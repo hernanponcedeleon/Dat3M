@@ -8,6 +8,7 @@ import com.dat3m.dartagnan.expression.integers.IntCmpOp;
 import com.dat3m.dartagnan.expression.integers.IntLiteral;
 import com.dat3m.dartagnan.expression.type.*;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.utils.ProgramBuilder;
+import com.dat3m.dartagnan.parsers.program.visitors.spirv.utils.ThreadGrid;
 import com.dat3m.dartagnan.program.memory.ScopedPointerVariable;
 import com.dat3m.dartagnan.expression.type.ScopedPointerType;
 import com.dat3m.dartagnan.program.Function;
@@ -25,14 +26,14 @@ public class MockProgramBuilder extends ProgramBuilder {
     private static final ExpressionFactory exprFactory = ExpressionFactory.getInstance();
 
     public MockProgramBuilder() {
-        this(List.of(1, 1, 1, 1), Map.of());
+        this(Map.of());
     }
 
     public MockProgramBuilder(Map<String, Expression> input) {
-        this(List.of(1, 1, 1, 1), input);
+        this(new ThreadGrid(1, 1, 1, 1), input);
     }
 
-    public MockProgramBuilder(List<Integer> grid, Map<String, Expression> input) {
+    public MockProgramBuilder(ThreadGrid grid, Map<String, Expression> input) {
         super(grid, input);
         cfBuilder = new MockControlFlowBuilder(expressions);
     }

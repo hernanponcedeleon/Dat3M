@@ -34,7 +34,7 @@ public class ProgramBuilder {
     protected final Map<String, Type> types = new HashMap<>();
     protected final Map<String, Expression> expressions = new HashMap<>();
     protected final Map<String, Function> forwardFunctions = new HashMap<>();
-    protected final List<Integer> threadGrid;
+    protected final ThreadGrid grid;
     protected final Map<String, Expression> inputs;
     public final Program program;
 
@@ -47,12 +47,11 @@ public class ProgramBuilder {
     private final HelperDecorations helperDecorations;
     protected ControlFlowBuilder cfBuilder = new ControlFlowBuilder(expressions);
 
-    public ProgramBuilder(List<Integer> threadGrid, Map<String, Expression> inputs) {
-        validateThreadGrid(threadGrid);
-        this.threadGrid = threadGrid;
+    public ProgramBuilder(ThreadGrid grid, Map<String, Expression> inputs) {
+        this.grid = grid;
         this.inputs = inputs;
         this.program = new Program(new Memory(), Program.SourceLanguage.SPV);
-        this.helperDecorations = new HelperDecorations(threadGrid);
+        this.helperDecorations = new HelperDecorations(grid);
     }
 
     public Program build() {
@@ -63,7 +62,7 @@ public class ProgramBuilder {
                 .filter(ScopedPointerVariable.class::isInstance)
                 .map(v -> (ScopedPointerVariable) v)
                 .collect(Collectors.toSet());
-        new ThreadCreator(threadGrid, getEntryPointFunction(), variables, builtIn).create();
+        new ThreadCreator(grid, getEntryPointFunction(), variables, builtIn).create();
         checkSpecification();
         return program;
     }
@@ -304,20 +303,8 @@ public class ProgramBuilder {
         return getCurrentFunctionOrThrowError().getName();
     }
 
-    private void validateThreadGrid(List<Integer> threadGrid) {
-        if (threadGrid.size() != 4) {
-            throw new ParsingException("Thread grid must have 4 dimensions");
-        }
-        if (threadGrid.stream().anyMatch(i -> i <= 0)) {
-            throw new ParsingException("Thread grid dimensions must be positive");
-        }
-        if (threadGrid.stream().reduce(1, (a, b) -> a * b) > 128) {
-            throw new ParsingException("Thread grid dimensions must be less than 128");
-        }
-    }
-
-    public List<Integer> getThreadGrid() {
-        return threadGrid;
+    public ThreadGrid getThreadGrid() {
+        return grid;
     }
 
     public Set<String> getNextOps() {

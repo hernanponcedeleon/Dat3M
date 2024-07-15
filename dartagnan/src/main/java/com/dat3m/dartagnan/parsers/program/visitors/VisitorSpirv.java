@@ -5,6 +5,7 @@ import com.dat3m.dartagnan.parsers.SpirvBaseVisitor;
 import com.dat3m.dartagnan.parsers.SpirvParser;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.*;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.utils.ProgramBuilder;
+import com.dat3m.dartagnan.parsers.program.visitors.spirv.utils.ThreadGrid;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
 import org.antlr.v4.runtime.tree.ParseTree;
@@ -13,7 +14,6 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -105,7 +105,7 @@ public class VisitorSpirv extends SpirvBaseVisitor<Program> {
     }
 
     private ProgramBuilder createBuilder(SpirvParser.SpvContext ctx) {
-        List<Integer> threadGrid = List.of(1, 1, 1, 1);
+        ThreadGrid grid = new ThreadGrid(1, 1, 1, 1);
         VisitorSpirvInput visitor = new VisitorSpirvInput();
         boolean hasConfig = false;
         for (SpirvParser.SpvHeaderContext header : ctx.spvHeaders().spvHeader()) {
@@ -120,10 +120,10 @@ public class VisitorSpirv extends SpirvBaseVisitor<Program> {
                 int threadAmount = Integer.parseInt(header.configHeader().literanHeaderUnsignedInteger().get(0).getText());
                 int subGroupAmount = Integer.parseInt(header.configHeader().literanHeaderUnsignedInteger().get(1).getText());
                 int workGroupAmount = Integer.parseInt(header.configHeader().literanHeaderUnsignedInteger().get(2).getText());
-                threadGrid = List.of(threadAmount, subGroupAmount, workGroupAmount, 1);
+                grid = new ThreadGrid(threadAmount, subGroupAmount, workGroupAmount, 1);
             }
         }
-        return new ProgramBuilder(threadGrid, visitor.getInputs());
+        return new ProgramBuilder(grid, visitor.getInputs());
     }
 
     @Override

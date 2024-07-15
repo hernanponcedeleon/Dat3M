@@ -14,16 +14,14 @@ import com.google.common.collect.Lists;
 
 import java.util.*;
 
-import static com.dat3m.dartagnan.program.ScopeHierarchy.ScopeHierarchyForVulkan;
-
 public class ThreadCreator {
 
-    private final List<Integer> grid;
+    private final ThreadGrid grid;
     private final Function function;
     private final Set<ScopedPointerVariable> variables;
     private final MemoryTransformer transformer;
 
-    public ThreadCreator(List<Integer> grid, Function function, Set<ScopedPointerVariable> variables, BuiltIn builtIn) {
+    public ThreadCreator(ThreadGrid grid, Function function, Set<ScopedPointerVariable> variables, BuiltIn builtIn) {
         this.grid = grid;
         this.function = function;
         this.variables = variables;
@@ -32,25 +30,18 @@ public class ThreadCreator {
 
     public void create() {
         Program program = function.getProgram();
-        for (int qfId = 0; qfId < grid.get(3); qfId++) {
-            for (int wgId = 0; wgId < grid.get(2); wgId++) {
-                for (int sgId = 0; sgId < grid.get(1); sgId++) {
-                    for (int thId = 0; thId < grid.get(0); thId++) {
-                        program.addThread(createThreadFromFunction(thId, sgId, wgId, qfId));
-                    }
-                }
-            }
+        for (int i = 0; i < grid.dvSize(); i++) {
+            program.addThread(createThreadFromFunction(i));
         }
         deleteLocalFunctionVariables();
     }
 
-    private Thread createThreadFromFunction(int thId, int sgId, int wgId, int qfId) {
-        int tid = thId + sgId * grid.get(0) + wgId * grid.get(0) * grid.get(1) + qfId * grid.get(0) * grid.get(1) * grid.get(2);
+    private Thread createThreadFromFunction(int tid) {
         String name = function.getName();
         FunctionType type = function.getFunctionType();
         List<String> args = Lists.transform(function.getParameterRegisters(), Register::getName);
         ThreadStart start = EventFactory.newThreadStart(null);
-        ScopeHierarchy scope = ScopeHierarchyForVulkan(qfId, wgId, sgId);
+        ScopeHierarchy scope = grid.getScoreHierarchy(tid);
         Thread thread = new Thread(name, type, args, tid, start, scope, Set.of());
         thread.copyDummyCountFrom(function);
         copyThreadEvents(thread);

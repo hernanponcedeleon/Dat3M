@@ -14,6 +14,7 @@ import com.dat3m.dartagnan.program.memory.VirtualMemoryObject;
 import com.dat3m.dartagnan.program.misc.NonDetValue;
 
 import java.util.*;
+import java.util.function.IntUnaryOperator;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -23,21 +24,27 @@ public class MemoryTransformer extends ExprTransformer {
 
     private static final List<String> namePrefixes = List.of("T", "S", "W", "Q");
 
-    private final List<Integer> grid;
     private final Function function;
     private final BuiltIn builtIn;
-    private final List<Integer> threadId;
+    private final List<? extends Map<MemoryObject, MemoryObject>> scopeMapping;
+    private final Map<MemoryObject, ScopedPointerVariable> pointerMapping;
+    private final List<IntUnaryOperator> scopeIdProvider;
+    private final List<IntUnaryOperator> namePrefixIdxProvider;
     private Map<Register, Register> registerMapping;
-    private final List<? extends Map<MemoryObject, MemoryObject>> memoryScopeMapping;
-    private final Map<MemoryObject, ScopedPointerVariable> memoryPointersMapping;
+    private int tid;
 
-    public MemoryTransformer(List<Integer> grid, Function function, BuiltIn builtIn, Set<ScopedPointerVariable> variables) {
-        this.grid = grid;
+    public MemoryTransformer(ThreadGrid grid, Function function, BuiltIn builtIn, Set<ScopedPointerVariable> variables) {
         this.function = function;
         this.builtIn = builtIn;
-        this.threadId = new ArrayList<>(Stream.generate(() -> 0).limit(grid.size()).toList());
-        this.memoryScopeMapping = Stream.generate(() -> new HashMap<MemoryObject, MemoryObject>()).limit(grid.size()).toList();
-        this.memoryPointersMapping = variables.stream().collect(Collectors.toMap((ScopedPointerVariable::getAddress), (v -> v)));
+        this.scopeMapping = Stream.generate(() -> new HashMap<MemoryObject, MemoryObject>()).limit(1L + ThreadGrid.DEPTH).toList();
+        this.pointerMapping = variables.stream().collect(Collectors.toMap((ScopedPointerVariable::getAddress), (v -> v)));
+        this.scopeIdProvider = List.of(grid::thId, grid::sgId, grid::wgId, grid::qfId, grid::dvId);
+        this.namePrefixIdxProvider = List.of(
+                i -> i,
+                i -> i / grid.sgSize(),
+                i -> i / grid.wgSize(),
+                i -> i / grid.qfSize(),
+                i -> i / grid.dvSize());
     }
 
     public Register getRegisterMapping(Register register) {
@@ -45,16 +52,13 @@ public class MemoryTransformer extends ExprTransformer {
     }
 
     public void setThread(Thread thread) {
-        List<Integer> newThreadId = getThreadHierarchicalId(thread);
-        for (int i = 0; i < newThreadId.size(); i++) {
-            if (!threadId.get(i).equals(newThreadId.get(i))) {
-                for (int j = 0; j <= i; j++) {
-                    memoryScopeMapping.get(j).clear();
-                }
-            }
-            threadId.set(i, newThreadId.get(i));
+        int newTid = thread.getId();
+        int depth = getScopeIdx(newTid, scopeIdProvider);
+        for (int i = 0; i <= depth; i++) {
+            scopeMapping.get(i).clear();
         }
-        builtIn.setHierarchy(newThreadId);
+        tid = newTid;
+        builtIn.setThreadId(tid);
         registerMapping = function.getRegisters().stream().collect(
                 toMap(r -> r, r -> thread.getOrNewRegister(r.getName(), r.getType())));
     }
@@ -66,7 +70,7 @@ public class MemoryTransformer extends ExprTransformer {
 
     @Override
     public Expression visitMemoryObject(MemoryObject memObj) {
-        String storageClass = memoryPointersMapping.get(memObj).getScopeId();
+        String storageClass = pointerMapping.get(memObj).getScopeId();
         return switch (storageClass) {
             case Tag.Spirv.SC_UNIFORM_CONSTANT,
                     Tag.Spirv.SC_UNIFORM,
@@ -83,15 +87,14 @@ public class MemoryTransformer extends ExprTransformer {
         };
     }
 
-    private Expression applyMapping(MemoryObject memObj, int scopeLevel) {
+    private Expression applyMapping(MemoryObject memObj, int scopeDepth) {
         Program program = function.getProgram();
-        Map<MemoryObject, MemoryObject> mapping = memoryScopeMapping.get(scopeLevel);
+        Map<MemoryObject, MemoryObject> mapping = scopeMapping.get(scopeDepth);
         if (!mapping.containsKey(memObj)) {
             MemoryObject copy = memObj instanceof VirtualMemoryObject
                     ? program.getMemory().allocateVirtual(memObj.size(), true, null)
                     : program.getMemory().allocate(memObj.size());
-
-            copy.setName(makeVariableName(scopeLevel, memObj.getName()));
+            copy.setName(makeVariableName(scopeDepth, memObj.getName()));
             for (int offset : memObj.getInitializedFields()) {
                 Expression value = memObj.getInitialValue(offset);
                 if (value instanceof NonDetValue) {
@@ -99,21 +102,23 @@ public class MemoryTransformer extends ExprTransformer {
                 }
                 copy.setInitialValue(offset, value);
             }
-            builtIn.decorate(memObj.getName(), copy, memoryPointersMapping.get(memObj).getInnerType());
+            builtIn.decorate(memObj.getName(), copy, pointerMapping.get(memObj).getInnerType());
             mapping.put(memObj, copy);
         }
         return mapping.getOrDefault(memObj, memObj);
     }
 
-    private List<Integer> getThreadHierarchicalId(Thread thread) {
-        int sgId = thread.getScopeHierarchy().getScopeId(Tag.Vulkan.SUB_GROUP);
-        int wgId = thread.getScopeHierarchy().getScopeId(Tag.Vulkan.WORK_GROUP);
-        int qfId = thread.getScopeHierarchy().getScopeId(Tag.Vulkan.QUEUE_FAMILY);
-        int thId = thread.getId() % grid.get(0);
-        return List.of(thId, sgId, wgId, qfId);
+    private int getScopeIdx(int newTid, List<IntUnaryOperator> f) {
+        for (int i = f.size() - 1; i >= 0; i--) {
+            if (f.get(i).applyAsInt(newTid) != f.get(i).applyAsInt(tid)) {
+                return i;
+            }
+        }
+        return -1;
     }
 
     private String makeVariableName(int idx, String base) {
-        return String.format("%s@%s%s", base, namePrefixes.get(idx), builtIn.getGlobalIdAtIndex(idx));
+        return String.format("%s@%s%s", base, namePrefixes.get(idx),
+                namePrefixIdxProvider.get(idx).applyAsInt(tid));
     }
 }

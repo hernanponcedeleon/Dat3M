@@ -8,61 +8,29 @@ import com.dat3m.dartagnan.expression.misc.ConstructExpr;
 import com.dat3m.dartagnan.expression.type.ArrayType;
 import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
+import com.dat3m.dartagnan.parsers.program.visitors.spirv.utils.ThreadGrid;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Stream;
 
 public class BuiltIn implements Decoration {
 
     private static final TypeFactory types = TypeFactory.getInstance();
     private static final ExpressionFactory expressions = ExpressionFactory.getInstance();
-    private static final int GRID_SIZE = 4;
-    // grid(0) - number of threads in a subgroup
-    // grid(1) - number of subgroups in a local workgroup
-    //      assuming sgSize <= wgSize and a flat workgroup
-    // grid(2) - number of local workgroups in a queue family (global wg)
-    //      assuming a flat workgroup
-    // grid(3) - number of queue families (global wg) in a device
-    private final List<Integer> grid;
-    private final List<Integer> threadId;
+    private final ThreadGrid grid;
     private final Map<String, String> mapping;
+    private int tid;
 
-    public BuiltIn(List<Integer> grid) {
-        if (grid.size() != 4 || grid.stream().anyMatch(x -> x <= 0)) {
-            throw new ParsingException("Illegal BuiltIn size (%s)", grid);
-        }
+    public BuiltIn(ThreadGrid grid) {
         this.grid = grid;
-        this.threadId = new ArrayList<>(Stream.generate(() -> 0)
-                .limit(GRID_SIZE).toList());
         this.mapping = new HashMap<>();
     }
 
-    public void setHierarchy(List<Integer> threadId) {
-        if (threadId.stream().anyMatch(e -> e < 0) || threadId.size() != GRID_SIZE) {
-            throw new ParsingException("Illegal BuiltIn hierarchy %s",
-                    String.join(", ", threadId.stream().map(Object::toString).toList()));
-        }
-        this.threadId.clear();
-        this.threadId.addAll(threadId);
-    }
-
-    public int getGlobalIdAtIndex(int idx) {
-        if (idx >= GRID_SIZE) {
-            throw new ParsingException("Illegal thread hierarchy index %d", idx);
-        }
-        int id = 0;
-        for (int i = idx; i < GRID_SIZE; i++) {
-            int v = threadId.get(i);
-            for (int j = idx; j < i; j++) {
-                v *= grid.get(j);
-            }
-            id += v;
-        }
-        return id;
+    public void setThreadId(int tid) {
+        this.tid = tid;
     }
 
     @Override
@@ -106,15 +74,15 @@ public class BuiltIn implements Decoration {
 
     private Expression getDecorationExpressions(String id, Type type) {
         return switch (mapping.get(id)) {
-            case "SubgroupLocalInvocationId" -> makeScalar(id, type, threadId.get(0));
-            case "LocalInvocationId" -> makeArray(id, type, threadId.get(0) + threadId.get(1) * grid.get(0), 0, 0);
-            case "LocalInvocationIndex" -> makeScalar(id, type, threadId.get(0) + threadId.get(1) * grid.get(0)); // scalar of LocalInvocationId
-            case "GlobalInvocationId" -> makeArray(id, type, threadId.get(0) + threadId.get(1) * grid.get(0) + threadId.get(2) * grid.get(0) * grid.get(1) + threadId.get(3) * grid.get(0) * grid.get(1) * grid.get(2), 0, 0);
+            case "SubgroupLocalInvocationId" -> makeScalar(id, type, tid % grid.sgSize());
+            case "LocalInvocationId" -> makeArray(id, type, tid % grid.wgSize(), 0, 0);
+            case "LocalInvocationIndex" -> makeScalar(id, type, tid % grid.wgSize()); // scalar of LocalInvocationId
+            case "GlobalInvocationId" -> makeArray(id, type, tid % grid.dvSize(), 0, 0);
             case "DeviceIndex" -> makeScalar(id, type, 0);
-            case "SubgroupId" -> makeScalar(id, type, threadId.get(1));
-            case "WorkgroupId" -> makeArray(id, type, threadId.get(2), 0, 0);
-            case "SubgroupSize" -> makeScalar(id, type, grid.get(0));
-            case "WorkgroupSize" -> makeArray(id, type, grid.get(0) * grid.get(1), 1, 1);
+            case "SubgroupId" -> makeScalar(id, type, grid.sgId(tid));
+            case "WorkgroupId" -> makeArray(id, type, grid.wgId(tid), 0, 0);
+            case "SubgroupSize" -> makeScalar(id, type, grid.sgSize());
+            case "WorkgroupSize" -> makeArray(id, type, grid.wgSize(), 1, 1);
             default -> throw new ParsingException("Unsupported decoration '%s'", mapping.get(id));
         };
     }

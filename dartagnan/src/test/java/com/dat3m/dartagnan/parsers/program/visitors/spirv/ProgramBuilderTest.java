@@ -5,6 +5,7 @@ import com.dat3m.dartagnan.expression.type.FunctionType;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.utils.ControlFlowBuilder;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.utils.ProgramBuilder;
+import com.dat3m.dartagnan.parsers.program.visitors.spirv.utils.ThreadGrid;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.core.Skip;
 import org.junit.Test;
@@ -19,7 +20,7 @@ public class ProgramBuilderTest {
 
     private static final TypeFactory types = TypeFactory.getInstance();
 
-    private final ProgramBuilder builder = new ProgramBuilder(List.of(1, 1, 1, 1), Map.of());
+    private final ProgramBuilder builder = new ProgramBuilder(new ThreadGrid(1, 1, 1, 1), Map.of());
     private final ControlFlowBuilder cfBuilder = builder.getHelperControlFlow();
 
     @Test

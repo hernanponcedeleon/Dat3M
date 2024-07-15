@@ -5,6 +5,7 @@ import com.dat3m.dartagnan.expression.integers.IntLiteral;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.extenstions.VisitorExtensionClspvReflection;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.mocks.MockProgramBuilder;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.mocks.MockSpirvParser;
+import com.dat3m.dartagnan.parsers.program.visitors.spirv.utils.ThreadGrid;
 import com.dat3m.dartagnan.program.memory.ScopedPointerVariable;
 import org.junit.Before;
 import org.junit.Test;
@@ -17,7 +18,7 @@ import static org.junit.Assert.fail;
 
 public class VisitorExtensionClspvReflectionTest {
 
-    private final MockProgramBuilder builder = new MockProgramBuilder(List.of(2, 3, 4, 1), Map.of());
+    private final MockProgramBuilder builder = new MockProgramBuilder(new ThreadGrid(2, 3, 4, 1), Map.of());
 
     @Before
     public void before() {
