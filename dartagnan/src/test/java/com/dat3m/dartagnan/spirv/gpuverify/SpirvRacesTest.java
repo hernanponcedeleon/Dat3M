@@ -100,6 +100,7 @@ public class SpirvRacesTest {
                 {"test_local_id_inference.spv.dis", 1, PASS},
                 {"test_mod_invariants/global_reduce_strength.spv.dis", 1, UNKNOWN},
                 {"test_part_load_store/store_int_and_short.spv.dis", 1, PASS},
+                {"test_for_ssa_bug.spv.dis", 2, PASS},
                 {"test_structs/use_array_element.spv.dis", 1, PASS},
                 {"test_structs/use_element.spv.dis", 1, PASS},
                 {"test_structs/use_struct_element.spv.dis", 1, PASS},
@@ -167,10 +168,6 @@ public class SpirvRacesTest {
                 // {"test_global_id_inference.spv.dis", 1, PASS},
                 // {"test_line_number_problem.spv.dis", 1, FAIL},
                 // {"test_mod_invariants/local_reduce_strength.spv.dis", 1, PASS},
-
-                // Unsupported control flow
-                // {"test_for_ssa_bug.spv.dis", 1, PASS},
-                // {"transitiveclosuresimplified.spv.dis", 1, PASS},
 
                 // Unsupported spir-v ops
                 // {"alignment/int3int4.spv.dis", 1, PASS},
@@ -248,6 +245,7 @@ public class SpirvRacesTest {
                 // {"ternarytest.spv.dis", 1, PASS},
                 // {"ternarytest2.spv.dis", 1, PASS},
                 // {"test_for_get_group_id.spv.dis", 1, PASS},
+                // {"transitiveclosuresimplified.spv.dis", 1, PASS},
                 // {"vectortests/float4arrayaccess.spv.dis", 1, PASS},
                 // {"vectortests/int3arrayaccess.spv.dis", 1, PASS},
                 // {"vectortests/test_paren.spv.dis", 1, FAIL},
