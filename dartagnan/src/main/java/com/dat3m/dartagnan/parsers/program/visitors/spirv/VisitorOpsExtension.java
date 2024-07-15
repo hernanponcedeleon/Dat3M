@@ -51,17 +51,17 @@ public class VisitorOpsExtension extends SpirvBaseVisitor<Void> {
         throw new ParsingException("Unexpected extension id '%s'", id);
     }
 
-    public Set<String> getSupportedOps() {
-        return Set.of(
-                "OpExtInstImport",
-                "OpExtInst"
-        );
-    }
-
     private String getFirstTokenText(ParseTree ctx) {
         while (!(ctx instanceof TerminalNode)) {
             ctx = ctx.getChild(0);
         }
         return ctx.getText();
+    }
+
+    public Set<String> getSupportedOps() {
+        return Set.of(
+                "OpExtInstImport",
+                "OpExtInst"
+        );
     }
 }

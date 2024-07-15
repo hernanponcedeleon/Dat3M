@@ -8,7 +8,8 @@ import java.util.Set;
 public class VisitorOpsDebug extends SpirvBaseVisitor<Void> {
 
     public VisitorOpsDebug(ProgramBuilder builder) {
-        // Nothing to do for debug operations
+        // TODO: Implement mapping to original variable names
+        //  and lines of code (readability for human users)
     }
 
     public Set<String> getSupportedOps() {

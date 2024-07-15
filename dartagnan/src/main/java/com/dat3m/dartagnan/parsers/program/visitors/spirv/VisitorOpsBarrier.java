@@ -11,7 +11,6 @@ import com.dat3m.dartagnan.parsers.program.visitors.spirv.utils.ProgramBuilder;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.Tag;
-import com.dat3m.dartagnan.program.event.core.GenericVisibleEvent;
 
 import java.util.Set;
 
@@ -46,9 +45,7 @@ public class VisitorOpsBarrier extends SpirvBaseVisitor<Event> {
     @Override
     public Event visitOpMemoryBarrier(SpirvParser.OpMemoryBarrierContext ctx) {
         if (!builder.isSemanticsNone(ctx.semantics().getText())) {
-            // TODO: Refactoring. The EventFactory method adds a fence name as a tag.
-            //  Refactor the factory method not to add name tag by default, then use it here.
-            Event fence = new GenericVisibleEvent("membar", Tag.FENCE);
+            Event fence = EventFactory.newFence(Tag.FENCE);
             fence.addTags(builder.getScope(ctx.memory().getText()));
             fence.addTags(builder.getSemantics(ctx.semantics().getText()));
             return builder.addEvent(fence);

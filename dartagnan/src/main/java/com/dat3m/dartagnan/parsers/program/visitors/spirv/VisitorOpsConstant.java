@@ -146,10 +146,10 @@ public class VisitorOpsConstant extends SpirvBaseVisitor<Expression> {
         throw new ParsingException("Illegal NULL constant type '%s'", type);
     }
 
-    // Special handling for OpSpecConstantOp (wrapper for another Op)
-    public Type visitOpSpecConstantOp(Register register) {
+    public void visitOpSpecConstantOp(Register register) {
         // TODO: Implementation
-        return register.getType();
+        // Special handling for OpSpecConstantOp (wrapper for another Op)
+        throw new ParsingException("Unsupported instruction OpSpecConstantOp");
     }
 
     private Expression makeBooleanSpecConstant(String id, boolean value) {
