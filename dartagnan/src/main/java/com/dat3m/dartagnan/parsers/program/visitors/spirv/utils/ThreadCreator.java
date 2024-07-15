@@ -1,4 +1,4 @@
-package com.dat3m.dartagnan.parsers.program.visitors.spirv.transformers;
+package com.dat3m.dartagnan.parsers.program.visitors.spirv.utils;
 
 import com.dat3m.dartagnan.expression.type.FunctionType;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.decorations.BuiltIn;
@@ -21,13 +21,13 @@ public class ThreadCreator {
     private final List<Integer> grid;
     private final Function function;
     private final Set<ScopedPointerVariable> variables;
-    private final ScopedMemoryTransformer transformer;
+    private final MemoryTransformer transformer;
 
     public ThreadCreator(List<Integer> grid, Function function, Set<ScopedPointerVariable> variables, BuiltIn builtIn) {
         this.grid = grid;
         this.function = function;
         this.variables = variables;
-        this.transformer = new ScopedMemoryTransformer(grid, function, builtIn, variables);
+        this.transformer = new MemoryTransformer(grid, function, builtIn, variables);
     }
 
     public void create() {

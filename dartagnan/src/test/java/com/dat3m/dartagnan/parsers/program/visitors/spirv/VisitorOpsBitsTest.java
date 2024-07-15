@@ -3,10 +3,7 @@ package com.dat3m.dartagnan.parsers.program.visitors.spirv;
 import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.expression.integers.IntBinaryExpr;
 import com.dat3m.dartagnan.expression.integers.IntBinaryOp;
-import com.dat3m.dartagnan.expression.integers.IntUnaryExpr;
-import com.dat3m.dartagnan.expression.integers.IntUnaryOp;
-import com.dat3m.dartagnan.expression.misc.ConstructExpr;
-import com.dat3m.dartagnan.parsers.program.visitors.spirv.mocks.MockProgramBuilderSpv;
+import com.dat3m.dartagnan.parsers.program.visitors.spirv.mocks.MockProgramBuilder;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.mocks.MockSpirvParser;
 import com.dat3m.dartagnan.program.event.core.Local;
 import org.junit.Test;
@@ -14,7 +11,6 @@ import org.junit.Test;
 import java.util.List;
 
 import static com.dat3m.dartagnan.expression.integers.IntBinaryOp.*;
-import static com.dat3m.dartagnan.expression.integers.IntUnaryOp.MINUS;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
@@ -29,7 +25,7 @@ public class VisitorOpsBitsTest {
 
     private void doTestOpsBitwiseInteger(String name, int op1, int op2) {
         // given
-        MockProgramBuilderSpv builder = new MockProgramBuilderSpv();
+        MockProgramBuilder builder = new MockProgramBuilder();
         builder.mockIntType("%int", 64);
         builder.mockConstant("%value1", "%int", op1);
         builder.mockConstant("%value2", "%int", op2);
@@ -55,7 +51,7 @@ public class VisitorOpsBitsTest {
     @Test
     public void testOpsBitwiseAndVector() {
         // given
-        MockProgramBuilderSpv builder = new MockProgramBuilderSpv();
+        MockProgramBuilder builder = new MockProgramBuilder();
         builder.mockIntType("%int", 64);
         builder.mockVectorType("%vector", "%int", 3);
         builder.mockConstant("%value1", "%vector", List.of(1, 2, 3));
@@ -83,7 +79,7 @@ public class VisitorOpsBitsTest {
 
     private void doTestOpsShift(String name, int op1, int op2) {
         // given
-        MockProgramBuilderSpv builder = new MockProgramBuilderSpv();
+        MockProgramBuilder builder = new MockProgramBuilder();
         builder.mockIntType("%int", 64);
         builder.mockConstant("%value1", "%int", op1);
         builder.mockConstant("%value2", "%int", op2);
@@ -109,7 +105,7 @@ public class VisitorOpsBitsTest {
     @Test
     public void testOpsShiftInvalidResultType() {
         // given
-        MockProgramBuilderSpv builder = new MockProgramBuilderSpv();
+        MockProgramBuilder builder = new MockProgramBuilder();
         builder.mockIntType("%int", 64);
         builder.mockVectorType("%vector", "%int", 3);
         builder.mockConstant("%value1", "%int", 1);
@@ -131,7 +127,7 @@ public class VisitorOpsBitsTest {
     @Test
     public void testOpsShiftInvalidOperandType() {
         // given
-        MockProgramBuilderSpv builder = new MockProgramBuilderSpv();
+        MockProgramBuilder builder = new MockProgramBuilder();
         builder.mockIntType("%int", 64);
         builder.mockVectorType("%vector", "%int", 3);
         builder.mockConstant("%value1", "%vector", List.of(1, 2, 3));
@@ -150,7 +146,7 @@ public class VisitorOpsBitsTest {
         }
     }
 
-    private Local visit(MockProgramBuilderSpv builder, String input) {
+    private Local visit(MockProgramBuilder builder, String input) {
         builder.mockFunctionStart();
         builder.mockLabel();
         return (Local) new MockSpirvParser(input).op().accept(new VisitorOpsBits(builder));

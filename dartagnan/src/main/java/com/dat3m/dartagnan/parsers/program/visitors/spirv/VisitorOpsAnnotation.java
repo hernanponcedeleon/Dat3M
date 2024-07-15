@@ -4,6 +4,7 @@ import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.parsers.SpirvBaseVisitor;
 import com.dat3m.dartagnan.parsers.SpirvParser;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.decorations.DecorationType;
+import com.dat3m.dartagnan.parsers.program.visitors.spirv.utils.ProgramBuilder;
 
 import java.util.Set;
 
@@ -11,9 +12,9 @@ import static com.dat3m.dartagnan.parsers.program.visitors.spirv.decorations.Dec
 
 public class VisitorOpsAnnotation extends SpirvBaseVisitor<Void> {
 
-    private final ProgramBuilderSpv builder;
+    private final ProgramBuilder builder;
 
-    public VisitorOpsAnnotation(ProgramBuilderSpv builder) {
+    public VisitorOpsAnnotation(ProgramBuilder builder) {
         this.builder = builder;
     }
 

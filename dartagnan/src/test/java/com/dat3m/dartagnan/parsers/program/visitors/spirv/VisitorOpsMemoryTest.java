@@ -10,7 +10,7 @@ import com.dat3m.dartagnan.expression.type.ArrayType;
 import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.parsers.SpirvParser;
-import com.dat3m.dartagnan.parsers.program.visitors.spirv.mocks.MockProgramBuilderSpv;
+import com.dat3m.dartagnan.parsers.program.visitors.spirv.mocks.MockProgramBuilder;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.mocks.MockSpirvParser;
 import com.dat3m.dartagnan.program.memory.ScopedPointer;
 import com.dat3m.dartagnan.program.memory.ScopedPointerVariable;
@@ -31,7 +31,7 @@ public class VisitorOpsMemoryTest {
 
     private static final TypeFactory types = TypeFactory.getInstance();
     private static final ExpressionFactory expressions = ExpressionFactory.getInstance();
-    private MockProgramBuilderSpv builder = new MockProgramBuilderSpv();
+    private MockProgramBuilder builder = new MockProgramBuilder();
 
     @Test
     public void testLoad() {
@@ -243,7 +243,7 @@ public class VisitorOpsMemoryTest {
         Expression i4 = expressions.makeConstruct(List.of(i1, i2, i3));
         Map<String, Expression> inputVariables = Map.of("%v1", i1, "%v2", i2, "%v3", i3, "%v4", i4);
 
-        builder = new MockProgramBuilderSpv(inputVariables);
+        builder = new MockProgramBuilder(inputVariables);
 
         builder.mockBoolType("%bool");
         builder.mockIntType("%int", 32);
@@ -327,7 +327,7 @@ public class VisitorOpsMemoryTest {
         Expression s = expressions.makeConstruct(List.of(i1, a1));
         Map<String, Expression> inputVariables = Map.of("%v1", a1, "%v2", a3a, "%v3", s);
 
-        builder = new MockProgramBuilderSpv(inputVariables);
+        builder = new MockProgramBuilder(inputVariables);
 
         IntegerType iType = builder.mockIntType("%int", 32);
         builder.mockVectorType("%ra", "%int", -1);
@@ -414,7 +414,7 @@ public class VisitorOpsMemoryTest {
         Expression a2 = expressions.makeArray(archType, List.of(i1, i2, i3), true);
         Map<String, Expression> inputVariables = Map.of("%v1", a1, "%v2", a2);
 
-        builder = new MockProgramBuilderSpv(inputVariables);
+        builder = new MockProgramBuilder(inputVariables);
 
         builder.mockIntType("%int", 64);
         builder.mockVectorType("%ra", "%int", -1);
@@ -506,7 +506,7 @@ public class VisitorOpsMemoryTest {
         Expression i2 = expressions.makeValue(2, archType);
         Expression a = expressions.makeArray(archType, List.of(i1, i2), true);
 
-        builder = new MockProgramBuilderSpv(Map.of("%v", a));
+        builder = new MockProgramBuilder(Map.of("%v", a));
 
         builder.mockIntType("%int", 32);
         builder.mockVectorType("%v2i", "%int", 2);
@@ -595,7 +595,7 @@ public class VisitorOpsMemoryTest {
         IntegerType archType = types.getArchType();
         Expression v = expressions.makeValue(2, archType);
 
-        builder = new MockProgramBuilderSpv(Map.of("%v", v));
+        builder = new MockProgramBuilder(Map.of("%v", v));
         builder.mockIntType("%int", 32);
         builder.mockPtrType("%i_ptr", "%int", "Uniform");
         builder.mockConstant("%i_const", "%int", 1);

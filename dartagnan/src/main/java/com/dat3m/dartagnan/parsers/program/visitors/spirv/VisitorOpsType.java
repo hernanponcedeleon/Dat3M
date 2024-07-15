@@ -7,6 +7,7 @@ import com.dat3m.dartagnan.expression.integers.IntLiteral;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.parsers.SpirvBaseVisitor;
 import com.dat3m.dartagnan.parsers.SpirvParser;
+import com.dat3m.dartagnan.parsers.program.visitors.spirv.utils.ProgramBuilder;
 
 import java.util.List;
 import java.util.Set;
@@ -17,9 +18,9 @@ public class VisitorOpsType extends SpirvBaseVisitor<Type> {
 
     private static final TypeFactory types = TypeFactory.getInstance();
 
-    private final ProgramBuilderSpv builder;
+    private final ProgramBuilder builder;
 
-    public VisitorOpsType(ProgramBuilderSpv builder) {
+    public VisitorOpsType(ProgramBuilder builder) {
         this.builder = builder;
     }
 

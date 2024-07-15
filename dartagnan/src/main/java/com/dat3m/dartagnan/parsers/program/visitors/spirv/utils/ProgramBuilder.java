@@ -1,4 +1,4 @@
-package com.dat3m.dartagnan.parsers.program.visitors.spirv;
+package com.dat3m.dartagnan.parsers.program.visitors.spirv.utils;
 
 import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.expression.Expression;
@@ -8,10 +8,8 @@ import com.dat3m.dartagnan.expression.type.FunctionType;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.decorations.BuiltIn;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.decorations.Decoration;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.decorations.DecorationType;
-import com.dat3m.dartagnan.parsers.program.visitors.spirv.helpers.HelperControlFlow;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.helpers.HelperDecorations;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.helpers.HelperTags;
-import com.dat3m.dartagnan.parsers.program.visitors.spirv.transformers.ThreadCreator;
 import com.dat3m.dartagnan.program.memory.ScopedPointer;
 import com.dat3m.dartagnan.program.memory.ScopedPointerVariable;
 import com.dat3m.dartagnan.expression.type.ScopedPointerType;
@@ -29,9 +27,9 @@ import java.util.stream.IntStream;
 import static com.dat3m.dartagnan.program.Program.SpecificationType.FORALL;
 import static com.dat3m.dartagnan.program.Program.SpecificationType.NOT_EXISTS;
 
-public class ProgramBuilderSpv {
+public class ProgramBuilder {
 
-    private static final Logger logger = LogManager.getLogger(ProgramBuilderSpv.class);
+    private static final Logger logger = LogManager.getLogger(ProgramBuilder.class);
 
     protected final Map<String, Type> types = new HashMap<>();
     protected final Map<String, Expression> expressions = new HashMap<>();
@@ -47,9 +45,9 @@ public class ProgramBuilderSpv {
 
     private final HelperTags helperTags = new HelperTags();
     private final HelperDecorations helperDecorations;
-    protected HelperControlFlow helperControlFlow = new HelperControlFlow(expressions);
+    protected ControlFlowBuilder cfBuilder = new ControlFlowBuilder(expressions);
 
-    public ProgramBuilderSpv(List<Integer> threadGrid, Map<String, Expression> inputs) {
+    public ProgramBuilder(List<Integer> threadGrid, Map<String, Expression> inputs) {
         validateThreadGrid(threadGrid);
         this.threadGrid = threadGrid;
         this.inputs = inputs;
@@ -59,7 +57,7 @@ public class ProgramBuilderSpv {
 
     public Program build() {
         validateBeforeBuild();
-        helperControlFlow.build();
+        cfBuilder.build();
         BuiltIn builtIn = (BuiltIn) getDecoration(DecorationType.BUILT_IN);
         Set<ScopedPointerVariable> variables = expressions.values().stream()
                 .filter(ScopedPointerVariable.class::isInstance)
@@ -162,7 +160,7 @@ public class ProgramBuilderSpv {
         if (currentFunction == null) {
             throw new ParsingException("Attempt to add an event outside a function definition");
         }
-        if (!helperControlFlow.isInsideBlock()) {
+        if (!cfBuilder.isInsideBlock()) {
             throw new ParsingException("Attempt to add an event outside a control flow block");
         }
         if (event instanceof RegWriter regWriter) {
@@ -245,8 +243,8 @@ public class ProgramBuilderSpv {
         return helperDecorations.getDecoration(type);
     }
 
-    public HelperControlFlow getHelperControlFlow() {
-        return helperControlFlow;
+    public ControlFlowBuilder getHelperControlFlow() {
+        return cfBuilder;
     }
 
     public Function getCurrentFunctionOrThrowError() {

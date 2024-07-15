@@ -6,7 +6,7 @@ import com.dat3m.dartagnan.expression.booleans.BoolBinaryOp;
 import com.dat3m.dartagnan.expression.booleans.BoolUnaryExpr;
 import com.dat3m.dartagnan.expression.integers.IntCmpExpr;
 import com.dat3m.dartagnan.expression.integers.IntCmpOp;
-import com.dat3m.dartagnan.parsers.program.visitors.spirv.mocks.MockProgramBuilderSpv;
+import com.dat3m.dartagnan.parsers.program.visitors.spirv.mocks.MockProgramBuilder;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.mocks.MockSpirvParser;
 import com.dat3m.dartagnan.program.event.core.Local;
 import org.junit.Test;
@@ -30,7 +30,7 @@ public class VisitorOpsLogicalTest {
 
     private void doTestOpsLogicalUn(boolean value) {
         // given
-        MockProgramBuilderSpv builder = new MockProgramBuilderSpv();
+        MockProgramBuilder builder = new MockProgramBuilder();
         builder.mockBoolType("%bool");
         builder.mockConstant("%value", "%bool", value);
         String input = "%reg = OpLogicalNot %bool %value";
@@ -48,7 +48,7 @@ public class VisitorOpsLogicalTest {
     @Test
     public void testOpSelect() {
         // given
-        MockProgramBuilderSpv builder = new MockProgramBuilderSpv();
+        MockProgramBuilder builder = new MockProgramBuilder();
         builder.mockBoolType("%bool");
         builder.mockIntType("%int", 64);
         builder.mockConstant("%cond", "%bool", true);
@@ -67,7 +67,7 @@ public class VisitorOpsLogicalTest {
     @Test
     public void testOpSelectMismatchingOperandType() {
         // given
-        MockProgramBuilderSpv builder = new MockProgramBuilderSpv();
+        MockProgramBuilder builder = new MockProgramBuilder();
         builder.mockBoolType("%bool");
         builder.mockIntType("%int", 64);
         builder.mockConstant("%cond", "%bool", true);
@@ -96,7 +96,7 @@ public class VisitorOpsLogicalTest {
 
     private void doTestOpsLogicalBin(String name, BoolBinaryOp op, boolean v1, boolean v2) {
         // given
-        MockProgramBuilderSpv builder = new MockProgramBuilderSpv();
+        MockProgramBuilder builder = new MockProgramBuilder();
         builder.mockBoolType("%bool");
         builder.mockConstant("%v1", "%bool", v1);
         builder.mockConstant("%v2", "%bool", v2);
@@ -129,7 +129,7 @@ public class VisitorOpsLogicalTest {
 
     private void doTestOpsIntegerBin(String name, IntCmpOp op, int v1, int v2) {
         // given
-        MockProgramBuilderSpv builder = new MockProgramBuilderSpv();
+        MockProgramBuilder builder = new MockProgramBuilder();
         builder.mockBoolType("%bool");
         builder.mockIntType("%int", 64);
         builder.mockConstant("%v1", "%int", v1);
@@ -150,7 +150,7 @@ public class VisitorOpsLogicalTest {
     @Test
     public void testOpsLogicalUnIllegalOperandType() {
         // given
-        MockProgramBuilderSpv builder = new MockProgramBuilderSpv();
+        MockProgramBuilder builder = new MockProgramBuilder();
         builder.mockBoolType("%bool");
         builder.mockIntType("%int", 64);
         builder.mockConstant("%value", "%int", 123);
@@ -170,7 +170,7 @@ public class VisitorOpsLogicalTest {
     @Test
     public void testOpsLogicalBinIllegalOperandType() {
         // given
-        MockProgramBuilderSpv builder = new MockProgramBuilderSpv();
+        MockProgramBuilder builder = new MockProgramBuilder();
         builder.mockBoolType("%bool");
         builder.mockIntType("%int", 64);
         builder.mockConstant("%v1", "%int", 123);
@@ -191,7 +191,7 @@ public class VisitorOpsLogicalTest {
     @Test
     public void testOpsIntegerBinIllegalOperandType() {
         // given
-        MockProgramBuilderSpv builder = new MockProgramBuilderSpv();
+        MockProgramBuilder builder = new MockProgramBuilder();
         builder.mockBoolType("%bool");
         builder.mockIntType("%int", 64);
         builder.mockConstant("%v1", "%int", 123);
@@ -212,7 +212,7 @@ public class VisitorOpsLogicalTest {
     @Test
     public void testOpsIntegerBinMismatchingOperandTypes() {
         // given
-        MockProgramBuilderSpv builder = new MockProgramBuilderSpv();
+        MockProgramBuilder builder = new MockProgramBuilder();
         builder.mockBoolType("%bool");
         builder.mockIntType("%int32", 32);
         builder.mockIntType("%int64", 64);
@@ -235,7 +235,7 @@ public class VisitorOpsLogicalTest {
     @Test
     public void testUnsupportedResultType() {
         // given
-        MockProgramBuilderSpv builder = new MockProgramBuilderSpv();
+        MockProgramBuilder builder = new MockProgramBuilder();
         builder.mockBoolType("%bool");
         builder.mockVectorType("%vector", "%bool", 4);
         builder.mockConstant("%value", "%vector", List.of(true, false, true, false));
@@ -255,7 +255,7 @@ public class VisitorOpsLogicalTest {
     @Test
     public void testIllegalResultType() {
         // given
-        MockProgramBuilderSpv builder = new MockProgramBuilderSpv();
+        MockProgramBuilder builder = new MockProgramBuilder();
         builder.mockBoolType("%bool");
         builder.mockIntType("%int", 64);
         builder.mockConstant("%value", "%bool", true);
@@ -271,7 +271,7 @@ public class VisitorOpsLogicalTest {
         }
     }
 
-    private Local visit(MockProgramBuilderSpv builder, String input) {
+    private Local visit(MockProgramBuilder builder, String input) {
         builder.mockFunctionStart();
         builder.mockLabel();
         return (Local) new MockSpirvParser(input).op().accept(new VisitorOpsLogical(builder));

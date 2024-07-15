@@ -1,7 +1,7 @@
 package com.dat3m.dartagnan.parsers.program.visitors.spirv.mocks;
 
 import com.dat3m.dartagnan.expression.Expression;
-import com.dat3m.dartagnan.parsers.program.visitors.spirv.helpers.HelperControlFlow;
+import com.dat3m.dartagnan.parsers.program.visitors.spirv.utils.ControlFlowBuilder;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Event;
 
@@ -9,8 +9,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class MockHelperControlFlow extends HelperControlFlow {
-    public MockHelperControlFlow(Map<String, Expression> expressions) {
+public class MockControlFlowBuilder extends ControlFlowBuilder {
+    public MockControlFlowBuilder(Map<String, Expression> expressions) {
         super(expressions);
     }
 

@@ -1,4 +1,4 @@
-package com.dat3m.dartagnan.parsers.program.visitors.spirv.transformers;
+package com.dat3m.dartagnan.parsers.program.visitors.spirv.utils;
 
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.processing.ExprTransformer;
@@ -19,7 +19,7 @@ import java.util.stream.Stream;
 
 import static java.util.stream.Collectors.toMap;
 
-public class ScopedMemoryTransformer extends ExprTransformer {
+public class MemoryTransformer extends ExprTransformer {
 
     private static final List<String> namePrefixes = List.of("T", "S", "W", "Q");
 
@@ -31,7 +31,7 @@ public class ScopedMemoryTransformer extends ExprTransformer {
     private final List<? extends Map<MemoryObject, MemoryObject>> memoryScopeMapping;
     private final Map<MemoryObject, ScopedPointerVariable> memoryPointersMapping;
 
-    public ScopedMemoryTransformer(List<Integer> grid, Function function, BuiltIn builtIn, Set<ScopedPointerVariable> variables) {
+    public MemoryTransformer(List<Integer> grid, Function function, BuiltIn builtIn, Set<ScopedPointerVariable> variables) {
         this.grid = grid;
         this.function = function;
         this.builtIn = builtIn;

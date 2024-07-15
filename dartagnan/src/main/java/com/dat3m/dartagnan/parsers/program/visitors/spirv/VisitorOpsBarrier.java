@@ -7,6 +7,7 @@ import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.parsers.SpirvBaseVisitor;
 import com.dat3m.dartagnan.parsers.SpirvParser;
+import com.dat3m.dartagnan.parsers.program.visitors.spirv.utils.ProgramBuilder;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.Tag;
@@ -18,10 +19,10 @@ public class VisitorOpsBarrier extends SpirvBaseVisitor<Event> {
 
     private static final ExpressionFactory expressions = ExpressionFactory.getInstance();
     private final IntegerType archType = TypeFactory.getInstance().getArchType();
-    private final ProgramBuilderSpv builder;
+    private final ProgramBuilder builder;
     private int nextBarrierId = 0;
 
-    public VisitorOpsBarrier(ProgramBuilderSpv builder) {
+    public VisitorOpsBarrier(ProgramBuilder builder) {
         this.builder = builder;
     }
 

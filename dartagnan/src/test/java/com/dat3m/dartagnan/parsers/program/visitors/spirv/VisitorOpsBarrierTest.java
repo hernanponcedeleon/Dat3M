@@ -1,7 +1,7 @@
 package com.dat3m.dartagnan.parsers.program.visitors.spirv;
 
 import com.dat3m.dartagnan.exception.ParsingException;
-import com.dat3m.dartagnan.parsers.program.visitors.spirv.mocks.MockProgramBuilderSpv;
+import com.dat3m.dartagnan.parsers.program.visitors.spirv.mocks.MockProgramBuilder;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.mocks.MockSpirvParser;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.Tag;
@@ -16,7 +16,7 @@ import static org.junit.Assert.fail;
 
 public class VisitorOpsBarrierTest {
 
-    private final MockProgramBuilderSpv builder = new MockProgramBuilderSpv();
+    private final MockProgramBuilder builder = new MockProgramBuilder();
 
     @Test
     public void testControlBarrier() {

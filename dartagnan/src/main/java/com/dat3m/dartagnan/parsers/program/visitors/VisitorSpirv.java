@@ -4,6 +4,7 @@ import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.parsers.SpirvBaseVisitor;
 import com.dat3m.dartagnan.parsers.SpirvParser;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.*;
+import com.dat3m.dartagnan.parsers.program.visitors.spirv.utils.ProgramBuilder;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
 import org.antlr.v4.runtime.tree.ParseTree;
@@ -20,7 +21,7 @@ public class VisitorSpirv extends SpirvBaseVisitor<Program> {
 
     private final Map<String, SpirvBaseVisitor<?>> visitors = new HashMap<>();
     private VisitorOpsConstant specConstantVisitor;
-    private ProgramBuilderSpv builder;
+    private ProgramBuilder builder;
 
     static String parseOpName(SpirvParser.OpContext ctx) {
         ParseTree innerCtx = ctx.getChild(0);
@@ -63,7 +64,7 @@ public class VisitorSpirv extends SpirvBaseVisitor<Program> {
     private void initializeVisitors() {
         for (Class<?> cls : getChildVisitors()) {
             try {
-                Constructor<?> constructor = cls.getDeclaredConstructor(ProgramBuilderSpv.class);
+                Constructor<?> constructor = cls.getDeclaredConstructor(ProgramBuilder.class);
                 SpirvBaseVisitor<?> visitor = (SpirvBaseVisitor<?>) constructor.newInstance(builder);
                 Method method = cls.getDeclaredMethod("getSupportedOps");
                 Object object = method.invoke(visitor);
@@ -103,7 +104,7 @@ public class VisitorSpirv extends SpirvBaseVisitor<Program> {
         return builder.build();
     }
 
-    private ProgramBuilderSpv createBuilder(SpirvParser.SpvContext ctx) {
+    private ProgramBuilder createBuilder(SpirvParser.SpvContext ctx) {
         List<Integer> threadGrid = List.of(1, 1, 1, 1);
         VisitorSpirvInput visitor = new VisitorSpirvInput();
         boolean hasConfig = false;
@@ -122,7 +123,7 @@ public class VisitorSpirv extends SpirvBaseVisitor<Program> {
                 threadGrid = List.of(threadAmount, subGroupAmount, workGroupAmount, 1);
             }
         }
-        return new ProgramBuilderSpv(threadGrid, visitor.getInputs());
+        return new ProgramBuilder(threadGrid, visitor.getInputs());
     }
 
     @Override

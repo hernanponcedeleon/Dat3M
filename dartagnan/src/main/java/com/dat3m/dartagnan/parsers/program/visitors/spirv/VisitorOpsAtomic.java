@@ -9,6 +9,7 @@ import com.dat3m.dartagnan.expression.integers.IntCmpOp;
 import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.parsers.SpirvBaseVisitor;
 import com.dat3m.dartagnan.parsers.SpirvParser;
+import com.dat3m.dartagnan.parsers.program.visitors.spirv.utils.ProgramBuilder;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.lang.spirv.*;
@@ -19,9 +20,9 @@ import static com.dat3m.dartagnan.program.event.EventFactory.Spirv.*;
 
 public class VisitorOpsAtomic extends SpirvBaseVisitor<Event> {
 
-    private final ProgramBuilderSpv builder;
+    private final ProgramBuilder builder;
 
-    public VisitorOpsAtomic(ProgramBuilderSpv builder) {
+    public VisitorOpsAtomic(ProgramBuilder builder) {
         this.builder = builder;
     }
 

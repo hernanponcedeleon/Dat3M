@@ -3,7 +3,7 @@ package com.dat3m.dartagnan.parsers.program.visitors.spirv;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.integers.IntBinaryOp;
 import com.dat3m.dartagnan.expression.integers.IntCmpOp;
-import com.dat3m.dartagnan.parsers.program.visitors.spirv.mocks.MockProgramBuilderSpv;
+import com.dat3m.dartagnan.parsers.program.visitors.spirv.mocks.MockProgramBuilder;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.mocks.MockSpirvParser;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.lang.spirv.*;
@@ -21,7 +21,7 @@ public class VisitorOpsAtomicTest {
     @Test
     public void testLoad() {
         // given
-        MockProgramBuilderSpv builder = new MockProgramBuilderSpv();
+        MockProgramBuilder builder = new MockProgramBuilder();
         builder.mockIntType("%int", 64);
         builder.mockPtrType("%int_ptr", "%int", "Uniform");
         builder.mockVariable("%ptr", "%int_ptr");
@@ -43,7 +43,7 @@ public class VisitorOpsAtomicTest {
     @Test
     public void testStore() {
         // given
-        MockProgramBuilderSpv builder = new MockProgramBuilderSpv();
+        MockProgramBuilder builder = new MockProgramBuilder();
         builder.mockIntType("%int", 64);
         builder.mockPtrType("%int_ptr", "%int", "Uniform");
         builder.mockVariable("%ptr", "%int_ptr");
@@ -65,7 +65,7 @@ public class VisitorOpsAtomicTest {
     @Test
     public void testXchg() {
         // given
-        MockProgramBuilderSpv builder = new MockProgramBuilderSpv();
+        MockProgramBuilder builder = new MockProgramBuilder();
         builder.mockIntType("%int", 64);
         builder.mockPtrType("%int_ptr", "%int", "Uniform");
         builder.mockVariable("%ptr", "%int_ptr");
@@ -89,7 +89,7 @@ public class VisitorOpsAtomicTest {
     @Test
     public void testCmpXchg() {
         // given
-        MockProgramBuilderSpv builder = new MockProgramBuilderSpv();
+        MockProgramBuilder builder = new MockProgramBuilder();
         builder.mockIntType("%int", 64);
         builder.mockPtrType("%int_ptr", "%int", "Uniform");
         builder.mockVariable("%ptr", "%int_ptr");
@@ -117,7 +117,7 @@ public class VisitorOpsAtomicTest {
     @Test
     public void testRmw() {
         // given
-        MockProgramBuilderSpv builder = new MockProgramBuilderSpv();
+        MockProgramBuilder builder = new MockProgramBuilder();
         builder.mockIntType("%int", 64);
         builder.mockPtrType("%int_ptr", "%int", "Uniform");
         builder.mockVariable("%ptr", "%int_ptr");
@@ -142,7 +142,7 @@ public class VisitorOpsAtomicTest {
     @Test
     public void testOpAtomicSMax() {
         // given
-        MockProgramBuilderSpv builder = new MockProgramBuilderSpv();
+        MockProgramBuilder builder = new MockProgramBuilder();
         builder.mockIntType("%int", 64);
         builder.mockPtrType("%int_ptr", "%int", "Uniform");
         builder.mockVariable("%ptr", "%int_ptr");
@@ -193,7 +193,7 @@ public class VisitorOpsAtomicTest {
 
     private void doTestIllegalMemoryOrder(int eq, int neq, String input, String error) {
         // given
-        MockProgramBuilderSpv builder = new MockProgramBuilderSpv();
+        MockProgramBuilder builder = new MockProgramBuilder();
         builder.mockIntType("%int", 64);
         builder.mockPtrType("%int_ptr", "%int", "Uniform");
         builder.mockVariable("%ptr", "%int_ptr");
@@ -213,7 +213,7 @@ public class VisitorOpsAtomicTest {
         }
     }
 
-    private Event visit(MockProgramBuilderSpv builder, String input) {
+    private Event visit(MockProgramBuilder builder, String input) {
         builder.mockFunctionStart();
         builder.mockLabel();
         return new MockSpirvParser(input).op().accept(new VisitorOpsAtomic(builder));

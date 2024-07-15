@@ -8,7 +8,7 @@ import com.dat3m.dartagnan.expression.type.BooleanType;
 import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.decorations.DecorationType;
-import com.dat3m.dartagnan.parsers.program.visitors.spirv.mocks.MockProgramBuilderSpv;
+import com.dat3m.dartagnan.parsers.program.visitors.spirv.mocks.MockProgramBuilder;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.mocks.MockSpirvParser;
 import org.junit.Test;
 
@@ -22,7 +22,7 @@ public class VisitorOpsConstantTest {
 
     private static final ExpressionFactory expressions = ExpressionFactory.getInstance();
     private static final IntegerType archType = TypeFactory.getInstance().getArchType();
-    private MockProgramBuilderSpv builder = new MockProgramBuilderSpv();
+    private MockProgramBuilder builder = new MockProgramBuilder();
 
     @Test
     public void testOpConstantBool() {
@@ -688,7 +688,7 @@ public class VisitorOpsConstantTest {
 
         Expression zero = expressions.makeValue(0, archType);
         Expression one = expressions.makeValue(1, archType);
-        builder = new MockProgramBuilderSpv(
+        builder = new MockProgramBuilder(
                 Map.of("%f2", zero, "%f3", one, "%f4", zero, "%f5", one));
 
         BooleanType bType = builder.mockBoolType("%bool");
@@ -729,7 +729,7 @@ public class VisitorOpsConstantTest {
 
         Expression zero = expressions.makeValue(0, archType);
         Expression one = expressions.makeValue(1, archType);
-        builder = new MockProgramBuilderSpv(
+        builder = new MockProgramBuilder(
                 Map.of("%t2", one, "%t3", zero, "%t4", one, "%t5", zero));
 
         BooleanType bType = builder.mockBoolType("%bool");
@@ -769,7 +769,7 @@ public class VisitorOpsConstantTest {
 
         Expression eleven = expressions.makeValue(11, archType);
         Expression three = expressions.makeValue(3, archType);
-        builder = new MockProgramBuilderSpv(
+        builder = new MockProgramBuilder(
                 Map.of("%i1", eleven, "%i3", three));
 
         IntegerType iType = builder.mockIntType("%int", 64);
@@ -803,7 +803,7 @@ public class VisitorOpsConstantTest {
         Expression zero = expressions.makeValue(0, archType);
         Expression one = expressions.makeValue(1, archType);
         Expression two = expressions.makeValue(2, archType);
-        builder = new MockProgramBuilderSpv(
+        builder = new MockProgramBuilder(
                 Map.of("%f", one, "%t", zero, "%i", two));
 
         builder.mockBoolType("%bool");

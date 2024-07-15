@@ -5,6 +5,7 @@ import com.dat3m.dartagnan.parsers.SpirvBaseVisitor;
 import com.dat3m.dartagnan.parsers.SpirvParser;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.extenstions.VisitorExtension;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.extenstions.VisitorExtensionClspvReflection;
+import com.dat3m.dartagnan.parsers.program.visitors.spirv.utils.ProgramBuilder;
 import org.antlr.v4.runtime.tree.ParseTree;
 import org.antlr.v4.runtime.tree.TerminalNode;
 
@@ -17,7 +18,7 @@ public class VisitorOpsExtension extends SpirvBaseVisitor<Void> {
     private final Map<String, VisitorExtension<?>> availableVisitors = new HashMap<>();
     private final Map<String, String> visitorIds = new HashMap<>();
 
-    public VisitorOpsExtension(ProgramBuilderSpv builder) {
+    public VisitorOpsExtension(ProgramBuilder builder) {
         this.availableVisitors.put("NonSemantic.ClspvReflection.5", new VisitorExtensionClspvReflection(builder));
     }
 

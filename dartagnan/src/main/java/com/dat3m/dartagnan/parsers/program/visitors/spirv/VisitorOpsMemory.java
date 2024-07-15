@@ -11,6 +11,7 @@ import com.dat3m.dartagnan.parsers.program.visitors.spirv.decorations.BuiltIn;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.decorations.DecorationType;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.helpers.HelperAccessChain;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.helpers.HelperInput;
+import com.dat3m.dartagnan.parsers.program.visitors.spirv.utils.ProgramBuilder;
 import com.dat3m.dartagnan.program.memory.ScopedPointer;
 import com.dat3m.dartagnan.program.memory.ScopedPointerVariable;
 import com.dat3m.dartagnan.expression.type.ScopedPointerType;
@@ -27,10 +28,10 @@ import java.util.Set;
 public class VisitorOpsMemory extends SpirvBaseVisitor<Event> {
 
     private static final TypeFactory types = TypeFactory.getInstance();
-    private final ProgramBuilderSpv builder;
+    private final ProgramBuilder builder;
     private final BuiltIn builtInDecorator;
 
-    public VisitorOpsMemory(ProgramBuilderSpv builder) {
+    public VisitorOpsMemory(ProgramBuilder builder) {
         this.builder = builder;
         this.builtInDecorator = (BuiltIn) builder.getDecoration(DecorationType.BUILT_IN);
     }

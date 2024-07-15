@@ -9,6 +9,7 @@ import com.dat3m.dartagnan.expression.integers.IntLiteral;
 import com.dat3m.dartagnan.expression.type.*;
 import com.dat3m.dartagnan.parsers.SpirvBaseVisitor;
 import com.dat3m.dartagnan.parsers.SpirvParser;
+import com.dat3m.dartagnan.parsers.program.visitors.spirv.utils.ProgramBuilder;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.memory.ScopedPointerVariable;
 import com.dat3m.dartagnan.program.memory.Location;
@@ -25,9 +26,9 @@ public class VisitorSpirvOutput extends SpirvBaseVisitor<Expression> {
     private static final TypeFactory types = TypeFactory.getInstance();
     private static final ExpressionFactory expressions = ExpressionFactory.getInstance();
     private final Map<Location, Type> locationTypes = new HashMap<>();
-    private final ProgramBuilderSpv builder;
+    private final ProgramBuilder builder;
 
-    public VisitorSpirvOutput(ProgramBuilderSpv builder) {
+    public VisitorSpirvOutput(ProgramBuilder builder) {
         this.builder = builder;
     }
 

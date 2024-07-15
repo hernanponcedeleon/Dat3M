@@ -7,7 +7,7 @@ import com.dat3m.dartagnan.expression.booleans.BoolLiteral;
 import com.dat3m.dartagnan.expression.integers.IntCmpOp;
 import com.dat3m.dartagnan.expression.integers.IntLiteral;
 import com.dat3m.dartagnan.expression.type.*;
-import com.dat3m.dartagnan.parsers.program.visitors.spirv.ProgramBuilderSpv;
+import com.dat3m.dartagnan.parsers.program.visitors.spirv.utils.ProgramBuilder;
 import com.dat3m.dartagnan.program.memory.ScopedPointerVariable;
 import com.dat3m.dartagnan.expression.type.ScopedPointerType;
 import com.dat3m.dartagnan.program.Function;
@@ -19,22 +19,22 @@ import com.dat3m.dartagnan.program.memory.MemoryObject;
 import java.util.*;
 import java.util.stream.Collectors;
 
-public class MockProgramBuilderSpv extends ProgramBuilderSpv {
+public class MockProgramBuilder extends ProgramBuilder {
 
     private static final TypeFactory typeFactory = TypeFactory.getInstance();
     private static final ExpressionFactory exprFactory = ExpressionFactory.getInstance();
 
-    public MockProgramBuilderSpv() {
+    public MockProgramBuilder() {
         this(List.of(1, 1, 1, 1), Map.of());
     }
 
-    public MockProgramBuilderSpv(Map<String, Expression> input) {
+    public MockProgramBuilder(Map<String, Expression> input) {
         this(List.of(1, 1, 1, 1), input);
     }
 
-    public MockProgramBuilderSpv(List<Integer> grid, Map<String, Expression> input) {
+    public MockProgramBuilder(List<Integer> grid, Map<String, Expression> input) {
         super(grid, input);
-        helperControlFlow = new MockHelperControlFlow(expressions);
+        cfBuilder = new MockControlFlowBuilder(expressions);
     }
 
     @Override
@@ -142,13 +142,13 @@ public class MockProgramBuilderSpv extends ProgramBuilderSpv {
     }
 
     public void mockLabel() {
-        helperControlFlow.getOrCreateLabel("%mock_label");
-        helperControlFlow.startBlock("%mock_label");
+        cfBuilder.getOrCreateLabel("%mock_label");
+        cfBuilder.startBlock("%mock_label");
     }
 
     public void mockLabel(String id) {
-        Label label = helperControlFlow.getOrCreateLabel(id);
-        helperControlFlow.startBlock(id);
+        Label label = cfBuilder.getOrCreateLabel(id);
+        cfBuilder.startBlock(id);
         addEvent(label);
     }
 

@@ -14,6 +14,7 @@ import com.dat3m.dartagnan.parsers.SpirvParser;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.decorations.BuiltIn;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.decorations.DecorationType;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.decorations.SpecId;
+import com.dat3m.dartagnan.parsers.program.visitors.spirv.utils.ProgramBuilder;
 import com.dat3m.dartagnan.program.Register;
 import org.antlr.v4.runtime.RuleContext;
 
@@ -27,11 +28,11 @@ public class VisitorOpsConstant extends SpirvBaseVisitor<Expression> {
     private static final ExpressionFactory expressions = ExpressionFactory.getInstance();
 
     private final Set<String> specConstants = new HashSet<>();
-    private final ProgramBuilderSpv builder;
+    private final ProgramBuilder builder;
     private final SpecId specIdDecorator;
     private final BuiltIn builtInDecorator;
 
-    public VisitorOpsConstant(ProgramBuilderSpv builder) {
+    public VisitorOpsConstant(ProgramBuilder builder) {
         this.builder = builder;
         this.specIdDecorator = (SpecId) builder.getDecoration(DecorationType.SPEC_ID);
         this.builtInDecorator = (BuiltIn) builder.getDecoration(DecorationType.BUILT_IN);

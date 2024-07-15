@@ -3,8 +3,8 @@ package com.dat3m.dartagnan.parsers.program.visitors.spirv;
 import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.expression.booleans.BoolLiteral;
 import com.dat3m.dartagnan.expression.type.FunctionType;
-import com.dat3m.dartagnan.parsers.program.visitors.spirv.mocks.MockHelperControlFlow;
-import com.dat3m.dartagnan.parsers.program.visitors.spirv.mocks.MockProgramBuilderSpv;
+import com.dat3m.dartagnan.parsers.program.visitors.spirv.mocks.MockControlFlowBuilder;
+import com.dat3m.dartagnan.parsers.program.visitors.spirv.mocks.MockProgramBuilder;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.mocks.MockSpirvParser;
 import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.Register;
@@ -23,8 +23,8 @@ import static org.junit.Assert.*;
 
 public class VisitorOpsControlFlowTest {
 
-    private final MockProgramBuilderSpv builder = new MockProgramBuilderSpv();
-    private final MockHelperControlFlow helper = (MockHelperControlFlow) builder.getHelperControlFlow();
+    private final MockProgramBuilder builder = new MockProgramBuilder();
+    private final MockControlFlowBuilder cfBuilder = (MockControlFlowBuilder) builder.getHelperControlFlow();
 
     @Test
     public void testOpPhi() {
@@ -40,11 +40,11 @@ public class VisitorOpsControlFlowTest {
         Register register = builder.getRegister("%phi");
         assertEquals(builder.getType("%int"), register.getType());
 
-        Map<Register, String> phi1 = helper.getPhiDefinitions("%label1");
+        Map<Register, String> phi1 = cfBuilder.getPhiDefinitions("%label1");
         assertEquals(1, phi1.size());
         assertEquals("%value1", phi1.get(register));
 
-        Map<Register, String> phi2 = helper.getPhiDefinitions("%label2");
+        Map<Register, String> phi2 = cfBuilder.getPhiDefinitions("%label2");
         assertEquals(1, phi2.size());
         assertEquals("%value2", phi2.get(register));
     }
@@ -62,19 +62,19 @@ public class VisitorOpsControlFlowTest {
         visit(input);
 
         // then
-        assertEquals(List.of("%label2", "%label1"), helper.getBlockStack());
+        assertEquals(List.of("%label2", "%label1"), cfBuilder.getBlockStack());
 
         // when
-        helper.endBlock(new Skip());
+        cfBuilder.endBlock(new Skip());
 
         // then
-        assertEquals(List.of("%label1"), helper.getBlockStack());
+        assertEquals(List.of("%label1"), cfBuilder.getBlockStack());
 
         // when
-        helper.endBlock(new Skip());
+        cfBuilder.endBlock(new Skip());
 
         // then
-        assertEquals(List.of(), helper.getBlockStack());
+        assertEquals(List.of(), cfBuilder.getBlockStack());
     }
 
     @Test
@@ -94,7 +94,7 @@ public class VisitorOpsControlFlowTest {
         CondJump condJump = (CondJump) function.getEvents().get(1);
         assertTrue(((BoolLiteral) (condJump.getGuard())).getValue());
         assertEquals("%label", condJump.getLabel().getName());
-        assertTrue(helper.getBlockStack().isEmpty());
+        assertTrue(cfBuilder.getBlockStack().isEmpty());
     }
 
     @Test
@@ -123,7 +123,7 @@ public class VisitorOpsControlFlowTest {
         assertTrue(((BoolLiteral) (condJump2.getGuard())).getValue());
         assertEquals("%label2", condJump2.getLabel().getName());
 
-        assertEquals(List.of("%label1"), helper.getBlockStack());
+        assertEquals(List.of("%label1"), cfBuilder.getBlockStack());
     }
 
     @Test
@@ -164,9 +164,9 @@ public class VisitorOpsControlFlowTest {
         assertEquals("%label2", label2.getName());
 
         assertTrue(jump.isGoto());
-        assertEquals(Map.of("%label2", "%label2_end"), helper.getMergeLabelIds());
+        assertEquals(Map.of("%label2", "%label2_end"), cfBuilder.getMergeLabelIds());
         assertEquals(Map.of("%label0", ifJump, "%label1", jump, "%label2", ret),
-                helper.getLastBlockEvents());
+                cfBuilder.getLastBlockEvents());
     }
 
     @Test
@@ -230,7 +230,7 @@ public class VisitorOpsControlFlowTest {
                 "%label1_inner", jumpInner,
                 "%label2_inner", jump,
                 "%label2", ret
-        ), helper.getLastBlockEvents());
+        ), cfBuilder.getLastBlockEvents());
     }
 
     @Test
@@ -301,7 +301,7 @@ public class VisitorOpsControlFlowTest {
                 "%label1_inner", jumpInner,
                 "%label2_inner", jump2,
                 "%label3", ret
-        ), helper.getLastBlockEvents());
+        ), cfBuilder.getLastBlockEvents());
     }
 
     @Test
@@ -376,10 +376,10 @@ public class VisitorOpsControlFlowTest {
         assertTrue(jump2.isGoto());
         assertTrue(jump3.isGoto());
 
-        assertTrue(helper.getMergeLabelIds().isEmpty());
+        assertTrue(cfBuilder.getMergeLabelIds().isEmpty());
 
         assertEquals(Map.of("%label0", jump1, "%label1", jump3, "%label2", ret),
-                helper.getLastBlockEvents());
+                cfBuilder.getLastBlockEvents());
     }
 
     @Test
@@ -417,10 +417,10 @@ public class VisitorOpsControlFlowTest {
         assertFalse(jump1.isGoto());
         assertTrue(jump2.isGoto());
 
-        assertTrue(helper.getMergeLabelIds().isEmpty());
+        assertTrue(cfBuilder.getMergeLabelIds().isEmpty());
 
         assertEquals(Map.of("%label0", jump1, "%label1", ret),
-                helper.getLastBlockEvents());
+                cfBuilder.getLastBlockEvents());
     }
 
     @Test
@@ -550,9 +550,9 @@ public class VisitorOpsControlFlowTest {
         assertFalse(jump3.isGoto());
         assertTrue(jump4.isGoto());
 
-        assertTrue(helper.getBlockStack().isEmpty());
+        assertTrue(cfBuilder.getBlockStack().isEmpty());
         assertEquals(Map.of("%label0", jump1, "%label1", jump3, "%label2", ret),
-                helper.getLastBlockEvents());
+                cfBuilder.getLastBlockEvents());
     }
 
     @Test
@@ -612,7 +612,7 @@ public class VisitorOpsControlFlowTest {
         Return event = (Return) function.getEvents().get(1);
         assertNotNull(event);
         assertTrue(event.getValue().isEmpty());
-        assertTrue(helper.getBlockStack().isEmpty());
+        assertTrue(cfBuilder.getBlockStack().isEmpty());
     }
 
     @Test
@@ -631,7 +631,7 @@ public class VisitorOpsControlFlowTest {
         Function function = builder.getCurrentFunction();
         Return event = (Return) function.getEvents().get(1);
         assertEquals(builder.getExpression("%value"), event.getValue().orElseThrow());
-        assertTrue(helper.getBlockStack().isEmpty());
+        assertTrue(cfBuilder.getBlockStack().isEmpty());
     }
 
     @Test

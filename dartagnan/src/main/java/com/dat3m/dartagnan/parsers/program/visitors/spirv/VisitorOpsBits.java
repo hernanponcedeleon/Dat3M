@@ -9,6 +9,7 @@ import com.dat3m.dartagnan.expression.type.ArrayType;
 import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.parsers.SpirvBaseVisitor;
 import com.dat3m.dartagnan.parsers.SpirvParser;
+import com.dat3m.dartagnan.parsers.program.visitors.spirv.utils.ProgramBuilder;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.EventFactory;
@@ -21,9 +22,9 @@ public class VisitorOpsBits extends SpirvBaseVisitor<Event> {
 
     private static final ExpressionFactory expressions = ExpressionFactory.getInstance();
 
-    private final ProgramBuilderSpv builder;
+    private final ProgramBuilder builder;
 
-    public VisitorOpsBits(ProgramBuilderSpv builder) {
+    public VisitorOpsBits(ProgramBuilder builder) {
         this.builder = builder;
     }
 

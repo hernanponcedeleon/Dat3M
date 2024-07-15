@@ -9,6 +9,7 @@ import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.expression.type.VoidType;
 import com.dat3m.dartagnan.parsers.SpirvBaseVisitor;
 import com.dat3m.dartagnan.parsers.SpirvParser;
+import com.dat3m.dartagnan.parsers.program.visitors.spirv.utils.ProgramBuilder;
 import com.dat3m.dartagnan.program.memory.ScopedPointer;
 import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.Register;
@@ -25,12 +26,12 @@ public class VisitorOpsFunction extends SpirvBaseVisitor<Void> {
 
     private static final TypeFactory types = TypeFactory.getInstance();
 
-    private final ProgramBuilderSpv builder;
+    private final ProgramBuilder builder;
     private String currentId;
     private FunctionType currentType;
     private List<String> currentArgs;
 
-    public VisitorOpsFunction(ProgramBuilderSpv builder) {
+    public VisitorOpsFunction(ProgramBuilder builder) {
         this.builder = builder;
     }
 

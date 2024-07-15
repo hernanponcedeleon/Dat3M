@@ -10,7 +10,7 @@ import com.dat3m.dartagnan.expression.type.ArrayType;
 import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.parsers.SpirvParser;
-import com.dat3m.dartagnan.parsers.program.visitors.spirv.ProgramBuilderSpv;
+import com.dat3m.dartagnan.parsers.program.visitors.spirv.utils.ProgramBuilder;
 import com.dat3m.dartagnan.program.memory.ScopedPointerVariable;
 import com.dat3m.dartagnan.program.event.Tag;
 
@@ -22,13 +22,13 @@ public class VisitorExtensionClspvReflection extends VisitorExtension<Void> {
     private static final TypeFactory types = TypeFactory.getInstance();
     private static final ExpressionFactory expressions = ExpressionFactory.getInstance();
 
-    private final ProgramBuilderSpv builder;
+    private final ProgramBuilder builder;
     private ScopedPointerVariable pushConstant;
     private AggregateType pushConstantType;
     private int pushConstantIndex = 0;
     private int pushConstantOffset = 0;
 
-    public VisitorExtensionClspvReflection(ProgramBuilderSpv builder) {
+    public VisitorExtensionClspvReflection(ProgramBuilder builder) {
         this.builder = builder;
     }
 

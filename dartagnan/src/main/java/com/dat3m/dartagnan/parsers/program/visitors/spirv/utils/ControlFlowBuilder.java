@@ -1,4 +1,4 @@
-package com.dat3m.dartagnan.parsers.program.visitors.spirv.helpers;
+package com.dat3m.dartagnan.parsers.program.visitors.spirv.utils;
 
 import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.expression.Expression;
@@ -10,7 +10,7 @@ import com.google.common.collect.Sets;
 
 import java.util.*;
 
-public class HelperControlFlow {
+public class ControlFlowBuilder {
 
     protected final Map<String, Label> blockLabels = new HashMap<>();
     protected final Map<String, Event> lastBlockEvents = new HashMap<>();
@@ -19,7 +19,7 @@ public class HelperControlFlow {
     protected final Map<String, Map<Register, String>> phiDefinitions = new HashMap<>();
     protected final Map<String, Expression> expressions;
 
-    public HelperControlFlow(Map<String, Expression> expressions) {
+    public ControlFlowBuilder(Map<String, Expression> expressions) {
         this.expressions = expressions;
     }
 

@@ -7,7 +7,8 @@ import com.dat3m.dartagnan.expression.Type;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.parsers.SpirvBaseVisitor;
 import com.dat3m.dartagnan.parsers.SpirvParser;
-import com.dat3m.dartagnan.parsers.program.visitors.spirv.helpers.HelperControlFlow;
+import com.dat3m.dartagnan.parsers.program.visitors.spirv.utils.ControlFlowBuilder;
+import com.dat3m.dartagnan.parsers.program.visitors.spirv.utils.ProgramBuilder;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.EventFactory;
@@ -21,15 +22,15 @@ import static com.dat3m.dartagnan.program.event.EventFactory.newFunctionReturn;
 public class VisitorOpsControlFlow extends SpirvBaseVisitor<Event> {
 
     private static final TypeFactory types = TypeFactory.getInstance();
-    private final ProgramBuilderSpv builder;
-    private final HelperControlFlow helper;
+    private final ProgramBuilder builder;
+    private final ControlFlowBuilder cfBuilder;
     private String continueLabelId;
     private String mergeLabelId;
     private String nextLabelId;
 
-    public VisitorOpsControlFlow(ProgramBuilderSpv builder) {
+    public VisitorOpsControlFlow(ProgramBuilder builder) {
         this.builder = builder;
-        this.helper = builder.getHelperControlFlow();
+        this.cfBuilder = builder.getHelperControlFlow();
     }
 
     @Override
@@ -41,7 +42,7 @@ public class VisitorOpsControlFlow extends SpirvBaseVisitor<Event> {
             SpirvParser.PairIdRefIdRefContext pCtx = vCtx.pairIdRefIdRef();
             String labelId = pCtx.idRef(1).getText();
             String expressionId = pCtx.idRef(0).getText();
-            helper.addPhiDefinition(labelId, register, expressionId);
+            cfBuilder.addPhiDefinition(labelId, register, expressionId);
         }
         builder.addExpression(id, register);
         return null;
@@ -57,8 +58,8 @@ public class VisitorOpsControlFlow extends SpirvBaseVisitor<Event> {
             nextLabelId = null;
         }
         String labelId = ctx.idResult().getText();
-        Label event = helper.getOrCreateLabel(labelId);
-        helper.startBlock(labelId);
+        Label event = cfBuilder.getOrCreateLabel(labelId);
+        cfBuilder.startBlock(labelId);
         return builder.addEvent(event);
     }
 
@@ -119,7 +120,7 @@ public class VisitorOpsControlFlow extends SpirvBaseVisitor<Event> {
         if (types.getVoidType().equals(returnType)) {
             Return event = newFunctionReturn(null);
             builder.addEvent(event);
-            return helper.endBlock(event);
+            return cfBuilder.endBlock(event);
         }
         throw new ParsingException("Illegal non-value return for a non-void function '%s'",
                 builder.getCurrentFunctionName());
@@ -133,17 +134,17 @@ public class VisitorOpsControlFlow extends SpirvBaseVisitor<Event> {
             Expression expression = builder.getExpression(valueId);
             Event event = newFunctionReturn(expression);
             builder.addEvent(event);
-            return helper.endBlock(event);
+            return cfBuilder.endBlock(event);
         }
         throw new ParsingException("Illegal value return for a void function '%s'",
                 builder.getCurrentFunctionName());
     }
 
     private Event visitGoto(String labelId) {
-        Label label = helper.getOrCreateLabel(labelId);
+        Label label = cfBuilder.getOrCreateLabel(labelId);
         Event event = EventFactory.newGoto(label);
         builder.addEvent(event);
-        return helper.endBlock(event);
+        return cfBuilder.endBlock(event);
     }
 
     private Event visitLoopBranch(String labelId) {
@@ -154,23 +155,23 @@ public class VisitorOpsControlFlow extends SpirvBaseVisitor<Event> {
 
     private Event visitIfBranch(Expression guard, String trueLabelId, String falseLabelId) {
         for (String labelId : List.of(trueLabelId, falseLabelId)) {
-            if (helper.isBlockStarted(labelId)) {
+            if (cfBuilder.isBlockStarted(labelId)) {
                 throw new ParsingException("Illegal backward jump to '%s' from a structured branch", labelId);
             }
         }
         mergeLabelId = null;
         nextLabelId = trueLabelId;
         builder.setNextOps(Set.of("OpLabel"));
-        Label falseLabel = helper.getOrCreateLabel(falseLabelId);
-        Label mergeLabel = helper.createMergeLabel(falseLabelId);
+        Label falseLabel = cfBuilder.getOrCreateLabel(falseLabelId);
+        Label mergeLabel = cfBuilder.createMergeLabel(falseLabelId);
         Event event = EventFactory.newIfJumpUnless(guard, falseLabel, mergeLabel);
         builder.addEvent(event);
-        return helper.endBlock(event);
+        return cfBuilder.endBlock(event);
     }
 
     private Event visitConditionalJump(Expression guard, String trueLabelId, String falseLabelId) {
-        if (helper.isBlockStarted(trueLabelId)) {
-            if (helper.isBlockStarted(falseLabelId)) {
+        if (cfBuilder.isBlockStarted(trueLabelId)) {
+            if (cfBuilder.isBlockStarted(falseLabelId)) {
                 throw new ParsingException("Unsupported conditional branch " +
                         "with two backward jumps to '%s' and '%s'", trueLabelId, falseLabelId);
             }
@@ -179,11 +180,11 @@ public class VisitorOpsControlFlow extends SpirvBaseVisitor<Event> {
             falseLabelId = labelId;
             guard = ExpressionFactory.getInstance().makeNot(guard);
         }
-        Label trueLabel = helper.getOrCreateLabel(trueLabelId);
-        Label falseLabel = helper.getOrCreateLabel(falseLabelId);
+        Label trueLabel = cfBuilder.getOrCreateLabel(trueLabelId);
+        Label falseLabel = cfBuilder.getOrCreateLabel(falseLabelId);
         Event trueJump = builder.addEvent(EventFactory.newJump(guard, trueLabel));
         builder.addEvent(EventFactory.newGoto(falseLabel));
-        return helper.endBlock(trueJump);
+        return cfBuilder.endBlock(trueJump);
     }
 
     private Event visitLoopBranchConditional(Expression guard, String trueLabelId, String falseLabelId) {

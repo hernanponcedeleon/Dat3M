@@ -5,7 +5,7 @@ import com.dat3m.dartagnan.expression.Type;
 import com.dat3m.dartagnan.expression.integers.IntLiteral;
 import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
-import com.dat3m.dartagnan.parsers.program.visitors.spirv.mocks.MockProgramBuilderSpv;
+import com.dat3m.dartagnan.parsers.program.visitors.spirv.mocks.MockProgramBuilder;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.mocks.MockSpirvParser;
 import com.dat3m.dartagnan.expression.type.ScopedPointerType;
 import com.dat3m.dartagnan.program.event.Tag;
@@ -20,7 +20,7 @@ import static org.junit.Assert.assertEquals;
 public class VisitorOpsTypeTest {
 
     private static final TypeFactory types = TypeFactory.getInstance();
-    private final MockProgramBuilderSpv builder = new MockProgramBuilderSpv();
+    private final MockProgramBuilder builder = new MockProgramBuilder();
 
     @Test
     public void testSupportedTypes() {

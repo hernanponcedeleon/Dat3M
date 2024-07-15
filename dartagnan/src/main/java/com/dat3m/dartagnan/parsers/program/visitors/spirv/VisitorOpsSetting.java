@@ -2,14 +2,15 @@ package com.dat3m.dartagnan.parsers.program.visitors.spirv;
 
 import com.dat3m.dartagnan.parsers.SpirvBaseVisitor;
 import com.dat3m.dartagnan.parsers.SpirvParser;
+import com.dat3m.dartagnan.parsers.program.visitors.spirv.utils.ProgramBuilder;
 
 import java.util.Set;
 
 public class VisitorOpsSetting extends SpirvBaseVisitor<Void> {
 
-    private final ProgramBuilderSpv builder;
+    private final ProgramBuilder builder;
 
-    public VisitorOpsSetting(ProgramBuilderSpv builder) {
+    public VisitorOpsSetting(ProgramBuilder builder) {
         this.builder = builder;
     }
 

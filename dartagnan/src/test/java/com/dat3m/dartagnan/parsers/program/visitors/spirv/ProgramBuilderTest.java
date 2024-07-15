@@ -3,7 +3,8 @@ package com.dat3m.dartagnan.parsers.program.visitors.spirv;
 import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.expression.type.FunctionType;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
-import com.dat3m.dartagnan.parsers.program.visitors.spirv.helpers.HelperControlFlow;
+import com.dat3m.dartagnan.parsers.program.visitors.spirv.utils.ControlFlowBuilder;
+import com.dat3m.dartagnan.parsers.program.visitors.spirv.utils.ProgramBuilder;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.core.Skip;
 import org.junit.Test;
@@ -18,8 +19,8 @@ public class ProgramBuilderTest {
 
     private static final TypeFactory types = TypeFactory.getInstance();
 
-    private final ProgramBuilderSpv builder = new ProgramBuilderSpv(List.of(1, 1, 1, 1), Map.of());
-    private final HelperControlFlow helper = builder.getHelperControlFlow();
+    private final ProgramBuilder builder = new ProgramBuilder(List.of(1, 1, 1, 1), Map.of());
+    private final ControlFlowBuilder cfBuilder = builder.getHelperControlFlow();
 
     @Test
     public void testAddEventOutsideFunction() {
@@ -37,9 +38,9 @@ public class ProgramBuilderTest {
     public void testAddEventAfterBlock() {
         FunctionType type = types.getFunctionType(types.getVoidType(), List.of());
         builder.startFunctionDefinition("test_func", type, List.of());
-        helper.getOrCreateLabel("test_label");
-        helper.startBlock("test_label");
-        helper.endBlock(new Skip());
+        cfBuilder.getOrCreateLabel("test_label");
+        cfBuilder.startBlock("test_label");
+        cfBuilder.endBlock(new Skip());
         testAddChildError("Attempt to add an event outside a control flow block");
     }
 
