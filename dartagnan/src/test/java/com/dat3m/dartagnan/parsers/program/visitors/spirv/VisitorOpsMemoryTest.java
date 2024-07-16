@@ -481,6 +481,41 @@ public class VisitorOpsMemoryTest {
     }
 
     @Test
+    public void testVariableMismatchingStorageClass() {
+        // given
+        String input = "%v = OpVariable %int_ptr Workgroup";
+        builder.mockIntType("%int", 64);
+        builder.mockPtrType("%int_ptr", "%int", "Uniform");
+
+        try {
+            // when
+            parse(input);
+            fail("Should throw exception");
+        } catch (ParsingException e) {
+            // then
+            assertEquals("Storage class of variable '%v' " +
+                    "does not match the pointer storage class", e.getMessage());
+        }
+    }
+
+    @Test
+    public void testVariableIllegalStorageClass() {
+        // given
+        String input = "%v = OpVariable %int_ptr Generic";
+        builder.mockIntType("%int", 64);
+        builder.mockPtrType("%int_ptr", "%int", "Generic");
+
+        try {
+            // when
+            parse(input);
+            fail("Should throw exception");
+        } catch (ParsingException e) {
+            // then
+            assertEquals("Variable '%v' has illegal storage class 'Generic'", e.getMessage());
+        }
+    }
+
+    @Test
     public void testMismatchingValueTypeConstant() {
         // given
         String input = "%v = OpVariable %i_ptr Uniform %const";

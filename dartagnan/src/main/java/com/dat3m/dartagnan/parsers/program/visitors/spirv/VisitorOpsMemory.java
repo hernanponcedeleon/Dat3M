@@ -99,8 +99,8 @@ public class VisitorOpsMemory extends SpirvBaseVisitor<Event> {
             int size = types.getMemorySizeInBytes(type);
             ScopedPointerVariable pointer = builder.allocateMemoryVirtual(id, typeId, type, size);
             setInitialValue(pointer, 0, value);
+            validateVariableStorageClass(pointer, ctx.storageClass().getText());
             builder.addExpression(id, pointer);
-            validateStorageClass(pointer, ctx.storageClass().getText());
             return null;
         }
         throw new ParsingException("Type '%s' is not a pointer type", typeId);
@@ -153,17 +153,16 @@ public class VisitorOpsMemory extends SpirvBaseVisitor<Event> {
         }
     }
 
-    // TODO: Unit tests for this
-    private void validateStorageClass(ScopedPointerVariable pointer, String classToken) {
+    private void validateVariableStorageClass(ScopedPointerVariable pointer, String classToken) {
         String ptrStorageClass = pointer.getScopeId();
         String varStorageClass = builder.getStorageClass(classToken);
         if (!varStorageClass.equals(ptrStorageClass)) {
-            throw new ParsingException("Mismatching storage class for variable '%s', " +
-                    "definition storage class is '%s' but pointer storage class is '%s'",
-                    pointer.getId(), varStorageClass, ptrStorageClass);
+            throw new ParsingException("Storage class of variable '%s' " +
+                    "does not match the pointer storage class", pointer.getId());
         }
         if (Tag.Spirv.SC_GENERIC.equals(ptrStorageClass)) {
-            throw new ParsingException("Illegal variable storage class '%s'", ptrStorageClass);
+            throw new ParsingException("Variable '%s' has illegal storage class '%s'",
+                    pointer.getId(), classToken);
         }
     }
 
@@ -211,8 +210,17 @@ public class VisitorOpsMemory extends SpirvBaseVisitor<Event> {
         if (ctx == null || ctx.None() != null) {
             return Set.of();
         }
-        Set<String> tags = new HashSet<>();
+        if (ctx.Volatile() != null) {
+            return Set.of(Tag.Spirv.MEM_VOLATILE);
+        }
+        if (ctx.Nontemporal() != null) {
+            return Set.of(Tag.Spirv.MEM_NON_TEMPORAL);
+        }
+        if (ctx.NonPrivatePointer() != null || ctx.NonPrivatePointerKHR() != null) {
+            return Set.of(Tag.Spirv.MEM_NON_PRIVATE);
+        }
         if (ctx.idScope() != null) {
+            Set<String> tags = new HashSet<>();
             tags.add(builder.getScope(ctx.idScope().getText()));
             tags.add(Tag.Spirv.MEM_NON_PRIVATE);
             if (ctx.MakePointerAvailable() != null || ctx.MakePointerAvailableKHR() != null) {
@@ -221,17 +229,10 @@ public class VisitorOpsMemory extends SpirvBaseVisitor<Event> {
             if (ctx.MakePointerVisible() != null || ctx.MakePointerVisibleKHR() != null) {
                 tags.add(Tag.Spirv.MEM_VISIBLE);
             }
-        } else if (ctx.Volatile() != null) {
-            tags.add(Tag.Spirv.MEM_VOLATILE);
-        } else if (ctx.Nontemporal() != null) {
-            tags.add(Tag.Spirv.MEM_NON_TEMPORAL);
-        } else if (ctx.NonPrivatePointer() != null || ctx.NonPrivatePointerKHR() != null) {
-            tags.add(Tag.Spirv.MEM_NON_PRIVATE);
-        } else {
-            throw new ParsingException("Unsupported memory access tag '%s'",
-                    String.join(" ", ctx.children.stream().map(ParseTree::getText).toList()));
+            return tags;
         }
-        return tags;
+        throw new ParsingException("Unsupported memory access tag '%s'",
+                String.join(" ", ctx.children.stream().map(ParseTree::getText).toList()));
     }
 
     private String getScope(String storageClass) {
