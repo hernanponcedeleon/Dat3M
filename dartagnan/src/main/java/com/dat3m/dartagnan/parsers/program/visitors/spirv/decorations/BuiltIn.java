@@ -87,18 +87,18 @@ public class BuiltIn implements Decoration {
         };
     }
 
-    private Expression makeArray(String id, Type type, int a, int b, int c) {
+    private Expression makeArray(String id, Type type, int x, int y, int z) {
         List<Expression> operands = new ArrayList<>();
         IntegerType elementType = getArrayElementType(id, type);
-        operands.add(expressions.makeValue(a, elementType));
-        operands.add(expressions.makeValue(b, elementType));
-        operands.add(expressions.makeValue(c, elementType));
+        operands.add(expressions.makeValue(x, elementType));
+        operands.add(expressions.makeValue(y, elementType));
+        operands.add(expressions.makeValue(z, elementType));
         return expressions.makeArray(elementType, operands, true);
     }
 
-    private Expression makeScalar(String id, Type type, int a) {
+    private Expression makeScalar(String id, Type type, int x) {
         IntegerType iType = getIntegerType(id, type);
-        return expressions.makeValue(a, iType);
+        return expressions.makeValue(x, iType);
     }
 
     private IntegerType getArrayElementType(String id, Type type) {

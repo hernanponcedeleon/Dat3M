@@ -15,13 +15,13 @@ import java.util.List;
 import static com.dat3m.dartagnan.expression.integers.IntBinaryOp.ADD;
 import static com.dat3m.dartagnan.expression.integers.IntBinaryOp.MUL;
 
-public class HelperCompositeTypes {
+public class HelperTypes {
 
     private static final TypeFactory types = TypeFactory.getInstance();
     private static final ExpressionFactory expressions = ExpressionFactory.getInstance();
     private static final IntegerType archType = types.getArchType();
 
-    private HelperCompositeTypes() {
+    private HelperTypes() {
     }
 
     public static Type getMemberType(String id, Type type, List<Integer> indexes) {

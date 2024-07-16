@@ -1,4 +1,4 @@
-package com.dat3m.dartagnan.parsers.program.visitors.spirv.utils;
+package com.dat3m.dartagnan.parsers.program.visitors.spirv.builders;
 
 import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.expression.Expression;
@@ -7,8 +7,8 @@ import com.dat3m.dartagnan.expression.type.FunctionType;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.decorations.BuiltIn;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.decorations.Decoration;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.decorations.DecorationType;
-import com.dat3m.dartagnan.parsers.program.visitors.spirv.helpers.HelperDecorations;
-import com.dat3m.dartagnan.parsers.program.visitors.spirv.helpers.HelperTags;
+import com.dat3m.dartagnan.parsers.program.visitors.spirv.utils.ThreadCreator;
+import com.dat3m.dartagnan.parsers.program.visitors.spirv.utils.ThreadGrid;
 import com.dat3m.dartagnan.program.memory.ScopedPointer;
 import com.dat3m.dartagnan.program.memory.ScopedPointerVariable;
 import com.dat3m.dartagnan.expression.type.ScopedPointerType;
@@ -34,13 +34,12 @@ public class ProgramBuilder {
     protected int nextFunctionId = 0;
     protected Set<String> nextOps;
     protected ControlFlowBuilder cfBuilder = new ControlFlowBuilder(expressions);
-    private final HelperTags helperTags = new HelperTags();
-    private final HelperDecorations helperDecorations;
+    private final DecorationsBuilder decorationsBuilder;
 
     public ProgramBuilder(ThreadGrid grid) {
         this.grid = grid;
         this.program = new Program(new Memory(), Program.SourceLanguage.SPV);
-        this.helperDecorations = new HelperDecorations(grid);
+        this.decorationsBuilder = new DecorationsBuilder(grid);
     }
 
     public Program build() {
@@ -250,24 +249,8 @@ public class ProgramBuilder {
         return getCurrentFunctionOrThrowError().newRegister(id, getType(typeId));
     }
 
-    public String getScope(String id) {
-        return helperTags.visitScope(id, getExpression(id));
-    }
-
-    public boolean isSemanticsNone(String id) {
-        return helperTags.isMemorySemanticsNone(id, getExpression(id));
-    }
-
-    public Set<String> getSemantics(String id) {
-        return helperTags.visitIdMemorySemantics(id, getExpression(id));
-    }
-
-    public String getStorageClass(String raw) {
-        return helperTags.visitStorageClass(raw);
-    }
-
     public Decoration getDecoration(DecorationType type) {
-        return helperDecorations.getDecoration(type);
+        return decorationsBuilder.getDecoration(type);
     }
 
     public ControlFlowBuilder getHelperControlFlow() {

@@ -9,7 +9,8 @@ import com.dat3m.dartagnan.expression.integers.IntCmpOp;
 import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.parsers.SpirvBaseVisitor;
 import com.dat3m.dartagnan.parsers.SpirvParser;
-import com.dat3m.dartagnan.parsers.program.visitors.spirv.utils.ProgramBuilder;
+import com.dat3m.dartagnan.parsers.program.visitors.spirv.helpers.HelperTags;
+import com.dat3m.dartagnan.parsers.program.visitors.spirv.builders.ProgramBuilder;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.lang.spirv.*;
@@ -30,8 +31,8 @@ public class VisitorOpsAtomic extends SpirvBaseVisitor<Event> {
     public Event visitOpAtomicLoad(SpirvParser.OpAtomicLoadContext ctx) {
         Register register = builder.addRegister(ctx.idResult().getText(), ctx.idResultType().getText());
         Expression ptr = builder.getExpression(ctx.pointer().getText());
-        String scope = builder.getScope(ctx.memory().getText());
-        Set<String> tags = builder.getSemantics(ctx.semantics().getText());
+        String scope = getScopeTag(ctx.memory().getText());
+        Set<String> tags = getMemorySemanticsTags(ctx.semantics().getText());
         tags.add(builder.getExpressionStorageClass(ctx.pointer().getText()));
         SpirvLoad event = newSpirvLoad(register, ptr, scope, tags);
         return builder.addEvent(event);
@@ -41,8 +42,8 @@ public class VisitorOpsAtomic extends SpirvBaseVisitor<Event> {
     public Event visitOpAtomicStore(SpirvParser.OpAtomicStoreContext ctx) {
         Expression ptr = builder.getExpression(ctx.pointer().getText());
         Expression value = builder.getExpression(ctx.valueIdRef().getText());
-        String scope = builder.getScope(ctx.memory().getText());
-        Set<String> tags = builder.getSemantics(ctx.semantics().getText());
+        String scope = getScopeTag(ctx.memory().getText());
+        Set<String> tags = getMemorySemanticsTags(ctx.semantics().getText());
         tags.add(builder.getExpressionStorageClass(ctx.pointer().getText()));
         SpirvStore event = newSpirvStore(ptr, value, scope, tags);
         return builder.addEvent(event);
@@ -53,8 +54,8 @@ public class VisitorOpsAtomic extends SpirvBaseVisitor<Event> {
         Register register = builder.addRegister(ctx.idResult().getText(), ctx.idResultType().getText());
         Expression ptr = builder.getExpression(ctx.pointer().getText());
         Expression value = builder.getExpression(ctx.valueIdRef().getText());
-        String scope = builder.getScope(ctx.memory().getText());
-        Set<String> tags = builder.getSemantics(ctx.semantics().getText());
+        String scope = getScopeTag(ctx.memory().getText());
+        Set<String> tags = getMemorySemanticsTags(ctx.semantics().getText());
         tags.add(builder.getExpressionStorageClass(ctx.pointer().getText()));
         SpirvXchg event = newSpirvXchg(register, ptr, value, scope, tags);
         return builder.addEvent(event);
@@ -139,8 +140,8 @@ public class VisitorOpsAtomic extends SpirvBaseVisitor<Event> {
         Register register = builder.addRegister(idCtx.getText(), typeCtx.getText());
         Expression ptr = builder.getExpression(ptrCtx.getText());
         Expression value = builder.getExpression(valCtx.getText());
-        String scope = builder.getScope(scopeCtx.getText());
-        Set<String> tags = builder.getSemantics(tagsCtx.getText());
+        String scope = getScopeTag(scopeCtx.getText());
+        Set<String> tags = getMemorySemanticsTags(tagsCtx.getText());
         tags.add(builder.getExpressionStorageClass(ptrCtx.getText()));
         if (!(ptr.getType() instanceof IntegerType) || !(value.getType() instanceof IntegerType)) {
             throw new ParsingException("Unexpected type at '%s' or '%s', expected integer but received '%s' and '%s'",
@@ -162,12 +163,12 @@ public class VisitorOpsAtomic extends SpirvBaseVisitor<Event> {
     ) {
         Register register = builder.addRegister(idCtx.getText(), typeCtx.getText());
         Expression ptr = builder.getExpression(ptrCtx.getText());
-        String scope = builder.getScope(scopeCtx.getText());
-        Set<String> eqTags = builder.getSemantics(eqCtx.getText());
+        String scope = getScopeTag(scopeCtx.getText());
+        Set<String> eqTags = getMemorySemanticsTags(eqCtx.getText());
 
         eqTags.add(builder.getExpressionStorageClass(ptrCtx.getText()));
 
-        Set<String> neqTags = builder.getSemantics(neqCtx.getText());
+        Set<String> neqTags = getMemorySemanticsTags(neqCtx.getText());
         neqTags.add(builder.getExpressionStorageClass(ptrCtx.getText()));
         Expression value = builder.getExpression(valCtx.getText());
         Expression cmp = builder.getExpression(cmpCtx.getText());
@@ -183,9 +184,13 @@ public class VisitorOpsAtomic extends SpirvBaseVisitor<Event> {
             SpirvParser.SemanticsContext tagsCtx,
             IntBinaryOp op
     ) {
-        IntegerType type = getIntegerType(typeCtx.getText());
-        Expression value = ExpressionFactory.getInstance().makeOne(type);
-        return visitAtomicOp(idCtx, typeCtx, ptrCtx, scopeCtx, tagsCtx, value, op);
+        String typeId = typeCtx.getText();
+        Type type = builder.getType(typeId);
+        if (type instanceof IntegerType iType) {
+            Expression value = ExpressionFactory.getInstance().makeOne(iType);
+            return visitAtomicOp(idCtx, typeCtx, ptrCtx, scopeCtx, tagsCtx, value, op);
+        }
+        throw new ParsingException("Unexpected type at '%s', expected integer but received '%s'", typeId, type);
     }
 
     private Event visitAtomicOp(
@@ -212,19 +217,19 @@ public class VisitorOpsAtomic extends SpirvBaseVisitor<Event> {
     ) {
         Register register = builder.addRegister(idCtx.getText(), typeCtx.getText());
         Expression ptr = builder.getExpression(ptrCtx.getText());
-        String scope = builder.getScope(scopeCtx.getText());
-        Set<String> tags = builder.getSemantics(tagsCtx.getText());
+        String scope = getScopeTag(scopeCtx.getText());
+        Set<String> tags = getMemorySemanticsTags(tagsCtx.getText());
         tags.add(builder.getExpressionStorageClass(ptrCtx.getText()));
         SpirvRmw event = newSpirvRmw(register, ptr, op, value, scope, tags);
         return builder.addEvent(event);
     }
 
-    private IntegerType getIntegerType(String typeId) {
-        Type type = builder.getType(typeId);
-        if (type instanceof IntegerType iType) {
-            return iType;
-        }
-        throw new ParsingException("Unexpected type at '%s', expected integer but received '%s'", typeId, type);
+    private String getScopeTag(String scopeId) {
+        return HelperTags.parseScope(scopeId, builder.getExpression(scopeId));
+    }
+
+    private Set<String> getMemorySemanticsTags(String semanticsId) {
+        return HelperTags.parseMemorySemanticsTags(semanticsId, builder.getExpression(semanticsId));
     }
 
     public Set<String> getSupportedOps() {

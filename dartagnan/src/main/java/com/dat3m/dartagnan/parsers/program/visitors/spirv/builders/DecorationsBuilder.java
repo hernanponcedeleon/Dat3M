@@ -1,4 +1,4 @@
-package com.dat3m.dartagnan.parsers.program.visitors.spirv.helpers;
+package com.dat3m.dartagnan.parsers.program.visitors.spirv.builders;
 
 import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.decorations.BuiltIn;
@@ -12,11 +12,11 @@ import java.util.EnumMap;
 import static com.dat3m.dartagnan.parsers.program.visitors.spirv.decorations.DecorationType.BUILT_IN;
 import static com.dat3m.dartagnan.parsers.program.visitors.spirv.decorations.DecorationType.SPEC_ID;
 
-public class HelperDecorations {
+public class DecorationsBuilder {
 
     private final EnumMap<DecorationType, Decoration> mapping = new EnumMap<>(DecorationType.class);
 
-    public HelperDecorations(ThreadGrid grid) {
+    public DecorationsBuilder(ThreadGrid grid) {
         mapping.put(BUILT_IN, new BuiltIn(grid));
         mapping.put(SPEC_ID, new SpecId());
     }

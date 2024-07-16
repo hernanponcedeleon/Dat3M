@@ -7,7 +7,8 @@ import com.dat3m.dartagnan.expression.booleans.BoolLiteral;
 import com.dat3m.dartagnan.expression.integers.IntCmpOp;
 import com.dat3m.dartagnan.expression.integers.IntLiteral;
 import com.dat3m.dartagnan.expression.type.*;
-import com.dat3m.dartagnan.parsers.program.visitors.spirv.utils.ProgramBuilder;
+import com.dat3m.dartagnan.parsers.program.visitors.spirv.helpers.HelperTags;
+import com.dat3m.dartagnan.parsers.program.visitors.spirv.builders.ProgramBuilder;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.utils.ThreadGrid;
 import com.dat3m.dartagnan.program.memory.ScopedPointerVariable;
 import com.dat3m.dartagnan.expression.type.ScopedPointerType;
@@ -53,7 +54,8 @@ public class MockProgramBuilder extends ProgramBuilder {
     }
 
     public ScopedPointerType mockPtrType(String id, String pointedTypeId, String storageClass) {
-        return (ScopedPointerType) addType(id, typeFactory.getScopedPointerType(getStorageClass(storageClass), getType(pointedTypeId)));
+        String storageClassTag = HelperTags.parseStorageClass(storageClass);
+        return (ScopedPointerType) addType(id, typeFactory.getScopedPointerType(storageClassTag, getType(pointedTypeId)));
     }
 
     public ArrayType mockVectorType(String id, String innerTypeId, int size) {

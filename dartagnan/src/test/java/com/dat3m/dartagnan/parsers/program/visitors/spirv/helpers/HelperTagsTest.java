@@ -17,7 +17,6 @@ public class HelperTagsTest {
 
     private static final ExpressionFactory expressions = ExpressionFactory.getInstance();
     private static final IntegerType archType = TypeFactory.getInstance().getArchType();
-    private final HelperTags helper = new HelperTags();
 
     @Test
     public void testValidScope() {
@@ -35,7 +34,7 @@ public class HelperTagsTest {
         Expression expr = expressions.makeValue(input, archType);
 
         // when
-        String scope = helper.visitScope("test", expr);
+        String scope = HelperTags.parseScope("test", expr);
 
         // then
         assertEquals(expected, scope);
@@ -53,7 +52,7 @@ public class HelperTagsTest {
 
         try {
             // when
-            helper.visitScope("test", expr);
+            HelperTags.parseScope("test", expr);
             fail("Should throw exception");
         } catch (ParsingException e) {
             // then
@@ -95,7 +94,7 @@ public class HelperTagsTest {
         Expression expr = expressions.makeValue(input, archType);
 
         // when
-        Set<String> tags = helper.visitIdMemorySemantics("test", expr);
+        Set<String> tags = HelperTags.parseMemorySemanticsTags("test", expr);
 
         // then
         assertEquals(expected, tags);
@@ -116,7 +115,7 @@ public class HelperTagsTest {
 
         try {
             // when
-            helper.visitIdMemorySemantics("test", expr);
+            HelperTags.parseMemorySemanticsTags("test", expr);
             fail("Should throw exception");
         } catch (ParsingException e) {
             // then

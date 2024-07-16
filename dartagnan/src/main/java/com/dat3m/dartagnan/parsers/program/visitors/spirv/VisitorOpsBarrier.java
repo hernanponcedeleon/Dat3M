@@ -7,7 +7,8 @@ import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.parsers.SpirvBaseVisitor;
 import com.dat3m.dartagnan.parsers.SpirvParser;
-import com.dat3m.dartagnan.parsers.program.visitors.spirv.utils.ProgramBuilder;
+import com.dat3m.dartagnan.parsers.program.visitors.spirv.helpers.HelperTags;
+import com.dat3m.dartagnan.parsers.program.visitors.spirv.builders.ProgramBuilder;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.Tag;
@@ -33,24 +34,34 @@ public class VisitorOpsBarrier extends SpirvBaseVisitor<Event> {
         Expression barrierId = expressions.makeValue(nextBarrierId++, archType);
         Event barrier = EventFactory.newControlBarrier("cbar", barrierId);
         barrier.addTags(Tag.Spirv.CONTROL);
-        barrier.addTags(builder.getScope(ctx.execution().getText()));
-        if (builder.isSemanticsNone(ctx.semantics().getText())) {
+        barrier.addTags(getScopeTag(ctx.execution().getText()));
+        Set<String> tags = getMemorySemanticsTags(ctx.semantics().getText());
+        if (Set.of(Tag.Spirv.RELAXED).equals(tags)) {
             barrier.removeTags(Tag.FENCE);
         } else {
-            barrier.addTags(builder.getSemantics(ctx.semantics().getText()));
+            barrier.addTags(tags);
         }
         return builder.addEvent(barrier);
     }
 
     @Override
     public Event visitOpMemoryBarrier(SpirvParser.OpMemoryBarrierContext ctx) {
-        if (!builder.isSemanticsNone(ctx.semantics().getText())) {
+        Set<String> tags = getMemorySemanticsTags(ctx.semantics().getText());
+        if (!Set.of(Tag.Spirv.RELAXED).equals(tags)) {
             Event fence = EventFactory.newFence(Tag.FENCE);
-            fence.addTags(builder.getScope(ctx.memory().getText()));
-            fence.addTags(builder.getSemantics(ctx.semantics().getText()));
+            fence.addTags(getScopeTag(ctx.memory().getText()));
+            fence.addTags(tags);
             return builder.addEvent(fence);
         }
         throw new ParsingException("Illegal OpMemoryBarrier with semantics None");
+    }
+
+    private String getScopeTag(String scopeId) {
+        return HelperTags.parseScope(scopeId, builder.getExpression(scopeId));
+    }
+
+    private Set<String> getMemorySemanticsTags(String semanticsId) {
+        return HelperTags.parseMemorySemanticsTags(semanticsId, builder.getExpression(semanticsId));
     }
 
     public Set<String> getSupportedOps() {

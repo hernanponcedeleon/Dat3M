@@ -14,6 +14,72 @@ public class HelperTags {
     private static final Set<String> moStrong = mkStrongMemoryOrderSet();
     private static final Map<Integer, String> semantics = mkSemanticsMap();
 
+    private HelperTags() {
+    }
+
+    public static boolean isMemorySemanticsNone(String id, Expression expr) {
+        return getIntValue(id, expr) == 0;
+    }
+
+    public static Set<String> parseMemorySemanticsTags(String id, Expression expr) {
+        int value = getIntValue(id, expr);
+        Set<String> tags = new HashSet<>();
+        for (int i = 1; i <= value; i <<= 1) {
+            if ((i & value) > 0) {
+                if (!semantics.containsKey(i)) {
+                    throw new ParsingException("Unexpected memory semantics bits");
+                }
+                tags.add(semantics.get(i));
+            }
+        }
+        int moSize = Sets.intersection(moStrong, tags).size();
+        if (moSize > 1) {
+            throw new ParsingException("Selected multiple non-relaxed memory order bits");
+        }
+        if (moSize == 0) {
+            tags.add(RELAXED);
+        }
+        return tags;
+    }
+
+    public static String parseScope(String id, Expression expr) {
+        int value = getIntValue(id, expr);
+        if (value >= 0 && value < scopes.size()) {
+            return scopes.get(value);
+        }
+        throw new ParsingException("Illegal scope value %d", value);
+    }
+
+    public static String parseStorageClass(String cls) {
+        return switch (cls) {
+            case "UniformConstant" -> SC_UNIFORM_CONSTANT;
+            case "Input" -> SC_INPUT;
+            case "Uniform" -> SC_UNIFORM;
+            case "Output" -> SC_OUTPUT;
+            case "Workgroup" -> SC_WORKGROUP;
+            case "CrossWorkgroup" -> SC_CROSS_WORKGROUP;
+            case "Private" -> SC_PRIVATE;
+            case "Function" -> SC_FUNCTION;
+            case "Generic" -> SC_GENERIC;
+            case "PushConstant" -> SC_PUSH_CONSTANT;
+            case "StorageBuffer" -> SC_STORAGE_BUFFER;
+            case "PhysicalStorageBuffer" -> SC_PHYS_STORAGE_BUFFER;
+            default -> throw new ParsingException("Unsupported storage class '%s'", cls);
+        };
+    }
+
+    private static int getIntValue(String id, Expression expr) {
+        if (expr instanceof IntLiteral iValue) {
+            try {
+                return iValue.getValue().intValue();
+            } catch (IllegalArgumentException e) {
+                throw new ParsingException("Illegal tag value at %s. %s", id, e.getMessage());
+            }
+        }
+        throw new ParsingException("Non-constant tags are not supported. " +
+                "Found non-constant tag at '%s'", id);
+    }
+
     private static List<String> mkScopesList() {
         return List.of(
                 CROSS_DEVICE,
@@ -51,68 +117,5 @@ public class HelperTags {
         map.put(0x4000, SEM_VISIBLE);
         map.put(0x8000, SEM_VOLATILE);
         return map;
-    }
-
-    public boolean isMemorySemanticsNone(String id, Expression expr) {
-        return getIntValue(id, expr) == 0;
-    }
-
-    public Set<String> visitIdMemorySemantics(String id, Expression expr) {
-        int value = getIntValue(id, expr);
-        Set<String> tags = new HashSet<>();
-        for (int i = 1; i <= value; i <<= 1) {
-            if ((i & value) > 0) {
-                if (!semantics.containsKey(i)) {
-                    throw new ParsingException("Unexpected memory semantics bits");
-                }
-                tags.add(semantics.get(i));
-            }
-        }
-        int moSize = Sets.intersection(moStrong, tags).size();
-        if (moSize > 1) {
-            throw new ParsingException("Selected multiple non-relaxed memory order bits");
-        }
-        if (moSize == 0) {
-            tags.add(RELAXED);
-        }
-        return tags;
-    }
-
-    public String visitScope(String id, Expression expr) {
-        int value = getIntValue(id, expr);
-        if (value >= 0 && value < scopes.size()) {
-            return scopes.get(value);
-        }
-        throw new ParsingException("Illegal scope value %d", value);
-    }
-
-    public String visitStorageClass(String cls) {
-        return switch (cls) {
-            case "UniformConstant" -> SC_UNIFORM_CONSTANT;
-            case "Input" -> SC_INPUT;
-            case "Uniform" -> SC_UNIFORM;
-            case "Output" -> SC_OUTPUT;
-            case "Workgroup" -> SC_WORKGROUP;
-            case "CrossWorkgroup" -> SC_CROSS_WORKGROUP;
-            case "Private" -> SC_PRIVATE;
-            case "Function" -> SC_FUNCTION;
-            case "Generic" -> SC_GENERIC;
-            case "PushConstant" -> SC_PUSH_CONSTANT;
-            case "StorageBuffer" -> SC_STORAGE_BUFFER;
-            case "PhysicalStorageBuffer" -> SC_PHYS_STORAGE_BUFFER;
-            default -> throw new ParsingException("Unsupported storage class '%s'", cls);
-        };
-    }
-
-    private int getIntValue(String id, Expression expr) {
-        if (expr instanceof IntLiteral iValue) {
-            try {
-                return iValue.getValue().intValue();
-            } catch (IllegalArgumentException e) {
-                throw new ParsingException("Illegal tag value at %s. %s", id, e.getMessage());
-            }
-        }
-        throw new ParsingException("Non-constant tags are not supported. " +
-                "Found non-constant tag at '%s'", id);
     }
 }

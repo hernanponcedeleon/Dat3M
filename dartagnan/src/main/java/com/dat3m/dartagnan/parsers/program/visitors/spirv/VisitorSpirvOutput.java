@@ -13,8 +13,8 @@ import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.parsers.SpirvBaseVisitor;
 import com.dat3m.dartagnan.parsers.SpirvParser;
-import com.dat3m.dartagnan.parsers.program.visitors.spirv.helpers.HelperCompositeTypes;
-import com.dat3m.dartagnan.parsers.program.visitors.spirv.utils.ProgramBuilder;
+import com.dat3m.dartagnan.parsers.program.visitors.spirv.helpers.HelperTypes;
+import com.dat3m.dartagnan.parsers.program.visitors.spirv.builders.ProgramBuilder;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.memory.Location;
 import com.dat3m.dartagnan.program.memory.ScopedPointerVariable;
@@ -181,11 +181,11 @@ public class VisitorSpirvOutput extends SpirvBaseVisitor<Expression> {
     private Location createLocation(ScopedPointerVariable base, List<Integer> indexes) {
         String name = indexes.isEmpty() ? base.getId() :
                 base.getId() + "[" + String.join("][", indexes.stream().map(Object::toString).toArray(String[]::new)) + "]";
-        Type elType = HelperCompositeTypes.getMemberType(base.getId(), base.getInnerType(), indexes);
+        Type elType = HelperTypes.getMemberType(base.getId(), base.getInnerType(), indexes);
         if (elType instanceof ArrayType || elType instanceof AggregateType) {
             throw new ParsingException("Index is not deep enough for variable '%s'", name);
         }
-        int offset = HelperCompositeTypes.getMemberOffset(base.getId(), 0, base.getInnerType(), indexes);
+        int offset = HelperTypes.getMemberOffset(base.getId(), 0, base.getInnerType(), indexes);
         Location location = new Location(name, elType, base.getAddress(), offset);
         locationTypes.put(location, elType);
         return location;

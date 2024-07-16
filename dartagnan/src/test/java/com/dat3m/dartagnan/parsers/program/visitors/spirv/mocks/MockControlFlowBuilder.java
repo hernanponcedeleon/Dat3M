@@ -1,7 +1,7 @@
 package com.dat3m.dartagnan.parsers.program.visitors.spirv.mocks;
 
 import com.dat3m.dartagnan.expression.Expression;
-import com.dat3m.dartagnan.parsers.program.visitors.spirv.utils.ControlFlowBuilder;
+import com.dat3m.dartagnan.parsers.program.visitors.spirv.builders.ControlFlowBuilder;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Event;
 

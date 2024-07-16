@@ -7,8 +7,6 @@ import java.util.List;
 
 public class ThreadGrid {
 
-    public static final int DEPTH = 4;
-
     private final int sg;
     private final int wg;
     private final int qf;

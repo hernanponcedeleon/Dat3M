@@ -10,9 +10,10 @@ import com.dat3m.dartagnan.parsers.SpirvBaseVisitor;
 import com.dat3m.dartagnan.parsers.SpirvParser;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.decorations.BuiltIn;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.decorations.DecorationType;
-import com.dat3m.dartagnan.parsers.program.visitors.spirv.helpers.HelperCompositeTypes;
-import com.dat3m.dartagnan.parsers.program.visitors.spirv.helpers.HelperInput;
-import com.dat3m.dartagnan.parsers.program.visitors.spirv.utils.ProgramBuilder;
+import com.dat3m.dartagnan.parsers.program.visitors.spirv.helpers.HelperTypes;
+import com.dat3m.dartagnan.parsers.program.visitors.spirv.helpers.HelperInputs;
+import com.dat3m.dartagnan.parsers.program.visitors.spirv.helpers.HelperTags;
+import com.dat3m.dartagnan.parsers.program.visitors.spirv.builders.ProgramBuilder;
 import com.dat3m.dartagnan.program.memory.ScopedPointer;
 import com.dat3m.dartagnan.program.memory.ScopedPointerVariable;
 import com.dat3m.dartagnan.expression.type.ScopedPointerType;
@@ -113,7 +114,7 @@ public class VisitorOpsMemory extends SpirvBaseVisitor<Event> {
                 throw new ParsingException("The original value of variable '%s' " +
                         "cannot be overwritten by an external input", id);
             }
-            return HelperInput.castInput(id, type, builder.getInput(id));
+            return HelperInputs.castInput(id, type, builder.getInput(id));
         }
         if (builtInDecorator.hasDecoration(id)) {
             if (ctx.initializer() != null) {
@@ -155,7 +156,7 @@ public class VisitorOpsMemory extends SpirvBaseVisitor<Event> {
 
     private void validateVariableStorageClass(ScopedPointerVariable pointer, String classToken) {
         String ptrStorageClass = pointer.getScopeId();
-        String varStorageClass = builder.getStorageClass(classToken);
+        String varStorageClass = HelperTags.parseStorageClass(classToken);
         if (!varStorageClass.equals(ptrStorageClass)) {
             throw new ParsingException("Storage class of variable '%s' " +
                     "does not match the pointer storage class", pointer.getId());
@@ -193,12 +194,12 @@ public class VisitorOpsMemory extends SpirvBaseVisitor<Event> {
                 exprIndexes.add(expression);
                 intIndexes.add(expression instanceof IntLiteral intLiteral ? intLiteral.getValueAsInt() : -1);
             });
-            Type exactResultType = HelperCompositeTypes.getMemberType(baseId, baseType, intIndexes);
+            Type exactResultType = HelperTypes.getMemberType(baseId, baseType, intIndexes);
             if (!TypeFactory.isStaticTypeOf(exactResultType, resultType)) {
                 throw new ParsingException("Invalid result type in access chain '%s', " +
                         "expected '%s' but received '%s'", id, resultType, exactResultType);
             }
-            Expression expression = HelperCompositeTypes.getMemberAddress(baseId, base, baseType, exprIndexes);
+            Expression expression = HelperTypes.getMemberAddress(baseId, base, baseType, exprIndexes);
             ScopedPointer pointer = new ScopedPointer(id, pointerType.getScopeId(), exactResultType, expression);
             builder.addExpression(id, pointer);
             return;
@@ -220,9 +221,9 @@ public class VisitorOpsMemory extends SpirvBaseVisitor<Event> {
             return Set.of(Tag.Spirv.MEM_NON_PRIVATE);
         }
         if (ctx.idScope() != null) {
-            Set<String> tags = new HashSet<>();
-            tags.add(builder.getScope(ctx.idScope().getText()));
-            tags.add(Tag.Spirv.MEM_NON_PRIVATE);
+            String scopeId = ctx.idScope().getText();
+            String scopeTag = HelperTags.parseScope(scopeId, builder.getExpression(scopeId));
+            Set<String> tags = new HashSet<>(Set.of(scopeTag, Tag.Spirv.MEM_NON_PRIVATE));
             if (ctx.MakePointerAvailable() != null || ctx.MakePointerAvailableKHR() != null) {
                 tags.add(Tag.Spirv.MEM_AVAILABLE);
             }

@@ -11,12 +11,12 @@ import com.dat3m.dartagnan.expression.type.*;
 import java.util.ArrayList;
 import java.util.List;
 
-public class HelperInput {
+public class HelperInputs {
 
     private static final TypeFactory types = TypeFactory.getInstance();
     private static final ExpressionFactory expressions = ExpressionFactory.getInstance();
 
-    private HelperInput(){
+    private HelperInputs(){
     }
 
     public static Expression castInput(String id, Type type, Expression value) {

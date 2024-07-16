@@ -1,4 +1,4 @@
-package com.dat3m.dartagnan.parsers.program.visitors.spirv.utils;
+package com.dat3m.dartagnan.parsers.program.visitors.spirv.builders;
 
 import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.expression.Expression;
@@ -31,6 +31,17 @@ public class ControlFlowBuilder {
         return lastBlockEvents.containsKey(id) || blockStack.contains(id);
     }
 
+    public void build() {
+        validateBeforeBuild();
+        phiDefinitions.forEach((blockId, def) ->
+                def.forEach((k, v) -> {
+                    Event event = EventFactory.newLocal(k, expressions.get(v));
+                    lastBlockEvents.get(blockId).getPredecessor().insertAfter(event);
+                }));
+        mergeLabelIds.forEach((jumpLabelId, endLabelId) ->
+                lastBlockEvents.get(jumpLabelId).getPredecessor().insertAfter(blockLabels.get(endLabelId)));
+    }
+
     public void startBlock(String id) {
         if (lastBlockEvents.containsKey(id)) {
             throw new ParsingException("Attempt to redefine label '%s'", id);
@@ -56,23 +67,8 @@ public class ControlFlowBuilder {
         return createLabel(mergeId);
     }
 
-    public Label createBackJumpLabel(String id) {
-        return createLabel(id + "_back");
-    }
-
     public void addPhiDefinition(String blockId, Register register, String expressionId) {
         phiDefinitions.computeIfAbsent(blockId, k -> new HashMap<>()).put(register, expressionId);
-    }
-
-    public void build() {
-        validateBeforeBuild();
-        phiDefinitions.forEach((blockId, def) ->
-                def.forEach((k, v) -> {
-                    Event event = EventFactory.newLocal(k, expressions.get(v));
-                    lastBlockEvents.get(blockId).getPredecessor().insertAfter(event);
-                }));
-        mergeLabelIds.forEach((jumpLabelId, endLabelId) ->
-                lastBlockEvents.get(jumpLabelId).getPredecessor().insertAfter(blockLabels.get(endLabelId)));
     }
 
     private void validateBeforeBuild() {

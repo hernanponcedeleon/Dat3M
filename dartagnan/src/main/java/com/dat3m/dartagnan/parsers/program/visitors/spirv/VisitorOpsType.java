@@ -7,14 +7,13 @@ import com.dat3m.dartagnan.expression.integers.IntLiteral;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.parsers.SpirvBaseVisitor;
 import com.dat3m.dartagnan.parsers.SpirvParser;
-import com.dat3m.dartagnan.parsers.program.visitors.spirv.utils.ProgramBuilder;
+import com.dat3m.dartagnan.parsers.program.visitors.spirv.helpers.HelperTags;
+import com.dat3m.dartagnan.parsers.program.visitors.spirv.builders.ProgramBuilder;
 
 import java.util.List;
 import java.util.Set;
 
 public class VisitorOpsType extends SpirvBaseVisitor<Type> {
-
-    // TODO: Validate that size is a multiple of 8 + tests
 
     private static final TypeFactory types = TypeFactory.getInstance();
 
@@ -101,7 +100,7 @@ public class VisitorOpsType extends SpirvBaseVisitor<Type> {
     public Type visitOpTypePointer(SpirvParser.OpTypePointerContext ctx) {
         String id = ctx.idResult().getText();
         String inner = ctx.type().getText();
-        String storageClass = builder.getStorageClass(ctx.storageClass().getText());
+        String storageClass = HelperTags.parseStorageClass(ctx.storageClass().getText());
         Type type = types.getScopedPointerType(storageClass, builder.getType(inner));
         return builder.addType(id, type);
     }
