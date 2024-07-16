@@ -30,15 +30,9 @@ public class VisitorSpirv extends SpirvBaseVisitor<Program> {
         this.initializeVisitors();
         this.specConstantVisitor = getSpecConstantVisitor();
         ctx.spvHeaders().accept(new VisitorSpirvInput(builder));
-        visitSpvInstructions(ctx.spvInstructions());
+        ctx.spvInstructions().accept(this);
         ctx.spvHeaders().accept(new VisitorSpirvOutput(builder));
         return builder.build();
-    }
-
-    @Override
-    public Program visitSpvInstructions(SpirvParser.SpvInstructionsContext ctx) {
-        this.visitChildren(ctx);
-        return null;
     }
 
     @Override

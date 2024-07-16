@@ -25,13 +25,13 @@ public class BadIndexTest extends AbstractTest {
     public static Iterable<Object[]> data() {
         return Arrays.asList(new Object[][]{
                 {"; @Output: forall %v8[0][0][0]==0",
-                        "Illegal assertion for variable '%v8', index too deep"},
+                        "Index is too deep for variable '%v8[0][0][0]'"},
                 {"; @Output: forall %v8[0]==0",
-                        "Illegal assertion for variable '%v8', index not deep enough"},
+                        "Index is not deep enough for variable '%v8[0]'"},
                 {"; @Output: forall %v8[1][0]==0",
-                        "Illegal assertion for variable '%v8', index out of bounds"},
+                        "Index is out of bounds for variable '%v8[1]'"},
                 {"; @Output: forall %v8[0][1]==0",
-                        "Illegal assertion for variable '%v8', index out of bounds"},
+                        "Index is out of bounds for variable '%v8[0][1]'"},
                 {"; @Input: %v8={{{0}}}",
                         "Mismatching value type for variable '%v8[0][0]', expected 'bv64' but received '{ bv64 }'"},
                 {"; @Input: %v8={0}",

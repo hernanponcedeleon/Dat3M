@@ -3,13 +3,14 @@ package com.dat3m.dartagnan.parsers.program.visitors.spirv;
 import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.Type;
+import com.dat3m.dartagnan.expression.integers.IntLiteral;
 import com.dat3m.dartagnan.expression.misc.ConstructExpr;
 import com.dat3m.dartagnan.expression.type.*;
 import com.dat3m.dartagnan.parsers.SpirvBaseVisitor;
 import com.dat3m.dartagnan.parsers.SpirvParser;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.decorations.BuiltIn;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.decorations.DecorationType;
-import com.dat3m.dartagnan.parsers.program.visitors.spirv.helpers.HelperAccessChain;
+import com.dat3m.dartagnan.parsers.program.visitors.spirv.helpers.HelperCompositeTypes;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.helpers.HelperInput;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.utils.ProgramBuilder;
 import com.dat3m.dartagnan.program.memory.ScopedPointer;
@@ -21,6 +22,7 @@ import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.Tag;
 import org.antlr.v4.runtime.tree.ParseTree;
 
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -185,15 +187,19 @@ public class VisitorOpsMemory extends SpirvBaseVisitor<Event> {
             ScopedPointer base = (ScopedPointer) builder.getExpression(baseId);
             Type baseType = base.getInnerType();
             Type resultType = pointerType.getPointedType();
-            List<Expression> indexes = idxContexts.stream()
-                    .map(c -> builder.getExpression(c.getText()))
-                    .toList();
-            Type exactResultType = HelperAccessChain.getMemberType(id, baseType, indexes);
+            List<Integer> intIndexes = new ArrayList<>();
+            List<Expression> exprIndexes = new ArrayList<>();
+            idxContexts.forEach(c -> {
+                Expression expression = builder.getExpression(c.getText());
+                exprIndexes.add(expression);
+                intIndexes.add(expression instanceof IntLiteral intLiteral ? intLiteral.getValueAsInt() : -1);
+            });
+            Type exactResultType = HelperCompositeTypes.getMemberType(baseId, baseType, intIndexes);
             if (!TypeFactory.isStaticTypeOf(exactResultType, resultType)) {
                 throw new ParsingException("Invalid result type in access chain '%s', " +
                         "expected '%s' but received '%s'", id, resultType, exactResultType);
             }
-            Expression expression = HelperAccessChain.getMemberAddress(id, base, baseType, indexes);
+            Expression expression = HelperCompositeTypes.getMemberAddress(baseId, base, baseType, exprIndexes);
             ScopedPointer pointer = new ScopedPointer(id, pointerType.getScopeId(), exactResultType, expression);
             builder.addExpression(id, pointer);
             return;

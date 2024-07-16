@@ -13,6 +13,7 @@ import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.parsers.SpirvBaseVisitor;
 import com.dat3m.dartagnan.parsers.SpirvParser;
+import com.dat3m.dartagnan.parsers.program.visitors.spirv.helpers.HelperCompositeTypes;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.utils.ProgramBuilder;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.memory.Location;
@@ -178,43 +179,15 @@ public class VisitorSpirvOutput extends SpirvBaseVisitor<Expression> {
     }
 
     private Location createLocation(ScopedPointerVariable base, List<Integer> indexes) {
-        Type newType = base.getInnerType();
-        int offset = 0;
-        for (int index : indexes) {
-            validateIndex(base.getId(), newType, index);
-            if (newType instanceof ArrayType arrayType) {
-                Type elementType = arrayType.getElementType();
-                int byteWidth = types.getMemorySizeInBytes(elementType);
-                offset += index * byteWidth;
-                newType = elementType;
-            } else if (newType instanceof AggregateType aggregateType) {
-                for (int i = 0; i < index; i++) {
-                    offset += types.getMemorySizeInBytes(aggregateType.getDirectFields().get(i));
-                }
-                newType = aggregateType.getDirectFields().get(index);
-            }
-        }
-        if (newType instanceof ArrayType || newType instanceof AggregateType) {
-            throw new ParsingException("Illegal assertion for variable '%s', index not deep enough", base.getId());
-        }
-        String offsetName = indexes.isEmpty() ? base.getId() :
+        String name = indexes.isEmpty() ? base.getId() :
                 base.getId() + "[" + String.join("][", indexes.stream().map(Object::toString).toArray(String[]::new)) + "]";
-        Location location = new Location(offsetName, newType, base.getAddress(), offset);
-        locationTypes.put(location, newType);
-        return location;
-    }
-
-    private void validateIndex(String name, Type type, int index) {
-        if (type instanceof ArrayType arrayType) {
-            if (index >= arrayType.getNumElements()) {
-                throw new ParsingException("Illegal assertion for variable '%s', index out of bounds", name);
-            }
-        } else if (type instanceof AggregateType aggregateType) {
-            if (index >= aggregateType.getDirectFields().size()) {
-                throw new ParsingException("Illegal assertion for variable '%s', index out of bounds", name);
-            }
-        } else {
-            throw new ParsingException("Illegal assertion for variable '%s', index too deep", name);
+        Type elType = HelperCompositeTypes.getMemberType(base.getId(), base.getInnerType(), indexes);
+        if (elType instanceof ArrayType || elType instanceof AggregateType) {
+            throw new ParsingException("Index is not deep enough for variable '%s'", name);
         }
+        int offset = HelperCompositeTypes.getMemberOffset(base.getId(), 0, base.getInnerType(), indexes);
+        Location location = new Location(name, elType, base.getAddress(), offset);
+        locationTypes.put(location, elType);
+        return location;
     }
 }

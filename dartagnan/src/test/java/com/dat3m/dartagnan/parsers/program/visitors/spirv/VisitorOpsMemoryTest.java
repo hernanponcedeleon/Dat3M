@@ -765,7 +765,7 @@ public class VisitorOpsMemoryTest {
             fail("Should throw exception");
         } catch (ParsingException e) {
             // then
-            assertEquals("Unsupported non-constant index in access chain '%element'",
+            assertEquals("Index of a struct member is non-constant for variable '%variable[-1]'",
                     e.getMessage());
         }
     }
@@ -796,7 +796,7 @@ public class VisitorOpsMemoryTest {
             fail("Should throw exception");
         } catch (ParsingException e) {
             // then
-            assertEquals("Index is too deep in access chain '%element'", e.getMessage());
+            assertEquals("Index is too deep for variable '%variable[0][0]'", e.getMessage());
         }
     }
 
