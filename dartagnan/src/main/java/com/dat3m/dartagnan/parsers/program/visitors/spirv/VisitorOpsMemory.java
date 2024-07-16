@@ -2,6 +2,7 @@ package com.dat3m.dartagnan.parsers.program.visitors.spirv;
 
 import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.expression.Expression;
+import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.Type;
 import com.dat3m.dartagnan.expression.integers.IntLiteral;
 import com.dat3m.dartagnan.expression.misc.ConstructExpr;
@@ -9,11 +10,11 @@ import com.dat3m.dartagnan.expression.type.*;
 import com.dat3m.dartagnan.parsers.SpirvBaseVisitor;
 import com.dat3m.dartagnan.parsers.SpirvParser;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.decorations.BuiltIn;
-import com.dat3m.dartagnan.parsers.program.visitors.spirv.decorations.DecorationType;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.helpers.HelperTypes;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.helpers.HelperInputs;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.helpers.HelperTags;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.builders.ProgramBuilder;
+import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.dat3m.dartagnan.program.memory.ScopedPointer;
 import com.dat3m.dartagnan.program.memory.ScopedPointerVariable;
 import com.dat3m.dartagnan.expression.type.ScopedPointerType;
@@ -28,15 +29,18 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import static com.dat3m.dartagnan.parsers.program.visitors.spirv.decorations.DecorationType.BUILT_IN;
+
 public class VisitorOpsMemory extends SpirvBaseVisitor<Event> {
 
     private static final TypeFactory types = TypeFactory.getInstance();
+    private static final ExpressionFactory expressions = ExpressionFactory.getInstance();
     private final ProgramBuilder builder;
-    private final BuiltIn builtInDecorator;
+    private final BuiltIn builtIn;
 
     public VisitorOpsMemory(ProgramBuilder builder) {
         this.builder = builder;
-        this.builtInDecorator = (BuiltIn) builder.getDecoration(DecorationType.BUILT_IN);
+        this.builtIn = (BuiltIn) builder.getDecorationsBuilder().getDecoration(BUILT_IN);
     }
 
     @Override
@@ -46,7 +50,7 @@ public class VisitorOpsMemory extends SpirvBaseVisitor<Event> {
         Event event = EventFactory.newStore(pointer, value);
         Set<String> tags = parseMemoryAccessTags(ctx.memoryAccess());
         if (!tags.contains(Tag.Spirv.MEM_VISIBLE)) {
-            String storageClass = builder.getExpressionStorageClass(ctx.pointer().getText());
+            String storageClass = builder.getPointerStorageClass(ctx.pointer().getText());
             String scope = getScope(storageClass);
             event.addTags(tags);
             event.addTags(storageClass);
@@ -66,7 +70,7 @@ public class VisitorOpsMemory extends SpirvBaseVisitor<Event> {
         Event event = EventFactory.newLoad(register, pointer);
         Set<String> tags = parseMemoryAccessTags(ctx.memoryAccess());
         if (!tags.contains(Tag.Spirv.MEM_AVAILABLE)) {
-            String storageClass = builder.getExpressionStorageClass(ctx.pointer().getText());
+            String storageClass = builder.getPointerStorageClass(ctx.pointer().getText());
             String scope = getScope(storageClass);
             event.addTags(tags);
             event.addTags(storageClass);
@@ -83,8 +87,8 @@ public class VisitorOpsMemory extends SpirvBaseVisitor<Event> {
     public Event visitOpVariable(SpirvParser.OpVariableContext ctx) {
         String id = ctx.idResult().getText();
         String typeId = ctx.idResultType().getText();
-        if (builder.getType(typeId) instanceof ScopedPointerType pType) {
-            Type type = pType.getPointedType();
+        if (builder.getType(typeId) instanceof ScopedPointerType pointerType) {
+            Type type = pointerType.getPointedType();
             Expression value = getOpVariableInitialValue(ctx, type);
             if (value != null) {
                 if (!TypeFactory.isStaticTypeOf(value.getType(), type)) {
@@ -95,10 +99,11 @@ public class VisitorOpsMemory extends SpirvBaseVisitor<Event> {
             } else if (!TypeFactory.isStaticType(type)) {
                 throw new ParsingException("Missing initial value for runtime variable '%s'", id);
             } else {
-                value = builder.newUndefinedValue(type);
+                value = builder.makeUndefinedValue(type);
             }
             int size = types.getMemorySizeInBytes(type);
-            ScopedPointerVariable pointer = builder.allocateMemoryVirtual(id, typeId, type, size);
+            MemoryObject memObj = builder.allocateVariable(id, size);
+            ScopedPointerVariable pointer = expressions.makeScopedPointerVariable(id, pointerType.getScopeId(), type, memObj);
             setInitialValue(pointer, 0, value);
             validateVariableStorageClass(pointer, ctx.storageClass().getText());
             builder.addExpression(id, pointer);
@@ -110,18 +115,18 @@ public class VisitorOpsMemory extends SpirvBaseVisitor<Event> {
     private Expression getOpVariableInitialValue(SpirvParser.OpVariableContext ctx, Type type) {
         String id = ctx.idResult().getText();
         if (builder.hasInput(id)) {
-            if (builtInDecorator.hasDecoration(id) || ctx.initializer() != null) {
+            if (builtIn.hasDecoration(id) || ctx.initializer() != null) {
                 throw new ParsingException("The original value of variable '%s' " +
                         "cannot be overwritten by an external input", id);
             }
             return HelperInputs.castInput(id, type, builder.getInput(id));
         }
-        if (builtInDecorator.hasDecoration(id)) {
+        if (builtIn.hasDecoration(id)) {
             if (ctx.initializer() != null) {
                 throw new ParsingException("The original value of variable '%s' " +
                         "cannot be overwritten by a decoration", id);
             }
-            return builtInDecorator.getDecoration(id, type);
+            return builtIn.getDecoration(id, type);
         }
         if (ctx.initializer() != null) {
             return builder.getExpression(ctx.initializer().getText());
@@ -200,7 +205,7 @@ public class VisitorOpsMemory extends SpirvBaseVisitor<Event> {
                         "expected '%s' but received '%s'", id, resultType, exactResultType);
             }
             Expression expression = HelperTypes.getMemberAddress(baseId, base, baseType, exprIndexes);
-            ScopedPointer pointer = new ScopedPointer(id, pointerType.getScopeId(), exactResultType, expression);
+            ScopedPointer pointer = expressions.makeScopedPointer(id, pointerType.getScopeId(), exactResultType, expression);
             builder.addExpression(id, pointer);
             return;
         }

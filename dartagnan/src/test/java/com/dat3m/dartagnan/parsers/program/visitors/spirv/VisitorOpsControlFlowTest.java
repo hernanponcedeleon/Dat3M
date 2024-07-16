@@ -24,7 +24,7 @@ import static org.junit.Assert.*;
 public class VisitorOpsControlFlowTest {
 
     private final MockProgramBuilder builder = new MockProgramBuilder();
-    private final MockControlFlowBuilder cfBuilder = (MockControlFlowBuilder) builder.getHelperControlFlow();
+    private final MockControlFlowBuilder cfBuilder = (MockControlFlowBuilder) builder.getControlFlowBuilder();
 
     @Test
     public void testOpPhi() {
@@ -37,7 +37,7 @@ public class VisitorOpsControlFlowTest {
         visit(input);
 
         // then
-        Register register = builder.getRegister("%phi");
+        Register register = builder.getCurrentFunction().getRegister("%phi");
         assertEquals(builder.getType("%int"), register.getType());
 
         Map<Register, String> phi1 = cfBuilder.getPhiDefinitions("%label1");

@@ -8,6 +8,9 @@ import com.dat3m.dartagnan.expression.misc.ExtractExpr;
 import com.dat3m.dartagnan.expression.misc.GEPExpr;
 import com.dat3m.dartagnan.expression.misc.ITEExpr;
 import com.dat3m.dartagnan.expression.type.*;
+import com.dat3m.dartagnan.program.memory.MemoryObject;
+import com.dat3m.dartagnan.program.memory.ScopedPointer;
+import com.dat3m.dartagnan.program.memory.ScopedPointerVariable;
 import com.google.common.base.Preconditions;
 
 import java.math.BigDecimal;
@@ -277,6 +280,14 @@ public final class ExpressionFactory {
         Preconditions.checkArgument(base.getType().equals(types.getArchType()),
                 "Applying offsets to non-pointer expression.");
         return new GEPExpr(indexingType, base, offsets);
+    }
+
+    public ScopedPointer makeScopedPointer(String id, String scopeId, Type type, Expression address) {
+        return new ScopedPointer(id, scopeId, type, address);
+    }
+
+    public ScopedPointerVariable makeScopedPointerVariable(String id, String scopeId, Type type, MemoryObject address) {
+        return new ScopedPointerVariable(id, scopeId, type, address);
     }
 
     // -----------------------------------------------------------------------------------------------------------------

@@ -97,7 +97,8 @@ public class VisitorExtensionClspvReflection extends VisitorExtension<Void> {
     public Void visitArgumentPodPushConstant(SpirvParser.ArgumentPodPushConstantContext ctx) {
         initPushConstant();
         if (pushConstantIndex >= pushConstantType.getDirectFields().size()) {
-            throw new ParsingException("Out of bounds definition 'ArgumentPodPushConstant' in PushConstant '%s'", pushConstant.getId());
+            throw new ParsingException("Out of bounds definition 'ArgumentPodPushConstant' in PushConstant '%s'",
+                    pushConstant.getId());
         }
         Type type = pushConstantType.getDirectFields().get(pushConstantIndex);
         int typeSize = types.getMemorySizeInBytes(type);
@@ -113,7 +114,8 @@ public class VisitorExtensionClspvReflection extends VisitorExtension<Void> {
     private Void setPushConstantValue(String decorationId, String sizeId) {
         initPushConstant();
         if (pushConstantIndex >= pushConstantType.getDirectFields().size()) {
-            throw new ParsingException("Out of bounds definition '%s' in PushConstant '%s'", decorationId, pushConstant.getId());
+            throw new ParsingException("Out of bounds definition '%s' in PushConstant '%s'",
+                    decorationId, pushConstant.getId());
         }
         Type type = pushConstantType.getDirectFields().get(pushConstantIndex);
         int typeSize = types.getMemorySizeInBytes(type);
@@ -154,18 +156,20 @@ public class VisitorExtensionClspvReflection extends VisitorExtension<Void> {
     // TODO: Better way to identify PushConstant using kernel and arg info methods
     private void initPushConstant() {
         if (pushConstant == null) {
-            List<ScopedPointerVariable> variables = builder.getVariablesWithStorageClass(Tag.Spirv.SC_PUSH_CONSTANT);
-            if (variables.size() != 1) {
-                throw new ParsingException("Cannot identify PushConstant referenced by CLSPV extension");
-            }
-            pushConstant = variables.get(0);
-            Type type = pushConstant.getInnerType();
-            if (type instanceof AggregateType agType) {
-                pushConstantType = agType;
-            } else {
+            List<ScopedPointerVariable> variables = builder.getVariables().stream()
+                    .filter(v -> Tag.Spirv.SC_PUSH_CONSTANT.equals(v.getScopeId()))
+                    .toList();
+            if (variables.size() == 1) {
+                pushConstant = variables.get(0);
+                Type type = pushConstant.getInnerType();
+                if (type instanceof AggregateType agType) {
+                    pushConstantType = agType;
+                    return;
+                }
                 throw new ParsingException("Unexpected type '%s' for PushConstant '%s'",
                         type, pushConstant.getId());
             }
+            throw new ParsingException("Cannot identify PushConstant referenced by CLSPV extension");
         }
     }
 

@@ -33,7 +33,7 @@ public class VisitorOpsAtomic extends SpirvBaseVisitor<Event> {
         Expression ptr = builder.getExpression(ctx.pointer().getText());
         String scope = getScopeTag(ctx.memory().getText());
         Set<String> tags = getMemorySemanticsTags(ctx.semantics().getText());
-        tags.add(builder.getExpressionStorageClass(ctx.pointer().getText()));
+        tags.add(builder.getPointerStorageClass(ctx.pointer().getText()));
         SpirvLoad event = newSpirvLoad(register, ptr, scope, tags);
         return builder.addEvent(event);
     }
@@ -44,7 +44,7 @@ public class VisitorOpsAtomic extends SpirvBaseVisitor<Event> {
         Expression value = builder.getExpression(ctx.valueIdRef().getText());
         String scope = getScopeTag(ctx.memory().getText());
         Set<String> tags = getMemorySemanticsTags(ctx.semantics().getText());
-        tags.add(builder.getExpressionStorageClass(ctx.pointer().getText()));
+        tags.add(builder.getPointerStorageClass(ctx.pointer().getText()));
         SpirvStore event = newSpirvStore(ptr, value, scope, tags);
         return builder.addEvent(event);
     }
@@ -56,7 +56,7 @@ public class VisitorOpsAtomic extends SpirvBaseVisitor<Event> {
         Expression value = builder.getExpression(ctx.valueIdRef().getText());
         String scope = getScopeTag(ctx.memory().getText());
         Set<String> tags = getMemorySemanticsTags(ctx.semantics().getText());
-        tags.add(builder.getExpressionStorageClass(ctx.pointer().getText()));
+        tags.add(builder.getPointerStorageClass(ctx.pointer().getText()));
         SpirvXchg event = newSpirvXchg(register, ptr, value, scope, tags);
         return builder.addEvent(event);
     }
@@ -142,7 +142,7 @@ public class VisitorOpsAtomic extends SpirvBaseVisitor<Event> {
         Expression value = builder.getExpression(valCtx.getText());
         String scope = getScopeTag(scopeCtx.getText());
         Set<String> tags = getMemorySemanticsTags(tagsCtx.getText());
-        tags.add(builder.getExpressionStorageClass(ptrCtx.getText()));
+        tags.add(builder.getPointerStorageClass(ptrCtx.getText()));
         if (!(ptr.getType() instanceof IntegerType) || !(value.getType() instanceof IntegerType)) {
             throw new ParsingException("Unexpected type at '%s' or '%s', expected integer but received '%s' and '%s'",
                     ptrCtx.getText(), valCtx.getText(), ptr.getType(), value.getType());
@@ -166,10 +166,10 @@ public class VisitorOpsAtomic extends SpirvBaseVisitor<Event> {
         String scope = getScopeTag(scopeCtx.getText());
         Set<String> eqTags = getMemorySemanticsTags(eqCtx.getText());
 
-        eqTags.add(builder.getExpressionStorageClass(ptrCtx.getText()));
+        eqTags.add(builder.getPointerStorageClass(ptrCtx.getText()));
 
         Set<String> neqTags = getMemorySemanticsTags(neqCtx.getText());
-        neqTags.add(builder.getExpressionStorageClass(ptrCtx.getText()));
+        neqTags.add(builder.getPointerStorageClass(ptrCtx.getText()));
         Expression value = builder.getExpression(valCtx.getText());
         Expression cmp = builder.getExpression(cmpCtx.getText());
         SpirvCmpXchg event = newSpirvCmpXchg(register, ptr, cmp, value, scope, eqTags, neqTags);
@@ -219,7 +219,7 @@ public class VisitorOpsAtomic extends SpirvBaseVisitor<Event> {
         Expression ptr = builder.getExpression(ptrCtx.getText());
         String scope = getScopeTag(scopeCtx.getText());
         Set<String> tags = getMemorySemanticsTags(tagsCtx.getText());
-        tags.add(builder.getExpressionStorageClass(ptrCtx.getText()));
+        tags.add(builder.getPointerStorageClass(ptrCtx.getText()));
         SpirvRmw event = newSpirvRmw(register, ptr, op, value, scope, tags);
         return builder.addEvent(event);
     }

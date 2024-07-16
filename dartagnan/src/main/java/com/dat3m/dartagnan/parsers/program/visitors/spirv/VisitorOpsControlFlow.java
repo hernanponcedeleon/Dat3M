@@ -30,7 +30,7 @@ public class VisitorOpsControlFlow extends SpirvBaseVisitor<Event> {
 
     public VisitorOpsControlFlow(ProgramBuilder builder) {
         this.builder = builder;
-        this.cfBuilder = builder.getHelperControlFlow();
+        this.cfBuilder = builder.getControlFlowBuilder();
     }
 
     @Override

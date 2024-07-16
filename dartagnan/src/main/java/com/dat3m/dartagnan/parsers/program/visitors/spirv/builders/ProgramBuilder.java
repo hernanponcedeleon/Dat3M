@@ -5,8 +5,6 @@ import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.Type;
 import com.dat3m.dartagnan.expression.type.FunctionType;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.decorations.BuiltIn;
-import com.dat3m.dartagnan.parsers.program.visitors.spirv.decorations.Decoration;
-import com.dat3m.dartagnan.parsers.program.visitors.spirv.decorations.DecorationType;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.utils.ThreadCreator;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.utils.ThreadGrid;
 import com.dat3m.dartagnan.program.memory.ScopedPointer;
@@ -21,6 +19,8 @@ import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
+import static com.dat3m.dartagnan.parsers.program.visitors.spirv.decorations.DecorationType.BUILT_IN;
+
 public class ProgramBuilder {
 
     protected final Map<String, Type> types = new HashMap<>();
@@ -29,33 +29,38 @@ public class ProgramBuilder {
     protected final Map<String, Function> forwardFunctions = new HashMap<>();
     protected final ThreadGrid grid;
     protected final Program program;
+    protected ControlFlowBuilder controlFlowBuilder;
+    protected DecorationsBuilder decorationsBuilder;
     protected Function currentFunction;
     protected String entryPointId;
     protected int nextFunctionId = 0;
     protected Set<String> nextOps;
-    protected ControlFlowBuilder cfBuilder = new ControlFlowBuilder(expressions);
-    private final DecorationsBuilder decorationsBuilder;
 
     public ProgramBuilder(ThreadGrid grid) {
         this.grid = grid;
         this.program = new Program(new Memory(), Program.SourceLanguage.SPV);
+        this.controlFlowBuilder = new ControlFlowBuilder(expressions);
         this.decorationsBuilder = new DecorationsBuilder(grid);
     }
 
     public Program build() {
         validateBeforeBuild();
-        cfBuilder.build();
-        BuiltIn builtIn = (BuiltIn) getDecoration(DecorationType.BUILT_IN);
-        Set<ScopedPointerVariable> variables = expressions.values().stream()
-                .filter(ScopedPointerVariable.class::isInstance)
-                .map(v -> (ScopedPointerVariable) v)
-                .collect(Collectors.toSet());
-        new ThreadCreator(grid, getEntryPointFunction(), variables, builtIn).create();
+        controlFlowBuilder.build();
+        BuiltIn builtIn = (BuiltIn) decorationsBuilder.getDecoration(BUILT_IN);
+        new ThreadCreator(grid, getEntryPointFunction(), getVariables(), builtIn).create();
         return program;
     }
 
     public ThreadGrid getThreadGrid() {
         return grid;
+    }
+
+    public ControlFlowBuilder getControlFlowBuilder() {
+        return controlFlowBuilder;
+    }
+
+    public DecorationsBuilder getDecorationsBuilder() {
+        return decorationsBuilder;
     }
 
     public Set<String> getNextOps() {
@@ -87,6 +92,10 @@ public class ProgramBuilder {
         program.setSpecification(type, assertion);
     }
 
+    public boolean hasInput(String id) {
+        return inputs.containsKey(id);
+    }
+
     public Expression getInput(String id) {
         if (inputs.containsKey(id)) {
             return inputs.get(id);
@@ -96,7 +105,7 @@ public class ProgramBuilder {
 
     public void addInput(String id, Expression value) {
         if (inputs.containsKey(id)) {
-            throw new ParsingException("Duplicated definition '%s'", id);
+            throw new ParsingException("Duplicated input definition '%s'", id);
         }
         inputs.put(id, value);
     }
@@ -133,11 +142,50 @@ public class ProgramBuilder {
         return value;
     }
 
+    public Set<ScopedPointerVariable> getVariables() {
+        return expressions.values().stream()
+                .filter(ScopedPointerVariable.class::isInstance)
+                .map(v -> (ScopedPointerVariable) v)
+                .collect(Collectors.toSet());
+    }
+
+    public MemoryObject allocateVariable(String id, int bytes) {
+        MemoryObject memObj = program.getMemory().allocateVirtual(bytes, true, null);
+        memObj.setName(id);
+        return memObj;
+    }
+
+    public String getPointerStorageClass(String id) {
+        Expression expression = getExpression(id);
+        // Pointers to variables and references from OpAccessChain
+        if (expression instanceof ScopedPointer pointer) {
+            return pointer.getScopeId();
+        }
+        // Pointers passed via function argument registers
+        // TODO: A cleaner way?
+        if (expression.getType() instanceof ScopedPointerType pointerType) {
+            return pointerType.getScopeId();
+        }
+        throw new ParsingException("Reference to undefined pointer '%s'", id);
+    }
+
+    public Register addRegister(String id, String typeId) {
+        Type type = getType(typeId);
+        if (type instanceof ScopedPointerType) {
+            throw new ParsingException("Register cannot be a pointer");
+        }
+        return getCurrentFunctionOrThrowError().newRegister(id, type);
+    }
+
+    public Expression makeUndefinedValue(Type type) {
+        return program.newConstant(type);
+    }
+
     public Event addEvent(Event event) {
         if (currentFunction == null) {
             throw new ParsingException("Attempt to add an event outside a function definition");
         }
-        if (!cfBuilder.isInsideBlock()) {
+        if (!controlFlowBuilder.isInsideBlock()) {
             throw new ParsingException("Attempt to add an event outside a control flow block");
         }
         if (event instanceof RegWriter regWriter) {
@@ -146,6 +194,14 @@ public class ProgramBuilder {
         }
         currentFunction.append(event);
         return event;
+    }
+
+    public FunctionType getCurrentFunctionType() {
+        return getCurrentFunctionOrThrowError().getFunctionType();
+    }
+
+    public String getCurrentFunctionName() {
+        return getCurrentFunctionOrThrowError().getName();
     }
 
     public void startFunctionDefinition(String id, FunctionType type, List<String> args) {
@@ -181,7 +237,8 @@ public class ProgramBuilder {
     public Function getCalledFunction(String id, FunctionType type) {
         Expression expression = expressions.get(id);
         if (expression instanceof Function function) {
-            return checkFunctionType(id, function, type);
+            checkFunctionType(id, function, type);
+            return function;
         }
         if (expression == null) {
             Function function = forwardFunctions.computeIfAbsent(id, k -> {
@@ -190,79 +247,18 @@ public class ProgramBuilder {
                         .toList();
                 return new Function(id, type, args, nextFunctionId++, null);
             });
-            return checkFunctionType(id, function, type);
+            checkFunctionType(id, function, type);
+            return function;
         }
         throw new ParsingException("Unexpected type of expression '%s', " +
                 "expected a function but received '%s'", id, expression.getType());
     }
 
-    private Function checkFunctionType(String id, Function function, Type type) {
-        if (function.getFunctionType().equals(type)) {
-            return function;
+    private void checkFunctionType(String id, Function function, Type type) {
+        if (!function.getFunctionType().equals(type)) {
+            throw new ParsingException("Illegal call of function '%s', " +
+                    "function type doesn't match the function definition", id);
         }
-        throw new ParsingException("Illegal call of function '%s', " +
-                "function type doesn't match the function definition", id);
-    }
-
-    public ScopedPointerVariable allocateMemoryVirtual(String id, String typeId, Type type, int bytes) {
-        MemoryObject memoryObject = program.getMemory().allocateVirtual(bytes, true, null);
-        memoryObject.setName(id);
-        return new ScopedPointerVariable(id, ((ScopedPointerType) getType(typeId)).getScopeId(), type, memoryObject);
-    }
-
-    public Expression newUndefinedValue(Type type) {
-        return program.newConstant(type);
-    }
-
-    public List<ScopedPointerVariable> getVariablesWithStorageClass(String storageClass) {
-        return expressions.values().stream()
-                .filter(ScopedPointerVariable.class::isInstance)
-                .map(e -> (ScopedPointerVariable)e)
-                .filter(e -> e.getScopeId().equals(storageClass))
-                .toList();
-    }
-
-    public String getExpressionStorageClass(String name) {
-        Expression expression = getExpression(name);
-        if (expression instanceof ScopedPointer pExpr) {
-            return pExpr.getScopeId();
-        }
-        if (expression instanceof Register) {
-            // TODO: Hacky, ideally new pointer type for registers
-            return Tag.Spirv.SC_FUNCTION;
-        }
-        throw new ParsingException("Reference to undefined pointer '%s'", name);
-    }
-
-    public boolean hasInput(String id) {
-        return inputs.containsKey(id);
-    }
-
-    public Register getRegister(String id) {
-        return getCurrentFunctionOrThrowError().getRegister(id);
-    }
-
-    public Register addRegister(String id, String typeId) {
-        if (getType(typeId) instanceof ScopedPointerType) {
-            throw new ParsingException("Register cannot be a pointer");
-        }
-        return getCurrentFunctionOrThrowError().newRegister(id, getType(typeId));
-    }
-
-    public Decoration getDecoration(DecorationType type) {
-        return decorationsBuilder.getDecoration(type);
-    }
-
-    public ControlFlowBuilder getHelperControlFlow() {
-        return cfBuilder;
-    }
-
-    public Function getCurrentFunctionOrThrowError() {
-        if (currentFunction != null) {
-            return currentFunction;
-        }
-        throw new ParsingException("Attempt to reference current function " +
-                "outside of a function definition");
     }
 
     private void validateBeforeBuild() {
@@ -298,11 +294,11 @@ public class ProgramBuilder {
         throw new ParsingException("Entry point expression '%s' must be a function", entryPointId);
     }
 
-    public FunctionType getCurrentFunctionType() {
-        return getCurrentFunctionOrThrowError().getFunctionType();
-    }
-
-    public String getCurrentFunctionName() {
-        return getCurrentFunctionOrThrowError().getName();
+    private Function getCurrentFunctionOrThrowError() {
+        if (currentFunction != null) {
+            return currentFunction;
+        }
+        throw new ParsingException("Attempt to reference current function " +
+                "outside of a function definition");
     }
 }

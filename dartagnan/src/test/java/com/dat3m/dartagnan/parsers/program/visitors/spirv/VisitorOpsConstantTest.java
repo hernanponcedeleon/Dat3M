@@ -7,7 +7,7 @@ import com.dat3m.dartagnan.expression.type.AggregateType;
 import com.dat3m.dartagnan.expression.type.BooleanType;
 import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
-import com.dat3m.dartagnan.parsers.program.visitors.spirv.decorations.DecorationType;
+import com.dat3m.dartagnan.parsers.program.visitors.spirv.decorations.SpecId;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.mocks.MockProgramBuilder;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.mocks.MockSpirvParser;
 import org.junit.Test;
@@ -15,6 +15,7 @@ import org.junit.Test;
 import java.util.List;
 import java.util.Map;
 
+import static com.dat3m.dartagnan.parsers.program.visitors.spirv.decorations.DecorationType.SPEC_ID;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
@@ -22,7 +23,8 @@ public class VisitorOpsConstantTest {
 
     private static final ExpressionFactory expressions = ExpressionFactory.getInstance();
     private static final IntegerType archType = TypeFactory.getInstance().getArchType();
-    private MockProgramBuilder builder = new MockProgramBuilder();
+    private final MockProgramBuilder builder = new MockProgramBuilder();
+    private final SpecId specId = (SpecId) builder.getDecorationsBuilder().getDecoration(SPEC_ID);
 
     @Test
     public void testOpConstantBool() {
@@ -552,10 +554,9 @@ public class VisitorOpsConstantTest {
 
         BooleanType bType = builder.mockBoolType("%bool");
         builder.mockVectorType("%bool4v", "%bool", 4);
-
-        builder.getDecoration(DecorationType.SPEC_ID).addDecoration("%f1", "1");
-        builder.getDecoration(DecorationType.SPEC_ID).addDecoration("%f3", "123");
-        builder.getDecoration(DecorationType.SPEC_ID).addDecoration("%f4", "0");
+        specId.addDecoration("%f1", "1");
+        specId.addDecoration("%f3", "123");
+        specId.addDecoration("%f4", "0");
 
         // when
         Map<String, Expression> data = parseConstants(input);
@@ -588,10 +589,9 @@ public class VisitorOpsConstantTest {
 
         BooleanType bType = builder.mockBoolType("%bool");
         builder.mockVectorType("%bool4v", "%bool", 4);
-
-        builder.getDecoration(DecorationType.SPEC_ID).addDecoration("%t1", "0");
-        builder.getDecoration(DecorationType.SPEC_ID).addDecoration("%t3", "123");
-        builder.getDecoration(DecorationType.SPEC_ID).addDecoration("%t4", "1");
+        specId.addDecoration("%t1", "0");
+        specId.addDecoration("%t3", "123");
+        specId.addDecoration("%t4", "1");
 
         // when
         Map<String, Expression> data = parseConstants(input);
@@ -623,8 +623,8 @@ public class VisitorOpsConstantTest {
 
         IntegerType iType = builder.mockIntType("%int", 64);
         builder.mockVectorType("%int3v", "%int", 3);
-        builder.getDecoration(DecorationType.SPEC_ID).addDecoration("%i1", "11");
-        builder.getDecoration(DecorationType.SPEC_ID).addDecoration("%i3", "3");
+        specId.addDecoration("%i1", "11");
+        specId.addDecoration("%i3", "3");
 
         // when
         Map<String, Expression> data = parseConstants(input);
@@ -654,10 +654,9 @@ public class VisitorOpsConstantTest {
         builder.mockBoolType("%bool");
         IntegerType iType = builder.mockIntType("%int", 64);
         builder.mockAggregateType("%struct", "%bool", "%bool", "%int");
-
-        builder.getDecoration(DecorationType.SPEC_ID).addDecoration("%f", "1");
-        builder.getDecoration(DecorationType.SPEC_ID).addDecoration("%t", "0");
-        builder.getDecoration(DecorationType.SPEC_ID).addDecoration("%i", "2");
+        specId.addDecoration("%f", "1");
+        specId.addDecoration("%t", "0");
+        specId.addDecoration("%i", "2");
 
         // when
         Map<String, Expression> data = parseConstants(input);
@@ -688,7 +687,6 @@ public class VisitorOpsConstantTest {
 
         Expression zero = expressions.makeValue(0, archType);
         Expression one = expressions.makeValue(1, archType);
-        builder = new MockProgramBuilder();
         builder.addInput("%f2", zero);
         builder.addInput("%f3", one);
         builder.addInput("%f4", zero);
@@ -696,8 +694,8 @@ public class VisitorOpsConstantTest {
 
         BooleanType bType = builder.mockBoolType("%bool");
         builder.mockVectorType("%bool5v", "%bool", 5);
-        builder.getDecoration(DecorationType.SPEC_ID).addDecoration("%f4", "1");
-        builder.getDecoration(DecorationType.SPEC_ID).addDecoration("%f5", "0");
+        specId.addDecoration("%f4", "1");
+        specId.addDecoration("%f5", "0");
 
         // when
         Map<String, Expression> data = parseConstants(input);
@@ -732,7 +730,6 @@ public class VisitorOpsConstantTest {
 
         Expression zero = expressions.makeValue(0, archType);
         Expression one = expressions.makeValue(1, archType);
-        builder = new MockProgramBuilder();
         builder.addInput("%t2", one);
         builder.addInput("%t3", zero);
         builder.addInput("%t4", one);
@@ -740,8 +737,8 @@ public class VisitorOpsConstantTest {
 
         BooleanType bType = builder.mockBoolType("%bool");
         builder.mockVectorType("%bool5v", "%bool", 5);
-        builder.getDecoration(DecorationType.SPEC_ID).addDecoration("%t4", "0");
-        builder.getDecoration(DecorationType.SPEC_ID).addDecoration("%t5", "1");
+        specId.addDecoration("%t4", "0");
+        specId.addDecoration("%t5", "1");
 
         // when
         Map<String, Expression> data = parseConstants(input);
@@ -775,7 +772,6 @@ public class VisitorOpsConstantTest {
 
         Expression eleven = expressions.makeValue(11, archType);
         Expression three = expressions.makeValue(3, archType);
-        builder = new MockProgramBuilder();
         builder.addInput("%i1", eleven);
         builder.addInput("%i3", three);
 
@@ -810,7 +806,6 @@ public class VisitorOpsConstantTest {
         Expression zero = expressions.makeValue(0, archType);
         Expression one = expressions.makeValue(1, archType);
         Expression two = expressions.makeValue(2, archType);
-        builder = new MockProgramBuilder();
         builder.addInput("%f", one);
         builder.addInput("%t", zero);
         builder.addInput("%i", two);

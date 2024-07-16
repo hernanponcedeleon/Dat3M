@@ -32,7 +32,7 @@ public class MockProgramBuilder extends ProgramBuilder {
 
     public MockProgramBuilder(ThreadGrid grid) {
         super(grid);
-        cfBuilder = new MockControlFlowBuilder(expressions);
+        controlFlowBuilder = new MockControlFlowBuilder(expressions);
     }
 
     @Override
@@ -114,11 +114,13 @@ public class MockProgramBuilder extends ProgramBuilder {
     }
 
     public ScopedPointerVariable mockVariable(String id, String typeId) {
-        Type pointedType = ((ScopedPointerType)getType(typeId)).getPointedType();
+        ScopedPointerType pointerType = (ScopedPointerType)getType(typeId);
+        Type pointedType = pointerType.getPointedType();
+        String scopeId = pointerType.getScopeId();
         int bytes = typeFactory.getMemorySizeInBytes(pointedType);
         MemoryObject memoryObject = program.getMemory().allocate(bytes);
         memoryObject.setName(id);
-        ScopedPointerVariable pointer = new ScopedPointerVariable(id, ((ScopedPointerType) getType(typeId)).getScopeId(), ((ScopedPointerType)getType(typeId)).getPointedType(), memoryObject);
+        ScopedPointerVariable pointer = exprFactory.makeScopedPointerVariable(id, scopeId, pointedType, memoryObject);
         addExpression(id, pointer);
         return pointer;
     }
@@ -141,13 +143,13 @@ public class MockProgramBuilder extends ProgramBuilder {
     }
 
     public void mockLabel() {
-        cfBuilder.getOrCreateLabel("%mock_label");
-        cfBuilder.startBlock("%mock_label");
+        controlFlowBuilder.getOrCreateLabel("%mock_label");
+        controlFlowBuilder.startBlock("%mock_label");
     }
 
     public void mockLabel(String id) {
-        Label label = cfBuilder.getOrCreateLabel(id);
-        cfBuilder.startBlock(id);
+        Label label = controlFlowBuilder.getOrCreateLabel(id);
+        controlFlowBuilder.startBlock(id);
         addEvent(label);
     }
 

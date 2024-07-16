@@ -3,6 +3,7 @@ package com.dat3m.dartagnan.parsers.program.visitors.spirv;
 import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.parsers.SpirvBaseVisitor;
 import com.dat3m.dartagnan.parsers.SpirvParser;
+import com.dat3m.dartagnan.parsers.program.visitors.spirv.decorations.Decoration;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.decorations.DecorationType;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.builders.ProgramBuilder;
 
@@ -12,10 +13,12 @@ import static com.dat3m.dartagnan.parsers.program.visitors.spirv.decorations.Dec
 
 public class VisitorOpsAnnotation extends SpirvBaseVisitor<Void> {
 
-    private final ProgramBuilder builder;
+    private final Decoration builtIn;
+    private final Decoration specId;
 
     public VisitorOpsAnnotation(ProgramBuilder builder) {
-        this.builder = builder;
+        this.builtIn = builder.getDecorationsBuilder().getDecoration(BUILT_IN);
+        this.specId = builder.getDecorationsBuilder().getDecoration(SPEC_ID);
     }
 
     @Override
@@ -25,11 +28,11 @@ public class VisitorOpsAnnotation extends SpirvBaseVisitor<Void> {
         switch (type) {
             case BUILT_IN -> {
                 String value = ctx.decoration().builtIn().getText();
-                builder.getDecoration(BUILT_IN).addDecoration(id, value);
+                builtIn.addDecoration(id, value);
             }
             case SPEC_ID -> {
                 String value = ctx.decoration().specializationConstantID().getText();
-                builder.getDecoration(SPEC_ID).addDecoration(id, value);
+                specId.addDecoration(id, value);
             }
             case ARRAY_STRIDE, BINDING, BLOCK, BUFFER_BLOCK, COHERENT, DESCRIPTOR_SET, OFFSET, NO_CONTRACTION, NO_PERSPECTIVE, NON_WRITABLE -> {
                 // TODO: Implementation

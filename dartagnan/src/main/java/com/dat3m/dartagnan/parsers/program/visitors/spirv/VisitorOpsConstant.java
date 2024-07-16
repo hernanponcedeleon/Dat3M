@@ -12,7 +12,6 @@ import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.parsers.SpirvBaseVisitor;
 import com.dat3m.dartagnan.parsers.SpirvParser;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.decorations.BuiltIn;
-import com.dat3m.dartagnan.parsers.program.visitors.spirv.decorations.DecorationType;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.decorations.SpecId;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.builders.ProgramBuilder;
 import com.dat3m.dartagnan.program.Register;
@@ -23,19 +22,22 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import static com.dat3m.dartagnan.parsers.program.visitors.spirv.decorations.DecorationType.BUILT_IN;
+import static com.dat3m.dartagnan.parsers.program.visitors.spirv.decorations.DecorationType.SPEC_ID;
+
 public class VisitorOpsConstant extends SpirvBaseVisitor<Expression> {
 
     private static final ExpressionFactory expressions = ExpressionFactory.getInstance();
 
     private final Set<String> specConstants = new HashSet<>();
     private final ProgramBuilder builder;
-    private final SpecId specIdDecorator;
-    private final BuiltIn builtInDecorator;
+    private final BuiltIn builtIn;
+    private final SpecId specId;
 
     public VisitorOpsConstant(ProgramBuilder builder) {
         this.builder = builder;
-        this.specIdDecorator = (SpecId) builder.getDecoration(DecorationType.SPEC_ID);
-        this.builtInDecorator = (BuiltIn) builder.getDecoration(DecorationType.BUILT_IN);
+        this.builtIn = (BuiltIn) builder.getDecorationsBuilder().getDecoration(BUILT_IN);
+        this.specId = (SpecId) builder.getDecorationsBuilder().getDecoration(SPEC_ID);
     }
 
     @Override
@@ -88,7 +90,7 @@ public class VisitorOpsConstant extends SpirvBaseVisitor<Expression> {
                 specConstants.add(id);
                 return builder.addExpression(id, expressions.makeValue(input, iType));
             }
-            String value = specIdDecorator.getValue(id);
+            String value = specId.getValue(id);
             if (value == null) {
                 value = ctx.valueLiteralContextDependentNumber().getText();
             }
@@ -123,7 +125,7 @@ public class VisitorOpsConstant extends SpirvBaseVisitor<Expression> {
                         "from spec composite constant '%s'", elementId, id);
             }
         }
-        Expression value = builtInDecorator.getDecoration(id, type);
+        Expression value = builtIn.getDecoration(id, type);
         if (value == null) {
             value = makeConstantComposite(id, type, elementIds);
         }
@@ -157,7 +159,7 @@ public class VisitorOpsConstant extends SpirvBaseVisitor<Expression> {
         if (input != null) {
             value = input != 0;
         } else {
-            String decoration = specIdDecorator.getValue(id);
+            String decoration = specId.getValue(id);
             if (decoration != null) {
                 value = !"0".equals(decoration);
             }

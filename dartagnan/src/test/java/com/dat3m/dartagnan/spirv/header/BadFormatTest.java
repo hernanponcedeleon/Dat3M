@@ -29,7 +29,7 @@ public class BadFormatTest extends AbstractTest {
                 ; @Output: forall (%v1==7 and %v2==123 and %v3==0)
                 ; @Config: 1, 1, 1
                 """,
-                        "Duplicated definition '%v1'"},
+                        "Duplicated input definition '%v1'"},
                 {"""
                 ; @Input: %v1=7, %v2=123, %v3=0
                 ; @Output: exists (%undefined!=456)
