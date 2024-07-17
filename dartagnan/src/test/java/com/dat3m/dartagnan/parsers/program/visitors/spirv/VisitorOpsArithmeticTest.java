@@ -179,7 +179,6 @@ public class VisitorOpsArithmeticTest {
 
     private Local visit(MockProgramBuilder builder, String input) {
         builder.mockFunctionStart();
-        builder.mockLabel();
         return (Local) new MockSpirvParser(input).op().accept(new VisitorOpsArithmetic(builder));
     }
 }

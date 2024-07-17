@@ -155,6 +155,8 @@ public class ProgramBuilder {
         return memObj;
     }
 
+    // TODO: Proper implementation of pointers
+    //  where ScopedPointer uses ScopedPointerType
     public String getPointerStorageClass(String id) {
         Expression expression = getExpression(id);
         // Pointers to variables and references from OpAccessChain
@@ -162,7 +164,6 @@ public class ProgramBuilder {
             return pointer.getScopeId();
         }
         // Pointers passed via function argument registers
-        // TODO: A cleaner way?
         if (expression.getType() instanceof ScopedPointerType pointerType) {
             return pointerType.getScopeId();
         }

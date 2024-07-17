@@ -6,6 +6,7 @@ import com.dat3m.dartagnan.expression.booleans.BoolBinaryOp;
 import com.dat3m.dartagnan.expression.booleans.BoolUnaryExpr;
 import com.dat3m.dartagnan.expression.integers.IntCmpExpr;
 import com.dat3m.dartagnan.expression.integers.IntCmpOp;
+import com.dat3m.dartagnan.expression.misc.ITEExpr;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.mocks.MockProgramBuilder;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.mocks.MockSpirvParser;
 import com.dat3m.dartagnan.program.event.core.Local;
@@ -37,10 +38,10 @@ public class VisitorOpsLogicalTest {
 
         // when
         Local local = visit(builder, input);
+        BoolUnaryExpr expr = (BoolUnaryExpr) local.getExpr();
 
         // then
         assertEquals(builder.getExpression("%reg"), local.getResultRegister());
-        BoolUnaryExpr expr = (BoolUnaryExpr) local.getExpr();
         assertEquals(builder.getExpression("%value"), expr.getOperand());
         assertEquals(NOT, expr.getKind());
     }
@@ -58,10 +59,13 @@ public class VisitorOpsLogicalTest {
 
         // when
         Local local = visit(builder, input);
+        ITEExpr expr = (ITEExpr) local.getExpr();
 
         // then
         assertEquals(builder.getExpression("%reg"), local.getResultRegister());
-        assertEquals(builder.mockITE(builder.getExpression("%cond"), "%v1", "%v2"), local.getExpr());
+        assertEquals(builder.getExpression("%cond"), expr.getCondition());
+        assertEquals(builder.getExpression("%v1"), expr.getTrueCase());
+        assertEquals(builder.getExpression("%v2"), expr.getFalseCase());
     }
 
     @Test
@@ -104,10 +108,10 @@ public class VisitorOpsLogicalTest {
 
         // when
         Local local = visit(builder, input);
+        BoolBinaryExpr expr = (BoolBinaryExpr) local.getExpr();
 
         // then
         assertEquals(builder.getExpression("%reg"), local.getResultRegister());
-        BoolBinaryExpr expr = (BoolBinaryExpr) local.getExpr();
         assertEquals(builder.getExpression("%v1"), expr.getLeft());
         assertEquals(builder.getExpression("%v2"), expr.getRight());
         assertEquals(op, expr.getKind());
@@ -138,10 +142,10 @@ public class VisitorOpsLogicalTest {
 
         // when
         Local local = visit(builder, input);
+        IntCmpExpr expr = (IntCmpExpr) local.getExpr();
 
         // then
         assertEquals(builder.getExpression("%reg"), local.getResultRegister());
-        IntCmpExpr expr = (IntCmpExpr) local.getExpr();
         assertEquals(builder.getExpression("%v1"), expr.getLeft());
         assertEquals(builder.getExpression("%v2"), expr.getRight());
         assertEquals(op, expr.getKind());
@@ -273,7 +277,6 @@ public class VisitorOpsLogicalTest {
 
     private Local visit(MockProgramBuilder builder, String input) {
         builder.mockFunctionStart();
-        builder.mockLabel();
         return (Local) new MockSpirvParser(input).op().accept(new VisitorOpsLogical(builder));
     }
 }

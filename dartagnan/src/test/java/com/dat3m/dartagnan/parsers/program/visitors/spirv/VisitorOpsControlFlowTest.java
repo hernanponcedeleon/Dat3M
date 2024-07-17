@@ -30,8 +30,10 @@ public class VisitorOpsControlFlowTest {
     public void testOpPhi() {
         // given
         String input = "%phi = OpPhi %int %value1 %label1 %value2 %label2";
-        builder.mockFunctionStart();
+        builder.mockVoidType("%void");
         builder.mockIntType("%int", 64);
+        FunctionType fType = builder.mockFunctionType("%void_func", "%void");
+        builder.startFunctionDefinition("%func", fType, List.of());
 
         // when
         visit(input);
@@ -56,7 +58,10 @@ public class VisitorOpsControlFlowTest {
                 %label1 = OpLabel
                 %label2 = OpLabel
                 """;
-        builder.mockFunctionStart();
+
+        builder.mockVoidType("%void");
+        FunctionType fType = builder.mockFunctionType("%void_func", "%void");
+        builder.startFunctionDefinition("%func", fType, List.of());
 
         // when
         visit(input);
@@ -84,7 +89,10 @@ public class VisitorOpsControlFlowTest {
                 %label = OpLabel
                 OpBranch %label
                 """;
-        builder.mockFunctionStart();
+
+        builder.mockVoidType("%void");
+        FunctionType fType = builder.mockFunctionType("%void_func", "%void");
+        builder.startFunctionDefinition("%func", fType, List.of());
 
         // when
         visit(input);
@@ -107,7 +115,10 @@ public class VisitorOpsControlFlowTest {
                 %label3 = OpLabel
                 OpBranch %label2
                 """;
-        builder.mockFunctionStart();
+
+        builder.mockVoidType("%void");
+        FunctionType fType = builder.mockFunctionType("%void_func", "%void");
+        builder.startFunctionDefinition("%func", fType, List.of());
 
         // when
         visit(input);
@@ -139,9 +150,11 @@ public class VisitorOpsControlFlowTest {
                 OpReturn
                 """;
 
-        builder.mockFunctionStart();
+        builder.mockVoidType("%void");
         builder.mockBoolType("%bool");
-        builder.mockRegister("%value", "%bool");
+        FunctionType fType = builder.mockFunctionType("%void_func", "%void");
+        builder.startFunctionDefinition("%func", fType, List.of());
+        builder.mockUndefinedValue("%value", "%bool");
 
         // when
         visit(input);
@@ -187,9 +200,11 @@ public class VisitorOpsControlFlowTest {
                 OpReturn
                 """;
 
-        builder.mockFunctionStart();
+        builder.mockVoidType("%void");
         builder.mockBoolType("%bool");
-        builder.mockRegister("%value", "%bool");
+        FunctionType fType = builder.mockFunctionType("%void_func", "%void");
+        builder.startFunctionDefinition("%func", fType, List.of());
+        builder.mockUndefinedValue("%value", "%bool");
 
         // when
         visit(input);
@@ -253,9 +268,11 @@ public class VisitorOpsControlFlowTest {
                 OpReturn
                 """;
 
-        builder.mockFunctionStart();
+        builder.mockVoidType("%void");
         builder.mockBoolType("%bool");
-        builder.mockRegister("%value", "%bool");
+        FunctionType fType = builder.mockFunctionType("%void_func", "%void");
+        builder.startFunctionDefinition("%func", fType, List.of());
+        builder.mockUndefinedValue("%value", "%bool");
 
         // when
         visit(input);
@@ -320,9 +337,11 @@ public class VisitorOpsControlFlowTest {
                 OpReturn
                 """;
 
-        builder.mockFunctionStart();
+        builder.mockVoidType("%void");
         builder.mockBoolType("%bool");
-        builder.mockRegister("%value", "%bool");
+        FunctionType fType = builder.mockFunctionType("%void_func", "%void");
+        builder.startFunctionDefinition("%func", fType, List.of());
+        builder.mockUndefinedValue("%value", "%bool");
 
         try {
             // when
@@ -347,9 +366,11 @@ public class VisitorOpsControlFlowTest {
                         OpReturn
                         """;
 
-        builder.mockFunctionStart();
+        builder.mockVoidType("%void");
         builder.mockBoolType("%bool");
-        builder.mockRegister("%value", "%bool");
+        FunctionType fType = builder.mockFunctionType("%void_func", "%void");
+        builder.startFunctionDefinition("%func", fType, List.of());
+        builder.mockUndefinedValue("%value", "%bool");
 
         // when
         visit(input);
@@ -393,9 +414,11 @@ public class VisitorOpsControlFlowTest {
                 OpReturn
                 """;
 
-        builder.mockFunctionStart();
+        builder.mockVoidType("%void");
         builder.mockBoolType("%bool");
-        builder.mockRegister("%value", "%bool");
+        FunctionType fType = builder.mockFunctionType("%void_func", "%void");
+        builder.startFunctionDefinition("%func", fType, List.of());
+        builder.mockUndefinedValue("%value", "%bool");
 
         // when
         visit(input);
@@ -492,9 +515,11 @@ public class VisitorOpsControlFlowTest {
 
     private void doTestIllegalStructuredBranch(String input, String error) {
         // given
-        builder.mockFunctionStart();
+        builder.mockVoidType("%void");
         builder.mockBoolType("%bool");
-        builder.mockRegister("%value1", "%bool");
+        FunctionType fType = builder.mockFunctionType("%void_func", "%void");
+        builder.startFunctionDefinition("%func", fType, List.of());
+        builder.mockUndefinedValue("%value1", "%bool");
 
         try {
             // when
@@ -517,10 +542,13 @@ public class VisitorOpsControlFlowTest {
                 %label2 = OpLabel
                 OpReturn
                 """;
-        builder.mockFunctionStart();
+
+        builder.mockVoidType("%void");
         builder.mockBoolType("%bool");
-        builder.mockRegister("%value1", "%bool");
-        builder.mockRegister("%value2", "%bool");
+        FunctionType fType = builder.mockFunctionType("%void_func", "%void");
+        builder.startFunctionDefinition("%func", fType, List.of());
+        builder.mockUndefinedValue("%value1", "%bool");
+        builder.mockUndefinedValue("%value2", "%bool");
 
         // when
         visit(input);
@@ -562,9 +590,12 @@ public class VisitorOpsControlFlowTest {
                 %label0 = OpLabel
                 OpBranchConditional %value %label1 %label1
                 """;
-        builder.mockFunctionStart();
+
+        builder.mockVoidType("%void");
         builder.mockBoolType("%bool");
-        builder.mockRegister("%value", "%bool");
+        FunctionType fType = builder.mockFunctionType("%void_func", "%void");
+        builder.startFunctionDefinition("%func", fType, List.of());
+        builder.mockUndefinedValue("%value", "%bool");
 
         try {
             // when
@@ -584,7 +615,10 @@ public class VisitorOpsControlFlowTest {
                 OpBranch %label
                 %label = OpLabel
                 """;
-        builder.mockFunctionStart();
+
+        builder.mockVoidType("%void");
+        FunctionType fType = builder.mockFunctionType("%void_func", "%void");
+        builder.startFunctionDefinition("%func", fType, List.of());
 
         try {
             // when
@@ -602,7 +636,7 @@ public class VisitorOpsControlFlowTest {
         builder.mockVoidType("%void");
         FunctionType fType = builder.mockFunctionType("%void_func", "%void");
         builder.startFunctionDefinition("%func", fType, List.of());
-        builder.mockLabel("%label");
+        builder.addEvent(mockLabel());
 
         // when
         visit("OpReturn");
@@ -622,7 +656,7 @@ public class VisitorOpsControlFlowTest {
         builder.mockConstant("%value", "%int", 5);
         FunctionType fType = builder.mockFunctionType("%int_func", "%int");
         builder.startFunctionDefinition("%func", fType, List.of());
-        builder.mockLabel("%label");
+        builder.addEvent(mockLabel());
 
         // when
         visit("OpReturnValue %value");
@@ -642,7 +676,7 @@ public class VisitorOpsControlFlowTest {
         builder.mockConstant("%value", "%int", 5);
         FunctionType fType = builder.mockFunctionType("%int_func", "%int");
         builder.startFunctionDefinition("%func", fType, List.of());
-        builder.mockLabel("%label");
+        builder.addEvent(mockLabel());
 
         try {
             // when
@@ -663,7 +697,7 @@ public class VisitorOpsControlFlowTest {
         builder.mockConstant("%value", "%int", 5);
         FunctionType fType = builder.mockFunctionType("%void_func", "%void");
         builder.startFunctionDefinition("%func", fType, List.of());
-        builder.mockLabel("%label");
+        builder.addEvent(mockLabel());
 
         try {
             // when
@@ -673,6 +707,12 @@ public class VisitorOpsControlFlowTest {
             // then
             assertEquals("Illegal value return for a void function '%func'", e.getMessage());
         }
+    }
+
+    private Label mockLabel() {
+        Label label = cfBuilder.getOrCreateLabel("%mock_label");
+        cfBuilder.startBlock("%mock_label");
+        return label;
     }
 
     private void visit(String text) {

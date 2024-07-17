@@ -235,8 +235,8 @@ public class VisitorOpsFunctionTest {
         visit(input);
 
         // then
-        Function func = getFunction("%func");
-        Function main = getFunction("%main");
+        Function func = (Function) builder.getExpression("%func");
+        Function main = (Function) builder.getExpression("%main");
 
         ValueFunctionCall call = (ValueFunctionCall) main.getEvents().get(0);
         assertEquals(main, call.getFunction());
@@ -269,7 +269,7 @@ public class VisitorOpsFunctionTest {
         visit(input);
 
         // then
-        Function func = getFunction("%func");
+        Function func = (Function) builder.getExpression("%func");
         ValueFunctionCall call = (ValueFunctionCall) func.getEvents().get(0);
         assertEquals(func, call.getFunction());
         assertEquals(func, call.getCalledFunction());
@@ -304,8 +304,8 @@ public class VisitorOpsFunctionTest {
         visit(input);
 
         // then
-        Function main = getFunction("%main");
-        Function func = getFunction("%func");
+        Function main = (Function) builder.getExpression("%main");
+        Function func = (Function) builder.getExpression("%func");
 
         ValueFunctionCall call = (ValueFunctionCall) main.getEvents().get(0);
         assertEquals(main, call.getFunction());
@@ -439,9 +439,9 @@ public class VisitorOpsFunctionTest {
         visit(input);
 
         // then
-        Function f1 = getFunction("%f1");
-        Function f2 = getFunction("%f2");
-        Function f3 = getFunction("%f3");
+        Function f1 = (Function) builder.getExpression("%f1");
+        Function f2 = (Function) builder.getExpression("%f2");
+        Function f3 = (Function) builder.getExpression("%f3");
 
         VoidFunctionCall c11 = (VoidFunctionCall) f1.getEvents().get(0);
         ValueFunctionCall c12 = (ValueFunctionCall) f1.getEvents().get(1);
@@ -473,18 +473,13 @@ public class VisitorOpsFunctionTest {
         assertEquals(a2, c22.getArguments().get(0));
         assertEquals(a3, c23.getArguments().get(0));
 
-        assertNotNull(getFunction("%main"));
+        assertNotNull(builder.getExpression("%main"));
         assertTrue(builder.getForwardFunctions().isEmpty());
     }
 
     private void visit(String text) {
-        builder.mockLabel();
+        builder.getControlFlowBuilder().getOrCreateLabel("%mock_label");
+        builder.getControlFlowBuilder().startBlock("%mock_label");
         new MockSpirvParser(text).spv().accept(new VisitorOpsFunction(builder));
-    }
-
-    private Function getFunction(String id) {
-        Function function = (Function) builder.getExpression(id);
-        assertNotNull(function);
-        return function;
     }
 }

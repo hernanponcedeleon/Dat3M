@@ -4,7 +4,6 @@ import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.Type;
 import com.dat3m.dartagnan.expression.booleans.BoolLiteral;
-import com.dat3m.dartagnan.expression.integers.IntCmpOp;
 import com.dat3m.dartagnan.expression.integers.IntLiteral;
 import com.dat3m.dartagnan.expression.type.*;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.helpers.HelperTags;
@@ -13,8 +12,6 @@ import com.dat3m.dartagnan.parsers.program.visitors.spirv.utils.ThreadGrid;
 import com.dat3m.dartagnan.program.memory.ScopedPointerVariable;
 import com.dat3m.dartagnan.expression.type.ScopedPointerType;
 import com.dat3m.dartagnan.program.Function;
-import com.dat3m.dartagnan.program.Register;
-import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 
@@ -37,8 +34,7 @@ public class MockProgramBuilder extends ProgramBuilder {
 
     @Override
     public void setNextOps(Set<String> nextOps) {
-        // The value of nextOps is reset by the parent SpirvVisitor,
-        // so we skip it in unit tests of child visitors
+        // Do nothing in the mock
     }
 
     public VoidType mockVoidType(String id) {
@@ -53,9 +49,9 @@ public class MockProgramBuilder extends ProgramBuilder {
         return (IntegerType) addType(id, typeFactory.getIntegerType(bitWidth));
     }
 
-    public ScopedPointerType mockPtrType(String id, String pointedTypeId, String storageClass) {
+    public ScopedPointerType mockPtrType(String id, String typeId, String storageClass) {
         String storageClassTag = HelperTags.parseStorageClass(storageClass);
-        return (ScopedPointerType) addType(id, typeFactory.getScopedPointerType(storageClassTag, getType(pointedTypeId)));
+        return (ScopedPointerType) addType(id, typeFactory.getScopedPointerType(storageClassTag, getType(typeId)));
     }
 
     public ArrayType mockVectorType(String id, String innerTypeId, int size) {
@@ -113,6 +109,11 @@ public class MockProgramBuilder extends ProgramBuilder {
         throw new UnsupportedOperationException("Unsupported mock constant array element type " + elementType);
     }
 
+    public Expression mockUndefinedValue(String id, String typeId) {
+        Expression expression = makeUndefinedValue(getType(typeId));
+        return addExpression(id, expression);
+    }
+
     public ScopedPointerVariable mockVariable(String id, String typeId) {
         ScopedPointerType pointerType = (ScopedPointerType)getType(typeId);
         Type pointedType = pointerType.getPointedType();
@@ -121,53 +122,19 @@ public class MockProgramBuilder extends ProgramBuilder {
         MemoryObject memoryObject = program.getMemory().allocate(bytes);
         memoryObject.setName(id);
         ScopedPointerVariable pointer = exprFactory.makeScopedPointerVariable(id, scopeId, pointedType, memoryObject);
-        addExpression(id, pointer);
-        return pointer;
-    }
-
-    public Expression mockCondition(String left, IntCmpOp kind, String right) {
-        Expression leftExpr = getExpression(left);
-        Expression rightExpr = getExpression(right);
-        Expression cmpExpr = exprFactory.makeIntCmp(leftExpr, kind, rightExpr);
-        return exprFactory.makeBooleanCast(cmpExpr);
-    }
-
-    public Expression mockITE(Expression cond, String thenId, String elseId) {
-        Expression thenExpr = getExpression(thenId);
-        Expression elseExpr = getExpression(elseId);
-        return exprFactory.makeITE(cond, thenExpr, elseExpr);
-    }
-
-    public Register mockRegister(String id, String typeId) {
-        return (Register) addExpression(id, addRegister(id, typeId));
-    }
-
-    public void mockLabel() {
-        controlFlowBuilder.getOrCreateLabel("%mock_label");
-        controlFlowBuilder.startBlock("%mock_label");
-    }
-
-    public void mockLabel(String id) {
-        Label label = controlFlowBuilder.getOrCreateLabel(id);
-        controlFlowBuilder.startBlock(id);
-        addEvent(label);
+        return (ScopedPointerVariable) addExpression(id, pointer);
     }
 
     public void mockFunctionStart() {
         FunctionType type = typeFactory.getFunctionType(typeFactory.getVoidType(), List.of());
         startFunctionDefinition("mock_function", type, List.of());
+        Label label = controlFlowBuilder.getOrCreateLabel("%mock_label");
+        controlFlowBuilder.startBlock("%mock_label");
+        addEvent(label);
     }
 
     public Function getCurrentFunction() {
         return currentFunction;
-    }
-
-    public Event getLastEvent() {
-        List<Event> events = currentFunction.getEvents();
-        if (!events.isEmpty()) {
-            return events.get(events.size() - 1);
-        }
-        return null;
     }
 
     public Map<String, Type> getTypes() {

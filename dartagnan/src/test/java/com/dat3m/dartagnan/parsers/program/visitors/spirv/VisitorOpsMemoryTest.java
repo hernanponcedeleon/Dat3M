@@ -12,6 +12,7 @@ import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.parsers.SpirvParser;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.mocks.MockProgramBuilder;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.mocks.MockSpirvParser;
+import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.memory.ScopedPointer;
 import com.dat3m.dartagnan.program.memory.ScopedPointerVariable;
 import com.dat3m.dartagnan.program.Register;
@@ -44,7 +45,7 @@ public class VisitorOpsMemoryTest {
         parse(input);
 
         // then
-        Load load = (Load) builder.getLastEvent();
+        Load load = (Load) getLastEvent();
         assertNotNull(load);
         assertEquals(pointer, load.getAddress());
         assertEquals(iType, load.getAccessType());
@@ -69,7 +70,7 @@ public class VisitorOpsMemoryTest {
         parse(input);
 
         // then
-        Load load = (Load) builder.getLastEvent();
+        Load load = (Load) getLastEvent();
         assertNotNull(load);
         assertEquals(pointer, load.getAddress());
         assertEquals(iType, load.getAccessType());
@@ -115,7 +116,7 @@ public class VisitorOpsMemoryTest {
         parse(input);
 
         // then
-        Store store = (Store) builder.getLastEvent();
+        Store store = (Store) getLastEvent();
         assertNotNull(store);
         assertEquals(pointer, store.getAddress());
         assertEquals(iType, store.getAccessType());
@@ -138,7 +139,7 @@ public class VisitorOpsMemoryTest {
         parse(input);
 
         // then
-        Store store = (Store) builder.getLastEvent();
+        Store store = (Store) getLastEvent();
         assertNotNull(store);
         assertEquals(pointer, store.getAddress());
         assertEquals(iType, store.getAccessType());
@@ -757,8 +758,7 @@ public class VisitorOpsMemoryTest {
 
         // when
         builder.mockFunctionStart();
-        builder.mockLabel();
-        Register register = builder.mockRegister("%register", "%int");
+        Register register = (Register) builder.addExpression("%register", builder.addRegister("%register", "%int"));
         new MockSpirvParser(input).spv().accept(new VisitorOpsMemory(builder));
 
         // then
@@ -789,8 +789,7 @@ public class VisitorOpsMemoryTest {
 
         builder.addExpression("%const", arr);
         builder.mockFunctionStart();
-        builder.mockLabel();
-        builder.mockRegister("%register", "%int32");
+        builder.addExpression("%register", builder.addRegister("%register", "%int32"));
         VisitorOpsMemory visitor = new VisitorOpsMemory(builder);
         SpirvParser.SpvContext ctx = new MockSpirvParser(input).spv();
 
@@ -906,9 +905,16 @@ public class VisitorOpsMemoryTest {
         return expressions.makeMul(expressions.makeValue(stepSize, archType), stepCastExpr);
     }
 
+    private Event getLastEvent() {
+        List<Event> events = builder.getCurrentFunction().getEvents();
+        if (!events.isEmpty()) {
+            return events.get(events.size() - 1);
+        }
+        return null;
+    }
+
     private void parse(String input) {
         builder.mockFunctionStart();
-        builder.mockLabel();
         new MockSpirvParser(input).spv().accept(new VisitorOpsMemory(builder));
     }
 }
