@@ -725,25 +725,7 @@ public class WmmEncoder implements Encoder {
             }
         }
         RelationAnalysis ra = context.getAnalysisContext().get(RelationAnalysis.class);
-        RelationAnalysis.Propagator p = ra.new Propagator();
-        for (Relation r : context.getTask().getMemoryModel().getRelations()) {
-            EventGraph may = new EventGraph();
-            EventGraph must = new EventGraph();
-            if (r.getDependencies().isEmpty()) {
-                continue;
-            }
-            for (Relation c : r.getDependencies()) {
-                p.setSource(c);
-                p.setMay(ra.getKnowledge(p.getSource()).getMaySet());
-                p.setMust(ra.getKnowledge(p.getSource()).getMustSet());
-                RelationAnalysis.Delta s = r.getDefinition().accept(p);
-                may.addAll(s.may);
-                must.addAll(s.must);
-            }
-            may.removeAll(ra.getKnowledge(r).getMaySet());
-            EventGraph must2 = difference(ra.getKnowledge(r).getMustSet(), must);
-            queue.computeIfAbsent(r, k -> new ArrayList<>()).add(EventGraph.union(may, must2));
-        }
+        ra.populateQueue(queue, context.getTask().getMemoryModel().getRelations());
         while (!queue.isEmpty()) {
             Relation r = queue.keySet().iterator().next();
             logger.trace("Update encode set of '{}'", r);
