@@ -54,10 +54,8 @@ public class OptionNames {
     public static final String MERGE_BRANCHES = "program.analysis.cf.mergeBranches";
 
     // Memory Model Options
-    public static final String ENABLE_RELATION_ANALYSIS = "wmm.analysis.relationAnalysis";
-    public static final String ENABLE_MUST_SETS = "wmm.analysis.mustSets";
+    public static final String RELATION_ANALYSIS = "wmm.analysis.relationAnalysis";
     public static final String ENABLE_EXTENDED_RELATION_ANALYSIS = "wmm.analysis.extendedRelationAnalysis";
-    public static final String RELATION_METHOD = "wmm.analysis.relation";
 
     // Refinement Options
     public static final String BASELINE = "refinement.baseline";

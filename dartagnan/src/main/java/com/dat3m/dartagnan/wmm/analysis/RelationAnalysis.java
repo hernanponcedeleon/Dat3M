@@ -46,22 +46,18 @@ public interface RelationAnalysis {
         logger.info("Selected relation analysis: {}", c.method);
 
         RelationAnalysis a = switch (c.method) {
+            case NONE -> EmptyRelationAnalysis.fromConfig(task, context, config);
             case NATIVE -> NativeRelationAnalysis.fromConfig(task, context, config);
         };
         task.getConfig().inject(a);
 
         final StringBuilder configSummary = new StringBuilder().append("\n");
-        configSummary.append("\t").append(ENABLE_RELATION_ANALYSIS).append(": ").append(c.enable).append("\n");
-        configSummary.append("\t").append(ENABLE_MUST_SETS).append(": ").append(c.enableMustSets).append("\n");
+        configSummary.append("\t").append(RELATION_ANALYSIS).append(": ").append(c.method).append("\n");
         configSummary.append("\t").append(ENABLE_EXTENDED_RELATION_ANALYSIS).append(": ").append(c.enableExtended);
         logger.info(configSummary);
 
-        if (c.enableMustSets && !c.enable) {
-            logger.warn("{} implies {}", ENABLE_MUST_SETS, ENABLE_RELATION_ANALYSIS);
-            c.enableMustSets = false;
-        }
-        if (c.enableExtended && !c.enable) {
-            logger.warn("{} implies {}", ENABLE_EXTENDED_RELATION_ANALYSIS, ENABLE_RELATION_ANALYSIS);
+        if (c.enableExtended && c.method == RelationMethod.NONE) {
+            logger.warn("{} implies {}", ENABLE_EXTENDED_RELATION_ANALYSIS, RELATION_ANALYSIS);
             c.enableExtended = false;
         }
 
@@ -95,19 +91,10 @@ public interface RelationAnalysis {
 
     @Options
     final class Config {
-        @Option(name = RELATION_METHOD,
-                description = "Relation analysis engine.")
+        @Option(name = RELATION_ANALYSIS,
+                description = "Relation analysis engine.",
+                secure = true)
         private RelationMethod method = RelationMethod.getDefault();
-
-        @Option(name = ENABLE_RELATION_ANALYSIS,
-                description = "Derived relations of the memory model ",
-                secure = true)
-        private boolean enable = true;
-
-        @Option(name = ENABLE_MUST_SETS,
-                description = "Tracks relationships of the memory model, which exist in all execution that execute the two participating events.",
-                secure = true)
-        private boolean enableMustSets = true;
 
         @Option(name = ENABLE_EXTENDED_RELATION_ANALYSIS,
                 description = "Marks relationships as trivially false, if they alone would violate a consistency property of the target memory model.",

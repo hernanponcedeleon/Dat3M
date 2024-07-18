@@ -21,7 +21,10 @@ import com.dat3m.dartagnan.verification.Context;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.witness.graphml.WitnessGraph;
 import com.dat3m.dartagnan.wmm.*;
-import com.dat3m.dartagnan.wmm.axiom.*;
+import com.dat3m.dartagnan.wmm.axiom.Acyclicity;
+import com.dat3m.dartagnan.wmm.axiom.Axiom;
+import com.dat3m.dartagnan.wmm.axiom.Emptiness;
+import com.dat3m.dartagnan.wmm.axiom.Irreflexivity;
 import com.dat3m.dartagnan.wmm.definition.*;
 import com.dat3m.dartagnan.wmm.utils.EventGraph;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
@@ -29,15 +32,11 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
-import org.sosy_lab.common.configuration.Option;
-import org.sosy_lab.common.configuration.Options;
 
 import java.util.*;
-import java.util.function.Predicate;
 import java.util.stream.Stream;
 
 import static com.dat3m.dartagnan.configuration.Arch.RISCV;
-import static com.dat3m.dartagnan.configuration.OptionNames.*;
 import static com.dat3m.dartagnan.program.Register.UsageType.*;
 import static com.dat3m.dartagnan.program.event.Tag.*;
 import static com.dat3m.dartagnan.wmm.utils.EventGraph.difference;
@@ -50,31 +49,20 @@ import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
 import static java.util.stream.IntStream.iterate;
 
-@Options
 public class NativeRelationAnalysis implements RelationAnalysis {
 
     private static final Logger logger = LogManager.getLogger(NativeRelationAnalysis.class);
 
-    private final VerificationTask task;
-    private final Context analysisContext;
-    private final ExecutionAnalysis exec;
-    private final AliasAnalysis alias;
-    private final Dependency dep;
-    private final WmmAnalysis wmmAnalysis;
-    private final Map<Relation, Knowledge> knowledgeMap = new HashMap<>();
-    private final EventGraph mutex = new EventGraph();
+    protected final VerificationTask task;
+    protected final Context analysisContext;
+    protected final ExecutionAnalysis exec;
+    protected final AliasAnalysis alias;
+    protected final Dependency dep;
+    protected final WmmAnalysis wmmAnalysis;
+    protected final Map<Relation, Knowledge> knowledgeMap = new HashMap<>();
+    protected final EventGraph mutex = new EventGraph();
 
-    @Option(name = ENABLE_RELATION_ANALYSIS,
-            description = "Derived relations of the memory model ",
-            secure = true)
-    private boolean enable = true;
-
-    @Option(name = ENABLE_MUST_SETS,
-            description = "Tracks relationships of the memory model, which exist in all execution that execute the two participating events.",
-            secure = true)
-    private boolean enableMustSets = true;
-
-    private NativeRelationAnalysis(VerificationTask t, Context context, Configuration config) {
+    protected NativeRelationAnalysis(VerificationTask t, Context context, Configuration config) {
         task = checkNotNull(t);
         analysisContext = context;
         exec = context.requires(ExecutionAnalysis.class);
@@ -137,7 +125,7 @@ public class NativeRelationAnalysis implements RelationAnalysis {
 
     @Override
     public EventGraph findTransitivelyImpliedCo(Relation co) {
-        final NativeRelationAnalysis.Knowledge k = getKnowledge(co);
+        final Knowledge k = getKnowledge(co);
         EventGraph transCo = new EventGraph();
         Map<Event, Set<Event>> mustIn = k.getMustSet().getInMap();
         Map<Event, Set<Event>> mustOut = k.getMustSet().getOutMap();
@@ -168,13 +156,10 @@ public class NativeRelationAnalysis implements RelationAnalysis {
             }
         }
         // ------------------------------------------------
-        final Initializer initializer = new Initializer();
+        final Initializer initializer = getInitializer();
         final Map<Relation, List<Delta>> qGlobal = new HashMap<>();
         for (Relation r : memoryModel.getRelations()) {
             Knowledge k = r.getDefinition().accept(initializer);
-            if (!enableMustSets) {
-                k = new Knowledge(k.getMaySet(), EventGraph.empty());
-            }
             knowledgeMap.put(r, k);
             if (!k.getMaySet().isEmpty() || !k.getMustSet().isEmpty()) {
                 qGlobal.computeIfAbsent(r, x -> new ArrayList<>(1))
@@ -183,69 +168,69 @@ public class NativeRelationAnalysis implements RelationAnalysis {
         }
         // ------------------------------------------------
         final Propagator propagator = new Propagator();
-        for (Set<DependencyGraph<Relation>.Node> scc : DependencyGraph.from(memoryModel.getRelations()).getSCCs()) {
-            logger.trace("Regular analysis for component {}", scc);
-            Set<Relation> stratum = scc.stream().map(DependencyGraph.Node::getContent).collect(toSet());
-            if (!enable && stratum.stream().noneMatch(Relation::isInternal)) {
-                continue;
-            }
-            // the algorithm has deterministic order, only if all components are deterministically-ordered
-            Map<Relation, List<Delta>> qLocal = new LinkedHashMap<>();
-            // move from global queue
-            for (Relation r : stratum) {
-                List<Delta> d = qGlobal.remove(r);
-                if (d != null) {
-                    qLocal.put(r, d);
-                }
-            }
-            // repeat until convergence
-            while (!qLocal.isEmpty()) {
-                Relation relation = qLocal.keySet().iterator().next();
-                logger.trace("Regular knowledge update for '{}'", relation);
+        DependencyGraph.from(memoryModel.getRelations()).getSCCs().forEach(scc -> processSCC(propagator, scc, qGlobal, dependents));
+        checkAfterRun(qGlobal);
+        logger.trace("End");
+    }
 
-                //  A fix for https://github.com/hernanponcedeleon/Dat3M/issues/523
-                //  In our current propagation approach, whenever a relation r gets updated,
-                //  we compute for each dependent relation "r' = r op x" an update U(r, x, r') that needs to get applied.
-                //  When r' gets processed, the update U(r, x, r') is applied as is to r'.
-                //  However, depending on whether x is before or after r in the stratification, the computed update
-                //  may be different. In particular, we compute updates to r' before all its dependencies were computed
-                //  and thus our computation does not strictly follow the stratification.
-                //  This does not matter if the update function U(r, x, r') is monotonic in r/x but if it is not,
-                //  an early computed update may be too large!
-                //  We fix this problem by reducing the potentially too large update U(r, x, r') before applying it to r'.
-                // TODO: The necessity of the fix suggests that our propagation algorithm is flawed.
-                //  We should reconsider our algorithm.
-                Delta toAdd = Delta.combine(qLocal.remove(relation));
-                if (relation.getDefinition() instanceof Difference difference) {
-                    // Our propagated update may be "too large" so we reduce it.
-                    Knowledge k = knowledgeMap.get(difference.getSubtrahend());
-                    toAdd.may.removeAll(k.getMustSet());
-                    toAdd.must.removeAll(k.getMaySet());
-                }
+    protected void checkAfterRun(Map<Relation, List<Delta>> qGlobal) {
+        verify(qGlobal.isEmpty(), "knowledge buildup propagated downwards");
+    }
 
-                Delta delta = joinSet(knowledgeMap.get(relation), List.of(toAdd));
-                if (delta.may.isEmpty() && delta.must.isEmpty()) {
-                    continue;
-                }
-
-                propagator.setSource(relation);
-                propagator.setMay(delta.may);
-                propagator.setMust(delta.must);
-                for (Definition c : dependents.getOrDefault(relation, List.of())) {
-                    logger.trace("Regular propagation from '{}' to '{}'", relation, c);
-                    Relation r = c.getDefinedRelation();
-                    Delta d = c.accept(propagator);
-                    verify(enableMustSets || d.must.isEmpty(),
-                            "although disabled, computed a non-empty must set for relation %s", r);
-                    (stratum.contains(r) ? qLocal : qGlobal)
-                            .computeIfAbsent(r, k -> new ArrayList<>())
-                            .add(d);
-                }
+    protected void processSCC(Propagator propagator, Set<DependencyGraph<Relation>.Node> scc, Map<Relation, List<Delta>> qGlobal, Map<Relation, List<Definition>> dependents) {
+        logger.trace("Regular analysis for component {}", scc);
+        Set<Relation> stratum = scc.stream().map(DependencyGraph.Node::getContent).collect(toSet());
+        // the algorithm has deterministic order, only if all components are deterministically-ordered
+        Map<Relation, List<Delta>> qLocal = new LinkedHashMap<>();
+        // move from global queue
+        for (Relation r : stratum) {
+            List<Delta> d = qGlobal.remove(r);
+            if (d != null) {
+                qLocal.put(r, d);
             }
         }
-        verify(!enable || qGlobal.isEmpty(), "knowledge buildup propagated downwards");
-        verify(enableMustSets || knowledgeMap.values().stream().map(Knowledge::getMustSet).allMatch(EventGraph::isEmpty));
-        logger.trace("End");
+        // repeat until convergence
+        while (!qLocal.isEmpty()) {
+            Relation relation = qLocal.keySet().iterator().next();
+            logger.trace("Regular knowledge update for '{}'", relation);
+
+            //  A fix for https://github.com/hernanponcedeleon/Dat3M/issues/523
+            //  In our current propagation approach, whenever a relation r gets updated,
+            //  we compute for each dependent relation "r' = r op x" an update U(r, x, r') that needs to get applied.
+            //  When r' gets processed, the update U(r, x, r') is applied as is to r'.
+            //  However, depending on whether x is before or after r in the stratification, the computed update
+            //  may be different. In particular, we compute updates to r' before all its dependencies were computed
+            //  and thus our computation does not strictly follow the stratification.
+            //  This does not matter if the update function U(r, x, r') is monotonic in r/x but if it is not,
+            //  an early computed update may be too large!
+            //  We fix this problem by reducing the potentially too large update U(r, x, r') before applying it to r'.
+            // TODO: The necessity of the fix suggests that our propagation algorithm is flawed.
+            //  We should reconsider our algorithm.
+            Delta toAdd = Delta.combine(qLocal.remove(relation));
+            if (relation.getDefinition() instanceof Difference difference) {
+                // Our propagated update may be "too large" so we reduce it.
+                Knowledge k = knowledgeMap.get(difference.getSubtrahend());
+                toAdd.may.removeAll(k.getMustSet());
+                toAdd.must.removeAll(k.getMaySet());
+            }
+
+            Delta delta = joinSet(knowledgeMap.get(relation), List.of(toAdd));
+            if (delta.may.isEmpty() && delta.must.isEmpty()) {
+                continue;
+            }
+
+            propagator.setSource(relation);
+            propagator.setMay(delta.may);
+            propagator.setMust(delta.must);
+            for (Definition c : dependents.getOrDefault(relation, List.of())) {
+                logger.trace("Regular propagation from '{}' to '{}'", relation, c);
+                Relation r = c.getDefinedRelation();
+                Delta d = c.accept(propagator);
+                (stratum.contains(r) ? qLocal : qGlobal)
+                        .computeIfAbsent(r, k -> new ArrayList<>())
+                        .add(d);
+            }
+        }
     }
 
     @Override
@@ -295,8 +280,11 @@ public class NativeRelationAnalysis implements RelationAnalysis {
                 }
             }
         }
-        verify(enableMustSets || knowledgeMap.values().stream().map(Knowledge::getMustSet).allMatch(EventGraph::isEmpty));
         logger.trace("End");
+    }
+
+    protected Initializer getInitializer() {
+        return new Initializer();
     }
 
     private static Delta joinSet(Knowledge k, List<Delta> l) {
@@ -333,11 +321,11 @@ public class NativeRelationAnalysis implements RelationAnalysis {
     }
 
     private static final class InitialKnowledgeCloser implements Constraint.Visitor<Map<Relation, ExtendedDelta>> {
-        private final Map<Relation, RelationAnalysis.Knowledge> knowledgeMap;
+        private final Map<Relation, Knowledge> knowledgeMap;
         private final Context analysisContext;
 
         public InitialKnowledgeCloser(
-                Map<Relation, RelationAnalysis.Knowledge> knowledgeMap,
+                Map<Relation, Knowledge> knowledgeMap,
                 Context analysisContext) {
             this.knowledgeMap = knowledgeMap;
             this.analysisContext = analysisContext;
@@ -357,7 +345,7 @@ public class NativeRelationAnalysis implements RelationAnalysis {
         @Override
         public Map<Relation, ExtendedDelta> visitIrreflexivity(Irreflexivity axiom) {
             Relation rel = axiom.getRelation();
-            RelationAnalysis.Knowledge k = knowledgeMap.get(rel);
+            Knowledge k = knowledgeMap.get(rel);
             EventGraph d = k.getMaySet().filter(Tuple::isLoop);
             return Map.of(rel, new ExtendedDelta(d, EventGraph.empty()));
         }
@@ -367,7 +355,7 @@ public class NativeRelationAnalysis implements RelationAnalysis {
             long t0 = System.currentTimeMillis();
             Relation rel = axiom.getRelation();
             ExecutionAnalysis exec = analysisContext.get(ExecutionAnalysis.class);
-            RelationAnalysis.Knowledge knowledge = knowledgeMap.get(rel);
+            Knowledge knowledge = knowledgeMap.get(rel);
             EventGraph may = knowledge.getMaySet();
             EventGraph must = knowledge.getMustSet();
             EventGraph newDisabled = new EventGraph();
@@ -395,7 +383,7 @@ public class NativeRelationAnalysis implements RelationAnalysis {
         @Override
         public Map<Relation, ExtendedDelta> visitAssumption(Assumption assume) {
             Relation rel = assume.getRelation();
-            RelationAnalysis.Knowledge k = knowledgeMap.get(rel);
+            Knowledge k = knowledgeMap.get(rel);
             EventGraph d = difference(k.getMaySet(), assume.getMaySet());
             EventGraph e = difference(assume.getMustSet(), k.getMustSet());
             if (d.size() + e.size() != 0) {
@@ -409,14 +397,14 @@ public class NativeRelationAnalysis implements RelationAnalysis {
         private final Relation changed;
         private final EventGraph disabled;
         private final EventGraph enabled;
-        private final Map<Relation, RelationAnalysis.Knowledge> knowledgeMap;
+        private final Map<Relation, Knowledge> knowledgeMap;
         private final Context analysisContext;
 
         public IncrementalKnowledgeCloser(
                 Relation changed,
                 EventGraph disabled,
                 EventGraph enabled,
-                Map<Relation, RelationAnalysis.Knowledge> knowledgeMap,
+                Map<Relation, Knowledge> knowledgeMap,
                 Context analysisContext) {
             this.changed = changed;
             this.disabled = disabled;
@@ -437,7 +425,7 @@ public class NativeRelationAnalysis implements RelationAnalysis {
                     "misdirected knowledge propagation from relation %s to %s", changed, this);
             long t0 = System.currentTimeMillis();
             ExecutionAnalysis exec = analysisContext.get(ExecutionAnalysis.class);
-            RelationAnalysis.Knowledge knowledge = knowledgeMap.get(rel);
+            Knowledge knowledge = knowledgeMap.get(rel);
             EventGraph may = knowledge.getMaySet();
             EventGraph newDisabled = new EventGraph();
             enabled.filter((e1, e2) -> may.contains(e2, e1)).apply((e1, e2) -> newDisabled.add(e2, e1));
@@ -473,26 +461,13 @@ public class NativeRelationAnalysis implements RelationAnalysis {
         }
     }
 
-    private final class Initializer implements Definition.Visitor<Knowledge> {
+    protected class Initializer implements Definition.Visitor<Knowledge> {
         final Program program = task.getProgram();
         final WitnessGraph witness = task.getWitness();
-        final Knowledge defaultKnowledge;
-
-        Initializer() {
-            if (enable) {
-                defaultKnowledge = null;
-                return;
-            }
-            EventGraph may = new EventGraph();
-            Set<Event> events = program.getThreadEvents().stream().filter(e -> e.hasTag(VISIBLE)).collect(toSet());
-            events.forEach(x -> may.addRange(x, events));
-            defaultKnowledge = new Knowledge(may, EventGraph.empty());
-        }
 
         @Override
         public Knowledge visitDefinition(Definition def) {
-            return defaultKnowledge != null && !def.getDefinedRelation().isInternal() ? defaultKnowledge
-                    : new Knowledge(new EventGraph(), new EventGraph());
+            return new Knowledge(new EventGraph(), new EventGraph());
         }
 
         @Override
@@ -1452,7 +1427,7 @@ public class NativeRelationAnalysis implements RelationAnalysis {
         return addr1.getGenericAddress() == addr2.getGenericAddress();
     }
 
-    private static final class Delta {
+    protected static final class Delta {
         public static final Delta EMPTY = new Delta(EventGraph.empty(), EventGraph.empty());
 
         public final EventGraph may;
@@ -1488,7 +1463,7 @@ public class NativeRelationAnalysis implements RelationAnalysis {
         }
     }
 
-    private final class Propagator implements Definition.Visitor<Delta> {
+    protected final class Propagator implements Definition.Visitor<Delta> {
         private Relation source;
         private EventGraph may;
         private EventGraph must;

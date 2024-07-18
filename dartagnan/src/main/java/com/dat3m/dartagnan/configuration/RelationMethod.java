@@ -3,7 +3,7 @@ package com.dat3m.dartagnan.configuration;
 import java.util.Arrays;
 
 public enum RelationMethod implements OptionInterface {
-	NATIVE;
+	NONE, NATIVE;
 
 	public static RelationMethod getDefault() {
 		return NATIVE;
@@ -11,7 +11,7 @@ public enum RelationMethod implements OptionInterface {
 	
 	// Used to decide the order shown by the selector in the UI
 	public static RelationMethod[] orderedValues() {
-		RelationMethod[] order = { NATIVE };
+		RelationMethod[] order = { NONE, NATIVE };
 		// Be sure no element is missing
 		assert(Arrays.asList(order).containsAll(Arrays.asList(values())));
 		return order;
