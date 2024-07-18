@@ -5,7 +5,6 @@ import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.Type;
 import com.dat3m.dartagnan.expression.integers.IntLiteral;
-import com.dat3m.dartagnan.expression.misc.ConstructExpr;
 import com.dat3m.dartagnan.expression.type.*;
 import com.dat3m.dartagnan.parsers.SpirvBaseVisitor;
 import com.dat3m.dartagnan.parsers.SpirvParser;
@@ -103,8 +102,8 @@ public class VisitorOpsMemory extends SpirvBaseVisitor<Event> {
             }
             int size = types.getMemorySizeInBytes(type);
             MemoryObject memObj = builder.allocateVariable(id, size);
+            memObj.setInitialValue(0, value);
             ScopedPointerVariable pointer = expressions.makeScopedPointerVariable(id, pointerType.getScopeId(), type, memObj);
-            setInitialValue(pointer, 0, value);
             validateVariableStorageClass(pointer, ctx.storageClass().getText());
             builder.addExpression(id, pointer);
             return null;
@@ -132,31 +131,6 @@ public class VisitorOpsMemory extends SpirvBaseVisitor<Event> {
             return builder.getExpression(ctx.initializer().getText());
         }
         return null;
-    }
-
-    private void setInitialValue(ScopedPointerVariable pointer, int offset, Expression value) {
-        if (value.getType() instanceof ArrayType aType) {
-            ConstructExpr cValue = (ConstructExpr) value;
-            List<Expression> elements = cValue.getOperands();
-            int step = types.getMemorySizeInBytes(aType.getElementType());
-            for (int i = 0; i < elements.size(); i++) {
-                setInitialValue(pointer, offset + i * step, elements.get(i));
-            }
-        } else if (value.getType() instanceof AggregateType) {
-            ConstructExpr cValue = (ConstructExpr) value;
-            final List<Expression> elements = cValue.getOperands();
-            int currentOffset = offset;
-            for (Expression element : elements) {
-                setInitialValue(pointer, currentOffset, element);
-                currentOffset += types.getMemorySizeInBytes(element.getType());
-            }
-        } else if (value.getType() instanceof IntegerType) {
-            pointer.setInitialValue(offset, value);
-        } else if (value.getType() instanceof BooleanType) {
-            pointer.setInitialValue(offset, value);
-        } else {
-            throw new ParsingException("Illegal variable value type '%s'", value.getType());
-        }
     }
 
     private void validateVariableStorageClass(ScopedPointerVariable pointer, String classToken) {

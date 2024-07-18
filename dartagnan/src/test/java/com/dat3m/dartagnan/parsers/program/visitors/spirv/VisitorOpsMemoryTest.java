@@ -297,10 +297,10 @@ public class VisitorOpsMemoryTest {
         assertEquals(types.getMemorySizeInBytes(builder.getType("%struct")), v4.getAddress().size());
         List<Expression> structElements = o4.getOperands();
         assertEquals(structElements.get(0), v4.getAddress().getInitialValue(0));
-        assertEquals(structElements.get(1), v4.getAddress().getInitialValue(1));
-        assertEquals(arrElements.get(0), v4.getAddress().getInitialValue(5));
-        assertEquals(arrElements.get(1), v4.getAddress().getInitialValue(9));
-        assertEquals(arrElements.get(2), v4.getAddress().getInitialValue(13));
+        assertEquals(structElements.get(1), v4.getAddress().getInitialValue(4));
+        assertEquals(arrElements.get(0), v4.getAddress().getInitialValue(8));
+        assertEquals(arrElements.get(1), v4.getAddress().getInitialValue(12));
+        assertEquals(arrElements.get(2), v4.getAddress().getInitialValue(16));
     }
 
     @Test

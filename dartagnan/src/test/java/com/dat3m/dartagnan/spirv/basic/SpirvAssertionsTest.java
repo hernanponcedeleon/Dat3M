@@ -69,6 +69,7 @@ public class SpirvAssertionsTest {
                 {"array-of-vector.spv.dis", 1, PASS},
                 {"array-of-vector1.spv.dis", 1, PASS},
                 {"vector-read-write.spv.dis", 1, PASS},
+                {"mixed-size.spv.dis", 1, PASS},
                 {"ids.spv.dis", 1, PASS},
                 {"builtin-constant.spv.dis", 1, PASS},
                 {"builtin-variable.spv.dis", 1, PASS},

@@ -5,8 +5,11 @@ import com.dat3m.dartagnan.expression.ExpressionKind;
 import com.dat3m.dartagnan.expression.ExpressionVisitor;
 import com.dat3m.dartagnan.expression.Type;
 import com.dat3m.dartagnan.expression.base.LeafExpressionBase;
+import com.dat3m.dartagnan.expression.misc.ConstructExpr;
+import com.dat3m.dartagnan.expression.type.*;
 import com.dat3m.dartagnan.program.event.core.Alloc;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
@@ -18,6 +21,8 @@ import static com.google.common.base.Preconditions.checkState;
  * Associated with an array of memory locations.
  */
 public class MemoryObject extends LeafExpressionBase<Type> {
+
+    private final TypeFactory types = TypeFactory.getInstance();
 
     // TODO: (TH) I think <id> is mostly useless.
     //  Its only benefit is that we can have different memory objects with the same name (but why would we?)
@@ -77,8 +82,29 @@ public class MemoryObject extends LeafExpressionBase<Type> {
      * @param value  New value to be read at the start of each execution.
      */
     public void setInitialValue(int offset, Expression value) {
-        checkArgument(offset >= 0 && offset < size, "array index out of bounds");
-        initialValues.put(offset, value);
+        if (value.getType() instanceof ArrayType arrayType) {
+            checkArgument(value instanceof ConstructExpr);
+            final ConstructExpr constArray = (ConstructExpr) value;
+            final List<Expression> arrayElements = constArray.getOperands();
+            for (int i = 0; i < arrayElements.size(); i++) {
+                final int innerOffset = types.getOffsetInBytes(arrayType, i);
+                setInitialValue(offset + innerOffset, arrayElements.get(i));
+            }
+        } else if (value.getType() instanceof AggregateType aggregateType) {
+            checkArgument(value instanceof ConstructExpr);
+            final ConstructExpr constStruct = (ConstructExpr) value;
+            final List<Expression> structElements = constStruct.getOperands();
+            for (int i = 0; i < structElements.size(); i++) {
+                int innerOffset = types.getOffsetInBytes(aggregateType, i);
+                setInitialValue(offset + innerOffset, structElements.get(i));
+            }
+        } else if (value.getType() instanceof IntegerType
+                || value.getType() instanceof BooleanType) {
+            checkArgument(offset >= 0 && offset < size, "array index out of bounds");
+            initialValues.put(offset, value);
+        } else {
+            throw new UnsupportedOperationException("Unrecognized constant value: " + value);
+        }
     }
 
     @Override

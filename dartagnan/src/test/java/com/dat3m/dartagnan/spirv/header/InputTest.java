@@ -66,8 +66,8 @@ public class InputTest extends AbstractTest {
         check(memory.get("%v6"), 16, 33);
 
         check(memory.get("%v7"), 0, 41);
-        check(memory.get("%v7"), 2, 42);
-        check(memory.get("%v7"), 6, 43);
+        check(memory.get("%v7"), 4, 42);
+        check(memory.get("%v7"), 8, 43);
 
         check(memory.get("%v8"), 0, 51);
     }

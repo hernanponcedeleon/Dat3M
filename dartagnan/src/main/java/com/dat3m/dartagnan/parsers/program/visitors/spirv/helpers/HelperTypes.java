@@ -90,7 +90,7 @@ public class HelperTypes {
         if (index >= 0) {
             if (type.getNumElements() < 0 || index < type.getNumElements()) {
                 Type elType = type.getElementType();
-                offset += types.getMemorySizeInBytes(elType) * index;
+                offset += types.getOffsetInBytes(type, index);
                 return getMemberOffset(id, offset, elType, indexes.subList(1, indexes.size()));
             }
             throw new ParsingException(indexOutOfBoundsError(id));
@@ -102,9 +102,7 @@ public class HelperTypes {
         int index = indexes.get(0);
         if (index >= 0) {
             if (index < type.getDirectFields().size()) {
-                for (int i = 0; i < index; i++) {
-                    offset += types.getMemorySizeInBytes(type.getDirectFields().get(i));
-                }
+                offset += types.getOffsetInBytes(type, index);
                 Type elType = type.getDirectFields().get(index);
                 return getMemberOffset(id, offset, elType, indexes.subList(1, indexes.size()));
             }
