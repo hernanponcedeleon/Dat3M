@@ -157,32 +157,32 @@ public final class TypeFactory {
         throw new UnsupportedOperationException("Cannot compute if type '" + type + "' is static");
     }
 
-    public static boolean isStaticTypeOf(Type staticType, Type genericType) {
-        if (staticType.equals(genericType)) {
+    public static boolean isStaticTypeOf(Type staticType, Type runtimeType) {
+        if (staticType.equals(runtimeType)) {
             return true;
         }
-        if (staticType instanceof AggregateType aStaticType && genericType instanceof AggregateType aGenericSizeType) {
+        if (staticType instanceof AggregateType aStaticType && runtimeType instanceof AggregateType aRuntimeType) {
             int size = aStaticType.getDirectFields().size();
-            if (size != aGenericSizeType.getDirectFields().size()) {
+            if (size != aRuntimeType.getDirectFields().size()) {
                 return false;
             }
             for (int i = 0; i < size; i++) {
-                if (!isStaticTypeOf(aStaticType.getDirectFields().get(i), aGenericSizeType.getDirectFields().get(i))) {
+                if (!isStaticTypeOf(aStaticType.getDirectFields().get(i), aRuntimeType.getDirectFields().get(i))) {
                     return false;
                 }
             }
             return true;
         }
-        if (staticType instanceof ArrayType aStaticType && genericType instanceof ArrayType aGenericType) {
+        if (staticType instanceof ArrayType aStaticType && runtimeType instanceof ArrayType aRuntimeType) {
             int countStatic = aStaticType.getNumElements();
-            int countGeneric = aGenericType.getNumElements();
-            if (countStatic != countGeneric && (countGeneric != -1 || countStatic <= 0)) {
+            int countRuntime = aRuntimeType.getNumElements();
+            if (countStatic != countRuntime && (countRuntime != -1 || countStatic <= 0)) {
                 return false;
             }
-            return isStaticTypeOf(aStaticType.getElementType(), aGenericType.getElementType());
+            return isStaticTypeOf(aStaticType.getElementType(), aRuntimeType.getElementType());
         }
-        if (staticType instanceof ScopedPointerType pStaticType && genericType instanceof ScopedPointerType pGenericType) {
-            return isStaticTypeOf(pStaticType.getPointedType(), pGenericType.getPointedType());
+        if (staticType instanceof ScopedPointerType pStaticType && runtimeType instanceof ScopedPointerType pRuntimeType) {
+            return isStaticTypeOf(pStaticType.getPointedType(), pRuntimeType.getPointedType());
         }
         return false;
     }

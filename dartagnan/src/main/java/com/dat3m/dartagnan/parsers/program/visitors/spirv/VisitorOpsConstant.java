@@ -72,14 +72,6 @@ public class VisitorOpsConstant extends SpirvBaseVisitor<Expression> {
         return builder.addExpression(id, makeConstant(type, value));
     }
 
-    private Expression makeConstant(Type type, String value) {
-        if (type instanceof IntegerType iType) {
-            long intValue = Long.parseLong(value);
-            return expressions.makeValue(intValue, iType);
-        }
-        throw new ParsingException("Illegal constant type '%s'", type);
-    }
-
     @Override
     public Expression visitOpSpecConstant(SpirvParser.OpSpecConstantContext ctx) {
         String id = ctx.idResult().getText();
@@ -170,16 +162,12 @@ public class VisitorOpsConstant extends SpirvBaseVisitor<Expression> {
         return expressions.makeFalse();
     }
 
-    private Integer getInputValue(String id) {
-        if (builder.hasInput(id)) {
-            Expression expr = builder.getInput(id);
-            if (expr instanceof IntLiteral iExpr) {
-                return iExpr.getValueAsInt();
-            }
-            throw new ParsingException("Unexpected input for SpecConstant '%s', " +
-                    "expected integer but received '%s'", id, expr.getType());
+    private Expression makeConstant(Type type, String value) {
+        if (type instanceof IntegerType iType) {
+            long intValue = Long.parseLong(value);
+            return expressions.makeValue(intValue, iType);
         }
-        return null;
+        throw new ParsingException("Illegal constant type '%s'", type);
     }
 
     private Expression makeConstantComposite(String id, Type type, List<String> elementIds) {
@@ -228,6 +216,18 @@ public class VisitorOpsConstant extends SpirvBaseVisitor<Expression> {
             elements.add(expression);
         }
         return expressions.makeArray(elementType, elements, true);
+    }
+
+    private Integer getInputValue(String id) {
+        if (builder.hasInput(id)) {
+            Expression expr = builder.getInput(id);
+            if (expr instanceof IntLiteral iExpr) {
+                return iExpr.getValueAsInt();
+            }
+            throw new ParsingException("Unexpected input for SpecConstant '%s', " +
+                    "expected integer but received '%s'", id, expr.getType());
+        }
+        return null;
     }
 
     public Set<String> getSupportedOps() {

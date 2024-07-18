@@ -199,13 +199,13 @@ public class VisitorOpsMemory extends SpirvBaseVisitor<Event> {
                 exprIndexes.add(expression);
                 intIndexes.add(expression instanceof IntLiteral intLiteral ? intLiteral.getValueAsInt() : -1);
             });
-            Type exactResultType = HelperTypes.getMemberType(baseId, baseType, intIndexes);
-            if (!TypeFactory.isStaticTypeOf(exactResultType, resultType)) {
+            Type runtimeResultType = HelperTypes.getMemberType(baseId, baseType, intIndexes);
+            if (!TypeFactory.isStaticTypeOf(runtimeResultType, resultType)) {
                 throw new ParsingException("Invalid result type in access chain '%s', " +
-                        "expected '%s' but received '%s'", id, resultType, exactResultType);
+                        "expected '%s' but received '%s'", id, resultType, runtimeResultType);
             }
             Expression expression = HelperTypes.getMemberAddress(baseId, base, baseType, exprIndexes);
-            ScopedPointer pointer = expressions.makeScopedPointer(id, pointerType.getScopeId(), exactResultType, expression);
+            ScopedPointer pointer = expressions.makeScopedPointer(id, pointerType.getScopeId(), runtimeResultType, expression);
             builder.addExpression(id, pointer);
             return;
         }
