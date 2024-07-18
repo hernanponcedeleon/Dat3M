@@ -49,7 +49,6 @@ public interface RelationAnalysis {
             case NONE -> EmptyRelationAnalysis.fromConfig(task, context, config);
             case NATIVE -> NativeRelationAnalysis.fromConfig(task, context, config);
         };
-        task.getConfig().inject(a);
 
         final StringBuilder configSummary = new StringBuilder().append("\n");
         configSummary.append("\t").append(RELATION_ANALYSIS).append(": ").append(c.method).append("\n");
