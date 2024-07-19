@@ -1675,6 +1675,7 @@ WriteBackINTEL : 'WriteBackINTEL';
 
 Op : 'Op';
 Equals : '=';
+Pipe : '|';
 Id : '%' [A-Za-z0-9_]+;
 fragment LiteralSciFloat : '-'? [0-9]+ '.' [0-9]* [eE] [+-]? [0-9]+;
 fragment LiteralHexFloat : '-'? '0x' ([0-9]+ '.'? | [0-9]* '.' [0-9]+) [Pp]? [+-]? [0-9]+ [DdFf]?;

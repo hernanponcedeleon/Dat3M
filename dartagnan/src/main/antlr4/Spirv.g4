@@ -994,7 +994,7 @@ opExtInstImport : idResult Equals Op (ExtInstImport  | SpecConstantOp  ExtInstIm
 opExtInst : idResult Equals Op (ExtInst idResultType | SpecConstantOp idResultType ExtInst) set instruction;
 
 // Function Operations
-opFunction : idResult Equals Op (Function idResultType | SpecConstantOp idResultType Function) functionControl functionType;
+opFunction : idResult Equals Op (Function idResultType | SpecConstantOp idResultType Function) functionControl (Pipe functionControl)* functionType;
 opFunctionParameter : idResult Equals Op (FunctionParameter idResultType | SpecConstantOp idResultType FunctionParameter);
 opFunctionEnd : Op FunctionEnd;
 opFunctionCall : idResult Equals Op (FunctionCall idResultType | SpecConstantOp idResultType FunctionCall) function argument*;
