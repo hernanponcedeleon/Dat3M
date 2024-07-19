@@ -80,7 +80,7 @@ public interface RelationAnalysis {
         Knowledge rf = a.getKnowledge(task.getMemoryModel().getRelation(RF));
         Knowledge co = a.getKnowledge(task.getMemoryModel().getRelation(CO));
         summary.append("\ttotal #must|may|exclusive edges: ")
-                .append(a.countMustSet()).append("|").append(a.countMaySet()).append("|").append(a.getMutuallyExclusiveEdges().size()).append("\n");
+                .append(a.countMustSet()).append("|").append(a.countMaySet()).append("|").append(a.getContradictions().size()).append("\n");
         summary.append("\t#must|may rf edges: ").append(rf.must.size()).append("|").append(rf.may.size()).append("\n");
         summary.append("\t#must|may co edges: ").append(co.must.size()).append("|").append(co.may.size()).append("\n");
         summary.append("===========================================");
@@ -116,7 +116,7 @@ public interface RelationAnalysis {
     /**
      * Iterates those event pairs that, if both executed, violate some axiom of the memory model.
      */
-    EventGraph getMutuallyExclusiveEdges();
+    EventGraph getContradictions();
 
     /*
         Returns a set of edges (e1, e2) (subset of may set) for ordered relations whose

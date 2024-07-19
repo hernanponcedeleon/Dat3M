@@ -95,7 +95,7 @@ public class NativeRelationAnalysis implements RelationAnalysis {
     }
 
     @Override
-    public EventGraph getMutuallyExclusiveEdges() {
+    public EventGraph getContradictions() {
         //TODO return undirected pairs
         return mutex;
     }

@@ -135,7 +135,7 @@ public class WmmEncoder implements Encoder {
                 enc.addAll(a.consistent(context));
             }
         }
-        ra.getMutuallyExclusiveEdges()
+        ra.getContradictions()
                 .apply((e1, e2) -> enc.add(bmgr.not(context.execution(e1, e2))));
         return bmgr.and(enc);
     }
@@ -145,7 +145,7 @@ public class WmmEncoder implements Encoder {
         EventGraph encodeSet = encodeSets.getOrDefault(relation, EventGraph.empty())
                 .filter((e1, e2) -> TRUE.equals(model.evaluate(edge.encode(e1, e2))));
         EventGraph mustEncodeSet = context.getAnalysisContext().get(RelationAnalysis.class).getKnowledge(relation).getMustSet()
-                        .filter((e1, e2) -> TRUE.equals(model.evaluate(context.execution(e1, e2))));
+                .filter((e1, e2) -> TRUE.equals(model.evaluate(context.execution(e1, e2))));
         encodeSet.addAll(mustEncodeSet);
         return encodeSet;
     }
@@ -648,7 +648,8 @@ public class WmmEncoder implements Encoder {
 
         @Override
         public Void visitSyncFence(SyncFence syncFenceDef) {
-            final Relation syncFence = syncFenceDef.getDefinedRelation();;
+            final Relation syncFence = syncFenceDef.getDefinedRelation();
+            ;
             final boolean idl = !context.useSATEncoding;
             final String relName = syncFence.getName().get(); // syncFence is base, it always has a name
             List<Event> allFenceSC = program.getThreadEventsWithAllTags(VISIBLE, FENCE, PTX.SC);
