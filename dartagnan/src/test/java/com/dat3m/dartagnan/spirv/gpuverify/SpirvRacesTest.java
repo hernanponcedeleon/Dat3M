@@ -239,7 +239,7 @@ public class SpirvRacesTest {
                 // {"pow2/64bit_relational.spv.dis", 1, PASS},
                 // {"saturate/uadd.spv.dis", 1, ??},
                 // {"saturate/usub.spv.dis", 1, ??},
-                // {"shuffle/shuffle.spv.dis", 1, ??},
+                // {"shuffle/shuffle.spv.dis", 1, PASS},
                 // {"simplebinomialoptions.spv.dis", 1, PASS},
                 // {"sourcelocation_tests/races/fail/write_write/elem_width_16.spv.dis", 1, FAIL},
                 // {"ternarytest.spv.dis", 1, PASS},
