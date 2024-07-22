@@ -598,6 +598,15 @@
                     <classifier>libz3java</classifier>
                 </dependency>
 
+                <!-- Bitwuzla dependencies -->
+                <dependency>
+                    <groupId>org.sosy-lab</groupId>
+                    <artifactId>javasmt-solver-bitwuzla</artifactId>
+                    <version>${bitwuzla.version}</version>
+                    <type>dll</type>
+                    <classifier>libbitwuzlaj</classifier>
+                </dependency>
+
                 <!-- MathSAT5 dependencies -->
                 <dependency>
                     <groupId>org.sosy-lab</groupId>
@@ -652,6 +661,15 @@
                                         <type>dll</type>
                                         <classifier>libz3</classifier>
                                         <destFileName>libz3.dll</destFileName>
+                                    </artifactItem>
+
+                                    <!-- Bitwuzla dependencies -->
+                                    <artifactItem>
+                                        <groupId>org.sosy-lab</groupId>
+                                        <artifactId>javasmt-solver-bitwuzla</artifactId>
+                                        <type>dll</type>
+                                        <classifier>libbitwuzlaj</classifier>
+                                        <destFileName>libbitwuzlaj.dll</destFileName>
                                     </artifactItem>
 
                                     <!-- MathSAT5 dependencies -->
