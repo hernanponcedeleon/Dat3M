@@ -23,13 +23,6 @@ public class Emptiness extends Axiom {
     }
 
     @Override
-    public Map<Relation, RelationAnalysis.ExtendedDelta> computeInitialKnowledgeClosure(
-            Map<Relation, RelationAnalysis.Knowledge> knowledgeMap,
-            Context analysisContext) {
-        return Map.of(rel, new RelationAnalysis.ExtendedDelta(knowledgeMap.get(rel).getMaySet(), EventGraph.empty()));
-    }
-
-    @Override
     protected EventGraph getEncodeGraph(Context analysisContext) {
         final RelationAnalysis ra = analysisContext.get(RelationAnalysis.class);
         return ra.getKnowledge(rel).getMaySet();
