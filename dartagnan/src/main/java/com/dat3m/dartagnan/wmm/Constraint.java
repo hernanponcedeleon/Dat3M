@@ -19,21 +19,6 @@ public interface Constraint {
 
     <T> T accept(Constraint.Visitor<? extends T> visitor);
 
-    default Map<Relation, RelationAnalysis.ExtendedDelta> computeInitialKnowledgeClosure(
-            Map<Relation, RelationAnalysis.Knowledge> knowledgeMap,
-            Context analysisContext) {
-        return Map.of();
-    }
-
-    default Map<Relation, RelationAnalysis.ExtendedDelta> computeIncrementalKnowledgeClosure(
-            Relation origin,
-            EventGraph disabled,
-            EventGraph enabled,
-            Map<Relation, RelationAnalysis.Knowledge> knowledgeMap,
-            Context analysisContext) {
-        return Map.of();
-    }
-
     default Map<Relation, EventGraph> getEncodeGraph(VerificationTask task, Context analysisContext) {
         return Map.of();
     }

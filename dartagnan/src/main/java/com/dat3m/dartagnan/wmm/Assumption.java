@@ -36,17 +36,6 @@ public final class Assumption implements Constraint {
     }
 
     @Override
-    public Map<Relation, RelationAnalysis.ExtendedDelta> computeInitialKnowledgeClosure(Map<Relation, RelationAnalysis.Knowledge> knowledgeMap, Context analysisContext) {
-        RelationAnalysis.Knowledge k = knowledgeMap.get(rel);
-        EventGraph d = difference(k.getMaySet(), may);
-        EventGraph e = difference(must, k.getMustSet());
-        if (d.size() + e.size() != 0) {
-            logger.info("Assumption disables {} and enables {} at {}", d.size(), e.size(), rel.getNameOrTerm());
-        }
-        return Map.of(rel, new RelationAnalysis.ExtendedDelta(d, e));
-    }
-
-    @Override
     public <T> T accept(Visitor<? extends T> visitor) {
         return visitor.visitAssumption(this);
     }

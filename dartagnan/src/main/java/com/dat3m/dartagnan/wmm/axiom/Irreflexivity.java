@@ -24,15 +24,6 @@ public class Irreflexivity extends Axiom {
     }
 
     @Override
-    public Map<Relation, RelationAnalysis.ExtendedDelta> computeInitialKnowledgeClosure(
-            Map<Relation, RelationAnalysis.Knowledge> knowledgeMap,
-            Context analysisContext) {
-        RelationAnalysis.Knowledge k = knowledgeMap.get(rel);
-        EventGraph d = k.getMaySet().filter(Tuple::isLoop);
-        return Map.of(rel, new RelationAnalysis.ExtendedDelta(d, EventGraph.empty()));
-    }
-
-    @Override
     protected EventGraph getEncodeGraph(Context analysisContext) {
         final RelationAnalysis ra = analysisContext.get(RelationAnalysis.class);
         return ra.getKnowledge(rel).getMaySet().filter(Tuple::isLoop);
