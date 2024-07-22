@@ -17,9 +17,9 @@ import java.util.*;
 import static com.dat3m.dartagnan.program.event.Tag.*;
 import static java.util.stream.Collectors.toSet;
 
-public class EmptyRelationAnalysis extends NativeRelationAnalysis {
+public class CoarseRelationAnalysis extends NativeRelationAnalysis {
 
-    private EmptyRelationAnalysis(VerificationTask t, Context context, Configuration config) {
+    private CoarseRelationAnalysis(VerificationTask t, Context context, Configuration config) {
         super(t, context, config);
     }
 
@@ -37,8 +37,8 @@ public class EmptyRelationAnalysis extends NativeRelationAnalysis {
      *                </ul>
      * @param config  User-defined options to further specify the behavior.
      */
-    public static EmptyRelationAnalysis fromConfig(VerificationTask task, Context context, Configuration config) throws InvalidConfigurationException {
-        return new EmptyRelationAnalysis(task, context, config);
+    public static CoarseRelationAnalysis fromConfig(VerificationTask task, Context context, Configuration config) throws InvalidConfigurationException {
+        return new CoarseRelationAnalysis(task, context, config);
     }
 
     @Override

@@ -1,6 +1,6 @@
 package com.dat3m.dartagnan.wmm.analysis;
 
-import com.dat3m.dartagnan.configuration.RelationMethod;
+import com.dat3m.dartagnan.configuration.RelationAnalysisMethod;
 import com.dat3m.dartagnan.program.analysis.Dependency;
 import com.dat3m.dartagnan.program.analysis.ExecutionAnalysis;
 import com.dat3m.dartagnan.program.analysis.alias.AliasAnalysis;
@@ -46,7 +46,7 @@ public interface RelationAnalysis {
         logger.info("Selected relation analysis: {}", c.method);
 
         RelationAnalysis a = switch (c.method) {
-            case NONE -> EmptyRelationAnalysis.fromConfig(task, context, config);
+            case NONE -> CoarseRelationAnalysis.fromConfig(task, context, config);
             case NATIVE -> NativeRelationAnalysis.fromConfig(task, context, config);
         };
 
@@ -55,7 +55,7 @@ public interface RelationAnalysis {
         configSummary.append("\t").append(ENABLE_EXTENDED_RELATION_ANALYSIS).append(": ").append(c.enableExtended);
         logger.info(configSummary);
 
-        if (c.enableExtended && c.method == RelationMethod.NONE) {
+        if (c.enableExtended && c.method == RelationAnalysisMethod.NONE) {
             logger.warn("{} implies {}", ENABLE_EXTENDED_RELATION_ANALYSIS, RELATION_ANALYSIS);
             c.enableExtended = false;
         }
@@ -93,7 +93,7 @@ public interface RelationAnalysis {
         @Option(name = RELATION_ANALYSIS,
                 description = "Relation analysis engine.",
                 secure = true)
-        private RelationMethod method = RelationMethod.getDefault();
+        private RelationAnalysisMethod method = RelationAnalysisMethod.getDefault();
 
         @Option(name = ENABLE_EXTENDED_RELATION_ANALYSIS,
                 description = "Marks relationships as trivially false, if they alone would violate a consistency property of the target memory model.",

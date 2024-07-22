@@ -649,9 +649,8 @@ public class WmmEncoder implements Encoder {
         @Override
         public Void visitSyncFence(SyncFence syncFenceDef) {
             final Relation syncFence = syncFenceDef.getDefinedRelation();
-            ;
             final boolean idl = !context.useSATEncoding;
-            final String relName = syncFence.getName().get(); // syncFence is base, it always has a name
+            final String relName = syncFence.getName().orElseThrow(); // syncFence is base, it always has a name
             List<Event> allFenceSC = program.getThreadEventsWithAllTags(VISIBLE, FENCE, PTX.SC);
             allFenceSC.removeIf(e -> !e.getThread().hasScope());
             EncodingContext.EdgeEncoder edge = context.edge(syncFence);
