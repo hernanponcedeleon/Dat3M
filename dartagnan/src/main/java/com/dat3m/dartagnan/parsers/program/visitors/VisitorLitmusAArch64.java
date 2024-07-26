@@ -17,6 +17,7 @@ import com.dat3m.dartagnan.program.event.arch.StoreExclusive;
 import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.event.core.Load;
 
+import java.math.BigInteger;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -212,6 +213,12 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object> {
     }
 
     @Override
+    public Object visitReturn(LitmusAArch64Parser.ReturnContext ctx) {
+        Label end = programBuilder.getEndOfThreadLabel(mainThread);
+        return programBuilder.addChild(mainThread, EventFactory.newGoto(end));
+    }
+
+    @Override
     public Expression visitExpressionRegister64(LitmusAArch64Parser.ExpressionRegister64Context ctx) {
         Expression expr = programBuilder.getOrNewRegister(mainThread, ctx.register64().id, archType);
         if(ctx.shift() != null){
@@ -255,4 +262,12 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object> {
         programBuilder.addChild(mainThread, EventFactory.newLocal(result, expressions.makeAdd(register, expr)));
         return result;
     }
+
+    @Override
+    public Expression visitImmediate(LitmusAArch64Parser.ImmediateContext ctx) {
+        final int radix = ctx.Hexa() != null ? 16 : 10;
+        BigInteger value = new BigInteger(ctx.constant().getText(), radix);
+        return expressions.makeValue(value, archType);
+    }
+
 }

@@ -76,6 +76,7 @@ instruction
     |   branchRegister
     |   branchLabel
     |   fence
+    |   return
     ;
 
 mov locals [String rD, int size]
@@ -129,6 +130,10 @@ branchRegister locals [String rV, int size]
 
 branchLabel
     :   label Colon
+    ;
+
+return
+    :   Ret
     ;
 
 loadInstruction locals [String mo]
@@ -252,7 +257,7 @@ location
     ;
 
 immediate
-    :   Num constant
+    :   Num Hexa? constant
     ;
 
 label
@@ -265,51 +270,62 @@ assertionValue
     |   constant
     ;
 
+Hexa
+    :   '0x'
+    ;
+
+Ret
+    :   'ret'
+    ;
+
 Locations
     :   'locations'
     ;
 
 // Arthmetic instructions
 
-ADD     :   'ADD'   ;   // Add
-ADDS    :   'ADDS'  ;   // Add and set flag
-SUB     :   'SUB'   ;   // Sub
-SUBS    :   'SUBS'  ;   // Sub and set flag
-ADC     :   'ADC'   ;   // Add and use carry flag
-ADCS    :   'ADCS'  ;   // Add and use carry flag and set carry flag
-SBC     :   'SBC'   ;   // Sub and use carry flag
-SBCS    :   'SBCS'  ;   // Sub and use carry flag and set carry flag
-AND     :   'AND'   ;   // Logical AND
-ORR     :   'ORR'   ;   // Logical OR
-EOR     :   'EOR'   ;   // Logical XOR
-BIC     :   'BIC'   ;   // Invert and AND (Bitwise Bit Clear)
-ORN     :   'ORN'   ;   // Invert and OR
-EON     :   'EON'   ;   // Invert and XOR
+ADD     :   'ADD'   |   'add'   ;   // Add
+ADDS    :   'ADDS'  |   'adds'  ;   // Add and set flag
+SUB     :   'SUB'   |   'sub'   ;   // Sub
+SUBS    :   'SUBS'  |   'subs'  ;   // Sub and set flag
+ADC     :   'ADC'   |   'adc'   ;   // Add and use carry flag
+ADCS    :   'ADCS'  |   'adcs'  ;   // Add and use carry flag and set carry flag
+SBC     :   'SBC'   |   'sbc'   ;   // Sub and use carry flag
+SBCS    :   'SBCS'  |   'sbcs'  ;   // Sub and use carry flag and set carry flag
+AND     :   'AND'   |   'and'   ;   // Logical AND
+ORR     :   'ORR'   |   'orr'   ;   // Logical OR
+EOR     :   'EOR'   |   'eor'   ;   // Logical XOR
+BIC     :   'BIC'   |   'bic'   ;   // Invert and AND (Bitwise Bit Clear)
+ORN     :   'ORN'   |   'orn'   ;   // Invert and OR
+EON     :   'EON'   |   'eon'   ;   // Invert and XOR
 
 // Load instructions
 
-LDR    :   'LDR'    ;
-LDAR   :   'LDAR'   ;
-LDXR   :   'LDXR'   ;
-LDAXR  :   'LDAXR'  ;
+LDR     :   'LDR'   |   'ldr'   ;
+LDAR    :   'LDAR'  |   'ldar'  ;
+LDXR    :   'LDXR'  |   'ldxr'  ;
+LDAXR   :   'LDAXR' |   'ldaxr' ;
 
 // Store instructions
 
-STR    :   'STR'    ;
-STLR   :   'STLR'   ;
-STXR   :   'STXR'   ;
-STLXR  :   'STLXR'   ;
+STR     :   'STR'   |   'str'   ;
+STLR    :   'STLR'  |   'stlr'  ;
+STXR    :   'STXR'  |   'stxr'  ;
+STLXR   :   'STLXR' |   'stlxr' ;
 
 MovInstruction
     :   'MOV'
+    |   'mov'
     ;
 
 CmpInstruction
     :   'CMP'
+    |   'cmp'
     ;
 
 BranchInstruction
     :   'B'
+    |   'b'
     ;
 
 Fence
@@ -335,8 +351,8 @@ FenceOpt
 
 // Bracnch conditions
 
-EQ  :   'EQ';    // Equal
-NE  :   'NE';    // Not equal
+EQ  :   'EQ'    |   'eq'    ;
+NE  :   'NE'    |   'ne'    ;
 CS  :   'CS';    // Carry set
 HS  :   'HS';    // Identical to CS
 CC  :   'CC';    // Carry clear
@@ -355,8 +371,8 @@ AL  :   'AL';    // Always (this is the default)
 
 // Branch conditions shortcut instructions
 
-CBZ     :   'CBZ';      // Branch if zero
-CBNZ    :   'CBNZ';     // Branch if not zero
+CBZ     :   'CBZ'    |   'cbz'  ;   // Branch if zero
+CBNZ    :   'CBNZ'   |   'cbnz' ;   // Branch if not zero
 
 // Shift operators
 
@@ -371,10 +387,12 @@ BitfieldOperator
 
 Register64
     :   'X' DigitSequence
+    |   'x' DigitSequence
     ;
 
 Register32
     :   'W' DigitSequence
+    |   'w' DigitSequence
     ;
 
 LitmusLanguage
