@@ -1,4 +1,4 @@
-package com.dat3m.testgen.classes;
+package com.dat3m.testgen.manual_classes;
 
 import scala.collection.mutable.StringBuilder;
 import java.lang.Exception;

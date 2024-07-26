@@ -1,4 +1,4 @@
-package com.dat3m.testgen.classes;
+package com.dat3m.testgen.smt_classes;
 
 public class Relation {
 
@@ -34,3 +34,4 @@ public class Relation {
     }
 
 }
+

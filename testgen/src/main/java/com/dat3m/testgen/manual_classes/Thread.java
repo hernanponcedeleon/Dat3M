@@ -1,4 +1,4 @@
-package com.dat3m.testgen.classes;
+package com.dat3m.testgen.manual_classes;
 
 import java.util.LinkedList;
 
