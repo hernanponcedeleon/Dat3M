@@ -25,6 +25,12 @@ public class Event {
         this.id = r_id;
     }
 
+    public String name(
+        final String suffix
+    ) {
+        return "e" + id + "_" + suffix;
+    }
+
     @Override
     public String toString() {
         StringBuilder sb = new StringBuilder();
