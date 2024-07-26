@@ -107,6 +107,10 @@ public class NormalizeLoops implements FunctionProcessor {
 
         // Guarantees header is the only entry point
         for (Label label : function.getEvents(Label.class)) {
+            final List<CondJump> backJumps = label.getJumpSet().stream()
+                    .filter(j -> j.getLocalId() > label.getLocalId())
+                    .sorted()
+                    .toList();
             final Label loopBegin = label;
             final CondJump uniqueBackJump = backJumps.get(0);
 

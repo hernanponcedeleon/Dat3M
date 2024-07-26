@@ -90,7 +90,8 @@ public class MiscellaneousTest extends AbstractCTest {
                 {"staticLoops", IMM, PASS, 1},
                 {"offsetof", IMM, PASS, 1},
                 {"ctlz", IMM, PASS, 1},
-                {"cttz", IMM, PASS, 1}
+                {"cttz", IMM, PASS, 1},
+                {"jumpFromOutside", IMM, PASS, 11}
         });
     }
 
