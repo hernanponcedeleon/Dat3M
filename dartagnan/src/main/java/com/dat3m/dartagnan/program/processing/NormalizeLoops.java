@@ -1,10 +1,15 @@
 package com.dat3m.dartagnan.program.processing;
 
+import com.dat3m.dartagnan.expression.ExpressionFactory;
+import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.program.Function;
+import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.core.CondJump;
 import com.dat3m.dartagnan.program.event.core.Label;
+import com.dat3m.dartagnan.program.event.core.Local;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
@@ -34,6 +39,9 @@ import java.util.Map;
     ...
 */
 public class NormalizeLoops implements FunctionProcessor {
+
+    private final TypeFactory types = TypeFactory.getInstance();
+    private final ExpressionFactory expressions = ExpressionFactory.getInstance();
 
     public static NormalizeLoops newInstance() {
         return new NormalizeLoops();
@@ -68,6 +76,38 @@ public class NormalizeLoops implements FunctionProcessor {
             }
 
             counter++;
+
+            // Guarantee header is the only fromOutside point
+            final Label loopBegin = label;
+            final CondJump uniqueBackJump = backJumps.get(0);
+
+            final List<Label> loopBodyLabels = loopBegin.getSuccessor().getSuccessors().stream()
+                    .takeWhile(ev -> ev != uniqueBackJump)
+                    .filter(Label.class::isInstance).map(Label.class::cast)
+                    .toList();
+            for (Label l : loopBodyLabels) {
+                final List<CondJump> externalEntries = l.getJumpSet().stream()
+                        .filter(j -> j.getLocalId() < loopBegin.getLocalId() ||
+                                j.getLocalId() > uniqueBackJump.getLocalId())
+                        .toList();
+
+                for(CondJump fromOutside : externalEntries) {
+
+                    final Register jumpedFromOutside = function.newRegister("__jumpedFromOutside", types.getBooleanType());
+                    final Local setJumpedFromOutside = EventFactory.newLocal(jumpedFromOutside, expressions.makeTrue());
+                    final CondJump jumpToHeader = EventFactory.newGoto(loopBegin);
+                    final Label internalLabel = fromOutside.getLabel();
+
+                    fromOutside.replaceBy(setJumpedFromOutside);
+                    setJumpedFromOutside.insertAfter(jumpToHeader);
+
+                    final CondJump jumpToInternal = EventFactory.newJump(jumpedFromOutside, internalLabel);
+                    final Local unsetJumpFromOutside = EventFactory.newLocal(jumpedFromOutside, expressions.makeFalse());
+
+                    loopBegin.insertAfter(Arrays.asList(jumpToInternal, unsetJumpFromOutside));
+                }
+            }
+
         }
     }
 }
