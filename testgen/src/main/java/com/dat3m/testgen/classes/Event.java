@@ -5,7 +5,7 @@ import java.lang.Exception;
 
 public class Event {
 
-    enum event_operation_t {
+    public enum event_operation_t {
         undefined,
         read,
         write
