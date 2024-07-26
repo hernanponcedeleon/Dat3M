@@ -10,8 +10,8 @@ public class Thread {
     public Thread(
         final int r_id
     ) throws Exception {
-        if( r_id <= 0 )
-            throw new Exception( "r_id of Thread must be greater than zero." );
+        if( r_id < 0 )
+            throw new Exception( "r_id of Thread must be non-negative." );
         this.id = r_id;
         events = new LinkedList<>();
     }
