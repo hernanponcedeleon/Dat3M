@@ -1,10 +1,7 @@
 package com.dat3m.testgen;
 
 import com.dat3m.testgen.classes.Cycle;
-import com.dat3m.testgen.classes.Event;
-import com.dat3m.testgen.classes.Thread;
 import com.dat3m.testgen.classes.Relation.relation_t;
-import com.dat3m.testgen.classes.Relation;
 
 public class TestgenDriver {
 
