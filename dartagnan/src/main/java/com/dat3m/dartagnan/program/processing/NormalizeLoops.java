@@ -14,29 +14,55 @@ import java.util.List;
 import java.util.Map;
 
 /*
-    This pass transforms loops to have a single backjump using forward jumping.
-    Given a loop of the form
+    This pass normalizes loops to have a single unconditional backjump and a single entry point.
+    It achives this via two transformations.
 
-    L:
-    ...
-    if X goto L
-    ...
-    if Y goto L
-    More Code
+    (1) Given a loop of the form
+
+        L:
+        ...
+        if X goto L
+        ...
+        if Y goto L
+        More Code
+
+        it transforms it to
+
+        L:
+        ...
+        if X goto __repeatLoop_L
+        ...
+        if Y goto __repeatLoop_L
+        goto __breakLoop_L
+        __repeatLoop_L:
+        goto L
+        __breakLoop_L
+        More Code
+        ...
+
+    (2) Given code the form
+
+        goto C
+        ...
+        L:
+        ...
+        C:
+        ...
+        goto L
 
     it transforms it to
 
-    L:
-    ...
-    if X goto __repeatLoop_L
-    ...
-    if Y goto __repeatLoop_L
-    goto __breakLoop_L
-    __repeatLoop_L:
-    goto L
-    __breakLoop_L
-    More Code
-    ...
+        __jumpedFromOutside <- true
+        goto L
+        ...
+        __jumpedFromOutside <- false
+        L:
+        if __jumpedFromOutside goto C
+        __jumpedFromOutside <- false
+        ...
+        C:
+        ...
+        goto L
 */
 public class NormalizeLoops implements FunctionProcessor {
 
@@ -49,6 +75,8 @@ public class NormalizeLoops implements FunctionProcessor {
 
     @Override
     public void run(Function function) {
+
+        // Guarantees having a single unconditional backjump
         int counter = 0;
         for (Label label : function.getEvents(Label.class)) {
             final List<CondJump> backJumps = label.getJumpSet().stream()
@@ -56,7 +84,6 @@ public class NormalizeLoops implements FunctionProcessor {
                     .sorted()
                     .toList();
 
-            // LoopFormVerification requires a unique and unconditional backjump
             if (backJumps.isEmpty() || (backJumps.size() == 1 && backJumps.get(0).isGoto())) {
                 continue;
             }
@@ -76,8 +103,10 @@ public class NormalizeLoops implements FunctionProcessor {
             }
 
             counter++;
+        }
 
-            // Guarantee header is the only fromOutside point
+        // Guarantees header is the only entry point
+        for (Label label : function.getEvents(Label.class)) {
             final Label loopBegin = label;
             final CondJump uniqueBackJump = backJumps.get(0);
 
@@ -91,9 +120,10 @@ public class NormalizeLoops implements FunctionProcessor {
                                 j.getLocalId() > uniqueBackJump.getLocalId())
                         .toList();
 
-                for(CondJump fromOutside : externalEntries) {
+                for (CondJump fromOutside : externalEntries) {
 
-                    final Register jumpedFromOutside = function.newRegister("__jumpedFromOutside", types.getBooleanType());
+                    final Register jumpedFromOutside = function.newRegister("__jumpedFromOutside",
+                            types.getBooleanType());
                     final Local setJumpedFromOutside = EventFactory.newLocal(jumpedFromOutside, expressions.makeTrue());
                     final CondJump jumpToHeader = EventFactory.newGoto(loopBegin);
                     final Label internalLabel = fromOutside.getLabel();
@@ -102,9 +132,11 @@ public class NormalizeLoops implements FunctionProcessor {
                     setJumpedFromOutside.insertAfter(jumpToHeader);
 
                     final CondJump jumpToInternal = EventFactory.newJump(jumpedFromOutside, internalLabel);
+                    final Local initJumpFromOutside = EventFactory.newLocal(jumpedFromOutside, expressions.makeFalse());
                     final Local unsetJumpFromOutside = EventFactory.newLocal(jumpedFromOutside, expressions.makeFalse());
 
-                    loopBegin.insertAfter(Arrays.asList(jumpToInternal, unsetJumpFromOutside));
+                    loopBegin.getPredecessor()
+                            .insertAfter(Arrays.asList(initJumpFromOutside, jumpToInternal, unsetJumpFromOutside));
                 }
             }
 
