@@ -20,8 +20,7 @@ public class Event {
     public Event(
         final int r_id
     ) throws Exception {
-        if( r_id < 0 )
-            throw new Exception( "r_id of Event must be non-negative." );
+        if( r_id < 0 ) throw new Exception( "r_id of Event must be non-negative." );
         this.id = r_id;
         type = event_operation_t.undefined;
         location = -1;

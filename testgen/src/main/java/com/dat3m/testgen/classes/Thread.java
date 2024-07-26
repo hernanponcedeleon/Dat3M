@@ -10,8 +10,7 @@ public class Thread {
     public Thread(
         final int r_id
     ) throws Exception {
-        if( r_id < 0 )
-            throw new Exception( "r_id of Thread must be non-negative." );
+        if( r_id < 0 ) throw new Exception( "r_id of Thread must be non-negative." );
         this.id = r_id;
         events = new LinkedList<>();
     }
@@ -36,7 +35,7 @@ public class Thread {
         if( parent_event.parent_thread != this ) throw new Exception( "Parent event does not belong to this thread." );
         int parent_index = events.indexOf( parent_event );
         if( parent_index == -1 ) throw new Exception( "Parent event does not exist in thread." );
-        events.add( events.indexOf( parent_event ) + 1, event );
+        events.add( parent_index + 1, event );
         event.parent_thread = this;
     }
 
