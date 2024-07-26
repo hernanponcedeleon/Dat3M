@@ -53,6 +53,7 @@ public class SMTProgramGenerator {
         bool_mngr = formula_mngr.getBooleanFormulaManager();
         enum_mngr = formula_mngr.getEnumerationFormulaManager();
 
+        /* TODO: turn Event.type into an integer field, or alternatively fix the enum field */
         event_t = enum_mngr.declareEnumeration( "event_t", "undefined", "read", "write" );
     }
 
