@@ -85,10 +85,7 @@ public class ProcessingManager implements ProgramProcessor {
         final FunctionProcessor removeDeadJumps = RemoveDeadCondJumps.fromConfig(config);
         programProcessors.addAll(Arrays.asList(
                 printBeforeProcessing ? DebugPrint.withHeader("Before processing", Printer.Mode.ALL) : null,
-                // We need to update events id between the next two passes,
-                // thus they cannot be merged as a FunctionProcessor chain.
-                ProgramProcessor.fromFunctionProcessor(NormalizeLoopsSingleEntry.newInstance(), Target.FUNCTIONS, true),
-                ProgramProcessor.fromFunctionProcessor(NormalizeLoopsSingleBackJump.newInstance(), Target.FUNCTIONS, true),
+                ProgramProcessor.fromFunctionProcessor(NormalizeLoops.newInstance(), Target.FUNCTIONS, true),
                 intrinsics.markIntrinsicsPass(),
                 GEPToAddition.newInstance(),
                 NaiveDevirtualisation.newInstance(),
