@@ -29,6 +29,9 @@ public class SMTProgramGenerator {
     FormulaManager formula_mngr;
     IntegerFormulaManager int_mngr;
     BooleanFormulaManager bool_mngr;
+
+    final static int READ_INSTRUCTION = 1;
+    final static int WRITE_INSTRUCTION = 2;
         
     public SMTProgramGenerator(
         final Cycle r_cycle
@@ -105,6 +108,15 @@ public class SMTProgramGenerator {
                     break;
 
                 case rf:
+                constraint = bool_mngr.and( constraint, bool_mngr.and( bool_mngr.and( bool_mngr.and( bool_mngr.and(
+                    int_mngr.equal( relation.event_L.type, int_mngr.makeNumber( WRITE_INSTRUCTION ) ),
+                    int_mngr.equal( relation.event_R.type, int_mngr.makeNumber( READ_INSTRUCTION ) ) ),
+                    int_mngr.equal( relation.event_L.location, relation.event_R.location ) ),
+                    int_mngr.equal( relation.event_L.value, relation.event_R.value ) ),
+                    int_mngr.equal( relation.event_L.value, int_mngr.makeNumber( relation.event_L.id ) )
+                ) );
+                    break;
+
                 case co:
                 case fr:
                     break;
@@ -150,7 +162,7 @@ public class SMTProgramGenerator {
                     BigInteger val_thread_row = model.evaluate( event.thread_row );
                     sb.append(
                         "\n" + event + ": " +
-                        "\n\ttype: " + val_type +
+                        "\n\ttype: " + ( val_type.equals( BigInteger.ZERO ) ? "undefined" : ( val_type.equals( BigInteger.ONE ) ? "READ" : "WRITE" ) ) +
                         "\n\tlocation: " + val_location +
                         "\n\tvalue: " + val_value + 
                         "\n\tthread_id: " + val_thread_id +
