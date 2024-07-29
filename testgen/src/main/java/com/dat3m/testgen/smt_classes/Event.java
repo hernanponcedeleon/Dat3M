@@ -1,6 +1,5 @@
 package com.dat3m.testgen.smt_classes;
 
-import org.sosy_lab.java_smt.api.EnumerationFormula;
 import org.sosy_lab.java_smt.api.NumeralFormula.IntegerFormula;
 
 public class Event {
@@ -12,11 +11,12 @@ public class Event {
     };
 
     public final int id;
-    public EnumerationFormula type;
+    public IntegerFormula type;
     public IntegerFormula location;
     public IntegerFormula value;
     public IntegerFormula thread_id;
     public IntegerFormula thread_row;
+    public boolean was_moved = false;
 
     public Event(
         final int r_id
