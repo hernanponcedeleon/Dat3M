@@ -48,6 +48,7 @@ public interface RelationAnalysis {
         RelationAnalysis a = switch (c.method) {
             case NONE -> CoarseRelationAnalysis.fromConfig(task, context, config);
             case NATIVE -> NativeRelationAnalysis.fromConfig(task, context, config);
+            case DATALOG -> DatalogRelationAnalysis.fromConfig(task, context, config);
         };
 
         final StringBuilder configSummary = new StringBuilder().append("\n");
