@@ -108,6 +108,11 @@ public class SMTProgramGenerator {
                     break;
 
                 case rf:
+                    memory_ufds.merge( relation.event_L.id, relation.event_R.id );
+                    prover.addConstraint( int_mngr.equal( relation.event_L.type, int_mngr.makeNumber( WRITE_INSTRUCTION ) ) );
+                    prover.addConstraint( int_mngr.equal( relation.event_R.type, int_mngr.makeNumber( READ_INSTRUCTION ) ) );
+                    prover.addConstraint( int_mngr.equal( relation.event_L.location, relation.event_R.location ) );
+                    prover.addConstraint( int_mngr.equal( relation.event_L.value, relation.event_R.value ) );
                     break;
 
                 case co:
@@ -133,6 +138,15 @@ public class SMTProgramGenerator {
                     if( thread_ufds.find_set( t_event.id ) != t_event.id )
                         continue;
                     prover.addConstraint( bool_mngr.not( int_mngr.equal( event.thread_id , t_event.thread_id ) ) );
+                }
+            }
+            if( memory_ufds.find_set( event.id ) == event.id ) {
+                for( final Event t_event : cycle.events ) {
+                    if( memory_ufds.are_same_set( event.id, t_event.id ) )
+                        continue;
+                    if( memory_ufds.find_set( t_event.id ) != t_event.id )
+                        continue;
+                    prover.addConstraint( bool_mngr.not( int_mngr.equal( event.location , t_event.location ) ) );
                 }
             }
         }
