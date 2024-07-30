@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan.encoding;
 
+import com.dat3m.dartagnan.configuration.ProgressModel;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.program.Program;
@@ -20,6 +21,7 @@ import com.dat3m.dartagnan.program.memory.Memory;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.dat3m.dartagnan.program.misc.NonDetValue;
 import com.google.common.base.Preconditions;
+import com.google.common.collect.Lists;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
@@ -123,13 +125,70 @@ public class ProgramEncoder implements Encoder {
         return context.getBooleanFormulaManager().and(enc);
     }
 
+    private BooleanFormula threadIsEnabled(Thread thread) {
+        final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
+        final ThreadStart start = thread.getEntry();
+        if (!start.isSpawned()) {
+            return bmgr.makeTrue();
+        } else if (!start.mayFailSpuriously()) {
+            return context.execution(start.getCreator());
+        } else {
+            final String spawnSuccessVarName = "__spawnSuccess#" + thread.getId();
+            return bmgr.makeVariable(spawnSuccessVarName);
+        }
+    }
+
     public BooleanFormula encodeControlFlow() {
         logger.info("Encoding program control flow");
 
         BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
         List<BooleanFormula> enc = new ArrayList<>();
         for(Thread t : context.getTask().getProgram().getThreads()){
-            enc.add(encodeThreadCF(t));
+            enc.add(encodeThreadConsistentCF(t));
+        }
+        enc.add(encodeForwardProgress(context.getTask().getProgram(), context.getTask().getProgressModel()));
+        return bmgr.and(enc);
+    }
+
+    private BooleanFormula encodeForwardProgress(Program program, ProgressModel progressModel) {
+        return switch (progressModel) {
+            case FAIR -> new FairProgressEncoder().encodeForwardProgress(program);
+            case HSA -> new HSAProgressEncoder().encodeForwardProgress(program);
+            case OBE -> new OBEProgressEncoder().encodeForwardProgress(program);
+            case UNFAIR -> new UnfairProgressEncoder().encodeForwardProgress(program);
+        };
+    }
+
+    private BooleanFormula encodeThreadConsistentCF(Thread thread) {
+        final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
+        final ThreadStart startEvent = thread.getEntry();
+        final List<BooleanFormula> enc = new ArrayList<>();
+
+        final BooleanFormula cfStart = context.controlFlow(startEvent);
+        if (startEvent.getCreator() != null) {
+            enc.add(bmgr.implication(cfStart, context.execution(startEvent.getCreator())));
+        }
+        enc.add(startEvent.encodeExec(context));
+
+        for(final Event cur : startEvent.getSuccessor().getSuccessors()) {
+            final Event immPred = cur.getPredecessor();
+            final List<BooleanFormula> possiblePredCfs = new ArrayList<>();
+            if (immPred instanceof CondJump jump) {
+                possiblePredCfs.add(bmgr.and(context.controlFlow(immPred), bmgr.not(context.jumpCondition(jump))));
+            } else {
+                possiblePredCfs.add(context.controlFlow(immPred));
+            }
+
+            if (cur instanceof Label label) {
+                for (CondJump jump : label.getJumpSet()) {
+                    possiblePredCfs.add(bmgr.and(context.controlFlow(jump), context.jumpCondition(jump)));
+                }
+            }
+
+            // cf(cur) => exists pred: cf(pred) && "pred->cur"
+            enc.add(bmgr.implication(context.controlFlow(cur), bmgr.or(possiblePredCfs)));
+            // encode execution semantics
+            enc.add(cur.encodeExec(context));
         }
         return bmgr.and(enc);
     }
@@ -324,6 +383,105 @@ public class ProgramEncoder implements Encoder {
         return bmgr.and(enc);
     }
 
+
+    // ============================================ Helper classes ============================================
+
+    private class FairProgressEncoder {
+
+        private BooleanFormula encodeFairForwardProgress(Thread thread) {
+            final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
+            final List<BooleanFormula> enc = new ArrayList<>();
+
+            for (Event cur : thread.getEvents()) {
+                if (cur.getSuccessor() == null) {
+                    assert cur == thread.getExit();
+                    break;
+                }
+                final List<Event> succs = new ArrayList<>();
+                final BooleanFormula curCf = context.controlFlow(cur);
+                succs.add(cur.getSuccessor());
+                if (cur instanceof CondJump jump) {
+                    succs.add(jump.getLabel());
+                }
+                enc.add(bmgr.implication(curCf, bmgr.or(Lists.transform(succs, context::controlFlow))));
+            }
+            return bmgr.and(enc);
+        }
+
+        private BooleanFormula encodeForwardProgress(Program program) {
+            final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
+            final List<BooleanFormula> enc = new ArrayList<>();
+            for (Thread thread : program.getThreads()) {
+                enc.add(bmgr.implication(threadIsEnabled(thread), context.controlFlow(thread.getEntry())));
+                enc.add(encodeFairForwardProgress(thread));
+            }
+            return bmgr.and(enc);
+        }
+    }
+
+    private class UnfairProgressEncoder {
+        private BooleanFormula encodeForwardProgress(Program program) {
+            final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
+            final List<CondJump> loopWitnesses = new ArrayList<>();
+            for (CondJump jump : program.getThreadEvents(CondJump.class)) {
+                if (jump.hasTag(Tag.EARLYTERMINATION) && (jump.hasTag(Tag.SPINLOOP) || jump.hasTag(Tag.BOUND))) {
+                    loopWitnesses.add(jump);
+                }
+            }
+            final BooleanFormula fairProgress = new FairProgressEncoder().encodeForwardProgress(program);
+            final BooleanFormula unfairLoopScheduling = bmgr.or(Lists.transform(loopWitnesses,
+                    l -> bmgr.and(context.execution(l), context.jumpCondition(l))));
+            return bmgr.or(unfairLoopScheduling, fairProgress);
+        }
+    }
+
+    private class OBEProgressEncoder {
+        private BooleanFormula encodeForwardProgress(Program program) {
+            final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
+            final List<BooleanFormula> enc = new ArrayList<>();
+
+            for (Thread thread : program.getThreads()) {
+                enc.add(new FairProgressEncoder().encodeFairForwardProgress(thread));
+            }
+
+            return bmgr.and(enc);
+        }
+    }
+
+    private class HSAProgressEncoder {
+
+        private BooleanFormula isTerminated(Thread thread) {
+            final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
+            final List<CondJump> loopWitnesses = new ArrayList<>();
+            for (CondJump jump : thread.getEvents(CondJump.class)) {
+                if (jump.hasTag(Tag.EARLYTERMINATION) && (jump.hasTag(Tag.SPINLOOP) || jump.hasTag(Tag.BOUND))) {
+                    loopWitnesses.add(jump);
+                }
+            }
+            final BooleanFormula isLooping = bmgr.or(Lists.transform(loopWitnesses,
+                    l -> bmgr.and(context.execution(l), context.jumpCondition(l))));
+            return bmgr.not(isLooping);
+        }
+
+        private BooleanFormula encodeForwardProgress(Program program) {
+            final List<Thread> threads = program.getThreads(); // Assume ordered by id
+            final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
+
+            final List<BooleanFormula> enc = new ArrayList<>();
+            // TODO: Ignore non-enabled threads when checking progress condition
+            enc.add(context.controlFlow(threads.get(0).getEntry())); // First thread always gets executed
+            for (int i = 1; i < threads.size(); i++) {
+                final Thread prevThread = threads.get(i - 1);
+                final Thread curThread = threads.get(i);
+                final BooleanFormula progressCondition = bmgr.and(isTerminated(prevThread), threadIsEnabled(curThread));
+                final BooleanFormula threadScheduled = context.controlFlow(curThread.getEntry());
+                enc.add(bmgr.implication(progressCondition, bmgr.and(threadScheduled, new FairProgressEncoder().encodeFairForwardProgress(curThread))));
+            }
+
+            return bmgr.and(enc);
+        }
+    }
+
     private int getWorkgroupId(Thread thread) {
         ScopeHierarchy hierarchy = thread.getScopeHierarchy();
         if (hierarchy != null) {
@@ -337,3 +495,4 @@ public class ProgramEncoder implements Encoder {
                 "for a non-hierarchical thread");
     }
 }
+

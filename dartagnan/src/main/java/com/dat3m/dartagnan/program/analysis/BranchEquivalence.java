@@ -31,6 +31,9 @@ import java.util.stream.Collectors;
     TODO: (5) Transitively close the merged implication graph,
               and saturate the mutual exclusion relation using the rule
                    A => B, B ~ C, C <= D   ---->   A ~ D  (where ~ denotes mutual exclusion)
+
+    NOTE: BranchEquivalence assumes a strong forward progress model when computing equivalence:
+          when an event is in the control-flow then so is one of its successors.
 */
 
 public class BranchEquivalence extends AbstractEquivalence<Event> {

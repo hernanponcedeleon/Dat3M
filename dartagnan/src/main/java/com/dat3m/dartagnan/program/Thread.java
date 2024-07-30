@@ -75,7 +75,7 @@ public class Thread extends Function {
         Event cur = start;
         while (!(cur instanceof Load startLoad)) { cur = cur.getSuccessor(); }
         cur = start.getCreator();
-        while (!(cur instanceof Store startStore)) { cur = cur.getSuccessor(); }
+        while (!(cur instanceof Store startStore)) { cur = cur.getPredecessor(); }
         
         assert startStore.getAddress().equals(startLoad.getAddress());
         
