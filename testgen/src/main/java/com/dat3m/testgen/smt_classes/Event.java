@@ -16,7 +16,6 @@ public class Event {
     public IntegerFormula value;
     public IntegerFormula thread_id;
     public IntegerFormula thread_row;
-    public boolean was_moved = false;
 
     public Event(
         final int r_id
