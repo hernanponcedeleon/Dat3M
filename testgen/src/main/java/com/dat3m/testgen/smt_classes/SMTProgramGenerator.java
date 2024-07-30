@@ -116,8 +116,11 @@ public class SMTProgramGenerator {
                     break;
 
                 case co:
+                    memory_ufds.merge( relation.event_L.id, relation.event_R.id );
+                    prover.addConstraint( int_mngr.equal( relation.event_L.type, int_mngr.makeNumber( WRITE_INSTRUCTION ) ) );
+                    prover.addConstraint( int_mngr.equal( relation.event_R.type, int_mngr.makeNumber( WRITE_INSTRUCTION ) ) );
+                    prover.addConstraint( int_mngr.equal( relation.event_L.location, relation.event_R.location ) );
                     break;
-
                 case fr:
                     break;
 
@@ -132,6 +135,7 @@ public class SMTProgramGenerator {
     ) throws Exception {
         for( final Event event : cycle.events ) {
             if( thread_ufds.find_set( event.id ) == event.id ) {
+                /* Events that don't have to be in the same thread, won't be in the same thread */
                 for( final Event t_event : cycle.events ) {
                     if( thread_ufds.are_same_set( event.id, t_event.id ) )
                         continue;
@@ -141,12 +145,31 @@ public class SMTProgramGenerator {
                 }
             }
             if( memory_ufds.find_set( event.id ) == event.id ) {
+                /* Events that don't have to access the same memory location, won't access the same memory location */
                 for( final Event t_event : cycle.events ) {
                     if( memory_ufds.are_same_set( event.id, t_event.id ) )
                         continue;
                     if( memory_ufds.find_set( t_event.id ) != t_event.id )
                         continue;
                     prover.addConstraint( bool_mngr.not( int_mngr.equal( event.location , t_event.location ) ) );
+                }
+                /* All writes to a memory location will be with a distinct value */
+                for( final Event event_1 : cycle.events ) {
+                    if( !memory_ufds.are_same_set( event.id, event_1.id ) )
+                        continue;
+                    for( final Event event_2 : cycle.events ) {
+                        if( !memory_ufds.are_same_set( event.id, event_2.id ) || event_1 == event_2 )
+                            continue;
+                        prover.addConstraint(
+                            bool_mngr.implication(
+                                bool_mngr.and(
+                                    int_mngr.equal( event_1.type, int_mngr.makeNumber( WRITE_INSTRUCTION ) ),
+                                    int_mngr.equal( event_2.type, int_mngr.makeNumber( WRITE_INSTRUCTION ) )
+                                ),
+                                bool_mngr.not( int_mngr.equal( event_1.value , event_2.value ) )
+                            )
+                        );
+                    }
                 }
             }
         }
