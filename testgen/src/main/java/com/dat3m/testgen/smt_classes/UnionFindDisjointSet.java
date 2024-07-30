@@ -42,8 +42,11 @@ public class UnionFindDisjointSet {
             return;
         int set_i = find_set(i);
         int set_j = find_set(j);
-        p[set_i] = set_j;
-        set_size[set_j] += set_size[set_i];
+        if( set_size[set_i] < set_size[set_j] ) {
+            int t = set_i; set_i = set_j; set_j = t;
+        }
+        p[set_j] = set_i;
+        set_size[set_i] += set_size[set_j];
     }
 
 }
