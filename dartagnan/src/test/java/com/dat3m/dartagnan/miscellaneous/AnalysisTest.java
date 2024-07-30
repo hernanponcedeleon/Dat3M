@@ -1,6 +1,7 @@
 package com.dat3m.dartagnan.miscellaneous;
 
 import com.dat3m.dartagnan.configuration.Alias;
+import com.dat3m.dartagnan.configuration.ProgressModel;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.type.IntegerType;
@@ -78,7 +79,7 @@ public class AnalysisTest {
         Configuration config = Configuration.defaultConfiguration();
         Context context = Context.create();
         context.register(BranchEquivalence.class, BranchEquivalence.fromConfig(program, config));
-        context.register(ExecutionAnalysis.class, ExecutionAnalysis.fromConfig(program, context, config));
+        context.register(ExecutionAnalysis.class, ExecutionAnalysis.fromConfig(program, ProgressModel.FAIR, context, config));
         Dependency dep = Dependency.fromConfig(program, context, config);
         Event me0 = findMatchingEventAfterProcessing(program, e0);
         Event me1 = findMatchingEventAfterProcessing(program, e1);
@@ -512,7 +513,7 @@ public class AnalysisTest {
         ProcessingManager.fromConfig(configuration).run(program);
         Context analysisContext = Context.create();
         analysisContext.register(BranchEquivalence.class, BranchEquivalence.fromConfig(program, configuration));
-        analysisContext.register(ExecutionAnalysis.class, ExecutionAnalysis.fromConfig(program, analysisContext, configuration));
+        analysisContext.register(ExecutionAnalysis.class, ExecutionAnalysis.fromConfig(program, ProgressModel.FAIR, analysisContext, configuration));
         analysisContext.register(Dependency.class, Dependency.fromConfig(program, analysisContext, configuration));
         return AliasAnalysis.fromConfig(program, analysisContext, configuration);
     }

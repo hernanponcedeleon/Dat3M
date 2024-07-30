@@ -1,16 +1,16 @@
 package com.dat3m.dartagnan.utils.options;
 
 import com.dat3m.dartagnan.configuration.Method;
+import com.dat3m.dartagnan.configuration.ProgressModel;
 import com.dat3m.dartagnan.configuration.Property;
 import com.dat3m.dartagnan.witness.WitnessType;
-
 import org.sosy_lab.common.configuration.Option;
 import org.sosy_lab.common.configuration.Options;
 import org.sosy_lab.java_smt.SolverContextFactory.Solvers;
 
-import static com.dat3m.dartagnan.configuration.OptionNames.*;
-
 import java.util.EnumSet;
+
+import static com.dat3m.dartagnan.configuration.OptionNames.*;
 
 @Options
 public abstract class BaseOptions {
@@ -19,9 +19,17 @@ public abstract class BaseOptions {
         name=PROPERTY,
         description="The property to check for: reachability (default), liveness, races.",
         toUppercase=true)
-    private EnumSet<Property> property=Property.getDefault();
+    private EnumSet<Property> property = Property.getDefault();
 
     public EnumSet<Property> getProperty() { return property; }
+
+    @Option(
+            name=PROGRESSMODEL,
+            description="The progress model to assume: fair (default), HSA, OBE, unfair",
+            toUppercase=true)
+    private ProgressModel progressModel = ProgressModel.getDefault();
+
+    public ProgressModel getProgressModel() { return progressModel; }
 
     @Option(
         name=VALIDATE,

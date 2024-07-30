@@ -117,6 +117,8 @@ public class Dartagnan extends BaseOptions {
                 .orElseThrow(() -> new IllegalArgumentException("CAT model not given or format not recognized")));
         logger.info("CAT file path: " + fileModel);
 
+        logger.info("Progress model: " + o.getProgressModel());
+
         Wmm mcm = new ParserCat().parse(fileModel);
         Program p = new ProgramParser().parse(fileProgram);
         EnumSet<Property> properties = o.getProperty();
@@ -129,6 +131,7 @@ public class Dartagnan extends BaseOptions {
 
         VerificationTaskBuilder builder = VerificationTask.builder()
                 .withConfig(config)
+                .withProgressModel(o.getProgressModel())
                 .withWitness(witness);
         // If the arch has been set during parsing (this only happens for litmus tests)
         // and the user did not explicitly add the target option, we use the one
