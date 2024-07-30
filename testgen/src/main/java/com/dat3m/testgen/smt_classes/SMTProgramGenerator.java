@@ -7,7 +7,6 @@ import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.log.LogManager;
 import org.sosy_lab.java_smt.SolverContextFactory;
 import org.sosy_lab.java_smt.SolverContextFactory.Solvers;
-import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.BooleanFormulaManager;
 import org.sosy_lab.java_smt.api.FormulaManager;
 import org.sosy_lab.java_smt.api.IntegerFormulaManager;
@@ -32,6 +31,9 @@ public class SMTProgramGenerator {
 
     ProverEnvironment prover;
 
+    UnionFindDisjointSet thread_ufds;
+    UnionFindDisjointSet memory_ufds;
+
     final static int READ_INSTRUCTION = 1;
     final static int WRITE_INSTRUCTION = 2;
 
@@ -53,6 +55,9 @@ public class SMTProgramGenerator {
         int_mngr = formula_mngr.getIntegerFormulaManager();
         bool_mngr = formula_mngr.getBooleanFormulaManager();
 
+        thread_ufds = new UnionFindDisjointSet( cycle.cycle_size );
+        memory_ufds = new UnionFindDisjointSet( cycle.cycle_size );
+
         prover = context.newProverEnvironment( ProverOptions.GENERATE_MODELS );
     }
 
@@ -62,9 +67,9 @@ public class SMTProgramGenerator {
 
         initialize( sb );
 
-        // process_relations( sb );
+        process_relations( sb );
 
-        // finalize( sb );
+        finalize( sb );
 
         prove_program( sb );
 
@@ -84,7 +89,7 @@ public class SMTProgramGenerator {
             String attribute_names[] = new String[]{ "type", "location", "value", "thread_id", "thread_row" };
             IntegerFormula attribute_formulas[] = new IntegerFormula[]{ event.type, event.location, event.value, event.thread_id, event.thread_row };
             for( int i = 0 ; i < attribute_names.length ; i++ ){
-                prover.addConstraint( int_mngr.greaterOrEquals( attribute_formulas[i], int_mngr.makeNumber( -1 ) ) );
+                prover.addConstraint( int_mngr.greaterOrEquals( attribute_formulas[i], int_mngr.makeNumber( 0 ) ) );
                 prover.addConstraint( int_mngr.lessThan( attribute_formulas[i], int_mngr.makeNumber( cycle.cycle_size ) ) );
             }
         }
@@ -97,6 +102,9 @@ public class SMTProgramGenerator {
             sb.append( relation + "\n" );
             switch( relation.type ) {
                 case po:
+                    thread_ufds.merge( relation.event_L.id, relation.event_R.id );
+                    prover.addConstraint( int_mngr.equal( relation.event_L.thread_id , relation.event_R.thread_id ) );
+                    prover.addConstraint( int_mngr.lessThan( relation.event_L.thread_row , relation.event_R.thread_row ) );
                     break;
 
                 case rf:
@@ -117,6 +125,17 @@ public class SMTProgramGenerator {
     void finalize(
         StringBuilder sb
     ) throws Exception {
+        for( final Event event : cycle.events ) {
+            if( thread_ufds.find_set( event.id ) == event.id ) {
+                for( final Event t_event : cycle.events ) {
+                    if( thread_ufds.are_same_set( event.id, t_event.id ) )
+                        continue;
+                    if( thread_ufds.find_set( t_event.id ) != t_event.id )
+                        continue;
+                    prover.addConstraint( bool_mngr.not( int_mngr.equal( event.thread_id , t_event.thread_id ) ) );
+                }
+            }
+        }
     }
 
     void prove_program(
