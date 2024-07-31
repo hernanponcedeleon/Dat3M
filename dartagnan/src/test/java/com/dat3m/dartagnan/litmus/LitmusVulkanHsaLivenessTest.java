@@ -27,7 +27,7 @@ public class LitmusVulkanHsaLivenessTest extends AbstractLitmusTest {
     @Override
     protected Provider<Configuration> getConfigurationProvider() {
         return Provider.fromSupplier(() -> Configuration.builder()
-                .setOption(PROGRESSMODEL, "fair")
+                .setOption(PROGRESSMODEL, "hsa")
                 .build());
     }
 
