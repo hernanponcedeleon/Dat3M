@@ -27,7 +27,7 @@ public class LitmusVulkanObeLivenessTest extends AbstractLitmusTest {
     @Override
     protected Provider<Configuration> getConfigurationProvider() {
         return Provider.fromSupplier(() -> Configuration.builder()
-                .setOption(PROGRESSMODEL, "fair")
+                .setOption(PROGRESSMODEL, "obe")
                 .build());
     }
 
