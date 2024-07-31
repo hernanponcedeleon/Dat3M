@@ -87,6 +87,8 @@ public class CNF {
 
         transformation_unit();
 
+        transformation_term();
+
     }
 
     void transformation_start()
@@ -141,6 +143,45 @@ public class CNF {
                     remove_rule( NT, rule );
                     for( final String rules_in_unit : rules.get( items[0] ) )
                         add_rule( NT, rules_in_unit );
+                    rules_modified = true;
+                    break;
+                }
+                if( rules_modified )
+                    break;
+            }
+        }
+    }
+
+    void transformation_term()
+    throws Exception {
+        boolean rules_modified = true;
+        while( rules_modified ) {
+            rules_modified = false;
+            for( final String NT : non_terminals ) {
+                for( final String rule : rules.get( NT ) ) {
+                    String items[] = rule.split( ";" );
+                    if( items.length == 1 )
+                        continue;
+                    boolean has_terminal = false;
+                    for( final String item : items )
+                        if( terminals.contains( item ) )
+                            has_terminal = true;
+                    if( !has_terminal )
+                        continue;
+                    remove_rule( NT, rule );
+                    StringBuilder new_rule = new StringBuilder();
+                    for( int i = 0 ; i < items.length ; i++ ) {
+                        if( !terminals.contains( items[i] ) ) {
+                            new_rule.append( ( i > 0 ? ";" : "" ) + items[i] );
+                        } else {
+                            String new_nonterminal = "NT_" + new_nonterminal_idx;
+                            new_nonterminal_idx++;
+                            add_non_terminal( new_nonterminal );
+                            add_rule( new_nonterminal, items[i] );
+                            new_rule.append( ( i > 0 ? ";" : "" ) + new_nonterminal );
+                        }
+                    }
+                    add_rule( NT, new_rule.toString() );
                     rules_modified = true;
                     break;
                 }

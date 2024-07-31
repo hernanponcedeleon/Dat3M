@@ -22,7 +22,7 @@ public class TestgenDriver {
         cnf.add_rule( "HB_SC", "rf" );
         cnf.add_rule( "HB_SC", "co" );
         cnf.add_rule( "HB_SC", "FR" );
-        cnf.add_rule( "FR", "rf_inv;co;po;co" );
+        cnf.add_rule( "FR", "rf_inv;co" );
 
         cnf.to_normal_form();
 
