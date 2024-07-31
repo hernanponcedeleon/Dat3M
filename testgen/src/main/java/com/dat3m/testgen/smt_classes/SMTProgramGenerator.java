@@ -121,6 +121,7 @@ public class SMTProgramGenerator {
                     prover.addConstraint( int_mngr.equal( relation.event_R.type, int_mngr.makeNumber( WRITE_INSTRUCTION ) ) );
                     prover.addConstraint( int_mngr.equal( relation.event_L.location, relation.event_R.location ) );
                     break;
+                    
                 case fr:
                     break;
 
