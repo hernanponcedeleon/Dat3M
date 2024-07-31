@@ -85,7 +85,6 @@ public class ProcessingManager implements ProgramProcessor {
         final FunctionProcessor removeDeadJumps = RemoveDeadCondJumps.fromConfig(config);
         programProcessors.addAll(Arrays.asList(
                 printBeforeProcessing ? DebugPrint.withHeader("Before processing", Printer.Mode.ALL) : null,
-                ProgramProcessor.fromFunctionProcessor(NormalizeLoops.newInstance(), Target.FUNCTIONS, true),
                 intrinsics.markIntrinsicsPass(),
                 GEPToAddition.newInstance(),
                 NaiveDevirtualisation.newInstance(),
@@ -101,6 +100,7 @@ public class ProcessingManager implements ProgramProcessor {
                 ),
                 RegisterDecomposition.newInstance(),
                 RemoveDeadFunctions.newInstance(),
+                ProgramProcessor.fromFunctionProcessor(NormalizeLoops.newInstance(), Target.FUNCTIONS, true),
                 printAfterSimplification ? DebugPrint.withHeader("After simplification", Printer.Mode.ALL) : null,
                 Compilation.fromConfig(config), // We keep compilation global for now
                 LoopFormVerification.fromConfig(config),

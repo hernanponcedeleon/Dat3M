@@ -91,6 +91,7 @@ public class NormalizeLoops implements FunctionProcessor {
     public void run(Function function) {
 
         // Guarantees header is the only entry point
+        int labelCounter = 0;
         for (Label label : function.getEvents(Label.class)) {
 
             final List<CondJump> backJumps = label.getJumpSet().stream()
@@ -106,7 +107,7 @@ public class NormalizeLoops implements FunctionProcessor {
             final Label loopBegin = label;
             final CondJump uniqueBackJump = backJumps.get(0);
 
-            final Register sourceReg = function.newRegister(String.format("__jumpedTo_%s_From", label), types.getArchType());
+            final Register sourceReg = function.newRegister(String.format("__jumpedTo_%s#%s_From", label, labelCounter), types.getArchType());
             final Local initJumpedFromOutside = EventFactory.newLocal(sourceReg, expressions.makeZero(types.getArchType()));
             function.getEntry().insertAfter(initJumpedFromOutside);
 
@@ -140,6 +141,8 @@ public class NormalizeLoops implements FunctionProcessor {
                     uniqueBackJump.getPredecessor().insertAfter(resetJumpFromOutside);
                 }
             }
+
+            labelCounter++;
         }
 
         IdReassignment.newInstance().run(function);
