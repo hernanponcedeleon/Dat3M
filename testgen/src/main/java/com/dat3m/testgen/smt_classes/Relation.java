@@ -7,7 +7,7 @@ public class Relation {
         po,
         rf,
         co,
-        fr
+        rf_inv
     };
 
     Event event_L;

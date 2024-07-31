@@ -122,7 +122,12 @@ public class SMTProgramGenerator {
                     prover.addConstraint( int_mngr.equal( relation.event_L.location, relation.event_R.location ) );
                     break;
                     
-                case fr:
+                case rf_inv:
+                    memory_ufds.merge( relation.event_L.id, relation.event_R.id );
+                    prover.addConstraint( int_mngr.equal( relation.event_L.type, int_mngr.makeNumber( READ_INSTRUCTION ) ) );
+                    prover.addConstraint( int_mngr.equal( relation.event_R.type, int_mngr.makeNumber( WRITE_INSTRUCTION ) ) );
+                    prover.addConstraint( int_mngr.equal( relation.event_L.location, relation.event_R.location ) );
+                    prover.addConstraint( int_mngr.equal( relation.event_L.value, relation.event_R.value ) );
                     break;
 
                 default:
