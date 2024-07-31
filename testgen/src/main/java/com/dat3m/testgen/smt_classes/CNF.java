@@ -85,6 +85,8 @@ public class CNF {
 
         transformation_bin();
 
+        transformation_unit();
+
     }
 
     void transformation_start()
@@ -115,6 +117,30 @@ public class CNF {
                     for( int i = 2 ; i < items.length ; i++ )
                         new_rule.append( ";" + items[i] );
                     add_rule( NT, new_rule.toString() );
+                    rules_modified = true;
+                    break;
+                }
+                if( rules_modified )
+                    break;
+            }
+        }
+    }
+
+    void transformation_unit()
+    throws Exception {
+        boolean rules_modified = true;
+        while( rules_modified ) {
+            rules_modified = false;
+            for( final String NT : non_terminals ) {
+                for( final String rule : rules.get( NT ) ) {
+                    String items[] = rule.split( ";" );
+                    if( items.length != 1 )
+                        continue;
+                    if( !non_terminals.contains( items[0] ) )
+                        continue;
+                    remove_rule( NT, rule );
+                    for( final String rules_in_unit : rules.get( items[0] ) )
+                        add_rule( NT, rules_in_unit );
                     rules_modified = true;
                     break;
                 }
