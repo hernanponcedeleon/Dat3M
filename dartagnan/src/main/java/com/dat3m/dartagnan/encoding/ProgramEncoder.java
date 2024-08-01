@@ -128,6 +128,10 @@ public class ProgramEncoder implements Encoder {
 
     // =============================== Control flow ===============================
 
+    private boolean isInitThread(Thread thread) {
+        return thread.getEntry().getSuccessor() instanceof Init;
+    }
+
     /*
         A thread is enabled if it has no creator or the corresponding ThreadCreate
         event was executed (and didn't fail spuriously).
@@ -146,6 +150,10 @@ public class ProgramEncoder implements Encoder {
         }
     }
 
+    private BooleanFormula threadHasStarted(Thread thread) {
+        return context.execution(thread.getEntry());
+    }
+
     private BooleanFormula threadHasTerminated(Thread thread) {
         final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
         final List<BooleanFormula> nonTerminationWitnesses = new ArrayList<>();
@@ -157,6 +165,8 @@ public class ProgramEncoder implements Encoder {
                 ));
             }
         }
+        // A thread that was never started is also non-terminating.
+        nonTerminationWitnesses.add(bmgr.not(threadHasStarted(thread)));
         return bmgr.not(bmgr.or(nonTerminationWitnesses));
     }
 
@@ -167,6 +177,10 @@ public class ProgramEncoder implements Encoder {
         List<BooleanFormula> enc = new ArrayList<>();
         for(Thread t : context.getTask().getProgram().getThreads()){
             enc.add(encodeConsistentThreadCF(t));
+            if (isInitThread(t)) {
+                // Init threads are always scheduled
+                enc.add(encodeFairForwardProgress(t));
+            }
         }
         enc.add(encodeForwardProgress(context.getTask().getProgram(), context.getTask().getProgressModel()));
         return bmgr.and(enc);
@@ -184,7 +198,7 @@ public class ProgramEncoder implements Encoder {
         final ThreadStart startEvent = thread.getEntry();
         final List<BooleanFormula> enc = new ArrayList<>();
 
-        enc.add(bmgr.implication(context.controlFlow(startEvent), threadIsEnabled(thread)));
+        enc.add(bmgr.implication(threadHasStarted(thread), threadIsEnabled(thread)));
         enc.add(startEvent.encodeExec(context));
 
         for(final Event cur : startEvent.getSuccessor().getSuccessors()) {
@@ -413,10 +427,6 @@ public class ProgramEncoder implements Encoder {
 
     // ============================================ Forward progress ============================================
 
-    private boolean isInitThread(Thread thread) {
-        return thread.getEntry().getSuccessor() instanceof Init;
-    }
-
     /*
         Encodes fair forward progress for a single thread: the thread will eventually get scheduled (if it is enabled).
         In particular, if the thread is enabled then it will eventually execute.
@@ -425,8 +435,8 @@ public class ProgramEncoder implements Encoder {
         final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
         final List<BooleanFormula> enc = new ArrayList<>();
 
-        // An enabled thread eventually gets scheduled
-        enc.add(bmgr.implication(threadIsEnabled(thread), context.controlFlow(thread.getEntry())));
+        // An enabled thread eventually gets started/scheduled
+        enc.add(bmgr.implication(threadIsEnabled(thread), threadHasStarted(thread)));
 
         // For every event in the cf a successor will be in the cf.
         for (Event cur : thread.getEvents()) {
@@ -452,7 +462,9 @@ public class ProgramEncoder implements Encoder {
             final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
             final List<BooleanFormula> enc = new ArrayList<>();
             for (Thread thread : program.getThreads()) {
-                enc.add(encodeFairForwardProgress(thread));
+                if (!isInitThread(thread)) {
+                    enc.add(encodeFairForwardProgress(thread));
+                }
             }
             return bmgr.and(enc);
         }
@@ -460,17 +472,10 @@ public class ProgramEncoder implements Encoder {
 
     private class UnfairProgressEncoder {
         private BooleanFormula encodeForwardProgress(Program program) {
-
-            final List<BooleanFormula> enc = new ArrayList<>();
-            for (Thread thread : program.getThreads()) {
-                if (isInitThread(thread)) {
-                    enc.add(encodeFairForwardProgress(thread));
-                }
-            }
             // NOTE: We do not need to enforce that some thread always has to get scheduled
             // because we (currently) cannot have liveness issues by not executing threads at all
             // (a thread that never runs is not considered a liveness violation right now).
-            return context.getBooleanFormulaManager().and(enc);
+            return context.getBooleanFormulaManager().makeTrue();
 
             /*
             final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
@@ -493,10 +498,12 @@ public class ProgramEncoder implements Encoder {
             final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
             final List<BooleanFormula> enc = new ArrayList<>();
             for (Thread thread : program.getThreads()) {
-                final BooleanFormula threadWasScheduledOnce = isInitThread(thread)
-                        ? bmgr.makeTrue() : context.execution(thread.getEntry());
+                if (isInitThread(thread)) {
+                    continue;
+                }
+                final BooleanFormula wasScheduledOnce = threadHasStarted(thread);
                 final BooleanFormula fairProgress = encodeFairForwardProgress(thread);
-                enc.add(bmgr.implication(threadWasScheduledOnce, fairProgress));
+                enc.add(bmgr.implication(wasScheduledOnce, fairProgress));
             }
             return bmgr.and(enc);
         }
@@ -513,7 +520,6 @@ public class ProgramEncoder implements Encoder {
             for (int i = 0; i < threads.size(); i++) {
                 final Thread thread = threads.get(i);
                 if (isInitThread(thread)) {
-                    enc.add(encodeFairForwardProgress(thread));
                     continue;
                 }
                 final List<BooleanFormula> allLowerIdThreadTerminated = new ArrayList<>();
