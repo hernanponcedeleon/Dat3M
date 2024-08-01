@@ -132,14 +132,14 @@ public class NormalizeLoops implements FunctionProcessor {
             int counter = 0;
 
             final Label loopBegin = label;
-            final CondJump uniqueBackJump = backJumps.get(0);
+            final CondJump last = backJumps.get(backJumps.size() - 1);
 
             final Register sourceReg = function.newRegister(String.format("__jumpedTo_%s#%s_From", label, labelCounter), types.getArchType());
             final Local initJumpedFromOutside = EventFactory.newLocal(sourceReg, expressions.makeZero(types.getArchType()));
             function.getEntry().insertAfter(initJumpedFromOutside);
 
             final List<Label> loopBodyLabels = loopBegin.getSuccessor().getSuccessors().stream()
-                    .takeWhile(ev -> ev != uniqueBackJump)
+                    .takeWhile(ev -> ev != last)
                     .filter(Label.class::isInstance).map(Label.class::cast)
                     .toList();
 
@@ -153,18 +153,16 @@ public class NormalizeLoops implements FunctionProcessor {
 
                     final Expression source = expressions.makeValue(BigInteger.valueOf(counter), types.getArchType());
                     final Local jumpingFrom = EventFactory.newLocal(sourceReg, source);
-                    final CondJump jumpToHeader = EventFactory.newGoto(loopBegin);
 
-                    fromOutside.replaceBy(jumpingFrom);
-                    jumpingFrom.insertAfter(jumpToHeader);
-                    jumpToHeader.updateReferences(Map.of(jumpToHeader.getLabel(), loopBegin));
+                    fromOutside.updateReferences(Map.of(fromOutside.getLabel(), loopBegin));
+                    fromOutside.getPredecessor().insertAfter(jumpingFrom);
 
                     final Label internalLabel = fromOutside.getLabel();
                     final CondJump jumpToInternal = EventFactory.newJump(expressions.makeEQ(sourceReg, source), internalLabel);
                     final Local resetJumpFromOutside = EventFactory.newLocal(sourceReg, expressions.makeZero(types.getArchType()));
 
                     loopBegin.insertAfter(jumpToInternal);
-                    uniqueBackJump.getPredecessor().insertAfter(resetJumpFromOutside);
+                    last.getPredecessor().insertAfter(resetJumpFromOutside);
                 }
             }
 
