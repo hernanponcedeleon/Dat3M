@@ -138,7 +138,7 @@ Please feel free to [contact us](mailto:hernanl.leon@huawei.com) in case of ques
 
 Awards
 ======
-- Distinguished Paper @ OOPSLA 2023
+- Distinguished Paper @ OOPSLA 2022
 - Gold Medal @ SVCOMP 2023
 - Gold Medal (x2) @ SVCOMP 2024
 
