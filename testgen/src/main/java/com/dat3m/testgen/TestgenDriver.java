@@ -2,8 +2,11 @@ package com.dat3m.testgen;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.Stack;
+import java.util.TreeSet;
 
 import com.dat3m.testgen.smt_classes.CNF;
 import com.dat3m.testgen.smt_classes.Cycle;
@@ -12,7 +15,11 @@ import com.dat3m.testgen.smt_classes.SMTProgramGenerator;
 
 public class TestgenDriver {
 
+    static Set <String> all_cycles;
+
     public static void main(String[] args) throws Exception {
+
+        all_cycles = new TreeSet<>();
         
         CNF cnf = new CNF( "HB_SC" );
 
@@ -33,8 +40,11 @@ public class TestgenDriver {
         cnf.to_normal_form();
 
         final int cycle_length = 3;
-        System.out.println( "Cycles of length " + cycle_length + ":" );
         explore_cnf( cnf, new ArrayList<String>( Arrays.asList( cnf.starting_nt ) ), new ArrayList<>(), cycle_length - 1 );
+        
+        System.out.println( "Cycles of length " + cycle_length + ":" );
+        for( String cycle : all_cycles )
+            System.out.println( cycle );
 
     }
 
@@ -51,7 +61,7 @@ public class TestgenDriver {
 
         if( states.isEmpty() ) {
             if( allowed_growth == 0 )
-                System.out.println( "Cycle: " + cycle );
+                all_cycles.add( cycle.toString() );
             return;
         }
 
