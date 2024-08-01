@@ -27,13 +27,14 @@ public class TestgenDriver {
         cnf.add_rule( "HB_SC", "rf" );
         cnf.add_rule( "HB_SC", "co" );
         cnf.add_rule( "HB_SC", "FR" );
+        cnf.add_rule( "HB_SC", "HB_SC;HB_SC" );
         cnf.add_rule( "FR", "rf_inv;co" );
 
         cnf.to_normal_form();
 
-        System.out.println( cnf );
-
-        explore_cnf( cnf, new ArrayList<String>( Arrays.asList( cnf.starting_nt ) ), new ArrayList<>(), 0 );
+        final int cycle_length = 3;
+        System.out.println( "Cycles of length " + cycle_length + ":" );
+        explore_cnf( cnf, new ArrayList<String>( Arrays.asList( cnf.starting_nt ) ), new ArrayList<>(), cycle_length - 1 );
 
     }
 
@@ -43,10 +44,14 @@ public class TestgenDriver {
         List <String> cycle,
         int allowed_growth
     ) throws Exception {
-        System.out.println( states + "\n" + cycle + "\n" + allowed_growth + "\n" );
+        // System.out.println( states + "\n" + cycle + "\n" + allowed_growth + "\n" );
+
+        if( allowed_growth < 0 )
+            return;
 
         if( states.isEmpty() ) {
-            System.out.println( "Cycle: " + cycle + "\n" );
+            if( allowed_growth == 0 )
+                System.out.println( "Cycle: " + cycle );
             return;
         }
 
