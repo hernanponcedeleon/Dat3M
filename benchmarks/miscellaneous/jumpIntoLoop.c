@@ -6,14 +6,15 @@ volatile int32_t x = 0;
 
 int main()
 {
-    int i = __VERIFIER_nondet_int();
-    if (i == 42) goto L;
+    int i = 0;
+    int jumpIntoLoop = __VERIFIER_nondet_bool();
+    if (jumpIntoLoop) goto L;
 
-    for (i = 0; i < 5; i++) {
+    for (i = 1; i < 5; i++) {
 L:
-    x++;
+        x++;
     }
 
-    assert(x <= 5);
-	return 0;
+    assert((!jumpIntoLoop || x == 5) && (jumpIntoLoop || x == 4));
+    return 0;
 }
