@@ -12,6 +12,7 @@ import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.RegWriter;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.CondJump;
+import com.dat3m.dartagnan.program.event.core.Init;
 import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.event.core.threading.ThreadStart;
 import com.dat3m.dartagnan.program.memory.Memory;
@@ -341,6 +342,10 @@ public class ProgramEncoder implements Encoder {
 
     // ============================================ Forward progress ============================================
 
+    private boolean isInitThread(Thread thread) {
+        return thread.getEntry().getSuccessor() instanceof Init;
+    }
+
     /*
         Encodes fair forward progress for a single thread: the thread will eventually get scheduled (if it is enabled).
         In particular, if the thread is enabled then it will eventually execute.
@@ -385,6 +390,17 @@ public class ProgramEncoder implements Encoder {
     private class UnfairProgressEncoder {
         private BooleanFormula encodeForwardProgress(Program program) {
 
+            final List<BooleanFormula> enc = new ArrayList<>();
+            for (Thread thread : program.getThreads()) {
+                if (isInitThread(thread)) {
+                    enc.add(encodeFairForwardProgress(thread));
+                }
+            }
+            // NOTE: We do not need to enforce that some thread always has to get scheduled
+            // because we (currently) cannot have liveness issues by not executing threads at all
+            // (a thread that never runs is not considered a liveness violation right now).
+            return context.getBooleanFormulaManager().and(enc);
+
             /*
             final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
             final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
@@ -398,11 +414,6 @@ public class ProgramEncoder implements Encoder {
             // Otherwise, we have fair progress.
             return bmgr.or(canScheduleUnfairly, fairProgress);
             */
-
-            // NOTE: We do not need to enforce that some thread always has to get scheduled
-            // because we (currently) cannot have liveness issues by not executing threads at all
-            // (a thread that never runs is not considered a liveness violation right now).
-            return context.getBooleanFormulaManager().makeTrue();
         }
     }
 
@@ -411,7 +422,8 @@ public class ProgramEncoder implements Encoder {
             final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
             final List<BooleanFormula> enc = new ArrayList<>();
             for (Thread thread : program.getThreads()) {
-                final BooleanFormula threadWasScheduledOnce = context.execution(thread.getEntry());
+                final BooleanFormula threadWasScheduledOnce = isInitThread(thread)
+                        ? bmgr.makeTrue() : context.execution(thread.getEntry());
                 final BooleanFormula fairProgress = encodeFairForwardProgress(thread);
                 enc.add(bmgr.implication(threadWasScheduledOnce, fairProgress));
             }
@@ -429,6 +441,10 @@ public class ProgramEncoder implements Encoder {
             final List<BooleanFormula> enc = new ArrayList<>();
             for (int i = 0; i < threads.size(); i++) {
                 final Thread thread = threads.get(i);
+                if (isInitThread(thread)) {
+                    enc.add(encodeFairForwardProgress(thread));
+                    continue;
+                }
                 final List<BooleanFormula> allLowerIdThreadTerminated = new ArrayList<>();
                 for (Thread t : threads.subList(0, i)) {
                     allLowerIdThreadTerminated.add(bmgr.or(threadHasTerminated(t), bmgr.not(threadIsEnabled(t))));
