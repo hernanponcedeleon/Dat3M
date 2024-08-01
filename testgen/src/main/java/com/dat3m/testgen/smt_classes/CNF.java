@@ -9,10 +9,10 @@ import java.util.Set;
 
 public class CNF {
     
-    Map < String, List <String> > rules;
-    String starting_nt;
-    Set <String> non_terminals;
-    Set <String> terminals;
+    public Map < String, List <String> > rules;
+    public String starting_nt;
+    public Set <String> non_terminals;
+    public Set <String> terminals;
     int new_nonterminal_idx = 1;
 
     public CNF(
