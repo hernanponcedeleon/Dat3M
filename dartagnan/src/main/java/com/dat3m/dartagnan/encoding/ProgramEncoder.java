@@ -158,7 +158,7 @@ public class ProgramEncoder implements Encoder {
         final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
         final List<BooleanFormula> nonTerminationWitnesses = new ArrayList<>();
         for (CondJump jump : thread.getEvents(CondJump.class)) {
-            if (jump.hasTag(Tag.EARLYTERMINATION) && (jump.hasTag(Tag.SPINLOOP) || jump.hasTag(Tag.BOUND))) {
+            if (jump.hasTag(Tag.NONTERMINATION)) {
                 nonTerminationWitnesses.add(bmgr.and(
                         context.execution(jump),
                         context.jumpCondition(jump)

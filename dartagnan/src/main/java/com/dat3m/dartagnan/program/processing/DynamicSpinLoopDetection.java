@@ -197,7 +197,7 @@ public class DynamicSpinLoopDetection implements ProgramProcessor {
         final Event terminator = func instanceof Thread thread ?
                 EventFactory.newJump(guard, (Label) thread.getExit())
                 : EventFactory.newAbortIf(guard);
-        terminator.addTags(Tag.SPINLOOP, Tag.EARLYTERMINATION, Tag.NOOPT);
+        terminator.addTags(Tag.SPINLOOP, Tag.NONTERMINATION, Tag.NOOPT);
         return terminator;
     }
 

@@ -191,7 +191,7 @@ public class LoopUnrolling implements ProgramProcessor {
         final Event boundEvent = func instanceof Thread thread ?
                 EventFactory.newGoto((Label) thread.getExit()) :
                 EventFactory.newAbortIf(ExpressionFactory.getInstance().makeTrue());
-        boundEvent.addTags(Tag.BOUND, Tag.EARLYTERMINATION, Tag.NOOPT);
+        boundEvent.addTags(Tag.BOUND, Tag.NONTERMINATION, Tag.NOOPT);
         return boundEvent;
     }
 

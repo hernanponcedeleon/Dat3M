@@ -417,7 +417,8 @@ public class PropertyEncoder implements Encoder {
             - while reading only from co-maximal stores
         => Without external help, a stuck thread will never be able to exit the loop.
 
-        (**) A thread terminates normally IFF it does not terminate early (denoted by EARLYTERMINATION-tagged jumps)
+        (**) A thread terminates normally IFF it does terminate (no NONTERMINATION-tagged jumps) non-exceptionally
+             (no EXCEPTIONAL_TERMINATION-tagged jumps)
              due to e.g.,
             - violating an assertion
             - reaching the loop unrolling bound
@@ -458,7 +459,7 @@ public class PropertyEncoder implements Encoder {
                 final BooleanFormula isStuck = isStuckMap.get(thread);
                 final BooleanFormula isTerminatingNormally = thread
                         .getEvents().stream()
-                        .filter(e -> e.hasTag(Tag.EARLYTERMINATION))
+                        .filter(e -> e.hasTag(Tag.EXCEPTIONAL_TERMINATION) || e.hasTag(Tag.NONTERMINATION))
                         .map(CondJump.class::cast)
                         .map(j -> bmgr.not(bmgr.and(context.execution(j), context.jumpCondition(j))))
                         .reduce(bmgr.makeTrue(), bmgr::and);
