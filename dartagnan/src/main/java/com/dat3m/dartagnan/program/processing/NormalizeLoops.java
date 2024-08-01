@@ -27,11 +27,7 @@ import java.util.Map;
         ...
         C:
         ...
-        D:
-        ...
         goto L
-        ...
-        goto D
 
     it transforms it to
 
@@ -43,16 +39,10 @@ import java.util.Map;
         ...
         L:
         if __jumpedTo_L_From == 1 goto C
-        if __jumpedTo_L_From == 2 goto D
         ...
         C:
         ...
-        D:
-        ...
         __jumpedTo_L_From <- 0
-        goto L
-        ...
-        __jumpedTo_L_From <- 2
         goto L
 
     (2) Given a loop of the form
@@ -118,8 +108,7 @@ public class NormalizeLoops implements FunctionProcessor {
 
             for (Label l : loopBodyLabels) {
                 final List<CondJump> externalEntries = l.getJumpSet().stream()
-                        .filter(j -> j.getLocalId() < loopBegin.getLocalId() ||
-                                j.getLocalId() > uniqueBackJump.getLocalId())
+                        .filter(j -> j.getLocalId() < loopBegin.getLocalId())
                         .toList();
 
                 for (CondJump fromOutside : externalEntries) {
