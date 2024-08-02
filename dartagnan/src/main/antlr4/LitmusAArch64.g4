@@ -77,6 +77,7 @@ instruction
     |   branchLabel
     |   fence
     |   return
+    |   nop
     ;
 
 mov locals [String rD, int size]
@@ -134,6 +135,10 @@ branchLabel
 
 return
     :   Ret
+    ;
+
+nop
+    :   Nop
     ;
 
 loadInstruction locals [String mo]
@@ -249,7 +254,7 @@ register64 returns[String id]
     ;
 
 register32 returns[String id]
-    :   r = Register32 {$id = $r.text.replace("W","w","X","x");}
+    :   r = Register32 {$id = $r.text.replace("W","X").replace("w","x");}
     ;
 
 location
@@ -276,6 +281,10 @@ Hexa
 
 Ret
     :   'ret'
+    ;
+
+Nop
+    :   'nop'
     ;
 
 Locations
