@@ -901,7 +901,7 @@ public class Intrinsics {
         final Expression condition = expressions.makeFalse();
         final Event assertion = EventFactory.newAssert(condition, errorMsg);
         final Event abort = EventFactory.newAbortIf(expressions.makeTrue());
-        abort.addTags(Tag.EARLYTERMINATION);
+        abort.addTags(Tag.EXCEPTIONAL_TERMINATION);
         return List.of(assertion, abort);
     }
 

@@ -423,7 +423,8 @@ public class PropertyEncoder implements Encoder {
               NOTE: Here we assume strong progress. Under weak fairness, a loop with two exclusive stores that need
               to succeed in the same iteration could fail liveness if they succeed in alternation.
 
-        (**) A thread terminates normally IFF it does not terminate early (denoted by EARLYTERMINATION-tagged jumps)
+        (**) A thread terminates normally IFF it does terminate (no NONTERMINATION-tagged jumps) non-exceptionally
+             (no EXCEPTIONAL_TERMINATION-tagged jumps)
              due to e.g.,
             - violating an assertion
             - reaching the loop unrolling bound
@@ -447,7 +448,7 @@ public class PropertyEncoder implements Encoder {
                 final BooleanFormula isStuck = isStuckEncoding(thread, context);
                 final BooleanFormula isTerminatingNormally = thread
                         .getEvents().stream()
-                        .filter(e -> e.hasTag(Tag.EARLYTERMINATION))
+                        .filter(e -> e.hasTag(Tag.EXCEPTIONAL_TERMINATION) || e.hasTag(Tag.NONTERMINATION))
                         .map(CondJump.class::cast)
                         .map(j -> bmgr.not(bmgr.and(context.execution(j), context.jumpCondition(j))))
                         .reduce(bmgr.makeTrue(), bmgr::and);
