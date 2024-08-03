@@ -42,7 +42,6 @@ export DAT3M_OUTPUT=$DAT3M_HOME/output
 At least the following compiler flag needs to be set, further can be added (only to verify C programs)
 ```
 export CFLAGS="-I$DAT3M_HOME/include"
-export OPTFLAGS="-mem2reg -sroa -early-cse -indvars -loop-unroll -fix-irreducible -loop-simplify -simplifycfg -gvn"
 ```
 
 If you are verifying C code, be sure `clang` is in your `PATH`.
