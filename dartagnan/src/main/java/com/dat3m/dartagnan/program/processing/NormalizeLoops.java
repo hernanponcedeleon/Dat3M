@@ -6,11 +6,14 @@ import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.Register;
+import com.dat3m.dartagnan.program.analysis.SyntacticContextAnalysis;
+import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.core.CondJump;
 import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.event.core.Local;
-import java.math.BigInteger;
+
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -33,17 +36,18 @@ import java.util.Map;
     it transforms it to
 
         entry:
-        __jumpedTo_L_From <- 0
+        __loopEntryPoint_L <- 0
         ...
-        __jumpedTo_L_From <- 1
+        __loopEntryPoint_L <- 1
         goto L
         ...
         L:
-        if __jumpedTo_L_From == 1 goto C
+        __forwardTo_L <- __loopEntryPoint_L
+        __loopEntryPoint_L <- 0
+        if __forwardTo_L == 1 goto C
         ...
         C:
         ...
-        __jumpedTo_L_From <- 0
         goto L
 
     (2) Given a loop of the form
@@ -119,9 +123,7 @@ public class NormalizeLoops implements FunctionProcessor {
     }
 
     private void guaranteeSingleEntry(Function function) {
-        final IntegerType sourceRegType = types.getArchType();
-        int labelCounter = 0;
-
+        int loopCounter = 0;
         for (Label loopBegin : function.getEvents(Label.class)) {
             final List<CondJump> backJumps = loopBegin.getJumpSet().stream()
                     .filter(j -> j.getLocalId() > loopBegin.getLocalId())
@@ -130,52 +132,72 @@ public class NormalizeLoops implements FunctionProcessor {
             if (backJumps.isEmpty()) {
                 continue;
             }
-            int counter = 0;
 
             final CondJump loopEnd = backJumps.get(backJumps.size() - 1);
-            final List<Label> loopBodyLabels = loopBegin.getSuccessor().getSuccessors().stream()
+            final List<Label> loopIrregularEntryPoints = loopBegin.getSuccessor().getSuccessors().stream()
                     .takeWhile(ev -> ev != loopEnd)
                     .filter(Label.class::isInstance).map(Label.class::cast)
+                    .filter(l -> isEntryPoint(loopBegin, loopEnd, l))
                     .toList();
-                    
-            if(loopBodyLabels.stream().noneMatch(l -> hasExternalEntries(loopBegin, l))) {
+
+            if (loopIrregularEntryPoints.isEmpty()) {
                 continue;
             }
 
-            final Register sourceReg = function.newRegister(String.format("__jumpedTo_%s#%s_From", loopBegin, labelCounter), sourceRegType);
-            final Local initJumpedFromOutside = EventFactory.newLocal(sourceReg, expressions.makeZero(sourceRegType));
-            function.getEntry().insertAfter(initJumpedFromOutside);
+            final IntegerType entryPointType = types.getByteType();
+            final Register entryPointReg = function.newRegister(String.format("__loopEntryPoint_%s#%s", loopBegin, loopCounter), entryPointType);
+            final Register forwarderReg = function.newRegister(String.format("__forwardTo_%s#%s", loopBegin, loopCounter), entryPointType);
+            final Local initEntryPointReg = EventFactory.newLocal(entryPointReg, expressions.makeZero(entryPointType));
+            final Local assignForwarderReg = EventFactory.newLocal(forwarderReg, entryPointReg);
+            final Local resetEntryPointReg = EventFactory.newLocal(entryPointReg, expressions.makeZero(entryPointType));
+            function.getEntry().insertAfter(initEntryPointReg);
 
-            for (Label target : loopBodyLabels) {
-                final List<CondJump> externalEntries = getExternalEntries(loopBegin, target);
-                if(externalEntries.isEmpty()) {
-                    continue;
+            final List<Event> forwardingInstrumentation = new ArrayList<>();
+            forwardingInstrumentation.add(assignForwarderReg);
+            forwardingInstrumentation.add(resetEntryPointReg);
+
+            int counter = 0;
+            for (Label entryPoint : loopIrregularEntryPoints) {
+                final List<CondJump> enteringJumps = getEnteringJumps(loopBegin,loopEnd, entryPoint);
+                assert (!enteringJumps.isEmpty());
+
+                final Expression entryPointValue = expressions.makeValue(++counter, entryPointType);
+                for (CondJump enteringJump : enteringJumps) {
+                    if (enteringJump.getLocalId() > loopEnd.getLocalId()) {
+                        // TODO: This case is rare as it would imply we have two (or more) overlapping loops.
+                        //  In this case, we should first merge the overlapping loops into one large loop.
+                        final String error = String.format("Cannot normalize loop with loop-entering backjump (overlapping loops?): %d:%s \t %s",
+                                enteringJump.getLocalId(), enteringJump, SyntacticContextAnalysis.getSourceLocationString(enteringJump));
+                        throw new UnsupportedOperationException(error);
+                    }
+                    if (!enteringJump.isGoto()) {
+                        // TODO: We should support this case, but the current implementation is wrong
+                        //  because if an instrumented jump is not taken, it still updates the entry point reg
+                        //  which will never get reset: we would end up accidentally forwarding a regular loop entry.
+                        final String error = String.format("Cannot normalize loop with conditional loop-entering jump: %d:%s \t %s",
+                                enteringJump.getLocalId(), enteringJump, SyntacticContextAnalysis.getSourceLocationString(enteringJump));
+                        throw new UnsupportedOperationException(error);
+                    }
+                    enteringJump.getPredecessor().insertAfter(EventFactory.newLocal(entryPointReg, entryPointValue));
+                    enteringJump.updateReferences(Map.of(entryPoint, loopBegin));
                 }
-                counter++;
 
-                final Expression source = expressions.makeValue(BigInteger.valueOf(counter), sourceRegType);
-                final Local jumpingFrom = EventFactory.newLocal(sourceReg, source);
-                final CondJump jumpToInternal = EventFactory.newJump(expressions.makeEQ(sourceReg, source), target);
-                loopBegin.insertAfter(jumpToInternal);
-
-                for (CondJump fromOutside : externalEntries) {
-                    fromOutside.updateReferences(Map.of(fromOutside.getLabel(), loopBegin));
-                    fromOutside.getPredecessor().insertAfter(jumpingFrom);
-                }
-
-                final Local resetJumpFromOutside = EventFactory.newLocal(sourceReg, expressions.makeZero(sourceRegType));
-                loopEnd.getPredecessor().insertAfter(resetJumpFromOutside);
+                final CondJump forwardingJump = EventFactory.newJump(expressions.makeEQ(forwarderReg, entryPointValue), entryPoint);
+                forwardingInstrumentation.add(forwardingJump);
             }
 
-            labelCounter++;
+            loopBegin.insertAfter(forwardingInstrumentation);
+            loopCounter++;
         }
     }
 
-    private boolean hasExternalEntries(Label loopBegin, Label internal) {
-        return internal.getJumpSet().stream().anyMatch(j -> j.getLocalId() < loopBegin.getLocalId());
+    private boolean isEntryPoint(Event beginning, Event end, Label internal) {
+        return !getEnteringJumps(beginning, end, internal).isEmpty();
     }
 
-    private List<CondJump> getExternalEntries(Label loopBegin, Label internal) {
-        return internal.getJumpSet().stream().filter(j -> j.getLocalId() < loopBegin.getLocalId()).toList();
+    private List<CondJump> getEnteringJumps(Event beginning, Event end, Label internal) {
+        return internal.getJumpSet().stream()
+                .filter(j -> j.getLocalId() < beginning.getLocalId() || end.getLocalId() < j.getLocalId())
+                .toList();
     }
 }
