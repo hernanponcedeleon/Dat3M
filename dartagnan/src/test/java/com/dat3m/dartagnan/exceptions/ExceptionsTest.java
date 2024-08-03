@@ -1,17 +1,21 @@
 package com.dat3m.dartagnan.exceptions;
 
 import com.dat3m.dartagnan.exception.MalformedProgramException;
+import java.lang.UnsupportedOperationException;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.parsers.program.ProgramParser;
 import com.dat3m.dartagnan.parsers.program.utils.ProgramBuilder;
+import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Program.SourceLanguage;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.analysis.BranchEquivalence;
 import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.core.Skip;
+import com.dat3m.dartagnan.program.processing.NormalizeLoops;
+
 import org.junit.Test;
 import org.sosy_lab.common.configuration.Configuration;
 
@@ -82,5 +86,12 @@ public class ExceptionsTest {
     @Test(expected = IllegalStateException.class)
     public void RegisterNotInitialized() throws Exception {
         new ProgramParser().parse(new File(getTestResourcePath("exceptions/RegisterNotInitialized.litmus")));
+    }
+
+    @Test(expected = UnsupportedOperationException.class)
+    public void UnsupportedLoopNormalization() throws Exception {
+        Program p = new ProgramParser().parse(new File(getTestResourcePath("exceptions/unsupported-loop-normalization.ll")));
+        Function main = p.getFunctionByName("main").get();
+        NormalizeLoops.newInstance().run(main);
     }
 }
