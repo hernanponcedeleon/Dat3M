@@ -1,4 +1,4 @@
-Vulkan counter-non-atomic
+Vulkan counter-plain-store-rmw
 "Adapted from https://github.com/mc-imperial/gpuverify/blob/master/testsuite/OpenCL/atomics/counter/kernel.cl"
 {
 P0:r0 = 0;

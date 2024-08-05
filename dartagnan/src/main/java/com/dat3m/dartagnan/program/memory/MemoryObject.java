@@ -22,7 +22,7 @@ import static com.google.common.base.Preconditions.checkState;
  */
 public class MemoryObject extends LeafExpressionBase<Type> {
 
-    private final TypeFactory types = TypeFactory.getInstance();
+    private static final TypeFactory types = TypeFactory.getInstance();
 
     // TODO: (TH) I think <id> is mostly useless.
     //  Its only benefit is that we can have different memory objects with the same name (but why would we?)
