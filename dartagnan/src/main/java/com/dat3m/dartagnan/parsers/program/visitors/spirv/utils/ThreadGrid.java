@@ -17,9 +17,6 @@ public class ThreadGrid {
         if (elements.stream().anyMatch(i -> i <= 0)) {
             throw new ParsingException("Thread grid dimensions must be positive");
         }
-        if (elements.stream().reduce(1, (a, b) -> a * b) > 128) {
-            throw new ParsingException("Thread grid dimensions must be less than 128");
-        }
         this.sg = sg;
         this.wg = wg;
         this.qf = qf;

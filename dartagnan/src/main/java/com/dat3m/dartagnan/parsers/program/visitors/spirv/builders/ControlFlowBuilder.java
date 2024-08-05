@@ -15,7 +15,7 @@ public class ControlFlowBuilder {
     protected final Map<String, Label> blockLabels = new HashMap<>();
     protected final Map<String, Event> lastBlockEvents = new HashMap<>();
     protected final Map<String, String> mergeLabelIds = new HashMap<>();
-    protected final  Deque<String> blockStack = new ArrayDeque<>();
+    protected final Deque<String> blockStack = new ArrayDeque<>();
     protected final Map<String, Map<Register, String>> phiDefinitions = new HashMap<>();
     protected final Map<String, Expression> expressions;
 

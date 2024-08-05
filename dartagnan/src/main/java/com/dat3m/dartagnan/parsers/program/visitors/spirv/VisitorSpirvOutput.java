@@ -33,7 +33,7 @@ public class VisitorSpirvOutput extends SpirvBaseVisitor<Expression> {
     private final Map<Location, Type> locationTypes = new HashMap<>();
     private final ProgramBuilder builder;
     private Program.SpecificationType type;
-    private Expression assertion;
+    private Expression condition;
 
     public VisitorSpirvOutput(ProgramBuilder builder) {
         this.builder = builder;
@@ -48,9 +48,9 @@ public class VisitorSpirvOutput extends SpirvBaseVisitor<Expression> {
         }
         if (type == null) {
             type = FORALL;
-            assertion = ExpressionFactory.getInstance().makeTrue();
+            condition = ExpressionFactory.getInstance().makeTrue();
         }
-        builder.setSpecification(type, assertion);
+        builder.setSpecification(type, condition);
         return null;
     }
 
@@ -109,14 +109,14 @@ public class VisitorSpirvOutput extends SpirvBaseVisitor<Expression> {
     }
 
     private void appendAssertion(Program.SpecificationType newType, Expression expression) {
-        if (assertion == null) {
+        if (condition == null) {
             type = newType;
-            assertion = expression;
+            condition = expression;
         } else if (newType.equals(type)) {
             if (type.equals(FORALL)) {
-                assertion = ExpressionFactory.getInstance().makeAnd(assertion, expression);
+                condition = ExpressionFactory.getInstance().makeAnd(condition, expression);
             } else if (type.equals(NOT_EXISTS)) {
-                assertion = ExpressionFactory.getInstance().makeOr(assertion, expression);
+                condition = ExpressionFactory.getInstance().makeOr(condition, expression);
             } else {
                 throw new ParsingException("Multiline assertion is not supported for type " + newType);
             }

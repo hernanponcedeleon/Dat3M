@@ -1,8 +1,12 @@
+// clspv MP.cl --cl-std=CL2.0 --inline-entry-points --spv-version=1.6
+// spirv-dis a.spv
+
 #ifdef ACQ2RX
 #define mo_acq memory_order_relaxed
 #else
 #define mo_acq memory_order_acquire
 #endif
+
 #ifdef REL2RX
 #define mo_rel memory_order_relaxed
 #else

@@ -11,14 +11,9 @@ import static com.dat3m.dartagnan.program.event.Tag.Spirv.*;
 
 public class HelperTags {
     private static final List<String> scopes = mkScopesList();
-    private static final Set<String> moStrong = mkStrongMemoryOrderSet();
     private static final Map<Integer, String> semantics = mkSemanticsMap();
 
     private HelperTags() {
-    }
-
-    public static boolean isMemorySemanticsNone(String id, Expression expr) {
-        return getIntValue(id, expr) == 0;
     }
 
     public static Set<String> parseMemorySemanticsTags(String id, Expression expr) {
@@ -32,7 +27,7 @@ public class HelperTags {
                 tags.add(semantics.get(i));
             }
         }
-        int moSize = Sets.intersection(moStrong, tags).size();
+        int moSize = Sets.intersection(moTags, tags).size();
         if (moSize > 1) {
             throw new ParsingException("Selected multiple non-relaxed memory order bits");
         }
@@ -89,15 +84,6 @@ public class HelperTags {
                 INVOCATION,
                 QUEUE_FAMILY,
                 SHADER_CALL);
-    }
-
-    private static Set<String> mkStrongMemoryOrderSet() {
-        return Set.of(
-                ACQUIRE,
-                RELEASE,
-                ACQ_REL,
-                SEQ_CST
-        );
     }
 
     private static Map<Integer, String> mkSemanticsMap() {

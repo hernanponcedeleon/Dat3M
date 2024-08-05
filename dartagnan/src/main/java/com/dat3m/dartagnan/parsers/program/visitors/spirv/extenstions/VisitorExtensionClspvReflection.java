@@ -35,7 +35,7 @@ public class VisitorExtensionClspvReflection extends VisitorExtension<Void> {
 
     @Override
     public Void visitKernel(SpirvParser.KernelContext ctx) {
-        // Do nothing, kernel name and the number of argument
+        // Do nothing, kernel name and the number of arguments
         return null;
     }
 
@@ -59,7 +59,7 @@ public class VisitorExtensionClspvReflection extends VisitorExtension<Void> {
 
     @Override
     public Void visitSpecConstantWorkgroupSize(SpirvParser.SpecConstantWorkgroupSizeContext ctx) {
-        // Do nothing, will be overwritten but BuiltIn WorkgroupSize
+        // Do nothing, will be overwritten by BuiltIn WorkgroupSize
         return null;
     }
 
@@ -123,7 +123,7 @@ public class VisitorExtensionClspvReflection extends VisitorExtension<Void> {
         if (type instanceof ArrayType aType && aType.getNumElements() == 3 && typeSize == expectedSize) {
             Type elType = aType.getElementType();
             if (elType instanceof IntegerType iType) {
-                List<Integer> values = getPushConstantValue(decorationId);
+                List<Integer> values = computePushConstantValue(decorationId);
                 int localOffset = 0;
                 for (int value : values) {
                     Expression elExpr = expressions.makeValue(value, iType);
@@ -139,7 +139,7 @@ public class VisitorExtensionClspvReflection extends VisitorExtension<Void> {
                 pushConstant.getId(), pushConstantIndex);
     }
 
-    private List<Integer> getPushConstantValue(String command) {
+    private List<Integer> computePushConstantValue(String command) {
         ThreadGrid grid = builder.getThreadGrid();
         return switch (command) {
             case "PushConstantGlobalSize" -> List.of(grid.dvSize(), 1, 1);

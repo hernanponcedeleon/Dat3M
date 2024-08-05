@@ -6,11 +6,13 @@ import java.util.Objects;
 
 public class ScopedPointerType extends IntegerType {
 
+    private static final int ARCH_SIZE = TypeFactory.getInstance().getArchType().getBitWidth();
+
     private final String scopeId;
     private final Type pointedType;
 
     ScopedPointerType(String scopeId, Type pointedType) {
-        super(64);
+        super(ARCH_SIZE);
         this.scopeId = scopeId;
         this.pointedType = pointedType;
     }

@@ -282,11 +282,7 @@ public class PropertyEncoder implements Encoder {
     private BooleanFormula encodeProgramTermination() {
         final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
         return bmgr.and(program.getThreads().stream()
-                .map(t -> {
-                    BooleanFormula started = context.execution(t.getEntry());
-                    BooleanFormula finished = context.execution(t.getEvents().get(t.getEvents().size() - 1));
-                    return bmgr.equivalence(started, finished);
-                })
+                .map(t -> bmgr.equivalence(context.execution(t.getEntry()), context.execution(t.getExit())))
                 .toList());
     }
 
@@ -448,13 +444,9 @@ public class PropertyEncoder implements Encoder {
             final Map<Thread, List<SpinIteration>> spinloopsMap =
                     Maps.toMap(program.getThreads(), t -> this.findSpinLoopsInThread(t, loopAnalysis));
             // Compute "stuckness" encoding for all threads
-            final Map<Thread, BooleanFormula> isStuckMap = Maps.toMap(program.getThreads(), t -> {
-                List<BooleanFormula> stuckAtBarrier = t.getEvents().stream()
-                        .filter(ControlBarrier.class::isInstance)
-                        .map(e -> bmgr.and(context.controlFlow(e), bmgr.not(context.execution(e))))
-                        .toList();
-                return bmgr.or(bmgr.or(stuckAtBarrier), this.generateStucknessEncoding(spinloopsMap.get(t), context));
-            });
+            final Map<Thread, BooleanFormula> isStuckMap = Maps.toMap(program.getThreads(), t ->
+                    bmgr.or(generateBarrierStucknessEncoding(t, context),
+                            this.generateSpinloopStucknessEncoding(spinloopsMap.get(t), context)));
 
             // Deadlock <=> allStuckOrDone /\ atLeastOneStuck
             BooleanFormula allStuckOrDone = bmgr.makeTrue();
@@ -476,9 +468,17 @@ public class PropertyEncoder implements Encoder {
             return new TrackableFormula(bmgr.not(LIVENESS.getSMTVariable(context)), hasDeadlock);
         }
 
+        private BooleanFormula generateBarrierStucknessEncoding(Thread thread, EncodingContext context) {
+            final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
+            return bmgr.or(thread.getEvents().stream()
+                    .filter(ControlBarrier.class::isInstance)
+                    .map(e -> bmgr.and(context.controlFlow(e), bmgr.not(context.execution(e))))
+                    .toList());
+        }
+
         // Compute "stuckness": A thread is stuck if it reaches a spin loop bound event
         // while only reading from co-maximal stores.
-        private BooleanFormula generateStucknessEncoding(List<SpinIteration> loops, EncodingContext context) {
+        private BooleanFormula generateSpinloopStucknessEncoding(List<SpinIteration> loops, EncodingContext context) {
             final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
             final RelationAnalysis ra = PropertyEncoder.this.ra;
             final Relation rf = memoryModel.getRelation(RelationNameRepository.RF);

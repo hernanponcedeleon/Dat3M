@@ -422,7 +422,7 @@ public final class Tag {
         public static final String SC_STORAGE_BUFFER = "SPV_CS_STORAGE_BUFFER";
         public static final String SC_PHYS_STORAGE_BUFFER = "SPV_CS_PHYS_STORAGE_BUFFER";
 
-        private static final Set<String> storageClassTags = Set.of(
+        public static final Set<String> storageClassTags = Set.of(
                 SC_UNIFORM_CONSTANT,
                 SC_INPUT,
                 SC_UNIFORM,
@@ -436,7 +436,7 @@ public final class Tag {
                 SC_STORAGE_BUFFER,
                 SC_PHYS_STORAGE_BUFFER
         );
-        private static final Set<String> scopeTags = Set.of(
+        public static final Set<String> scopeTags = Set.of(
                 INVOCATION,
                 SUBGROUP,
                 WORKGROUP,
@@ -445,7 +445,7 @@ public final class Tag {
                 QUEUE_FAMILY,
                 SHADER_CALL
         );
-        private static final Set<String> moTags = Set.of(
+        public static final Set<String> moTags = Set.of(
                 RELAXED,
                 ACQUIRE,
                 RELEASE,

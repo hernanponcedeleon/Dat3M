@@ -103,7 +103,7 @@ public class BuiltIn implements Decoration {
 
     private IntegerType getArrayElementType(String id, Type type) {
         if (type instanceof ArrayType aType && aType.getNumElements() == 3) {
-            return getIntegerType(id, ((ArrayType) type).getElementType());
+            return getIntegerType(id, aType.getElementType());
         }
         throw new ParsingException("Illegal type of element '%s', " +
                 "expected array of three elements but received '%s'", id, type);

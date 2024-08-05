@@ -72,7 +72,7 @@ public class ProgramEncoder implements Encoder {
 
     public BooleanFormula encodeFullProgram() {
         return context.getBooleanFormulaManager().and(
-                encodeControlBarrier(),
+                encodeControlBarriers(),
                 encodeConstants(),
                 encodeMemory(),
                 encodeControlFlow(),
@@ -81,7 +81,7 @@ public class ProgramEncoder implements Encoder {
                 encodeDependencies());
     }
 
-    public BooleanFormula encodeControlBarrier() {
+    public BooleanFormula encodeControlBarriers() {
         BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
         BooleanFormula enc = bmgr.makeTrue();
         Map<Integer, List<ControlBarrier>> groups = context.getTask().getProgram().getThreads().stream()
@@ -333,6 +333,7 @@ public class ProgramEncoder implements Encoder {
             }
             return id;
         }
-        return -1;
+        throw new IllegalArgumentException("Attempt to compute workgroup ID " +
+                "for a non-hierarchical thread");
     }
 }

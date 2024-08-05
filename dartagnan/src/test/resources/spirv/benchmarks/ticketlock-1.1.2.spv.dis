@@ -13,7 +13,7 @@
          %55 = OpExtInstImport "NonSemantic.ClspvReflection.5"
                OpMemoryModel Logical GLSL450
                OpEntryPoint GLCompute %23 "mutex_test" %gl_GlobalInvocationID %13 %17 %18 %19 %20 %5
-               OpSource OpenCL_C 300
+               OpSource OpenCL_C 200
          %56 = OpString "mutex_test"
          %57 = OpString " __kernel"
          %60 = OpString "owner"

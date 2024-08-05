@@ -50,8 +50,6 @@ public class ConfigTest extends AbstractTest {
                 "Line 2:16 mismatched input 'Op' expecting ','");
         doTestIllegalConfig("; @Config: 1, 1, 0",
                 "Thread grid dimensions must be positive");
-        doTestIllegalConfig("; @Config: 100, 100, 100",
-                "Thread grid dimensions must be less than 128");
         doTestIllegalConfig("""
                         ; @Output: forall (1 == 1)
                         ; @Config: 1, 1, 1

@@ -85,11 +85,11 @@ public class ProgramBuilder {
         entryPointId = id;
     }
 
-    public void setSpecification(Program.SpecificationType type, Expression assertion) {
+    public void setSpecification(Program.SpecificationType type, Expression condition) {
         if (program.getSpecification() != null) {
             throw new ParsingException("Attempt to override program specification");
         }
-        program.setSpecification(type, assertion);
+        program.setSpecification(type, condition);
     }
 
     public boolean hasInput(String id) {
