@@ -7,6 +7,7 @@ import com.dat3m.dartagnan.expression.type.FunctionType;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.decorations.BuiltIn;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.utils.ThreadCreator;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.utils.ThreadGrid;
+import com.dat3m.dartagnan.program.event.functions.FunctionCall;
 import com.dat3m.dartagnan.program.memory.ScopedPointer;
 import com.dat3m.dartagnan.program.memory.ScopedPointerVariable;
 import com.dat3m.dartagnan.expression.type.ScopedPointerType;
@@ -17,7 +18,6 @@ import com.dat3m.dartagnan.program.memory.MemoryObject;
 
 import java.util.*;
 import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 
 import static com.dat3m.dartagnan.parsers.program.visitors.spirv.decorations.DecorationType.BUILT_IN;
 
@@ -26,14 +26,12 @@ public class ProgramBuilder {
     protected final Map<String, Type> types = new HashMap<>();
     protected final Map<String, Expression> expressions = new HashMap<>();
     protected final Map<String, Expression> inputs = new HashMap<>();
-    protected final Map<String, Function> forwardFunctions = new HashMap<>();
     protected final ThreadGrid grid;
     protected final Program program;
     protected ControlFlowBuilder controlFlowBuilder;
     protected DecorationsBuilder decorationsBuilder;
     protected Function currentFunction;
     protected String entryPointId;
-    protected int nextFunctionId = 0;
     protected Set<String> nextOps;
 
     public ProgramBuilder(ThreadGrid grid) {
@@ -96,6 +94,10 @@ public class ProgramBuilder {
         return inputs.containsKey(id);
     }
 
+    public boolean hasDefinition(String id) {
+        return types.containsKey(id) || expressions.containsKey(id);
+    }
+
     public Expression getInput(String id) {
         if (inputs.containsKey(id)) {
             return inputs.get(id);
@@ -110,35 +112,35 @@ public class ProgramBuilder {
         inputs.put(id, value);
     }
 
-    public Type getType(String name) {
-        Type type = types.get(name);
+    public Type getType(String id) {
+        Type type = types.get(id);
         if (type == null) {
-            throw new ParsingException("Reference to undefined type '%s'", name);
+            throw new ParsingException("Reference to undefined type '%s'", id);
         }
         return type;
     }
 
-    public Type addType(String name, Type type) {
-        if (types.containsKey(name) || expressions.containsKey(name)) {
-            throw new ParsingException("Duplicated definition '%s'", name);
+    public Type addType(String id, Type type) {
+        if (types.containsKey(id) || expressions.containsKey(id)) {
+            throw new ParsingException("Duplicated definition '%s'", id);
         }
-        types.put(name, type);
+        types.put(id, type);
         return type;
     }
 
-    public Expression getExpression(String name) {
-        Expression expression = expressions.get(name);
+    public Expression getExpression(String id) {
+        Expression expression = expressions.get(id);
         if (expression == null) {
-            throw new ParsingException("Reference to undefined expression '%s'", name);
+            throw new ParsingException("Reference to undefined expression '%s'", id);
         }
         return expression;
     }
 
-    public Expression addExpression(String name, Expression value) {
-        if (types.containsKey(name) || expressions.containsKey(name)) {
-            throw new ParsingException("Duplicated definition '%s'", name);
+    public Expression addExpression(String id, Expression value) {
+        if (types.containsKey(id) || expressions.containsKey(id)) {
+            throw new ParsingException("Duplicated definition '%s'", id);
         }
-        expressions.put(name, value);
+        expressions.put(id, value);
         return value;
     }
 
@@ -205,77 +207,50 @@ public class ProgramBuilder {
         return getCurrentFunctionOrThrowError().getName();
     }
 
-    public void startFunctionDefinition(String id, FunctionType type, List<String> args) {
+    public void startCurrentFunction(Function function) {
         if (currentFunction != null) {
             throw new ParsingException("Attempt to define function '%s' " +
                     "inside a definition of another function '%s'",
-                    id, currentFunction.getName());
+                    function.getName(), currentFunction.getName());
         }
-        Function function = forwardFunctions.remove(id);
-        if (function != null) {
-            checkFunctionType(id, function, type);
-            for (int i = 0; i < args.size(); i++) {
-                function.getParameterRegisters().get(i).setName(args.get(i));
-            }
-        } else {
-            function = new Function(id, type, args, nextFunctionId++, null);
-        }
-        program.addFunction(function);
-        addExpression(id, function);
+        addExpression(function.getName(), function);
         for (Register register : function.getParameterRegisters()) {
             addExpression(register.getName(), register);
         }
+        program.addFunction(function);
         currentFunction = function;
     }
 
-    public void endFunctionDefinition() {
+    public void endCurrentFunction() {
         if (currentFunction == null) {
             throw new ParsingException("Illegal attempt to exit a function definition");
         }
         currentFunction = null;
     }
 
-    public Function getCalledFunction(String id, FunctionType type) {
-        Expression expression = expressions.get(id);
-        if (expression instanceof Function function) {
-            checkFunctionType(id, function, type);
-            return function;
-        }
-        if (expression == null) {
-            Function function = forwardFunctions.computeIfAbsent(id, k -> {
-                List<String> args = IntStream.range(0, type.getParameterTypes().size())
-                        .boxed().map(i -> "param_" + i)
-                        .toList();
-                return new Function(id, type, args, nextFunctionId++, null);
-            });
-            checkFunctionType(id, function, type);
-            return function;
-        }
-        throw new ParsingException("Unexpected type of expression '%s', " +
-                "expected a function but received '%s'", id, expression.getType());
-    }
-
-    private void checkFunctionType(String id, Function function, Type type) {
-        if (!function.getFunctionType().equals(type)) {
-            throw new ParsingException("Illegal call of function '%s', " +
-                    "function type doesn't match the function definition", id);
-        }
-    }
-
     private void validateBeforeBuild() {
-        if (!forwardFunctions.isEmpty()) {
-            throw new ParsingException("Missing function definitions: %s",
-                    String.join(",", forwardFunctions.keySet()));
-        }
-        if (currentFunction != null) {
-            throw new ParsingException("Unclosed definition for function '%s'",
-                    currentFunction.getName());
-        }
         if (nextOps != null) {
             throw new ParsingException("Missing expected op: %s",
                     String.join(",", nextOps));
 
         }
+        if (currentFunction != null) {
+            throw new ParsingException("Unclosed definition for function '%s'",
+                    currentFunction.getName());
+        }
+        expressions.values().forEach(expression -> {
+            if (expression instanceof Function function) {
+                function.getEvents().forEach(event -> {
+                    if (event instanceof FunctionCall call) {
+                        String calledId = call.getCalledFunction().getName();
+                        if (!expressions.containsKey(calledId)
+                                || !(expressions.get(calledId) instanceof Function)) {
+                            throw new ParsingException("Call to undefined function '%s'", calledId);
+                        }
+                    }
+                });
+            }
+        });
     }
 
     private Function getEntryPointFunction() {

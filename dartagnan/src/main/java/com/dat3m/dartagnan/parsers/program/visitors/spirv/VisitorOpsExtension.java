@@ -19,7 +19,9 @@ public class VisitorOpsExtension extends SpirvBaseVisitor<Void> {
     private final Map<String, String> visitorIds = new HashMap<>();
 
     public VisitorOpsExtension(ProgramBuilder builder) {
-        this.availableVisitors.put("NonSemantic.ClspvReflection.5", new VisitorExtensionClspvReflection(builder));
+        VisitorExtensionClspvReflection clspv = new VisitorExtensionClspvReflection(builder);
+        this.availableVisitors.put("NonSemantic.ClspvReflection.5", clspv);
+        this.availableVisitors.put("NonSemantic.ClspvReflection.6", clspv);
     }
 
     @Override

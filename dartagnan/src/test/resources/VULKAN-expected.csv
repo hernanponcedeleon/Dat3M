@@ -73,7 +73,7 @@ litmus/VULKAN/Kronos-Group/test5.litmus,1
 litmus/VULKAN/Kronos-Group/test6.litmus,1
 litmus/VULKAN/Kronos-Group/test9.litmus,1
 litmus/VULKAN/Kronos-Group/waw.litmus,1
-litmus/VULKAN/Manual/asmo-weak.litmus,0
+litmus/VULKAN/Manual/asmo-plain.litmus,0
 litmus/VULKAN/Manual/ticketlock-same-wg.litmus,0
 litmus/VULKAN/Manual/ticketlock-diff-wg.litmus,1
 litmus/VULKAN/Manual/ticketlock-acq2rlx-1.litmus,0

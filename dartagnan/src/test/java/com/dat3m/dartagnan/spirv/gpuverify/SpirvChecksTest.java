@@ -347,10 +347,10 @@ public class SpirvChecksTest {
 
     @Test
     public void testAllSolvers() throws Exception {
-        // Using this solver is useless because the CAAT solver cannot deal with Property.CAT_SPEC
-        // try (SolverContext ctx = mkCtx(); ProverEnvironment prover = mkProver(ctx)) {
-        //     assertEquals(expected, RefinementSolver.run(ctx, prover, mkTask()).getResult());
-        // }
+        /* TODO: Implementation
+        try (SolverContext ctx = mkCtx(); ProverEnvironment prover = mkProver(ctx)) {
+            assertEquals(expected, RefinementSolver.run(ctx, prover, mkTask()).getResult());
+        }*/
         try (SolverContext ctx = mkCtx(); ProverEnvironment prover = mkProver(ctx)) {
             assertEquals(expected, AssumeSolver.run(ctx, prover, mkTask()).getResult());
         }

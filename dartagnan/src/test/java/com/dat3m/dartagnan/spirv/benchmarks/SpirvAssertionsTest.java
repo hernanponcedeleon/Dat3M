@@ -113,10 +113,10 @@ public class SpirvAssertionsTest {
 
     @Test
     public void testAllSolvers() throws Exception {
-        // Fails xf-barrier
-        // try (SolverContext ctx = mkCtx(); ProverEnvironment prover = mkProver(ctx)) {
-        //     assertEquals(expected, RefinementSolver.run(ctx, prover, mkTask()).getResult());
-        // }
+        /* TODO: Implementation
+        try (SolverContext ctx = mkCtx(); ProverEnvironment prover = mkProver(ctx)) {
+             assertEquals(expected, RefinementSolver.run(ctx, prover, mkTask()).getResult());
+        }*/
         try (SolverContext ctx = mkCtx(); ProverEnvironment prover = mkProver(ctx)) {
             assertEquals(expected, AssumeSolver.run(ctx, prover, mkTask()).getResult());
         }

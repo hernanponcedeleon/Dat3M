@@ -120,7 +120,7 @@ public class SpirvAssertionsTest {
 
     @Test
     public void testAllSolvers() throws Exception {
-        /*
+        /* TODO: Implementation
         try (SolverContext ctx = mkCtx(); ProverEnvironment prover = mkProver(ctx)) {
             assertEquals(expected, RefinementSolver.run(ctx, prover, mkTask()).getResult());
         }*/

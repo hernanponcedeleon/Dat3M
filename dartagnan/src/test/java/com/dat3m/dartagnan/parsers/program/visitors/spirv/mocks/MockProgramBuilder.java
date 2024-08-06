@@ -125,12 +125,14 @@ public class MockProgramBuilder extends ProgramBuilder {
         return (ScopedPointerVariable) addExpression(id, pointer);
     }
 
-    public void mockFunctionStart() {
+    public void mockFunctionStart(boolean addStartLabel) {
         FunctionType type = typeFactory.getFunctionType(typeFactory.getVoidType(), List.of());
-        startFunctionDefinition("mock_function", type, List.of());
-        Label label = controlFlowBuilder.getOrCreateLabel("%mock_label");
-        controlFlowBuilder.startBlock("%mock_label");
-        addEvent(label);
+        startCurrentFunction(new Function("mock_function", type, List.of(), 0, null));
+        if (addStartLabel) {
+            Label label = controlFlowBuilder.getOrCreateLabel("%mock_label");
+            controlFlowBuilder.startBlock("%mock_label");
+            addEvent(label);
+        }
     }
 
     public Function getCurrentFunction() {
@@ -143,9 +145,5 @@ public class MockProgramBuilder extends ProgramBuilder {
 
     public Map<String, Expression> getExpressions() {
         return Map.copyOf(expressions);
-    }
-
-    public Set<Function> getForwardFunctions() {
-        return Set.copyOf(forwardFunctions.values());
     }
 }

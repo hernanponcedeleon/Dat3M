@@ -87,7 +87,7 @@ litmus/VULKAN/Manual/XF-Barrier-relacq.litmus,1
 litmus/VULKAN/Manual/XF-Barrier-relacq2.litmus,0
 litmus/VULKAN/Manual/XF-Barrier-rlx.litmus,0
 litmus/VULKAN/Manual/XF-Barrier-weak.litmus,0
-litmus/VULKAN/Manual/asmo-weak.litmus,0
+litmus/VULKAN/Manual/asmo-plain.litmus,0
 litmus/VULKAN/Manual/PC-bar-acq-rel-atom.litmus,1
 litmus/VULKAN/Manual/PC-bar-acq-rel-nonpriv.litmus,1
 litmus/VULKAN/Manual/PC-bar-acq-rel-priv.litmus,0

@@ -147,7 +147,7 @@ public class VisitorOpsBitsTest {
     }
 
     private Local visit(MockProgramBuilder builder, String input) {
-        builder.mockFunctionStart();
+        builder.mockFunctionStart(true);
         return (Local) new MockSpirvParser(input).op().accept(new VisitorOpsBits(builder));
     }
 }

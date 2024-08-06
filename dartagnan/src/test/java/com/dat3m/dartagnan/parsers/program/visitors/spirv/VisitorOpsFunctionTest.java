@@ -21,6 +21,7 @@ import static org.junit.Assert.*;
 public class VisitorOpsFunctionTest {
 
     private final MockProgramBuilder builder = new MockProgramBuilder();
+    private final VisitorOpsFunction visitor = new VisitorOpsFunction(builder);
 
     @Before
     public void before() {
@@ -247,7 +248,8 @@ public class VisitorOpsFunctionTest {
         assertEquals(arg1, call.getArguments().get(0));
         assertEquals(arg2, call.getArguments().get(1));
 
-        assertTrue(builder.getForwardFunctions().isEmpty());
+        assertTrue(visitor.forwardFunctions.isEmpty());
+        assertTrue(visitor.forwardCalls.isEmpty());
     }
 
     @Test
@@ -279,7 +281,8 @@ public class VisitorOpsFunctionTest {
         assertEquals(arg1, call.getArguments().get(0));
         assertEquals(arg2, call.getArguments().get(1));
 
-        assertTrue(builder.getForwardFunctions().isEmpty());
+        assertTrue(visitor.forwardFunctions.isEmpty());
+        assertTrue(visitor.forwardCalls.isEmpty());
     }
 
     @Test
@@ -320,7 +323,8 @@ public class VisitorOpsFunctionTest {
         assertEquals(arg1, call.getArguments().get(0));
         assertEquals(arg2, call.getArguments().get(1));
 
-        assertTrue(builder.getForwardFunctions().isEmpty());
+        assertTrue(visitor.forwardFunctions.isEmpty());
+        assertTrue(visitor.forwardCalls.isEmpty());
     }
 
     @Test
@@ -474,12 +478,13 @@ public class VisitorOpsFunctionTest {
         assertEquals(a3, c23.getArguments().get(0));
 
         assertNotNull(builder.getExpression("%main"));
-        assertTrue(builder.getForwardFunctions().isEmpty());
+        assertTrue(visitor.forwardFunctions.isEmpty());
+        assertTrue(visitor.forwardCalls.isEmpty());
     }
 
     private void visit(String text) {
         builder.getControlFlowBuilder().getOrCreateLabel("%mock_label");
         builder.getControlFlowBuilder().startBlock("%mock_label");
-        new MockSpirvParser(text).spv().accept(new VisitorOpsFunction(builder));
+        new MockSpirvParser(text).spv().accept(visitor);
     }
 }

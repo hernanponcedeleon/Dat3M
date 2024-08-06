@@ -85,7 +85,7 @@ public class VisitorOpsBarrierTest {
     }
 
     private Event visit(String text) {
-        builder.mockFunctionStart();
+        builder.mockFunctionStart(true);
         return new MockSpirvParser(text).spv().spvInstructions().accept(new VisitorOpsBarrier(builder));
     }
 }

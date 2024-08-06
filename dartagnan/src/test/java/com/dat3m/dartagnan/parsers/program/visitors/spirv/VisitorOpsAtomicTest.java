@@ -211,7 +211,7 @@ public class VisitorOpsAtomicTest {
     }
 
     private Event visit(MockProgramBuilder builder, String input) {
-        builder.mockFunctionStart();
+        builder.mockFunctionStart(true);
         return new MockSpirvParser(input).op().accept(new VisitorOpsAtomic(builder));
     }
 }

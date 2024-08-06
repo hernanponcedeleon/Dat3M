@@ -23,15 +23,15 @@ public class VisitorOpsSettingTest {
         String input = "OpEntryPoint GLCompute %main \"main\" %gl_GlobalInvocationID";
         builder.mockVoidType("%void");
         FunctionType type = builder.mockFunctionType("%func", "%void");
-        builder.startFunctionDefinition("%main", type, List.of());
-        builder.endFunctionDefinition();
+        Function function = new Function("%main", type, List.of(), 0, null);
+        builder.startCurrentFunction(function);
+        builder.endCurrentFunction();
 
         // when
         visit(input);
         Program program = builder.build();
 
         // then
-        Function function = (Function) builder.getExpression("%main");
         assertEquals(type, function.getFunctionType());
         assertEquals(1, program.getFunctions().size());
         assertEquals(function, program.getFunctions().get(0));
@@ -43,8 +43,9 @@ public class VisitorOpsSettingTest {
         String input = "OpEntryPoint GLCompute %expected \"main\" %gl_GlobalInvocationID";
         builder.mockVoidType("%void");
         FunctionType type = builder.mockFunctionType("%func", "%void");
-        builder.startFunctionDefinition("%defined", type, List.of());
-        builder.endFunctionDefinition();
+        Function function = new Function("%defined", type, List.of(), 0, null);
+        builder.startCurrentFunction(function);
+        builder.endCurrentFunction();
         visit(input);
 
         try {
@@ -64,7 +65,8 @@ public class VisitorOpsSettingTest {
         String input = "OpEntryPoint GLCompute %main \"main\" %gl_GlobalInvocationID";
         builder.mockVoidType("%void");
         FunctionType type = builder.mockFunctionType("%func", "%void");
-        builder.startFunctionDefinition("%main", type, List.of());
+        Function function = new Function("%main", type, List.of(), 0, null);
+        builder.startCurrentFunction(function);
         visit(input);
 
         try {
@@ -83,8 +85,9 @@ public class VisitorOpsSettingTest {
         // given
         builder.mockVoidType("%void");
         FunctionType type = builder.mockFunctionType("%func", "%void");
-        builder.startFunctionDefinition("%main", type, List.of());
-        builder.endFunctionDefinition();
+        Function function = new Function("%main", type, List.of(), 0, null);
+        builder.startCurrentFunction(function);
+        builder.endCurrentFunction();
 
         try {
             // when

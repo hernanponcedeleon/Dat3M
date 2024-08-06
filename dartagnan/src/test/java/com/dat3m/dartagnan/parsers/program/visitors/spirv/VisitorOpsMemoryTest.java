@@ -757,7 +757,7 @@ public class VisitorOpsMemoryTest {
         builder.addExpression("%const", arr);
 
         // when
-        builder.mockFunctionStart();
+        builder.mockFunctionStart(true);
         Register register = (Register) builder.addExpression("%register", builder.addRegister("%register", "%int"));
         new MockSpirvParser(input).spv().accept(new VisitorOpsMemory(builder));
 
@@ -788,7 +788,7 @@ public class VisitorOpsMemoryTest {
         Expression arr = expressions.makeConstruct(List.of(i1, i2));
 
         builder.addExpression("%const", arr);
-        builder.mockFunctionStart();
+        builder.mockFunctionStart(true);
         builder.addExpression("%register", builder.addRegister("%register", "%int32"));
         VisitorOpsMemory visitor = new VisitorOpsMemory(builder);
         SpirvParser.SpvContext ctx = new MockSpirvParser(input).spv();
@@ -914,7 +914,7 @@ public class VisitorOpsMemoryTest {
     }
 
     private void parse(String input) {
-        builder.mockFunctionStart();
+        builder.mockFunctionStart(true);
         new MockSpirvParser(input).spv().accept(new VisitorOpsMemory(builder));
     }
 }

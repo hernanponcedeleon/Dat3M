@@ -68,7 +68,7 @@ public class HelperTypes {
 
     private static Type getArrayMemberType(String id, ArrayType type, List<Integer> indexes) {
         int index = indexes.get(0);
-        if (type.getNumElements() < 0 || index < type.getNumElements()) {
+        if (!type.hasKnownNumElements() || index < type.getNumElements()) {
             return getMemberType(id, type.getElementType(), indexes.subList(1, indexes.size()));
         }
         throw new ParsingException(indexOutOfBoundsError(id));
