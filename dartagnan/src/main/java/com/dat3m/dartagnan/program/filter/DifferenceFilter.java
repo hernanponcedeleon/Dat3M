@@ -12,6 +12,14 @@ public class DifferenceFilter extends Filter {
         this.filter2 = filterAbsent;
     }
 
+    public Filter getLeft() {
+        return filter1;
+    }
+
+    public Filter getRight() {
+        return filter2;
+    }
+
     @Override
     public boolean apply(Event event){
         return filter1.apply(event) && !filter2.apply(event);
@@ -38,5 +46,10 @@ public class DifferenceFilter extends Filter {
 
         DifferenceFilter fObj = (DifferenceFilter) obj;
         return fObj.filter1.equals(filter1) && fObj.filter2.equals(filter2);
+    }
+
+    @Override
+    public <T> T accept(Visitor<? extends T> visitor) {
+        return visitor.visitDifferenceFilter(this);
     }
 }

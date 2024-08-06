@@ -48,4 +48,27 @@ public abstract class Filter {
     public static UnionFilter union(Filter a, Filter b) {
         return (UnionFilter) canonicalizer.computeIfAbsent(new UnionFilter(a, b), key -> key);
     }
+
+    // ================================= Visitor ================================
+
+    public abstract <T> T accept(Visitor<? extends T> visitor);
+
+    public interface Visitor<T> {
+
+        private static void error(Filter.Visitor<?> visitor, Filter f) {
+            final String error = String.format("Visitor %s does not support filter %s",
+                    visitor.getClass().getSimpleName(), f.getClass().getSimpleName());
+            throw new UnsupportedOperationException(error);
+        }
+
+        default T visitFilter(Filter filter) {
+            error(this, filter);
+            return null;
+        }
+
+        default T visitTagFilter(TagFilter tagFilter) { return visitFilter(tagFilter); }
+        default T visitIntersectionFilter(IntersectionFilter intersectionFilter) { return visitFilter(intersectionFilter); }
+        default T visitDifferenceFilter(DifferenceFilter differenceFilter) { return visitFilter(differenceFilter); }
+        default T visitUnionFilter(UnionFilter unionFilter) { return visitFilter(unionFilter); }
+    }
 }
