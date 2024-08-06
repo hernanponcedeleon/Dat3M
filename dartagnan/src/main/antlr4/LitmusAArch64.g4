@@ -77,6 +77,7 @@ instruction
     |   branchLabel
     |   fence
     |   return
+    |   nop
     ;
 
 mov locals [String rD, int size]
@@ -134,6 +135,10 @@ branchLabel
 
 return
     :   Ret
+    ;
+
+nop
+    :   Nop
     ;
 
 loadInstruction locals [String mo]
@@ -249,7 +254,7 @@ register64 returns[String id]
     ;
 
 register32 returns[String id]
-    :   r = Register32 {$id = $r.text.replace("W","X");}
+    :   r = Register32 {$id = $r.text.replace("W","X").replace("w","x");}
     ;
 
 location
@@ -276,6 +281,10 @@ Hexa
 
 Ret
     :   'ret'
+    ;
+
+Nop
+    :   'nop'
     ;
 
 Locations
@@ -351,23 +360,23 @@ FenceOpt
 
 // Bracnch conditions
 
-EQ  :   'EQ'    |   'eq'    ;
-NE  :   'NE'    |   'ne'    ;
-CS  :   'CS';    // Carry set
-HS  :   'HS';    // Identical to CS
-CC  :   'CC';    // Carry clear
-LO  :   'LO';    // Identical to CC
-MI  :   'MI';	 // Minus or negative result
-PL  :   'PL';    // Positive or zero result
-VS  :   'VS';    // Overflow
-VC  :   'VC';    // No overflow
-HI  :   'HI';    // Unsigned higher
-LS  :   'LS';    // Unsigned lower or same
-GE  :   'GE';    // Signed greater than or equal
-LT  :   'LT';    // Signed less than
-GT  :   'GT';    // Signed greater than
-LE  :   'LE';    // Signed less than or equal
-AL  :   'AL';    // Always (this is the default)
+EQ  :   'EQ'    |   'eq'    ;   // Equal
+NE  :   'NE'    |   'ne'    ;   // Not equal
+CS  :   'CS'    |   'cs'    ;   // Carry set
+HS  :   'HS'    |   'hs'    ;   // Identical to CS
+CC  :   'CC'    |   'cc'    ;   // Carry clear
+LO  :   'LO'    |   'lo'    ;   // Identical to CC
+MI  :   'MI'    |   'mi'    ;   // Minus or negative result
+PL  :   'PL'    |   'pl'    ;   // Positive or zero result
+VS  :   'VS'    |   'vs'    ;   // Overflow
+VC  :   'VC'    |   'vs'    ;   // No overflow
+HI  :   'HI'    |   'hi'    ;   // Unsigned higher
+LS  :   'LS'    |   'ls'    ;   // Unsigned lower or same
+GE  :   'GE'    |   'ge'    ;   // Signed greater than or equal
+LT  :   'LT'    |   'lt'    ;   // Signed less than
+GT  :   'GT'    |   'gt'    ;   // Signed greater than
+LE  :   'LE'    |   'le'    ;   // Signed less than or equal
+AL  :   'AL'    |   'al'    ;   // Always (this is the default)
 
 // Branch conditions shortcut instructions
 
@@ -376,13 +385,13 @@ CBNZ    :   'CBNZ'   |   'cbnz' ;   // Branch if not zero
 
 // Shift operators
 
-LSL :   'LSL';   // Logical shift left
-LSR :   'LSR';   // Logical shift right
-ASR :   'ASR';   // Arithmetic shift right (preserves sign bit)
+LSL :   'LSL'    |   'lsl'  ;   // Logical shift left
+LSR :   'LSR'    |   'lsr'  ;   // Logical shift right
+ASR :   'ASR'    |   'asr'  ;   // Arithmetic shift right (preserves sign bit)
 
 BitfieldOperator
-    :   'UXTW' // Zero extends a 32-bit word (unsigned)
-    |   'SXTW' // Zero extends a 32-bit word (signed)
+    :   'UXTW'   |   'uxtw'  // Zero extends a 32-bit word (unsigned)
+    |   'SXTW'   |   'sxtw'  // Zero extends a 32-bit word (signed)
     ;
 
 Register64
