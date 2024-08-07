@@ -39,6 +39,8 @@ public class GlobalSettings {
 
     private static final boolean USE_TEST_PATH = isJUnitTest();
 
+    public static final boolean CHECK_DATALOG = false; // Enables comparing basic RA in datalog against native
+
     // --------------------
 
     public static void logGlobalSettings() {

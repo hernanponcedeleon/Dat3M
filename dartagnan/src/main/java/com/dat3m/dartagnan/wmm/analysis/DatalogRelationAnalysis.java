@@ -9,6 +9,7 @@ import com.dat3m.dartagnan.program.analysis.Dependency;
 import com.dat3m.dartagnan.program.analysis.ExecutionAnalysis;
 import com.dat3m.dartagnan.program.analysis.alias.AliasAnalysis;
 import com.dat3m.dartagnan.program.event.Event;
+import com.dat3m.dartagnan.program.event.MemoryEvent;
 import com.dat3m.dartagnan.program.event.RegReader;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.*;
@@ -39,8 +40,10 @@ import java.util.stream.Stream;
 import static com.dat3m.dartagnan.configuration.Arch.RISCV;
 import static com.dat3m.dartagnan.program.Register.UsageType.*;
 import static com.dat3m.dartagnan.program.event.Tag.*;
+
 import com.dat3m.dartagnan.wmm.RelationNameRepository;
 
+import static com.dat3m.dartagnan.wmm.utils.EventGraph.difference;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Verify.verify;
 import static com.google.common.collect.Lists.reverse;
@@ -70,7 +73,7 @@ public class DatalogRelationAnalysis implements RelationAnalysis {
     static private final String MODEL_NAME = "model.dl";
     private int free_index = 0;
     private Path tempDir;
-    private final Map<Integer, Event> idToEvent = new HashMap();
+    private final Map<Integer, Event> idToEvent = new HashMap<>();
 
 
     protected DatalogRelationAnalysis(VerificationTask t, Context context, Configuration config) {
@@ -147,17 +150,237 @@ public class DatalogRelationAnalysis implements RelationAnalysis {
 
     @Override
     public void populateQueue(Map<Relation, List<EventGraph>> queue, Set<Relation> relations) {
+        // TODO implement as a datalog pass
+        Propagator p = new Propagator();
+        for (Relation r : relations) {
+            EventGraph may = new EventGraph();
+            EventGraph must = new EventGraph();
+            if (r.getDependencies().isEmpty()) {
+                continue;
+            }
+            for (Relation c : r.getDependencies()) {
+                p.setSource(c);
+                p.setMay(getKnowledge(p.getSource()).getMaySet());
+                p.setMust(getKnowledge(p.getSource()).getMustSet());
+                NativeRelationAnalysis.Delta s = r.getDefinition().accept(p);
+                may.addAll(s.may);
+                must.addAll(s.must);
+            }
+            may.removeAll(getKnowledge(r).getMaySet());
+            EventGraph must2 = difference(getKnowledge(r).getMustSet(), must);
+            queue.computeIfAbsent(r, k -> new ArrayList<>()).add(EventGraph.union(may, must2));
+        }
+    }
+
+    protected final class Propagator implements Definition.Visitor<NativeRelationAnalysis.Delta> {
+        private Relation source;
+        private EventGraph may;
+        private EventGraph must;
+
+        public Relation getSource() {
+            return source;
+        }
+
+        public void setSource(Relation source) {
+            this.source = source;
+        }
+
+        public EventGraph getMay() {
+            return may;
+        }
+
+        public void setMay(EventGraph may) {
+            this.may = may;
+        }
+
+        public EventGraph getMust() {
+            return must;
+        }
+
+        public void setMust(EventGraph must) {
+            this.must = must;
+        }
+
+        @Override
+        public NativeRelationAnalysis.Delta visitUnion(Union union) {
+            if (union.getOperands().contains(source)) {
+                return new NativeRelationAnalysis.Delta(may, must);
+            }
+            return NativeRelationAnalysis.Delta.EMPTY;
+        }
+
+        @Override
+        public NativeRelationAnalysis.Delta visitIntersection(Intersection inter) {
+            final List<Relation> operands = inter.getOperands();
+            if (operands.contains(source)) {
+                EventGraph maySet = operands.stream()
+                        .map(r -> source.equals(r) ? may : getKnowledge(r).getMaySet())
+                        .sorted(Comparator.comparingInt(EventGraph::size))
+                        .reduce(EventGraph::intersection)
+                        .orElseThrow();
+                EventGraph mustSet = operands.stream()
+                        .map(r -> source.equals(r) ? must : getKnowledge(r).getMustSet())
+                        .sorted(Comparator.comparingInt(EventGraph::size))
+                        .reduce(EventGraph::intersection)
+                        .orElseThrow();
+                return new NativeRelationAnalysis.Delta(maySet, mustSet);
+            }
+            return NativeRelationAnalysis.Delta.EMPTY;
+        }
+
+        @Override
+        public NativeRelationAnalysis.Delta visitDifference(Difference diff) {
+            if (diff.getMinuend().equals(source)) {
+                Knowledge k = getKnowledge(diff.getSubtrahend());
+                return new NativeRelationAnalysis.Delta(difference(may, k.getMustSet()), difference(must, k.getMaySet()));
+            }
+            return NativeRelationAnalysis.Delta.EMPTY;
+        }
+
+        @Override
+        public NativeRelationAnalysis.Delta visitComposition(Composition comp) {
+            final Relation r1 = comp.getLeftOperand();
+            final Relation r2 = comp.getRightOperand();
+            EventGraph maySet = new EventGraph();
+            EventGraph mustSet = new EventGraph();
+            if (r1.equals(source)) {
+                computeComposition(maySet, may, getKnowledge(r2).getMaySet(), true);
+                computeComposition(mustSet, must, getKnowledge(r2).getMustSet(), false);
+            }
+            if (r2.equals(source)) {
+                computeComposition(maySet, getKnowledge(r1).getMaySet(), may, true);
+                computeComposition(mustSet, getKnowledge(r1).getMustSet(), must, false);
+            }
+            return new NativeRelationAnalysis.Delta(maySet, mustSet);
+        }
+
+        private void computeComposition(EventGraph result, EventGraph left, EventGraph right, final boolean isMay) {
+            for (Event e1 : left.getDomain()) {
+                Set<Event> update = new HashSet<>();
+                for (Event e : left.getRange(e1)) {
+                    if (isMay || exec.isImplied(e1, e)) {
+                        update.addAll(right.getRange(e));
+                    } else {
+                        update.addAll(right.getRange(e).stream()
+                                .filter(e2 -> exec.isImplied(e2, e)).toList());
+                    }
+                }
+                update.removeIf(e -> exec.areMutuallyExclusive(e1, e));
+                result.addRange(e1, update);
+            }
+        }
+
+        @Override
+        public NativeRelationAnalysis.Delta visitDomainIdentity(DomainIdentity domId) {
+            if (domId.getOperand().equals(source)) {
+                EventGraph maySet = new EventGraph();
+                may.getDomain().forEach(e -> maySet.add(e, e));
+                EventGraph mustSet = new EventGraph();
+                must.apply((e1, e2) -> {
+                    if (exec.isImplied(e1, e2)) {
+                        mustSet.add(e1, e1);
+                    }
+                });
+                return new NativeRelationAnalysis.Delta(maySet, mustSet);
+            }
+            return NativeRelationAnalysis.Delta.EMPTY;
+        }
+
+        @Override
+        public NativeRelationAnalysis.Delta visitRangeIdentity(RangeIdentity rangeId) {
+            if (rangeId.getOperand().equals(source)) {
+                EventGraph maySet = new EventGraph();
+                may.getRange().forEach(e -> maySet.add(e, e));
+                EventGraph mustSet = new EventGraph();
+                must.apply((e1, e2) -> {
+                    if (exec.isImplied(e2, e1)) {
+                        mustSet.add(e2, e2);
+                    }
+                });
+                return new NativeRelationAnalysis.Delta(maySet, mustSet);
+            }
+            return NativeRelationAnalysis.Delta.EMPTY;
+        }
+
+        @Override
+        public NativeRelationAnalysis.Delta visitInverse(Inverse inv) {
+            if (inv.getOperand().equals(source)) {
+                return new NativeRelationAnalysis.Delta(may.inverse(), must.inverse());
+            }
+            return NativeRelationAnalysis.Delta.EMPTY;
+        }
+
+        @Override
+        public NativeRelationAnalysis.Delta visitTransitiveClosure(TransitiveClosure trans) {
+            final Relation rel = trans.getDefinedRelation();
+            if (trans.getOperand().equals(source)) {
+                EventGraph maySet = computeTransitiveClosure(getKnowledge(rel).getMaySet(), may, true);
+                EventGraph mustSet = computeTransitiveClosure(getKnowledge(rel).getMustSet(), must, false);
+                return new NativeRelationAnalysis.Delta(maySet, mustSet);
+            }
+            return NativeRelationAnalysis.Delta.EMPTY;
+        }
+
+        private EventGraph computeTransitiveClosure(EventGraph oldOuter, EventGraph inner, boolean isMay) {
+            EventGraph next;
+            EventGraph outer = new EventGraph(oldOuter);
+            outer.addAll(inner);
+            for (EventGraph current = inner; !current.isEmpty(); current = next) {
+                next = new EventGraph();
+                for (Event e1 : current.getDomain()) {
+                    Set<Event> update = new HashSet<>();
+                    for (Event e2 : current.getRange(e1)) {
+                        if (isMay) {
+                            update.addAll(outer.getRange(e2));
+                        } else {
+                            boolean implies = exec.isImplied(e1, e2);
+                            update.addAll(outer.getRange(e2).stream()
+                                    .filter(e -> implies || exec.isImplied(e, e2))
+                                    .toList());
+                        }
+                    }
+                    Set<Event> known = outer.getRange(e1);
+                    update.removeIf(e -> known.contains(e) || exec.areMutuallyExclusive(e1, e));
+                    if (!update.isEmpty()) {
+                        next.addRange(e1, update);
+                    }
+                }
+                outer.addAll(next);
+            }
+            return outer;
+        }
     }
 
     @Override
     public EventGraph findTransitivelyImpliedCo(Relation co) {
+        final Knowledge k = getKnowledge(co);
         EventGraph transCo = new EventGraph();
+        Map<Event, Set<Event>> mustIn = k.getMustSet().getInMap();
+        Map<Event, Set<Event>> mustOut = k.getMustSet().getOutMap();
+        k.getMaySet().apply((e1, e2) -> {
+            final MemoryEvent x = (MemoryEvent) e1;
+            final MemoryEvent z = (MemoryEvent) e2;
+            boolean hasIntermediary = mustOut.getOrDefault(x, Set.of()).stream().anyMatch(y -> y != x && y != z &&
+                    (exec.isImplied(x, y) || exec.isImplied(z, y)) &&
+                    !k.getMaySet().contains(z, y))
+                    || mustIn.getOrDefault(z, Set.of()).stream().anyMatch(y -> y != x && y != z &&
+                    (exec.isImplied(x, y) || exec.isImplied(z, y)) &&
+                    !k.getMaySet().contains(y, x));
+            if (hasIntermediary) {
+                transCo.add(e1, e2);
+            }
+        });
         return transCo;
     }
 
     private String getRelationDatalogName(Relation r) {
         String name = relationToDatalogName.computeIfAbsent(r, k -> sanitize(r.getDefinition().accept(new DatalogNameVisitor()).toString()));
         return name.length() < 200 ? name : "rel" + System.identityHashCode(name);
+    }
+
+    public String getRelationDatalogName(Relation r, boolean full) {
+        String name = relationToDatalogName.computeIfAbsent(r, k -> sanitize(r.getDefinition().accept(new DatalogNameVisitor()).toString()));
+        return full || name.length() < 200 ? name : "rel" + System.identityHashCode(name);
     }
 
     private String getFilterDatalogName(Filter f) {
@@ -175,7 +398,7 @@ public class DatalogRelationAnalysis implements RelationAnalysis {
         }
     }
 
-    private static void addData(Writer writer, String ...args) {
+    private static void addData(Writer writer, String... args) {
         try {
             writer.write(String.join("\t", args));
             writer.write('\n');
@@ -184,11 +407,11 @@ public class DatalogRelationAnalysis implements RelationAnalysis {
         }
     }
 
-    private static void addData(Writer writer, int ...args) {
+    private static void addData(Writer writer, int... args) {
         addData(writer, Arrays.stream(args).mapToObj(String::valueOf).toArray(String[]::new));
     }
 
-    private static void addData(Writer writer, Event ...args) {
+    private static void addData(Writer writer, Event... args) {
         addData(writer, Arrays.stream(args).mapToInt(Event::getGlobalId).toArray());
     }
 
@@ -198,7 +421,7 @@ public class DatalogRelationAnalysis implements RelationAnalysis {
     }
 
     private void writeAnalysis(String name, Writer may, Writer must) {
-        switch(name) {
+        switch (name) {
             case "event_to_thread" -> {
                 List<Writer> writers = List.of(may, must);
                 task.getProgram().getThreads().forEach(t -> t.getEvents().stream()
@@ -210,8 +433,10 @@ public class DatalogRelationAnalysis implements RelationAnalysis {
                 List<Writer> writers = List.of(may, must);
                 for (int i = 1; i < events.size(); i++) {
                     Event ei = events.get(i);
-                    events.stream().limit(i).filter(e -> exec.areMutuallyExclusive(ei, e)).forEach(e -> writers.forEach(w -> {addData(w, ei, e);
-                        addData(w, e.getGlobalId(), ei.getGlobalId());}));
+                    events.stream().limit(i).filter(e -> exec.areMutuallyExclusive(ei, e)).forEach(e -> writers.forEach(w -> {
+                        addData(w, ei, e);
+                        addData(w, e, ei);
+                    }));
                 }
             }
             case "implies" -> {
@@ -248,7 +473,7 @@ public class DatalogRelationAnalysis implements RelationAnalysis {
                 List<Writer> writers = List.of(may, must);
                 task.getProgram().getThreads().forEach(t -> writers.forEach(w -> addData(w, t.getId())));
             }
-            case "VISIBLE" -> writeTag(VISIBLE, may,  must);
+            case "VISIBLE" -> writeTag(VISIBLE, may, must);
             default -> writeTag(sanitizedToOriginalName.getOrDefault(name, name), may, must);
         }
     }
@@ -287,7 +512,10 @@ public class DatalogRelationAnalysis implements RelationAnalysis {
         StringBuilder datalogProgram = new StringBuilder("#include \"").append(LIB_NAME).append("\"\n");
         memoryModel.getRelations().stream()
                 .filter(Predicate.not(translatedRelations::contains))
-                .map(r -> { translatedRelations.add(r); return r.getDefinition().accept(new DatalogGenerator());})
+                .map(r -> {
+                    translatedRelations.add(r);
+                    return r.getDefinition().accept(new DatalogGenerator());
+                })
                 .forEachOrdered(datalogProgram::append);
         task.getProgram().getThreadEvents().forEach(e -> idToEvent.put(e.getGlobalId(), e));
         Path tempDir;
@@ -307,7 +535,7 @@ public class DatalogRelationAnalysis implements RelationAnalysis {
     }
 
     private String sanitize(String s) {
-        assert(s != null);
+        assert (s != null);
         String result = VISIBLE.equals(s) ? "VISIBLE" : s.replace('-', '_').replace("__", "_VISIBLE");
         sanitizedToOriginalName.putIfAbsent(result, s);
         return result;
@@ -322,7 +550,10 @@ public class DatalogRelationAnalysis implements RelationAnalysis {
             verify(!def.getOperands().isEmpty());
             name.append("union_".repeat(def.getOperands().size() - 1));
             name.setLength(name.length() - 1);
-            def.getOperands().stream().map(Relation::getDefinition).forEachOrdered(d -> {name.append("_"); d.accept(this);});
+            def.getOperands().stream().map(Relation::getDefinition).forEachOrdered(d -> {
+                name.append("_");
+                d.accept(this);
+            });
             return name;
         }
 
@@ -331,21 +562,30 @@ public class DatalogRelationAnalysis implements RelationAnalysis {
             verify(!def.getOperands().isEmpty());
             name.append("intersection_".repeat(def.getOperands().size() - 1));
             name.setLength(name.length() - 1);
-            def.getOperands().stream().map(Relation::getDefinition).forEachOrdered(d -> {name.append("_"); d.accept(this);});
+            def.getOperands().stream().map(Relation::getDefinition).forEachOrdered(d -> {
+                name.append("_");
+                d.accept(this);
+            });
             return name;
         }
 
         @Override
         public StringBuilder visitDifference(Difference def) {
             name.append("difference");
-            Stream.of(def.getMinuend(), def.getSubtrahend()).map(Relation::getDefinition).forEachOrdered(d -> {name.append("_"); d.accept(this);});
+            Stream.of(def.getMinuend(), def.getSubtrahend()).map(Relation::getDefinition).forEachOrdered(d -> {
+                name.append("_");
+                d.accept(this);
+            });
             return name;
         }
 
         @Override
         public StringBuilder visitComposition(Composition def) {
             name.append("composition");
-            Stream.of(def.getLeftOperand(), def.getRightOperand()).map(Relation::getDefinition).forEachOrdered(d ->  {name.append("_"); d.accept(this);});
+            Stream.of(def.getLeftOperand(), def.getRightOperand()).map(Relation::getDefinition).forEachOrdered(d -> {
+                name.append("_");
+                d.accept(this);
+            });
             return name;
         }
 
@@ -496,21 +736,30 @@ public class DatalogRelationAnalysis implements RelationAnalysis {
         @Override
         public StringBuilder visitIntersectionFilter(IntersectionFilter intersectionFilter) {
             name.append("intersection");
-            Stream.of(intersectionFilter.getLeft(), intersectionFilter.getRight()).forEachOrdered(f ->{name.append("_");  f.accept(this); });
+            Stream.of(intersectionFilter.getLeft(), intersectionFilter.getRight()).forEachOrdered(f -> {
+                name.append("_");
+                f.accept(this);
+            });
             return name;
         }
 
         @Override
         public StringBuilder visitDifferenceFilter(DifferenceFilter differenceFilter) {
             name.append("difference");
-            Stream.of(differenceFilter.getLeft(), differenceFilter.getRight()).forEachOrdered(f ->{name.append("_");  f.accept(this); });
+            Stream.of(differenceFilter.getLeft(), differenceFilter.getRight()).forEachOrdered(f -> {
+                name.append("_");
+                f.accept(this);
+            });
             return name;
         }
 
         @Override
         public StringBuilder visitUnionFilter(UnionFilter unionFilter) {
             name.append("union");
-            Stream.of(unionFilter.getLeft(), unionFilter.getRight()).forEachOrdered(f ->{name.append("_");  f.accept(this); });
+            Stream.of(unionFilter.getLeft(), unionFilter.getRight()).forEachOrdered(f -> {
+                name.append("_");
+                f.accept(this);
+            });
             return name;
         }
     }
@@ -553,7 +802,10 @@ public class DatalogRelationAnalysis implements RelationAnalysis {
 
         private void defineRelations(Stream<Relation> relations) {
             relations.filter(Predicate.not(translatedRelations::contains))
-                    .forEachOrdered(r -> { translatedRelations.add(r); r.getDefinition().accept(this);});
+                    .forEachOrdered(r -> {
+                        translatedRelations.add(r);
+                        r.getDefinition().accept(this);
+                    });
         }
 
         private void defineBaseRelation(String name) {
@@ -598,7 +850,10 @@ public class DatalogRelationAnalysis implements RelationAnalysis {
         }
 
         private void defineTags(Stream<String> tags) {
-            tags.filter(Predicate.not(translatedAnalyses::contains)).forEachOrdered(t -> {translatedAnalyses.add(t); defineBaseFilter(t);});
+            tags.filter(Predicate.not(translatedAnalyses::contains)).forEachOrdered(t -> {
+                translatedAnalyses.add(t);
+                defineBaseFilter(t);
+            });
         }
 
         @Override
@@ -606,7 +861,9 @@ public class DatalogRelationAnalysis implements RelationAnalysis {
             verify(def.getOperands().size() > 1);
             defineRelations(def.getOperands().stream());
             String currentName = getRelationDatalogName(def.getDefinedRelation());
-            var prevName = new Object(){ String value = getRelationDatalogName(def.getOperands().get(0)); };
+            var prevName = new Object() {
+                String value = getRelationDatalogName(def.getOperands().get(0));
+            };
             int[] i = {0};
             def.getOperands().stream()
                     .skip(1)
@@ -615,7 +872,8 @@ public class DatalogRelationAnalysis implements RelationAnalysis {
                     .forEachOrdered(n -> {
                         String nextName = currentName + i[0]++;
                         binaryRelationOperator(nextName, prevName.value, n, "UNION");
-                    prevName.value = nextName; });
+                        prevName.value = nextName;
+                    });
             binaryRelationOperator(currentName, prevName.value, def.getOperands().get(def.getOperands().size() - 1), "UNION");
             return program;
         }
@@ -625,7 +883,9 @@ public class DatalogRelationAnalysis implements RelationAnalysis {
             verify(def.getOperands().size() > 1);
             defineRelations(def.getOperands().stream());
             String currentName = getRelationDatalogName(def.getDefinedRelation());
-            var prevName = new Object(){ String value = getRelationDatalogName(def.getOperands().get(0)); };
+            var prevName = new Object() {
+                String value = getRelationDatalogName(def.getOperands().get(0));
+            };
             int[] i = {0};
             def.getOperands().stream()
                     .skip(1)
@@ -634,7 +894,8 @@ public class DatalogRelationAnalysis implements RelationAnalysis {
                     .forEachOrdered(n -> {
                         String nextName = currentName + i[0]++;
                         binaryRelationOperator(nextName, prevName.value, n, "INTERSECTION");
-                        prevName.value = nextName; });
+                        prevName.value = nextName;
+                    });
             binaryRelationOperator(currentName, prevName.value, def.getOperands().get(def.getOperands().size() - 1), "INTERSECTION");
             return program;
         }
@@ -758,9 +1019,13 @@ public class DatalogRelationAnalysis implements RelationAnalysis {
 
         @Override
         public StringBuilder visitControlDependency(DirectControlDependency ctrlDirect) {
+            translatedBaseRelations.add(ctrlDirect.getDefinedRelation());
+            defineBaseRelation(RelationNameRepository.CTRLDIRECT);
+            return program;
+            /*
             defineTags(Stream.of("GOTO", "DEAD"));
             defineAnalyses(Stream.of("mutex", "jump"));
-            return program.append("CTRLDIRECT(").append(sanitize(RelationNameRepository.CTRLDIRECT)).append(")\n");
+            return program.append("CTRLDIRECT(").append(sanitize(RelationNameRepository.CTRLDIRECT)).append(")\n");*/
         }
 
         @Override
@@ -867,6 +1132,7 @@ public class DatalogRelationAnalysis implements RelationAnalysis {
         }
     }
 
+    // TODO rewrite in datalog
     private class Initializer implements Definition.Visitor<Void> {
         final Program program = task.getProgram();
         final WitnessGraph witness = task.getWitness();
@@ -876,6 +1142,37 @@ public class DatalogRelationAnalysis implements RelationAnalysis {
         public Initializer(Writer mayWriter, Writer mustWriter) {
             this.mayWriter = mayWriter;
             this.mustWriter = mustWriter;
+        }
+
+        @Override
+        public Void visitControlDependency(DirectControlDependency ctrlDep) {
+            //TODO: We can restrict the codomain to visible events as the only usage of this Relation is in
+            // ctrl := idd^+;ctrlDirect & (R*V)
+            List<Writer> writers = List.of(mayWriter, mustWriter);
+            for (Thread thread : program.getThreads()) {
+                for (CondJump jump : thread.getEvents(CondJump.class)) {
+                    if (jump.isGoto() || jump.isDead()) {
+                        continue; // There is no point in ctrl-edges from unconditional jumps.
+                    }
+
+                    final List<Event> ctrlDependentEvents;
+                    if (jump instanceof IfAsJump ifJump) {
+                        // Ctrl dependencies of Ifs (under Linux) only extend up until the merge point of both
+                        // branches.
+                        ctrlDependentEvents = ifJump.getBranchesEvents();
+                    } else {
+                        // Regular jumps give dependencies to all successors.
+                        ctrlDependentEvents = jump.getSuccessor().getSuccessors();
+                    }
+
+                    for (Event e : ctrlDependentEvents) {
+                        if (!exec.areMutuallyExclusive(jump, e)) {
+                            writers.forEach(w -> addData(w, jump, e));
+                        }
+                    }
+                }
+            }
+            return null;
         }
 
         @Override
@@ -1349,18 +1646,15 @@ public class DatalogRelationAnalysis implements RelationAnalysis {
     }
 
     private long countSet(String type) {
-        String command = String.format("bash -c \"( find %s/ \\( -name '*.%s.facts' -o -name '*.%s.csv' \\) -print0 | xargs -0 cat ) | wc -l\"", tempDir, type, type);
+        String command = String.format("( find %s/ \\( -name '*.%s.facts' -o -name '*.%s.csv' \\) -print0 | xargs -0 cat ) | wc -l", tempDir, type, type);
         String line = null;
         try {
-            logger.info("command : " + command);
-            Process process = Runtime.getRuntime().exec(command);
-            logger.info("start process");
+            Process process = Runtime.getRuntime().exec(new String[]{"bash", "-c", command});
             try (BufferedReader in = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
-                logger.info("read line");
                 line = in.readLine();
             }
             int returnCode = process.waitFor();
-            verify(returnCode == 0, "set counting failed");
+            verify(returnCode == 0, "set counting failed with error code " + returnCode);
         } catch (InterruptedException | IOException e) {
             e.printStackTrace();
             verify(false, "could not calculate " + type + " set size" + e.getMessage());
@@ -1371,13 +1665,11 @@ public class DatalogRelationAnalysis implements RelationAnalysis {
 
     @Override
     public long countMaySet() {
-        return 0;
-        //return countSet("May");
+        return countSet("May");
     }
 
     @Override
     public long countMustSet() {
-        return 0;
-        //return countSet("Must");
+        return countSet("Must");
     }
 }
