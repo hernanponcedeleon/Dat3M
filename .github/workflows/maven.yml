@@ -21,7 +21,11 @@ jobs:
 
     steps:
     - name: Install dependencies
-      run: sudo apt-get install -y souffle
+      run: |
+        sudo wget https://souffle-lang.github.io/ppa/souffle-key.public -O /usr/share/keyrings/souffle-archive-keyring.gpg
+        echo "deb [signed-by=/usr/share/keyrings/souffle-archive-keyring.gpg] https://souffle-lang.github.io/ppa/ubuntu/ stable main" | sudo tee /etc/apt/sources.list.d/souffle.list
+        sudo apt update
+        sudo apt install -y souffle
 
     - name: Checkout
       uses: actions/checkout@v4
