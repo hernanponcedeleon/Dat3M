@@ -1,4 +1,4 @@
-package com.dat3m.testgen.smt_classes;
+package com.dat3m.testgen;
 
 public class UnionFindDisjointSet {
     

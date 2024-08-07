@@ -1,4 +1,4 @@
-package com.dat3m.testgen.smt_classes;
+package com.dat3m.testgen;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -9,7 +9,7 @@ import java.util.Set;
 
 public class CNF {
     
-    public Map < String, List <String> > rules;
+    public Map <String, List <String>> rules;
     public String starting_nt;
     public Set <String> non_terminals;
     public Set <String> terminals;

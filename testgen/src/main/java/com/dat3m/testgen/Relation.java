@@ -1,4 +1,4 @@
-package com.dat3m.testgen.manual_classes;
+package com.dat3m.testgen;
 
 public class Relation {
 
@@ -7,7 +7,7 @@ public class Relation {
         po,
         rf,
         co,
-        fr
+        rf_inv
     };
 
     Event event_L;
@@ -34,3 +34,4 @@ public class Relation {
     }
 
 }
+

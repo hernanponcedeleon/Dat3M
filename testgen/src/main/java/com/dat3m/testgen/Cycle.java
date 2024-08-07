@@ -1,4 +1,4 @@
-package com.dat3m.testgen.smt_classes;
+package com.dat3m.testgen;
 
 import java.util.ArrayList;
 import java.util.List;

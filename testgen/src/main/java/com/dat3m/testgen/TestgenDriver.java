@@ -6,8 +6,6 @@ import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
 
-import com.dat3m.testgen.smt_classes.CNF;
-
 public class TestgenDriver {
 
     static Set <String> all_cycles;
@@ -34,7 +32,7 @@ public class TestgenDriver {
 
         cnf.to_normal_form();
 
-        final int cycle_length = 3;
+        final int cycle_length = 4;
         explore_cnf( cnf, new ArrayList<String>( Arrays.asList( cnf.starting_nt ) ), new ArrayList<>(), cycle_length - 1 );
         
         System.out.println( "Cycles of length " + cycle_length + ":" );
