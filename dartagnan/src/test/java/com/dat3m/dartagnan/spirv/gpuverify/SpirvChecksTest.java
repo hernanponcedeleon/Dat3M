@@ -48,7 +48,6 @@ public class SpirvChecksTest {
     @Parameterized.Parameters(name = "{index}: {0}, {1}, {2}")
     public static Iterable<Object[]> data() throws IOException {
         return Arrays.asList(new Object[][]{
-                // Agree with gpu-verify
                 {"atomics/atomic_read_race.spv.dis", 1, PASS},
                 {"atomics/equality_fail.spv.dis", 1, PASS},
                 {"atomics/forloop.spv.dis", 2, UNKNOWN},
@@ -65,15 +64,19 @@ public class SpirvChecksTest {
                 {"divergence/race_no_divergence.spv.dis", 1, PASS},
                 {"inter_group_and_barrier_flag_tests/fail/local_id.spv.dis", 1, PASS},
                 {"inter_group_and_barrier_flag_tests/fail/missing_local_barrier_flag.spv.dis", 1, PASS},
+
                 // Fails check checkRelIsSem for a barrier with semantics 0x8 (rel_acq, no storage class semantics)
                 // {"inter_group_and_barrier_flag_tests/fail/no_barrier_flags.spv.dis", 1, PASS},
+
                 {"inter_group_and_barrier_flag_tests/fail/sync.spv.dis", 1, PASS},
                 {"inter_group_and_barrier_flag_tests/pass/local_barrier_flag.spv.dis", 1, PASS},
                 {"inter_group_and_barrier_flag_tests/pass/local_id_benign_write_write.spv.dis", 1, PASS},
                 {"inter_group_and_barrier_flag_tests/pass/pass_due_to_intra_group_flag.spv.dis", 1, PASS},
                 {"localarrayaccess.spv.dis", 1, PASS},
+
                 // Fails check checkRelIsSem for a barrier with semantics 0x8 (rel_acq, no storage class semantics)
                 // {"mem_fence.spv.dis", 1, PASS},
+
                 {"misc/fail/miscfail1.spv.dis", 1, PASS},
                 {"misc/fail/miscfail3.spv.dis", 1, PASS},
                 {"misc/fail/struct_member_race.spv.dis", 1, PASS},
@@ -108,22 +111,17 @@ public class SpirvChecksTest {
                 {"test_structs/use_element.spv.dis", 1, PASS},
                 {"test_structs/use_struct_element.spv.dis", 1, PASS},
 
-                // Fails in gpu-verify, but should pass (even according to the annotation in the test)
                 {"saturate/sadd.spv.dis", 1, PASS},
                 {"saturate/ssub.spv.dis", 1, PASS},
 
-                // Passes in gpu-verify, but has race (even according to the annotation in the test)
                 {"atomics/refined_atomic_abstraction/bad_local_counters.spv.dis", 1, PASS},
                 {"atomics/refined_atomic_abstraction/intra_local_counters.spv.dis", 1, PASS},
 
-                // Should pass according to gpu-verify, suspecting a bug in the memory model
                 {"atomics/counter.spv.dis", 1, PASS},
 
-                // In gpu-verify fails barrier divergence but not leading to a data race
                 {"barrier_intervals/test2.spv.dis", 1, PASS},
                 {"sourcelocation_tests/barrier_divergence/fail.spv.dis", 1, PASS},
 
-                // In gpu-verify fails command-line test, no races
                 {"global_size/local_size_fail_divide_global_size.spv.dis", 1, PASS},
                 {"global_size/mismatch_dims.spv.dis", 1, PASS},
                 {"global_size/num_groups_and_global_size.spv.dis", 1, PASS},

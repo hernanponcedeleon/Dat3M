@@ -22,6 +22,7 @@ import static java.util.stream.Collectors.toMap;
 
 public class MemoryTransformer extends ExprTransformer {
 
+    // Thread / Subgroup / Workgroup / QueueFamily / Device
     private static final List<String> namePrefixes = List.of("T", "S", "W", "Q", "D");
 
     private final Function function;
