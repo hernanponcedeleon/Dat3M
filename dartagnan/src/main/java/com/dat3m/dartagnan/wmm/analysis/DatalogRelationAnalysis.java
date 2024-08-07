@@ -499,7 +499,19 @@ public class DatalogRelationAnalysis implements RelationAnalysis {
     private void runDatalog(Path tempDir) throws InterruptedException, IOException {
         String command = "souffle " + Paths.get(tempDir.toString(), MODEL_NAME);
         logger.info("running datalog: " + command);
-        Process process = Runtime.getRuntime().exec(command, null, tempDir.toFile());
+        Process process = Runtime.getRuntime().exec(new String[]{"bash", "-c", command}, null, tempDir.toFile());
+        try (BufferedReader in = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
+            String line;
+            while ((line = in.readLine()) != null) {
+                logger.info(line);
+            }
+        }
+        try (BufferedReader in = new BufferedReader(new InputStreamReader(process.getErrorStream()))) {
+            String line;
+            while ((line = in.readLine()) != null) {
+                logger.warn(line);
+            }
+        }
         int returnCode = process.waitFor();
         verify(returnCode == 0, "datalog execution failed");
         logger.info("finished datalog");
