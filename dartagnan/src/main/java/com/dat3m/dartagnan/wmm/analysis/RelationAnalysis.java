@@ -47,6 +47,7 @@ public interface RelationAnalysis {
      */
     static RelationAnalysis fromConfig(VerificationTask task, Context context, Configuration config) throws InvalidConfigurationException {
         RelationAnalysis.Config c = new RelationAnalysis.Config(config);
+        c.method = RelationAnalysisMethod.DATALOG;
         logger.info("Selected relation analysis: {}", c.method);
 
         RelationAnalysis a = switch (c.method) {
