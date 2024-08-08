@@ -34,6 +34,7 @@ import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 
 import java.util.*;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static com.dat3m.dartagnan.configuration.Arch.RISCV;
@@ -752,11 +753,15 @@ public class NativeRelationAnalysis implements RelationAnalysis {
         @Override
         public Knowledge visitCoherence(Coherence co) {
             logger.trace("Computing knowledge about memory order");
+            List<Store> allWrites = program.getThreadEvents(Store.class);
             List<Store> nonInitWrites = program.getThreadEvents(Store.class);
             nonInitWrites.removeIf(Init.class::isInstance);
             EventGraph may = new EventGraph();
             for (Store w1 : program.getThreadEvents(Store.class)) {
-                for (Store w2 : nonInitWrites) {
+                // It is possible to have multiple initial writes
+                // to the same memory location via different virtual memory aliases
+                List<Store> writes = w1 instanceof Init ? allWrites : nonInitWrites;
+                for (Store w2 : writes) {
                     if (w1.getGlobalId() != w2.getGlobalId() && !exec.areMutuallyExclusive(w1, w2)
                             && alias.mayAlias(w1, w2)) {
                         may.add(w1, w2);
@@ -983,7 +988,7 @@ public class NativeRelationAnalysis implements RelationAnalysis {
                     }
                     Thread thread1 = e1.getThread();
                     Thread thread2 = e2.getThread();
-                    if (specificScope != null) { // scope specified
+                    if (specificScope != null) {
                         if (thread1.getScopeHierarchy().canSyncAtScope(thread2.getScopeHierarchy(), specificScope)) {
                             must.add(e1, e2);
                         }
@@ -1004,16 +1009,16 @@ public class NativeRelationAnalysis implements RelationAnalysis {
         public Knowledge visitSyncBarrier(SyncBar syncBar) {
             EventGraph may = new EventGraph();
             EventGraph must = new EventGraph();
-            List<FenceWithId> fenceEvents = program.getThreadEvents(FenceWithId.class);
-            for (FenceWithId e1 : fenceEvents) {
-                for (FenceWithId e2 : fenceEvents) {
+            List<ControlBarrier> barriers = program.getThreadEvents(ControlBarrier.class);
+            for (ControlBarrier e1 : barriers) {
+                for (ControlBarrier e2 : barriers) {
                     // “A bar.sync or bar.red or bar.arrive operation synchronizes with a bar.sync
                     // or bar.red operation executed on the same barrier.”
                     if (exec.areMutuallyExclusive(e1, e2) || e2.hasTag(PTX.ARRIVE)) {
                         continue;
                     }
                     may.add(e1, e2);
-                    if (e1.getFenceID().equals(e2.getFenceID())) {
+                    if (e1.getId().equals(e2.getId())) {
                         must.add(e1, e2);
                     }
                 }
@@ -1040,20 +1045,37 @@ public class NativeRelationAnalysis implements RelationAnalysis {
         public Knowledge visitSameVirtualLocation(SameVirtualLocation vloc) {
             EventGraph must = new EventGraph();
             EventGraph may = new EventGraph();
-            List<MemoryCoreEvent> events = program.getThreadEvents(MemoryCoreEvent.class);
-            for (MemoryCoreEvent e1 : events) {
-                for (MemoryCoreEvent e2 : events) {
-                    if (sameGenericAddress(e1, e2) && !exec.areMutuallyExclusive(e1, e2)) {
-                        if (alias.mustAlias(e1, e2)) {
-                            must.add(e1, e2);
-                        }
-                        if (alias.mayAlias(e1, e2)) {
-                            may.add(e1, e2);
-                        }
+            Map<MemoryCoreEvent, VirtualMemoryObject> map = computeViltualAddressMap();
+            map.forEach((e1, a1) -> map.forEach((e2, a2) -> {
+                if (a1.equals(a2) && !exec.areMutuallyExclusive(e1, e2)) {
+                    if (alias.mustAlias(e1, e2)) {
+                        must.add(e1, e2);
+                    }
+                    if (alias.mayAlias(e1, e2)) {
+                        may.add(e1, e2);
                     }
                 }
-            }
+            }));
             return new Knowledge(may, must);
+        }
+
+        private Map<MemoryCoreEvent, VirtualMemoryObject> computeViltualAddressMap() {
+            Map<MemoryCoreEvent, VirtualMemoryObject> map = new HashMap<>();
+            program.getThreadEvents(MemoryCoreEvent.class).forEach(e -> {
+                Set<VirtualMemoryObject> s = e.getAddress().getMemoryObjects().stream()
+                        .filter(VirtualMemoryObject.class::isInstance)
+                        .map(o -> (VirtualMemoryObject)o)
+                        .collect(Collectors.toSet());
+                if (s.size() > 1) {
+                    throw new UnsupportedOperationException(
+                            "Expressions with multiple virtual addresses are not supported");
+                }
+                if (!s.isEmpty()) {
+                    VirtualMemoryObject a = s.stream().findFirst().orElseThrow().getGenericAddress();
+                    map.put(e, a);
+                }
+            });
+            return map;
         }
 
         @Override
@@ -1412,19 +1434,6 @@ public class NativeRelationAnalysis implements RelationAnalysis {
     @Override
     public long countMustSet() {
         return knowledgeMap.values().stream().mapToLong(k -> k.getMustSet().size()).sum();
-    }
-
-    // GPU memory models make use of virtual addresses.
-    // This models same_alias_r from the PTX Alloy model
-    // Checking address1 and address2 hold the same generic address
-    private boolean sameGenericAddress(MemoryCoreEvent e1, MemoryCoreEvent e2) {
-        // TODO: Add support for pointers, i.e. if `x` and `y` virtually alias,
-        // then `x + offset` and `y + offset` should too
-        if (!(e1.getAddress() instanceof VirtualMemoryObject addr1)
-                || !(e2.getAddress() instanceof VirtualMemoryObject addr2)) {
-            return false;
-        }
-        return addr1.getGenericAddress() == addr2.getGenericAddress();
     }
 
     protected static final class Delta {
