@@ -4,7 +4,9 @@ import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
+import com.dat3m.dartagnan.expression.ExpressionVisitor;
 import com.dat3m.dartagnan.expression.integers.IntLiteral;
+import com.dat3m.dartagnan.expression.processing.ExprTransformer;
 import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.parsers.LitmusAArch64BaseVisitor;
@@ -13,6 +15,7 @@ import com.dat3m.dartagnan.parsers.program.utils.ProgramBuilder;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.EventFactory;
+import com.dat3m.dartagnan.program.event.RegReader;
 import com.dat3m.dartagnan.program.event.arch.StoreExclusive;
 import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.event.core.Load;
@@ -54,9 +57,32 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object> {
         visitVariableDeclaratorList(ctx.variableDeclaratorList());
         visitInstructionList(ctx.program().instructionList());
         VisitorLitmusAssertions.parseAssertions(programBuilder, ctx.assertionList(), ctx.assertionFilter());
-        return programBuilder.build();
+        Program prog = programBuilder.build();
+        replaceXZRRegister(prog);
+
+        return prog;
+
     }
 
+    /*
+    The "xzr" register plays a special role in AArhc64:
+      1. Reading accesses always return the value 0.
+      2. Discards data when written.
+     TODO: The below code is a simple fix to guarantee point 1. above.
+      Point 2. might also be resolved: although we do not prevent writing to xzr,
+      the value of xzr is never read after the transformation so its value is effectively 0.
+      However, the exists/forall clauses could still refer to that register and observe a non-zero value.
+     */
+    private void replaceXZRRegister(Program program) {
+        final ExpressionVisitor<Expression> xzrReplacer = new ExprTransformer() {
+            @Override
+            public Expression visitRegister(Register reg) {
+                return reg.getName().equals("xzr") ? expressions.makeGeneralZero(reg.getType()) : reg;
+            }
+        };
+        program.getThreadEvents(RegReader.class)
+                .forEach(e -> e.transformExpressions(xzrReplacer));
+    }
 
     // ----------------------------------------------------------------------------------------------------------------
     // Variable declarator list, e.g., { 0:EAX=0; 1:EAX=1; x=2; }
