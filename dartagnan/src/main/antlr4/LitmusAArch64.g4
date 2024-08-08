@@ -338,9 +338,9 @@ BranchInstruction
     ;
 
 Fence
-    :   'DMB'
-    |   'DSB'
-    |   'ISB'
+    :   'DMB'   |   'dmb'
+    |   'DSB'   |   'dsb'
+    |   'ISB'   |   'isb'
     ;
 
 FenceOpt
