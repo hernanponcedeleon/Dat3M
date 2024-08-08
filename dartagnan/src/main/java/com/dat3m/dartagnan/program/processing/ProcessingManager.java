@@ -97,7 +97,7 @@ public class ProcessingManager implements ProgramProcessor {
                                 ComplexBlockSplitting.newInstance(),
                                 BranchReordering.fromConfig(config),
                                 Simplifier.fromConfig(config)
-                        ), Target.FUNCTIONS, true
+                        ), Target.ALL, true
                 ),
                 ProgramProcessor.fromFunctionProcessor(NormalizeLoops.newInstance(), Target.FUNCTIONS, true),
                 RegisterDecomposition.newInstance(),
