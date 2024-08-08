@@ -397,11 +397,15 @@ BitfieldOperator
 Register64
     :   'X' DigitSequence
     |   'x' DigitSequence
+    |   'XZR' // zero register
+    |   'xzr' // zero register
     ;
 
 Register32
     :   'W' DigitSequence
     |   'w' DigitSequence
+    |   'WZR' // zero register
+    |   'wzr' // zero register
     ;
 
 LitmusLanguage
