@@ -80,15 +80,10 @@ public class CNF {
 
     public void to_normal_form()
     throws Exception {
-
         transformation_start();
-
         transformation_bin();
-
         transformation_unit();
-
         transformation_term();
-
     }
 
     void transformation_start()
