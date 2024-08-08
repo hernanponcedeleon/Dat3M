@@ -10,7 +10,7 @@
 
 // analyses
 
-#define SAME_THREAD(e1, e2, temp) (THREAD.Must(temp), event_to_thread.Must(e1, temp), event_to_thread.Must(e2, temp))
+#define SAME_THREAD(e1, e2, temp) (event_to_thread.Must(e1, temp), event_to_thread.Must(e2, temp))
 #define NOT_SAME_THREAD(e1, e2, temp) ((event_to_thread.Must(e1, temp); event_to_thread.Must(e2, temp)), !(event_to_thread.Must(e1, temp), event_to_thread.Must(e2, temp)))
 #define MUTEX(...) mutex.Must(__VA_ARGS__)
 #define IMPLIES(...) implies.Must(__VA_ARGS__)
