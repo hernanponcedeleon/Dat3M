@@ -374,17 +374,17 @@ public class DatalogRelationAnalysis implements RelationAnalysis {
     }
 
     private String getRelationDatalogName(Relation r) {
-        String name = relationToDatalogName.computeIfAbsent(r, k -> sanitize(r.getDefinition().accept(new DatalogNameVisitor()).toString()));
-        return name.length() < 200 ? name : "rel" + System.identityHashCode(name);
+        return getRelationDatalogName(r, false);
     }
 
     public String getRelationDatalogName(Relation r, boolean full) {
-        String name = relationToDatalogName.computeIfAbsent(r, k -> sanitize(r.getDefinition().accept(new DatalogNameVisitor()).toString()));
-        return full || name.length() < 200 ? name : "rel" + System.identityHashCode(name);
+        String name = relationToDatalogName.computeIfAbsent(r, k -> sanitize(r.getDefinition().accept(new DatalogNameVisitor(r)).toString()));
+        return full || name.length() < 200 ? name : "rel" + System.identityHashCode(r);
     }
 
     private String getFilterDatalogName(Filter f) {
-        return filterToDatalogName.computeIfAbsent(f, k -> sanitize(f.accept(new DatalogNameVisitor()).toString()));
+        String name = filterToDatalogName.computeIfAbsent(f, k -> sanitize(f.accept(new DatalogNameVisitor(f)).toString()));
+        return name.length() < 200 ? name : "fil" + System.identityHashCode(f);
     }
 
     @FunctionalInterface
@@ -548,7 +548,7 @@ public class DatalogRelationAnalysis implements RelationAnalysis {
 
     private String sanitize(String s) {
         assert (s != null);
-        String result = VISIBLE.equals(s) ? "VISIBLE" : s.replace('-', '_').replace("__", "_VISIBLE");
+        String result = VISIBLE.equals(s) ? "VISIBLE" : s.replaceAll("[\\-.]", "_").replace("__", "_VISIBLE");
         sanitizedToOriginalName.putIfAbsent(result, s);
         return result;
     }
@@ -556,9 +556,38 @@ public class DatalogRelationAnalysis implements RelationAnalysis {
     private class DatalogNameVisitor implements Definition.Visitor<StringBuilder>, Filter.Visitor<StringBuilder> {
 
         private final StringBuilder name = new StringBuilder();
+        private final Object target;
+        private boolean recursive = false;
+        private String recursiveName = null;
+
+        public DatalogNameVisitor(Filter filter) {
+            target = filter;
+        }
+
+        public DatalogNameVisitor(Relation relation) {
+            target = relation;
+        }
+
+        private boolean checkRecursion(Object target) {
+            if (!Objects.equals(this.target, target)) {
+                return false;
+            }
+            if (!recursive) {
+                recursive = true;
+                return false;
+            }
+            if (recursiveName == null) {
+                recursiveName = "name" + System.identityHashCode(this.target);
+                name.insert(0, "recursive_" + recursiveName);
+            }
+            return true;
+        }
 
         @Override
         public StringBuilder visitUnion(Union def) {
+            if (checkRecursion(def.getDefinedRelation())) {
+                return name.append(recursiveName);
+            }
             verify(!def.getOperands().isEmpty());
             name.append("union_".repeat(def.getOperands().size() - 1));
             name.setLength(name.length() - 1);
@@ -571,6 +600,9 @@ public class DatalogRelationAnalysis implements RelationAnalysis {
 
         @Override
         public StringBuilder visitIntersection(Intersection def) {
+            if (checkRecursion(def.getDefinedRelation())) {
+                return name.append(recursiveName);
+            }
             verify(!def.getOperands().isEmpty());
             name.append("intersection_".repeat(def.getOperands().size() - 1));
             name.setLength(name.length() - 1);
@@ -583,6 +615,9 @@ public class DatalogRelationAnalysis implements RelationAnalysis {
 
         @Override
         public StringBuilder visitDifference(Difference def) {
+            if (checkRecursion(def.getDefinedRelation())) {
+                return name.append(recursiveName);
+            }
             name.append("difference");
             Stream.of(def.getMinuend(), def.getSubtrahend()).map(Relation::getDefinition).forEachOrdered(d -> {
                 name.append("_");
@@ -593,6 +628,9 @@ public class DatalogRelationAnalysis implements RelationAnalysis {
 
         @Override
         public StringBuilder visitComposition(Composition def) {
+            if (checkRecursion(def.getDefinedRelation())) {
+                return name.append(recursiveName);
+            }
             name.append("composition");
             Stream.of(def.getLeftOperand(), def.getRightOperand()).map(Relation::getDefinition).forEachOrdered(d -> {
                 name.append("_");
@@ -603,36 +641,54 @@ public class DatalogRelationAnalysis implements RelationAnalysis {
 
         @Override
         public StringBuilder visitDomainIdentity(DomainIdentity def) {
+            if (checkRecursion(def.getDefinedRelation())) {
+                return name.append(recursiveName);
+            }
             name.append("domain_");
             return def.getOperand().getDefinition().accept(this);
         }
 
         @Override
         public StringBuilder visitRangeIdentity(RangeIdentity def) {
+            if (checkRecursion(def.getDefinedRelation())) {
+                return name.append(recursiveName);
+            }
             name.append("identity_range_");
             return def.getOperand().getDefinition().accept(this);
         }
 
         @Override
         public StringBuilder visitInverse(Inverse def) {
+            if (checkRecursion(def.getDefinedRelation())) {
+                return name.append(recursiveName);
+            }
             name.append("inverse_");
             return def.getOperand().getDefinition().accept(this);
         }
 
         @Override
         public StringBuilder visitTransitiveClosure(TransitiveClosure def) {
+            if (checkRecursion(def.getDefinedRelation())) {
+                return name.append(recursiveName);
+            }
             name.append("closure_");
             return def.getOperand().getDefinition().accept(this);
         }
 
         @Override
         public StringBuilder visitSetIdentity(SetIdentity def) {
+            if (checkRecursion(def.getDefinedRelation())) {
+                return name.append(recursiveName);
+            }
             name.append("identity_");
             return def.getFilter().accept(this);
         }
 
         @Override
         public StringBuilder visitProduct(CartesianProduct def) {
+            if (checkRecursion(def.getDefinedRelation())) {
+                return name.append(recursiveName);
+            }
             name.append("product_");
             def.getFirstFilter().accept(this);
             name.append("_");
@@ -641,6 +697,9 @@ public class DatalogRelationAnalysis implements RelationAnalysis {
 
         @Override
         public StringBuilder visitFences(Fences fence) {
+            if (checkRecursion(fence.getDefinedRelation())) {
+                return name.append(recursiveName);
+            }
             name.append("fence_");
             return fence.getFilter().accept(this);
         }
@@ -747,6 +806,9 @@ public class DatalogRelationAnalysis implements RelationAnalysis {
 
         @Override
         public StringBuilder visitIntersectionFilter(IntersectionFilter intersectionFilter) {
+            if (checkRecursion(intersectionFilter)) {
+                return name.append(recursiveName);
+            }
             name.append("intersection");
             Stream.of(intersectionFilter.getLeft(), intersectionFilter.getRight()).forEachOrdered(f -> {
                 name.append("_");
@@ -757,6 +819,9 @@ public class DatalogRelationAnalysis implements RelationAnalysis {
 
         @Override
         public StringBuilder visitDifferenceFilter(DifferenceFilter differenceFilter) {
+            if (checkRecursion(differenceFilter)) {
+                return name.append(recursiveName);
+            }
             name.append("difference");
             Stream.of(differenceFilter.getLeft(), differenceFilter.getRight()).forEachOrdered(f -> {
                 name.append("_");
@@ -767,6 +832,9 @@ public class DatalogRelationAnalysis implements RelationAnalysis {
 
         @Override
         public StringBuilder visitUnionFilter(UnionFilter unionFilter) {
+            if (checkRecursion(unionFilter)) {
+                return name.append(recursiveName);
+            }
             name.append("union");
             Stream.of(unionFilter.getLeft(), unionFilter.getRight()).forEachOrdered(f -> {
                 name.append("_");
