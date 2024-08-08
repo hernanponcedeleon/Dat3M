@@ -132,7 +132,7 @@ public class DatalogRelationAnalysis implements RelationAnalysis {
                 readFile(must, mustSet);
             });
         } catch (IOException e) {
-            verify(false, "could not read datalog data for " + name + isBase);
+            verify(false, "could not read datalog data for " + name);
         }
         return new Knowledge(maySet, mustSet);
     }
@@ -378,13 +378,14 @@ public class DatalogRelationAnalysis implements RelationAnalysis {
     }
 
     public String getRelationDatalogName(Relation r, boolean full) {
-        String name = relationToDatalogName.computeIfAbsent(r, k -> sanitize(r.getDefinition().accept(new DatalogNameVisitor(r)).toString()));
-        return full || name.length() < 200 ? name : "rel" + System.identityHashCode(r);
+        //String name = relationToDatalogName.computeIfAbsent(r, k -> sanitize(r.getName()
+        //        .filter(n -> n.matches("[A-Za-z0-9\\-_.]+"))
+        //        .orElseGet(() -> { logger.info("getting name for " + r.getName()); return r.getDefinition().accept(new DatalogNameVisitor(r)).toString(); })));
+        return "rel" + System.identityHashCode(r);
     }
 
     private String getFilterDatalogName(Filter f) {
-        String name = filterToDatalogName.computeIfAbsent(f, k -> sanitize(f.accept(new DatalogNameVisitor(f)).toString()));
-        return name.length() < 200 ? name : "fil" + System.identityHashCode(f);
+        return filterToDatalogName.computeIfAbsent(f, k -> f instanceof TagFilter tf ? sanitize(tf.toString()) : "fil" + System.identityHashCode(f));
     }
 
     @FunctionalInterface
@@ -591,9 +592,9 @@ public class DatalogRelationAnalysis implements RelationAnalysis {
             verify(!def.getOperands().isEmpty());
             name.append("union_".repeat(def.getOperands().size() - 1));
             name.setLength(name.length() - 1);
-            def.getOperands().stream().map(Relation::getDefinition).forEachOrdered(d -> {
+            def.getOperands().forEach(r -> {
                 name.append("_");
-                d.accept(this);
+                name.append(getRelationDatalogName(r));
             });
             return name;
         }
@@ -606,9 +607,9 @@ public class DatalogRelationAnalysis implements RelationAnalysis {
             verify(!def.getOperands().isEmpty());
             name.append("intersection_".repeat(def.getOperands().size() - 1));
             name.setLength(name.length() - 1);
-            def.getOperands().stream().map(Relation::getDefinition).forEachOrdered(d -> {
+            def.getOperands().forEach(r -> {
                 name.append("_");
-                d.accept(this);
+                name.append(getRelationDatalogName(r));
             });
             return name;
         }
@@ -849,7 +850,7 @@ public class DatalogRelationAnalysis implements RelationAnalysis {
         private final StringBuilder program = new StringBuilder();
 
         private void operator(String result, String op1, String op2, String operator, boolean isResultBinary) {
-            program.append(op2 == null ? "UNARY" : "BINARY").append("_OPERATOR_").append(isResultBinary ? "BINARY" : "UNARY").append("(").append(operator).append(", ").append(result).append(", ").append(op1);
+            program.append(String.format("%s_OPERATOR_%s(%s, %s, %s", op2 == null ? "UNARY" : "BINARY", isResultBinary ? "BINARY" : "UNARY", operator, result, op1));
             if (op2 != null) {
                 program.append(", ").append(op2);
             }
@@ -857,7 +858,7 @@ public class DatalogRelationAnalysis implements RelationAnalysis {
         }
 
         private void base(String name, boolean isResultBinary) {
-            program.append("BASE(").append(name).append(", ").append(isResultBinary ? "Binary" : "Unary").append(")\n");
+            program.append(String.format("BASE(%s, %s)\n", name, isResultBinary ? "Binary" : "Unary"));
         }
 
         private void binaryRelationOperator(String result, String op1, String op2, String operator) {
@@ -888,8 +889,9 @@ public class DatalogRelationAnalysis implements RelationAnalysis {
                     });
         }
 
-        private void defineBaseRelation(String name) {
-            base(name, true);
+        private void defineBaseRelation(Relation relation) {
+            translatedBaseRelations.add(relation);
+            base(getRelationDatalogName(relation), true);
         }
 
         private void binaryFilterComposer(String result, String op1, String op2, String operator) {
@@ -926,7 +928,7 @@ public class DatalogRelationAnalysis implements RelationAnalysis {
         }
 
         private void defineAnalyses(Stream<String> analyses) {
-            analyses.filter(translatedAnalyses::add).forEachOrdered(this::defineBaseRelation);
+            analyses.filter(translatedAnalyses::add).forEachOrdered(n -> base(n, true));
         }
 
         private void defineTags(Stream<String> tags) {
@@ -1046,17 +1048,17 @@ public class DatalogRelationAnalysis implements RelationAnalysis {
             Filter filter = fence.getFilter();
             defineFilters(Stream.of(filter, Filter.byTag(VISIBLE)));
             defineAnalyses(Stream.of("mutex, implies"));
-            return program.append("FENCES(fencerel, ").append(getFilterDatalogName(filter)).append(")\n");
+            return program.append(String.format("FENCES(%s, %s)\n", getRelationDatalogName(fence.getDefinedRelation()), getFilterDatalogName(filter)));
         }
 
         @Override
         public StringBuilder visitFree(Free def) {
-            return program.append("FREE(").append(getRelationDatalogName(def.getDefinedRelation())).append(")\n");
+            return program.append(String.format("FREE(%s)\n", getRelationDatalogName(def.getDefinedRelation())));
         }
 
         @Override
         public StringBuilder visitEmpty(Empty def) {
-            return program.append("FREE(empty)\n");
+            return program.append(String.format("EMPTY(%s)\n", getRelationDatalogName(def.getDefinedRelation())));
         }
 
         @Override
@@ -1064,7 +1066,7 @@ public class DatalogRelationAnalysis implements RelationAnalysis {
             Filter filter = po.getFilter();
             defineFilters(Stream.of(filter));
             defineAnalyses(Stream.of("mutex"));
-            return program.append("PO(").append(sanitize(RelationNameRepository.PO)).append(", ").append(getFilterDatalogName(filter)).append(")\n");
+            return program.append(String.format("PO(%s, %s)\n", getRelationDatalogName(po.getDefinedRelation()), getFilterDatalogName(filter)));
         }
 
         @Override
@@ -1072,7 +1074,7 @@ public class DatalogRelationAnalysis implements RelationAnalysis {
             defineTags(Stream.of("THREAD"));
             defineAnalyses(Stream.of("mutex", "event_to_thread"));
             defineFilters(Stream.of(Filter.byTag(VISIBLE)));
-            return program.append("EXT(").append(sanitize(RelationNameRepository.EXT)).append(")\n");
+            return program.append(String.format("EXT(%s)\n", getRelationDatalogName(ext.getDefinedRelation())));
         }
 
         @Override
@@ -1080,107 +1082,90 @@ public class DatalogRelationAnalysis implements RelationAnalysis {
             defineTags(Stream.of("THREAD"));
             defineAnalyses(Stream.of("mutex", "event_to_thread"));
             defineFilters(Stream.of(Filter.byTag(VISIBLE)));
-            return program.append("INT(").append(sanitize(RelationNameRepository.INT)).append(")\n");
+            return program.append(String.format("INT(%s)\n", getRelationDatalogName(internal.getDefinedRelation())));
         }
 
         @Override
         public StringBuilder visitInternalDataDependency(DirectDataDependency idd) {
-            translatedBaseRelations.add(idd.getDefinedRelation());
-            defineBaseRelation(RelationNameRepository.IDD);
+            defineBaseRelation(idd.getDefinedRelation());
             return program;
         }
 
         @Override
         public StringBuilder visitAddressDependency(DirectAddressDependency addrDirect) {
-            translatedBaseRelations.add(addrDirect.getDefinedRelation());
-            defineBaseRelation(RelationNameRepository.ADDRDIRECT);
+            defineBaseRelation(addrDirect.getDefinedRelation());
             return program;
         }
 
         @Override
         public StringBuilder visitControlDependency(DirectControlDependency ctrlDirect) {
-            translatedBaseRelations.add(ctrlDirect.getDefinedRelation());
-            defineBaseRelation(RelationNameRepository.CTRLDIRECT);
+            defineBaseRelation(ctrlDirect.getDefinedRelation());
             return program;
-            /*
-            defineTags(Stream.of("GOTO", "DEAD"));
-            defineAnalyses(Stream.of("mutex", "jump"));
-            return program.append("CTRLDIRECT(").append(sanitize(RelationNameRepository.CTRLDIRECT)).append(")\n");*/
         }
 
         @Override
         public StringBuilder visitReadModifyWrites(ReadModifyWrites rmw) {
-            translatedBaseRelations.add(rmw.getDefinedRelation());
-            defineBaseRelation(RelationNameRepository.RMW);
+            defineBaseRelation(rmw.getDefinedRelation());
             return program;
         }
 
         @Override
         public StringBuilder visitCoherence(Coherence co) {
-            translatedBaseRelations.add(co.getDefinedRelation());
-            defineBaseRelation(RelationNameRepository.CO);
+            defineBaseRelation(co.getDefinedRelation());
             return program;
         }
 
         @Override
         public StringBuilder visitReadFrom(ReadFrom rf) {
-            translatedBaseRelations.add(rf.getDefinedRelation());
-            defineBaseRelation(RelationNameRepository.RF);
+            defineBaseRelation(rf.getDefinedRelation());
             return program;
         }
 
         @Override
         public StringBuilder visitSameLocation(SameLocation loc) {
-            translatedBaseRelations.add(loc.getDefinedRelation());
-            defineBaseRelation(RelationNameRepository.LOC);
+            defineBaseRelation(loc.getDefinedRelation());
             return program;
         }
 
         @Override
         public StringBuilder visitCASDependency(CASDependency casDep) {
-            translatedBaseRelations.add(casDep.getDefinedRelation());
-            defineBaseRelation(RelationNameRepository.CASDEP);
+            defineBaseRelation(casDep.getDefinedRelation());
             return program;
         }
 
         @Override
         public StringBuilder visitLinuxCriticalSections(LinuxCriticalSections rscs) {
-            translatedBaseRelations.add(rscs.getDefinedRelation());
-            defineBaseRelation(RelationNameRepository.CRIT);
+            defineBaseRelation(rscs.getDefinedRelation());
             return program;
         }
 
         @Override
         public StringBuilder visitSameVirtualLocation(SameVirtualLocation vloc) {
-            translatedBaseRelations.add(vloc.getDefinedRelation());
-            defineBaseRelation(RelationNameRepository.VLOC);
+            defineBaseRelation(vloc.getDefinedRelation());
             return program;
         }
 
         @Override
         public StringBuilder visitSameScope(SameScope sc) {
-            translatedBaseRelations.add(sc.getDefinedRelation());
-            defineBaseRelation(RelationNameRepository.SR + "_" + sc.getSpecificScope());
+            defineBaseRelation(sc.getDefinedRelation());
             return program;
         }
 
         @Override
         public StringBuilder visitSyncBarrier(SyncBar sync_bar) {
-            translatedBaseRelations.add(sync_bar.getDefinedRelation());
-            defineBaseRelation(RelationNameRepository.SYNC_BARRIER);
+            defineBaseRelation(sync_bar.getDefinedRelation());
             return program;
         }
 
         @Override
         public StringBuilder visitSyncWith(SyncWith sync_with) {
-            defineBaseRelation(RelationNameRepository.SSW);
+            defineBaseRelation(sync_with.getDefinedRelation());
             return program;
         }
 
         @Override
         public StringBuilder visitSyncFence(SyncFence sync_fen) {
-            translatedBaseRelations.add(sync_fen.getDefinedRelation());
-            defineBaseRelation(RelationNameRepository.SYNC_FENCE);
+            defineBaseRelation(sync_fen.getDefinedRelation());
             return program;
         }
 
