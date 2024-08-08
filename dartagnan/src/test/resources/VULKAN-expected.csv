@@ -86,11 +86,6 @@ litmus/VULKAN/Manual/MP-mesa-optimized.litmus,1
 litmus/VULKAN/Manual/MP-avvis.litmus,0
 litmus/VULKAN/Manual/MP-no-avvis.litmus,1
 litmus/VULKAN/Manual/CoWW-RR.litmus,1
-litmus/VULKAN/Manual/XF-Barrier.litmus,0
-litmus/VULKAN/Manual/XF-Barrier-relacq.litmus,0
-litmus/VULKAN/Manual/XF-Barrier-relacq2.litmus,1
-litmus/VULKAN/Manual/XF-Barrier-rlx.litmus,1
-litmus/VULKAN/Manual/XF-Barrier-weak.litmus,1
 litmus/VULKAN/Manual/PC-bar-acq-rel-atom.litmus,1
 litmus/VULKAN/Manual/PC-bar-acq-rel-nonpriv.litmus,1
 litmus/VULKAN/Manual/PC-bar-acq-rel-priv.litmus,0
@@ -106,3 +101,11 @@ litmus/VULKAN/Manual/bar-1.litmus,1
 litmus/VULKAN/Manual/bar-2.litmus,1
 litmus/VULKAN/Manual/bar-3.litmus,1
 litmus/VULKAN/Manual/bar-4.litmus,1
+litmus/VULKAN/Manual/xf-barrier.litmus,1
+litmus/VULKAN/Manual/xf-barrier-cbar-rlx-1.litmus,0
+litmus/VULKAN/Manual/xf-barrier-cbar-rlx-2.litmus,0
+litmus/VULKAN/Manual/xf-barrier-cbar-rlx-3.litmus,0
+litmus/VULKAN/Manual/xf-barrier-load-rlx-1.litmus,0
+litmus/VULKAN/Manual/xf-barrier-load-rlx-2.litmus,0
+litmus/VULKAN/Manual/xf-barrier-store-rlx-1.litmus,0
+litmus/VULKAN/Manual/xf-barrier-store-rlx-2.litmus,0
