@@ -1065,7 +1065,7 @@ public class DatalogRelationAnalysis implements RelationAnalysis {
         public StringBuilder visitProgramOrder(ProgramOrder po) {
             Filter filter = po.getFilter();
             defineFilters(Stream.of(filter));
-            defineAnalyses(Stream.of("mutex"));
+            defineAnalyses(Stream.of("mutex", "event_to_thread"));
             return program.append(String.format("PO(%s, %s)\n", getRelationDatalogName(po.getDefinedRelation()), getFilterDatalogName(filter)));
         }
 
