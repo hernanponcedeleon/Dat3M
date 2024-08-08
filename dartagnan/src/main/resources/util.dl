@@ -25,7 +25,7 @@
     free.May(x, y) :- FILTERED(VISIBLE, x, y).
 
 #define EMPTY(empty) \
-    .init empty = ApproximationBinary
+    .init empty = ApproximationBinaryOutput
 
 // No test for MUTEX, since that currently does not span across threads
 #define EXT(ext) \
