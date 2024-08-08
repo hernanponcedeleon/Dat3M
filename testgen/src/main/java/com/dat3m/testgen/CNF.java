@@ -7,6 +7,17 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+/** 
+ * Chomsky Normal Form
+ * Takes a grammar and transforms it into a chomsky normal form grammar.
+ * https://en.wikipedia.org/wiki/Chomsky_normal_form#
+ * 
+ * @param rules For each non-terminal, a list of rules.
+ * @param starting_nt Starting non-terminal.
+ * @param non_terminals List of non-terminal states.
+ * @param terminals List of terminal states.
+ * @param new_nonterminal_idx Next index for the auto-generated non-terminal states.
+ */
 public class CNF {
     
     public Map <String, List <String>> rules;
@@ -15,6 +26,11 @@ public class CNF {
     public Set <String> terminals;
     int new_nonterminal_idx = 1;
 
+    /**
+     * Constructor for CNF class
+     * @param r_starting_nt Starting non-terminal
+     * @throws Exception
+     */
     public CNF(
         final String r_starting_nt
     ) throws Exception {
@@ -25,6 +41,12 @@ public class CNF {
         add_non_terminal( starting_nt );
     }
 
+    /**
+     * Add a new non-terminal state
+     * 
+     * @param non_terminal Name of the non-terminal state
+     * @throws Exception
+     */
     public void add_non_terminal(
         final String non_terminal
     ) throws Exception {
@@ -36,6 +58,12 @@ public class CNF {
         rules.put( non_terminal, new ArrayList<>() );
     }
 
+    /**
+     * Add a new terminal state
+     * 
+     * @param terminal Name of the terminal state
+     * @throws Exception
+     */
     public void add_terminal(
         final String terminal
     ) throws Exception {
@@ -46,6 +74,13 @@ public class CNF {
         terminals.add( terminal );
     }
 
+    /**
+     * Add a transformation rule to a terminal state
+     * 
+     * @param NT Non-terminal state
+     * @param transformation Transformation rule to be added
+     * @throws Exception
+     */
     public void add_rule(
         final String NT,
         final String transformation
@@ -59,6 +94,13 @@ public class CNF {
         rules.get( NT ).add( transformation );
     }
 
+    /**
+     * Remove an existing rule from a non-terminal state
+     * 
+     * @param NT Non-terminal state
+     * @param transformation Transformation rule to be removed
+     * @throws Exception
+     */
     public void remove_rule(
         final String NT,
         final String transformation
@@ -70,6 +112,13 @@ public class CNF {
         rules.get( NT ).remove( transformation );
     }
 
+    /**
+     * Returns a list of all rules belonging to a non-terminal state
+     * 
+     * @param NT Non-terminal state
+     * @return List of rules for the non-terminal state
+     * @throws Exception
+     */
     public List <String> get_rules(
         final String NT
     ) throws Exception {
@@ -78,6 +127,10 @@ public class CNF {
         return rules.get( NT );
     }
 
+    /**
+     * Inplace transforms the defined grammar into a Chomsky Normal Form grammar
+     * @throws Exception
+     */
     public void to_normal_form()
     throws Exception {
         transformation_start();
@@ -86,6 +139,12 @@ public class CNF {
         transformation_term();
     }
 
+    /**
+     * Start phase of the CNF transformation.
+     * https://en.wikipedia.org/wiki/Chomsky_normal_form#START:_Eliminate_the_start_symbol_from_right-hand_sides
+     * 
+     * @throws Exception
+     */
     void transformation_start()
     throws Exception {
         String new_start = "S_CNF";
@@ -94,6 +153,12 @@ public class CNF {
         starting_nt = new_start;
     }
 
+    /**
+     * Bin phase of the CNF transformation.
+     * https://en.wikipedia.org/wiki/Chomsky_normal_form#BIN:_Eliminate_right-hand_sides_with_more_than_2_nonterminals
+     * 
+     * @throws Exception
+     */
     void transformation_bin()
     throws Exception {
         boolean rules_modified = true;
@@ -123,6 +188,12 @@ public class CNF {
         }
     }
 
+    /**
+     * Unit phase of the CNF transformation
+     * https://en.wikipedia.org/wiki/Chomsky_normal_form#UNIT:_Eliminate_unit_rules
+     * 
+     * @throws Exception
+     */
     void transformation_unit()
     throws Exception {
         boolean rules_modified = true;
@@ -147,6 +218,12 @@ public class CNF {
         }
     }
 
+    /**
+     * Term phase of the CNF transformation.
+     * https://en.wikipedia.org/wiki/Chomsky_normal_form#TERM:_Eliminate_rules_with_nonsolitary_terminals
+     * 
+     * @throws Exception
+     */
     void transformation_term()
     throws Exception {
         boolean rules_modified = true;
