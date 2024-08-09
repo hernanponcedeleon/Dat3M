@@ -74,6 +74,7 @@ public class BuiltIn implements Decoration {
 
     private Expression getDecorationExpressions(String id, Type type) {
         return switch (mapping.get(id)) {
+            // BuiltIn decorations according to the Vulkan API
             case "SubgroupLocalInvocationId" -> makeScalar(id, type, tid % grid.sgSize());
             case "LocalInvocationId" -> makeArray(id, type, tid % grid.wgSize(), 0, 0);
             case "LocalInvocationIndex" -> makeScalar(id, type, tid % grid.wgSize()); // scalar of LocalInvocationId

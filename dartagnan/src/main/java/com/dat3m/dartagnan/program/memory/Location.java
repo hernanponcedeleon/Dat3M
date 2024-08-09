@@ -5,6 +5,7 @@ import com.dat3m.dartagnan.expression.ExpressionVisitor;
 import com.dat3m.dartagnan.expression.Type;
 import com.dat3m.dartagnan.expression.base.LeafExpressionBase;
 
+// TODO: Should be replaced with a Pointer class
 public class Location extends LeafExpressionBase<Type> {
 
     private final String name;
