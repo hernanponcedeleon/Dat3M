@@ -7,8 +7,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-/** 
- * Chomsky Normal Form
+/**
  * Takes a grammar and transforms it into a chomsky normal form grammar.
  * https://en.wikipedia.org/wiki/Chomsky_normal_form#
  * 
