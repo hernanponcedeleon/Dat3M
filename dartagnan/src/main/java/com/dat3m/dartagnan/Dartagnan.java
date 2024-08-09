@@ -82,7 +82,7 @@ public class Dartagnan extends BaseOptions {
 
     public static void main(String[] args) throws Exception {
 
-//        initGitInfo();
+        initGitInfo();
 
         if (Arrays.asList(args).contains("--help")) {
             collectOptions();
