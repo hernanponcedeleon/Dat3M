@@ -1,11 +1,25 @@
 package com.dat3m.testgen;
 
+/**
+ * Implementation of Union Find Disjoint Set data structure.
+ * https://en.wikipedia.org/wiki/Disjoint-set_data_structure
+ * 
+ * @param total_elements Maximum amount of elements to be included in the UFDS set.
+ * @param p Element parent array.
+ * @param set_size Set size array.
+ */
 public class UnionFindDisjointSet {
     
     final int total_elements;
     int p[];
     int set_size[];
 
+    /**
+     * Constructor for UnionFindDisjointSet class.
+     * 
+     * @param r_total_elements Maximum amount of elements to be included in the UFDS set.
+     * @throws Exception
+     */
     public UnionFindDisjointSet(
         final int r_total_elements
     ) throws Exception {
@@ -19,6 +33,11 @@ public class UnionFindDisjointSet {
         }
     }
 
+    /**
+     * Returns the set of element i.
+     * 
+     * @param i Input element.
+     */
     public int find_set(
         final int i
     ) {
@@ -27,6 +46,12 @@ public class UnionFindDisjointSet {
         return p[i] = find_set( p[i] );
     }
 
+    /**
+     * Returns wether two elements belong in the same set.
+     * 
+     * @param i Input element 1.
+     * @param j Input element 2.
+     */
     public boolean are_same_set(
         final int i,
         final int j
@@ -34,6 +59,12 @@ public class UnionFindDisjointSet {
         return find_set(i) == find_set(j);
     }
 
+    /**
+     * Merges the sets of the two given elements.
+     * 
+     * @param i Input element 1.
+     * @param j Input element 2.
+     */
     public void merge(
         final int i,
         final int j
