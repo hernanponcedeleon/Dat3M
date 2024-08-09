@@ -1,5 +1,13 @@
 package com.dat3m.testgen;
 
+/**
+ * Represents relations between events.
+ * 
+ * @param relation_t Types of currently supported relations.
+ * @param event_L Left event involved in relation.
+ * @param type Type of relation.
+ * @param event_R Right event involved in relation.
+ */
 public class Relation {
 
     public enum relation_t {
@@ -14,6 +22,14 @@ public class Relation {
     relation_t type;
     Event event_R;
 
+    /**
+     * Constructor for Relation class.
+     * 
+     * @param r_event_L Left event involved in relation.
+     * @param r_type Type of relation.
+     * @param r_event_R Right event involved in relation.
+     * @throws Exception
+     */
     public Relation(
         Event r_event_L,
         relation_t r_type,
