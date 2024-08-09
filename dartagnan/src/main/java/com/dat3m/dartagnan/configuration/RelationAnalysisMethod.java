@@ -3,7 +3,7 @@ package com.dat3m.dartagnan.configuration;
 import java.util.Arrays;
 
 public enum RelationAnalysisMethod implements OptionInterface {
-	NONE, NATIVE;
+	NONE, NATIVE, DATALOG;
 
 	public static RelationAnalysisMethod getDefault() {
 		return NATIVE;
