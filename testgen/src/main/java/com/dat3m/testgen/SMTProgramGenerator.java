@@ -16,27 +16,36 @@ import org.sosy_lab.java_smt.api.ProverEnvironment;
 import org.sosy_lab.java_smt.api.SolverContext;
 import org.sosy_lab.java_smt.api.SolverContext.ProverOptions;
 
+/**
+ * Generate a program given relations between events.
+ * 
+ * @param cycle Description of the 'consistency cycle'. List of events and the relations between them.
+ * @param thread_ufds UFDS data structure for creating sets of events belonging to the same thread.
+ * @param memory_ufds UFDS data structure for creating sets of events accessing the same memory address.
+ */
 public class SMTProgramGenerator {
 
     Cycle cycle;
+    UnionFindDisjointSet thread_ufds;
+    UnionFindDisjointSet memory_ufds;
 
     Configuration config;
     LogManager logger;
     ShutdownNotifier shutdown;
     SolverContext context;
-
     FormulaManager formula_mngr;
     IntegerFormulaManager int_mngr;
     BooleanFormulaManager bool_mngr;
-
     ProverEnvironment prover;
-
-    UnionFindDisjointSet thread_ufds;
-    UnionFindDisjointSet memory_ufds;
-
     final static int READ_INSTRUCTION = 1;
     final static int WRITE_INSTRUCTION = 2;
 
+    /**
+     * Constructor for SMTProgramGenerator class.
+     * 
+     * @param r_cycle Description of the 'consistency cycle'.
+     * @throws Exception
+     */
     public SMTProgramGenerator(
         final Cycle r_cycle
     ) throws Exception {
@@ -61,21 +70,28 @@ public class SMTProgramGenerator {
         prover = context.newProverEnvironment( ProverOptions.GENERATE_MODELS );
     }
 
+    /**
+     * Generate and return of a program that follows the cycle description.
+     * 
+     * @return Text description of program.
+     * @throws Exception
+     */
     public String generate_program()
     throws Exception {
         StringBuilder sb = new StringBuilder();
-
         initialize( sb );
-
         process_relations( sb );
-
         finalize( sb );
-
         prove_program( sb );
-
         return sb.toString();
     }
 
+    /**
+     * Initialize SMT variables.
+     * 
+     * @param sb StringBuilder for output.
+     * @throws Exception
+     */
     void initialize(
         StringBuilder sb
     ) throws Exception {
@@ -95,6 +111,12 @@ public class SMTProgramGenerator {
         }
     }
 
+    /**
+     * Process event relations.
+     * 
+     * @param sb StringBuilder for output.
+     * @throws Exception
+     */
     void process_relations(
         StringBuilder sb
     ) throws Exception {
@@ -136,6 +158,12 @@ public class SMTProgramGenerator {
         }
     }
 
+    /**
+     * Use UFDS information to add extra assertions to the program.
+     * 
+     * @param sb StringBuilder for output.
+     * @throws Exception
+     */
     void finalize(
         StringBuilder sb
     ) throws Exception {
@@ -181,6 +209,12 @@ public class SMTProgramGenerator {
         }
     }
 
+    /**
+     * Generate a program from the SMT constraints.
+     * 
+     * @param sb StringBuilder for output.
+     * @throws Exception
+     */
     void prove_program(
         StringBuilder sb
     ) throws Exception {
