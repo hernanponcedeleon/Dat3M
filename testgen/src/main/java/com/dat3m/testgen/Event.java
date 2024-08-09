@@ -2,6 +2,17 @@ package com.dat3m.testgen;
 
 import org.sosy_lab.java_smt.api.NumeralFormula.IntegerFormula;
 
+/**
+ * Describes a single event.
+ * 
+ * @param event_opration_t Types of events (read, write, etc.).
+ * @param id Unique identifier for this event.
+ * @param type SMT integer for event type.
+ * @param location SMT integer for memory access location.
+ * @param value SMT integer for memory access value.
+ * @param thread_id SMT integer for which thread this event belongs to.
+ * @param thread_row SMT integer for which row in the thread this event belongs to.
+ */
 public class Event {
 
     public enum event_operation_t {
@@ -17,6 +28,12 @@ public class Event {
     public IntegerFormula thread_id;
     public IntegerFormula thread_row;
 
+    /**
+     * Constructor for Event class.
+     * 
+     * @param r_id Unique identifier for this event.
+     * @throws Exception
+     */
     public Event(
         final int r_id
     ) throws Exception {
@@ -24,6 +41,12 @@ public class Event {
         this.id = r_id;
     }
 
+    /**
+     * Name generator function for variable names in SMT solver.
+     * 
+     * @param suffix Suffix to add to the name.
+     * @return
+     */
     public String name(
         final String suffix
     ) {
