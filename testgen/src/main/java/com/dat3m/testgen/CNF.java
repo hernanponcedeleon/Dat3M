@@ -26,8 +26,9 @@ public class CNF {
     int new_nonterminal_idx = 1;
 
     /**
-     * Constructor for CNF class
-     * @param r_starting_nt Starting non-terminal
+     * Constructor for CNF class.
+     * 
+     * @param r_starting_nt Starting non-terminal.
      * @throws Exception
      */
     public CNF(
@@ -41,9 +42,9 @@ public class CNF {
     }
 
     /**
-     * Add a new non-terminal state
+     * Add a new non-terminal state.
      * 
-     * @param non_terminal Name of the non-terminal state
+     * @param non_terminal Name of the non-terminal state.
      * @throws Exception
      */
     public void add_non_terminal(
@@ -58,9 +59,9 @@ public class CNF {
     }
 
     /**
-     * Add a new terminal state
+     * Add a new terminal state.
      * 
-     * @param terminal Name of the terminal state
+     * @param terminal Name of the terminal state.
      * @throws Exception
      */
     public void add_terminal(
@@ -74,10 +75,10 @@ public class CNF {
     }
 
     /**
-     * Add a transformation rule to a terminal state
+     * Add a transformation rule to a terminal state.
      * 
-     * @param NT Non-terminal state
-     * @param transformation Transformation rule to be added
+     * @param NT Non-terminal state.
+     * @param transformation Transformation rule to be added.
      * @throws Exception
      */
     public void add_rule(
@@ -94,10 +95,10 @@ public class CNF {
     }
 
     /**
-     * Remove an existing rule from a non-terminal state
+     * Remove an existing rule from a non-terminal state.
      * 
-     * @param NT Non-terminal state
-     * @param transformation Transformation rule to be removed
+     * @param NT Non-terminal state.
+     * @param transformation Transformation rule to be removed.
      * @throws Exception
      */
     public void remove_rule(
@@ -112,10 +113,10 @@ public class CNF {
     }
 
     /**
-     * Returns a list of all rules belonging to a non-terminal state
+     * Returns a list of all rules belonging to a non-terminal state.
      * 
-     * @param NT Non-terminal state
-     * @return List of rules for the non-terminal state
+     * @param NT Non-terminal state.
+     * @return List of rules for the non-terminal state.
      * @throws Exception
      */
     public List <String> get_rules(
@@ -127,7 +128,8 @@ public class CNF {
     }
 
     /**
-     * Inplace transforms the defined grammar into a Chomsky Normal Form grammar
+     * Inplace transforms the defined grammar into a Chomsky Normal Form grammar.
+     * 
      * @throws Exception
      */
     public void to_normal_form()
@@ -188,7 +190,7 @@ public class CNF {
     }
 
     /**
-     * Unit phase of the CNF transformation
+     * Unit phase of the CNF transformation.
      * https://en.wikipedia.org/wiki/Chomsky_normal_form#UNIT:_Eliminate_unit_rules
      * 
      * @throws Exception

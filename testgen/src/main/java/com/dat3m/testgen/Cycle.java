@@ -4,11 +4,11 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Represents a list of events and the relations between them
+ * Represents a list of events and the relations between them.
  * 
- * @param cycle_size Amount of events in the cycle
- * @param events List of events that will be in the resulting program
- * @param relations List of relations between events
+ * @param cycle_size Amount of events in the cycle.
+ * @param events List of events that will be in the resulting program.
+ * @param relations List of relations between events.
  */
 public class Cycle {
     
@@ -17,9 +17,9 @@ public class Cycle {
     public List <Relation> relations;
 
     /**
-     * Constructor for Cycle class
+     * Constructor for Cycle class.
      * 
-     * @param r_cycle_size Amount of events in the cycle
+     * @param r_cycle_size Amount of events in the cycle.
      * @throws Exception
      */
     public Cycle(
@@ -35,11 +35,11 @@ public class Cycle {
     }
 
     /**
-     * Creates a relation between two events (given their event ids)
+     * Creates a relation between two events (given their event ids).
      * 
-     * @param event_L_id Event id of left event
-     * @param relation_type Relation type
-     * @param event_R_id Event id of right event
+     * @param event_L_id Event id of left event.
+     * @param relation_type Relation type.
+     * @param event_R_id Event id of right event.
      * @throws Exception
      */
     public void create_relation(
