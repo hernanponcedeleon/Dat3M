@@ -1,0 +1,96 @@
+; @Config: 3, 1, 3
+; SPIR-V
+; Version: 1.6
+; Generator: Google Clspv; 0
+; Bound: 77
+; Schema: 0
+               OpCapability Shader
+         %67 = OpExtInstImport "NonSemantic.ClspvReflection.5"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %17 "foo" %8 %gl_LocalInvocationID %14
+               OpSource OpenCL_C 200
+         %68 = OpString "foo"
+         %69 = OpString " __kernel"
+         %71 = OpString "A"
+               OpDecorate %gl_WorkGroupSize BuiltIn WorkgroupSize
+               OpDecorate %gl_LocalInvocationID BuiltIn LocalInvocationId
+               OpDecorate %11 SpecId 3
+               OpDecorate %2 SpecId 0
+               OpDecorate %3 SpecId 1
+               OpDecorate %4 SpecId 2
+       %uint = OpTypeInt 32 0
+          %2 = OpSpecConstant %uint 1
+          %3 = OpSpecConstant %uint 1
+          %4 = OpSpecConstant %uint 1
+     %v3uint = OpTypeVector %uint 3
+%gl_WorkGroupSize = OpSpecConstantComposite %v3uint %2 %3 %4
+%_ptr_Private_v3uint = OpTypePointer Private %v3uint
+%_ptr_Input_v3uint = OpTypePointer Input %v3uint
+         %11 = OpSpecConstant %uint 1
+%_arr_uint_11 = OpTypeArray %uint %11
+%_ptr_Workgroup__arr_uint_11 = OpTypePointer Workgroup %_arr_uint_11
+       %void = OpTypeVoid
+         %16 = OpTypeFunction %void
+       %bool = OpTypeBool
+     %uint_1 = OpConstant %uint 1
+%_ptr_Input_uint = OpTypePointer Input %uint
+     %uint_0 = OpConstant %uint 0
+%_ptr_Workgroup_uint = OpTypePointer Workgroup %uint
+     %uint_2 = OpConstant %uint 2
+   %uint_264 = OpConstant %uint 264
+     %uint_3 = OpConstant %uint 3
+     %uint_4 = OpConstant %uint 4
+          %8 = OpVariable %_ptr_Private_v3uint Private %gl_WorkGroupSize
+%gl_LocalInvocationID = OpVariable %_ptr_Input_v3uint Input
+         %14 = OpVariable %_ptr_Workgroup__arr_uint_11 Workgroup
+         %17 = OpFunction %void None %16
+         %18 = OpLabel
+         %19 = OpBitwiseAnd %v3uint %gl_WorkGroupSize %gl_WorkGroupSize
+         %20 = OpCompositeExtract %uint %19 0
+         %23 = OpUGreaterThan %bool %20 %uint_1
+               OpSelectionMerge %66 None
+               OpBranchConditional %23 %26 %66
+         %26 = OpLabel
+         %27 = OpPhi %uint %46 %58 %uint_0 %18
+         %28 = OpPhi %uint %59 %58 %uint_1 %18
+         %31 = OpAccessChain %_ptr_Input_uint %gl_LocalInvocationID %uint_0
+         %32 = OpLoad %uint %31
+         %33 = OpULessThan %bool %28 %32
+               OpLoopMerge %64 %58 None
+               OpBranch %36
+         %36 = OpLabel
+               OpSelectionMerge %45 None
+               OpBranchConditional %33 %39 %45
+         %39 = OpLabel
+         %40 = OpISub %uint %32 %28
+         %42 = OpAccessChain %_ptr_Workgroup_uint %14 %40
+         %43 = OpLoad %uint %42
+               OpBranch %45
+         %45 = OpLabel
+         %46 = OpPhi %uint %43 %39 %27 %36
+               OpControlBarrier %uint_2 %uint_2 %uint_264
+         %49 = OpAccessChain %_ptr_Input_uint %gl_LocalInvocationID %uint_0
+         %50 = OpLoad %uint %49
+         %51 = OpULessThan %bool %28 %50
+               OpBranchConditional %51 %53 %58
+         %53 = OpLabel
+         %54 = OpAccessChain %_ptr_Workgroup_uint %14 %50
+         %55 = OpLoad %uint %54
+         %56 = OpIAdd %uint %55 %46
+               OpStore %54 %56
+               OpBranch %58
+         %58 = OpLabel
+         %59 = OpShiftLeftLogical %uint %28 %uint_1
+         %60 = OpBitwiseAnd %v3uint %gl_WorkGroupSize %gl_WorkGroupSize
+         %61 = OpCompositeExtract %uint %60 0
+         %62 = OpUGreaterThanEqual %bool %59 %61
+               OpBranchConditional %62 %64 %26
+         %64 = OpLabel
+               OpBranch %66
+         %66 = OpLabel
+               OpReturn
+               OpFunctionEnd
+         %70 = OpExtInst %void %67 Kernel %17 %68 %uint_1 %uint_0 %69
+         %72 = OpExtInst %void %67 ArgumentInfo %71
+         %75 = OpExtInst %void %67 ArgumentWorkgroup %70 %uint_0 %uint_3 %uint_4 %72
+         %76 = OpExtInst %void %67 SpecConstantWorkgroupSize %uint_0 %uint_1 %uint_2

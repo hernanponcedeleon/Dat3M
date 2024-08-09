@@ -1,15 +1,19 @@
 package com.dat3m.dartagnan.encoding;
 
+import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
+import com.dat3m.dartagnan.program.ScopeHierarchy;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.analysis.BranchEquivalence;
 import com.dat3m.dartagnan.program.analysis.Dependency;
 import com.dat3m.dartagnan.program.analysis.ExecutionAnalysis;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.RegWriter;
+import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.CondJump;
+import com.dat3m.dartagnan.program.event.core.ControlBarrier;
 import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.event.core.threading.ThreadStart;
 import com.dat3m.dartagnan.program.memory.Memory;
@@ -25,13 +29,11 @@ import org.sosy_lab.java_smt.api.*;
 import org.sosy_lab.java_smt.api.NumeralFormula.IntegerFormula;
 
 import java.math.BigInteger;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import static com.dat3m.dartagnan.configuration.OptionNames.INITIALIZE_REGISTERS;
 import static com.google.common.collect.Lists.reverse;
+import static java.util.stream.Collectors.*;
 
 @Options
 public class ProgramEncoder implements Encoder {
@@ -70,12 +72,39 @@ public class ProgramEncoder implements Encoder {
 
     public BooleanFormula encodeFullProgram() {
         return context.getBooleanFormulaManager().and(
+                encodeControlBarriers(),
                 encodeConstants(),
                 encodeMemory(),
                 encodeControlFlow(),
                 encodeFinalRegisterValues(),
                 encodeFilter(),
                 encodeDependencies());
+    }
+
+    public BooleanFormula encodeControlBarriers() {
+        BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
+        BooleanFormula enc = bmgr.makeTrue();
+        Map<Integer, List<ControlBarrier>> groups = context.getTask().getProgram().getThreads().stream()
+                .filter(Thread::hasScope)
+                .collect(groupingBy(this::getWorkgroupId,
+                        flatMapping(t -> t.getEvents(ControlBarrier.class).stream(), toList())));
+
+        for (List<ControlBarrier> events : groups.values()) {
+            for (ControlBarrier e1 : events) {
+                Expression id1 = e1.getId();
+                BooleanFormula allCF = context.controlFlow(e1);
+                for (ControlBarrier e2 : events) {
+                    if (!e1.getThread().equals(e2.getThread())) {
+                        Expression id2 = e2.getId();
+                        BooleanFormula sameId = context.equal(context.encodeExpressionAt(id1, e1), context.encodeExpressionAt(id2, e2));
+                        BooleanFormula cf = bmgr.or(context.controlFlow(e2), bmgr.not(sameId));
+                        allCF = bmgr.and(allCF, cf);
+                    }
+                }
+                enc = bmgr.and(enc, bmgr.equivalence(allCF, context.execution(e1)));
+            }
+        }
+        return enc;
     }
 
     public BooleanFormula encodeConstants() {
@@ -121,22 +150,27 @@ public class ProgramEncoder implements Encoder {
         enc.add(startEvent.encodeExec(context));
 
         Event pred = startEvent;
-        for(Event e : startEvent.getSuccessor().getSuccessors()) {
-            // Immediate control flow
-            BooleanFormula cfCond = context.controlFlow(pred);
-            if (pred instanceof CondJump jump) {
-                cfCond = bmgr.and(cfCond, bmgr.not(context.jumpCondition(jump)));
-            }
-
-            // Control flow via jumps
-            if (e instanceof Label label) {
-                for (CondJump jump : label.getJumpSet()) {
-                    cfCond = bmgr.or(cfCond, bmgr.and(context.controlFlow(jump), context.jumpCondition(jump)));
+        Event next = startEvent.getSuccessor();
+        if (next != null) {
+            for(Event e : next.getSuccessors()) {
+                // Immediate control flow
+                BooleanFormula cfCond = context.controlFlow(pred);
+                if (pred instanceof CondJump jump) {
+                    cfCond = bmgr.and(cfCond, bmgr.not(context.jumpCondition(jump)));
+                } else if (pred instanceof ControlBarrier) {
+                    cfCond = bmgr.and(cfCond, context.execution(pred));
                 }
+
+                // Control flow via jumps
+                if (e instanceof Label label) {
+                    for (CondJump jump : label.getJumpSet()) {
+                        cfCond = bmgr.or(cfCond, bmgr.and(context.controlFlow(jump), context.jumpCondition(jump)));
+                    }
+                }
+                enc.add(bmgr.equivalence(context.controlFlow(e), cfCond));
+                enc.add(e.encodeExec(context));
+                pred = e;
             }
-            enc.add(bmgr.equivalence(context.controlFlow(e), cfCond));
-            enc.add(e.encodeExec(context));
-            pred = e;
         }
         return bmgr.and(enc);
     }
@@ -288,5 +322,18 @@ public class ProgramEncoder implements Encoder {
             }
         }
         return bmgr.and(enc);
+    }
+
+    private int getWorkgroupId(Thread thread) {
+        ScopeHierarchy hierarchy = thread.getScopeHierarchy();
+        if (hierarchy != null) {
+            int id = hierarchy.getScopeId(Tag.Vulkan.WORK_GROUP);
+            if (id < 0) {
+                id = hierarchy.getScopeId(Tag.PTX.CTA);
+            }
+            return id;
+        }
+        throw new IllegalArgumentException("Attempt to compute workgroup ID " +
+                "for a non-hierarchical thread");
     }
 }

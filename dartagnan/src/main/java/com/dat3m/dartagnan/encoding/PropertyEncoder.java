@@ -2,6 +2,7 @@ package com.dat3m.dartagnan.encoding;
 
 import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.configuration.Property;
+import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.analysis.ExecutionAnalysis;
@@ -35,12 +36,13 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import static com.dat3m.dartagnan.configuration.Property.*;
-import static com.dat3m.dartagnan.program.Program.SourceLanguage.LITMUS;
 import static com.dat3m.dartagnan.wmm.RelationNameRepository.CO;
+import static com.dat3m.dartagnan.program.Program.SourceLanguage.LLVM;
 
 public class PropertyEncoder implements Encoder {
 
     private static final Logger logger = LogManager.getLogger(PropertyEncoder.class);
+    private static final TypeFactory types = TypeFactory.getInstance();
 
     private final EncodingContext context;
     private final Program program;
@@ -110,7 +112,7 @@ public class PropertyEncoder implements Encoder {
 
         BooleanFormula encoding = (specType == Property.Type.SAFETY) ?
                 encodePropertyViolations(properties) : encodePropertyWitnesses(properties);
-        if (program.getFormat().equals(LITMUS) || properties.contains(LIVENESS)) {
+        if (!program.getFormat().equals(LLVM) || properties.contains(LIVENESS)) {
             // Both litmus assertions and liveness need to identify
             // the final stores to addresses.
             // TODO Optimization: This encoding can be restricted to only those addresses
@@ -167,7 +169,7 @@ public class PropertyEncoder implements Encoder {
         final EncodingContext.EdgeEncoder coEncoder = context.edge(co);
         final RelationAnalysis.Knowledge knowledge = ra.getKnowledge(co);
         final List<Init> initEvents = program.getThreadEvents(Init.class);
-        final boolean doEncodeFinalAddressValues = program.getFormat() == LITMUS;
+        final boolean doEncodeFinalAddressValues = program.getFormat() != LLVM;
         // Find transitively implied coherences. We can use these to reduce the encoding.
         final EventGraph transCo = ra.findTransitivelyImpliedCo(co);
         // Find all writes that are never last, i.e., those that will always have a co-successor.
@@ -205,7 +207,8 @@ public class PropertyEncoder implements Encoder {
                         continue;
                     }
                     BooleanFormula sameAddress = context.sameAddress(init, w1);
-                    Formula v2 = context.lastValue(init.getBase(), init.getOffset());
+                    int size = types.getMemorySizeInBits(init.getValue().getType());
+                    Formula v2 = context.lastValue(init.getBase(), init.getOffset(), size);
                     BooleanFormula sameValue = context.equal(context.value(w1), v2);
                     enc.add(bmgr.implication(bmgr.and(lastCoExpr, sameAddress), sameValue));
                 }
@@ -219,7 +222,8 @@ public class PropertyEncoder implements Encoder {
             for (Init init : program.getThreadEvents(Init.class)) {
                 BooleanFormula lastValueEnc = bmgr.makeFalse();
                 BooleanFormula lastStoreExistsEnc = bmgr.makeFalse();
-                Formula v2 = context.lastValue(init.getBase(), init.getOffset());
+                int size = types.getMemorySizeInBits(init.getValue().getType());
+                Formula v2 = context.lastValue(init.getBase(), init.getOffset(), size);
                 BooleanFormula readFromInit = context.equal(context.value(init), v2);
                 for (Store w : program.getThreadEvents(Store.class)) {
                     if (!alias.mayAlias(w, init)) {
@@ -269,7 +273,17 @@ public class PropertyEncoder implements Encoder {
             case FORALL, NOT_EXISTS, ASSERT -> bmgr.not(PROGRAM_SPEC.getSMTVariable(context));
             case EXISTS -> PROGRAM_SPEC.getSMTVariable(context);
         };
+        if (!program.getFormat().equals(LLVM)) {
+            encoding = bmgr.and(encoding, encodeProgramTermination());
+        }
         return new TrackableFormula(trackingLiteral, encoding);
+    }
+
+    private BooleanFormula encodeProgramTermination() {
+        final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
+        return bmgr.and(program.getThreads().stream()
+                .map(t -> bmgr.equivalence(context.execution(t.getEntry()), context.execution(t.getExit())))
+                .toList());
     }
 
     // ======================================================================
@@ -430,8 +444,9 @@ public class PropertyEncoder implements Encoder {
             final Map<Thread, List<SpinIteration>> spinloopsMap =
                     Maps.toMap(program.getThreads(), t -> this.findSpinLoopsInThread(t, loopAnalysis));
             // Compute "stuckness" encoding for all threads
-            final Map<Thread, BooleanFormula> isStuckMap = Maps.toMap(program.getThreads(),
-                    t -> this.generateStucknessEncoding(spinloopsMap.get(t), context));
+            final Map<Thread, BooleanFormula> isStuckMap = Maps.toMap(program.getThreads(), t ->
+                    bmgr.or(generateBarrierStucknessEncoding(t, context),
+                            this.generateSpinloopStucknessEncoding(spinloopsMap.get(t), context)));
 
             // Deadlock <=> allStuckOrDone /\ atLeastOneStuck
             BooleanFormula allStuckOrDone = bmgr.makeTrue();
@@ -453,9 +468,17 @@ public class PropertyEncoder implements Encoder {
             return new TrackableFormula(bmgr.not(LIVENESS.getSMTVariable(context)), hasDeadlock);
         }
 
+        private BooleanFormula generateBarrierStucknessEncoding(Thread thread, EncodingContext context) {
+            final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
+            return bmgr.or(thread.getEvents().stream()
+                    .filter(ControlBarrier.class::isInstance)
+                    .map(e -> bmgr.and(context.controlFlow(e), bmgr.not(context.execution(e))))
+                    .toList());
+        }
+
         // Compute "stuckness": A thread is stuck if it reaches a spin loop bound event
         // while only reading from co-maximal stores.
-        private BooleanFormula generateStucknessEncoding(List<SpinIteration> loops, EncodingContext context) {
+        private BooleanFormula generateSpinloopStucknessEncoding(List<SpinIteration> loops, EncodingContext context) {
             final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
             final RelationAnalysis ra = PropertyEncoder.this.ra;
             final Relation rf = memoryModel.getRelation(RelationNameRepository.RF);

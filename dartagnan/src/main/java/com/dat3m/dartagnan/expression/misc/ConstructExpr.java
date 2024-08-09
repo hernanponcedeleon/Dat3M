@@ -9,6 +9,7 @@ import com.dat3m.dartagnan.expression.type.AggregateType;
 import com.dat3m.dartagnan.expression.type.ArrayType;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 import static com.google.common.base.Preconditions.checkArgument;
 
@@ -30,5 +31,10 @@ public final class ConstructExpr extends NaryExpressionBase<Type, ExpressionKind
     @Override
     public <T> T accept(ExpressionVisitor<T> visitor) {
         return visitor.visitConstructExpression(this);
+    }
+
+    @Override
+    public String toString() {
+        return operands.stream().map(Expression::toString).collect(Collectors.joining(", ", "{ ", " }"));
     }
 }

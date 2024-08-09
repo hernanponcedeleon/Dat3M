@@ -1,0 +1,57 @@
+; @Input:  %out1 = {0, 0, 0}, %out2 = {0, 0, 0}
+; @Output: forall (%out1[0] == 1 and %out1[1] == 1 and %out1[2] == 3)
+; @Output: forall (%out2[0] == 2 and %out2[1] == 1 and %out2[2] == 3)
+; @Output: forall (%shared1 == 3 and %shared2 == 2)
+; @Config: 1, 1, 1
+; SPIR-V
+; Version: 1.0
+; Schema: 0
+               OpCapability Shader
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %main "main"
+               OpSource GLSL 450
+       %void = OpTypeVoid
+       %bool = OpTypeBool
+       %func = OpTypeFunction %void
+       %uint = OpTypeInt 64 0
+     %v3uint = OpTypeVector %uint 3
+   %ptr_uint = OpTypePointer Uniform %uint
+ %ptr_v3uint = OpTypePointer Output %v3uint
+         %c0 = OpConstant %uint 0
+         %c1 = OpConstant %uint 1
+         %c2 = OpConstant %uint 2
+        %c66 = OpConstant %uint 66
+        %c72 = OpConstant %uint 72
+
+       %cmp1 = OpConstant %uint 1
+       %cmp2 = OpConstant %uint 1
+
+    %shared1 = OpVariable %ptr_uint Uniform %c1
+    %shared2 = OpVariable %ptr_uint Uniform %c2
+       %out1 = OpVariable %ptr_v3uint Output
+       %out2 = OpVariable %ptr_v3uint Output
+       %main = OpFunction %void None %func
+      %label = OpLabel
+
+     %value1 = OpIAdd %uint %c1 %c2
+     %value2 = OpIAdd %uint %c1 %c2
+
+    %result1 = OpAtomicCompareExchange %uint %shared1 %c1 %c72 %c66 %value1 %cmp1
+    %result2 = OpAtomicCompareExchange %uint %shared2 %c1 %c72 %c66 %value2 %cmp2
+
+    %ptr_1_0 = OpAccessChain %ptr_uint %out1 %c0
+    %ptr_1_1 = OpAccessChain %ptr_uint %out1 %c1
+    %ptr_1_2 = OpAccessChain %ptr_uint %out1 %c2
+    %ptr_2_0 = OpAccessChain %ptr_uint %out2 %c0
+    %ptr_2_1 = OpAccessChain %ptr_uint %out2 %c1
+    %ptr_2_2 = OpAccessChain %ptr_uint %out2 %c2
+
+               OpStore %ptr_1_0 %result1
+               OpStore %ptr_1_1 %cmp1
+               OpStore %ptr_1_2 %value2
+               OpStore %ptr_2_0 %result2
+               OpStore %ptr_2_1 %cmp2
+               OpStore %ptr_2_2 %value2
+
+               OpReturn
+               OpFunctionEnd

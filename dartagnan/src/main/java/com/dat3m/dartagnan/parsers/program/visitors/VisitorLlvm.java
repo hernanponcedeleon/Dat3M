@@ -3,7 +3,6 @@ package com.dat3m.dartagnan.parsers.program.visitors;
 import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.expression.*;
 import com.dat3m.dartagnan.expression.integers.IntBinaryOp;
-import com.dat3m.dartagnan.expression.misc.ConstructExpr;
 import com.dat3m.dartagnan.expression.type.*;
 import com.dat3m.dartagnan.parsers.LLVMIRBaseVisitor;
 import com.dat3m.dartagnan.parsers.LLVMIRParser.*;
@@ -263,32 +262,8 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
 
         final Expression value;
         value = hasInitializer ? checkExpression(type, ctx.constant()) : program.newConstant(type);
-        setInitialMemoryFromConstant(globalObject, 0, value);
+        globalObject.setInitialValue(0, value);
         return null;
-    }
-
-    private void setInitialMemoryFromConstant(MemoryObject memObj, int offset, Expression constant) {
-        if (constant.getType() instanceof ArrayType arrayType) {
-            assert constant instanceof ConstructExpr;
-            final ConstructExpr constArray = (ConstructExpr) constant;
-            final List<Expression> arrayElements = constArray.getOperands();
-            for (int i = 0; i < arrayElements.size(); i++) {
-                final int innerOffset = types.getOffsetInBytes(arrayType, i);
-                setInitialMemoryFromConstant(memObj, offset + innerOffset, arrayElements.get(i));
-            }
-        } else if (constant.getType() instanceof AggregateType aggregateType) {
-            assert constant instanceof ConstructExpr;
-            final ConstructExpr constStruct = (ConstructExpr) constant;
-            final List<Expression> structElements = constStruct.getOperands();
-            for (int i = 0; i < structElements.size(); i++) {
-                int innerOffset = types.getOffsetInBytes(aggregateType, i);
-                setInitialMemoryFromConstant(memObj, offset + innerOffset, structElements.get(i));
-            }
-        } else if (constant.getType() instanceof IntegerType) {
-            memObj.setInitialValue(offset, constant);
-        } else {
-            throw new UnsupportedOperationException("Unrecognized constant value: " + constant);
-        }
     }
 
     private Block getBlock(String label) {

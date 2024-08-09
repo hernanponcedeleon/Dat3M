@@ -1,5 +1,7 @@
 package com.dat3m.dartagnan.program.event;
 
+import com.google.common.base.Preconditions;
+
 import java.util.*;
 
 public final class TagSet extends AbstractSet<String> {
@@ -8,6 +10,7 @@ public final class TagSet extends AbstractSet<String> {
 
     @Override
     public boolean add(String tag) {
+        Preconditions.checkNotNull(tag);
         final int index = Collections.binarySearch(sortedTags, tag);
         if (index < 0) {
             sortedTags.add(~index, tag);
@@ -26,14 +29,12 @@ public final class TagSet extends AbstractSet<String> {
 
     @Override
     public boolean remove(Object o) {
-        if (!(o instanceof String tag)) {
-            return false;
-        }
-
-        final int index = Collections.binarySearch(sortedTags, tag);
-        if (index >= 0) {
-            sortedTags.remove(index);
-            return true;
+        if (o instanceof String tag) {
+            final int index = Collections.binarySearch(sortedTags, tag);
+            if (index >= 0) {
+                sortedTags.remove(index);
+                return true;
+            }
         }
         return false;
     }

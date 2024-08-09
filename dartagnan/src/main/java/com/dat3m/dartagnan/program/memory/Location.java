@@ -2,18 +2,18 @@ package com.dat3m.dartagnan.program.memory;
 
 import com.dat3m.dartagnan.expression.ExpressionKind;
 import com.dat3m.dartagnan.expression.ExpressionVisitor;
+import com.dat3m.dartagnan.expression.Type;
 import com.dat3m.dartagnan.expression.base.LeafExpressionBase;
-import com.dat3m.dartagnan.expression.type.IntegerType;
-import com.dat3m.dartagnan.expression.type.TypeFactory;
 
-public class Location extends LeafExpressionBase<IntegerType> {
+// TODO: Should be replaced with a Pointer class
+public class Location extends LeafExpressionBase<Type> {
 
     private final String name;
     private final MemoryObject base;
     private final int offset;
 
-    public Location(String name, MemoryObject base, int offset) {
-        super(TypeFactory.getInstance().getArchType());
+    public Location(String name, Type type, MemoryObject base, int offset) {
+        super(type);
         this.name = name;
         this.base = base;
         this.offset = offset;

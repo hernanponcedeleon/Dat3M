@@ -1,0 +1,13 @@
+Vulkan counter-atomic-store-rmw
+"Adapted from https://github.com/mc-imperial/gpuverify/blob/master/testsuite/OpenCL/atomics/counter/kernel.cl"
+{
+P0:r0 = 0;
+P1:r0 = 0;
+x=0;
+}
+ P0@sg 0, wg 0, qf 0                         | P1@sg 1, wg 0, qf 0                         ;
+ st.atom.dv.sc0 x, 1                         | cbar.acq_rel.dv.semsc0 0                    ;
+ cbar.acq_rel.dv.semsc0 0                    | rmw.atom.acq_rel.dv.sc0.semsc0.add r0, x, 1 ;
+ rmw.atom.acq_rel.dv.sc0.semsc0.add r0, x, 1 |                                             ;
+~exists
+(P0:r0 == 1 /\ P1:r0 == 1)

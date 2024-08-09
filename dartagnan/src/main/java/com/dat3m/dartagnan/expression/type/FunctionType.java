@@ -28,7 +28,7 @@ public final class FunctionType implements Type {
             return true;
         }
         return (obj instanceof FunctionType other)
-                && other.returnType == this.returnType
+                && other.returnType.equals(this.returnType)
                 && Arrays.equals(other.parameterTypes, this.parameterTypes)
                 && other.isVarArgs == this.isVarArgs;
     }

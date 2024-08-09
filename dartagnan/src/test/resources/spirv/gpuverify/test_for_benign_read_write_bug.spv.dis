@@ -1,0 +1,53 @@
+; @Config: 3, 1, 3
+; SPIR-V
+; Version: 1.6
+; Generator: Google Clspv; 0
+; Bound: 35
+; Schema: 0
+               OpCapability Shader
+               OpCapability Int16
+         %24 = OpExtInstImport "NonSemantic.ClspvReflection.5"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %16 "foo" %8 %13
+               OpSource OpenCL_C 200
+         %25 = OpString "foo"
+         %26 = OpString " __kernel"
+         %29 = OpString "p"
+               OpDecorate %gl_WorkGroupSize BuiltIn WorkgroupSize
+               OpDecorate %9 SpecId 3
+               OpDecorate %2 SpecId 0
+               OpDecorate %3 SpecId 1
+               OpDecorate %4 SpecId 2
+       %uint = OpTypeInt 32 0
+          %2 = OpSpecConstant %uint 1
+          %3 = OpSpecConstant %uint 1
+          %4 = OpSpecConstant %uint 1
+     %v3uint = OpTypeVector %uint 3
+%gl_WorkGroupSize = OpSpecConstantComposite %v3uint %2 %3 %4
+%_ptr_Private_v3uint = OpTypePointer Private %v3uint
+          %9 = OpSpecConstant %uint 1
+     %ushort = OpTypeInt 16 0
+%_arr_ushort_9 = OpTypeArray %ushort %9
+%_ptr_Workgroup__arr_ushort_9 = OpTypePointer Workgroup %_arr_ushort_9
+       %void = OpTypeVoid
+         %15 = OpTypeFunction %void
+%_ptr_Workgroup_ushort = OpTypePointer Workgroup %ushort
+     %uint_0 = OpConstant %uint 0
+   %ushort_1 = OpConstant %ushort 1
+     %uint_1 = OpConstant %uint 1
+     %uint_3 = OpConstant %uint 3
+     %uint_2 = OpConstant %uint 2
+          %8 = OpVariable %_ptr_Private_v3uint Private %gl_WorkGroupSize
+         %13 = OpVariable %_ptr_Workgroup__arr_ushort_9 Workgroup
+         %16 = OpFunction %void None %15
+         %17 = OpLabel
+         %20 = OpAccessChain %_ptr_Workgroup_ushort %13 %uint_0
+         %21 = OpLoad %ushort %20
+         %23 = OpIAdd %ushort %21 %ushort_1
+               OpStore %20 %23
+               OpReturn
+               OpFunctionEnd
+         %28 = OpExtInst %void %24 Kernel %16 %25 %uint_1 %uint_0 %26
+         %30 = OpExtInst %void %24 ArgumentInfo %29
+         %33 = OpExtInst %void %24 ArgumentWorkgroup %28 %uint_0 %uint_3 %uint_2 %30
+         %34 = OpExtInst %void %24 SpecConstantWorkgroupSize %uint_0 %uint_1 %uint_2
