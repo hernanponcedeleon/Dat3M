@@ -3,12 +3,25 @@ package com.dat3m.testgen;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Represents a list of events and the relations between them
+ * 
+ * @param cycle_size Amount of events in the cycle
+ * @param events List of events that will be in the resulting program
+ * @param relations List of relations between events
+ */
 public class Cycle {
     
     public final int cycle_size;
     public List <Event> events;
     public List <Relation> relations;
 
+    /**
+     * Constructor for Cycle class
+     * 
+     * @param r_cycle_size Amount of events in the cycle
+     * @throws Exception
+     */
     public Cycle(
         final int r_cycle_size
     ) throws Exception {
@@ -21,6 +34,14 @@ public class Cycle {
         }
     }
 
+    /**
+     * Creates a relation between two events (given their event ids)
+     * 
+     * @param event_L_id Event id of left event
+     * @param relation_type Relation type
+     * @param event_R_id Event id of right event
+     * @throws Exception
+     */
     public void create_relation(
         final int event_L_id,
         final Relation.relation_t relation_type,
