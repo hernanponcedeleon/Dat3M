@@ -240,13 +240,17 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
         final String name = globalIdent(ctx.GlobalIdent());
         check(!constantMap.containsKey(name), "Redeclared constant in %s.", ctx);
         final int size = types.getMemorySizeInBytes(parseType(ctx.type()));
-        final MemoryObject globalObject = program.getMemory().allocate(size);
-        globalObject.setName(name);
-        if (ctx.threadLocal() != null) {
-            globalObject.setIsThreadLocal(true);
+        if (size > 0) {
+            final MemoryObject globalObject = program.getMemory().allocate(size);
+            globalObject.setName(name);
+            if (ctx.threadLocal() != null) {
+                globalObject.setIsThreadLocal(true);
+            }
+            // TODO: mark the global as constant, if possible.
+            constantMap.put(name, globalObject);
+            return;
         }
-        // TODO: mark the global as constant, if possible.
-        constantMap.put(name, globalObject);
+        throw new ParsingException(String.format("Cannot compute memory size for '%s'", name));
     }
 
     @Override

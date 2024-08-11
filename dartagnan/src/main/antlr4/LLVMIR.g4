@@ -740,7 +740,17 @@ funcAttr:
 	| 'sspstrong'
 	| 'strictfp'
 	| 'willreturn'
-	| 'writeonly';
+	| 'writeonly'
+	| 'memory(' memoryEffect+ ')';
+memoryEffect
+	: accessKind
+	| 'argmem:' accessKind
+	| 'inaccessiblemem:' accessKind;
+accessKind
+	: 'none'
+	| 'readwrite'
+	| 'read'
+	| 'write';
 distinct: 'distinct';
 inBounds: 'inbounds';
 returnAttr:
