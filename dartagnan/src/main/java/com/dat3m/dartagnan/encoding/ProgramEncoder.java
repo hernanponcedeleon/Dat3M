@@ -7,9 +7,10 @@ import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.ScopeHierarchy;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.analysis.BranchEquivalence;
-import com.dat3m.dartagnan.program.analysis.Dependency;
 import com.dat3m.dartagnan.program.analysis.ExecutionAnalysis;
+import com.dat3m.dartagnan.program.analysis.ReachingDefinitionsAnalysis;
 import com.dat3m.dartagnan.program.event.Event;
+import com.dat3m.dartagnan.program.event.RegReader;
 import com.dat3m.dartagnan.program.event.RegWriter;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.CondJump;
@@ -51,14 +52,14 @@ public class ProgramEncoder implements Encoder {
 
     private final EncodingContext context;
     private final ExecutionAnalysis exec;
-    private final Dependency dep;
+    private final ReachingDefinitionsAnalysis definitions;
 
     private ProgramEncoder(EncodingContext c) {
         Preconditions.checkArgument(c.getTask().getProgram().isCompiled(), "The program must be compiled before encoding.");
         context = c;
         c.getAnalysisContext().requires(BranchEquivalence.class);
         this.exec = c.getAnalysisContext().requires(ExecutionAnalysis.class);
-        this.dep = c.getAnalysisContext().requires(Dependency.class);
+        this.definitions = c.getAnalysisContext().requires(ReachingDefinitionsAnalysis.class);
     }
 
     public static ProgramEncoder withContext(EncodingContext context) throws InvalidConfigurationException {
@@ -243,22 +244,21 @@ public class ProgramEncoder implements Encoder {
         logger.info("Encoding dependencies");
         final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
         List<BooleanFormula> enc = new ArrayList<>();
-        for(Map.Entry<Event,Map<Register, Dependency.State>> e : dep.getAll()) {
-            final Event reader = e.getKey();
-            for(Map.Entry<Register, Dependency.State> r : e.getValue().entrySet()) {
-                final Formula value = context.encodeExpressionAt(r.getKey(), reader);
-                final Dependency.State state = r.getValue();
-                List<BooleanFormula> overwrite = new ArrayList<>();
-                for(Event writer : reverse(state.may)) {
-                    assert writer instanceof RegWriter;
+        for (RegReader reader : context.getTask().getProgram().getThreadEvents(RegReader.class)) {
+            final ReachingDefinitionsAnalysis.Writers writers = definitions.getWriters(reader);
+            for (Register register : writers.getUsedRegisters()) {
+                final Formula value = context.encodeExpressionAt(register, reader);
+                final List<BooleanFormula> overwrite = new ArrayList<>();
+                final ReachingDefinitionsAnalysis.RegisterWriters reg = writers.ofRegister(register);
+                for (RegWriter writer : reverse(reg.getMayWriters())) {
                     BooleanFormula edge;
-                    if(state.must.contains(writer)) {
+                    if (reg.getMustWriters().contains(writer)) {
                         if (exec.isImplied(reader, writer) && reader.cfImpliesExec()) {
                             // This special case is important. Usually, we encode "dep => regValue = regWriterResult"
                             // By getting rid of the guard "dep" in this special case, we end up with an unconditional
                             // "regValue = regWriterResult", which allows the solver to eliminate one of the variables
                             // in preprocessing.
-                            assert state.may.size() == 1;
+                            assert reg.getMayWriters().size() == 1;
                             edge = bmgr.makeTrue();
                         } else {
                             edge = bmgr.and(context.execution(writer), context.controlFlow(reader));
@@ -267,10 +267,10 @@ public class ProgramEncoder implements Encoder {
                         edge = context.dependency(writer, reader);
                         enc.add(bmgr.equivalence(edge, bmgr.and(context.execution(writer), context.controlFlow(reader), bmgr.not(bmgr.or(overwrite)))));
                     }
-                    enc.add(bmgr.implication(edge, context.equal(value, context.result((RegWriter) writer))));
+                    enc.add(bmgr.implication(edge, context.equal(value, context.result(writer))));
                     overwrite.add(context.execution(writer));
                 }
-                if(initializeRegisters && !state.initialized) {
+                if(initializeRegisters && !reg.mustBeInitialized()) {
                     overwrite.add(bmgr.not(context.controlFlow(reader)));
                     overwrite.add(context.equalZero(value));
                     enc.add(bmgr.or(overwrite));
@@ -296,25 +296,26 @@ public class ProgramEncoder implements Encoder {
 
         logger.info("Encoding final register values");
         List<BooleanFormula> enc = new ArrayList<>();
-        for(Map.Entry<Register,Dependency.State> e : dep.finalWriters().entrySet()) {
-            final Formula value = context.encodeFinalExpression(e.getKey());
-            final Dependency.State state = e.getValue();
-            final List<RegWriter> writers = state.may;
-            if(initializeRegisters && !state.initialized) {
+        final ReachingDefinitionsAnalysis.Writers finalState = definitions.getFinalWriters();
+        for (Register register : finalState.getUsedRegisters()) {
+            final Formula value = context.encodeFinalExpression(register);
+            final ReachingDefinitionsAnalysis.RegisterWriters registerWriters = finalState.ofRegister(register);
+            final List<RegWriter> writers = registerWriters.getMayWriters();
+            if (initializeRegisters && !registerWriters.mustBeInitialized()) {
                 List<BooleanFormula> clause = new ArrayList<>();
                 clause.add(context.equalZero(value));
-                for(Event w : writers) {
+                for (Event w : writers) {
                     clause.add(context.execution(w));
                 }
                 enc.add(bmgr.or(clause));
             }
-            for(int i = 0; i < writers.size(); i++) {
+            for (int i = 0; i < writers.size(); i++) {
                 final RegWriter writer = writers.get(i);
                 List<BooleanFormula> clause = new ArrayList<>();
                 clause.add(context.equal(value, context.result(writer)));
                 clause.add(bmgr.not(context.execution(writer)));
-                for(Event w : writers.subList(i + 1, writers.size())) {
-                    if(!exec.areMutuallyExclusive(writer, w)) {
+                for (Event w : writers.subList(i + 1, writers.size())) {
+                    if (!exec.areMutuallyExclusive(writer, w)) {
                         clause.add(context.execution(w));
                     }
                 }

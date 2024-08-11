@@ -1,7 +1,7 @@
 package com.dat3m.dartagnan.wmm.analysis;
 
-import com.dat3m.dartagnan.program.analysis.Dependency;
 import com.dat3m.dartagnan.program.analysis.ExecutionAnalysis;
+import com.dat3m.dartagnan.program.analysis.ReachingDefinitionsAnalysis;
 import com.dat3m.dartagnan.program.analysis.alias.AliasAnalysis;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.utils.dependable.DependencyGraph;
@@ -31,7 +31,7 @@ public class CoarseRelationAnalysis extends NativeRelationAnalysis {
      *                Should at least include the following elements:
      *                <ul>
      *                    <li>{@link ExecutionAnalysis}
-     *                    <li>{@link Dependency}
+     *                    <li>{@link ReachingDefinitionsAnalysis}
      *                    <li>{@link AliasAnalysis}
      *                    <li>{@link WmmAnalysis}
      *                </ul>

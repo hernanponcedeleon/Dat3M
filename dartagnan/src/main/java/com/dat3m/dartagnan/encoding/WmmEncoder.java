@@ -4,9 +4,10 @@ import com.dat3m.dartagnan.GlobalSettings;
 import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.program.Program;
-import com.dat3m.dartagnan.program.analysis.Dependency;
+import com.dat3m.dartagnan.program.analysis.ReachingDefinitionsAnalysis;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.MemoryEvent;
+import com.dat3m.dartagnan.program.event.RegReader;
 import com.dat3m.dartagnan.program.event.RegWriter;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.ControlBarrier;
@@ -390,16 +391,18 @@ public class WmmEncoder implements Encoder {
         }
 
         private Void visitDirectDependency(Relation r) {
-            Dependency dep = context.getAnalysisContext().get(Dependency.class);
-            EncodingContext.EdgeEncoder edge = context.edge(r);
+            final ReachingDefinitionsAnalysis definitions = context.getAnalysisContext()
+                    .get(ReachingDefinitionsAnalysis.class);
+            final EncodingContext.EdgeEncoder edge = context.edge(r);
             encodeSets.get(r).apply((writer, reader) -> {
-                if (!(writer instanceof RegWriter rw)) {
+                if (!(writer instanceof RegWriter wr) || !(reader instanceof RegReader rr)) {
                     enc.add(bmgr.not(edge.encode(writer, reader)));
                 } else {
-                    Dependency.State s = dep.of(reader, rw.getResultRegister());
-                    if (s.must.contains(writer)) {
+                    final ReachingDefinitionsAnalysis.RegisterWriters state = definitions.getWriters(rr)
+                            .ofRegister(wr.getResultRegister());
+                    if (state.getMustWriters().contains(writer)) {
                         enc.add(bmgr.equivalence(edge.encode(writer, reader), context.execution(writer, reader)));
-                    } else if (!s.may.contains(writer)) {
+                    } else if (!state.getMayWriters().contains(writer)) {
                         enc.add(bmgr.not(edge.encode(writer, reader)));
                     }
                 }
