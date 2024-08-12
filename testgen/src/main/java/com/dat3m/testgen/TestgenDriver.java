@@ -31,62 +31,17 @@ public class TestgenDriver {
 
         cnf.to_normal_form();
 
-        final int cycle_length = 3;
-        explore_cnf( cnf, new ArrayList<String>( Arrays.asList( cnf.starting_nt ) ), new ArrayList<>(), cycle_length - 1, all_cycles );
+        final int cycle_length = 4;
+        cnf.explore_cnf(
+            all_cycles,
+            new ArrayList<String>( Arrays.asList( cnf.starting_nt ) ),
+            new ArrayList<>(),
+            cycle_length - 1
+        );
         
         System.out.println( "Cycles of length " + cycle_length + ":" );
         for( String cycle : all_cycles )
             System.out.println( cycle );
-    }
-
-    static void explore_cnf(
-        final CNF cnf,
-        List <String> states,
-        List <String> cycle,
-        int allowed_growth,
-        Set <String> all_cycles
-    ) throws Exception {
-        if( allowed_growth < 0 )
-            return;
-
-        if( states.isEmpty() ) {
-            if( allowed_growth == 0 )
-                all_cycles.add( cycle.toString() );
-            return;
-        }
-
-        String current_state = states.get( 0 );
-        states.remove( 0 );
-
-        if( cnf.terminals.contains( current_state ) ) {
-            cycle.add( current_state );
-            explore_cnf( cnf, states, cycle, allowed_growth, all_cycles );
-            cycle.remove( cycle.size() - 1 );
-        } else {
-            for( String rule : cnf.get_rules( current_state ) ) {
-                if( is_nonterminal_rule( rule ) ) {
-                    String state_1 = rule.split( ";" )[0];
-                    String state_2 = rule.split( ";" )[1];
-                    states.add( 0, state_2 );
-                    states.add( 0, state_1 );
-                    explore_cnf( cnf, states, cycle, allowed_growth - 1, all_cycles );
-                    states.remove( 0 );
-                    states.remove( 0 );
-                } else {
-                    states.add( 0, rule );
-                    explore_cnf( cnf, states, cycle, allowed_growth, all_cycles );
-                    states.remove( 0 );
-                }
-            }
-        }
-
-        states.add( 0, current_state );
-    }
-
-    static boolean is_nonterminal_rule(
-        final String rule
-    ) {
-        return rule.split( ";" ).length == 2;
     }
 
 }

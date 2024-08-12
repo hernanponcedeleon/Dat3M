@@ -264,6 +264,70 @@ public class CNF {
         }
     }
 
+    /**
+     * Explores the grammar (after being transformed into cnf) exaustively up to a given length.
+     * 
+     * @param all_cycles Set of all the generated cycles
+     * @param states Current stack of states
+     * @param cycle Current cycle
+     * @param allowed_growth Rules of type NT;NT that can be taken
+     * @throws Exception
+     */
+    void explore_cnf(
+        Set <String> all_cycles,
+        List <String> states,
+        List <String> cycle,
+        int allowed_growth
+    ) throws Exception {
+        if( allowed_growth < 0 )
+            return;
+
+        if( states.isEmpty() ) {
+            if( allowed_growth == 0 )
+                all_cycles.add( cycle.toString() );
+            return;
+        }
+
+        String current_state = states.get( 0 );
+        states.remove( 0 );
+
+        if( terminals.contains( current_state ) ) {
+            cycle.add( current_state );
+            explore_cnf( all_cycles, states, cycle, allowed_growth  );
+            cycle.remove( cycle.size() - 1 );
+        } else {
+            for( String rule : get_rules( current_state ) ) {
+                if( is_nonterminal_rule( rule ) ) {
+                    String state_1 = rule.split( ";" )[0];
+                    String state_2 = rule.split( ";" )[1];
+                    states.add( 0, state_2 );
+                    states.add( 0, state_1 );
+                    explore_cnf( all_cycles, states, cycle, allowed_growth - 1 );
+                    states.remove( 0 );
+                    states.remove( 0 );
+                } else {
+                    states.add( 0, rule );
+                    explore_cnf( all_cycles, states, cycle, allowed_growth );
+                    states.remove( 0 );
+                }
+            }
+        }
+
+        states.add( 0, current_state );
+    }
+
+    /**
+     * Returns whether the given rule is of type NT;NT
+     * 
+     * @param rule
+     * @return
+     */
+    boolean is_nonterminal_rule(
+        final String rule
+    ) {
+        return rule.split( ";" ).length == 2;
+    }
+
     @Override
     public String toString()
     {
