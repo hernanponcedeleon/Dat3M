@@ -1,4 +1,4 @@
-package com.dat3m.testgen;
+package com.dat3m.testgen.util;
 
 /**
  * Represents relations between events.
@@ -18,9 +18,9 @@ public class Relation {
         rf_inv
     };
 
-    Event event_L;
-    relation_t type;
-    Event event_R;
+    public Event event_L;
+    public relation_t type;
+    public Event event_R;
 
     /**
      * Constructor for Relation class.

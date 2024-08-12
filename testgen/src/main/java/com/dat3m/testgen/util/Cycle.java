@@ -1,4 +1,4 @@
-package com.dat3m.testgen;
+package com.dat3m.testgen.util;
 
 import java.util.ArrayList;
 import java.util.List;

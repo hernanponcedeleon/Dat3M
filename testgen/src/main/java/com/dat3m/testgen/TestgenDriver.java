@@ -5,6 +5,8 @@ import java.util.Arrays;
 import java.util.Set;
 import java.util.TreeSet;
 
+import com.dat3m.testgen.cycle_gen.CNF;
+
 public class TestgenDriver {
 
     public static void main(

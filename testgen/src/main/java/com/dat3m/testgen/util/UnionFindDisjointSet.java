@@ -1,4 +1,4 @@
-package com.dat3m.testgen;
+package com.dat3m.testgen.util;
 
 /**
  * Implementation of Union Find Disjoint Set data structure.

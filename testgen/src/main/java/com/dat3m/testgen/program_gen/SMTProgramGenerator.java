@@ -1,4 +1,4 @@
-package com.dat3m.testgen;
+package com.dat3m.testgen.program_gen;
 
 import java.math.BigInteger;
 
@@ -15,6 +15,11 @@ import org.sosy_lab.java_smt.api.NumeralFormula.IntegerFormula;
 import org.sosy_lab.java_smt.api.ProverEnvironment;
 import org.sosy_lab.java_smt.api.SolverContext;
 import org.sosy_lab.java_smt.api.SolverContext.ProverOptions;
+
+import com.dat3m.testgen.util.Cycle;
+import com.dat3m.testgen.util.Event;
+import com.dat3m.testgen.util.Relation;
+import com.dat3m.testgen.util.UnionFindDisjointSet;
 
 /**
  * Generate a program given relations between events.

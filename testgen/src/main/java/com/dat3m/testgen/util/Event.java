@@ -1,4 +1,4 @@
-package com.dat3m.testgen;
+package com.dat3m.testgen.util;
 
 import org.sosy_lab.java_smt.api.NumeralFormula.IntegerFormula;
 
