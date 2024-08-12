@@ -10,8 +10,9 @@ public class TestgenDriver {
 
     static Set <String> all_cycles;
 
-    public static void main(String[] args) throws Exception {
-
+    public static void main(
+        String[] args
+    ) throws Exception {
         all_cycles = new TreeSet<>();
         
         CNF cnf = new CNF( "HB_SC" );
@@ -38,7 +39,6 @@ public class TestgenDriver {
         System.out.println( "Cycles of length " + cycle_length + ":" );
         for( String cycle : all_cycles )
             System.out.println( cycle );
-
     }
 
     static void explore_cnf(
