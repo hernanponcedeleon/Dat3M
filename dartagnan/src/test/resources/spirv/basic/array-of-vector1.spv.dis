@@ -1,0 +1,31 @@
+; @Output: forall (%v3v[0][0]==0 and %v3v[1][0]==1 and %v3v[1][1]==2)
+; @Config: 1, 1, 1
+; SPIR-V
+; Version: 1.0
+; Schema: 0
+               OpCapability Shader
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %main "main"
+               OpSource GLSL 450
+       %void = OpTypeVoid
+       %func = OpTypeFunction %void
+       %uint = OpTypeInt 64 0
+         %c0 = OpConstant %uint 0
+         %c1 = OpConstant %uint 1
+         %c2 = OpConstant %uint 2
+     %v1uint = OpTypeVector %uint 1
+     %v2uint = OpTypeArray %uint %c2
+     %struct = OpTypeStruct %v1uint %v2uint
+ %ptr_struct = OpTypePointer Uniform %struct
+   %ptr_uint = OpTypePointer Uniform %uint
+        %v3v = OpVariable %ptr_struct Uniform
+       %main = OpFunction %void None %func
+      %label = OpLabel
+        %el0 = OpAccessChain %ptr_uint %v3v %c0 %c0
+        %el1 = OpAccessChain %ptr_uint %v3v %c1 %c0
+        %el2 = OpAccessChain %ptr_uint %v3v %c1 %c1
+               OpStore %el0 %c0
+               OpStore %el1 %c1
+               OpStore %el2 %c2
+               OpReturn
+               OpFunctionEnd

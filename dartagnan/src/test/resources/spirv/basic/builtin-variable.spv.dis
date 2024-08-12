@@ -1,0 +1,44 @@
+; @Input: %out = {0, 0, 0}
+; @Output: forall (%out[0]==6 and %out[1]==1 and %out[2]==1)
+; @Config: 3, 2, 1
+; SPIR-V
+; Version: 1.0
+; Schema: 0
+                      OpCapability Shader
+                      OpMemoryModel Logical GLSL450
+                      OpEntryPoint GLCompute %main "main"
+                      OpSource GLSL 450
+                      OpDecorate %gl_WorkGroupSize BuiltIn WorkgroupSize
+              %void = OpTypeVoid
+              %func = OpTypeFunction %void
+              %uint = OpTypeInt 32 0
+            %v3uint = OpTypeVector %uint 3
+        %ptr_v3uint = OpTypePointer Uniform %v3uint
+          %ptr_uint = OpTypePointer Uniform %uint
+                %c0 = OpConstant %uint 0
+                %c1 = OpConstant %uint 1
+                %c2 = OpConstant %uint 2
+               %c64 = OpConstant %uint 64
+ %_ptr_Input_v3uint = OpTypePointer Input %v3uint
+%_ptr_Output_v3uint = OpTypePointer Output %v3uint
+  %gl_WorkGroupSize = OpVariable %_ptr_Input_v3uint Input
+               %out = OpVariable %_ptr_Output_v3uint Output
+              %main = OpFunction %void None %func
+             %label = OpLabel
+           %in0_ptr = OpAccessChain %ptr_uint %gl_WorkGroupSize %c0
+           %in1_ptr = OpAccessChain %ptr_uint %gl_WorkGroupSize %c1
+           %in2_ptr = OpAccessChain %ptr_uint %gl_WorkGroupSize %c2
+                %v0 = OpLoad %uint %in0_ptr
+                %v1 = OpLoad %uint %in1_ptr
+                %v2 = OpLoad %uint %in2_ptr
+          %out0_ptr = OpAccessChain %ptr_uint %out %c0
+          %out1_ptr = OpAccessChain %ptr_uint %out %c1
+          %out2_ptr = OpAccessChain %ptr_uint %out %c2
+
+          ; TODO: What is the storage class here? Should be mapped from Output
+
+                      OpAtomicStore %out0_ptr %c1 %c64 %v0
+                      OpAtomicStore %out1_ptr %c1 %c64 %v1
+                      OpAtomicStore %out2_ptr %c1 %c64 %v2
+                      OpReturn
+                      OpFunctionEnd

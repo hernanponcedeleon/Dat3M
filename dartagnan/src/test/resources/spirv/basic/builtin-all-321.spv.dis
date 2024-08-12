@@ -1,0 +1,152 @@
+; @Output: forall (%out_SubgroupLocalInvocationId>=0 and %out_SubgroupLocalInvocationId<=2)
+
+; @Output: forall (%out_LocalInvocationId[0]>=0 and %out_LocalInvocationId[0]<=5)
+; @Output: forall (%out_LocalInvocationId[1]==0)
+; @Output: forall (%out_LocalInvocationId[2]==0)
+
+; @Output: forall (%out_LocalInvocationIndex>=0 and %out_LocalInvocationIndex<=5)
+
+; @Output: forall (%out_GlobalInvocationId[0]>=0 and %out_GlobalInvocationId[0]<=5)
+; @Output: forall (%out_GlobalInvocationId[1]==0)
+; @Output: forall (%out_GlobalInvocationId[2]==0)
+
+; @Output: forall (%out_DeviceIndex==0)
+
+; @Output: forall (%out_SubgroupId==0 or %out_SubgroupId==1)
+
+; @Output: forall (%out_WorkgroupId[0]==0)
+; @Output: forall (%out_WorkgroupId[1]==0)
+; @Output: forall (%out_WorkgroupId[2]==0)
+
+; @Output: forall (%out_SubgroupSize==3)
+
+; @Output: forall (%out_WorkgroupSize[0]==6)
+; @Output: forall (%out_WorkgroupSize[1]==1)
+; @Output: forall (%out_WorkgroupSize[2]==1)
+
+; @Config: 3, 2, 1
+; SPIR-V
+; Version: 1.0
+; Schema: 0
+                                 OpCapability Shader
+                                 OpMemoryModel Logical GLSL450
+                                 OpEntryPoint GLCompute %main "main"
+                                 OpSource GLSL 450
+                                 OpDecorate %gl_SubgroupLocalInvocationId BuiltIn SubgroupLocalInvocationId
+                                 OpDecorate %gl_LocalInvocationId BuiltIn LocalInvocationId
+                                 OpDecorate %gl_LocalInvocationIndex BuiltIn LocalInvocationIndex
+                                 OpDecorate %gl_GlobalInvocationId BuiltIn GlobalInvocationId
+                                 OpDecorate %gl_DeviceIndex BuiltIn DeviceIndex
+                                 OpDecorate %gl_SubgroupId BuiltIn SubgroupId
+                                 OpDecorate %gl_WorkgroupId BuiltIn WorkgroupId
+                                 OpDecorate %gl_SubgroupSize BuiltIn SubgroupSize
+                                 OpDecorate %gl_WorkgroupSize BuiltIn WorkgroupSize
+                         %void = OpTypeVoid
+                         %func = OpTypeFunction %void
+                         %uint = OpTypeInt 32 0
+                       %v3uint = OpTypeVector %uint 3
+                     %ptr_uint = OpTypePointer Uniform %uint
+              %_ptr_Input_uint = OpTypePointer Input %uint
+             %_ptr_Output_uint = OpTypePointer Output %uint
+            %_ptr_Input_v3uint = OpTypePointer Input %v3uint
+           %_ptr_Output_v3uint = OpTypePointer Output %v3uint
+
+                           %c0 = OpConstant %uint 0
+                           %c1 = OpConstant %uint 1
+                           %c2 = OpConstant %uint 2
+                          %c64 = OpConstant %uint 64
+                         %init = OpConstant %uint 999
+                       %v3init = OpConstantComposite %v3uint %init %init %init
+
+ %gl_SubgroupLocalInvocationId = OpVariable %_ptr_Input_uint Input
+         %gl_LocalInvocationId = OpVariable %_ptr_Input_v3uint Input
+      %gl_LocalInvocationIndex = OpVariable %_ptr_Input_uint Input
+        %gl_GlobalInvocationId = OpVariable %_ptr_Input_v3uint Input
+               %gl_DeviceIndex = OpVariable %_ptr_Input_uint Input
+                %gl_SubgroupId = OpVariable %_ptr_Input_uint Input
+               %gl_WorkgroupId = OpVariable %_ptr_Input_v3uint Input
+              %gl_SubgroupSize = OpVariable %_ptr_Input_uint Input
+             %gl_WorkgroupSize = OpVariable %_ptr_Input_v3uint Input
+
+%out_SubgroupLocalInvocationId = OpVariable %_ptr_Output_uint Output %init
+        %out_LocalInvocationId = OpVariable %_ptr_Output_v3uint Output %v3init
+     %out_LocalInvocationIndex = OpVariable %_ptr_Output_uint Output %init
+       %out_GlobalInvocationId = OpVariable %_ptr_Output_v3uint Output %v3init
+              %out_DeviceIndex = OpVariable %_ptr_Output_uint Output %init
+               %out_SubgroupId = OpVariable %_ptr_Output_uint Output %init
+              %out_WorkgroupId = OpVariable %_ptr_Output_v3uint Output %v3init
+             %out_SubgroupSize = OpVariable %_ptr_Output_uint Output %init
+            %out_WorkgroupSize = OpVariable %_ptr_Output_v3uint Output %v3init
+
+                         %main = OpFunction %void None %func
+                        %label = OpLabel
+
+%in_SubgroupLocalInvocationId = OpLoad %uint %gl_SubgroupLocalInvocationId
+                                 OpAtomicStore %out_SubgroupLocalInvocationId %c1 %c64 %in_SubgroupLocalInvocationId
+
+    %in0_ptr_LocalInvocationId = OpAccessChain %ptr_uint %gl_LocalInvocationId %c0
+    %in1_ptr_LocalInvocationId = OpAccessChain %ptr_uint %gl_LocalInvocationId %c1
+    %in2_ptr_LocalInvocationId = OpAccessChain %ptr_uint %gl_LocalInvocationId %c2
+         %v0_LocalInvocationId = OpLoad %uint %in0_ptr_LocalInvocationId
+         %v1_LocalInvocationId = OpLoad %uint %in1_ptr_LocalInvocationId
+         %v2_LocalInvocationId = OpLoad %uint %in2_ptr_LocalInvocationId
+   %out0_ptr_LocalInvocationId = OpAccessChain %ptr_uint %out_LocalInvocationId %c0
+   %out1_ptr_LocalInvocationId = OpAccessChain %ptr_uint %out_LocalInvocationId %c1
+   %out2_ptr_LocalInvocationId = OpAccessChain %ptr_uint %out_LocalInvocationId %c2
+                                 OpAtomicStore %out0_ptr_LocalInvocationId %c1 %c64 %v0_LocalInvocationId
+                                 OpAtomicStore %out1_ptr_LocalInvocationId %c1 %c64 %v1_LocalInvocationId
+                                 OpAtomicStore %out2_ptr_LocalInvocationId %c1 %c64 %v2_LocalInvocationId
+
+      %in_LocalInvocationIndex = OpLoad %uint %gl_LocalInvocationIndex
+                                 OpAtomicStore %out_LocalInvocationIndex %c1 %c64 %in_LocalInvocationIndex
+
+   %in0_ptr_GlobalInvocationId = OpAccessChain %ptr_uint %gl_GlobalInvocationId %c0
+   %in1_ptr_GlobalInvocationId = OpAccessChain %ptr_uint %gl_GlobalInvocationId %c1
+   %in2_ptr_GlobalInvocationId = OpAccessChain %ptr_uint %gl_GlobalInvocationId %c2
+        %v0_GlobalInvocationId = OpLoad %uint %in0_ptr_GlobalInvocationId
+        %v1_GlobalInvocationId = OpLoad %uint %in1_ptr_GlobalInvocationId
+        %v2_GlobalInvocationId = OpLoad %uint %in2_ptr_GlobalInvocationId
+  %out0_ptr_GlobalInvocationId = OpAccessChain %ptr_uint %out_GlobalInvocationId %c0
+  %out1_ptr_GlobalInvocationId = OpAccessChain %ptr_uint %out_GlobalInvocationId %c1
+  %out2_ptr_GlobalInvocationId = OpAccessChain %ptr_uint %out_GlobalInvocationId %c2
+                                 OpAtomicStore %out0_ptr_GlobalInvocationId %c1 %c64 %v0_GlobalInvocationId
+                                 OpAtomicStore %out1_ptr_GlobalInvocationId %c1 %c64 %v1_GlobalInvocationId
+                                 OpAtomicStore %out2_ptr_GlobalInvocationId %c1 %c64 %v2_GlobalInvocationId
+
+               %in_DeviceIndex = OpLoad %uint %gl_DeviceIndex
+                                 OpAtomicStore %out_DeviceIndex %c1 %c64 %in_DeviceIndex
+
+                %in_SubgroupId = OpLoad %uint %gl_SubgroupId
+                                 OpAtomicStore %out_SubgroupId %c1 %c64 %in_SubgroupId
+
+          %in0_ptr_WorkgroupId = OpAccessChain %ptr_uint %gl_WorkgroupId %c0
+          %in1_ptr_WorkgroupId = OpAccessChain %ptr_uint %gl_WorkgroupId %c1
+          %in2_ptr_WorkgroupId = OpAccessChain %ptr_uint %gl_WorkgroupId %c2
+               %v0_WorkgroupId = OpLoad %uint %in0_ptr_WorkgroupId
+               %v1_WorkgroupId = OpLoad %uint %in1_ptr_WorkgroupId
+               %v2_WorkgroupId = OpLoad %uint %in2_ptr_WorkgroupId
+         %out0_ptr_WorkgroupId = OpAccessChain %ptr_uint %out_WorkgroupId %c0
+         %out1_ptr_WorkgroupId = OpAccessChain %ptr_uint %out_WorkgroupId %c1
+         %out2_ptr_WorkgroupId = OpAccessChain %ptr_uint %out_WorkgroupId %c2
+                                 OpAtomicStore %out0_ptr_WorkgroupId %c1 %c64 %v0_WorkgroupId
+                                 OpAtomicStore %out1_ptr_WorkgroupId %c1 %c64 %v1_WorkgroupId
+                                 OpAtomicStore %out2_ptr_WorkgroupId %c1 %c64 %v2_WorkgroupId
+
+              %in_SubgroupSize = OpLoad %uint %gl_SubgroupSize
+                                 OpAtomicStore %out_SubgroupSize %c1 %c64 %in_SubgroupSize
+
+        %in0_ptr_WorkgroupSize = OpAccessChain %ptr_uint %gl_WorkgroupSize %c0
+        %in1_ptr_WorkgroupSize = OpAccessChain %ptr_uint %gl_WorkgroupSize %c1
+        %in2_ptr_WorkgroupSize = OpAccessChain %ptr_uint %gl_WorkgroupSize %c2
+             %v0_WorkgroupSize = OpLoad %uint %in0_ptr_WorkgroupSize
+             %v1_WorkgroupSize = OpLoad %uint %in1_ptr_WorkgroupSize
+             %v2_WorkgroupSize = OpLoad %uint %in2_ptr_WorkgroupSize
+       %out0_ptr_WorkgroupSize = OpAccessChain %ptr_uint %out_WorkgroupSize %c0
+       %out1_ptr_WorkgroupSize = OpAccessChain %ptr_uint %out_WorkgroupSize %c1
+       %out2_ptr_WorkgroupSize = OpAccessChain %ptr_uint %out_WorkgroupSize %c2
+                                 OpAtomicStore %out0_ptr_WorkgroupSize %c1 %c64 %v0_WorkgroupSize
+                                 OpAtomicStore %out1_ptr_WorkgroupSize %c1 %c64 %v1_WorkgroupSize
+                                 OpAtomicStore %out2_ptr_WorkgroupSize %c1 %c64 %v2_WorkgroupSize
+
+                                 OpReturn
+                                 OpFunctionEnd

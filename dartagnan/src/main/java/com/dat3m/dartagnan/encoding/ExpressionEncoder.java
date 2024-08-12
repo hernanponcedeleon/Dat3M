@@ -8,6 +8,7 @@ import com.dat3m.dartagnan.expression.booleans.BoolLiteral;
 import com.dat3m.dartagnan.expression.booleans.BoolUnaryExpr;
 import com.dat3m.dartagnan.expression.integers.*;
 import com.dat3m.dartagnan.expression.misc.ITEExpr;
+import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.memory.Location;
@@ -22,6 +23,8 @@ import static com.google.common.base.Preconditions.checkState;
 import static java.util.Arrays.asList;
 
 class ExpressionEncoder implements ExpressionVisitor<Formula> {
+
+    private static final TypeFactory types = TypeFactory.getInstance();
 
     private final EncodingContext context;
     private final FormulaManager formulaManager;
@@ -297,6 +300,7 @@ class ExpressionEncoder implements ExpressionVisitor<Formula> {
     @Override
     public Formula visitLocation(Location location) {
         checkState(event == null, "Cannot evaluate %s at event %s.", location, event);
-        return context.lastValue(location.getMemoryObject(), location.getOffset());
+        int size = types.getMemorySizeInBits(location.getType());
+        return context.lastValue(location.getMemoryObject(), location.getOffset(), size);
     }
 }

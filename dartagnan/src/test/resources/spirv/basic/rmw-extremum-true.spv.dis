@@ -1,0 +1,44 @@
+; @Input: %out_result = {0, 0}
+; @Output: forall (%out_result[0]==2 and %out_result[1]==2)
+; @Output: forall (%out_final[0]==-3 and %out_final[1]==2)
+; @Config: 1, 1, 1
+; SPIR-V
+; Version: 1.0
+; Schema: 0
+                OpCapability Shader
+                OpMemoryModel Logical GLSL450
+                OpEntryPoint GLCompute %main "main"
+                OpSource GLSL 450
+        %void = OpTypeVoid
+        %bool = OpTypeBool
+        %func = OpTypeFunction %void
+         %int = OpTypeInt 64 0
+       %v2int = OpTypeVector %int 2
+     %ptr_int = OpTypePointer Uniform %int
+   %ptr_v2int = OpTypePointer Output %v2int
+      %c3_neg = OpConstant %int -3
+          %c0 = OpConstant %int 0
+          %c1 = OpConstant %int 1
+          %c2 = OpConstant %int 2
+          %c3 = OpConstant %int 3
+         %c64 = OpConstant %int 64
+        %var0 = OpVariable %ptr_int Uniform %c2
+        %var1 = OpVariable %ptr_int Uniform %c2
+  %out_result = OpVariable %ptr_v2int Output
+   %out_final = OpVariable %ptr_v2int Output
+        %main = OpFunction %void None %func
+       %label = OpLabel
+     %result0 = OpAtomicSMin %int %var0 %c1 %c64 %c3_neg
+     %result1 = OpAtomicSMax %int %var1 %c1 %c64 %c3_neg
+      %final0 = OpLoad %int %var0
+      %final1 = OpLoad %int %var1
+   %ptr_res_0 = OpAccessChain %ptr_int %out_result %c0
+   %ptr_res_1 = OpAccessChain %ptr_int %out_result %c1
+                OpStore %ptr_res_0 %result0
+                OpStore %ptr_res_1 %result1
+   %ptr_fin_0 = OpAccessChain %ptr_int %out_final %c0
+   %ptr_fin_1 = OpAccessChain %ptr_int %out_final %c1
+                OpStore %ptr_fin_0 %final0
+                OpStore %ptr_fin_1 %final1
+                OpReturn
+                OpFunctionEnd

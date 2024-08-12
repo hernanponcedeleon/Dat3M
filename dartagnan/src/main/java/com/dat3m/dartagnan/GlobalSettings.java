@@ -77,7 +77,7 @@ public class GlobalSettings {
         if (!home.isEmpty()) {
             return home + "/output";
         }
-        return "";
+        return "output";
     }
 
     private static boolean isJUnitTest() {

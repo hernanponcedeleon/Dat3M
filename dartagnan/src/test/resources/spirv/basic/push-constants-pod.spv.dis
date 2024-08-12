@@ -1,0 +1,101 @@
+; @Input: %push = {{1, 2, 3}, {4, 5}, {6}, {7, 8}}
+; @Input: %out = {{0, 0, 0, 0, 0, 0, 0, 0}}
+; @Output: forall (%out[0][0] == 1 and %out[0][1] == 2 and %out[0][2] == 3)
+; @Output: forall (%out[0][3] == 4 and %out[0][4] == 5)
+; @Output: forall (%out[0][5] == 6)
+; @Output: forall (%out[0][6] == 7 and %out[0][7] == 8)
+; @Config: 1, 1, 1
+; SPIR-V
+; Version: 1.6
+; Generator: Google Clspv; 0
+; Bound: 155
+; Schema: 0
+               OpCapability Shader
+        %ext = OpExtInstImport "NonSemantic.ClspvReflection.5"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %func "test" %out %push
+               OpSource OpenCL_C 200
+               OpMemberDecorate %_struct_3 0 Offset 0
+               OpMemberDecorate %_struct_3 1 Offset 12
+               OpMemberDecorate %_struct_3 2 Offset 20
+               OpMemberDecorate %_struct_3 3 Offset 24
+               OpDecorate %_struct_3 Block
+               OpDecorate %_runtimearr_uint ArrayStride 4
+               OpMemberDecorate %_struct_17 0 Offset 0
+               OpDecorate %_struct_17 Block
+               OpDecorate %out DescriptorSet 0
+               OpDecorate %out Binding 0
+               OpDecorate %out Coherent
+       %uint = OpTypeInt 32 0
+     %v1uint = OpTypeVector %uint 1
+     %v2uint = OpTypeVector %uint 2
+     %v3uint = OpTypeVector %uint 3
+  %_struct_3 = OpTypeStruct %v3uint %v2uint %v1uint %v2uint
+%_ptr_PushConstant__struct_3 = OpTypePointer PushConstant %_struct_3
+%_ptr_Input_v3uint = OpTypePointer Input %v3uint
+%_ptr_Private_v3uint = OpTypePointer Private %v3uint
+%_runtimearr_uint = OpTypeRuntimeArray %uint
+ %_struct_17 = OpTypeStruct %_runtimearr_uint
+%_ptr_StorageBuffer__struct_17 = OpTypePointer StorageBuffer %_struct_17
+%_ptr_PushConstant_uint = OpTypePointer PushConstant %uint
+%_ptr_StorageBuffer_uint = OpTypePointer StorageBuffer %uint
+       %void = OpTypeVoid
+  %void_func = OpTypeFunction %void
+     %uint_0 = OpConstant %uint 0
+     %uint_1 = OpConstant %uint 1
+     %uint_2 = OpConstant %uint 2
+     %uint_3 = OpConstant %uint 3
+     %uint_4 = OpConstant %uint 4
+     %uint_5 = OpConstant %uint 5
+     %uint_6 = OpConstant %uint 6
+     %uint_7 = OpConstant %uint 7
+     %uint_8 = OpConstant %uint 8
+    %uint_12 = OpConstant %uint 12
+    %uint_20 = OpConstant %uint 20
+    %uint_24 = OpConstant %uint 24
+       %push = OpVariable %_ptr_PushConstant__struct_3 PushConstant
+        %out = OpVariable %_ptr_StorageBuffer__struct_17 StorageBuffer
+       %func = OpFunction %void None %void_func
+      %label = OpLabel
+      %ptr_0 = OpAccessChain %_ptr_PushConstant_uint %push %uint_0 %uint_0
+      %ptr_1 = OpAccessChain %_ptr_PushConstant_uint %push %uint_0 %uint_1
+      %ptr_2 = OpAccessChain %_ptr_PushConstant_uint %push %uint_0 %uint_2
+      %ptr_3 = OpAccessChain %_ptr_PushConstant_uint %push %uint_1 %uint_0
+      %ptr_4 = OpAccessChain %_ptr_PushConstant_uint %push %uint_1 %uint_1
+      %ptr_5 = OpAccessChain %_ptr_PushConstant_uint %push %uint_2 %uint_0
+      %ptr_6 = OpAccessChain %_ptr_PushConstant_uint %push %uint_3 %uint_0
+      %ptr_7 = OpAccessChain %_ptr_PushConstant_uint %push %uint_3 %uint_1
+      %val_0 = OpLoad %uint %ptr_0
+      %val_1 = OpLoad %uint %ptr_1
+      %val_2 = OpLoad %uint %ptr_2
+      %val_3 = OpLoad %uint %ptr_3
+      %val_4 = OpLoad %uint %ptr_4
+      %val_5 = OpLoad %uint %ptr_5
+      %val_6 = OpLoad %uint %ptr_6
+      %val_7 = OpLoad %uint %ptr_7
+      %out_0 = OpAccessChain %_ptr_StorageBuffer_uint %out %uint_0 %uint_0
+      %out_1 = OpAccessChain %_ptr_StorageBuffer_uint %out %uint_0 %uint_1
+      %out_2 = OpAccessChain %_ptr_StorageBuffer_uint %out %uint_0 %uint_2
+      %out_3 = OpAccessChain %_ptr_StorageBuffer_uint %out %uint_0 %uint_3
+      %out_4 = OpAccessChain %_ptr_StorageBuffer_uint %out %uint_0 %uint_4
+      %out_5 = OpAccessChain %_ptr_StorageBuffer_uint %out %uint_0 %uint_5
+      %out_6 = OpAccessChain %_ptr_StorageBuffer_uint %out %uint_0 %uint_6
+      %out_7 = OpAccessChain %_ptr_StorageBuffer_uint %out %uint_0 %uint_7
+               OpStore %out_0 %val_0
+               OpStore %out_1 %val_1
+               OpStore %out_2 %val_2
+               OpStore %out_3 %val_3
+               OpStore %out_4 %val_4
+               OpStore %out_5 %val_5
+               OpStore %out_6 %val_6
+               OpStore %out_7 %val_7
+               OpReturn
+               OpFunctionEnd
+          %1 = OpExtInst %void %ext ArgumentInfo %a
+          %2 = OpExtInst %void %ext ArgumentPodPushConstant %43 %uint_1 %uint_0 %uint_12 %1
+          %3 = OpExtInst %void %ext ArgumentInfo %b
+          %4 = OpExtInst %void %ext ArgumentPodPushConstant %43 %uint_2 %uint_12 %uint_8 %3
+          %5 = OpExtInst %void %ext ArgumentInfo %c
+          %6 = OpExtInst %void %ext ArgumentPodPushConstant %43 %uint_2 %uint_20 %uint_4 %5
+          %7 = OpExtInst %void %ext ArgumentInfo %d
+          %8 = OpExtInst %void %ext ArgumentPodPushConstant %43 %uint_2 %uint_24 %uint_8 %7

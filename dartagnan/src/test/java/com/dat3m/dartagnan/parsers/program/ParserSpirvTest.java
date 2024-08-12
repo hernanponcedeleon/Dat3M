@@ -1,54 +1,50 @@
 package com.dat3m.dartagnan.parsers.program;
 
+import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.program.Program;
 import org.antlr.v4.runtime.CharStream;
 import org.antlr.v4.runtime.CharStreams;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
 
-import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.stream.Stream;
 
 import static com.dat3m.dartagnan.utils.ResourceHelper.getTestResourcePath;
-import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.*;
 
-@RunWith(Parameterized.class)
 public class ParserSpirvTest {
 
-    private static final String PATH = "parsers/program/spirv/";
-
-    private final String filename;
-
-    public ParserSpirvTest(String filename) {
-        this.filename = filename;
-    }
-
-    @Parameterized.Parameters(name = "{index}: {0}")
-    public static Iterable<Object[]> data() throws IOException {
-        String path = Paths.get(getTestResourcePath(PATH)).toString();
-        File dir = new File(path);
-        File[] files = dir.listFiles();
-        assertNotNull(files);
-        return Stream.of(files)
-                .filter(file -> !file.isDirectory())
-                .map(f -> new Object[]{f.getName()})
-                .toList();
+    @Test
+    public void testParsingProgram() throws IOException {
+        String path = Paths.get(getTestResourcePath("parsers/program/spirv/valid/fibonacci.spv.dis")).toString();
+        try (FileInputStream stream = new FileInputStream(path)) {
+            CharStream charStream = CharStreams.fromStream(stream);
+            ParserSpirv parser = new ParserSpirv();
+            Program program = parser.parse(charStream);
+            assertNotNull(program);
+        }
     }
 
     @Test
-    public void testParsingFile() throws IOException {
-        Program program;
-        Path path = Paths.get(getTestResourcePath(PATH + filename));
-        try (FileInputStream stream = new FileInputStream(path.toString())) {
+    public void testParsingInvalidProgram() throws IOException {
+        doTestParsingInvalidProgram("malformed-selection-merge-label.spv.dis");
+        doTestParsingInvalidProgram("malformed-selection-merge.spv.dis");
+        doTestParsingInvalidProgram("malformed-loop-merge.spv.dis");
+        doTestParsingInvalidProgram("malformed-loop-merge-true-label.spv.dis");
+    }
+
+    private void doTestParsingInvalidProgram(String file) throws IOException {
+        String path = Paths.get(getTestResourcePath("parsers/program/spirv/invalid/" + file)).toString();
+        try (FileInputStream stream = new FileInputStream(path)) {
             CharStream charStream = CharStreams.fromStream(stream);
             ParserSpirv parser = new ParserSpirv();
-            program = parser.parse(charStream);
+            try {
+                parser.parse(charStream);
+                fail("Should throw exception");
+            } catch (ParsingException e) {
+                assertEquals("Unexpected operation 'OpLogicalNot'", e.getMessage());
+            }
         }
-        assertNotNull(program);
     }
 }

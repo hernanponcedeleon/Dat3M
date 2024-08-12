@@ -1,0 +1,155 @@
+; @Input: %17 = {{0}}
+; @Input: %18 = {{0}}
+; @Input: %19 = {{0}}
+; @Input: %20 = {{0}}
+; @Input: %21 = {{0}}
+; @Output: not exists (%18[0][0] == 2 and %19[0][0] == 1 and %20[0][0] == 1 and %21[0][0] == 2)
+; @Config: 1, 1, 4
+; SPIR-V
+; Version: 1.6
+; Generator: Google Clspv; 0
+; Bound: 112
+; Schema: 0
+               OpCapability Shader
+         %88 = OpExtInstImport "NonSemantic.ClspvReflection.5"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %24 "test" %gl_WorkGroupID %13 %17 %18 %19 %20 %21 %5
+               OpSource OpenCL_C 200
+         %89 = OpString "test"
+         %90 = OpString " __kernel"
+         %93 = OpString "x"
+         %96 = OpString "r0"
+         %99 = OpString "r1"
+        %102 = OpString "r2"
+        %105 = OpString "r3"
+               OpMemberDecorate %_struct_3 0 Offset 0
+               OpDecorate %_struct_3 Block
+               OpDecorate %gl_WorkGroupID BuiltIn WorkgroupId
+               OpDecorate %gl_WorkGroupSize BuiltIn WorkgroupSize
+               OpDecorate %_runtimearr_uint ArrayStride 4
+               OpMemberDecorate %_struct_15 0 Offset 0
+               OpDecorate %_struct_15 Block
+               OpDecorate %17 DescriptorSet 0
+               OpDecorate %17 Binding 0
+               OpDecorate %18 DescriptorSet 0
+               OpDecorate %18 Binding 1
+               OpDecorate %19 DescriptorSet 0
+               OpDecorate %19 Binding 2
+               OpDecorate %20 DescriptorSet 0
+               OpDecorate %20 Binding 3
+               OpDecorate %21 DescriptorSet 0
+               OpDecorate %21 Binding 4
+               OpDecorate %8 SpecId 0
+               OpDecorate %9 SpecId 1
+               OpDecorate %10 SpecId 2
+       %uint = OpTypeInt 32 0
+     %v3uint = OpTypeVector %uint 3
+  %_struct_3 = OpTypeStruct %v3uint
+%_ptr_PushConstant__struct_3 = OpTypePointer PushConstant %_struct_3
+%_ptr_Input_v3uint = OpTypePointer Input %v3uint
+          %8 = OpSpecConstant %uint 1
+          %9 = OpSpecConstant %uint 1
+         %10 = OpSpecConstant %uint 1
+%gl_WorkGroupSize = OpSpecConstantComposite %v3uint %8 %9 %10
+%_ptr_Private_v3uint = OpTypePointer Private %v3uint
+%_runtimearr_uint = OpTypeRuntimeArray %uint
+ %_struct_15 = OpTypeStruct %_runtimearr_uint
+%_ptr_StorageBuffer__struct_15 = OpTypePointer StorageBuffer %_struct_15
+       %void = OpTypeVoid
+         %23 = OpTypeFunction %void
+%_ptr_StorageBuffer_uint = OpTypePointer StorageBuffer %uint
+     %uint_0 = OpConstant %uint 0
+%_ptr_Input_uint = OpTypePointer Input %uint
+%_ptr_PushConstant_uint = OpTypePointer PushConstant %uint
+       %bool = OpTypeBool
+     %uint_1 = OpConstant %uint 1
+    %uint_64 = OpConstant %uint 64
+     %uint_2 = OpConstant %uint 2
+     %uint_3 = OpConstant %uint 3
+     %uint_5 = OpConstant %uint 5
+     %uint_4 = OpConstant %uint 4
+    %uint_12 = OpConstant %uint 12
+          %5 = OpVariable %_ptr_PushConstant__struct_3 PushConstant
+%gl_WorkGroupID = OpVariable %_ptr_Input_v3uint Input
+         %13 = OpVariable %_ptr_Private_v3uint Private %gl_WorkGroupSize
+         %17 = OpVariable %_ptr_StorageBuffer__struct_15 StorageBuffer
+         %18 = OpVariable %_ptr_StorageBuffer__struct_15 StorageBuffer
+         %19 = OpVariable %_ptr_StorageBuffer__struct_15 StorageBuffer
+         %20 = OpVariable %_ptr_StorageBuffer__struct_15 StorageBuffer
+         %21 = OpVariable %_ptr_StorageBuffer__struct_15 StorageBuffer
+         %24 = OpFunction %void None %23
+         %25 = OpLabel
+         %28 = OpAccessChain %_ptr_StorageBuffer_uint %17 %uint_0 %uint_0
+         %29 = OpAccessChain %_ptr_StorageBuffer_uint %18 %uint_0 %uint_0
+         %30 = OpAccessChain %_ptr_StorageBuffer_uint %19 %uint_0 %uint_0
+         %31 = OpAccessChain %_ptr_StorageBuffer_uint %20 %uint_0 %uint_0
+         %32 = OpAccessChain %_ptr_StorageBuffer_uint %21 %uint_0 %uint_0
+         %34 = OpAccessChain %_ptr_Input_uint %gl_WorkGroupID %uint_0
+         %35 = OpLoad %uint %34
+         %37 = OpAccessChain %_ptr_PushConstant_uint %5 %uint_0 %uint_0
+         %38 = OpLoad %uint %37
+         %39 = OpISub %uint %uint_0 %38
+         %41 = OpIEqual %bool %35 %39
+               OpSelectionMerge %50 None
+               OpBranchConditional %41 %44 %50
+         %44 = OpLabel
+         %47 = OpAtomicLoad %uint %28 %uint_1 %uint_64
+               OpStore %29 %47
+         %48 = OpAtomicLoad %uint %28 %uint_1 %uint_64
+               OpStore %30 %48
+               OpBranch %50
+         %50 = OpLabel
+         %51 = OpAccessChain %_ptr_Input_uint %gl_WorkGroupID %uint_0
+         %52 = OpLoad %uint %51
+         %53 = OpAccessChain %_ptr_PushConstant_uint %5 %uint_0 %uint_0
+         %54 = OpLoad %uint %53
+         %55 = OpIAdd %uint %54 %52
+         %56 = OpIEqual %bool %55 %uint_1
+               OpSelectionMerge %63 None
+               OpBranchConditional %56 %59 %63
+         %59 = OpLabel
+         %60 = OpAtomicLoad %uint %28 %uint_1 %uint_64
+               OpStore %31 %60
+         %61 = OpAtomicLoad %uint %28 %uint_1 %uint_64
+               OpStore %32 %61
+               OpBranch %63
+         %63 = OpLabel
+         %64 = OpAccessChain %_ptr_Input_uint %gl_WorkGroupID %uint_0
+         %65 = OpLoad %uint %64
+         %66 = OpAccessChain %_ptr_PushConstant_uint %5 %uint_0 %uint_0
+         %67 = OpLoad %uint %66
+         %68 = OpIAdd %uint %67 %65
+         %70 = OpIEqual %bool %68 %uint_2
+               OpSelectionMerge %75 None
+               OpBranchConditional %70 %73 %75
+         %73 = OpLabel
+               OpAtomicStore %28 %uint_1 %uint_64 %uint_2
+               OpBranch %75
+         %75 = OpLabel
+         %76 = OpAccessChain %_ptr_Input_uint %gl_WorkGroupID %uint_0
+         %77 = OpLoad %uint %76
+         %78 = OpAccessChain %_ptr_PushConstant_uint %5 %uint_0 %uint_0
+         %79 = OpLoad %uint %78
+         %80 = OpIAdd %uint %79 %77
+         %82 = OpIEqual %bool %80 %uint_3
+               OpSelectionMerge %87 None
+               OpBranchConditional %82 %85 %87
+         %85 = OpLabel
+               OpAtomicStore %28 %uint_1 %uint_64 %uint_1
+               OpBranch %87
+         %87 = OpLabel
+               OpReturn
+               OpFunctionEnd
+        %110 = OpExtInst %void %88 PushConstantRegionGroupOffset %uint_0 %uint_12
+         %92 = OpExtInst %void %88 Kernel %24 %89 %uint_5 %uint_0 %90
+         %94 = OpExtInst %void %88 ArgumentInfo %93
+         %95 = OpExtInst %void %88 ArgumentStorageBuffer %92 %uint_0 %uint_0 %uint_0 %94
+         %97 = OpExtInst %void %88 ArgumentInfo %96
+         %98 = OpExtInst %void %88 ArgumentStorageBuffer %92 %uint_1 %uint_0 %uint_1 %97
+        %100 = OpExtInst %void %88 ArgumentInfo %99
+        %101 = OpExtInst %void %88 ArgumentStorageBuffer %92 %uint_2 %uint_0 %uint_2 %100
+        %103 = OpExtInst %void %88 ArgumentInfo %102
+        %104 = OpExtInst %void %88 ArgumentStorageBuffer %92 %uint_3 %uint_0 %uint_3 %103
+        %106 = OpExtInst %void %88 ArgumentInfo %105
+        %108 = OpExtInst %void %88 ArgumentStorageBuffer %92 %uint_4 %uint_0 %uint_4 %106
+        %111 = OpExtInst %void %88 SpecConstantWorkgroupSize %uint_0 %uint_1 %uint_2

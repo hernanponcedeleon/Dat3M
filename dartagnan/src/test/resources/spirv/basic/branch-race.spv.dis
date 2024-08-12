@@ -1,0 +1,37 @@
+; @Input:  %out = 0
+; @Output: forall (%out==11 or %out==22)
+; @Config: 2, 1, 1
+; SPIR-V
+; Version: 1.0
+; Schema: 0
+               OpCapability Shader
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %main "main" %ids
+               OpSource GLSL 450
+               OpDecorate %ids BuiltIn GlobalInvocationId
+       %void = OpTypeVoid
+       %bool = OpTypeBool
+       %func = OpTypeFunction %void
+       %uint = OpTypeInt 32 0
+     %v3uint = OpTypeVector %uint 3
+   %ptr_uint = OpTypePointer Output %uint
+ %ptr_v3uint = OpTypePointer Input %v3uint
+         %c0 = OpConstant %uint 0
+        %c11 = OpConstant %uint 11
+        %c22 = OpConstant %uint 22
+        %ids = OpVariable %ptr_v3uint Input
+        %out = OpVariable %ptr_uint Output
+       %main = OpFunction %void None %func
+      %label = OpLabel
+     %id_ptr = OpAccessChain %ptr_uint %ids %c0
+         %id = OpLoad %uint %id_ptr
+       %cond = OpUGreaterThan %bool %id %c0
+               OpSelectionMerge %l_false None
+               OpBranchConditional %cond %l_true %l_false
+     %l_true = OpLabel
+               OpStore %out %c22
+               OpReturn
+    %l_false = OpLabel
+               OpStore %out %c11
+               OpReturn
+               OpFunctionEnd

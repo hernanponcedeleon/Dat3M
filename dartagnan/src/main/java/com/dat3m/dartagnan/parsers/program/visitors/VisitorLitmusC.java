@@ -5,6 +5,7 @@ import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.integers.IntLiteral;
 import com.dat3m.dartagnan.expression.type.IntegerType;
+import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.parsers.LitmusCBaseVisitor;
 import com.dat3m.dartagnan.parsers.LitmusCParser;
 import com.dat3m.dartagnan.parsers.program.utils.ProgramBuilder;
@@ -28,6 +29,7 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
     private final ProgramBuilder programBuilder = ProgramBuilder.forLanguage(Program.SourceLanguage.LITMUS);
     private final ExpressionFactory expressions = programBuilder.getExpressionFactory();
     private final IntegerType archType = programBuilder.getTypeFactory().getArchType();
+    private final int archSize = TypeFactory.getInstance().getMemorySizeInBytes(archType);
     private int currentThread;
     private int scope;
     private int ifId = 0;
@@ -76,7 +78,7 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
 
     @Override
     public Object visitGlobalDeclaratorLocationLocation(LitmusCParser.GlobalDeclaratorLocationLocationContext ctx) {
-        if(ctx.Ast() == null){
+        if(ctx.Ast() == null) {
             programBuilder.initLocEqLocPtr(ctx.varName(0).getText(), ctx.varName(1).getText());
         } else {
             String rightName = ctx.varName(1).getText();
@@ -135,7 +137,7 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
                         }
                     }
                 }
-                MemoryObject object = programBuilder.newMemoryObject(name,values.size());
+                MemoryObject object = programBuilder.newMemoryObject(name,values.size() * archSize);
                 for(int i = 0; i < values.size(); i++) {
                     object.setInitialValue(i,values.get(i));
                 }
@@ -532,7 +534,7 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
             }
             return programBuilder.getOrNewRegister(scope, ctx.getText(), archType);
         }
-        MemoryObject object = programBuilder.newMemoryObject(ctx.getText(), 1);
+        MemoryObject object = programBuilder.newMemoryObject(ctx.getText(), archSize);
         Register register = programBuilder.getOrNewRegister(scope, null, archType);
         programBuilder.addChild(currentThread, EventFactory.newLoadWithMo(register, object, C11.NONATOMIC));
         return register;

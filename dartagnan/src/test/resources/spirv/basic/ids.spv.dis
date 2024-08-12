@@ -1,0 +1,57 @@
+; @Output: forall (%out[0]==0 and %out[1]==0 and %out[2]==0)
+; @Output: forall (%out[3]==1 and %out[4]==0 and %out[5]==0)
+; @Output: forall (%out[6]==0 and %out[7]==1 and %out[8]==0)
+; @Output: forall (%out[9]==1 and %out[10]==1 and %out[11]==0)
+; @Output: forall (%out[12]==0 and %out[13]==0 and %out[14]==1)
+; @Output: forall (%out[15]==1 and %out[16]==0 and %out[17]==1)
+; @Output: forall (%out[18]==0 and %out[19]==1 and %out[20]==1)
+; @Output: forall (%out[21]==1 and %out[22]==1 and %out[23]==1)
+; @Config: 2, 2, 2
+; SPIR-V
+; Version: 1.0
+; Schema: 0
+               OpCapability Shader
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %main "main"
+               OpSource GLSL 450
+               OpDecorate %x_scalar BuiltIn SubgroupLocalInvocationId
+               OpDecorate %y_scalar BuiltIn SubgroupId
+               OpDecorate %z_arr BuiltIn WorkgroupId
+       %void = OpTypeVoid
+       %func = OpTypeFunction %void
+       %uint = OpTypeInt 32 0
+     %v3uint = OpTypeVector %uint 3
+    %v24uint = OpTypeVector %uint 24
+   %ptr_uint = OpTypePointer Input %uint
+ %ptr_v3uint = OpTypePointer Input %v3uint
+%ptr_v24uint = OpTypePointer Output %v24uint
+         %c0 = OpConstant %uint 0
+         %c1 = OpConstant %uint 1
+         %c2 = OpConstant %uint 2
+         %c3 = OpConstant %uint 3
+         %c4 = OpConstant %uint 4
+   %x_scalar = OpVariable %ptr_uint Input
+   %y_scalar = OpVariable %ptr_uint Input
+      %z_arr = OpVariable %ptr_v3uint Input
+        %out = OpVariable %ptr_v24uint Output
+       %main = OpFunction %void None %func
+      %label = OpLabel
+      %x_val = OpLoad %uint %x_scalar
+      %y_val = OpLoad %uint %y_scalar
+      %z_ptr = OpAccessChain %ptr_uint %z_arr %c0
+      %z_val = OpLoad %uint %z_ptr
+          %1 = OpIMul %uint %z_val %c4
+          %2 = OpIMul %uint %y_val %c2
+          %3 = OpIAdd %uint %1 %2
+          %4 = OpIAdd %uint %3 %x_val
+      %idx_x = OpIMul %uint %4 %c3
+      %idx_y = OpIAdd %uint %idx_x %c1
+      %idx_z = OpIAdd %uint %idx_x %c2
+  %ptr_out_x = OpAccessChain %ptr_uint %out %idx_x
+  %ptr_out_y = OpAccessChain %ptr_uint %out %idx_y
+  %ptr_out_z = OpAccessChain %ptr_uint %out %idx_z
+               OpStore %ptr_out_x %x_val
+               OpStore %ptr_out_y %y_val
+               OpStore %ptr_out_z %z_val
+               OpReturn
+               OpFunctionEnd

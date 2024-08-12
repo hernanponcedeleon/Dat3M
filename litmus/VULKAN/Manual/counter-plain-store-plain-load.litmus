@@ -1,0 +1,13 @@
+Vulkan counter-plain-store-plain-load
+"Adapted from https://github.com/mc-imperial/gpuverify/blob/master/testsuite/OpenCL/atomics/counter/kernel.cl"
+{
+P0:r0 = 0;
+P1:r0 = 0;
+x=0;
+}
+ P0@sg 0, wg 0, qf 0      | P1@sg 1, wg 0, qf 0      ;
+ st.av.dv.sc0 x, 1        | cbar.acq_rel.dv.semsc0 0 ;
+ cbar.acq_rel.dv.semsc0 0 | ld.vis.dv.sc0 r0, x      ;
+ ld.vis.dv.sc0 r0, x      |                          ;
+forall
+(P0:r0 == 1 /\ P1:r0 == 1)
