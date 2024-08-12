@@ -18,6 +18,7 @@ local.properties
 .loadpath
 .recommenders
 .vscode/launch.json
+.vscode/
 
 ######################
 # OS generated files #

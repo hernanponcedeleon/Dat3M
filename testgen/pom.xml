@@ -7,7 +7,7 @@
         <artifactId>dat3m</artifactId>
         <version>4.1.0</version>
     </parent>
-    <artifactId>svcomp</artifactId>
+    <artifactId>testgen</artifactId>
     <packaging>jar</packaging>
 
     <dependencies>
@@ -35,7 +35,7 @@
                         <manifest>
                             <addClasspath>true</addClasspath>
                             <classpathPrefix>${dat3m.library.path}</classpathPrefix>
-                            <mainClass>com.dat3m.svcomp.SVCOMPRunner</mainClass>
+                            <mainClass>com.dat3m.testgen.TestgenDriver</mainClass>
                         </manifest>
                     </archive>
                 </configuration>

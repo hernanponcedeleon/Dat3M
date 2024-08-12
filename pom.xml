@@ -59,6 +59,7 @@
         <module>dartagnan</module>
         <module>ui</module>
         <module>svcomp</module>
+        <module>testgen</module>
     </modules>
 
     <build>
