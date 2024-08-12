@@ -1,5 +1,7 @@
 package com.dat3m.testgen.util;
 
+import com.dat3m.testgen.program_gen.SMTEvent;
+
 /**
  * Represents relations between events.
  * 
@@ -18,9 +20,9 @@ public class Relation {
         rf_inv
     };
 
-    public Event event_L;
+    public SMTEvent event_L;
     public relation_t type;
-    public Event event_R;
+    public SMTEvent event_R;
 
     /**
      * Constructor for Relation class.
@@ -31,9 +33,9 @@ public class Relation {
      * @throws Exception
      */
     public Relation(
-        Event r_event_L,
+        SMTEvent r_event_L,
         relation_t r_type,
-        Event r_event_R
+        SMTEvent r_event_R
     ) throws Exception {
         if( r_event_L == null || r_event_R == null ) throw new Exception( "Events in relation cannot be null" );
         if( r_type == relation_t.undefined ) throw new Exception( "Relation type cannot be undefined" );

@@ -17,7 +17,6 @@ import org.sosy_lab.java_smt.api.SolverContext;
 import org.sosy_lab.java_smt.api.SolverContext.ProverOptions;
 
 import com.dat3m.testgen.util.Cycle;
-import com.dat3m.testgen.util.Event;
 import com.dat3m.testgen.util.Relation;
 import com.dat3m.testgen.util.UnionFindDisjointSet;
 
@@ -102,7 +101,7 @@ public class SMTProgramGenerator {
     void initialize(
         StringBuilder sb
     ) throws Exception {
-        for( Event event : cycle.events ) {
+        for( SMTEvent event : cycle.events ) {
             event.type       = int_mngr.makeVariable( event.name( "type"       ) );
             event.location   = int_mngr.makeVariable( event.name( "location"   ) );
             event.value      = int_mngr.makeVariable( event.name( "value"      ) );
@@ -204,7 +203,7 @@ public class SMTProgramGenerator {
     void finalize(
         StringBuilder sb
     ) throws Exception {
-        for( final Event event : cycle.events ) {
+        for( final SMTEvent event : cycle.events ) {
             if( thread_ufds.is_leader( event.id ) ) {
                 /* Events that don't have to be in the same thread, won't be in the same thread */
                 // for( final Event t_event : cycle.events ) {
@@ -220,16 +219,16 @@ public class SMTProgramGenerator {
             }
             if( memory_ufds.is_leader( event.id ) ) {
                 /* Events that don't have to access the same memory location, won't access the same memory location */
-                for( final Event t_event : cycle.events ) {
+                for( final SMTEvent t_event : cycle.events ) {
                     if( memory_ufds.are_same_set( event.id, t_event.id ) || !memory_ufds.is_leader( t_event.id ) )
                         continue;
                     prover.addConstraint( bool_mngr.not( int_mngr.equal( event.location , t_event.location ) ) );
                 }
                 /* All writes to one memory location will have distinct values */
-                for( final Event event_1 : cycle.events ) {
+                for( final SMTEvent event_1 : cycle.events ) {
                     if( !memory_ufds.are_same_set( event.id, event_1.id ) )
                         continue;
-                    for( final Event event_2 : cycle.events ) {
+                    for( final SMTEvent event_2 : cycle.events ) {
                         if( !memory_ufds.are_same_set( event.id, event_2.id ) || event_1.id == event_2.id )
                             continue;
                         prover.addConstraint(
@@ -248,7 +247,7 @@ public class SMTProgramGenerator {
                 }
             }
             /* Handle equivalence between events */
-            for( final Event t_event : cycle.events ) {
+            for( final SMTEvent t_event : cycle.events ) {
                 if( event.id == t_event.id )
                     continue;
                 prover.addConstraint(
@@ -279,7 +278,7 @@ public class SMTProgramGenerator {
         boolean isUnsat = prover.isUnsat();
         if( !isUnsat ) {
             Model model = prover.getModel();
-            for( final Event event : cycle.events ) {
+            for( final SMTEvent event : cycle.events ) {
                 BigInteger val_type = model.evaluate( event.type );
                 BigInteger val_location = model.evaluate( event.location );
                 BigInteger val_value = model.evaluate( event.value );

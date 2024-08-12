@@ -3,6 +3,8 @@ package com.dat3m.testgen.util;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.dat3m.testgen.program_gen.SMTEvent;
+
 /**
  * Represents a list of events and the relations between them.
  * 
@@ -13,7 +15,7 @@ import java.util.List;
 public class Cycle {
     
     public final int cycle_size;
-    public List <Event> events;
+    public List <SMTEvent> events;
     public List <Relation> relations;
 
     /**
@@ -30,7 +32,7 @@ public class Cycle {
         events = new ArrayList<>();
         relations = new ArrayList<>();
         for( int i = 0 ; i < this.cycle_size ; i++ ) {
-            this.events.add( new Event( i ) );
+            this.events.add( new SMTEvent( i ) );
         }
     }
 
@@ -58,7 +60,7 @@ public class Cycle {
     public String toString() {
         StringBuilder sb = new StringBuilder();
         sb.append( "Cycle Events:\n" );
-        for( final Event e : events )
+        for( final SMTEvent e : events )
             sb.append( "\t" + e + '\n' );
         sb.append( "Cycle Relations:\n" );
         for( final Relation r : relations )
