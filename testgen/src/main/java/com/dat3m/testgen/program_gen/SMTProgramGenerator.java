@@ -77,9 +77,9 @@ public class SMTProgramGenerator {
     }
 
     /**
-     * Generate and return of a program that follows the cycle description.
+     * Generate and return a program that follows the cycle description.
      * 
-     * @return Text description of program.
+     * @return Text description of the program.
      * @throws Exception
      */
     public String generate_program()
@@ -94,6 +94,7 @@ public class SMTProgramGenerator {
 
     /**
      * Initialize SMT variables.
+     * All values are integers in the range [0, cycle_size)
      * 
      * @param sb StringBuilder for output.
      * @throws Exception
@@ -102,17 +103,26 @@ public class SMTProgramGenerator {
         StringBuilder sb
     ) throws Exception {
         for( Event event : cycle.events ) {
-            event.type = int_mngr.makeVariable( event.name( "type" ) );
-            event.location = int_mngr.makeVariable( event.name( "location" ) );
-            event.value = int_mngr.makeVariable( event.name( "value" ) );
-            event.thread_id = int_mngr.makeVariable( event.name( "thread_id" ) );
+            event.type       = int_mngr.makeVariable( event.name( "type"       ) );
+            event.location   = int_mngr.makeVariable( event.name( "location"   ) );
+            event.value      = int_mngr.makeVariable( event.name( "value"      ) );
+            event.thread_id  = int_mngr.makeVariable( event.name( "thread_id"  ) );
             event.thread_row = int_mngr.makeVariable( event.name( "thread_row" ) );
+            event.event_id   = int_mngr.makeVariable( event.name( "event_id"   ) );
 
-            String attribute_names[] = new String[]{ "type", "location", "value", "thread_id", "thread_row" };
-            IntegerFormula attribute_formulas[] = new IntegerFormula[]{ event.type, event.location, event.value, event.thread_id, event.thread_row };
+            String attribute_names[] = new String[]{
+                "type", "location", "value", "thread_id", "thread_row", "event_id"
+            };
+            IntegerFormula attribute_formulas[] = new IntegerFormula[]{
+                event.type, event.location, event.value, event.thread_id, event.thread_row, event.event_id
+            };
             for( int i = 0 ; i < attribute_names.length ; i++ ){
-                prover.addConstraint( int_mngr.greaterOrEquals( attribute_formulas[i], int_mngr.makeNumber( 0 ) ) );
-                prover.addConstraint( int_mngr.lessThan( attribute_formulas[i], int_mngr.makeNumber( cycle.cycle_size ) ) );
+                prover.addConstraint(
+                    int_mngr.greaterOrEquals( attribute_formulas[i], int_mngr.makeNumber(0) )
+                );
+                prover.addConstraint(
+                    int_mngr.lessThan( attribute_formulas[i], int_mngr.makeNumber( cycle.cycle_size ) )
+                );
             }
         }
     }
@@ -131,30 +141,51 @@ public class SMTProgramGenerator {
             switch( relation.type ) {
                 case po:
                     thread_ufds.merge( relation.event_L.id, relation.event_R.id );
+                    /* L.event_id != R.event_id */
+                    prover.addConstraint( bool_mngr.not( int_mngr.equal( relation.event_L.event_id, relation.event_R.event_id ) ) );
+                    /* L.thread_id == R.thread_id */
                     prover.addConstraint( int_mngr.equal( relation.event_L.thread_id , relation.event_R.thread_id ) );
+                    /* L.thread_row < R.thread_row */
                     prover.addConstraint( int_mngr.lessThan( relation.event_L.thread_row , relation.event_R.thread_row ) );
                     break;
 
                 case rf:
                     memory_ufds.merge( relation.event_L.id, relation.event_R.id );
+                    /* L.event_id != R.event_id */
+                    prover.addConstraint( bool_mngr.not( int_mngr.equal( relation.event_L.event_id, relation.event_R.event_id ) ) );
+                    /* L.type == W */
                     prover.addConstraint( int_mngr.equal( relation.event_L.type, int_mngr.makeNumber( WRITE_INSTRUCTION ) ) );
+                    /* R.type == R */
                     prover.addConstraint( int_mngr.equal( relation.event_R.type, int_mngr.makeNumber( READ_INSTRUCTION ) ) );
+                    /* L.location == R.location */
                     prover.addConstraint( int_mngr.equal( relation.event_L.location, relation.event_R.location ) );
+                    /* L.value == R.value */
                     prover.addConstraint( int_mngr.equal( relation.event_L.value, relation.event_R.value ) );
                     break;
 
                 case co:
                     memory_ufds.merge( relation.event_L.id, relation.event_R.id );
+                    /* L.event_id != R.event_id */
+                    prover.addConstraint( bool_mngr.not( int_mngr.equal( relation.event_L.event_id, relation.event_R.event_id ) ) );
+                    /* L.type == W */
                     prover.addConstraint( int_mngr.equal( relation.event_L.type, int_mngr.makeNumber( WRITE_INSTRUCTION ) ) );
+                    /* R.type == W */
                     prover.addConstraint( int_mngr.equal( relation.event_R.type, int_mngr.makeNumber( WRITE_INSTRUCTION ) ) );
+                    /* L.location == R.location */
                     prover.addConstraint( int_mngr.equal( relation.event_L.location, relation.event_R.location ) );
                     break;
                     
                 case rf_inv:
                     memory_ufds.merge( relation.event_L.id, relation.event_R.id );
+                    /* L.event_id != R.event_id */
+                    prover.addConstraint( bool_mngr.not( int_mngr.equal( relation.event_L.event_id, relation.event_R.event_id ) ) );
+                    /* L.type == R */
                     prover.addConstraint( int_mngr.equal( relation.event_L.type, int_mngr.makeNumber( READ_INSTRUCTION ) ) );
+                    /* R.type == W */
                     prover.addConstraint( int_mngr.equal( relation.event_R.type, int_mngr.makeNumber( WRITE_INSTRUCTION ) ) );
+                    /* L.location == R.location */
                     prover.addConstraint( int_mngr.equal( relation.event_L.location, relation.event_R.location ) );
+                    /* L.value == R.value */
                     prover.addConstraint( int_mngr.equal( relation.event_L.value, relation.event_R.value ) );
                     break;
 
@@ -174,31 +205,27 @@ public class SMTProgramGenerator {
         StringBuilder sb
     ) throws Exception {
         for( final Event event : cycle.events ) {
-            if( thread_ufds.find_set( event.id ) == event.id ) {
+            if( thread_ufds.is_leader( event.id ) ) {
                 /* Events that don't have to be in the same thread, won't be in the same thread */
-                for( final Event t_event : cycle.events ) {
-                    if( thread_ufds.are_same_set( event.id, t_event.id ) )
-                        continue;
-                    if( thread_ufds.find_set( t_event.id ) != t_event.id )
-                        continue;
-                    prover.addConstraint( bool_mngr.not( int_mngr.equal( event.thread_id , t_event.thread_id ) ) );
-                }
+                // for( final Event t_event : cycle.events ) {
+                //     if( thread_ufds.are_same_set( event.id, t_event.id ) || !thread_ufds.is_leader( t_event.id ) )
+                //         continue;
+                //     prover.addConstraint( bool_mngr.not( int_mngr.equal( event.thread_id , t_event.thread_id ) ) );
+                // }
             }
-            if( memory_ufds.find_set( event.id ) == event.id ) {
+            if( memory_ufds.is_leader( event.id ) ) {
                 /* Events that don't have to access the same memory location, won't access the same memory location */
                 for( final Event t_event : cycle.events ) {
-                    if( memory_ufds.are_same_set( event.id, t_event.id ) )
-                        continue;
-                    if( memory_ufds.find_set( t_event.id ) != t_event.id )
+                    if( memory_ufds.are_same_set( event.id, t_event.id ) || !memory_ufds.is_leader( t_event.id ) )
                         continue;
                     prover.addConstraint( bool_mngr.not( int_mngr.equal( event.location , t_event.location ) ) );
                 }
-                /* All writes to a memory location will be with a distinct value */
+                /* All writes to one memory location will have distinct values */
                 for( final Event event_1 : cycle.events ) {
                     if( !memory_ufds.are_same_set( event.id, event_1.id ) )
                         continue;
                     for( final Event event_2 : cycle.events ) {
-                        if( !memory_ufds.are_same_set( event.id, event_2.id ) || event_1 == event_2 )
+                        if( !memory_ufds.are_same_set( event.id, event_2.id ) || event_1.id == event_2.id )
                             continue;
                         prover.addConstraint(
                             bool_mngr.implication(
@@ -206,11 +233,31 @@ public class SMTProgramGenerator {
                                     int_mngr.equal( event_1.type, int_mngr.makeNumber( WRITE_INSTRUCTION ) ),
                                     int_mngr.equal( event_2.type, int_mngr.makeNumber( WRITE_INSTRUCTION ) )
                                 ),
-                                bool_mngr.not( int_mngr.equal( event_1.value , event_2.value ) )
+                                bool_mngr.or(
+                                    int_mngr.equal( event_1.event_id, event_2.event_id ),
+                                    bool_mngr.not( int_mngr.equal( event_1.value , event_2.value ) )
+                                )
                             )
                         );
                     }
                 }
+            }
+            /* Handle equivalence between events */
+            for( final Event t_event : cycle.events ) {
+                if( event.id == t_event.id )
+                    continue;
+                prover.addConstraint(
+                    bool_mngr.implication(
+                        int_mngr.equal( event.event_id, t_event.event_id ),
+                        bool_mngr.and( bool_mngr.and(
+                            int_mngr.equal( event.type ,      t_event.type ),
+                            int_mngr.equal( event.location,   t_event.location ) ), bool_mngr.and( bool_mngr.and(
+                            int_mngr.equal( event.thread_id,  t_event.thread_id ),
+                            int_mngr.equal( event.thread_row, t_event.thread_row ) ),
+                            int_mngr.equal( event.value,      t_event.value ) )
+                        )
+                    )
+                );
             }
         }
     }
@@ -233,8 +280,9 @@ public class SMTProgramGenerator {
                 BigInteger val_value = model.evaluate( event.value );
                 BigInteger val_thread_id = model.evaluate( event.thread_id );
                 BigInteger val_thread_row = model.evaluate( event.thread_row );
+                BigInteger val_event_id = model.evaluate( event.event_id );
                 sb.append(
-                    "\n" + event + ": " +
+                    "\n[Event_id: " + val_event_id + "]: " +
                     "\n\ttype: " + ( val_type.equals( BigInteger.ONE ) ? "READ" : ( val_type.equals( BigInteger.TWO ) ? "WRITE" : "undefined" ) ) +
                     "\n\tlocation: " + val_location +
                     "\n\tvalue: " + val_value +
