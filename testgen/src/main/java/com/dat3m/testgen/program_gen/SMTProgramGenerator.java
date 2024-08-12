@@ -134,7 +134,6 @@ public class SMTProgramGenerator {
         StringBuilder sb
     ) throws Exception {
         for( final SMTRelation relation : cycle.relations ) {
-            sb.append( relation + "\n" );
             switch( relation.type ) {
                 case po:
                     thread_ufds.merge( relation.event_L.id, relation.event_R.id );
@@ -204,7 +203,7 @@ public class SMTProgramGenerator {
         for( final SMTEvent event : cycle.events ) {
             if( thread_ufds.is_leader( event.id ) ) {
                 /* Events that don't have to be in the same thread, won't be in the same thread */
-                // for( final Event t_event : cycle.events ) {
+                // for( final SMTEvent t_event : cycle.events ) {
                 //     if( thread_ufds.are_same_set( event.id, t_event.id ) || !thread_ufds.is_leader( t_event.id ) )
                 //         continue;
                 //     prover.addConstraint( 
@@ -284,16 +283,16 @@ public class SMTProgramGenerator {
                 BigInteger val_thread_row = model.evaluate( event.thread_row );
                 BigInteger val_event_id = model.evaluate( event.event_id );
                 sb.append(
-                    "\n[Event_id: " + val_event_id + "]: " +
-                    "\n\ttype: " + ( val_type.equals( BigInteger.ONE ) ? "READ" : ( val_type.equals( BigInteger.TWO ) ? "WRITE" : "undefined" ) ) +
-                    "\n\tlocation: " + val_location +
-                    "\n\tvalue: " + val_value +
-                    "\n\tthread_id: " + val_thread_id +
-                    "\n\tthread_row:" + val_thread_row + "\n"
+                    val_event_id.toString() + "," +
+                    val_type.toString() + "," +
+                    val_location.toString() + "," +
+                    val_value.toString() + "," +
+                    val_thread_id.toString() + "," +
+                    val_thread_row.toString() + "\n"
                 );
             }
         } else {
-            sb.append( "Program cannot exist!\n" );
+            sb.append( "Program cannot exist!" );
         }
     }
 
