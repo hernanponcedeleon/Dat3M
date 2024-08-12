@@ -210,7 +210,12 @@ public class SMTProgramGenerator {
                 // for( final Event t_event : cycle.events ) {
                 //     if( thread_ufds.are_same_set( event.id, t_event.id ) || !thread_ufds.is_leader( t_event.id ) )
                 //         continue;
-                //     prover.addConstraint( bool_mngr.not( int_mngr.equal( event.thread_id , t_event.thread_id ) ) );
+                //     prover.addConstraint( 
+                //         bool_mngr.or(
+                //             bool_mngr.not( int_mngr.equal( event.thread_id, t_event.thread_id ) ),
+                //             int_mngr.equal( event.event_id, t_event.event_id )
+                //         )
+                //     );
                 // }
             }
             if( memory_ufds.is_leader( event.id ) ) {
