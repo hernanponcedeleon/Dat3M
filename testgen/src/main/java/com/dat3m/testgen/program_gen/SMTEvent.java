@@ -1,4 +1,4 @@
-package com.dat3m.testgen.util;
+package com.dat3m.testgen.program_gen;
 
 import org.sosy_lab.java_smt.api.NumeralFormula.IntegerFormula;
 
@@ -14,7 +14,7 @@ import org.sosy_lab.java_smt.api.NumeralFormula.IntegerFormula;
  * @param thread_row SMT integer for which row in the thread this event belongs to.
  * @param event_id ID of the 'real' event this SMT object is referencing.
  */
-public class Event {
+public class SMTEvent {
 
     public enum event_operation_t {
         undefined,
@@ -36,7 +36,7 @@ public class Event {
      * @param r_id Unique identifier for this event reference.
      * @throws Exception
      */
-    public Event(
+    public SMTEvent(
         final int r_id
     ) throws Exception {
         if( r_id < 0 ) throw new Exception( "Event id has to be non-negative." );
