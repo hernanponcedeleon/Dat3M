@@ -6,9 +6,9 @@ import java.util.Set;
 import java.util.TreeSet;
 
 import com.dat3m.testgen.cycle_gen.CNF;
+import com.dat3m.testgen.program_gen.SMTCycle;
 import com.dat3m.testgen.program_gen.SMTProgramGenerator;
-import com.dat3m.testgen.util.Cycle;
-import com.dat3m.testgen.util.Relation;
+import com.dat3m.testgen.program_gen.SMTRelation;
 
 public class TestgenDriver {
 
@@ -22,7 +22,7 @@ public class TestgenDriver {
 
     static void example_program_generation()
     throws Exception {
-        Cycle cycle = new Cycle( 10 );;
+        SMTCycle cycle = new SMTCycle( 10 );;
 
         /*
         cycle.create_relation( 0, Relation.relation_t.po, 1 );
@@ -37,11 +37,11 @@ public class TestgenDriver {
         cycle.create_relation( 3, Relation.relation_t.co, 0 ); // */
 
         // /*
-        cycle.create_relation( 0, Relation.relation_t.co, 1 );
-        cycle.create_relation( 1, Relation.relation_t.po, 2 );
-        cycle.create_relation( 2, Relation.relation_t.rf, 3 );
-        cycle.create_relation( 3, Relation.relation_t.rf_inv, 4 );
-        cycle.create_relation( 4, Relation.relation_t.co, 0 ); // */
+        cycle.create_relation( 0, SMTRelation.relation_t.co, 1 );
+        cycle.create_relation( 1, SMTRelation.relation_t.po, 2 );
+        cycle.create_relation( 2, SMTRelation.relation_t.rf, 3 );
+        cycle.create_relation( 3, SMTRelation.relation_t.rf_inv, 4 );
+        cycle.create_relation( 4, SMTRelation.relation_t.co, 0 ); // */
 
         /*
         cycle.create_relation( 0, Relation.relation_t.po, 1 );

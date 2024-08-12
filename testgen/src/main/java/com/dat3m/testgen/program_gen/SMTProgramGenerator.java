@@ -16,8 +16,6 @@ import org.sosy_lab.java_smt.api.ProverEnvironment;
 import org.sosy_lab.java_smt.api.SolverContext;
 import org.sosy_lab.java_smt.api.SolverContext.ProverOptions;
 
-import com.dat3m.testgen.util.Cycle;
-import com.dat3m.testgen.util.Relation;
 import com.dat3m.testgen.util.UnionFindDisjointSet;
 
 /**
@@ -29,7 +27,7 @@ import com.dat3m.testgen.util.UnionFindDisjointSet;
  */
 public class SMTProgramGenerator {
 
-    Cycle cycle;
+    SMTCycle cycle;
     UnionFindDisjointSet thread_ufds;
     UnionFindDisjointSet memory_ufds;
 
@@ -51,7 +49,7 @@ public class SMTProgramGenerator {
      * @throws Exception
      */
     public SMTProgramGenerator(
-        final Cycle r_cycle
+        final SMTCycle r_cycle
     ) throws Exception {
         if( r_cycle == null )
             throw new Exception( "Cycle object is not allowed to be null." );
@@ -135,7 +133,7 @@ public class SMTProgramGenerator {
     void process_relations(
         StringBuilder sb
     ) throws Exception {
-        for( final Relation relation : cycle.relations ) {
+        for( final SMTRelation relation : cycle.relations ) {
             sb.append( relation + "\n" );
             switch( relation.type ) {
                 case po:

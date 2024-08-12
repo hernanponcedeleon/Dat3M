@@ -1,6 +1,4 @@
-package com.dat3m.testgen.util;
-
-import com.dat3m.testgen.program_gen.SMTEvent;
+package com.dat3m.testgen.program_gen;
 
 /**
  * Represents relations between events.
@@ -10,7 +8,7 @@ import com.dat3m.testgen.program_gen.SMTEvent;
  * @param type Type of relation.
  * @param event_R Right event involved in relation.
  */
-public class Relation {
+public class SMTRelation {
 
     public enum relation_t {
         undefined,
@@ -32,7 +30,7 @@ public class Relation {
      * @param r_event_R Right event involved in relation.
      * @throws Exception
      */
-    public Relation(
+    public SMTRelation(
         SMTEvent r_event_L,
         relation_t r_type,
         SMTEvent r_event_R
