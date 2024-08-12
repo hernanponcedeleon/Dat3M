@@ -49,9 +49,10 @@ public class SMTProgramGenerator {
     public SMTProgramGenerator(
         final Cycle r_cycle
     ) throws Exception {
-        if( r_cycle == null ) throw new Exception( "Cycle object is not allowed to be null." );
+        if( r_cycle == null )
+            throw new Exception( "Cycle object is not allowed to be null." );
+        
         cycle = r_cycle;
-
         config = Configuration.defaultConfiguration();
         logger = LogManager.createNullLogManager();
         shutdown = ShutdownNotifier.createDummy();
