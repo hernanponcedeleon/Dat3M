@@ -1,0 +1,21 @@
+; @Input: %v1=7, %v2=123
+; @Output: not exists (%v1==7 and %v2==123 and %v3==0)
+; @Config: 1, 1, 1
+; SPIR-V
+; Version: 1.0
+; Schema: 0
+               OpCapability Shader
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %main "main"
+               OpSource GLSL 450
+       %void = OpTypeVoid
+       %uint = OpTypeInt 64 0
+   %ptr_uint = OpTypePointer Uniform %uint
+       %func = OpTypeFunction %void
+         %v1 = OpVariable %ptr_uint Uniform
+         %v2 = OpVariable %ptr_uint Uniform
+         %v3 = OpVariable %ptr_uint Uniform
+       %main = OpFunction %void None %func
+      %label = OpLabel
+               OpReturn
+               OpFunctionEnd

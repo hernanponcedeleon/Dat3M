@@ -44,6 +44,12 @@ public final class TypeFactory {
         return typeNormalizer.normalize(new IntegerType(bitWidth));
     }
 
+    public ScopedPointerType getScopedPointerType(String scopeId, Type pointedType) {
+        checkNotNull(scopeId);
+        checkNotNull(pointedType);
+        return typeNormalizer.normalize(new ScopedPointerType(scopeId, pointedType));
+    }
+
     public FloatType getFloatType(int mantissaBits, int exponentBits) {
         checkArgument(mantissaBits > 0 && exponentBits > 0,
                 "Cannot construct floating-point type with mantissa %s and exponent %s",
@@ -131,5 +137,53 @@ public final class TypeFactory {
         }
 
         return decomposition;
+    }
+
+    public static boolean isStaticType(Type type) {
+        if (type instanceof BooleanType || type instanceof IntegerType || type instanceof FloatType) {
+            return true;
+        }
+        if (type instanceof ArrayType aType) {
+            return aType.hasKnownNumElements() && isStaticType(aType.getElementType());
+        }
+        if (type instanceof AggregateType aType) {
+            for (Type elType : aType.getDirectFields()) {
+                if (!isStaticType(elType)) {
+                    return false;
+                }
+            }
+            return true;
+        }
+        throw new UnsupportedOperationException("Cannot compute if type '" + type + "' is static");
+    }
+
+    public static boolean isStaticTypeOf(Type staticType, Type runtimeType) {
+        if (staticType.equals(runtimeType)) {
+            return true;
+        }
+        if (staticType instanceof AggregateType aStaticType && runtimeType instanceof AggregateType aRuntimeType) {
+            int size = aStaticType.getDirectFields().size();
+            if (size != aRuntimeType.getDirectFields().size()) {
+                return false;
+            }
+            for (int i = 0; i < size; i++) {
+                if (!isStaticTypeOf(aStaticType.getDirectFields().get(i), aRuntimeType.getDirectFields().get(i))) {
+                    return false;
+                }
+            }
+            return true;
+        }
+        if (staticType instanceof ArrayType aStaticType && runtimeType instanceof ArrayType aRuntimeType) {
+            int countStatic = aStaticType.getNumElements();
+            int countRuntime = aRuntimeType.getNumElements();
+            if (countStatic != countRuntime && (countRuntime != -1 || countStatic <= 0)) {
+                return false;
+            }
+            return isStaticTypeOf(aStaticType.getElementType(), aRuntimeType.getElementType());
+        }
+        if (staticType instanceof ScopedPointerType pStaticType && runtimeType instanceof ScopedPointerType pRuntimeType) {
+            return isStaticTypeOf(pStaticType.getPointedType(), pRuntimeType.getPointedType());
+        }
+        return false;
     }
 }

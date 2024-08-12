@@ -1,0 +1,59 @@
+; @Input:  %var = 0
+; @Output: forall (%var==16275)
+; @Config: 1, 1, 1
+; SPIR-V
+; Version: 1.0
+; Schema: 0
+                       OpCapability Shader
+                       OpMemoryModel Logical GLSL450
+                       OpEntryPoint GLCompute %main "main" %ids
+                       OpSource GLSL 450
+                       OpDecorate %ids BuiltIn GlobalInvocationId
+               %void = OpTypeVoid
+               %bool = OpTypeBool
+               %func = OpTypeFunction %void
+               %uint = OpTypeInt 64 0
+             %v3uint = OpTypeVector %uint 3
+           %ptr_uint = OpTypePointer Uniform %uint
+                 %c0 = OpConstant %uint 0
+                 %c1 = OpConstant %uint 1
+                 %c2 = OpConstant %uint 2
+                 %c5 = OpConstant %uint 5
+                %var = OpVariable %ptr_uint Uniform
+            %count_1 = OpVariable %ptr_uint Uniform %c0
+            %count_2 = OpVariable %ptr_uint Uniform %c0
+               %main = OpFunction %void None %func
+
+                       ; loop 1 start
+            %label_1 = OpLabel
+              %val_1 = OpLoad %uint %var
+          %val_1_new = OpIAdd %uint %val_1 %c1
+                       OpStore %var %val_1_new
+        %val_count_1 = OpLoad %uint %count_1
+    %val_count_1_new = OpIAdd %uint %val_count_1 %c1
+                       OpStore %count_1 %val_count_1_new
+                       OpStore %count_2 %c0
+                       OpBranch %label_3
+
+                       ; loop 2 starts
+            %label_3 = OpLabel
+              %val_2 = OpLoad %uint %var
+          %val_2_new = OpIMul %uint %val_2 %c5
+                       OpStore %var %val_2_new
+        %val_count_2 = OpLoad %uint %count_2
+    %val_count_2_new = OpIAdd %uint %val_count_2 %c1
+                       OpStore %count_2 %val_count_2_new
+             %cond_2 = OpIEqual %bool %val_count_2 %c1
+                       OpLoopMerge %label_4 %label_3 None
+                       OpBranchConditional %cond_2 %label_4 %label_3
+            %label_4 = OpLabel
+                       ; loop 2 end
+
+             %cond_1 = OpIEqual %bool %val_count_1 %c2
+                       OpLoopMerge %label_2 %label_1 None
+                       OpBranchConditional %cond_1 %label_2 %label_1
+            %label_2 = OpLabel
+                       ; loop 1 end
+
+                       OpReturn
+                       OpFunctionEnd

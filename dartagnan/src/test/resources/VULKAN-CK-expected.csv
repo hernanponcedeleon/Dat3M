@@ -143,7 +143,7 @@ litmus/VULKAN/Kronos-Group/test5.litmus,1
 litmus/VULKAN/Kronos-Group/test6.litmus,1
 litmus/VULKAN/Kronos-Group/test9.litmus,1
 litmus/VULKAN/Kronos-Group/waw.litmus,1
-litmus/VULKAN/Manual/asmo-weak.litmus,1
+litmus/VULKAN/Manual/asmo-plain.litmus,1
 litmus/VULKAN/Manual/CoWW-RR.litmus,1
 litmus/VULKAN/Manual/SB-2-wg.litmus,1
 litmus/VULKAN/Manual/SB-2-dv.litmus,1
@@ -237,3 +237,8 @@ litmus/VULKAN/Manual/PC-bar-acq-rel-priv.litmus,1
 litmus/VULKAN/Manual/PC-bar-atom.litmus,1
 litmus/VULKAN/Manual/PC-bar-nonpriv.litmus,1
 litmus/VULKAN/Manual/OOTA.litmus,1
+litmus/VULKAN/Manual/IRIW.litmus,1
+litmus/VULKAN/Manual/counter-atomic-store-rmw.litmus,1
+litmus/VULKAN/Manual/counter-plain-store-rmw.litmus,1
+litmus/VULKAN/Manual/counter-plain-store-atomic-load.litmus,1
+litmus/VULKAN/Manual/counter-plain-store-plain-load.litmus,1
