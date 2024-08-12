@@ -8,12 +8,10 @@ import java.util.TreeSet;
 
 public class TestgenDriver {
 
-    static Set <String> all_cycles;
-
     public static void main(
         String[] args
     ) throws Exception {
-        all_cycles = new TreeSet<>();
+        Set <String> all_cycles = new TreeSet<>();
         
         CNF cnf = new CNF( "HB_SC" );
 
@@ -33,8 +31,8 @@ public class TestgenDriver {
 
         cnf.to_normal_form();
 
-        final int cycle_length = 4;
-        explore_cnf( cnf, new ArrayList<String>( Arrays.asList( cnf.starting_nt ) ), new ArrayList<>(), cycle_length - 1 );
+        final int cycle_length = 3;
+        explore_cnf( cnf, new ArrayList<String>( Arrays.asList( cnf.starting_nt ) ), new ArrayList<>(), cycle_length - 1, all_cycles );
         
         System.out.println( "Cycles of length " + cycle_length + ":" );
         for( String cycle : all_cycles )
@@ -45,10 +43,9 @@ public class TestgenDriver {
         final CNF cnf,
         List <String> states,
         List <String> cycle,
-        int allowed_growth
+        int allowed_growth,
+        Set <String> all_cycles
     ) throws Exception {
-        // System.out.println( states + "\n" + cycle + "\n" + allowed_growth + "\n" );
-
         if( allowed_growth < 0 )
             return;
 
@@ -63,7 +60,7 @@ public class TestgenDriver {
 
         if( cnf.terminals.contains( current_state ) ) {
             cycle.add( current_state );
-            explore_cnf( cnf, states, cycle, allowed_growth );
+            explore_cnf( cnf, states, cycle, allowed_growth, all_cycles );
             cycle.remove( cycle.size() - 1 );
         } else {
             for( String rule : cnf.get_rules( current_state ) ) {
@@ -72,12 +69,12 @@ public class TestgenDriver {
                     String state_2 = rule.split( ";" )[1];
                     states.add( 0, state_2 );
                     states.add( 0, state_1 );
-                    explore_cnf( cnf, states, cycle, allowed_growth - 1 );
+                    explore_cnf( cnf, states, cycle, allowed_growth - 1, all_cycles );
                     states.remove( 0 );
                     states.remove( 0 );
                 } else {
                     states.add( 0, rule );
-                    explore_cnf( cnf, states, cycle, allowed_growth );
+                    explore_cnf( cnf, states, cycle, allowed_growth, all_cycles );
                     states.remove( 0 );
                 }
             }
