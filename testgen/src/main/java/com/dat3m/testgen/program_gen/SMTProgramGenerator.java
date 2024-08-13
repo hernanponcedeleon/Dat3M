@@ -157,12 +157,6 @@ public class SMTProgramGenerator {
     ) throws Exception {
         for( final SMTEvent event : cycle.events ) {
             if( memory_ufds.is_leader( event.id ) ) {
-                /* Events that don't have to access the same memory location, won't access the same memory location */
-                for( final SMTEvent t_event : cycle.events ) {
-                    if( memory_ufds.are_same_set( event.id, t_event.id ) || !memory_ufds.is_leader( t_event.id ) )
-                        continue;
-                    prover.addConstraint( bm.not( im.equal( event.location, t_event.location ) ) );
-                }
                 /* All writes to one memory location will have distinct values */
                 for( final SMTEvent event_1 : cycle.events ) {
                     if( !memory_ufds.are_same_set( event.id, event_1.id ) )
@@ -209,6 +203,24 @@ public class SMTProgramGenerator {
                 ) ) ) {
                     prover.addConstraint( bm.not( im.equal( cycle.events.get(i).thread_id, cycle.events.get(j).thread_id ) ) );
                 }
+            }
+        }
+        /* Events that don't have to access the same memory location, won't access the same memory location */
+        for( int i = 0 ; i < cycle.events.size() ; i++ ) {
+            for( int j = 0 ; j < cycle.events.size() ; j++ ) {
+                if( !prover.isUnsatWithAssumptions( Arrays.asList(
+                    bm.not( im.equal( cycle.events.get(i).location, cycle.events.get(j).location ) )
+                ) ) ) {
+                    prover.addConstraint( bm.not( im.equal( cycle.events.get(i).location, cycle.events.get(j).location ) ) );
+                }
+            }
+        }
+        /* Events that don't have to be defined, won't be defined */
+        for( int i = 0 ; i < cycle.events.size() ; i++ ) {
+            if( !prover.isUnsatWithAssumptions( Arrays.asList(
+                im.equal( cycle.events.get(i).type, im.makeNumber( SMTInstructions.UNDEFINED_INSTRUCTION ) )
+            ) ) ) {
+                prover.addConstraint( im.equal( cycle.events.get(i).type, im.makeNumber( SMTInstructions.UNDEFINED_INSTRUCTION ) ) );
             }
         }
     }
