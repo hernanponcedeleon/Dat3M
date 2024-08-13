@@ -17,16 +17,12 @@ import org.sosy_lab.java_smt.api.ProverEnvironment;
 import org.sosy_lab.java_smt.api.SolverContext;
 import org.sosy_lab.java_smt.api.SolverContext.ProverOptions;
 
-import com.dat3m.testgen.util.UnionFindDisjointSet;
-
 /**
  * Generate a program given relations between events.
  */
 public class SMTProgramGenerator {
 
     SMTCycle cycle;
-    UnionFindDisjointSet thread_ufds;
-    UnionFindDisjointSet memory_ufds;
 
     Configuration config;
     LogManager logger;
@@ -55,9 +51,6 @@ public class SMTProgramGenerator {
         fm = context.getFormulaManager();
         im = fm.getIntegerFormulaManager();
         bm = fm.getBooleanFormulaManager();
-
-        thread_ufds = new UnionFindDisjointSet( cycle.cycle_size );
-        memory_ufds = new UnionFindDisjointSet( cycle.cycle_size );
 
         prover = context.newProverEnvironment( ProverOptions.GENERATE_MODELS );
     }
@@ -111,14 +104,12 @@ public class SMTProgramGenerator {
         for( final SMTRelation relation : cycle.relations ) {
             switch( relation.type ) {
                 case po:
-                    thread_ufds.merge( relation.event_L.id, relation.event_R.id );
                     /* L.event_id != R.event_id    */ prover.addConstraint( bm.not( im.equal( relation.event_L.event_id, relation.event_R.event_id ) ) );
                     /* L.thread_id == R.thread_id  */ prover.addConstraint( im.equal( relation.event_L.thread_id, relation.event_R.thread_id ) );
                     /* L.thread_row < R.thread_row */ prover.addConstraint( im.lessThan( relation.event_L.thread_row, relation.event_R.thread_row ) );
                     break;
 
                 case rf:
-                    memory_ufds.merge( relation.event_L.id, relation.event_R.id );
                     /* L.event_id != R.event_id */ prover.addConstraint( bm.not( im.equal( relation.event_L.event_id, relation.event_R.event_id ) ) );
                     /* L.type == W              */ prover.addConstraint( im.equal( relation.event_L.type, im.makeNumber( SMTInstructions.WRITE_INSTRUCTION ) ) );
                     /* R.type == R              */ prover.addConstraint( im.equal( relation.event_R.type, im.makeNumber( SMTInstructions.READ_INSTRUCTION ) ) );
@@ -127,7 +118,6 @@ public class SMTProgramGenerator {
                     break;
 
                 case co:
-                    memory_ufds.merge( relation.event_L.id, relation.event_R.id );
                     /* L.event_id != R.event_id */ prover.addConstraint( bm.not( im.equal( relation.event_L.event_id, relation.event_R.event_id ) ) );
                     /* L.type == W              */ prover.addConstraint( im.equal( relation.event_L.type, im.makeNumber( SMTInstructions.WRITE_INSTRUCTION ) ) );
                     /* R.type == W              */ prover.addConstraint( im.equal( relation.event_R.type, im.makeNumber( SMTInstructions.WRITE_INSTRUCTION ) ) );
@@ -135,7 +125,6 @@ public class SMTProgramGenerator {
                     break;
                     
                 case rf_inv:
-                    memory_ufds.merge( relation.event_L.id, relation.event_R.id );
                     /* L.event_id != R.event_id */ prover.addConstraint( bm.not( im.equal( relation.event_L.event_id, relation.event_R.event_id ) ) );
                     /* L.type == R              */ prover.addConstraint( im.equal( relation.event_L.type, im.makeNumber( SMTInstructions.READ_INSTRUCTION ) ) );
                     /* R.type == W              */ prover.addConstraint( im.equal( relation.event_R.type, im.makeNumber( SMTInstructions.WRITE_INSTRUCTION ) ) );
