@@ -378,8 +378,8 @@ public class DatalogRelationAnalysis implements RelationAnalysis {
     }
 
     public String getRelationDatalogName(Relation r, boolean full) {
-        String name = relationToDatalogName.computeIfAbsent(r, k -> r.getDefinition().accept(new DatalogNameVisitor()).toString());
-        return full ? name : "rel" + System.identityHashCode(name);
+        String name = relationToDatalogName.computeIfAbsent(r, k -> sanitize(r.getDefinition().accept(new DatalogNameVisitor()).toString()));
+        return full || name.length() < 200 ? name : "rel" + System.identityHashCode(name);
     }
 
     private String getFilterDatalogName(Filter f) {
@@ -1617,16 +1617,16 @@ public class DatalogRelationAnalysis implements RelationAnalysis {
 
         @Override
         public Void visitSyncBarrier(SyncBar syncBar) {
-            List<FenceWithId> fenceEvents = program.getThreadEvents(FenceWithId.class);
-            for (FenceWithId e1 : fenceEvents) {
-                for (FenceWithId e2 : fenceEvents) {
+            List<ControlBarrier> fenceEvents = program.getThreadEvents(ControlBarrier.class);
+            for (ControlBarrier e1 : fenceEvents) {
+                for (ControlBarrier e2 : fenceEvents) {
                     // “A bar.sync or bar.red or bar.arrive operation synchronizes with a bar.sync
                     // or bar.red operation executed on the same barrier.”
                     if (exec.areMutuallyExclusive(e1, e2) || e2.hasTag(PTX.ARRIVE)) {
                         continue;
                     }
                     addData(mayWriter, e1, e2);
-                    if (e1.getFenceID().equals(e2.getFenceID())) {
+                    if (e1.getId().equals(e2.getId())) {
                         addData(mustWriter, e1, e2);
                     }
                 }
