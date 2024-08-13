@@ -185,22 +185,20 @@ public class SMTProgramGenerator {
                     }
                 }
             }
-            /* Handle equivalence between events */
-            for( final SMTEvent t_event : cycle.events ) {
-                if( event.id == t_event.id )
-                    continue;
-                prover.addConstraint(
-                    bm.implication(
-                        im.equal( event.event_id, t_event.event_id ),
-                        bm.and( bm.and(
-                            im.equal( event.type,       t_event.type ),
-                            im.equal( event.location,   t_event.location ) ), bm.and( bm.and(
-                            im.equal( event.thread_id,  t_event.thread_id ),
-                            im.equal( event.thread_row, t_event.thread_row ) ),
-                            im.equal( event.value,      t_event.value ) )
-                        )
+        }
+        /* Handle equivalence between events */
+        for( int i = 0 ; i < cycle.events.size() ; i++ ) {
+            for( int j = 0 ; j < cycle.events.size() ; j++ ) {
+                prover.addConstraint( bm.implication(
+                    im.equal( cycle.events.get(i).event_id, cycle.events.get(j).event_id ),
+                    bm.and( bm.and(
+                        im.equal( cycle.events.get(i).type,       cycle.events.get(j).type ),
+                        im.equal( cycle.events.get(i).location,   cycle.events.get(j).location ) ), bm.and( bm.and(
+                        im.equal( cycle.events.get(i).thread_id,  cycle.events.get(j).thread_id ),
+                        im.equal( cycle.events.get(i).thread_row, cycle.events.get(j).thread_row ) ),
+                        im.equal( cycle.events.get(i).value,      cycle.events.get(j).value ) )
                     )
-                );
+                ) );
             }
         }
         /* Events that don't have to be in the same thread, won't be in the same thread */
