@@ -1063,7 +1063,7 @@ public class NativeRelationAnalysis implements RelationAnalysis {
             program.getThreadEvents(MemoryCoreEvent.class).forEach(e -> {
                 Set<VirtualMemoryObject> s = e.getAddress().getMemoryObjects().stream()
                         .filter(VirtualMemoryObject.class::isInstance)
-                        .map(o -> (VirtualMemoryObject)o)
+                        .map(o -> (VirtualMemoryObject) o)
                         .collect(toSet());
                 if (s.size() > 1) {
                     throw new UnsupportedOperationException(
@@ -1627,21 +1627,41 @@ public class NativeRelationAnalysis implements RelationAnalysis {
             for (EventGraph current = inner; !current.isEmpty(); current = next) {
                 next = new EventGraph();
                 for (Event e1 : current.getDomain()) {
-                    Set<Event> update = new HashSet<>();
+                    Set<Event> rangeUpdate = new HashSet<>();
                     for (Event e2 : current.getRange(e1)) {
                         if (isMay) {
-                            update.addAll(outer.getRange(e2));
+                            rangeUpdate.addAll(outer.getRange(e2));
                         } else {
                             boolean implies = exec.isImplied(e1, e2);
-                            update.addAll(outer.getRange(e2).stream()
+                            rangeUpdate.addAll(outer.getRange(e2).stream()
                                     .filter(e -> implies || exec.isImplied(e, e2))
                                     .toList());
                         }
                     }
                     Set<Event> known = outer.getRange(e1);
-                    update.removeIf(e -> known.contains(e) || exec.areMutuallyExclusive(e1, e));
-                    if (!update.isEmpty()) {
-                        next.addRange(e1, update);
+                    rangeUpdate.removeIf(e -> known.contains(e) || exec.areMutuallyExclusive(e1, e));
+                    if (!rangeUpdate.isEmpty()) {
+                        next.addRange(e1, rangeUpdate);
+                    }
+                }
+                EventGraph currentInverse = current.inverse();
+                EventGraph outerInverse = outer.inverse();
+                for (Event e3 : currentInverse.getDomain()) {
+                    Set<Event> domainUpdate = new HashSet<>();
+                    for (Event e2 : currentInverse.getRange(e3)) {
+                        if (isMay) {
+                            domainUpdate.addAll(outerInverse.getRange(e2));
+                        } else {
+                            boolean implies = exec.isImplied(e2, e3);
+                            domainUpdate.addAll(outerInverse.getRange(e2).stream()
+                                    .filter(e -> implies || exec.isImplied(e2, e))
+                                    .toList());
+                        }
+                    }
+                    Set<Event> known = outerInverse.getRange(e3);
+                    domainUpdate.removeIf(e -> known.contains(e) || exec.areMutuallyExclusive(e3, e));
+                    for (Event e : domainUpdate) {
+                        next.add(e, e3);
                     }
                 }
                 outer.addAll(next);
