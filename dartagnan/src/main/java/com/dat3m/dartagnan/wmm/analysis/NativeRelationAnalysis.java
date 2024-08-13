@@ -34,7 +34,6 @@ import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 
 import java.util.*;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static com.dat3m.dartagnan.configuration.Arch.RISCV;
@@ -107,6 +106,9 @@ public class NativeRelationAnalysis implements RelationAnalysis {
         for (Relation r : relations) {
             EventGraph may = new EventGraph();
             EventGraph must = new EventGraph();
+            if (r.getDependencies().isEmpty()) {
+                continue;
+            }
             for (Relation c : r.getDependencies()) {
                 p.setSource(c);
                 p.setMay(getKnowledge(p.getSource()).getMaySet());
@@ -1062,7 +1064,7 @@ public class NativeRelationAnalysis implements RelationAnalysis {
                 Set<VirtualMemoryObject> s = e.getAddress().getMemoryObjects().stream()
                         .filter(VirtualMemoryObject.class::isInstance)
                         .map(o -> (VirtualMemoryObject)o)
-                        .collect(Collectors.toSet());
+                        .collect(toSet());
                 if (s.size() > 1) {
                     throw new UnsupportedOperationException(
                             "Expressions with multiple virtual addresses are not supported");
@@ -1552,33 +1554,51 @@ public class NativeRelationAnalysis implements RelationAnalysis {
         }
 
         private void computeComposition(EventGraph result, EventGraph left, EventGraph right, final boolean isMay) {
-            left.getDomain().forEach(e1 -> result.addRange(e1, left.getRange(e1).stream().flatMap(e -> right.getRange().stream()
-                    .filter(e2 -> isMay || exec.isImplied(e1, e) || exec.isImplied(e2, e))
-                    .filter(e2 -> !exec.areMutuallyExclusive(e1, e2))).collect(Collectors.toSet())));
+            for (Event e1 : left.getDomain()) {
+                Set<Event> update = new HashSet<>();
+                for (Event e : left.getRange(e1)) {
+                    if (isMay || exec.isImplied(e1, e)) {
+                        update.addAll(right.getRange(e));
+                    } else {
+                        update.addAll(right.getRange(e).stream()
+                                .filter(e2 -> exec.isImplied(e2, e)).toList());
+                    }
+                }
+                update.removeIf(e -> exec.areMutuallyExclusive(e1, e));
+                result.addRange(e1, update);
+            }
         }
 
         @Override
         public Delta visitDomainIdentity(DomainIdentity domId) {
-            if (!domId.getOperand().equals(source)) {
-                return Delta.EMPTY;
+            if (domId.getOperand().equals(source)) {
+                EventGraph maySet = new EventGraph();
+                may.getDomain().forEach(e -> maySet.add(e, e));
+                EventGraph mustSet = new EventGraph();
+                must.apply((e1, e2) -> {
+                    if (exec.isImplied(e1, e2)) {
+                        mustSet.add(e1, e1);
+                    }
+                });
+                return new Delta(maySet, mustSet);
             }
-            EventGraph maySet = new EventGraph();
-            may.getDomain().forEach(e -> maySet.add(e, e));
-            EventGraph mustSet = new EventGraph();
-            must.filter(exec::isImplied).getDomain().forEach(e -> mustSet.add(e, e));
-            return new Delta(maySet, mustSet);
+            return Delta.EMPTY;
         }
 
         @Override
         public Delta visitRangeIdentity(RangeIdentity rangeId) {
-            if (!rangeId.getOperand().equals(source)) {
-                return Delta.EMPTY;
+            if (rangeId.getOperand().equals(source)) {
+                EventGraph maySet = new EventGraph();
+                may.getRange().forEach(e -> maySet.add(e, e));
+                EventGraph mustSet = new EventGraph();
+                must.apply((e1, e2) -> {
+                    if (exec.isImplied(e2, e1)) {
+                        mustSet.add(e2, e2);
+                    }
+                });
+                return new Delta(maySet, mustSet);
             }
-            EventGraph maySet = new EventGraph();
-            may.getRange().forEach(e -> maySet.add(e, e));
-            EventGraph mustSet = new EventGraph();
-            must.filter((e1, e2) -> exec.isImplied(e2, e1)).getRange().forEach(e -> mustSet.add(e, e));
-            return new Delta(maySet, mustSet);
+            return Delta.EMPTY;
         }
 
         @Override
@@ -1591,13 +1611,13 @@ public class NativeRelationAnalysis implements RelationAnalysis {
 
         @Override
         public Delta visitTransitiveClosure(TransitiveClosure trans) {
-            if (!trans.getOperand().equals(source)) {
-                return Delta.EMPTY;
-            }
             final Relation rel = trans.getDefinedRelation();
-            EventGraph maySet = computeTransitiveClosure(getKnowledge(rel).getMaySet(), may, true);
-            EventGraph mustSet = computeTransitiveClosure(getKnowledge(rel).getMustSet(), must, false);
-            return new Delta(maySet, mustSet);
+            if (trans.getOperand().equals(source)) {
+                EventGraph maySet = computeTransitiveClosure(getKnowledge(rel).getMaySet(), may, true);
+                EventGraph mustSet = computeTransitiveClosure(getKnowledge(rel).getMustSet(), must, false);
+                return new Delta(maySet, mustSet);
+            }
+            return Delta.EMPTY;
         }
 
         private EventGraph computeTransitiveClosure(EventGraph oldOuter, EventGraph inner, boolean isMay) {
@@ -1606,12 +1626,24 @@ public class NativeRelationAnalysis implements RelationAnalysis {
             outer.addAll(inner);
             for (EventGraph current = inner; !current.isEmpty(); current = next) {
                 next = new EventGraph();
-                EventGraph finalNext = next;
-                EventGraph finalCurrent = current;
-                current.getDomain().forEach(e1 -> finalNext.addRange(e1, finalCurrent.getRange(e1).stream().flatMap(e2 -> outer.getRange(e2).stream()
-                        .filter(e -> isMay || exec.isImplied(e1, e2) || exec.isImplied(e, e2))
-                        .filter(Predicate.not(outer.getRange(e1)::contains))
-                        .filter(e -> !exec.areMutuallyExclusive(e1, e))).collect(Collectors.toSet())));
+                for (Event e1 : current.getDomain()) {
+                    Set<Event> update = new HashSet<>();
+                    for (Event e2 : current.getRange(e1)) {
+                        if (isMay) {
+                            update.addAll(outer.getRange(e2));
+                        } else {
+                            boolean implies = exec.isImplied(e1, e2);
+                            update.addAll(outer.getRange(e2).stream()
+                                    .filter(e -> implies || exec.isImplied(e, e2))
+                                    .toList());
+                        }
+                    }
+                    Set<Event> known = outer.getRange(e1);
+                    update.removeIf(e -> known.contains(e) || exec.areMutuallyExclusive(e1, e));
+                    if (!update.isEmpty()) {
+                        next.addRange(e1, update);
+                    }
+                }
                 outer.addAll(next);
             }
             return outer;

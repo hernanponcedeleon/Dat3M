@@ -11,7 +11,7 @@
 // analyses
 
 #define SAME_THREAD(e1, e2, temp) (THREAD.Must(temp), event_to_thread.Must(e1, temp), event_to_thread.Must(e2, temp))
-#define NOT_SAME_THREAD(e1, e2, temp) (THREAD.Must(temp), !(event_to_thread.Must(e1, temp), event_to_thread.Must(e2, temp)))
+#define NOT_SAME_THREAD(e1, e2, temp) ((event_to_thread.Must(e1, temp); event_to_thread.Must(e2, temp)), !(event_to_thread.Must(e1, temp), event_to_thread.Must(e2, temp)))
 #define MUTEX(...) mutex.Must(__VA_ARGS__)
 #define IMPLIES(...) implies.Must(__VA_ARGS__)
 #define DEAD(...) DEAD.Must(__VA_ARGS__)
@@ -41,12 +41,13 @@
 #define PO(po, filter) \
     .init po = ApproximationBinaryOutput \
     po.May(x, y) :- po.Must(x, y). \
-    po.Must(x, y) :- FILTERED(filter, x, y), !MUTEX(x, y).
+    po.Must(x, y) :- FILTERED(filter, x, y), x < y, !MUTEX(x, y), SAME_THREAD(x, y, z).
 
+// TODO make it work
 #define CTRLDIRECT(ctrldirect) \
    .init ctrldirect = ApproximationBinaryOutput \
     ctrldirect.May(x, y) :- ctrldirect.Must(x, y). \
-    ctrldirect.Must(x, y) :- !FILTERED(GOTO, x), FILTERED(DEAD, x), JUMP(x, y), !MUTEX(x, y).
+    ctrldirect.Must(x, y) :- !FILTERED(GOTO, x), !FILTERED(DEAD, x), JUMP(x, y), !MUTEX(x, y).
 
 #define FENCES(fences, filter) \
     .init fences = ApproximationBinaryOutput \
@@ -96,14 +97,14 @@
 #define COMPOSITION(result, op1, op2, arity, output, ...) \
     .init result = Approximation##arity##output \
     result.May(x, y) :- op1.May(x, t), op2.May(t, y), !MUTEX(x, y). \
-    result.Must(x, y) :- (op1.Must(x, t), op2.Must(t, y)), (IMPLIES(x, t); IMPLIES(t, y)), !MUTEX(x, y).
+    result.Must(x, y) :- (op1.Must(x, t), op2.Must(t, y)), (IMPLIES(x, t); IMPLIES(y, t)), !MUTEX(x, y).
 
 #define CLOSURE(result, op1, op2, arity, output, ...) \
     .init result = Approximation##arity##output \
-    result.May(x, y) :- op1.May(x, t), op1.May(t, y), !MUTEX(x, y). \
-    result.May(x, y) :- op1.May(x, t), result.May(t, y), !MUTEX(x, y). \
-    result.Must(x, y) :- (op1.Must(x, t), op1.Must(t, y)), (IMPLIES(x, t); IMPLIES(t, y)), !MUTEX(x, y). \
-    result.Must(x, y) :- (op1.Must(x, t), result.Must(t, y)), (IMPLIES(x, t); IMPLIES(t, y)), !MUTEX(x, y).
+    result.May(x, y) :- op1.May(x, y). \
+    result.May(x, y) :- result.May(x, t), result.May(t, y), !MUTEX(x, y). \
+    result.Must(x, y) :- op1.Must(x, y). \
+    result.Must(x, y) :- (result.Must(x, t), result.Must(t, y)), (IMPLIES(x, t); IMPLIES(y, t)), !MUTEX(x, y).
 
 #define PRODUCT(result, op1, op2, arity, output, ...) \
     .init result = Approximation##arity##output \

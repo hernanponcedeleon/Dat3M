@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan.wmm.analysis;
 
+import com.dat3m.dartagnan.GlobalSettings;
 import com.dat3m.dartagnan.configuration.RelationAnalysisMethod;
 import com.dat3m.dartagnan.program.analysis.Dependency;
 import com.dat3m.dartagnan.program.analysis.ExecutionAnalysis;
@@ -17,11 +18,14 @@ import org.sosy_lab.common.configuration.Option;
 import org.sosy_lab.common.configuration.Options;
 
 import java.util.*;
+import java.util.function.Predicate;
+import java.util.stream.Stream;
 
 import static com.dat3m.dartagnan.configuration.OptionNames.*;
 import static com.dat3m.dartagnan.wmm.RelationNameRepository.CO;
 import static com.dat3m.dartagnan.wmm.RelationNameRepository.RF;
 import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.common.base.Verify.verify;
 
 public interface RelationAnalysis {
 
@@ -75,6 +79,12 @@ public interface RelationAnalysis {
                 .append("\n======== RelationAnalysis summary ======== \n");
         summary.append("\t#Relations: ").append(task.getMemoryModel().getRelations().size()).append("\n");
         summary.append("\t#Axioms: ").append(task.getMemoryModel().getAxioms().size()).append("\n");
+
+        if (c.method == RelationAnalysisMethod.DATALOG && GlobalSettings.CHECK_DATALOG) {
+            assert a instanceof DatalogRelationAnalysis;
+            compareDatalogToNative(task, context, config, (DatalogRelationAnalysis) a);
+        }
+
         if (c.enableExtended) {
             long mayCount = a.countMaySet();
             long mustCount = a.countMustSet();
@@ -188,5 +198,22 @@ public interface RelationAnalysis {
         public String toString() {
             return "(may:" + may.size() + ", must:" + must.size() + ")";
         }
+    }
+
+    private static void compareDatalogToNative(VerificationTask task, Context context, Configuration config, DatalogRelationAnalysis dra) throws InvalidConfigurationException {
+        RelationAnalysis nra = NativeRelationAnalysis.fromConfig(task, context, config);
+        nra.run();
+        task.getMemoryModel().getRelations().forEach(r -> {
+            Knowledge nk = nra.getKnowledge(r);
+            Knowledge dk = dra.getKnowledge(r);
+            String shortName = dra.getRelationDatalogName(r, false);
+            String fullName = dra.getRelationDatalogName(r, true);
+            Map.of(dk.getMustSet(), nk.getMustSet(), dk.getMaySet(), nk.getMaySet()).forEach((d, n) -> {
+                int diff_size = d.filter((e1, e2) -> !n.contains(e1, e2)).size();
+                verify(diff_size == 0, "DRA > NRA for " + r.getName() + "/" + shortName + "/" + fullName);
+                diff_size = n.filter((e1, e2) -> !d.contains(e1, e2)).size();
+                verify(diff_size == 0, "NRA > DRA for " + r.getName() + "/" + shortName + "/" + fullName);
+            });
+        });
     }
 }
