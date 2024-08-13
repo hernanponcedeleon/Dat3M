@@ -61,6 +61,11 @@ public interface RelationAnalysis {
             c.enableExtended = false;
         }
 
+        if (c.enableExtended && c.method == RelationAnalysisMethod.DATALOG) {
+            logger.warn("{}=datalog does not support {}=true", RELATION_ANALYSIS, ENABLE_EXTENDED_RELATION_ANALYSIS);
+            c.enableExtended = false;
+        }
+
         long t0 = System.currentTimeMillis();
         a.run();
         long t1 = System.currentTimeMillis();

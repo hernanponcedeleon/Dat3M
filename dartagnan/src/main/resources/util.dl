@@ -1,0 +1,161 @@
+#pragma once
+
+// util
+
+#define GET_MACRO(_1,_2,_3,_4,NAME,...) NAME
+#define FILTERED1(filter, e) filter.Must(e)
+#define FILTERED2(filter, e, ...) filter.Must(e), FILTERED1(filter, __VA_ARGS__)
+#define FILTERED3(filter, e, ...) filter.Must(e), FILTERED2(filter, __VA_ARGS__)
+#define FILTERED4(filter, e, ...) filter.Must(e), FILTERED3(filter, __VA_ARGS__)
+
+// analyses
+
+#define SAME_THREAD(e1, e2, temp) (THREAD.Must(temp), event_to_thread.Must(e1, temp), event_to_thread.Must(e2, temp))
+#define NOT_SAME_THREAD(e1, e2, temp) (THREAD.Must(temp), !(event_to_thread.Must(e1, temp), event_to_thread.Must(e2, temp)))
+#define MUTEX(...) mutex.Must(__VA_ARGS__)
+#define IMPLIES(...) implies.Must(__VA_ARGS__)
+#define DEAD(...) DEAD.Must(__VA_ARGS__)
+#define JUMP(...) jump.Must(__VA_ARGS__)
+#define FILTERED(filter, ...) (GET_MACRO(__VA_ARGS__, FILTERED4, FILTERED3, FILTERED2, FILTERED1) (filter, __VA_ARGS__))
+
+// base relations
+
+#define FREE(free) \
+    .init free = ApproximationBinaryOutput \
+    free.May(x, y) :- FILTERED(VISIBLE, x, y).
+
+#define EMPTY(empty) \
+    .init empty = ApproximationBinary
+
+// No test for MUTEX, since that currently does not span across threads
+#define EXT(ext) \
+    .init ext = ApproximationBinaryOutput \
+    ext.May(x, y) :- ext.Must(x, y). \
+    ext.Must(x, y) :- FILTERED(VISIBLE, x, y), NOT_SAME_THREAD(x, y, z).
+
+#define INT(int) \
+    .init int = ApproximationBinaryOutput \
+    int.May(x, y) :- int.Must(x, y). \
+    int.Must(x, y) :- FILTERED(VISIBLE, x, y), SAME_THREAD(x, y, z), !MUTEX(x, y).
+
+#define PO(po, filter) \
+    .init po = ApproximationBinaryOutput \
+    po.May(x, y) :- po.Must(x, y). \
+    po.Must(x, y) :- FILTERED(filter, x, y), !MUTEX(x, y).
+
+#define CTRLDIRECT(ctrldirect) \
+   .init ctrldirect = ApproximationBinaryOutput \
+    ctrldirect.May(x, y) :- ctrldirect.Must(x, y). \
+    ctrldirect.Must(x, y) :- !FILTERED(GOTO, x), FILTERED(DEAD, x), JUMP(x, y), !MUTEX(x, y).
+
+#define FENCES(fences, filter) \
+    .init fences = ApproximationBinaryOutput \
+    fences##_##filter.May(x, y) :- FILTERED(VISIBLE, x, y, f), FILTERED(filter, f), x != f, y != f, x != y, !MUTEX(x, f), !MUTEX(f, y), !MUTEX(x, y). \
+    fences##_##filter.Must(x, y) :- FILTERED(VISIBLE, x, y, f), FILTERED(filter, f), x != f, y != f, x != y, !MUTEX(x, f), !MUTEX(f, y), !MUTEX(x, y), IMPLIES(x, f), IMPLIES(f, y).
+
+#define BASE(name, arity) \
+    .init name = Approximation##arity##Input
+
+// operation implementations
+
+#define INTERSECTION(result, op1, op2, arity, output, ...) \
+    .init result = Approximation##arity##output \
+    result.May(__VA_ARGS__) :- op1.May(__VA_ARGS__), op2.May(__VA_ARGS__). \
+    result.Must(__VA_ARGS__) :- op1.Must(__VA_ARGS__), op2.Must(__VA_ARGS__).
+
+#define UNION(result, op1, op2, arity, output, ...) \
+    .init result = Approximation##arity##output \
+    result.May(__VA_ARGS__) :- op1.May(__VA_ARGS__); op2.May(__VA_ARGS__). \
+    result.Must(__VA_ARGS__) :- op1.Must(__VA_ARGS__); op2.Must(__VA_ARGS__).
+
+#define DIFFERENCE(result, op1, op2, arity, output, ...) \
+    .init result = Approximation##arity##output \
+    result.May(__VA_ARGS__) :- op1.May(__VA_ARGS__), !op2.Must(__VA_ARGS__). \
+    result.Must(__VA_ARGS__) :- op1.Must(__VA_ARGS__), !op2.May(__VA_ARGS__).
+
+#define IDENTITY(result, op1, op2, arity, output, ...) \
+    .init result = Approximation##arity##output \
+    result.May(x, x) :- op1.May(x). \
+    result.Must(x, x) :- op1.Must(x).
+
+#define INVERSE(result, op1, op2, arity, output, ...) \
+    .init result = Approximation##arity##output \
+    result.May(x, y) :- op1.May(y, x). \
+    result.Must(x, y) :- op1.Must(y, x).
+
+#define DOMAIN_IDENTITY(result, op1, op2, arity, output, ...) \
+    .init result = Approximation##arity##output \
+    result.May(x, x) :- op1.May(x, y). \
+    result.Must(x, x) :- op1.Must(x, y), IMPLIES(x, y).
+
+#define RANGE_IDENTITY(result, op1, op2, arity, output, ...) \
+    .init result = Approximation##arity##output \
+    result.May(y, y) :- op1.May(x, y). \
+    result.Must(y, y) :- op1.Must(x, y), IMPLIES(y, x).
+
+#define COMPOSITION(result, op1, op2, arity, output, ...) \
+    .init result = Approximation##arity##output \
+    result.May(x, y) :- op1.May(x, t), op2.May(t, y), !MUTEX(x, y). \
+    result.Must(x, y) :- (op1.Must(x, t), op2.Must(t, y)), (IMPLIES(x, t); IMPLIES(t, y)), !MUTEX(x, y).
+
+#define CLOSURE(result, op1, op2, arity, output, ...) \
+    .init result = Approximation##arity##output \
+    result.May(x, y) :- op1.May(x, t), op1.May(t, y), !MUTEX(x, y). \
+    result.May(x, y) :- op1.May(x, t), result.May(t, y), !MUTEX(x, y). \
+    result.Must(x, y) :- (op1.Must(x, t), op1.Must(t, y)), (IMPLIES(x, t); IMPLIES(t, y)), !MUTEX(x, y). \
+    result.Must(x, y) :- (op1.Must(x, t), result.Must(t, y)), (IMPLIES(x, t); IMPLIES(t, y)), !MUTEX(x, y).
+
+#define PRODUCT(result, op1, op2, arity, output, ...) \
+    .init result = Approximation##arity##output \
+    result.May(x, y) :- op1.May(x), op2.May(y), !MUTEX(x, y). \
+    result.Must(x, y) :- op1.Must(x), op2.Must(y), !MUTEX(x, y).
+
+// applicators
+
+// X x Y -> binary
+#define BINARY_OPERATOR_BINARY(operator, result, op1, op2) \
+    operator(result, op1, op2, Binary, Output, x, y)
+
+// X x Y -> unary
+#define BINARY_OPERATOR_UNARY(operator, result, op1, op2) \
+    operator(result, op1, op2, Unary,, x)
+
+// X -> binary
+#define UNARY_OPERATOR_BINARY(operator, result, op) \
+    operator(result, op,, Binary, Output, x)
+
+// X -> unary
+#define UNARY_OPERATOR_UNARY(operator, result, op) \
+    operator(result, op,, Unary,, x)
+
+// data structures
+
+.comp ApproximationUnary {
+    .decl May(x: number)
+    .decl Must(x: number)
+}
+
+.comp ApproximationUnaryInput : ApproximationUnary {
+    .input May
+    .input Must
+}
+
+.comp ApproximationUnaryOutput : ApproximationUnary {
+    .output May
+    .output Must
+}
+
+.comp ApproximationBinary {
+    .decl May(x: number, y: number)
+    .decl Must(x: number, y: number)
+}
+
+.comp ApproximationBinaryInput : ApproximationBinary {
+    .input May
+    .input Must
+}
+
+.comp ApproximationBinaryOutput : ApproximationBinary {
+    .output May
+    .output Must
+}

@@ -36,4 +36,9 @@ public class TagFilter extends Filter {
         TagFilter fObj = (TagFilter) obj;
         return fObj.tag.equals(tag);
     }
+
+    @Override
+    public <T> T accept(Visitor<? extends T> visitor) {
+        return visitor.visitTagFilter(this);
+    }
 }
