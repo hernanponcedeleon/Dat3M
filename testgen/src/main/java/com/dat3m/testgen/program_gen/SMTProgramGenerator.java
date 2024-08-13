@@ -156,16 +156,6 @@ public class SMTProgramGenerator {
         StringBuilder sb
     ) throws Exception {
         for( final SMTEvent event : cycle.events ) {
-            if( thread_ufds.is_leader( event.id ) ) {
-                /* Events that don't have to be in the same thread, won't be in the same thread */
-                for( int i = 0 ; i < cycle.events.size() ; i++ ) {
-                    for( int j = 0 ; j < cycle.events.size() ; j++ ) {
-                        if( !prover.isUnsatWithAssumptions( Arrays.asList(
-                            bm.not( im.equal( cycle.events.get(i).thread_id, cycle.events.get(j).thread_id ) )
-                        ) ) ) {}
-                    }
-                }
-            }
             if( memory_ufds.is_leader( event.id ) ) {
                 /* Events that don't have to access the same memory location, won't access the same memory location */
                 for( final SMTEvent t_event : cycle.events ) {
@@ -211,6 +201,16 @@ public class SMTProgramGenerator {
                         )
                     )
                 );
+            }
+        }
+        /* Events that don't have to be in the same thread, won't be in the same thread */
+        for( int i = 0 ; i < cycle.events.size() ; i++ ) {
+            for( int j = 0 ; j < cycle.events.size() ; j++ ) {
+                if( !prover.isUnsatWithAssumptions( Arrays.asList(
+                    bm.not( im.equal( cycle.events.get(i).thread_id, cycle.events.get(j).thread_id ) )
+                ) ) ) {
+                    prover.addConstraint( bm.not( im.equal( cycle.events.get(i).thread_id, cycle.events.get(j).thread_id ) ) );
+                }
             }
         }
     }
