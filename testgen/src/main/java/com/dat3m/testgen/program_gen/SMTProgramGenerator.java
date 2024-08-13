@@ -150,37 +150,14 @@ public class SMTProgramGenerator {
     }
 
     /**
-     * Use UFDS information to add extra assertions to the program.
+     * Add final extra assertions to the program.
+     * Rules marked as [H] are Heuristics, and aren't required for correctness.
+     * Rule 2. is required for correctness, since the equivalence depends on the value that is being written by writes to the same location.
      */
     void finalize(
         StringBuilder sb
     ) throws Exception {
-        for( final SMTEvent event : cycle.events ) {
-            if( memory_ufds.is_leader( event.id ) ) {
-                /* All writes to one memory location will have distinct values */
-                for( final SMTEvent event_1 : cycle.events ) {
-                    if( !memory_ufds.are_same_set( event.id, event_1.id ) )
-                        continue;
-                    for( final SMTEvent event_2 : cycle.events ) {
-                        if( !memory_ufds.are_same_set( event.id, event_2.id ) || event_1.id == event_2.id )
-                            continue;
-                        prover.addConstraint(
-                            bm.implication(
-                                bm.and(
-                                    im.equal( event_1.type, im.makeNumber( SMTInstructions.WRITE_INSTRUCTION ) ),
-                                    im.equal( event_2.type, im.makeNumber( SMTInstructions.WRITE_INSTRUCTION ) )
-                                ),
-                                bm.or(
-                                    im.equal( event_1.event_id, event_2.event_id ),
-                                    bm.not( im.equal( event_1.value, event_2.value ) )
-                                )
-                            )
-                        );
-                    }
-                }
-            }
-        }
-        /* Handle equivalence between events */
+        /* 1. Handle equivalence between events */
         for( int i = 0 ; i < cycle.events.size() ; i++ ) {
             for( int j = 0 ; j < cycle.events.size() ; j++ ) {
                 prover.addConstraint( bm.implication(
@@ -195,7 +172,19 @@ public class SMTProgramGenerator {
                 ) );
             }
         }
-        /* Events that don't have to be in the same thread, won't be in the same thread */
+        /* 2. Each two writes at the same memory location, either have different value or are equivalent events */
+        for( int i = 0 ; i < cycle.events.size() ; i++ ) {
+            for( int j = 0 ; j < cycle.events.size() ; j++ ) {
+                prover.addConstraint( bm.implication( bm.and(
+                    im.equal( cycle.events.get(i).location, cycle.events.get(j).location ),
+                    im.equal( cycle.events.get(i).type, im.makeNumber( SMTInstructions.WRITE_INSTRUCTION ) ),
+                    im.equal( cycle.events.get(j).type, im.makeNumber( SMTInstructions.WRITE_INSTRUCTION ) ) ), bm.or(
+                    im.equal( cycle.events.get(i).event_id, cycle.events.get(j).event_id ),
+                    bm.not( im.equal( cycle.events.get(i).value, cycle.events.get(j).value ) )
+                ) ) );
+            }
+        }
+        /* 3. [H] Events that don't have to be in the same thread, won't be in the same thread */
         for( int i = 0 ; i < cycle.events.size() ; i++ ) {
             for( int j = 0 ; j < cycle.events.size() ; j++ ) {
                 if( !prover.isUnsatWithAssumptions( Arrays.asList(
@@ -205,7 +194,7 @@ public class SMTProgramGenerator {
                 }
             }
         }
-        /* Events that don't have to access the same memory location, won't access the same memory location */
+        /* 4. [H] Events that don't have to access the same memory location, won't access the same memory location */
         for( int i = 0 ; i < cycle.events.size() ; i++ ) {
             for( int j = 0 ; j < cycle.events.size() ; j++ ) {
                 if( !prover.isUnsatWithAssumptions( Arrays.asList(
@@ -215,7 +204,7 @@ public class SMTProgramGenerator {
                 }
             }
         }
-        /* Events that don't have to be defined, won't be defined */
+        /* 5. [H] Events that don't have to be defined, won't be defined */
         for( int i = 0 ; i < cycle.events.size() ; i++ ) {
             if( !prover.isUnsatWithAssumptions( Arrays.asList(
                 im.equal( cycle.events.get(i).type, im.makeNumber( SMTInstructions.UNDEFINED_INSTRUCTION ) )
