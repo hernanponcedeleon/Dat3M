@@ -1,6 +1,7 @@
 package com.dat3m.testgen.program_gen;
 
 import java.math.BigInteger;
+import java.util.Arrays;
 
 import org.sosy_lab.common.ShutdownNotifier;
 import org.sosy_lab.common.configuration.Configuration;
@@ -157,17 +158,13 @@ public class SMTProgramGenerator {
         for( final SMTEvent event : cycle.events ) {
             if( thread_ufds.is_leader( event.id ) ) {
                 /* Events that don't have to be in the same thread, won't be in the same thread */
-                // /*
-                for( final SMTEvent t_event : cycle.events ) {
-                    if( thread_ufds.are_same_set( event.id, t_event.id ) || !thread_ufds.is_leader( t_event.id ) )
-                        continue;
-                    prover.addConstraint( 
-                        bm.or(
-                            bm.not( im.equal( event.thread_id, t_event.thread_id ) ),
-                            im.equal( event.event_id, t_event.event_id )
-                        )
-                    );
-                } // */
+                for( int i = 0 ; i < cycle.events.size() ; i++ ) {
+                    for( int j = 0 ; j < cycle.events.size() ; j++ ) {
+                        if( !prover.isUnsatWithAssumptions( Arrays.asList(
+                            bm.not( im.equal( cycle.events.get(i).thread_id, cycle.events.get(j).thread_id ) )
+                        ) ) ) {}
+                    }
+                }
             }
             if( memory_ufds.is_leader( event.id ) ) {
                 /* Events that don't have to access the same memory location, won't access the same memory location */
