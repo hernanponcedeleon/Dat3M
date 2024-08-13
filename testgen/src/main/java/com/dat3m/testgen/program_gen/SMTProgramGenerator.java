@@ -224,27 +224,26 @@ public class SMTProgramGenerator {
     void prove_program(
         StringBuilder sb
     ) throws Exception {
-        boolean isUnsat = prover.isUnsat();
-        if( !isUnsat ) {
-            Model model = prover.getModel();
-            for( final SMTEvent event : cycle.events ) {
-                BigInteger val_type = model.evaluate( event.type );
-                BigInteger val_location = model.evaluate( event.location );
-                BigInteger val_value = model.evaluate( event.value );
-                BigInteger val_thread_id = model.evaluate( event.thread_id );
-                BigInteger val_thread_row = model.evaluate( event.thread_row );
-                BigInteger val_event_id = model.evaluate( event.event_id );
-                sb.append(
-                    val_event_id.toString() + "," +
-                    val_type.toString() + "," +
-                    val_location.toString() + "," +
-                    val_value.toString() + "," +
-                    val_thread_id.toString() + "," +
-                    val_thread_row.toString() + "\n"
-                );
-            }
-        } else {
+        if( prover.isUnsat() ) {
             sb.append( "Program cannot exist!" );
+            return;
+        }
+        Model model = prover.getModel();
+        for( final SMTEvent event : cycle.events ) {
+            BigInteger val_type = model.evaluate( event.type );
+            BigInteger val_location = model.evaluate( event.location );
+            BigInteger val_value = model.evaluate( event.value );
+            BigInteger val_thread_id = model.evaluate( event.thread_id );
+            BigInteger val_thread_row = model.evaluate( event.thread_row );
+            BigInteger val_event_id = model.evaluate( event.event_id );
+            sb.append(
+                val_event_id.toString() + "," +
+                val_type.toString() + "," +
+                val_location.toString() + "," +
+                val_value.toString() + "," +
+                val_thread_id.toString() + "," +
+                val_thread_row.toString() + "\n"
+            );
         }
     }
 

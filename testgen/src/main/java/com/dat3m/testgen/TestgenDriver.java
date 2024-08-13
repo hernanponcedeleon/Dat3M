@@ -19,6 +19,12 @@ public class TestgenDriver {
         example_program_generation();
     }
 
+    static void playground()
+    throws Exception {
+        Playground playground = new Playground();
+        playground.start();
+    }
+
     static void example_program_generation()
     throws Exception {
         SMTCycle cycle = new SMTCycle( 10 );
