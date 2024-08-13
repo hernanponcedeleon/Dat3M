@@ -1,4 +1,4 @@
-package com.dat3m.testgen;
+package com.dat3m.testgen.cycle_gen;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -19,10 +19,10 @@ import java.util.Set;
  */
 public class CNF {
     
-    public Map <String, List <String>> rules;
+    Map <String, List <String>> rules;
     public String starting_nt;
-    public Set <String> non_terminals;
-    public Set <String> terminals;
+    Set <String> non_terminals;
+    Set <String> terminals;
     int new_nonterminal_idx = 1;
 
     /**
@@ -273,7 +273,7 @@ public class CNF {
      * @param allowed_growth Rules of type NT;NT that can be taken
      * @throws Exception
      */
-    void explore_cnf(
+    public void explore_cnf(
         Set <String> all_cycles,
         List <String> states,
         List <String> cycle,

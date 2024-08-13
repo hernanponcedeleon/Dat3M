@@ -1,4 +1,4 @@
-package com.dat3m.testgen;
+package com.dat3m.testgen.util;
 
 /**
  * Implementation of Union Find Disjoint Set data structure.
@@ -78,6 +78,18 @@ public class UnionFindDisjointSet {
         }
         p[set_j] = set_i;
         set_size[set_i] += set_size[set_j];
+    }
+
+    /**
+     * Returns true if the given element is the leader of its set
+     * 
+     * @param i
+     * @return
+     */
+    public boolean is_leader(
+        final int i
+    ) {
+        return i == find_set( i );
     }
 
 }
