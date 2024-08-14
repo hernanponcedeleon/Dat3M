@@ -19,9 +19,21 @@ public class TestgenDriver {
         example_program_generation();
     }
 
+    static void playground()
+    throws Exception {
+        Playground playground = new Playground();
+        playground.start();
+    }
+
     static void example_program_generation()
     throws Exception {
         SMTCycle cycle = new SMTCycle( 10 );
+
+        // /*
+        cycle.create_relation( 0, SMTRelation.relation_t.po, 1 );
+        cycle.create_relation( 1, SMTRelation.relation_t.rf, 2 );
+        cycle.create_relation( 2, SMTRelation.relation_t.po, 3 );
+        cycle.create_relation( 3, SMTRelation.relation_t.rf, 0 ); // */
 
         /*
         cycle.create_relation( 0, SMTRelation.relation_t.po, 1 );
@@ -42,7 +54,7 @@ public class TestgenDriver {
         cycle.create_relation( 3, SMTRelation.relation_t.rf_inv, 4 );
         cycle.create_relation( 4, SMTRelation.relation_t.co, 0 ); // */
 
-        // /*
+        /*
         cycle.create_relation( 0, SMTRelation.relation_t.po, 1 );
         cycle.create_relation( 1, SMTRelation.relation_t.rf_inv, 2 );
         cycle.create_relation( 2, SMTRelation.relation_t.co, 3 );
