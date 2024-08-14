@@ -30,9 +30,8 @@ import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 
 import java.io.*;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
+import java.nio.file.*;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.util.*;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
@@ -477,8 +476,39 @@ public class DatalogRelationAnalysis implements RelationAnalysis {
         }
     }
 
+    private void deleteOnExit(Path path) {
+        Runtime.getRuntime().addShutdownHook(new java.lang.Thread(){
+            @Override
+            public void run() {
+                if (!Files.exists(path)) {
+                    return;
+                }
+                try {
+                    Files.walkFileTree(path, new SimpleFileVisitor<>() {
+                        @Override
+                        public FileVisitResult postVisitDirectory(Path dir, IOException exc)
+                                throws IOException {
+                            Files.deleteIfExists(dir);
+                            return super.postVisitDirectory(dir, exc);
+                        }
+
+                        @Override
+                        public FileVisitResult visitFile(Path file, BasicFileAttributes attrs)
+                                throws IOException {
+                            Files.deleteIfExists(file);
+                            return super.visitFile(file, attrs);
+                        }
+                    });
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+        });
+    }
+
     private Path writeDatalog(StringBuilder datalogProgram) throws IOException {
         tempDir = Files.createTempDirectory("datalog");
+        deleteOnExit(tempDir);
         String tempDirPath = tempDir.toString();
         logger.info("using temp dir: " + tempDir);
         try (InputStream libIn = getClass().getResourceAsStream("/" + LIB_NAME)) {
