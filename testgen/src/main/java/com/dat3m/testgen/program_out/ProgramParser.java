@@ -22,6 +22,8 @@ public class ProgramParser {
     {
         if( program_str.equals( "Program cannot exist!" ) )
             return "Program cannot exist!";
+
+        System.out.println( program_str );
         
         StringBuilder sb = new StringBuilder();
         Set <Integer> event_id_set = new HashSet<>();

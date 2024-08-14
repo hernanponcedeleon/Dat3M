@@ -29,6 +29,8 @@ public class Event {
                 return "Read";
             case 2:
                 return "Write";
+            case 3:
+                return "Observer";
             default:
                 return "Undefined";
         }
