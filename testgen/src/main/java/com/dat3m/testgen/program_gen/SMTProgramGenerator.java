@@ -2,6 +2,9 @@ package com.dat3m.testgen.program_gen;
 
 import java.math.BigInteger;
 import java.util.Arrays;
+import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.sosy_lab.common.ShutdownNotifier;
 import org.sosy_lab.common.configuration.Configuration;
@@ -23,6 +26,7 @@ import org.sosy_lab.java_smt.api.SolverContext.ProverOptions;
 public class SMTProgramGenerator {
 
     SMTCycle cycle;
+    SMTCycle observers;
 
     Configuration config;
     LogManager logger;
@@ -33,6 +37,8 @@ public class SMTProgramGenerator {
     BooleanFormulaManager bm;
     ProverEnvironment prover;
 
+    List <SMTEvent> all_events;
+
     public SMTProgramGenerator(
         final SMTCycle r_cycle
     ) throws Exception {
@@ -40,6 +46,7 @@ public class SMTProgramGenerator {
             throw new Exception( "Cycle object is not allowed to be null." );
         
         cycle    = r_cycle;
+        observers = new SMTCycle( cycle.cycle_size );
         config   = Configuration.defaultConfiguration();
         logger   = LogManager.createNullLogManager();
         shutdown = ShutdownNotifier.createDummy();
@@ -53,6 +60,8 @@ public class SMTProgramGenerator {
         bm = fm.getBooleanFormulaManager();
 
         prover = context.newProverEnvironment( ProverOptions.GENERATE_MODELS );
+
+        all_events = Stream.concat( cycle.events.stream(), observers.events.stream() ).collect( Collectors.toList() );
     }
 
     public String generate_program()
@@ -60,7 +69,8 @@ public class SMTProgramGenerator {
         StringBuilder sb = new StringBuilder();
         initialize( sb );
         process_relations( sb );
-        finalize( sb );
+        finalize( sb, cycle );
+        finalize( sb, observers );
         prove_program( sb );
         return sb.toString();
     }
@@ -80,15 +90,35 @@ public class SMTProgramGenerator {
             event.thread_row = im.makeVariable( event.name( "thread_row" ) );
             event.event_id   = im.makeVariable( event.name( "event_id"   ) );
 
-            String attribute_names[] = new String[]{
-                "type", "location", "value", "thread_id", "thread_row", "event_id"
-            };
             IntegerFormula attribute_formulas[] = new IntegerFormula[]{
                 event.type, event.location, event.value, event.thread_id, event.thread_row, event.event_id
             };
-            for( int i = 0 ; i < attribute_names.length ; i++ )
+            for( int i = 0 ; i < attribute_formulas.length ; i++ )
                 prover.addConstraint( bm.and(
                     im.greaterOrEquals( attribute_formulas[i], im.makeNumber(0) ),
+                    im.lessThan( attribute_formulas[i], im.makeNumber( cycle.cycle_size ) )
+                ) );
+        }
+        for( SMTEvent event : observers.events ) {
+            event.type       = im.makeVariable( event.name( "o_type"       ) );
+            event.location   = im.makeVariable( event.name( "o_location"   ) );
+            event.value      = im.makeVariable( event.name( "o_value"      ) );
+            event.thread_id  = im.makeVariable( event.name( "o_thread_id"  ) );
+            event.thread_row = im.makeVariable( event.name( "o_thread_row" ) );
+            event.event_id   = im.makeVariable( event.name( "o_event_id"   ) );
+
+            prover.addConstraint( bm.and(
+                im.greaterOrEquals( event.thread_id, im.makeNumber( cycle.cycle_size ) ),
+                im.lessThan( event.thread_id, im.makeNumber( 2*cycle.cycle_size ) ),
+                im.greaterOrEquals( event.event_id, im.makeNumber( cycle.cycle_size ) ),
+                im.lessThan( event.event_id, im.makeNumber( 2*cycle.cycle_size ) )
+            ) );
+            IntegerFormula attribute_formulas[] = new IntegerFormula[]{
+                event.type, event.location, event.value, event.thread_row
+            };
+            for( int i = 0 ; i < attribute_formulas.length ; i++ )
+                prover.addConstraint( bm.and(
+                    im.greaterOrEquals( attribute_formulas[i], im.makeNumber( 0 ) ),
                     im.lessThan( attribute_formulas[i], im.makeNumber( cycle.cycle_size ) )
                 ) );
         }
@@ -111,23 +141,31 @@ public class SMTProgramGenerator {
 
                 case rf:
                     /* L.event_id != R.event_id */ prover.addConstraint( bm.not( im.equal( relation.event_L.event_id, relation.event_R.event_id ) ) );
-                    /* L.type == W              */ prover.addConstraint( im.equal( relation.event_L.type, im.makeNumber( SMTInstructions.WRITE_INSTRUCTION ) ) );
-                    /* R.type == R              */ prover.addConstraint( im.equal( relation.event_R.type, im.makeNumber( SMTInstructions.READ_INSTRUCTION ) ) );
+                    /* L.type == W              */ prover.addConstraint( im.equal( relation.event_L.type, im.makeNumber( SMTInstructions.WRITE ) ) );
+                    /* R.type == R              */ prover.addConstraint( im.equal( relation.event_R.type, im.makeNumber( SMTInstructions.READ ) ) );
                     /* L.location == R.location */ prover.addConstraint( im.equal( relation.event_L.location, relation.event_R.location ) );
                     /* L.value == R.value       */ prover.addConstraint( im.equal( relation.event_L.value, relation.event_R.value ) );
                     break;
 
                 case co:
-                    /* L.event_id != R.event_id */ prover.addConstraint( bm.not( im.equal( relation.event_L.event_id, relation.event_R.event_id ) ) );
-                    /* L.type == W              */ prover.addConstraint( im.equal( relation.event_L.type, im.makeNumber( SMTInstructions.WRITE_INSTRUCTION ) ) );
-                    /* R.type == W              */ prover.addConstraint( im.equal( relation.event_R.type, im.makeNumber( SMTInstructions.WRITE_INSTRUCTION ) ) );
-                    /* L.location == R.location */ prover.addConstraint( im.equal( relation.event_L.location, relation.event_R.location ) );
+                    /* L.event_id != R.event_id       */ prover.addConstraint( bm.not( im.equal( relation.event_L.event_id, relation.event_R.event_id ) ) );
+                    /* L.type == W                    */ prover.addConstraint( im.equal( relation.event_L.type, im.makeNumber( SMTInstructions.WRITE ) ) );
+                    /* R.type == W                    */ prover.addConstraint( im.equal( relation.event_R.type, im.makeNumber( SMTInstructions.WRITE ) ) );
+                    /* L.location == R.location       */ prover.addConstraint( im.equal( relation.event_L.location, relation.event_R.location ) );
+                    /* Declare observer thread L      */ prover.addConstraint( im.equal( observers.events.get( relation.event_L.id ).type, im.makeNumber( SMTInstructions.OBSERVER_READ ) ) );
+                    /* Set observer thread L location */ prover.addConstraint( im.equal( observers.events.get( relation.event_L.id ).location, relation.event_L.location ) );
+                    /* Set observer thread L value    */ prover.addConstraint( im.equal( observers.events.get( relation.event_L.id ).value, relation.event_L.value ) );
+                    /* Declare observer thread R      */ prover.addConstraint( im.equal( observers.events.get( relation.event_R.id ).type, im.makeNumber( SMTInstructions.OBSERVER_READ ) ) );
+                    /* Set observer thread R location */ prover.addConstraint( im.equal( observers.events.get( relation.event_R.id ).location, relation.event_R.location ) );
+                    /* Set observer thread R value    */ prover.addConstraint( im.equal( observers.events.get( relation.event_R.id ).value, relation.event_R.value ) );
+                    /* Set po order between observers */ prover.addConstraint( im.equal( observers.events.get( relation.event_L.id ).thread_id, observers.events.get( relation.event_R.id ).thread_id ) );
+                    /* Set po order between observers */ prover.addConstraint( im.lessThan( observers.events.get( relation.event_L.id ).thread_row, observers.events.get( relation.event_R.id ).thread_row ) );
                     break;
                     
                 case rf_inv:
                     /* L.event_id != R.event_id */ prover.addConstraint( bm.not( im.equal( relation.event_L.event_id, relation.event_R.event_id ) ) );
-                    /* L.type == R              */ prover.addConstraint( im.equal( relation.event_L.type, im.makeNumber( SMTInstructions.READ_INSTRUCTION ) ) );
-                    /* R.type == W              */ prover.addConstraint( im.equal( relation.event_R.type, im.makeNumber( SMTInstructions.WRITE_INSTRUCTION ) ) );
+                    /* L.type == R              */ prover.addConstraint( im.equal( relation.event_L.type, im.makeNumber( SMTInstructions.READ ) ) );
+                    /* R.type == W              */ prover.addConstraint( im.equal( relation.event_R.type, im.makeNumber( SMTInstructions.WRITE ) ) );
                     /* L.location == R.location */ prover.addConstraint( im.equal( relation.event_L.location, relation.event_R.location ) );
                     /* L.value == R.value       */ prover.addConstraint( im.equal( relation.event_L.value, relation.event_R.value ) );
                     break;
@@ -144,7 +182,8 @@ public class SMTProgramGenerator {
      * Rule 2. is required for correctness, since the equivalence depends on the value that is being written by writes to the same location.
      */
     void finalize(
-        StringBuilder sb
+        StringBuilder sb,
+        SMTCycle cycle
     ) throws Exception {
         /* 1. Handle equivalence between events */
         for( int i = 0 ; i < cycle.events.size() ; i++ ) {
@@ -166,8 +205,8 @@ public class SMTProgramGenerator {
             for( int j = 0 ; j < cycle.events.size() ; j++ ) {
                 prover.addConstraint( bm.implication( bm.and(
                     im.equal( cycle.events.get(i).location, cycle.events.get(j).location ),
-                    im.equal( cycle.events.get(i).type, im.makeNumber( SMTInstructions.WRITE_INSTRUCTION ) ),
-                    im.equal( cycle.events.get(j).type, im.makeNumber( SMTInstructions.WRITE_INSTRUCTION ) ) ), bm.or(
+                    im.equal( cycle.events.get(i).type, im.makeNumber( SMTInstructions.WRITE ) ),
+                    im.equal( cycle.events.get(j).type, im.makeNumber( SMTInstructions.WRITE ) ) ), bm.or(
                     im.equal( cycle.events.get(i).event_id, cycle.events.get(j).event_id ),
                     bm.not( im.equal( cycle.events.get(i).value, cycle.events.get(j).value ) )
                 ) ) );
@@ -196,9 +235,9 @@ public class SMTProgramGenerator {
         /* 5. [H] Events that don't have to be defined, won't be defined */
         for( int i = 0 ; i < cycle.events.size() ; i++ ) {
             if( !prover.isUnsatWithAssumptions( Arrays.asList(
-                im.equal( cycle.events.get(i).type, im.makeNumber( SMTInstructions.UNDEFINED_INSTRUCTION ) )
+                im.equal( cycle.events.get(i).type, im.makeNumber( SMTInstructions.UNDEFINED ) )
             ) ) ) {
-                prover.addConstraint( im.equal( cycle.events.get(i).type, im.makeNumber( SMTInstructions.UNDEFINED_INSTRUCTION ) ) );
+                prover.addConstraint( im.equal( cycle.events.get(i).type, im.makeNumber( SMTInstructions.UNDEFINED ) ) );
             }
         }
     }
@@ -214,7 +253,7 @@ public class SMTProgramGenerator {
             return;
         }
         Model model = prover.getModel();
-        for( final SMTEvent event : cycle.events ) {
+        for( final SMTEvent event : all_events ) {
             BigInteger val_type = model.evaluate( event.type );
             BigInteger val_location = model.evaluate( event.location );
             BigInteger val_value = model.evaluate( event.value );
