@@ -1624,46 +1624,11 @@ public class NativeRelationAnalysis implements RelationAnalysis {
             EventGraph next;
             EventGraph outer = new EventGraph(oldOuter);
             outer.addAll(inner);
-            for (EventGraph current = inner; !current.isEmpty(); current = next) {
+            for (EventGraph current = EventGraph.difference(inner, outer); !current.isEmpty(); current = next) {
                 next = new EventGraph();
-                for (Event e1 : current.getDomain()) {
-                    Set<Event> rangeUpdate = new HashSet<>();
-                    for (Event e2 : current.getRange(e1)) {
-                        if (isMay) {
-                            rangeUpdate.addAll(outer.getRange(e2));
-                        } else {
-                            boolean implies = exec.isImplied(e1, e2);
-                            rangeUpdate.addAll(outer.getRange(e2).stream()
-                                    .filter(e -> implies || exec.isImplied(e, e2))
-                                    .toList());
-                        }
-                    }
-                    Set<Event> known = outer.getRange(e1);
-                    rangeUpdate.removeIf(e -> known.contains(e) || exec.areMutuallyExclusive(e1, e));
-                    if (!rangeUpdate.isEmpty()) {
-                        next.addRange(e1, rangeUpdate);
-                    }
-                }
-                EventGraph currentInverse = current.inverse();
-                EventGraph outerInverse = outer.inverse();
-                for (Event e3 : currentInverse.getDomain()) {
-                    Set<Event> domainUpdate = new HashSet<>();
-                    for (Event e2 : currentInverse.getRange(e3)) {
-                        if (isMay) {
-                            domainUpdate.addAll(outerInverse.getRange(e2));
-                        } else {
-                            boolean implies = exec.isImplied(e2, e3);
-                            domainUpdate.addAll(outerInverse.getRange(e2).stream()
-                                    .filter(e -> implies || exec.isImplied(e2, e))
-                                    .toList());
-                        }
-                    }
-                    Set<Event> known = outerInverse.getRange(e3);
-                    domainUpdate.removeIf(e -> known.contains(e) || exec.areMutuallyExclusive(e3, e));
-                    for (Event e : domainUpdate) {
-                        next.add(e, e3);
-                    }
-                }
+                computeComposition(next, current, outer, isMay);
+                computeComposition(next, outer, current, isMay);
+                next.removeAll(outer);
                 outer.addAll(next);
             }
             return outer;
