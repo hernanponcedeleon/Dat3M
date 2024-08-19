@@ -59,6 +59,7 @@ public class NativeRelationAnalysis implements RelationAnalysis {
     protected final AliasAnalysis alias;
     protected final Dependency dep;
     protected final WmmAnalysis wmmAnalysis;
+    protected final BranchEquivalence eq;
     protected final Map<Relation, Knowledge> knowledgeMap = new HashMap<>();
     protected final EventGraph mutex = new EventGraph();
 
@@ -69,6 +70,7 @@ public class NativeRelationAnalysis implements RelationAnalysis {
         alias = context.requires(AliasAnalysis.class);
         dep = context.requires(Dependency.class);
         wmmAnalysis = context.requires(WmmAnalysis.class);
+        eq = analysisContext.requires(BranchEquivalence.class);
     }
 
     /**
@@ -284,7 +286,7 @@ public class NativeRelationAnalysis implements RelationAnalysis {
     }
 
     protected Initializer getInitializer() {
-        return new Initializer();
+        return new Initializer(task.getProgram(), task.getWitness(), exec, alias, wmmAnalysis, dep, eq);
     }
 
     private static Delta joinSet(Knowledge k, List<Delta> l) {
@@ -461,9 +463,24 @@ public class NativeRelationAnalysis implements RelationAnalysis {
         }
     }
 
-    protected class Initializer implements Definition.Visitor<Knowledge> {
-        final Program program = task.getProgram();
-        final WitnessGraph witness = task.getWitness();
+    public static class Initializer implements Definition.Visitor<Knowledge> {
+        final Program program;
+        final WitnessGraph witness;
+        final ExecutionAnalysis exec;
+        final AliasAnalysis alias;
+        final WmmAnalysis wmmAnalysis;
+        final Dependency dep;
+        final BranchEquivalence eq;
+
+        public Initializer(Program program, WitnessGraph witness, ExecutionAnalysis exec, AliasAnalysis alias, WmmAnalysis wmmAnalysis, Dependency dep, BranchEquivalence eq) {
+            this.program = program;
+            this.witness = witness;
+            this.exec = exec;
+            this.alias = alias;
+            this.wmmAnalysis = wmmAnalysis;
+            this.dep = dep;
+            this.eq = eq;
+        }
 
         @Override
         public Knowledge visitDefinition(Definition def) {
@@ -798,7 +815,6 @@ public class NativeRelationAnalysis implements RelationAnalysis {
         @Override
         public Knowledge visitReadFrom(ReadFrom rf) {
             logger.trace("Computing knowledge about read-from");
-            final BranchEquivalence eq = analysisContext.requires(BranchEquivalence.class);
             EventGraph may = new EventGraph();
             EventGraph must = new EventGraph();
             List<Load> loadEvents = program.getThreadEvents(Load.class);

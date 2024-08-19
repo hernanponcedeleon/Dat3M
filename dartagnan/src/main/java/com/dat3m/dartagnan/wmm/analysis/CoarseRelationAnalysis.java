@@ -1,5 +1,7 @@
 package com.dat3m.dartagnan.wmm.analysis;
 
+import com.dat3m.dartagnan.program.Program;
+import com.dat3m.dartagnan.program.analysis.BranchEquivalence;
 import com.dat3m.dartagnan.program.analysis.Dependency;
 import com.dat3m.dartagnan.program.analysis.ExecutionAnalysis;
 import com.dat3m.dartagnan.program.analysis.alias.AliasAnalysis;
@@ -7,6 +9,7 @@ import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.utils.dependable.DependencyGraph;
 import com.dat3m.dartagnan.verification.Context;
 import com.dat3m.dartagnan.verification.VerificationTask;
+import com.dat3m.dartagnan.witness.graphml.WitnessGraph;
 import com.dat3m.dartagnan.wmm.*;
 import com.dat3m.dartagnan.wmm.utils.EventGraph;
 import org.sosy_lab.common.configuration.Configuration;
@@ -60,13 +63,14 @@ public class CoarseRelationAnalysis extends NativeRelationAnalysis {
 
     @Override
     protected Initializer getInitializer() {
-        return new EmptyInitializer();
+        return new CoarseInitializer(task.getProgram(), task.getWitness(), exec, alias, wmmAnalysis, dep, eq);
     }
 
-    private final class EmptyInitializer extends NativeRelationAnalysis.Initializer {
+    private final class CoarseInitializer extends NativeRelationAnalysis.Initializer {
         final Knowledge defaultKnowledge;
 
-        EmptyInitializer() {
+        CoarseInitializer(Program program, WitnessGraph witness, ExecutionAnalysis exec, AliasAnalysis alias, WmmAnalysis wmmAnalysis, Dependency dep, BranchEquivalence eq) {
+            super(program, witness, exec, alias, wmmAnalysis, dep, eq);
             EventGraph may = new EventGraph();
             Set<Event> events = program.getThreadEvents().stream().filter(e -> e.hasTag(VISIBLE)).collect(toSet());
             events.forEach(x -> may.addRange(x, events));
