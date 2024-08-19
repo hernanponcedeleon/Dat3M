@@ -1622,15 +1622,15 @@ public class NativeRelationAnalysis implements RelationAnalysis {
         }
 
         private EventGraph computeTransitiveClosure(EventGraph oldOuter, EventGraph inner, boolean isMay) {
-            EventGraph next;
             EventGraph outer = new EventGraph(oldOuter);
-            outer.addAll(inner);
-            for (EventGraph current = EventGraph.difference(inner, oldOuter); !current.isEmpty(); current = next) {
-                next = new EventGraph();
-                computeComposition(next, current, outer, isMay);
-                computeComposition(next, outer, current, isMay);
-                next.removeAll(outer);
-                outer.addAll(next);
+            EventGraph update = inner.filter(outer::add);
+            EventGraph updateComposition = new EventGraph();
+            computeComposition(updateComposition, update, oldOuter, isMay);
+            update.addAll(updateComposition.filter(outer::add));
+            while (!update.isEmpty()) {
+                EventGraph t = new EventGraph();
+                computeComposition(t, inner, update, isMay);
+                update = t.filter(outer::add);
             }
             return outer;
         }
