@@ -7,6 +7,10 @@
 #define FILTERED2(filter, e, ...) filter.Must(e), FILTERED1(filter, __VA_ARGS__)
 #define FILTERED3(filter, e, ...) filter.Must(e), FILTERED2(filter, __VA_ARGS__)
 #define FILTERED4(filter, e, ...) filter.Must(e), FILTERED3(filter, __VA_ARGS__)
+#define COMPOSE_MAY(result, op1, op2) \
+    result.May(x, y) :- op1.May(x, t), op2.May(t, y), !MUTEX(x, y).
+#define COMPOSE_MUST(result, op1, op2) \
+    result.Must(x, y) :- (op1.Must(x, t), op2.Must(t, y)), (IMPLIES(x, t); IMPLIES(y, t)), !MUTEX(x, y).
 
 // analyses
 
@@ -96,15 +100,15 @@
 
 #define COMPOSITION(result, op1, op2, arity, output, ...) \
     .init result = Approximation##arity##output \
-    result.May(x, y) :- op1.May(x, t), op2.May(t, y), !MUTEX(x, y). \
-    result.Must(x, y) :- (op1.Must(x, t), op2.Must(t, y)), (IMPLIES(x, t); IMPLIES(y, t)), !MUTEX(x, y).
+    COMPOSE_MAY(result, op1, op2) \
+    COMPOSE_MUST(result, op1, op2)
 
 #define CLOSURE(result, op1, op2, arity, output, ...) \
     .init result = Approximation##arity##output \
     result.May(x, y) :- op1.May(x, y). \
-    result.May(x, y) :- result.May(x, t), result.May(t, y), !MUTEX(x, y). \
+    COMPOSE_MAY(result, op1, result) \
     result.Must(x, y) :- op1.Must(x, y). \
-    result.Must(x, y) :- (result.Must(x, t), result.Must(t, y)), (IMPLIES(x, t); IMPLIES(y, t)), !MUTEX(x, y).
+    COMPOSE_MUST(result, op1, result)
 
 #define PRODUCT(result, op1, op2, arity, output, ...) \
     .init result = Approximation##arity##output \
