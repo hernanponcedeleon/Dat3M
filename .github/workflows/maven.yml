@@ -26,6 +26,7 @@ jobs:
         echo "deb [signed-by=/usr/share/keyrings/souffle-archive-keyring.gpg] https://souffle-lang.github.io/ppa/ubuntu/ stable main" | sudo tee /etc/apt/sources.list.d/souffle.list
         sudo apt update
         sudo apt install -y souffle
+        sudo rm -rf /var/lib/apt/lists/*
         souffle -h
 
     - name: Checkout
