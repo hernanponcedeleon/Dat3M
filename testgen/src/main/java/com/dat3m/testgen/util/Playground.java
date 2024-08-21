@@ -1,4 +1,4 @@
-package com.dat3m.testgen;
+package com.dat3m.testgen.util;
 
 import java.math.BigInteger;
 import java.util.Arrays;
@@ -30,7 +30,7 @@ public class Playground {
     BooleanFormulaManager bm;
     ProverEnvironment prover;
     
-    Playground()
+    public Playground()
     throws Exception {
         config   = Configuration.defaultConfiguration();
         logger   = LogManager.createNullLogManager();

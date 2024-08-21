@@ -1,28 +1,35 @@
 package com.dat3m.testgen;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Set;
-import java.util.TreeSet;
+import java.util.*;
+import java.io.*;
 
-import com.dat3m.testgen.cycle_gen.CNF;
+import com.dat3m.testgen.cycle_gen.Cycle;
+import com.dat3m.testgen.cycle_gen.Grammar;
+import com.dat3m.testgen.grammar_parse.GrammarParser;
 import com.dat3m.testgen.program_gen.SMTCycle;
 import com.dat3m.testgen.program_gen.SMTProgramGenerator;
 import com.dat3m.testgen.program_gen.SMTRelation;
 import com.dat3m.testgen.program_out.ProgramParser;
+import com.dat3m.testgen.util.Playground;
 
 public class TestgenDriver {
 
     public static void main(
         String[] args
     ) throws Exception {
-        example_program_generation();
+        example_grammar_parser();
     }
 
     static void playground()
     throws Exception {
         Playground playground = new Playground();
         playground.start();
+    }
+
+    static void example_grammar_parser()
+    throws Exception {
+        File memory_model = new File( "../cat/sc.cat" );
+        GrammarParser.parse( memory_model );
     }
 
     static void example_program_generation()
@@ -70,12 +77,10 @@ public class TestgenDriver {
     }
 
     static void example_cycles()
-    throws Exception {
-        Set <String> all_cycles = new TreeSet<>();
-        
-        CNF cnf = new CNF( "HB_SC" );
+    throws Exception {        
+        Grammar cnf = new Grammar( "HB_SC" );
 
-        cnf.add_non_terminal( "FR" );
+        cnf.add_nonterminal( "FR" );
 
         cnf.add_terminal( "po" );
         cnf.add_terminal( "rf" );
@@ -87,20 +92,13 @@ public class TestgenDriver {
         cnf.add_rule( "HB_SC", "co" );
         cnf.add_rule( "HB_SC", "FR" );
         cnf.add_rule( "HB_SC", "HB_SC;HB_SC" );
-        cnf.add_rule( "FR", "rf_inv;co" );
-
-        cnf.to_normal_form();
+        cnf.add_rule( "FR",    "rf_inv;co" );
 
         final int cycle_length = 4;
-        cnf.explore_cnf(
-            all_cycles,
-            new ArrayList<String>( Arrays.asList( cnf.starting_nt ) ),
-            new ArrayList<>(),
-            cycle_length - 1
-        );
+        List <Cycle> all_cycles = cnf.explore_cnf( cycle_length );        
         
         System.out.println( "Cycles of length " + cycle_length + ":" );
-        for( String cycle : all_cycles )
+        for( Cycle cycle : all_cycles )
             System.out.println( cycle );
     }
 
