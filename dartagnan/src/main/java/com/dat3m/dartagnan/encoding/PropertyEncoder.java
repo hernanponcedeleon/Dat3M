@@ -103,11 +103,14 @@ public class PropertyEncoder implements Encoder {
     public BooleanFormula encodeProperties(EnumSet<Property> properties) {
         Property.Type specType = Property.getCombinedType(properties, context.getTask());
         if (specType == Property.Type.MIXED) {
-            final String error = String.format(
+            final String warn = String.format(
                     "The set of properties %s are of mixed type (safety and reachability properties). " +
-                            "Cannot encode mixed properties into a single SMT-query. Please select a different set of properties.",
+                    "Cannot encode mixed properties into a single SMT-query. " +
+                    "You can select a different set of properties with option --property. " +
+                    "Defaulting to reachability.",
                     properties);
-            throw new IllegalArgumentException(error);
+            logger.warn(warn);
+            properties = EnumSet.of(Property.PROGRAM_SPEC);
         }
 
         BooleanFormula encoding = (specType == Property.Type.SAFETY) ?
