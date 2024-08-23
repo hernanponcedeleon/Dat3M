@@ -1,9 +1,9 @@
-package com.dat3m.testgen.cycle_gen;
+package com.dat3m.testgen.old.cycle_gen;
 
 /**
  * Represents information regarding all the possible relations between events.
  */
-public class RelationType {
+public class GrammarRelationType {
     
     public enum base_relation {
         undefined,
@@ -15,7 +15,7 @@ public class RelationType {
     public final base_relation type;
     public final boolean is_inverse;
 
-    public RelationType(
+    public GrammarRelationType(
         final base_relation r_type,
         final boolean r_is_inverse
     ) {
@@ -23,7 +23,7 @@ public class RelationType {
         is_inverse = r_is_inverse;
     }
 
-    public RelationType(
+    public GrammarRelationType(
         final String str_relation
     ) throws Exception {
         switch( str_relation ) {

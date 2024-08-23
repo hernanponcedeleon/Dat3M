@@ -1,4 +1,4 @@
-package com.dat3m.testgen.program_gen;
+package com.dat3m.testgen.old.program_gen;
 
 public class SMTInstructions {
     static int UNDEFINED = 0;

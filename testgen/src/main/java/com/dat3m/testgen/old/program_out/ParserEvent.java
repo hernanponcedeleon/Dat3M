@@ -1,6 +1,6 @@
-package com.dat3m.testgen.program_out;
+package com.dat3m.testgen.old.program_out;
 
-public class Event {
+public class ParserEvent {
 
     final int event_id;
     final String type;
@@ -9,7 +9,7 @@ public class Event {
     final int thread_id;
     final int thread_row;
 
-    public Event(
+    public ParserEvent(
         final String line
     ) {
         String[] info = line.split( "," );

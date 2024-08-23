@@ -1,4 +1,4 @@
-package com.dat3m.testgen.cycle_gen;
+package com.dat3m.testgen.old.cycle_gen;
 
 import java.util.*;
 
@@ -174,10 +174,10 @@ public class Grammar {
         modified = true; break; } if( modified ) break; } }
     }
 
-    public List <Cycle> explore_cnf(
+    public List <GrammarCycle> explore_cnf(
         final int cycle_length
     ) throws Exception {
-        List <Cycle> cycle_list = new ArrayList<>();
+        List <GrammarCycle> cycle_list = new ArrayList<>();
         Set <String> cycle_str_set = new HashSet<String>();
         Stack <String> st = new Stack<>();
 
@@ -206,7 +206,7 @@ public class Grammar {
      */
     void explore_cnf(
         Set   <String> cycle_str_set,
-        List  <Cycle>  output,
+        List  <GrammarCycle>  output,
         Stack <String> states,
         Stack <String> cycle,
         final int      allowed_growth
@@ -214,7 +214,7 @@ public class Grammar {
         if( states.isEmpty() || allowed_growth < 0 ) {
             if( allowed_growth == 0 && !cycle_str_set.contains( cycle.toString() ) ) {
                 cycle_str_set.add( cycle.toString() );
-                output.add( new Cycle( cycle ) );
+                output.add( new GrammarCycle( cycle ) );
             }
             return;
         }

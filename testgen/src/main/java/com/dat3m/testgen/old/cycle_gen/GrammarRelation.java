@@ -1,17 +1,17 @@
-package com.dat3m.testgen.cycle_gen;
+package com.dat3m.testgen.old.cycle_gen;
 
 /**
  * Represents a relation between two abstract events.
  */
-public class Relation {
+public class GrammarRelation {
 
     public final int event_L_id;
-    public final RelationType type;
+    public final GrammarRelationType type;
     public final int event_R_id;
 
-    public Relation(
+    public GrammarRelation(
         final int r_event_L_id,
-        final RelationType r_type,
+        final GrammarRelationType r_type,
         final int r_event_R_id
     ) throws Exception {
         if( r_event_L_id < 0 || r_event_R_id < 0 )
