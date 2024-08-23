@@ -107,7 +107,7 @@ public class PropertyEncoder implements Encoder {
                     "The set of properties %s are of mixed type (safety and reachability properties). " +
                     "Cannot encode mixed properties into a single SMT-query. " +
                     "You can select a different set of properties with option --property. " +
-                    "Defaulting to reachability.",
+                    "Defaulting to " + Property.PROGRAM_SPEC.asStringOption() + ".",
                     properties);
             logger.warn(warn);
             properties = EnumSet.of(Property.PROGRAM_SPEC);
