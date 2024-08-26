@@ -1625,7 +1625,7 @@ public class NativeRelationAnalysis implements RelationAnalysis {
             EventGraph outer = new EventGraph(oldOuter);
             EventGraph update = inner.filter(outer::add);
             EventGraph updateComposition = new EventGraph();
-            computeComposition(updateComposition, update, oldOuter, isMay);
+            computeComposition(updateComposition, inner, oldOuter, isMay);
             update.addAll(updateComposition.filter(outer::add));
             while (!update.isEmpty()) {
                 EventGraph t = new EventGraph();
