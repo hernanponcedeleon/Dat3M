@@ -1064,7 +1064,7 @@ public class NativeRelationAnalysis implements RelationAnalysis {
             program.getThreadEvents(MemoryCoreEvent.class).forEach(e -> {
                 Set<VirtualMemoryObject> s = e.getAddress().getMemoryObjects().stream()
                         .filter(VirtualMemoryObject.class::isInstance)
-                        .map(o -> (VirtualMemoryObject)o)
+                        .map(o -> (VirtualMemoryObject) o)
                         .collect(Collectors.toSet());
                 if (s.size() > 1) {
                     throw new UnsupportedOperationException(
@@ -1622,30 +1622,15 @@ public class NativeRelationAnalysis implements RelationAnalysis {
         }
 
         private EventGraph computeTransitiveClosure(EventGraph oldOuter, EventGraph inner, boolean isMay) {
-            EventGraph next;
             EventGraph outer = new EventGraph(oldOuter);
-            outer.addAll(inner);
-            for (EventGraph current = inner; !current.isEmpty(); current = next) {
-                next = new EventGraph();
-                for (Event e1 : current.getDomain()) {
-                    Set<Event> update = new HashSet<>();
-                    for (Event e2 : current.getRange(e1)) {
-                        if (isMay) {
-                            update.addAll(outer.getRange(e2));
-                        } else {
-                            boolean implies = exec.isImplied(e1, e2);
-                            update.addAll(outer.getRange(e2).stream()
-                                    .filter(e -> implies || exec.isImplied(e, e2))
-                                    .toList());
-                        }
-                    }
-                    Set<Event> known = outer.getRange(e1);
-                    update.removeIf(e -> known.contains(e) || exec.areMutuallyExclusive(e1, e));
-                    if (!update.isEmpty()) {
-                        next.addRange(e1, update);
-                    }
-                }
-                outer.addAll(next);
+            EventGraph update = inner.filter(outer::add);
+            EventGraph updateComposition = new EventGraph();
+            computeComposition(updateComposition, inner, oldOuter, isMay);
+            update.addAll(updateComposition.filter(outer::add));
+            while (!update.isEmpty()) {
+                EventGraph t = new EventGraph();
+                computeComposition(t, inner, update, isMay);
+                update = t.filter(outer::add);
             }
             return outer;
         }
