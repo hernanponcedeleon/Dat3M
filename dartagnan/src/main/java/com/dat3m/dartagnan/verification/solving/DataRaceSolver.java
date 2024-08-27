@@ -9,7 +9,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
-import org.sosy_lab.java_smt.api.ProverEnvironment;
+import com.dat3m.dartagnan.encoding.ProverWithTracker;
 import org.sosy_lab.java_smt.api.SolverContext;
 import org.sosy_lab.java_smt.api.SolverException;
 
@@ -25,16 +25,16 @@ public class DataRaceSolver extends ModelChecker {
     private static final Logger logger = LogManager.getLogger(DataRaceSolver.class);
 
 	private final SolverContext ctx;
-	private final ProverEnvironment prover;
+	private final ProverWithTracker prover;
 	private final VerificationTask task;
 
-	private DataRaceSolver(SolverContext c, ProverEnvironment p, VerificationTask t) {
+	private DataRaceSolver(SolverContext c, ProverWithTracker p, VerificationTask t) {
 		ctx = c;
 		prover = p;
 		task = t;
 	}
 
-	public static DataRaceSolver run(SolverContext ctx, ProverEnvironment prover, VerificationTask task)
+	public static DataRaceSolver run(SolverContext ctx, ProverWithTracker prover, VerificationTask task)
 			throws InterruptedException, SolverException, InvalidConfigurationException {
 		DataRaceSolver s = new DataRaceSolver(ctx, prover, task);
 		s.run();
