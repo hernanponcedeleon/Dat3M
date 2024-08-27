@@ -3,6 +3,7 @@ package com.dat3m.dartagnan;
 import com.dat3m.dartagnan.configuration.OptionNames;
 import com.dat3m.dartagnan.configuration.Property;
 import com.dat3m.dartagnan.encoding.EncodingContext;
+import com.dat3m.dartagnan.encoding.ProverWithTracker;
 import com.dat3m.dartagnan.expression.ExpressionPrinter;
 import com.dat3m.dartagnan.parsers.cat.ParserCat;
 import com.dat3m.dartagnan.parsers.program.ProgramParser;
@@ -163,7 +164,10 @@ public class Dartagnan extends BaseOptions {
                     BasicLogManager.create(solverConfig),
                     sdm.getNotifier(),
                     o.getSolver());
-                    ProverEnvironment prover = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS)) {
+                    ProverWithTracker prover = new ProverWithTracker(ctx,
+                        o.getDumpSmtLib() ? 
+                            System.getenv("DAT3M_OUTPUT") + String.format("/%s.smt2", p.getName()) : "",
+                        ProverOptions.GENERATE_MODELS)) {
                 ModelChecker modelChecker;
                 if (properties.contains(DATARACEFREEDOM)) {
                     if (properties.size() > 1) {
@@ -207,7 +211,7 @@ public class Dartagnan extends BaseOptions {
         }
     }
 
-    public static File generateExecutionGraphFile(VerificationTask task, ProverEnvironment prover, ModelChecker modelChecker,
+    public static File generateExecutionGraphFile(VerificationTask task, ProverWithTracker prover, ModelChecker modelChecker,
                                                   WitnessType witnessType)
             throws InvalidConfigurationException, SolverException, IOException {
         Preconditions.checkArgument(modelChecker.hasModel(), "No execution graph to generate.");
@@ -228,7 +232,7 @@ public class Dartagnan extends BaseOptions {
                 synContext, witnessType.convertToPng());
     }
 
-    private static void generateWitnessIfAble(VerificationTask task, ProverEnvironment prover,
+    private static void generateWitnessIfAble(VerificationTask task, ProverWithTracker prover,
             ModelChecker modelChecker, String summary) {
         // ------------------ Generate Witness, if possible ------------------
         final EnumSet<Property> properties = task.getProperty();
@@ -247,7 +251,7 @@ public class Dartagnan extends BaseOptions {
         }
     }
 
-    public static String generateResultSummary(VerificationTask task, ProverEnvironment prover,
+    public static String generateResultSummary(VerificationTask task, ProverWithTracker prover,
             ModelChecker modelChecker) throws SolverException {
         // ----------------- Generate output of verification result -----------------
         final Program p = task.getProgram();
@@ -385,7 +389,7 @@ public class Dartagnan extends BaseOptions {
         return summary.toString();
     }
 
-    private static void printWarningIfThreadStartFailed(Program p, EncodingContext encoder, ProverEnvironment prover)
+    private static void printWarningIfThreadStartFailed(Program p, EncodingContext encoder, ProverWithTracker prover)
             throws SolverException {
         for (Event e : p.getThreadEvents()) {
             if (e.hasTag(Tag.STARTLOAD)

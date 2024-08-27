@@ -21,16 +21,16 @@ public class AssumeSolver extends ModelChecker {
     private static final Logger logger = LogManager.getLogger(AssumeSolver.class);
 
     private final SolverContext ctx;
-    private final ProverEnvironment prover;
+    private final ProverWithTracker prover;
     private final VerificationTask task;
 
-    private AssumeSolver(SolverContext c, ProverEnvironment p, VerificationTask t) {
+    private AssumeSolver(SolverContext c, ProverWithTracker p, VerificationTask t) {
         ctx = c;
         prover = p;
         task = t;
     }
 
-    public static AssumeSolver run(SolverContext ctx, ProverEnvironment prover, VerificationTask task)
+    public static AssumeSolver run(SolverContext ctx, ProverWithTracker prover, VerificationTask task)
             throws InterruptedException, SolverException, InvalidConfigurationException {
         AssumeSolver s = new AssumeSolver(ctx, prover, task);
         s.run();

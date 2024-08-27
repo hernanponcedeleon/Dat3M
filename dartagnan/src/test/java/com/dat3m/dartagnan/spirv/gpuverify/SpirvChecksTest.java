@@ -1,6 +1,7 @@
 package com.dat3m.dartagnan.spirv.gpuverify;
 
 import com.dat3m.dartagnan.configuration.Arch;
+import com.dat3m.dartagnan.encoding.ProverWithTracker;
 import com.dat3m.dartagnan.parsers.cat.ParserCat;
 import com.dat3m.dartagnan.parsers.program.ProgramParser;
 import com.dat3m.dartagnan.program.Program;
@@ -16,7 +17,6 @@ import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.common.log.BasicLogManager;
 import org.sosy_lab.java_smt.SolverContextFactory;
-import org.sosy_lab.java_smt.api.ProverEnvironment;
 import org.sosy_lab.java_smt.api.SolverContext;
 
 import java.io.File;
@@ -349,7 +349,7 @@ public class SpirvChecksTest {
         try (SolverContext ctx = mkCtx(); ProverEnvironment prover = mkProver(ctx)) {
             assertEquals(expected, RefinementSolver.run(ctx, prover, mkTask()).getResult());
         }*/
-        try (SolverContext ctx = mkCtx(); ProverEnvironment prover = mkProver(ctx)) {
+        try (SolverContext ctx = mkCtx(); ProverWithTracker prover = mkProver(ctx)) {
             assertEquals(expected, AssumeSolver.run(ctx, prover, mkTask()).getResult());
         }
     }
@@ -363,8 +363,8 @@ public class SpirvChecksTest {
                 SolverContextFactory.Solvers.Z3);
     }
 
-    private ProverEnvironment mkProver(SolverContext ctx) {
-        return ctx.newProverEnvironment(SolverContext.ProverOptions.GENERATE_MODELS);
+    private ProverWithTracker mkProver(SolverContext ctx) {
+        return new ProverWithTracker(ctx, "", SolverContext.ProverOptions.GENERATE_MODELS);
     }
 
     private VerificationTask mkTask() throws Exception {

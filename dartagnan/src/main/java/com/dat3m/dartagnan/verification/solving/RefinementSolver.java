@@ -162,7 +162,7 @@ public class RefinementSolver extends ModelChecker {
     //TODO: We do not yet use Witness information. The problem is that WitnessGraph.encode() generates
     // constraints on hb, which is not encoded in Refinement.
     //TODO (2): Add possibility for Refinement to handle CAT-properties (it ignores them for now).
-    public static RefinementSolver run(SolverContext ctx, ProverEnvironment prover, VerificationTask task)
+    public static RefinementSolver run(SolverContext ctx, ProverWithTracker prover, VerificationTask task)
             throws InterruptedException, SolverException, InvalidConfigurationException {
         RefinementSolver solver = new RefinementSolver();
         task.getConfig().inject(solver);
@@ -171,7 +171,7 @@ public class RefinementSolver extends ModelChecker {
         return solver;
     }
 
-    private void runInternal(SolverContext ctx, ProverEnvironment prover, VerificationTask task)
+    private void runInternal(SolverContext ctx, ProverWithTracker prover, VerificationTask task)
             throws InterruptedException, SolverException, InvalidConfigurationException {
         final Program program = task.getProgram();
         final Wmm memoryModel = task.getMemoryModel();
@@ -358,7 +358,7 @@ public class RefinementSolver extends ModelChecker {
     // Refinement core algorithm
 
     // TODO: We could expose the following method(s) to allow for more general application of refinement.
-    private RefinementTrace runRefinement(VerificationTask task, ProverEnvironment prover, WMMSolver solver, Refiner refiner)
+    private RefinementTrace runRefinement(VerificationTask task, ProverWithTracker prover, WMMSolver solver, Refiner refiner)
             throws SolverException, InterruptedException {
 
         final List<RefinementIteration> trace = new ArrayList<>();
@@ -418,7 +418,7 @@ public class RefinementSolver extends ModelChecker {
         return !last.inconsistencyReasons.equals(prev.inconsistencyReasons);
     }
 
-    private RefinementIteration doRefinementIteration(ProverEnvironment prover, WMMSolver solver, Refiner refiner)
+    private RefinementIteration doRefinementIteration(ProverWithTracker prover, WMMSolver solver, Refiner refiner)
             throws SolverException, InterruptedException {
 
         long nativeTime = 0;
