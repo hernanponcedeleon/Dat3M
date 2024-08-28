@@ -5,7 +5,7 @@ package com.dat3m.testgen.old.cycle_gen;
  */
 public class GrammarRelationType {
     
-    public enum base_relation {
+    enum base_relation {
         undefined,
         po,
         rf,

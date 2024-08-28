@@ -11,6 +11,7 @@ import com.dat3m.dartagnan.wmm.definition.Composition;
 import com.dat3m.dartagnan.wmm.definition.Intersection;
 import com.dat3m.dartagnan.wmm.definition.Union;
 import com.dat3m.testgen.util.Graph;
+import com.dat3m.testgen.util.RelationEdge;
 import com.dat3m.testgen.util.RelationType;
 
 public class WmmExplorer {
@@ -34,16 +35,16 @@ public class WmmExplorer {
         List <Graph> all_cycles = new ArrayList<>();
 
         for( final Axiom axiom : memory_model.getAxioms() ) {
-            final List <WmmRelation> relation_list = new ArrayList<>();
+            final List <RelationEdge> relation_list = new ArrayList<>();
             for( int d = 1 ; d <= degree_of_exploration ; d++ ) {
-                relation_list.add( new WmmRelation(
+                relation_list.add( new RelationEdge(
                     d, axiom.getRelation(), (d%degree_of_exploration)+1,
                     is_base_relation( axiom.getRelation() ), get_base_relation( axiom.getRelation() )
                 ) );
             }
 
             next_event_id = -1;
-            for( final WmmRelation relation : relation_list ) {
+            for( final RelationEdge relation : relation_list ) {
                 next_event_id = Math.max( next_event_id, relation.event_id_left );
                 next_event_id = Math.max( next_event_id, relation.event_id_right );
             }
@@ -57,21 +58,21 @@ public class WmmExplorer {
 
     void register_base_relations()
     throws Exception {
-        register_base_relation( "po", "po" );
-        register_base_relation( "co", "co" );
-        register_base_relation( "rf", "rf" );
-        register_base_relation( "rf^-1", "rf_inv" );
-        register_base_relation( "ext", "ext" );
-        register_base_relation( "rmw", "rmw" );
+        register_base_relation( "po",    new RelationType( RelationType.base_relation.po,  false ) );
+        register_base_relation( "co",    new RelationType( RelationType.base_relation.co,  false ) );
+        register_base_relation( "rf",    new RelationType( RelationType.base_relation.rf,  false ) );
+        register_base_relation( "rf^-1", new RelationType( RelationType.base_relation.rf,  true  ) );
+        register_base_relation( "ext",   new RelationType( RelationType.base_relation.ext, false ) );
+        register_base_relation( "rmw",   new RelationType( RelationType.base_relation.rmw, false ) );
         register_base_relation( "((([R]) \\ ([range(rf)])) ; loc) ; ([W])", null );
     }
 
     void explore_relation(
-        final List <WmmRelation> relation_list,
+        final List <RelationEdge> relation_list,
         final List <Graph> all_cycles
     ) throws Exception {
-        WmmRelation relation = null;
-        for( final WmmRelation rel : relation_list ) {
+        RelationEdge relation = null;
+        for( final RelationEdge rel : relation_list ) {
             if( rel.is_base_relation )
                 continue;
             relation = rel;
@@ -105,11 +106,11 @@ public class WmmExplorer {
 
         if( composition ) {
             final int intermediate_event_id = next_event_id++;
-            final WmmRelation wmm_L = new WmmRelation(
+            final RelationEdge wmm_L = new RelationEdge(
                 relation.event_id_left, dep_L, intermediate_event_id,
                 is_base_relation( dep_L ), get_base_relation( dep_L )
             );
-            final WmmRelation wmm_R = new WmmRelation(
+            final RelationEdge wmm_R = new RelationEdge(
                 intermediate_event_id, dep_R, relation.event_id_right,
                 is_base_relation( dep_R ), get_base_relation( dep_R )
             );
@@ -120,11 +121,11 @@ public class WmmExplorer {
             relation_list.remove( wmm_L );
             next_event_id--;
         } else if( union ) {
-            final WmmRelation wmm_L = new WmmRelation(
+            final RelationEdge wmm_L = new RelationEdge(
                 relation.event_id_left, dep_L, relation.event_id_right,
                 is_base_relation( dep_L ), get_base_relation( dep_L )
             );
-            final WmmRelation wmm_R = new WmmRelation(
+            final RelationEdge wmm_R = new RelationEdge(
                 relation.event_id_left, dep_R, relation.event_id_right,
                 is_base_relation( dep_R ), get_base_relation( dep_R )
             );
@@ -135,11 +136,11 @@ public class WmmExplorer {
             explore_relation( relation_list, all_cycles );
             relation_list.remove( wmm_R );
         } else if( intersection ) {
-            final WmmRelation wmm_L = new WmmRelation(
+            final RelationEdge wmm_L = new RelationEdge(
                 relation.event_id_left, dep_L, relation.event_id_right,
                 is_base_relation( dep_L ), get_base_relation( dep_L )
             );
-            final WmmRelation wmm_R = new WmmRelation(
+            final RelationEdge wmm_R = new RelationEdge(
                 relation.event_id_left, dep_R, relation.event_id_right,
                 is_base_relation( dep_R ), get_base_relation( dep_R )
             );
@@ -178,23 +179,19 @@ public class WmmExplorer {
     }
 
     Graph generate_cycle(
-        final List <WmmRelation> relation_list
+        final List <RelationEdge> relation_list
     ) {
-        for( final WmmRelation relation : relation_list )
+        for( final RelationEdge relation : relation_list )
             if( relation.base_relation == null )
                 return null;
-        /* TODO: Check for duplicate cycles... */
         return new Graph( relation_list );
     }
 
     void register_base_relation(
         final String relation_str,
-        final String type_str
+        final RelationType relation_type
     ) throws Exception {
-        type_map.put(
-            relation_str,
-            type_str == null ? null : new RelationType( type_str )
-        );
+        type_map.put( relation_str, relation_type );
     }
 
 }

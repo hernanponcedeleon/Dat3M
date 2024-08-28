@@ -1,17 +1,16 @@
-package com.dat3m.testgen.explore;
+package com.dat3m.testgen.util;
 
 import com.dat3m.dartagnan.wmm.Relation;
-import com.dat3m.testgen.util.RelationType;
 
-public class WmmRelation {
+public class RelationEdge {
     
-    final int event_id_left;
-    final Relation dat3m_relation;
-    final int event_id_right;
-    final boolean is_base_relation;
-    final RelationType base_relation;
+    public final int event_id_left;
+    public final Relation dat3m_relation;
+    public final int event_id_right;
+    public final boolean is_base_relation;
+    public final RelationType base_relation;
 
-    WmmRelation(
+    public RelationEdge(
         final int r_event_id_left,
         final Relation r_dat3m_relation,
         final int r_event_id_right,
