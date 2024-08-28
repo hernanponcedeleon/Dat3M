@@ -164,7 +164,7 @@ public class Dartagnan extends BaseOptions {
                     sdm.getNotifier(),
                     o.getSolver());
                     ProverWithTracker prover = new ProverWithTracker(ctx,
-                        o.getDumpSmtLib() ? 
+                        o.getDumpSmtLib() ?
                             System.getenv("DAT3M_OUTPUT") + String.format("/%s.smt2", p.getName()) : "",
                         ProverOptions.GENERATE_MODELS)) {
                 ModelChecker modelChecker;
