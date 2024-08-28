@@ -9,8 +9,10 @@ import com.dat3m.dartagnan.utils.equivalence.EquivalenceClass;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
 import com.dat3m.dartagnan.wmm.axiom.Axiom;
-import com.dat3m.dartagnan.wmm.utils.EventGraph;
+import com.dat3m.dartagnan.wmm.utils.graph.EventGraph;
+import com.dat3m.dartagnan.wmm.utils.graph.mutable.MapEventGraph;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
+import com.dat3m.dartagnan.wmm.utils.graph.mutable.MutableEventGraph;
 import com.google.common.base.Preconditions;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -246,7 +248,7 @@ public class SymmetryEncoder implements Encoder {
 
     private EventGraph cfSet() {
         final BranchEquivalence branchEq = context.getAnalysisContext().requires(BranchEquivalence.class);
-        EventGraph cfSet = new EventGraph();
+        MutableEventGraph cfSet = new MapEventGraph();
         branchEq.getAllEquivalenceClasses().forEach(c -> {
             if (c != branchEq.getInitialClass() && c != branchEq.getUnreachableClass()) {
                 Event rep = c.getRepresentative();

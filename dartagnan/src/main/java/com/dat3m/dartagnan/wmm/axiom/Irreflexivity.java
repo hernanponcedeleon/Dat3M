@@ -4,14 +4,13 @@ import com.dat3m.dartagnan.encoding.EncodingContext;
 import com.dat3m.dartagnan.verification.Context;
 import com.dat3m.dartagnan.wmm.Relation;
 import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
-import com.dat3m.dartagnan.wmm.utils.EventGraph;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
+import com.dat3m.dartagnan.wmm.utils.graph.mutable.MutableEventGraph;
 import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.BooleanFormulaManager;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
 public class Irreflexivity extends Axiom {
 
@@ -24,9 +23,9 @@ public class Irreflexivity extends Axiom {
     }
 
     @Override
-    protected EventGraph getEncodeGraph(Context analysisContext) {
-        final RelationAnalysis ra = analysisContext.get(RelationAnalysis.class);
-        return ra.getKnowledge(rel).getMaySet().filter(Tuple::isLoop);
+    protected MutableEventGraph getEncodeGraph(Context analysisContext) {
+        return MutableEventGraph.from(analysisContext.get(RelationAnalysis.class)
+                .getKnowledge(rel).getMaySet().filter(Tuple::isLoop));
     }
 
     @Override

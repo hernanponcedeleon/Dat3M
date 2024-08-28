@@ -1,15 +1,11 @@
 package com.dat3m.dartagnan.wmm;
 
-import com.dat3m.dartagnan.verification.Context;
-import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
-import com.dat3m.dartagnan.wmm.utils.EventGraph;
+import com.dat3m.dartagnan.wmm.utils.graph.EventGraph;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.util.Map;
 import java.util.Set;
 
-import static com.dat3m.dartagnan.wmm.utils.EventGraph.difference;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 public final class Assumption implements Constraint {

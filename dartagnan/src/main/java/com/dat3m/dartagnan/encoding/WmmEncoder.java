@@ -20,11 +20,14 @@ import com.dat3m.dartagnan.wmm.Constraint;
 import com.dat3m.dartagnan.wmm.Definition;
 import com.dat3m.dartagnan.wmm.Relation;
 import com.dat3m.dartagnan.wmm.Wmm;
+import com.dat3m.dartagnan.wmm.analysis.LazyRelationAnalysis;
 import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
 import com.dat3m.dartagnan.wmm.axiom.Axiom;
 import com.dat3m.dartagnan.wmm.definition.*;
-import com.dat3m.dartagnan.wmm.utils.EventGraph;
+import com.dat3m.dartagnan.wmm.utils.graph.EventGraph;
+import com.dat3m.dartagnan.wmm.utils.graph.mutable.MapEventGraph;
 import com.dat3m.dartagnan.wmm.utils.Flag;
+import com.dat3m.dartagnan.wmm.utils.graph.mutable.MutableEventGraph;
 import com.google.common.collect.Iterables;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -39,7 +42,6 @@ import static com.dat3m.dartagnan.configuration.OptionNames.ENABLE_ACTIVE_SETS;
 import static com.dat3m.dartagnan.configuration.OptionNames.MEMORY_IS_ZEROED;
 import static com.dat3m.dartagnan.program.event.Tag.*;
 import static com.dat3m.dartagnan.wmm.RelationNameRepository.RF;
-import static com.dat3m.dartagnan.wmm.utils.EventGraph.difference;
 import static com.google.common.base.Verify.verify;
 import static java.lang.Boolean.TRUE;
 
@@ -47,7 +49,8 @@ import static java.lang.Boolean.TRUE;
 public class WmmEncoder implements Encoder {
 
     private static final Logger logger = LogManager.getLogger(WmmEncoder.class);
-    final Map<Relation, EventGraph> encodeSets = new HashMap<>();
+    // TODO: Should become generic or immutable after the analysis is ready
+    final Map<Relation, MutableEventGraph> encodeSets = new HashMap<>();
     private final EncodingContext context;
 
     // =====================================================================
@@ -83,11 +86,12 @@ public class WmmEncoder implements Encoder {
         }
         logger.info("Finished active sets in {}", Utils.toTimeString(System.currentTimeMillis() - t0));
         RelationAnalysis ra = context.getAnalysisContext().get(RelationAnalysis.class);
-        logger.info("Number of unknown edges: {}", context.getTask().getMemoryModel().getRelations().stream()
-                .filter(r -> !r.isInternal())
-                .map(ra::getKnowledge)
-                .mapToLong(k -> difference(k.getMaySet(), k.getMustSet()).size())
-                .sum());
+        // TODO: Temporary commented out, unnecessary overhead for a lazy graph
+        //logger.info("Number of unknown edges: {}", context.getTask().getMemoryModel().getRelations().stream()
+        //        .filter(r -> !r.isInternal())
+        //        .map(ra::getKnowledge)
+        //        .mapToLong(k -> EventGraph.difference(k.getMaySet(), k.getMustSet()).size())
+        //        .sum());
         logger.info("Number of encoded edges: {}", encoder.encodeSets.entrySet().stream()
                 .filter(e -> !e.getKey().isInternal())
                 .mapToLong(e -> e.getValue().size())
@@ -142,7 +146,7 @@ public class WmmEncoder implements Encoder {
 
     public EventGraph getEventGraph(Relation relation, Model model) {
         EncodingContext.EdgeEncoder edge = context.edge(relation);
-        EventGraph encodeSet = encodeSets.getOrDefault(relation, EventGraph.empty())
+        MutableEventGraph encodeSet = encodeSets.getOrDefault(relation, new MapEventGraph())
                 .filter((e1, e2) -> TRUE.equals(model.evaluate(edge.encode(e1, e2))));
         EventGraph mustEncodeSet = context.getAnalysisContext().get(RelationAnalysis.class).getKnowledge(relation).getMustSet()
                 .filter((e1, e2) -> TRUE.equals(model.evaluate(context.execution(e1, e2))));
@@ -708,35 +712,40 @@ public class WmmEncoder implements Encoder {
     private void initializeAlternative() {
         RelationAnalysis ra = context.getAnalysisContext().get(RelationAnalysis.class);
         for (Relation r : context.getTask().getMemoryModel().getRelations()) {
-            encodeSets.put(r, ra.getKnowledge(r).getMaySet());
+            // TODO: Remove conversion when encodeSets are generic
+            encodeSets.put(r, MutableEventGraph.from(ra.getKnowledge(r).getMaySet()));
         }
     }
 
     private void initializeEncodeSets() {
         logger.trace("Start");
         for (Relation r : context.getTask().getMemoryModel().getRelations()) {
-            encodeSets.put(r, new EventGraph());
+            encodeSets.put(r, new MapEventGraph());
         }
         EncodeSets v = new EncodeSets(context.getAnalysisContext());
-        Map<Relation, List<EventGraph>> queue = new HashMap<>();
+        Map<Relation, List<MutableEventGraph>> queue = new HashMap<>();
         for (Axiom a : context.getTask().getMemoryModel().getAxioms()) {
-            for (Map.Entry<Relation, EventGraph> e : a.getEncodeGraph(context.getTask(), context.getAnalysisContext()).entrySet()) {
+            for (Map.Entry<Relation, MutableEventGraph> e : a.getEncodeGraph(context.getTask(), context.getAnalysisContext()).entrySet()) {
                 queue.computeIfAbsent(e.getKey(), k -> new ArrayList<>()).add(e.getValue());
             }
         }
         RelationAnalysis ra = context.getAnalysisContext().get(RelationAnalysis.class);
+        // TODO: A cleaner way to do this
+        if (ra instanceof LazyRelationAnalysis lra) {
+            lra.encodeSets = encodeSets;
+        }
         ra.populateQueue(queue, context.getTask().getMemoryModel().getRelations());
         while (!queue.isEmpty()) {
             Relation r = queue.keySet().iterator().next();
             logger.trace("Update encode set of '{}'", r);
-            EventGraph s = encodeSets.get(r);
-            EventGraph c = new EventGraph();
+            MutableEventGraph s = encodeSets.get(r);
+            MutableEventGraph c = new MapEventGraph();
             for (EventGraph news : queue.remove(r)) {
                 news.filter(s::add).apply(c::add);
             }
             if (!c.isEmpty()) {
                 v.news = c;
-                for (Map.Entry<Relation, EventGraph> e : r.getDefinition().accept(v).entrySet()) {
+                for (Map.Entry<Relation, MutableEventGraph> e : r.getDefinition().accept(v).entrySet()) {
                     queue.computeIfAbsent(e.getKey(), k -> new ArrayList<>()).add(e.getValue());
                 }
             }

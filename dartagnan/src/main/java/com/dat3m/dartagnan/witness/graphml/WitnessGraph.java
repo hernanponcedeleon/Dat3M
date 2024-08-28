@@ -7,7 +7,9 @@ import com.dat3m.dartagnan.program.event.core.Load;
 import com.dat3m.dartagnan.program.event.core.MemoryCoreEvent;
 import com.dat3m.dartagnan.program.event.core.Store;
 import com.dat3m.dartagnan.program.event.metadata.SourceLocation;
-import com.dat3m.dartagnan.wmm.utils.EventGraph;
+import com.dat3m.dartagnan.wmm.utils.graph.EventGraph;
+import com.dat3m.dartagnan.wmm.utils.graph.mutable.MapEventGraph;
+import com.dat3m.dartagnan.wmm.utils.graph.mutable.MutableEventGraph;
 import com.google.common.collect.Lists;
 import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.BooleanFormulaManager;
@@ -134,7 +136,7 @@ public class WitnessGraph extends ElemWithAttributes {
     }
 
     public EventGraph getReadFromKnowledge(Program program, AliasAnalysis alias) {
-        EventGraph k = new EventGraph();
+        MutableEventGraph k = new MapEventGraph();
         MemoryCoreEvent current = null;
         MemoryCoreEvent last = null;
         List<MemoryCoreEvent> currents;
@@ -154,7 +156,7 @@ public class WitnessGraph extends ElemWithAttributes {
     }
 
     public EventGraph getCoherenceKnowledge(Program program, AliasAnalysis alias) {
-        EventGraph k = new EventGraph();
+        MutableEventGraph k = new MapEventGraph();
         final List<Store> writes = getPathToViolation().stream()
             .filter(e -> getEventsFromEdge(program, e).size() == 1 && getEventsFromEdge(program, e).get(0) instanceof Store)
             .map(e -> (Store) getEventsFromEdge(program, e).get(0)).toList();

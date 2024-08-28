@@ -5,7 +5,7 @@ import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.wmm.Constraint;
 import com.dat3m.dartagnan.wmm.Relation;
 import com.dat3m.dartagnan.wmm.Wmm;
-import com.dat3m.dartagnan.wmm.utils.EventGraph;
+import com.dat3m.dartagnan.wmm.utils.graph.mutable.MutableEventGraph;
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 
@@ -65,10 +65,10 @@ public abstract class Axiom implements Constraint {
         return name != null ? name : toString();
     }
 
-    protected abstract EventGraph getEncodeGraph(Context analysisContext);
+    protected abstract MutableEventGraph getEncodeGraph(Context analysisContext);
 
     @Override
-    public Map<Relation, EventGraph> getEncodeGraph(VerificationTask task, Context analysisContext) {
+    public Map<Relation, MutableEventGraph> getEncodeGraph(VerificationTask task, Context analysisContext) {
         return Map.of(rel, getEncodeGraph(analysisContext));
     }
 

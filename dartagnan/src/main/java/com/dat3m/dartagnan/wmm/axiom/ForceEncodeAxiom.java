@@ -4,7 +4,7 @@ import com.dat3m.dartagnan.encoding.EncodingContext;
 import com.dat3m.dartagnan.verification.Context;
 import com.dat3m.dartagnan.wmm.Relation;
 import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
-import com.dat3m.dartagnan.wmm.utils.EventGraph;
+import com.dat3m.dartagnan.wmm.utils.graph.mutable.MutableEventGraph;
 import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.BooleanFormulaManager;
 
@@ -23,8 +23,9 @@ public class ForceEncodeAxiom extends Axiom {
     }
 
     @Override
-    protected EventGraph getEncodeGraph(Context analysisContext) {
-        return analysisContext.requires(RelationAnalysis.class).getKnowledge(rel).getMaySet();
+    protected MutableEventGraph getEncodeGraph(Context analysisContext) {
+        return MutableEventGraph.from(analysisContext.requires(RelationAnalysis.class)
+                .getKnowledge(rel).getMaySet());
     }
 
     @Override

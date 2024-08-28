@@ -8,7 +8,8 @@ import com.dat3m.dartagnan.utils.Utils;
 import com.dat3m.dartagnan.verification.Context;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.wmm.Relation;
-import com.dat3m.dartagnan.wmm.utils.EventGraph;
+import com.dat3m.dartagnan.wmm.utils.graph.EventGraph;
+import com.dat3m.dartagnan.wmm.utils.graph.mutable.MutableEventGraph;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.sosy_lab.common.configuration.Configuration;
@@ -48,6 +49,7 @@ public interface RelationAnalysis {
         RelationAnalysis a = switch (c.method) {
             case NONE -> CoarseRelationAnalysis.fromConfig(task, context, config);
             case NATIVE -> NativeRelationAnalysis.fromConfig(task, context, config);
+            case LAZY -> LazyRelationAnalysis.fromConfig(task, context, config);
         };
 
         final StringBuilder configSummary = new StringBuilder().append("\n");
@@ -159,11 +161,11 @@ public interface RelationAnalysis {
      */
     long countMustSet();
 
-    void populateQueue(Map<Relation, List<EventGraph>> queue, Set<Relation> relations);
+    void populateQueue(Map<Relation, List<MutableEventGraph>> queue, Set<Relation> relations);
 
-    final class Knowledge {
-        private final EventGraph may;
-        private final EventGraph must;
+    class Knowledge {
+        protected final EventGraph may;
+        protected final EventGraph must;
 
         public Knowledge(EventGraph maySet, EventGraph mustSet) {
             may = checkNotNull(maySet);
