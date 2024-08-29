@@ -11,7 +11,10 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
+
 import org.sosy_lab.java_smt.api.*;
 import org.sosy_lab.java_smt.api.SolverContext.ProverOptions;
 
@@ -21,12 +24,14 @@ public class ProverWithTracker implements AutoCloseable {
 
     private final FormulaManager fmgr;
     private final ProverEnvironment prover;
-    private final String fileName; 
+    private final String fileName;
+    private final Set<String> declarations;
 
     public ProverWithTracker(SolverContext ctx, String fileName, ProverOptions... options) {
         this.fmgr = ctx.getFormulaManager();
         this.prover = ctx.newProverEnvironment(options);
         this.fileName = fileName;
+        this.declarations = new HashSet<>();
         init();
     }
 
@@ -48,37 +53,6 @@ public class ProverWithTracker implements AutoCloseable {
     public void close() throws Exception {
         removeDuplicatedDeclarations(fileName);
         prover.close();
-    }
-
-    // Each call to fmgr.dumpFormula(f) defines all variables used in f.
-    // We might end up with several definitions of the declarations.
-    // This might not be the most performant implementation, but duming the 
-    // smtlib2 file is intended only for debugging or trying to understand 
-    // how to optimize the encoding, thus performance is not an issue. 
-    private void removeDuplicatedDeclarations(String fileName) {
-        try {
-
-            BufferedReader reader = new BufferedReader(new FileReader(fileName));
-            List<String> newLines = new ArrayList<>();
-            String line;
-            while ((line = reader.readLine()) != null) {
-                // We only skip repeated declarations
-                if (!line.contains("declare-fun") || !newLines.contains(line)) {
-                    newLines.add(line);
-                }
-            }
-            reader.close();
-
-            BufferedWriter writer = new BufferedWriter(new FileWriter(fileName));
-            for (String newLine : newLines) {
-                writer.write(newLine);
-                writer.newLine();
-            }
-            writer.close();
-
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
     }
 
     public void addConstraint(BooleanFormula f) throws InterruptedException {
@@ -135,10 +109,21 @@ public class ProverWithTracker implements AutoCloseable {
         try {
             writer = new FileWriter(file, true);
             PrintWriter printer = new PrintWriter(writer);
-            printer.append(content);
+            printer.append(removeDuplicatedDeclarations(content));
             printer.close();
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+
+    private String removeDuplicatedDeclarations(String content) {
+        String output = "";
+        for(String line : content.split("\n")) {
+            if(line.contains("declare-fun") && !declarations.add(line)) {
+                continue;
+            }
+            output += line + "\n";
+        }
+        return output;
     }
 }
