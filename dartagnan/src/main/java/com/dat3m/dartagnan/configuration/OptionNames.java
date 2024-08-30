@@ -35,6 +35,7 @@ public class OptionNames {
     public static final String IDL_TO_SAT = "encoding.wmm.idl2sat";
 
     // Program Processing Options
+    public static final String BRANCH_REORDERING = "program.processing.reordering";
     public static final String DETERMINISTIC_REORDERING = "program.processing.detReordering";
     public static final String REDUCE_SYMMETRY = "program.processing.reduceSymmetry";
     public static final String CONSTANT_PROPAGATION = "program.processing.constantPropagation";

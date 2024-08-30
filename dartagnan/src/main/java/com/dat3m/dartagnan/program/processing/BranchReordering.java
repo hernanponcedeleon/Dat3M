@@ -15,6 +15,7 @@ import org.sosy_lab.common.configuration.Options;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static com.dat3m.dartagnan.configuration.OptionNames.BRANCH_REORDERING;
 import static com.dat3m.dartagnan.configuration.OptionNames.DETERMINISTIC_REORDERING;
 
 /*
@@ -39,6 +40,11 @@ public class BranchReordering implements FunctionProcessor {
             secure = true)
     private boolean reorderDeterministically = true;
 
+    @Option(name = BRANCH_REORDERING,
+            description = "Reorder branches to minimise the number of backjumps",
+            secure = true)
+    private boolean reorder = true;
+
     // =====================================================================
 
     private BranchReordering() { }
@@ -57,7 +63,7 @@ public class BranchReordering implements FunctionProcessor {
 
     @Override
     public void run(Function function) {
-        if (function.hasBody()) {
+        if (reorder && function.hasBody()) {
             new FunctionReordering(function).run();
         }
     }
