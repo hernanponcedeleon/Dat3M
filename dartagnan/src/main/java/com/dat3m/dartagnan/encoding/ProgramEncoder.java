@@ -14,8 +14,8 @@ import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.RegWriter;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.CondJump;
-import com.dat3m.dartagnan.program.event.core.Init;
 import com.dat3m.dartagnan.program.event.core.ControlBarrier;
+import com.dat3m.dartagnan.program.event.core.Init;
 import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.event.core.threading.ThreadStart;
 import com.dat3m.dartagnan.program.memory.Memory;
@@ -202,68 +202,29 @@ public class ProgramEncoder implements Encoder {
         enc.add(startEvent.encodeExec(context));
 
         for(final Event cur : startEvent.getSuccessor().getSuccessors()) {
-            final Event immPred = cur.getPredecessor();
-            final List<BooleanFormula> possiblePredCfs = new ArrayList<>();
-            if (immPred instanceof CondJump jump) {
-                possiblePredCfs.add(bmgr.and(context.controlFlow(immPred), bmgr.not(context.jumpCondition(jump))));
-            } else {
-                possiblePredCfs.add(context.controlFlow(immPred));
+            final Event pred = cur.getPredecessor();
+            // Immediate control flow
+            BooleanFormula cfCond = context.controlFlow(pred);
+            if (pred instanceof CondJump jump) {
+                cfCond = bmgr.and(cfCond, bmgr.not(context.jumpCondition(jump)));
+            } else if (pred instanceof ControlBarrier) {
+                cfCond = bmgr.and(cfCond, context.execution(pred));
             }
 
             if (cur instanceof Label label) {
                 for (CondJump jump : label.getJumpSet()) {
-                    possiblePredCfs.add(bmgr.and(context.controlFlow(jump), context.jumpCondition(jump)));
+                    cfCond = bmgr.or(cfCond, bmgr.and(context.controlFlow(jump), context.jumpCondition(jump)));
                 }
             }
 
             // cf(cur) => exists pred: cf(pred) && "pred->cur"
-            enc.add(bmgr.implication(context.controlFlow(cur), bmgr.or(possiblePredCfs)));
+            enc.add(bmgr.implication(context.controlFlow(cur), cfCond));
             // encode execution semantics
             enc.add(cur.encodeExec(context));
         }
         return bmgr.and(enc);
     }
 
-    private BooleanFormula encodeThreadCF(Thread thread) {
-        final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
-        final ThreadStart startEvent = thread.getEntry();
-        final List<BooleanFormula> enc = new ArrayList<>();
-
-        final BooleanFormula cfStart = context.controlFlow(startEvent);
-        if (startEvent.getCreator() == null) {
-            enc.add(cfStart);
-        } else if (startEvent.mayFailSpuriously()) {
-            enc.add(bmgr.implication(cfStart, context.execution(startEvent.getCreator())));
-        } else {
-            enc.add(bmgr.equivalence(cfStart, context.execution(startEvent.getCreator())));
-        }
-        enc.add(startEvent.encodeExec(context));
-
-        Event pred = startEvent;
-        Event next = startEvent.getSuccessor();
-        if (next != null) {
-            for(Event e : next.getSuccessors()) {
-                // Immediate control flow
-                BooleanFormula cfCond = context.controlFlow(pred);
-                if (pred instanceof CondJump jump) {
-                    cfCond = bmgr.and(cfCond, bmgr.not(context.jumpCondition(jump)));
-                } else if (pred instanceof ControlBarrier) {
-                    cfCond = bmgr.and(cfCond, context.execution(pred));
-                }
-
-                // Control flow via jumps
-                if (e instanceof Label label) {
-                    for (CondJump jump : label.getJumpSet()) {
-                        cfCond = bmgr.or(cfCond, bmgr.and(context.controlFlow(jump), context.jumpCondition(jump)));
-                    }
-                }
-                enc.add(bmgr.equivalence(context.controlFlow(e), cfCond));
-                enc.add(e.encodeExec(context));
-                pred = e;
-            }
-        }
-        return bmgr.and(enc);
-    }
     private BooleanFormula encodeForwardProgress(Program program, ProgressModel progressModel) {
         return switch (progressModel) {
             case FAIR -> new FairProgressEncoder().encodeForwardProgress(program);
