@@ -2,6 +2,7 @@ package com.dat3m.dartagnan.wmm.definition;
 
 import com.dat3m.dartagnan.wmm.Definition;
 import com.dat3m.dartagnan.wmm.Relation;
+import com.dat3m.dartagnan.wmm.Wmm;
 
 import java.util.List;
 
@@ -19,6 +20,23 @@ public class Inverse extends Definition {
     }
 
     public Relation getOperand() { return r1; }
+
+    @Override
+    public Inverse updateComponents(Wmm wmm, Object oldObj, Object newObj) {
+        Relation newR1 = oldObj == r1 ? (Relation) newObj : r1.getDefinition().updateComponents(wmm, oldObj, newObj).getDefinedRelation();
+        if (newR1 != r1) {
+            Inverse newInverse = new Inverse(wmm.newRelation(), newR1);
+            wmm.addDefinition(newInverse);
+            return newInverse;
+        } else {
+            return this;
+        }
+    }
+
+    @Override
+    public boolean withoutParametricCall() {
+        return r1.getDefinition().withoutParametricCall();
+    }
 
     @Override
     public List<Relation> getConstrainedRelations() {

@@ -25,6 +25,14 @@ public abstract class Definition implements Constraint {
         return definedRelation;
     }
 
+    public Definition updateComponents(Wmm wmm, Object oldComponent, Object newComponent) {
+        return this;
+    }
+
+    public boolean withoutParametricCall() {
+        return true;
+    }
+
     public EncodingContext.EdgeEncoder getEdgeVariableEncoder(EncodingContext c) {
         String nameOrTerm = definedRelation.getNameOrTerm();
         return (e1, e2) -> c.edgeVariable(nameOrTerm, e1, e2);

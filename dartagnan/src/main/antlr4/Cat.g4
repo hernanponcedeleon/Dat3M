@@ -12,12 +12,17 @@ definition
     :   axiomDefinition
     |   letDefinition
     |   letRecDefinition
+    |   letParaDefinition
     ;
 
 axiomDefinition locals [Class<?> cls]
     :   (flag = FLAG)? (negate = NOT)? ACYCLIC { $cls = Acyclicity.class; } e = expression (AS NAME)?
     |   (flag = FLAG)? (negate = NOT)? IRREFLEXIVE { $cls = Irreflexivity.class; } e = expression (AS NAME)?
     |   (flag = FLAG)? (negate = NOT)? EMPTY { $cls = Emptiness.class; } e = expression (AS NAME)?
+    ;
+
+letParaDefinition
+    :   LET n = NAME LPAR p = NAME RPAR EQ e = expression
     ;
 
 letDefinition
@@ -50,6 +55,7 @@ expression
     |   LPAR e = expression RPAR                                        # expr
     |   n = NAME                                                        # exprBasic
     |   call = NEW LPAR RPAR                                            # exprNew
+    |   n = NAME LPAR p = expression RPAR                               # exprParametricCall
     ;
 
 LET     :   'let';

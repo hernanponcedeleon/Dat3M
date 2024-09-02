@@ -2,6 +2,7 @@ package com.dat3m.dartagnan.wmm.definition;
 
 import com.dat3m.dartagnan.wmm.Definition;
 import com.dat3m.dartagnan.wmm.Relation;
+import com.dat3m.dartagnan.wmm.Wmm;
 
 import java.util.List;
 
@@ -20,6 +21,26 @@ public class Difference extends Definition {
 
     public Relation getMinuend() { return minuend; }
     public Relation getSubtrahend() { return subtrahend; }
+
+    @Override
+    public Difference updateComponents(Wmm wmm, Object oldObj, Object newObj) {
+        Relation newMinuend = oldObj == minuend ? (Relation) newObj :
+                minuend.getDefinition().updateComponents(wmm, oldObj, newObj).getDefinedRelation();
+        Relation newSubtrahend = oldObj == subtrahend ? (Relation) newObj :
+                subtrahend.getDefinition().updateComponents(wmm, oldObj, newObj).getDefinedRelation();
+        if (newMinuend != minuend || newSubtrahend != subtrahend) {
+            Difference newDifference = new Difference(wmm.newRelation(), newMinuend, newSubtrahend);
+            wmm.addDefinition(newDifference);
+            return newDifference;
+        } else {
+            return this;
+        }
+    }
+
+    @Override
+    public boolean withoutParametricCall() {
+        return minuend.getDefinition().withoutParametricCall() && subtrahend.getDefinition().withoutParametricCall();
+    }
 
     @Override
     public List<Relation> getConstrainedRelations() {

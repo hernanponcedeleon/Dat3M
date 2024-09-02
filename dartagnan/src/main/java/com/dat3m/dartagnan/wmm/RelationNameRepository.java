@@ -50,6 +50,8 @@ public class RelationNameRepository {
     public static final String SYNC_FENCE = "sync_fence";
     public static final String SYNCBAR = "syncbar";
     public static final String VLOC = "vloc";
+    public static final String PARAMETRIC = "parametric";
+    public static final String PARAMETRIC_CALL = "parametric-call";
 
     public static final ImmutableSet<String> RELATION_NAMES;
 

@@ -33,6 +33,10 @@ class VisitorBase extends CatBaseVisitor<Object> {
     private final Map<String, Integer> nameOccurrenceCounter = new HashMap<>();
     // Used to handle recursive definitions properly
     private Relation relationToBeDefined;
+    // Used to handle parametric definition
+    private String currentParametric;
+    private String currentParameter;
+    private Object currentParameterObject;
 
     VisitorBase() {
         this.wmm = new Wmm();
@@ -88,6 +92,24 @@ class VisitorBase extends CatBaseVisitor<Object> {
             wmm.addFilter(filter);
         }
         namespace.put(name, definedPredicate);
+        return null;
+    }
+
+    @Override
+    public Void visitLetParaDefinition(LetParaDefinitionContext ctx) {
+        String alias = createUniqueName(ctx.n.getText());
+        currentParametric = alias;
+        currentParameter = ctx.p.getText();
+        Object defineParametric = ctx.e.accept(this);
+        if (!(defineParametric instanceof Relation rel)) {
+            throw new ParsingException("Expected relation, got " + defineParametric.getClass().getSimpleName());
+        }
+        Parametric parametric = new Parametric(rel, alias, currentParameterObject);
+        wmm.addAlias(alias, rel);
+        namespace.put(alias, parametric);
+        currentParametric = null;
+        currentParameter = null;
+        currentParameterObject = null;
         return null;
     }
 
@@ -149,9 +171,12 @@ class VisitorBase extends CatBaseVisitor<Object> {
     @Override
     public Object visitExprBasic(ExprBasicContext ctx) {
         String name = ctx.n.getText();
-        Object predicate = namespace.computeIfAbsent(name,
-                k -> RelationNameRepository.contains(name) ? wmm.getOrCreatePredefinedRelation(k) : Filter.byTag(k));
-        return predicate;
+        if (name.equals(currentParameter)) {
+            return currentParameterObject;
+        } else {
+            return namespace.computeIfAbsent(name,
+                    k -> RelationNameRepository.contains(name) ? wmm.getOrCreatePredefinedRelation(k) : Filter.byTag(k));
+        }
     }
 
     @Override
@@ -162,6 +187,9 @@ class VisitorBase extends CatBaseVisitor<Object> {
         if (o1 instanceof Relation) {
             Relation r0 = defRel.orElseGet(wmm::newRelation);
             return addDefinition(new Intersection(r0, (Relation) o1, parseAsRelation(o2, c)));
+        } else if (o2 instanceof Relation) {
+            Relation r0 = defRel.orElseGet(wmm::newRelation);
+            return addDefinition(new Intersection(r0, (Relation) o2, parseAsRelation(o1, c)));
         }
         return Filter.intersection(parseAsFilter(o1, c), parseAsFilter(o2, c));
     }
@@ -174,6 +202,9 @@ class VisitorBase extends CatBaseVisitor<Object> {
         if (o1 instanceof Relation) {
             Relation r0 = wmm.newRelation();
             return addDefinition(new Difference(r0, (Relation) o1, parseAsRelation(o2, c)));
+        } else if (o2 instanceof Relation) {
+            Relation r0 = wmm.newRelation();
+            return addDefinition(new Difference(r0, parseAsRelation(o1, c), (Relation) o2));
         }
         return Filter.difference(parseAsFilter(o1, c), parseAsFilter(o2, c));
     }
@@ -186,6 +217,9 @@ class VisitorBase extends CatBaseVisitor<Object> {
         if (o1 instanceof Relation) {
             Relation r0 = defRel.orElseGet(wmm::newRelation);
             return addDefinition(new Union(r0, (Relation) o1, parseAsRelation(o2, c)));
+        } else if (o2 instanceof Relation) {
+            Relation r0 = defRel.orElseGet(wmm::newRelation);
+            return addDefinition(new Union(r0, (Relation) o2, parseAsRelation(o1, c)));
         }
         return Filter.union(parseAsFilter(o1, c), parseAsFilter(o2, c));
     }
@@ -279,6 +313,29 @@ class VisitorBase extends CatBaseVisitor<Object> {
         return addDefinition(new Fences(r0, s1));
     }
 
+    @Override
+    public Relation visitExprParametricCall(ExprParametricCallContext ctx) {
+        String name = ctx.n.getText();
+        String alias = name + "(" + ctx.p.getText() + ")";
+        if (!namespace.containsKey(name) || !(namespace.get(name) instanceof Parametric parametric)) {
+            throw new ParsingException("Undefined parametric call: " + name);
+        }
+        if (namespace.containsKey(alias) && namespace.get(alias) instanceof ParametricCall parametricCall) {
+            return parametricCall.getDefinedRelation();
+        }
+        Relation r0 = wmm.newRelation(alias);
+        ParametricCall parametricCall;
+        if (parametric.isParameterRelation()) {
+            Relation r1 = parseAsRelation(ctx.p);
+            parametricCall = new ParametricCall(r0, parametric, r1);
+        } else {
+            Filter s1 = parseAsFilter(ctx.p);
+            parametricCall = new ParametricCall(r0, parametric, s1);
+        }
+        namespace.put(alias, parametricCall);
+        return addDefinition(parametricCall);
+    }
+
     // ============================ Utility ============================
 
     private Relation addDefinition(Definition definition) {
@@ -308,6 +365,11 @@ class VisitorBase extends CatBaseVisitor<Object> {
     private Relation parseAsRelation(Object o, ExpressionContext t) {
         if (o instanceof Relation relation) {
             return relation;
+        } else if (o == null) {
+            if (currentParameterObject == null) {
+                currentParameterObject = wmm.newRelation(currentParametric + "_" + currentParameter);
+            }
+            return (Relation) currentParameterObject;
         }
         throw new ParsingException("Expected relation, got " + o.getClass().getSimpleName() + " " + o + " from expression " + t.getText());
     }
@@ -316,9 +378,14 @@ class VisitorBase extends CatBaseVisitor<Object> {
         return parseAsFilter(t.accept(this), t);
     }
 
-    private static Filter parseAsFilter(Object o, ExpressionContext t) {
+    private Filter parseAsFilter(Object o, ExpressionContext t) {
         if (o instanceof Filter filter) {
             return filter;
+        } else if (o == null) {
+            if (currentParameterObject == null) {
+                currentParameterObject = Filter.byTag(currentParametric + "_" + currentParameter);
+            }
+            return (Filter) currentParameterObject;
         }
         throw new ParsingException("Expected set, got " + o.getClass().getSimpleName() + " " + o + " from expression " + t.getText());
     }

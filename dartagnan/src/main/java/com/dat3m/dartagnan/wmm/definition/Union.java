@@ -2,6 +2,7 @@ package com.dat3m.dartagnan.wmm.definition;
 
 import com.dat3m.dartagnan.wmm.Definition;
 import com.dat3m.dartagnan.wmm.Relation;
+import com.dat3m.dartagnan.wmm.Wmm;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 
@@ -20,6 +21,25 @@ public class Union extends Definition {
     }
 
     public List<Relation> getOperands() { return Arrays.asList(operands); }
+
+    @Override
+    public Union updateComponents(Wmm wmm, Object oldObj, Object newObj) {
+        Relation[] newOperands = Arrays.stream(operands)
+                .map(r -> r == oldObj ? (Relation) newObj : r.getDefinition().updateComponents(wmm, oldObj, newObj).getDefinedRelation())
+                .toArray(Relation[]::new);
+        if (!Arrays.equals(newOperands, operands)) {
+            Union newUnion = new Union(wmm.newRelation(), newOperands);
+            wmm.addDefinition(newUnion);
+            return newUnion;
+        } else {
+            return this;
+        }
+    }
+
+    @Override
+    public boolean withoutParametricCall() {
+        return Arrays.stream(operands).allMatch(r -> r.getDefinition().withoutParametricCall());
+    }
 
     @Override
     public List<Relation> getConstrainedRelations() {

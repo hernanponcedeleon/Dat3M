@@ -3,6 +3,7 @@ package com.dat3m.dartagnan.wmm.definition;
 import com.dat3m.dartagnan.program.filter.Filter;
 import com.dat3m.dartagnan.wmm.Definition;
 import com.dat3m.dartagnan.wmm.Relation;
+import com.dat3m.dartagnan.wmm.Wmm;
 
 public class CartesianProduct extends Definition {
     private final Filter filter1;
@@ -14,6 +15,18 @@ public class CartesianProduct extends Definition {
     
     public Filter getSecondFilter() {
     	return filter2;
+    }
+
+    @Override
+    public CartesianProduct updateComponents(Wmm wmm, Object oldObj, Object newObj) {
+        Filter newFilter1 = oldObj == filter1 ? (Filter) newObj : filter1;
+        Filter newFilter2 = oldObj == filter2 ? (Filter) newObj : filter2;
+        if (newFilter1 != filter1 || newFilter2 != filter2) {
+            CartesianProduct newCartesianProduct = new CartesianProduct(wmm.newRelation(), newFilter1, newFilter2);
+            wmm.addDefinition(newCartesianProduct);
+            return newCartesianProduct;
+        }
+        return this;
     }
 
     public CartesianProduct(Relation r0, Filter s1, Filter s2) {
