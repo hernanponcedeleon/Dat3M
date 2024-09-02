@@ -9,8 +9,8 @@ import com.dat3m.dartagnan.parsers.program.utils.ProgramBuilder;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Program.SourceLanguage;
 import com.dat3m.dartagnan.program.Register;
+import com.dat3m.dartagnan.program.analysis.BackwardsReachingDefinitionsAnalysis;
 import com.dat3m.dartagnan.program.analysis.BranchEquivalence;
-import com.dat3m.dartagnan.program.analysis.Dependency;
 import com.dat3m.dartagnan.program.analysis.ExecutionAnalysis;
 import com.dat3m.dartagnan.program.analysis.alias.AliasAnalysis;
 import com.dat3m.dartagnan.program.event.Event;
@@ -79,8 +79,7 @@ public class AnalysisTest {
         Configuration config = Configuration.defaultConfiguration();
         Context context = Context.create();
         context.register(BranchEquivalence.class, BranchEquivalence.fromConfig(program, config));
-        context.register(ExecutionAnalysis.class, ExecutionAnalysis.fromConfig(program, context, config));
-        Dependency dep = Dependency.fromConfig(program, context, config);
+        final var dep = BackwardsReachingDefinitionsAnalysis.injectForProgram(program, context);
         var me0 = (RegReader) findMatchingEventAfterProcessing(program, e0);
         var me1 = (RegReader) findMatchingEventAfterProcessing(program, e1);
         var me2 = (RegReader) findMatchingEventAfterProcessing(program, e2);
@@ -514,7 +513,7 @@ public class AnalysisTest {
         Context analysisContext = Context.create();
         analysisContext.register(BranchEquivalence.class, BranchEquivalence.fromConfig(program, configuration));
         analysisContext.register(ExecutionAnalysis.class, ExecutionAnalysis.fromConfig(program, analysisContext, configuration));
-        analysisContext.register(Dependency.class, Dependency.fromConfig(program, analysisContext, configuration));
+        BackwardsReachingDefinitionsAnalysis.injectForProgram(program, analysisContext);
         return AliasAnalysis.fromConfig(program, analysisContext, configuration);
     }
 

@@ -83,9 +83,7 @@ public abstract class ModelChecker {
         Program program = task.getProgram();
         analysisContext.register(BranchEquivalence.class, BranchEquivalence.fromConfig(program, config));
         analysisContext.register(ExecutionAnalysis.class, ExecutionAnalysis.fromConfig(program, analysisContext, config));
-        final Dependency dependency = Dependency.fromConfig(program, analysisContext, config);
-        analysisContext.register(ReachingDefinitionsAnalysis.class, dependency);
-        analysisContext.register(Dependency.class, dependency);
+        BackwardsReachingDefinitionsAnalysis.injectForProgram(program, analysisContext);
         analysisContext.register(AliasAnalysis.class, AliasAnalysis.fromConfig(program, analysisContext, config));
         analysisContext.register(ThreadSymmetry.class, ThreadSymmetry.fromConfig(program, config));
         for(Thread thread : program.getThreads()) {
