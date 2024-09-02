@@ -4,14 +4,19 @@ import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionVisitor;
 import com.dat3m.dartagnan.expression.integers.*;
 import com.dat3m.dartagnan.expression.misc.ITEExpr;
+import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.analysis.ReachingDefinitionsAnalysis;
 import com.dat3m.dartagnan.program.analysis.SyntacticContextAnalysis;
+import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.RegReader;
 import com.dat3m.dartagnan.program.event.RegWriter;
 import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.event.core.threading.ThreadArgument;
+import com.dat3m.dartagnan.program.event.functions.FunctionCall;
+import com.dat3m.dartagnan.program.event.functions.Return;
+import com.dat3m.dartagnan.program.event.functions.ValueFunctionCall;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.dat3m.dartagnan.verification.Context;
 import com.dat3m.dartagnan.witness.graphviz.Graphviz;
@@ -90,6 +95,14 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
     // Maps a set of same-register writers to a variable representing their combined result sets (~phi node).
     // Non-trivial modifiers may only appear for singleton Locals.
     private final Map<List<RegWriter>, DerivedVariable> registerVariables = new HashMap<>();
+    // Second variant where the uninitialized value is also considered.
+    private final Map<List<RegWriter>, DerivedVariable> registerVariablesInit = new HashMap<>();
+
+    // Maps function parameters to the points-to set.
+    private final Map<Register, Variable> parameterVariables = new HashMap<>();
+
+    // Maps functions to the returning points-to set.
+    private final Map<Function, Variable> returnVariables = new HashMap<>();
 
     // If enabled, the algorithm describes its internal graph to be written into a file.
     private Graphviz graphviz;
@@ -192,14 +205,24 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
             totalVariables++;
             objectVariables.put(object, new Variable(object, object.toString()));
         }
+        for (final Function function : program.getFunctions()) {
+            for (final Register register : function.getRegisters()) {
+                final Variable parameter = newVariable("parameter " + function.getName() + " " + register.getName());
+                parameterVariables.put(register, parameter);
+            }
+            returnVariables.put(function, newVariable("ret of " + function.getName()));
+        }
         // Each expression gets a "res" variable representing its result value set.
         // Each register writer gets an "out" variable ("ld" for loads) representing its return value set.
         // If needed, a register gets a "phi" variable representing its phi-node's value set.
         // Variables may fulfill multiple roles, e.g. the "out" of a Local is the "res" of its expression, etc.
-        for (final RegWriter writer : program.getThreadEvents(RegWriter.class)) {
+        for (final RegWriter writer : getEvents(program, RegWriter.class)) {
             processWriter(writer);
         }
-        for (final MemoryCoreEvent memoryEvent : program.getThreadEvents(MemoryCoreEvent.class)) {
+        for (final RegReader reader : getEvents(program, RegReader.class)) {
+            processReader(reader);
+        }
+        for (final MemoryCoreEvent memoryEvent : getEvents(program, MemoryCoreEvent.class)) {
             processMemoryEvent(memoryEvent);
         }
         // Fixed-point computation:
@@ -218,6 +241,20 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
         }
         objectVariables.clear();
         registerVariables.clear();
+    }
+
+    private <T extends Event> Iterable<T> getEvents(Program program, Class<T> cls) {
+        if (program.isUnrolled()) {
+            return program.getThreadEvents(cls);
+        }
+        final List<T> events = new ArrayList<>();
+        for (final Function function : program.getThreads()) {
+            events.addAll(function.getEvents(cls));
+        }
+        for (final Function function : program.getFunctions()) {
+            events.addAll(function.getEvents(cls));
+        }
+        return events;
     }
 
     // Declares the "out" variable of 'event' and inserts initial 'includes' and 'loads' edges.
@@ -245,6 +282,8 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
             address.base.loads.add(new LoadEdge(result, address.modifier));
             result.seeAlso.add(address.base);
             value = derive(result);
+        } else if (event instanceof ValueFunctionCall call) {
+            value = derive(returnVariables.get(call.getCalledFunction()));
         } else {
             return;
         }
@@ -253,6 +292,26 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
             // this might happen if events are iterated out of order
             assert isTrivial(old.modifier);
             replace(old.base, value);
+        }
+    }
+
+    private void processReader(RegReader event) {
+        if (event instanceof FunctionCall call) {
+            final List<Register> parameterRegisters = call.getCalledFunction().getParameterRegisters();
+            for (int i = 0; i < call.getArguments().size(); i++) {
+                final DerivedVariable argument = getResultVariable(call.getArguments().get(i), call);
+                if (argument == null) {
+                    continue;
+                }
+                final Variable parameter = parameterVariables.get(parameterRegisters.get(i));
+                addInclude(parameter, includeEdge(argument));
+            }
+        }
+        if (event instanceof Return ret && ret.getValue().isPresent()) {
+            final DerivedVariable result = getResultVariable(ret.getValue().get(), ret);
+            if (result != null) {
+                addInclude(returnVariables.get(ret.getFunction()), includeEdge(result));
+            }
         }
     }
 
@@ -910,20 +969,30 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
     // Constructs a new node, if there are multiple writers.
     private DerivedVariable getPhiNodeVariable(Register register, RegReader reader) {
         // We assume here that uninitialized values carry no meaningful address to any memory object.
-        final List<RegWriter> writers = dependency.getWriters(reader).ofRegister(register).getMayWriters();
-        final DerivedVariable find = registerVariables.get(writers);
+        final ReachingDefinitionsAnalysis.RegisterWriters state = dependency.getWriters(reader).ofRegister(register);
+        final List<RegWriter> writers = state.getMayWriters();
+        final boolean initialized = state.mustBeInitialized();
+        final Variable parameter = initialized ? null : parameterVariables.get(register);
+        if (parameter != null && writers.isEmpty()) {
+            return derive(parameter);
+        }
+        final Map<List<RegWriter>, DerivedVariable> map = initialized ? registerVariables : registerVariablesInit;
+        final DerivedVariable find = map.get(writers);
         if (find != null) {
             return find;
         }
         final Variable result = newVariable("phi" + reader.getGlobalId() + "(" + register.getName() + ")");
+        if (parameter != null) {
+            addInclude(result, new IncludeEdge(parameter, TRIVIAL_MODIFIER));
+        }
         // If writers is a singleton here, its "phi" node will be replaced later.  Otherwise, the "out" nodes.
         for (final RegWriter writer : writers.size() == 1 ? List.<RegWriter>of() : writers) {
             // The variables created here will be replaced later, if the events are out of order.
-            final DerivedVariable writerVariable = registerVariables.computeIfAbsent(List.of(writer),
+            final DerivedVariable writerVariable = map.computeIfAbsent(List.of(writer),
                     k -> derive(newVariable("out" + writer.getGlobalId())));
             addInclude(result, includeEdge(writerVariable));
         }
-        return registerVariables.compute(writers, (k, v) -> derive(result));
+        return map.compute(writers, (k, v) -> derive(result));
     }
 
     private static final class Collector implements ExpressionVisitor<Result> {

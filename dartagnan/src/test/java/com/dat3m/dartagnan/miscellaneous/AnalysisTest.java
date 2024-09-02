@@ -10,6 +10,7 @@ import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.parsers.cat.ParserCat;
 import com.dat3m.dartagnan.parsers.program.ProgramParser;
 import com.dat3m.dartagnan.parsers.program.utils.ProgramBuilder;
+import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Program.SourceLanguage;
 import com.dat3m.dartagnan.program.Register;
@@ -618,6 +619,72 @@ public class AnalysisTest {
         assertAlias(MAY, a, me1, me4);
         assertAlias(MUST, a, me2, me4);
         assertAlias(MAY, a, me3, me4);
+    }
+
+    @Test
+    public void simpleInterprocedural() throws InvalidConfigurationException {
+        final ProgramBuilder b = ProgramBuilder.forLanguage(SourceLanguage.LITMUS);
+        final IntegerType type = types.getArchType();
+        final Expression zero = expressions.makeZero(type);
+        final Expression one = expressions.makeOne(type);
+        final MemoryObject x = b.newMemoryObject("x", 1);
+        final MemoryObject y = b.newMemoryObject("y", 6);
+
+        // fn fib(this, count):
+        final Function fib = b.newFunction("fib", 2, types.getFunctionType(type, List.of(type, type)), List.of("this", "count"));
+        final Register thisRegister = fib.getParameterRegisters().get(0);
+        final Register countRegister = fib.getParameterRegisters().get(1);
+        final Register lastRegister = fib.newRegister("last", type);
+        //   count = count == 0 ? 1 : count;
+        b.addChild(2, newLocal(countRegister, expressions.makeITE(expressions.makeEQ(countRegister, zero), one, countRegister)));
+        //   last = *this;
+        final Load ld0 = newLoad(lastRegister, thisRegister);
+        b.addChild(2, ld0);
+        //   *this = count;
+        final Store st0 = newStore(thisRegister, countRegister);
+        b.addChild(2, st0);
+        //   last = count == 1 ? 1 : last;
+        b.addChild(2, newLocal(lastRegister, expressions.makeITE(expressions.makeEQ(countRegister, one), one, lastRegister)));
+        //   return count + last;
+        b.addChild(2, newFunctionReturn(expressions.makeAdd(countRegister, lastRegister)));
+
+        // fn thread0():
+        b.newThread(0);
+        final Register r0 = b.getOrNewRegister(0, "r0");
+        final Register r1 = b.getOrNewRegister(0, "r1");
+        //   r0 = fib(x, 1); // = 1
+        b.addChild(0, newValueFunctionCall(r0, fib, List.of(x, one)));
+        //   r0 = fib(x, r0); // = 2
+        b.addChild(0, newValueFunctionCall(r0, fib, List.of(x, r0)));
+        //   r0 = fib(x, r0); // = 3
+        b.addChild(0, newValueFunctionCall(r0, fib, List.of(x, r0)));
+        //   r0 = fib(x, r0); // = 5
+        b.addChild(0, newValueFunctionCall(r0, fib, List.of(x, r0)));
+        //   r0 = fib(x, y); // = y+5
+        b.addChild(0, newValueFunctionCall(r0, fib, List.of(x, y)));
+        //   y[5] = 1;
+        final Store st5 = newStore(expressions.makeAdd(y, expressions.makeValue(5, type)), one);
+        b.addChild(0, st5);
+        //   r1 = *x;
+        final Load ld5 = newLoad(r1, r0);
+        b.addChild(0, ld5);
+
+        Program program = b.build();
+        Compilation.newInstance().run(program);
+        Configuration configuration = Configuration.builder()
+                .setOption(ALIAS_METHOD, FULL.asStringOption())
+                .build();
+        Context analysisContext = Context.create();
+        analysisContext.register(ReachingDefinitionsAnalysis.class,
+                ReachingDefinitionsAnalysis.fromConfig(program, analysisContext, configuration));
+        var a = AliasAnalysis.fromConfig(program, analysisContext, configuration);
+
+        assertAlias(MUST, a, st0, ld0);
+        assertAlias(NONE, a, st0, st5);
+        assertAlias(NONE, a, st0, ld5);
+        assertAlias(NONE, a, ld0, st5);
+        assertAlias(NONE, a, ld0, ld5);
+        assertAlias(MAY, a, st5, ld5);//MUST under uniproc / SC per loc
     }
 
     private Load newLoad(Register value, Expression address) {
