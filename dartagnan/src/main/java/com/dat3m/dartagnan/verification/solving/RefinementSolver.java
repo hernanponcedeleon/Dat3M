@@ -473,7 +473,7 @@ public class RefinementSolver extends ModelChecker {
         // TODO: We should probably automatically cut all "unknown relation",
         //  i.e., use a white-list of known relations instead of a blacklist of unknown one's.
         return def instanceof LinuxCriticalSections // LKMM
-                || def instanceof SyncFence || def instanceof SyncBar; // GPUs
+                || def instanceof SyncFence || def instanceof SyncBar || def instanceof SameVirtualLocation; // GPUs
     }
 
     private static RefinementModel generateRefinementModel(Wmm original) {
