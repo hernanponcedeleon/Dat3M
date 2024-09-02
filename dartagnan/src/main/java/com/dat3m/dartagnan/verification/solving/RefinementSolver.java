@@ -469,6 +469,13 @@ public class RefinementSolver extends ModelChecker {
     // ================================================================================================================
     // Special memory model processing
 
+    private static boolean isUnknownDefinitionForCAAT(Definition def) {
+        // TODO: We should probably automatically cut all "unknown relation",
+        //  i.e., use a white-list of known relations instead of a blacklist of unknown one's.
+        return def instanceof LinuxCriticalSections // LKMM
+                || def instanceof SyncFence || def instanceof SyncBar; // GPUs
+    }
+
     private static RefinementModel generateRefinementModel(Wmm original) {
         // We cut (i) negated axioms, (ii) negated relations (if derived),
         // and (iii) some special relations because they are derived from internal relations (like data/addr/ctrl)
@@ -492,7 +499,7 @@ public class RefinementSolver extends ModelChecker {
             } else if (c instanceof Definition def && def.getDefinedRelation().hasName()) {
                 // (iii) Special relations
                 final String name = def.getDefinedRelation().getName().get();
-                if (name.equals(DATA) || name.equals(CTRL) || name.equals(ADDR) || name.equals(CRIT)) {
+                if (name.equals(DATA) || name.equals(CTRL) || name.equals(ADDR) || isUnknownDefinitionForCAAT(def)) {
                     constraintsToCut.add(c);
                 }
             } else if (c instanceof Definition def && def instanceof Fences) {
@@ -516,7 +523,8 @@ public class RefinementSolver extends ModelChecker {
                     memoryModel.getOrCreatePredefinedRelation(POLOC),
                     rf,
                     memoryModel.getOrCreatePredefinedRelation(CO),
-                    memoryModel.getOrCreatePredefinedRelation(FR)))));
+                    memoryModel.getOrCreatePredefinedRelation(FR)
+            ))));
         }
         if (biases.contains(Baseline.NO_OOTA)) {
             // ---- acyclic (dep | rf) ----
@@ -524,7 +532,8 @@ public class RefinementSolver extends ModelChecker {
                     memoryModel.getOrCreatePredefinedRelation(CTRL),
                     memoryModel.getOrCreatePredefinedRelation(DATA),
                     memoryModel.getOrCreatePredefinedRelation(ADDR),
-                    rf))));
+                    rf)
+            )));
         }
         if (biases.contains(Baseline.ATOMIC_RMW)) {
             // ---- empty (rmw & fre;coe) ----
