@@ -14,17 +14,7 @@ public class SMTRelationHandler {
         final SMTEvent     observer_L,
         final SMTEvent     observer_R,
         final RelationType type
-    ) throws Exception {
-        if( type.is_inverse ) {
-            handle_relation(
-                smt,
-                event_R, event_L,
-                observer_R, observer_L,
-                new RelationType( type.type, false )
-            );
-            return;
-        }
-        
+    ) throws Exception {      
         switch( type.type ) {
             case po:
                 smt.prover.addConstraint( smt.bm.and(
@@ -57,7 +47,7 @@ public class SMTRelationHandler {
                     smt,
                     observer_L, observer_R,
                     null, null,
-                    new RelationType( base_relation.po, false )
+                    new RelationType( base_relation.po )
                 );
             break;
 

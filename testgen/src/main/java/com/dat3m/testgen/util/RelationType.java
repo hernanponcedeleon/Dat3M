@@ -12,14 +12,11 @@ public class RelationType {
     };
 
     public base_relation type;
-    public boolean is_inverse;
 
     public RelationType(
-        final base_relation r_type,
-        final boolean r_is_inverse
+        final base_relation r_type
     ) {
         type = r_type;
-        is_inverse = r_is_inverse;
     }
 
     @Override
@@ -27,8 +24,6 @@ public class RelationType {
     {
         StringBuilder sb = new StringBuilder();
         sb.append( type );
-        if( is_inverse )
-            sb.append( "^(-1)" );
         return sb.toString();
     }
 

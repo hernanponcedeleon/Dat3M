@@ -9,6 +9,7 @@ import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.axiom.Axiom;
 import com.dat3m.dartagnan.wmm.definition.Composition;
 import com.dat3m.dartagnan.wmm.definition.Intersection;
+import com.dat3m.dartagnan.wmm.definition.Inverse;
 import com.dat3m.dartagnan.wmm.definition.Union;
 import com.dat3m.testgen.util.Graph;
 import com.dat3m.testgen.util.RelationEdge;
@@ -30,8 +31,6 @@ public class WmmExplorer {
     public List <Graph> begin_exploration(
         final int degree_of_exploration
     ) throws Exception {
-        register_base_relations();
-
         List <Graph> all_cycles = new ArrayList<>();
 
         for( final Axiom axiom : memory_model.getAxioms() ) {
@@ -56,17 +55,6 @@ public class WmmExplorer {
         return all_cycles;
     }
 
-    void register_base_relations()
-    throws Exception {
-        register_base_relation( "po",    new RelationType( RelationType.base_relation.po,  false ) );
-        register_base_relation( "co",    new RelationType( RelationType.base_relation.co,  false ) );
-        register_base_relation( "rf",    new RelationType( RelationType.base_relation.rf,  false ) );
-        register_base_relation( "rf^-1", new RelationType( RelationType.base_relation.rf,  true  ) );
-        register_base_relation( "ext",   new RelationType( RelationType.base_relation.ext, false ) );
-        register_base_relation( "rmw",   new RelationType( RelationType.base_relation.rmw, false ) );
-        register_base_relation( "((([R]) \\ ([range(rf)])) ; loc) ; ([W])", null );
-    }
-
     void explore_relation(
         final List <RelationEdge> relation_list,
         final List <Graph> all_cycles
@@ -86,69 +74,76 @@ public class WmmExplorer {
             return;
         }
 
-        relation_list.remove( relation ); 
+        relation_list.remove( relation );
 
-        boolean composition  = relation.dat3m_relation.getDefinition() instanceof Composition;
-        boolean union        = relation.dat3m_relation.getDefinition() instanceof Union;
-        boolean intersection = relation.dat3m_relation.getDefinition() instanceof Intersection;
+        boolean successful_exploration = true;
 
-        if( !composition && !union && !intersection ) {
+        if( relation.dat3m_relation.getDependencies().size() == 1 ) {
+            final Relation dep = relation.dat3m_relation.getDependencies().get(0);
+            if( relation.dat3m_relation.getDefinition() instanceof Inverse ) {
+                final RelationEdge edge = new RelationEdge(
+                    relation.event_id_right, dep, relation.event_id_left,
+                    is_base_relation( dep ), get_base_relation( dep )
+                );
+                relation_list.add( edge );
+                explore_relation( relation_list, all_cycles );
+                relation_list.remove( edge );
+            } else successful_exploration = false;
+        } else if( relation.dat3m_relation.getDependencies().size() == 2 ) {
+            final Relation dep_L = relation.dat3m_relation.getDependencies().get(0);
+            final Relation dep_R = relation.dat3m_relation.getDependencies().get(1);
+            if( relation.dat3m_relation.getDefinition() instanceof Composition ) {
+                final int intermediate_event_id = next_event_id++;
+                final RelationEdge wmm_L = new RelationEdge(
+                    relation.event_id_left, dep_L, intermediate_event_id,
+                    is_base_relation( dep_L ), get_base_relation( dep_L )
+                );
+                final RelationEdge wmm_R = new RelationEdge(
+                    intermediate_event_id, dep_R, relation.event_id_right,
+                    is_base_relation( dep_R ), get_base_relation( dep_R )
+                );
+                relation_list.add( wmm_L );
+                relation_list.add( wmm_R );
+                explore_relation( relation_list, all_cycles );
+                relation_list.remove( wmm_R );
+                relation_list.remove( wmm_L );
+                next_event_id--;
+            } else if( relation.dat3m_relation.getDefinition() instanceof Union ) {
+                final RelationEdge wmm_L = new RelationEdge(
+                    relation.event_id_left, dep_L, relation.event_id_right,
+                    is_base_relation( dep_L ), get_base_relation( dep_L )
+                );
+                final RelationEdge wmm_R = new RelationEdge(
+                    relation.event_id_left, dep_R, relation.event_id_right,
+                    is_base_relation( dep_R ), get_base_relation( dep_R )
+                );
+                relation_list.add( wmm_L );
+                explore_relation( relation_list, all_cycles );
+                relation_list.remove( wmm_L );
+                relation_list.add( wmm_R );
+                explore_relation( relation_list, all_cycles );
+                relation_list.remove( wmm_R );
+            } else if( relation.dat3m_relation.getDefinition() instanceof Intersection ) {
+                final RelationEdge wmm_L = new RelationEdge(
+                    relation.event_id_left, dep_L, relation.event_id_right,
+                    is_base_relation( dep_L ), get_base_relation( dep_L )
+                );
+                final RelationEdge wmm_R = new RelationEdge(
+                    relation.event_id_left, dep_R, relation.event_id_right,
+                    is_base_relation( dep_R ), get_base_relation( dep_R )
+                );
+                relation_list.add( wmm_L );
+                relation_list.add( wmm_R );
+                explore_relation( relation_list, all_cycles );
+                relation_list.remove( wmm_R );
+                relation_list.remove( wmm_L );
+            } else successful_exploration = false;
+        } else successful_exploration = false;
+        
+        if( !successful_exploration ) {
             System.out.println( "[ERROR] " + relation );
             System.out.println( "[ERROR] " + relation.dat3m_relation.getDefinition() );
             throw new Exception( "Reached relation that isn't a base relation but also cannot be expanded." );
-        }
-
-        if( relation.dat3m_relation.getDependencies().size() != 2 )
-            throw new Exception( "Dependency size should be exactly two." );
-            
-        final Relation dep_L = relation.dat3m_relation.getDependencies().get(0);
-        final Relation dep_R = relation.dat3m_relation.getDependencies().get(1);
-
-        if( composition ) {
-            final int intermediate_event_id = next_event_id++;
-            final RelationEdge wmm_L = new RelationEdge(
-                relation.event_id_left, dep_L, intermediate_event_id,
-                is_base_relation( dep_L ), get_base_relation( dep_L )
-            );
-            final RelationEdge wmm_R = new RelationEdge(
-                intermediate_event_id, dep_R, relation.event_id_right,
-                is_base_relation( dep_R ), get_base_relation( dep_R )
-            );
-            relation_list.add( wmm_L );
-            relation_list.add( wmm_R );
-            explore_relation( relation_list, all_cycles );
-            relation_list.remove( wmm_R );
-            relation_list.remove( wmm_L );
-            next_event_id--;
-        } else if( union ) {
-            final RelationEdge wmm_L = new RelationEdge(
-                relation.event_id_left, dep_L, relation.event_id_right,
-                is_base_relation( dep_L ), get_base_relation( dep_L )
-            );
-            final RelationEdge wmm_R = new RelationEdge(
-                relation.event_id_left, dep_R, relation.event_id_right,
-                is_base_relation( dep_R ), get_base_relation( dep_R )
-            );
-            relation_list.add( wmm_L );
-            explore_relation( relation_list, all_cycles );
-            relation_list.remove( wmm_L );
-            relation_list.add( wmm_R );
-            explore_relation( relation_list, all_cycles );
-            relation_list.remove( wmm_R );
-        } else if( intersection ) {
-            final RelationEdge wmm_L = new RelationEdge(
-                relation.event_id_left, dep_L, relation.event_id_right,
-                is_base_relation( dep_L ), get_base_relation( dep_L )
-            );
-            final RelationEdge wmm_R = new RelationEdge(
-                relation.event_id_left, dep_R, relation.event_id_right,
-                is_base_relation( dep_R ), get_base_relation( dep_R )
-            );
-            relation_list.add( wmm_L );
-            relation_list.add( wmm_R );
-            explore_relation( relation_list, all_cycles );
-            relation_list.remove( wmm_R );
-            relation_list.remove( wmm_L );
         }
 
         relation_list.add( relation );
@@ -187,7 +182,7 @@ public class WmmExplorer {
         return new Graph( relation_list );
     }
 
-    void register_base_relation(
+    public void register_base_relation(
         final String relation_str,
         final RelationType relation_type
     ) throws Exception {
