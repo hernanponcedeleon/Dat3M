@@ -1,13 +1,13 @@
 package com.dat3m.dartagnan.solver.onlineCaatTest.caat.predicates.relationGraphs.derived;
 
 
-import com.dat3m.dartagnan.solver.onlineCaatTest.caat.misc.EdgeDirection;
-import com.dat3m.dartagnan.solver.onlineCaatTest.caat.predicates.AbstractPredicate;
-import com.dat3m.dartagnan.solver.onlineCaatTest.caat.predicates.CAATPredicate;
-import com.dat3m.dartagnan.solver.onlineCaatTest.caat.predicates.Derivable;
-import com.dat3m.dartagnan.solver.onlineCaatTest.caat.predicates.misc.PredicateVisitor;
-import com.dat3m.dartagnan.solver.onlineCaatTest.caat.predicates.relationGraphs.Edge;
-import com.dat3m.dartagnan.solver.onlineCaatTest.caat.predicates.relationGraphs.RelationGraph;
+import com.dat3m.dartagnan.solver.caat.misc.EdgeDirection;
+import com.dat3m.dartagnan.solver.caat.predicates.AbstractPredicate;
+import com.dat3m.dartagnan.solver.caat.predicates.CAATPredicate;
+import com.dat3m.dartagnan.solver.caat.predicates.Derivable;
+import com.dat3m.dartagnan.solver.caat.predicates.misc.PredicateVisitor;
+import com.dat3m.dartagnan.solver.caat.predicates.relationGraphs.Edge;
+import com.dat3m.dartagnan.solver.caat.predicates.relationGraphs.RelationGraph;
 
 import java.util.Collection;
 import java.util.Collections;

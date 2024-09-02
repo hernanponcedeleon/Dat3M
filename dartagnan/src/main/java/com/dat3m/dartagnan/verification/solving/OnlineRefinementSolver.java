@@ -211,6 +211,8 @@ public class OnlineRefinementSolver extends ModelChecker {
 
         boolean isUnsat = prover.isUnsat();
 
+        logger.info(userPropagator.getTotalStats());
+
         if (logger.isInfoEnabled()) {
             final String message = !isUnsat ?
                     (propertyType == Property.Type.SAFETY ? "Specification violation found." : "Specification witness found.")
@@ -246,6 +248,8 @@ public class OnlineRefinementSolver extends ModelChecker {
             //logger.info(generateSummary(combinedTrace, boundCheckTime));
         }
 
+        System.out.println(userPropagator.getTotalStats());
+
         if (logger.isDebugEnabled()) {
             StringBuilder smtStatistics = new StringBuilder("\n ===== SMT Statistics (after final iteration) ===== \n");
             for (String key : prover.getStatistics().keySet()) {
@@ -273,17 +277,7 @@ public class OnlineRefinementSolver extends ModelChecker {
                 // (i) Negated axioms
                 constraintsToCut.add(ax);
             } else if (c instanceof Difference diff) {
-                // (ii) Negated relations (if derived)
-                final Relation sub = diff.getSubtrahend();
-                final Definition subDef = sub.getDefinition();
-                if (!sub.getDependencies().isEmpty()
-                        // The following three definitions are "semi-derived" and need to get cut
-                        // to get a semi-positive model.
-                        || subDef instanceof SetIdentity
-                        || subDef instanceof CartesianProduct
-                        || subDef instanceof Fences) {
-                    constraintsToCut.add(subDef);
-                }
+                    constraintsToCut.add(c);
             } else if (c instanceof Definition def && def.getDefinedRelation().getDependencies().isEmpty()) {
                 // For online solving, we cut all base relations
                 constraintsToCut.add(c);

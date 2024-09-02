@@ -67,6 +67,11 @@ public class CAATModel {
     public void populate() {
         this.hierarchy.populate();
     }
+    // ======================================== Validation ==============================================
+
+    public void validate(int time) {
+        this.hierarchy.validate(time);
+    }
 
     // ======================================== Consistency ==============================================
 

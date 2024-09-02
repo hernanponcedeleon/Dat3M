@@ -26,6 +26,9 @@ public interface RelationGraph extends CAATPredicate {
 
     // ================= Default methods ==================
 
+    @Override
+    default void validate(int time) { edgeStream().forEach(edge -> { assert edge.getTime() <= time; }); }
+
     default boolean contains(Edge edge) { return get(edge) != null; }
     default boolean containsById(int id1, int id2) { return contains(getById(id1, id2)); }
     default Edge getById(int id1, int id2) { return get(new Edge(id1, id2)); }

@@ -1,7 +1,6 @@
 package com.dat3m.dartagnan.solver.onlineCaatTest.caat;
 
 
-import com.dat3m.dartagnan.solver.onlineCaatTest.caat.CAATModel;
 import com.dat3m.dartagnan.solver.onlineCaatTest.caat.constraints.Constraint;
 import com.dat3m.dartagnan.solver.onlineCaatTest.caat.misc.PathAlgorithm;
 import com.dat3m.dartagnan.solver.onlineCaatTest.caat.reasoning.CAATLiteral;
@@ -11,6 +10,9 @@ import com.dat3m.dartagnan.utils.logic.DNF;
 
 import java.util.ArrayList;
 import java.util.List;
+
+import static com.dat3m.dartagnan.solver.onlineCaatTest.caat.CAATSolver.Status.CONSISTENT;
+import static com.dat3m.dartagnan.solver.onlineCaatTest.caat.CAATSolver.Status.INCONSISTENT;
 
 
 public class CAATSolver {
@@ -52,23 +54,29 @@ public class CAATSolver {
             - Return results about the computation
      */
     public Result check(CAATModel model) {
+        return check(model, false);
+    }
+
+    public Result check(CAATModel model, boolean populate) {
         Result result = new Result();
         stats = result.getStatistics();
 
         PathAlgorithm.ensureCapacity(model.getDomain().size());
         // ============== Populate derived predicates ===============
         long curTime = System.currentTimeMillis();
-        model.populate();
-        stats.populationTime = System.currentTimeMillis() - curTime;
+        if (populate) {
+            model.populate();
+            stats.populationTime = System.currentTimeMillis() - curTime;
+        }
 
         // ============== Check for inconsistencies ===============
         curTime = System.currentTimeMillis();
         List<Constraint> violatedConstraints = model.getViolatedConstraints();
-        Status status = violatedConstraints.isEmpty() ? Status.CONSISTENT : Status.INCONSISTENT;
+        Status status = violatedConstraints.isEmpty() ? CONSISTENT : INCONSISTENT;
         result.setStatus(status);
         stats.consistencyCheckTime = System.currentTimeMillis() - curTime;
 
-        if (status == Status.INCONSISTENT) {
+        if (status == INCONSISTENT) {
             // ============== Compute reasons ===============
             curTime = System.currentTimeMillis();
             result.setBaseReasons(computeInconsistencyReasons(violatedConstraints));

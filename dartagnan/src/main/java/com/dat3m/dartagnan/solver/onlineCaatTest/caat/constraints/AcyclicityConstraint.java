@@ -3,6 +3,7 @@ package com.dat3m.dartagnan.solver.onlineCaatTest.caat.constraints;
 
 import com.dat3m.dartagnan.solver.onlineCaatTest.caat.domain.Domain;
 import com.dat3m.dartagnan.solver.onlineCaatTest.caat.misc.DenseIntegerSet;
+import com.dat3m.dartagnan.solver.onlineCaatTest.caat.misc.MediumDenseIntegerSet;
 import com.dat3m.dartagnan.solver.onlineCaatTest.caat.misc.ObjectPool;
 import com.dat3m.dartagnan.solver.onlineCaatTest.caat.misc.PathAlgorithm;
 import com.dat3m.dartagnan.solver.onlineCaatTest.caat.predicates.CAATPredicate;
@@ -24,8 +25,8 @@ public class AcyclicityConstraint extends AbstractConstraint {
 
 
     private final List<DenseIntegerSet> violatingSccs = new ArrayList<>();
-    private final DenseIntegerSet markedNodes = new DenseIntegerSet();
-    private Node[] nodeMap;
+    private final MediumDenseIntegerSet markedNodes = new MediumDenseIntegerSet();
+    private ArrayList<Node> nodeMap = new ArrayList<>();
 
     public AcyclicityConstraint(RelationGraph constrainedGraph) {
         this.constrainedGraph = constrainedGraph;
@@ -56,12 +57,14 @@ public class AcyclicityConstraint extends AbstractConstraint {
         if (violatingSccs.isEmpty()) {
             return Collections.emptyList();
         }
+        //System.out.println("NEW CALL");
 
         List<List<Edge>> cycles = new ArrayList<>();
         // Current implementation: For all marked events <e> in all SCCs:
         // (1) find a shortest path C from <e> to <e> (=cycle)
         // (2) remove all nodes in C from the search space (those nodes are likely to give the same cycle)
         // (3) remove chords and normalize cycle order (starting from element with smallest id)
+        //System.out.println("NEW SCC");
         for (Set<Integer> scc : violatingSccs) {
             MaterializedSubgraphView subgraph = new MaterializedSubgraphView(constrainedGraph, scc);
             Set<Integer> nodes = new HashSet<>(Sets.intersection(scc, markedNodes));
@@ -70,7 +73,6 @@ public class AcyclicityConstraint extends AbstractConstraint {
 
                 List<Edge> cycle = PathAlgorithm.findShortestPath(subgraph, e, e);
                 cycle = new ArrayList<>(cycle);
-
                 cycle.forEach(edge -> nodes.remove(edge.getFirst()));
                 //TODO: Most cycles have chords, so a specialized algorithm that avoids
                 // chords altogether would be great
@@ -128,10 +130,20 @@ public class AcyclicityConstraint extends AbstractConstraint {
             markedNodes.ensureCapacity(e.getFirst() + 1);
             markedNodes.add(e.getFirst());
         }
+
+        while (nodeMap.size() < domain.size()) {
+            nodeMap.add(new Node(nodeMap.size()));
+        }
+    }
+
+    @Override
+    public void onPush() {
+        markedNodes.increaseLevel();
     }
 
     @Override
     public void onBacktrack(CAATPredicate predicate, int time) {
+        markedNodes.resetToLevel((short)time);
         cleanUp();
     }
 
@@ -139,11 +151,12 @@ public class AcyclicityConstraint extends AbstractConstraint {
     public void onDomainInit(CAATPredicate predicate, Domain<?> domain) {
         super.onDomainInit(predicate, domain);
         cleanUp();
-        int domSize = domain.size();;
+        int domSize = domain.size();
+        markedNodes.clear();
         markedNodes.ensureCapacity(domSize);
-        nodeMap = new Node[domSize];
+        nodeMap = new ArrayList<>(domSize);
         for (int i = 0; i < domSize; i++) {
-            nodeMap[i] = new Node(i);
+            nodeMap.add(i, new Node(i));
         }
     }
 
@@ -156,7 +169,7 @@ public class AcyclicityConstraint extends AbstractConstraint {
     private void cleanUp() {
         violatingSccs.forEach(SET_COLLECTION_POOL::returnToPool);
         violatingSccs.clear();
-        markedNodes.clear();
+        nodeMap.clear();
     }
 
 
@@ -190,7 +203,7 @@ public class AcyclicityConstraint extends AbstractConstraint {
         index++;
 
         for (Edge e : constrainedGraph.outEdges(v.id)) {
-            Node w = nodeMap[e.getSecond()];
+            Node w = nodeMap.get(e.getSecond());
             if (!w.wasVisited()) {
                 strongConnect(w);
                 v.lowlink = Math.min(v.lowlink, w.lowlink);

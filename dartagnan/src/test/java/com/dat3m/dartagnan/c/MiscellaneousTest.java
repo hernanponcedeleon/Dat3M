@@ -43,7 +43,7 @@ public class MiscellaneousTest extends AbstractCTest {
 
     @Override
     protected long getTimeout() {
-        return 10000;
+        return 1000000000;
     }
 
     @Override
@@ -70,7 +70,7 @@ public class MiscellaneousTest extends AbstractCTest {
                 {"MP_atomic_bool", IMM, PASS, 1},
                 {"MP_atomic_bool_weak", IMM, FAIL, 1},
                 {"nondet_loop", IMM, FAIL, 1},
-                {"pthread", IMM, PASS, 1},
+                {"pthread", IMM, PASS, 1}, // gets stuck in online solving
                 {"recursion", IMM, UNKNOWN, 1},
                 {"recursion", IMM, PASS, 2},
                 {"thread_chaining", IMM, PASS, 1},

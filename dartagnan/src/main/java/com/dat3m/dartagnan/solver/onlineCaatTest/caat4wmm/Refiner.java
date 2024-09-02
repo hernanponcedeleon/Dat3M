@@ -2,7 +2,6 @@ package com.dat3m.dartagnan.solver.onlineCaatTest.caat4wmm;
 
 import com.dat3m.dartagnan.encoding.EncodingContext;
 import com.dat3m.dartagnan.program.event.core.MemoryCoreEvent;
-import com.dat3m.dartagnan.solver.onlineCaatTest.caat4wmm.RefinementModel;
 import com.dat3m.dartagnan.solver.onlineCaatTest.caat4wmm.coreReasoning.AddressLiteral;
 import com.dat3m.dartagnan.solver.onlineCaatTest.caat4wmm.coreReasoning.CoreLiteral;
 import com.dat3m.dartagnan.solver.onlineCaatTest.caat4wmm.coreReasoning.ExecLiteral;

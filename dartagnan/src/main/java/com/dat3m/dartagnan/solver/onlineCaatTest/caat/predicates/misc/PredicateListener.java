@@ -11,4 +11,6 @@ public interface PredicateListener {
     void onPopulation(CAATPredicate predicate);
     void onChanged(CAATPredicate predicate, Collection<? extends Derivable> added);
     void onBacktrack(CAATPredicate predicate, int time);
+
+    default void onPush() {}
 }

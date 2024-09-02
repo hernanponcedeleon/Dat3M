@@ -125,5 +125,7 @@ public class InverseGraph extends AbstractPredicate implements RelationGraph {
     public void repopulate() { }
 
     @Override
-    public void backtrackTo(int time) { }
+    public void backtrackTo(int time) {
+     inner.backtrackTo(time);
+    }
 }

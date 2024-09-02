@@ -79,7 +79,7 @@ public class CompositionGraph extends MaterializedGraph {
 
     private void updateFirst(Edge a, Collection<Edge> addedEdges) {
         for (Edge b : second.outEdges(a.getSecond())) {
-            Edge c = combine(a, b, a.getTime());
+            Edge c = combine(a, b, Math.max(a.getTime(), b.getTime()));
             if (simpleGraph.add(c)) {
                 addedEdges.add(c);
             }
@@ -88,7 +88,7 @@ public class CompositionGraph extends MaterializedGraph {
 
     private void updateSecond(Edge b, Collection<Edge> addedEdges) {
         for (Edge a : first.inEdges(b.getFirst())) {
-            Edge c = combine(a, b, b.getTime());
+            Edge c = combine(a, b, Math.max(a.getTime(), b.getTime()));
             if (simpleGraph.add(c)) {
                 addedEdges.add(c);
             }

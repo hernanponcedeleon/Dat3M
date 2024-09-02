@@ -57,6 +57,12 @@ public class PredicateHierarchy {
 
     // ============== Initialization =============
 
+    public void validate(int time) {
+        for (CAATPredicate pred : getPredicates()) {
+            pred.validate(time);
+        }
+    }
+
     public void initializeToDomain(Domain<?> domain) {
         this.domain = domain;
         for (CAATPredicate pred : getPredicateList()) {
@@ -127,6 +133,12 @@ public class PredicateHierarchy {
         }
         createPropagationTask(null, pred, props, 0);
         forwardPropagate();
+    }
+
+    public void onPush() {
+        for (CAATPredicate pred : getPredicateList()) {
+            listenersMap.get(pred).forEach(listener -> listener.onPush());
+        }
     }
 
     public void backtrackTo(int time) {

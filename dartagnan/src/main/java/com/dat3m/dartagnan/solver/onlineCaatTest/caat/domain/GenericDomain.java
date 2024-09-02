@@ -1,16 +1,18 @@
 package com.dat3m.dartagnan.solver.onlineCaatTest.caat.domain;
 
+import com.dat3m.dartagnan.program.event.Event;
+
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.Set;
+import java.util.TreeMap;
 
 public class GenericDomain<T> implements Domain<T> {
 
     private final DenseIdBiMap<T> domainMap;
-    //private final int fullSize;
 
     public GenericDomain(Collection<T> domain) {
         domainMap = DenseIdBiMap.createIdentityBased(domain.size());
-        //fullSize = domain.size();
         for (T obj : domain) {
             domainMap.addObject(obj);
         }
@@ -20,14 +22,10 @@ public class GenericDomain<T> implements Domain<T> {
         domainMap = new DenseIdBiMap<>();
     }
 
-    public boolean resetElements(int clusterNum) {
+    // returns smallest unoccupied id
+    public int resetElements(int clusterNum) {
         return domainMap.removeObjectsFromTop(clusterNum);
     }
-
-    /*@Override
-    public int fullSize() {
-        return fullSize;
-    }*/
 
     @Override
     public int size() {

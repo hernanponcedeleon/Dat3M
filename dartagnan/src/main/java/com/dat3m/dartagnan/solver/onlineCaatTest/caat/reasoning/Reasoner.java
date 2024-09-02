@@ -10,9 +10,6 @@ import com.dat3m.dartagnan.solver.onlineCaatTest.caat.predicates.relationGraphs.
 import com.dat3m.dartagnan.solver.onlineCaatTest.caat.predicates.relationGraphs.RelationGraph;
 import com.dat3m.dartagnan.solver.onlineCaatTest.caat.predicates.sets.Element;
 import com.dat3m.dartagnan.solver.onlineCaatTest.caat.predicates.sets.SetPredicate;
-import com.dat3m.dartagnan.solver.onlineCaatTest.caat.reasoning.CAATLiteral;
-import com.dat3m.dartagnan.solver.onlineCaatTest.caat.reasoning.EdgeLiteral;
-import com.dat3m.dartagnan.solver.onlineCaatTest.caat.reasoning.ElementLiteral;
 import com.dat3m.dartagnan.utils.logic.Conjunction;
 import com.dat3m.dartagnan.utils.logic.DNF;
 

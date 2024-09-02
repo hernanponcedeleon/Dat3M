@@ -60,6 +60,10 @@ public class ExecutionGraph {
         caatModel.initializeToDomain(domain);
     }
 
+    public void validate(int time) {
+        caatModel.validate(time);
+    }
+
     // --------------------------------------------------
 
     private void constructMappings() {

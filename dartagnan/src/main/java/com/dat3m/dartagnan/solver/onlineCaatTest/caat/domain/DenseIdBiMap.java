@@ -52,9 +52,6 @@ public class DenseIdBiMap<T> {
         final int nextId = size();
         if (objToIdMap.putIfAbsent(obj, nextId) == null) {
             idToObjMap.add(obj);
-            if (size() != idToObjMap.size()) {
-                int i = 5;
-            }
             assert(idToObjMap.get(nextId).equals(obj));
             return nextId;
         } else {
@@ -62,19 +59,20 @@ public class DenseIdBiMap<T> {
         }
     }
 
-    public boolean removeObjectsFromTop(int number) {
+    public int removeObjectsFromTop(int number) {
         if (number > backtrackPoints.size() || number <= 0) {
-            return false;
+            return -1;
         }
+        int level = -1;
         for (int i = 0; i < number; i++) {
-            int level = backtrackPoints.remove(backtrackPoints.size() - 1);
+            level = backtrackPoints.remove(backtrackPoints.size() - 1);
             for(int size = size() - 1; size >= level; size--) {
                 T obj = getObject(size);
                 objToIdMap.remove(obj);
             }
             idToObjMap = idToObjMap.subList(0, level);
         }
-        return true;
+        return level;
     }
 
     public int getId(Object obj) {
@@ -89,7 +87,7 @@ public class DenseIdBiMap<T> {
     }
 
     public int size() {
-        return objToIdMap.size();
+        return idToObjMap.size();
     }
 
     public void clear() {
