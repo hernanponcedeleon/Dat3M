@@ -6,10 +6,11 @@ import com.dat3m.dartagnan.expression.integers.*;
 import com.dat3m.dartagnan.expression.misc.ITEExpr;
 import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.Register;
+import com.dat3m.dartagnan.program.analysis.BackwardsReachingDefinitionsAnalysis;
 import com.dat3m.dartagnan.program.analysis.DominatorAnalysis;
 import com.dat3m.dartagnan.program.analysis.LiveRegistersAnalysis;
 import com.dat3m.dartagnan.program.analysis.LoopAnalysis;
-import com.dat3m.dartagnan.program.analysis.UseDefAnalysis;
+import com.dat3m.dartagnan.program.analysis.ReachingDefinitionsAnalysis;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.RegWriter;
@@ -19,7 +20,6 @@ import com.dat3m.dartagnan.program.event.core.Local;
 import com.dat3m.dartagnan.utils.DominatorTree;
 
 import java.util.List;
-import java.util.Set;
 
 /*
     This pass adds a loop bound annotation to static loops of the form
@@ -56,7 +56,7 @@ public class NaiveLoopBoundAnnotation implements FunctionProcessor {
         }
 
         final LiveRegistersAnalysis liveAnalysis = LiveRegistersAnalysis.forFunction(function);
-        final UseDefAnalysis useDefAnalysis = UseDefAnalysis.forFunction(function);
+        final ReachingDefinitionsAnalysis useDefAnalysis = BackwardsReachingDefinitionsAnalysis.forFunction(function);
         final DominatorTree<Event> preDominatorTree = DominatorAnalysis.computePreDominatorTree(function.getEntry(), function.getExit());
         final List<LoopAnalysis.LoopInfo> loops = LoopAnalysis.onFunction(function).getLoopsOfFunction(function);
 
@@ -123,7 +123,7 @@ public class NaiveLoopBoundAnnotation implements FunctionProcessor {
     // Check if there is a single increment to the register.
     // If there is, it returns the event performing the increment, otherwise it returns null.
     private Event findUniqueIncrement(List<Event> events, Register register,
-                                      UseDefAnalysis useDefAnalysis, DominatorTree<Event> preDominatorTree) {
+                                      ReachingDefinitionsAnalysis useDefAnalysis, DominatorTree<Event> preDominatorTree) {
         final RegWriter source = findUniqueSource(events, register, useDefAnalysis, preDominatorTree);
         if (source == null) {
             return null;
@@ -142,7 +142,7 @@ public class NaiveLoopBoundAnnotation implements FunctionProcessor {
     }
 
     private Expression computeLoopBound(List<Event> events, Register exitReg, Register counterReg, int counterRegInitVal,
-                                        UseDefAnalysis useDefAnalysis, DominatorTree<Event> preDominatorTree) {
+                                        ReachingDefinitionsAnalysis useDefAnalysis, DominatorTree<Event> preDominatorTree) {
 
         final RegWriter exitSource = findUniqueSource(events, exitReg, useDefAnalysis, preDominatorTree);
         if (exitSource == null) {
@@ -168,7 +168,7 @@ public class NaiveLoopBoundAnnotation implements FunctionProcessor {
 
     // Finds the unique non-trivial assignment that (possibly indirectly) provides the value of <register>
     // Returns NULL, if no such unique assignment exists.
-    private RegWriter findUniqueSource(List<Event> events, Register register, UseDefAnalysis useDefAnalysis, DominatorTree<Event> preDominatorTree) {
+    private RegWriter findUniqueSource(List<Event> events, Register register, ReachingDefinitionsAnalysis useDefAnalysis, DominatorTree<Event> preDominatorTree) {
         final List<RegWriter> writers = events.stream()
                 .filter(e -> e instanceof RegWriter writer && writer.getResultRegister().equals(register))
                 .map(RegWriter.class::cast).toList();
@@ -187,10 +187,10 @@ public class NaiveLoopBoundAnnotation implements FunctionProcessor {
         return source;
     }
 
-    private RegWriter chaseUseDefChain(RegWriter assignment, UseDefAnalysis useDefAnalysis, DominatorTree<Event> preDominatorTree) {
+    private RegWriter chaseUseDefChain(RegWriter assignment, ReachingDefinitionsAnalysis useDefAnalysis, DominatorTree<Event> preDominatorTree) {
         RegWriter cur = assignment;
         while (cur instanceof Local loc && loc.getExpr() instanceof Register reg) {
-            final Set<RegWriter> defs = useDefAnalysis.getDefs(loc, reg);
+            final List<RegWriter> defs = useDefAnalysis.getWriters(loc).ofRegister(reg).getMayWriters();
             if (defs.size() != 1) {
                 // Multiple assignments (or none): too complex so give up.
                 return null;
