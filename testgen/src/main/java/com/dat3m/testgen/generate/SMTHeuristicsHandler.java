@@ -40,8 +40,8 @@ public class SMTHeuristicsHandler {
                 smt.prover.addConstraint( smt.bm.implication(
                     smt.bm.and(
                         smt.im.equal( events[i].location, events[j].location ),
-                        smt.em.equivalence( events[i].type, SMTInstruction.get( smt, "WRITE" ) ),
-                        smt.em.equivalence( events[j].type, SMTInstruction.get( smt, "WRITE" ) )
+                        smt.em.equivalence( events[i].type, SMTInstruction.get( smt, "W" ) ),
+                        smt.em.equivalence( events[j].type, SMTInstruction.get( smt, "W" ) )
                     ),
                     smt.bm.or(
                         smt.im.equal( events[i].event_id, events[j].event_id ),

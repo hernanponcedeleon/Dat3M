@@ -9,6 +9,8 @@ public class RelationType {
         po,
         rf,
         rmw,
+        read,
+        write
     };
 
     public base_relation type;

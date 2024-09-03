@@ -28,7 +28,7 @@ public class ProgramEvent {
     public String short_form()
     {
         StringBuilder sb = new StringBuilder();
-        sb.append( "(" + type.charAt(0) + ", @" + location + ", " + value + ")" );
+        sb.append( "(" + type + ", @" + location + ", " + value + ")" );
         return sb.toString();
     }
 
