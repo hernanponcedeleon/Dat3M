@@ -27,9 +27,11 @@ public final class Tag {
     public static final String EXCL             = "__EXCL";
     // Marks the event that is reachable IFF a loop has not been fully unrolled.
     public static final String BOUND            = "__BOUND";
-    // Marks jumps that somehow terminate a thread earlier than "normally"
-    // This can be bound events, spinning events, assertion violations, etc.
-    public static final String EARLYTERMINATION = "__EARLYTERMINATION";
+    // Marks jumps that designate an exceptional termination, typically due to assertion failures
+    public static final String EXCEPTIONAL_TERMINATION = "__EXCEPTIONAL_TERMINATION";
+    // Marks jumps that designate non-termination, typically spinloops and bound events
+    // (and control barriers in the future)
+    public static final String NONTERMINATION    = "__NONTERMINATION";
     // Marks jumps that terminate a thread due to spinning behaviour, i.e. side-effect-free loop iterations
     public static final String SPINLOOP         = "__SPINLOOP";
     // Some events should not be optimized (e.g. fake dependencies) or deleted (e.g. bounds)
