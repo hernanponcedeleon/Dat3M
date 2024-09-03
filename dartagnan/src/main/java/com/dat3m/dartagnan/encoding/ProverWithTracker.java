@@ -78,7 +78,9 @@ public class ProverWithTracker implements AutoCloseable {
     }
 
     public boolean isUnsatWithAssumptions(Collection<BooleanFormula> fs) throws SolverException, InterruptedException {
+        long start = System.currentTimeMillis();
         boolean result = prover.isUnsatWithAssumptions(fs);
+        long end = System.currentTimeMillis();
         String resultString = result ? "unsat" : "sat";
         if(dump()) {
             write("(push)\n");
@@ -87,17 +89,21 @@ public class ProverWithTracker implements AutoCloseable {
             }
             write("(set-info :status " + resultString + ")\n");
             write("(check-sat)\n");
+            write("; Original solving time: " + (end - start) + " ms");
             write("(pop)\n");
         }
         return result;
     }
 
     public boolean isUnsat() throws SolverException, InterruptedException {
+        long start = System.currentTimeMillis();
         boolean result = prover.isUnsat();
+        long end = System.currentTimeMillis();
         String resultString = result ? "unsat" : "sat";
         if(dump()) {
             write("(set-info :status " + resultString + ")\n");
             write("(check-sat)\n");
+            write("; Original solving time: " + (end - start) + " ms");
         }
         return result;
     }
@@ -124,7 +130,7 @@ public class ProverWithTracker implements AutoCloseable {
         prover.pop();
     }
 
-    private void write(String content) {
+    public void write(String content) {
         File file = new File(fileName);
         FileWriter writer;
         try {

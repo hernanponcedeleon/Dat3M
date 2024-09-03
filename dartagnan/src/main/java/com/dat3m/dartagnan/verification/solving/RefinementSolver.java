@@ -224,8 +224,11 @@ public class RefinementSolver extends ModelChecker {
         final Property.Type propertyType = Property.getCombinedType(task.getProperty(), task);
 
         logger.info("Starting encoding using " + ctx.getVersion());
+        prover.write("; Program encoding");
         prover.addConstraint(programEncoder.encodeFullProgram());
+        prover.write("; Memory model (baseline) encoding");
         prover.addConstraint(baselineEncoder.encodeFullMemoryModel());
+        prover.write("; Symmetry breaking encoding");
         prover.addConstraint(symmetryEncoder.encodeFullSymmetryBreaking());
 
         // ------------------------ Solving ------------------------
@@ -233,6 +236,7 @@ public class RefinementSolver extends ModelChecker {
 
         logger.info("Checking target property.");
         prover.push();
+        prover.write("; Property encoding");
         prover.addConstraint(propertyEncoder.encodeProperties(task.getProperty()));
 
         final RefinementTrace propertyTrace = runRefinement(task, prover, solver, refiner);
@@ -265,8 +269,10 @@ public class RefinementSolver extends ModelChecker {
             logger.info("Checking unrolling bounds.");
             final long lastTime = System.currentTimeMillis();
             prover.pop();
+            prover.write("; Bound encoding");
             prover.addConstraint(propertyEncoder.encodeBoundEventExec());
             // Add back the refinement clauses we already found, hoping that this improves the performance.
+            prover.write("; Refinement encoding");
             prover.addConstraint(bmgr.and(propertyTrace.getRefinementFormulas()));
             final RefinementTrace boundTrace = runRefinement(task, prover, solver, refiner);
             boundCheckTime = System.currentTimeMillis() - lastTime;
@@ -455,6 +461,7 @@ public class RefinementSolver extends ModelChecker {
                 inconsistencyReasons = solverResult.getCoreReasons();
                 lastTime = System.currentTimeMillis();
                 refinementFormula = refiner.refine(inconsistencyReasons, context);
+                prover.write("; Refinement encoding");
                 prover.addConstraint(refinementFormula);
                 refineTime = (System.currentTimeMillis() - lastTime);
             }
