@@ -396,6 +396,7 @@ public class NativeRelationAnalysis implements RelationAnalysis {
 
     private static final class IncrementalKnowledgeCloser implements Constraint.Visitor<Map<Relation, ExtendedDelta>> {
         private final Relation changed;
+        private final EventGraph disabled;
         private final EventGraph enabled;
         private final Map<Relation, Knowledge> knowledgeMap;
         private final Context analysisContext;
