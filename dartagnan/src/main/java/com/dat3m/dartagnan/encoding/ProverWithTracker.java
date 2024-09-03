@@ -111,14 +111,14 @@ public class ProverWithTracker implements AutoCloseable {
         }
     }
 
-    private String removeDuplicatedDeclarations(String content) {
-        String output = "";
+    private StringBuilder removeDuplicatedDeclarations(String content) {
+        StringBuilder builder = new StringBuilder();
         for(String line : content.split("\n")) {
             if(line.contains("declare-fun") && !declarations.add(line)) {
                 continue;
             }
-            output += line + "\n";
+            builder.append(line + "\n");
         }
-        return output;
+        return builder;
     }
 }
