@@ -48,6 +48,8 @@ public class Program {
             }
         }
 
+        List <String> read_constraints = new ArrayList<>();
+
         for( List <ProgramEvent> thread : threads ) {
             if( thread.isEmpty() )
                 continue;
@@ -58,10 +60,19 @@ public class Program {
                 if( last_row != -1 && event.thread_row != last_row )
                     sb.append( "--- --- --- ---\n" );
                 last_row = event.thread_row;
-                sb.append( "  " + event.short_form() + "\n" );
+                String register_info = ( event.type.equals( "R" ) ? "r" + event.event_id + " = " : "" );
+                sb.append( "  " + register_info + event.short_form() + "\n" );
+                if( event.type.equals( "R" ) )
+                    read_constraints.add( "r" + event.event_id + " == " + event.value );
             }
-            sb.append( "\n\n" );
+            sb.append( "\n" );
         }
+
+        sb.append( "assert( true" );
+        for( String constraint : read_constraints ) {
+            sb.append( "\n  && " + constraint );
+        }
+        sb.append( "\n)\n\n" );
 
         return sb.toString();
     }
