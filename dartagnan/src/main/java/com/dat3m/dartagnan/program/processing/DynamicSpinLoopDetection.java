@@ -132,6 +132,7 @@ public class DynamicSpinLoopDetection implements ProgramProcessor {
         final List<Event> sideEffects = loop.sideEffects;
         final Event start = loop.getStart();
         final Event end = loop.getEnd();
+        final Predicate<Event> isAlwaysSideEffectful = (e -> e.cfImpliesExec() && sideEffects.contains(e));
 
         final DominatorTree<Event> preDominatorTree = DominatorAnalysis.computePreDominatorTree(start, end);
         final DominatorTree<Event> postDominatorTree = DominatorAnalysis.computePostDominatorTree(start, end);
@@ -144,7 +145,7 @@ public class DynamicSpinLoopDetection implements ProgramProcessor {
         // (2) Check if always side-effect-full at the end of an iteration directly before entering the next one.
         // This is an approximation: If the end of the iteration is predominated by some side effect
         // then we always observe side effects.
-        loop.isAlwaysSideEffectful = Streams.stream(preDominatorTree.getDominators(end)).anyMatch(sideEffects::contains);
+        loop.isAlwaysSideEffectful = Streams.stream(preDominatorTree.getDominators(end)).anyMatch(isAlwaysSideEffectful);
         if (loop.isAlwaysSideEffectful) {
             return;
         }
@@ -157,7 +158,7 @@ public class DynamicSpinLoopDetection implements ProgramProcessor {
                     preDominatorTree.getStrictDominators(sideEffect),
                     postDominatorTree.getStrictDominators(sideEffect)
             );
-            final boolean isDominated = Iterables.tryFind(dominators, sideEffects::contains).isPresent();
+            final boolean isDominated = Iterables.tryFind(dominators, isAlwaysSideEffectful::test).isPresent();
             if (isDominated) {
                 sideEffects.remove(i);
             }
@@ -173,12 +174,22 @@ public class DynamicSpinLoopDetection implements ProgramProcessor {
         final ExpressionFactory expressions = ExpressionFactory.getInstance();
         final Function func = loop.loopInfo.function();
         final int loopNum = loop.loopInfo.loopNumber();
+        final Register tempReg = func.newRegister("__possiblySideEffectless#" + loopNum, types.getBooleanType());
         final Register trackingReg = func.newRegister("__sideEffect#" + loopNum, types.getBooleanType());
 
         final Event init = EventFactory.newLocal(trackingReg, expressions.makeFalse());
         loop.getStart().insertAfter(init);
         for (Event sideEffect : loop.sideEffects) {
-            final Event updateSideEffect = EventFactory.newLocal(trackingReg, expressions.makeTrue());
+            final List<Event> updateSideEffect = new ArrayList<>();
+            if (sideEffect.cfImpliesExec()) {
+                updateSideEffect.add(EventFactory.newLocal(trackingReg, expressions.makeTrue()));
+            } else {
+                updateSideEffect.addAll(List.of(
+                        EventFactory.newExecutionStatus(tempReg, sideEffect),
+                        EventFactory.newLocal(trackingReg, expressions.makeOr(trackingReg, expressions.makeNot(tempReg)))
+                ));
+
+            }
             sideEffect.getPredecessor().insertAfter(updateSideEffect);
         }
 
@@ -197,7 +208,7 @@ public class DynamicSpinLoopDetection implements ProgramProcessor {
         final Event terminator = func instanceof Thread thread ?
                 EventFactory.newJump(guard, (Label) thread.getExit())
                 : EventFactory.newAbortIf(guard);
-        terminator.addTags(Tag.SPINLOOP, Tag.EARLYTERMINATION, Tag.NOOPT);
+        terminator.addTags(Tag.SPINLOOP, Tag.NONTERMINATION, Tag.NOOPT);
         return terminator;
     }
 
