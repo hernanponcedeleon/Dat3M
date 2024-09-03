@@ -192,7 +192,8 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
             }
 
             final Event terminator = block.events.get(block.events.size() - 1);
-            for (final Map.Entry<BlockPair, List<Event>> phiNode : phiNodes.entrySet()) {
+            for (final Map.Entry<BlockPair, List<Event>> phiNode : phiNodes.entrySet().stream()
+                    .sorted(Comparator.comparing(e -> ((Label)e.getValue().get(0)).getName())).toList()) {
                 final BlockPair blockPair = phiNode.getKey();
                 if (blockPair.from == block) {
                     for (Event event : phiNode.getValue()) {

@@ -6,6 +6,7 @@ import com.dat3m.dartagnan.program.analysis.alias.AliasAnalysis;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.MemoryEvent;
 import com.dat3m.dartagnan.program.event.core.*;
+import com.dat3m.dartagnan.program.event.core.threading.ThreadCreate;
 import com.dat3m.dartagnan.program.filter.Filter;
 import com.dat3m.dartagnan.verification.Context;
 import com.dat3m.dartagnan.verification.VerificationTask;
@@ -24,6 +25,7 @@ import org.sosy_lab.common.configuration.Configuration;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 
 import static com.dat3m.dartagnan.program.event.Tag.*;
 import static java.util.stream.Collectors.toSet;
@@ -44,6 +46,8 @@ public class LazyRelationAnalysis implements RelationAnalysis, Constraint.Visito
     // TODO: A proper way to pass encode sets from WmmEncoder
     public Map<Relation, MutableEventGraph> encodeSets;
 
+    private EventGraph forkJoinGraph;
+
     public LazyRelationAnalysis(VerificationTask task, Context context) {
         this.task = task;
         this.program = task.getProgram();
@@ -53,6 +57,32 @@ public class LazyRelationAnalysis implements RelationAnalysis, Constraint.Visito
         this.visibleEvents = new HashSet<>(program.getThreadEventsWithAllTags(VISIBLE));
         this.memoryEvents = new HashSet<>(program.getThreadEvents(MemoryCoreEvent.class));
         this.initializer = new NativeRelationAnalysis.Initializer(task, context);
+    }
+
+    // TODO: Proper implementation
+    public EventGraph getForkJoinGraph() {
+        if (forkJoinGraph == null) {
+            MutableEventGraph eventGraph = new MapEventGraph();
+            for (ThreadCreate create : program.getThreadEvents(ThreadCreate.class)) {
+                List<Event> predecessors = create.getPredecessors();
+                Set<Event> successors = new HashSet<>();
+                Set<ThreadCreate> next = Set.of(create);
+                while (!next.isEmpty()) {
+                    successors.addAll(next.stream()
+                            .flatMap(c -> c.getSpawnedThread().getEvents().stream())
+                            .collect(toSet()));
+                    next = next.stream()
+                            .flatMap(t -> t.getSpawnedThread().getEvents(ThreadCreate.class).stream())
+                            .collect(Collectors.toSet());
+                }
+                for (Event e1 : predecessors) {
+                    eventGraph.addRange(e1, successors);
+                }
+            }
+            // TODO: Compute joins
+            forkJoinGraph = ImmutableEventGraph.from(eventGraph);
+        }
+        return forkJoinGraph;
     }
 
     public static LazyRelationAnalysis fromConfig(VerificationTask task, Context context, Configuration config) {
@@ -138,6 +168,9 @@ public class LazyRelationAnalysis implements RelationAnalysis, Constraint.Visito
                 relation.getDefinition().accept(visitor);
             }
         }
+        // TODO: !!
+        //  Check if it is necessary to reduce must sets
+        // TODO: !!
         queue.clear();
     }
 
@@ -180,8 +213,12 @@ public class LazyRelationAnalysis implements RelationAnalysis, Constraint.Visito
     @Override
     public RelationAnalysis.Knowledge visitExternal(External definition) {
         long start = System.currentTimeMillis();
+        // TODO: This is a quick hack for rc11 data races, not sound in general
+        EventGraph forkJoin = getForkJoinGraph();
         EventGraph must = new LazyEventGraph(visibleEvents, visibleEvents,
-                (e1, e2) -> !e1.getThread().equals(e2.getThread()));
+                (e1, e2) -> !e1.getThread().equals(e2.getThread())
+                        && !forkJoin.contains(e1, e2)
+                        && !forkJoin.contains(e2, e1));
         logTime(definition, start, System.currentTimeMillis());
         return new RelationAnalysis.Knowledge(must, must);
     }
@@ -281,8 +318,9 @@ public class LazyRelationAnalysis implements RelationAnalysis, Constraint.Visito
     public RelationAnalysis.Knowledge visitCoherence(Coherence definition) {
         long start = System.currentTimeMillis();
         NativeRelationAnalysis.MutableKnowledge mutable = initializer.visitCoherence(definition);
-        EventGraph may = ImmutableMapEventGraph.from(mutable.getMaySet());
-        EventGraph must = ImmutableMapEventGraph.from(mutable.getMustSet());
+        EventGraph may = ImmutableEventGraph.difference(mutable.getMaySet(), getForkJoinGraph().inverse());
+        // TODO: Assert must disjoint with getForkJoinGraph().inverse()
+        EventGraph must = mutable.getMustSet();
         logTime(definition, start, System.currentTimeMillis());
         return new RelationAnalysis.Knowledge(may, must);
     }
@@ -291,8 +329,9 @@ public class LazyRelationAnalysis implements RelationAnalysis, Constraint.Visito
     public RelationAnalysis.Knowledge visitReadFrom(ReadFrom definition) {
         long start = System.currentTimeMillis();
         NativeRelationAnalysis.MutableKnowledge mutable = initializer.visitReadFrom(definition);
-        EventGraph may = ImmutableMapEventGraph.from(mutable.getMaySet());
-        EventGraph must = ImmutableMapEventGraph.from(mutable.getMustSet());
+        EventGraph may = ImmutableEventGraph.difference(mutable.getMaySet(), getForkJoinGraph().inverse());
+        // TODO: Assert must disjoint with getForkJoinGraph().inverse()
+        EventGraph must = mutable.getMustSet();
         logTime(definition, start, System.currentTimeMillis());
         return new RelationAnalysis.Knowledge(may, must);
     }

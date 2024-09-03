@@ -91,6 +91,8 @@ public class EventGraphStaticTest {
         });
     }
 
+    // TODO: Add tests for 2+ operators in union and intersection
+
     @Test
     public void testUnionDisjoint() {
         // given

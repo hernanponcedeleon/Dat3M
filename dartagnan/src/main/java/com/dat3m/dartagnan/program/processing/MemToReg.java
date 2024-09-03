@@ -2,10 +2,12 @@ package com.dat3m.dartagnan.program.processing;
 
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
+import com.dat3m.dartagnan.expression.ExpressionVisitor;
 import com.dat3m.dartagnan.expression.Type;
 import com.dat3m.dartagnan.expression.integers.IntBinaryExpr;
 import com.dat3m.dartagnan.expression.integers.IntBinaryOp;
 import com.dat3m.dartagnan.expression.integers.IntLiteral;
+import com.dat3m.dartagnan.expression.processing.ExprTransformer;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.Register;
@@ -57,7 +59,7 @@ public class MemToReg implements FunctionProcessor {
         // Initially, all locally-allocated addresses are potentially promotable.
         for (final Alloc allocation : function.getEvents(Alloc.class)) {
             // Allocations will usually not have users.  Otherwise, their object is not promotable.
-            if (allocation.getUsers().isEmpty()) {
+            if (!allocation.isHeapAllocation() && allocation.getUsers().isEmpty()) {
                 matcher.reachabilityGraph.put(allocation, new HashSet<>());
             }
         }
@@ -85,7 +87,8 @@ public class MemToReg implements FunctionProcessor {
             }
         }
 
-        int loadCount = 0, storeCount = 0;
+        int loadCount = 0;
+        int storeCount = 0;
         // Replace all loads and stores to replaceable storage.
         for (final Map.Entry<MemoryEvent, AddressOffset> entry : matcher.accesses.entrySet()) {
             final MemoryEvent event = entry.getKey();
@@ -105,15 +108,50 @@ public class MemToReg implements FunctionProcessor {
                 assert store.getUsers().isEmpty();
                 store.replaceBy(EventFactory.newLocal(memreg, expressions.makeCast(store.getMemValue(), memreg.getType())));
                 storeCount++;
+            } else {
+                throw new IllegalArgumentException("Event " + event.getGlobalId()
+                        + " has unexpected type" + event.getClass().getSimpleName());
             }
         }
+
+        for (final Map.Entry<Local, AddressOffset> entry : matcher.assignments.entrySet()) {
+            final Local event = entry.getKey();
+            final AddressOffset access = entry.getValue();
+            final Map<Integer, Register> registers = access == null ? null : replacingRegisters.get(access.base);
+            if (registers == null || !registers.containsKey((int)access.offset)) {
+                // TODO: Add assertion
+                continue;
+            }
+            if (entry.getValue().offset != 0) {
+                // TODO: Implementation
+                //System.out.println("Non-zero offset for local " + event.getGlobalId());
+                continue;
+            }
+
+            assert event.getUsers().isEmpty();
+
+            Register resultReg = event.getResultRegister();
+            Register oldReg = access.base().getResultRegister();
+            Register newReg = registers.get((int)access.offset);
+            ExpressionVisitor<Expression> replacer = new ExprTransformer() {
+                @Override
+                public Expression visitRegister(Register reg) {
+                    return reg.equals(oldReg)? newReg : reg;
+                }
+            };
+
+            Expression expression = expressions.makeCast(event.getExpr().accept(replacer), resultReg.getType());
+            event.replaceBy(new Local(resultReg, expression));
+        }
+
+        /*
         // Remove involved local assignments.
         for (final Map.Entry<Local, AddressOffset> entry : matcher.assignments.entrySet()) {
             if (replacingRegisters.containsKey(entry.getValue().base)) {
                 assert entry.getKey().getUsers().isEmpty();
                 entry.getKey().tryDelete();
             }
-        }
+        }*/
         if (loadCount + storeCount > 0) {
             logger.debug("Removed {} loads and {} stores in function \"{}\".", loadCount, storeCount, function.getName());
         }
@@ -121,7 +159,7 @@ public class MemToReg implements FunctionProcessor {
 
     private Map<Integer, Type> getPrimitiveReplacementTypes(Alloc allocation) {
         if (!(allocation.getArraySize() instanceof IntLiteral sizeExpression)) {
-            return null;
+            throw new IllegalArgumentException("Cannot replace memory for variable array type " + allocation.getGlobalId());
         }
         final TypeFactory typeFactory = TypeFactory.getInstance();
         final int size = sizeExpression.getValueAsInt();

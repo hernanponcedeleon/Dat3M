@@ -188,8 +188,8 @@ public class Dartagnan extends BaseOptions {
 
                 long endTime = System.currentTimeMillis();
                 String summary = generateResultSummary(task, prover, modelChecker);
-                System.out.print(summary);
-                System.out.println("Total verification time: " + Utils.toTimeString(endTime - startTime));
+                logger.info(summary);
+                logger.info("Total verification time: " + Utils.toTimeString(endTime - startTime));
 
                 // We only generate witnesses if we are not validating one.
                 if (o.getWitnessType().equals(GRAPHML) && !o.runValidator()) {
