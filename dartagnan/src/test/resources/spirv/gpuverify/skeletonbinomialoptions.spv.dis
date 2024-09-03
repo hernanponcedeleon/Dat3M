@@ -1,0 +1,76 @@
+; @Config: 3, 1, 3
+; SPIR-V
+; Version: 1.6
+; Generator: Google Clspv; 0
+; Bound: 58
+; Schema: 0
+               OpCapability Shader
+         %52 = OpExtInstImport "NonSemantic.ClspvReflection.5"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %11 "binomial_options_kernel" %8
+               OpSource OpenCL_C 200
+         %53 = OpString "binomial_options_kernel"
+         %54 = OpString " __kernel"
+               OpDecorate %gl_WorkGroupSize BuiltIn WorkgroupSize
+               OpDecorate %2 SpecId 0
+               OpDecorate %3 SpecId 1
+               OpDecorate %4 SpecId 2
+       %uint = OpTypeInt 32 0
+          %2 = OpSpecConstant %uint 1
+          %3 = OpSpecConstant %uint 1
+          %4 = OpSpecConstant %uint 1
+     %v3uint = OpTypeVector %uint 3
+%gl_WorkGroupSize = OpSpecConstantComposite %v3uint %2 %3 %4
+%_ptr_Private_v3uint = OpTypePointer Private %v3uint
+       %void = OpTypeVoid
+         %10 = OpTypeFunction %void
+     %uint_2 = OpConstant %uint 2
+   %uint_264 = OpConstant %uint 264
+%uint_4294967295 = OpConstant %uint 4294967295
+       %bool = OpTypeBool
+   %uint_239 = OpConstant %uint 239
+   %uint_240 = OpConstant %uint 240
+%uint_4294967280 = OpConstant %uint 4294967280
+    %uint_16 = OpConstant %uint 16
+  %uint_1024 = OpConstant %uint 1024
+     %uint_0 = OpConstant %uint 0
+   %uint_254 = OpConstant %uint 254
+     %uint_1 = OpConstant %uint 1
+          %8 = OpVariable %_ptr_Private_v3uint Private %gl_WorkGroupSize
+         %11 = OpFunction %void None %10
+         %12 = OpLabel
+               OpBranch %14
+         %14 = OpLabel
+         %15 = OpPhi %uint %uint_1024 %12 %44 %42
+               OpLoopMerge %48 %42 None
+               OpBranch %18
+         %18 = OpLabel
+         %19 = OpPhi %uint %37 %35 %uint_0 %14
+               OpControlBarrier %uint_2 %uint_2 %uint_264
+               OpLoopMerge %40 %35 None
+               OpBranch %24
+         %24 = OpLabel
+         %25 = OpPhi %uint %27 %24 %uint_254 %18
+               OpControlBarrier %uint_2 %uint_2 %uint_264
+         %27 = OpIAdd %uint %25 %uint_4294967295
+         %30 = OpULessThanEqual %bool %25 %uint_239
+               OpLoopMerge %33 %24 None
+               OpBranchConditional %30 %33 %24
+         %33 = OpLabel
+               OpBranch %35
+         %35 = OpLabel
+               OpControlBarrier %uint_2 %uint_2 %uint_264
+         %37 = OpIAdd %uint %19 %uint_240
+         %38 = OpUGreaterThanEqual %bool %37 %15
+               OpBranchConditional %38 %40 %18
+         %40 = OpLabel
+               OpBranch %42
+         %42 = OpLabel
+         %44 = OpIAdd %uint %15 %uint_4294967280
+         %46 = OpULessThanEqual %bool %15 %uint_16
+               OpBranchConditional %46 %48 %14
+         %48 = OpLabel
+               OpReturn
+               OpFunctionEnd
+         %55 = OpExtInst %void %52 Kernel %11 %53 %uint_0 %uint_0 %54
+         %57 = OpExtInst %void %52 SpecConstantWorkgroupSize %uint_0 %uint_1 %uint_2

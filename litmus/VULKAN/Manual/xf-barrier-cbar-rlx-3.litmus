@@ -1,0 +1,32 @@
+Vulkan xf-barrier-cbar-rlx-3
+"Adapted from Figure 2 in
+Portable Inter-workgroup Barrier Synchronisation for GPUs
+https://dl.acm.org/doi/pdf/10.1145/2983990.2984032"
+{
+x0=0; x1=0; x2=0; x3=0; x4=0; x5=0;
+f1=0; f2=0;
+}
+ P0@sg 0, wg 0, qf 0              | P1@sg 0, wg 0, qf 0              | P2@sg 0, wg 1, qf 0              | P3@sg 0, wg 1, qf 0              | P4@sg 0, wg 2, qf 0              | P5@sg 0, wg 2, qf 0              ;
+ st.av.dv.sc0 x0, 1               | st.av.dv.sc0 x1, 1               | st.av.dv.sc0 x2, 1               | st.av.dv.sc0 x3, 1               | st.av.dv.sc0 x4, 1               | st.av.dv.sc0 x5, 1               ;
+ LC00:                            | LC10:                            | cbar.acq_rel.wg.semsc0 10        | cbar.acq_rel.wg.semsc0 10        | cbar.acq_rel.wg.semsc0 20        | cbar.acq_rel.wg.semsc0 20        ;
+ ld.atom.acq.dv.sc0.semsc0 r9, f1 | ld.atom.acq.dv.sc0.semsc0 r9, f2 | st.atom.rel.dv.sc0.semsc0 f1, 1  | cbar.wg.semsc0 11                | st.atom.rel.dv.sc0.semsc0 f2, 1  | cbar.wg.semsc0 21                ;
+ bne r9, 0, LC01                  | bne r9, 0, LC11                  | LC20:                            | ld.vis.dv.sc0 r0, x0             | LC40:                            | ld.vis.dv.sc0 r0, x0             ;
+ goto LC00                        | goto LC10                        | ld.atom.acq.dv.sc0.semsc0 r9, f1 | ld.vis.dv.sc0 r1, x1             | ld.atom.acq.dv.sc0.semsc0 r9, f2 | ld.vis.dv.sc0 r1, x1             ;
+ LC01:                            | LC11:                            | bne r9, 1, LC21                  | ld.vis.dv.sc0 r2, x2             | bne r9, 1, LC41                  | ld.vis.dv.sc0 r2, x2             ;
+ cbar.acq_rel.wg.semsc0 00        | cbar.acq_rel.wg.semsc0 00        | goto LC20                        | ld.vis.dv.sc0 r3, x3             | goto LC40                        | ld.vis.dv.sc0 r3, x3             ;
+ st.atom.rel.dv.sc0.semsc0 f1, 0  | st.atom.rel.dv.sc0.semsc0 f2, 0  | LC21:                            | ld.vis.dv.sc0 r4, x4             | LC41:                            | ld.vis.dv.sc0 r4, x4             ;
+ ld.vis.dv.sc0 r0, x0             | ld.vis.dv.sc0 r0, x0             | cbar.wg.semsc0 11                | ld.vis.dv.sc0 r5, x5             | cbar.wg.semsc0 21                | ld.vis.dv.sc0 r5, x5             ;
+ ld.vis.dv.sc0 r1, x1             | ld.vis.dv.sc0 r1, x1             | ld.vis.dv.sc0 r0, x0             |                                  | ld.vis.dv.sc0 r0, x0             |                                  ;
+ ld.vis.dv.sc0 r2, x2             | ld.vis.dv.sc0 r2, x2             | ld.vis.dv.sc0 r1, x1             |                                  | ld.vis.dv.sc0 r1, x1             |                                  ;
+ ld.vis.dv.sc0 r3, x3             | ld.vis.dv.sc0 r3, x3             | ld.vis.dv.sc0 r2, x2             |                                  | ld.vis.dv.sc0 r2, x2             |                                  ;
+ ld.vis.dv.sc0 r4, x4             | ld.vis.dv.sc0 r4, x4             | ld.vis.dv.sc0 r3, x3             |                                  | ld.vis.dv.sc0 r3, x3             |                                  ;
+ ld.vis.dv.sc0 r5, x5             | ld.vis.dv.sc0 r5, x5             | ld.vis.dv.sc0 r4, x4             |                                  | ld.vis.dv.sc0 r4, x4             |                                  ;
+                                  |                                  | ld.vis.dv.sc0 r5, x5             |                                  | ld.vis.dv.sc0 r5, x5             |                                  ;
+
+forall(
+P0:r0 == 1 /\ P0:r1 == 1 /\ P0:r2 == 1 /\ P0:r3 == 1 /\ P0:r4 == 1 /\ P0:r5 == 1 /\
+P1:r0 == 1 /\ P1:r1 == 1 /\ P1:r2 == 1 /\ P1:r3 == 1 /\ P1:r4 == 1 /\ P1:r5 == 1 /\
+P2:r0 == 1 /\ P2:r1 == 1 /\ P2:r2 == 1 /\ P2:r3 == 1 /\ P2:r4 == 1 /\ P2:r5 == 1 /\
+P3:r0 == 1 /\ P3:r1 == 1 /\ P3:r2 == 1 /\ P3:r3 == 1 /\ P3:r4 == 1 /\ P3:r5 == 1 /\
+P4:r0 == 1 /\ P4:r1 == 1 /\ P4:r2 == 1 /\ P4:r3 == 1 /\ P4:r4 == 1 /\ P4:r5 == 1 /\
+P5:r0 == 1 /\ P5:r1 == 1 /\ P5:r2 == 1 /\ P5:r3 == 1 /\ P5:r4 == 1 /\ P5:r5 == 1)

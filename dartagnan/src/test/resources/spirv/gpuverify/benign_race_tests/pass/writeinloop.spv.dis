@@ -1,0 +1,78 @@
+; @Config: 3, 1, 3
+; SPIR-V
+; Version: 1.6
+; Generator: Google Clspv; 0
+; Bound: 57
+; Schema: 0
+               OpCapability Shader
+         %39 = OpExtInstImport "NonSemantic.ClspvReflection.5"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %19 "foo" %8 %12 %16
+               OpSource OpenCL_C 200
+         %40 = OpString "foo"
+         %41 = OpString " __kernel"
+         %44 = OpString "A"
+         %48 = OpString "start"
+         %52 = OpString "end"
+               OpDecorate %gl_WorkGroupSize BuiltIn WorkgroupSize
+               OpMemberDecorate %_struct_9 0 Offset 0
+               OpMemberDecorate %_struct_9 1 Offset 4
+               OpMemberDecorate %_struct_10 0 Offset 0
+               OpDecorate %_struct_10 Block
+               OpDecorate %13 SpecId 3
+               OpDecorate %2 SpecId 0
+               OpDecorate %3 SpecId 1
+               OpDecorate %4 SpecId 2
+       %uint = OpTypeInt 32 0
+          %2 = OpSpecConstant %uint 1
+          %3 = OpSpecConstant %uint 1
+          %4 = OpSpecConstant %uint 1
+     %v3uint = OpTypeVector %uint 3
+%gl_WorkGroupSize = OpSpecConstantComposite %v3uint %2 %3 %4
+%_ptr_Private_v3uint = OpTypePointer Private %v3uint
+  %_struct_9 = OpTypeStruct %uint %uint
+ %_struct_10 = OpTypeStruct %_struct_9
+%_ptr_PushConstant__struct_10 = OpTypePointer PushConstant %_struct_10
+         %13 = OpSpecConstant %uint 1
+%_arr_uint_13 = OpTypeArray %uint %13
+%_ptr_Workgroup__arr_uint_13 = OpTypePointer Workgroup %_arr_uint_13
+       %void = OpTypeVoid
+         %18 = OpTypeFunction %void
+%_ptr_Workgroup_uint = OpTypePointer Workgroup %uint
+     %uint_0 = OpConstant %uint 0
+%_ptr_PushConstant__struct_9 = OpTypePointer PushConstant %_struct_9
+ %_struct_27 = OpTypeStruct %uint %uint
+       %bool = OpTypeBool
+    %uint_42 = OpConstant %uint 42
+     %uint_3 = OpConstant %uint 3
+     %uint_4 = OpConstant %uint 4
+     %uint_1 = OpConstant %uint 1
+     %uint_2 = OpConstant %uint 2
+          %8 = OpVariable %_ptr_Private_v3uint Private %gl_WorkGroupSize
+         %12 = OpVariable %_ptr_PushConstant__struct_10 PushConstant
+         %16 = OpVariable %_ptr_Workgroup__arr_uint_13 Workgroup
+         %19 = OpFunction %void None %18
+         %20 = OpLabel
+         %23 = OpAccessChain %_ptr_Workgroup_uint %16 %uint_0
+         %25 = OpAccessChain %_ptr_PushConstant__struct_9 %12 %uint_0
+         %26 = OpLoad %_struct_9 %25
+         %28 = OpCopyLogical %_struct_27 %26
+         %29 = OpCompositeExtract %uint %28 0
+         %30 = OpCompositeExtract %uint %28 1
+         %32 = OpULessThan %bool %29 %30
+               OpSelectionMerge %38 None
+               OpBranchConditional %32 %35 %38
+         %35 = OpLabel
+               OpStore %23 %uint_42
+               OpBranch %38
+         %38 = OpLabel
+               OpReturn
+               OpFunctionEnd
+         %43 = OpExtInst %void %39 Kernel %19 %40 %uint_3 %uint_0 %41
+         %45 = OpExtInst %void %39 ArgumentInfo %44
+         %47 = OpExtInst %void %39 ArgumentWorkgroup %43 %uint_0 %uint_3 %uint_4 %45
+         %49 = OpExtInst %void %39 ArgumentInfo %48
+         %51 = OpExtInst %void %39 ArgumentPodPushConstant %43 %uint_1 %uint_0 %uint_4 %49
+         %53 = OpExtInst %void %39 ArgumentInfo %52
+         %55 = OpExtInst %void %39 ArgumentPodPushConstant %43 %uint_2 %uint_4 %uint_4 %53
+         %56 = OpExtInst %void %39 SpecConstantWorkgroupSize %uint_0 %uint_1 %uint_2

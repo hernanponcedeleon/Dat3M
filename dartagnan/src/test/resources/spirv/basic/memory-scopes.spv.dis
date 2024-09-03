@@ -1,0 +1,69 @@
+; @Output: forall (%out_th[0]==1 and %out_th[1]==1 and %out_th[2]==1 and %out_th[3]==1)
+; @Output: forall (%out_wg[0]==2 and %out_wg[1]==2 and %out_wg[2]==2 and %out_wg[3]==2)
+; @Output: forall (%out_dv[0]==4 and %out_dv[1]==4 and %out_dv[2]==4 and %out_dv[3]==4)
+; @Config: 2, 1, 2
+; SPIR-V
+; Version: 1.0
+; Schema: 0
+               OpCapability Shader
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %main "main" %ids
+               OpSource GLSL 450
+               OpDecorate %ids BuiltIn GlobalInvocationId
+
+       %void = OpTypeVoid
+       %bool = OpTypeBool
+       %func = OpTypeFunction %void
+       %uint = OpTypeInt 32 0
+     %v3uint = OpTypeVector %uint 3
+     %v4uint = OpTypeVector %uint 4
+
+     %ptr_in = OpTypePointer Input %uint
+    %ptr_out = OpTypePointer Output %uint
+  %ptr_v3_in = OpTypePointer Input %v3uint
+ %ptr_v4_out = OpTypePointer Output %v4uint
+%ptr_uint_th = OpTypePointer Private %uint
+%ptr_uint_wg = OpTypePointer Workgroup %uint
+%ptr_uint_dv = OpTypePointer Uniform %uint
+
+         %c0 = OpConstant %uint 0
+         %c1 = OpConstant %uint 1
+         %c2 = OpConstant %uint 2
+         %c4 = OpConstant %uint 4
+        %c66 = OpConstant %uint 66
+        %c72 = OpConstant %uint 72
+
+     %var_th = OpVariable %ptr_uint_th Private %c0
+     %var_wg = OpVariable %ptr_uint_wg Workgroup %c0
+     %var_dv = OpVariable %ptr_uint_dv Uniform %c0
+     %out_th = OpVariable %ptr_v4_out Output
+     %out_wg = OpVariable %ptr_v4_out Output
+     %out_dv = OpVariable %ptr_v4_out Output
+        %ids = OpVariable %ptr_v3_in Input
+
+       %main = OpFunction %void None %func
+    %label_1 = OpLabel
+
+     %id_ptr = OpAccessChain %ptr_in %ids %c0
+         %id = OpLoad %uint %id_ptr
+
+%var_th_orig = OpAtomicIIncrement %uint %var_th %c4 %c72
+%var_wg_orig = OpAtomicIIncrement %uint %var_wg %c2 %c72
+%var_dv_orig = OpAtomicIIncrement %uint %var_dv %c1 %c72
+
+               OpControlBarrier %c1 %c1 %c72
+
+         %th = OpAtomicLoad %uint %var_th %c4 %c66
+         %wg = OpAtomicLoad %uint %var_wg %c2 %c66
+         %dv = OpAtomicLoad %uint %var_dv %c1 %c66
+
+ %out_th_ptr = OpAccessChain %ptr_out %out_th %id
+ %out_wg_ptr = OpAccessChain %ptr_out %out_wg %id
+ %out_dv_ptr = OpAccessChain %ptr_out %out_dv %id
+
+               OpStore %out_th_ptr %th
+               OpStore %out_wg_ptr %wg
+               OpStore %out_dv_ptr %dv
+
+               OpReturn
+               OpFunctionEnd

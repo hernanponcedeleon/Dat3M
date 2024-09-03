@@ -113,7 +113,9 @@ public class Printer {
             if(!(event instanceof Label)) {
                 result.append("   ");
             }
-            result.append(padding, idSb.length(), padding.length());
+            if (idSb.length() < padding.length()) {
+                result.append(padding, idSb.length(), padding.length());
+            }
             result.append(event).append("\n");
         }
     }

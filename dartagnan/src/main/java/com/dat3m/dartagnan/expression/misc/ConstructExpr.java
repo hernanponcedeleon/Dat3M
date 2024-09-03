@@ -31,4 +31,9 @@ public final class ConstructExpr extends NaryExpressionBase<Type, ExpressionKind
     public <T> T accept(ExpressionVisitor<T> visitor) {
         return visitor.visitConstructExpression(this);
     }
+
+    @Override
+    public String toString() {
+        return operands.stream().map(Expression::toString).collect(Collectors.joining(", ", "{ ", " }"));
+    }
 }

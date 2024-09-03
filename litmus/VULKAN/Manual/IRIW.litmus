@@ -1,0 +1,12 @@
+Vulkan IRIW
+{
+P2:r0 = 0; P2:r1 = 0;
+P3:r2 = 0; P3:r3 = 0;
+x=0;
+y=0;
+}
+ P0@sg 0, wg 0, qf 0            | P1@sg 0,wg 0, qf 0             | P2@sg 0,wg 0, qf 0              | P3@sg 0,wg 0, qf 0              ;
+ st.atom.rel.wg.sc0.semsc0 x, 1 | st.atom.rel.wg.sc0.semsc0 y, 1 | ld.atom.acq.wg.sc0.semsc0 r0, x | ld.atom.acq.wg.sc0.semsc0 r2, y ;
+                                |                                | ld.atom.acq.wg.sc0.semsc0 r1, y | ld.atom.acq.wg.sc0.semsc0 r3, x ;
+exists
+(P2:r0 == 1 /\ P2:r1 == 0 /\ P3:r2 == 1 /\ P3:r3 == 0)

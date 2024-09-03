@@ -5,7 +5,6 @@ import com.dat3m.dartagnan.expression.Type;
 import com.dat3m.dartagnan.expression.integers.IntCmpOp;
 import com.dat3m.dartagnan.expression.type.BooleanType;
 import com.dat3m.dartagnan.expression.type.IntegerType;
-import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.analysis.BranchEquivalence;
 import com.dat3m.dartagnan.program.analysis.ExecutionAnalysis;
@@ -214,17 +213,13 @@ public final class EncodingContext {
         return booleanFormulaManager.makeVariable("idd " + first.getGlobalId() + " " + second.getGlobalId());
     }
 
-    public Formula lastValue(MemoryObject base, int offset) {
+    public Formula lastValue(MemoryObject base, int offset, int size) {
         checkArgument(0 <= offset && offset < base.size(), "array index out of bounds");
         final String name = String.format("last_val_at_%s_%d", base, offset);
         if (useIntegers) {
             return formulaManager.getIntegerFormulaManager().makeVariable(name);
         }
-        //TODO match this with the actual type stored at the memory address
-        // (we do not know and guess the arch type right now)
-        TypeFactory types = TypeFactory.getInstance();
-        final int archSize = types.getMemorySizeInBits(types.getArchType());
-        return formulaManager.getBitvectorFormulaManager().makeVariable(archSize, name);
+        return formulaManager.getBitvectorFormulaManager().makeVariable(size, name);
     }
 
     public BooleanFormula equal(Formula left, Formula right) {

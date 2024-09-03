@@ -4,6 +4,7 @@ import com.dat3m.dartagnan.program.event.Tag;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
 public class ScopeHierarchy{
@@ -31,7 +32,7 @@ public class ScopeHierarchy{
         return scopeHierarchy;
     }
 
-    public ArrayList<String> getScopes() {
+    public List<String> getScopes() {
         return new ArrayList<>(scopeIds.keySet());
     }
 
@@ -45,7 +46,7 @@ public class ScopeHierarchy{
             return false;
         }
 
-        ArrayList<String> scopes = this.getScopes();
+        List<String> scopes = this.getScopes();
         int validIndex = scopes.indexOf(scope);
         // scopes(0) is highest in hierarchy
         // i = 0 is global, every thread will always have the same id, so start from i = 1

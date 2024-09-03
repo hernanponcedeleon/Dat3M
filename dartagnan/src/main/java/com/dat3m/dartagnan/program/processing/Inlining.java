@@ -88,7 +88,7 @@ public class Inlining implements ProgramProcessor {
             if (depth > bound) {
                 final AbortIf boundEvent = newAbortIf(ExpressionFactory.getInstance().makeTrue());
                 boundEvent.copyAllMetadataFrom(call);
-                boundEvent.addTags(Tag.BOUND, Tag.EARLYTERMINATION, Tag.NOOPT);
+                boundEvent.addTags(Tag.BOUND, Tag.NONTERMINATION, Tag.NOOPT);
                 call.replaceBy(boundEvent);
                 event = boundEvent;
             } else {
