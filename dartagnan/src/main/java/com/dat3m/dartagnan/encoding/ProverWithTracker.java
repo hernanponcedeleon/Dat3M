@@ -55,8 +55,9 @@ public class ProverWithTracker implements AutoCloseable {
             Files.deleteIfExists(Paths.get(fileName));
             write("(set-info :smt-lib-version 2.6)\n");
             write("(set-logic ALL)\n");
-            write("(set-info :category industrial)\n");
+            write("(set-info :category \"industrial\")\n");
             write("(set-info :source |\n" + description + "\n|)\n");
+            write("(set-info :license \"https://creativecommons.org/licenses/by/4.0/\")\n");
         } catch (IOException e) {
             e.printStackTrace();
         }
