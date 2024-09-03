@@ -55,21 +55,27 @@ public class AssumeSolver extends ModelChecker {
         SymmetryEncoder symmetryEncoder = SymmetryEncoder.withContext(context);
 
         logger.info("Starting encoding using " + ctx.getVersion());
+        prover.write("; Program encoding");
         prover.addConstraint(programEncoder.encodeFullProgram());
+        prover.write("; Memory model encoding");
         prover.addConstraint(wmmEncoder.encodeFullMemoryModel());
         // For validation this contains information.
         // For verification graph.encode() just returns ctx.mkTrue()
+        prover.write("; Witness encoding");
         prover.addConstraint(task.getWitness().encode(context));
+        prover.write("; Symmetry breaking encoding");
         prover.addConstraint(symmetryEncoder.encodeFullSymmetryBreaking());
 
         BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
         BooleanFormula assumptionLiteral = bmgr.makeVariable("DAT3M_spec_assumption");
         BooleanFormula propertyEncoding = propertyEncoder.encodeProperties(task.getProperty());
         BooleanFormula assumedSpec = bmgr.implication(assumptionLiteral, propertyEncoding);
+        prover.write("; Property encoding");
         prover.addConstraint(assumedSpec);
         
         logger.info("Starting first solver.check()");
         if(prover.isUnsatWithAssumptions(singletonList(assumptionLiteral))) {
+            prover.write("; Bound encoding");
 			prover.addConstraint(propertyEncoder.encodeBoundEventExec());
             logger.info("Starting second solver.check()");
             res = prover.isUnsat()? PASS : Result.UNKNOWN;

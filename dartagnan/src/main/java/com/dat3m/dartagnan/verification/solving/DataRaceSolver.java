@@ -59,16 +59,20 @@ public class DataRaceSolver extends ModelChecker {
 		SymmetryEncoder symmetryEncoder = SymmetryEncoder.withContext(context);
 
         logger.info("Starting encoding using " + ctx.getVersion());
+        prover.write("; Program encoding");
 		prover.addConstraint(programEncoder.encodeFullProgram());
+        prover.write("; Memory model encoding");
 		prover.addConstraint(wmmEncoder.encodeFullMemoryModel());
+        prover.write("; Symmetry breaking encoding");
 		prover.addConstraint(symmetryEncoder.encodeFullSymmetryBreaking());
 		prover.push();
-
+        prover.write("; Property encoding");
 		prover.addConstraint(propertyEncoder.encodeProperties(EnumSet.of(Property.DATARACEFREEDOM)));
 
 		logger.info("Starting first solver.check()");
 		if(prover.isUnsat()) {
 			prover.pop();
+            prover.write("; Bound encoding");
 			prover.addConstraint(propertyEncoder.encodeBoundEventExec());
 			logger.info("Starting second solver.check()");
 			res = prover.isUnsat() ? PASS : UNKNOWN;
