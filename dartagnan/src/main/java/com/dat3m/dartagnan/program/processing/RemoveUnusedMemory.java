@@ -4,7 +4,7 @@ import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.processing.ExpressionInspector;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.event.RegReader;
-import com.dat3m.dartagnan.program.memory.Location;
+import com.dat3m.dartagnan.program.memory.FinalMemoryValue;
 import com.dat3m.dartagnan.program.memory.Memory;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.google.common.collect.Sets;
@@ -52,9 +52,9 @@ public class RemoveUnusedMemory implements ProgramProcessor {
         }
 
         @Override
-        public Expression visitLocation(Location location) {
-            memoryObjects.add(location.getMemoryObject());
-            return location;
+        public Expression visitFinalMemoryValue(FinalMemoryValue val) {
+            memoryObjects.add(val.getMemoryObject());
+            return val;
         }
     }
 }
