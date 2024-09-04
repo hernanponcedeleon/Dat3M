@@ -1,21 +1,20 @@
 package com.dat3m.testgen.generate;
 
-import com.dat3m.testgen.util.RelationType;
-import com.dat3m.testgen.util.RelationType.base_relation;
+import com.dat3m.testgen.util.BaseRelations;
 
 public class SMTRelationHandler {
     
     SMTRelationHandler(){}
 
     static void handle_relation(
-        final SMTHandler   smt,
-        final SMTEvent     event_L,
-        final SMTEvent     event_R,
-        final SMTEvent     observer_L,
-        final SMTEvent     observer_R,
-        final RelationType type
+        final SMTHandler         smt,
+        final SMTEvent           event_L,
+        final SMTEvent           event_R,
+        final SMTEvent           observer_L,
+        final SMTEvent           observer_R,
+        final BaseRelations.type type
     ) throws Exception {      
-        switch( type.type ) {
+        switch( type ) {
             case po:
                 smt.prover.addConstraint( smt.bm.and(
                     smt.bm.not( smt.im.equal( event_L.event_id, event_R.event_id ) ),
@@ -43,7 +42,7 @@ public class SMTRelationHandler {
                     smt.em.equivalence( event_R.type, SMTInstruction.get( smt, "W" ) ),
                     smt.im.equal( event_L.location, event_R.location )
                 ) );
-                handle_relation( smt, observer_L, observer_R, null, null, new RelationType( base_relation.po ) );
+                handle_relation( smt, observer_L, observer_R, null, null, BaseRelations.type.po );
             break;
 
             case ext:
@@ -79,7 +78,7 @@ public class SMTRelationHandler {
             break;
     
             default:
-                System.out.println( "[ERROR] " + type.type );
+                System.out.println( "[ERROR] " + type );
                 throw new Exception( "Relation type does not have defined rules!" );
         }
     }

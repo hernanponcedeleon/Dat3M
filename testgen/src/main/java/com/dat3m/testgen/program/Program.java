@@ -4,13 +4,13 @@ import java.util.*;
 
 public class Program {
     
-    List < List <ProgramEvent> > threads;
-    List <ProgramEvent> events;
+    final List <List <ProgramEvent>> threads;
+    final List <ProgramEvent> events;
 
     public Program(
-        List <ProgramEvent> r_events
+        final List <ProgramEvent> r_events
     ) {
-        events = new ArrayList<>( r_events );
+        events  = new ArrayList<>( r_events );
         threads = new ArrayList<>();
         for( int i = 0 ; i < events.size() ; i++ )
             threads.add( new ArrayList<>() );
@@ -20,19 +20,20 @@ public class Program {
     {
         StringBuilder sb = new StringBuilder();
         Set <Integer> event_id_set = new HashSet<>();
-        
         List <ProgramEvent> filtered_events = new ArrayList<>();
 
         for( ProgramEvent event : events ) {
-            if( event.type == null || event.type.equals( "UNDEFINED" ) || event_id_set.contains( event.event_id ) )
+            if( event.type == null ||
+                event.type.equals( "UNDEFINED" ) ||
+                event_id_set.contains( event.event_id )
+            ) {
                 continue;
+            }
             filtered_events.add( event );
             event_id_set.add( event.event_id );
         }
 
-        events = filtered_events;
-
-        for( ProgramEvent event : events ) {
+        for( ProgramEvent event : filtered_events ) {
             threads.get( event.thread_id ).add( event );
         }
 
@@ -56,15 +57,19 @@ public class Program {
             
             sb.append( "T" + thread.get(0).thread_id + ":\n" );
             int last_row = -1;
+
             for( ProgramEvent event : thread ) {
                 if( last_row != -1 && event.thread_row != last_row )
                     sb.append( "--- --- --- ---\n" );
                 last_row = event.thread_row;
-                String register_info = ( event.type.equals( "R" ) ? "r" + event.event_id + " = " : "" );
-                sb.append( "  " + register_info + event.short_form() + "\n" );
-                if( event.type.equals( "R" ) )
+                if( event.type.equals( "R" ) ) {
                     read_constraints.add( "r" + event.event_id + " == " + event.value );
+                    sb.append( "  r" + event.event_id + " = " + event.short_form() + "\n" );
+                } else {
+                    sb.append( "  " + event.short_form() + "\n" );
+                }
             }
+
             sb.append( "\n" );
         }
 

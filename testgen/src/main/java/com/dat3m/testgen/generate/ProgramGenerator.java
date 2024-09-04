@@ -46,14 +46,14 @@ public class ProgramGenerator {
 
     void process_relations()
     throws Exception {
-        for( final RelationEdge relation : cycle.relations )
+        for( final RelationEdge relation : cycle.edges )
             SMTRelationHandler.handle_relation(
                 smt,
-                events[ relation.event_id_left ],
-                events[ relation.event_id_right ],
-                observers[ relation.event_id_left ],
-                observers[ relation.event_id_right ],
-                relation.base_relation
+                events[ relation.eid_L ],
+                events[ relation.eid_R ],
+                observers[ relation.eid_L ],
+                observers[ relation.eid_R ],
+                relation.base
             );
     }
 

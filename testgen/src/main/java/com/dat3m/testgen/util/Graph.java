@@ -4,19 +4,19 @@ import java.util.*;
 
 public class Graph {
     
-    public List <RelationEdge> relations;
+    public final List <RelationEdge> edges;
     
     public Graph(
         final List <RelationEdge> r_relations
     ) {
-        relations = new ArrayList<>( r_relations );
+        edges = new ArrayList<>( r_relations );
     }
 
     @Override
     public String toString()
     {
-        final StringBuilder sb = new StringBuilder();
-        for( final RelationEdge relation : relations )
+        StringBuilder sb = new StringBuilder();
+        for( RelationEdge relation : edges )
             sb.append( relation + "\n" );
         return sb.toString();
     }
