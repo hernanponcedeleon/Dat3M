@@ -10,13 +10,13 @@ import com.dat3m.dartagnan.verification.solving.ModelChecker;
 import com.dat3m.dartagnan.verification.solving.RefinementSolver;
 import com.dat3m.dartagnan.witness.WitnessType;
 import com.dat3m.dartagnan.wmm.Wmm;
+import com.dat3m.dartagnan.encoding.ProverWithTracker;
 import com.dat3m.ui.utils.UiOptions;
 import com.dat3m.ui.utils.Utils;
 import org.sosy_lab.common.ShutdownManager;
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.log.BasicLogManager;
 import org.sosy_lab.java_smt.SolverContextFactory;
-import org.sosy_lab.java_smt.api.ProverEnvironment;
 import org.sosy_lab.java_smt.api.SolverContext;
 import org.sosy_lab.java_smt.api.SolverContext.ProverOptions;
 
@@ -92,7 +92,7 @@ public class ReachabilityResult {
                     BasicLogManager.create(solverConfig),
                     sdm.getNotifier(),
                     options.solver());
-                 ProverEnvironment prover = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS)) {
+                    ProverWithTracker prover = new ProverWithTracker(ctx, "", ProverOptions.GENERATE_MODELS)) {
 
                 final ModelChecker modelChecker; modelChecker = switch (options.method()) {
                     case EAGER -> AssumeSolver.run(ctx, prover, task);
