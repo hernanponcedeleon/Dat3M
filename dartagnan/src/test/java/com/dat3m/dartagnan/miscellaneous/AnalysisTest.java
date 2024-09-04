@@ -237,7 +237,7 @@ public class AnalysisTest {
 
     @Test
     public void full0() throws InvalidConfigurationException {
-        program0(FULL, NONE, MAY, NONE, NONE, NONE, NONE);
+        program0(FULL, NONE, MAY, MAY, NONE, NONE, NONE);
     }
 
     private void program0(Alias method, Result... expect) throws InvalidConfigurationException {
