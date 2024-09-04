@@ -97,9 +97,9 @@ public class BackwardsReachingDefinitionsAnalysis implements ReachingDefinitions
     /**
      * Analyzes an entire set of threads.
      * @param program Contains a set of threads to be analyzed.  Additionally-defined functions are ignored.
-     * @param branch Optional, queried for possibility of pairs of writers appearing together in an execution.
+     * @param exec Optional, queried for possibility of pairs of writers appearing together in an execution.
      */
-    public static BackwardsReachingDefinitionsAnalysis forProgram(Program program, BranchEquivalence branch) {
+    public static BackwardsReachingDefinitionsAnalysis forProgram(Program program, ExecutionAnalysis exec) {
         final var analysis = new BackwardsReachingDefinitionsAnalysis();
         final Set<Register> finalRegisters = finalRegisters(program);
         for (Function function : program.isUnrolled() ? program.getThreads() :
@@ -108,16 +108,15 @@ public class BackwardsReachingDefinitionsAnalysis implements ReachingDefinitions
             analysis.run(function, finalRegisters);
         }
         analysis.postProcess();
-        if (branch != null && program.isUnrolled()) {
-            analysis.analyzeMust(branch);
+        if (exec != null && program.isUnrolled()) {
+            analysis.analyzeMust(exec);
         }
         return analysis;
     }
 
     public static BackwardsReachingDefinitionsAnalysis injectForProgram(Program program, Context analysisContext) {
-        final BranchEquivalence branch = analysisContext.get(BranchEquivalence.class);
-        final BackwardsReachingDefinitionsAnalysis analysis = forProgram(program, branch);
-        analysisContext.register(BackwardsReachingDefinitionsAnalysis.class, analysis);
+        final ExecutionAnalysis exec = analysisContext.get(ExecutionAnalysis.class);
+        final BackwardsReachingDefinitionsAnalysis analysis = forProgram(program, exec);
         analysisContext.register(ReachingDefinitionsAnalysis.class, analysis);
         return analysis;
     }
@@ -362,24 +361,23 @@ public class BackwardsReachingDefinitionsAnalysis implements ReachingDefinitions
         return true;
     }
 
-    private void analyzeMust(BranchEquivalence branch) {
+    private void analyzeMust(ExecutionAnalysis exec) {
         // Require that function is unrolled.
         for (ReaderInfo reader : readerMap.values()) {
             for (int i = 0; i < reader.mayWriters.size(); i++) {
                 final RegWriter writer = reader.mayWriters.get(i);
-                if (!mayBeOverwritten(writer, reader.mayWriters.subList(i+1, reader.mayWriters.size()), branch)) {
+                if (!mayBeOverwritten(writer, reader.mayWriters.subList(i+1, reader.mayWriters.size()), exec)) {
                     reader.mustWriters.add(writer);
                 }
             }
         }
     }
 
-    private static boolean mayBeOverwritten(RegWriter earlyWriter, List<RegWriter> lateWriters, BranchEquivalence branch) {
+    private static boolean mayBeOverwritten(RegWriter earlyWriter, List<RegWriter> lateWriters, ExecutionAnalysis exec) {
         final Register resultRegister = earlyWriter.getResultRegister();
-        final Set<BranchEquivalence.Class> exclusiveClasses = branch.getEquivalenceClass(earlyWriter).getExclusiveClasses();
         for (RegWriter lateWriter : lateWriters) {
             if (lateWriter.getResultRegister().equals(resultRegister) &&
-                    !exclusiveClasses.contains(branch.getEquivalenceClass(lateWriter))) {
+                    !exec.areMutuallyExclusive(earlyWriter, lateWriter)) {
                 return true;
             }
         }

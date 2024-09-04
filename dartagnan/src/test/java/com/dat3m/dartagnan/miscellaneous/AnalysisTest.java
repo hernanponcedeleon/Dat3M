@@ -80,6 +80,7 @@ public class AnalysisTest {
         Configuration config = Configuration.defaultConfiguration();
         Context context = Context.create();
         context.register(BranchEquivalence.class, BranchEquivalence.fromConfig(program, config));
+        context.register(ExecutionAnalysis.class, ExecutionAnalysis.fromConfig(program, context, config));
         final var dep = BackwardsReachingDefinitionsAnalysis.injectForProgram(program, context);
         var me0 = (RegReader) findMatchingEventAfterProcessing(program, e0);
         var me1 = (RegReader) findMatchingEventAfterProcessing(program, e1);
