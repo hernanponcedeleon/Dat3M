@@ -48,7 +48,7 @@ import static com.dat3m.dartagnan.solver.onlineCaatTest.caat.CAATSolver.Status.I
 import static com.dat3m.dartagnan.utils.Result.*;
 import static com.dat3m.dartagnan.wmm.RelationNameRepository.*;
 
-;
+
 
 /*
     Refinement is a custom solving procedure that starts from a weak memory model (possibly the empty model)
@@ -248,6 +248,7 @@ public class OnlineRefinementSolver extends ModelChecker {
             //logger.info(generateSummary(combinedTrace, boundCheckTime));
         }
 
+        // TODO: fix stats
         System.out.println(userPropagator.getTotalStats());
 
         if (logger.isDebugEnabled()) {

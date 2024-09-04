@@ -110,6 +110,8 @@ public class OnlineWMMSolver extends AbstractUserPropagator {
         executionGraph.getCAATModel().getHierarchy().onPush();
         curStats.modelExtractionTime += System.currentTimeMillis() - curTime;
         //System.out.println("PUSH " + backtrackPoints.size());
+
+        onlineCheck();
     }
 
     @Override
@@ -191,8 +193,6 @@ public class OnlineWMMSolver extends AbstractUserPropagator {
         curTime = System.currentTimeMillis();
         progressPropagation();
         curStats.refinementTime += System.currentTimeMillis() - curTime;
-
-        onlineCheck();
     }
 
 
@@ -250,6 +250,9 @@ public class OnlineWMMSolver extends AbstractUserPropagator {
         if (result.status == CAATSolver.Status.INCONSISTENT) {
             long curTime = System.currentTimeMillis();
             final List<Refiner.Conflict> conflicts = refiner.computeConflicts(result.coreReasons, encodingContext);
+            if (conflicts.isEmpty()) {
+                int i = 5;
+            }
             assert !conflicts.isEmpty();
             boolean isFirst = true;
             for (Refiner.Conflict conflict : conflicts) {
@@ -351,11 +354,16 @@ public class OnlineWMMSolver extends AbstractUserPropagator {
         Result result = Result.fromCAATResult(caatResult);
 
         if (result.getStatus() == CAATSolver.Status.INCONSISTENT) {
+            System.out.println("===========");
             // ============== Compute Core reasons ==============
             long curTime = System.currentTimeMillis();
             List<Conjunction<CoreLiteral>> coreReasons = new ArrayList<>(caatResult.getBaseReasons().getNumberOfCubes());
             for (Conjunction<CAATLiteral> baseReason : caatResult.getBaseReasons().getCubes()) {
                 coreReasons.addAll(reasoner.toCoreReasons(baseReason));
+                System.out.println("WAS IN LOOP");
+            }
+            if (coreReasons.isEmpty()) {
+                int i = 5;
             }
             curStats.numComputedCoreReasons = coreReasons.size();
             result.coreReasons = new DNF<>(coreReasons);

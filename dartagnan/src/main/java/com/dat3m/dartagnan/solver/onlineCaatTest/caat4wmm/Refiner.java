@@ -46,6 +46,9 @@ public class Refiner {
     }
 
     public List<Conflict> computeConflicts(DNF<CoreLiteral> coreReasons, EncodingContext context) {
+        if (coreReasons.isTriviallyTrue() || coreReasons.isFalse()) {
+            int i = 5;
+        }
         final BooleanFormulaManager bmgr  = context.getBooleanFormulaManager();
         final List<Conflict> conflicts = new ArrayList<>();
         for (Conjunction<CoreLiteral> reason : coreReasons.getCubes()) {

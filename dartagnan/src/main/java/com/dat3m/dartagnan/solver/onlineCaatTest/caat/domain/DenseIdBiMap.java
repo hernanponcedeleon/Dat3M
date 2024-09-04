@@ -70,7 +70,7 @@ public class DenseIdBiMap<T> {
                 T obj = getObject(size);
                 objToIdMap.remove(obj);
             }
-            idToObjMap = idToObjMap.subList(0, level);
+            idToObjMap.subList(level, size()).clear();
         }
         return level;
     }

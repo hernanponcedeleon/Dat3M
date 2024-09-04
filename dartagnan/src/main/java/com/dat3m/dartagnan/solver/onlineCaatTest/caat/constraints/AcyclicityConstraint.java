@@ -17,6 +17,9 @@ import com.google.common.collect.Sets;
 import java.util.*;
 
 public class AcyclicityConstraint extends AbstractConstraint {
+    static int counter = 0;
+
+    private int thisCounter;
 
     private final RelationGraph constrainedGraph;
 
@@ -29,6 +32,7 @@ public class AcyclicityConstraint extends AbstractConstraint {
     private ArrayList<Node> nodeMap = new ArrayList<>();
 
     public AcyclicityConstraint(RelationGraph constrainedGraph) {
+        thisCounter = counter++;
         this.constrainedGraph = constrainedGraph;
     }
 
@@ -83,6 +87,10 @@ public class AcyclicityConstraint extends AbstractConstraint {
             }
         }
 
+        if (cycles.isEmpty()) {
+            int i = 5;
+        }
+
         return cycles;
     }
 
@@ -129,7 +137,14 @@ public class AcyclicityConstraint extends AbstractConstraint {
         for (Edge e : (Collection<Edge>)added) {
             markedNodes.ensureCapacity(e.getFirst() + 1);
             markedNodes.add(e.getFirst());
+            System.out.print("add node " + e.getFirst() + " ");
         }
+        /*System.out.println();
+        System.out.println("Marked Nodes on Change in Constraint " + thisCounter +": ");
+        for (Integer element : markedNodes) {
+            System.out.print("[" + element + "], ");
+        }
+        System.out.println("\n");*/
 
         while (nodeMap.size() < domain.size()) {
             nodeMap.add(new Node(nodeMap.size()));
@@ -144,6 +159,13 @@ public class AcyclicityConstraint extends AbstractConstraint {
     @Override
     public void onBacktrack(CAATPredicate predicate, int time) {
         markedNodes.resetToLevel((short)time);
+
+        /*System.out.println("Marked Nodes on Backtrack in Constraint " + thisCounter + ": ");
+        for (Integer element : markedNodes) {
+            System.out.print("[" + element + "], ");
+        }
+        System.out.println("\n");*/
+
         cleanUp();
     }
 

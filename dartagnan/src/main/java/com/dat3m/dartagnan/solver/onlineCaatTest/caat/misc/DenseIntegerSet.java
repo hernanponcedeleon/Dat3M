@@ -37,7 +37,7 @@ public class DenseIntegerSet implements Set<Integer> {
     }
 
     public boolean contains(int e) {
-        return elements[e];
+        return e < elements.length && elements[e];
     }
 
     @Override

@@ -51,7 +51,7 @@ public class MediumDenseIntegerSet implements Set<Integer> {
     }
 
     public boolean contains(int e) {
-        return elements[e] > 0;
+        return e < elements.length && elements[e] > 0;
     }
 
     @Override
@@ -170,7 +170,7 @@ public class MediumDenseIntegerSet implements Set<Integer> {
         @Override
         public int nextInt() {
             while (elements[++index] <= 0) { }
-            size--;
+            this.size--;
             return index;
         }
 

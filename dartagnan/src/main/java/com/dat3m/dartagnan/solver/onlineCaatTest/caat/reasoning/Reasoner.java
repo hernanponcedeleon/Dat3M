@@ -60,6 +60,10 @@ public class Reasoner {
             }
         }
 
+        if (reasonList.isEmpty()) {
+            int i = 5;
+        }
+
         return new DNF<>(reasonList);
     }
 

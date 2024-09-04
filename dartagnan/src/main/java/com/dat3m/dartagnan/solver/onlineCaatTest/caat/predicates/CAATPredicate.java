@@ -56,7 +56,7 @@ public interface CAATPredicate extends Dependent<CAATPredicate> {
 
     // ======================================== Defaults ==============================================
 
-    default int size() { return (int)valueStream().count(); }; // Returns the exact(!) size of this predicate
+    default int size() { return (int)valueStream().count(); } // Returns the exact(!) size of this predicate
     default boolean contains(Derivable value) { return get(value) != null; }
     default boolean isEmpty() { return size() == 0; }
 
