@@ -56,7 +56,7 @@ public class SMTRelationHandler {
                 smt.prover.addConstraint( smt.bm.and(
                     smt.bm.not( smt.im.equal( event_L.event_id, event_R.event_id ) ),
                     smt.im.equal( event_L.thread_id, event_R.thread_id ),
-                    smt.im.lessThan( event_L.thread_row, event_R.thread_row ),
+                    smt.im.equal( event_L.thread_row, smt.im.subtract( event_R.thread_row, smt.im.makeNumber(1) ) ),
                     smt.im.equal( event_L.location, event_R.location ),
                     smt.em.equivalence( event_L.type, SMTInstruction.get( smt, "R" ) ),
                     smt.em.equivalence( event_R.type, SMTInstruction.get( smt, "W" ) )

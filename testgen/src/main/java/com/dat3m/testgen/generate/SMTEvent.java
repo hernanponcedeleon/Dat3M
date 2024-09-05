@@ -29,7 +29,8 @@ public class SMTEvent {
 
     void init(
         final SMTHandler smt,
-        final int event_id_lower_bound
+        final int event_id_lower_bound,
+        final int max_events
     ) throws Exception {
         type       = smt.em.makeVariable( name( "type" ) , SMTInstruction.enum_type );
         location   = smt.im.makeVariable( name( "location" ) );
@@ -39,15 +40,15 @@ public class SMTEvent {
         event_id   = smt.im.makeVariable( name( "event_id" ) );
         smt.prover.addConstraint( smt.bm.and(
             smt.im.greaterThan(  location,   smt.im.makeNumber( 0 ) ),
-            smt.im.lessOrEquals( location,   smt.im.makeNumber( ProgramGenerator.MAX_EVENTS ) ),
+            smt.im.lessOrEquals( location,   smt.im.makeNumber( max_events ) ),
             smt.im.greaterThan(  value,      smt.im.makeNumber( 0 ) ),
-            smt.im.lessOrEquals( value,      smt.im.makeNumber( ProgramGenerator.MAX_EVENTS ) ),
+            smt.im.lessOrEquals( value,      smt.im.makeNumber( max_events ) ),
             smt.im.greaterThan(  thread_id,  smt.im.makeNumber( event_id_lower_bound ) ),
-            smt.im.lessOrEquals( thread_id,  smt.im.makeNumber( event_id_lower_bound + ProgramGenerator.MAX_EVENTS ) ),
+            smt.im.lessOrEquals( thread_id,  smt.im.makeNumber( event_id_lower_bound + max_events ) ),
             smt.im.greaterThan(  thread_row, smt.im.makeNumber( 0 ) ),
-            smt.im.lessOrEquals( thread_row, smt.im.makeNumber( ProgramGenerator.MAX_EVENTS ) ),
+            smt.im.lessOrEquals( thread_row, smt.im.makeNumber( max_events ) ),
             smt.im.greaterThan(  event_id,   smt.im.makeNumber( event_id_lower_bound ) ),
-            smt.im.lessOrEquals( event_id,   smt.im.makeNumber( event_id_lower_bound + ProgramGenerator.MAX_EVENTS ) )
+            smt.im.lessOrEquals( event_id,   smt.im.makeNumber( event_id_lower_bound + max_events ) )
         ) );
     }
 

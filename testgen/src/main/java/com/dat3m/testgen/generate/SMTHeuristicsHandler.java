@@ -99,4 +99,25 @@ public class SMTHeuristicsHandler {
         }
     }
 
+    /**
+     * All rows are different in the same thread
+     */
+    static void row_maximization(
+        final SMTHandler smt,
+        final SMTEvent[] events
+    ) throws Exception {
+        for( int i = 0 ; i < events.length ; i++ ) {
+            for( int j = 0 ; j < events.length ; j++ ) {
+                if( i == j )
+                    continue;
+                smt.prover.addConstraint( smt.bm.and(
+                    smt.bm.implication(
+                        smt.im.equal( events[i].thread_id , events[j].thread_id ),
+                        smt.bm.not( smt.im.equal( events[i].thread_row, events[j].thread_row ) )
+                    )
+                ) );
+            }
+        }
+    }
+
 }

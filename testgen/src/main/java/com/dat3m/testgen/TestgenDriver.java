@@ -28,7 +28,7 @@ public class TestgenDriver {
 
         List <Graph> all_cycles = wmm_explorer.begin_exploration( Integer.parseInt( args[1] ) );
         for( final Graph cycle : all_cycles )
-            new ProgramGenerator( cycle );
+            new ProgramGenerator( cycle, Integer.parseInt( args[2] ) );
     }
 
 }

@@ -6,6 +6,7 @@ import java.util.*;
 import com.dat3m.dartagnan.parsers.cat.ParserCat;
 import com.dat3m.dartagnan.wmm.Relation;
 import com.dat3m.dartagnan.wmm.Wmm;
+import com.dat3m.dartagnan.wmm.axiom.Acyclicity;
 import com.dat3m.dartagnan.wmm.axiom.Axiom;
 import com.dat3m.testgen.util.BaseRelations;
 import com.dat3m.testgen.util.Graph;
@@ -32,6 +33,9 @@ public class WmmExplorer {
         List <Graph> all_cycles = new ArrayList<>();
 
         for( Axiom axiom : memory_model.getAxioms() ) {
+            if( !( axiom instanceof Acyclicity ) )
+                continue;
+
             List <RelationEdge> relation_list = new ArrayList<>();
             for( int d = 1 ; d <= degree_of_exploration ; d++ ) {
                 relation_list.add( new RelationEdge(
