@@ -10,6 +10,8 @@ import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 
 import org.sosy_lab.java_smt.api.*;
@@ -17,7 +19,7 @@ import org.sosy_lab.java_smt.api.SolverContext.ProverOptions;
 
 import com.google.common.collect.ImmutableMap;
 
-public class ProverWithTracker implements AutoCloseable {
+public class ProverWithTracker implements ProverEnvironment {
 
     private final FormulaManager fmgr;
     private final ProverEnvironment prover;
@@ -39,6 +41,11 @@ public class ProverWithTracker implements AutoCloseable {
     
     private void init() {
         if(dump()) {
+            try {
+                Files.deleteIfExists(Paths.get(fileName));
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
             StringBuilder description = new StringBuilder();
             LocalDate currentDate = LocalDate.now();
             DateTimeFormatter formatter = DateTimeFormatter.ofPattern("YYYY-MM-DD");
@@ -52,21 +59,16 @@ public class ProverWithTracker implements AutoCloseable {
                 "- Thomas Haas, Roland Meyer, Hernán Ponce de León: " +
                 "CAAT: consistency as a theory. Proc. ACM Program. Lang. 6(OOPSLA2): 114-144 (2022)"
             );
-            try {
-                Files.deleteIfExists(Paths.get(fileName));
-                write("(set-info :smt-lib-version 2.6)\n");
-                write("(set-logic ALL)\n");
-                write("(set-info :category \"industrial\")\n");
-                write("(set-info :source |\n" + description + "\n|)\n");
-                write("(set-info :license \"https://creativecommons.org/licenses/by/4.0/\")\n");
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
+            write("(set-info :smt-lib-version 2.6)\n");
+            write("(set-logic ALL)\n");
+            write("(set-info :category \"industrial\")\n");
+            write("(set-info :source |\n" + description + "\n|)\n");
+            write("(set-info :license \"https://creativecommons.org/licenses/by/4.0/\")\n");
         }
     }
 
     @Override
-    public void close() throws Exception {
+    public void close() {
         if(dump()) {
             removeDuplicatedDeclarations(fileName);
             write("(exit)\n");
@@ -74,11 +76,11 @@ public class ProverWithTracker implements AutoCloseable {
         prover.close();
     }
 
-    public void addConstraint(BooleanFormula f) throws InterruptedException {
+    public Void addConstraint(BooleanFormula f) throws InterruptedException {
         if(dump()) {
             write(fmgr.dumpFormula(f).toString());
         }
-        prover.addConstraint(f);
+        return prover.addConstraint(f);
     }
 
     public boolean isUnsatWithAssumptions(Collection<BooleanFormula> fs) throws SolverException, InterruptedException {
@@ -132,19 +134,21 @@ public class ProverWithTracker implements AutoCloseable {
         prover.pop();
     }
 
-    public void write(String content) {
-        if(dump()) {
+    private void write(String content) {
+        if (dump()) {
             File file = new File(fileName);
-            FileWriter writer;
-            try {
-                writer = new FileWriter(file, true);
-                PrintWriter printer = new PrintWriter(writer);
+            try (FileWriter writer = new FileWriter(file, true);
+                    PrintWriter printer = new PrintWriter(writer)) {
                 printer.append(removeDuplicatedDeclarations(content));
                 printer.close();
             } catch (IOException e) {
                 e.printStackTrace();
             }
         }
+    }
+
+    public void writeComment(String content) {
+        write("; " + content);
     }
 
     private StringBuilder removeDuplicatedDeclarations(String content) {
@@ -156,5 +160,26 @@ public class ProverWithTracker implements AutoCloseable {
             builder.append(line + "\n");
         }
         return builder;
+    }
+
+    @Override
+    public <R> R allSat(AllSatCallback<R> arg0, List<BooleanFormula> arg1) throws InterruptedException, SolverException {
+        return prover.allSat(arg0, arg1);
+    }
+
+    @Override
+    public List<BooleanFormula> getUnsatCore() {
+        return prover.getUnsatCore();
+    }
+
+    @Override
+    public int size() {
+        return prover.size();
+    }
+
+    @Override
+    public Optional<List<BooleanFormula>> unsatCoreOverAssumptions(Collection<BooleanFormula> arg0)
+            throws SolverException, InterruptedException {
+        return prover.unsatCoreOverAssumptions(arg0);
     }
 }
