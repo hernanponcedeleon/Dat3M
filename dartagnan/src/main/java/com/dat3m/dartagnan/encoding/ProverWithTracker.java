@@ -76,6 +76,7 @@ public class ProverWithTracker implements ProverEnvironment {
         prover.close();
     }
 
+    @Override
     public Void addConstraint(BooleanFormula f) throws InterruptedException {
         if(dump()) {
             write(fmgr.dumpFormula(f).toString());
@@ -83,23 +84,31 @@ public class ProverWithTracker implements ProverEnvironment {
         return prover.addConstraint(f);
     }
 
+    @Override
     public boolean isUnsatWithAssumptions(Collection<BooleanFormula> fs) throws SolverException, InterruptedException {
-        long start = System.currentTimeMillis();
-        boolean result = prover.isUnsatWithAssumptions(fs);
-        long end = System.currentTimeMillis();
+
         if(dump()) {
             write("(push)\n");
             for(BooleanFormula f : fs) {
                 write(fmgr.dumpFormula(f).toString());
             }
+        }
+
+        long start = System.currentTimeMillis();
+        boolean result = prover.isUnsatWithAssumptions(fs);
+        long end = System.currentTimeMillis();
+
+        if(dump()) {
             write("(set-info :status " + (result ? "unsat" : "sat") + ")\n");
             write("(check-sat)\n");
-            write("; Original solving time: " + (end - start) + " ms");
+            writeComment("Original solving time: " + (end - start) + " ms");
             write("(pop)\n");
         }
+
         return result;
     }
 
+    @Override
     public boolean isUnsat() throws SolverException, InterruptedException {
         long start = System.currentTimeMillis();
         boolean result = prover.isUnsat();
@@ -107,19 +116,22 @@ public class ProverWithTracker implements ProverEnvironment {
         if(dump()) {
             write("(set-info :status " + (result ? "unsat" : "sat") + ")\n");
             write("(check-sat)\n");
-            write("; Original solving time: " + (end - start) + " ms");
+            writeComment("Original solving time: " + (end - start) + " ms");
         }
         return result;
     }
 
+    @Override
     public ImmutableMap<String, String> getStatistics() {
         return prover.getStatistics();
     }
 
+    @Override
     public Model getModel() throws SolverException {
         return prover.getModel();
     }
 
+    @Override
     public void push() throws InterruptedException {
         if(dump()) {
             write("(push)\n");
@@ -127,39 +139,12 @@ public class ProverWithTracker implements ProverEnvironment {
         prover.push();
     }
 
+    @Override
     public void pop() {
         if(dump()) {
             write("(pop)\n");
         }
         prover.pop();
-    }
-
-    private void write(String content) {
-        if (dump()) {
-            File file = new File(fileName);
-            try (FileWriter writer = new FileWriter(file, true);
-                    PrintWriter printer = new PrintWriter(writer)) {
-                printer.append(removeDuplicatedDeclarations(content));
-                printer.close();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }
-    }
-
-    public void writeComment(String content) {
-        write("; " + content);
-    }
-
-    private StringBuilder removeDuplicatedDeclarations(String content) {
-        StringBuilder builder = new StringBuilder();
-        for(String line : content.split("\n")) {
-            if(line.contains("declare-fun") && !declarations.add(line)) {
-                continue;
-            }
-            builder.append(line + "\n");
-        }
-        return builder;
     }
 
     @Override
@@ -181,5 +166,35 @@ public class ProverWithTracker implements ProverEnvironment {
     public Optional<List<BooleanFormula>> unsatCoreOverAssumptions(Collection<BooleanFormula> arg0)
             throws SolverException, InterruptedException {
         return prover.unsatCoreOverAssumptions(arg0);
+    }
+
+    private void write(String content) {
+        if (dump()) {
+            File file = new File(fileName);
+            try (FileWriter writer = new FileWriter(file, true);
+                    PrintWriter printer = new PrintWriter(writer)) {
+                printer.append(removeDuplicatedDeclarations(content));
+                printer.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    public void writeComment(String content) {
+        write("; " + content);
+    }
+
+    // FIXME: This is only correct as long as no declarations are popped and then
+    // later redeclared (which is currently guarenteed by the way we use the solver)
+    private StringBuilder removeDuplicatedDeclarations(String content) {
+        StringBuilder builder = new StringBuilder();
+        for(String line : content.split("\n")) {
+            if(line.contains("declare-fun") && !declarations.add(line)) {
+                continue;
+            }
+            builder.append(line + "\n");
+        }
+        return builder;
     }
 }
