@@ -355,6 +355,7 @@ public class SpirvChecksTest {
     }
 
 
+
     private SolverContext mkCtx() throws InvalidConfigurationException {
         Configuration cfg = Configuration.builder().build();
         return SolverContextFactory.createSolverContext(
