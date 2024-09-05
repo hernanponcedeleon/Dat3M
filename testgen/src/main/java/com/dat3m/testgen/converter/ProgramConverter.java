@@ -1,39 +1,40 @@
-package com.dat3m.testgen.program;
+package com.dat3m.testgen.converter;
 
 import java.util.*;
 
-public class Program {
+import com.dat3m.dartagnan.program.Program;
+import com.dat3m.testgen.util.ProgramEvent;
+
+public class ProgramConverter {
     
     final List <List <ProgramEvent>> threads;
     final List <ProgramEvent> events;
 
-    public Program(
+    public ProgramConverter(
         final List <ProgramEvent> r_events
-    ) {
-        events  = new ArrayList<>( r_events );
+    ) throws Exception {
+        if( r_events == null )
+            throw new Exception( "List of events is empty." );
+        
+        events  = new ArrayList<>();
         threads = new ArrayList<>();
-        for( int i = 0 ; i < events.size() ; i++ )
+        for( int i = 0 ; i < r_events.size() ; i++ )
             threads.add( new ArrayList<>() );
-    }
-
-    public String print_program()
-    {
-        StringBuilder sb = new StringBuilder();
+        
         Set <Integer> event_id_set = new HashSet<>();
-        List <ProgramEvent> filtered_events = new ArrayList<>();
 
-        for( ProgramEvent event : events ) {
+        for( ProgramEvent event : r_events ) {
             if( event.type == null ||
                 event.type.equals( "UNDEFINED" ) ||
                 event_id_set.contains( event.event_id )
             ) {
                 continue;
             }
-            filtered_events.add( event );
+            events.add( event );
             event_id_set.add( event.event_id );
         }
 
-        for( ProgramEvent event : filtered_events ) {
+        for( ProgramEvent event : events ) {
             threads.get( event.thread_id ).add( event );
         }
 
@@ -48,20 +49,18 @@ public class Program {
                 }
             }
         }
+    }
 
+    public String print_program()
+    {
+        StringBuilder sb = new StringBuilder();
         List <String> read_constraints = new ArrayList<>();
 
         for( List <ProgramEvent> thread : threads ) {
             if( thread.isEmpty() )
                 continue;
-            
             sb.append( "T" + thread.get(0).thread_id + ":\n" );
-            int last_row = -1;
-
             for( ProgramEvent event : thread ) {
-                if( last_row != -1 && event.thread_row != last_row )
-                    sb.append( "--- --- --- ---\n" );
-                last_row = event.thread_row;
                 if( event.type.equals( "R" ) ) {
                     read_constraints.add( "r" + event.event_id + " == " + event.value );
                     sb.append( "  r" + event.event_id + " = " + event.short_form() + "\n" );
@@ -69,7 +68,6 @@ public class Program {
                     sb.append( "  " + event.short_form() + "\n" );
                 }
             }
-
             sb.append( "\n" );
         }
 
@@ -80,6 +78,11 @@ public class Program {
         sb.append( "\n)\n\n" );
 
         return sb.toString();
+    }
+
+    public Program to_dat3m_program()
+    {
+        return null;
     }
 
 }

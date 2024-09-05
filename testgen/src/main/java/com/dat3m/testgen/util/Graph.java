@@ -8,7 +8,10 @@ public class Graph {
     
     public Graph(
         final List <RelationEdge> r_relations
-    ) {
+    ) throws Exception {
+        for( RelationEdge relation_edge : r_relations )
+            if( relation_edge.base == null )
+                throw new Exception( "RelationEdge base relation is null." );
         edges = new ArrayList<>( r_relations );
     }
 

@@ -6,28 +6,31 @@ import org.sosy_lab.common.log.LogManager;
 import org.sosy_lab.java_smt.SolverContextFactory;
 import org.sosy_lab.java_smt.SolverContextFactory.Solvers;
 import org.sosy_lab.java_smt.api.BooleanFormulaManager;
+import org.sosy_lab.java_smt.api.EnumerationFormula;
 import org.sosy_lab.java_smt.api.EnumerationFormulaManager;
 import org.sosy_lab.java_smt.api.FormulaManager;
+import org.sosy_lab.java_smt.api.FormulaType.EnumerationFormulaType;
 import org.sosy_lab.java_smt.api.IntegerFormulaManager;
 import org.sosy_lab.java_smt.api.ProverEnvironment;
 import org.sosy_lab.java_smt.api.SolverContext;
-import org.sosy_lab.java_smt.api.UFManager;
 import org.sosy_lab.java_smt.api.SolverContext.ProverOptions;
 
-public class SMTHandler {
+class SMTHandler {
     
-    public Configuration config;
-    public LogManager logger;
-    public ShutdownNotifier shutdown;
-    public SolverContext context;
-    public FormulaManager fm;
-    public IntegerFormulaManager im;
-    public BooleanFormulaManager bm;
-    public EnumerationFormulaManager em;
-    public UFManager ufm;
-    public ProverEnvironment prover;
+    Configuration config;
+    LogManager logger;
+    ShutdownNotifier shutdown;
+    SolverContext context;
+    FormulaManager fm;
+    IntegerFormulaManager im;
+    BooleanFormulaManager bm;
+    EnumerationFormulaManager em;
+    ProverEnvironment prover;
     
-    public SMTHandler()
+    EnumerationFormulaType instruction_type;
+    String[] instructions = { "UNDEFINED", "R", "W" };
+
+    SMTHandler()
     throws Exception {
         config   = Configuration.defaultConfiguration();
         logger   = LogManager.createNullLogManager();
@@ -41,11 +44,19 @@ public class SMTHandler {
         im = fm.getIntegerFormulaManager();
         bm = fm.getBooleanFormulaManager();
         em = fm.getEnumerationFormulaManager();
-        ufm = fm.getUFManager();
 
         prover = context.newProverEnvironment( ProverOptions.GENERATE_MODELS );
+        instruction_type = em.declareEnumeration( "instruction_type", instructions ); 
+    }
 
-        SMTInstruction.enum_type = em.declareEnumeration( "instruction_type", SMTInstruction.instruction_types ); 
+    EnumerationFormula instruction(
+        final String instruction
+    ) throws Exception {
+        for( String str : instructions ) {
+            if( str.equals( instruction ) )
+                return em.makeConstant( instruction, instruction_type );
+        }
+        throw new Exception( "Instruction type not found!" );
     }
 
 }

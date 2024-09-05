@@ -4,7 +4,7 @@ import java.util.*;
 
 import org.sosy_lab.java_smt.api.BooleanFormula;
 
-public class SMTHeuristicsHandler {
+class SMTHeuristics {
     
     /**
      * Handle equivalence between events
@@ -40,8 +40,8 @@ public class SMTHeuristicsHandler {
                 smt.prover.addConstraint( smt.bm.implication(
                     smt.bm.and(
                         smt.im.equal( events[i].location, events[j].location ),
-                        smt.em.equivalence( events[i].type, SMTInstruction.get( smt, "W" ) ),
-                        smt.em.equivalence( events[j].type, SMTInstruction.get( smt, "W" ) )
+                        smt.em.equivalence( events[i].type, smt.instruction( "W" ) ),
+                        smt.em.equivalence( events[j].type, smt.instruction( "W" ) )
                     ),
                     smt.bm.or(
                         smt.im.equal( events[i].event_id, events[j].event_id ),
@@ -53,7 +53,27 @@ public class SMTHeuristicsHandler {
     }
 
     /**
-     * Events that don't have to be in the same thread, won't be in the same thread
+     * Each two events on the same thread, either have different rows or are equivalent events
+     */
+    static void row_maximization(
+        final SMTHandler smt,
+        final SMTEvent[] events
+    ) throws Exception {
+        for( int i = 0 ; i < events.length ; i++ ) {
+            for( int j = 0 ; j < events.length ; j++ ) {
+                smt.prover.addConstraint( smt.bm.implication(
+                    smt.im.equal( events[i].thread_id , events[j].thread_id ),
+                    smt.bm.or(
+                        smt.im.equal( events[i].event_id, events[j].event_id ),
+                        smt.bm.not( smt.im.equal( events[i].thread_row, events[j].thread_row ) )
+                    )
+                ) );
+            }
+        }
+    }
+
+    /**
+     * [Optional] Events that don't have to be in the same thread, won't be in the same thread
      */
     static void thread_maximisation(
         final SMTHandler smt,
@@ -69,7 +89,7 @@ public class SMTHeuristicsHandler {
     }
 
     /**
-     * Events that don't have to access the same memory location, won't access the same memory location
+     * [Optional] Events that don't have to access the same memory location, won't access the same memory location
      */
     static void memory_maximisation(
         final SMTHandler smt,
@@ -85,37 +105,16 @@ public class SMTHeuristicsHandler {
     }
 
     /**
-     * Events that don't have to be defined, won't be defined
+     * [Optional] Events that don't have to be defined, won't be defined
      */
     static void event_minimization(
         final SMTHandler smt,
         final SMTEvent[] events
     ) throws Exception {
         for( int i = 0 ; i < events.length ; i++ ) {
-            BooleanFormula assumption = smt.em.equivalence( events[i].type, SMTInstruction.get( smt, "UNDEFINED" ) );
+            BooleanFormula assumption = smt.em.equivalence( events[i].type, smt.instruction( "UNDEFINED" ) );
             if( !smt.prover.isUnsatWithAssumptions( Arrays.asList( assumption ) ) ) {
                 smt.prover.addConstraint( assumption );
-            }
-        }
-    }
-
-    /**
-     * All rows are different in the same thread
-     */
-    static void row_maximization(
-        final SMTHandler smt,
-        final SMTEvent[] events
-    ) throws Exception {
-        for( int i = 0 ; i < events.length ; i++ ) {
-            for( int j = 0 ; j < events.length ; j++ ) {
-                if( i == j )
-                    continue;
-                smt.prover.addConstraint( smt.bm.and(
-                    smt.bm.implication(
-                        smt.im.equal( events[i].thread_id , events[j].thread_id ),
-                        smt.bm.not( smt.im.equal( events[i].thread_row, events[j].thread_row ) )
-                    )
-                ) );
             }
         }
     }

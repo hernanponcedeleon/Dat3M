@@ -4,8 +4,9 @@ import java.util.*;
 
 import java.io.*;
 
+import com.dat3m.testgen.converter.ProgramConverter;
 import com.dat3m.testgen.explore.WmmExplorer;
-import com.dat3m.testgen.generate.ProgramGenerator;
+import com.dat3m.testgen.generate.SMTProgramGenerator;
 import com.dat3m.testgen.util.BaseRelations;
 import com.dat3m.testgen.util.Graph;
 public class TestgenDriver {
@@ -27,8 +28,17 @@ public class TestgenDriver {
         wmm_explorer.register_ignored_relation( "((([R]) \\ ([range(rf)])) ; loc) ; ([W])" );
 
         List <Graph> all_cycles = wmm_explorer.begin_exploration( Integer.parseInt( args[1] ) );
-        for( final Graph cycle : all_cycles )
-            new ProgramGenerator( cycle, Integer.parseInt( args[2] ) );
+        for( final Graph cycle : all_cycles ) {
+            try{
+                ProgramConverter program_converter = new ProgramConverter(
+                    new SMTProgramGenerator( cycle, Integer.parseInt( args[2] ) ).generate_program()
+                );
+                System.out.println( program_converter.print_program() );
+            } catch( Exception exception ) {
+                if( !exception.getMessage().equals( "List of events is empty." ) )
+                    throw exception;
+            }
+        }
     }
 
 }
