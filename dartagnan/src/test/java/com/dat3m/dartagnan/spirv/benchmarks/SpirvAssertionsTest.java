@@ -7,6 +7,7 @@ import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.utils.Result;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.verification.solving.AssumeSolver;
+import com.dat3m.dartagnan.verification.solving.RefinementSolver;
 import com.dat3m.dartagnan.wmm.Wmm;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -113,10 +114,9 @@ public class SpirvAssertionsTest {
 
     @Test
     public void testAllSolvers() throws Exception {
-        /* TODO: Implementation
         try (SolverContext ctx = mkCtx(); ProverEnvironment prover = mkProver(ctx)) {
              assertEquals(expected, RefinementSolver.run(ctx, prover, mkTask()).getResult());
-        }*/
+        }
         try (SolverContext ctx = mkCtx(); ProverEnvironment prover = mkProver(ctx)) {
             assertEquals(expected, AssumeSolver.run(ctx, prover, mkTask()).getResult());
         }
