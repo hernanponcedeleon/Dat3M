@@ -38,7 +38,7 @@ public class ProverWithTracker implements ProverEnvironment {
     private boolean dump() {
         return !fileName.isEmpty();
     }
-    
+
     private void init() {
         if(dump()) {
             try {
