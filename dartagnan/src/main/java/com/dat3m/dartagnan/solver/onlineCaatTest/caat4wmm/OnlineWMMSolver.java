@@ -354,13 +354,11 @@ public class OnlineWMMSolver extends AbstractUserPropagator {
         Result result = Result.fromCAATResult(caatResult);
 
         if (result.getStatus() == CAATSolver.Status.INCONSISTENT) {
-            System.out.println("===========");
             // ============== Compute Core reasons ==============
             long curTime = System.currentTimeMillis();
             List<Conjunction<CoreLiteral>> coreReasons = new ArrayList<>(caatResult.getBaseReasons().getNumberOfCubes());
             for (Conjunction<CAATLiteral> baseReason : caatResult.getBaseReasons().getCubes()) {
                 coreReasons.addAll(reasoner.toCoreReasons(baseReason));
-                System.out.println("WAS IN LOOP");
             }
             if (coreReasons.isEmpty()) {
                 int i = 5;

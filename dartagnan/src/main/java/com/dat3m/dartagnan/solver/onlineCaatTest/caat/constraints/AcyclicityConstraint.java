@@ -48,6 +48,7 @@ public class AcyclicityConstraint extends AbstractConstraint {
         } else if (markedNodes.isEmpty()) {
             return false;
         }
+        ensureCapacity();
         tarjan();
         violatingSccs.sort(Comparator.comparingInt(Set::size));
         if (violatingSccs.isEmpty()) {
@@ -131,23 +132,21 @@ public class AcyclicityConstraint extends AbstractConstraint {
         Collections.rotate(cycle, -first);
     }
 
+    //private final ArrayList<Integer> toAdd = new ArrayList<>();
+
+    private void ensureCapacity() {
+        markedNodes.ensureCapacity(domain.size());
+        while (nodeMap.size() < domain.size()) {
+            nodeMap.add(new Node(nodeMap.size()));
+        }
+    }
+
     @Override
     @SuppressWarnings("unchecked")
     public void onChanged(CAATPredicate predicate, Collection<? extends Derivable> added) {
         for (Edge e : (Collection<Edge>)added) {
-            markedNodes.ensureCapacity(e.getFirst() + 1);
+            markedNodes.ensureCapacity(domain.size());
             markedNodes.add(e.getFirst());
-            System.out.print("add node " + e.getFirst() + " ");
-        }
-        /*System.out.println();
-        System.out.println("Marked Nodes on Change in Constraint " + thisCounter +": ");
-        for (Integer element : markedNodes) {
-            System.out.print("[" + element + "], ");
-        }
-        System.out.println("\n");*/
-
-        while (nodeMap.size() < domain.size()) {
-            nodeMap.add(new Node(nodeMap.size()));
         }
     }
 
@@ -160,12 +159,8 @@ public class AcyclicityConstraint extends AbstractConstraint {
     public void onBacktrack(CAATPredicate predicate, int time) {
         markedNodes.resetToLevel((short)time);
 
-        /*System.out.println("Marked Nodes on Backtrack in Constraint " + thisCounter + ": ");
-        for (Integer element : markedNodes) {
-            System.out.print("[" + element + "], ");
-        }
-        System.out.println("\n");*/
-
+        //System.out.println("\nMarked Nodes on Backtrack in Constraint " + thisCounter + ": ");
+        //System.out.println(markedNodes);
         cleanUp();
     }
 
