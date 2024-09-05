@@ -43,6 +43,7 @@ import org.sosy_lab.common.configuration.Options;
 import org.sosy_lab.common.log.BasicLogManager;
 import org.sosy_lab.java_smt.SolverContextFactory;
 import org.sosy_lab.java_smt.api.Model;
+import org.sosy_lab.java_smt.api.ProverEnvironment;
 import org.sosy_lab.java_smt.api.SolverContext;
 import org.sosy_lab.java_smt.api.SolverContext.ProverOptions;
 import org.sosy_lab.java_smt.api.SolverException;
@@ -210,7 +211,7 @@ public class Dartagnan extends BaseOptions {
         }
     }
 
-    public static File generateExecutionGraphFile(VerificationTask task, ProverWithTracker prover, ModelChecker modelChecker,
+    public static File generateExecutionGraphFile(VerificationTask task, ProverEnvironment prover, ModelChecker modelChecker,
                                                   WitnessType witnessType)
             throws InvalidConfigurationException, SolverException, IOException {
         Preconditions.checkArgument(modelChecker.hasModel(), "No execution graph to generate.");
@@ -231,7 +232,7 @@ public class Dartagnan extends BaseOptions {
                 synContext, witnessType.convertToPng());
     }
 
-    private static void generateWitnessIfAble(VerificationTask task, ProverWithTracker prover,
+    private static void generateWitnessIfAble(VerificationTask task, ProverEnvironment prover,
             ModelChecker modelChecker, String summary) {
         // ------------------ Generate Witness, if possible ------------------
         final EnumSet<Property> properties = task.getProperty();
@@ -250,7 +251,7 @@ public class Dartagnan extends BaseOptions {
         }
     }
 
-    public static String generateResultSummary(VerificationTask task, ProverWithTracker prover,
+    public static String generateResultSummary(VerificationTask task, ProverEnvironment prover,
             ModelChecker modelChecker) throws SolverException {
         // ----------------- Generate output of verification result -----------------
         final Program p = task.getProgram();
@@ -388,7 +389,7 @@ public class Dartagnan extends BaseOptions {
         return summary.toString();
     }
 
-    private static void printWarningIfThreadStartFailed(Program p, EncodingContext encoder, ProverWithTracker prover)
+    private static void printWarningIfThreadStartFailed(Program p, EncodingContext encoder, ProverEnvironment prover)
             throws SolverException {
         for (Event e : p.getThreadEvents()) {
             if (e.hasTag(Tag.STARTLOAD)

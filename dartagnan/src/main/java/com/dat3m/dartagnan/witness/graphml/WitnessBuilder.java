@@ -1,7 +1,6 @@
 package com.dat3m.dartagnan.witness.graphml;
 
 import com.dat3m.dartagnan.encoding.EncodingContext;
-import com.dat3m.dartagnan.encoding.ProverWithTracker;
 import com.dat3m.dartagnan.expression.booleans.BoolLiteral;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Thread;
@@ -17,6 +16,7 @@ import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.common.configuration.Option;
 import org.sosy_lab.common.configuration.Options;
 import org.sosy_lab.java_smt.api.Model;
+import org.sosy_lab.java_smt.api.ProverEnvironment;
 import org.sosy_lab.java_smt.api.SolverException;
 
 import java.io.File;
@@ -40,7 +40,7 @@ import static java.lang.String.valueOf;
 public class WitnessBuilder {
 
     private final EncodingContext context;
-    private final ProverWithTracker prover;
+    private final ProverEnvironment prover;
     private final String type;
     private final String ltlProperty;
 
@@ -60,14 +60,14 @@ public class WitnessBuilder {
 
     private final Map<Event, Integer> eventThreadMap = new HashMap<>();
 
-    private WitnessBuilder(EncodingContext c, ProverWithTracker p, Result r, String summary) {
+    private WitnessBuilder(EncodingContext c, ProverEnvironment p, Result r, String summary) {
         context = checkNotNull(c);
         prover = checkNotNull(p);
         type = r.equals(FAIL) ? "violation" : "correctness";
         ltlProperty = getLtlPropertyFromSummary(summary);
     }
 
-    public static WitnessBuilder of(EncodingContext context, ProverWithTracker prover, Result result,
+    public static WitnessBuilder of(EncodingContext context, ProverEnvironment prover, Result result,
             String ltlProperty) throws InvalidConfigurationException {
         WitnessBuilder b = new WitnessBuilder(context, prover, result, ltlProperty);
         context.getTask().getConfig().inject(b);
