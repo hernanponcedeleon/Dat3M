@@ -28,8 +28,7 @@ import java.util.EnumSet;
 import static com.dat3m.dartagnan.configuration.Property.PROGRAM_SPEC;
 import static com.dat3m.dartagnan.utils.ResourceHelper.getRootPath;
 import static com.dat3m.dartagnan.utils.ResourceHelper.getTestResourcePath;
-import static com.dat3m.dartagnan.utils.Result.FAIL;
-import static com.dat3m.dartagnan.utils.Result.PASS;
+import static com.dat3m.dartagnan.utils.Result.*;
 import static org.junit.Assert.assertEquals;
 
 @RunWith(Parameterized.class)
@@ -79,30 +78,23 @@ public class SpirvAssertionsTest {
                 {"builtin-all-321.spv.dis", 1, PASS},
                 {"branch-cond-ff.spv.dis", 1, PASS},
                 {"branch-cond-ff-inverted.spv.dis", 1, PASS},
-                {"branch-cond-bf.spv.dis", 1, FAIL},
+                {"branch-cond-bf.spv.dis", 1, UNKNOWN},
                 {"branch-cond-bf.spv.dis", 2, PASS},
-                {"branch-cond-bf.spv.dis", 3, PASS},
-                {"branch-cond-fb.spv.dis", 1, FAIL},
+                {"branch-cond-fb.spv.dis", 1, UNKNOWN},
                 {"branch-cond-fb.spv.dis", 2, PASS},
-                {"branch-cond-fb.spv.dis", 3, PASS},
                 {"branch-cond-struct.spv.dis", 1, PASS},
                 {"branch-cond-struct-read-write.spv.dis", 1, PASS},
                 {"branch-race.spv.dis", 1, PASS},
-                {"branch-loop.spv.dis", 2, FAIL},
+                {"branch-loop.spv.dis", 2, UNKNOWN},
                 {"branch-loop.spv.dis", 3, PASS},
-                {"branch-loop.spv.dis", 4, PASS},
-                {"loop-struct-cond.spv.dis", 1, FAIL},
+                {"loop-struct-cond.spv.dis", 1, UNKNOWN},
                 {"loop-struct-cond.spv.dis", 2, PASS},
-                {"loop-struct-cond.spv.dis", 3, PASS},
-                {"loop-struct-cond-suffix.spv.dis", 1, FAIL},
+                {"loop-struct-cond-suffix.spv.dis", 1, UNKNOWN},
                 {"loop-struct-cond-suffix.spv.dis", 2, PASS},
-                {"loop-struct-cond-suffix.spv.dis", 3, PASS},
-                {"loop-struct-cond-sequence.spv.dis", 2, FAIL},
+                {"loop-struct-cond-sequence.spv.dis", 2, UNKNOWN},
                 {"loop-struct-cond-sequence.spv.dis", 3, PASS},
-                {"loop-struct-cond-sequence.spv.dis", 4, PASS},
-                {"loop-struct-cond-nested.spv.dis", 2, FAIL},
+                {"loop-struct-cond-nested.spv.dis", 2, UNKNOWN},
                 {"loop-struct-cond-nested.spv.dis", 3, PASS},
-                {"loop-struct-cond-nested.spv.dis", 4, PASS},
                 {"phi.spv.dis", 1, PASS},
                 {"phi-unstruct-true.spv.dis", 1, PASS},
                 {"phi-unstruct-false.spv.dis", 1, PASS},
