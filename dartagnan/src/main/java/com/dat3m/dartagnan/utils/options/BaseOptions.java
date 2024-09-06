@@ -68,4 +68,11 @@ public abstract class BaseOptions {
     private WitnessType witnessType=WitnessType.getDefault();
 
     public WitnessType getWitnessType() { return witnessType; }
+
+    @Option(
+        name=SMTLIB2,
+        description="Dump encoding to an SMTLIB2 file.")
+    private boolean smtlib=false;
+
+    public boolean getDumpSmtLib() { return smtlib; }
 }
