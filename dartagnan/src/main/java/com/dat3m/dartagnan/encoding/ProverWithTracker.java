@@ -88,7 +88,7 @@ public class ProverWithTracker implements ProverEnvironment {
     public boolean isUnsatWithAssumptions(Collection<BooleanFormula> fs) throws SolverException, InterruptedException {
 
         if(dump()) {
-            write("(push)\n");
+            write("(push 1)\n");
             for(BooleanFormula f : fs) {
                 write(fmgr.dumpFormula(f).toString());
             }
@@ -102,7 +102,7 @@ public class ProverWithTracker implements ProverEnvironment {
             write("(set-info :status " + (result ? "unsat" : "sat") + ")\n");
             write("(check-sat)\n");
             writeComment("Original solving time: " + (end - start) + " ms");
-            write("(pop)\n");
+            write("(pop 1)\n");
         }
 
         return result;
@@ -134,7 +134,7 @@ public class ProverWithTracker implements ProverEnvironment {
     @Override
     public void push() throws InterruptedException {
         if(dump()) {
-            write("(push)\n");
+            write("(push 1)\n");
         }
         prover.push();
     }
@@ -142,7 +142,7 @@ public class ProverWithTracker implements ProverEnvironment {
     @Override
     public void pop() {
         if(dump()) {
-            write("(pop)\n");
+            write("(pop 1)\n");
         }
         prover.pop();
     }
