@@ -3,6 +3,7 @@ package com.dat3m.dartagnan;
 import com.dat3m.dartagnan.configuration.OptionNames;
 import com.dat3m.dartagnan.configuration.Property;
 import com.dat3m.dartagnan.encoding.EncodingContext;
+import com.dat3m.dartagnan.encoding.ProverWithTracker;
 import com.dat3m.dartagnan.expression.ExpressionPrinter;
 import com.dat3m.dartagnan.parsers.cat.ParserCat;
 import com.dat3m.dartagnan.parsers.program.ProgramParser;
@@ -163,7 +164,10 @@ public class Dartagnan extends BaseOptions {
                     BasicLogManager.create(solverConfig),
                     sdm.getNotifier(),
                     o.getSolver());
-                    ProverEnvironment prover = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS)) {
+                    ProverWithTracker prover = new ProverWithTracker(ctx,
+                        o.getDumpSmtLib() ?
+                            System.getenv("DAT3M_OUTPUT") + String.format("/%s.smt2", p.getName()) : "",
+                        ProverOptions.GENERATE_MODELS)) {
                 ModelChecker modelChecker;
                 if (properties.contains(DATARACEFREEDOM)) {
                     if (properties.size() > 1) {

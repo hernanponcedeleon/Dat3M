@@ -162,7 +162,7 @@ public class RefinementSolver extends ModelChecker {
     //TODO: We do not yet use Witness information. The problem is that WitnessGraph.encode() generates
     // constraints on hb, which is not encoded in Refinement.
     //TODO (2): Add possibility for Refinement to handle CAT-properties (it ignores them for now).
-    public static RefinementSolver run(SolverContext ctx, ProverEnvironment prover, VerificationTask task)
+    public static RefinementSolver run(SolverContext ctx, ProverWithTracker prover, VerificationTask task)
             throws InterruptedException, SolverException, InvalidConfigurationException {
         RefinementSolver solver = new RefinementSolver();
         task.getConfig().inject(solver);
@@ -171,7 +171,7 @@ public class RefinementSolver extends ModelChecker {
         return solver;
     }
 
-    private void runInternal(SolverContext ctx, ProverEnvironment prover, VerificationTask task)
+    private void runInternal(SolverContext ctx, ProverWithTracker prover, VerificationTask task)
             throws InterruptedException, SolverException, InvalidConfigurationException {
         final Program program = task.getProgram();
         final Wmm memoryModel = task.getMemoryModel();
@@ -224,8 +224,11 @@ public class RefinementSolver extends ModelChecker {
         final Property.Type propertyType = Property.getCombinedType(task.getProperty(), task);
 
         logger.info("Starting encoding using " + ctx.getVersion());
+        prover.writeComment("Program encoding");
         prover.addConstraint(programEncoder.encodeFullProgram());
+        prover.writeComment("Memory model (baseline) encoding");
         prover.addConstraint(baselineEncoder.encodeFullMemoryModel());
+        prover.writeComment("Symmetry breaking encoding");
         prover.addConstraint(symmetryEncoder.encodeFullSymmetryBreaking());
 
         // ------------------------ Solving ------------------------
@@ -233,6 +236,7 @@ public class RefinementSolver extends ModelChecker {
 
         logger.info("Checking target property.");
         prover.push();
+        prover.writeComment("Property encoding");
         prover.addConstraint(propertyEncoder.encodeProperties(task.getProperty()));
 
         final RefinementTrace propertyTrace = runRefinement(task, prover, solver, refiner);
@@ -265,8 +269,10 @@ public class RefinementSolver extends ModelChecker {
             logger.info("Checking unrolling bounds.");
             final long lastTime = System.currentTimeMillis();
             prover.pop();
+            prover.writeComment("Bound encoding");
             prover.addConstraint(propertyEncoder.encodeBoundEventExec());
             // Add back the refinement clauses we already found, hoping that this improves the performance.
+            prover.writeComment("Refinement encoding");
             prover.addConstraint(bmgr.and(propertyTrace.getRefinementFormulas()));
             final RefinementTrace boundTrace = runRefinement(task, prover, solver, refiner);
             boundCheckTime = System.currentTimeMillis() - lastTime;
@@ -358,7 +364,7 @@ public class RefinementSolver extends ModelChecker {
     // Refinement core algorithm
 
     // TODO: We could expose the following method(s) to allow for more general application of refinement.
-    private RefinementTrace runRefinement(VerificationTask task, ProverEnvironment prover, WMMSolver solver, Refiner refiner)
+    private RefinementTrace runRefinement(VerificationTask task, ProverWithTracker prover, WMMSolver solver, Refiner refiner)
             throws SolverException, InterruptedException {
 
         final List<RefinementIteration> trace = new ArrayList<>();
@@ -418,7 +424,7 @@ public class RefinementSolver extends ModelChecker {
         return !last.inconsistencyReasons.equals(prev.inconsistencyReasons);
     }
 
-    private RefinementIteration doRefinementIteration(ProverEnvironment prover, WMMSolver solver, Refiner refiner)
+    private RefinementIteration doRefinementIteration(ProverWithTracker prover, WMMSolver solver, Refiner refiner)
             throws SolverException, InterruptedException {
 
         long nativeTime = 0;
@@ -455,6 +461,7 @@ public class RefinementSolver extends ModelChecker {
                 inconsistencyReasons = solverResult.getCoreReasons();
                 lastTime = System.currentTimeMillis();
                 refinementFormula = refiner.refine(inconsistencyReasons, context);
+                prover.writeComment("Refinement encoding");
                 prover.addConstraint(refinementFormula);
                 refineTime = (System.currentTimeMillis() - lastTime);
             }
