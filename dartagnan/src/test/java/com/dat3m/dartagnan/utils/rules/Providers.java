@@ -8,12 +8,12 @@ import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.configuration.Property;
+import com.dat3m.dartagnan.encoding.ProverWithTracker;
 
 import org.sosy_lab.common.ShutdownManager;
 import org.sosy_lab.common.ShutdownNotifier;
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.java_smt.SolverContextFactory.Solvers;
-import org.sosy_lab.java_smt.api.ProverEnvironment;
 import org.sosy_lab.java_smt.api.SolverContext;
 
 import java.io.File;
@@ -81,11 +81,11 @@ public class Providers {
         return Provider.fromSupplier(() -> TestHelper.createContextWithShutdownNotifier(shutdownManagerSupplier.get().getNotifier(), solverSupplier.get()));
     }
 
-    public static Provider<ProverEnvironment> createProver(Supplier<SolverContext> contextSupplier, Supplier<SolverContext.ProverOptions[]> optionsSupplier) {
-        return Provider.fromSupplier(() -> contextSupplier.get().newProverEnvironment(optionsSupplier.get()));
+    public static Provider<ProverWithTracker> createProver(Supplier<SolverContext> contextSupplier, Supplier<SolverContext.ProverOptions[]> optionsSupplier) {
+        return Provider.fromSupplier(() -> new ProverWithTracker(contextSupplier.get(), "", optionsSupplier.get()));
     }
 
-    public static Provider<ProverEnvironment> createProverWithFixedOptions(Supplier<SolverContext> contextSupplier, SolverContext.ProverOptions... options) {
+    public static Provider<ProverWithTracker> createProverWithFixedOptions(Supplier<SolverContext> contextSupplier, SolverContext.ProverOptions... options) {
         return createProver(contextSupplier, () -> options);
     }
 }

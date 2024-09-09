@@ -12,6 +12,7 @@ public class OptionNames {
     public static final String VALIDATE = "validate";
     public static final String COVERAGE = "coverage";
     public static final String WITNESS = "witness";
+    public static final String SMTLIB2 = "smtlib2";
 
     // Modeling Options
     public static final String THREAD_CREATE_ALWAYS_SUCCEEDS = "modeling.threadCreateAlwaysSucceeds";

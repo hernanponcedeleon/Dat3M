@@ -1,6 +1,7 @@
 package com.dat3m.dartagnan.witness;
 
 import com.dat3m.dartagnan.configuration.Property;
+import com.dat3m.dartagnan.encoding.ProverWithTracker;
 import com.dat3m.dartagnan.parsers.cat.ParserCat;
 import com.dat3m.dartagnan.parsers.program.ProgramParser;
 import com.dat3m.dartagnan.program.Program;
@@ -15,7 +16,6 @@ import org.junit.Test;
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.BooleanFormulaManager;
-import org.sosy_lab.java_smt.api.ProverEnvironment;
 import org.sosy_lab.java_smt.api.SolverContext;
 import org.sosy_lab.java_smt.api.SolverContext.ProverOptions;
 
@@ -43,7 +43,7 @@ public class BuildWitnessTest {
         Wmm wmm = new ParserCat().parse(new File(getRootPath("cat/svcomp.cat")));
         VerificationTask task = VerificationTask.builder().withConfig(config).build(p, wmm, Property.getDefault());
         try (SolverContext ctx = TestHelper.createContext();
-             ProverEnvironment prover = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS)) {
+              ProverWithTracker prover = new ProverWithTracker(ctx, "", ProverOptions.GENERATE_MODELS)) {
             AssumeSolver modelChecker = AssumeSolver.run(ctx, prover, task);
             Result res = modelChecker.getResult();
             WitnessBuilder witnessBuilder = WitnessBuilder.of(modelChecker.getEncodingContext(), prover, res, "user assertion");
