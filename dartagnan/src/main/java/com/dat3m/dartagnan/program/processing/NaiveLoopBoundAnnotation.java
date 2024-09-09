@@ -11,6 +11,7 @@ import com.dat3m.dartagnan.program.analysis.DominatorAnalysis;
 import com.dat3m.dartagnan.program.analysis.LiveRegistersAnalysis;
 import com.dat3m.dartagnan.program.analysis.LoopAnalysis;
 import com.dat3m.dartagnan.program.analysis.ReachingDefinitionsAnalysis;
+import com.dat3m.dartagnan.program.analysis.UseDefAnalysis;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.RegWriter;
@@ -18,8 +19,12 @@ import com.dat3m.dartagnan.program.event.core.CondJump;
 import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.event.core.Local;
 import com.dat3m.dartagnan.utils.DominatorTree;
+import org.sosy_lab.common.configuration.Option;
+import org.sosy_lab.common.configuration.Options;
 
 import java.util.List;
+
+import static com.dat3m.dartagnan.configuration.OptionNames.LOOP_BOUNDS_USE_DEF_METHOD;
 
 /*
     This pass adds a loop bound annotation to static loops of the form
@@ -43,11 +48,19 @@ import java.util.List;
 
     TODO: support general step increments
 */
+@Options
 public class NaiveLoopBoundAnnotation implements FunctionProcessor {
+
+    @Option(name = LOOP_BOUNDS_USE_DEF_METHOD,
+            description = "",
+            secure = true)
+    private Method method = Method.BACKWARD;
 
     public static NaiveLoopBoundAnnotation newInstance() {
         return new NaiveLoopBoundAnnotation();
     }
+
+    public enum Method { BACKWARD, FORWARD }
 
     @Override
     public void run(Function function) {
@@ -56,7 +69,10 @@ public class NaiveLoopBoundAnnotation implements FunctionProcessor {
         }
 
         final LiveRegistersAnalysis liveAnalysis = LiveRegistersAnalysis.forFunction(function);
-        final ReachingDefinitionsAnalysis useDefAnalysis = BackwardsReachingDefinitionsAnalysis.forFunction(function);
+        final ReachingDefinitionsAnalysis useDefAnalysis = switch(method) {
+            case BACKWARD -> BackwardsReachingDefinitionsAnalysis.forFunction(function);
+            case FORWARD -> UseDefAnalysis.forFunction(function);
+        };
         final DominatorTree<Event> preDominatorTree = DominatorAnalysis.computePreDominatorTree(function.getEntry(), function.getExit());
         final List<LoopAnalysis.LoopInfo> loops = LoopAnalysis.onFunction(function).getLoopsOfFunction(function);
 

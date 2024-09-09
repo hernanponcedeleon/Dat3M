@@ -12,6 +12,7 @@ import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.analysis.BackwardsReachingDefinitionsAnalysis;
 import com.dat3m.dartagnan.program.analysis.BranchEquivalence;
 import com.dat3m.dartagnan.program.analysis.ExecutionAnalysis;
+import com.dat3m.dartagnan.program.analysis.ReachingDefinitionsAnalysis;
 import com.dat3m.dartagnan.program.analysis.alias.AliasAnalysis;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.EventFactory;
@@ -33,6 +34,7 @@ import java.util.List;
 
 import static com.dat3m.dartagnan.configuration.Alias.*;
 import static com.dat3m.dartagnan.configuration.OptionNames.ALIAS_METHOD;
+import static com.dat3m.dartagnan.configuration.OptionNames.REACHING_DEFINITIONS_METHOD;
 import static com.dat3m.dartagnan.program.event.EventFactory.*;
 import static org.junit.Assert.*;
 
@@ -49,6 +51,11 @@ public class AnalysisTest {
 
     @Test
     public void reachingDefinitionMustOverride() throws InvalidConfigurationException {
+        reachingDefinitionMustOverride(ReachingDefinitionsAnalysis.Method.BACKWARD);
+        reachingDefinitionMustOverride(ReachingDefinitionsAnalysis.Method.FORWARD);
+    }
+
+    private void reachingDefinitionMustOverride(ReachingDefinitionsAnalysis.Method method) throws InvalidConfigurationException {
         ProgramBuilder b = ProgramBuilder.forLanguage(SourceLanguage.LITMUS);
         b.newThread(0);
         Register r0 = b.getOrNewRegister(0, "r0");
@@ -77,29 +84,29 @@ public class AnalysisTest {
         Compilation.newInstance().run(program);
         LoopUnrolling.newInstance().run(program);
         MemoryAllocation.newInstance().run(program);
-        Configuration config = Configuration.defaultConfiguration();
+        Configuration config = Configuration.builder().setOption(REACHING_DEFINITIONS_METHOD, method.name()).build();
         Context context = Context.create();
         context.register(BranchEquivalence.class, BranchEquivalence.fromConfig(program, config));
         context.register(ExecutionAnalysis.class, ExecutionAnalysis.fromConfig(program, context, config));
-        final var dep = BackwardsReachingDefinitionsAnalysis.injectForProgram(program, context);
+        final ReachingDefinitionsAnalysis rd = ReachingDefinitionsAnalysis.fromConfig(program, context, config);
         var me0 = (RegReader) findMatchingEventAfterProcessing(program, e0);
         var me1 = (RegReader) findMatchingEventAfterProcessing(program, e1);
         var me2 = (RegReader) findMatchingEventAfterProcessing(program, e2);
         var me3 = (RegReader) findMatchingEventAfterProcessing(program, e3);
         var me4 = (RegReader) findMatchingEventAfterProcessing(program, e4);
         var me5 = (RegReader) findMatchingEventAfterProcessing(program, e5);
-        assertTrue(dep.getWriters(me1).ofRegister(r0).mustBeInitialized());
-        assertList(dep.getWriters(me1).ofRegister(r0).getMayWriters(), me0);
-        assertList(dep.getWriters(me1).ofRegister(r0).getMustWriters(), me0);
-        assertFalse(dep.getWriters(me3).ofRegister(r0).mustBeInitialized());
-        assertList(dep.getWriters(me3).ofRegister(r0).getMayWriters(), me0);
-        assertList(dep.getWriters(me3).ofRegister(r0).getMustWriters(), me0);
-        assertTrue(dep.getWriters(me4).ofRegister(r1).mustBeInitialized());
-        assertList(dep.getWriters(me4).ofRegister(r1).getMayWriters(), me1, me2);
-        assertList(dep.getWriters(me4).ofRegister(r1).getMustWriters(), me1, me2);
-        assertTrue(dep.getWriters(me5).ofRegister(r2).mustBeInitialized());
-        assertList(dep.getWriters(me5).ofRegister(r2).getMayWriters(), me4);
-        assertList(dep.getWriters(me5).ofRegister(r2).getMustWriters(), me4);
+        assertTrue(rd.getWriters(me1).ofRegister(r0).mustBeInitialized());
+        assertList(rd.getWriters(me1).ofRegister(r0).getMayWriters(), me0);
+        assertList(rd.getWriters(me1).ofRegister(r0).getMustWriters(), me0);
+        assertFalse(rd.getWriters(me3).ofRegister(r0).mustBeInitialized());
+        assertList(rd.getWriters(me3).ofRegister(r0).getMayWriters(), me0);
+        assertList(rd.getWriters(me3).ofRegister(r0).getMustWriters(), me0);
+        assertTrue(rd.getWriters(me4).ofRegister(r1).mustBeInitialized());
+        assertList(rd.getWriters(me4).ofRegister(r1).getMayWriters(), me1, me2);
+        assertList(rd.getWriters(me4).ofRegister(r1).getMustWriters(), me1, me2);
+        assertTrue(rd.getWriters(me5).ofRegister(r2).mustBeInitialized());
+        assertList(rd.getWriters(me5).ofRegister(r2).getMayWriters(), me4);
+        assertList(rd.getWriters(me5).ofRegister(r2).getMustWriters(), me4);
     }
 
 
@@ -627,7 +634,7 @@ public class AnalysisTest {
         Context analysisContext = Context.create();
         analysisContext.register(BranchEquivalence.class, BranchEquivalence.fromConfig(program, configuration));
         analysisContext.register(ExecutionAnalysis.class, ExecutionAnalysis.fromConfig(program, analysisContext, configuration));
-        BackwardsReachingDefinitionsAnalysis.injectForProgram(program, analysisContext);
+        analysisContext.register(ReachingDefinitionsAnalysis.class, ReachingDefinitionsAnalysis.fromConfig(program, analysisContext, configuration));
         return AliasAnalysis.fromConfig(program, analysisContext, configuration);
     }
 

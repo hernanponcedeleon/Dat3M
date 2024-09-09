@@ -1,10 +1,18 @@
 package com.dat3m.dartagnan.program.analysis;
 
+import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.RegReader;
 import com.dat3m.dartagnan.program.event.RegWriter;
+import com.dat3m.dartagnan.verification.Context;
+import org.sosy_lab.common.configuration.Configuration;
+import org.sosy_lab.common.configuration.InvalidConfigurationException;
+import org.sosy_lab.common.configuration.Option;
+import org.sosy_lab.common.configuration.Options;
 
 import java.util.*;
+
+import static com.dat3m.dartagnan.configuration.OptionNames.REACHING_DEFINITIONS_METHOD;
 
 /**
  * Instances of this analysis shall over-approximate the relationship between {@link RegWriter} and {@link RegReader},
@@ -66,4 +74,24 @@ public interface ReachingDefinitionsAnalysis {
          */
         List<RegWriter> getMustWriters();
     }
+
+    static ReachingDefinitionsAnalysis fromConfig(Program program, Context analysisContext, Configuration config) throws InvalidConfigurationException {
+        var c = new Config();
+        config.inject(c);
+        ReachingDefinitionsAnalysis analysis = switch (c.method) {
+            case BACKWARD -> BackwardsReachingDefinitionsAnalysis.fromConfig(program, analysisContext, config);
+            case FORWARD -> Dependency.fromConfig(program, analysisContext, config);
+        };
+        analysisContext.register(ReachingDefinitionsAnalysis.class, analysis);
+        return analysis;
+    }
+
+    @Options
+    final class Config {
+
+        @Option(name = REACHING_DEFINITIONS_METHOD, description = "", secure = true)
+        private Method method = Method.BACKWARD;
+    }
+
+    enum Method { BACKWARD, FORWARD}
 }
