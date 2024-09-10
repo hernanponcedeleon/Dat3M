@@ -306,14 +306,7 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
                     for (final IncludeEdge edge : pointers) {
                         addInclude(user, compose(edge, edgeAfter.modifier));
                     }
-                    // In a cycle, variable gets an accelerating self-loop.
-                    for (final IncludeEdge cycleEdge : detectCycles(user, edgeAfter)) {
-                        if (cycleEdge.source == user) {
-                            final Modifier composed = compose(cycleEdge.modifier, edgeAfter.modifier);
-                            final var accelerated = new Modifier(0, compose(composed.alignment, composed.offset));
-                            addInclude(user, new IncludeEdge(user, accelerated));
-                        }
-                    }
+                    detectAndEliminateCycles(user, edgeAfter);
                 }
             }
         }
@@ -497,6 +490,18 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
             return edge;
         }
         return new IncludeEdge(edge.source, new Modifier(0, compose(edge.modifier.alignment, edge.modifier.offset)));
+    }
+
+    private void detectAndEliminateCycles(Variable variable, IncludeEdge edge) {
+        assert variable.includes.contains(edge);
+        // In a cycle, variable gets an accelerating self-loop.
+        for (final IncludeEdge cycleEdge : detectCycles(variable, edge)) {
+            if (cycleEdge.source == variable) {
+                final Modifier composed = compose(cycleEdge.modifier, edge.modifier);
+                final var accelerated = new Modifier(0, compose(composed.alignment, composed.offset));
+                addInclude(variable, new IncludeEdge(variable, accelerated));
+            }
+        }
     }
 
     // Tries to detect cycles when a new edge is to be added.
