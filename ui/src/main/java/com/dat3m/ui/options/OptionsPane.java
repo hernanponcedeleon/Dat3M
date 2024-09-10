@@ -3,6 +3,7 @@ package com.dat3m.ui.options;
 import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.configuration.Method;
 import com.dat3m.dartagnan.configuration.Property;
+import com.dat3m.dartagnan.configuration.ProgressModel;
 import com.dat3m.ui.button.ClearButton;
 import com.dat3m.ui.button.TestButton;
 import com.dat3m.ui.options.utils.ControlCode;
@@ -33,6 +34,7 @@ public class OptionsPane extends JPanel implements ActionListener {
     private final Selector<Method> methodPane;
     private final Selector<Solvers> solverPane;
     private final Selector<Property> propertyPane;
+    private final Selector<ProgressModel> progressPane;
 
     private final Selector<Arch> targetPane;
 
@@ -66,6 +68,9 @@ public class OptionsPane extends JPanel implements ActionListener {
         targetPane = new Selector<>(Arch.orderedValues(), ControlCode.TARGET);
         targetPane.setSelectedItem(Arch.getDefault());
 
+        progressPane = new Selector<>(ProgressModel.orderedValues(), ControlCode.PROGRESS);
+        progressPane.setSelectedItem(ProgressModel.getDefault());
+
         boundField = new BoundField();
         timeoutField = new TimeoutField();
         showViolationField = new JRadioButton();
@@ -94,6 +99,7 @@ public class OptionsPane extends JPanel implements ActionListener {
         timeoutField.addActionListener(this);
         clearButton.addActionListener(this);
         propertyPane.addActionListener(this);
+        progressPane.addActionListener(this);
     }
 
     public JButton getTestButton() {
@@ -150,7 +156,7 @@ public class OptionsPane extends JPanel implements ActionListener {
 
         JSplitPane graphPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT);
         graphPane.setDividerSize(0);
-        JComponent[] panes = { targetPane, methodPane, solverPane, propertyPane, boundsPane, showViolationPane, configPane,
+        JComponent[] panes = { targetPane, methodPane, solverPane, propertyPane, progressPane, boundsPane, showViolationPane, configPane,
                 cflagsPane, testButton, clearButton, graphPane, scrollConsole };
         Iterator<JComponent> it = Arrays.asList(panes).iterator();
         JComponent current = iconPane;
