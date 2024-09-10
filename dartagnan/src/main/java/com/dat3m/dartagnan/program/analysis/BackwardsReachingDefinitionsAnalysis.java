@@ -89,16 +89,14 @@ public class BackwardsReachingDefinitionsAnalysis implements ReachingDefinitions
     public static BackwardsReachingDefinitionsAnalysis forFunction(Function function) {
         final var analysis = new BackwardsReachingDefinitionsAnalysis();
         final Set<Register> finalRegisters = new HashSet<>();
-        final List<Event> events = function.getEvents();
-        analysis.initializeWriterMap(events);
-        analysis.initializeReaderMap(events, finalRegisters);
-        analysis.run(events, finalRegisters);
+        analysis.initialize(function, finalRegisters);
+        analysis.run(function, finalRegisters);
         analysis.postProcess();
         return analysis;
     }
 
     /**
-     * Analyzes an entire set of threads.
+     * Analyzes the entire program (after thread creation).
      * <p>
      * Optionally queries {@link ExecutionAnalysis} for pairs of writers appearing together in an execution.
      * @param program Contains a set of threads to be analyzed.  Additionally-defined functions are ignored.
@@ -111,10 +109,8 @@ public class BackwardsReachingDefinitionsAnalysis implements ReachingDefinitions
         final Set<Register> finalRegisters = finalRegisters(program);
         for (Function function : program.isUnrolled() ? program.getThreads() :
                 Iterables.concat(program.getThreads(), program.getFunctions())) {
-            final List<Event> events = function.getEvents();
-            analysis.initializeWriterMap(events);
-            analysis.initializeReaderMap(events, finalRegisters);
-            analysis.run(events, finalRegisters);
+            analysis.initialize(function, finalRegisters);
+            analysis.run(function, finalRegisters);
         }
         analysis.postProcess();
         if (exec != null && program.isUnrolled()) {
@@ -213,29 +209,22 @@ public class BackwardsReachingDefinitionsAnalysis implements ReachingDefinitions
 
     private BackwardsReachingDefinitionsAnalysis() {}
 
-    private void initializeWriterMap(Collection<Event> events) {
-        for (Event event : events) {
-            if (event instanceof RegWriter writer) {
-                writerMap.put(writer, new Readers());
-            }
+    private void initialize(Function function, Set<Register> finalRegisters) {
+        for (RegWriter writer : function.getEvents(RegWriter.class)) {
+            writerMap.put(writer, new Readers());
         }
         writerMap.put(INITIAL_WRITER, new Readers());
-    }
-
-    private void initializeReaderMap(Collection<Event> events, Set<Register> finalRegisters) {
-        for (Event event : events) {
-            if (event instanceof RegReader reader) {
-                final Set<Register> usedRegisters = new HashSet<>();
-                for (Register.Read read : reader.getRegisterReads()) {
-                    usedRegisters.add(read.register());
-                }
-                readerMap.put(reader, new ReaderInfo(usedRegisters));
+        for (RegReader reader : function.getEvents(RegReader.class)) {
+            final Set<Register> usedRegisters = new HashSet<>();
+            for (Register.Read read : reader.getRegisterReads()) {
+                usedRegisters.add(read.register());
             }
+            readerMap.put(reader, new ReaderInfo(usedRegisters));
         }
         readerMap.put(FINAL_READER, new ReaderInfo(finalRegisters));
     }
 
-    private void run(List<Event> events, Set<Register> finalRegisters) {
+    private void run(Function function, Set<Register> finalRegisters) {
         //For each register used after this state, all future users.
         final State currentState = new State();
         for (Register finalRegister : finalRegisters) {
@@ -245,6 +234,7 @@ public class BackwardsReachingDefinitionsAnalysis implements ReachingDefinitions
         }
         final Map<CondJump, State> trueStates = new HashMap<>();
         final Map<CondJump, State> falseStates = new HashMap<>();
+        final List<Event> events = function.getEvents();
         for (int i = events.size() - 1; i >= 0; i--) {
             final CondJump loop = runLocal(events.get(i), currentState, trueStates, falseStates);
             if (loop != null) {
