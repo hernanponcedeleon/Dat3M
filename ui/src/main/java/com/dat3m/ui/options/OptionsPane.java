@@ -120,7 +120,8 @@ public class OptionsPane extends JPanel implements ActionListener {
         Method method = (Method) methodPane.getSelectedItem();
         Solvers solver = (Solvers) solverPane.getSelectedItem();
         EnumSet<Property> properties = EnumSet.of((Property) propertyPane.getSelectedItem());
-        return new UiOptions(target, method, bound, solver, timeout, showViolationGraph, cflags, config, properties);
+        ProgressModel progress = (ProgressModel) progressPane.getSelectedItem();
+        return new UiOptions(target, method, bound, solver, timeout, showViolationGraph, cflags, config, properties, progress);
     }
 
     private void mkGrid() {
