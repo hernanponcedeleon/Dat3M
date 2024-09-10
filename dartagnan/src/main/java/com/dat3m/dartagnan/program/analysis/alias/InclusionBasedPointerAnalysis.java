@@ -515,7 +515,31 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
             return;
         }
         cyclesDetected++;
-        final List<IncludeEdge> result = getAllCyclicPaths(edge, includerSet);
+        final Map<Variable, List<IncludeEdge>> edges = new HashMap<>();
+        // Use 'set' for performance.
+        final Set<IncludeEdge> set = new HashSet<>();
+        List<IncludeEdge> worklist = new ArrayList<>(List.of(new IncludeEdge(edge.source, TRIVIAL_MODIFIER)));
+        // Since cycles are detected lazily, we need a bound for cycle lengths.
+        for (int length = 0; length < includerSet.size(); length++) {
+            if (worklist.isEmpty()) {
+                break;
+            }
+            final List<IncludeEdge> next = new ArrayList<>();
+            for (final IncludeEdge current : worklist) {
+                for (final IncludeEdge i : current.source.includes) {
+                    if (edge.source != i.source && includerSet.contains(i.source)) {
+                        final IncludeEdge joinedEdge = compose(i, current.modifier);
+                        if (set.add(joinedEdge) &&
+                                addInto(edges.computeIfAbsent(i.source, k -> new ArrayList<>()), joinedEdge, false)) {
+                            next.add(joinedEdge);
+                        }
+                    }
+                }
+            }
+            worklist = next;
+        }
+        final List<IncludeEdge> result = new ArrayList<>();
+        edges.values().forEach(result::addAll);
         assert result.stream().anyMatch(e -> e.source == variable);
         // In a cycle, variable gets an accelerating self-loop.
         for (final IncludeEdge cycleEdge : result) {
@@ -563,35 +587,6 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
             }
             worklist = next;
         }
-        return result;
-    }
-
-    private List<IncludeEdge> getAllCyclicPaths(IncludeEdge edge, Set<Variable> includerSet) {
-        final Map<Variable, List<IncludeEdge>> edges = new HashMap<>();
-        // Use 'set' for performance.
-        final Set<IncludeEdge> set = new HashSet<>();
-        List<IncludeEdge> worklist = new ArrayList<>(List.of(new IncludeEdge(edge.source, TRIVIAL_MODIFIER)));
-        // Since cycles are detected lazily, we need a bound for cycle lengths.
-        for (int length = 0; length < includerSet.size(); length++) {
-            if (worklist.isEmpty()) {
-                break;
-            }
-            final List<IncludeEdge> next = new ArrayList<>();
-            for (final IncludeEdge current : worklist) {
-                for (final IncludeEdge i : current.source.includes) {
-                    if (edge.source != i.source && includerSet.contains(i.source)) {
-                        final IncludeEdge joinedEdge = compose(i, current.modifier);
-                        if (set.add(joinedEdge) &&
-                                addInto(edges.computeIfAbsent(i.source, k -> new ArrayList<>()), joinedEdge, false)) {
-                            next.add(joinedEdge);
-                        }
-                    }
-                }
-            }
-            worklist = next;
-        }
-        final List<IncludeEdge> result = new ArrayList<>();
-        edges.values().forEach(result::addAll);
         return result;
     }
 
