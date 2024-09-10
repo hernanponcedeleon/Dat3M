@@ -51,7 +51,8 @@ public interface ReachingDefinitionsAnalysis {
     }
 
     /**
-     * Instances of this class are associated with a {@link Register} and either a {@link RegReader} or the final state of the program or function.
+     * Instances of this class are associated with a {@link Register}
+     * and either a {@link RegReader} or the final state of the program or function.
      */
     interface RegisterWriters {
 
@@ -63,19 +64,22 @@ public interface ReachingDefinitionsAnalysis {
         boolean mustBeInitialized();
 
         /**
-         * Lists writers s.t. there may be executions, where some instance of the associated reader directly uses the result of an instance of that writer.
+         * Lists writers s.t. there may be executions, where some instance of the associated reader directly uses the
+         * result of an instance of that writer.
          * @return Writers in program order.
          */
         List<RegWriter> getMayWriters();
 
         /**
-         * Lists writers s.t. all event instances of the associated reader in any execution read from all instances of that writer in that execution.
+         * Lists writers s.t. all event instances of the associated reader in any execution read from all instances of
+         * that writer in that execution.
          * @return Writers in program order.
          */
         List<RegWriter> getMustWriters();
     }
 
-    static ReachingDefinitionsAnalysis fromConfig(Program program, Context analysisContext, Configuration config) throws InvalidConfigurationException {
+    static ReachingDefinitionsAnalysis fromConfig(Program program, Context analysisContext, Configuration config)
+            throws InvalidConfigurationException {
         var c = new Config();
         config.inject(c);
         ReachingDefinitionsAnalysis analysis = switch (c.method) {

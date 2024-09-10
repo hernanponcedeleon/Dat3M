@@ -21,21 +21,19 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 
 /**
  * Collects all direct usage relationships between {@link RegWriter} and {@link RegReader}.
  * <p>
- * In contrast to a usual Reaching-Definitions-Analysis,
- * this implementation analyzes the program from back to front,
- * assigning each program point the set of readers,
- * who may still require a register initialization.
+ * In contrast to a usual Reaching-Definitions-Analysis, this implementation analyzes the program from back to front,
+ * assigning each program point the set of readers, who may still require a register initialization.
  * This means that it does not collect definitions for unused registers.
  * Especially, it does not collect last writers for all registers.
  * <p>
  * This analysis is control-flow-sensitive;
- * that is, {@link Label} splits the information among the jumps to it
- * and {@link CondJump} merges the information.
+ * that is, {@link Label} splits the information among the jumps to it and {@link CondJump} merges the information.
  * <p>
  * This analysis supports loops;
  * that is, backward jumps cause re-evaluation of the loop body until convergence.
@@ -45,6 +43,8 @@ public class BackwardsReachingDefinitionsAnalysis implements ReachingDefinitions
 
     private final Map<RegReader, ReaderInfo> readerMap = new HashMap<>();
     private final Map<RegWriter, Readers> writerMap = new HashMap<>();
+    private final RegWriter INITIAL_WRITER = null;
+    private final RegReader FINAL_READER = null;
 
     @Override
     public Writers getWriters(RegReader reader) {
@@ -56,7 +56,7 @@ public class BackwardsReachingDefinitionsAnalysis implements ReachingDefinitions
 
     @Override
     public Writers getFinalWriters() {
-        final ReaderInfo result = readerMap.get(null);
+        final ReaderInfo result = readerMap.get(FINAL_READER);
         Preconditions.checkState(result != null, "final state has not been analyzed.");
         return result;
     }
@@ -77,7 +77,7 @@ public class BackwardsReachingDefinitionsAnalysis implements ReachingDefinitions
      * Lists all potential users of uninitialized registers.
      */
     public Readers getInitialReaders() {
-        final Readers result = writerMap.get(null);
+        final Readers result = writerMap.get(INITIAL_WRITER);
         Preconditions.checkState(result != null, "initial state has not been analyzed.");
         return result;
     }
@@ -89,8 +89,10 @@ public class BackwardsReachingDefinitionsAnalysis implements ReachingDefinitions
     public static BackwardsReachingDefinitionsAnalysis forFunction(Function function) {
         final var analysis = new BackwardsReachingDefinitionsAnalysis();
         final Set<Register> finalRegisters = new HashSet<>();
-        analysis.initialize(function, finalRegisters);
-        analysis.run(function, finalRegisters);
+        final List<Event> events = function.getEvents();
+        analysis.initializeWriterMap(events);
+        analysis.initializeReaderMap(events, finalRegisters);
+        analysis.run(events, finalRegisters);
         analysis.postProcess();
         return analysis;
     }
@@ -109,8 +111,10 @@ public class BackwardsReachingDefinitionsAnalysis implements ReachingDefinitions
         final Set<Register> finalRegisters = finalRegisters(program);
         for (Function function : program.isUnrolled() ? program.getThreads() :
                 Iterables.concat(program.getThreads(), program.getFunctions())) {
-            analysis.initialize(function, finalRegisters);
-            analysis.run(function, finalRegisters);
+            final List<Event> events = function.getEvents();
+            analysis.initializeWriterMap(events);
+            analysis.initializeReaderMap(events, finalRegisters);
+            analysis.run(events, finalRegisters);
         }
         analysis.postProcess();
         if (exec != null && program.isUnrolled()) {
@@ -209,14 +213,17 @@ public class BackwardsReachingDefinitionsAnalysis implements ReachingDefinitions
 
     private BackwardsReachingDefinitionsAnalysis() {}
 
-    private void initialize(Function function, Set<Register> finalRegisters) {
-        for (Event event : function.getEvents()) {
+    private void initializeWriterMap(Collection<Event> events) {
+        for (Event event : events) {
             if (event instanceof RegWriter writer) {
                 writerMap.put(writer, new Readers());
             }
         }
-        writerMap.put(null, new Readers());
-        for (Event event : function.getEvents()) {
+        writerMap.put(INITIAL_WRITER, new Readers());
+    }
+
+    private void initializeReaderMap(Collection<Event> events, Set<Register> finalRegisters) {
+        for (Event event : events) {
             if (event instanceof RegReader reader) {
                 final Set<Register> usedRegisters = new HashSet<>();
                 for (Register.Read read : reader.getRegisterReads()) {
@@ -225,20 +232,19 @@ public class BackwardsReachingDefinitionsAnalysis implements ReachingDefinitions
                 readerMap.put(reader, new ReaderInfo(usedRegisters));
             }
         }
-        readerMap.put(null, new ReaderInfo(finalRegisters));
+        readerMap.put(FINAL_READER, new ReaderInfo(finalRegisters));
     }
 
-    private void run(Function function, Set<Register> finalRegisters) {
+    private void run(List<Event> events, Set<Register> finalRegisters) {
         //For each register used after this state, all future users.
         final State currentState = new State();
         for (Register finalRegister : finalRegisters) {
             final var info = new StateInfo();
-            info.mayReaders.add(null);
+            info.mayReaders.add(FINAL_READER);
             currentState.put(finalRegister, info);
         }
         final Map<CondJump, State> trueStates = new HashMap<>();
         final Map<CondJump, State> falseStates = new HashMap<>();
-        final List<Event> events = function.getEvents();
         for (int i = events.size() - 1; i >= 0; i--) {
             final CondJump loop = runLocal(events.get(i), currentState, trueStates, falseStates);
             if (loop != null) {
@@ -248,7 +254,7 @@ public class BackwardsReachingDefinitionsAnalysis implements ReachingDefinitions
             }
         }
         // set the uninitialized flags
-        final Readers uninitialized = writerMap.get(null);
+        final Readers uninitialized = writerMap.get(INITIAL_WRITER);
         for (Map.Entry<Register, StateInfo> entry : currentState.entrySet()) {
             uninitialized.readers.addAll(entry.getValue().mayReaders);
             for (RegReader reader : entry.getValue().mayReaders) {
@@ -260,7 +266,7 @@ public class BackwardsReachingDefinitionsAnalysis implements ReachingDefinitions
     private void postProcess() {
         // build the reverse association
         for (Map.Entry<RegWriter, Readers> entry : writerMap.entrySet()) {
-            if (entry.getKey() == null) {
+            if (Objects.equals(entry.getKey(), INITIAL_WRITER)) {
                 continue;
             }
             for (RegReader reader : entry.getValue().readers) {
@@ -275,7 +281,7 @@ public class BackwardsReachingDefinitionsAnalysis implements ReachingDefinitions
         }
         // set the final flag
         for (Readers writer : writerMap.values()) {
-            writer.mayBeFinal = writer.readers.remove(null);
+            writer.mayBeFinal = writer.readers.remove(FINAL_READER);
         }
     }
 
