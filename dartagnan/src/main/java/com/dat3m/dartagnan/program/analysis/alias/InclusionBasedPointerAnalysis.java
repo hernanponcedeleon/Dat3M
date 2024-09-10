@@ -448,7 +448,7 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
         return modifier.offset == 0 && isConstant(modifier);
     }
 
-    private static final List<Integer> TOP = List.of(1);
+    private static final List<Integer> TOP = List.of(-1);
 
     private static final Modifier RELAXED_MODIFIER = new Modifier(0, TOP);
 
