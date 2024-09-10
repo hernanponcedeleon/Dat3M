@@ -4,11 +4,14 @@ import java.util.*;
 
 import java.io.*;
 
+import com.dat3m.dartagnan.program.Program;
+import com.dat3m.dartagnan.utils.printer.Printer;
 import com.dat3m.testgen.converter.ProgramConverter;
 import com.dat3m.testgen.explore.WmmExplorer;
 import com.dat3m.testgen.generate.SMTProgramGenerator;
 import com.dat3m.testgen.util.BaseRelations;
 import com.dat3m.testgen.util.Graph;
+import com.dat3m.testgen.util.ProgramEvent;
 public class TestgenDriver {
 
     public static void main(
@@ -27,17 +30,32 @@ public class TestgenDriver {
 
         wmm_explorer.register_ignored_relation( "((([R]) \\ ([range(rf)])) ; loc) ; ([W])" );
 
-        List <Graph> all_cycles = wmm_explorer.begin_exploration( Integer.parseInt( args[1] ) );
-        for( final Graph cycle : all_cycles ) {
-            try{
-                ProgramConverter program_converter = new ProgramConverter(
-                    new SMTProgramGenerator( cycle, Integer.parseInt( args[2] ) ).generate_program()
-                );
-                System.out.println( program_converter.print_program() );
-            } catch( Exception exception ) {
-                if( !exception.getMessage().equals( "List of events is empty." ) )
-                    throw exception;
-            }
+        /* Phase 1 - Generate all possible cyclical graphs from the cat file definition of the memory model */
+        List <Graph> graphs = wmm_explorer.begin_exploration( Integer.parseInt( args[1] ) );
+
+        for( final Graph graph : graphs ) {
+            /* Phase 2 - Attempt to generate an abstract program for each relation graph */
+            SMTProgramGenerator program_generator = new SMTProgramGenerator( graph, Integer.parseInt( args[2] ) );
+            List <ProgramEvent> program_events = program_generator.generate_program();
+
+            /* Phase 2a - Program cannot exist, ignore */
+            if( program_events == null )
+                continue;
+
+            /* Phase 2b - Program can exist, continue */
+            System.out.print( "Program relation graph:\n" + graph );
+
+            /* Phase 3 - Get Dat3M program object */
+            ProgramConverter program_converter = new ProgramConverter( program_events );
+            Program program = program_converter.to_dat3m_program();
+
+            /* Phase 4 - Print Dat3M program object */
+            Printer printer = new Printer();
+            System.out.println(
+                printer.print( program ) + "\n" +
+                program.getSpecificationType() + "( " +
+                program.getSpecification() + " )\n"
+            );
         }
     }
 

@@ -75,9 +75,7 @@ public class SMTProgramGenerator {
 
     List <ProgramEvent> prove_program()
     throws Exception {
-        System.out.println( "Cycle: \n" + graph );
         if( smt.prover.isUnsat() ) {
-            System.out.println( "Program cannot exist !\n" );
             return null;
         }
         List <ProgramEvent> event_list = new ArrayList<>();
