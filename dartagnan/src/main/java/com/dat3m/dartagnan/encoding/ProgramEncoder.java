@@ -110,6 +110,7 @@ public class ProgramEncoder implements Encoder {
         A thread is enabled if it has no creator or the corresponding ThreadCreate
         event was executed (and didn't fail spuriously).
         // TODO: We could make ThreadCreate "not executed" if it fails rather than guessing the success state here.
+        // FIXME: The guessing allows for mismatches: the spawning may succeed but the guess says it doesn't.
      */
     private BooleanFormula threadIsEnabled(Thread thread) {
         final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
@@ -139,6 +140,7 @@ public class ProgramEncoder implements Encoder {
         );
     }
 
+    // NOTE: Stuckness also considers bound events, i.e., insufficiently unrolled loops.
     private BooleanFormula threadIsStuckInLoop(Thread thread) {
         final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
         final List<BooleanFormula> nonTerminationWitnesses = new ArrayList<>();
@@ -154,7 +156,7 @@ public class ProgramEncoder implements Encoder {
         return bmgr.or(nonTerminationWitnesses);
     }
 
-    private BooleanFormula isThreadBlockedAt(ControlBarrier barrier) {
+    private BooleanFormula barrierIsBlocking(ControlBarrier barrier) {
         final BooleanFormulaManager bmgr = context.getFormulaManager().getBooleanFormulaManager();
         return bmgr.and(
                 context.controlFlow(barrier),
@@ -165,7 +167,7 @@ public class ProgramEncoder implements Encoder {
     private BooleanFormula threadIsStuckInBarrier(Thread thread) {
         final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
         return thread.getEvents(ControlBarrier.class).stream()
-                .map(this::isThreadBlockedAt)
+                .map(this::barrierIsBlocking)
                 .reduce(bmgr.makeFalse(), bmgr::or);
     }
 
@@ -183,7 +185,7 @@ public class ProgramEncoder implements Encoder {
     }
 
     public BooleanFormula encodeControlFlow() {
-        logger.info("Encoding program control flow");
+        logger.info("Encoding program control flow with progress model {}", context.getTask().getProgressModel());
 
         final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
         final ForwardProgressEncoder progressEncoder = new ForwardProgressEncoder();
@@ -200,7 +202,7 @@ public class ProgramEncoder implements Encoder {
     }
 
     /*
-        A thread has consistent control-flow if every event in the cf
+        A thread has consistent control flow if every event in the cf
            (1) has a predecessor
         OR (2) is the ThreadStart event and the thread is enabled
         This does NOT encode any forward progress guarantees.
@@ -441,7 +443,7 @@ public class ProgramEncoder implements Encoder {
             // An enabled thread eventually gets started/scheduled
             enc.add(bmgr.implication(threadIsEnabled(thread), threadHasStarted(thread)));
 
-            // For every event in the cf a successor will be in the cf.
+            // For every event in the cf a successor will be in the cf (unless a barrier is blocking).
             for (Event cur : thread.getEvents()) {
                 if (cur.getSuccessor() == null) {
                     assert cur == thread.getExit();
@@ -462,7 +464,8 @@ public class ProgramEncoder implements Encoder {
 
         /*
             Minimal progress means that at least one thread must get scheduled, i.e., the execution cannot just stop.
-            In particular, a single-threaded program must progress.
+            In particular, a single-threaded program must progress and concurrent programs with only finite threads
+            must terminate (unless blocked).
 
             NOTE: For producing correct verdicts on loop-based nontermination, we do not really require
                   minimal progress guarantees.
@@ -475,17 +478,18 @@ public class ProgramEncoder implements Encoder {
             BooleanFormula allThreadsTerminated = bmgr.makeTrue();
             BooleanFormula aThreadIsStuck = bmgr.makeFalse();
             for (Thread t : program.getThreads()) {
-                if (!isInitThread(t)) {
-                    allThreadsTerminated = bmgr.and(allThreadsTerminated,
-                            bmgr.or(bmgr.not(threadIsEnabled(t)), threadHasTerminated(t))
-                    );
-                    // Here we assume that a thread stuck in a barrier is eligible for scheduling
-                    // so we can (unfairly) schedule the blocked thread indefinitely
-                    // TODO: We may revise this and disallow blocked threads from getting rescheduled.
-                    aThreadIsStuck = bmgr.or(aThreadIsStuck,
-                            bmgr.or(threadIsStuckInLoop(t), threadIsStuckInBarrier(t))
-                    );
+                if (isInitThread(t)) {
+                    continue;
                 }
+                allThreadsTerminated = bmgr.and(allThreadsTerminated,
+                        bmgr.or(bmgr.not(threadIsEnabled(t)), threadHasTerminated(t))
+                );
+                // Here we assume that a thread stuck in a barrier is eligible for scheduling
+                // so we can (unfairly) schedule the blocked thread indefinitely
+                // TODO: We may revise this and disallow blocked threads from getting scheduled again.
+                aThreadIsStuck = bmgr.or(aThreadIsStuck,
+                        bmgr.or(threadIsStuckInLoop(t), threadIsStuckInBarrier(t))
+                );
             }
 
             return bmgr.or(allThreadsTerminated, aThreadIsStuck);
