@@ -4,8 +4,6 @@ import java.util.*;
 
 import java.io.*;
 
-import com.dat3m.dartagnan.program.Program;
-import com.dat3m.dartagnan.utils.printer.Printer;
 import com.dat3m.testgen.converter.ProgramConverter;
 import com.dat3m.testgen.explore.WmmExplorer;
 import com.dat3m.testgen.generate.SMTProgramGenerator;
@@ -42,20 +40,9 @@ public class TestgenDriver {
             if( program_events == null )
                 continue;
 
-            /* Phase 2b - Program can exist, continue */
-            System.out.print( "Program relation graph:\n" + graph );
-
-            /* Phase 3 - Get Dat3M program object */
+            /* Phase 3 - Print Program */
             ProgramConverter program_converter = new ProgramConverter( program_events );
-            Program program = program_converter.to_dat3m_program();
-
-            /* Phase 4 - Print Dat3M program object */
-            Printer printer = new Printer();
-            System.out.println(
-                printer.print( program ) + "\n" +
-                program.getSpecificationType() + "( " +
-                program.getSpecification() + " )\n"
-            );
+            System.out.println( program_converter.print_program( "Program relation graph:\n" + graph ) );
         }
     }
 

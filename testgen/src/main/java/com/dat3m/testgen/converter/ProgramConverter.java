@@ -61,33 +61,68 @@ public class ProgramConverter {
                 }
             }
         }
+
+        int next_actual_tid = 0;
+        for( List <ProgramEvent> thread : threads ) {
+            if( thread.isEmpty() )
+                continue;
+            for( int i = 0 ; i < thread.size() ; i++ ) {
+                ProgramEvent event = thread.get( i );
+                thread.set( i, new ProgramEvent( event.type, event.location, event.value, next_actual_tid, event.thread_row, event.event_id ) );
+                events.set( events.indexOf( event ), new ProgramEvent( event.type, event.location, event.value, next_actual_tid, event.thread_row, event.event_id ) );
+            }
+            next_actual_tid++;
+        }
     }
 
-    public String print_program()
-    {
+    public String print_program(
+        String graph_str
+    ) {
         StringBuilder sb = new StringBuilder();
         List <String> read_constraints = new ArrayList<>();
+
+        sb.append( "C Dat3M Testgen Litmus\n\"\n" + graph_str + "\"\n{" );
+
+        Set <Integer> global_memory_addresses = new HashSet<>();
+        StringBuilder tsb = new StringBuilder();
+        for( ProgramEvent event : events ) {
+            global_memory_addresses.add( event.location );
+        }
+        boolean first_run = true;
+        for( Integer addr : global_memory_addresses ) {
+            tsb.append( ( first_run ? "( " : ", " ) + "atomic_int *a" + addr );
+            first_run = false;
+            sb.append( " [a" + addr + "]=0;" );
+        }
+        for( ProgramEvent event : events ) {
+            if( event.type.equals( "R" ) )
+                sb.append( " " + event.thread_id + ":r" + event.event_id + "=0;" );
+        }
+        sb.append( " }\n\n" );
+        tsb.append( " ) " );
+        String thread_signature = tsb.toString();
 
         for( List <ProgramEvent> thread : threads ) {
             if( thread.isEmpty() )
                 continue;
-            sb.append( "T" + thread.get(0).thread_id + ":\n" );
+            sb.append( "P" + thread.get(0).thread_id + thread_signature + " {\n" );
             for( ProgramEvent event : thread ) {
                 if( event.type.equals( "R" ) ) {
-                    read_constraints.add( "r" + event.event_id + " == " + event.value );
-                    sb.append( "  r" + event.event_id + " = " + event.short_form() + "\n" );
+                    read_constraints.add( event.thread_id + ":r" + event.event_id + " = " + event.value );
+                    sb.append( "  r" + event.event_id + " = atomic_load_explicit(a" + event.location +", memory_order_seq_cst);" + "\n" );
                 } else {
-                    sb.append( "  " + event.short_form() + "\n" );
+                    sb.append( "  atomic_store_explicit(a" + event.location + ", " + event.value + ", memory_order_seq_cst);" + "\n" );
                 }
             }
-            sb.append( "\n" );
+            sb.append( "}\n\n" );
         }
 
-        sb.append( "assert( true" );
+        first_run = true;
         for( String constraint : read_constraints ) {
-            sb.append( "\n  && " + constraint );
+            sb.append( ( first_run ? "exists ( " : " /\\ " ) + constraint );
+            first_run = false;
         }
-        sb.append( "\n)\n\n" );
+        sb.append( " )\n" );
 
         return sb.toString();
     }
