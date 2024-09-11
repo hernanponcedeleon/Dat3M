@@ -21,7 +21,6 @@ import com.dat3m.dartagnan.wmm.axiom.Axiom;
 import com.dat3m.dartagnan.wmm.utils.EventGraph;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
@@ -36,8 +35,9 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import static com.dat3m.dartagnan.configuration.Property.*;
-import static com.dat3m.dartagnan.wmm.RelationNameRepository.CO;
 import static com.dat3m.dartagnan.program.Program.SourceLanguage.LLVM;
+import static com.dat3m.dartagnan.program.Program.SpecificationType.ASSERT;
+import static com.dat3m.dartagnan.wmm.RelationNameRepository.CO;
 
 public class PropertyEncoder implements Encoder {
 
@@ -66,7 +66,7 @@ public class PropertyEncoder implements Encoder {
        Since we encode a lot of potential violations, and we want to trace back which one lead to
        our query being SAT, we use trackable formulas.
      */
-    private static class TrackableFormula {
+    public static class TrackableFormula {
         private final BooleanFormula trackingLiteral;
         private final BooleanFormula trackedFormula;
 
@@ -276,7 +276,7 @@ public class PropertyEncoder implements Encoder {
             case FORALL, NOT_EXISTS, ASSERT -> bmgr.not(PROGRAM_SPEC.getSMTVariable(context));
             case EXISTS -> PROGRAM_SPEC.getSMTVariable(context);
         };
-        if (!program.getFormat().equals(LLVM)) {
+        if (!ASSERT.equals(program.getSpecificationType())) {
             encoding = bmgr.and(encoding, encodeProgramTermination());
         }
         return new TrackableFormula(trackingLiteral, encoding);
@@ -284,9 +284,10 @@ public class PropertyEncoder implements Encoder {
 
     private BooleanFormula encodeProgramTermination() {
         final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
-        return bmgr.and(program.getThreads().stream()
+        BooleanFormula exitReached = bmgr.and(program.getThreads().stream()
                 .map(t -> bmgr.equivalence(context.execution(t.getEntry()), context.execution(t.getExit())))
                 .toList());
+        return bmgr.and(exitReached, bmgr.not(encodeBoundEventExec()));
     }
 
     // ======================================================================
@@ -304,7 +305,7 @@ public class PropertyEncoder implements Encoder {
         final EncodingContext ctx = this.context;
         final Wmm memoryModel = this.memoryModel;
         final List<Axiom> flaggedAxioms = memoryModel.getAxioms().stream()
-                .filter(Axiom::isFlagged).collect(Collectors.toList());
+                .filter(Axiom::isFlagged).toList();
 
         if (flaggedAxioms.isEmpty()) {
             logger.info("No CAT specification in the WMM. Skipping encoding.");
@@ -402,20 +403,27 @@ public class PropertyEncoder implements Encoder {
 
     private TrackableFormula encodeDeadlocks() {
         logger.info("Encoding dead locks");
-        return new LivenessEncoder().encodeDeadlocks();
+        return new LivenessEncoder().encodeLivenessBugs();
     }
 
     /*
         Encoder for the liveness property.
 
         We have a liveness violation in some execution if
-            - At least one thread is stuck inside a loop (*)
+            - At least one thread is stuck (*)
             - All other threads are either stuck or terminated normally (**)
 
-        (*) A thread is stuck if it finishes a loop iteration
-            - without causing side-effects (e.g., visible stores)
-            - while reading only from co-maximal stores
-        => Without external help, a stuck thread will never be able to exit the loop.
+        (*) A thread is stuck if
+            (1) it performs a loop iteration without causing side-effects (e.g., visible stores)
+                while satisfying fairness conditions
+                => Without external help, a stuck thread will never be able to exit the loop.
+         OR (2) the thread is blocked by a control barrier.
+
+        Fairness conditions for loops:
+            - Memory fairness: the loop iteration reads only co-maximal values
+            - Excl-Store progress: all exclusive stores in the iteration succeed (infinite spurious failures are unfair)
+              NOTE: Here we assume strong progress. Under weak fairness, a loop with two exclusive stores that need
+              to succeed in the same iteration could fail liveness if they succeed in alternation.
 
         (**) A thread terminates normally IFF it does terminate (no NONTERMINATION-tagged jumps) non-exceptionally
              (no EXCEPTIONAL_TERMINATION-tagged jumps)
@@ -430,33 +438,16 @@ public class PropertyEncoder implements Encoder {
     */
     private class LivenessEncoder {
 
-        private static class SpinIteration {
-            public final List<Load> containedLoads = new ArrayList<>();
-            // Execution of the <boundJump> means the loop performed a side-effect-free
-            // iteration without exiting. If such a jump is executed + all loads inside the loop
-            // were co-maximal, then we have a deadlock condition.
-            public final List<CondJump> spinningJumps = new ArrayList<>();
-        }
-
-        public TrackableFormula encodeDeadlocks() {
+        public TrackableFormula encodeLivenessBugs() {
             final Program program = PropertyEncoder.this.program;
             final EncodingContext context = PropertyEncoder.this.context;
             final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
-            final LoopAnalysis loopAnalysis = LoopAnalysis.newInstance(program);
-
-            // Find spin loops of all threads
-            final Map<Thread, List<SpinIteration>> spinloopsMap =
-                    Maps.toMap(program.getThreads(), t -> this.findSpinLoopsInThread(t, loopAnalysis));
-            // Compute "stuckness" encoding for all threads
-            final Map<Thread, BooleanFormula> isStuckMap = Maps.toMap(program.getThreads(), t ->
-                    bmgr.or(generateBarrierStucknessEncoding(t, context),
-                            this.generateSpinloopStucknessEncoding(spinloopsMap.get(t), context)));
 
             // Deadlock <=> allStuckOrDone /\ atLeastOneStuck
             BooleanFormula allStuckOrDone = bmgr.makeTrue();
             BooleanFormula atLeastOneStuck = bmgr.makeFalse();
             for (Thread thread : program.getThreads()) {
-                final BooleanFormula isStuck = isStuckMap.get(thread);
+                final BooleanFormula isStuck = isStuckEncoding(thread, context);
                 final BooleanFormula isTerminatingNormally = thread
                         .getEvents().stream()
                         .filter(e -> e.hasTag(Tag.EXCEPTIONAL_TERMINATION) || e.hasTag(Tag.NONTERMINATION))
@@ -472,6 +463,16 @@ public class PropertyEncoder implements Encoder {
             return new TrackableFormula(bmgr.not(LIVENESS.getSMTVariable(context)), hasDeadlock);
         }
 
+        private BooleanFormula isStuckEncoding(Thread thread, EncodingContext context) {
+            return context.getBooleanFormulaManager().or(
+                    generateSpinloopStucknessEncoding(thread, context),
+                    generateBarrierStucknessEncoding(thread, context)
+            );
+        }
+
+        // ------------------------------------------------------------------------------
+        // Liveness issue due to blocked execution (due to ControlBarrier)
+
         private BooleanFormula generateBarrierStucknessEncoding(Thread thread, EncodingContext context) {
             final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
             return bmgr.or(thread.getEvents().stream()
@@ -480,37 +481,85 @@ public class PropertyEncoder implements Encoder {
                     .toList());
         }
 
-        // Compute "stuckness": A thread is stuck if it reaches a spin loop bound event
-        // while only reading from co-maximal stores.
-        private BooleanFormula generateSpinloopStucknessEncoding(List<SpinIteration> loops, EncodingContext context) {
+        // ------------------------------------------------------------------------------
+        // Liveness issue due to non-terminating loops (~ deadlocks)
+
+        private record SpinIteration(List<Event> body, List<CondJump> spinningJumps) {
+            // Execution of the <spinningJumps> means the loop performed a side-effect-free
+            // iteration without exiting. If such a jump is executed + all loads inside the loop
+            // were co-maximal, then we have a deadlock condition.
+        }
+
+        private BooleanFormula generateSpinloopStucknessEncoding(Thread thread, EncodingContext context) {
+            final LoopAnalysis loopAnalysis = LoopAnalysis.onFunction(thread);
+            final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
+
+            return this.findSpinLoopsInThread(thread, loopAnalysis).stream()
+                    .map(loop -> generateSpinloopStucknessEncoding(loop, context))
+                    .reduce(bmgr.makeFalse(), bmgr::or);
+        }
+
+        private BooleanFormula generateSpinloopStucknessEncoding(SpinIteration loop, EncodingContext context) {
+            return context.getBooleanFormulaManager().and(
+                    isSideEffectFreeEncoding(loop, context),
+                    fairnessEncoding(loop, context)
+            );
+        }
+
+        private BooleanFormula isSideEffectFreeEncoding(SpinIteration loop, EncodingContext context) {
+            // Note that we assume (for now) that a SPINLOOP-tagged jump is executed only if the loop iteration
+            // was side-effect free.
+            final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
+            final BooleanFormula isSideEffectFree = loop.spinningJumps.stream()
+                    .map(j -> bmgr.and(context.execution(j), context.jumpCondition(j)))
+                    .reduce(bmgr.makeFalse(), bmgr::or);
+            return isSideEffectFree;
+        }
+
+        private BooleanFormula fairnessEncoding(SpinIteration loop, EncodingContext context) {
+            return context.getBooleanFormulaManager().and(
+                    memoryFairnessEncoding(loop, context),
+                    exclStoreFairnessEncoding(loop, context)
+            );
+        }
+
+        private BooleanFormula memoryFairnessEncoding(SpinIteration loop, EncodingContext context) {
             final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
             final RelationAnalysis ra = PropertyEncoder.this.ra;
             final Relation rf = memoryModel.getRelation(RelationNameRepository.RF);
             final EncodingContext.EdgeEncoder rfEncoder = context.edge(rf);
             final Map<Event, Set<Event>> rfMayIn = ra.getKnowledge(rf).getMaySet().getInMap();
 
-            if (loops.isEmpty()) {
-                return bmgr.makeFalse();
+            final List<Load> loads = loop.body.stream()
+                    .filter(Load.class::isInstance)
+                    .map(Load.class::cast)
+                    .toList();
+
+            BooleanFormula allLoadsAreCoMaximal = bmgr.makeTrue();
+            for (Load load : loads) {
+                final BooleanFormula readsCoMaximalStore = rfMayIn.getOrDefault(load, Set.of()).stream()
+                        .map(store -> bmgr.and(rfEncoder.encode(store, load), lastCoVar(store)))
+                        .reduce(bmgr.makeFalse(), bmgr::or);
+                final BooleanFormula isCoMaximalLoad = bmgr.implication(context.execution(load), readsCoMaximalStore);
+                allLoadsAreCoMaximal = bmgr.and(allLoadsAreCoMaximal, isCoMaximalLoad);
             }
 
-            BooleanFormula isStuck = bmgr.makeFalse();
-            for (SpinIteration loop : loops) {
-                BooleanFormula allLoadsAreCoMaximal = bmgr.makeTrue();
-                for (Load load : loop.containedLoads) {
-                    final BooleanFormula readsCoMaximalStore = rfMayIn.getOrDefault(load, Set.of()).stream()
-                            .map(store -> bmgr.and(rfEncoder.encode(store, load), lastCoVar(store)))
-                            .reduce(bmgr.makeFalse(), bmgr::or);
-                    final BooleanFormula isCoMaximalLoad = bmgr.implication(context.execution(load), readsCoMaximalStore);
-                    allLoadsAreCoMaximal = bmgr.and(allLoadsAreCoMaximal, isCoMaximalLoad);
-                }
-                // Note that we assume (for now) that a SPINLOOP-tagged jump is executed only if the loop iteration
-                // was side-effect free.
-                final BooleanFormula isSideEffectFree = loop.spinningJumps.stream()
-                        .map(j -> bmgr.and(context.execution(j), context.jumpCondition(j)))
-                        .reduce(bmgr.makeFalse(), bmgr::or);
-                isStuck = bmgr.or(isStuck, bmgr.and(isSideEffectFree, allLoadsAreCoMaximal));
+            return allLoadsAreCoMaximal;
+        }
+
+        private BooleanFormula exclStoreFairnessEncoding(SpinIteration loop, EncodingContext context) {
+            final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
+            final List<RMWStoreExclusive> exclStores = loop.body.stream()
+                    .filter(RMWStoreExclusive.class::isInstance)
+                    .map(RMWStoreExclusive.class::cast)
+                    .toList();
+            BooleanFormula allExclStoresExecuted = bmgr.makeTrue();
+            for (RMWStoreExclusive exclStore : exclStores) {
+                final BooleanFormula executedIfPossible = bmgr.implication(context.controlFlow(exclStore), context.execution(exclStore));
+                allExclStoresExecuted = bmgr.and(allExclStoresExecuted, executedIfPossible);
             }
-            return isStuck;
+
+            return allExclStoresExecuted;
         }
 
         private List<SpinIteration> findSpinLoopsInThread(Thread thread, LoopAnalysis loopAnalysis) {
@@ -526,14 +575,7 @@ public class PropertyEncoder implements Encoder {
                             .toList();
 
                     if (!spinningJumps.isEmpty()) {
-                        final List<Load> loads = iterBody.stream()
-                                .filter(Load.class::isInstance)
-                                .map(Load.class::cast)
-                                .toList();
-
-                        final SpinIteration spinIter = new SpinIteration();
-                        spinIter.spinningJumps.addAll(spinningJumps);
-                        spinIter.containedLoads.addAll(loads);
+                        final SpinIteration spinIter = new SpinIteration(iterBody, spinningJumps);
                         spinIterations.add(spinIter);
                     }
                 }

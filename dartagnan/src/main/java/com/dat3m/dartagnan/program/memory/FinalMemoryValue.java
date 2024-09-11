@@ -5,15 +5,17 @@ import com.dat3m.dartagnan.expression.ExpressionVisitor;
 import com.dat3m.dartagnan.expression.Type;
 import com.dat3m.dartagnan.expression.base.LeafExpressionBase;
 
-// TODO: Should be replaced with a Pointer class
-public class Location extends LeafExpressionBase<Type> {
+// TODO: Should work with an arbitrary pointer rather than "base + offset"
+// Represents the final (co-maximal) value at a memory address as if read by a load instruction
+// that observed the final store.
+public class FinalMemoryValue extends LeafExpressionBase<Type> {
 
     private final String name;
     private final MemoryObject base;
     private final int offset;
 
-    public Location(String name, Type type, MemoryObject base, int offset) {
-        super(type);
+    public FinalMemoryValue(String name, Type loadType, MemoryObject base, int offset) {
+        super(loadType);
         this.name = name;
         this.base = base;
         this.offset = offset;
@@ -33,12 +35,12 @@ public class Location extends LeafExpressionBase<Type> {
 
     @Override
     public ExpressionKind getKind() {
-        return ExpressionKind.Other.MEMORY_ADDR;
+        return ExpressionKind.Other.FINAL_MEM_VAL;
     }
 
     @Override
     public <T> T accept(ExpressionVisitor<T> visitor) {
-        return visitor.visitLocation(this);
+        return visitor.visitFinalMemoryValue(this);
     }
 
     @Override
@@ -48,17 +50,12 @@ public class Location extends LeafExpressionBase<Type> {
 
     @Override
     public int hashCode() {
-        return base.hashCode() + offset;
+        return base.hashCode() + 31 * offset;
     }
 
     @Override
     public boolean equals(Object obj) {
-        if (this == obj) {
-            return true;
-        } else if (obj == null || getClass() != obj.getClass()) {
-            return false;
-        }
-        Location o = (Location) obj;
-        return base.equals(o.base) && offset == o.offset;
+        return (obj instanceof FinalMemoryValue o) &&
+                base.equals(o.base) && offset == o.offset;
     }
 }
