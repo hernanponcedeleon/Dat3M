@@ -2,19 +2,19 @@ package com.dat3m.testgen.generate;
 
 import org.sosy_lab.java_smt.api.BooleanFormula;
 
-import com.dat3m.testgen.util.BaseRelations;
+import com.dat3m.testgen.util.Types;
 
-class SMTRelationHandler {
+class SMTBaseRelationHandler {
     
-    SMTRelationHandler(){}
+    SMTBaseRelationHandler(){}
 
     static BooleanFormula handle_relation(
-        final SMTHandler         smt,
-        final SMTEvent           event_L,
-        final SMTEvent           event_R,
-        final SMTEvent           observer_L,
-        final SMTEvent           observer_R,
-        final BaseRelations.type type
+        final SMTHandler smt,
+        final SMTEvent   event_L,
+        final SMTEvent   event_R,
+        final SMTEvent   observer_L,
+        final SMTEvent   observer_R,
+        final Types.base type
     ) throws Exception {      
         switch( type ) {
             case po:
@@ -41,7 +41,7 @@ class SMTRelationHandler {
                     smt.em.equivalence( event_L.type, smt.instruction( "W" ) ),
                     smt.em.equivalence( event_R.type, smt.instruction( "W" ) ),
                     smt.im.equal( event_L.location, event_R.location ),
-                    handle_relation( smt, observer_L, observer_R, null, null, BaseRelations.type.po )
+                    handle_relation( smt, observer_L, observer_R, null, null, Types.base.po )
                 );
 
             case ext:
@@ -72,6 +72,12 @@ class SMTRelationHandler {
                     smt.em.equivalence( event_L.type, smt.instruction( "W" ) )
                 );
     
+            case loc:
+                return smt.bm.and(
+                    smt.bm.not( smt.im.equal( event_L.event_id, event_R.event_id ) ),
+                    smt.im.equal( event_L.location, event_R.location )
+                );
+
             default:
                 System.out.println( "[ERROR] " + type );
                 throw new Exception( "Relation type does not have defined rules!" );

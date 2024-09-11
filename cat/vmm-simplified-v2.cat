@@ -1,0 +1,34 @@
+/*
+ * Copyright (C) Huawei Technologies Co., Ltd. 2024. All rights reserved.
+ * SPDX-License-Identifier: MIT
+ *
+ * Version 0.9.1
+ */
+
+(** Atomicity **)
+empty rmw & (fre;coe)
+
+(** SC per location **)
+acyclic co | rf | fr | (po & loc)
+
+let M = W | R
+let V = M | F
+let Marked = RLX | ACQ | REL | SC
+let Plain = V \ Marked
+let Acq = ACQ | (SC & R)
+let Rel = REL | (SC & W)
+
+(** Ordering **)
+let dep = ctrl | addr | data
+
+(* Barrier Ordered-Before: barrier ordering rules *)
+let bob = [Acq];po | po;[Rel] | [SC];po;[SC] | po;[SC & F];po | [R];po;[Acq & F];po | po;[Rel & F];po;[W & Marked]
+
+(* Preserved Program-Order: these are never visibly reordered by compiler and hardware. 
+   Includes both barrier ordering, and dependency ordering + same-address ordering *)
+let ppo = bob | [Marked];(dep | coi | fri);[W & Marked]
+
+let WRF-ppo = po;[Rel & F];po;[W & Plain] | [Marked];(ctrl | addr);[W & Plain]
+
+let hb = ppo | WRF-ppo | rfe | fre | coe
+acyclic hb

@@ -2,22 +2,22 @@ package com.dat3m.testgen.generate;
 
 import org.sosy_lab.java_smt.api.Model;
 
-import com.dat3m.testgen.util.Graph;
-import com.dat3m.testgen.util.ProgramEvent;
-import com.dat3m.testgen.util.RelationEdge;
+import com.dat3m.testgen.program.ProgramEdge;
+import com.dat3m.testgen.program.ProgramEvent;
+import com.dat3m.testgen.program.ProgramGraph;
 
 import java.util.*;
 
 public class SMTProgramGenerator {
     
-    final Graph graph;
+    final ProgramGraph graph;
     final int max_events;
     final SMTEvent[] events;
     final SMTEvent[] observers;
     final SMTHandler smt;
 
     public SMTProgramGenerator(
-        final Graph r_graph,
+        final ProgramGraph r_graph,
         final int r_max_events
     ) throws Exception {
         graph      = r_graph;
@@ -50,8 +50,8 @@ public class SMTProgramGenerator {
 
     void process_relations()
     throws Exception {
-        for( final RelationEdge relation : graph.edges )
-            smt.prover.addConstraint( SMTRelationHandler.handle_relation(
+        for( final ProgramEdge relation : graph.edges )
+            smt.prover.addConstraint( SMTBaseRelationHandler.handle_relation(
                 smt,
                 events[ relation.eid_L ], events[ relation.eid_R ],
                 observers[ relation.eid_L ], observers[ relation.eid_R ],
@@ -61,16 +61,10 @@ public class SMTProgramGenerator {
 
     void apply_heuristics()
     throws Exception {
-        SMTHeuristics.equivalence_h( smt, events );
-        SMTHeuristics.equivalence_h( smt, observers );
-        SMTHeuristics.memory_distinction( smt, events );
-        SMTHeuristics.row_maximization( smt, events );
-        SMTHeuristics.row_maximization( smt, observers );
-        SMTHeuristics.thread_maximisation( smt, events );
-        SMTHeuristics.thread_maximisation( smt, observers );
-        SMTHeuristics.memory_maximisation( smt, events );
-        SMTHeuristics.event_minimization( smt, events );
-        SMTHeuristics.event_minimization( smt, observers );
+        SMTHeuristicsHandler event_h = new SMTHeuristicsHandler( smt, events );
+        SMTHeuristicsHandler observer_h = new SMTHeuristicsHandler( smt, observers );
+        event_h.apply_heuristics( "equivalence", "memory_distinction", "row_maximization", "thread_maximization", "memory_maximization", "event_minimization" );
+        observer_h.apply_heuristics( "equivalence", "row_maximization", "thread_maximization", "event_minimization" );
     }
 
     List <ProgramEvent> prove_program()

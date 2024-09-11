@@ -1,4 +1,4 @@
-package com.dat3m.testgen.util;
+package com.dat3m.testgen.program;
 
 public class ProgramEvent {
     

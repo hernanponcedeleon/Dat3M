@@ -7,21 +7,21 @@ import com.dat3m.dartagnan.wmm.definition.Composition;
 import com.dat3m.dartagnan.wmm.definition.Intersection;
 import com.dat3m.dartagnan.wmm.definition.Inverse;
 import com.dat3m.dartagnan.wmm.definition.Union;
-import com.dat3m.testgen.util.Graph;
-import com.dat3m.testgen.util.RelationEdge;
+import com.dat3m.testgen.program.ProgramEdge;
+import com.dat3m.testgen.program.ProgramGraph;
 
 class SetOperations {
     
     WmmExplorer explorer;
-    List <Graph> graphs;
-    List <RelationEdge> relations;
-    RelationEdge relation_edge;
+    List <ProgramGraph> graphs;
+    List <ProgramEdge> relations;
+    ProgramEdge relation_edge;
 
     SetOperations(
         final WmmExplorer r_explorer,
-        final List <Graph> r_graphs,
-        final List <RelationEdge> r_relations,
-        final RelationEdge r_relation_edge
+        final List <ProgramGraph> r_graphs,
+        final List <ProgramEdge> r_relations,
+        final ProgramEdge r_relation_edge
     ) {
         explorer      = r_explorer;
         graphs        = r_graphs;
@@ -48,10 +48,10 @@ class SetOperations {
     void expand_intersection() throws Exception {
         Relation dep_L = relation_edge.relation.getDependencies().get( 0 );
         Relation dep_R = relation_edge.relation.getDependencies().get( 1 );
-        RelationEdge wmm_L = new RelationEdge(
+        ProgramEdge wmm_L = new ProgramEdge(
             relation_edge.eid_L, dep_L, relation_edge.eid_R, explorer.get_base_relation( dep_L )
         );
-        RelationEdge wmm_R = new RelationEdge(
+        ProgramEdge wmm_R = new ProgramEdge(
             relation_edge.eid_L, dep_R, relation_edge.eid_R, explorer.get_base_relation( dep_R )
         );
         relations.add( wmm_L );
@@ -64,10 +64,10 @@ class SetOperations {
     void expand_union() throws Exception {
         Relation dep_L = relation_edge.relation.getDependencies().get( 0 );
         Relation dep_R = relation_edge.relation.getDependencies().get( 1 );
-        RelationEdge wmm_L = new RelationEdge(
+        ProgramEdge wmm_L = new ProgramEdge(
             relation_edge.eid_L, dep_L, relation_edge.eid_R, explorer.get_base_relation( dep_L )
         );
-        RelationEdge wmm_R = new RelationEdge(
+        ProgramEdge wmm_R = new ProgramEdge(
             relation_edge.eid_L, dep_R, relation_edge.eid_R, explorer.get_base_relation( dep_R )
         );
         relations.add( wmm_L );
@@ -82,10 +82,10 @@ class SetOperations {
         Relation dep_L = relation_edge.relation.getDependencies().get( 0 );
         Relation dep_R = relation_edge.relation.getDependencies().get( 1 );
         int intermediate_event_id = explorer.next_event_id++;
-        RelationEdge wmm_L = new RelationEdge(
+        ProgramEdge wmm_L = new ProgramEdge(
             relation_edge.eid_L, dep_L, intermediate_event_id, explorer.get_base_relation( dep_L )
         );
-        RelationEdge wmm_R = new RelationEdge(
+        ProgramEdge wmm_R = new ProgramEdge(
             intermediate_event_id, dep_R, relation_edge.eid_R, explorer.get_base_relation( dep_R )
         );
         relations.add( wmm_L );
@@ -98,7 +98,7 @@ class SetOperations {
 
     void expand_inverse() throws Exception {
         Relation dep = relation_edge.relation.getDependencies().get( 0 );
-        RelationEdge edge = new RelationEdge(
+        ProgramEdge edge = new ProgramEdge(
             relation_edge.eid_R, dep, relation_edge.eid_L, explorer.get_base_relation( dep )
         );
         relations.add( edge );

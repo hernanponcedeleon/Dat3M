@@ -4,15 +4,59 @@ import java.util.*;
 
 import org.sosy_lab.java_smt.api.BooleanFormula;
 
-class SMTHeuristics {
+class SMTHeuristicsHandler {
+
+    final SMTHandler smt;
+    final SMTEvent[] events;
+
+    SMTHeuristicsHandler(
+        final SMTHandler r_smt,
+        final SMTEvent[] r_events
+    ) {
+        smt    = r_smt;
+        events = r_events;
+    }
+
+    void apply_heuristics(
+        String... heuristics
+    ) throws Exception {
+        for( String heuristic : heuristics ) {
+            switch( heuristic ) {
+                case "equivalence":
+                    equivalence_h();
+                break;
+
+                case "memory_distinction":
+                    memory_distinction();
+                break;
+
+                case "row_maximization":
+                    row_maximization();
+                break;
+
+                case "thread_maximization":
+                    thread_maximization();
+                break;
+
+                case "memory_maximization":
+                    memory_maximization();
+                break;
+
+                case "event_minimization":
+                    event_minimization();
+                break;
+
+                default:
+                    System.out.println( "[ERROR] " + heuristic );
+                    throw new Exception( "Unknown heuristic type!" );
+            }
+        }
+    }
     
     /**
      * Handle equivalence between events
      */
-    static void equivalence_h(
-        final SMTHandler smt,
-        final SMTEvent[] events
-    ) throws Exception {
+    void equivalence_h() throws Exception {
         for( int i = 0 ; i < events.length ; i++ ) {
             for( int j = 0 ; j < events.length ; j++ ) {
                 smt.prover.addConstraint( smt.bm.implication(
@@ -31,10 +75,7 @@ class SMTHeuristics {
     /**
      * Each two writes at the same memory location, either have different value or are equivalent events
      */
-    static void memory_distinction(
-        final SMTHandler smt,
-        final SMTEvent[] events
-    ) throws Exception {
+    void memory_distinction() throws Exception {
         for( int i = 0 ; i < events.length ; i++ ) {
             for( int j = 0 ; j < events.length ; j++ ) {
                 smt.prover.addConstraint( smt.bm.implication(
@@ -55,10 +96,7 @@ class SMTHeuristics {
     /**
      * Each two events on the same thread, either have different rows or are equivalent events
      */
-    static void row_maximization(
-        final SMTHandler smt,
-        final SMTEvent[] events
-    ) throws Exception {
+    void row_maximization() throws Exception {
         for( int i = 0 ; i < events.length ; i++ ) {
             for( int j = 0 ; j < events.length ; j++ ) {
                 smt.prover.addConstraint( smt.bm.implication(
@@ -75,10 +113,7 @@ class SMTHeuristics {
     /**
      * [Optional] Events that don't have to be in the same thread, won't be in the same thread
      */
-    static void thread_maximisation(
-        final SMTHandler smt,
-        final SMTEvent[] events
-    ) throws Exception {
+    void thread_maximization() throws Exception {
         for( int i = 0 ; i < events.length ; i++ ) {
             for( int j = 0 ; j < events.length ; j++ ) {
                 BooleanFormula assumption = smt.bm.not( smt.im.equal( events[i].thread_id, events[j].thread_id ) );
@@ -91,10 +126,7 @@ class SMTHeuristics {
     /**
      * [Optional] Events that don't have to access the same memory location, won't access the same memory location
      */
-    static void memory_maximisation(
-        final SMTHandler smt,
-        final SMTEvent[] events
-    ) throws Exception {
+    void memory_maximization() throws Exception {
         for( int i = 0 ; i < events.length ; i++ ) {
             for( int j = 0 ; j < events.length ; j++ ) {
                 BooleanFormula assumption = smt.bm.not( smt.im.equal( events[i].location, events[j].location ) );
@@ -107,10 +139,7 @@ class SMTHeuristics {
     /**
      * [Optional] Events that don't have to be defined, won't be defined
      */
-    static void event_minimization(
-        final SMTHandler smt,
-        final SMTEvent[] events
-    ) throws Exception {
+    void event_minimization() throws Exception {
         for( int i = 0 ; i < events.length ; i++ ) {
             BooleanFormula assumption = smt.em.equivalence( events[i].type, smt.instruction( "UNDEFINED" ) );
             if( !smt.prover.isUnsatWithAssumptions( Arrays.asList( assumption ) ) ) {

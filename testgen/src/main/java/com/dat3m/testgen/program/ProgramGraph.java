@@ -1,15 +1,15 @@
-package com.dat3m.testgen.util;
+package com.dat3m.testgen.program;
 
 import java.util.*;
 
-public class Graph {
+public class ProgramGraph {
     
-    public final List <RelationEdge> edges;
+    public final List <ProgramEdge> edges;
     
-    public Graph(
-        final List <RelationEdge> r_relations
+    public ProgramGraph(
+        final List <ProgramEdge> r_relations
     ) throws Exception {
-        for( RelationEdge relation_edge : r_relations )
+        for( ProgramEdge relation_edge : r_relations )
             if( relation_edge.base == null )
                 throw new Exception( "RelationEdge base relation is null." );
         edges = new ArrayList<>( r_relations );
@@ -19,7 +19,7 @@ public class Graph {
     public String toString()
     {
         StringBuilder sb = new StringBuilder();
-        for( RelationEdge relation : edges )
+        for( ProgramEdge relation : edges )
             sb.append( relation + "\n" );
         return sb.toString();
     }

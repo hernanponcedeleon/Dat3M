@@ -1,5 +1,7 @@
 package com.dat3m.testgen.generate;
 
+import java.util.stream.*;
+
 import org.sosy_lab.common.ShutdownNotifier;
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.log.LogManager;
@@ -15,6 +17,8 @@ import org.sosy_lab.java_smt.api.ProverEnvironment;
 import org.sosy_lab.java_smt.api.SolverContext;
 import org.sosy_lab.java_smt.api.SolverContext.ProverOptions;
 
+import com.dat3m.testgen.util.Types;
+
 class SMTHandler {
     
     Configuration config;
@@ -28,7 +32,7 @@ class SMTHandler {
     ProverEnvironment prover;
     
     EnumerationFormulaType instruction_type;
-    String[] instructions = { "UNDEFINED", "R", "W" };
+    String[] instructions_str = {};
 
     SMTHandler()
     throws Exception {
@@ -46,13 +50,14 @@ class SMTHandler {
         em = fm.getEnumerationFormulaManager();
 
         prover = context.newProverEnvironment( ProverOptions.GENERATE_MODELS );
-        instruction_type = em.declareEnumeration( "instruction_type", instructions ); 
+        instructions_str = Stream.of( Types.instruction.values() ).map( Types.instruction::name ).toArray( String[]::new );
+        instruction_type = em.declareEnumeration( "instruction_type", instructions_str ); 
     }
 
     EnumerationFormula instruction(
         final String instruction
     ) throws Exception {
-        for( String str : instructions ) {
+        for( String str : instructions_str ) {
             if( str.equals( instruction ) )
                 return em.makeConstant( instruction, instruction_type );
         }

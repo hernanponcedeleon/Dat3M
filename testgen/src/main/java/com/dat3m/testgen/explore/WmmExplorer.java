@@ -8,14 +8,14 @@ import com.dat3m.dartagnan.wmm.Relation;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.axiom.Acyclicity;
 import com.dat3m.dartagnan.wmm.axiom.Axiom;
-import com.dat3m.testgen.util.BaseRelations;
-import com.dat3m.testgen.util.Graph;
-import com.dat3m.testgen.util.RelationEdge;
+import com.dat3m.testgen.program.ProgramEdge;
+import com.dat3m.testgen.program.ProgramGraph;
+import com.dat3m.testgen.util.Types;
 
 public class WmmExplorer {
 
     Wmm memory_model;
-    Map <String, BaseRelations.type> base_relations;
+    Map <String, Types.base> base_relations;
     Set <String> ignored_relations;
     int next_event_id;
     
@@ -27,19 +27,19 @@ public class WmmExplorer {
         ignored_relations = new HashSet<>();
     }
 
-    public List <Graph> begin_exploration(
+    public List <ProgramGraph> begin_exploration(
         final int cycle_length
     ) throws Exception {
-        List <Graph> graphs = new ArrayList<>();
+        List <ProgramGraph> graphs = new ArrayList<>();
 
         for( Axiom axiom : memory_model.getAxioms() ) {
             if( !( axiom instanceof Acyclicity ) )
                 continue;
 
             next_event_id = cycle_length + 1;
-            List <RelationEdge> relations = new ArrayList<>();
+            List <ProgramEdge> relations = new ArrayList<>();
             for( int d = 1 ; d <= cycle_length ; d++ ) {
-                relations.add( new RelationEdge(
+                relations.add( new ProgramEdge(
                     d, axiom.getRelation(), ( d % cycle_length ) + 1, get_base_relation( axiom.getRelation() )
                 ) );
             }
@@ -51,11 +51,11 @@ public class WmmExplorer {
     }
 
     void explore_relation(
-        final List <RelationEdge> relations,
-        final List <Graph> graphs
+        final List <ProgramEdge> relations,
+        final List <ProgramGraph> graphs
     ) throws Exception {
-        RelationEdge relation_edge = null;
-        for( RelationEdge candidate_edge : relations ) {
+        ProgramEdge relation_edge = null;
+        for( ProgramEdge candidate_edge : relations ) {
             if( ignored_relations.contains( get_relation_string( candidate_edge.relation ) ) )
                 return;
             if( candidate_edge.base != null )
@@ -65,7 +65,7 @@ public class WmmExplorer {
         }
 
         if( relation_edge == null ) {
-            graphs.add( new Graph( relations ) );
+            graphs.add( new ProgramGraph( relations ) );
             return;
         }
 
@@ -84,7 +84,7 @@ public class WmmExplorer {
         relation.getNames().get(0);
     }
 
-    BaseRelations.type get_base_relation(
+    Types.base get_base_relation(
         final Relation relation
     ) {
         if( !base_relations.containsKey( get_relation_string( relation ) ) )
@@ -94,7 +94,7 @@ public class WmmExplorer {
 
     public void register_base_relation(
         final String relation_str,
-        final BaseRelations.type relation_type
+        final Types.base relation_type
     ) throws Exception {
         base_relations.put( relation_str, relation_type );
     }

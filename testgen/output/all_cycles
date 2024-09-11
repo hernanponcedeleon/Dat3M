@@ -5,14 +5,14 @@ Program relation graph:
 2 --po-> 3
 3 --rf-> 1
 "
-{ [a1]=0; 0:r4=0; }
+{ [a1]=0; 0:r1=0; }
 
 P0( atomic_int *a1 )  {
-  r4 = atomic_load_explicit(a1, memory_order_seq_cst);
+  r1 = atomic_load_explicit(a1, memory_order_seq_cst);
   atomic_store_explicit(a1, 2, memory_order_seq_cst);
 }
 
-exists ( 0:r4 = 2 )
+exists ( 0:r1 = 2 )
 
 C Dat3M Testgen Litmus
 "
@@ -22,23 +22,23 @@ Program relation graph:
 4 --co-> 1
 4 --rf-> 3
 "
-{ [a2]=0; 0:r2=0; 2:r9=0; 2:r12=0; }
+{ [a2]=0; 0:r5=0; 2:r8=0; 2:r12=0; }
 
 P0( atomic_int *a2 )  {
-  atomic_store_explicit(a2, 2, memory_order_seq_cst);
-  r2 = atomic_load_explicit(a2, memory_order_seq_cst);
+  atomic_store_explicit(a2, 1, memory_order_seq_cst);
+  r5 = atomic_load_explicit(a2, memory_order_seq_cst);
 }
 
 P1( atomic_int *a2 )  {
-  atomic_store_explicit(a2, 4, memory_order_seq_cst);
+  atomic_store_explicit(a2, 2, memory_order_seq_cst);
 }
 
 P2( atomic_int *a2 )  {
   r12 = atomic_load_explicit(a2, memory_order_seq_cst);
-  r9 = atomic_load_explicit(a2, memory_order_seq_cst);
+  r8 = atomic_load_explicit(a2, memory_order_seq_cst);
 }
 
-exists ( 0:r2 = 4 /\ 2:r12 = 4 /\ 2:r9 = 2 )
+exists ( 0:r5 = 2 /\ 2:r12 = 2 /\ 2:r8 = 1 )
 
 C Dat3M Testgen Litmus
 "
@@ -47,7 +47,7 @@ Program relation graph:
 2 --po-> 3
 3 --co-> 1
 "
-{ [a2]=0; 1:r9=0; 1:r11=0; }
+{ [a2]=0; 1:r8=0; 1:r11=0; }
 
 P0( atomic_int *a2 )  {
   atomic_store_explicit(a2, 1, memory_order_seq_cst);
@@ -56,10 +56,10 @@ P0( atomic_int *a2 )  {
 
 P1( atomic_int *a2 )  {
   r11 = atomic_load_explicit(a2, memory_order_seq_cst);
-  r9 = atomic_load_explicit(a2, memory_order_seq_cst);
+  r8 = atomic_load_explicit(a2, memory_order_seq_cst);
 }
 
-exists ( 1:r11 = 2 /\ 1:r9 = 1 )
+exists ( 1:r11 = 2 /\ 1:r8 = 1 )
 
 C Dat3M Testgen Litmus
 "
@@ -68,14 +68,14 @@ Program relation graph:
 3 --po-> 1
 2 --rf-> 3
 "
-{ [a2]=0; 0:r2=0; }
+{ [a2]=0; 0:r3=0; }
 
 P0( atomic_int *a2 )  {
-  r2 = atomic_load_explicit(a2, memory_order_seq_cst);
+  r3 = atomic_load_explicit(a2, memory_order_seq_cst);
   atomic_store_explicit(a2, 3, memory_order_seq_cst);
 }
 
-exists ( 0:r2 = 3 )
+exists ( 0:r3 = 3 )
 
 C Dat3M Testgen Litmus
 "
@@ -85,23 +85,23 @@ Program relation graph:
 4 --co-> 3
 4 --rf-> 2
 "
-{ [a3]=0; 0:r1=0; 2:r11=0; 2:r12=0; }
+{ [a2]=0; 0:r1=0; 2:r11=0; 2:r12=0; }
 
-P0( atomic_int *a3 )  {
-  atomic_store_explicit(a3, 2, memory_order_seq_cst);
-  r1 = atomic_load_explicit(a3, memory_order_seq_cst);
+P0( atomic_int *a2 )  {
+  atomic_store_explicit(a2, 1, memory_order_seq_cst);
+  r1 = atomic_load_explicit(a2, memory_order_seq_cst);
 }
 
-P1( atomic_int *a3 )  {
-  atomic_store_explicit(a3, 1, memory_order_seq_cst);
+P1( atomic_int *a2 )  {
+  atomic_store_explicit(a2, 2, memory_order_seq_cst);
 }
 
-P2( atomic_int *a3 )  {
-  r12 = atomic_load_explicit(a3, memory_order_seq_cst);
-  r11 = atomic_load_explicit(a3, memory_order_seq_cst);
+P2( atomic_int *a2 )  {
+  r12 = atomic_load_explicit(a2, memory_order_seq_cst);
+  r11 = atomic_load_explicit(a2, memory_order_seq_cst);
 }
 
-exists ( 0:r1 = 1 /\ 2:r12 = 1 /\ 2:r11 = 2 )
+exists ( 0:r1 = 2 /\ 2:r12 = 2 /\ 2:r11 = 1 )
 
 C Dat3M Testgen Litmus
 "
@@ -113,8 +113,8 @@ Program relation graph:
 { [a2]=0; 1:r10=0; 1:r11=0; }
 
 P0( atomic_int *a2 )  {
-  atomic_store_explicit(a2, 2, memory_order_seq_cst);
   atomic_store_explicit(a2, 1, memory_order_seq_cst);
+  atomic_store_explicit(a2, 2, memory_order_seq_cst);
 }
 
 P1( atomic_int *a2 )  {
@@ -122,7 +122,7 @@ P1( atomic_int *a2 )  {
   r11 = atomic_load_explicit(a2, memory_order_seq_cst);
 }
 
-exists ( 1:r10 = 1 /\ 1:r11 = 2 )
+exists ( 1:r10 = 2 /\ 1:r11 = 1 )
 
 C Dat3M Testgen Litmus
 "
@@ -132,7 +132,7 @@ Program relation graph:
 4 --co-> 1
 4 --rf-> 3
 "
-{ [a2]=0; 0:r3=0; 2:r9=0; 2:r12=0; }
+{ [a2]=0; 0:r3=0; 2:r8=0; 2:r12=0; }
 
 P0( atomic_int *a2 )  {
   r3 = atomic_load_explicit(a2, memory_order_seq_cst);
@@ -140,15 +140,15 @@ P0( atomic_int *a2 )  {
 
 P1( atomic_int *a2 )  {
   atomic_store_explicit(a2, 2, memory_order_seq_cst);
-  atomic_store_explicit(a2, 3, memory_order_seq_cst);
+  atomic_store_explicit(a2, 1, memory_order_seq_cst);
 }
 
 P2( atomic_int *a2 )  {
   r12 = atomic_load_explicit(a2, memory_order_seq_cst);
-  r9 = atomic_load_explicit(a2, memory_order_seq_cst);
+  r8 = atomic_load_explicit(a2, memory_order_seq_cst);
 }
 
-exists ( 0:r3 = 3 /\ 2:r12 = 3 /\ 2:r9 = 2 )
+exists ( 0:r3 = 1 /\ 2:r12 = 1 /\ 2:r8 = 2 )
 
 C Dat3M Testgen Litmus
 "
@@ -158,11 +158,11 @@ Program relation graph:
 4 --co-> 3
 4 --rf-> 2
 "
-{ [a2]=0; 0:r4=0; 0:r1=0; 3:r11=0; 3:r12=0; }
+{ [a2]=0; 0:r1=0; 0:r3=0; 3:r11=0; 3:r12=0; }
 
 P0( atomic_int *a2 )  {
-  r4 = atomic_load_explicit(a2, memory_order_seq_cst);
   r1 = atomic_load_explicit(a2, memory_order_seq_cst);
+  r3 = atomic_load_explicit(a2, memory_order_seq_cst);
 }
 
 P1( atomic_int *a2 )  {
@@ -170,7 +170,7 @@ P1( atomic_int *a2 )  {
 }
 
 P2( atomic_int *a2 )  {
-  atomic_store_explicit(a2, 3, memory_order_seq_cst);
+  atomic_store_explicit(a2, 1, memory_order_seq_cst);
 }
 
 P3( atomic_int *a2 )  {
@@ -178,7 +178,7 @@ P3( atomic_int *a2 )  {
   r11 = atomic_load_explicit(a2, memory_order_seq_cst);
 }
 
-exists ( 0:r4 = 2 /\ 0:r1 = 3 /\ 3:r12 = 3 /\ 3:r11 = 2 )
+exists ( 0:r1 = 2 /\ 0:r3 = 1 /\ 3:r12 = 1 /\ 3:r11 = 2 )
 
 C Dat3M Testgen Litmus
 "
@@ -188,7 +188,7 @@ Program relation graph:
 4 --co-> 3
 4 --rf-> 2
 "
-{ [a2]=0; 0:r3=0; 3:r9=0; 3:r11=0; 3:r12=0; }
+{ [a2]=0; 0:r3=0; 3:r8=0; 3:r11=0; 3:r12=0; }
 
 P0( atomic_int *a2 )  {
   atomic_store_explicit(a2, 1, memory_order_seq_cst);
@@ -200,16 +200,16 @@ P1( atomic_int *a2 )  {
 }
 
 P2( atomic_int *a2 )  {
-  atomic_store_explicit(a2, 4, memory_order_seq_cst);
+  atomic_store_explicit(a2, 2, memory_order_seq_cst);
 }
 
 P3( atomic_int *a2 )  {
   r12 = atomic_load_explicit(a2, memory_order_seq_cst);
   r11 = atomic_load_explicit(a2, memory_order_seq_cst);
-  r9 = atomic_load_explicit(a2, memory_order_seq_cst);
+  r8 = atomic_load_explicit(a2, memory_order_seq_cst);
 }
 
-exists ( 0:r3 = 4 /\ 3:r12 = 4 /\ 3:r11 = 3 /\ 3:r9 = 1 )
+exists ( 0:r3 = 2 /\ 3:r12 = 2 /\ 3:r11 = 3 /\ 3:r8 = 1 )
 
 C Dat3M Testgen Litmus
 "
@@ -218,15 +218,15 @@ Program relation graph:
 2 --co-> 3
 3 --rf-> 1
 "
-{ [a1]=0; 1:r1=0; 2:r10=0; 2:r11=0; }
+{ [a1]=0; 0:r3=0; 2:r10=0; 2:r11=0; }
 
 P0( atomic_int *a1 )  {
-  atomic_store_explicit(a1, 1, memory_order_seq_cst);
+  r3 = atomic_load_explicit(a1, memory_order_seq_cst);
+  atomic_store_explicit(a1, 2, memory_order_seq_cst);
 }
 
 P1( atomic_int *a1 )  {
-  r1 = atomic_load_explicit(a1, memory_order_seq_cst);
-  atomic_store_explicit(a1, 2, memory_order_seq_cst);
+  atomic_store_explicit(a1, 1, memory_order_seq_cst);
 }
 
 P2( atomic_int *a1 )  {
@@ -234,7 +234,7 @@ P2( atomic_int *a1 )  {
   r11 = atomic_load_explicit(a1, memory_order_seq_cst);
 }
 
-exists ( 1:r1 = 1 /\ 2:r10 = 2 /\ 2:r11 = 1 )
+exists ( 0:r3 = 1 /\ 2:r10 = 2 /\ 2:r11 = 1 )
 
 C Dat3M Testgen Litmus
 "
@@ -243,24 +243,24 @@ Program relation graph:
 2 --co-> 3
 3 --co-> 1
 "
-{ [a2]=0; 2:r9=0; 2:r10=0; 2:r11=0; }
+{ [a2]=0; 2:r8=0; 2:r10=0; 2:r11=0; }
 
 P0( atomic_int *a2 )  {
+  atomic_store_explicit(a2, 3, memory_order_seq_cst);
   atomic_store_explicit(a2, 1, memory_order_seq_cst);
-  atomic_store_explicit(a2, 2, memory_order_seq_cst);
 }
 
 P1( atomic_int *a2 )  {
-  atomic_store_explicit(a2, 3, memory_order_seq_cst);
+  atomic_store_explicit(a2, 2, memory_order_seq_cst);
 }
 
 P2( atomic_int *a2 )  {
   r10 = atomic_load_explicit(a2, memory_order_seq_cst);
   r11 = atomic_load_explicit(a2, memory_order_seq_cst);
-  r9 = atomic_load_explicit(a2, memory_order_seq_cst);
+  r8 = atomic_load_explicit(a2, memory_order_seq_cst);
 }
 
-exists ( 2:r10 = 2 /\ 2:r11 = 3 /\ 2:r9 = 1 )
+exists ( 2:r10 = 1 /\ 2:r11 = 2 /\ 2:r8 = 3 )
 
 C Dat3M Testgen Litmus
 "
@@ -269,14 +269,14 @@ Program relation graph:
 2 --po-> 3
 1 --rf-> 2
 "
-{ [a1]=0; 0:r2=0; }
+{ [a1]=0; 0:r3=0; }
 
 P0( atomic_int *a1 )  {
-  r2 = atomic_load_explicit(a1, memory_order_seq_cst);
+  r3 = atomic_load_explicit(a1, memory_order_seq_cst);
   atomic_store_explicit(a1, 2, memory_order_seq_cst);
 }
 
-exists ( 0:r2 = 2 )
+exists ( 0:r3 = 2 )
 
 C Dat3M Testgen Litmus
 "
@@ -286,11 +286,11 @@ Program relation graph:
 4 --co-> 2
 4 --rf-> 1
 "
-{ [a2]=0; 0:r1=0; 2:r10=0; 2:r12=0; }
+{ [a2]=0; 0:r3=0; 2:r10=0; 2:r12=0; }
 
 P0( atomic_int *a2 )  {
   atomic_store_explicit(a2, 2, memory_order_seq_cst);
-  r1 = atomic_load_explicit(a2, memory_order_seq_cst);
+  r3 = atomic_load_explicit(a2, memory_order_seq_cst);
 }
 
 P1( atomic_int *a2 )  {
@@ -302,7 +302,7 @@ P2( atomic_int *a2 )  {
   r10 = atomic_load_explicit(a2, memory_order_seq_cst);
 }
 
-exists ( 0:r1 = 1 /\ 2:r12 = 1 /\ 2:r10 = 2 )
+exists ( 0:r3 = 1 /\ 2:r12 = 1 /\ 2:r10 = 2 )
 
 C Dat3M Testgen Litmus
 "
@@ -311,19 +311,19 @@ Program relation graph:
 2 --po-> 3
 1 --co-> 2
 "
-{ [a2]=0; 1:r9=0; 1:r10=0; }
+{ [a2]=0; 1:r8=0; 1:r10=0; }
 
 P0( atomic_int *a2 )  {
-  atomic_store_explicit(a2, 1, memory_order_seq_cst);
   atomic_store_explicit(a2, 2, memory_order_seq_cst);
+  atomic_store_explicit(a2, 1, memory_order_seq_cst);
 }
 
 P1( atomic_int *a2 )  {
-  r9 = atomic_load_explicit(a2, memory_order_seq_cst);
+  r8 = atomic_load_explicit(a2, memory_order_seq_cst);
   r10 = atomic_load_explicit(a2, memory_order_seq_cst);
 }
 
-exists ( 1:r9 = 2 /\ 1:r10 = 1 )
+exists ( 1:r8 = 1 /\ 1:r10 = 2 )
 
 C Dat3M Testgen Litmus
 "
@@ -359,27 +359,27 @@ Program relation graph:
 4 --co-> 2
 4 --rf-> 1
 "
-{ [a2]=0; 0:r4=0; 0:r2=0; 3:r10=0; 3:r12=0; }
+{ [a2]=0; 0:r3=0; 0:r1=0; 3:r9=0; 3:r11=0; }
 
 P0( atomic_int *a2 )  {
-  r2 = atomic_load_explicit(a2, memory_order_seq_cst);
-  r4 = atomic_load_explicit(a2, memory_order_seq_cst);
+  r1 = atomic_load_explicit(a2, memory_order_seq_cst);
+  r3 = atomic_load_explicit(a2, memory_order_seq_cst);
 }
 
 P1( atomic_int *a2 )  {
-  atomic_store_explicit(a2, 2, memory_order_seq_cst);
-}
-
-P2( atomic_int *a2 )  {
   atomic_store_explicit(a2, 1, memory_order_seq_cst);
 }
 
-P3( atomic_int *a2 )  {
-  r12 = atomic_load_explicit(a2, memory_order_seq_cst);
-  r10 = atomic_load_explicit(a2, memory_order_seq_cst);
+P2( atomic_int *a2 )  {
+  atomic_store_explicit(a2, 2, memory_order_seq_cst);
 }
 
-exists ( 0:r2 = 2 /\ 0:r4 = 1 /\ 3:r12 = 1 /\ 3:r10 = 2 )
+P3( atomic_int *a2 )  {
+  r11 = atomic_load_explicit(a2, memory_order_seq_cst);
+  r9 = atomic_load_explicit(a2, memory_order_seq_cst);
+}
+
+exists ( 0:r1 = 1 /\ 0:r3 = 2 /\ 3:r11 = 2 /\ 3:r9 = 1 )
 
 C Dat3M Testgen Litmus
 "
@@ -392,12 +392,12 @@ Program relation graph:
 { [a2]=0; 0:r3=0; 3:r10=0; 3:r11=0; 3:r12=0; }
 
 P0( atomic_int *a2 )  {
-  atomic_store_explicit(a2, 3, memory_order_seq_cst);
+  atomic_store_explicit(a2, 2, memory_order_seq_cst);
   r3 = atomic_load_explicit(a2, memory_order_seq_cst);
 }
 
 P1( atomic_int *a2 )  {
-  atomic_store_explicit(a2, 2, memory_order_seq_cst);
+  atomic_store_explicit(a2, 3, memory_order_seq_cst);
 }
 
 P2( atomic_int *a2 )  {
@@ -410,7 +410,7 @@ P3( atomic_int *a2 )  {
   r11 = atomic_load_explicit(a2, memory_order_seq_cst);
 }
 
-exists ( 0:r3 = 1 /\ 3:r12 = 1 /\ 3:r10 = 2 /\ 3:r11 = 3 )
+exists ( 0:r3 = 1 /\ 3:r12 = 1 /\ 3:r10 = 3 /\ 3:r11 = 2 )
 
 C Dat3M Testgen Litmus
 "
@@ -419,23 +419,23 @@ Program relation graph:
 1 --co-> 2
 2 --rf-> 3
 "
-{ [a2]=0; 1:r4=0; 2:r9=0; 2:r10=0; }
+{ [a2]=0; 0:r2=0; 2:r8=0; 2:r9=0; }
 
 P0( atomic_int *a2 )  {
+  r2 = atomic_load_explicit(a2, memory_order_seq_cst);
   atomic_store_explicit(a2, 2, memory_order_seq_cst);
 }
 
 P1( atomic_int *a2 )  {
-  r4 = atomic_load_explicit(a2, memory_order_seq_cst);
   atomic_store_explicit(a2, 1, memory_order_seq_cst);
 }
 
 P2( atomic_int *a2 )  {
+  r8 = atomic_load_explicit(a2, memory_order_seq_cst);
   r9 = atomic_load_explicit(a2, memory_order_seq_cst);
-  r10 = atomic_load_explicit(a2, memory_order_seq_cst);
 }
 
-exists ( 1:r4 = 2 /\ 2:r9 = 1 /\ 2:r10 = 2 )
+exists ( 0:r2 = 1 /\ 2:r8 = 2 /\ 2:r9 = 1 )
 
 C Dat3M Testgen Litmus
 "
@@ -444,24 +444,24 @@ Program relation graph:
 1 --co-> 2
 2 --co-> 3
 "
-{ [a2]=0; 2:r10=0; 2:r9=0; 2:r11=0; }
+{ [a2]=0; 2:r9=0; 2:r10=0; 2:r11=0; }
 
 P0( atomic_int *a2 )  {
-  atomic_store_explicit(a2, 1, memory_order_seq_cst);
   atomic_store_explicit(a2, 2, memory_order_seq_cst);
+  atomic_store_explicit(a2, 4, memory_order_seq_cst);
 }
 
 P1( atomic_int *a2 )  {
-  atomic_store_explicit(a2, 3, memory_order_seq_cst);
+  atomic_store_explicit(a2, 1, memory_order_seq_cst);
 }
 
 P2( atomic_int *a2 )  {
-  r10 = atomic_load_explicit(a2, memory_order_seq_cst);
   r9 = atomic_load_explicit(a2, memory_order_seq_cst);
+  r10 = atomic_load_explicit(a2, memory_order_seq_cst);
   r11 = atomic_load_explicit(a2, memory_order_seq_cst);
 }
 
-exists ( 2:r10 = 2 /\ 2:r9 = 3 /\ 2:r11 = 1 )
+exists ( 2:r9 = 4 /\ 2:r10 = 1 /\ 2:r11 = 2 )
 
 C Dat3M Testgen Litmus
 "
@@ -471,27 +471,27 @@ Program relation graph:
 4 --co-> 1
 4 --rf-> 3
 "
-{ [a2]=0; 1:r1=0; 1:r4=0; 3:r9=0; 3:r12=0; }
+{ [a2]=0; 1:r2=0; 1:r4=0; 3:r8=0; 3:r12=0; }
 
 P0( atomic_int *a2 )  {
-  atomic_store_explicit(a2, 2, memory_order_seq_cst);
+  atomic_store_explicit(a2, 1, memory_order_seq_cst);
 }
 
 P1( atomic_int *a2 )  {
-  r1 = atomic_load_explicit(a2, memory_order_seq_cst);
+  r2 = atomic_load_explicit(a2, memory_order_seq_cst);
   r4 = atomic_load_explicit(a2, memory_order_seq_cst);
 }
 
 P2( atomic_int *a2 )  {
-  atomic_store_explicit(a2, 3, memory_order_seq_cst);
+  atomic_store_explicit(a2, 2, memory_order_seq_cst);
 }
 
 P3( atomic_int *a2 )  {
   r12 = atomic_load_explicit(a2, memory_order_seq_cst);
-  r9 = atomic_load_explicit(a2, memory_order_seq_cst);
+  r8 = atomic_load_explicit(a2, memory_order_seq_cst);
 }
 
-exists ( 1:r1 = 2 /\ 1:r4 = 3 /\ 3:r12 = 3 /\ 3:r9 = 2 )
+exists ( 1:r2 = 1 /\ 1:r4 = 2 /\ 3:r12 = 2 /\ 3:r8 = 1 )
 
 C Dat3M Testgen Litmus
 "
@@ -501,10 +501,10 @@ Program relation graph:
 4 --co-> 2
 4 --rf-> 1
 "
-{ [a2]=0; 0:r4=0; 2:r10=0; 2:r12=0; }
+{ [a2]=0; 0:r1=0; 2:r10=0; 2:r12=0; }
 
 P0( atomic_int *a2 )  {
-  r4 = atomic_load_explicit(a2, memory_order_seq_cst);
+  r1 = atomic_load_explicit(a2, memory_order_seq_cst);
 }
 
 P1( atomic_int *a2 )  {
@@ -517,7 +517,7 @@ P2( atomic_int *a2 )  {
   r10 = atomic_load_explicit(a2, memory_order_seq_cst);
 }
 
-exists ( 0:r4 = 1 /\ 2:r12 = 1 /\ 2:r10 = 2 )
+exists ( 0:r1 = 1 /\ 2:r12 = 1 /\ 2:r10 = 2 )
 
 C Dat3M Testgen Litmus
 "
@@ -526,23 +526,23 @@ Program relation graph:
 3 --co-> 1
 1 --rf-> 2
 "
-{ [a2]=0; 0:r1=0; 2:r9=0; 2:r11=0; }
+{ [a2]=0; 1:r1=0; 2:r8=0; 2:r10=0; }
 
 P0( atomic_int *a2 )  {
+  atomic_store_explicit(a2, 1, memory_order_seq_cst);
+}
+
+P1( atomic_int *a2 )  {
   r1 = atomic_load_explicit(a2, memory_order_seq_cst);
   atomic_store_explicit(a2, 2, memory_order_seq_cst);
 }
 
-P1( atomic_int *a2 )  {
-  atomic_store_explicit(a2, 1, memory_order_seq_cst);
-}
-
 P2( atomic_int *a2 )  {
-  r11 = atomic_load_explicit(a2, memory_order_seq_cst);
-  r9 = atomic_load_explicit(a2, memory_order_seq_cst);
+  r10 = atomic_load_explicit(a2, memory_order_seq_cst);
+  r8 = atomic_load_explicit(a2, memory_order_seq_cst);
 }
 
-exists ( 0:r1 = 1 /\ 2:r11 = 2 /\ 2:r9 = 1 )
+exists ( 1:r1 = 1 /\ 2:r10 = 2 /\ 2:r8 = 1 )
 
 C Dat3M Testgen Litmus
 "
@@ -563,7 +563,7 @@ P1( atomic_int *a2 )  {
 }
 
 P2( atomic_int *a2 )  {
-  atomic_store_explicit(a2, 1, memory_order_seq_cst);
+  atomic_store_explicit(a2, 4, memory_order_seq_cst);
 }
 
 P3( atomic_int *a2 )  {
@@ -572,7 +572,7 @@ P3( atomic_int *a2 )  {
   r9 = atomic_load_explicit(a2, memory_order_seq_cst);
 }
 
-exists ( 0:r2 = 1 /\ 3:r12 = 1 /\ 3:r11 = 2 /\ 3:r9 = 1 )
+exists ( 0:r2 = 4 /\ 3:r12 = 4 /\ 3:r11 = 2 /\ 3:r9 = 4 )
 
 C Dat3M Testgen Litmus
 "
@@ -589,11 +589,11 @@ P0( atomic_int *a2 )  {
 }
 
 P1( atomic_int *a2 )  {
-  atomic_store_explicit(a2, 2, memory_order_seq_cst);
+  atomic_store_explicit(a2, 3, memory_order_seq_cst);
 }
 
 P2( atomic_int *a2 )  {
-  atomic_store_explicit(a2, 1, memory_order_seq_cst);
+  atomic_store_explicit(a2, 2, memory_order_seq_cst);
 }
 
 P3( atomic_int *a2 )  {
@@ -602,7 +602,7 @@ P3( atomic_int *a2 )  {
   r11 = atomic_load_explicit(a2, memory_order_seq_cst);
 }
 
-exists ( 0:r1 = 1 /\ 3:r12 = 1 /\ 3:r10 = 2 /\ 3:r11 = 1 )
+exists ( 0:r1 = 2 /\ 3:r12 = 2 /\ 3:r10 = 3 /\ 3:r11 = 2 )
 
 C Dat3M Testgen Litmus
 "
@@ -612,28 +612,28 @@ Program relation graph:
 4 --co-> 1
 4 --rf-> 3
 "
-{ [a2]=0; 1:r4=0; 3:r10=0; 3:r9=0; 3:r12=0; }
+{ [a2]=0; 1:r4=0; 3:r8=0; 3:r10=0; 3:r12=0; }
 
 P0( atomic_int *a2 )  {
   atomic_store_explicit(a2, 2, memory_order_seq_cst);
 }
 
 P1( atomic_int *a2 )  {
-  atomic_store_explicit(a2, 3, memory_order_seq_cst);
+  atomic_store_explicit(a2, 1, memory_order_seq_cst);
   r4 = atomic_load_explicit(a2, memory_order_seq_cst);
 }
 
 P2( atomic_int *a2 )  {
-  atomic_store_explicit(a2, 4, memory_order_seq_cst);
+  atomic_store_explicit(a2, 3, memory_order_seq_cst);
 }
 
 P3( atomic_int *a2 )  {
   r12 = atomic_load_explicit(a2, memory_order_seq_cst);
+  r8 = atomic_load_explicit(a2, memory_order_seq_cst);
   r10 = atomic_load_explicit(a2, memory_order_seq_cst);
-  r9 = atomic_load_explicit(a2, memory_order_seq_cst);
 }
 
-exists ( 1:r4 = 4 /\ 3:r12 = 4 /\ 3:r10 = 2 /\ 3:r9 = 3 )
+exists ( 1:r4 = 3 /\ 3:r12 = 3 /\ 3:r8 = 2 /\ 3:r10 = 1 )
 
 C Dat3M Testgen Litmus
 "
@@ -646,7 +646,7 @@ Program relation graph:
 { [a2]=0; 1:r3=0; 3:r9=0; 3:r10=0; 3:r12=0; }
 
 P0( atomic_int *a2 )  {
-  atomic_store_explicit(a2, 2, memory_order_seq_cst);
+  atomic_store_explicit(a2, 4, memory_order_seq_cst);
 }
 
 P1( atomic_int *a2 )  {
@@ -654,7 +654,7 @@ P1( atomic_int *a2 )  {
 }
 
 P2( atomic_int *a2 )  {
-  atomic_store_explicit(a2, 3, memory_order_seq_cst);
+  atomic_store_explicit(a2, 2, memory_order_seq_cst);
 }
 
 P3( atomic_int *a2 )  {
@@ -663,7 +663,7 @@ P3( atomic_int *a2 )  {
   r10 = atomic_load_explicit(a2, memory_order_seq_cst);
 }
 
-exists ( 1:r3 = 3 /\ 3:r12 = 3 /\ 3:r9 = 2 /\ 3:r10 = 3 )
+exists ( 1:r3 = 2 /\ 3:r12 = 2 /\ 3:r9 = 4 /\ 3:r10 = 2 )
 
 C Dat3M Testgen Litmus
 "
@@ -672,22 +672,22 @@ Program relation graph:
 3 --co-> 1
 2 --po-> 3
 "
-{ [a3]=0; 2:r9=0; 2:r10=0; 2:r11=0; }
+{ [a2]=0; 2:r9=0; 2:r10=0; 2:r11=0; }
 
-P0( atomic_int *a3 )  {
-  atomic_store_explicit(a3, 3, memory_order_seq_cst);
+P0( atomic_int *a2 )  {
+  atomic_store_explicit(a2, 4, memory_order_seq_cst);
 }
 
-P1( atomic_int *a3 )  {
-  atomic_store_explicit(a3, 2, memory_order_seq_cst);
-  atomic_store_explicit(a3, 4, memory_order_seq_cst);
+P1( atomic_int *a2 )  {
+  atomic_store_explicit(a2, 1, memory_order_seq_cst);
+  atomic_store_explicit(a2, 2, memory_order_seq_cst);
 }
 
-P2( atomic_int *a3 )  {
-  r11 = atomic_load_explicit(a3, memory_order_seq_cst);
-  r9 = atomic_load_explicit(a3, memory_order_seq_cst);
-  r10 = atomic_load_explicit(a3, memory_order_seq_cst);
+P2( atomic_int *a2 )  {
+  r11 = atomic_load_explicit(a2, memory_order_seq_cst);
+  r9 = atomic_load_explicit(a2, memory_order_seq_cst);
+  r10 = atomic_load_explicit(a2, memory_order_seq_cst);
 }
 
-exists ( 2:r11 = 4 /\ 2:r9 = 3 /\ 2:r10 = 2 )
+exists ( 2:r11 = 2 /\ 2:r9 = 4 /\ 2:r10 = 1 )
 
