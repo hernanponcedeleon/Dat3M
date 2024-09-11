@@ -515,6 +515,7 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
             return;
         }
         cyclesDetected++;
+        // Collect the transitive closure of inclusion inside the SCC, starting with the representative 'variable'.
         final Map<Variable, List<IncludeEdge>> edges = new HashMap<>();
         // Use 'set' for performance.
         final Set<IncludeEdge> set = new HashSet<>();
@@ -538,16 +539,77 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
             }
             worklist = next;
         }
-        final List<IncludeEdge> result = new ArrayList<>();
-        edges.values().forEach(result::addAll);
-        assert result.stream().anyMatch(e -> e.source == variable);
+        logger.debug("detected cycle of size {}: {}", edges.size(), edges.keySet());
         // In a cycle, variable gets an accelerating self-loop.
-        for (final IncludeEdge cycleEdge : result) {
-            if (cycleEdge.source == variable) {
-                final Modifier composed = compose(cycleEdge.modifier, edge.modifier);
-                final var accelerated = new Modifier(0, compose(composed.alignment, composed.offset));
-                addInclude(variable, new IncludeEdge(variable, accelerated));
+        for (final IncludeEdge cycleEdge : edges.get(variable)) {
+            assert cycleEdge.source == variable;
+            final Modifier composed = compose(cycleEdge.modifier, edge.modifier);
+            final var accelerated = new Modifier(0, compose(composed.alignment, composed.offset));
+            addInclude(variable, new IncludeEdge(variable, accelerated));
+        }
+        // Eliminate cycles in the SCC by making it star-shaped.
+        for (Map.Entry<Variable, List<IncludeEdge>> entry : edges.entrySet()) {
+            final Variable other = entry.getKey();
+            assert !entry.getValue().isEmpty();
+            if (other == variable) {
+                continue;
             }
+            for (IncludeEdge i : entry.getValue()) {
+                assert i.source == other;
+                addInclude(variable, i);
+            }
+            other.includes.removeIf(i -> edges.containsKey(i.source));
+        }
+        // Redirect edges at the border of the SCC to the representative 'variable'.
+        // (Incoming edges could be another alternative, but they need inverse edges and different types of load edges.)
+        for (Map.Entry<Variable, List<IncludeEdge>> entry : edges.entrySet()) {
+            final Variable other = entry.getKey();
+            assert !entry.getValue().isEmpty();
+            if (other == variable) {
+                continue;
+            }
+            // Redirect outgoing include edges
+            for (Variable includer : other.seeAlso) {
+                if (edges.containsKey(includer)) {
+                    continue;
+                }
+                final List<IncludeEdge> newIncludeEdges = new ArrayList<>();
+                for (IncludeEdge includeEdge : includer.includes) {
+                    if (includeEdge.source != other) {
+                        continue;
+                    }
+                    for (IncludeEdge i : entry.getValue()) {
+                        assert i.source == other;
+                        // simply negate the static modifier to have the detour over the representative
+                        var negated = new Modifier(-i.modifier.offset, i.modifier.alignment);
+                        var composed = compose(negated, includeEdge.modifier);
+                        newIncludeEdges.add(new IncludeEdge(variable, composed));
+                    }
+                }
+                includer.includes.removeIf(store -> store.source == other);
+                for (IncludeEdge newIncludeEdge : newIncludeEdges) {
+                    addInclude(includer, newIncludeEdge);
+                }
+            }
+            // Redirect incoming store edges; those would generate more outgoing edges
+            for (Variable address : other.seeAlso) {
+                final List<StoreEdge> newStores = new ArrayList<>();
+                for (StoreEdge store : address.stores) {
+                    if (store.value.base != other) {
+                        continue;
+                    }
+                    for (IncludeEdge i : entry.getValue()) {
+                        assert i.source == other;
+                        var negated = new Modifier(-i.modifier.offset, i.modifier.alignment);
+                        var composed = compose(negated, store.value.modifier);
+                        newStores.add(new StoreEdge(new DerivedVariable(variable, composed), store.addressModifier));
+                    }
+                }
+                address.stores.removeIf(store -> store.value.base == other);
+                address.stores.addAll(newStores);
+                variable.seeAlso.add(address);
+            }
+            //NOTE: Includers and addresses may be removed from other.seeAlso.
         }
     }
 
