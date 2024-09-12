@@ -1,0 +1,30 @@
+C IRIW_sc_dev
+
+(*
+ * https://multicore.doc.ic.ac.uk/overhauling/OpenCL/IRIW_sc_dev.litmus
+ *)
+
+{
+[x] = 0;
+[y] = 0;
+}
+
+P0@wg 0, dev 0 (global atomic_int* x, global atomic_int* y) {
+  atomic_store_explicit(x, 1, memory_order_seq_cst, memory_scope_device);
+}
+
+P1@wg 0, dev 0 (global atomic_int* x, global atomic_int* y) {
+  atomic_store_explicit(y, 1, memory_order_seq_cst, memory_scope_device);
+}
+
+P2@wg 0, dev 0 (global atomic_int* x, global atomic_int* y) {
+  int r0 = atomic_load_explicit(x, memory_order_seq_cst, memory_scope_device);
+  int r1 = atomic_load_explicit(y, memory_order_seq_cst, memory_scope_device);
+}
+
+P3@wg 0, dev 0 (global atomic_int* x, global atomic_int* y) {
+  int r2 = atomic_load_explicit(y, memory_order_seq_cst, memory_scope_device);
+  int r3 = atomic_load_explicit(x, memory_order_seq_cst, memory_scope_device);
+}
+
+exists (2:r0=1 /\ 2:r1=0 /\ 3:r2=1 /\ 3:r3=0)

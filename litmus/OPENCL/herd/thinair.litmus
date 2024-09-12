@@ -1,0 +1,22 @@
+C thinair
+
+(*
+ * https://github.com/herd/legacy/blob/master/herdtools/herd/testsuite/OpenCLTests/thinair.litmus
+ *)
+
+{
+  [x]=0;
+  [y]=0;
+}
+
+P0@wg 0, dev 0 (global atomic_int* x, local atomic_int* y) {
+  int t = atomic_load_explicit(y, memory_order_acquire);
+  atomic_store_explicit(x, t, memory_order_release);
+}
+
+P1@wg 1, dev 0 (global atomic_int* x, local atomic_int* y) {
+  int t = atomic_load_explicit(x, memory_order_acquire);
+  atomic_store_explicit(y, t, memory_order_release);
+}
+
+exists (x=42 /\ y=42)

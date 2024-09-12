@@ -15,7 +15,7 @@ import java.util.Set;
 public class Thread extends Function {
 
     // Scope hierarchy of the thread
-    private final Optional<ScopeHierarchy> scopeHierarchy;
+    private Optional<ScopeHierarchy> scopeHierarchy;
 
     // Threads that are system-synchronized-with this thread
     private final Optional<Set<Thread>> syncSet;
@@ -54,6 +54,11 @@ public class Thread extends Function {
 
     public Set<Thread> getSyncSet() {
         return syncSet.get();
+    }
+
+    // TODO: remove ScopeHierarchy setter and make field final after the thread creation of C fixed
+    public void setScopeHierarchy(ScopeHierarchy scopeHierarchy) {
+        this.scopeHierarchy = Optional.of(scopeHierarchy);
     }
 
     @Override

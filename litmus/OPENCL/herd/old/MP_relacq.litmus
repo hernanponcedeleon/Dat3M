@@ -1,0 +1,23 @@
+C MP_relacq
+
+(*
+ * Fre PodWR Fre PodWR
+ * https://github.com/herd/legacy/blob/master/herdtools/herd/testsuite/oldOpenCLTests/MP_relacq.litmus
+ *)
+
+{
+[x] = 0;
+[y] = 0;
+}
+
+P0@wg 0, dev 0 (global int* x, local atomic_int* y) {
+ *x = 1;
+ atomic_store_explicit(y, 1, memory_order_release, memory_scope_work_group);
+}
+
+P1@wg 1, dev 0 (global int* x, local atomic_int* y) {
+ int r1 = atomic_load_explicit(y, memory_order_acquire, memory_scope_work_group);
+ int r2 = *x;
+}
+
+exists (1:r1=1 /\ 1:r2=0)

@@ -123,6 +123,7 @@ public class Compilation implements ProgramProcessor {
         return switch (target) {
             case C11 -> new VisitorC11();
             case LKMM -> new VisitorLKMM();
+            case OPENCL -> new VisitorOpenCL();
             case TSO -> new VisitorTso();
             case POWER -> new VisitorPower(useRC11Scheme, cToPowerScheme);
             case ARM8 -> new VisitorArm8(useRC11Scheme);

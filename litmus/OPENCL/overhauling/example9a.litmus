@@ -1,0 +1,22 @@
+C example9a
+
+(*
+ * https://multicore.doc.ic.ac.uk/overhauling/examples/example9a.litmus
+ *)
+
+{
+[x] = 0;
+[y] = 0;
+}
+
+P0@wg 0, dev 0 (global atomic_int* x, global atomic_int* y) {
+  atomic_store_explicit(x, 1, memory_order_seq_cst, memory_scope_device);
+  int r0 = atomic_load_explicit(y, memory_order_seq_cst, memory_scope_device);
+}
+
+P1@wg 1, dev 0 (global atomic_int* x, global atomic_int* y) {
+  atomic_store_explicit(y, 1, memory_order_seq_cst, memory_scope_device);
+  int r1 = atomic_load_explicit(x, memory_order_seq_cst, memory_scope_device);
+}
+
+exists (0:r0 = 0 /\ 1:r1 = 0)

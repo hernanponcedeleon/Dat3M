@@ -1,0 +1,25 @@
+C MP_sc_dev
+
+(*
+ * https://multicore.doc.ic.ac.uk/overhauling/OpenCL/MP_sc_dev.litmus
+ *)
+
+{
+[x] = 0;
+[y] = 0;
+}
+
+P0@wg 0, dev 0 (global int* x, global atomic_int* y) {
+  *x = 1;
+  atomic_store_explicit(y, 1, memory_order_seq_cst, memory_scope_device);
+}
+
+P1@wg 1, dev 0 (global int* x, global atomic_int* y) {
+  int r0 = atomic_load_explicit(y, memory_order_seq_cst, memory_scope_device);
+  int r1 = -1;
+  if (1 == r0) {
+    r1 = *x;
+  }
+}
+
+exists (1:r0=1 /\ 1:r1=0)

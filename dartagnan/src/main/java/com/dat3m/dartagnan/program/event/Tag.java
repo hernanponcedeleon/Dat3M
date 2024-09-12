@@ -125,7 +125,7 @@ public final class Tag {
         public static final String MO_ACQUIRE           = "ACQ";
         public static final String MO_RELEASE           = "REL";
         public static final String MO_ACQUIRE_RELEASE   = "ACQ_REL";
-        public static final String MO_SC                 = "SC";
+        public static final String MO_SC                = "SC";
 
         public static String intToMo(int i) {
             switch (i) {
@@ -271,13 +271,27 @@ public final class Tag {
     }
 
     // =============================================================================================
-    // =========================================== PTX =============================================
+    // ======================================= GPU Scopes ==========================================
     // =============================================================================================
-    public static final class PTX {
-        // Scopes
+    public static final class GPU_SCOPES {
+        // PTX
         public static final String CTA = "CTA";
         public static final String GPU = "GPU";
         public static final String SYS = "SYS";
+        // Vulkan, OpenCL
+        public static final String WORK_ITEM = "WI";
+        public static final String SUB_GROUP = "SG";
+        public static final String WORK_GROUP = "WG";
+        public static final String QUEUE_FAMILY = "QF";
+        public static final String DEVICE = "DV";
+        public static final String ALL = "ALL";
+        public static final String NON_PRIVATE = "NONPRIV";
+    }
+
+    // =============================================================================================
+    // =========================================== PTX =============================================
+    // =============================================================================================
+    public static final class PTX {
         // Memory orders
         public static final String WEAK = "WEAK";
         public static final String RLX = "RLX"; // RELAXED
@@ -314,7 +328,7 @@ public final class Tag {
         }
 
         public static List<String> getScopeTags() {
-            return List.of(CTA, GPU, SYS);
+            return List.of(GPU_SCOPES.CTA, GPU_SCOPES.GPU, GPU_SCOPES.SYS);
         }
     }
 
@@ -325,12 +339,6 @@ public final class Tag {
         public static final String CBAR = "CBAR";
         public static final String AVDEVICE = "AVDEVICE";
         public static final String VISDEVICE = "VISDEVICE";
-        // Scopes
-        public static final String SUB_GROUP = "SG";
-        public static final String WORK_GROUP = "WG";
-        public static final String QUEUE_FAMILY = "QF";
-        public static final String DEVICE = "DV";
-        public static final String NON_PRIVATE = "NONPRIV";
         // Memory orders
         public static final String ATOM = "ATOM";
         public static final String ACQUIRE = "ACQ";
@@ -348,7 +356,7 @@ public final class Tag {
         public static final String SEMSC1 = "SEMSC1";
 
         public static List<String> getScopeTags() {
-            return List.of(SUB_GROUP, WORK_GROUP, QUEUE_FAMILY, DEVICE);
+            return List.of(GPU_SCOPES.SUB_GROUP, GPU_SCOPES.WORK_GROUP, GPU_SCOPES.QUEUE_FAMILY, GPU_SCOPES.DEVICE);
         }
 
         public static String loadMO(String mo) {
@@ -366,6 +374,29 @@ public final class Tag {
         }
     }
 
+    // =============================================================================================
+    // ========================================= OpenCL ============================================
+    // =============================================================================================
+    public static final class OpenCL {
+        // Space
+        public static final String GLOBAL_SPACE = "GLOBAL";
+        public static final String LOCAL_SPACE = "LOCAL";
+        // Barrier
+        public static final String ENTRY_FENCE = "EF";
+        public static final String EXIT_FENCE = "XF";
+
+        public static List<String> getScopeTags() {
+            return List.of(GPU_SCOPES.WORK_GROUP, GPU_SCOPES.DEVICE, GPU_SCOPES.ALL);
+        }
+
+        public static List<String> getSpaceTags() {
+            return List.of(GLOBAL_SPACE, LOCAL_SPACE);
+        }
+
+        public static List<String> getSpaceTags(Event e) {
+            return getSpaceTags().stream().filter(e::hasTag).toList();
+        }
+    }
     // =============================================================================================
     // ========================================= Spir-V ============================================
     // =============================================================================================
@@ -487,6 +518,7 @@ public final class Tag {
         return switch (arch) {
             case PTX -> PTX.getScopeTags().stream().filter(e::hasTag).findFirst().orElse("");
             case VULKAN -> Vulkan.getScopeTags().stream().filter(e::hasTag).findFirst().orElse("");
+            case OPENCL -> OpenCL.getScopeTags().stream().filter(e::hasTag).findFirst().orElse("");
             default -> throw new UnsupportedOperationException("Scope tags not implemented for architecture " + arch);
         };
     }

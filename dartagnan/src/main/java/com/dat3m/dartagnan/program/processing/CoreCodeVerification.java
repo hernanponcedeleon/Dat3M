@@ -3,6 +3,7 @@ package com.dat3m.dartagnan.program.processing;
 import com.dat3m.dartagnan.exception.MalformedProgramException;
 import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.event.Event;
+import com.dat3m.dartagnan.program.event.arch.opencl.OpenCLInit;
 import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.event.core.annotations.CodeAnnotation;
 import com.dat3m.dartagnan.program.event.core.threading.ThreadArgument;
@@ -38,7 +39,8 @@ public class CoreCodeVerification implements FunctionProcessor {
             Assume.class, Assert.class,
             ThreadCreate.class, ThreadArgument.class, ThreadStart.class,
             ControlBarrier.class, // For PTX and Vulkan
-            BeginAtomic.class, EndAtomic.class
+            BeginAtomic.class, EndAtomic.class,
+            OpenCLInit.class // For OpenCL
             // We add SVCOMP atomic blocks here as well, despite them not being part of the core package.
             // TODO: We might want to find a more systematic way to extend the core with these custom events.
     ));

@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan.program.processing;
 
+import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.configuration.OptionNames;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
@@ -85,7 +86,11 @@ public class MemoryAllocation implements ProgramProcessor {
                 final String threadName = "Init_" + nextThreadId;
                 final Thread thread = new Thread(threadName, initThreadType, paramNames, nextThreadId,
                         EventFactory.newThreadStart(null));
-                thread.append(EventFactory.newInit(memObj, field));
+                if (program.getArch().equals(Arch.OPENCL)) {
+                    thread.append(EventFactory.OpenCL.newOpenCLInit(memObj, field));
+                } else {
+                    thread.append(EventFactory.newInit(memObj, field));
+                }
                 thread.append(EventFactory.newLabel("END_OF_T" + thread.getId()));
                 program.addThread(thread);
                 nextThreadId++;

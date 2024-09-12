@@ -1,0 +1,24 @@
+C example4
+
+(*
+ * https://multicore.doc.ic.ac.uk/overhauling/examples/example4.litmus
+ *)
+
+{
+[x] = 0;
+[y] = 0;
+}
+
+P0@wg 0, dev 0 (global int* x, global atomic_int* y) {
+ *x = 42;
+ atomic_store_explicit(y, 1, memory_order_release, memory_scope_work_group);
+}
+
+P1@wg 0, dev 0 (global int* x, global atomic_int* y) {
+  int r = -1;
+  if (atomic_load_explicit(y, memory_order_acquire, memory_scope_work_group) == 1) {
+    r = *x;
+  }
+}
+
+exists (1:r=0)

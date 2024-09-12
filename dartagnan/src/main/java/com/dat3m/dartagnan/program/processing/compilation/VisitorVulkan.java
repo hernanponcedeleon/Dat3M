@@ -95,8 +95,8 @@ public class VisitorVulkan extends VisitorBase {
     }
 
     private void propagateTags(Event source, Event target) {
-        for (String tag : List.of(Tag.Vulkan.SUB_GROUP, Tag.Vulkan.WORK_GROUP, Tag.Vulkan.QUEUE_FAMILY, Tag.Vulkan.DEVICE,
-                Tag.Vulkan.NON_PRIVATE, Tag.Vulkan.ATOM, Tag.Vulkan.SC0, Tag.Vulkan.SC1, Tag.Vulkan.SEMSC0, Tag.Vulkan.SEMSC1)) {
+        for (String tag : List.of(Tag.GPU_SCOPES.SUB_GROUP, Tag.GPU_SCOPES.WORK_GROUP, Tag.GPU_SCOPES.QUEUE_FAMILY, Tag.GPU_SCOPES.DEVICE,
+                Tag.GPU_SCOPES.NON_PRIVATE, Tag.Vulkan.ATOM, Tag.Vulkan.SC0, Tag.Vulkan.SC1, Tag.Vulkan.SEMSC0, Tag.Vulkan.SEMSC1)) {
             if (source.hasTag(tag)) {
                 target.addTags(tag);
             }

@@ -1,0 +1,28 @@
+C 3LB_xaG_yaG_zaG_sc--sc_na--sc_sc--sc_0|1||2
+
+(*
+ * https://github.com/herd/legacy/blob/master/herdtools/herd/testsuite/OpenCLTests/3LB/3LB_xaG_yaG_zaG_sc--sc_na--sc_sc--sc_0%7C1%7C%7C2.litmus
+ *)
+
+{
+  [x]=0;
+  [y]=0;
+  [z]=0;
+}
+
+P0@wg 0, dev 0 (global atomic_int* x, global atomic_int* y, global atomic_int* z) {
+  int r0 = atomic_load(x);
+  atomic_store(y,1);
+}
+
+P1@wg 0, dev 0 (global atomic_int* x, global atomic_int* y, global atomic_int* z) {
+  int r1 = atomic_load(y);
+  atomic_store(z,1);
+}
+
+P2@wg 1, dev 0 (global atomic_int* x, global atomic_int* y, global atomic_int* z) {
+  int r2 = atomic_load(z);
+  atomic_store(x,1);
+}
+
+exists (0:r0=1 /\ 1:r1=1 /\ 2:r2=1)

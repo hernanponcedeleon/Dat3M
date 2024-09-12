@@ -1,0 +1,24 @@
+C barrier_example
+
+(*
+ * https://github.com/herd/legacy/blob/master/herdtools/herd/testsuite/OpenCLTests/barrier_example.litmus
+ *)
+
+{
+  [x]=0;
+  [y]=0;
+}
+
+P0@wg 0, dev 0 (global int* x, global int* y) {
+  atomic_store_explicit(x, 1, memory_order_release);
+  B1: barrier(CLK_GLOBAL_MEM_FENCE);
+  int x1 = atomic_load_explicit(y, memory_order_acquire); // original: without x1
+}
+
+P1@wg 0, dev 0 (global int* x, global int* y) {
+  atomic_store_explicit(y, 1, memory_order_release);
+  B1: barrier(CLK_GLOBAL_MEM_FENCE);
+  int y1 = atomic_load_explicit(x, memory_order_acquire); // original: without y1
+}
+
+exists (0:x=0 /\ 1:y=0)

@@ -12,6 +12,7 @@ import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.arch.StoreExclusive;
+import com.dat3m.dartagnan.program.event.arch.opencl.OpenCLInit;
 import com.dat3m.dartagnan.program.event.arch.ptx.PTXAtomCAS;
 import com.dat3m.dartagnan.program.event.arch.ptx.PTXAtomExch;
 import com.dat3m.dartagnan.program.event.arch.ptx.PTXAtomOp;
@@ -800,6 +801,20 @@ public class EventFactory {
                                                            String scope, Set<String> tags) {
             return new SpirvRmwExtremum(register, address, op, value, scope, tags);
         }
+    }
+
+    // =============================================================================================
+    // =========================================== OpenCL ==========================================
+    // =============================================================================================
+    public static class OpenCL {
+        private OpenCL() {}
+
+        public static OpenCLInit newOpenCLInit(MemoryObject base, int offset) {
+            final Expression address = offset == 0 ? base :
+                    expressions.makeAdd(base, expressions.makeValue(offset, (IntegerType) base.getType()));
+            return new OpenCLInit(base, offset, address);
+        }
+
     }
 
 }

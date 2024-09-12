@@ -1,0 +1,149 @@
+OpenCL
+(* OpenCL Memory Model *)
+
+(*
+* This model is based on:
+* https://github.com/herd/herdtools7/blob/master/herd-www/cat_includes/opencl_base.cat
+* https://github.com/herd/herdtools7/blob/master/herd-www/cat_includes/opencl.cat
+*)
+
+// Base relations:
+// int: same work-item
+// swg: same work-group
+// sdv: same device
+// syncbar: same barrier id
+
+// Tags:
+// WI: work-item scope
+// WG: work-group scope
+// DV: device scope
+// ALL: all-svm-devices scope
+// GLOBAL: global memory
+// LOCAL: local memory
+// EF: entry fence of barrier
+// XF: exit fence of barrier
+
+(* Inclusive scopes *)
+let incl = (int & (WI * WI)) |
+    (swg & (WG * WG)) |
+    (sdv & (DV * DV)) |
+    (ALL * ALL)
+
+(*******************)
+(* Synchronisation *)
+(*******************)
+
+let Acq = (ACQ | SC | ACQ_REL) & (R | F | RMW)
+let Rel = (REL | SC | ACQ_REL) & (W | F | RMW)
+
+(* Release sequence *)
+let rs = (_ * RMW) | int
+let max_co = co? & rs & ~((co & ~rs) ; co)
+
+(* Including release-acquire fences *)
+let relf = [Rel]; ([F]; po)?; [A & W]
+let acqf = [A & R]; (po; [F])?; [Acq]
+
+(* Release-acquire synchronisation *)
+let ra_sw_g = incl & ~int & ([GLOBAL]; relf; max_co; [GLOBAL]; rf; acqf; [GLOBAL])
+let ra_sw_l = incl & ~int & ([LOCAL]; relf; max_co; [LOCAL]; rf; acqf; [LOCAL])
+
+(* Barrier synchronisation *)
+// in OpenCL a barrier results in two fence operations: entry and exit fences:
+// https://registry.khronos.org/OpenCL/specs/3.0-unified/html/OpenCL_API.html#_work_group_functions
+let bar_sw_g = (EF * XF) & syncbar & ~int & swg & (GLOBAL * GLOBAL)
+let bar_sw_l = (EF * XF) & syncbar & ~int & swg & (LOCAL * LOCAL)
+
+(* Synchronisation on a region *)
+let region_sw_g = ra_sw_g | bar_sw_g
+let region_sw_l = ra_sw_l | bar_sw_l
+
+(* Allowed to synchronise on the other region *)
+let scf = (SC * SC) | ((GLOBAL & LOCAL & F) * (GLOBAL & LOCAL & F))
+
+(* Global and local synchronises-with *)
+let gsw = region_sw_g | (scf & region_sw_l)
+let lsw = region_sw_l | (scf & region_sw_g)
+
+(******************)
+(* Happens-before *)
+(******************)
+
+(* Global and local happens-before *)
+let ghb = (((GLOBAL * GLOBAL) & (po | (IW * ~IW))) | gsw)+
+let lhb = (((LOCAL * LOCAL) & (po | (IW * ~IW))) | lsw)+
+
+acyclic ghb as global_hb_acyclic
+acyclic lhb as local_hb_acyclic
+
+(* Per-location happens-before *)
+let ghbl = ghb & loc
+let lhbl = lhb & loc
+
+(*************)
+(* Coherence *)
+(*************)
+
+let coh_hb_g = (rf^-1)?; co; rf?; ghb
+let coh_hb_l = (rf^-1)?; co; rf?; lhb
+irreflexive coh_hb_g as global_coherence
+irreflexive coh_hb_l as local_coherence
+
+(************************)
+(* Consistency of reads *)
+(************************)
+
+(* Visible side effects *)
+let vse_hbl_g = (W * R) & ghbl & ~(ghbl; [W]; ghbl)
+let vse_hbl_l = (W * R) & lhbl & ~(lhbl; [W]; lhbl)
+let gvse = [GLOBAL]; vse_hbl_g
+let lvse = [LOCAL]; vse_hbl_l
+
+(* A non-atomic load can only read from a store that is visible. *)
+irreflexive rf; [NA & GLOBAL]; ~(gvse^-1) as global_nonatomic_rf_consistent
+irreflexive rf; [NA & LOCAL]; ~(lvse^-1) as local_nonatomic_rf_consistent
+
+(* An atomic load can only read from a store that already happened. *)
+irreflexive (ghb | lhb); rf; [A] as atomic_rf_consistent
+
+(* Consistency of RMWs *)
+irreflexive rf | (fr;co) | (co;rf) as rmw_consistent
+
+(**************************)
+(* Sequential consistency *)
+(**************************)
+
+let sc1 = rf^-1; [SC]; co
+let sc2 = [F]; po; co; po; [F]
+let sc3 = [F]; po; fr; po; [F]
+let sc4 =          fr; po; [F]
+let sc5 = [F]; po; fr
+
+let scp = (SC * SC) & (ghb | lhb | co | sc1 | sc2 | sc3 | sc4 | sc5)
+
+let sc6 = rf^-1; (ghb | lhb); [W]
+
+(* BEGIN PARTIAL SC STUFF *)
+let scp_prime = scp & sc6
+let unv = ~0
+let sc_existance = unv; [SC & ~ALL]; unv
+acyclic scp_prime & sc_existance as s_exists
+(* END PARTIAL SC STUFF *)
+
+(***************)
+(*    Races    *)
+(***************)
+
+let conflict =  (((W * _) | (_ * W)) \ ((IW * _) | (_ * IW))) & loc
+
+let gl_hb = ghb | lhb
+let dr = conflict & ~(gl_hb | gl_hb^-1) & ~incl \ id
+flag ~empty dr as data_race
+
+let ur = (int & conflict & ~(po | po^-1)) \ id
+flag ~empty ur as unsequenced_race
+
+let bsw = bar_sw_g | bar_sw_l
+// let bd = [EF] & ((~int & swg & ~(bar_sw_g | bar_sw_l)); [_]) // opencl_total
+let bd = [EF] & (~int & swg) \ bsw
+flag ~empty bd as barrier_divergence

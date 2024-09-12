@@ -1,0 +1,22 @@
+C R_xaG_yaG_sc--sc_sc--sc_0||1
+
+(*
+ * https://github.com/herd/legacy/blob/master/herdtools/herd/testsuite/OpenCLTests/R/R_xaG_yaG_sc--sc_sc--sc_0%7C%7C1.litmus
+ *)
+
+{
+  [x]=0;
+  [y]=0;
+}
+
+P0@wg 0, dev 0 (global atomic_int* x, global atomic_int* y) {
+  atomic_store(x,1);
+  atomic_store(y,1);
+}
+
+P1@wg 1, dev 0 (global atomic_int* x, global atomic_int* y) {
+  atomic_store(y,2);
+  int r0 = atomic_load(x);
+}
+
+exists (1:r0=0)

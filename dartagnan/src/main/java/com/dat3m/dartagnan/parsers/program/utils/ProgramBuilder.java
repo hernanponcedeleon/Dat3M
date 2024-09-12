@@ -44,6 +44,7 @@ public class ProgramBuilder {
     private final Map<Integer, Function> id2FunctionsMap = new HashMap<>();
     private final Map<Integer, Map<String, Label>> fid2LabelsMap = new HashMap<>();
     private final Map<String, MemoryObject> locations = new HashMap<>();
+    private final Map<Integer, Map<String, String>> addressSpaces = new HashMap<>();
 
     private final Program program;
 
@@ -274,7 +275,10 @@ public class ProgramBuilder {
     }
 
     // ----------------------------------------------------------------------------------------------------------------
-    // PTX
+    // GPU
+    public void setThreadScopeHierarchy(int tid, ScopeHierarchy scopeHierarchy) {
+        getOrNewThread(tid).setScopeHierarchy(scopeHierarchy);
+    }
 
     public void newScopedThread(Arch arch, String name, int id, int ...scopeIds) {
         if(id2FunctionsMap.containsKey(id)) {
@@ -297,6 +301,8 @@ public class ProgramBuilder {
         newScopedThread(arch, String.valueOf(id), id, ids);
     }
 
+    // ----------------------------------------------------------------------------------------------------------------
+    // PTX
     public void initVirLocEqCon(String leftName, IntLiteral iValue){
         MemoryObject object = locations.computeIfAbsent(
                 leftName, k->program.getMemory().allocateVirtual(ARCH_SIZE, true, null));
@@ -345,5 +351,19 @@ public class ProgramBuilder {
         if (thread0.hasSyncSet()) {
             thread0.getSyncSet().add(thread1);
         }
+    }
+
+    // ----------------------------------------------------------------------------------------------------------------
+    // OpenCL
+    public void setAddressSpace(int threadId, String name, String spaceValue) {
+        addressSpaces
+                .computeIfAbsent(threadId, k -> new HashMap<>())
+                .put(name, spaceValue);
+    }
+
+    public String getAddressSpace(int threadId, String name) {
+        return addressSpaces
+                .getOrDefault(threadId, new HashMap<>())
+                .get(name);
     }
 }

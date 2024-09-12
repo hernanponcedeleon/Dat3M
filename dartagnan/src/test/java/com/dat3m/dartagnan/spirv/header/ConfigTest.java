@@ -8,7 +8,7 @@ import org.junit.Test;
 
 import java.util.List;
 
-import static com.dat3m.dartagnan.program.event.Tag.Vulkan.*;
+import static com.dat3m.dartagnan.program.event.Tag.GPU_SCOPES.*;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 

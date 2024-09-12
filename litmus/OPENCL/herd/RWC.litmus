@@ -1,0 +1,29 @@
+C RWC_xaG_yaG_sc-_rel[wg]-LFsc-rel_rel-GFrel[dev]-acq[wg]_0||1|2
+
+(*
+ * https://github.com/herd/legacy/blob/master/herdtools/herd/testsuite/OpenCLTests/RWC/RWC_xaG_yaG_sc-_rel%5Bwg%5D-LFsc-rel_rel-GFrel%5Bdev%5D-acq%5Bwg%5D_0%7C%7C1%7C2.litmus
+ *)
+
+{
+  [x]=0;
+  [y]=0;
+}
+
+P0@wg 0, dev 0 (global atomic_int* x, global atomic_int* y) {
+  atomic_store(x,1);
+
+}
+
+P1@wg 1, dev 0 (global atomic_int* x, global atomic_int* y) {
+  int r0 = atomic_load_explicit(x,memory_order_acquire,memory_scope_work_group); // original: release
+  atomic_work_item_fence(CLK_LOCAL_MEM_FENCE,memory_order_seq_cst,memory_scope_work_group);
+  int r1 = atomic_load_explicit(y,memory_order_acquire); // original: release
+}
+
+P2@wg 1, dev 0 (global atomic_int* x, global atomic_int* y) {
+  atomic_store_explicit(y,1,memory_order_release);
+  atomic_work_item_fence(CLK_GLOBAL_MEM_FENCE,memory_order_release,memory_scope_device);
+  int r2 = atomic_load_explicit(x,memory_order_acquire,memory_scope_work_group);
+}
+
+exists (1:r0=1 /\ 1:r1=0 /\ 2:r2=0)

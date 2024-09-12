@@ -54,25 +54,47 @@ public class Compilation {
         return new File(outputFileName);
     }
 
+    public static File applyDemangling(File file) throws IOException {
+        final File outputFile = new File(getOutputName(file, "-dmg.ll"));
+        ArrayList<String> cmd = new ArrayList<>();
+        cmd.add("llvm-cxxfilt");
+        try {
+            runCmd(cmd, file, outputFile);
+        } catch (Exception e) {
+            logger.warn("Failed to run llvm-cxxfilt (llvm symbol name demangler). Continuing without demangling.");
+            return file;
+        }
+        return outputFile;
+    }
+
     private static String getOutputName(File file, String postfix) throws IOException {
         return getOrCreateOutputDirectory() + "/" +
                 file.getName().substring(0, file.getName().lastIndexOf('.')) + postfix;
     }
 
     private static void runCmd(ArrayList<String> cmd) throws Exception {
+        runCmd(cmd, null, null);
+    }
+
+    private static void runCmd(ArrayList<String> cmd, File inputFile, File outputFile) throws Exception {
         logger.debug(String.join(" ", cmd));
         ProcessBuilder processBuilder = new ProcessBuilder(cmd);
+        if(inputFile != null) {
+            processBuilder.redirectInput(inputFile);
+        }
         // "Unless the standard input and output streams are promptly written and read respectively
         // of the sub process, it may block or deadlock the sub process."
         //		https://www.developer.com/design/understanding-java-process-and-java-processbuilder/
         // The lines below take care of this.
-        File log = File.createTempFile("log", null);
+        if(outputFile == null) {
+            outputFile = File.createTempFile("log", null);
+        }
         processBuilder.redirectErrorStream(true);
-        processBuilder.redirectOutput(log);
+        processBuilder.redirectOutput(outputFile);
         Process proc = processBuilder.start();
         proc.waitFor();
         if(proc.exitValue() != 0) {
-            String errorString =  Files.asCharSource(log, Charsets.UTF_8).read();
+            String errorString =  Files.asCharSource(outputFile, Charsets.UTF_8).read();
             throw new IOException("'" + String.join("' '", cmd) + "': " + errorString);
         }
     }

@@ -1,0 +1,33 @@
+C ISA2_broken
+
+(*
+ * https://multicore.doc.ic.ac.uk/overhauling/OpenCL/ISA2_broken.litmus
+ *)
+
+{
+[x] = 0;
+[y] = 0;
+[z] = 0;
+}
+
+P0@wg 0, dev 0 (global int* x, local atomic_int* y, global atomic_int* z) {
+  *x = 1;
+  atomic_store_explicit(y, 1, memory_order_release, memory_scope_work_group);
+}
+
+P1@wg 0, dev 0 (global int* x, local atomic_int* y, global atomic_int* z) {
+  int r0 = atomic_load_explicit(y, memory_order_acquire, memory_scope_work_group);
+  if (1 == r0) {
+    atomic_store_explicit(z, 1, memory_order_release, memory_scope_device);
+  }
+}
+
+P2@wg 1, dev 0 (global int* x, local atomic_int* y, global atomic_int* z) {
+  int r1 = atomic_load_explicit(z, memory_order_acquire, memory_scope_device);
+  int r2 = -1;
+  if (1 == r1) {
+    r2 = *x;
+  }
+}
+
+exists (1:r0=1 /\ 2:r1=1 /\ 2:r2=0)

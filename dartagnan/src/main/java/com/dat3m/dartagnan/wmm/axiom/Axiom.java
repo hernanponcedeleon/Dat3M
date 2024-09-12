@@ -105,4 +105,16 @@ public abstract class Axiom implements Constraint {
     public boolean isIrreflexivity() {
     	return this instanceof Irreflexivity;
     }
+
+    public Axiom copy(Relation rel) {
+    	if(isEmptiness()) {
+            return new Emptiness(rel, negated, flag);
+    	} else if(isAcyclicity()) {
+    		return new Acyclicity(rel, negated, flag);
+    	} else if(isIrreflexivity()) {
+    		return new Irreflexivity(rel, negated, flag);
+    	} else {
+    		throw new UnsupportedOperationException("Unsupported axiom type");
+    	}
+    }
 }

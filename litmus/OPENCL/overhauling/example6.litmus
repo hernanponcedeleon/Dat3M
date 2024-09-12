@@ -1,0 +1,26 @@
+C example6
+
+(*
+ * https://multicore.doc.ic.ac.uk/overhauling/examples/example6.litmus
+ *)
+
+{
+[x] = 0;
+[y] = 0;
+}
+
+P0@wg 0, dev 0 (global int* x, local atomic_int* y) {
+  *x = 42;
+  atomic_work_item_fence(CLK_GLOBAL_MEM_FENCE | CLK_LOCAL_MEM_FENCE, memory_order_release, memory_scope_work_group);
+  atomic_store_explicit(y, 1, memory_order_relaxed, memory_scope_work_group);
+}
+
+P1@wg 0, dev 0 (global int* x, local atomic_int* y) {
+  int r = -1;
+  if (atomic_load_explicit(y, memory_order_relaxed, memory_scope_work_group) == 1) {
+    atomic_work_item_fence(CLK_GLOBAL_MEM_FENCE | CLK_LOCAL_MEM_FENCE, memory_order_acquire, memory_scope_work_group);
+    r = *x;
+  }
+}
+
+exists (1:r=0)

@@ -221,10 +221,11 @@ public class Wmm {
                 yield intersection(r, comp, mv);
             }
             case SR -> new SameScope(r);
-            case SCTA -> new SameScope(r, Tag.PTX.CTA);
-            case SSG -> new SameScope(r, Tag.Vulkan.SUB_GROUP);
-            case SWG -> new SameScope(r, Tag.Vulkan.WORK_GROUP);
-            case SQF -> new SameScope(r, Tag.Vulkan.QUEUE_FAMILY);
+            case SCTA -> new SameScope(r, Tag.GPU_SCOPES.CTA);
+            case SSG -> new SameScope(r, Tag.GPU_SCOPES.SUB_GROUP);
+            case SWG -> new SameScope(r, Tag.GPU_SCOPES.WORK_GROUP);
+            case SQF -> new SameScope(r, Tag.GPU_SCOPES.QUEUE_FAMILY);
+            case SDV -> new SameScope(r, Tag.GPU_SCOPES.DEVICE);
             case SSW -> new SyncWith(r);
             case SYNCBAR -> new SyncBar(r);
             case SYNC_FENCE -> new SyncFence(r);
