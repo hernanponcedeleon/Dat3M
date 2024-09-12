@@ -9,7 +9,8 @@ mcm
     ;
 
 definition
-    :   axiomDefinition
+    :   include
+    |   axiomDefinition
     |   letDefinition
     |   letRecDefinition
     ;
@@ -52,6 +53,10 @@ expression
     |   call = NEW LPAR RPAR                                            # exprNew
     ;
 
+include
+    :   'include' path = QUOTED_STRING
+    ;
+
 LET     :   'let';
 REC     :   'rec';
 AND     :   'and';
@@ -88,6 +93,8 @@ FLAG       :   'flag';
 
 NAME    : [A-Za-z0-9\-_.]+;
 
+QUOTED_STRING : '"' .*? '"';
+
 LINE_COMMENT
     :   '//' ~[\n]*
         -> skip
@@ -100,11 +107,6 @@ BLOCK_COMMENT
 
 WS
     :   [ \t\r\n]+
-        -> skip
-    ;
-
-INCLUDE
-    :   'include "' .*? '"'
         -> skip
     ;
 

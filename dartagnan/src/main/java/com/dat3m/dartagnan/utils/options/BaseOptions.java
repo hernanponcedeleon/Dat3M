@@ -1,16 +1,16 @@
 package com.dat3m.dartagnan.utils.options;
 
+import com.dat3m.dartagnan.GlobalSettings;
 import com.dat3m.dartagnan.configuration.Method;
 import com.dat3m.dartagnan.configuration.Property;
 import com.dat3m.dartagnan.witness.WitnessType;
-
 import org.sosy_lab.common.configuration.Option;
 import org.sosy_lab.common.configuration.Options;
 import org.sosy_lab.java_smt.SolverContextFactory.Solvers;
 
-import static com.dat3m.dartagnan.configuration.OptionNames.*;
-
 import java.util.EnumSet;
+
+import static com.dat3m.dartagnan.configuration.OptionNames.*;
 
 @Options
 public abstract class BaseOptions {
@@ -75,4 +75,11 @@ public abstract class BaseOptions {
     private boolean smtlib=false;
 
     public boolean getDumpSmtLib() { return smtlib; }
+
+    @Option(
+            name=CAT_INCLUDE,
+            description = "The directory used to resolve cat include statements. Defaults to Dartagnan's cat directory."
+    )
+    private String catIncludePath = GlobalSettings.getCatDirectory();
+    public String getCatIncludePath() { return catIncludePath; }
 }

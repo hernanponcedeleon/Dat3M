@@ -1,8 +1,11 @@
 package com.dat3m.dartagnan.parsers.cat;
 
+import com.dat3m.dartagnan.exception.AbortErrorListener;
 import com.dat3m.dartagnan.exception.MalformedMemoryModelException;
 import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.parsers.CatBaseVisitor;
+import com.dat3m.dartagnan.parsers.CatLexer;
+import com.dat3m.dartagnan.parsers.CatParser;
 import com.dat3m.dartagnan.parsers.CatParser.*;
 import com.dat3m.dartagnan.program.filter.Filter;
 import com.dat3m.dartagnan.wmm.Definition;
@@ -11,9 +14,18 @@ import com.dat3m.dartagnan.wmm.RelationNameRepository;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.axiom.Axiom;
 import com.dat3m.dartagnan.wmm.definition.*;
+import org.antlr.v4.runtime.CharStreams;
+import org.antlr.v4.runtime.CommonTokenStream;
+import org.antlr.v4.runtime.DiagnosticErrorListener;
+import org.antlr.v4.runtime.Lexer;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
+import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
@@ -22,7 +34,12 @@ import java.util.Optional;
 import static com.dat3m.dartagnan.program.event.Tag.VISIBLE;
 import static com.dat3m.dartagnan.wmm.RelationNameRepository.ID;
 
-class VisitorBase extends CatBaseVisitor<Object> {
+class VisitorCat extends CatBaseVisitor<Object> {
+
+    private static final Logger logger = LogManager.getLogger(VisitorCat.class);
+
+    // The directory path used to resolve include statements.
+    private final Path includePath;
 
     private final Wmm wmm;
     // Maps names used on the lhs of definitions ("let name = relexpr") to the
@@ -34,14 +51,40 @@ class VisitorBase extends CatBaseVisitor<Object> {
     // Used to handle recursive definitions properly
     private Relation relationToBeDefined;
 
-    VisitorBase() {
+    VisitorCat(Path includePath) {
+        this.includePath = includePath;
         this.wmm = new Wmm();
     }
+
 
     @Override
     public Object visitMcm(McmContext ctx) {
         super.visitMcm(ctx);
         return wmm;
+    }
+
+    @Override
+    public Object visitInclude(IncludeContext ctx) {
+        final String fileName = ctx.path.getText().substring(1, ctx.path.getText().length() - 1);
+        final Path filePath = includePath.resolve(Path.of(fileName));
+        if (!Files.exists(filePath)) {
+            logger.warn("Included file '{}' not found. Skipped inclusion.", filePath);
+            return null;
+        }
+
+        try {
+            final Lexer lexer = new CatLexer(CharStreams.fromPath(filePath));
+            lexer.addErrorListener(new AbortErrorListener());
+            lexer.addErrorListener(new DiagnosticErrorListener(true));
+            final CommonTokenStream tokenStream = new CommonTokenStream(lexer);
+
+            final CatParser parser = new CatParser(tokenStream);
+            parser.addErrorListener(new AbortErrorListener());
+            parser.addErrorListener(new DiagnosticErrorListener(true));
+            return parser.mcm().accept(this);
+        } catch (IOException e) {
+            throw new ParsingException(String.format("Error parsing file '%s'", filePath), e);
+        }
     }
 
     @Override
