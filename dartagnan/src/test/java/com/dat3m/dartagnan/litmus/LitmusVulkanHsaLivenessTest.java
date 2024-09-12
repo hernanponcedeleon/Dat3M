@@ -1,13 +1,12 @@
 package com.dat3m.dartagnan.litmus;
 
 import com.dat3m.dartagnan.configuration.Arch;
+import com.dat3m.dartagnan.configuration.ProgressModel;
 import com.dat3m.dartagnan.configuration.Property;
 import com.dat3m.dartagnan.utils.Result;
 import com.dat3m.dartagnan.utils.rules.Provider;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
-import org.sosy_lab.common.configuration.Configuration;
-import static com.dat3m.dartagnan.configuration.OptionNames.PROGRESSMODEL;
 
 import java.io.IOException;
 import java.util.EnumSet;
@@ -25,10 +24,8 @@ public class LitmusVulkanHsaLivenessTest extends AbstractLitmusTest {
     }
 
     @Override
-    protected Provider<Configuration> getConfigurationProvider() {
-        return Provider.fromSupplier(() -> Configuration.builder()
-                .setOption(PROGRESSMODEL, "hsa")
-                .build());
+    protected Provider<ProgressModel> getProgressModelProvider() {
+        return () -> ProgressModel.HSA;
     }
 
     @Override
