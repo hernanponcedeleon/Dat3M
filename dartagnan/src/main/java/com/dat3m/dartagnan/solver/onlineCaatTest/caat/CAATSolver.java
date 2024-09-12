@@ -90,14 +90,14 @@ public class CAATSolver {
 
     private DNF<CAATLiteral> computeInconsistencyReasons(List<Constraint> violatedConstraints) {
         List<Conjunction<CAATLiteral>> reasons = new ArrayList<>();
-        System.out.println("*********************");
+        //System.out.println("*********************");
         for (Constraint constraint : violatedConstraints) {
             var cubes = reasoner.computeViolationReasons(constraint).getCubes();
             reasons.addAll(cubes);
             if (cubes.isEmpty()) {
                 int i = 5;
             }
-            System.out.println("WAS IN LOOP");
+            //System.out.println("WAS IN LOOP");
         }
         stats.numComputedReasons += reasons.size();
         if (reasons.isEmpty()) {

@@ -31,7 +31,7 @@ public class IntersectionGraph extends MaterializedGraph {
     @Override
     public void repopulate() {
         RelationGraph first = Stream.of(operands).min(comparingInt(RelationGraph::getEstimatedSize)).orElseThrow();
-        RelationGraph[] others = Stream.of(operands).filter(x -> first != x).toArray(RelationGraph[]::new);
+        List<RelationGraph> others = Stream.of(operands).filter(x -> first != x).toList();
         for (Edge e1 : first.edges()) {
             Edge e = derive(e1, others);
             if (e != null) {
@@ -44,7 +44,7 @@ public class IntersectionGraph extends MaterializedGraph {
     @SuppressWarnings("unchecked")
     public Collection<Edge> forwardPropagate(CAATPredicate changedSource, Collection<? extends Derivable> added) {
         if (Stream.of(operands).anyMatch(g -> changedSource == g)) {
-            RelationGraph[] others = Stream.of(operands).filter(g -> g != changedSource).toArray(RelationGraph[]::new);
+            List<RelationGraph> others = Stream.of(operands).filter(g -> g != changedSource).toList();
             Collection<Edge> addedEdges = (Collection<Edge>)added;
             List<Edge> newlyAdded = new ArrayList<>();
             for (Edge e1 : addedEdges) {
@@ -68,7 +68,7 @@ public class IntersectionGraph extends MaterializedGraph {
     }
 
     // Note: The derived edge has the timestamp of edge
-    private Edge derive(Edge edge, RelationGraph[] operands) {
+    private Edge derive(Edge edge, List<RelationGraph> operands) {
         int time = edge.getTime();
         int length = edge.getDerivationLength();
         for (RelationGraph g : operands) {

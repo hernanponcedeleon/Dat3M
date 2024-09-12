@@ -17,9 +17,6 @@ import com.google.common.collect.Sets;
 import java.util.*;
 
 public class AcyclicityConstraint extends AbstractConstraint {
-    static int counter = 0;
-
-    private int thisCounter;
 
     private final RelationGraph constrainedGraph;
 
@@ -32,7 +29,6 @@ public class AcyclicityConstraint extends AbstractConstraint {
     private ArrayList<Node> nodeMap = new ArrayList<>();
 
     public AcyclicityConstraint(RelationGraph constrainedGraph) {
-        thisCounter = counter++;
         this.constrainedGraph = constrainedGraph;
     }
 
@@ -49,6 +45,7 @@ public class AcyclicityConstraint extends AbstractConstraint {
             return false;
         }
         ensureCapacity();
+        //applyChanges();
         tarjan();
         violatingSccs.sort(Comparator.comparingInt(Set::size));
         if (violatingSccs.isEmpty()) {
@@ -63,6 +60,9 @@ public class AcyclicityConstraint extends AbstractConstraint {
             return Collections.emptyList();
         }
         //System.out.println("NEW CALL");
+
+        ensureCapacity();
+        //applyChanges();
 
         List<List<Edge>> cycles = new ArrayList<>();
         // Current implementation: For all marked events <e> in all SCCs:
@@ -88,9 +88,9 @@ public class AcyclicityConstraint extends AbstractConstraint {
             }
         }
 
-        if (cycles.isEmpty()) {
+        /*if (cycles.isEmpty()) {
             int i = 5;
-        }
+        }*/
 
         return cycles;
     }
@@ -132,7 +132,18 @@ public class AcyclicityConstraint extends AbstractConstraint {
         Collections.rotate(cycle, -first);
     }
 
-    //private final ArrayList<Integer> toAdd = new ArrayList<>();
+    /*private final ArrayList<Integer> toAdd = new ArrayList<>();
+
+    private void applyChanges() {
+        ensureCapacity();
+        markedNodes.addAll(toAdd);
+        toAdd.clear();
+    }
+
+    private void cancelChanges() {
+        ensureCapacity();
+        toAdd.clear();
+    }*/
 
     private void ensureCapacity() {
         markedNodes.ensureCapacity(domain.size());
@@ -145,18 +156,20 @@ public class AcyclicityConstraint extends AbstractConstraint {
     @SuppressWarnings("unchecked")
     public void onChanged(CAATPredicate predicate, Collection<? extends Derivable> added) {
         for (Edge e : (Collection<Edge>)added) {
-            markedNodes.ensureCapacity(domain.size());
+            markedNodes.ensureCapacity(e.getFirst() + 1);
             markedNodes.add(e.getFirst());
         }
     }
 
     @Override
     public void onPush() {
+        //applyChanges();
         markedNodes.increaseLevel();
     }
 
     @Override
     public void onBacktrack(CAATPredicate predicate, int time) {
+        //cancelChanges();
         markedNodes.resetToLevel((short)time);
 
         //System.out.println("\nMarked Nodes on Backtrack in Constraint " + thisCounter + ": ");
