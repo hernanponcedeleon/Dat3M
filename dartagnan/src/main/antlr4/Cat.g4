@@ -5,7 +5,7 @@ import com.dat3m.dartagnan.wmm.axiom.*;
 }
 
 mcm
-    :   (NAME| QUOTED_STRING)? (definition | include)+ EOF
+    :   (NAME)? (QUOTED_STRING)? (definition | include)+ EOF
     ;
 
 definition
