@@ -18,7 +18,7 @@
  * It can be replaced by include "cos.cat" for tests that do not use locks.
  *)
 
-include "lock.cat"
+//include "lock.cat"
 
 (* Compute marked and plain memory accesses *)
 let Marked = (~M) | IW | Once | Release | Acquire | (RMW & R) | (RMW & W) |

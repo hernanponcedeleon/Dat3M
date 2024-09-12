@@ -5,12 +5,11 @@ import com.dat3m.dartagnan.wmm.axiom.*;
 }
 
 mcm
-    :   (NAME)? definition+ EOF
+    :   (NAME| QUOTED_STRING)? (definition | include)+ EOF
     ;
 
 definition
-    :   include
-    |   axiomDefinition
+    :   axiomDefinition
     |   letDefinition
     |   letRecDefinition
     ;
@@ -91,9 +90,9 @@ NEW         :   'new';
 
 FLAG       :   'flag';
 
-NAME    : [A-Za-z0-9\-_.]+;
-
 QUOTED_STRING : '"' .*? '"';
+
+NAME    : [A-Za-z0-9\-_.]+;
 
 LINE_COMMENT
     :   '//' ~[\n]*
@@ -107,10 +106,5 @@ BLOCK_COMMENT
 
 WS
     :   [ \t\r\n]+
-        -> skip
-    ;
-
-MODELNAME
-    :   '"' .*? '"'
         -> skip
     ;
