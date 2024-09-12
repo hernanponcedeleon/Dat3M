@@ -61,6 +61,9 @@ public class ProgramParser {
             case "ll" -> {
                 return new ParserLlvm().parse(CharStreams.fromString(raw));
             }
+            case "spv.dis" -> {
+                return new ParserSpirv().parse(CharStreams.fromString(raw));
+            }
             case "litmus" -> {
                 return getConcreteLitmusParser(raw.toUpperCase()).parse(CharStreams.fromString(raw));
             }
