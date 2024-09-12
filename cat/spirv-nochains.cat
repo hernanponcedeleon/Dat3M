@@ -64,8 +64,9 @@ let asmo = co & ((ATOM | IW) * ATOM)
 let fr = (rf^-1; asmo) | (([IW]; rf)^-1; ((loc;[W]) \ id))
 let fre = fr & ext
 
-let rs = [REL & ATOM]; ((asmo \ (asmo; asmo+)); [RMW])*
-let hypors = [W & ATOM]; ((asmo \ (asmo; asmo+)); [RMW])*
+let imm(r) = r \ (r; r+)
+let rs = [REL & ATOM]; (imm(asmo); [RMW])*
+let hypors = [W & ATOM]; (imm(asmo); [RMW])*
 
 // synchronizes-with is similar to C++, with an additional case for fence->cbar->cbar->fence
 let sw = inscope & (
