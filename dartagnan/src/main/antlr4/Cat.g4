@@ -10,6 +10,7 @@ mcm
 
 definition
     :   axiomDefinition
+    |   letFuncDefinition
     |   letDefinition
     |   letRecDefinition
     ;
@@ -18,6 +19,10 @@ axiomDefinition locals [Class<?> cls]
     :   (flag = FLAG)? (negate = NOT)? ACYCLIC { $cls = Acyclicity.class; } e = expression (AS NAME)?
     |   (flag = FLAG)? (negate = NOT)? IRREFLEXIVE { $cls = Irreflexivity.class; } e = expression (AS NAME)?
     |   (flag = FLAG)? (negate = NOT)? EMPTY { $cls = Emptiness.class; } e = expression (AS NAME)?
+    ;
+
+letFuncDefinition
+    :   LET (fname = NAME) LPAR params = parameterList RPAR EQ e = expression
     ;
 
 letDefinition
@@ -50,10 +55,19 @@ expression
     |   LPAR e = expression RPAR                                        # expr
     |   n = NAME                                                        # exprBasic
     |   call = NEW LPAR RPAR                                            # exprNew
+    |   call = NAME LPAR args = argumentList RPAR                       # exprCall
     ;
 
 include
     :   'include' path = QUOTED_STRING
+    ;
+
+parameterList
+    : (NAME (COMMA NAME)*)
+    ;
+
+argumentList
+    : expression (COMMA expression)*
     ;
 
 LET     :   'let';
@@ -82,6 +96,7 @@ LPAR    :   '(';
 RPAR    :   ')';
 LBRAC   :   '[';
 RBRAC   :   ']';
+COMMA   :   ',';
 
 FENCEREL    :   'fencerel';
 DOMAIN      :   'domain';
