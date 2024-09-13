@@ -5,6 +5,8 @@
 
 atomic_int x = 0;
 
+// Required progress: Unfair (terminates under all progress models)
+
 void *thread_1(void *unused)
 {
     while (x != 1);
@@ -14,13 +16,7 @@ void *thread_1(void *unused)
 int main()
 {
     pthread_t t1, t2;
-#ifndef FAIL
     x = 1;
     pthread_create(&t1, NULL, thread_1, NULL);
-#else
-    pthread_create(&t1, NULL, thread_1, NULL);
-    // Under totally unfair scheduling, we can stop here, never signaling T1
-    x = 1;
-#endif
     return 0;
 }

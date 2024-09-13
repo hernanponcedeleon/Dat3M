@@ -71,6 +71,10 @@ public abstract class AbstractCTest {
         return Provider.fromSupplier(this::getConfiguration);
     }
 
+    protected Provider<ProgressModel> getProgressModelProvider() {
+        return () -> ProgressModel.FAIR;
+    }
+
     // =============================================================
 
     // Provider rules
@@ -80,7 +84,7 @@ public abstract class AbstractCTest {
     protected final Provider<Integer> boundProvider = getBoundProvider();
     protected final Provider<Program> programProvider = Providers.createProgramFromPath(filePathProvider);
     protected final Provider<Wmm> wmmProvider = getWmmProvider();
-    protected final Provider<ProgressModel> progressModelProvider = () -> ProgressModel.FAIR;
+    protected final Provider<ProgressModel> progressModelProvider = getProgressModelProvider();
     protected final Provider<Solvers> solverProvider = getSolverProvider();
     protected final Provider<EnumSet<Property>> propertyProvider = getPropertyProvider();
     protected final Provider<Configuration> configurationProvider = getConfigurationProvider();

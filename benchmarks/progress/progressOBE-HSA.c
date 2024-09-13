@@ -3,6 +3,8 @@
 #include <assert.h>
 #include <stdatomic.h>
 
+// Required progress: HSA or OBE (stronger than unfair)
+
 atomic_int x = 0;
 
 void *thread_1(void *unused)
