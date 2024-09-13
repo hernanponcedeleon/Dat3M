@@ -202,24 +202,6 @@ public class Wmm {
             case ADDRDIRECT -> new DirectAddressDependency(r);
             case CTRLDIRECT -> new DirectControlDependency(r);
             case EMPTY -> new Empty(r);
-            case FR ->  {
-                // rf^-1;co
-                final Relation rfinv = addDefinition(new Inverse(newRelation(), getOrCreatePredefinedRelation(RF)));
-                final Relation co = getOrCreatePredefinedRelation(CO);
-                final Relation frStandard = addDefinition(composition(newRelation(), rfinv, co));
-
-                // ([R] \ [range(rf)]);loc;[W]
-                final Relation reads = addDefinition(new SetIdentity(newRelation(), getFilter(Tag.READ)));
-                final Relation rfRange = addDefinition(new RangeIdentity(newRelation(), getOrCreatePredefinedRelation(RF)));
-                final Relation loc = getOrCreatePredefinedRelation(LOC);
-                final Relation writes = addDefinition(new SetIdentity(newRelation(), Filter.byTag(Tag.WRITE)));
-                final Relation ur = addDefinition(new Difference(newRelation(), reads, rfRange));
-                final Relation urloc = addDefinition(composition(newRelation(), ur, loc));
-                final Relation urlocwrites = addDefinition(composition(newRelation(), urloc, writes));
-
-                // let fr = rf^-1;co | ([R] \ [range(rf)]);loc;[W]
-                yield union(r, frStandard, urlocwrites);
-            }
             case IDDTRANS -> new TransitiveClosure(r, getOrCreatePredefinedRelation(IDD));
             case DATA -> intersection(r,
                     getOrCreatePredefinedRelation(IDDTRANS),
@@ -238,21 +220,12 @@ public class Wmm {
                 Relation mv = addDefinition(product(newRelation(), Tag.MEMORY, Tag.VISIBLE));
                 yield intersection(r, comp, mv);
             }
-            case POLOC -> intersection(r, getOrCreatePredefinedRelation(PO), getOrCreatePredefinedRelation(LOC));
-            case RFE ->  intersection(r, getOrCreatePredefinedRelation(RF), getOrCreatePredefinedRelation(EXT));
-            case RFI -> intersection(r, getOrCreatePredefinedRelation(RF), getOrCreatePredefinedRelation(INT));
-            case COE -> intersection(r, getOrCreatePredefinedRelation(CO), getOrCreatePredefinedRelation(EXT));
-            case COI -> intersection(r, getOrCreatePredefinedRelation(CO), getOrCreatePredefinedRelation(INT));
-            case FRE -> intersection(r, getOrCreatePredefinedRelation(FR), getOrCreatePredefinedRelation(EXT));
-            case FRI -> intersection(r, getOrCreatePredefinedRelation(FR), getOrCreatePredefinedRelation(INT));
             case MFENCE -> fence(r, MFENCE);
             case ISH -> fence(r, ISH);
             case ISB -> fence(r, ISB);
             case SYNC -> fence(r, SYNC);
             case ISYNC -> fence(r, ISYNC);
             case LWSYNC -> fence(r, LWSYNC);
-            case CTRLISYNC -> intersection(r, getOrCreatePredefinedRelation(CTRL), getOrCreatePredefinedRelation(ISYNC));
-            case CTRLISB -> intersection(r, getOrCreatePredefinedRelation(CTRL), getOrCreatePredefinedRelation(ISB));
             case SR -> new SameScope(r);
             case SCTA -> new SameScope(r, Tag.PTX.CTA);
             case SSG -> new SameScope(r, Tag.Vulkan.SUB_GROUP);
@@ -264,7 +237,7 @@ public class Wmm {
             case SYNC_FENCE -> new SyncFence(r);
             case VLOC -> new SameVirtualLocation(r);
             default ->
-                    throw new RuntimeException(name + "is part of RelationNameRepository but it has no associated relation.");
+                    throw new RuntimeException(name + " is part of RelationNameRepository but it has no associated relation.");
         };
         return addDefinition(def);
     }

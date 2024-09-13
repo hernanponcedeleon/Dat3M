@@ -1,0 +1,2 @@
+let ctrlisync = ctrl & isync
+let ctrlisb = ctrl & isb

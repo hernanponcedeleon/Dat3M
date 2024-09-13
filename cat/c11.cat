@@ -14,6 +14,7 @@ Rewritten by Luc Maranget for herd7
    may be missing. As a consequence, reads may have no rf-edge if they read from initial memory.
 *)
 
+include "basic.cat"
 include "c11_cos.cat"
 include "c11_los.cat"
 

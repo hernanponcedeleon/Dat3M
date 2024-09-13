@@ -18,7 +18,7 @@
  * It can be replaced by include "cos.cat" for tests that do not use locks.
  *)
 
-//include "lock.cat"
+include "lock.cat"
 
 (* Compute matching pairs of nested Srcu-lock and Srcu-unlock *)
 let carry-srcu-data = (data ; [~ Srcu-unlock] ; rf)*

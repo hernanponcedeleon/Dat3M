@@ -81,6 +81,11 @@ public class RefinementSolver extends ModelChecker {
 
     private static final Logger logger = LogManager.getLogger(RefinementSolver.class);
 
+    private static final String FR = "fr";
+    private static final String COE = "coe";
+    private static final String FRE = "fre";
+    private static final String POLOC = "po-loc";
+
     // ================================================================================================================
     // Configuration
 
@@ -527,7 +532,7 @@ public class RefinementSolver extends ModelChecker {
         if (biases.contains(Baseline.UNIPROC)) {
             // ---- acyclic(po-loc | com) ----
             memoryModel.addConstraint(new Acyclicity(memoryModel.addDefinition(new Union(memoryModel.newRelation(),
-                    memoryModel.getOrCreatePredefinedRelation(POLOC),
+                    memoryModel.getRelation(POLOC),
                     rf,
                     memoryModel.getOrCreatePredefinedRelation(CO),
                     memoryModel.getOrCreatePredefinedRelation(FR)
@@ -545,8 +550,8 @@ public class RefinementSolver extends ModelChecker {
         if (biases.contains(Baseline.ATOMIC_RMW)) {
             // ---- empty (rmw & fre;coe) ----
             Relation rmw = memoryModel.getOrCreatePredefinedRelation(RMW);
-            Relation coe = memoryModel.getOrCreatePredefinedRelation(COE);
-            Relation fre = memoryModel.getOrCreatePredefinedRelation(FRE);
+            Relation coe = memoryModel.getRelation(COE);
+            Relation fre = memoryModel.getRelation(FRE);
             Relation frecoe = memoryModel.addDefinition(new Composition(memoryModel.newRelation(), fre, coe));
             Relation rmwANDfrecoe = memoryModel.addDefinition(new Intersection(memoryModel.newRelation(), rmw, frecoe));
             memoryModel.addConstraint(new Emptiness(rmwANDfrecoe));
