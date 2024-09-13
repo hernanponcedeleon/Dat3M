@@ -8,7 +8,6 @@ public class OptionNames {
     public static final String TARGET = "target";
     public static final String METHOD = "method";
     public static final String SOLVER = "solver";
-    public static final String PROGRESSMODEL = "progressModel";
     public static final String TIMEOUT = "timeout";
     public static final String VALIDATE = "validate";
     public static final String COVERAGE = "coverage";
@@ -16,6 +15,7 @@ public class OptionNames {
     public static final String SMTLIB2 = "smtlib2";
 
     // Modeling Options
+    public static final String PROGRESSMODEL = "modeling.progress";
     public static final String THREAD_CREATE_ALWAYS_SUCCEEDS = "modeling.threadCreateAlwaysSucceeds";
     public static final String RECURSION_BOUND = "modeling.recursionBound";
     public static final String MEMORY_IS_ZEROED = "modeling.memoryIsZeroed";

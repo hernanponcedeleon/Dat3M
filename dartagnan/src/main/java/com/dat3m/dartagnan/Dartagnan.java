@@ -118,8 +118,6 @@ public class Dartagnan extends BaseOptions {
                 .orElseThrow(() -> new IllegalArgumentException("CAT model not given or format not recognized")));
         logger.info("CAT file path: " + fileModel);
 
-        logger.info("Progress model: " + o.getProgressModel());
-
         Wmm mcm = new ParserCat().parse(fileModel);
         Program p = new ProgramParser().parse(fileProgram);
         EnumSet<Property> properties = o.getProperty();

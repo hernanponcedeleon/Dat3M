@@ -34,7 +34,7 @@ public class VerificationTask {
     throws InvalidConfigurationException {
         this.program = checkNotNull(program);
         this.memoryModel = checkNotNull(memoryModel);
-        this.progressModel = progressModel;
+        this.progressModel = checkNotNull(progressModel);
         this.property = checkNotNull(property);
         this.witness = checkNotNull(witness);
         this.config = checkNotNull(config);

@@ -133,10 +133,8 @@ public class ProgramEncoder implements Encoder {
     private BooleanFormula threadHasTerminated(Thread thread) {
         final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
         return bmgr.and(
-                context.execution(thread.getExit()),
+                context.execution(thread.getExit()), // Also guarantees that we are not stuck in a barrier
                 bmgr.not(threadIsStuckInLoop(thread))
-                // The following is not needed since the first condition already implies this
-                // bmgr.not(threadIsStuckInBarrier(thread))
         );
     }
 
@@ -445,8 +443,7 @@ public class ProgramEncoder implements Encoder {
 
             // For every event in the cf a successor will be in the cf (unless a barrier is blocking).
             for (Event cur : thread.getEvents()) {
-                if (cur.getSuccessor() == null) {
-                    assert cur == thread.getExit();
+                if (cur == thread.getExit()) {
                     break;
                 }
                 final List<Event> succs = new ArrayList<>();
