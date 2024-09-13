@@ -233,7 +233,6 @@ public class Wmm {
             case SQF -> new SameScope(r, Tag.Vulkan.QUEUE_FAMILY);
             case SSW -> new SyncWith(r);
             case SYNCBAR -> new SyncBar(r);
-            case SYNC_BARRIER -> intersection(r, getOrCreatePredefinedRelation(SYNCBAR), getOrCreatePredefinedRelation(SCTA));
             case SYNC_FENCE -> new SyncFence(r);
             case VLOC -> new SameVirtualLocation(r);
             default ->

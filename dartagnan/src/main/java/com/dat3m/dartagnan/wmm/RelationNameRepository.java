@@ -36,7 +36,6 @@ public class RelationNameRepository {
     public static final String SWG = "swg";
     public static final String SQF = "sqf";
     public static final String SSW = "ssw";
-    public static final String SYNC_BARRIER = "sync_barrier";
     public static final String SYNC_FENCE = "sync_fence";
     public static final String SYNCBAR = "syncbar";
     public static final String VLOC = "vloc";
