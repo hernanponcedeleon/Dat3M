@@ -64,7 +64,6 @@ class VisitorCat extends CatBaseVisitor<Object> {
         this.wmm = new Wmm();
     }
 
-
     @Override
     public Object visitMcm(McmContext ctx) {
         super.visitMcm(ctx);
