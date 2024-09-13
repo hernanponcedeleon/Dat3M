@@ -97,7 +97,6 @@ LBRAC   :   '[';
 RBRAC   :   ']';
 COMMA   :   ',';
 
-FENCEREL    :   'fencerel';
 DOMAIN      :   'domain';
 RANGE       :   'range';
 NEW         :   'new';
