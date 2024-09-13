@@ -85,9 +85,6 @@ public class MergeEquivalentRelations implements WmmProcessor {
         if (def1 instanceof CartesianProduct p1 && def2 instanceof CartesianProduct p2) {
             return p1.getFirstFilter().equals(p2.getFirstFilter()) && p1.getSecondFilter().equals(p2.getSecondFilter());
         }
-        if (def1 instanceof Fences f1 && def2 instanceof Fences f2) {
-            return f1.getFilter().equals(f2.getFilter());
-        }
         if (def1 instanceof SameScope s1 && def2 instanceof SameScope s2) {
             return Objects.equals(s1.getSpecificScope(), s2.getSpecificScope());
         }

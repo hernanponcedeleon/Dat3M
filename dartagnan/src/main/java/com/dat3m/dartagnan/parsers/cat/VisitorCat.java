@@ -355,14 +355,6 @@ class VisitorCat extends CatBaseVisitor<Object> {
         return addDefinition(new CartesianProduct(r0, s1, s2));
     }
 
-    @Override
-    public Relation visitExprFencerel(ExprFencerelContext ctx) {
-        checkNoRecursion(ctx);
-        Relation r0 = wmm.newRelation();
-        Filter s1 = parseAsFilter(ctx.e);
-        return addDefinition(new Fences(r0, s1));
-    }
-
     // ============================ Utility ============================
 
     private Relation addDefinition(Definition definition) {

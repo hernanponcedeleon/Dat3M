@@ -247,10 +247,6 @@ public class Wmm {
         return new Composition(r0, r1, r2);
     }
 
-    private Definition fence(Relation r0, String name) {
-        return new Fences(r0, Filter.byTag(name));
-    }
-
     private Definition product(Relation r0, String tag1, String tag2) {
         return new CartesianProduct(r0, Filter.byTag(tag1), Filter.byTag(tag2));
     }

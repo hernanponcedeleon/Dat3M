@@ -357,29 +357,6 @@ public class WmmEncoder implements Encoder {
         }
 
         @Override
-        public Void visitFences(Fences fence) {
-            final Relation rel = fence.getDefinedRelation();
-            final Filter fenceSet = fence.getFilter();
-            EventGraph mustSet = ra.getKnowledge(rel).getMustSet();
-            List<Event> fences = program.getThreadEvents().stream().filter(fenceSet::apply).toList();
-            EncodingContext.EdgeEncoder encoder = context.edge(rel);
-            encodeSets.get(rel).apply((e1, e2) -> {
-                BooleanFormula orClause;
-                if (mustSet.contains(e1, e2)) {
-                    orClause = bmgr.makeTrue();
-                } else {
-                    orClause = fences.stream()
-                            .filter(f -> e1.getGlobalId() < f.getGlobalId() && f.getGlobalId() < e2.getGlobalId())
-                            .map(context::execution).reduce(bmgr.makeFalse(), bmgr::or);
-                }
-                enc.add(bmgr.equivalence(
-                        encoder.encode(e1, e2),
-                        bmgr.and(execution(e1, e2), orClause)));
-            });
-            return null;
-        }
-
-        @Override
         public Void visitInternalDataDependency(DirectDataDependency idd) {
             return visitDirectDependency(idd.getDefinedRelation());
         }

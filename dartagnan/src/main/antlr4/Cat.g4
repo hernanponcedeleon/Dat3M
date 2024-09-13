@@ -51,7 +51,6 @@ expression
     |   LBRAC DOMAIN LPAR e = expression RPAR RBRAC                     # exprDomainIdentity
     |   LBRAC RANGE LPAR e = expression RPAR RBRAC                      # exprRangeIdentity
     |   (TOID LPAR e = expression RPAR | LBRAC e = expression RBRAC)    # exprIdentity
-    |   FENCEREL LPAR e = expression RPAR                               # exprFencerel
     |   LPAR e = expression RPAR                                        # expr
     |   n = NAME                                                        # exprBasic
     |   call = NEW LPAR RPAR                                            # exprNew
