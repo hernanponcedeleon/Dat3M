@@ -22,6 +22,7 @@ public class TestgenDriver {
         /* Phase 1 - Generate all possible cyclical graphs from the cat file definition of the memory model */
         List <ProgramGraph> graphs = wmm_explorer.begin_exploration( Integer.parseInt( args[1] ) );
 
+        int next_test_id = 1;
         for( final ProgramGraph graph : graphs ) {
             /* Phase 2 - Attempt to generate an abstract program for each relation graph */
             SMTProgramGenerator program_generator = new SMTProgramGenerator( graph, Integer.parseInt( args[2] ) );
@@ -33,7 +34,9 @@ public class TestgenDriver {
 
             /* Phase 3 - Print Program */
             ProgramConverter program_converter = new ProgramConverter( program_events );
-            System.out.println( program_converter.print_program( "Program relation graph:\n" + graph ) );
+            BufferedWriter writer = new BufferedWriter( new FileWriter( "output/litmus/test_" + next_test_id++ + ".litmus" ) );
+            writer.write( program_converter.print_program( "Program relation graph:\n" + graph ) + "\n" );
+            writer.close();
         }
     }
 

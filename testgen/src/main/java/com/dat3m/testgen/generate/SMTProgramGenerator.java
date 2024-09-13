@@ -37,6 +37,7 @@ public class SMTProgramGenerator {
         initialize_events();
         process_relations();
         apply_heuristics();
+        finalize_events();
         return prove_program();
     }
 
@@ -50,7 +51,7 @@ public class SMTProgramGenerator {
 
     void process_relations()
     throws Exception {
-        for( final ProgramEdge relation : graph.edges )
+        for( ProgramEdge relation : graph.edges )
             smt.prover.addConstraint( SMTBaseRelationHandler.handle_relation(
                 smt,
                 events[ relation.eid_L ], events[ relation.eid_R ],
@@ -63,8 +64,16 @@ public class SMTProgramGenerator {
     throws Exception {
         SMTHeuristicsHandler event_h = new SMTHeuristicsHandler( smt, events );
         SMTHeuristicsHandler observer_h = new SMTHeuristicsHandler( smt, observers );
-        event_h.apply_heuristics( "equivalence", "memory_distinction", "row_maximization", "thread_maximization", "memory_maximization", "event_minimization" );
-        observer_h.apply_heuristics( "equivalence", "row_maximization", "thread_maximization", "event_minimization" );
+        event_h.apply_heuristics( "equivalence", "memory_distinction", "row_maximization", "thread_maximization", "memory_maximization" );
+        observer_h.apply_heuristics( "equivalence", "row_maximization", "thread_maximization" );
+    }
+
+    void finalize_events()
+    throws Exception {
+        for( SMTEvent event : events )
+            event.finalize( smt );
+        for( SMTEvent event : observers )
+            event.finalize( smt );
     }
 
     List <ProgramEvent> prove_program()
@@ -75,24 +84,10 @@ public class SMTProgramGenerator {
         List <ProgramEvent> event_list = new ArrayList<>();
         Model model = smt.prover.getModel();
         for( SMTEvent event : events )
-            event_list.add( generate_program_event( model, event ) );
+            event_list.add( event.generate_program_event( model ) );
         for( SMTEvent event : observers )
-            event_list.add( generate_program_event( model, event ) );
+            event_list.add( event.generate_program_event( model ) );
         return event_list;
-    }
-
-    ProgramEvent generate_program_event(
-        final Model model,
-        final SMTEvent event
-    ) throws Exception {
-        return new ProgramEvent(
-            model.evaluate( event.type ),
-            Integer.parseInt( model.evaluate( event.location ).toString() ),
-            Integer.parseInt( model.evaluate( event.value ).toString() ),
-            Integer.parseInt( model.evaluate( event.thread_id ).toString() ),
-            Integer.parseInt( model.evaluate( event.thread_row ).toString() ),
-            Integer.parseInt( model.evaluate( event.event_id ).toString() )
-        );
     }
 
 }

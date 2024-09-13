@@ -19,63 +19,63 @@ class SMTBaseRelationHandler {
         switch( type ) {
             case po:
                 return smt.bm.and(
-                    smt.bm.not( smt.im.equal( event_L.event_id, event_R.event_id ) ),
-                    smt.im.equal( event_L.thread_id, event_R.thread_id ),
-                    smt.im.lessThan( event_L.thread_row, event_R.thread_row )
+                    smt.bm.not( smt.im.equal( event_L.eid, event_R.eid ) ),
+                    smt.im.equal( event_L.thread.tid, event_R.thread.tid ),
+                    smt.im.lessThan( event_L.thread.row, event_R.thread.row )
                 );
             
             case rf:
                 return smt.bm.and(
-                    smt.bm.not( smt.im.equal( event_L.event_id, event_R.event_id ) ),
-                    smt.em.equivalence( event_L.type, smt.instruction( "W" ) ),
-                    smt.em.equivalence( event_R.type, smt.instruction( "R" ) ),
-                    smt.im.equal( event_L.location, event_R.location ),
-                    smt.im.equal( event_L.value, event_R.value )
+                    smt.bm.not( smt.im.equal( event_L.eid, event_R.eid ) ),
+                    smt.em.equivalence( event_L.instruction, smt.instruction( "W" ) ),
+                    smt.em.equivalence( event_R.instruction, smt.instruction( "R" ) ),
+                    smt.im.equal( event_L.mem.location, event_R.mem.location ),
+                    smt.im.equal( event_L.mem.value, event_R.mem.value )
                 );
 
             case co:
                 return smt.bm.and(
                     set_observer( smt, event_L, observer_L ),
                     set_observer( smt, event_R, observer_R ),
-                    smt.bm.not( smt.im.equal( event_L.event_id, event_R.event_id ) ),
-                    smt.em.equivalence( event_L.type, smt.instruction( "W" ) ),
-                    smt.em.equivalence( event_R.type, smt.instruction( "W" ) ),
-                    smt.im.equal( event_L.location, event_R.location ),
+                    smt.bm.not( smt.im.equal( event_L.eid, event_R.eid ) ),
+                    smt.em.equivalence( event_L.instruction, smt.instruction( "W" ) ),
+                    smt.em.equivalence( event_R.instruction, smt.instruction( "W" ) ),
+                    smt.im.equal( event_L.mem.location, event_R.mem.location ),
                     handle_relation( smt, observer_L, observer_R, null, null, Types.base.po )
                 );
 
             case ext:
                 return smt.bm.and(
-                    smt.bm.not( smt.im.equal( event_L.event_id, event_R.event_id ) ),
-                    smt.bm.not( smt.im.equal( event_L.thread_id, event_R.thread_id ) )
+                    smt.bm.not( smt.im.equal( event_L.eid, event_R.eid ) ),
+                    smt.bm.not( smt.im.equal( event_L.thread.tid, event_R.thread.tid ) )
                 );
 
             case rmw:
                 return smt.bm.and(
-                    smt.bm.not( smt.im.equal( event_L.event_id, event_R.event_id ) ),
-                    smt.im.equal( event_L.thread_id, event_R.thread_id ),
-                    smt.im.equal( event_L.thread_row, smt.im.subtract( event_R.thread_row, smt.im.makeNumber(1) ) ),
-                    smt.im.equal( event_L.location, event_R.location ),
-                    smt.em.equivalence( event_L.type, smt.instruction( "R" ) ),
-                    smt.em.equivalence( event_R.type, smt.instruction( "W" ) )
+                    smt.bm.not( smt.im.equal( event_L.eid, event_R.eid ) ),
+                    smt.im.equal( event_L.thread.tid, event_R.thread.tid ),
+                    smt.im.equal( event_L.thread.row, smt.im.subtract( event_R.thread.row, smt.im.makeNumber(1) ) ),
+                    smt.im.equal( event_L.mem.location, event_R.mem.location ),
+                    smt.em.equivalence( event_L.instruction, smt.instruction( "R" ) ),
+                    smt.em.equivalence( event_R.instruction, smt.instruction( "W" ) )
                 );
 
             case read:
                 return smt.bm.and(
-                    smt.im.equal( event_L.event_id, event_R.event_id ),
-                    smt.em.equivalence( event_L.type, smt.instruction( "R" ) )
+                    smt.im.equal( event_L.eid, event_R.eid ),
+                    smt.em.equivalence( event_L.instruction, smt.instruction( "R" ) )
                 );
 
             case write:
                 return smt.bm.and(
-                    smt.im.equal( event_L.event_id, event_R.event_id ),
-                    smt.em.equivalence( event_L.type, smt.instruction( "W" ) )
+                    smt.im.equal( event_L.eid, event_R.eid ),
+                    smt.em.equivalence( event_L.instruction, smt.instruction( "W" ) )
                 );
     
             case loc:
                 return smt.bm.and(
-                    smt.bm.not( smt.im.equal( event_L.event_id, event_R.event_id ) ),
-                    smt.im.equal( event_L.location, event_R.location )
+                    smt.bm.not( smt.im.equal( event_L.eid, event_R.eid ) ),
+                    smt.im.equal( event_L.mem.location, event_R.mem.location )
                 );
 
             default:
@@ -90,9 +90,9 @@ class SMTBaseRelationHandler {
         final SMTEvent   observer
     ) throws Exception {
         return smt.bm.and(
-            smt.em.equivalence( observer.type, smt.instruction( "R" ) ),
-            smt.im.equal( observer.location, event.location ),
-            smt.im.equal( observer.value, event.value )
+            smt.em.equivalence( observer.instruction, smt.instruction( "R" ) ),
+            smt.im.equal( observer.mem.location, event.mem.location ),
+            smt.im.equal( observer.mem.value, event.mem.value )
         );
     }
 

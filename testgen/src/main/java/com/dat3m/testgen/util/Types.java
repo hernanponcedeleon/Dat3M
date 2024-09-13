@@ -20,4 +20,10 @@ public class Types {
         W
     };
 
+    static public enum memory {
+        UNDEFINED,
+        ADDRESS,
+        REGISTER
+    }
+
 }

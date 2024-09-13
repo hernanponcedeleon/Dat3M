@@ -42,10 +42,6 @@ class SMTHeuristicsHandler {
                     memory_maximization();
                 break;
 
-                case "event_minimization":
-                    event_minimization();
-                break;
-
                 default:
                     System.out.println( "[ERROR] " + heuristic );
                     throw new Exception( "Unknown heuristic type!" );
@@ -60,13 +56,13 @@ class SMTHeuristicsHandler {
         for( int i = 0 ; i < events.length ; i++ ) {
             for( int j = 0 ; j < events.length ; j++ ) {
                 smt.prover.addConstraint( smt.bm.implication(
-                    smt.im.equal( events[i].event_id, events[j].event_id ),
+                    smt.im.equal( events[i].eid, events[j].eid ),
                     smt.bm.and(
-                        smt.em.equivalence( events[i].type, events[j].type ),
-                        smt.im.equal( events[i].location,   events[j].location ),
-                        smt.im.equal( events[i].thread_id,  events[j].thread_id ),
-                        smt.im.equal( events[i].thread_row, events[j].thread_row ),
-                        smt.im.equal( events[i].value,      events[j].value )
+                        smt.em.equivalence( events[i].instruction, events[j].instruction ),
+                        smt.im.equal( events[i].mem.location,   events[j].mem.location ),
+                        smt.im.equal( events[i].thread.tid,  events[j].thread.tid ),
+                        smt.im.equal( events[i].thread.row, events[j].thread.row ),
+                        smt.im.equal( events[i].mem.value,      events[j].mem.value )
                 ) ) );
             }
         }
@@ -80,13 +76,13 @@ class SMTHeuristicsHandler {
             for( int j = 0 ; j < events.length ; j++ ) {
                 smt.prover.addConstraint( smt.bm.implication(
                     smt.bm.and(
-                        smt.im.equal( events[i].location, events[j].location ),
-                        smt.em.equivalence( events[i].type, smt.instruction( "W" ) ),
-                        smt.em.equivalence( events[j].type, smt.instruction( "W" ) )
+                        smt.im.equal( events[i].mem.location, events[j].mem.location ),
+                        smt.em.equivalence( events[i].instruction, smt.instruction( "W" ) ),
+                        smt.em.equivalence( events[j].instruction, smt.instruction( "W" ) )
                     ),
                     smt.bm.or(
-                        smt.im.equal( events[i].event_id, events[j].event_id ),
-                        smt.bm.not( smt.im.equal( events[i].value, events[j].value ) )
+                        smt.im.equal( events[i].eid, events[j].eid ),
+                        smt.bm.not( smt.im.equal( events[i].mem.value, events[j].mem.value ) )
                     )
                 ) );
             }
@@ -100,10 +96,10 @@ class SMTHeuristicsHandler {
         for( int i = 0 ; i < events.length ; i++ ) {
             for( int j = 0 ; j < events.length ; j++ ) {
                 smt.prover.addConstraint( smt.bm.implication(
-                    smt.im.equal( events[i].thread_id , events[j].thread_id ),
+                    smt.im.equal( events[i].thread.tid , events[j].thread.tid ),
                     smt.bm.or(
-                        smt.im.equal( events[i].event_id, events[j].event_id ),
-                        smt.bm.not( smt.im.equal( events[i].thread_row, events[j].thread_row ) )
+                        smt.im.equal( events[i].eid, events[j].eid ),
+                        smt.bm.not( smt.im.equal( events[i].thread.row, events[j].thread.row ) )
                     )
                 ) );
             }
@@ -116,7 +112,7 @@ class SMTHeuristicsHandler {
     void thread_maximization() throws Exception {
         for( int i = 0 ; i < events.length ; i++ ) {
             for( int j = 0 ; j < events.length ; j++ ) {
-                BooleanFormula assumption = smt.bm.not( smt.im.equal( events[i].thread_id, events[j].thread_id ) );
+                BooleanFormula assumption = smt.bm.not( smt.im.equal( events[i].thread.tid, events[j].thread.tid ) );
                 if( !smt.prover.isUnsatWithAssumptions( Arrays.asList( assumption ) ) )
                     smt.prover.addConstraint( assumption );
             }
@@ -129,21 +125,9 @@ class SMTHeuristicsHandler {
     void memory_maximization() throws Exception {
         for( int i = 0 ; i < events.length ; i++ ) {
             for( int j = 0 ; j < events.length ; j++ ) {
-                BooleanFormula assumption = smt.bm.not( smt.im.equal( events[i].location, events[j].location ) );
+                BooleanFormula assumption = smt.bm.not( smt.im.equal( events[i].mem.location, events[j].mem.location ) );
                 if( !smt.prover.isUnsatWithAssumptions( Arrays.asList( assumption ) ) )
                     smt.prover.addConstraint( assumption );
-            }
-        }
-    }
-
-    /**
-     * [Optional] Events that don't have to be defined, won't be defined
-     */
-    void event_minimization() throws Exception {
-        for( int i = 0 ; i < events.length ; i++ ) {
-            BooleanFormula assumption = smt.em.equivalence( events[i].type, smt.instruction( "UNDEFINED" ) );
-            if( !smt.prover.isUnsatWithAssumptions( Arrays.asList( assumption ) ) ) {
-                smt.prover.addConstraint( assumption );
             }
         }
     }

@@ -30,8 +30,8 @@ public class ProgramConverter {
         Set <Integer> event_id_set = new HashSet<>();
 
         for( ProgramEvent event : r_events ) {
-            if( event.type == null ||
-                event.type.equals( "UNDEFINED" ) ||
+            if( event.instruction == null ||
+                event.instruction.equals( "UNDEFINED" ) ||
                 event_id_set.contains( event.event_id )
             ) {
                 continue;
@@ -61,8 +61,10 @@ public class ProgramConverter {
                 continue;
             for( int i = 0 ; i < thread.size() ; i++ ) {
                 ProgramEvent event = thread.get( i );
-                thread.set( i, new ProgramEvent( event.type, event.location, event.value, next_actual_tid, event.thread_row, event.event_id ) );
-                events.set( events.indexOf( event ), new ProgramEvent( event.type, event.location, event.value, next_actual_tid, event.thread_row, event.event_id ) );
+                int index_of = events.indexOf( event );
+                event.thread_id = next_actual_tid;
+                thread.set( i, event );
+                events.set( index_of, event );
             }
             next_actual_tid++;
         }
@@ -70,7 +72,7 @@ public class ProgramConverter {
 
     public String print_program(
         String graph_str
-    ) {
+    ) throws Exception {
         StringBuilder sb = new StringBuilder();
         List <String> read_constraints = new ArrayList<>();
 
@@ -80,7 +82,7 @@ public class ProgramConverter {
         StringBuilder tsb = new StringBuilder();
 
         for( ProgramEvent event : events )
-            global_memory_addresses.add( event.location );
+            global_memory_addresses.add( event.mem_location );
 
         boolean first_run = true;
         for( Integer addr : global_memory_addresses ) {
@@ -90,7 +92,7 @@ public class ProgramConverter {
         }
 
         for( ProgramEvent event : events )
-            if( event.type.equals( "R" ) )
+            if( event.instruction.equals( "R" ) )
                 sb.append( " " + event.thread_id + ":r" + event.event_id + "=0;" );
 
         sb.append( " }\n\n" );
@@ -102,11 +104,25 @@ public class ProgramConverter {
                 continue;
             sb.append( "P" + thread.get(0).thread_id + thread_signature + " {\n" );
             for( ProgramEvent event : thread ) {
-                if( event.type.equals( "R" ) ) {
-                    read_constraints.add( event.thread_id + ":r" + event.event_id + " = " + event.value );
-                    sb.append( "  r" + event.event_id + " = atomic_load_explicit(a" + event.location +", memory_order_seq_cst);" + "\n" );
+                char memory_tag;
+                switch( event.mem_type ) {
+                    case "ADDRESS":
+                        memory_tag = 'a';
+                    break;
+                    
+                    case "REGISTER":
+                        memory_tag = 'r';
+                    break;
+
+                    default:
+                        System.out.println( "[ERROR] " + event.mem_type );
+                        throw new Exception( "Undefined memory location type." );
+                }
+                if( event.instruction.equals( "R" ) ) {
+                    read_constraints.add( event.thread_id + ":r" + event.event_id + " = " + event.mem_value );
+                    sb.append( "  r" + event.event_id + " = atomic_load_explicit(" + memory_tag + event.mem_location +", memory_order_seq_cst);" + "\n" );
                 } else {
-                    sb.append( "  atomic_store_explicit(a" + event.location + ", " + event.value + ", memory_order_seq_cst);" + "\n" );
+                    sb.append( "  atomic_store_explicit(" + memory_tag + event.mem_location + ", " + event.mem_value + ", memory_order_seq_cst);" + "\n" );
                 }
             }
             sb.append( "}\n\n" );

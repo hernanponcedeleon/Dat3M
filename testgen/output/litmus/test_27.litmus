@@ -1,0 +1,26 @@
+C Dat3M Testgen Litmus
+"
+Program relation graph:
+1 --co-> 2
+3 --co-> 1
+2 --po-> 3
+"
+{ [a2]=0; 2:r9=0; 2:r10=0; 2:r11=0; }
+
+P0( atomic_int *a2 )  {
+  atomic_store_explicit(a2, 4, memory_order_seq_cst);
+}
+
+P1( atomic_int *a2 )  {
+  atomic_store_explicit(a2, 1, memory_order_seq_cst);
+  atomic_store_explicit(a2, 2, memory_order_seq_cst);
+}
+
+P2( atomic_int *a2 )  {
+  r11 = atomic_load_explicit(a2, memory_order_seq_cst);
+  r9 = atomic_load_explicit(a2, memory_order_seq_cst);
+  r10 = atomic_load_explicit(a2, memory_order_seq_cst);
+}
+
+exists ( 2:r11 = 2 /\ 2:r9 = 4 /\ 2:r10 = 1 )
+

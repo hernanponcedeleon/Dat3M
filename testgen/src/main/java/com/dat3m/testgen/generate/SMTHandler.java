@@ -31,8 +31,11 @@ class SMTHandler {
     EnumerationFormulaManager em;
     ProverEnvironment prover;
     
-    EnumerationFormulaType instruction_type;
-    String[] instructions_str = {};
+    EnumerationFormulaType instruction_type_enum;
+    String[] instruction_type_str = {};
+
+    EnumerationFormulaType memory_type_enum;
+    String[] memory_type_str = {};
 
     SMTHandler()
     throws Exception {
@@ -50,18 +53,30 @@ class SMTHandler {
         em = fm.getEnumerationFormulaManager();
 
         prover = context.newProverEnvironment( ProverOptions.GENERATE_MODELS );
-        instructions_str = Stream.of( Types.instruction.values() ).map( Types.instruction::name ).toArray( String[]::new );
-        instruction_type = em.declareEnumeration( "instruction_type", instructions_str ); 
+        instruction_type_str = Stream.of( Types.instruction.values() ).map( Types.instruction::name ).toArray( String[]::new );
+        instruction_type_enum = em.declareEnumeration( "instruction_type", instruction_type_str );
+        memory_type_str = Stream.of( Types.memory.values() ).map( Types.memory::name ).toArray( String[]::new );
+        memory_type_enum = em.declareEnumeration( "memory_type", memory_type_str );
     }
 
     EnumerationFormula instruction(
         final String instruction
     ) throws Exception {
-        for( String str : instructions_str ) {
+        for( String str : instruction_type_str ) {
             if( str.equals( instruction ) )
-                return em.makeConstant( instruction, instruction_type );
+                return em.makeConstant( instruction, instruction_type_enum );
         }
         throw new Exception( "Instruction type not found!" );
+    }
+
+    EnumerationFormula memory(
+        final String memory
+    ) throws Exception {
+        for( String str : memory_type_str ) {
+            if( str.equals( memory ) )
+                return em.makeConstant( memory, memory_type_enum );
+        }
+        throw new Exception( "Memory type not found!" );
     }
 
 }
