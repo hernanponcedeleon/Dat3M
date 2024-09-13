@@ -1,2 +1,4 @@
+let sync = fencerel(sync)
+let isync = fencerel(isync)
+let lwsync = fencerel(lwsync)
 let ctrlisync = ctrl & isync
-let ctrlisb = ctrl & isb

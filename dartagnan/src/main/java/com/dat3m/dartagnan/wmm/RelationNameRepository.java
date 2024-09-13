@@ -15,20 +15,10 @@ public class RelationNameRepository {
     public static final String RF = "rf";
     public static final String RMW = "rmw";
     public static final String CRIT = "rcu-rscs";
-    public static final String IDD = "idd";
-    public static final String ADDRDIRECT = "addrDirect";
-    public static final String CTRLDIRECT = "ctrlDirect";
     public static final String EMPTY = "0";
-    public static final String IDDTRANS = "idd^+";
     public static final String DATA = "data";
     public static final String ADDR = "addr";
     public static final String CTRL = "ctrl";
-    public static final String MFENCE = "mfence";
-    public static final String ISH = "ish";
-    public static final String ISB = "isb";
-    public static final String SYNC = "sync";
-    public static final String ISYNC = "isync";
-    public static final String LWSYNC = "lwsync";
     public static final String CASDEP = "casdep";
     public static final String SR = "sr";
     public static final String SCTA = "scta"; // same-cta, the same as same_block_r in alloy
@@ -39,6 +29,11 @@ public class RelationNameRepository {
     public static final String SYNC_FENCE = "sync_fence";
     public static final String SYNCBAR = "syncbar";
     public static final String VLOC = "vloc";
+    // private relations, not to be exposed in cat
+    public static final String IDD = "idd";
+    public static final String ADDRDIRECT = "__addrDirect";
+    public static final String CTRLDIRECT = "__ctrlDirect";
+    public static final String IDDTRANS = "__iddTrans";
 
     public static final ImmutableSet<String> RELATION_NAMES;
 
