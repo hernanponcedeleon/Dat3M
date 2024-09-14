@@ -17,7 +17,35 @@ public class ParserSpirvTest {
 
     @Test
     public void testParsingProgram() throws IOException {
-        String path = Paths.get(getTestResourcePath("parsers/program/spirv/valid/fibonacci.spv.dis")).toString();
+        doTestParsingValidProgram("fibonacci.spv.dis");
+        doTestParsingValidProgram("mp-memory-operands.spv.dis");
+    }
+
+    @Test
+    public void testInvalidControlFlow() throws IOException {
+        String error = "Unexpected operation 'OpLogicalNot'";
+        doTestParsingInvalidProgram("control-flow/malformed-selection-merge-label.spv.dis", error);
+        doTestParsingInvalidProgram("control-flow/malformed-selection-merge.spv.dis", error);
+        doTestParsingInvalidProgram("control-flow/malformed-loop-merge.spv.dis", error);
+        doTestParsingInvalidProgram("control-flow/malformed-loop-merge-true-label.spv.dis", error);
+    }
+
+    @Test
+    public void testInvalidMemoryOperands() throws IOException {
+        doTestParsingInvalidProgram("memory-operands/illegal-parameter-order-1.spv.dis", null);
+        doTestParsingInvalidProgram("memory-operands/illegal-parameter-order-2.spv.dis", null);
+        doTestParsingInvalidProgram("memory-operands/missing-alignment.spv.dis", null);
+        doTestParsingInvalidProgram("memory-operands/missing-scope-1.spv.dis", null);
+        doTestParsingInvalidProgram("memory-operands/missing-scope-2.spv.dis", null);
+        doTestParsingInvalidProgram("memory-operands/unnecessary-alignment-1.spv.dis", null);
+        doTestParsingInvalidProgram("memory-operands/unnecessary-alignment-2.spv.dis", null);
+        doTestParsingInvalidProgram("memory-operands/unnecessary-alignment-3.spv.dis", null);
+        doTestParsingInvalidProgram("memory-operands/unnecessary-scope-1.spv.dis", null);
+        doTestParsingInvalidProgram("memory-operands/unnecessary-scope-2.spv.dis", null);
+    }
+
+    private void doTestParsingValidProgram(String file) throws IOException {
+        String path = Paths.get(getTestResourcePath("parsers/program/spirv/valid/" + file)).toString();
         try (FileInputStream stream = new FileInputStream(path)) {
             CharStream charStream = CharStreams.fromStream(stream);
             ParserSpirv parser = new ParserSpirv();
@@ -26,15 +54,7 @@ public class ParserSpirvTest {
         }
     }
 
-    @Test
-    public void testParsingInvalidProgram() throws IOException {
-        doTestParsingInvalidProgram("malformed-selection-merge-label.spv.dis");
-        doTestParsingInvalidProgram("malformed-selection-merge.spv.dis");
-        doTestParsingInvalidProgram("malformed-loop-merge.spv.dis");
-        doTestParsingInvalidProgram("malformed-loop-merge-true-label.spv.dis");
-    }
-
-    private void doTestParsingInvalidProgram(String file) throws IOException {
+    private void doTestParsingInvalidProgram(String file, String error) throws IOException {
         String path = Paths.get(getTestResourcePath("parsers/program/spirv/invalid/" + file)).toString();
         try (FileInputStream stream = new FileInputStream(path)) {
             CharStream charStream = CharStreams.fromStream(stream);
@@ -43,7 +63,9 @@ public class ParserSpirvTest {
                 parser.parse(charStream);
                 fail("Should throw exception");
             } catch (ParsingException e) {
-                assertEquals("Unexpected operation 'OpLogicalNot'", e.getMessage());
+                if (error != null) {
+                    assertEquals(error, e.getMessage());
+                }
             }
         }
     }
