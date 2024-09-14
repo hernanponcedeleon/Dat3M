@@ -1,15 +1,15 @@
 package com.dat3m.dartagnan.utils.rules;
 
+import com.dat3m.dartagnan.configuration.Arch;
+import com.dat3m.dartagnan.configuration.ProgressModel;
+import com.dat3m.dartagnan.configuration.Property;
+import com.dat3m.dartagnan.encoding.ProverWithTracker;
 import com.dat3m.dartagnan.parsers.cat.ParserCat;
 import com.dat3m.dartagnan.parsers.program.ProgramParser;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.utils.TestHelper;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.wmm.Wmm;
-import com.dat3m.dartagnan.configuration.Arch;
-import com.dat3m.dartagnan.configuration.Property;
-import com.dat3m.dartagnan.encoding.ProverWithTracker;
-
 import org.sosy_lab.common.ShutdownManager;
 import org.sosy_lab.common.ShutdownNotifier;
 import org.sosy_lab.common.configuration.Configuration;
@@ -63,11 +63,12 @@ public class Providers {
     // =========================== Task related providers ==============================
 
     public static Provider<VerificationTask> createTask(Supplier<Program> programSupplier, Supplier<Wmm> wmmSupplier, Supplier<EnumSet<Property>> propertySupplier,
-                                                        Supplier<Arch> targetSupplier, Supplier<Integer> boundSupplier, Supplier<Configuration> config) {
+                                                        Supplier<Arch> targetSupplier, Supplier<ProgressModel> progressModelSupplier, Supplier<Integer> boundSupplier, Supplier<Configuration> config) {
     	return Provider.fromSupplier(() -> VerificationTask.builder().
     	        withConfig(config.get()).
     			withTarget(targetSupplier.get()).
     			withBound(boundSupplier.get()).
+                withProgressModel(progressModelSupplier.get()).
     			build(programSupplier.get(), wmmSupplier.get(), propertySupplier.get()));
     }
 
