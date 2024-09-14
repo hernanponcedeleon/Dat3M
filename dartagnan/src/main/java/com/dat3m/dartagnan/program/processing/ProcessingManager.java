@@ -98,7 +98,7 @@ public class ProcessingManager implements ProgramProcessor {
                                 Simplifier.fromConfig(config)
                         ), Target.FUNCTIONS, true
                 ),
-                ProgramProcessor.fromFunctionProcessor(NormalizeLoops.newInstance(), Target.FUNCTIONS, true),
+                ProgramProcessor.fromFunctionProcessor(NormalizeLoops.newInstance(), Target.ALL, true),
                 RegisterDecomposition.newInstance(),
                 RemoveDeadFunctions.newInstance(),
                 printAfterSimplification ? DebugPrint.withHeader("After simplification", Printer.Mode.ALL) : null,

@@ -81,6 +81,7 @@ public class ReachabilityResult {
                     .withBound(options.bound())
                     .withSolverTimeout(options.timeout())
                     .withTarget(arch)
+                    .withProgressModel(options.progress())
                     .build(program, wmm, options.properties());
 
             t.start();

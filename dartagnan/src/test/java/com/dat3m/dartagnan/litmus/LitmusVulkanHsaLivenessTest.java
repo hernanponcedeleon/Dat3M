@@ -1,6 +1,7 @@
 package com.dat3m.dartagnan.litmus;
 
 import com.dat3m.dartagnan.configuration.Arch;
+import com.dat3m.dartagnan.configuration.ProgressModel;
 import com.dat3m.dartagnan.configuration.Property;
 import com.dat3m.dartagnan.utils.Result;
 import com.dat3m.dartagnan.utils.rules.Provider;
@@ -11,15 +12,20 @@ import java.io.IOException;
 import java.util.EnumSet;
 
 @RunWith(Parameterized.class)
-public class LitmusVulkanLivenessTest extends AbstractLitmusTest {
+public class LitmusVulkanHsaLivenessTest extends AbstractLitmusTest {
 
-    public LitmusVulkanLivenessTest(String path, Result expected) {
+    public LitmusVulkanHsaLivenessTest(String path, Result expected) {
         super(path, expected);
     }
 
     @Parameterized.Parameters(name = "{index}: {0}, {1}")
     public static Iterable<Object[]> data() throws IOException {
-        return buildLitmusTests("litmus/VULKAN/", "VULKAN-Liveness");
+        return buildLitmusTests("litmus/VULKAN/", "VULKAN-Liveness-HSA");
+    }
+
+    @Override
+    protected Provider<ProgressModel> getProgressModelProvider() {
+        return () -> ProgressModel.HSA;
     }
 
     @Override
