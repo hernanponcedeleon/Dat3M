@@ -378,6 +378,7 @@ public final class Tag {
     // ========================================= OpenCL ============================================
     // =============================================================================================
     public static final class OpenCL {
+        // Atomicity of location
         public static final String NON_ATOMIC_LOCATION = "NAL";
         // Space
         public static final String GLOBAL_SPACE = "GLOBAL";
@@ -386,6 +387,14 @@ public final class Tag {
         // Barrier
         public static final String ENTRY_FENCE = "EF";
         public static final String EXIT_FENCE = "XF";
+
+        // Default Tags
+        public static final String DEFAULT_SCOPE = GPU_SCOPES.DEVICE;
+        public static final String DEFAULT_WEAK_SCOPE = GPU_SCOPES.WORK_ITEM;
+        public static final String DEFAULT_MO = C11.MO_SC;
+        public static final String DEFAULT_CPU_SPACE = GLOBAL_SPACE;
+        public static final String DEFAULT_GPU_SPACE = GENERIC_SPACE;
+
 
         public static List<String> getScopeTags() {
             return List.of(GPU_SCOPES.WORK_GROUP, GPU_SCOPES.DEVICE, GPU_SCOPES.ALL);
