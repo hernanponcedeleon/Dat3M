@@ -3,6 +3,7 @@ package com.dat3m.dartagnan.parsers.program.visitors;
 import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
+import com.dat3m.dartagnan.expression.base.BinaryExpressionBase;
 import com.dat3m.dartagnan.expression.integers.IntLiteral;
 import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
@@ -200,21 +201,21 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
         String name = ctx.varName().getText();
         MemoryObject object = programBuilder.getOrNewMemoryObject(name);
         Register register = programBuilder.getOrNewRegister(scope, name, archType);
+        boolean atomicity = ctx.pointerTypeSpecifier().atomicTypeSpecifier() != null
+                || ctx.pointerTypeSpecifier().basicTypeSpecifier().AtomicInt() != null;
+        object.setIsAtomic(atomicity);
         if (this.isOpenCL) {
             if (ctx.openCLSpace() != null) {
-                programBuilder.setAddressSpace(currentThread, name, ctx.openCLSpace().space);
-                boolean atomicity = ctx.pointerTypeSpecifier().atomicTypeSpecifier() != null;
-                object.setIsAtomic(atomicity);
                 object.setMemorySpace(ctx.openCLSpace().space);
+            } else {
+                // Using GENERIC_SPACE as default memory space for OpenCL threads
+                object.setMemorySpace(Tag.OpenCL.GENERIC_SPACE);
             }
         } else {
             // Using GLOBAL_SPACE as default memory space for CPU threads
-            programBuilder.setAddressSpace(currentThread, name, Tag.OpenCL.GLOBAL_SPACE);
-            boolean atomicity = ctx.pointerTypeSpecifier().atomicTypeSpecifier() != null
-                    || ctx.pointerTypeSpecifier().basicTypeSpecifier().AtomicInt() != null;
-            object.setIsAtomic(atomicity);
             object.setMemorySpace(Tag.OpenCL.GLOBAL_SPACE);
         }
+        programBuilder.setReg2LocMap(register, object);
         programBuilder.addChild(currentThread, EventFactory.newLocal(register, object));
         return null;
     }
@@ -291,8 +292,9 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
     public Expression visitC11AtomicOp(LitmusCParser.C11AtomicOpContext ctx) {
         Register register = getReturnRegister(true);
         Expression value = returnExpressionOrOne(ctx.value);
-        Event event = EventFactory.Atomic.newFetchOp(register, getAddress(ctx.address), value, ctx.op, ctx.c11Mo().mo);
-        addOpenCLMemorySpaceTag(event, ctx.address.getText());
+        Expression address = getAddress(ctx.address);
+        Event event = EventFactory.Atomic.newFetchOp(register, address, value, ctx.op, ctx.c11Mo().mo);
+        addOpenCLMemorySpaceTag(event, address);
         if (ctx.openCLScope() != null) {
             event.addTags(ctx.openCLScope().scope);
         } else {
@@ -348,7 +350,7 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
         Expression expectedAdd = getAddress(ctx.expectedAdd);
         String mo = ctx.c11Mo(0).mo;
         Event event = EventFactory.Atomic.newCompareExchange(register, address, expectedAdd, value, mo, true);
-        addOpenCLMemorySpaceTag(event, ctx.address.getText());
+        addOpenCLMemorySpaceTag(event, address);
         if (ctx.openCLScope() != null) {
             event.addTags(ctx.openCLScope().scope);
         } else {
@@ -365,7 +367,7 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
         Expression address = getAddress(ctx.address);
         Expression expectedAdd = getAddress(ctx.expectedAdd);
         Event event = EventFactory.Atomic.newCompareExchange(register, address, expectedAdd, value, C11.MO_SC, true); // default memory_order for OpenCL
-        addOpenCLMemorySpaceTag(event, ctx.address.getText());
+        addOpenCLMemorySpaceTag(event, address);
         event.addTags(Tag.GPU_SCOPES.DEVICE); // default memory_scope for OpenCL
         programBuilder.addChild(currentThread, event);
         return register;
@@ -379,7 +381,7 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
         Expression expectedAdd = getAddress(ctx.expectedAdd);
         String mo = ctx.c11Mo(0).mo;
         Event event = EventFactory.Atomic.newCompareExchange(register, address, expectedAdd, value, mo, false);
-        addOpenCLMemorySpaceTag(event, ctx.address.getText());
+        addOpenCLMemorySpaceTag(event, address);
         if (ctx.openCLScope() != null) {
             event.addTags(ctx.openCLScope().scope);
         } else {
@@ -396,7 +398,7 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
         Expression address = getAddress(ctx.address);
         Expression expectedAdd = getAddress(ctx.expectedAdd);
         Event event = EventFactory.Atomic.newCompareExchange(register, address, expectedAdd, value, C11.MO_SC, false); // default memory_order for OpenCL
-        addOpenCLMemorySpaceTag(event, ctx.address.getText());
+        addOpenCLMemorySpaceTag(event, address);
         event.addTags(Tag.GPU_SCOPES.DEVICE); // default memory_scope for OpenCL
         programBuilder.addChild(currentThread, event);
         return register;
@@ -414,8 +416,9 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
 
     @Override public Expression visitReC11LoadExplicit(LitmusCParser.ReC11LoadExplicitContext ctx) {
         Register register = getReturnRegister(true);
-        AtomicLoad event = EventFactory.Atomic.newLoad(register, getAddress(ctx.address), ctx.c11Mo().mo);
-        addOpenCLMemorySpaceTag(event, ctx.address.getText());
+        Expression address = getAddress(ctx.address);
+        AtomicLoad event = EventFactory.Atomic.newLoad(register, address, ctx.c11Mo().mo);
+        addOpenCLMemorySpaceTag(event, address);
         if (ctx.openCLScope() != null) {
             event.addTags(ctx.openCLScope().scope);
         } else {
@@ -427,8 +430,9 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
 
     @Override public Expression visitReC11Load(LitmusCParser.ReC11LoadContext ctx) {
         Register register = getReturnRegister(true);
-        AtomicLoad event = EventFactory.Atomic.newLoad(register, getAddress(ctx.address), C11.MO_SC); // default memory_order for OpenCL
-        addOpenCLMemorySpaceTag(event, ctx.address.getText());
+        Expression address = getAddress(ctx.address);
+        AtomicLoad event = EventFactory.Atomic.newLoad(register, address, C11.MO_SC); // default memory_order for OpenCL
+        addOpenCLMemorySpaceTag(event, address);
         event.addTags(Tag.GPU_SCOPES.DEVICE); // default memory_scope for OpenCL
         programBuilder.addChild(currentThread, event);
         return register;
@@ -453,8 +457,9 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
     @Override
     public Expression visitReReadNa(LitmusCParser.ReReadNaContext ctx){
         Register register = getReturnRegister(true);
-        Load event = EventFactory.newLoadWithMo(register, getAddress(ctx.address), C11.NONATOMIC);
-        addOpenCLMemorySpaceTag(event, ctx.address.getText());
+        Expression address = getAddress(ctx.address);
+        Load event = EventFactory.newLoadWithMo(register, address, C11.NONATOMIC);
+        addOpenCLMemorySpaceTag(event, address);
         programBuilder.addChild(currentThread, event);
         return register;
     }
@@ -567,8 +572,9 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
     @Override
     public Object visitNreC11StoreExplicit(LitmusCParser.NreC11StoreExplicitContext ctx) {
         Expression value = (Expression)ctx.value.accept(this);
-        AtomicStore event = EventFactory.Atomic.newStore(getAddress(ctx.address), value, ctx.c11Mo().mo);
-        addOpenCLMemorySpaceTag(event, ctx.address.getText());
+        Expression address = getAddress(ctx.address);
+        AtomicStore event = EventFactory.Atomic.newStore(address, value, ctx.c11Mo().mo);
+        addOpenCLMemorySpaceTag(event, address);
         if (ctx.openCLScope() != null) {
             event.addTags(ctx.openCLScope().scope);
         } else {
@@ -580,8 +586,9 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
     @Override
     public Object visitNreC11Store(LitmusCParser.NreC11StoreContext ctx) {
         Expression value = (Expression)ctx.value.accept(this);
-        AtomicStore event = EventFactory.Atomic.newStore(getAddress(ctx.address), value, C11.MO_SC); // default memory_order for OpenCL
-        addOpenCLMemorySpaceTag(event, ctx.address.getText());
+        Expression address = getAddress(ctx.address);
+        AtomicStore event = EventFactory.Atomic.newStore(address, value, C11.MO_SC); // default memory_order for OpenCL
+        addOpenCLMemorySpaceTag(event, address);
         event.addTags(Tag.GPU_SCOPES.DEVICE); // default memory_scope for OpenCL
         return programBuilder.addChild(currentThread, event);
     }
@@ -602,7 +609,7 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
         if(variable instanceof MemoryObject || variable instanceof Register){
             Event event = EventFactory.newStoreWithMo(variable, value, C11.NONATOMIC);
             if (variable instanceof Register reg) {
-                addOpenCLMemorySpaceTag(event, reg.getName());
+                addOpenCLMemorySpaceTag(event, reg);
                 event.addTags(Tag.GPU_SCOPES.WORK_ITEM); // default memory_scope for OpenCL weak access
             }
             return programBuilder.addChild(currentThread, event);
@@ -728,10 +735,19 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
         return value;
     }
 
-    private void addOpenCLMemorySpaceTag(Event event, String addressString) {
-        String space = programBuilder.getAddressSpace(currentThread, addressString);
-        if (space != null) {
-            event.addTags(space);
+    private void addOpenCLMemorySpaceTag(Event event, Expression address) {
+        if (address instanceof Register reg) {
+            MemoryObject object = programBuilder.getLocFromReg(reg);
+            if (object != null) {
+                event.addTags(object.getMemorySpace());
+                if (!object.isAtomic()) {
+                    event.addTags(Tag.OpenCL.NON_ATOMIC_LOCATION);
+                }
+            }
+        } else if (address instanceof BinaryExpressionBase<?,?> binExpr) {
+            // TODO: Convert memory space tags for binary expressions
+            addOpenCLMemorySpaceTag(event, binExpr.getLeft());
+            addOpenCLMemorySpaceTag(event, binExpr.getRight());
         }
     }
 }

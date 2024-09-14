@@ -378,9 +378,11 @@ public final class Tag {
     // ========================================= OpenCL ============================================
     // =============================================================================================
     public static final class OpenCL {
+        public static final String NON_ATOMIC_LOCATION = "NAL";
         // Space
         public static final String GLOBAL_SPACE = "GLOBAL";
         public static final String LOCAL_SPACE = "LOCAL";
+        public static final String GENERIC_SPACE = "GENERIC";
         // Barrier
         public static final String ENTRY_FENCE = "EF";
         public static final String EXIT_FENCE = "XF";

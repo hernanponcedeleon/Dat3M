@@ -10,8 +10,9 @@ public class OpenCLInit extends Init {
         super(b, o, address);
         if (b.getMemorySpace() != null) {
             addTags(b.getMemorySpace());
-            if (b.isAtomic()) {
-                addTags(Tag.C11.ATOMIC);
+            addTags(Tag.C11.NONATOMIC); // Every initial event is a nonatomic write of zero
+            if (!b.isAtomic()) {
+                addTags(Tag.OpenCL.NON_ATOMIC_LOCATION);
             }
         }
     }

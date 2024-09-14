@@ -100,8 +100,8 @@ let gvse = [GLOBAL]; vse_hbl_g
 let lvse = [LOCAL]; vse_hbl_l
 
 (* A non-atomic load can only read from a store that is visible. *)
-irreflexive rf; [NA & GLOBAL]; ~(gvse^-1) as global_nonatomic_rf_consistent
-irreflexive rf; [NA & LOCAL]; ~(lvse^-1) as local_nonatomic_rf_consistent
+irreflexive rf; [NAL & GLOBAL]; ~(gvse^-1) as global_nonatomic_rf_consistent
+irreflexive rf; [NAL & LOCAL]; ~(lvse^-1) as local_nonatomic_rf_consistent
 
 (* An atomic load can only read from a store that already happened. *)
 irreflexive (ghb | lhb); rf; [A] as atomic_rf_consistent

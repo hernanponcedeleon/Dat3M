@@ -44,7 +44,7 @@ public class ProgramBuilder {
     private final Map<Integer, Function> id2FunctionsMap = new HashMap<>();
     private final Map<Integer, Map<String, Label>> fid2LabelsMap = new HashMap<>();
     private final Map<String, MemoryObject> locations = new HashMap<>();
-    private final Map<Integer, Map<String, String>> addressSpaces = new HashMap<>();
+    private final Map<Register, MemoryObject> reg2LocMap = new HashMap<>();
 
     private final Program program;
 
@@ -355,15 +355,11 @@ public class ProgramBuilder {
 
     // ----------------------------------------------------------------------------------------------------------------
     // OpenCL
-    public void setAddressSpace(int threadId, String name, String spaceValue) {
-        addressSpaces
-                .computeIfAbsent(threadId, k -> new HashMap<>())
-                .put(name, spaceValue);
+    public void setReg2LocMap(Register reg, MemoryObject loc) {
+        reg2LocMap.put(reg, loc);
     }
 
-    public String getAddressSpace(int threadId, String name) {
-        return addressSpaces
-                .getOrDefault(threadId, new HashMap<>())
-                .get(name);
+    public MemoryObject getLocFromReg(Register reg) {
+        return reg2LocMap.get(reg);
     }
 }
