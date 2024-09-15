@@ -210,6 +210,7 @@ public class RefinementSolver extends ModelChecker {
 
         final VerificationTask baselineTask = VerificationTask.builder()
                 .withConfig(task.getConfig())
+                .withProgressModel(task.getProgressModel())
                 .build(program, baselineModel, task.getProperty());
         performStaticWmmAnalyses(baselineTask, baselineContext, config);
 

@@ -128,8 +128,8 @@ public class ThreadCreation implements ProgramProcessor {
                         comAddress.setInitialValue(0, expressions.makeZero(archType));
 
                         final List<Event> replacement = eventSequence(
-                                createEvent,
                                 newReleaseStore(comAddress, expressions.makeTrue()),
+                                createEvent,
                                 newStore(pidResultAddress, tidExpr),
                                 // TODO: Allow to return failure value (!= 0)
                                 newLocal(resultRegister, expressions.makeZero((IntegerType) resultRegister.getType()))

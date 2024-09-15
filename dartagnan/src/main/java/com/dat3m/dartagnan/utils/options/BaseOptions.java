@@ -2,6 +2,7 @@ package com.dat3m.dartagnan.utils.options;
 
 import com.dat3m.dartagnan.GlobalSettings;
 import com.dat3m.dartagnan.configuration.Method;
+import com.dat3m.dartagnan.configuration.ProgressModel;
 import com.dat3m.dartagnan.configuration.Property;
 import com.dat3m.dartagnan.witness.WitnessType;
 import org.sosy_lab.common.configuration.Option;
@@ -17,12 +18,22 @@ public abstract class BaseOptions {
 
     @Option(
             name = PROPERTY,
-            description = "The property to check for: reachability (default), liveness, races.",
+            description = "A combination of properties to check for: program_spec, liveness, cat_spec (defaults to all).",
             toUppercase = true)
     private EnumSet<Property> property = Property.getDefault();
 
     public EnumSet<Property> getProperty() {
         return property;
+    }
+
+    @Option(
+            name = PROGRESSMODEL,
+            description = "The progress model to assume: fair (default), hsa, obe, unfair",
+            toUppercase = true)
+    private ProgressModel progressModel = ProgressModel.getDefault();
+
+    public ProgressModel getProgressModel() {
+        return progressModel;
     }
 
     @Option(

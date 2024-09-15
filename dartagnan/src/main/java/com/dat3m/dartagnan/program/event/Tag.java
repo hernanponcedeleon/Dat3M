@@ -391,7 +391,7 @@ public final class Tag {
 
         // Memory access (non-atomic)
         public static final String MEM_VOLATILE = "SPV_MEM_VOLATILE";
-        public static final String MEM_NON_TEMPORAL = "SPV_MEM_NON_TEMPORAL";
+        public static final String MEM_NONTEMPORAL = "SPV_MEM_NONTEMPORAL";
         public static final String MEM_NON_PRIVATE = "SPV_MEM_NON_PRIVATE";
         public static final String MEM_AVAILABLE = "SPV_MEM_AVAILABLE";
         public static final String MEM_VISIBLE = "SPV_MEM_VISIBLE";
