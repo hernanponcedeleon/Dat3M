@@ -97,24 +97,28 @@ public class VisitorOpenCL extends VisitorBase {
     }
 
     private List<Event> tagList(Event originalEvent, List<Event> in) {
-        in.forEach(this::tagEvent);
-        String scope = Tag.getScopeTag(originalEvent, Arch.OPENCL);
-        if (!scope.isEmpty()) {
-            in.forEach(e -> e.addTags(scope));
-        }
-        List<String> spaces = Tag.OpenCL.getSpaceTags(originalEvent);
-        if (!spaces.isEmpty()) {
-            in.forEach(e -> e.addTags(spaces));
-        }
-
+        in.forEach(e -> tagEvent(originalEvent, e));
         return in;
     }
 
-    private void tagEvent(Event e) {
-        if (e instanceof MemoryEvent) {
-            final MemoryOrder mo = e.getMetadata(MemoryOrder.class);
-            final boolean canRace = mo == null || mo.value().equals(C11.NONATOMIC);
-            e.addTags(canRace ? C11.NONATOMIC : C11.ATOMIC);
+    private void tagEvent(Event originalEvent, Event e) {
+        String scope = Tag.getScopeTag(originalEvent, Arch.OPENCL);
+        List<String> spaces = Tag.OpenCL.getSpaceTags(originalEvent);
+        if (e instanceof MemoryEvent || e instanceof GenericVisibleEvent) {
+            if (!scope.isEmpty()) {
+                e.addTags(scope);
+            }
+            if (!spaces.isEmpty()) {
+                e.addTags(spaces);
+            }
+            if (e instanceof MemoryEvent) {
+                final MemoryOrder mo = e.getMetadata(MemoryOrder.class);
+                final boolean canRace = mo == null || mo.value().equals(C11.NONATOMIC);
+                e.addTags(canRace ? C11.NONATOMIC : C11.ATOMIC);
+                if (e.hasTag(Tag.OpenCL.NON_ATOMIC_LOCATION)) {
+                    e.addTags(Tag.OpenCL.NON_ATOMIC_LOCATION);
+                }
+            }
         }
     }
 }

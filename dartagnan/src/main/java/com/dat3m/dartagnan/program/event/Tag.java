@@ -401,7 +401,7 @@ public final class Tag {
         }
 
         public static List<String> getSpaceTags() {
-            return List.of(GLOBAL_SPACE, LOCAL_SPACE);
+            return List.of(GLOBAL_SPACE, LOCAL_SPACE, GENERIC_SPACE);
         }
 
         public static List<String> getSpaceTags(Event e) {

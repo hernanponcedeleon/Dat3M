@@ -134,7 +134,7 @@ acyclic scp_prime & sc_existance as s_exists
 (*    Races    *)
 (***************)
 
-let conflict =  (((W * _) | (_ * W)) \ ((IW * _) | (_ * IW))) & loc
+let conflict = ((W * _) | (_ * W)) & loc
 
 let gl_hb = ghb | lhb
 let dr = conflict & ~(gl_hb | gl_hb^-1) & ~incl \ id
