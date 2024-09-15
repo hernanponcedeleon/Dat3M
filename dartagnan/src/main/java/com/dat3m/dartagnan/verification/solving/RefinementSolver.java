@@ -14,6 +14,8 @@ import com.dat3m.dartagnan.program.event.MemoryEvent;
 import com.dat3m.dartagnan.program.event.core.MemoryCoreEvent;
 import com.dat3m.dartagnan.program.event.metadata.OriginalId;
 import com.dat3m.dartagnan.program.event.metadata.SourceLocation;
+import com.dat3m.dartagnan.program.filter.Filter;
+import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.solver.caat.CAATSolver;
 import com.dat3m.dartagnan.solver.caat4wmm.RefinementModel;
 import com.dat3m.dartagnan.solver.caat4wmm.Refiner;
@@ -521,36 +523,56 @@ public class RefinementSolver extends ModelChecker {
         return RefinementModel.fromCut(Cut.computeInducedCut(original, constraintsToCut));
     }
 
-    private static void addBiases(Wmm memoryModel, EnumSet<Baseline> biases) {
-        // FIXME: This can (in theory) add redundant intermediate relations and/or constraints that
-        //  already exist in the model.
-        final Relation rf = memoryModel.getRelation(RF);
+    private static void addBiases(Wmm wmm, EnumSet<Baseline> biases) {
+
+        // Base relations
+        final Relation rf = wmm.getRelation(RF);
+        final Relation co = wmm.getOrCreatePredefinedRelation(CO);
+        final Relation loc = wmm.getOrCreatePredefinedRelation(LOC);
+        final Relation po = wmm.getOrCreatePredefinedRelation(PO);
+        final Relation ext = wmm.getOrCreatePredefinedRelation(EXT);
+        final Relation rmw = wmm.getOrCreatePredefinedRelation(RMW);
+
+        // rf^-1;co
+        final Relation rfinv = wmm.addDefinition(new Inverse(wmm.newRelation(), rf));
+        final Relation frStandard = wmm.addDefinition(new Composition(wmm.newRelation(), rfinv, co));
+
+        // ([R] \ [range(rf)]);loc;[W]
+        final Relation reads = wmm.addDefinition(new SetIdentity(wmm.newRelation(), wmm.getFilter(Tag.READ)));
+        final Relation rfRange = wmm.addDefinition(new RangeIdentity(wmm.newRelation(), rf));
+        final Relation writes = wmm.addDefinition(new SetIdentity(wmm.newRelation(), Filter.byTag(Tag.WRITE)));
+        final Relation ur = wmm.addDefinition(new Difference(wmm.newRelation(), reads, rfRange));
+        final Relation urloc = wmm.addDefinition(new Composition(wmm.newRelation(), ur, loc));
+        final Relation urlocwrites = wmm.addDefinition(new Composition(wmm.newRelation(), urloc, writes));
+
+        // let fr = rf^-1;co | ([R] \ [range(rf)]);loc;[W]
+        final Relation fr = wmm.addDefinition(new Union(wmm.newRelation(), frStandard, urlocwrites));
+
         if (biases.contains(Baseline.UNIPROC)) {
             // ---- acyclic(po-loc | com) ----
-            memoryModel.addConstraint(new Acyclicity(memoryModel.addDefinition(new Union(memoryModel.newRelation(),
-                    memoryModel.getRelation(POLOC),
-                    rf,
-                    memoryModel.getOrCreatePredefinedRelation(CO),
-                    memoryModel.getOrCreatePredefinedRelation(FR)
+            wmm.addConstraint(new Acyclicity(wmm.addDefinition(new Union(wmm.newRelation(),
+                wmm.addDefinition(new Intersection(wmm.newRelation(), po, loc)),
+                rf,
+                co,
+                fr
             ))));
         }
         if (biases.contains(Baseline.NO_OOTA)) {
             // ---- acyclic (dep | rf) ----
-            memoryModel.addConstraint(new Acyclicity(memoryModel.addDefinition(new Union(memoryModel.newRelation(),
-                    memoryModel.getOrCreatePredefinedRelation(CTRL),
-                    memoryModel.getOrCreatePredefinedRelation(DATA),
-                    memoryModel.getOrCreatePredefinedRelation(ADDR),
-                    rf)
+            wmm.addConstraint(new Acyclicity(wmm.addDefinition(new Union(wmm.newRelation(),
+                wmm.getOrCreatePredefinedRelation(CTRL),
+                wmm.getOrCreatePredefinedRelation(DATA),
+                wmm.getOrCreatePredefinedRelation(ADDR),
+                rf)
             )));
         }
         if (biases.contains(Baseline.ATOMIC_RMW)) {
             // ---- empty (rmw & fre;coe) ----
-            Relation rmw = memoryModel.getOrCreatePredefinedRelation(RMW);
-            Relation coe = memoryModel.getRelation(COE);
-            Relation fre = memoryModel.getRelation(FRE);
-            Relation frecoe = memoryModel.addDefinition(new Composition(memoryModel.newRelation(), fre, coe));
-            Relation rmwANDfrecoe = memoryModel.addDefinition(new Intersection(memoryModel.newRelation(), rmw, frecoe));
-            memoryModel.addConstraint(new Emptiness(rmwANDfrecoe));
+            Relation coe = wmm.addDefinition(new Intersection(wmm.newRelation(), co, ext));
+            Relation fre = wmm.addDefinition(new Intersection(wmm.newRelation(), fr, ext));
+            Relation frecoe = wmm.addDefinition(new Composition(wmm.newRelation(), fre, coe));
+            Relation rmwANDfrecoe = wmm.addDefinition(new Intersection(wmm.newRelation(), rmw, frecoe));
+            wmm.addConstraint(new Emptiness(rmwANDfrecoe));
         }
     }
 
