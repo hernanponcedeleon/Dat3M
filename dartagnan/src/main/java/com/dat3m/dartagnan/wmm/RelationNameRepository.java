@@ -30,7 +30,7 @@ public class RelationNameRepository {
     public static final String SYNCBAR = "syncbar";
     public static final String VLOC = "vloc";
     // private relations, not to be exposed in cat
-    public static final String IDD = "idd";
+    public static final String IDD = "__idd";
     public static final String ADDRDIRECT = "__addrDirect";
     public static final String CTRLDIRECT = "__ctrlDirect";
     public static final String IDDTRANS = "__iddTrans";
