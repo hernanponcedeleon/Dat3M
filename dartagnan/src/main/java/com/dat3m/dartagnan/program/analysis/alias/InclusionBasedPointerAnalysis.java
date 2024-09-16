@@ -17,7 +17,6 @@ import com.dat3m.dartagnan.verification.Context;
 import com.dat3m.dartagnan.witness.graphviz.Graphviz;
 import com.google.common.base.Supplier;
 import com.google.common.base.Suppliers;
-import com.google.common.collect.Lists;
 import com.google.common.math.IntMath;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -580,9 +579,7 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
                     }
                     for (IncludeEdge i : entry.getValue()) {
                         assert i.source == other;
-                        // simply negate the static modifier to have the detour over the representative
-                        var negated = new Modifier(-i.modifier.offset, i.modifier.alignment);
-                        var composed = compose(negated, includeEdge.modifier);
+                        var composed = compose(invert(i.modifier), includeEdge.modifier);
                         newIncludeEdges.add(new IncludeEdge(variable, composed));
                     }
                 }
@@ -600,16 +597,32 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
                     }
                     for (IncludeEdge i : entry.getValue()) {
                         assert i.source == other;
-                        var negated = new Modifier(-i.modifier.offset, i.modifier.alignment);
-                        var composed = compose(negated, store.value.modifier);
+                        Modifier composed = compose(invert(i.modifier), store.value.modifier);
                         newStores.add(new StoreEdge(new DerivedVariable(variable, composed), store.addressModifier));
                     }
                 }
-                address.stores.removeIf(store -> store.value.base == other);
-                address.stores.addAll(newStores);
-                variable.seeAlso.add(address);
+                if (!newStores.isEmpty()) {
+                    address.stores.removeIf(store -> store.value.base == other);
+                    address.stores.addAll(newStores);
+                    variable.seeAlso.add(address);
+                }
             }
             //NOTE: Includers and addresses may be removed from other.seeAlso.
+        }
+        // Redirect addressVariable map entries.
+        //final List<IncludeEdge> selfLoops = variable.includes.stream().filter(i -> i.source == variable).toList();
+        //assert selfLoops.size() == 1 : "not able to join self loops: " + selfLoops;
+        for (Map.Entry<MemoryCoreEvent, DerivedVariable> entry : addressVariables.entrySet()) {
+            final List<IncludeEdge> includeEdges = edges.get(entry.getValue().base);
+            if (includeEdges == null) {
+                continue;
+            }
+            assert !includeEdges.isEmpty();
+            if (logger.isWarnEnabled() && includeEdges.size() != 1) {
+                List<Modifier> m = includeEdges.stream().map(i -> i.modifier).toList();
+                logger.warn("multiple paths in component {} -> {}: {}", entry.getValue().base, variable, m);
+            }
+            entry.setValue(new DerivedVariable(variable, compose(entry.getValue().modifier, invert(includeEdges.get(0).modifier))));
         }
     }
 
@@ -653,24 +666,32 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
     }
 
     private boolean addInto(List<IncludeEdge> list, IncludeEdge element, boolean isGraphModification) {
+        if (addInto(list, element.source, element.modifier)) {
+            if (isGraphModification) {
+                addIntoGraphSucceesses++;
+            } else {
+                addIntoCyclesSuccesses++;
+            }
+            return true;
+        } else {
+            if (isGraphModification) {
+                addIntoGraphFails++;
+            } else {
+                addIntoCyclesFails++;
+            }
+            return false;
+        }
+    }
+
+    private boolean addInto(List<IncludeEdge> list, Variable source, Modifier modifier) {
         //NOTE The Stream API is too costly here
         for (final IncludeEdge o : list) {
-            if (element.source.equals(o.source) && includes(o.modifier, element.modifier)) {
-                if (isGraphModification) {
-                    addIntoGraphFails++;
-                } else {
-                    addIntoCyclesFails++;
-                }
+            if (source.equals(o.source) && includes(o.modifier, modifier)) {
                 return false;
             }
         }
-        if (isGraphModification) {
-            addIntoGraphSucceesses++;
-        } else {
-            addIntoCyclesSuccesses++;
-        }
-        list.removeIf(o -> element.source.equals(o.source) && includes(element.modifier, o.modifier));
-        list.add(element);
+        list.removeIf(o -> source.equals(o.source) && includes(modifier, o.modifier));
+        list.add(new IncludeEdge(source, modifier));
         return true;
     }
 
@@ -738,30 +759,22 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
         if (left.alignment.isEmpty()) {
             return right.alignment.isEmpty() && offset == 0;
         }
-        for (final Integer a : left.alignment) {
-            if (a < 0) {
-                final int l = reduceAbsGCD(left.alignment);
-                final int r = reduceAbsGCD(right.alignment);
-                return offset % l == 0 && r % l == 0;
-            }
+        // Case of unbounded dynamic indexes.
+        int leftAlignment = singleAlignment(left.alignment);
+        int rightAlignment = singleAlignment(right.alignment);
+        if (leftAlignment < 0 || rightAlignment < 0) {
+            int l = leftAlignment < 0 ? -leftAlignment : reduceGCD(left.alignment);
+            int r = rightAlignment < 0 ? -rightAlignment : reduceGCD(right.alignment);
+            return offset % l == 0 && r % l == 0;
         }
-        for (final Integer a : right.alignment) {
-            if (a < 0) {
-                final int l = reduceAbsGCD(left.alignment);
-                final int r = reduceAbsGCD(right.alignment);
-                return offset % l == 0 && r % l == 0;
-            }
-        }
-        // FIXME assumes that dynamic indexes used here only have non-negative values.
-        // This cannot be used when a negative alignment occurs, because the analysis would not terminate.
+        // Case of a single non-negative dynamic index.
         if (left.alignment.size() == 1) {
-            final int alignment = Math.abs(left.alignment.get(0));
             for (final Integer a : right.alignment) {
-                if (a % alignment != 0) {
+                if (a % leftAlignment != 0) {
                     return false;
                 }
             }
-            return offset % alignment == 0 && offset >= 0;
+            return offset % leftAlignment == 0 && offset >= 0;
         }
         // Case of multiple dynamic indexes with pairwise indivisible alignments.
         final int gcd = IntMath.gcd(reduceGCD(right.alignment), Math.abs(offset));
@@ -795,8 +808,10 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
     private static boolean overlaps(Modifier l, Modifier r) {
         // exists non-negative integers x, y with l.offset + x * l.alignment == r.offset + y * r.alignment
         final int offset = r.offset - l.offset;
-        final int left = reduceAbsGCD(l.alignment);
-        final int right = reduceAbsGCD(r.alignment);
+        final int leftAlignment = singleAlignment(l.alignment);
+        final int rightAlignment = singleAlignment(r.alignment);
+        final int left = leftAlignment < 0 ? -leftAlignment : reduceGCD(l.alignment);
+        final int right = rightAlignment < 0 ? -rightAlignment : reduceGCD(r.alignment);
         if (left == 0 && right == 0) {
             return offset == 0;
         }
@@ -805,12 +820,8 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
         return nonNegativeIndexes && offset % divisor == 0;
     }
 
-    // Computes the greatest common divisor of the absolute values of the operands.
-    // This gets called only if there is at least one negative dynamic offset.
-    // Positive values assume non-negative multipliers and thus enable the precision of the previous analysis.
-    // Negative values indicate that the multiplier can also be negative.
-    private static int reduceAbsGCD(List<Integer> alignment) {
-        return reduceGCD(Lists.transform(alignment, Math::abs));
+    private static int singleAlignment(List<Integer> alignment) {
+        return alignment.size() != 1 ? 0 : alignment.get(0);
     }
 
     // Computes the greatest common divisor of the operands.
@@ -832,6 +843,17 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
         }
         if (left == TOP || right == TOP) {
             return TOP;
+        }
+        // Negative values are unrestricted and compose always.
+        // Therefore, each list shall either contain a single negative value, or only positive values.
+        int leftAlignment = singleAlignment(left);
+        int rightAlignment = singleAlignment(right);
+        if (leftAlignment < 0 || rightAlignment < 0) {
+            int alignment = leftAlignment < 0 ? -leftAlignment : -rightAlignment;
+            for (Integer other : leftAlignment < 0 ? right : left) {
+                alignment = IntMath.gcd(alignment, Math.abs(other));
+            }
+            return List.of(-alignment);
         }
         // assert left and right each consist of pairwise indivisible positives
         final List<Integer> result = new ArrayList<>();
@@ -888,6 +910,10 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
 
     private static StoreEdge compose(StoreEdge other, Modifier modifier) {
         return isTrivial(modifier) ? other : new StoreEdge(other.value, compose(other.addressModifier, modifier));
+    }
+
+    private static Modifier invert(Modifier modifier) {
+        return new Modifier(-modifier.offset, modifier.alignment);
     }
 
     // Multiplies all dynamic offsets with another factor.
