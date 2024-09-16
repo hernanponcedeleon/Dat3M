@@ -6,6 +6,7 @@ import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.core.Label;
+import com.dat3m.dartagnan.program.event.metadata.SourceLocation;
 import com.google.common.collect.Sets;
 
 import java.util.*;
@@ -18,6 +19,7 @@ public class ControlFlowBuilder {
     protected final Deque<String> blockStack = new ArrayDeque<>();
     protected final Map<String, Map<Register, String>> phiDefinitions = new HashMap<>();
     protected final Map<String, Expression> expressions;
+    protected SourceLocation currentLocation;
 
     public ControlFlowBuilder(Map<String, Expression> expressions) {
         this.expressions = expressions;
@@ -54,6 +56,7 @@ public class ControlFlowBuilder {
             throw new ParsingException("Attempt to exit block while not in a block definition");
         }
         lastBlockEvents.put(blockStack.pop(), event);
+        removeCurrentLocation();
         return event;
     }
 
@@ -69,6 +72,21 @@ public class ControlFlowBuilder {
 
     public void addPhiDefinition(String blockId, Register register, String expressionId) {
         phiDefinitions.computeIfAbsent(blockId, k -> new HashMap<>()).put(register, expressionId);
+    }
+
+    public SourceLocation getCurrentLocation() {
+        if (currentLocation == null) {
+            throw new ParsingException("No source location for the instruction");
+        }
+        return currentLocation;
+    }
+
+    public void setCurrentLocation(SourceLocation loc) { currentLocation = loc; }
+
+    public void removeCurrentLocation() { currentLocation = null; }
+
+    public boolean hasCurrentLocation() {
+        return currentLocation != null;
     }
 
     private void validateBeforeBuild() {
