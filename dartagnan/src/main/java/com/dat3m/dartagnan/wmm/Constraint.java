@@ -70,7 +70,6 @@ public interface Constraint {
         // These three are semi-derived (they are derived from sets/filters and not from relations).
         default T visitSetIdentity(SetIdentity def) { return visitDefinition(def); }
         default T visitProduct(CartesianProduct def) { return visitDefinition(def); }
-        default T visitFences(Fences fence) { return visitDefinition(fence); }
 
         // Base
         default T visitUndefined(Definition.Undefined def) { return visitDefinition(def); }

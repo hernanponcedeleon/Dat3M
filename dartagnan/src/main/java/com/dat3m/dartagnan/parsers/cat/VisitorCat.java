@@ -1,8 +1,11 @@
 package com.dat3m.dartagnan.parsers.cat;
 
+import com.dat3m.dartagnan.exception.AbortErrorListener;
 import com.dat3m.dartagnan.exception.MalformedMemoryModelException;
 import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.parsers.CatBaseVisitor;
+import com.dat3m.dartagnan.parsers.CatLexer;
+import com.dat3m.dartagnan.parsers.CatParser;
 import com.dat3m.dartagnan.parsers.CatParser.*;
 import com.dat3m.dartagnan.program.filter.Filter;
 import com.dat3m.dartagnan.wmm.Definition;
@@ -11,30 +14,53 @@ import com.dat3m.dartagnan.wmm.RelationNameRepository;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.axiom.Axiom;
 import com.dat3m.dartagnan.wmm.definition.*;
+import com.google.common.collect.ImmutableMap;
+import org.antlr.v4.runtime.*;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
+import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Optional;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.*;
+import java.util.stream.Collectors;
 
 import static com.dat3m.dartagnan.program.event.Tag.VISIBLE;
 import static com.dat3m.dartagnan.wmm.RelationNameRepository.ID;
 
-class VisitorBase extends CatBaseVisitor<Object> {
+class VisitorCat extends CatBaseVisitor<Object> {
+
+    private static final Logger logger = LogManager.getLogger(VisitorCat.class);
+
+    // The directory path used to resolve include statements.
+    private final Path includePath;
 
     private final Wmm wmm;
-    // Maps names used on the lhs of definitions ("let name = relexpr") to the
-    // predicate they identify (either a Relation or a Filter).
-    private final Map<String, Object> namespace = new HashMap<>();
+    // Maps names used on the lhs of definitions ("let name = relexpr" or "let name(params) = relexpr") to the
+    // predicate (either a Relation or a Filter) or the function (FuncDefinition) they identify
+    private Map<String, Object> namespace = new HashMap<>();
     // Counts the number of occurrences of a name on the lhs of a definition
     // This is used to give proper names to re-definitions
     private final Map<String, Integer> nameOccurrenceCounter = new HashMap<>();
     // Used to handle recursive definitions properly
     private Relation relationToBeDefined;
 
-    VisitorBase() {
+    private record FuncDefinition(String name, List<String> params, String expression,
+                                  Map<String, Object> capturedNamespace) {
+        @Override
+        public String toString() {
+            return String.format("%s%s := %s",
+                    name,
+                    params.stream().collect(Collectors.joining(", ", "(", ")")),
+                    expression
+            );
+        }
+    }
+
+    VisitorCat(Path includePath) {
+        this.includePath = includePath;
         this.wmm = new Wmm();
     }
 
@@ -42,6 +68,35 @@ class VisitorBase extends CatBaseVisitor<Object> {
     public Object visitMcm(McmContext ctx) {
         super.visitMcm(ctx);
         return wmm;
+    }
+
+    @Override
+    public Object visitLetFuncDefinition(LetFuncDefinitionContext ctx) {
+        final String fname = ctx.fname.getText();
+        final List<String> params = ctx.params.NAME().stream().map(Object::toString).toList();
+        final String expression = ctx.expression().getText();
+        final Map<String, Object> capturedNamespace = ImmutableMap.copyOf(namespace);
+
+        final FuncDefinition definition = new FuncDefinition(fname, params, expression, capturedNamespace);
+        namespace.put(fname, definition);
+        return null;
+    }
+
+    @Override
+    public Object visitInclude(IncludeContext ctx) {
+        final String fileName = ctx.path.getText().substring(1, ctx.path.getText().length() - 1);
+        final Path filePath = includePath.resolve(Path.of(fileName));
+        if (!Files.exists(filePath)) {
+            logger.warn("Included file '{}' not found. Skipped inclusion.", filePath);
+            return null;
+        }
+
+        try {
+            final CatParser parser = getParser(CharStreams.fromPath(filePath));
+            return parser.mcm().accept(this);
+        } catch (IOException e) {
+            throw new ParsingException(String.format("Error parsing file '%s'", filePath), e);
+        }
     }
 
     @Override
@@ -152,6 +207,34 @@ class VisitorBase extends CatBaseVisitor<Object> {
         Object predicate = namespace.computeIfAbsent(name,
                 k -> RelationNameRepository.contains(name) ? wmm.getOrCreatePredefinedRelation(k) : Filter.byTag(k));
         return predicate;
+    }
+
+    @Override
+    public Object visitExprCall(ExprCallContext ctx) {
+        final String calledFunc = ctx.call.getText();
+        if (!(namespace.get(calledFunc) instanceof FuncDefinition funcDef)) {
+            final String error = String.format("Invalid call %s: %s is undefined or no function.", ctx.getText(), calledFunc);
+            throw new ParsingException(error);
+        }
+
+        final List<CatParser.ExpressionContext> args = ctx.args.expression();
+        if (args.size() != funcDef.params().size()) {
+            final String error = String.format("Invalid call %s to function %s: wrong number of arguments.",
+                    ctx.getText(), funcDef);
+            throw new ParsingException(error);
+        }
+        final List<Object> arguments = ctx.args.expression().stream().map(e -> e.accept(this)).toList();
+        final Map<String, Object> functionNamespace = new HashMap<>(funcDef.capturedNamespace());
+        for (int i = 0; i < arguments.size(); i++) {
+            functionNamespace.put(funcDef.params.get(i), arguments.get(i));
+        }
+
+        final Map<String, Object> curNamespace = namespace;
+        namespace = functionNamespace;
+        final CatParser parser = getParser(CharStreams.fromString(funcDef.expression));
+        Object result =  parser.expression().accept(this);
+        namespace = curNamespace;
+        return result;
     }
 
     @Override
@@ -271,14 +354,6 @@ class VisitorBase extends CatBaseVisitor<Object> {
         return addDefinition(new CartesianProduct(r0, s1, s2));
     }
 
-    @Override
-    public Relation visitExprFencerel(ExprFencerelContext ctx) {
-        checkNoRecursion(ctx);
-        Relation r0 = wmm.newRelation();
-        Filter s1 = parseAsFilter(ctx.e);
-        return addDefinition(new Fences(r0, s1));
-    }
-
     // ============================ Utility ============================
 
     private Relation addDefinition(Definition definition) {
@@ -321,6 +396,18 @@ class VisitorBase extends CatBaseVisitor<Object> {
             return filter;
         }
         throw new ParsingException("Expected set, got " + o.getClass().getSimpleName() + " " + o + " from expression " + t.getText());
+    }
+
+    private static CatParser getParser(CharStream input) {
+        final Lexer lexer = new CatLexer(input);
+        lexer.addErrorListener(new AbortErrorListener());
+        lexer.addErrorListener(new DiagnosticErrorListener(true));
+        final CommonTokenStream tokenStream = new CommonTokenStream(lexer);
+
+        final CatParser parser = new CatParser(tokenStream);
+        parser.addErrorListener(new AbortErrorListener());
+        parser.addErrorListener(new DiagnosticErrorListener(true));
+        return parser;
     }
 }
 

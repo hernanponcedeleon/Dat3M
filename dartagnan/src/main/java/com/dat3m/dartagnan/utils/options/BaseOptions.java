@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan.utils.options;
 
+import com.dat3m.dartagnan.GlobalSettings;
 import com.dat3m.dartagnan.configuration.Method;
 import com.dat3m.dartagnan.configuration.ProgressModel;
 import com.dat3m.dartagnan.configuration.Property;
@@ -106,5 +107,15 @@ public abstract class BaseOptions {
 
     public boolean getDumpSmtLib() {
         return smtlib;
+    }
+
+    @Option(
+            name = CAT_INCLUDE,
+            description = "The directory used to resolve cat include statements. Defaults to $DAT3M_HOME/cat."
+    )
+    private String catIncludePath = GlobalSettings.getCatDirectory();
+
+    public String getCatIncludePath() {
+        return catIncludePath;
     }
 }

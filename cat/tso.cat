@@ -1,6 +1,7 @@
 "X86 TSO"
+
 include "cos.cat"
-include "fences.cat"
+include "x86fences.cat"
 include "filters.cat"
 
 (* All communication relations *)

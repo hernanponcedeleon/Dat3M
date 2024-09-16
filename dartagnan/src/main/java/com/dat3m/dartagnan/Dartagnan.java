@@ -52,6 +52,7 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.math.BigInteger;
+import java.nio.file.Path;
 import java.util.*;
 
 import static com.dat3m.dartagnan.GlobalSettings.getOrCreateOutputDirectory;
@@ -112,19 +113,20 @@ public class Dartagnan extends BaseOptions {
         File fileProgram = new File(Arrays.stream(args).filter(a -> supportedFormats.stream().anyMatch(a::endsWith))
                 .findFirst()
                 .orElseThrow(() -> new IllegalArgumentException("Input program not given or format not recognized")));
-        logger.info("Program path: " + fileProgram);
+        logger.info("Program path: {}", fileProgram);
 
         File fileModel = new File(Arrays.stream(args).filter(a -> a.endsWith(".cat")).findFirst()
                 .orElseThrow(() -> new IllegalArgumentException("CAT model not given or format not recognized")));
-        logger.info("CAT file path: " + fileModel);
+        logger.info("CAT file path: {}", fileModel);
 
-        Wmm mcm = new ParserCat().parse(fileModel);
+
+        Wmm mcm = new ParserCat(Path.of(o.getCatIncludePath())).parse(fileModel);
         Program p = new ProgramParser().parse(fileProgram);
         EnumSet<Property> properties = o.getProperty();
 
         WitnessGraph witness = new WitnessGraph();
         if (o.runValidator()) {
-            logger.info("Witness path: " + o.getWitnessPath());
+            logger.info("Witness path: {}", o.getWitnessPath());
             witness = new ParserWitness().parse(new File(o.getWitnessPath()));
         }
 
@@ -166,8 +168,7 @@ public class Dartagnan extends BaseOptions {
                     sdm.getNotifier(),
                     o.getSolver());
                     ProverWithTracker prover = new ProverWithTracker(ctx,
-                        o.getDumpSmtLib() ?
-                            System.getenv("DAT3M_OUTPUT") + String.format("/%s.smt2", p.getName()) : "",
+                        o.getDumpSmtLib() ? GlobalSettings.getOutputDirectory() + String.format("/%s.smt2", p.getName()) : "",
                         ProverOptions.GENERATE_MODELS)) {
                 ModelChecker modelChecker;
                 if (properties.contains(DATARACEFREEDOM)) {
