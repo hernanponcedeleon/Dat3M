@@ -7,6 +7,7 @@ public class ProgramEvent {
     public String  mem_type;
     public Integer mem_location;
     public Integer mem_value;
+    public String  mem_order;
     public Integer thread_id;
     public Integer thread_row;
 
@@ -16,6 +17,7 @@ public class ProgramEvent {
         final String  r_mem_type,
         final Integer r_mem_location,
         final Integer r_mem_value,
+        final String  r_mem_order,
         final Integer r_thread_id,
         final Integer r_thread_row
     ) {
@@ -24,6 +26,7 @@ public class ProgramEvent {
         mem_type     = r_mem_type;
         mem_location = r_mem_location;
         mem_value    = r_mem_value;
+        mem_order    = r_mem_order;
         thread_id    = r_thread_id;
         thread_row   = r_thread_row;
     }

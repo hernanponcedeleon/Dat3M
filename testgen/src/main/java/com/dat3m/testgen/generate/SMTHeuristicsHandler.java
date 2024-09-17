@@ -58,11 +58,13 @@ class SMTHeuristicsHandler {
                 smt.prover.addConstraint( smt.bm.implication(
                     smt.im.equal( events[i].eid, events[j].eid ),
                     smt.bm.and(
-                        smt.em.equivalence( events[i].instruction, events[j].instruction ),
                         smt.im.equal( events[i].mem.location,   events[j].mem.location ),
                         smt.im.equal( events[i].thread.tid,  events[j].thread.tid ),
                         smt.im.equal( events[i].thread.row, events[j].thread.row ),
-                        smt.im.equal( events[i].mem.value,      events[j].mem.value )
+                        smt.im.equal( events[i].mem.value,      events[j].mem.value ),
+                        smt.em.equivalence( events[i].instruction, events[j].instruction ),
+                        smt.em.equivalence( events[i].mem.type, events[i].mem.type ),
+                        smt.em.equivalence( events[i].mem.order, events[j].mem.order )
                 ) ) );
             }
         }

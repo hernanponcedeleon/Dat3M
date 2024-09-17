@@ -37,6 +37,9 @@ class SMTHandler {
     EnumerationFormulaType memory_type_enum;
     String[] memory_type_str = {};
 
+    EnumerationFormulaType order_type_enum;
+    String[] order_type_str = {};
+
     SMTHandler()
     throws Exception {
         config   = Configuration.defaultConfiguration();
@@ -53,10 +56,15 @@ class SMTHandler {
         em = fm.getEnumerationFormulaManager();
 
         prover = context.newProverEnvironment( ProverOptions.GENERATE_MODELS );
+
         instruction_type_str = Stream.of( Types.instruction.values() ).map( Types.instruction::name ).toArray( String[]::new );
         instruction_type_enum = em.declareEnumeration( "instruction_type", instruction_type_str );
+
         memory_type_str = Stream.of( Types.memory.values() ).map( Types.memory::name ).toArray( String[]::new );
         memory_type_enum = em.declareEnumeration( "memory_type", memory_type_str );
+
+        order_type_str = Stream.of( Types.order.values() ).map( Types.order::name ).toArray( String[]::new );
+        order_type_enum = em.declareEnumeration( "order_type", order_type_str );
     }
 
     EnumerationFormula instruction(
@@ -77,6 +85,16 @@ class SMTHandler {
                 return em.makeConstant( memory, memory_type_enum );
         }
         throw new Exception( "Memory type not found!" );
+    }
+
+    EnumerationFormula order(
+        final String order
+    ) throws Exception {
+        for( String str : order_type_str ) {
+            if( str.equals( order ) )
+                return em.makeConstant( order, order_type_enum );
+        }
+        throw new Exception( "Order type not found!" );
     }
 
 }

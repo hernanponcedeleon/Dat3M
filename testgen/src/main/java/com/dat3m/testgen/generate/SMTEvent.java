@@ -43,6 +43,7 @@ class SMTEvent {
         mem.type     = smt.em.makeVariable( name( "mem_type" ), smt.memory_type_enum );
         mem.location = smt.im.makeVariable( name( "mem_location" ) );
         mem.value    = smt.im.makeVariable( name( "mem_value" ) );
+        mem.order    = smt.em.makeVariable( name( "mem_order" ), smt.order_type_enum );
         thread.tid   = smt.im.makeVariable( name( "thread_tid" ) );
         thread.row   = smt.im.makeVariable( name( "thread_row" ) );
         smt.prover.addConstraint( smt.bm.and(
@@ -71,6 +72,10 @@ class SMTEvent {
         if( !smt.prover.isUnsatWithAssumptions( Arrays.asList( assumption ) ) ) {
             smt.prover.addConstraint( assumption );
         }
+        assumption = smt.em.equivalence( mem.order, smt.order( "NONE" ) );
+        if( !smt.prover.isUnsatWithAssumptions( Arrays.asList( assumption ) ) ) {
+            smt.prover.addConstraint( assumption );
+        }
     }
 
     ProgramEvent generate_program_event(
@@ -82,6 +87,7 @@ class SMTEvent {
             model.evaluate( mem.type ),
             Integer.parseInt( model.evaluate( mem.location ).toString() ),
             Integer.parseInt( model.evaluate( mem.value ).toString() ),
+            model.evaluate( mem.order ),
             Integer.parseInt( model.evaluate( thread.tid ).toString() ),
             Integer.parseInt( model.evaluate( thread.row ).toString() )
         );
@@ -94,6 +100,7 @@ class SMTMemory {
     EnumerationFormula type;
     IntegerFormula value;
     IntegerFormula location;
+    EnumerationFormula order;
 
 }
 

@@ -78,6 +78,30 @@ class SMTBaseRelationHandler {
                     smt.im.equal( event_L.mem.location, event_R.mem.location )
                 );
 
+            case tag_sc:
+                return smt.bm.and(
+                    smt.im.equal( event_L.eid, event_R.eid ),
+                    smt.em.equivalence( event_L.mem.order, smt.order( "SC" ) )
+                );
+
+            case tag_rel:
+                return smt.bm.and(
+                    smt.im.equal( event_L.eid, event_R.eid ),
+                    smt.em.equivalence( event_L.mem.order, smt.order( "REL" ) )
+                );
+
+            case tag_acq:
+                return smt.bm.and(
+                    smt.im.equal( event_L.eid, event_R.eid ),
+                    smt.em.equivalence( event_L.mem.order, smt.order( "ACQ" ) )
+                );
+
+            case tag_rlx:
+                return smt.bm.and(
+                    smt.im.equal( event_L.eid, event_R.eid ),
+                    smt.em.equivalence( event_L.mem.order, smt.order( "RLX" ) )
+                );
+
             default:
                 System.out.println( "[ERROR] " + type );
                 throw new Exception( "Relation type does not have defined rules!" );

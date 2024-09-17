@@ -6,21 +6,21 @@ Program relation graph:
 4 --co-> 2
 4 --rf-> 1
 "
-{ [a2]=0; 0:r3=0; 2:r10=0; 2:r12=0; }
+{ [a3]=0; 0:r8=0; 2:r16=0; 2:r20=0; }
 
-P0( atomic_int *a2 )  {
-  atomic_store_explicit(a2, 1, memory_order_seq_cst);
-  r3 = atomic_load_explicit(a2, memory_order_seq_cst);
+P0( atomic_int *a3 )  {
+  atomic_store_explicit(a3, 2, memory_order_NONE);
+  r8 = atomic_load_explicit(a3, memory_order_NONE);
 }
 
-P1( atomic_int *a2 )  {
-  atomic_store_explicit(a2, 2, memory_order_seq_cst);
+P1( atomic_int *a3 )  {
+  atomic_store_explicit(a3, 7, memory_order_NONE);
 }
 
-P2( atomic_int *a2 )  {
-  r12 = atomic_load_explicit(a2, memory_order_seq_cst);
-  r10 = atomic_load_explicit(a2, memory_order_seq_cst);
+P2( atomic_int *a3 )  {
+  r20 = atomic_load_explicit(a3, memory_order_NONE);
+  r16 = atomic_load_explicit(a3, memory_order_NONE);
 }
 
-exists ( 0:r3 = 2 /\ 2:r12 = 2 /\ 2:r10 = 1 )
+exists ( 0:r8 = 7 /\ 2:r20 = 7 /\ 2:r16 = 2 )
 

@@ -11,7 +11,11 @@ public class Types {
         rf,
         rmw,
         write,
-        loc
+        loc,
+        tag_sc,
+        tag_rel,
+        tag_acq,
+        tag_rlx
     };
 
     static public enum instruction {
@@ -24,6 +28,14 @@ public class Types {
         UNDEFINED,
         ADDRESS,
         REGISTER
+    }
+
+    static public enum order {
+        NONE,
+        SC,
+        REL,
+        ACQ,
+        RLX
     }
 
 }

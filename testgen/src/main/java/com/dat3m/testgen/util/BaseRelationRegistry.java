@@ -18,7 +18,7 @@ public class BaseRelationRegistry {
             break;
 
             case "andrej.cat":
-                register_sc( wmm_explorer );
+                register_andrej( wmm_explorer );
             break;
 
             default:
@@ -38,6 +38,25 @@ public class BaseRelationRegistry {
         wmm_explorer.register_base_relation( "[R]",   Types.base.read  );
         wmm_explorer.register_base_relation( "[W]",   Types.base.write );
         wmm_explorer.register_base_relation( "[RMW]", Types.base.rmw   );
+
+        wmm_explorer.register_ignored_relation( "((([R]) \\ ([range(rf)])) ; loc) ; ([W])" );
+    }
+
+    static void register_andrej(
+        final WmmExplorer wmm_explorer
+    ) throws Exception {
+        wmm_explorer.register_base_relation( "po",     Types.base.po      );
+        wmm_explorer.register_base_relation( "co",     Types.base.co      );
+        wmm_explorer.register_base_relation( "rf",     Types.base.rf      );
+        wmm_explorer.register_base_relation( "ext",    Types.base.ext     );
+        wmm_explorer.register_base_relation( "rmw",    Types.base.rmw     );
+        wmm_explorer.register_base_relation( "[R]",    Types.base.read    );
+        wmm_explorer.register_base_relation( "[W]",    Types.base.write   );
+        wmm_explorer.register_base_relation( "[RMW]",  Types.base.rmw     );
+        wmm_explorer.register_base_relation( "[SC]",   Types.base.tag_sc  );
+        wmm_explorer.register_base_relation( "[REL]",  Types.base.tag_rel );
+        wmm_explorer.register_base_relation( "[ACQ]",  Types.base.tag_acq );
+        wmm_explorer.register_base_relation( "[RLX]",  Types.base.tag_rlx );
 
         wmm_explorer.register_ignored_relation( "((([R]) \\ ([range(rf)])) ; loc) ; ([W])" );
     }

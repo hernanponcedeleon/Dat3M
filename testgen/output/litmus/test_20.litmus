@@ -6,25 +6,25 @@ Program relation graph:
 4 --co-> 1
 4 --rf-> 3
 "
-{ [a2]=0; 1:r2=0; 1:r4=0; 3:r8=0; 3:r11=0; }
+{ [a7]=0; 2:r1=0; 2:r6=0; 3:r15=0; 3:r17=0; }
 
-P0( atomic_int *a2 )  {
-  atomic_store_explicit(a2, 1, memory_order_seq_cst);
+P0( atomic_int *a7 )  {
+  atomic_store_explicit(a7, 8, memory_order_NONE);
 }
 
-P1( atomic_int *a2 )  {
-  r2 = atomic_load_explicit(a2, memory_order_seq_cst);
-  r4 = atomic_load_explicit(a2, memory_order_seq_cst);
+P1( atomic_int *a7 )  {
+  atomic_store_explicit(a7, 2, memory_order_NONE);
 }
 
-P2( atomic_int *a2 )  {
-  atomic_store_explicit(a2, 2, memory_order_seq_cst);
+P2( atomic_int *a7 )  {
+  r1 = atomic_load_explicit(a7, memory_order_NONE);
+  r6 = atomic_load_explicit(a7, memory_order_NONE);
 }
 
-P3( atomic_int *a2 )  {
-  r11 = atomic_load_explicit(a2, memory_order_seq_cst);
-  r8 = atomic_load_explicit(a2, memory_order_seq_cst);
+P3( atomic_int *a7 )  {
+  r17 = atomic_load_explicit(a7, memory_order_NONE);
+  r15 = atomic_load_explicit(a7, memory_order_NONE);
 }
 
-exists ( 1:r2 = 1 /\ 1:r4 = 2 /\ 3:r11 = 2 /\ 3:r8 = 1 )
+exists ( 2:r1 = 8 /\ 2:r6 = 2 /\ 3:r17 = 2 /\ 3:r15 = 8 )
 

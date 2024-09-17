@@ -120,9 +120,9 @@ public class ProgramConverter {
                 }
                 if( event.instruction.equals( "R" ) ) {
                     read_constraints.add( event.thread_id + ":r" + event.event_id + " = " + event.mem_value );
-                    sb.append( "  r" + event.event_id + " = atomic_load_explicit(" + memory_tag + event.mem_location +", memory_order_seq_cst);" + "\n" );
+                    sb.append( "  r" + event.event_id + " = atomic_load_explicit(" + memory_tag + event.mem_location +", memory_order_" + event.mem_order + ");" + "\n" );
                 } else {
-                    sb.append( "  atomic_store_explicit(" + memory_tag + event.mem_location + ", " + event.mem_value + ", memory_order_seq_cst);" + "\n" );
+                    sb.append( "  atomic_store_explicit(" + memory_tag + event.mem_location + ", " + event.mem_value + ", memory_order_" + event.mem_order + ");" + "\n" );
                 }
             }
             sb.append( "}\n\n" );
