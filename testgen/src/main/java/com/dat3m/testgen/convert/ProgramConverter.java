@@ -1,4 +1,4 @@
-package com.dat3m.testgen.converter;
+package com.dat3m.testgen.convert;
 
 import java.util.*;
 
