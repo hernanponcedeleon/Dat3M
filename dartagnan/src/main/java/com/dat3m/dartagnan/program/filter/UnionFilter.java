@@ -12,6 +12,14 @@ public class UnionFilter extends Filter {
         this.filter2 = filter2;
     }
 
+    public Filter getLeft() {
+        return filter1;
+    }
+
+    public Filter getRight() {
+        return filter2;
+    }
+
     @Override
     public boolean apply(Event event){
         return filter1.apply(event) || filter2.apply(event);
