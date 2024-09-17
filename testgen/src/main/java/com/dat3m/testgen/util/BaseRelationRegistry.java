@@ -17,6 +17,10 @@ public class BaseRelationRegistry {
                 register_vmm_simplified_v2( wmm_explorer );
             break;
 
+            case "andrej.cat":
+                register_sc( wmm_explorer );
+            break;
+
             default:
                 System.out.println( "[ERROR] " + cat_file );
                 throw new Exception( "No base relations registered for chosen cat file!" );

@@ -2,8 +2,6 @@ package com.dat3m.testgen.explore;
 
 import java.util.*;
 
-import com.dat3m.dartagnan.program.filter.Filter;
-import com.dat3m.dartagnan.program.filter.UnionFilter;
 import com.dat3m.dartagnan.wmm.Relation;
 import com.dat3m.dartagnan.wmm.definition.Composition;
 import com.dat3m.dartagnan.wmm.definition.Intersection;
@@ -112,16 +110,7 @@ class SetOperations {
     }
 
     void expand_set_identity() throws Exception {
-        Filter filter = ( ( SetIdentity )( relation_edge.relation.getDefinition() ) ).getFilter();
-        Filter left_filter = ((UnionFilter)(filter)).getLeft();
-        Relation left_relation = explorer.memory_model.addDefinition( new SetIdentity( explorer.memory_model.newRelation(), left_filter ) );
-
-        System.out.println( "[Filter]: " + filter );
-        System.out.println( "[Relation]: " + relation_edge.relation );
-        System.out.println( "[Filter]: " + left_filter );
-        System.out.println( "[Relation]: " + left_relation );
-
-        throw new Exception( "." );    
+        new FilterOperations( explorer, graphs, relations, relation_edge, ((SetIdentity)relation_edge.relation.getDefinition()).getFilter() ).expand();
     }
 
 }
