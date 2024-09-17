@@ -6,6 +6,7 @@ import com.dat3m.dartagnan.wmm.Relation;
 import com.dat3m.dartagnan.wmm.definition.Composition;
 import com.dat3m.dartagnan.wmm.definition.Intersection;
 import com.dat3m.dartagnan.wmm.definition.Inverse;
+import com.dat3m.dartagnan.wmm.definition.SetIdentity;
 import com.dat3m.dartagnan.wmm.definition.Union;
 import com.dat3m.testgen.program.ProgramEdge;
 import com.dat3m.testgen.program.ProgramGraph;
@@ -38,6 +39,8 @@ class SetOperations {
             expand_union();
         else if( relation_edge.relation.getDefinition() instanceof Intersection )
             expand_intersection();
+        else if( relation_edge.relation.getDefinition() instanceof SetIdentity )
+            expand_set_identity();
         else {
             System.out.println( "[ERROR] " + relation_edge );
             System.out.println( "[ERROR] " + relation_edge.relation.getDefinition() );
@@ -104,6 +107,10 @@ class SetOperations {
         relations.add( edge );
         explorer.explore_relation( relations, graphs );
         relations.remove( edge );
+    }
+
+    void expand_set_identity() throws Exception {
+        new FilterOperations( explorer, graphs, relations, relation_edge, ((SetIdentity)relation_edge.relation.getDefinition()).getFilter() ).expand();
     }
 
 }

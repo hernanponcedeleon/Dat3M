@@ -4,7 +4,7 @@ import java.util.*;
 
 import java.io.*;
 
-import com.dat3m.testgen.converter.ProgramConverter;
+import com.dat3m.testgen.convert.ProgramConverter;
 import com.dat3m.testgen.explore.WmmExplorer;
 import com.dat3m.testgen.generate.SMTProgramGenerator;
 import com.dat3m.testgen.program.ProgramEvent;
