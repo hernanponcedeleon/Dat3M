@@ -241,7 +241,7 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
             }
             addressVariables.put(load, address);
             final Variable result = newVariable("ld" + load.getGlobalId() + "(" + load.getResultRegister().getName() + ")");
-            address.base.loads.add(new LoadEdge(result, address.modifier));
+            address.base.loads.add(new LoadEdge(result, address.modifier, TRIVIAL_MODIFIER));
             result.seeAlso.add(address.base);
             value = derive(result);
         } else {
@@ -350,7 +350,7 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
                 final List<StoreEdge> variableStores = isTrivial ? variable.stores : new ArrayList<>(variable.stores.size());
                 if (!isTrivial) {
                     for (final LoadEdge load : variable.loads) {
-                        variableLoads.add(new LoadEdge(load.result, compose(load.addressModifier, edge.modifier)));
+                        variableLoads.add(new LoadEdge(load.result, compose(load.addressModifier, edge.modifier), load.valueModifier));
                     }
                     for (final StoreEdge store : variable.stores) {
                         variableStores.add(new StoreEdge(store.value, compose(store.addressModifier, edge.modifier)));
@@ -424,7 +424,7 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
 
     private record IncludeEdge(Variable source, Modifier modifier) {}
 
-    private record LoadEdge(Variable result, Modifier addressModifier) {}
+    private record LoadEdge(Variable result, Modifier addressModifier, Modifier valueModifier) {}
 
     private record StoreEdge(DerivedVariable value, Modifier addressModifier) {}
 
@@ -485,10 +485,7 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
     }
 
     private IncludeEdge tryAccelerate(Variable variable, IncludeEdge edge) {
-        if (edge.source != variable) {
-            return edge;
-        }
-        return new IncludeEdge(edge.source, new Modifier(0, compose(edge.modifier.alignment, edge.modifier.offset)));
+        return edge.source != variable ? edge : new IncludeEdge(edge.source, accelerate(edge.modifier));
     }
 
     // Tries to detect cycles when a new edge is to be added.
@@ -514,11 +511,151 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
             return;
         }
         cyclesDetected++;
+        eliminateCycles(variable, includerSet);
+    }
+
+    // Locally collects the detected non-trivial SCC on a variable and modifies the graph to remove it.
+    // All nodes stay, as to not affect 'addressVariables'.
+    private void eliminateCycles(Variable variable, Set<Variable> includerSet) {
+        // Collect the transitive closure of inclusion inside the SCC, starting with the representative 'variable'.
+        final Map<Variable, List<IncludeEdge>> toVariablePaths = allPathsTo(includerSet, variable);
+        final Set<Variable> component = toVariablePaths.keySet();
+        verify(component.contains(variable), "Cycle elimination missed to find any cycle with variable %s", variable);
+        final Modifier cyclicModifier = cyclicModifier(variable, toVariablePaths);
+        logger.debug("detected cycle of size {} with modifier {}: {}", toVariablePaths.size(), cyclicModifier, component);
+        // Not all paths in the SCC have to visit 'variable'.
+        // 'componentEdges' maps X and Y to a summary of all 'include' paths from X to Y.
+        // For each other variable, compose all incoming, internal, 'variable'-avoiding include-paths with all outgoing external include-edges.
+        final Map<Variable, Map<Variable, List<IncludeEdge>>> componentEdges = new HashMap<>();
+        final Set<Variable> otherVariables = new HashSet<>(component);
+        otherVariables.remove(variable);
+        // For each non-'variable' component variable, all incoming, internal, 'variable'-avoiding include-paths.
+        final Map<Variable, List<IncludeEdge>> internalPaths = new HashMap<>();
+        for (Variable other : otherVariables) {
+            final List<IncludeEdge> internalPathsToOther = new ArrayList<>();
+            for (List<IncludeEdge> paths : allPathsTo(otherVariables, other).values()) {
+                internalPathsToOther.addAll(paths);
+            }
+            if (!internalPathsToOther.isEmpty()) {
+                internalPaths.put(other, internalPathsToOther);
+            }
+        }
+        // For each non-component variable, all incoming include-edges from non-'variable' component variables.
+        final Map<Variable, List<IncludeEdge>> oldOutEdges = new HashMap<>();
+        final Set<Variable> includerCandidates = new HashSet<>();
+        for (Variable other : otherVariables) {
+            includerCandidates.addAll(other.seeAlso);
+        }
+        for (Variable includerCandidate : includerCandidates) {
+            final List<IncludeEdge> outgoingEdges = includerCandidate.includes.stream()
+                    .filter(i -> otherVariables.contains(i.source))
+                    .toList();
+            if (!outgoingEdges.isEmpty()) {
+                oldOutEdges.put(includerCandidate, outgoingEdges);
+                includerCandidate.includes.removeIf(i -> otherVariables.contains(i.source));
+            }
+        }
+        // For each non-'variable' component variable, all incoming, external include-edges.
+        final Map<Variable, List<IncludeEdge>> oldInEdges = new HashMap<>();
+        for (Variable other : otherVariables) {
+            oldInEdges.put(other, other.includes.stream().filter(i -> !component.contains(i.source)).toList());
+            other.includes.clear();
+            //TODO remove otherVariables from seeAlso
+        }
+        // For each non-'variable' component variable, all incoming load edges.
+        final Map<Variable, Map<Variable, List<LoadEdge>>> oldLoads = new HashMap<>();
+        for (Variable address : includerCandidates) {
+            boolean hadLoadEdges = false;
+            for (LoadEdge load : address.loads) {
+                if (otherVariables.contains(load.result)) {
+                    oldLoads.computeIfAbsent(load.result, k -> new HashMap<>())
+                            .computeIfAbsent(address, k -> new ArrayList<>())
+                            .add(load);
+                    hadLoadEdges = true;
+                }
+            }
+            if (hadLoadEdges) {
+                address.loads.removeIf(l -> otherVariables.contains(l.result));
+            }
+        }
+        // newPaths = cyclicModifier ; (toVariablePaths | (internalPaths ; oldOutEdges))
+        // For each non-component variable and 'variable', all incoming paths and cyclicModifier
+        final Map<Variable, List<IncludeEdge>> newPaths = new HashMap<>();
+        final List<IncludeEdge> newPathsToVariable = new ArrayList<>();
+        for (List<IncludeEdge> toVariablePathList : toVariablePaths.values()) {
+            assert !toVariablePathList.isEmpty();
+            for (IncludeEdge toVariablePath : toVariablePathList) {
+                if (oldInEdges.containsKey(toVariablePath.source)) {
+                    newPathsToVariable.add(compose(toVariablePath, cyclicModifier));
+                }
+            }
+        }
+        assert !newPathsToVariable.isEmpty();
+        newPaths.put(variable, newPathsToVariable);
+        for (Map.Entry<Variable, List<IncludeEdge>> entry : oldOutEdges.entrySet()) {
+            assert !component.contains(entry.getKey());
+            final List<IncludeEdge> paths = new ArrayList<>();
+            for (IncludeEdge outgoingEdge : entry.getValue()) {
+                assert otherVariables.contains(outgoingEdge.source);
+                final List<IncludeEdge> internalPathList = internalPaths.get(outgoingEdge.source);
+                if (internalPathList == null) {
+                    continue;
+                }
+                final Modifier acceleratedModifier = compose(outgoingEdge.modifier, cyclicModifier);
+                for (IncludeEdge internalPath : internalPathList) {
+                    paths.add(compose(internalPath, acceleratedModifier));
+                }
+            }
+            if (!paths.isEmpty()) {
+                newPaths.put(entry.getKey(), paths);
+            }
+        }
+        // New incoming and detour edges = oldInEdges ; cyclicModifier ; (toVariablePaths | (internalPaths ; oldOutEdges))
+        // = oldInEdges ; newPaths
+        // New load edges = oldLoadEdges ; cyclicModifier ; (toVariablePaths | (internalPaths ; oldOutEdges))
+        // = oldLoadEdges ; newPaths
+        for (Map.Entry<Variable, List<IncludeEdge>> entry : newPaths.entrySet()) {
+            assert !otherVariables.contains(entry.getKey());
+            assert !entry.getValue().isEmpty();
+            for (IncludeEdge path : entry.getValue()) {
+                for (IncludeEdge oldInEdge : oldInEdges.getOrDefault(path.source, List.of())) {
+                    addInclude(entry.getKey(), compose(oldInEdge, path.modifier));
+                }
+                for (Map.Entry<Variable, List<LoadEdge>> loadEntry : oldLoads.getOrDefault(path.source, Map.of()).entrySet()) {
+                    for (LoadEdge load : loadEntry.getValue()) {
+                        loadEntry.getKey().loads.add(new LoadEdge(load.result, load.addressModifier, compose(load.valueModifier, path.modifier)));
+                    }
+                }
+            }
+        }
+        // New outgoing edges = new internal edges ; oldOutEdges
+        for (Map.Entry<Variable, List<IncludeEdge>> oldOut : oldOutEdges.entrySet()) {
+            assert !component.contains(oldOut.getKey());
+            assert !oldOut.getValue().isEmpty();
+            for (IncludeEdge oldOutEdge : oldOut.getValue()) {
+                final Modifier acceleratedModifier = compose(oldOutEdge.modifier, cyclicModifier);
+                for (IncludeEdge toVariablePath : toVariablePaths.get(oldOutEdge.source)) {
+                    final Modifier negatedOffset = new Modifier(-toVariablePath.modifier.offset, List.of());
+                    addInclude(oldOut.getKey(), new IncludeEdge(toVariablePath.source, compose(negatedOffset, acceleratedModifier)));
+                }
+            }
+        }
+        // New internal edges = fromVariablePaths ; cyclicModifier = toVariablePaths^-1 ; cyclicModifier
+        for (List<IncludeEdge> toVariablePathList : toVariablePaths.values()) {
+            for (IncludeEdge toVariablePath : toVariablePathList) {
+                final Modifier negatedOffset = new Modifier(-toVariablePath.modifier.offset, List.of());
+                addInclude(toVariablePath.source, new IncludeEdge(variable, negatedOffset));
+            }
+        }
+        //TODO remove other variables that are not in 'addressVariables' and thus became dead sinks.
+    }
+
+    private Map<Variable, List<IncludeEdge>> allPathsTo(Set<Variable> includerSet, Variable target) {
         // Collect the transitive closure of inclusion inside the SCC, starting with the representative 'variable'.
         final Map<Variable, List<IncludeEdge>> edges = new HashMap<>();
         // Use 'set' for performance.
         final Set<IncludeEdge> set = new HashSet<>();
-        List<IncludeEdge> worklist = new ArrayList<>(List.of(new IncludeEdge(edge.source, TRIVIAL_MODIFIER)));
+        List<IncludeEdge> worklist = new ArrayList<>(List.of(new IncludeEdge(target, TRIVIAL_MODIFIER)));
         // Since cycles are detected lazily, we need a bound for cycle lengths.
         for (int length = 0; length < includerSet.size(); length++) {
             if (worklist.isEmpty()) {
@@ -527,7 +664,7 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
             final List<IncludeEdge> next = new ArrayList<>();
             for (final IncludeEdge current : worklist) {
                 for (final IncludeEdge i : current.source.includes) {
-                    if (edge.source != i.source && includerSet.contains(i.source)) {
+                    if (target != i.source && includerSet.contains(i.source)) {
                         final IncludeEdge joinedEdge = compose(i, current.modifier);
                         if (set.add(joinedEdge) &&
                                 addInto(edges.computeIfAbsent(i.source, k -> new ArrayList<>()), joinedEdge, false)) {
@@ -538,92 +675,17 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
             }
             worklist = next;
         }
-        logger.debug("detected cycle of size {}: {}", edges.size(), edges.keySet());
-        // In a cycle, variable gets an accelerating self-loop.
+        return edges;
+    }
+
+    private Modifier cyclicModifier(Variable variable, Map<Variable, List<IncludeEdge>> edges) {
+        // Since accelerated modifiers all have zero static offsets, they can be composed into one.
+        Modifier cyclicModifier = TRIVIAL_MODIFIER;
         for (final IncludeEdge cycleEdge : edges.get(variable)) {
             assert cycleEdge.source == variable;
-            final Modifier composed = compose(cycleEdge.modifier, edge.modifier);
-            final var accelerated = new Modifier(0, compose(composed.alignment, composed.offset));
-            addInclude(variable, new IncludeEdge(variable, accelerated));
+            cyclicModifier = compose(cyclicModifier, accelerate(cycleEdge.modifier));
         }
-        // Eliminate cycles in the SCC by making it star-shaped.
-        for (Map.Entry<Variable, List<IncludeEdge>> entry : edges.entrySet()) {
-            final Variable other = entry.getKey();
-            assert !entry.getValue().isEmpty();
-            if (other == variable) {
-                continue;
-            }
-            for (IncludeEdge i : entry.getValue()) {
-                assert i.source == other;
-                addInclude(variable, i);
-            }
-            other.includes.removeIf(i -> edges.containsKey(i.source));
-        }
-        // Redirect edges at the border of the SCC to the representative 'variable'.
-        // (Incoming edges could be another alternative, but they need inverse edges and different types of load edges.)
-        for (Map.Entry<Variable, List<IncludeEdge>> entry : edges.entrySet()) {
-            final Variable other = entry.getKey();
-            assert !entry.getValue().isEmpty();
-            if (other == variable) {
-                continue;
-            }
-            // Redirect outgoing include edges
-            for (Variable includer : other.seeAlso) {
-                if (edges.containsKey(includer)) {
-                    continue;
-                }
-                final List<IncludeEdge> newIncludeEdges = new ArrayList<>();
-                for (IncludeEdge includeEdge : includer.includes) {
-                    if (includeEdge.source != other) {
-                        continue;
-                    }
-                    for (IncludeEdge i : entry.getValue()) {
-                        assert i.source == other;
-                        var composed = compose(invert(i.modifier), includeEdge.modifier);
-                        newIncludeEdges.add(new IncludeEdge(variable, composed));
-                    }
-                }
-                includer.includes.removeIf(store -> store.source == other);
-                for (IncludeEdge newIncludeEdge : newIncludeEdges) {
-                    addInclude(includer, newIncludeEdge);
-                }
-            }
-            // Redirect incoming store edges; those would generate more outgoing edges
-            for (Variable address : other.seeAlso) {
-                final List<StoreEdge> newStores = new ArrayList<>();
-                for (StoreEdge store : address.stores) {
-                    if (store.value.base != other) {
-                        continue;
-                    }
-                    for (IncludeEdge i : entry.getValue()) {
-                        assert i.source == other;
-                        Modifier composed = compose(invert(i.modifier), store.value.modifier);
-                        newStores.add(new StoreEdge(new DerivedVariable(variable, composed), store.addressModifier));
-                    }
-                }
-                if (!newStores.isEmpty()) {
-                    address.stores.removeIf(store -> store.value.base == other);
-                    address.stores.addAll(newStores);
-                    variable.seeAlso.add(address);
-                }
-            }
-            //NOTE: Includers and addresses may be removed from other.seeAlso.
-        }
-        // Redirect addressVariable map entries.
-        //final List<IncludeEdge> selfLoops = variable.includes.stream().filter(i -> i.source == variable).toList();
-        //assert selfLoops.size() == 1 : "not able to join self loops: " + selfLoops;
-        for (Map.Entry<MemoryCoreEvent, DerivedVariable> entry : addressVariables.entrySet()) {
-            final List<IncludeEdge> includeEdges = edges.get(entry.getValue().base);
-            if (includeEdges == null) {
-                continue;
-            }
-            assert !includeEdges.isEmpty();
-            if (logger.isWarnEnabled() && includeEdges.size() != 1) {
-                List<Modifier> m = includeEdges.stream().map(i -> i.modifier).toList();
-                logger.warn("multiple paths in component {} -> {}: {}", entry.getValue().base, variable, m);
-            }
-            entry.setValue(new DerivedVariable(variable, compose(entry.getValue().modifier, invert(includeEdges.get(0).modifier))));
-        }
+        return cyclicModifier;
     }
 
     private boolean equalsPointerSet(Variable left, Variable right) {
@@ -742,7 +804,7 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
         for (final StoreEdge store : stores) {
             for (final LoadEdge load : loads) {
                 if (overlaps(store.addressModifier, load.addressModifier)) {
-                    addInclude(load.result, includeEdge(store.value));
+                    addInclude(load.result, compose(includeEdge(store.value), load.valueModifier));
                 }
             }
         }
@@ -905,15 +967,15 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
     }
 
     private static LoadEdge compose(LoadEdge other, Modifier modifier) {
-        return isTrivial(modifier) ? other : new LoadEdge(other.result, compose(other.addressModifier, modifier));
+        return isTrivial(modifier) ? other : new LoadEdge(other.result, compose(other.addressModifier, modifier), other.valueModifier);
     }
 
     private static StoreEdge compose(StoreEdge other, Modifier modifier) {
         return isTrivial(modifier) ? other : new StoreEdge(other.value, compose(other.addressModifier, modifier));
     }
 
-    private static Modifier invert(Modifier modifier) {
-        return new Modifier(-modifier.offset, modifier.alignment);
+    private static Modifier accelerate(Modifier modifier) {
+        return new Modifier(0, compose(modifier.alignment, modifier.offset));
     }
 
     // Multiplies all dynamic offsets with another factor.
