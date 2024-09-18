@@ -4,7 +4,7 @@ OpenCL
 (*
 * This model is based on:
 * https://multicore.doc.ic.ac.uk/overhauling/opencl_base.cat
-* https://multicore.doc.ic.ac.uk/overhauling/opencl_scopedsc.cat
+* https://multicore.doc.ic.ac.uk/overhauling/opencl.cat
 *)
 
 // Base relations:
@@ -27,12 +27,10 @@ let mo = co & ((~NAL) * (~NAL))
 let sb = po
 let rb = (rf^-1; mo) \ id
 let unv = ~0
+let wi = int
 
 (* Inclusive scopes *)
-let incl = (int & (WI * WI)) |
-    (swg & (WG * WG)) |
-    (sdv & (DV * DV)) |
-    (ALL * ALL)
+let incl = (swg & (WG * WG)) | (sdv & (DV * DV)) | (ALL * ALL)
 
 (*******************)
 (* Synchronisation *)
@@ -46,25 +44,23 @@ let Fsb = [F]; sb
 let sbF = sb; [F]
 
 (* Release sequence *)
-let rs_prime = int | (unv; [R & W])
+let rs_prime = wi | (unv; [R & W])
 let rs = mo & rs_prime & ~((mo & ~rs_prime) ; mo)
 
 (* Release-acquire synchronisation *)
-let ra_sw_g = ([GLOBAL & Rel]; Fsb?; [W \ WI]; rs?; [GLOBAL]; rf; [R \ WI]; sbF?; [Acq & GLOBAL]) & incl & ~int
-let ra_sw_l = ([LOCAL & Rel]; Fsb?; [W \ WI]; rs?; [LOCAL]; rf; [R \ WI]; sbF?; [Acq & LOCAL]) & incl & ~int
+let ra_sw(r) = ([r & Rel]; Fsb?; [W \ WI]; rs?; [r]; rf; [R \ WI]; sbF?; [Acq & r]) & incl & ~wi
 
 (* Barrier synchronisation *)
 // in OpenCL a barrier results in two fence operations: entry and exit fences:
 // https://registry.khronos.org/OpenCL/specs/3.0-unified/html/OpenCL_API.html#_work_group_functions
-let bar_sw_g = (EF * XF) & syncbar & ~int & swg & (GLOBAL * GLOBAL)
-let bar_sw_l = (EF * XF) & syncbar & ~int & swg & (LOCAL * LOCAL)
+let bar_sw(r) =  (EF * XF) & syncbar & ~wi & swg & (r * r)
 
 (* Allowed to synchronise on the other region *)
 let scf = (SC * SC) | ((GLOBAL & LOCAL & F) * (GLOBAL & LOCAL & F))
 
 (* Global and local synchronises-with *)
-let gsw = ra_sw_g | bar_sw_g | (scf & ra_sw_l)
-let lsw = ra_sw_l | bar_sw_l | (scf & ra_sw_g)
+let gsw = ra_sw(GLOBAL) | bar_sw(GLOBAL) | (scf & ra_sw(LOCAL))
+let lsw = ra_sw(LOCAL) | bar_sw(LOCAL) | (scf & ra_sw(GLOBAL))
 
 (******************)
 (* Happens-before *)
@@ -73,17 +69,16 @@ let lsw = ra_sw_l | bar_sw_l | (scf & ra_sw_g)
 (* Global and local happens-before *)
 let ghb = (((GLOBAL * GLOBAL) & (sb | (IW * ~IW))) | gsw)+
 let lhb = (((LOCAL * LOCAL) & (sb | (IW * ~IW))) | lsw)+
-irreflexive ghb as global_hb_acyclic
-irreflexive lhb as local_hb_acyclic
+irreflexive ghb as O-HbG
+irreflexive lhb as O-HbL
 
 (*************)
 (* Coherence *)
 (*************)
 
-let coh_hb_g = (rf^-1)?; mo; rf?; ghb
-let coh_hb_l = (rf^-1)?; mo; rf?; lhb
-irreflexive coh_hb_g as global_coherence
-irreflexive coh_hb_l as local_coherence
+let coh(hb) = (rf^-1)?; mo; rf?; hb
+irreflexive coh(ghb) as O-CohG
+irreflexive coh(lhb) as O-CohL
 
 (************************)
 (* Consistency of reads *)
@@ -93,12 +88,11 @@ irreflexive coh_hb_l as local_coherence
 irreflexive rf; (ghb | lhb) as O-Rf
 
 (* Visible side effects *)
-let vse_ghb = (W * R) & ghb & loc & ~((ghb & loc); [W]; ghb)
-let vse_lhb = (W * R) & lhb & loc & ~((lhb & loc); [W]; lhb)
+let vis(hb) = (W * R) & hb & loc & ~((hb & loc); [W]; hb)
 
 (* A non-atomic load can only read from a store that is visible. *)
-empty (rf; [NAL & GLOBAL]) \ vse_ghb as O-NaRfG
-empty (rf; [NAL & LOCAL]) \ vse_lhb as O-NaRfL
+empty (rf; [NAL & GLOBAL])\vis(ghb) as O-NaRfG
+empty (rf; [NAL & LOCAL])\vis(lhb) as O-NaRfL
 
 (* Consistency of RMWs *)
 irreflexive rf | (mo;mo;rf^-1) | (mo;rf) as O-Rmw
@@ -114,13 +108,12 @@ acyclic (SC*SC) & scp & incl as O-Sscoped
 (*    Races    *)
 (***************)
 
-let conflict = ((W * _) | (_ * W)) & loc
+let cnf = ((W * W) | (W * R) | (R * W)) & loc
 
-let gl_hb = ghb | lhb
-let dr = conflict & ~(gl_hb) & ~(gl_hb)^-1 & ~int & ~incl
+let dr = cnf & ~(ghb | lhb) & ~(ghb | lhb)^-1 & ~wi & ~incl
 flag ~empty dr as data_race
 
 (* Barrier divergence *)
-let bsw = bar_sw_g | bar_sw_l
-let bd = [EF] & ((~int & swg);unv) \ (bsw;unv)
+let bsw = bar_sw(GLOBAL) | bar_sw(LOCAL)
+let bd = [EF] & ((~wi & swg); unv) \ (bsw ; unv)
 flag ~empty bd as barrier_divergence
