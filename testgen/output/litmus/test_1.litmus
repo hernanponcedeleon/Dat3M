@@ -5,12 +5,12 @@ Program relation graph:
 2 --po-> 3
 3 --rf-> 1
 "
-{ [a1]=0; 0:r1=0; }
+{ [a1]=0; 0:r6=0; }
 
 P0( atomic_int *a1 )  {
-  r1 = atomic_load_explicit(a1, memory_order_seq_cst);
-  atomic_store_explicit(a1, 2, memory_order_seq_cst);
+  r6 = atomic_load_explicit(a1, memory_order_seq_cst);
+  atomic_store_explicit(a1, 6, memory_order_seq_cst);
 }
 
-exists ( 0:r1 = 2 )
+exists ( 0:r6 = 6 )
 

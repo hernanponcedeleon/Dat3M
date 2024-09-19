@@ -5,17 +5,17 @@ Program relation graph:
 3 --po-> 1
 2 --co-> 3
 "
-{ [a2]=0; 1:r9=0; 1:r10=0; }
+{ [a4]=0; 1:r12=0; 1:r16=0; }
 
-P0( atomic_int *a2 )  {
-  atomic_store_explicit(a2, 1, memory_order_seq_cst);
-  atomic_store_explicit(a2, 2, memory_order_seq_cst);
+P0( atomic_int *a4 )  {
+  atomic_store_explicit(a4, 2, memory_order_seq_cst);
+  atomic_store_explicit(a4, 1, memory_order_seq_cst);
 }
 
-P1( atomic_int *a2 )  {
-  r9 = atomic_load_explicit(a2, memory_order_seq_cst);
-  r10 = atomic_load_explicit(a2, memory_order_seq_cst);
+P1( atomic_int *a4 )  {
+  r12 = atomic_load_explicit(a4, memory_order_seq_cst);
+  r16 = atomic_load_explicit(a4, memory_order_seq_cst);
 }
 
-exists ( 1:r9 = 2 /\ 1:r10 = 1 )
+exists ( 1:r12 = 1 /\ 1:r16 = 2 )
 
