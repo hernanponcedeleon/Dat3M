@@ -15,7 +15,7 @@ import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.google.common.collect.ImmutableSet;
 
-import static com.dat3m.dartagnan.wmm.RelationNameRepository.MFENCE;
+import static com.dat3m.dartagnan.program.event.FenceNameRepository.*;
 
 public class VisitorLitmusX86 extends LitmusX86BaseVisitor<Object> {
 

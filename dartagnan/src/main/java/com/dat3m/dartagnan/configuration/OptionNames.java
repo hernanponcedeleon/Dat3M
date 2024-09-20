@@ -13,8 +13,10 @@ public class OptionNames {
     public static final String COVERAGE = "coverage";
     public static final String WITNESS = "witness";
     public static final String SMTLIB2 = "smtlib2";
+    public static final String CAT_INCLUDE = "cat.include";
 
     // Modeling Options
+    public static final String PROGRESSMODEL = "modeling.progress";
     public static final String THREAD_CREATE_ALWAYS_SUCCEEDS = "modeling.threadCreateAlwaysSucceeds";
     public static final String RECURSION_BOUND = "modeling.recursionBound";
     public static final String MEMORY_IS_ZEROED = "modeling.memoryIsZeroed";

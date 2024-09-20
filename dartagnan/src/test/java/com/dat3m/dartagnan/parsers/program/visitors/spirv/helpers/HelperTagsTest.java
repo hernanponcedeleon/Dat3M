@@ -7,11 +7,12 @@ import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
 import org.junit.Test;
 
+import java.util.List;
 import java.util.Set;
+import java.util.stream.IntStream;
 
 import static com.dat3m.dartagnan.program.event.Tag.Spirv.*;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
+import static org.junit.Assert.*;
 
 public class HelperTagsTest {
 
@@ -121,5 +122,155 @@ public class HelperTagsTest {
             // then
             assertEquals(error, e.getMessage());
         }
+    }
+
+    @Test
+    public void testValidMemoryOperands() {
+        // Empty
+        doTestValidMemoryOperands(Set.of(), "", null, List.of());
+        doTestValidMemoryOperands(Set.of(), "None", null, List.of());
+
+        // Non-parametrized
+        doTestValidMemoryOperands(Set.of(MEM_VOLATILE), "Volatile", null, List.of());
+        doTestValidMemoryOperands(Set.of(MEM_NONTEMPORAL), "Nontemporal", null, List.of());
+        doTestValidMemoryOperands(Set.of(MEM_NON_PRIVATE), "NonPrivatePointer", null, List.of());
+        doTestValidMemoryOperands(Set.of(MEM_VOLATILE, MEM_NONTEMPORAL, MEM_NON_PRIVATE),
+                "Volatile|Nontemporal|NonPrivatePointer", null, List.of());
+        doTestValidMemoryOperands(Set.of(MEM_VOLATILE, MEM_NONTEMPORAL, MEM_NON_PRIVATE),
+                "NonPrivatePointer|Nontemporal|Volatile", null, List.of());
+
+        // Aligned
+        doTestValidMemoryOperands(Set.of(), "Aligned", 4, List.of());
+        doTestValidMemoryOperands(Set.of(), "Aligned", 8, List.of());
+        doTestValidMemoryOperands(Set.of(MEM_NON_PRIVATE), "NonPrivatePointer|Aligned", 4, List.of());
+        doTestValidMemoryOperands(Set.of(MEM_NONTEMPORAL, MEM_VISIBLE, DEVICE),
+                "Nontemporal|Aligned|MakePointerVisible", 4, List.of(1));
+
+        // Availability-Visibility
+        doTestValidMemoryOperands(Set.of(MEM_NON_PRIVATE, MEM_VISIBLE, DEVICE),
+                "NonPrivatePointer|MakePointerVisible", null, List.of(1));
+        doTestValidMemoryOperands(Set.of(MEM_NON_PRIVATE, MEM_VISIBLE, DEVICE),
+                "NonPrivatePointer|Aligned|MakePointerVisible", 4, List.of(1));
+        doTestValidMemoryOperands(Set.of(MEM_VOLATILE, MEM_NONTEMPORAL, MEM_NON_PRIVATE, MEM_VISIBLE, DEVICE),
+                "Volatile|Aligned|Nontemporal|NonPrivatePointer|MakePointerVisible", 4, List.of(1));
+        // TODO: Uncomment after implementing combined av-vis operands
+        //doTestValidMemoryOperands(Set.of(MEM_AVAILABLE, MEM_VISIBLE, DEVICE),
+        //        "MakePointerAvailable|MakePointerVisible", null, List.of(1, 2));
+    }
+
+    @Test
+    public void testInvalidMemoryOperands() {
+        // Non-parameterized
+        doTestInvalidMemoryOperandsParameters("None", 4, List.of());
+        doTestInvalidMemoryOperandsParameters("Volatile", null, List.of(1));
+        doTestInvalidMemoryOperandsParameters("Nontemporal", null, List.of(1, 2));
+        doTestInvalidMemoryOperandsParameters("NonPrivatePointer", 4, List.of(1));
+        doTestInvalidMemoryOperandsParameters("NonPrivatePointerKHR", 4, List.of(1, 2));
+
+        doTestInvalidMemoryOperandsParameters("Volatile|Nontemporal", 4, List.of());
+        doTestInvalidMemoryOperandsParameters("Volatile|Nontemporal|NonPrivatePointer", null, List.of(1));
+        doTestInvalidMemoryOperandsParameters("Volatile|Nontemporal|NonPrivatePointerKHR", null, List.of(1, 2));
+        doTestInvalidMemoryOperandsParameters("NonPrivatePointer|Nontemporal", 4, List.of(1));
+        doTestInvalidMemoryOperandsParameters("NonPrivatePointerKHR|Nontemporal|Volatile", 4, List.of(1, 2));
+
+        // Aligned
+        doTestInvalidMemoryOperandsParameters("Aligned", null, List.of());
+        doTestInvalidMemoryOperandsParameters("Aligned", null, List.of(1));
+        doTestInvalidMemoryOperandsParameters("Aligned", null, List.of(1, 2));
+        doTestInvalidMemoryOperandsParameters("Aligned", 4, List.of(1));
+        doTestInvalidMemoryOperandsParameters("Aligned", 4, List.of(1, 2));
+
+        doTestInvalidMemoryOperandsParameters("Aligned|Volatile", null, List.of());
+        doTestInvalidMemoryOperandsParameters("Volatile|Aligned", null, List.of(1));
+        doTestInvalidMemoryOperandsParameters("Aligned|MakePointerVisible", null, List.of(1));
+        doTestInvalidMemoryOperandsParameters("Aligned|NonPrivatePointer|MakePointerVisible", null, List.of(1));
+
+        // Availability-Visibility
+        doTestInvalidMemoryOperandsParameters("MakePointerVisible", null, List.of());
+        doTestInvalidMemoryOperandsParameters("MakePointerVisible", 4, List.of());
+        doTestInvalidMemoryOperandsParameters("MakePointerVisible", null, List.of(1, 2));
+        doTestInvalidMemoryOperandsParameters("MakePointerAvailable", null, List.of());
+        doTestInvalidMemoryOperandsParameters("MakePointerAvailable", 4, List.of());
+        doTestInvalidMemoryOperandsParameters("MakePointerAvailable", null, List.of(1, 2));
+
+        doTestInvalidMemoryOperandsParameters("NonPrivatePointer|MakePointerAvailable", null, List.of());
+        doTestInvalidMemoryOperandsParameters("Aligned|NonPrivatePointer|MakePointerAvailable", 4, List.of(1, 2));
+        doTestInvalidMemoryOperandsParameters("MakePointerAvailable|MakePointerVisible", null, List.of(1));
+        doTestInvalidMemoryOperandsParameters("MakePointerAvailable|MakePointerVisible", null, List.of(1, 1, 1));
+    }
+
+    @Test
+    public void testInvalidMemoryOperandsCombinedNone() {
+        doTestInvalidMemoryOperandsCombinedWithNone("None|Volatile", null, List.of());
+        doTestInvalidMemoryOperandsCombinedWithNone("Volatile|None", null, List.of());
+        doTestInvalidMemoryOperandsCombinedWithNone("None|Aligned", 4, List.of());
+        doTestInvalidMemoryOperandsCombinedWithNone("Aligned|None", 4, List.of());
+        doTestInvalidMemoryOperandsCombinedWithNone("None|MakePointerVisible", null, List.of(1));
+        doTestInvalidMemoryOperandsCombinedWithNone("MakePointerVisible|None", null, List.of(1));
+        doTestInvalidMemoryOperandsCombinedWithNone("None|Aligned|MakePointerVisible", 4, List.of(1));
+        doTestInvalidMemoryOperandsCombinedWithNone("Aligned|None|MakePointerVisible", 4, List.of(1));
+        doTestInvalidMemoryOperandsCombinedWithNone("Aligned|MakePointerVisible|None", 4, List.of(1));
+    }
+
+    @Test
+    public void testInvalidMemoryOperandsDuplicate() {
+        // Trivial duplicates
+        doTestInvalidMemoryOperandsDuplicate("None|None", null, List.of());
+        doTestInvalidMemoryOperandsDuplicate("Volatile|Volatile", null, List.of());
+        doTestInvalidMemoryOperandsDuplicate("Volatile|Nontemporal|Volatile|Nontemporal", null, List.of());
+        doTestInvalidMemoryOperandsDuplicate("Aligned|Aligned", 4, List.of());
+        doTestInvalidMemoryOperandsDuplicate("MakePointerVisible|MakePointerVisible", null, List.of(1));
+        doTestInvalidMemoryOperandsDuplicate("MakePointerVisible|MakePointerVisible",null, List.of(1, 2));
+
+        // KHR duplicates
+        doTestInvalidMemoryOperandsDuplicate("NonPrivatePointer|NonPrivatePointerKHR", null, List.of());
+        doTestInvalidMemoryOperandsDuplicate("MakePointerVisible|MakePointerVisibleKHR", null, List.of(1));
+        doTestInvalidMemoryOperandsDuplicate("MakePointerVisible|MakePointerVisibleKHR", null, List.of(1, 2));
+        doTestInvalidMemoryOperandsDuplicate("MakePointerAvailable|MakePointerAvailableKHR",null, List.of(1));
+        doTestInvalidMemoryOperandsDuplicate("MakePointerAvailable|MakePointerAvailableKHR", null, List.of(1, 2));
+    }
+
+    private void doTestInvalidMemoryOperandsParameters(String operand, Integer alignment, List<Integer> params) {
+        String error = String.format("Illegal parameter(s) in memory operands definition '%s'", operand);
+        doTestInvalidMemoryOperands(error, operand, alignment, params);
+    }
+
+    private void doTestInvalidMemoryOperandsDuplicate(String operand, Integer alignment, List<Integer> params) {
+        String error = String.format("Duplicated memory operands definition(s) in '%s'", operand);
+        doTestInvalidMemoryOperands(error, operand, alignment, params);
+    }
+
+    private void doTestInvalidMemoryOperandsCombinedWithNone(String operand, Integer alignment, List<Integer> params) {
+        String error = "Memory operand 'None' cannot be combined with other operands";
+        doTestInvalidMemoryOperands(error, operand, alignment, params);
+    }
+
+    private void doTestInvalidMemoryOperands(String error, String operands, Integer alignment, List<Integer> params) {
+        // given
+        List<String> operandsList = operands.isEmpty() ? List.of() : List.of(operands.split("\\|"));
+        List<String> paramIds = IntStream.range(0, params.size()).boxed().map(idx -> "param_" + idx).toList();
+        List<Expression> paramValues = params.stream().map(p -> (Expression) expressions.makeValue(p, archType)).toList();
+
+        try {
+            // when
+            HelperTags.parseMemoryOperandsTags(operandsList, alignment, paramIds, paramValues);
+            fail("Should throw exception");
+        } catch (Exception e) {
+            // then
+            assertEquals(error, e.getMessage());
+        }
+    }
+
+    private void doTestValidMemoryOperands(Set<String> expected, String operands, Integer alignment, List<Integer> params) {
+        // given
+        List<String> operandsList = operands.isEmpty() ? List.of() : List.of(operands.split("\\|"));
+        List<String> paramIds = IntStream.range(0, params.size()).boxed().map(idx -> "param_" + idx).toList();
+        List<Expression> paramValues = params.stream().map(p -> (Expression) expressions.makeValue(p, archType)).toList();
+
+        // when
+        Set<String> actual = HelperTags.parseMemoryOperandsTags(operandsList, alignment, paramIds, paramValues);
+
+        // then
+        assertEquals(expected, actual);
     }
 }
