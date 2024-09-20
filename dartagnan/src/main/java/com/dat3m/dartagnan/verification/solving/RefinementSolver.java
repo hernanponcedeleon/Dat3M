@@ -555,8 +555,7 @@ public class RefinementSolver extends ModelChecker {
                 rf,
                 co,
                 fr
-            )
-            )));
+            ))));
         }
         if (biases.contains(Baseline.NO_OOTA)) {
             // ---- acyclic (dep | rf) ----
