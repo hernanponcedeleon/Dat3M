@@ -10,8 +10,8 @@ import com.dat3m.dartagnan.program.event.core.CondJump;
 import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.verification.Context;
 import com.google.common.base.Preconditions;
+import com.google.common.base.Verify;
 import com.google.common.collect.Iterables;
-import org.sosy_lab.common.configuration.Configuration;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -39,7 +39,7 @@ import java.util.Set;
  * that is, backward jumps cause re-evaluation of the loop body until convergence.
  * This results in a squared worst-case time complexity in terms of events being processed.
  */
-public class BackwardsReachingDefinitionsAnalysis implements ReachingDefinitionsAnalysis {
+class BackwardsReachingDefinitionsAnalysis implements ReachingDefinitionsAnalysis {
 
     private final Map<RegReader, ReaderInfo> readerMap = new HashMap<>();
     private final Map<RegWriter, Readers> writerMap = new HashMap<>();
@@ -57,7 +57,7 @@ public class BackwardsReachingDefinitionsAnalysis implements ReachingDefinitions
     @Override
     public Writers getFinalWriters() {
         final ReaderInfo result = readerMap.get(FINAL_READER);
-        Preconditions.checkState(result != null, "final state has not been analyzed.");
+        Verify.verify(result != null, "final state has not been analyzed.");
         return result;
     }
 
@@ -78,7 +78,7 @@ public class BackwardsReachingDefinitionsAnalysis implements ReachingDefinitions
      */
     public Readers getInitialReaders() {
         final Readers result = writerMap.get(INITIAL_WRITER);
-        Preconditions.checkState(result != null, "initial state has not been analyzed.");
+        Verify.verify(result != null, "initial state has not been analyzed.");
         return result;
     }
 
@@ -101,9 +101,8 @@ public class BackwardsReachingDefinitionsAnalysis implements ReachingDefinitions
      * Optionally queries {@link ExecutionAnalysis} for pairs of writers appearing together in an execution.
      * @param program Contains a set of threads to be analyzed.  Additionally-defined functions are ignored.
      * @param analysisContext Collection of previous analyses to be used as dependencies.
-     * @param config User-defined settings for this analysis.
      */
-    public static BackwardsReachingDefinitionsAnalysis fromConfig(Program program, Context analysisContext, Configuration config) {
+    public static BackwardsReachingDefinitionsAnalysis forProgram(Program program, Context analysisContext) {
         final ExecutionAnalysis exec = analysisContext.get(ExecutionAnalysis.class);
         final var analysis = new BackwardsReachingDefinitionsAnalysis();
         final Set<Register> finalRegisters = finalRegisters(program);

@@ -46,7 +46,6 @@ public class OptionNames {
     public static final String DYNAMIC_SPINLOOP_DETECTION = "program.processing.spinloops";
     public static final String PROPAGATE_COPY_ASSIGNMENTS = "program.processing.propagateCopyAssignments";
     public static final String REMOVE_ASSERTION_OF_TYPE = "program.processing.skipAssertionsOfType";
-    public static final String LOOP_BOUNDS_USE_DEF_METHOD = "program.processing.loopBounds.useDefAnalysis";
 
     // Program Property Options
     public static final String REACHING_DEFINITIONS_METHOD = "program.analysis.reachingDefinitions";

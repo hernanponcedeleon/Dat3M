@@ -10,7 +10,6 @@ import com.dat3m.dartagnan.parsers.program.utils.ProgramBuilder;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Program.SourceLanguage;
 import com.dat3m.dartagnan.program.Register;
-import com.dat3m.dartagnan.program.analysis.BackwardsReachingDefinitionsAnalysis;
 import com.dat3m.dartagnan.program.analysis.BranchEquivalence;
 import com.dat3m.dartagnan.program.analysis.ExecutionAnalysis;
 import com.dat3m.dartagnan.program.analysis.ReachingDefinitionsAnalysis;
@@ -113,7 +112,7 @@ public class AnalysisTest {
 
 
     @Test
-    public void reachingDefinitionSupportsLoops() {
+    public void reachingDefinitionSupportsLoops() throws InvalidConfigurationException {
         ProgramBuilder b = ProgramBuilder.forLanguage(SourceLanguage.LITMUS);
         b.newFunction("test", 0, types.getFunctionType(types.getArchType(), List.of()), List.of());
         Register r0 = b.getOrNewRegister(0, "r0");
@@ -187,7 +186,11 @@ public class AnalysisTest {
         b.addChild(0, ret);
 
         Program program = b.build();
-        final var dep = BackwardsReachingDefinitionsAnalysis.forFunction(program.getFunctions().get(0));
+        Configuration config = Configuration.builder()
+                .setOption(REACHING_DEFINITIONS_METHOD, ReachingDefinitionsAnalysis.Method.BACKWARD.name())
+                .build();
+        final ReachingDefinitionsAnalysis dep = ReachingDefinitionsAnalysis.configure(config)
+                .forFunction(program.getFunctions().get(0));
         assertFalse(dep.getWriters(r00).ofRegister(r0).mustBeInitialized());
         assertList(dep.getWriters(r00).ofRegister(r0).getMayWriters());
         assertFalse(dep.getWriters(r10).ofRegister(r0).mustBeInitialized());

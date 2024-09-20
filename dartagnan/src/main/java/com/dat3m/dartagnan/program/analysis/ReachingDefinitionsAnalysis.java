@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan.program.analysis;
 
+import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.RegReader;
@@ -80,22 +81,38 @@ public interface ReachingDefinitionsAnalysis {
 
     static ReachingDefinitionsAnalysis fromConfig(Program program, Context analysisContext, Configuration config)
             throws InvalidConfigurationException {
-        var c = new Config();
-        config.inject(c);
-        ReachingDefinitionsAnalysis analysis = switch (c.method) {
-            case BACKWARD -> BackwardsReachingDefinitionsAnalysis.fromConfig(program, analysisContext, config);
+        ReachingDefinitionsAnalysis analysis = switch (configure(config).method) {
+            case BACKWARD -> BackwardsReachingDefinitionsAnalysis.forProgram(program, analysisContext);
             case FORWARD -> Dependency.fromConfig(program, analysisContext, config);
         };
         analysisContext.register(ReachingDefinitionsAnalysis.class, analysis);
         return analysis;
     }
 
+    static Config configure(Configuration config) throws InvalidConfigurationException {
+        var c = new Config();
+        config.inject(c);
+        return c;
+    }
+
+    enum Method { BACKWARD, FORWARD }
+
     @Options
     final class Config {
 
-        @Option(name = REACHING_DEFINITIONS_METHOD, description = "", secure = true)
+        @Option(name = REACHING_DEFINITIONS_METHOD,
+                description = "Specifies the static analysis algorithm, that collects the relationship between"
+                        + " register writers and their direct readers.",
+                secure = true)
         private Method method = Method.BACKWARD;
-    }
 
-    enum Method { BACKWARD, FORWARD}
+        private Config() {}
+
+        public ReachingDefinitionsAnalysis forFunction(Function function) {
+            return switch (method) {
+                case BACKWARD -> BackwardsReachingDefinitionsAnalysis.forFunction(function);
+                case FORWARD -> UseDefAnalysis.forFunction(function);
+            };
+        }
+    }
 }
