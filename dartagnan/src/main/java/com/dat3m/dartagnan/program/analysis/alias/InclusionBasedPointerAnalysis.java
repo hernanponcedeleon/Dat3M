@@ -526,20 +526,8 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
         // Not all paths in the SCC have to visit 'variable'.
         // 'componentEdges' maps X and Y to a summary of all 'include' paths from X to Y.
         // For each other variable, compose all incoming, internal, 'variable'-avoiding include-paths with all outgoing external include-edges.
-        final Map<Variable, Map<Variable, List<IncludeEdge>>> componentEdges = new HashMap<>();
         final Set<Variable> otherVariables = new HashSet<>(component);
         otherVariables.remove(variable);
-        // For each non-'variable' component variable, all incoming, internal, 'variable'-avoiding include-paths.
-        final Map<Variable, List<IncludeEdge>> internalPaths = new HashMap<>();
-        for (Variable other : otherVariables) {
-            final List<IncludeEdge> internalPathsToOther = new ArrayList<>();
-            for (List<IncludeEdge> paths : allPathsTo(otherVariables, other).values()) {
-                internalPathsToOther.addAll(paths);
-            }
-            if (!internalPathsToOther.isEmpty()) {
-                internalPaths.put(other, internalPathsToOther);
-            }
-        }
         // For each non-component variable, all incoming include-edges from non-'variable' component variables.
         final Map<Variable, List<IncludeEdge>> oldOutEdges = new HashMap<>();
         final Set<Variable> includerCandidates = new HashSet<>();
@@ -578,52 +566,26 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
                 address.loads.removeIf(l -> otherVariables.contains(l.result));
             }
         }
-        // newPaths = cyclicModifier ; (toVariablePaths | (internalPaths ; oldOutEdges))
-        // For each non-component variable and 'variable', all incoming paths and cyclicModifier
-        final Map<Variable, List<IncludeEdge>> newPaths = new HashMap<>();
-        final List<IncludeEdge> newPathsToVariable = new ArrayList<>();
+        // New incoming edges = oldInEdges ; cyclicModifier ; toVariablePaths
+        // New load edges = oldLoadEdges ; cyclicModifier ; toVariablePaths
+        Set<IncludeEdge> newPathsToVariable = new HashSet<>();
         for (List<IncludeEdge> toVariablePathList : toVariablePaths.values()) {
             assert !toVariablePathList.isEmpty();
             for (IncludeEdge toVariablePath : toVariablePathList) {
-                if (oldInEdges.containsKey(toVariablePath.source)) {
-                    newPathsToVariable.add(compose(toVariablePath, cyclicModifier));
-                }
-            }
-        }
-        assert !newPathsToVariable.isEmpty();
-        newPaths.put(variable, newPathsToVariable);
-        for (Map.Entry<Variable, List<IncludeEdge>> entry : oldOutEdges.entrySet()) {
-            assert !component.contains(entry.getKey());
-            final List<IncludeEdge> paths = new ArrayList<>();
-            for (IncludeEdge outgoingEdge : entry.getValue()) {
-                assert otherVariables.contains(outgoingEdge.source);
-                final List<IncludeEdge> internalPathList = internalPaths.get(outgoingEdge.source);
-                if (internalPathList == null) {
+                if (!oldInEdges.containsKey(toVariablePath.source)) {
                     continue;
                 }
-                final Modifier acceleratedModifier = compose(outgoingEdge.modifier, cyclicModifier);
-                for (IncludeEdge internalPath : internalPathList) {
-                    paths.add(compose(internalPath, acceleratedModifier));
+                final IncludeEdge path = compose(toVariablePath, cyclicModifier);
+                if (!newPathsToVariable.add(path)) {
+                    continue;
                 }
-            }
-            if (!paths.isEmpty()) {
-                newPaths.put(entry.getKey(), paths);
-            }
-        }
-        // New incoming and detour edges = oldInEdges ; cyclicModifier ; (toVariablePaths | (internalPaths ; oldOutEdges))
-        // = oldInEdges ; newPaths
-        // New load edges = oldLoadEdges ; cyclicModifier ; (toVariablePaths | (internalPaths ; oldOutEdges))
-        // = oldLoadEdges ; newPaths
-        for (Map.Entry<Variable, List<IncludeEdge>> entry : newPaths.entrySet()) {
-            assert !otherVariables.contains(entry.getKey());
-            assert !entry.getValue().isEmpty();
-            for (IncludeEdge path : entry.getValue()) {
                 for (IncludeEdge oldInEdge : oldInEdges.getOrDefault(path.source, List.of())) {
-                    addInclude(entry.getKey(), compose(oldInEdge, path.modifier));
+                    addInclude(variable, compose(oldInEdge, path.modifier));
                 }
-                for (Map.Entry<Variable, List<LoadEdge>> loadEntry : oldLoads.getOrDefault(path.source, Map.of()).entrySet()) {
+                for (Map.Entry<Variable, Set<LoadEdge>> loadEntry : oldLoads.getOrDefault(path.source, Map.of()).entrySet()) {
                     for (LoadEdge load : loadEntry.getValue()) {
-                        loadEntry.getKey().loads.add(new LoadEdge(load.result, load.addressModifier, compose(load.valueModifier, path.modifier)));
+                        loadEntry.getKey().loads.add(new LoadEdge(load.result, load.addressModifier,
+                                compose(load.valueModifier, path.modifier)));
                     }
                 }
             }
