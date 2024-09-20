@@ -636,7 +636,7 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
                 final Modifier acceleratedModifier = compose(oldOutEdge.modifier, cyclicModifier);
                 for (IncludeEdge toVariablePath : toVariablePaths.get(oldOutEdge.source)) {
                     final Modifier negatedOffset = new Modifier(-toVariablePath.modifier.offset, List.of());
-                    addInclude(oldOut.getKey(), new IncludeEdge(toVariablePath.source, compose(negatedOffset, acceleratedModifier)));
+                    addInclude(oldOut.getKey(), new IncludeEdge(variable, compose(negatedOffset, acceleratedModifier)));
                 }
             }
         }
