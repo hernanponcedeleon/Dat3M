@@ -118,11 +118,4 @@ public abstract class BaseOptions {
     public String getCatIncludePath() {
         return catIncludePath;
     }
-
-    @Option(
-        name=SMTLIB2,
-        description="Dump encoding to an SMTLIB2 file.")
-    private boolean smtlib=false;
-
-    public boolean getDumpSmtLib() { return smtlib; }
 }
