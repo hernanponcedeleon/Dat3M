@@ -122,11 +122,6 @@ public final class ConstraintCopier implements Constraint.Visitor<Constraint> {
     }
 
     @Override
-    public Fences visitFences(Fences fence) {
-        return new Fences(translate(fence.getDefinedRelation()), fence.getFilter());
-    }
-
-    @Override
     public Definition.Undefined visitUndefined(Definition.Undefined def) {
         return new Definition.Undefined(translate(def.getDefinedRelation()));
     }

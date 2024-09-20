@@ -36,6 +36,7 @@ import java.util.stream.Collectors;
 
 import static com.dat3m.dartagnan.configuration.Property.*;
 import static com.dat3m.dartagnan.program.Program.SourceLanguage.LLVM;
+import static com.dat3m.dartagnan.program.Program.SpecificationType.ASSERT;
 import static com.dat3m.dartagnan.wmm.RelationNameRepository.CO;
 
 public class PropertyEncoder implements Encoder {
@@ -275,7 +276,7 @@ public class PropertyEncoder implements Encoder {
             case FORALL, NOT_EXISTS, ASSERT -> bmgr.not(PROGRAM_SPEC.getSMTVariable(context));
             case EXISTS -> PROGRAM_SPEC.getSMTVariable(context);
         };
-        if (!program.getFormat().equals(LLVM)) {
+        if (!ASSERT.equals(program.getSpecificationType())) {
             encoding = bmgr.and(encoding, encodeProgramTermination());
         }
         return new TrackableFormula(trackingLiteral, encoding);
@@ -283,9 +284,10 @@ public class PropertyEncoder implements Encoder {
 
     private BooleanFormula encodeProgramTermination() {
         final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
-        return bmgr.and(program.getThreads().stream()
+        BooleanFormula exitReached = bmgr.and(program.getThreads().stream()
                 .map(t -> bmgr.equivalence(context.execution(t.getEntry()), context.execution(t.getExit())))
                 .toList());
+        return bmgr.and(exitReached, bmgr.not(encodeBoundEventExec()));
     }
 
     // ======================================================================

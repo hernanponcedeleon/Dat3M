@@ -3,6 +3,7 @@ package com.dat3m.dartagnan.parsers.program.visitors.spirv.helpers;
 import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.integers.IntLiteral;
+import com.dat3m.dartagnan.program.event.Tag;
 import com.google.common.collect.Sets;
 
 import java.util.*;
@@ -37,6 +38,72 @@ public class HelperTags {
         return tags;
     }
 
+    public static Set<String> parseMemoryOperandsTags(List<String> operands, Integer alignment,
+                                                      List<String> paramIds, List<Expression> paramsValues) {
+        List<String> tagList = parseTagList(operands, alignment);
+        Set<String> tagSet = new HashSet<>(tagList);
+        if (tagList.size() != tagSet.size()) {
+            throwDuplicatesException(operands);
+        }
+        int i = 0;
+        for (String tag : List.of(Tag.Spirv.MEM_AVAILABLE, Tag.Spirv.MEM_VISIBLE)) {
+            if (tagSet.contains(tag)) {
+                if (paramIds.size() <= i) {
+                    throwIllegalParametersException(operands);
+                }
+                String scopeTag = HelperTags.parseScope(paramIds.get(i), paramsValues.get(i));
+                tagSet.add(scopeTag);
+                i++;
+            }
+        }
+        if (i != paramsValues.size()) {
+            throwIllegalParametersException(operands);
+        }
+        // TODO: Implementation: this is a legal combination for OpCopyMemory and OpCopyMemorySized
+        if (tagSet.contains(Tag.Spirv.MEM_VISIBLE) && tagSet.contains(Tag.Spirv.MEM_AVAILABLE)) {
+            throw new ParsingException("Unsupported combination of memory operands '%s'",
+                    String.join("|", operands));
+        }
+        return tagSet;
+    }
+
+    private static List<String> parseTagList(List<String> operands, Integer alignment) {
+        boolean isNone = false;
+        boolean isAligned = false;
+        List<String> tagList = new LinkedList<>();
+        for (String tag : operands) {
+            switch (tag) {
+                case "None" -> {
+                    if (isNone) {
+                        throwDuplicatesException(operands);
+                    }
+                    isNone = true;
+                }
+                case "Aligned" -> {
+                    if (isAligned) {
+                        throwDuplicatesException(operands);
+                    }
+                    isAligned = true;
+                }
+                case "Volatile" -> tagList.add(Tag.Spirv.MEM_VOLATILE);
+                case "Nontemporal" -> tagList.add(Tag.Spirv.MEM_NONTEMPORAL);
+                case "MakePointerAvailable", "MakePointerAvailableKHR" -> tagList.add(Tag.Spirv.MEM_AVAILABLE);
+                case "MakePointerVisible", "MakePointerVisibleKHR" -> tagList.add(Tag.Spirv.MEM_VISIBLE);
+                case "NonPrivatePointer", "NonPrivatePointerKHR" -> tagList.add(Tag.Spirv.MEM_NON_PRIVATE);
+                case "AliasScopeINTELMask", "NoAliasINTELMask" ->
+                        throw new ParsingException("Unsupported memory operand '%s'", tag);
+                default -> throw new ParsingException("Unexpected memory operand '%s'", tag);
+            }
+        }
+        if (isNone && (isAligned || !tagList.isEmpty())) {
+            throw new ParsingException("Memory operand 'None' cannot be combined with other operands");
+        }
+        if (isAligned && alignment == null || !isAligned && alignment != null) {
+            throwIllegalParametersException(operands);
+        }
+        return tagList;
+    }
+
     public static String parseScope(String id, Expression expr) {
         int value = getIntValue(id, expr);
         if (value >= 0 && value < scopes.size()) {
@@ -61,6 +128,16 @@ public class HelperTags {
             case "PhysicalStorageBuffer" -> SC_PHYS_STORAGE_BUFFER;
             default -> throw new ParsingException("Unsupported storage class '%s'", cls);
         };
+    }
+
+    private static void throwDuplicatesException(List<String> operands) {
+        throw new ParsingException("Duplicated memory operands definition(s) in '%s'",
+                String.join("|", operands));
+    }
+
+    private static void throwIllegalParametersException(List<String> operands) {
+        throw new ParsingException("Illegal parameter(s) in memory operands definition '%s'",
+                String.join("|", operands));
     }
 
     private static int getIntValue(String id, Expression expr) {

@@ -10,23 +10,7 @@ Partial
 (* Utilities *)
 (*************)
 
-let fence.r.r = [R];fencerel(Fence.r.r);[R]
-let fence.r.w = [R];fencerel(Fence.r.w);[W]
-let fence.r.rw = [R];fencerel(Fence.r.rw);[M]
-let fence.w.r = [W];fencerel(Fence.w.r);[R]
-let fence.w.w = [W];fencerel(Fence.w.w);[W]
-let fence.w.rw = [W];fencerel(Fence.w.rw);[M]
-let fence.rw.r = [M];fencerel(Fence.rw.r);[R]
-let fence.rw.w = [M];fencerel(Fence.rw.w);[W]
-let fence.rw.rw = [M];fencerel(Fence.rw.rw);[M]
-let fence.tso = ([W];fencerel(Fence.tso);[W]) | ([R];fencerel(Fence.tso);[M])
-
-let fence = 
-  fence.r.r | fence.r.w | fence.r.rw |
-  fence.w.r | fence.w.w | fence.w.rw |
-  fence.rw.r | fence.rw.w | fence.rw.rw |
-  fence.tso
-
+include "riscvfences.cat"
 
 let po-loc-no-w = po-loc \ (po-loc?;[W];po-loc)
 let rsw = rf^-1;rf

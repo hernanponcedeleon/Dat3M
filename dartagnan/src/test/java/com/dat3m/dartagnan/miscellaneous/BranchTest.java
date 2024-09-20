@@ -2,6 +2,7 @@ package com.dat3m.dartagnan.miscellaneous;
 
 import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.configuration.Property;
+import com.dat3m.dartagnan.encoding.ProverWithTracker;
 import com.dat3m.dartagnan.parsers.cat.ParserCat;
 import com.dat3m.dartagnan.parsers.program.ProgramParser;
 import com.dat3m.dartagnan.program.Program;
@@ -14,7 +15,6 @@ import com.google.common.collect.ImmutableMap;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
-import org.sosy_lab.java_smt.api.ProverEnvironment;
 import org.sosy_lab.java_smt.api.SolverContext;
 import org.sosy_lab.java_smt.api.SolverContext.ProverOptions;
 
@@ -95,7 +95,7 @@ public class BranchTest {
     @Test
     public void test() {
         try (SolverContext ctx = TestHelper.createContext();
-             ProverEnvironment prover = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS)) {
+              ProverWithTracker prover = new ProverWithTracker(ctx, "", ProverOptions.GENERATE_MODELS)) {
             Program program = new ProgramParser().parse(new File(path));
             VerificationTask task = VerificationTask.builder()
                     .withSolverTimeout(60)

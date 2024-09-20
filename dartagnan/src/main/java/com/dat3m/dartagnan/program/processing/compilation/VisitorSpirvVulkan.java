@@ -219,7 +219,7 @@ public class VisitorSpirvVulkan extends VisitorVulkan {
 
             // Memory access (non-atomic)
             case Tag.Spirv.MEM_VOLATILE,
-                    Tag.Spirv.MEM_NON_TEMPORAL -> null;
+                    Tag.Spirv.MEM_NONTEMPORAL -> null;
             case Tag.Spirv.MEM_NON_PRIVATE -> Tag.Vulkan.NON_PRIVATE;
             case Tag.Spirv.MEM_AVAILABLE -> Tag.Vulkan.AVAILABLE;
             case Tag.Spirv.MEM_VISIBLE -> Tag.Vulkan.VISIBLE;

@@ -100,7 +100,7 @@ public class Editor extends RTextScrollPane implements ActionListener {
             if (chooser.showOpenDialog(null) == APPROVE_OPTION) {
                 String path = chooser.getSelectedFile().getPath();
                 loadedPath = path.substring(0, path.lastIndexOf('/') + 1);
-                String format = path.substring(path.lastIndexOf('.') + 1).trim();
+                String format = path.endsWith("spv.dis") ? "spv.dis" : path.substring(path.indexOf('.') + 1).trim();
                 if (allowedFormats.contains(format)) {
                     loadedFormat = format;
                     notifyListeners();

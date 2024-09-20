@@ -55,12 +55,8 @@
 
 let ext = ext & ((~IW) * M)
 let int = int | (IW * M)
-let rfe = rf & ext
-let coe = co & ext
-let fre = fr & ext
-let rfi = rf & int
-let coi = co & int
-let fri = fr & int
+
+include "basic.cat"
 
 (** Atomicity **)
 empty rmw & (fre;coe)

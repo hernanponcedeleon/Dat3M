@@ -21,10 +21,9 @@ import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.Tag;
-import org.antlr.v4.runtime.tree.ParseTree;
+import org.antlr.v4.runtime.RuleContext;
 
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -187,32 +186,14 @@ public class VisitorOpsMemory extends SpirvBaseVisitor<Event> {
     }
 
     private Set<String> parseMemoryAccessTags(SpirvParser.MemoryAccessContext ctx) {
-        if (ctx == null || ctx.None() != null) {
-            return Set.of();
+        if (ctx != null) {
+            List<String> operands = ctx.memoryAccessTag().stream().map(RuleContext::getText).toList();
+            Integer alignment = ctx.literalInteger() != null ? Integer.parseInt(ctx.literalInteger().getText()) : null;
+            List<String> paramIds = ctx.idRef().stream().map(RuleContext::getText).toList();
+            List<Expression> paramsValues = ctx.idRef().stream().map(c -> builder.getExpression(c.getText())).toList();
+            return HelperTags.parseMemoryOperandsTags(operands, alignment, paramIds, paramsValues);
         }
-        if (ctx.Volatile() != null) {
-            return Set.of(Tag.Spirv.MEM_VOLATILE);
-        }
-        if (ctx.Nontemporal() != null) {
-            return Set.of(Tag.Spirv.MEM_NON_TEMPORAL);
-        }
-        if (ctx.NonPrivatePointer() != null || ctx.NonPrivatePointerKHR() != null) {
-            return Set.of(Tag.Spirv.MEM_NON_PRIVATE);
-        }
-        if (ctx.idScope() != null) {
-            String scopeId = ctx.idScope().getText();
-            String scopeTag = HelperTags.parseScope(scopeId, builder.getExpression(scopeId));
-            Set<String> tags = new HashSet<>(Set.of(scopeTag, Tag.Spirv.MEM_NON_PRIVATE));
-            if (ctx.MakePointerAvailable() != null || ctx.MakePointerAvailableKHR() != null) {
-                tags.add(Tag.Spirv.MEM_AVAILABLE);
-            }
-            if (ctx.MakePointerVisible() != null || ctx.MakePointerVisibleKHR() != null) {
-                tags.add(Tag.Spirv.MEM_VISIBLE);
-            }
-            return tags;
-        }
-        throw new ParsingException("Unsupported memory access tag '%s'",
-                String.join(" ", ctx.children.stream().map(ParseTree::getText).toList()));
+        return Set.of();
     }
 
     private String getScope(String storageClass) {

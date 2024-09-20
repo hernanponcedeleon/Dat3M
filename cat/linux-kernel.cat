@@ -101,8 +101,9 @@ let to-r = (addr ; [R]) | (dep ; [Marked] ; rfi)
 let ppo = to-r | to-w | (fence & int) | (po-unlock-lock-po & int)
 
 (* Propagation: Ordering from release operations and strong fences. *)
+let A-cumul(r) = (rfe ; [Marked])? ; r
 let rmw-sequence = (rf ; rmw)*
-let cumul-fence = [Marked] ; ((rfe ; [Marked])? ; (strong-fence | po-rel) | wmb |
+let cumul-fence = [Marked] ; (A-cumul(strong-fence | po-rel) | wmb |
 	po-unlock-lock-po) ; [Marked] ; rmw-sequence
 let prop = [Marked] ; (overwrite & ext)? ; cumul-fence* ;
 	[Marked] ; rfe? ; [Marked]

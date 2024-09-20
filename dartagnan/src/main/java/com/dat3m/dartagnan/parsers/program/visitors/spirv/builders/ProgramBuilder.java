@@ -26,6 +26,7 @@ public class ProgramBuilder {
     protected final Map<String, Type> types = new HashMap<>();
     protected final Map<String, Expression> expressions = new HashMap<>();
     protected final Map<String, Expression> inputs = new HashMap<>();
+    protected final Map<String, String> debugInfos = new HashMap<>();
     protected final ThreadGrid grid;
     protected final Program program;
     protected ControlFlowBuilder controlFlowBuilder;
@@ -191,6 +192,9 @@ public class ProgramBuilder {
         if (!controlFlowBuilder.isInsideBlock()) {
             throw new ParsingException("Attempt to add an event outside a control flow block");
         }
+        if (controlFlowBuilder.hasCurrentLocation()) {
+            event.setMetadata(controlFlowBuilder.getCurrentLocation());
+        }
         if (event instanceof RegWriter regWriter) {
             Register register = regWriter.getResultRegister();
             addExpression(register.getName(), register);
@@ -226,6 +230,20 @@ public class ProgramBuilder {
             throw new ParsingException("Illegal attempt to exit a function definition");
         }
         currentFunction = null;
+    }
+
+    public void addDebugInfo(String id, String info) {
+        if (debugInfos.containsKey(id)) {
+            throw new ParsingException("Attempt to add debug information with duplicate id");
+        }
+        debugInfos.put(id, info);
+    }
+
+    public String getDebugInfo(String id) {
+        if (!debugInfos.containsKey(id)) {
+            throw new ParsingException("No debug information with id '%s'", id);
+        }
+        return debugInfos.get(id);
     }
 
     private void validateBeforeBuild() {

@@ -8,7 +8,7 @@ import com.dat3m.dartagnan.parsers.LitmusAssertionsBaseVisitor;
 import com.dat3m.dartagnan.parsers.LitmusAssertionsLexer;
 import com.dat3m.dartagnan.parsers.LitmusAssertionsParser;
 import com.dat3m.dartagnan.parsers.program.utils.ProgramBuilder;
-import com.dat3m.dartagnan.program.memory.Location;
+import com.dat3m.dartagnan.program.memory.FinalMemoryValue;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import org.antlr.v4.runtime.CharStream;
 import org.antlr.v4.runtime.CharStreams;
@@ -115,6 +115,6 @@ class VisitorLitmusAssertions extends LitmusAssertionsBaseVisitor<Expression> {
         checkState(base != null, "uninitialized location %s", name);
         TerminalNode offset = ctx.DigitSequence();
         int o = offset == null ? 0 : Integer.parseInt(offset.getText());
-        return right && offset == null ? base : new Location(name, archType, base, o);
+        return right && offset == null ? base : new FinalMemoryValue(name, archType, base, o);
     }
 }

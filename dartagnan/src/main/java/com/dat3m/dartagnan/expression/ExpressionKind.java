@@ -16,6 +16,7 @@ public interface ExpressionKind {
         NONDET,
         FUNCTION_ADDR,
         MEMORY_ADDR,
+        FINAL_MEM_VAL,
         REGISTER,
         GEP,
         CONSTRUCT,

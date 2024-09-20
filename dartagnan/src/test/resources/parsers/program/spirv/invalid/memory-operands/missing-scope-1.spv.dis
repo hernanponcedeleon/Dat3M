@@ -1,0 +1,19 @@
+; SPIR-V
+; Version: 1.0
+; Schema: 0
+               OpCapability Shader
+               OpCapability VulkanMemoryModel
+               OpMemoryModel Logical Vulkan
+               OpEntryPoint GLCompute %main "main"
+       %void = OpTypeVoid
+       %uint = OpTypeInt 32 0
+   %ptr_uint = OpTypePointer Uniform %uint
+       %func = OpTypeFunction %void
+     %uint_1 = OpConstant %uint 1
+        %var = OpVariable %ptr_uint Uniform
+       %main = OpFunction %void None %func
+      %label = OpLabel
+               OpStore %var %uint_1 MakePointerAvailable
+     %result = OpLoad %uint %var MakePointerVisible
+               OpReturn
+               OpFunctionEnd

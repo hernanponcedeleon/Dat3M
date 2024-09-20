@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan.encoding;
 
+import com.dat3m.dartagnan.configuration.ProgressModel;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.Type;
 import com.dat3m.dartagnan.expression.integers.IntCmpOp;
@@ -369,7 +370,11 @@ public final class EncodingContext {
     }
 
     private void initialize() {
-        if (shouldMergeCFVars) {
+        // Only for the standard fair progress model we can merge CF variables.
+        // TODO: It would also be possible for OBE/HSA in some cases if we refine the cf-equivalence classes
+        //  to classes per thread.
+        final boolean mergeCFVars = shouldMergeCFVars && verificationTask.getProgressModel() == ProgressModel.FAIR;
+        if (mergeCFVars) {
             for (BranchEquivalence.Class cls : analysisContext.get(BranchEquivalence.class).getAllEquivalenceClasses()) {
                 BooleanFormula v = booleanFormulaManager.makeVariable("cf " + cls.getRepresentative().getGlobalId());
                 for (Event e : cls) {

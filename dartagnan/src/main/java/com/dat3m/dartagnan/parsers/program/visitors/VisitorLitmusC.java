@@ -278,6 +278,15 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
     }
 
     @Override
+    public Expression visitReC11AtomicXchg(LitmusCParser.ReC11AtomicXchgContext ctx) {
+        Register register = getReturnRegister(true);
+        Expression value = (Expression) ctx.value.accept(this);
+        Event event = EventFactory.Atomic.newExchange(register, getAddress(ctx.address), value, ctx.c11Mo().mo);
+        programBuilder.addChild(currentThread, event);
+        return register;
+    }
+
+    @Override
     public Expression visitReXchg(LitmusCParser.ReXchgContext ctx){
         Register register = getReturnRegister(true);
         Expression value = (Expression) ctx.value.accept(this);

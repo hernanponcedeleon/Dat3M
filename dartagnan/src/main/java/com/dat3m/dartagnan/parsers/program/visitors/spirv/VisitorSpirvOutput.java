@@ -4,7 +4,6 @@ import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.Type;
-import com.dat3m.dartagnan.expression.base.LiteralExpressionBase;
 import com.dat3m.dartagnan.expression.integers.IntCmpOp;
 import com.dat3m.dartagnan.expression.integers.IntLiteral;
 import com.dat3m.dartagnan.expression.type.AggregateType;
@@ -13,15 +12,13 @@ import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.parsers.SpirvBaseVisitor;
 import com.dat3m.dartagnan.parsers.SpirvParser;
-import com.dat3m.dartagnan.parsers.program.visitors.spirv.helpers.HelperTypes;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.builders.ProgramBuilder;
+import com.dat3m.dartagnan.parsers.program.visitors.spirv.helpers.HelperTypes;
 import com.dat3m.dartagnan.program.Program;
-import com.dat3m.dartagnan.program.memory.Location;
+import com.dat3m.dartagnan.program.memory.FinalMemoryValue;
 import com.dat3m.dartagnan.program.memory.ScopedPointerVariable;
 
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 import static com.dat3m.dartagnan.expression.integers.IntCmpOp.*;
 import static com.dat3m.dartagnan.program.Program.SpecificationType.*;
@@ -30,7 +27,6 @@ public class VisitorSpirvOutput extends SpirvBaseVisitor<Expression> {
 
     private static final TypeFactory types = TypeFactory.getInstance();
     private static final ExpressionFactory expressions = ExpressionFactory.getInstance();
-    private final Map<Location, Type> locationTypes = new HashMap<>();
     private final ProgramBuilder builder;
     private Program.SpecificationType type;
     private Expression condition;
@@ -48,7 +44,7 @@ public class VisitorSpirvOutput extends SpirvBaseVisitor<Expression> {
         }
         if (type == null) {
             type = FORALL;
-            condition = ExpressionFactory.getInstance().makeTrue();
+            condition = expressions.makeTrue();
         }
         builder.setSpecification(type, condition);
         return null;
@@ -103,7 +99,7 @@ public class VisitorSpirvOutput extends SpirvBaseVisitor<Expression> {
             List<Integer> indexes = ctx.indexValue().stream()
                     .map(c -> Integer.parseInt(c.ModeHeader_PositiveInteger().getText()))
                     .toList();
-            return createLocation(base, indexes);
+            return createFinalMemoryValue(base, indexes);
         }
         throw new ParsingException("Uninitialized location %s", name);
     }
@@ -114,9 +110,9 @@ public class VisitorSpirvOutput extends SpirvBaseVisitor<Expression> {
             condition = expression;
         } else if (newType.equals(type)) {
             if (type.equals(FORALL)) {
-                condition = ExpressionFactory.getInstance().makeAnd(condition, expression);
+                condition = expressions.makeAnd(condition, expression);
             } else if (type.equals(NOT_EXISTS)) {
-                condition = ExpressionFactory.getInstance().makeOr(condition, expression);
+                condition = expressions.makeOr(condition, expression);
             } else {
                 throw new ParsingException("Multiline assertion is not supported for type " + newType);
             }
@@ -126,15 +122,15 @@ public class VisitorSpirvOutput extends SpirvBaseVisitor<Expression> {
     }
 
     private Expression normalize(Expression target, Expression other) {
-        Type targetType = target instanceof Location ? locationTypes.get(target) : target.getType();
-        Type otherType = other instanceof Location ? locationTypes.get(other) : other.getType();
+        Type targetType = target.getType();
+        Type otherType = other.getType();
         if (targetType.equals(otherType)) {
             return target;
         }
-        if (target instanceof Location && other instanceof LiteralExpressionBase<?>) {
+        if (target instanceof FinalMemoryValue && other.getKind() == Other.LITERAL) {
             return target;
         }
-        if (target instanceof IntLiteral iValue && other instanceof Location) {
+        if (target instanceof IntLiteral iValue && other instanceof FinalMemoryValue) {
             int size = types.getMemorySizeInBits(otherType);
             IntegerType newType = types.getIntegerType(size);
             return new IntLiteral(newType, iValue.getValue());
@@ -178,7 +174,7 @@ public class VisitorSpirvOutput extends SpirvBaseVisitor<Expression> {
         throw new ParsingException("Unrecognised comparison operator");
     }
 
-    private Location createLocation(ScopedPointerVariable base, List<Integer> indexes) {
+    private FinalMemoryValue createFinalMemoryValue(ScopedPointerVariable base, List<Integer> indexes) {
         String name = indexes.isEmpty() ? base.getId() :
                 base.getId() + "[" + String.join("][", indexes.stream().map(Object::toString).toArray(String[]::new)) + "]";
         Type elType = HelperTypes.getMemberType(base.getId(), base.getInnerType(), indexes);
@@ -186,8 +182,6 @@ public class VisitorSpirvOutput extends SpirvBaseVisitor<Expression> {
             throw new ParsingException("Index is not deep enough for variable '%s'", name);
         }
         int offset = HelperTypes.getMemberOffset(base.getId(), 0, base.getInnerType(), indexes);
-        Location location = new Location(name, elType, base.getAddress(), offset);
-        locationTypes.put(location, elType);
-        return location;
+        return new FinalMemoryValue(name, elType, base.getAddress(), offset);
     }
 }

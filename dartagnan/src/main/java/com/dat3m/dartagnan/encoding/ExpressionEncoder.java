@@ -11,7 +11,7 @@ import com.dat3m.dartagnan.expression.misc.ITEExpr;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Event;
-import com.dat3m.dartagnan.program.memory.Location;
+import com.dat3m.dartagnan.program.memory.FinalMemoryValue;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.dat3m.dartagnan.program.misc.NonDetValue;
 import org.sosy_lab.java_smt.api.*;
@@ -298,9 +298,9 @@ class ExpressionEncoder implements ExpressionVisitor<Formula> {
     }
 
     @Override
-    public Formula visitLocation(Location location) {
-        checkState(event == null, "Cannot evaluate %s at event %s.", location, event);
-        int size = types.getMemorySizeInBits(location.getType());
-        return context.lastValue(location.getMemoryObject(), location.getOffset(), size);
+    public Formula visitFinalMemoryValue(FinalMemoryValue val) {
+        checkState(event == null, "Cannot evaluate final memory value of %s at event %s.", val, event);
+        int size = types.getMemorySizeInBits(val.getType());
+        return context.lastValue(val.getMemoryObject(), val.getOffset(), size);
     }
 }

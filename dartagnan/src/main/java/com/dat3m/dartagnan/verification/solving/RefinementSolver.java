@@ -14,6 +14,8 @@ import com.dat3m.dartagnan.program.event.MemoryEvent;
 import com.dat3m.dartagnan.program.event.core.MemoryCoreEvent;
 import com.dat3m.dartagnan.program.event.metadata.OriginalId;
 import com.dat3m.dartagnan.program.event.metadata.SourceLocation;
+import com.dat3m.dartagnan.program.filter.Filter;
+import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.solver.caat.CAATSolver;
 import com.dat3m.dartagnan.solver.caat4wmm.RefinementModel;
 import com.dat3m.dartagnan.solver.caat4wmm.Refiner;
@@ -80,6 +82,11 @@ import static com.dat3m.dartagnan.wmm.RelationNameRepository.*;
 public class RefinementSolver extends ModelChecker {
 
     private static final Logger logger = LogManager.getLogger(RefinementSolver.class);
+
+    private static final String FR = "fr";
+    private static final String COE = "coe";
+    private static final String FRE = "fre";
+    private static final String POLOC = "po-loc";
 
     // ================================================================================================================
     // Configuration
@@ -162,7 +169,7 @@ public class RefinementSolver extends ModelChecker {
     //TODO: We do not yet use Witness information. The problem is that WitnessGraph.encode() generates
     // constraints on hb, which is not encoded in Refinement.
     //TODO (2): Add possibility for Refinement to handle CAT-properties (it ignores them for now).
-    public static RefinementSolver run(SolverContext ctx, ProverEnvironment prover, VerificationTask task)
+    public static RefinementSolver run(SolverContext ctx, ProverWithTracker prover, VerificationTask task)
             throws InterruptedException, SolverException, InvalidConfigurationException {
         RefinementSolver solver = new RefinementSolver();
         task.getConfig().inject(solver);
@@ -171,7 +178,7 @@ public class RefinementSolver extends ModelChecker {
         return solver;
     }
 
-    private void runInternal(SolverContext ctx, ProverEnvironment prover, VerificationTask task)
+    private void runInternal(SolverContext ctx, ProverWithTracker prover, VerificationTask task)
             throws InterruptedException, SolverException, InvalidConfigurationException {
         final Program program = task.getProgram();
         final Wmm memoryModel = task.getMemoryModel();
@@ -205,6 +212,7 @@ public class RefinementSolver extends ModelChecker {
 
         final VerificationTask baselineTask = VerificationTask.builder()
                 .withConfig(task.getConfig())
+                .withProgressModel(task.getProgressModel())
                 .build(program, baselineModel, task.getProperty());
         performStaticWmmAnalyses(baselineTask, baselineContext, config);
 
@@ -224,8 +232,11 @@ public class RefinementSolver extends ModelChecker {
         final Property.Type propertyType = Property.getCombinedType(task.getProperty(), task);
 
         logger.info("Starting encoding using " + ctx.getVersion());
+        prover.writeComment("Program encoding");
         prover.addConstraint(programEncoder.encodeFullProgram());
+        prover.writeComment("Memory model (baseline) encoding");
         prover.addConstraint(baselineEncoder.encodeFullMemoryModel());
+        prover.writeComment("Symmetry breaking encoding");
         prover.addConstraint(symmetryEncoder.encodeFullSymmetryBreaking());
 
         // ------------------------ Solving ------------------------
@@ -233,6 +244,7 @@ public class RefinementSolver extends ModelChecker {
 
         logger.info("Checking target property.");
         prover.push();
+        prover.writeComment("Property encoding");
         prover.addConstraint(propertyEncoder.encodeProperties(task.getProperty()));
 
         final RefinementTrace propertyTrace = runRefinement(task, prover, solver, refiner);
@@ -265,8 +277,10 @@ public class RefinementSolver extends ModelChecker {
             logger.info("Checking unrolling bounds.");
             final long lastTime = System.currentTimeMillis();
             prover.pop();
+            prover.writeComment("Bound encoding");
             prover.addConstraint(propertyEncoder.encodeBoundEventExec());
             // Add back the refinement clauses we already found, hoping that this improves the performance.
+            prover.writeComment("Refinement encoding");
             prover.addConstraint(bmgr.and(propertyTrace.getRefinementFormulas()));
             final RefinementTrace boundTrace = runRefinement(task, prover, solver, refiner);
             boundCheckTime = System.currentTimeMillis() - lastTime;
@@ -358,7 +372,7 @@ public class RefinementSolver extends ModelChecker {
     // Refinement core algorithm
 
     // TODO: We could expose the following method(s) to allow for more general application of refinement.
-    private RefinementTrace runRefinement(VerificationTask task, ProverEnvironment prover, WMMSolver solver, Refiner refiner)
+    private RefinementTrace runRefinement(VerificationTask task, ProverWithTracker prover, WMMSolver solver, Refiner refiner)
             throws SolverException, InterruptedException {
 
         final List<RefinementIteration> trace = new ArrayList<>();
@@ -418,7 +432,7 @@ public class RefinementSolver extends ModelChecker {
         return !last.inconsistencyReasons.equals(prev.inconsistencyReasons);
     }
 
-    private RefinementIteration doRefinementIteration(ProverEnvironment prover, WMMSolver solver, Refiner refiner)
+    private RefinementIteration doRefinementIteration(ProverWithTracker prover, WMMSolver solver, Refiner refiner)
             throws SolverException, InterruptedException {
 
         long nativeTime = 0;
@@ -455,6 +469,7 @@ public class RefinementSolver extends ModelChecker {
                 inconsistencyReasons = solverResult.getCoreReasons();
                 lastTime = System.currentTimeMillis();
                 refinementFormula = refiner.refine(inconsistencyReasons, context);
+                prover.writeComment("Refinement encoding");
                 prover.addConstraint(refinementFormula);
                 refineTime = (System.currentTimeMillis() - lastTime);
             }
@@ -468,6 +483,13 @@ public class RefinementSolver extends ModelChecker {
 
     // ================================================================================================================
     // Special memory model processing
+
+    private static boolean isUnknownDefinitionForCAAT(Definition def) {
+        // TODO: We should probably automatically cut all "unknown relation",
+        //  i.e., use a white-list of known relations instead of a blacklist of unknown one's.
+        return def instanceof LinuxCriticalSections // LKMM
+                || def instanceof SyncFence || def instanceof SyncBar || def instanceof SameVirtualLocation; // GPUs
+    }
 
     private static RefinementModel generateRefinementModel(Wmm original) {
         // We cut (i) negated axioms, (ii) negated relations (if derived),
@@ -492,48 +514,65 @@ public class RefinementSolver extends ModelChecker {
             } else if (c instanceof Definition def && def.getDefinedRelation().hasName()) {
                 // (iii) Special relations
                 final String name = def.getDefinedRelation().getName().get();
-                if (name.equals(DATA) || name.equals(CTRL) || name.equals(ADDR) || name.equals(CRIT)) {
+                if (name.equals(DATA) || name.equals(CTRL) || name.equals(ADDR) || isUnknownDefinitionForCAAT(def)) {
                     constraintsToCut.add(c);
                 }
-            } else if (c instanceof Definition def && def instanceof Fences) {
-                // (iii) continued: fencerel(F) is unsupported in CAAT.
-                //  It should get rewritten to "po;[F];po" by our passes,
-                //  but if it was not, we cut it instead.
-                constraintsToCut.add(c);
             }
         }
 
         return RefinementModel.fromCut(Cut.computeInducedCut(original, constraintsToCut));
     }
 
-    private static void addBiases(Wmm memoryModel, EnumSet<Baseline> biases) {
-        // FIXME: This can (in theory) add redundant intermediate relations and/or constraints that
-        //  already exist in the model.
-        final Relation rf = memoryModel.getRelation(RF);
+    private static void addBiases(Wmm wmm, EnumSet<Baseline> biases) {
+
+        // Base relations
+        final Relation rf = wmm.getRelation(RF);
+        final Relation co = wmm.getOrCreatePredefinedRelation(CO);
+        final Relation loc = wmm.getOrCreatePredefinedRelation(LOC);
+        final Relation po = wmm.getOrCreatePredefinedRelation(PO);
+        final Relation ext = wmm.getOrCreatePredefinedRelation(EXT);
+        final Relation rmw = wmm.getOrCreatePredefinedRelation(RMW);
+
+        // rf^-1;co
+        final Relation rfinv = wmm.addDefinition(new Inverse(wmm.newRelation(), rf));
+        final Relation frStandard = wmm.addDefinition(new Composition(wmm.newRelation(), rfinv, co));
+
+        // ([R] \ [range(rf)]);loc;[W]
+        final Relation reads = wmm.addDefinition(new SetIdentity(wmm.newRelation(), wmm.getFilter(Tag.READ)));
+        final Relation rfRange = wmm.addDefinition(new RangeIdentity(wmm.newRelation(), rf));
+        final Relation writes = wmm.addDefinition(new SetIdentity(wmm.newRelation(), Filter.byTag(Tag.WRITE)));
+        final Relation ur = wmm.addDefinition(new Difference(wmm.newRelation(), reads, rfRange));
+        final Relation urloc = wmm.addDefinition(new Composition(wmm.newRelation(), ur, loc));
+        final Relation urlocwrites = wmm.addDefinition(new Composition(wmm.newRelation(), urloc, writes));
+
+        // let fr = rf^-1;co | ([R] \ [range(rf)]);loc;[W]
+        final Relation fr = wmm.addDefinition(new Union(wmm.newRelation(), frStandard, urlocwrites));
+
         if (biases.contains(Baseline.UNIPROC)) {
             // ---- acyclic(po-loc | com) ----
-            memoryModel.addConstraint(new Acyclicity(memoryModel.addDefinition(new Union(memoryModel.newRelation(),
-                    memoryModel.getOrCreatePredefinedRelation(POLOC),
-                    rf,
-                    memoryModel.getOrCreatePredefinedRelation(CO),
-                    memoryModel.getOrCreatePredefinedRelation(FR)))));
+            wmm.addConstraint(new Acyclicity(wmm.addDefinition(new Union(wmm.newRelation(),
+                wmm.addDefinition(new Intersection(wmm.newRelation(), po, loc)),
+                rf,
+                co,
+                fr
+            ))));
         }
         if (biases.contains(Baseline.NO_OOTA)) {
             // ---- acyclic (dep | rf) ----
-            memoryModel.addConstraint(new Acyclicity(memoryModel.addDefinition(new Union(memoryModel.newRelation(),
-                    memoryModel.getOrCreatePredefinedRelation(CTRL),
-                    memoryModel.getOrCreatePredefinedRelation(DATA),
-                    memoryModel.getOrCreatePredefinedRelation(ADDR),
-                    rf))));
+            wmm.addConstraint(new Acyclicity(wmm.addDefinition(new Union(wmm.newRelation(),
+                wmm.getOrCreatePredefinedRelation(CTRL),
+                wmm.getOrCreatePredefinedRelation(DATA),
+                wmm.getOrCreatePredefinedRelation(ADDR),
+                rf)
+            )));
         }
         if (biases.contains(Baseline.ATOMIC_RMW)) {
             // ---- empty (rmw & fre;coe) ----
-            Relation rmw = memoryModel.getOrCreatePredefinedRelation(RMW);
-            Relation coe = memoryModel.getOrCreatePredefinedRelation(COE);
-            Relation fre = memoryModel.getOrCreatePredefinedRelation(FRE);
-            Relation frecoe = memoryModel.addDefinition(new Composition(memoryModel.newRelation(), fre, coe));
-            Relation rmwANDfrecoe = memoryModel.addDefinition(new Intersection(memoryModel.newRelation(), rmw, frecoe));
-            memoryModel.addConstraint(new Emptiness(rmwANDfrecoe));
+            Relation coe = wmm.addDefinition(new Intersection(wmm.newRelation(), co, ext));
+            Relation fre = wmm.addDefinition(new Intersection(wmm.newRelation(), fr, ext));
+            Relation frecoe = wmm.addDefinition(new Composition(wmm.newRelation(), fre, coe));
+            Relation rmwANDfrecoe = wmm.addDefinition(new Intersection(wmm.newRelation(), rmw, frecoe));
+            wmm.addConstraint(new Emptiness(rmwANDfrecoe));
         }
     }
 

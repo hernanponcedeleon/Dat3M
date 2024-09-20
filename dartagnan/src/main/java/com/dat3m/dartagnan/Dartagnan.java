@@ -3,6 +3,7 @@ package com.dat3m.dartagnan;
 import com.dat3m.dartagnan.configuration.OptionNames;
 import com.dat3m.dartagnan.configuration.Property;
 import com.dat3m.dartagnan.encoding.EncodingContext;
+import com.dat3m.dartagnan.encoding.ProverWithTracker;
 import com.dat3m.dartagnan.expression.ExpressionPrinter;
 import com.dat3m.dartagnan.parsers.cat.ParserCat;
 import com.dat3m.dartagnan.parsers.program.ProgramParser;
@@ -51,6 +52,7 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.math.BigInteger;
+import java.nio.file.Path;
 import java.util.*;
 
 import static com.dat3m.dartagnan.GlobalSettings.getOrCreateOutputDirectory;
@@ -111,24 +113,26 @@ public class Dartagnan extends BaseOptions {
         File fileProgram = new File(Arrays.stream(args).filter(a -> supportedFormats.stream().anyMatch(a::endsWith))
                 .findFirst()
                 .orElseThrow(() -> new IllegalArgumentException("Input program not given or format not recognized")));
-        logger.info("Program path: " + fileProgram);
+        logger.info("Program path: {}", fileProgram);
 
         File fileModel = new File(Arrays.stream(args).filter(a -> a.endsWith(".cat")).findFirst()
                 .orElseThrow(() -> new IllegalArgumentException("CAT model not given or format not recognized")));
-        logger.info("CAT file path: " + fileModel);
+        logger.info("CAT file path: {}", fileModel);
 
-        Wmm mcm = new ParserCat().parse(fileModel);
+
+        Wmm mcm = new ParserCat(Path.of(o.getCatIncludePath())).parse(fileModel);
         Program p = new ProgramParser().parse(fileProgram);
         EnumSet<Property> properties = o.getProperty();
 
         WitnessGraph witness = new WitnessGraph();
         if (o.runValidator()) {
-            logger.info("Witness path: " + o.getWitnessPath());
+            logger.info("Witness path: {}", o.getWitnessPath());
             witness = new ParserWitness().parse(new File(o.getWitnessPath()));
         }
 
         VerificationTaskBuilder builder = VerificationTask.builder()
                 .withConfig(config)
+                .withProgressModel(o.getProgressModel())
                 .withWitness(witness);
         // If the arch has been set during parsing (this only happens for litmus tests)
         // and the user did not explicitly add the target option, we use the one
@@ -163,7 +167,9 @@ public class Dartagnan extends BaseOptions {
                     BasicLogManager.create(solverConfig),
                     sdm.getNotifier(),
                     o.getSolver());
-                    ProverEnvironment prover = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS)) {
+                    ProverWithTracker prover = new ProverWithTracker(ctx,
+                        o.getDumpSmtLib() ? GlobalSettings.getOutputDirectory() + String.format("/%s.smt2", p.getName()) : "",
+                        ProverOptions.GENERATE_MODELS)) {
                 ModelChecker modelChecker;
                 if (properties.contains(DATARACEFREEDOM)) {
                     if (properties.size() > 1) {

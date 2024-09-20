@@ -608,39 +608,6 @@ public class NativeRelationAnalysis implements RelationAnalysis {
         }
 
         @Override
-        public Knowledge visitFences(Fences fenceDef) {
-            final Filter fence = fenceDef.getFilter();
-            EventGraph may = new EventGraph();
-            EventGraph must = new EventGraph();
-            for (Thread t : program.getThreads()) {
-                List<Event> events = visibleEvents(t);
-                int end = events.size();
-                for (int i = 0; i < end; i++) {
-                    Event f = events.get(i);
-                    if (!fence.apply(f)) {
-                        continue;
-                    }
-                    for (Event x : events.subList(0, i)) {
-                        if (exec.areMutuallyExclusive(x, f)) {
-                            continue;
-                        }
-                        boolean implies = exec.isImplied(x, f);
-                        for (Event y : events.subList(i + 1, end)) {
-                            if (exec.areMutuallyExclusive(x, y) || exec.areMutuallyExclusive(f, y)) {
-                                continue;
-                            }
-                            may.add(x, y);
-                            if (implies || exec.isImplied(y, f)) {
-                                must.add(x, y);
-                            }
-                        }
-                    }
-                }
-            }
-            return new Knowledge(may, must);
-        }
-
-        @Override
         public Knowledge visitCASDependency(CASDependency casDep) {
             EventGraph must = new EventGraph();
             for (Event e : program.getThreadEvents()) {

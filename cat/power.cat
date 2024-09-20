@@ -1,7 +1,7 @@
 Power
 
 include "cos.cat"
-include "fences.cat"
+include "ppcfences.cat"
 
 (* Uniproc *)
 let com = rf | fr | co

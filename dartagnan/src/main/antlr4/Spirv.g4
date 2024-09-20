@@ -3230,14 +3230,16 @@ loopControl
     |   Unroll
     ;
 
-memoryAccess
-    :   AliasScopeINTELMask idRef
-    |   Aligned literalInteger
-    |   MakePointerAvailable idScope
-    |   MakePointerAvailableKHR idScope
-    |   MakePointerVisible idScope
-    |   MakePointerVisibleKHR idScope
-    |   NoAliasINTELMask idRef
+memoryAccess : memoryAccessTag (Pipe memoryAccessTag)* literalInteger? idRef*;
+
+memoryAccessTag
+    :   AliasScopeINTELMask
+    |   Aligned
+    |   MakePointerAvailable
+    |   MakePointerAvailableKHR
+    |   MakePointerVisible
+    |   MakePointerVisibleKHR
+    |   NoAliasINTELMask
     |   NonPrivatePointer
     |   NonPrivatePointerKHR
     |   None

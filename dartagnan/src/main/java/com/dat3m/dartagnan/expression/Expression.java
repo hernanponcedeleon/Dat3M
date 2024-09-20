@@ -2,7 +2,7 @@ package com.dat3m.dartagnan.expression;
 
 import com.dat3m.dartagnan.expression.processing.ExpressionInspector;
 import com.dat3m.dartagnan.program.Register;
-import com.dat3m.dartagnan.program.memory.Location;
+import com.dat3m.dartagnan.program.memory.FinalMemoryValue;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.google.common.collect.ImmutableSet;
 
@@ -40,9 +40,9 @@ public interface Expression {
             }
 
             @Override
-            public Expression visitLocation(Location location) {
-                objects.add(location.getMemoryObject());
-                return location;
+            public Expression visitFinalMemoryValue(FinalMemoryValue val) {
+                objects.add(val.getMemoryObject());
+                return val;
             }
         }
 

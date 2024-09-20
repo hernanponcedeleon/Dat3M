@@ -2,7 +2,9 @@ package com.dat3m.dartagnan.c;
 
 import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.configuration.OptionNames;
+import com.dat3m.dartagnan.configuration.ProgressModel;
 import com.dat3m.dartagnan.configuration.Property;
+import com.dat3m.dartagnan.encoding.ProverWithTracker;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.utils.Result;
 import com.dat3m.dartagnan.utils.rules.Provider;
@@ -17,7 +19,6 @@ import org.sosy_lab.common.ShutdownManager;
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.java_smt.SolverContextFactory.Solvers;
-import org.sosy_lab.java_smt.api.ProverEnvironment;
 import org.sosy_lab.java_smt.api.SolverContext;
 
 import java.util.EnumSet;
@@ -70,6 +71,10 @@ public abstract class AbstractCTest {
         return Provider.fromSupplier(this::getConfiguration);
     }
 
+    protected Provider<ProgressModel> getProgressModelProvider() {
+        return () -> ProgressModel.FAIR;
+    }
+
     // =============================================================
 
     // Provider rules
@@ -79,12 +84,13 @@ public abstract class AbstractCTest {
     protected final Provider<Integer> boundProvider = getBoundProvider();
     protected final Provider<Program> programProvider = Providers.createProgramFromPath(filePathProvider);
     protected final Provider<Wmm> wmmProvider = getWmmProvider();
+    protected final Provider<ProgressModel> progressModelProvider = getProgressModelProvider();
     protected final Provider<Solvers> solverProvider = getSolverProvider();
     protected final Provider<EnumSet<Property>> propertyProvider = getPropertyProvider();
     protected final Provider<Configuration> configurationProvider = getConfigurationProvider();
-    protected final Provider<VerificationTask> taskProvider = Providers.createTask(programProvider, wmmProvider, propertyProvider, targetProvider, boundProvider, configurationProvider);
+    protected final Provider<VerificationTask> taskProvider = Providers.createTask(programProvider, wmmProvider, propertyProvider, targetProvider, progressModelProvider, boundProvider, configurationProvider);
     protected final Provider<SolverContext> contextProvider = Providers.createSolverContextFromManager(shutdownManagerProvider, solverProvider);
-    protected final Provider<ProverEnvironment> proverProvider = Providers.createProverWithFixedOptions(contextProvider, SolverContext.ProverOptions.GENERATE_MODELS);
+    protected final Provider<ProverWithTracker> proverProvider = Providers.createProverWithFixedOptions(contextProvider, SolverContext.ProverOptions.GENERATE_MODELS);
 
     // Special rules
     protected final Timeout timeout = Timeout.millis(getTimeout());
@@ -99,6 +105,7 @@ public abstract class AbstractCTest {
             .around(boundProvider)
             .around(programProvider)
             .around(wmmProvider)
+            .around(progressModelProvider)
             .around(solverProvider)
             .around(propertyProvider)
             .around(taskProvider)

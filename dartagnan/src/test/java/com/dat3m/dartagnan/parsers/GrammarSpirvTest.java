@@ -29,22 +29,21 @@ public class GrammarSpirvTest {
 
     @Parameterized.Parameters(name = "{index}: {0}")
     public static Iterable<Object[]> data() throws IOException {
-        List<Object[]> data = new LinkedList<>();
-        listFiles(Paths.get(getTestResourcePath("parsers/program/spirv")), data);
-        listFiles(Paths.get(getTestResourcePath("spirv")), data);
-        return data;
+        return listFiles(Paths.get(getTestResourcePath("spirv")));
     }
 
-    private static void listFiles(Path path, List<Object[]> result) throws IOException {
+    private static List<Object[]> listFiles(Path path) throws IOException {
+        List<Object[]> result = new LinkedList<>();
         try (DirectoryStream<Path> files = Files.newDirectoryStream(path)) {
             for (Path file : files) {
                 if (Files.isDirectory(file)) {
-                    listFiles(file, result);
+                    result.addAll(listFiles(file));
                 } else {
                     result.add(new Object[]{file.toAbsolutePath().toString()});
                 }
             }
         }
+        return result;
     }
 
     @Test

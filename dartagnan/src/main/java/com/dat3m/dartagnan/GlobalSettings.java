@@ -59,6 +59,12 @@ public class GlobalSettings {
         return env;
     }
 
+    public static String getCatDirectory() {
+        String env = System.getenv("DAT3M_HOME");
+        env = env == null ? "" : env;
+        return env + "/cat";
+    }
+
     public static String getOrCreateOutputDirectory() throws IOException {
         String path = getOutputDirectory();
         Files.createDirectories(Paths.get(path));

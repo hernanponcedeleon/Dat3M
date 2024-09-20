@@ -11,7 +11,7 @@ import com.dat3m.dartagnan.expression.misc.GEPExpr;
 import com.dat3m.dartagnan.expression.misc.ITEExpr;
 import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.Register;
-import com.dat3m.dartagnan.program.memory.Location;
+import com.dat3m.dartagnan.program.memory.FinalMemoryValue;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.dat3m.dartagnan.program.misc.NonDetValue;
 
@@ -59,7 +59,7 @@ public interface ExpressionVisitor<TRet> {
     default TRet visitRegister(Register reg) { return visitLeafExpression(reg); }
     default TRet visitFunction(Function function) { return visitLeafExpression(function); }
     default TRet visitMemoryObject(MemoryObject memObj) { return visitLeafExpression(memObj); }
-    default TRet visitLocation(Location loc) { return visitLeafExpression(loc); }
+    default TRet visitFinalMemoryValue(FinalMemoryValue val) { return visitLeafExpression(val); }
     default TRet visitNonDetValue(NonDetValue nonDet) { return visitLeafExpression(nonDet); }
 
 

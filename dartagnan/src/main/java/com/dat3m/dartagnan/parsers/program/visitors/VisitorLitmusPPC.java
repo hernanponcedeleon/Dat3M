@@ -19,7 +19,7 @@ import com.google.common.collect.ImmutableSet;
 import java.util.HashMap;
 import java.util.Map;
 
-import static com.dat3m.dartagnan.wmm.RelationNameRepository.*;
+import static com.dat3m.dartagnan.program.event.FenceNameRepository.*;
 
 public class VisitorLitmusPPC extends LitmusPPCBaseVisitor<Object> {
 

@@ -117,18 +117,13 @@ public class SVCOMPRunner extends BaseOptions {
         File file;
         String output = "UNKNOWN";
         while(output.equals("UNKNOWN")) {
-            file = compileWithClang(fileProgram, "");
-            file = applyLlvmPasses(file);    
-
-            String llvmName = System.getenv().get("DAT3M_HOME") + "/output/" + Files.getNameWithoutExtension(programPath) + "-opt.ll";
-	        
             ArrayList<String> cmd = new ArrayList<>();
             cmd.add("java");
             cmd.add("-Dlog4j.configurationFile=" + System.getenv().get("DAT3M_HOME") + "/dartagnan/src/main/resources/log4j2.xml");
             cmd.add("-DLOGNAME=" + Files.getNameWithoutExtension(programPath));
             cmd.addAll(Arrays.asList("-jar", System.getenv().get("DAT3M_HOME") + "/dartagnan/target/dartagnan.jar"));
             cmd.add(fileModel.toString());
-            cmd.add(llvmName);
+            cmd.add(programPath);
             cmd.add(String.format("--%s=%s", PROPERTY, r.property.asStringOption()));
             cmd.add(String.format("--%s=%s", BOUND, bound));
             cmd.add(String.format("--%s=%s", WITNESS, GRAPHML.asStringOption()));
