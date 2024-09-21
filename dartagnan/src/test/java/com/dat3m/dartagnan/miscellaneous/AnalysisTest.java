@@ -11,12 +11,14 @@ import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Program.SourceLanguage;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.analysis.BranchEquivalence;
-import com.dat3m.dartagnan.program.analysis.Dependency;
 import com.dat3m.dartagnan.program.analysis.ExecutionAnalysis;
+import com.dat3m.dartagnan.program.analysis.ReachingDefinitionsAnalysis;
 import com.dat3m.dartagnan.program.analysis.alias.AliasAnalysis;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.EventFactory;
+import com.dat3m.dartagnan.program.event.RegReader;
 import com.dat3m.dartagnan.program.event.core.*;
+import com.dat3m.dartagnan.program.event.functions.Return;
 import com.dat3m.dartagnan.program.event.metadata.OriginalId;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.dat3m.dartagnan.program.processing.LoopUnrolling;
@@ -32,6 +34,7 @@ import java.util.List;
 
 import static com.dat3m.dartagnan.configuration.Alias.*;
 import static com.dat3m.dartagnan.configuration.OptionNames.ALIAS_METHOD;
+import static com.dat3m.dartagnan.configuration.OptionNames.REACHING_DEFINITIONS_METHOD;
 import static com.dat3m.dartagnan.program.event.EventFactory.*;
 import static org.junit.Assert.*;
 
@@ -47,7 +50,12 @@ public class AnalysisTest {
     private static final ExpressionFactory expressions = ExpressionFactory.getInstance();
 
     @Test
-    public void dependencyMustOverride() throws InvalidConfigurationException {
+    public void reachingDefinitionMustOverride() throws InvalidConfigurationException {
+        reachingDefinitionMustOverride(ReachingDefinitionsAnalysis.Method.BACKWARD);
+        reachingDefinitionMustOverride(ReachingDefinitionsAnalysis.Method.FORWARD);
+    }
+
+    private void reachingDefinitionMustOverride(ReachingDefinitionsAnalysis.Method method) throws InvalidConfigurationException {
         ProgramBuilder b = ProgramBuilder.forLanguage(SourceLanguage.LITMUS);
         b.newThread(0);
         Register r0 = b.getOrNewRegister(0, "r0");
@@ -59,7 +67,7 @@ public class AnalysisTest {
         b.addChild(0, e0);
         Local e1 = newLocal(r1, r0);
         b.addChild(0, e1);
-        Label join = b.getOrCreateLabel(0,"join");
+        Label join = b.getOrCreateLabel(0, "join");
         b.addChild(0, newGoto(join));
         b.addChild(0, alt);
         Local e2 = newLocal(r1, value(2));
@@ -76,29 +84,145 @@ public class AnalysisTest {
         Compilation.newInstance().run(program);
         LoopUnrolling.newInstance().run(program);
         MemoryAllocation.newInstance().run(program);
-        Configuration config = Configuration.defaultConfiguration();
+        Configuration config = Configuration.builder().setOption(REACHING_DEFINITIONS_METHOD, method.name()).build();
         Context context = Context.create();
         context.register(BranchEquivalence.class, BranchEquivalence.fromConfig(program, config));
         context.register(ExecutionAnalysis.class, ExecutionAnalysis.fromConfig(program, ProgressModel.FAIR, context, config));
-        Dependency dep = Dependency.fromConfig(program, context, config);
-        Event me0 = findMatchingEventAfterProcessing(program, e0);
-        Event me1 = findMatchingEventAfterProcessing(program, e1);
-        Event me2 = findMatchingEventAfterProcessing(program, e2);
-        Event me3 = findMatchingEventAfterProcessing(program, e3);
-        Event me4 = findMatchingEventAfterProcessing(program, e4);
-        Event me5 = findMatchingEventAfterProcessing(program, e5);
-        assertTrue(dep.of(me1, r0).initialized);
-        assertList(dep.of(me1, r0).may, me0);
-        assertList(dep.of(me1, r0).must, me0);
-        assertFalse(dep.of(me3, r0).initialized);
-        assertList(dep.of(me3, r0).may, me0);
-        assertList(dep.of(me3, r0).must, me0);
-        assertTrue(dep.of(me4, r1).initialized);
-        assertList(dep.of(me4, r1).may, me1, me2);
-        assertList(dep.of(me4, r1).must, me1, me2);
-        assertTrue(dep.of(me5, r2).initialized);
-        assertList(dep.of(me5, r2).may, me4);
-        assertList(dep.of(me5, r2).must, me4);
+        final ReachingDefinitionsAnalysis rd = ReachingDefinitionsAnalysis.fromConfig(program, context, config);
+        var me0 = (RegReader) findMatchingEventAfterProcessing(program, e0);
+        var me1 = (RegReader) findMatchingEventAfterProcessing(program, e1);
+        var me2 = (RegReader) findMatchingEventAfterProcessing(program, e2);
+        var me3 = (RegReader) findMatchingEventAfterProcessing(program, e3);
+        var me4 = (RegReader) findMatchingEventAfterProcessing(program, e4);
+        var me5 = (RegReader) findMatchingEventAfterProcessing(program, e5);
+        assertTrue(rd.getWriters(me1).ofRegister(r0).mustBeInitialized());
+        assertList(rd.getWriters(me1).ofRegister(r0).getMayWriters(), me0);
+        assertList(rd.getWriters(me1).ofRegister(r0).getMustWriters(), me0);
+        assertFalse(rd.getWriters(me3).ofRegister(r0).mustBeInitialized());
+        assertList(rd.getWriters(me3).ofRegister(r0).getMayWriters(), me0);
+        assertList(rd.getWriters(me3).ofRegister(r0).getMustWriters(), me0);
+        assertTrue(rd.getWriters(me4).ofRegister(r1).mustBeInitialized());
+        assertList(rd.getWriters(me4).ofRegister(r1).getMayWriters(), me1, me2);
+        assertList(rd.getWriters(me4).ofRegister(r1).getMustWriters(), me1, me2);
+        assertTrue(rd.getWriters(me5).ofRegister(r2).mustBeInitialized());
+        assertList(rd.getWriters(me5).ofRegister(r2).getMayWriters(), me4);
+        assertList(rd.getWriters(me5).ofRegister(r2).getMustWriters(), me4);
+    }
+
+
+
+    @Test
+    public void reachingDefinitionSupportsLoops() throws InvalidConfigurationException {
+        ProgramBuilder b = ProgramBuilder.forLanguage(SourceLanguage.LITMUS);
+        b.newFunction("test", 0, types.getFunctionType(types.getArchType(), List.of()), List.of());
+        Register r0 = b.getOrNewRegister(0, "r0");
+        Register r1 = b.getOrNewRegister(0, "r1");
+        Register r2 = b.getOrNewRegister(0, "r2");
+        Register r3 = b.getOrNewRegister(0, "r3");
+        //  if * {
+        Label skip0 = b.getOrCreateLabel(0, "skip0");
+        b.addChild(0, newJump(b.newConstant(types.getBooleanType()), skip0));
+        //      r0 = r0
+        Local r00 = newLocal(r0, r0);
+        b.addChild(0, r00);
+        //  }
+        b.addChild(0, skip0);
+        //  r1 = r0
+        Local r10 = newLocal(r1, r0);
+        b.addChild(0, r10);
+        //  r2 = r0
+        Local r20 = newLocal(r2, r0);
+        b.addChild(0, r20);
+        //  r3 = 0
+        Local r30 = newLocal(r3, expressions.makeZero(types.getArchType()));
+        b.addChild(0, r30);
+        //  do {
+        Label begin = b.getOrCreateLabel(0, "begin");
+        b.addChild(0, begin);
+        //      if * {
+        Label skip1 = b.getOrCreateLabel(0, "skip1");
+        b.addChild(0, newJump(b.newConstant(types.getBooleanType()), skip1));
+        //          r0 = r1
+        Local r01 = newLocal(r0, r1);
+        b.addChild(0, r01);
+        //          r1 = r1
+        Local r11 = newLocal(r1, r1);
+        b.addChild(0, r11);
+        //          r2 = r1
+        Local r21 = newLocal(r2, r1);
+        b.addChild(0, r21);
+        //      }
+        b.addChild(0, skip1);
+        //      r3 = r1
+        Local r31 = newLocal(r3, r1);
+        b.addChild(0, r31);
+        //  } while *
+        b.addChild(0, newJump(b.newConstant(types.getBooleanType()), begin));
+        //  if * {
+        Label skip2 = b.getOrCreateLabel(0, "skip2");
+        b.addChild(0, newJump(b.newConstant(types.getBooleanType()), skip2));
+        //      r0 = r2
+        Local r02 = newLocal(r0, r2);
+        b.addChild(0, r02);
+        //      r1 = r2
+        Local r12 = newLocal(r1, r2);
+        b.addChild(0, r12);
+        //  }
+        b.addChild(0, skip2);
+        //  r2 = r2
+        Local r22 = newLocal(r2, r2);
+        b.addChild(0, r22);
+        //  if * {
+        Label skip3 = b.getOrCreateLabel(0, "skip3");
+        b.addChild(0, newJump(b.newConstant(types.getBooleanType()), skip3));
+        //      r3 = r2
+        Local r32 = newLocal(r3, r2);
+        b.addChild(0, r32);
+        //  }
+        b.addChild(0, skip3);
+        //  return (r0 + r1) ^ (r2 | r3)
+        Return ret = newFunctionReturn(
+                expressions.makeIntXor(expressions.makeAdd(r0, r1), expressions.makeIntOr(r2, r3)));
+        b.addChild(0, ret);
+
+        Program program = b.build();
+        Configuration config = Configuration.builder()
+                .setOption(REACHING_DEFINITIONS_METHOD, ReachingDefinitionsAnalysis.Method.BACKWARD.name())
+                .build();
+        final ReachingDefinitionsAnalysis dep = ReachingDefinitionsAnalysis.configure(config)
+                .forFunction(program.getFunctions().get(0));
+        assertFalse(dep.getWriters(r00).ofRegister(r0).mustBeInitialized());
+        assertList(dep.getWriters(r00).ofRegister(r0).getMayWriters());
+        assertFalse(dep.getWriters(r10).ofRegister(r0).mustBeInitialized());
+        assertList(dep.getWriters(r10).ofRegister(r0).getMayWriters(), r00);
+        assertFalse(dep.getWriters(r20).ofRegister(r0).mustBeInitialized());
+        assertList(dep.getWriters(r20).ofRegister(r0).getMayWriters(), r00);
+        assertTrue(dep.getWriters(r30).getUsedRegisters().isEmpty());
+        assertList(dep.getWriters(r30).ofRegister(r0).getMayWriters());
+        assertTrue(dep.getWriters(r01).ofRegister(r1).mustBeInitialized());
+        assertList(dep.getWriters(r01).ofRegister(r1).getMayWriters(), r10, r11);
+        assertTrue(dep.getWriters(r11).ofRegister(r1).mustBeInitialized());
+        assertList(dep.getWriters(r11).ofRegister(r1).getMayWriters(), r10, r11);
+        assertTrue(dep.getWriters(r21).ofRegister(r1).mustBeInitialized());
+        assertList(dep.getWriters(r21).ofRegister(r1).getMayWriters(), r11);
+        assertTrue(dep.getWriters(r31).ofRegister(r1).mustBeInitialized());
+        assertList(dep.getWriters(r31).ofRegister(r1).getMayWriters(), r10, r11);
+        assertTrue(dep.getWriters(r02).ofRegister(r2).mustBeInitialized());
+        assertList(dep.getWriters(r02).ofRegister(r2).getMayWriters(), r20, r21);
+        assertTrue(dep.getWriters(r12).ofRegister(r2).mustBeInitialized());
+        assertList(dep.getWriters(r12).ofRegister(r2).getMayWriters(), r20, r21);
+        assertTrue(dep.getWriters(r22).ofRegister(r2).mustBeInitialized());
+        assertList(dep.getWriters(r22).ofRegister(r2).getMayWriters(), r20, r21);
+        assertTrue(dep.getWriters(r32).ofRegister(r2).mustBeInitialized());
+        assertList(dep.getWriters(r32).ofRegister(r2).getMayWriters(), r22);
+        assertFalse(dep.getWriters(ret).ofRegister(r0).mustBeInitialized());
+        assertList(dep.getWriters(ret).ofRegister(r0).getMayWriters(), r00, r01, r02);
+        assertTrue(dep.getWriters(ret).ofRegister(r1).mustBeInitialized());
+        assertList(dep.getWriters(ret).ofRegister(r1).getMayWriters(), r10, r11, r12);
+        assertTrue(dep.getWriters(ret).ofRegister(r2).mustBeInitialized());
+        assertList(dep.getWriters(ret).ofRegister(r2).getMayWriters(), r22);
+        assertTrue(dep.getWriters(ret).ofRegister(r3).mustBeInitialized());
+        assertList(dep.getWriters(ret).ofRegister(r3).getMayWriters(), r31, r32);
     }
 
     @Test
@@ -514,7 +638,7 @@ public class AnalysisTest {
         Context analysisContext = Context.create();
         analysisContext.register(BranchEquivalence.class, BranchEquivalence.fromConfig(program, configuration));
         analysisContext.register(ExecutionAnalysis.class, ExecutionAnalysis.fromConfig(program, ProgressModel.FAIR, analysisContext, configuration));
-        analysisContext.register(Dependency.class, Dependency.fromConfig(program, analysisContext, configuration));
+        analysisContext.register(ReachingDefinitionsAnalysis.class, ReachingDefinitionsAnalysis.fromConfig(program, analysisContext, configuration));
         return AliasAnalysis.fromConfig(program, analysisContext, configuration);
     }
 

@@ -5,8 +5,8 @@ import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.Register.UsageType;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.analysis.BranchEquivalence;
-import com.dat3m.dartagnan.program.analysis.Dependency;
 import com.dat3m.dartagnan.program.analysis.ExecutionAnalysis;
+import com.dat3m.dartagnan.program.analysis.ReachingDefinitionsAnalysis;
 import com.dat3m.dartagnan.program.analysis.alias.AliasAnalysis;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.MemoryEvent;
@@ -57,8 +57,8 @@ public class NativeRelationAnalysis implements RelationAnalysis {
     protected final VerificationTask task;
     protected final Context analysisContext;
     protected final ExecutionAnalysis exec;
+    protected final ReachingDefinitionsAnalysis definitions;
     protected final AliasAnalysis alias;
-    protected final Dependency dep;
     protected final WmmAnalysis wmmAnalysis;
     protected final Map<Relation, Knowledge> knowledgeMap = new HashMap<>();
     protected final EventGraph mutex = new EventGraph();
@@ -67,8 +67,8 @@ public class NativeRelationAnalysis implements RelationAnalysis {
         task = checkNotNull(t);
         analysisContext = context;
         exec = context.requires(ExecutionAnalysis.class);
+        definitions = context.requires(ReachingDefinitionsAnalysis.class);
         alias = context.requires(AliasAnalysis.class);
-        dep = context.requires(Dependency.class);
         wmmAnalysis = context.requires(WmmAnalysis.class);
     }
 
@@ -80,7 +80,7 @@ public class NativeRelationAnalysis implements RelationAnalysis {
      *                Should at least include the following elements:
      *                <ul>
      *                    <li>{@link ExecutionAnalysis}
-     *                    <li>{@link Dependency}
+     *                    <li>{@link ReachingDefinitionsAnalysis}
      *                    <li>{@link AliasAnalysis}
      *                    <li>{@link WmmAnalysis}
      *                </ul>
@@ -904,6 +904,7 @@ public class NativeRelationAnalysis implements RelationAnalysis {
             EventGraph must = new EventGraph();
 
             for (RegReader regReader : program.getThreadEvents(RegReader.class)) {
+                final ReachingDefinitionsAnalysis.Writers state = definitions.getWriters(regReader);
                 for (Register.Read regRead : regReader.getRegisterReads()) {
                     if (!usageTypes.contains(regRead.usageType())) {
                         continue;
@@ -917,11 +918,11 @@ public class NativeRelationAnalysis implements RelationAnalysis {
                     if (program.getArch().equals(RISCV) && register.getName().equals("x0")) {
                         continue;
                     }
-                    Dependency.State r = dep.of(regReader, register);
-                    for (Event regWriter : r.may) {
+                    final List<? extends Event> writers = state.ofRegister(register).getMayWriters();
+                    for (Event regWriter : writers) {
                         may.add(regWriter, regReader);
                     }
-                    for (Event regWriter : r.must) {
+                    for (Event regWriter : writers) {
                         must.add(regWriter, regReader);
                     }
                 }

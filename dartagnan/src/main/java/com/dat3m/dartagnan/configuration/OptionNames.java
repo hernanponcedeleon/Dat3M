@@ -48,6 +48,7 @@ public class OptionNames {
     public static final String REMOVE_ASSERTION_OF_TYPE = "program.processing.skipAssertionsOfType";
 
     // Program Property Options
+    public static final String REACHING_DEFINITIONS_METHOD = "program.analysis.reachingDefinitions";
     public static final String ALIAS_METHOD = "program.analysis.alias";
     public static final String ALIAS_GRAPHVIZ = "program.analysis.generateAliasGraph";
     public static final String ALIAS_GRAPHVIZ_SPLIT_BY_THREAD = "program.analysis.generateAliasGraph.splitByThread";

@@ -6,7 +6,7 @@ import com.dat3m.dartagnan.expression.integers.*;
 import com.dat3m.dartagnan.expression.misc.ITEExpr;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
-import com.dat3m.dartagnan.program.analysis.Dependency;
+import com.dat3m.dartagnan.program.analysis.ReachingDefinitionsAnalysis;
 import com.dat3m.dartagnan.program.analysis.SyntacticContextAnalysis;
 import com.dat3m.dartagnan.program.event.RegReader;
 import com.dat3m.dartagnan.program.event.RegWriter;
@@ -71,8 +71,8 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
 
     private static final Logger logger = LogManager.getLogger(InclusionBasedPointerAnalysis.class);
 
-    // This analysis depends on the results of a Dependency analysis, mapping used registers to a list of possible writers.
-    private final Dependency dependency;
+    // This analysis depends on another, that maps used registers to a list of possible direct writers.
+    private final ReachingDefinitionsAnalysis dependency;
 
     // For providing helpful error messages, this analysis prints call-stack and loop information for events.
     private final Supplier<SyntacticContextAnalysis> synContext;
@@ -117,7 +117,8 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
     // ================================ Construction ================================
 
     public static InclusionBasedPointerAnalysis fromConfig(Program program, Context analysisContext, AliasAnalysis.Config config) {
-        final var analysis = new InclusionBasedPointerAnalysis(program, analysisContext.requires(Dependency.class));
+        final ReachingDefinitionsAnalysis def = analysisContext.requires(ReachingDefinitionsAnalysis.class);
+        final var analysis = new InclusionBasedPointerAnalysis(program, def);
         analysis.run(program, config);
         logger.debug("variable count: {}",
                 analysis.totalVariables);
@@ -138,7 +139,7 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
         return analysis;
     }
 
-    private InclusionBasedPointerAnalysis(Program p, Dependency d) {
+    private InclusionBasedPointerAnalysis(Program p, ReachingDefinitionsAnalysis d) {
         dependency = d;
         synContext = Suppliers.memoize(() -> SyntacticContextAnalysis.newInstance(p));
     }
@@ -892,7 +893,7 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
     // Constructs a new node, if there are multiple writers.
     private DerivedVariable getPhiNodeVariable(Register register, RegReader reader) {
         // We assume here that uninitialized values carry no meaningful address to any memory object.
-        final List<RegWriter> writers = dependency.of(reader, register).may;
+        final List<RegWriter> writers = dependency.getWriters(reader).ofRegister(register).getMayWriters();
         final DerivedVariable find = registerVariables.get(writers);
         if (find != null) {
             return find;

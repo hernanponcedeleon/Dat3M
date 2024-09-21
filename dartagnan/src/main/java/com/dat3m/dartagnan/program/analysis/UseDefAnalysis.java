@@ -9,8 +9,11 @@ import com.dat3m.dartagnan.program.event.RegWriter;
 import com.dat3m.dartagnan.program.event.core.CondJump;
 import com.dat3m.dartagnan.program.event.core.Label;
 
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -27,7 +30,7 @@ import java.util.Set;
      The main difference is that this analysis works independently of other analyses
      (e.g., it does not depend on ExecutionAnalysis) and can be used on single functions.
  */
-public class UseDefAnalysis {
+public class UseDefAnalysis implements ReachingDefinitionsAnalysis {
 
     private Map<RegReader, Map<Register, Set<RegWriter>>> useDefGraph;
 
@@ -45,6 +48,57 @@ public class UseDefAnalysis {
 
     public Set<RegWriter> getDefs(Event regReader, Register register) {
         return getDefs(regReader).getOrDefault(register, Set.of());
+    }
+
+    @Override
+    public Writers getWriters(RegReader reader) {
+        return new WritersView(useDefGraph.getOrDefault(reader, new HashMap<>()));
+    }
+
+    @Override
+    public Writers getFinalWriters() {
+        return new WritersView(new HashMap<>());
+    }
+
+    private static final class WritersView implements Writers {
+        private final Map<Register, Set<RegWriter>> useDefByRegister;
+
+        private WritersView(Map<Register, Set<RegWriter>> useDefByRegister) {
+            this.useDefByRegister = useDefByRegister;
+        }
+
+        @Override
+        public Set<Register> getUsedRegisters() {
+            return Collections.unmodifiableSet(useDefByRegister.keySet());
+        }
+
+        @Override
+        public RegisterWriters ofRegister(Register register) {
+            return new RegisterInfo(useDefByRegister.getOrDefault(register, new HashSet<>()));
+        }
+    }
+
+    private static final class RegisterInfo implements RegisterWriters {
+        private final Set<RegWriter> useDefSet;
+
+        private RegisterInfo(Set<RegWriter> useDefSet) {
+            this.useDefSet = useDefSet;
+        }
+
+        @Override
+        public boolean mustBeInitialized() {
+            return false;
+        }
+
+        @Override
+        public List<RegWriter> getMayWriters() {
+            return useDefSet.stream().sorted(Comparator.comparingInt(Event::getGlobalId)).toList();
+        }
+
+        @Override
+        public List<RegWriter> getMustWriters() {
+            return List.of();
+        }
     }
 
     // ======================================================================

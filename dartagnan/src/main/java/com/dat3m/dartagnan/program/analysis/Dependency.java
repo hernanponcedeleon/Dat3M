@@ -29,7 +29,7 @@ import static java.util.stream.IntStream.range;
  * Instances of this class store the results of the analysis,
  * which was performed on the instance's creation.
  */
-public final class Dependency {
+public final class Dependency implements ReachingDefinitionsAnalysis {
 
     private static final Logger logger = LogManager.getLogger(Dependency.class);
 
@@ -67,19 +67,20 @@ public final class Dependency {
      * Queries the collection of providers for a variable, given a certain state of the program.
      *
      * @param reader   Event containing some computation over values of the register space.
-     * @param register Thread-local program variable used by {@code reader}.
      * @return Local result of this analysis.
      */
-    public State of(Event reader, Register register) {
-        return map.getOrDefault(reader, Map.of()).getOrDefault(register, new State(false, List.of(), List.of()));
+    @Override
+    public Writers getWriters(RegReader reader) {
+        return new StateMap(map.getOrDefault(reader, Map.of()));
     }
 
     /**
      * @return Complete set of registers of the analyzed program,
      * mapped to program-ordered list of writers.
      */
-    public Map<Register, State> finalWriters() {
-        return finalWriters;
+    @Override
+    public Writers getFinalWriters() {
+        return new StateMap(finalWriters);
     }
 
     /**
@@ -215,24 +216,24 @@ public final class Dependency {
      * Indirectly associated with an instance of {@link Register}, as well as an optional event of the respective thread.
      * When no such event exists, the instance describes the final register values.
      */
-    public static final class State {
+    public static final class State implements RegisterWriters {
 
         /**
          * The analysis was able to determine that in all executions, there is a provider for the register.
          */
-        public final boolean initialized;
+        private final boolean initialized;
 
         /**
          * Complete, but unsound, program-ordered list of direct providers for the register:
          * If there is a program execution where an event of the program was the latest writer, that event is contained in this list.
          */
-        public final List<RegWriter> may;
+        private final List<RegWriter> may;
 
         /**
          * Sound, but incomplete, program-ordered list of direct providers with no overwriting event in between:
          * Each event in this list will be the latest writer in any execution that contains that event.
          */
-        public final List<RegWriter> must;
+        private final List<RegWriter> must;
 
         private State(boolean initialized, List<RegWriter> may, List<RegWriter> must) {
             verify(new HashSet<>(may).containsAll(must), "Each must-writer must also be a may-writer.");
@@ -240,6 +241,40 @@ public final class Dependency {
             this.initialized = initialized;
             this.may = may;
             this.must = must;
+        }
+
+        @Override
+        public boolean mustBeInitialized() {
+            return initialized;
+        }
+
+        @Override
+        public List<RegWriter> getMayWriters() {
+            return Collections.unmodifiableList(may);
+        }
+
+        @Override
+        public List<RegWriter> getMustWriters() {
+            return Collections.unmodifiableList(must);
+        }
+    }
+
+    private static final class StateMap implements Writers {
+
+        private final Map<Register, State> map;
+
+        private StateMap(Map<Register, State> m) {
+            map = m;
+        }
+
+        @Override
+        public Set<Register> getUsedRegisters() {
+            return Collections.unmodifiableSet(map.keySet());
+        }
+
+        @Override
+        public RegisterWriters ofRegister(Register register) {
+            return map.getOrDefault(register, new State(false, List.of(), List.of()));
         }
     }
 }
