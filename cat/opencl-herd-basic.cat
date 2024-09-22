@@ -1,11 +1,9 @@
 OpenCL
 (* OpenCL Memory Model *)
-include "basic.cat"
 
 (*
 * This model is based on:
 * https://github.com/herd/herdtools7/blob/master/herd-www/cat_includes/opencl_base.cat
-* https://github.com/herd/herdtools7/blob/master/herd-www/cat_includes/opencl.cat
 *)
 
 // Base relations:
@@ -113,42 +111,3 @@ irreflexive rf | (fr;co) | (co;rf) as rmw_consistent
 
 // Atomicity
 empty rmw & (fre; coe) as atomic
-
-(**************************)
-(* Sequential consistency *)
-(**************************)
-
-let sc1 = rf^-1; [SC]; co
-let sc2 = [F]; po; co; po; [F]
-let sc3 = [F]; po; fr; po; [F]
-let sc4 =          fr; po; [F]
-let sc5 = [F]; po; fr
-
-let scp = (SC * SC) & (ghb | lhb | co | sc1 | sc2 | sc3 | sc4 | sc5)
-
-let sc6 = rf^-1; (ghb | lhb); [W]
-
-let unv = ~0
-let ifexists(s) = unv; [s]; unv
-
-(* BEGIN PARTIAL SC STUFF *)
-let scp_prime = scp & sc6
-acyclic scp_prime & ifexists(SC & ~ALL) as s_exists
-(* END PARTIAL SC STUFF *)
-
-(***************)
-(*    Races    *)
-(***************)
-
-let conflict = (((W * _) | (_ * W)) \ ((IW * _) | (_ * IW))) & loc
-
-let gl_hb = ghb | lhb
-let dr = conflict & ~symm(ghb | lhb) & ~incl
-flag ~empty dr as data_race
-
-let ur = (wi & conflict & ~symm(po)) \ id
-flag ~empty ur as unsequenced_race
-
-let bsw = bar_sw(GLOBAL) | bar_sw(LOCAL)
-let bd = [EF] & ((~wi & swg); unv) \ (bsw ; unv)
-flag ~empty bd as barrier_divergence
