@@ -1,5 +1,6 @@
 OpenCL
 (* OpenCL Memory Model *)
+include "basic.cat"
 
 (*
 * This model is based on:
@@ -109,6 +110,9 @@ irreflexive (ghb | lhb); rf; [A] as atomic_rf_consistent
 
 (* Consistency of RMWs *)
 irreflexive rf | (fr;co) | (co;rf) as rmw_consistent
+
+// Atomicity
+empty rmw & (fre; coe) as atomic
 
 (**************************)
 (* Sequential consistency *)

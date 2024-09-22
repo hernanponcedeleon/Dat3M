@@ -1,10 +1,11 @@
 OpenCL
 (* OpenCL Memory Model *)
+include "basic.cat"
 
 (*
 * This model is based on:
 * https://multicore.doc.ic.ac.uk/overhauling/opencl_base.cat
-* https://multicore.doc.ic.ac.uk/overhauling/opencl.cat
+* https://multicore.doc.ic.ac.uk/overhauling/opencl_scopedsc.cat
 *)
 
 // Base relations:
@@ -96,6 +97,9 @@ empty (rf; [NAL & LOCAL])\vis(lhb) as O-NaRfL
 
 (* Consistency of RMWs *)
 irreflexive rf | (mo;mo;rf^-1) | (mo;rf) as O-Rmw
+
+// Atomicity
+empty rmw & (fre; coe) as atomic
 
 (****************************************)
 (* Sequential consistency, simplified,  *)
