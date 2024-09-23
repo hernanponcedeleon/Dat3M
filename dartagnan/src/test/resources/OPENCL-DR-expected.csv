@@ -2,7 +2,6 @@ litmus/OPENCL/herd/2+2W.litmus,1
 litmus/OPENCL/herd/3.2W.litmus,0
 litmus/OPENCL/herd/3LB.litmus,1
 litmus/OPENCL/herd/CT_wsq1.litmus,1
-litmus/OPENCL/herd/CT_wsq2.litmus,1
 litmus/OPENCL/herd/IRIW.litmus,1
 litmus/OPENCL/herd/ISA2.litmus,0
 litmus/OPENCL/herd/ISA3.litmus,1

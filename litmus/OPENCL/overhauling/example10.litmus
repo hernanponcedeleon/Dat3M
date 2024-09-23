@@ -2,6 +2,7 @@ C example10
 
 (*
  * https://multicore.doc.ic.ac.uk/overhauling/examples/example10.litmus
+ * global_fga -> global
  *)
 
 {
@@ -23,13 +24,13 @@ P1@wg 0, dev 0 (global atomic_int* x, global atomic_int* y, global atomic_int* z
     r = atomic_load_explicit(x, memory_order_seq_cst, memory_scope_device);
 }
 
-P2@wg 1, dev 0 (global atomic_int* x, global atomic_int* y, global atomic_int* z1, global atomic_int* z2) {
+P2@wg 0, dev 1 (global atomic_int* x, global atomic_int* y, global atomic_int* z1, global atomic_int* z2) {
   atomic_store_explicit(y, 1, memory_order_seq_cst, memory_scope_device);
   //int r = atomic_load_explicit(y, memory_order_seq_cst, memory_scope_device);
   atomic_store_explicit(z2, 1, memory_order_release, memory_scope_all_svm_devices);
 }
 
-P3@wg 1, dev 0 (global atomic_int* x, global atomic_int* y, global atomic_int* z1, global atomic_int* z2) {
+P3@wg 0, dev 1 (global atomic_int* x, global atomic_int* y, global atomic_int* z1, global atomic_int* z2) {
   int r = -1;
   if (atomic_load_explicit(z1, memory_order_acquire, memory_scope_all_svm_devices) == 1)
     r = atomic_load_explicit(y, memory_order_seq_cst, memory_scope_device);

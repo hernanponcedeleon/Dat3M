@@ -33,7 +33,7 @@ public class LitmusOpenClRacesTest extends AbstractLitmusTest {
 
     @Override
     protected Provider<Wmm> getWmmProvider() {
-        return Providers.createWmmFromName(() -> "opencl-herd-partialsc");
+        return Providers.createWmmFromName(() -> "opencl-overhauling");
     }
 
     public LitmusOpenClRacesTest(String path, Result expected) {

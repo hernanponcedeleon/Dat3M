@@ -2,6 +2,7 @@ C example9b
 
 (*
  * https://multicore.doc.ic.ac.uk/overhauling/examples/example9b.litmus
+ * global_fga -> global
  *)
 
 {
