@@ -5,7 +5,8 @@ import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.RegWriter;
 import com.dat3m.dartagnan.program.event.core.MemoryCoreEvent;
-import com.dat3m.dartagnan.wmm.utils.EventGraph;
+import com.dat3m.dartagnan.wmm.utils.graph.mutable.MapEventGraph;
+import com.dat3m.dartagnan.wmm.utils.graph.mutable.MutableEventGraph;
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 
@@ -20,8 +21,8 @@ import java.util.Set;
  */
 public class EqualityAliasAnalysis implements AliasAnalysis {
 
-    private final EventGraph trueSet = new EventGraph();
-    private final EventGraph falseSet = new EventGraph();
+    private final MutableEventGraph trueSet = new MapEventGraph();
+    private final MutableEventGraph falseSet = new MapEventGraph();
 
     public static EqualityAliasAnalysis fromConfig(Program program, Configuration config) throws InvalidConfigurationException {
         return new EqualityAliasAnalysis();
