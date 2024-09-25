@@ -16,7 +16,7 @@ include "basic.cat"
 
 let asw = IW * (M \ IW)
 let sb = po
-let mo = co & (~NA * ~NA)
+let mo = co & (~NAL * ~NAL)
 
 let cacq = ACQ | (SC & (R | F)) | ACQ_REL
            | (F & CON)
@@ -73,7 +73,7 @@ let vis = ([W] ; hbl ; [R]) & ~(hbl; [W]; hbl)
 irreflexive (rf ; hb) as Rf
 
 (* consistent_non_atomic_rf  *)
-empty ((rf ; [NA]) \ vis) as NaRf
+empty ((rf ; [NAL]) \ vis) as NaRf
 
 irreflexive (rf | (mo ; mo ; rf^-1) | (mo ; rf)) as Rmw
 

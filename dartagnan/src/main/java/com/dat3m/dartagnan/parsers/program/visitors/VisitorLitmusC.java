@@ -292,6 +292,7 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
         Expression value = returnExpressionOrOne(ctx.value);
         Expression address = getAddress(ctx.address);
         Event event = EventFactory.Atomic.newFetchOp(register, address, value, ctx.op, ctx.c11Mo().mo);
+        addLocationAtomicityTag(event, address);
         addOpenCLMemorySpaceTag(event, address);
         if (ctx.openCLScope() != null) {
             event.addTags(ctx.openCLScope().scope);
@@ -348,6 +349,7 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
         Expression expectedAdd = getAddress(ctx.expectedAdd);
         String mo = ctx.c11Mo(0).mo;
         Event event = EventFactory.Atomic.newCompareExchange(register, address, expectedAdd, value, mo, true);
+        addLocationAtomicityTag(event, address);
         addOpenCLMemorySpaceTag(event, address);
         if (ctx.openCLScope() != null) {
             event.addTags(ctx.openCLScope().scope);
@@ -366,6 +368,7 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
         Expression expectedAdd = getAddress(ctx.expectedAdd);
         Event event = EventFactory.Atomic.newCompareExchange(register, address, expectedAdd, value,
                 Tag.OpenCL.DEFAULT_MO, true);
+        addLocationAtomicityTag(event, address);
         addOpenCLMemorySpaceTag(event, address);
         event.addTags(Tag.OpenCL.DEFAULT_SCOPE);
         programBuilder.addChild(currentThread, event);
@@ -380,6 +383,7 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
         Expression expectedAdd = getAddress(ctx.expectedAdd);
         String mo = ctx.c11Mo(0).mo;
         Event event = EventFactory.Atomic.newCompareExchange(register, address, expectedAdd, value, mo, false);
+        addLocationAtomicityTag(event, address);
         addOpenCLMemorySpaceTag(event, address);
         if (ctx.openCLScope() != null) {
             event.addTags(ctx.openCLScope().scope);
@@ -398,6 +402,7 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
         Expression expectedAdd = getAddress(ctx.expectedAdd);
         Event event = EventFactory.Atomic.newCompareExchange(register, address, expectedAdd, value,
                 Tag.OpenCL.DEFAULT_MO, false);
+        addLocationAtomicityTag(event, address);
         addOpenCLMemorySpaceTag(event, address);
         event.addTags(Tag.OpenCL.DEFAULT_SCOPE);
         programBuilder.addChild(currentThread, event);
@@ -418,6 +423,7 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
         Register register = getReturnRegister(true);
         Expression address = getAddress(ctx.address);
         AtomicLoad event = EventFactory.Atomic.newLoad(register, address, ctx.c11Mo().mo);
+        addLocationAtomicityTag(event, address);
         addOpenCLMemorySpaceTag(event, address);
         if (ctx.openCLScope() != null) {
             event.addTags(ctx.openCLScope().scope);
@@ -432,6 +438,7 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
         Register register = getReturnRegister(true);
         Expression address = getAddress(ctx.address);
         AtomicLoad event = EventFactory.Atomic.newLoad(register, address, Tag.OpenCL.DEFAULT_MO);
+        addLocationAtomicityTag(event, address);
         addOpenCLMemorySpaceTag(event, address);
         event.addTags(Tag.OpenCL.DEFAULT_SCOPE);
         programBuilder.addChild(currentThread, event);
@@ -459,6 +466,7 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
         Register register = getReturnRegister(true);
         Expression address = getAddress(ctx.address);
         Load event = EventFactory.newLoadWithMo(register, address, C11.NONATOMIC);
+        addLocationAtomicityTag(event, address);
         addOpenCLMemorySpaceTag(event, address);
         programBuilder.addChild(currentThread, event);
         return register;
@@ -574,6 +582,7 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
         Expression value = (Expression)ctx.value.accept(this);
         Expression address = getAddress(ctx.address);
         AtomicStore event = EventFactory.Atomic.newStore(address, value, ctx.c11Mo().mo);
+        addLocationAtomicityTag(event, address);
         addOpenCLMemorySpaceTag(event, address);
         if (ctx.openCLScope() != null) {
             event.addTags(ctx.openCLScope().scope);
@@ -588,6 +597,7 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
         Expression value = (Expression)ctx.value.accept(this);
         Expression address = getAddress(ctx.address);
         AtomicStore event = EventFactory.Atomic.newStore(address, value, Tag.OpenCL.DEFAULT_MO);
+        addLocationAtomicityTag(event, address);
         addOpenCLMemorySpaceTag(event, address);
         event.addTags(Tag.OpenCL.DEFAULT_SCOPE);
         return programBuilder.addChild(currentThread, event);
@@ -609,6 +619,7 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
         if(variable instanceof MemoryObject || variable instanceof Register){
             Event event = EventFactory.newStoreWithMo(variable, value, C11.NONATOMIC);
             if (variable instanceof Register reg) {
+                addLocationAtomicityTag(event, reg);
                 addOpenCLMemorySpaceTag(event, reg);
                 event.addTags(Tag.OpenCL.DEFAULT_WEAK_SCOPE);
             }
@@ -742,14 +753,20 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
             MemoryObject object = programBuilder.getLocFromReg(reg);
             if (object != null) {
                 event.addTags(object.getMemorySpace());
-                if (!object.isAtomic()) {
-                    event.addTags(Tag.OpenCL.NON_ATOMIC_LOCATION);
-                }
             }
         } else if (address instanceof BinaryExpressionBase<?,?> binExpr) {
             // TODO: Convert memory space tags for binary expressions
             addOpenCLMemorySpaceTag(event, binExpr.getLeft());
             addOpenCLMemorySpaceTag(event, binExpr.getRight());
+        }
+    }
+
+    private void addLocationAtomicityTag(Event event, Expression address) {
+        if (address instanceof Register reg) {
+            MemoryObject object = programBuilder.getLocFromReg(reg);
+            if (object != null && !object.isAtomic()) {
+                event.addTags(Tag.OpenCL.NON_ATOMIC_LOCATION);
+            }
         }
     }
 }
