@@ -119,6 +119,7 @@ public final class Tag {
 
         public static final String ATOMIC               = "A";
         public static final String NONATOMIC            = "NA";
+        public static final String NON_ATOMIC_LOCATION  = "NAL";
 
         public static final String MO_RELAXED           = "RLX";
         public static final String MO_CONSUME           = "CON";

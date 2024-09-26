@@ -12,7 +12,8 @@ import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.arch.StoreExclusive;
-import com.dat3m.dartagnan.program.event.arch.opencl.OpenCLInit;
+import com.dat3m.dartagnan.program.event.arch.c11.C11Init;
+import com.dat3m.dartagnan.program.event.arch.c11.OpenCLInit;
 import com.dat3m.dartagnan.program.event.arch.ptx.PTXAtomCAS;
 import com.dat3m.dartagnan.program.event.arch.ptx.PTXAtomExch;
 import com.dat3m.dartagnan.program.event.arch.ptx.PTXAtomOp;
@@ -378,6 +379,12 @@ public class EventFactory {
 
         public static AtomicXchg newExchange(Register register, Expression address, Expression value, String mo) {
             return new AtomicXchg(register, address, value, mo);
+        }
+
+        public static C11Init newC11Init(MemoryObject base, int offset) {
+            final Expression address = offset == 0 ? base :
+                    expressions.makeAdd(base, expressions.makeValue(offset, (IntegerType) base.getType()));
+            return new C11Init(base, offset, address);
         }
     }
     // =============================================================================================

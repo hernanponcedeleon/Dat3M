@@ -765,7 +765,7 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
         if (address instanceof Register reg) {
             MemoryObject object = programBuilder.getLocFromReg(reg);
             if (object != null && !object.isAtomic()) {
-                event.addTags(Tag.OpenCL.NON_ATOMIC_LOCATION);
+                event.addTags(Tag.C11.NON_ATOMIC_LOCATION);
             }
         }
     }

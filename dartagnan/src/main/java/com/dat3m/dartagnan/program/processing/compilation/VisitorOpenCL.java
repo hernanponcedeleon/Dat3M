@@ -115,9 +115,6 @@ public class VisitorOpenCL extends VisitorBase {
                 final MemoryOrder mo = e.getMetadata(MemoryOrder.class);
                 final boolean canRace = mo == null || mo.value().equals(C11.NONATOMIC);
                 e.addTags(canRace ? C11.NONATOMIC : C11.ATOMIC);
-                if (e.hasTag(Tag.OpenCL.NON_ATOMIC_LOCATION)) {
-                    e.addTags(Tag.OpenCL.NON_ATOMIC_LOCATION);
-                }
             }
         }
     }
