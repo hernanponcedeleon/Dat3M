@@ -276,10 +276,6 @@ public class ProgramBuilder {
 
     // ----------------------------------------------------------------------------------------------------------------
     // GPU
-    public void setThreadScopeHierarchy(int tid, ScopeHierarchy scopeHierarchy) {
-        getOrNewThread(tid).setScopeHierarchy(scopeHierarchy);
-    }
-
     public void newScopedThread(Arch arch, String name, int id, int ...scopeIds) {
         if(id2FunctionsMap.containsKey(id)) {
             throw new MalformedProgramException("Function or thread with id " + id + " already exists.");
@@ -291,6 +287,8 @@ public class ProgramBuilder {
                     ScopeHierarchy.ScopeHierarchyForPTX(scopeIds[0], scopeIds[1]), new HashSet<>());
             case VULKAN -> new Thread(name, DEFAULT_THREAD_TYPE, List.of(), id, threadEntry,
                     ScopeHierarchy.ScopeHierarchyForVulkan(scopeIds[0], scopeIds[1], scopeIds[2]), new HashSet<>());
+            case OPENCL -> new Thread(name, DEFAULT_THREAD_TYPE, List.of(), id, threadEntry,
+                    ScopeHierarchy.ScopeHierarchyForOpenCL(scopeIds[0], scopeIds[1]), new HashSet<>());
             default -> throw new UnsupportedOperationException("Unsupported architecture: " + arch);
         };
         id2FunctionsMap.put(id, scopedThread);

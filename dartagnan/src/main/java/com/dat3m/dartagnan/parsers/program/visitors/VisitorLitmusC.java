@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan.parsers.program.visitors;
 
+import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
@@ -157,14 +158,12 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
     public Object visitThread(LitmusCParser.ThreadContext ctx) {
         scope = currentThread = ctx.threadId().id;
         // Declarations in the preamble may have created the thread already
-        programBuilder.getOrNewThread(currentThread);
-        if (ctx.threadScope() != null) {
+        if (ctx.threadScope() == null) {
+            // Set dummy scope for C11 threads
+            programBuilder.newScopedThread(Arch.OPENCL, currentThread, 0, 0);
+        } else {
             ctx.threadScope().accept(this);
             this.isOpenCL = true;
-        } else {
-            // Set dummy scope hierarchy for CPU threads
-            programBuilder.setThreadScopeHierarchy(currentThread,
-                    ScopeHierarchy.ScopeHierarchyForOpenCL(-2, -2));
         }
         visitThreadArguments(ctx.threadArguments());
 
@@ -179,8 +178,7 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
     public Object visitOpenCLThreadScope(LitmusCParser.OpenCLThreadScopeContext ctx) {
         int wgID = ctx.scopeID(0).id;
         int devID = ctx.scopeID(1).id;
-        ScopeHierarchy scopeHierarchy = ScopeHierarchy.ScopeHierarchyForOpenCL(devID, wgID);
-        programBuilder.setThreadScopeHierarchy(currentThread, scopeHierarchy);
+        programBuilder.newScopedThread(Arch.OPENCL, currentThread, devID, wgID);
         return null;
     }
 
@@ -196,7 +194,7 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
 
     @Override
     public Object visitThreadArgument(LitmusCParser.ThreadArgumentContext ctx) {
-        // TODO: Possibly parse attributes/type modifiers (const, atomic, ...)
+        // TODO: Possibly parse attributes/type modifiers (const, ...)
         //  For now, herd7 also seems to ignore most modifiers, in particular the atomic one.
         String name = ctx.varName().getText();
         MemoryObject object = programBuilder.getOrNewMemoryObject(name);
