@@ -13,29 +13,28 @@ C "C++11"
 *)
 
 include "basic.cat"
+include "c11_cos.cat"
+include "c11_los.cat"
 
 let asw = IW * (M \ IW)
 let sb = po
 let mo = co & (~NAL * ~NAL)
 
-let cacq = ACQ | (SC & (R | F)) | ACQ_REL
-           | (F & CON)
+let cacq = ACQ | (SC & (R | F)) | ACQ_REL | (F & CON)
 let crel = REL | (SC & (W | F)) | ACQ_REL
 let ccon = R & CON
 
-let fr = rf^-1 ; mo
+// To be compatible with reads from uninit memory, we use our default definition of fr
+//let fr = rf^-1 ; mo
 
 let dd = (data | addr)+
 
 let fsb = [F] ; sb
 let sbf = sb ; [F]
 
-(* release_acquire_fenced_synchronizes_with,
-   hypothetical_release_sequence_set,
-   release_sequence_set *)
+(* release_acquire_fenced_synchronizes_with, hypothetical_release_sequence_set, release_sequence_set *)
 
-(* OLD: let rs = [crel] ; fsb? ; [A & W] ;
-	 (((mo ; [rmw]) | coi) & ~(coe ; [!rmw] ; mo))? *)
+(* OLD: let rs = [crel] ; fsb? ; [A & W] ; (((mo ; [rmw]) | coi) & ~(coe ; [!rmw] ; mo))? *)
 let rs_prime = int | (_ * (R & W))
 let rs = mo & rs_prime \ ((mo \ rs_prime) ; mo)
 
@@ -47,19 +46,15 @@ let pp_asw = asw \ (asw ; sb)
 //let sw = pp_asw | swul | swra
 let sw = pp_asw | swra
 
-(* with_consume_cad_set,
-   dependency_ordered_before *)
+(* with_consume_cad_set, dependency_ordered_before *)
 let cad = ((rf & sb) | dd)+
 let dob = (ext & ([W & crel] ; fsb? ; [A & W] ; rs?; rf; [ccon])); cad?
 
-(* happens_before,
-   inter_thread_happens_before,
-   consistent_hb *)
+(* happens_before, inter_thread_happens_before, consistent_hb *)
 let ithbr = sw | dob | (sw ; sb)
 let ithb = (ithbr | (sb ; ithbr))+
 let hb = sb | ithb
 acyclic hb as Hb
-
 
 (* coherent_memory_use *)
 let hbl = hb & loc
@@ -75,33 +70,35 @@ irreflexive (rf ; hb) as Rf
 (* consistent_non_atomic_rf  *)
 empty ((rf ; [NAL]) \ vis) as NaRf
 
-irreflexive (rf | (mo ; mo ; rf^-1) | (mo ; rf)) as Rmw
+(* Consistency of RMWs *)
+empty rmw & (fre; coe) as atomic
+// The original model was tested with Herd, which treats RMW as a single atomic operation.
+// We have modified the model to handle RMW as a sequence of atomic operations.
+// irreflexive (rf | (mo ; mo ; rf^-1) | (mo ; rf)) as Rmw
 
 
 (* locks_only_consistent_lo *)
 // irreflexive (lo ; hb) as Lo1
 
 (* locks_only_consistent_locks *)
-// irreflexive ([ls] ; lo^-1 ; [ls] ; ~(lo ; [ul] ; lo)) as Lo2
+// irreflexive ([LS] ; lo^-1 ; [LS] ; ~(lo ; [UL] ; lo)) as Lo2
 
 (* data_races *)
 let cnf = ((W * _) | (_ * W)) & loc
 let dr = ext & (cnf \ hb \ (hb^-1) \ (A * A))
 
 (* unsequenced_races *)
-let ur = int & ((W * M) | (M * W)) & loc & ~[_] & ~(sb+) & ~((sb+)^-1)
+let ur = int & ((W * M) | (M * W)) & loc & ~id & ~(sb+) & ~((sb+)^-1)
 
 (* locks_only_good_mutex_use, locks_only_bad_mutexes *)
-// let bl = ([ls]; (sb & lo); [lk]) & ~(lo; [ul]; lo)
-
-// let losbwoul = (sb & lo & ~(lo; [ul]; lo))
-// let lu = [ul] & ~([ul] ; losbwoul^-1 ; [ls] ; losbwoul ; [ul])
-
+// let bl = ([LS]; (sb & lo); [LK]) & ~(lo; [UL]; lo)
+// let losbwoul = (sb & lo & ~(lo; [UL]; lo))
+// let lu = [UL] & ~([UL] ; losbwoul^-1 ; [LS] ; losbwoul ; [UL])
 
 (* Partial SC axioms *)
 let r1 = hb
 let r2 = fsb? ; mo ; sbf?
-let r3 = rf^-1; [sc] ; mo
+let r3 = rf^-1; [SC] ; mo
 let r4 = rf^-1 ; hbl ; [W]
 let r5 = fsb ; fr
 let r6 = fr ; sbf
@@ -109,7 +106,4 @@ let r7 = fsb ; fr ; sbf
 
 let scp = r1|r2|r3|r4|r5|r6|r7
 
-acyclic (((SC * SC) & scp) \ [_]) as Spartial
-
-// Atomicity
-empty rmw & (fre; coe) as atomic
+acyclic (((SC * SC) & scp) \ id) as Spartial

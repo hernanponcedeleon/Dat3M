@@ -96,10 +96,10 @@ empty (rf; [NAL & GLOBAL])\vis(ghb) as O-NaRfG
 empty (rf; [NAL & LOCAL])\vis(lhb) as O-NaRfL
 
 (* Consistency of RMWs *)
-irreflexive rf | (mo;mo;rf^-1) | (mo;rf) as O-Rmw
-
-// Atomicity
 empty rmw & (fre; coe) as atomic
+// The original model was tested with Herd, which treats RMW as a single atomic operation.
+// We have modified the model to handle RMW as a sequence of atomic operations.
+// irreflexive rf | (mo;mo;rf^-1) | (mo;rf) as O-Rmw
 
 (****************************************)
 (* Sequential consistency, simplified,  *)

@@ -27,7 +27,7 @@ public class LitmusOpenClTest extends AbstractLitmusTest {
 
     @Override
     protected Provider<Wmm> getWmmProvider() {
-        return Providers.createWmmFromName(() -> "opencl-overhauling");
+        return Providers.createWmmFromName(() -> "opencl");
     }
 
     public LitmusOpenClTest(String path, Result expected) {
