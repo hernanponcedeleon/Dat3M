@@ -1,6 +1,7 @@
 package com.dat3m.dartagnan.program.event;
 
 import com.dat3m.dartagnan.program.event.arch.StoreExclusive;
+import com.dat3m.dartagnan.program.event.arch.c11.OpenCLBarrier;
 import com.dat3m.dartagnan.program.event.arch.ptx.PTXAtomCAS;
 import com.dat3m.dartagnan.program.event.arch.ptx.PTXAtomExch;
 import com.dat3m.dartagnan.program.event.arch.ptx.PTXAtomOp;
@@ -101,6 +102,7 @@ public interface EventVisitor<T> {
 
     // ------------------ GPU Events ------------------
     default T visitControlBarrier(ControlBarrier e) { return visitEvent(e); }
+    default T visitOpenCLBarrier(OpenCLBarrier e) { return visitEvent(e); }
     default T visitPtxRedOp(PTXRedOp e) { return visitMemEvent(e); }
     default T visitPtxAtomOp(PTXAtomOp e) { return visitMemEvent(e); }
     default T visitPtxAtomCAS(PTXAtomCAS e) { return visitMemEvent(e); }

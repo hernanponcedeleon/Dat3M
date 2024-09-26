@@ -5,10 +5,12 @@ import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.type.BooleanType;
 import com.dat3m.dartagnan.expression.Type;
 import com.dat3m.dartagnan.program.Register;
+import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.Tag.C11;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.MemoryEvent;
+import com.dat3m.dartagnan.program.event.arch.c11.OpenCLBarrier;
 import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.event.core.RMWStore;
 import com.dat3m.dartagnan.program.event.lang.catomic.*;
@@ -17,6 +19,7 @@ import com.dat3m.dartagnan.program.event.metadata.MemoryOrder;
 import java.util.List;
 
 import static com.dat3m.dartagnan.program.event.EventFactory.*;
+import static com.dat3m.dartagnan.program.event.EventFactory.OpenCL.newOpenCLBarrier;
 
 public class VisitorOpenCL extends VisitorBase {
 
@@ -93,6 +96,19 @@ public class VisitorOpenCL extends VisitorBase {
     public List<Event> visitAtomicThreadFence(AtomicThreadFence e) {
         return tagList(e, eventSequence(
                 newFence(e.getMo())
+        ));
+    }
+
+    @Override
+    public List<Event> visitOpenCLBarrier(OpenCLBarrier e) {
+        Event entryFence = EventFactory.newControlBarrier(e.getName() + "_entry", e.getId());
+        entryFence.addTags(Tag.OpenCL.ENTRY_FENCE);
+        Event exitFence = EventFactory.newControlBarrier(e.getName() + "_exit", e.getId());
+        exitFence.addTags(Tag.OpenCL.EXIT_FENCE);
+        return tagList(e, eventSequence(
+                entryFence,
+                newOpenCLBarrier(e.getName(), e.getId()),
+                exitFence
         ));
     }
 

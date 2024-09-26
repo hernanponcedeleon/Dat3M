@@ -379,8 +379,6 @@ public final class Tag {
     // ========================================= OpenCL ============================================
     // =============================================================================================
     public static final class OpenCL {
-        // Atomicity of location
-        public static final String NON_ATOMIC_LOCATION = "NAL";
         // Space
         public static final String GLOBAL_SPACE = "GLOBAL";
         public static final String LOCAL_SPACE = "LOCAL";

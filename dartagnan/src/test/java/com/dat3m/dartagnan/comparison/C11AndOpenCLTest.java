@@ -38,6 +38,6 @@ public class C11AndOpenCLTest extends AbstractComparisonTest {
 
     @Override
     protected Provider<Wmm> getTargetWmmProvider() {
-        return Providers.createWmmFromName(() -> "opencl-overhauling");
+        return Providers.createWmmFromName(() -> "opencl");
     }
 }

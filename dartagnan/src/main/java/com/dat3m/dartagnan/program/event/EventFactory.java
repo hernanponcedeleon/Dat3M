@@ -13,6 +13,7 @@ import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.arch.StoreExclusive;
 import com.dat3m.dartagnan.program.event.arch.c11.C11Init;
+import com.dat3m.dartagnan.program.event.arch.c11.OpenCLBarrier;
 import com.dat3m.dartagnan.program.event.arch.c11.OpenCLInit;
 import com.dat3m.dartagnan.program.event.arch.ptx.PTXAtomCAS;
 import com.dat3m.dartagnan.program.event.arch.ptx.PTXAtomExch;
@@ -820,6 +821,10 @@ public class EventFactory {
             final Expression address = offset == 0 ? base :
                     expressions.makeAdd(base, expressions.makeValue(offset, (IntegerType) base.getType()));
             return new OpenCLInit(base, offset, address);
+        }
+
+        public static OpenCLBarrier newOpenCLBarrier(String name, Expression fenceId) {
+            return new OpenCLBarrier(name, fenceId);
         }
 
     }
