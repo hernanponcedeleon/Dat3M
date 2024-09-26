@@ -534,15 +534,19 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
             includerCandidates.addAll(other.seeAlso);
         }
         for (Variable includerCandidate : includerCandidates) {
-            if (component.contains(includerCandidate)) {
+            if (otherVariables.contains(includerCandidate)) {
                 continue;
             }
-            final List<IncludeEdge> outgoingEdges = includerCandidate.includes.stream()
-                    .filter(i -> otherVariables.contains(i.source))
-                    .toList();
+            final List<IncludeEdge> outgoingEdges = new ArrayList<>();
+            for (Iterator<IncludeEdge> i = includerCandidate.includes.iterator(); i.hasNext();) {
+                final IncludeEdge edge = i.next();
+                if (otherVariables.contains(edge.source)) {
+                    outgoingEdges.add(edge);
+                    i.remove();
+                }
+            }
             if (!outgoingEdges.isEmpty()) {
                 oldOutEdges.put(includerCandidate, outgoingEdges);
-                includerCandidate.includes.removeIf(i -> otherVariables.contains(i.source));
             }
         }
         // Remove otherVariables from seeAlso.
@@ -572,29 +576,23 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
         final Map<Variable, Map<Variable, Set<LoadEdge>>> oldLoads = new HashMap<>();
         final Map<Variable, Map<Variable, Set<StoreEdge>>> oldStores = new HashMap<>();
         for (Variable address : includerCandidates) {
-            boolean hadLoadEdges = false;
-            for (LoadEdge load : address.loads) {
+            for (Iterator<LoadEdge> i = address.loads.iterator(); i.hasNext();) {
+                final LoadEdge load = i.next();
                 if (otherVariables.contains(load.result)) {
                     oldLoads.computeIfAbsent(load.result, k -> new HashMap<>())
                             .computeIfAbsent(address, k -> new HashSet<>())
                             .add(load);
-                    hadLoadEdges = true;
+                    i.remove();
                 }
             }
-            if (hadLoadEdges) {
-                address.loads.removeIf(l -> otherVariables.contains(l.result));
-            }
-            boolean hadStoreEdges = false;
-            for (StoreEdge store : address.stores) {
+            for (Iterator<StoreEdge> i = address.stores.iterator(); i.hasNext();) {
+                final StoreEdge store = i.next();
                 if (otherVariables.contains(store.value.base)) {
                     oldStores.computeIfAbsent(store.value.base, k -> new HashMap<>())
                             .computeIfAbsent(address, k -> new HashSet<>())
                             .add(store);
-                    hadStoreEdges = true;
+                    i.remove();
                 }
-            }
-            if (hadStoreEdges) {
-                address.stores.removeIf(s -> otherVariables.contains(s.value.base));
             }
         }
         // New incoming edges = oldInEdges ; cyclicModifier ; toVariablePaths
@@ -638,7 +636,7 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
         }
         // New outgoing edges = new internal edges ; oldOutEdges
         for (Map.Entry<Variable, List<IncludeEdge>> oldOut : oldOutEdges.entrySet()) {
-            assert !component.contains(oldOut.getKey());
+            assert !otherVariables.contains(oldOut.getKey());
             assert !oldOut.getValue().isEmpty();
             for (IncludeEdge oldOutEdge : oldOut.getValue()) {
                 final Modifier acceleratedModifier = compose(oldOutEdge.modifier, cyclicModifier);
@@ -673,6 +671,9 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
             verify(includerCandidates.stream()
                     .flatMap(c -> c.stores.stream())
                     .noneMatch(s -> otherVariables.contains(s.value.base)));
+            verify(variable.includes.stream()
+                    .noneMatch(i -> otherVariables.contains(i.source)));
+            verify(variable.seeAlso.containsAll(otherVariables));
         }
     }
 
