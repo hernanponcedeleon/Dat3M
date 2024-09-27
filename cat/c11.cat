@@ -59,7 +59,8 @@ acyclic hb as Hb
 (* coherent_memory_use *)
 let hbl = hb & loc
 
-irreflexive ((rf^-1)? ; mo ; rf? ; hb) as Coh
+// To support reads from uninitialized memory
+irreflexive ((fr | mo); rf?; hb) as Coh
 
 (* visible_side_effect_set *)
 let vis = ([W] ; hbl ; [R]) & ~(hbl; [W]; hbl)
