@@ -13,7 +13,6 @@ import com.dat3m.dartagnan.parsers.LitmusCParser;
 import com.dat3m.dartagnan.parsers.program.utils.ProgramBuilder;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
-import com.dat3m.dartagnan.program.ScopeHierarchy;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.Tag;
@@ -47,8 +46,6 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
 
     @Override
     public Program visitMain(LitmusCParser.MainContext ctx) {
-        //FIXME: We should visit thread declarations before variable declarations
-        // because variable declaration refer to threads.
         visitVariableDeclaratorList(ctx.variableDeclaratorList());
         visitProgram(ctx.program());
         VisitorLitmusAssertions.parseAssertions(programBuilder, ctx.assertionList(), ctx.assertionFilter());
@@ -71,10 +68,9 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
     @Override
     public Object visitGlobalDeclaratorRegister(LitmusCParser.GlobalDeclaratorRegisterContext ctx) {
         if (ctx.initConstantValue() != null) {
-            // FIXME: We visit declarators before threads, so we need to create threads early
-            programBuilder.getOrNewThread(ctx.threadId().id);
             IntLiteral value = expressions.parseValue(ctx.initConstantValue().constant().getText(), archType);
-            programBuilder.initRegEqConst(ctx.threadId().id,ctx.varName().getText(), value);
+            programBuilder.addRegType(ctx.threadId().id, ctx.varName().getText(), archType);
+            programBuilder.addRegToConstMap(ctx.threadId().id, ctx.varName().getText(), value);
         }
         return null;
     }
@@ -97,17 +93,19 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
 
     @Override
     public Object visitGlobalDeclaratorRegisterLocation(LitmusCParser.GlobalDeclaratorRegisterLocationContext ctx) {
-        // FIXME: We visit declarators before threads, so we need to create threads early
-        programBuilder.getOrNewThread(ctx.threadId().id);
+        int threadId = ctx.threadId().id;
+        String regName = ctx.varName(0).getText();
+        String locName = ctx.varName(1).getText();
+        programBuilder.addRegType(threadId, regName, archType);
         if(ctx.Ast() == null){
-            programBuilder.initRegEqLocPtr(ctx.threadId().id, ctx.varName(0).getText(), ctx.varName(1).getText(), archType);
+            programBuilder.addRegToLocPtrMap(threadId, regName, locName);
         } else {
             String rightName = ctx.varName(1).getText();
             MemoryObject object = programBuilder.getMemoryObject(rightName);
             if(object != null){
-                programBuilder.initRegEqConst(ctx.threadId().id, ctx.varName(0).getText(), object);
+                programBuilder.addRegToConstMap(threadId, regName, object);
             } else {
-                programBuilder.initRegEqLocVal(ctx.threadId().id, ctx.varName(0).getText(), ctx.varName(1).getText(), archType);
+                programBuilder.addRegToLocValMap(threadId, regName, locName);
             }
         }
         return null;

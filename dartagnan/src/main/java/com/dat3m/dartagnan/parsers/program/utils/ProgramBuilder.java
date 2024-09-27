@@ -7,6 +7,7 @@ import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.Type;
 import com.dat3m.dartagnan.expression.integers.IntLiteral;
 import com.dat3m.dartagnan.expression.type.FunctionType;
+import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.program.*;
 import com.dat3m.dartagnan.program.Thread;
@@ -45,6 +46,10 @@ public class ProgramBuilder {
     private final Map<Integer, Map<String, Label>> fid2LabelsMap = new HashMap<>();
     private final Map<String, MemoryObject> locations = new HashMap<>();
     private final Map<Register, MemoryObject> reg2LocMap = new HashMap<>();
+    private final Map<Integer, Map<String, IntegerType>> id2RegTypeMap = new HashMap<>();
+    private final Map<Integer, Map<String, Expression>> id2RegConstMap = new HashMap<>();
+    private final Map<Integer, Map<String, String>> id2RegLocPtrMap = new HashMap<>();
+    private final Map<Integer, Map<String, String>> id2RegLocValMap = new HashMap<>();
 
     private final Program program;
 
@@ -114,13 +119,19 @@ public class ProgramBuilder {
 
     // This method creates a "default" thread that has no parameters, no return value, and runs unconditionally.
     // It is only useful for creating threads of Litmus code.
-    public Thread newThread(String name, int tid) {
-        if(id2FunctionsMap.containsKey(tid)) {
-            throw new MalformedProgramException("Function or thread with id " + tid + " already exists.");
-        }
-        final Thread thread = new Thread(name, DEFAULT_THREAD_TYPE, List.of(), tid, EventFactory.newThreadStart(null));
+    public Thread newThread(int tid, Thread thread) {
         id2FunctionsMap.put(tid, thread);
         program.addThread(thread);
+        if (id2RegConstMap.containsKey(tid)) {
+            id2RegConstMap.get(tid).forEach((regName, value) ->
+                    initRegEqConst(tid, regName, value));
+        } else if (id2RegLocPtrMap.containsKey(tid)) {
+            id2RegLocPtrMap.get(tid).forEach((regName, value) ->
+                    initRegEqLocPtr(tid, regName, value, getRegType(tid, regName)));
+        } else if (id2RegLocValMap.containsKey(tid)) {
+            id2RegLocValMap.get(tid).forEach((regName, value) ->
+                    initRegEqLocVal(tid, regName, value, getRegType(tid, regName)));
+        }
         return thread;
     }
 
@@ -135,8 +146,12 @@ public class ProgramBuilder {
     }
 
     public Thread newThread(int tid) {
+        if(id2FunctionsMap.containsKey(tid)) {
+            throw new MalformedProgramException("Function or thread with id " + tid + " already exists.");
+        }
         final String threadName = (program.getFormat() == LITMUS ? "P" : "__thread_") + tid;
-        return newThread(threadName, tid);
+        final Thread thread = new Thread(threadName, DEFAULT_THREAD_TYPE, List.of(), tid, EventFactory.newThreadStart(null));
+        return newThread(tid, thread);
     }
 
     public Thread getOrNewThread(int tid) {
@@ -235,6 +250,29 @@ public class ProgramBuilder {
         addChild(regThread, EventFactory.newLocal(getOrNewRegister(regThread, regName, value.getType()), value));
     }
 
+    public void addRegType(int tid, String regName, IntegerType type) {
+        id2RegTypeMap.computeIfAbsent(tid, k -> new HashMap<>()).put(regName, type);
+    }
+
+    public IntegerType getRegType(int tid, String regName) {
+        if (id2RegTypeMap.containsKey(tid) && id2RegTypeMap.get(tid).containsKey(regName)) {
+                return id2RegTypeMap.get(tid).get(regName);
+            }
+        throw new IllegalStateException("Register " + tid + ":" + regName + " is not initialised");
+    }
+
+    public void addRegToConstMap(int tid, String regName, Expression value) {
+        id2RegConstMap.computeIfAbsent(tid, k -> new HashMap<>()).put(regName, value);
+    }
+
+    public void addRegToLocPtrMap(int tid, String regName, String locName) {
+        id2RegLocPtrMap.computeIfAbsent(tid, k -> new HashMap<>()).put(regName, locName);
+    }
+
+    public void addRegToLocValMap(int tid, String regName, String locName) {
+        id2RegLocValMap.computeIfAbsent(tid, k -> new HashMap<>()).put(regName, locName);
+    }
+
     private Expression getInitialValue(String name) {
         return getOrNewMemoryObject(name).getInitialValue(0);
     }
@@ -291,8 +329,7 @@ public class ProgramBuilder {
                     ScopeHierarchy.ScopeHierarchyForOpenCL(scopeIds[0], scopeIds[1]), new HashSet<>());
             default -> throw new UnsupportedOperationException("Unsupported architecture: " + arch);
         };
-        id2FunctionsMap.put(id, scopedThread);
-        program.addThread(scopedThread);
+        newThread(id, scopedThread);
     }
 
     public void newScopedThread(Arch arch, int id, int ...ids) {
