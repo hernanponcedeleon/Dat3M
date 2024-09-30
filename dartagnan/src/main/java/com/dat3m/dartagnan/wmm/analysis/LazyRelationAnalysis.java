@@ -1,7 +1,6 @@
 package com.dat3m.dartagnan.wmm.analysis;
 
 import com.dat3m.dartagnan.configuration.Arch;
-import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.ScopeHierarchy;
@@ -377,25 +376,9 @@ public class LazyRelationAnalysis extends NativeRelationAnalysis {
         @Override
         public RelationAnalysis.Knowledge visitSyncBarrier(SyncBar definition) {
             long start = System.currentTimeMillis();
-            Map<Event, Set<Event>> mayData = new HashMap<>();
-            Map<Event, Set<Event>> mustData = new HashMap<>();
-            List<ControlBarrier> barriers = program.getThreadEvents(ControlBarrier.class);
-            barriers.forEach(e1 -> {
-                Expression id = e1.getId();
-                Set<Event> mustRange = new HashSet<>();
-                mayData.put(e1, barriers.stream().filter(e2 -> {
-                    if (!exec.areMutuallyExclusive(e1, e2) && !e2.hasTag(Tag.PTX.ARRIVE)) {
-                        if (id.equals(e2.getId())) {
-                            mustRange.add(e2);
-                        }
-                        return true;
-                    }
-                    return false;
-                }).collect(ImmutableSet.toImmutableSet()));
-                mustData.put(e1, mustRange);
-            });
-            EventGraph may = new ImmutableMapEventGraph(mayData);
-            EventGraph must = new ImmutableMapEventGraph(mustData);
+            RelationAnalysis.Knowledge base = nativeInitializer.visitSyncBarrier(definition);
+            EventGraph may = ImmutableMapEventGraph.from(base.getMaySet());
+            EventGraph must = ImmutableMapEventGraph.from(base.getMustSet());
             time(definition, start, System.currentTimeMillis());
             return new RelationAnalysis.Knowledge(may, must);
         }
