@@ -127,7 +127,7 @@ let scp = (SC * SC) & (ghb | lhb | co | sc1 | sc2 | sc3 | sc4 | sc5)
 
 let sc6 = rf^-1; (ghb | lhb); [W]
 
-let unv = ~0
+let unv = _ * _
 let ifexists(s) = unv; [s]; unv
 
 (* BEGIN PARTIAL SC STUFF *)

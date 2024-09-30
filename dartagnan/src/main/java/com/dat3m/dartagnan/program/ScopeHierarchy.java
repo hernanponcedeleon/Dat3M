@@ -17,26 +17,26 @@ public class ScopeHierarchy{
 
     public static ScopeHierarchy ScopeHierarchyForVulkan(int queueFamily, int workGroup, int subGroup) {
         ScopeHierarchy scopeHierarchy = new ScopeHierarchy();
-        scopeHierarchy.scopeIds.put(Tag.GPU_SCOPES.DEVICE, 0);
-        scopeHierarchy.scopeIds.put(Tag.GPU_SCOPES.QUEUE_FAMILY, queueFamily);
-        scopeHierarchy.scopeIds.put(Tag.GPU_SCOPES.WORK_GROUP, workGroup);
-        scopeHierarchy.scopeIds.put(Tag.GPU_SCOPES.SUB_GROUP, subGroup);
+        scopeHierarchy.scopeIds.put(Tag.Vulkan.DEVICE, 0);
+        scopeHierarchy.scopeIds.put(Tag.Vulkan.QUEUE_FAMILY, queueFamily);
+        scopeHierarchy.scopeIds.put(Tag.Vulkan.WORK_GROUP, workGroup);
+        scopeHierarchy.scopeIds.put(Tag.Vulkan.SUB_GROUP, subGroup);
         return scopeHierarchy;
     }
 
     public static ScopeHierarchy ScopeHierarchyForPTX(int gpu, int cta) {
         ScopeHierarchy scopeHierarchy = new ScopeHierarchy();
-        scopeHierarchy.scopeIds.put(Tag.GPU_SCOPES.SYS, 0);
-        scopeHierarchy.scopeIds.put(Tag.GPU_SCOPES.GPU, gpu);
-        scopeHierarchy.scopeIds.put(Tag.GPU_SCOPES.CTA, cta);
+        scopeHierarchy.scopeIds.put(Tag.PTX.SYS, 0);
+        scopeHierarchy.scopeIds.put(Tag.PTX.GPU, gpu);
+        scopeHierarchy.scopeIds.put(Tag.PTX.CTA, cta);
         return scopeHierarchy;
     }
 
     public static ScopeHierarchy ScopeHierarchyForOpenCL(int dev, int wg) {
         ScopeHierarchy scopeHierarchy = new ScopeHierarchy();
-        scopeHierarchy.scopeIds.put(Tag.GPU_SCOPES.ALL, 0);
-        scopeHierarchy.scopeIds.put(Tag.GPU_SCOPES.DEVICE, dev);
-        scopeHierarchy.scopeIds.put(Tag.GPU_SCOPES.WORK_GROUP, wg);
+        scopeHierarchy.scopeIds.put(Tag.OpenCL.ALL, 0);
+        scopeHierarchy.scopeIds.put(Tag.OpenCL.DEVICE, dev);
+        scopeHierarchy.scopeIds.put(Tag.OpenCL.WORK_GROUP, wg);
         return scopeHierarchy;
     }
 

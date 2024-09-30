@@ -93,7 +93,7 @@ public class VisitorPTX extends VisitorBase {
     }
 
     private void propagateTags(Event source, Event target) {
-        for (String tag : List.of(Tag.GPU_SCOPES.CTA, Tag.GPU_SCOPES.GPU, Tag.GPU_SCOPES.SYS, Tag.PTX.GEN, Tag.PTX.TEX, Tag.PTX.SUR, Tag.PTX.CON)) {
+        for (String tag : List.of(Tag.PTX.CTA, Tag.PTX.GPU, Tag.PTX.SYS, Tag.PTX.GEN, Tag.PTX.TEX, Tag.PTX.SUR, Tag.PTX.CON)) {
             if (source.hasTag(tag)) {
                 target.addTags(tag);
             }

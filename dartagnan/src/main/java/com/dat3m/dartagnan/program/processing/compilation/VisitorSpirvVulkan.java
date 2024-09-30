@@ -181,21 +181,21 @@ public class VisitorSpirvVulkan extends VisitorVulkan {
                     Tag.Spirv.SEQ_CST -> Tag.Vulkan.ACQ_REL;
 
             // Scope
-            case Tag.Spirv.SUBGROUP -> Tag.GPU_SCOPES.SUB_GROUP;
-            case Tag.Spirv.WORKGROUP -> Tag.GPU_SCOPES.WORK_GROUP;
-            case Tag.Spirv.QUEUE_FAMILY -> Tag.GPU_SCOPES.QUEUE_FAMILY;
+            case Tag.Spirv.SUBGROUP -> Tag.Vulkan.SUB_GROUP;
+            case Tag.Spirv.WORKGROUP -> Tag.Vulkan.WORK_GROUP;
+            case Tag.Spirv.QUEUE_FAMILY -> Tag.Vulkan.QUEUE_FAMILY;
             // TODO: Refactoring of the cat model
             //  In the cat file AV/VISSHADER uses device domain,
             //  and device domain is mapped to AV/VISDEVICE
             case Tag.Spirv.INVOCATION,
                     Tag.Spirv.SHADER_CALL,
                     Tag.Spirv.DEVICE,
-                    Tag.Spirv.CROSS_DEVICE -> Tag.GPU_SCOPES.DEVICE;
+                    Tag.Spirv.CROSS_DEVICE -> Tag.Vulkan.DEVICE;
 
             // Memory access (non-atomic)
             case Tag.Spirv.MEM_VOLATILE,
                     Tag.Spirv.MEM_NONTEMPORAL -> null;
-            case Tag.Spirv.MEM_NON_PRIVATE -> Tag.GPU_SCOPES.NON_PRIVATE;
+            case Tag.Spirv.MEM_NON_PRIVATE -> Tag.Vulkan.NON_PRIVATE;
             case Tag.Spirv.MEM_AVAILABLE -> Tag.Vulkan.AVAILABLE;
             case Tag.Spirv.MEM_VISIBLE -> Tag.Vulkan.VISIBLE;
 

@@ -173,9 +173,9 @@ public class ProgramEncoder implements Encoder {
     private int getWorkgroupId(Thread thread) {
         ScopeHierarchy hierarchy = thread.getScopeHierarchy();
         if (hierarchy != null) {
-            int id = hierarchy.getScopeId(Tag.GPU_SCOPES.WORK_GROUP);
+            int id = hierarchy.getScopeId(Tag.Vulkan.WORK_GROUP);
             if (id < 0) {
-                id = hierarchy.getScopeId(Tag.GPU_SCOPES.CTA);
+                id = hierarchy.getScopeId(Tag.PTX.CTA);
             }
             return id;
         }

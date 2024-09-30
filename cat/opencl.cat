@@ -27,7 +27,7 @@ include "basic.cat"
 let mo = co & ((~NAL) * (~NAL))
 let sb = po
 let rb = (rf^-1; mo) \ id
-let unv = ~0
+let unv = _ * _
 let wi = int
 
 (* Inclusive scopes *)

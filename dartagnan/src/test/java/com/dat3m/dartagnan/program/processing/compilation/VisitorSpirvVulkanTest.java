@@ -110,19 +110,19 @@ public class VisitorSpirvVulkanTest {
     public void testSpirvLoad() {
         doTestSpirvLoad(
                 Set.of(Tag.Spirv.RELAXED, Tag.Spirv.SUBGROUP, Tag.Spirv.SC_WORKGROUP),
-                Set.of(Tag.GPU_SCOPES.SUB_GROUP, Tag.Vulkan.SC1, Tag.GPU_SCOPES.NON_PRIVATE)
+                Set.of(Tag.Vulkan.SUB_GROUP, Tag.Vulkan.SC1, Tag.Vulkan.NON_PRIVATE)
         );
         doTestSpirvLoad(
                 Set.of(Tag.Spirv.SEQ_CST, Tag.Spirv.SUBGROUP, Tag.Spirv.SC_WORKGROUP),
-                Set.of(Tag.Vulkan.ACQUIRE, Tag.GPU_SCOPES.SUB_GROUP, Tag.Vulkan.SC1, Tag.GPU_SCOPES.NON_PRIVATE)
+                Set.of(Tag.Vulkan.ACQUIRE, Tag.Vulkan.SUB_GROUP, Tag.Vulkan.SC1, Tag.Vulkan.NON_PRIVATE)
         );
         doTestSpirvLoad(
                 Set.of(Tag.Spirv.ACQUIRE, Tag.Spirv.WORKGROUP, Tag.Spirv.SC_WORKGROUP),
-                Set.of(Tag.Vulkan.ACQUIRE, Tag.GPU_SCOPES.WORK_GROUP, Tag.Vulkan.SC1, Tag.GPU_SCOPES.NON_PRIVATE)
+                Set.of(Tag.Vulkan.ACQUIRE, Tag.Vulkan.WORK_GROUP, Tag.Vulkan.SC1, Tag.Vulkan.NON_PRIVATE)
         );
         doTestSpirvLoad(
                 Set.of(Tag.Spirv.ACQUIRE, Tag.Spirv.WORKGROUP, Tag.Spirv.SEM_UNIFORM, Tag.Spirv.SEM_VISIBLE, Tag.Spirv.SC_UNIFORM),
-                Set.of(Tag.Vulkan.ACQUIRE, Tag.GPU_SCOPES.WORK_GROUP, Tag.Vulkan.SEMSC0, Tag.Vulkan.SEM_VISIBLE, Tag.Vulkan.SC0, Tag.GPU_SCOPES.NON_PRIVATE)
+                Set.of(Tag.Vulkan.ACQUIRE, Tag.Vulkan.WORK_GROUP, Tag.Vulkan.SEMSC0, Tag.Vulkan.SEM_VISIBLE, Tag.Vulkan.SC0, Tag.Vulkan.NON_PRIVATE)
         );
         doTestSpirvLoad(
                 Set.of(Tag.Spirv.RELAXED, Tag.Spirv.DEVICE, Tag.Spirv.SC_UNIFORM),
@@ -145,7 +145,7 @@ public class VisitorSpirvVulkanTest {
         assertEquals(1, seq.size());
         Load load = (Load) seq.get(0);
         Set<String> baseTags = Set.of(Tag.VISIBLE, Tag.MEMORY, Tag.READ, Tag.Vulkan.ATOM,
-                Tag.Vulkan.VISIBLE, Tag.GPU_SCOPES.NON_PRIVATE);
+                Tag.Vulkan.VISIBLE, Tag.Vulkan.NON_PRIVATE);
         assertEquals(Sets.union(baseTags, vulTags), load.getTags());
     }
 
@@ -153,19 +153,19 @@ public class VisitorSpirvVulkanTest {
     public void testSpirvStore() {
         doTestSpirvStore(
                 Set.of(Tag.Spirv.RELAXED, Tag.Spirv.SUBGROUP, Tag.Spirv.SC_WORKGROUP),
-                Set.of(Tag.GPU_SCOPES.SUB_GROUP, Tag.Vulkan.SC1, Tag.GPU_SCOPES.NON_PRIVATE)
+                Set.of(Tag.Vulkan.SUB_GROUP, Tag.Vulkan.SC1, Tag.Vulkan.NON_PRIVATE)
         );
         doTestSpirvStore(
                 Set.of(Tag.Spirv.SEQ_CST, Tag.Spirv.SUBGROUP, Tag.Spirv.SC_WORKGROUP),
-                Set.of(Tag.Vulkan.RELEASE, Tag.GPU_SCOPES.SUB_GROUP, Tag.Vulkan.SC1, Tag.GPU_SCOPES.NON_PRIVATE)
+                Set.of(Tag.Vulkan.RELEASE, Tag.Vulkan.SUB_GROUP, Tag.Vulkan.SC1, Tag.Vulkan.NON_PRIVATE)
         );
         doTestSpirvStore(
                 Set.of(Tag.Spirv.RELEASE, Tag.Spirv.WORKGROUP, Tag.Spirv.SC_WORKGROUP),
-                Set.of(Tag.Vulkan.RELEASE, Tag.GPU_SCOPES.WORK_GROUP, Tag.Vulkan.SC1, Tag.GPU_SCOPES.NON_PRIVATE)
+                Set.of(Tag.Vulkan.RELEASE, Tag.Vulkan.WORK_GROUP, Tag.Vulkan.SC1, Tag.Vulkan.NON_PRIVATE)
         );
         doTestSpirvStore(
                 Set.of(Tag.Spirv.RELEASE, Tag.Spirv.WORKGROUP, Tag.Spirv.SEM_UNIFORM, Tag.Spirv.SEM_AVAILABLE, Tag.Spirv.SC_UNIFORM),
-                Set.of(Tag.Vulkan.RELEASE, Tag.GPU_SCOPES.WORK_GROUP, Tag.Vulkan.SEMSC0, Tag.Vulkan.SEM_AVAILABLE, Tag.Vulkan.SC0, Tag.GPU_SCOPES.NON_PRIVATE)
+                Set.of(Tag.Vulkan.RELEASE, Tag.Vulkan.WORK_GROUP, Tag.Vulkan.SEMSC0, Tag.Vulkan.SEM_AVAILABLE, Tag.Vulkan.SC0, Tag.Vulkan.NON_PRIVATE)
         );
         doTestSpirvStore(
                 Set.of(Tag.Spirv.RELAXED, Tag.Spirv.DEVICE, Tag.Spirv.SC_UNIFORM),
@@ -188,7 +188,7 @@ public class VisitorSpirvVulkanTest {
         assertEquals(1, seq.size());
         Store store = (Store) seq.get(0);
         Set<String> baseTags = Set.of(Tag.VISIBLE, Tag.MEMORY, Tag.WRITE, Tag.Vulkan.ATOM,
-                Tag.Vulkan.AVAILABLE, Tag.GPU_SCOPES.NON_PRIVATE);
+                Tag.Vulkan.AVAILABLE, Tag.Vulkan.NON_PRIVATE);
         assertEquals(Sets.union(baseTags, vulTags), store.getTags());
     }
 
@@ -196,28 +196,28 @@ public class VisitorSpirvVulkanTest {
     public void testSpirvXchg() {
         doTestSpirvXchg(
                 Set.of(Tag.Spirv.RELAXED, Tag.Spirv.SUBGROUP, Tag.Spirv.SC_WORKGROUP),
-                Set.of(Tag.GPU_SCOPES.SUB_GROUP, Tag.Vulkan.SC1, Tag.GPU_SCOPES.NON_PRIVATE),
-                Set.of(Tag.GPU_SCOPES.SUB_GROUP, Tag.Vulkan.SC1, Tag.GPU_SCOPES.NON_PRIVATE)
+                Set.of(Tag.Vulkan.SUB_GROUP, Tag.Vulkan.SC1, Tag.Vulkan.NON_PRIVATE),
+                Set.of(Tag.Vulkan.SUB_GROUP, Tag.Vulkan.SC1, Tag.Vulkan.NON_PRIVATE)
         );
         doTestSpirvXchg(
                 Set.of(Tag.Spirv.ACQUIRE, Tag.Spirv.WORKGROUP, Tag.Spirv.SC_WORKGROUP),
-                Set.of(Tag.Vulkan.ACQUIRE, Tag.GPU_SCOPES.WORK_GROUP, Tag.Vulkan.SC1, Tag.GPU_SCOPES.NON_PRIVATE),
-                Set.of(Tag.GPU_SCOPES.WORK_GROUP, Tag.Vulkan.SC1, Tag.GPU_SCOPES.NON_PRIVATE)
+                Set.of(Tag.Vulkan.ACQUIRE, Tag.Vulkan.WORK_GROUP, Tag.Vulkan.SC1, Tag.Vulkan.NON_PRIVATE),
+                Set.of(Tag.Vulkan.WORK_GROUP, Tag.Vulkan.SC1, Tag.Vulkan.NON_PRIVATE)
         );
         doTestSpirvXchg(
                 Set.of(Tag.Spirv.RELEASE, Tag.Spirv.WORKGROUP, Tag.Spirv.SC_WORKGROUP),
-                Set.of(Tag.GPU_SCOPES.WORK_GROUP, Tag.Vulkan.SC1, Tag.GPU_SCOPES.NON_PRIVATE),
-                Set.of(Tag.Vulkan.RELEASE, Tag.GPU_SCOPES.WORK_GROUP, Tag.Vulkan.SC1, Tag.GPU_SCOPES.NON_PRIVATE)
+                Set.of(Tag.Vulkan.WORK_GROUP, Tag.Vulkan.SC1, Tag.Vulkan.NON_PRIVATE),
+                Set.of(Tag.Vulkan.RELEASE, Tag.Vulkan.WORK_GROUP, Tag.Vulkan.SC1, Tag.Vulkan.NON_PRIVATE)
         );
         doTestSpirvXchg(
                 Set.of(Tag.Spirv.ACQ_REL, Tag.Spirv.WORKGROUP, Tag.Spirv.SC_WORKGROUP),
-                Set.of(Tag.Vulkan.ACQUIRE, Tag.GPU_SCOPES.WORK_GROUP, Tag.Vulkan.SC1, Tag.GPU_SCOPES.NON_PRIVATE),
-                Set.of(Tag.Vulkan.RELEASE, Tag.GPU_SCOPES.WORK_GROUP, Tag.Vulkan.SC1, Tag.GPU_SCOPES.NON_PRIVATE)
+                Set.of(Tag.Vulkan.ACQUIRE, Tag.Vulkan.WORK_GROUP, Tag.Vulkan.SC1, Tag.Vulkan.NON_PRIVATE),
+                Set.of(Tag.Vulkan.RELEASE, Tag.Vulkan.WORK_GROUP, Tag.Vulkan.SC1, Tag.Vulkan.NON_PRIVATE)
         );
         doTestSpirvXchg(
                 Set.of(Tag.Spirv.SEQ_CST, Tag.Spirv.WORKGROUP, Tag.Spirv.SC_WORKGROUP),
-                Set.of(Tag.Vulkan.ACQUIRE, Tag.GPU_SCOPES.WORK_GROUP, Tag.Vulkan.SC1, Tag.GPU_SCOPES.NON_PRIVATE),
-                Set.of(Tag.Vulkan.RELEASE, Tag.GPU_SCOPES.WORK_GROUP, Tag.Vulkan.SC1, Tag.GPU_SCOPES.NON_PRIVATE)
+                Set.of(Tag.Vulkan.ACQUIRE, Tag.Vulkan.WORK_GROUP, Tag.Vulkan.SC1, Tag.Vulkan.NON_PRIVATE),
+                Set.of(Tag.Vulkan.RELEASE, Tag.Vulkan.WORK_GROUP, Tag.Vulkan.SC1, Tag.Vulkan.NON_PRIVATE)
         );
         doTestSpirvXchg(
                 Set.of(Tag.Spirv.RELAXED, Tag.Spirv.DEVICE, Tag.Spirv.SC_WORKGROUP),
@@ -243,11 +243,11 @@ public class VisitorSpirvVulkanTest {
         assertEquals(3, seq.size());
         Load load = (Load) seq.get(0);
         Set<String> baseLoadTags = Set.of(Tag.VISIBLE, Tag.MEMORY, Tag.READ, Tag.RMW, Tag.Vulkan.ATOM,
-                Tag.Vulkan.VISIBLE, Tag.GPU_SCOPES.NON_PRIVATE);
+                Tag.Vulkan.VISIBLE, Tag.Vulkan.NON_PRIVATE);
         assertEquals(Sets.union(baseLoadTags, loadTags), load.getTags());
         Store store = (Store) seq.get(1);
         Set<String> baseStoreTags = Set.of(Tag.VISIBLE, Tag.MEMORY, Tag.WRITE, Tag.RMW, Tag.Vulkan.ATOM,
-                Tag.Vulkan.AVAILABLE, Tag.GPU_SCOPES.NON_PRIVATE);
+                Tag.Vulkan.AVAILABLE, Tag.Vulkan.NON_PRIVATE);
         assertEquals(Sets.union(baseStoreTags, storeTags), store.getTags());
         Local local = (Local) seq.get(2);
         assertEquals(register, local.getResultRegister());
@@ -257,28 +257,28 @@ public class VisitorSpirvVulkanTest {
     public void testSpirvRmw() {
         doTestSpirvRmw(
                 Set.of(Tag.Spirv.RELAXED, Tag.Spirv.SUBGROUP, Tag.Spirv.SC_WORKGROUP),
-                Set.of(Tag.GPU_SCOPES.SUB_GROUP, Tag.Vulkan.SC1, Tag.GPU_SCOPES.NON_PRIVATE),
-                Set.of(Tag.GPU_SCOPES.SUB_GROUP, Tag.Vulkan.SC1, Tag.GPU_SCOPES.NON_PRIVATE)
+                Set.of(Tag.Vulkan.SUB_GROUP, Tag.Vulkan.SC1, Tag.Vulkan.NON_PRIVATE),
+                Set.of(Tag.Vulkan.SUB_GROUP, Tag.Vulkan.SC1, Tag.Vulkan.NON_PRIVATE)
         );
         doTestSpirvRmw(
                 Set.of(Tag.Spirv.ACQUIRE, Tag.Spirv.WORKGROUP, Tag.Spirv.SC_WORKGROUP),
-                Set.of(Tag.Vulkan.ACQUIRE, Tag.GPU_SCOPES.WORK_GROUP, Tag.Vulkan.SC1, Tag.GPU_SCOPES.NON_PRIVATE),
-                Set.of(Tag.GPU_SCOPES.WORK_GROUP, Tag.Vulkan.SC1, Tag.GPU_SCOPES.NON_PRIVATE)
+                Set.of(Tag.Vulkan.ACQUIRE, Tag.Vulkan.WORK_GROUP, Tag.Vulkan.SC1, Tag.Vulkan.NON_PRIVATE),
+                Set.of(Tag.Vulkan.WORK_GROUP, Tag.Vulkan.SC1, Tag.Vulkan.NON_PRIVATE)
         );
         doTestSpirvRmw(
                 Set.of(Tag.Spirv.RELEASE, Tag.Spirv.WORKGROUP, Tag.Spirv.SC_WORKGROUP),
-                Set.of(Tag.GPU_SCOPES.WORK_GROUP, Tag.Vulkan.SC1, Tag.GPU_SCOPES.NON_PRIVATE),
-                Set.of(Tag.Vulkan.RELEASE, Tag.GPU_SCOPES.WORK_GROUP, Tag.Vulkan.SC1, Tag.GPU_SCOPES.NON_PRIVATE)
+                Set.of(Tag.Vulkan.WORK_GROUP, Tag.Vulkan.SC1, Tag.Vulkan.NON_PRIVATE),
+                Set.of(Tag.Vulkan.RELEASE, Tag.Vulkan.WORK_GROUP, Tag.Vulkan.SC1, Tag.Vulkan.NON_PRIVATE)
         );
         doTestSpirvRmw(
                 Set.of(Tag.Spirv.ACQ_REL, Tag.Spirv.WORKGROUP, Tag.Spirv.SC_WORKGROUP),
-                Set.of(Tag.Vulkan.ACQUIRE, Tag.GPU_SCOPES.WORK_GROUP, Tag.Vulkan.SC1, Tag.GPU_SCOPES.NON_PRIVATE),
-                Set.of(Tag.Vulkan.RELEASE, Tag.GPU_SCOPES.WORK_GROUP, Tag.Vulkan.SC1, Tag.GPU_SCOPES.NON_PRIVATE)
+                Set.of(Tag.Vulkan.ACQUIRE, Tag.Vulkan.WORK_GROUP, Tag.Vulkan.SC1, Tag.Vulkan.NON_PRIVATE),
+                Set.of(Tag.Vulkan.RELEASE, Tag.Vulkan.WORK_GROUP, Tag.Vulkan.SC1, Tag.Vulkan.NON_PRIVATE)
         );
         doTestSpirvRmw(
                 Set.of(Tag.Spirv.SEQ_CST, Tag.Spirv.WORKGROUP, Tag.Spirv.SC_WORKGROUP),
-                Set.of(Tag.Vulkan.ACQUIRE, Tag.GPU_SCOPES.WORK_GROUP, Tag.Vulkan.SC1, Tag.GPU_SCOPES.NON_PRIVATE),
-                Set.of(Tag.Vulkan.RELEASE, Tag.GPU_SCOPES.WORK_GROUP, Tag.Vulkan.SC1, Tag.GPU_SCOPES.NON_PRIVATE)
+                Set.of(Tag.Vulkan.ACQUIRE, Tag.Vulkan.WORK_GROUP, Tag.Vulkan.SC1, Tag.Vulkan.NON_PRIVATE),
+                Set.of(Tag.Vulkan.RELEASE, Tag.Vulkan.WORK_GROUP, Tag.Vulkan.SC1, Tag.Vulkan.NON_PRIVATE)
         );
         doTestSpirvRmw(
                 Set.of(Tag.Spirv.RELAXED, Tag.Spirv.DEVICE, Tag.Spirv.SC_WORKGROUP),
@@ -304,11 +304,11 @@ public class VisitorSpirvVulkanTest {
         assertEquals(3, seq.size());
         Load load = (Load) seq.get(0);
         Set<String> baseLoadTags = Set.of(Tag.VISIBLE, Tag.MEMORY, Tag.READ, Tag.RMW, Tag.Vulkan.ATOM,
-                Tag.Vulkan.VISIBLE, Tag.GPU_SCOPES.NON_PRIVATE);
+                Tag.Vulkan.VISIBLE, Tag.Vulkan.NON_PRIVATE);
         assertEquals(Sets.union(baseLoadTags, loadTags), load.getTags());
         Store store = (Store) seq.get(1);
         Set<String> baseStoreTags = Set.of(Tag.VISIBLE, Tag.MEMORY, Tag.WRITE, Tag.RMW, Tag.Vulkan.ATOM,
-                Tag.Vulkan.AVAILABLE, Tag.GPU_SCOPES.NON_PRIVATE);
+                Tag.Vulkan.AVAILABLE, Tag.Vulkan.NON_PRIVATE);
         assertEquals(Sets.union(baseStoreTags, storeTags), store.getTags());
         Local local = (Local) seq.get(2);
         assertEquals(register, local.getResultRegister());
@@ -320,32 +320,32 @@ public class VisitorSpirvVulkanTest {
                 Tag.Spirv.WORKGROUP,
                 Set.of(Tag.Spirv.RELAXED, Tag.Spirv.SC_WORKGROUP),
                 Set.of(Tag.Spirv.RELAXED, Tag.Spirv.SC_WORKGROUP),
-                Set.of(Tag.GPU_SCOPES.WORK_GROUP, Tag.Vulkan.SC1, Tag.GPU_SCOPES.NON_PRIVATE),
-                Set.of(Tag.GPU_SCOPES.WORK_GROUP, Tag.Vulkan.SC1, Tag.GPU_SCOPES.NON_PRIVATE));
+                Set.of(Tag.Vulkan.WORK_GROUP, Tag.Vulkan.SC1, Tag.Vulkan.NON_PRIVATE),
+                Set.of(Tag.Vulkan.WORK_GROUP, Tag.Vulkan.SC1, Tag.Vulkan.NON_PRIVATE));
         doTestSpirvCmpXchg(
                 Tag.Spirv.WORKGROUP,
                 Set.of(Tag.Spirv.ACQUIRE, Tag.Spirv.SC_WORKGROUP),
                 Set.of(Tag.Spirv.ACQUIRE, Tag.Spirv.SC_WORKGROUP),
-                Set.of(Tag.Vulkan.ACQUIRE, Tag.GPU_SCOPES.WORK_GROUP, Tag.Vulkan.SC1, Tag.GPU_SCOPES.NON_PRIVATE),
-                Set.of(Tag.GPU_SCOPES.WORK_GROUP, Tag.Vulkan.SC1, Tag.GPU_SCOPES.NON_PRIVATE));
+                Set.of(Tag.Vulkan.ACQUIRE, Tag.Vulkan.WORK_GROUP, Tag.Vulkan.SC1, Tag.Vulkan.NON_PRIVATE),
+                Set.of(Tag.Vulkan.WORK_GROUP, Tag.Vulkan.SC1, Tag.Vulkan.NON_PRIVATE));
         doTestSpirvCmpXchg(
                 Tag.Spirv.WORKGROUP,
                 Set.of(Tag.Spirv.RELEASE, Tag.Spirv.SC_WORKGROUP),
                 Set.of(Tag.Spirv.RELAXED, Tag.Spirv.SC_WORKGROUP),
-                Set.of(Tag.GPU_SCOPES.WORK_GROUP, Tag.Vulkan.SC1, Tag.GPU_SCOPES.NON_PRIVATE),
-                Set.of(Tag.Vulkan.RELEASE, Tag.GPU_SCOPES.WORK_GROUP, Tag.Vulkan.SC1, Tag.GPU_SCOPES.NON_PRIVATE));
+                Set.of(Tag.Vulkan.WORK_GROUP, Tag.Vulkan.SC1, Tag.Vulkan.NON_PRIVATE),
+                Set.of(Tag.Vulkan.RELEASE, Tag.Vulkan.WORK_GROUP, Tag.Vulkan.SC1, Tag.Vulkan.NON_PRIVATE));
         doTestSpirvCmpXchg(
                 Tag.Spirv.WORKGROUP,
                 Set.of(Tag.Spirv.ACQ_REL, Tag.Spirv.SC_WORKGROUP),
                 Set.of(Tag.Spirv.ACQUIRE, Tag.Spirv.SC_WORKGROUP),
-                Set.of(Tag.Vulkan.ACQUIRE, Tag.GPU_SCOPES.WORK_GROUP, Tag.Vulkan.SC1, Tag.GPU_SCOPES.NON_PRIVATE),
-                Set.of(Tag.Vulkan.RELEASE, Tag.GPU_SCOPES.WORK_GROUP, Tag.Vulkan.SC1, Tag.GPU_SCOPES.NON_PRIVATE));
+                Set.of(Tag.Vulkan.ACQUIRE, Tag.Vulkan.WORK_GROUP, Tag.Vulkan.SC1, Tag.Vulkan.NON_PRIVATE),
+                Set.of(Tag.Vulkan.RELEASE, Tag.Vulkan.WORK_GROUP, Tag.Vulkan.SC1, Tag.Vulkan.NON_PRIVATE));
         doTestSpirvCmpXchg(
                 Tag.Spirv.WORKGROUP,
                 Set.of(Tag.Spirv.SEQ_CST, Tag.Spirv.SC_WORKGROUP),
                 Set.of(Tag.Spirv.ACQUIRE, Tag.Spirv.SC_WORKGROUP),
-                Set.of(Tag.Vulkan.ACQUIRE, Tag.GPU_SCOPES.WORK_GROUP, Tag.Vulkan.SC1, Tag.GPU_SCOPES.NON_PRIVATE),
-                Set.of(Tag.Vulkan.RELEASE, Tag.GPU_SCOPES.WORK_GROUP, Tag.Vulkan.SC1, Tag.GPU_SCOPES.NON_PRIVATE));
+                Set.of(Tag.Vulkan.ACQUIRE, Tag.Vulkan.WORK_GROUP, Tag.Vulkan.SC1, Tag.Vulkan.NON_PRIVATE),
+                Set.of(Tag.Vulkan.RELEASE, Tag.Vulkan.WORK_GROUP, Tag.Vulkan.SC1, Tag.Vulkan.NON_PRIVATE));
         doTestSpirvCmpXchg(
                 Tag.Spirv.DEVICE,
                 Set.of(Tag.Spirv.RELAXED, Tag.Spirv.SC_WORKGROUP),
@@ -371,11 +371,11 @@ public class VisitorSpirvVulkanTest {
         assertEquals(5, seq.size());
         Load load = (Load) seq.get(0);
         Set<String> baseLoadTags = Set.of(Tag.VISIBLE, Tag.MEMORY, Tag.READ, Tag.RMW,
-                Tag.Vulkan.ATOM, Tag.Vulkan.VISIBLE, Tag.GPU_SCOPES.NON_PRIVATE);
+                Tag.Vulkan.ATOM, Tag.Vulkan.VISIBLE, Tag.Vulkan.NON_PRIVATE);
         assertEquals(Sets.union(baseLoadTags, loadTags), load.getTags());
         Store store = (Store) seq.get(3);
         Set<String> baseStoreTags = Set.of(Tag.VISIBLE, Tag.MEMORY, Tag.WRITE, Tag.RMW,
-                Tag.Vulkan.ATOM, Tag.Vulkan.AVAILABLE, Tag.GPU_SCOPES.NON_PRIVATE);
+                Tag.Vulkan.ATOM, Tag.Vulkan.AVAILABLE, Tag.Vulkan.NON_PRIVATE);
         assertEquals(Sets.union(baseStoreTags, storeTags), store.getTags());
     }
 
@@ -424,23 +424,23 @@ public class VisitorSpirvVulkanTest {
     public void testSpirvMemoryBarrier() {
         doTestSpirvMemoryBarrier(
                 Set.of(Tag.Spirv.RELAXED, Tag.Spirv.SUBGROUP),
-                Set.of(Tag.GPU_SCOPES.SUB_GROUP)
+                Set.of(Tag.Vulkan.SUB_GROUP)
         );
         doTestSpirvMemoryBarrier(
                 Set.of(Tag.Spirv.ACQUIRE, Tag.Spirv.SUBGROUP),
-                Set.of(Tag.Vulkan.ACQUIRE, Tag.GPU_SCOPES.SUB_GROUP)
+                Set.of(Tag.Vulkan.ACQUIRE, Tag.Vulkan.SUB_GROUP)
         );
         doTestSpirvMemoryBarrier(
                 Set.of(Tag.Spirv.RELEASE, Tag.Spirv.SUBGROUP),
-                Set.of(Tag.Vulkan.RELEASE, Tag.GPU_SCOPES.SUB_GROUP)
+                Set.of(Tag.Vulkan.RELEASE, Tag.Vulkan.SUB_GROUP)
         );
         doTestSpirvMemoryBarrier(
                 Set.of(Tag.Spirv.ACQ_REL, Tag.Spirv.SUBGROUP),
-                Set.of(Tag.Vulkan.ACQUIRE, Tag.Vulkan.RELEASE, Tag.GPU_SCOPES.SUB_GROUP)
+                Set.of(Tag.Vulkan.ACQUIRE, Tag.Vulkan.RELEASE, Tag.Vulkan.SUB_GROUP)
         );
         doTestSpirvMemoryBarrier(
                 Set.of(Tag.Spirv.SEQ_CST, Tag.Spirv.SUBGROUP),
-                Set.of(Tag.Vulkan.ACQUIRE, Tag.Vulkan.RELEASE, Tag.GPU_SCOPES.SUB_GROUP)
+                Set.of(Tag.Vulkan.ACQUIRE, Tag.Vulkan.RELEASE, Tag.Vulkan.SUB_GROUP)
         );
     }
 
@@ -467,23 +467,23 @@ public class VisitorSpirvVulkanTest {
         );
         doTestSpirvControlBarrier(
                 Set.of(Tag.Spirv.RELAXED, Tag.Spirv.SUBGROUP),
-                Set.of(Tag.FENCE, Tag.GPU_SCOPES.SUB_GROUP)
+                Set.of(Tag.FENCE, Tag.Vulkan.SUB_GROUP)
         );
         doTestSpirvControlBarrier(
                 Set.of(Tag.Spirv.ACQUIRE, Tag.Spirv.SUBGROUP),
-                Set.of(Tag.FENCE, Tag.Vulkan.ACQUIRE, Tag.GPU_SCOPES.SUB_GROUP)
+                Set.of(Tag.FENCE, Tag.Vulkan.ACQUIRE, Tag.Vulkan.SUB_GROUP)
         );
         doTestSpirvControlBarrier(
                 Set.of(Tag.Spirv.RELEASE, Tag.Spirv.SUBGROUP),
-                Set.of(Tag.FENCE, Tag.Vulkan.RELEASE, Tag.GPU_SCOPES.SUB_GROUP)
+                Set.of(Tag.FENCE, Tag.Vulkan.RELEASE, Tag.Vulkan.SUB_GROUP)
         );
         doTestSpirvControlBarrier(
                 Set.of(Tag.Spirv.ACQ_REL, Tag.Spirv.SUBGROUP),
-                Set.of(Tag.FENCE, Tag.Vulkan.ACQUIRE, Tag.Vulkan.RELEASE, Tag.GPU_SCOPES.SUB_GROUP)
+                Set.of(Tag.FENCE, Tag.Vulkan.ACQUIRE, Tag.Vulkan.RELEASE, Tag.Vulkan.SUB_GROUP)
         );
         doTestSpirvControlBarrier(
                 Set.of(Tag.Spirv.SEQ_CST, Tag.Spirv.SUBGROUP),
-                Set.of(Tag.FENCE, Tag.Vulkan.ACQUIRE, Tag.Vulkan.RELEASE, Tag.GPU_SCOPES.SUB_GROUP)
+                Set.of(Tag.FENCE, Tag.Vulkan.ACQUIRE, Tag.Vulkan.RELEASE, Tag.Vulkan.SUB_GROUP)
         );
     }
 

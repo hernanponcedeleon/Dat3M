@@ -4,11 +4,11 @@ import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.ScopeHierarchy;
 import com.dat3m.dartagnan.program.Thread;
+import com.dat3m.dartagnan.program.event.Tag;
 import org.junit.Test;
 
 import java.util.List;
 
-import static com.dat3m.dartagnan.program.event.Tag.GPU_SCOPES.*;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
@@ -37,10 +37,10 @@ public class ConfigTest extends AbstractTest {
         for (int i = 0; i < size; i++) {
             ScopeHierarchy hierarchy = threads.get(i).getScopeHierarchy();
             assertEquals(i, threads.get(i).getId());
-            assertEquals(((i % qf_size) % wg_size) / sg_size, hierarchy.getScopeId(SUB_GROUP));
-            assertEquals((i % qf_size) / wg_size, hierarchy.getScopeId(WORK_GROUP));
-            assertEquals(i / qf_size, hierarchy.getScopeId(QUEUE_FAMILY));
-            assertEquals(0, hierarchy.getScopeId(DEVICE));
+            assertEquals(((i % qf_size) % wg_size) / sg_size, hierarchy.getScopeId(Tag.Vulkan.SUB_GROUP));
+            assertEquals((i % qf_size) / wg_size, hierarchy.getScopeId(Tag.Vulkan.WORK_GROUP));
+            assertEquals(i / qf_size, hierarchy.getScopeId(Tag.Vulkan.QUEUE_FAMILY));
+            assertEquals(0, hierarchy.getScopeId(Tag.Vulkan.DEVICE));
         }
     }
 

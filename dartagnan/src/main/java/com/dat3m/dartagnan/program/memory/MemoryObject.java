@@ -9,10 +9,7 @@ import com.dat3m.dartagnan.expression.misc.ConstructExpr;
 import com.dat3m.dartagnan.expression.type.*;
 import com.dat3m.dartagnan.program.event.core.Alloc;
 
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.TreeMap;
+import java.util.*;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkState;
@@ -33,8 +30,7 @@ public class MemoryObject extends LeafExpressionBase<Type> {
 
     private String name = null;
     private boolean isThreadLocal = false;
-    private boolean isAtomic = false;
-    private String memorySpace = null;
+    private final Set<String> featureTags = new HashSet<>();
 
     private final Map<Integer, Expression> initialValues = new TreeMap<>();
 
@@ -56,11 +52,8 @@ public class MemoryObject extends LeafExpressionBase<Type> {
     public boolean isThreadLocal() { return this.isThreadLocal; }
     public void setIsThreadLocal(boolean value) { this.isThreadLocal = value;}
 
-    public boolean isAtomic() { return this.isAtomic; }
-    public void setIsAtomic(boolean value) { this.isAtomic = value;}
-
-    public String getMemorySpace() { return this.memorySpace; }
-    public void setMemorySpace(String value) { this.memorySpace = value; }
+    public void addFeatureTag(String tag) { featureTags.add(tag); }
+    public Set<String> getFeatureTags() { return featureTags; }
 
     /**
      * @return Number of fields in this array.

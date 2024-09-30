@@ -56,7 +56,6 @@ public class ProgramParser {
                 }
                 file = compileWithClang(file, cflags);
                 file = applyLlvmPasses(file);
-                file = applyDemangling(file);
                 Program p = new ProgramParser().parse(file);
                 file.delete();
                 return p;

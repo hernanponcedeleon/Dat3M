@@ -12,9 +12,6 @@ import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.arch.StoreExclusive;
-import com.dat3m.dartagnan.program.event.arch.c11.C11Init;
-import com.dat3m.dartagnan.program.event.arch.c11.OpenCLBarrier;
-import com.dat3m.dartagnan.program.event.arch.c11.OpenCLInit;
 import com.dat3m.dartagnan.program.event.arch.ptx.PTXAtomCAS;
 import com.dat3m.dartagnan.program.event.arch.ptx.PTXAtomExch;
 import com.dat3m.dartagnan.program.event.arch.ptx.PTXAtomOp;
@@ -138,7 +135,9 @@ public class EventFactory {
         // meaning that <addr> and <addr + 0> are treated differently.
         final Expression address = offset == 0 ? base :
                 expressions.makeAdd(base, expressions.makeValue(offset, (IntegerType) base.getType()));
-        return new Init(base, offset, address);
+        Init init = new Init(base, offset, address);
+        init.addTags(base.getFeatureTags());
+        return init;
     }
 
     public static ValueFunctionCall newValueFunctionCall(Register resultRegister, Function function, List<Expression> arguments) {
@@ -380,12 +379,6 @@ public class EventFactory {
 
         public static AtomicXchg newExchange(Register register, Expression address, Expression value, String mo) {
             return new AtomicXchg(register, address, value, mo);
-        }
-
-        public static C11Init newC11Init(MemoryObject base, int offset) {
-            final Expression address = offset == 0 ? base :
-                    expressions.makeAdd(base, expressions.makeValue(offset, (IntegerType) base.getType()));
-            return new C11Init(base, offset, address);
         }
     }
     // =============================================================================================
@@ -810,23 +803,4 @@ public class EventFactory {
             return new SpirvRmwExtremum(register, address, op, value, scope, tags);
         }
     }
-
-    // =============================================================================================
-    // =========================================== OpenCL ==========================================
-    // =============================================================================================
-    public static class OpenCL {
-        private OpenCL() {}
-
-        public static OpenCLInit newOpenCLInit(MemoryObject base, int offset) {
-            final Expression address = offset == 0 ? base :
-                    expressions.makeAdd(base, expressions.makeValue(offset, (IntegerType) base.getType()));
-            return new OpenCLInit(base, offset, address);
-        }
-
-        public static OpenCLBarrier newOpenCLBarrier(String name, Expression fenceId) {
-            return new OpenCLBarrier(name, fenceId);
-        }
-
-    }
-
 }

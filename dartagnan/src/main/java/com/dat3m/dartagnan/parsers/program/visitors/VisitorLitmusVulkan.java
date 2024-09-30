@@ -407,17 +407,17 @@ public class VisitorLitmusVulkan extends LitmusVulkanBaseVisitor<Object> {
         // AV, VIS, and atomics M are all implicitly nonpriv
         if ((avvis.equals(Tag.Vulkan.AVAILABLE) || avvis.equals(Tag.Vulkan.VISIBLE) || atomic)
                 && (e instanceof MemoryEvent)) {
-            e.addTags(Tag.GPU_SCOPES.NON_PRIVATE);
+            e.addTags(Tag.Vulkan.NON_PRIVATE);
         }
 
         // Atomics implicitly have AV/VIS ops, hence they are implicitly nonpriv
         if (atomic && e instanceof Store) {
             e.addTags(Tag.Vulkan.AVAILABLE);
-            e.addTags(Tag.GPU_SCOPES.NON_PRIVATE);
+            e.addTags(Tag.Vulkan.NON_PRIVATE);
         }
         if (atomic && e instanceof Load) {
             e.addTags(Tag.Vulkan.VISIBLE);
-            e.addTags(Tag.GPU_SCOPES.NON_PRIVATE);
+            e.addTags(Tag.Vulkan.NON_PRIVATE);
         }
     }
 }

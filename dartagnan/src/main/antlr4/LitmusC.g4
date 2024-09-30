@@ -266,10 +266,10 @@ openCLSpace returns [String space]
     ;
 
 openCLScope returns [String scope]
-    :   OpenCLMemoryScopeWI    {$scope = GPU_SCOPES.WORK_ITEM;}
-    |   OpenCLMemoryScopeWG    {$scope = GPU_SCOPES.WORK_GROUP;}
-    |   OpenCLMemoryScopeDEV   {$scope = GPU_SCOPES.DEVICE;}
-    |   OpenCLMemoryScopeALL   {$scope = GPU_SCOPES.ALL;}
+    :   OpenCLMemoryScopeWI    {$scope = OpenCL.WORK_ITEM;}
+    |   OpenCLMemoryScopeWG    {$scope = OpenCL.WORK_GROUP;}
+    |   OpenCLMemoryScopeDEV   {$scope = OpenCL.DEVICE;}
+    |   OpenCLMemoryScopeALL   {$scope = OpenCL.ALL;}
     ;
 
 openCLFenceFlags
