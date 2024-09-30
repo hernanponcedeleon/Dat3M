@@ -41,7 +41,7 @@ public class LazyEventGraph implements ImmutableEventGraph {
         if (size == -1) {
             size = domain.stream()
                     .map(e1 -> range.stream().filter(e2 -> function.test(e1, e2)).count())
-                    .map(s -> Integer.parseInt(s.toString()))
+                    .map(Math::toIntExact)
                     .reduce(0, Integer::sum);
         }
         return size;

@@ -202,14 +202,11 @@ public class LazyRelationAnalysis extends NativeRelationAnalysis {
             Map<Event, Set<Event>> data = new HashMap<>();
             program.getThreads().forEach(t -> t.getEvents(CondJump.class).forEach(j -> {
                 if (!j.isGoto() && !j.isDead()) {
-                    ImmutableSet<Event> range = ((j instanceof IfAsJump ifJump)
+                    data.put(j, ((j instanceof IfAsJump ifJump)
                             ? ifJump.getBranchesEvents()
                             : j.getSuccessor().getSuccessors()).stream()
                             .filter(e -> !exec.areMutuallyExclusive(j, e))
-                            .collect(ImmutableSet.toImmutableSet());
-                    if (!range.isEmpty()) {
-                        data.put(j, range);
-                    }
+                            .collect(ImmutableSet.toImmutableSet()));
                 }
             }));
             ImmutableEventGraph must = new ImmutableMapEventGraph(data);
@@ -228,6 +225,7 @@ public class LazyRelationAnalysis extends NativeRelationAnalysis {
         @Override
         public RelationAnalysis.Knowledge visitInternalDataDependency(DirectDataDependency definition) {
             long start = System.currentTimeMillis();
+            // FIXME: Our "internal data dependency" relation is quite odd an contains all but address dependencies.
             EventGraph must = computeInternalDependencies(EnumSet.of(DATA, CTRL, OTHER));
             time(definition, start, System.currentTimeMillis());
             return new RelationAnalysis.Knowledge(must, must);
@@ -240,6 +238,8 @@ public class LazyRelationAnalysis extends NativeRelationAnalysis {
                 reader.getRegisterReads().forEach(read -> {
                     if (usageTypes.contains(read.usageType())) {
                         Register register = read.register();
+                        // TODO: Update after this is merged
+                        //  https://github.com/hernanponcedeleon/Dat3M/pull/741
                         // Register x0 is hardwired to the constant 0 in RISCV
                         // https://en.wikichip.org/wiki/risc-v/registers,
                         // and thus it generates no dependency, see

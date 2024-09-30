@@ -915,6 +915,8 @@ public class NativeRelationAnalysis implements RelationAnalysis {
                         continue;
                     }
                     final Register register = regRead.register();
+                    // TODO: Update after this is merged
+                    //  https://github.com/hernanponcedeleon/Dat3M/pull/741
                     // Register x0 is hardwired to the constant 0 in RISCV
                     // https://en.wikichip.org/wiki/risc-v/registers,
                     // and thus it generates no dependency, see

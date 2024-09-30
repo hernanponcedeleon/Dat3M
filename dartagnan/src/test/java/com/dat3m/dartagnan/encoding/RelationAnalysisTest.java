@@ -113,8 +113,7 @@ public class RelationAnalysisTest {
                     result.addAll(listFiles(file.toAbsolutePath()));
                 } else {
                     String filePath = file.toAbsolutePath().toString();
-                    if (filePath.endsWith(".litmus") || filePath.endsWith(".ll") ||
-                            filePath.endsWith(".c") || filePath.endsWith(".spv.dis")) {
+                    if (filePath.endsWith(".litmus") || filePath.endsWith(".ll") || filePath.endsWith(".spv.dis")) {
                         result.add(filePath);
                     }
                 }

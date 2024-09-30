@@ -28,9 +28,7 @@ public class ImmutableMapEventGraph implements ImmutableEventGraph {
                 .filter(e -> !e.getValue().isEmpty())
                 .collect(ImmutableMap.toImmutableMap(
                         Map.Entry::getKey,
-                        entry -> entry.getValue() instanceof ImmutableSet
-                                ? entry.getValue()
-                                : ImmutableSet.copyOf(entry.getValue())));
+                        entry -> ImmutableSet.copyOf(entry.getValue())));
         this.size = size;
     }
 
