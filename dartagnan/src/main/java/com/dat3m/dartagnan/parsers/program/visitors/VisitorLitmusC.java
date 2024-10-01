@@ -2,9 +2,9 @@ package com.dat3m.dartagnan.parsers.program.visitors;
 
 import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.exception.ParsingException;
+import com.dat3m.dartagnan.expression.BinaryExpression;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
-import com.dat3m.dartagnan.expression.base.BinaryExpressionBase;
 import com.dat3m.dartagnan.expression.integers.IntLiteral;
 import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
@@ -741,10 +741,10 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
             if (object != null) {
                 event.addTags(object.getFeatureTags());
             }
-        } else if (address instanceof BinaryExpressionBase<?,?> binExpr) {
-            // TODO: Convert memory space tags for binary expressions
-            addMemoryObjectTags(event, binExpr.getLeft());
-            addMemoryObjectTags(event, binExpr.getRight());
+        } else {
+            for (Expression add : address.getOperands()) {
+                addMemoryObjectTags(event, add);
+            }
         }
     }
 }
