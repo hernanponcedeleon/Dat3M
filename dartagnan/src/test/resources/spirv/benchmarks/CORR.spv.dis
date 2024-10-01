@@ -11,8 +11,9 @@
 ; Bound: 112
 ; Schema: 0
                OpCapability Shader
+               OpCapability VulkanMemoryModel
+               OpMemoryModel Logical Vulkan
          %88 = OpExtInstImport "NonSemantic.ClspvReflection.5"
-               OpMemoryModel Logical GLSL450
                OpEntryPoint GLCompute %24 "test" %gl_WorkGroupID %13 %17 %18 %19 %20 %21 %5
                OpSource OpenCL_C 200
          %89 = OpString "test"
@@ -63,7 +64,6 @@
 %_ptr_PushConstant_uint = OpTypePointer PushConstant %uint
        %bool = OpTypeBool
      %uint_1 = OpConstant %uint 1
-    %uint_64 = OpConstant %uint 64
      %uint_2 = OpConstant %uint 2
      %uint_3 = OpConstant %uint 3
      %uint_5 = OpConstant %uint 5
@@ -93,9 +93,9 @@
                OpSelectionMerge %50 None
                OpBranchConditional %41 %44 %50
          %44 = OpLabel
-         %47 = OpAtomicLoad %uint %28 %uint_1 %uint_64
+         %47 = OpAtomicLoad %uint %28 %uint_1 %uint_0
                OpStore %29 %47
-         %48 = OpAtomicLoad %uint %28 %uint_1 %uint_64
+         %48 = OpAtomicLoad %uint %28 %uint_1 %uint_0
                OpStore %30 %48
                OpBranch %50
          %50 = OpLabel
@@ -108,9 +108,9 @@
                OpSelectionMerge %63 None
                OpBranchConditional %56 %59 %63
          %59 = OpLabel
-         %60 = OpAtomicLoad %uint %28 %uint_1 %uint_64
+         %60 = OpAtomicLoad %uint %28 %uint_1 %uint_0
                OpStore %31 %60
-         %61 = OpAtomicLoad %uint %28 %uint_1 %uint_64
+         %61 = OpAtomicLoad %uint %28 %uint_1 %uint_0
                OpStore %32 %61
                OpBranch %63
          %63 = OpLabel
@@ -123,7 +123,7 @@
                OpSelectionMerge %75 None
                OpBranchConditional %70 %73 %75
          %73 = OpLabel
-               OpAtomicStore %28 %uint_1 %uint_64 %uint_2
+               OpAtomicStore %28 %uint_1 %uint_0 %uint_2
                OpBranch %75
          %75 = OpLabel
          %76 = OpAccessChain %_ptr_Input_uint %gl_WorkGroupID %uint_0
@@ -135,7 +135,7 @@
                OpSelectionMerge %87 None
                OpBranchConditional %82 %85 %87
          %85 = OpLabel
-               OpAtomicStore %28 %uint_1 %uint_64 %uint_1
+               OpAtomicStore %28 %uint_1 %uint_0 %uint_1
                OpBranch %87
          %87 = OpLabel
                OpReturn

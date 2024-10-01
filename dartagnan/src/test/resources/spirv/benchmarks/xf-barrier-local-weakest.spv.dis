@@ -11,8 +11,9 @@
 ; Bound: 154
 ; Schema: 0
                OpCapability Shader
+               OpCapability VulkanMemoryModel
+               OpMemoryModel Logical Vulkan
         %132 = OpExtInstImport "NonSemantic.ClspvReflection.5"
-               OpMemoryModel Logical GLSL450
                OpEntryPoint GLCompute %24 "xf_barrier" %gl_GlobalInvocationID %gl_LocalInvocationID %gl_WorkGroupID %15 %19 %20 %21 %5
                OpSource OpenCL_C 200
         %133 = OpString "xf_barrier"
@@ -65,7 +66,6 @@
 %_ptr_StorageBuffer_uint = OpTypePointer StorageBuffer %uint
        %bool = OpTypeBool
    %uint_264 = OpConstant %uint 264
-    %uint_64 = OpConstant %uint 64
       %false = OpConstantFalse %bool
        %true = OpConstantTrue %bool
     %uint_12 = OpConstant %uint 12
@@ -99,7 +99,7 @@
          %46 = OpAccessChain %_ptr_PushConstant_uint %5 %uint_0 %uint_0
          %47 = OpLoad %uint %46
          %49 = OpAccessChain %_ptr_StorageBuffer_uint %20 %uint_0 %45
-               OpStore %49 %uint_1
+               OpStore %49 %uint_1 MakePointerAvailable|NonPrivatePointer %uint_1
          %51 = OpINotEqual %bool %34 %uint_0
                OpSelectionMerge %74 None
                OpBranchConditional %51 %54 %74
@@ -110,10 +110,10 @@
                OpBranchConditional %56 %59 %70
          %59 = OpLabel
          %60 = OpAccessChain %_ptr_StorageBuffer_uint %19 %uint_0 %34
-               OpAtomicStore %60 %uint_1 %uint_64 %uint_1
+               OpAtomicStore %60 %uint_1 %uint_0 %uint_1
                OpBranch %63
          %63 = OpLabel
-         %64 = OpAtomicLoad %uint %60 %uint_1 %uint_64
+         %64 = OpAtomicLoad %uint %60 %uint_1 %uint_0
          %65 = OpINotEqual %bool %64 %uint_1
                OpLoopMerge %68 %63 None
                OpBranchConditional %65 %68 %63
@@ -138,7 +138,7 @@
          %85 = OpAccessChain %_ptr_StorageBuffer_uint %19 %uint_0 %84
                OpBranch %87
          %87 = OpLabel
-         %88 = OpAtomicLoad %uint %85 %uint_1 %uint_64
+         %88 = OpAtomicLoad %uint %85 %uint_1 %uint_0
          %89 = OpINotEqual %bool %88 %uint_0
                OpLoopMerge %92 %87 None
                OpBranchConditional %89 %92 %87
@@ -153,7 +153,7 @@
          %99 = OpLabel
         %100 = OpIAdd %uint %36 %uint_1
         %101 = OpAccessChain %_ptr_StorageBuffer_uint %19 %uint_0 %100
-               OpAtomicStore %101 %uint_1 %uint_64 %uint_0
+               OpAtomicStore %101 %uint_1 %uint_0 %uint_0
                OpBranch %103
         %103 = OpLabel
                OpBranch %105
@@ -171,7 +171,7 @@
         %116 = OpPhi %uint %120 %115 %113 %111
         %117 = OpPhi %uint %121 %115 %uint_0 %111
         %118 = OpAccessChain %_ptr_StorageBuffer_uint %20 %uint_0 %117
-        %119 = OpLoad %uint %118
+        %119 = OpLoad %uint %118 MakePointerVisible|NonPrivatePointer %uint_1
         %120 = OpIAdd %uint %116 %119
                OpStore %112 %120
         %121 = OpIAdd %uint %117 %uint_1

@@ -75,8 +75,7 @@ public class SpirvAssertionsTest {
                 {"ttaslock-dv2wg-1.1.2.spv.dis", 1, FAIL},
 
                 {"xf-barrier-2.1.2.spv.dis", 4, PASS},
-                // Slow test
-                // {"xf-barrier-3.1.3.spv.dis", 9, PASS},
+                {"xf-barrier-3.1.3.spv.dis", 9, PASS},
                 // TODO: IMO should pass (spinloop handling?)
                 // {"xf-barrier-1.1.2.spv.dis", 2, PASS},
                 {"xf-barrier-2.1.1.spv.dis", 2, PASS},
@@ -87,8 +86,7 @@ public class SpirvAssertionsTest {
                 {"xf-barrier-weakest.spv.dis", 4, FAIL},
 
                 {"xf-barrier-local-2.1.2.spv.dis", 4, FAIL},
-                // Slow test
-                // {"xf-barrier-local-3.1.3.spv.dis", 9, FAIL},
+                {"xf-barrier-local-3.1.3.spv.dis", 9, FAIL},
                 // TODO: ??
                 // {"xf-barrier-local-1.1.2.spv.dis", 2, FAIL},
                 {"xf-barrier-local-2.1.1.spv.dis", 2, FAIL},
@@ -99,8 +97,7 @@ public class SpirvAssertionsTest {
                 {"xf-barrier-local-weakest.spv.dis", 4, FAIL},
 
                 {"xf-barrier-zero-2.1.2.spv.dis", 4, FAIL},
-                // Slow test
-                // {"xf-barrier-zero-3.1.3.spv.dis", 9, FAIL},
+                {"xf-barrier-zero-3.1.3.spv.dis", 9, FAIL},
                 // TODO: ??
                 // {"xf-barrier-zero-1.1.2.spv.dis", 2, FAIL},
                 {"xf-barrier-zero-2.1.1.spv.dis", 2, FAIL},

@@ -8,9 +8,10 @@
 ; Bound: 170
 ; Schema: 0
                OpCapability Shader
+               OpCapability VulkanMemoryModel
+               OpMemoryModel Logical Vulkan
          %85 = OpExtInstImport "GLSL.std.450"
         %153 = OpExtInstImport "NonSemantic.ClspvReflection.5"
-               OpMemoryModel Logical GLSL450
                OpEntryPoint GLCompute %29 "binomial_options_kernel" %6 %7 %gl_LocalInvocationID %gl_WorkGroupID %20 %24 %25 %26 %11
                OpSource OpenCL_C 200
         %154 = OpString "binomial_options_kernel"

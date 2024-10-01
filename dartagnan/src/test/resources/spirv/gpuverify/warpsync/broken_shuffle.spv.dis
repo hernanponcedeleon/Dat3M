@@ -5,9 +5,10 @@
 ; Bound: 55
 ; Schema: 0
                OpCapability Shader
+               OpCapability VulkanMemoryModel
+               OpMemoryModel Logical Vulkan
          %29 = OpExtInstImport "GLSL.std.450"
          %44 = OpExtInstImport "NonSemantic.ClspvReflection.5"
-               OpMemoryModel Logical GLSL450
                OpEntryPoint GLCompute %17 "shuffle" %gl_LocalInvocationID %10 %14
                OpSource OpenCL_C 200
          %45 = OpString "shuffle"

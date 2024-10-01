@@ -6,9 +6,10 @@
 ; Bound: 87
 ; Schema: 0
                OpCapability Shader
+               OpCapability VulkanMemoryModel
+               OpMemoryModel Logical Vulkan
                OpCapability Float64
          %65 = OpExtInstImport "NonSemantic.ClspvReflection.5"
-               OpMemoryModel Logical GLSL450
                OpEntryPoint GLCompute %31 "float_const" %gl_GlobalInvocationID %13 %18 %22 %27 %28 %5
                OpSource OpenCL_C 200
          %66 = OpString "float_const"

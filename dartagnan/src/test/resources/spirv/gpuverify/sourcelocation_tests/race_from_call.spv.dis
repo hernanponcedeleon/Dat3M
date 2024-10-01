@@ -5,8 +5,9 @@
 ; Bound: 38
 ; Schema: 0
                OpCapability Shader
+               OpCapability VulkanMemoryModel
+               OpMemoryModel Logical Vulkan
          %27 = OpExtInstImport "NonSemantic.ClspvReflection.5"
-               OpMemoryModel Logical GLSL450
                OpEntryPoint GLCompute %17 "baz" %gl_LocalInvocationID %10 %14
                OpSource OpenCL_C 200
          %28 = OpString "baz"

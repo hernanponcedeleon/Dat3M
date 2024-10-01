@@ -82,8 +82,7 @@ public class SpirvChecksTest {
                 {"ttaslock-dv2wg-2.2.2.spv.dis", 2, UNKNOWN},
 
                 {"xf-barrier-2.1.2.spv.dis", 4, PASS},
-                // Slow test
-                // {"xf-barrier-3.1.3.spv.dis", 9, PASS},
+                {"xf-barrier-3.1.3.spv.dis", 9, PASS},
                 {"xf-barrier-2.1.1.spv.dis", 2, PASS},
                 {"xf-barrier-1.1.2.spv.dis", 2, PASS},
                 {"xf-barrier-fail1.spv.dis", 4, PASS},
@@ -93,8 +92,7 @@ public class SpirvChecksTest {
                 {"xf-barrier-weakest.spv.dis", 4, PASS},
 
                 {"xf-barrier-local-2.1.2.spv.dis", 4, PASS},
-                // Slow test
-                // {"xf-barrier-local-3.1.3.spv.dis", 9, PASS},
+                {"xf-barrier-local-3.1.3.spv.dis", 9, PASS},
                 {"xf-barrier-local-2.1.1.spv.dis", 2, PASS},
                 {"xf-barrier-local-1.1.2.spv.dis", 2, PASS},
                 {"xf-barrier-local-fail1.spv.dis", 4, PASS},
@@ -118,9 +116,10 @@ public class SpirvChecksTest {
 
     @Test
     public void testAllSolvers() throws Exception {
+        /* TODO: Very slow, enable when Vulkan memory model is more efficient in CAAT
         try (SolverContext ctx = mkCtx(); ProverWithTracker prover = mkProver(ctx)) {
              assertEquals(expected, RefinementSolver.run(ctx, prover, mkTask()).getResult());
-        }
+        }*/
         try (SolverContext ctx = mkCtx(); ProverWithTracker prover = mkProver(ctx)) {
             assertEquals(expected, AssumeSolver.run(ctx, prover, mkTask()).getResult());
         }

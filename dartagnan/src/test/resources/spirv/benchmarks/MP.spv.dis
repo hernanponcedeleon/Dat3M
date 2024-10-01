@@ -10,8 +10,9 @@
 ; Bound: 80
 ; Schema: 0
                OpCapability Shader
+               OpCapability VulkanMemoryModel
+               OpMemoryModel Logical Vulkan
          %58 = OpExtInstImport "NonSemantic.ClspvReflection.5"
-               OpMemoryModel Logical GLSL450
                OpEntryPoint GLCompute %23 "test" %gl_GlobalInvocationID %13 %17 %18 %19 %20 %5
                OpSource OpenCL_C 200
          %59 = OpString "test"
@@ -91,7 +92,7 @@
          %42 = OpLabel
          %45 = OpAtomicLoad %uint %27 %uint_1 %uint_66
                OpStore %29 %45
-         %46 = OpLoad %uint %28
+         %46 = OpLoad %uint %28 MakePointerVisible|NonPrivatePointer %uint_1
                OpStore %30 %46
                OpBranch %48
          %48 = OpLabel
@@ -99,7 +100,7 @@
                OpSelectionMerge %55 None
                OpBranchConditional %49 %52 %55
          %52 = OpLabel
-               OpStore %28 %uint_1
+               OpStore %28 %uint_1 MakePointerAvailable|NonPrivatePointer %uint_1
                OpAtomicStore %27 %uint_1 %uint_68 %uint_1
                OpBranch %55
          %55 = OpLabel

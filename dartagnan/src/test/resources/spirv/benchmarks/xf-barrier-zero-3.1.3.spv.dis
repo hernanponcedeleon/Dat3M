@@ -13,8 +13,9 @@
 ; Bound: 155
 ; Schema: 0
                OpCapability Shader
+               OpCapability VulkanMemoryModel
+               OpMemoryModel Logical Vulkan
         %133 = OpExtInstImport "NonSemantic.ClspvReflection.5"
-               OpMemoryModel Logical GLSL450
                OpEntryPoint GLCompute %24 "xf_barrier" %gl_GlobalInvocationID %gl_LocalInvocationID %gl_WorkGroupID %15 %19 %20 %21 %5
                OpSource OpenCL_C 200
         %134 = OpString "xf_barrier"
@@ -102,7 +103,7 @@
          %46 = OpAccessChain %_ptr_PushConstant_uint %5 %uint_0 %uint_0
          %47 = OpLoad %uint %46
          %49 = OpAccessChain %_ptr_StorageBuffer_uint %20 %uint_0 %45
-               OpStore %49 %uint_1
+               OpStore %49 %uint_1 MakePointerAvailable|NonPrivatePointer %uint_1
          %51 = OpINotEqual %bool %34 %uint_0
                OpSelectionMerge %75 None
                OpBranchConditional %51 %54 %75
@@ -174,7 +175,7 @@
         %117 = OpPhi %uint %121 %116 %114 %112
         %118 = OpPhi %uint %122 %116 %uint_0 %112
         %119 = OpAccessChain %_ptr_StorageBuffer_uint %20 %uint_0 %118
-        %120 = OpLoad %uint %119
+        %120 = OpLoad %uint %119 MakePointerVisible|NonPrivatePointer %uint_1
         %121 = OpIAdd %uint %117 %120
                OpStore %113 %121
         %122 = OpIAdd %uint %118 %uint_1

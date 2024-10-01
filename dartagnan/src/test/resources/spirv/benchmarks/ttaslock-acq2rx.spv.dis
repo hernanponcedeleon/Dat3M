@@ -9,8 +9,9 @@
 ; Bound: 75
 ; Schema: 0
                OpCapability Shader
+               OpCapability VulkanMemoryModel
+               OpMemoryModel Logical Vulkan
          %59 = OpExtInstImport "NonSemantic.ClspvReflection.5"
-               OpMemoryModel Logical GLSL450
                OpEntryPoint GLCompute %19 "mutex_test" %gl_LocalInvocationID %10 %14 %15 %16
                OpSource OpenCL_C 200
          %60 = OpString "mutex_test"
@@ -48,7 +49,6 @@
 %_ptr_StorageBuffer_uint = OpTypePointer StorageBuffer %uint
      %uint_0 = OpConstant %uint 0
      %uint_1 = OpConstant %uint 1
-    %uint_64 = OpConstant %uint 64
        %bool = OpTypeBool
     %uint_68 = OpConstant %uint 68
 %_ptr_Input_uint = OpTypePointer Input %uint
@@ -67,7 +67,7 @@
          %24 = OpAccessChain %_ptr_StorageBuffer_uint %15 %uint_0 %uint_0
                OpBranch %26
          %26 = OpLabel
-         %29 = OpAtomicLoad %uint %23 %uint_1 %uint_64
+         %29 = OpAtomicLoad %uint %23 %uint_1 %uint_0
          %31 = OpIEqual %bool %29 %uint_0
                OpLoopMerge %49 %46 None
                OpBranch %34
@@ -75,7 +75,7 @@
                OpSelectionMerge %41 None
                OpBranchConditional %31 %37 %41
          %37 = OpLabel
-         %38 = OpAtomicExchange %uint %23 %uint_1 %uint_64 %uint_1
+         %38 = OpAtomicExchange %uint %23 %uint_1 %uint_0 %uint_1
          %39 = OpINotEqual %bool %38 %uint_0
                OpBranch %41
          %41 = OpLabel
@@ -87,9 +87,9 @@
          %47 = OpPhi %bool %false %44 %true %41
                OpBranchConditional %47 %49 %26
          %49 = OpLabel
-         %50 = OpLoad %uint %24
+         %50 = OpLoad %uint %24 MakePointerVisible|NonPrivatePointer %uint_1
          %51 = OpIAdd %uint %50 %uint_1
-               OpStore %24 %51
+               OpStore %24 %51 MakePointerAvailable|NonPrivatePointer %uint_1
                OpAtomicStore %23 %uint_1 %uint_68 %uint_0
          %54 = OpAccessChain %_ptr_Input_uint %gl_LocalInvocationID %uint_0
          %55 = OpLoad %uint %54

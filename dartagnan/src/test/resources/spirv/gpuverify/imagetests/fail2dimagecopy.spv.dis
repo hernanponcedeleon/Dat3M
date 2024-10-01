@@ -5,9 +5,10 @@
 ; Bound: 73
 ; Schema: 0
                OpCapability Shader
+               OpCapability VulkanMemoryModel
+               OpMemoryModel Logical Vulkan
                OpCapability StorageImageWriteWithoutFormat
           %4 = OpExtInstImport "NonSemantic.ClspvReflection.5"
-               OpMemoryModel Logical GLSL450
                OpEntryPoint GLCompute %31 "k" %3 %gl_GlobalInvocationID %21 %25 %29 %13
                OpSource OpenCL_C 200
          %60 = OpString "k"

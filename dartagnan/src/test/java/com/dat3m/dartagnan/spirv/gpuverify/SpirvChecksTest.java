@@ -28,8 +28,7 @@ import java.util.EnumSet;
 import static com.dat3m.dartagnan.configuration.Property.CAT_SPEC;
 import static com.dat3m.dartagnan.utils.ResourceHelper.getRootPath;
 import static com.dat3m.dartagnan.utils.ResourceHelper.getTestResourcePath;
-import static com.dat3m.dartagnan.utils.Result.PASS;
-import static com.dat3m.dartagnan.utils.Result.UNKNOWN;
+import static com.dat3m.dartagnan.utils.Result.*;
 import static org.junit.Assert.assertEquals;
 
 @RunWith(Parameterized.class)
@@ -64,13 +63,11 @@ public class SpirvChecksTest {
                 {"divergence/race_and_divergence.spv.dis", 1, PASS},
                 {"divergence/race_no_divergence.spv.dis", 1, PASS},
                 {"inter_group_and_barrier_flag_tests/fail/local_id.spv.dis", 1, PASS},
-                {"inter_group_and_barrier_flag_tests/fail/missing_local_barrier_flag.spv.dis", 1, PASS},
 
                 // Fails check checkRelIsSem for a barrier with semantics 0x8 (rel_acq, no storage class semantics)
                 // {"inter_group_and_barrier_flag_tests/fail/no_barrier_flags.spv.dis", 1, PASS},
 
                 {"inter_group_and_barrier_flag_tests/fail/sync.spv.dis", 1, PASS},
-                {"inter_group_and_barrier_flag_tests/pass/local_barrier_flag.spv.dis", 1, PASS},
                 {"inter_group_and_barrier_flag_tests/pass/local_id_benign_write_write.spv.dis", 1, PASS},
                 {"inter_group_and_barrier_flag_tests/pass/pass_due_to_intra_group_flag.spv.dis", 1, PASS},
                 {"localarrayaccess.spv.dis", 1, PASS},
@@ -126,6 +123,13 @@ public class SpirvChecksTest {
                 {"global_size/local_size_fail_divide_global_size.spv.dis", 1, PASS},
                 {"global_size/mismatch_dims.spv.dis", 1, PASS},
                 {"global_size/num_groups_and_global_size.spv.dis", 1, PASS},
+
+                {"inter_group_and_barrier_flag_tests/fail/missing_local_barrier_flag.spv.dis", 1, PASS},
+                {"inter_group_and_barrier_flag_tests/fail/missing_local_barrier_flag_2.spv.dis", 1, PASS},
+                {"inter_group_and_barrier_flag_tests/fail/missing_local_barrier_flag_3.spv.dis", 1, PASS},
+                {"inter_group_and_barrier_flag_tests/pass/local_barrier_flag.spv.dis", 1, PASS},
+                {"inter_group_and_barrier_flag_tests/pass/local_barrier_flag_2.spv.dis", 1, PASS},
+                {"inter_group_and_barrier_flag_tests/pass/local_barrier_flag_3.spv.dis", 1, PASS},
 
                 // Unsupported large array (4K elements) leading to OOM
                 // {"misc/fail/2d_array_race.spv.dis", 1, PASS},

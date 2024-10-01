@@ -6,7 +6,8 @@
 ; Bound: 72
 ; Schema: 0
                OpCapability Shader
-               OpMemoryModel Logical GLSL450
+               OpCapability VulkanMemoryModel
+               OpMemoryModel Logical Vulkan
                OpEntryPoint GLCompute %main "main" %gl_GlobalInvocationID
                OpExecutionMode %main LocalSize 1 1 1
                OpSource GLSL 450

@@ -64,10 +64,8 @@ public class SpirvRacesTest {
                 {"divergence/race_and_divergence.spv.dis", 1, FAIL},
                 {"divergence/race_no_divergence.spv.dis", 1, FAIL},
                 {"inter_group_and_barrier_flag_tests/fail/local_id.spv.dis", 1, FAIL},
-                {"inter_group_and_barrier_flag_tests/fail/missing_local_barrier_flag.spv.dis", 1, FAIL},
                 {"inter_group_and_barrier_flag_tests/fail/no_barrier_flags.spv.dis", 1, FAIL},
                 {"inter_group_and_barrier_flag_tests/fail/sync.spv.dis", 1, FAIL},
-                {"inter_group_and_barrier_flag_tests/pass/local_barrier_flag.spv.dis", 1, PASS},
                 {"inter_group_and_barrier_flag_tests/pass/local_id_benign_write_write.spv.dis", 1, FAIL},
                 {"inter_group_and_barrier_flag_tests/pass/pass_due_to_intra_group_flag.spv.dis", 1, FAIL},
                 {"localarrayaccess.spv.dis", 1, PASS},
@@ -125,6 +123,14 @@ public class SpirvRacesTest {
                 {"global_size/local_size_fail_divide_global_size.spv.dis", 1, PASS},
                 {"global_size/mismatch_dims.spv.dis", 1, PASS},
                 {"global_size/num_groups_and_global_size.spv.dis", 1, PASS},
+
+                // barrier avvis variations
+                {"inter_group_and_barrier_flag_tests/fail/missing_local_barrier_flag.spv.dis", 1, FAIL},
+                {"inter_group_and_barrier_flag_tests/fail/missing_local_barrier_flag_2.spv.dis", 1, FAIL},
+                {"inter_group_and_barrier_flag_tests/fail/missing_local_barrier_flag_3.spv.dis", 1, FAIL},
+                {"inter_group_and_barrier_flag_tests/pass/local_barrier_flag.spv.dis", 1, FAIL},
+                {"inter_group_and_barrier_flag_tests/pass/local_barrier_flag_2.spv.dis", 1, PASS},
+                {"inter_group_and_barrier_flag_tests/pass/local_barrier_flag_3.spv.dis", 1, PASS},
 
                 // Unsupported large array (4K elements) leading to OOM
                 // {"misc/fail/2d_array_race.spv.dis", 1, FAIL},
@@ -357,7 +363,7 @@ public class SpirvRacesTest {
     private SolverContext mkCtx() throws InvalidConfigurationException {
         Configuration cfg = Configuration.builder().build();
         return SolverContextFactory.createSolverContext(
-                Configuration.builder().build(),
+                cfg,
                 BasicLogManager.create(cfg),
                 ShutdownManager.create().getNotifier(),
                 SolverContextFactory.Solvers.Z3);
