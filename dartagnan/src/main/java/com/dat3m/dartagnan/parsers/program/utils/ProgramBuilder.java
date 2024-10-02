@@ -7,7 +7,6 @@ import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.Type;
 import com.dat3m.dartagnan.expression.integers.IntLiteral;
 import com.dat3m.dartagnan.expression.type.FunctionType;
-import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.program.*;
 import com.dat3m.dartagnan.program.Thread;
@@ -46,10 +45,6 @@ public class ProgramBuilder {
     private final Map<Integer, Map<String, Label>> fid2LabelsMap = new HashMap<>();
     private final Map<String, MemoryObject> locations = new HashMap<>();
     private final Map<Register, MemoryObject> reg2LocMap = new HashMap<>();
-    private final Map<Integer, Map<String, IntegerType>> id2RegTypeMap = new HashMap<>();
-    private final Map<Integer, Map<String, Expression>> id2RegConstMap = new HashMap<>();
-    private final Map<Integer, Map<String, String>> id2RegLocPtrMap = new HashMap<>();
-    private final Map<Integer, Map<String, String>> id2RegLocValMap = new HashMap<>();
 
     private final Program program;
 
@@ -119,19 +114,13 @@ public class ProgramBuilder {
 
     // This method creates a "default" thread that has no parameters, no return value, and runs unconditionally.
     // It is only useful for creating threads of Litmus code.
-    public Thread newThread(int tid, Thread thread) {
+    public Thread newThread(String name, int tid) {
+        if(id2FunctionsMap.containsKey(tid)) {
+            throw new MalformedProgramException("Function or thread with id " + tid + " already exists.");
+        }
+        final Thread thread = new Thread(name, DEFAULT_THREAD_TYPE, List.of(), tid, EventFactory.newThreadStart(null));
         id2FunctionsMap.put(tid, thread);
         program.addThread(thread);
-        if (id2RegConstMap.containsKey(tid)) {
-            id2RegConstMap.get(tid).forEach((regName, value) ->
-                    initRegEqConst(tid, regName, value));
-        } else if (id2RegLocPtrMap.containsKey(tid)) {
-            id2RegLocPtrMap.get(tid).forEach((regName, value) ->
-                    initRegEqLocPtr(tid, regName, value, getRegType(tid, regName)));
-        } else if (id2RegLocValMap.containsKey(tid)) {
-            id2RegLocValMap.get(tid).forEach((regName, value) ->
-                    initRegEqLocVal(tid, regName, value, getRegType(tid, regName)));
-        }
         return thread;
     }
 
@@ -146,12 +135,8 @@ public class ProgramBuilder {
     }
 
     public Thread newThread(int tid) {
-        if(id2FunctionsMap.containsKey(tid)) {
-            throw new MalformedProgramException("Function or thread with id " + tid + " already exists.");
-        }
         final String threadName = (program.getFormat() == LITMUS ? "P" : "__thread_") + tid;
-        final Thread thread = new Thread(threadName, DEFAULT_THREAD_TYPE, List.of(), tid, EventFactory.newThreadStart(null));
-        return newThread(tid, thread);
+        return newThread(threadName, tid);
     }
 
     public Thread getOrNewThread(int tid) {
@@ -250,29 +235,6 @@ public class ProgramBuilder {
         addChild(regThread, EventFactory.newLocal(getOrNewRegister(regThread, regName, value.getType()), value));
     }
 
-    public void addRegType(int tid, String regName, IntegerType type) {
-        id2RegTypeMap.computeIfAbsent(tid, k -> new HashMap<>()).put(regName, type);
-    }
-
-    public IntegerType getRegType(int tid, String regName) {
-        if (id2RegTypeMap.containsKey(tid) && id2RegTypeMap.get(tid).containsKey(regName)) {
-                return id2RegTypeMap.get(tid).get(regName);
-            }
-        throw new IllegalStateException("Register " + tid + ":" + regName + " is not initialised");
-    }
-
-    public void addRegToConstMap(int tid, String regName, Expression value) {
-        id2RegConstMap.computeIfAbsent(tid, k -> new HashMap<>()).put(regName, value);
-    }
-
-    public void addRegToLocPtrMap(int tid, String regName, String locName) {
-        id2RegLocPtrMap.computeIfAbsent(tid, k -> new HashMap<>()).put(regName, locName);
-    }
-
-    public void addRegToLocValMap(int tid, String regName, String locName) {
-        id2RegLocValMap.computeIfAbsent(tid, k -> new HashMap<>()).put(regName, locName);
-    }
-
     private Expression getInitialValue(String name) {
         return getOrNewMemoryObject(name).getInitialValue(0);
     }
@@ -314,26 +276,28 @@ public class ProgramBuilder {
 
     // ----------------------------------------------------------------------------------------------------------------
     // GPU
-    public void newScopedThread(Arch arch, String name, int id, int ...scopeIds) {
-        if(id2FunctionsMap.containsKey(id)) {
-            throw new MalformedProgramException("Function or thread with id " + id + " already exists.");
-        }
-        // Litmus threads run unconditionally (have no creator) and have no parameters/return types.
-        ThreadStart threadEntry = EventFactory.newThreadStart(null);
-        Thread scopedThread = switch (arch) {
-            case PTX -> new Thread(name, DEFAULT_THREAD_TYPE, List.of(), id, threadEntry,
-                    ScopeHierarchy.ScopeHierarchyForPTX(scopeIds[0], scopeIds[1]), new HashSet<>());
-            case VULKAN -> new Thread(name, DEFAULT_THREAD_TYPE, List.of(), id, threadEntry,
-                    ScopeHierarchy.ScopeHierarchyForVulkan(scopeIds[0], scopeIds[1], scopeIds[2]), new HashSet<>());
-            case OPENCL -> new Thread(name, DEFAULT_THREAD_TYPE, List.of(), id, threadEntry,
-                    ScopeHierarchy.ScopeHierarchyForOpenCL(scopeIds[0], scopeIds[1]), new HashSet<>());
+    public void setOrCreateScopedThread(Arch arch, String name, int id, int ...scopeIds) {
+        ScopeHierarchy scopeHierarchy = switch (arch) {
+            case PTX -> ScopeHierarchy.ScopeHierarchyForPTX(scopeIds[0], scopeIds[1]);
+            case VULKAN -> ScopeHierarchy.ScopeHierarchyForVulkan(scopeIds[0], scopeIds[1], scopeIds[2]);
+            case OPENCL -> ScopeHierarchy.ScopeHierarchyForOpenCL(scopeIds[0], scopeIds[1]);
             default -> throw new UnsupportedOperationException("Unsupported architecture: " + arch);
         };
-        newThread(id, scopedThread);
+
+        if(id2FunctionsMap.containsKey(id)) {
+            Thread thread = (Thread) id2FunctionsMap.get(id);
+            thread.setScopeHierarchy(scopeHierarchy);
+        } else {
+            // Litmus threads run unconditionally (have no creator) and have no parameters/return types.
+            ThreadStart threadEntry = EventFactory.newThreadStart(null);
+            Thread scopedThread = new Thread(name, DEFAULT_THREAD_TYPE, List.of(), id, threadEntry, scopeHierarchy, new HashSet<>());
+            id2FunctionsMap.put(id, scopedThread);
+            program.addThread(scopedThread);
+        }
     }
 
-    public void newScopedThread(Arch arch, int id, int ...ids) {
-        newScopedThread(arch, String.valueOf(id), id, ids);
+    public void setOrCreateScopedThread(Arch arch, int id, int ...ids) {
+        setOrCreateScopedThread(arch, String.valueOf(id), id, ids);
     }
 
     // ----------------------------------------------------------------------------------------------------------------

@@ -2,7 +2,6 @@ package com.dat3m.dartagnan.parsers.program.visitors;
 
 import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.exception.ParsingException;
-import com.dat3m.dartagnan.expression.BinaryExpression;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.integers.IntLiteral;
@@ -46,6 +45,8 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
 
     @Override
     public Program visitMain(LitmusCParser.MainContext ctx) {
+        //FIXME: We should visit thread declarations before variable declarations
+        // because variable declaration refer to threads.
         visitVariableDeclaratorList(ctx.variableDeclaratorList());
         visitProgram(ctx.program());
         VisitorLitmusAssertions.parseAssertions(programBuilder, ctx.assertionList(), ctx.assertionFilter());
@@ -68,9 +69,10 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
     @Override
     public Object visitGlobalDeclaratorRegister(LitmusCParser.GlobalDeclaratorRegisterContext ctx) {
         if (ctx.initConstantValue() != null) {
+            // FIXME: We visit declarators before threads, so we need to create threads early
+            programBuilder.getOrNewThread(ctx.threadId().id);
             IntLiteral value = expressions.parseValue(ctx.initConstantValue().constant().getText(), archType);
-            programBuilder.addRegType(ctx.threadId().id, ctx.varName().getText(), archType);
-            programBuilder.addRegToConstMap(ctx.threadId().id, ctx.varName().getText(), value);
+            programBuilder.initRegEqConst(ctx.threadId().id,ctx.varName().getText(), value);
         }
         return null;
     }
@@ -93,19 +95,17 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
 
     @Override
     public Object visitGlobalDeclaratorRegisterLocation(LitmusCParser.GlobalDeclaratorRegisterLocationContext ctx) {
-        int threadId = ctx.threadId().id;
-        String regName = ctx.varName(0).getText();
-        String locName = ctx.varName(1).getText();
-        programBuilder.addRegType(threadId, regName, archType);
+        // FIXME: We visit declarators before threads, so we need to create threads early
+        programBuilder.getOrNewThread(ctx.threadId().id);
         if(ctx.Ast() == null){
-            programBuilder.addRegToLocPtrMap(threadId, regName, locName);
+            programBuilder.initRegEqLocPtr(ctx.threadId().id, ctx.varName(0).getText(), ctx.varName(1).getText(), archType);
         } else {
             String rightName = ctx.varName(1).getText();
             MemoryObject object = programBuilder.getMemoryObject(rightName);
             if(object != null){
-                programBuilder.addRegToConstMap(threadId, regName, object);
+                programBuilder.initRegEqConst(ctx.threadId().id, ctx.varName(0).getText(), object);
             } else {
-                programBuilder.addRegToLocValMap(threadId, regName, locName);
+                programBuilder.initRegEqLocVal(ctx.threadId().id, ctx.varName(0).getText(), ctx.varName(1).getText(), archType);
             }
         }
         return null;
@@ -158,7 +158,7 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
         // Declarations in the preamble may have created the thread already
         if (ctx.threadScope() == null) {
             // Set dummy scope for C11 threads
-            programBuilder.newScopedThread(Arch.OPENCL, currentThread, 0, 0);
+            programBuilder.setOrCreateScopedThread(Arch.OPENCL, currentThread, 0, 0);
         } else {
             ctx.threadScope().accept(this);
             this.isOpenCL = true;
@@ -176,7 +176,7 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
     public Object visitOpenCLThreadScope(LitmusCParser.OpenCLThreadScopeContext ctx) {
         int wgID = ctx.scopeID(0).id;
         int devID = ctx.scopeID(1).id;
-        programBuilder.newScopedThread(Arch.OPENCL, currentThread, devID, wgID);
+        programBuilder.setOrCreateScopedThread(Arch.OPENCL, currentThread, devID, wgID);
         return null;
     }
 
