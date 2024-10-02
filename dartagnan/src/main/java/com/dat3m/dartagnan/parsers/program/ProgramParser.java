@@ -9,7 +9,6 @@ import java.io.*;
 
 import static com.dat3m.dartagnan.parsers.program.utils.Compilation.applyLlvmPasses;
 import static com.dat3m.dartagnan.parsers.program.utils.Compilation.compileWithClang;
-import static com.dat3m.dartagnan.parsers.program.utils.Compilation.applyDemangling;;
 
 public class ProgramParser {
 
@@ -25,7 +24,6 @@ public class ProgramParser {
         if (needsClang(file)) {
             file = compileWithClang(file, "");
             file = applyLlvmPasses(file);
-            file = applyDemangling(file);
             return new ProgramParser().parse(file);
         }
 
@@ -40,15 +38,15 @@ public class ProgramParser {
     }
 
     private boolean needsClang(File f) {
-        return f.getPath().endsWith(".c") || f.getPath().endsWith(".i") || f.getPath().endsWith(".cl");
+        return f.getPath().endsWith(".c") || f.getPath().endsWith(".i");
     }
 
     public Program parse(String raw, String path, String format, String cflags) throws Exception {
         switch (format) {
-            case "c", "i", "cl" -> {
+            case "c", "i" -> {
                 File file = path.isEmpty() ?
                         // This is for the case where the user fully typed the program instead of loading it
-                        File.createTempFile("dat3m", format) :
+                        File.createTempFile("dat3m", ".c") :
                         // This is for the case where the user loaded the program
                         new File(path, "dat3m.c");
                 try (FileWriter writer = new FileWriter(file)) {
