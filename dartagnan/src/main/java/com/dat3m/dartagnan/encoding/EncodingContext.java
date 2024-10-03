@@ -23,7 +23,7 @@ import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.wmm.Relation;
 import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
 import com.dat3m.dartagnan.wmm.axiom.Acyclicity;
-import com.dat3m.dartagnan.wmm.utils.EventGraph;
+import com.dat3m.dartagnan.wmm.utils.graph.EventGraph;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;

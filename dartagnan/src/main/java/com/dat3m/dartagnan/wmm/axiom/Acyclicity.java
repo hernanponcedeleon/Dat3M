@@ -8,8 +8,10 @@ import com.dat3m.dartagnan.utils.dependable.DependencyGraph;
 import com.dat3m.dartagnan.verification.Context;
 import com.dat3m.dartagnan.wmm.Relation;
 import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
-import com.dat3m.dartagnan.wmm.utils.EventGraph;
+import com.dat3m.dartagnan.wmm.utils.graph.EventGraph;
+import com.dat3m.dartagnan.wmm.utils.graph.mutable.MapEventGraph;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
+import com.dat3m.dartagnan.wmm.utils.graph.mutable.MutableEventGraph;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.sosy_lab.java_smt.api.BooleanFormula;
@@ -18,9 +20,6 @@ import org.sosy_lab.java_smt.api.FormulaManager;
 import org.sosy_lab.java_smt.api.IntegerFormulaManager;
 
 import java.util.*;
-
-import static com.dat3m.dartagnan.wmm.utils.EventGraph.difference;
-import static com.google.common.base.Preconditions.checkArgument;
 
 public class Acyclicity extends Axiom {
 
@@ -41,12 +40,12 @@ public class Acyclicity extends Axiom {
     // if the clauses {@code exec(x) implies before(x,y)} and {@code exec(z) implies before(y,z)} exist.
     // NOTE: Assumes that the must-set of rel+ is acyclic.
     private static EventGraph transitivelyDerivableMustEdges(ExecutionAnalysis exec, RelationAnalysis.Knowledge k) {
-        EventGraph result = new EventGraph();
+        MutableEventGraph result = new MapEventGraph();
         Map<Event, Set<Event>> map = new HashMap<>();
         Map<Event, Set<Event>> mapInverse = new HashMap<>();
         EventGraph current = k.getMustSet();
         while (!current.isEmpty()) {
-            EventGraph next = new EventGraph();
+            MutableEventGraph next = new MapEventGraph();
             current.apply((x, y) -> {
                 map.computeIfAbsent(x, e -> new HashSet<>()).add(y);
                 mapInverse.computeIfAbsent(y, e -> new HashSet<>()).add(x);
@@ -86,7 +85,7 @@ public class Acyclicity extends Axiom {
         ExecutionAnalysis exec = analysisContext.get(ExecutionAnalysis.class);
         RelationAnalysis ra = analysisContext.get(RelationAnalysis.class);
         RelationAnalysis.Knowledge k = ra.getKnowledge(rel);
-        return difference(getEncodeGraph(exec, ra), k.getMustSet());
+        return MutableEventGraph.difference(getEncodeGraph(exec, ra), k.getMustSet());
     }
 
     public int getEncodeGraphSize(Context analysisContext) {
@@ -101,7 +100,7 @@ public class Acyclicity extends Axiom {
 
         // ====== Compute SCCs ======
         DependencyGraph<Event> depGraph = DependencyGraph.from(succMap.keySet(), succMap);
-        final EventGraph result = new EventGraph();
+        final MutableEventGraph result = new MapEventGraph();
         for (Set<DependencyGraph<Event>.Node> scc : depGraph.getSCCs()) {
             for (DependencyGraph<Event>.Node node1 : scc) {
                 for (DependencyGraph<Event>.Node node2 : scc) {
@@ -123,7 +122,7 @@ public class Acyclicity extends Axiom {
         return result;
     }
 
-    private void reduceWithMinSets(EventGraph encodeSet, ExecutionAnalysis exec, RelationAnalysis ra) {
+    private void reduceWithMinSets(MutableEventGraph encodeSet, ExecutionAnalysis exec, RelationAnalysis ra) {
         /*
             ASSUMPTION: MinSet is acyclic!
             IDEA:
@@ -179,7 +178,7 @@ public class Acyclicity extends Axiom {
         // Note: We reduce the transitive closure which may have more edges
         // that can be used to perform reduction
         // Approximative must-transitive reduction of minSet:
-        EventGraph reduct = new EventGraph();
+        MutableEventGraph reduct = new MapEventGraph();
         DependencyGraph<Event> depGraph = DependencyGraph.from(transMinSet.keySet(), e -> transMinSet.getOrDefault(e, Set.of()));
         for (DependencyGraph<Event>.Node start : depGraph.getNodes()) {
             Event e1 = start.getContent();

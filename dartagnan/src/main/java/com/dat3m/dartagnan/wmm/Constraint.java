@@ -5,7 +5,7 @@ import com.dat3m.dartagnan.verification.Context;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.wmm.axiom.*;
 import com.dat3m.dartagnan.wmm.definition.*;
-import com.dat3m.dartagnan.wmm.utils.EventGraph;
+import com.dat3m.dartagnan.wmm.utils.graph.EventGraph;
 import org.sosy_lab.java_smt.api.BooleanFormula;
 
 import java.util.Collection;

@@ -7,7 +7,9 @@ import com.dat3m.dartagnan.wmm.Definition;
 import com.dat3m.dartagnan.wmm.Relation;
 import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
 import com.dat3m.dartagnan.wmm.definition.*;
-import com.dat3m.dartagnan.wmm.utils.EventGraph;
+import com.dat3m.dartagnan.wmm.utils.graph.EventGraph;
+import com.dat3m.dartagnan.wmm.utils.graph.mutable.MapEventGraph;
+import com.dat3m.dartagnan.wmm.utils.graph.mutable.MutableEventGraph;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -61,8 +63,8 @@ final class EncodeSets implements Visitor<Map<Relation, EventGraph>> {
 
         final Relation r1 = comp.getLeftOperand();
         final Relation r2 = comp.getRightOperand();
-        final EventGraph set1 = new EventGraph();
-        final EventGraph set2 = new EventGraph();
+        final MutableEventGraph set1 = new MapEventGraph();
+        final MutableEventGraph set2 = new MapEventGraph();
         final RelationAnalysis.Knowledge k1 = ra.getKnowledge(r1);
         final RelationAnalysis.Knowledge k2 = ra.getKnowledge(r2);
         Map<Event, Set<Event>> out = ra.getKnowledge(r1).getMaySet().getOutMap();
@@ -85,7 +87,7 @@ final class EncodeSets implements Visitor<Map<Relation, EventGraph>> {
     public Map<Relation, EventGraph> visitDomainIdentity(DomainIdentity domId) {
         final RelationAnalysis.Knowledge k1 = ra.getKnowledge(domId.getOperand());
         Map<Event, Set<Event>> out = k1.getMaySet().getOutMap();
-        EventGraph result = new EventGraph();
+        MutableEventGraph result = new MapEventGraph();
         news.apply((e1, e2) ->
             out.getOrDefault(e1, Set.of()).forEach(e -> {
                 if (!k1.getMustSet().contains(e1, e)) {
@@ -100,7 +102,7 @@ final class EncodeSets implements Visitor<Map<Relation, EventGraph>> {
     public Map<Relation, EventGraph> visitRangeIdentity(RangeIdentity rangeId) {
         final RelationAnalysis.Knowledge k1 = ra.getKnowledge(rangeId.getOperand());
         Map<Event, Set<Event>> in = k1.getMaySet().getInMap();
-        EventGraph result = new EventGraph();
+        MutableEventGraph result = new MapEventGraph();
         news.apply((e1, e2) ->
             in.getOrDefault(e2, Set.of()).forEach(e -> {
                 if (!k1.getMustSet().contains(e, e2)) {
@@ -122,7 +124,7 @@ final class EncodeSets implements Visitor<Map<Relation, EventGraph>> {
     public Map<Relation, EventGraph> visitTransitiveClosure(TransitiveClosure trans) {
         final Relation rel = trans.getDefinedRelation();
         final Relation r1 = trans.getOperand();
-        EventGraph factors = new EventGraph();
+        MutableEventGraph factors = new MapEventGraph();
         final RelationAnalysis.Knowledge k0 = ra.getKnowledge(rel);
         Map<Event, Set<Event>> out = k0.getMaySet().getOutMap();
         news.apply((e1, e2) -> {
@@ -142,7 +144,7 @@ final class EncodeSets implements Visitor<Map<Relation, EventGraph>> {
 
     @Override
     public Map<Relation, EventGraph> visitLinuxCriticalSections(LinuxCriticalSections rscs) {
-        EventGraph queue = new EventGraph();
+        MutableEventGraph queue = new MapEventGraph();
         final RelationAnalysis.Knowledge k0 = ra.getKnowledge(rscs.getDefinedRelation());
         Map<Event, Set<Event>> in = k0.getMaySet().getInMap();
         Map<Event, Set<Event>> out = k0.getMaySet().getOutMap();

@@ -8,7 +8,7 @@ import com.dat3m.dartagnan.utils.Utils;
 import com.dat3m.dartagnan.verification.Context;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.wmm.Relation;
-import com.dat3m.dartagnan.wmm.utils.EventGraph;
+import com.dat3m.dartagnan.wmm.utils.graph.EventGraph;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.sosy_lab.common.configuration.Configuration;
@@ -16,7 +16,9 @@ import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.common.configuration.Option;
 import org.sosy_lab.common.configuration.Options;
 
-import java.util.*;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 import static com.dat3m.dartagnan.configuration.OptionNames.*;
 import static com.dat3m.dartagnan.wmm.RelationNameRepository.CO;
@@ -43,19 +45,21 @@ public interface RelationAnalysis {
      */
     static RelationAnalysis fromConfig(VerificationTask task, Context context, Configuration config) throws InvalidConfigurationException {
         RelationAnalysis.Config c = new RelationAnalysis.Config(config);
-        logger.info("Selected relation analysis: {}", c.method);
-
         RelationAnalysis a = switch (c.method) {
             case NONE -> CoarseRelationAnalysis.fromConfig(task, context, config);
             case NATIVE -> NativeRelationAnalysis.fromConfig(task, context, config);
+            case LAZY -> LazyRelationAnalysis.fromConfig(task, context, config);
         };
 
-        final StringBuilder configSummary = new StringBuilder().append("\n");
-        configSummary.append("\t").append(RELATION_ANALYSIS).append(": ").append(c.method).append("\n");
-        configSummary.append("\t").append(ENABLE_EXTENDED_RELATION_ANALYSIS).append(": ").append(c.enableExtended);
-        logger.info(configSummary);
+        if (logger.isInfoEnabled()) {
+            logger.info("Selected relation analysis: {}", c.method);
+            final StringBuilder configSummary = new StringBuilder().append("\n");
+            configSummary.append("\t").append(RELATION_ANALYSIS).append(": ").append(c.method).append("\n");
+            configSummary.append("\t").append(ENABLE_EXTENDED_RELATION_ANALYSIS).append(": ").append(c.enableExtended);
+            logger.info(configSummary);
+        }
 
-        if (c.enableExtended && c.method == RelationAnalysisMethod.NONE) {
+        if (c.enableExtended && (c.method == RelationAnalysisMethod.NONE || c.method == RelationAnalysisMethod.LAZY)) {
             logger.warn("{} implies {}", ENABLE_EXTENDED_RELATION_ANALYSIS, RELATION_ANALYSIS);
             c.enableExtended = false;
         }
@@ -63,28 +67,37 @@ public interface RelationAnalysis {
         long t0 = System.currentTimeMillis();
         a.run();
         long t1 = System.currentTimeMillis();
-        logger.info("Finished regular analysis in {}", Utils.toTimeString(t1 - t0));
-
-        final StringBuilder summary = new StringBuilder()
-                .append("\n======== RelationAnalysis summary ======== \n");
-        summary.append("\t#Relations: ").append(task.getMemoryModel().getRelations().size()).append("\n");
-        summary.append("\t#Axioms: ").append(task.getMemoryModel().getAxioms().size()).append("\n");
-        if (c.enableExtended) {
-            long mayCount = a.countMaySet();
-            long mustCount = a.countMustSet();
-            a.runExtended();
-            logger.info("Finished extended analysis in {}", Utils.toTimeString(System.currentTimeMillis() - t1));
-            summary.append("\t#may-edges removed (extended): ").append(mayCount - a.countMaySet()).append("\n");
-            summary.append("\t#must-edges added (extended): ").append(a.countMustSet() - mustCount).append("\n");
+        final StringBuilder summary = new StringBuilder();
+        if (logger.isInfoEnabled()) {
+            logger.info("Finished regular analysis in {}", Utils.toTimeString(t1 - t0));
+            summary.append("\n======== RelationAnalysis summary ======== \n");
+            summary.append("\t#Relations: ").append(task.getMemoryModel().getRelations().size()).append("\n");
+            summary.append("\t#Axioms: ").append(task.getMemoryModel().getAxioms().size()).append("\n");
         }
-        Knowledge rf = a.getKnowledge(task.getMemoryModel().getRelation(RF));
-        Knowledge co = a.getKnowledge(task.getMemoryModel().getRelation(CO));
-        summary.append("\ttotal #must|may|exclusive edges: ")
-                .append(a.countMustSet()).append("|").append(a.countMaySet()).append("|").append(a.getContradictions().size()).append("\n");
-        summary.append("\t#must|may rf edges: ").append(rf.must.size()).append("|").append(rf.may.size()).append("\n");
-        summary.append("\t#must|may co edges: ").append(co.must.size()).append("|").append(co.may.size()).append("\n");
-        summary.append("===========================================");
-        logger.info(summary);
+        if (c.enableExtended) {
+            long mayCount = -1;
+            long mustCount = -1;
+            if (logger.isInfoEnabled()) {
+                mayCount = a.countMaySet();
+                mustCount = a.countMustSet();
+            }
+            a.runExtended();
+            if (logger.isInfoEnabled()) {
+                logger.info("Finished extended analysis in {}", Utils.toTimeString(System.currentTimeMillis() - t1));
+                summary.append("\t#may-edges removed (extended): ").append(mayCount - a.countMaySet()).append("\n");
+                summary.append("\t#must-edges added (extended): ").append(a.countMustSet() - mustCount).append("\n");
+            }
+        }
+        if (logger.isInfoEnabled()) {
+            Knowledge rf = a.getKnowledge(task.getMemoryModel().getRelation(RF));
+            Knowledge co = a.getKnowledge(task.getMemoryModel().getRelation(CO));
+            summary.append("\ttotal #must|may|exclusive edges: ")
+                    .append(a.countMustSet()).append("|").append(a.countMaySet()).append("|").append(a.getContradictions().size()).append("\n");
+            summary.append("\t#must|may rf edges: ").append(rf.must.size()).append("|").append(rf.may.size()).append("\n");
+            summary.append("\t#must|may co edges: ").append(co.must.size()).append("|").append(co.may.size()).append("\n");
+            summary.append("===========================================");
+            logger.info(summary);
+        }
         return a;
     }
 
@@ -161,9 +174,9 @@ public interface RelationAnalysis {
 
     void populateQueue(Map<Relation, List<EventGraph>> queue, Set<Relation> relations);
 
-    final class Knowledge {
-        private final EventGraph may;
-        private final EventGraph must;
+    class Knowledge {
+        protected final EventGraph may;
+        protected final EventGraph must;
 
         public Knowledge(EventGraph maySet, EventGraph mustSet) {
             may = checkNotNull(maySet);

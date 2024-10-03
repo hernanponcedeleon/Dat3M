@@ -60,6 +60,9 @@ public class GlobalSettings {
     }
 
     public static String getCatDirectory() {
+        if (USE_TEST_PATH) {
+            return "../cat";
+        }
         String env = System.getenv("DAT3M_HOME");
         env = env == null ? "" : env;
         return env + "/cat";

@@ -1,8 +1,6 @@
 package com.dat3m.dartagnan.wmm;
 
-import com.dat3m.dartagnan.wmm.utils.EventGraph;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import com.dat3m.dartagnan.wmm.utils.graph.EventGraph;
 
 import java.util.Set;
 

@@ -8,7 +8,8 @@ import com.dat3m.dartagnan.utils.dependable.DependencyGraph;
 import com.dat3m.dartagnan.verification.Context;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.wmm.*;
-import com.dat3m.dartagnan.wmm.utils.EventGraph;
+import com.dat3m.dartagnan.wmm.utils.graph.mutable.MapEventGraph;
+import com.dat3m.dartagnan.wmm.utils.graph.mutable.MutableEventGraph;
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 
@@ -64,19 +65,19 @@ public class CoarseRelationAnalysis extends NativeRelationAnalysis {
     }
 
     private final class EmptyInitializer extends NativeRelationAnalysis.Initializer {
-        final Knowledge defaultKnowledge;
+        final MutableKnowledge defaultKnowledge;
 
         EmptyInitializer() {
-            EventGraph may = new EventGraph();
+            MutableEventGraph may = new MapEventGraph();
             Set<Event> events = program.getThreadEvents().stream().filter(e -> e.hasTag(VISIBLE)).collect(toSet());
             events.forEach(x -> may.addRange(x, events));
-            defaultKnowledge = new Knowledge(may, EventGraph.empty());
+            defaultKnowledge = new MutableKnowledge(may, new MapEventGraph());
         }
 
         @Override
-        public Knowledge visitDefinition(Definition def) {
+        public MutableKnowledge visitDefinition(Definition def) {
             return !def.getDefinedRelation().isInternal() ? defaultKnowledge
-                    : new Knowledge(new EventGraph(), new EventGraph());
+                    : new MutableKnowledge(new MapEventGraph(), new MapEventGraph());
         }
     }
 }
