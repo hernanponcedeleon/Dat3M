@@ -76,6 +76,8 @@ instruction
     |   branchRegister
     |   branchLabel
     |   fence
+    |   return
+    |   nop
     ;
 
 mov locals [String rD, int size]
@@ -129,6 +131,14 @@ branchRegister locals [String rV, int size]
 
 branchLabel
     :   label Colon
+    ;
+
+return
+    :   Ret
+    ;
+
+nop
+    :   Nop
     ;
 
 loadInstruction locals [String mo]
@@ -252,7 +262,7 @@ location
     ;
 
 immediate
-    :   Num constant
+    :   Num Hexa? constant
     ;
 
 label
@@ -263,6 +273,18 @@ assertionValue
     :   location
     |   threadId Colon register64
     |   constant
+    ;
+
+Hexa
+    :   '0x'
+    ;
+
+Ret
+    :   'ret'
+    ;
+
+Nop
+    :   'nop'
     ;
 
 Locations
@@ -371,10 +393,12 @@ BitfieldOperator
 
 Register64
     :   'X' DigitSequence
+    |   'XZR' // zero register
     ;
 
 Register32
     :   'W' DigitSequence
+    |   'WZR' // zero register
     ;
 
 LitmusLanguage
