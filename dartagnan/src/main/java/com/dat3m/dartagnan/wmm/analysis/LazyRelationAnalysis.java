@@ -9,6 +9,7 @@ import com.dat3m.dartagnan.program.analysis.ExecutionAnalysis;
 import com.dat3m.dartagnan.program.analysis.ReachingDefinitionsAnalysis;
 import com.dat3m.dartagnan.program.analysis.alias.AliasAnalysis;
 import com.dat3m.dartagnan.program.event.Event;
+import com.dat3m.dartagnan.program.event.RegReader;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.filter.Filter;
@@ -32,6 +33,7 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
+import static com.dat3m.dartagnan.configuration.Arch.RISCV;
 import static com.dat3m.dartagnan.program.Register.UsageType.*;
 import static com.dat3m.dartagnan.program.event.Tag.FENCE;
 import static com.dat3m.dartagnan.program.event.Tag.VISIBLE;
@@ -231,6 +233,16 @@ public class LazyRelationAnalysis extends NativeRelationAnalysis {
 
         private EventGraph computeInternalDependencies(Set<Register.UsageType> usageTypes) {
             Map<Event, Set<Event>> data = new HashMap<>();
+            program.getThreadEvents(RegReader.class).forEach(reader -> {
+                ReachingDefinitionsAnalysis.Writers state = definitions.getWriters(reader);
+                reader.getRegisterReads().forEach(read -> {
+                    if (usageTypes.contains(read.usageType())) {
+                        Register register = read.register();
+                        state.ofRegister(register).getMayWriters()
+                                .forEach(writer -> data.computeIfAbsent(writer, x -> new HashSet<>()).add(reader));
+                    }
+                });
+            });
             if (usageTypes.contains(DATA)) {
                 program.getThreadEvents(ExecutionStatus.class).forEach(execStatus -> {
                     if (execStatus.doesTrackDep()) {
