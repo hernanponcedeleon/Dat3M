@@ -1,4 +1,4 @@
-C IRIW_sc_dev
+OPENCL IRIW_sc_dev
 
 (*
  * https://multicore.doc.ic.ac.uk/overhauling/OpenCL/IRIW_sc_dev.litmus

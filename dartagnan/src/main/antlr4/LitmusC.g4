@@ -41,7 +41,7 @@ threadArguments
     ;
 
 threadArgument
-    :   openCLSpace? pointerTypeSpecifier varName
+    :   pointerTypeSpecifier varName
     ;
 
 expression
@@ -121,7 +121,8 @@ re locals [IntBinaryOp op, String mo]
         | XchgAcquire LPar address = re Comma value = re RPar {$mo = Linux.MO_ACQUIRE;}
         | XchgRelease LPar address = re Comma value = re RPar {$mo = Linux.MO_RELEASE;})                                                    # reXchg
 
-    |   C11AtomicXchg   LPar address = re Comma value = re Comma c11Mo RPar                                             # reC11AtomicXchg
+    |   C11AtomicXchg           LPar address = re Comma value = re Comma c11Mo RPar                                                         # reC11AtomicXchg
+    |   C11AtomicXchgExplicit   LPar address = re Comma value = re Comma c11Mo (Comma openCLScope)? RPar                                    # reC11AtomicXchgExplicit
 
     |   ( AtomicCmpXchg        LPar address = re Comma cmp = re Comma value = re RPar {$mo = Linux.MO_MB;}
         | AtomicCmpXchgRelaxed LPar address = re Comma cmp = re Comma value = re RPar {$mo = Linux.MO_RELAXED;}
@@ -305,8 +306,8 @@ cast
     ;
 
 pointerTypeSpecifier
-    :   (Volatile)? basicTypeSpecifier Ast
-    |   (Volatile)? atomicTypeSpecifier Ast
+    :   (Volatile)? openCLSpace? basicTypeSpecifier Ast
+    |   (Volatile)? openCLSpace? atomicTypeSpecifier Ast
     ;
 
 typeSpecifier
@@ -442,6 +443,7 @@ BarBar
 
 LitmusLanguage
     :   'C'
+    |   'OPENCL'
     ;
 
 AssertionNot

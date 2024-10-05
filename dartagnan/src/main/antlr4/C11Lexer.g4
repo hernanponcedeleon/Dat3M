@@ -4,6 +4,7 @@ C11AtomicLoadExplicit         :   'atomic_load_explicit';
 C11AtomicLoad                 :   'atomic_load';
 C11AtomicStoreExplicit        :   'atomic_store_explicit';
 C11AtomicStore                :   'atomic_store';
+C11AtomicXchgExplicit         :   'atomic_exchange_explicit_explicit';
 C11AtomicXchg                 :   'atomic_exchange_explicit';
 C11AtomicSCASExplicit         :   'atomic_compare_exchange_strong_explicit';
 C11AtomicSCAS                 :   'atomic_compare_exchange_strong';

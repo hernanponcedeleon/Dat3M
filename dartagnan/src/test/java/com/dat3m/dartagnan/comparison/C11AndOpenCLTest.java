@@ -14,7 +14,7 @@ public class C11AndOpenCLTest extends AbstractComparisonTest {
 
     @Parameterized.Parameters(name = "{index}: {0}")
     public static Iterable<Object[]> data() throws IOException {
-        return buildLitmusTests("litmus/C11/");
+        return buildLitmusTests("litmus/OPENCL/portedFromC11/");
     }
 
     public C11AndOpenCLTest(String path) {

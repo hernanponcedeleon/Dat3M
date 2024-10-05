@@ -1,4 +1,4 @@
-C IRIW_sc_wg
+OPENCL IRIW_sc_wg
 
 (*
  * https://multicore.doc.ic.ac.uk/overhauling/OpenCL/IRIW_sc_wg.litmus

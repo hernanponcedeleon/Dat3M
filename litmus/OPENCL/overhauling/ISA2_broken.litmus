@@ -1,4 +1,4 @@
-C ISA2_broken
+OPENCL ISA2_broken
 
 (*
  * https://multicore.doc.ic.ac.uk/overhauling/OpenCL/ISA2_broken.litmus

@@ -1,4 +1,4 @@
-C CT_wsq2
+OPENCL CT_wsq2
 
 (*
  * https://github.com/herd/legacy/blob/master/herdtools/herd/testsuite/OpenCLTests/CT_wsq/CT_wsq2.litmus

@@ -1,4 +1,4 @@
-C 3.2W_xaG_yaG_zaG_sc--sc_rel[wg]-LFsc-rel_rel-GFrel[dev]-acq[wg]_0||1|2
+OPENCL 3.2W_xaG_yaG_zaG_sc--sc_rel[wg]-LFsc-rel_rel-GFrel[dev]-acq[wg]_0||1|2
 
 (*
  * https://github.com/herd/legacy/blob/master/herdtools/herd/testsuite/OpenCLTests/3.2W/3.2W_xaG_yaG_zaG_sc--sc_rel%5Bwg%5D-LFsc-rel_rel-GFrel%5Bdev%5D-acq%5Bwg%5D_0%7C%7C1%7C2.litmus

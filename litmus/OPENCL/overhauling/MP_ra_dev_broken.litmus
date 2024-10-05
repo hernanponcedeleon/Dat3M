@@ -1,4 +1,4 @@
-C MP_ra_dev_broken
+OPENCL MP_ra_dev_broken
 
 (*
  * https://multicore.doc.ic.ac.uk/overhauling/OpenCL/MP_ra_dev_broken.litmus

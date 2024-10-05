@@ -1,4 +1,4 @@
-C IRIW_sc_sc_sc-sc_sc-sc_xaG_yaG_P0_P1_P2_P3
+OPENCL IRIW_sc_sc_sc-sc_sc-sc_xaG_yaG_P0_P1_P2_P3
 
 (*
  * https://github.com/herd/legacy/blob/master/herdtools/herd/testsuite/OpenCLTests/IRIW/IRIW_sc_sc_sc-sc_sc-sc_xaG_yaG_P0_P1_P2_P3.litmus

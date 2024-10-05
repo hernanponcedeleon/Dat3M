@@ -1,4 +1,4 @@
-C ISA2_sc-sc_sc-sc_sc-sc_xaG_yaG_zaG_P0_P1_P2
+OPENCL ISA2_sc-sc_sc-sc_sc-sc_xaG_yaG_zaG_P0_P1_P2
 
 (*
  * https://github.com/herd/legacy/blob/master/herdtools/herd/testsuite/OpenCLTests/ISA2/ISA2_sc-sc_sc-sc_sc-sc_xaG_yaG_zaG_P0_P1_P2.litmus

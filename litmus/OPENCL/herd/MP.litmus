@@ -1,4 +1,4 @@
-C MP_rlx_1FG-sc-all_rlx_xaG_yaG_P0_P1
+OPENCL MP_rlx_1FG-sc-all_rlx_xaG_yaG_P0_P1
 
 (*
  * https://github.com/herd/legacy/blob/master/herdtools/herd/testsuite/OpenCLTests/MP/MP_rlx_1FG-sc-all_rlx_xaG_yaG_P0_P1.litmus

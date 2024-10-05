@@ -1,4 +1,4 @@
-C MP_ra_wg
+OPENCL MP_ra_wg
 
 (*
  * https://multicore.doc.ic.ac.uk/overhauling/OpenCL/MP_ra_wg.litmus

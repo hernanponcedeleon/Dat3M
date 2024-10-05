@@ -1,4 +1,4 @@
-C global_barrier
+OPENCL global_barrier
 
 (*
  * https://github.com/herd/legacy/blob/master/herdtools/herd/testsuite/OpenCLTests/global_barrier_mo.litmus

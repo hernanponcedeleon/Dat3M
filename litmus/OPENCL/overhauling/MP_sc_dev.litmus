@@ -1,4 +1,4 @@
-C MP_sc_dev
+OPENCL MP_sc_dev
 
 (*
  * https://multicore.doc.ic.ac.uk/overhauling/OpenCL/MP_sc_dev.litmus

@@ -128,6 +128,8 @@ public final class Tag {
         public static final String MO_ACQUIRE_RELEASE   = "ACQ_REL";
         public static final String MO_SC                = "SC";
 
+        public static final String DEFAULT_MO = MO_SC;
+
         public static String intToMo(int i) {
             switch (i) {
                 case 0: return MO_RELAXED;
@@ -379,23 +381,19 @@ public final class Tag {
         // Space
         public static final String GLOBAL_SPACE = "GLOBAL";
         public static final String LOCAL_SPACE = "LOCAL";
-        public static final String GENERIC_SPACE = "GENERIC";
         // Barrier
         public static final String ENTRY_FENCE = "EF";
         public static final String EXIT_FENCE = "XF";
         // Default Tags
         public static final String DEFAULT_SCOPE = DEVICE;
         public static final String DEFAULT_WEAK_SCOPE = WORK_ITEM;
-        public static final String DEFAULT_MO = C11.MO_SC;
-        public static final String DEFAULT_CPU_SPACE = GLOBAL_SPACE;
-        public static final String DEFAULT_GPU_SPACE = GENERIC_SPACE;
 
         public static List<String> getScopeTags() {
             return List.of(WORK_GROUP, DEVICE, ALL);
         }
 
         public static List<String> getSpaceTags() {
-            return List.of(GLOBAL_SPACE, LOCAL_SPACE, GENERIC_SPACE);
+            return List.of(GLOBAL_SPACE, LOCAL_SPACE);
         }
 
         public static List<String> getSpaceTags(Event e) {

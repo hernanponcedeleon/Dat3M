@@ -1,4 +1,4 @@
-C MP_ra_dev
+OPENCL MP_ra_dev
 
 (*
  * https://multicore.doc.ic.ac.uk/overhauling/OpenCL/MP_ra_dev.litmus

@@ -1,4 +1,4 @@
-C barrier_example
+OPENCL barrier_example
 
 (*
  * https://github.com/herd/legacy/blob/master/herdtools/herd/testsuite/OpenCLTests/barrier_example.litmus
