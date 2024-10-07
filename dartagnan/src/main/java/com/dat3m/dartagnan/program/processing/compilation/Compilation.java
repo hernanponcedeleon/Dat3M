@@ -130,7 +130,6 @@ public class Compilation implements ProgramProcessor {
             case RISCV -> new VisitorRISCV(useRC11Scheme);
             case PTX -> new VisitorPTX();
             case VULKAN -> new VisitorVulkan();
-            case OPENCL -> throw new UnsupportedOperationException();
         };
     }
 
