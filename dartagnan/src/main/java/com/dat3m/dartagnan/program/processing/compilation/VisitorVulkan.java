@@ -109,14 +109,10 @@ public class VisitorVulkan extends VisitorBase {
             if (source.hasTag(Tag.Vulkan.SEM_VISIBLE)) {
                 target.addTags(Tag.Vulkan.SEM_VISIBLE);
             }
-            // If a RMW is a release, we do not propagate semscX to the read
-            if (!(source.hasTag(Tag.Vulkan.ACQUIRE) || source.hasTag(Tag.Vulkan.ACQ_REL))) {
-                if (target.hasTag(Tag.Vulkan.SEMSC0)) {
-                    target.removeTags(Tag.Vulkan.SEMSC0);
-                }
-                if (target.hasTag(Tag.Vulkan.SEMSC1)) {
-                    target.removeTags(Tag.Vulkan.SEMSC1);
-                }
+            // Remove tag if it refers to the release write
+            if (!source.hasTag(Tag.Vulkan.ACQUIRE) && source.hasTag(Tag.Vulkan.RELEASE)) {
+                target.removeTags(Tag.Vulkan.SEMSC0);
+                target.removeTags(Tag.Vulkan.SEMSC1);
             }
             if (source.hasTag(Tag.Vulkan.VISDEVICE)) {
                 target.addTags(Tag.Vulkan.VISDEVICE);
@@ -129,14 +125,10 @@ public class VisitorVulkan extends VisitorBase {
             if (source.hasTag(Tag.Vulkan.SEM_AVAILABLE)) {
                 target.addTags(Tag.Vulkan.SEM_AVAILABLE);
             }
-            // If a RMW is an acquire, we do not propagate semscX to the write
-            if (!(source.hasTag(Tag.Vulkan.RELEASE) || source.hasTag(Tag.Vulkan.ACQ_REL))) {
-                if (target.hasTag(Tag.Vulkan.SEMSC0)) {
-                    target.removeTags(Tag.Vulkan.SEMSC0);
-                }
-                if (target.hasTag(Tag.Vulkan.SEMSC1)) {
-                    target.removeTags(Tag.Vulkan.SEMSC1);
-                }
+            // Remove tag if it refers to the acquire read
+            if (!source.hasTag(Tag.Vulkan.RELEASE) && source.hasTag(Tag.Vulkan.ACQUIRE)) {
+                target.removeTags(Tag.Vulkan.SEMSC0);
+                target.removeTags(Tag.Vulkan.SEMSC1);
             }
             if (source.hasTag(Tag.Vulkan.AVDEVICE)) {
                 target.addTags(Tag.Vulkan.AVDEVICE);

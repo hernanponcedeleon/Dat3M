@@ -9,8 +9,9 @@
 ; Bound: 58
 ; Schema: 0
                OpCapability Shader
+               OpCapability VulkanMemoryModel
+               OpMemoryModel Logical Vulkan
          %42 = OpExtInstImport "NonSemantic.ClspvReflection.5"
-               OpMemoryModel Logical GLSL450
                OpEntryPoint GLCompute %19 "mutex_test" %gl_LocalInvocationID %10 %14 %15 %16
                OpSource OpenCL_C 200
          %43 = OpString "mutex_test"
@@ -50,7 +51,6 @@
      %uint_1 = OpConstant %uint 1
     %uint_66 = OpConstant %uint 66
        %bool = OpTypeBool
-    %uint_64 = OpConstant %uint 64
 %_ptr_Input_uint = OpTypePointer Input %uint
      %uint_3 = OpConstant %uint 3
      %uint_2 = OpConstant %uint 2
@@ -70,10 +70,10 @@
                OpLoopMerge %34 %26 None
                OpBranchConditional %31 %34 %26
          %34 = OpLabel
-         %35 = OpLoad %uint %24
+         %35 = OpLoad %uint %24 MakePointerVisible|NonPrivatePointer %uint_1
          %36 = OpIAdd %uint %35 %uint_1
-               OpStore %24 %36
-               OpAtomicStore %23 %uint_1 %uint_64 %uint_0
+               OpStore %24 %36 MakePointerAvailable|NonPrivatePointer %uint_1
+               OpAtomicStore %23 %uint_1 %uint_0 %uint_0
          %39 = OpAccessChain %_ptr_Input_uint %gl_LocalInvocationID %uint_0
          %40 = OpLoad %uint %39
          %41 = OpAccessChain %_ptr_StorageBuffer_uint %16 %uint_0 %40

@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan.parsers.program.visitors.spirv.builders;
 
+import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.Type;
@@ -33,6 +34,7 @@ public class ProgramBuilder {
     protected DecorationsBuilder decorationsBuilder;
     protected Function currentFunction;
     protected String entryPointId;
+    protected Arch arch;
     protected Set<String> nextOps;
 
     public ProgramBuilder(ThreadGrid grid) {
@@ -82,6 +84,13 @@ public class ProgramBuilder {
             throw new ParsingException("Multiple entry points are not supported");
         }
         entryPointId = id;
+    }
+
+    public void setArch(Arch arch) {
+        if (this.arch != null) {
+            throw new ParsingException("Illegal attempt to override memory model");
+        }
+        this.arch = arch;
     }
 
     public void setSpecification(Program.SpecificationType type, Expression condition) {

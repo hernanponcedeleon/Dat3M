@@ -40,15 +40,15 @@ public class VisitorSpirvVulkanTest {
         );
         doTestLoad(
                 Set.of(Tag.Spirv.SC_WORKGROUP),
-                Set.of(Tag.Vulkan.SC1, Tag.Vulkan.NON_PRIVATE, Tag.Vulkan.VISIBLE)
-        );
-        doTestLoad(
-                Set.of(Tag.Spirv.MEM_VISIBLE, Tag.Spirv.SC_UNIFORM),
-                Set.of(Tag.Vulkan.VISIBLE, Tag.Vulkan.SC0, Tag.Vulkan.NON_PRIVATE)
+                Set.of(Tag.Vulkan.SC1)
         );
         doTestLoad(
                 Set.of(Tag.Spirv.MEM_VISIBLE, Tag.Spirv.DEVICE, Tag.Spirv.SC_UNIFORM),
-                Set.of(Tag.Vulkan.VISIBLE, Tag.Vulkan.DEVICE, Tag.Vulkan.VISDEVICE, Tag.Vulkan.SC0, Tag.Vulkan.NON_PRIVATE)
+                Set.of(Tag.Vulkan.VISIBLE, Tag.Vulkan.DEVICE, Tag.Vulkan.SC0)
+        );
+        doTestLoad(
+                Set.of(Tag.Spirv.MEM_NON_PRIVATE, Tag.Spirv.MEM_VISIBLE, Tag.Spirv.DEVICE, Tag.Spirv.SC_UNIFORM),
+                Set.of(Tag.Vulkan.NON_PRIVATE, Tag.Vulkan.VISIBLE, Tag.Vulkan.DEVICE, Tag.Vulkan.SC0)
         );
     }
 
@@ -77,15 +77,15 @@ public class VisitorSpirvVulkanTest {
         );
         doTestStore(
                 Set.of(Tag.Spirv.SC_WORKGROUP),
-                Set.of(Tag.Vulkan.SC1, Tag.Vulkan.NON_PRIVATE, Tag.Vulkan.AVAILABLE)
-        );
-        doTestStore(
-                Set.of(Tag.Spirv.MEM_AVAILABLE, Tag.Spirv.SC_UNIFORM),
-                Set.of(Tag.Vulkan.AVAILABLE, Tag.Vulkan.SC0, Tag.Vulkan.NON_PRIVATE)
+                Set.of(Tag.Vulkan.SC1)
         );
         doTestStore(
                 Set.of(Tag.Spirv.MEM_AVAILABLE, Tag.Spirv.DEVICE, Tag.Spirv.SC_UNIFORM),
-                Set.of(Tag.Vulkan.AVAILABLE, Tag.Vulkan.DEVICE, Tag.Vulkan.AVDEVICE, Tag.Vulkan.SC0, Tag.Vulkan.NON_PRIVATE)
+                Set.of(Tag.Vulkan.AVAILABLE, Tag.Vulkan.DEVICE, Tag.Vulkan.SC0)
+        );
+        doTestStore(
+                Set.of(Tag.Spirv.MEM_NON_PRIVATE, Tag.Spirv.MEM_AVAILABLE, Tag.Spirv.DEVICE, Tag.Spirv.SC_UNIFORM),
+                Set.of(Tag.Vulkan.NON_PRIVATE, Tag.Vulkan.AVAILABLE, Tag.Vulkan.DEVICE, Tag.Vulkan.SC0)
         );
     }
 
@@ -126,7 +126,7 @@ public class VisitorSpirvVulkanTest {
         );
         doTestSpirvLoad(
                 Set.of(Tag.Spirv.RELAXED, Tag.Spirv.DEVICE, Tag.Spirv.SC_UNIFORM),
-                Set.of(Tag.Vulkan.DEVICE, Tag.Vulkan.VISDEVICE, Tag.Vulkan.SC0, Tag.Vulkan.NON_PRIVATE)
+                Set.of(Tag.Vulkan.DEVICE, Tag.Vulkan.SC0, Tag.Vulkan.NON_PRIVATE)
         );
     }
 
@@ -169,7 +169,7 @@ public class VisitorSpirvVulkanTest {
         );
         doTestSpirvStore(
                 Set.of(Tag.Spirv.RELAXED, Tag.Spirv.DEVICE, Tag.Spirv.SC_UNIFORM),
-                Set.of(Tag.Vulkan.DEVICE, Tag.Vulkan.AVDEVICE, Tag.Vulkan.SC0, Tag.Vulkan.NON_PRIVATE)
+                Set.of(Tag.Vulkan.DEVICE, Tag.Vulkan.SC0, Tag.Vulkan.NON_PRIVATE)
         );
     }
 
@@ -221,8 +221,8 @@ public class VisitorSpirvVulkanTest {
         );
         doTestSpirvXchg(
                 Set.of(Tag.Spirv.RELAXED, Tag.Spirv.DEVICE, Tag.Spirv.SC_WORKGROUP),
-                Set.of(Tag.Vulkan.DEVICE, Tag.Vulkan.VISDEVICE, Tag.Vulkan.SC1, Tag.Vulkan.NON_PRIVATE),
-                Set.of(Tag.Vulkan.DEVICE, Tag.Vulkan.AVDEVICE, Tag.Vulkan.SC1, Tag.Vulkan.NON_PRIVATE)
+                Set.of(Tag.Vulkan.DEVICE, Tag.Vulkan.SC1, Tag.Vulkan.NON_PRIVATE),
+                Set.of(Tag.Vulkan.DEVICE, Tag.Vulkan.SC1, Tag.Vulkan.NON_PRIVATE)
         );
     }
 
@@ -282,8 +282,8 @@ public class VisitorSpirvVulkanTest {
         );
         doTestSpirvRmw(
                 Set.of(Tag.Spirv.RELAXED, Tag.Spirv.DEVICE, Tag.Spirv.SC_WORKGROUP),
-                Set.of(Tag.Vulkan.DEVICE, Tag.Vulkan.VISDEVICE, Tag.Vulkan.SC1, Tag.Vulkan.NON_PRIVATE),
-                Set.of(Tag.Vulkan.DEVICE, Tag.Vulkan.AVDEVICE, Tag.Vulkan.SC1, Tag.Vulkan.NON_PRIVATE)
+                Set.of(Tag.Vulkan.DEVICE, Tag.Vulkan.SC1, Tag.Vulkan.NON_PRIVATE),
+                Set.of(Tag.Vulkan.DEVICE, Tag.Vulkan.SC1, Tag.Vulkan.NON_PRIVATE)
         );
     }
 
@@ -350,8 +350,8 @@ public class VisitorSpirvVulkanTest {
                 Tag.Spirv.DEVICE,
                 Set.of(Tag.Spirv.RELAXED, Tag.Spirv.SC_WORKGROUP),
                 Set.of(Tag.Spirv.RELAXED, Tag.Spirv.SC_WORKGROUP),
-                Set.of(Tag.Vulkan.DEVICE, Tag.Vulkan.VISDEVICE, Tag.Vulkan.SC1, Tag.Vulkan.NON_PRIVATE),
-                Set.of(Tag.Vulkan.DEVICE, Tag.Vulkan.AVDEVICE, Tag.Vulkan.SC1, Tag.Vulkan.NON_PRIVATE));
+                Set.of(Tag.Vulkan.DEVICE, Tag.Vulkan.SC1, Tag.Vulkan.NON_PRIVATE),
+                Set.of(Tag.Vulkan.DEVICE, Tag.Vulkan.SC1, Tag.Vulkan.NON_PRIVATE));
     }
 
     private void doTestSpirvCmpXchg(String scope, Set<String> eqTags, Set<String> neqTags, Set<String> loadTags, Set<String> storeTags) {

@@ -11,10 +11,11 @@
 ; Bound: 191
 ; Schema: 0
                OpCapability Shader
+               OpCapability VulkanMemoryModel
+               OpMemoryModel Logical Vulkan
                OpCapability VariablePointersStorageBuffer
                OpCapability VariablePointers
         %157 = OpExtInstImport "NonSemantic.ClspvReflection.5"
-               OpMemoryModel Logical GLSL450
                OpEntryPoint GLCompute %27 "foo" %gl_GlobalInvocationID %10 %19 %20 %21 %22 %23 %24 %14
                OpSource OpenCL_C 200
         %158 = OpString "foo"

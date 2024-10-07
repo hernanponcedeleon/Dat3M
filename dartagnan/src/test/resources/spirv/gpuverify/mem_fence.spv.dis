@@ -5,8 +5,9 @@
 ; Bound: 23
 ; Schema: 0
                OpCapability Shader
+               OpCapability VulkanMemoryModel
+               OpMemoryModel Logical Vulkan
          %16 = OpExtInstImport "NonSemantic.ClspvReflection.5"
-               OpMemoryModel Logical GLSL450
                OpEntryPoint GLCompute %11 "foo" %8
                OpSource OpenCL_C 200
          %17 = OpString "foo"

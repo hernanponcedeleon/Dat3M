@@ -5,8 +5,9 @@
 ; Bound: 55
 ; Schema: 0
                OpCapability Shader
+               OpCapability VulkanMemoryModel
+               OpMemoryModel Logical Vulkan
          %41 = OpExtInstImport "NonSemantic.ClspvReflection.5"
-               OpMemoryModel Logical GLSL450
                OpEntryPoint GLCompute %21 "atomicTest" %gl_LocalInvocationID %10 %14 %18
                OpSource OpenCL_C 200
          %42 = OpString "atomicTest"

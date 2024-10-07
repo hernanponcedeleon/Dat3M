@@ -10,8 +10,9 @@
 ; Bound: 67
 ; Schema: 0
                OpCapability Shader
+               OpCapability VulkanMemoryModel
+               OpMemoryModel Logical Vulkan
          %47 = OpExtInstImport "NonSemantic.ClspvReflection.5"
-               OpMemoryModel Logical GLSL450
                OpEntryPoint GLCompute %20 "mutex_test" %gl_LocalInvocationID %10 %14 %15 %16 %17
                OpSource OpenCL_C 200
          %48 = OpString "mutex_test"
@@ -52,7 +53,6 @@
 %_ptr_StorageBuffer_uint = OpTypePointer StorageBuffer %uint
      %uint_0 = OpConstant %uint 0
      %uint_1 = OpConstant %uint 1
-    %uint_64 = OpConstant %uint 64
     %uint_66 = OpConstant %uint 66
        %bool = OpTypeBool
 %_ptr_Input_uint = OpTypePointer Input %uint
@@ -70,7 +70,7 @@
          %24 = OpAccessChain %_ptr_StorageBuffer_uint %14 %uint_0 %uint_0
          %25 = OpAccessChain %_ptr_StorageBuffer_uint %15 %uint_0 %uint_0
          %26 = OpAccessChain %_ptr_StorageBuffer_uint %16 %uint_0 %uint_0
-         %29 = OpAtomicIAdd %uint %25 %uint_1 %uint_64 %uint_1
+         %29 = OpAtomicIAdd %uint %25 %uint_1 %uint_0 %uint_1
                OpBranch %31
          %31 = OpLabel
          %33 = OpAtomicLoad %uint %24 %uint_1 %uint_66
@@ -78,12 +78,12 @@
                OpLoopMerge %38 %31 None
                OpBranchConditional %35 %38 %31
          %38 = OpLabel
-         %39 = OpLoad %uint %26
+         %39 = OpLoad %uint %26 MakePointerVisible|NonPrivatePointer %uint_1
          %40 = OpIAdd %uint %39 %uint_1
-               OpStore %26 %40
-         %41 = OpAtomicLoad %uint %24 %uint_1 %uint_64
+               OpStore %26 %40 MakePointerAvailable|NonPrivatePointer %uint_1
+         %41 = OpAtomicLoad %uint %24 %uint_1 %uint_0
          %42 = OpIAdd %uint %41 %uint_1
-               OpAtomicStore %24 %uint_1 %uint_64 %42
+               OpAtomicStore %24 %uint_1 %uint_0 %42
          %44 = OpAccessChain %_ptr_Input_uint %gl_LocalInvocationID %uint_0
          %45 = OpLoad %uint %44
          %46 = OpAccessChain %_ptr_StorageBuffer_uint %17 %uint_0 %45

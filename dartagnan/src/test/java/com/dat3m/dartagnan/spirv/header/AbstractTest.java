@@ -9,7 +9,8 @@ public abstract class AbstractTest {
 
     protected static final String BODY = """
                             OpCapability Shader
-                            OpMemoryModel Logical GLSL450
+                            OpCapability VulkanMemoryModel
+                            OpMemoryModel Logical Vulkan
                             OpEntryPoint GLCompute %main "main"
                             OpSource GLSL 450
                     %void = OpTypeVoid
