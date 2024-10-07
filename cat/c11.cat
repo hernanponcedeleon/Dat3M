@@ -12,7 +12,6 @@ C "C++11"
 * https://multicore.doc.ic.ac.uk/overhauling/c11_simp.cat
 *)
 
-include "basic.cat"
 include "c11_cos.cat"
 include "c11_los.cat"
 
@@ -26,6 +25,8 @@ let ccon = R & CON
 
 // To be compatible with reads from uninit memory, we use our default definition of fr
 //let fr = rf^-1 ; mo
+include "basic.cat"
+let fr = fr & (_ * ~NAL)
 
 let dd = (data | addr)+
 
