@@ -47,9 +47,7 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
     public Program visitMain(LitmusCParser.MainContext ctx) {
         //FIXME: We should visit thread declarations before variable declarations
         // because variable declaration refer to threads.
-        if (ctx.LitmusLanguage().getText().equals("OPENCL")) {
-            isOpenCL = true;
-        }
+            isOpenCL = ctx.LitmusLanguage().getText().equals("OPENCL");
         visitVariableDeclaratorList(ctx.variableDeclaratorList());
         visitProgram(ctx.program());
         VisitorLitmusAssertions.parseAssertions(programBuilder, ctx.assertionList(), ctx.assertionFilter());
