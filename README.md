@@ -51,18 +51,6 @@ To build the tool run
 mvn clean install -DskipTests
 ```
 
-Troubleshooting
-======
-**MacOS ARM**
-
-Dartagnan automatically loads native binaries for its supported SMT solvers.
-However, it always loads the x86 binaries even on MacOS ARM.
-This will trigger the following error when using Z3:
-```
-java.lang.UnsatisfiedLinkError: no libz3 in java.library.path: [/Users/***/Library/Java/Extensions, /Library/Java/Extensions, /Network/Library/Java/Extensions, /System/Library/Java/Extensions, /usr/lib/java, .]
-```
-A workaround here is to manually download the ARM binaries (https://github.com/Z3Prover/z3/releases/), unpack the .zip, and place the two `.dylib` files (`libz3.dylib` and `libz3java.dylib`) into one of the folders mentioned in the error message (e.g., `Library/Java/Extensions`).
-
 Usage
 ======
 Dartagnan comes with a user interface (not available from the docker container) where it is easy to import, export and modify both the program and the memory model and select the options for the verification engine (see below).
