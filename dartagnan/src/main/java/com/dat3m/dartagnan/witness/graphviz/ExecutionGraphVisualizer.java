@@ -7,6 +7,7 @@ import com.dat3m.dartagnan.program.event.metadata.MemoryOrder;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.dat3m.dartagnan.verification.model.EventData;
 import com.dat3m.dartagnan.verification.model.ExecutionModel;
+import com.dat3m.dartagnan.verification.model.MemoryObjectModel;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -34,7 +35,7 @@ public class ExecutionGraphVisualizer {
     private BiPredicate<EventData, EventData> rfFilter = (x, y) -> true;
     private BiPredicate<EventData, EventData> frFilter = (x, y) -> true;
     private BiPredicate<EventData, EventData> coFilter = (x, y) -> true;
-    private final LinkedHashMap<MemoryObject, BigInteger> objToAddrMap = new LinkedHashMap<>();
+    private final LinkedHashMap<MemoryObject, MemoryObjectModel> objToAddrMap = new LinkedHashMap<>();
 
     public ExecutionGraphVisualizer() {
         this.graphviz = new Graphviz();
@@ -74,9 +75,9 @@ public class ExecutionGraphVisualizer {
     }
 
     private void computeAddressMap(ExecutionModel model) {
-        final Map<MemoryObject, BigInteger> memLayout = model.getMemoryLayoutMap();
+        final Map<MemoryObject, MemoryObjectModel> memLayout = model.getMemoryLayoutMap();
         final List<MemoryObject> objs = new ArrayList<>(memLayout.keySet());
-        objs.sort(Comparator.comparing(memLayout::get));
+        objs.sort(Comparator.comparing(obj -> memLayout.get(obj).address()));
 
         for (MemoryObject obj : objs) {
             objToAddrMap.put(obj, memLayout.get(obj));
@@ -187,24 +188,22 @@ public class ExecutionGraphVisualizer {
     }
 
     private String getAddressString(BigInteger address) {
-        MemoryObject obj = null;
-        BigInteger objAddress = null;
-        for (Map.Entry<MemoryObject, BigInteger> entry : objToAddrMap.entrySet()) {
-            final BigInteger nextObjAddr = entry.getValue();
+        MemoryObjectModel obj = null;
+        for (Map.Entry<MemoryObject, MemoryObjectModel> entry : objToAddrMap.entrySet()) {
+            final BigInteger nextObjAddr = entry.getValue().address();
             if (nextObjAddr.compareTo(address) > 0) {
                 break;
             }
-            obj = entry.getKey();
-            objAddress = nextObjAddr;
+            obj = entry.getValue();
         }
 
         if (obj == null) {
             return address + " [OOB]";
-        } else if (address.equals(objAddress)) {
+        } else if (address.equals(obj.address())) {
             return obj.toString();
         } else {
-            final boolean isOOB = address.compareTo(objAddress.add(BigInteger.valueOf(obj.size()))) >= 0;
-            return String.format("%s + %s%s", obj, address.subtract(objAddress), isOOB ? " [OOB]" : "");
+            final boolean isOOB = address.compareTo(obj.address().add(obj.size())) >= 0;
+            return String.format("%s + %s%s", obj, address.subtract(obj.address()), isOOB ? " [OOB]" : "");
         }
     }
 

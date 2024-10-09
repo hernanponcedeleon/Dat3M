@@ -291,10 +291,8 @@ public class ProgramEncoder implements Encoder {
 
         final var enc = new ArrayList<BooleanFormula>();
         for (final MemoryObject memObj : memory.getObjects()) {
-            // For all objects, their 'final' value fetched here represents their constant value.
-            final Formula addressVariable = context.encodeFinalExpression(memObj);
+            final Formula addressVariable = context.address(memObj);
             final BigInteger addressInteger = memObj2Addr.get(memObj);
-
             if (addressVariable instanceof BitvectorFormula bitvectorVariable) {
                 final BitvectorFormulaManager bvmgr = fmgr.getBitvectorFormulaManager();
                 final int length = bvmgr.getLength(bitvectorVariable);
@@ -303,6 +301,18 @@ public class ProgramEncoder implements Encoder {
                 assert addressVariable instanceof IntegerFormula;
                 final IntegerFormulaManager imgr = fmgr.getIntegerFormulaManager();
                 enc.add(imgr.equal((IntegerFormula) addressVariable, imgr.makeNumber(addressInteger)));
+            }
+
+            final Formula sizeVariable = context.size(memObj);
+            final BigInteger sizeInteger = BigInteger.valueOf(memObj.getKnownSize());
+            if (sizeVariable instanceof BitvectorFormula bitvectorVariable) {
+                final BitvectorFormulaManager bvmgr = fmgr.getBitvectorFormulaManager();
+                final int length = bvmgr.getLength(bitvectorVariable);
+                enc.add(bvmgr.equal(bitvectorVariable, bvmgr.makeBitvector(length, sizeInteger)));
+            } else {
+                assert addressVariable instanceof IntegerFormula;
+                final IntegerFormulaManager imgr = fmgr.getIntegerFormulaManager();
+                enc.add(imgr.equal((IntegerFormula) sizeVariable, imgr.makeNumber(sizeInteger)));
             }
         }
         return fmgr.getBooleanFormulaManager().and(enc);
@@ -321,6 +331,8 @@ public class ProgramEncoder implements Encoder {
         Map<MemoryObject, BigInteger> memObj2Addr = new HashMap<>();
         BigInteger nextAddr = alignment;
         for(MemoryObject memObj : memory.getObjects()) {
+            Preconditions.checkState(memObj.hasKnownSize(), "Cannot encode static memory layout for" +
+                            "variable-sized memory object: %s", memObj);
             memObj2Addr.put(memObj, nextAddr);
 
             // Compute next aligned address as follows:
@@ -328,7 +340,7 @@ public class ProgramEncoder implements Encoder {
             //  => padding = k*alignment - curAddr - size
             //  => padding mod alignment = (-size) mod alignment    // k*alignment and curAddr are 0 mod alignment.
             //  => padding = (-size) mod alignment                  // Because padding < alignment
-            final BigInteger memObjSize = BigInteger.valueOf(memObj.size());
+            final BigInteger memObjSize = BigInteger.valueOf(memObj.getKnownSize());
             final BigInteger padding = memObjSize.negate().mod(alignment);
             nextAddr = nextAddr.add(memObjSize).add(padding);
         }

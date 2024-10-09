@@ -28,9 +28,7 @@ public class Memory {
     // Generates a new, dynamically allocated memory object.
     public MemoryObject allocate(Alloc allocationSite) {
         Preconditions.checkNotNull(allocationSite);
-        // TODO: Add support for dynamically-sized allocations.
-        final int size = getStaticAllocSize(allocationSite);
-        final MemoryObject memoryObject = new MemoryObject(nextIndex++, size, allocationSite, ptrType);
+        final MemoryObject memoryObject = new MemoryObject(nextIndex++, allocationSite.getAllocationSize(), allocationSite, ptrType);
         objects.add(memoryObject);
         return memoryObject;
     }
