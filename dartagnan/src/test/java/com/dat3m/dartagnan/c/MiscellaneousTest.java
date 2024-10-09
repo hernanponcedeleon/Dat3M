@@ -91,7 +91,9 @@ public class MiscellaneousTest extends AbstractCTest {
                 {"offsetof", IMM, PASS, 1},
                 {"ctlz", IMM, PASS, 1},
                 {"cttz", IMM, PASS, 1},
-                {"jumpIntoLoop", IMM, PASS, 11}
+                {"jumpIntoLoop", IMM, PASS, 11},
+                {"nondet_alloc", IMM, FAIL, 1},
+                {"nondet_alloc_2", IMM, PASS, 1},
         });
     }
 
