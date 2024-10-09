@@ -75,8 +75,7 @@ public class Dartagnan extends BaseOptions {
 
     private static final Logger logger = LogManager.getLogger(Dartagnan.class);
 
-    private static final Set<String> supportedFormats =
-            ImmutableSet.copyOf(Arrays.asList(".litmus", ".c", ".i", ".ll", ".spv.dis"));
+    private static final Set<String> supportedFormats = ImmutableSet.copyOf(ProgramParser.SUPPORTED_EXTENSIONS);
 
     private Dartagnan(Configuration config) throws InvalidConfigurationException {
         config.recursiveInject(this);
