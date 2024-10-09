@@ -93,6 +93,7 @@ public class EventFactory {
 
     public static Alloc newAlloc(Register register, Type allocType, Expression arraySize,
                                  boolean isHeapAlloc, boolean doesZeroOutMemory) {
+        arraySize = expressions.makeCast(arraySize, TypeFactory.getInstance().getArchType(), false);
         return new Alloc(register, allocType, arraySize, isHeapAlloc, doesZeroOutMemory);
     }
 
