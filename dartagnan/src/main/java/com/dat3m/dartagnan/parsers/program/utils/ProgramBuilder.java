@@ -276,7 +276,7 @@ public class ProgramBuilder {
 
     // ----------------------------------------------------------------------------------------------------------------
     // GPU
-    public void setOrCreateScopedThread(Arch arch, String name, int id, int ...scopeIds) {
+    public void newScopedThread(Arch arch, String name, int id, int ...scopeIds) {
         ScopeHierarchy scopeHierarchy = switch (arch) {
             case PTX -> ScopeHierarchy.ScopeHierarchyForPTX(scopeIds[0], scopeIds[1]);
             case VULKAN -> ScopeHierarchy.ScopeHierarchyForVulkan(scopeIds[0], scopeIds[1], scopeIds[2]);
@@ -285,19 +285,17 @@ public class ProgramBuilder {
         };
 
         if(id2FunctionsMap.containsKey(id)) {
-            Thread thread = (Thread) id2FunctionsMap.get(id);
-            thread.setScopeHierarchy(scopeHierarchy);
-        } else {
-            // Litmus threads run unconditionally (have no creator) and have no parameters/return types.
-            ThreadStart threadEntry = EventFactory.newThreadStart(null);
-            Thread scopedThread = new Thread(name, DEFAULT_THREAD_TYPE, List.of(), id, threadEntry, scopeHierarchy, new HashSet<>());
-            id2FunctionsMap.put(id, scopedThread);
-            program.addThread(scopedThread);
+            throw new MalformedProgramException("Function or thread with id " + id + " already exists.");
         }
+        // Litmus threads run unconditionally (have no creator) and have no parameters/return types.
+        ThreadStart threadEntry = EventFactory.newThreadStart(null);
+        Thread scopedThread = new Thread(name, DEFAULT_THREAD_TYPE, List.of(), id, threadEntry, scopeHierarchy, new HashSet<>());
+        id2FunctionsMap.put(id, scopedThread);
+        program.addThread(scopedThread);
     }
 
-    public void setOrCreateScopedThread(Arch arch, int id, int ...ids) {
-        setOrCreateScopedThread(arch, String.valueOf(id), id, ids);
+    public void newScopedThread(Arch arch, int id, int ...ids) {
+        newScopedThread(arch, String.valueOf(id), id, ids);
     }
 
     // ----------------------------------------------------------------------------------------------------------------

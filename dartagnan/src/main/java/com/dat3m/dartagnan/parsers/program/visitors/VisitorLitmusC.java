@@ -36,6 +36,7 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
     private int whileId = 0;
     private Register returnRegister;
     private boolean isOpenCL = false;
+    private final List<Integer> threadIds = new ArrayList<>();
 
     public VisitorLitmusC(){
     }
@@ -45,11 +46,16 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
 
     @Override
     public Program visitMain(LitmusCParser.MainContext ctx) {
-        //FIXME: We should visit thread declarations before variable declarations
-        // because variable declaration refer to threads.
-            isOpenCL = ctx.LitmusLanguage().getText().equals("OPENCL");
+        isOpenCL = ctx.LitmusLanguage().getText().equals("OPENCL");
+        for (LitmusCParser.ThreadDeclaratorContext threadDeclaratorContext : ctx.threadDeclarator()) {
+            visitThreadDeclarator(threadDeclaratorContext);
+        }
         visitVariableDeclaratorList(ctx.variableDeclaratorList());
-        visitProgram(ctx.program());
+        int threadIndex = 0;
+        for (LitmusCParser.ThreadContentContext threadContentContext : ctx.threadContent()) {
+            scope = currentThread = threadIds.get(threadIndex++);
+            visitThreadContent(threadContentContext);
+        }
         VisitorLitmusAssertions.parseAssertions(programBuilder, ctx.assertionList(), ctx.assertionFilter());
         return programBuilder.build();
     }
@@ -70,8 +76,6 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
     @Override
     public Object visitGlobalDeclaratorRegister(LitmusCParser.GlobalDeclaratorRegisterContext ctx) {
         if (ctx.initConstantValue() != null) {
-            // FIXME: We visit declarators before threads, so we need to create threads early
-            programBuilder.getOrNewThread(ctx.threadId().id);
             IntLiteral value = expressions.parseValue(ctx.initConstantValue().constant().getText(), archType);
             programBuilder.initRegEqConst(ctx.threadId().id,ctx.varName().getText(), value);
         }
@@ -97,7 +101,6 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
     @Override
     public Object visitGlobalDeclaratorRegisterLocation(LitmusCParser.GlobalDeclaratorRegisterLocationContext ctx) {
         // FIXME: We visit declarators before threads, so we need to create threads early
-        programBuilder.getOrNewThread(ctx.threadId().id);
         if(ctx.Ast() == null){
             programBuilder.initRegEqLocPtr(ctx.threadId().id, ctx.varName(0).getText(), ctx.varName(1).getText(), archType);
         } else {
@@ -154,28 +157,25 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
     // Threads (the program itself)
 
     @Override
-    public Object visitThread(LitmusCParser.ThreadContext ctx) {
+    public Object visitThreadDeclarator(LitmusCParser.ThreadDeclaratorContext ctx) {
         scope = currentThread = ctx.threadId().id;
-        // Declarations in the preamble may have created the thread already
+        threadIds.add(currentThread);
         if (isOpenCL && ctx.threadScope() != null) {
-            ctx.threadScope().accept(this);
+            int wgID = ctx.threadScope().scopeID(0).id;
+            int devID = ctx.threadScope().scopeID(1).id;
+            programBuilder.newScopedThread(Arch.OPENCL, currentThread, devID, wgID);
         } else {
-            programBuilder.getOrNewThread(currentThread);
+            programBuilder.newThread(currentThread);
         }
-        visitThreadArguments(ctx.threadArguments());
-
-        for(LitmusCParser.ExpressionContext expressionContext : ctx.expression())
-            expressionContext.accept(this);
-
         scope = currentThread = -1;
         return null;
     }
 
     @Override
-    public Object visitOpenCLThreadScope(LitmusCParser.OpenCLThreadScopeContext ctx) {
-        int wgID = ctx.scopeID(0).id;
-        int devID = ctx.scopeID(1).id;
-        programBuilder.setOrCreateScopedThread(Arch.OPENCL, currentThread, devID, wgID);
+    public Object visitThreadContent(LitmusCParser.ThreadContentContext ctx) {
+        visitThreadArguments(ctx.threadArguments());
+        for(LitmusCParser.ExpressionContext expressionContext : ctx.expression())
+            expressionContext.accept(this);
         return null;
     }
 

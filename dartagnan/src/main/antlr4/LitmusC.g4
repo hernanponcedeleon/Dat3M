@@ -9,7 +9,7 @@ import static com.dat3m.dartagnan.program.event.Tag.*;
 }
 
 main
-    :    LitmusLanguage ~(LBrace)* variableDeclaratorList program variableList? assertionFilter? assertionList? comment? EOF
+    :    LitmusLanguage ~(LBrace)* variableDeclaratorList (threadDeclarator threadContent)+ variableList? assertionFilter? assertionList? comment? EOF
     ;
 
 variableDeclaratorList
@@ -24,16 +24,16 @@ globalDeclarator
     |   typeSpecifier? varName LBracket DigitSequence? RBracket (Equals initArray)?                                                         # globalDeclaratorArray
     ;
 
-program
-    :   thread+
+threadDeclarator
+    :   threadId (At threadScope)?
     ;
 
-thread
-    :   threadId (At threadScope)? LPar threadArguments? RPar LBrace expression* RBrace
+threadContent
+    :   LPar threadArguments? RPar LBrace expression* RBrace
     ;
 
 threadScope
-    :   OpenCLWG scopeID Comma OpenCLDEV scopeID                                                                                            # OpenCLThreadScope
+    :   OpenCLWG scopeID Comma OpenCLDEV scopeID
     ;
 
 threadArguments
@@ -215,9 +215,9 @@ nre locals [IntBinaryOp op, String mo, String name]
 
     |   C11AtomicFence LPar c11Mo RPar                                                                                                      # nreC11Fence
 
-    |   OpenCLAtomicFenceWI LPar openCLFenceFlags Comma c11Mo Comma openCLScope RPar                                                         # nreOpenCLFence
+    |   OpenCLAtomicFenceWI LPar openCLFenceFlags Comma c11Mo Comma openCLScope RPar                                                        # nreOpenCLFence
 
-    |   barrierId Colon OpenCLBarrier LPar openCLFenceFlags (Comma openCLScope)? RPar                                                        # nreOpenCLBarrier
+    |   barrierId Colon OpenCLBarrier LPar openCLFenceFlags (Comma openCLScope)? RPar                                                       # nreOpenCLBarrier
 
     ;
 
