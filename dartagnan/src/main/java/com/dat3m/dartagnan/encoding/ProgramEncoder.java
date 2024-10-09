@@ -23,6 +23,7 @@ import com.dat3m.dartagnan.program.memory.Memory;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.dat3m.dartagnan.program.misc.NonDetValue;
 import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -284,10 +285,10 @@ public class ProgramEncoder implements Encoder {
         logger.info("Encoding memory");
         final Memory memory = context.getTask().getProgram().getMemory();
         final FormulaManager fmgr = context.getFormulaManager();
-        // TODO: Once we want to encode dynamic memory layouts (e.g., due to dynamically-sized mallocs)
-        //  we need to compute a Map<MemoryObject, Formula> where each formula describes a
-        //  unique, properly aligned, and non-overlapping address of the memory object.
-        final Map<MemoryObject, BigInteger> memObj2Addr = computeStaticMemoryLayout(memory);
+
+        return encodeDynamicMemoryLayout(memory);
+
+        /*final Map<MemoryObject, BigInteger> memObj2Addr = computeStaticMemoryLayout(memory);
 
         final var enc = new ArrayList<BooleanFormula>();
         for (final MemoryObject memObj : memory.getObjects()) {
@@ -315,7 +316,7 @@ public class ProgramEncoder implements Encoder {
                 enc.add(imgr.equal((IntegerFormula) sizeVariable, imgr.makeNumber(sizeInteger)));
             }
         }
-        return fmgr.getBooleanFormulaManager().and(enc);
+        return fmgr.getBooleanFormulaManager().and(enc);*/
     }
 
     /*
@@ -332,7 +333,7 @@ public class ProgramEncoder implements Encoder {
         BigInteger nextAddr = alignment;
         for(MemoryObject memObj : memory.getObjects()) {
             Preconditions.checkState(memObj.hasKnownSize(), "Cannot encode static memory layout for" +
-                            "variable-sized memory object: %s", memObj);
+                            " variable-sized memory object: %s", memObj);
             memObj2Addr.put(memObj, nextAddr);
 
             // Compute next aligned address as follows:
@@ -346,6 +347,54 @@ public class ProgramEncoder implements Encoder {
         }
 
         return memObj2Addr;
+    }
+
+    private BooleanFormula encodeDynamicMemoryLayout(Memory memory) {
+        final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
+        final EncodingHelper helper = new EncodingHelper(context.getFormulaManager());
+        final List<BooleanFormula> enc = new ArrayList<>();
+
+        // TODO: We could sort the objects to generate better encoding:
+        //  "static -> dynamic with known size -> dynamic with unknown size"
+        //  For the former two we can then statically assign addresses as we do now and
+        //  only the latter needs dynamic encodings.
+        final List<MemoryObject> memoryObjects = ImmutableList.copyOf(memory.getObjects());
+        for (int i = 0; i < memoryObjects.size(); i++) {
+            final MemoryObject cur = memoryObjects.get(i);
+            final Formula addr = context.address(cur);
+            final Formula size = context.size(cur);
+
+            // Encode size (non-allocated objects are 0-sized)
+            if (cur.isStaticallyAllocated()) {
+                enc.add(helper.equals(size, context.encodeFinalExpression(cur.size())));
+            } else {
+                enc.add(helper.equals(size,
+                        bmgr.ifThenElse(context.execution(cur.getAllocationSite()),
+                                context.encodeExpressionAt(cur.size(), cur.getAllocationSite()),
+                                helper.value(BigInteger.ZERO, helper.typeOf(size)))
+                        )
+                );
+            }
+
+            // Encode address (we even give non-allocated objects a proper address)
+            // We 8-align by default because it works for most real code.
+            final Formula alignment = helper.value(BigInteger.valueOf(8), helper.typeOf(addr));
+            final MemoryObject prev = i > 0 ? memoryObjects.get(i - 1) : null;
+            if (prev == null) {
+                // First object is placed at alignment
+                enc.add(helper.equals(addr, alignment));
+            } else {
+                final Formula prevAddr = context.address(prev);
+                final Formula prevSize = context.size(prev);
+                final Formula nextAvailableAddr = helper.add(prevAddr, prevSize);
+                final Formula nextAlignedAddr = helper.add(nextAvailableAddr,
+                        helper.subtract(alignment, helper.remainder(nextAvailableAddr, alignment))
+                );
+                enc.add(helper.equals(addr, nextAlignedAddr));
+            }
+        }
+
+        return bmgr.and(enc);
     }
 
     /**
