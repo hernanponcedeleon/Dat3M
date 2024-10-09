@@ -38,6 +38,7 @@ import org.apache.logging.log4j.Logger;
 import org.apache.maven.model.io.xpp3.MavenXpp3Reader;
 import org.sosy_lab.common.ShutdownManager;
 import org.sosy_lab.common.configuration.Configuration;
+import org.sosy_lab.common.configuration.ConfigurationBuilder;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.common.configuration.Options;
 import org.sosy_lab.common.log.BasicLogManager;
@@ -81,6 +82,24 @@ public class Dartagnan extends BaseOptions {
         config.recursiveInject(this);
     }
 
+    private static Configuration loadConfiguration(String[] args) throws InvalidConfigurationException, IOException {
+        ConfigurationBuilder builder = Configuration.builder();
+        for (String argument : args) {
+            int index = argument.indexOf('=');
+            if (index != -1 && argument.startsWith("--")) {
+                builder.setOption(argument.substring(2, index), argument.substring(index + 1));
+            } else if (argument.endsWith(".properties")) {
+                try {
+                    builder.loadFromFile(argument);
+                    logger.info("Loaded properties from {}", argument);
+                } catch (IOException e) {
+                    logger.warn("Could not load file {}: {}", argument, e.getMessage());
+                }
+            }
+        }
+        return builder.build();
+    }
+
     public static void main(String[] args) throws Exception {
 
         initGitInfo();
@@ -100,10 +119,7 @@ public class Dartagnan extends BaseOptions {
 
         logGitInfo();
 
-        String[] argKeyword = Arrays.stream(args)
-                .filter(s -> s.startsWith("-"))
-                .toArray(String[]::new);
-        Configuration config = Configuration.fromCmdLineArguments(argKeyword);
+        Configuration config = loadConfiguration(args);
         Dartagnan o = new Dartagnan(config);
 
         GlobalSettings.configure(config);
