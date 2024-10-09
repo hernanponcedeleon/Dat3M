@@ -4,10 +4,10 @@ import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.analysis.SyntacticContextAnalysis;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.metadata.MemoryOrder;
-import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.dat3m.dartagnan.verification.model.EventData;
 import com.dat3m.dartagnan.verification.model.ExecutionModel;
 import com.dat3m.dartagnan.verification.model.MemoryObjectModel;
+import com.google.common.collect.Lists;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -16,7 +16,10 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.io.Writer;
 import java.math.BigInteger;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Map;
 import java.util.function.BiPredicate;
 
 import static com.dat3m.dartagnan.program.analysis.SyntacticContextAnalysis.*;
@@ -35,7 +38,7 @@ public class ExecutionGraphVisualizer {
     private BiPredicate<EventData, EventData> rfFilter = (x, y) -> true;
     private BiPredicate<EventData, EventData> frFilter = (x, y) -> true;
     private BiPredicate<EventData, EventData> coFilter = (x, y) -> true;
-    private final LinkedHashMap<MemoryObject, MemoryObjectModel> objToAddrMap = new LinkedHashMap<>();
+    private final List<MemoryObjectModel> sortedMemoryObjects = new ArrayList<>();
 
     public ExecutionGraphVisualizer() {
         this.graphviz = new Graphviz();
@@ -75,13 +78,9 @@ public class ExecutionGraphVisualizer {
     }
 
     private void computeAddressMap(ExecutionModel model) {
-        final Map<MemoryObject, MemoryObjectModel> memLayout = model.getMemoryLayoutMap();
-        final List<MemoryObject> objs = new ArrayList<>(memLayout.keySet());
-        objs.sort(Comparator.comparing(obj -> memLayout.get(obj).address()));
-
-        for (MemoryObject obj : objs) {
-            objToAddrMap.put(obj, memLayout.get(obj));
-        }
+        model.getMemoryLayoutMap().entrySet().stream()
+                .sorted(Comparator.comparing(entry -> entry.getValue().address()))
+                .forEach(entry -> sortedMemoryObjects.add(entry.getValue()));
     }
 
     private boolean ignore(EventData e) {
@@ -188,22 +187,19 @@ public class ExecutionGraphVisualizer {
     }
 
     private String getAddressString(BigInteger address) {
-        MemoryObjectModel obj = null;
-        for (Map.Entry<MemoryObject, MemoryObjectModel> entry : objToAddrMap.entrySet()) {
-            final BigInteger nextObjAddr = entry.getValue().address();
-            if (nextObjAddr.compareTo(address) > 0) {
-                break;
-            }
-            obj = entry.getValue();
-        }
+        final MemoryObjectModel accObj = Lists.reverse(sortedMemoryObjects).stream()
+                .filter(o -> o.address().compareTo(address) <= 0)
+                .findFirst().orElse(null);
 
-        if (obj == null) {
+        if (accObj == null) {
             return address + " [OOB]";
-        } else if (address.equals(obj.address())) {
-            return obj.toString();
         } else {
-            final boolean isOOB = address.compareTo(obj.address().add(obj.size())) >= 0;
-            return String.format("%s + %s%s", obj, address.subtract(obj.address()), isOOB ? " [OOB]" : "");
+            final boolean isOOB = address.compareTo(accObj.address().add(accObj.size())) >= 0;
+            final BigInteger offset = address.subtract(accObj.address());
+            return String.format("%s[size=%s]%s%s", accObj.object(), accObj.size(),
+                    !offset.equals(BigInteger.ZERO) ? " + " + offset : "",
+                    isOOB ? " [OOB]" : ""
+            );
         }
     }
 
