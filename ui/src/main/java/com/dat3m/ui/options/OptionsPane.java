@@ -19,6 +19,7 @@ import java.awt.event.ActionListener;
 import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.Iterator;
+import java.util.Map;
 
 import static com.dat3m.ui.options.utils.Helper.solversOrderedValues;
 import static java.awt.FlowLayout.LEFT;
@@ -42,7 +43,7 @@ public class OptionsPane extends JPanel implements ActionListener {
     private final TimeoutField timeoutField;
 
     private final JTextField cflagsField;
-    private final JTextField configField;
+    private final ConfigField configField;
 
     private final JButton testButton;
     private final JButton clearButton;
@@ -78,7 +79,7 @@ public class OptionsPane extends JPanel implements ActionListener {
         cflagsField = new JTextField();
         cflagsField.setColumns(20);
 
-        configField = new JTextField();
+        configField = new ConfigField();
         configField.setColumns(20);
 
         testButton = new TestButton();
@@ -115,7 +116,7 @@ public class OptionsPane extends JPanel implements ActionListener {
         int timeout = Integer.parseInt(timeoutField.getText());
         boolean showViolationGraph = showViolationField.isSelected();
         String cflags = cflagsField.getText().strip();
-        String config = configField.getText().strip();
+        final Map<String, String> config = configField.getConfiguration();
         Arch target = (Arch) targetPane.getSelectedItem();
         Method method = (Method) methodPane.getSelectedItem();
         Solvers solver = (Solvers) solverPane.getSelectedItem();

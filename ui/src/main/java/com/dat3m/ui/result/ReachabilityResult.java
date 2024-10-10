@@ -73,9 +73,7 @@ public class ReachabilityResult {
 
         try {
             final Arch arch = program.getArch() != null ? program.getArch() : options.target();
-            final Configuration config = options.config().isEmpty() ?
-                    Configuration.defaultConfiguration() :
-                    Configuration.fromCmdLineArguments(options.config().split(" "));
+            final Configuration config = Configuration.builder().setOptions(options.config()).build();
             final VerificationTask task = VerificationTask.builder()
                     .withConfig(config)
                     .withBound(options.bound())
