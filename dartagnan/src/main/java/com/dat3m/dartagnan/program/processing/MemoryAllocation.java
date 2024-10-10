@@ -11,6 +11,7 @@ import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.core.Alloc;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
+import com.google.common.base.Preconditions;
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.common.configuration.Option;
@@ -65,7 +66,8 @@ public class MemoryAllocation implements ProgramProcessor {
             alloc.setAllocatedObject(allocatedObject);
 
             if (alloc.doesZeroOutMemory() || createInitsForDynamicAllocations) {
-                for (int i = 0; i < allocatedObject.size(); i++) {
+                Preconditions.checkState(allocatedObject.hasKnownSize(), "Cannot initialize dynamic allocation of unknown size.");
+                for (int i = 0; i < allocatedObject.getKnownSize(); i++) {
                     allocatedObject.setInitialValue(i, zero);
                 }
             }

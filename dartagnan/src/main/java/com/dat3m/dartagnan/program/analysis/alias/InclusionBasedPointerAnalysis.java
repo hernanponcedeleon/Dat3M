@@ -397,7 +397,10 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
         final Modifier modifier = compose(includeEdge.modifier, address.modifier);
         assert includeEdge.source.object != null;
         // If the only included address refers to the last element, treat it as a direct static offset instead.
-        final int remainingSize = includeEdge.source.object.size() - modifier.offset;
+        if (!includeEdge.source.object.hasKnownSize()) {
+            return;
+        }
+        final int remainingSize = includeEdge.source.object.getKnownSize() - modifier.offset;
         for (final Integer a : modifier.alignment) {
             if (a < remainingSize) {
                 return;

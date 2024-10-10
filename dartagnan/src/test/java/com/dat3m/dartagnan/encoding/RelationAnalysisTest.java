@@ -23,7 +23,10 @@ import java.io.IOException;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.*;
+import java.util.Arrays;
+import java.util.EnumSet;
+import java.util.LinkedList;
+import java.util.List;
 
 import static com.dat3m.dartagnan.configuration.Alias.FIELD_SENSITIVE;
 import static com.dat3m.dartagnan.configuration.OptionNames.*;
@@ -62,37 +65,51 @@ public class RelationAnalysisTest {
                 { "dartagnan/src/test/resources/lfds", "cat/c11.cat", Arch.C11 },
                 { "dartagnan/src/test/resources/locks", "cat/c11.cat", Arch.C11 },
                 { "dartagnan/src/test/resources/libvsync", "cat/c11.cat", Arch.C11 },
-                { "dartagnan/src/test/resources/miscellaneous", "cat/c11.cat", Arch.C11 },
+                // Requires new alias analysis, but we cannot enable it due to
+                // https://github.com/hernanponcedeleon/Dat3M/issues/746
+                //{ "dartagnan/src/test/resources/miscellaneous", "cat/c11.cat", Arch.C11 },
 
                 { "dartagnan/src/test/resources/lfds", "cat/imm.cat", Arch.C11 },
                 { "dartagnan/src/test/resources/locks", "cat/imm.cat", Arch.C11 },
                 { "dartagnan/src/test/resources/libvsync", "cat/imm.cat", Arch.C11 },
-                { "dartagnan/src/test/resources/miscellaneous", "cat/imm.cat", Arch.C11 },
+                // Requires new alias analysis, but we cannot enable it due to
+                // https://github.com/hernanponcedeleon/Dat3M/issues/746
+                //{ "dartagnan/src/test/resources/miscellaneous", "cat/imm.cat", Arch.C11 },
 
                 { "dartagnan/src/test/resources/lfds", "cat/vmm.cat", Arch.C11 },
                 { "dartagnan/src/test/resources/locks", "cat/vmm.cat", Arch.C11 },
                 { "dartagnan/src/test/resources/libvsync", "cat/vmm.cat", Arch.C11 },
-                { "dartagnan/src/test/resources/miscellaneous", "cat/vmm.cat", Arch.C11 },
+                // Requires new alias analysis, but we cannot enable it due to
+                // https://github.com/hernanponcedeleon/Dat3M/issues/746
+                //{ "dartagnan/src/test/resources/miscellaneous", "cat/vmm.cat", Arch.C11 },
 
                 { "dartagnan/src/test/resources/lfds", "cat/rc11.cat", Arch.C11 },
                 { "dartagnan/src/test/resources/locks", "cat/rc11.cat", Arch.C11 },
                 { "dartagnan/src/test/resources/libvsync", "cat/rc11.cat", Arch.C11 },
-                { "dartagnan/src/test/resources/miscellaneous", "cat/rc11.cat", Arch.C11 },
+                // Requires new alias analysis, but we cannot enable it due to
+                // https://github.com/hernanponcedeleon/Dat3M/issues/746
+                //{ "dartagnan/src/test/resources/miscellaneous", "cat/rc11.cat", Arch.C11 },
 
                 { "dartagnan/src/test/resources/lfds", "cat/aarch64.cat", Arch.ARM8 },
                 { "dartagnan/src/test/resources/locks", "cat/aarch64.cat", Arch.ARM8 },
                 { "dartagnan/src/test/resources/libvsync", "cat/aarch64.cat", Arch.ARM8 },
-                { "dartagnan/src/test/resources/miscellaneous", "cat/aarch64.cat", Arch.ARM8 },
+                // Requires new alias analysis, but we cannot enable it due to
+                // https://github.com/hernanponcedeleon/Dat3M/issues/746
+                //{ "dartagnan/src/test/resources/miscellaneous", "cat/aarch64.cat", Arch.ARM8 },
 
                 { "dartagnan/src/test/resources/lfds", "cat/tso.cat", Arch.TSO },
                 { "dartagnan/src/test/resources/locks", "cat/tso.cat", Arch.TSO },
                 { "dartagnan/src/test/resources/libvsync", "cat/tso.cat", Arch.TSO },
-                { "dartagnan/src/test/resources/miscellaneous", "cat/tso.cat", Arch.TSO },
+                // Requires new alias analysis, but we cannot enable it due to
+                // https://github.com/hernanponcedeleon/Dat3M/issues/746
+                //{ "dartagnan/src/test/resources/miscellaneous", "cat/tso.cat", Arch.TSO },
 
                 { "dartagnan/src/test/resources/lfds", "cat/riscv.cat", Arch.RISCV },
                 { "dartagnan/src/test/resources/locks", "cat/riscv.cat", Arch.RISCV },
                 { "dartagnan/src/test/resources/libvsync", "cat/riscv.cat", Arch.RISCV },
-                { "dartagnan/src/test/resources/miscellaneous", "cat/riscv.cat", Arch.RISCV },
+                // Requires new alias analysis, but we cannot enable it due to
+                // https://github.com/hernanponcedeleon/Dat3M/issues/746
+                //{ "dartagnan/src/test/resources/miscellaneous", "cat/riscv.cat", Arch.RISCV },
 
                 { "dartagnan/src/test/resources/spirv/benchmarks", "cat/spirv.cat", Arch.VULKAN },
         });

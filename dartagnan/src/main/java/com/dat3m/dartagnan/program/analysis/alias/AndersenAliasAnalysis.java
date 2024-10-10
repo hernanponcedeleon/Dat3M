@@ -53,7 +53,7 @@ public class AndersenAliasAnalysis implements AliasAnalysis {
         Preconditions.checkArgument(program.isCompiled(), "The program must be compiled first.");
         ImmutableSet.Builder<Location> builder = new ImmutableSet.Builder<>();
         for (MemoryObject a : program.getMemory().getObjects()) {
-            for (int i = 0; i < a.size(); i++) {
+            for (int i = 0; i < a.getKnownSize(); i++) {
                 builder.add(new Location(a, i));
             }
         }
@@ -227,7 +227,7 @@ public class AndersenAliasAnalysis implements AliasAnalysis {
             Expression rhs = ((IntBinaryExpr) exp).getRight();
             if (rhs instanceof IntLiteral ic) {
                 int o = target.offset + ic.getValueAsInt();
-                if (o < target.base.size()) {
+                if (o < target.base.getKnownSize()) {
                     addTarget(reg, new Location(target.base, o));
                 }
             } else {
@@ -302,7 +302,8 @@ public class AndersenAliasAnalysis implements AliasAnalysis {
         final int offset;
 
         Location(MemoryObject b, int o) {
-            Preconditions.checkArgument(0 <= o && o < b.size(), "Array out of bounds");
+            b.isInRange(o);
+            Preconditions.checkArgument(b.isInRange(o), "Array out of bounds");
             base = b;
             offset = o;
         }
@@ -356,7 +357,7 @@ public class AndersenAliasAnalysis implements AliasAnalysis {
     }
 
     private void addTargetArray(Register r, MemoryObject b) {
-        targets.put(r, IntStream.range(0, b.size())
+        targets.put(r, IntStream.range(0, b.getKnownSize())
                 .mapToObj(i -> new Location(b, i))
                 .collect(Collectors.toSet()));
     }

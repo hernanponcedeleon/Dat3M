@@ -54,10 +54,12 @@ public class LogThreadStatistics implements ProgramProcessor {
 
         int numNonInitThreads = (int)threads.stream().filter(t -> !(t.getEntry().getSuccessor() instanceof Init)).count();
         int staticAddressSpaceSize = program.getMemory().getObjects().stream()
-                .filter(MemoryObject::isStaticallyAllocated).mapToInt(MemoryObject::size).sum();
+                .filter(m -> m.isStaticallyAllocated() && m.hasKnownSize()).mapToInt(MemoryObject::getKnownSize).sum();
         int dynamicAddressSpaceSize = program.getMemory().getObjects().stream()
-                .filter(MemoryObject::isDynamicallyAllocated).mapToInt(MemoryObject::size).sum();
+                .filter(m -> m.isDynamicallyAllocated() && m.hasKnownSize()).mapToInt(MemoryObject::getKnownSize).sum();
         int totalAddressSpaceSize = dynamicAddressSpaceSize + staticAddressSpaceSize;
+        int numUnknownSizedAllocations = Math.toIntExact(program.getMemory().getObjects().stream()
+                .filter(m -> !m.hasKnownSize()).count());
 
         StringBuilder output = new StringBuilder();
         output.append("\n======== Program statistics ========").append("\n");
@@ -70,7 +72,8 @@ public class LogThreadStatistics implements ProgramProcessor {
                 .append("\t#Others: ").append(otherVisibleCount).append("\n")
                 .append("#Allocated bytes: ").append(totalAddressSpaceSize).append("\n")
                 .append("\tStatically allocated: ").append(staticAddressSpaceSize).append("\n")
-                .append("\tDynamically allocated: ").append(dynamicAddressSpaceSize).append("\n");
+                .append("\tDynamically allocated: ").append(dynamicAddressSpaceSize).append("\n")
+                .append("\t#Unknown allocations: ").append(numUnknownSizedAllocations).append("\n");
         output.append("========================================");
         logger.info(output);
     }

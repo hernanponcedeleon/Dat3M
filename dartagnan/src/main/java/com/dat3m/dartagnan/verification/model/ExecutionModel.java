@@ -54,7 +54,7 @@ public class ExecutionModel {
     // The event list is sorted lexicographically by (threadID, cID)
     private final ArrayList<EventData> eventList;
     private final ArrayList<Thread> threadList;
-    private final Map<MemoryObject, BigInteger> memoryLayoutMap;
+    private final Map<MemoryObject, MemoryObjectModel> memoryLayoutMap;
     private final Map<Thread, List<EventData>> threadEventsMap;
     private final Map<Thread, List<List<EventData>>> atomicBlocksMap;
     private final Map<EventData, EventData> readWriteMap;
@@ -74,7 +74,7 @@ public class ExecutionModel {
     // The following are a read-only views which get passed to the outside
     private List<EventData> eventListView;
     private List<Thread> threadListView;
-    private Map<MemoryObject, BigInteger> memoryLayoutMapView;
+    private Map<MemoryObject, MemoryObjectModel> memoryLayoutMapView;
     private Map<Thread, List<EventData>> threadEventsMapView;
     private Map<Thread, List<List<EventData>>> atomicBlocksMapView;
     private Map<EventData, EventData> readWriteMapView;
@@ -172,7 +172,7 @@ public class ExecutionModel {
         return threadListView;
     }
 
-    public Map<MemoryObject, BigInteger> getMemoryLayoutMap() { return memoryLayoutMapView; }
+    public Map<MemoryObject, MemoryObjectModel> getMemoryLayoutMap() { return memoryLayoutMapView; }
     public Map<Thread, List<EventData>> getThreadEventsMap() {
         return threadEventsMapView;
     }
@@ -496,8 +496,9 @@ public class ExecutionModel {
         for (MemoryObject obj : getProgram().getMemory().getObjects()) {
             final boolean isAllocated = obj.isStaticallyAllocated() || isTrue(encodingContext.execution(obj.getAllocationSite()));
             if (isAllocated) {
-                final BigInteger address = (BigInteger) model.evaluate(encodingContext.encodeFinalExpression(obj));
-                memoryLayoutMap.put(obj, address);
+                final BigInteger address = (BigInteger) model.evaluate(encodingContext.address(obj));
+                final BigInteger size = (BigInteger) model.evaluate(encodingContext.size(obj));
+                memoryLayoutMap.put(obj, new MemoryObjectModel(obj, address, size));
             }
         }
     }

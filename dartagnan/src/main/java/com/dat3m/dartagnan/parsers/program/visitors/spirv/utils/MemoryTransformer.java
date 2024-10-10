@@ -13,7 +13,10 @@ import com.dat3m.dartagnan.program.memory.ScopedPointerVariable;
 import com.dat3m.dartagnan.program.memory.VirtualMemoryObject;
 import com.dat3m.dartagnan.program.misc.NonDetValue;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.function.IntUnaryOperator;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -96,8 +99,8 @@ public class MemoryTransformer extends ExprTransformer {
         Map<MemoryObject, MemoryObject> mapping = scopeMapping.get(scopeDepth);
         if (!mapping.containsKey(memObj)) {
             MemoryObject copy = memObj instanceof VirtualMemoryObject
-                    ? program.getMemory().allocateVirtual(memObj.size(), true, null)
-                    : program.getMemory().allocate(memObj.size());
+                    ? program.getMemory().allocateVirtual(memObj.getKnownSize(), true, null)
+                    : program.getMemory().allocate(memObj.getKnownSize());
             copy.setName(makeVariableName(scopeDepth, memObj.getName()));
             for (int offset : memObj.getInitializedFields()) {
                 Expression value = memObj.getInitialValue(offset);

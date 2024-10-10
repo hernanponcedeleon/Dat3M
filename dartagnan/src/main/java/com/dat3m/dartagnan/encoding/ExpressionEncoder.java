@@ -102,7 +102,6 @@ class ExpressionEncoder implements ExpressionVisitor<Formula> {
 
     @Override
     public Formula visitIntLiteral(IntLiteral intLiteral) {
-        
         BigInteger value = intLiteral.getValue();
         Type type = intLiteral.getType();
         return context.makeLiteral(type, value);
@@ -294,7 +293,7 @@ class ExpressionEncoder implements ExpressionVisitor<Formula> {
 
     @Override
     public Formula visitMemoryObject(MemoryObject memObj) {
-        return context.makeVariable(memObj.toString(), memObj.getType());
+        return context.address(memObj);
     }
 
     @Override
