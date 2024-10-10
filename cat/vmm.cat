@@ -56,8 +56,6 @@
 let ext = ext & ((~IW) * M)
 let int = int | (IW * M)
 
-include "basic.cat"
-
 (** Atomicity **)
 empty rmw & (fre;coe)
 

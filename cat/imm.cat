@@ -8,8 +8,6 @@
  * following GenMC's implementation
  *)
 
-include "basic.cat"
-
 (* coherence *)
 let rs = [W];po-loc;[W] | [W];(po-loc?;rf;rmw)*                                                                                     (* release sequence *)
 (* GenMC uses the same sw definition as RC11 *)
