@@ -5,7 +5,7 @@ import com.dat3m.dartagnan.wmm.axiom.*;
 }
 
 mcm
-    :   (NAME)? (QUOTED_STRING)? (definition | include)+ EOF
+    :   (NAME)? (QUOTED_STRING)? (definition | include | show)+ EOF
     ;
 
 definition
@@ -58,7 +58,11 @@ expression
     ;
 
 include
-    :   'include' path = QUOTED_STRING
+    :   INCLUDE path = QUOTED_STRING
+    ;
+
+show
+    :   SHOW expression (AS NAME)?
     ;
 
 parameterList
@@ -74,6 +78,8 @@ REC     :   'rec';
 AND     :   'and';
 AS      :   'as';
 TOID    :   'toid';
+SHOW    :   'show';
+INCLUDE :   'include';
 
 ACYCLIC     :   'acyclic';
 IRREFLEXIVE :   'irreflexive';
