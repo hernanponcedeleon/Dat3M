@@ -25,9 +25,9 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.EnumSet;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -65,6 +65,7 @@ public class OptionsPane extends JPanel {
 
     private final JTextField extraOptionsField;
     private final JDialog extraOptionsDialog;
+    private final Map<String, JComponent> extraOptionsComponents = new HashMap<>();
     private final Map<String, String> extraOptionsMap = new LinkedHashMap<>();
     private final JFileChooser configurationFileChooser = new JFileChooser();
 
@@ -243,6 +244,7 @@ public class OptionsPane extends JPanel {
     }
 
     private void handleExtraOptionsButton(ActionEvent e) {
+        updateExtraOptionsFields();
         extraOptionsDialog.setVisible(true);
         extraOptionsDialog.setLocationRelativeTo(this);
         extraOptionsDialog.requestFocus();
@@ -443,6 +445,20 @@ public class OptionsPane extends JPanel {
         return field;
     }
 
+    private void updateExtraOptionsFields() {
+        for (Map.Entry<String, JComponent> entry : extraOptionsComponents.entrySet()) {
+            String value = extraOptionsMap.get(entry.getKey());
+            if (entry.getValue() instanceof JCheckBox field) {
+                field.setSelected("true".equals(value));
+            } else if (entry.getValue() instanceof JComboBox<?> field) {
+                field.setSelectedItem("");
+                field.setSelectedItem(value == null ? "" : value);
+            } else if (entry.getValue() instanceof JTextField field) {
+                field.setText(value == null ? "" : value);
+            }
+        }
+    }
+
     private void setOption(String key, String value) {
         //TODO sometimes, the empty string should be treated as a valid value
         if (value.isEmpty()) {
@@ -469,7 +485,6 @@ public class OptionsPane extends JPanel {
             } catch (InterruptedException | ExecutionException e) {
                 throw new RuntimeException("Future falsely marked as done", e);
             }
-            List<JComponent> fields = new ArrayList<>();
             int labelWidth = 0;
             for (OptionInfo info : list) {
                 if (BASIC_OPTIONS.contains(info.getName())) {
@@ -481,7 +496,7 @@ public class OptionsPane extends JPanel {
                 panel.add(label);
                 labelWidth = Math.max(labelWidth, label.getMinimumSize().width);
                 panel.add(field);
-                fields.add(field);
+                extraOptionsComponents.put(info.getName(), field);
                 layout.putConstraint(SpringLayout.WEST, label, 0, SpringLayout.WEST, panel);
                 layout.putConstraint(SpringLayout.NORTH, label, top, SpringLayout.NORTH, panel);
                 layout.putConstraint(SpringLayout.EAST, field, 0, SpringLayout.EAST, panel);
@@ -490,7 +505,7 @@ public class OptionsPane extends JPanel {
                 top += LINE_HEIGHT;
             }
             //Layout the second column.
-            for (JComponent field : fields) {
+            for (JComponent field : extraOptionsComponents.values()) {
                 layout.putConstraint(SpringLayout.WEST, field, labelWidth, SpringLayout.WEST, panel);
             }
             panel.setPreferredSize(new Dimension(labelWidth + 20, top));
