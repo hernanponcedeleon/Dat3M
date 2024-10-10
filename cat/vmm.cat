@@ -2,7 +2,7 @@
  * Copyright (C) Huawei Technologies Co., Ltd. 2024. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
- * Version 0.9.1
+ * Version 0.9.3
  */
 
 (* Notation
@@ -55,8 +55,12 @@
 
 let ext = ext & ((~IW) * M)
 let int = int | (IW * M)
-
-include "basic.cat"
+let rfe = rf & ext
+let coe = co & ext
+let fre = fr & ext
+let rfi = rf & int
+let coi = co & int
+let fri = fr & int
 
 (** Atomicity **)
 empty rmw & (fre;coe)
@@ -66,8 +70,8 @@ acyclic co | rf | fr | po-loc
 
 let Marked = RLX | ACQ | REL | SC
 let Plain = ~Marked
-let Acq = ACQ | (SC & R)
-let Rel = REL | (SC & W)
+let Acq = (ACQ | SC) & (R | F)
+let Rel = (REL | SC) & (W | F)
 
 (** Ordering **)
 (* In our model, dependencies only order stores:

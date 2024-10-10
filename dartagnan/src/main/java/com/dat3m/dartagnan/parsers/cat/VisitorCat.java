@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan.parsers.cat;
 
+import com.dat3m.dartagnan.GlobalSettings;
 import com.dat3m.dartagnan.exception.AbortErrorListener;
 import com.dat3m.dartagnan.exception.MalformedMemoryModelException;
 import com.dat3m.dartagnan.exception.ParsingException;
@@ -62,6 +63,17 @@ class VisitorCat extends CatBaseVisitor<Object> {
     VisitorCat(Path includePath) {
         this.includePath = includePath;
         this.wmm = new Wmm();
+        includeStdlib();
+    }
+
+    private void includeStdlib() {
+        try {
+            // The standard library is a cat file stdlib.cat which all models include by default
+            final CatParser parser = getParser(CharStreams.fromPath(Path.of(GlobalSettings.getCatDirectory() + "/stdlib.cat")));
+            parser.mcm().accept(this);
+        } catch (IOException e) {
+            throw new ParsingException("Error parsing stdlib.cat file", e);
+        }
     }
 
     @Override

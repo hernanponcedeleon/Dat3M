@@ -12,8 +12,6 @@ PTX
 // GPU: Graphics processing unit. The GPU scope is the set of all threads executing in the same cluster as the current thread.
 // SYS: System. The SYS scope is the set of all threads in the current program.
 
-include "basic.cat"
-
 (*******************)
 (*   Auxiliaries   *)
 (*******************)
