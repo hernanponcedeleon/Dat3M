@@ -11,18 +11,26 @@ import java.awt.event.FocusEvent;
 import java.awt.event.ItemEvent;
 import java.awt.event.WindowEvent;
 import java.awt.event.WindowFocusListener;
+import java.io.File;
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 import java.util.concurrent.ExecutionException;
+
+import static com.dat3m.ui.utils.Utils.showError;
 
 final class ConfigField extends JPanel {
 
     final JTextField textField;
     JDialog dialog;
     final Map<String, String> map = new LinkedHashMap<>();
+    final JFileChooser fileChooser = new JFileChooser();
 
     public ConfigField() {
         setLayout(new BoxLayout(this, BoxLayout.X_AXIS));
@@ -31,7 +39,7 @@ final class ConfigField extends JPanel {
         var button = new JButton("...");
         button.setToolTipText("Manage extra options.");
         add(button);
-        button.addActionListener(this::handleButtonAction);
+        button.addActionListener(this::handleShowButton);
         textField.addFocusListener(new FocusAdapter() {
             @Override
             public void focusGained(FocusEvent e) {
@@ -68,7 +76,7 @@ final class ConfigField extends JPanel {
         textField.setText(b.toString());
     }
 
-    private void handleButtonAction(ActionEvent e) {
+    private void handleShowButton(ActionEvent e) {
         if (dialog == null) {
             dialog = newDialog();
         }
@@ -110,10 +118,52 @@ final class ConfigField extends JPanel {
     private JPanel newDialogButtons() {
         final var panel = new JPanel();
         panel.setLayout(new FlowLayout(FlowLayout.RIGHT));
+        final var importButton = new JButton("Import");
+        importButton.setToolTipText("Load a configuration from a file");
+        importButton.addActionListener(this::handleImportButton);
+        panel.add(importButton);
+        final var exportButton = new JButton("Export");
+        exportButton.setToolTipText("Save the current configuration to a file");
+        exportButton.addActionListener(this::handleExportButton);
+        panel.add(exportButton);
         final var okButton = new JButton("OK");
         okButton.addActionListener(event -> dialog.setVisible(false));
         panel.add(okButton);
         return panel;
+    }
+
+    private void handleExportButton(ActionEvent ignoreEvent) {
+        fileChooser.showSaveDialog(this);
+        final File file = fileChooser.getSelectedFile();
+        if (file == null) {
+            return;
+        }
+        Properties properties = new Properties();
+        properties.putAll(map);
+        try (FileWriter writer = new FileWriter(file)) {
+            properties.store(writer, "Created with Dartagnan");
+        } catch (IOException e) {
+            showError(e.getMessage(), "Error while exporting configuration");
+        }
+    }
+
+    private void handleImportButton(ActionEvent ignoreEvent) {
+        fileChooser.showOpenDialog(this);
+        final File file = fileChooser.getSelectedFile();
+        if (file == null) {
+            return;
+        }
+        Properties properties = new Properties();
+        try (FileReader reader = new FileReader(file)) {
+            properties.load(reader);
+        } catch (IOException e) {
+            showError(e.getMessage(), "Error while importing configuration");
+            return;
+        }
+        map.clear();
+        for (Map.Entry<Object, Object> entry : properties.entrySet()) {
+            map.put(entry.getKey().toString(), entry.getValue().toString());
+        }
     }
 
     private final class Worker extends SwingWorker<List<OptionInfo>, Void> {
