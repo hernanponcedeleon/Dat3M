@@ -30,7 +30,6 @@ public class OptionNames {
     public static final String USE_INTEGERS = "encoding.integers";
     public static final String ENABLE_ACTIVE_SETS = "encoding.activeSets";
     public static final String REDUCE_ACYCLICITY_ENCODE_SETS = "encoding.wmm.reduceAcyclicityEncodeSets";
-    public static final String LOCALLY_CONSISTENT = "encoding.locallyConsistent";// TODO also influences RA
     public static final String MERGE_CF_VARS = "encoding.mergeCFVars";
     public static final String INITIALIZE_REGISTERS = "encoding.initializeRegisters";
     public static final String BREAK_SYMMETRY_ON = "encoding.symmetry.breakOn";
@@ -58,6 +57,8 @@ public class OptionNames {
     public static final String MERGE_BRANCHES = "program.analysis.cf.mergeBranches";
 
     // Memory Model Options
+    public static final String WMM_ATOMICITY = "wmm.analysis.alwaysAtomicity";
+    public static final String WMM_SC_PER_LOC = "wmm.analysis.alwaysSCPerLoc";
     public static final String RELATION_ANALYSIS = "wmm.analysis.relationAnalysis";
     public static final String ENABLE_EXTENDED_RELATION_ANALYSIS = "wmm.analysis.extendedRelationAnalysis";
 

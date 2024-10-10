@@ -14,20 +14,20 @@ import org.sosy_lab.common.configuration.Options;
 
 import java.util.Set;
 
-import static com.dat3m.dartagnan.configuration.OptionNames.LOCALLY_CONSISTENT;
+import static com.dat3m.dartagnan.configuration.OptionNames.WMM_ATOMICITY;
+import static com.dat3m.dartagnan.configuration.OptionNames.WMM_SC_PER_LOC;
 
 @Options
 public class WmmAnalysis {
 
     // =========================== Configurables ===========================
 
-    @Option(
-            name= LOCALLY_CONSISTENT,
+    @Option(name=WMM_SC_PER_LOC,
             description="Assumes local consistency for all created wmms.",
             secure=true)
     private boolean assumeLocalConsistency = true;
 
-    @Option(
+    @Option(name=WMM_ATOMICITY,
             description="Assumes the WMM respects atomic blocks for optimization (only the case for SVCOMP right now).",
             secure=true)
     private boolean respectsAtomicBlocks = true;
