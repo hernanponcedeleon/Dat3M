@@ -129,6 +129,10 @@ public final class OptionInfo implements Comparable<OptionInfo> {
         return option.name();
     }
 
+    public String getDescription() {
+        return option.description();
+    }
+
     public Class<?> getDomain() {
         return domain;
     }

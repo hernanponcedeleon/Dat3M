@@ -80,7 +80,7 @@ public class OptionsPane extends JPanel implements ActionListener {
         cflagsField.setColumns(20);
 
         configField = new ConfigField();
-        configField.setColumns(20);
+        configField.textField.setColumns(20);
 
         testButton = new TestButton();
         clearButton = new ClearButton();
