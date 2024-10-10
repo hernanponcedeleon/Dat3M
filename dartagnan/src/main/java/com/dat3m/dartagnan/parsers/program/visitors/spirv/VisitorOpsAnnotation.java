@@ -14,11 +14,9 @@ import static com.dat3m.dartagnan.parsers.program.visitors.spirv.decorations.Dec
 public class VisitorOpsAnnotation extends SpirvBaseVisitor<Void> {
 
     private final Decoration builtIn;
-    private final Decoration specId;
 
     public VisitorOpsAnnotation(ProgramBuilder builder) {
         this.builtIn = builder.getDecorationsBuilder().getDecoration(BUILT_IN);
-        this.specId = builder.getDecorationsBuilder().getDecoration(SPEC_ID);
     }
 
     @Override
@@ -30,11 +28,10 @@ public class VisitorOpsAnnotation extends SpirvBaseVisitor<Void> {
                 String value = ctx.decoration().builtIn().getText();
                 builtIn.addDecoration(id, value);
             }
-            case SPEC_ID -> {
-                String value = ctx.decoration().specializationConstantID().getText();
-                specId.addDecoration(id, value);
+            case BINDING, SPEC_ID -> {
+                // Skip, defines the order of pointers passed by the host
             }
-            case ARRAY_STRIDE, BINDING, BLOCK, BUFFER_BLOCK, COHERENT, DESCRIPTOR_SET, OFFSET, NO_CONTRACTION, NO_PERSPECTIVE, NON_WRITABLE -> {
+            case ARRAY_STRIDE, BLOCK, BUFFER_BLOCK, COHERENT, DESCRIPTOR_SET, OFFSET, NO_CONTRACTION, NO_PERSPECTIVE, NON_WRITABLE -> {
                 // TODO: Implementation
             }
             default -> throw new ParsingException("Unsupported decoration type '%s'", type);
