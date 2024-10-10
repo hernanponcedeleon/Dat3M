@@ -3,8 +3,10 @@ package com.dat3m.dartagnan.parsers.program.visitors.spirv;
 import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
-import com.dat3m.dartagnan.expression.type.*;
-import com.dat3m.dartagnan.parsers.program.visitors.spirv.decorations.SpecId;
+import com.dat3m.dartagnan.expression.type.AggregateType;
+import com.dat3m.dartagnan.expression.type.BooleanType;
+import com.dat3m.dartagnan.expression.type.IntegerType;
+import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.mocks.MockProgramBuilder;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.mocks.MockSpirvParser;
 import org.junit.Test;
@@ -12,7 +14,6 @@ import org.junit.Test;
 import java.util.List;
 import java.util.Map;
 
-import static com.dat3m.dartagnan.parsers.program.visitors.spirv.decorations.DecorationType.SPEC_ID;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
@@ -21,7 +22,6 @@ public class VisitorOpsConstantTest {
     private static final ExpressionFactory expressions = ExpressionFactory.getInstance();
     private static final IntegerType archType = TypeFactory.getInstance().getArchType();
     private final MockProgramBuilder builder = new MockProgramBuilder();
-    private final SpecId specId = (SpecId) builder.getDecorationsBuilder().getDecoration(SPEC_ID);
 
     @Test
     public void testOpConstantBool() {
@@ -536,225 +536,6 @@ public class VisitorOpsConstantTest {
             assertEquals("Mismatching number of elements in the composite constant '%s', " +
                     "expected 2 elements but received 1 elements", e.getMessage());
         }
-    }
-
-    @Test
-    public void testSpecConstantFalseOverride() {
-        // given
-        String input = """
-                %f1 = OpSpecConstantFalse %bool
-                %f2 = OpSpecConstantFalse %bool
-                %f3 = OpSpecConstantFalse %bool
-                %f4 = OpSpecConstantFalse %bool
-                %b4v = OpSpecConstantComposite %bool4v %f1 %f2 %f3 %f4
-                """;
-
-        BooleanType bType = builder.mockBoolType("%bool");
-        builder.mockVectorType("%bool4v", "%bool", 4);
-        specId.addDecoration("%f1", "1");
-        specId.addDecoration("%f3", "123");
-        specId.addDecoration("%f4", "0");
-
-        // when
-        Map<String, Expression> data = parseConstants(input);
-
-        // then
-        Expression f1 = expressions.makeTrue();
-        Expression f2 = expressions.makeFalse();
-        Expression f3 = expressions.makeTrue();
-        Expression f4 = expressions.makeFalse();
-
-        assertEquals(f1, data.get("%f1"));
-        assertEquals(f2, data.get("%f2"));
-        assertEquals(f3, data.get("%f3"));
-        assertEquals(f4, data.get("%f4"));
-
-        assertEquals(expressions.makeArray(bType, List.of(f1, f2, f3, f4), true),
-                data.get("%b4v"));
-    }
-
-    @Test
-    public void testSpecConstantTrueOverride() {
-        // given
-        String input = """
-                %t1 = OpSpecConstantTrue %bool
-                %t2 = OpSpecConstantTrue %bool
-                %t3 = OpSpecConstantTrue %bool
-                %t4 = OpSpecConstantTrue %bool
-                %b4v = OpSpecConstantComposite %bool4v %t1 %t2 %t3 %t4
-                """;
-
-        BooleanType bType = builder.mockBoolType("%bool");
-        builder.mockVectorType("%bool4v", "%bool", 4);
-        specId.addDecoration("%t1", "0");
-        specId.addDecoration("%t3", "123");
-        specId.addDecoration("%t4", "1");
-
-        // when
-        Map<String, Expression> data = parseConstants(input);
-
-        // then
-        Expression t1 = expressions.makeFalse();
-        Expression t2 = expressions.makeTrue();
-        Expression t3 = expressions.makeTrue();
-        Expression t4 = expressions.makeTrue();
-
-        assertEquals(t1, data.get("%t1"));
-        assertEquals(t2, data.get("%t2"));
-        assertEquals(t3, data.get("%t3"));
-        assertEquals(t4, data.get("%t4"));
-
-        assertEquals(expressions.makeArray(bType, List.of(t1, t2, t3, t4), true),
-                data.get("%b4v"));
-    }
-
-    @Test
-    public void testSpecConstantOverride() {
-        // given
-        String input = """
-                %i1 = OpSpecConstant %int 1
-                %i2 = OpSpecConstant %int 2
-                %i3 = OpSpecConstant %int 3
-                %i3v = OpSpecConstantComposite %int3v %i1 %i2 %i3
-                """;
-
-        IntegerType iType = builder.mockIntType("%int", 64);
-        builder.mockVectorType("%int3v", "%int", 3);
-        specId.addDecoration("%i1", "11");
-        specId.addDecoration("%i3", "3");
-
-        // when
-        Map<String, Expression> data = parseConstants(input);
-
-        // then
-        Expression i1 = expressions.makeValue(11, iType);
-        Expression i2 = expressions.makeValue(2, iType);
-        Expression i3 = expressions.makeValue(3, iType);
-
-        assertEquals(i1, data.get("%i1"));
-        assertEquals(i2, data.get("%i2"));
-        assertEquals(i3, data.get("%i3"));
-
-        assertEquals(expressions.makeArray(iType, List.of(i1, i2, i3), true), data.get("%i3v"));
-    }
-
-    @Test
-    public void testOverrideNotSpecConstant() {
-        // given
-        String input = """
-                %f = OpConstantFalse %bool
-                %t = OpConstantTrue %bool
-                %i = OpConstant %int 1
-                %s = OpConstantComposite %struct %f %t %i
-                """;
-
-        builder.mockBoolType("%bool");
-        IntegerType iType = builder.mockIntType("%int", 64);
-        AggregateType aType = builder.mockAggregateType("%struct", "%bool", "%bool", "%int");
-        specId.addDecoration("%f", "1");
-        specId.addDecoration("%t", "0");
-        specId.addDecoration("%i", "2");
-
-        // when
-        Map<String, Expression> data = parseConstants(input);
-
-        // then
-        Expression f = expressions.makeFalse();
-        Expression t = expressions.makeTrue();
-        Expression i = expressions.makeValue(1, iType);
-
-        assertEquals(f, data.get("%f"));
-        assertEquals(t, data.get("%t"));
-        assertEquals(i, data.get("%i"));
-
-        assertEquals(expressions.makeConstruct(aType, List.of(f, t, i)), data.get("%s"));
-    }
-
-    @Test
-    public void testSpecConstantFalseInput() {
-        // given
-        String input = """
-                %f1 = OpSpecConstantFalse %bool
-                %f2 = OpSpecConstantFalse %bool
-                %f3 = OpSpecConstantFalse %bool
-                %f4 = OpSpecConstantFalse %bool
-                %f5 = OpSpecConstantFalse %bool
-                %b5v = OpSpecConstantComposite %bool5v %f1 %f2 %f3 %f4 %f5
-                """;
-
-        Expression zero = expressions.makeValue(0, archType);
-        Expression one = expressions.makeValue(1, archType);
-        builder.addInput("%f2", zero);
-        builder.addInput("%f3", one);
-        builder.addInput("%f4", zero);
-        builder.addInput("%f5", one);
-
-        BooleanType bType = builder.mockBoolType("%bool");
-        builder.mockVectorType("%bool5v", "%bool", 5);
-        specId.addDecoration("%f4", "1");
-        specId.addDecoration("%f5", "0");
-
-        // when
-        Map<String, Expression> data = parseConstants(input);
-
-        // then
-        Expression f1 = expressions.makeFalse();
-        Expression f2 = expressions.makeFalse();
-        Expression f3 = expressions.makeTrue();
-        Expression f4 = expressions.makeFalse();
-        Expression f5 = expressions.makeTrue();
-
-        assertEquals(f1, data.get("%f1"));
-        assertEquals(f2, data.get("%f2"));
-        assertEquals(f3, data.get("%f3"));
-        assertEquals(f4, data.get("%f4"));
-
-        assertEquals(expressions.makeArray(bType, List.of(f1, f2, f3, f4, f5), true),
-                data.get("%b5v"));
-    }
-
-    @Test
-    public void testSpecConstantTrueInput() {
-        // given
-        String input = """
-                %t1 = OpSpecConstantTrue %bool
-                %t2 = OpSpecConstantTrue %bool
-                %t3 = OpSpecConstantTrue %bool
-                %t4 = OpSpecConstantTrue %bool
-                %t5 = OpSpecConstantTrue %bool
-                %b5v = OpSpecConstantComposite %bool5v %t1 %t2 %t3 %t4 %t5
-                """;
-
-        Expression zero = expressions.makeValue(0, archType);
-        Expression one = expressions.makeValue(1, archType);
-        builder.addInput("%t2", one);
-        builder.addInput("%t3", zero);
-        builder.addInput("%t4", one);
-        builder.addInput("%t5", zero);
-
-        BooleanType bType = builder.mockBoolType("%bool");
-        builder.mockVectorType("%bool5v", "%bool", 5);
-        specId.addDecoration("%t4", "0");
-        specId.addDecoration("%t5", "1");
-
-        // when
-        Map<String, Expression> data = parseConstants(input);
-
-        // then
-        Expression t1 = expressions.makeTrue();
-        Expression t2 = expressions.makeTrue();
-        Expression t3 = expressions.makeFalse();
-        Expression t4 = expressions.makeTrue();
-        Expression t5 = expressions.makeFalse();
-
-        assertEquals(t1, data.get("%t1"));
-        assertEquals(t2, data.get("%t2"));
-        assertEquals(t3, data.get("%t3"));
-        assertEquals(t4, data.get("%t4"));
-        assertEquals(t5, data.get("%t5"));
-
-        assertEquals(expressions.makeArray(bType, List.of(t1, t2, t3, t4, t5), true),
-                data.get("%b5v"));
     }
 
     @Test

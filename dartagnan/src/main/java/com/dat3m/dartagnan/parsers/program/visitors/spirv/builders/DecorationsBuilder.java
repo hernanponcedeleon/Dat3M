@@ -14,7 +14,6 @@ public class DecorationsBuilder {
 
     public DecorationsBuilder(ThreadGrid grid) {
         mapping.put(BUILT_IN, new BuiltIn(grid));
-        mapping.put(SPEC_ID, new SpecId());
         mapping.put(OFFSET, new Offset());
     }
 
