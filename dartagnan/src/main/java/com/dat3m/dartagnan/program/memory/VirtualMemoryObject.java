@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan.program.memory;
 
+import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.Type;
 
 import java.util.Objects;
@@ -15,7 +16,7 @@ public class VirtualMemoryObject extends MemoryObject {
     // the generic address of this virtual address
     private final VirtualMemoryObject genericAddress;
 
-    VirtualMemoryObject(int index, int size, boolean generic, VirtualMemoryObject alias, Type ptrType) {
+    VirtualMemoryObject(int index, Expression size, boolean generic, VirtualMemoryObject alias, Type ptrType) {
         super(index, size, null, ptrType);
         checkArgument(generic || alias != null,
                 "Non-generic virtualMemoryObject must have generic address it alias target");

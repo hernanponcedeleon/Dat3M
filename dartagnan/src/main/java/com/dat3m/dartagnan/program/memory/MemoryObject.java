@@ -1,6 +1,9 @@
 package com.dat3m.dartagnan.program.memory;
 
-import com.dat3m.dartagnan.expression.*;
+import com.dat3m.dartagnan.expression.Expression;
+import com.dat3m.dartagnan.expression.ExpressionKind;
+import com.dat3m.dartagnan.expression.ExpressionVisitor;
+import com.dat3m.dartagnan.expression.Type;
 import com.dat3m.dartagnan.expression.base.LeafExpressionBase;
 import com.dat3m.dartagnan.expression.integers.IntLiteral;
 import com.dat3m.dartagnan.expression.misc.ConstructExpr;
@@ -24,7 +27,6 @@ public class MemoryObject extends LeafExpressionBase<Type> {
     // TODO: (TH) I think <id> is mostly useless.
     //  Its only benefit is that we can have different memory objects with the same name (but why would we?)
     private final int id;
-    // TODO: Generalize <size> to Expression
     private final Expression size;
     private final Alloc allocationSite;
 
@@ -35,15 +37,12 @@ public class MemoryObject extends LeafExpressionBase<Type> {
 
     MemoryObject(int id, Expression size, Alloc allocationSite, Type ptrType) {
         super(ptrType);
+        final TypeFactory types = TypeFactory.getInstance();
+        Preconditions.checkArgument(size instanceof IntegerType, "Size %s must be of integer type.", size);
+        Preconditions.checkArgument(types.getMemorySizeInBytes(size.getType()) == types.getMemorySizeInBytes(ptrType),
+                "Size expression %s should be of a type whose size matches the pointer type %s.", size, ptrType);
         this.id = id;
         this.size = size;
-        this.allocationSite = allocationSite;
-    }
-
-    MemoryObject(int id, int size, Alloc allocationSite, Type ptrType) {
-        super(ptrType);
-        this.id = id;
-        this.size = ExpressionFactory.getInstance().makeValue(size, TypeFactory.getInstance().getArchType());
         this.allocationSite = allocationSite;
     }
 

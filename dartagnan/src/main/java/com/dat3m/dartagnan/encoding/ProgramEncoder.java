@@ -30,11 +30,17 @@ import org.apache.logging.log4j.Logger;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.common.configuration.Option;
 import org.sosy_lab.common.configuration.Options;
-import org.sosy_lab.java_smt.api.*;
+import org.sosy_lab.java_smt.api.BooleanFormula;
+import org.sosy_lab.java_smt.api.BooleanFormulaManager;
+import org.sosy_lab.java_smt.api.Formula;
+import org.sosy_lab.java_smt.api.IntegerFormulaManager;
 import org.sosy_lab.java_smt.api.NumeralFormula.IntegerFormula;
 
 import java.math.BigInteger;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Map;
 
 import static com.dat3m.dartagnan.configuration.OptionNames.INITIALIZE_REGISTERS;
 import static com.google.common.collect.Lists.reverse;
@@ -73,7 +79,7 @@ public class ProgramEncoder implements Encoder {
         return encoder;
     }
 
-    // ============================== Encoding ==============================
+    // ====================================== Encoding ======================================
 
     public BooleanFormula encodeFullProgram() {
         return context.getBooleanFormulaManager().and(
@@ -102,7 +108,7 @@ public class ProgramEncoder implements Encoder {
         return context.getBooleanFormulaManager().and(enc);
     }
 
-    // =============================== Control flow ==============================
+    // ====================================== Control flow ======================================
 
     private boolean isInitThread(Thread thread) {
         return thread.getEntry().getSuccessor() instanceof Init;
@@ -278,78 +284,15 @@ public class ProgramEncoder implements Encoder {
         };
     }
 
-    // =====================================================================================
+    // ====================================== Memory layout ======================================
 
-    // Encodes the address values of memory objects.
+    // Encodes the address values and sizes of memory objects.
     public BooleanFormula encodeMemory() {
         logger.info("Encoding memory");
-        final Memory memory = context.getTask().getProgram().getMemory();
-        final FormulaManager fmgr = context.getFormulaManager();
-
-        return encodeDynamicMemoryLayout(memory);
-
-        /*final Map<MemoryObject, BigInteger> memObj2Addr = computeStaticMemoryLayout(memory);
-
-        final var enc = new ArrayList<BooleanFormula>();
-        for (final MemoryObject memObj : memory.getObjects()) {
-            final Formula addressVariable = context.address(memObj);
-            final BigInteger addressInteger = memObj2Addr.get(memObj);
-            if (addressVariable instanceof BitvectorFormula bitvectorVariable) {
-                final BitvectorFormulaManager bvmgr = fmgr.getBitvectorFormulaManager();
-                final int length = bvmgr.getLength(bitvectorVariable);
-                enc.add(bvmgr.equal(bitvectorVariable, bvmgr.makeBitvector(length, addressInteger)));
-            } else {
-                assert addressVariable instanceof IntegerFormula;
-                final IntegerFormulaManager imgr = fmgr.getIntegerFormulaManager();
-                enc.add(imgr.equal((IntegerFormula) addressVariable, imgr.makeNumber(addressInteger)));
-            }
-
-            final Formula sizeVariable = context.size(memObj);
-            final BigInteger sizeInteger = BigInteger.valueOf(memObj.getKnownSize());
-            if (sizeVariable instanceof BitvectorFormula bitvectorVariable) {
-                final BitvectorFormulaManager bvmgr = fmgr.getBitvectorFormulaManager();
-                final int length = bvmgr.getLength(bitvectorVariable);
-                enc.add(bvmgr.equal(bitvectorVariable, bvmgr.makeBitvector(length, sizeInteger)));
-            } else {
-                assert addressVariable instanceof IntegerFormula;
-                final IntegerFormulaManager imgr = fmgr.getIntegerFormulaManager();
-                enc.add(imgr.equal((IntegerFormula) sizeVariable, imgr.makeNumber(sizeInteger)));
-            }
-        }
-        return fmgr.getBooleanFormulaManager().and(enc);*/
+        return encodeMemoryLayout(context.getTask().getProgram().getMemory());
     }
 
-    /*
-        Computes a static memory layout, i.e., a mapping from memory objects to fixed addresses.
-     */
-    private Map<MemoryObject, BigInteger> computeStaticMemoryLayout(Memory memory) {
-        // Addresses are typically at least two byte aligned
-        //      https://stackoverflow.com/questions/23315939/why-2-lsbs-of-32-bit-arm-instruction-address-not-used
-        // Many algorithms rely on this assumption for correctness.
-        // Many objects have even stricter alignment requirements and need up to 8-byte alignment.
-        final BigInteger alignment = BigInteger.valueOf(8);
-
-        Map<MemoryObject, BigInteger> memObj2Addr = new HashMap<>();
-        BigInteger nextAddr = alignment;
-        for(MemoryObject memObj : memory.getObjects()) {
-            Preconditions.checkState(memObj.hasKnownSize(), "Cannot encode static memory layout for" +
-                            " variable-sized memory object: %s", memObj);
-            memObj2Addr.put(memObj, nextAddr);
-
-            // Compute next aligned address as follows:
-            //  nextAddr = curAddr + size + padding = k*alignment   // Alignment requirement
-            //  => padding = k*alignment - curAddr - size
-            //  => padding mod alignment = (-size) mod alignment    // k*alignment and curAddr are 0 mod alignment.
-            //  => padding = (-size) mod alignment                  // Because padding < alignment
-            final BigInteger memObjSize = BigInteger.valueOf(memObj.getKnownSize());
-            final BigInteger padding = memObjSize.negate().mod(alignment);
-            nextAddr = nextAddr.add(memObjSize).add(padding);
-        }
-
-        return memObj2Addr;
-    }
-
-    private BooleanFormula encodeDynamicMemoryLayout(Memory memory) {
+    private BooleanFormula encodeMemoryLayout(Memory memory) {
         final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
         final EncodingHelper helper = new EncodingHelper(context.getFormulaManager());
         final List<BooleanFormula> enc = new ArrayList<>();
@@ -369,9 +312,9 @@ public class ProgramEncoder implements Encoder {
                 enc.add(helper.equals(size, context.encodeFinalExpression(cur.size())));
             } else {
                 enc.add(helper.equals(size,
-                        bmgr.ifThenElse(context.execution(cur.getAllocationSite()),
-                                context.encodeExpressionAt(cur.size(), cur.getAllocationSite()),
-                                helper.value(BigInteger.ZERO, helper.typeOf(size)))
+                                bmgr.ifThenElse(context.execution(cur.getAllocationSite()),
+                                        context.encodeExpressionAt(cur.size(), cur.getAllocationSite()),
+                                        helper.value(BigInteger.ZERO, helper.typeOf(size)))
                         )
                 );
             }
@@ -396,6 +339,8 @@ public class ProgramEncoder implements Encoder {
 
         return bmgr.and(enc);
     }
+
+    // ====================================== Data flow ======================================
 
     /**
      * @return
