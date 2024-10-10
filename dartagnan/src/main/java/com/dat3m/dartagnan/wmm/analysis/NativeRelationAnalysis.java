@@ -40,7 +40,6 @@ import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static com.dat3m.dartagnan.configuration.Arch.RISCV;
 import static com.dat3m.dartagnan.program.Register.UsageType.*;
 import static com.dat3m.dartagnan.program.event.Tag.*;
 import static com.google.common.base.Preconditions.checkArgument;
@@ -915,16 +914,6 @@ public class NativeRelationAnalysis implements RelationAnalysis {
                         continue;
                     }
                     final Register register = regRead.register();
-                    // TODO: Update after this is merged
-                    //  https://github.com/hernanponcedeleon/Dat3M/pull/741
-                    // Register x0 is hardwired to the constant 0 in RISCV
-                    // https://en.wikichip.org/wiki/risc-v/registers,
-                    // and thus it generates no dependency, see
-                    // https://github.com/herd/herdtools7/issues/408
-                    // TODO: Can't we just replace all reads of "x0" by 0 in RISC-specific preprocessing?
-                    if (program.getArch().equals(RISCV) && register.getName().equals("x0")) {
-                        continue;
-                    }
                     final List<? extends Event> writers = state.ofRegister(register).getMayWriters();
                     for (Event regWriter : writers) {
                         may.add(regWriter, regReader);
