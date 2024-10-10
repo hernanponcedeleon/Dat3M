@@ -53,7 +53,6 @@
    
 *)
 
-let po-loc = po & loc
 let ext = ext & ((~IW) * M)
 let int = int | (IW * M)
 let rfe = rf & ext
