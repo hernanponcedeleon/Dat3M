@@ -308,18 +308,23 @@ public class ProgramEncoder implements Encoder {
             final Formula size = context.size(cur);
             final Formula alignment;
 
-            // Encode size (non-allocated objects are 0-sized) & compute alignment
+            // Encode size & compute alignment
             if (cur.isStaticallyAllocated()) {
                 enc.add(helper.equals(size, context.encodeFinalExpression(cur.size())));
                 alignment = context.encodeFinalExpression(cur.alignment());
             } else {
+                // Non-allocated objects get size 0
                 enc.add(helper.equals(size,
                                 bmgr.ifThenElse(context.execution(cur.getAllocationSite()),
                                         context.encodeExpressionAt(cur.size(), cur.getAllocationSite()),
                                         helper.value(BigInteger.ZERO, helper.typeOf(size)))
                         )
                 );
-                alignment = context.encodeExpressionAt(cur.alignment(), cur.getAllocationSite());
+                // Non-allocated objects with variable alignment get alignment 1
+                alignment = cur.hasKnownAlignment() ? context.encodeExpressionAt(cur.alignment(), cur.getAllocationSite())
+                        : bmgr.ifThenElse(context.execution(cur.getAllocationSite()),
+                        context.encodeExpressionAt(cur.alignment(), cur.getAllocationSite()),
+                        helper.value(BigInteger.ONE, helper.typeOf(size)));
             }
 
             // Encode address (we even give non-allocated objects a proper, well-aligned address)

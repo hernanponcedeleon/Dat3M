@@ -29,18 +29,21 @@ public final class Alloc extends AbstractEvent implements RegReader, RegWriter {
     private Register resultRegister;
     private Type allocationType;
     private Expression arraySize;
+    private Expression alignment;
     private boolean isHeapAllocation;
     private boolean doesZeroOutMemory;
 
     // This will be set at the end of the program processing.
     private transient MemoryObject allocatedObject;
 
-    public Alloc(Register resultRegister, Type allocType, Expression arraySize, boolean isHeapAllocation,
+    public Alloc(Register resultRegister, Type allocType, Expression arraySize, Expression alignment, boolean isHeapAllocation,
                  boolean doesZeroOutMemory) {
         Preconditions.checkArgument(resultRegister.getType() == TypeFactory.getInstance().getPointerType());
         Preconditions.checkArgument(arraySize.getType() instanceof IntegerType);
+        Preconditions.checkArgument(alignment.getType() instanceof IntegerType);
         this.resultRegister = resultRegister;
         this.arraySize = arraySize;
+        this.alignment = alignment;
         this.allocationType = allocType;
         this.isHeapAllocation = isHeapAllocation;
         this.doesZeroOutMemory = doesZeroOutMemory;
@@ -53,6 +56,7 @@ public final class Alloc extends AbstractEvent implements RegReader, RegWriter {
         this.resultRegister = other.resultRegister;
         this.allocationType = other.allocationType;
         this.arraySize = other.arraySize;
+        this.alignment = other.alignment;
         this.isHeapAllocation = other.isHeapAllocation;
         this.doesZeroOutMemory = other.doesZeroOutMemory;
     }
@@ -64,6 +68,7 @@ public final class Alloc extends AbstractEvent implements RegReader, RegWriter {
 
     public Type getAllocationType() { return allocationType; }
     public Expression getArraySize() { return arraySize; }
+    public Expression getAlignment() { return alignment; }
     public boolean isHeapAllocation() { return isHeapAllocation; }
     public boolean doesZeroOutMemory() { return doesZeroOutMemory; }
 
@@ -100,18 +105,20 @@ public final class Alloc extends AbstractEvent implements RegReader, RegWriter {
 
     @Override
     public Set<Register.Read> getRegisterReads() {
-        return Register.collectRegisterReads(arraySize, Register.UsageType.DATA, new HashSet<>());
+        final Set<Register.Read> reads = Register.collectRegisterReads(alignment, Register.UsageType.DATA, new HashSet<>());
+        return Register.collectRegisterReads(arraySize, Register.UsageType.DATA, reads);
     }
 
     @Override
     public void transformExpressions(ExpressionVisitor<? extends Expression> exprTransformer) {
         arraySize = arraySize.accept(exprTransformer);
+        alignment = alignment.accept(exprTransformer);
     }
 
     @Override
     protected String defaultString() {
-        return String.format("%s <- %salloc(%s, %s)",
-                resultRegister, isHeapAllocation ? "heap" : "stack", allocationType, arraySize);
+        return String.format("%s <- %salloc(type=%s, size=%s, align=%s)",
+                resultRegister, isHeapAllocation ? "heap" : "stack", allocationType, arraySize, alignment);
     }
 
     @Override

@@ -94,6 +94,7 @@ public class MiscellaneousTest extends AbstractCTest {
                 {"jumpIntoLoop", IMM, PASS, 11},
                 {"nondet_alloc", IMM, FAIL, 1},
                 {"nondet_alloc_2", IMM, PASS, 1},
+                {"nondet_aligned_alloc", IMM, PASS, 1},
         });
     }
 

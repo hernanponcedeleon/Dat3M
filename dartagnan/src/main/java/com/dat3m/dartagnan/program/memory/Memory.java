@@ -33,7 +33,7 @@ public class Memory {
     public MemoryObject allocate(Alloc allocationSite) {
         Preconditions.checkNotNull(allocationSite);
         final MemoryObject memoryObject = new MemoryObject(nextIndex++, allocationSite.getAllocationSize(),
-                defaultAlignment, allocationSite, ptrType);
+                allocationSite.getAlignment(), allocationSite, ptrType);
         objects.add(memoryObject);
         return memoryObject;
     }
