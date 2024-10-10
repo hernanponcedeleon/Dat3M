@@ -306,10 +306,12 @@ public class ProgramEncoder implements Encoder {
             final MemoryObject cur = memoryObjects.get(i);
             final Formula addr = context.address(cur);
             final Formula size = context.size(cur);
+            final Formula alignment;
 
-            // Encode size (non-allocated objects are 0-sized)
+            // Encode size (non-allocated objects are 0-sized) & compute alignment
             if (cur.isStaticallyAllocated()) {
                 enc.add(helper.equals(size, context.encodeFinalExpression(cur.size())));
+                alignment = context.encodeFinalExpression(cur.alignment());
             } else {
                 enc.add(helper.equals(size,
                                 bmgr.ifThenElse(context.execution(cur.getAllocationSite()),
@@ -317,11 +319,10 @@ public class ProgramEncoder implements Encoder {
                                         helper.value(BigInteger.ZERO, helper.typeOf(size)))
                         )
                 );
+                alignment = context.encodeExpressionAt(cur.alignment(), cur.getAllocationSite());
             }
 
-            // Encode address (we even give non-allocated objects a proper address)
-            // We 8-align by default because it works for most real code.
-            final Formula alignment = helper.value(BigInteger.valueOf(8), helper.typeOf(addr));
+            // Encode address (we even give non-allocated objects a proper, well-aligned address)
             final MemoryObject prev = i > 0 ? memoryObjects.get(i - 1) : null;
             if (prev == null) {
                 // First object is placed at alignment

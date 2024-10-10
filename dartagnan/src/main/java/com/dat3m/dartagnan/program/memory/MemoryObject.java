@@ -28,6 +28,7 @@ public class MemoryObject extends LeafExpressionBase<Type> {
     //  Its only benefit is that we can have different memory objects with the same name (but why would we?)
     private final int id;
     private final Expression size;
+    private final Expression alignment;
     private final Alloc allocationSite;
 
     private String name = null;
@@ -35,13 +36,16 @@ public class MemoryObject extends LeafExpressionBase<Type> {
 
     private final Map<Integer, Expression> initialValues = new TreeMap<>();
 
-    MemoryObject(int id, Expression size, Alloc allocationSite, Type ptrType) {
+    MemoryObject(int id, Expression size, Expression alignment, Alloc allocationSite, Type ptrType) {
         super(ptrType);
         final TypeFactory types = TypeFactory.getInstance();
-        Preconditions.checkArgument(size instanceof IntegerType, "Size %s must be of integer type.", size);
+        Preconditions.checkArgument(size.getType() instanceof IntegerType, "Size %s must be of integer type.", size);
+        Preconditions.checkArgument(alignment.getType() == size.getType(),
+                "Size %s and alignment %s must have matching types.", size, alignment);
         Preconditions.checkArgument(types.getMemorySizeInBytes(size.getType()) == types.getMemorySizeInBytes(ptrType),
                 "Size expression %s should be of a type whose size matches the pointer type %s.", size, ptrType);
         this.id = id;
+        this.alignment = alignment;
         this.size = size;
         this.allocationSite = allocationSite;
     }
@@ -58,14 +62,17 @@ public class MemoryObject extends LeafExpressionBase<Type> {
     public void setIsThreadLocal(boolean value) { this.isThreadLocal = value;}
 
     public Expression size() { return size; }
-
-    public boolean hasKnownSize() {
-        return size instanceof IntLiteral;
-    }
-
+    public boolean hasKnownSize() { return size instanceof IntLiteral; }
     public int getKnownSize() {
         Preconditions.checkState(hasKnownSize());
         return ((IntLiteral)size).getValueAsInt();
+    }
+
+    public Expression alignment() { return alignment; }
+    public boolean hasKnownAlignment() { return alignment instanceof IntLiteral; }
+    public int getKnownAlignment() {
+        Preconditions.checkState(hasKnownAlignment());
+        return ((IntLiteral)alignment).getValueAsInt();
     }
 
     public boolean isInRange(int offset) {

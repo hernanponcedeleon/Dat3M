@@ -16,8 +16,8 @@ public class VirtualMemoryObject extends MemoryObject {
     // the generic address of this virtual address
     private final VirtualMemoryObject genericAddress;
 
-    VirtualMemoryObject(int index, Expression size, boolean generic, VirtualMemoryObject alias, Type ptrType) {
-        super(index, size, null, ptrType);
+    VirtualMemoryObject(int index, Expression size, Expression alignment, boolean generic, VirtualMemoryObject alias, Type ptrType) {
+        super(index, size, alignment, null, ptrType);
         checkArgument(generic || alias != null,
                 "Non-generic virtualMemoryObject must have generic address it alias target");
         if (alias == null) {
