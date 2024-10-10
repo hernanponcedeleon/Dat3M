@@ -63,6 +63,10 @@ class VisitorCat extends CatBaseVisitor<Object> {
     VisitorCat(Path includePath) {
         this.includePath = includePath;
         this.wmm = new Wmm();
+        includeStdlib();
+    }
+
+    private void includeStdlib() {
         try {
             // The standard library is a cat file stdlib.cat which all models include by default
             final CatParser parser = getParser(CharStreams.fromPath(Path.of(GlobalSettings.getCatDirectory() + "/stdlib.cat")));
