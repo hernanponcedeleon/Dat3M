@@ -1,10 +1,12 @@
 package com.dat3m.dartagnan.program.processing.compilation;
 
+import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.Type;
 import com.dat3m.dartagnan.expression.type.BooleanType;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Event;
+import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.MemoryEvent;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.Tag.C11;
@@ -57,7 +59,7 @@ public class VisitorC11 extends VisitorBase {
         Load loadValue = newRMWLoadWithMo(regValue, address, Tag.C11.loadMO(mo));
         Store storeValue = newRMWStoreWithMo(loadValue, address, e.getStoreValue(), Tag.C11.storeMO(mo));
 
-        return tagList(eventSequence(
+        return tagList(e, eventSequence(
                 loadExpected,
                 loadValue,
                 casCmpResult,
@@ -82,7 +84,7 @@ public class VisitorC11 extends VisitorBase {
         Local localOp = newLocal(dummyReg, expressions.makeIntBinary(resultRegister, e.getOperator(), e.getOperand()));
         RMWStore store = newRMWStoreWithMo(load, address, dummyReg, mo);
 
-        return tagList(eventSequence(
+        return tagList(e, eventSequence(
                 load,
                 localOp,
                 store
@@ -91,21 +93,21 @@ public class VisitorC11 extends VisitorBase {
 
     @Override
     public List<Event> visitAtomicLoad(AtomicLoad e) {
-        return tagList(eventSequence(
+        return tagList(e, eventSequence(
                 newLoadWithMo(e.getResultRegister(), e.getAddress(), Tag.C11.loadMO(e.getMo()))
         ));
     }
 
     @Override
     public List<Event> visitAtomicStore(AtomicStore e) {
-        return tagList(eventSequence(
+        return tagList(e, eventSequence(
                 newStoreWithMo(e.getAddress(), e.getMemValue(), Tag.C11.storeMO(e.getMo()))
         ));
     }
 
     @Override
     public List<Event> visitAtomicThreadFence(AtomicThreadFence e) {
-        return tagList(eventSequence(
+        return tagList(e, eventSequence(
                 newFence(e.getMo())
         ));
     }
@@ -118,9 +120,21 @@ public class VisitorC11 extends VisitorBase {
         Load load = newRMWLoadWithMo(e.getResultRegister(), address, Tag.C11.loadMO(mo));
         RMWStore store = newRMWStoreWithMo(load, address, e.getValue(), Tag.C11.storeMO(mo));
 
-        return tagList(eventSequence(
+        return tagList(e, eventSequence(
                 load,
                 store
+        ));
+    }
+
+    @Override
+    public List<Event> visitControlBarrier(ControlBarrier e) {
+        Event entryFence = EventFactory.newControlBarrier(e.getName() + "_entry", e.getId());
+        entryFence.addTags(Tag.OpenCL.ENTRY_FENCE, C11.MO_RELEASE);
+        Event exitFence = EventFactory.newControlBarrier(e.getName() + "_exit", e.getId());
+        exitFence.addTags(Tag.OpenCL.EXIT_FENCE, C11.MO_ACQUIRE);
+        return tagList(e, eventSequence(
+                entryFence,
+                exitFence
         ));
     }
 
@@ -210,16 +224,30 @@ public class VisitorC11 extends VisitorBase {
     }
 
     private List<Event> tagList(List<Event> in) {
-        in.forEach(this::tagEvent);
+        in.forEach(e -> tagEvent(null, e));
         return in;
     }
 
-    private void tagEvent(Event e) {
+    private List<Event> tagList(Event originalEvent, List<Event> in) {
+        in.forEach(e -> tagEvent(originalEvent, e));
+        return in;
+    }
+
+    private void tagEvent(Event originalEvent, Event e) {
+        if (originalEvent != null) {
+            String scope = Tag.getScopeTag(originalEvent, Arch.OPENCL);
+            List<String> spaces = Tag.OpenCL.getSpaceTags(originalEvent);
+            if (e instanceof MemoryEvent || e instanceof GenericVisibleEvent) {
+                if (!scope.isEmpty()) {
+                    e.addTags(scope);
+                }
+                e.addTags(spaces);
+            }
+        }
         if (e instanceof MemoryEvent) {
-            final MemoryOrder mo = e.getMetadata(MemoryOrder.class);
-            final boolean canRace = mo == null || mo.value().equals(C11.NONATOMIC);
+            MemoryOrder mo = e.getMetadata(MemoryOrder.class);
+            boolean canRace = mo == null || mo.value().equals(C11.NONATOMIC);
             e.addTags(canRace ? C11.NONATOMIC : C11.ATOMIC);
         }
     }
-
 }

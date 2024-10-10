@@ -119,13 +119,16 @@ public final class Tag {
 
         public static final String ATOMIC               = "A";
         public static final String NONATOMIC            = "NA";
+        public static final String NON_ATOMIC_LOCATION  = "NAL";
 
         public static final String MO_RELAXED           = "RLX";
         public static final String MO_CONSUME           = "CON";
         public static final String MO_ACQUIRE           = "ACQ";
         public static final String MO_RELEASE           = "REL";
         public static final String MO_ACQUIRE_RELEASE   = "ACQ_REL";
-        public static final String MO_SC                 = "SC";
+        public static final String MO_SC                = "SC";
+
+        public static final String DEFAULT_MO = MO_SC;
 
         public static String intToMo(int i) {
             switch (i) {
@@ -367,6 +370,37 @@ public final class Tag {
     }
 
     // =============================================================================================
+    // ========================================= OpenCL ============================================
+    // =============================================================================================
+    public static final class OpenCL {
+        // Scopes
+        public static final String WORK_ITEM = "WI";
+        public static final String WORK_GROUP = "WG";
+        public static final String DEVICE = "DV";
+        public static final String ALL = "ALL";
+        // Space
+        public static final String GLOBAL_SPACE = "GLOBAL";
+        public static final String LOCAL_SPACE = "LOCAL";
+        // Barrier
+        public static final String ENTRY_FENCE = "EF";
+        public static final String EXIT_FENCE = "XF";
+        // Default Tags
+        public static final String DEFAULT_SCOPE = DEVICE;
+        public static final String DEFAULT_WEAK_SCOPE = WORK_ITEM;
+
+        public static List<String> getScopeTags() {
+            return List.of(WORK_GROUP, DEVICE, ALL);
+        }
+
+        public static List<String> getSpaceTags() {
+            return List.of(GLOBAL_SPACE, LOCAL_SPACE);
+        }
+
+        public static List<String> getSpaceTags(Event e) {
+            return getSpaceTags().stream().filter(e::hasTag).toList();
+        }
+    }
+    // =============================================================================================
     // ========================================= Spir-V ============================================
     // =============================================================================================
     public static final class Spirv {
@@ -487,6 +521,7 @@ public final class Tag {
         return switch (arch) {
             case PTX -> PTX.getScopeTags().stream().filter(e::hasTag).findFirst().orElse("");
             case VULKAN -> Vulkan.getScopeTags().stream().filter(e::hasTag).findFirst().orElse("");
+            case OPENCL -> OpenCL.getScopeTags().stream().filter(e::hasTag).findFirst().orElse("");
             default -> throw new UnsupportedOperationException("Scope tags not implemented for architecture " + arch);
         };
     }

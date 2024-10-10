@@ -46,6 +46,7 @@ public class ProgramBuilder {
     private final Map<Integer, Function> id2FunctionsMap = new HashMap<>();
     private final Map<Integer, Map<String, Label>> fid2LabelsMap = new HashMap<>();
     private final Map<String, MemoryObject> locations = new HashMap<>();
+    private final Map<Register, MemoryObject> reg2LocMap = new HashMap<>();
 
     private final Program program;
 
@@ -297,21 +298,21 @@ public class ProgramBuilder {
     }
 
     // ----------------------------------------------------------------------------------------------------------------
-    // PTX
-
+    // GPU
     public void newScopedThread(Arch arch, String name, int id, int ...scopeIds) {
+        ScopeHierarchy scopeHierarchy = switch (arch) {
+            case PTX -> ScopeHierarchy.ScopeHierarchyForPTX(scopeIds[0], scopeIds[1]);
+            case VULKAN -> ScopeHierarchy.ScopeHierarchyForVulkan(scopeIds[0], scopeIds[1], scopeIds[2]);
+            case OPENCL -> ScopeHierarchy.ScopeHierarchyForOpenCL(scopeIds[0], scopeIds[1]);
+            default -> throw new UnsupportedOperationException("Unsupported architecture: " + arch);
+        };
+
         if(id2FunctionsMap.containsKey(id)) {
             throw new MalformedProgramException("Function or thread with id " + id + " already exists.");
         }
         // Litmus threads run unconditionally (have no creator) and have no parameters/return types.
         ThreadStart threadEntry = EventFactory.newThreadStart(null);
-        Thread scopedThread = switch (arch) {
-            case PTX -> new Thread(name, DEFAULT_THREAD_TYPE, List.of(), id, threadEntry,
-                    ScopeHierarchy.ScopeHierarchyForPTX(scopeIds[0], scopeIds[1]), new HashSet<>());
-            case VULKAN -> new Thread(name, DEFAULT_THREAD_TYPE, List.of(), id, threadEntry,
-                    ScopeHierarchy.ScopeHierarchyForVulkan(scopeIds[0], scopeIds[1], scopeIds[2]), new HashSet<>());
-            default -> throw new UnsupportedOperationException("Unsupported architecture: " + arch);
-        };
+        Thread scopedThread = new Thread(name, DEFAULT_THREAD_TYPE, List.of(), id, threadEntry, scopeHierarchy, new HashSet<>());
         id2FunctionsMap.put(id, scopedThread);
         program.addThread(scopedThread);
     }
@@ -320,6 +321,8 @@ public class ProgramBuilder {
         newScopedThread(arch, String.valueOf(id), id, ids);
     }
 
+    // ----------------------------------------------------------------------------------------------------------------
+    // PTX
     public void initVirLocEqCon(String leftName, IntLiteral iValue){
         MemoryObject object = locations.computeIfAbsent(
                 leftName, k->program.getMemory().allocateVirtual(ARCH_SIZE, true, null));
@@ -368,5 +371,15 @@ public class ProgramBuilder {
         if (thread0.hasSyncSet()) {
             thread0.getSyncSet().add(thread1);
         }
+    }
+
+    // ----------------------------------------------------------------------------------------------------------------
+    // OpenCL
+    public void setReg2LocMap(Register reg, MemoryObject loc) {
+        reg2LocMap.put(reg, loc);
+    }
+
+    public MemoryObject getLocFromReg(Register reg) {
+        return reg2LocMap.get(reg);
     }
 }

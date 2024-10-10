@@ -225,6 +225,7 @@ public class Wmm {
             case SSG -> new SameScope(r, Tag.Vulkan.SUB_GROUP);
             case SWG -> new SameScope(r, Tag.Vulkan.WORK_GROUP);
             case SQF -> new SameScope(r, Tag.Vulkan.QUEUE_FAMILY);
+            case SDV -> new SameScope(r, Tag.Vulkan.DEVICE);
             case SSW -> new SyncWith(r);
             case SYNCBAR -> new SyncBar(r);
             case SYNC_FENCE -> new SyncFence(r);

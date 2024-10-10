@@ -20,7 +20,7 @@ public class ControlBarrier extends GenericVisibleEvent implements RegReader {
         this.id = id;
     }
 
-    private ControlBarrier(ControlBarrier other) {
+    protected ControlBarrier(ControlBarrier other) {
         super(other);
         this.id = other.id;
     }
