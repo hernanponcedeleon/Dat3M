@@ -32,6 +32,7 @@ import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Properties;
 import java.util.concurrent.ExecutionException;
 
@@ -85,7 +86,7 @@ public class OptionsPane extends JPanel {
         solverPane.setSelectedItem(Solvers.Z3);
 
         propertyPane = new Selector<>(Property.orderedValues(), ControlCode.PROPERTY);
-        solverPane.setSelectedItem(Property.PROGRAM_SPEC);
+        propertyPane.setSelectedItem(Property.PROGRAM_SPEC);
 
         targetPane = new Selector<>(Arch.orderedValues(), ControlCode.TARGET);
         targetPane.setSelectedItem(Arch.getDefault());
@@ -253,8 +254,16 @@ public class OptionsPane extends JPanel {
         if (file == null) {
             return;
         }
-        Properties properties = new Properties();
+        final var properties = new Properties();
         properties.putAll(extraOptionsMap);
+        properties.put(METHOD, methodPane.getSelectedItem());
+        properties.put(SOLVER, solverPane.getSelectedItem());
+        properties.put(PROPERTY, propertyPane.getSelectedItem());
+        properties.put(TARGET, targetPane.getSelectedItem());
+        properties.put(PROGRESSMODEL, progressPane.getSelectedItem());
+        properties.put(BOUND, boundField.getText());
+        properties.put(TIMEOUT, timeoutField.getText());
+        properties.put(WITNESS, showViolationField.isSelected());
         try (FileWriter writer = new FileWriter(file)) {
             properties.store(writer, "Created with Dartagnan");
         } catch (IOException e) {
@@ -268,7 +277,7 @@ public class OptionsPane extends JPanel {
         if (file == null) {
             return;
         }
-        Properties properties = new Properties();
+        final var properties = new Properties();
         try (FileReader reader = new FileReader(file)) {
             properties.load(reader);
         } catch (IOException e) {
@@ -276,9 +285,85 @@ public class OptionsPane extends JPanel {
             return;
         }
         extraOptionsMap.clear();
+        setMethod(properties.remove(METHOD));
+        setSolver(properties.remove(SOLVER));
+        setProperty(properties.remove(PROPERTY));
+        setTargetArch(properties.remove(TARGET));
+        setProgressModel(properties.remove(PROGRESSMODEL));
+        setBound(properties.remove(BOUND));
+        setTimeout(properties.remove(TIMEOUT));
+        setWitness(properties.remove(WITNESS));
         for (Map.Entry<Object, Object> entry : properties.entrySet()) {
             extraOptionsMap.put(entry.getKey().toString(), entry.getValue().toString());
         }
+    }
+
+    private void setMethod(Object value) {
+        if (value == null) {
+            return;
+        }
+        try {
+            methodPane.setSelectedItem(Method.valueOf(value.toString()));
+        } catch (IllegalArgumentException ignore) {
+        }
+    }
+
+    private void setSolver(Object value) {
+        if (value == null) {
+            return;
+        }
+        try {
+            solverPane.setSelectedItem(Solvers.valueOf(value.toString()));
+        } catch (IllegalArgumentException ignore) {
+        }
+    }
+
+    private void setProperty(Object value) {
+        if (value == null) {
+            return;
+        }
+        try {
+            propertyPane.setSelectedItem(Property.valueOf(value.toString()));
+        } catch (IllegalArgumentException ignore) {
+        }
+    }
+
+    private void setTargetArch(Object value) {
+        if (value == null) {
+            return;
+        }
+        try {
+            targetPane.setSelectedItem(Arch.valueOf(value.toString()));
+        } catch (IllegalArgumentException ignore) {
+        }
+    }
+
+    private void setProgressModel(Object value) {
+        if (value == null) {
+            return;
+        }
+        try {
+            progressPane.setSelectedItem(ProgressModel.valueOf(value.toString()));
+        } catch (IllegalArgumentException ignore) {
+        }
+    }
+
+    private void setBound(Object value) {
+        if (value == null) {
+            return;
+        }
+        boundField.setText(value.toString());
+    }
+
+    private void setTimeout(Object value) {
+        if (value == null) {
+            return;
+        }
+        timeoutField.setText(value.toString());
+    }
+
+    private void setWitness(Object value) {
+        showViolationField.setSelected(Objects.equals("true", value));
     }
 
     private JDialog newDialog() {
@@ -408,7 +493,7 @@ public class OptionsPane extends JPanel {
             for (JComponent field : fields) {
                 layout.putConstraint(SpringLayout.WEST, field, labelWidth, SpringLayout.WEST, panel);
             }
-            panel.setPreferredSize(new Dimension(panel.getParent().getSize().width, top));
+            panel.setPreferredSize(new Dimension(labelWidth + 20, top));
             panel.revalidate();
             panel.repaint();
             extraOptionsDialog.pack();
