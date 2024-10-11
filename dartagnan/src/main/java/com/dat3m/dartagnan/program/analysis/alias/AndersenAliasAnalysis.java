@@ -302,7 +302,6 @@ public class AndersenAliasAnalysis implements AliasAnalysis {
         final int offset;
 
         Location(MemoryObject b, int o) {
-            b.isInRange(o);
             Preconditions.checkArgument(b.isInRange(o), "Array out of bounds");
             base = b;
             offset = o;

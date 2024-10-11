@@ -84,15 +84,17 @@ public class EncodingHelper {
     }
 
     public Formula remainder(Formula left, Formula right) {
+        //FIXME: integer modulo and BV modulo have different semantics, the former is always positive, the latter
+        // returns a value whose sign depends on one of the two BVs.
+        // The results in this implementation will match if the denominator <right> is positive which is the most usual case.
         if (left instanceof NumeralFormula.IntegerFormula iLeft && right instanceof NumeralFormula.IntegerFormula iRight) {
-            // NOTE: This is not the same as the BV version in terms of signedness (here the sign is from the numerator)
             return fmgr.getIntegerFormulaManager().modulo(iLeft, iRight);
         }
 
         if (left instanceof BitvectorFormula bvLeft && right instanceof BitvectorFormula bvRight) {
             final BitvectorFormulaManager bvmgr = fmgr.getBitvectorFormulaManager();
             Preconditions.checkState(bvmgr.getLength(bvLeft) == bvmgr.getLength(bvRight));
-            return fmgr.getBitvectorFormulaManager().remainder(bvLeft, bvRight, true);
+            return fmgr.getBitvectorFormulaManager().smodulo(bvLeft, bvRight);
         }
 
         throw new UnsupportedOperationException("Mismatching types: " + left + " and " + right);
