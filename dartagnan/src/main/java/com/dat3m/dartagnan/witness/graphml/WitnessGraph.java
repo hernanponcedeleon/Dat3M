@@ -10,6 +10,7 @@ import com.dat3m.dartagnan.program.event.metadata.SourceLocation;
 import com.dat3m.dartagnan.wmm.utils.graph.EventGraph;
 import com.dat3m.dartagnan.wmm.utils.graph.mutable.MapEventGraph;
 import com.dat3m.dartagnan.wmm.utils.graph.mutable.MutableEventGraph;
+import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.BooleanFormulaManager;
@@ -113,6 +114,9 @@ public class WitnessGraph extends ElemWithAttributes {
     }
 
     public BooleanFormula encode(EncodingContext context) {
+        // If there is something to encode (i.e., edges is not empty),
+        // then there must be a violation node.
+        Preconditions.checkState(edges.isEmpty() || !getPathToViolation().isEmpty());
         Program program = context.getTask().getProgram();
         BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
         List<BooleanFormula> enc = new ArrayList<>();
