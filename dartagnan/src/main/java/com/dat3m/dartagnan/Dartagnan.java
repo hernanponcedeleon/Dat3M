@@ -33,12 +33,12 @@ import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.axiom.Axiom;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.io.CharSource;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.maven.model.io.xpp3.MavenXpp3Reader;
 import org.sosy_lab.common.ShutdownManager;
 import org.sosy_lab.common.configuration.Configuration;
-import org.sosy_lab.common.configuration.ConfigurationBuilder;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.common.configuration.Options;
 import org.sosy_lab.common.log.BasicLogManager;
@@ -83,21 +83,15 @@ public class Dartagnan extends BaseOptions {
     }
 
     private static Configuration loadConfiguration(String[] args) throws InvalidConfigurationException, IOException {
-        ConfigurationBuilder builder = Configuration.builder();
+        final List<CharSource> source = new ArrayList<>();
         for (String argument : args) {
-            int index = argument.indexOf('=');
-            if (index != -1 && argument.startsWith("--")) {
-                builder.setOption(argument.substring(2, index), argument.substring(index + 1));
+            if (argument.startsWith("--")) {
+                source.add(CharSource.wrap(argument.substring(2)));
             } else if (argument.endsWith(".properties")) {
-                try {
-                    builder.loadFromFile(argument);
-                    logger.info("Loaded properties from {}", argument);
-                } catch (IOException e) {
-                    logger.warn("Could not load file {}: {}", argument, e.getMessage());
-                }
+                source.add(CharSource.wrap(String.format("#include %s", argument)));
             }
         }
-        return builder.build();
+        return Configuration.builder().loadFromSource(CharSource.concat(source), ".", "[arguments]").build();
     }
 
     public static void main(String[] args) throws Exception {
