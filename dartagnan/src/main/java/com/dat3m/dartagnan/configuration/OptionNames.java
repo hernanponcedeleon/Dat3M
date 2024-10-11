@@ -57,8 +57,8 @@ public class OptionNames {
     public static final String MERGE_BRANCHES = "program.analysis.cf.mergeBranches";
 
     // Memory Model Options
-    public static final String WMM_ATOMICITY = "wmm.analysis.alwaysAtomicity";
-    public static final String WMM_SC_PER_LOC = "wmm.analysis.alwaysSCPerLoc";
+    public static final String WMM_ATOMICITY = "wmm.analysis.assumeAtomicity";
+    public static final String WMM_LOCALLY_CONSISTENT = "wmm.analysis.assumeLocalConsistency";
     public static final String RELATION_ANALYSIS = "wmm.analysis.relationAnalysis";
     public static final String ENABLE_EXTENDED_RELATION_ANALYSIS = "wmm.analysis.extendedRelationAnalysis";
 
