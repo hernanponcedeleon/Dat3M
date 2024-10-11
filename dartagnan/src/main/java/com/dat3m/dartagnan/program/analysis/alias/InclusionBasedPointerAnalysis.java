@@ -418,7 +418,7 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
         // Visualized as outgoing edges.
         private final List<StoreEdge> stores = new ArrayList<>();
         // All variables that have a direct (includes/loads/stores) link to this.
-        private final Set<Variable> seeAlso = new HashSet<>();
+        private final Set<Variable> seeAlso = new LinkedHashSet<>();
         // If nonnull, this variable represents that object's base address.
         private final MemoryObject object;
         // For visualization.
@@ -912,8 +912,8 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
 
     private static final class Collector implements ExpressionVisitor<Result> {
 
-        final Set<MemoryObject> address = new HashSet<>();
-        final Set<Register> register = new HashSet<>();
+        final Set<MemoryObject> address = new LinkedHashSet<>();
+        final Set<Register> register = new LinkedHashSet<>();
 
         @Override
         public Result visitExpression(Expression expr) {
