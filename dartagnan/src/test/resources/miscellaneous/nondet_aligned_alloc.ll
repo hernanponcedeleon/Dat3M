@@ -5,7 +5,7 @@ target triple = "arm64-apple-macosx14.0.0"
 
 @__func__.main = private unnamed_addr constant [5 x i8] c"main\00", align 1
 @.str = private unnamed_addr constant [23 x i8] c"nondet_aligned_alloc.c\00", align 1
-@.str.1 = private unnamed_addr constant [17 x i8] c"array != array_2\00", align 1
+@.str.1 = private unnamed_addr constant [56 x i8] c"(size_t)array_2 - (size_t)array >= SIZE_1 * sizeof(int)\00", align 1
 @.str.2 = private unnamed_addr constant [25 x i8] c"((size_t)array) % 8 == 0\00", align 1
 @.str.3 = private unnamed_addr constant [31 x i8] c"((size_t)array_2) % align == 0\00", align 1
 
@@ -53,71 +53,74 @@ define i32 @main() #0 !dbg !19 {
   call void @llvm.assume(i1 true) [ "align"(i8* %25, i64 %22) ], !dbg !54
   %26 = bitcast i8* %25 to i32*, !dbg !54
   store i32* %26, i32** %7, align 8, !dbg !50
-  %27 = load i32*, i32** %6, align 8, !dbg !55
-  %28 = load i32*, i32** %7, align 8, !dbg !55
-  %29 = icmp ne i32* %27, %28, !dbg !55
-  %30 = xor i1 %29, true, !dbg !55
-  %31 = zext i1 %30 to i32, !dbg !55
-  %32 = sext i32 %31 to i64, !dbg !55
-  %33 = icmp ne i64 %32, 0, !dbg !55
-  br i1 %33, label %34, label %36, !dbg !55
+  %27 = load i32*, i32** %7, align 8, !dbg !55
+  %28 = ptrtoint i32* %27 to i64, !dbg !55
+  %29 = load i32*, i32** %6, align 8, !dbg !55
+  %30 = ptrtoint i32* %29 to i64, !dbg !55
+  %31 = sub i64 %28, %30, !dbg !55
+  %32 = icmp uge i64 %31, 168, !dbg !55
+  %33 = xor i1 %32, true, !dbg !55
+  %34 = zext i1 %33 to i32, !dbg !55
+  %35 = sext i32 %34 to i64, !dbg !55
+  %36 = icmp ne i64 %35, 0, !dbg !55
+  br i1 %36, label %37, label %39, !dbg !55
 
-34:                                               ; preds = %0
-  call void @__assert_rtn(i8* noundef getelementptr inbounds ([5 x i8], [5 x i8]* @__func__.main, i64 0, i64 0), i8* noundef getelementptr inbounds ([23 x i8], [23 x i8]* @.str, i64 0, i64 0), i32 noundef 20, i8* noundef getelementptr inbounds ([17 x i8], [17 x i8]* @.str.1, i64 0, i64 0)) #9, !dbg !55
+37:                                               ; preds = %0
+  call void @__assert_rtn(i8* noundef getelementptr inbounds ([5 x i8], [5 x i8]* @__func__.main, i64 0, i64 0), i8* noundef getelementptr inbounds ([23 x i8], [23 x i8]* @.str, i64 0, i64 0), i32 noundef 23, i8* noundef getelementptr inbounds ([56 x i8], [56 x i8]* @.str.1, i64 0, i64 0)) #9, !dbg !55
   unreachable, !dbg !55
 
-35:                                               ; No predecessors!
-  br label %37, !dbg !55
+38:                                               ; No predecessors!
+  br label %40, !dbg !55
 
-36:                                               ; preds = %0
-  br label %37, !dbg !55
+39:                                               ; preds = %0
+  br label %40, !dbg !55
 
-37:                                               ; preds = %36, %35
-  %38 = load i32*, i32** %6, align 8, !dbg !56
-  %39 = ptrtoint i32* %38 to i64, !dbg !56
-  %40 = urem i64 %39, 8, !dbg !56
-  %41 = icmp eq i64 %40, 0, !dbg !56
-  %42 = xor i1 %41, true, !dbg !56
-  %43 = zext i1 %42 to i32, !dbg !56
-  %44 = sext i32 %43 to i64, !dbg !56
-  %45 = icmp ne i64 %44, 0, !dbg !56
-  br i1 %45, label %46, label %48, !dbg !56
+40:                                               ; preds = %39, %38
+  %41 = load i32*, i32** %6, align 8, !dbg !56
+  %42 = ptrtoint i32* %41 to i64, !dbg !56
+  %43 = urem i64 %42, 8, !dbg !56
+  %44 = icmp eq i64 %43, 0, !dbg !56
+  %45 = xor i1 %44, true, !dbg !56
+  %46 = zext i1 %45 to i32, !dbg !56
+  %47 = sext i32 %46 to i64, !dbg !56
+  %48 = icmp ne i64 %47, 0, !dbg !56
+  br i1 %48, label %49, label %51, !dbg !56
 
-46:                                               ; preds = %37
-  call void @__assert_rtn(i8* noundef getelementptr inbounds ([5 x i8], [5 x i8]* @__func__.main, i64 0, i64 0), i8* noundef getelementptr inbounds ([23 x i8], [23 x i8]* @.str, i64 0, i64 0), i32 noundef 21, i8* noundef getelementptr inbounds ([25 x i8], [25 x i8]* @.str.2, i64 0, i64 0)) #9, !dbg !56
+49:                                               ; preds = %40
+  call void @__assert_rtn(i8* noundef getelementptr inbounds ([5 x i8], [5 x i8]* @__func__.main, i64 0, i64 0), i8* noundef getelementptr inbounds ([23 x i8], [23 x i8]* @.str, i64 0, i64 0), i32 noundef 24, i8* noundef getelementptr inbounds ([25 x i8], [25 x i8]* @.str.2, i64 0, i64 0)) #9, !dbg !56
   unreachable, !dbg !56
 
-47:                                               ; No predecessors!
-  br label %49, !dbg !56
+50:                                               ; No predecessors!
+  br label %52, !dbg !56
 
-48:                                               ; preds = %37
-  br label %49, !dbg !56
+51:                                               ; preds = %40
+  br label %52, !dbg !56
 
-49:                                               ; preds = %48, %47
-  %50 = load i32*, i32** %7, align 8, !dbg !57
-  %51 = ptrtoint i32* %50 to i64, !dbg !57
-  %52 = load i64, i64* %5, align 8, !dbg !57
-  %53 = urem i64 %51, %52, !dbg !57
-  %54 = icmp eq i64 %53, 0, !dbg !57
-  %55 = xor i1 %54, true, !dbg !57
-  %56 = zext i1 %55 to i32, !dbg !57
-  %57 = sext i32 %56 to i64, !dbg !57
-  %58 = icmp ne i64 %57, 0, !dbg !57
-  br i1 %58, label %59, label %61, !dbg !57
+52:                                               ; preds = %51, %50
+  %53 = load i32*, i32** %7, align 8, !dbg !57
+  %54 = ptrtoint i32* %53 to i64, !dbg !57
+  %55 = load i64, i64* %5, align 8, !dbg !57
+  %56 = urem i64 %54, %55, !dbg !57
+  %57 = icmp eq i64 %56, 0, !dbg !57
+  %58 = xor i1 %57, true, !dbg !57
+  %59 = zext i1 %58 to i32, !dbg !57
+  %60 = sext i32 %59 to i64, !dbg !57
+  %61 = icmp ne i64 %60, 0, !dbg !57
+  br i1 %61, label %62, label %64, !dbg !57
 
-59:                                               ; preds = %49
-  call void @__assert_rtn(i8* noundef getelementptr inbounds ([5 x i8], [5 x i8]* @__func__.main, i64 0, i64 0), i8* noundef getelementptr inbounds ([23 x i8], [23 x i8]* @.str, i64 0, i64 0), i32 noundef 22, i8* noundef getelementptr inbounds ([31 x i8], [31 x i8]* @.str.3, i64 0, i64 0)) #9, !dbg !57
+62:                                               ; preds = %52
+  call void @__assert_rtn(i8* noundef getelementptr inbounds ([5 x i8], [5 x i8]* @__func__.main, i64 0, i64 0), i8* noundef getelementptr inbounds ([23 x i8], [23 x i8]* @.str, i64 0, i64 0), i32 noundef 25, i8* noundef getelementptr inbounds ([31 x i8], [31 x i8]* @.str.3, i64 0, i64 0)) #9, !dbg !57
   unreachable, !dbg !57
 
-60:                                               ; No predecessors!
-  br label %62, !dbg !57
+63:                                               ; No predecessors!
+  br label %65, !dbg !57
 
-61:                                               ; preds = %49
-  br label %62, !dbg !57
+64:                                               ; preds = %52
+  br label %65, !dbg !57
 
-62:                                               ; preds = %61, %60
-  %63 = load i32, i32* %1, align 4, !dbg !58
-  ret i32 %63, !dbg !58
+65:                                               ; preds = %64, %63
+  %66 = load i32, i32* %1, align 4, !dbg !58
+  ret i32 %66, !dbg !58
 }
 
 ; Function Attrs: nofree nosync nounwind readnone speculatable willreturn
@@ -173,43 +176,43 @@ attributes #9 = { cold noreturn }
 !16 = !{i32 7, !"uwtable", i32 1}
 !17 = !{i32 7, !"frame-pointer", i32 1}
 !18 = !{!"Homebrew clang version 14.0.6"}
-!19 = distinct !DISubprogram(name: "main", scope: !20, file: !20, line: 6, type: !21, scopeLine: 7, spFlags: DISPFlagDefinition, unit: !0, retainedNodes: !24)
+!19 = distinct !DISubprogram(name: "main", scope: !20, file: !20, line: 8, type: !21, scopeLine: 9, spFlags: DISPFlagDefinition, unit: !0, retainedNodes: !24)
 !20 = !DIFile(filename: "benchmarks/miscellaneous/nondet_aligned_alloc.c", directory: "/Users/thomashaas/IdeaProjects/Dat3M")
 !21 = !DISubroutineType(types: !22)
 !22 = !{!23}
 !23 = !DIBasicType(name: "int", size: 32, encoding: DW_ATE_signed)
 !24 = !{}
-!25 = !DILocalVariable(name: "size_int", scope: !19, file: !20, line: 8, type: !23)
-!26 = !DILocation(line: 8, column: 9, scope: !19)
-!27 = !DILocation(line: 8, column: 20, scope: !19)
-!28 = !DILocalVariable(name: "align_int", scope: !19, file: !20, line: 9, type: !23)
-!29 = !DILocation(line: 9, column: 9, scope: !19)
-!30 = !DILocation(line: 9, column: 21, scope: !19)
-!31 = !DILocation(line: 10, column: 23, scope: !19)
-!32 = !DILocation(line: 10, column: 32, scope: !19)
-!33 = !DILocation(line: 10, column: 5, scope: !19)
-!34 = !DILocation(line: 11, column: 23, scope: !19)
-!35 = !DILocation(line: 11, column: 33, scope: !19)
-!36 = !DILocation(line: 11, column: 5, scope: !19)
-!37 = !DILocalVariable(name: "size", scope: !19, file: !20, line: 12, type: !3)
-!38 = !DILocation(line: 12, column: 12, scope: !19)
-!39 = !DILocation(line: 12, column: 27, scope: !19)
-!40 = !DILocation(line: 12, column: 19, scope: !19)
-!41 = !DILocalVariable(name: "align", scope: !19, file: !20, line: 13, type: !3)
-!42 = !DILocation(line: 13, column: 12, scope: !19)
-!43 = !DILocation(line: 13, column: 28, scope: !19)
-!44 = !DILocation(line: 13, column: 20, scope: !19)
-!45 = !DILocalVariable(name: "array", scope: !19, file: !20, line: 14, type: !46)
+!25 = !DILocalVariable(name: "size_int", scope: !19, file: !20, line: 10, type: !23)
+!26 = !DILocation(line: 10, column: 9, scope: !19)
+!27 = !DILocation(line: 10, column: 20, scope: !19)
+!28 = !DILocalVariable(name: "align_int", scope: !19, file: !20, line: 11, type: !23)
+!29 = !DILocation(line: 11, column: 9, scope: !19)
+!30 = !DILocation(line: 11, column: 21, scope: !19)
+!31 = !DILocation(line: 12, column: 23, scope: !19)
+!32 = !DILocation(line: 12, column: 32, scope: !19)
+!33 = !DILocation(line: 12, column: 5, scope: !19)
+!34 = !DILocation(line: 13, column: 23, scope: !19)
+!35 = !DILocation(line: 13, column: 33, scope: !19)
+!36 = !DILocation(line: 13, column: 5, scope: !19)
+!37 = !DILocalVariable(name: "size", scope: !19, file: !20, line: 14, type: !3)
+!38 = !DILocation(line: 14, column: 12, scope: !19)
+!39 = !DILocation(line: 14, column: 27, scope: !19)
+!40 = !DILocation(line: 14, column: 19, scope: !19)
+!41 = !DILocalVariable(name: "align", scope: !19, file: !20, line: 15, type: !3)
+!42 = !DILocation(line: 15, column: 12, scope: !19)
+!43 = !DILocation(line: 15, column: 28, scope: !19)
+!44 = !DILocation(line: 15, column: 20, scope: !19)
+!45 = !DILocalVariable(name: "array", scope: !19, file: !20, line: 16, type: !46)
 !46 = !DIDerivedType(tag: DW_TAG_pointer_type, baseType: !23, size: 64)
-!47 = !DILocation(line: 14, column: 10, scope: !19)
-!48 = !DILocation(line: 14, column: 18, scope: !19)
-!49 = !DILocalVariable(name: "array_2", scope: !19, file: !20, line: 15, type: !46)
-!50 = !DILocation(line: 15, column: 10, scope: !19)
-!51 = !DILocation(line: 15, column: 34, scope: !19)
-!52 = !DILocation(line: 15, column: 41, scope: !19)
-!53 = !DILocation(line: 15, column: 46, scope: !19)
-!54 = !DILocation(line: 15, column: 20, scope: !19)
-!55 = !DILocation(line: 20, column: 5, scope: !19)
-!56 = !DILocation(line: 21, column: 5, scope: !19)
-!57 = !DILocation(line: 22, column: 5, scope: !19)
-!58 = !DILocation(line: 23, column: 1, scope: !19)
+!47 = !DILocation(line: 16, column: 10, scope: !19)
+!48 = !DILocation(line: 16, column: 18, scope: !19)
+!49 = !DILocalVariable(name: "array_2", scope: !19, file: !20, line: 17, type: !46)
+!50 = !DILocation(line: 17, column: 10, scope: !19)
+!51 = !DILocation(line: 17, column: 34, scope: !19)
+!52 = !DILocation(line: 17, column: 41, scope: !19)
+!53 = !DILocation(line: 17, column: 46, scope: !19)
+!54 = !DILocation(line: 17, column: 20, scope: !19)
+!55 = !DILocation(line: 23, column: 5, scope: !19)
+!56 = !DILocation(line: 24, column: 5, scope: !19)
+!57 = !DILocation(line: 25, column: 5, scope: !19)
+!58 = !DILocation(line: 26, column: 1, scope: !19)
