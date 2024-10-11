@@ -76,6 +76,8 @@ public final class EncodingContext {
     private final Map<Event, Formula> addresses = new HashMap<>();
     private final Map<Event, Formula> values = new HashMap<>();
     private final Map<Event, Formula> results = new HashMap<>();
+    private final Map<MemoryObject, Formula> objAddress = new HashMap<>();
+    private final Map<MemoryObject, Formula> objSize = new HashMap<>();
 
     private EncodingContext(VerificationTask t, Context a, FormulaManager m) {
         verificationTask = checkNotNull(t);
@@ -215,7 +217,7 @@ public final class EncodingContext {
     }
 
     public Formula lastValue(MemoryObject base, int offset, int size) {
-        checkArgument(0 <= offset && offset < base.size(), "array index out of bounds");
+        checkArgument(base.isInRange(offset), "Array index out of bounds");
         final String name = String.format("last_val_at_%s_%d", base, offset);
         if (useIntegers) {
             return formulaManager.getIntegerFormulaManager().makeVariable(name);
@@ -306,6 +308,10 @@ public final class EncodingContext {
         return addresses.get(event);
     }
 
+    public Formula address(MemoryObject memoryObject) { return objAddress.get(memoryObject); }
+
+    public Formula size(MemoryObject memoryObject) { return objSize.get(memoryObject); }
+
     public Formula value(MemoryEvent event) {
         return values.get(event);
     }
@@ -370,6 +376,7 @@ public final class EncodingContext {
     }
 
     private void initialize() {
+        // ------- Control flow variables -------
         // Only for the standard fair progress model we can merge CF variables.
         // TODO: It would also be possible for OBE/HSA in some cases if we refine the cf-equivalence classes
         //  to classes per thread.
@@ -386,6 +393,14 @@ public final class EncodingContext {
                 controlFlowVariables.put(e, booleanFormulaManager.makeVariable("cf " + e.getGlobalId()));
             }
         }
+
+        // ------- Memory object variables -------
+        for (MemoryObject memoryObject : verificationTask.getProgram().getMemory().getObjects()) {
+            objAddress.put(memoryObject, makeVariable(String.format("addrof(%s)", memoryObject), memoryObject.getType()));
+            objSize.put(memoryObject, makeVariable(String.format("sizeof(%s)", memoryObject), memoryObject.getType()));
+        }
+
+        // ------- Event variables  -------
         for (Event e : verificationTask.getProgram().getThreadEvents()) {
             if (!e.cfImpliesExec()) {
                 executionVariables.put(e, booleanFormulaManager.makeVariable("exec " + e.getGlobalId()));

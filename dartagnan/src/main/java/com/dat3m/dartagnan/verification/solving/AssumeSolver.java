@@ -10,7 +10,10 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
-import org.sosy_lab.java_smt.api.*;
+import org.sosy_lab.java_smt.api.BooleanFormula;
+import org.sosy_lab.java_smt.api.BooleanFormulaManager;
+import org.sosy_lab.java_smt.api.SolverContext;
+import org.sosy_lab.java_smt.api.SolverException;
 
 import static com.dat3m.dartagnan.utils.Result.FAIL;
 import static com.dat3m.dartagnan.utils.Result.PASS;
@@ -72,24 +75,24 @@ public class AssumeSolver extends ModelChecker {
         BooleanFormula assumedSpec = bmgr.implication(assumptionLiteral, propertyEncoding);
         prover.writeComment("Property encoding");
         prover.addConstraint(assumedSpec);
-        
+
         logger.info("Starting first solver.check()");
-        if(prover.isUnsatWithAssumptions(singletonList(assumptionLiteral))) {
+        if (prover.isUnsatWithAssumptions(singletonList(assumptionLiteral))) {
             prover.writeComment("Bound encoding");
-			prover.addConstraint(propertyEncoder.encodeBoundEventExec());
+            prover.addConstraint(propertyEncoder.encodeBoundEventExec());
             logger.info("Starting second solver.check()");
-            res = prover.isUnsat()? PASS : Result.UNKNOWN;
+            res = prover.isUnsat() ? PASS : Result.UNKNOWN;
         } else {
             res = FAIL;
             saveFlaggedPairsOutput(memoryModel, wmmEncoder, prover, context, task.getProgram());
         }
 
-        if(logger.isDebugEnabled()) {        	
-    		String smtStatistics = "\n ===== SMT Statistics ===== \n";
-    		for(String key : prover.getStatistics().keySet()) {
-    			smtStatistics += String.format("\t%s -> %s\n", key, prover.getStatistics().get(key));
-    		}
-    		logger.debug(smtStatistics);
+        if (logger.isDebugEnabled()) {
+            String smtStatistics = "\n ===== SMT Statistics ===== \n";
+            for (String key : prover.getStatistics().keySet()) {
+                smtStatistics += String.format("\t%s -> %s\n", key, prover.getStatistics().get(key));
+            }
+            logger.debug(smtStatistics);
         }
 
         // For Safety specs, we have SAT=FAIL, but for reachability specs, we have SAT=PASS
