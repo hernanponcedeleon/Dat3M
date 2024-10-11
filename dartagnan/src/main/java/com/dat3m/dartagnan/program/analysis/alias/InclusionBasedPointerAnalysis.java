@@ -17,7 +17,6 @@ import com.dat3m.dartagnan.verification.Context;
 import com.dat3m.dartagnan.witness.graphviz.Graphviz;
 import com.google.common.base.Supplier;
 import com.google.common.base.Suppliers;
-import com.google.common.collect.Lists;
 import com.google.common.math.IntMath;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -680,30 +679,22 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
         if (left.alignment.isEmpty()) {
             return right.alignment.isEmpty() && offset == 0;
         }
-        for (final Integer a : left.alignment) {
-            if (a < 0) {
-                final int l = reduceAbsGCD(left.alignment);
-                final int r = reduceAbsGCD(right.alignment);
-                return offset % l == 0 && r % l == 0;
-            }
+        // Case of unbounded dynamic indexes.
+        int leftAlignment = singleAlignment(left.alignment);
+        int rightAlignment = singleAlignment(right.alignment);
+        if (leftAlignment < 0 || rightAlignment < 0) {
+            int l = leftAlignment < 0 ? -leftAlignment : reduceGCD(left.alignment);
+            int r = rightAlignment < 0 ? -rightAlignment : reduceGCD(right.alignment);
+            return offset % l == 0 && r % l == 0;
         }
-        for (final Integer a : right.alignment) {
-            if (a < 0) {
-                final int l = reduceAbsGCD(left.alignment);
-                final int r = reduceAbsGCD(right.alignment);
-                return offset % l == 0 && r % l == 0;
-            }
-        }
-        // FIXME assumes that dynamic indexes used here only have non-negative values.
-        // This cannot be used when a negative alignment occurs, because the analysis would not terminate.
+        // Case of a single non-negative dynamic index.
         if (left.alignment.size() == 1) {
-            final int alignment = Math.abs(left.alignment.get(0));
             for (final Integer a : right.alignment) {
-                if (a % alignment != 0) {
+                if (a % leftAlignment != 0) {
                     return false;
                 }
             }
-            return offset % alignment == 0 && offset >= 0;
+            return offset % leftAlignment == 0 && offset >= 0;
         }
         // Case of multiple dynamic indexes with pairwise indivisible alignments.
         final int gcd = IntMath.gcd(reduceGCD(right.alignment), Math.abs(offset));
@@ -737,22 +728,21 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
     private static boolean overlaps(Modifier l, Modifier r) {
         // exists non-negative integers x, y with l.offset + x * l.alignment == r.offset + y * r.alignment
         final int offset = r.offset - l.offset;
-        final int left = reduceAbsGCD(l.alignment);
-        final int right = reduceAbsGCD(r.alignment);
+        final int leftAlignment = singleAlignment(l.alignment);
+        final int rightAlignment = singleAlignment(r.alignment);
+        final int left = leftAlignment < 0 ? -leftAlignment : reduceGCD(l.alignment);
+        final int right = rightAlignment < 0 ? -rightAlignment : reduceGCD(r.alignment);
         if (left == 0 && right == 0) {
             return offset == 0;
         }
         final int divisor = left == 0 ? right : right == 0 ? left : IntMath.gcd(left, right);
-        final boolean nonNegativeIndexes = left == 0 ? offset <= 0 : right != 0 || offset >= 0;
-        return nonNegativeIndexes && offset % divisor == 0;
+        final boolean leftDirectedTowardsRight = right != 0 || leftAlignment < 0 || offset >= 0;
+        final boolean rightDirectedTowardsLeft = left != 0 || rightAlignment < 0 || offset <= 0;
+        return leftDirectedTowardsRight && rightDirectedTowardsLeft && offset % divisor == 0;
     }
 
-    // Computes the greatest common divisor of the absolute values of the operands.
-    // This gets called only if there is at least one negative dynamic offset.
-    // Positive values assume non-negative multipliers and thus enable the precision of the previous analysis.
-    // Negative values indicate that the multiplier can also be negative.
-    private static int reduceAbsGCD(List<Integer> alignment) {
-        return reduceGCD(Lists.transform(alignment, Math::abs));
+    private static int singleAlignment(List<Integer> alignment) {
+        return alignment.size() != 1 ? 0 : alignment.get(0);
     }
 
     // Computes the greatest common divisor of the operands.
@@ -774,6 +764,17 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
         }
         if (left == TOP || right == TOP) {
             return TOP;
+        }
+        // Negative values are unrestricted and compose always.
+        // Therefore, each list shall either contain a single negative value, or only positive values.
+        int leftAlignment = singleAlignment(left);
+        int rightAlignment = singleAlignment(right);
+        if (leftAlignment < 0 || rightAlignment < 0) {
+            int alignment = leftAlignment < 0 ? -leftAlignment : -rightAlignment;
+            for (Integer other : leftAlignment < 0 ? right : left) {
+                alignment = IntMath.gcd(alignment, Math.abs(other));
+            }
+            return List.of(-alignment);
         }
         // assert left and right each consist of pairwise indivisible positives
         final List<Integer> result = new ArrayList<>();
