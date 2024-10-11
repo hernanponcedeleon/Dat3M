@@ -793,7 +793,14 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
                 result.add(j);
             }
         }
+        sort(result);
         return result;
+    }
+
+    private static void sort(List<Integer> alignment) {
+        if (alignment.size() > 1) {
+            Collections.sort(alignment);
+        }
     }
 
     // Checks if value is no multiple of any element in the list.
@@ -865,6 +872,7 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
         if (result != null && (result.address != null || result.register != null)) {
             final DerivedVariable base = result.address != null ? derive(objectVariables.get(result.address)) :
                     getPhiNodeVariable(result.register, reader);
+            sort(result.alignment);
             main = compose(base, modifier(result.offset.intValue(), result.alignment));
         } else {
             main = null;
