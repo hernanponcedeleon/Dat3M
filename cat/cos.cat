@@ -1,5 +1,0 @@
-// Herd7 uses cos.cat for generating coherence.
-// It usually also defines some derived relations used in many memory models.
-// Dartagnan does not need the former; the later is handled by basic.cat below.
-
-include "basic.cat"
