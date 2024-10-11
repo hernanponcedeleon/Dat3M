@@ -454,12 +454,17 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
 
     private static final Modifier TRIVIAL_MODIFIER = new Modifier(0, List.of());
 
+    private static Modifier modifier(int offset, List<Integer> alignment) {
+        int a = singleAlignment(alignment);
+        return new Modifier(a >= 0 ? offset : offset % -a, alignment);
+    }
+
     private static DerivedVariable derive(Variable base) {
         return new DerivedVariable(base, TRIVIAL_MODIFIER);
     }
 
     private static DerivedVariable derive(Variable base, int offset, List<Integer> alignment) {
-        return new DerivedVariable(base, new Modifier(offset, alignment));
+        return new DerivedVariable(base, modifier(offset, alignment));
     }
 
     private static IncludeEdge includeEdge(DerivedVariable variable) {
@@ -802,7 +807,7 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
     }
 
     private static Modifier compose(Modifier left, Modifier right) {
-        return new Modifier(left.offset + right.offset, compose(left.alignment, right.alignment));
+        return modifier(left.offset + right.offset, compose(left.alignment, right.alignment));
     }
 
     // Adds a single value to a set of dynamic offsets.
@@ -860,7 +865,7 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
         if (result != null && (result.address != null || result.register != null)) {
             final DerivedVariable base = result.address != null ? derive(objectVariables.get(result.address)) :
                     getPhiNodeVariable(result.register, reader);
-            main = compose(base, new Modifier(result.offset.intValue(), result.alignment));
+            main = compose(base, modifier(result.offset.intValue(), result.alignment));
         } else {
             main = null;
         }
