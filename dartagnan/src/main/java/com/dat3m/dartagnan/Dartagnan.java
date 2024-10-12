@@ -85,9 +85,9 @@ public class Dartagnan extends BaseOptions {
         final List<CharSource> source = new ArrayList<>();
         for (String argument : args) {
             if (argument.startsWith("--")) {
-                source.add(CharSource.wrap(argument.substring(2)));
+                source.add(CharSource.wrap(argument.substring(2) + "\n"));
             } else if (argument.endsWith(".properties")) {
-                source.add(CharSource.wrap(String.format("#include %s", argument)));
+                source.add(CharSource.wrap(String.format("#include %s%n", argument)));
             }
         }
         return Configuration.builder().loadFromSource(CharSource.concat(source), ".", "[arguments]").build();
