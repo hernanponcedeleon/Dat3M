@@ -80,19 +80,19 @@ public class OptionsPane extends JPanel {
     public OptionsPane() {
         super(new GridLayout(1, 0));
 
-        methodPane = new Selector<>(Method.orderedValues(), ControlCode.METHOD);
+        methodPane = new Selector<>(Method.class, Method.orderedValues(), ControlCode.METHOD);
         methodPane.setSelectedItem(Method.getDefault());
 
-        solverPane = new Selector<>(solversOrderedValues(), ControlCode.SOLVER);
+        solverPane = new Selector<>(Solvers.class, solversOrderedValues(), ControlCode.SOLVER);
         solverPane.setSelectedItem(Solvers.Z3);
 
-        propertyPane = new Selector<>(Property.orderedValues(), ControlCode.PROPERTY);
+        propertyPane = new Selector<>(Property.class, Property.orderedValues(), ControlCode.PROPERTY);
         propertyPane.setSelectedItem(Property.PROGRAM_SPEC);
 
-        targetPane = new Selector<>(Arch.orderedValues(), ControlCode.TARGET);
+        targetPane = new Selector<>(Arch.class, Arch.orderedValues(), ControlCode.TARGET);
         targetPane.setSelectedItem(Arch.getDefault());
 
-        progressPane = new Selector<>(ProgressModel.orderedValues(), ControlCode.PROGRESS);
+        progressPane = new Selector<>(ProgressModel.class, ProgressModel.orderedValues(), ControlCode.PROGRESS);
         progressPane.setSelectedItem(ProgressModel.getDefault());
 
         boundField = new BoundField();
@@ -154,11 +154,11 @@ public class OptionsPane extends JPanel {
         int timeout = Integer.parseInt(timeoutField.getText());
         boolean showViolationGraph = showViolationField.isSelected();
         String cflags = cflagsField.getText().strip();
-        Arch target = (Arch) targetPane.getSelectedItem();
-        Method method = (Method) methodPane.getSelectedItem();
-        Solvers solver = (Solvers) solverPane.getSelectedItem();
-        EnumSet<Property> properties = EnumSet.of((Property) propertyPane.getSelectedItem());
-        ProgressModel progress = (ProgressModel) progressPane.getSelectedItem();
+        Arch target = targetPane.getSelectedItem();
+        Method method = methodPane.getSelectedItem();
+        Solvers solver = solverPane.getSelectedItem();
+        EnumSet<Property> properties = EnumSet.of(propertyPane.getSelectedItem());
+        ProgressModel progress = progressPane.getSelectedItem();
         return new UiOptions(target, method, bound, solver, timeout, showViolationGraph, cflags, extraOptionsMap, properties, progress);
     }
 
@@ -251,6 +251,10 @@ public class OptionsPane extends JPanel {
     }
 
     private void doExport() {
+        if (extraOptionsDialog.isVisible()) {
+            toText();
+            extraOptionsDialog.setVisible(false);
+        }
         configurationFileChooser.showSaveDialog(this);
         final File file = configurationFileChooser.getSelectedFile();
         if (file == null) {
@@ -258,14 +262,14 @@ public class OptionsPane extends JPanel {
         }
         final var properties = new Properties();
         properties.putAll(extraOptionsMap);
-        properties.put(METHOD, methodPane.getSelectedItem());
-        properties.put(SOLVER, solverPane.getSelectedItem());
-        properties.put(PROPERTY, propertyPane.getSelectedItem());
-        properties.put(TARGET, targetPane.getSelectedItem());
-        properties.put(PROGRESSMODEL, progressPane.getSelectedItem());
+        properties.put(METHOD, methodPane.getSelectedItem().name());
+        properties.put(SOLVER, solverPane.getSelectedItem().name());
+        properties.put(PROPERTY, propertyPane.getSelectedItem().name());
+        properties.put(TARGET, targetPane.getSelectedItem().name());
+        properties.put(PROGRESSMODEL, progressPane.getSelectedItem().name());
         properties.put(BOUND, boundField.getText());
         properties.put(TIMEOUT, timeoutField.getText());
-        properties.put(WITNESS, showViolationField.isSelected());
+        properties.put(WITNESS, Boolean.toString(showViolationField.isSelected()));
         try (FileWriter writer = new FileWriter(file)) {
             properties.store(writer, "Created with Dartagnan");
         } catch (IOException e) {
@@ -274,6 +278,9 @@ public class OptionsPane extends JPanel {
     }
 
     private void doImport() {
+        if (extraOptionsDialog.isVisible()) {
+            extraOptionsDialog.setVisible(false);
+        }
         configurationFileChooser.showOpenDialog(this);
         final File file = configurationFileChooser.getSelectedFile();
         if (file == null) {
@@ -286,7 +293,6 @@ public class OptionsPane extends JPanel {
             showError(e.getMessage(), "Error while importing configuration");
             return;
         }
-        extraOptionsMap.clear();
         setMethod(properties.remove(METHOD));
         setSolver(properties.remove(SOLVER));
         setProperty(properties.remove(PROPERTY));
@@ -295,9 +301,11 @@ public class OptionsPane extends JPanel {
         setBound(properties.remove(BOUND));
         setTimeout(properties.remove(TIMEOUT));
         setWitness(properties.remove(WITNESS));
+        extraOptionsMap.clear();
         for (Map.Entry<Object, Object> entry : properties.entrySet()) {
             extraOptionsMap.put(entry.getKey().toString(), entry.getValue().toString());
         }
+        toText();
     }
 
     private void setMethod(Object value) {
