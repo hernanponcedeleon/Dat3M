@@ -238,16 +238,8 @@ public class LazyRelationAnalysis extends NativeRelationAnalysis {
                 reader.getRegisterReads().forEach(read -> {
                     if (usageTypes.contains(read.usageType())) {
                         Register register = read.register();
-                        // TODO: Update after this is merged
-                        //  https://github.com/hernanponcedeleon/Dat3M/pull/741
-                        // Register x0 is hardwired to the constant 0 in RISCV
-                        // https://en.wikichip.org/wiki/risc-v/registers,
-                        // and thus it generates no dependency, see
-                        // https://github.com/herd/herdtools7/issues/408
-                        if (!program.getArch().equals(RISCV) || !register.getName().equals("x0")) {
-                            state.ofRegister(register).getMayWriters().forEach(writer ->
-                                    data.computeIfAbsent(writer, x -> new HashSet<>()).add(reader));
-                        }
+                        state.ofRegister(register).getMayWriters()
+                                .forEach(writer -> data.computeIfAbsent(writer, x -> new HashSet<>()).add(reader));
                     }
                 });
             });

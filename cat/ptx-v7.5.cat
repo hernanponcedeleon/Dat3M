@@ -26,8 +26,6 @@ PTX
 // The ASPLOS'19 paper and the documentation refer to "rf | fr" (non-optional). 
 // We follow the later.
 
-include "basic.cat"
-
 (*******************)
 (*   Auxiliaries   *)
 (*******************)

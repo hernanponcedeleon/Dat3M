@@ -53,8 +53,6 @@
             <groupId>org.sosy-lab</groupId>
             <artifactId>javasmt-solver-z3</artifactId>
             <version>${z3.version}</version>
-            <type>jar</type>
-            <classifier>com.microsoft.z3</classifier>
         </dependency>
 
         <!-- Test dependencies -->
