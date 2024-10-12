@@ -204,7 +204,6 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
         if (isOpenCL && ctx.pointerTypeSpecifier().openCLSpace() != null) {
             object.addFeatureTag(ctx.pointerTypeSpecifier().openCLSpace().space);
         }
-        programBuilder.setReg2LocMap(register, object);
         programBuilder.addChild(currentThread, EventFactory.newLocal(register, object));
         return null;
     }
@@ -283,7 +282,6 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
         Expression value = returnExpressionOrOne(ctx.value);
         Expression address = getAddress(ctx.address);
         Event event = EventFactory.Atomic.newFetchOp(register, address, value, ctx.op, ctx.c11Mo().mo);
-        addMemoryObjectTags(event, address);
         addScopeTag(event, ctx.openCLScope());
         programBuilder.addChild(currentThread, event);
         return register;
@@ -315,7 +313,6 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
         Expression value = (Expression) ctx.value.accept(this);
         Expression address = getAddress(ctx.address);
         Event event = EventFactory.Atomic.newExchange(register, address, value, ctx.c11Mo().mo);
-        addMemoryObjectTags(event, address);
         programBuilder.addChild(currentThread, event);
         return register;
     }
@@ -326,7 +323,6 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
         Expression value = (Expression) ctx.value.accept(this);
         Expression address = getAddress(ctx.address);
         Event event = EventFactory.Atomic.newExchange(register, address, value, ctx.c11Mo().mo);
-        addMemoryObjectTags(event, address);
         addScopeTag(event, ctx.openCLScope());
         programBuilder.addChild(currentThread, event);
         return register;
@@ -349,7 +345,6 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
         Expression expectedAdd = getAddress(ctx.expectedAdd);
         String mo = ctx.c11Mo(0).mo;
         Event event = EventFactory.Atomic.newCompareExchange(register, address, expectedAdd, value, mo, true);
-        addMemoryObjectTags(event, address);
         addScopeTag(event, ctx.openCLScope());
         programBuilder.addChild(currentThread, event);
         return register;
@@ -363,7 +358,6 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
         Expression expectedAdd = getAddress(ctx.expectedAdd);
         Event event = EventFactory.Atomic.newCompareExchange(register, address, expectedAdd, value,
                 C11.DEFAULT_MO, true);
-        addMemoryObjectTags(event, address);
         addScopeTag(event, null);
         programBuilder.addChild(currentThread, event);
         return register;
@@ -377,7 +371,6 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
         Expression expectedAdd = getAddress(ctx.expectedAdd);
         String mo = ctx.c11Mo(0).mo;
         Event event = EventFactory.Atomic.newCompareExchange(register, address, expectedAdd, value, mo, false);
-        addMemoryObjectTags(event, address);
         addScopeTag(event, ctx.openCLScope());
         programBuilder.addChild(currentThread, event);
         return register;
@@ -391,7 +384,6 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
         Expression expectedAdd = getAddress(ctx.expectedAdd);
         Event event = EventFactory.Atomic.newCompareExchange(register, address, expectedAdd, value,
                 C11.DEFAULT_MO, false);
-        addMemoryObjectTags(event, address);
         addScopeTag(event, null);
         programBuilder.addChild(currentThread, event);
         return register;
@@ -411,7 +403,6 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
         Register register = getReturnRegister(true);
         Expression address = getAddress(ctx.address);
         AtomicLoad event = EventFactory.Atomic.newLoad(register, address, ctx.c11Mo().mo);
-        addMemoryObjectTags(event, address);
         addScopeTag(event, ctx.openCLScope());
         programBuilder.addChild(currentThread, event);
         return register;
@@ -421,7 +412,6 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
         Register register = getReturnRegister(true);
         Expression address = getAddress(ctx.address);
         AtomicLoad event = EventFactory.Atomic.newLoad(register, address, C11.DEFAULT_MO);
-        addMemoryObjectTags(event, address);
         addScopeTag(event, null);
         programBuilder.addChild(currentThread, event);
         return register;
@@ -448,7 +438,6 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
         Register register = getReturnRegister(true);
         Expression address = getAddress(ctx.address);
         Load event = EventFactory.newLoadWithMo(register, address, C11.NONATOMIC);
-        addMemoryObjectTags(event, address);
         programBuilder.addChild(currentThread, event);
         return register;
     }
@@ -563,7 +552,6 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
         Expression value = (Expression)ctx.value.accept(this);
         Expression address = getAddress(ctx.address);
         AtomicStore event = EventFactory.Atomic.newStore(address, value, ctx.c11Mo().mo);
-        addMemoryObjectTags(event, address);
         addScopeTag(event, ctx.openCLScope());
         return programBuilder.addChild(currentThread, event);
     }
@@ -573,7 +561,6 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
         Expression value = (Expression)ctx.value.accept(this);
         Expression address = getAddress(ctx.address);
         AtomicStore event = EventFactory.Atomic.newStore(address, value, C11.DEFAULT_MO);
-        addMemoryObjectTags(event, address);
         addScopeTag(event, null);
         return programBuilder.addChild(currentThread, event);
     }
@@ -594,7 +581,6 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
         if(variable instanceof MemoryObject || variable instanceof Register){
             Event event = EventFactory.newStoreWithMo(variable, value, C11.NONATOMIC);
             if (variable instanceof Register reg) {
-                addMemoryObjectTags(event, reg);
                 if (isOpenCL) {
                     event.addTags(Tag.OpenCL.DEFAULT_WEAK_SCOPE);
                 }
@@ -721,19 +707,6 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
             programBuilder.addChild(currentThread, EventFactory.newLocal(register, cast));
         }
         return value;
-    }
-
-    private void addMemoryObjectTags(Event event, Expression address) {
-        if (address instanceof Register reg) {
-            MemoryObject object = programBuilder.getLocFromReg(reg);
-            if (object != null) {
-                event.addTags(object.getFeatureTags());
-            }
-        } else {
-            for (Expression add : address.getOperands()) {
-                addMemoryObjectTags(event, add);
-            }
-        }
     }
 
     private void addScopeTag(Event event, LitmusCParser.OpenCLScopeContext ctx) {

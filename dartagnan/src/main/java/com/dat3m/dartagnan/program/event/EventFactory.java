@@ -135,8 +135,15 @@ public class EventFactory {
         // meaning that <addr> and <addr + 0> are treated differently.
         final Expression address = offset == 0 ? base :
                 expressions.makeAdd(base, expressions.makeValue(offset, (IntegerType) base.getType()));
+        return new Init(base, offset, address);
+    }
+
+    public static Init newC11Init(MemoryObject base, int offset) {
+        final Expression address = offset == 0 ? base :
+                expressions.makeAdd(base, expressions.makeValue(offset, (IntegerType) base.getType()));
         Init init = new Init(base, offset, address);
         init.addTags(base.getFeatureTags());
+        init.addTags(Tag.C11.NONATOMIC);
         return init;
     }
 

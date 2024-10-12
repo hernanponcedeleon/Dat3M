@@ -86,7 +86,11 @@ public class MemoryAllocation implements ProgramProcessor {
                 final String threadName = "Init_" + nextThreadId;
                 final Thread thread = new Thread(threadName, initThreadType, paramNames, nextThreadId,
                         EventFactory.newThreadStart(null));
-                thread.append(EventFactory.newInit(memObj, field));
+                if (program.getArch() == Arch.C11 || program.getArch() == Arch.OPENCL) {
+                    thread.append(EventFactory.newC11Init(memObj, field));
+                } else {
+                    thread.append(EventFactory.newInit(memObj, field));
+                }
                 thread.append(EventFactory.newLabel("END_OF_T" + thread.getId()));
                 program.addThread(thread);
                 nextThreadId++;

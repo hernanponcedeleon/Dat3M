@@ -24,7 +24,10 @@ include "basic.cat"
 // EF: entry fence of barrier
 // XF: exit fence of barrier
 
-let mo = co & ((~NAL) * (~NAL))
+// dynamic_tag relates events to itself that access an address whose init event is marked X or Fence tagged with X
+let dynamic_tag(X) = [range([IW & X]; loc)] | [X & F]
+
+let mo = dynamic_tag(~NAL); co; dynamic_tag(~NAL)
 let sb = po
 let rb = (rf^-1; mo) \ id
 let unv = _ * _
@@ -49,27 +52,28 @@ let rs_prime = wi | (unv; [R & W])
 let rs = mo & rs_prime & ~((mo & ~rs_prime) ; mo)
 
 (* Release-acquire synchronisation *)
-let ra_sw(r) = ([r & Rel]; Fsb?; [W \ WI]; rs?; [r]; rf; [R \ WI]; sbF?; [Acq & r]) & incl & ~wi
+let ra_sw(r) = ((r & [Rel]); Fsb?; [W \ WI]; rs?; r; rf; [R \ WI]; sbF?; ([Acq] & r)) & incl & ~wi
 
 (* Barrier synchronisation *)
 // in OpenCL a barrier results in two fence operations: entry and exit fences:
 // https://registry.khronos.org/OpenCL/specs/3.0-unified/html/OpenCL_API.html#_work_group_functions
-let bar_sw(r) =  (EF * XF) & syncbar & ~wi & swg & (r * r)
+let bar_sw(r) = (r & [EF]); syncbar & ~wi & swg; (r & [XF])
 
 (* Allowed to synchronise on the other region *)
-let scf = (SC * SC) | ((GLOBAL & LOCAL & F) * (GLOBAL & LOCAL & F))
+let scf = (SC * SC) | ((dynamic_tag(GLOBAL) & dynamic_tag(LOCAL)); F*F;(dynamic_tag(GLOBAL) & dynamic_tag(LOCAL)))
 
 (* Global and local synchronises-with *)
-let gsw = ra_sw(GLOBAL) | bar_sw(GLOBAL) | (scf & ra_sw(LOCAL))
-let lsw = ra_sw(LOCAL) | bar_sw(LOCAL) | (scf & ra_sw(GLOBAL))
+let gsw = ra_sw(dynamic_tag(GLOBAL)) | bar_sw(dynamic_tag(GLOBAL)) | (scf & ra_sw(dynamic_tag(LOCAL)))
+let lsw = ra_sw(dynamic_tag(LOCAL)) | bar_sw(dynamic_tag(LOCAL)) | (scf & ra_sw(dynamic_tag(GLOBAL)))
 
 (******************)
 (* Happens-before *)
 (******************)
 
 (* Global and local happens-before *)
-let ghb = (((GLOBAL * GLOBAL) & (sb | (IW * ~IW))) | gsw)+
-let lhb = (((LOCAL * LOCAL) & (sb | (IW * ~IW))) | lsw)+
+let ghb = ((dynamic_tag(GLOBAL); sb; dynamic_tag(GLOBAL)) | (dynamic_tag(GLOBAL); IW * ~IW; dynamic_tag(GLOBAL)) | gsw)+
+let lhb = ((dynamic_tag(LOCAL); sb; dynamic_tag(LOCAL)) | (dynamic_tag(LOCAL); IW * ~IW; dynamic_tag(LOCAL)) | lsw)+
+
 irreflexive ghb as O-HbG
 irreflexive lhb as O-HbL
 
@@ -92,8 +96,8 @@ irreflexive rf; (ghb | lhb) as O-Rf
 let vis(hb) = (W * R) & hb & loc & ~((hb & loc); [W]; hb)
 
 (* A non-atomic load can only read from a store that is visible. *)
-empty (rf; [NAL & GLOBAL])\vis(ghb) as O-NaRfG
-empty (rf; [NAL & LOCAL])\vis(lhb) as O-NaRfL
+empty (rf; (dynamic_tag(NAL) & dynamic_tag(GLOBAL))) \ vis(ghb) as O-NaRfG
+empty (rf; (dynamic_tag(NAL) & dynamic_tag(LOCAL))) \ vis(lhb) as O-NaRfL
 
 (* Consistency of RMWs *)
 empty rmw & (fre; coe) as atomic
@@ -119,6 +123,6 @@ let dr = cnf & ~(ghb | lhb) & ~(ghb | lhb)^-1 & ~wi & ~incl
 flag ~empty dr as data_race
 
 (* Barrier divergence *)
-let bsw = bar_sw(GLOBAL) | bar_sw(LOCAL)
+let bsw = bar_sw(dynamic_tag(GLOBAL)) | bar_sw(dynamic_tag(LOCAL))
 let bd = [EF] & ((~wi & swg); unv) \ (bsw ; unv)
 flag ~empty bd as barrier_divergence

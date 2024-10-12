@@ -44,7 +44,6 @@ public class ProgramBuilder {
     private final Map<Integer, Function> id2FunctionsMap = new HashMap<>();
     private final Map<Integer, Map<String, Label>> fid2LabelsMap = new HashMap<>();
     private final Map<String, MemoryObject> locations = new HashMap<>();
-    private final Map<Register, MemoryObject> reg2LocMap = new HashMap<>();
 
     private final Program program;
 
@@ -348,15 +347,5 @@ public class ProgramBuilder {
         if (thread0.hasSyncSet()) {
             thread0.getSyncSet().add(thread1);
         }
-    }
-
-    // ----------------------------------------------------------------------------------------------------------------
-    // OpenCL
-    public void setReg2LocMap(Register reg, MemoryObject loc) {
-        reg2LocMap.put(reg, loc);
-    }
-
-    public MemoryObject getLocFromReg(Register reg) {
-        return reg2LocMap.get(reg);
     }
 }
