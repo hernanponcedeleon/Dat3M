@@ -345,7 +345,8 @@ public class ThreadCreation implements ProgramProcessor {
             @Override
             public Expression visitMemoryObject(MemoryObject memObj) {
                 if (memObj.isThreadLocal() && !global2ThreadLocal.containsKey(memObj)) {
-                    final MemoryObject threadLocalCopy = memory.allocate(memObj.size());
+                    Preconditions.checkState(memObj.hasKnownSize());
+                    final MemoryObject threadLocalCopy = memory.allocate(memObj.getKnownSize());
                     assert memObj.hasName();
                     final String varName = String.format("%s@T%s", memObj.getName(), thread.getId());
                     threadLocalCopy.setName(varName);

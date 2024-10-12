@@ -195,7 +195,7 @@ public class VisitorExtensionClspvReflectionTest {
         new MockSpirvParser(input).spv().accept(new VisitorExtensionClspvReflection(builder));
 
         // then
-        assertEquals(12, pointer.getAddress().size());
+        assertEquals(12, pointer.getAddress().getKnownSize());
     }
 
     @Test
@@ -215,7 +215,7 @@ public class VisitorExtensionClspvReflectionTest {
         new MockSpirvParser(input).spv().accept(new VisitorExtensionClspvReflection(builder));
 
         // then
-        assertEquals(16, pointer.getAddress().size());
+        assertEquals(16, pointer.getAddress().getKnownSize());
         verifyPushConstant(pointer, 0, List.of(24, 1, 1));
     }
 
