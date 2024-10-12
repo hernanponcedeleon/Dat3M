@@ -21,6 +21,7 @@ public class OptionNames {
     public static final String RECURSION_BOUND = "modeling.recursionBound";
     public static final String MEMORY_IS_ZEROED = "modeling.memoryIsZeroed";
     public static final String INIT_DYNAMIC_ALLOCATIONS = "modeling.initDynamicAllocations";
+    public static final String MULTI_READS = "modeling.multiReads";
 
     // Compilation Options
     public static final String USE_RC11_TO_ARCH_SCHEME = "compilation.rc11ToArch";
@@ -64,6 +65,8 @@ public class OptionNames {
 
     // Refinement Options
     public static final String BASELINE = "refinement.baseline";
+    public static final String GRAPHVIZ_DEBUG_FILES = "refinement.generageGraphvizDebugFiles";
+    public static final String SYMMETRY_LEARNING = "refinement.symmetryLearning";
 
     // SMT solver Options
     public static final String PHANTOM_REFERENCES = "solver.z3.usePhantomReferences";

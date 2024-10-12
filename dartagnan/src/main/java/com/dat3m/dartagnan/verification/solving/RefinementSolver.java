@@ -55,10 +55,8 @@ import java.util.*;
 import java.util.function.BiPredicate;
 import java.util.stream.Collectors;
 
-import static com.dat3m.dartagnan.GlobalSettings.REFINEMENT_GENERATE_GRAPHVIZ_DEBUG_FILES;
 import static com.dat3m.dartagnan.GlobalSettings.getOutputDirectory;
-import static com.dat3m.dartagnan.configuration.OptionNames.BASELINE;
-import static com.dat3m.dartagnan.configuration.OptionNames.COVERAGE;
+import static com.dat3m.dartagnan.configuration.OptionNames.*;
 import static com.dat3m.dartagnan.program.analysis.SyntacticContextAnalysis.*;
 import static com.dat3m.dartagnan.solver.caat.CAATSolver.Status.*;
 import static com.dat3m.dartagnan.utils.Result.*;
@@ -102,6 +100,11 @@ public class RefinementSolver extends ModelChecker {
             secure=true,
             toUppercase=true)
     private boolean printCovReport = false;
+
+    @Option(name=GRAPHVIZ_DEBUG_FILES,
+            description="This option causes Refinement to generate many .dot and .png files that describe EACH iteration." +
+                    " It is very expensive and should only be used for debugging purposes.")
+    private boolean generateGraphvizDebugFiles = false;
 
     // ================================================================================================================
     // Data classes
@@ -227,7 +230,7 @@ public class RefinementSolver extends ModelChecker {
         final WmmEncoder baselineEncoder = WmmEncoder.withContext(context);
 
         final BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
-        final WMMSolver solver = WMMSolver.withContext(refinementModel, context, analysisContext);
+        final WMMSolver solver = WMMSolver.withContext(refinementModel, context, analysisContext, config);
         final Refiner refiner = new Refiner(refinementModel);
         final Property.Type propertyType = Property.getCombinedType(task.getProperty(), task);
 
@@ -384,7 +387,7 @@ public class RefinementSolver extends ModelChecker {
             isFinalIteration = !checkProgress(trace) || iteration.isConclusive();
 
             // ------------------------- Debugging/Logging -------------------------
-            if (REFINEMENT_GENERATE_GRAPHVIZ_DEBUG_FILES) {
+            if (generateGraphvizDebugFiles) {
                 generateGraphvizFiles(task, solver.getExecution(), trace.size(), iteration.inconsistencyReasons);
             }
             if (logger.isDebugEnabled()) {

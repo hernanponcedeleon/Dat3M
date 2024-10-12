@@ -57,7 +57,6 @@ import java.nio.file.Path;
 import java.util.*;
 
 import static com.dat3m.dartagnan.GlobalSettings.getOrCreateOutputDirectory;
-import static com.dat3m.dartagnan.GlobalSettings.logGlobalSettings;
 import static com.dat3m.dartagnan.configuration.OptionInfo.collectOptions;
 import static com.dat3m.dartagnan.configuration.OptionNames.PHANTOM_REFERENCES;
 import static com.dat3m.dartagnan.configuration.OptionNames.TARGET;
@@ -115,9 +114,6 @@ public class Dartagnan extends BaseOptions {
 
         Configuration config = loadConfiguration(args);
         Dartagnan o = new Dartagnan(config);
-
-        GlobalSettings.configure(config);
-        logGlobalSettings();
 
         File fileProgram = new File(Arrays.stream(args).filter(a -> supportedFormats.stream().anyMatch(a::endsWith))
                 .findFirst()

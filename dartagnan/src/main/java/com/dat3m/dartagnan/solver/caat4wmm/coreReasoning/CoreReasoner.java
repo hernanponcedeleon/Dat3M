@@ -17,20 +17,30 @@ import com.dat3m.dartagnan.wmm.Relation;
 import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
+import org.sosy_lab.common.configuration.Option;
+import org.sosy_lab.common.configuration.Options;
 
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import static com.dat3m.dartagnan.GlobalSettings.REFINEMENT_SYMMETRIC_LEARNING;
+import static com.dat3m.dartagnan.configuration.OptionNames.SYMMETRY_LEARNING;
 import static com.dat3m.dartagnan.wmm.RelationNameRepository.*;
 
 // The CoreReasoner transforms base reasons of the CAATSolver to core reasons of the WMMSolver.
+@Options
 public class CoreReasoner {
 
     // An upper bound on the number of reasons computed per iteration,
     // This is mostly used to limit "reason explosion" for highly symmetric benchmarks.
     private final static int MAX_NUM_COMPUTED_REASONS = 1000;
+
+    @Option(name = SYMMETRY_LEARNING,
+            description = "Sets the kind of clauses learned in each refinement step. Effective only in lazy methods." +
+                    " If NONE, only learns the reasons for inconsistency of the currently modelled execution."+
+                    " If FULL, additionally learns all clauses symmetric to reasons.",
+            secure = true)
+    private SymmetricLearning symmetricLearning = SymmetricLearning.FULL;
 
     public enum SymmetricLearning { NONE, FULL }
 
@@ -43,8 +53,7 @@ public class CoreReasoner {
         this.executionGraph = executionGraph;
         this.exec = analysisContext.requires(ExecutionAnalysis.class);
         this.ra = analysisContext.requires(RelationAnalysis.class);
-        this.symmGenerators = computeSymmetryGenerators(
-                analysisContext.requires(ThreadSymmetry.class), REFINEMENT_SYMMETRIC_LEARNING);
+        this.symmGenerators = computeSymmetryGenerators(analysisContext.requires(ThreadSymmetry.class));
     }
 
     /*
@@ -236,17 +245,16 @@ public class CoreReasoner {
 
     // Computes a list of generators for the symmetry group of threads.
     // NOTE We always add the identity as generator, although it is unnecessary.
-    private List<Function<Event, Event>> computeSymmetryGenerators(
-            ThreadSymmetry symm, SymmetricLearning learningOption) {
+    private List<Function<Event, Event>> computeSymmetryGenerators(ThreadSymmetry symm) {
         final Set<? extends EquivalenceClass<Thread>> symmClasses = symm.getNonTrivialClasses();
         final List<Function<Event, Event>> perms = new ArrayList<>();
         perms.add(Function.identity());
 
-        if (learningOption == SymmetricLearning.NONE) {
+        if (symmetricLearning == SymmetricLearning.NONE) {
             return perms;
         }
 
-        assert learningOption == SymmetricLearning.FULL;
+        assert symmetricLearning == SymmetricLearning.FULL;
 
         for (EquivalenceClass<Thread> c : symmClasses) {
             final List<Thread> threads = new ArrayList<>(c);
