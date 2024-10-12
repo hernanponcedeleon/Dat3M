@@ -29,7 +29,7 @@ let dynamic_tag(X) = [range([IW & X]; loc)] | [X & F]
 
 let mo = dynamic_tag(~NAL); co; dynamic_tag(~NAL)
 let sb = po
-let rb = (rf^-1; mo) \ id
+let rb = rf^-1;mo | ([R] \ [range(rf)]);loc;[W]
 let unv = _ * _
 let wi = int
 
@@ -60,7 +60,7 @@ let ra_sw(r) = ((r & [Rel]); Fsb?; [W \ WI]; rs?; r; rf; [R \ WI]; sbF?; ([Acq] 
 let bar_sw(r) = (r & [EF]); syncbar & ~wi & swg; (r & [XF])
 
 (* Allowed to synchronise on the other region *)
-let scf = (SC * SC) | ((dynamic_tag(GLOBAL) & dynamic_tag(LOCAL)); F*F;(dynamic_tag(GLOBAL) & dynamic_tag(LOCAL)))
+let scf = (SC * SC) | ((dynamic_tag(GLOBAL) & dynamic_tag(LOCAL)); unv; (dynamic_tag(GLOBAL) & dynamic_tag(LOCAL)))
 
 (* Global and local synchronises-with *)
 let gsw = ra_sw(dynamic_tag(GLOBAL)) | bar_sw(dynamic_tag(GLOBAL)) | (scf & ra_sw(dynamic_tag(LOCAL)))
@@ -100,10 +100,10 @@ empty (rf; (dynamic_tag(NAL) & dynamic_tag(GLOBAL))) \ vis(ghb) as O-NaRfG
 empty (rf; (dynamic_tag(NAL) & dynamic_tag(LOCAL))) \ vis(lhb) as O-NaRfL
 
 (* Consistency of RMWs *)
-empty rmw & (fre; coe) as atomic
 // The original model was tested with Herd, which treats RMW as a single atomic operation.
 // We have modified the model to handle RMW as a sequence of atomic operations.
 // irreflexive rf | (mo;mo;rf^-1) | (mo;rf) as O-Rmw
+empty rmw & (fre; coe) as atomic
 
 (****************************************)
 (* Sequential consistency, simplified,  *)

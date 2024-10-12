@@ -22,13 +22,11 @@ let asw = IW * (M \ IW)
 let sb = po
 let mo = dynamic_tag(~NAL); co; dynamic_tag(~NAL)
 
-let cacq = ACQ | (SC & (R | F)) | ACQ_REL | (F & CON)
-let crel = REL | (SC & (W | F)) | ACQ_REL
-let ccon = R & CON
+let Cacq = ACQ | (SC & (R | F)) | ACQ_REL | (F & CON)
+let Crel = REL | (SC & (W | F)) | ACQ_REL
+let Ccon = R & CON
 
 // To be compatible with reads from uninit memory, we use our default definition of fr
-// let fr = rf^-1 ; mo
-include "basic.cat"
 let fr = rf^-1;mo | ([R] \ [range(rf)]);loc;[W]
 
 let dd = (data | addr)+
@@ -38,12 +36,12 @@ let sbf = sb ; [F]
 
 (* release_acquire_fenced_synchronizes_with, hypothetical_release_sequence_set, release_sequence_set *)
 
-(* OLD: let rs = [crel] ; fsb? ; [A & W] ; (((mo ; [rmw]) | coi) & ~(coe ; [!rmw] ; mo))? *)
+(* OLD: let rs = [Crel] ; fsb? ; [A & W] ; (((mo ; [rmw]) | coi) & ~(coe ; [!rmw] ; mo))? *)
 let rs_prime = int | (_ * (R & W))
 let rs = mo & rs_prime \ ((mo \ rs_prime) ; mo)
 
-(* OLD: let swra = ext & (rs ; rf ; [A] ; sbf? ; [cacq]) *)
-let swra = ext & ([crel] ; fsb? ; [A & W] ; rs? ; rf ; [R & A] ; sbf? ; [cacq])
+(* OLD: let swra = ext & (rs ; rf ; [A] ; sbf? ; [Cacq]) *)
+let swra = ext & ([Crel] ; fsb? ; [A & W] ; rs? ; rf ; [R & A] ; sbf? ; [Cacq])
 
 //let swul = ext & ([UL] ; lo ; [LK])
 let pp_asw = asw \ (asw ; sb)
@@ -52,7 +50,7 @@ let sw = pp_asw | swra
 
 (* with_consume_cad_set, dependency_ordered_before *)
 let cad = ((rf & sb) | dd)+
-let dob = (ext & ([W & crel] ; fsb? ; [A & W] ; rs?; rf; [ccon])); cad?
+let dob = (ext & ([W & Crel] ; fsb? ; [A & W] ; rs?; rf; [Ccon])); cad?
 
 (* happens_before, inter_thread_happens_before, consistent_hb *)
 let ithbr = sw | dob | (sw ; sb)
@@ -75,11 +73,10 @@ irreflexive (rf ; hb) as Rf
 empty ((rf ; dynamic_tag(NAL)) \ vis) as NaRf
 
 (* Consistency of RMWs *)
-empty rmw & (fre; coe) as atomic
 // The original model was tested with Herd, which treats RMW as a single atomic operation.
 // We have modified the model to handle RMW as a sequence of atomic operations.
 // irreflexive (rf | (mo ; mo ; rf^-1) | (mo ; rf)) as Rmw
-
+empty rmw & (fre; coe) as atomic
 
 (* locks_only_consistent_lo *)
 // irreflexive (lo ; hb) as Lo1
@@ -90,9 +87,11 @@ empty rmw & (fre; coe) as atomic
 (* data_races *)
 let cnf = ((W * _) | (_ * W)) & loc
 let dr = ext & (cnf \ hb \ (hb^-1) \ (A * A))
+flag ~empty dr as data_race
 
 (* unsequenced_races *)
 let ur = int & ((W * M) | (M * W)) & loc & ~id & ~(sb+) & ~((sb+)^-1)
+flag ~empty dr as unsequenced_race
 
 (* locks_only_good_mutex_use, locks_only_bad_mutexes *)
 // let bl = ([LS]; (sb & lo); [LK]) & ~(lo; [UL]; lo)
