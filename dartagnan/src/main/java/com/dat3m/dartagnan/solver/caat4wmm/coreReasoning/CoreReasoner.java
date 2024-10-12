@@ -24,7 +24,7 @@ import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import static com.dat3m.dartagnan.configuration.OptionNames.SYMMETRY_LEARNING;
+import static com.dat3m.dartagnan.configuration.OptionNames.SYMMETRIC_LEARNING;
 import static com.dat3m.dartagnan.wmm.RelationNameRepository.*;
 
 // The CoreReasoner transforms base reasons of the CAATSolver to core reasons of the WMMSolver.
@@ -35,7 +35,7 @@ public class CoreReasoner {
     // This is mostly used to limit "reason explosion" for highly symmetric benchmarks.
     private final static int MAX_NUM_COMPUTED_REASONS = 1000;
 
-    @Option(name = SYMMETRY_LEARNING,
+    @Option(name = SYMMETRIC_LEARNING,
             description = "Sets the kind of clauses learned in each refinement step. Effective only in lazy methods." +
                     " If NONE, only learns the reasons for inconsistency of the currently modelled execution."+
                     " If FULL, additionally learns all clauses symmetric to reasons.",

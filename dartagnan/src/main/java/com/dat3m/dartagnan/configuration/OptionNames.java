@@ -66,7 +66,7 @@ public class OptionNames {
     // Refinement Options
     public static final String BASELINE = "refinement.baseline";
     public static final String GRAPHVIZ_DEBUG_FILES = "refinement.generageGraphvizDebugFiles";
-    public static final String SYMMETRY_LEARNING = "refinement.symmetryLearning";
+    public static final String SYMMETRIC_LEARNING = "refinement.symmetricLearning";
 
     // SMT solver Options
     public static final String PHANTOM_REFERENCES = "solver.z3.usePhantomReferences";
