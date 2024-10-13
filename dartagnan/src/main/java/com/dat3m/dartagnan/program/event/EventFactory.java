@@ -12,32 +12,18 @@ import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.arch.StoreExclusive;
-import com.dat3m.dartagnan.program.event.arch.ptx.PTXAtomCAS;
-import com.dat3m.dartagnan.program.event.arch.ptx.PTXAtomExch;
-import com.dat3m.dartagnan.program.event.arch.ptx.PTXAtomOp;
-import com.dat3m.dartagnan.program.event.arch.ptx.PTXRedOp;
-import com.dat3m.dartagnan.program.event.arch.tso.TSOXchg;
-import com.dat3m.dartagnan.program.event.arch.vulkan.VulkanCmpXchg;
-import com.dat3m.dartagnan.program.event.arch.vulkan.VulkanRMW;
-import com.dat3m.dartagnan.program.event.arch.vulkan.VulkanRMWExtremum;
-import com.dat3m.dartagnan.program.event.arch.vulkan.VulkanRMWOp;
+import com.dat3m.dartagnan.program.event.arch.bpf.*;
+import com.dat3m.dartagnan.program.event.arch.ptx.*;
+import com.dat3m.dartagnan.program.event.arch.tso.*;
+import com.dat3m.dartagnan.program.event.arch.vulkan.*;
 import com.dat3m.dartagnan.program.event.core.*;
-import com.dat3m.dartagnan.program.event.core.annotations.FunCallMarker;
-import com.dat3m.dartagnan.program.event.core.annotations.FunReturnMarker;
-import com.dat3m.dartagnan.program.event.core.annotations.StringAnnotation;
-import com.dat3m.dartagnan.program.event.core.threading.ThreadArgument;
-import com.dat3m.dartagnan.program.event.core.threading.ThreadCreate;
-import com.dat3m.dartagnan.program.event.core.threading.ThreadStart;
-import com.dat3m.dartagnan.program.event.functions.AbortIf;
-import com.dat3m.dartagnan.program.event.functions.Return;
-import com.dat3m.dartagnan.program.event.functions.ValueFunctionCall;
-import com.dat3m.dartagnan.program.event.functions.VoidFunctionCall;
+import com.dat3m.dartagnan.program.event.core.annotations.*;
+import com.dat3m.dartagnan.program.event.core.threading.*;
+import com.dat3m.dartagnan.program.event.functions.*;
 import com.dat3m.dartagnan.program.event.lang.catomic.*;
 import com.dat3m.dartagnan.program.event.lang.linux.*;
 import com.dat3m.dartagnan.program.event.lang.llvm.*;
-import com.dat3m.dartagnan.program.event.lang.pthread.InitLock;
-import com.dat3m.dartagnan.program.event.lang.pthread.Lock;
-import com.dat3m.dartagnan.program.event.lang.pthread.Unlock;
+import com.dat3m.dartagnan.program.event.lang.pthread.*;
 import com.dat3m.dartagnan.program.event.lang.spirv.*;
 import com.dat3m.dartagnan.program.event.lang.svcomp.*;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
@@ -600,6 +586,23 @@ public class EventFactory {
             return srcuSync;
         }
 
+    }
+
+
+    // =============================================================================================
+    // ============================================ BPF ============================================
+    // =============================================================================================
+    public static class BPF {
+        private BPF() {
+        }
+
+        public static BPF_RMWOp newBPF_RMWOp(Expression address, IntBinaryOp operator, Expression operand) {
+            return new BPF_RMWOp(address, operator, operand);
+        }
+
+        public static BPF_RMWOpReturn newBPF_RMWOpReturn(Register register, Expression address, IntBinaryOp operator, Expression operand) {
+            return new BPF_RMWOpReturn(register, address, operator, operand);
+        }
     }
 
 

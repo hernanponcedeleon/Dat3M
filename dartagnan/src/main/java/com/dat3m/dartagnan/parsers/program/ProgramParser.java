@@ -21,6 +21,7 @@ public class ProgramParser {
     private static final String TYPE_LITMUS_VULKAN = "VULKAN";
     private static final String TYPE_LITMUS_C = "C";
     private static final String TYPE_LITMUS_OPENCL = "OPENCL";
+    private static final String TYPE_LITMUS_BPF = "BPF";
 
     public static final String EXTENSION_C = ".c";
     public static final String EXTENSION_I = ".i";
@@ -110,6 +111,8 @@ public class ProgramParser {
             return new ParserLitmusPTX();
         } else if(programText.indexOf(TYPE_LITMUS_VULKAN) == 0) {
             return new ParserLitmusVulkan();
+        } else if(programText.indexOf(TYPE_LITMUS_BPF) == 0) {
+            return new ParserLitmusBPF();
         }
         throw new ParsingException("Unknown input file type");
     }

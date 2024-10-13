@@ -1,25 +1,17 @@
 package com.dat3m.dartagnan.program.event;
 
 import com.dat3m.dartagnan.program.event.arch.StoreExclusive;
-import com.dat3m.dartagnan.program.event.arch.ptx.PTXAtomCAS;
-import com.dat3m.dartagnan.program.event.arch.ptx.PTXAtomExch;
-import com.dat3m.dartagnan.program.event.arch.ptx.PTXAtomOp;
-import com.dat3m.dartagnan.program.event.arch.ptx.PTXRedOp;
-import com.dat3m.dartagnan.program.event.arch.tso.TSOXchg;
-import com.dat3m.dartagnan.program.event.arch.vulkan.VulkanCmpXchg;
-import com.dat3m.dartagnan.program.event.arch.vulkan.VulkanRMW;
-import com.dat3m.dartagnan.program.event.arch.vulkan.VulkanRMWExtremum;
-import com.dat3m.dartagnan.program.event.arch.vulkan.VulkanRMWOp;
+import com.dat3m.dartagnan.program.event.arch.bpf.*;
+import com.dat3m.dartagnan.program.event.arch.ptx.*;
+import com.dat3m.dartagnan.program.event.arch.tso.*;
+import com.dat3m.dartagnan.program.event.arch.vulkan.*;
 import com.dat3m.dartagnan.program.event.core.*;
-import com.dat3m.dartagnan.program.event.core.annotations.CodeAnnotation;
+import com.dat3m.dartagnan.program.event.core.annotations.*;
 import com.dat3m.dartagnan.program.event.lang.catomic.*;
 import com.dat3m.dartagnan.program.event.lang.linux.*;
 import com.dat3m.dartagnan.program.event.lang.llvm.*;
-import com.dat3m.dartagnan.program.event.lang.pthread.InitLock;
-import com.dat3m.dartagnan.program.event.lang.pthread.Lock;
-import com.dat3m.dartagnan.program.event.lang.pthread.Unlock;
-import com.dat3m.dartagnan.program.event.lang.svcomp.BeginAtomic;
-import com.dat3m.dartagnan.program.event.lang.svcomp.EndAtomic;
+import com.dat3m.dartagnan.program.event.lang.pthread.*;
+import com.dat3m.dartagnan.program.event.lang.svcomp.*;
 import com.dat3m.dartagnan.program.event.lang.spirv.*;
 
 public interface EventVisitor<T> {
@@ -75,6 +67,10 @@ public interface EventVisitor<T> {
     // Linux Lock Events
     default T visitLKMMLock(LKMMLock e) { return visitMemEvent(e); }
     default T visitLKMMUnlock(LKMMUnlock e) { return visitMemEvent(e); }
+
+    // ------------------ BPF Events ------------------
+    default T visitBPF_RMWOp(BPF_RMWOp e) { return visitMemEvent(e); }
+    default T visitBPF_RMWOpReturn(BPF_RMWOpReturn e) { return visitMemEvent(e); }
 
     // ------------------ TSO Events ------------------
     default T visitTSOXchg(TSOXchg e) { return visitMemEvent(e); }
