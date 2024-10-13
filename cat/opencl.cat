@@ -48,7 +48,7 @@ let Fsb = [F]; sb
 let sbF = sb; [F]
 
 (* Release sequence *)
-let rs_prime = wi | (unv; [R & W])
+let rs_prime = (_ * RMW) | wi
 let rs = mo & rs_prime & ~((mo & ~rs_prime) ; mo)
 
 (* Release-acquire synchronisation *)
@@ -124,10 +124,10 @@ flag ~empty dr as data_race
 
 (* unsequenced_races *)
 let symm(r) = r | r^-1
-let ur = (wi & cnf & ~symm(po)) \ id
+let ur = (wi & cnf & ~symm(sb)) \ id
 flag ~empty ur as unsequenced_race
 
 (* Barrier divergence *)
 let bsw = bar_sw(dynamic_tag(GLOBAL)) | bar_sw(dynamic_tag(LOCAL))
-let bd = [EF] & ((~wi & swg); unv) \ (bsw ; unv)
+let bd = [EF] & [domain(~wi & swg)] \ [domain(bsw)]
 flag ~empty bd as barrier_divergence
