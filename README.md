@@ -84,6 +84,7 @@ For programs written in `.c`, value `<arch>` specifies the programming language 
 - riscv
 - ptx
 - vulkan
+- opencl
 
 The target architecture is supposed to match (this is responsibility of the user) the intended weak memory model specified by the CAT file. 
 

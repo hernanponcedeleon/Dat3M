@@ -181,8 +181,10 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
 
     @Override
     public Object visitThreadArguments(LitmusCParser.ThreadArgumentsContext ctx){
-        for(LitmusCParser.ThreadArgumentContext threadArgumentContext : ctx.threadArgument()){
-            threadArgumentContext.accept(this);
+        if(ctx != null){
+            for(LitmusCParser.ThreadArgumentContext threadArgumentContext : ctx.threadArgument()){
+                threadArgumentContext.accept(this);
+            }
         }
         return null;
     }

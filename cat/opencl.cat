@@ -117,10 +117,15 @@ acyclic (SC*SC) & scp & incl as O-Sscoped
 (*    Races    *)
 (***************)
 
+(* data_races *)
 let cnf = ((W * W) | (W * R) | (R * W)) & loc
-
 let dr = cnf & ~(ghb | lhb) & ~(ghb | lhb)^-1 & ~wi & ~incl
 flag ~empty dr as data_race
+
+(* unsequenced_races *)
+let symm(r) = r | r^-1
+let ur = (wi & cnf & ~symm(po)) \ id
+flag ~empty ur as unsequenced_race
 
 (* Barrier divergence *)
 let bsw = bar_sw(dynamic_tag(GLOBAL)) | bar_sw(dynamic_tag(LOCAL))
