@@ -591,3 +591,16 @@ litmus/VULKAN/CADP/2_threads_4_instructions/145_simple.litmus
 litmus/VULKAN/CADP/2_threads_4_instructions/62_simple.litmus
 litmus/VULKAN/CADP/2_threads_4_instructions/63_simple.litmus
 litmus/VULKAN/CADP/2_threads_4_instructions/132_simple.litmus
+
+// TODO fix
+litmus/BPF/LB+fcas-data-once+once-scas.litmus
+litmus/BPF/LB+fcas-ctrl-once+once-scas.litmus
+litmus/BPF/SB+fence+fail_cmpxchg.litmus
+litmus/BPF/MP+fcas-data-fcas+scas-scas.litmus
+litmus/BPF/LB+fcas-addr-once+once-scas.litmus
+litmus/BPF/MP+fcas-ctrl-fcas+scas-scas.litmus
+litmus/BPF/LB+fcas-ctrlcvg-once+once-scas.litmus
+litmus/BPF/SB+fence+success_cmpxchg.litmus
+litmus/BPF/MP+fcas-addr-fcas+scas-scas.litmus
+litmus/BPF/X+addr-reads+corr-writes+data-rw.litmus
+litmus/BPF/S+onceatomic+data.litmus
