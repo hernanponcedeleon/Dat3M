@@ -16,9 +16,9 @@ let asw = IW * (M \ IW)
 let sb = po
 let mo = co
 
-let cacq = ACQ | (SC & (R | F)) | ACQ_REL | (F & CON)
-let crel = REL | (SC & (W | F)) | ACQ_REL
-let ccon = R & CON
+let Acq = ACQ | (SC & (R | F)) | ACQ_REL | (F & CON)
+let Rel = REL | (SC & (W | F)) | ACQ_REL
+let Con = R & CON
 
 let fr = rf^-1 ; mo
 
@@ -31,17 +31,17 @@ let sbf = sb & (_ * F)
    hypothetical_release_sequence_set,
    release_sequence_set *)
 
-(* OLD: let rs = [crel] ; fsb? ; [A & W] ;
+(* OLD: let rs = [Rel] ; fsb? ; [A & W] ;
          (((mo ; [rmw]) | coi) & ~(coe ; [!rmw] ; mo))? *)
 
 let rs_prime = int | (_ * (R & W))
 let rs = mo & rs_prime \ ((mo \ rs_prime) ; mo)
 
-(* OLD: let swra = ext (rs ; rf ; [A] ; sbf? ; [cacq]) *)
+(* OLD: let swra = ext (rs ; rf ; [A] ; sbf? ; [Acq]) *)
 let swra =
  ext &
- ([crel] ; fsb? ; [A & W] ; rs? ; rf ;
- [R & A] ; sbf? ; [cacq])
+ ([Rel] ; fsb? ; [A & W] ; rs? ; rf ;
+ [R & A] ; sbf? ; [Acq])
 
 //let swul = ext & ([UL] ; lo ; [LK])
 let pp_asw = asw \ (asw ; sb)
@@ -53,8 +53,8 @@ let sw = pp_asw | swra
 let cad = ((rf & sb) | dd)+
 let dob =
  (ext &
-  ([W & crel] ; fsb? ; [A & W] ;
-   rs?; rf; [ccon]));
+  ([W & Rel] ; fsb? ; [A & W] ;
+   rs?; rf; [Con]));
  cad?
 
 (* happens_before,

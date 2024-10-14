@@ -147,6 +147,13 @@ public class EventFactory {
         return new Init(base, offset, address);
     }
 
+    public static Init newC11Init(MemoryObject base, int offset) {
+        Init init = newInit(base, offset);
+        init.addTags(base.getFeatureTags());
+        init.addTags(Tag.C11.NONATOMIC);
+        return init;
+    }
+
     public static ValueFunctionCall newValueFunctionCall(Register resultRegister, Function function, List<Expression> arguments) {
         return new ValueFunctionCall(resultRegister, function.getFunctionType(), function, arguments);
     }
@@ -810,5 +817,4 @@ public class EventFactory {
             return new SpirvRmwExtremum(register, address, op, value, scope, tags);
         }
     }
-
 }

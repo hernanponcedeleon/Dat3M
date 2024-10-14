@@ -19,6 +19,7 @@ public class ProgramParser {
     private static final String TYPE_LITMUS_PTX = "PTX";
     private static final String TYPE_LITMUS_VULKAN = "VULKAN";
     private static final String TYPE_LITMUS_C = "C";
+    private static final String TYPE_LITMUS_OPENCL = "OPENCL";
 
     public Program parse(File file) throws Exception {
         if (needsClang(file)) {
@@ -88,7 +89,7 @@ public class ProgramParser {
     private ParserInterface getConcreteLitmusParser(String programText) {
         if (programText.indexOf(TYPE_LITMUS_AARCH64) == 0) {
             return new ParserLitmusAArch64();
-        } else if (programText.indexOf(TYPE_LITMUS_C) == 0) {
+        } else if (programText.indexOf(TYPE_LITMUS_C) == 0 || programText.indexOf(TYPE_LITMUS_OPENCL) == 0) {
             return new ParserLitmusC();
         } else if (programText.indexOf(TYPE_LITMUS_PPC) == 0) {
             return new ParserLitmusPPC();
