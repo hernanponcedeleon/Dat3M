@@ -23,6 +23,7 @@ import static com.dat3m.dartagnan.configuration.Property.PROGRAM_SPEC;
 import static com.dat3m.dartagnan.utils.ResourceHelper.getRootPath;
 import static com.dat3m.dartagnan.utils.ResourceHelper.getTestResourcePath;
 import static com.dat3m.dartagnan.verification.solving.ModelChecker.*;
+import static com.dat3m.dartagnan.wmm.RelationNameRepository.LOC;
 import static org.junit.Assert.assertEquals;
 
 public class AliasTest {
@@ -39,12 +40,9 @@ public class AliasTest {
         VerificationTask baseTask = createTask(program, wmm, baseConfig);
         wmm.configureAll(baseTask.getConfig());
         preprocessProgram(baseTask, baseTask.getConfig());
-        preprocessMemoryModel(baseTask, baseTask.getConfig());
 
-        Relation loc = wmm.getRelations().stream().filter(r -> r.getNameOrTerm().equals("loc")).findAny().orElseThrow();
+        Relation loc = wmm.getRelation(LOC);
         Configuration config = Configuration.builder()
-                //.setOption(ALIAS_METHOD, FIELD_SENSITIVE.asStringOption())
-                //.setOption(ALIAS_METHOD, FIELD_INSENSITIVE.asStringOption())
                 .setOption(ENABLE_EXTENDED_RELATION_ANALYSIS, "false")
                 .build();
 
@@ -55,7 +53,6 @@ public class AliasTest {
             performStaticProgramAnalyses(nativeTask, nativeContext, nativeTask.getConfig());
             performStaticWmmAnalyses(nativeTask, nativeContext, nativeTask.getConfig());
             RelationAnalysis nativeRa = nativeContext.get(RelationAnalysis.class);
-            System.out.println(nativeRa.getKnowledge(loc).getMaySet().size());
             sizes.add(nativeRa.getKnowledge(loc).getMaySet().size());
         }
         for (int i = 1; i < 10; i++) {
