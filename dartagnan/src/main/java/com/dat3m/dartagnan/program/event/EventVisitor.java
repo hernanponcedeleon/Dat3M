@@ -71,6 +71,8 @@ public interface EventVisitor<T> {
     // ------------------ BPF Events ------------------
     default T visitBPF_RMWOp(BPF_RMWOp e) { return visitMemEvent(e); }
     default T visitBPF_RMWOpReturn(BPF_RMWOpReturn e) { return visitMemEvent(e); }
+    default T visitBPF_CAS(BPF_CAS e) { return visitMemEvent(e); }
+    default T visitBPF_Xchg(BPF_Xchg e) { return visitMemEvent(e); }
 
     // ------------------ TSO Events ------------------
     default T visitTSOXchg(TSOXchg e) { return visitMemEvent(e); }

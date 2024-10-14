@@ -6,6 +6,7 @@ import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.integers.IntBinaryOp;
 import com.dat3m.dartagnan.expression.integers.IntLiteral;
+import com.dat3m.dartagnan.expression.integers.IntUnaryOp;
 import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.parsers.LitmusBPFBaseVisitor;
@@ -87,8 +88,9 @@ public class VisitorLitmusBPF extends LitmusBPFBaseVisitor<Object> {
     }
 	
     @Override 
-    public IntLiteral visitConstant(LitmusBPFParser.ConstantContext ctx) {
-        return expressions.parseValue(ctx.getText(), archType);
+    public Expression visitConstant(LitmusBPFParser.ConstantContext ctx) {
+        Expression value = expressions.parseValue(ctx.getText(), archType);
+        return ctx.negative() != null ? expressions.makeIntUnary(IntUnaryOp.MINUS, value) : value;
     }
 
     // ----------------------------------------------------------------------------------------------------------------
@@ -130,7 +132,7 @@ public class VisitorLitmusBPF extends LitmusBPFBaseVisitor<Object> {
     public Object visitLoad(LitmusBPFParser.LoadContext ctx) {
         Register r1 = programBuilder.getOrNewRegister(mainThread, ctx.register(0).getText(), archType);
         Register ra = programBuilder.getOrErrorRegister(mainThread, ctx.register(1).getText());
-        IntLiteral ca = expressions.parseValue(ctx.constant().getText(), archType);
+        Expression ca = (Expression) ctx.constant().accept(this);
         Expression address = expressions.makeAdd(ra, ca);
         return programBuilder.addChild(mainThread, EventFactory.newLoad(r1, address));
     }
@@ -139,7 +141,7 @@ public class VisitorLitmusBPF extends LitmusBPFBaseVisitor<Object> {
     public Object visitLoadAcquire(LitmusBPFParser.LoadAcquireContext ctx) {
         Register r1 = programBuilder.getOrNewRegister(mainThread, ctx.register(0).getText(), archType);
         Register ra = programBuilder.getOrErrorRegister(mainThread, ctx.register(1).getText());
-        IntLiteral ca = expressions.parseValue(ctx.constant().getText(), archType);
+        Expression ca = (Expression) ctx.constant().accept(this);
         Expression address = expressions.makeAdd(ra, ca);
         return programBuilder.addChild(mainThread, EventFactory.newLoadWithMo(r1, address, Tag.BPF.ACQ));
     }
@@ -147,7 +149,7 @@ public class VisitorLitmusBPF extends LitmusBPFBaseVisitor<Object> {
     @Override 
     public Object visitStore(LitmusBPFParser.StoreContext ctx) {
         Register ra = programBuilder.getOrErrorRegister(mainThread, ctx.register().getText());
-        IntLiteral ca = expressions.parseValue(ctx.constant().getText(), archType);
+        Expression ca = (Expression) ctx.constant().accept(this);
         Expression address = expressions.makeAdd(ra, ca);
         Expression val = (Expression) ctx.value().accept(this);
         return programBuilder.addChild(mainThread, EventFactory.newStore(address, val));
@@ -156,7 +158,7 @@ public class VisitorLitmusBPF extends LitmusBPFBaseVisitor<Object> {
     @Override
     public Object visitStoreRelease(LitmusBPFParser.StoreReleaseContext ctx) {
         Register ra = programBuilder.getOrErrorRegister(mainThread, ctx.register().getText());
-        IntLiteral ca = expressions.parseValue(ctx.constant().getText(), archType);
+        Expression ca = (Expression) ctx.constant().accept(this);
         Expression address = expressions.makeAdd(ra, ca);
         Expression val = (Expression) ctx.value().accept(this);
         return programBuilder.addChild(mainThread, EventFactory.newStoreWithMo(address, val, Tag.BPF.REL));
@@ -165,7 +167,7 @@ public class VisitorLitmusBPF extends LitmusBPFBaseVisitor<Object> {
     @Override 
     public Object visitAtomicRMW(LitmusBPFParser.AtomicRMWContext ctx) {
         Register ra = programBuilder.getOrErrorRegister(mainThread, ctx.register().getText());
-        IntLiteral ca = expressions.parseValue(ctx.constant().getText(), archType);
+        Expression ca = (Expression) ctx.constant().accept(this);
         Expression address = expressions.makeAdd(ra, ca);
         IntBinaryOp operator = ctx.atomicOperation().op;
         Expression operand = (Expression) ctx.value().accept(this);
@@ -176,11 +178,32 @@ public class VisitorLitmusBPF extends LitmusBPFBaseVisitor<Object> {
     public Object visitAtomicFetchRMW(LitmusBPFParser.AtomicFetchRMWContext ctx) {
         Register r1 = programBuilder.getOrNewRegister(mainThread, ctx.register(0).getText(), archType);
         Register ra = programBuilder.getOrErrorRegister(mainThread, ctx.register(1).getText());
-        IntLiteral ca = expressions.parseValue(ctx.constant().getText(), archType);
+        Expression ca = (Expression) ctx.constant().accept(this);
         Expression address = expressions.makeAdd(ra, ca);
         IntBinaryOp operator = ctx.op;
         Expression operand = (Expression) ctx.value().accept(this);
         return programBuilder.addChild(mainThread, EventFactory.BPF.newBPF_RMWOpReturn(r1, address, operator, operand));
+    }
+
+    @Override
+    public Object visitAtomicCas(LitmusBPFParser.AtomicCasContext ctx) {
+        Register r1 = programBuilder.getOrNewRegister(mainThread, ctx.register(0).getText(), archType);
+        Register ra = programBuilder.getOrErrorRegister(mainThread, ctx.register(1).getText());
+        Register re = programBuilder.getOrErrorRegister(mainThread, ctx.register(2).getText());
+        Expression ca = (Expression) ctx.constant().accept(this);
+        Expression address = expressions.makeAdd(ra, ca);
+        Expression value = (Expression) ctx.value().accept(this);
+        return programBuilder.addChild(mainThread, EventFactory.BPF.newBPF_CAS(r1, address, re, value));
+    }
+
+    @Override
+    public Object visitAtomicXchg(LitmusBPFParser.AtomicXchgContext ctx) {
+        Register r1 = programBuilder.getOrNewRegister(mainThread, ctx.register(0).getText(), archType);
+        Register ra = programBuilder.getOrErrorRegister(mainThread, ctx.register(1).getText());
+        Expression ca = (Expression) ctx.constant().accept(this);
+        Expression address = expressions.makeAdd(ra, ca);
+        Expression value = (Expression) ctx.register(2).accept(this);
+        return programBuilder.addChild(mainThread, EventFactory.BPF.newBPF_Xchg(r1, address, value));
     }
 
     @Override
