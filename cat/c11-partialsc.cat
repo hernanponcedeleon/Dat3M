@@ -1,0 +1,112 @@
+C "C++11"
+
+(*
+* Overhauling SC atomics in C11 and OpenCL.
+* M. Batty, A. Donaldson, J. Wickerson. In Proc.
+* 43rd ACM SIGPLAN-SIGACT Symposium on Principles of Programming Languages (POPL), 2016.
+*)
+
+(*
+* This model is based on:
+* https://multicore.doc.ic.ac.uk/overhauling/c11_base.cat
+* https://multicore.doc.ic.ac.uk/overhauling/c11_partialSC.cat
+*)
+
+include "c11_cos.cat"
+include "c11_los.cat"
+
+// dynamic_tag relates events to itself that access an address whose init event is marked X
+let dynamic_tag(X) = [range([IW & X]; loc)]
+
+let asw = IW * (M \ IW)
+let sb = po
+let mo = dynamic_tag(~NAL); co; dynamic_tag(~NAL)
+
+let Acq = ACQ | (SC & (R | F)) | ACQ_REL | (F & CON)
+let Rel = REL | (SC & (W | F)) | ACQ_REL
+let Con = R & CON
+
+// To be compatible with reads from uninit memory, we use our default definition of fr
+let fr = rf^-1;mo | ([R] \ [range(rf)]);loc;[W]
+
+let dd = (data | addr)+
+
+let fsb = [F] ; sb
+let sbf = sb ; [F]
+
+(* release_acquire_fenced_synchronizes_with, hypothetical_release_sequence_set, release_sequence_set *)
+
+(* OLD: let rs = [Rel] ; fsb? ; [A & W] ; (((mo ; [rmw]) | coi) & ~(coe ; [!rmw] ; mo))? *)
+let rs_prime = int | (_ * (R & W))
+let rs = mo & rs_prime \ ((mo \ rs_prime) ; mo)
+
+(* OLD: let swra = ext & (rs ; rf ; [A] ; sbf? ; [Acq]) *)
+let swra = ext & ([Rel] ; fsb? ; [A & W] ; rs? ; rf ; [R & A] ; sbf? ; [Acq])
+
+//let swul = ext & ([UL] ; lo ; [LK])
+let pp_asw = asw \ (asw ; sb)
+//let sw = pp_asw | swul | swra
+let sw = pp_asw | swra
+
+(* with_consume_cad_set, dependency_ordered_before *)
+let cad = ((rf & sb) | dd)+
+let dob = (ext & ([W & Rel] ; fsb? ; [A & W] ; rs?; rf; [Con])); cad?
+
+(* happens_before, inter_thread_happens_before, consistent_hb *)
+let ithbr = sw | dob | (sw ; sb)
+let ithb = (ithbr | (sb ; ithbr))+
+let hb = sb | ithb
+acyclic hb as Hb
+
+(* coherent_memory_use *)
+let hbl = hb & loc
+
+irreflexive ((rf^-1)? ; mo ; rf? ; hb) as Coh
+
+(* visible_side_effect_set *)
+let vis = ([W] ; hbl ; [R]) & ~(hbl; [W]; hbl)
+
+(* consistent_atomic_rf *)
+irreflexive (rf ; hb) as Rf
+
+(* consistent_non_atomic_rf  *)
+empty ((rf ; dynamic_tag(NAL)) \ vis) as NaRf
+
+(* Consistency of RMWs *)
+// The original model was tested with Herd, which treats RMW as a single atomic operation.
+// We have modified the model to handle RMW as a sequence of atomic operations.
+// irreflexive (rf | (mo ; mo ; rf^-1) | (mo ; rf)) as Rmw
+empty rmw & (fre; coe) as atomic
+
+(* locks_only_consistent_lo *)
+// irreflexive (lo ; hb) as Lo1
+
+(* locks_only_consistent_locks *)
+// irreflexive ([LS] ; lo^-1 ; [LS] ; ~(lo ; [UL] ; lo)) as Lo2
+
+(* data_races *)
+let cnf = ((W * _) | (_ * W)) & loc
+let dr = ext & (cnf \ hb \ (hb^-1) \ (A * A))
+flag ~empty dr as data_race
+
+(* unsequenced_races *)
+let ur = int & ((W * M) | (M * W)) & loc & ~id & ~(sb+) & ~((sb+)^-1)
+flag ~empty dr as unsequenced_race
+
+(* locks_only_good_mutex_use, locks_only_bad_mutexes *)
+// let bl = ([LS]; (sb & lo); [LK]) & ~(lo; [UL]; lo)
+// let losbwoul = (sb & lo & ~(lo; [UL]; lo))
+// let lu = [UL] & ~([UL] ; losbwoul^-1 ; [LS] ; losbwoul ; [UL])
+
+(* Partial SC axioms *)
+let r1 = hb
+let r2 = fsb? ; mo ; sbf?
+let r3 = rf^-1; [SC] ; mo
+let r4 = rf^-1 ; hbl ; [W]
+let r5 = fsb ; fr
+let r6 = fr ; sbf
+let r7 = fsb ; fr ; sbf
+
+let scp = r1|r2|r3|r4|r5|r6|r7
+
+acyclic (((SC * SC) & scp) \ id) as Spartial
