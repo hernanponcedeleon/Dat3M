@@ -596,6 +596,14 @@ public class EventFactory {
         public static BPF_RMWOpReturn newBPF_RMWOpReturn(Register register, Expression address, IntBinaryOp operator, Expression operand) {
             return new BPF_RMWOpReturn(register, address, operator, operand);
         }
+
+        public static BPF_CAS newBPF_CAS(Register register, Expression address, Register expected, Expression value) {
+            return new BPF_CAS(register, address, expected, value);
+        }
+
+        public static BPF_Xchg newBPF_Xchg(Register register, Expression address, Expression value) {
+            return new BPF_Xchg(register, address, value);
+        }
     }
 
 

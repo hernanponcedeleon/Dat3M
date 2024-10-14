@@ -34,7 +34,7 @@ variableDeclaratorRegisterLocation
     ;
 
 variableDeclaratorLocationLocation
-    :   location Equals Amp? location
+    :   typeSpecifier location Equals Amp? location
     ;
 
 variableList
@@ -82,6 +82,8 @@ instruction
     |   storeRelease
     |   atomicRMW
     |   atomicFetchRMW
+    |   atomicCas
+    |   atomicXchg
     |   label
     |   jump
     ;
@@ -115,6 +117,14 @@ atomicFetchRMW locals [IntBinaryOp op]
     |   register Equals AtomicFetchSub LPar awt LPar register Add constant RPar Comma value RPar {$op = IntBinaryOp.SUB;}
     |   register Equals AtomicFetchAnd LPar awt LPar register Add constant RPar Comma value RPar {$op = IntBinaryOp.AND;}
     |   register Equals AtomicFetchOr LPar awt LPar register Add constant RPar Comma value RPar {$op = IntBinaryOp.OR;}
+    ;
+
+atomicCas
+    :   register Equals AtomicCas LPar register Add constant Comma register Comma value RPar
+    ;
+
+atomicXchg
+    :   register Equals AtomicXchg LPar register Add constant Comma register RPar
     ;
 
 mwt
@@ -176,7 +186,11 @@ register
     ;
 
 constant
-    :   DigitSequence
+    :   negative? DigitSequence
+    ;
+
+negative
+    :   Sub
     ;
 
 assertionValue
@@ -209,6 +223,16 @@ AtomicFetchAnd
 
 AtomicFetchOr
     :   'atomic_fetch_or'
+    ;
+
+AtomicCas
+    :   'cmpxchg_32'
+    |   'cmpxchg_64'
+    ;
+
+AtomicXchg
+    :   'xchg_32'
+    |   'xchg_64'
     ;
 
 LoadAcquire
