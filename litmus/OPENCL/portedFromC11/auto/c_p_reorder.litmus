@@ -1,7 +1,7 @@
 OPENCL c_p_reorder
 { [x] = 0; [y] = 0; [p] = 0; [q] = 0; [zero] = 0; [one] = 1; }
 
-P0@wg 0, dev 0 (atomic_int *x, atomic_int *y, volatile global int* p, volatile global int* q, global atomic_int* zero, global atomic_int* one) {
+P0@wg 0, dev 0 (global atomic_int* x, global atomic_int* y, volatile global int* p, volatile global int* q, global atomic_int* zero, global atomic_int* one) {
   int r0 = atomic_load_explicit(x, memory_order_relaxed);
   if (r0) {
     *q = 1;
@@ -12,7 +12,7 @@ P0@wg 0, dev 0 (atomic_int *x, atomic_int *y, volatile global int* p, volatile g
   }
 }
 
-P1@wg 0, dev 0 (atomic_int *x, atomic_int *y, volatile global int* p, volatile global int* q) {
+P1@wg 0, dev 0 (global atomic_int* x, global atomic_int* y, volatile global int* p, volatile global int* q) {
   int r1 = atomic_load_explicit(y, memory_order_relaxed);
   if (r1) {
     int r2 = *q;
