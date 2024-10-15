@@ -1,11 +1,14 @@
 package com.dat3m.dartagnan.miscellaneous;
 
 import com.dat3m.dartagnan.configuration.Alias;
+import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.configuration.ProgressModel;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
+import com.dat3m.dartagnan.parsers.cat.ParserCat;
+import com.dat3m.dartagnan.parsers.program.ProgramParser;
 import com.dat3m.dartagnan.parsers.program.utils.ProgramBuilder;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Program.SourceLanguage;
@@ -26,16 +29,27 @@ import com.dat3m.dartagnan.program.processing.MemoryAllocation;
 import com.dat3m.dartagnan.program.processing.ProcessingManager;
 import com.dat3m.dartagnan.program.processing.compilation.Compilation;
 import com.dat3m.dartagnan.verification.Context;
+import com.dat3m.dartagnan.verification.VerificationTask;
+import com.dat3m.dartagnan.wmm.Relation;
+import com.dat3m.dartagnan.wmm.Wmm;
+import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
 import org.junit.Test;
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 
+import java.io.File;
+import java.util.EnumSet;
+import java.util.LinkedList;
 import java.util.List;
 
 import static com.dat3m.dartagnan.configuration.Alias.*;
-import static com.dat3m.dartagnan.configuration.OptionNames.ALIAS_METHOD;
-import static com.dat3m.dartagnan.configuration.OptionNames.REACHING_DEFINITIONS_METHOD;
+import static com.dat3m.dartagnan.configuration.OptionNames.*;
+import static com.dat3m.dartagnan.configuration.Property.PROGRAM_SPEC;
 import static com.dat3m.dartagnan.program.event.EventFactory.*;
+import static com.dat3m.dartagnan.utils.ResourceHelper.getRootPath;
+import static com.dat3m.dartagnan.utils.ResourceHelper.getTestResourcePath;
+import static com.dat3m.dartagnan.verification.solving.ModelChecker.*;
+import static com.dat3m.dartagnan.wmm.RelationNameRepository.LOC;
 import static org.junit.Assert.*;
 
 public class AnalysisTest {
@@ -237,7 +251,7 @@ public class AnalysisTest {
 
     @Test
     public void full0() throws InvalidConfigurationException {
-        program0(FULL, NONE, MAY, NONE, NONE, NONE, NONE);
+        program0(FULL, NONE, MAY, MAY, NONE, NONE, NONE);
     }
 
     private void program0(Alias method, Result... expect) throws InvalidConfigurationException {
@@ -656,6 +670,41 @@ public class AnalysisTest {
                 assertTrue(a.mayAlias(x, y));
                 assertTrue(a.mustAlias(x, y));
                 break;
+        }
+    }
+
+    /*
+     * This test may fail to show the presence of an error immediately.
+     * When it fails during a merge, consider repeating it on the head of the target branch.
+     */
+    @Test
+    public void aliasAnalysisDeterminism() throws Exception {
+        final String programPath = getTestResourcePath("libvsync/bounded_mpmc_check_empty-opt.ll");
+        final String modelPath = "cat/c11.cat";
+        final int ITERATIONS = 10;
+        final Program program = new ProgramParser().parse(new File(programPath));
+        final Wmm wmm = new ParserCat().parse(new File(getRootPath(modelPath)));
+        final Configuration config = Configuration.builder()
+                .setOption(ENABLE_EXTENDED_RELATION_ANALYSIS, "false")
+                .build();
+        final VerificationTask task = VerificationTask.builder()
+                .withConfig(config)
+                .withBound(1)
+                .withTarget(Arch.C11)
+                .build(program, wmm, EnumSet.of(PROGRAM_SPEC));
+        wmm.configureAll(task.getConfig());
+        preprocessProgram(task, task.getConfig());
+        final Relation loc = wmm.getRelation(LOC);
+        final List<Integer> sizes = new LinkedList<>();
+        for (int i = 0; i < ITERATIONS; i++) {
+            final Context context = Context.create();
+            performStaticProgramAnalyses(task, context, config);
+            performStaticWmmAnalyses(task, context, config);
+            final RelationAnalysis relationAnalysis = context.get(RelationAnalysis.class);
+            sizes.add(relationAnalysis.getKnowledge(loc).getMaySet().size());
+        }
+        for (int i = 1; i < ITERATIONS; i++) {
+            assertEquals(sizes.get(i - 1), sizes.get(i));
         }
     }
 

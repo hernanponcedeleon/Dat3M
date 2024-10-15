@@ -17,7 +17,6 @@ import com.dat3m.dartagnan.verification.Context;
 import com.dat3m.dartagnan.witness.graphviz.Graphviz;
 import com.google.common.base.Supplier;
 import com.google.common.base.Suppliers;
-import com.google.common.collect.Lists;
 import com.google.common.math.IntMath;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -422,7 +421,7 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
         // Visualized as outgoing edges.
         private final List<StoreEdge> stores = new ArrayList<>();
         // All variables that have a direct (includes/loads/stores) link to this.
-        private final Set<Variable> seeAlso = new HashSet<>();
+        private final Set<Variable> seeAlso = new LinkedHashSet<>();
         // If nonnull, this variable represents that object's base address.
         private final MemoryObject object;
         // For visualization.
@@ -458,12 +457,17 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
 
     private static final Modifier TRIVIAL_MODIFIER = new Modifier(0, List.of());
 
+    private static Modifier modifier(int offset, List<Integer> alignment) {
+        int a = singleAlignment(alignment);
+        return new Modifier(a >= 0 ? offset : offset % -a, alignment);
+    }
+
     private static DerivedVariable derive(Variable base) {
         return new DerivedVariable(base, TRIVIAL_MODIFIER);
     }
 
     private static DerivedVariable derive(Variable base, int offset, List<Integer> alignment) {
-        return new DerivedVariable(base, new Modifier(offset, alignment));
+        return new DerivedVariable(base, modifier(offset, alignment));
     }
 
     private static IncludeEdge includeEdge(DerivedVariable variable) {
@@ -683,30 +687,22 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
         if (left.alignment.isEmpty()) {
             return right.alignment.isEmpty() && offset == 0;
         }
-        for (final Integer a : left.alignment) {
-            if (a < 0) {
-                final int l = reduceAbsGCD(left.alignment);
-                final int r = reduceAbsGCD(right.alignment);
-                return offset % l == 0 && r % l == 0;
-            }
+        // Case of unbounded dynamic indexes.
+        int leftAlignment = singleAlignment(left.alignment);
+        int rightAlignment = singleAlignment(right.alignment);
+        if (leftAlignment < 0 || rightAlignment < 0) {
+            int l = leftAlignment < 0 ? -leftAlignment : reduceGCD(left.alignment);
+            int r = rightAlignment < 0 ? -rightAlignment : reduceGCD(right.alignment);
+            return offset % l == 0 && r % l == 0;
         }
-        for (final Integer a : right.alignment) {
-            if (a < 0) {
-                final int l = reduceAbsGCD(left.alignment);
-                final int r = reduceAbsGCD(right.alignment);
-                return offset % l == 0 && r % l == 0;
-            }
-        }
-        // FIXME assumes that dynamic indexes used here only have non-negative values.
-        // This cannot be used when a negative alignment occurs, because the analysis would not terminate.
+        // Case of a single non-negative dynamic index.
         if (left.alignment.size() == 1) {
-            final int alignment = Math.abs(left.alignment.get(0));
             for (final Integer a : right.alignment) {
-                if (a % alignment != 0) {
+                if (a % leftAlignment != 0) {
                     return false;
                 }
             }
-            return offset % alignment == 0 && offset >= 0;
+            return offset % leftAlignment == 0 && offset >= 0;
         }
         // Case of multiple dynamic indexes with pairwise indivisible alignments.
         final int gcd = IntMath.gcd(reduceGCD(right.alignment), Math.abs(offset));
@@ -740,22 +736,21 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
     private static boolean overlaps(Modifier l, Modifier r) {
         // exists non-negative integers x, y with l.offset + x * l.alignment == r.offset + y * r.alignment
         final int offset = r.offset - l.offset;
-        final int left = reduceAbsGCD(l.alignment);
-        final int right = reduceAbsGCD(r.alignment);
+        final int leftAlignment = singleAlignment(l.alignment);
+        final int rightAlignment = singleAlignment(r.alignment);
+        final int left = leftAlignment < 0 ? -leftAlignment : reduceGCD(l.alignment);
+        final int right = rightAlignment < 0 ? -rightAlignment : reduceGCD(r.alignment);
         if (left == 0 && right == 0) {
             return offset == 0;
         }
         final int divisor = left == 0 ? right : right == 0 ? left : IntMath.gcd(left, right);
-        final boolean nonNegativeIndexes = left == 0 ? offset <= 0 : right != 0 || offset >= 0;
-        return nonNegativeIndexes && offset % divisor == 0;
+        final boolean leftDirectedTowardsRight = right != 0 || leftAlignment < 0 || offset >= 0;
+        final boolean rightDirectedTowardsLeft = left != 0 || rightAlignment < 0 || offset <= 0;
+        return leftDirectedTowardsRight && rightDirectedTowardsLeft && offset % divisor == 0;
     }
 
-    // Computes the greatest common divisor of the absolute values of the operands.
-    // This gets called only if there is at least one negative dynamic offset.
-    // Positive values assume non-negative multipliers and thus enable the precision of the previous analysis.
-    // Negative values indicate that the multiplier can also be negative.
-    private static int reduceAbsGCD(List<Integer> alignment) {
-        return reduceGCD(Lists.transform(alignment, Math::abs));
+    private static int singleAlignment(List<Integer> alignment) {
+        return alignment.size() != 1 ? 0 : alignment.get(0);
     }
 
     // Computes the greatest common divisor of the operands.
@@ -778,6 +773,17 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
         if (left == TOP || right == TOP) {
             return TOP;
         }
+        // Negative values are unrestricted and compose always.
+        // Therefore, each list shall either contain a single negative value, or only positive values.
+        int leftAlignment = singleAlignment(left);
+        int rightAlignment = singleAlignment(right);
+        if (leftAlignment < 0 || rightAlignment < 0) {
+            int alignment = leftAlignment < 0 ? -leftAlignment : -rightAlignment;
+            for (Integer other : leftAlignment < 0 ? right : left) {
+                alignment = IntMath.gcd(alignment, Math.abs(other));
+            }
+            return List.of(-alignment);
+        }
         // assert left and right each consist of pairwise indivisible positives
         final List<Integer> result = new ArrayList<>();
         for (final Integer i : left) {
@@ -790,7 +796,14 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
                 result.add(j);
             }
         }
+        sort(result);
         return result;
+    }
+
+    private static void sort(List<Integer> alignment) {
+        if (alignment.size() > 1) {
+            Collections.sort(alignment);
+        }
     }
 
     // Checks if value is no multiple of any element in the list.
@@ -804,7 +817,7 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
     }
 
     private static Modifier compose(Modifier left, Modifier right) {
-        return new Modifier(left.offset + right.offset, compose(left.alignment, right.alignment));
+        return modifier(left.offset + right.offset, compose(left.alignment, right.alignment));
     }
 
     // Adds a single value to a set of dynamic offsets.
@@ -862,7 +875,8 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
         if (result != null && (result.address != null || result.register != null)) {
             final DerivedVariable base = result.address != null ? derive(objectVariables.get(result.address)) :
                     getPhiNodeVariable(result.register, reader);
-            main = compose(base, new Modifier(result.offset.intValue(), result.alignment));
+            sort(result.alignment);
+            main = compose(base, modifier(result.offset.intValue(), result.alignment));
         } else {
             main = null;
         }
@@ -914,8 +928,8 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
 
     private static final class Collector implements ExpressionVisitor<Result> {
 
-        final Set<MemoryObject> address = new HashSet<>();
-        final Set<Register> register = new HashSet<>();
+        final Set<MemoryObject> address = new LinkedHashSet<>();
+        final Set<Register> register = new LinkedHashSet<>();
 
         @Override
         public Result visitExpression(Expression expr) {
