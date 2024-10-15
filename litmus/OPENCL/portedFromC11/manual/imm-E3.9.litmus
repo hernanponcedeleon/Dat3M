@@ -1,0 +1,28 @@
+OPENCL imm-E3.9
+
+(*
+ * Bridging the Gap between Programming Languages and Hardware Weak Memory Models
+ *)
+
+{}
+
+P0@wg 0, dev 0 (global atomic_int* y, global atomic_int* z) {
+    int r0 = atomic_load_explicit(y, memory_order_relaxed);
+    atomic_work_item_fence(CLK_GLOBAL_MEM_FENCE,memory_order_seq_cst,memory_scope_all_svm_devices);
+    int r1 = atomic_load_explicit(z, memory_order_relaxed);
+}
+
+P1@wg 0, dev 0 (global atomic_int* x, global atomic_int* z) {
+    atomic_store_explicit(z, 1, memory_order_relaxed);
+    atomic_work_item_fence(CLK_GLOBAL_MEM_FENCE,memory_order_seq_cst,memory_scope_all_svm_devices);
+    atomic_store_explicit(x, 1, memory_order_relaxed);
+}
+
+P2@wg 0, dev 0 (global atomic_int* x, global atomic_int* y) {
+    int r0 = atomic_load_explicit(x, memory_order_relaxed);
+    if (r0 != 0) {
+        atomic_store_explicit(y, 1, memory_order_relaxed);
+    }
+}
+
+exists (0:r0=1 /\ 0:r1=0 /\ 2:r0=10)

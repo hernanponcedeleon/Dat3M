@@ -129,7 +129,7 @@ litmus/C11/manual/cppmem_iriw_relacq.litmus,1
 litmus/C11/manual/imm-E3.5.litmus,1
 litmus/C11/manual/imm-E3.9.litmus,0
 litmus/C11/manual/imm-R2.litmus,0
-litmus/C11/manual/example1.litmus,1
+litmus/C11/manual/example1.litmus,0
 litmus/C11/manual/imm-R2-alt.litmus,1
 litmus/C11/manual/mp_relaxed.litmus,1
 litmus/C11/manual/IRIW-sc-sc-acq-sc-acq-sc.litmus,0

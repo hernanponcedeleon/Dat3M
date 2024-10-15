@@ -121,7 +121,7 @@ public class Compilation implements ProgramProcessor {
 
     private VisitorBase getCompiler() {
         return switch (target) {
-            case C11 -> new VisitorC11();
+            case C11, OPENCL -> new VisitorC11();
             case LKMM -> new VisitorLKMM();
             case TSO -> new VisitorTso();
             case POWER -> new VisitorPower(useRC11Scheme, cToPowerScheme);
@@ -130,7 +130,6 @@ public class Compilation implements ProgramProcessor {
             case RISCV -> new VisitorRISCV(useRC11Scheme);
             case PTX -> new VisitorPTX();
             case VULKAN -> new VisitorVulkan();
-            case OPENCL -> throw new UnsupportedOperationException();
         };
     }
 
