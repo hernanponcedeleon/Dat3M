@@ -82,15 +82,17 @@ public class Dartagnan extends BaseOptions {
     }
 
     private static Configuration loadConfiguration(String[] args) throws InvalidConfigurationException, IOException {
-        final List<CharSource> source = new ArrayList<>();
+        final var preamble = new StringBuilder();
+        final var options = new StringBuilder();
         for (String argument : args) {
             if (argument.startsWith("--")) {
-                source.add(CharSource.wrap(argument.substring(2) + "\n"));
+                options.append(argument.substring("--".length())).append("\n");
             } else if (argument.endsWith(".properties")) {
-                source.add(CharSource.wrap(String.format("#include %s%n", argument)));
+                preamble.append("#include ").append(argument).append("\n");
             }
         }
-        return Configuration.builder().loadFromSource(CharSource.concat(source), ".", "[arguments]").build();
+        final CharSource source = CharSource.concat(CharSource.wrap(preamble), CharSource.wrap(options));
+        return Configuration.builder().loadFromSource(source, ".", ".").build();
     }
 
     public static void main(String[] args) throws Exception {
