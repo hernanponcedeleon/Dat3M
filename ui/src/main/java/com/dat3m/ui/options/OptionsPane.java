@@ -9,6 +9,8 @@ import com.dat3m.ui.button.ClearButton;
 import com.dat3m.ui.button.TestButton;
 import com.dat3m.ui.options.utils.ControlCode;
 import com.dat3m.ui.utils.UiOptions;
+import org.sosy_lab.common.configuration.Configuration;
+import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.java_smt.SolverContextFactory.Solvers;
 
 import javax.swing.*;
@@ -22,18 +24,16 @@ import java.awt.event.ItemEvent;
 import java.awt.event.WindowEvent;
 import java.awt.event.WindowFocusListener;
 import java.io.File;
-import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Date;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
-import java.util.Properties;
 import java.util.concurrent.ExecutionException;
 
 import static com.dat3m.dartagnan.configuration.OptionNames.*;
@@ -260,19 +260,27 @@ public class OptionsPane extends JPanel {
         if (file == null) {
             return;
         }
-        final var properties = new Properties();
-        properties.putAll(extraOptionsMap);
-        properties.put(METHOD, methodPane.getSelectedItem().name());
-        properties.put(SOLVER, solverPane.getSelectedItem().name());
-        properties.put(PROPERTY, propertyPane.getSelectedItem().name());
-        properties.put(TARGET, targetPane.getSelectedItem().name());
-        properties.put(PROGRESSMODEL, progressPane.getSelectedItem().name());
-        properties.put(BOUND, boundField.getText());
-        properties.put(TIMEOUT, timeoutField.getText());
-        properties.put(WITNESS, Boolean.toString(showViolationField.isSelected()));
-        try (FileWriter writer = new FileWriter(file)) {
-            properties.store(writer, "Created with Dartagnan");
-        } catch (IOException e) {
+        try {
+            final Configuration properties = Configuration.builder()
+                    .setOptions(extraOptionsMap)
+                    .setOption(METHOD, methodPane.getSelectedItem().name())
+                    .setOption(SOLVER, solverPane.getSelectedItem().name())
+                    .setOption(PROPERTY, propertyPane.getSelectedItem().name())
+                    .setOption(TARGET, targetPane.getSelectedItem().name())
+                    .setOption(PROGRESSMODEL, progressPane.getSelectedItem().name())
+                    .setOption(BOUND, boundField.getText())
+                    .setOption(TIMEOUT, timeoutField.getText())
+                    .setOption(WITNESS, Boolean.toString(showViolationField.isSelected()))
+                    .build();
+            //NOTE the properties file format almost fits the format accepted by Configuration.loadCharSource.
+            //But comments missing a whitespace after '#' are treated as directives.
+            try (FileWriter writer = new FileWriter(file)) {
+                writer.append("# Created with Dartagnan\n# ")
+                        .append(new Date().toString())
+                        .append('\n')
+                        .append(properties.asPropertiesString());
+            }
+        } catch (IOException | InvalidConfigurationException e) {
             showError(e.getMessage(), "Error while exporting configuration");
         }
     }
@@ -286,10 +294,13 @@ public class OptionsPane extends JPanel {
         if (file == null) {
             return;
         }
-        final var properties = new Properties();
-        try (FileReader reader = new FileReader(file)) {
-            properties.load(reader);
-        } catch (IOException e) {
+        final var properties = new HashMap<String, String>();
+        try {
+            final Configuration config = Configuration.builder().loadFromFile(file.toPath()).build();
+            for (String key : List.copyOf(config.getUnusedProperties())) {
+                properties.put(key, config.getProperty(key));
+            }
+        } catch (IOException | InvalidConfigurationException e) {
             showError(e.getMessage(), "Error while importing configuration");
             return;
         }
@@ -302,78 +313,76 @@ public class OptionsPane extends JPanel {
         setTimeout(properties.remove(TIMEOUT));
         setWitness(properties.remove(WITNESS));
         extraOptionsMap.clear();
-        for (Map.Entry<Object, Object> entry : properties.entrySet()) {
-            extraOptionsMap.put(entry.getKey().toString(), entry.getValue().toString());
-        }
+        extraOptionsMap.putAll(properties);
         toText();
     }
 
-    private void setMethod(Object value) {
+    private void setMethod(String value) {
         if (value == null) {
             return;
         }
         try {
-            methodPane.setSelectedItem(Method.valueOf(value.toString()));
+            methodPane.setSelectedItem(Method.valueOf(value));
         } catch (IllegalArgumentException ignore) {
         }
     }
 
-    private void setSolver(Object value) {
+    private void setSolver(String value) {
         if (value == null) {
             return;
         }
         try {
-            solverPane.setSelectedItem(Solvers.valueOf(value.toString()));
+            solverPane.setSelectedItem(Solvers.valueOf(value));
         } catch (IllegalArgumentException ignore) {
         }
     }
 
-    private void setProperty(Object value) {
+    private void setProperty(String value) {
         if (value == null) {
             return;
         }
         try {
-            propertyPane.setSelectedItem(Property.valueOf(value.toString()));
+            propertyPane.setSelectedItem(Property.valueOf(value));
         } catch (IllegalArgumentException ignore) {
         }
     }
 
-    private void setTargetArch(Object value) {
+    private void setTargetArch(String value) {
         if (value == null) {
             return;
         }
         try {
-            targetPane.setSelectedItem(Arch.valueOf(value.toString()));
+            targetPane.setSelectedItem(Arch.valueOf(value));
         } catch (IllegalArgumentException ignore) {
         }
     }
 
-    private void setProgressModel(Object value) {
+    private void setProgressModel(String value) {
         if (value == null) {
             return;
         }
         try {
-            progressPane.setSelectedItem(ProgressModel.valueOf(value.toString()));
+            progressPane.setSelectedItem(ProgressModel.valueOf(value));
         } catch (IllegalArgumentException ignore) {
         }
     }
 
-    private void setBound(Object value) {
+    private void setBound(String value) {
         if (value == null) {
             return;
         }
-        boundField.setText(value.toString());
+        boundField.setText(value);
     }
 
-    private void setTimeout(Object value) {
+    private void setTimeout(String value) {
         if (value == null) {
             return;
         }
-        timeoutField.setText(value.toString());
+        timeoutField.setText(value);
     }
 
-    private void setWitness(Object value) {
-        showViolationField.setSelected(Objects.equals("true", value));
+    private void setWitness(String value) {
+        showViolationField.setSelected(Boolean.parseBoolean(value));
     }
 
     private JDialog newDialog() {
