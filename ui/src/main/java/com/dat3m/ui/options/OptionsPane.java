@@ -322,7 +322,7 @@ public class OptionsPane extends JPanel {
             return;
         }
         try {
-            methodPane.setSelectedItem(Method.valueOf(value));
+            methodPane.setSelectedItem(Method.valueOf(value.toUpperCase()));
         } catch (IllegalArgumentException ignore) {
         }
     }
@@ -332,7 +332,7 @@ public class OptionsPane extends JPanel {
             return;
         }
         try {
-            solverPane.setSelectedItem(Solvers.valueOf(value));
+            solverPane.setSelectedItem(Solvers.valueOf(value.toUpperCase()));
         } catch (IllegalArgumentException ignore) {
         }
     }
@@ -342,7 +342,7 @@ public class OptionsPane extends JPanel {
             return;
         }
         try {
-            propertyPane.setSelectedItem(Property.valueOf(value));
+            propertyPane.setSelectedItem(Property.valueOf(value.toUpperCase()));
         } catch (IllegalArgumentException ignore) {
         }
     }
@@ -352,7 +352,7 @@ public class OptionsPane extends JPanel {
             return;
         }
         try {
-            targetPane.setSelectedItem(Arch.valueOf(value));
+            targetPane.setSelectedItem(Arch.valueOf(value.toUpperCase()));
         } catch (IllegalArgumentException ignore) {
         }
     }
@@ -362,7 +362,7 @@ public class OptionsPane extends JPanel {
             return;
         }
         try {
-            progressPane.setSelectedItem(ProgressModel.valueOf(value));
+            progressPane.setSelectedItem(ProgressModel.valueOf(value.toUpperCase()));
         } catch (IllegalArgumentException ignore) {
         }
     }
@@ -466,10 +466,10 @@ public class OptionsPane extends JPanel {
         for (Map.Entry<String, JComponent> entry : extraOptionsComponents.entrySet()) {
             String value = extraOptionsMap.get(entry.getKey());
             if (entry.getValue() instanceof JCheckBox field) {
-                field.setSelected("true".equals(value));
+                field.setSelected("true".equalsIgnoreCase(value));
             } else if (entry.getValue() instanceof JComboBox<?> field) {
                 field.setSelectedItem("");
-                field.setSelectedItem(value == null ? "" : value);
+                field.setSelectedItem(value == null ? "" : value.toUpperCase());
             } else if (entry.getValue() instanceof JTextField field) {
                 field.setText(value == null ? "" : value);
             }
