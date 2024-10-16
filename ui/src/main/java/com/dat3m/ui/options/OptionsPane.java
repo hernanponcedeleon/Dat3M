@@ -47,7 +47,7 @@ public class OptionsPane extends JPanel {
 
     public final static int OPTWIDTH = 300;
 
-    private static final List<String> BASIC_OPTIONS = List.of(TARGET, METHOD, BOUND, SOLVER, TIMEOUT, WITNESS, PROPERTY, PROGRESSMODEL);
+    private static final List<String> BASIC_OPTIONS = List.of(TARGET, METHOD, BOUND, SOLVER, TIMEOUT, PROPERTY, PROGRESSMODEL);
 
     private final JLabel iconPane = new JLabel();
 
@@ -270,7 +270,6 @@ public class OptionsPane extends JPanel {
                     .setOption(PROGRESSMODEL, progressPane.getSelectedItem().name())
                     .setOption(BOUND, boundField.getText())
                     .setOption(TIMEOUT, timeoutField.getText())
-                    .setOption(WITNESS, Boolean.toString(showViolationField.isSelected()))
                     .build();
             //NOTE the properties file format almost fits the format accepted by Configuration.loadCharSource.
             //But comments missing a whitespace after '#' are treated as directives.
@@ -311,7 +310,6 @@ public class OptionsPane extends JPanel {
         setProgressModel(properties.remove(PROGRESSMODEL));
         setBound(properties.remove(BOUND));
         setTimeout(properties.remove(TIMEOUT));
-        setWitness(properties.remove(WITNESS));
         extraOptionsMap.clear();
         extraOptionsMap.putAll(properties);
         toText();
@@ -379,10 +377,6 @@ public class OptionsPane extends JPanel {
             return;
         }
         timeoutField.setText(value);
-    }
-
-    private void setWitness(String value) {
-        showViolationField.setSelected(Boolean.parseBoolean(value));
     }
 
     private JDialog newDialog() {
