@@ -16,6 +16,7 @@ import org.sosy_lab.java_smt.SolverContextFactory.Solvers;
 import javax.swing.*;
 import javax.swing.border.Border;
 import javax.swing.border.TitledBorder;
+import javax.swing.filechooser.FileNameExtensionFilter;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.FocusAdapter;
@@ -108,6 +109,7 @@ public class OptionsPane extends JPanel {
         setLayout(new BoxLayout(this, BoxLayout.X_AXIS));
         extraOptionsButton.setToolTipText("Manage extra options.");
         extraOptionsDialog = newDialog();
+        configurationFileChooser.addChoosableFileFilter(new FileNameExtensionFilter("*.properties", "properties"));
 
         testButton = new TestButton();
         clearButton = new ClearButton();

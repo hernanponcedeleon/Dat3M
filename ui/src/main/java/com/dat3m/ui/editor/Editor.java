@@ -54,7 +54,8 @@ public class Editor extends RTextScrollPane implements ActionListener {
         this.allowedFormats = ImmutableSet.copyOf(code.supportedExtensions());
         this.chooser = new JFileChooser();
         for (String format : allowedFormats) {
-            chooser.addChoosableFileFilter(new FileNameExtensionFilter("*" + format, format));
+            final String extension = format.startsWith(".") ? format.substring(1) : format;
+            chooser.addChoosableFileFilter(new FileNameExtensionFilter("*" + format, extension));
         }
 
         setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
