@@ -58,8 +58,8 @@ public class Dat3M extends JFrame implements ActionListener {
         optionsPane.getTestButton().addActionListener(this);
 
         // optionsPane needs to listen to editor to clean the console
-        editorsPane.getEditor(EditorCode.PROGRAM).addActionListener(optionsPane);
-        editorsPane.getEditor(EditorCode.TARGET_MM).addActionListener(optionsPane);
+        editorsPane.getEditor(EditorCode.PROGRAM).addActionListener(optionsPane::clearConsole);
+        editorsPane.getEditor(EditorCode.TARGET_MM).addActionListener(optionsPane::clearConsole);
 
         // The console shall be cleaned every time the program or MM is modified from the editor
         EditorListener listener = new EditorListener(optionsPane.getConsolePane());
@@ -138,7 +138,7 @@ public class Dat3M extends JFrame implements ActionListener {
         try {
             final Editor programEditor = editorsPane.getEditor(EditorCode.PROGRAM);
             // We default to "c" code, if we do not know
-            final String format = programEditor.getLoadedFormat().isEmpty() ? "c" : programEditor.getLoadedFormat();
+            final String format = programEditor.getLoadedFormat().isEmpty() ? ProgramParser.EXTENSION_C : programEditor.getLoadedFormat();
             final Program program = new ProgramParser().parse(programEditor.getEditorPane().getText(),
                     programEditor.getLoadedPath(),
                     format,

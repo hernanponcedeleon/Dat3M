@@ -1,6 +1,5 @@
 package com.dat3m.dartagnan.encoding;
 
-import com.dat3m.dartagnan.GlobalSettings;
 import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.program.Program;
@@ -36,8 +35,7 @@ import org.sosy_lab.java_smt.api.*;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static com.dat3m.dartagnan.configuration.OptionNames.ENABLE_ACTIVE_SETS;
-import static com.dat3m.dartagnan.configuration.OptionNames.MEMORY_IS_ZEROED;
+import static com.dat3m.dartagnan.configuration.OptionNames.*;
 import static com.dat3m.dartagnan.program.event.Tag.*;
 import static com.dat3m.dartagnan.wmm.RelationNameRepository.RF;
 import static com.google.common.base.Verify.verify;
@@ -58,10 +56,16 @@ public class WmmEncoder implements Encoder {
 
     @Option(name = MEMORY_IS_ZEROED,
             description = "Assumes the whole memory is zeroed before the program runs." +
-                    "In particular, if set to TRUE, reads from uninitialized memory will return zero." +
-                    "Otherwise, uninitialized memory has a nondeterministic value.",
+                    " In particular, if set to TRUE, reads from uninitialized memory will return zero." +
+                    " Otherwise, uninitialized memory has a nondeterministic value.",
             secure = true)
     private boolean memoryIsZeroed = true;
+
+    @Option(name = MULTI_READS,
+            description = "Allows each load to have multiple, but at least one, incoming read-from relationships." +
+                    " Otherwise, that number is restricted to 1.",
+            secure = true)
+    private boolean allowMultiReads = false;
 
     // =====================================================================
 
@@ -579,7 +583,7 @@ public class WmmEncoder implements Encoder {
                 }
 
                 final List<BooleanFormula> rfEdges = edgeMap.getOrDefault(r, List.of());
-                if (GlobalSettings.ALLOW_MULTIREADS) {
+                if (allowMultiReads) {
                     enc.add(bmgr.implication(context.execution(r), bmgr.or(bmgr.or(rfEdges), uninit)));
                     continue;
                 }

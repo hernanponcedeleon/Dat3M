@@ -14,8 +14,8 @@ import java.awt.event.ActionListener;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
 import java.io.*;
-import java.util.Arrays;
 import java.util.HashSet;
+import java.util.Objects;
 import java.util.Set;
 
 import static com.dat3m.ui.utils.Utils.showError;
@@ -36,25 +36,26 @@ public class Editor extends RTextScrollPane implements ActionListener {
     private String loadedFormat = "";
     private String loadedPath = "";
 
-    private Set<ActionListener> actionListeners = new HashSet<>();
+    private final Set<ActionListener> actionListeners = new HashSet<>();
 
-    Editor(EditorCode code, RSyntaxTextArea editorPane, String... formats) {
+    Editor(EditorCode code, RSyntaxTextArea editorPane) {
         super(editorPane);
         this.code = code;
         this.editorPane = editorPane;
         this.editorPane.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_C);
         this.editorPane.setCodeFoldingEnabled(true);
         this.importerItem = new JMenuItem(code.toString());
-        importerItem.setActionCommand(code.editorMenuImportActionCommand());
-        importerItem.addActionListener(this);
+        this.importerItem.setActionCommand(code.editorMenuImportActionCommand());
+        this.importerItem.addActionListener(this);
         this.exporterItem = new JMenuItem(code.toString());
-        exporterItem.setActionCommand(code.editorMenuExportActionCommand());
-        exporterItem.addActionListener(this);
+        this.exporterItem.setActionCommand(code.editorMenuExportActionCommand());
+        this.exporterItem.addActionListener(this);
 
-        this.allowedFormats = ImmutableSet.copyOf(Arrays.asList(formats));
+        this.allowedFormats = ImmutableSet.copyOf(code.supportedExtensions());
         this.chooser = new JFileChooser();
         for (String format : allowedFormats) {
-            chooser.addChoosableFileFilter(new FileNameExtensionFilter("*." + format, format));
+            final String extension = format.startsWith(".") ? format.substring(1) : format;
+            chooser.addChoosableFileFilter(new FileNameExtensionFilter("*" + format, extension));
         }
 
         setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
@@ -96,45 +97,50 @@ public class Editor extends RTextScrollPane implements ActionListener {
     @Override
     public void actionPerformed(ActionEvent event) {
         if (code.editorMenuImportActionCommand().equals(event.getActionCommand())) {
-            chooser.setCurrentDirectory(new File(getProperty("user.dir") + "/.."));
-            if (chooser.showOpenDialog(null) == APPROVE_OPTION) {
-                String path = chooser.getSelectedFile().getPath();
-                loadedPath = path.substring(0, path.lastIndexOf('/') + 1);
-                String format = path.endsWith("spv.dis") ? "spv.dis" : path.substring(path.lastIndexOf('.') + 1).trim();
-                if (allowedFormats.contains(format)) {
-                    loadedFormat = format;
-                    notifyListeners();
-                    try {
-                        editorPane.read(new InputStreamReader(new FileInputStream(path)), null);
-                    } catch (IOException e) {
-                        showError("Error reading input file");
-                    }
-                } else {
-                    showError("Please select a *." + String.join(", *.", allowedFormats) + " file",
-                            "Invalid file format");
-                }
-            }
+            doImportDialog();
+            return;
         }
         if (code.editorMenuExportActionCommand().equals(event.getActionCommand())) {
-            chooser.setCurrentDirectory(new File(getProperty("user.dir") + "/.."));
-            if (chooser.showSaveDialog(null) == APPROVE_OPTION) {
-                String path = chooser.getSelectedFile().getPath();
-                String format = path.substring(path.lastIndexOf('.') + 1).trim();
-                if (allowedFormats.contains(format)) {
-                    notifyListeners();
-                    try {
-                        File newTextFile = new File(path);
-                        FileWriter fw = new FileWriter(newTextFile);
-                        fw.write(editorPane.getText());
-                        fw.close();
-                    } catch (IOException e) {
-                        // This should never happen since the file is created above
-                    }
-                } else {
-                    showError("Please select a *." + String.join(", *.", allowedFormats) + " file",
-                            "Invalid file format");
-                }
-            }
+            doExportDialog();
+            return;
+        }
+    }
+
+    private void doImportDialog() {
+        chooser.setCurrentDirectory(new File(getProperty("user.dir") + "/.."));
+        if (chooser.showOpenDialog(null) != APPROVE_OPTION) {
+            return;
+        }
+        final File selectedFile = chooser.getSelectedFile();
+        loadedPath = Objects.requireNonNullElse(selectedFile.getParent(), "");
+        loadedFormat = allowedFormats.stream().filter(selectedFile.getName()::endsWith).findAny().orElse("");
+        if (loadedFormat.isEmpty()) {
+            showError("Please select a *" + String.join(", *", allowedFormats) + " file", "Invalid file format");
+            return;
+        }
+        notifyListeners();
+        try(final var r = new FileReader(selectedFile)) {
+            editorPane.read(r, null);
+        } catch (IOException e) {
+            showError("Error reading input file", e.getMessage());
+        }
+    }
+
+    private void doExportDialog() {
+        chooser.setCurrentDirectory(new File(getProperty("user.dir") + "/.."));
+        if (chooser.showSaveDialog(null) != APPROVE_OPTION) {
+            return;
+        }
+        final File selectedFile = chooser.getSelectedFile();
+        if (allowedFormats.stream().noneMatch(selectedFile.getName()::endsWith)) {
+            showError("Please select a *" + String.join(", *", allowedFormats) + " file", "Invalid file format");
+            return;
+        }
+        notifyListeners();
+        try(final var w = new FileWriter(selectedFile)) {
+            editorPane.write(w);
+        } catch (IOException e) {
+            showError("Error writing program file", e.getMessage());
         }
     }
 

@@ -10,6 +10,7 @@ import com.dat3m.dartagnan.utils.logic.DNF;
 import com.dat3m.dartagnan.verification.Context;
 import com.dat3m.dartagnan.verification.model.ExecutionModel;
 import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
+import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.java_smt.api.Model;
 
@@ -33,8 +34,11 @@ public class WMMSolver {
         this.solver = CAATSolver.create();
     }
 
-    public static WMMSolver withContext(RefinementModel refinementModel, EncodingContext context, Context analysisContext) throws InvalidConfigurationException {
-        return new WMMSolver(refinementModel, analysisContext, ExecutionModel.withContext(context));
+    public static WMMSolver withContext(RefinementModel refinementModel, EncodingContext context,
+            Context analysisContext, Configuration config) throws InvalidConfigurationException {
+        final var solver = new WMMSolver(refinementModel, analysisContext, ExecutionModel.withContext(context));
+        config.inject(solver.reasoner);
+        return solver;
     }
 
     public ExecutionModel getExecution() {

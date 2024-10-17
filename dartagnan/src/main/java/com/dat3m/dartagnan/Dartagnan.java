@@ -33,6 +33,7 @@ import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.axiom.Axiom;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.io.CharSource;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.maven.model.io.xpp3.MavenXpp3Reader;
@@ -56,7 +57,6 @@ import java.nio.file.Path;
 import java.util.*;
 
 import static com.dat3m.dartagnan.GlobalSettings.getOrCreateOutputDirectory;
-import static com.dat3m.dartagnan.GlobalSettings.logGlobalSettings;
 import static com.dat3m.dartagnan.configuration.OptionInfo.collectOptions;
 import static com.dat3m.dartagnan.configuration.OptionNames.PHANTOM_REFERENCES;
 import static com.dat3m.dartagnan.configuration.OptionNames.TARGET;
@@ -75,11 +75,24 @@ public class Dartagnan extends BaseOptions {
 
     private static final Logger logger = LogManager.getLogger(Dartagnan.class);
 
-    private static final Set<String> supportedFormats =
-            ImmutableSet.copyOf(Arrays.asList(".litmus", ".c", ".i", ".ll", ".spv.dis"));
+    private static final Set<String> supportedFormats = ImmutableSet.copyOf(ProgramParser.SUPPORTED_EXTENSIONS);
 
     private Dartagnan(Configuration config) throws InvalidConfigurationException {
         config.recursiveInject(this);
+    }
+
+    private static Configuration loadConfiguration(String[] args) throws InvalidConfigurationException, IOException {
+        final var preamble = new StringBuilder();
+        final var options = new StringBuilder();
+        for (String argument : args) {
+            if (argument.startsWith("--")) {
+                options.append(argument.substring("--".length())).append("\n");
+            } else if (argument.endsWith(".properties")) {
+                preamble.append("#include ").append(argument).append("\n");
+            }
+        }
+        final CharSource source = CharSource.concat(CharSource.wrap(preamble), CharSource.wrap(options));
+        return Configuration.builder().loadFromSource(source, ".", ".").build();
     }
 
     public static void main(String[] args) throws Exception {
@@ -101,14 +114,8 @@ public class Dartagnan extends BaseOptions {
 
         logGitInfo();
 
-        String[] argKeyword = Arrays.stream(args)
-                .filter(s -> s.startsWith("-"))
-                .toArray(String[]::new);
-        Configuration config = Configuration.fromCmdLineArguments(argKeyword);
+        Configuration config = loadConfiguration(args);
         Dartagnan o = new Dartagnan(config);
-
-        GlobalSettings.configure(config);
-        logGlobalSettings();
 
         File fileProgram = new File(Arrays.stream(args).filter(a -> supportedFormats.stream().anyMatch(a::endsWith))
                 .findFirst()
