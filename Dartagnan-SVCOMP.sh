@@ -33,6 +33,6 @@ else
         skip_assertions_of_type=""
     fi
     
-    cmd="java -jar svcomp/target/svcomp.jar --method=eager --encoding.integers=true $skip_assertions_of_type --svcomp.step=5 --svcomp.umax=27 cat/svcomp.cat --svcomp.property="$propertypath" "$programpath" "$witness
+    cmd="java -jar svcomp/target/svcomp.jar $skip_assertions_of_type cat/svcomp.cat --svcomp.property="$propertypath" "$programpath" "$witness
 fi
 $cmd

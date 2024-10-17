@@ -124,6 +124,7 @@ public class SVCOMPRunner extends BaseOptions {
             cmd.addAll(Arrays.asList("-jar", System.getenv().get("DAT3M_HOME") + "/dartagnan/target/dartagnan.jar"));
             cmd.add(fileModel.toString());
             cmd.add(programPath);
+            cmd.add("svcomp.properties");
             cmd.add(String.format("--%s=%s", PROPERTY, r.property.asStringOption()));
             cmd.add(String.format("--%s=%s", BOUND, bound));
             cmd.add(String.format("--%s=%s", WITNESS, GRAPHML.asStringOption()));
