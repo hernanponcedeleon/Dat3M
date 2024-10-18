@@ -7,6 +7,7 @@ import com.dat3m.dartagnan.program.event.metadata.MemoryOrder;
 import com.dat3m.dartagnan.verification.model.EventData;
 import com.dat3m.dartagnan.verification.model.ExecutionModel;
 import com.dat3m.dartagnan.verification.model.MemoryObjectModel;
+import com.dat3m.dartagnan.verification.model.relation.RelationModel;
 import com.google.common.collect.Lists;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -16,13 +17,11 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.io.Writer;
 import java.math.BigInteger;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.function.BiPredicate;
 
 import static com.dat3m.dartagnan.program.analysis.SyntacticContextAnalysis.*;
+import static com.dat3m.dartagnan.wmm.RelationNameRepository.*;
 
 /*
     This is some rudimentary class to create graphs of executions.
@@ -39,9 +38,13 @@ public class ExecutionGraphVisualizer {
     private BiPredicate<EventData, EventData> frFilter = (x, y) -> true;
     private BiPredicate<EventData, EventData> coFilter = (x, y) -> true;
     private final List<MemoryObjectModel> sortedMemoryObjects = new ArrayList<>();
+    private Map<String, String> colors;
+    private Set<String> toShow = new HashSet<>(Set.of(RF, CO, "fr"));
 
     public ExecutionGraphVisualizer() {
         this.graphviz = new Graphviz();
+
+        initializeColors();
     }
 
 
@@ -70,11 +73,31 @@ public class ExecutionGraphVisualizer {
         graphviz.beginDigraph(graphName);
         graphviz.append(String.format("label=\"%s\" \n", graphName));
         addAllThreadPos(model);
-        addReadFrom(model);
-        addFromRead(model);
-        addCoherence(model);
+        addRelations(model);
+        //addSameLocation(model);
+        //addReadFrom(model);
+        //addFromRead(model);
+        //addCoherence(model);
         graphviz.end();
         graphviz.generateOutput(writer);
+    }
+
+    private void initializeColors() {
+        colors = new HashMap<>();
+        colors.put(RF, "green");
+        colors.put("fr", "orange");
+        colors.put(CO, "red");
+    }
+
+    private BiPredicate<EventData, EventData> getFilter(String relationName) {
+        return (x, y) -> true;
+    }
+
+    private String getColor(String relationName) {
+        if (colors.containsKey(relationName)) {
+            return colors.get(relationName);
+        }
+        return "aqua";
     }
 
     private void computeAddressMap(ExecutionModel model) {
@@ -100,6 +123,34 @@ public class ExecutionGraphVisualizer {
             }
 
             appendEdge(w, r, "label=rf");
+        }
+        graphviz.end();
+        return this;
+    }
+
+    private ExecutionGraphVisualizer addRelations(ExecutionModel model) {
+        model.extractRelationsToShow(new ArrayList<>(toShow));
+        for (String relationName : toShow) {
+            addRelation(model, relationName);
+        }
+        return this;
+    }
+
+    private ExecutionGraphVisualizer addRelation(ExecutionModel model, String relationName) {
+        graphviz.beginSubgraph(relationName);
+        graphviz.setEdgeAttributes(String.format("color=%s", getColor(relationName)));
+        String label = "label=" + relationName.replace("-", "");
+        BiPredicate<EventData, EventData> filter = getFilter(relationName);
+        RelationModel rm = model.getRelationModel(relationName);
+        for (RelationModel.EdgeModel edge : rm.getEdges()) {
+            EventData predecessor = edge.getPredecessor();
+            EventData successor = edge.getSuccessor();
+
+            if (ignore(predecessor) || ignore(successor) || !filter.test(predecessor, successor)) {
+                continue;
+            }
+
+            appendEdge(predecessor, successor, label);
         }
         graphviz.end();
         return this;
@@ -159,7 +210,7 @@ public class ExecutionGraphVisualizer {
 
     private ExecutionGraphVisualizer addThreadPo(Thread thread, ExecutionModel model) {
         List<EventData> threadEvents = model.getThreadEventsMap().get(thread)
-                .stream().filter(e -> e.hasTag(Tag.VISIBLE)).toList();
+                .stream().filter(e -> e.hasTag(Tag.VISIBLE) || e.isLocal() || e.isAssert()).toList();
         if (threadEvents.size() <= 1) {
             // This skips init threads.
             return this;

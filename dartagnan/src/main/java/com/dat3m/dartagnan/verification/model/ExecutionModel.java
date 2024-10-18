@@ -222,7 +222,7 @@ public class ExecutionModel {
         rmManager.extractRelations(names);
     }
 
-    public Map<MemoryObject, BigInteger> getMemoryLayoutMap() { return memoryLayoutMapView; }
+    public Map<MemoryObject, MemoryObjectModel> getMemoryLayoutMap() { return memoryLayoutMapView; }
     public Map<Thread, List<EventData>> getThreadEventsMap() {
         return threadEventsMapView;
     }
