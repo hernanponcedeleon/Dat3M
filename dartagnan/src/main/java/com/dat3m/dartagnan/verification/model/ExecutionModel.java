@@ -5,6 +5,7 @@ import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.*;
+import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.event.core.threading.ThreadArgument;
 import com.dat3m.dartagnan.program.event.lang.svcomp.BeginAtomic;
@@ -14,6 +15,10 @@ import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.dat3m.dartagnan.utils.dependable.DependencyGraph;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.wmm.Wmm;
+import com.dat3m.dartagnan.wmm.Relation;
+import com.dat3m.dartagnan.verification.model.relation.RelationModel;
+import com.dat3m.dartagnan.verification.model.relation.RelationModel.EdgeModel;
+import com.dat3m.dartagnan.verification.model.relation.RelationModelManager;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
@@ -28,9 +33,9 @@ import org.sosy_lab.java_smt.api.Model;
 import java.math.BigInteger;
 import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
-import static com.dat3m.dartagnan.wmm.RelationNameRepository.CO;
-import static com.dat3m.dartagnan.wmm.RelationNameRepository.RF;
+import static com.dat3m.dartagnan.wmm.RelationNameRepository.*;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 /*
@@ -51,6 +56,11 @@ public class ExecutionModel {
     private boolean extractCoherences;
 
     private final EventMap eventMap;
+    private final RelationModelManager rmManager;
+    private final Map<Relation, RelationModel> relations;
+    private final Map<String, RelationModel> definedRelations;
+    private final Map<String, EdgeModel> edges;
+    private final Set<String> relationsToExtract = new HashSet<>(Set.of(PO, RF, CO));
     // The event list is sorted lexicographically by (threadID, cID)
     private final ArrayList<EventData> eventList;
     private final ArrayList<Thread> threadList;
@@ -109,6 +119,10 @@ public class ExecutionModel {
         addrDepMap = new HashMap<>();
         ctrlDepMap = new HashMap<>();
         coherenceMap = new HashMap<>();
+        rmManager = RelationModelManager.newRMManager(this);
+        relations = new HashMap<>();
+        definedRelations = new HashMap<>();
+        edges = new HashMap<>();
 
         createViews();
     }
@@ -172,7 +186,43 @@ public class ExecutionModel {
         return threadListView;
     }
 
-    public Map<MemoryObject, MemoryObjectModel> getMemoryLayoutMap() { return memoryLayoutMapView; }
+    public RelationModelManager getRMManager() { return rmManager; }
+
+    public boolean containsRelation(Relation r) {
+        return relations.containsKey(r);
+    }
+
+    public void addRelation(Relation r, RelationModel rm) {
+        relations.put(r, rm);
+        if (rm.isDefined()) {
+            definedRelations.put(rm.getName(), rm);
+        }
+    }
+
+    public RelationModel getRelationModel(String name) {
+        return definedRelations.get(name);
+    }
+
+    public RelationModel getRelationModel(Relation r) {
+        return relations.get(r);
+    }
+
+    public EdgeModel getEdge(String identifier) {
+        if (edges.containsKey(identifier)) {
+            return edges.get(identifier);
+        }
+        return null;
+    }
+
+    public void addEdge(EdgeModel edge) {
+        edges.put(edge.getIdentifier(), edge);
+    }
+
+    public void extractRelationsToShow(List<String> names) {
+        rmManager.extractRelations(names);
+    }
+
+    public Map<MemoryObject, BigInteger> getMemoryLayoutMap() { return memoryLayoutMapView; }
     public Map<Thread, List<EventData>> getThreadEventsMap() {
         return threadEventsMapView;
     }
@@ -231,11 +281,12 @@ public class ExecutionModel {
         this.extractCoherences = extractCoherences;
         extractEventsFromModel();
         extractMemoryLayout();
-        extractReadsFrom();
-        coherenceMap.clear();
-        if (extractCoherences) {
-            extractCoherences();
-        }
+        extractRelations();
+        // extractReadsFrom();
+        // coherenceMap.clear();
+        // if (extractCoherences) {
+        //     extractCoherences();
+        // }
     }
 
     //========================== Internal methods  =========================
@@ -273,7 +324,7 @@ public class ExecutionModel {
                     e = e.getSuccessor();
                     continue;
                 }
-                if (eventFilter.apply(e)) {
+                if (eventFilter.apply(e) || e instanceof Local || e instanceof Assert) {
                     addEvent(e, id++, localId++);
                 }
                 trackDependencies(e);
@@ -490,6 +541,10 @@ public class ExecutionModel {
     }
 
     // ===================================================
+
+    private void extractRelations() {
+        rmManager.extractRelations(new ArrayList<>(relationsToExtract));
+    }
 
     private void extractMemoryLayout() {
         memoryLayoutMap.clear();

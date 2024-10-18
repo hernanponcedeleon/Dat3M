@@ -3,6 +3,8 @@ package com.dat3m.dartagnan.verification.model;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.core.CondJump;
+import com.dat3m.dartagnan.program.event.core.Local;
+import com.dat3m.dartagnan.program.event.core.Assert;
 
 import java.math.BigInteger;
 
@@ -74,7 +76,7 @@ public class EventData implements Comparable<EventData> {
     }
 
     public int getCoherenceIndex() { return coIndex; }
-    void setCoherenceIndex(int index) { coIndex = index; }
+    public void setCoherenceIndex(int index) { coIndex = index; }
 
     public boolean isMemoryEvent() { return event.hasTag(MEMORY); }
     public boolean isInit() {
@@ -91,6 +93,12 @@ public class EventData implements Comparable<EventData> {
     }
     public boolean isRMW() {
     	return event.hasTag(RMW);
+    }
+    public boolean isLocal() {
+        return event instanceof Local;
+    }
+    public boolean isAssert() {
+        return event instanceof Assert;
     }
 
     public boolean hasTag(String tag) {
