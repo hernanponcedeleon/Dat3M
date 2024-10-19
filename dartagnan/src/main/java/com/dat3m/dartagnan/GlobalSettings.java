@@ -38,6 +38,10 @@ public class GlobalSettings {
         return env + "/cat";
     }
 
+    public static String getBoundsFile() {
+        return getOutputDirectory() + "/bounds.csv";
+    }
+
     public static String getOrCreateOutputDirectory() throws IOException {
         String path = getOutputDirectory();
         Files.createDirectories(Paths.get(path));

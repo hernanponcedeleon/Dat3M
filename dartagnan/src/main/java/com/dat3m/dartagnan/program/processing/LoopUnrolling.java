@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan.program.processing;
 
+import com.dat3m.dartagnan.GlobalSettings;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.Program;
@@ -11,14 +12,20 @@ import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.CondJump;
 import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.event.lang.svcomp.LoopBound;
+import com.dat3m.dartagnan.program.event.metadata.UnrollingBound;
 import com.dat3m.dartagnan.program.event.metadata.UnrollingId;
 import com.google.common.base.Preconditions;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.sosy_lab.common.configuration.*;
+import org.apache.commons.csv.CSVFormat;
+import org.apache.commons.csv.CSVRecord;
 
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.Reader;
 import java.util.*;
-
 import static com.dat3m.dartagnan.configuration.OptionNames.BOUND;
 
 @Options
@@ -89,9 +96,31 @@ public class LoopUnrolling implements ProgramProcessor {
             return;
         }
         final Map<CondJump, Integer> loopBoundsMap = computeLoopBoundsMap(func, defaultBound);
+        final Map<CondJump, Integer> loopBoundsMapFromFile = loadLoopBoundsMapFromFile(func);
+        Map<CondJump, Integer> mergedBounds = new HashMap<>(loopBoundsMap);
+        loopBoundsMapFromFile.forEach((key, value) -> mergedBounds.merge(key, value, Math::max));
         func.getEvents(CondJump.class).stream()
-                .filter(loopBoundsMap::containsKey)
-                .forEach(j -> unrollLoop(j, loopBoundsMap.get(j)));
+                .filter(mergedBounds::containsKey)
+                .forEach(j -> unrollLoop(j, mergedBounds.get(j)));
+        }
+
+    private Map<CondJump, Integer> loadLoopBoundsMapFromFile(Function func) {
+
+        Map<CondJump, Integer> loopBoundsMapFromFile = new HashMap<>();
+        try (Reader reader = new FileReader(GlobalSettings.getBoundsFile())) {
+            Iterable<CSVRecord> records = CSVFormat.DEFAULT.parse(reader);
+            for (CSVRecord record : records) {
+                int evId = Integer.parseInt(record.get(0));
+                int bound = Integer.parseInt(record.get(1));
+                if(func.getEvents(CondJump.class).stream().anyMatch(e -> e.getGlobalId() == evId)) {
+                    CondJump loop = func.getEvents(CondJump.class).stream().filter(e -> e.getGlobalId() == evId).findAny().get();
+                    loopBoundsMapFromFile.put(loop, bound);
+                }
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return loopBoundsMapFromFile;
     }
 
     private Map<CondJump, Integer> computeLoopBoundsMap(Function func, int defaultBound) {
@@ -128,6 +157,7 @@ public class LoopUnrolling implements ProgramProcessor {
         Preconditions.checkArgument(loopBegin.getLocalId() < loopBackJump.getLocalId(),
                 "The jump does not belong to a loop.");
 
+        dumpBoundToFile(loopBackJump, bound);
         int iterCounter = 0;
         while (++iterCounter <= bound) {
             if (iterCounter == bound) {
@@ -146,6 +176,7 @@ public class LoopUnrolling implements ProgramProcessor {
                 boundEvent.getPredecessor().insertAfter(endOfLoopMarker);
 
                 boundEvent.copyAllMetadataFrom(loopBackJump);
+                boundEvent.setMetadata(new UnrollingBound(bound));
                 endOfLoopMarker.copyAllMetadataFrom(loopBackJump);
 
             } else {
@@ -193,6 +224,15 @@ public class LoopUnrolling implements ProgramProcessor {
                 EventFactory.newAbortIf(ExpressionFactory.getInstance().makeTrue());
         boundEvent.addTags(Tag.BOUND, Tag.NONTERMINATION, Tag.NOOPT);
         return boundEvent;
+    }
+
+    private void dumpBoundToFile(Event jump, int bound) {
+        System.out.println("Dumping " + jump.getGlobalId() + " with value " + bound);
+        try (FileWriter writer = new FileWriter(GlobalSettings.getBoundsFile(), true)) {
+            writer.append(String.valueOf(jump.getGlobalId())).append(',').append(String.valueOf(bound)).append('\n');
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
 }

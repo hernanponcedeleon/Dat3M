@@ -47,6 +47,8 @@
         <guava.version>32.1.2-jre</guava.version>
         <junit.version>4.13.2</junit.version>
         <log4j.version>2.23.0</log4j.version>
+        <maven-model.version>3.3.9</maven-model.version>
+        <commons-csv.version>1.12.0</commons-csv.version>
         <mockito.version>5.11.0</mockito.version>
         <rsyntaxtextarea.version>3.3.4</rsyntaxtextarea.version>
 

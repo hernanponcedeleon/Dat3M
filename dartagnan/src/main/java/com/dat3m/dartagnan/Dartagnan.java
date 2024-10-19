@@ -16,6 +16,8 @@ import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.Assert;
 import com.dat3m.dartagnan.program.event.core.CondJump;
 import com.dat3m.dartagnan.program.event.core.Load;
+import com.dat3m.dartagnan.program.event.metadata.UnrollingBound;
+import com.dat3m.dartagnan.program.event.metadata.UnrollingId;
 import com.dat3m.dartagnan.utils.Result;
 import com.dat3m.dartagnan.utils.Utils;
 import com.dat3m.dartagnan.utils.options.BaseOptions;
@@ -34,6 +36,9 @@ import com.dat3m.dartagnan.wmm.axiom.Axiom;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.io.CharSource;
+
+import scala.collection.mutable.UnrolledBuffer.Unrolled;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.maven.model.io.xpp3.MavenXpp3Reader;
@@ -51,6 +56,7 @@ import org.sosy_lab.java_smt.api.SolverException;
 
 import java.io.File;
 import java.io.FileReader;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.math.BigInteger;
 import java.nio.file.Path;
@@ -341,6 +347,7 @@ public class Dartagnan extends BaseOptions {
                                 .append("\t")
                                 .append(synContext.getSourceLocationWithContext(ev, true))
                                 .append("\n");
+                        increaseBoundAndDumpToFile(ev);
                     }
                 }
                 summary.append("=================================================\n");
@@ -396,6 +403,15 @@ public class Dartagnan extends BaseOptions {
             }
         }
         return summary.toString();
+    }
+
+    private static void increaseBoundAndDumpToFile(Event ev) {
+        try (FileWriter writer = new FileWriter(GlobalSettings.getBoundsFile(), true)) {
+            writer.append(String.valueOf(ev.getMetadata(UnrollingId.class).value())).append(',')
+                    .append(String.valueOf(ev.getMetadata(UnrollingBound.class).value() + 1)).append('\n');
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     private static void printWarningIfThreadStartFailed(Program p, EncodingContext encoder, ProverEnvironment prover)
