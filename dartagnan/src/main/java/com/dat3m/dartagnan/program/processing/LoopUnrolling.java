@@ -20,13 +20,17 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.sosy_lab.common.configuration.*;
 import org.apache.commons.csv.CSVFormat;
+import org.apache.commons.csv.CSVPrinter;
 import org.apache.commons.csv.CSVRecord;
 
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.Reader;
+import java.io.Writer;
 import java.util.*;
+import java.util.function.Predicate;
+
 import static com.dat3m.dartagnan.configuration.OptionNames.BOUND;
 
 @Options
@@ -106,16 +110,16 @@ public class LoopUnrolling implements ProgramProcessor {
         }
 
     private Map<CondJump, Integer> loadLoopBoundsMapFromFile(Function func) {
-
         Map<CondJump, Integer> loopBoundsMapFromFile = new HashMap<>();
         try (Reader reader = new FileReader(GlobalSettings.getBoundsFile())) {
             Iterable<CSVRecord> records = CSVFormat.DEFAULT.parse(reader);
             for (CSVRecord record : records) {
-                int evId = Integer.parseInt(record.get(0));
-                int bound = Integer.parseInt(record.get(1));
-                if(func.getEvents(CondJump.class).stream().anyMatch(e -> e.getGlobalId() == evId)) {
-                    CondJump loop = func.getEvents(CondJump.class).stream().filter(e -> e.getGlobalId() == evId).findAny().get();
-                    loopBoundsMapFromFile.put(loop, bound);
+                int nexId = Integer.parseInt(record.get(0));
+                int nextBound = Integer.parseInt(record.get(1));
+                Predicate<Event> predicate = e -> e.getGlobalId() == nexId;
+                if(func.getEvents(CondJump.class).stream().anyMatch(predicate)) {
+                    CondJump loop = func.getEvents(CondJump.class).stream().filter(predicate).findAny().get();
+                    loopBoundsMapFromFile.put(loop, nextBound);
                 }
             }
         } catch (IOException e) {
@@ -125,7 +129,6 @@ public class LoopUnrolling implements ProgramProcessor {
     }
 
     private Map<CondJump, Integer> computeLoopBoundsMap(Function func, int defaultBound) {
-
         LoopBound curBoundAnnotation = null;
         final Map<CondJump, Integer> loopBoundsMap = new HashMap<>();
         for (Event event : func.getEvents()) {
@@ -158,7 +161,7 @@ public class LoopUnrolling implements ProgramProcessor {
         Preconditions.checkArgument(loopBegin.getLocalId() < loopBackJump.getLocalId(),
                 "The jump does not belong to a loop.");
 
-        dumpBoundToFile(loopBackJump, bound);
+        dumpBoundIfMissing(loopBackJump, bound);
         int iterCounter = 0;
         while (++iterCounter <= bound) {
             if (iterCounter == bound) {
@@ -227,14 +230,24 @@ public class LoopUnrolling implements ProgramProcessor {
         return boundEvent;
     }
 
-    private void dumpBoundToFile(Event jump, int bound) {
-        try (FileWriter writer = new FileWriter(GlobalSettings.getBoundsFile(), true)) {
-            final SyntacticContextAnalysis synContext = SyntacticContextAnalysis
-                    .newInstance(jump.getFunction().getProgram());
-            writer.append(String.valueOf(jump.getGlobalId())).append(',')
-                    .append(String.valueOf(bound)).append(',')
-                    .append(synContext.getSourceLocationWithContext(jump, false))
-                    .append('\n');
+    private void dumpBoundIfMissing(Event jump, Integer bound) {
+        String evId = String.valueOf(jump.getMetadata(UnrollingId.class).value());
+        final SyntacticContextAnalysis synContext = SyntacticContextAnalysis.newInstance(jump.getFunction().getProgram());
+        String sourceLoc = synContext.getSourceLocationWithContext(jump, false);
+        try (Reader reader = new FileReader(GlobalSettings.getBoundsFile());
+                Writer writer = new FileWriter(GlobalSettings.getBoundsFile(), true);
+                CSVPrinter csvPrinter = new CSVPrinter(writer, CSVFormat.DEFAULT)) {
+            boolean found = false;
+            for (CSVRecord record : CSVFormat.DEFAULT.parse(reader)) {
+                String nextId = record.get(0);
+                if (found = nextId.equals(evId)) {
+                    break;
+                }
+            }
+            if (!found) {
+                csvPrinter.printRecord(evId, bound.toString(), sourceLoc);
+            }
+            csvPrinter.flush();
         } catch (IOException e) {
             e.printStackTrace();
         }

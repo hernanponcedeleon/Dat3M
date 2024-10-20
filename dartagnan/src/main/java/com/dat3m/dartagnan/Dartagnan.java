@@ -37,8 +37,9 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.io.CharSource;
 
-import scala.collection.mutable.UnrolledBuffer.Unrolled;
-
+import org.apache.commons.csv.CSVFormat;
+import org.apache.commons.csv.CSVPrinter;
+import org.apache.commons.csv.CSVRecord;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.maven.model.io.xpp3.MavenXpp3Reader;
@@ -58,6 +59,8 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.Reader;
+import java.io.Writer;
 import java.math.BigInteger;
 import java.nio.file.Path;
 import java.util.*;
@@ -347,7 +350,7 @@ public class Dartagnan extends BaseOptions {
                                 .append("\t")
                                 .append(synContext.getSourceLocationWithContext(ev, true))
                                 .append("\n");
-                        increaseBoundAndDumpToFile(ev);
+                        increaseBoundAndDump(ev);
                     }
                 }
                 summary.append("=================================================\n");
@@ -405,12 +408,34 @@ public class Dartagnan extends BaseOptions {
         return summary.toString();
     }
 
-    private static void increaseBoundAndDumpToFile(Event ev) {
-        try (FileWriter writer = new FileWriter(GlobalSettings.getBoundsFile(), true)) {
-            final SyntacticContextAnalysis synContext = newInstance(ev.getThread().getProgram());
-            writer.append(String.valueOf(ev.getMetadata(UnrollingId.class).value())).append(',')
-                    .append(String.valueOf(ev.getMetadata(UnrollingBound.class).value() + 1)).append(',')
-                    .append(synContext.getSourceLocationWithContext(ev, false)).append('\n');
+    private static void increaseBoundAndDump(Event ev) {
+
+        String evId = String.valueOf(ev.getMetadata(UnrollingId.class).value());
+        String incBound = String.valueOf(ev.getMetadata(UnrollingBound.class).value() + 1);
+
+        // We read from and write to the same CSV file,
+        // thus we need to split this in two loops
+        List<String[]> modifiedRecords = new ArrayList<>();
+        try (Reader reader = new FileReader(GlobalSettings.getBoundsFile())) {
+            for (CSVRecord record : CSVFormat.DEFAULT.parse(reader)) {
+                String nextId = record.get(0);
+                String nextBound = record.get(1);
+                String sourceLoc = record.get(2);
+                if (nextId.equals(evId)) {
+                    nextBound = incBound;
+                }
+                modifiedRecords.add(new String[] { nextId, nextBound, sourceLoc });
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        try (Writer writer = new FileWriter(GlobalSettings.getBoundsFile(), false);
+                CSVPrinter csvPrinter = new CSVPrinter(writer, CSVFormat.DEFAULT)) {
+            for (String[] record : modifiedRecords) {
+                csvPrinter.printRecord(record[0], record[1], record[2]);
+            }
+            csvPrinter.flush();
         } catch (IOException e) {
             e.printStackTrace();
         }
