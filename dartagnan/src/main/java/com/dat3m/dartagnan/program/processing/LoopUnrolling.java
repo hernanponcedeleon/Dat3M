@@ -5,6 +5,7 @@ import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Thread;
+import com.dat3m.dartagnan.program.analysis.SyntacticContextAnalysis;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.EventUser;
@@ -227,9 +228,13 @@ public class LoopUnrolling implements ProgramProcessor {
     }
 
     private void dumpBoundToFile(Event jump, int bound) {
-        System.out.println("Dumping " + jump.getGlobalId() + " with value " + bound);
         try (FileWriter writer = new FileWriter(GlobalSettings.getBoundsFile(), true)) {
-            writer.append(String.valueOf(jump.getGlobalId())).append(',').append(String.valueOf(bound)).append('\n');
+            final SyntacticContextAnalysis synContext = SyntacticContextAnalysis
+                    .newInstance(jump.getFunction().getProgram());
+            writer.append(String.valueOf(jump.getGlobalId())).append(',')
+                    .append(String.valueOf(bound)).append(',')
+                    .append(synContext.getSourceLocationWithContext(jump, false))
+                    .append('\n');
         } catch (IOException e) {
             e.printStackTrace();
         }

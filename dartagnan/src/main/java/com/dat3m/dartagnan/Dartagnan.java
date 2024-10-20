@@ -407,8 +407,10 @@ public class Dartagnan extends BaseOptions {
 
     private static void increaseBoundAndDumpToFile(Event ev) {
         try (FileWriter writer = new FileWriter(GlobalSettings.getBoundsFile(), true)) {
+            final SyntacticContextAnalysis synContext = newInstance(ev.getThread().getProgram());
             writer.append(String.valueOf(ev.getMetadata(UnrollingId.class).value())).append(',')
-                    .append(String.valueOf(ev.getMetadata(UnrollingBound.class).value() + 1)).append('\n');
+                    .append(String.valueOf(ev.getMetadata(UnrollingBound.class).value() + 1)).append(',')
+                    .append(synContext.getSourceLocationWithContext(ev, false)).append('\n');
         } catch (IOException e) {
             e.printStackTrace();
         }
