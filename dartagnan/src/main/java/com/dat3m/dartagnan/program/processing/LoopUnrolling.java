@@ -31,7 +31,7 @@ import java.io.Writer;
 import java.util.*;
 import java.util.function.Predicate;
 
-import static com.dat3m.dartagnan.configuration.OptionNames.BOUND;
+import static com.dat3m.dartagnan.configuration.OptionNames.*;
 
 @Options
 public class LoopUnrolling implements ProgramProcessor {
@@ -56,6 +56,11 @@ public class LoopUnrolling implements ProgramProcessor {
         Preconditions.checkArgument(bound >= 1, "The unrolling bound must be positive.");
         this.bound = bound;
     }
+
+    @Option(name = BOUNDS_LOAD_PATH,
+            description = "Path to the CSV file containing loop bounds.",
+            secure = true)
+    private String bounds_load_path = "";
 
     // =====================================================================
 
@@ -101,9 +106,11 @@ public class LoopUnrolling implements ProgramProcessor {
             return;
         }
         final Map<CondJump, Integer> loopBoundsMap = computeLoopBoundsMap(func, defaultBound);
-        final Map<CondJump, Integer> loopBoundsMapFromFile = loadLoopBoundsMapFromFile(func);
         Map<CondJump, Integer> mergedBounds = new HashMap<>(loopBoundsMap);
-        loopBoundsMapFromFile.forEach((key, value) -> mergedBounds.merge(key, value, Math::max));
+        if(!bounds_load_path.isEmpty()) {
+            final Map<CondJump, Integer> loopBoundsMapFromFile = loadLoopBoundsMapFromFile(func);
+            loopBoundsMapFromFile.forEach((key, value) -> mergedBounds.merge(key, value, Math::max));
+        }
         func.getEvents(CondJump.class).stream()
                 .filter(mergedBounds::containsKey)
                 .forEach(j -> unrollLoop(j, mergedBounds.get(j)));
@@ -111,7 +118,7 @@ public class LoopUnrolling implements ProgramProcessor {
 
     private Map<CondJump, Integer> loadLoopBoundsMapFromFile(Function func) {
         Map<CondJump, Integer> loopBoundsMapFromFile = new HashMap<>();
-        try (Reader reader = new FileReader(GlobalSettings.getBoundsFile())) {
+        try (Reader reader = new FileReader(bounds_load_path)) {
             Iterable<CSVRecord> records = CSVFormat.DEFAULT.parse(reader);
             for (CSVRecord record : records) {
                 int nexId = Integer.parseInt(record.get(0));
