@@ -23,6 +23,7 @@ import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVPrinter;
 import org.apache.commons.csv.CSVRecord;
 
+import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -86,6 +87,7 @@ public class LoopUnrolling implements ProgramProcessor {
             logger.warn("Skipped unrolling: Program is already unrolled.");
             return;
         }
+        createBoundsFileIfMissing();
         final int defaultBound = this.bound;
         program.getFunctions().forEach(this::run);
         program.getThreads().forEach(this::run);
@@ -94,7 +96,6 @@ public class LoopUnrolling implements ProgramProcessor {
 
         logger.info("Program unrolled {} times", defaultBound);
     }
-
 
     private void run(Function function) {
         function.getEvents().forEach(e -> e.setMetadata(new UnrollingId(e.getGlobalId()))); // Track ids before unrolling
@@ -235,6 +236,17 @@ public class LoopUnrolling implements ProgramProcessor {
                 EventFactory.newAbortIf(ExpressionFactory.getInstance().makeTrue());
         boundEvent.addTags(Tag.BOUND, Tag.NONTERMINATION, Tag.NOOPT);
         return boundEvent;
+    }
+
+    private void createBoundsFileIfMissing() {
+        File file = new File(GlobalSettings.getBoundsFile());
+        if (!file.exists()) {
+            try {
+                file.createNewFile();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
     }
 
     private void dumpBoundIfMissing(Event jump, Integer bound) {
