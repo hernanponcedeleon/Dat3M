@@ -63,6 +63,11 @@ public class LoopUnrolling implements ProgramProcessor {
             secure = true)
     private String bounds_load_path = "";
 
+    @Option(name = BOUNDS_SAVE_PATH,
+            description = "Path to the CSV file to save loop bounds.",
+            secure = true)
+    private String bounds_save_path = GlobalSettings.getBoundsFile();
+
     // =====================================================================
 
     private LoopUnrolling() { }
@@ -239,7 +244,7 @@ public class LoopUnrolling implements ProgramProcessor {
     }
 
     private void createBoundsFileIfMissing() {
-        File file = new File(GlobalSettings.getBoundsFile());
+        File file = new File(bounds_save_path);
         if (!file.exists()) {
             try {
                 file.createNewFile();
@@ -253,8 +258,8 @@ public class LoopUnrolling implements ProgramProcessor {
         String evId = String.valueOf(jump.getMetadata(UnrollingId.class).value());
         final SyntacticContextAnalysis synContext = SyntacticContextAnalysis.newInstance(jump.getFunction().getProgram());
         String sourceLoc = synContext.getSourceLocationWithContext(jump, false);
-        try (Reader reader = new FileReader(GlobalSettings.getBoundsFile());
-                Writer writer = new FileWriter(GlobalSettings.getBoundsFile(), true);
+        try (Reader reader = new FileReader(bounds_load_path);
+                Writer writer = new FileWriter(bounds_save_path, true);
                 CSVPrinter csvPrinter = new CSVPrinter(writer, CSVFormat.DEFAULT)) {
             boolean found = false;
             for (CSVRecord record : CSVFormat.DEFAULT.parse(reader)) {

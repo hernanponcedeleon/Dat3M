@@ -67,6 +67,7 @@ import java.util.*;
 
 import static com.dat3m.dartagnan.GlobalSettings.getOrCreateOutputDirectory;
 import static com.dat3m.dartagnan.configuration.OptionInfo.collectOptions;
+import static com.dat3m.dartagnan.configuration.OptionNames.BOUNDS_SAVE_PATH;
 import static com.dat3m.dartagnan.configuration.OptionNames.PHANTOM_REFERENCES;
 import static com.dat3m.dartagnan.configuration.OptionNames.TARGET;
 import static com.dat3m.dartagnan.configuration.Property.*;
@@ -350,7 +351,7 @@ public class Dartagnan extends BaseOptions {
                                 .append("\t")
                                 .append(synContext.getSourceLocationWithContext(ev, true))
                                 .append("\n");
-                        increaseBoundAndDump(ev);
+                        increaseBoundAndDump(ev, task.getConfig());
                     }
                 }
                 summary.append("=================================================\n");
@@ -408,7 +409,7 @@ public class Dartagnan extends BaseOptions {
         return summary.toString();
     }
 
-    private static void increaseBoundAndDump(Event ev) {
+    private static void increaseBoundAndDump(Event ev, Configuration config) {
 
         String evId = String.valueOf(ev.getMetadata(UnrollingId.class).value());
         String incBound = String.valueOf(ev.getMetadata(UnrollingBound.class).value() + 1);
@@ -416,7 +417,9 @@ public class Dartagnan extends BaseOptions {
         // We read from and write to the same CSV file,
         // thus we need to split this in two loops
         List<String[]> modifiedRecords = new ArrayList<>();
-        try (Reader reader = new FileReader(GlobalSettings.getBoundsFile())) {
+        // We read the file written by the LoopUnrolling pass,
+        // thus we use BOUNDS_SAVE_PATH also for the reader
+        try (Reader reader = new FileReader(config.getProperty(BOUNDS_SAVE_PATH))) {
             for (CSVRecord record : CSVFormat.DEFAULT.parse(reader)) {
                 String nextId = record.get(0);
                 String nextBound = record.get(1);
@@ -430,7 +433,7 @@ public class Dartagnan extends BaseOptions {
             e.printStackTrace();
         }
 
-        try (Writer writer = new FileWriter(GlobalSettings.getBoundsFile(), false);
+        try (Writer writer = new FileWriter(config.getProperty(BOUNDS_SAVE_PATH), false);
                 CSVPrinter csvPrinter = new CSVPrinter(writer, CSVFormat.DEFAULT)) {
             for (String[] record : modifiedRecords) {
                 csvPrinter.printRecord(record[0], record[1], record[2]);
