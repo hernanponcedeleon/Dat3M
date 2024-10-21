@@ -8,6 +8,9 @@ import com.dat3m.dartagnan.verification.model.EventData;
 import com.dat3m.dartagnan.verification.model.ExecutionModel;
 import com.dat3m.dartagnan.verification.model.MemoryObjectModel;
 import com.dat3m.dartagnan.verification.model.relation.RelationModel;
+import org.sosy_lab.common.configuration.Option;
+import org.sosy_lab.common.configuration.Options;
+import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import com.google.common.collect.Lists;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -22,11 +25,13 @@ import java.util.function.BiPredicate;
 
 import static com.dat3m.dartagnan.program.analysis.SyntacticContextAnalysis.*;
 import static com.dat3m.dartagnan.wmm.RelationNameRepository.*;
+import static com.dat3m.dartagnan.configuration.OptionNames.WITNESS_RELATIONS_TO_SHOW;
 
 /*
     This is some rudimentary class to create graphs of executions.
     Currently, it just creates very special graphs.
  */
+@Options
 public class ExecutionGraphVisualizer {
 
     private static final Logger logger = LogManager.getLogger(ExecutionGraphVisualizer.class);
@@ -39,7 +44,13 @@ public class ExecutionGraphVisualizer {
     private BiPredicate<EventData, EventData> coFilter = (x, y) -> true;
     private final List<MemoryObjectModel> sortedMemoryObjects = new ArrayList<>();
     private Map<String, String> colors;
-    private Set<String> toShow = new HashSet<>(Set.of(RF, CO, "fr"));
+    private Set<String> relToShow;
+
+    @Option(
+            name=WITNESS_RELATIONS_TO_SHOW,
+            description="Names of relations to show in the witness graph.",
+            secure=true)
+    private String relToShowStr = "default";
 
     public ExecutionGraphVisualizer() {
         this.graphviz = new Graphviz();
@@ -80,6 +91,18 @@ public class ExecutionGraphVisualizer {
         //addCoherence(model);
         graphviz.end();
         graphviz.generateOutput(writer);
+    }
+
+    private ExecutionGraphVisualizer setRelationsToShow(ExecutionModel model)
+            throws InvalidConfigurationException {
+        model.getContext().getTask().getConfig().inject(this);
+        if (relToShowStr.equals("default")) {
+            relToShow = new HashSet<>(Set.of(RF, CO, "fr"));
+        }
+        else {
+            relToShow = new HashSet<>(Arrays.asList(relToShowStr.split(",\\s*")));
+        }
+        return this;
     }
 
     private void initializeColors() {
@@ -129,8 +152,8 @@ public class ExecutionGraphVisualizer {
     }
 
     private ExecutionGraphVisualizer addRelations(ExecutionModel model) {
-        model.extractRelationsToShow(new ArrayList<>(toShow));
-        for (String relationName : toShow) {
+        model.extractRelationsToShow(new ArrayList<>(relToShow));
+        for (String relationName : relToShow) {
             addRelation(model, relationName);
         }
         return this;
@@ -297,6 +320,7 @@ public class ExecutionGraphVisualizer {
         try (FileWriter writer = new FileWriter(fileVio)) {
             // Create .dot file
             new ExecutionGraphVisualizer()
+                    .setRelationsToShow(model)
                     .setSyntacticContext(synContext)
                     .setReadFromFilter(rfFilter)
                     .setFromReadFilter(frFilter)
