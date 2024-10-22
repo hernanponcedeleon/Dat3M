@@ -92,7 +92,7 @@ public class ExecutionGraphVisualizer {
             throws InvalidConfigurationException {
         model.getContext().getTask().getConfig().inject(this);
         if (relToShowStr.equals("default")) {
-            relToShow = new HashSet<>(Set.of(RF, CO, "fr"));
+            relToShow = new HashSet<>(Set.of(PO, RF, CO, "fr"));
         }
         else {
             relToShow = new HashSet<>(Arrays.asList(relToShowStr.split(",\\s*")));
@@ -102,6 +102,7 @@ public class ExecutionGraphVisualizer {
 
     private void initializeColors() {
         colors = new HashMap<>();
+        colors.put(PO, "black");
         colors.put(RF, "green");
         colors.put("fr", "orange");
         colors.put(CO, "red");
@@ -138,7 +139,11 @@ public class ExecutionGraphVisualizer {
 
     private ExecutionGraphVisualizer addRelation(ExecutionModel model, String relationName) {
         graphviz.beginSubgraph(relationName);
-        graphviz.setEdgeAttributes(String.format("color=%s", getColor(relationName)));
+        String attributes = String.format("color=%s", getColor(relationName));
+        if (relationName.equals(PO)) {
+            attributes += ", weight=100";
+        }
+        graphviz.setEdgeAttributes(attributes);
         String label = "label=" + relationName.replace("-", "");
         BiPredicate<EventData, EventData> filter = getFilter(relationName);
         RelationModel rm = model.getRelationModel(relationName);
@@ -173,17 +178,21 @@ public class ExecutionGraphVisualizer {
 
         // --- Subgraph start ---
         graphviz.beginSubgraph("T" + thread.getId());
-        graphviz.setEdgeAttributes("weight=100");
-        // --- Node list ---
-        for (int i = 1; i < threadEvents.size(); i++) {
-            EventData e1 = threadEvents.get(i - 1);
-            EventData e2 = threadEvents.get(i);
+        // graphviz.setEdgeAttributes("weight=100");
+        // // --- Node list ---
+        // for (int i = 1; i < threadEvents.size(); i++) {
+        //     EventData e1 = threadEvents.get(i - 1);
+        //     EventData e2 = threadEvents.get(i);
 
-            if (ignore(e1) || ignore(e2)) {
-                continue;
-            }
+        //     if (ignore(e1) || ignore(e2)) {
+        //         continue;
+        //     }
 
-            appendEdge(e1, e2, (String[]) null);
+        //     appendEdge(e1, e2, (String[]) null);
+        // }
+
+        for (EventData e : threadEvents) {
+            appendNode(e, (String[]) null);
         }
 
         // --- Subgraph end ---
@@ -240,6 +249,10 @@ public class ExecutionGraphVisualizer {
 
     private void appendEdge(EventData a, EventData b, String... options) {
         graphviz.addEdge(eventToNode(a), eventToNode(b), options);
+    }
+
+    private void appendNode(EventData e, String... attributes) {
+        graphviz.addNode(eventToNode(e), attributes);
     }
 
     public static File generateGraphvizFile(ExecutionModel model, int iterationCount,
