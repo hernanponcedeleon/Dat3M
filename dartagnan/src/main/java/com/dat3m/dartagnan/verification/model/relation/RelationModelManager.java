@@ -5,7 +5,6 @@ import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.verification.model.ExecutionModel;
 import com.dat3m.dartagnan.verification.model.EventData;
-import com.dat3m.dartagnan.verification.model.relation.RelationModel;
 import com.dat3m.dartagnan.verification.model.relation.RelationModel.EdgeModel;
 import com.dat3m.dartagnan.wmm.Constraint.Visitor;
 import com.dat3m.dartagnan.wmm.definition.*;
@@ -22,6 +21,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static com.dat3m.dartagnan.wmm.RelationNameRepository.*;
+import static com.google.common.base.Preconditions.checkNotNull;
 
 public class RelationModelManager {
     private final ExecutionModel executionModel;
@@ -59,7 +59,8 @@ public class RelationModelManager {
 
     public void extractRelations(List<String> relationNames) {
         for (String name : relationNames) {
-            Relation r = executionModel.getMemoryModel().getRelation(name);
+            Relation r = checkNotNull(executionModel.getMemoryModelForWitness().getRelation(name),
+                                      String.format("Relation with the name %s does not exist", name));
             extractRelation(r, Optional.of(name));
         }
     }
@@ -255,7 +256,7 @@ public class RelationModelManager {
         public RelationModel visitReadFrom(ReadFrom rf) {
             Relation r = rf.getDefinedRelation();
             RelationModel rm = manager.newModel(r, RF);
-            EncodingContext.EdgeEncoder rfEncoder = executionModel.getContext().edge(r);
+            EncodingContext.EdgeEncoder rfEncoder = executionModel.getContextForWitness().edge(r);
             for (Map.Entry<BigInteger, Set<EventData>> reads : executionModel.getAddressReadsMap().entrySet()) {
                 BigInteger address = reads.getKey();
                 for (EventData read : reads.getValue()) {
@@ -275,7 +276,7 @@ public class RelationModelManager {
         public RelationModel visitCoherence(Coherence co) {
             Relation r = co.getDefinedRelation();
             RelationModel rm = manager.newModel(r, CO);
-            EncodingContext.EdgeEncoder coEncoder = executionModel.getContext().edge(r);
+            EncodingContext.EdgeEncoder coEncoder = executionModel.getContextForWitness().edge(r);
             for (Map.Entry<BigInteger, Set<EventData>> writes : executionModel.getAddressWritesMap().entrySet()) {
                 BigInteger address = writes.getKey();
                 Set<EventData> writeEvents = writes.getValue();
@@ -317,7 +318,7 @@ public class RelationModelManager {
         public RelationModel visitSameLocation(SameLocation loc) {
             Relation r = loc.getDefinedRelation();
             RelationModel rm = manager.newModel(r, LOC);
-            EncodingContext.EdgeEncoder locEncoder = executionModel.getContext().edge(r);
+            EncodingContext.EdgeEncoder locEncoder = executionModel.getContextForWitness().edge(r);
             Map<BigInteger, Set<EventData>> memoryAccesses = Stream.concat(executionModel.getAddressReadsMap().entrySet().stream(),
                                                                            executionModel.getAddressWritesMap().entrySet().stream())
                                                                    .collect(Collectors.toMap(
@@ -354,7 +355,7 @@ public class RelationModelManager {
         public RelationModel visitInternal(Internal in) {
             Relation r = in.getDefinedRelation();
             RelationModel rm = manager.newModel(r, INT);
-            EncodingContext.EdgeEncoder intEncoder = executionModel.getContext().edge(r);
+            EncodingContext.EdgeEncoder intEncoder = executionModel.getContextForWitness().edge(r);
             for (Thread t : executionModel.getThreads()) {
                 List<EventData> events = getVisibleEvents(t);
                 if (events.size() <= 1) { continue; }
@@ -380,7 +381,7 @@ public class RelationModelManager {
         public RelationModel visitExternal(External ext) {
             Relation r = ext.getDefinedRelation();
             RelationModel rm = manager.newModel(r, EXT);
-            EncodingContext.EdgeEncoder extEncoder = executionModel.getContext().edge(r);
+            EncodingContext.EdgeEncoder extEncoder = executionModel.getContextForWitness().edge(r);
             List<Thread> threads = executionModel.getThreads();
             for (int i = 0; i < threads.size(); i++) {
                 List<EventData> eventList1 = getVisibleEvents(threads.get(i));
@@ -409,7 +410,7 @@ public class RelationModelManager {
         public RelationModel visitReadModifyWrites(ReadModifyWrites rmw) {
             Relation r = rmw.getDefinedRelation();
             RelationModel rm = manager.newModel(r, RMW);
-            EncodingContext.EdgeEncoder rmwEncoder = executionModel.getContext().edge(r);
+            EncodingContext.EdgeEncoder rmwEncoder = executionModel.getContextForWitness().edge(r);
             for (Map.Entry<BigInteger, Set<EventData>> addressReads : executionModel.getAddressReadsMap().entrySet()) {
                 BigInteger addr = addressReads.getKey();
                 for (EventData read : addressReads.getValue()) {

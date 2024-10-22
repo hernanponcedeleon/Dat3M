@@ -46,8 +46,7 @@ public class ExecutionGraphVisualizer {
     private Map<String, String> colors;
     private Set<String> relToShow;
 
-    @Option(
-            name=WITNESS_RELATIONS_TO_SHOW,
+    @Option(name=WITNESS_RELATIONS_TO_SHOW,
             description="Names of relations to show in the witness graph.",
             secure=true)
     private String relToShowStr = "default";
@@ -85,10 +84,6 @@ public class ExecutionGraphVisualizer {
         graphviz.append(String.format("label=\"%s\" \n", graphName));
         addAllThreadPos(model);
         addRelations(model);
-        //addSameLocation(model);
-        //addReadFrom(model);
-        //addFromRead(model);
-        //addCoherence(model);
         graphviz.end();
         graphviz.generateOutput(writer);
     }
@@ -133,26 +128,8 @@ public class ExecutionGraphVisualizer {
         return false; // We ignore no events for now.
     }
 
-    private ExecutionGraphVisualizer addReadFrom(ExecutionModel model) {
-
-        graphviz.beginSubgraph("ReadFrom");
-        graphviz.setEdgeAttributes("color=green");
-        for (Map.Entry<EventData, EventData> rw : model.getReadWriteMap().entrySet()) {
-            EventData r = rw.getKey();
-            EventData w = rw.getValue();
-
-            if (ignore(r) || ignore(w) || !rfFilter.test(w, r)) {
-                continue;
-            }
-
-            appendEdge(w, r, "label=rf");
-        }
-        graphviz.end();
-        return this;
-    }
-
     private ExecutionGraphVisualizer addRelations(ExecutionModel model) {
-        model.extractRelationsToShow(new ArrayList<>(relToShow));
+        model.getManager().extractRelations(new ArrayList<>(relToShow));
         for (String relationName : relToShow) {
             addRelation(model, relationName);
         }
@@ -174,51 +151,6 @@ public class ExecutionGraphVisualizer {
             }
 
             appendEdge(predecessor, successor, label);
-        }
-        graphviz.end();
-        return this;
-    }
-
-    private ExecutionGraphVisualizer addFromRead(ExecutionModel model) {
-
-        graphviz.beginSubgraph("FromRead");
-        graphviz.setEdgeAttributes("color=orange");
-        for (Map.Entry<EventData, EventData> rw : model.getReadWriteMap().entrySet()) {
-            EventData r = rw.getKey();
-            EventData w = rw.getValue();
-
-            if (ignore(r) || ignore(w)) {
-                continue;
-            }
-
-            List<EventData> co = model.getCoherenceMap().get(w.getAccessedAddress());
-            // Check if exists w2 : co(w, w2)
-            if (co.indexOf(w) + 1 < co.size()) {
-                EventData w2 = co.get(co.indexOf(w) + 1);
-                if (!ignore(w2) && frFilter.test(r, w2)) {
-                    appendEdge(r, w2, "label=fr");
-                }
-            }
-        }
-        graphviz.end();
-        return this;
-    }
-
-    private ExecutionGraphVisualizer addCoherence(ExecutionModel model) {
-
-        graphviz.beginSubgraph("Coherence");
-        graphviz.setEdgeAttributes("color=red");
-
-        for (List<EventData> co : model.getCoherenceMap().values()) {
-            for (int i = 2; i < co.size(); i++) {
-                // We skip the init writes
-                EventData w1 = co.get(i - 1);
-                EventData w2 = co.get(i);
-                if (ignore(w1) || ignore(w2) || !coFilter.test(w1, w2)) {
-                    continue;
-                }
-                appendEdge(w1, w2, "label=co");
-            }
         }
         graphviz.end();
         return this;

@@ -35,6 +35,7 @@ public abstract class ModelChecker {
 
     protected Result res = Result.UNKNOWN;
     protected EncodingContext context;
+    protected EncodingContext contextForWitness;
     private String flaggedPairsOutput = "";
 
     public final Result getResult() {
@@ -42,6 +43,12 @@ public abstract class ModelChecker {
     }
     public EncodingContext getEncodingContext() {
         return context;
+    }
+    public EncodingContext getEncodingContextForWitness() {
+        return contextForWitness;
+    }
+    protected void setEncodingContextForWitness(EncodingContext c) {
+        contextForWitness = c;
     }
     public final String getFlaggedPairsOutput() {
         return flaggedPairsOutput;

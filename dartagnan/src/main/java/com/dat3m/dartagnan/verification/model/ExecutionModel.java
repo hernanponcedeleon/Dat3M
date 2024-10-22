@@ -18,7 +18,6 @@ import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.Relation;
 import com.dat3m.dartagnan.verification.model.relation.RelationModel;
 import com.dat3m.dartagnan.verification.model.relation.RelationModel.EdgeModel;
-import com.dat3m.dartagnan.verification.model.relation.RelationModelManager;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
@@ -49,6 +48,7 @@ public class ExecutionModel {
     private static final Logger logger = LogManager.getLogger(ExecutionModel.class);
 
     private final EncodingContext encodingContext;
+    private EncodingContext encodingContextForWitness;
 
     // ============= Model specific  =============
     private Model model;
@@ -56,11 +56,10 @@ public class ExecutionModel {
     private boolean extractCoherences;
 
     private final EventMap eventMap;
-    private final RelationModelManager rmManager;
+    private ExecutionModelManager manager;
     private final Map<Relation, RelationModel> relations;
     private final Map<String, RelationModel> definedRelations;
     private final Map<String, EdgeModel> edges;
-    private final Set<String> relationsToExtract = new HashSet<>(Set.of(PO, RF, CO));
     // The event list is sorted lexicographically by (threadID, cID)
     private final ArrayList<EventData> eventList;
     private final ArrayList<Thread> threadList;
@@ -119,7 +118,6 @@ public class ExecutionModel {
         addrDepMap = new HashMap<>();
         ctrlDepMap = new HashMap<>();
         coherenceMap = new HashMap<>();
-        rmManager = RelationModelManager.newRMManager(this);
         relations = new HashMap<>();
         definedRelations = new HashMap<>();
         edges = new HashMap<>();
@@ -155,9 +153,13 @@ public class ExecutionModel {
     public VerificationTask getTask() {
         return encodingContext.getTask();
     }
-    
+
     public Wmm getMemoryModel() {
         return encodingContext.getTask().getMemoryModel();
+    }
+
+    public Wmm getMemoryModelForWitness() {
+        return getContextForWitness().getTask().getMemoryModel();
     }
 
     public Program getProgram() {
@@ -170,6 +172,15 @@ public class ExecutionModel {
     }
     public EncodingContext getContext() {
         return encodingContext;
+    }
+    public EncodingContext getContextForWitness() {
+        if (encodingContextForWitness != null) {
+            return encodingContextForWitness;
+        }
+        return encodingContext;
+    }
+    void setEncodingContextForWitness(EncodingContext c) {
+        encodingContextForWitness = c;
     }
     public Filter getEventFilter() {
         return eventFilter;
@@ -186,7 +197,9 @@ public class ExecutionModel {
         return threadListView;
     }
 
-    public RelationModelManager getRMManager() { return rmManager; }
+    public ExecutionModelManager getManager() {
+        return manager;
+    }
 
     public boolean containsRelation(Relation r) {
         return relations.containsKey(r);
@@ -216,10 +229,6 @@ public class ExecutionModel {
 
     public void addEdge(EdgeModel edge) {
         edges.put(edge.getIdentifier(), edge);
-    }
-
-    public void extractRelationsToShow(List<String> names) {
-        rmManager.extractRelations(names);
     }
 
     public Map<MemoryObject, MemoryObjectModel> getMemoryLayoutMap() { return memoryLayoutMapView; }
@@ -281,12 +290,11 @@ public class ExecutionModel {
         this.extractCoherences = extractCoherences;
         extractEventsFromModel();
         extractMemoryLayout();
-        extractRelations();
-        // extractReadsFrom();
-        // coherenceMap.clear();
-        // if (extractCoherences) {
-        //     extractCoherences();
-        // }
+    }
+
+    public void initialize(Model model, ExecutionModelManager manager) {
+        this.manager = manager;
+        initialize(model, true);
     }
 
     //========================== Internal methods  =========================
@@ -542,10 +550,6 @@ public class ExecutionModel {
 
     // ===================================================
 
-    private void extractRelations() {
-        rmManager.extractRelations(new ArrayList<>(relationsToExtract));
-    }
-
     private void extractMemoryLayout() {
         memoryLayoutMap.clear();
         for (MemoryObject obj : getProgram().getMemory().getObjects()) {
@@ -556,66 +560,6 @@ public class ExecutionModel {
                 memoryLayoutMap.put(obj, new MemoryObjectModel(obj, address, size));
             }
         }
-    }
-
-    private void extractReadsFrom() {
-        final EncodingContext.EdgeEncoder rf = encodingContext.edge(encodingContext.getTask().getMemoryModel().getRelation(RF));
-        readWriteMap.clear();
-
-        for (Map.Entry<BigInteger, Set<EventData>> addressedReads : addressReadsMap.entrySet()) {
-            BigInteger address = addressedReads.getKey();
-            for (EventData read : addressedReads.getValue()) {
-                for (EventData write : addressWritesMap.get(address)) {
-                    BooleanFormula rfExpr = rf.encode(write.getEvent(), read.getEvent());
-                    if (isTrue(rfExpr)) {
-                        readWriteMap.put(read, write);
-                        read.setReadFrom(write);
-                        writeReadsMap.get(write).add(read);
-                        break;
-                    }
-                }
-            }
-        }
-    }
-
-    private void extractCoherences() {
-        final EncodingContext.EdgeEncoder co = encodingContext.edge(encodingContext.getTask().getMemoryModel().getRelation(CO));
-
-        for (Map.Entry<BigInteger, Set<EventData>> addrWrites : addressWritesMap.entrySet()) {
-            final BigInteger addr = addrWrites.getKey();
-            final Set<EventData> writes = addrWrites.getValue();
-
-            List<EventData> coSortedWrites;
-            if (encodingContext.usesSATEncoding()) {
-                // --- Extracting co from SAT-based encoding ---
-                Map<EventData, List<EventData>> coEdges = new HashMap<>();
-                for (EventData w1 : writes) {
-                    coEdges.put(w1, new ArrayList<>());
-                    for (EventData w2 : writes) {
-                        if (isTrue(co.encode(w1.getEvent(), w2.getEvent()))) {
-                            coEdges.get(w1).add(w2);
-                        }
-                    }
-                }
-                DependencyGraph<EventData> depGraph = DependencyGraph.from(writes, coEdges);
-                coSortedWrites = new ArrayList<>(Lists.reverse(depGraph.getNodeContents()));
-            } else {
-                // --- Extracting co from IDL-based encoding using clock variables ---
-                Map<EventData, BigInteger> writeClockMap = new HashMap<>(writes.size() * 4 / 3, 0.75f);
-                for (EventData w : writes) {
-                    writeClockMap.put(w, model.evaluate(encodingContext.memoryOrderClock(w.getEvent())));
-                }
-                coSortedWrites = writes.stream().sorted(Comparator.comparing(writeClockMap::get)).collect(Collectors.toList());
-            }
-
-            // --- Apply internal clock orders (we always start from 0) --
-            int i = 0;
-            for (EventData w : coSortedWrites) {
-                w.setCoherenceIndex(i++);
-            }
-            coherenceMap.put(addr, Collections.unmodifiableList(coSortedWrites));
-        }
-
     }
 
     private boolean isTrue(BooleanFormula formula) {
