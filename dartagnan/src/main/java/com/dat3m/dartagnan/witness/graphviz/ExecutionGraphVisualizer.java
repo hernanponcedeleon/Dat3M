@@ -37,13 +37,13 @@ public class ExecutionGraphVisualizer {
     private static final Logger logger = LogManager.getLogger(ExecutionGraphVisualizer.class);
 
     private final Graphviz graphviz;
+    private final ColorMap colorMap;
     private SyntacticContextAnalysis synContext = getEmptyInstance();
     // By default, we do not filter anything
     private BiPredicate<EventData, EventData> rfFilter = (x, y) -> true;
     private BiPredicate<EventData, EventData> frFilter = (x, y) -> true;
     private BiPredicate<EventData, EventData> coFilter = (x, y) -> true;
     private final List<MemoryObjectModel> sortedMemoryObjects = new ArrayList<>();
-    private Map<String, String> colors;
     private Set<String> relToShow;
 
     @Option(name=WITNESS_RELATIONS_TO_SHOW,
@@ -53,8 +53,7 @@ public class ExecutionGraphVisualizer {
 
     public ExecutionGraphVisualizer() {
         this.graphviz = new Graphviz();
-
-        initializeColors();
+        this.colorMap = new ColorMap();
     }
 
 
@@ -100,23 +99,8 @@ public class ExecutionGraphVisualizer {
         return this;
     }
 
-    private void initializeColors() {
-        colors = new HashMap<>();
-        colors.put(PO, "black");
-        colors.put(RF, "green");
-        colors.put("fr", "orange");
-        colors.put(CO, "red");
-    }
-
     private BiPredicate<EventData, EventData> getFilter(String relationName) {
         return (x, y) -> true;
-    }
-
-    private String getColor(String relationName) {
-        if (colors.containsKey(relationName)) {
-            return colors.get(relationName);
-        }
-        return "aqua";
     }
 
     private void computeAddressMap(ExecutionModel model) {
@@ -139,7 +123,7 @@ public class ExecutionGraphVisualizer {
 
     private ExecutionGraphVisualizer addRelation(ExecutionModel model, String relationName) {
         graphviz.beginSubgraph(relationName);
-        String attributes = String.format("color=%s", getColor(relationName));
+        String attributes = String.format("color=%s", colorMap.getColor(relationName));
         if (relationName.equals(PO)) {
             attributes += ", weight=100";
         }
