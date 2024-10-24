@@ -14,6 +14,8 @@ import com.dat3m.dartagnan.utils.dependable.DependencyGraph;
 import com.google.common.collect.Sets;
 import com.google.common.collect.Lists;
 import org.sosy_lab.java_smt.api.BooleanFormula;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
 
 import java.math.BigInteger;
 import java.util.*;
@@ -24,6 +26,9 @@ import static com.dat3m.dartagnan.wmm.RelationNameRepository.*;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 public class RelationModelManager {
+
+    private static final Logger logger = LogManager.getLogger(RelationModelManager.class);
+
     private final ExecutionModel executionModel;
     private final RelationModelBuilder builder;
 
@@ -38,8 +43,11 @@ public class RelationModelManager {
 
     public void extractRelations(List<String> relationNames) {
         for (String name : relationNames) {
-            Relation r = checkNotNull(executionModel.getMemoryModelForWitness().getRelation(name),
-                                      String.format("Relation with the name %s does not exist", name));
+            Relation r = executionModel.getMemoryModelForWitness().getRelation(name);
+            if (r == null) {
+                logger.warn("Relation with the name {} does not exist", name);
+                continue;
+            }
             extractRelation(r, Optional.of(name));
         }
     }

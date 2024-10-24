@@ -122,6 +122,11 @@ public class ExecutionGraphVisualizer {
     }
 
     private ExecutionGraphVisualizer addRelation(ExecutionModel model, String relationName) {
+        RelationModel rm = model.getRelationModel(relationName);
+        if (rm == null) {
+            logger.warn("Relation with the name {} does not exist", relationName);
+            return this;
+        }
         graphviz.beginSubgraph(relationName);
         String attributes = String.format("color=%s", colorMap.getColor(relationName));
         if (relationName.equals(PO)) {
@@ -130,7 +135,6 @@ public class ExecutionGraphVisualizer {
         graphviz.setEdgeAttributes(attributes);
         String label = String.format("label=\"%s\"", relationName);
         BiPredicate<EventData, EventData> filter = getFilter(relationName);
-        RelationModel rm = model.getRelationModel(relationName);
         for (RelationModel.EdgeModel edge : rm.getEdgesToShow()) {
             EventData predecessor = edge.getPredecessor();
             EventData successor = edge.getSuccessor();
