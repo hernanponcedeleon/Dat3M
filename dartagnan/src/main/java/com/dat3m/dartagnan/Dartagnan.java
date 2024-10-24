@@ -251,7 +251,7 @@ public class Dartagnan extends BaseOptions {
         // ------------------ Generate Witness, if possible ------------------
         final EnumSet<Property> properties = task.getProperty();
         if (task.getProgram().getFormat().equals(SourceLanguage.LLVM) && modelChecker.hasModel()
-                && properties.contains(PROGRAM_SPEC) && properties.size() == 1
+                && (properties.contains(PROGRAM_SPEC) || properties.contains(DATARACEFREEDOM)) && properties.size() == 1
                 && modelChecker.getResult() != UNKNOWN) {
             try {
                 WitnessBuilder w = WitnessBuilder.of(modelChecker.getEncodingContext(), prover,
@@ -317,6 +317,10 @@ public class Dartagnan extends BaseOptions {
                                     .append("\n");
                         }
                     }
+                    summary.append("=================================================\n");
+                }
+                if (props.contains(DATARACEFREEDOM) && FALSE.equals(model.evaluate(DATARACEFREEDOM.getSMTVariable(encCtx)))) {
+                    summary.append("============= SVCOMP data race found ============\n");
                     summary.append("=================================================\n");
                 }
                 final List<Axiom> violatedCATSpecs = task.getMemoryModel().getAxioms().stream()
