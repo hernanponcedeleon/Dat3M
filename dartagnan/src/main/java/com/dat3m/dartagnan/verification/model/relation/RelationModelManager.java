@@ -23,7 +23,7 @@ import java.util.stream.Stream;
 import static com.dat3m.dartagnan.wmm.RelationNameRepository.*;
 import static com.google.common.base.Preconditions.checkNotNull;
 
-public class RelationModelManager{
+public class RelationModelManager {
     private final ExecutionModel executionModel;
     private final RelationModelBuilder builder;
 
@@ -64,7 +64,7 @@ public class RelationModelManager{
                 rm.setName(name.get());
             }
         }
-        executionModel.addRelation(r, removeSelfLoopToShow(rm));
+        executionModel.addRelation(r, rm);
     }
 
     private RelationModel newModel(Relation r) {
@@ -507,6 +507,22 @@ public class RelationModelManager{
             return rm;
         }
 
+        @Override
+        public RelationModel visitFree(Free f) {
+            Relation r = f.getDefinedRelation();
+            RelationModel rm = newModel(r);
+            for (Thread t : executionModel.getThreads()) {
+                List<EventData> events = getVisibleEvents(t);
+                if (events.size() <= 1) { continue; }
+                for (EventData e1 : events) {
+                    for (EventData e2 : events) {
+                        addEdgeToRelation(rm, e1, e2);
+                    }
+                }
+            }
+            return rm;
+        }
+
         public RelationModel buildDataDependency(Relation dataDep) {
             RelationModel rm = newModel(dataDep, DATA);
             for (Map.Entry<EventData, Set<EventData>> deps : executionModel.getDataDepMap().entrySet()) {
@@ -515,7 +531,7 @@ public class RelationModelManager{
                     addEdgeToRelation(rm, e, dep);
                 }
             }
-            return removeTransitiveEdgesToShow(rm);
+            return rm;
         }
 
         public RelationModel buildAddressDependency(Relation addrDep) {
@@ -526,7 +542,7 @@ public class RelationModelManager{
                     addEdgeToRelation(rm, e, dep);
                 }
             }
-            return removeTransitiveEdgesToShow(rm);
+            return rm;
         }
         
         public RelationModel buildControlDependency(Relation ctrlDep) {
@@ -537,7 +553,7 @@ public class RelationModelManager{
                     addEdgeToRelation(rm, e, dep);
                 }
             }
-            return removeTransitiveEdgesToShow(rm);
+            return rm;
         }
 
         private boolean isTrue(BooleanFormula formula) {
