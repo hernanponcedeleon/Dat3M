@@ -221,10 +221,7 @@ public class ExecutionModel {
     }
 
     public EdgeModel getEdge(String identifier) {
-        if (edges.containsKey(identifier)) {
-            return edges.get(identifier);
-        }
-        return null;
+        return edges.get(identifier);
     }
 
     public void addEdge(EdgeModel edge) {

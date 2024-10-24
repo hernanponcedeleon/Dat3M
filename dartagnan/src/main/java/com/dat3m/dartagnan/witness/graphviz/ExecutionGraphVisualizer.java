@@ -128,10 +128,10 @@ public class ExecutionGraphVisualizer {
             attributes += ", weight=100";
         }
         graphviz.setEdgeAttributes(attributes);
-        String label = "label=" + relationName.replace("-", "");
+        String label = String.format("label=\"%s\"", relationName);
         BiPredicate<EventData, EventData> filter = getFilter(relationName);
         RelationModel rm = model.getRelationModel(relationName);
-        for (RelationModel.EdgeModel edge : rm.getEdges()) {
+        for (RelationModel.EdgeModel edge : rm.getEdgesToShow()) {
             EventData predecessor = edge.getPredecessor();
             EventData successor = edge.getSuccessor();
 
@@ -162,18 +162,6 @@ public class ExecutionGraphVisualizer {
 
         // --- Subgraph start ---
         graphviz.beginSubgraph("T" + thread.getId());
-        // graphviz.setEdgeAttributes("weight=100");
-        // // --- Node list ---
-        // for (int i = 1; i < threadEvents.size(); i++) {
-        //     EventData e1 = threadEvents.get(i - 1);
-        //     EventData e2 = threadEvents.get(i);
-
-        //     if (ignore(e1) || ignore(e2)) {
-        //         continue;
-        //     }
-
-        //     appendEdge(e1, e2, (String[]) null);
-        // }
 
         for (EventData e : threadEvents) {
             appendNode(e, (String[]) null);

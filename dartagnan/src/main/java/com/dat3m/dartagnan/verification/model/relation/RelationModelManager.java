@@ -23,38 +23,17 @@ import java.util.stream.Stream;
 import static com.dat3m.dartagnan.wmm.RelationNameRepository.*;
 import static com.google.common.base.Preconditions.checkNotNull;
 
-public class RelationModelManager {
+public class RelationModelManager{
     private final ExecutionModel executionModel;
     private final RelationModelBuilder builder;
 
     private RelationModelManager(ExecutionModel m) {
         executionModel = m;
-        builder = new RelationModelBuilder(m, this);
+        builder = new RelationModelBuilder();
     }
 
     public static RelationModelManager newRMManager(ExecutionModel m) {
         return new RelationModelManager(m);
-    }
-
-    public RelationModel newModel(Relation r) {
-        return new RelationModel(r);
-    }
-
-    public RelationModel newModel(Relation r, String relationName) {
-        RelationModel m = newModel(r);
-        m.setName(relationName);
-        return m;
-    }
-
-    public void addEdgeToRelation(RelationModel r, EventData p, EventData s) {
-        String identifier = p.getId() + " -> " + s.getId();
-        EdgeModel edge = executionModel.getEdge(identifier);
-        if (edge == null) {
-            executionModel.addEdge(r.newEdge(p, s));
-        }
-        else {
-            r.addEdge(edge);
-        }
     }
 
     public void extractRelations(List<String> relationNames) {
@@ -85,12 +64,37 @@ public class RelationModelManager {
                 rm.setName(name.get());
             }
         }
-        executionModel.addRelation(r, rm);
+        executionModel.addRelation(r, removeSelfLoopToShow(rm));
+    }
+
+    private RelationModel newModel(Relation r) {
+        return new RelationModel(r);
+    }
+
+    private RelationModel newModel(Relation r, String relationName) {
+        RelationModel m = newModel(r);
+        m.setName(relationName);
+        return m;
+    }
+
+    private void addEdgeToRelation(RelationModel r, EventData p, EventData s) {
+        // We do this check because we want only PO edges to connect Local or Assert events.
+        if (!r.isDefined() || (r.isDefined() && !r.getName().equals(PO))) {
+            if (!p.hasTag(Tag.VISIBLE) || !s.hasTag(Tag.VISIBLE)) { return; }
+        }
+        String identifier = p.getId() + " -> " + s.getId();
+        EdgeModel edge = executionModel.getEdge(identifier);
+        if (edge == null) {
+            executionModel.addEdge(r.newEdge(p, s));
+        }
+        else {
+            r.addEdge(edge);
+        }
     }
 
     private RelationModel computeInverse(Relation r, RelationModel rm) {
         RelationModel result = newModel(r);
-        for(EdgeModel edge : rm.getEdges()) {
+        for (EdgeModel edge : rm.getEdges()) {
             addEdgeToRelation(result, edge.getSuccessor(), edge.getPredecessor());
         }
         return result;
@@ -155,8 +159,7 @@ public class RelationModelManager {
         RelationModel result = newModel(r);
         final Map<EventData, Set<EventData>> reachMap = new HashMap<>();
         for (EdgeModel edge : rm.getEdges()) {
-            reachMap.putIfAbsent(edge.getPredecessor(), new HashSet<>());
-            reachMap.get(edge.getPredecessor()).add(edge.getSuccessor());
+            reachMap.computeIfAbsent(edge.getPredecessor(), k -> new HashSet<>()).add(edge.getSuccessor());
         }
         for (EventData p : reachMap.keySet()) {
             final Set<EventData> reachables = new HashSet<>();
@@ -178,21 +181,37 @@ public class RelationModelManager {
         }
     }
 
+    private RelationModel removeSelfLoopToShow(RelationModel rm) {
+        for (EdgeModel e : rm.getEdges()) {
+            if (e.getPredecessor() == e.getSuccessor()) {
+                rm.removeEdgeToShow(e);
+            }
+        }
+        return rm;
+    }
+
+    // We do NOT show transitive edges in base relations.
+    private RelationModel removeTransitiveEdgesToShow(RelationModel rm) {
+        rm = removeSelfLoopToShow(rm);
+        for (EdgeModel e1 : rm.getEdges()) {
+            for (EdgeModel e2 : rm.getEdges()) {
+                if (e1.getSuccessor() == e2.getPredecessor()) {
+                    rm.removeEdgeToShow(new EdgeModel(e1.getPredecessor(), e2.getSuccessor()));
+                }
+            }
+        }
+        return rm;
+    }
+
 
     private final class RelationModelBuilder implements Visitor<RelationModel> {
-        private final ExecutionModel executionModel;
-        private final RelationModelManager manager;
-
-        public RelationModelBuilder(ExecutionModel model, RelationModelManager manager) {
-            executionModel = model;
-            this.manager = manager;
-        }
+        public RelationModelBuilder() {}
 
         @Override
         public RelationModel visitInverse(Inverse invs) {
             Relation inversed = invs.getDefinedRelation();
             RelationModel toInverse = executionModel.getRelationModel(invs.getOperand());
-            return manager.computeInverse(inversed, toInverse);
+            return computeInverse(inversed, toInverse);
         }
 
         @Override
@@ -200,7 +219,7 @@ public class RelationModelManager {
             Relation compR = comp.getDefinedRelation();
             RelationModel left = executionModel.getRelationModel(comp.getLeftOperand());
             RelationModel right = executionModel.getRelationModel(comp.getRightOperand());
-            return manager.computeComposition(compR, left, right);
+            return computeComposition(compR, left, right);
         }
 
         @Override
@@ -208,34 +227,34 @@ public class RelationModelManager {
             Relation diffR = diff.getDefinedRelation();
             RelationModel minuend = executionModel.getRelationModel(diff.getMinuend());
             RelationModel subtrahend = executionModel.getRelationModel(diff.getSubtrahend());
-            return manager.computeDifference(diffR, minuend, subtrahend);
+            return computeDifference(diffR, minuend, subtrahend);
         }
 
         @Override
         public RelationModel visitUnion(Union u) {
             Relation uR = u.getDefinedRelation();
             List<RelationModel> operandModels = u.getOperands().stream().map(r -> executionModel.getRelationModel(r)).collect(Collectors.toList());
-            return manager.computeUnion(uR, operandModels);
+            return computeUnion(uR, operandModels);
         }
 
         @Override
         public RelationModel visitIntersection(Intersection intsc) {
             Relation intscR = intsc.getDefinedRelation();
             List<RelationModel> operandModels = intsc.getOperands().stream().map(r -> executionModel.getRelationModel(r)).collect(Collectors.toList());
-            return manager.computeIntersection(intscR, operandModels);
+            return computeIntersection(intscR, operandModels);
         }
 
         @Override
         public RelationModel visitTransitiveClosure(TransitiveClosure tscl) {
             Relation tsclR = tscl.getDefinedRelation();
             RelationModel operand = executionModel.getRelationModel(tscl.getOperand());
-            return manager.computeTransitiveClosure(tsclR, operand);
+            return computeTransitiveClosure(tsclR, operand);
         }
 
         @Override
         public RelationModel visitProgramOrder(ProgramOrder po) {
             Relation r = po.getDefinedRelation();
-            RelationModel rm = manager.newModel(r, PO);
+            RelationModel rm = newModel(r, PO);
             for (Thread t : executionModel.getThreads()) {
                 List<EventData> events = executionModel.getThreadEventsMap().get(t).stream()
                                                        .filter(e -> e.hasTag(Tag.VISIBLE)
@@ -246,16 +265,23 @@ public class RelationModelManager {
                 for (int i = 1; i < events.size(); i++) {
                     EventData e1 = events.get(i - 1);
                     EventData e2 = events.get(i);
-                    manager.addEdgeToRelation(rm, e1, e2);
+                    addEdgeToRelation(rm, e1, e2);
+                }
+                // Add PO edge also between visible events.
+                List<EventData> visibles = getVisibleEvents(t);
+                for (int i = 1; i < visibles.size(); i++) {
+                    EventData e1 = visibles.get(i - 1);
+                    EventData e2 = visibles.get(i);
+                    addEdgeToRelation(rm, e1, e2);
                 }
             }
-            return rm;
+            return removeTransitiveEdgesToShow(rm);
         }
 
         @Override
         public RelationModel visitReadFrom(ReadFrom rf) {
             Relation r = rf.getDefinedRelation();
-            RelationModel rm = manager.newModel(r, RF);
+            RelationModel rm = newModel(r, RF);
             EncodingContext.EdgeEncoder rfEncoder = executionModel.getContextForWitness().edge(r);
             for (Map.Entry<BigInteger, Set<EventData>> reads : executionModel.getAddressReadsMap().entrySet()) {
                 BigInteger address = reads.getKey();
@@ -263,19 +289,19 @@ public class RelationModelManager {
                     for (EventData write : executionModel.getAddressWritesMap().get(address)) {
                         BooleanFormula rfExpr = rfEncoder.encode(write.getEvent(), read.getEvent());
                         if (isTrue(rfExpr)) {
-                            manager.addEdgeToRelation(rm, write, read);
+                            addEdgeToRelation(rm, write, read);
                             break;
                         }
                     }
                 }
             }
-            return rm;
+            return removeTransitiveEdgesToShow(rm);
         }
 
         @Override
         public RelationModel visitCoherence(Coherence co) {
             Relation r = co.getDefinedRelation();
-            RelationModel rm = manager.newModel(r, CO);
+            RelationModel rm = newModel(r, CO);
             EncodingContext.EdgeEncoder coEncoder = executionModel.getContextForWitness().edge(r);
             for (Map.Entry<BigInteger, Set<EventData>> writes : executionModel.getAddressWritesMap().entrySet()) {
                 BigInteger address = writes.getKey();
@@ -308,16 +334,16 @@ public class RelationModelManager {
                 for (int i = 2; i < sortedWrites.size(); i ++) {
                     EventData w1 = sortedWrites.get(i - 1);
                     EventData w2 = sortedWrites.get(i);
-                    manager.addEdgeToRelation(rm, w1, w2);
+                    addEdgeToRelation(rm, w1, w2);
                 }
             }
-            return rm;
+            return removeTransitiveEdgesToShow(rm);
         }
 
         @Override
         public RelationModel visitSameLocation(SameLocation loc) {
             Relation r = loc.getDefinedRelation();
-            RelationModel rm = manager.newModel(r, LOC);
+            RelationModel rm = newModel(r, LOC);
             EncodingContext.EdgeEncoder locEncoder = executionModel.getContextForWitness().edge(r);
             Map<BigInteger, Set<EventData>> memoryAccesses = Stream.concat(executionModel.getAddressReadsMap().entrySet().stream(),
                                                                            executionModel.getAddressWritesMap().entrySet().stream())
@@ -339,11 +365,11 @@ public class RelationModelManager {
                         EventData e2 = asList.get(j);
                         BooleanFormula locExpr1 = locEncoder.encode(e1.getEvent(), e2.getEvent());
                         if (isTrue(locExpr1)) {
-                            manager.addEdgeToRelation(rm, e1, e2);
+                            addEdgeToRelation(rm, e1, e2);
                         }
                         BooleanFormula locExpr2 = locEncoder.encode(e2.getEvent(), e1.getEvent());
                         if (isTrue(locExpr2)) {
-                            manager.addEdgeToRelation(rm, e2, e1);
+                            addEdgeToRelation(rm, e2, e1);
                         }
                     }
                 }
@@ -354,7 +380,7 @@ public class RelationModelManager {
         @Override
         public RelationModel visitInternal(Internal in) {
             Relation r = in.getDefinedRelation();
-            RelationModel rm = manager.newModel(r, INT);
+            RelationModel rm = newModel(r, INT);
             EncodingContext.EdgeEncoder intEncoder = executionModel.getContextForWitness().edge(r);
             for (Thread t : executionModel.getThreads()) {
                 List<EventData> events = getVisibleEvents(t);
@@ -365,11 +391,11 @@ public class RelationModelManager {
                         EventData e2 = events.get(j);
                         BooleanFormula intExpr1 = intEncoder.encode(e1.getEvent(), e2.getEvent());
                         if (isTrue(intExpr1)) {
-                            manager.addEdgeToRelation(rm, e1, e2);
+                            addEdgeToRelation(rm, e1, e2);
                         }
                         BooleanFormula intExpr2 = intEncoder.encode(e2.getEvent(), e1.getEvent());
                         if (isTrue(intExpr2)) {
-                            manager.addEdgeToRelation(rm, e2, e1);
+                            addEdgeToRelation(rm, e2, e1);
                         }
                     }
                 }
@@ -380,7 +406,7 @@ public class RelationModelManager {
         @Override
         public RelationModel visitExternal(External ext) {
             Relation r = ext.getDefinedRelation();
-            RelationModel rm = manager.newModel(r, EXT);
+            RelationModel rm = newModel(r, EXT);
             EncodingContext.EdgeEncoder extEncoder = executionModel.getContextForWitness().edge(r);
             List<Thread> threads = executionModel.getThreads();
             for (int i = 0; i < threads.size(); i++) {
@@ -393,11 +419,11 @@ public class RelationModelManager {
                         for (EventData e2 : eventList2) {
                             BooleanFormula extExpr1 = extEncoder.encode(e1.getEvent(), e2.getEvent());
                             if (isTrue(extExpr1)) {
-                                manager.addEdgeToRelation(rm, e1, e2);
+                                addEdgeToRelation(rm, e1, e2);
                             }
                             BooleanFormula extExpr2 = extEncoder.encode(e2.getEvent(), e1.getEvent());
                             if (isTrue(extExpr2)) {
-                                manager.addEdgeToRelation(rm, e2, e1);
+                                addEdgeToRelation(rm, e2, e1);
                             }
                         }
                     }
@@ -409,7 +435,7 @@ public class RelationModelManager {
         @Override
         public RelationModel visitReadModifyWrites(ReadModifyWrites rmw) {
             Relation r = rmw.getDefinedRelation();
-            RelationModel rm = manager.newModel(r, RMW);
+            RelationModel rm = newModel(r, RMW);
             EncodingContext.EdgeEncoder rmwEncoder = executionModel.getContextForWitness().edge(r);
             for (Map.Entry<BigInteger, Set<EventData>> addressReads : executionModel.getAddressReadsMap().entrySet()) {
                 BigInteger addr = addressReads.getKey();
@@ -419,19 +445,19 @@ public class RelationModelManager {
                             && read.isRMW() && write.isRMW()) {
                             BooleanFormula rmwExpr = rmwEncoder.encode(read.getEvent(), write.getEvent());
                             if (isTrue(rmwExpr)) {
-                                manager.addEdgeToRelation(rm, read, write);
+                                addEdgeToRelation(rm, read, write);
                             }
                         }
                     }
                 }
             }
-            return rm;
+            return removeTransitiveEdgesToShow(rm);
         }
 
         @Override
         public RelationModel visitProduct(CartesianProduct prod) {
             Relation r = prod.getDefinedRelation();
-            RelationModel rm = manager.newModel(r);
+            RelationModel rm = newModel(r);
             List<EventData> eList1 = executionModel.getEventList().stream()
                                                    .filter(e -> prod.getFirstFilter().apply(e.getEvent()))
                                                    .toList();
@@ -441,7 +467,7 @@ public class RelationModelManager {
             for (EventData p : eList1) {
                 for (EventData s : eList2) {
                     if (p != s) {
-                        manager.addEdgeToRelation(rm, p, s);
+                        addEdgeToRelation(rm, p, s);
                     }
                 }
             }
@@ -451,67 +477,67 @@ public class RelationModelManager {
         @Override
         public RelationModel visitSetIdentity(SetIdentity set) {
             Relation r = set.getDefinedRelation();
-            RelationModel rm = manager.newModel(r);
+            RelationModel rm = newModel(r);
             List<EventData> eList = executionModel.getEventList().stream()
                                                   .filter(e -> set.getFilter().apply(e.getEvent()))
                                                   .toList();
-            eList.stream().forEach(e -> manager.addEdgeToRelation(rm, e, e));
+            eList.stream().forEach(e -> addEdgeToRelation(rm, e, e));
             return rm;
         }
 
         @Override
         public RelationModel visitRangeIdentity(RangeIdentity range) {
             Relation r = range.getDefinedRelation();
-            RelationModel rm = manager.newModel(r);
+            RelationModel rm = newModel(r);
             Set<EventData> successors = new HashSet<>();
             executionModel.getRelationModel(range.getOperand()).getEdges()
                           .stream().forEach(e -> successors.add(e.getSuccessor()));
-            successors.stream().forEach(s -> manager.addEdgeToRelation(rm, s, s));
+            successors.stream().forEach(s -> addEdgeToRelation(rm, s, s));
             return rm;
         }
 
         @Override
         public RelationModel visitDomainIdentity(DomainIdentity domain) {
             Relation r = domain.getDefinedRelation();
-            RelationModel rm = manager.newModel(r);
+            RelationModel rm = newModel(r);
             Set<EventData> predecessors = new HashSet<>();
             executionModel.getRelationModel(domain.getOperand()).getEdges()
                           .stream().forEach(e -> predecessors.add(e.getPredecessor()));
-            predecessors.stream().forEach(p -> manager.addEdgeToRelation(rm, p, p));
+            predecessors.stream().forEach(p -> addEdgeToRelation(rm, p, p));
             return rm;
         }
 
         public RelationModel buildDataDependency(Relation dataDep) {
-            RelationModel rm = manager.newModel(dataDep, DATA);
+            RelationModel rm = newModel(dataDep, DATA);
             for (Map.Entry<EventData, Set<EventData>> deps : executionModel.getDataDepMap().entrySet()) {
                 EventData e = deps.getKey();
                 for (EventData dep : deps.getValue()) {
-                    manager.addEdgeToRelation(rm, e, dep);
+                    addEdgeToRelation(rm, e, dep);
                 }
             }
-            return rm;
+            return removeTransitiveEdgesToShow(rm);
         }
 
         public RelationModel buildAddressDependency(Relation addrDep) {
-            RelationModel rm = manager.newModel(addrDep, ADDR);
+            RelationModel rm = newModel(addrDep, ADDR);
             for (Map.Entry<EventData, Set<EventData>> deps : executionModel.getAddrDepMap().entrySet()) {
                 EventData e = deps.getKey();
                 for (EventData dep : deps.getValue()) {
-                    manager.addEdgeToRelation(rm, e, dep);
+                    addEdgeToRelation(rm, e, dep);
                 }
             }
-            return rm;
+            return removeTransitiveEdgesToShow(rm);
         }
         
         public RelationModel buildControlDependency(Relation ctrlDep) {
-            RelationModel rm = manager.newModel(ctrlDep, CTRL);
+            RelationModel rm = newModel(ctrlDep, CTRL);
             for (Map.Entry<EventData, Set<EventData>> deps : executionModel.getCtrlDepMap().entrySet()) {
                 EventData e = deps.getKey();
                 for (EventData dep : deps.getValue()) {
-                    manager.addEdgeToRelation(rm, e, dep);
+                    addEdgeToRelation(rm, e, dep);
                 }
             }
-            return rm;
+            return removeTransitiveEdgesToShow(rm);
         }
 
         private boolean isTrue(BooleanFormula formula) {
