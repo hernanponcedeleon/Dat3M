@@ -97,7 +97,7 @@ public class RelationModel {
             if (this == other) {
                 return true;
             }
-            return getIdentifier().equals(((EdgeModel) other).getIdentifier());
+            return identifier.equals(((EdgeModel) other).getIdentifier());
         }
 
         @Override
