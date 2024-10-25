@@ -287,6 +287,11 @@ public class ExecutionModel {
         this.extractCoherences = extractCoherences;
         extractEventsFromModel();
         extractMemoryLayout();
+        extractReadsFrom();
+        coherenceMap.clear();
+        if (extractCoherences) {
+            extractCoherences();
+        }
     }
 
     public void initialize(Model model, ExecutionModelManager manager) {
@@ -557,6 +562,66 @@ public class ExecutionModel {
                 memoryLayoutMap.put(obj, new MemoryObjectModel(obj, address, size));
             }
         }
+    }
+
+    private void extractReadsFrom() {
+        final EncodingContext.EdgeEncoder rf = encodingContext.edge(encodingContext.getTask().getMemoryModel().getRelation(RF));
+        readWriteMap.clear();
+
+        for (Map.Entry<BigInteger, Set<EventData>> addressedReads : addressReadsMap.entrySet()) {
+            BigInteger address = addressedReads.getKey();
+            for (EventData read : addressedReads.getValue()) {
+                for (EventData write : addressWritesMap.get(address)) {
+                    BooleanFormula rfExpr = rf.encode(write.getEvent(), read.getEvent());
+                    if (isTrue(rfExpr)) {
+                        readWriteMap.put(read, write);
+                        read.setReadFrom(write);
+                        writeReadsMap.get(write).add(read);
+                        break;
+                    }
+                }
+            }
+        }
+    }
+
+    private void extractCoherences() {
+        final EncodingContext.EdgeEncoder co = encodingContext.edge(encodingContext.getTask().getMemoryModel().getRelation(CO));
+
+        for (Map.Entry<BigInteger, Set<EventData>> addrWrites : addressWritesMap.entrySet()) {
+            final BigInteger addr = addrWrites.getKey();
+            final Set<EventData> writes = addrWrites.getValue();
+
+            List<EventData> coSortedWrites;
+            if (encodingContext.usesSATEncoding()) {
+                // --- Extracting co from SAT-based encoding ---
+                Map<EventData, List<EventData>> coEdges = new HashMap<>();
+                for (EventData w1 : writes) {
+                    coEdges.put(w1, new ArrayList<>());
+                    for (EventData w2 : writes) {
+                        if (isTrue(co.encode(w1.getEvent(), w2.getEvent()))) {
+                            coEdges.get(w1).add(w2);
+                        }
+                    }
+                }
+                DependencyGraph<EventData> depGraph = DependencyGraph.from(writes, coEdges);
+                coSortedWrites = new ArrayList<>(Lists.reverse(depGraph.getNodeContents()));
+            } else {
+                // --- Extracting co from IDL-based encoding using clock variables ---
+                Map<EventData, BigInteger> writeClockMap = new HashMap<>(writes.size() * 4 / 3, 0.75f);
+                for (EventData w : writes) {
+                    writeClockMap.put(w, model.evaluate(encodingContext.memoryOrderClock(w.getEvent())));
+                }
+                coSortedWrites = writes.stream().sorted(Comparator.comparing(writeClockMap::get)).collect(Collectors.toList());
+            }
+
+            // --- Apply internal clock orders (we always start from 0) --
+            int i = 0;
+            for (EventData w : coSortedWrites) {
+                w.setCoherenceIndex(i++);
+            }
+            coherenceMap.put(addr, Collections.unmodifiableList(coSortedWrites));
+        }
+
     }
 
     private boolean isTrue(BooleanFormula formula) {

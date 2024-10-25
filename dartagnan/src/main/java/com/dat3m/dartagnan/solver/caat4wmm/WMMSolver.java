@@ -9,6 +9,7 @@ import com.dat3m.dartagnan.utils.logic.Conjunction;
 import com.dat3m.dartagnan.utils.logic.DNF;
 import com.dat3m.dartagnan.verification.Context;
 import com.dat3m.dartagnan.verification.model.ExecutionModel;
+import com.dat3m.dartagnan.verification.model.ExecutionModelManager;
 import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
@@ -22,27 +23,29 @@ import java.util.Set;
 public class WMMSolver {
 
     private final ExecutionGraph executionGraph;
-    private final ExecutionModel executionModel;
+    private final ExecutionModelManager executionModelManager;
     private final CAATSolver solver;
     private final CoreReasoner reasoner;
 
-    private WMMSolver(RefinementModel refinementModel, Context analysisContext, ExecutionModel m) {
+    private WMMSolver(RefinementModel refinementModel, Context analysisContext, ExecutionModelManager manager) {
         final RelationAnalysis ra = analysisContext.requires(RelationAnalysis.class);
         this.executionGraph = new ExecutionGraph(refinementModel, ra);
-        this.executionModel = m;
+        this.executionModelManager = manager;
         this.reasoner = new CoreReasoner(analysisContext, executionGraph);
         this.solver = CAATSolver.create();
     }
 
     public static WMMSolver withContext(RefinementModel refinementModel, EncodingContext context,
-            Context analysisContext, Configuration config) throws InvalidConfigurationException {
-        final var solver = new WMMSolver(refinementModel, analysisContext, ExecutionModel.withContext(context));
+            EncodingContext contextForWitness, Configuration config) throws InvalidConfigurationException {
+        ExecutionModelManager manager = ExecutionModelManager.newManager(context)
+                                                             .setEncodingContextForWitness(contextForWitness);
+        final var solver = new WMMSolver(refinementModel, contextForWitness.getAnalysisContext(), manager);
         config.inject(solver.reasoner);
         return solver;
     }
 
     public ExecutionModel getExecution() {
-        return executionModel;
+        return executionModelManager.getExecutionModel();
     }
 
     public ExecutionGraph getExecutionGraph() {
@@ -52,8 +55,7 @@ public class WMMSolver {
     public Result check(Model model) {
         // ============ Extract ExecutionModel ==============
         long curTime = System.currentTimeMillis();
-        executionModel.initialize(model);
-        executionGraph.initializeFromModel(executionModel);
+        executionGraph.initializeFromModel(executionModelManager.initializeModel(model));
         long extractTime = System.currentTimeMillis() - curTime;
 
         // ============== Run the CAATSolver ==============

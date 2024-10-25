@@ -91,7 +91,7 @@ public class ExecutionGraphVisualizer {
             throws InvalidConfigurationException {
         model.getContext().getTask().getConfig().inject(this);
         if (relToShowStr.equals("default")) {
-            relToShow = new HashSet<>(Set.of(PO, RF, CO, "fr"));
+            relToShow = new HashSet<>(Set.of(PO, RF, CO));
         }
         else {
             relToShow = new HashSet<>(Arrays.asList(relToShowStr.split(",\\s*")));

@@ -206,7 +206,8 @@ public class RefinementSolver extends ModelChecker {
         performStaticWmmAnalyses(task, analysisContext, config);
 
         // Encoding for witness generation only
-        setEncodingContextForWitness(EncodingContext.of(task, analysisContext, ctx.getFormulaManager()));
+        EncodingContext contextForWitness = EncodingContext.of(task, analysisContext, ctx.getFormulaManager());
+        setEncodingContextForWitness(contextForWitness);
 
         //  ------- Generate refinement model -------
         final RefinementModel refinementModel = generateRefinementModel(memoryModel);
@@ -233,7 +234,7 @@ public class RefinementSolver extends ModelChecker {
         final WmmEncoder baselineEncoder = WmmEncoder.withContext(context);
 
         final BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
-        final WMMSolver solver = WMMSolver.withContext(refinementModel, context, analysisContext, config);
+        final WMMSolver solver = WMMSolver.withContext(refinementModel, context, contextForWitness, config);
         final Refiner refiner = new Refiner(refinementModel);
         final Property.Type propertyType = Property.getCombinedType(task.getProperty(), task);
 
