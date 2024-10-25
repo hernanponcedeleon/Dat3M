@@ -135,6 +135,14 @@ public class VisitorLitmusPPC extends LitmusPPCBaseVisitor<Object> {
     }
 
     @Override
+    public Object visitLwarx(LitmusPPCParser.LwarxContext ctx) {
+        Register r1 = programBuilder.getOrNewRegister(mainThread, ctx.register(0).getText(), archType);
+        Register ra = programBuilder.getOrErrorRegister(mainThread, ctx.register(1).getText());
+        Register rb = programBuilder.getOrErrorRegister(mainThread, ctx.register(2).getText());
+        return programBuilder.addChild(mainThread, EventFactory.newRMWLoadExclusive(r1, expressions.makeAdd(ra, rb)));
+    }
+
+    @Override
     public Object visitStw(LitmusPPCParser.StwContext ctx) {
         Register r1 = programBuilder.getOrErrorRegister(mainThread, ctx.register(0).getText());
         Register ra = programBuilder.getOrErrorRegister(mainThread, ctx.register(1).getText());
@@ -145,6 +153,14 @@ public class VisitorLitmusPPC extends LitmusPPCBaseVisitor<Object> {
     public Object visitStwx(LitmusPPCParser.StwxContext ctx) {
         // TODO: Implementation
         throw new ParsingException("stwx is not implemented");
+    }
+
+    @Override
+    public Object visitStwcx(LitmusPPCParser.StwcxContext ctx) {
+        Register r1 = programBuilder.getOrNewRegister(mainThread, ctx.register(0).getText(), archType);
+        Register ra = programBuilder.getOrErrorRegister(mainThread, ctx.register(1).getText());
+        Register rb = programBuilder.getOrErrorRegister(mainThread, ctx.register(2).getText());
+        return programBuilder.addChild(mainThread, EventFactory.Power.newRMWStoreConditional(expressions.makeAdd(ra, rb), r1, true));
     }
 
     @Override
