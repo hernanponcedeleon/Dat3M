@@ -198,10 +198,11 @@ public class VisitorLitmusPPC extends LitmusPPCBaseVisitor<Object> {
     public Object visitBranchCond(LitmusPPCParser.BranchCondContext ctx) {
         Label label = programBuilder.getOrCreateLabel(mainThread, ctx.Label().getText());
         CmpInstruction cmp = lastCmpInstructionPerThread.put(mainThread, null);
-        if(cmp == null){
-            throw new ParsingException("Invalid syntax near " + ctx.getText());
-        }
-        Expression expr = expressions.makeIntCmp(cmp.left, ctx.cond().op, cmp.right);
+        Expression expr = cmp == null ?
+            // In PPC, when there is no previous comparison instruction, 
+            // the value of r0 is used as the branching condition
+            expressions.makeBooleanCast(programBuilder.getOrNewRegister(mainThread, "r0")) :
+            expressions.makeIntCmp(cmp.left, ctx.cond().op, cmp.right);
         return programBuilder.addChild(mainThread, EventFactory.newJump(expr, label));
     }
 

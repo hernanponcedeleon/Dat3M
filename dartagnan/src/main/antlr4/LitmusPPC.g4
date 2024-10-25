@@ -134,6 +134,7 @@ fence
 
 location
     :   Identifier
+    |   LBracket Identifier RBracket
     ;
 
 register
@@ -240,7 +241,7 @@ Register
     ;
 
 Label
-    :   'LC' DigitSequence
+    :   'L' Identifier
     ;
 
 LitmusLanguage
