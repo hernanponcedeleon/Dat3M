@@ -16,8 +16,7 @@ import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.Assert;
 import com.dat3m.dartagnan.program.event.core.CondJump;
 import com.dat3m.dartagnan.program.event.core.Load;
-import com.dat3m.dartagnan.program.event.metadata.UnrollingBound;
-import com.dat3m.dartagnan.program.event.metadata.UnrollingId;
+import com.dat3m.dartagnan.program.processing.LoopUnrolling;
 import com.dat3m.dartagnan.utils.Result;
 import com.dat3m.dartagnan.utils.Utils;
 import com.dat3m.dartagnan.utils.options.BaseOptions;
@@ -36,8 +35,8 @@ import com.dat3m.dartagnan.wmm.axiom.Axiom;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.io.CharSource;
-
 import org.apache.commons.csv.CSVFormat;
+import org.apache.commons.csv.CSVParser;
 import org.apache.commons.csv.CSVPrinter;
 import org.apache.commons.csv.CSVRecord;
 import org.apache.logging.log4j.LogManager;
@@ -59,17 +58,13 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.io.Reader;
-import java.io.Writer;
 import java.math.BigInteger;
 import java.nio.file.Path;
 import java.util.*;
 
 import static com.dat3m.dartagnan.GlobalSettings.getOrCreateOutputDirectory;
 import static com.dat3m.dartagnan.configuration.OptionInfo.collectOptions;
-import static com.dat3m.dartagnan.configuration.OptionNames.BOUNDS_SAVE_PATH;
-import static com.dat3m.dartagnan.configuration.OptionNames.PHANTOM_REFERENCES;
-import static com.dat3m.dartagnan.configuration.OptionNames.TARGET;
+import static com.dat3m.dartagnan.configuration.OptionNames.*;
 import static com.dat3m.dartagnan.configuration.Property.*;
 import static com.dat3m.dartagnan.program.analysis.SyntacticContextAnalysis.*;
 import static com.dat3m.dartagnan.utils.GitInfo.*;
@@ -343,18 +338,26 @@ public class Dartagnan extends BaseOptions {
                 }
             } else if (result == UNKNOWN && modelChecker.hasModel()) {
                 // We reached unrolling bounds.
-                summary.append("=========== Not fully unrolled loops ============\n");
+                final List<Event> reachedBounds = new ArrayList<>();
                 for (Event ev : p.getThreadEventsWithAllTags(Tag.BOUND)) {
-                    final boolean isReached = TRUE.equals(model.evaluate(encCtx.execution(ev)));
-                    if (isReached) {
-                        summary
-                                .append("\t")
-                                .append(synContext.getSourceLocationWithContext(ev, true))
-                                .append("\n");
-                        increaseBoundAndDump(ev, task.getConfig());
+                    if (TRUE.equals(model.evaluate(encCtx.execution(ev)))) {
+                        reachedBounds.add(ev);
                     }
                 }
+                summary.append("=========== Not fully unrolled loops ============\n");
+                for (Event bound : reachedBounds) {
+                    summary
+                            .append("\t")
+                            .append(synContext.getSourceLocationWithContext(bound, true))
+                            .append("\n");
+                }
                 summary.append("=================================================\n");
+
+                try {
+                    increaseBoundAndDump(reachedBounds, task.getConfig());
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
             }
             summary.append(result).append("\n");
         } else {
@@ -409,42 +412,40 @@ public class Dartagnan extends BaseOptions {
         return summary.toString();
     }
 
-    private static void increaseBoundAndDump(Event ev, Configuration config) {
+    private static void increaseBoundAndDump(List<Event> boundEvents, Configuration config) throws IOException {
+        final File boundsFile = new File(config.hasProperty(BOUNDS_SAVE_PATH) ?
+                config.getProperty(BOUNDS_SAVE_PATH) :
+                GlobalSettings.getBoundsFile());
 
-        String evId = String.valueOf(ev.getMetadata(UnrollingId.class).value());
-        String incBound = String.valueOf(ev.getMetadata(UnrollingBound.class).value() + 1);
-
-        // We read from and write to the same CSV file,
-        // thus we need to split this in two loops
-        List<String[]> modifiedRecords = new ArrayList<>();
-        // We read the file written by the LoopUnrolling pass,
-        // thus we use BOUNDS_SAVE_PATH also for the reader
-        try (Reader reader = new FileReader(config.hasProperty(BOUNDS_SAVE_PATH) ?
-                                            config.getProperty(BOUNDS_SAVE_PATH) :
-                                            GlobalSettings.getBoundsFile())) {
-            for (CSVRecord record : CSVFormat.DEFAULT.parse(reader)) {
-                String nextId = record.get(0);
-                String nextBound = record.get(1);
-                String sourceLoc = record.get(2);
-                if (nextId.equals(evId)) {
-                    nextBound = incBound;
-                }
-                modifiedRecords.add(new String[] { nextId, nextBound, sourceLoc });
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
+        // Parse old entries
+        final List<CSVRecord> entries;
+        try (CSVParser parser = CSVParser.parse(new FileReader(boundsFile), CSVFormat.DEFAULT)) {
+            entries = parser.getRecords();
         }
 
-        try (Writer writer = new FileWriter(config.hasProperty(BOUNDS_SAVE_PATH) ?
-                                            config.getProperty(BOUNDS_SAVE_PATH) :
-                                            GlobalSettings.getBoundsFile(), false);
-                CSVPrinter csvPrinter = new CSVPrinter(writer, CSVFormat.DEFAULT)) {
-            for (String[] record : modifiedRecords) {
-                csvPrinter.printRecord(record[0], record[1], record[2]);
+        // Compute update for entries
+        final Map<Integer, Integer> loopId2UpdatedBound = new HashMap<>();
+        for (Event e : boundEvents) {
+            assert e instanceof CondJump;
+            final CondJump loopJump = (CondJump) e;
+            final int loopId = LoopUnrolling.getPersistentLoopId(loopJump);
+            final int bound = LoopUnrolling.getUnrollingBoundAnnotation(loopJump);
+            loopId2UpdatedBound.put(loopId, bound + 1);
+        }
+
+        // Write new entries
+        try (CSVPrinter csvPrinter = new CSVPrinter(new FileWriter(boundsFile, false), CSVFormat.DEFAULT)) {
+            for (CSVRecord entry : entries) {
+                final int entryId = Integer.parseInt(entry.get(0));
+                if (!loopId2UpdatedBound.containsKey(entryId)) {
+                    csvPrinter.printRecord(entry);
+                } else {
+                    final String[] content = entry.values();
+                    content[0] = String.valueOf(loopId2UpdatedBound.get(entryId));
+                    csvPrinter.printRecord(Arrays.asList(content));
+                }
             }
             csvPrinter.flush();
-        } catch (IOException e) {
-            e.printStackTrace();
         }
     }
 

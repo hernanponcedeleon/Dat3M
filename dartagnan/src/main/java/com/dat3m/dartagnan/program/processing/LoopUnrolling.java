@@ -16,21 +16,17 @@ import com.dat3m.dartagnan.program.event.lang.svcomp.LoopBound;
 import com.dat3m.dartagnan.program.event.metadata.UnrollingBound;
 import com.dat3m.dartagnan.program.event.metadata.UnrollingId;
 import com.google.common.base.Preconditions;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-import org.sosy_lab.common.configuration.*;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVPrinter;
 import org.apache.commons.csv.CSVRecord;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.sosy_lab.common.configuration.*;
 
-import java.io.File;
-import java.io.FileReader;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.io.Reader;
-import java.io.Writer;
+import java.io.*;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.*;
-import java.util.function.Predicate;
 
 import static com.dat3m.dartagnan.configuration.OptionNames.*;
 
@@ -52,7 +48,10 @@ public class LoopUnrolling implements ProgramProcessor {
     @IntegerOption(min = 1)
     private int bound = 1;
 
-    public int getUnrollingBound() { return bound; }
+    public int getUnrollingBound() {
+        return bound;
+    }
+
     public void setUnrollingBound(int bound) {
         Preconditions.checkArgument(bound >= 1, "The unrolling bound must be positive.");
         this.bound = bound;
@@ -61,16 +60,17 @@ public class LoopUnrolling implements ProgramProcessor {
     @Option(name = BOUNDS_LOAD_PATH,
             description = "Path to the CSV file containing loop bounds.",
             secure = true)
-    private String bounds_load_path = "";
+    private String boundsLoadPath = "";
 
     @Option(name = BOUNDS_SAVE_PATH,
             description = "Path to the CSV file to save loop bounds.",
             secure = true)
-    private String bounds_save_path = GlobalSettings.getBoundsFile();
+    private String boundsSavePath = GlobalSettings.getBoundsFile();
 
     // =====================================================================
 
-    private LoopUnrolling() { }
+    private LoopUnrolling() {
+    }
 
     private LoopUnrolling(Configuration config) throws InvalidConfigurationException {
         this();
@@ -92,7 +92,9 @@ public class LoopUnrolling implements ProgramProcessor {
             logger.warn("Skipped unrolling: Program is already unrolled.");
             return;
         }
-        createBoundsFileIfMissing();
+        if (pathIsSpecified(boundsSavePath)) {
+            ensureFileExistsAndIsEmpty(boundsSavePath);
+        }
         final int defaultBound = this.bound;
         program.getFunctions().forEach(this::run);
         program.getThreads().forEach(this::run);
@@ -112,33 +114,9 @@ public class LoopUnrolling implements ProgramProcessor {
             return;
         }
         final Map<CondJump, Integer> loopBoundsMap = computeLoopBoundsMap(func, defaultBound);
-        Map<CondJump, Integer> mergedBounds = new HashMap<>(loopBoundsMap);
-        if(!bounds_load_path.isEmpty()) {
-            final Map<CondJump, Integer> loopBoundsMapFromFile = loadLoopBoundsMapFromFile(func);
-            loopBoundsMapFromFile.forEach((key, value) -> mergedBounds.merge(key, value, Math::max));
-        }
         func.getEvents(CondJump.class).stream()
-                .filter(mergedBounds::containsKey)
-                .forEach(j -> unrollLoop(j, mergedBounds.get(j)));
-        }
-
-    private Map<CondJump, Integer> loadLoopBoundsMapFromFile(Function func) {
-        Map<CondJump, Integer> loopBoundsMapFromFile = new HashMap<>();
-        try (Reader reader = new FileReader(bounds_load_path)) {
-            Iterable<CSVRecord> records = CSVFormat.DEFAULT.parse(reader);
-            for (CSVRecord record : records) {
-                int nexId = Integer.parseInt(record.get(0));
-                int nextBound = Integer.parseInt(record.get(1));
-                Predicate<Event> predicate = e -> e.getGlobalId() == nexId;
-                if(func.getEvents(CondJump.class).stream().anyMatch(predicate)) {
-                    CondJump loop = func.getEvents(CondJump.class).stream().filter(predicate).findAny().get();
-                    loopBoundsMapFromFile.put(loop, nextBound);
-                }
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        return loopBoundsMapFromFile;
+                .filter(loopBoundsMap::containsKey)
+                .forEach(j -> unrollLoop(j, loopBoundsMap.get(j)));
     }
 
     private Map<CondJump, Integer> computeLoopBoundsMap(Function func, int defaultBound) {
@@ -165,6 +143,17 @@ public class LoopUnrolling implements ProgramProcessor {
                 }
             }
         }
+
+        // Merge with loaded bounds if those exist.
+        if(pathIsSpecified(boundsLoadPath)) {
+            final Map<CondJump, Integer> loopBoundsMapFromFile = loadLoopBoundsMapFromFile(func, boundsLoadPath);
+            loopBoundsMapFromFile.forEach((key, value) -> loopBoundsMap.merge(key, value, Math::max));
+        }
+        // Store bounds we computed
+        if (pathIsSpecified(boundsSavePath)) {
+            dumpLoopBoundsMapToFile(func, loopBoundsMap, boundsSavePath);
+        }
+
         return loopBoundsMap;
     }
 
@@ -174,7 +163,6 @@ public class LoopUnrolling implements ProgramProcessor {
         Preconditions.checkArgument(loopBegin.getLocalId() < loopBackJump.getLocalId(),
                 "The jump does not belong to a loop.");
 
-        dumpBoundIfMissing(loopBackJump, bound);
         int iterCounter = 0;
         while (++iterCounter <= bound) {
             if (iterCounter == bound) {
@@ -243,34 +231,70 @@ public class LoopUnrolling implements ProgramProcessor {
         return boundEvent;
     }
 
-    private void createBoundsFileIfMissing() {
-        File file = new File(bounds_save_path);
-        if (!file.exists()) {
-            try {
-                file.createNewFile();
-            } catch (IOException e) {
-                e.printStackTrace();
+    // ------------------------------------------------------------------------
+    // Functions related to loading and storing bound maps
+
+    private boolean pathIsSpecified(String path) {
+        return !path.isEmpty();
+    }
+
+    private void ensureFileExistsAndIsEmpty(String filePath) {
+        try {
+            final File file = new File(filePath);
+            if (!file.createNewFile()) {
+                // Clear file content
+                new FileWriter(file).close();
             }
+        } catch (IOException e) {
+            e.printStackTrace();
         }
     }
 
-    private void dumpBoundIfMissing(Event jump, Integer bound) {
-        String evId = String.valueOf(jump.getMetadata(UnrollingId.class).value());
-        final SyntacticContextAnalysis synContext = SyntacticContextAnalysis.newInstance(jump.getFunction().getProgram());
-        String sourceLoc = synContext.getSourceLocationWithContext(jump, false);
-        try (Reader reader = new FileReader(bounds_load_path);
-                Writer writer = new FileWriter(bounds_save_path, true);
-                CSVPrinter csvPrinter = new CSVPrinter(writer, CSVFormat.DEFAULT)) {
-            boolean found = false;
-            for (CSVRecord record : CSVFormat.DEFAULT.parse(reader)) {
-                String nextId = record.get(0);
-                if (found = nextId.equals(evId)) {
-                    break;
-                }
+    public static int getPersistentLoopId(CondJump loopBackjump) {
+        return loopBackjump.getMetadata(UnrollingId.class).value();
+    }
+
+    public static int getUnrollingBoundAnnotation(CondJump boundEvent) {
+        Preconditions.checkArgument(boundEvent.hasTag(Tag.BOUND));
+        return boundEvent.getMetadata(UnrollingBound.class).value();
+    }
+
+    private Map<CondJump, Integer> loadLoopBoundsMapFromFile(Function func, String filePath) {
+        Preconditions.checkArgument(pathIsSpecified(filePath));
+        Preconditions.checkArgument(Files.exists(Path.of(filePath)));
+
+        final List<CondJump> jumps = func.getEvents(CondJump.class);
+        final Map<CondJump, Integer> loopBoundsMapFromFile = new HashMap<>();
+        try (Reader reader = new FileReader(filePath)) {
+            Iterable<CSVRecord> records = CSVFormat.DEFAULT.parse(reader);
+            for (CSVRecord record : records) {
+                final int loopId = Integer.parseInt(record.get(0));
+                final int bound = Integer.parseInt(record.get(1));
+                jumps.stream()
+                        .filter(e -> getPersistentLoopId(e) == loopId)
+                        .findFirst().ifPresent(loop -> loopBoundsMapFromFile.put(loop, bound));
             }
-            if (!found) {
-                csvPrinter.printRecord(evId, bound.toString(), sourceLoc);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return loopBoundsMapFromFile;
+    }
+
+    private void dumpLoopBoundsMapToFile(Function func, Map<CondJump, Integer> boundsMap, String filePath) {
+        Preconditions.checkArgument(pathIsSpecified(filePath));
+        Preconditions.checkArgument(Files.exists(Path.of(filePath)));
+
+        final SyntacticContextAnalysis synContext = SyntacticContextAnalysis.newInstance(func.getProgram());
+        try (Writer writer = new FileWriter(filePath, true);
+             CSVPrinter csvPrinter = new CSVPrinter(writer, CSVFormat.DEFAULT)) {
+            for (Map.Entry<CondJump, Integer> entry : boundsMap.entrySet()) {
+                final CondJump loopJump = entry.getKey();
+                final int loopId = getPersistentLoopId(loopJump);
+                final int loopBound = entry.getValue();
+                final String sourceLoc = synContext.getSourceLocationWithContext(loopJump, false);
+                csvPrinter.printRecord(loopId, loopBound, sourceLoc);
             }
+            writer.flush();
             csvPrinter.flush();
         } catch (IOException e) {
             e.printStackTrace();
