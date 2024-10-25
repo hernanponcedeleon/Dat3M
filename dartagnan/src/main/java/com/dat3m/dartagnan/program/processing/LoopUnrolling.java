@@ -301,7 +301,7 @@ public class LoopUnrolling implements ProgramProcessor {
         }
 
         final SyntacticContextAnalysis synContext = SyntacticContextAnalysis.newInstance(program);
-        try (CSVPrinter csvPrinter = new CSVPrinter( new FileWriter(filePath, true), CSVFormat.DEFAULT)) {
+        try (CSVPrinter csvPrinter = new CSVPrinter( new FileWriter(filePath, false), CSVFormat.DEFAULT)) {
             for (Map<CondJump, Integer> loopBoundsMap : loopBounds.values()) {
                 for (Map.Entry<CondJump, Integer> entry : loopBoundsMap.entrySet()) {
                     final CondJump loopJump = entry.getKey();
