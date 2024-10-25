@@ -441,7 +441,7 @@ public class Dartagnan extends BaseOptions {
                     csvPrinter.printRecord(entry);
                 } else {
                     final String[] content = entry.values();
-                    content[0] = String.valueOf(loopId2UpdatedBound.get(entryId));
+                    content[1] = String.valueOf(loopId2UpdatedBound.get(entryId));
                     csvPrinter.printRecord(Arrays.asList(content));
                 }
             }
