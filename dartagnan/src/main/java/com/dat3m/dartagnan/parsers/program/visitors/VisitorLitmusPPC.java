@@ -199,7 +199,7 @@ public class VisitorLitmusPPC extends LitmusPPCBaseVisitor<Object> {
         Label label = programBuilder.getOrCreateLabel(mainThread, ctx.Label().getText());
         CmpInstruction cmp = lastCmpInstructionPerThread.put(mainThread, null);
         Expression expr = cmp == null ?
-            // In PPC, when there is no previous comparison instruction, 
+            // In PPC, when there is no previous comparison instruction,
             // the value of r0 is used as the branching condition
             expressions.makeBooleanCast(programBuilder.getOrNewRegister(mainThread, "r0")) :
             expressions.makeIntCmp(cmp.left, ctx.cond().op, cmp.right);
