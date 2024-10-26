@@ -157,10 +157,14 @@ public class VisitorLitmusPPC extends LitmusPPCBaseVisitor<Object> {
 
     @Override
     public Object visitStwcx(LitmusPPCParser.StwcxContext ctx) {
+        // This instruction is usually followed by a branch instruction.
+        // Thus, the execution status of the store is saved in r0
+        // (the default register for branch conditions).
+        Register rs = programBuilder.getOrNewRegister(mainThread, "r0", types.getBooleanType());
         Register r1 = (Register) ctx.register(0).accept(this);
         Register ra = (Register) ctx.register(1).accept(this);
         Register rb = (Register) ctx.register(2).accept(this);
-        return programBuilder.addChild(mainThread, EventFactory.Power.newRMWStoreConditional(expressions.makeAdd(ra, rb), r1, true));
+        return programBuilder.addChild(mainThread, EventFactory.Common.newExclusiveStore(rs, expressions.makeAdd(ra, rb), r1, ""));
     }
 
     @Override

@@ -8,6 +8,7 @@ import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.Tag.C11;
+import com.dat3m.dartagnan.program.event.arch.StoreExclusive;
 import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.event.lang.catomic.*;
 import com.dat3m.dartagnan.program.event.lang.linux.*;
@@ -38,6 +39,20 @@ public class VisitorPower extends VisitorBase {
     protected VisitorPower(boolean useRC11Scheme, PowerScheme cToPowerScheme) {
         this.useRC11Scheme = useRC11Scheme;
         this.cToPowerScheme = cToPowerScheme;
+    }
+
+    // =============================================================================================
+    // ========================================= Common ============================================
+    // =============================================================================================
+
+    @Override
+    public List<Event> visitStoreExclusive(StoreExclusive e) {
+        RMWStoreExclusive store = newRMWStoreExclusiveWithMo(e.getAddress(), e.getMemValue(), true, e.getMo());
+
+        return eventSequence(
+                store,
+                newExecutionStatus(e.getResultRegister(), store)
+        );
     }
 
     // =============================================================================================
