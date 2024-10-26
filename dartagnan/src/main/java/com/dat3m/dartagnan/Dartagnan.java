@@ -356,7 +356,7 @@ public class Dartagnan extends BaseOptions {
                 try {
                     increaseBoundAndDump(reachedBounds, task.getConfig());
                 } catch (IOException e) {
-                    e.printStackTrace();
+                    logger.warn("Failed to save bounds file: {}", e.getLocalizedMessage());
                 }
             }
             summary.append(result).append("\n");

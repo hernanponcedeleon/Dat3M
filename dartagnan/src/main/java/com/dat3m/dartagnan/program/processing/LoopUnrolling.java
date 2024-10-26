@@ -289,7 +289,7 @@ public class LoopUnrolling implements ProgramProcessor {
                         .put(loopJump, bound);
             }
         } catch (IOException e) {
-            e.printStackTrace();
+            // Nothing to be done, filePath is guaranteed to exists when the FileReader is called.
         }
 
         return loopBoundsMapPerFunction;
@@ -313,7 +313,7 @@ public class LoopUnrolling implements ProgramProcessor {
             }
             csvPrinter.flush();
         } catch (IOException e) {
-            e.printStackTrace();
+            logger.warn("Failed to save bounds file: {}", e.getLocalizedMessage());
         }
     }
 
