@@ -17,6 +17,20 @@ import static com.dat3m.dartagnan.program.event.EventFactory.*;
 public class VisitorBPF extends VisitorBase {
 
     @Override
+    public List<Event> visitBPF_AcquireLoad(BPF_AcquireLoad e) {
+        return eventSequence(
+                newLoadWithMo(e.getResultRegister(), e.getAddress(), e.getMo())
+        );
+    }
+
+    @Override
+    public List<Event> visitBPF_ReleaseStore(BPF_ReleaseStore e) {
+        return eventSequence(
+                newStoreWithMo(e.getAddress(), e.getMemValue(), e.getMo())
+        );
+    }
+
+    @Override
     public List<Event> visitBPF_RMWOp(BPF_RMWOp e) {
         Expression address = e.getAddress();
         Register dummy = e.getFunction().newRegister(e.getAccessType());

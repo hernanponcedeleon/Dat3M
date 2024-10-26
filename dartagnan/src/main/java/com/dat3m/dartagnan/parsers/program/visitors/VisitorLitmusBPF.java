@@ -143,7 +143,7 @@ public class VisitorLitmusBPF extends LitmusBPFBaseVisitor<Object> {
         Register ra = programBuilder.getOrErrorRegister(mainThread, ctx.register(1).getText());
         Expression ca = (Expression) ctx.constant().accept(this);
         Expression address = expressions.makeAdd(ra, ca);
-        return programBuilder.addChild(mainThread, EventFactory.newLoadWithMo(r1, address, Tag.BPF.ACQ));
+        return programBuilder.addChild(mainThread, EventFactory.BPF.newBPF_AcquireLoad(r1, address));
     }
 
     @Override 
@@ -161,7 +161,7 @@ public class VisitorLitmusBPF extends LitmusBPFBaseVisitor<Object> {
         Expression ca = (Expression) ctx.constant().accept(this);
         Expression address = expressions.makeAdd(ra, ca);
         Expression val = (Expression) ctx.value().accept(this);
-        return programBuilder.addChild(mainThread, EventFactory.newStoreWithMo(address, val, Tag.BPF.REL));
+        return programBuilder.addChild(mainThread, EventFactory.BPF.newBPF_ReleaseStore(address, val));
     }
 
     @Override 

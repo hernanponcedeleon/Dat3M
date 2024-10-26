@@ -596,6 +596,14 @@ public class EventFactory {
         private BPF() {
         }
 
+        public static BPF_ReleaseStore newBPF_ReleaseStore(Expression address, Expression value) {
+            return new BPF_ReleaseStore(address, value);
+        }
+
+        public static BPF_AcquireLoad newBPF_AcquireLoad(Register register, Expression address) {
+            return new BPF_AcquireLoad(register, address);
+        }
+
         public static BPF_RMWOp newBPF_RMWOp(Expression address, IntBinaryOp operator, Expression operand) {
             return new BPF_RMWOp(address, operator, operand);
         }

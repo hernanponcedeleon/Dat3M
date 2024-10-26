@@ -9,6 +9,7 @@ import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.Tag.C11;
 import com.dat3m.dartagnan.program.event.arch.StoreExclusive;
+import com.dat3m.dartagnan.program.event.arch.bpf.*;
 import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.event.lang.catomic.*;
 import com.dat3m.dartagnan.program.event.lang.linux.*;
@@ -39,6 +40,12 @@ public class VisitorPower extends VisitorBase {
     protected VisitorPower(boolean useRC11Scheme, PowerScheme cToPowerScheme) {
         this.useRC11Scheme = useRC11Scheme;
         this.cToPowerScheme = cToPowerScheme;
+    }
+
+    public enum PowerScheme {
+
+        LEADING_SYNC, TRAILING_SYNC;
+
     }
 
     // =============================================================================================
@@ -953,9 +960,102 @@ public class VisitorPower extends VisitorBase {
         );
     }
 
-    public enum PowerScheme {
+    // =============================================================================================
+    // =========================================== BPF =============================================
+    // =============================================================================================
 
-        LEADING_SYNC, TRAILING_SYNC;
-
+    // Intuitive mapping
+    @Override
+    public List<Event> visitBPF_AcquireLoad(BPF_AcquireLoad e) {
+        Label label = newLabel("FakeDep");
+        return eventSequence(
+                newLoad(e.getResultRegister(), e.getAddress()),
+                newFakeCtrlDep(e.getResultRegister(), label),
+                label,
+                Power.newISyncBarrier()
+        );
     }
+
+    @Override
+    public List<Event> visitBPF_ReleaseStore(BPF_ReleaseStore e) {
+        return eventSequence(
+                Power.newLwSyncBarrier(),
+                newStore(e.getAddress(), e.getMemValue())
+        );
+    }
+
+    // Following
+    //		https://github.com/torvalds/linux/blob/master/arch/powerpc/net/bpf_jit_comp32.c
+    @Override
+    public List<Event> visitBPF_RMWOp(BPF_RMWOp e) {
+        Type type = e.getAccessType();
+        Register dummy = e.getFunction().newRegister(type);
+        Label head = newLabel("Spinloop_head");
+        Label end = newLabel("Spinloop_end");
+        Register statusReg = e.getFunction().newRegister(types.getBooleanType());
+        Store storeValue = Power.newRMWStoreConditional(e.getAddress(), dummy, true);
+
+        return eventSequence(
+            head,
+            newRMWLoadExclusive(dummy, e.getAddress()),
+            newLocal(dummy, expressions.makeIntBinary(dummy, e.getOperator(), e.getOperand())),
+            storeValue,
+            newExecutionStatus(statusReg, storeValue),
+            // Compilation happens after loop normalization, thus we use forward jumping
+            newJump(expressions.makeNot(statusReg), end),
+            newGoto(head),
+            end
+        );
+    }
+
+    @Override
+    public List<Event> visitBPF_RMWOpReturn(BPF_RMWOpReturn e) {
+        Type type = e.getAccessType();
+        Register dummy = e.getFunction().newRegister(type);
+        Label head = newLabel("Spinloop_head");
+        Label end = newLabel("Spinloop_end");
+        Register statusReg = e.getFunction().newRegister(types.getBooleanType());
+        Store storeValue = Power.newRMWStoreConditional(e.getAddress(), dummy, true);
+
+        return eventSequence(
+                Power.newSyncBarrier(),
+                head,
+                newRMWLoadExclusive(dummy, e.getAddress()),
+                newLocal(dummy, expressions.makeIntBinary(dummy, e.getOperator(), e.getOperand())),
+                storeValue,
+                newExecutionStatus(statusReg, storeValue),
+                // Compilation happens after loop normalization, thus we use forward jumping
+                newJump(expressions.makeNot(statusReg), end),
+                newGoto(head),
+                end,
+                Power.newSyncBarrier()
+        );
+    }
+    
+    // @Override
+    // public List<Event> visitBPF_CAS(BPF_CAS e) {
+    //     Type type = e.getAccessType();
+    //     Register dummy = e.getFunction().newRegister(type);
+    //     Label head = newLabel("Spinloop_head");
+    //     Label end = newLabel("Spinloop_end");
+    //     Register statusReg = e.getFunction().newRegister(types.getBooleanType());
+    //     Store storeValue = Power.newRMWStoreConditional(e.getAddress(), dummy, true);
+
+    //     return eventSequence(
+    //             Power.newSyncBarrier(),
+    //             head,
+    //             newRMWLoadExclusive(dummy, e.getAddress()),
+    //             newLocal(dummy, expressions.makeIntBinary(dummy, e.getOperator(), e.getOperand())),
+    //             storeValue,
+    //             newExecutionStatus(statusReg, storeValue),
+    //             // Compilation happens after loop normalization, thus we use forward jumping
+    //             newJump(expressions.makeNot(statusReg), end),
+    //             newGoto(head),
+    //             end,
+    //             Power.newSyncBarrier()
+    //     );
+    // }
+
+    // default T visitBPF_Xchg(BPF_Xchg e) { return visitMemEvent(e); }
+
 }

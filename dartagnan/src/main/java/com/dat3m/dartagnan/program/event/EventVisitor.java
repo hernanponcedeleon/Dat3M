@@ -69,6 +69,8 @@ public interface EventVisitor<T> {
     default T visitLKMMUnlock(LKMMUnlock e) { return visitMemEvent(e); }
 
     // ------------------ BPF Events ------------------
+    default T visitBPF_ReleaseStore(BPF_ReleaseStore e) { return visitMemEvent(e); }
+    default T visitBPF_AcquireLoad(BPF_AcquireLoad e) { return visitMemEvent(e); }
     default T visitBPF_RMWOp(BPF_RMWOp e) { return visitMemEvent(e); }
     default T visitBPF_RMWOpReturn(BPF_RMWOpReturn e) { return visitMemEvent(e); }
     default T visitBPF_CAS(BPF_CAS e) { return visitMemEvent(e); }
