@@ -289,7 +289,7 @@ public class LoopUnrolling implements ProgramProcessor {
                         .put(loopJump, bound);
             }
         } catch (IOException e) {
-            // Nothing to be done, filePath is guaranteed to exists when the FileReader is called.
+            logger.warn("Failed to read bounds file: {}", e.getLocalizedMessage());
         }
 
         return loopBoundsMapPerFunction;
