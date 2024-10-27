@@ -179,6 +179,7 @@ atomicOperation returns [IntBinaryOp op]
 
 location
     :   Identifier
+    |   LBracket Identifier RBracket
     ;
 
 register
