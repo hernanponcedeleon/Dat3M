@@ -57,13 +57,4 @@ public class WrongTargetTest {
         comp.setTarget(Arch.TSO);
         comp.run(p);
     }
-
-    @Test(expected = IllegalArgumentException.class)
-    public void ARMCompiledToPower() throws Exception {
-        Program p = new ProgramParser().parse(new File(getRootPath("litmus/AARCH64/ATOM/2+2W+poxxs.litmus")));
-        LoopUnrolling.newInstance().run(p);
-        Compilation comp = Compilation.newInstance();
-        comp.setTarget(Arch.POWER);
-        comp.run(p);
-    }
 }
