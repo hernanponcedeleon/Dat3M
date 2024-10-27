@@ -5,6 +5,8 @@ public class OptionNames {
     // Base Options
     public static final String PROPERTY = "property";
     public static final String BOUND = "bound";
+    public static final String BOUNDS_LOAD_PATH = "bound.load";
+    public static final String BOUNDS_SAVE_PATH = "bound.save";
     public static final String TARGET = "target";
     public static final String METHOD = "method";
     public static final String SOLVER = "solver";
