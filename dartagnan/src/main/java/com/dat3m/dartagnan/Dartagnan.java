@@ -413,9 +413,10 @@ public class Dartagnan extends BaseOptions {
     }
 
     private static void increaseBoundAndDump(List<Event> boundEvents, Configuration config) throws IOException {
-        final File boundsFile = new File(config.hasProperty(BOUNDS_SAVE_PATH) ?
-                config.getProperty(BOUNDS_SAVE_PATH) :
-                GlobalSettings.getBoundsFile());
+        if(!config.hasProperty(BOUNDS_SAVE_PATH)) {
+            return;
+        }
+        final File boundsFile = new File(config.getProperty(BOUNDS_SAVE_PATH));
 
         // Parse old entries
         final List<CSVRecord> entries;

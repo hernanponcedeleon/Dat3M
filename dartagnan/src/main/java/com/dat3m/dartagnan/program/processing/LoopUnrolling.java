@@ -68,7 +68,7 @@ public class LoopUnrolling implements ProgramProcessor {
     @Option(name = BOUNDS_SAVE_PATH,
             description = "Path to the CSV file to save loop bounds.",
             secure = true)
-    private String boundsSavePath = GlobalSettings.getBoundsFile();
+    private String boundsSavePath = "";
 
     // =====================================================================
 
