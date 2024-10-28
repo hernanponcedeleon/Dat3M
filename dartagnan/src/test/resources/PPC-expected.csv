@@ -1334,6 +1334,7 @@ litmus/PPC/R+isyncs.litmus,1
 litmus/PPC/R+lwsync+isync.litmus,1
 litmus/PPC/R+lwsync+po.litmus,1
 litmus/PPC/R+lwsync+sync.litmus,1
+litmus/PPC/R+lwsync+sync+excl+sync.litmus,1
 litmus/PPC/R+lwsyncs.litmus,1
 litmus/PPC/R+po+isync.litmus,1
 litmus/PPC/R+po+lwsync.litmus,1

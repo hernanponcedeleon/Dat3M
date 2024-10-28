@@ -116,15 +116,15 @@ public class VisitorLitmusPPC extends LitmusPPCBaseVisitor<Object> {
 
     @Override
     public Object visitLi(LitmusPPCParser.LiContext ctx) {
-        Register register = programBuilder.getOrNewRegister(mainThread, ctx.register().getText(), archType);
+        Register register = (Register) ctx.register().accept(this);
         IntLiteral constant = expressions.parseValue(ctx.constant().getText(), archType);
         return programBuilder.addChild(mainThread, EventFactory.newLocal(register, constant));
     }
 
     @Override
     public Object visitLwz(LitmusPPCParser.LwzContext ctx) {
-        Register r1 = programBuilder.getOrNewRegister(mainThread, ctx.register(0).getText(), archType);
-        Register ra = programBuilder.getOrErrorRegister(mainThread, ctx.register(1).getText());
+        Register r1 = (Register) ctx.register(0).accept(this);
+        Register ra = (Register) ctx.register(1).accept(this);
         return programBuilder.addChild(mainThread, EventFactory.newLoad(r1, ra));
     }
 
@@ -135,9 +135,17 @@ public class VisitorLitmusPPC extends LitmusPPCBaseVisitor<Object> {
     }
 
     @Override
+    public Object visitLwarx(LitmusPPCParser.LwarxContext ctx) {
+        Register r1 = (Register) ctx.register(0).accept(this);
+        Register ra = (Register) ctx.register(1).accept(this);
+        Register rb = (Register) ctx.register(2).accept(this);
+        return programBuilder.addChild(mainThread, EventFactory.newRMWLoadExclusive(r1, expressions.makeAdd(ra, rb)));
+    }
+
+    @Override
     public Object visitStw(LitmusPPCParser.StwContext ctx) {
-        Register r1 = programBuilder.getOrErrorRegister(mainThread, ctx.register(0).getText());
-        Register ra = programBuilder.getOrErrorRegister(mainThread, ctx.register(1).getText());
+        Register r1 = (Register) ctx.register(0).accept(this);
+        Register ra = (Register) ctx.register(1).accept(this);
         return programBuilder.addChild(mainThread, EventFactory.newStore(ra, r1));
     }
 
@@ -148,32 +156,44 @@ public class VisitorLitmusPPC extends LitmusPPCBaseVisitor<Object> {
     }
 
     @Override
+    public Object visitStwcx(LitmusPPCParser.StwcxContext ctx) {
+        // This instruction is usually followed by a branch instruction.
+        // Thus, the execution status of the store is saved in r0
+        // (the default register for branch conditions).
+        Register rs = programBuilder.getOrNewRegister(mainThread, "r0", types.getBooleanType());
+        Register r1 = (Register) ctx.register(0).accept(this);
+        Register ra = (Register) ctx.register(1).accept(this);
+        Register rb = (Register) ctx.register(2).accept(this);
+        return programBuilder.addChild(mainThread, EventFactory.Common.newExclusiveStore(rs, expressions.makeAdd(ra, rb), r1, ""));
+    }
+
+    @Override
     public Object visitMr(LitmusPPCParser.MrContext ctx) {
-        Register r1 = programBuilder.getOrNewRegister(mainThread, ctx.register(0).getText(), archType);
-        Register r2 = programBuilder.getOrErrorRegister(mainThread, ctx.register(1).getText());
+        Register r1 = (Register) ctx.register(0).accept(this);
+        Register r2 = (Register) ctx.register(1).accept(this);
         return programBuilder.addChild(mainThread, EventFactory.newLocal(r1, r2));
     }
 
     @Override
     public Object visitAddi(LitmusPPCParser.AddiContext ctx) {
-        Register r1 = programBuilder.getOrNewRegister(mainThread, ctx.register(0).getText(), archType);
-        Register r2 = programBuilder.getOrErrorRegister(mainThread, ctx.register(1).getText());
+        Register r1 = (Register) ctx.register(0).accept(this);
+        Register r2 = (Register) ctx.register(1).accept(this);
         IntLiteral constant = expressions.parseValue(ctx.constant().getText(), archType);
         return programBuilder.addChild(mainThread, EventFactory.newLocal(r1, expressions.makeAdd(r2, constant)));
     }
 
     @Override
     public Object visitXor(LitmusPPCParser.XorContext ctx) {
-        Register r1 = programBuilder.getOrNewRegister(mainThread, ctx.register(0).getText(), archType);
-        Register r2 = programBuilder.getOrErrorRegister(mainThread, ctx.register(1).getText());
-        Register r3 = programBuilder.getOrErrorRegister(mainThread, ctx.register(2).getText());
+        Register r1 = (Register) ctx.register(0).accept(this);
+        Register r2 = (Register) ctx.register(1).accept(this);
+        Register r3 = (Register) ctx.register(2).accept(this);
         return programBuilder.addChild(mainThread, EventFactory.newLocal(r1, expressions.makeIntXor(r2, r3)));
     }
 
     @Override
     public Object visitCmpw(LitmusPPCParser.CmpwContext ctx) {
-        Register r1 = programBuilder.getOrErrorRegister(mainThread, ctx.register(0).getText());
-        Register r2 = programBuilder.getOrErrorRegister(mainThread, ctx.register(1).getText());
+        Register r1 = (Register) ctx.register(0).accept(this);
+        Register r2 = (Register) ctx.register(1).accept(this);
         lastCmpInstructionPerThread.put(mainThread, new CmpInstruction(r1, r2));
         return null;
     }
@@ -182,10 +202,11 @@ public class VisitorLitmusPPC extends LitmusPPCBaseVisitor<Object> {
     public Object visitBranchCond(LitmusPPCParser.BranchCondContext ctx) {
         Label label = programBuilder.getOrCreateLabel(mainThread, ctx.Label().getText());
         CmpInstruction cmp = lastCmpInstructionPerThread.put(mainThread, null);
-        if(cmp == null){
-            throw new ParsingException("Invalid syntax near " + ctx.getText());
-        }
-        Expression expr = expressions.makeIntCmp(cmp.left, ctx.cond().op, cmp.right);
+        Expression expr = cmp == null ?
+            // In PPC, when there is no previous comparison instruction,
+            // the value of r0 is used as the branching condition
+            expressions.makeBooleanCast(programBuilder.getOrNewRegister(mainThread, "r0")) :
+            expressions.makeIntCmp(cmp.left, ctx.cond().op, cmp.right);
         return programBuilder.addChild(mainThread, EventFactory.newJump(expr, label));
     }
 
@@ -202,4 +223,10 @@ public class VisitorLitmusPPC extends LitmusPPCBaseVisitor<Object> {
         }
         throw new ParsingException("Unrecognised fence " + name);
     }
+
+    @Override
+    public Register visitRegister(LitmusPPCParser.RegisterContext ctx) {
+        return programBuilder.getOrNewRegister(mainThread, ctx.getText(), archType);
+    }
+
 }
