@@ -20,6 +20,8 @@
 
 grammar LLVMIR;
 
+//import InlineAArch64Lexer, InlineAArch64;
+
 compilationUnit: topLevelEntity* EOF;
 
 targetDef: targetDataLayout | targetTriple;
@@ -292,9 +294,11 @@ value:
 	constant
 	// %42 %foo
 	| LocalIdent;
+
 inlineAsm:
 	'asm' sideEffect = 'sideeffect'? alignStackTok = 'alignstack'? intelDialect = 'inteldialect'?
-		unwind = 'unwind'? StringLit ',' StringLit;
+	unwind = 'unwind'? StringLit ',' StringLit ;
+
 mdString: '!' StringLit;
 mdFieldOrInt: IntLit | mdField;
 diSPFlag: IntLit | DispFlag;
@@ -637,7 +641,7 @@ selectInst:
 freezeInst: 'freeze' typeValue;
 callInst:
 	tail = ('musttail' | 'notail' | 'tail')? 'call' fastMathFlag* callingConv? returnAttribute*
-		addrSpace? type (inlineAsm | value) '(' args ')' funcAttribute* (
+		addrSpace? type (inlineAsm | value)  '(' args ')' funcAttribute* (
 		'[' operandBundle (',' operandBundle)* ']'
 	)?;
 vaargInst:
@@ -1346,6 +1350,49 @@ fragment GlobalId: '@' Id;
 fragment LocalName: '%' (Name | QuotedString);
 fragment LocalId: '%' Id;
 fragment QuotedString: '"' (~["\r\n])* '"';
+
+
+//ASM Inline parsing
+/*
+
+//metaInstrRule
+asmInlineMetaInstrRule : Quot(metaInstr(','metaInstr)*)Quot;
+metaInstr : metadataInline | Clobber;
+metadataInline : OutputOpAssign | IsMemoryAddress | InputOpGeneralReg | MetadataExtraVariables;
+Clobber : '~{' (ClobberMemory | ClobberModifyFlags ) '}';
+
+
+
+// asmInlineRule
+asmRule : ((inlineAsmTokens)+WhiteSpace(asmVariableTypes)*(WhiteSpace','(asmVariableTypes))* EndInstruction?)+Quot;
+asmVariableTypes : VariableInline | ConstantInline | PrefetchStoreL1Once | LabelReference | NumbersInline;
+
+
+// actual tokenization
+AsmInlineMetaInstr : Quot(OutputOpAssign|GeneralPurposeReg|IsMemoryAddress|Clobber)(Comma(OutputOpAssign|GeneralPurposeReg|IsMemoryAddress|Clobber))* Quot ;
+
+AsmToken
+	: Quot
+	((AlignInline | LoadReg| LoadAcquireReg | LoadExclusiveReg| LoadAcquireExclusiveReg| Add | Compare | CompareBranchNonZero | BranchEqual | BranchNotEqual | SetEventLocally| WaitForEvent| StoreReg | StoreExclusiveRegister | StoreReleaseExclusiveReg| StoreReleaseReg| AtomicAddDoubleWordRelease| DataMemoryBarrier| SwapWordAcquire | CompareAndSwap | CompareAndSwapAcquire  | Move| PrefetchMemory | YieldTask | LabelDefinition) 
+	(WhiteSpace?
+	(VariableInline|ConstantInline|PrefetchStoreL1Once|LabelReference|DecimalDigit)* (Comma WhiteSpace (VariableInline|ConstantInline|LabelReference))* EndInstruction? )?
+	)+ Quot
+	//(VariableInline|ConstantInline)* WhiteSpace* (','(VariableInline|ConstantInline))* EndInstruction AsmToken*
+	{System.out.println("Read one asm line");}; 
+
+//MyAsm
+asmTokenVersion : AsmToken ',' AsmInlineMetaInstr;
+// problema : Attualmente ho definito come token "codice,metadati" e quindi non posso applicare una regola singola, perche' se no cercherebbe di prendere semplicemente '"' perche' non riconosce i token minimali.
+// bisogna pensare a come far si che pigli pezzo per pezzo e non tutto il blocco "..."
+
+
+
+inlineAsmTokens : AlignInline | LoadReg| LoadAcquireReg | LoadExclusiveReg| LoadAcquireExclusiveReg| Add | Compare | CompareBranchNonZero | BranchEqual | BranchNotEqual | SetEventLocally| WaitForEvent| StoreReg | StoreExclusiveRegister | StoreReleaseExclusiveReg| StoreReleaseReg| AtomicAddDoubleWordRelease| DataMemoryBarrier| SwapWordAcquire | CompareAndSwap | CompareAndSwapAcquire  | Move| PrefetchMemory | YieldTask | LabelDefinition;
+//Tmp : AlignInline | LoadReg| LoadAcquireReg | LoadExclusiveReg| LoadAcquireExclusiveReg| Add | Compare | CompareBranchNonZero | BranchEqual | BranchNotEqual | SetEventLocally| WaitForEvent| StoreReg | StoreExclusiveRegister | StoreReleaseExclusiveReg| StoreReleaseReg| AtomicAddDoubleWordRelease| DataMemoryBarrier| SwapWordAcquire | CompareAndSwap | CompareAndSwapAcquire  | Move| PrefetchMemory | YieldTask | LabelDefinition;
+// It can't be a Lexer rule atm, as it is going to confuse the parser on taking this rule or AsmToken
+
+ */
+
 Comment: ';' .*? '\r'? '\n' -> channel(HIDDEN);
 WhiteSpace: [ \t\n\r]+ -> skip;
 IntLit: '-'? DecimalDigit+ | IntHexLit;
