@@ -502,7 +502,6 @@ public class Intrinsics {
         //final Expression condAddress = call.getArguments().get(0);
         final Expression lockAddress = call.getArguments().get(1);
         //final Expression timespec = call.getArguments().get(2);
-        final var errorValue = call.getFunction().getProgram().newConstant(errorType);
         return List.of(
                 // Allow other threads to access the condition variable.
                 EventFactory.Pthread.newUnlock(lockAddress.toString(), lockAddress),
@@ -510,7 +509,7 @@ public class Intrinsics {
                 // Re-lock.
                 EventFactory.Pthread.newLock(lockAddress.toString(), lockAddress),
                 //TODO proper error code: ETIMEDOUT
-                EventFactory.newLocal(errorRegister, errorValue),
+                EventFactory.Svcomp.newNonDetChoice(errorRegister),
                 EventFactory.newAssume(expressions.makeGTE(errorRegister, expressions.makeZero(errorType), true))
         );
     }
@@ -743,14 +742,13 @@ public class Intrinsics {
         final Register errorRegister = getResultRegisterAndCheckArguments(1, call);
         final Expression lockAddress = call.getArguments().get(0);
         final Register successRegister = call.getFunction().newRegister(types.getBooleanType());
-        final Expression error = call.getFunction().getProgram().newConstant(errorRegister.getType());
         final Expression success = expressions.makeGeneralZero(errorRegister.getType());
         return List.of(
                 // Write-lock only if unlocked.
                 newRwlockTryWrlock(call, successRegister, lockAddress),
                 // Indicate success by returning zero.
-                EventFactory.newAssume(expressions.makeEQ(successRegister, expressions.makeEQ(error, success))),
-                EventFactory.newLocal(errorRegister, error)
+                EventFactory.Svcomp.newNonDetChoice(errorRegister),
+                EventFactory.newAssume(expressions.makeEQ(successRegister, expressions.makeEQ(errorRegister, success))),
         );
     }
 
@@ -770,13 +768,14 @@ public class Intrinsics {
         final Register errorRegister = getResultRegisterAndCheckArguments(1, call);
         final Register oldValueRegister = call.getFunction().newRegister(getRwlockDatatype());
         final Register successRegister = call.getFunction().newRegister(types.getBooleanType());
+        final Register expectedRegister = call.getFunction().newRegister(getRwlockDatatype());
         final Expression lockAddress = call.getArguments().get(0);
-        final Expression expected = call.getFunction().getProgram().newConstant(getRwlockDatatype());
         return List.of(
                 // Expect any other value than write-locked.
-                EventFactory.newAssume(expressions.makeNEQ(expected, getRwlockWriteLockedValue())),
+                EventFactory.Svcomp.newNonDetChoice(expectedRegister),
+                EventFactory.newAssume(expressions.makeNEQ(expectedRegister, getRwlockWriteLockedValue())),
                 // Increment shared counter only if not locked by writer.
-                newRwlockTryRdlock(call, oldValueRegister, successRegister, lockAddress, expected),
+                newRwlockTryRdlock(call, oldValueRegister, successRegister, lockAddress, expectedRegister),
                 // Fail only if write-locked.
                 EventFactory.newAssume(expressions.makeOr(successRegister, expressions.makeEQ(oldValueRegister, getRwlockWriteLockedValue()))),
                 // Deadlock if a violation occurred in another thread.
@@ -790,20 +789,20 @@ public class Intrinsics {
         final Register errorRegister = getResultRegisterAndCheckArguments(1, call);
         final Register oldValueRegister = call.getFunction().newRegister(getRwlockDatatype());
         final Register successRegister = call.getFunction().newRegister(types.getBooleanType());
+        final Register expectedRegister = call.getFunction().newRegister(getRwlockDatatype());
         final Expression lockAddress = call.getArguments().get(0);
-        final Expression expected = call.getFunction().getProgram().newConstant(getRwlockDatatype());
-        final Expression error = call.getFunction().getProgram().newConstant(errorRegister.getType());
         final Expression success = expressions.makeGeneralZero(errorRegister.getType());
         return List.of(
                 // Expect any other value than write-locked.
-                EventFactory.newAssume(expressions.makeNEQ(expected, getRwlockWriteLockedValue())),
+                EventFactory.Svcomp.newNonDetChoice(expectedRegister),
+                EventFactory.newAssume(expressions.makeNEQ(expectedRegister, getRwlockWriteLockedValue())),
                 // Increment shared counter only if not locked by writer.
-                newRwlockTryRdlock(call, oldValueRegister, successRegister, lockAddress, expected),
+                newRwlockTryRdlock(call, oldValueRegister, successRegister, lockAddress, expectedRegister),
                 // Fail only if write-locked.
                 EventFactory.newAssume(expressions.makeOr(successRegister, expressions.makeEQ(oldValueRegister, getRwlockWriteLockedValue()))),
                 // Indicate success with zero.
-                EventFactory.newAssume(expressions.makeEQ(successRegister, expressions.makeEQ(error, success))),
-                EventFactory.newLocal(errorRegister, error)
+                EventFactory.Svcomp.newNonDetChoice(errorRegister)
+                EventFactory.newAssume(expressions.makeEQ(successRegister, expressions.makeEQ(errorRegister, success))),
         );
     }
 
@@ -826,8 +825,8 @@ public class Intrinsics {
         //see https://linux.die.net/man/3/pthread_rwlock_unlock
         final Register errorRegister = getResultRegisterAndCheckArguments(1, call);
         final Register oldValueRegister = call.getFunction().newRegister(getRwlockDatatype());
+        final Register decrementRegister = call.getFunction().newRegister(getRwlockDatatype());
         final Expression lockAddress = call.getArguments().get(0);
-        final Expression decrement = call.getCalledFunction().getProgram().newConstant(getRwlockDatatype());
         final Expression one = expressions.makeOne(getRwlockDatatype());
         final Expression two = expressions.makeValue(BigInteger.TWO, getRwlockDatatype());
         final Expression lastReader = expressions.makeEQ(oldValueRegister, two);
@@ -835,8 +834,9 @@ public class Intrinsics {
         //TODO does not recognize whether the calling thread is allowed to unlock
         return List.of(
                 // decreases the lock value by 1, if not the last reader, or else 2.
-                EventFactory.Llvm.newRMW(oldValueRegister, lockAddress, decrement, IntBinaryOp.SUB, Tag.C11.MO_RELEASE),
-                EventFactory.newAssume(expressions.makeEQ(decrement, properDecrement)),
+                EventFactory.Svcomp.newNonDetChoice(decrementRegister),
+                EventFactory.Llvm.newRMW(oldValueRegister, lockAddress, decrementRegister, IntBinaryOp.SUB, Tag.C11.MO_RELEASE),
+                EventFactory.newAssume(expressions.makeEQ(decrementRegister, properDecrement)),
                 assignSuccess(errorRegister)
         );
     }
