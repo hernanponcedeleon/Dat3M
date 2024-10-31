@@ -4,7 +4,7 @@ options {tokenVocab=InlineAArch64Lexer;}
 /* each rule has the form asm sideeffect? "(instruction)*", "(metadata)*,~{clobber}*" */
 asm                                 // vvv this one is because the staddl starts with \0A for some reason
     :
-    (Quot(asmInstrEntries)*Quot)(Comma Quot(asmMetadataEntries)+ Quot)? EOF?
+    (Quot(asmInstrEntries)*Quot)Comma (Quot(asmMetadataEntries)+ Quot)+ EOF?
 ;
 
 asmInstrEntries : EndInstruction?((instr)EndInstruction?);
@@ -46,9 +46,9 @@ loadExclusiveReg : (LoadExclusiveReg VariableInline)Comma ConstantInline;
 loadAcquireExclusiveReg : (LoadAcquireExclusiveReg VariableInline)Comma ConstantInline;
 add : ((Add VariableInline)Comma VariableInline)Comma VariableInline;
 storeReg : (StoreReg VariableInline)Comma ConstantInline;
+storeReleaseReg : (StoreReleaseReg VariableInline)Comma ConstantInline;
 storeExclusiveRegister : ((StoreExclusiveRegister VariableInline)Comma VariableInline)Comma ConstantInline ;
 storeReleaseExclusiveReg : ((StoreReleaseExclusiveReg VariableInline)Comma VariableInline)Comma ConstantInline;
-storeReleaseReg : (StoreReleaseReg VariableInline)Comma ConstantInline;
 atomicAddDoubleWordRelease : (AtomicAddDoubleWordRelease VariableInline)Comma ConstantInline;
 dataMemoryBarrier : DataMemoryBarrier DataMemoryBarrierOpt; //atm it is catched by the visitorLlvm so it should not be mandatory
 swapWordAcquire : ((SwapWordAcquire VariableInline)Comma VariableInline)Comma ConstantInline;
