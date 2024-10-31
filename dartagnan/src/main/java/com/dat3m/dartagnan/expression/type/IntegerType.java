@@ -9,7 +9,7 @@ public class IntegerType implements Type {
 
     private final int bitWidth;
 
-    IntegerType(int bitWidth) {
+    public IntegerType(int bitWidth) {
         Preconditions.checkArgument(bitWidth > 0, "Invalid size for integers: %s", bitWidth);
         this.bitWidth = bitWidth;
     }
