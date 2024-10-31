@@ -748,7 +748,7 @@ public class Intrinsics {
                 newRwlockTryWrlock(call, successRegister, lockAddress),
                 // Indicate success by returning zero.
                 EventFactory.Svcomp.newNonDetChoice(errorRegister),
-                EventFactory.newAssume(expressions.makeEQ(successRegister, expressions.makeEQ(errorRegister, success))),
+                EventFactory.newAssume(expressions.makeEQ(successRegister, expressions.makeEQ(errorRegister, success)))
         );
     }
 
@@ -801,8 +801,8 @@ public class Intrinsics {
                 // Fail only if write-locked.
                 EventFactory.newAssume(expressions.makeOr(successRegister, expressions.makeEQ(oldValueRegister, getRwlockWriteLockedValue()))),
                 // Indicate success with zero.
-                EventFactory.Svcomp.newNonDetChoice(errorRegister)
-                EventFactory.newAssume(expressions.makeEQ(successRegister, expressions.makeEQ(errorRegister, success))),
+                EventFactory.Svcomp.newNonDetChoice(errorRegister),
+                EventFactory.newAssume(expressions.makeEQ(successRegister, expressions.makeEQ(errorRegister, success)))
         );
     }
 
