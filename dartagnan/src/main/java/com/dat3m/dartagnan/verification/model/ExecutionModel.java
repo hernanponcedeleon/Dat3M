@@ -1,23 +1,18 @@
 package com.dat3m.dartagnan.verification.model;
 
-import com.dat3m.dartagnan.encoding.EncodingContext;
-import com.dat3m.dartagnan.program.Program;
-import com.dat3m.dartagnan.program.Register;
-import com.dat3m.dartagnan.program.Thread;
-import com.dat3m.dartagnan.program.event.*;
-import com.dat3m.dartagnan.program.event.core.*;
-import com.dat3m.dartagnan.program.event.core.threading.ThreadArgument;
-import com.dat3m.dartagnan.program.event.lang.svcomp.BeginAtomic;
-import com.dat3m.dartagnan.program.event.lang.svcomp.EndAtomic;
-import com.dat3m.dartagnan.program.filter.Filter;
-import com.dat3m.dartagnan.program.memory.MemoryObject;
-import com.dat3m.dartagnan.utils.dependable.DependencyGraph;
-import com.dat3m.dartagnan.verification.VerificationTask;
-import com.dat3m.dartagnan.wmm.Wmm;
-import com.google.common.base.Preconditions;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Sets;
+import java.math.BigInteger;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+import java.util.Stack;
+import java.util.stream.Collectors;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
@@ -25,13 +20,39 @@ import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.Formula;
 import org.sosy_lab.java_smt.api.Model;
 
-import java.math.BigInteger;
-import java.util.*;
-import java.util.stream.Collectors;
-
+import com.dat3m.dartagnan.encoding.EncodingContext;
+import com.dat3m.dartagnan.program.Program;
+import com.dat3m.dartagnan.program.Register;
+import com.dat3m.dartagnan.program.Thread;
+import com.dat3m.dartagnan.program.event.Event;
+import com.dat3m.dartagnan.program.event.MemoryEvent;
+import com.dat3m.dartagnan.program.event.RegReader;
+import com.dat3m.dartagnan.program.event.RegWriter;
+import com.dat3m.dartagnan.program.event.Tag;
+import com.dat3m.dartagnan.program.event.core.Alloc;
+import com.dat3m.dartagnan.program.event.core.CondJump;
+import com.dat3m.dartagnan.program.event.core.ExecutionStatus;
+import com.dat3m.dartagnan.program.event.core.GenericVisibleEvent;
+import com.dat3m.dartagnan.program.event.core.IfAsJump;
+import com.dat3m.dartagnan.program.event.core.Label;
+import com.dat3m.dartagnan.program.event.core.Load;
+import com.dat3m.dartagnan.program.event.core.Local;
+import com.dat3m.dartagnan.program.event.core.MemoryCoreEvent;
+import com.dat3m.dartagnan.program.event.core.threading.ThreadArgument;
+import com.dat3m.dartagnan.program.event.lang.svcomp.BeginAtomic;
+import com.dat3m.dartagnan.program.event.lang.svcomp.EndAtomic;
+import com.dat3m.dartagnan.program.filter.Filter;
+import com.dat3m.dartagnan.program.memory.MemoryObject;
+import com.dat3m.dartagnan.utils.dependable.DependencyGraph;
+import com.dat3m.dartagnan.verification.VerificationTask;
 import static com.dat3m.dartagnan.wmm.RelationNameRepository.CO;
 import static com.dat3m.dartagnan.wmm.RelationNameRepository.RF;
+import com.dat3m.dartagnan.wmm.Wmm;
+import com.google.common.base.Preconditions;
 import static com.google.common.base.Preconditions.checkNotNull;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
 
 /*
 The ExecutionModel wraps a Model and extracts data from it in a more workable manner.
@@ -263,9 +284,11 @@ public class ExecutionModel {
         Map<Thread, List<List<Integer>>> atomicBlockRangesMap = new HashMap<>();
 
         for (Thread thread : threadList) {
+            System.out.println("The current thread is " + thread);
             initDepTracking();
             List<List<Integer>> atomicBlockRanges = atomicBlockRangesMap.computeIfAbsent(thread, key -> new ArrayList<>());
             Event e = thread.getEntry();
+            System.out.println("The event inside the thread is " + e);
             int atomicBegin = -1;
             int localId = 0;
             do {
@@ -274,6 +297,7 @@ public class ExecutionModel {
                     continue;
                 }
                 if (eventFilter.apply(e)) {
+                    System.out.println("e is " + e + "id is " + id + " localId is " + localId);
                     addEvent(e, id++, localId++);
                 }
                 trackDependencies(e);

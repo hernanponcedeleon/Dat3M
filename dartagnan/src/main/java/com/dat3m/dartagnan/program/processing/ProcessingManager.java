@@ -30,7 +30,6 @@ public class ProcessingManager implements ProgramProcessor {
     private final List<ProgramProcessor> programProcessors = new ArrayList<>();
 
     // =========================== Configurables ===========================
-
     @Option(name = REDUCE_SYMMETRY,
             description = "Reduces the symmetry of the program (unsound in general).",
             secure = true)
@@ -57,7 +56,6 @@ public class ProcessingManager implements ProgramProcessor {
     private boolean dynamicSpinLoopDetection = true;
 
     // =================== Debugging options ===================
-
     @Option(name = PRINT_PROGRAM_BEFORE_PROCESSING,
             description = "Prints the program before any processing.",
             secure = true)
@@ -83,9 +81,7 @@ public class ProcessingManager implements ProgramProcessor {
             secure = true)
     private boolean printAfterProcessing = false;
 
-
 // ======================================================================
-
     private ProcessingManager(Configuration config) throws InvalidConfigurationException {
         config.inject(this);
         final Intrinsics intrinsics = Intrinsics.fromConfig(config);
@@ -139,7 +135,7 @@ public class ProcessingManager implements ProgramProcessor {
                 ),
                 ProgramProcessor.fromFunctionProcessor(
                         FunctionProcessor.chain(
-                                performAssignmentInlining ? AssignmentInlining.newInstance() :  null,
+                                performAssignmentInlining ? AssignmentInlining.newInstance() : null,
                                 sccp,
                                 dce,
                                 removeDeadJumps
@@ -164,10 +160,8 @@ public class ProcessingManager implements ProgramProcessor {
     }
 
     // ==================================================
-
     public void run(Program program) {
         programProcessors.forEach(p -> p.run(program));
     }
-
 
 }
