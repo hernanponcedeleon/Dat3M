@@ -3,76 +3,110 @@ package com.dat3m.dartagnan.parsers.program.visitors;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.dat3m.dartagnan.configuration.Arch;
-import com.dat3m.dartagnan.expression.type.IntegerType;
+import com.dat3m.dartagnan.expression.Type;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.parsers.InlineAArch64BaseVisitor;
 import com.dat3m.dartagnan.parsers.InlineAArch64Parser;
-import com.dat3m.dartagnan.parsers.program.utils.ProgramBuilder;
-import com.dat3m.dartagnan.program.Program;
+import com.dat3m.dartagnan.program.Function;
+import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Event;
+import com.dat3m.dartagnan.program.event.EventFactory;
+
 
 public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
 
-    private List<Event> events = new ArrayList();
-    private ProgramBuilder programBuilder = ProgramBuilder.forArch(Program.SourceLanguage.AArch64,Arch.ARM8);
-    //might be needed later idk
-    private final TypeFactory types = programBuilder.getTypeFactory();
-    private final IntegerType archType = types.getArchType();
+    private enum MemoryOrder {
+        RELAXED("RLX"),
+        ACQUIRE("ACQ"),
+        RELEASE("REL"),
+        SEQUENTIAL("SEQ");
+    
+        private final String value;
+    
+        MemoryOrder(String value) {
+            this.value = value;
+        }
+    
+        public String getValue() {
+            return value;
+        }
+    }
+    
+    private final List<Event> events = new ArrayList();
+    private final Function llvmFunction;
+    private final Type archType = TypeFactory.getInstance().getIntegerType(64);
 
-    public VisitorInlineAArch64() {
-
+    public VisitorInlineAArch64(Function llvmFunction) {
+        this.llvmFunction = llvmFunction;
     }
 
-    @Override
-    public Object visitAsm(InlineAArch64Parser.AsmContext ctx) {
-        System.out.println("visitAsm");
-        return visitChildren(ctx);
+    public List<Event> getEvents(){
+        return this.events;
     }
-
-    @Override
-    public Object visitAsmInstrEntries(InlineAArch64Parser.AsmInstrEntriesContext ctx) {
-        System.out.println("visitInstrEntries");
-        return visitChildren(ctx);
-    }
-
-    @Override
-    public Object visitAsmMetadataEntries(InlineAArch64Parser.AsmMetadataEntriesContext ctx) {
-        System.out.println("visitAsmMetadataEntries");
-        return visitChildren(ctx);
-    }
-
-    @Override
-    public Object visitInstr(InlineAArch64Parser.InstrContext ctx) {
-        System.out.println("visitInstr");
-        return visitChildren(ctx);
+    
+    /* given the VariableInline as String it picks up if it is a 32 or 64 bit */
+    public Type getMemoryOrderGivenVariable(String variable){
+        int width = - 1;
+        if (variable.startsWith("${") && variable.endsWith("}")){
+            char letter = variable.charAt(4);
+            switch (letter) {
+                case 'w' -> width = 32;
+                case 'x' -> width = 64;
+                default -> throw new UnsupportedOperationException("Unrecognized pattern for variable : does not fit into ${NUM:x/w}");
+            }
+        } else if (variable.length() == 2){
+            width = 32; // assuming that $1,$2 are 32 bit
+        }
+        return TypeFactory.getInstance().getIntegerType(width);
     }
 
     @Override
     public Object visitLoadReg(InlineAArch64Parser.LoadRegContext ctx) {
-        System.out.println("Trying out to capture pieces of rules that I need...");
-        System.out.println(ctx.VariableInline());
-        System.out.println(ctx.ConstantInline());
-        // events.add(EventFactory.newLocal())
-        System.out.println("LoadReg");
+        String regString = ctx.VariableInline().getText();
+        String addrString = ctx.ConstantInline().getText();
+        Register register = llvmFunction.getOrNewRegister(regString, getMemoryOrderGivenVariable(regString));
+        Register address = llvmFunction.getOrNewRegister(addrString, getMemoryOrderGivenVariable(addrString));
+        MemoryOrder mo = MemoryOrder.RELAXED;
+        events.add(EventFactory.newLoadWithMo(register,address,mo.getValue()));
+        System.out.println("Added " + events.toString());
         return visitChildren(ctx);
     }
 
     @Override
     public Object visitLoadAcquireReg(InlineAArch64Parser.LoadAcquireRegContext ctx) {
-        System.out.println("LoadAcquireReg");
+        String regString = ctx.VariableInline().getText();
+        String addrString = ctx.ConstantInline().getText();
+        Register register = llvmFunction.getOrNewRegister(regString, getMemoryOrderGivenVariable(regString));
+        Register address = llvmFunction.getOrNewRegister(addrString, getMemoryOrderGivenVariable(addrString));
+        MemoryOrder mo = MemoryOrder.ACQUIRE;
+        events.add(EventFactory.newLoadWithMo(register,address,mo.getValue()));
+        System.out.println("Added " + events.toString());
         return visitChildren(ctx);
     }
 
     @Override
     public Object visitLoadExclusiveReg(InlineAArch64Parser.LoadExclusiveRegContext ctx) {
-        System.out.println("LoadExclusiveReg");
+        // for now LDR and LDXR are the same from Memory Ordering point of view
+        // as in Libvsync source code there is no generation with Exclusive mode 
+        String regString = ctx.VariableInline().getText();
+        String addrString = ctx.ConstantInline().getText();
+        Register register = llvmFunction.getOrNewRegister(regString, getMemoryOrderGivenVariable(regString));
+        Register address = llvmFunction.getOrNewRegister(addrString, getMemoryOrderGivenVariable(addrString));
+        MemoryOrder mo = MemoryOrder.RELAXED;
+        events.add(EventFactory.newLoadWithMo(register,address,mo.getValue()));
+        System.out.println("Added " + events.toString());
         return visitChildren(ctx);
     }
 
     @Override
     public Object visitLoadAcquireExclusiveReg(InlineAArch64Parser.LoadAcquireExclusiveRegContext ctx) {
-        System.out.println("LoadAcquireExclusiveReg");
+        String regString = ctx.VariableInline().getText();
+        String addrString = ctx.ConstantInline().getText();
+        Register register = llvmFunction.getOrNewRegister(regString, getMemoryOrderGivenVariable(regString));
+        Register address = llvmFunction.getOrNewRegister(addrString, getMemoryOrderGivenVariable(addrString));
+        MemoryOrder mo = MemoryOrder.ACQUIRE;
+        events.add(EventFactory.newLoadWithMo(register,address,mo.getValue()));
+        System.out.println("Added " + events.toString());
         return visitChildren(ctx);
     }
 
@@ -84,25 +118,50 @@ public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
 
     @Override
     public Object visitStoreReg(InlineAArch64Parser.StoreRegContext ctx) {
-        System.out.println("StoreReg");
+        String regString = ctx.VariableInline().getText();
+        String addrString = ctx.ConstantInline().getText();
+        Register register = llvmFunction.getOrNewRegister(regString, getMemoryOrderGivenVariable(regString));
+        Register address = llvmFunction.getOrNewRegister(addrString, getMemoryOrderGivenVariable(addrString));
+        MemoryOrder mo = MemoryOrder.RELAXED;
+        events.add(EventFactory.newStoreWithMo(register,address,mo.getValue()));
         return visitChildren(ctx);
     }
 
+
     @Override
     public Object visitStoreExclusiveRegister(InlineAArch64Parser.StoreExclusiveRegisterContext ctx) {
-        System.out.println("StoreExclusiveReg");
+        String result = ctx.VariableInline(0).getText(); // this register either holds 0 or 1 if the operation was successful or not, for now I'm collecting it but it is not needed
+        String regString = ctx.VariableInline(1).getText();
+        String addrString = ctx.ConstantInline().getText();
+        Register register = llvmFunction.getOrNewRegister(regString, getMemoryOrderGivenVariable(regString));
+        Register address = llvmFunction.getOrNewRegister(addrString, getMemoryOrderGivenVariable(addrString));
+        MemoryOrder mo = MemoryOrder.RELAXED;
+        events.add(EventFactory.newStoreWithMo(register,address,mo.getValue()));
         return visitChildren(ctx);
     }
 
     @Override
     public Object visitStoreReleaseExclusiveReg(InlineAArch64Parser.StoreReleaseExclusiveRegContext ctx) {
-        System.out.println("StoreReleaseExclusiveReg");
+        String result = ctx.VariableInline(0).getText();
+        String regString = ctx.VariableInline(1).getText();
+        String addrString = ctx.ConstantInline().getText();
+        Register register = llvmFunction.getOrNewRegister(regString, getMemoryOrderGivenVariable(regString));
+        Register address = llvmFunction.getOrNewRegister(addrString, getMemoryOrderGivenVariable(addrString));
+        MemoryOrder mo = MemoryOrder.RELEASE;
+        events.add(EventFactory.newStoreWithMo(register,address,mo.getValue()));
         return visitChildren(ctx);
     }
 
     @Override
     public Object visitStoreReleaseReg(InlineAArch64Parser.StoreReleaseRegContext ctx) {
-        System.out.println("StoreReleaseReg");
+        // this one breaks apparently randomly.. or I did not get how to make events
+        // reference run ttaslock.ll (write_rel function) and hclhlock.ll and see that...
+        String regString = ctx.VariableInline().getText();
+        String addrString = ctx.ConstantInline().getText();
+        Register register = llvmFunction.getOrNewRegister(regString, getMemoryOrderGivenVariable(regString));
+        Register address = llvmFunction.getOrNewRegister(addrString, getMemoryOrderGivenVariable(addrString));
+        MemoryOrder mo = MemoryOrder.RELEASE;
+        events.add(EventFactory.newStore(register, address));
         return visitChildren(ctx);
     }
 
@@ -193,7 +252,6 @@ public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
     @Override
     public Object visitPrefetchMemory(InlineAArch64Parser.PrefetchMemoryContext ctx) {
         System.out.println("PrefetchMemory");
-        System.out.println("prefetch");
         return visitChildren(ctx);
     }
 
