@@ -84,6 +84,9 @@ public class WitnessBuilder {
         if (summary.contains("user assertion")) {
             return "CHECK( init(main()), LTL(G ! call(reach_error())))";
         }
+        if (summary.contains("SVCOMP data race found")) {
+            return "CHECK( init(main()), LTL(G ! data-race) )";
+        }
         throw new UnsupportedOperationException("Violation found for unsupported property");
     }
 
