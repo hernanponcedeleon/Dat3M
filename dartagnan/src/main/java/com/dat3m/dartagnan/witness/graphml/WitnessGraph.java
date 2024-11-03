@@ -135,6 +135,11 @@ public class WitnessGraph extends ElemWithAttributes {
         return bmgr.and(enc);
     }
 
+    // FIXME: the code to generate RA knowledge from a violation witness is extremely fragile.
+    // We should rewrite this code to extract knowledge about the hb relation (from which the
+    // witness was actually generated) rather than rf and co. Then, the extended relation
+    // analysis should propagate this knowledge top-down to reach the base relations.
+
     private boolean graphEdgeImpliesHbEdge() {
         return hasAttributed(PRODUCER.toString()) && getAttributed(PRODUCER.toString()).equals("Dartagnan");
     }
