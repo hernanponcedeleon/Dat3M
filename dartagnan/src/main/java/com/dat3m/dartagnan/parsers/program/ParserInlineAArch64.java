@@ -11,14 +11,17 @@ import com.dat3m.dartagnan.parsers.InlineAArch64Parser;
 import com.dat3m.dartagnan.parsers.program.visitors.VisitorInlineAArch64;
 import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.Program;
+import com.dat3m.dartagnan.program.Register;
 
 public class ParserInlineAArch64 implements ParserInterface {
 
     private VisitorInlineAArch64 visitor;
     private final Function llvmFunction;
+    private final Register returnRegister;
 
-    public ParserInlineAArch64(Function function){
+    public ParserInlineAArch64(Function function, Register returnRegister){
         this.llvmFunction = function;
+        this.returnRegister = returnRegister;
     }
     public VisitorInlineAArch64 getVisitor(){
         return this.visitor;
@@ -34,7 +37,7 @@ public class ParserInlineAArch64 implements ParserInterface {
         InlineAArch64Parser parser = new InlineAArch64Parser(tokenStream);
         parser.addErrorListener(new AbortErrorListener());
         ParserRuleContext parserEntryPoint = parser.asm();
-        visitor = new VisitorInlineAArch64(this.llvmFunction);
+        visitor = new VisitorInlineAArch64(this.llvmFunction,this.returnRegister);
         return (Program) parserEntryPoint.accept(visitor);
     }
 }

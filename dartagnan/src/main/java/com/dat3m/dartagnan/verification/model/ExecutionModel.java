@@ -264,11 +264,9 @@ public class ExecutionModel {
         Map<Thread, List<List<Integer>>> atomicBlockRangesMap = new HashMap<>();
 
         for (Thread thread : threadList) {
-            System.out.println("The current thread is " + thread);
             initDepTracking();
             List<List<Integer>> atomicBlockRanges = atomicBlockRangesMap.computeIfAbsent(thread, key -> new ArrayList<>());
             Event e = thread.getEntry();
-            System.out.println("The event inside the thread is " + e);
             int atomicBegin = -1;
             int localId = 0;
             do {
@@ -277,7 +275,6 @@ public class ExecutionModel {
                     continue;
                 }
                 if (eventFilter.apply(e)) {
-                    System.out.println("e is " + e + "id is " + id + " localId is " + localId);
                     addEvent(e, id++, localId++);
                 }
                 trackDependencies(e);
