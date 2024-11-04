@@ -135,6 +135,11 @@ public class WitnessGraph extends ElemWithAttributes {
         return bmgr.and(enc);
     }
 
+    // FIXME: the code to generate RA knowledge from a violation witness is extremely fragile.
+    // We should rewrite this code to extract knowledge about the hb relation (from which the
+    // witness was actually generated) rather than rf and co. Then, the extended relation
+    // analysis should propagate this knowledge top-down to reach the base relations.
+
     private boolean graphEdgeImpliesHbEdge() {
         return hasAttributed(PRODUCER.toString()) && getAttributed(PRODUCER.toString()).equals("Dartagnan");
     }
@@ -150,8 +155,10 @@ public class WitnessGraph extends ElemWithAttributes {
             // If a graph edge implies a hb-relation, inter-thread communication guarantees
             // same address and thus rf.
             if (last instanceof Store && current instanceof Load
-                    && ((graphEdgeImpliesHbEdge() && !last.getThread().equals(current.getThread()))
-                    || alias.mustAlias(last, current))) {
+                    && ((graphEdgeImpliesHbEdge()
+                            && !last.getThread().equals(current.getThread())
+                            && alias.mayAlias(last, current))
+                        || alias.mustAlias(last, current))) {
                 k.add(last, current);
             }
             last = current;
@@ -175,7 +182,8 @@ public class WitnessGraph extends ElemWithAttributes {
                 .forEach(w2 -> k.add(w1, w2));
             // Special case for cross-thread edges.
             final Store immSucc = writes.get(i+1);
-            if(graphEdgeImpliesHbEdge() && !w1.getThread().equals(immSucc.getThread())) {
+            if(graphEdgeImpliesHbEdge() && !w1.getThread().equals(immSucc.getThread())
+                && alias.mayAlias(w1, immSucc)) {
                 k.add(w1, immSucc);
             }
         }
