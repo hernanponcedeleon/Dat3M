@@ -383,12 +383,13 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
             if (resultRegister != null) {
                 block.events.add(newLocal(resultRegister, program.newConstant(returnType)));
                 logger.warn(String.format("Interpreting inline assembly as an unconstrained value:  %s.", ctx.inlineAsm().getText()));
-                // List<Event> events = inlineAArch64Wrapper(ctx.inlineAsm().StringLit(0).getText()+ ","+ ctx.inlineAsm().StringLit(1).getText(), this.function);
-                // if(!events.isEmpty()){
-                //     block.events.addAll(events);
-                //     System.out.println("BLOCK EVENTS IN CALLINSTR ARE "+ block.events);
-                // }
+                List<Event> events = inlineAArch64Wrapper(ctx.inlineAsm().StringLit(0).getText()+ ","+ ctx.inlineAsm().StringLit(1).getText(), this.function, resultRegister);
+                if(!events.isEmpty()){
+                    block.events.addAll(events);
+                    System.out.println("CALLINSTR new events are "+ events);
+                }
             } else {
+                // Note : we enter here with a normal call void asm "...", and then we enter the switch case one
                 ctx.inlineAsm().accept(this);
             }
             return resultRegister;
@@ -530,7 +531,7 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
             case "fence rw,rw" -> fences.add(RISCV.newRWRWFence());
             case "fence tso" -> fences.add(RISCV.newTsoFence());
             case "fence i" -> fences.add(RISCV.newSynchronizeFence());
-            default -> {logger.warn(String.format("found asm in InlineAsm:  %s.", ctx.getText()));fences.addAll(inlineAArch64Wrapper(ctx.StringLit(0).getText()+", "+ ctx.StringLit(1).getText(), this.function));break;}//throw new ParsingException(String.format("Encountered unsupported inline assembly:  %s.", asm)); HAS TO BECOME INLINEWRAPPER
+            default -> {logger.warn(String.format("found asm in InlineAsm:  %s.", ctx.getText()));fences.addAll(inlineAArch64Wrapper(ctx.StringLit(0).getText()+", "+ ctx.StringLit(1).getText(), this.function, null));break;}//throw new ParsingException(String.format("Encountered unsupported inline assembly:  %s.", asm)); HAS TO BECOME INLINEWRAPPER
         }
         if(!fences.isEmpty()) {
             block.events.addAll(fences);
@@ -539,11 +540,10 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
         return null;
     }
 
-    public List<Event> inlineAArch64Wrapper(String inlineAsm, Function function){
-        // I have to push all events into this one and return it
+    public List<Event> inlineAArch64Wrapper(String inlineAsm, Function function, Register resultRegister){
         CharStream charStream = CharStreams.fromString(inlineAsm);
         System.out.println("Getting this from function "+ this.function);
-        ParserInlineAArch64 parser = new ParserInlineAArch64(function);
+        ParserInlineAArch64 parser = new ParserInlineAArch64(function,resultRegister);
         parser.parse(charStream);
         List<Event> events = parser.getVisitor().getEvents();
         System.out.println("Events are "+ events);
