@@ -1,6 +1,7 @@
 package com.dat3m.dartagnan.parsers.program.visitors;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 
 import org.antlr.v4.runtime.tree.TerminalNode;
@@ -60,11 +61,12 @@ public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
     private final List<Event> events = new ArrayList();
     private final Function llvmFunction;
     private final Register returnRegister;
-    private final Type archType = TypeFactory.getInstance().getIntegerType(64);
+    private final Type archType = TypeFactory.getInstance().getIntegerType(64); // maybe it is not needed anymore
     private final ExpressionFactory expressions = ExpressionFactory.getInstance();
     private final TypeFactory types = TypeFactory.getInstance();
     private final IntegerType integerType = types.getArchType();
-    private compareExpression comparator; // class used to use compare and so on
+    private final compareExpression comparator; // class used to use compare and so on
+    private final HashMap<String,Label> labelsDefined;
     
 
 
@@ -73,6 +75,7 @@ public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
         this.llvmFunction = llvmFunction;
         this.returnRegister = returnRegister; //this one is used to perform sideeffects if needed
         this.comparator = new compareExpression();
+        this.labelsDefined = new HashMap<>();
     }
 
     public List<Event> getEvents(){
@@ -94,6 +97,19 @@ public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
         }
         return TypeFactory.getInstance().getIntegerType(width);
     }
+
+    // if the label already exists return it, otherwise create it and append its event
+    public Label getOrNewLabel(String labelName){
+        Label label;
+        if (!this.labelsDefined.containsKey(labelName)){
+            label = EventFactory.newLabel(labelName);
+            events.add(label);
+        } else{
+            label = labelsDefined.get(labelName);
+        }
+        return label;
+    }
+
 
 
     private boolean isVariable(String registerName){
@@ -130,11 +146,11 @@ public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
     @Override
     public Object visitLoadExclusiveReg(InlineAArch64Parser.LoadExclusiveRegContext ctx) {
         // for now LDR and LDXR are the same from Memory Ordering point of view
-        // as in Libvsync source code there is no generation with Exclusive mode 
         Register register = makeRegister(ctx.VariableInline());
         Register address = makeRegister(ctx.ConstantInline());
         MemoryOrder mo = MemoryOrder.RELAXED;
         // events.add(EventFactory.newLoadWithMo(register,address,mo.getValue()));
+        events.add(EventFactory.newLocal(register, address)); // this one can be skipped since it is in a loop, so I make it local
         System.out.println("Added " + events.toString());
         return visitChildren(ctx);
     }
@@ -252,9 +268,8 @@ public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
     @Override
     public Object visitBranchEqual(InlineAArch64Parser.BranchEqualContext ctx) {
         System.out.println("BranchEqual");
-        Label label = EventFactory.newLabel(ctx.LabelReference().getText());
-        // in order to model the notion of "Flags being set" I am using the cmpTmp Register. Each time I have to jump to a non defined label I create it
-        events.add(label);
+        String labelName = ctx.LabelReference().getText();
+        Label label = getOrNewLabel(labelName);
         this.comparator.updateCompareExpressionOperator(IntCmpOp.EQ);
         events.add(EventFactory.newJump(this.comparator.compareExpression, label));
         return visitChildren(ctx);
@@ -263,9 +278,9 @@ public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
     @Override
     public Object visitBranchNotEqual(InlineAArch64Parser.BranchNotEqualContext ctx) {
         System.out.println("BranchNotEqual");
-        Label label = EventFactory.newLabel(ctx.LabelReference().getText());
-        // in order to model the notion of "Flags being set" I am using the cmpTmp Register. Each time I have to jump to a non defined label I create it
-        events.add(label);
+        String labelName = ctx.LabelReference().getText();
+        Label label = getOrNewLabel(labelName);
+        this.comparator.updateCompareExpressionOperator(IntCmpOp.NEQ);
         events.add(EventFactory.newJump(this.comparator.compareExpression, label));
         return visitChildren(ctx);
     }
