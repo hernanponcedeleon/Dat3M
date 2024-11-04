@@ -3,7 +3,13 @@ package com.dat3m.dartagnan.parsers.program.visitors;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.antlr.v4.runtime.tree.TerminalNode;
+
+import com.dat3m.dartagnan.expression.Expression;
+import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.Type;
+import com.dat3m.dartagnan.expression.integers.IntCmpOp;
+import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.parsers.InlineAArch64BaseVisitor;
 import com.dat3m.dartagnan.parsers.InlineAArch64Parser;
@@ -11,6 +17,7 @@ import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.EventFactory;
+import com.dat3m.dartagnan.program.event.core.Label;
 
 
 public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
@@ -31,13 +38,41 @@ public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
             return value;
         }
     }
+    private class compareExpression {
+        public Expression compareExpression;
+        public Register boolRegister;
+        public Register firstRegister;
+        public Register secondRegister;
+
+        public compareExpression(){
+            this.boolRegister = llvmFunction.getOrNewRegister("BOOLEAN_TEST", types.getBooleanType());
+        }
+        public void updateCompareExpression(Register firstRegister, IntCmpOp intCmpOp, Register secondRegister){
+            this.firstRegister = firstRegister;
+            this.secondRegister = secondRegister;
+            this.compareExpression = expressions.makeIntCmp(firstRegister, intCmpOp, secondRegister);
+        }
+        public void updateCompareExpressionOperator( IntCmpOp intCmpOp){
+            this.compareExpression = expressions.makeIntCmp(this.firstRegister, intCmpOp, this.secondRegister);
+        }
+    }
     
     private final List<Event> events = new ArrayList();
     private final Function llvmFunction;
+    private final Register returnRegister;
     private final Type archType = TypeFactory.getInstance().getIntegerType(64);
+    private final ExpressionFactory expressions = ExpressionFactory.getInstance();
+    private final TypeFactory types = TypeFactory.getInstance();
+    private final IntegerType integerType = types.getArchType();
+    private compareExpression comparator; // class used to use compare and so on
+    
 
-    public VisitorInlineAArch64(Function llvmFunction) {
+
+
+    public VisitorInlineAArch64(Function llvmFunction, Register returnRegister) {
         this.llvmFunction = llvmFunction;
+        this.returnRegister = returnRegister; //this one is used to perform sideeffects if needed
+        this.comparator = new compareExpression();
     }
 
     public List<Event> getEvents(){
@@ -45,7 +80,7 @@ public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
     }
     
     /* given the VariableInline as String it picks up if it is a 32 or 64 bit */
-    public Type getMemoryOrderGivenVariable(String variable){
+    public Type getVariableSize(String variable){
         int width = - 1;
         if (variable.startsWith("${") && variable.endsWith("}")){
             char letter = variable.charAt(4);
@@ -60,26 +95,34 @@ public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
         return TypeFactory.getInstance().getIntegerType(width);
     }
 
+
+    private boolean isVariable(String registerName){
+        return registerName.startsWith("${") && registerName.endsWith("}");
+    }
+
+    private Register makeRegister(TerminalNode node){
+        String nodeName = node.getText();
+        return llvmFunction.getOrNewRegister(nodeName,getVariableSize(nodeName));
+    }
+
     @Override
     public Object visitLoadReg(InlineAArch64Parser.LoadRegContext ctx) {
-        String regString = ctx.VariableInline().getText();
-        String addrString = ctx.ConstantInline().getText();
-        Register register = llvmFunction.getOrNewRegister(regString, getMemoryOrderGivenVariable(regString));
-        Register address = llvmFunction.getOrNewRegister(addrString, getMemoryOrderGivenVariable(addrString));
+        // this is the base example for an event with sideeffect
+        Register register = makeRegister(ctx.VariableInline());
+        Register address = makeRegister(ctx.ConstantInline());
         MemoryOrder mo = MemoryOrder.RELAXED;
-        events.add(EventFactory.newLoadWithMo(register,address,mo.getValue()));
+        Expression exp = isVariable(address.getName()) ? expressions.parseValue("22222", integerType) : expressions.parseValue(address.getName().substring(1), integerType); // TODO Change to a real value to parse
+        events.add(EventFactory.newLoadWithMo(returnRegister,exp,mo.getValue())); // we add to returnRegister because it is sideeffect
         System.out.println("Added " + events.toString());
         return visitChildren(ctx);
     }
 
     @Override
     public Object visitLoadAcquireReg(InlineAArch64Parser.LoadAcquireRegContext ctx) {
-        String regString = ctx.VariableInline().getText();
-        String addrString = ctx.ConstantInline().getText();
-        Register register = llvmFunction.getOrNewRegister(regString, getMemoryOrderGivenVariable(regString));
-        Register address = llvmFunction.getOrNewRegister(addrString, getMemoryOrderGivenVariable(addrString));
+        Register register = makeRegister(ctx.VariableInline());
+        Register address = makeRegister(ctx.ConstantInline());
         MemoryOrder mo = MemoryOrder.ACQUIRE;
-        events.add(EventFactory.newLoadWithMo(register,address,mo.getValue()));
+        // events.add(EventFactory.newLoadWithMo(register,address,mo.getValue()));
         System.out.println("Added " + events.toString());
         return visitChildren(ctx);
     }
@@ -88,24 +131,20 @@ public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
     public Object visitLoadExclusiveReg(InlineAArch64Parser.LoadExclusiveRegContext ctx) {
         // for now LDR and LDXR are the same from Memory Ordering point of view
         // as in Libvsync source code there is no generation with Exclusive mode 
-        String regString = ctx.VariableInline().getText();
-        String addrString = ctx.ConstantInline().getText();
-        Register register = llvmFunction.getOrNewRegister(regString, getMemoryOrderGivenVariable(regString));
-        Register address = llvmFunction.getOrNewRegister(addrString, getMemoryOrderGivenVariable(addrString));
+        Register register = makeRegister(ctx.VariableInline());
+        Register address = makeRegister(ctx.ConstantInline());
         MemoryOrder mo = MemoryOrder.RELAXED;
-        events.add(EventFactory.newLoadWithMo(register,address,mo.getValue()));
+        // events.add(EventFactory.newLoadWithMo(register,address,mo.getValue()));
         System.out.println("Added " + events.toString());
         return visitChildren(ctx);
     }
 
     @Override
     public Object visitLoadAcquireExclusiveReg(InlineAArch64Parser.LoadAcquireExclusiveRegContext ctx) {
-        String regString = ctx.VariableInline().getText();
-        String addrString = ctx.ConstantInline().getText();
-        Register register = llvmFunction.getOrNewRegister(regString, getMemoryOrderGivenVariable(regString));
-        Register address = llvmFunction.getOrNewRegister(addrString, getMemoryOrderGivenVariable(addrString));
+        Register register = makeRegister(ctx.VariableInline());
+        Register address = makeRegister(ctx.ConstantInline());
         MemoryOrder mo = MemoryOrder.ACQUIRE;
-        events.add(EventFactory.newLoadWithMo(register,address,mo.getValue()));
+        // events.add(EventFactory.newLoadWithMo(register,address,mo.getValue()));
         System.out.println("Added " + events.toString());
         return visitChildren(ctx);
     }
@@ -118,10 +157,8 @@ public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
 
     @Override
     public Object visitStoreReg(InlineAArch64Parser.StoreRegContext ctx) {
-        String regString = ctx.VariableInline().getText();
-        String addrString = ctx.ConstantInline().getText();
-        Register register = llvmFunction.getOrNewRegister(regString, getMemoryOrderGivenVariable(regString));
-        Register address = llvmFunction.getOrNewRegister(addrString, getMemoryOrderGivenVariable(addrString));
+        Register register = makeRegister(ctx.VariableInline());
+        Register address = makeRegister(ctx.ConstantInline());
         MemoryOrder mo = MemoryOrder.RELAXED;
         events.add(EventFactory.newStoreWithMo(register,address,mo.getValue()));
         return visitChildren(ctx);
@@ -131,10 +168,8 @@ public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
     @Override
     public Object visitStoreExclusiveRegister(InlineAArch64Parser.StoreExclusiveRegisterContext ctx) {
         String result = ctx.VariableInline(0).getText(); // this register either holds 0 or 1 if the operation was successful or not, for now I'm collecting it but it is not needed
-        String regString = ctx.VariableInline(1).getText();
-        String addrString = ctx.ConstantInline().getText();
-        Register register = llvmFunction.getOrNewRegister(regString, getMemoryOrderGivenVariable(regString));
-        Register address = llvmFunction.getOrNewRegister(addrString, getMemoryOrderGivenVariable(addrString));
+        Register register = makeRegister(ctx.VariableInline(1));
+        Register address = makeRegister(ctx.ConstantInline());
         MemoryOrder mo = MemoryOrder.RELAXED;
         events.add(EventFactory.newStoreWithMo(register,address,mo.getValue()));
         return visitChildren(ctx);
@@ -143,10 +178,8 @@ public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
     @Override
     public Object visitStoreReleaseExclusiveReg(InlineAArch64Parser.StoreReleaseExclusiveRegContext ctx) {
         String result = ctx.VariableInline(0).getText();
-        String regString = ctx.VariableInline(1).getText();
-        String addrString = ctx.ConstantInline().getText();
-        Register register = llvmFunction.getOrNewRegister(regString, getMemoryOrderGivenVariable(regString));
-        Register address = llvmFunction.getOrNewRegister(addrString, getMemoryOrderGivenVariable(addrString));
+        Register register = makeRegister(ctx.VariableInline(1));
+        Register address = makeRegister(ctx.ConstantInline());
         MemoryOrder mo = MemoryOrder.RELEASE;
         events.add(EventFactory.newStoreWithMo(register,address,mo.getValue()));
         return visitChildren(ctx);
@@ -154,14 +187,12 @@ public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
 
     @Override
     public Object visitStoreReleaseReg(InlineAArch64Parser.StoreReleaseRegContext ctx) {
-        // this one breaks apparently randomly.. or I did not get how to make events
+        //  TODO: this one breaks apparently randomly.. or I did not get how to make events correctly
         // reference run ttaslock.ll (write_rel function) and hclhlock.ll and see that...
-        String regString = ctx.VariableInline().getText();
-        String addrString = ctx.ConstantInline().getText();
-        Register register = llvmFunction.getOrNewRegister(regString, getMemoryOrderGivenVariable(regString));
-        Register address = llvmFunction.getOrNewRegister(addrString, getMemoryOrderGivenVariable(addrString));
+        Register register = makeRegister(ctx.VariableInline());
+        Register address = makeRegister(ctx.ConstantInline());
         MemoryOrder mo = MemoryOrder.RELEASE;
-        events.add(EventFactory.newStore(register, address));
+        events.add(EventFactory.newLocal(register, address)); // this one can be skipped since it is in a loop
         return visitChildren(ctx);
     }
 
@@ -186,6 +217,11 @@ public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
     @Override
     public Object visitCompare(InlineAArch64Parser.CompareContext ctx) {
         System.out.println("Compare");
+        Register firstRegister = makeRegister(ctx.VariableInline(0));
+        Register secondRegister = makeRegister(ctx.VariableInline(1));
+        this.comparator.updateCompareExpression(firstRegister, IntCmpOp.EQ, secondRegister);
+        System.out.println("Update object now it is " + this.comparator.firstRegister+ this.comparator.secondRegister+ this.comparator.compareExpression);
+        //events.add(EventFactory.newLocal(this.comparator.boolRegister,this.comparator.cmpTmp)); I don't think I need to make events
         return visitChildren(ctx);
     }
 
@@ -216,12 +252,21 @@ public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
     @Override
     public Object visitBranchEqual(InlineAArch64Parser.BranchEqualContext ctx) {
         System.out.println("BranchEqual");
+        Label label = EventFactory.newLabel(ctx.LabelReference().getText());
+        // in order to model the notion of "Flags being set" I am using the cmpTmp Register. Each time I have to jump to a non defined label I create it
+        events.add(label);
+        this.comparator.updateCompareExpressionOperator(IntCmpOp.EQ);
+        events.add(EventFactory.newJump(this.comparator.compareExpression, label));
         return visitChildren(ctx);
     }
 
     @Override
     public Object visitBranchNotEqual(InlineAArch64Parser.BranchNotEqualContext ctx) {
         System.out.println("BranchNotEqual");
+        Label label = EventFactory.newLabel(ctx.LabelReference().getText());
+        // in order to model the notion of "Flags being set" I am using the cmpTmp Register. Each time I have to jump to a non defined label I create it
+        events.add(label);
+        events.add(EventFactory.newJump(this.comparator.compareExpression, label));
         return visitChildren(ctx);
     }
 
