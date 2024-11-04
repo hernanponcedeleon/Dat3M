@@ -264,7 +264,8 @@ public class ProgramEncoder implements Encoder {
                     if (!e1.getThread().equals(e2.getThread())) {
                         Expression id2 = e2.getId();
                         BooleanFormula sameId = context.equal(context.encodeExpressionAt(id1, e1), context.encodeExpressionAt(id2, e2));
-                        BooleanFormula cf = bmgr.or(context.controlFlow(e2), bmgr.not(sameId));
+                        BooleanFormula cfImplExec = bmgr.implication(context.controlFlow(e2), context.execution(e2));
+                        BooleanFormula cf = bmgr.or(cfImplExec, bmgr.not(sameId));
                         allCF = bmgr.and(allCF, cf);
                     }
                 }
