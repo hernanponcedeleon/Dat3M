@@ -1181,14 +1181,13 @@ public class Intrinsics {
         final Expression yExt = expressions.makeCast(y, types.getIntegerType(width + 1), true);
         final Expression resultExt = expressions.makeCast(result, types.getIntegerType(width + 1), true);
         final Expression bvCheck = expressions.makeEQ(expressions.makeIntBinary(xExt, op, yExt), resultExt);
-
         final Expression flag = expressions.makeCast(
                 expressions.makeNot(expressions.makeAnd(bvCheck, rangeCheck)),
                 types.getIntegerType(1)
         );
-
+        final Type type = types.getAggregateType(List.of(result.getType(), flag.getType()));
         return List.of(
-                EventFactory.newLocal(resultReg, expressions.makeConstruct(List.of(result, flag)))
+                EventFactory.newLocal(resultReg, expressions.makeConstruct(type, List.of(result, flag)))
         );
     }
 

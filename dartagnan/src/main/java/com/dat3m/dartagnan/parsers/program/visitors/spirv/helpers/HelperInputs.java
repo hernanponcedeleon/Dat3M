@@ -48,16 +48,19 @@ public class HelperInputs {
 
     private static Expression castAggregate(String id, AggregateType type, Expression value) {
         if (value instanceof ConstructExpr aValue) {
-            int expectedSize = type.getDirectFields().size();
+            int expectedSize = type.getTypeOffsets().size();
             int actualSize = aValue.getOperands().size();
             if (expectedSize != actualSize) {
                 throw new ParsingException(errorMismatchingElementCount(id, expectedSize, actualSize));
             }
             List<Expression> elements = new ArrayList<>();
             for (int i = 0; i < actualSize; i++) {
-                elements.add(castInput(id, type.getDirectFields().get(i), aValue.getOperands().get(i)));
+                elements.add(castInput(id, type.getTypeOffsets().get(i).type(), aValue.getOperands().get(i)));
             }
-            return expressions.makeConstruct(elements);
+            List<Type> fields = elements.stream().map(Expression::getType).toList();
+            List<Integer> offsets = type.getTypeOffsets().stream().map(TypeOffset::offset).toList();
+            AggregateType aType = types.getAggregateType(fields, offsets);
+            return expressions.makeConstruct(aType, elements);
         }
         throw new ParsingException(errorMismatchingType(id, type, value.getType()));
     }

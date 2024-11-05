@@ -33,7 +33,7 @@ public class BadIndexTest extends AbstractTest {
                 {"; @Output: forall %v8[0][1]==0",
                         "Index is out of bounds for variable '%v8[0][1]'"},
                 {"; @Input: %v8={{{0}}}",
-                        "Mismatching value type for variable '%v8[0][0]', expected 'bv64' but received '{ bv64 }'"},
+                        "Mismatching value type for variable '%v8[0][0]', expected 'bv64' but received '{ 0: bv64 }'"},
                 {"; @Input: %v8={0}",
                         "Mismatching value type for variable '%v8[0]', expected '[1 x bv64]' but received 'bv64'"},
                 {"; @Input: %v8={{0}, {0}}",

@@ -6,6 +6,9 @@ import com.dat3m.dartagnan.expression.Type;
 import com.dat3m.dartagnan.expression.booleans.BoolLiteral;
 import com.dat3m.dartagnan.expression.integers.IntLiteral;
 import com.dat3m.dartagnan.expression.type.*;
+import com.dat3m.dartagnan.parsers.program.visitors.spirv.decorations.Decoration;
+import com.dat3m.dartagnan.parsers.program.visitors.spirv.decorations.DecorationType;
+import com.dat3m.dartagnan.parsers.program.visitors.spirv.decorations.Offset;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.helpers.HelperTags;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.builders.ProgramBuilder;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.utils.ThreadGrid;
@@ -63,8 +66,12 @@ public class MockProgramBuilder extends ProgramBuilder {
     }
 
     public AggregateType mockAggregateType(String id, String... innerTypeIds) {
+        Offset decoration = (Offset) getDecorationsBuilder().getDecoration(DecorationType.OFFSET);
+        Map<Integer, Integer> offsets = decoration.getValue(id);
         List<Type> innerTypes = Arrays.stream(innerTypeIds).map(this::getType).toList();
-        AggregateType type = typeFactory.getAggregateType(innerTypes);
+        AggregateType type = offsets != null
+                ? typeFactory.getAggregateType(innerTypes, new ArrayList<>(offsets.values()))
+                : typeFactory.getAggregateType(innerTypes);
         return (AggregateType) addType(id, type);
     }
 
@@ -90,7 +97,7 @@ public class MockProgramBuilder extends ProgramBuilder {
             return addExpression(id, construction);
         } else if (type instanceof AggregateType) {
             List<Expression> members = ((List<?>) value).stream().map(s -> getExpression((String) s)).toList();
-            Expression construction = exprFactory.makeConstruct(members);
+            Expression construction = exprFactory.makeConstruct(type, members);
             return addExpression(id, construction);
         }
         throw new UnsupportedOperationException("Unsupported mock constant type " + typeId);
@@ -123,6 +130,13 @@ public class MockProgramBuilder extends ProgramBuilder {
         memoryObject.setName(id);
         ScopedPointerVariable pointer = exprFactory.makeScopedPointerVariable(id, scopeId, pointedType, memoryObject);
         return (ScopedPointerVariable) addExpression(id, pointer);
+    }
+
+    public void mockStructMemberOffsets(String id, Integer... offsets) {
+        Decoration decoration = getDecorationsBuilder().getDecoration(DecorationType.OFFSET);
+        for (int i = 0; i < offsets.length; i++) {
+            decoration.addDecoration(id, Integer.toString(i), Integer.toString(offsets[i]));
+        }
     }
 
     public void mockFunctionStart(boolean addStartLabel) {

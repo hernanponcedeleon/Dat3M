@@ -7,20 +7,24 @@ import com.dat3m.dartagnan.expression.integers.IntLiteral;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.parsers.SpirvBaseVisitor;
 import com.dat3m.dartagnan.parsers.SpirvParser;
+import com.dat3m.dartagnan.parsers.program.visitors.spirv.decorations.DecorationType;
+import com.dat3m.dartagnan.parsers.program.visitors.spirv.decorations.Offset;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.helpers.HelperTags;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.builders.ProgramBuilder;
 
-import java.util.List;
-import java.util.Set;
+import java.util.*;
+import java.util.stream.IntStream;
 
 public class VisitorOpsType extends SpirvBaseVisitor<Type> {
 
     private static final TypeFactory types = TypeFactory.getInstance();
 
     private final ProgramBuilder builder;
+    private final Offset offset;
 
     public VisitorOpsType(ProgramBuilder builder) {
         this.builder = builder;
+        this.offset = (Offset) builder.getDecorationsBuilder().getDecoration(DecorationType.OFFSET);
     }
 
     @Override
@@ -92,8 +96,21 @@ public class VisitorOpsType extends SpirvBaseVisitor<Type> {
         String id = ctx.idResult().getText();
         List<Type> memberTypes = ctx.memberType().stream()
                 .map(memberCtx -> builder.getType(memberCtx.getText())).toList();
-        Type type = types.getAggregateType(memberTypes);
-        return builder.addType(id, type);
+        Map<Integer, Integer> offsets = offset.getValue(id);
+        if (offsets != null) {
+            if (memberTypes.size() == offsets.size()) {
+                List<Integer> memberOffsets = IntStream.range(0, offsets.size()).boxed().map(i -> {
+                    if (!offsets.containsKey(i)) {
+                        throw new ParsingException("Missing member offset decoration for struct '%s' index '%s'", id, i);
+                    }
+                    return offsets.get(i);
+                }).toList();
+                Type type = types.getAggregateType(memberTypes, memberOffsets);
+                return builder.addType(id, type);
+            }
+            throw new ParsingException("Illegal member offset decorations for struct '%s'", id);
+        }
+        throw new ParsingException("Missing member offset decorations for struct '%s'", id);
     }
 
     @Override

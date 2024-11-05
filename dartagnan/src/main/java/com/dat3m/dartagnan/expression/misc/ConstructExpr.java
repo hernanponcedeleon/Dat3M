@@ -7,6 +7,7 @@ import com.dat3m.dartagnan.expression.Type;
 import com.dat3m.dartagnan.expression.base.NaryExpressionBase;
 import com.dat3m.dartagnan.expression.type.AggregateType;
 import com.dat3m.dartagnan.expression.type.ArrayType;
+import com.dat3m.dartagnan.expression.type.TypeOffset;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -20,7 +21,8 @@ public final class ConstructExpr extends NaryExpressionBase<Type, ExpressionKind
         checkArgument(type instanceof AggregateType || type instanceof ArrayType,
                 "Non-constructible type %s.", type);
         checkArgument(!(type instanceof AggregateType a) ||
-                arguments.stream().map(Expression::getType).toList().equals(a.getDirectFields()),
+                arguments.stream().map(Expression::getType).toList()
+                        .equals(a.getTypeOffsets().stream().map(TypeOffset::type).toList()),
                 "Arguments do not match the constructor signature.");
         checkArgument(!(type instanceof ArrayType a) ||
                 !a.hasKnownNumElements() ||
