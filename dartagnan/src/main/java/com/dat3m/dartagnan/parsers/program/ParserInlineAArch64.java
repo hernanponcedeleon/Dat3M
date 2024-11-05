@@ -6,6 +6,7 @@ import org.antlr.v4.runtime.DiagnosticErrorListener;
 import org.antlr.v4.runtime.ParserRuleContext;
 
 import com.dat3m.dartagnan.exception.AbortErrorListener;
+import com.dat3m.dartagnan.expression.Type;
 import com.dat3m.dartagnan.parsers.InlineAArch64Lexer;
 import com.dat3m.dartagnan.parsers.InlineAArch64Parser;
 import com.dat3m.dartagnan.parsers.program.visitors.VisitorInlineAArch64;
@@ -18,10 +19,12 @@ public class ParserInlineAArch64 implements ParserInterface {
     private VisitorInlineAArch64 visitor;
     private final Function llvmFunction;
     private final Register returnRegister;
+    private final Type returnType;
 
-    public ParserInlineAArch64(Function function, Register returnRegister){
+    public ParserInlineAArch64(Function function, Register returnRegister,Type returnType){
         this.llvmFunction = function;
         this.returnRegister = returnRegister;
+        this.returnType = returnType;
     }
     public VisitorInlineAArch64 getVisitor(){
         return this.visitor;
@@ -37,7 +40,7 @@ public class ParserInlineAArch64 implements ParserInterface {
         InlineAArch64Parser parser = new InlineAArch64Parser(tokenStream);
         parser.addErrorListener(new AbortErrorListener());
         ParserRuleContext parserEntryPoint = parser.asm();
-        visitor = new VisitorInlineAArch64(this.llvmFunction,this.returnRegister);
+        visitor = new VisitorInlineAArch64(this.llvmFunction,this.returnRegister, this.returnType);
         return (Program) parserEntryPoint.accept(visitor);
     }
 }

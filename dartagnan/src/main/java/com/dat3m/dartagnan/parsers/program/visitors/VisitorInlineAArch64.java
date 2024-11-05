@@ -2,6 +2,7 @@ package com.dat3m.dartagnan.parsers.program.visitors;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
 
 import org.antlr.v4.runtime.tree.TerminalNode;
@@ -18,26 +19,11 @@ import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.EventFactory;
+import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.Label;
 
 public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
 
-    private enum MemoryOrder {
-        RELAXED("RLX"),
-        ACQUIRE("ACQ"),
-        RELEASE("REL"),
-        SEQUENTIAL("SEQ");
-
-        private final String value;
-
-        MemoryOrder(String value) {
-            this.value = value;
-        }
-
-        public String getValue() {
-            return value;
-        }
-    }
 
     private class CompareExpression {
 
@@ -70,20 +56,65 @@ public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
         }
     }
 
+    private class LlvmToArmRegisterMapping{
+        // the rule is like this 
+        // $n means r0, n \in Nats to "keep an id of the function"
+        // the first ${n:w}s are used to lock return values e.g. ${0:w}, ${1:w} means it is going to return 2 values in LLVM
+        // the other ones are the remaining args
+        private final List<Register> returnValues;
+        private final int returnValuesNumber;
+        private final HashMap<String,String> llvmToArmMap;
+
+        public LlvmToArmRegisterMapping(Function llvmFunction,Type returnType){
+            this.llvmToArmMap = new HashMap<>();
+            this.returnValues = llvmFunction.getParameterRegisters();
+            this.returnValuesNumber = assignReturnValues(returnType);
+            System.out.println(returnValuesNumber);
+            assert(this.returnValuesNumber >= 0);
+            // now we have to fill our map
+            for (int i = 0; i < returnValuesNumber; i++){
+                String key = String.format("${%d:w}", i);
+                String value = this.returnValues.get(i).getName();
+                llvmToArmMap.put(key,value);
+            }
+            System.out.println("State is " + llvmToArmMap);
+        }
+
+        private int assignReturnValues(Type returnType){
+            if (returnType == null){ //its a void fn
+                return 0;
+            }
+            String str = returnType.toString(); 
+            if (str.equals("bv32")){
+                return 1;
+            } else if (str.startsWith("{") && str.endsWith("}")){
+                String content = str.substring(1, str.length() - 1).trim(); // Remove curly braces
+                String[] elements = content.split(","); // Split by commas
+                return elements.length;
+            }
+            return -1;
+        }
+    }
+
     private final List<Event> events = new ArrayList();
     private final Function llvmFunction;
     private final Register returnRegister;
+    private final Type returnType;
     private final ExpressionFactory expressions = ExpressionFactory.getInstance();
     private final TypeFactory types = TypeFactory.getInstance();
     private final IntegerType integerType = types.getIntegerType(32);
     private final CompareExpression comparator; // class used to use compare and set flags
     private final HashMap<String, Label> labelsDefined;
+    private final LlvmToArmRegisterMapping llvmToArmMap; // keeps track of all mappings
+    
 
-    public VisitorInlineAArch64(Function llvmFunction, Register returnRegister) {
+    public VisitorInlineAArch64(Function llvmFunction, Register returnRegister,Type returnType) {
         this.llvmFunction = llvmFunction;
         this.returnRegister = returnRegister; //this one is used to perform sideeffects if needed
+        this.returnType = returnType;
         this.comparator = new CompareExpression();
         this.labelsDefined = new HashMap<>();
+        this.llvmToArmMap = new LlvmToArmRegisterMapping(llvmFunction, returnType);
     }
 
     public List<Event> getEvents() {
@@ -122,6 +153,7 @@ public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
         return label;
     }
 
+
     private boolean isVariable(String registerName) {
         return registerName.startsWith("${") && registerName.endsWith("}");
     }
@@ -135,10 +167,11 @@ public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
     public Object visitLoadReg(InlineAArch64Parser.LoadRegContext ctx) {
         // this is the base example for an event with sideeffect
         Register register = makeRegister(ctx.VariableInline());
-        Register address = makeRegister(ctx.ConstantInline());
-        MemoryOrder mo = MemoryOrder.RELAXED;
+        System.out.println(" the register is " + register);
+        Register address = makeRegister(ctx.ConstantInline()); //address
+        System.out.println(" the address is " + address);
         Expression exp = isVariable(address.getName()) ? expressions.parseValue("22222", integerType) : expressions.parseValue(address.getName().substring(1), integerType); // TODO Change to a real value to parse
-        events.add(EventFactory.newLoadWithMo(returnRegister, exp, mo.getValue())); // we add to returnRegister because it is sideeffect
+        events.add(EventFactory.newLoad(returnRegister, exp)); // we add to returnRegister because it is sideeffect
         System.out.println("Added " + events.toString());
         return visitChildren(ctx);
     }
@@ -146,8 +179,12 @@ public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
     @Override
     public Object visitLoadAcquireReg(InlineAArch64Parser.LoadAcquireRegContext ctx) {
         Register register = makeRegister(ctx.VariableInline());
+        System.out.println(" the register is " + register);
         Register address = makeRegister(ctx.ConstantInline());
-        MemoryOrder mo = MemoryOrder.ACQUIRE;
+        System.out.println(" the second register is " + address);
+        String mo = Tag.ARMv8.MO_ACQ;
+        var exp = isVariable(address.getName()) ? expressions.parseValue("22222", integerType) : expressions.parseValue(address.getName().substring(1), integerType);
+        events.add(EventFactory.newLoadWithMo(returnRegister, exp, mo)); // we add to returnRegister because it is sideeffect
         // events.add(EventFactory.newLoadWithMo(register,address,mo.getValue()));
         System.out.println("Added " + events.toString());
         return visitChildren(ctx);
@@ -158,9 +195,9 @@ public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
         // for now LDR and LDXR are the same from Memory Ordering point of view
         Register register = makeRegister(ctx.VariableInline());
         Register address = makeRegister(ctx.ConstantInline());
-        MemoryOrder mo = MemoryOrder.RELAXED;
         // events.add(EventFactory.newLoadWithMo(register,address,mo.getValue()));
-        events.add(EventFactory.newLocal(register, address)); // this one can be skipped since it is in a loop, so I make it local
+        Expression exp = isVariable(address.getName()) ? expressions.parseValue("22222", integerType) : expressions.parseValue(address.getName().substring(1), integerType);
+        events.add(EventFactory.newLocal(register, exp)); // this one can be skipped since it is in a loop, so I make it local
         System.out.println("Added " + events.toString());
         return visitChildren(ctx);
     }
@@ -169,8 +206,10 @@ public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
     public Object visitLoadAcquireExclusiveReg(InlineAArch64Parser.LoadAcquireExclusiveRegContext ctx) {
         Register register = makeRegister(ctx.VariableInline());
         Register address = makeRegister(ctx.ConstantInline());
-        MemoryOrder mo = MemoryOrder.ACQUIRE;
-        // events.add(EventFactory.newLoadWithMo(register,address,mo.getValue()));
+        String mo = Tag.ARMv8.MO_ACQ;
+        Expression exp = isVariable(address.getName()) ? expressions.parseValue("22222", integerType) : expressions.parseValue(address.getName().substring(1), integerType);
+        events.add(EventFactory.newLocal(register, exp));
+        // events.add(EventFactory.newLoadWithMo(returnRegister, exp, mo)); this one break due to "aggregate construct".. maybe something with returning 2 values and not 1 -- still it should return the value!!!
         System.out.println("Added " + events.toString());
         return visitChildren(ctx);
     }
@@ -185,8 +224,7 @@ public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
     public Object visitStoreReg(InlineAArch64Parser.StoreRegContext ctx) {
         Register register = makeRegister(ctx.VariableInline());
         Register address = makeRegister(ctx.ConstantInline());
-        MemoryOrder mo = MemoryOrder.RELAXED;
-        events.add(EventFactory.newStoreWithMo(register, address, mo.getValue()));
+        events.add(EventFactory.newStore(register, address));
         return visitChildren(ctx);
     }
 
@@ -196,8 +234,7 @@ public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
         this.comparator.updateStoreSucceeded(result.equals("1"));
         Register register = makeRegister(ctx.VariableInline(1));
         Register address = makeRegister(ctx.ConstantInline());
-        MemoryOrder mo = MemoryOrder.RELAXED;
-        events.add(EventFactory.newStoreWithMo(register, address, mo.getValue()));
+        events.add(EventFactory.newStore(register, address));
         return visitChildren(ctx);
     }
 
@@ -207,8 +244,8 @@ public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
         this.comparator.updateStoreSucceeded(result.equals("1"));
         Register register = makeRegister(ctx.VariableInline(1));
         Register address = makeRegister(ctx.ConstantInline());
-        MemoryOrder mo = MemoryOrder.RELEASE;
-        events.add(EventFactory.newStoreWithMo(register, address, mo.getValue()));
+        String mo = Tag.ARMv8.MO_REL;
+        events.add(EventFactory.newStoreWithMo(register, address, mo));
         return visitChildren(ctx);
     }
 
@@ -218,8 +255,8 @@ public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
         // reference run ttaslock.ll (write_rel function) and hclhlock.ll and see that...
         Register register = makeRegister(ctx.VariableInline());
         Register address = makeRegister(ctx.ConstantInline());
-        MemoryOrder mo = MemoryOrder.RELEASE;
-        events.add(EventFactory.newLocal(register, address)); // this one can be skipped since it is in a loop
+        String mo = Tag.ARMv8.MO_ACQ;
+        events.add(EventFactory.newStoreWithMo(register, address,mo)); // this one can be skipped since it is in a loop
         return visitChildren(ctx);
     }
 
@@ -242,8 +279,9 @@ public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
         Register newValueRegister = makeRegister(ctx.VariableInline(0));
         Register oldValueRegister = makeRegister(ctx.VariableInline(1));
         Register value = makeRegister(ctx.ConstantInline());
+        String mo = Tag.ARMv8.MO_ACQ;
         Expression exp = expressions.parseValue("1", integerType); // should hold oldValueRegister
-        events.add(EventFactory.newLoad(returnRegister, exp)); //for now mock and save 1
+        events.add(EventFactory.newLoad(returnRegister, exp)); // for now mock and save 1
         System.out.println("Added returnregister to events");
         exp = expressions.parseValue(value.getName().substring(1), integerType); // TODO Change to a real value to parse
         events.add(EventFactory.newLocal(newValueRegister, exp));

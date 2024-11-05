@@ -22,7 +22,7 @@ public class InlineAArch64Test {
         String input = Files.readString(path, StandardCharsets.UTF_8);
         System.out.println(input);
         CharStream charStream = CharStreams.fromString(input);
-        ParserInlineAArch64 parser = new ParserInlineAArch64(null,null); // this breaks the test because its going to try and create registers under null function
+        ParserInlineAArch64 parser = new ParserInlineAArch64(null,null,null); // this breaks the test because its going to try and create registers under null function
         parser.parse(charStream);
     }
 }
