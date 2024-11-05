@@ -28,6 +28,7 @@ public class MemoryTransformer extends ExprTransformer {
     // Thread / Subgroup / Workgroup / QueueFamily / Device
     private static final List<String> namePrefixes = List.of("T", "S", "W", "Q", "D");
 
+    private final Program program;
     private final Function function;
     private final BuiltIn builtIn;
     private final List<? extends Map<MemoryObject, MemoryObject>> scopeMapping;
@@ -35,9 +36,11 @@ public class MemoryTransformer extends ExprTransformer {
     private final List<IntUnaryOperator> scopeIdProvider;
     private final List<IntUnaryOperator> namePrefixIdxProvider;
     private Map<Register, Register> registerMapping;
+    private Map<NonDetValue, NonDetValue> nonDetMapping;
     private int tid;
 
     public MemoryTransformer(ThreadGrid grid, Function function, BuiltIn builtIn, Set<ScopedPointerVariable> variables) {
+        this.program = function.getProgram();
         this.function = function;
         this.builtIn = builtIn;
         this.scopeMapping = Stream.generate(() -> new HashMap<MemoryObject, MemoryObject>()).limit(namePrefixes.size()).toList();
@@ -65,11 +68,17 @@ public class MemoryTransformer extends ExprTransformer {
         builtIn.setThreadId(tid);
         registerMapping = function.getRegisters().stream().collect(
                 toMap(r -> r, r -> thread.getOrNewRegister(r.getName(), r.getType())));
+        nonDetMapping = new HashMap<>();
     }
 
     @Override
     public Expression visitRegister(Register register) {
         return registerMapping.get(register);
+    }
+
+    @Override
+    public Expression visitNonDetValue(NonDetValue nonDetValue) {
+        return nonDetMapping.computeIfAbsent(nonDetValue, x -> (NonDetValue) program.newConstant(x.getType()));
     }
 
     @Override
