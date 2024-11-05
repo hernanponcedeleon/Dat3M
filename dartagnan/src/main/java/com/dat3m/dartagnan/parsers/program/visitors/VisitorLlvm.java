@@ -500,6 +500,7 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
         block.events.add(Llvm.newFence(mo));
         return null;
     }
+
     // ----------------------------------------------------------------------------------------------------------------
     // Instructions producing a value
     @Override
