@@ -877,6 +877,7 @@ public class NativeRelationAnalysis implements RelationAnalysis {
                 for (Event r : g.getRange()) {
                     may.removeIf((e1, e2) -> e2 == r);
                 }
+                may.addAll(g);
             }
 
             logger.debug("Initial may set size for read-from: {}", may.size());
