@@ -875,9 +875,8 @@ public class NativeRelationAnalysis implements RelationAnalysis {
                 EventGraph g = witness.getReadFromKnowledge(program, alias);
                 must.addAll(g);
                 for (Event r : g.getRange()) {
-                    may.removeIf((e1, e2) -> e2 == r);
+                    may.removeIf((e1, e2) -> e2 == r && !g.contains(e1, e2));
                 }
-                may.addAll(g);
             }
 
             logger.debug("Initial may set size for read-from: {}", may.size());
