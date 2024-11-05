@@ -31,6 +31,8 @@ import java.math.BigInteger;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import javax.annotation.Nullable;
+
 import org.antlr.v4.runtime.CharStream;
 import org.antlr.v4.runtime.CharStreams;
 
@@ -383,7 +385,7 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
             if (resultRegister != null) {
                 block.events.add(newLocal(resultRegister, program.newConstant(returnType)));
                 logger.warn(String.format("Interpreting inline assembly as an unconstrained value:  %s.", ctx.inlineAsm().getText()));
-                List<Event> events = inlineAArch64Wrapper(ctx.inlineAsm().StringLit(0).getText()+ ","+ ctx.inlineAsm().StringLit(1).getText(), this.function, resultRegister);
+                List<Event> events = inlineAArch64Wrapper(ctx.inlineAsm().StringLit(0).getText()+ ","+ ctx.inlineAsm().StringLit(1).getText(), this.function, resultRegister, returnType);
                 if(!events.isEmpty()){
                     block.events.addAll(events);
                     System.out.println("CALLINSTR new events are "+ events);
@@ -531,19 +533,17 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
             case "fence rw,rw" -> fences.add(RISCV.newRWRWFence());
             case "fence tso" -> fences.add(RISCV.newTsoFence());
             case "fence i" -> fences.add(RISCV.newSynchronizeFence());
-            default -> {logger.warn(String.format("found asm in InlineAsm:  %s.", ctx.getText()));fences.addAll(inlineAArch64Wrapper(ctx.StringLit(0).getText()+", "+ ctx.StringLit(1).getText(), this.function, null));break;}//throw new ParsingException(String.format("Encountered unsupported inline assembly:  %s.", asm)); HAS TO BECOME INLINEWRAPPER
+            default -> {logger.warn(String.format("found asm in InlineAsm:  %s.", ctx.getText()));fences.addAll(inlineAArch64Wrapper(ctx.StringLit(0).getText()+", "+ ctx.StringLit(1).getText(), this.function, null, null));break;}//throw new ParsingException(String.format("Encountered unsupported inline assembly:  %s.", asm)); HAS TO BECOME INLINEWRAPPER
         }
         if(!fences.isEmpty()) {
             block.events.addAll(fences);
-            System.out.println("BLOCK EVENTS " + block.events);
         }
         return null;
     }
 
-    public List<Event> inlineAArch64Wrapper(String inlineAsm, Function function, Register resultRegister){
+    public List<Event> inlineAArch64Wrapper(String inlineAsm, Function function, Register resultRegister, Type returnType){
         CharStream charStream = CharStreams.fromString(inlineAsm);
-        System.out.println("Getting this from function "+ this.function);
-        ParserInlineAArch64 parser = new ParserInlineAArch64(function,resultRegister);
+        ParserInlineAArch64 parser = new ParserInlineAArch64(function,resultRegister, returnType);
         parser.parse(charStream);
         List<Event> events = parser.getVisitor().getEvents();
         System.out.println("Events are "+ events);
