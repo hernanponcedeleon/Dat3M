@@ -52,21 +52,6 @@ public class SVCOMPRunner extends BaseOptions {
     }
 
     @Option(
-        name=UMIN,
-        description="Starting unrolling bound <integer>.")
-    private int umin = 1;
-
-    @Option(
-        name=UMAX,
-        description="Ending unrolling bound <integer>.")
-    private int umax = Integer.MAX_VALUE;
-
-    @Option(
-        name=STEP,
-        description="Step size for the increasing unrolling bound <integer>.")
-    private int step = 1;
-
-    @Option(
         name=VALIDATE,
         description="Run Dartagnan as a violation witness validator. Argument is the path to the witness file.")
     private String witnessPath;
@@ -112,7 +97,7 @@ public class SVCOMPRunner extends BaseOptions {
             }
         }
 
-        int bound = witness.hasAttributed(UNROLLBOUND.toString()) ? parseInt(witness.getAttributed(UNROLLBOUND.toString())) : r.umin;
+        int bound = witness.hasAttributed(UNROLLBOUND.toString()) ? parseInt(witness.getAttributed(UNROLLBOUND.toString())) : 1;
 
         File file;
         String output = "UNKNOWN";
@@ -156,19 +141,13 @@ public class SVCOMPRunner extends BaseOptions {
                 System.out.println(e.getMessage());
                 System.exit(0);
             }
-            if(bound > r.umax) {
-                System.out.println("PASS");
-                break;
-            }
-            // We always do iterations 1 and 2 and then use the step
-            bound = bound == 1 ? 2 : bound + r.step;
+            bound++;
         }
     }
     
     private static List<String> filterOptions(Configuration config) {
     	
-        // BOUND is computed based on umin and the information from the witness
-        List<String> skip = Arrays.asList(PROPERTYPATH, UMIN, UMAX, STEP, BOUND);
+        List<String> skip = Arrays.asList(PROPERTYPATH);
     	
         return Arrays.stream(config.asPropertiesString().split("\n")).
             filter(p -> skip.stream().noneMatch(s -> s.equals(p.split(" = ")[0]))).
