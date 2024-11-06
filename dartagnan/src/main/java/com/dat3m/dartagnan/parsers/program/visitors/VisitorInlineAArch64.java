@@ -2,7 +2,6 @@ package com.dat3m.dartagnan.parsers.program.visitors;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.LinkedList;
 import java.util.List;
 
 import org.antlr.v4.runtime.tree.TerminalNode;
@@ -56,28 +55,29 @@ public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
         }
     }
 
-    private class LlvmToArmRegisterMapping{
+    private class ArmToLlvmRegisterMapping{
         // the rule is like this 
         // $n means r0, n \in Nats to "keep an id of the function"
         // the first ${n:w}s are used to lock return values e.g. ${0:w}, ${1:w} means it is going to return 2 values in LLVM
         // the other ones are the remaining args
-        private final List<Register> returnValues;
+        private final List<Register> fnParameters;
+        private final Register returnRegister;
         private final int returnValuesNumber;
-        private final HashMap<String,String> llvmToArmMap;
+        private final HashMap<String,String> armToLlvmMap;
+        private final int MAX_FN_CALLS = 10; // this is used to keep track of how many fn calls I am going to use
 
-        public LlvmToArmRegisterMapping(Function llvmFunction,Type returnType){
-            this.llvmToArmMap = new HashMap<>();
-            this.returnValues = llvmFunction.getParameterRegisters();
+        public ArmToLlvmRegisterMapping(Function llvmFunction,Type returnType, Register returnRegister){
+            this.armToLlvmMap = new HashMap<>();
+            this.returnRegister = returnRegister;
+            this.fnParameters = llvmFunction.getParameterRegisters();
+            System.out.println("The parameters of the fn are " + fnParameters);
             this.returnValuesNumber = assignReturnValues(returnType);
             System.out.println(returnValuesNumber);
             assert(this.returnValuesNumber >= 0);
-            // now we have to fill our map
-            for (int i = 0; i < returnValuesNumber; i++){
-                String key = String.format("${%d:w}", i);
-                String value = this.returnValues.get(i).getName();
-                llvmToArmMap.put(key,value);
-            }
-            System.out.println("State is " + llvmToArmMap);
+            // now we have to fill our map following the llvm rule 
+            // every $ is going to map to r0
+            populateRegisters(armToLlvmMap);
+            System.out.println("State is " + armToLlvmMap);
         }
 
         private int assignReturnValues(Type returnType){
@@ -94,6 +94,43 @@ public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
             }
             return -1;
         }
+
+        private void populateRegisters(HashMap<String,String> llvmToArmMap){
+            for (int i = 0; i < this.MAX_FN_CALLS; i++){
+                String key = String.format("$%d", i);
+                String value = this.fnParameters.get(0).getName();
+                llvmToArmMap.put(key,value);
+            }
+            if (returnRegister == null){
+                // if it is a void just push the parameters in
+                for (int i = 0; i < this.fnParameters.size() - 1; i++){
+                    String key = String.format("${%d:w}", i);
+                    int j = i + 1;
+                    String value = fnParameters.get(j).getName();
+                    llvmToArmMap.put(key,value);
+                }
+            } else{
+                // save return Register into the first, the rest are for other return values
+                llvmToArmMap.put("${0:w}",this.returnRegister.getName());
+                for (int i = 1; i < this.returnValuesNumber; i++){
+                    String key = String.format("${%d:w}", i);
+                    String value = "RegisterToBeEaten"+i;
+                    llvmToArmMap.put(key,value);
+                }
+                System.out.println("Now map looks like this " + llvmToArmMap);
+                // from where you left, continue and fill the fn parameters skipping r0 because it is already mapped
+                int registerCounter = 1;
+                for (int i = returnValuesNumber; i < returnValuesNumber + fnParameters.size() - 1 ; i++){
+                    String key = String.format("${%d:w}", i);
+                    System.out.println("Register COunter is " + registerCounter);
+                    System.out.println("i is " + i + " "+key);
+                    System.out.println("params are " + fnParameters);
+                    String value = fnParameters.get(registerCounter).getName();
+                    registerCounter++;
+                    llvmToArmMap.put(key,value);
+                }
+            }
+        }
     }
 
     private final List<Event> events = new ArrayList();
@@ -105,7 +142,7 @@ public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
     private final IntegerType integerType = types.getIntegerType(32);
     private final CompareExpression comparator; // class used to use compare and set flags
     private final HashMap<String, Label> labelsDefined;
-    private final LlvmToArmRegisterMapping llvmToArmMap; // keeps track of all mappings
+    private final ArmToLlvmRegisterMapping armToLlvmMap; // keeps track of all mappings
     
 
     public VisitorInlineAArch64(Function llvmFunction, Register returnRegister,Type returnType) {
@@ -114,7 +151,7 @@ public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
         this.returnType = returnType;
         this.comparator = new CompareExpression();
         this.labelsDefined = new HashMap<>();
-        this.llvmToArmMap = new LlvmToArmRegisterMapping(llvmFunction, returnType);
+        this.armToLlvmMap = new ArmToLlvmRegisterMapping(llvmFunction, returnType,returnRegister);
     }
 
     public List<Event> getEvents() {
