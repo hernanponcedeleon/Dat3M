@@ -61,6 +61,7 @@ public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
         // the other ones are the remaining args
         private final List<Register> fnParameters;
         private final Register returnRegister;
+        private String[] returnRegisterTypes;
         private final int returnValuesNumber;
         private final HashMap<String,Register> armToLlvmMap;
         private final int MAX_FN_CALLS = 10; // this is used to keep track of how many fn calls I am going to use
@@ -91,8 +92,8 @@ public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
                 return 1;
             } else if (str.startsWith("{") && str.endsWith("}")){
                 String content = str.substring(1, str.length() - 1).trim(); // Remove curly braces
-                String[] elements = content.split(","); // Split by commas
-                return elements.length;
+                this.returnRegisterTypes = content.split(","); // Split by commas
+                return this.returnRegisterTypes.length;
             }
             return -1;
         }
@@ -107,31 +108,42 @@ public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
                 // if it is a void just push the parameters in
                 for (int i = 0; i < this.fnParameters.size() - 1; i++){
                     String key = String.format("${%d:w}", i);
+                    String keyLong = String.format("${%d:x}", i);
                     int j = i + 1;
                     Register value = fnParameters.get(j);
                     llvmToArmMap.put(key,value);
+                    llvmToArmMap.put(keyLong,value);
                 }
             } else{
                 // save return Register into the first, the rest are for other return values
                 llvmToArmMap.put("${0:w}",this.returnRegister);
+                llvmToArmMap.put("${0:x}",this.returnRegister);
                 for (int i = 1; i < this.returnValuesNumber; i++){
                     String key = String.format("${%d:w}", i);
-                    Register value = null;
+                    String keyLong = String.format("${%d:x}", i);
+                    Type type = getTypeGivenString(this.returnRegisterTypes[i]); // by default it should be an int
+                    Register value = llvmFunction.newRegister("RegisterToBeEaten", type); // for now just do 
                     llvmToArmMap.put(key,value);
+                    llvmToArmMap.put(keyLong,value);
                 }
-                System.out.println("Now map looks like this " + llvmToArmMap);
                 // from where you left, continue and fill the fn parameters skipping r0 because it is already mapped
                 int registerCounter = 1;
                 for (int i = returnValuesNumber; i < returnValuesNumber + fnParameters.size() - 1 ; i++){
                     String key = String.format("${%d:w}", i);
-                    System.out.println("Register COunter is " + registerCounter);
-                    System.out.println("i is " + i + " "+key);
-                    System.out.println("params are " + fnParameters);
+                    String keyLong = String.format("${%d:x}", i);
                     Register value = fnParameters.get(registerCounter);
                     registerCounter++;
                     llvmToArmMap.put(key,value);
+                    llvmToArmMap.put(keyLong,value);
                 }
             }
+        }
+        private Type getTypeGivenString(String typeString){
+            Type res = integerType;
+            if(typeString.equals("ptr")){
+                res = types.getPointerType();
+            }
+            return res;
         }
     }
 
@@ -240,7 +252,7 @@ public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
         Register returnRegisterLlvm = this.armToLlvmMap.getLlvmRegister(returnRegisterName);
         Register valueToLoadLlvm = this.armToLlvmMap.getLlvmRegister(directMemoryAccess);
         String mo = Tag.ARMv8.MO_ACQ;
-        //events.add(EventFactory.newLoadWithMo(returnRegisterLlvm, valueToLoadLlvm,mo));
+        //events.add(EventFactory.newLoadWithMo(returnRegisterLlvm, valueToLoadLlvm,mo)); for now it is commented for the ttaslock double return value
         System.out.println("Added visitLoadAcquireExclusiveReg");
         return visitChildren(ctx);
     }
@@ -283,11 +295,14 @@ public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
         Register resultRegister = this.armToLlvmMap.getLlvmRegister(resultRegisterName);
         Expression simulationAllOk = expressions.parseValue("0",integerType); // holds simulation of store going ok
         this.comparator.updateStoreSucceeded(resultRegister);
-        Register register = makeRegister(ctx.VariableInline(1));
-        Register address = makeRegister(ctx.ConstantInline());
+        // this part is used for the store
+        String valueToStore = ctx.VariableInline(1).getText();
+        String directMemoryAccess = ctx.ConstantInline().getText();
+        Register valueToStoreLlvm = this.armToLlvmMap.getLlvmRegister(valueToStore);
+        Register registerToStoreLlvm = this.armToLlvmMap.getLlvmRegister(directMemoryAccess);
         String mo = Tag.ARMv8.MO_REL;
-        events.add(EventFactory.newStoreWithMo(register, address, mo));
-        events.add(EventFactory.newLocal(resultRegister,simulationAllOk));
+        events.add(EventFactory.newStoreWithMo(valueToStoreLlvm, registerToStoreLlvm,mo));
+        events.add(EventFactory.newLocal(resultRegister,simulationAllOk)); // simulate saving state into register..ctx. it should be r9[1]
         return visitChildren(ctx);
     }
 
@@ -337,6 +352,7 @@ public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
         String secondRegisterName = ctx.VariableInline(1).getText();
         Register firstRegister = this.armToLlvmMap.getLlvmRegister(firstRegisterName);
         Register secondRegister = this.armToLlvmMap.getLlvmRegister(secondRegisterName);
+        // actual issue : when comparing r13 which is { bv64, bv32 } and r2 which is only bv64 types do not match...
         this.comparator.updateCompareExpression(firstRegister, IntCmpOp.EQ, secondRegister);
         System.out.println("Update object now it is " + this.comparator.firstRegister + this.comparator.secondRegister + this.comparator.compareExpression);
         //events.add(EventFactory.newLocal(this.comparator.boolRegister,this.comparator.cmpTmp)); I don't think I need to make events
@@ -395,40 +411,10 @@ public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
     }
 
     @Override
-    public Object visitSetEventLocally(InlineAArch64Parser.SetEventLocallyContext ctx) {
-        System.out.println("SetEventlocally");
-        return visitChildren(ctx);
-    }
-
-    @Override
-    public Object visitWaitForEvent(InlineAArch64Parser.WaitForEventContext ctx) {
-        System.out.println("WaitForEvent");
-        return visitChildren(ctx);
-    }
-
-    @Override
     public Object visitLabelDefinition(InlineAArch64Parser.LabelDefinitionContext ctx) {
         System.out.println("LabelDefinition");
         Label label = getOrNewLabel(ctx.LabelDefinition().getText().replace(":", ""));
         events.add(label);
-        return visitChildren(ctx);
-    }
-
-    @Override
-    public Object visitAlignInline(InlineAArch64Parser.AlignInlineContext ctx) {
-        System.out.println("AlignInline");
-        return visitChildren(ctx);
-    }
-
-    @Override
-    public Object visitPrefetchMemory(InlineAArch64Parser.PrefetchMemoryContext ctx) {
-        System.out.println("PrefetchMemory");
-        return visitChildren(ctx);
-    }
-
-    @Override
-    public Object visitYieldtask(InlineAArch64Parser.YieldtaskContext ctx) {
-        System.out.println("YieldTask");
         return visitChildren(ctx);
     }
 
