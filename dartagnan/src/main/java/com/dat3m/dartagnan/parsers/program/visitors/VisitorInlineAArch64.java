@@ -154,6 +154,7 @@ public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
 
     private final List<Event> events = new ArrayList();
     private final Function llvmFunction;
+    private final Register returnRegister;
     private final ExpressionFactory expressions = ExpressionFactory.getInstance();
     private final TypeFactory types = TypeFactory.getInstance();
     private final IntegerType integerType = types.getIntegerType(32);
@@ -164,6 +165,7 @@ public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
 
     public VisitorInlineAArch64(Function llvmFunction, Register returnRegister,Type returnType) {
         this.llvmFunction = llvmFunction;
+        this.returnRegister = returnRegister;
         this.comparator = new CompareExpression();
         this.labelsDefined = new HashMap<>();
         this.armToLlvmMap = new ArmToLlvmRegisterMapping(llvmFunction, returnType,returnRegister);
@@ -337,7 +339,7 @@ public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
         Register directMemoryAccessLlvm = this.armToLlvmMap.getLlvmRegister(directMemoryAccess);
         String mo = Tag.ARMv8.MO_ACQ;
         events.add(EventFactory.newLoadWithMo(oldValueRegisterLlvm, directMemoryAccessLlvm,mo));
-        events.add(EventFactory.newStore(newValueRegisterLlvm,directMemoryAccessLlvm));
+        events.add(EventFactory.newStore(this.returnRegister,directMemoryAccessLlvm));
         return visitChildren(ctx);
     }
 
