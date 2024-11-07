@@ -664,9 +664,9 @@ public class Intrinsics {
         final Expression lockAddress = call.getArguments().get(0);
         final Expression locked = expressions.makeOne(type);
         final Expression unlocked = expressions.makeZero(type);
-        return List.of(
+        return EventFactory.eventSequence(
                 EventFactory.Llvm.newLoad(oldValueRegister, lockAddress, Tag.C11.MO_RELAXED),
-                EventFactory.newAssert(expressions.makeEQ(oldValueRegister, locked), "Unlocking an already unlocked mutex"),
+                notToInline.contains(AssertionType.USER) ? null : EventFactory.newAssert(expressions.makeEQ(oldValueRegister, locked), "Unlocking an already unlocked mutex"),
                 EventFactory.Llvm.newStore(lockAddress, unlocked, Tag.C11.MO_RELEASE),
                 assignSuccess(errorRegister)
         );

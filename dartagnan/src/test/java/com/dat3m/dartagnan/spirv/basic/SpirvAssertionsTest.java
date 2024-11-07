@@ -62,6 +62,8 @@ public class SpirvAssertionsTest {
                 {"uninitialized-forall.spv.dis", 1, FAIL},
                 {"uninitialized-private-exists.spv.dis", 1, PASS},
                 {"uninitialized-private-forall.spv.dis", 1, FAIL},
+                {"undef-exists.spv.dis", 1, PASS},
+                {"undef-forall.spv.dis", 1, FAIL},
                 {"read-write.spv.dis", 1, PASS},
                 {"vector-init.spv.dis", 1, PASS},
                 {"vector.spv.dis", 1, PASS},

@@ -21,8 +21,6 @@ else
     export DAT3M_HOME=$(pwd)
     export DAT3M_OUTPUT=$DAT3M_HOME/output
 
-    export OPTFLAGS="-mem2reg -sroa -early-cse -indvars -loop-unroll -fix-irreducible -loop-simplify -simplifycfg -gvn"
-
     skip_assertions_of_type="--program.processing.skipAssertionsOfType=USER"
     if [[ $propertypath == *"no-overflow.prp"* ]]; then
         export CFLAGS="-fgnu89-inline -fsanitize=signed-integer-overflow"

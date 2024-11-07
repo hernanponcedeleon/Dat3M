@@ -127,7 +127,6 @@ public class SVCOMPRunner extends BaseOptions {
             cmd.add("svcomp.properties");
             cmd.add(String.format("--%s=%s", PROPERTY, r.property.asStringOption()));
             cmd.add(String.format("--%s=%s", BOUND, bound));
-            cmd.add(String.format("--%s=%s", WITNESS, GRAPHML.asStringOption()));
             cmd.add(String.format("--%s=%s", WITNESS_ORIGINAL_PROGRAM_PATH, programPath));
             cmd.addAll(filterOptions(config));
 
