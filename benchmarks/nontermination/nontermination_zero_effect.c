@@ -25,6 +25,7 @@ void *thread(void *unused)
 {
     acquireLock();
     releaseLock();
+    return 0;
 }
 
 int main()

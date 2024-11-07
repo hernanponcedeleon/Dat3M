@@ -12,28 +12,26 @@ target triple = "arm64-apple-macosx14.0.0"
 ; Function Attrs: noinline nounwind ssp uwtable
 define i8* @thread(i8* noundef %0) #0 !dbg !23 {
   %2 = alloca i8*, align 8
-  %3 = alloca i8*, align 8
+  %3 = alloca i32, align 4
   %4 = alloca i32, align 4
-  %5 = alloca i32, align 4
-  store i8* %0, i8** %3, align 8
-  call void @llvm.dbg.declare(metadata i8** %3, metadata !27, metadata !DIExpression()), !dbg !28
-  br label %6, !dbg !29
+  store i8* %0, i8** %2, align 8
+  call void @llvm.dbg.declare(metadata i8** %2, metadata !27, metadata !DIExpression()), !dbg !28
+  br label %5, !dbg !29
 
-6:                                                ; preds = %11, %1
-  store i32 1, i32* %4, align 4, !dbg !30
-  %7 = load i32, i32* %4, align 4, !dbg !30
-  %8 = atomicrmw xchg i32* @lock, i32 %7 seq_cst, align 4, !dbg !30
-  store i32 %8, i32* %5, align 4, !dbg !30
-  %9 = load i32, i32* %5, align 4, !dbg !30
-  %10 = icmp eq i32 %9, 1, !dbg !31
-  br i1 %10, label %11, label %12, !dbg !29
+5:                                                ; preds = %10, %1
+  store i32 1, i32* %3, align 4, !dbg !30
+  %6 = load i32, i32* %3, align 4, !dbg !30
+  %7 = atomicrmw xchg i32* @lock, i32 %6 seq_cst, align 4, !dbg !30
+  store i32 %7, i32* %4, align 4, !dbg !30
+  %8 = load i32, i32* %4, align 4, !dbg !30
+  %9 = icmp ne i32 %8, 0, !dbg !31
+  br i1 %9, label %10, label %11, !dbg !29
 
-11:                                               ; preds = %6
-  br label %6, !dbg !29, !llvm.loop !32
+10:                                               ; preds = %5
+  br label %5, !dbg !29, !llvm.loop !32
 
-12:                                               ; preds = %6
-  %13 = load i8*, i8** %2, align 8, !dbg !35
-  ret i8* %13, !dbg !35
+11:                                               ; preds = %5
+  ret i8* null, !dbg !35
 }
 
 ; Function Attrs: nofree nosync nounwind readnone speculatable willreturn
@@ -42,12 +40,16 @@ declare void @llvm.dbg.declare(metadata, metadata, metadata) #1
 ; Function Attrs: noinline nounwind ssp uwtable
 define i8* @thread2(i8* noundef %0) #0 !dbg !36 {
   %2 = alloca i8*, align 8
-  %3 = alloca i8*, align 8
-  store i8* %0, i8** %3, align 8
-  call void @llvm.dbg.declare(metadata i8** %3, metadata !37, metadata !DIExpression()), !dbg !38
-  store atomic i32 1, i32* @lock seq_cst, align 4, !dbg !39
-  %4 = load i8*, i8** %2, align 8, !dbg !40
-  ret i8* %4, !dbg !40
+  %3 = alloca i32, align 4
+  %4 = alloca i32, align 4
+  store i8* %0, i8** %2, align 8
+  call void @llvm.dbg.declare(metadata i8** %2, metadata !37, metadata !DIExpression()), !dbg !38
+  store i32 1, i32* %3, align 4, !dbg !39
+  %5 = load i32, i32* %3, align 4, !dbg !39
+  %6 = atomicrmw xchg i32* @lock, i32 %5 seq_cst, align 4, !dbg !39
+  store i32 %6, i32* %4, align 4, !dbg !39
+  %7 = load i32, i32* %4, align 4, !dbg !39
+  ret i8* null, !dbg !40
 }
 
 ; Function Attrs: noinline nounwind ssp uwtable
@@ -108,16 +110,16 @@ attributes #2 = { "frame-pointer"="non-leaf" "no-trapping-math"="true" "stack-pr
 !32 = distinct !{!32, !29, !33, !34}
 !33 = !DILocation(line: 13, column: 43, scope: !23)
 !34 = !{!"llvm.loop.mustprogress"}
-!35 = !DILocation(line: 14, column: 1, scope: !23)
-!36 = distinct !DISubprogram(name: "thread2", scope: !7, file: !7, line: 16, type: !24, scopeLine: 16, flags: DIFlagPrototyped, spFlags: DISPFlagDefinition, unit: !2, retainedNodes: !26)
-!37 = !DILocalVariable(name: "unused", arg: 1, scope: !36, file: !7, line: 16, type: !5)
-!38 = !DILocation(line: 16, column: 21, scope: !36)
-!39 = !DILocation(line: 17, column: 10, scope: !36)
-!40 = !DILocation(line: 18, column: 1, scope: !36)
-!41 = distinct !DISubprogram(name: "main", scope: !7, file: !7, line: 20, type: !42, scopeLine: 21, spFlags: DISPFlagDefinition, unit: !2, retainedNodes: !26)
+!35 = !DILocation(line: 14, column: 5, scope: !23)
+!36 = distinct !DISubprogram(name: "thread2", scope: !7, file: !7, line: 17, type: !24, scopeLine: 17, flags: DIFlagPrototyped, spFlags: DISPFlagDefinition, unit: !2, retainedNodes: !26)
+!37 = !DILocalVariable(name: "unused", arg: 1, scope: !36, file: !7, line: 17, type: !5)
+!38 = !DILocation(line: 17, column: 21, scope: !36)
+!39 = !DILocation(line: 18, column: 5, scope: !36)
+!40 = !DILocation(line: 19, column: 5, scope: !36)
+!41 = distinct !DISubprogram(name: "main", scope: !7, file: !7, line: 22, type: !42, scopeLine: 23, spFlags: DISPFlagDefinition, unit: !2, retainedNodes: !26)
 !42 = !DISubroutineType(types: !43)
 !43 = !{!11}
-!44 = !DILocalVariable(name: "t1", scope: !41, file: !7, line: 22, type: !45)
+!44 = !DILocalVariable(name: "t1", scope: !41, file: !7, line: 24, type: !45)
 !45 = !DIDerivedType(tag: DW_TAG_typedef, name: "pthread_t", file: !46, line: 31, baseType: !47)
 !46 = !DIFile(filename: "/Library/Developer/CommandLineTools/SDKs/MacOSX13.sdk/usr/include/sys/_pthread/_pthread_t.h", directory: "")
 !47 = !DIDerivedType(tag: DW_TAG_typedef, name: "__darwin_pthread_t", file: !48, line: 118, baseType: !49)
@@ -142,9 +144,9 @@ attributes #2 = { "frame-pointer"="non-leaf" "no-trapping-math"="true" "stack-pr
 !66 = !DIBasicType(name: "char", size: 8, encoding: DW_ATE_signed_char)
 !67 = !{!68}
 !68 = !DISubrange(count: 8176)
-!69 = !DILocation(line: 22, column: 15, scope: !41)
-!70 = !DILocalVariable(name: "t2", scope: !41, file: !7, line: 22, type: !45)
-!71 = !DILocation(line: 22, column: 19, scope: !41)
-!72 = !DILocation(line: 24, column: 5, scope: !41)
-!73 = !DILocation(line: 25, column: 5, scope: !41)
-!74 = !DILocation(line: 27, column: 5, scope: !41)
+!69 = !DILocation(line: 24, column: 15, scope: !41)
+!70 = !DILocalVariable(name: "t2", scope: !41, file: !7, line: 24, type: !45)
+!71 = !DILocation(line: 24, column: 19, scope: !41)
+!72 = !DILocation(line: 26, column: 5, scope: !41)
+!73 = !DILocation(line: 27, column: 5, scope: !41)
+!74 = !DILocation(line: 29, column: 5, scope: !41)

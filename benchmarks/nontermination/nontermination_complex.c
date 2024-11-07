@@ -1,4 +1,5 @@
 #include <pthread.h>
+#include <stdatomic.h>
 
 /*
     Test case: Three loops that interfere with each other..
@@ -6,9 +7,9 @@
     NOTE: Any pair of loops would terminate, only all three together fail.
 */
 
-volatile int x = 0;
-volatile int y = 0;
-volatile int z = 0;
+atomic_int x = 0;
+atomic_int y = 0;
+atomic_int z = 0;
 
 void *thread(void *unused)
 {
@@ -17,6 +18,7 @@ void *thread(void *unused)
         x = 0;
         y = 1;
     }
+    return 0;
 }
 
 void *thread2(void *unused) {
@@ -25,6 +27,7 @@ void *thread2(void *unused) {
             z = i;
         }
     }
+    return 0;
 }
 
 void *thread3(void *unused) {
@@ -32,7 +35,7 @@ void *thread3(void *unused) {
         y = 0;
         z = 0;
     }
-
+    return 0;
 }
 
 int main()

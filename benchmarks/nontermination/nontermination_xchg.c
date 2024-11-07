@@ -10,11 +10,13 @@ atomic_int lock;
 
 void *thread(void *unused)
 {
-    while (atomic_exchange(&lock, 1) == 1);
+    while (atomic_exchange(&lock, 1) != 0);
+    return 0;
 }
 
 void *thread2(void *unused) {
-    lock = 1;
+    atomic_exchange(&lock, 1);
+    return 0;
 }
 
 int main()

@@ -192,14 +192,25 @@ public class NonTerminationEncoder {
     public BooleanFormula encodeNontermination() {
         final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
         final BooleanFormula atLeastOneStuckLoop = encodeLoopsAreStuck();
+        final BooleanFormula noExceptionalTermination = encodeNoExceptionalTermination();
         final BooleanFormula infixSuffixEquivalence = encodeInfixSuffixEquivalence();
         final BooleanFormula strongSuffixExtension = encodeStrongSuffixExtension();
 
         return bmgr.and(
+                noExceptionalTermination,
                 atLeastOneStuckLoop,
                 infixSuffixEquivalence,
                 strongSuffixExtension
         );
+    }
+
+    private BooleanFormula encodeNoExceptionalTermination() {
+        final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
+        final BooleanFormula noExceptionalTermination = task.getProgram()
+                .getThreadEventsWithAllTags(Tag.EXCEPTIONAL_TERMINATION).stream()
+                .map(e -> bmgr.not(context.execution(e)))
+                .reduce(bmgr.makeTrue(), bmgr::and);
+        return noExceptionalTermination;
     }
 
     private BooleanFormula encodeLoopsAreStuck() {
