@@ -324,6 +324,11 @@ public final class EncodingContext {
         return formulaManager.getIntegerFormulaManager().makeVariable(formulaManager.escape(name) + " " + event.getGlobalId());
     }
 
+    // TODO: The semantics of variable might not always be encoded. Be careful!
+    public BooleanFormula lastCoVar(Event write) {
+        return booleanFormulaManager.makeVariable("co_last(" + write.getGlobalId() + ")");
+    }
+
     public IntegerFormula memoryOrderClock(Event write) {
         checkArgument(write.hasTag(WRITE), "Cannot get a clock-var for non-writes.");
         if (write.hasTag(INIT)) {
