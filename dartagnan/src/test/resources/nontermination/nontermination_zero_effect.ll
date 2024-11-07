@@ -56,13 +56,11 @@ define void @releaseLock() #0 !dbg !39 {
 ; Function Attrs: noinline nounwind ssp uwtable
 define i8* @thread(i8* noundef %0) #0 !dbg !42 {
   %2 = alloca i8*, align 8
-  %3 = alloca i8*, align 8
-  store i8* %0, i8** %3, align 8
-  call void @llvm.dbg.declare(metadata i8** %3, metadata !45, metadata !DIExpression()), !dbg !46
+  store i8* %0, i8** %2, align 8
+  call void @llvm.dbg.declare(metadata i8** %2, metadata !45, metadata !DIExpression()), !dbg !46
   call void @acquireLock(), !dbg !47
   call void @releaseLock(), !dbg !48
-  %4 = load i8*, i8** %2, align 8, !dbg !49
-  ret i8* %4, !dbg !49
+  ret i8* null, !dbg !49
 }
 
 ; Function Attrs: nofree nosync nounwind readnone speculatable willreturn
@@ -144,11 +142,11 @@ attributes #2 = { "frame-pointer"="non-leaf" "no-trapping-math"="true" "stack-pr
 !46 = !DILocation(line: 24, column: 20, scope: !42)
 !47 = !DILocation(line: 26, column: 5, scope: !42)
 !48 = !DILocation(line: 27, column: 5, scope: !42)
-!49 = !DILocation(line: 28, column: 1, scope: !42)
-!50 = distinct !DISubprogram(name: "main", scope: !7, file: !7, line: 30, type: !51, scopeLine: 31, spFlags: DISPFlagDefinition, unit: !2, retainedNodes: !26)
+!49 = !DILocation(line: 28, column: 5, scope: !42)
+!50 = distinct !DISubprogram(name: "main", scope: !7, file: !7, line: 31, type: !51, scopeLine: 32, spFlags: DISPFlagDefinition, unit: !2, retainedNodes: !26)
 !51 = !DISubroutineType(types: !52)
 !52 = !{!11}
-!53 = !DILocalVariable(name: "t1", scope: !50, file: !7, line: 32, type: !54)
+!53 = !DILocalVariable(name: "t1", scope: !50, file: !7, line: 33, type: !54)
 !54 = !DIDerivedType(tag: DW_TAG_typedef, name: "pthread_t", file: !55, line: 31, baseType: !56)
 !55 = !DIFile(filename: "/Library/Developer/CommandLineTools/SDKs/MacOSX13.sdk/usr/include/sys/_pthread/_pthread_t.h", directory: "")
 !56 = !DIDerivedType(tag: DW_TAG_typedef, name: "__darwin_pthread_t", file: !57, line: 118, baseType: !58)
@@ -173,13 +171,13 @@ attributes #2 = { "frame-pointer"="non-leaf" "no-trapping-math"="true" "stack-pr
 !75 = !DIBasicType(name: "char", size: 8, encoding: DW_ATE_signed_char)
 !76 = !{!77}
 !77 = !DISubrange(count: 8176)
-!78 = !DILocation(line: 32, column: 15, scope: !50)
-!79 = !DILocalVariable(name: "t2", scope: !50, file: !7, line: 32, type: !54)
-!80 = !DILocation(line: 32, column: 19, scope: !50)
-!81 = !DILocalVariable(name: "t3", scope: !50, file: !7, line: 32, type: !54)
-!82 = !DILocation(line: 32, column: 23, scope: !50)
-!83 = !DILocation(line: 34, column: 5, scope: !50)
-!84 = !DILocation(line: 36, column: 5, scope: !50)
-!85 = !DILocation(line: 37, column: 5, scope: !50)
-!86 = !DILocation(line: 38, column: 5, scope: !50)
-!87 = !DILocation(line: 39, column: 5, scope: !50)
+!78 = !DILocation(line: 33, column: 15, scope: !50)
+!79 = !DILocalVariable(name: "t2", scope: !50, file: !7, line: 33, type: !54)
+!80 = !DILocation(line: 33, column: 19, scope: !50)
+!81 = !DILocalVariable(name: "t3", scope: !50, file: !7, line: 33, type: !54)
+!82 = !DILocation(line: 33, column: 23, scope: !50)
+!83 = !DILocation(line: 35, column: 5, scope: !50)
+!84 = !DILocation(line: 37, column: 5, scope: !50)
+!85 = !DILocation(line: 38, column: 5, scope: !50)
+!86 = !DILocation(line: 39, column: 5, scope: !50)
+!87 = !DILocation(line: 40, column: 5, scope: !50)
