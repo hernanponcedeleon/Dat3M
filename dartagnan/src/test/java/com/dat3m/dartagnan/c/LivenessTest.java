@@ -30,6 +30,11 @@ public class LivenessTest extends AbstractCTest {
     }
 
     @Override
+    protected Provider<Integer> getBoundProvider() {
+        return () -> 2;
+    }
+
+    @Override
     protected Provider<EnumSet<Property>> getPropertyProvider() {
         return () -> EnumSet.of(Property.LIVENESS);
     }
@@ -98,29 +103,29 @@ public class LivenessTest extends AbstractCTest {
                 {"locks/linuxrwlock", POWER, UNKNOWN},
                 {"locks/linuxrwlock", RISCV, UNKNOWN},
                 {"locks/linuxrwlock-acq2rx", TSO, UNKNOWN},
-                {"locks/linuxrwlock-acq2rx", ARM8, UNKNOWN},
-                {"locks/linuxrwlock-acq2rx", POWER, UNKNOWN},
-                {"locks/linuxrwlock-acq2rx", RISCV, UNKNOWN},
+                {"locks/linuxrwlock-acq2rx", ARM8, FAIL},
+                {"locks/linuxrwlock-acq2rx", POWER, FAIL},
+                {"locks/linuxrwlock-acq2rx", RISCV, FAIL},
                 {"locks/linuxrwlock-rel2rx", TSO, UNKNOWN},
-                {"locks/linuxrwlock-rel2rx", ARM8, UNKNOWN},
-                {"locks/linuxrwlock-rel2rx", POWER, UNKNOWN},
-                {"locks/linuxrwlock-rel2rx", RISCV, UNKNOWN},
+                {"locks/linuxrwlock-rel2rx", ARM8, FAIL},
+                {"locks/linuxrwlock-rel2rx", POWER, FAIL},
+                {"locks/linuxrwlock-rel2rx", RISCV, FAIL},
                 {"locks/mutex_musl", TSO, UNKNOWN},
                 {"locks/mutex_musl", ARM8, UNKNOWN},
                 {"locks/mutex_musl", POWER, UNKNOWN},
                 {"locks/mutex_musl", RISCV, UNKNOWN},
                 {"locks/mutex_musl-acq2rx_futex", TSO, UNKNOWN},
-                {"locks/mutex_musl-acq2rx_futex", ARM8, UNKNOWN},
-                {"locks/mutex_musl-acq2rx_futex", POWER, UNKNOWN},
-                {"locks/mutex_musl-acq2rx_futex", RISCV, UNKNOWN},
+                {"locks/mutex_musl-acq2rx_futex", ARM8, FAIL},
+                {"locks/mutex_musl-acq2rx_futex", POWER, FAIL},
+                {"locks/mutex_musl-acq2rx_futex", RISCV, FAIL},
                 {"locks/mutex_musl-acq2rx_lock", TSO, UNKNOWN},
                 {"locks/mutex_musl-acq2rx_lock", ARM8, UNKNOWN},
                 {"locks/mutex_musl-acq2rx_lock", POWER, UNKNOWN},
                 {"locks/mutex_musl-acq2rx_lock", RISCV, UNKNOWN},
                 {"locks/mutex_musl-rel2rx_futex", TSO, UNKNOWN},
-                {"locks/mutex_musl-rel2rx_futex", ARM8, UNKNOWN},
-                {"locks/mutex_musl-rel2rx_futex", POWER, UNKNOWN},
-                {"locks/mutex_musl-rel2rx_futex", RISCV, UNKNOWN},
+                {"locks/mutex_musl-rel2rx_futex", ARM8, FAIL},
+                {"locks/mutex_musl-rel2rx_futex", POWER, FAIL},
+                {"locks/mutex_musl-rel2rx_futex", RISCV, FAIL},
                 {"locks/mutex_musl-rel2rx_unlock", TSO, UNKNOWN},
                 {"locks/mutex_musl-rel2rx_unlock", ARM8, UNKNOWN},
                 {"locks/mutex_musl-rel2rx_unlock", POWER, UNKNOWN},
@@ -137,6 +142,13 @@ public class LivenessTest extends AbstractCTest {
                 {"locks/deadlock", ARM8, FAIL},
                 {"locks/deadlock", POWER, FAIL},
                 {"locks/deadlock", RISCV, FAIL},
+                // Side-effectful nontermination
+                {"nontermination/nontermination", TSO, FAIL},
+                {"nontermination/nontermination_xchg", TSO, FAIL},
+                {"nontermination/nontermination_zero_effect", TSO, FAIL},
+                {"nontermination/nontermination_complex", TSO, FAIL},
+                {"nontermination/nontermination_weak", TSO, UNKNOWN},
+                {"nontermination/nontermination_weak", ARM8, FAIL}
         });
     }
 
