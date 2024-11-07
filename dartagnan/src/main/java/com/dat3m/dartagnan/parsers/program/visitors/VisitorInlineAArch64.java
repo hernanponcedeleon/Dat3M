@@ -258,6 +258,15 @@ public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
     @Override
     public Object visitAdd(InlineAArch64Parser.AddContext ctx) {
         System.out.println("Add");
+        String resultRegisterName = ctx.VariableInline(0).getText();
+        String leftRegName = ctx.VariableInline(1).getText();
+        String rightRegName = ctx.VariableInline(2).getText();
+        Register resultRegister = this.armToLlvmMap.getLlvmRegister(resultRegisterName);
+        Register leftRegister = this.armToLlvmMap.getLlvmRegister(leftRegName);
+        Register rightRegister = this.armToLlvmMap.getLlvmRegister(rightRegName);
+        Expression exp = expressions.makeAdd(leftRegister, rightRegister);
+        //An add is a local operation. Can be seen as a store in dat3m internal encoding
+        events.add(EventFactory.newLocal(resultRegister, exp));
         return visitChildren(ctx);
     }
 
