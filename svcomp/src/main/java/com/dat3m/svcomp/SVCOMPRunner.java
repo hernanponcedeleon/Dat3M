@@ -24,8 +24,6 @@ import org.apache.logging.log4j.Logger;
 
 import static com.dat3m.dartagnan.configuration.OptionInfo.collectOptions;
 import static com.dat3m.dartagnan.configuration.OptionNames.*;
-import static com.dat3m.dartagnan.parsers.program.utils.Compilation.*;
-import static com.dat3m.dartagnan.witness.WitnessType.GRAPHML;
 import static com.dat3m.dartagnan.witness.graphml.GraphAttributes.UNROLLBOUND;
 import static java.lang.Integer.parseInt;
 
@@ -99,7 +97,6 @@ public class SVCOMPRunner extends BaseOptions {
 
         int bound = witness.hasAttributed(UNROLLBOUND.toString()) ? parseInt(witness.getAttributed(UNROLLBOUND.toString())) : 1;
 
-        File file;
         String output = "UNKNOWN";
         while(output.equals("UNKNOWN")) {
             ArrayList<String> cmd = new ArrayList<>();
