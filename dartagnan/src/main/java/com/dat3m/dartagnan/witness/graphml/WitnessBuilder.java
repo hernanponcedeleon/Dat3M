@@ -11,6 +11,7 @@ import com.dat3m.dartagnan.program.event.core.MemoryCoreEvent;
 import com.dat3m.dartagnan.program.event.core.Store;
 import com.dat3m.dartagnan.program.event.lang.svcomp.EndAtomic;
 import com.dat3m.dartagnan.program.event.metadata.SourceLocation;
+import com.dat3m.dartagnan.program.event.metadata.UnrollingBound;
 import com.dat3m.dartagnan.utils.Result;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.common.configuration.Option;
@@ -91,14 +92,20 @@ public class WitnessBuilder {
     }
 
     public WitnessGraph build() {
+        Integer bound = 1;
         for (Thread t : context.getTask().getProgram().getThreads()) {
             for (Event e : t.getEntry().getSuccessors()) {
                 eventThreadMap.put(e, t.getId());
+                // TODO: move the bound attribute from graph to nodes and make the
+                // LoopUnrolling pass get the bounds from the witness when available
+                if(e.hasMetadata(UnrollingBound.class)) {
+                    bound = Integer.max(bound, e.getMetadata(UnrollingBound.class).value());
+                }
             }
         }
 
         WitnessGraph graph = new WitnessGraph();
-        graph.addAttribute(UNROLLBOUND.toString(), valueOf(context.getTask().getProgram().getUnrollingBound()));
+        graph.addAttribute(UNROLLBOUND.toString(), bound.toString());
         graph.addAttribute(WITNESSTYPE.toString(), type + "_witness");
         graph.addAttribute(SOURCECODELANG.toString(), "C");
         graph.addAttribute(PRODUCER.toString(), "Dartagnan");
