@@ -8,6 +8,7 @@ import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.Type;
 import com.dat3m.dartagnan.expression.integers.IntCmpOp;
+import com.dat3m.dartagnan.expression.type.AggregateType;
 import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.parsers.InlineAArch64BaseVisitor;
@@ -116,37 +117,60 @@ public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
                     llvmToArmMap.put(keyLong,value);
                 }
             } else{
-                for (int i = 0; i < this.returnValuesNumber; i++){
-                    String key = String.format("${%d:w}", i);
-                    String keyLong = String.format("${%d:x}", i);
-                    String regName = String.format("GhostRegister %d:w", i);
-                    String regNameLong = String.format("GhostRegister %d:x", i);
-                    if (i == 0){ // if it is the return register I have to map to which real register it maps!
-                        regName = String.format("GhostRegister %s:realOne", this.returnRegister.getName());
-                        regNameLong = String.format("GhostRegister %s:realTwo", this.returnRegister.getName());
+                // if it is just one we're fine, otherwise we have to do some aggregation dark magic
+                // no more ghost registers now.
+                if(returnRegisterTypes.length == 1){
+                    // if it is just one, put it into the map
+                    String key = String.format("${%d:w}", 0);
+                    Type type = getTypeGivenString(this.returnRegisterTypes[0]);
+                    if (type.toString().equals("bv64")){
+                        key = key.replace("w","x");
                     }
-                    Type type = getTypeGivenString(this.returnRegisterTypes[i]); 
-                    Register value = llvmFunction.newRegister(regName, type);
-                    Register valueLong = llvmFunction.newRegister(regNameLong, types.getIntegerType(64));
-                    llvmToArmMap.put(key,value);
-                    llvmToArmMap.put(keyLong,valueLong);
+                    llvmToArmMap.put(key,this.returnRegister);
+                } else{
+                    // List<Type> aggregateTypes = new LinkedList<>();
+                    // for(String s : this.returnRegisterTypes){
+                    //     aggregateTypes.add(types.getIntegerType(Integer.parseInt(s.replace("bv","").trim())));
+                    // }
+                    // AggregateType test;
+                    // test = types.getAggregateType(aggregateTypes);
+                    // Register mock = llvmFunction.getOrNewRegister("tmp", test);
+                    if(returnRegister.getType() instanceof AggregateType){
+                        System.out.println("Types are aggregate and are " + returnRegister.getType());
+                    }
+                    for (int i = 0; i < this.returnValuesNumber; i++){
+                        String key = String.format("${%d:w}", i);
+                        Type type = getTypeGivenString(this.returnRegisterTypes[i]);
+                        System.out.println("Type here is "+ type.toString());
+                        if (type.toString().trim().equals("bv64")){
+                            key = key.replace("w","x");
+                        }
+                        String regName = String.format(returnRegister.getName()+".%d", i);
+                        Register value = llvmFunction.newRegister(regName, type);
+                        llvmToArmMap.put(key,value);
+                    }
                 }
                 // from where you left, continue and fill the fn parameters skipping r0 because it is already mapped
                 int registerCounter = 1;
-                for (int i = returnValuesNumber; i < returnValuesNumber + fnParameters.size() - 1 ; i++){
+                for (int i = returnValuesNumber ; i < returnValuesNumber + fnParameters.size() - 1 ; i++){
                     String key = String.format("${%d:w}", i);
-                    String keyLong = String.format("${%d:x}", i);
                     Register value = fnParameters.get(registerCounter);
+                    Type type = value.getType();
+                    if(type.toString().equals("bv64")){
+                        key = key.replace("w","x");
+                    }
                     registerCounter++;
                     llvmToArmMap.put(key,value);
-                    llvmToArmMap.put(keyLong,value);
                 }
             }
         }
         private Type getTypeGivenString(String typeString){
             Type res = integerType;
-            if(typeString.equals("ptr")){
+            String trimmed = typeString.trim();
+            if(trimmed.equals("ptr")){
                 res = types.getPointerType();
+            } else if (trimmed.equals("bv64")){
+                res = types.getIntegerType(64);
             }
             return res;
         }
