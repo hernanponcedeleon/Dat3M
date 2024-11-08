@@ -392,7 +392,9 @@ public class VisitorLitmusVulkan extends LitmusVulkanBaseVisitor<Object> {
 
     private void tagControl(Event e, Boolean atomic, String mo, String avvis, String scope, String storageClass,
                             List<String> storageClassSemantics, List<String> avvisSemantics) {
-        e.addTags(storageClass);
+        if (!storageClass.isEmpty()) {
+            e.addTags(storageClass);
+        }
         e.addTags(storageClassSemantics);
         e.addTags(avvisSemantics);
         if (atomic) {
