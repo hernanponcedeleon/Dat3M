@@ -738,7 +738,8 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
                 getOrNewCurrentRegister(types.getAggregateType(List.of(comparator.getType(), getIntegerType(1))));
         if (register != null) {
             final Expression cast = expressions.makeIntegerCast(asExpected, getIntegerType(1), false);
-            final Expression result = expressions.makeConstruct(List.of(value, cast));
+            final Type type = types.getAggregateType(List.of(value.getType(), cast.getType()));
+            final Expression result = expressions.makeConstruct(type, List.of(value, cast));
             block.events.add(newLocal(register, result));
         }
         return register;
@@ -886,11 +887,9 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
 
     @Override
     public Expression visitStructConst(StructConstContext ctx) {
-        List<Expression> structMembers = new ArrayList<>();
-        for (TypeConstContext typeCtx : ctx.typeConst()) {
-            structMembers.add(visitTypeConst(typeCtx));
-        }
-        return expressions.makeConstruct(structMembers);
+        List<Expression> structMembers = ctx.typeConst().stream().map(this::visitTypeConst).toList();
+        List<Type> structTypes = structMembers.stream().map(Expression::getType).toList();
+        return expressions.makeConstruct(types.getAggregateType(structTypes), structMembers);
     }
 
     @Override

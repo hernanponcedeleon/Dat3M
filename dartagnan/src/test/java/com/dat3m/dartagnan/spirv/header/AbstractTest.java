@@ -13,6 +13,11 @@ public abstract class AbstractTest {
                             OpMemoryModel Logical Vulkan
                             OpEntryPoint GLCompute %main "main"
                             OpSource GLSL 450
+                            OpMemberDecorate %struct 0 Offset 0
+                            OpMemberDecorate %struct 1 Offset 16
+                            OpMemberDecorate %struct_2 0 Offset 0
+                            OpMemberDecorate %struct_2 1 Offset 4
+                            OpMemberDecorate %struct_2 2 Offset 8
                     %void = OpTypeVoid
                   %uint16 = OpTypeInt 16 0
                   %uint32 = OpTypeInt 32 0

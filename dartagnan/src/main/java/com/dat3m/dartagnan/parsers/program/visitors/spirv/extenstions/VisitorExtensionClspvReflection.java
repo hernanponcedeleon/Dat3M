@@ -5,15 +5,12 @@ import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.Type;
 import com.dat3m.dartagnan.expression.integers.IntLiteral;
-import com.dat3m.dartagnan.expression.type.AggregateType;
-import com.dat3m.dartagnan.expression.type.ArrayType;
-import com.dat3m.dartagnan.expression.type.IntegerType;
-import com.dat3m.dartagnan.expression.type.TypeFactory;
+import com.dat3m.dartagnan.expression.type.*;
 import com.dat3m.dartagnan.parsers.SpirvParser;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.builders.ProgramBuilder;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.utils.ThreadGrid;
-import com.dat3m.dartagnan.program.memory.ScopedPointerVariable;
 import com.dat3m.dartagnan.program.event.Tag;
+import com.dat3m.dartagnan.program.memory.ScopedPointerVariable;
 
 import java.util.List;
 import java.util.Set;
@@ -26,8 +23,6 @@ public class VisitorExtensionClspvReflection extends VisitorExtension<Void> {
     private final ProgramBuilder builder;
     private ScopedPointerVariable pushConstant;
     private AggregateType pushConstantType;
-    private int pushConstantIndex = 0;
-    private int pushConstantOffset = 0;
 
     public VisitorExtensionClspvReflection(ProgramBuilder builder) {
         this.builder = builder;
@@ -65,78 +60,61 @@ public class VisitorExtensionClspvReflection extends VisitorExtension<Void> {
 
     @Override
     public Void visitPushConstantGlobalOffset(SpirvParser.PushConstantGlobalOffsetContext ctx) {
-        return setPushConstantValue("PushConstantGlobalOffset", ctx.sizeIdRef().getText());
+        return setPushConstantValue("PushConstantGlobalOffset", ctx.offsetIdRef().getText(), ctx.sizeIdRef().getText());
     }
 
     @Override
     public Void visitPushConstantGlobalSize(SpirvParser.PushConstantGlobalSizeContext ctx) {
-        return setPushConstantValue("PushConstantGlobalSize", ctx.sizeIdRef().getText());
+        return setPushConstantValue("PushConstantGlobalSize", ctx.offsetIdRef().getText(), ctx.sizeIdRef().getText());
     }
 
     @Override
     public Void visitPushConstantEnqueuedLocalSize(SpirvParser.PushConstantEnqueuedLocalSizeContext ctx) {
-        return setPushConstantValue("PushConstantEnqueuedLocalSize", ctx.sizeIdRef().getText());
+        return setPushConstantValue("PushConstantEnqueuedLocalSize", ctx.offsetIdRef().getText(), ctx.sizeIdRef().getText());
     }
 
     @Override
     public Void visitPushConstantNumWorkgroups(SpirvParser.PushConstantNumWorkgroupsContext ctx) {
-        return setPushConstantValue("PushConstantNumWorkgroups", ctx.sizeIdRef().getText());
+        return setPushConstantValue("PushConstantNumWorkgroups", ctx.offsetIdRef().getText(), ctx.sizeIdRef().getText());
     }
 
     @Override
     public Void visitPushConstantRegionOffset(SpirvParser.PushConstantRegionOffsetContext ctx) {
-        return setPushConstantValue("PushConstantRegionOffset", ctx.sizeIdRef().getText());
+        return setPushConstantValue("PushConstantRegionOffset", ctx.offsetIdRef().getText(), ctx.sizeIdRef().getText());
     }
 
     @Override
     public Void visitPushConstantRegionGroupOffset(SpirvParser.PushConstantRegionGroupOffsetContext ctx) {
-        return setPushConstantValue("PushConstantRegionGroupOffset", ctx.sizeIdRef().getText());
+        return setPushConstantValue("PushConstantRegionGroupOffset", ctx.offsetIdRef().getText(), ctx.sizeIdRef().getText());
     }
 
     @Override
     public Void visitArgumentPodPushConstant(SpirvParser.ArgumentPodPushConstantContext ctx) {
         initPushConstant();
-        if (pushConstantIndex >= pushConstantType.getDirectFields().size()) {
-            throw new ParsingException("Out of bounds definition 'ArgumentPodPushConstant' in PushConstant '%s'",
-                    pushConstant.getId());
-        }
-        Type type = pushConstantType.getDirectFields().get(pushConstantIndex);
-        int typeSize = types.getMemorySizeInBytes(type);
-        if (typeSize != getExpressionAsConstInteger(ctx.sizeIdRef().getText())) {
-            throw new ParsingException("Unexpected offset in PushConstant '%s' element '%s'",
-                    pushConstant.getId(), pushConstantIndex);
-        }
-        pushConstantOffset += typeSize;
-        pushConstantIndex++;
+        int argOffset = getExpressionAsConstInteger(ctx.offsetIdRef().getText());
+        int argSize = getExpressionAsConstInteger(ctx.sizeIdRef().getText());
+        getTypeOffset("ArgumentPodPushConstant", pushConstantType, argOffset, argSize);
         return null;
     }
 
-    private Void setPushConstantValue(String decorationId, String sizeId) {
+    private Void setPushConstantValue(String argument, String offsetId, String sizeId) {
         initPushConstant();
-        if (pushConstantIndex >= pushConstantType.getDirectFields().size()) {
-            throw new ParsingException("Out of bounds definition '%s' in PushConstant '%s'",
-                    decorationId, pushConstant.getId());
-        }
-        Type type = pushConstantType.getDirectFields().get(pushConstantIndex);
-        int typeSize = types.getMemorySizeInBytes(type);
-        int expectedSize = getExpressionAsConstInteger(sizeId);
-        if (type instanceof ArrayType aType && aType.getNumElements() == 3 && typeSize == expectedSize) {
+        int argOffset = getExpressionAsConstInteger(offsetId);
+        int argSize = getExpressionAsConstInteger(sizeId);
+        TypeOffset typeOffset = getTypeOffset(argument, pushConstantType, argOffset, argSize);
+        if (typeOffset.type() instanceof ArrayType aType && aType.getNumElements() == 3) {
             Type elType = aType.getElementType();
             if (elType instanceof IntegerType iType) {
-                List<Integer> values = computePushConstantValue(decorationId);
-                int localOffset = 0;
-                for (int value : values) {
+                int offset = typeOffset.offset();
+                for (int value : computePushConstantValue(argument)) {
                     Expression elExpr = expressions.makeValue(value, iType);
-                    pushConstant.setInitialValue(pushConstantOffset + localOffset, elExpr);
-                    localOffset += types.getMemorySizeInBytes(elExpr.getType());
+                    pushConstant.setInitialValue(offset, elExpr);
+                    offset += types.getMemorySizeInBytes(elExpr.getType());
                 }
-                pushConstantOffset += localOffset;
-                pushConstantIndex++;
                 return null;
             }
         }
-        throw new ParsingException("Unexpected element type in '%s' at index %s",
-                pushConstant.getId(), pushConstantIndex);
+        throw new ParsingException("Argument %s doesn't match the PushConstant type", argument);
     }
 
     private List<Integer> computePushConstantValue(String command) {
@@ -147,8 +125,7 @@ public class VisitorExtensionClspvReflection extends VisitorExtension<Void> {
             case "PushConstantNumWorkgroups" -> List.of(grid.qfSize() / grid.wgSize(), 1, 1);
             case "PushConstantGlobalOffset",
                     "PushConstantRegionOffset",
-                    "PushConstantRegionGroupOffset"
-                    -> List.of(0, 0, 0);
+                    "PushConstantRegionGroupOffset" -> List.of(0, 0, 0);
             default -> throw new ParsingException("Unsupported PushConstant command '%s'", command);
         };
     }
@@ -179,6 +156,29 @@ public class VisitorExtensionClspvReflection extends VisitorExtension<Void> {
             return iExpr.getValueAsInt();
         }
         throw new ParsingException("Expression '%s' is not an integer constant", id);
+    }
+
+    private TypeOffset getTypeOffset(String argument, AggregateType type, int argOffset, int argSize) {
+        TypeOffset lastOffset = null;
+        for (TypeOffset typeOffset : type.getTypeOffsets()) {
+            if (argOffset <= typeOffset.offset()) {
+                if (argOffset == typeOffset.offset()) {
+                    lastOffset = typeOffset;
+                }
+                break;
+            }
+            lastOffset = typeOffset;
+        }
+        if (lastOffset != null) {
+            if (argOffset == lastOffset.offset() && argSize == types.getMemorySizeInBytes(lastOffset.type())) {
+                return new TypeOffset(lastOffset.type(), lastOffset.offset());
+            }
+            if (lastOffset.type() instanceof AggregateType aType) {
+                TypeOffset subTypeOffset = getTypeOffset(argument, aType, argOffset - lastOffset.offset(), argSize);
+                return new TypeOffset(subTypeOffset.type(), lastOffset.offset() + subTypeOffset.offset());
+            }
+        }
+        throw new ParsingException("Argument %s doesn't match the PushConstant type", argument);
     }
 
     @Override

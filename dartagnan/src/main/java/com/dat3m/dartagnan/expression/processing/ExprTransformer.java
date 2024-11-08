@@ -85,7 +85,7 @@ public abstract class ExprTransformer implements ExpressionVisitor<Expression> {
         for (final Expression argument : construct.getOperands()) {
             arguments.add(argument.accept(this));
         }
-        return expressions.makeConstruct(arguments);
+        return expressions.makeConstruct(construct.getType(), arguments);
     }
 
     @Override

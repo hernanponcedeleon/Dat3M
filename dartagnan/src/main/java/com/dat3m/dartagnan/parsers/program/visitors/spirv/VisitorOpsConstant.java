@@ -5,10 +5,7 @@ import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.Type;
 import com.dat3m.dartagnan.expression.integers.IntLiteral;
-import com.dat3m.dartagnan.expression.type.AggregateType;
-import com.dat3m.dartagnan.expression.type.ArrayType;
-import com.dat3m.dartagnan.expression.type.BooleanType;
-import com.dat3m.dartagnan.expression.type.IntegerType;
+import com.dat3m.dartagnan.expression.type.*;
 import com.dat3m.dartagnan.parsers.SpirvBaseVisitor;
 import com.dat3m.dartagnan.parsers.SpirvParser;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.decorations.BuiltIn;
@@ -181,7 +178,7 @@ public class VisitorOpsConstant extends SpirvBaseVisitor<Expression> {
     }
 
     private Expression makeConstantStruct(String id, AggregateType type, List<String> elementIds) {
-        List<Type> elementTypes = type.getDirectFields();
+        List<TypeOffset> elementTypes = type.getTypeOffsets();
         if (elementTypes.size() != elementIds.size()) {
             throw new ParsingException("Mismatching number of elements in the composite constant '%s', " +
                     "expected %d elements but received %d elements", id, elementTypes.size(), elementIds.size());
@@ -189,14 +186,14 @@ public class VisitorOpsConstant extends SpirvBaseVisitor<Expression> {
         List<Expression> elements = new ArrayList<>();
         for (int i = 0; i < elementTypes.size(); i++) {
             Expression expression = builder.getExpression(elementIds.get(i));
-            if (!expression.getType().equals(elementTypes.get(i))) {
+            if (!expression.getType().equals(elementTypes.get(i).type())) {
                 throw new ParsingException("Mismatching type of a composite constant '%s' element '%s', " +
                         "expected '%s' but received '%s'", id, elementIds.get(i),
-                        elementTypes.get(i), expression.getType());
+                        elementTypes.get(i).type(), expression.getType());
             }
             elements.add(expression);
         }
-        return expressions.makeConstruct(elements);
+        return expressions.makeConstruct(type, elements);
     }
 
     private Expression makeConstantArray(String id, ArrayType type, List<String> elementIds) {

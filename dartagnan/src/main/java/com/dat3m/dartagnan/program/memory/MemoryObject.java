@@ -119,7 +119,7 @@ public class MemoryObject extends LeafExpressionBase<Type> {
             final ConstructExpr constStruct = (ConstructExpr) value;
             final List<Expression> structElements = constStruct.getOperands();
             for (int i = 0; i < structElements.size(); i++) {
-                int innerOffset = types.getOffsetInBytes(aggregateType, i);
+                int innerOffset = aggregateType.getTypeOffsets().get(i).offset();
                 setInitialValue(offset + innerOffset, structElements.get(i));
             }
         } else if (value.getType() instanceof IntegerType
