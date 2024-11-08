@@ -75,5 +75,7 @@ yieldtask : YieldTask;
 metaInstr : metadataInline | clobber;
 metadataInline : OutputOpAssign | IsMemoryAddress | InputOpGeneralReg | MetadataExtraVariables;
 
-clobber : Tilde LBrace (ClobberMemory | ClobberModifyFlags) RBrace;
+clobber : Tilde LBrace clobberType RBrace;
+
+clobberType : ClobberMemory | ClobberModifyFlags | ClobberDirectionFlag | ClobberFlags | ClobberFloatPntStatusReg;
 
