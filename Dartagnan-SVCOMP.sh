@@ -5,6 +5,9 @@ if [ $# -eq 0 ]; then
     exit 0
 fi
 
+export DAT3M_HOME=$(pwd)
+export DAT3M_OUTPUT=$DAT3M_HOME/output
+
 if [ $1 == "-v" ] || [ $1 == "--version" ]; then
     cmd="java -jar dartagnan/target/dartagnan.jar --version"
 else
@@ -17,9 +20,6 @@ else
         propertypath=$1
         programpath=$2
     fi
-
-    export DAT3M_HOME=$(pwd)
-    export DAT3M_OUTPUT=$DAT3M_HOME/output
 
     skip_assertions_of_type="--program.processing.skipAssertionsOfType=USER"
     if [[ $propertypath == *"no-overflow.prp"* ]]; then
