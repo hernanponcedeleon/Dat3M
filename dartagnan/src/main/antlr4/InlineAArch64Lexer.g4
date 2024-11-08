@@ -40,6 +40,9 @@ MetadataExtraVariables      : '0' | '3'; // M3 mac produced inline with '0' in t
 // clobbers
 ClobberMemory               : 'memory';
 ClobberModifyFlags          : 'cc';
+ClobberDirectionFlag        : 'dirflag';
+ClobberFloatPntStatusReg    : 'fpsr';
+ClobberFlags                : 'flags';
 
 
 WS
