@@ -301,7 +301,7 @@ class ExpressionEncoder implements ExpressionVisitor<Formula> {
     @Override
     public Formula visitAggregateCmpExpression(AggregateCmpExpr expr) {
         final Formula left = encode(expr.getLeft());
-        final Formula right = encode(expr.getRight());
+        final Formula right = encode(expr.getLeft());
         final BooleanFormula eq = context.equal(left, right);
         return switch (expr.getKind())
         {

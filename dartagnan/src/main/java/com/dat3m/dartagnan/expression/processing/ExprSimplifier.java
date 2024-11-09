@@ -335,6 +335,7 @@ public class ExprSimplifier extends ExprTransformer {
         final Expression right = expr.getRight().accept(this);
         assert expr.getKind() == AggregateCmpOp.EQ || expr.getKind() == AggregateCmpOp.NEQ;
         final boolean isEq = expr.getKind() == AggregateCmpOp.EQ;
+        // TODO: Fix for NEQ
         if (left instanceof ConstructExpr l && right instanceof ConstructExpr r) {
             if (l.getOperands().size() == r.getOperands().size()) {
                 if (l.getOperands().isEmpty()) {
