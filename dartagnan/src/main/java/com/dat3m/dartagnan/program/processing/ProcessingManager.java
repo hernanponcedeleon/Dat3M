@@ -104,6 +104,7 @@ public class ProcessingManager implements ProgramProcessor {
                         ), Target.ALL, true
                 ),
                 ProgramProcessor.fromFunctionProcessor(NormalizeLoops.newInstance(), Target.ALL, true),
+                // RegisterDecomposition.newInstance(),
                 RemoveDeadFunctions.newInstance(),
                 printAfterSimplification ? DebugPrint.withHeader("After simplification", Printer.Mode.ALL) : null,
                 Compilation.fromConfig(config), // We keep compilation global for now
