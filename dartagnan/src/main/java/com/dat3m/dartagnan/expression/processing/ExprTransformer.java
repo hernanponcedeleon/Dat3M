@@ -4,6 +4,9 @@ import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.ExpressionVisitor;
 import com.dat3m.dartagnan.expression.LeafExpression;
+import com.dat3m.dartagnan.expression.aggregates.AggregateCmpExpr;
+import com.dat3m.dartagnan.expression.aggregates.ConstructExpr;
+import com.dat3m.dartagnan.expression.aggregates.ExtractExpr;
 import com.dat3m.dartagnan.expression.booleans.BoolBinaryExpr;
 import com.dat3m.dartagnan.expression.booleans.BoolUnaryExpr;
 import com.dat3m.dartagnan.expression.floats.FloatBinaryExpr;
@@ -13,8 +16,6 @@ import com.dat3m.dartagnan.expression.integers.IntBinaryExpr;
 import com.dat3m.dartagnan.expression.integers.IntCmpExpr;
 import com.dat3m.dartagnan.expression.integers.IntSizeCast;
 import com.dat3m.dartagnan.expression.integers.IntUnaryExpr;
-import com.dat3m.dartagnan.expression.misc.ConstructExpr;
-import com.dat3m.dartagnan.expression.misc.ExtractExpr;
 import com.dat3m.dartagnan.expression.misc.GEPExpr;
 import com.dat3m.dartagnan.expression.misc.ITEExpr;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
@@ -90,8 +91,16 @@ public abstract class ExprTransformer implements ExpressionVisitor<Expression> {
 
     @Override
     public Expression visitExtractExpression(ExtractExpr expr) {
-        Expression object = expr.getOperand().accept(this);
-        return expressions.makeExtract(expr.getFieldIndex(), object);
+        return expressions.makeExtract(expr.getFieldIndex(), expr.getOperand().accept(this));
+    }
+
+    @Override
+    public Expression visitAggregateCmpExpression(AggregateCmpExpr expr) {
+        return expressions.makeAggregateCmp(
+                expr.getLeft().accept(this),
+                expr.getKind(),
+                expr.getRight().accept(this)
+        );
     }
 
     @Override

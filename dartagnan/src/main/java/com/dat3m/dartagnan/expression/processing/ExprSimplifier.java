@@ -4,10 +4,12 @@ package com.dat3m.dartagnan.expression.processing;
 import com.dat3m.dartagnan.expression.BinaryExpression;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionKind;
+import com.dat3m.dartagnan.expression.aggregates.AggregateCmpExpr;
+import com.dat3m.dartagnan.expression.aggregates.AggregateCmpOp;
+import com.dat3m.dartagnan.expression.aggregates.ConstructExpr;
+import com.dat3m.dartagnan.expression.aggregates.ExtractExpr;
 import com.dat3m.dartagnan.expression.booleans.*;
 import com.dat3m.dartagnan.expression.integers.*;
-import com.dat3m.dartagnan.expression.misc.ConstructExpr;
-import com.dat3m.dartagnan.expression.misc.ExtractExpr;
 import com.dat3m.dartagnan.expression.misc.ITEExpr;
 import com.dat3m.dartagnan.expression.utils.IntegerHelper;
 import com.google.common.base.VerifyException;
@@ -310,8 +312,29 @@ public class ExprSimplifier extends ExprTransformer {
         if (inner instanceof ConstructExpr construct) {
             return construct.getOperands().get(expr.getFieldIndex());
         }
-
         return expressions.makeExtract(expr.getFieldIndex(), inner);
+    }
+
+    @Override
+    public Expression visitAggregateCmpExpression(AggregateCmpExpr expr) {
+        final Expression left = expr.getLeft().accept(this);
+        final Expression right = expr.getRight().accept(this);
+        assert expr.getKind() == AggregateCmpOp.EQ || expr.getKind() == AggregateCmpOp.NEQ;
+        final boolean isEq = expr.getKind() == AggregateCmpOp.EQ;
+        // TODO: Fix for NEQ
+        if (left instanceof ConstructExpr l && right instanceof ConstructExpr r) {
+            if (l.getOperands().size() == r.getOperands().size()) {
+                if (l.getOperands().isEmpty()) {
+                    return expressions.makeValue(isEq);
+                } else if (l.getOperands().size() == 1) {
+                    final Expression lOp = l.getOperands().get(0);
+                    final Expression rOp = r.getOperands().get(0);
+                    return (isEq ? expressions.makeEQ(lOp, rOp) : expressions.makeNEQ(lOp, rOp)).accept(this);
+                }
+            }
+        }
+
+        return expressions.makeAggregateCmp(left, expr.getKind(), right);
     }
 
     // =================================== Helper methods ===================================
