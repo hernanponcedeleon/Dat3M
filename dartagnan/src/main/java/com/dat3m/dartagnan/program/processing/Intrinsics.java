@@ -21,6 +21,7 @@ import com.dat3m.dartagnan.program.event.core.Local;
 import com.dat3m.dartagnan.program.event.functions.FunctionCall;
 import com.dat3m.dartagnan.program.event.functions.ValueFunctionCall;
 import com.dat3m.dartagnan.program.event.lang.svcomp.BeginAtomic;
+import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.google.common.collect.ImmutableList;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -196,6 +197,7 @@ public class Intrinsics {
         LLVM_EXPECT("llvm.expect", false, false, true, true, Intrinsics::inlineLLVMExpect),
         LLVM_MEMCPY("llvm.memcpy", true, true, true, false, Intrinsics::inlineMemCpy),
         LLVM_MEMSET("llvm.memset", true, false, true, false, Intrinsics::inlineMemSet),
+        LLVM_THREADLOCAL("llvm.threadlocal.address.p0", false, false, true, true, Intrinsics::inlineLLVMThreadLocal),
         // --------------------------- LKMM ---------------------------
         LKMM_LOAD("__LKMM_LOAD", false, true, true, true, Intrinsics::handleLKMMIntrinsic),
         LKMM_STORE("__LKMM_STORE", true, false, true, true, Intrinsics::handleLKMMIntrinsic),
@@ -1563,6 +1565,15 @@ public class Intrinsics {
         }
 
         return replacement;
+    }
+
+    private List<Event> inlineLLVMThreadLocal(FunctionCall call) {
+        final Register resultReg = getResultRegisterAndCheckArguments(1, call);
+        final Expression exp = call.getArguments().get(0);
+        checkArgument(exp instanceof MemoryObject object && object.isThreadLocal(), "Calling thread local instrinsic on a non thread local object \"%s\"", call);
+        return List.of(
+            EventFactory.newLocal(resultReg, exp)
+        );
     }
 
     private Event assignSuccess(Register errorRegister) {
