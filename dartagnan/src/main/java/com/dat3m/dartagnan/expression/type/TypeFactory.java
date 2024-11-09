@@ -5,7 +5,10 @@ import com.dat3m.dartagnan.utils.Normalizer;
 import com.google.common.math.IntMath;
 
 import java.math.RoundingMode;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.stream.IntStream;
 
 import static com.google.common.base.Preconditions.checkArgument;
@@ -170,7 +173,7 @@ public final class TypeFactory {
             return getMemorySizeInBytes(arrayType.getElementType());
         }
         if (type instanceof AggregateType aType) {
-            return aType.getTypeOffsets().stream().map(o -> getAlignment(o.type())).max(Integer::compare).orElseThrow();
+            return aType.getTypeOffsets().stream().map(o -> getAlignment(o.type())).max(Integer::compare).orElse(1);
         }
         throw new UnsupportedOperationException("Cannot compute memory layout of type " + type);
     }
