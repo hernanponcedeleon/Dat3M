@@ -183,6 +183,7 @@ public class Intrinsics {
                 "__VERIFIER_nondet_int", "__VERIFIER_nondet_uint", "__VERIFIER_nondet_unsigned_int",
                 "__VERIFIER_nondet_short", "__VERIFIER_nondet_ushort", "__VERIFIER_nondet_unsigned_short",
                 "__VERIFIER_nondet_long", "__VERIFIER_nondet_ulong",
+                "__VERIFIER_nondet_longlong", "__VERIFIER_nondet_ulonglong",
                 "__VERIFIER_nondet_char", "__VERIFIER_nondet_uchar"),
                 false, false, true, true, Intrinsics::inlineNonDet),
         // --------------------------- LLVM ---------------------------
@@ -221,7 +222,8 @@ public class Intrinsics {
         STD_ASSERT(List.of("__assert_fail", "__assert_rtn"), false, false, false, true, Intrinsics::inlineUserAssert),
         STD_EXIT("exit", false, false, false, true, Intrinsics::inlineExit),
         STD_ABORT("abort", false, false, false, true, Intrinsics::inlineExit),
-        STD_IO(List.of("puts", "putchar", "printf"), false, false, true, true, Intrinsics::inlineAsZero),
+        STD_IO(List.of("puts", "putchar", "printf", "fflush"), false, false, true, true, Intrinsics::inlineAsZero),
+        STD_IO_NONDET(List.of("__isoc99_sscanf", "fprintf"), false, false, true, true, Intrinsics::inlineCallAsNonDet),
         STD_SLEEP("sleep", false, false, true, true, Intrinsics::inlineAsZero),
         // --------------------------- UBSAN ---------------------------
         UBSAN_OVERFLOW(List.of("__ubsan_handle_add_overflow", "__ubsan_handle_sub_overflow", 
@@ -1299,6 +1301,12 @@ public class Intrinsics {
         }
     }
 
+    private List<Event> inlineCallAsNonDet(FunctionCall call) {
+        return List.of(
+                EventFactory.Svcomp.newSignedNonDetChoice(getResultRegister(call), true)
+        );
+    }
+
     private List<Event> inlineNonDet(FunctionCall call) {
         assert call.isDirectCall() && call instanceof ValueFunctionCall;
         final Register result = getResultRegister(call);
@@ -1317,6 +1325,7 @@ public class Intrinsics {
         } else {
             // Nondeterministic integers
             final int bits = switch (suffix) {
+                case "longlong", "ulonglong" -> 128;
                 case "long", "ulong" -> 64;
                 case "int", "uint", "unsigned_int" -> 32;
                 case "short", "ushort", "unsigned_short" -> 16;
@@ -1325,7 +1334,7 @@ public class Intrinsics {
             };
 
             signed = switch (suffix) {
-                case "int", "short", "long", "char" -> true;
+                case "int", "short", "long", "longlong", "char" -> true;
                 default -> false;
             };
             nonDetType = types.getIntegerType(bits);
