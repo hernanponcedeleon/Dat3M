@@ -73,9 +73,7 @@ public final class TypeFactory {
     }
 
     public AggregateType getAggregateType(List<Type> fields) {
-        checkNotNull(fields);
-        checkArgument(fields.stream().noneMatch(t -> t == voidType), "Void fields are not allowed");
-        return typeNormalizer.normalize(new AggregateType(fields, computeDefaultOffsets(fields)));
+        return getAggregateType(fields, computeDefaultOffsets(fields));
     }
 
     public AggregateType getAggregateType(List<Type> fields, List<Integer> offsets) {
@@ -85,11 +83,11 @@ public final class TypeFactory {
         checkArgument(fields.size() == offsets.size(), "Offsets number does not match the fields number");
         checkArgument(offsets.stream().noneMatch(o -> o < 0), "Offset cannot be negative");
         checkArgument(offsets.isEmpty() || offsets.get(0) == 0, "The first offset must be zero");
-        checkArgument(IntStream.range(1, offsets.size()).boxed().allMatch(
+        checkArgument(IntStream.range(1, offsets.size()).allMatch(
                 i -> offsets.get(i) >= offsets.get(i - 1) + Integer.max(0, getMemorySizeInBytes(fields.get(i - 1), false))),
                 "Offset is too small");
-        checkArgument(IntStream.range(0, offsets.size() - 1).boxed().allMatch(
-                i -> getMemorySizeInBytes(fields.get(i)) > 0),
+        checkArgument(IntStream.range(0, fields.size() - 1).allMatch(
+                i -> hasKnownSize(fields.get(i))),
                 "Non-last element with unknown size");
         return typeNormalizer.normalize(new AggregateType(fields, offsets));
     }
@@ -149,11 +147,11 @@ public final class TypeFactory {
         }
         if (type instanceof AggregateType aType) {
             List<TypeOffset> typeOffsets = aType.getTypeOffsets();
+            if (aType.getTypeOffsets().stream().anyMatch(o -> !hasKnownSize(type))) {
+                return -1;
+            }
             if (typeOffsets.isEmpty()) {
                 return 0;
-            }
-            if (aType.getTypeOffsets().stream().anyMatch(o -> getMemorySizeInBytes(o.type()) < 0)) {
-                return -1;
             }
             TypeOffset lastTypeOffset = typeOffsets.get(typeOffsets.size() - 1);
             int baseSize = lastTypeOffset.offset() + getMemorySizeInBytes(lastTypeOffset.type());
@@ -170,7 +168,7 @@ public final class TypeFactory {
             return getMemorySizeInBytes(type);
         }
         if (type instanceof ArrayType arrayType) {
-            return getMemorySizeInBytes(arrayType.getElementType());
+            return getAlignment(arrayType.getElementType());
         }
         if (type instanceof AggregateType aType) {
             return aType.getTypeOffsets().stream().map(o -> getAlignment(o.type())).max(Integer::compare).orElse(1);
@@ -185,6 +183,8 @@ public final class TypeFactory {
         }
         return size;
     }
+
+    public boolean hasKnownSize(Type type) { return getMemorySizeInBytes(type) >= 0; }
 
     public int getMemorySizeInBits(Type type) {
         return getMemorySizeInBytes(type) * 8;
