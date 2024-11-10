@@ -147,7 +147,7 @@ public final class TypeFactory {
         }
         if (type instanceof AggregateType aType) {
             List<TypeOffset> typeOffsets = aType.getTypeOffsets();
-            if (aType.getTypeOffsets().stream().anyMatch(o -> !hasKnownSize(type))) {
+            if (aType.getTypeOffsets().stream().anyMatch(o -> !hasKnownSize(o.type()))) {
                 return -1;
             }
             if (typeOffsets.isEmpty()) {
