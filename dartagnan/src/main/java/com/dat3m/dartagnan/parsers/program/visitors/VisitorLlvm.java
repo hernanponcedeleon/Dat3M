@@ -376,6 +376,7 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
             final Type argumentType = parseType(argument.concreteType());
             arguments.add(checkExpression(argumentType, argument.value()));
         }
+        this.argumentsRegisterAddresses = arguments;
 
         final Register resultRegister = currentRegisterName == null ? null :
                 getOrNewRegister(currentRegisterName, returnType);

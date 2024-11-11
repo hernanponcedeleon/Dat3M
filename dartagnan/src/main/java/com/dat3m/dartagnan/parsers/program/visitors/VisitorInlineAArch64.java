@@ -1,14 +1,15 @@
 package com.dat3m.dartagnan.parsers.program.visitors;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
 
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.Type;
 import com.dat3m.dartagnan.expression.integers.IntCmpOp;
-import com.dat3m.dartagnan.expression.type.AggregateType;
 import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.parsers.InlineAArch64BaseVisitor;
@@ -66,11 +67,17 @@ public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
         private final HashMap<String,Register> armToLlvmMap;
         private final int MAX_FN_CALLS = 10; // this is used to keep track of how many fn calls I am going to use
 
-        public ArmToLlvmRegisterMapping(Function llvmFunction,Type returnType, Register returnRegister){
+        public ArmToLlvmRegisterMapping(Function llvmFunction,Type returnType, Register returnRegister, ArrayList<Expression> argumentsRegisterAddresses){
             this.armToLlvmMap = new HashMap<>();
             this.returnRegister = returnRegister;
-            this.fnParameters = llvmFunction.getParameterRegisters();
-            System.out.println("The parameters of the fn are " + fnParameters);
+            // this.fnParameters = llvmFunction.getParameterRegisters();
+            Collections.reverse(argumentsRegisterAddresses); // they are usually pushed in stack in the llvm fn
+            this.fnParameters = new LinkedList<>();
+            for(Expression e : argumentsRegisterAddresses){
+                this.fnParameters.add((Register) e);
+            }
+            System.out.println("The parameters of the fn are " + llvmFunction.getParameterRegisters());
+            System.out.println("The real params are " + argumentsRegisterAddresses);
             this.returnValuesNumber = assignReturnValues(returnType);
             System.out.println(returnValuesNumber);
             assert(this.returnValuesNumber >= 0);
@@ -128,16 +135,17 @@ public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
                     }
                     llvmToArmMap.put(key,this.returnRegister);
                 } else{
-                    // List<Type> aggregateTypes = new LinkedList<>();
+                    // List<Type> aggregateTypes = new ArrayList<>();
                     // for(String s : this.returnRegisterTypes){
                     //     aggregateTypes.add(types.getIntegerType(Integer.parseInt(s.replace("bv","").trim())));
                     // }
                     // AggregateType test;
                     // test = types.getAggregateType(aggregateTypes);
                     // Register mock = llvmFunction.getOrNewRegister("tmp", test);
-                    if(returnRegister.getType() instanceof AggregateType){
-                        System.out.println("Types are aggregate and are " + returnRegister.getType());
-                    }
+                    // System.out.println("Here it is " + mock);
+                    // if(returnRegister.getType() instanceof AggregateType){
+                    //     System.out.println("Types are aggregate and are " + returnRegister.getType());
+                    // }
                     for (int i = 0; i < this.returnValuesNumber; i++){
                         String key = String.format("${%d:w}", i);
                         Type type = getTypeGivenString(this.returnRegisterTypes[i]);
@@ -145,7 +153,9 @@ public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
                         if (type.toString().trim().equals("bv64")){
                             key = key.replace("w","x");
                         }
-                        String regName = String.format(returnRegister.getName()+".%d", i);
+                        // Expression exp = expressions.makeExtract(i,returnRegister); // pretty much useless
+                        // System.out.println("Extract is "+ exp);
+                        String regName = String.format(returnRegister.getName()+"[%d]", i);
                         Register value = llvmFunction.newRegister(regName, type);
                         llvmToArmMap.put(key,value);
                     }
@@ -187,12 +197,12 @@ public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
     private final ArmToLlvmRegisterMapping armToLlvmMap; // keeps track of all mappings
     
 
-    public VisitorInlineAArch64(Function llvmFunction, Register returnRegister,Type returnType) {
+    public VisitorInlineAArch64(Function llvmFunction, Register returnRegister,Type returnType,ArrayList<Expression> argumentsRegisterAddresses) {
         this.llvmFunction = llvmFunction;
         this.returnRegister = returnRegister;
         this.comparator = new CompareExpression();
         this.labelsDefined = new HashMap<>();
-        this.armToLlvmMap = new ArmToLlvmRegisterMapping(llvmFunction, returnType,returnRegister);
+        this.armToLlvmMap = new ArmToLlvmRegisterMapping(llvmFunction, returnType,returnRegister,argumentsRegisterAddresses);
     }
 
     public List<Event> getEvents() {
@@ -383,7 +393,7 @@ public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
         Register firstRegister = this.armToLlvmMap.getLlvmRegister(firstRegisterName);
         Register secondRegister = this.armToLlvmMap.getLlvmRegister(secondRegisterName);
         this.comparator.updateCompareExpression(firstRegister, IntCmpOp.EQ, secondRegister);
-        System.out.println("Update object now it is " + this.comparator.firstRegister + this.comparator.secondRegister + this.comparator.compareExpression);
+        System.out.println("Update cmp object now it is " + this.comparator.firstRegister + this.comparator.secondRegister + this.comparator.compareExpression);
         //events.add(EventFactory.newLocal(this.comparator.boolRegister,this.comparator.cmpTmp)); no events needed, it is internal and dat3m does not need to know, as IntCmp already does this
         return visitChildren(ctx);
     }
