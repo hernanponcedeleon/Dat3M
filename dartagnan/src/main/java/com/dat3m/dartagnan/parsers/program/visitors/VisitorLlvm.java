@@ -72,12 +72,8 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
 
     @Override
     public Expression visitCompilationUnit(CompilationUnitContext ctx) {
-        // Create the metadata mapping beforehand, so that instructions can get all attachments.
-        // Also parse all type definitions.
+        // Define types
         for (final TopLevelEntityContext entity : ctx.topLevelEntity()) {
-            if (entity.metadataDef() != null) {
-                entity.accept(this);
-            }
             if (entity.typeDef() != null) {
                 entity.accept(this);
             }
@@ -96,14 +92,21 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
             }
         }
 
-        // Parse global definitions after declarations.
+        // Create the metadata mapping beforehand, so that instructions can get all attachments.
+        for (final TopLevelEntityContext entity : ctx.topLevelEntity()) {
+            if (entity.metadataDef() != null) {
+                entity.accept(this);
+            }
+        }
+
+        // Parse global definitions.
         for (final TopLevelEntityContext entity : ctx.topLevelEntity()) {
             if (entity.globalDef() != null) {
                 visitGlobalDef(entity.globalDef());
             }
         }
 
-        // Parse definitions
+        // Parse remaining definitions (~ function bodies).
         for (final TopLevelEntityContext entity : ctx.topLevelEntity()) {
             if (entity.metadataDef() == null &&
                     entity.globalDef() == null &&
@@ -1018,6 +1021,11 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
     public Expression visitGetElementPtrExpr(GetElementPtrExprContext ctx) {
         final Type indexingType = parseType(ctx.type());
         final Expression base = visitTypeConst(ctx.typeConst());
+        if (base == null) {
+            final String typeConst = ctx.typeConst().getText();
+            final String rep = ctx.getText();
+            int i = 5;
+        }
         final var offsets = new ArrayList<Expression>();
         for (final GepIndexContext index : ctx.gepIndex()) {
             offsets.add(visitTypeConst(index.typeConst()));
