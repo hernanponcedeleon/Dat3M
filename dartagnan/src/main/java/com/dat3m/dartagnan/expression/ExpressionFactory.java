@@ -257,8 +257,7 @@ public final class ExpressionFactory {
     // -----------------------------------------------------------------------------------------------------------------
     // Aggregates
 
-    public Expression makeConstruct(List<Expression> arguments) {
-        final AggregateType type = types.getAggregateType(arguments.stream().map(Expression::getType).toList());
+    public Expression makeConstruct(Type type, List<Expression> arguments) {
         return new ConstructExpr(type, arguments);
     }
 
@@ -302,11 +301,11 @@ public final class ExpressionFactory {
             }
             return makeArray(arrayType.getElementType(), zeroes, true);
         } else if (type instanceof AggregateType structType) {
-            List<Expression> zeroes = new ArrayList<>(structType.getDirectFields().size());
-            for (Type fieldType : structType.getDirectFields()) {
-                zeroes.add(makeGeneralZero(fieldType));
+            List<Expression> zeroes = new ArrayList<>(structType.getTypeOffsets().size());
+            for (TypeOffset typeOffset : structType.getTypeOffsets()) {
+                zeroes.add(makeGeneralZero(typeOffset.type()));
             }
-            return makeConstruct(zeroes);
+            return makeConstruct(structType, zeroes);
         } else if (type instanceof IntegerType intType) {
             return makeZero(intType);
         } else if (type instanceof BooleanType) {

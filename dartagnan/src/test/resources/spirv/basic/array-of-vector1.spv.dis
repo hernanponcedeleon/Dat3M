@@ -8,6 +8,8 @@
                OpMemoryModel Logical Vulkan
                OpEntryPoint GLCompute %main "main"
                OpSource GLSL 450
+               OpMemberDecorate %struct 0 Offset 0
+               OpMemberDecorate %struct 1 Offset 8
        %void = OpTypeVoid
        %func = OpTypeFunction %void
        %uint = OpTypeInt 64 0

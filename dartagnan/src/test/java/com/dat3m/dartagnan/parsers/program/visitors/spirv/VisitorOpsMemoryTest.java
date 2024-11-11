@@ -6,9 +6,7 @@ import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.Type;
 import com.dat3m.dartagnan.expression.integers.IntBinaryExpr;
 import com.dat3m.dartagnan.expression.misc.ConstructExpr;
-import com.dat3m.dartagnan.expression.type.ArrayType;
-import com.dat3m.dartagnan.expression.type.IntegerType;
-import com.dat3m.dartagnan.expression.type.TypeFactory;
+import com.dat3m.dartagnan.expression.type.*;
 import com.dat3m.dartagnan.parsers.SpirvParser;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.mocks.MockProgramBuilder;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.mocks.MockSpirvParser;
@@ -238,7 +236,8 @@ public class VisitorOpsMemoryTest {
         Expression i2 = expressions.makeValue(7890, archType);
         List<Expression> iValues = Stream.of(1, 2, 3).map(i -> (Expression) expressions.makeValue(i, archType)).toList();
         Expression i3 = expressions.makeArray(archType, iValues, true);
-        Expression i4 = expressions.makeConstruct(List.of(i1, i2, i3));
+        AggregateType aType = types.getAggregateType(List.of(i1.getType(), i2.getType(), i3.getType()));
+        Expression i4 = expressions.makeConstruct(aType, List.of(i1, i2, i3));
 
         builder = new MockProgramBuilder();
         builder.addInput("%v1", i1);
@@ -270,7 +269,8 @@ public class VisitorOpsMemoryTest {
         Expression o2 = expressions.makeValue(7890, iType);
         List<Expression> oValues = Stream.of(1, 2, 3).map(i -> (Expression) expressions.makeValue(i, iType)).toList();
         Expression o3 = expressions.makeArray(iType, oValues, true);
-        Expression o4 = expressions.makeConstruct(List.of(o1, o2, o3));
+        AggregateType aType = types.getAggregateType(List.of(o1.getType(), o2.getType(), o3.getType()));
+        Expression o4 = expressions.makeConstruct(aType, List.of(o1, o2, o3));
 
         ScopedPointerVariable v1 = (ScopedPointerVariable) builder.getExpression("%v1");
         assertNotNull(v1);
@@ -311,7 +311,8 @@ public class VisitorOpsMemoryTest {
                 """;
 
         IntegerType archType = types.getArchType();
-        Type aType = types.getArrayType(archType, 2);
+        Type arrType = types.getArrayType(archType, 2);
+        AggregateType aggType = types.getAggregateType(List.of(archType, arrType));
 
         Expression i1 = expressions.makeValue(1, archType);
         Expression i2 = expressions.makeValue(2, archType);
@@ -324,8 +325,8 @@ public class VisitorOpsMemoryTest {
         Expression a2 = expressions.makeArray(archType, List.of(i3, i4), true);
         Expression a3 = expressions.makeArray(archType, List.of(i5, i6), true);
 
-        Expression a3a = expressions.makeArray(aType, List.of(a1, a2, a3), true);
-        Expression s = expressions.makeConstruct(List.of(i1, a1));
+        Expression a3a = expressions.makeArray(arrType, List.of(a1, a2, a3), true);
+        Expression s = expressions.makeConstruct(aggType, List.of(i1, a1));
 
         builder = new MockProgramBuilder();
         builder.addInput("%v1", a1);
@@ -600,9 +601,11 @@ public class VisitorOpsMemoryTest {
         // given
         String input = "%v = OpVariable %struct2_ptr Uniform %const";
 
-        builder.mockBoolType("%bool");
+        BooleanType boolType = builder.mockBoolType("%bool");
         builder.mockIntType("%int16", 16);
         IntegerType i32Type = builder.mockIntType("%int32", 32);
+        AggregateType a1Type = types.getAggregateType(List.of(boolType, i32Type));
+        AggregateType a2Type = types.getAggregateType(List.of(boolType, a1Type));
 
         builder.mockAggregateType("%struct1", "%bool", "%int16");
         builder.mockAggregateType("%struct2", "%bool", "%struct1");
@@ -611,8 +614,8 @@ public class VisitorOpsMemoryTest {
 
         Expression bool = expressions.makeTrue();
         Expression int32 = expressions.makeValue(1, i32Type);
-        Expression struct1 = expressions.makeConstruct(List.of(bool, int32));
-        Expression struct2 = expressions.makeConstruct(List.of(bool, struct1));
+        Expression struct1 = expressions.makeConstruct(a1Type, List.of(bool, int32));
+        Expression struct2 = expressions.makeConstruct(a2Type, List.of(bool, struct1));
 
         builder.addExpression("%const", struct2);
 
@@ -623,7 +626,9 @@ public class VisitorOpsMemoryTest {
         } catch (ParsingException e) {
             // then
             assertEquals("Mismatching value type for variable '%v', " +
-                    "expected '{ bool, { bool, bv16 } }' but received '{ bool, { bool, bv32 } }'", e.getMessage());
+                    "expected '{ 0: bool, 2: { 0: bool, 2: bv16 } }' " +
+                    "but received '{ 0: bool, 4: { 0: bool, 4: bv32 } }'",
+                    e.getMessage());
         }
     }
 
@@ -701,10 +706,12 @@ public class VisitorOpsMemoryTest {
                 %element = OpAccessChain %i32_ptr %variable %4 %2
                 """;
 
-        builder.mockBoolType("%bool");
+        BooleanType boolType = builder.mockBoolType("%bool");
         IntegerType i16Type = builder.mockIntType("%int16", 16);
         IntegerType i32Type = builder.mockIntType("%int32", 32);
         IntegerType i64Type = builder.mockIntType("%int64", 64);
+        AggregateType a1Type = types.getAggregateType(List.of(boolType, i16Type, i32Type, i64Type));
+        AggregateType a2Type = types.getAggregateType(List.of(boolType, i16Type, i32Type, i64Type, a1Type));
 
         builder.mockAggregateType("%agg1", "%bool", "%int16", "%int32", "%int64");
         builder.mockAggregateType("%agg2", "%bool", "%int16", "%int32", "%int64", "%agg1");
@@ -715,8 +722,8 @@ public class VisitorOpsMemoryTest {
         Expression i16 = expressions.makeValue(1, i16Type);
         Expression i32 = expressions.makeValue(11, i32Type);
         Expression i64 = expressions.makeValue(111, i64Type);
-        Expression agg1 = expressions.makeConstruct(List.of(b, i16, i32, i64));
-        Expression agg2 = expressions.makeConstruct(List.of(b, i16, i32, i64, agg1));
+        Expression agg1 = expressions.makeConstruct(a1Type, List.of(b, i16, i32, i64));
+        Expression agg2 = expressions.makeConstruct(a2Type, List.of(b, i16, i32, i64, agg1));
 
         builder.addExpression("%const", agg2);
 
@@ -729,9 +736,9 @@ public class VisitorOpsMemoryTest {
         // then
         IntBinaryExpr e1 = (IntBinaryExpr) ((ScopedPointer)builder.getExpression("%element")).getAddress();
         assertEquals(types.getArchType(), e1.getType());
-        assertEquals(expressions.makeValue(3, i64Type), e1.getRight());
+        assertEquals(expressions.makeValue(4, i64Type), e1.getRight());
         IntBinaryExpr e2 = (IntBinaryExpr) e1.getLeft();
-        assertEquals(expressions.makeValue(15, i64Type), e2.getRight());
+        assertEquals(expressions.makeValue(16, i64Type), e2.getRight());
         assertEquals(builder.getExpression("%variable"), e2.getLeft());
     }
 
@@ -776,16 +783,16 @@ public class VisitorOpsMemoryTest {
 
         IntegerType i16Type = builder.mockIntType("%int16", 16);
         IntegerType i32Type = builder.mockIntType("%int32", 32);
-        builder.mockAggregateType("%agg", "%int16", "%int32");
+        AggregateType aType = builder.mockAggregateType("%agg", "%int16", "%int32");
 
         builder.mockPtrType("%i16_ptr", "%int16", "Uniform");
         builder.mockPtrType("%agg_ptr", "%agg", "Uniform");
 
         Expression i1 = expressions.makeValue(1, i16Type);
         Expression i2 = expressions.makeValue(2, i32Type);
-        Expression arr = expressions.makeConstruct(List.of(i1, i2));
+        Expression struct = expressions.makeConstruct(aType, List.of(i1, i2));
 
-        builder.addExpression("%const", arr);
+        builder.addExpression("%const", struct);
         builder.mockFunctionStart(true);
         builder.addExpression("%register", builder.addRegister("%register", "%int32"));
         VisitorOpsMemory visitor = new VisitorOpsMemory(builder);
@@ -874,16 +881,16 @@ public class VisitorOpsMemoryTest {
 
         IntegerType i16Type = builder.mockIntType("%int16", 16);
         IntegerType i32Type = builder.mockIntType("%int32", 32);
-        builder.mockAggregateType("%agg", "%int16", "%int32");
+        AggregateType aType = builder.mockAggregateType("%agg", "%int16", "%int32");
 
         builder.mockPtrType("%i16_ptr", "%int16", "Uniform");
         builder.mockPtrType("%agg_ptr", "%agg", "Uniform");
 
         Expression i1 = expressions.makeValue(1, i16Type);
         Expression i2 = expressions.makeValue(2, i32Type);
-        Expression arr = expressions.makeConstruct(List.of(i1, i2));
+        Expression struct = expressions.makeConstruct(aType, List.of(i1, i2));
 
-        builder.addExpression("%const", arr);
+        builder.addExpression("%const", struct);
         builder.addExpression("%1", expressions.makeValue(1, i32Type));
 
         try {

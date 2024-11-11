@@ -12,6 +12,17 @@
                OpMemoryModel Logical Vulkan
                OpEntryPoint GLCompute %main "main"
                OpSource GLSL 450
+               OpMemberDecorate %struct1 0 Offset 0
+               OpMemberDecorate %struct1 1 Offset 2
+               OpMemberDecorate %struct1 2 Offset 6
+               OpMemberDecorate %struct2 0 Offset 0
+               OpMemberDecorate %struct2 1 Offset 1
+               OpMemberDecorate %struct2 2 Offset 3
+               OpMemberDecorate %struct2 3 Offset 6
+               OpMemberDecorate %struct2 4 Offset 10
+               OpMemberDecorate %struct2 5 Offset 15
+               OpMemberDecorate %struct2 6 Offset 21
+               OpMemberDecorate %struct2 7 Offset 28
        %void = OpTypeVoid
        %uint = OpTypeInt 64 0
    %ptr_uint = OpTypePointer Uniform %uint

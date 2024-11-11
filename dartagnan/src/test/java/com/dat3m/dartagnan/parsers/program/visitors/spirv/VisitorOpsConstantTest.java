@@ -3,10 +3,7 @@ package com.dat3m.dartagnan.parsers.program.visitors.spirv;
 import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
-import com.dat3m.dartagnan.expression.type.AggregateType;
-import com.dat3m.dartagnan.expression.type.BooleanType;
-import com.dat3m.dartagnan.expression.type.IntegerType;
-import com.dat3m.dartagnan.expression.type.TypeFactory;
+import com.dat3m.dartagnan.expression.type.*;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.decorations.SpecId;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.mocks.MockProgramBuilder;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.mocks.MockSpirvParser;
@@ -209,7 +206,7 @@ public class VisitorOpsConstantTest {
         // given
         builder.mockBoolType("%bool");
         IntegerType iType = builder.mockIntType("%int", 64);
-        builder.mockAggregateType("%struct", "%bool", "%int");
+        AggregateType aType = builder.mockAggregateType("%struct", "%bool", "%int");
 
         // when
         Map<String, Expression> data = parseConstants(input);
@@ -219,7 +216,7 @@ public class VisitorOpsConstantTest {
 
         Expression b = expressions.makeTrue();
         Expression i = expressions.makeValue(7, iType);
-        Expression s = expressions.makeConstruct(List.of(b, i));
+        Expression s = expressions.makeConstruct(aType, List.of(b, i));
 
         assertEquals(b, data.get("%b"));
         assertEquals(i, data.get("%i"));
@@ -298,9 +295,9 @@ public class VisitorOpsConstantTest {
 
         builder.mockBoolType("%bool");
         IntegerType iType = builder.mockIntType("%int", 64);
-        AggregateType aType = builder.mockAggregateType("%inner", "%bool", "%int");
+        AggregateType innerType = builder.mockAggregateType("%inner", "%bool", "%int");
         builder.mockVectorType("%v2inner", "%inner", 2);
-        builder.mockAggregateType("%outer", "%inner", "%v2inner");
+        AggregateType outerType = builder.mockAggregateType("%outer", "%inner", "%v2inner");
 
         // when
         Map<String, Expression> data = parseConstants(input);
@@ -316,12 +313,12 @@ public class VisitorOpsConstantTest {
         Expression i1 = expressions.makeValue(1, iType);
         Expression i2 = expressions.makeValue(2, iType);
 
-        Expression s0 = expressions.makeConstruct(List.of(b0, i0));
-        Expression s1 = expressions.makeConstruct(List.of(b1, i1));
-        Expression s2 = expressions.makeConstruct(List.of(b2, i2));
+        Expression s0 = expressions.makeConstruct(innerType, List.of(b0, i0));
+        Expression s1 = expressions.makeConstruct(innerType, List.of(b1, i1));
+        Expression s2 = expressions.makeConstruct(innerType, List.of(b2, i2));
 
-        Expression a0 = expressions.makeArray(aType, List.of(s1, s2), true);
-        Expression s = expressions.makeConstruct(List.of(s0, a0));
+        Expression a0 = expressions.makeArray(innerType, List.of(s1, s2), true);
+        Expression s = expressions.makeConstruct(outerType, List.of(s0, a0));
 
         assertEquals(b0, data.get("%b0"));
         assertEquals(b1, data.get("%b1"));
@@ -653,7 +650,7 @@ public class VisitorOpsConstantTest {
 
         builder.mockBoolType("%bool");
         IntegerType iType = builder.mockIntType("%int", 64);
-        builder.mockAggregateType("%struct", "%bool", "%bool", "%int");
+        AggregateType aType = builder.mockAggregateType("%struct", "%bool", "%bool", "%int");
         specId.addDecoration("%f", "1");
         specId.addDecoration("%t", "0");
         specId.addDecoration("%i", "2");
@@ -670,7 +667,7 @@ public class VisitorOpsConstantTest {
         assertEquals(t, data.get("%t"));
         assertEquals(i, data.get("%i"));
 
-        assertEquals(expressions.makeConstruct(List.of(f, t, i)), data.get("%s"));
+        assertEquals(expressions.makeConstruct(aType, List.of(f, t, i)), data.get("%s"));
     }
 
     @Test
@@ -812,7 +809,7 @@ public class VisitorOpsConstantTest {
 
         builder.mockBoolType("%bool");
         IntegerType iType = builder.mockIntType("%int", 64);
-        builder.mockAggregateType("%struct", "%bool", "%bool", "%int");
+        AggregateType aType = builder.mockAggregateType("%struct", "%bool", "%bool", "%int");
 
         // when
         Map<String, Expression> data = parseConstants(input);
@@ -826,7 +823,7 @@ public class VisitorOpsConstantTest {
         assertEquals(t, data.get("%t"));
         assertEquals(i, data.get("%i"));
 
-        assertEquals(expressions.makeConstruct(List.of(f, t, i)), data.get("%s"));
+        assertEquals(expressions.makeConstruct(aType, List.of(f, t, i)), data.get("%s"));
     }
 
     private Map<String, Expression> parseConstants(String input) {

@@ -4,10 +4,11 @@ import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.expression.Type;
 import com.dat3m.dartagnan.expression.integers.IntLiteral;
 import com.dat3m.dartagnan.expression.type.IntegerType;
+import com.dat3m.dartagnan.expression.type.ScopedPointerType;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
+import com.dat3m.dartagnan.parsers.program.visitors.spirv.decorations.DecorationType;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.mocks.MockProgramBuilder;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.mocks.MockSpirvParser;
-import com.dat3m.dartagnan.expression.type.ScopedPointerType;
 import com.dat3m.dartagnan.program.event.Tag;
 import org.junit.Test;
 
@@ -16,6 +17,7 @@ import java.util.List;
 import java.util.Map;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
 
 public class VisitorOpsTypeTest {
 
@@ -37,6 +39,9 @@ public class VisitorOpsTypeTest {
                 """;
 
         addIntConstant("%val_20", 20);
+        addMemberOffset("%struct", "0", "0");
+        addMemberOffset("%struct", "1", "2");
+        addMemberOffset("%struct", "2", "10");
 
         // when
         Map<String, Type> data = parseTypes(input);
@@ -51,7 +56,7 @@ public class VisitorOpsTypeTest {
         Type typeArray = types.getArrayType(typeInteger, 20);
         Type typePointer = types.getScopedPointerType(Tag.Spirv.SC_INPUT, typeInteger);
         Type typeFunction = types.getFunctionType(typeVoid, List.of(typePointer, typeInteger));
-        Type typeStruct = types.getAggregateType(List.of(typeInteger, typePointer, typeArray));
+        Type typeStruct = types.getAggregateType(List.of(typeInteger, typePointer, typeArray), List.of(0, 2, 10));
 
         assertEquals(typeVoid, data.get("%void"));
         assertEquals(typeBoolean, data.get("%bool"));
@@ -186,15 +191,15 @@ public class VisitorOpsTypeTest {
         // then
         assertEquals(5, data.size());
 
-        ScopedPointerType boolPtr = (ScopedPointerType)data.get("%ptr_input_bool");
+        ScopedPointerType boolPtr = (ScopedPointerType) data.get("%ptr_input_bool");
         assertEquals(Tag.Spirv.SC_INPUT, boolPtr.getScopeId());
         assertEquals(builder.getType("%bool"), boolPtr.getPointedType());
 
-        ScopedPointerType inputIntPtr = (ScopedPointerType)data.get("%ptr_input_int");
+        ScopedPointerType inputIntPtr = (ScopedPointerType) data.get("%ptr_input_int");
         assertEquals(Tag.Spirv.SC_INPUT, inputIntPtr.getScopeId());
         assertEquals(builder.getType("%int"), inputIntPtr.getPointedType());
 
-        ScopedPointerType workgroupIntPtr = (ScopedPointerType)data.get("%ptr_workgroup_int");
+        ScopedPointerType workgroupIntPtr = (ScopedPointerType) data.get("%ptr_workgroup_int");
         assertEquals(Tag.Spirv.SC_WORKGROUP, workgroupIntPtr.getScopeId());
         assertEquals(builder.getType("%int"), workgroupIntPtr.getPointedType());
     }
@@ -273,25 +278,35 @@ public class VisitorOpsTypeTest {
                 %s1 = OpTypeStruct %int %array
                 %ptr = OpTypePointer Input %s1
                 %s2 = OpTypeStruct %bool %ptr
+                %s3 = OpTypeStruct %bool %ptr
                 """;
 
         addIntConstant("%val_10", 10);
+        addMemberOffset("%s1", "0", "0");
+        addMemberOffset("%s1", "1", "4");
+        addMemberOffset("%s2", "0", "0");
+        addMemberOffset("%s2", "1", "1");
+        addMemberOffset("%s3", "0", "0");
+        addMemberOffset("%s3", "1", "2");
 
         // when
         Map<String, Type> data = parseTypes(input);
 
         // then
-        assertEquals(6, data.size());
+        assertEquals(7, data.size());
 
         Type typeBoolean = types.getBooleanType();
         Type typeInteger = types.getIntegerType(32);
         Type typeArray = types.getArrayType(typeInteger, 10);
-        Type typeStructFirst = types.getAggregateType(List.of(typeInteger, typeArray));
+        Type typeStructFirst = types.getAggregateType(List.of(typeInteger, typeArray), List.of(0, 4));
         Type typePointer = types.getScopedPointerType(Tag.Spirv.SC_INPUT, typeStructFirst);
-        Type typeStructSecond = types.getAggregateType(List.of(typeBoolean, typePointer));
+        Type typeStructSecond = types.getAggregateType(List.of(typeBoolean, typePointer), List.of(0, 1));
+        Type typeStructThird = types.getAggregateType(List.of(typeBoolean, typePointer), List.of(0, 2));
 
         assertEquals(data.get("%s1"), typeStructFirst);
         assertEquals(data.get("%s2"), typeStructSecond);
+        assertEquals(data.get("%s3"), typeStructThird);
+        assertNotEquals(data.get("%s2"), data.get("%s3"));
     }
 
     @Test(expected = ParsingException.class)
@@ -301,6 +316,9 @@ public class VisitorOpsTypeTest {
                 %int = OpTypeInt 32 0
                 %s1 = OpTypeStruct %int %ptr
                 """;
+
+        addMemberOffset("%s1", "0", "0");
+        addMemberOffset("%s1", "1", "4");
 
         // when
         parseTypes(input);
@@ -315,5 +333,9 @@ public class VisitorOpsTypeTest {
         IntegerType type = types.getArchType();
         IntLiteral iValue = new IntLiteral(type, new BigInteger(Integer.toString(value)));
         builder.addExpression(id, iValue);
+    }
+
+    private void addMemberOffset(String id, String idx, String offset) {
+        builder.getDecorationsBuilder().getDecoration(DecorationType.OFFSET).addDecoration(id, idx, offset);
     }
 }

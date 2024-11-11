@@ -77,8 +77,8 @@ public class HelperTypes {
     private static Type getStructMemberType(String id, AggregateType type, List<Integer> indexes) {
         int index = indexes.get(0);
         if (index >= 0) {
-            if (index < type.getDirectFields().size()) {
-                return getMemberType(id, type.getDirectFields().get(index), indexes.subList(1, indexes.size()));
+            if (index < type.getTypeOffsets().size()) {
+                return getMemberType(id, type.getTypeOffsets().get(index).type(), indexes.subList(1, indexes.size()));
             }
             throw new ParsingException(indexOutOfBoundsError(id));
         }
@@ -101,9 +101,9 @@ public class HelperTypes {
     private static int getStructMemberOffset(String id, int offset, AggregateType type, List<Integer> indexes) {
         int index = indexes.get(0);
         if (index >= 0) {
-            if (index < type.getDirectFields().size()) {
-                offset += types.getOffsetInBytes(type, index);
-                Type elType = type.getDirectFields().get(index);
+            if (index < type.getTypeOffsets().size()) {
+                offset += type.getTypeOffsets().get(index).offset();
+                Type elType = type.getTypeOffsets().get(index).type();
                 return getMemberOffset(id, offset, elType, indexes.subList(1, indexes.size()));
             }
             throw new ParsingException(indexOutOfBoundsError(id));
@@ -125,14 +125,12 @@ public class HelperTypes {
         Expression indexExpr = indexes.get(0);
         if (indexExpr instanceof IntLiteral intLiteral) {
             int index = intLiteral.getValueAsInt();
-            if (index < type.getDirectFields().size()) {
-                int offset = 0;
-                for (int i = 0; i < index; i++) {
-                    offset += types.getMemorySizeInBytes(type.getDirectFields().get(i));
-                }
+            if (index < type.getTypeOffsets().size()) {
+                Type subType = type.getTypeOffsets().get(index).type();
+                int offset = type.getTypeOffsets().get(index).offset();
                 IntLiteral offsetExpr = expressions.makeValue(offset, archType);
                 Expression expression = expressions.makeBinary(base, ADD, offsetExpr);
-                return getMemberAddress(id, expression, type.getDirectFields().get(index), indexes.subList(1, indexes.size()));
+                return getMemberAddress(id, expression, subType, indexes.subList(1, indexes.size()));
             }
             throw new ParsingException(indexOutOfBoundsError(id));
         }

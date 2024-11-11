@@ -15,10 +15,12 @@ public class VisitorOpsAnnotation extends SpirvBaseVisitor<Void> {
 
     private final Decoration builtIn;
     private final Decoration specId;
+    private final Decoration offset;
 
     public VisitorOpsAnnotation(ProgramBuilder builder) {
         this.builtIn = builder.getDecorationsBuilder().getDecoration(BUILT_IN);
         this.specId = builder.getDecorationsBuilder().getDecoration(SPEC_ID);
+        this.offset = builder.getDecorationsBuilder().getDecoration(OFFSET);
     }
 
     @Override
@@ -34,10 +36,25 @@ public class VisitorOpsAnnotation extends SpirvBaseVisitor<Void> {
                 String value = ctx.decoration().specializationConstantID().getText();
                 specId.addDecoration(id, value);
             }
-            case ARRAY_STRIDE, BINDING, BLOCK, BUFFER_BLOCK, COHERENT, DESCRIPTOR_SET, OFFSET, NO_CONTRACTION, NO_PERSPECTIVE, NON_WRITABLE -> {
+            case ARRAY_STRIDE, BINDING, BLOCK, BUFFER_BLOCK, COHERENT, DESCRIPTOR_SET, NO_CONTRACTION, NO_PERSPECTIVE, NON_WRITABLE -> {
                 // TODO: Implementation
             }
-            default -> throw new ParsingException("Unsupported decoration type '%s'", type);
+            default -> throw new ParsingException("Unsupported decoration '%s'", type);
+        }
+        return null;
+    }
+
+    @Override
+    public Void visitOpMemberDecorate(SpirvParser.OpMemberDecorateContext ctx) {
+        String id = ctx.structureType().getText();
+        String index = ctx.member().getText();
+        DecorationType type = fromString(ctx.decoration().getChild(0).getText());
+        switch (type) {
+            case OFFSET -> {
+                String value = ctx.decoration().byteOffset().getText();
+                offset.addDecoration(id, index, value);
+            }
+            default -> throw new ParsingException("Unsupported member decoration '%s'", type);
         }
         return null;
     }

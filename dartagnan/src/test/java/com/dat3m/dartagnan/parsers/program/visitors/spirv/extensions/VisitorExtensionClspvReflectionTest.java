@@ -22,7 +22,6 @@ public class VisitorExtensionClspvReflectionTest {
     @Before
     public void before() {
         builder.mockIntType("%uint", 32);
-
         builder.mockVectorType("%v1uint", "%uint", 1);
         builder.mockVectorType("%v2uint", "%uint", 2);
         builder.mockVectorType("%v3uint", "%uint", 3);
@@ -32,6 +31,14 @@ public class VisitorExtensionClspvReflectionTest {
         builder.mockConstant("%uint_4", "%uint", 4);
         builder.mockConstant("%uint_8", "%uint", 8);
         builder.mockConstant("%uint_12", "%uint", 12);
+        builder.mockConstant("%uint_16", "%uint", 16);
+        builder.mockConstant("%uint_24", "%uint", 24);
+        builder.mockConstant("%uint_32", "%uint", 32);
+        builder.mockConstant("%uint_36", "%uint", 36);
+        builder.mockConstant("%uint_48", "%uint", 48);
+        builder.mockConstant("%uint_60", "%uint", 60);
+        builder.mockConstant("%uint_64", "%uint", 64);
+        builder.mockConstant("%uint_80", "%uint", 80);
     }
 
     @Test
@@ -40,13 +47,44 @@ public class VisitorExtensionClspvReflectionTest {
         String input = """
                 %ext = OpExtInstImport "NonSemantic.ClspvReflection.5"
                 %1 = OpExtInst %void %ext PushConstantGlobalOffset %uint_0 %uint_12
-                %2 = OpExtInst %void %ext PushConstantGlobalSize %uint_0 %uint_12
-                %3 = OpExtInst %void %ext PushConstantEnqueuedLocalSize %uint_0 %uint_12
-                %4 = OpExtInst %void %ext PushConstantNumWorkgroups %uint_0 %uint_12
-                %5 = OpExtInst %void %ext PushConstantRegionOffset %uint_0 %uint_12
-                %6 = OpExtInst %void %ext PushConstantRegionGroupOffset %uint_0 %uint_12
+                %2 = OpExtInst %void %ext PushConstantGlobalSize %uint_16 %uint_12
+                %3 = OpExtInst %void %ext PushConstantEnqueuedLocalSize %uint_32 %uint_12
+                %4 = OpExtInst %void %ext PushConstantNumWorkgroups %uint_48 %uint_12
+                %5 = OpExtInst %void %ext PushConstantRegionOffset %uint_64 %uint_12
+                %6 = OpExtInst %void %ext PushConstantRegionGroupOffset %uint_80 %uint_12
                 """;
 
+        builder.mockStructMemberOffsets("%6x_v3uint", 0, 16, 32, 48, 64, 80);
+        builder.mockAggregateType("%6x_v3uint", "%v3uint", "%v3uint", "%v3uint", "%v3uint", "%v3uint", "%v3uint");
+        builder.mockPtrType("%ptr_6x_v3uint", "%6x_v3uint", "PushConstant");
+        ScopedPointerVariable pointer = builder.mockVariable("%var", "%ptr_6x_v3uint");
+
+        // when
+        new MockSpirvParser(input).spv().accept(new VisitorExtensionClspvReflection(builder));
+
+        // then
+        verifyPushConstant(pointer, 0, List.of(0, 0, 0));
+        verifyPushConstant(pointer, 16, List.of(24, 1, 1));
+        verifyPushConstant(pointer, 32, List.of(6, 1, 1));
+        verifyPushConstant(pointer, 48, List.of(4, 1, 1));
+        verifyPushConstant(pointer, 64, List.of(0, 0, 0));
+        verifyPushConstant(pointer, 80, List.of(0, 0, 0));
+    }
+
+    @Test
+    public void testPushConstantOffsets() {
+        // given
+        String input = """
+                %ext = OpExtInstImport "NonSemantic.ClspvReflection.5"
+                %1 = OpExtInst %void %ext PushConstantGlobalOffset %uint_0 %uint_12
+                %2 = OpExtInst %void %ext PushConstantGlobalSize %uint_12 %uint_12
+                %3 = OpExtInst %void %ext PushConstantEnqueuedLocalSize %uint_24 %uint_12
+                %4 = OpExtInst %void %ext PushConstantNumWorkgroups %uint_36 %uint_12
+                %5 = OpExtInst %void %ext PushConstantRegionOffset %uint_48 %uint_12
+                %6 = OpExtInst %void %ext PushConstantRegionGroupOffset %uint_60 %uint_12
+                """;
+
+        builder.mockStructMemberOffsets("%6x_v3uint", 0, 12, 24, 36, 48, 60);
         builder.mockAggregateType("%6x_v3uint", "%v3uint", "%v3uint", "%v3uint", "%v3uint", "%v3uint", "%v3uint");
         builder.mockPtrType("%ptr_6x_v3uint", "%6x_v3uint", "PushConstant");
         ScopedPointerVariable pointer = builder.mockVariable("%var", "%ptr_6x_v3uint");
@@ -134,10 +172,11 @@ public class VisitorExtensionClspvReflectionTest {
         String input = """
                 %ext = OpExtInstImport "NonSemantic.ClspvReflection.5"
                 %1 = OpExtInst %void %ext PushConstantGlobalOffset %uint_0 %uint_12
-                %2 = OpExtInst %void %ext PushConstantGlobalSize %uint_0 %uint_12
-                %3 = OpExtInst %void %ext PushConstantEnqueuedLocalSize %uint_0 %uint_12
+                %2 = OpExtInst %void %ext PushConstantGlobalSize %uint_16 %uint_12
+                %3 = OpExtInst %void %ext PushConstantEnqueuedLocalSize %uint_32 %uint_12
                 """;
 
+        builder.mockStructMemberOffsets("%2x_v3uint", 0, 16);
         builder.mockAggregateType("%2x_v3uint", "%v3uint", "%v3uint");
         builder.mockPtrType("%ptr_2x_v3uint", "%2x_v3uint", "PushConstant");
         builder.mockVariable("%var", "%ptr_2x_v3uint");
@@ -149,8 +188,8 @@ public class VisitorExtensionClspvReflectionTest {
 
         } catch (ParsingException e) {
             // then
-            assertEquals("Out of bounds definition 'PushConstantEnqueuedLocalSize' " +
-                    "in PushConstant '%var'", e.getMessage());
+            assertEquals("Argument PushConstantEnqueuedLocalSize doesn't match the PushConstant type",
+                    e.getMessage());
         }
     }
 
@@ -173,7 +212,7 @@ public class VisitorExtensionClspvReflectionTest {
 
         } catch (ParsingException e) {
             // then
-            assertEquals("Unexpected element type in '%var' at index 0", e.getMessage());
+            assertEquals("Argument PushConstantGlobalOffset doesn't match the PushConstant type", e.getMessage());
         }
     }
 
@@ -204,7 +243,7 @@ public class VisitorExtensionClspvReflectionTest {
                 %ext = OpExtInstImport "NonSemantic.ClspvReflection.5"
                 %1 = OpExtInst %void %ext PushConstantGlobalSize %uint_0 %uint_12
                 %2 = OpExtInst %void %ext ArgumentInfo %kernel
-                %3 = OpExtInst %void %ext ArgumentPodPushConstant %kernel %uint_1 %uint_0 %uint_4 %2
+                %3 = OpExtInst %void %ext ArgumentPodPushConstant %kernel %uint_1 %uint_12 %uint_4 %2
                 """;
 
         builder.mockAggregateType("%v3uint_v1uint", "%v3uint", "%v1uint");
@@ -311,8 +350,8 @@ public class VisitorExtensionClspvReflectionTest {
 
         } catch (ParsingException e) {
             // then
-            assertEquals("Out of bounds definition 'ArgumentPodPushConstant' " +
-                    "in PushConstant '%var'", e.getMessage());
+            assertEquals("Argument ArgumentPodPushConstant doesn't match the PushConstant type",
+                    e.getMessage());
         }
     }
 
@@ -337,7 +376,8 @@ public class VisitorExtensionClspvReflectionTest {
 
         } catch (ParsingException e) {
             // then
-            assertEquals("Unexpected offset in PushConstant '%var' element '1'", e.getMessage());
+            assertEquals("Argument ArgumentPodPushConstant doesn't match the PushConstant type",
+                    e.getMessage());
         }
     }
 
@@ -362,7 +402,8 @@ public class VisitorExtensionClspvReflectionTest {
 
         } catch (ParsingException e) {
             // then
-            assertEquals("Unexpected offset in PushConstant '%var' element '1'", e.getMessage());
+            assertEquals("Argument ArgumentPodPushConstant doesn't match the PushConstant type",
+                    e.getMessage());
         }
     }
 

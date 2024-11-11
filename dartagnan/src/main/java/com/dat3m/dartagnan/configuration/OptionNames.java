@@ -78,9 +78,6 @@ public class OptionNames {
 
     // SVCOMP Options
     public static final String PROPERTYPATH = "svcomp.property";
-    public static final String UMIN = "svcomp.umin";
-    public static final String UMAX = "svcomp.umax";
-    public static final String STEP = "svcomp.step";
 
     // Debugging Options
     public static final String PRINT_PROGRAM_BEFORE_PROCESSING = "printer.beforeProcessing";

@@ -2,10 +2,11 @@ package com.dat3m.dartagnan.expression.type;
 
 import com.dat3m.dartagnan.expression.Type;
 import com.dat3m.dartagnan.utils.Normalizer;
+import com.google.common.math.IntMath;
 
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import java.math.RoundingMode;
+import java.util.*;
+import java.util.stream.IntStream;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -71,7 +72,38 @@ public final class TypeFactory {
     public AggregateType getAggregateType(List<Type> fields) {
         checkNotNull(fields);
         checkArgument(fields.stream().noneMatch(t -> t == voidType), "Void fields are not allowed");
-        return typeNormalizer.normalize(new AggregateType(fields));
+        return typeNormalizer.normalize(new AggregateType(fields, computeDefaultOffsets(fields)));
+    }
+
+    public AggregateType getAggregateType(List<Type> fields, List<Integer> offsets) {
+        checkNotNull(fields);
+        checkNotNull(offsets);
+        checkArgument(fields.stream().noneMatch(t -> t == voidType), "Void fields are not allowed");
+        checkArgument(fields.size() == offsets.size(), "Offsets number does not match the fields number");
+        checkArgument(offsets.stream().noneMatch(o -> o < 0), "Offset cannot be negative");
+        checkArgument(offsets.isEmpty() || offsets.get(0) == 0, "The first offset must be zero");
+        checkArgument(IntStream.range(1, offsets.size()).boxed().allMatch(
+                i -> offsets.get(i) >= offsets.get(i - 1) + Integer.max(0, getMemorySizeInBytes(fields.get(i - 1), false))),
+                "Offset is too small");
+        checkArgument(IntStream.range(0, offsets.size() - 1).boxed().allMatch(
+                i -> getMemorySizeInBytes(fields.get(i)) > 0),
+                "Non-last element with unknown size");
+        return typeNormalizer.normalize(new AggregateType(fields, offsets));
+    }
+
+    private List<Integer> computeDefaultOffsets(List<Type> fields) {
+        List<Integer> offsets = new ArrayList<>();
+        int offset = 0;
+        if (!fields.isEmpty()) {
+            offset = getMemorySizeInBytes(fields.get(0));
+            offsets.add(0);
+        }
+        for (int i = 1; i < fields.size(); i++) {
+            offset = paddedSize(offset, getAlignment(fields.get(i)));
+            offsets.add(offset);
+            offset += getMemorySizeInBytes(fields.get(i));
+        }
+        return offsets;
     }
 
     public ArrayType getArrayType(Type element) {
@@ -92,7 +124,63 @@ public final class TypeFactory {
     }
 
     public int getMemorySizeInBytes(Type type) {
-        return TypeLayout.of(type).totalSizeInBytes();
+        return getMemorySizeInBytes(type, true);
+    }
+
+    public int getMemorySizeInBytes(Type type, boolean padded) {
+        if (type instanceof BooleanType) {
+            return 1;
+        }
+        if (type instanceof IntegerType integerType) {
+            return IntMath.divide(integerType.getBitWidth(), 8, RoundingMode.CEILING);
+        }
+        if (type instanceof FloatType floatType) {
+            return IntMath.divide(floatType.getBitWidth(), 8, RoundingMode.CEILING);
+        }
+        if (type instanceof ArrayType arrayType) {
+            if (arrayType.hasKnownNumElements()) {
+                Type elType = arrayType.getElementType();
+                return getMemorySizeInBytes(elType) * arrayType.getNumElements();
+            }
+            return -1;
+        }
+        if (type instanceof AggregateType aType) {
+            List<TypeOffset> typeOffsets = aType.getTypeOffsets();
+            if (typeOffsets.isEmpty()) {
+                return 0;
+            }
+            if (aType.getTypeOffsets().stream().anyMatch(o -> getMemorySizeInBytes(o.type()) < 0)) {
+                return -1;
+            }
+            TypeOffset lastTypeOffset = typeOffsets.get(typeOffsets.size() - 1);
+            int baseSize = lastTypeOffset.offset() + getMemorySizeInBytes(lastTypeOffset.type());
+            if (padded) {
+                return paddedSize(baseSize, getAlignment(type));
+            }
+            return baseSize;
+        }
+        throw new UnsupportedOperationException("Cannot compute memory layout of type " + type);
+    }
+
+    public int getAlignment(Type type) {
+        if (type instanceof BooleanType || type instanceof IntegerType || type instanceof FloatType) {
+            return getMemorySizeInBytes(type);
+        }
+        if (type instanceof ArrayType arrayType) {
+            return getMemorySizeInBytes(arrayType.getElementType());
+        }
+        if (type instanceof AggregateType aType) {
+            return aType.getTypeOffsets().stream().map(o -> getAlignment(o.type())).max(Integer::compare).orElseThrow();
+        }
+        throw new UnsupportedOperationException("Cannot compute memory layout of type " + type);
+    }
+
+    public static int paddedSize(int size, int alignment) {
+        int mod = size % alignment;
+        if (mod > 0) {
+            return size + alignment - mod;
+        }
+        return size;
     }
 
     public int getMemorySizeInBits(Type type) {
@@ -119,16 +207,13 @@ public final class TypeFactory {
                 }
             }
         } else if (type instanceof AggregateType aggregateType) {
-            final List<Type> fields = aggregateType.getDirectFields();
-            for (int i = 0; i < fields.size(); i++) {
-                final int offset = getOffsetInBytes(aggregateType, i);
-                final Map<Integer, Type> innerDecomposition = decomposeIntoPrimitives(fields.get(i));
+            for (TypeOffset typeOffset : aggregateType.getTypeOffsets()) {
+                final Map<Integer, Type> innerDecomposition = decomposeIntoPrimitives(typeOffset.type());
                 if (innerDecomposition == null) {
                     return null;
                 }
-
                 for (Map.Entry<Integer, Type> entry : innerDecomposition.entrySet()) {
-                    decomposition.put(entry.getKey() + offset, entry.getValue());
+                    decomposition.put(typeOffset.offset() + entry.getKey(), entry.getValue());
                 }
             }
         } else {
@@ -147,12 +232,7 @@ public final class TypeFactory {
             return aType.hasKnownNumElements() && isStaticType(aType.getElementType());
         }
         if (type instanceof AggregateType aType) {
-            for (Type elType : aType.getDirectFields()) {
-                if (!isStaticType(elType)) {
-                    return false;
-                }
-            }
-            return true;
+            return aType.getTypeOffsets().stream().allMatch(o -> isStaticType(o.type()));
         }
         throw new UnsupportedOperationException("Cannot compute if type '" + type + "' is static");
     }
@@ -162,12 +242,15 @@ public final class TypeFactory {
             return true;
         }
         if (staticType instanceof AggregateType aStaticType && runtimeType instanceof AggregateType aRuntimeType) {
-            int size = aStaticType.getDirectFields().size();
-            if (size != aRuntimeType.getDirectFields().size()) {
+            int size = aStaticType.getTypeOffsets().size();
+            if (size != aRuntimeType.getTypeOffsets().size()) {
                 return false;
             }
             for (int i = 0; i < size; i++) {
-                if (!isStaticTypeOf(aStaticType.getDirectFields().get(i), aRuntimeType.getDirectFields().get(i))) {
+                TypeOffset staticTypeOffset = aStaticType.getTypeOffsets().get(i);
+                TypeOffset runtimeTypeOffset = aRuntimeType.getTypeOffsets().get(i);
+                if (staticTypeOffset.offset() != runtimeTypeOffset.offset()
+                        || !isStaticTypeOf(staticTypeOffset.type(), runtimeTypeOffset.type())) {
                     return false;
                 }
             }
