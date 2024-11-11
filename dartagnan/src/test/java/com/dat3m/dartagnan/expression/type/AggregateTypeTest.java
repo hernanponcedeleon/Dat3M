@@ -85,6 +85,20 @@ public class AggregateTypeTest {
         testIllegalOffsets(List.of(arr, i32), List.of(0, 8), "Non-last element with unknown size");
     }
 
+    @Test
+    public void testEmptyType() {
+        Type empty = types.getAggregateType(List.of());
+        Type emptyAlt = types.getAggregateType(List.of(), List.of());
+
+        assertEquals(empty, emptyAlt);
+
+        Type i32 = types.getIntegerType(32);
+        List<Type> structMembers = List.of(empty, i32, empty, empty, i32, empty);
+
+        testDefaultOffsets(structMembers, List.of(0, 0, 4, 4, 4, 8), 8);
+        testExplicitOffsets(structMembers, List.of(0, 0, 4, 5, 8, 13), 16);
+    }
+
     private void testStandardOffsets(List<Type> fields, List<Integer> offsets, int size) {
         testDefaultOffsets(fields, offsets, size);
         testExplicitOffsets(fields, offsets, size);

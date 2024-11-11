@@ -43,8 +43,10 @@ public class VisitorOpsControlFlow extends SpirvBaseVisitor<Event> {
             String labelId = pCtx.idRef(1).getText();
             String expressionId = pCtx.idRef(0).getText();
             cfBuilder.addPhiDefinition(labelId, register, expressionId);
+            cfBuilder.setPhiId(labelId, register, id);
         }
         builder.addExpression(id, register);
+        cfBuilder.setPhiLocation(id);
         return null;
     }
 

@@ -18,6 +18,8 @@ public class ControlFlowBuilder {
     protected final Map<String, String> mergeLabelIds = new HashMap<>();
     protected final Deque<String> blockStack = new ArrayDeque<>();
     protected final Map<String, Map<Register, String>> phiDefinitions = new HashMap<>();
+    protected final Map<String, SourceLocation> phiDefinitionLocations = new HashMap<>();
+    protected final Map<String, Map<Register, String>> phiDefinitionIds = new HashMap<>();
     protected final Map<String, Expression> expressions;
     protected SourceLocation currentLocation;
 
@@ -38,6 +40,8 @@ public class ControlFlowBuilder {
         phiDefinitions.forEach((blockId, def) ->
                 def.forEach((k, v) -> {
                     Event event = EventFactory.newLocal(k, expressions.get(v));
+                    SourceLocation loc = getPhiLocation(blockId, k);
+                    if (loc != null) { event.setMetadata(loc); }
                     lastBlockEvents.get(blockId).getPredecessor().insertAfter(event);
                 }));
         mergeLabelIds.forEach((jumpLabelId, endLabelId) ->
@@ -89,6 +93,25 @@ public class ControlFlowBuilder {
         return currentLocation != null;
     }
 
+    public void setPhiLocation(String id) {
+        if (phiDefinitionLocations.containsKey(id)) {
+            throw new ParsingException("Already set source location for Phi definition %s", id);
+        }
+        if (hasCurrentLocation()) {
+            phiDefinitionLocations.put(id, currentLocation);
+        }
+    }
+
+    public void setPhiId(String blockId, Register register, String id) {
+        String phiId = phiDefinitionIds.computeIfAbsent(blockId, k -> new HashMap<>()).get(register);
+        if (phiId != null) {
+            throw new ParsingException(
+                "Already set id %s for the Phi definition in the block %s", phiId, blockId);
+        } else {
+            phiDefinitionIds.get(blockId).put(register, id);
+        }
+    }
+
     private void validateBeforeBuild() {
         if (!blockStack.isEmpty()) {
             throw new ParsingException("Unclosed blocks %s", String.join(",", blockStack));
@@ -117,5 +140,13 @@ public class ControlFlowBuilder {
             throw new ParsingException("Attempt to redefine label '%s'", id);
         }
         return getOrCreateLabel(id);
+    }
+
+    private SourceLocation getPhiLocation(String blockId, Register register) {
+        String id = phiDefinitionIds.get(blockId).get(register);
+        if (id != null) {
+            return phiDefinitionLocations.get(id);
+        }
+        return null;
     }
 }
