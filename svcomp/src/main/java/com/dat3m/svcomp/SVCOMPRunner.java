@@ -59,8 +59,6 @@ public class SVCOMPRunner extends BaseOptions {
 
     public static void main(String[] args) throws Exception {
 
-        final String boundsFilePath = System.getenv("DAT3M_OUTPUT") + "/bounds.csv";
-
         if(Arrays.asList(args).contains("--help")) {
             collectOptions();
             return;
@@ -76,6 +74,7 @@ public class SVCOMPRunner extends BaseOptions {
         String programPath = Arrays.stream(args).filter(a -> supportedFormats.stream().anyMatch(a::endsWith)).findFirst().get();
         File fileProgram = new File(programPath);
         // To be sure we do not mixed benchmarks, if the bounds file exists, delete it
+        final String boundsFilePath = System.getenv("DAT3M_OUTPUT") + "/bounds.csv";
         new File(boundsFilePath).delete();
 
         String[] argKeyword = Arrays.stream(args)
