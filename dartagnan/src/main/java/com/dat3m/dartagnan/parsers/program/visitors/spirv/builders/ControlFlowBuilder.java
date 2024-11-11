@@ -19,7 +19,7 @@ public class ControlFlowBuilder {
     protected final Deque<String> blockStack = new ArrayDeque<>();
     protected final Map<String, Map<Register, String>> phiDefinitions = new HashMap<>();
     protected final Map<String, SourceLocation> phiDefinitionLocations = new HashMap<>();
-    protected final Map<Set<Object>, String> phiDefinitionIds = new HashMap<>();
+    protected final Map<String, Map<Register, String>> phiDefinitionIds = new HashMap<>();
     protected final Map<String, Expression> expressions;
     protected SourceLocation currentLocation;
 
@@ -40,8 +40,7 @@ public class ControlFlowBuilder {
         phiDefinitions.forEach((blockId, def) ->
                 def.forEach((k, v) -> {
                     Event event = EventFactory.newLocal(k, expressions.get(v));
-                    Set<Object> definition = Set.of(blockId, k, v);
-                    SourceLocation loc = getPhiLocation(definition);
+                    SourceLocation loc = getPhiLocation(blockId, k);
                     if (loc != null) { event.setMetadata(loc); }
                     lastBlockEvents.get(blockId).getPredecessor().insertAfter(event);
                 }));
@@ -103,12 +102,15 @@ public class ControlFlowBuilder {
         }
     }
 
-    public void setPhiId(String blockId, Register register, String expressionId, String id) {
-        Set<Object> definition = Set.of(blockId, register, expressionId);
-        if (phiDefinitionIds.containsKey(definition)) {
-            throw new ParsingException("Already set id for the Phi definition");
+    public void setPhiId(String blockId, Register register, String id) {
+        phiDefinitionIds.putIfAbsent(blockId, new HashMap<>());
+        String phiId = phiDefinitionIds.get(blockId).get(register);
+        if (phiId != null) {
+            throw new ParsingException(
+                "Already set id %s for the Phi definition in the block %s", phiId, blockId);
+        } else {
+            phiDefinitionIds.get(blockId).put(register, id);
         }
-        phiDefinitionIds.put(definition, id);
     }
 
     private void validateBeforeBuild() {
@@ -141,9 +143,9 @@ public class ControlFlowBuilder {
         return getOrCreateLabel(id);
     }
 
-    private SourceLocation getPhiLocation(Set<Object> definition) {
-        String id = phiDefinitionIds.get(definition);
-        if (phiDefinitionLocations.containsKey(id)) {
+    private SourceLocation getPhiLocation(String blockId, Register register) {
+        String id = phiDefinitionIds.get(blockId).get(register);
+        if (id != null) {
             return phiDefinitionLocations.get(id);
         }
         return null;
