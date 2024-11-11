@@ -1021,11 +1021,6 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
     public Expression visitGetElementPtrExpr(GetElementPtrExprContext ctx) {
         final Type indexingType = parseType(ctx.type());
         final Expression base = visitTypeConst(ctx.typeConst());
-        if (base == null) {
-            final String typeConst = ctx.typeConst().getText();
-            final String rep = ctx.getText();
-            int i = 5;
-        }
         final var offsets = new ArrayList<Expression>();
         for (final GepIndexContext index : ctx.gepIndex()) {
             offsets.add(visitTypeConst(index.typeConst()));
