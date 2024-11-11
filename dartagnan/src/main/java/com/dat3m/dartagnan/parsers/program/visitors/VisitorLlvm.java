@@ -374,6 +374,7 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
             final Type argumentType = parseType(argument.concreteType());
             arguments.add(checkExpression(argumentType, argument.value()));
         }
+        this.argumentsRegisterAddresses = arguments;
 
         final Register resultRegister = currentRegisterName == null ? null :
                 getOrNewRegister(currentRegisterName, returnType);
@@ -543,7 +544,7 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
 
     public List<Event> inlineAArch64Wrapper(String inlineAsm, Function function, Register resultRegister, Type returnType){
         CharStream charStream = CharStreams.fromString(inlineAsm);
-        ParserInlineAArch64 parser = new ParserInlineAArch64(function,resultRegister, returnType);
+        ParserInlineAArch64 parser = new ParserInlineAArch64(function,resultRegister, returnType, this.argumentsRegisterAddresses);
         parser.parse(charStream);
         List<Event> events = parser.getVisitor().getEvents();
         System.out.println("Events are "+ events);
