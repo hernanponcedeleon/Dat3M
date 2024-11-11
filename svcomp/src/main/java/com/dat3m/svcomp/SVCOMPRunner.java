@@ -73,6 +73,9 @@ public class SVCOMPRunner extends BaseOptions {
         File fileModel = new File(Arrays.stream(args).filter(a -> a.endsWith(".cat")).findFirst().get());
         String programPath = Arrays.stream(args).filter(a -> supportedFormats.stream().anyMatch(a::endsWith)).findFirst().get();
         File fileProgram = new File(programPath);
+        // To be sure we do not mixed benchmarks, if the bounds file exists, delete it
+        final String boundsFilePath = System.getenv("DAT3M_OUTPUT") + "/bounds.csv";
+        new File(boundsFilePath).delete();
 
         String[] argKeyword = Arrays.stream(args)
             .filter(s->s.startsWith("-"))
@@ -107,6 +110,8 @@ public class SVCOMPRunner extends BaseOptions {
             cmd.add(fileModel.toString());
             cmd.add(programPath);
             cmd.add("svcomp.properties");
+            cmd.add("--bound.load=" + boundsFilePath);
+            cmd.add("--bound.save=" + boundsFilePath);
             cmd.add(String.format("--%s=%s", PROPERTY, r.property.asStringOption()));
             cmd.add(String.format("--%s=%s", BOUND, bound));
             cmd.add(String.format("--%s=%s", WITNESS_ORIGINAL_PROGRAM_PATH, programPath));
@@ -138,7 +143,6 @@ public class SVCOMPRunner extends BaseOptions {
                 System.out.println(e.getMessage());
                 System.exit(0);
             }
-            bound++;
         }
     }
     
