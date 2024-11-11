@@ -59,7 +59,7 @@ public class SVCOMPRunner extends BaseOptions {
 
     public static void main(String[] args) throws Exception {
 
-        String final boundsFilePath = System.getenv("DAT3M_OUTPUT") + "/bounds.csv";
+        final String boundsFilePath = System.getenv("DAT3M_OUTPUT") + "/bounds.csv";
 
         if(Arrays.asList(args).contains("--help")) {
             collectOptions();
