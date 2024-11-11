@@ -23,7 +23,6 @@ import com.dat3m.dartagnan.program.event.core.Label;
 
 public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
 
-
     private class CompareExpression {
 
         public Expression compareExpression;
@@ -54,52 +53,53 @@ public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
         }
     }
 
-    private class ArmToLlvmRegisterMapping{
+    private class ArmToLlvmRegisterMapping {
+
         // the rule is like this 
         // $n means r0, n \in Nats to "keep an id of the function"
         // the first ${n:w}s are used to lock return values e.g. ${0:w}, ${1:w} means it is going to return 2 values in LLVM (if we're in a void fn we skip it)
         // the other ones are the remaining args
         // It should be n:w for 32 bit and n:x for 64 bit, but to make it easier I just allocate every type to be ok
+        // now mapped to the real registers of llvm function
         private final List<Register> fnParameters;
         private final Register returnRegister;
         private String[] returnRegisterTypes;
         private final int returnValuesNumber;
-        private final HashMap<String,Register> armToLlvmMap;
+        private final HashMap<String, Register> armToLlvmMap;
         private final int MAX_FN_CALLS = 10; // this is used to keep track of how many fn calls I am going to use
 
-        public ArmToLlvmRegisterMapping(Function llvmFunction,Type returnType, Register returnRegister, ArrayList<Expression> argumentsRegisterAddresses){
+        public ArmToLlvmRegisterMapping(Function llvmFunction, Type returnType, Register returnRegister, ArrayList<Expression> argumentsRegisterAddresses) {
             this.armToLlvmMap = new HashMap<>();
             this.returnRegister = returnRegister;
-            // this.fnParameters = llvmFunction.getParameterRegisters();
+            // this.fnParameters = llvmFunction.getParameterRegisters(); these hold the original fn arguments
             Collections.reverse(argumentsRegisterAddresses); // they are usually pushed in stack in the llvm fn
             this.fnParameters = new LinkedList<>();
-            for(Expression e : argumentsRegisterAddresses){
+            for (Expression e : argumentsRegisterAddresses) {
                 this.fnParameters.add((Register) e);
             }
-            System.out.println("The parameters of the fn are " + llvmFunction.getParameterRegisters());
-            System.out.println("The real params are " + argumentsRegisterAddresses);
             this.returnValuesNumber = assignReturnValues(returnType);
             System.out.println(returnValuesNumber);
-            assert(this.returnValuesNumber >= 0);
+            assert (this.returnValuesNumber >= 0);
             // now we have to fill our map following the llvm rule 
             // every $ is going to map to r0
             populateRegisters(armToLlvmMap);
             System.out.println("State is " + armToLlvmMap);
         }
-        public Register getLlvmRegister(String armName){
+
+        public Register getLlvmRegister(String armName) {
             return this.armToLlvmMap.get(armName);
         }
 
-        private int assignReturnValues(Type returnType){
-            if (returnType == null){ //its a void fn
+        private int assignReturnValues(Type returnType) {
+            if (returnType == null) { //its a void fn
                 return 0;
             }
-            String str = returnType.toString(); 
-            if (str.equals("bv32") || str.equals("bv64")){
+            String str = returnType.toString();
+            if (str.equals("bv32") || str.equals("bv64")) {
                 String[] singleton = {str};
                 this.returnRegisterTypes = singleton;
                 return 1;
-            } else if (str.startsWith("{") && str.endsWith("}")){
+            } else if (str.startsWith("{") && str.endsWith("}")) {
                 String content = str.substring(1, str.length() - 1).trim(); // Remove curly braces
                 this.returnRegisterTypes = content.split(","); // Split by commas
                 return this.returnRegisterTypes.length;
@@ -107,34 +107,34 @@ public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
             return -1;
         }
 
-        private void populateRegisters(HashMap<String,Register> llvmToArmMap){
-            for (int i = 0; i < this.MAX_FN_CALLS; i++){
+        private void populateRegisters(HashMap<String, Register> llvmToArmMap) {
+            for (int i = 0; i < this.MAX_FN_CALLS; i++) {
                 String key = String.format("$%d", i);
                 Register value = this.fnParameters.get(0);
-                llvmToArmMap.put(key,value);
+                llvmToArmMap.put(key, value);
             }
-            if (returnRegister == null){
+            if (returnRegister == null) {
                 // if it is a void just push the parameters in
-                for (int i = 0; i < this.fnParameters.size() - 1; i++){
+                for (int i = 0; i < this.fnParameters.size() - 1; i++) {
                     String key = String.format("${%d:w}", i);
                     String keyLong = String.format("${%d:x}", i);
                     int j = i + 1;
                     Register value = fnParameters.get(j);
-                    llvmToArmMap.put(key,value);
-                    llvmToArmMap.put(keyLong,value);
+                    llvmToArmMap.put(key, value);
+                    llvmToArmMap.put(keyLong, value);
                 }
-            } else{
+            } else {
                 // if it is just one we're fine, otherwise we have to do some aggregation dark magic
                 // no more ghost registers now.
-                if(returnRegisterTypes.length == 1){
+                if (returnRegisterTypes.length == 1) {
                     // if it is just one, put it into the map
                     String key = String.format("${%d:w}", 0);
                     Type type = getTypeGivenString(this.returnRegisterTypes[0]);
-                    if (type.toString().equals("bv64")){
-                        key = key.replace("w","x");
+                    if (type.toString().equals("bv64")) {
+                        key = key.replace("w", "x");
                     }
-                    llvmToArmMap.put(key,this.returnRegister);
-                } else{
+                    llvmToArmMap.put(key, this.returnRegister);
+                } else {
                     // List<Type> aggregateTypes = new ArrayList<>();
                     // for(String s : this.returnRegisterTypes){
                     //     aggregateTypes.add(types.getIntegerType(Integer.parseInt(s.replace("bv","").trim())));
@@ -146,40 +146,41 @@ public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
                     // if(returnRegister.getType() instanceof AggregateType){
                     //     System.out.println("Types are aggregate and are " + returnRegister.getType());
                     // }
-                    for (int i = 0; i < this.returnValuesNumber; i++){
+                    for (int i = 0; i < this.returnValuesNumber; i++) {
                         String key = String.format("${%d:w}", i);
                         Type type = getTypeGivenString(this.returnRegisterTypes[i]);
-                        System.out.println("Type here is "+ type.toString());
-                        if (type.toString().trim().equals("bv64")){
-                            key = key.replace("w","x");
+                        System.out.println("Type here is " + type.toString());
+                        if (type.toString().trim().equals("bv64")) {
+                            key = key.replace("w", "x");
                         }
                         // Expression exp = expressions.makeExtract(i,returnRegister); // pretty much useless
                         // System.out.println("Extract is "+ exp);
-                        String regName = String.format(returnRegister.getName()+"[%d]", i);
+                        String regName = String.format(returnRegister.getName() + "[%d]", i);
                         Register value = llvmFunction.newRegister(regName, type);
-                        llvmToArmMap.put(key,value);
+                        llvmToArmMap.put(key, value);
                     }
                 }
                 // from where you left, continue and fill the fn parameters skipping r0 because it is already mapped
                 int registerCounter = 1;
-                for (int i = returnValuesNumber ; i < returnValuesNumber + fnParameters.size() - 1 ; i++){
+                for (int i = returnValuesNumber; i < returnValuesNumber + fnParameters.size() - 1; i++) {
                     String key = String.format("${%d:w}", i);
                     Register value = fnParameters.get(registerCounter);
                     Type type = value.getType();
-                    if(type.toString().equals("bv64")){
-                        key = key.replace("w","x");
+                    if (type.toString().equals("bv64")) {
+                        key = key.replace("w", "x");
                     }
                     registerCounter++;
-                    llvmToArmMap.put(key,value);
+                    llvmToArmMap.put(key, value);
                 }
             }
         }
-        private Type getTypeGivenString(String typeString){
+
+        private Type getTypeGivenString(String typeString) {
             Type res = integerType;
             String trimmed = typeString.trim();
-            if(trimmed.equals("ptr")){
+            if (trimmed.equals("ptr")) {
                 res = types.getPointerType();
-            } else if (trimmed.equals("bv64")){
+            } else if (trimmed.equals("bv64")) {
                 res = types.getIntegerType(64);
             }
             return res;
@@ -195,14 +196,13 @@ public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
     private final CompareExpression comparator; // class used to use compare and set flags
     private final HashMap<String, Label> labelsDefined;
     private final ArmToLlvmRegisterMapping armToLlvmMap; // keeps track of all mappings
-    
 
-    public VisitorInlineAArch64(Function llvmFunction, Register returnRegister,Type returnType,ArrayList<Expression> argumentsRegisterAddresses) {
+    public VisitorInlineAArch64(Function llvmFunction, Register returnRegister, Type returnType, ArrayList<Expression> argumentsRegisterAddresses) {
         this.llvmFunction = llvmFunction;
         this.returnRegister = returnRegister;
         this.comparator = new CompareExpression();
         this.labelsDefined = new HashMap<>();
-        this.armToLlvmMap = new ArmToLlvmRegisterMapping(llvmFunction, returnType,returnRegister,argumentsRegisterAddresses);
+        this.armToLlvmMap = new ArmToLlvmRegisterMapping(llvmFunction, returnType, returnRegister, argumentsRegisterAddresses);
     }
 
     public List<Event> getEvents() {
@@ -240,7 +240,6 @@ public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
         return label;
     }
 
-
     @Override
     public Object visitLoadReg(InlineAArch64Parser.LoadRegContext ctx) {
         // this is the base example for an event with sideeffect
@@ -260,7 +259,7 @@ public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
         Register returnRegisterLlvm = this.armToLlvmMap.getLlvmRegister(returnRegisterName);
         Register valueToLoadLlvm = this.armToLlvmMap.getLlvmRegister(directMemoryAccess);
         String mo = Tag.ARMv8.MO_ACQ;
-        events.add(EventFactory.newLoadWithMo(returnRegisterLlvm, valueToLoadLlvm,mo));
+        events.add(EventFactory.newLoadWithMo(returnRegisterLlvm, valueToLoadLlvm, mo));
         System.out.println("Added visitLoadAcquireReg");
         return visitChildren(ctx);
     }
@@ -272,7 +271,7 @@ public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
         String directMemoryAccess = ctx.ConstantInline().getText();
         Register returnRegisterLlvm = this.armToLlvmMap.getLlvmRegister(returnRegisterName);
         Register valueToLoadLlvm = this.armToLlvmMap.getLlvmRegister(directMemoryAccess);
-        events.add(EventFactory.newLoad(returnRegisterLlvm, valueToLoadLlvm)); 
+        events.add(EventFactory.newLoad(returnRegisterLlvm, valueToLoadLlvm));
         System.out.println("Added visitLoadExclusiveReg");
         return visitChildren(ctx);
     }
@@ -284,7 +283,7 @@ public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
         Register returnRegisterLlvm = this.armToLlvmMap.getLlvmRegister(returnRegisterName);
         Register valueToLoadLlvm = this.armToLlvmMap.getLlvmRegister(directMemoryAccess);
         String mo = Tag.ARMv8.MO_ACQ;
-        events.add(EventFactory.newLoadWithMo(returnRegisterLlvm, valueToLoadLlvm,mo));
+        events.add(EventFactory.newLoadWithMo(returnRegisterLlvm, valueToLoadLlvm, mo));
         System.out.println("Added visitLoadAcquireExclusiveReg");
         return visitChildren(ctx);
     }
@@ -318,7 +317,7 @@ public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
     public Object visitStoreExclusiveRegister(InlineAArch64Parser.StoreExclusiveRegisterContext ctx) {
         String resultRegisterName = ctx.VariableInline(0).getText(); // this register either holds 0 or 1 if the operation was successful or not
         Register resultRegister = this.armToLlvmMap.getLlvmRegister(resultRegisterName);
-        Expression simulationAllOk = expressions.parseValue("0",integerType); // holds simulation of store going ok
+        Expression simulationAllOk = expressions.parseValue("0", integerType); // holds simulation of store going ok
         this.comparator.updateStoreSucceeded(resultRegister);
         // this part is used for the store
         String directMemoryAccess = ctx.VariableInline(1).getText();
@@ -326,7 +325,7 @@ public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
         Register valueToStoreLlvm = this.armToLlvmMap.getLlvmRegister(valueToStore);
         Register registerToStoreLlvm = this.armToLlvmMap.getLlvmRegister(directMemoryAccess);
         events.add(EventFactory.newStore(valueToStoreLlvm, registerToStoreLlvm));
-        events.add(EventFactory.newLocal(resultRegister,simulationAllOk)); // simulate saving state into register
+        events.add(EventFactory.newLocal(resultRegister, simulationAllOk)); // simulate saving state into register
         return visitChildren(ctx);
     }
 
@@ -334,7 +333,7 @@ public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
     public Object visitStoreReleaseExclusiveReg(InlineAArch64Parser.StoreReleaseExclusiveRegContext ctx) {
         String resultRegisterName = ctx.VariableInline(0).getText(); // this register either holds 0 or 1 if the operation was successful or not
         Register resultRegister = this.armToLlvmMap.getLlvmRegister(resultRegisterName);
-        Expression simulationAllOk = expressions.parseValue("0",integerType); // holds simulation of store going ok
+        Expression simulationAllOk = expressions.parseValue("0", integerType); // holds simulation of store going ok
         this.comparator.updateStoreSucceeded(resultRegister);
         // this part is used for the store
         String directMemoryAccess = ctx.VariableInline(1).getText();
@@ -342,8 +341,8 @@ public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
         Register valueToStoreLlvm = this.armToLlvmMap.getLlvmRegister(valueToStore);
         Register registerToStoreLlvm = this.armToLlvmMap.getLlvmRegister(directMemoryAccess);
         String mo = Tag.ARMv8.MO_REL;
-        events.add(EventFactory.newStoreWithMo(valueToStoreLlvm, registerToStoreLlvm,mo));
-        events.add(EventFactory.newLocal(resultRegister,simulationAllOk)); 
+        events.add(EventFactory.newStoreWithMo(valueToStoreLlvm, registerToStoreLlvm, mo));
+        events.add(EventFactory.newLocal(resultRegister, simulationAllOk));
         return visitChildren(ctx);
     }
 
@@ -381,8 +380,8 @@ public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
         String mo = Tag.ARMv8.MO_ACQ;
         // String newValueRegister = ctx.VariableInline(1).getText(); // is not needed because we have returnRegister. It is a corner case
         // Register newValueRegisterLlvm = this.armToLlvmMap.getLlvmRegister(newValueRegister); 
-        events.add(EventFactory.newLoadWithMo(oldValueRegisterLlvm, directMemoryAccessLlvm,mo));
-        events.add(EventFactory.newStore(this.returnRegister,directMemoryAccessLlvm));
+        events.add(EventFactory.newLoadWithMo(oldValueRegisterLlvm, directMemoryAccessLlvm, mo));
+        events.add(EventFactory.newStore(this.returnRegister, directMemoryAccessLlvm));
         return visitChildren(ctx);
     }
 
@@ -428,7 +427,7 @@ public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
         // if this goes well, then I store b into c, which means CompareRegister goes into DMA
         this.comparator.updateCompareExpression(toRegister, IntCmpOp.NEQ, compareRegister);
         Label customLabel = getOrNewLabel("customLabel");
-        events.add(EventFactory.newJump(this.comparator.compareExpression,customLabel));
+        events.add(EventFactory.newJump(this.comparator.compareExpression, customLabel));
         events.add(EventFactory.newStore(compareRegister, directMemoryAccess));
         events.add(customLabel);
         return visitChildren(ctx);
@@ -446,7 +445,7 @@ public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
         events.add(EventFactory.newLoadWithMo(toRegister, directMemoryAccess, mo));
         this.comparator.updateCompareExpression(toRegister, IntCmpOp.NEQ, compareRegister);
         Label customLabel = getOrNewLabel("customLabel");
-        events.add(EventFactory.newJump(this.comparator.compareExpression,customLabel));
+        events.add(EventFactory.newJump(this.comparator.compareExpression, customLabel));
         events.add(EventFactory.newStore(compareRegister, directMemoryAccess));
         events.add(customLabel);
         return visitChildren(ctx);
