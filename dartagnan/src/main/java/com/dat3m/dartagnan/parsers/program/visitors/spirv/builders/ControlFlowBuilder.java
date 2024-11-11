@@ -103,8 +103,7 @@ public class ControlFlowBuilder {
     }
 
     public void setPhiId(String blockId, Register register, String id) {
-        phiDefinitionIds.putIfAbsent(blockId, new HashMap<>());
-        String phiId = phiDefinitionIds.get(blockId).get(register);
+        String phiId = phiDefinitionIds.computeIfAbsent(blockId, k -> new HashMap<>()).get(register);
         if (phiId != null) {
             throw new ParsingException(
                 "Already set id %s for the Phi definition in the block %s", phiId, blockId);
