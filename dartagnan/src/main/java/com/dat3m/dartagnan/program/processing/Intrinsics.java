@@ -1325,7 +1325,7 @@ public class Intrinsics {
         } else {
             // Nondeterministic integers
             final int bits = switch (suffix) {
-                case "longlong", "ulonglong" -> 128;
+                case "longlong", "ulonglong" -> 64;
                 case "long", "ulong" -> 64;
                 case "int", "uint", "unsigned_int" -> 32;
                 case "short", "ushort", "unsigned_short" -> 16;
@@ -1579,7 +1579,7 @@ public class Intrinsics {
     private List<Event> inlineLLVMThreadLocal(FunctionCall call) {
         final Register resultReg = getResultRegisterAndCheckArguments(1, call);
         final Expression exp = call.getArguments().get(0);
-        checkArgument(exp instanceof MemoryObject object && object.isThreadLocal(), "Calling thread local instrinsic on a non thread local object \"%s\"", call);
+        checkArgument(exp instanceof MemoryObject object && object.isThreadLocal(), "Calling thread-local intrinsic on a non-thread-local object \"%s\"", call);
         return List.of(
             EventFactory.newLocal(resultReg, exp)
         );
