@@ -90,6 +90,10 @@ public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
             return this.armToLlvmMap.get(armName);
         }
 
+        public void put(String key, Register value){
+            this.armToLlvmMap.put(key, value);
+        }
+
         public int getReturnValuesNumber() {
             return this.returnValuesNumber;
         }
@@ -254,12 +258,13 @@ public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
         return types.getIntegerType(width);
     }
 
+    // used if the return is AggregateType (size > 1)
     private boolean isPartOfReturnRegister(String registerName) {
         if (!(registerName.startsWith("${") || registerName.endsWith("}"))) {
             return false;
         }
         int number = Integer.parseInt(Character.toString(registerName.charAt(2)));
-        int returnValuesNumber = this.armToLlvmMap.returnValuesNumber;
+        int returnValuesNumber = this.armToLlvmMap.getReturnValuesNumber();
         return ((number < returnValuesNumber) && (returnValuesNumber > 1));
     }
 
@@ -287,8 +292,9 @@ public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
             this.nameToRegisterMap.put(nodeName, newRegister);
             Expression assignment;
             if(isPartOfReturnRegister(nodeName)){
+                System.out.println("Accessing part of ret register!!!");
                 // I enter here the first time I see a register like 0:w, 1:w AND the return type is Aggregate
-                // this.armToLlvmMap.armToLlvmMap.put(nodeName, newRegister); not needed(?)
+                this.armToLlvmMap.put(nodeName, newRegister);
                 // System.out.println("New state is " + this.armToLlvmMap.armToLlvmMap);
                 // now newLocal with the slice of right value
                 int number = Integer.parseInt(Character.toString(nodeName.charAt(2)));
@@ -303,13 +309,22 @@ public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
         }
     }
 
+    private void updateReturnRegisterIfModified(TerminalNode node){
+        Register freshReturnRegister = getOrNewRegister(node);
+        String llvmRegisterName = this.armToLlvmMap.getLlvmRegister(node.getText()).getName();
+        if(this.armToLlvmMap.getReturnValuesNumber() == 1 && llvmRegisterName.equals(this.returnRegister.getName())){
+            System.out.println(" I am accessing the returnValue with register " + freshReturnRegister.getName() + " aka " + llvmRegisterName);
+            events.add(EventFactory.newLocal(this.returnRegister,freshReturnRegister));
+        }
+    }
+
     @Override
     public Object visitLoadReg(InlineAArch64Parser.LoadRegContext ctx) {
         // this is the base example for an event with sideeffect
-        // for now each register creation also assigns to right "real address"
         Register freshReturnRegister = getOrNewRegister(ctx.VariableInline());
         Register directMemoryAccess = getOrNewRegister(ctx.ConstantInline());
         events.add(EventFactory.newLoad(freshReturnRegister, directMemoryAccess));
+        updateReturnRegisterIfModified(ctx.VariableInline());
         System.out.println("Added visitLoadReg");
         return visitChildren(ctx);
     }
@@ -320,46 +335,44 @@ public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
         Register directMemoryAccess = getOrNewRegister(ctx.ConstantInline());
         String mo = Tag.ARMv8.MO_ACQ;
         events.add(EventFactory.newLoadWithMo(freshReturnRegister, directMemoryAccess, mo));
+        updateReturnRegisterIfModified(ctx.VariableInline());
         System.out.println("Added visitLoadAcquireReg");
         return visitChildren(ctx);
     }
 
     @Override
     public Object visitLoadExclusiveReg(InlineAArch64Parser.LoadExclusiveRegContext ctx) {
-        // this one is a RMWLoad        
         Register freshReturnRegister = getOrNewRegister(ctx.VariableInline());
         Register directMemoryAccess = getOrNewRegister(ctx.ConstantInline());
         events.add(EventFactory.newRMWLoadExclusive(freshReturnRegister, directMemoryAccess));
+        updateReturnRegisterIfModified(ctx.VariableInline());
         System.out.println("Added visitLoadExclusiveReg");
         return visitChildren(ctx);
     }
 
     @Override
     public Object visitLoadAcquireExclusiveReg(InlineAArch64Parser.LoadAcquireExclusiveRegContext ctx) {
-
         Register freshReturnRegister = getOrNewRegister(ctx.VariableInline());
         Register directMemoryAccess = getOrNewRegister(ctx.ConstantInline());
         String mo = Tag.ARMv8.MO_ACQ;
         events.add(EventFactory.newRMWLoadExclusiveWithMo(freshReturnRegister, directMemoryAccess, mo));
-        // events.add(EventFactory.newLoadWithMo(returnRegisterLlvm, valueToLoadLlvm, mo));
+        updateReturnRegisterIfModified(ctx.VariableInline());
         System.out.println("Added visitLoadAcquireExclusiveReg");
         return visitChildren(ctx);
     }
 
-    // @Override
-    // public Object visitAdd(InlineAArch64Parser.AddContext ctx) {
-    //     System.out.println("Add");
-    //     String resultRegisterName = ctx.VariableInline(0).getText();
-    //     String leftRegName = ctx.VariableInline(1).getText();
-    //     String rightRegName = ctx.VariableInline(2).getText();
-    //     Register resultRegister = this.armToLlvmMap.getLlvmRegister(resultRegisterName);
-    //     Register leftRegister = this.armToLlvmMap.getLlvmRegister(leftRegName);
-    //     Register rightRegister = this.armToLlvmMap.getLlvmRegister(rightRegName);
-    //     Expression exp = expressions.makeAdd(leftRegister, rightRegister);
-    //     //An add is a local operation. Can be seen as a store in dat3m internal encoding
-    //     events.add(EventFactory.newLocal(resultRegister, exp));
-    //     return visitChildren(ctx);
-    // }
+    @Override
+    public Object visitAdd(InlineAArch64Parser.AddContext ctx) {
+        System.out.println("Add");
+        Register resultRegister = getOrNewRegister(ctx.VariableInline(0));
+        Register leftRegister = getOrNewRegister(ctx.VariableInline(1));
+        Register rightRegister = getOrNewRegister(ctx.VariableInline(2));
+        Expression exp = expressions.makeAdd(leftRegister, rightRegister);
+        //An add is a local operation. Can be seen as a store in dat3m internal encoding
+        updateReturnRegisterIfModified(ctx.VariableInline(0));
+        events.add(EventFactory.newLocal(resultRegister, exp));
+        return visitChildren(ctx);
+    }
     @Override
     public Object visitStoreReg(InlineAArch64Parser.StoreRegContext ctx) {
         Register directMemoryAccess = getOrNewRegister(ctx.VariableInline());
@@ -404,11 +417,6 @@ public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
     // @Override
     // public Object visitAtomicAddDoubleWordRelease(InlineAArch64Parser.AtomicAddDoubleWordReleaseContext ctx) {
     //     System.out.println("AtomicAddDoubleWordRelease");
-    //     return visitChildren(ctx);
-    // }
-    // @Override
-    // public Object visitDataMemoryBarrier(InlineAArch64Parser.DataMemoryBarrierContext ctx) {
-    //     System.out.println("DataMemoryBarrier");
     //     return visitChildren(ctx);
     // }
     // @Override
@@ -485,15 +493,14 @@ public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
     //     events.add(customLabel);
     //     return visitChildren(ctx);
     // }
-    // @Override
-    // public Object visitMove(InlineAArch64Parser.MoveContext ctx) {
-    //     String toRegisterName = ctx.VariableInline(0).getText();
-    //     String fromRegisterName = ctx.VariableInline(1).getText();
-    //     Register toRegister = this.armToLlvmMap.getLlvmRegister(toRegisterName);
-    //     Register fromRegister = this.armToLlvmMap.getLlvmRegister(fromRegisterName);
-    //     events.add(EventFactory.newLocal(toRegister, fromRegister));
-    //     return visitChildren(ctx);
-    // }
+    @Override
+    public Object visitMove(InlineAArch64Parser.MoveContext ctx) {
+        Register toRegister = getOrNewRegister(ctx.VariableInline(0));
+        Register fromRegister = getOrNewRegister(ctx.VariableInline(1));
+        events.add(EventFactory.newLocal(toRegister, fromRegister));
+        updateReturnRegisterIfModified(ctx.VariableInline(0));
+        return visitChildren(ctx);
+    }
     @Override
     public Object visitBranchEqual(InlineAArch64Parser.BranchEqualContext ctx) {
         String cleanedLabelName = ctx.LabelReference().getText().replaceAll("(\\d)[a-z]", "$1");
