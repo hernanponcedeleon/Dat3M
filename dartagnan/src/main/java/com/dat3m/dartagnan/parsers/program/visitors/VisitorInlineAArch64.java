@@ -201,8 +201,8 @@ public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
     private final IntegerType integerType = types.getIntegerType(32);
     private final CompareExpression comparator; // class used to use compare and set flags
     private final HashMap<String, Label> labelsDefined;
-    private final ArmToLlvmRegisterMapping armToLlvmMap; // keeps track of all mappings
-    private final HashMap<String, Register> nameToRegisterMap; // keeps fresh registers
+    private final ArmToLlvmRegisterMapping armToLlvmMap; // maps arm names to LLVM names
+    private final HashMap<String, Register> nameToRegisterMap; // maps arm register to dummy ones
     private final List<Expression> pendingRegisters; // used to create the final aggregatetype
 
     public VisitorInlineAArch64(Function llvmFunction, Register returnRegister, Type returnType, ArrayList<Expression> argumentsRegisterAddresses) {
@@ -285,18 +285,20 @@ public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
             Type type = getVariableSize(nodeName);
             Register newRegister = llvmFunction.newRegister(type);
             this.nameToRegisterMap.put(nodeName, newRegister);
+            Expression assignment;
             if(isPartOfReturnRegister(nodeName)){
                 // I enter here the first time I see a register like 0:w, 1:w AND the return type is Aggregate
-                this.armToLlvmMap.armToLlvmMap.put(nodeName, newRegister);
+                // this.armToLlvmMap.armToLlvmMap.put(nodeName, newRegister); not needed(?)
                 // System.out.println("New state is " + this.armToLlvmMap.armToLlvmMap);
                 // now newLocal with the slice of right value
                 int number = Integer.parseInt(Character.toString(nodeName.charAt(2)));
-                events.add(EventFactory.newLocal(newRegister,expressions.makeExtract(number, returnRegister)));
+                assignment = expressions.makeExtract(number, returnRegister);
+                // events.add(EventFactory.newLocal(newRegister,assignmentExp));
                 this.pendingRegisters.add(newRegister);
             } else {
-                Register assignment = this.armToLlvmMap.getLlvmRegister(nodeName);
-                events.add(EventFactory.newLocal(newRegister, assignment));
+                assignment = this.armToLlvmMap.getLlvmRegister(nodeName);
             }
+            events.add(EventFactory.newLocal(newRegister, assignment));
             return newRegister;
         }
     }
@@ -368,6 +370,7 @@ public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
     @Override
     public Object visitStoreExclusiveRegister(InlineAArch64Parser.StoreExclusiveRegisterContext ctx) {
         Register resultRegister = getOrNewRegister(ctx.VariableInline(0)); // this register either holds 0 or 1 if the operation was successful or not
+        System.out.println("My regs atm are" + this.nameToRegisterMap);
         Expression simulationAllOk = expressions.parseValue("0", integerType); // holds simulation of store going ok
         this.comparator.updateStoreSucceeded(resultRegister);
         // this part is used for the store
@@ -377,23 +380,19 @@ public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
         events.add(EventFactory.newLocal(resultRegister, simulationAllOk)); // simulate saving state into register
         return visitChildren(ctx);
     }
-    // @Override
-    // public Object visitStoreReleaseExclusiveReg(InlineAArch64Parser.StoreReleaseExclusiveRegContext ctx) {
-    //     String resultRegisterName = ctx.VariableInline(0).getText(); // this register either holds 0 or 1 if the operation was successful or not
-    //     Register resultRegister = this.armToLlvmMap.getLlvmRegister(resultRegisterName);
-    //     Expression simulationAllOk = expressions.parseValue("0", integerType); // holds simulation of store going ok
-    //     this.comparator.updateStoreSucceeded(resultRegister);
-    //     // this part is used for the store
-    //     String directMemoryAccess = ctx.VariableInline(1).getText();
-    //     String valueToStore = ctx.ConstantInline().getText();
-    //     Register valueToStoreLlvm = this.armToLlvmMap.getLlvmRegister(valueToStore);
-    //     Register registerToStoreLlvm = this.armToLlvmMap.getLlvmRegister(directMemoryAccess);
-    //     String mo = Tag.ARMv8.MO_REL;
-    //     events.add(EventFactory.newRMWStoreExclusiveWithMo(valueToStoreLlvm, registerToStoreLlvm, true, mo));
-    //     // events.add(EventFactory.newStoreWithMo(valueToStoreLlvm, registerToStoreLlvm, mo));
-    //     events.add(EventFactory.newLocal(resultRegister, simulationAllOk));
-    //     return visitChildren(ctx);
-    // }
+    @Override
+    public Object visitStoreReleaseExclusiveReg(InlineAArch64Parser.StoreReleaseExclusiveRegContext ctx) {
+        Register resultRegister = getOrNewRegister(ctx.VariableInline(0)); // this register either holds 0 or 1 if the operation was successful or not
+        Expression simulationAllOk = expressions.parseValue("0", integerType); // holds simulation of store going ok
+        this.comparator.updateStoreSucceeded(resultRegister);
+        // this part is used for the store
+        Register directMemoryAccess = getOrNewRegister(ctx.VariableInline(1));
+        Register valueToStore = getOrNewRegister(ctx.ConstantInline());
+        String mo = Tag.ARMv8.MO_REL;
+        events.add(EventFactory.newRMWStoreExclusiveWithMo(valueToStore, directMemoryAccess, true, mo)); // maybe it is another store fn
+        events.add(EventFactory.newLocal(resultRegister, simulationAllOk)); // simulate saving state into register
+        return visitChildren(ctx);
+    }
     @Override
     public Object visitStoreReleaseReg(InlineAArch64Parser.StoreReleaseRegContext ctx) {
         Register directMemoryAccess = getOrNewRegister(ctx.VariableInline());
@@ -427,28 +426,25 @@ public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
     //     events.add(EventFactory.newStore(this.returnRegister, directMemoryAccessLlvm));
     //     return visitChildren(ctx);
     // }
-    // @Override
-    // public Object visitCompare(InlineAArch64Parser.CompareContext ctx) {
-    //     String firstRegisterName = ctx.VariableInline(0).getText();
-    //     String secondRegisterName = ctx.VariableInline(1).getText();
-    //     Register firstRegister = this.armToLlvmMap.getLlvmRegister(firstRegisterName);
-    //     Register secondRegister = this.armToLlvmMap.getLlvmRegister(secondRegisterName);
-    //     this.comparator.updateCompareExpression(firstRegister, IntCmpOp.EQ, secondRegister);
-    //     System.out.println("Update cmp object now it is " + this.comparator.firstRegister + this.comparator.secondRegister + this.comparator.compareExpression);
-    //     //events.add(EventFactory.newLocal(this.comparator.boolRegister,this.comparator.cmpTmp)); no events needed, it is internal and dat3m does not need to know, as IntCmp already does this
-    //     return visitChildren(ctx);
-    // }
-    // @Override
-    // public Object visitCompareBranchNonZero(InlineAArch64Parser.CompareBranchNonZeroContext ctx) {
-    //     //we should perform both compare and branch operations
-    //     String registerName = ctx.VariableInline().getText();
-    //     Register registerLlvm = this.armToLlvmMap.getLlvmRegister(registerName);
-    //     this.comparator.updateCompareExpression(registerLlvm, IntCmpOp.NEQ, this.comparator.zeroRegister);
-    //     String cleanedLabelName = ctx.LabelReference().getText().replaceAll("(\\d)[a-z]", "$1");
-    //     Label label = getOrNewLabel(cleanedLabelName);
-    //     events.add(EventFactory.newJump(this.comparator.compareExpression, label));
-    //     return visitChildren(ctx);
-    // }
+    @Override
+    public Object visitCompare(InlineAArch64Parser.CompareContext ctx) {
+        Register firstRegister = getOrNewRegister(ctx.VariableInline(0));
+        Register secondRegister = getOrNewRegister(ctx.VariableInline(1));
+        this.comparator.updateCompareExpression(firstRegister, IntCmpOp.EQ, secondRegister);
+        System.out.println("Update cmp object now it is " + this.comparator.firstRegister + this.comparator.secondRegister + this.comparator.compareExpression);
+        //events.add(EventFactory.newLocal(this.comparator.boolRegister,this.comparator.cmpTmp)); no events needed, it is internal and dat3m does not need to know, as IntCmp already does this
+        return visitChildren(ctx);
+    }
+    @Override
+    public Object visitCompareBranchNonZero(InlineAArch64Parser.CompareBranchNonZeroContext ctx) {
+        //we should perform both compare and branch operations
+        Register registerLlvm = getOrNewRegister(ctx.VariableInline());
+        this.comparator.updateCompareExpression(registerLlvm, IntCmpOp.NEQ, this.comparator.zeroRegister);
+        String cleanedLabelName = ctx.LabelReference().getText().replaceAll("(\\d)[a-z]", "$1");
+        Label label = getOrNewLabel(cleanedLabelName); // since it is mainly used to make loops it should always return a defined one tho
+        events.add(EventFactory.newJump(this.comparator.compareExpression, label));
+        return visitChildren(ctx);
+    }
     // @Override
     // public Object visitCompareAndSwap(InlineAArch64Parser.CompareAndSwapContext ctx) {
     //     System.out.println("CompareAndSwap");
@@ -498,28 +494,28 @@ public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
     //     events.add(EventFactory.newLocal(toRegister, fromRegister));
     //     return visitChildren(ctx);
     // }
-    // @Override
-    // public Object visitBranchEqual(InlineAArch64Parser.BranchEqualContext ctx) {
-    //     String cleanedLabelName = ctx.LabelReference().getText().replaceAll("(\\d)[a-z]", "$1");
-    //     Label label = getOrNewLabel(cleanedLabelName);
-    //     this.comparator.updateCompareExpressionOperator(IntCmpOp.EQ);
-    //     events.add(EventFactory.newJump(this.comparator.compareExpression, label));
-    //     return visitChildren(ctx);
-    // }
-    // @Override
-    // public Object visitBranchNotEqual(InlineAArch64Parser.BranchNotEqualContext ctx) {
-    //     String cleanedLabelName = ctx.LabelReference().getText().replaceAll("(\\d)[a-z]", "$1");
-    //     Label label = getOrNewLabel(cleanedLabelName);
-    //     this.comparator.updateCompareExpressionOperator(IntCmpOp.NEQ);
-    //     events.add(EventFactory.newJump(this.comparator.compareExpression, label));
-    //     return visitChildren(ctx);
-    // }
-    // @Override
-    // public Object visitLabelDefinition(InlineAArch64Parser.LabelDefinitionContext ctx) {
-    //     Label label = getOrNewLabel(ctx.LabelDefinition().getText().replace(":", ""));
-    //     events.add(label);
-    //     return visitChildren(ctx);
-    // }
+    @Override
+    public Object visitBranchEqual(InlineAArch64Parser.BranchEqualContext ctx) {
+        String cleanedLabelName = ctx.LabelReference().getText().replaceAll("(\\d)[a-z]", "$1");
+        Label label = getOrNewLabel(cleanedLabelName);
+        this.comparator.updateCompareExpressionOperator(IntCmpOp.EQ);
+        events.add(EventFactory.newJump(this.comparator.compareExpression, label));
+        return visitChildren(ctx);
+    }
+    @Override
+    public Object visitBranchNotEqual(InlineAArch64Parser.BranchNotEqualContext ctx) {
+        String cleanedLabelName = ctx.LabelReference().getText().replaceAll("(\\d)[a-z]", "$1");
+        Label label = getOrNewLabel(cleanedLabelName);
+        this.comparator.updateCompareExpressionOperator(IntCmpOp.NEQ);
+        events.add(EventFactory.newJump(this.comparator.compareExpression, label));
+        return visitChildren(ctx);
+    }
+    @Override
+    public Object visitLabelDefinition(InlineAArch64Parser.LabelDefinitionContext ctx) {
+        Label label = getOrNewLabel(ctx.LabelDefinition().getText().replace(":", ""));
+        events.add(label);
+        return visitChildren(ctx);
+    }
     @Override 
     public Object visitAsmMetadataEntries(InlineAArch64Parser.AsmMetadataEntriesContext ctx) {
         // here we have to create the final mapping for the return register
@@ -533,8 +529,8 @@ public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
             Type aggregateType = types.getAggregateType(typesList);
             Register returnRegisterMapper = llvmFunction.newRegister(aggregateType);
             Expression finalAssignExpression = expressions.makeConstruct(this.pendingRegisters);
-            events.add(EventFactory.newLocal(returnRegisterMapper, finalAssignExpression));
-
+            events.add(EventFactory.newLocal(returnRegisterMapper, finalAssignExpression)); // has to be assigned to returnReg
+            // events.add(EventFactory.newLocal(this.returnRegister, returnRegisterMapper)); // this should be the last expression, but atm dat3m complains because of RegisterDecomposition
         }
         return visitChildren(ctx);
     }
