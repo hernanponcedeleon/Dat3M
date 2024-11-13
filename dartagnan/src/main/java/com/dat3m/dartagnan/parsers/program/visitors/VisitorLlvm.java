@@ -31,7 +31,6 @@ import java.math.BigInteger;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import javax.annotation.Nullable;
 
 import org.antlr.v4.runtime.CharStream;
 import org.antlr.v4.runtime.CharStreams;
@@ -39,7 +38,6 @@ import org.antlr.v4.runtime.CharStreams;
 import com.dat3m.dartagnan.parsers.program.ParserInlineAArch64;
 import static com.dat3m.dartagnan.program.event.EventFactory.*;
 import static com.dat3m.dartagnan.program.event.EventFactory.Llvm.newCompareExchange;
-import com.dat3m.dartagnan.program.event.core.GenericVisibleEvent;
 import static com.google.common.base.Preconditions.checkState;
 import static com.google.common.base.Verify.verify;
 
@@ -389,7 +387,6 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
                 List<Event> events = inlineAArch64Wrapper(ctx.inlineAsm().StringLit(0).getText()+ ","+ ctx.inlineAsm().StringLit(1).getText(), this.function, resultRegister, returnType);
                 if(!events.isEmpty()){
                     block.events.addAll(events);
-                    System.out.println("CALLINSTR new events are "+ events);
                 }
             } else {
                 // Note : we enter here with a normal call void asm "...", and then we enter the switch case one
@@ -547,7 +544,6 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
         ParserInlineAArch64 parser = new ParserInlineAArch64(function,resultRegister, returnType, this.argumentsRegisterAddresses);
         parser.parse(charStream);
         List<Event> events = parser.getVisitor().getEvents();
-        System.out.println("Events are "+ events);
         return events;
     }
 
