@@ -92,26 +92,6 @@ public class RelationModelManager {
             createModel(r);
         }
 
-        // Set<RelationGraph> relGraphs = new HashSet<>();
-        // for (Relation r : relsToExtract) {
-        //     if (r.isRecursive()) {
-        //         RecursiveGraph recGraph = new RecursiveGraph();
-        //         recGraph.setName(r.getNameOrTerm() + "_rec");
-        //         relGraphs.add(recGraph);
-        //         relGraphCache.put(r, recGraph);
-        //     }
-        // }
-        // for (Relation r : relsToExtract) {
-        //     createModel(r);
-        //     RelationGraph rg = createGraph(r);
-        //     if (r.isRecursive()) {
-        //         RecursiveGraph recGraph = (RecursiveGraph) relGraphCache.get(r);
-        //         recGraph.setConcreteGraph(rg);
-        //     } else {
-        //         relGraphs.add(rg);
-        //     }
-        // }
-
         Set<RelationGraph> relGraphs = new HashSet<>();
         DependencyGraph<Relation> dependencyGraph = DependencyGraph.from(relsToExtract);
 
@@ -141,13 +121,13 @@ public class RelationModelManager {
         Set<CAATPredicate> predicates = new HashSet<>(relGraphs);
         PredicateHierarchy hierarchy = new PredicateHierarchy(predicates);
         hierarchy.initializeToDomain(domain);
+
         for (CAATPredicate basePred : hierarchy.getBasePredicates()) {
             if (basePred.getClass() == StaticWMMSet.class) { continue; }
             Relation r = relGraphCache.inverse().get((RelationGraph) basePred);
             r.getDefinition().accept(baseBuilder);
         }
 
-        List<CAATPredicate> preds = hierarchy.getPredicateList();
         hierarchy.populate();
 
         for (CAATPredicate pred : hierarchy.getPredicateList()) {
