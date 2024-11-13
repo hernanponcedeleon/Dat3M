@@ -273,7 +273,11 @@ public class ExecutionModel {
                     e = e.getSuccessor();
                     continue;
                 }
-                if (eventFilter.apply(e)) {
+                if (eventFilter.apply(e)
+                    || e instanceof Local
+                    || e instanceof Assert
+                    || e instanceof CondJump
+                ) {
                     addEvent(e, id++, localId++);
                 }
                 trackDependencies(e);

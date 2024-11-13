@@ -22,7 +22,8 @@ import com.dat3m.dartagnan.utils.Utils;
 import com.dat3m.dartagnan.utils.options.BaseOptions;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.verification.VerificationTask.VerificationTaskBuilder;
-import com.dat3m.dartagnan.verification.model.ExecutionModel;
+import com.dat3m.dartagnan.verification.model.ExecutionModelManager;
+import com.dat3m.dartagnan.verification.model.ExecutionModelNext;
 import com.dat3m.dartagnan.verification.solving.AssumeSolver;
 import com.dat3m.dartagnan.verification.solving.DataRaceSolver;
 import com.dat3m.dartagnan.verification.solving.ModelChecker;
@@ -230,8 +231,16 @@ public class Dartagnan extends BaseOptions {
             throws InvalidConfigurationException, SolverException, IOException {
         Preconditions.checkArgument(modelChecker.hasModel(), "No execution graph to generate.");
 
-        final ExecutionModel m = ExecutionModel.withContext(modelChecker.getEncodingContext());
-        m.initialize(prover.getModel());
+        final ExecutionModelManager manager = ExecutionModelManager.newManager(
+            modelChecker.getEncodingContext()
+        );
+        final EncodingContext contextWithFullWmm = modelChecker.getContextWithFullWmm();
+        if (contextWithFullWmm != null) {
+            manager.setContextWithFullWmm(contextWithFullWmm);
+        }
+        final ExecutionModelNext m = manager.initializeModel(prover.getModel());
+        // final ExecutionModel m = ExecutionModel.withContext(modelChecker.getEncodingContext());
+        // m.initialize(prover.getModel());
         final SyntacticContextAnalysis synContext = newInstance(task.getProgram());
         final String progName = task.getProgram().getName();
         final int fileSuffixIndex = progName.lastIndexOf('.');

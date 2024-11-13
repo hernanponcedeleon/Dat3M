@@ -28,7 +28,9 @@ import com.dat3m.dartagnan.utils.logic.DNF;
 import com.dat3m.dartagnan.verification.Context;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.verification.model.EventData;
-import com.dat3m.dartagnan.verification.model.ExecutionModel;
+import com.dat3m.dartagnan.verification.model.ExecutionModelNext;
+import com.dat3m.dartagnan.verification.model.event.EventModel;
+import com.dat3m.dartagnan.verification.model.event.MemoryEventModel;
 import com.dat3m.dartagnan.wmm.Constraint;
 import com.dat3m.dartagnan.wmm.Definition;
 import com.dat3m.dartagnan.wmm.Relation;
@@ -205,6 +207,12 @@ public class RefinementSolver extends ModelChecker {
         Context baselineContext = Context.createCopyFrom(analysisContext);
         performStaticWmmAnalyses(task, analysisContext, config);
 
+        // Encoding context with the original Wmm for relation extraction.
+        EncodingContext contextWithFullWmm = EncodingContext.of(
+            task, analysisContext, ctx.getFormulaManager()
+        );
+        setContextWithFullWmm(contextWithFullWmm);
+
         //  ------- Generate refinement model -------
         final RefinementModel refinementModel = generateRefinementModel(memoryModel);
         final Wmm baselineModel = refinementModel.getBaseModel();
@@ -230,7 +238,7 @@ public class RefinementSolver extends ModelChecker {
         final WmmEncoder baselineEncoder = WmmEncoder.withContext(context);
 
         final BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
-        final WMMSolver solver = WMMSolver.withContext(refinementModel, context, analysisContext, config);
+        final WMMSolver solver = WMMSolver.withContext(refinementModel, context, contextWithFullWmm, analysisContext, config);
         final Refiner refiner = new Refiner(refinementModel);
         final Property.Type propertyType = Property.getCombinedType(task.getProperty(), task);
 
@@ -256,7 +264,7 @@ public class RefinementSolver extends ModelChecker {
         if (smtStatus == SMTStatus.UNKNOWN) {
             // Refinement got no result (should not be able to happen), so we cannot proceed further.
             logger.warn("Refinement procedure was inconclusive. Trying to find reason of inconclusiveness.");
-            analyzeInconclusiveness(task, analysisContext, solver.getExecution());
+            analyzeInconclusiveness(task, analysisContext, solver.getNextModel());
             throw new RuntimeException("Terminated verification due to inconclusiveness (bug?).");
         }
 
@@ -329,7 +337,7 @@ public class RefinementSolver extends ModelChecker {
         logger.info("Verification finished with result " + res);
     }
 
-    private void analyzeInconclusiveness(VerificationTask task, Context analysisContext, ExecutionModel model) {
+    private void analyzeInconclusiveness(VerificationTask task, Context analysisContext, ExecutionModelNext model) {
         final AliasAnalysis alias = analysisContext.get(AliasAnalysis.class);
         if (alias == null) {
             return;
@@ -338,14 +346,12 @@ public class RefinementSolver extends ModelChecker {
         if (synContext == null) {
             synContext = newInstance(task.getProgram());
         }
+        // model.getAddressReadsMap().forEach((addr, reads) -> addr2Events.computeIfAbsent(addr, key -> new HashSet<>()).addAll(reads));
+        // model.getAddressWritesMap().forEach((addr, writes) -> addr2Events.computeIfAbsent(addr, key -> new HashSet<>()).addAll(writes));
+        // model.getAddressInitMap().forEach((addr, init) -> addr2Events.computeIfAbsent(addr, key -> new HashSet<>()).add(init));
 
-        final Map<BigInteger, Set<EventData>> addr2Events = new HashMap<>();
-        model.getAddressReadsMap().forEach((addr, reads) -> addr2Events.computeIfAbsent(addr, key -> new HashSet<>()).addAll(reads));
-        model.getAddressWritesMap().forEach((addr, writes) -> addr2Events.computeIfAbsent(addr, key -> new HashSet<>()).addAll(writes));
-        model.getAddressInitMap().forEach((addr, init) -> addr2Events.computeIfAbsent(addr, key -> new HashSet<>()).add(init));
-
-        for (Set<EventData> sameLocEvents : addr2Events.values()) {
-            final List<EventData> events = sameLocEvents.stream().sorted().toList();
+        for (Set<MemoryEventModel> sameLocEvents : model.getAddressAccessesMap().values()) {
+            final List<MemoryEventModel> events = sameLocEvents.stream().sorted().toList();
 
             for (int i = 0; i < events.size() - 1; i++) {
                 for (int j = i + 1; j < events.size(); j++) {
@@ -388,7 +394,7 @@ public class RefinementSolver extends ModelChecker {
 
             // ------------------------- Debugging/Logging -------------------------
             if (generateGraphvizDebugFiles) {
-                generateGraphvizFiles(task, solver.getExecution(), trace.size(), iteration.inconsistencyReasons);
+                generateGraphvizFiles(task, solver.getNextModel(), trace.size(), iteration.inconsistencyReasons);
             }
             if (logger.isDebugEnabled()) {
                 // ---- Internal SMT stats after the first iteration ----
@@ -862,16 +868,16 @@ public class RefinementSolver extends ModelChecker {
     // This code is pure debugging code that will generate graphical representations
     // of each refinement iteration.
     // Generate .dot files and .png files per iteration
-    private static void generateGraphvizFiles(VerificationTask task, ExecutionModel model, int iterationCount,
+    private static void generateGraphvizFiles(VerificationTask task, ExecutionModelNext model, int iterationCount,
             DNF<CoreLiteral> reasons) {
         // =============== Visualization code ==================
         // The edgeFilter filters those co/rf that belong to some violation reason
-        BiPredicate<EventData, EventData> edgeFilter = (e1, e2) -> {
+        BiPredicate<EventModel, EventModel> edgeFilter = (e1, e2) -> {
             for (Conjunction<CoreLiteral> cube : reasons.getCubes()) {
                 for (CoreLiteral lit : cube.getLiterals()) {
                     if (lit instanceof RelLiteral edgeLit) {
-                        if (model.getData(edgeLit.getSource()).get() == e1 &&
-                                model.getData(edgeLit.getTarget()).get() == e2) {
+                        if (model.getEventModelByEvent(edgeLit.getSource()) == e1 &&
+                                model.getEventModelByEvent(edgeLit.getTarget()) == e2) {
                             return true;
                         }
                     }

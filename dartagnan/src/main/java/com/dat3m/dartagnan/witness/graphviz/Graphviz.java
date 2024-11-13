@@ -61,7 +61,12 @@ public class Graphviz {
     }
 
     public Graphviz addNode(String name, String... attributes) {
-        text.append(String.format("%s [%s]\n", name, String.join(", ", attributes)));
+        // text.append(String.format("%s [%s]\n", name, String.join(", ", attributes)));
+        if (attributes == null) {
+            text.append(String.format("%s\n", name));
+        } else {
+            text.append(String.format("%s [%s]\n", name, String.join(", ", attributes)));
+        }
         return this;
     }
 
