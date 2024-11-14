@@ -348,8 +348,7 @@ public class ExecutionGraphVisualizer {
             // Create .dot file
             ExecutionGraphVisualizer visualizer = new ExecutionGraphVisualizer();
             if (!usedByRefinementSolver) { visualizer.setRelationsToShow(model); }
-            visualizer.setRelationsToShow(model)
-                      .setSyntacticContext(synContext)
+            visualizer.setSyntacticContext(synContext)
                       .setReadFromFilter(rfFilter)
                       .setFromReadFilter(frFilter)
                       .setCoherenceFilter(coFilter)
