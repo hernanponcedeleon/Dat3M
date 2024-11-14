@@ -83,7 +83,7 @@ public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
             // now we have to fill our map following the llvm rule 
             // every $ is going to map to r0
             populateRegisters(armToLlvmMap);
-            System.out.println("State is " + armToLlvmMap);
+            // System.out.println("State is " + armToLlvmMap);
         }
 
         public Register getLlvmRegister(String armName) {
@@ -375,43 +375,43 @@ public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
     }
     @Override
     public Object visitStoreReg(InlineAArch64Parser.StoreRegContext ctx) {
-        Register directMemoryAccess = getOrNewRegister(ctx.VariableInline());
-        Register valueToStore = getOrNewRegister(ctx.ConstantInline());
-        events.add(EventFactory.newStore(valueToStore, directMemoryAccess));
-        return visitChildren(ctx);
-    }
-    @Override
-    public Object visitStoreExclusiveRegister(InlineAArch64Parser.StoreExclusiveRegisterContext ctx) {
-        Register resultRegister = getOrNewRegister(ctx.VariableInline(0)); // this register either holds 0 or 1 if the operation was successful or not
-        System.out.println("My regs atm are" + this.nameToRegisterMap);
-        Expression simulationAllOk = expressions.parseValue("0", integerType); // holds simulation of store going ok
-        this.comparator.updateStoreSucceeded(resultRegister);
-        // this part is used for the store
-        Register directMemoryAccess = getOrNewRegister(ctx.VariableInline(1));
-        Register valueToStore = getOrNewRegister(ctx.ConstantInline());
-        events.add(EventFactory.newRMWStoreExclusive(valueToStore, directMemoryAccess, true)); // maybe it is another store fn
-        events.add(EventFactory.newLocal(resultRegister, simulationAllOk)); // simulate saving state into register
-        return visitChildren(ctx);
-    }
-    @Override
-    public Object visitStoreReleaseExclusiveReg(InlineAArch64Parser.StoreReleaseExclusiveRegContext ctx) {
-        Register resultRegister = getOrNewRegister(ctx.VariableInline(0)); // this register either holds 0 or 1 if the operation was successful or not
-        Expression simulationAllOk = expressions.parseValue("0", integerType); // holds simulation of store going ok
-        this.comparator.updateStoreSucceeded(resultRegister);
-        // this part is used for the store
-        Register directMemoryAccess = getOrNewRegister(ctx.VariableInline(1));
-        Register valueToStore = getOrNewRegister(ctx.ConstantInline());
-        String mo = Tag.ARMv8.MO_REL;
-        events.add(EventFactory.newRMWStoreExclusiveWithMo(valueToStore, directMemoryAccess, true, mo)); // maybe it is another store fn
-        events.add(EventFactory.newLocal(resultRegister, simulationAllOk)); // simulate saving state into register
+        Register firstRegister = getOrNewRegister(ctx.VariableInline());
+        Register secondRegister = getOrNewRegister(ctx.ConstantInline());
+        events.add(EventFactory.newStore(secondRegister, firstRegister));
         return visitChildren(ctx);
     }
     @Override
     public Object visitStoreReleaseReg(InlineAArch64Parser.StoreReleaseRegContext ctx) {
-        Register directMemoryAccess = getOrNewRegister(ctx.VariableInline());
-        Register valueToStore = getOrNewRegister(ctx.ConstantInline());
+        Register firstRegister = getOrNewRegister(ctx.VariableInline());
+        Register secondRegister = getOrNewRegister(ctx.ConstantInline());
         String mo = Tag.ARMv8.MO_REL;
-        events.add(EventFactory.newStoreWithMo(valueToStore, directMemoryAccess, mo));
+        events.add(EventFactory.newStoreWithMo(secondRegister, firstRegister, mo));
+        return visitChildren(ctx);
+    }
+    @Override
+    public Object visitStoreExclusiveRegister(InlineAArch64Parser.StoreExclusiveRegisterContext ctx) {
+        Register freshResultRegister = getOrNewRegister(ctx.VariableInline(0)); // this register either holds 0 or 1 if the operation was successful or not
+        System.out.println("My regs atm are" + this.nameToRegisterMap);
+        Expression simulationAllOk = expressions.parseValue("0", integerType); // holds simulation of store going ok
+        this.comparator.updateStoreSucceeded(freshResultRegister);
+        // this part is used for the store
+        Register firstRegister = getOrNewRegister(ctx.VariableInline(1));
+        Register secondRegister = getOrNewRegister(ctx.ConstantInline());
+        events.add(EventFactory.newRMWStoreExclusive(secondRegister, firstRegister, true)); // maybe it is another store fn
+        events.add(EventFactory.newLocal(freshResultRegister, simulationAllOk)); // simulate saving state into register
+        return visitChildren(ctx);
+    }
+    @Override
+    public Object visitStoreReleaseExclusiveReg(InlineAArch64Parser.StoreReleaseExclusiveRegContext ctx) {
+        Register freshResultRegister = getOrNewRegister(ctx.VariableInline(0)); // this register either holds 0 or 1 if the operation was successful or not
+        Expression simulationAllOk = expressions.parseValue("0", integerType); // holds simulation of store going ok
+        this.comparator.updateStoreSucceeded(freshResultRegister);
+        // this part is used for the store
+        Register firstRegister = getOrNewRegister(ctx.VariableInline(1));
+        Register secondRegister = getOrNewRegister(ctx.ConstantInline());
+        String mo = Tag.ARMv8.MO_REL;
+        events.add(EventFactory.newRMWStoreExclusiveWithMo(secondRegister, firstRegister, true, mo)); // maybe it is another store fn
+        events.add(EventFactory.newLocal(freshResultRegister, simulationAllOk)); // simulate saving state into register
         return visitChildren(ctx);
     }
     // @Override
@@ -419,21 +419,27 @@ public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
     //     System.out.println("AtomicAddDoubleWordRelease");
     //     return visitChildren(ctx);
     // }
-    // @Override
-    // public Object visitSwapWordAcquire(InlineAArch64Parser.SwapWordAcquireContext ctx) {
-    //     System.out.println("SwapWordAcquire");
-    //     // write constant into newValueR and return to resultRegister the oldValueR
-    //     String oldValueRegister = ctx.VariableInline(0).getText();
-    //     String directMemoryAccess = ctx.ConstantInline().getText();
-    //     Register oldValueRegisterLlvm = this.armToLlvmMap.getLlvmRegister(oldValueRegister);
-    //     Register directMemoryAccessLlvm = this.armToLlvmMap.getLlvmRegister(directMemoryAccess);
-    //     String mo = Tag.ARMv8.MO_ACQ;
-    //     // String newValueRegister = ctx.VariableInline(1).getText(); // is not needed because we have returnRegister. It is a corner case
-    //     // Register newValueRegisterLlvm = this.armToLlvmMap.getLlvmRegister(newValueRegister); 
-    //     events.add(EventFactory.newLoadWithMo(oldValueRegisterLlvm, directMemoryAccessLlvm, mo));
-    //     events.add(EventFactory.newStore(this.returnRegister, directMemoryAccessLlvm));
-    //     return visitChildren(ctx);
-    // }
+    @Override
+    public Object visitSwapWordAcquire(InlineAArch64Parser.SwapWordAcquireContext ctx) {
+        System.out.println("SwapWordAcquire");
+        // dummyZero -> 1:w -> r9
+        // dummyOne -> 0:w -> r1
+        // dummyTwo -> $2 -> r0
+        // ldaxr dummyZero, dummyTwo
+        // str dummyTwo, dummyOne
+        Register dummyZero = getOrNewRegister(ctx.VariableInline(1));
+        Register dummyOne = getOrNewRegister(ctx.VariableInline(0));
+        Register dummyTwo = getOrNewRegister(ctx.ConstantInline());
+        System.out.println("Registers are " + dummyOne + " " + dummyZero + " " + dummyTwo);
+        System.out.println("Registers are " + ctx.VariableInline(0) + " " + ctx.VariableInline(1) + " " + ctx.ConstantInline());
+        String mo = Tag.ARMv8.MO_ACQ;
+        // String newValueRegister = ctx.VariableInline(1).getText(); // is not needed because we have returnRegister. It is a corner case
+        // Register newValueRegisterLlvm = this.armToLlvmMap.getLlvmRegister(newValueRegister); 
+        events.add(EventFactory.newRMWLoadWithMo(dummyZero, dummyTwo, mo));
+        events.add(EventFactory.newStore(dummyTwo, dummyOne)); // TODO ask why it is a null pointer for store ttaslockApple test
+        events.add(EventFactory.newLocal(this.returnRegister,dummyZero));
+        return visitChildren(ctx);
+    }
     @Override
     public Object visitCompare(InlineAArch64Parser.CompareContext ctx) {
         Register firstRegister = getOrNewRegister(ctx.VariableInline(0));
@@ -536,7 +542,8 @@ public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
             Type aggregateType = types.getAggregateType(typesList);
             Register returnRegisterMapper = llvmFunction.newRegister(aggregateType);
             Expression finalAssignExpression = expressions.makeConstruct(this.pendingRegisters);
-            events.add(EventFactory.newLocal(returnRegisterMapper, finalAssignExpression)); // has to be assigned to returnReg
+            events.add(EventFactory.newLocal(this.returnRegister, finalAssignExpression)); // comment this out later
+            // events.add(EventFactory.newLocal(returnRegisterMapper, finalAssignExpression)); // has to be assigned to returnReg
             // events.add(EventFactory.newLocal(this.returnRegister, returnRegisterMapper)); // this should be the last expression, but atm dat3m complains because of RegisterDecomposition
         }
         return visitChildren(ctx);
