@@ -5,7 +5,6 @@ import com.dat3m.dartagnan.program.analysis.SyntacticContextAnalysis;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.metadata.MemoryOrder;
 import com.dat3m.dartagnan.verification.model.event.*;
-import com.dat3m.dartagnan.verification.model.EventData;
 import com.dat3m.dartagnan.verification.model.ExecutionModelNext;
 import com.dat3m.dartagnan.verification.model.MemoryObjectModel;
 import com.dat3m.dartagnan.verification.model.relation.RelationModel;
@@ -41,9 +40,9 @@ public class ExecutionGraphVisualizer {
     private final ColorMap colorMap;
     private SyntacticContextAnalysis synContext = getEmptyInstance();
     // By default, we do not filter anything
-    // private BiPredicate<EventData, EventData> rfFilter = (x, y) -> true;
-    // private BiPredicate<EventData, EventData> frFilter = (x, y) -> true;
-    // private BiPredicate<EventData, EventData> coFilter = (x, y) -> true;
+    private BiPredicate<EventModel, EventModel> rfFilter = (x, y) -> true;
+    private BiPredicate<EventModel, EventModel> frFilter = (x, y) -> true;
+    private BiPredicate<EventModel, EventModel> coFilter = (x, y) -> true;
     private final List<MemoryObjectModel> sortedMemoryObjects = new ArrayList<>();
     private Set<String> relToShow;
 
@@ -63,20 +62,20 @@ public class ExecutionGraphVisualizer {
         return this;
     }
 
-    // public ExecutionGraphVisualizer setReadFromFilter(BiPredicate<EventData, EventData> filter) {
-    //     this.rfFilter = filter;
-    //     return this;
-    // }
+    public ExecutionGraphVisualizer setReadFromFilter(BiPredicate<EventModel, EventModel> filter) {
+        this.rfFilter = filter;
+        return this;
+    }
 
-    // public ExecutionGraphVisualizer setFromReadFilter(BiPredicate<EventData, EventData> filter) {
-    //     this.frFilter = filter;
-    //     return this;
-    // }
+    public ExecutionGraphVisualizer setFromReadFilter(BiPredicate<EventModel, EventModel> filter) {
+        this.frFilter = filter;
+        return this;
+    }
 
-    // public ExecutionGraphVisualizer setCoherenceFilter(BiPredicate<EventData, EventData> filter) {
-    //     this.coFilter = filter;
-    //     return this;
-    // }
+    public ExecutionGraphVisualizer setCoherenceFilter(BiPredicate<EventModel, EventModel> filter) {
+        this.coFilter = filter;
+        return this;
+    }
 
     public void generateGraphOfExecutionModel(Writer writer, String graphName, ExecutionModelNext model) throws IOException {
         computeAddressMap(model);
@@ -96,7 +95,7 @@ public class ExecutionGraphVisualizer {
     {
         model.getEncodingContext().getTask().getConfig().inject(this);
         if (relToShowStr.equals("default")) {
-            relToShow = new HashSet<>(Set.of(PO, RF, CO));
+            relToShow = new HashSet<>(Set.of(PO, RF, CO, "fr"));
         }
         else {
             relToShow = new HashSet<>(Arrays.asList(relToShowStr.split(",\\s*")));
@@ -140,7 +139,14 @@ public class ExecutionGraphVisualizer {
         String attributes = String.format("color=%s", colorMap.getColor(name));
         graphviz.setEdgeAttributes(attributes);
         String label = String.format("label=\"%s\"", name);
-        BiPredicate<EventModel, EventModel> filter = getFilter(name);
+        BiPredicate<EventModel, EventModel> filter;
+        if (name.equals(CO)) {
+            filter = coFilter;
+        } else if (name.equals(RF)) {
+            filter = rfFilter;
+        } else if (name.equals("fr")) {
+            filter = frFilter;
+        } else { filter = getFilter(name); }
         for (RelationModel.EdgeModel edge : rm.getEdgeModels()) {
             EventModel from = edge.getFrom();
             EventModel to = edge.getTo();
@@ -335,18 +341,19 @@ public class ExecutionGraphVisualizer {
                                             BiPredicate<EventModel, EventModel> frFilter,
                                             BiPredicate<EventModel, EventModel> coFilter, String directoryName, String fileNameBase,
                                             SyntacticContextAnalysis synContext,
-                                            boolean convert) {
+                                            boolean convert, boolean usedByRefinementSolver) {
         File fileVio = new File(directoryName + fileNameBase + ".dot");
         fileVio.getParentFile().mkdirs();
         try (FileWriter writer = new FileWriter(fileVio)) {
             // Create .dot file
-            new ExecutionGraphVisualizer()
-                    .setRelationsToShow(model)
-                    .setSyntacticContext(synContext)
-                    // .setReadFromFilter(rfFilter)
-                    // .setFromReadFilter(frFilter)
-                    // .setCoherenceFilter(coFilter)
-                    .generateGraphOfExecutionModel(writer, "Iteration " + iterationCount, model);
+            ExecutionGraphVisualizer visualizer = new ExecutionGraphVisualizer();
+            if (!usedByRefinementSolver) { visualizer.setRelationsToShow(model); }
+            visualizer.setRelationsToShow(model)
+                      .setSyntacticContext(synContext)
+                      .setReadFromFilter(rfFilter)
+                      .setFromReadFilter(frFilter)
+                      .setCoherenceFilter(coFilter)
+                      .generateGraphOfExecutionModel(writer, "Iteration " + iterationCount, model);
 
             writer.flush();
             if (convert) {
@@ -365,6 +372,6 @@ public class ExecutionGraphVisualizer {
             BiPredicate<EventModel, EventModel> coFilter, String directoryName, String fileNameBase,
             SyntacticContextAnalysis synContext) {
         generateGraphvizFile(model, iterationCount, rfFilter, frFilter, coFilter, directoryName, fileNameBase,
-                synContext, true);
+                synContext, true, true);
     }
 }

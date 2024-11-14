@@ -252,7 +252,7 @@ public class Dartagnan extends BaseOptions {
         // CO edges only give ordering information which is known if the pair is also in PO
         return generateGraphvizFile(m, 1, (x, y) -> true, (x, y) -> !x.getThread().equals(y.getThread()),
                 (x, y) -> !x.getThread().equals(y.getThread()), getOrCreateOutputDirectory() + "/", name,
-                synContext, witnessType.convertToPng());
+                synContext, witnessType.convertToPng(), false);
     }
 
     private static void generateWitnessIfAble(VerificationTask task, ProverEnvironment prover,
