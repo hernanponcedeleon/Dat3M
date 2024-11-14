@@ -234,8 +234,8 @@ public class ExecutionModelNext {
 
     public List<EventModel> getEventModelsToShow(Thread t) {
         return threadEventsMap.get(t).stream()
-                    .filter(e -> e.hasTag(Tag.VISIBLE) || e.isLocal() || e.isAssert())
-                    .toList();
+                              .filter(e -> e.hasTag(Tag.VISIBLE) || e.isLocal() || e.isAssert())
+                              .toList();
     }
 
     public RelationModel getRelationModel(String name) {

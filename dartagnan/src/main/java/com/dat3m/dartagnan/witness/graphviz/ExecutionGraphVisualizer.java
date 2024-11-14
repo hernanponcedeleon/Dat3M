@@ -121,7 +121,11 @@ public class ExecutionGraphVisualizer {
     private ExecutionGraphVisualizer addRelations(ExecutionModelNext model) {
         model.getManager().extractRelations(new ArrayList<>(relToShow));
         for (String relationName : relToShow) {
-            addRelation(model, relationName);
+            if (relationName.equals(PO)) {
+                addProgramOrder(model);
+            } else {
+                addRelation(model, relationName);
+            }
         }
         return this;
     }
@@ -134,9 +138,6 @@ public class ExecutionGraphVisualizer {
         }
         graphviz.beginSubgraph(name);
         String attributes = String.format("color=%s", colorMap.getColor(name));
-        if (name.equals(PO)) {
-            attributes += ", weight=100";
-        }
         graphviz.setEdgeAttributes(attributes);
         String label = String.format("label=\"%s\"", name);
         BiPredicate<EventModel, EventModel> filter = getFilter(name);
@@ -147,6 +148,27 @@ public class ExecutionGraphVisualizer {
             if (ignore(from) || ignore(to) || !filter.test(from, to)) { continue; }
 
             appendEdge(from, to, label);
+        }
+        graphviz.end();
+        return this;
+    }
+
+    private ExecutionGraphVisualizer addProgramOrder(ExecutionModelNext model) {
+        graphviz.beginSubgraph(PO);
+        String attributes = String.format("color=%s, weight=100", colorMap.getColor(PO));
+        graphviz.setEdgeAttributes(attributes);
+        BiPredicate<EventModel, EventModel> filter = getFilter(PO);
+        for (Thread t : model.getThreads()) {
+            List<EventModel> eventsToShow = model.getEventModelsToShow(t);
+            if (eventsToShow.size() <= 1) { continue; }
+            for (int i = 1; i < eventsToShow.size(); i++) {
+                EventModel from = eventsToShow.get(i - 1);
+                EventModel to = eventsToShow.get(i);
+
+                if (ignore(from) || ignore(to) || !filter.test(from, to)) { continue; }
+
+                appendEdge(from, to, "label=po");
+            }
         }
         graphviz.end();
         return this;
