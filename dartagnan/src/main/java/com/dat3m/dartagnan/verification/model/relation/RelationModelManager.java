@@ -161,7 +161,9 @@ public class RelationModelManager {
             rg = new SimpleGraph();
         }
         rg.setName(r.getNameOrTerm());
-        relGraphCache.put(r, rg);
+        if (!r.isRecursive()) {
+            relGraphCache.put(r, rg);
+        }
         return rg;
     }
 
@@ -475,6 +477,11 @@ public class RelationModelManager {
                     }
                 }
             }
+            return null;
+        }
+
+        @Override
+        public Void visitEmpty(Empty empty) {
             return null;
         }
 
