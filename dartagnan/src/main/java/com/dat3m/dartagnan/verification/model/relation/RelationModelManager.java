@@ -15,12 +15,14 @@ import com.dat3m.dartagnan.solver.caat.predicates.relationGraphs.base.SimpleGrap
 import com.dat3m.dartagnan.solver.caat.predicates.relationGraphs.derived.*;
 import com.dat3m.dartagnan.solver.caat.predicates.sets.SetPredicate;
 import com.dat3m.dartagnan.solver.caat4wmm.EventDomain;
+import com.dat3m.dartagnan.solver.caat4wmm.basePredicates.StaticDefaultWMMGraph;
 import com.dat3m.dartagnan.solver.caat4wmm.basePredicates.StaticWMMSet;
 import com.dat3m.dartagnan.utils.dependable.DependencyGraph;
 import com.dat3m.dartagnan.verification.model.ExecutionModel;
 import com.dat3m.dartagnan.verification.model.ExecutionModelNext;
 import com.dat3m.dartagnan.verification.model.event.*;
 import com.dat3m.dartagnan.verification.model.relation.RelationModel.EdgeModel;
+import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
 import com.dat3m.dartagnan.wmm.Constraint.Visitor;
 import com.dat3m.dartagnan.wmm.definition.*;
 import com.dat3m.dartagnan.wmm.Relation;
@@ -123,7 +125,9 @@ public class RelationModelManager {
         hierarchy.initializeToDomain(domain);
 
         for (CAATPredicate basePred : hierarchy.getBasePredicates()) {
-            if (basePred.getClass() == StaticWMMSet.class) { continue; }
+            if (basePred.getClass() == StaticWMMSet.class
+                || basePred.getClass() == StaticDefaultWMMGraph.class
+            ) { continue; }
             Relation r = relGraphCache.inverse().get((RelationGraph) basePred);
             r.getDefinition().accept(baseBuilder);
         }
@@ -158,6 +162,7 @@ public class RelationModelManager {
         if (r.getDependencies().size() > 0
             || r.getDefinition().getClass() == SetIdentity.class
             || r.getDefinition().getClass() == CartesianProduct.class
+            || r.getDefinition().getClass() == DomainIdentity.class
         ) {
             rg = r.getDefinition().accept(derivedBuilder);
         } else {
@@ -551,6 +556,13 @@ public class RelationModelManager {
             SetPredicate lhs = getOrCreateSetFromFilter(prod.getFirstFilter());
             SetPredicate rhs = getOrCreateSetFromFilter(prod.getSecondFilter());
             return new CartesianGraph(lhs, rhs);
+        }
+
+        @Override
+        public RelationGraph visitDomainIdentity(DomainIdentity di) {
+            return new StaticDefaultWMMGraph(di.getDefinedRelation(),
+                                             getContextWithFullWmm().getAnalysisContext()
+                                                                    .requires(RelationAnalysis.class));
         }
 
     }
