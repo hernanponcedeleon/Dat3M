@@ -44,8 +44,8 @@ public class RelationModelManager {
     private static final Logger logger = LogManager.getLogger(RelationModelManager.class);
 
     private final ExecutionModelNext executionModel;
-    private final BaseRelationGraphBuilder baseBuilder;
-    private final DerivedRelationGraphBuilder derivedBuilder;
+    private final BaseRelationGraphPopulator graphPopulator;
+    private final RelationGraphBuilder graphBuilder;
 
     private final Map<Relation, RelationModel> relModelCache;
     private final BiMap<Relation, RelationGraph> relGraphCache;
@@ -53,19 +53,17 @@ public class RelationModelManager {
     private final Map<String, EdgeModel> edgeModelCache;
 
     private final ExecutionModel oldModel; // old one for CAAT use
-    private final EventDomain domain;
 
     private RelationModelManager(ExecutionModelNext m, ExecutionModel old) {
         executionModel = m;
-        baseBuilder = new BaseRelationGraphBuilder();
-        derivedBuilder = new DerivedRelationGraphBuilder();
+        graphPopulator = new BaseRelationGraphPopulator();
+        graphBuilder = new RelationGraphBuilder();
         relModelCache = new HashMap<>();
         relGraphCache = HashBiMap.create();
         setCache = new HashMap<>();
         edgeModelCache = new HashMap<>();
 
         oldModel = old;
-        domain = new EventDomain(old);
     }
 
     public static RelationModelManager newRMManager(
@@ -122,14 +120,14 @@ public class RelationModelManager {
 
         Set<CAATPredicate> predicates = new HashSet<>(relGraphs);
         PredicateHierarchy hierarchy = new PredicateHierarchy(predicates);
-        hierarchy.initializeToDomain(domain);
+        hierarchy.initializeToDomain(new EventDomain(oldModel));
 
         for (CAATPredicate basePred : hierarchy.getBasePredicates()) {
             if (basePred.getClass() == StaticWMMSet.class
                 || basePred.getClass() == StaticDefaultWMMGraph.class
             ) { continue; }
             Relation r = relGraphCache.inverse().get((RelationGraph) basePred);
-            r.getDefinition().accept(baseBuilder);
+            r.getDefinition().accept(graphPopulator);
         }
 
         hierarchy.populate();
@@ -159,14 +157,12 @@ public class RelationModelManager {
 
     private RelationGraph createGraph(Relation r) {
         RelationGraph rg;
-        if (r.getDependencies().size() > 0
-            || r.getDefinition().getClass() == SetIdentity.class
-            || r.getDefinition().getClass() == CartesianProduct.class
-            || r.getDefinition().getClass() == DomainIdentity.class
-        ) {
-            rg = r.getDefinition().accept(derivedBuilder);
-        } else {
-            rg = new SimpleGraph();
+        try {
+            rg = r.getDefinition().accept(graphBuilder);
+        } catch (UnsupportedOperationException e) {
+            rg = new StaticDefaultWMMGraph(r, getContextWithFullWmm().getAnalysisContext()
+                                                                     .requires(RelationAnalysis.class)
+            );
         }
         rg.setName(r.getNameOrTerm());
         if (!r.isRecursive()) {
@@ -182,7 +178,7 @@ public class RelationModelManager {
         RelationGraph rg = createGraph(r);
         return rg;
     }
-    
+
     private SetPredicate getOrCreateSetFromFilter(Filter filter) {
         if (setCache.containsKey(filter)) {
             return setCache.get(filter);
@@ -215,7 +211,7 @@ public class RelationModelManager {
     }
 
 
-    private final class BaseRelationGraphBuilder implements Visitor<Void> {
+    private final class BaseRelationGraphPopulator implements Visitor<Void> {
 
         @Override
         public Void visitProgramOrder(ProgramOrder po) {
@@ -496,7 +492,67 @@ public class RelationModelManager {
     }
 
 
-    private final class DerivedRelationGraphBuilder implements Visitor<RelationGraph> {
+    private final class RelationGraphBuilder implements Visitor<RelationGraph> {
+
+        @Override
+        public RelationGraph visitProgramOrder(ProgramOrder po) {
+            return new SimpleGraph();
+        }
+
+        @Override
+        public RelationGraph visitCoherence(Coherence co) {
+            return new SimpleGraph();
+        }
+
+        @Override
+        public RelationGraph visitReadFrom(ReadFrom rf) {
+            return new SimpleGraph();
+        }
+
+        @Override
+        public RelationGraph visitReadModifyWrites(ReadModifyWrites rmw) {
+            return new SimpleGraph();
+        }
+
+        @Override
+        public RelationGraph visitSameLocation(SameLocation loc) {
+            return new SimpleGraph();
+        }
+
+        @Override
+        public RelationGraph visitInternal(Internal in) {
+            return new SimpleGraph();
+        }
+
+        @Override
+        public RelationGraph visitExternal(External ext) {
+            return new SimpleGraph();
+        }
+
+        @Override
+        public RelationGraph visitControlDependency(DirectControlDependency ctrlDirect) {
+            return new SimpleGraph();
+        }
+
+        @Override
+        public RelationGraph visitAddressDependency(DirectAddressDependency addrDirect) {
+            return new SimpleGraph();
+        }
+
+        @Override
+        public RelationGraph visitInternalDataDependency(DirectDataDependency idd) {
+            return new SimpleGraph();
+        }
+
+        @Override
+        public RelationGraph visitFree(Free f) {
+            return new SimpleGraph();
+        }
+
+        @Override
+        public RelationGraph visitEmpty(Empty empty) {
+            return new SimpleGraph();
+        }
 
         @Override
         public RelationGraph visitInverse(Inverse inv) {
@@ -556,13 +612,6 @@ public class RelationModelManager {
             SetPredicate lhs = getOrCreateSetFromFilter(prod.getFirstFilter());
             SetPredicate rhs = getOrCreateSetFromFilter(prod.getSecondFilter());
             return new CartesianGraph(lhs, rhs);
-        }
-
-        @Override
-        public RelationGraph visitDomainIdentity(DomainIdentity di) {
-            return new StaticDefaultWMMGraph(di.getDefinedRelation(),
-                                             getContextWithFullWmm().getAnalysisContext()
-                                                                    .requires(RelationAnalysis.class));
         }
 
     }
