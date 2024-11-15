@@ -357,14 +357,14 @@ public final class Tag {
         public static String loadMO(String mo) {
             return switch (mo) {
                 case ACQ_REL, ACQUIRE -> ACQUIRE;
-                default -> "";
+                default -> ATOM;
             };
         }
 
         public static String storeMO(String mo) {
             return switch (mo) {
                 case ACQ_REL, RELEASE -> RELEASE;
-                default -> "";
+                default -> ATOM;
             };
         }
     }

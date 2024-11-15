@@ -42,7 +42,7 @@
 %_ptr_PushConstant_uint = OpTypePointer PushConstant %uint
 %_ptr_Workgroup_uint = OpTypePointer Workgroup %uint
      %uint_2 = OpConstant %uint 2
-     %uint_8 = OpConstant %uint 8
+   %uint_264 = OpConstant %uint 264
      %uint_1 = OpConstant %uint 1
      %uint_3 = OpConstant %uint 3
      %uint_4 = OpConstant %uint 4
@@ -63,7 +63,7 @@
          %32 = OpLoad %uint %31
          %34 = OpAccessChain %_ptr_Workgroup_uint %18 %32
                OpStore %34 %30
-               OpControlBarrier %uint_2 %uint_2 %uint_8
+               OpControlBarrier %uint_2 %uint_2 %uint_264
          %37 = OpAccessChain %_ptr_Input_uint %gl_GlobalInvocationID %uint_0
          %38 = OpLoad %uint %37
          %39 = OpAccessChain %_ptr_PushConstant_uint %5 %uint_0 %uint_0

@@ -43,8 +43,8 @@ public class VisitorSpirvVulkanTest {
                 Set.of(Tag.Vulkan.SC1)
         );
         doTestLoad(
-                Set.of(Tag.Spirv.MEM_VISIBLE, Tag.Spirv.DEVICE, Tag.Spirv.SC_UNIFORM),
-                Set.of(Tag.Vulkan.VISIBLE, Tag.Vulkan.DEVICE, Tag.Vulkan.SC0)
+                Set.of(Tag.Spirv.MEM_NON_PRIVATE, Tag.Spirv.DEVICE),
+                Set.of(Tag.Vulkan.NON_PRIVATE, Tag.Vulkan.DEVICE)
         );
         doTestLoad(
                 Set.of(Tag.Spirv.MEM_NON_PRIVATE, Tag.Spirv.MEM_VISIBLE, Tag.Spirv.DEVICE, Tag.Spirv.SC_UNIFORM),
@@ -57,6 +57,7 @@ public class VisitorSpirvVulkanTest {
         Register register = mock(Register.class);
         MemoryObject address = mock(MemoryObject.class);
         Load e = EventFactory.newLoad(register, address);
+        e.setFunction(mock(Function.class));
         e.addTags(spvTags);
 
         // when
@@ -80,8 +81,8 @@ public class VisitorSpirvVulkanTest {
                 Set.of(Tag.Vulkan.SC1)
         );
         doTestStore(
-                Set.of(Tag.Spirv.MEM_AVAILABLE, Tag.Spirv.DEVICE, Tag.Spirv.SC_UNIFORM),
-                Set.of(Tag.Vulkan.AVAILABLE, Tag.Vulkan.DEVICE, Tag.Vulkan.SC0)
+                Set.of(Tag.Spirv.MEM_NON_PRIVATE, Tag.Spirv.DEVICE),
+                Set.of(Tag.Vulkan.NON_PRIVATE, Tag.Vulkan.DEVICE)
         );
         doTestStore(
                 Set.of(Tag.Spirv.MEM_NON_PRIVATE, Tag.Spirv.MEM_AVAILABLE, Tag.Spirv.DEVICE, Tag.Spirv.SC_UNIFORM),
@@ -94,6 +95,7 @@ public class VisitorSpirvVulkanTest {
         Expression value = mock(Expression.class);
         MemoryObject address = mock(MemoryObject.class);
         Store e = EventFactory.newStore(address, value);
+        e.setFunction(mock(Function.class));
         e.addTags(spvTags);
 
         // when
@@ -109,24 +111,16 @@ public class VisitorSpirvVulkanTest {
     @Test
     public void testSpirvLoad() {
         doTestSpirvLoad(
-                Set.of(Tag.Spirv.RELAXED, Tag.Spirv.SUBGROUP, Tag.Spirv.SC_WORKGROUP),
-                Set.of(Tag.Vulkan.SUB_GROUP, Tag.Vulkan.SC1, Tag.Vulkan.NON_PRIVATE)
+                Set.of(Tag.Spirv.SC_WORKGROUP, Tag.Spirv.SUBGROUP, Tag.Spirv.RELAXED),
+                Set.of(Tag.Vulkan.SC1, Tag.Vulkan.SUB_GROUP)
         );
         doTestSpirvLoad(
-                Set.of(Tag.Spirv.SEQ_CST, Tag.Spirv.SUBGROUP, Tag.Spirv.SC_WORKGROUP),
-                Set.of(Tag.Vulkan.ACQUIRE, Tag.Vulkan.SUB_GROUP, Tag.Vulkan.SC1, Tag.Vulkan.NON_PRIVATE)
+                Set.of(Tag.Spirv.SC_WORKGROUP, Tag.Spirv.WORKGROUP, Tag.Spirv.ACQUIRE, Tag.Spirv.SEM_WORKGROUP),
+                Set.of(Tag.Vulkan.SC1, Tag.Vulkan.WORK_GROUP, Tag.Vulkan.ACQUIRE, Tag.Vulkan.SEMSC1)
         );
         doTestSpirvLoad(
-                Set.of(Tag.Spirv.ACQUIRE, Tag.Spirv.WORKGROUP, Tag.Spirv.SC_WORKGROUP),
-                Set.of(Tag.Vulkan.ACQUIRE, Tag.Vulkan.WORK_GROUP, Tag.Vulkan.SC1, Tag.Vulkan.NON_PRIVATE)
-        );
-        doTestSpirvLoad(
-                Set.of(Tag.Spirv.ACQUIRE, Tag.Spirv.WORKGROUP, Tag.Spirv.SEM_UNIFORM, Tag.Spirv.SEM_VISIBLE, Tag.Spirv.SC_UNIFORM),
-                Set.of(Tag.Vulkan.ACQUIRE, Tag.Vulkan.WORK_GROUP, Tag.Vulkan.SEMSC0, Tag.Vulkan.SEM_VISIBLE, Tag.Vulkan.SC0, Tag.Vulkan.NON_PRIVATE)
-        );
-        doTestSpirvLoad(
-                Set.of(Tag.Spirv.RELAXED, Tag.Spirv.DEVICE, Tag.Spirv.SC_UNIFORM),
-                Set.of(Tag.Vulkan.DEVICE, Tag.Vulkan.SC0, Tag.Vulkan.NON_PRIVATE)
+                Set.of(Tag.Spirv.SC_UNIFORM, Tag.Spirv.WORKGROUP, Tag.Spirv.ACQUIRE, Tag.Spirv.SEM_UNIFORM, Tag.Spirv.SEM_VISIBLE),
+                Set.of(Tag.Vulkan.SC0, Tag.Vulkan.WORK_GROUP, Tag.Vulkan.ACQUIRE, Tag.Vulkan.SEMSC0, Tag.Vulkan.SEM_VISIBLE)
         );
     }
 
@@ -152,24 +146,16 @@ public class VisitorSpirvVulkanTest {
     @Test
     public void testSpirvStore() {
         doTestSpirvStore(
-                Set.of(Tag.Spirv.RELAXED, Tag.Spirv.SUBGROUP, Tag.Spirv.SC_WORKGROUP),
-                Set.of(Tag.Vulkan.SUB_GROUP, Tag.Vulkan.SC1, Tag.Vulkan.NON_PRIVATE)
+                Set.of(Tag.Spirv.SC_WORKGROUP, Tag.Spirv.SUBGROUP, Tag.Spirv.RELAXED),
+                Set.of(Tag.Vulkan.SC1, Tag.Vulkan.SUB_GROUP)
         );
         doTestSpirvStore(
-                Set.of(Tag.Spirv.SEQ_CST, Tag.Spirv.SUBGROUP, Tag.Spirv.SC_WORKGROUP),
-                Set.of(Tag.Vulkan.RELEASE, Tag.Vulkan.SUB_GROUP, Tag.Vulkan.SC1, Tag.Vulkan.NON_PRIVATE)
+                Set.of(Tag.Spirv.SC_WORKGROUP, Tag.Spirv.WORKGROUP, Tag.Spirv.RELEASE, Tag.Spirv.SEM_WORKGROUP),
+                Set.of(Tag.Vulkan.SC1, Tag.Vulkan.WORK_GROUP, Tag.Vulkan.RELEASE, Tag.Vulkan.SEMSC1)
         );
         doTestSpirvStore(
-                Set.of(Tag.Spirv.RELEASE, Tag.Spirv.WORKGROUP, Tag.Spirv.SC_WORKGROUP),
-                Set.of(Tag.Vulkan.RELEASE, Tag.Vulkan.WORK_GROUP, Tag.Vulkan.SC1, Tag.Vulkan.NON_PRIVATE)
-        );
-        doTestSpirvStore(
-                Set.of(Tag.Spirv.RELEASE, Tag.Spirv.WORKGROUP, Tag.Spirv.SEM_UNIFORM, Tag.Spirv.SEM_AVAILABLE, Tag.Spirv.SC_UNIFORM),
-                Set.of(Tag.Vulkan.RELEASE, Tag.Vulkan.WORK_GROUP, Tag.Vulkan.SEMSC0, Tag.Vulkan.SEM_AVAILABLE, Tag.Vulkan.SC0, Tag.Vulkan.NON_PRIVATE)
-        );
-        doTestSpirvStore(
-                Set.of(Tag.Spirv.RELAXED, Tag.Spirv.DEVICE, Tag.Spirv.SC_UNIFORM),
-                Set.of(Tag.Vulkan.DEVICE, Tag.Vulkan.SC0, Tag.Vulkan.NON_PRIVATE)
+                Set.of(Tag.Spirv.SC_UNIFORM, Tag.Spirv.WORKGROUP, Tag.Spirv.RELEASE, Tag.Spirv.SEM_UNIFORM, Tag.Spirv.SEM_AVAILABLE),
+                Set.of(Tag.Vulkan.SC0, Tag.Vulkan.WORK_GROUP, Tag.Vulkan.RELEASE, Tag.Vulkan.SEMSC0, Tag.Vulkan.SEM_AVAILABLE)
         );
     }
 
@@ -195,34 +181,24 @@ public class VisitorSpirvVulkanTest {
     @Test
     public void testSpirvXchg() {
         doTestSpirvXchg(
-                Set.of(Tag.Spirv.RELAXED, Tag.Spirv.SUBGROUP, Tag.Spirv.SC_WORKGROUP),
-                Set.of(Tag.Vulkan.SUB_GROUP, Tag.Vulkan.SC1, Tag.Vulkan.NON_PRIVATE),
-                Set.of(Tag.Vulkan.SUB_GROUP, Tag.Vulkan.SC1, Tag.Vulkan.NON_PRIVATE)
+                Set.of(Tag.Spirv.SC_WORKGROUP, Tag.Spirv.SUBGROUP, Tag.Spirv.RELAXED),
+                Set.of(Tag.Vulkan.SC1, Tag.Vulkan.SUB_GROUP),
+                Set.of(Tag.Vulkan.SC1, Tag.Vulkan.SUB_GROUP)
         );
         doTestSpirvXchg(
-                Set.of(Tag.Spirv.ACQUIRE, Tag.Spirv.WORKGROUP, Tag.Spirv.SC_WORKGROUP),
-                Set.of(Tag.Vulkan.ACQUIRE, Tag.Vulkan.WORK_GROUP, Tag.Vulkan.SC1, Tag.Vulkan.NON_PRIVATE),
-                Set.of(Tag.Vulkan.WORK_GROUP, Tag.Vulkan.SC1, Tag.Vulkan.NON_PRIVATE)
+                Set.of(Tag.Spirv.SC_WORKGROUP, Tag.Spirv.WORKGROUP, Tag.Spirv.ACQUIRE, Tag.Spirv.SEM_WORKGROUP),
+                Set.of(Tag.Vulkan.SC1, Tag.Vulkan.WORK_GROUP, Tag.Vulkan.ACQUIRE, Tag.Vulkan.SEMSC1),
+                Set.of(Tag.Vulkan.SC1, Tag.Vulkan.WORK_GROUP)
         );
         doTestSpirvXchg(
-                Set.of(Tag.Spirv.RELEASE, Tag.Spirv.WORKGROUP, Tag.Spirv.SC_WORKGROUP),
-                Set.of(Tag.Vulkan.WORK_GROUP, Tag.Vulkan.SC1, Tag.Vulkan.NON_PRIVATE),
-                Set.of(Tag.Vulkan.RELEASE, Tag.Vulkan.WORK_GROUP, Tag.Vulkan.SC1, Tag.Vulkan.NON_PRIVATE)
+                Set.of(Tag.Spirv.SC_WORKGROUP, Tag.Spirv.WORKGROUP, Tag.Spirv.RELEASE, Tag.Spirv.SEM_WORKGROUP),
+                Set.of(Tag.Vulkan.SC1, Tag.Vulkan.WORK_GROUP),
+                Set.of(Tag.Vulkan.SC1, Tag.Vulkan.WORK_GROUP, Tag.Vulkan.RELEASE, Tag.Vulkan.SEMSC1)
         );
         doTestSpirvXchg(
-                Set.of(Tag.Spirv.ACQ_REL, Tag.Spirv.WORKGROUP, Tag.Spirv.SC_WORKGROUP),
-                Set.of(Tag.Vulkan.ACQUIRE, Tag.Vulkan.WORK_GROUP, Tag.Vulkan.SC1, Tag.Vulkan.NON_PRIVATE),
-                Set.of(Tag.Vulkan.RELEASE, Tag.Vulkan.WORK_GROUP, Tag.Vulkan.SC1, Tag.Vulkan.NON_PRIVATE)
-        );
-        doTestSpirvXchg(
-                Set.of(Tag.Spirv.SEQ_CST, Tag.Spirv.WORKGROUP, Tag.Spirv.SC_WORKGROUP),
-                Set.of(Tag.Vulkan.ACQUIRE, Tag.Vulkan.WORK_GROUP, Tag.Vulkan.SC1, Tag.Vulkan.NON_PRIVATE),
-                Set.of(Tag.Vulkan.RELEASE, Tag.Vulkan.WORK_GROUP, Tag.Vulkan.SC1, Tag.Vulkan.NON_PRIVATE)
-        );
-        doTestSpirvXchg(
-                Set.of(Tag.Spirv.RELAXED, Tag.Spirv.DEVICE, Tag.Spirv.SC_WORKGROUP),
-                Set.of(Tag.Vulkan.DEVICE, Tag.Vulkan.SC1, Tag.Vulkan.NON_PRIVATE),
-                Set.of(Tag.Vulkan.DEVICE, Tag.Vulkan.SC1, Tag.Vulkan.NON_PRIVATE)
+                Set.of(Tag.Spirv.SC_WORKGROUP, Tag.Spirv.WORKGROUP, Tag.Spirv.ACQ_REL, Tag.Spirv.SEM_WORKGROUP),
+                Set.of(Tag.Vulkan.SC1, Tag.Vulkan.WORK_GROUP, Tag.Vulkan.ACQUIRE, Tag.Vulkan.SEMSC1),
+                Set.of(Tag.Vulkan.SC1, Tag.Vulkan.WORK_GROUP, Tag.Vulkan.RELEASE, Tag.Vulkan.SEMSC1)
         );
     }
 
@@ -256,34 +232,24 @@ public class VisitorSpirvVulkanTest {
     @Test
     public void testSpirvRmw() {
         doTestSpirvRmw(
-                Set.of(Tag.Spirv.RELAXED, Tag.Spirv.SUBGROUP, Tag.Spirv.SC_WORKGROUP),
-                Set.of(Tag.Vulkan.SUB_GROUP, Tag.Vulkan.SC1, Tag.Vulkan.NON_PRIVATE),
-                Set.of(Tag.Vulkan.SUB_GROUP, Tag.Vulkan.SC1, Tag.Vulkan.NON_PRIVATE)
+                Set.of(Tag.Spirv.SC_WORKGROUP, Tag.Spirv.SUBGROUP, Tag.Spirv.RELAXED),
+                Set.of(Tag.Vulkan.SC1, Tag.Vulkan.SUB_GROUP),
+                Set.of(Tag.Vulkan.SC1, Tag.Vulkan.SUB_GROUP)
         );
         doTestSpirvRmw(
-                Set.of(Tag.Spirv.ACQUIRE, Tag.Spirv.WORKGROUP, Tag.Spirv.SC_WORKGROUP),
-                Set.of(Tag.Vulkan.ACQUIRE, Tag.Vulkan.WORK_GROUP, Tag.Vulkan.SC1, Tag.Vulkan.NON_PRIVATE),
-                Set.of(Tag.Vulkan.WORK_GROUP, Tag.Vulkan.SC1, Tag.Vulkan.NON_PRIVATE)
+                Set.of(Tag.Spirv.SC_WORKGROUP, Tag.Spirv.WORKGROUP, Tag.Spirv.ACQUIRE, Tag.Spirv.SEM_WORKGROUP),
+                Set.of(Tag.Vulkan.SC1, Tag.Vulkan.WORK_GROUP, Tag.Vulkan.ACQUIRE, Tag.Vulkan.SEMSC1),
+                Set.of(Tag.Vulkan.SC1, Tag.Vulkan.WORK_GROUP)
         );
         doTestSpirvRmw(
-                Set.of(Tag.Spirv.RELEASE, Tag.Spirv.WORKGROUP, Tag.Spirv.SC_WORKGROUP),
-                Set.of(Tag.Vulkan.WORK_GROUP, Tag.Vulkan.SC1, Tag.Vulkan.NON_PRIVATE),
-                Set.of(Tag.Vulkan.RELEASE, Tag.Vulkan.WORK_GROUP, Tag.Vulkan.SC1, Tag.Vulkan.NON_PRIVATE)
+                Set.of(Tag.Spirv.SC_WORKGROUP, Tag.Spirv.WORKGROUP, Tag.Spirv.RELEASE, Tag.Spirv.SEM_WORKGROUP),
+                Set.of(Tag.Vulkan.SC1, Tag.Vulkan.WORK_GROUP),
+                Set.of(Tag.Vulkan.SC1, Tag.Vulkan.WORK_GROUP, Tag.Vulkan.RELEASE, Tag.Vulkan.SEMSC1)
         );
         doTestSpirvRmw(
-                Set.of(Tag.Spirv.ACQ_REL, Tag.Spirv.WORKGROUP, Tag.Spirv.SC_WORKGROUP),
-                Set.of(Tag.Vulkan.ACQUIRE, Tag.Vulkan.WORK_GROUP, Tag.Vulkan.SC1, Tag.Vulkan.NON_PRIVATE),
-                Set.of(Tag.Vulkan.RELEASE, Tag.Vulkan.WORK_GROUP, Tag.Vulkan.SC1, Tag.Vulkan.NON_PRIVATE)
-        );
-        doTestSpirvRmw(
-                Set.of(Tag.Spirv.SEQ_CST, Tag.Spirv.WORKGROUP, Tag.Spirv.SC_WORKGROUP),
-                Set.of(Tag.Vulkan.ACQUIRE, Tag.Vulkan.WORK_GROUP, Tag.Vulkan.SC1, Tag.Vulkan.NON_PRIVATE),
-                Set.of(Tag.Vulkan.RELEASE, Tag.Vulkan.WORK_GROUP, Tag.Vulkan.SC1, Tag.Vulkan.NON_PRIVATE)
-        );
-        doTestSpirvRmw(
-                Set.of(Tag.Spirv.RELAXED, Tag.Spirv.DEVICE, Tag.Spirv.SC_WORKGROUP),
-                Set.of(Tag.Vulkan.DEVICE, Tag.Vulkan.SC1, Tag.Vulkan.NON_PRIVATE),
-                Set.of(Tag.Vulkan.DEVICE, Tag.Vulkan.SC1, Tag.Vulkan.NON_PRIVATE)
+                Set.of(Tag.Spirv.SC_WORKGROUP, Tag.Spirv.WORKGROUP, Tag.Spirv.ACQ_REL, Tag.Spirv.SEM_WORKGROUP),
+                Set.of(Tag.Vulkan.SC1, Tag.Vulkan.WORK_GROUP, Tag.Vulkan.ACQUIRE, Tag.Vulkan.SEMSC1),
+                Set.of(Tag.Vulkan.SC1, Tag.Vulkan.WORK_GROUP, Tag.Vulkan.RELEASE, Tag.Vulkan.SEMSC1)
         );
     }
 
@@ -318,40 +284,28 @@ public class VisitorSpirvVulkanTest {
     public void testSpirvCmpXchg() {
         doTestSpirvCmpXchg(
                 Tag.Spirv.WORKGROUP,
-                Set.of(Tag.Spirv.RELAXED, Tag.Spirv.SC_WORKGROUP),
-                Set.of(Tag.Spirv.RELAXED, Tag.Spirv.SC_WORKGROUP),
-                Set.of(Tag.Vulkan.WORK_GROUP, Tag.Vulkan.SC1, Tag.Vulkan.NON_PRIVATE),
-                Set.of(Tag.Vulkan.WORK_GROUP, Tag.Vulkan.SC1, Tag.Vulkan.NON_PRIVATE));
+                Set.of(Tag.Spirv.RELAXED),
+                Set.of(Tag.Spirv.RELAXED),
+                Set.of(Tag.Vulkan.WORK_GROUP),
+                Set.of(Tag.Vulkan.WORK_GROUP));
         doTestSpirvCmpXchg(
                 Tag.Spirv.WORKGROUP,
-                Set.of(Tag.Spirv.ACQUIRE, Tag.Spirv.SC_WORKGROUP),
-                Set.of(Tag.Spirv.ACQUIRE, Tag.Spirv.SC_WORKGROUP),
-                Set.of(Tag.Vulkan.ACQUIRE, Tag.Vulkan.WORK_GROUP, Tag.Vulkan.SC1, Tag.Vulkan.NON_PRIVATE),
-                Set.of(Tag.Vulkan.WORK_GROUP, Tag.Vulkan.SC1, Tag.Vulkan.NON_PRIVATE));
+                Set.of(Tag.Spirv.ACQUIRE, Tag.Spirv.SEM_WORKGROUP),
+                Set.of(Tag.Spirv.ACQUIRE, Tag.Spirv.SEM_WORKGROUP),
+                Set.of(Tag.Vulkan.WORK_GROUP, Tag.Vulkan.ACQUIRE, Tag.Vulkan.SEMSC1),
+                Set.of(Tag.Vulkan.WORK_GROUP));
         doTestSpirvCmpXchg(
                 Tag.Spirv.WORKGROUP,
-                Set.of(Tag.Spirv.RELEASE, Tag.Spirv.SC_WORKGROUP),
-                Set.of(Tag.Spirv.RELAXED, Tag.Spirv.SC_WORKGROUP),
-                Set.of(Tag.Vulkan.WORK_GROUP, Tag.Vulkan.SC1, Tag.Vulkan.NON_PRIVATE),
-                Set.of(Tag.Vulkan.RELEASE, Tag.Vulkan.WORK_GROUP, Tag.Vulkan.SC1, Tag.Vulkan.NON_PRIVATE));
+                Set.of(Tag.Spirv.RELEASE, Tag.Spirv.SEM_WORKGROUP),
+                Set.of(Tag.Spirv.RELAXED, Tag.Spirv.SEM_WORKGROUP),
+                Set.of(Tag.Vulkan.WORK_GROUP),
+                Set.of(Tag.Vulkan.WORK_GROUP, Tag.Vulkan.RELEASE, Tag.Vulkan.SEMSC1));
         doTestSpirvCmpXchg(
                 Tag.Spirv.WORKGROUP,
-                Set.of(Tag.Spirv.ACQ_REL, Tag.Spirv.SC_WORKGROUP),
-                Set.of(Tag.Spirv.ACQUIRE, Tag.Spirv.SC_WORKGROUP),
-                Set.of(Tag.Vulkan.ACQUIRE, Tag.Vulkan.WORK_GROUP, Tag.Vulkan.SC1, Tag.Vulkan.NON_PRIVATE),
-                Set.of(Tag.Vulkan.RELEASE, Tag.Vulkan.WORK_GROUP, Tag.Vulkan.SC1, Tag.Vulkan.NON_PRIVATE));
-        doTestSpirvCmpXchg(
-                Tag.Spirv.WORKGROUP,
-                Set.of(Tag.Spirv.SEQ_CST, Tag.Spirv.SC_WORKGROUP),
-                Set.of(Tag.Spirv.ACQUIRE, Tag.Spirv.SC_WORKGROUP),
-                Set.of(Tag.Vulkan.ACQUIRE, Tag.Vulkan.WORK_GROUP, Tag.Vulkan.SC1, Tag.Vulkan.NON_PRIVATE),
-                Set.of(Tag.Vulkan.RELEASE, Tag.Vulkan.WORK_GROUP, Tag.Vulkan.SC1, Tag.Vulkan.NON_PRIVATE));
-        doTestSpirvCmpXchg(
-                Tag.Spirv.DEVICE,
-                Set.of(Tag.Spirv.RELAXED, Tag.Spirv.SC_WORKGROUP),
-                Set.of(Tag.Spirv.RELAXED, Tag.Spirv.SC_WORKGROUP),
-                Set.of(Tag.Vulkan.DEVICE, Tag.Vulkan.SC1, Tag.Vulkan.NON_PRIVATE),
-                Set.of(Tag.Vulkan.DEVICE, Tag.Vulkan.SC1, Tag.Vulkan.NON_PRIVATE));
+                Set.of(Tag.Spirv.ACQ_REL, Tag.Spirv.SEM_WORKGROUP),
+                Set.of(Tag.Spirv.ACQUIRE, Tag.Spirv.SEM_WORKGROUP),
+                Set.of(Tag.Vulkan.WORK_GROUP, Tag.Vulkan.ACQUIRE, Tag.Vulkan.SEMSC1),
+                Set.of(Tag.Vulkan.WORK_GROUP, Tag.Vulkan.RELEASE, Tag.Vulkan.SEMSC1));
     }
 
     private void doTestSpirvCmpXchg(String scope, Set<String> eqTags, Set<String> neqTags, Set<String> loadTags, Set<String> storeTags) {
@@ -423,30 +377,27 @@ public class VisitorSpirvVulkanTest {
     @Test
     public void testSpirvMemoryBarrier() {
         doTestSpirvMemoryBarrier(
-                Set.of(Tag.Spirv.RELAXED, Tag.Spirv.SUBGROUP),
+                Set.of(Tag.Spirv.SUBGROUP, Tag.Spirv.RELAXED),
                 Set.of(Tag.Vulkan.SUB_GROUP)
         );
         doTestSpirvMemoryBarrier(
-                Set.of(Tag.Spirv.ACQUIRE, Tag.Spirv.SUBGROUP),
-                Set.of(Tag.Vulkan.ACQUIRE, Tag.Vulkan.SUB_GROUP)
+                Set.of(Tag.Spirv.SUBGROUP, Tag.Spirv.ACQUIRE, Tag.Spirv.SEM_WORKGROUP),
+                Set.of(Tag.Vulkan.SUB_GROUP, Tag.Vulkan.ACQUIRE, Tag.Vulkan.SEMSC1)
         );
         doTestSpirvMemoryBarrier(
-                Set.of(Tag.Spirv.RELEASE, Tag.Spirv.SUBGROUP),
-                Set.of(Tag.Vulkan.RELEASE, Tag.Vulkan.SUB_GROUP)
+                Set.of(Tag.Spirv.SUBGROUP, Tag.Spirv.RELEASE, Tag.Spirv.SEM_WORKGROUP),
+                Set.of(Tag.Vulkan.SUB_GROUP, Tag.Vulkan.RELEASE, Tag.Vulkan.SEMSC1)
         );
         doTestSpirvMemoryBarrier(
-                Set.of(Tag.Spirv.ACQ_REL, Tag.Spirv.SUBGROUP),
-                Set.of(Tag.Vulkan.ACQUIRE, Tag.Vulkan.RELEASE, Tag.Vulkan.SUB_GROUP)
-        );
-        doTestSpirvMemoryBarrier(
-                Set.of(Tag.Spirv.SEQ_CST, Tag.Spirv.SUBGROUP),
-                Set.of(Tag.Vulkan.ACQUIRE, Tag.Vulkan.RELEASE, Tag.Vulkan.SUB_GROUP)
+                Set.of(Tag.Spirv.SUBGROUP, Tag.Spirv.ACQ_REL, Tag.Spirv.SEM_WORKGROUP),
+                Set.of(Tag.Vulkan.SUB_GROUP, Tag.Vulkan.ACQUIRE, Tag.Vulkan.RELEASE, Tag.Vulkan.SEMSC1)
         );
     }
 
     private void doTestSpirvMemoryBarrier(Set<String> spvTags, Set<String> expected) {
         // given
         GenericVisibleEvent e = new GenericVisibleEvent("membar", Tag.FENCE);
+        e.setFunction(mock(Function.class));
         e.addTags(spvTags);
 
         // when
@@ -466,30 +417,27 @@ public class VisitorSpirvVulkanTest {
                 Set.of()
         );
         doTestSpirvControlBarrier(
-                Set.of(Tag.Spirv.RELAXED, Tag.Spirv.SUBGROUP),
+                Set.of(Tag.Spirv.SUBGROUP, Tag.Spirv.RELAXED),
                 Set.of(Tag.FENCE, Tag.Vulkan.SUB_GROUP)
         );
         doTestSpirvControlBarrier(
-                Set.of(Tag.Spirv.ACQUIRE, Tag.Spirv.SUBGROUP),
-                Set.of(Tag.FENCE, Tag.Vulkan.ACQUIRE, Tag.Vulkan.SUB_GROUP)
+                Set.of(Tag.Spirv.SUBGROUP, Tag.Spirv.ACQUIRE, Tag.Spirv.SEM_WORKGROUP),
+                Set.of(Tag.FENCE, Tag.Vulkan.SUB_GROUP, Tag.Vulkan.ACQUIRE, Tag.Vulkan.SEMSC1)
         );
         doTestSpirvControlBarrier(
-                Set.of(Tag.Spirv.RELEASE, Tag.Spirv.SUBGROUP),
-                Set.of(Tag.FENCE, Tag.Vulkan.RELEASE, Tag.Vulkan.SUB_GROUP)
+                Set.of(Tag.Spirv.SUBGROUP, Tag.Spirv.RELEASE, Tag.Spirv.SEM_WORKGROUP),
+                Set.of(Tag.FENCE, Tag.Vulkan.SUB_GROUP, Tag.Vulkan.RELEASE, Tag.Vulkan.SEMSC1)
         );
         doTestSpirvControlBarrier(
-                Set.of(Tag.Spirv.ACQ_REL, Tag.Spirv.SUBGROUP),
-                Set.of(Tag.FENCE, Tag.Vulkan.ACQUIRE, Tag.Vulkan.RELEASE, Tag.Vulkan.SUB_GROUP)
-        );
-        doTestSpirvControlBarrier(
-                Set.of(Tag.Spirv.SEQ_CST, Tag.Spirv.SUBGROUP),
-                Set.of(Tag.FENCE, Tag.Vulkan.ACQUIRE, Tag.Vulkan.RELEASE, Tag.Vulkan.SUB_GROUP)
+                Set.of(Tag.Spirv.SUBGROUP, Tag.Spirv.ACQ_REL, Tag.Spirv.SEM_WORKGROUP),
+                Set.of(Tag.FENCE, Tag.Vulkan.SUB_GROUP, Tag.Vulkan.ACQUIRE, Tag.Vulkan.RELEASE, Tag.Vulkan.SEMSC1)
         );
     }
 
     private void doTestSpirvControlBarrier(Set<String> spvTags, Set<String> expected) {
         // given
         ControlBarrier e = EventFactory.newControlBarrier("cbar", mock(Expression.class));
+        e.setFunction(mock(Function.class));
         e.addTags(Tag.Spirv.CONTROL);
         if (!spvTags.isEmpty()) {
             e.addTags(spvTags);

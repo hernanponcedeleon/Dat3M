@@ -15,6 +15,6 @@ public class AbortErrorListener extends ConsoleErrorListener {
             String msg,
             RecognitionException e
     ) throws ParsingException {
-        throw new ParsingException("Line " + line + ":" + charPositionInLine + " " + msg);
+        throw new ParsingException(e, "Line " + line + ":" + charPositionInLine + " " + msg);
     }
 }

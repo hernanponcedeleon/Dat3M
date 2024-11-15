@@ -103,11 +103,11 @@ public class HelperTagsTest {
 
     @Test
     public void testInvalidSemantics() {
-        doTestInvalidSemantics(0x1, "Unexpected memory semantics bits");
-        doTestInvalidSemantics(0x3, "Unexpected memory semantics bits");
-        doTestInvalidSemantics(0xffff, "Unexpected memory semantics bits");
-        doTestInvalidSemantics(0x6, "Selected multiple non-relaxed memory order bits");
-        doTestInvalidSemantics(0x18, "Selected multiple non-relaxed memory order bits");
+        doTestInvalidSemantics(0x1, "Illegal memory semantics '1': unexpected bits");
+        doTestInvalidSemantics(0x3, "Illegal memory semantics '3': unexpected bits");
+        doTestInvalidSemantics(0xffff, "Illegal memory semantics '65535': unexpected bits");
+        doTestInvalidSemantics(0x6, "Illegal memory semantics '6': multiple non-relaxed memory order bits");
+        doTestInvalidSemantics(0x18, "Illegal memory semantics '24': multiple non-relaxed memory order bits");
     }
 
     private void doTestInvalidSemantics(int input, String error) {
@@ -143,8 +143,8 @@ public class HelperTagsTest {
         doTestValidMemoryOperands(Set.of(), "Aligned", 4, List.of());
         doTestValidMemoryOperands(Set.of(), "Aligned", 8, List.of());
         doTestValidMemoryOperands(Set.of(MEM_NON_PRIVATE), "NonPrivatePointer|Aligned", 4, List.of());
-        doTestValidMemoryOperands(Set.of(MEM_NONTEMPORAL, MEM_VISIBLE, DEVICE),
-                "Nontemporal|Aligned|MakePointerVisible", 4, List.of(1));
+        doTestValidMemoryOperands(Set.of(MEM_NONTEMPORAL, MEM_NON_PRIVATE, MEM_VISIBLE, DEVICE),
+                "Nontemporal|Aligned|NonPrivatePointer|MakePointerVisible", 4, List.of(1));
 
         // Availability-Visibility
         doTestValidMemoryOperands(Set.of(MEM_NON_PRIVATE, MEM_VISIBLE, DEVICE),
