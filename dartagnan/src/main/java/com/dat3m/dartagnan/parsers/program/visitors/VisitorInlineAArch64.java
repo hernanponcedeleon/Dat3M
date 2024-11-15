@@ -223,15 +223,6 @@ public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
         return this.events;
     }
 
-    private Expression getReturnRegisterUpdate() {
-        int registerReturnValuesNumber = armToLlvmMap.getReturnValuesNumber();
-        LinkedList<Expression> expressionList = new LinkedList<>();
-        for (int i = 0; i < registerReturnValuesNumber; i++) {
-            Expression exp = expressions.makeExtract(i, this.returnRegister);
-            expressionList.add(exp);
-        }
-        return expressions.makeConstruct(expressionList);
-    }
 
     /* given the VariableInline as String it picks up if it is a 32 or 64 bit */
     public Type getVariableSize(String variable) {
@@ -397,7 +388,6 @@ public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
         // this part is used for the store
         Register firstRegister = getOrNewRegister(ctx.VariableInline(1));
         Register secondRegister = getOrNewRegister(ctx.ConstantInline());
-        // events.add(EventFactory.newRMWStoreExclusive(secondRegister, firstRegister, true)); // maybe it is another store fn
         events.add(EventFactory.Common.newExclusiveStore(freshResultRegister, secondRegister, firstRegister, Tag.ARMv8.MO_RX));
         // events.add(EventFactory.newLocal(freshResultRegister, simulationAllOk)); // simulate saving state into register
         return visitChildren(ctx);
@@ -412,7 +402,6 @@ public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
         Register secondRegister = getOrNewRegister(ctx.ConstantInline());
         String mo = Tag.ARMv8.MO_REL;
         events.add(EventFactory.Common.newExclusiveStore(freshResultRegister, secondRegister, firstRegister, mo));
-        // events.add(EventFactory.newRMWStoreExclusiveWithMo(secondRegister, firstRegister, true, mo)); // maybe it is another store fn
         // events.add(EventFactory.newLocal(freshResultRegister, simulationAllOk)); // simulate saving state into register
         return visitChildren(ctx);
     }
@@ -543,10 +532,9 @@ public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
             }
             Type aggregateType = types.getAggregateType(typesList);
             Register returnRegisterMapper = llvmFunction.newRegister(aggregateType);
-            Expression finalAssignExpression = expressions.makeConstruct(this.pendingRegisters);
-            events.add(EventFactory.newLocal(this.returnRegister, finalAssignExpression)); // comment this out later
-            // events.add(EventFactory.newLocal(returnRegisterMapper, finalAssignExpression)); // has to be assigned to returnReg
-            // events.add(EventFactory.newLocal(this.returnRegister, returnRegisterMapper)); // this should be the last expression, but atm dat3m complains because of RegisterDecomposition
+            Expression finalAssignExpression = expressions.makeConstruct(aggregateType,this.pendingRegisters);
+            events.add(EventFactory.newLocal(returnRegisterMapper, finalAssignExpression)); 
+            events.add(EventFactory.newLocal(this.returnRegister, returnRegisterMapper)); // effectively map resRegister with RHS one
         }
         return visitChildren(ctx);
     }
