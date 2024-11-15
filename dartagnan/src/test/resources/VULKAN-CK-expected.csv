@@ -158,9 +158,14 @@ litmus/VULKAN/Manual/ticketlock-acq2rlx-2.litmus,1
 litmus/VULKAN/Manual/ticketlock-diff-wg.litmus,1
 litmus/VULKAN/Manual/ticketlock-rel2rlx.litmus,1
 litmus/VULKAN/Manual/ticketlock-same-wg.litmus,1
-litmus/VULKAN/Manual/XF-Barrier-relacq.litmus,1
-litmus/VULKAN/Manual/XF-Barrier-rlx.litmus,1
-litmus/VULKAN/Manual/XF-Barrier-weak.litmus,1
+litmus/VULKAN/Manual/xf-barrier.litmus,1
+litmus/VULKAN/Manual/xf-barrier-cbar-rlx-1.litmus,1
+litmus/VULKAN/Manual/xf-barrier-cbar-rlx-2.litmus,1
+litmus/VULKAN/Manual/xf-barrier-cbar-rlx-3.litmus,1
+litmus/VULKAN/Manual/xf-barrier-load-rlx-1.litmus,1
+litmus/VULKAN/Manual/xf-barrier-load-rlx-2.litmus,1
+litmus/VULKAN/Manual/xf-barrier-store-rlx-1.litmus,1
+litmus/VULKAN/Manual/xf-barrier-store-rlx-2.litmus,1
 litmus/VULKAN/CADP/2_threads_2_instructions/4_simple.litmus,1
 litmus/VULKAN/CADP/2_threads_2_instructions/5_simple.litmus,1
 litmus/VULKAN/CADP/2_threads_3_instructions/4_simple.litmus,1

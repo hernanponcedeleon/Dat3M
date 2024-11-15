@@ -103,11 +103,11 @@ public class HelperTagsTest {
 
     @Test
     public void testInvalidSemantics() {
-        doTestInvalidSemantics(0x1, "Unexpected memory semantics bits");
-        doTestInvalidSemantics(0x3, "Unexpected memory semantics bits");
-        doTestInvalidSemantics(0xffff, "Unexpected memory semantics bits");
-        doTestInvalidSemantics(0x6, "Selected multiple non-relaxed memory order bits");
-        doTestInvalidSemantics(0x18, "Selected multiple non-relaxed memory order bits");
+        doTestInvalidSemantics(0x1, "Illegal memory semantics '1': unexpected bits");
+        doTestInvalidSemantics(0x3, "Illegal memory semantics '3': unexpected bits");
+        doTestInvalidSemantics(0xffff, "Illegal memory semantics '65535': unexpected bits");
+        doTestInvalidSemantics(0x6, "Illegal memory semantics '6': multiple non-relaxed memory order bits");
+        doTestInvalidSemantics(0x18, "Illegal memory semantics '24': multiple non-relaxed memory order bits");
     }
 
     private void doTestInvalidSemantics(int input, String error) {

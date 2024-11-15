@@ -13,6 +13,6 @@ flag=0;
  goto LC00                |                        ;
  LC01:                    |                        ;
  ld.atom.dv.sc0 r2, data  |                        ;
- ld.sc0 r3, 1             |                        ;
+ add r3, 1, 0             |                        ;
 exists
 (P0:r3 == 1 /\ P0:r2 != 1)

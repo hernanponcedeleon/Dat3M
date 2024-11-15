@@ -23,14 +23,14 @@ public class HelperTags {
         for (int i = 1; i <= value; i <<= 1) {
             if ((i & value) > 0) {
                 if (!semantics.containsKey(i)) {
-                    throw new ParsingException("Unexpected memory semantics bits");
+                    throw new ParsingException("Illegal memory semantics '%s': unexpected bits", value);
                 }
                 tags.add(semantics.get(i));
             }
         }
         int moSize = Sets.intersection(moTags, tags).size();
         if (moSize > 1) {
-            throw new ParsingException("Selected multiple non-relaxed memory order bits");
+            throw new ParsingException("Illegal memory semantics '%s': multiple non-relaxed memory order bits", value);
         }
         if (moSize == 0) {
             tags.add(RELAXED);

@@ -8,7 +8,7 @@ y=0;
 }
  P0@sg 0, wg 0, qf 0                 ;
  st.nonpriv.sc0 y, 1                 ;
- rmw.wg.sc0 r0, y, 2                 ;
+ rmw.atom.wg.sc0 r0, y, 2            ;
  ld.sc0 r1, y                        ;
 exists
 (P0:r0 == 1 /\ P0:r1 == 2)

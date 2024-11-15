@@ -83,8 +83,12 @@ queuefamilyScope
     :   Queuefamily scopeID
     ;
 
+scopeID returns [int id]
+    :   t = DigitSequence {$id = Integer.parseInt($t.text);}
+    ;
+
 instructionList
-    :   (instructionRow) +
+    :   instructionRow+
     ;
 
 instructionRow
@@ -95,92 +99,65 @@ instruction
     :
     |   storeInstruction
     |   loadInstruction
-    |   rmwInstruction
-    |   fenceInstruction
+    |   atomicStoreInstruction
+    |   atomicLoadInstruction
+    |   atomicRmwInstruction
+    |   memoryBarrierInstruction
+    |   controlBarrierInstruction
+    |   localInstruction
+    |   labelInstruction
+    |   jumpInstruction
+    |   condJumpInstruction
     |   deviceOperation
-    |   label
-    |   branchCond
-    |   jump
     ;
 
 storeInstruction
-    :   Store atomic mo? avvis? scope? storageClass storageClassSemanticList avvisSemanticList location Comma value
+    :   Store (nonpriv | (av scope))? sc location Comma value
     ;
 
 loadInstruction
-    :   localValue
-    |   localAdd
-    |   localSub
-    |   localMul
-    |   localDiv
-    |   loadLocation
+    :   Load (nonpriv | (vis scope))? sc register Comma location
     ;
 
-localValue
-    :   Load atomic mo? avvis? scope? storageClass storageClassSemanticList avvisSemanticList register Comma value
+atomicStoreInstruction
+    :   Store Period Atom (scope sc | moRel scope sc semSc+ semAv?) location Comma value
     ;
 
-localAdd
-    :   Add register Comma value Comma value
+atomicLoadInstruction
+    :   Load Period Atom (scope sc | moAcq scope sc semSc+ semVis?) register Comma location
     ;
 
-localSub
-    :   Sub register Comma value Comma value
+atomicRmwInstruction
+    :   RMW Period Atom (scope sc | moAcq scope sc semSc+ semVis? | moRel scope sc semSc+ semAv? | moAcqRel scope sc semSc+ semAv? semVis?) (Period operation)? register Comma location Comma value
     ;
 
-localMul
-    :   Mul register Comma value Comma value
+memoryBarrierInstruction
+    :   MemoryBarrier (moAcq scope semSc+ semVis? | moRel scope semSc+ semAv? | moAcqRel scope semSc+ semAv? semVis?)
     ;
 
-localDiv
-    :   Div register Comma value Comma value
+controlBarrierInstruction
+    :   ControlBarrier (scope | moAcq scope semSc+ semVis? | moRel scope semSc+ semAv? | moAcqRel scope semSc+ semAv? semVis?) value
     ;
 
-loadLocation
-    :   Load atomic mo? avvis? scope? storageClass storageClassSemanticList avvisSemanticList register Comma location
+localInstruction
+    :   operation register Comma value Comma value
     ;
 
-rmwInstruction
-    :   rmwValue
-    |   rmwOp
+labelInstruction
+    :   Label Colon
     ;
 
-rmwValue
-    :   RMW atomic mo? avvis? scope? storageClass storageClassSemanticList avvisSemanticList register Comma location Comma value
+jumpInstruction
+    :   Goto Label
     ;
 
-rmwOp
-    :   RMW atomic mo? avvis? scope? storageClass storageClassSemanticList avvisSemanticList operation register Comma location Comma value
-    ;
-
-fenceInstruction
-    :   memoryBarrier
-    |   controlBarrier
-    ;
-
-memoryBarrier
-    :   MemoryBarrier mo? avvis? scope? storageClassSemanticList avvisSemanticList
-    ;
-
-controlBarrier
-    :   ControlBarrier mo? avvis? scope? storageClassSemanticList avvisSemanticList value
+condJumpInstruction
+    :   cond value Comma value Comma Label
     ;
 
 deviceOperation
     :   AVDEVICE
     |   VISDEVICE
-    ;
-
-label
-    :   Label Colon
-    ;
-
-branchCond
-    :   cond value Comma value Comma Label
-    ;
-
-jump
-    :   Goto Label
     ;
 
 value
@@ -202,9 +179,36 @@ assertionValue
     |   constant
     ;
 
-atomic returns [Boolean isAtomic]
-    :   Period Atom {$isAtomic = true;}
-    |   {$isAtomic = false;}
+moAcq
+    :   Period Acquire
+    ;
+
+moRel
+    :   Period Release
+    ;
+
+moAcqRel
+    :   Period Acq_rel
+    ;
+
+nonpriv
+    :   Period Nonprivate
+    ;
+
+av
+    :   Period Available
+    ;
+
+vis
+    :   Period Visible
+    ;
+
+semAv
+    :   Period SemAv
+    ;
+
+semVis
+    :   Period SemVis
     ;
 
 scope returns [String content]
@@ -212,55 +216,26 @@ scope returns [String content]
     |   Period Workgroup {$content = "WG";}
     |   Period Queuefamily {$content = "QF";}
     |   Period Device {$content = "DV";}
-    |   Period Nonprivate {$content = "NONPRIV";}
     ;
 
-scopeID returns [int id]
-    :   t = DigitSequence {$id = Integer.parseInt($t.text);}
-    ;
-
-mo returns [String content]
-    :   Period Acquire {$content = "ACQ";}
-    |   Period Release {$content = "REL";}
-    |   Period Acq_rel {$content = "ACQ_REL";}
-    ;
-
-avvis returns [String content]
-    :   Period Visible {$content = "VIS";}
-    |   Period Available {$content = "AV";}
-    ;
-
-storageClass returns [String content]
+sc returns [String content]
     :   Period Sc0 {$content = "SC0";}
     |   Period Sc1 {$content = "SC1";}
     ;
 
-storageClassSemantic returns [String content]
+semSc returns [String content]
     :   Period Semsc0 {$content = "SEMSC0";}
     |   Period Semsc1 {$content = "SEMSC1";}
     ;
 
-storageClassSemanticList
-    :   (storageClassSemantic)*
-    ;
-
-avvisSemantic returns [String content]
-    :   Period SemVis {$content = "SEMVIS";}
-    |   Period SemAv {$content = "SEMAV";}
-    ;
-
-avvisSemanticList
-    :   (avvisSemantic)*
-    ;
-
 operation locals [IntBinaryOp op]
-    :   Period Add {$op = IntBinaryOp.ADD;}
-    |   Period Sub {$op = IntBinaryOp.SUB;}
-    |   Period Mul {$op = IntBinaryOp.MUL;}
-    |   Period Div {$op = IntBinaryOp.DIV;}
-    |   Period And {$op = IntBinaryOp.AND;}
-    |   Period Or {$op = IntBinaryOp.OR;}
-    |   Period Xor {$op = IntBinaryOp.XOR;}
+    :   Add {$op = IntBinaryOp.ADD;}
+    |   Sub {$op = IntBinaryOp.SUB;}
+    |   Mul {$op = IntBinaryOp.MUL;}
+    |   Div {$op = IntBinaryOp.DIV;}
+    |   And {$op = IntBinaryOp.AND;}
+    |   Or {$op = IntBinaryOp.OR;}
+    |   Xor {$op = IntBinaryOp.XOR;}
     ;
 
 cond returns [IntCmpOp op]
