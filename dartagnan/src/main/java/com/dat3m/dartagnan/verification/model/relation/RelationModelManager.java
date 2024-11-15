@@ -89,7 +89,7 @@ public class RelationModelManager {
                 continue;
             }
             relsToExtract.add(r);
-            createModel(r);
+            createModel(r, name);
         }
 
         Set<RelationGraph> relGraphs = new HashSet<>();
@@ -145,9 +145,12 @@ public class RelationModelManager {
         }
     }
 
-    private void createModel(Relation r) {
-        if (relModelCache.containsKey(r)) { return; }
-        relModelCache.put(r, new RelationModel(r, r.getNameOrTerm()));
+    private void createModel(Relation r, String name) {
+        if (relModelCache.containsKey(r)) {
+            relModelCache.get(r).addName(name);
+        } else {
+            relModelCache.put(r, new RelationModel(r, name));
+        }
     }
 
     private RelationGraph createGraph(Relation r) {

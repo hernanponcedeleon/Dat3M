@@ -152,7 +152,9 @@ public class ExecutionModelNext {
 
     public void addRelation(Relation r, RelationModel rModel) {
         relationMap.put(r, rModel);
-        relationNameMap.put(rModel.getName(), rModel);
+        for (String name : rModel.getNames()) {
+            relationNameMap.put(name, rModel);
+        }
     }
 
     public void addMemoryObject(MemoryObject m, MemoryObjectModel mModel) {

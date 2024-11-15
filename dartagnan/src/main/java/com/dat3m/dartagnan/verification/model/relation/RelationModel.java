@@ -10,21 +10,31 @@ import java.util.Collections;
 
 public class RelationModel {
     private final Relation relation;
-    private final String name;
+    private final Set<String> names;
     private final Set<EdgeModel> edgeModels;
 
     RelationModel(Relation relation, String name) {
         this.relation = relation;
-        this.name = name;
+        names = new HashSet<>();
         edgeModels = new HashSet<>();
+
+        addName(name);
     }
 
     public Relation getRelation() {
         return relation;
     }
 
-    public String getName() {
-        return name;
+    public boolean hasName(String name) {
+        return names.contains(name);
+    }
+
+    public Set<String> getNames() {
+        return Collections.unmodifiableSet(names);
+    }
+
+    public void addName(String name) {
+        names.add(name);
     }
 
     public Set<EdgeModel> getEdgeModels() {
