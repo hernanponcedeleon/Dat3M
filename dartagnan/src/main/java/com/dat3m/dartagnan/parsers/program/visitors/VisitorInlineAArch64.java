@@ -83,7 +83,7 @@ public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
             // now we have to fill our map following the llvm rule 
             // every $ is going to map to r0
             populateRegisters(armToLlvmMap);
-            // System.out.println("State is " + armToLlvmMap);
+            System.out.println("State is " + armToLlvmMap);
         }
 
         public Register getLlvmRegister(String armName) {
@@ -217,6 +217,15 @@ public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
         this.nameToRegisterMap = new HashMap<>();
         this.pendingRegisters = new LinkedList<>();
         this.armToLlvmMap = new ArmToLlvmRegisterMapping(llvmFunction, returnType, returnRegister, argumentsRegisterAddresses);
+        // for now initialize like this the missing fn params, to be changed
+        for (String key : armToLlvmMap.armToLlvmMap.keySet()) {
+            if (key.startsWith("${")){
+                Type type = types.getIntegerType(32); // for now like this
+                Register newParamRegister = llvmFunction.newRegister(type);
+                this.nameToRegisterMap.put(key, newParamRegister);
+                events.add(EventFactory.newLocal(newParamRegister, this.armToLlvmMap.getLlvmRegister(key)));
+            }
+        }
     }
 
     public List<Event> getEvents() {
@@ -276,6 +285,7 @@ public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
     public Register getOrNewRegister(TerminalNode node) {
         String nodeName = node.getText();
         if (this.nameToRegisterMap.containsKey(nodeName)) {
+            System.out.println("O have this " + nodeName+" its register is "+ this.nameToRegisterMap.get(nodeName));
             return this.nameToRegisterMap.get(nodeName);
         } else {
             Type type = getVariableSize(nodeName);
@@ -283,7 +293,7 @@ public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
             this.nameToRegisterMap.put(nodeName, newRegister);
             Expression assignment;
             if(isPartOfReturnRegister(nodeName)){
-                System.out.println("Accessing part of ret register!!!");
+                System.out.println("Accessing part of ret register with node " + nodeName+" its register is "+ newRegister);
                 // I enter here the first time I see a register like 0:w, 1:w AND the return type is Aggregate
                 this.armToLlvmMap.put(nodeName, newRegister);
                 // System.out.println("New state is " + this.armToLlvmMap.armToLlvmMap);
@@ -316,7 +326,6 @@ public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
         Register directMemoryAccess = getOrNewRegister(ctx.ConstantInline());
         events.add(EventFactory.newLoad(freshReturnRegister, directMemoryAccess));
         updateReturnRegisterIfModified(ctx.VariableInline());
-        System.out.println("Added visitLoadReg");
         return visitChildren(ctx);
     }
 
@@ -327,7 +336,6 @@ public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
         String mo = Tag.ARMv8.MO_ACQ;
         events.add(EventFactory.newLoadWithMo(freshReturnRegister, directMemoryAccess, mo));
         updateReturnRegisterIfModified(ctx.VariableInline());
-        System.out.println("Added visitLoadAcquireReg");
         return visitChildren(ctx);
     }
 
@@ -337,7 +345,6 @@ public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
         Register directMemoryAccess = getOrNewRegister(ctx.ConstantInline());
         events.add(EventFactory.newRMWLoadExclusive(freshReturnRegister, directMemoryAccess));
         updateReturnRegisterIfModified(ctx.VariableInline());
-        System.out.println("Added visitLoadExclusiveReg");
         return visitChildren(ctx);
     }
 
@@ -348,7 +355,6 @@ public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
         String mo = Tag.ARMv8.MO_ACQ;
         events.add(EventFactory.newRMWLoadExclusiveWithMo(freshReturnRegister, directMemoryAccess, mo));
         updateReturnRegisterIfModified(ctx.VariableInline());
-        System.out.println("Added visitLoadAcquireExclusiveReg");
         return visitChildren(ctx);
     }
 
@@ -382,8 +388,6 @@ public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
     @Override
     public Object visitStoreExclusiveRegister(InlineAArch64Parser.StoreExclusiveRegisterContext ctx) {
         Register freshResultRegister = getOrNewRegister(ctx.VariableInline(0)); // this register either holds 0 or 1 if the operation was successful or not
-        System.out.println("My regs atm are" + this.nameToRegisterMap);
-        Expression simulationAllOk = expressions.parseValue("0", integerType); // holds simulation of store going ok
         this.comparator.updateStoreSucceeded(freshResultRegister);
         // this part is used for the store
         Register firstRegister = getOrNewRegister(ctx.VariableInline(1));
@@ -395,7 +399,6 @@ public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
     @Override
     public Object visitStoreReleaseExclusiveReg(InlineAArch64Parser.StoreReleaseExclusiveRegContext ctx) {
         Register freshResultRegister = getOrNewRegister(ctx.VariableInline(0)); // this register either holds 0 or 1 if the operation was successful or not
-        Expression simulationAllOk = expressions.parseValue("0", integerType); // holds simulation of store going ok
         this.comparator.updateStoreSucceeded(freshResultRegister);
         // this part is used for the store
         Register firstRegister = getOrNewRegister(ctx.VariableInline(1));
@@ -412,7 +415,6 @@ public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
     // }
     @Override
     public Object visitSwapWordAcquire(InlineAArch64Parser.SwapWordAcquireContext ctx) {
-        System.out.println("SwapWordAcquire");
         // dummyZero -> 1:w -> r9
         // dummyOne -> 0:w -> r1
         // dummyTwo -> $2 -> r0
@@ -435,8 +437,8 @@ public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
     public Object visitCompare(InlineAArch64Parser.CompareContext ctx) {
         Register firstRegister = getOrNewRegister(ctx.VariableInline(0));
         Register secondRegister = getOrNewRegister(ctx.VariableInline(1));
+        System.out.println("Regs are " + firstRegister + " " + secondRegister);
         this.comparator.updateCompareExpression(firstRegister, IntCmpOp.EQ, secondRegister);
-        System.out.println("Update cmp object now it is " + this.comparator.firstRegister + this.comparator.secondRegister + this.comparator.compareExpression);
         //events.add(EventFactory.newLocal(this.comparator.boolRegister,this.comparator.cmpTmp)); no events needed, it is internal and dat3m does not need to know, as IntCmp already does this
         return visitChildren(ctx);
     }
@@ -525,7 +527,6 @@ public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
         // here we have to create the final mapping for the return register
         if(this.armToLlvmMap.getReturnValuesNumber() > 1 ){
             //we have pending values, so we have to finalize it!
-            System.out.println("Pending Registers are " + this.pendingRegisters);
             List<Type> typesList = new LinkedList<>();
             for (Expression r : this.pendingRegisters){
                 typesList.add(((Register) r).getType());
@@ -538,19 +539,4 @@ public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
         }
         return visitChildren(ctx);
     }
-    // @Override
-    // public Object visitMetaInstr(InlineAArch64Parser.MetaInstrContext ctx) {
-    //     System.out.println("MetaInstr");
-    //     return visitChildren(ctx);
-    // }
-
-    // @Override
-    // public Object visitMetadataInline(InlineAArch64Parser.MetadataInlineContext ctx) {
-    //     System.out.println("MetadataInline");
-    //     return visitChildren(ctx);
-    // }
-    // @Override
-    // public Object visitClobber(InlineAArch64Parser.ClobberContext ctx) {
-    //     return visitChildren(ctx);
-    // }
 }
