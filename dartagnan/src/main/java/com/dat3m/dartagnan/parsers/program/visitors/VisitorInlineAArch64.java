@@ -397,8 +397,9 @@ public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
         // this part is used for the store
         Register firstRegister = getOrNewRegister(ctx.VariableInline(1));
         Register secondRegister = getOrNewRegister(ctx.ConstantInline());
-        events.add(EventFactory.newRMWStoreExclusive(secondRegister, firstRegister, true)); // maybe it is another store fn
-        events.add(EventFactory.newLocal(freshResultRegister, simulationAllOk)); // simulate saving state into register
+        // events.add(EventFactory.newRMWStoreExclusive(secondRegister, firstRegister, true)); // maybe it is another store fn
+        events.add(EventFactory.Common.newExclusiveStore(freshResultRegister, secondRegister, firstRegister, Tag.ARMv8.MO_RX));
+        // events.add(EventFactory.newLocal(freshResultRegister, simulationAllOk)); // simulate saving state into register
         return visitChildren(ctx);
     }
     @Override
@@ -410,8 +411,9 @@ public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
         Register firstRegister = getOrNewRegister(ctx.VariableInline(1));
         Register secondRegister = getOrNewRegister(ctx.ConstantInline());
         String mo = Tag.ARMv8.MO_REL;
-        events.add(EventFactory.newRMWStoreExclusiveWithMo(secondRegister, firstRegister, true, mo)); // maybe it is another store fn
-        events.add(EventFactory.newLocal(freshResultRegister, simulationAllOk)); // simulate saving state into register
+        events.add(EventFactory.Common.newExclusiveStore(freshResultRegister, secondRegister, firstRegister, mo));
+        // events.add(EventFactory.newRMWStoreExclusiveWithMo(secondRegister, firstRegister, true, mo)); // maybe it is another store fn
+        // events.add(EventFactory.newLocal(freshResultRegister, simulationAllOk)); // simulate saving state into register
         return visitChildren(ctx);
     }
     // @Override
