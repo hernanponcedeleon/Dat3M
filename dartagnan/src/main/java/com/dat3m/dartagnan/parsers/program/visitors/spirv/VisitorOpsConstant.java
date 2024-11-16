@@ -9,7 +9,6 @@ import com.dat3m.dartagnan.expression.type.*;
 import com.dat3m.dartagnan.parsers.SpirvBaseVisitor;
 import com.dat3m.dartagnan.parsers.SpirvParser;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.decorations.BuiltIn;
-import com.dat3m.dartagnan.parsers.program.visitors.spirv.decorations.SpecId;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.builders.ProgramBuilder;
 import com.dat3m.dartagnan.program.Register;
 import org.antlr.v4.runtime.RuleContext;
@@ -20,7 +19,6 @@ import java.util.List;
 import java.util.Set;
 
 import static com.dat3m.dartagnan.parsers.program.visitors.spirv.decorations.DecorationType.BUILT_IN;
-import static com.dat3m.dartagnan.parsers.program.visitors.spirv.decorations.DecorationType.SPEC_ID;
 
 public class VisitorOpsConstant extends SpirvBaseVisitor<Expression> {
 
@@ -29,12 +27,10 @@ public class VisitorOpsConstant extends SpirvBaseVisitor<Expression> {
     private final Set<String> specConstants = new HashSet<>();
     private final ProgramBuilder builder;
     private final BuiltIn builtIn;
-    private final SpecId specId;
 
     public VisitorOpsConstant(ProgramBuilder builder) {
         this.builder = builder;
         this.builtIn = (BuiltIn) builder.getDecorationsBuilder().getDecoration(BUILT_IN);
-        this.specId = (SpecId) builder.getDecorationsBuilder().getDecoration(SPEC_ID);
     }
 
     @Override
@@ -79,11 +75,8 @@ public class VisitorOpsConstant extends SpirvBaseVisitor<Expression> {
                 specConstants.add(id);
                 return builder.addExpression(id, expressions.makeValue(input, iType));
             }
-            String value = specId.getValue(id);
-            if (value == null) {
-                value = ctx.valueLiteralContextDependentNumber().getText();
-            }
             specConstants.add(id);
+            String value = ctx.valueLiteralContextDependentNumber().getText();
             return builder.addExpression(id, expressions.makeValue(Long.parseLong(value), iType));
         }
         throw new ParsingException("Illegal constant type '%s'", type);
@@ -147,11 +140,6 @@ public class VisitorOpsConstant extends SpirvBaseVisitor<Expression> {
         Integer input = getInputValue(id);
         if (input != null) {
             value = input != 0;
-        } else {
-            String decoration = specId.getValue(id);
-            if (decoration != null) {
-                value = !"0".equals(decoration);
-            }
         }
         if (value) {
             return expressions.makeTrue();
