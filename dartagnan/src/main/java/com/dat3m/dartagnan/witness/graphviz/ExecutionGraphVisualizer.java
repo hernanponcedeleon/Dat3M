@@ -56,7 +56,6 @@ public class ExecutionGraphVisualizer {
         this.colorMap = new ColorMap();
     }
 
-
     public ExecutionGraphVisualizer setSyntacticContext(SyntacticContextAnalysis synContext) {
         this.synContext = synContext;
         return this;
