@@ -19,7 +19,7 @@
                  %c0 = OpConstant %uint 0
                  %c1 = OpConstant %uint 1
                  %c2 = OpConstant %uint 2
-                %c64 = OpConstant %uint 64
+                %c68 = OpConstant %uint 68
                 %sc0 = OpSpecConstant %uint 0
    %gl_WorkGroupSize = OpSpecConstantComposite %v3uint %sc0 %sc0 %sc0
   %_ptr_Input_v3uint = OpTypePointer Input %v3uint
@@ -37,8 +37,8 @@
            %out0_ptr = OpAccessChain %ptr_uint %out %c0
            %out1_ptr = OpAccessChain %ptr_uint %out %c1
            %out2_ptr = OpAccessChain %ptr_uint %out %c2
-                       OpAtomicStore %out0_ptr %c1 %c64 %v0
-                       OpAtomicStore %out1_ptr %c1 %c64 %v1
-                       OpAtomicStore %out2_ptr %c1 %c64 %v2
+                       OpAtomicStore %out0_ptr %c1 %c68 %v0
+                       OpAtomicStore %out1_ptr %c1 %c68 %v1
+                       OpAtomicStore %out2_ptr %c1 %c68 %v2
                        OpReturn
                        OpFunctionEnd

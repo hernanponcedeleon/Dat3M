@@ -100,17 +100,6 @@ public class SpirvChecksTest {
                 {"xf-barrier-local-fail3.spv.dis", 4, PASS},
                 {"xf-barrier-local-fail4.spv.dis", 4, PASS},
                 {"xf-barrier-local-weakest.spv.dis", 4, PASS},
-
-                // Fails check checkRelIsSem for a barrier with semantics 0x8 (rel_acq, no storage class semantics)
-                // {"xf-barrier-zero-2.1.2.spv.dis", 4, PASS},
-                // {"xf-barrier-zero-3.1.3.spv.dis", 9, PASS},
-                // {"xf-barrier-zero-2.1.1.spv.dis", 2, PASS},
-                // {"xf-barrier-zero-1.1.2.spv.dis", 2, PASS},
-                // {"xf-barrier-zero-fail1.spv.dis", 4, PASS},
-                // {"xf-barrier-zero-fail2.spv.dis", 4, PASS},
-                // {"xf-barrier-zero-fail3.spv.dis", 4, PASS},
-                // {"xf-barrier-zero-fail4.spv.dis", 4, PASS},
-                // {"xf-barrier-zero-weakest.spv.dis", 4, PASS},
         });
     }
 

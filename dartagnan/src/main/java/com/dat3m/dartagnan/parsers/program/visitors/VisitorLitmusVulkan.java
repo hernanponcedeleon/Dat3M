@@ -20,6 +20,7 @@ import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.event.core.Load;
 import com.dat3m.dartagnan.program.event.core.Store;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
+import org.antlr.v4.runtime.ParserRuleContext;
 
 
 public class VisitorLitmusVulkan extends LitmusVulkanBaseVisitor<Object> {
@@ -29,9 +30,6 @@ public class VisitorLitmusVulkan extends LitmusVulkanBaseVisitor<Object> {
     private final IntegerType archType = types.getArchType();
     private int mainThread;
     private int threadCount = 0;
-
-    public VisitorLitmusVulkan() {
-    }
 
     // ----------------------------------------------------------------------------------------------------------------
     // Entry point
@@ -219,7 +217,7 @@ public class VisitorLitmusVulkan extends LitmusVulkanBaseVisitor<Object> {
         Register register = (Register) ctx.register().accept(this);
         MemoryObject location = programBuilder.getOrNewMemoryObject(ctx.location().getText());
         Expression value = (Expression) ctx.value().accept(this);
-        String mo = getAtomicRmwMemoryOrder(ctx);
+        String mo = getMemoryOrderOrDefault(ctx, Tag.Vulkan.ATOM);
         SingleAccessMemoryEvent rmw = ctx.operation() != null
                 ? EventFactory.Vulkan.newRMWOp(location, register, value, ctx.operation().op, mo, ctx.scope().content)
                 : EventFactory.Vulkan.newRMW(location, register, value, mo, ctx.scope().content);
@@ -229,10 +227,6 @@ public class VisitorLitmusVulkan extends LitmusVulkanBaseVisitor<Object> {
                 Tag.Vulkan.VISIBLE,
                 ctx.sc().content
         );
-        if (mo.equals(Tag.Vulkan.ACQ_REL)) {
-            rmw.removeTags(Tag.Vulkan.ACQ_REL);
-            rmw.addTags(Tag.Vulkan.ACQUIRE, Tag.Vulkan.RELEASE);
-        }
         if (ctx.semAv() != null) {
             rmw.addTags(Tag.Vulkan.SEM_AVAILABLE);
         }
@@ -246,13 +240,11 @@ public class VisitorLitmusVulkan extends LitmusVulkanBaseVisitor<Object> {
     @Override
     public Object visitMemoryBarrierInstruction(LitmusVulkanParser.MemoryBarrierInstructionContext ctx) {
         Event fence = EventFactory.newFence(Tag.FENCE);
+        String mo = getMemoryOrderOrDefault(ctx, null);
+        if (mo != null) {
+            fence.addTags(mo);
+        }
         fence.addTags(ctx.scope().content);
-        if (ctx.moAcq() != null || ctx.moAcqRel() != null) {
-            fence.addTags(Tag.Vulkan.ACQUIRE);
-        }
-        if (ctx.moRel() != null || ctx.moAcqRel() != null) {
-            fence.addTags(Tag.Vulkan.RELEASE);
-        }
         if (ctx.semAv() != null) {
             fence.addTags(Tag.Vulkan.SEM_AVAILABLE);
         }
@@ -269,14 +261,11 @@ public class VisitorLitmusVulkan extends LitmusVulkanBaseVisitor<Object> {
         String barrierIdString = ctx.getText().replace(barrierId.toString(), "");
         Event barrier = EventFactory.newControlBarrier(barrierIdString.toLowerCase(), barrierId);
         barrier.addTags(Tag.Vulkan.CBAR, ctx.scope().content);
-        if (ctx.moAcq() == null && ctx.moRel() == null && ctx.moAcqRel() == null) {
+        String mo = getMemoryOrderOrDefault(ctx, null);
+        if (mo != null) {
+            barrier.addTags(mo);
+        } else {
             barrier.removeTags(Tag.FENCE);
-        }
-        if (ctx.moAcq() != null || ctx.moAcqRel() != null) {
-            barrier.addTags(Tag.Vulkan.ACQUIRE);
-        }
-        if (ctx.moRel() != null || ctx.moAcqRel() != null) {
-            barrier.addTags(Tag.Vulkan.RELEASE);
         }
         if (ctx.semAv() != null) {
             barrier.addTags(Tag.Vulkan.SEM_AVAILABLE);
@@ -330,16 +319,16 @@ public class VisitorLitmusVulkan extends LitmusVulkanBaseVisitor<Object> {
         return programBuilder.addChild(mainThread, e);
     }
 
-    private String getAtomicRmwMemoryOrder(LitmusVulkanParser.AtomicRmwInstructionContext ctx) {
-        if (ctx.moAcq() != null) {
+    private String getMemoryOrderOrDefault(ParserRuleContext ctx, String defaultMo) {
+        if (ctx.getRuleContext(LitmusVulkanParser.MoAcqContext.class, 0) != null) {
             return Tag.Vulkan.ACQUIRE;
         }
-        if(ctx.moRel() != null) {
+        if(ctx.getRuleContext(LitmusVulkanParser.MoRelContext.class, 0) != null) {
             return Tag.Vulkan.RELEASE;
         }
-        if (ctx.moAcqRel() != null) {
+        if (ctx.getRuleContext(LitmusVulkanParser.MoAcqRelContext.class, 0) != null) {
             return Tag.Vulkan.ACQ_REL;
         }
-        return Tag.Vulkan.ATOM;
+        return defaultMo;
     }
 }

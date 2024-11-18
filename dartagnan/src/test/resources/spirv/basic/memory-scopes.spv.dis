@@ -52,7 +52,7 @@
 %var_wg_orig = OpAtomicIIncrement %uint %var_wg %c2 %c72
 %var_dv_orig = OpAtomicIIncrement %uint %var_dv %c1 %c72
 
-               OpControlBarrier %c1 %c1 %c72
+               OpControlBarrier %c2 %c1 %c72
 
          %th = OpAtomicLoad %uint %var_th %c4 %c66
          %wg = OpAtomicLoad %uint %var_wg %c2 %c66

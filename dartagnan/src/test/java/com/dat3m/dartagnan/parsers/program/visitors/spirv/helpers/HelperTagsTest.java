@@ -143,8 +143,8 @@ public class HelperTagsTest {
         doTestValidMemoryOperands(Set.of(), "Aligned", 4, List.of());
         doTestValidMemoryOperands(Set.of(), "Aligned", 8, List.of());
         doTestValidMemoryOperands(Set.of(MEM_NON_PRIVATE), "NonPrivatePointer|Aligned", 4, List.of());
-        doTestValidMemoryOperands(Set.of(MEM_NONTEMPORAL, MEM_VISIBLE, DEVICE),
-                "Nontemporal|Aligned|MakePointerVisible", 4, List.of(1));
+        doTestValidMemoryOperands(Set.of(MEM_NONTEMPORAL, MEM_NON_PRIVATE, MEM_VISIBLE, DEVICE),
+                "Nontemporal|Aligned|NonPrivatePointer|MakePointerVisible", 4, List.of(1));
 
         // Availability-Visibility
         doTestValidMemoryOperands(Set.of(MEM_NON_PRIVATE, MEM_VISIBLE, DEVICE),

@@ -59,8 +59,12 @@ public class HelperTags {
         if (i != paramsValues.size()) {
             throwIllegalParametersException(operands);
         }
+        if (!tagSet.contains(MEM_NON_PRIVATE) && (tagSet.contains(Tag.Spirv.MEM_AVAILABLE) || tagSet.contains(MEM_VISIBLE))) {
+            throw new ParsingException("Missing NonPrivatePointer bit in memory operands '%s'",
+                    String.join("|", operands));
+        }
         // TODO: Implementation: this is a legal combination for OpCopyMemory and OpCopyMemorySized
-        if (tagSet.contains(Tag.Spirv.MEM_VISIBLE) && tagSet.contains(Tag.Spirv.MEM_AVAILABLE)) {
+        if (tagSet.contains(MEM_AVAILABLE) && tagSet.contains(MEM_VISIBLE)) {
             throw new ParsingException("Unsupported combination of memory operands '%s'",
                     String.join("|", operands));
         }

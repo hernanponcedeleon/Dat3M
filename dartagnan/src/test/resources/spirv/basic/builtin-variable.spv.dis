@@ -19,7 +19,7 @@
                 %c0 = OpConstant %uint 0
                 %c1 = OpConstant %uint 1
                 %c2 = OpConstant %uint 2
-               %c64 = OpConstant %uint 64
+               %c68 = OpConstant %uint 68
  %_ptr_Input_v3uint = OpTypePointer Input %v3uint
 %_ptr_Output_v3uint = OpTypePointer Output %v3uint
   %gl_WorkGroupSize = OpVariable %_ptr_Input_v3uint Input
@@ -38,8 +38,8 @@
 
           ; TODO: What is the storage class here? Should be mapped from Output
 
-                      OpAtomicStore %out0_ptr %c1 %c64 %v0
-                      OpAtomicStore %out1_ptr %c1 %c64 %v1
-                      OpAtomicStore %out2_ptr %c1 %c64 %v2
+                      OpAtomicStore %out0_ptr %c1 %c68 %v0
+                      OpAtomicStore %out1_ptr %c1 %c68 %v1
+                      OpAtomicStore %out2_ptr %c1 %c68 %v2
                       OpReturn
                       OpFunctionEnd

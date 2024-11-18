@@ -39,7 +39,7 @@
      %uint_2 = OpConstant %uint 2
    %uint_264 = OpConstant %uint 264
      %uint_1 = OpConstant %uint 1
-    %uint_80 = OpConstant %uint 80
+    %uint_72 = OpConstant %uint 72
      %uint_3 = OpConstant %uint 3
      %uint_4 = OpConstant %uint 4
           %3 = OpVariable %_ptr_Workgroup_uint Workgroup
@@ -60,7 +60,7 @@
                OpControlBarrier %uint_2 %uint_2 %uint_264
          %34 = OpAccessChain %_ptr_Input_uint %gl_LocalInvocationID %uint_0
          %35 = OpLoad %uint %34
-         %38 = OpAtomicIIncrement %uint %3 %uint_1 %uint_80
+         %38 = OpAtomicIIncrement %uint %3 %uint_1 %uint_72
          %39 = OpAccessChain %_ptr_Workgroup_uint %16 %38
                OpStore %39 %35
                OpReturn

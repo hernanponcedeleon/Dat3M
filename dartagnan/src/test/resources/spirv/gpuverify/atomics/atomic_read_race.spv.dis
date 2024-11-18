@@ -37,7 +37,7 @@
      %uint_0 = OpConstant %uint 0
 %_ptr_Input_uint = OpTypePointer Input %uint
      %uint_1 = OpConstant %uint 1
-    %uint_80 = OpConstant %uint 80
+    %uint_72 = OpConstant %uint 72
      %uint_3 = OpConstant %uint 3
      %uint_4 = OpConstant %uint 4
      %uint_2 = OpConstant %uint 2
@@ -53,7 +53,7 @@
          %27 = OpAccessChain %_ptr_Workgroup_uint %14 %26
          %28 = OpLoad %uint %27
                OpStore %20 %28
-         %31 = OpAtomicIIncrement %uint %23 %uint_1 %uint_80
+         %31 = OpAtomicIIncrement %uint %23 %uint_1 %uint_72
                OpReturn
                OpFunctionEnd
          %35 = OpExtInst %void %32 Kernel %17 %33 %uint_1 %uint_0 %34
