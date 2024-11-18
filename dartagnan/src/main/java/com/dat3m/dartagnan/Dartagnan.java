@@ -239,8 +239,6 @@ public class Dartagnan extends BaseOptions {
             manager.setContextWithFullWmm(contextWithFullWmm);
         }
         final ExecutionModelNext m = manager.initializeModel(prover.getModel());
-        // final ExecutionModel m = ExecutionModel.withContext(modelChecker.getEncodingContext());
-        // m.initialize(prover.getModel());
         final SyntacticContextAnalysis synContext = newInstance(task.getProgram());
         final String progName = task.getProgram().getName();
         final int fileSuffixIndex = progName.lastIndexOf('.');

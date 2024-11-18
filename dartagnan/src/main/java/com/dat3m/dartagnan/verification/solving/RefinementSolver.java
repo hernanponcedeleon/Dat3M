@@ -894,9 +894,9 @@ public class RefinementSolver extends ModelChecker {
         final SyntacticContextAnalysis emptySynContext = getEmptyInstance();
         // File with reason edges only
         generateGraphvizFile(model, iterationCount, edgeFilter, edgeFilter, edgeFilter, directoryName, fileNameBase,
-                emptySynContext);
+                emptySynContext, true);
         // File with all edges
         generateGraphvizFile(model, iterationCount, (x, y) -> true, (x, y) -> true, (x, y) -> true, directoryName,
-                fileNameBase + "-full", emptySynContext);
+                fileNameBase + "-full", emptySynContext, true);
     }
 }

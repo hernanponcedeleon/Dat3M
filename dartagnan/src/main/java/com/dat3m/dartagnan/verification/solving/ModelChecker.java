@@ -35,6 +35,7 @@ public abstract class ModelChecker {
 
     protected Result res = Result.UNKNOWN;
     protected EncodingContext context;
+    // This context is needed for extraction of relations when RefinementSolver being used.
     protected EncodingContext contextWithFullWmm;
     private String flaggedPairsOutput = "";
 

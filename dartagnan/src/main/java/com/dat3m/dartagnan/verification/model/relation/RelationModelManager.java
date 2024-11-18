@@ -9,10 +9,10 @@ import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.solver.caat.predicates.CAATPredicate;
 import com.dat3m.dartagnan.solver.caat.predicates.PredicateHierarchy;
-import com.dat3m.dartagnan.solver.caat.predicates.relationGraphs.Edge;
-import com.dat3m.dartagnan.solver.caat.predicates.relationGraphs.RelationGraph;
 import com.dat3m.dartagnan.solver.caat.predicates.relationGraphs.base.SimpleGraph;
 import com.dat3m.dartagnan.solver.caat.predicates.relationGraphs.derived.*;
+import com.dat3m.dartagnan.solver.caat.predicates.relationGraphs.Edge;
+import com.dat3m.dartagnan.solver.caat.predicates.relationGraphs.RelationGraph;
 import com.dat3m.dartagnan.solver.caat.predicates.sets.SetPredicate;
 import com.dat3m.dartagnan.solver.caat4wmm.EventDomain;
 import com.dat3m.dartagnan.solver.caat4wmm.basePredicates.StaticDefaultWMMGraph;
@@ -117,11 +117,11 @@ public class RelationModelManager {
             }
         }
 
-
         Set<CAATPredicate> predicates = new HashSet<>(relGraphs);
         PredicateHierarchy hierarchy = new PredicateHierarchy(predicates);
         hierarchy.initializeToDomain(new EventDomain(oldModel));
 
+        // Populate graphs of base relations.
         for (CAATPredicate basePred : hierarchy.getBasePredicates()) {
             if (basePred.getClass() == StaticWMMSet.class
                 || basePred.getClass() == StaticDefaultWMMGraph.class
@@ -130,6 +130,7 @@ public class RelationModelManager {
             r.getDefinition().accept(graphPopulator);
         }
 
+        // Do the computation.
         hierarchy.populate();
 
         for (CAATPredicate pred : hierarchy.getPredicateList()) {
@@ -175,8 +176,7 @@ public class RelationModelManager {
         if (relGraphCache.containsKey(r)) {
             return relGraphCache.get(r);
         }
-        RelationGraph rg = createGraph(r);
-        return rg;
+        return createGraph(r);
     }
 
     private SetPredicate getOrCreateSetFromFilter(Filter filter) {
@@ -194,8 +194,8 @@ public class RelationModelManager {
         if (edgeModelCache.containsKey(identifier)) {
             return edgeModelCache.get(identifier);
         }
-        final List<EventModel> eventList = executionModel.getEventList();
-        EdgeModel em = new EdgeModel(eventList.get(e.getFirst()), eventList.get(e.getSecond()));
+        EdgeModel em = new EdgeModel(executionModel.getEventModelById(e.getFirst()),
+                                     executionModel.getEventModelById(e.getSecond()));
         edgeModelCache.put(identifier, em);
         return em;
     }
@@ -211,6 +211,8 @@ public class RelationModelManager {
     }
 
 
+    // Usage: Populate graph of the base relations with instances of the Edge class
+    // based on the information from ExecutionModelNext.
     private final class BaseRelationGraphPopulator implements Visitor<Void> {
 
         @Override
@@ -429,7 +431,7 @@ public class RelationModelManager {
                         writes.add((RegWriterModel) em);
                         continue;
                     }
-                    if (em.isWrite()) {
+                    if (em.isRegReader()) {
                         for (RegWriterModel write : writes) {
                             for (Register.Read read : ((RegReaderModel) em).getRegisterReads()) {
                                 if (read.register() == write.getResultRegister()
@@ -492,6 +494,9 @@ public class RelationModelManager {
     }
 
 
+    // Create a SimpleGraph for base relations and the specific graph for derived ones,
+    // so that edges of base relations are set manually and edges of derived ones can be
+    // computed automatically by PredicateHierarchy. 
     private final class RelationGraphBuilder implements Visitor<RelationGraph> {
 
         @Override

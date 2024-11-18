@@ -1,29 +1,35 @@
 package com.dat3m.dartagnan.verification.model;
 
 import com.dat3m.dartagnan.encoding.EncodingContext;
-import com.dat3m.dartagnan.program.Thread;
-import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
+import com.dat3m.dartagnan.program.Thread;
+import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.verification.model.event.*;
 import com.dat3m.dartagnan.verification.model.relation.RelationModel;
-import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.Relation;
-import org.sosy_lab.java_smt.api.Model;
-import org.sosy_lab.java_smt.api.Formula;
+import com.dat3m.dartagnan.wmm.Wmm;
 import org.sosy_lab.java_smt.api.BooleanFormula;
+import org.sosy_lab.java_smt.api.Formula;
+import org.sosy_lab.java_smt.api.Model;
 
-import java.util.*;
 import java.math.BigInteger;
+import java.util.*;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
 
+// This is a new implementation of ExecutionModel which serves as the data structure
+// representing an execution in Dartagnan. It contains instances of EventModel for events
+// and RelationModel for relations. It holds the information that has the same name and
+// format as the old ExecutionModel so that it can replace the old one easily for CAAT also.
+// It is used only by ExecutionGraphVisualizer so far.
 public class ExecutionModelNext {
     private final EncodingContext encodingContext;
     private Model model;
-    private EncodingContext contextWithFullWmm; // This context is needed for extraction of relations when RefinementSolver being used.
+    // This context is needed for extraction of relations when RefinementSolver being used.
+    private EncodingContext contextWithFullWmm;
     private ExecutionModelManager manager;
 
     private final List<Thread> threadList;
@@ -152,6 +158,7 @@ public class ExecutionModelNext {
 
     public void addRelation(Relation r, RelationModel rModel) {
         relationMap.put(r, rModel);
+        // We add an entry for each name of the relation.
         for (String name : rModel.getNames()) {
             relationNameMap.put(name, rModel);
         }

@@ -12,8 +12,8 @@ import com.dat3m.dartagnan.verification.model.ExecutionModelNext;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
 
-import java.util.*;
 import java.math.BigInteger;
+import java.util.*;
 
 
 public class EventModelManager {
@@ -116,7 +116,11 @@ public class EventModelManager {
         EventModel em = createAndInitializeModel(e);
         em.setId(id);
         em.setLocalId(localId);
-        em.setWasExecuted(true);
+        if (e instanceof CondJump) {
+            em.setWasExecuted(
+                executionModel.isTrue(getEncodingContext().jumpCondition((CondJump) e))
+            );
+        } else { em.setWasExecuted(true); }
         eventCache.put(e, em);
 
         return em;
@@ -171,9 +175,6 @@ public class EventModelManager {
             em = new LocalModel((Local) e);
         } else if (e instanceof CondJump) {
             em = new CondJumpModel((CondJump) e);
-            em.setWasExecuted(
-                executionModel.isTrue(getEncodingContext().jumpCondition((CondJump) e))
-            );
         } else {
             em = new DefaultEventModel(e);
         }
@@ -182,6 +183,8 @@ public class EventModelManager {
     }
 
     private boolean toExtract(Event e) {
+        // We extract visible events, Locals and Asserts to show them in the witness,
+        // and extract also CondJumps for tracking internal dependencies.
         return eventFilter.apply(e)
                || e instanceof Local
                || e instanceof Assert

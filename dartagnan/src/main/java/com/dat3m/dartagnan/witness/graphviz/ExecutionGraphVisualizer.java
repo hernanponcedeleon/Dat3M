@@ -83,9 +83,6 @@ public class ExecutionGraphVisualizer {
         graphviz.append(String.format("label=\"%s\" \n", graphName));
         addAllThreadPos(model);
         addRelations(model);
-        // addReadFrom(model);
-        // addFromRead(model);
-        // addCoherence(model);
         graphviz.end();
         graphviz.generateOutput(writer);
     }
@@ -180,69 +177,6 @@ public class ExecutionGraphVisualizer {
         return this;
     }
 
-    // private ExecutionGraphVisualizer addReadFrom(ExecutionModel model) {
-
-    //     graphviz.beginSubgraph("ReadFrom");
-    //     graphviz.setEdgeAttributes("color=green");
-    //     for (Map.Entry<EventData, EventData> rw : model.getReadWriteMap().entrySet()) {
-    //         EventData r = rw.getKey();
-    //         EventData w = rw.getValue();
-
-    //         if (ignore(r) || ignore(w) || !rfFilter.test(w, r)) {
-    //             continue;
-    //         }
-
-    //         appendEdge(w, r, "label=rf");
-    //     }
-    //     graphviz.end();
-    //     return this;
-    // }
-
-    // private ExecutionGraphVisualizer addFromRead(ExecutionModel model) {
-
-    //     graphviz.beginSubgraph("FromRead");
-    //     graphviz.setEdgeAttributes("color=orange");
-    //     for (Map.Entry<EventData, EventData> rw : model.getReadWriteMap().entrySet()) {
-    //         EventData r = rw.getKey();
-    //         EventData w = rw.getValue();
-
-    //         if (ignore(r) || ignore(w)) {
-    //             continue;
-    //         }
-
-    //         List<EventData> co = model.getCoherenceMap().get(w.getAccessedAddress());
-    //         // Check if exists w2 : co(w, w2)
-    //         if (co.indexOf(w) + 1 < co.size()) {
-    //             EventData w2 = co.get(co.indexOf(w) + 1);
-    //             if (!ignore(w2) && frFilter.test(r, w2)) {
-    //                 appendEdge(r, w2, "label=fr");
-    //             }
-    //         }
-    //     }
-    //     graphviz.end();
-    //     return this;
-    // }
-
-    // private ExecutionGraphVisualizer addCoherence(ExecutionModel model) {
-
-    //     graphviz.beginSubgraph("Coherence");
-    //     graphviz.setEdgeAttributes("color=red");
-
-    //     for (List<EventData> co : model.getCoherenceMap().values()) {
-    //         for (int i = 2; i < co.size(); i++) {
-    //             // We skip the init writes
-    //             EventData w1 = co.get(i - 1);
-    //             EventData w2 = co.get(i);
-    //             if (ignore(w1) || ignore(w2) || !coFilter.test(w1, w2)) {
-    //                 continue;
-    //             }
-    //             appendEdge(w1, w2, "label=co");
-    //         }
-    //     }
-    //     graphviz.end();
-    //     return this;
-    // }
-
     private ExecutionGraphVisualizer addAllThreadPos(ExecutionModelNext model) {
         for (Thread thread : model.getThreads()) {
             addThreadPo(thread, model);
@@ -259,18 +193,7 @@ public class ExecutionGraphVisualizer {
 
         // --- Subgraph start ---
         graphviz.beginSubgraph("T" + thread.getId());
-        // graphviz.setEdgeAttributes("weight=100");
-        // // --- Node list ---
-        // for (int i = 1; i < threadEvents.size(); i++) {
-        //     EventData e1 = threadEvents.get(i - 1);
-        //     EventData e2 = threadEvents.get(i);
 
-        //     if (ignore(e1) || ignore(e2)) {
-        //         continue;
-        //     }
-
-        //     appendEdge(e1, e2, (String[]) null);
-        // }
         for (EventModel e : threadEvents) {
             appendNode(e, (String[]) null);
         }
@@ -303,7 +226,7 @@ public class ExecutionGraphVisualizer {
             return String.format("\"I(%s, %d)\"", getAddressString(
                 ((StoreModel) e).getAccessedAddress()), ((StoreModel) e).getValue());
         }
-        // We have MemEvent + Fence
+        // We have MemEvent + Fence + Local + Assert
         String tag = e.getEvent().toString();
         if (e.isMemoryEvent()) {
             String address = getAddressString(((MemoryEventModel) e).getAccessedAddress());
@@ -369,8 +292,8 @@ public class ExecutionGraphVisualizer {
     public static void generateGraphvizFile(ExecutionModelNext model, int iterationCount,
             BiPredicate<EventModel, EventModel> rfFilter, BiPredicate<EventModel, EventModel> frFilter,
             BiPredicate<EventModel, EventModel> coFilter, String directoryName, String fileNameBase,
-            SyntacticContextAnalysis synContext) {
+            SyntacticContextAnalysis synContext, boolean usedByRefinementSolver) {
         generateGraphvizFile(model, iterationCount, rfFilter, frFilter, coFilter, directoryName, fileNameBase,
-                synContext, true, true);
+                synContext, true, usedByRefinementSolver);
     }
 }
