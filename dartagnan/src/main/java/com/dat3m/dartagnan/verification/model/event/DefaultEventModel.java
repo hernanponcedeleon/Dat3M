@@ -115,4 +115,9 @@ public class DefaultEventModel implements EventModel {
     public String toString() {
         return String.format("T%d:%d", event.getThread().getId(), localId);
     }
+
+    @Override
+    public int compareTo(EventModel e) {
+        return this.getId() - e.getId();
+    }
 }

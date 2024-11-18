@@ -4,7 +4,7 @@ import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.Event;
 
 
-public interface EventModel {
+public interface EventModel extends Comparable<EventModel> {
     Event getEvent();
 
     Thread getThread();

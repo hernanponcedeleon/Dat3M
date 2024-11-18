@@ -133,6 +133,7 @@ public class EventModelManager {
                 executionModel.evaluateByModel(getEncodingContext().address((MemoryEvent) e))
             );
             BigInteger address = new BigInteger(addressObj.toString());
+            executionModel.addAccessedAddress(address);
 
             if (e.hasTag(Tag.READ)) {
                 em = new LoadModel(e);

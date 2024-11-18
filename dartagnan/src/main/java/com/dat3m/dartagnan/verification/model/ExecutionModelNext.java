@@ -168,14 +168,26 @@ public class ExecutionModelNext {
         memoryLayoutMap.put(m, mModel);
     }
 
+    public void addAccessedAddress(BigInteger address) {
+        if (!addressAccessesMap.containsKey(address)) {
+            addressAccessesMap.put(address, new HashSet<>());
+        }
+        if (!addressReadsMap.containsKey(address)) {
+            addressReadsMap.put(address, new HashSet<>());
+        }
+        if (!addressWritesMap.containsKey(address)) {
+            addressWritesMap.put(address, new HashSet<>());
+        }
+    }
+
     public void addAddressRead(BigInteger address, LoadModel read) {
-        addressReadsMap.computeIfAbsent(address, key -> new HashSet<>()).add(read);
-        addressAccessesMap.computeIfAbsent(address, key -> new HashSet<>()).add((MemoryEventModel) read);
+        addressReadsMap.get(address).add(read);
+        addressAccessesMap.get(address).add((MemoryEventModel) read);
     }
 
     public void addAddressWrite(BigInteger address, StoreModel write) {
-        addressWritesMap.computeIfAbsent(address, key -> new HashSet<>()).add(write);
-        addressAccessesMap.computeIfAbsent(address, key -> new HashSet<>()).add((MemoryEventModel) write);
+        addressWritesMap.get(address).add(write);
+        addressAccessesMap.get(address).add((MemoryEventModel) write);
     }
 
     public void addAddressInit(BigInteger address, StoreModel init) {
