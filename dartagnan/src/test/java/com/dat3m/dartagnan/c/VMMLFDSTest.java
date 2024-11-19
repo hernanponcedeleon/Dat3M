@@ -10,6 +10,8 @@ import com.dat3m.dartagnan.wmm.Wmm;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
+import org.sosy_lab.common.configuration.Configuration;
+import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.java_smt.SolverContextFactory.Solvers;
 
 import java.io.IOException;
@@ -27,6 +29,11 @@ public class VMMLFDSTest extends AbstractCTest {
 
     public VMMLFDSTest(String name, Arch target, Result expected) {
         super(name, target, expected);
+    }
+
+    @Override
+    protected Configuration getConfiguration() throws InvalidConfigurationException {
+        return Configuration.defaultConfiguration();
     }
 
     @Override

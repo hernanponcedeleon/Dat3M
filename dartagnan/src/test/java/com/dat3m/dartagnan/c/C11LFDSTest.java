@@ -10,6 +10,8 @@ import com.dat3m.dartagnan.wmm.Wmm;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
+import org.sosy_lab.common.configuration.Configuration;
+import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.java_smt.SolverContextFactory.Solvers;
 
 import java.io.IOException;
@@ -25,6 +27,11 @@ public class C11LFDSTest extends AbstractCTest {
 
     public C11LFDSTest(String name, Arch target, Result expected) {
         super(name, target, expected);
+    }
+
+    @Override
+    protected Configuration getConfiguration() throws InvalidConfigurationException {
+        return Configuration.defaultConfiguration();
     }
 
     @Override
@@ -55,11 +62,11 @@ public class C11LFDSTest extends AbstractCTest {
     public static Iterable<Object[]> data() throws IOException {
         // Commented ones take too long ATM
         return Arrays.asList(new Object[][]{
-                {"dglm", C11, UNKNOWN},
+                {"dglm", C11, FAIL},
                 {"dglm-CAS-relaxed", C11, FAIL},
-                {"ms", C11, UNKNOWN},
+                {"ms", C11, FAIL},
                 {"ms-CAS-relaxed", C11, FAIL},
-                {"treiber", C11, UNKNOWN},
+                {"treiber", C11, FAIL},
                 {"treiber-CAS-relaxed", C11, FAIL},
                 {"chase-lev", C11, PASS},
                 // These have an extra thief that violate the assertion
