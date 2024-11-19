@@ -28,6 +28,7 @@ import com.dat3m.dartagnan.utils.logic.DNF;
 import com.dat3m.dartagnan.verification.Context;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.verification.model.EventData;
+import com.dat3m.dartagnan.verification.model.ExecutionModel;
 import com.dat3m.dartagnan.verification.model.ExecutionModelNext;
 import com.dat3m.dartagnan.verification.model.event.EventModel;
 import com.dat3m.dartagnan.verification.model.event.MemoryEventModel;
@@ -264,7 +265,7 @@ public class RefinementSolver extends ModelChecker {
         if (smtStatus == SMTStatus.UNKNOWN) {
             // Refinement got no result (should not be able to happen), so we cannot proceed further.
             logger.warn("Refinement procedure was inconclusive. Trying to find reason of inconclusiveness.");
-            analyzeInconclusiveness(task, analysisContext, solver.getNextModel());
+            analyzeInconclusiveness(task, analysisContext, solver.getExecution());
             throw new RuntimeException("Terminated verification due to inconclusiveness (bug?).");
         }
 
@@ -337,7 +338,7 @@ public class RefinementSolver extends ModelChecker {
         logger.info("Verification finished with result " + res);
     }
 
-    private void analyzeInconclusiveness(VerificationTask task, Context analysisContext, ExecutionModelNext model) {
+    private void analyzeInconclusiveness(VerificationTask task, Context analysisContext, ExecutionModel model) {
         final AliasAnalysis alias = analysisContext.get(AliasAnalysis.class);
         if (alias == null) {
             return;
@@ -346,12 +347,14 @@ public class RefinementSolver extends ModelChecker {
         if (synContext == null) {
             synContext = newInstance(task.getProgram());
         }
-        // model.getAddressReadsMap().forEach((addr, reads) -> addr2Events.computeIfAbsent(addr, key -> new HashSet<>()).addAll(reads));
-        // model.getAddressWritesMap().forEach((addr, writes) -> addr2Events.computeIfAbsent(addr, key -> new HashSet<>()).addAll(writes));
-        // model.getAddressInitMap().forEach((addr, init) -> addr2Events.computeIfAbsent(addr, key -> new HashSet<>()).add(init));
 
-        for (Set<MemoryEventModel> sameLocEvents : model.getAddressAccessesMap().values()) {
-            final List<MemoryEventModel> events = sameLocEvents.stream().sorted().toList();
+        final Map<BigInteger, Set<EventData>> addr2Events = new HashMap<>();
+        model.getAddressReadsMap().forEach((addr, reads) -> addr2Events.computeIfAbsent(addr, key -> new HashSet<>()).addAll(reads));
+        model.getAddressWritesMap().forEach((addr, writes) -> addr2Events.computeIfAbsent(addr, key -> new HashSet<>()).addAll(writes));
+        model.getAddressInitMap().forEach((addr, init) -> addr2Events.computeIfAbsent(addr, key -> new HashSet<>()).add(init));
+
+        for (Set<EventData> sameLocEvents : addr2Events.values()) {
+            final List<EventData> events = sameLocEvents.stream().sorted().toList();
 
             for (int i = 0; i < events.size() - 1; i++) {
                 for (int j = i + 1; j < events.size(); j++) {
