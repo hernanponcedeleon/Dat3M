@@ -1,6 +1,7 @@
 package com.dat3m.dartagnan.parsers.program.visitors;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -82,17 +83,29 @@ public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
         this.nameToRegisterMap = new HashMap<>();
         this.pendingRegisters = new LinkedList<>();
         this.armToLlvmMap = new HashMap<>();
-        // armToLLVM
-        this.fnParameters = llvmFunction.getParameterRegisters(); // these hold the original fn arguments
+        this.fnParameters = getFnParams(llvmFunction.getParameterRegisters()); // these hold the original fn arguments
         this.returnValuesNumber = assignReturnValues(returnType);
         assert (this.returnValuesNumber >= 0);
         populateRegisters(armToLlvmMap);
     }
 
+    private List<Register> getFnParams(List<Register> fnParams){
+        // reverse all elements except for the first one. If it has size 1 just return the list
+        if(fnParams.size()==1){
+            return fnParams; 
+        }
+        Register firstElement = fnParams.get(0);
+        List<Register> res = new LinkedList(fnParams.subList(1, fnParams.size()));
+        Collections.reverse(res);
+        res.add(0, firstElement);
+        System.out.println("The original list is "+ fnParams);
+        System.out.println("The reversed list is "+ res);
+        return res;
+    }
+
     public List<Event> getEvents() {
         return this.events;
     }
-
 
     /* given the VariableInline as String it picks up if it is a 32 or 64 bit */
     public Type getVariableSize(String variable) {
@@ -246,7 +259,6 @@ public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
             if (isPartOfReturnRegister(nodeName)) {
                 // I enter here the first time I see a register like 0:w, 1:w AND the return type is Aggregate
                 this.armToLlvmMap.put(nodeName, newRegister);
-                // System.out.println("New state is " + this.armToLlvmMap.armToLlvmMap);
                 // now newLocal with the slice of right value
                 int number = Integer.parseInt(Character.toString(nodeName.charAt(2)));
                 assignment = expressions.makeExtract(number, returnRegister);
@@ -314,7 +326,6 @@ public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
         Register leftRegister = getOrNewRegister(ctx.VariableInline(1).getText());
         Register rightRegister = getOrNewRegister(ctx.VariableInline(2).getText());
         Expression exp = expressions.makeAdd(leftRegister, rightRegister);
-        //An add is a local operation. Can be seen as a store in dat3m internal encoding
         updateReturnRegisterIfModified(ctx.VariableInline(0));
         events.add(EventFactory.newLocal(resultRegister, exp));
         return visitChildren(ctx);
