@@ -98,8 +98,6 @@ public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
         List<Register> res = new LinkedList(fnParams.subList(1, fnParams.size()));
         Collections.reverse(res);
         res.add(0, firstElement);
-        System.out.println("The original list is "+ fnParams);
-        System.out.println("The reversed list is "+ res);
         return res;
     }
 
@@ -199,6 +197,29 @@ public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
                 }
                 llvmToArmMap.put(key, this.returnRegister);
             } else {
+                if(this.returnValuesNumber == 4){
+                    // we're in the special case of "add".
+                    // since it allocates 3 values manually, it means that the rule changes to this
+                    // 1) allocate 0:w.... to the local variables -> they are going to overlap with the return registers, so it is hard to design a general solution
+                    // 2) allocate $n and the rest for fn parameters
+                    for ( int i= 0; i < this.returnValuesNumber ; i++){
+                        String key = String.format("${%d:w}", i);
+                        Type type = getTypeGivenString(this.returnRegisterTypes[i]);
+                        if (type.toString().equals("bv64")) {
+                            key = key.replace("w", "x");
+                        }
+                        Register tmp = getOrNewRegister(key);
+                        // we have to map specific cases here
+                        if (i == 1 || i == 2){
+                            // they are the variables tmp and newv, so we initialize with 0 to not get strange results
+                            events.add(EventFactory.newLocal(tmp, expressions.parseValue("0", integerType)));
+                        }
+                        if (i == 3){
+                            // this is 'oldv' which maps with the returnValue, so we map it directly
+                            events.add(EventFactory.newLocal(tmp, this.fnParameters.get(1)));
+                        }
+                    }
+                }
                 for (int i = 0; i < this.returnValuesNumber; i++) {
                     String key = String.format("${%d:w}", i);
                     Type type = getTypeGivenString(this.returnRegisterTypes[i]);
@@ -207,7 +228,7 @@ public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
                     }
                     System.out.println("Creating register with this one" + key);
                     Register tmp = getOrNewRegister(key); // used to initialize registers which are assigned after an if statement
-                }
+                } 
             }
             // from where you left, continue and fill the fn parameters skipping r0 because it is already mapped
             int registerCounter = 1;
