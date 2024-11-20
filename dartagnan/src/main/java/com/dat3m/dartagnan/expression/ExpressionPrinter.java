@@ -1,5 +1,7 @@
 package com.dat3m.dartagnan.expression;
 
+import com.dat3m.dartagnan.expression.aggregates.ConstructExpr;
+import com.dat3m.dartagnan.expression.aggregates.ExtractExpr;
 import com.dat3m.dartagnan.expression.booleans.BoolBinaryOp;
 import com.dat3m.dartagnan.expression.booleans.BoolUnaryOp;
 import com.dat3m.dartagnan.expression.floats.FloatSizeCast;
@@ -8,8 +10,6 @@ import com.dat3m.dartagnan.expression.integers.FloatToIntCast;
 import com.dat3m.dartagnan.expression.integers.IntBinaryOp;
 import com.dat3m.dartagnan.expression.integers.IntSizeCast;
 import com.dat3m.dartagnan.expression.integers.IntUnaryOp;
-import com.dat3m.dartagnan.expression.misc.ConstructExpr;
-import com.dat3m.dartagnan.expression.misc.ExtractExpr;
 import com.dat3m.dartagnan.expression.misc.GEPExpr;
 import com.dat3m.dartagnan.expression.misc.ITEExpr;
 import com.dat3m.dartagnan.program.Register;

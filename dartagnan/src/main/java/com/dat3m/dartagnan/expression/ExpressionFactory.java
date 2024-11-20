@@ -1,10 +1,12 @@
 package com.dat3m.dartagnan.expression;
 
+import com.dat3m.dartagnan.expression.aggregates.AggregateCmpExpr;
+import com.dat3m.dartagnan.expression.aggregates.AggregateCmpOp;
+import com.dat3m.dartagnan.expression.aggregates.ConstructExpr;
+import com.dat3m.dartagnan.expression.aggregates.ExtractExpr;
 import com.dat3m.dartagnan.expression.booleans.*;
 import com.dat3m.dartagnan.expression.floats.*;
 import com.dat3m.dartagnan.expression.integers.*;
-import com.dat3m.dartagnan.expression.misc.ConstructExpr;
-import com.dat3m.dartagnan.expression.misc.ExtractExpr;
 import com.dat3m.dartagnan.expression.misc.GEPExpr;
 import com.dat3m.dartagnan.expression.misc.ITEExpr;
 import com.dat3m.dartagnan.expression.type.*;
@@ -271,6 +273,10 @@ public final class ExpressionFactory {
         return new ExtractExpr(fieldIndex, object);
     }
 
+    public Expression makeAggregateCmp(Expression x, AggregateCmpOp op, Expression y) {
+        return new AggregateCmpExpr(booleanType, x, op, y);
+    }
+
     // -----------------------------------------------------------------------------------------------------------------
     // Pointers
 
@@ -345,6 +351,8 @@ public final class ExpressionFactory {
         } else if (type instanceof FloatType) {
             // TODO: Decide on a default semantics for float equality?
             return makeFloatCmp(leftOperand, FloatCmpOp.OEQ, rightOperand);
+        } else if (type instanceof AggregateType) {
+            return makeAggregateCmp(leftOperand, AggregateCmpOp.EQ, rightOperand);
         }
         throw new UnsupportedOperationException("Equality not supported on type: " + type);
     }
@@ -358,6 +366,8 @@ public final class ExpressionFactory {
         } else if (type instanceof FloatType) {
             // TODO: Decide on a default semantics for float equality?
             return makeFloatCmp(leftOperand, FloatCmpOp.ONEQ, rightOperand);
+        } else if (type instanceof AggregateType) {
+            return makeAggregateCmp(leftOperand, AggregateCmpOp.NEQ, rightOperand);
         }
         throw new UnsupportedOperationException("Disequality not supported on type: " + type);
     }
@@ -391,6 +401,8 @@ public final class ExpressionFactory {
             return makeIntCmp(x, intCmpOp, y);
         } else if (cmpOp instanceof FloatCmpOp floatOp) {
             return makeFloatCmp(x, floatOp, y);
+        } else if (cmpOp instanceof AggregateCmpOp aggrCmpOp) {
+            return makeAggregateCmp(x, aggrCmpOp, y);
         }
         throw new UnsupportedOperationException(String.format("Expression kind %s is no comparison operator.", cmpOp));
     }

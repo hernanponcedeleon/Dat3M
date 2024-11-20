@@ -1,11 +1,15 @@
 package com.dat3m.dartagnan.encoding;
 
 import com.dat3m.dartagnan.configuration.ProgressModel;
+import com.dat3m.dartagnan.encoding.formulas.TupleFormula;
+import com.dat3m.dartagnan.encoding.formulas.TupleFormulaManager;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.Type;
 import com.dat3m.dartagnan.expression.integers.IntCmpOp;
+import com.dat3m.dartagnan.expression.type.AggregateType;
 import com.dat3m.dartagnan.expression.type.BooleanType;
 import com.dat3m.dartagnan.expression.type.IntegerType;
+import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.analysis.BranchEquivalence;
 import com.dat3m.dartagnan.program.analysis.ExecutionAnalysis;
@@ -33,7 +37,9 @@ import org.sosy_lab.java_smt.api.*;
 import org.sosy_lab.java_smt.api.NumeralFormula.IntegerFormula;
 
 import java.math.BigInteger;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import static com.dat3m.dartagnan.configuration.OptionNames.*;
@@ -54,6 +60,7 @@ public final class EncodingContext {
     private final RelationAnalysis relationAnalysis;
     private final FormulaManager formulaManager;
     private final BooleanFormulaManager booleanFormulaManager;
+    private final TupleFormulaManager tupleFormulaManager;
 
     @Option(
             name=IDL_TO_SAT,
@@ -88,6 +95,7 @@ public final class EncodingContext {
         relationAnalysis = a.requires(RelationAnalysis.class);
         formulaManager = m;
         booleanFormulaManager = m.getBooleanFormulaManager();
+        tupleFormulaManager = new TupleFormulaManager(this);
     }
 
     public static EncodingContext of(VerificationTask task, Context analysisContext, FormulaManager formulaManager) throws InvalidConfigurationException {
@@ -124,6 +132,10 @@ public final class EncodingContext {
 
     public BooleanFormulaManager getBooleanFormulaManager() {
         return booleanFormulaManager;
+    }
+
+    public TupleFormulaManager getTupleFormulaManager() {
+        return tupleFormulaManager;
     }
 
     public Formula encodeFinalExpression(Expression expression) {
@@ -248,6 +260,9 @@ public final class EncodingContext {
         }
         if (left instanceof BooleanFormula l && right instanceof BooleanFormula r) {
             return booleanFormulaManager.equivalence(l, r);
+        }
+        if (left instanceof TupleFormula l && right instanceof TupleFormula r) {
+            return tupleFormulaManager.equal(l, r);
         }
         throw new UnsupportedOperationException(String.format("Unknown types for equal(%s,%s)", left, right));
     }
@@ -438,6 +453,14 @@ public final class EncodingContext {
             } else {
                 return formulaManager.getBitvectorFormulaManager().makeVariable(integerType.getBitWidth(), name);
             }
+        }
+        if (type instanceof AggregateType) {
+            final Map<Integer, Type> primitives = TypeFactory.getInstance().decomposeIntoPrimitives(type);
+            final List<Formula> elements = new ArrayList<>();
+            for (Type eleType : primitives.values()) {
+                elements.add(makeVariable(name + "@" + elements.size(), eleType));
+            }
+            return tupleFormulaManager.makeTuple(elements);
         }
         throw new UnsupportedOperationException(String.format("Cannot encode variable of type %s.", type));
     }
