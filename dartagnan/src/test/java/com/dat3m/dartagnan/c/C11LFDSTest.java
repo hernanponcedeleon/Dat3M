@@ -1,6 +1,7 @@
 package com.dat3m.dartagnan.c;
 
 import com.dat3m.dartagnan.configuration.Arch;
+import com.dat3m.dartagnan.configuration.OptionNames;
 import com.dat3m.dartagnan.utils.Result;
 import com.dat3m.dartagnan.utils.rules.Provider;
 import com.dat3m.dartagnan.utils.rules.Providers;
@@ -31,7 +32,9 @@ public class C11LFDSTest extends AbstractCTest {
 
     @Override
     protected Configuration getConfiguration() throws InvalidConfigurationException {
-        return Configuration.defaultConfiguration();
+        return Configuration.builder()
+                            .setOption(OptionNames.INIT_DYNAMIC_ALLOCATIONS, "true")
+                            .build();
     }
 
     @Override
@@ -60,13 +63,12 @@ public class C11LFDSTest extends AbstractCTest {
 
     @Parameterized.Parameters(name = "{index}: {0}, target={1}")
     public static Iterable<Object[]> data() throws IOException {
-        // Commented ones take too long ATM
         return Arrays.asList(new Object[][]{
-                {"dglm", C11, FAIL},
+                {"dglm", C11, UNKNOWN},
                 {"dglm-CAS-relaxed", C11, FAIL},
-                {"ms", C11, FAIL},
+                {"ms", C11, UNKNOWN},
                 {"ms-CAS-relaxed", C11, FAIL},
-                {"treiber", C11, FAIL},
+                {"treiber", C11, UNKNOWN},
                 {"treiber-CAS-relaxed", C11, FAIL},
                 {"chase-lev", C11, PASS},
                 // These have an extra thief that violate the assertion
