@@ -44,13 +44,16 @@ public class IRHelper {
         return nonDeleted;
     }
 
-    public static List<Event> getEventsFromTo(Event from, Event to) {
+    public static List<Event> getEventsFromTo(Event from, Event to, boolean endInclusive) {
         Preconditions.checkArgument(from.getFunction() == to.getFunction());
         final List<Event> events = new ArrayList<>();
         Event cur = from;
         do {
-            events.add(cur);
-            if (cur == to) {
+            final boolean reachedEnd = (cur == to);
+            if (!reachedEnd || endInclusive) {
+                events.add(cur);
+            }
+            if (reachedEnd) {
                 break;
             }
             cur = cur.getSuccessor();
@@ -60,17 +63,14 @@ public class IRHelper {
         return events;
     }
 
-    public static List<Event> copyPath(Event from, Event to,
-                                       Map<Register, Register> regReplacement,
-                                       Map<Event, Event> copyContext) {
+    public static List<Event> copyEvents(Collection<? extends Event> events,
+                                         Map<Register, Register> regReplacement,
+                                         Map<Event, Event> copyContext) {
         final List<Event> copies = new ArrayList<>();
-
-        Event cur = from;
-        while (cur != null && !cur.equals(to)) {
-            final Event copy = cur.getCopy();
+        for (Event e : events) {
+            final Event copy = e.getCopy();
             copies.add(copy);
-            copyContext.put(cur, copy);
-            cur = cur.getSuccessor();
+            copyContext.put(e, copy);
         }
 
         final ExprTransformer regSubstitutor = new ExprTransformer() {
@@ -97,6 +97,12 @@ public class IRHelper {
         }
 
         return copies;
+    }
+
+    public static List<Event> copyPath(Event from, Event to,
+                                       Map<Register, Register> regReplacement,
+                                       Map<Event, Event> copyContext) {
+        return copyEvents(getEventsFromTo(from, to, false), regReplacement, copyContext);
     }
 
     public static Set<Register> collectWrittenRegisters(Collection<? extends Event> events) {
@@ -134,10 +140,16 @@ public class IRHelper {
         return set;
     }
 
-    public static Map<Register, Register> copyOverRegisters(Iterable<Register> toCopy, Function target) {
+    public static Map<Register, Register> copyOverRegisters(Iterable<Register> toCopy, Function target,
+                                                            java.util.function.Function<Register, String> registerNames,
+                                                            boolean guaranteeFreshRegisters) {
         final Map<Register, Register> registerMap = new HashMap<>();
         for (Register reg : toCopy) {
-            registerMap.put(reg, target.getOrNewRegister(reg.getName(), reg.getType()));
+            final String name = registerNames.apply(reg);
+            final Register copiedReg = guaranteeFreshRegisters ?
+                    target.newRegister(name, reg.getType())
+                    : target.getOrNewRegister(name, reg.getType());
+            registerMap.put(reg, copiedReg);
         }
         return registerMap;
     }
