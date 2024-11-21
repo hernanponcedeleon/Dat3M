@@ -1,0 +1,54 @@
+; @Input: %spec_0=0
+; @Input: %spec_1=1
+; @Config: 1, 1, 1
+; @Output: forall (%out[0]==0 and %out[1]==11 and %out[2]==12 and %out[3]==3)
+; SPIR-V
+; Version: 1.6
+; Generator: Google Clspv; 0
+; Bound: 77
+; Schema: 0
+               OpCapability Shader
+               OpCapability VulkanMemoryModel
+               OpMemoryModel Logical Vulkan
+          %1 = OpExtInstImport "NonSemantic.ClspvReflection.5"
+               OpEntryPoint GLCompute %25 "foo" %8 %gl_LocalInvocationID %14 %18 %22
+               OpDecorate %spec_0 SpecId 0
+               OpDecorate %spec_1 SpecId 1
+               OpDecorate %spec_2 SpecId 2
+               OpDecorate %spec_3 SpecId 3
+       %bool = OpTypeBool
+       %uint = OpTypeInt 32 0
+     %v4uint = OpTypeVector %uint 4
+   %ptr_uint = OpTypePointer Output %uint
+ %ptr_v4uint = OpTypePointer Output %v4uint
+       %void = OpTypeVoid
+          %2 = OpTypeFunction %void
+     %spec_0 = OpSpecConstantTrue %bool
+     %spec_1 = OpSpecConstantFalse %bool
+     %spec_2 = OpSpecConstantTrue %bool
+     %spec_3 = OpSpecConstantFalse %bool
+     %uint_0 = OpConstant %uint 0
+     %uint_1 = OpConstant %uint 1
+     %uint_2 = OpConstant %uint 2
+     %uint_3 = OpConstant %uint 3
+    %uint_10 = OpConstant %uint 10
+    %uint_11 = OpConstant %uint 11
+    %uint_12 = OpConstant %uint 12
+    %uint_13 = OpConstant %uint 13
+        %out = OpVariable %ptr_v4uint Output
+         %25 = OpFunction %void None %2
+         %26 = OpLabel
+      %val_0 = OpSelect %uint %spec_0 %uint_10 %uint_0
+      %ptr_0 = OpAccessChain %ptr_uint %out %uint_0
+               OpStore %ptr_0 %val_0
+      %val_1 = OpSelect %uint %spec_1 %uint_11 %uint_1
+      %ptr_1 = OpAccessChain %ptr_uint %out %uint_1
+               OpStore %ptr_1 %val_1
+      %val_2 = OpSelect %uint %spec_2 %uint_12 %uint_2
+      %ptr_2 = OpAccessChain %ptr_uint %out %uint_2
+               OpStore %ptr_2 %val_2
+      %val_3 = OpSelect %uint %spec_3 %uint_13 %uint_3
+      %ptr_3 = OpAccessChain %ptr_uint %out %uint_3
+               OpStore %ptr_3 %val_3
+               OpReturn
+               OpFunctionEnd

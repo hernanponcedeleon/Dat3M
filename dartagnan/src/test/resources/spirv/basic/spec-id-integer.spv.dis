@@ -1,0 +1,45 @@
+; @Input: %spec_0=10
+; @Input: %spec_1=11
+; @Config: 1, 1, 1
+; @Output: forall (%out[0]==10 and %out[1]==11 and %out[2]==2 and %out[3]==3)
+; SPIR-V
+; Version: 1.6
+; Generator: Google Clspv; 0
+; Bound: 77
+; Schema: 0
+               OpCapability Shader
+               OpCapability VulkanMemoryModel
+               OpMemoryModel Logical Vulkan
+          %1 = OpExtInstImport "NonSemantic.ClspvReflection.5"
+               OpEntryPoint GLCompute %25 "foo" %8 %gl_LocalInvocationID %14 %18 %22
+               OpDecorate %spec_0 SpecId 0
+               OpDecorate %spec_1 SpecId 1
+               OpDecorate %spec_2 SpecId 2
+               OpDecorate %spec_3 SpecId 3
+       %uint = OpTypeInt 32 0
+     %v4uint = OpTypeVector %uint 4
+   %ptr_uint = OpTypePointer Output %uint
+ %ptr_v4uint = OpTypePointer Output %v4uint
+       %void = OpTypeVoid
+          %2 = OpTypeFunction %void
+     %spec_0 = OpSpecConstant %uint 0
+     %spec_1 = OpSpecConstant %uint 1
+     %spec_2 = OpSpecConstant %uint 2
+     %spec_3 = OpSpecConstant %uint 3
+     %uint_0 = OpConstant %uint 0
+     %uint_1 = OpConstant %uint 1
+     %uint_2 = OpConstant %uint 2
+     %uint_3 = OpConstant %uint 3
+        %out = OpVariable %ptr_v4uint Output
+         %25 = OpFunction %void None %2
+         %26 = OpLabel
+      %ptr_0 = OpAccessChain %ptr_uint %out %uint_0
+               OpStore %ptr_0 %spec_0
+      %ptr_1 = OpAccessChain %ptr_uint %out %uint_1
+               OpStore %ptr_1 %spec_1
+      %ptr_2 = OpAccessChain %ptr_uint %out %uint_2
+               OpStore %ptr_2 %spec_2
+      %ptr_3 = OpAccessChain %ptr_uint %out %uint_3
+               OpStore %ptr_3 %spec_3
+               OpReturn
+               OpFunctionEnd

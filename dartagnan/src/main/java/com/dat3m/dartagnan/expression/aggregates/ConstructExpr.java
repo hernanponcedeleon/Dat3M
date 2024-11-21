@@ -1,4 +1,4 @@
-package com.dat3m.dartagnan.expression.misc;
+package com.dat3m.dartagnan.expression.aggregates;
 
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionKind;
