@@ -2,12 +2,12 @@ package com.dat3m.dartagnan.program.processing;
 
 import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.program.Function;
+import com.dat3m.dartagnan.program.IRHelper;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.analysis.SyntacticContextAnalysis;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.EventFactory;
-import com.dat3m.dartagnan.program.event.EventUser;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.CondJump;
 import com.dat3m.dartagnan.program.event.core.ControlBarrier;
@@ -29,7 +29,10 @@ import java.io.IOException;
 import java.io.Reader;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.*;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 
 import static com.dat3m.dartagnan.configuration.OptionNames.*;
 
@@ -195,7 +198,7 @@ public class LoopUnrolling implements ProgramProcessor {
             } else {
                 final String loopId = String.format("%s%s%s%d", loopBegin.getName(), LOOP_INFO_SEPARATOR, LOOP_INFO_ITERATION_SUFFIX, iterCounter);
                 final Map<Event, Event> copyCtx = new HashMap<>();
-                final List<Event> copies = copyPath(loopBegin, loopBackJump, copyCtx, loopId);
+                final List<Event> copies = IRHelper.copyPath(loopBegin, loopBackJump, Map.of(), copyCtx);
 
                 // Insert copy of the loop
                 loopBegin.getPredecessor().insertAfter(copies);
