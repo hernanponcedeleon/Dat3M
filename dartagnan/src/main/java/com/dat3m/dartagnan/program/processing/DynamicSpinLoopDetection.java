@@ -86,6 +86,7 @@ public class DynamicSpinLoopDetection implements ProgramProcessor {
             }
         } while ((cur = cur.getSuccessor()) != loop.getEnd().getSuccessor());
 
+        // Every live register that is written to is a potential local side effect.
         loop.writtenLiveRegisters.addAll(Sets.intersection(
                 writtenRegisters,
                 liveRegsAna.getLiveRegistersAt(loop.getStart())
