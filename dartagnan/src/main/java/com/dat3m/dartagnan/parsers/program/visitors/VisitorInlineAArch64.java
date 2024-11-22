@@ -12,6 +12,8 @@ import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.Type;
 import com.dat3m.dartagnan.expression.integers.IntCmpOp;
+import com.dat3m.dartagnan.expression.type.AggregateType;
+import com.dat3m.dartagnan.expression.type.BooleanType;
 import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.parsers.InlineAArch64BaseVisitor;
@@ -83,7 +85,7 @@ public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
         this.pendingRegisters = new LinkedList<>();
         this.armToLlvmMap = new HashMap<>();
         this.fnParameters = reverseAndGetFnParams(llvmFunction.getParameterRegisters()); // these hold the original fn arguments
-        this.returnValuesNumber = countReturnValues(returnType);
+        this.returnValuesNumber = initReturnValuesNumberInitReturnRegisterTypes(returnType);
         assert (this.returnValuesNumber >= 0);
         populateRegisters(armToLlvmMap);
     }
@@ -129,21 +131,20 @@ public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
     }
 
     //these are used to populate the armToLlvmMap
-    private int countReturnValues(Type returnType) {
-        if (returnType == null) { //its a void fn
-            return 0;
-        }
-        String str = returnType.toString();
-        if (str.equals("bv32") || str.equals("bv64")) {
-            String[] singleton = {str};
+    private int initReturnValuesNumberInitReturnRegisterTypes(Type returnType) {
+        if (returnType instanceof IntegerType || returnType instanceof BooleanType) {
+            String[] singleton = {returnType.toString()};
             this.returnRegisterTypes = singleton;
             return 1;
-        } else if (str.startsWith("{") && str.endsWith("}")) {
-            String content = str.substring(1, str.length() - 1).trim(); // Remove curly braces
-            this.returnRegisterTypes = content.split(","); // Split by commas
-            return this.returnRegisterTypes.length;
+        } else if (returnType instanceof AggregateType at) {
+            String str = at.toString();
+            this.returnRegisterTypes = str.substring(1, str.length() - 1).trim().split(",");
+            return at.getTypeOffsets().size();
+        } else if (returnType == null) {
+            return 0;
+        } else {
+            return -1;
         }
-        return -1;
     }
 
     private Type getTypeGivenReturnTypeString(String typeString) {
@@ -262,23 +263,25 @@ public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
             return this.nameToRegisterMap.get(nodeName);
         } else {
             Type type = getArmVariableSize(nodeName);
+            // Register toBeName = this.armToLlvmMap.get(nodeName);
             Register newRegister = llvmFunction.newRegister(type);
             this.nameToRegisterMap.put(nodeName, newRegister);
-            Expression assignment;
             if (isPartOfReturnRegister(nodeName)) {
                 this.armToLlvmMap.put(nodeName, newRegister);
-                int number = Integer.parseInt(Character.toString(nodeName.charAt(2)));
-                assignment = expressions.makeExtract(number, returnRegister);
+                // int number = Integer.parseInt(Character.toString(nodeName.charAt(2)));
+                // assignment = expressions.makeExtract(number, returnRegister); // no need to initialize returnRegister at start
                 this.pendingRegisters.add(newRegister);
             } else {
-                assignment = this.armToLlvmMap.get(nodeName);
+                Expression assignment = this.armToLlvmMap.get(nodeName);
+                if (this.returnRegister == null || !((Register) assignment).equals(this.returnRegister)) {
+                    events.add(EventFactory.newLocal(newRegister, assignment));
+                }
             }
-            events.add(EventFactory.newLocal(newRegister, assignment));
             return newRegister;
         }
     }
 
-    private String cleanLabel(String label){
+    private String cleanLabel(String label) {
         return label.replaceAll("(\\d)[a-z]", "$1");
     }
 
@@ -387,7 +390,7 @@ public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
         Register registerLlvm = getOrNewRegister(ctx.VariableInline().getText());
         this.comparator.updateCompareExpression(registerLlvm, IntCmpOp.NEQ, this.comparator.zeroRegister);
         String cleanedLabelName = cleanLabel(ctx.LabelReference().getText());
-        Label label = getOrNewLabel(cleanedLabelName); 
+        Label label = getOrNewLabel(cleanedLabelName);
         events.add(EventFactory.newJump(this.comparator.compareExpression, label));
         return visitChildren(ctx);
     }
@@ -435,10 +438,11 @@ public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
                 typesList.add(((Register) r).getType());
             }
             Type aggregateType = types.getAggregateType(typesList);
-            Register returnRegisterMapper = llvmFunction.newRegister(aggregateType);
+            // Register returnRegisterMapper = llvmFunction.newRegister(aggregateType);
             Expression finalAssignExpression = expressions.makeConstruct(aggregateType, this.pendingRegisters);
-            events.add(EventFactory.newLocal(returnRegisterMapper, finalAssignExpression));
-            events.add(EventFactory.newLocal(this.returnRegister, returnRegisterMapper));
+            // events.add(EventFactory.newLocal(returnRegisterMapper, finalAssignExpression));
+            // events.add(EventFactory.newLocal(this.returnRegister, returnRegisterMapper));
+            events.add(EventFactory.newLocal(this.returnRegister, finalAssignExpression));
         }
         return visitChildren(ctx);
     }
@@ -464,7 +468,6 @@ public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
     //     events.add(EventFactory.newLocal(this.returnRegister, dummyZero));
     //     return visitChildren(ctx);
     // }
-
     // @Override
     // public Object visitCompareAndSwap(InlineAArch64Parser.CompareAndSwapContext ctx) {
     //     Register toRegister = getOrNewRegister(ctx.VariableInline(0).getText());
@@ -485,7 +488,6 @@ public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
     //     events.add(customLabel);
     //     return visitChildren(ctx);
     // }
-
     // @Override
     // public Object visitCompareAndSwapAcquire(InlineAArch64Parser.CompareAndSwapAcquireContext ctx) {
     //     Register toRegister = getOrNewRegister(ctx.VariableInline(0).getText());
