@@ -12,21 +12,34 @@ import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
-public class RangeIdentityGraph extends MaterializedGraph {
+public class ProjectionIdentityGraph extends MaterializedGraph {
+
+    public enum Dimension {
+        DOMAIN,
+        RANGE
+    }
 
     private final RelationGraph inner;
+    private final Dimension dimension;
 
     @Override
     public List<RelationGraph> getDependencies() {
         return List.of(inner);
     }
 
-    public RangeIdentityGraph(RelationGraph inner) {
+    public Dimension getProjectionDimension() { return dimension; }
+
+    public ProjectionIdentityGraph(RelationGraph inner, Dimension dimension) {
         this.inner = inner;
+        this.dimension = dimension;
     }
 
     private Edge derive(Edge e) {
-        return new Edge(e.getSecond(), e.getSecond(), e.getTime(), e.getDerivationLength() + 1);
+        int id = switch (this.dimension) {
+            case RANGE -> e.getSecond();
+            case DOMAIN -> e.getFirst();
+        };
+        return new Edge(id, id, e.getTime(), e.getDerivationLength() + 1);
     }
 
     @Override
@@ -50,7 +63,7 @@ public class RangeIdentityGraph extends MaterializedGraph {
 
     @Override
     public <TRet, TData, TContext> TRet accept(PredicateVisitor<TRet, TData, TContext> visitor, TData data, TContext context) {
-        return visitor.visitRangeIdentity(this, data, context);
+        return visitor.visitProjectionIdentity(this, data, context);
     }
 
 }

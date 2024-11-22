@@ -8,6 +8,7 @@ import com.dat3m.dartagnan.solver.caat.predicates.Derivable;
 import com.dat3m.dartagnan.solver.caat.predicates.misc.PredicateVisitor;
 import com.dat3m.dartagnan.solver.caat.predicates.relationGraphs.Edge;
 import com.dat3m.dartagnan.solver.caat.predicates.relationGraphs.RelationGraph;
+import com.dat3m.dartagnan.solver.caat.predicates.relationGraphs.derived.ProjectionIdentityGraph;
 import com.dat3m.dartagnan.solver.caat.predicates.sets.Element;
 import com.dat3m.dartagnan.solver.caat.predicates.sets.SetPredicate;
 import com.dat3m.dartagnan.utils.logic.Conjunction;
@@ -220,19 +221,24 @@ public class Reasoner {
         }
 
         @Override
-        public Conjunction<CAATLiteral> visitRangeIdentity(RelationGraph graph, Edge edge, Void unused) {
+        public Conjunction<CAATLiteral> visitProjectionIdentity(RelationGraph graph, Edge edge, Void unused) {
             assert edge.isLoop();
 
             RelationGraph inner = (RelationGraph) graph.getDependencies().get(0);
-            for (Edge inEdge : inner.inEdges(edge.getSecond())) {
+            ProjectionIdentityGraph.Dimension dim = ((ProjectionIdentityGraph)graph).getProjectionDimension();
+            Iterable<Edge> edges = switch (dim) {
+                case RANGE -> inner.inEdges(edge.getSecond());
+                case DOMAIN -> inner.outEdges(edge.getFirst());
+            };
+            for (Edge e : edges) {
                 // We use the first edge we find
-                if (inEdge.getDerivationLength() < edge.getDerivationLength()) {
-                    Conjunction<CAATLiteral> reason = computeReason(inner, inEdge);
+                if (e.getDerivationLength() < edge.getDerivationLength()) {
+                    Conjunction<CAATLiteral> reason = computeReason(inner, e);
                     assert !reason.isFalse();
                     return reason;
                 }
             }
-            throw new IllegalStateException("RangeIdentityGraph: No matching edge is found");
+            throw new IllegalStateException("ProjectionIdentityGraph: No matching edge is found");
         }
 
         @Override
