@@ -382,7 +382,7 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
             //TODO add support form inline assembly
             //FIXME ignore side effects of inline assembly
             if (resultRegister != null) {
-                block.events.add(newLocal(resultRegister, program.newConstant(returnType)));
+                // block.events.add(newLocal(resultRegister, program.newConstant(returnType)));
                 logger.warn(String.format("Interpreting inline assembly as an unconstrained value:  %s.", ctx.inlineAsm().getText()));
                 List<Event> events = inlineAArch64Wrapper(ctx.inlineAsm().StringLit(0).getText()+ ","+ ctx.inlineAsm().StringLit(1).getText(), this.function, resultRegister, returnType);
                 if(!events.isEmpty()){
