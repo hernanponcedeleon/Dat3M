@@ -1,7 +1,6 @@
 package com.dat3m.dartagnan.program.processing;
 
 import com.dat3m.dartagnan.expression.Expression;
-import com.dat3m.dartagnan.expression.booleans.BoolLiteral;
 import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.Tag;
@@ -63,7 +62,7 @@ public class Simplifier implements FunctionProcessor {
         final Label jumpTarget = jump.getLabel();
         final Event successor = jump.getSuccessor();
         final Expression guard = jump.getGuard();
-        if(jumpTarget.equals(successor) && guard instanceof BoolLiteral) {
+        if(jumpTarget.equals(successor) && guard.getRegs().isEmpty()) {
             return jump.tryDelete();
         }
         return false;

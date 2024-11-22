@@ -144,7 +144,7 @@ public class LoopUnrolling implements ProgramProcessor {
                 curBoundAnnotation = boundAnnotation;
             } else if (event instanceof Label label) {
                 final Optional<CondJump> backjump = label.getJumpSet().stream()
-                        .filter(j -> j.getLocalId() > label.getLocalId()).findFirst();
+                        .filter(IRHelper::isBackJump).findFirst();
                 final boolean isLoop = backjump.isPresent();
 
                 if (isLoop) {
@@ -171,7 +171,7 @@ public class LoopUnrolling implements ProgramProcessor {
     private void unrollLoop(CondJump loopBackJump, int bound) {
         final Label loopBegin = loopBackJump.getLabel();
         Preconditions.checkArgument(bound >= 1, "Positive unrolling bound expected.");
-        Preconditions.checkArgument(loopBegin.getLocalId() < loopBackJump.getLocalId(),
+        Preconditions.checkArgument(IRHelper.isBackJump(loopBackJump),
                 "The jump does not belong to a loop.");
 
         int iterCounter = 0;

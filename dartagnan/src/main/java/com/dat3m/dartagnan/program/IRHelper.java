@@ -115,4 +115,8 @@ public class IRHelper {
         }
         return registerMap;
     }
+
+    public static boolean isBackJump(CondJump jump) {
+        return jump.getLocalId() > jump.getLabel().getLocalId();
+    }
 }
