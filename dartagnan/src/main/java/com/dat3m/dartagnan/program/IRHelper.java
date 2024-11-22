@@ -3,7 +3,6 @@ package com.dat3m.dartagnan.program;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.booleans.BoolLiteral;
 import com.dat3m.dartagnan.expression.processing.ExprTransformer;
-import com.dat3m.dartagnan.expression.processing.ExpressionInspector;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.EventUser;
 import com.dat3m.dartagnan.program.event.RegReader;
@@ -12,8 +11,6 @@ import com.dat3m.dartagnan.program.event.core.CondJump;
 import com.dat3m.dartagnan.program.event.functions.AbortIf;
 import com.dat3m.dartagnan.program.event.functions.Return;
 import com.dat3m.dartagnan.program.event.lang.llvm.LlvmCmpXchg;
-import com.dat3m.dartagnan.program.memory.MemoryObject;
-import com.dat3m.dartagnan.program.misc.NonDetValue;
 import com.google.common.base.Preconditions;
 
 import java.util.*;
@@ -105,47 +102,12 @@ public class IRHelper {
         return copyEvents(getEventsFromTo(from, to, false), regReplacement, copyContext);
     }
 
-    public static Set<Register> collectWrittenRegisters(Collection<? extends Event> events) {
-        final Set<Register> regs = new HashSet<>();
-        events.stream().filter(RegWriter.class::isInstance).map(RegWriter.class::cast)
-                .forEach(writer -> regs.add(writer.getResultRegister()));
-        return regs;
-    }
-
-    public static Set<MemoryObject> collectMemoryObjects(Collection<? extends Event> events) {
-        final Set<MemoryObject> set = new HashSet<>();
-        final ExpressionInspector collector = new ExpressionInspector() {
-            @Override
-            public Expression visitMemoryObject(MemoryObject memObj) {
-                set.add(memObj);
-                return memObj;
-            }
-        };
-        events.stream().filter(RegReader.class::isInstance).map(RegReader.class::cast)
-                .forEach(reader -> reader.transformExpressions(collector));
-        return set;
-    }
-
-    public static Set<NonDetValue> collectProgramConstants(Collection<? extends Event> events) {
-        final Set<NonDetValue> set = new HashSet<>();
-        final ExpressionInspector collector = new ExpressionInspector() {
-            @Override
-            public Expression visitNonDetValue(NonDetValue nonDet) {
-                set.add(nonDet);
-                return nonDet;
-            }
-        };
-        events.stream().filter(RegReader.class::isInstance).map(RegReader.class::cast)
-                .forEach(reader -> reader.transformExpressions(collector));
-        return set;
-    }
-
     public static Map<Register, Register> copyOverRegisters(Iterable<Register> toCopy, Function target,
-                                                            java.util.function.Function<Register, String> registerNames,
+                                                            java.util.function.Function<Register, String> registerRename,
                                                             boolean guaranteeFreshRegisters) {
         final Map<Register, Register> registerMap = new HashMap<>();
         for (Register reg : toCopy) {
-            final String name = registerNames.apply(reg);
+            final String name = registerRename.apply(reg);
             final Register copiedReg = guaranteeFreshRegisters ?
                     target.newRegister(name, reg.getType())
                     : target.getOrNewRegister(name, reg.getType());
