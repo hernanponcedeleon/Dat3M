@@ -110,7 +110,6 @@ public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
         int width = - 1;
         if (variable.length() == 2) {
             return this.fnParameters.get(0).getType(); // get type of $n, which is fnParams(0)
-            // width = 32; 
         } else if (variable.startsWith("${") && variable.endsWith("}")) {
             if (isPartOfReturnRegister(variable)) {
                 int number = Integer.parseInt(Character.toString(variable.charAt(2)));
@@ -263,8 +262,8 @@ public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
             return this.nameToRegisterMap.get(nodeName);
         } else {
             Type type = getArmVariableSize(nodeName);
-            // Register toBeName = this.armToLlvmMap.get(nodeName);
-            Register newRegister = llvmFunction.newRegister(type);
+            String registerName = makeRegisterName(nodeName);
+            Register newRegister = llvmFunction.newRegister(registerName, type);
             this.nameToRegisterMap.put(nodeName, newRegister);
             if (isPartOfReturnRegister(nodeName)) {
                 this.armToLlvmMap.put(nodeName, newRegister);
@@ -279,6 +278,17 @@ public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
             }
             return newRegister;
         }
+    }
+
+    private String makeRegisterName(String nodeName) {
+        Register llvmName = this.armToLlvmMap.get(nodeName);
+        if (llvmName == null) {
+            // we're in a returnRegister I think
+            String regName = this.returnRegister.getName();
+            int number = Integer.parseInt(Character.toString(nodeName.charAt(2)));
+            return regName + "[" + number + "]_Inner";
+        }
+        return llvmName.getName() + "_Inner";
     }
 
     private String cleanLabel(String label) {
