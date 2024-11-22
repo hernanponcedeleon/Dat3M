@@ -93,11 +93,24 @@ public class VisitorOpsBits extends SpirvBaseVisitor<Event> {
             Local event = EventFactory.newLocal(register, f.apply(bType));
             return builder.addEvent(event);
         }
+        Register register = builder.addRegister(id, "%uint");
+        Local event = EventFactory.newLocal(register, expressions.makeZero((IntegerType) builder.getType("%uint")));
+        return event;
+        /*
         if (type instanceof ArrayType) {
             throw new ParsingException("Unsupported result type for '%s', " +
                     "vector types are not supported", id);
         }
-        throw new ParsingException("Illegal result type for '%s'", id);
+        throw new ParsingException("Illegal result type for '%s'", id); */
+    }
+
+    @Override
+    public Event visitOpCompositeExtract(SpirvParser.OpCompositeExtractContext ctx) {
+        String id = ctx.idResult().getText();
+        Register register = builder.addRegister(id, "%uint");
+        builder.addExpression(id, register);
+        Local event = EventFactory.newLocal(register, expressions.makeZero((IntegerType) builder.getType("%uint")));
+        return event;
     }
 
     private Expression getOperandInteger(String id, String opId) {
@@ -116,7 +129,8 @@ public class VisitorOpsBits extends SpirvBaseVisitor<Event> {
                 "opShiftRightArithmetic",
                 "OpBitwiseAnd",
                 "OpBitwiseOr",
-                "OpBitwiseXor"
+                "OpBitwiseXor",
+                "OpCompositeExtract"
         );
     }
 }
