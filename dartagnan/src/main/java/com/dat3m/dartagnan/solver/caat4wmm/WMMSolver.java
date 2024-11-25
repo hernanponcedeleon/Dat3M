@@ -35,7 +35,7 @@ public class WMMSolver {
     }
 
     public static WMMSolver withContext(RefinementModel refinementModel, EncodingContext context,
-        Context analysisContext, Configuration config) throws InvalidConfigurationException {
+            Context analysisContext, Configuration config) throws InvalidConfigurationException {
         final var solver = new WMMSolver(refinementModel, analysisContext, ExecutionModel.withContext(context));
         config.inject(solver.reasoner);
         return solver;
