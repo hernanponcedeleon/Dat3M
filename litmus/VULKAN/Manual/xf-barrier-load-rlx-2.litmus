@@ -11,7 +11,7 @@ f1=0; f2=0;
  LC00:                            | LC10:                            | cbar.acq_rel.wg.semsc0 10        | cbar.acq_rel.wg.semsc0 10        | cbar.acq_rel.wg.semsc0 20        | cbar.acq_rel.wg.semsc0 20        ;
  ld.atom.acq.dv.sc0.semsc0 r9, f1 | ld.atom.acq.dv.sc0.semsc0 r9, f2 | st.atom.rel.dv.sc0.semsc0 f1, 1  | cbar.acq_rel.wg.semsc0 11        | st.atom.rel.dv.sc0.semsc0 f2, 1  | cbar.acq_rel.wg.semsc0 21        ;
  bne r9, 0, LC01                  | bne r9, 0, LC11                  | LC20:                            | ld.vis.dv.sc0 r0, x0             | LC40:                            | ld.vis.dv.sc0 r0, x0             ;
- goto LC00                        | goto LC10                        | ld.atom.dv.sc0.semsc0 r9, f1     | ld.vis.dv.sc0 r1, x1             | ld.atom.dv.sc0.semsc0 r9, f2     | ld.vis.dv.sc0 r1, x1             ;
+ goto LC00                        | goto LC10                        | ld.atom.dv.sc0 r9, f1            | ld.vis.dv.sc0 r1, x1             | ld.atom.dv.sc0 r9, f2            | ld.vis.dv.sc0 r1, x1             ;
  LC01:                            | LC11:                            | bne r9, 1, LC21                  | ld.vis.dv.sc0 r2, x2             | bne r9, 1, LC41                  | ld.vis.dv.sc0 r2, x2             ;
  cbar.acq_rel.wg.semsc0 00        | cbar.acq_rel.wg.semsc0 00        | goto LC20                        | ld.vis.dv.sc0 r3, x3             | goto LC40                        | ld.vis.dv.sc0 r3, x3             ;
  st.atom.rel.dv.sc0.semsc0 f1, 0  | st.atom.rel.dv.sc0.semsc0 f2, 0  | LC21:                            | ld.vis.dv.sc0 r4, x4             | LC41:                            | ld.vis.dv.sc0 r4, x4             ;

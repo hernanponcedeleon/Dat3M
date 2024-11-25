@@ -23,14 +23,14 @@ public class HelperTags {
         for (int i = 1; i <= value; i <<= 1) {
             if ((i & value) > 0) {
                 if (!semantics.containsKey(i)) {
-                    throw new ParsingException("Unexpected memory semantics bits");
+                    throw new ParsingException("Illegal memory semantics '%s': unexpected bits", value);
                 }
                 tags.add(semantics.get(i));
             }
         }
         int moSize = Sets.intersection(moTags, tags).size();
         if (moSize > 1) {
-            throw new ParsingException("Selected multiple non-relaxed memory order bits");
+            throw new ParsingException("Illegal memory semantics '%s': multiple non-relaxed memory order bits", value);
         }
         if (moSize == 0) {
             tags.add(RELAXED);
@@ -59,8 +59,12 @@ public class HelperTags {
         if (i != paramsValues.size()) {
             throwIllegalParametersException(operands);
         }
+        if (!tagSet.contains(MEM_NON_PRIVATE) && (tagSet.contains(Tag.Spirv.MEM_AVAILABLE) || tagSet.contains(MEM_VISIBLE))) {
+            throw new ParsingException("Missing NonPrivatePointer bit in memory operands '%s'",
+                    String.join("|", operands));
+        }
         // TODO: Implementation: this is a legal combination for OpCopyMemory and OpCopyMemorySized
-        if (tagSet.contains(Tag.Spirv.MEM_VISIBLE) && tagSet.contains(Tag.Spirv.MEM_AVAILABLE)) {
+        if (tagSet.contains(MEM_AVAILABLE) && tagSet.contains(MEM_VISIBLE)) {
             throw new ParsingException("Unsupported combination of memory operands '%s'",
                     String.join("|", operands));
         }

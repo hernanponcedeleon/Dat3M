@@ -28,13 +28,14 @@ public class VisitorOpsBarrier extends SpirvBaseVisitor<Event> {
 
     @Override
     public Event visitOpControlBarrier(SpirvParser.OpControlBarrierContext ctx) {
-        if (!ctx.execution().getText().equals(ctx.memory().getText())) {
-            throw new ParsingException("Unequal scopes in OpControlBarrier are not supported");
+        String execScope = getScopeTag(ctx.execution().getText());
+        if (!Tag.Spirv.WORKGROUP.equals(execScope)) {
+            throw new ParsingException("Control barrier with execution scope other than workgroup is not supported");
         }
         Expression barrierId = expressions.makeValue(nextBarrierId++, archType);
         Event barrier = EventFactory.newControlBarrier("cbar", barrierId);
         barrier.addTags(Tag.Spirv.CONTROL);
-        barrier.addTags(getScopeTag(ctx.execution().getText()));
+        barrier.addTags(getScopeTag(ctx.memory().getText()));
         Set<String> tags = getMemorySemanticsTags(ctx.semantics().getText());
         if (Set.of(Tag.Spirv.RELAXED).equals(tags)) {
             barrier.removeTags(Tag.FENCE);

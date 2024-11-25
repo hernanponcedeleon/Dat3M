@@ -55,7 +55,7 @@
                            %c0 = OpConstant %uint 0
                            %c1 = OpConstant %uint 1
                            %c2 = OpConstant %uint 2
-                          %c64 = OpConstant %uint 64
+                          %c68 = OpConstant %uint 68
                          %init = OpConstant %uint 999
                        %v3init = OpConstantComposite %v3uint %init %init %init
 
@@ -83,7 +83,7 @@
                         %label = OpLabel
 
 %in_SubgroupLocalInvocationId = OpLoad %uint %gl_SubgroupLocalInvocationId
-                                 OpAtomicStore %out_SubgroupLocalInvocationId %c1 %c64 %in_SubgroupLocalInvocationId
+                                 OpAtomicStore %out_SubgroupLocalInvocationId %c1 %c68 %in_SubgroupLocalInvocationId
 
     %in0_ptr_LocalInvocationId = OpAccessChain %ptr_uint %gl_LocalInvocationId %c0
     %in1_ptr_LocalInvocationId = OpAccessChain %ptr_uint %gl_LocalInvocationId %c1
@@ -94,12 +94,12 @@
    %out0_ptr_LocalInvocationId = OpAccessChain %ptr_uint %out_LocalInvocationId %c0
    %out1_ptr_LocalInvocationId = OpAccessChain %ptr_uint %out_LocalInvocationId %c1
    %out2_ptr_LocalInvocationId = OpAccessChain %ptr_uint %out_LocalInvocationId %c2
-                                 OpAtomicStore %out0_ptr_LocalInvocationId %c1 %c64 %v0_LocalInvocationId
-                                 OpAtomicStore %out1_ptr_LocalInvocationId %c1 %c64 %v1_LocalInvocationId
-                                 OpAtomicStore %out2_ptr_LocalInvocationId %c1 %c64 %v2_LocalInvocationId
+                                 OpAtomicStore %out0_ptr_LocalInvocationId %c1 %c68 %v0_LocalInvocationId
+                                 OpAtomicStore %out1_ptr_LocalInvocationId %c1 %c68 %v1_LocalInvocationId
+                                 OpAtomicStore %out2_ptr_LocalInvocationId %c1 %c68 %v2_LocalInvocationId
 
       %in_LocalInvocationIndex = OpLoad %uint %gl_LocalInvocationIndex
-                                 OpAtomicStore %out_LocalInvocationIndex %c1 %c64 %in_LocalInvocationIndex
+                                 OpAtomicStore %out_LocalInvocationIndex %c1 %c68 %in_LocalInvocationIndex
 
    %in0_ptr_GlobalInvocationId = OpAccessChain %ptr_uint %gl_GlobalInvocationId %c0
    %in1_ptr_GlobalInvocationId = OpAccessChain %ptr_uint %gl_GlobalInvocationId %c1
@@ -110,15 +110,15 @@
   %out0_ptr_GlobalInvocationId = OpAccessChain %ptr_uint %out_GlobalInvocationId %c0
   %out1_ptr_GlobalInvocationId = OpAccessChain %ptr_uint %out_GlobalInvocationId %c1
   %out2_ptr_GlobalInvocationId = OpAccessChain %ptr_uint %out_GlobalInvocationId %c2
-                                 OpAtomicStore %out0_ptr_GlobalInvocationId %c1 %c64 %v0_GlobalInvocationId
-                                 OpAtomicStore %out1_ptr_GlobalInvocationId %c1 %c64 %v1_GlobalInvocationId
-                                 OpAtomicStore %out2_ptr_GlobalInvocationId %c1 %c64 %v2_GlobalInvocationId
+                                 OpAtomicStore %out0_ptr_GlobalInvocationId %c1 %c68 %v0_GlobalInvocationId
+                                 OpAtomicStore %out1_ptr_GlobalInvocationId %c1 %c68 %v1_GlobalInvocationId
+                                 OpAtomicStore %out2_ptr_GlobalInvocationId %c1 %c68 %v2_GlobalInvocationId
 
                %in_DeviceIndex = OpLoad %uint %gl_DeviceIndex
-                                 OpAtomicStore %out_DeviceIndex %c1 %c64 %in_DeviceIndex
+                                 OpAtomicStore %out_DeviceIndex %c1 %c68 %in_DeviceIndex
 
                 %in_SubgroupId = OpLoad %uint %gl_SubgroupId
-                                 OpAtomicStore %out_SubgroupId %c1 %c64 %in_SubgroupId
+                                 OpAtomicStore %out_SubgroupId %c1 %c68 %in_SubgroupId
 
           %in0_ptr_WorkgroupId = OpAccessChain %ptr_uint %gl_WorkgroupId %c0
           %in1_ptr_WorkgroupId = OpAccessChain %ptr_uint %gl_WorkgroupId %c1
@@ -129,12 +129,12 @@
          %out0_ptr_WorkgroupId = OpAccessChain %ptr_uint %out_WorkgroupId %c0
          %out1_ptr_WorkgroupId = OpAccessChain %ptr_uint %out_WorkgroupId %c1
          %out2_ptr_WorkgroupId = OpAccessChain %ptr_uint %out_WorkgroupId %c2
-                                 OpAtomicStore %out0_ptr_WorkgroupId %c1 %c64 %v0_WorkgroupId
-                                 OpAtomicStore %out1_ptr_WorkgroupId %c1 %c64 %v1_WorkgroupId
-                                 OpAtomicStore %out2_ptr_WorkgroupId %c1 %c64 %v2_WorkgroupId
+                                 OpAtomicStore %out0_ptr_WorkgroupId %c1 %c68 %v0_WorkgroupId
+                                 OpAtomicStore %out1_ptr_WorkgroupId %c1 %c68 %v1_WorkgroupId
+                                 OpAtomicStore %out2_ptr_WorkgroupId %c1 %c68 %v2_WorkgroupId
 
               %in_SubgroupSize = OpLoad %uint %gl_SubgroupSize
-                                 OpAtomicStore %out_SubgroupSize %c1 %c64 %in_SubgroupSize
+                                 OpAtomicStore %out_SubgroupSize %c1 %c68 %in_SubgroupSize
 
         %in0_ptr_WorkgroupSize = OpAccessChain %ptr_uint %gl_WorkgroupSize %c0
         %in1_ptr_WorkgroupSize = OpAccessChain %ptr_uint %gl_WorkgroupSize %c1
@@ -145,9 +145,9 @@
        %out0_ptr_WorkgroupSize = OpAccessChain %ptr_uint %out_WorkgroupSize %c0
        %out1_ptr_WorkgroupSize = OpAccessChain %ptr_uint %out_WorkgroupSize %c1
        %out2_ptr_WorkgroupSize = OpAccessChain %ptr_uint %out_WorkgroupSize %c2
-                                 OpAtomicStore %out0_ptr_WorkgroupSize %c1 %c64 %v0_WorkgroupSize
-                                 OpAtomicStore %out1_ptr_WorkgroupSize %c1 %c64 %v1_WorkgroupSize
-                                 OpAtomicStore %out2_ptr_WorkgroupSize %c1 %c64 %v2_WorkgroupSize
+                                 OpAtomicStore %out0_ptr_WorkgroupSize %c1 %c68 %v0_WorkgroupSize
+                                 OpAtomicStore %out1_ptr_WorkgroupSize %c1 %c68 %v1_WorkgroupSize
+                                 OpAtomicStore %out2_ptr_WorkgroupSize %c1 %c68 %v2_WorkgroupSize
 
                                  OpReturn
                                  OpFunctionEnd

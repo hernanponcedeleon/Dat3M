@@ -72,7 +72,7 @@ class VisitorCat extends CatBaseVisitor<Object> {
             final CatParser parser = getParser(CharStreams.fromPath(Path.of(GlobalSettings.getCatDirectory() + "/stdlib.cat")));
             parser.mcm().accept(this);
         } catch (IOException e) {
-            throw new ParsingException("Error parsing stdlib.cat file", e);
+            throw new ParsingException(e, "Error parsing stdlib.cat file");
         }
     }
 
@@ -107,7 +107,7 @@ class VisitorCat extends CatBaseVisitor<Object> {
             final CatParser parser = getParser(CharStreams.fromPath(filePath));
             return parser.mcm().accept(this);
         } catch (IOException e) {
-            throw new ParsingException(String.format("Error parsing file '%s'", filePath), e);
+            throw new ParsingException(e, String.format("Error parsing file '%s'", filePath));
         }
     }
 
