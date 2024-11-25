@@ -1,6 +1,5 @@
 package com.dat3m.dartagnan.verification.model;
 
-import com.dat3m.dartagnan.encoding.EncodingContext;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
@@ -9,10 +8,6 @@ import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.verification.model.event.*;
 import com.dat3m.dartagnan.verification.model.relation.RelationModel;
 import com.dat3m.dartagnan.wmm.Relation;
-import com.dat3m.dartagnan.wmm.Wmm;
-import org.sosy_lab.java_smt.api.BooleanFormula;
-import org.sosy_lab.java_smt.api.Formula;
-import org.sosy_lab.java_smt.api.Model;
 
 import java.math.BigInteger;
 import java.util.*;
@@ -22,13 +17,9 @@ import static com.google.common.base.Preconditions.checkNotNull;
 
 // This is a new implementation of ExecutionModel which serves as the data structure
 // representing an execution in Dartagnan. It contains instances of EventModel for events
-// and RelationModel for relations. It holds the information that has the same name and
-// format as the old ExecutionModel so that it can replace the old one easily for CAAT also.
-// It is used only by ExecutionGraphVisualizer so far.
+// and RelationModel for relations. It is used only by ExecutionGraphVisualizer so far.
 public class ExecutionModelNext {
-    private final EncodingContext encodingContext;
-    private Model model;
-    private ExecutionModelManager manager;
+    private final ExecutionModelManager manager;
 
     private final List<Thread> threadList;
     private final List<EventModel> eventList;
@@ -68,12 +59,12 @@ public class ExecutionModelNext {
     private Map<StoreModel, Set<LoadModel>> writeReadsMapView;
     private Map<BigInteger, List<StoreModel>> coherenceMapView;
 
-    ExecutionModelNext(EncodingContext encodingContext) {
-        this.encodingContext = checkNotNull(encodingContext);
+    ExecutionModelNext(ExecutionModelManager manager) {
+        this.manager = manager;
 
-        threadList = new ArrayList<>(getProgram().getThreads().size());
+        threadList = new ArrayList<>();
         eventList = new ArrayList<>();
-        threadEventsMap = new HashMap<>(getProgram().getThreads().size() * 4 / 3, 0.75f);
+        threadEventsMap = new HashMap<>();
         eventMap = new HashMap<>();
         relationMap = new HashMap<>();
         relationNameMap = new HashMap<>();
@@ -111,33 +102,6 @@ public class ExecutionModelNext {
         readWriteMapView = Collections.unmodifiableMap(readWriteMap);
         writeReadsMapView = Collections.unmodifiableMap(writeReadsMap);
         coherenceMapView = Collections.unmodifiableMap(coherenceMap);
-    }
-
-    void clear() {
-        threadList.clear();
-        eventList.clear();
-        threadEventsMap.clear();
-        eventMap.clear();
-        relationMap.clear();
-        relationNameMap.clear();
-        memoryLayoutMap.clear();
-        addressReadsMap.clear();
-        addressWritesMap.clear();
-        addressAccessesMap.clear();
-        addressInitMap.clear();
-        fenceMap.clear();
-        atomicBlocksMap.clear();
-        readWriteMap.clear();
-        writeReadsMap.clear();
-        coherenceMap.clear();
-    }
-
-    void setModel(Model model) {
-        this.model = model;
-    }
-
-    void setManager(ExecutionModelManager manager) {
-        this.manager = manager;
     }
 
     public void addThreadEvents(Thread thread, List<EventModel> events) {
@@ -208,24 +172,8 @@ public class ExecutionModelNext {
         coherenceMap.put(address, writes);
     }
 
-    public EncodingContext getEncodingContext() {
-        return encodingContext;
-    }
-
     public ExecutionModelManager getManager() {
         return manager;
-    }
-
-    public EncodingContext getContext() {
-        return encodingContext;
-    }
-
-    public Program getProgram() {
-        return encodingContext.getTask().getProgram();
-    }
-
-    public Wmm getMemoryModel() {
-        return encodingContext.getTask().getMemoryModel();
     }
 
     public List<Thread> getThreads() {
@@ -280,13 +228,5 @@ public class ExecutionModelNext {
 
     public Map<Thread, List<List<EventModel>>> getAtomicBlocksMap() {
         return atomicBlocksMapView;
-    }
-
-    public boolean isTrue(BooleanFormula formula) {
-        return Boolean.TRUE.equals(model.evaluate(formula));
-    }
-
-    public Object evaluateByModel(Formula formula) {
-        return model.evaluate(formula);
     }
 }

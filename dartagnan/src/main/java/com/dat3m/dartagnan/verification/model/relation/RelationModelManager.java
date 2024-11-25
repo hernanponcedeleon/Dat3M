@@ -15,6 +15,7 @@ import com.dat3m.dartagnan.solver.caat.predicates.relationGraphs.Edge;
 import com.dat3m.dartagnan.solver.caat.predicates.relationGraphs.RelationGraph;
 import com.dat3m.dartagnan.solver.caat4wmm.EventDomainNext;
 import com.dat3m.dartagnan.utils.dependable.DependencyGraph;
+import com.dat3m.dartagnan.verification.model.ExecutionModelManager;
 import com.dat3m.dartagnan.verification.model.ExecutionModelNext;
 import com.dat3m.dartagnan.verification.model.event.*;
 import com.dat3m.dartagnan.verification.model.relation.RelationModel.EdgeModel;
@@ -22,6 +23,7 @@ import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
 import com.dat3m.dartagnan.wmm.Constraint.Visitor;
 import com.dat3m.dartagnan.wmm.definition.*;
 import com.dat3m.dartagnan.wmm.Relation;
+import com.dat3m.dartagnan.wmm.Wmm;
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
 import com.google.common.collect.Lists;
@@ -39,33 +41,33 @@ public class RelationModelManager {
 
     private static final Logger logger = LogManager.getLogger(RelationModelManager.class);
 
-    private final EncodingContext encodingContext;
-    private final ExecutionModelNext executionModel;
-    private final BaseRelationGraphPopulator graphPopulator;
+    private final ExecutionModelManager manager;
     private final RelationGraphBuilder graphBuilder;
+    private final RelationGraphPopulator graphPopulator;
 
     private final Map<Relation, RelationModel> relModelCache;
     private final BiMap<Relation, RelationGraph> relGraphCache;
     private final Map<String, EdgeModel> edgeModelCache;
 
-    private final EventDomainNext domain;
+    private EncodingContext context;
+    private Wmm wmm;
+    private ExecutionModelNext executionModel;
+    private EventDomainNext domain;
 
-    private RelationModelManager(ExecutionModelNext m) {
-        executionModel = m;
-        encodingContext = m.getContext();
-        graphPopulator = new BaseRelationGraphPopulator();
+    public RelationModelManager(ExecutionModelManager manager) {
+        this.manager = manager;
         graphBuilder = new RelationGraphBuilder();
+        graphPopulator = new RelationGraphPopulator();
         relModelCache = new HashMap<>();
         relGraphCache = HashBiMap.create();
         edgeModelCache = new HashMap<>();
-        domain = new EventDomainNext(m);
     }
 
-    public static RelationModelManager newRMManager(ExecutionModelNext m) {
-        return new RelationModelManager(m);
-    }
-
-    public void initialize() {
+    public void buildRelationModels(ExecutionModelNext executionModel, EncodingContext context) {
+        this.executionModel = executionModel;
+        this.context = context;
+        this.wmm = context.getTask().getMemoryModel();
+        this.domain = new EventDomainNext(executionModel);
         relModelCache.clear();
         relGraphCache.clear();
         edgeModelCache.clear();
@@ -75,7 +77,7 @@ public class RelationModelManager {
     public void extractRelations(List<String> relationNames) {
         Set<Relation> relsToExtract = new HashSet<>();
         for (String name : relationNames) {
-            Relation r = executionModel.getMemoryModel().getRelation(name);
+            Relation r = wmm.getRelation(name);
             if (r == null) {
                 logger.warn("Relation with the name {} does not exist", name);
                 continue;
@@ -189,7 +191,7 @@ public class RelationModelManager {
 
     // Usage: Populate graph of the base relations with instances of the Edge class
     // based on the information from ExecutionModelNext.
-    private final class BaseRelationGraphPopulator implements Visitor<Void> {
+    private final class RelationGraphPopulator implements Visitor<Void> {
 
         @Override
         public Void visitProgramOrder(ProgramOrder po) {
@@ -207,22 +209,21 @@ public class RelationModelManager {
 
         @Override
         public Void visitCoherence(Coherence coherence) {
-            SimpleGraph rg = (SimpleGraph) relGraphCache.get(coherence.getDefinedRelation());
-            EncodingContext.EdgeEncoder co = encodingContext.edge(
-                executionModel.getMemoryModel().getRelation(CO)
-            );
+            Relation relation = coherence.getDefinedRelation();
+            SimpleGraph rg = (SimpleGraph) relGraphCache.get(relation);
+            EncodingContext.EdgeEncoder co = context.edge(relation);
 
             for (Map.Entry<BigInteger, Set<StoreModel>> entry : executionModel.getAddressWritesMap()
                                                                               .entrySet()) {
                 BigInteger address = entry.getKey();
                 Set<StoreModel> writes = entry.getValue();
                 List<StoreModel> coSortedWrites;
-                if (encodingContext.usesSATEncoding()) {
+                if (context.usesSATEncoding()) {
                     Map<StoreModel, List<StoreModel>> coEdges = new HashMap<>();
                     for (StoreModel w1 : writes) {
                         coEdges.put(w1, new ArrayList<>());
                         for (StoreModel w2 : writes) {
-                            if (executionModel.isTrue(co.encode(w1.getEvent(), w2.getEvent()))) {
+                            if (manager.isTrue(co.encode(w1.getEvent(), w2.getEvent()))) {
                                 coEdges.get(w1).add(w2);
                             }
                         }
@@ -234,8 +235,8 @@ public class RelationModelManager {
                         writes.size() * 4 / 3, 0.75f
                     );
                     for (StoreModel w : writes) {
-                        writeClockMap.put(w, (BigInteger) executionModel.evaluateByModel(
-                            encodingContext.memoryOrderClock(w.getEvent())
+                        writeClockMap.put(w, (BigInteger) manager.evaluateByModel(
+                            context.memoryOrderClock(w.getEvent())
                         ));
                     }
                     coSortedWrites = writes.stream()
@@ -258,10 +259,9 @@ public class RelationModelManager {
 
         @Override
         public Void visitReadFrom(ReadFrom readFrom) {
-            SimpleGraph rg = (SimpleGraph) relGraphCache.get(readFrom.getDefinedRelation());
-            EncodingContext.EdgeEncoder rf = encodingContext.edge(
-                executionModel.getMemoryModel().getRelation(RF)
-            );
+            Relation relation = readFrom.getDefinedRelation();
+            SimpleGraph rg = (SimpleGraph) relGraphCache.get(relation);
+            EncodingContext.EdgeEncoder rf = context.edge(relation);
 
             for (Map.Entry<BigInteger, Set<LoadModel>> reads : executionModel.getAddressReadsMap()
                                                                              .entrySet()) {
@@ -269,7 +269,7 @@ public class RelationModelManager {
                 for (LoadModel read : reads.getValue()) {
                     for (StoreModel write : executionModel.getAddressWritesMap().get(address)) {
                         BooleanFormula isRF = rf.encode(write.getEvent(), read.getEvent());
-                        if (executionModel.isTrue(isRF)) {
+                        if (manager.isTrue(isRF)) {
                             rg.add(new Edge(write.getId(), read.getId()));
                             executionModel.addReadWrite(read, write);
                             executionModel.addWriteRead(write, read);
@@ -496,8 +496,8 @@ public class RelationModelManager {
 
         public void populateDynamicDefaultGraph(Relation r) {
             SimpleGraph rg = (SimpleGraph) relGraphCache.get(r);
-            EncodingContext.EdgeEncoder edge = encodingContext.edge(r);
-            RelationAnalysis.Knowledge k = encodingContext.getAnalysisContext()
+            EncodingContext.EdgeEncoder edge = context.edge(r);
+            RelationAnalysis.Knowledge k = context.getAnalysisContext()
                                                                   .get(RelationAnalysis.class)
                                                                   .getKnowledge(r);
             
@@ -506,7 +506,7 @@ public class RelationModelManager {
                     EventModel em1 = executionModel.getEventModelByEvent(e1);
                     EventModel em2 = executionModel.getEventModelByEvent(e2);
                     if (em1 != null && em2 != null) {
-                        if (executionModel.isTrue(edge.encode(e1, e2))) {
+                        if (manager.isTrue(edge.encode(e1, e2))) {
                             rg.add(new Edge(em1.getId(), em2.getId()));
                         }
                     }
@@ -514,7 +514,7 @@ public class RelationModelManager {
             } else {
                 for (EventModel em1 : executionModel.getEventList()) {
                     for (EventModel em2 : executionModel.getEventList()) {
-                        if (executionModel.isTrue(edge.encode(em1.getEvent(), em2.getEvent()))) {
+                        if (manager.isTrue(edge.encode(em1.getEvent(), em2.getEvent()))) {
                             rg.add(new Edge(em1.getId(), em2.getId()));
                         }
                     }

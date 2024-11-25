@@ -7,6 +7,7 @@ import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.event.lang.svcomp.BeginAtomic;
 import com.dat3m.dartagnan.program.event.lang.svcomp.EndAtomic;
 import com.dat3m.dartagnan.program.filter.Filter;
+import com.dat3m.dartagnan.verification.model.ExecutionModelManager;
 import com.dat3m.dartagnan.verification.model.ExecutionModelNext;
 
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -17,25 +18,21 @@ import java.util.*;
 
 
 public class EventModelManager {
-    private final ExecutionModelNext executionModel;
+    private final ExecutionModelManager manager;
     private final Map<Event, EventModel> eventCache;
 
+    private ExecutionModelNext executionModel;
+    private EncodingContext context;
     private Filter eventFilter;
 
-    private EventModelManager(ExecutionModelNext executionModel) {
-        this.executionModel = checkNotNull(executionModel);
+    public EventModelManager(ExecutionModelManager manager) {
+        this.manager = manager;
         eventCache = new HashMap<>();
     }
 
-    public static EventModelManager newEMManager(ExecutionModelNext executionModel) {
-        return new EventModelManager(executionModel);
-    }
-
-    public EncodingContext getEncodingContext() {
-        return executionModel.getEncodingContext();
-    }
-
-    public void initialize() {
+    public void buildEventModels(ExecutionModelNext executionModel, EncodingContext context) {
+        this.executionModel = executionModel;
+        this.context = context;
         eventCache.clear();
         eventFilter = Filter.byTag(Tag.VISIBLE);
         extractEvents();
@@ -43,7 +40,7 @@ public class EventModelManager {
 
     private void extractEvents() {
         int id = 0;
-        List<Thread> threadList = new ArrayList<>(executionModel.getProgram().getThreads());
+        List<Thread> threadList = new ArrayList<>(context.getTask().getProgram().getThreads());
 
         for (Thread t : threadList) {
             int localId = 0;
@@ -53,7 +50,7 @@ public class EventModelManager {
             Event e = t.getEntry();
 
             do {
-                if (!executionModel.isTrue(getEncodingContext().execution(e))) {
+                if (!manager.isTrue(context.execution(e))) {
                     e = e.getSuccessor();
                     continue;
                 }
@@ -72,7 +69,7 @@ public class EventModelManager {
                 }
 
                 if (e instanceof CondJump jump
-                    && executionModel.isTrue(getEncodingContext().jumpCondition(jump))
+                    && manager.isTrue(context.jumpCondition(jump))
                 ) {
                     e = jump.getLabel();
                 } else {
@@ -118,7 +115,7 @@ public class EventModelManager {
         em.setLocalId(localId);
         if (e instanceof CondJump) {
             em.setWasExecuted(
-                executionModel.isTrue(getEncodingContext().jumpCondition((CondJump) e))
+                manager.isTrue(context.jumpCondition((CondJump) e))
             );
         } else { em.setWasExecuted(true); }
         eventCache.put(e, em);
@@ -130,7 +127,7 @@ public class EventModelManager {
         EventModel em;
         if (e.hasTag(Tag.MEMORY)) {
             Object addressObj = checkNotNull(
-                executionModel.evaluateByModel(getEncodingContext().address((MemoryEvent) e))
+                manager.evaluateByModel(context.address((MemoryEvent) e))
             );
             BigInteger address = new BigInteger(addressObj.toString());
             executionModel.addAccessedAddress(address);
@@ -152,9 +149,7 @@ public class EventModelManager {
 
             if (em.isRead() || em.isWrite()) {
                 String valueString = String.valueOf(
-                    executionModel.evaluateByModel(
-                        getEncodingContext().value((MemoryCoreEvent) e)
-                    )
+                    manager.evaluateByModel(context.value((MemoryCoreEvent) e))
                 );
                 BigInteger value = switch(valueString) {
                     // NULL case can happen if the solver optimized away a variable.

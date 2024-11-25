@@ -89,6 +89,8 @@ public class RefinementSolver extends ModelChecker {
     private static final String FRE = "fre";
     private static final String POLOC = "po-loc";
 
+    private final ExecutionModelManager nextModelManager = new ExecutionModelManager();
+
     private EncodingContext contextWithFullWmm;
 
     // ================================================================================================================
@@ -216,7 +218,6 @@ public class RefinementSolver extends ModelChecker {
 
         // Encoding context with the original Wmm and the analysis for relation extraction.
         contextWithFullWmm = EncodingContext.of(task, analysisContext, ctx.getFormulaManager());
-        final ExecutionModelManager manager = ExecutionModelManager.newManager(contextWithFullWmm);
 
         //  ------- Generate refinement model -------
         final RefinementModel refinementModel = generateRefinementModel(memoryModel);
@@ -263,7 +264,7 @@ public class RefinementSolver extends ModelChecker {
         prover.writeComment("Property encoding");
         prover.addConstraint(propertyEncoder.encodeProperties(task.getProperty()));
 
-        final RefinementTrace propertyTrace = runRefinement(task, prover, solver, refiner, manager);
+        final RefinementTrace propertyTrace = runRefinement(task, prover, solver, refiner);
         SMTStatus smtStatus = propertyTrace.getFinalResult();
 
         if (smtStatus == SMTStatus.UNKNOWN) {
@@ -298,7 +299,7 @@ public class RefinementSolver extends ModelChecker {
             // Add back the refinement clauses we already found, hoping that this improves the performance.
             prover.writeComment("Refinement encoding");
             prover.addConstraint(bmgr.and(propertyTrace.getRefinementFormulas()));
-            final RefinementTrace boundTrace = runRefinement(task, prover, solver, refiner, manager);
+            final RefinementTrace boundTrace = runRefinement(task, prover, solver, refiner);
             boundCheckTime = System.currentTimeMillis() - lastTime;
 
             smtStatus = boundTrace.getFinalResult();
@@ -388,7 +389,7 @@ public class RefinementSolver extends ModelChecker {
     // Refinement core algorithm
 
     // TODO: We could expose the following method(s) to allow for more general application of refinement.
-    private RefinementTrace runRefinement(VerificationTask task, ProverWithTracker prover, WMMSolver solver, Refiner refiner, ExecutionModelManager manager)
+    private RefinementTrace runRefinement(VerificationTask task, ProverWithTracker prover, WMMSolver solver, Refiner refiner)
             throws SolverException, InterruptedException {
 
         final List<RefinementIteration> trace = new ArrayList<>();
@@ -401,7 +402,7 @@ public class RefinementSolver extends ModelChecker {
 
             // ------------------------- Debugging/Logging -------------------------
             if (generateGraphvizDebugFiles) {
-                generateGraphvizFiles(task, manager.initializeModel(prover.getModel()), trace.size(), iteration.inconsistencyReasons);
+                generateGraphvizFiles(task, nextModelManager.buildExecutionModel(contextWithFullWmm, prover.getModel()), trace.size(), iteration.inconsistencyReasons);
             }
             if (logger.isDebugEnabled()) {
                 // ---- Internal SMT stats after the first iteration ----

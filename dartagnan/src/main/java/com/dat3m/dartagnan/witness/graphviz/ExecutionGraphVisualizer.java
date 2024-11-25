@@ -89,7 +89,7 @@ public class ExecutionGraphVisualizer {
     private ExecutionGraphVisualizer setRelationsToShow(ExecutionModelNext model)
         throws InvalidConfigurationException
     {
-        model.getEncodingContext().getTask().getConfig().inject(this);
+        model.getManager().getContext().getTask().getConfig().inject(this);
         if (relToShowStr.equals("default")) {
             relToShow = new HashSet<>(Set.of(PO, RF, CO, "fr"));
         }

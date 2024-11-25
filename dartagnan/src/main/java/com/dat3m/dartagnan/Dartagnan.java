@@ -233,8 +233,8 @@ public class Dartagnan extends BaseOptions {
 
         final EncodingContext encodingContext = modelChecker instanceof RefinementSolver refinementSolver ?
             refinementSolver.getContextWithFullWmm() : modelChecker.getEncodingContext();
-        final ExecutionModelNext m = ExecutionModelManager.newManager(encodingContext)
-                                                          .initializeModel(prover.getModel());
+        final ExecutionModelManager manager = new ExecutionModelManager();
+        final ExecutionModelNext m = manager.buildExecutionModel(encodingContext, prover.getModel());
         final SyntacticContextAnalysis synContext = newInstance(task.getProgram());
         final String progName = task.getProgram().getName();
         final int fileSuffixIndex = progName.lastIndexOf('.');
