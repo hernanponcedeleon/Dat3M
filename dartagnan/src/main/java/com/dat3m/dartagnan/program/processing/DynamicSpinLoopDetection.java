@@ -33,6 +33,26 @@ import java.util.Set;
     This pass instruments loops that do not cause a side effect in an iteration to terminate, i.e., to avoid spinning.
     In other words, only the last loop iteration is allowed to be side-effect free.
 
+    Instrumentation:
+        loop_header:
+            __localLiveSnapshot <- ( <list of writable live registers> )  // To track local side effects
+            __globalSideEffect  <- false                                  // To track global side effects
+            // ---------- Loop body ----------
+            ...
+            __globalSideEffect <- true  // Store is a guaranteed global effect
+            store(...)
+            ...
+            // ---------- Backjump ----------
+            // Local side effect if value of any live register changed.
+            __localSideEffect <- __localLiveSnapshot != ( <list of writable live registers> )
+            if (!(__localSideEffect || __globalSideEffect)) goto END_OF_T ### SPINLOOP
+            goto loop_header
+
+    NOTE: "<list of writable live registers>" refers to those registers
+           (1) that are live inside or after the loop
+       and (2) that are potentially written to inside the loop (i.e. are not invariant).
+
+
     NOTE: This pass is required to detect liveness violations.
  */
 public class DynamicSpinLoopDetection implements ProgramProcessor {
@@ -158,7 +178,7 @@ public class DynamicSpinLoopDetection implements ProgramProcessor {
 
     private AnalysisStats collectStats(List<LoopData> loops) {
         int numStaticSpinLoops = Math.toIntExact(loops.stream().filter(LoopData::isSideEffectFree).count());
-        return new AnalysisStats( numStaticSpinLoops);
+        return new AnalysisStats(numStaticSpinLoops);
     }
 
     // ==================================================================================================
