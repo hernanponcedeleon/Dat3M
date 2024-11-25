@@ -40,30 +40,31 @@ instr
 ;
 
 // rules divised like this in order to generate single visitors
-loadReg : (LoadReg VariableInline)Comma ConstantInline;
-loadAcquireReg : (LoadAcquireReg VariableInline)Comma ConstantInline;
-loadExclusiveReg : (LoadExclusiveReg VariableInline)Comma ConstantInline;
-loadAcquireExclusiveReg : (LoadAcquireExclusiveReg VariableInline)Comma ConstantInline;
-add : ((Add VariableInline)Comma VariableInline)Comma VariableInline;
-storeReg : (StoreReg VariableInline)Comma ConstantInline;
-storeReleaseReg : (StoreReleaseReg VariableInline)Comma ConstantInline;
-storeExclusiveRegister : ((StoreExclusiveRegister VariableInline)Comma VariableInline)Comma ConstantInline ;
-storeReleaseExclusiveReg : ((StoreReleaseExclusiveReg VariableInline)Comma VariableInline)Comma ConstantInline;
-atomicAddDoubleWordRelease : (AtomicAddDoubleWordRelease VariableInline)Comma ConstantInline;
+loadReg : (LoadReg register)Comma register;
+// register : register | ConstantInline;
+loadAcquireReg : (LoadAcquireReg register)Comma register;
+loadExclusiveReg : (LoadExclusiveReg register)Comma register;
+loadAcquireExclusiveReg : (LoadAcquireExclusiveReg register)Comma register;
+add : ((Add register)Comma register)Comma register;
+storeReg : (StoreReg register)Comma register;
+storeReleaseReg : (StoreReleaseReg register)Comma register;
+storeExclusiveRegister : ((StoreExclusiveRegister register)Comma register)Comma register ;
+storeReleaseExclusiveReg : ((StoreReleaseExclusiveReg register)Comma register)Comma register;
+atomicAddDoubleWordRelease : (AtomicAddDoubleWordRelease register)Comma register;
 dataMemoryBarrier : DataMemoryBarrier DataMemoryBarrierOpt; //atm it is catched by the visitorLlvm so it should not be mandatory
-swapWordAcquire : ((SwapWordAcquire VariableInline)Comma VariableInline)Comma ConstantInline;
-compare : (Compare VariableInline)Comma VariableInline;
-compareBranchNonZero : (CompareBranchNonZero VariableInline)Comma LabelReference;
-compareAndSwap : ((CompareAndSwap VariableInline)Comma VariableInline)Comma ConstantInline;
-compareAndSwapAcquire :((CompareAndSwapAcquire VariableInline)Comma VariableInline)Comma ConstantInline;
-move : (Move VariableInline)Comma VariableInline;
+swapWordAcquire : ((SwapWordAcquire register)Comma register)Comma register;
+compare : (Compare register)Comma register;
+compareBranchNonZero : (CompareBranchNonZero register)Comma LabelReference;
+compareAndSwap : ((CompareAndSwap register)Comma register)Comma register;
+compareAndSwapAcquire :((CompareAndSwapAcquire register)Comma register)Comma register;
+move : (Move register)Comma register;
 branchEqual : BranchEqual LabelReference;
 branchNotEqual : BranchNotEqual LabelReference;
 setEventLocally : SetEventLocally;
 waitForEvent : WaitForEvent;
 labelDefinition : LabelDefinition;
 alignInline : AlignInline;
-prefetchMemory : (PrefetchMemory PrefetchStoreL1Once)Comma ConstantInline;
+prefetchMemory : (PrefetchMemory PrefetchStoreL1Once)Comma register;
 yieldtask : YieldTask;
 
 
@@ -79,3 +80,4 @@ clobber : Tilde LBrace clobberType RBrace;
 
 clobberType : ClobberMemory | ClobberModifyFlags | ClobberDirectionFlag | ClobberFlags | ClobberFloatPntStatusReg;
 
+register : VariableInline | ConstantInline;

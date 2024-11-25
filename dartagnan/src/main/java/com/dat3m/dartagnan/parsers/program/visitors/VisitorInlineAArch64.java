@@ -32,11 +32,9 @@ public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
         public Expression compareExpression;
         public Register firstRegister;
         public Expression secondRegister;
-        public boolean storeSucceeded; // holds 0 if last store was successful
         public Expression zeroRegister; // used to have register with value 0
 
         public CompareExpression() {
-            this.storeSucceeded = false;
             this.zeroRegister = expressions.parseValue("0", integerType);
         }
 
@@ -46,9 +44,6 @@ public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
             this.compareExpression = expressions.makeIntCmp(firstRegister, intCmpOp, secondRegister);
         }
 
-        public void updateLHSCompareExpression(Register lhs) {
-            this.firstRegister = lhs;
-        }
 
         public void updateCompareExpressionOperator(IntCmpOp intCmpOp) {
             this.compareExpression = expressions.makeIntCmp(this.firstRegister, intCmpOp, this.secondRegister);
@@ -59,7 +54,7 @@ public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
         // }
     }
 
-    private final List<Event> events = new ArrayList();
+    private final List<Event> events = new ArrayList<>();
     private final Function llvmFunction;
     private final Register returnRegister;
     private final ExpressionFactory expressions = ExpressionFactory.getInstance();
@@ -95,7 +90,7 @@ public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
             return fnParams;
         }
         Register firstElement = fnParams.get(0);
-        List<Register> res = new LinkedList(fnParams.subList(1, fnParams.size()));
+        List<Register> res = new LinkedList<>(fnParams.subList(1, fnParams.size()));
         Collections.reverse(res);
         res.add(0, firstElement);
         return res;
@@ -206,7 +201,7 @@ public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
                         }
                         Register tmp = getOrNewRegister(key);
                         if (i == 1 || i == 2) {
-                            events.add(EventFactory.newLocal(tmp, expressions.parseValue("0", integerType)));
+                            events.add(EventFactory.newLocal(tmp, expressions.parseValue("0", (IntegerType) type)));
                         }
                         if (i == 3) {
                             events.add(EventFactory.newLocal(tmp, this.fnParameters.get(1)));
@@ -219,7 +214,6 @@ public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
                     if (type.toString().equals("bv64")) {
                         key = key.replace("w", "x");
                     }
-                    System.out.println("Creating register with this one" + key);
                     Register tmp = getOrNewRegister(key); // avoid null registers in guard of comparison
                 }
             }
@@ -295,109 +289,106 @@ public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
         return label.replaceAll("(\\d)[a-z]", "$1");
     }
 
-    private void updateReturnRegisterIfModified(TerminalNode node) {
-        Register freshReturnRegister = getOrNewRegister(node.getText());
-        String llvmRegisterName = this.armToLlvmMap.get(node.getText()).getName();
-        if (this.returnValuesNumber == 1 && llvmRegisterName.equals(this.returnRegister.getName())) {
-            events.add(EventFactory.newLocal(this.returnRegister, freshReturnRegister));
+    private void updateReturnRegisterIfModified(Register register) {
+        String registerName = register.getName().split("_")[0];
+        if (this.returnValuesNumber == 1 && registerName.equals(this.returnRegister.getName())) {
+            events.add(EventFactory.newLocal(this.returnRegister, register));
         }
     }
 
     @Override
     public Object visitLoadReg(InlineAArch64Parser.LoadRegContext ctx) {
-        Register freshReturnRegister = getOrNewRegister(ctx.VariableInline().getText());
-        Register directMemoryAccess = getOrNewRegister(ctx.ConstantInline().getText());
+        Register freshReturnRegister = (Register) ctx.register(0).accept(this);
+        Register directMemoryAccess = (Register) ctx.register(1).accept(this);
+        System.out.println("Regs are " + freshReturnRegister + " and " + directMemoryAccess);
         events.add(EventFactory.newLoad(freshReturnRegister, directMemoryAccess));
-        updateReturnRegisterIfModified(ctx.VariableInline());
+        updateReturnRegisterIfModified(freshReturnRegister);
         return visitChildren(ctx);
     }
 
     @Override
     public Object visitLoadAcquireReg(InlineAArch64Parser.LoadAcquireRegContext ctx) {
-        Register freshReturnRegister = getOrNewRegister(ctx.VariableInline().getText());
-        Register directMemoryAccess = getOrNewRegister(ctx.ConstantInline().getText());
+        Register freshReturnRegister = (Register) ctx.register(0).accept(this);
+        Register directMemoryAccess = (Register) ctx.register(1).accept(this);
         events.add(EventFactory.newLoadWithMo(freshReturnRegister, directMemoryAccess, Tag.ARMv8.MO_ACQ));
-        updateReturnRegisterIfModified(ctx.VariableInline());
+        updateReturnRegisterIfModified(freshReturnRegister);
         return visitChildren(ctx);
     }
 
     @Override
     public Object visitLoadExclusiveReg(InlineAArch64Parser.LoadExclusiveRegContext ctx) {
-        Register freshReturnRegister = getOrNewRegister(ctx.VariableInline().getText());
-        Register directMemoryAccess = getOrNewRegister(ctx.ConstantInline().getText());
+        Register freshReturnRegister = (Register) ctx.register(0).accept(this);
+        Register directMemoryAccess = (Register) ctx.register(1).accept(this);
         events.add(EventFactory.newRMWLoadExclusive(freshReturnRegister, directMemoryAccess));
-        updateReturnRegisterIfModified(ctx.VariableInline());
+        updateReturnRegisterIfModified(freshReturnRegister);
         return visitChildren(ctx);
     }
 
     @Override
     public Object visitLoadAcquireExclusiveReg(InlineAArch64Parser.LoadAcquireExclusiveRegContext ctx) {
-        Register freshReturnRegister = getOrNewRegister(ctx.VariableInline().getText());
-        Register directMemoryAccess = getOrNewRegister(ctx.ConstantInline().getText());
+        Register freshReturnRegister = (Register) ctx.register(0).accept(this);
+        Register directMemoryAccess = (Register) ctx.register(1).accept(this);
         events.add(EventFactory.newRMWLoadExclusiveWithMo(freshReturnRegister, directMemoryAccess, Tag.ARMv8.MO_ACQ));
-        updateReturnRegisterIfModified(ctx.VariableInline());
+        updateReturnRegisterIfModified(freshReturnRegister);
         return visitChildren(ctx);
     }
 
     @Override
     public Object visitAdd(InlineAArch64Parser.AddContext ctx) {
-        Register resultRegister = getOrNewRegister(ctx.VariableInline(0).getText());
-        Register leftRegister = getOrNewRegister(ctx.VariableInline(1).getText());
-        Register rightRegister = getOrNewRegister(ctx.VariableInline(2).getText());
+        Register resultRegister = (Register) ctx.register(0).accept(this);
+        Register leftRegister = (Register) ctx.register(1).accept(this);
+        Register rightRegister = (Register) ctx.register(2).accept(this);
         Expression exp = expressions.makeAdd(leftRegister, rightRegister);
-        updateReturnRegisterIfModified(ctx.VariableInline(0));
+        updateReturnRegisterIfModified(resultRegister);
         events.add(EventFactory.newLocal(resultRegister, exp));
         return visitChildren(ctx);
     }
 
     @Override
     public Object visitStoreReg(InlineAArch64Parser.StoreRegContext ctx) {
-        Register firstRegister = getOrNewRegister(ctx.VariableInline().getText());
-        Register secondRegister = getOrNewRegister(ctx.ConstantInline().getText());
+        Register firstRegister = (Register) ctx.register(0).accept(this);
+        Register secondRegister = (Register) ctx.register(1).accept(this);
         events.add(EventFactory.newStore(secondRegister, firstRegister));
         return visitChildren(ctx);
     }
 
     @Override
     public Object visitStoreReleaseReg(InlineAArch64Parser.StoreReleaseRegContext ctx) {
-        Register firstRegister = getOrNewRegister(ctx.VariableInline().getText());
-        Register secondRegister = getOrNewRegister(ctx.ConstantInline().getText());
+        Register firstRegister = (Register) ctx.register(0).accept(this);
+        Register secondRegister = (Register) ctx.register(1).accept(this);
         events.add(EventFactory.newStoreWithMo(secondRegister, firstRegister, Tag.ARMv8.MO_REL));
         return visitChildren(ctx);
     }
 
     @Override
     public Object visitStoreExclusiveRegister(InlineAArch64Parser.StoreExclusiveRegisterContext ctx) {
-        Register freshResultRegister = getOrNewRegister(ctx.VariableInline(0).getText());
-        // this.comparator.updateStoreSucceeded(freshResultRegister);
-        // this part is used for the store
-        Register firstRegister = getOrNewRegister(ctx.VariableInline(1).getText());
-        Register secondRegister = getOrNewRegister(ctx.ConstantInline().getText());
+        Register freshResultRegister = (Register) ctx.register(0).accept(this);
+        Register firstRegister = (Register) ctx.register(1).accept(this);
+        Register secondRegister = (Register) ctx.register(2).accept(this);
         events.add(EventFactory.Common.newExclusiveStore(freshResultRegister, secondRegister, firstRegister, Tag.ARMv8.MO_RX));
         return visitChildren(ctx);
     }
 
     @Override
     public Object visitStoreReleaseExclusiveReg(InlineAArch64Parser.StoreReleaseExclusiveRegContext ctx) {
-        Register freshResultRegister = getOrNewRegister(ctx.VariableInline(0).getText());
-        // this.comparator.updateStoreSucceeded(freshResultRegister);
-        Register firstRegister = getOrNewRegister(ctx.VariableInline(1).getText());
-        Register secondRegister = getOrNewRegister(ctx.ConstantInline().getText());
+        Register freshResultRegister = (Register) ctx.register(0).accept(this);
+        Register firstRegister = (Register) ctx.register(1).accept(this);
+        Register secondRegister = (Register) ctx.register(2).accept(this);
         events.add(EventFactory.Common.newExclusiveStore(freshResultRegister, secondRegister, firstRegister, Tag.ARMv8.MO_REL));
         return visitChildren(ctx);
     }
 
     @Override
     public Object visitCompare(InlineAArch64Parser.CompareContext ctx) {
-        Register firstRegister = getOrNewRegister(ctx.VariableInline(0).getText());
-        Register secondRegister = getOrNewRegister(ctx.VariableInline(1).getText());
+        Register firstRegister = (Register) ctx.register(0).accept(this);
+        Register secondRegister = (Register) ctx.register(1).accept(this);
         this.comparator.updateCompareExpression(firstRegister, IntCmpOp.EQ, secondRegister);
         return visitChildren(ctx);
     }
 
     @Override
     public Object visitCompareBranchNonZero(InlineAArch64Parser.CompareBranchNonZeroContext ctx) {
-        Register registerLlvm = getOrNewRegister(ctx.VariableInline().getText());
+        Register registerLlvm = (Register) ctx.register().accept(this);
         this.comparator.updateCompareExpression(registerLlvm, IntCmpOp.NEQ, this.comparator.zeroRegister);
         String cleanedLabelName = cleanLabel(ctx.LabelReference().getText());
         Label label = getOrNewLabel(cleanedLabelName);
@@ -407,10 +398,10 @@ public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
 
     @Override
     public Object visitMove(InlineAArch64Parser.MoveContext ctx) {
-        Register toRegister = getOrNewRegister(ctx.VariableInline(0).getText());
-        Register fromRegister = getOrNewRegister(ctx.VariableInline(1).getText());
+        Register toRegister = (Register) ctx.register(0).accept(this);
+        Register fromRegister = (Register) ctx.register(1).accept(this);
         events.add(EventFactory.newLocal(toRegister, fromRegister));
-        updateReturnRegisterIfModified(ctx.VariableInline(0));
+        updateReturnRegisterIfModified(toRegister);
         return visitChildren(ctx);
     }
 
@@ -450,13 +441,16 @@ public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
             Type aggregateType = types.getAggregateType(typesList);
             // Register returnRegisterMapper = llvmFunction.newRegister(aggregateType);
             Expression finalAssignExpression = expressions.makeConstruct(aggregateType, this.pendingRegisters);
-            // events.add(EventFactory.newLocal(returnRegisterMapper, finalAssignExpression));
-            // events.add(EventFactory.newLocal(this.returnRegister, returnRegisterMapper));
             events.add(EventFactory.newLocal(this.returnRegister, finalAssignExpression));
         }
         return visitChildren(ctx);
     }
 
+    @Override
+    public Object visitRegister(InlineAArch64Parser.RegisterContext ctx) {
+        TerminalNode register = ctx.VariableInline() != null ? ctx.VariableInline() : ctx.ConstantInline();
+        return getOrNewRegister(register.getText());
+    }
     // apple generated code 
     // @Override
     // public Object visitSwapWordAcquire(InlineAArch64Parser.SwapWordAcquireContext ctx) {
@@ -474,7 +468,7 @@ public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
     //     // String newValueRegister = ctx.VariableInline(1).getText(); // is not needed because we have returnRegister. It is a corner case
     //     // Register newValueRegisterLlvm = this.armToLlvmMap.getLlvmRegister(newValueRegister); 
     //     events.add(EventFactory.newRMWLoadWithMo(dummyZero, dummyTwo, mo));
-    //     events.add(EventFactory.newStore(dummyTwo, dummyOne)); // TODO it is a null pointer for store ttaslockApple test
+    //     events.add(EventFactory.newStore(dummyTwo, dummyOne)); // null
     //     events.add(EventFactory.newLocal(this.returnRegister, dummyZero));
     //     return visitChildren(ctx);
     // }
