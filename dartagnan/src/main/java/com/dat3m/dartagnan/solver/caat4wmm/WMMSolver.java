@@ -9,8 +9,6 @@ import com.dat3m.dartagnan.utils.logic.Conjunction;
 import com.dat3m.dartagnan.utils.logic.DNF;
 import com.dat3m.dartagnan.verification.Context;
 import com.dat3m.dartagnan.verification.model.ExecutionModel;
-import com.dat3m.dartagnan.verification.model.ExecutionModelManager;
-import com.dat3m.dartagnan.verification.model.ExecutionModelNext;
 import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
@@ -25,37 +23,26 @@ public class WMMSolver {
 
     private final ExecutionGraph executionGraph;
     private final ExecutionModel executionModel;
-    private final ExecutionModelNext nextModel;
-    private final ExecutionModelManager manager;
     private final CAATSolver solver;
     private final CoreReasoner reasoner;
 
-    private WMMSolver(RefinementModel refinementModel, Context analysisContext, ExecutionModelManager m) {
+    private WMMSolver(RefinementModel refinementModel, Context analysisContext, ExecutionModel m) {
         final RelationAnalysis ra = analysisContext.requires(RelationAnalysis.class);
         this.executionGraph = new ExecutionGraph(refinementModel, ra);
-        this.executionModel = m.getOldModel();
-        this.nextModel = m.getExecutionModel();
-        this.manager = m;
+        this.executionModel = m;
         this.reasoner = new CoreReasoner(analysisContext, executionGraph);
         this.solver = CAATSolver.create();
     }
 
     public static WMMSolver withContext(RefinementModel refinementModel, EncodingContext context,
-        EncodingContext contextWithFullWmm, Context analysisContext, Configuration config)
-        throws InvalidConfigurationException {
-        ExecutionModelManager manager = ExecutionModelManager.newManager(context);
-        manager.setContextWithFullWmm(contextWithFullWmm);
-        final var solver = new WMMSolver(refinementModel, analysisContext, manager);
+        Context analysisContext, Configuration config) throws InvalidConfigurationException {
+        final var solver = new WMMSolver(refinementModel, analysisContext, ExecutionModel.withContext(context));
         config.inject(solver.reasoner);
         return solver;
     }
 
     public ExecutionModel getExecution() {
         return executionModel;
-    }
-
-    public ExecutionModelNext getNextModel() {
-        return nextModel;
     }
 
     public ExecutionGraph getExecutionGraph() {
@@ -65,7 +52,7 @@ public class WMMSolver {
     public Result check(Model model) {
         // ============ Extract ExecutionModel ==============
         long curTime = System.currentTimeMillis();
-        manager.initializeModel(model);
+        executionModel.initialize(model);
         executionGraph.initializeFromModel(executionModel);
         long extractTime = System.currentTimeMillis() - curTime;
 

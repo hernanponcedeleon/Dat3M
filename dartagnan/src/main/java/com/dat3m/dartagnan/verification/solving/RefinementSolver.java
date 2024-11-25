@@ -29,9 +29,9 @@ import com.dat3m.dartagnan.verification.Context;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.verification.model.EventData;
 import com.dat3m.dartagnan.verification.model.ExecutionModel;
+import com.dat3m.dartagnan.verification.model.ExecutionModelManager;
 import com.dat3m.dartagnan.verification.model.ExecutionModelNext;
 import com.dat3m.dartagnan.verification.model.event.EventModel;
-import com.dat3m.dartagnan.verification.model.event.MemoryEventModel;
 import com.dat3m.dartagnan.wmm.Constraint;
 import com.dat3m.dartagnan.wmm.Definition;
 import com.dat3m.dartagnan.wmm.Relation;
@@ -88,6 +88,8 @@ public class RefinementSolver extends ModelChecker {
     private static final String COE = "coe";
     private static final String FRE = "fre";
     private static final String POLOC = "po-loc";
+
+    private EncodingContext contextWithFullWmm;
 
     // ================================================================================================================
     // Configuration
@@ -172,6 +174,10 @@ public class RefinementSolver extends ModelChecker {
     private RefinementSolver() {
     }
 
+    public EncodingContext getContextWithFullWmm() {
+        return contextWithFullWmm;
+    }
+
     //TODO: We do not yet use Witness information. The problem is that WitnessGraph.encode() generates
     // constraints on hb, which is not encoded in Refinement.
     //TODO (2): Add possibility for Refinement to handle CAT-properties (it ignores them for now).
@@ -208,11 +214,9 @@ public class RefinementSolver extends ModelChecker {
         Context baselineContext = Context.createCopyFrom(analysisContext);
         performStaticWmmAnalyses(task, analysisContext, config);
 
-        // Encoding context with the original Wmm for relation extraction.
-        EncodingContext contextWithFullWmm = EncodingContext.of(
-            task, analysisContext, ctx.getFormulaManager()
-        );
-        setContextWithFullWmm(contextWithFullWmm);
+        // Encoding context with the original Wmm and the analysis for relation extraction.
+        contextWithFullWmm = EncodingContext.of(task, analysisContext, ctx.getFormulaManager());
+        final ExecutionModelManager manager = ExecutionModelManager.newManager(contextWithFullWmm);
 
         //  ------- Generate refinement model -------
         final RefinementModel refinementModel = generateRefinementModel(memoryModel);
@@ -239,7 +243,7 @@ public class RefinementSolver extends ModelChecker {
         final WmmEncoder baselineEncoder = WmmEncoder.withContext(context);
 
         final BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
-        final WMMSolver solver = WMMSolver.withContext(refinementModel, context, contextWithFullWmm, analysisContext, config);
+        final WMMSolver solver = WMMSolver.withContext(refinementModel, context, analysisContext, config);
         final Refiner refiner = new Refiner(refinementModel);
         final Property.Type propertyType = Property.getCombinedType(task.getProperty(), task);
 
@@ -259,7 +263,7 @@ public class RefinementSolver extends ModelChecker {
         prover.writeComment("Property encoding");
         prover.addConstraint(propertyEncoder.encodeProperties(task.getProperty()));
 
-        final RefinementTrace propertyTrace = runRefinement(task, prover, solver, refiner);
+        final RefinementTrace propertyTrace = runRefinement(task, prover, solver, refiner, manager);
         SMTStatus smtStatus = propertyTrace.getFinalResult();
 
         if (smtStatus == SMTStatus.UNKNOWN) {
@@ -294,7 +298,7 @@ public class RefinementSolver extends ModelChecker {
             // Add back the refinement clauses we already found, hoping that this improves the performance.
             prover.writeComment("Refinement encoding");
             prover.addConstraint(bmgr.and(propertyTrace.getRefinementFormulas()));
-            final RefinementTrace boundTrace = runRefinement(task, prover, solver, refiner);
+            final RefinementTrace boundTrace = runRefinement(task, prover, solver, refiner, manager);
             boundCheckTime = System.currentTimeMillis() - lastTime;
 
             smtStatus = boundTrace.getFinalResult();
@@ -384,7 +388,7 @@ public class RefinementSolver extends ModelChecker {
     // Refinement core algorithm
 
     // TODO: We could expose the following method(s) to allow for more general application of refinement.
-    private RefinementTrace runRefinement(VerificationTask task, ProverWithTracker prover, WMMSolver solver, Refiner refiner)
+    private RefinementTrace runRefinement(VerificationTask task, ProverWithTracker prover, WMMSolver solver, Refiner refiner, ExecutionModelManager manager)
             throws SolverException, InterruptedException {
 
         final List<RefinementIteration> trace = new ArrayList<>();
@@ -397,7 +401,7 @@ public class RefinementSolver extends ModelChecker {
 
             // ------------------------- Debugging/Logging -------------------------
             if (generateGraphvizDebugFiles) {
-                generateGraphvizFiles(task, solver.getNextModel(), trace.size(), iteration.inconsistencyReasons);
+                generateGraphvizFiles(task, manager.initializeModel(prover.getModel()), trace.size(), iteration.inconsistencyReasons);
             }
             if (logger.isDebugEnabled()) {
                 // ---- Internal SMT stats after the first iteration ----

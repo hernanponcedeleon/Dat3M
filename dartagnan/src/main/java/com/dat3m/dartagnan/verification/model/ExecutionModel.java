@@ -273,15 +273,7 @@ public class ExecutionModel {
                     e = e.getSuccessor();
                     continue;
                 }
-                // In the new model we extract visible events, Locals and Asserts to show them in the
-                // witness, and extract also CondJumps for tracking internal dependencies. For consistency
-                // of the view of events which infects the derived relation computation by CAAT, we need 
-                // to extract the same events here in the old model.
-                if (eventFilter.apply(e)
-                    || e instanceof Local
-                    || e instanceof Assert
-                    || e instanceof CondJump
-                ) {
+                if (eventFilter.apply(e)) {
                     addEvent(e, id++, localId++);
                 }
                 trackDependencies(e);

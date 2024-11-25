@@ -16,15 +16,10 @@ public class ExecutionModelManager {
     private final EventModelManager eMManager;
     private final RelationModelManager rMManager;
 
-    private final ExecutionModel oldModel; // old one for CAAT use
-
     private ExecutionModelManager(EncodingContext encodingContext) throws InvalidConfigurationException {
         executionModel = new ExecutionModelNext(encodingContext);
-
-        oldModel = ExecutionModel.withContext(encodingContext);
-
         eMManager = EventModelManager.newEMManager(executionModel);
-        rMManager = RelationModelManager.newRMManager(executionModel, oldModel);
+        rMManager = RelationModelManager.newRMManager(executionModel);
     }
 
     public static ExecutionModelManager newManager(EncodingContext encodingContext)
@@ -37,17 +32,7 @@ public class ExecutionModelManager {
         return executionModel;
     }
 
-    public ExecutionModel getOldModel() {
-        return oldModel;
-    }
-
-    public void setContextWithFullWmm(EncodingContext context) {
-        executionModel.setContextWithFullWmm(context);
-    }
-
     public ExecutionModelNext initializeModel(Model model) {
-        oldModel.initialize(model);
-
         executionModel.clear();
         executionModel.setModel(model);
         eMManager.initialize();

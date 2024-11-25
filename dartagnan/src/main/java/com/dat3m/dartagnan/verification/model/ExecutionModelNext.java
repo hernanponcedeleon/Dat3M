@@ -28,8 +28,6 @@ import static com.google.common.base.Preconditions.checkNotNull;
 public class ExecutionModelNext {
     private final EncodingContext encodingContext;
     private Model model;
-    // This context is needed for extraction of relations when RefinementSolver being used.
-    private EncodingContext contextWithFullWmm;
     private ExecutionModelManager manager;
 
     private final List<Thread> threadList;
@@ -138,10 +136,6 @@ public class ExecutionModelNext {
         this.model = model;
     }
 
-    void setContextWithFullWmm(EncodingContext context) {
-        contextWithFullWmm = context;
-    }
-
     void setManager(ExecutionModelManager manager) {
         this.manager = manager;
     }
@@ -222,10 +216,7 @@ public class ExecutionModelNext {
         return manager;
     }
 
-    public EncodingContext getContextWithFullWmm() {
-        if (contextWithFullWmm != null) {
-            return contextWithFullWmm;
-        }
+    public EncodingContext getContext() {
         return encodingContext;
     }
 
@@ -233,8 +224,8 @@ public class ExecutionModelNext {
         return encodingContext.getTask().getProgram();
     }
 
-    public Wmm getFullMemoryModel() {
-        return getContextWithFullWmm().getTask().getMemoryModel();
+    public Wmm getMemoryModel() {
+        return encodingContext.getTask().getMemoryModel();
     }
 
     public List<Thread> getThreads() {

@@ -13,12 +13,8 @@ import com.dat3m.dartagnan.solver.caat.predicates.relationGraphs.base.SimpleGrap
 import com.dat3m.dartagnan.solver.caat.predicates.relationGraphs.derived.*;
 import com.dat3m.dartagnan.solver.caat.predicates.relationGraphs.Edge;
 import com.dat3m.dartagnan.solver.caat.predicates.relationGraphs.RelationGraph;
-import com.dat3m.dartagnan.solver.caat.predicates.sets.SetPredicate;
-import com.dat3m.dartagnan.solver.caat4wmm.EventDomain;
-import com.dat3m.dartagnan.solver.caat4wmm.basePredicates.StaticDefaultWMMGraph;
-import com.dat3m.dartagnan.solver.caat4wmm.basePredicates.StaticWMMSet;
+import com.dat3m.dartagnan.solver.caat4wmm.EventDomainNext;
 import com.dat3m.dartagnan.utils.dependable.DependencyGraph;
-import com.dat3m.dartagnan.verification.model.ExecutionModel;
 import com.dat3m.dartagnan.verification.model.ExecutionModelNext;
 import com.dat3m.dartagnan.verification.model.event.*;
 import com.dat3m.dartagnan.verification.model.relation.RelationModel.EdgeModel;
@@ -43,39 +39,35 @@ public class RelationModelManager {
 
     private static final Logger logger = LogManager.getLogger(RelationModelManager.class);
 
+    private final EncodingContext encodingContext;
     private final ExecutionModelNext executionModel;
     private final BaseRelationGraphPopulator graphPopulator;
     private final RelationGraphBuilder graphBuilder;
 
     private final Map<Relation, RelationModel> relModelCache;
     private final BiMap<Relation, RelationGraph> relGraphCache;
-    private final Map<Filter, SetPredicate> setCache;
     private final Map<String, EdgeModel> edgeModelCache;
 
-    private final ExecutionModel oldModel; // old one for CAAT use
+    private final EventDomainNext domain;
 
-    private RelationModelManager(ExecutionModelNext m, ExecutionModel old) {
+    private RelationModelManager(ExecutionModelNext m) {
         executionModel = m;
+        encodingContext = m.getContext();
         graphPopulator = new BaseRelationGraphPopulator();
         graphBuilder = new RelationGraphBuilder();
         relModelCache = new HashMap<>();
         relGraphCache = HashBiMap.create();
-        setCache = new HashMap<>();
         edgeModelCache = new HashMap<>();
-
-        oldModel = old;
+        domain = new EventDomainNext(m);
     }
 
-    public static RelationModelManager newRMManager(
-        ExecutionModelNext m, ExecutionModel old
-    ) {
-        return new RelationModelManager(m, old);
+    public static RelationModelManager newRMManager(ExecutionModelNext m) {
+        return new RelationModelManager(m);
     }
 
     public void initialize() {
         relModelCache.clear();
         relGraphCache.clear();
-        setCache.clear();
         edgeModelCache.clear();
         extractRelations(List.of(PO, RF, CO));
     }
@@ -83,7 +75,7 @@ public class RelationModelManager {
     public void extractRelations(List<String> relationNames) {
         Set<Relation> relsToExtract = new HashSet<>();
         for (String name : relationNames) {
-            Relation r = executionModel.getFullMemoryModel().getRelation(name);
+            Relation r = executionModel.getMemoryModel().getRelation(name);
             if (r == null) {
                 logger.warn("Relation with the name {} does not exist", name);
                 continue;
@@ -119,22 +111,22 @@ public class RelationModelManager {
 
         Set<CAATPredicate> predicates = new HashSet<>(relGraphs);
         PredicateHierarchy hierarchy = new PredicateHierarchy(predicates);
-        hierarchy.initializeToDomain(new EventDomain(oldModel));
+        hierarchy.initializeToDomain(domain);
 
         // Populate graphs of base relations.
         for (CAATPredicate basePred : hierarchy.getBasePredicates()) {
-            if (basePred.getClass() == StaticWMMSet.class
-                || basePred.getClass() == StaticDefaultWMMGraph.class
-            ) { continue; }
             Relation r = relGraphCache.inverse().get((RelationGraph) basePred);
-            r.getDefinition().accept(graphPopulator);
+            try {
+                r.getDefinition().accept(graphPopulator);
+            } catch (UnsupportedOperationException e) {
+                graphPopulator.populateDynamicDefaultGraph(r);
+            }
         }
 
         // Do the computation.
         hierarchy.populate();
 
         for (CAATPredicate pred : hierarchy.getPredicateList()) {
-            if (pred.getClass() == StaticWMMSet.class) { continue; }
             Relation r = relGraphCache.inverse().get((RelationGraph) pred);
             if (relModelCache.containsKey(r)) {
                 RelationModel rm = relModelCache.get(r);
@@ -161,9 +153,7 @@ public class RelationModelManager {
         try {
             rg = r.getDefinition().accept(graphBuilder);
         } catch (UnsupportedOperationException e) {
-            rg = new StaticDefaultWMMGraph(r, getContextWithFullWmm().getAnalysisContext()
-                                                                     .requires(RelationAnalysis.class)
-            );
+            rg = new SimpleGraph();
         }
         rg.setName(r.getNameOrTerm());
         if (!r.isRecursive()) {
@@ -179,16 +169,6 @@ public class RelationModelManager {
         return createGraph(r);
     }
 
-    private SetPredicate getOrCreateSetFromFilter(Filter filter) {
-        if (setCache.containsKey(filter)) {
-            return setCache.get(filter);
-        }
-        SetPredicate set = new StaticWMMSet(filter);
-        set.setName(filter.toString());
-        setCache.put(filter, set);
-        return set;
-    }
-
     private EdgeModel getOrCreateEdgeModel(Edge e) {
         String identifier = e.getFirst() + " -> " + e.getSecond();
         if (edgeModelCache.containsKey(identifier)) {
@@ -198,10 +178,6 @@ public class RelationModelManager {
                                      executionModel.getEventModelById(e.getSecond()));
         edgeModelCache.put(identifier, em);
         return em;
-    }
-
-    private EncodingContext getContextWithFullWmm() {
-        return executionModel.getContextWithFullWmm();
     }
 
     private List<EventModel> getVisibleEvents(Thread t) {
@@ -232,8 +208,8 @@ public class RelationModelManager {
         @Override
         public Void visitCoherence(Coherence coherence) {
             SimpleGraph rg = (SimpleGraph) relGraphCache.get(coherence.getDefinedRelation());
-            EncodingContext.EdgeEncoder co = getContextWithFullWmm().edge(
-                executionModel.getFullMemoryModel().getRelation(CO)
+            EncodingContext.EdgeEncoder co = encodingContext.edge(
+                executionModel.getMemoryModel().getRelation(CO)
             );
 
             for (Map.Entry<BigInteger, Set<StoreModel>> entry : executionModel.getAddressWritesMap()
@@ -241,7 +217,7 @@ public class RelationModelManager {
                 BigInteger address = entry.getKey();
                 Set<StoreModel> writes = entry.getValue();
                 List<StoreModel> coSortedWrites;
-                if (getContextWithFullWmm().usesSATEncoding()) {
+                if (encodingContext.usesSATEncoding()) {
                     Map<StoreModel, List<StoreModel>> coEdges = new HashMap<>();
                     for (StoreModel w1 : writes) {
                         coEdges.put(w1, new ArrayList<>());
@@ -259,7 +235,7 @@ public class RelationModelManager {
                     );
                     for (StoreModel w : writes) {
                         writeClockMap.put(w, (BigInteger) executionModel.evaluateByModel(
-                            getContextWithFullWmm().memoryOrderClock(w.getEvent())
+                            encodingContext.memoryOrderClock(w.getEvent())
                         ));
                     }
                     coSortedWrites = writes.stream()
@@ -283,8 +259,8 @@ public class RelationModelManager {
         @Override
         public Void visitReadFrom(ReadFrom readFrom) {
             SimpleGraph rg = (SimpleGraph) relGraphCache.get(readFrom.getDefinedRelation());
-            EncodingContext.EdgeEncoder rf = getContextWithFullWmm().edge(
-                executionModel.getFullMemoryModel().getRelation(RF)
+            EncodingContext.EdgeEncoder rf = encodingContext.edge(
+                executionModel.getMemoryModel().getRelation(RF)
             );
 
             for (Map.Entry<BigInteger, Set<LoadModel>> reads : executionModel.getAddressReadsMap()
@@ -402,6 +378,33 @@ public class RelationModelManager {
         }
 
         @Override
+        public Void visitSetIdentity(SetIdentity si) {
+            SimpleGraph rg = (SimpleGraph) relGraphCache.get(si.getDefinedRelation());
+            List<EventModel> eventList = executionModel.getEventList().stream()
+                                                       .filter(e -> si.getFilter().apply(e.getEvent()))
+                                                       .toList();
+            eventList.stream().forEach(e -> rg.add(new Edge(e.getId(), e.getId())));
+            return null;
+        }
+
+        @Override
+        public Void visitProduct(CartesianProduct cp) {
+            SimpleGraph rg = (SimpleGraph) relGraphCache.get(cp.getDefinedRelation());
+            List<EventModel> first = executionModel.getEventList().stream()
+                                                   .filter(e -> cp.getFirstFilter().apply(e.getEvent()))
+                                                   .toList();
+            List<EventModel> second = executionModel.getEventList().stream()
+                                                    .filter(e -> cp.getSecondFilter().apply(e.getEvent()))
+                                                    .toList();
+            for (EventModel e1 : first) {
+                for (EventModel e2 : second) {
+                    rg.add(new Edge(e1.getId(), e2.getId()));
+                }
+            }
+            return null;
+        }
+
+        @Override
         public Void visitControlDependency(DirectControlDependency ctrlDirect) {
             SimpleGraph rg = (SimpleGraph) relGraphCache.get(ctrlDirect.getDefinedRelation());
             for (List<EventModel> eventList : executionModel.getThreadEventsMap().values()) {
@@ -491,6 +494,34 @@ public class RelationModelManager {
             return null;
         }
 
+        public void populateDynamicDefaultGraph(Relation r) {
+            SimpleGraph rg = (SimpleGraph) relGraphCache.get(r);
+            EncodingContext.EdgeEncoder edge = encodingContext.edge(r);
+            RelationAnalysis.Knowledge k = encodingContext.getAnalysisContext()
+                                                                  .get(RelationAnalysis.class)
+                                                                  .getKnowledge(r);
+            
+            if (k.getMaySet().size() < domain.size() * domain.size()) {
+                k.getMaySet().apply((e1, e2) -> {
+                    EventModel em1 = executionModel.getEventModelByEvent(e1);
+                    EventModel em2 = executionModel.getEventModelByEvent(e2);
+                    if (em1 != null && em2 != null) {
+                        if (executionModel.isTrue(edge.encode(e1, e2))) {
+                            rg.add(new Edge(em1.getId(), em2.getId()));
+                        }
+                    }
+                });
+            } else {
+                for (EventModel em1 : executionModel.getEventList()) {
+                    for (EventModel em2 : executionModel.getEventList()) {
+                        if (executionModel.isTrue(edge.encode(em1.getEvent(), em2.getEvent()))) {
+                            rg.add(new Edge(em1.getId(), em2.getId()));
+                        }
+                    }
+                }
+            }
+        }
+
     }
 
 
@@ -498,66 +529,6 @@ public class RelationModelManager {
     // so that edges of base relations are set manually and edges of derived ones can be
     // computed automatically by PredicateHierarchy. 
     private final class RelationGraphBuilder implements Visitor<RelationGraph> {
-
-        @Override
-        public RelationGraph visitProgramOrder(ProgramOrder po) {
-            return new SimpleGraph();
-        }
-
-        @Override
-        public RelationGraph visitCoherence(Coherence co) {
-            return new SimpleGraph();
-        }
-
-        @Override
-        public RelationGraph visitReadFrom(ReadFrom rf) {
-            return new SimpleGraph();
-        }
-
-        @Override
-        public RelationGraph visitReadModifyWrites(ReadModifyWrites rmw) {
-            return new SimpleGraph();
-        }
-
-        @Override
-        public RelationGraph visitSameLocation(SameLocation loc) {
-            return new SimpleGraph();
-        }
-
-        @Override
-        public RelationGraph visitInternal(Internal in) {
-            return new SimpleGraph();
-        }
-
-        @Override
-        public RelationGraph visitExternal(External ext) {
-            return new SimpleGraph();
-        }
-
-        @Override
-        public RelationGraph visitControlDependency(DirectControlDependency ctrlDirect) {
-            return new SimpleGraph();
-        }
-
-        @Override
-        public RelationGraph visitAddressDependency(DirectAddressDependency addrDirect) {
-            return new SimpleGraph();
-        }
-
-        @Override
-        public RelationGraph visitInternalDataDependency(DirectDataDependency idd) {
-            return new SimpleGraph();
-        }
-
-        @Override
-        public RelationGraph visitFree(Free f) {
-            return new SimpleGraph();
-        }
-
-        @Override
-        public RelationGraph visitEmpty(Empty empty) {
-            return new SimpleGraph();
-        }
 
         @Override
         public RelationGraph visitInverse(Inverse inv) {
@@ -603,20 +574,18 @@ public class RelationModelManager {
 
         @Override
         public RelationGraph visitRangeIdentity(RangeIdentity ri) {
-            return new RangeIdentityGraph(getOrCreateGraph(ri.getOperand()));
+            return new ProjectionIdentityGraph(
+                getOrCreateGraph(ri.getOperand()),
+                ProjectionIdentityGraph.Dimension.RANGE
+            );
         }
 
         @Override
-        public RelationGraph visitSetIdentity(SetIdentity si) {
-            SetPredicate set = getOrCreateSetFromFilter(si.getFilter());
-            return new SetIdentityGraph(set);
-        }
-
-        @Override
-        public RelationGraph visitProduct(CartesianProduct prod) {
-            SetPredicate lhs = getOrCreateSetFromFilter(prod.getFirstFilter());
-            SetPredicate rhs = getOrCreateSetFromFilter(prod.getSecondFilter());
-            return new CartesianGraph(lhs, rhs);
+        public RelationGraph visitDomainIdentity(DomainIdentity di) {
+            return new ProjectionIdentityGraph(
+                getOrCreateGraph(di.getOperand()),
+                ProjectionIdentityGraph.Dimension.DOMAIN
+            );
         }
 
     }
