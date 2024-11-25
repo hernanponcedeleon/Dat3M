@@ -18,10 +18,6 @@ public class MockControlFlowBuilder extends ControlFlowBuilder {
         return blockStack.stream().toList();
     }
 
-    public Map<String, String> getMergeLabelIds() {
-        return Map.copyOf(mergeLabelIds);
-    }
-
     public Map<String, Event> getLastBlockEvents() {
         return Map.copyOf(lastBlockEvents);
     }

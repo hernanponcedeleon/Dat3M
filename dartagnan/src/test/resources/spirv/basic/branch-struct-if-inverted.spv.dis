@@ -1,0 +1,58 @@
+; @Input:  %out = {{0, 0}}
+; @Output: forall (%out[0][0]==0 and %out[0][1]==1)
+; @Config: 2, 1, 1
+; SPIR-V
+; Version: 1.6
+; Generator: Google Clspv; 0
+; Bound: 42
+; Schema: 0
+               OpCapability Shader
+         %33 = OpExtInstImport "NonSemantic.ClspvReflection.5"
+               OpMemoryModel Logical Vulkan
+               OpEntryPoint GLCompute %17 "test" %gl_LocalInvocationID %10 %out
+               OpDecorate %gl_LocalInvocationID BuiltIn LocalInvocationId
+               OpDecorate %gl_WorkGroupSize BuiltIn WorkgroupSize
+               OpDecorate %_runtimearr_uint ArrayStride 4
+               OpMemberDecorate %_struct_12 0 Offset 0
+               OpDecorate %_struct_12 Block
+               OpDecorate %out DescriptorSet 0
+               OpDecorate %out Binding 0
+               OpDecorate %5 SpecId 0
+               OpDecorate %6 SpecId 1
+               OpDecorate %7 SpecId 2
+       %uint = OpTypeInt 32 0
+     %v3uint = OpTypeVector %uint 3
+%_ptr_Input_v3uint = OpTypePointer Input %v3uint
+          %5 = OpSpecConstant %uint 1
+          %6 = OpSpecConstant %uint 1
+          %7 = OpSpecConstant %uint 1
+%gl_WorkGroupSize = OpSpecConstantComposite %v3uint %5 %6 %7
+%_ptr_Private_v3uint = OpTypePointer Private %v3uint
+%_runtimearr_uint = OpTypeRuntimeArray %uint
+ %_struct_12 = OpTypeStruct %_runtimearr_uint
+%_ptr_StorageBuffer__struct_12 = OpTypePointer StorageBuffer %_struct_12
+       %void = OpTypeVoid
+         %16 = OpTypeFunction %void
+%_ptr_StorageBuffer_uint = OpTypePointer StorageBuffer %uint
+     %uint_0 = OpConstant %uint 0
+%_ptr_Input_uint = OpTypePointer Input %uint
+       %bool = OpTypeBool
+     %uint_1 = OpConstant %uint 1
+     %uint_2 = OpConstant %uint 2
+%gl_LocalInvocationID = OpVariable %_ptr_Input_v3uint Input
+         %10 = OpVariable %_ptr_Private_v3uint Private %gl_WorkGroupSize
+        %out = OpVariable %_ptr_StorageBuffer__struct_12 StorageBuffer
+         %17 = OpFunction %void None %16
+         %18 = OpLabel
+         %23 = OpAccessChain %_ptr_Input_uint %gl_LocalInvocationID %uint_0
+         %24 = OpLoad %uint %23
+         %21 = OpAccessChain %_ptr_StorageBuffer_uint %out %uint_0 %24
+         %26 = OpIEqual %bool %24 %uint_0
+               OpSelectionMerge %32 None
+               OpBranchConditional %26 %32 %29
+         %29 = OpLabel
+               OpStore %21 %uint_1
+               OpBranch %32
+         %32 = OpLabel
+               OpReturn
+               OpFunctionEnd
