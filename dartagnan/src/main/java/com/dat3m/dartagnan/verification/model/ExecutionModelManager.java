@@ -4,6 +4,7 @@ import com.dat3m.dartagnan.encoding.EncodingContext;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.dat3m.dartagnan.verification.model.event.EventModelManager;
 import com.dat3m.dartagnan.verification.model.relation.RelationModelManager;
+import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.Formula;
 import org.sosy_lab.java_smt.api.Model;
@@ -16,35 +17,24 @@ public class ExecutionModelManager {
     private final EventModelManager eMManager;
     private final RelationModelManager rMManager;
 
-    private EncodingContext context;
     private Model model;
-    private ExecutionModelNext executionModel;
 
     public ExecutionModelManager(){
         eMManager = new EventModelManager(this);
         rMManager = new RelationModelManager(this);
     }
 
-    public ExecutionModelNext buildExecutionModel(EncodingContext context, Model model) {
-        if (this.context != null && this.model != null) {
-            if (this.context == context && this.model == model) {
-                return executionModel;
-            }
-        }
-
-        this.context = context;
+    public ExecutionModelNext buildExecutionModel(EncodingContext context, Model model, boolean buildAsConfig) throws InvalidConfigurationException {
         this.model = model;
-        executionModel = new ExecutionModelNext(this);
+        final ExecutionModelNext executionModel = new ExecutionModelNext();
 
         eMManager.buildEventModels(executionModel, context);
-        extractMemoryLayout();
-        rMManager.buildRelationModels(executionModel, context);
+        extractMemoryLayout(executionModel, context);
+        rMManager.buildRelationModels(executionModel, context, buildAsConfig);
+
+        this.model = null;
 
         return executionModel;
-    }
-
-    public EncodingContext getContext() {
-        return context;
     }
 
     public boolean isTrue(BooleanFormula formula) {
@@ -55,11 +45,7 @@ public class ExecutionModelManager {
         return model.evaluate(formula);
     }
 
-    public void extractRelations(List<String> relationNames) {
-        rMManager.extractRelations(relationNames);
-    }
-
-    private void extractMemoryLayout() {
+    private void extractMemoryLayout(ExecutionModelNext executionModel, EncodingContext context) {
         for (MemoryObject obj : context.getTask().getProgram().getMemory().getObjects()) {
             final boolean isAllocated = obj.isStaticallyAllocated()
                                         || isTrue(context.execution(obj.getAllocationSite()));

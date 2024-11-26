@@ -390,7 +390,7 @@ public class RefinementSolver extends ModelChecker {
 
     // TODO: We could expose the following method(s) to allow for more general application of refinement.
     private RefinementTrace runRefinement(VerificationTask task, ProverWithTracker prover, WMMSolver solver, Refiner refiner)
-            throws SolverException, InterruptedException {
+            throws SolverException, InterruptedException, InvalidConfigurationException {
 
         final List<RefinementIteration> trace = new ArrayList<>();
         boolean isFinalIteration = false;
@@ -402,7 +402,7 @@ public class RefinementSolver extends ModelChecker {
 
             // ------------------------- Debugging/Logging -------------------------
             if (generateGraphvizDebugFiles) {
-                generateGraphvizFiles(task, nextModelManager.buildExecutionModel(contextWithFullWmm, prover.getModel()), trace.size(), iteration.inconsistencyReasons);
+                generateGraphvizFiles(task, nextModelManager.buildExecutionModel(contextWithFullWmm, prover.getModel(), false), trace.size(), iteration.inconsistencyReasons);
             }
             if (logger.isDebugEnabled()) {
                 // ---- Internal SMT stats after the first iteration ----
@@ -902,9 +902,9 @@ public class RefinementSolver extends ModelChecker {
         final SyntacticContextAnalysis emptySynContext = getEmptyInstance();
         // File with reason edges only
         generateGraphvizFile(model, iterationCount, edgeFilter, edgeFilter, edgeFilter, directoryName, fileNameBase,
-                emptySynContext, true);
+                emptySynContext);
         // File with all edges
         generateGraphvizFile(model, iterationCount, (x, y) -> true, (x, y) -> true, (x, y) -> true, directoryName,
-                fileNameBase + "-full", emptySynContext, true);
+                fileNameBase + "-full", emptySynContext);
     }
 }

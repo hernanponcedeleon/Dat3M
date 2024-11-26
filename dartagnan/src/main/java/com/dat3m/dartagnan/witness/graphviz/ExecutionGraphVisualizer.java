@@ -8,9 +8,6 @@ import com.dat3m.dartagnan.verification.model.ExecutionModelNext;
 import com.dat3m.dartagnan.verification.model.MemoryObjectModel;
 import com.dat3m.dartagnan.verification.model.relation.RelationModel;
 import com.dat3m.dartagnan.verification.model.ThreadModel;
-import org.sosy_lab.common.configuration.Option;
-import org.sosy_lab.common.configuration.Options;
-import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import com.google.common.collect.Lists;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -25,13 +22,13 @@ import java.util.function.BiPredicate;
 
 import static com.dat3m.dartagnan.program.analysis.SyntacticContextAnalysis.*;
 import static com.dat3m.dartagnan.wmm.RelationNameRepository.*;
-import static com.dat3m.dartagnan.configuration.OptionNames.WITNESS_RELATIONS_TO_SHOW;
+// import static com.dat3m.dartagnan.configuration.OptionNames.WITNESS_RELATIONS_TO_SHOW;
 
 /*
     This is some rudimentary class to create graphs of executions.
     Currently, it just creates very special graphs.
  */
-@Options
+// @Options
 public class ExecutionGraphVisualizer {
 
     private static final Logger logger = LogManager.getLogger(ExecutionGraphVisualizer.class);
@@ -44,12 +41,6 @@ public class ExecutionGraphVisualizer {
     private BiPredicate<EventModel, EventModel> frFilter = (x, y) -> true;
     private BiPredicate<EventModel, EventModel> coFilter = (x, y) -> true;
     private final List<MemoryObjectModel> sortedMemoryObjects = new ArrayList<>();
-    private Set<String> relToShow;
-
-    @Option(name=WITNESS_RELATIONS_TO_SHOW,
-            description="Names of relations to show in the witness graph.",
-            secure=true)
-    private String relToShowStr = "default";
 
     public ExecutionGraphVisualizer() {
         this.graphviz = new Graphviz();
@@ -86,19 +77,6 @@ public class ExecutionGraphVisualizer {
         graphviz.generateOutput(writer);
     }
 
-    private ExecutionGraphVisualizer setRelationsToShow(ExecutionModelNext model)
-        throws InvalidConfigurationException
-    {
-        model.getManager().getContext().getTask().getConfig().inject(this);
-        if (relToShowStr.equals("default")) {
-            relToShow = new HashSet<>(Set.of(PO, RF, CO, "fr"));
-        }
-        else {
-            relToShow = new HashSet<>(Arrays.asList(relToShowStr.split(",\\s*")));
-        }
-        return this;
-    }
-
     private BiPredicate<EventModel, EventModel> getFilter(String relationName) {
         return (x, y) -> true;
     }
@@ -114,23 +92,18 @@ public class ExecutionGraphVisualizer {
     }
 
     private ExecutionGraphVisualizer addRelations(ExecutionModelNext model) {
-        model.getManager().extractRelations(new ArrayList<>(relToShow));
-        for (String relationName : relToShow) {
-            if (relationName.equals(PO)) {
+        for (RelationModel rm : model.getRelationModels()) {
+            if (rm.getName().equals(PO)) {
                 addProgramOrder(model);
             } else {
-                addRelation(model, relationName);
+                addRelation(model, rm);
             }
         }
         return this;
     }
 
-    private ExecutionGraphVisualizer addRelation(ExecutionModelNext model, String name) {
-        RelationModel rm = model.getRelationModel(name);
-        if (rm == null) {
-            logger.warn("Relation with the name {} does not exist", name);
-            return this;
-        }
+    private ExecutionGraphVisualizer addRelation(ExecutionModelNext model, RelationModel rm) {
+        String name = rm.getName();
         graphviz.beginSubgraph(name);
         String attributes = String.format("color=%s", colorMap.getColor(name));
         graphviz.setEdgeAttributes(attributes);
@@ -263,13 +236,12 @@ public class ExecutionGraphVisualizer {
                                             BiPredicate<EventModel, EventModel> frFilter,
                                             BiPredicate<EventModel, EventModel> coFilter, String directoryName, String fileNameBase,
                                             SyntacticContextAnalysis synContext,
-                                            boolean convert, boolean usedByRefinementSolver) {
+                                            boolean convert) {
         File fileVio = new File(directoryName + fileNameBase + ".dot");
         fileVio.getParentFile().mkdirs();
         try (FileWriter writer = new FileWriter(fileVio)) {
             // Create .dot file
             ExecutionGraphVisualizer visualizer = new ExecutionGraphVisualizer();
-            if (!usedByRefinementSolver) { visualizer.setRelationsToShow(model); }
             visualizer.setSyntacticContext(synContext)
                       .setReadFromFilter(rfFilter)
                       .setFromReadFilter(frFilter)
@@ -291,8 +263,8 @@ public class ExecutionGraphVisualizer {
     public static void generateGraphvizFile(ExecutionModelNext model, int iterationCount,
             BiPredicate<EventModel, EventModel> rfFilter, BiPredicate<EventModel, EventModel> frFilter,
             BiPredicate<EventModel, EventModel> coFilter, String directoryName, String fileNameBase,
-            SyntacticContextAnalysis synContext, boolean usedByRefinementSolver) {
+            SyntacticContextAnalysis synContext) {
         generateGraphvizFile(model, iterationCount, rfFilter, frFilter, coFilter, directoryName, fileNameBase,
-                synContext, true, usedByRefinementSolver);
+                synContext, true);
     }
 }

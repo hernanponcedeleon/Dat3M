@@ -234,7 +234,7 @@ public class Dartagnan extends BaseOptions {
         final EncodingContext encodingContext = modelChecker instanceof RefinementSolver refinementSolver ?
             refinementSolver.getContextWithFullWmm() : modelChecker.getEncodingContext();
         final ExecutionModelManager manager = new ExecutionModelManager();
-        final ExecutionModelNext m = manager.buildExecutionModel(encodingContext, prover.getModel());
+        final ExecutionModelNext m = manager.buildExecutionModel(encodingContext, prover.getModel(), true);
         final SyntacticContextAnalysis synContext = newInstance(task.getProgram());
         final String progName = task.getProgram().getName();
         final int fileSuffixIndex = progName.lastIndexOf('.');
@@ -246,7 +246,7 @@ public class Dartagnan extends BaseOptions {
         // CO edges only give ordering information which is known if the pair is also in PO
         return generateGraphvizFile(m, 1, (x, y) -> true, (x, y) -> !x.getThread().equals(y.getThread()),
                 (x, y) -> !x.getThread().equals(y.getThread()), getOrCreateOutputDirectory() + "/", name,
-                synContext, witnessType.convertToPng(), false);
+                synContext, witnessType.convertToPng());
     }
 
     private static void generateWitnessIfAble(VerificationTask task, ProverEnvironment prover,

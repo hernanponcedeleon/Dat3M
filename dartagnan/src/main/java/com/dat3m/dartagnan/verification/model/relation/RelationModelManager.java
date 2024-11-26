@@ -24,18 +24,23 @@ import com.dat3m.dartagnan.wmm.Constraint.Visitor;
 import com.dat3m.dartagnan.wmm.definition.*;
 import com.dat3m.dartagnan.wmm.Relation;
 import com.dat3m.dartagnan.wmm.Wmm;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
 import com.google.common.collect.Lists;
-import org.apache.logging.log4j.Logger;
-import org.apache.logging.log4j.LogManager;
+import org.sosy_lab.common.configuration.Option;
+import org.sosy_lab.common.configuration.Options;
+import org.sosy_lab.common.configuration.InvalidConfigurationException;
 
 import java.math.BigInteger;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static com.dat3m.dartagnan.configuration.OptionNames.WITNESS_RELATIONS_TO_SHOW;
 import static com.dat3m.dartagnan.wmm.RelationNameRepository.*;
 
+@Options
 public class RelationModelManager {
 
     private static final Logger logger = LogManager.getLogger(RelationModelManager.class);
@@ -53,6 +58,11 @@ public class RelationModelManager {
     private ExecutionModelNext executionModel;
     private EventDomainNext domain;
 
+    @Option(name=WITNESS_RELATIONS_TO_SHOW,
+            description="Names of relations to show in the witness graph.",
+            secure=true)
+    private String relToShowStr = "default";
+
     public RelationModelManager(ExecutionModelManager manager) {
         this.manager = manager;
         graphBuilder = new RelationGraphBuilder();
@@ -62,7 +72,7 @@ public class RelationModelManager {
         edgeModelCache = new HashMap<>();
     }
 
-    public void buildRelationModels(ExecutionModelNext executionModel, EncodingContext context) {
+    public void buildRelationModels(ExecutionModelNext executionModel, EncodingContext context, boolean buildAsConfig) throws InvalidConfigurationException {
         this.executionModel = executionModel;
         this.context = context;
         this.wmm = context.getTask().getMemoryModel();
@@ -70,7 +80,8 @@ public class RelationModelManager {
         relModelCache.clear();
         relGraphCache.clear();
         edgeModelCache.clear();
-        extractRelations(List.of(PO, RF, CO));
+        final List<String> relationNames = buildAsConfig ? getRelationsToShow() : List.of(PO, RF, CO);
+        extractRelations(relationNames);
     }
 
     public void extractRelations(List<String> relationNames) {
@@ -138,6 +149,16 @@ public class RelationModelManager {
 
         for (Relation r : relsToExtract) {
             executionModel.addRelation(r, relModelCache.get(r));
+        }
+    }
+
+    private List<String> getRelationsToShow() throws InvalidConfigurationException {
+        context.getTask().getConfig().inject(this);
+        if (relToShowStr.equals("default")) {
+            return List.of(PO, RF, CO, "fr");
+        }
+        else {
+            return Arrays.asList(relToShowStr.split(",\\s*"));
         }
     }
 

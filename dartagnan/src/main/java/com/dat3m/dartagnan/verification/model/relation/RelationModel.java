@@ -3,19 +3,17 @@ package com.dat3m.dartagnan.verification.model.relation;
 import com.dat3m.dartagnan.wmm.Relation;
 import com.dat3m.dartagnan.verification.model.event.EventModel;
 
-import java.util.Set;
-import java.util.HashSet;
-import java.util.Collections;
+import java.util.*;
 
 
 public class RelationModel {
     private final Relation relation;
-    private final Set<String> names;
+    private final List<String> names;
     private final Set<EdgeModel> edgeModels;
 
     RelationModel(Relation relation, String name) {
         this.relation = relation;
-        names = new HashSet<>();
+        names = new ArrayList<>();
         edgeModels = new HashSet<>();
 
         addName(name);
@@ -29,8 +27,12 @@ public class RelationModel {
         return names.contains(name);
     }
 
-    public Set<String> getNames() {
-        return Collections.unmodifiableSet(names);
+    public List<String> getNames() {
+        return Collections.unmodifiableList(names);
+    }
+
+    public String getName() {
+        return names.get(0);
     }
 
     public void addName(String name) {

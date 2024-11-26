@@ -17,13 +17,10 @@ import java.util.*;
 // representing an execution in Dartagnan. It contains instances of EventModel for events
 // and RelationModel for relations. It is used only by ExecutionGraphVisualizer so far.
 public class ExecutionModelNext {
-    private final ExecutionModelManager manager;
-
     private final List<ThreadModel> threadList;
     private final List<EventModel> eventList;
     private final Map<Event, EventModel> eventMap;
     private final Map<Relation, RelationModel> relationMap;
-    private final Map<String, RelationModel> relationNameMap;
     private final Map<MemoryObject, MemoryObjectModel> memoryLayoutMap;
 
     private final Map<BigInteger, Set<LoadModel>> addressReadsMap;
@@ -31,14 +28,11 @@ public class ExecutionModelNext {
     private final Map<BigInteger, Set<MemoryEventModel>> addressAccessesMap;
     private final Map<Thread, List<List<EventModel>>> atomicBlocksMap;
 
-    ExecutionModelNext(ExecutionModelManager manager) {
-        this.manager = manager;
-
+    ExecutionModelNext() {
         threadList = new ArrayList<>();
         eventList = new ArrayList<>();
         eventMap = new HashMap<>();
         relationMap = new HashMap<>();
-        relationNameMap = new HashMap<>();
         memoryLayoutMap= new HashMap<>();
 
         addressReadsMap = new HashMap<>();
@@ -58,10 +52,6 @@ public class ExecutionModelNext {
 
     public void addRelation(Relation r, RelationModel rModel) {
         relationMap.put(r, rModel);
-        // We add an entry for each name of the relation.
-        for (String name : rModel.getNames()) {
-            relationNameMap.put(name, rModel);
-        }
     }
 
     public void addMemoryObject(MemoryObject m, MemoryObjectModel mModel) {
@@ -94,10 +84,6 @@ public class ExecutionModelNext {
         atomicBlocksMap.put(thread, atomics);
     }
 
-    public ExecutionModelManager getManager() {
-        return manager;
-    }
-
     public List<ThreadModel> getThreadList() {
         return Collections.unmodifiableList(threadList);
     }
@@ -122,8 +108,8 @@ public class ExecutionModelNext {
         return eventMap.get(event);
     }
 
-    public RelationModel getRelationModel(String name) {
-        return relationNameMap.get(name);
+    public Set<RelationModel> getRelationModels() {
+        return new HashSet<>(relationMap.values());
     }
 
     public Map<MemoryObject, MemoryObjectModel> getMemoryLayoutMap() {
