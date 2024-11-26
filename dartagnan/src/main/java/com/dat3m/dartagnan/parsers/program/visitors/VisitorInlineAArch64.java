@@ -173,18 +173,15 @@ public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
             for (int i = 0; i < this.fnParameters.size() - 1; i++) {
                 String key = String.format("${%d:w}", i);
                 String keyLong = String.format("${%d:x}", i);
-                int j = i + 1;
-                Register value = fnParameters.get(j);
+                int indexOneBased = i + 1;
+                Register value = fnParameters.get(indexOneBased);
                 llvmToArmMap.put(key, value);
                 llvmToArmMap.put(keyLong, value);
             }
         } else {
             if (returnRegisterTypes.length == 1) {
-                String key = String.format("${%d:w}", 0);
                 Type type = getTypeGivenReturnTypeString(this.returnRegisterTypes[0]);
-                if (type.toString().equals("bv64")) {
-                    key = key.replace("w", "x");
-                }
+                String key = returnRegisterKey(type,0);
                 llvmToArmMap.put(key, this.returnRegister);
             } else {
                 if (this.returnValuesNumber == 4) {
@@ -194,11 +191,8 @@ public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
                     // 2) allocate $n and the rest for fn parameters
                     // check paper
                     for (int i = 0; i < this.returnValuesNumber; i++) {
-                        String key = String.format("${%d:w}", i);
                         Type type = getTypeGivenReturnTypeString(this.returnRegisterTypes[i]);
-                        if (type.toString().equals("bv64")) {
-                            key = key.replace("w", "x");
-                        }
+                        String key = returnRegisterKey(type,i);
                         Register tmp = getOrNewRegister(key);
                         if (i == 1 || i == 2) {
                             events.add(EventFactory.newLocal(tmp, expressions.parseValue("0", (IntegerType) type)));
@@ -209,26 +203,28 @@ public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
                     }
                 }
                 for (int i = 0; i < this.returnValuesNumber; i++) {
-                    String key = String.format("${%d:w}", i);
                     Type type = getTypeGivenReturnTypeString(this.returnRegisterTypes[i]);
-                    if (type.toString().equals("bv64")) {
-                        key = key.replace("w", "x");
-                    }
+                    String key = returnRegisterKey(type,i);
                     Register tmp = getOrNewRegister(key); // avoid null registers in guard of comparison
                 }
             }
             int registerCounter = 1;
             for (int i = returnValuesNumber; i < returnValuesNumber + fnParameters.size() - 1; i++) {
-                String key = String.format("${%d:w}", i);
                 Register value = fnParameters.get(registerCounter);
                 Type type = value.getType();
-                if (type.toString().equals("bv64")) {
-                    key = key.replace("w", "x");
-                }
+                String key = returnRegisterKey(type,i);
                 registerCounter++;
                 llvmToArmMap.put(key, value);
             }
         }
+    }
+
+    private String returnRegisterKey(Type type, int index){
+        String key = String.format("${%d:w}", index);
+        if (type.toString().equals("bv64")) {
+            key = key.replace("w", "x");
+        }
+        return key;
     }
 
     // used if the return is AggregateType (size > 1)
@@ -300,7 +296,6 @@ public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
     public Object visitLoadReg(InlineAArch64Parser.LoadRegContext ctx) {
         Register freshReturnRegister = (Register) ctx.register(0).accept(this);
         Register directMemoryAccess = (Register) ctx.register(1).accept(this);
-        System.out.println("Regs are " + freshReturnRegister + " and " + directMemoryAccess);
         events.add(EventFactory.newLoad(freshReturnRegister, directMemoryAccess));
         updateReturnRegisterIfModified(freshReturnRegister);
         return visitChildren(ctx);
@@ -451,75 +446,4 @@ public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
         TerminalNode register = ctx.VariableInline() != null ? ctx.VariableInline() : ctx.ConstantInline();
         return getOrNewRegister(register.getText());
     }
-    // apple generated code 
-    // @Override
-    // public Object visitSwapWordAcquire(InlineAArch64Parser.SwapWordAcquireContext ctx) {
-    //     // dummyZero -> 1:w -> r9
-    //     // dummyOne -> 0:w -> r1
-    //     // dummyTwo -> $2 -> r0
-    //     // ldaxr dummyZero, dummyTwo
-    //     // str dummyTwo, dummyOne
-    //     Register dummyZero = getOrNewRegister(ctx.VariableInline(1).getText());
-    //     Register dummyOne = getOrNewRegister(ctx.VariableInline(0).getText());
-    //     Register dummyTwo = getOrNewRegister(ctx.ConstantInline().getText());
-    //     System.out.println("Registers are " + dummyOne + " " + dummyZero + " " + dummyTwo);
-    //     System.out.println("Registers are " + ctx.VariableInline(0) + " " + ctx.VariableInline(1) + " " + ctx.ConstantInline());
-    //     String mo = Tag.ARMv8.MO_ACQ;
-    //     // String newValueRegister = ctx.VariableInline(1).getText(); // is not needed because we have returnRegister. It is a corner case
-    //     // Register newValueRegisterLlvm = this.armToLlvmMap.getLlvmRegister(newValueRegister); 
-    //     events.add(EventFactory.newRMWLoadWithMo(dummyZero, dummyTwo, mo));
-    //     events.add(EventFactory.newStore(dummyTwo, dummyOne)); // null
-    //     events.add(EventFactory.newLocal(this.returnRegister, dummyZero));
-    //     return visitChildren(ctx);
-    // }
-    // @Override
-    // public Object visitCompareAndSwap(InlineAArch64Parser.CompareAndSwapContext ctx) {
-    //     Register toRegister = getOrNewRegister(ctx.VariableInline(0).getText());
-    //     Register compareRegister = getOrNewRegister(ctx.VariableInline(1).getText());
-    //     Register directMemoryAccess = getOrNewRegister(ctx.ConstantInline().getText());
-    //     String mo = Tag.ARMv8.MO_RX;
-    //     events.add(EventFactory.newRMWLoadWithMo(toRegister, directMemoryAccess, mo));
-    //     // simulate comparison
-    //     // if toRegister != compareRegister goto custom
-    //     // store()
-    //     // custom : 
-    //     // rest of the code
-    //     // if this goes well, then I store b into c, which means CompareRegister goes into DMA
-    //     this.comparator.updateCompareExpression(toRegister, IntCmpOp.NEQ, compareRegister);
-    //     Label customLabel = getOrNewLabel("customLabelRlx");
-    //     events.add(EventFactory.newJump(this.comparator.compareExpression, customLabel));
-    //     events.add(EventFactory.newStore(directMemoryAccess, compareRegister));
-    //     events.add(customLabel);
-    //     return visitChildren(ctx);
-    // }
-    // @Override
-    // public Object visitCompareAndSwapAcquire(InlineAArch64Parser.CompareAndSwapAcquireContext ctx) {
-    //     Register toRegister = getOrNewRegister(ctx.VariableInline(0).getText());
-    //     Register compareRegister = getOrNewRegister(ctx.VariableInline(1).getText());
-    //     Register directMemoryAccess = getOrNewRegister(ctx.ConstantInline().getText());
-    //     String mo = Tag.ARMv8.MO_ACQ;
-    //     events.add(EventFactory.newRMWLoadWithMo(toRegister, directMemoryAccess, mo));
-    //     this.comparator.updateCompareExpression(toRegister, IntCmpOp.NEQ, compareRegister);
-    //     Label customLabel = getOrNewLabel("customLabelAcq");
-    //     events.add(EventFactory.newJump(this.comparator.compareExpression, customLabel));
-    //     events.add(EventFactory.newStore(directMemoryAccess, compareRegister));
-    //     events.add(customLabel);
-    //     return visitChildren(ctx);
-    // }
-    // this one is commented because it requires adding bv64 and bv32, as returnReg is bv64 / ptr and dst is bv32
-    // @Override
-    // public Object visitAtomicAddDoubleWordRelease(InlineAArch64Parser.AtomicAddDoubleWordReleaseContext ctx) {
-    //     Register freshReturnRegister = getOrNewRegister(ctx.VariableInline().getText());
-    //     Register dstRegister = getOrNewRegister(ctx.ConstantInline().getText());
-    //     // load and return old value
-    //     events.add(EventFactory.newRMWLoad(freshReturnRegister, dstRegister));
-    //     updateReturnRegisterIfModified(ctx.VariableInline());
-    //     // add the new value to returnRegister
-    //     Expression sum = expressions.makeAdd(freshReturnRegister, dstRegister); 
-    //     events.add(EventFactory.newLocal(freshReturnRegister, sum));
-    //     // store result into dstRegister
-    //     String mo = Tag.ARMv8.MO_REL;
-    //     events.add(EventFactory.newStoreWithMo(freshReturnRegister, dstRegister, mo));
-    //     return visitChildren(ctx);
-    // }
 }
