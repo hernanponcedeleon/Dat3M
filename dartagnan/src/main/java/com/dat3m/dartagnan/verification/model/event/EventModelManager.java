@@ -83,7 +83,7 @@ public class EventModelManager {
             }
 
             if (eventList.size() > 0) {
-                executionModel.addThreadEvents(t, Collections.unmodifiableList(eventList));
+                executionModel.addThreadEvents(t, eventList);
 
                 List<List<EventModel>> atomicBlocks = new ArrayList<>(atomicBlockRanges.size());
                 for (int i = 0; i < atomicBlockRanges.size(); i++) {
@@ -138,9 +138,6 @@ public class EventModelManager {
             } else if (e.hasTag(Tag.WRITE)) {
                 em = new StoreModel(e);
                 executionModel.addAddressWrite(address, (StoreModel) em);
-                if (em.isInit()) {
-                    executionModel.addAddressInit(address, (StoreModel) em);
-                }
             } else {
                 em = new MemoryEventModel(e);
             }
@@ -164,7 +161,6 @@ public class EventModelManager {
         } else if (e.hasTag(Tag.FENCE)) {
             String name = ((GenericVisibleEvent) e).getName();
             em = new FenceModel(e, name);
-            executionModel.addFence((FenceModel) em);
         } else if (e instanceof Assert) {
             em = new AssertModel((Assert) e);
         } else if (e instanceof Local) {

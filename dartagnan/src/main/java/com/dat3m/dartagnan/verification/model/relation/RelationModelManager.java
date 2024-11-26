@@ -6,7 +6,6 @@ import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.RMWStore;
 import com.dat3m.dartagnan.program.filter.Filter;
 import com.dat3m.dartagnan.program.Register;
-import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.solver.caat.predicates.CAATPredicate;
 import com.dat3m.dartagnan.solver.caat.predicates.PredicateHierarchy;
 import com.dat3m.dartagnan.solver.caat.predicates.relationGraphs.base.SimpleGraph;
@@ -19,6 +18,7 @@ import com.dat3m.dartagnan.verification.model.ExecutionModelManager;
 import com.dat3m.dartagnan.verification.model.ExecutionModelNext;
 import com.dat3m.dartagnan.verification.model.event.*;
 import com.dat3m.dartagnan.verification.model.relation.RelationModel.EdgeModel;
+import com.dat3m.dartagnan.verification.model.ThreadModel;
 import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
 import com.dat3m.dartagnan.wmm.Constraint.Visitor;
 import com.dat3m.dartagnan.wmm.definition.*;
@@ -29,7 +29,6 @@ import com.google.common.collect.HashBiMap;
 import com.google.common.collect.Lists;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.LogManager;
-import org.sosy_lab.java_smt.api.BooleanFormula;
 
 import java.math.BigInteger;
 import java.util.*;
@@ -133,7 +132,7 @@ public class RelationModelManager {
             if (relModelCache.containsKey(r)) {
                 RelationModel rm = relModelCache.get(r);
                 ((RelationGraph) pred).edgeStream()
-                    .forEach(e -> rm.addEdgeModel(getOrCreateEdgeModel(e)));
+                                      .forEach(e -> rm.addEdgeModel(getOrCreateEdgeModel(e)));
            }
         }
 
@@ -182,12 +181,6 @@ public class RelationModelManager {
         return em;
     }
 
-    private List<EventModel> getVisibleEvents(Thread t) {
-        return executionModel.getThreadEventsMap().get(t).stream()
-                             .filter(e -> e.hasTag(Tag.VISIBLE))
-                             .toList();
-    }
-
 
     // Usage: Populate graph of the base relations with instances of the Edge class
     // based on the information from ExecutionModelNext.
@@ -196,8 +189,8 @@ public class RelationModelManager {
         @Override
         public Void visitProgramOrder(ProgramOrder po) {
             SimpleGraph rg = (SimpleGraph) relGraphCache.get(po.getDefinedRelation());
-            for (Thread t : executionModel.getThreads()) {
-                List<EventModel> eventList = getVisibleEvents(t);
+            for (ThreadModel tm : executionModel.getThreadList()) {
+                List<EventModel> eventList = tm.getVisibleEventList();
                 if (eventList.size() <= 1) { continue; }
                 for (int i = 1; i < eventList.size(); i++) {
                     rg.add(new Edge(eventList.get(i - 1).getId(),
@@ -250,9 +243,6 @@ public class RelationModelManager {
                                         coSortedWrites.get(i).getId()));
                     }
                 }
-                executionModel.addCoherenceWrites(
-                    address, Collections.unmodifiableList(coSortedWrites)
-                );
             }
             return null;
         }
@@ -268,11 +258,8 @@ public class RelationModelManager {
                 BigInteger address = reads.getKey();
                 for (LoadModel read : reads.getValue()) {
                     for (StoreModel write : executionModel.getAddressWritesMap().get(address)) {
-                        BooleanFormula isRF = rf.encode(write.getEvent(), read.getEvent());
-                        if (manager.isTrue(isRF)) {
+                        if (manager.isTrue(rf.encode(write.getEvent(), read.getEvent()))) {
                             rg.add(new Edge(write.getId(), read.getId()));
-                            executionModel.addReadWrite(read, write);
-                            executionModel.addWriteRead(write, read);
                             read.setReadFrom(write);
                         }
                     }
@@ -296,8 +283,8 @@ public class RelationModelManager {
                                     }
                                 });
             
-            for (Thread t : executionModel.getThreads()) {
-                List<EventModel> eventList = getVisibleEvents(t);
+            for (ThreadModel tm : executionModel.getThreadList()) {
+                List<EventModel> eventList = tm.getVisibleEventList();
                 if (eventList.size() <= 1) { continue; }
                 LoadModel lastExclLoad = null;
                 for (EventModel e : eventList) {
@@ -332,7 +319,6 @@ public class RelationModelManager {
             for (Set<MemoryEventModel> sameLocAccesses : executionModel.getAddressAccessesMap().values()) {
                 for (MemoryEventModel e1 : sameLocAccesses) {
                     for (MemoryEventModel e2 : sameLocAccesses) {
-                        if (e1 == e2) { continue; }
                         rg.add(new Edge(e1.getId(), e2.getId()));
                     }
                 }
@@ -343,12 +329,10 @@ public class RelationModelManager {
         @Override
         public Void visitInternal(Internal in) {
             SimpleGraph rg = (SimpleGraph) relGraphCache.get(in.getDefinedRelation());
-            for (Thread t : executionModel.getThreads()) {
-                List<EventModel> eventList = getVisibleEvents(t);
-                if (eventList.size() <= 1) { continue; }
+            for (ThreadModel tm : executionModel.getThreadList()) {
+                List<EventModel> eventList = tm.getVisibleEventList();
                 for (EventModel e1 : eventList) {
                     for (EventModel e2 : eventList) {
-                        if (e1 == e2) { continue; }
                         rg.add(new Edge(e1.getId(), e2.getId()));
                     }
                 }
@@ -359,15 +343,11 @@ public class RelationModelManager {
         @Override
         public Void visitExternal(External ext) {
             SimpleGraph rg = (SimpleGraph) relGraphCache.get(ext.getDefinedRelation());
-            List<Thread> threadList = executionModel.getThreads();
+            List<ThreadModel> threadList = executionModel.getThreadList();
             for (int i = 0; i < threadList.size(); i ++) {
-                List<EventModel> eventList1 = getVisibleEvents(threadList.get(i));
-                if (eventList1.size() <= 1) { continue; }
                 for (int j = i + 1; j < threadList.size(); j ++) {
-                    List<EventModel> eventList2 = getVisibleEvents(threadList.get(j));
-                    if (eventList2.size() <= 1) { continue; }
-                    for (EventModel e1 : eventList1) {
-                        for (EventModel e2 : eventList2) {
+                    for (EventModel e1 : threadList.get(i).getVisibleEventList()) {
+                        for (EventModel e2 : threadList.get(j).getVisibleEventList()) {
                             rg.add(new Edge(e1.getId(), e2.getId()));
                             rg.add(new Edge(e2.getId(), e1.getId()));
                         }
@@ -380,22 +360,16 @@ public class RelationModelManager {
         @Override
         public Void visitSetIdentity(SetIdentity si) {
             SimpleGraph rg = (SimpleGraph) relGraphCache.get(si.getDefinedRelation());
-            List<EventModel> eventList = executionModel.getEventList().stream()
-                                                       .filter(e -> si.getFilter().apply(e.getEvent()))
-                                                       .toList();
-            eventList.stream().forEach(e -> rg.add(new Edge(e.getId(), e.getId())));
+            executionModel.getEventsByFilter(si.getFilter())
+                          .stream().forEach(e -> rg.add(new Edge(e.getId(), e.getId())));
             return null;
         }
 
         @Override
         public Void visitProduct(CartesianProduct cp) {
             SimpleGraph rg = (SimpleGraph) relGraphCache.get(cp.getDefinedRelation());
-            List<EventModel> first = executionModel.getEventList().stream()
-                                                   .filter(e -> cp.getFirstFilter().apply(e.getEvent()))
-                                                   .toList();
-            List<EventModel> second = executionModel.getEventList().stream()
-                                                    .filter(e -> cp.getSecondFilter().apply(e.getEvent()))
-                                                    .toList();
+            List<EventModel> first = executionModel.getEventsByFilter(cp.getFirstFilter());
+            List<EventModel> second = executionModel.getEventsByFilter(cp.getSecondFilter());
             for (EventModel e1 : first) {
                 for (EventModel e2 : second) {
                     rg.add(new Edge(e1.getId(), e2.getId()));
@@ -407,8 +381,8 @@ public class RelationModelManager {
         @Override
         public Void visitControlDependency(DirectControlDependency ctrlDirect) {
             SimpleGraph rg = (SimpleGraph) relGraphCache.get(ctrlDirect.getDefinedRelation());
-            for (List<EventModel> eventList : executionModel.getThreadEventsMap().values()) {
-                for (EventModel em : eventList) {
+            for (ThreadModel tm : executionModel.getThreadList()) {
+                for (EventModel em : tm.getEventList()) {
                     if (em.isJump()) {
                         if (((CondJumpModel) em).isGoto() || ((CondJumpModel) em).isDead()) {
                             continue;
@@ -427,9 +401,9 @@ public class RelationModelManager {
         @Override
         public Void visitAddressDependency(DirectAddressDependency addrDirect) {
             SimpleGraph rg = (SimpleGraph) relGraphCache.get(addrDirect.getDefinedRelation());
-            for (List<EventModel> eventList : executionModel.getThreadEventsMap().values()) {
+            for (ThreadModel tm : executionModel.getThreadList()) {
                 Set<RegWriterModel> writes = new HashSet<>();
-                for (EventModel em : eventList) {
+                for (EventModel em : tm.getEventList()) {
                     if (em.isRegWriter()) {
                         writes.add((RegWriterModel) em);
                         continue;
@@ -452,9 +426,9 @@ public class RelationModelManager {
         @Override
         public Void visitInternalDataDependency(DirectDataDependency idd) {
             SimpleGraph rg = (SimpleGraph) relGraphCache.get(idd.getDefinedRelation());
-            for (List<EventModel> eventList : executionModel.getThreadEventsMap().values()) {
+            for (ThreadModel tm : executionModel.getThreadList()) {
                 Set<RegWriterModel> writes = new HashSet<>();
-                for (EventModel em : eventList) {
+                for (EventModel em : tm.getEventList()) {
                     if (em.isRegWriter()) {
                         writes.add((RegWriterModel) em);
                         continue;
@@ -475,21 +449,6 @@ public class RelationModelManager {
         }
 
         @Override
-        public Void visitFree(Free f) {
-            SimpleGraph rg = (SimpleGraph) relGraphCache.get(f.getDefinedRelation());
-            for (Thread t : executionModel.getThreads()) {
-                List<EventModel> events = getVisibleEvents(t);
-                if (events.size() <= 1) { continue; }
-                for (EventModel e1 : events) {
-                    for (EventModel e2 : events) {
-                        rg.add(new Edge(e1.getId(), e2.getId()));
-                    }
-                }
-            }
-            return null;
-        }
-
-        @Override
         public Void visitEmpty(Empty empty) {
             return null;
         }
@@ -498,8 +457,8 @@ public class RelationModelManager {
             SimpleGraph rg = (SimpleGraph) relGraphCache.get(r);
             EncodingContext.EdgeEncoder edge = context.edge(r);
             RelationAnalysis.Knowledge k = context.getAnalysisContext()
-                                                                  .get(RelationAnalysis.class)
-                                                                  .getKnowledge(r);
+                                                  .get(RelationAnalysis.class)
+                                                  .getKnowledge(r);
             
             if (k.getMaySet().size() < domain.size() * domain.size()) {
                 k.getMaySet().apply((e1, e2) -> {
@@ -525,9 +484,8 @@ public class RelationModelManager {
     }
 
 
-    // Create a SimpleGraph for base relations and the specific graph for derived ones,
-    // so that edges of base relations are set manually and edges of derived ones can be
-    // computed automatically by PredicateHierarchy. 
+    // Create a the specific graph for derived ones, so that edges of derived relations
+    // can be computed automatically by PredicateHierarchy. 
     private final class RelationGraphBuilder implements Visitor<RelationGraph> {
 
         @Override

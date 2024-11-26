@@ -216,7 +216,7 @@ public class RefinementSolver extends ModelChecker {
         Context baselineContext = Context.createCopyFrom(analysisContext);
         performStaticWmmAnalyses(task, analysisContext, config);
 
-        // Encoding context with the original Wmm and the analysis for relation extraction.
+        // Encoding context with the original Wmm and the analysis context for relation extraction.
         contextWithFullWmm = EncodingContext.of(task, analysisContext, ctx.getFormulaManager());
 
         //  ------- Generate refinement model -------

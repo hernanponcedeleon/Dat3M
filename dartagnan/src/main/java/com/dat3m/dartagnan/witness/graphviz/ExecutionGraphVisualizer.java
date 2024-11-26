@@ -1,6 +1,5 @@
 package com.dat3m.dartagnan.witness.graphviz;
 
-import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.analysis.SyntacticContextAnalysis;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.metadata.MemoryOrder;
@@ -8,6 +7,7 @@ import com.dat3m.dartagnan.verification.model.event.*;
 import com.dat3m.dartagnan.verification.model.ExecutionModelNext;
 import com.dat3m.dartagnan.verification.model.MemoryObjectModel;
 import com.dat3m.dartagnan.verification.model.relation.RelationModel;
+import com.dat3m.dartagnan.verification.model.ThreadModel;
 import org.sosy_lab.common.configuration.Option;
 import org.sosy_lab.common.configuration.Options;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
@@ -160,8 +160,8 @@ public class ExecutionGraphVisualizer {
         String attributes = String.format("color=%s, weight=100", colorMap.getColor(PO));
         graphviz.setEdgeAttributes(attributes);
         BiPredicate<EventModel, EventModel> filter = getFilter(PO);
-        for (Thread t : model.getThreads()) {
-            List<EventModel> eventsToShow = model.getEventModelsToShow(t);
+        for (ThreadModel tm : model.getThreadList()) {
+            List<EventModel> eventsToShow = tm.getEventModelsToShow();
             if (eventsToShow.size() <= 1) { continue; }
             for (int i = 1; i < eventsToShow.size(); i++) {
                 EventModel from = eventsToShow.get(i - 1);
@@ -177,21 +177,21 @@ public class ExecutionGraphVisualizer {
     }
 
     private ExecutionGraphVisualizer addAllThreadPos(ExecutionModelNext model) {
-        for (Thread thread : model.getThreads()) {
-            addThreadPo(thread, model);
+        for (ThreadModel tm : model.getThreadList()) {
+            addThreadPo(tm, model);
         }
         return this;
     }
 
-    private ExecutionGraphVisualizer addThreadPo(Thread thread, ExecutionModelNext model) {
-        List<EventModel> threadEvents = model.getEventModelsToShow(thread);
+    private ExecutionGraphVisualizer addThreadPo(ThreadModel tm, ExecutionModelNext model) {
+        List<EventModel> threadEvents = tm.getEventModelsToShow();
         if (threadEvents.size() <= 1) {
             // This skips init threads.
             return this;
         }
 
         // --- Subgraph start ---
-        graphviz.beginSubgraph("T" + thread.getId());
+        graphviz.beginSubgraph("T" + tm.getId());
 
         for (EventModel e : threadEvents) {
             appendNode(e, (String[]) null);
