@@ -22,6 +22,7 @@ litmus/BPF/C-LB-LWR+R-A+R-A+R-A+R-A-BPF.litmus,0
 litmus/BPF/C-RW-B+RW-B+RW-B+RW-B+RW-B+RW-B-BPF.litmus,0
 litmus/BPF/MP+fcas-addr-fcas+scas-scas.litmus,0
 litmus/BPF/C-LB-GWW+OB-O+OB-O+OB-OB-BPF.litmus,0
+litmus/BPF/Z6.3+fence+fence+acquire.litmus,0
 litmus/BPF/X+addr-reads+corr-writes+data-rw.litmus,1
 litmus/BPF/MP+poonceonces.litmus,1
 litmus/BPF/C-LB-GRR+R-A+OB-O+OB-OB-BPF.litmus,0
@@ -110,6 +111,7 @@ litmus/BPF/X-test-r2.litmus,1
 litmus/BPF/C-RW-B+RW-B+RW-B+RW-B+RW-B-BPF.litmus,0
 litmus/BPF/C-LB-GRW+R-A-BPF.litmus,0
 litmus/BPF/C-LB-GRR+R-A+R-A+OB-OB-BPF.litmus,0
+litmus/BPF/R+release+fence.litmus,1
 litmus/BPF/C-LB-GRR+OB-O+OB-O+OB-O+OB-OB-BPF.litmus,0
 litmus/BPF/C-LB-LRW+R-A+R-A+R-A+OB-OB-BPF.litmus,0
 litmus/BPF/C-LB-GWW+R-A+OB-OB-BPF.litmus,0
