@@ -92,7 +92,7 @@ public class ExecutionGraphVisualizer {
 
     private ExecutionGraphVisualizer addRelations(ExecutionModelNext model) {
         for (RelationModel rm : model.getRelationModels()) {
-            if (rm.getName().equals(PO)) {
+            if (rm.hasName(PO)) {
                 addProgramOrder(model);
             } else {
                 addRelation(model, rm);

@@ -82,11 +82,21 @@ public class RelationModelManager {
         relModelCache.clear();
         relGraphCache.clear();
         edgeModelCache.clear();
-        final List<String> relationNames = buildAsConfig ? getRelationsToShow() : List.of(PO, RF, CO);
+        final List<String> relationNames = buildAsConfig ? getRelationsToShow() : List.of(PO, RF, CO, "fr");
         extractRelations(relationNames);
     }
 
-    public void extractRelations(List<String> relationNames) {
+    private List<String> getRelationsToShow() throws InvalidConfigurationException {
+        context.getTask().getConfig().inject(this);
+        if (relToShowStr.equals("default")) {
+            return List.of(PO, RF, CO, "fr");
+        }
+        else {
+            return Arrays.asList(relToShowStr.split(",\\s*"));
+        }
+    }
+
+    private void extractRelations(List<String> relationNames) {
         Set<Relation> relsToExtract = new HashSet<>();
         for (String name : relationNames) {
             Relation r = wmm.getRelation(name);
@@ -151,16 +161,6 @@ public class RelationModelManager {
 
         for (Relation r : relsToExtract) {
             executionModel.addRelation(r, relModelCache.get(r));
-        }
-    }
-
-    private List<String> getRelationsToShow() throws InvalidConfigurationException {
-        context.getTask().getConfig().inject(this);
-        if (relToShowStr.equals("default")) {
-            return List.of(PO, RF, CO, "fr");
-        }
-        else {
-            return Arrays.asList(relToShowStr.split(",\\s*"));
         }
     }
 
