@@ -16,7 +16,7 @@ public class RelationModel {
         names = new ArrayList<>();
         edgeModels = new HashSet<>();
 
-        addName(name);
+        names.add(name);
     }
 
     public Relation getRelation() {
@@ -36,7 +36,9 @@ public class RelationModel {
     }
 
     public void addName(String name) {
-        names.add(name);
+        if (!names.contains(name)) {
+            names.add(name);
+        }
     }
 
     public Set<EdgeModel> getEdgeModels() {

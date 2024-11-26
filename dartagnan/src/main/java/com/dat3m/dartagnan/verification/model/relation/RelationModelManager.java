@@ -72,7 +72,9 @@ public class RelationModelManager {
         edgeModelCache = new HashMap<>();
     }
 
-    public void buildRelationModels(ExecutionModelNext executionModel, EncodingContext context, boolean buildAsConfig) throws InvalidConfigurationException {
+    public void buildRelationModels(ExecutionModelNext executionModel, EncodingContext context, boolean buildAsConfig)
+        throws InvalidConfigurationException
+    {
         this.executionModel = executionModel;
         this.context = context;
         this.wmm = context.getTask().getMemoryModel();
@@ -405,9 +407,6 @@ public class RelationModelManager {
             for (ThreadModel tm : executionModel.getThreadList()) {
                 for (EventModel em : tm.getEventList()) {
                     if (em.isJump()) {
-                        if (((CondJumpModel) em).isGoto() || ((CondJumpModel) em).isDead()) {
-                            continue;
-                        }
                         for (Event e : ((CondJumpModel) em).getDependentEvents()) {
                             EventModel dep = executionModel.getEventModelByEvent(e);
                             if (dep == null) { continue; }

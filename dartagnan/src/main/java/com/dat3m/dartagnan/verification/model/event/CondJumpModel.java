@@ -15,19 +15,14 @@ public class CondJumpModel extends DefaultEventModel implements RegReaderModel {
         super(event);
     }
 
-    public boolean isGoto() {
-        return ((CondJump) event).isGoto();
-    }
-
-    public boolean isDead() {
-        return ((CondJump) event).isDead();
-    }
-
     public List<Event> getDependentEvents() {
-        if (event instanceof IfAsJump jump) {
+        if (((CondJump) event).isGoto() || ((CondJump) event).isDead()) {
+            return List.of();
+        } else if (event instanceof IfAsJump jump) {
             return jump.getBranchesEvents();
+        } else {
+            return ((CondJump) event).getSuccessor().getSuccessors();
         }
-        return ((CondJump) event).getSuccessor().getSuccessors();
     }
 
     @Override

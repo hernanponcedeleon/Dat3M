@@ -22,7 +22,6 @@ import java.util.function.BiPredicate;
 
 import static com.dat3m.dartagnan.program.analysis.SyntacticContextAnalysis.*;
 import static com.dat3m.dartagnan.wmm.RelationNameRepository.*;
-// import static com.dat3m.dartagnan.configuration.OptionNames.WITNESS_RELATIONS_TO_SHOW;
 
 /*
     This is some rudimentary class to create graphs of executions.

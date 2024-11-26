@@ -24,7 +24,9 @@ public class ExecutionModelManager {
         rMManager = new RelationModelManager(this);
     }
 
-    public ExecutionModelNext buildExecutionModel(EncodingContext context, Model model, boolean buildAsConfig) throws InvalidConfigurationException {
+    public ExecutionModelNext buildExecutionModel(EncodingContext context, Model model, boolean buildAsConfig)
+        throws InvalidConfigurationException
+    {
         this.model = model;
         final ExecutionModelNext executionModel = new ExecutionModelNext();
 
