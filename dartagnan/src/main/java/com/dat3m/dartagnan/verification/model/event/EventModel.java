@@ -1,22 +1,15 @@
 package com.dat3m.dartagnan.verification.model.event;
 
-import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.Event;
+import com.dat3m.dartagnan.verification.model.ThreadModel;
 
 
 public interface EventModel extends Comparable<EventModel> {
     Event getEvent();
 
-    Thread getThread();
+    ThreadModel getThread();
 
     int getId();
-    void setId(int id);
-
-    int getLocalId();
-    void setLocalId(int localId);
-
-    boolean wasExecuted();
-    void setWasExecuted(boolean executed);
 
     boolean isMemoryEvent();
     boolean isInit();
@@ -25,10 +18,10 @@ public interface EventModel extends Comparable<EventModel> {
     boolean isFence();
     boolean isExclusive();
     boolean isRMW();
+    boolean isVisible();
     boolean isJump();
     boolean isAssert();
     boolean isLocal();
     boolean isRegReader();
     boolean isRegWriter();
-    boolean hasTag(String tag);
 }

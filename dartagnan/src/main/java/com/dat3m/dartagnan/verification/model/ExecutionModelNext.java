@@ -41,8 +41,8 @@ public class ExecutionModelNext {
         atomicBlocksMap = new HashMap<>();
     }
 
-    public void addThreadEvents(Thread thread, List<EventModel> events) {
-        threadList.add(new ThreadModel(thread, events));
+    public void addThread(ThreadModel tModel) {
+        threadList.add(tModel);
     }
 
     public void addEvent(Event e, EventModel eModel) {
@@ -93,7 +93,7 @@ public class ExecutionModelNext {
     }
 
     public List<EventModel> getVisibleEventList() {
-        return eventList.stream().filter(e -> e.hasTag(Tag.VISIBLE)).toList();
+        return eventList.stream().filter(e -> e.isVisible()).toList();
     }
 
     public List<EventModel> getEventsByFilter(Filter filter) {

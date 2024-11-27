@@ -229,10 +229,7 @@ public class RelationModelManager {
             SimpleGraph rg = (SimpleGraph) relGraphCache.get(relation);
             EncodingContext.EdgeEncoder co = context.edge(relation);
 
-            for (Map.Entry<BigInteger, Set<StoreModel>> entry : executionModel.getAddressWritesMap()
-                                                                              .entrySet()) {
-                BigInteger address = entry.getKey();
-                Set<StoreModel> writes = entry.getValue();
+            for (Set<StoreModel> writes : executionModel.getAddressWritesMap().values()) {
                 List<StoreModel> coSortedWrites;
                 if (context.usesSATEncoding()) {
                     Map<StoreModel, List<StoreModel>> coEdges = new HashMap<>();

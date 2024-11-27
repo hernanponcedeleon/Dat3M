@@ -4,34 +4,31 @@ import com.dat3m.dartagnan.program.Register.Read;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.RegReader;
 import com.dat3m.dartagnan.program.event.Tag;
+import com.dat3m.dartagnan.verification.model.ThreadModel;
 
 import java.util.Set;
 import java.math.BigInteger;
 
 
 public class MemoryEventModel extends DefaultEventModel implements RegReaderModel {
-    protected BigInteger accessedAddress;
-    protected BigInteger value;
+    protected final BigInteger accessedAddress;
+    protected final BigInteger value;
 
-    public MemoryEventModel(Event event) {
-        super(event);
+    public MemoryEventModel(
+        Event event, ThreadModel thread, int id, BigInteger address, BigInteger value
+    ) {
+        super(event, thread, id);
         assert event.hasTag(Tag.MEMORY);
+        this.accessedAddress = address;
+        this.value = value;
     }
 
     public BigInteger getAccessedAddress() {
         return accessedAddress;
     }
 
-    public void setAccessedAddress(BigInteger address) {
-        accessedAddress = address;
-    }
-
     public BigInteger getValue() {
         return value;
-    }
-
-    public void setValue(BigInteger value) {
-        this.value = value;
     }
 
     @Override

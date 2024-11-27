@@ -9,17 +9,21 @@ import com.dat3m.dartagnan.program.event.lang.svcomp.EndAtomic;
 import com.dat3m.dartagnan.program.filter.Filter;
 import com.dat3m.dartagnan.verification.model.ExecutionModelManager;
 import com.dat3m.dartagnan.verification.model.ExecutionModelNext;
-
-import static com.google.common.base.Preconditions.checkNotNull;
-import static com.google.common.base.Preconditions.checkState;
+import com.dat3m.dartagnan.verification.model.ThreadModel;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
 
 import java.math.BigInteger;
 import java.util.*;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.common.base.Preconditions.checkState;
+
 
 public class EventModelManager {
+    private static final Logger logger = LogManager.getLogger(EventModelManager.class);
+
     private final ExecutionModelManager manager;
-    private final Map<Event, EventModel> eventCache;
 
     private ExecutionModelNext executionModel;
     private EncodingContext context;
@@ -27,13 +31,11 @@ public class EventModelManager {
 
     public EventModelManager(ExecutionModelManager manager) {
         this.manager = manager;
-        eventCache = new HashMap<>();
     }
 
     public void buildEventModels(ExecutionModelNext executionModel, EncodingContext context) {
         this.executionModel = executionModel;
         this.context = context;
-        eventCache.clear();
         eventFilter = Filter.byTag(Tag.VISIBLE);
         extractEvents();
     }
@@ -43,7 +45,7 @@ public class EventModelManager {
         List<Thread> threadList = new ArrayList<>(context.getTask().getProgram().getThreads());
 
         for (Thread t : threadList) {
-            int localId = 0;
+            ThreadModel tm = new ThreadModel(t);
             int atomicBegin = -1;
             List<EventModel> eventList = new ArrayList<>();
             List<List<Integer>> atomicBlockRanges = new ArrayList<>();
@@ -56,7 +58,7 @@ public class EventModelManager {
                 }
 
                 if (toExtract(e)) {
-                    eventList.add(extractEvent(e, id++, localId++));
+                    eventList.add(extractEvent(e, tm, id++));
                 }
                 
                 if (e instanceof BeginAtomic) {
@@ -83,7 +85,7 @@ public class EventModelManager {
             }
 
             if (eventList.size() > 0) {
-                executionModel.addThreadEvents(t, eventList);
+                executionModel.addThread(tm);
 
                 List<List<EventModel>> atomicBlocks = new ArrayList<>(atomicBlockRanges.size());
                 for (int i = 0; i < atomicBlockRanges.size(); i++) {
@@ -99,78 +101,54 @@ public class EventModelManager {
         }
     }
 
-    private EventModel extractEvent(Event e, int id, int localId) {
-        EventModel em = getOrCreateModel(e, id, localId);
-        executionModel.addEvent(e, em);
-        return em;
-    }
-
-    private EventModel getOrCreateModel(Event e, int id, int localId) {
-        if (eventCache.containsKey(e)) {
-            return eventCache.get(e);
-        }
-
-        EventModel em = createAndInitializeModel(e);
-        em.setId(id);
-        em.setLocalId(localId);
-        if (e instanceof CondJump) {
-            em.setWasExecuted(
-                manager.isTrue(context.jumpCondition((CondJump) e))
-            );
-        } else { em.setWasExecuted(true); }
-        eventCache.put(e, em);
-
-        return em;
-    }
-
-    private EventModel createAndInitializeModel(Event e) {
+    private EventModel extractEvent(Event e, ThreadModel tm, int id) {
         EventModel em;
         if (e.hasTag(Tag.MEMORY)) {
             Object addressObj = checkNotNull(
                 manager.evaluateByModel(context.address((MemoryEvent) e))
             );
-            BigInteger address = new BigInteger(addressObj.toString());
+            final BigInteger address = new BigInteger(addressObj.toString());
             executionModel.addAccessedAddress(address);
+            
+            String valueString = String.valueOf(
+                manager.evaluateByModel(context.value((MemoryCoreEvent) e))
+            );
+            final BigInteger value = switch(valueString) {
+                // NULL case can happen if the solver optimized away a variable.
+                // This should only happen if the value is irrelevant, so we will just pick 0.
+                case "false", "null" -> BigInteger.ZERO;
+                case "true" -> BigInteger.ONE;
+                default -> new BigInteger(valueString);
+            };
 
             if (e.hasTag(Tag.READ)) {
-                em = new LoadModel(e);
+                em = new LoadModel(e, tm, id, address, value);
                 executionModel.addAddressRead(address, (LoadModel) em);
             } else if (e.hasTag(Tag.WRITE)) {
-                em = new StoreModel(e);
+                em = new StoreModel(e, tm, id, address, value);
                 executionModel.addAddressWrite(address, (StoreModel) em);
             } else {
-                em = new MemoryEventModel(e);
-            }
-
-            ((MemoryEventModel) em).setAccessedAddress(address);
-
-            if (em.isRead() || em.isWrite()) {
-                String valueString = String.valueOf(
-                    manager.evaluateByModel(context.value((MemoryCoreEvent) e))
-                );
-                BigInteger value = switch(valueString) {
-                    // NULL case can happen if the solver optimized away a variable.
-                    // This should only happen if the value is irrelevant, so we will just pick 0.
-                    case "false", "null" -> BigInteger.ZERO;
-                    case "true" -> BigInteger.ONE;
-                    default -> new BigInteger(valueString);
-                };
-                ((MemoryEventModel) em).setValue(value);
+                // Should never happen.
+                logger.warn("Event {} has Tag MEMORY but no READ or WRITE", e);
+                em = new MemoryEventModel(e, tm, id, address, value);
             }
 
         } else if (e.hasTag(Tag.FENCE)) {
-            String name = ((GenericVisibleEvent) e).getName();
-            em = new FenceModel(e, name);
-        } else if (e instanceof Assert) {
-            em = new AssertModel((Assert) e);
-        } else if (e instanceof Local) {
-            em = new LocalModel((Local) e);
-        } else if (e instanceof CondJump) {
-            em = new CondJumpModel((CondJump) e);
+            final String name = ((GenericVisibleEvent) e).getName();
+            em = new FenceModel(e, tm, id, name);
+        } else if (e instanceof Assert assrt) {
+            em = new AssertModel(assrt, tm, id);
+        } else if (e instanceof Local local) {
+            em = new LocalModel(local, tm, id);
+        } else if (e instanceof CondJump cj) {
+            em = new CondJumpModel(cj, tm, id);
         } else {
-            em = new DefaultEventModel(e);
+            // Should never happen.
+            logger.warn("Extracting the event {} that should not be extracted");
+            em = new DefaultEventModel(e, tm, id);
         }
 
+        executionModel.addEvent(e, em);
         return em;
     }
 

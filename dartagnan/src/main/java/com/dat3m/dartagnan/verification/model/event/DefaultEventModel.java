@@ -1,22 +1,25 @@
 package com.dat3m.dartagnan.verification.model.event;
 
-import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.RegReader;
 import com.dat3m.dartagnan.program.event.RegWriter;
+import com.dat3m.dartagnan.verification.model.ThreadModel;
 
 import static com.dat3m.dartagnan.program.event.Tag.*;
 
 
 public class DefaultEventModel implements EventModel {
     protected final Event event;
+    protected final ThreadModel thread;
     protected int id = -1;
-    protected int localId = -1;
-    protected boolean executed;
 
-    public DefaultEventModel(Event event) {
+    public DefaultEventModel(Event event, ThreadModel thread, int id) {
         this.event = event;
+        this.thread = thread;
+        this.id = id;
+
+        thread.addEvent(this);
     }
 
     @Override
@@ -25,38 +28,13 @@ public class DefaultEventModel implements EventModel {
     }
 
     @Override
-    public Thread getThread() {
-        return event.getThread();
+    public ThreadModel getThread() {
+        return thread;
     }
 
     @Override
     public int getId() {
         return id;
-    }
-
-    @Override
-    public void setId(int id) {
-        this.id = id;
-    }
-
-    @Override
-    public int getLocalId() {
-        return localId;
-    }
-
-    @Override
-    public void setLocalId(int localId) {
-        this.localId = localId;
-    }
-
-    @Override
-    public boolean wasExecuted() {
-        return executed;
-    }
-
-    @Override
-    public void setWasExecuted(boolean executed) {
-        this.executed = executed;
     }
 
     @Override
@@ -81,6 +59,9 @@ public class DefaultEventModel implements EventModel {
     public boolean isRMW() { return event.hasTag(RMW); }
 
     @Override
+    public boolean isVisible() { return event.hasTag(VISIBLE); }
+
+    @Override
     public boolean isJump() { return event instanceof CondJump; }
 
     @Override
@@ -96,11 +77,6 @@ public class DefaultEventModel implements EventModel {
     public boolean isRegWriter() { return event instanceof RegWriter; }
 
     @Override
-    public boolean hasTag(String tag) {
-    	return event.hasTag(tag);
-    }
-
-    @Override
     public int hashCode() {
         return id;
     }
@@ -113,7 +89,7 @@ public class DefaultEventModel implements EventModel {
 
     @Override
     public String toString() {
-        return String.format("T%d:%d", event.getThread().getId(), localId);
+        return String.format("T%d/E%d", thread.getId(), id);
     }
 
     @Override

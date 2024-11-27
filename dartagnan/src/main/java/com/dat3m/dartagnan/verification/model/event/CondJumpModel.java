@@ -5,14 +5,15 @@ import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.RegReader;
 import com.dat3m.dartagnan.program.event.core.CondJump;
 import com.dat3m.dartagnan.program.event.core.IfAsJump;
+import com.dat3m.dartagnan.verification.model.ThreadModel;
 
 import java.util.Set;
 import java.util.List;
 
 
 public class CondJumpModel extends DefaultEventModel implements RegReaderModel {
-    public CondJumpModel(CondJump event) {
-        super(event);
+    public CondJumpModel(CondJump event, ThreadModel thread, int id) {
+        super(event, thread, id);
     }
 
     public List<Event> getDependentEvents() {

@@ -27,7 +27,6 @@ import static com.dat3m.dartagnan.wmm.RelationNameRepository.*;
     This is some rudimentary class to create graphs of executions.
     Currently, it just creates very special graphs.
  */
-// @Options
 public class ExecutionGraphVisualizer {
 
     private static final Logger logger = LogManager.getLogger(ExecutionGraphVisualizer.class);
