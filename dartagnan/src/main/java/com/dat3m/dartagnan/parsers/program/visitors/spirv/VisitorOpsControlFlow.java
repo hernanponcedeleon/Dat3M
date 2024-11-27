@@ -155,22 +155,6 @@ public class VisitorOpsControlFlow extends SpirvBaseVisitor<Event> {
         return visitGoto(labelId);
     }
 
-    private Event visitIfBranch(Expression guard, String trueLabelId, String falseLabelId) {
-        for (String labelId : List.of(trueLabelId, falseLabelId)) {
-            if (cfBuilder.isBlockStarted(labelId)) {
-                throw new ParsingException("Illegal backward jump to '%s' from a structured branch", labelId);
-            }
-        }
-        mergeLabelId = null;
-        nextLabelId = trueLabelId;
-        builder.setNextOps(Set.of("OpLabel"));
-        Label falseLabel = cfBuilder.getOrCreateLabel(falseLabelId);
-        Label mergeLabel = cfBuilder.createMergeLabel(falseLabelId);
-        Event event = EventFactory.newIfJumpUnless(guard, falseLabel, mergeLabel);
-        builder.addEvent(event);
-        return cfBuilder.endBlock(event);
-    }
-
     private Event visitConditionalJump(Expression guard, String trueLabelId, String falseLabelId) {
         if (cfBuilder.isBlockStarted(trueLabelId)) {
             if (cfBuilder.isBlockStarted(falseLabelId)) {
@@ -189,16 +173,32 @@ public class VisitorOpsControlFlow extends SpirvBaseVisitor<Event> {
         return cfBuilder.endBlock(trueJump);
     }
 
+    private Event visitIfBranch(Expression guard, String trueLabelId, String falseLabelId) {
+        for (String labelId : List.of(trueLabelId, falseLabelId)) {
+            if (cfBuilder.isBlockStarted(labelId)) {
+                throw new ParsingException("Illegal backward jump to '%s' from a structured branch", labelId);
+            }
+        }
+        mergeLabelId = null;
+        builder.setNextOps(Set.of("OpLabel"));
+
+        // TODO: Currently, we treat structured branches as unstructured control flow.
+        //  We need a new event type to represent SPIR-V structured control flow.
+        //  For now, we can treat a structured branch as unstructured jumps,
+        //  because Vulkan memory model has no control dependency.
+
+        return visitConditionalJump(guard, trueLabelId, falseLabelId);
+    }
+
     private Event visitLoopBranchConditional(Expression guard, String trueLabelId, String falseLabelId) {
         mergeLabelId = null;
         continueLabelId = null;
         nextLabelId = trueLabelId;
         builder.setNextOps(Set.of("OpLabel"));
 
-        // TODO: For a structured while loop, a control dependency
-        //  should be generated in the same way as for a structured if branch.
+        // TODO: Currently, we treat structured loops as unstructured control flow.
         //  We need to add a new event type for this.
-        //  For now, we can treat while loop as unstructured jumps,
+        //  For now, we can treat a structured branch as unstructured jumps,
         //  because Vulkan memory model has no control dependency.
 
         return visitConditionalJump(guard, trueLabelId, falseLabelId);

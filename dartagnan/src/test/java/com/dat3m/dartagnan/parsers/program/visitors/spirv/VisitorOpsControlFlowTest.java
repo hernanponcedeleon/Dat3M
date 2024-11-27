@@ -10,7 +10,6 @@ import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.core.CondJump;
-import com.dat3m.dartagnan.program.event.core.IfAsJump;
 import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.event.core.Skip;
 import com.dat3m.dartagnan.program.event.functions.Return;
@@ -153,22 +152,64 @@ public class VisitorOpsControlFlowTest {
         List<Event> events = builder.getCurrentFunction().getEvents();
 
         Label label0 = (Label) events.get(0);
-        IfAsJump ifJump = (IfAsJump) events.get(1);
-        Label label1 = (Label) events.get(2);
-        CondJump jump = (CondJump) events.get(3);
-        Label label2 = (Label) events.get(4);
-        Return ret = (Return) events.get(5);
+        CondJump trueJump = (CondJump) events.get(1);
+        CondJump falseJump = (CondJump) events.get(2);
+        Label label1 = (Label) events.get(3);
+        CondJump jump = (CondJump) events.get(4);
+        Label label2 = (Label) events.get(5);
+        Return ret = (Return) events.get(6);
 
         assertEquals("%label0", label0.getName());
-        assertEquals("%label2", ifJump.getLabel().getName());
-        assertEquals("%label2_end", ifJump.getEndIf().getName());
+        assertEquals("%label1", trueJump.getLabel().getName());
+        assertEquals("%label2", falseJump.getLabel().getName());
         assertEquals("%label1", label1.getName());
         assertEquals("%label2", jump.getLabel().getName());
         assertEquals("%label2", label2.getName());
 
         assertTrue(jump.isGoto());
-        assertEquals(Map.of("%label2", "%label2_end"), cfBuilder.getMergeLabelIds());
-        assertEquals(Map.of("%label0", ifJump, "%label1", jump, "%label2", ret),
+        assertEquals(Map.of("%label0", trueJump, "%label1", jump, "%label2", ret),
+                cfBuilder.getLastBlockEvents());
+    }
+
+    @Test
+    public void testStructuredBranchInverseLabeOrder() {
+        String input = """
+                %label0 = OpLabel
+                OpSelectionMerge %label2 None
+                OpBranchConditional %value %label2 %label1
+                %label1 = OpLabel
+                OpBranch %label2
+                %label2 = OpLabel
+                OpReturn
+                """;
+
+        builder.mockBoolType("%bool");
+        builder.mockUndefinedValue("%value", "%bool");
+        builder.mockFunctionStart(false);
+
+        // when
+        visit(input);
+
+        // then
+        List<Event> events = builder.getCurrentFunction().getEvents();
+
+        Label label0 = (Label) events.get(0);
+        CondJump trueJump = (CondJump) events.get(1);
+        CondJump falseJump = (CondJump) events.get(2);
+        Label label1 = (Label) events.get(3);
+        CondJump jump = (CondJump) events.get(4);
+        Label label2 = (Label) events.get(5);
+        Return ret = (Return) events.get(6);
+
+        assertEquals("%label0", label0.getName());
+        assertEquals("%label2", trueJump.getLabel().getName());
+        assertEquals("%label1", falseJump.getLabel().getName());
+        assertEquals("%label1", label1.getName());
+        assertEquals("%label2", jump.getLabel().getName());
+        assertEquals("%label2", label2.getName());
+
+        assertTrue(jump.isGoto());
+        assertEquals(Map.of("%label0", trueJump, "%label1", jump, "%label2", ret),
                 cfBuilder.getLastBlockEvents());
     }
 
@@ -201,22 +242,24 @@ public class VisitorOpsControlFlowTest {
         List<Event> events = builder.getCurrentFunction().getEvents();
 
         Label label0 = (Label) events.get(0);
-        IfAsJump ifJump = (IfAsJump) events.get(1);
-        Label label1 = (Label) events.get(2);
-        IfAsJump ifJumpInner = (IfAsJump) events.get(3);
-        Label label1Inner = (Label) events.get(4);
-        CondJump jumpInner = (CondJump) events.get(5);
-        Label label2Inner = (Label) events.get(6);
-        CondJump jump = (CondJump) events.get(7);
-        Label label2 = (Label) events.get(8);
-        Return ret = (Return) events.get(9);
+        CondJump trueJump = (CondJump) events.get(1);
+        CondJump falseJump = (CondJump) events.get(2);
+        Label label1 = (Label) events.get(3);
+        CondJump trueJumpInner = (CondJump) events.get(4);
+        CondJump falseJumpInner = (CondJump) events.get(5);
+        Label label1Inner = (Label) events.get(6);
+        CondJump jumpInner = (CondJump) events.get(7);
+        Label label2Inner = (Label) events.get(8);
+        CondJump jump = (CondJump) events.get(9);
+        Label label2 = (Label) events.get(10);
+        Return ret = (Return) events.get(11);
 
         assertEquals("%label0", label0.getName());
-        assertEquals("%label2", ifJump.getLabel().getName());
-        assertEquals("%label2_end", ifJump.getEndIf().getName());
+        assertEquals("%label1", trueJump.getLabel().getName());
+        assertEquals("%label2", falseJump.getLabel().getName());
         assertEquals("%label1", label1.getName());
-        assertEquals("%label2_inner", ifJumpInner.getLabel().getName());
-        assertEquals("%label2_inner_end", ifJumpInner.getEndIf().getName());
+        assertEquals("%label1_inner", trueJumpInner.getLabel().getName());
+        assertEquals("%label2_inner", falseJumpInner.getLabel().getName());
         assertEquals("%label1_inner", label1Inner.getName());
         assertEquals("%label2_inner", jumpInner.getLabel().getName());
         assertEquals("%label2_inner", label2Inner.getName());
@@ -228,8 +271,8 @@ public class VisitorOpsControlFlowTest {
         assertTrue(jumpInner.isGoto());
 
         assertEquals(Map.of(
-                "%label0", ifJump,
-                "%label1", ifJumpInner,
+                "%label0", trueJump,
+                "%label1", trueJumpInner,
                 "%label1_inner", jumpInner,
                 "%label2_inner", jump,
                 "%label2", ret
@@ -267,26 +310,28 @@ public class VisitorOpsControlFlowTest {
         List<Event> events = builder.getCurrentFunction().getEvents();
 
         Label label0 = (Label) events.get(0);
-        IfAsJump ifJump = (IfAsJump) events.get(1);
-        Label label1 = (Label) events.get(2);
-        CondJump jump1 = (CondJump) events.get(3);
-        Label label2 = (Label) events.get(4);
-        IfAsJump ifJumpInner = (IfAsJump) events.get(5);
-        Label label1Inner = (Label) events.get(6);
-        CondJump jumpInner = (CondJump) events.get(7);
-        Label label2Inner = (Label) events.get(8);
-        CondJump jump2 = (CondJump) events.get(9);
-        Label label3 = (Label) events.get(10);
-        Return ret = (Return) events.get(11);
+        CondJump trueJump = (CondJump) events.get(1);
+        CondJump falseJump = (CondJump) events.get(2);
+        Label label1 = (Label) events.get(3);
+        CondJump jump1 = (CondJump) events.get(4);
+        Label label2 = (Label) events.get(5);
+        CondJump trueJumpInner = (CondJump) events.get(6);
+        CondJump falseJumpInner = (CondJump) events.get(7);
+        Label label1Inner = (Label) events.get(8);
+        CondJump jumpInner = (CondJump) events.get(9);
+        Label label2Inner = (Label) events.get(10);
+        CondJump jump2 = (CondJump) events.get(11);
+        Label label3 = (Label) events.get(12);
+        Return ret = (Return) events.get(13);
 
         assertEquals("%label0", label0.getName());
-        assertEquals("%label3", ifJump.getLabel().getName());
-        assertEquals("%label3_end", ifJump.getEndIf().getName());
+        assertEquals("%label1", trueJump.getLabel().getName());
+        assertEquals("%label3", falseJump.getLabel().getName());
         assertEquals("%label2", jump1.getLabel().getName());
         assertEquals("%label1", label1.getName());
         assertEquals("%label2", label2.getName());
-        assertEquals("%label2_inner", ifJumpInner.getLabel().getName());
-        assertEquals("%label2_inner_end", ifJumpInner.getEndIf().getName());
+        assertEquals("%label1_inner", trueJumpInner.getLabel().getName());
+        assertEquals("%label2_inner", falseJumpInner.getLabel().getName());
         assertEquals("%label1_inner", label1Inner.getName());
         assertEquals("%label2_inner", jumpInner.getLabel().getName());
         assertEquals("%label2_inner", label2Inner.getName());
@@ -298,9 +343,9 @@ public class VisitorOpsControlFlowTest {
         assertTrue(jumpInner.isGoto());
 
         assertEquals(Map.of(
-                "%label0", ifJump,
+                "%label0", trueJump,
                 "%label1", jump1,
-                "%label2", ifJumpInner,
+                "%label2", trueJumpInner,
                 "%label1_inner", jumpInner,
                 "%label2_inner", jump2,
                 "%label3", ret
@@ -308,47 +353,17 @@ public class VisitorOpsControlFlowTest {
     }
 
     @Test
-    public void testStructuredBranchNestedSameLabel() {
+    public void testLoopWithForwardLabels() {
         // given
         String input = """
                 %label0 = OpLabel
-                OpSelectionMerge %label2 None
+                OpLoopMerge %label1 %label2 None
                 OpBranchConditional %value %label1 %label2
                 %label1 = OpLabel
-                OpSelectionMerge %label2 None
-                OpBranchConditional %value %label1_inner %label2
-                %label1_inner = OpLabel
                 OpBranch %label2
                 %label2 = OpLabel
                 OpReturn
                 """;
-
-        builder.mockFunctionStart(false);
-        builder.mockBoolType("%bool");
-        builder.mockUndefinedValue("%value", "%bool");
-
-        try {
-            // when
-            visit(input);
-            fail("Should throw exception");
-        } catch (ParsingException e) {
-            // then
-            assertEquals("Attempt to redefine label '%label2_end'", e.getMessage());
-        }
-    }
-
-    @Test
-    public void testLoopWithForwardLabels() {
-        // given
-        String input = """
-                        %label0 = OpLabel
-                        OpLoopMerge %label1 %label2 None
-                        OpBranchConditional %value %label1 %label2
-                        %label1 = OpLabel
-                        OpBranch %label2
-                        %label2 = OpLabel
-                        OpReturn
-                        """;
 
         builder.mockFunctionStart(false);
         builder.mockBoolType("%bool");
@@ -378,8 +393,6 @@ public class VisitorOpsControlFlowTest {
         assertFalse(jump1.isGoto());
         assertTrue(jump2.isGoto());
         assertTrue(jump3.isGoto());
-
-        assertTrue(cfBuilder.getMergeLabelIds().isEmpty());
 
         assertEquals(Map.of("%label0", jump1, "%label1", jump3, "%label2", ret),
                 cfBuilder.getLastBlockEvents());
@@ -420,8 +433,6 @@ public class VisitorOpsControlFlowTest {
         assertFalse(jump1.isGoto());
         assertTrue(jump2.isGoto());
 
-        assertTrue(cfBuilder.getMergeLabelIds().isEmpty());
-
         assertEquals(Map.of("%label0", jump1, "%label1", ret),
                 cfBuilder.getLastBlockEvents());
     }
@@ -450,20 +461,6 @@ public class VisitorOpsControlFlowTest {
                         """,
                 "Illegal backward jump to '%label0' " +
                         "from a structured branch");
-    }
-
-    @Test
-    public void testStructuredBranchLabelsIllegalOrder() {
-        doTestIllegalStructuredBranch("""
-                        %label0 = OpLabel
-                        OpSelectionMerge %label1 None
-                        OpBranchConditional %value1 %label2 %label1
-                        %label1 = OpLabel
-                        OpBranch %label2
-                        %label2 = OpLabel
-                        OpReturn
-                        """,
-                "Illegal label, expected '%label2' but received '%label1'");
     }
 
     @Test
