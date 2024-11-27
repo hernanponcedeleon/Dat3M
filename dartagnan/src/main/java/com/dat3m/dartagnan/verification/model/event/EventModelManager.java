@@ -144,7 +144,7 @@ public class EventModelManager {
             em = new CondJumpModel(cj, tm, id);
         } else {
             // Should never happen.
-            logger.warn("Extracting the event {} that should not be extracted");
+            logger.warn("Extracting the event {} that should not be extracted", e);
             em = new DefaultEventModel(e, tm, id);
         }
 
