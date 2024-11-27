@@ -239,12 +239,12 @@ public class ExecutionGraphVisualizer {
         fileVio.getParentFile().mkdirs();
         try (FileWriter writer = new FileWriter(fileVio)) {
             // Create .dot file
-            ExecutionGraphVisualizer visualizer = new ExecutionGraphVisualizer();
-            visualizer.setSyntacticContext(synContext)
-                      .setReadFromFilter(rfFilter)
-                      .setFromReadFilter(frFilter)
-                      .setCoherenceFilter(coFilter)
-                      .generateGraphOfExecutionModel(writer, "Iteration " + iterationCount, model);
+            new ExecutionGraphVisualizer()
+                    .setSyntacticContext(synContext)
+                    .setReadFromFilter(rfFilter)
+                    .setFromReadFilter(frFilter)
+                    .setCoherenceFilter(coFilter)
+                    .generateGraphOfExecutionModel(writer, "Iteration " + iterationCount, model);
 
             writer.flush();
             if (convert) {
