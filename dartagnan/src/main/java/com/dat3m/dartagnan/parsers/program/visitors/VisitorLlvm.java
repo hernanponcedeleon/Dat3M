@@ -72,12 +72,8 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
 
     @Override
     public Expression visitCompilationUnit(CompilationUnitContext ctx) {
-        // Create the metadata mapping beforehand, so that instructions can get all attachments.
-        // Also parse all type definitions.
+        // Define types
         for (final TopLevelEntityContext entity : ctx.topLevelEntity()) {
-            if (entity.metadataDef() != null) {
-                entity.accept(this);
-            }
             if (entity.typeDef() != null) {
                 entity.accept(this);
             }
@@ -96,14 +92,21 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
             }
         }
 
-        // Parse global definitions after declarations.
+        // Create the metadata mapping beforehand, so that instructions can get all attachments.
+        for (final TopLevelEntityContext entity : ctx.topLevelEntity()) {
+            if (entity.metadataDef() != null) {
+                entity.accept(this);
+            }
+        }
+
+        // Parse global definitions.
         for (final TopLevelEntityContext entity : ctx.topLevelEntity()) {
             if (entity.globalDef() != null) {
                 visitGlobalDef(entity.globalDef());
             }
         }
 
-        // Parse definitions
+        // Parse remaining definitions (~ function bodies).
         for (final TopLevelEntityContext entity : ctx.topLevelEntity()) {
             if (entity.metadataDef() == null &&
                     entity.globalDef() == null &&
