@@ -86,6 +86,9 @@ public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
     }
 
     private List<Register> reverseAndGetFnParams(List<Register> fnParams) {
+        if(fnParams.isEmpty()){
+            return null;
+        }
         if (fnParams.size() == 1) {
             return fnParams;
         }
@@ -164,12 +167,10 @@ public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
         // the other ones are the remaining args
         // It should be n:w for 32 bit and n:x for 64 bit, but to make it easier I just allocate every type to be ok
         // now mapped to the real registers of llvm function
-        for (int i = 0; i < this.MAX_FN_CALLS; i++) {
-            String key = String.format("$%d", i);
-            Register value = this.fnParameters.get(0);
-            llvmToArmMap.put(key, value);
-        }
         if (returnRegister == null) {
+            if(this.fnParameters == null){
+                return; //we're in a fence fn
+            }
             for (int i = 0; i < this.fnParameters.size() - 1; i++) {
                 String key = String.format("${%d:w}", i);
                 String keyLong = String.format("${%d:x}", i);
@@ -216,6 +217,11 @@ public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
                 registerCounter++;
                 llvmToArmMap.put(key, value);
             }
+        }
+        for (int i = 0; i < this.MAX_FN_CALLS; i++) {
+            String key = String.format("$%d", i);
+            Register value = this.fnParameters.get(0);
+            llvmToArmMap.put(key, value);
         }
     }
 
@@ -334,6 +340,17 @@ public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
         Register leftRegister = (Register) ctx.register(1).accept(this);
         Register rightRegister = (Register) ctx.register(2).accept(this);
         Expression exp = expressions.makeAdd(leftRegister, rightRegister);
+        updateReturnRegisterIfModified(resultRegister);
+        events.add(EventFactory.newLocal(resultRegister, exp));
+        return visitChildren(ctx);
+    }
+
+    @Override
+    public Object visitSub(InlineAArch64Parser.SubContext ctx){
+        Register resultRegister = (Register) ctx.register(0).accept(this);
+        Register leftRegister = (Register) ctx.register(1).accept(this);
+        Register rightRegister = (Register) ctx.register(2).accept(this);
+        Expression exp = expressions.makeSub(leftRegister, rightRegister);
         updateReturnRegisterIfModified(resultRegister);
         events.add(EventFactory.newLocal(resultRegister, exp));
         return visitChildren(ctx);

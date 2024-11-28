@@ -17,6 +17,7 @@ instr
     | loadExclusiveReg
     | loadAcquireExclusiveReg
     | add
+    | sub
     | storeReg
     | storeExclusiveRegister
     | storeReleaseExclusiveReg
@@ -46,6 +47,7 @@ loadAcquireReg : (LoadAcquireReg register)Comma register;
 loadExclusiveReg : (LoadExclusiveReg register)Comma register;
 loadAcquireExclusiveReg : (LoadAcquireExclusiveReg register)Comma register;
 add : ((Add register)Comma register)Comma register;
+sub : ((Sub register)Comma register)Comma register;
 storeReg : (StoreReg register)Comma register;
 storeReleaseReg : (StoreReleaseReg register)Comma register;
 storeExclusiveRegister : ((StoreExclusiveRegister register)Comma register)Comma register ;
