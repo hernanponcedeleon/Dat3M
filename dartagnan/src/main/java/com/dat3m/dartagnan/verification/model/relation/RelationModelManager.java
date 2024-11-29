@@ -184,7 +184,13 @@ public class RelationModelManager {
         }
 
         for (Relation r : relsToExtract) {
-            executionModel.addRelation(r, relModelCache.get(r));
+            RelationModel rm;
+            if (r.getDefinition().getClass() == Coherence.class) {
+                rm = constructCoherenceModel(r);
+            } else {
+                rm = relModelCache.get(r);
+            }
+            executionModel.addRelation(r, rm);
         }
     }
 
@@ -228,6 +234,49 @@ public class RelationModelManager {
         return em;
     }
 
+    // For coherence we do not show the transitive edges in witness.
+    private RelationModel constructCoherenceModel(Relation coherence) {
+        RelationModel rm = new RelationModel(coherence, CO);
+        EncodingContext.EdgeEncoder co = context.edge(coherence);
+
+        for (Set<StoreModel> writes : executionModel.getAddressWritesMap().values()) {
+            List<StoreModel> coSortedWrites;
+            if (context.usesSATEncoding()) {
+                Map<StoreModel, List<StoreModel>> coEdges = new HashMap<>();
+                for (StoreModel w1 : writes) {
+                    coEdges.put(w1, new ArrayList<>());
+                    for (StoreModel w2 : writes) {
+                        if (manager.isTrue(co.encode(w1.getEvent(), w2.getEvent()))) {
+                            coEdges.get(w1).add(w2);
+                        }
+                    }
+                }
+                DependencyGraph<StoreModel> depGraph = DependencyGraph.from(writes, coEdges);
+                coSortedWrites = new ArrayList<>(Lists.reverse(depGraph.getNodeContents()));
+            } else {
+                Map<StoreModel, BigInteger> writeClockMap = new HashMap<>(
+                    writes.size() * 4 / 3, 0.75f
+                );
+                for (StoreModel w : writes) {
+                    writeClockMap.put(w, (BigInteger) manager.evaluateByModel(
+                        context.memoryOrderClock(w.getEvent())
+                    ));
+                }
+                coSortedWrites = writes.stream()
+                                       .sorted(Comparator.comparing(writeClockMap::get))
+                                       .collect(Collectors.toList());
+            }
+            for (int i = 0; i < coSortedWrites.size(); i++) {
+                coSortedWrites.get(i).setCoherenceIndex(i);
+                if (i >= 1) {
+                    rm.addEdgeModel(getOrCreateEdgeModel(new Edge(coSortedWrites.get(i - 1).getId(),
+                                                                  coSortedWrites.get(i).getId())));
+                }
+            }
+        }
+        return rm;
+    }
+
 
     // Usage: Populate graph of the base relations with instances of the Edge class
     // based on the information from ExecutionModelNext.
@@ -242,50 +291,6 @@ public class RelationModelManager {
                 for (int i = 1; i < eventList.size(); i++) {
                     rg.add(new Edge(eventList.get(i - 1).getId(),
                                     eventList.get(i).getId()));
-                }
-            }
-            return null;
-        }
-
-        @Override
-        public Void visitCoherence(Coherence coherence) {
-            Relation relation = coherence.getDefinedRelation();
-            SimpleGraph rg = (SimpleGraph) relGraphCache.get(relation);
-            EncodingContext.EdgeEncoder co = context.edge(relation);
-
-            for (Set<StoreModel> writes : executionModel.getAddressWritesMap().values()) {
-                List<StoreModel> coSortedWrites;
-                if (context.usesSATEncoding()) {
-                    Map<StoreModel, List<StoreModel>> coEdges = new HashMap<>();
-                    for (StoreModel w1 : writes) {
-                        coEdges.put(w1, new ArrayList<>());
-                        for (StoreModel w2 : writes) {
-                            if (manager.isTrue(co.encode(w1.getEvent(), w2.getEvent()))) {
-                                coEdges.get(w1).add(w2);
-                            }
-                        }
-                    }
-                    DependencyGraph<StoreModel> depGraph = DependencyGraph.from(writes, coEdges);
-                    coSortedWrites = new ArrayList<>(Lists.reverse(depGraph.getNodeContents()));
-                } else {
-                    Map<StoreModel, BigInteger> writeClockMap = new HashMap<>(
-                        writes.size() * 4 / 3, 0.75f
-                    );
-                    for (StoreModel w : writes) {
-                        writeClockMap.put(w, (BigInteger) manager.evaluateByModel(
-                            context.memoryOrderClock(w.getEvent())
-                        ));
-                    }
-                    coSortedWrites = writes.stream()
-                                           .sorted(Comparator.comparing(writeClockMap::get))
-                                           .collect(Collectors.toList());
-                }
-                for (int i = 0; i < coSortedWrites.size(); i++) {
-                    coSortedWrites.get(i).setCoherenceIndex(i);
-                    if (i >= 1) {
-                        rg.add(new Edge(coSortedWrites.get(i - 1).getId(),
-                                        coSortedWrites.get(i).getId()));
-                    }
                 }
             }
             return null;
