@@ -96,10 +96,28 @@ public class RelationModelManager {
         }
     }
 
+    // Getting the correct relation to extract is tricky.
+    // In the case of redefinition, we have to find the latest defined one which we care about only.
+    // If there is no redefinition the original one will be returned simply.
+    private Relation getRelationWithName(String name) {
+        final Map<Integer, Relation> redefineds = new HashMap<>();
+        for (Relation r : wmm.getRelations()) {
+            final int defIndex = r.getNames().stream().filter(s -> s.startsWith(name + "#"))
+                                  .map(s -> s.substring(s.lastIndexOf("#") + 1))
+                                  .mapToInt(Integer::parseInt)
+                                  .max().orElse(0);
+            if (defIndex != 0) {
+                redefineds.put(defIndex, r);
+            }
+        }
+        return redefineds.entrySet().stream().max(Map.Entry.comparingByKey())
+                         .map(Map.Entry::getValue).orElse(wmm.getRelation(name));
+    }
+
     private void extractRelations(List<String> relationNames) {
         Set<Relation> relsToExtract = new HashSet<>();
         for (String name : relationNames) {
-            Relation r = wmm.getRelation(name);
+            Relation r = getRelationWithName(name);
             if (r == null) {
                 logger.warn("Relation with the name {} does not exist", name);
                 continue;
