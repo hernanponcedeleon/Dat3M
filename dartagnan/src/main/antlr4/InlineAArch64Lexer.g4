@@ -12,6 +12,8 @@ LoadExclusiveReg            : 'ldxr';
 LoadAcquireExclusiveReg     : 'ldaxr';
 Add                         : 'add';
 Sub                         : 'sub';
+Or                          : 'orr';
+And                         : 'and';
 Compare                     : 'cmp';
 CompareBranchNonZero        : 'cbnz';
 BranchEqual                 : 'b.eq';
