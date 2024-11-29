@@ -103,9 +103,15 @@ public class RelationModelManager {
         final Map<Integer, Relation> redefineds = new HashMap<>();
         for (Relation r : wmm.getRelations()) {
             final int defIndex = r.getNames().stream().filter(s -> s.startsWith(name + "#"))
-                                  .map(s -> s.substring(s.lastIndexOf("#") + 1))
-                                  .mapToInt(Integer::parseInt)
-                                  .max().orElse(0);
+                                  .map(s -> {
+                                    try {
+                                        return Integer.parseInt(s.substring(s.lastIndexOf("#") + 1));
+                                    } catch (NumberFormatException e) {
+                                        return Integer.MIN_VALUE;
+                                    }
+                                  })
+                                  .filter(i -> i != Integer.MIN_VALUE)
+                                  .max(Comparator.naturalOrder()).orElse(0);
             if (defIndex != 0) {
                 redefineds.put(defIndex, r);
             }
