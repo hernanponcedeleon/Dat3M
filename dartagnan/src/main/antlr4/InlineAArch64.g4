@@ -18,6 +18,8 @@ instr
     | loadAcquireExclusiveReg
     | add
     | sub
+    | or 
+    | and
     | storeReg
     | storeExclusiveRegister
     | storeReleaseExclusiveReg
@@ -48,6 +50,8 @@ loadExclusiveReg : (LoadExclusiveReg register)Comma register;
 loadAcquireExclusiveReg : (LoadAcquireExclusiveReg register)Comma register;
 add : ((Add register)Comma register)Comma register;
 sub : ((Sub register)Comma register)Comma register;
+or : ((Or register)Comma register)Comma register;
+and : ((And register)Comma register)Comma register;
 storeReg : (StoreReg register)Comma register;
 storeReleaseReg : (StoreReleaseReg register)Comma register;
 storeExclusiveRegister : ((StoreExclusiveRegister register)Comma register)Comma register ;

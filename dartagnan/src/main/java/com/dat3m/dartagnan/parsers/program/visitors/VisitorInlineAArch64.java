@@ -355,6 +355,31 @@ public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
         events.add(EventFactory.newLocal(resultRegister, exp));
         return visitChildren(ctx);
     }
+    @Override
+    public Object visitOr(InlineAArch64Parser.OrContext ctx){
+        Register resultRegister = (Register) ctx.register(0).accept(this);
+        Register leftRegister = (Register) ctx.register(1).accept(this);
+        Register rightRegister = (Register) ctx.register(2).accept(this);
+        // Expression leftBoolCast = expressions.makeBooleanCast(leftRegister);
+        // Expression rightBoolCast = expressions.makeBooleanCast(rightRegister);
+        Expression exp = expressions.makeIntOr(leftRegister, rightRegister);
+        updateReturnRegisterIfModified(resultRegister);
+        events.add(EventFactory.newLocal(resultRegister, exp));
+        return visitChildren(ctx);
+    }
+
+    @Override
+    public Object visitAnd(InlineAArch64Parser.AndContext ctx){
+        Register resultRegister = (Register) ctx.register(0).accept(this);
+        Register leftRegister = (Register) ctx.register(1).accept(this);
+        Register rightRegister = (Register) ctx.register(2).accept(this);
+        // Expression leftBoolCast = expressions.makeBooleanCast(leftRegister);
+        // Expression rightBoolCast = expressions.makeBooleanCast(rightRegister);
+        Expression exp = expressions.makeIntAnd(leftRegister, rightRegister);
+        updateReturnRegisterIfModified(resultRegister);
+        events.add(EventFactory.newLocal(resultRegister, exp));
+        return visitChildren(ctx);
+    }
 
     @Override
     public Object visitStoreReg(InlineAArch64Parser.StoreRegContext ctx) {
