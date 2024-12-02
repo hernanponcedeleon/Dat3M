@@ -128,7 +128,8 @@ public class PropertyEncoder implements Encoder {
     private BooleanFormula encodePropertyViolations(EnumSet<Property> properties) {
         final List<TrackableFormula> trackableViolationEncodings = new ArrayList<>();
         if (properties.contains(LIVENESS)) {
-            trackableViolationEncodings.add(encodeDeadlocks());
+            trackableViolationEncodings.add(encodeNontermination());
+            //trackableViolationEncodings.add(encodeDeadlocks());
         }
         if (properties.contains(DATARACEFREEDOM)) {
             trackableViolationEncodings.add(encodeDataRaces());
@@ -187,7 +188,7 @@ public class PropertyEncoder implements Encoder {
         Map<Event, Set<Event>> out = knowledge.getMaySet().getOutMap();
         for (Store w1 : program.getThreadEvents(Store.class)) {
             if (dominatedWrites.contains(w1)) {
-                enc.add(bmgr.not(lastCoVar(w1)));
+                enc.add(bmgr.not(context.lastCoVar(w1)));
                 continue;
             }
             BooleanFormula isLast = context.execution(w1);
@@ -201,7 +202,7 @@ public class PropertyEncoder implements Encoder {
                 BooleanFormula isAfter = bmgr.not(knowledge.getMustSet().contains(w1, w2) ? context.execution(w2) : coEncoder.encode(w1, w2));
                 isLast = bmgr.and(isLast, isAfter);
             }
-            BooleanFormula lastCoExpr = lastCoVar(w1);
+            BooleanFormula lastCoExpr = context.lastCoVar(w1);
             enc.add(bmgr.equivalence(lastCoExpr, isLast));
             if (doEncodeFinalAddressValues && Arch.coIsTotal(program.getArch())) {
                 // ---- Encode final values of addresses ----
@@ -232,7 +233,7 @@ public class PropertyEncoder implements Encoder {
                     if (!alias.mayAlias(w, init)) {
                         continue;
                     }
-                    BooleanFormula isLast = lastCoVar(w);
+                    BooleanFormula isLast = context.lastCoVar(w);
                     BooleanFormula sameAddr = context.sameAddress(init, w);
                     BooleanFormula sameValue = context.equal(context.value(w), v2);
                     lastValueEnc = bmgr.or(lastValueEnc, bmgr.and(isLast, sameAddr, sameValue));
@@ -242,10 +243,6 @@ public class PropertyEncoder implements Encoder {
             }
         }
         return bmgr.and(enc);
-    }
-
-    private BooleanFormula lastCoVar(Event write) {
-        return context.getBooleanFormulaManager().makeVariable("co_last(" + write.getGlobalId() + ")");
     }
 
     // ======================================================================
@@ -401,6 +398,15 @@ public class PropertyEncoder implements Encoder {
     // ======================================================================
     // ======================================================================
 
+    private TrackableFormula encodeNontermination() {
+        final BooleanFormula hasNontermination = new NonTerminationEncoder(context.getTask(), context).encodeNontermination();
+        return new TrackableFormula(context.getBooleanFormulaManager().not(LIVENESS.getSMTVariable(context)), hasNontermination);
+    }
+
+    // TODO: The following code is not fully subsumed by the new nontermination encoding, because the new one
+    //  does not yet consider ControlBarriers and also might consider assertion-failing code as liveness issue.
+    //  Due to these discrepancies, we keep the old code around for now.
+
     private TrackableFormula encodeDeadlocks() {
         logger.info("Encoding dead locks");
         return new LivenessEncoder().encodeLivenessBugs();
@@ -538,7 +544,7 @@ public class PropertyEncoder implements Encoder {
             BooleanFormula allLoadsAreCoMaximal = bmgr.makeTrue();
             for (Load load : loads) {
                 final BooleanFormula readsCoMaximalStore = rfMayIn.getOrDefault(load, Set.of()).stream()
-                        .map(store -> bmgr.and(rfEncoder.encode(store, load), lastCoVar(store)))
+                        .map(store -> bmgr.and(rfEncoder.encode(store, load), context.lastCoVar(store)))
                         .reduce(bmgr.makeFalse(), bmgr::or);
                 final BooleanFormula isCoMaximalLoad = bmgr.implication(context.execution(load), readsCoMaximalStore);
                 allLoadsAreCoMaximal = bmgr.and(allLoadsAreCoMaximal, isCoMaximalLoad);

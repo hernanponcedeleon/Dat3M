@@ -305,7 +305,7 @@ public class Dartagnan extends BaseOptions {
                 if (props.contains(LIVENESS) && FALSE.equals(model.evaluate(LIVENESS.getSMTVariable(encCtx)))) {
                     summary.append("============ Liveness violation found ============\n");
                     for (CondJump e : p.getThreadEvents(CondJump.class)) {
-                        if (e.hasTag(Tag.SPINLOOP) && TRUE.equals(model.evaluate(encCtx.execution(e)))
+                        if (e.hasTag(Tag.NONTERMINATION) && TRUE.equals(model.evaluate(encCtx.execution(e)))
                                 && TRUE.equals(model.evaluate(encCtx.jumpCondition(e)))) {
                             final String callStack = makeContextString(
                                     synContext.getContextInfo(e).getContextOfType(CallContext.class), " -> ");
