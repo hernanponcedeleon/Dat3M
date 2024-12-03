@@ -274,7 +274,7 @@ public final class EncodingContext {
             return booleanFormulaManager.equivalence(l, toBoolean(right));
         }
         if (left instanceof TupleFormula l && right instanceof TupleFormula r) {
-            return new TupleFormulaManager(this).equal(l, r);
+            return tupleFormulaManager.equal(l, r);
         }
         throw new UnsupportedOperationException(String.format("Unknown types for equal(%s,%s)", left, right));
     }
