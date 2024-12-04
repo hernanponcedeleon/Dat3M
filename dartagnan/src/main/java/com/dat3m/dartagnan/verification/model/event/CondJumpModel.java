@@ -1,10 +1,9 @@
 package com.dat3m.dartagnan.verification.model.event;
 
-import com.dat3m.dartagnan.program.Register.Read;
 import com.dat3m.dartagnan.program.event.Event;
-import com.dat3m.dartagnan.program.event.RegReader;
 import com.dat3m.dartagnan.program.event.core.CondJump;
 import com.dat3m.dartagnan.program.event.core.IfAsJump;
+import com.dat3m.dartagnan.verification.model.ExecutionModelNext;
 import com.dat3m.dartagnan.verification.model.ThreadModel;
 
 import java.util.Set;
@@ -16,18 +15,21 @@ public class CondJumpModel extends DefaultEventModel implements RegReaderModel {
         super(event, thread, id);
     }
 
-    public List<Event> getDependentEvents() {
+    public List<EventModel> getDependentEvents(ExecutionModelNext executionModel) {
+        List<Event> dependents;
         if (((CondJump) event).isGoto() || ((CondJump) event).isDead()) {
             return List.of();
-        } else if (event instanceof IfAsJump jump) {
-            return jump.getBranchesEvents();
-        } else {
-            return ((CondJump) event).getSuccessor().getSuccessors();
         }
-    }
 
-    @Override
-    public Set<Read> getRegisterReads() {
-        return ((RegReader) event).getRegisterReads();
+        if (event instanceof IfAsJump jump) {
+            dependents = jump.getBranchesEvents();
+        } else {
+            dependents = ((CondJump) event).getSuccessor().getSuccessors();
+        }
+
+        return dependents.stream()
+                         .map(e -> executionModel.getEventModelByEvent(e))
+                         .filter(m -> m != null)
+                         .toList();
     }
 }

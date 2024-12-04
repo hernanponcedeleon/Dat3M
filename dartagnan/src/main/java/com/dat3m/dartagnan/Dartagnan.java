@@ -22,8 +22,6 @@ import com.dat3m.dartagnan.utils.Utils;
 import com.dat3m.dartagnan.utils.options.BaseOptions;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.verification.VerificationTask.VerificationTaskBuilder;
-import com.dat3m.dartagnan.verification.model.ExecutionModelManager;
-import com.dat3m.dartagnan.verification.model.ExecutionModelNext;
 import com.dat3m.dartagnan.verification.solving.AssumeSolver;
 import com.dat3m.dartagnan.verification.solving.DataRaceSolver;
 import com.dat3m.dartagnan.verification.solving.ModelChecker;
@@ -233,8 +231,6 @@ public class Dartagnan extends BaseOptions {
 
         final EncodingContext encodingContext = modelChecker instanceof RefinementSolver refinementSolver ?
             refinementSolver.getContextWithFullWmm() : modelChecker.getEncodingContext();
-        final ExecutionModelManager manager = new ExecutionModelManager();
-        final ExecutionModelNext m = manager.buildExecutionModel(encodingContext, prover.getModel(), true);
         final SyntacticContextAnalysis synContext = newInstance(task.getProgram());
         final String progName = task.getProgram().getName();
         final int fileSuffixIndex = progName.lastIndexOf('.');
@@ -244,7 +240,7 @@ public class Dartagnan extends BaseOptions {
         // we get some data flow information by observing the edge
         // FR edges only give ordering information which is known if the pair is also in PO
         // CO edges only give ordering information which is known if the pair is also in PO
-        return generateGraphvizFile(m, 1, (x, y) -> true, (x, y) -> !x.getThread().equals(y.getThread()),
+        return generateGraphvizFile(encodingContext, prover.getModel(), 1, (x, y) -> true, (x, y) -> !x.getThread().equals(y.getThread()),
                 (x, y) -> !x.getThread().equals(y.getThread()), getOrCreateOutputDirectory() + "/", name,
                 synContext, witnessType.convertToPng());
     }

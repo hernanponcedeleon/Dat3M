@@ -390,7 +390,7 @@ public class RefinementSolver extends ModelChecker {
 
     // TODO: We could expose the following method(s) to allow for more general application of refinement.
     private RefinementTrace runRefinement(VerificationTask task, ProverWithTracker prover, WMMSolver solver, Refiner refiner)
-            throws SolverException, InterruptedException, InvalidConfigurationException {
+            throws SolverException, InterruptedException {
 
         final List<RefinementIteration> trace = new ArrayList<>();
         boolean isFinalIteration = false;
@@ -402,7 +402,7 @@ public class RefinementSolver extends ModelChecker {
 
             // ------------------------- Debugging/Logging -------------------------
             if (generateGraphvizDebugFiles) {
-                generateGraphvizFiles(task, nextModelManager.buildExecutionModel(contextWithFullWmm, prover.getModel(), false), trace.size(), iteration.inconsistencyReasons);
+                generateGraphvizFiles(task, nextModelManager, contextWithFullWmm, prover.getModel(), trace.size(), iteration.inconsistencyReasons);
             }
             if (logger.isDebugEnabled()) {
                 // ---- Internal SMT stats after the first iteration ----
@@ -876,10 +876,11 @@ public class RefinementSolver extends ModelChecker {
     // This code is pure debugging code that will generate graphical representations
     // of each refinement iteration.
     // Generate .dot files and .png files per iteration
-    private static void generateGraphvizFiles(VerificationTask task, ExecutionModelNext model, int iterationCount,
-            DNF<CoreLiteral> reasons) {
+    private static void generateGraphvizFiles(VerificationTask task, ExecutionModelManager manager, EncodingContext context, 
+            Model smtModel, int iterationCount, DNF<CoreLiteral> reasons) {
         // =============== Visualization code ==================
         // The edgeFilter filters those co/rf that belong to some violation reason
+        ExecutionModelNext model = manager.buildExecutionModel(context, smtModel);
         BiPredicate<EventModel, EventModel> edgeFilter = (e1, e2) -> {
             for (Conjunction<CoreLiteral> cube : reasons.getCubes()) {
                 for (CoreLiteral lit : cube.getLiterals()) {
@@ -901,10 +902,10 @@ public class RefinementSolver extends ModelChecker {
         String fileNameBase = String.format("%s-%d", programName, iterationCount);
         final SyntacticContextAnalysis emptySynContext = getEmptyInstance();
         // File with reason edges only
-        generateGraphvizFile(model, iterationCount, edgeFilter, edgeFilter, edgeFilter, directoryName, fileNameBase,
+        generateGraphvizFile(model, context, smtModel, iterationCount, edgeFilter, edgeFilter, edgeFilter, directoryName, fileNameBase,
                 emptySynContext);
         // File with all edges
-        generateGraphvizFile(model, iterationCount, (x, y) -> true, (x, y) -> true, (x, y) -> true, directoryName,
+        generateGraphvizFile(model, context, smtModel, iterationCount, (x, y) -> true, (x, y) -> true, (x, y) -> true, directoryName,
                 fileNameBase + "-full", emptySynContext);
     }
 }

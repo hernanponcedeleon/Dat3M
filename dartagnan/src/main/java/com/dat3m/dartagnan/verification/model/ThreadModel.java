@@ -30,11 +30,11 @@ public class ThreadModel {
         return thread.getName();
     }
 
-    public List<EventModel> getEventList() {
+    public List<EventModel> getEventModels() {
         return Collections.unmodifiableList(eventList);
     }
 
-    public List<EventModel> getVisibleEventList() {
+    public List<EventModel> getVisibleEventModels() {
         return eventList.stream().filter(e -> e.isVisible()).toList();
     }
 

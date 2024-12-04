@@ -14,7 +14,7 @@ public class EventDomainNext implements Domain<EventModel> {
 
     public EventDomainNext(ExecutionModelNext executionModel) {
         this.executionModel = executionModel;
-        eventList = executionModel.getEventList();
+        eventList = executionModel.getEventModels();
     }
 
     @Override

@@ -1,8 +1,6 @@
 package com.dat3m.dartagnan.verification.model.event;
 
-import com.dat3m.dartagnan.program.Register.Read;
 import com.dat3m.dartagnan.program.event.Event;
-import com.dat3m.dartagnan.program.event.RegReader;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.verification.model.ThreadModel;
 
@@ -29,10 +27,5 @@ public class MemoryEventModel extends DefaultEventModel implements RegReaderMode
 
     public BigInteger getValue() {
         return value;
-    }
-
-    @Override
-    public Set<Read> getRegisterReads() {
-        return ((RegReader) event).getRegisterReads();
     }
 }

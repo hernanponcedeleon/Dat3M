@@ -4,9 +4,8 @@ import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.filter.Filter;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
-import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.verification.model.event.*;
-import com.dat3m.dartagnan.verification.model.relation.RelationModel;
+import com.dat3m.dartagnan.verification.model.RelationModel;
 import com.dat3m.dartagnan.wmm.Relation;
 
 import java.math.BigInteger;
@@ -25,8 +24,6 @@ public class ExecutionModelNext {
 
     private final Map<BigInteger, Set<LoadModel>> addressReadsMap;
     private final Map<BigInteger, Set<StoreModel>> addressWritesMap;
-    private final Map<BigInteger, Set<MemoryEventModel>> addressAccessesMap;
-    private final Map<Thread, List<List<EventModel>>> atomicBlocksMap;
 
     ExecutionModelNext() {
         threadList = new ArrayList<>();
@@ -37,8 +34,6 @@ public class ExecutionModelNext {
 
         addressReadsMap = new HashMap<>();
         addressWritesMap = new HashMap<>();
-        addressAccessesMap = new HashMap<>();
-        atomicBlocksMap = new HashMap<>();
     }
 
     public void addThread(ThreadModel tModel) {
@@ -58,45 +53,27 @@ public class ExecutionModelNext {
         memoryLayoutMap.put(m, mModel);
     }
 
-    public void addAccessedAddress(BigInteger address) {
-        if (!addressAccessesMap.containsKey(address)) {
-            addressAccessesMap.put(address, new HashSet<>());
-        }
-        if (!addressReadsMap.containsKey(address)) {
-            addressReadsMap.put(address, new HashSet<>());
-        }
-        if (!addressWritesMap.containsKey(address)) {
-            addressWritesMap.put(address, new HashSet<>());
-        }
-    }
-
     public void addAddressRead(BigInteger address, LoadModel read) {
-        addressReadsMap.get(address).add(read);
-        addressAccessesMap.get(address).add((MemoryEventModel) read);
+        addressReadsMap.computeIfAbsent(address, k -> new HashSet<>()).add(read);
     }
 
     public void addAddressWrite(BigInteger address, StoreModel write) {
-        addressWritesMap.get(address).add(write);
-        addressAccessesMap.get(address).add((MemoryEventModel) write);
+        addressWritesMap.computeIfAbsent(address, k -> new HashSet<>()).add(write);
     }
 
-    public void addAtomicBlocks(Thread thread, List<List<EventModel>> atomics) {
-        atomicBlocksMap.put(thread, atomics);
-    }
-
-    public List<ThreadModel> getThreadList() {
+    public List<ThreadModel> getThreadModels() {
         return Collections.unmodifiableList(threadList);
     }
 
-    public List<EventModel> getEventList() {
+    public List<EventModel> getEventModels() {
         return Collections.unmodifiableList(eventList);
     }
 
-    public List<EventModel> getVisibleEventList() {
+    public List<EventModel> getVisibleEventModels() {
         return eventList.stream().filter(e -> e.isVisible()).toList();
     }
 
-    public List<EventModel> getEventsByFilter(Filter filter) {
+    public List<EventModel> getEventModelsByFilter(Filter filter) {
         return eventList.stream().filter(e -> filter.apply(e.getEvent())).toList();
     }
 
@@ -122,13 +99,5 @@ public class ExecutionModelNext {
 
     public Map<BigInteger, Set<StoreModel>> getAddressWritesMap() {
         return Collections.unmodifiableMap(addressWritesMap);
-    }
-
-    public Map<BigInteger, Set<MemoryEventModel>> getAddressAccessesMap() {
-        return Collections.unmodifiableMap(addressAccessesMap);
-    }
-
-    public Map<Thread, List<List<EventModel>>> getAtomicBlocksMap() {
-        return Collections.unmodifiableMap(atomicBlocksMap);
     }
 }

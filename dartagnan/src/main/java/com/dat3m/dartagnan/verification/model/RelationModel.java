@@ -1,4 +1,4 @@
-package com.dat3m.dartagnan.verification.model.relation;
+package com.dat3m.dartagnan.verification.model;
 
 import com.dat3m.dartagnan.wmm.Relation;
 import com.dat3m.dartagnan.verification.model.event.EventModel;
@@ -8,37 +8,15 @@ import java.util.*;
 
 public class RelationModel {
     private final Relation relation;
-    private final List<String> names;
     private final Set<EdgeModel> edgeModels;
 
-    RelationModel(Relation relation, String name) {
+    RelationModel(Relation relation) {
         this.relation = relation;
-        names = new ArrayList<>();
         edgeModels = new HashSet<>();
-
-        names.add(name);
     }
 
     public Relation getRelation() {
         return relation;
-    }
-
-    public boolean hasName(String name) {
-        return names.contains(name);
-    }
-
-    public List<String> getNames() {
-        return Collections.unmodifiableList(names);
-    }
-
-    public String getName() {
-        return names.get(0);
-    }
-
-    public void addName(String name) {
-        if (!names.contains(name)) {
-            names.add(name);
-        }
     }
 
     public Set<EdgeModel> getEdgeModels() {
@@ -53,12 +31,10 @@ public class RelationModel {
     public static class EdgeModel {
         private final EventModel from;
         private final EventModel to;
-        private final String identifier;
 
         EdgeModel(EventModel from, EventModel to) {
             this.from = from;
             this.to = to;
-            identifier = from.getId() + " -> " + to.getId();
         }
 
         public EventModel getFrom() {
@@ -69,19 +45,16 @@ public class RelationModel {
             return to;
         }
 
-        public String getIdentifier() {
-            return identifier;
-        }
-
         @Override
-        public String toString() { return identifier; }
+        public String toString() { return from.getId() + " -> " + to.getId(); }
 
         @Override
         public boolean equals(Object other) {
             if (this == other) {
                 return true;
             }
-            return identifier.equals(((EdgeModel) other).getIdentifier());
+            return from.getId() == ((EdgeModel) other).getFrom().getId()
+                   && to.getId() == ((EdgeModel) other).getTo().getId();
         }
 
         @Override

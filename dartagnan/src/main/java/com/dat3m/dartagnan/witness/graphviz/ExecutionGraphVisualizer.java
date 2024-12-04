@@ -1,16 +1,26 @@
 package com.dat3m.dartagnan.witness.graphviz;
 
 import com.dat3m.dartagnan.program.analysis.SyntacticContextAnalysis;
-import com.dat3m.dartagnan.program.event.Tag;
+import com.dat3m.dartagnan.encoding.EncodingContext;
 import com.dat3m.dartagnan.program.event.metadata.MemoryOrder;
+import com.dat3m.dartagnan.utils.dependable.DependencyGraph;
 import com.dat3m.dartagnan.verification.model.event.*;
+import com.dat3m.dartagnan.verification.model.ExecutionModelManager;
 import com.dat3m.dartagnan.verification.model.ExecutionModelNext;
 import com.dat3m.dartagnan.verification.model.MemoryObjectModel;
-import com.dat3m.dartagnan.verification.model.relation.RelationModel;
+import com.dat3m.dartagnan.verification.model.RelationModel;
 import com.dat3m.dartagnan.verification.model.ThreadModel;
+import com.dat3m.dartagnan.wmm.definition.Coherence;
+import com.dat3m.dartagnan.wmm.definition.ProgramOrder;
+import com.dat3m.dartagnan.wmm.definition.ReadFrom;
+import com.dat3m.dartagnan.wmm.Relation;
 import com.google.common.collect.Lists;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.sosy_lab.common.configuration.InvalidConfigurationException;
+import org.sosy_lab.common.configuration.Option;
+import org.sosy_lab.common.configuration.Options;
+import org.sosy_lab.java_smt.api.Model;
 
 import java.io.File;
 import java.io.FileWriter;
@@ -19,14 +29,13 @@ import java.io.Writer;
 import java.math.BigInteger;
 import java.util.*;
 import java.util.function.BiPredicate;
+import java.util.stream.Collectors;
 
+import static com.dat3m.dartagnan.configuration.OptionNames.WITNESS_SHOW;
 import static com.dat3m.dartagnan.program.analysis.SyntacticContextAnalysis.*;
 import static com.dat3m.dartagnan.wmm.RelationNameRepository.*;
 
-/*
-    This is some rudimentary class to create graphs of executions.
-    Currently, it just creates very special graphs.
- */
+@Options
 public class ExecutionGraphVisualizer {
 
     private static final Logger logger = LogManager.getLogger(ExecutionGraphVisualizer.class);
@@ -39,6 +48,12 @@ public class ExecutionGraphVisualizer {
     private BiPredicate<EventModel, EventModel> frFilter = (x, y) -> true;
     private BiPredicate<EventModel, EventModel> coFilter = (x, y) -> true;
     private final List<MemoryObjectModel> sortedMemoryObjects = new ArrayList<>();
+    private List<String> relsToShow = List.of(PO, CO, RF);
+
+    @Option(name=WITNESS_SHOW,
+            description="Names of relations to show in the witness graph.",
+            secure=true)
+    private String relsToShowStr = "";
 
     public ExecutionGraphVisualizer() {
         this.graphviz = new Graphviz();
@@ -65,14 +80,24 @@ public class ExecutionGraphVisualizer {
         return this;
     }
 
-    public void generateGraphOfExecutionModel(Writer writer, String graphName, ExecutionModelNext model) throws IOException {
+    public void generateGraphOfExecutionModel(
+        Writer writer, String graphName, ExecutionModelNext model, EncodingContext context, Model smtModel
+    ) throws IOException {
         computeAddressMap(model);
         graphviz.beginDigraph(graphName);
         graphviz.append(String.format("label=\"%s\" \n", graphName));
         addAllThreadPos(model);
-        addRelations(model);
+        addRelations(model, context, smtModel);
         graphviz.end();
         graphviz.generateOutput(writer);
+    }
+
+    private List<String> setRelationsToShow(EncodingContext context) throws InvalidConfigurationException {
+        context.getTask().getConfig().inject(this);
+        if (!relsToShowStr.isEmpty()) {
+            relsToShow = Arrays.asList(relsToShowStr.split(",\\s*"));
+        }
+        return relsToShow;
     }
 
     private BiPredicate<EventModel, EventModel> getFilter(String relationName) {
@@ -85,31 +110,44 @@ public class ExecutionGraphVisualizer {
              .forEach(entry -> sortedMemoryObjects.add(entry.getValue()));
     }
 
-    private boolean ignore(EventModel e) {
-        return false; // We ignore no events for now.
+    private RelationModel getRelationModelByName(ExecutionModelNext model, String name) {
+        for (RelationModel rm : model.getRelationModels()) {
+            Relation r = rm.getRelation();
+            if (r.hasName(name)
+                || r.getNames().stream().anyMatch(n -> n.startsWith(name + "#")))
+            { return rm; }
+        }
+        return null;
     }
 
-    private ExecutionGraphVisualizer addRelations(ExecutionModelNext model) {
-        for (RelationModel rm : model.getRelationModels()) {
-            if (rm.hasName(PO)) {
-                addProgramOrder(model);
+    private ExecutionGraphVisualizer addRelations(
+        ExecutionModelNext model, EncodingContext context, Model smtModel
+    ) {
+        for (String name : relsToShow) {
+            RelationModel rm = getRelationModelByName(model, name);
+            if (rm == null) {
+                logger.warn("Relation with the name {} does not exist", name);
+                continue;
+            }
+            // For PO and CO we do not show the transitive edges in witness.
+            if (rm.getRelation().getDefinition().getClass() == ProgramOrder.class) {
+                addProgramOrder(model, name);
+            } else if (rm.getRelation().getDefinition().getClass() == Coherence.class) {
+                addCoherence(rm, model, name, context, smtModel);
             } else {
-                addRelation(model, rm);
+                addRelation(rm, name);
             }
         }
         return this;
     }
 
-    private ExecutionGraphVisualizer addRelation(ExecutionModelNext model, RelationModel rm) {
-        String name = rm.getName();
+    private ExecutionGraphVisualizer addRelation(RelationModel rm, String name) {
         graphviz.beginSubgraph(name);
         String attributes = String.format("color=%s", colorMap.getColor(name));
         graphviz.setEdgeAttributes(attributes);
         String label = String.format("label=\"%s\"", name);
         BiPredicate<EventModel, EventModel> filter;
-        if (name.equals(CO)) {
-            filter = coFilter;
-        } else if (name.equals(RF)) {
+        if (rm.getRelation().getDefinition().getClass() == ReadFrom.class) {
             filter = rfFilter;
         } else if (name.equals("fr")) {
             filter = frFilter;
@@ -118,7 +156,7 @@ public class ExecutionGraphVisualizer {
             EventModel from = edge.getFrom();
             EventModel to = edge.getTo();
 
-            if (ignore(from) || ignore(to) || !filter.test(from, to)) { continue; }
+            if (!filter.test(from, to)) { continue; }
 
             appendEdge(from, to, label);
         }
@@ -126,21 +164,75 @@ public class ExecutionGraphVisualizer {
         return this;
     }
 
-    private ExecutionGraphVisualizer addProgramOrder(ExecutionModelNext model) {
-        graphviz.beginSubgraph(PO);
+    private ExecutionGraphVisualizer addProgramOrder(ExecutionModelNext model, String name) {
+        graphviz.beginSubgraph(name);
         String attributes = String.format("color=%s, weight=100", colorMap.getColor(PO));
         graphviz.setEdgeAttributes(attributes);
+        String label = String.format("label=\"%s\"", name);
         BiPredicate<EventModel, EventModel> filter = getFilter(PO);
-        for (ThreadModel tm : model.getThreadList()) {
+        for (ThreadModel tm : model.getThreadModels()) {
             List<EventModel> eventsToShow = tm.getEventModelsToShow();
             if (eventsToShow.size() <= 1) { continue; }
             for (int i = 1; i < eventsToShow.size(); i++) {
                 EventModel from = eventsToShow.get(i - 1);
                 EventModel to = eventsToShow.get(i);
 
-                if (ignore(from) || ignore(to) || !filter.test(from, to)) { continue; }
+                if (!filter.test(from, to)) { continue; }
 
-                appendEdge(from, to, "label=po");
+                appendEdge(from, to, label);
+            }
+        }
+        graphviz.end();
+        return this;
+    }
+
+    private ExecutionGraphVisualizer addCoherence(
+        RelationModel rm, ExecutionModelNext model, String name, EncodingContext context, Model smtModel
+    ) {
+        graphviz.beginSubgraph(name);
+        String attributes = String.format("color=%s", colorMap.getColor(CO));
+        graphviz.setEdgeAttributes(attributes);
+        String label = String.format("label=\"%s\"", name);
+        BiPredicate<EventModel, EventModel> filter = getFilter(CO);
+
+        EncodingContext.EdgeEncoder co = context.edge(rm.getRelation());
+        for (Set<StoreModel> writes : model.getAddressWritesMap().values()) {
+            List<StoreModel> coSortedWrites;
+            if (context.usesSATEncoding()) {
+                Map<StoreModel, List<StoreModel>> coEdges = new HashMap<>();
+                for (StoreModel w1 : writes) {
+                    coEdges.put(w1, new ArrayList<>());
+                    for (StoreModel w2 : writes) {
+                        if (Boolean.TRUE.equals(smtModel.evaluate(co.encode(w1.getEvent(), w2.getEvent())))) {
+                            coEdges.get(w1).add(w2);
+                        }
+                    }
+                }
+                DependencyGraph<StoreModel> depGraph = DependencyGraph.from(writes, coEdges);
+                coSortedWrites = new ArrayList<>(Lists.reverse(depGraph.getNodeContents()));
+            } else {
+                Map<StoreModel, BigInteger> writeClockMap = new HashMap<>(
+                    writes.size() * 4 / 3, 0.75f
+                );
+                for (StoreModel w : writes) {
+                    writeClockMap.put(w, (BigInteger) smtModel.evaluate(
+                        context.memoryOrderClock(w.getEvent())
+                    ));
+                }
+                coSortedWrites = writes.stream()
+                                       .sorted(Comparator.comparing(writeClockMap::get))
+                                       .collect(Collectors.toList());
+            }
+
+            for (int i = 0; i < coSortedWrites.size(); i++) {
+                if (i >= 1) {
+                    EventModel w1 = (EventModel) coSortedWrites.get(i - 1);
+                    EventModel w2 = (EventModel) coSortedWrites.get(i);
+
+                    if (!filter.test(w1, w2)) { continue; }
+
+                    appendEdge(w1, w2, label);
+                }
             }
         }
         graphviz.end();
@@ -148,7 +240,7 @@ public class ExecutionGraphVisualizer {
     }
 
     private ExecutionGraphVisualizer addAllThreadPos(ExecutionModelNext model) {
-        for (ThreadModel tm : model.getThreadList()) {
+        for (ThreadModel tm : model.getThreadModels()) {
             addThreadPo(tm, model);
         }
         return this;
@@ -161,14 +253,12 @@ public class ExecutionGraphVisualizer {
             return this;
         }
 
-        // --- Subgraph start ---
         graphviz.beginSubgraph("T" + tm.getId());
 
         for (EventModel e : threadEvents) {
             appendNode(e, (String[]) null);
         }
 
-        // --- Subgraph end ---
         graphviz.end();
 
         return this;
@@ -229,22 +319,28 @@ public class ExecutionGraphVisualizer {
         graphviz.addNode(eventToNode(e), attributes);
     }
 
-    public static File generateGraphvizFile(ExecutionModelNext model, int iterationCount,
+    public static File generateGraphvizFile(ExecutionModelNext model,
+                                            EncodingContext context,
+                                            Model smtModel,
+                                            int iterationCount,
                                             BiPredicate<EventModel, EventModel> rfFilter,
                                             BiPredicate<EventModel, EventModel> frFilter,
-                                            BiPredicate<EventModel, EventModel> coFilter, String directoryName, String fileNameBase,
+                                            BiPredicate<EventModel, EventModel> coFilter,
+                                            String directoryName,
+                                            String fileNameBase,
                                             SyntacticContextAnalysis synContext,
-                                            boolean convert) {
+                                            boolean convert,
+                                            ExecutionGraphVisualizer visualizer) {
         File fileVio = new File(directoryName + fileNameBase + ".dot");
         fileVio.getParentFile().mkdirs();
         try (FileWriter writer = new FileWriter(fileVio)) {
             // Create .dot file
-            new ExecutionGraphVisualizer()
-                    .setSyntacticContext(synContext)
-                    .setReadFromFilter(rfFilter)
-                    .setFromReadFilter(frFilter)
-                    .setCoherenceFilter(coFilter)
-                    .generateGraphOfExecutionModel(writer, "Iteration " + iterationCount, model);
+            if (visualizer == null) { visualizer = new ExecutionGraphVisualizer(); }
+            visualizer.setSyntacticContext(synContext)
+                      .setReadFromFilter(rfFilter)
+                      .setFromReadFilter(frFilter)
+                      .setCoherenceFilter(coFilter)
+                      .generateGraphOfExecutionModel(writer, "Iteration " + iterationCount, model, context, smtModel);
 
             writer.flush();
             if (convert) {
@@ -258,11 +354,54 @@ public class ExecutionGraphVisualizer {
         return null;
     }
 
-    public static void generateGraphvizFile(ExecutionModelNext model, int iterationCount,
-            BiPredicate<EventModel, EventModel> rfFilter, BiPredicate<EventModel, EventModel> frFilter,
-            BiPredicate<EventModel, EventModel> coFilter, String directoryName, String fileNameBase,
-            SyntacticContextAnalysis synContext) {
-        generateGraphvizFile(model, iterationCount, rfFilter, frFilter, coFilter, directoryName, fileNameBase,
-                synContext, true);
+    public static File generateGraphvizFile(EncodingContext context,
+                                            Model smtModel,
+                                            int iterationCount,
+                                            BiPredicate<EventModel, EventModel> rfFilter,
+                                            BiPredicate<EventModel, EventModel> frFilter,
+                                            BiPredicate<EventModel, EventModel> coFilter,
+                                            String directoryName,
+                                            String fileNameBase,
+                                            SyntacticContextAnalysis synContext,
+                                            boolean convert) throws InvalidConfigurationException {
+        ExecutionGraphVisualizer visualizer = new ExecutionGraphVisualizer();
+        ExecutionModelNext model = new ExecutionModelManager().setRelationsToExtract(visualizer.setRelationsToShow(context))
+                                                              .buildExecutionModel(context, smtModel);
+        return generateGraphvizFile(model,
+                                    context,
+                                    smtModel,
+                                    iterationCount,
+                                    rfFilter,
+                                    frFilter,
+                                    coFilter,
+                                    directoryName,
+                                    fileNameBase,
+                                    synContext,
+                                    convert,
+                                    visualizer);
+    }
+
+    public static void generateGraphvizFile(ExecutionModelNext model,
+                                            EncodingContext context,
+                                            Model smtModel,
+                                            int iterationCount,
+                                            BiPredicate<EventModel, EventModel> rfFilter,
+                                            BiPredicate<EventModel, EventModel> frFilter,
+                                            BiPredicate<EventModel, EventModel> coFilter,
+                                            String directoryName,
+                                            String fileNameBase,
+                                            SyntacticContextAnalysis synContext) {
+        generateGraphvizFile(model,
+                             context,
+                             smtModel,
+                             iterationCount,
+                             rfFilter,
+                             frFilter,
+                             coFilter,
+                             directoryName,
+                             fileNameBase,
+                             synContext,
+                             true,
+                             null);
     }
 }
