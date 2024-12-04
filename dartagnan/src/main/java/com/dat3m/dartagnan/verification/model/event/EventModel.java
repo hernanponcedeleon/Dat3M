@@ -7,7 +7,7 @@ import com.dat3m.dartagnan.verification.model.ThreadModel;
 public interface EventModel extends Comparable<EventModel> {
     Event getEvent();
 
-    ThreadModel getThread();
+    ThreadModel getThreadModel();
 
     int getId();
 

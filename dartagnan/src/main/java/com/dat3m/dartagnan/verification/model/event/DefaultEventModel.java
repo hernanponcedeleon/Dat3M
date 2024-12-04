@@ -28,7 +28,7 @@ public class DefaultEventModel implements EventModel {
     }
 
     @Override
-    public ThreadModel getThread() {
+    public ThreadModel getThreadModel() {
         return thread;
     }
 

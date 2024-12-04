@@ -22,6 +22,10 @@ public class ThreadModel {
         eventList.add(event);
     }
 
+    public Thread getThread() {
+        return thread;
+    }
+
     public int getId() {
         return thread.getId();
     }
@@ -36,11 +40,5 @@ public class ThreadModel {
 
     public List<EventModel> getVisibleEventModels() {
         return eventList.stream().filter(e -> e.isVisible()).toList();
-    }
-
-    public List<EventModel> getEventModelsToShow() {
-        return eventList.stream()
-                        .filter(e -> e.isVisible() || e.isLocal() || e.isAssert())
-                        .toList();
     }
 }

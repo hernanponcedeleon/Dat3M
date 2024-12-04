@@ -171,7 +171,10 @@ public class ExecutionGraphVisualizer {
         String label = String.format("label=\"%s\"", name);
         BiPredicate<EventModel, EventModel> filter = getFilter(PO);
         for (ThreadModel tm : model.getThreadModels()) {
-            List<EventModel> eventsToShow = tm.getEventModelsToShow();
+            List<EventModel> eventsToShow = tm.getEventModels()
+                                              .stream()
+                                              .filter(e -> e.isVisible() || e.isLocal() || e.isAssert())
+                                              .toList();
             if (eventsToShow.size() <= 1) { continue; }
             for (int i = 1; i < eventsToShow.size(); i++) {
                 EventModel from = eventsToShow.get(i - 1);
@@ -247,7 +250,10 @@ public class ExecutionGraphVisualizer {
     }
 
     private ExecutionGraphVisualizer addThreadPo(ThreadModel tm, ExecutionModelNext model) {
-        List<EventModel> threadEvents = tm.getEventModelsToShow();
+        List<EventModel> threadEvents = tm.getEventModels()
+                                          .stream()
+                                          .filter(e -> e.isVisible() || e.isLocal() || e.isAssert())
+                                          .toList();
         if (threadEvents.size() <= 1) {
             // This skips init threads.
             return this;
@@ -300,8 +306,8 @@ public class ExecutionGraphVisualizer {
         final String callStack = makeContextString(
             synContext.getContextInfo(e.getEvent()).getContextOfType(CallContext.class), " -> \\n");
         final String nodeString = String.format("%s:T%s/E%s\\n%s%s\n%s",
-                e.getThread().getName(),
-                e.getThread().getId(),
+                e.getThreadModel().getName(),
+                e.getThreadModel().getId(),
                 e.getEvent().getGlobalId(),
                 callStack.isEmpty() ? callStack : callStack + " -> \\n",
                 getSourceLocationString(e.getEvent()),
