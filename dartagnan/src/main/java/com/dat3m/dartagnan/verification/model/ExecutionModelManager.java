@@ -205,7 +205,7 @@ public class ExecutionModelManager {
         if (name.endsWith("#0")) {
             String originalName = name.substring(0, name.lastIndexOf("#"));
             Relation r = wmm.getRelation(originalName);
-            if (r!=null) { return r; }
+            if (r != null) { return r; }
         }
 
         int maxId = -1;
