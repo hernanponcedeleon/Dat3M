@@ -114,7 +114,8 @@ public class ExecutionGraphVisualizer {
         for (RelationModel rm : model.getRelationModels()) {
             Relation r = rm.getRelation();
             if (r.hasName(name)
-                || r.getNames().stream().anyMatch(n -> n.startsWith(name + "#")))
+                || r.getNames().stream().anyMatch(n -> n.startsWith(name + "#"))
+                || (name.endsWith("#0") && r.hasName(name.substring(0, name.lastIndexOf("#")))))
             { return rm; }
         }
         return null;

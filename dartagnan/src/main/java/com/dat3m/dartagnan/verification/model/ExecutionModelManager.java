@@ -201,6 +201,12 @@ public class ExecutionModelManager {
     // In the case of redefinition, we have to find the latest defined one which we care about only.
     // If there is no redefinition the original one will be returned simply.
     private Relation getRelationWithName(String name) {
+        // First check if the original definition is asked.
+        if (name.endsWith("#0")) {
+            String originalName = name.substring(0, name.lastIndexOf("#"));
+            return wmm.getRelation(originalName);
+        }
+
         int maxId = -1;
         for (Relation r : wmm.getRelations()) {
             final int defIndex = r.getNames().stream().filter(s -> s.startsWith(name + "#"))
