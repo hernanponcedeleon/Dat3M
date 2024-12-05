@@ -45,7 +45,6 @@ public class ExecutionGraphVisualizer {
     private SyntacticContextAnalysis synContext = getEmptyInstance();
     // By default, we do not filter anything
     private BiPredicate<EventModel, EventModel> rfFilter = (x, y) -> true;
-    private BiPredicate<EventModel, EventModel> frFilter = (x, y) -> true;
     private BiPredicate<EventModel, EventModel> coFilter = (x, y) -> true;
     private final List<MemoryObjectModel> sortedMemoryObjects = new ArrayList<>();
     private List<String> relsToShow = List.of(PO, CO, RF);
@@ -67,11 +66,6 @@ public class ExecutionGraphVisualizer {
 
     public ExecutionGraphVisualizer setReadFromFilter(BiPredicate<EventModel, EventModel> filter) {
         this.rfFilter = filter;
-        return this;
-    }
-
-    public ExecutionGraphVisualizer setFromReadFilter(BiPredicate<EventModel, EventModel> filter) {
-        this.frFilter = filter;
         return this;
     }
 
@@ -147,12 +141,8 @@ public class ExecutionGraphVisualizer {
         String attributes = String.format("color=%s", colorMap.getColor(name));
         graphviz.setEdgeAttributes(attributes);
         String label = String.format("label=\"%s\"", name);
-        BiPredicate<EventModel, EventModel> filter;
-        if (rm.getRelation().getDefinition().getClass() == ReadFrom.class) {
-            filter = rfFilter;
-        } else if (name.equals("fr")) {
-            filter = frFilter;
-        } else { filter = getFilter(name); }
+        BiPredicate<EventModel, EventModel> filter = rm.getRelation().getDefinition().getClass() == ReadFrom.class ?
+            rfFilter : getFilter(name);
         for (RelationModel.EdgeModel edge : rm.getEdgeModels()) {
             EventModel from = edge.getFrom();
             EventModel to = edge.getTo();
@@ -331,7 +321,6 @@ public class ExecutionGraphVisualizer {
                                             Model smtModel,
                                             int iterationCount,
                                             BiPredicate<EventModel, EventModel> rfFilter,
-                                            BiPredicate<EventModel, EventModel> frFilter,
                                             BiPredicate<EventModel, EventModel> coFilter,
                                             String directoryName,
                                             String fileNameBase,
@@ -345,7 +334,6 @@ public class ExecutionGraphVisualizer {
             if (visualizer == null) { visualizer = new ExecutionGraphVisualizer(); }
             visualizer.setSyntacticContext(synContext)
                       .setReadFromFilter(rfFilter)
-                      .setFromReadFilter(frFilter)
                       .setCoherenceFilter(coFilter)
                       .generateGraphOfExecutionModel(writer, "Iteration " + iterationCount, model, context, smtModel);
 
@@ -365,7 +353,6 @@ public class ExecutionGraphVisualizer {
                                             Model smtModel,
                                             int iterationCount,
                                             BiPredicate<EventModel, EventModel> rfFilter,
-                                            BiPredicate<EventModel, EventModel> frFilter,
                                             BiPredicate<EventModel, EventModel> coFilter,
                                             String directoryName,
                                             String fileNameBase,
@@ -379,7 +366,6 @@ public class ExecutionGraphVisualizer {
                                     smtModel,
                                     iterationCount,
                                     rfFilter,
-                                    frFilter,
                                     coFilter,
                                     directoryName,
                                     fileNameBase,
@@ -393,7 +379,6 @@ public class ExecutionGraphVisualizer {
                                             Model smtModel,
                                             int iterationCount,
                                             BiPredicate<EventModel, EventModel> rfFilter,
-                                            BiPredicate<EventModel, EventModel> frFilter,
                                             BiPredicate<EventModel, EventModel> coFilter,
                                             String directoryName,
                                             String fileNameBase,
@@ -403,7 +388,6 @@ public class ExecutionGraphVisualizer {
                              smtModel,
                              iterationCount,
                              rfFilter,
-                             frFilter,
                              coFilter,
                              directoryName,
                              fileNameBase,

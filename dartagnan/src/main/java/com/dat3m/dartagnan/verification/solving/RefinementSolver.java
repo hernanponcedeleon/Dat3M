@@ -902,10 +902,10 @@ public class RefinementSolver extends ModelChecker {
         String fileNameBase = String.format("%s-%d", programName, iterationCount);
         final SyntacticContextAnalysis emptySynContext = getEmptyInstance();
         // File with reason edges only
-        generateGraphvizFile(model, context, smtModel, iterationCount, edgeFilter, edgeFilter, edgeFilter, directoryName, fileNameBase,
+        generateGraphvizFile(model, context, smtModel, iterationCount, edgeFilter, edgeFilter, directoryName, fileNameBase,
                 emptySynContext);
         // File with all edges
-        generateGraphvizFile(model, context, smtModel, iterationCount, (x, y) -> true, (x, y) -> true, (x, y) -> true, directoryName,
+        generateGraphvizFile(model, context, smtModel, iterationCount, (x, y) -> true, (x, y) -> true, directoryName,
                 fileNameBase + "-full", emptySynContext);
     }
 }
