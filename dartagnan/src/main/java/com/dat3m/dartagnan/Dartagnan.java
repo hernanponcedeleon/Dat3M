@@ -238,7 +238,6 @@ public class Dartagnan extends BaseOptions {
                 (fileSuffixIndex == - 1) ? progName : progName.substring(0, fileSuffixIndex);
         // RF edges give both ordering and data flow information, thus even when the pair is in PO
         // we get some data flow information by observing the edge
-        // FR edges only give ordering information which is known if the pair is also in PO
         // CO edges only give ordering information which is known if the pair is also in PO
         return generateGraphvizFile(encodingContext, prover.getModel(), 1, (x, y) -> true,
                 (x, y) -> !x.getThreadModel().getThread().equals(y.getThreadModel().getThread()),

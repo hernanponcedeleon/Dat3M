@@ -26,8 +26,6 @@ class ColorMap {
         fixedColorMap.put(RF, colorToHex(Color.getHSBColor(0.33f, 1.0f, 1.0f)));
         // Red for CO
         fixedColorMap.put(CO, colorToHex(Color.getHSBColor(0.0f, 1.0f, 1.0f)));
-        // Orange for FR
-        fixedColorMap.put("fr", colorToHex(Color.getHSBColor(0.08f, 1.0f, 1.0f)));
 
         usedColors.addAll(fixedColorMap.values());
     }

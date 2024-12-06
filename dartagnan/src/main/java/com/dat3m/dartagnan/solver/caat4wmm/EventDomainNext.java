@@ -8,6 +8,8 @@ import java.util.Collection;
 import java.util.List;
 
 
+// TODO: this class is temporary and needs to be merged into EventDomain
+// once there is one ExecutionModel for all use cases.
 public class EventDomainNext implements Domain<EventModel> {
     private final ExecutionModelNext executionModel;
     private final List<EventModel> eventList;

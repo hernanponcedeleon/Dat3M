@@ -114,8 +114,7 @@ public class ExecutionModelManager {
                 }
                 
                 if (e instanceof CondJump jump
-                    && isTrue(context.jumpCondition(jump))
-                ) {
+                    && isTrue(context.jumpCondition(jump))) {
                     e = jump.getLabel();
                 } else {
                     e = e.getSuccessor();
@@ -129,14 +128,14 @@ public class ExecutionModelManager {
 
     private void extractEvent(Event e, ThreadModel tm, int id) {
         EventModel em;
-        if (e.hasTag(Tag.MEMORY)) {
+        if (e instanceof MemoryEvent memEvent) {
             Object addressObj = checkNotNull(
-                evaluateByModel(context.address((MemoryEvent) e))
+                evaluateByModel(context.address(memEvent))
             );
             final BigInteger address = new BigInteger(addressObj.toString());
             
             String valueString = String.valueOf(
-                evaluateByModel(context.value((MemoryCoreEvent) e))
+                evaluateByModel(context.value(memEvent))
             );
             final BigInteger value = switch(valueString) {
                 // NULL case can happen if the solver optimized away a variable.
@@ -146,21 +145,22 @@ public class ExecutionModelManager {
                 default -> new BigInteger(valueString);
             };
 
-            if (e.hasTag(Tag.READ)) {
-                em = new LoadModel(e, tm, id, address, value);
+            if (memEvent.hasTag(Tag.READ)) {
+                em = new LoadModel(memEvent, tm, id, address, value);
                 executionModel.addAddressRead(address, (LoadModel) em);
-            } else if (e.hasTag(Tag.WRITE)) {
-                em = new StoreModel(e, tm, id, address, value);
+            } else if (memEvent.hasTag(Tag.WRITE)) {
+                em = new StoreModel(memEvent, tm, id, address, value);
                 executionModel.addAddressWrite(address, (StoreModel) em);
             } else {
                 // Should never happen.
-                logger.warn("Event {} has Tag MEMORY but no READ or WRITE", e);
-                em = new MemoryEventModel(e, tm, id, address, value);
+                throw new IllegalArgumentException(String.format(
+                    "Event %s is memory event but neither read nor write", memEvent
+                ));
             }
 
-        } else if (e.hasTag(Tag.FENCE)) {
-            final String name = ((GenericVisibleEvent) e).getName();
-            em = new FenceModel(e, tm, id, name);
+        } else if (e.hasTag(Tag.FENCE) && e instanceof GenericVisibleEvent visible) {
+            final String name = (visible).getName();
+            em = new FenceModel(visible, tm, id, name);
         } else if (e instanceof Assert assrt) {
             em = new AssertModel(assrt, tm, id);
         } else if (e instanceof Local local) {
@@ -169,8 +169,7 @@ public class ExecutionModelManager {
             em = new CondJumpModel(cj, tm, id);
         } else {
             // Should never happen.
-            logger.warn("Extracting the event {} that should not be extracted", e);
-            em = new DefaultEventModel(e, tm, id);
+            throw new IllegalArgumentException(String.format("Event %s should not be extracted", e));
         }
 
         executionModel.addEvent(e, em);
@@ -188,7 +187,7 @@ public class ExecutionModelManager {
     private void extractMemoryLayout() {
         for (MemoryObject obj : context.getTask().getProgram().getMemory().getObjects()) {
             boolean isAllocated = obj.isStaticallyAllocated()
-                                        || isTrue(context.execution(obj.getAllocationSite()));
+                                  || isTrue(context.execution(obj.getAllocationSite()));
             if (isAllocated) {
                 BigInteger address = (BigInteger) evaluateByModel(context.address(obj));
                 BigInteger size = (BigInteger) evaluateByModel(context.size(obj));
@@ -198,28 +197,26 @@ public class ExecutionModelManager {
     }
 
     // Getting the correct relation to extract is tricky.
-    // In the case of redefinition, we have to find the latest defined one which we care about only.
-    // If there is no redefinition the original one will be returned simply.
+    // In the case of redefinition, we care about the one defined last.
+    // If there is no redefinition, we simply return the original one.
     private Relation getRelationWithName(String name) {
         // First check if the original definition is asked.
         if (name.endsWith("#0")) {
             String originalName = name.substring(0, name.lastIndexOf("#"));
-            Relation r = wmm.getRelation(originalName);
-            if (r != null) { return r; }
+            return wmm.getRelation(originalName);
         }
 
         int maxId = -1;
         for (Relation r : wmm.getRelations()) {
-            final int defIndex = r.getNames().stream().filter(s -> s.startsWith(name + "#"))
-                                  .map(s -> {
-                                    try {
-                                        return Integer.parseInt(s.substring(s.lastIndexOf("#") + 1));
-                                    } catch (NumberFormatException e) {
-                                        return Integer.MIN_VALUE;
-                                    }
-                                  })
-                                  .filter(i -> i != Integer.MIN_VALUE)
-                                  .max(Comparator.naturalOrder()).orElse(0);
+            int defIndex = 0;
+            for (String n : r.getNames()) {
+                if (n.startsWith(name + "#")) {
+                    try {
+                        defIndex = Integer.parseInt(n.substring(n.lastIndexOf("#") + 1));
+                        break;
+                    } catch (NumberFormatException e) {}
+                }
+            }
             if (defIndex != 0 && defIndex > maxId) {
                 maxId = defIndex;
             }
@@ -356,7 +353,8 @@ public class ExecutionModelManager {
                 for (int i = 1; i < eventList.size(); i++) {
                     EventModel e1 = eventList.get(i);
                     for (int j = i + 1; j < eventList.size(); j++) {
-                        rg.add(new Edge(e1.getId(), eventList.get(j).getId()));
+                        EventModel e2 = eventList.get(j);
+                        rg.add(new Edge(e1.getId(), e2.getId()));
                     }
                 }
             }
@@ -369,8 +367,7 @@ public class ExecutionModelManager {
             SimpleGraph rg = (SimpleGraph) relGraphCache.get(relation);
             EncodingContext.EdgeEncoder rf = context.edge(relation);
 
-            for (Map.Entry<BigInteger, Set<LoadModel>> reads : executionModel.getAddressReadsMap()
-                                                                             .entrySet()) {
+            for (Map.Entry<BigInteger, Set<LoadModel>> reads : executionModel.getAddressReadsMap().entrySet()) {
                 BigInteger address = reads.getKey();
                 if (!executionModel.getAddressWritesMap().containsKey(address)) { continue; }
                 for (LoadModel read : reads.getValue()) {
