@@ -22,7 +22,6 @@ import com.dat3m.dartagnan.utils.Utils;
 import com.dat3m.dartagnan.utils.options.BaseOptions;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.verification.VerificationTask.VerificationTaskBuilder;
-import com.dat3m.dartagnan.verification.model.ExecutionModel;
 import com.dat3m.dartagnan.verification.solving.AssumeSolver;
 import com.dat3m.dartagnan.verification.solving.DataRaceSolver;
 import com.dat3m.dartagnan.verification.solving.ModelChecker;
@@ -230,8 +229,8 @@ public class Dartagnan extends BaseOptions {
             throws InvalidConfigurationException, SolverException, IOException {
         Preconditions.checkArgument(modelChecker.hasModel(), "No execution graph to generate.");
 
-        final ExecutionModel m = ExecutionModel.withContext(modelChecker.getEncodingContext());
-        m.initialize(prover.getModel());
+        final EncodingContext encodingContext = modelChecker instanceof RefinementSolver refinementSolver ?
+            refinementSolver.getContextWithFullWmm() : modelChecker.getEncodingContext();
         final SyntacticContextAnalysis synContext = newInstance(task.getProgram());
         final String progName = task.getProgram().getName();
         final int fileSuffixIndex = progName.lastIndexOf('.');
@@ -239,10 +238,10 @@ public class Dartagnan extends BaseOptions {
                 (fileSuffixIndex == - 1) ? progName : progName.substring(0, fileSuffixIndex);
         // RF edges give both ordering and data flow information, thus even when the pair is in PO
         // we get some data flow information by observing the edge
-        // FR edges only give ordering information which is known if the pair is also in PO
         // CO edges only give ordering information which is known if the pair is also in PO
-        return generateGraphvizFile(m, 1, (x, y) -> true, (x, y) -> !x.getThread().equals(y.getThread()),
-                (x, y) -> !x.getThread().equals(y.getThread()), getOrCreateOutputDirectory() + "/", name,
+        return generateGraphvizFile(encodingContext, prover.getModel(), 1, (x, y) -> true,
+                (x, y) -> !x.getThreadModel().getThread().equals(y.getThreadModel().getThread()),
+                getOrCreateOutputDirectory() + "/", name,
                 synContext, witnessType.convertToPng());
     }
 
