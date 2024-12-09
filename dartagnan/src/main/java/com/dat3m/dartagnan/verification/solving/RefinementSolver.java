@@ -740,7 +740,7 @@ public class RefinementSolver extends ModelChecker {
             if (replacements.containsKey(b)) {
                 bPrime = replacements.get(b);
             } else {
-                final String bPrimeName = b.getName().map(n -> n + "#POS").orElse("__POS" + counter++);
+                final String bPrimeName = b.getName().map(n -> n + "__POS").orElse("__POS" + counter++);
                 bPrime = wmm.addDefinition(new Free(wmm.newRelation(bPrimeName)));
                 replacements.put(b, bPrime);
             }

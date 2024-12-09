@@ -47,12 +47,12 @@ public class ExecutionGraphVisualizer {
     private BiPredicate<EventModel, EventModel> rfFilter = (x, y) -> true;
     private BiPredicate<EventModel, EventModel> coFilter = (x, y) -> true;
     private final List<MemoryObjectModel> sortedMemoryObjects = new ArrayList<>();
-    private List<String> relsToShow = List.of(PO, CO, RF);
+    private List<String> relsToShow;
 
     @Option(name=WITNESS_SHOW,
             description="Names of relations to show in the witness graph.",
             secure=true)
-    private String relsToShowStr = "";
+    private String relsToShowStr = String.format("%s,%s,%s", PO, CO, RF);
 
     public ExecutionGraphVisualizer() {
         this.graphviz = new Graphviz();
@@ -88,9 +88,7 @@ public class ExecutionGraphVisualizer {
 
     private List<String> setRelationsToShow(EncodingContext context) throws InvalidConfigurationException {
         context.getTask().getConfig().inject(this);
-        if (!relsToShowStr.isEmpty()) {
-            relsToShow = Arrays.asList(relsToShowStr.split(",\\s*"));
-        }
+        relsToShow = Arrays.asList(relsToShowStr.split(",\\s*"));
         return relsToShow;
     }
 
@@ -109,15 +107,15 @@ public class ExecutionGraphVisualizer {
             Relation r = rm.getRelation();
             if (r.hasName(name)
                 || r.getNames().stream().anyMatch(n -> n.startsWith(name + "#"))
-                || (name.endsWith("#0") && r.hasName(name.substring(0, name.lastIndexOf("#")))))
-            { return rm; }
+                || (name.endsWith("#0") && r.hasName(name.substring(0, name.lastIndexOf("#"))))) {
+                return rm;
+            }
         }
         return null;
     }
 
     private ExecutionGraphVisualizer addRelations(
-        ExecutionModelNext model, EncodingContext context, Model smtModel
-    ) {
+            ExecutionModelNext model, EncodingContext context, Model smtModel) {
         for (String name : relsToShow) {
             RelationModel rm = getRelationModelByName(model, name);
             if (rm == null) {
@@ -181,8 +179,7 @@ public class ExecutionGraphVisualizer {
     }
 
     private ExecutionGraphVisualizer addCoherence(
-        RelationModel rm, ExecutionModelNext model, String name, EncodingContext context, Model smtModel
-    ) {
+            RelationModel rm, ExecutionModelNext model, String name, EncodingContext context, Model smtModel) {
         graphviz.beginSubgraph(name);
         String attributes = String.format("color=%s", colorMap.getColor(CO));
         graphviz.setEdgeAttributes(attributes);

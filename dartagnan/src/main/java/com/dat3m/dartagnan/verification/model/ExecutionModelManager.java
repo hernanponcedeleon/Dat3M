@@ -137,6 +137,9 @@ public class ExecutionModelManager {
             String valueString = String.valueOf(
                 evaluateByModel(context.value(memEvent))
             );
+            // The old ExecutionModel represents all values as integers for CAAT-use.
+            // TODO: A ValueModel representing different types of values could be useful
+            // for both CAAT and witness.
             final BigInteger value = switch(valueString) {
                 // NULL case can happen if the solver optimized away a variable.
                 // This should only happen if the value is irrelevant, so we will just pick 0.
@@ -189,6 +192,7 @@ public class ExecutionModelManager {
             boolean isAllocated = obj.isStaticallyAllocated()
                                   || isTrue(context.execution(obj.getAllocationSite()));
             if (isAllocated) {
+                // Currently, addresses of memory objects are guaranteed to be integer and assigned.
                 BigInteger address = (BigInteger) evaluateByModel(context.address(obj));
                 BigInteger size = (BigInteger) evaluateByModel(context.size(obj));
                 executionModel.addMemoryObject(obj, new MemoryObjectModel(obj, address, size));
