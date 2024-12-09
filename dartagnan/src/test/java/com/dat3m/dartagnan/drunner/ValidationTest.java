@@ -56,6 +56,11 @@ public class ValidationTest extends AbstractTest {
                 {"litmus-vulkan/plain/sb", "spirv-verification/plain/sb", Map.of(2, 11, 3, 12, 7, 5, 8, 6),  List.of(), false},
                 {"litmus-vulkan/sanity/storage-class", "spirv-verification/sanity/storage-class", Map.of(1, 10, 5, 5),  List.of(), false},
 
+                {"litmus-vulkan/atomic/lb/semsc", "spirv-empirical-new/atomic/lb/semsc", Map.of(2, 49, 3, 51, 7, 41, 8, 43),  List.of(), false},
+                {"litmus-vulkan/atomic/lb/semsc2", "spirv-empirical-new/atomic/lb/semsc2", Map.of(2, 49, 3, 51, 7, 41, 8, 43),  List.of(), false},
+                {"litmus-vulkan/atomic/lb/semscavvis", "spirv-empirical-new/atomic/lb/semscavvis", Map.of(2, 49, 3, 51, 7, 41, 8, 43),  List.of(), false},
+                {"litmus-vulkan/atomic/lb/semscavvis2", "spirv-empirical-new/atomic/lb/semscavvis2", Map.of(2, 49, 3, 51, 7, 41, 8, 43),  List.of(), false},
+
                 {"litmus-vulkan/atomic/lb/mo", "spirv-empirical/atomic/lb/mo", Map.of(2, 116, 3, 118, 7, 108, 8, 110),  List.of(), false},
                 {"litmus-vulkan/atomic/mp/mo", "spirv-empirical/atomic/mp/mo", Map.of(1, 115, 2, 116, 7, 106, 8, 108),  List.of(), false},
                 {"litmus-vulkan/atomic/sb/mo", "spirv-empirical/atomic/sb/mo", Map.of(2, 116, 3, 117, 7, 108, 8, 109),  List.of(), false},
