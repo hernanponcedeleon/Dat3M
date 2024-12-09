@@ -16,10 +16,10 @@ import java.util.Arrays;
 import java.util.EnumSet;
 
 import static com.dat3m.dartagnan.configuration.Arch.C11;
+import static com.dat3m.dartagnan.configuration.Property.*;
 import static com.dat3m.dartagnan.utils.ResourceHelper.getTestResourcePath;
 import static com.dat3m.dartagnan.utils.Result.*;
 import static org.junit.Assert.assertEquals;
-import static com.dat3m.dartagnan.configuration.Property.*;
 
 @RunWith(Parameterized.class)
 public class VMMLocksTest extends AbstractCTest {
@@ -82,7 +82,7 @@ public class VMMLocksTest extends AbstractCTest {
                 {"mutex_musl-rel2rx_futex", C11, FAIL},
                 {"mutex_musl-rel2rx_unlock", C11, FAIL},
                 {"seqlock", C11, PASS},
-                {"clh_mutex", C11, UNKNOWN},
+                {"clh_mutex", C11, PASS},
                 {"clh_mutex-acq2rx", C11, FAIL},
                 {"ticket_awnsb_mutex", C11, PASS},
                 {"ticket_awnsb_mutex-acq2rx", C11, FAIL},

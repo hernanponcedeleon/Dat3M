@@ -49,7 +49,7 @@
 %_ptr_Workgroup_uint = OpTypePointer Workgroup %uint
      %uint_0 = OpConstant %uint 0
      %uint_1 = OpConstant %uint 1
-    %uint_80 = OpConstant %uint 80
+    %uint_72 = OpConstant %uint 72
 %_ptr_Input_uint = OpTypePointer Input %uint
 %_ptr_PushConstant_uint = OpTypePointer PushConstant %uint
 %_ptr_StorageBuffer_uint = OpTypePointer StorageBuffer %uint
@@ -65,7 +65,7 @@
          %24 = OpFunction %void None %23
          %25 = OpLabel
          %28 = OpAccessChain %_ptr_Workgroup_uint %21 %uint_0
-         %31 = OpAtomicIIncrement %uint %28 %uint_1 %uint_80
+         %31 = OpAtomicIIncrement %uint %28 %uint_1 %uint_72
          %33 = OpAccessChain %_ptr_Input_uint %gl_GlobalInvocationID %uint_0
          %34 = OpLoad %uint %33
          %36 = OpAccessChain %_ptr_PushConstant_uint %5 %uint_0 %uint_0

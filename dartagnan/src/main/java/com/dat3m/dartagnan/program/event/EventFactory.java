@@ -742,15 +742,6 @@ public class EventFactory {
             red.addTags(scope);
             return red;
         }
-
-        public static GenericVisibleEvent newAvDevice() {
-            return new GenericVisibleEvent("avdevice", Tag.Vulkan.AVDEVICE);
-        }
-    
-        public static GenericVisibleEvent newVisDevice() {
-            return new GenericVisibleEvent("visdevice", Tag.Vulkan.VISDEVICE);
-        }
-    
     }
 
     // =============================================================================================
@@ -777,6 +768,14 @@ public class EventFactory {
         public static VulkanCmpXchg newVulkanCmpXchg(Expression address, Register register, Expression expected,
                                                      Expression value, String mo, String scope) {
             return new VulkanCmpXchg(register, address, expected, value, mo, scope);
+        }
+
+        public static GenericVisibleEvent newAvDevice() {
+            return new GenericVisibleEvent("avdevice", Tag.Vulkan.AVDEVICE);
+        }
+
+        public static GenericVisibleEvent newVisDevice() {
+            return new GenericVisibleEvent("visdevice", Tag.Vulkan.VISDEVICE);
         }
     }
 

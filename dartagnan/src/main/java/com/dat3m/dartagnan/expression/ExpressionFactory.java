@@ -259,7 +259,7 @@ public final class ExpressionFactory {
     // -----------------------------------------------------------------------------------------------------------------
     // Aggregates
 
-    public Expression makeConstruct(Type type, List<Expression> arguments) {
+    public Expression makeConstruct(Type type, List<? extends Expression> arguments) {
         return new ConstructExpr(type, arguments);
     }
 

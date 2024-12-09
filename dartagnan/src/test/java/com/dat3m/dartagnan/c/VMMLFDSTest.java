@@ -10,12 +10,15 @@ import com.dat3m.dartagnan.wmm.Wmm;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
+import org.sosy_lab.common.configuration.Configuration;
+import org.sosy_lab.common.configuration.InvalidConfigurationException;
+import org.sosy_lab.java_smt.SolverContextFactory.Solvers;
 
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.EnumSet;
 
-import static com.dat3m.dartagnan.configuration.Arch.IMM;
+import static com.dat3m.dartagnan.configuration.Arch.C11;
 import static com.dat3m.dartagnan.configuration.Property.*;
 import static com.dat3m.dartagnan.utils.ResourceHelper.getTestResourcePath;
 import static com.dat3m.dartagnan.utils.Result.*;
@@ -26,6 +29,11 @@ public class VMMLFDSTest extends AbstractCTest {
 
     public VMMLFDSTest(String name, Arch target, Result expected) {
         super(name, target, expected);
+    }
+
+    @Override
+    protected Configuration getConfiguration() throws InvalidConfigurationException {
+        return Configuration.defaultConfiguration();
     }
 
     @Override
@@ -53,20 +61,25 @@ public class VMMLFDSTest extends AbstractCTest {
         return Providers.createWmmFromName(() -> "vmm");
     }
 
+    @Override
+    protected Provider<Solvers> getSolverProvider() {
+        return () -> Solvers.YICES2;
+    }
+
     @Parameterized.Parameters(name = "{index}: {0}, target={1}")
     public static Iterable<Object[]> data() throws IOException {
         return Arrays.asList(new Object[][]{
-                {"dglm", IMM, UNKNOWN},
-                {"dglm-CAS-relaxed", IMM, FAIL},
-                {"ms", IMM, UNKNOWN},
-                {"ms-CAS-relaxed", IMM, FAIL},
-                {"treiber", IMM, UNKNOWN},
-                {"treiber-CAS-relaxed", IMM, FAIL},
-                {"chase-lev", IMM, PASS},
+                {"dglm", C11, UNKNOWN},
+                {"dglm-CAS-relaxed", C11, FAIL},
+                {"ms", C11, UNKNOWN},
+                {"ms-CAS-relaxed", C11, FAIL},
+                {"treiber", C11, UNKNOWN},
+                {"treiber-CAS-relaxed", C11, FAIL},
+                {"chase-lev", C11, PASS},
                 // These have an extra thief that violate the assertion
-                {"chase-lev-fail", IMM, FAIL},
-                {"hash_table", IMM, PASS},
-                {"hash_table-fail", IMM, FAIL},
+                {"chase-lev-fail", C11, FAIL},
+                {"hash_table", C11, PASS},
+                {"hash_table-fail", C11, FAIL},
         });
     }
 

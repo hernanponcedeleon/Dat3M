@@ -25,6 +25,7 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.EnumSet;
 
+import static com.dat3m.dartagnan.configuration.Property.CAT_SPEC;
 import static com.dat3m.dartagnan.configuration.Property.PROGRAM_SPEC;
 import static com.dat3m.dartagnan.utils.ResourceHelper.getRootPath;
 import static com.dat3m.dartagnan.utils.ResourceHelper.getTestResourcePath;
@@ -32,14 +33,14 @@ import static com.dat3m.dartagnan.utils.Result.*;
 import static org.junit.Assert.assertEquals;
 
 @RunWith(Parameterized.class)
-public class SpirvAssertionsTest {
+public class SpirvChecksTest {
 
-    private final String modelPath = getRootPath("cat/spirv.cat");
+    private final String modelPath = getRootPath("cat/spirv-check.cat");
     private final String programPath;
     private final int bound;
     private final Result expected;
 
-    public SpirvAssertionsTest(String file, int bound, Result expected) {
+    public SpirvChecksTest(String file, int bound, Result expected) {
         this.programPath = getTestResourcePath("spirv/basic/" + file);
         this.bound = bound;
         this.expected = expected;
@@ -48,22 +49,22 @@ public class SpirvAssertionsTest {
     @Parameterized.Parameters(name = "{index}: {0}, {1}, {2}")
     public static Iterable<Object[]> data() throws IOException {
         return Arrays.asList(new Object[][]{
-                {"empty-exists-false.spv.dis", 1, FAIL},
+                {"empty-exists-false.spv.dis", 1, PASS},
                 {"empty-exists-true.spv.dis", 1, PASS},
-                {"empty-forall-false.spv.dis", 1, FAIL},
+                {"empty-forall-false.spv.dis", 1, PASS},
                 {"empty-forall-true.spv.dis", 1, PASS},
                 {"empty-not-exists-false.spv.dis", 1, PASS},
-                {"empty-not-exists-true.spv.dis", 1, FAIL},
+                {"empty-not-exists-true.spv.dis", 1, PASS},
                 {"init-forall.spv.dis", 1, PASS},
                 {"init-forall-split.spv.dis", 1, PASS},
                 {"init-forall-not-exists.spv.dis", 1, PASS},
-                {"init-forall-not-exists-fail.spv.dis", 1, FAIL},
+                {"init-forall-not-exists-fail.spv.dis", 1, PASS},
                 {"uninitialized-exists.spv.dis", 1, PASS},
-                {"uninitialized-forall.spv.dis", 1, FAIL},
+                {"uninitialized-forall.spv.dis", 1, PASS},
                 {"uninitialized-private-exists.spv.dis", 1, PASS},
-                {"uninitialized-private-forall.spv.dis", 1, FAIL},
+                {"uninitialized-private-forall.spv.dis", 1, PASS},
                 {"undef-exists.spv.dis", 1, PASS},
-                {"undef-forall.spv.dis", 1, FAIL},
+                {"undef-forall.spv.dis", 1, PASS},
                 {"read-write.spv.dis", 1, PASS},
                 {"vector-init.spv.dis", 1, PASS},
                 {"vector.spv.dis", 1, PASS},
@@ -110,7 +111,7 @@ public class SpirvAssertionsTest {
                 {"cmpxchg-reg-reg.spv.dis", 1, PASS},
                 {"memory-scopes.spv.dis", 1, PASS},
                 {"rmw-extremum-true.spv.dis", 1, PASS},
-                {"rmw-extremum-false.spv.dis", 1, FAIL},
+                {"rmw-extremum-false.spv.dis", 1, PASS},
                 {"push-constants.spv.dis", 1, PASS},
                 {"push-constants-pod.spv.dis", 1, PASS},
                 {"push-constant-mixed.spv.dis", 1, PASS}
@@ -147,6 +148,6 @@ public class SpirvAssertionsTest {
                 .withTarget(Arch.VULKAN);
         Program program = new ProgramParser().parse(new File(programPath));
         Wmm mcm = new ParserCat().parse(new File(modelPath));
-        return builder.build(program, mcm, EnumSet.of(PROGRAM_SPEC));
+        return builder.build(program, mcm, EnumSet.of(CAT_SPEC));
     }
 }

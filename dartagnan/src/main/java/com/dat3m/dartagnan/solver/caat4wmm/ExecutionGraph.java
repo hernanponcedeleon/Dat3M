@@ -230,11 +230,15 @@ public class ExecutionGraph {
             graph = new ProgramOrderGraph();
         } else if (relClass == Coherence.class) {
             graph = new CoherenceGraph();
-        } else if (relClass == Inverse.class || relClass == TransitiveClosure.class || relClass == RangeIdentity.class) {
+        } else if (relClass == RangeIdentity.class || relClass == DomainIdentity.class) {
             RelationGraph g = getOrCreateGraphFromRelation(dependencies.get(0));
-            graph = relClass == Inverse.class ? new InverseGraph(g) :
-                    relClass == TransitiveClosure.class ? new TransitiveGraph(g) :
-                            new RangeIdentityGraph(g);
+            ProjectionIdentityGraph.Dimension dim = relClass == RangeIdentity.class ?
+                    ProjectionIdentityGraph.Dimension.RANGE :
+                    ProjectionIdentityGraph.Dimension.DOMAIN;
+            graph = new ProjectionIdentityGraph(g, dim);
+        } else if (relClass == Inverse.class || relClass == TransitiveClosure.class) {
+            RelationGraph g = getOrCreateGraphFromRelation(dependencies.get(0));
+            graph = relClass == Inverse.class ? new InverseGraph(g) : new TransitiveGraph(g);
         } else if (relClass == Union.class || relClass == Intersection.class) {
             RelationGraph[] graphs = new RelationGraph[dependencies.size()];
             for (int i = 0; i < graphs.length; i++) {
@@ -264,8 +268,9 @@ public class ExecutionGraph {
         } else if (relClass == Empty.class) {
             graph = new EmptyGraph();
         } else {
-            // This is a fallback for all unimplemented static graphs
-            graph = new StaticDefaultWMMGraph(rel, ra);
+            final String error = String.format("Cannot handle relation %s with definition of type %s.",
+                    rel, relClass.getSimpleName());
+            throw new UnsupportedOperationException(error);
         }
 
         graph.setName(rel.getNameOrTerm());

@@ -64,16 +64,19 @@ public class SpirvChecksTest {
                 {"divergence/race_no_divergence.spv.dis", 1, PASS},
                 {"inter_group_and_barrier_flag_tests/fail/local_id.spv.dis", 1, PASS},
 
-                // Fails check checkRelIsSem for a barrier with semantics 0x8 (rel_acq, no storage class semantics)
-                // {"inter_group_and_barrier_flag_tests/fail/no_barrier_flags.spv.dis", 1, PASS},
+                // Changed illegal barrier semantics 0x8 (acqrel) to 0x108 (acqrel+semWg)
+                {"inter_group_and_barrier_flag_tests/fail/no_barrier_flags.spv.dis", 1, PASS},
 
                 {"inter_group_and_barrier_flag_tests/fail/sync.spv.dis", 1, PASS},
                 {"inter_group_and_barrier_flag_tests/pass/local_id_benign_write_write.spv.dis", 1, PASS},
                 {"inter_group_and_barrier_flag_tests/pass/pass_due_to_intra_group_flag.spv.dis", 1, PASS},
                 {"localarrayaccess.spv.dis", 1, PASS},
 
-                // Fails check checkRelIsSem for a barrier with semantics 0x8 (rel_acq, no storage class semantics)
-                // {"mem_fence.spv.dis", 1, PASS},
+                // Changed illegal fence semantics:
+                //  0x2 (acq) -> 0x102 (acq+semWg)
+                //  0x4 (rel) -> 0x104 (rel+semWg)
+                //  0x8 (acqrel) -> 0x108 (acqrel+semWg)
+                {"mem_fence.spv.dis", 1, PASS},
 
                 {"misc/fail/miscfail1.spv.dis", 1, PASS},
                 {"misc/fail/miscfail3.spv.dis", 1, PASS},

@@ -11,11 +11,11 @@ import com.dat3m.dartagnan.program.analysis.ThreadSymmetry;
 import com.dat3m.dartagnan.program.analysis.alias.AliasAnalysis;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.MemoryEvent;
+import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.MemoryCoreEvent;
 import com.dat3m.dartagnan.program.event.metadata.OriginalId;
 import com.dat3m.dartagnan.program.event.metadata.SourceLocation;
 import com.dat3m.dartagnan.program.filter.Filter;
-import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.solver.caat.CAATSolver;
 import com.dat3m.dartagnan.solver.caat4wmm.RefinementModel;
 import com.dat3m.dartagnan.solver.caat4wmm.Refiner;
@@ -234,7 +234,7 @@ public class RefinementSolver extends ModelChecker {
         final Refiner refiner = new Refiner(refinementModel);
         final Property.Type propertyType = Property.getCombinedType(task.getProperty(), task);
 
-        logger.info("Starting encoding using " + ctx.getVersion());
+        logger.info("Starting encoding using {}", ctx.getVersion());
         prover.writeComment("Program encoding");
         prover.addConstraint(programEncoder.encodeFullProgram());
         prover.writeComment("Memory model (baseline) encoding");
@@ -491,7 +491,10 @@ public class RefinementSolver extends ModelChecker {
         // TODO: We should probably automatically cut all "unknown relation",
         //  i.e., use a white-list of known relations instead of a blacklist of unknown one's.
         return def instanceof LinuxCriticalSections // LKMM
-                || def instanceof SyncFence || def instanceof SyncBar || def instanceof SameVirtualLocation; // GPUs
+                || def instanceof CASDependency // IMM
+                // GPUs
+                || def instanceof SameScope || def instanceof SyncWith
+                || def instanceof SyncFence || def instanceof SyncBar || def instanceof SameVirtualLocation;
     }
 
     private static RefinementModel generateRefinementModel(Wmm original) {

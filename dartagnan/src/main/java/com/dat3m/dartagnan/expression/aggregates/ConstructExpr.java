@@ -16,7 +16,7 @@ import static com.google.common.base.Preconditions.checkArgument;
 
 public final class ConstructExpr extends NaryExpressionBase<Type, ExpressionKind.Other> {
 
-    public ConstructExpr(Type type, List<Expression> arguments) {
+    public ConstructExpr(Type type, List<? extends Expression> arguments) {
         super(type, ExpressionKind.Other.CONSTRUCT, List.copyOf(arguments));
         checkArgument(type instanceof AggregateType || type instanceof ArrayType,
                 "Non-constructible type %s.", type);

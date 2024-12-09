@@ -15,7 +15,6 @@ public class ControlFlowBuilder {
 
     protected final Map<String, Label> blockLabels = new HashMap<>();
     protected final Map<String, Event> lastBlockEvents = new HashMap<>();
-    protected final Map<String, String> mergeLabelIds = new HashMap<>();
     protected final Deque<String> blockStack = new ArrayDeque<>();
     protected final Map<String, Map<Register, String>> phiDefinitions = new HashMap<>();
     protected final Map<String, SourceLocation> phiDefinitionLocations = new HashMap<>();
@@ -44,8 +43,6 @@ public class ControlFlowBuilder {
                     if (loc != null) { event.setMetadata(loc); }
                     lastBlockEvents.get(blockId).getPredecessor().insertAfter(event);
                 }));
-        mergeLabelIds.forEach((jumpLabelId, endLabelId) ->
-                lastBlockEvents.get(jumpLabelId).getPredecessor().insertAfter(blockLabels.get(endLabelId)));
     }
 
     public void startBlock(String id) {
@@ -66,12 +63,6 @@ public class ControlFlowBuilder {
 
     public Label getOrCreateLabel(String id) {
         return blockLabels.computeIfAbsent(id, EventFactory::newLabel);
-    }
-
-    public Label createMergeLabel(String id) {
-        String mergeId = id + "_end";
-        mergeLabelIds.put(id, mergeId);
-        return createLabel(mergeId);
     }
 
     public void addPhiDefinition(String blockId, Register register, String expressionId) {
@@ -121,11 +112,6 @@ public class ControlFlowBuilder {
             throw new ParsingException("Phi operation(s) refer to undefined block(s) %s",
                     String.join(", ", missingPhiBlocks));
         }
-        Set<String> missingMergeBlocks = Sets.difference(mergeLabelIds.keySet(), blockLabels.keySet());
-        if (!missingMergeBlocks.isEmpty()) {
-            throw new ParsingException("Branch merge label(s) refer to undefined block(s) %s",
-                    String.join(", ", missingMergeBlocks));
-        }
         Map<Event, String> reverse = new HashMap<>();
         lastBlockEvents.forEach((k, v) -> {
             if (reverse.containsKey(v)) {
@@ -133,13 +119,6 @@ public class ControlFlowBuilder {
             }
             reverse.put(v, k);
         });
-    }
-
-    private Label createLabel(String id) {
-        if (blockLabels.containsKey(id)) {
-            throw new ParsingException("Attempt to redefine label '%s'", id);
-        }
-        return getOrCreateLabel(id);
     }
 
     private SourceLocation getPhiLocation(String blockId, Register register) {

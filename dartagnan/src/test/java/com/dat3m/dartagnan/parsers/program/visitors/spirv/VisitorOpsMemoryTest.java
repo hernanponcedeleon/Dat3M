@@ -83,7 +83,7 @@ public class VisitorOpsMemoryTest {
     @Test
     public void testLoadWithIllegalTags() {
         // given
-        String input = "%result = OpLoad %int %ptr MakePointerAvailable %scope";
+        String input = "%result = OpLoad %int %ptr NonPrivatePointer|MakePointerAvailable %scope";
         builder.mockIntType("%int", 32);
         builder.mockPtrType("%int_ptr", "%int", "Uniform");
         builder.mockVariable("%ptr", "%int_ptr");
@@ -148,7 +148,7 @@ public class VisitorOpsMemoryTest {
     @Test
     public void testStoreWithIllegalTags() {
         // given
-        String input = "OpStore %ptr %value MakePointerVisible %scope";
+        String input = "OpStore %ptr %value NonPrivatePointer|MakePointerVisible %scope";
         builder.mockIntType("%int", 32);
         builder.mockPtrType("%int_ptr", "%int", "Uniform");
         builder.mockVariable("%ptr", "%int_ptr");

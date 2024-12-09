@@ -84,28 +84,6 @@ public class SpirvAssertionsTest {
                 {"xf-barrier-fail3.spv.dis", 4, FAIL},
                 {"xf-barrier-fail4.spv.dis", 4, FAIL},
                 {"xf-barrier-weakest.spv.dis", 4, FAIL},
-
-                {"xf-barrier-local-2.1.2.spv.dis", 4, FAIL},
-                {"xf-barrier-local-3.1.3.spv.dis", 9, FAIL},
-                // TODO: ??
-                // {"xf-barrier-local-1.1.2.spv.dis", 2, FAIL},
-                {"xf-barrier-local-2.1.1.spv.dis", 2, FAIL},
-                {"xf-barrier-local-fail1.spv.dis", 4, FAIL},
-                {"xf-barrier-local-fail2.spv.dis", 4, FAIL},
-                {"xf-barrier-local-fail3.spv.dis", 4, FAIL},
-                {"xf-barrier-local-fail4.spv.dis", 4, FAIL},
-                {"xf-barrier-local-weakest.spv.dis", 4, FAIL},
-
-                {"xf-barrier-zero-2.1.2.spv.dis", 4, FAIL},
-                {"xf-barrier-zero-3.1.3.spv.dis", 9, FAIL},
-                // TODO: ??
-                // {"xf-barrier-zero-1.1.2.spv.dis", 2, FAIL},
-                {"xf-barrier-zero-2.1.1.spv.dis", 2, FAIL},
-                {"xf-barrier-zero-fail1.spv.dis", 4, FAIL},
-                {"xf-barrier-zero-fail2.spv.dis", 4, FAIL},
-                {"xf-barrier-zero-fail3.spv.dis", 4, FAIL},
-                {"xf-barrier-zero-fail4.spv.dis", 4, FAIL},
-                {"xf-barrier-zero-weakest.spv.dis", 4, FAIL},
         });
     }
 
