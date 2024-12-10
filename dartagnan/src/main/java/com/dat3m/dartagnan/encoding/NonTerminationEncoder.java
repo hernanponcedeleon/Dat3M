@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan.encoding;
 
+import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.analysis.LoopAnalysis;
@@ -9,6 +10,7 @@ import com.dat3m.dartagnan.program.event.core.CondJump;
 import com.dat3m.dartagnan.program.event.core.Local;
 import com.dat3m.dartagnan.program.event.core.MemoryCoreEvent;
 import com.dat3m.dartagnan.program.event.core.Store;
+import com.dat3m.dartagnan.program.event.core.special.StateSnapshot;
 import com.dat3m.dartagnan.program.event.metadata.UnrollingId;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.wmm.Relation;
@@ -71,8 +73,7 @@ import static com.dat3m.dartagnan.wmm.RelationNameRepository.RF;
     TODO: We have not considered uninit reads, i.e., reads without rf-edges in the implementation.
           There might be issues if init events are missing.
     TODO 2: We do not consider ControlBarriers at all. The current version is only for loop-based nontermination.
-    TODO 3: The old encoding also ensured no exceptional termination due to e.g. failed assertions.
-            We might have to include this here as well.
+    TODO 3: We do not (yet) consider fairness of weak atomics like StoreExclusive
  */
 public class NonTerminationEncoder {
 
@@ -444,6 +445,20 @@ public class NonTerminationEncoder {
                     equality,
                     context.equal(context.result(e), context.result(f))
             );
+        }
+        if (x instanceof StateSnapshot e && y instanceof StateSnapshot f) {
+            if (e.getExpressions().size() != f.getExpressions().size()) {
+                equality = bmgr.makeFalse();
+            } else {
+                for (int i = 0; i < e.getExpressions().size(); i++) {
+                    final Expression exprE = e.getExpressions().get(i);
+                    final Expression exprF = f.getExpressions().get(i);
+                    equality = bmgr.and(
+                            equality,
+                            context.equal(context.encodeExpressionAt(exprE, e), context.encodeExpressionAt(exprF, f))
+                    );
+                }
+            }
         }
         if (x instanceof MemoryCoreEvent e && y instanceof MemoryCoreEvent f) {
             equality = bmgr.and(

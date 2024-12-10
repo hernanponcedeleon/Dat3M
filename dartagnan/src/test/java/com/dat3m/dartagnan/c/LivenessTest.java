@@ -143,11 +143,12 @@ public class LivenessTest extends AbstractCTest {
                 {"locks/deadlock", POWER, FAIL},
                 {"locks/deadlock", RISCV, FAIL},
                 // Side-effectful nontermination
+                {"nontermination/nontermination_sanity", TSO, UNKNOWN},
                 {"nontermination/nontermination", TSO, FAIL},
                 {"nontermination/nontermination_xchg", TSO, FAIL},
                 {"nontermination/nontermination_zero_effect", TSO, FAIL},
                 {"nontermination/nontermination_complex", TSO, FAIL},
-                {"nontermination/nontermination_weak", TSO, UNKNOWN},
+                {"nontermination/nontermination_weak", TSO, PASS},
                 {"nontermination/nontermination_weak", ARM8, FAIL}
         });
     }
