@@ -14,6 +14,7 @@ import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.*;
+import com.dat3m.dartagnan.program.event.core.Assume;
 import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.event.core.Local;
 import com.dat3m.dartagnan.program.event.core.threading.ThreadCreate;
@@ -210,6 +211,12 @@ public class ThreadCreation implements ProgramProcessor {
                 final List<Event> caseBody = eventSequence(
                         joinCase,
                         newAcquireLoad(joinDummyReg, comAddrOfThreadToJoinWith),
+                        // TODO: !!! THIS IS NOT A PROPER IMPLEMENTATION BUT A QUICK MOCK !!!
+                        //  This is a quick mock that forces main thread to wait until child thread joins.
+                        //  It has been added to test memory leak detection (alloc without free).
+                        //  In the final version we need either to add a proper implementation for thread_join
+                        //  or to remove alloc-without-free detection for now.
+                        new Assume(ExpressionFactory.getInstance().makeEQ(joinDummyReg, ExpressionFactory.getInstance().makeFalse())),
                         EventFactory.newGoto(joinEnd)
                 );
                 tid2joinCases.put(tidCandidate, caseBody);

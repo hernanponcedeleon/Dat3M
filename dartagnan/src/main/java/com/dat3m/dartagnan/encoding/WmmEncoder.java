@@ -5,10 +5,7 @@ import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.analysis.ReachingDefinitionsAnalysis;
 import com.dat3m.dartagnan.program.event.*;
-import com.dat3m.dartagnan.program.event.core.ControlBarrier;
-import com.dat3m.dartagnan.program.event.core.Load;
-import com.dat3m.dartagnan.program.event.core.MemoryCoreEvent;
-import com.dat3m.dartagnan.program.event.core.RMWStoreExclusive;
+import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.utils.Utils;
 import com.dat3m.dartagnan.utils.dependable.DependencyGraph;
 import com.dat3m.dartagnan.wmm.Constraint;
@@ -666,6 +663,41 @@ public class WmmEncoder implements Encoder {
                     }
                 }
             }
+            return null;
+        }
+
+        @Override
+        public Void visitAllocPtr(AllocPtr def) {
+            final Relation rel = def.getDefinedRelation();
+            EncodingContext.EdgeEncoder edge = context.edge(rel);
+            encodeSets.get(rel).apply((e1, e2) -> {
+                Formula ptr1 = (e1 instanceof Alloc alloc)
+                        ? context.result(alloc)
+                        : context.encodeExpressionAt(((MemFree)e1).getAddress(), e1);
+                Formula ptr2 = context.encodeExpressionAt(((MemFree) e2).getAddress(), e2);
+                enc.add(bmgr.equivalence(edge.encode(e1, e2), bmgr.and(
+                        execution(e1, e2),
+                        context.equal(ptr1, ptr2))));
+            });
+            return null;
+        }
+
+        @Override
+        public Void visitAllocMem(AllocMem def) {
+            final Relation rel = def.getDefinedRelation();
+            final EncodingHelper helper = new EncodingHelper(context.getFormulaManager());
+            EncodingContext.EdgeEncoder edge = context.edge(rel);
+            encodeSets.get(rel).apply((e1, e2) -> {
+                Formula minAddress = context.result((Alloc)e1);
+                Formula size = context.encodeExpressionAt(((Alloc) e1).getAllocationSize(), e1);
+                Formula maxAddress = helper.add(minAddress, size);
+                Formula address = context.address((MemoryEvent) e2);
+                enc.add(bmgr.equivalence(edge.encode(e1, e2), bmgr.and(
+                        execution(e1, e2),
+                        helper.greaterOrEquals(address, minAddress, false),
+                        helper.greaterThan(maxAddress, address, false)
+                )));
+            });
             return null;
         }
 

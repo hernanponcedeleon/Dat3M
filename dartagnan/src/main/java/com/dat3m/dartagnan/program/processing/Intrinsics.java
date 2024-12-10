@@ -14,10 +14,7 @@ import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.Tag;
-import com.dat3m.dartagnan.program.event.core.CondJump;
-import com.dat3m.dartagnan.program.event.core.ExecutionStatus;
-import com.dat3m.dartagnan.program.event.core.Label;
-import com.dat3m.dartagnan.program.event.core.Local;
+import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.event.functions.FunctionCall;
 import com.dat3m.dartagnan.program.event.functions.ValueFunctionCall;
 import com.dat3m.dartagnan.program.event.lang.svcomp.BeginAtomic;
@@ -218,7 +215,7 @@ public class Intrinsics {
         STD_MALLOC("malloc", false, false, true, true, Intrinsics::inlineMalloc),
         STD_CALLOC("calloc", false, false, true, true, Intrinsics::inlineCalloc),
         STD_ALIGNED_ALLOC("aligned_alloc", false, false, true, true, Intrinsics::inlineAlignedAlloc),
-        STD_FREE("free", true, false, true, true, Intrinsics::inlineAsZero),//TODO support free
+        STD_FREE("free", true, false, true, true, Intrinsics::inlineFree),
         STD_ASSERT(List.of("__assert_fail", "__assert_rtn"), false, false, false, true, Intrinsics::inlineUserAssert),
         STD_EXIT("exit", false, false, false, true, Intrinsics::inlineExit),
         STD_ABORT("abort", false, false, false, true, Intrinsics::inlineExit),
@@ -876,6 +873,12 @@ public class Intrinsics {
         checkUnknownIntrinsic(P_THREAD_RWLOCK_ATTR.contains(suffix.substring(3)), call);
         return List.of(
                 assignSuccess(errorRegister)
+        );
+    }
+
+    private List<Event> inlineFree(FunctionCall call) {
+        return List.of(
+                EventFactory.newFree(call.getArguments().get(0))
         );
     }
 

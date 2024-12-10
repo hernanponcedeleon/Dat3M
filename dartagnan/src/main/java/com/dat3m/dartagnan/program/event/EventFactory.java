@@ -105,6 +105,10 @@ public class EventFactory {
         return new Alloc(register, allocType, arraySize, alignment, isHeapAlloc, doesZeroOutMemory);
     }
 
+    public static MemFree newFree(Expression address) {
+        return new MemFree(address);
+    }
+
     public static Load newLoad(Register register, Expression address) {
         return new Load(register, address);
     }

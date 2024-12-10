@@ -9,10 +9,7 @@ import com.dat3m.dartagnan.expression.integers.IntLiteral;
 import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.program.Register;
-import com.dat3m.dartagnan.program.event.AbstractEvent;
-import com.dat3m.dartagnan.program.event.EventVisitor;
-import com.dat3m.dartagnan.program.event.RegReader;
-import com.dat3m.dartagnan.program.event.RegWriter;
+import com.dat3m.dartagnan.program.event.*;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.google.common.base.Preconditions;
 import org.sosy_lab.java_smt.api.BooleanFormula;
@@ -47,6 +44,9 @@ public final class Alloc extends AbstractEvent implements RegReader, RegWriter {
         this.allocationType = allocType;
         this.isHeapAllocation = isHeapAllocation;
         this.doesZeroOutMemory = doesZeroOutMemory;
+        if (isHeapAllocation) {
+            addTags(Tag.VISIBLE, Tag.ALLOC);
+        }
     }
 
     private Alloc(Alloc other) {
@@ -59,6 +59,9 @@ public final class Alloc extends AbstractEvent implements RegReader, RegWriter {
         this.alignment = other.alignment;
         this.isHeapAllocation = other.isHeapAllocation;
         this.doesZeroOutMemory = other.doesZeroOutMemory;
+        if (isHeapAllocation) {
+            addTags(Tag.VISIBLE, Tag.ALLOC);
+        }
     }
 
     @Override

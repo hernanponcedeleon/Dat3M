@@ -768,6 +768,42 @@ public class NativeRelationAnalysis implements RelationAnalysis {
         }
 
         @Override
+        // TODO: Alias analysis for alloc-free pointers
+        public MutableKnowledge visitAllocPtr(AllocPtr aref) {
+            MutableEventGraph may = new MapEventGraph();
+            MutableEventGraph must = new MapEventGraph();
+            for (Alloc e1 : program.getThreadEvents(Alloc.class)) {
+                if (e1.isHeapAllocation()) {
+                    for (Event e2 : program.getThreadEvents(MemFree.class)) {
+                        may.add(e1, e2);
+                    }
+                }
+            }
+            for (Event e1 : program.getThreadEvents(MemFree.class)) {
+                for (Event e2 : program.getThreadEvents(MemFree.class)) {
+                    may.add(e1, e2);
+                }
+            }
+            return new MutableKnowledge(may, must);
+        }
+
+        @Override
+        // TODO: Alias analysis for alloc and memory accesses
+        //  (note that we should consider the whole allocated region, not only the pointer)
+        public MutableKnowledge visitAllocMem(AllocMem aloc) {
+            MutableEventGraph may = new MapEventGraph();
+            MutableEventGraph must = new MapEventGraph();
+            for (Alloc e1 : program.getThreadEvents(Alloc.class)) {
+                if (e1.isHeapAllocation()) {
+                    for (Event e2 : program.getThreadEvents(MemoryEvent.class)) {
+                        may.add(e1, e2);
+                    }
+                }
+            }
+            return new MutableKnowledge(may, must);
+        }
+
+        @Override
         public MutableKnowledge visitReadFrom(ReadFrom rf) {
             logger.trace("Computing knowledge about read-from");
             final BranchEquivalence eq = analysisContext.requires(BranchEquivalence.class);
