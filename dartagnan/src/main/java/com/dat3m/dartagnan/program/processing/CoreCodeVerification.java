@@ -35,7 +35,7 @@ public class CoreCodeVerification implements FunctionProcessor {
     private static final Set<Class<? extends Event>> CORE_CLASSES = new HashSet<>(Arrays.asList(
             Load.class, Store.class, Init.class, GenericMemoryEvent.class, GenericVisibleEvent.class,
             CondJump.class, IfAsJump.class, ExecutionStatus.class, Label.class, Local.class,
-            Skip.class, RMWStore.class, RMWStoreExclusive.class, Alloc.class,
+            Skip.class, RMWStore.class, RMWStoreExclusive.class, Alloc.class, MemFree.class,
             Assume.class, Assert.class,
             ThreadCreate.class, ThreadArgument.class, ThreadStart.class,
             ControlBarrier.class, NamedBarrier.class,

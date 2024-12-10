@@ -220,6 +220,8 @@ public class Wmm {
                 Relation mv = addDefinition(product(newRelation(), Tag.MEMORY, Tag.VISIBLE));
                 yield intersection(r, comp, mv);
             }
+            case ALLOCPTR -> new AllocPtr(r);
+            case ALLOCMEM -> new AllocMem(r);
             case SR -> new SameScope(r);
             case SCTA -> new SameScope(r, Tag.PTX.CTA);
             case SSG -> new SameScope(r, Tag.Vulkan.SUB_GROUP);
