@@ -46,7 +46,7 @@ public class ExecutionModelManager {
 
     private final Map<Relation, RelationModel> relModelCache;
     private final BiMap<Relation, RelationGraph> relGraphCache;
-    private final Map<String, EdgeModel> edgeModelCache;
+    private final Map<Edge, EdgeModel> edgeModelCache;
 
     private ExecutionModelNext executionModel;
     private EncodingContext context;
@@ -132,27 +132,15 @@ public class ExecutionModelManager {
             Object addressObj = checkNotNull(
                 evaluateByModel(context.address(memEvent))
             );
-            final BigInteger address = new BigInteger(addressObj.toString());
+            BigInteger address = new BigInteger(addressObj.toString());
             
-            String valueString = String.valueOf(
-                evaluateByModel(context.value(memEvent))
-            );
-            // The old ExecutionModel represents all values as integers for CAAT-use.
-            // TODO: A ValueModel representing different types of values could be useful
-            // for both CAAT and witness.
-            final BigInteger value = switch(valueString) {
-                // NULL case can happen if the solver optimized away a variable.
-                // This should only happen if the value is irrelevant, so we will just pick 0.
-                case "false", "null" -> BigInteger.ZERO;
-                case "true" -> BigInteger.ONE;
-                default -> new BigInteger(valueString);
-            };
+            ValueModel value = new ValueModel(evaluateByModel(context.value(memEvent)));
 
-            if (memEvent.hasTag(Tag.READ)) {
-                em = new LoadModel(memEvent, tm, id, address, value);
+            if (memEvent instanceof Load load) {
+                em = new LoadModel(load, tm, id, address, value);
                 executionModel.addAddressRead(address, (LoadModel) em);
-            } else if (memEvent.hasTag(Tag.WRITE)) {
-                em = new StoreModel(memEvent, tm, id, address, value);
+            } else if (memEvent instanceof Store store) {
+                em = new StoreModel(store, tm, id, address, value);
                 executionModel.addAddressWrite(address, (StoreModel) em);
             } else {
                 // Should never happen.
@@ -161,13 +149,13 @@ public class ExecutionModelManager {
                 ));
             }
 
-        } else if (e.hasTag(Tag.FENCE) && e instanceof GenericVisibleEvent visible) {
-            final String name = (visible).getName();
-            em = new FenceModel(visible, tm, id, name);
+        } else if (e instanceof GenericVisibleEvent visible) {
+            em = new GenericVisibleEventModel(visible, tm, id);
         } else if (e instanceof Assert assrt) {
             em = new AssertModel(assrt, tm, id);
         } else if (e instanceof Local local) {
-            em = new LocalModel(local, tm, id);
+            ValueModel value = new ValueModel(evaluateByModel(context.result((RegWriter) e)));
+            em = new LocalModel(local, tm, id, value);
         } else if (e instanceof CondJump cj) {
             em = new CondJumpModel(cj, tm, id);
         } else {
@@ -181,7 +169,8 @@ public class ExecutionModelManager {
     private boolean toExtract(Event e) {
         // We extract visible events, Locals and Asserts to show them in the witness,
         // and extract also CondJumps for tracking internal dependencies.
-        return e.hasTag(Tag.VISIBLE)
+        return e instanceof MemoryEvent
+               || e instanceof GenericVisibleEvent
                || e instanceof Local
                || e instanceof Assert
                || e instanceof CondJump;
@@ -212,20 +201,25 @@ public class ExecutionModelManager {
 
         int maxId = -1;
         for (Relation r : wmm.getRelations()) {
-            int defIndex = 0;
+            int defIndex = -1;
             for (String n : r.getNames()) {
                 if (n.startsWith(name + "#")) {
-                    try {
-                        defIndex = Integer.parseInt(n.substring(n.lastIndexOf("#") + 1));
-                        break;
-                    } catch (NumberFormatException e) {}
+                    defIndex = tryParseInt(n).orElse(-1);
+                    if (defIndex > -1) { break; }
                 }
             }
-            if (defIndex != 0 && defIndex > maxId) {
-                maxId = defIndex;
-            }
+            maxId = Math.max(maxId, defIndex);
         }
         return maxId != -1 ? wmm.getRelation(name + "#" + maxId) : wmm.getRelation(name);
+    }
+
+    private Optional<Integer> tryParseInt(String s) {
+        try {
+            int n = Integer.parseInt(s.substring(s.lastIndexOf("#") + 1));
+            return Optional.of(n);
+        } catch (NumberFormatException e) {
+            return Optional.empty();
+        }
     }
 
     private void extractRelations(List<String> relationNames) {
@@ -303,13 +297,7 @@ public class ExecutionModelManager {
     }
 
     private RelationGraph createGraph(Relation r) {
-        RelationGraph rg;
-        try {
-            rg = r.getDefinition().accept(graphBuilder);
-        } catch (UnsupportedOperationException e) {
-            // Generate a SimpleGraph for base relations that can be populated manually.
-            rg = new SimpleGraph();
-        }
+        RelationGraph rg = r.getDependencies().size() == 0 ? new SimpleGraph() : r.getDefinition().accept(graphBuilder);
         rg.setName(r.getNameOrTerm());
         if (!r.isRecursive()) {
             relGraphCache.put(r, rg);
@@ -325,13 +313,12 @@ public class ExecutionModelManager {
     }
 
     private EdgeModel getOrCreateEdgeModel(Edge e) {
-        String identifier = e.getFirst() + " -> " + e.getSecond();
-        if (edgeModelCache.containsKey(identifier)) {
-            return edgeModelCache.get(identifier);
+        if (edgeModelCache.containsKey(e)) {
+            return edgeModelCache.get(e);
         }
         EdgeModel em = new EdgeModel(executionModel.getEventModelById(e.getFirst()),
                                      executionModel.getEventModelById(e.getSecond()));
-        edgeModelCache.put(identifier, em);
+        edgeModelCache.put(e, em);
         return em;
     }
 

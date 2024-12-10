@@ -14,10 +14,6 @@ public interface EventModel extends Comparable<EventModel> {
     boolean isMemoryEvent();
     boolean isInit();
     boolean isWrite();
-    boolean isRead();
-    boolean isFence();
-    boolean isExclusive();
-    boolean isRMW();
     boolean isVisible();
     boolean isJump();
     boolean isAssert();

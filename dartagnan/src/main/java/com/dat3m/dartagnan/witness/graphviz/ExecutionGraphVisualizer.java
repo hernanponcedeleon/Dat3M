@@ -2,6 +2,7 @@ package com.dat3m.dartagnan.witness.graphviz;
 
 import com.dat3m.dartagnan.program.analysis.SyntacticContextAnalysis;
 import com.dat3m.dartagnan.encoding.EncodingContext;
+import com.dat3m.dartagnan.program.event.core.Local;
 import com.dat3m.dartagnan.program.event.metadata.MemoryOrder;
 import com.dat3m.dartagnan.utils.dependable.DependencyGraph;
 import com.dat3m.dartagnan.verification.model.event.*;
@@ -10,6 +11,7 @@ import com.dat3m.dartagnan.verification.model.ExecutionModelNext;
 import com.dat3m.dartagnan.verification.model.MemoryObjectModel;
 import com.dat3m.dartagnan.verification.model.RelationModel;
 import com.dat3m.dartagnan.verification.model.ThreadModel;
+import com.dat3m.dartagnan.verification.model.ValueModel;
 import com.dat3m.dartagnan.wmm.definition.Coherence;
 import com.dat3m.dartagnan.wmm.definition.ProgramOrder;
 import com.dat3m.dartagnan.wmm.definition.ReadFrom;
@@ -277,19 +279,21 @@ public class ExecutionGraphVisualizer {
 
     private String eventToNode(EventModel e) {
         if (e.isInit()) {
-            return String.format("\"I(%s, %d)\"", getAddressString(
+            return String.format("\"I(%s, %s)\"", getAddressString(
                 ((StoreModel) e).getAccessedAddress()), ((StoreModel) e).getValue());
         }
         // We have MemEvent + Fence + Local + Assert
         String tag = e.getEvent().toString();
         if (e.isMemoryEvent()) {
             String address = getAddressString(((MemoryEventModel) e).getAccessedAddress());
-            BigInteger value = ((MemoryEventModel) e).getValue();
+            ValueModel value = ((MemoryEventModel) e).getValue();
             MemoryOrder mo = e.getEvent().getMetadata(MemoryOrder.class);
             String moString = mo == null ? "" : ", " + mo.value();
             tag = e.isWrite() ?
-                    String.format("W(%s, %d%s)", address, value, moString) :
+                    String.format("W(%s, %s%s)", address, value, moString) :
                     String.format("%s = R(%s%s)", value, address, moString);
+        } else if (e.isLocal()) {
+            tag = String.format("%s <- %s", ((LocalModel) e).getValue(), ((Local) e.getEvent()).getExpr());
         }
         final String callStack = makeContextString(
             synContext.getContextInfo(e.getEvent()).getContextOfType(CallContext.class), " -> \\n");

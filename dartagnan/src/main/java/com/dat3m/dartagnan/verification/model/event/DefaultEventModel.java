@@ -1,9 +1,7 @@
 package com.dat3m.dartagnan.verification.model.event;
 
 import com.dat3m.dartagnan.program.event.core.*;
-import com.dat3m.dartagnan.program.event.Event;
-import com.dat3m.dartagnan.program.event.RegReader;
-import com.dat3m.dartagnan.program.event.RegWriter;
+import com.dat3m.dartagnan.program.event.*;
 import com.dat3m.dartagnan.verification.model.ThreadModel;
 
 import static com.dat3m.dartagnan.program.event.Tag.*;
@@ -38,28 +36,16 @@ public class DefaultEventModel implements EventModel {
     }
 
     @Override
-    public boolean isMemoryEvent() { return event.hasTag(MEMORY); }
+    public boolean isMemoryEvent() { return event instanceof MemoryEvent; }
 
     @Override
-    public boolean isInit() { return event.hasTag(INIT); }
+    public boolean isInit() { return event instanceof Init; }
 
     @Override
-    public boolean isWrite() { return event.hasTag(WRITE); }
+    public boolean isWrite() { return event instanceof Store; }
 
     @Override
-    public boolean isRead() { return event.hasTag(READ); }
-
-    @Override
-    public boolean isFence() { return event.hasTag(FENCE); }
-
-    @Override
-    public boolean isExclusive() { return event.hasTag(EXCL); }
-
-    @Override
-    public boolean isRMW() { return event.hasTag(RMW); }
-
-    @Override
-    public boolean isVisible() { return event.hasTag(VISIBLE); }
+    public boolean isVisible() { return event instanceof MemoryEvent || event instanceof GenericVisibleEvent; }
 
     @Override
     public boolean isJump() { return event instanceof CondJump; }

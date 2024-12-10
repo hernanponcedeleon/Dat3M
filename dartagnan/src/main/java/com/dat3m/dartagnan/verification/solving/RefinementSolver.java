@@ -89,8 +89,6 @@ public class RefinementSolver extends ModelChecker {
     private static final String FRE = "fre";
     private static final String POLOC = "po-loc";
 
-    private final ExecutionModelManager nextModelManager = new ExecutionModelManager();
-
     private EncodingContext contextWithFullWmm;
 
     // ================================================================================================================
@@ -402,7 +400,7 @@ public class RefinementSolver extends ModelChecker {
 
             // ------------------------- Debugging/Logging -------------------------
             if (generateGraphvizDebugFiles) {
-                generateGraphvizFiles(task, nextModelManager, contextWithFullWmm, prover.getModel(), trace.size(), iteration.inconsistencyReasons);
+                generateGraphvizFiles(task, contextWithFullWmm, prover.getModel(), trace.size(), iteration.inconsistencyReasons);
             }
             if (logger.isDebugEnabled()) {
                 // ---- Internal SMT stats after the first iteration ----
@@ -876,11 +874,10 @@ public class RefinementSolver extends ModelChecker {
     // This code is pure debugging code that will generate graphical representations
     // of each refinement iteration.
     // Generate .dot files and .png files per iteration
-    private static void generateGraphvizFiles(VerificationTask task, ExecutionModelManager manager, EncodingContext context, 
-            Model smtModel, int iterationCount, DNF<CoreLiteral> reasons) {
+    private static void generateGraphvizFiles(VerificationTask task, EncodingContext context, Model smtModel, int iterationCount, DNF<CoreLiteral> reasons) {
         // =============== Visualization code ==================
         // The edgeFilter filters those co/rf that belong to some violation reason
-        ExecutionModelNext model = manager.buildExecutionModel(context, smtModel);
+        ExecutionModelNext model = new ExecutionModelManager().buildExecutionModel(context, smtModel);
         BiPredicate<EventModel, EventModel> edgeFilter = (e1, e2) -> {
             for (Conjunction<CoreLiteral> cube : reasons.getCubes()) {
                 for (CoreLiteral lit : cube.getLiterals()) {
