@@ -92,6 +92,16 @@ public class LazyEncodeSets implements Constraint.Visitor<Boolean> {
     }
 
     @Override
+    public Boolean visitAllocPtr(AllocPtr definition) {
+        return doUpdateSelf(definition);
+    }
+
+    @Override
+    public Boolean visitAllocMem(AllocMem definition) {
+        return doUpdateSelf(definition);
+    }
+
+    @Override
     public Boolean visitLinuxCriticalSections(LinuxCriticalSections definition) {
         return doUpdateSelf(definition);
     }

@@ -270,6 +270,29 @@ public class LazyRelationAnalysis extends NativeRelationAnalysis {
         }
 
         @Override
+        public RelationAnalysis.Knowledge visitAllocPtr(AllocPtr definition) {
+            long start = System.currentTimeMillis();
+            RelationAnalysis.Knowledge base = nativeInitializer.visitAllocPtr(definition);
+            EventGraph may = ImmutableMapEventGraph.from(base.getMaySet());
+            EventGraph must = ImmutableMapEventGraph.from(base.getMustSet());
+            time(definition, start, System.currentTimeMillis());
+            return new RelationAnalysis.Knowledge(may, must);
+        }
+
+        @Override
+        // TODO: May and must sets of AllocMem can become very large for some programs.
+        //  Consider using a more efficient representation. A LazyEventGraph can be a good option
+        //  if alias analysis for alloc will be thread-safe.
+        public RelationAnalysis.Knowledge visitAllocMem(AllocMem definition) {
+            long start = System.currentTimeMillis();
+            RelationAnalysis.Knowledge base = nativeInitializer.visitAllocMem(definition);
+            EventGraph may = ImmutableMapEventGraph.from(base.getMaySet());
+            EventGraph must = ImmutableMapEventGraph.from(base.getMustSet());
+            time(definition, start, System.currentTimeMillis());
+            return new RelationAnalysis.Knowledge(may, must);
+        }
+
+        @Override
         public RelationAnalysis.Knowledge visitLinuxCriticalSections(LinuxCriticalSections definition) {
             long start = System.currentTimeMillis();
             RelationAnalysis.Knowledge base = nativeInitializer.visitLinuxCriticalSections(definition);
