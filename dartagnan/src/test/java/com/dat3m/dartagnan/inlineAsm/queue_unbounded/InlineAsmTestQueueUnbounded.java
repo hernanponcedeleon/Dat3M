@@ -52,11 +52,7 @@ public class InlineAsmTestQueueUnbounded {
         this.bound = bound;
         this.expected = expected;
     }
-
-    // protected Provider<Solvers> getSolverProvider() {
-    //     return () -> Solvers.YICES2;
-    // }
-
+    
     @Parameterized.Parameters(name = "{index}: {0}, {1}, {2}")
     public static Iterable<Object[]> data() throws IOException {
         return Arrays.asList(new Object[][]{

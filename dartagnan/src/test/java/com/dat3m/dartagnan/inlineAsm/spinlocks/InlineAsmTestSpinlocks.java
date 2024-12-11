@@ -53,17 +53,13 @@ public class InlineAsmTestSpinlocks {
         this.expected = expected;
     }
 
-    // protected Provider<Solvers> getSolverProvider() {
-    //     return () -> Solvers.YICES2;
-    // }
-
     @Parameterized.Parameters(name = "{index}: {0}, {1}, {2}")
     public static Iterable<Object[]> data() throws IOException {
         return Arrays.asList(new Object[][]{
             {"arraylock", 4, PASS},
             // {"caslock", 4, PASS}, // passes Refinement but out of memory on Assume
             {"clhlock", 3, PASS},
-            // {"cnalock", 5, PASS}, // killed out of memory?
+            // {"cnalock", 5, PASS}, // killed out of memory
             {"hemlock", 3, PASS},
             {"mcslock", 3, PASS},
             {"rec_mcslock", 3, PASS},
