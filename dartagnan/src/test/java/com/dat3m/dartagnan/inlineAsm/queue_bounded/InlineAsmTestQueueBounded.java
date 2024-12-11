@@ -53,16 +53,13 @@ public class InlineAsmTestQueueBounded {
         this.expected = expected;
     }
 
-    // protected Provider<Solvers> getSolverProvider() {
-    //     return () -> Solvers.YICES2;
-    // }
 
     @Parameterized.Parameters(name = "{index}: {0}, {1}, {2}")
     public static Iterable<Object[]> data() throws IOException {
         return Arrays.asList(new Object[][]{
             {"bounded_spsc", 4, PASS},
             {"bounded_mpmc_check_full", 5, PASS},
-            {"bounded_mpmc_check_empty", 4, PASS} // it is UNKNOWN O.o
+            {"bounded_mpmc_check_empty", 4, PASS}
         });
     }
 

@@ -53,10 +53,6 @@ public class InlineAsmTestThreads {
         this.expected = expected;
     }
 
-    // protected Provider<Solvers> getSolverProvider() {
-    //     return () -> Solvers.YICES2;
-    // }
-
     @Parameterized.Parameters(name = "{index}: {0}, {1}, {2}")
     public static Iterable<Object[]> data() throws IOException {
         return Arrays.asList(new Object[][]{
@@ -64,7 +60,6 @@ public class InlineAsmTestThreads {
             {"cnd_test2", 3, PASS},
             {"mutex_musl", 3, PASS},
             {"mutex_slim", 3, PASS},
-            // {"mutex_tristate", 4, PASS}, // out of memory heap
             {"mutex_waiters", 3, PASS},
             {"once", 5, PASS}
         });
