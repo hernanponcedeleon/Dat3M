@@ -154,7 +154,7 @@ public class ExecutionModelManager {
         } else if (e instanceof Assert assrt) {
             em = new AssertModel(assrt, tm, id);
         } else if (e instanceof Local local) {
-            ValueModel value = new ValueModel(evaluateByModel(context.result((RegWriter) e)));
+            ValueModel value = new ValueModel(evaluateByModel(context.result(local)));
             em = new LocalModel(local, tm, id, value);
         } else if (e instanceof CondJump cj) {
             em = new CondJumpModel(cj, tm, id);

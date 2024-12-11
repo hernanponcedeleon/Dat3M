@@ -293,7 +293,11 @@ public class ExecutionGraphVisualizer {
                     String.format("W(%s, %s%s)", address, value, moString) :
                     String.format("%s = R(%s%s)", value, address, moString);
         } else if (e.isLocal()) {
-            tag = String.format("%s <- %s", ((LocalModel) e).getValue(), ((Local) e.getEvent()).getExpr());
+            tag = String.format("%s(%s) <- %s",
+                ((Local) e.getEvent()).getResultRegister(),
+                ((LocalModel) e).getValue(),
+                ((Local) e.getEvent()).getExpr()
+            );
         }
         final String callStack = makeContextString(
             synContext.getContextInfo(e.getEvent()).getContextOfType(CallContext.class), " -> \\n");
