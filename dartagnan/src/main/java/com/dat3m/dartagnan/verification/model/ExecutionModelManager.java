@@ -129,11 +129,7 @@ public class ExecutionModelManager {
     private void extractEvent(Event e, ThreadModel tm, int id) {
         EventModel em;
         if (e instanceof MemoryEvent memEvent) {
-            Object addressObj = checkNotNull(
-                evaluateByModel(context.address(memEvent))
-            );
-            BigInteger address = new BigInteger(addressObj.toString());
-            
+            ValueModel address = new ValueModel(evaluateByModel(context.address(memEvent)));
             ValueModel value = new ValueModel(evaluateByModel(context.value(memEvent)));
 
             if (memEvent instanceof Load load) {
@@ -152,7 +148,9 @@ public class ExecutionModelManager {
         } else if (e instanceof GenericVisibleEvent visible) {
             em = new GenericVisibleEventModel(visible, tm, id);
         } else if (e instanceof Assert assrt) {
-            em = new AssertModel(assrt, tm, id);
+            em = new AssertModel(
+                assrt, tm, id, isTrue(context.encodeExpressionAsBooleanAt(assrt.getExpression(), assrt))
+            );
         } else if (e instanceof Local local) {
             ValueModel value = new ValueModel(evaluateByModel(context.result(local)));
             em = new LocalModel(local, tm, id, value);
@@ -182,7 +180,7 @@ public class ExecutionModelManager {
                                   || isTrue(context.execution(obj.getAllocationSite()));
             if (isAllocated) {
                 // Currently, addresses of memory objects are guaranteed to be integer and assigned.
-                BigInteger address = (BigInteger) evaluateByModel(context.address(obj));
+                ValueModel address = new ValueModel(evaluateByModel(context.address(obj)));
                 BigInteger size = (BigInteger) evaluateByModel(context.size(obj));
                 executionModel.addMemoryObject(obj, new MemoryObjectModel(obj, address, size));
             }
@@ -358,8 +356,8 @@ public class ExecutionModelManager {
             SimpleGraph rg = (SimpleGraph) relGraphCache.get(relation);
             EncodingContext.EdgeEncoder rf = context.edge(relation);
 
-            for (Map.Entry<BigInteger, Set<LoadModel>> reads : executionModel.getAddressReadsMap().entrySet()) {
-                BigInteger address = reads.getKey();
+            for (Map.Entry<ValueModel, Set<LoadModel>> reads : executionModel.getAddressReadsMap().entrySet()) {
+                ValueModel address = reads.getKey();
                 if (!executionModel.getAddressWritesMap().containsKey(address)) { continue; }
                 for (LoadModel read : reads.getValue()) {
                     for (StoreModel write : executionModel.getAddressWritesMap().get(address)) {
@@ -396,8 +394,8 @@ public class ExecutionModelManager {
             SimpleGraph rg = (SimpleGraph) relGraphCache.get(relation);
             EncodingContext.EdgeEncoder edge = context.edge(relation);
 
-            for (Map.Entry<BigInteger, Set<LoadModel>> reads : executionModel.getAddressReadsMap().entrySet()) {
-                BigInteger address = reads.getKey();
+            for (Map.Entry<ValueModel, Set<LoadModel>> reads : executionModel.getAddressReadsMap().entrySet()) {
+                ValueModel address = reads.getKey();
                 if (!executionModel.getAddressWritesMap().containsKey(address)) { continue; }
                 for (LoadModel read : reads.getValue()) {
                     for (StoreModel write : executionModel.getAddressWritesMap().get(address)) {
@@ -413,18 +411,18 @@ public class ExecutionModelManager {
         @Override
         public Void visitSameLocation(SameLocation loc) {
             SimpleGraph rg = (SimpleGraph) relGraphCache.get(loc.getDefinedRelation());
-            final Map<BigInteger, Set<MemoryEventModel>> addressAccesses = new HashMap<>();
+            final Map<ValueModel, Set<MemoryEventModel>> addressAccesses = new HashMap<>();
 
-            for (Map.Entry<BigInteger, Set<LoadModel>> reads : executionModel.getAddressReadsMap().entrySet()) {
-                BigInteger address = reads.getKey();
+            for (Map.Entry<ValueModel, Set<LoadModel>> reads : executionModel.getAddressReadsMap().entrySet()) {
+                ValueModel address = reads.getKey();
                 addressAccesses.putIfAbsent(address, new HashSet<>());
                 for (LoadModel read : reads.getValue()) {
                     addressAccesses.get(address).add(read);
                 }
             }
 
-            for (Map.Entry<BigInteger, Set<StoreModel>> writes : executionModel.getAddressWritesMap().entrySet()) {
-                BigInteger address = writes.getKey();
+            for (Map.Entry<ValueModel, Set<StoreModel>> writes : executionModel.getAddressWritesMap().entrySet()) {
+                ValueModel address = writes.getKey();
                 addressAccesses.putIfAbsent(address, new HashSet<>());
                 for (StoreModel write : writes.getValue()) {
                     addressAccesses.get(address).add(write);

@@ -496,7 +496,7 @@ public class ExecutionModel {
         for (MemoryObject obj : getProgram().getMemory().getObjects()) {
             final boolean isAllocated = obj.isStaticallyAllocated() || isTrue(encodingContext.execution(obj.getAllocationSite()));
             if (isAllocated) {
-                final BigInteger address = (BigInteger) model.evaluate(encodingContext.address(obj));
+                final ValueModel address = new ValueModel(model.evaluate(encodingContext.address(obj)));
                 final BigInteger size = (BigInteger) model.evaluate(encodingContext.size(obj));
                 memoryLayoutMap.put(obj, new MemoryObjectModel(obj, address, size));
             }

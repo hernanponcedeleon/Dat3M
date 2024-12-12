@@ -100,7 +100,7 @@ public class ExecutionGraphVisualizer {
 
     private void computeAddressMap(ExecutionModelNext model) {
         model.getMemoryLayoutMap().entrySet().stream()
-             .sorted(Comparator.comparing(entry -> entry.getValue().address()))
+             .sorted(Comparator.comparing(entry -> (BigInteger) entry.getValue().address().getValue()))
              .forEach(entry -> sortedMemoryObjects.add(entry.getValue()));
     }
 
@@ -260,16 +260,17 @@ public class ExecutionGraphVisualizer {
         return this;
     }
 
-    private String getAddressString(BigInteger address) {
+    private String getAddressString(ValueModel address) {
+        final BigInteger addrValue = (BigInteger) address.getValue();
         final MemoryObjectModel accObj = Lists.reverse(sortedMemoryObjects).stream()
-                .filter(o -> o.address().compareTo(address) <= 0)
+                .filter(o -> ((BigInteger) o.address().getValue()).compareTo(addrValue) <= 0)
                 .findFirst().orElse(null);
 
         if (accObj == null) {
-            return address + " [OOB]";
+            return addrValue + " [OOB]";
         } else {
-            final boolean isOOB = address.compareTo(accObj.address().add(accObj.size())) >= 0;
-            final BigInteger offset = address.subtract(accObj.address());
+            final boolean isOOB = addrValue.compareTo(((BigInteger) accObj.address().getValue()).add(accObj.size())) >= 0;
+            final BigInteger offset = addrValue.subtract((BigInteger) accObj.address().getValue());
             return String.format("%s[size=%s]%s%s", accObj.object(), accObj.size(),
                     !offset.equals(BigInteger.ZERO) ? " + " + offset : "",
                     isOOB ? " [OOB]" : ""
@@ -298,6 +299,8 @@ public class ExecutionGraphVisualizer {
                 ((LocalModel) e).getValue(),
                 ((Local) e.getEvent()).getExpr()
             );
+        } else if (e.isAssert()) {
+            tag = String.format("Assertion(%s)", ((AssertModel) e).getResult());
         }
         final String callStack = makeContextString(
             synContext.getContextInfo(e.getEvent()).getContextOfType(CallContext.class), " -> \\n");

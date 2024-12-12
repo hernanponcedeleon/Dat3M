@@ -8,7 +8,6 @@ import com.dat3m.dartagnan.verification.model.event.*;
 import com.dat3m.dartagnan.verification.model.RelationModel;
 import com.dat3m.dartagnan.wmm.Relation;
 
-import java.math.BigInteger;
 import java.util.*;
 
 
@@ -22,8 +21,8 @@ public class ExecutionModelNext {
     private final Map<Relation, RelationModel> relationMap;
     private final Map<MemoryObject, MemoryObjectModel> memoryLayoutMap;
 
-    private final Map<BigInteger, Set<LoadModel>> addressReadsMap;
-    private final Map<BigInteger, Set<StoreModel>> addressWritesMap;
+    private final Map<ValueModel, Set<LoadModel>> addressReadsMap;
+    private final Map<ValueModel, Set<StoreModel>> addressWritesMap;
 
     ExecutionModelNext() {
         threadList = new ArrayList<>();
@@ -53,11 +52,11 @@ public class ExecutionModelNext {
         memoryLayoutMap.put(m, mModel);
     }
 
-    public void addAddressRead(BigInteger address, LoadModel read) {
+    public void addAddressRead(ValueModel address, LoadModel read) {
         addressReadsMap.computeIfAbsent(address, k -> new HashSet<>()).add(read);
     }
 
-    public void addAddressWrite(BigInteger address, StoreModel write) {
+    public void addAddressWrite(ValueModel address, StoreModel write) {
         addressWritesMap.computeIfAbsent(address, k -> new HashSet<>()).add(write);
     }
 
@@ -93,11 +92,11 @@ public class ExecutionModelNext {
         return Collections.unmodifiableMap(memoryLayoutMap);
     }
 
-    public Map<BigInteger, Set<LoadModel>> getAddressReadsMap() {
+    public Map<ValueModel, Set<LoadModel>> getAddressReadsMap() {
         return Collections.unmodifiableMap(addressReadsMap);
     }
 
-    public Map<BigInteger, Set<StoreModel>> getAddressWritesMap() {
+    public Map<ValueModel, Set<StoreModel>> getAddressWritesMap() {
         return Collections.unmodifiableMap(addressWritesMap);
     }
 }

@@ -6,7 +6,6 @@ import com.dat3m.dartagnan.program.event.core.IfAsJump;
 import com.dat3m.dartagnan.verification.model.ExecutionModelNext;
 import com.dat3m.dartagnan.verification.model.ThreadModel;
 
-import java.util.Set;
 import java.util.List;
 
 
