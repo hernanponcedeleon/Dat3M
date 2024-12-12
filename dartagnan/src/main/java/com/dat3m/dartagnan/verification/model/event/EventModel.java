@@ -10,14 +10,4 @@ public interface EventModel extends Comparable<EventModel> {
     ThreadModel getThreadModel();
 
     int getId();
-
-    boolean isMemoryEvent();
-    boolean isInit();
-    boolean isWrite();
-    boolean isVisible();
-    boolean isJump();
-    boolean isAssert();
-    boolean isLocal();
-    boolean isRegReader();
-    boolean isRegWriter();
 }

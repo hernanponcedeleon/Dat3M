@@ -23,6 +23,27 @@ public class ValueModel {
     }
 
     @Override
+    public boolean equals(Object other) {
+        if (this == other) {
+            return true;
+        }
+
+        ValueModel vm = (ValueModel) other;
+        if (value == null) {
+            return vm.getValue() == null;
+        }
+        if (value.getClass() != vm.getValue().getClass()) {
+            return false;
+        }
+        return value.equals(vm.getValue());
+    }
+
+    @Override
+    public int hashCode() {
+        return value == null ? 0 : value.hashCode();
+    }
+
+    @Override
     public String toString() {
         return String.valueOf(value);
     }

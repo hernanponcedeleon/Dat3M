@@ -2,7 +2,7 @@ package com.dat3m.dartagnan.witness.graphviz;
 
 import com.dat3m.dartagnan.program.analysis.SyntacticContextAnalysis;
 import com.dat3m.dartagnan.encoding.EncodingContext;
-import com.dat3m.dartagnan.program.event.core.Local;
+import com.dat3m.dartagnan.program.event.core.Init;
 import com.dat3m.dartagnan.program.event.metadata.MemoryOrder;
 import com.dat3m.dartagnan.utils.dependable.DependencyGraph;
 import com.dat3m.dartagnan.verification.model.event.*;
@@ -164,7 +164,10 @@ public class ExecutionGraphVisualizer {
         for (ThreadModel tm : model.getThreadModels()) {
             List<EventModel> eventsToShow = tm.getEventModels()
                                               .stream()
-                                              .filter(e -> e.isVisible() || e.isLocal() || e.isAssert())
+                                              .filter(e -> e instanceof MemoryEventModel
+                                                           || e instanceof GenericVisibleEventModel
+                                                           || e instanceof LocalModel
+                                                           || e instanceof AssertModel)
                                               .toList();
             if (eventsToShow.size() <= 1) { continue; }
             for (int i = 1; i < eventsToShow.size(); i++) {
@@ -242,7 +245,10 @@ public class ExecutionGraphVisualizer {
     private ExecutionGraphVisualizer addThreadPo(ThreadModel tm, ExecutionModelNext model) {
         List<EventModel> threadEvents = tm.getEventModels()
                                           .stream()
-                                          .filter(e -> e.isVisible() || e.isLocal() || e.isAssert())
+                                          .filter(e -> e instanceof MemoryEventModel
+                                                       || e instanceof GenericVisibleEventModel
+                                                       || e instanceof LocalModel
+                                                       || e instanceof AssertModel)
                                           .toList();
         if (threadEvents.size() <= 1) {
             // This skips init threads.
@@ -279,28 +285,29 @@ public class ExecutionGraphVisualizer {
     }
 
     private String eventToNode(EventModel e) {
-        if (e.isInit()) {
+        if (e instanceof StoreModel sm && e.getEvent() instanceof Init) {
             return String.format("\"I(%s, %s)\"", getAddressString(
-                ((StoreModel) e).getAccessedAddress()), ((StoreModel) e).getValue());
+                sm.getAccessedAddress()), sm.getValue()
+            );
         }
         // We have MemEvent + Fence + Local + Assert
         String tag = e.getEvent().toString();
-        if (e.isMemoryEvent()) {
-            String address = getAddressString(((MemoryEventModel) e).getAccessedAddress());
-            ValueModel value = ((MemoryEventModel) e).getValue();
-            MemoryOrder mo = e.getEvent().getMetadata(MemoryOrder.class);
+        if (e instanceof MemoryEventModel mem) {
+            String address = getAddressString(mem.getAccessedAddress());
+            ValueModel value = mem.getValue();
+            MemoryOrder mo = mem.getEvent().getMetadata(MemoryOrder.class);
             String moString = mo == null ? "" : ", " + mo.value();
-            tag = e.isWrite() ?
+            tag = mem instanceof StoreModel ?
                     String.format("W(%s, %s%s)", address, value, moString) :
                     String.format("%s = R(%s%s)", value, address, moString);
-        } else if (e.isLocal()) {
+        } else if (e instanceof LocalModel lm) {
             tag = String.format("%s(%s) <- %s",
-                ((Local) e.getEvent()).getResultRegister(),
-                ((LocalModel) e).getValue(),
-                ((Local) e.getEvent()).getExpr()
+                lm.getEvent().getResultRegister(),
+                lm.getValue(),
+                lm.getEvent().getExpr()
             );
-        } else if (e.isAssert()) {
-            tag = String.format("Assertion(%s)", ((AssertModel) e).getResult());
+        } else if (e instanceof AssertModel am) {
+            tag = String.format("Assertion(%s)", am.getResult());
         }
         final String callStack = makeContextString(
             synContext.getContextInfo(e.getEvent()).getContextOfType(CallContext.class), " -> \\n");

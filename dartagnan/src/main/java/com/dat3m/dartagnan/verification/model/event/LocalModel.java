@@ -13,6 +13,11 @@ public class LocalModel extends DefaultEventModel implements RegReaderModel, Reg
         this.value = value;
     }
 
+    @Override
+    public Local getEvent() {
+        return (Local) event;
+    }
+
     public ValueModel getValue() {
         return value;
     }

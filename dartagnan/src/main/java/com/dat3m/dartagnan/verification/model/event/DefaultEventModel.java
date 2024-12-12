@@ -1,16 +1,13 @@
 package com.dat3m.dartagnan.verification.model.event;
 
-import com.dat3m.dartagnan.program.event.core.*;
-import com.dat3m.dartagnan.program.event.*;
+import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.verification.model.ThreadModel;
-
-import static com.dat3m.dartagnan.program.event.Tag.*;
 
 
 public class DefaultEventModel implements EventModel {
     protected final Event event;
     protected final ThreadModel thread;
-    protected int id = -1;
+    protected final int id;
 
     public DefaultEventModel(Event event, ThreadModel thread, int id) {
         this.event = event;
@@ -34,33 +31,6 @@ public class DefaultEventModel implements EventModel {
     public int getId() {
         return id;
     }
-
-    @Override
-    public boolean isMemoryEvent() { return event instanceof MemoryEvent; }
-
-    @Override
-    public boolean isInit() { return event instanceof Init; }
-
-    @Override
-    public boolean isWrite() { return event instanceof Store; }
-
-    @Override
-    public boolean isVisible() { return event instanceof MemoryEvent || event instanceof GenericVisibleEvent; }
-
-    @Override
-    public boolean isJump() { return event instanceof CondJump; }
-
-    @Override
-    public boolean isAssert() { return event instanceof Assert; }
-
-    @Override
-    public boolean isLocal() { return event instanceof Local; }
-
-    @Override
-    public boolean isRegReader() { return event instanceof RegReader; }
-
-    @Override
-    public boolean isRegWriter() { return event instanceof RegWriter; }
 
     @Override
     public int hashCode() {

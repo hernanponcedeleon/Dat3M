@@ -496,9 +496,9 @@ public class ExecutionModelManager {
             SimpleGraph rg = (SimpleGraph) relGraphCache.get(ctrlDirect.getDefinedRelation());
             for (ThreadModel tm : executionModel.getThreadModels()) {
                 for (EventModel em : tm.getEventModels()) {
-                    if (em.isJump()) {
-                        for (EventModel dep : ((CondJumpModel) em).getDependentEvents(executionModel)) {
-                            rg.add(new Edge(em.getId(), dep.getId()));
+                    if (em instanceof CondJumpModel cjm) {
+                        for (EventModel dep : cjm.getDependentEvents(executionModel)) {
+                            rg.add(new Edge(cjm.getId(), dep.getId()));
                         }
                     }
                 }
@@ -512,16 +512,16 @@ public class ExecutionModelManager {
             for (ThreadModel tm : executionModel.getThreadModels()) {
                 Set<RegWriterModel> writes = new HashSet<>();
                 for (EventModel em : tm.getEventModels()) {
-                    if (em.isRegWriter()) {
-                        writes.add((RegWriterModel) em);
+                    if (em instanceof RegWriterModel rwm) {
+                        writes.add(rwm);
                         continue;
                     }
-                    if (em.isRegReader()) {
+                    if (em instanceof RegReaderModel rrm) {
                         for (RegWriterModel write : writes) {
-                            for (Register.Read read : ((RegReaderModel) em).getRegisterReads()) {
+                            for (Register.Read read : rrm.getRegisterReads()) {
                                 if (read.register() == write.getResultRegister()
                                     && read.usageType() == Register.UsageType.ADDR) {
-                                    rg.add(new Edge(write.getId(), em.getId()));
+                                    rg.add(new Edge(write.getId(), rrm.getId()));
                                 }
                             }
                         }
@@ -537,16 +537,16 @@ public class ExecutionModelManager {
             for (ThreadModel tm : executionModel.getThreadModels()) {
                 Set<RegWriterModel> writes = new HashSet<>();
                 for (EventModel em : tm.getEventModels()) {
-                    if (em.isRegWriter()) {
-                        writes.add((RegWriterModel) em);
+                    if (em instanceof RegWriterModel rwm) {
+                        writes.add(rwm);
                         continue;
                     }
-                    if (em.isRegReader()) {
+                    if (em instanceof RegReaderModel rrm) {
                         for (RegWriterModel write : writes) {
-                            for (Register.Read read : ((RegReaderModel) em).getRegisterReads()) {
+                            for (Register.Read read : rrm.getRegisterReads()) {
                                 if (read.register() == write.getResultRegister()
                                     && read.usageType() == Register.UsageType.DATA) {
-                                    rg.add(new Edge(write.getId(), em.getId()));
+                                    rg.add(new Edge(write.getId(), rrm.getId()));
                                 }
                             }
                         }
