@@ -5,6 +5,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import org.antlr.v4.runtime.tree.TerminalNode;
 
@@ -44,14 +45,10 @@ public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
             this.compareExpression = expressions.makeIntCmp(firstRegister, intCmpOp, secondRegister);
         }
 
-
         public void updateCompareExpressionOperator(IntCmpOp intCmpOp) {
             this.compareExpression = expressions.makeIntCmp(this.firstRegister, intCmpOp, this.secondRegister);
         }
 
-        // public void updateStoreSucceeded(Register register) {
-        //     this.storeSucceeded = true;
-        // }
     }
 
     private final List<Event> events = new ArrayList<>();
@@ -79,14 +76,20 @@ public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
         this.nameToRegisterMap = new HashMap<>();
         this.pendingRegisters = new LinkedList<>();
         this.armToLlvmMap = new HashMap<>();
-        this.fnParameters = reverseAndGetFnParams(llvmFunction.getParameterRegisters()); // these hold the original fn arguments
+        // System.out.println("I am parsing with " + argumentsRegisterAddresses);
+        List<Register> registers = argumentsRegisterAddresses.stream()
+                .filter(expr -> expr instanceof Register)
+                .map(expr -> (Register) expr)
+                .collect(Collectors.toList());
+        this.fnParameters = registers;//reverseAndGetFnParams(llvmFunction.getParameterRegisters()); // these hold the original fn arguments
+        System.out.println("New list is " + this.fnParameters);
         this.returnValuesNumber = initReturnValuesNumberInitReturnRegisterTypes(returnType);
         assert (this.returnValuesNumber >= 0);
         populateRegisters(armToLlvmMap);
     }
 
     private List<Register> reverseAndGetFnParams(List<Register> fnParams) {
-        if(fnParams.isEmpty()){
+        if (fnParams.isEmpty()) {
             return null;
         }
         if (fnParams.size() == 1) {
@@ -161,28 +164,37 @@ public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
     }
 
     private void populateRegisters(HashMap<String, Register> llvmToArmMap) {
+        int fnParamLen = this.fnParameters.size();
+        if (fnParamLen == 0) {
+            return;
+        }
         // the rule is like this 
         // $n means r0, n \in Nats to "keep an id of the function"
         // the first ${n:w}s are used to lock return values e.g. ${0:w}, ${1:w} means it is going to return 2 values in LLVM (if we're in a void fn we skip it)
         // the other ones are the remaining args
         // It should be n:w for 32 bit and n:x for 64 bit, but to make it easier I just allocate every type to be ok
         // now mapped to the real registers of llvm function
+
+        // new rule
+        // first, allocate 0:w...n for the return registers
+        // then, map n:w....end to the new given list
+        // the last element is going to be $N \mapsto last element of the list!
+        // still need to tweak add rule with a custom mapping tho :/
         if (returnRegister == null) {
-            if(this.fnParameters == null){
+            if (this.fnParameters == null) {
                 return; //we're in a fence fn
             }
-            for (int i = 0; i < this.fnParameters.size() - 1; i++) {
+            for (int i = 0; i < fnParamLen - 1; i++) {
                 String key = String.format("${%d:w}", i);
                 String keyLong = String.format("${%d:x}", i);
-                int indexOneBased = i + 1;
-                Register value = fnParameters.get(indexOneBased);
+                Register value = fnParameters.get(i);
                 llvmToArmMap.put(key, value);
                 llvmToArmMap.put(keyLong, value);
             }
         } else {
             if (returnRegisterTypes.length == 1) {
                 Type type = getTypeGivenReturnTypeString(this.returnRegisterTypes[0]);
-                String key = returnRegisterKey(type,0);
+                String key = returnRegisterKey(type, 0);
                 llvmToArmMap.put(key, this.returnRegister);
             } else {
                 if (this.returnValuesNumber == 4) {
@@ -193,7 +205,7 @@ public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
                     // check paper
                     for (int i = 0; i < this.returnValuesNumber; i++) {
                         Type type = getTypeGivenReturnTypeString(this.returnRegisterTypes[i]);
-                        String key = returnRegisterKey(type,i);
+                        String key = returnRegisterKey(type, i);
                         Register tmp = getOrNewRegister(key);
                         if (i == 1 || i == 2) {
                             events.add(EventFactory.newLocal(tmp, expressions.parseValue("0", (IntegerType) type)));
@@ -209,8 +221,8 @@ public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
                     Register tmp = getOrNewRegister(key); // avoid null registers in guard of comparison
                 }
             }
-            int registerCounter = 1;
-            for (int i = returnValuesNumber; i < returnValuesNumber + fnParameters.size() - 1; i++) {
+            int registerCounter = 0;
+            for (int i = returnValuesNumber; i < returnValuesNumber + fnParamLen - 1 ; i++) {
                 Register value = fnParameters.get(registerCounter);
                 Type type = value.getType();
                 String key = returnRegisterKey(type,i);
@@ -220,12 +232,13 @@ public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
         }
         for (int i = 0; i < this.MAX_FN_CALLS; i++) {
             String key = String.format("$%d", i);
-            Register value = this.fnParameters.get(0);
+            Register value = this.fnParameters.get(fnParamLen - 1);
             llvmToArmMap.put(key, value);
         }
+        System.out.println("Status is " + llvmToArmMap);
     }
 
-    private String returnRegisterKey(Type type, int index){
+    private String returnRegisterKey(Type type, int index) {
         String key = String.format("${%d:w}", index);
         if (type.toString().equals("bv64")) {
             key = key.replace("w", "x");
@@ -346,7 +359,7 @@ public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
     }
 
     @Override
-    public Object visitSub(InlineAArch64Parser.SubContext ctx){
+    public Object visitSub(InlineAArch64Parser.SubContext ctx) {
         Register resultRegister = (Register) ctx.register(0).accept(this);
         Register leftRegister = (Register) ctx.register(1).accept(this);
         Register rightRegister = (Register) ctx.register(2).accept(this);
@@ -355,8 +368,9 @@ public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
         events.add(EventFactory.newLocal(resultRegister, exp));
         return visitChildren(ctx);
     }
+
     @Override
-    public Object visitOr(InlineAArch64Parser.OrContext ctx){
+    public Object visitOr(InlineAArch64Parser.OrContext ctx) {
         Register resultRegister = (Register) ctx.register(0).accept(this);
         Register leftRegister = (Register) ctx.register(1).accept(this);
         Register rightRegister = (Register) ctx.register(2).accept(this);
@@ -369,7 +383,7 @@ public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
     }
 
     @Override
-    public Object visitAnd(InlineAArch64Parser.AndContext ctx){
+    public Object visitAnd(InlineAArch64Parser.AndContext ctx) {
         Register resultRegister = (Register) ctx.register(0).accept(this);
         Register leftRegister = (Register) ctx.register(1).accept(this);
         Register rightRegister = (Register) ctx.register(2).accept(this);
