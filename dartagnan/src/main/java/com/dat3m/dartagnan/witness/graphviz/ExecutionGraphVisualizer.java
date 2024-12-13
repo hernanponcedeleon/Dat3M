@@ -1,12 +1,10 @@
 package com.dat3m.dartagnan.witness.graphviz;
 
 import com.dat3m.dartagnan.program.analysis.SyntacticContextAnalysis;
-import com.dat3m.dartagnan.encoding.EncodingContext;
 import com.dat3m.dartagnan.program.event.core.Init;
 import com.dat3m.dartagnan.program.event.metadata.MemoryOrder;
 import com.dat3m.dartagnan.utils.dependable.DependencyGraph;
 import com.dat3m.dartagnan.verification.model.event.*;
-import com.dat3m.dartagnan.verification.model.ExecutionModelManager;
 import com.dat3m.dartagnan.verification.model.ExecutionModelNext;
 import com.dat3m.dartagnan.verification.model.MemoryObjectModel;
 import com.dat3m.dartagnan.verification.model.RelationModel;
@@ -24,7 +22,6 @@ import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.common.configuration.Option;
 import org.sosy_lab.common.configuration.Options;
-import org.sosy_lab.java_smt.api.Model;
 
 import java.io.File;
 import java.io.FileWriter;
@@ -88,10 +85,9 @@ public class ExecutionGraphVisualizer {
         graphviz.generateOutput(writer);
     }
 
-    private List<String> setRelationsToShow(Configuration config) throws InvalidConfigurationException {
+    private void setRelationsToShow(Configuration config) throws InvalidConfigurationException {
         config.inject(this);
         relsToShow = Arrays.asList(relsToShowStr.split(",\\s*"));
-        return relsToShow;
     }
 
     private BiPredicate<EventModel, EventModel> getFilter(String relationName) {
@@ -315,12 +311,13 @@ public class ExecutionGraphVisualizer {
                                             String fileNameBase,
                                             SyntacticContextAnalysis synContext,
                                             boolean convert,
-                                            ExecutionGraphVisualizer visualizer) {
+                                            Configuration config) {
         File fileVio = new File(directoryName + fileNameBase + ".dot");
         fileVio.getParentFile().mkdirs();
         try (FileWriter writer = new FileWriter(fileVio)) {
             // Create .dot file
-            if (visualizer == null) { visualizer = new ExecutionGraphVisualizer(); }
+            ExecutionGraphVisualizer visualizer = new ExecutionGraphVisualizer();
+            if (config != null) { visualizer.setRelationsToShow(config); }
             visualizer.setSyntacticContext(synContext)
                       .setReadFromFilter(rfFilter)
                       .setCoherenceFilter(coFilter)
@@ -336,30 +333,6 @@ public class ExecutionGraphVisualizer {
         }
 
         return null;
-    }
-
-    public static File generateGraphvizFile(EncodingContext context,
-                                            Model smtModel,
-                                            int iterationCount,
-                                            BiPredicate<EventModel, EventModel> rfFilter,
-                                            BiPredicate<EventModel, EventModel> coFilter,
-                                            String directoryName,
-                                            String fileNameBase,
-                                            SyntacticContextAnalysis synContext,
-                                            boolean convert) throws InvalidConfigurationException {
-        ExecutionGraphVisualizer visualizer = new ExecutionGraphVisualizer();
-        ExecutionModelNext model = new ExecutionModelManager()
-                .setRelationsToExtract(visualizer.setRelationsToShow(context.getTask().getConfig()))
-                .buildExecutionModel(context, smtModel);
-        return generateGraphvizFile(model,
-                                    iterationCount,
-                                    rfFilter,
-                                    coFilter,
-                                    directoryName,
-                                    fileNameBase,
-                                    synContext,
-                                    convert,
-                                    visualizer);
     }
 
     public static void generateGraphvizFile(ExecutionModelNext model,

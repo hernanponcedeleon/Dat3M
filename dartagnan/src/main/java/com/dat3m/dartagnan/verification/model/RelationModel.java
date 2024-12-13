@@ -12,7 +12,7 @@ public class RelationModel {
     private final Relation relation;
     private final Set<EdgeModel> edgeModels;
 
-    RelationModel(Relation relation) {
+    public RelationModel(Relation relation) {
         this.relation = relation;
         edgeModels = new HashSet<>();
     }
@@ -29,7 +29,7 @@ public class RelationModel {
         edgeModels.add(edge);
     }
 
-    
+
     public static class EdgeModel {
         private final EventModel from;
         private final EventModel to;

@@ -22,8 +22,6 @@ import com.dat3m.dartagnan.wmm.Constraint.Visitor;
 import com.dat3m.dartagnan.wmm.definition.*;
 import com.dat3m.dartagnan.wmm.Relation;
 import com.dat3m.dartagnan.wmm.Wmm;
-import org.apache.logging.log4j.Logger;
-import org.apache.logging.log4j.LogManager;
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
 import org.sosy_lab.java_smt.api.BooleanFormula;
@@ -38,9 +36,6 @@ import static com.google.common.base.Preconditions.checkNotNull;
 
 
 public class ExecutionModelManager {
-
-    private static final Logger logger = LogManager.getLogger(ExecutionModelManager.class);
-
     private final RelationGraphBuilder graphBuilder;
     private final RelationGraphPopulator graphPopulator;
 
@@ -54,19 +49,12 @@ public class ExecutionModelManager {
     private Wmm wmm;
     private EventDomainNext domain;
 
-    private List<String> relsToExtract = List.of(PO, CO, RF);
-
     public ExecutionModelManager(){
         graphBuilder = new RelationGraphBuilder();
         graphPopulator = new RelationGraphPopulator();
         relModelCache = new HashMap<>();
         relGraphCache = HashBiMap.create();
         edgeModelCache = new HashMap<>();
-    }
-
-    public ExecutionModelManager setRelationsToExtract(List<String> relationNames) {
-        relsToExtract = relationNames;
-        return this;
     }
 
     public ExecutionModelNext buildExecutionModel(EncodingContext context, Model model) {
@@ -83,7 +71,7 @@ public class ExecutionModelManager {
         relModelCache.clear();
         relGraphCache.clear();
         edgeModelCache.clear();
-        extractRelations(relsToExtract);
+        extractRelations();
 
         this.context = null;
         this.model = null;
@@ -112,7 +100,7 @@ public class ExecutionModelManager {
                     extractEvent(e, tm, id++);
                     eventNum++;
                 }
-                
+
                 if (e instanceof CondJump jump
                     && isTrue(context.jumpCondition(jump))) {
                     e = jump.getLabel();
@@ -220,17 +208,9 @@ public class ExecutionModelManager {
         }
     }
 
-    private void extractRelations(List<String> relationNames) {
-        Set<Relation> relsToExtract = new HashSet<>();
-        for (String name : relationNames) {
-            Relation r = getRelationWithName(name);
-            if (r == null) {
-                logger.warn("Relation with the name {} does not exist", name);
-                continue;
-            }
-            relsToExtract.add(r);
-            createModel(r);
-        }
+    private void extractRelations() {
+        Set<Relation> relsToExtract = new HashSet<>(wmm.getRelations());
+        for (Relation r : relsToExtract) { createModel(r); }
 
         Set<RelationGraph> relGraphs = new HashSet<>();
         DependencyGraph<Relation> dependencyGraph = DependencyGraph.from(relsToExtract);
@@ -567,7 +547,7 @@ public class ExecutionModelManager {
             RelationAnalysis.Knowledge k = context.getAnalysisContext()
                                                   .get(RelationAnalysis.class)
                                                   .getKnowledge(r);
-            
+
             if (k.getMaySet().size() < domain.size() * domain.size()) {
                 k.getMaySet().apply((e1, e2) -> {
                     EventModel em1 = executionModel.getEventModelByEvent(e1);
@@ -593,7 +573,7 @@ public class ExecutionModelManager {
 
 
     // Create a the specific graph for derived relations, so that edges of them
-    // can be computed automatically by PredicateHierarchy. 
+    // can be computed automatically by PredicateHierarchy.
     private final class RelationGraphBuilder implements Visitor<RelationGraph> {
 
         @Override
