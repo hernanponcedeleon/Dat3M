@@ -175,39 +175,6 @@ public class ExecutionModelManager {
         }
     }
 
-    // Getting the correct relation to extract is tricky.
-    // In the case of redefinition, we care about the one defined last.
-    // If there is no redefinition, we simply return the original one.
-    private Relation getRelationWithName(String name) {
-        // First check if the original definition is asked.
-        if (name.endsWith("#0")) {
-            String originalName = name.substring(0, name.lastIndexOf("#"));
-            return wmm.getRelation(originalName);
-        }
-
-        int maxId = -1;
-        for (Relation r : wmm.getRelations()) {
-            int defIndex = -1;
-            for (String n : r.getNames()) {
-                if (n.startsWith(name + "#")) {
-                    defIndex = tryParseInt(n).orElse(-1);
-                    if (defIndex > -1) { break; }
-                }
-            }
-            maxId = Math.max(maxId, defIndex);
-        }
-        return maxId != -1 ? wmm.getRelation(name + "#" + maxId) : wmm.getRelation(name);
-    }
-
-    private Optional<Integer> tryParseInt(String s) {
-        try {
-            int n = Integer.parseInt(s.substring(s.lastIndexOf("#") + 1));
-            return Optional.of(n);
-        } catch (NumberFormatException e) {
-            return Optional.empty();
-        }
-    }
-
     private void extractRelations() {
         Set<Relation> relsToExtract = new HashSet<>(wmm.getRelations());
         for (Relation r : relsToExtract) { createModel(r); }
