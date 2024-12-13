@@ -10,6 +10,7 @@ import com.dat3m.dartagnan.verification.model.ExecutionModelManager;
 import com.dat3m.dartagnan.verification.model.ExecutionModelNext;
 import com.dat3m.dartagnan.verification.model.MemoryObjectModel;
 import com.dat3m.dartagnan.verification.model.RelationModel;
+import com.dat3m.dartagnan.verification.model.RelationModel.EdgeModel;
 import com.dat3m.dartagnan.verification.model.ThreadModel;
 import com.dat3m.dartagnan.verification.model.ValueModel;
 import com.dat3m.dartagnan.wmm.definition.Coherence;
@@ -19,6 +20,7 @@ import com.dat3m.dartagnan.wmm.Relation;
 import com.google.common.collect.Lists;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.common.configuration.Option;
 import org.sosy_lab.common.configuration.Options;
@@ -76,20 +78,18 @@ public class ExecutionGraphVisualizer {
         return this;
     }
 
-    public void generateGraphOfExecutionModel(
-        Writer writer, String graphName, ExecutionModelNext model, EncodingContext context, Model smtModel
-    ) throws IOException {
+    public void generateGraphOfExecutionModel(Writer writer, String graphName, ExecutionModelNext model) throws IOException {
         computeAddressMap(model);
         graphviz.beginDigraph(graphName);
         graphviz.append(String.format("label=\"%s\" \n", graphName));
-        addAllThreadPos(model);
-        addRelations(model, context, smtModel);
+        addEvents(model);
+        addRelations(model);
         graphviz.end();
         graphviz.generateOutput(writer);
     }
 
-    private List<String> setRelationsToShow(EncodingContext context) throws InvalidConfigurationException {
-        context.getTask().getConfig().inject(this);
+    private List<String> setRelationsToShow(Configuration config) throws InvalidConfigurationException {
+        config.inject(this);
         relsToShow = Arrays.asList(relsToShowStr.split(",\\s*"));
         return relsToShow;
     }
@@ -104,6 +104,35 @@ public class ExecutionGraphVisualizer {
              .forEach(entry -> sortedMemoryObjects.add(entry.getValue()));
     }
 
+    private List<EventModel> getEventModelsToShow(ThreadModel tm) {
+        return tm.getEventModels()
+                 .stream()
+                 .filter(e -> e instanceof MemoryEventModel
+                              || e instanceof GenericVisibleEventModel
+                              || e instanceof LocalModel
+                              || e instanceof AssertModel)
+                 .toList();
+    }
+
+    private ExecutionGraphVisualizer addEvents(ExecutionModelNext model) {
+        for (ThreadModel tm : model.getThreadModels()) {
+            List<EventModel> threadEvents = getEventModelsToShow(tm);
+            if (threadEvents.size() <= 1) {
+                // This skips init threads.
+                return this;
+            }
+
+            graphviz.beginSubgraph("T" + tm.getId());
+
+            for (EventModel e : threadEvents) {
+                appendNode(e, (String[]) null);
+            }
+
+            graphviz.end();
+        }
+        return this;
+    }
+
     private RelationModel getRelationModelByName(ExecutionModelNext model, String name) {
         for (RelationModel rm : model.getRelationModels()) {
             Relation r = rm.getRelation();
@@ -116,8 +145,7 @@ public class ExecutionGraphVisualizer {
         return null;
     }
 
-    private ExecutionGraphVisualizer addRelations(
-            ExecutionModelNext model, EncodingContext context, Model smtModel) {
+    private ExecutionGraphVisualizer addRelations(ExecutionModelNext model) {
         for (String name : relsToShow) {
             RelationModel rm = getRelationModelByName(model, name);
             if (rm == null) {
@@ -128,7 +156,7 @@ public class ExecutionGraphVisualizer {
             if (rm.getRelation().getDefinition().getClass() == ProgramOrder.class) {
                 addProgramOrder(model, name);
             } else if (rm.getRelation().getDefinition().getClass() == Coherence.class) {
-                addCoherence(rm, model, name, context, smtModel);
+                addCoherence(rm, model, name);
             } else {
                 addRelation(rm, name);
             }
@@ -143,7 +171,7 @@ public class ExecutionGraphVisualizer {
         String label = String.format("label=\"%s\"", name);
         BiPredicate<EventModel, EventModel> filter = rm.getRelation().getDefinition().getClass() == ReadFrom.class ?
             rfFilter : getFilter(name);
-        for (RelationModel.EdgeModel edge : rm.getEdgeModels()) {
+        for (EdgeModel edge : rm.getEdgeModels()) {
             EventModel from = edge.getFrom();
             EventModel to = edge.getTo();
 
@@ -162,13 +190,7 @@ public class ExecutionGraphVisualizer {
         String label = String.format("label=\"%s\"", name);
         BiPredicate<EventModel, EventModel> filter = getFilter(PO);
         for (ThreadModel tm : model.getThreadModels()) {
-            List<EventModel> eventsToShow = tm.getEventModels()
-                                              .stream()
-                                              .filter(e -> e instanceof MemoryEventModel
-                                                           || e instanceof GenericVisibleEventModel
-                                                           || e instanceof LocalModel
-                                                           || e instanceof AssertModel)
-                                              .toList();
+            List<EventModel> eventsToShow = getEventModelsToShow(tm);
             if (eventsToShow.size() <= 1) { continue; }
             for (int i = 1; i < eventsToShow.size(); i++) {
                 EventModel from = eventsToShow.get(i - 1);
@@ -183,42 +205,27 @@ public class ExecutionGraphVisualizer {
         return this;
     }
 
-    private ExecutionGraphVisualizer addCoherence(
-            RelationModel rm, ExecutionModelNext model, String name, EncodingContext context, Model smtModel) {
+    private ExecutionGraphVisualizer addCoherence(RelationModel rm, ExecutionModelNext model, String name) {
         graphviz.beginSubgraph(name);
         String attributes = String.format("color=%s", colorMap.getColor(CO));
         graphviz.setEdgeAttributes(attributes);
         String label = String.format("label=\"%s\"", name);
         BiPredicate<EventModel, EventModel> filter = getFilter(CO);
 
-        EncodingContext.EdgeEncoder co = context.edge(rm.getRelation());
+        Set<EdgeModel> coModels = rm.getEdgeModels();
         for (Set<StoreModel> writes : model.getAddressWritesMap().values()) {
             List<StoreModel> coSortedWrites;
-            if (context.usesSATEncoding()) {
-                Map<StoreModel, List<StoreModel>> coEdges = new HashMap<>();
-                for (StoreModel w1 : writes) {
-                    coEdges.put(w1, new ArrayList<>());
-                    for (StoreModel w2 : writes) {
-                        if (Boolean.TRUE.equals(smtModel.evaluate(co.encode(w1.getEvent(), w2.getEvent())))) {
-                            coEdges.get(w1).add(w2);
-                        }
+            Map<StoreModel, List<StoreModel>> coEdges = new HashMap<>();
+            for (StoreModel w1 : writes) {
+                coEdges.put(w1, new ArrayList<>());
+                for (StoreModel w2 : writes) {
+                    if (coModels.contains(new EdgeModel(w1, w2))) {
+                        coEdges.get(w1).add(w2);
                     }
                 }
-                DependencyGraph<StoreModel> depGraph = DependencyGraph.from(writes, coEdges);
-                coSortedWrites = new ArrayList<>(Lists.reverse(depGraph.getNodeContents()));
-            } else {
-                Map<StoreModel, BigInteger> writeClockMap = new HashMap<>(
-                    writes.size() * 4 / 3, 0.75f
-                );
-                for (StoreModel w : writes) {
-                    writeClockMap.put(w, (BigInteger) smtModel.evaluate(
-                        context.memoryOrderClock(w.getEvent())
-                    ));
-                }
-                coSortedWrites = writes.stream()
-                                       .sorted(Comparator.comparing(writeClockMap::get))
-                                       .collect(Collectors.toList());
             }
+            DependencyGraph<StoreModel> depGraph = DependencyGraph.from(writes, coEdges);
+            coSortedWrites = new ArrayList<>(Lists.reverse(depGraph.getNodeContents()));
 
             for (int i = 0; i < coSortedWrites.size(); i++) {
                 if (i >= 1) {
@@ -232,37 +239,6 @@ public class ExecutionGraphVisualizer {
             }
         }
         graphviz.end();
-        return this;
-    }
-
-    private ExecutionGraphVisualizer addAllThreadPos(ExecutionModelNext model) {
-        for (ThreadModel tm : model.getThreadModels()) {
-            addThreadPo(tm, model);
-        }
-        return this;
-    }
-
-    private ExecutionGraphVisualizer addThreadPo(ThreadModel tm, ExecutionModelNext model) {
-        List<EventModel> threadEvents = tm.getEventModels()
-                                          .stream()
-                                          .filter(e -> e instanceof MemoryEventModel
-                                                       || e instanceof GenericVisibleEventModel
-                                                       || e instanceof LocalModel
-                                                       || e instanceof AssertModel)
-                                          .toList();
-        if (threadEvents.size() <= 1) {
-            // This skips init threads.
-            return this;
-        }
-
-        graphviz.beginSubgraph("T" + tm.getId());
-
-        for (EventModel e : threadEvents) {
-            appendNode(e, (String[]) null);
-        }
-
-        graphviz.end();
-
         return this;
     }
 
@@ -332,8 +308,6 @@ public class ExecutionGraphVisualizer {
     }
 
     public static File generateGraphvizFile(ExecutionModelNext model,
-                                            EncodingContext context,
-                                            Model smtModel,
                                             int iterationCount,
                                             BiPredicate<EventModel, EventModel> rfFilter,
                                             BiPredicate<EventModel, EventModel> coFilter,
@@ -350,7 +324,7 @@ public class ExecutionGraphVisualizer {
             visualizer.setSyntacticContext(synContext)
                       .setReadFromFilter(rfFilter)
                       .setCoherenceFilter(coFilter)
-                      .generateGraphOfExecutionModel(writer, "Iteration " + iterationCount, model, context, smtModel);
+                      .generateGraphOfExecutionModel(writer, "Iteration " + iterationCount, model);
 
             writer.flush();
             if (convert) {
@@ -374,11 +348,10 @@ public class ExecutionGraphVisualizer {
                                             SyntacticContextAnalysis synContext,
                                             boolean convert) throws InvalidConfigurationException {
         ExecutionGraphVisualizer visualizer = new ExecutionGraphVisualizer();
-        ExecutionModelNext model = new ExecutionModelManager().setRelationsToExtract(visualizer.setRelationsToShow(context))
-                                                              .buildExecutionModel(context, smtModel);
+        ExecutionModelNext model = new ExecutionModelManager()
+                .setRelationsToExtract(visualizer.setRelationsToShow(context.getTask().getConfig()))
+                .buildExecutionModel(context, smtModel);
         return generateGraphvizFile(model,
-                                    context,
-                                    smtModel,
                                     iterationCount,
                                     rfFilter,
                                     coFilter,
@@ -390,8 +363,6 @@ public class ExecutionGraphVisualizer {
     }
 
     public static void generateGraphvizFile(ExecutionModelNext model,
-                                            EncodingContext context,
-                                            Model smtModel,
                                             int iterationCount,
                                             BiPredicate<EventModel, EventModel> rfFilter,
                                             BiPredicate<EventModel, EventModel> coFilter,
@@ -399,8 +370,6 @@ public class ExecutionGraphVisualizer {
                                             String fileNameBase,
                                             SyntacticContextAnalysis synContext) {
         generateGraphvizFile(model,
-                             context,
-                             smtModel,
                              iterationCount,
                              rfFilter,
                              coFilter,

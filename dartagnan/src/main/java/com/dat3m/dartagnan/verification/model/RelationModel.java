@@ -3,7 +3,9 @@ package com.dat3m.dartagnan.verification.model;
 import com.dat3m.dartagnan.wmm.Relation;
 import com.dat3m.dartagnan.verification.model.event.EventModel;
 
-import java.util.*;
+import java.util.Collections;
+import java.util.Set;
+import java.util.HashSet;
 
 
 public class RelationModel {
@@ -32,7 +34,7 @@ public class RelationModel {
         private final EventModel from;
         private final EventModel to;
 
-        EdgeModel(EventModel from, EventModel to) {
+        public EdgeModel(EventModel from, EventModel to) {
             this.from = from;
             this.to = to;
         }
