@@ -129,21 +129,49 @@ public class ExecutionGraphVisualizer {
         return this;
     }
 
-    private RelationModel getRelationModelByName(ExecutionModelNext model, String name) {
-        for (RelationModel rm : model.getRelationModels()) {
-            Relation r = rm.getRelation();
-            if (r.hasName(name)
-                || r.getNames().stream().anyMatch(n -> n.startsWith(name + "#"))
-                || (name.endsWith("#0") && r.hasName(name.substring(0, name.lastIndexOf("#"))))) {
-                return rm;
-            }
+    private Optional<Integer> tryParseInt(String s) {
+        try {
+            int n = Integer.parseInt(s.substring(s.lastIndexOf("#") + 1));
+            return Optional.of(n);
+        } catch (NumberFormatException e) {
+            return Optional.empty();
         }
-        return null;
+    }
+
+    private RelationModel getRelationModelByName(ExecutionModelNext model, String name) {
+        return model.getRelationModels().stream()
+                    .filter(rm -> rm.getRelation().hasName(name))
+                    .findFirst().orElse(null);
+    }
+
+    // Getting the correct relation to show is tricky.
+    // In the case of redefinition, we care about the one defined last.
+    // If there is no redefinition, we simply return the original one.
+    private RelationModel getRelationModel(ExecutionModelNext model, String name) {
+        // First check if the original definition is asked.
+        if (name.endsWith("#0")) {
+            String originalName = name.substring(0, name.lastIndexOf("#"));
+            return getRelationModelByName(model, originalName);
+        }
+
+        int maxId = -1;
+        for (RelationModel rm : model.getRelationModels()) {
+            int defIndex = -1;
+            for (String n : rm.getRelation().getNames()) {
+                if (n.startsWith(name + "#")) {
+                    defIndex = tryParseInt(n).orElse(-1);
+                    if (defIndex > -1) { break; }
+                }
+            }
+            maxId = Math.max(maxId, defIndex);
+        }
+        return maxId != -1 ? getRelationModelByName(model, name + "#" + maxId)
+                           : getRelationModelByName(model, name);
     }
 
     private ExecutionGraphVisualizer addRelations(ExecutionModelNext model) {
         for (String name : relsToShow) {
-            RelationModel rm = getRelationModelByName(model, name);
+            RelationModel rm = getRelationModel(model, name);
             if (rm == null) {
                 logger.warn("Relation with the name {} does not exist", name);
                 continue;
