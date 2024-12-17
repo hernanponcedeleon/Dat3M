@@ -121,7 +121,7 @@ re locals [IntBinaryOp op, String mo]
         | XchgAcquire LPar address = re Comma value = re RPar {$mo = Linux.MO_ACQUIRE;}
         | XchgRelease LPar address = re Comma value = re RPar {$mo = Linux.MO_RELEASE;})                                                    # reXchg
 
-    |   C11AtomicXchg           LPar address = re Comma value = re Comma c11Mo RPar                                                         # reC11AtomicXchg
+    |   C11AtomicXchg           LPar address = re Comma value = re RPar                                                                     # reC11AtomicXchg
     |   C11AtomicXchgExplicit   LPar address = re Comma value = re Comma c11Mo (Comma openCLScope)? RPar                                    # reC11AtomicXchgExplicit
 
     |   ( AtomicCmpXchg        LPar address = re Comma cmp = re Comma value = re RPar {$mo = Linux.MO_MB;}

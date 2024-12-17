@@ -312,7 +312,7 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
         Register register = getReturnRegister(true);
         Expression value = (Expression) ctx.value.accept(this);
         Expression address = getAddress(ctx.address);
-        Event event = EventFactory.Atomic.newExchange(register, address, value, ctx.c11Mo().mo);
+        Event event = EventFactory.Atomic.newExchange(register, address, value, Tag.C11.MO_SC);
         addScopeTag(event, null);
         programBuilder.addChild(currentThread, event);
         return register;
