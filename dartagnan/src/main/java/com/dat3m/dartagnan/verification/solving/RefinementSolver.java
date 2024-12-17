@@ -29,6 +29,9 @@ import com.dat3m.dartagnan.verification.Context;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.verification.model.EventData;
 import com.dat3m.dartagnan.verification.model.ExecutionModel;
+import com.dat3m.dartagnan.verification.model.ExecutionModelManager;
+import com.dat3m.dartagnan.verification.model.ExecutionModelNext;
+import com.dat3m.dartagnan.verification.model.event.EventModel;
 import com.dat3m.dartagnan.wmm.Constraint;
 import com.dat3m.dartagnan.wmm.Definition;
 import com.dat3m.dartagnan.wmm.Relation;
@@ -85,6 +88,8 @@ public class RefinementSolver extends ModelChecker {
     private static final String COE = "coe";
     private static final String FRE = "fre";
     private static final String POLOC = "po-loc";
+
+    private EncodingContext contextWithFullWmm;
 
     // ================================================================================================================
     // Configuration
@@ -169,6 +174,10 @@ public class RefinementSolver extends ModelChecker {
     private RefinementSolver() {
     }
 
+    public EncodingContext getContextWithFullWmm() {
+        return contextWithFullWmm;
+    }
+
     //TODO: We do not yet use Witness information. The problem is that WitnessGraph.encode() generates
     // constraints on hb, which is not encoded in Refinement.
     //TODO (2): Add possibility for Refinement to handle CAT-properties (it ignores them for now).
@@ -204,6 +213,9 @@ public class RefinementSolver extends ModelChecker {
         // Copy context without WMM analyses because we want to analyse a second model later
         Context baselineContext = Context.createCopyFrom(analysisContext);
         performStaticWmmAnalyses(task, analysisContext, config);
+
+        // Encoding context with the original Wmm and the analysis context for relation extraction.
+        contextWithFullWmm = EncodingContext.of(task, analysisContext, ctx.getFormulaManager());
 
         //  ------- Generate refinement model -------
         final RefinementModel refinementModel = generateRefinementModel(memoryModel);
@@ -388,7 +400,8 @@ public class RefinementSolver extends ModelChecker {
 
             // ------------------------- Debugging/Logging -------------------------
             if (generateGraphvizDebugFiles) {
-                generateGraphvizFiles(task, solver.getExecution(), trace.size(), iteration.inconsistencyReasons);
+                final ExecutionModelNext model = new ExecutionModelManager().buildExecutionModel(contextWithFullWmm, prover.getModel());
+                generateGraphvizFiles(task, model, trace.size(), iteration.inconsistencyReasons);
             }
             if (logger.isDebugEnabled()) {
                 // ---- Internal SMT stats after the first iteration ----
@@ -726,7 +739,7 @@ public class RefinementSolver extends ModelChecker {
             if (replacements.containsKey(b)) {
                 bPrime = replacements.get(b);
             } else {
-                final String bPrimeName = b.getName().map(n -> n + "#POS").orElse("__POS" + counter++);
+                final String bPrimeName = b.getName().map(n -> n + "__POS").orElse("__POS" + counter++);
                 bPrime = wmm.addDefinition(new Free(wmm.newRelation(bPrimeName)));
                 replacements.put(b, bPrime);
             }
@@ -862,16 +875,16 @@ public class RefinementSolver extends ModelChecker {
     // This code is pure debugging code that will generate graphical representations
     // of each refinement iteration.
     // Generate .dot files and .png files per iteration
-    private static void generateGraphvizFiles(VerificationTask task, ExecutionModel model, int iterationCount,
-            DNF<CoreLiteral> reasons) {
+    private static void generateGraphvizFiles(
+            VerificationTask task, ExecutionModelNext model, int iterationCount, DNF<CoreLiteral> reasons) {
         // =============== Visualization code ==================
         // The edgeFilter filters those co/rf that belong to some violation reason
-        BiPredicate<EventData, EventData> edgeFilter = (e1, e2) -> {
+        BiPredicate<EventModel, EventModel> edgeFilter = (e1, e2) -> {
             for (Conjunction<CoreLiteral> cube : reasons.getCubes()) {
                 for (CoreLiteral lit : cube.getLiterals()) {
                     if (lit instanceof RelLiteral edgeLit) {
-                        if (model.getData(edgeLit.getSource()).get() == e1 &&
-                                model.getData(edgeLit.getTarget()).get() == e2) {
+                        if (model.getEventModelByEvent(edgeLit.getSource()) == e1 &&
+                                model.getEventModelByEvent(edgeLit.getTarget()) == e2) {
                             return true;
                         }
                     }
@@ -887,10 +900,10 @@ public class RefinementSolver extends ModelChecker {
         String fileNameBase = String.format("%s-%d", programName, iterationCount);
         final SyntacticContextAnalysis emptySynContext = getEmptyInstance();
         // File with reason edges only
-        generateGraphvizFile(model, iterationCount, edgeFilter, edgeFilter, edgeFilter, directoryName, fileNameBase,
+        generateGraphvizFile(model, iterationCount, edgeFilter, edgeFilter, directoryName, fileNameBase,
                 emptySynContext);
         // File with all edges
-        generateGraphvizFile(model, iterationCount, (x, y) -> true, (x, y) -> true, (x, y) -> true, directoryName,
+        generateGraphvizFile(model, iterationCount, (x, y) -> true, (x, y) -> true, directoryName,
                 fileNameBase + "-full", emptySynContext);
     }
 }
