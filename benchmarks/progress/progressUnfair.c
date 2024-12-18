@@ -3,9 +3,9 @@
 #include <assert.h>
 #include <stdatomic.h>
 
-atomic_int x = 0;
-
 // Required progress: Unfair (terminates under all progress models)
+
+atomic_int x = 0;
 
 void *thread_1(void *unused)
 {
