@@ -55,47 +55,7 @@ public class ValidationTest extends AbstractTest {
                 {"litmus-vulkan/plain/mp", "spirv-verification/plain/mp", Map.of(1, 12, 2, 13, 7, 5, 8, 7),  List.of(), false},
                 {"litmus-vulkan/plain/sb", "spirv-verification/plain/sb", Map.of(2, 11, 3, 12, 7, 5, 8, 6),  List.of(), false},
                 {"litmus-vulkan/sanity/storage-class", "spirv-verification/sanity/storage-class", Map.of(1, 10, 5, 5),  List.of(), false},
-
-                {"litmus-vulkan/atomic/lb/semsc", "spirv-empirical-new/atomic/lb/semsc", Map.of(2, 49, 3, 51, 7, 41, 8, 43),  List.of(), false},
-                {"litmus-vulkan/atomic/lb/semsc2", "spirv-empirical-new/atomic/lb/semsc2", Map.of(2, 49, 3, 51, 7, 41, 8, 43),  List.of(), false},
-                {"litmus-vulkan/atomic/lb/semscavvis", "spirv-empirical-new/atomic/lb/semscavvis", Map.of(2, 49, 3, 51, 7, 41, 8, 43),  List.of(), false},
-                {"litmus-vulkan/atomic/lb/semscavvis2", "spirv-empirical-new/atomic/lb/semscavvis2", Map.of(2, 49, 3, 51, 7, 41, 8, 43),  List.of(), false},
-
-                {"litmus-vulkan/atomic/lb/mo", "spirv-empirical/atomic/lb/mo", Map.of(2, 116, 3, 118, 7, 108, 8, 110),  List.of(), false},
-                {"litmus-vulkan/atomic/mp/mo", "spirv-empirical/atomic/mp/mo", Map.of(1, 115, 2, 116, 7, 106, 8, 108),  List.of(), false},
-                {"litmus-vulkan/atomic/sb/mo", "spirv-empirical/atomic/sb/mo", Map.of(2, 116, 3, 117, 7, 108, 8, 109),  List.of(), false},
-                {"litmus-vulkan/mixed/mp/mo", "spirv-empirical/mixed/mp/mo", Map.of(1, 117, 2, 118, 7, 108, 8, 110),  List.of(), false},
-                {"litmus-vulkan/plain/lb", "spirv-empirical/plain/lb", Map.of(2, 116, 3, 118, 7, 108, 8, 110),  List.of(), false},
-                {"litmus-vulkan/plain/mp", "spirv-empirical/plain/mp", Map.of(1, 117, 2, 118, 7, 108, 8, 110),  List.of(), false},
-                {"litmus-vulkan/plain/sb", "spirv-empirical/plain/sb", Map.of(2, 116, 3, 117, 7, 108, 8, 109),  List.of(), false},
                 {"litmus-vulkan/sanity/storage-class", "spirv-empirical/sanity/storage-class", Map.of(1, 113, 5, 106),  List.of(), false},
-
-                {"litmus-vulkan/atomic/lb/mo", "spirv-empirical-nop/atomic/lb/mo", Map.of(2, 191, 3, 193, 7, 183, 8, 185),  List.of(), false},
-                {"litmus-vulkan/atomic/mp/mo", "spirv-empirical-nop/atomic/mp/mo", Map.of(1, 190, 2, 191, 7, 181, 8, 183),  List.of(), false},
-                {"litmus-vulkan/atomic/sb/mo", "spirv-empirical-nop/atomic/sb/mo", Map.of(2, 191, 3, 192, 7, 183, 8, 184),  List.of(), false},
-                {"litmus-vulkan/mixed/mp/mo", "spirv-empirical-nop/mixed/mp/mo", Map.of(1, 192, 2, 193, 7, 183, 8, 185),  List.of(), false},
-                {"litmus-vulkan/plain/lb", "spirv-empirical-nop/plain/lb", Map.of(2, 191, 3, 193, 7, 183, 8, 185),  List.of(), false},
-                {"litmus-vulkan/plain/mp", "spirv-empirical-nop/plain/mp", Map.of(1, 192, 2, 193, 7, 183, 8, 185),  List.of(), false},
-                {"litmus-vulkan/plain/sb", "spirv-empirical-nop/plain/sb", Map.of(2, 191, 3, 192, 7, 183, 8, 184),  List.of(), false},
-                {"litmus-vulkan/sanity/storage-class", "spirv-empirical-nop/sanity/storage-class", Map.of(1, 188, 5, 181),  List.of(), false},
-
-                {"litmus-vulkan/atomic/lb/mo", "spirv-empirical-barrier-0/atomic/lb/mo", Map.of(2, 117, 3, 119, 7, 109, 8, 111),  List.of(), false},
-                {"litmus-vulkan/atomic/mp/mo", "spirv-empirical-barrier-0/atomic/mp/mo", Map.of(1, 116, 2, 117, 7, 107, 8, 109),  List.of(), false},
-                {"litmus-vulkan/atomic/sb/mo", "spirv-empirical-barrier-0/atomic/sb/mo", Map.of(2, 117, 3, 118, 7, 109, 8, 110),  List.of(), false},
-                {"litmus-vulkan/mixed/mp/mo", "spirv-empirical-barrier-0/mixed/mp/mo", Map.of(1, 118, 2, 119, 7, 109, 8, 111),  List.of(), false},
-                {"litmus-vulkan/plain/lb", "spirv-empirical-barrier-0/plain/lb", Map.of(2, 117, 3, 119, 7, 109, 8, 111),  List.of(), false},
-                {"litmus-vulkan/plain/mp", "spirv-empirical-barrier-0/plain/mp", Map.of(1, 118, 2, 119, 7, 109, 8, 111),  List.of(), false},
-                {"litmus-vulkan/plain/sb", "spirv-empirical-barrier-0/plain/sb", Map.of(2, 117, 3, 118, 7, 109, 8, 110),  List.of(), false},
-                {"litmus-vulkan/sanity/storage-class", "spirv-empirical-barrier-0/sanity/storage-class", Map.of(1, 114, 5, 107),  List.of(), false},
-
-                {"litmus-vulkan/atomic/lb/mo", "spirv-empirical-barrier-264/atomic/lb/mo", Map.of(2, 117, 3, 119, 7, 109, 8, 111),  List.of(), false},
-                {"litmus-vulkan/atomic/mp/mo", "spirv-empirical-barrier-264/atomic/mp/mo", Map.of(1, 116, 2, 117, 7, 107, 8, 109),  List.of(), false},
-                {"litmus-vulkan/atomic/sb/mo", "spirv-empirical-barrier-264/atomic/sb/mo", Map.of(2, 117, 3, 118, 7, 109, 8, 110),  List.of(), false},
-                {"litmus-vulkan/mixed/mp/mo", "spirv-empirical-barrier-264/mixed/mp/mo", Map.of(1, 118, 2, 119, 7, 109, 8, 111),  List.of(), false},
-                {"litmus-vulkan/plain/lb", "spirv-empirical-barrier-264/plain/lb", Map.of(2, 117, 3, 119, 7, 109, 8, 111),  List.of(), false},
-                {"litmus-vulkan/plain/mp", "spirv-empirical-barrier-264/plain/mp", Map.of(1, 118, 2, 119, 7, 109, 8, 111),  List.of(), false},
-                {"litmus-vulkan/plain/sb", "spirv-empirical-barrier-264/plain/sb", Map.of(2, 117, 3, 118, 7, 109, 8, 110),  List.of(), false},
-                {"litmus-vulkan/sanity/storage-class", "spirv-empirical-barrier-264/sanity/storage-class", Map.of(1, 114, 5, 107),  List.of(), false},
 
                 {"litmus-vulkan/sanity/operands/load", "spirv-verification/sanity/operands/load", Map.of(2, 1),  List.of("spirv-sanity-operands-avvis-illegal.txt"), false},
                 {"litmus-vulkan/sanity/operands/store", "spirv-verification/sanity/operands/store", Map.of(1, 1),  List.of("spirv-sanity-operands-avvis-illegal.txt"), false},
@@ -107,6 +67,36 @@ public class ValidationTest extends AbstractTest {
                 // TODO: Instead of skipping assert that throws exception
                 {"litmus-vulkan/sanity/semantics/illegal", "spirv-verification/sanity/semantics/illegal", Map.of(2, 1),  List.of(), true},
                 {"spirv-verification/sanity/semantics/illegal", "spirv-empirical/sanity/semantics/illegal", Map.of(1, 105, 2, 106),  null, true},
+
+                {"litmus-vulkan/atomic/lb", "spirv-verification-new/atomic/lb", Map.of(2, 11, 3, 13, 7, 5, 8, 7),  List.of(), false},
+                {"litmus-vulkan/atomic/mp", "spirv-verification-new/atomic/mp", Map.of(1, 12, 2, 13, 7, 5, 8, 7),  List.of(), false},
+                {"litmus-vulkan/atomic/sb", "spirv-verification-new/atomic/sb", Map.of(2, 11, 3, 12, 7, 5, 8, 6),  List.of(), false},
+                {"litmus-vulkan/mixed/mp/mo", "spirv-verification-new/mixed/mp/mo", Map.of(1, 12, 2, 13, 7, 5, 8, 7),  List.of(), false},
+                {"litmus-vulkan/plain/lb", "spirv-verification-new/plain/lb", Map.of(2, 11, 3, 13, 7, 5, 8, 7),  List.of(), false},
+                {"litmus-vulkan/plain/mp", "spirv-verification-new/plain/mp", Map.of(1, 12, 2, 13, 7, 5, 8, 7),  List.of(), false},
+                {"litmus-vulkan/plain/sb", "spirv-verification-new/plain/sb", Map.of(2, 11, 3, 12, 7, 5, 8, 6),  List.of(), false},
+                {"litmus-vulkan/sanity/storage-class", "spirv-verification-new/sanity/storage-class", Map.of(1, 10, 5, 5),  List.of(), false},
+
+                {"litmus-vulkan/sanity/operands/load", "spirv-verification-new/sanity/operands/load", Map.of(2, 1),  List.of("spirv-sanity-operands-avvis-illegal.txt"), false},
+                {"litmus-vulkan/sanity/operands/store", "spirv-verification-new/sanity/operands/store", Map.of(1, 1),  List.of("spirv-sanity-operands-avvis-illegal.txt"), false},
+                {"litmus-vulkan/sanity/semantics/legal", "spirv-verification-new/sanity/semantics/legal", Map.of(2, 1),  List.of("litmus-vulkan-sanity-semantics.txt", "spirv-verification-sanity-semantics.txt"), false},
+
+                {"spirv-verification-new/sanity/semantics/illegal", "spirv-empirical-new/sanity/semantics/illegal", Map.of(0, 0),  null, true},
+                {"spirv-empirical-new/sanity/semantics/illegal", "spirv-verification-new/sanity/semantics/illegal", Map.of(0, 0),  null, true},
+
+                {"litmus-vulkan/atomic/lb", "spirv-empirical-new/atomic/lb", Map.of(2, 49, 3, 51, 7, 41, 8, 43),  List.of(), false},
+                {"litmus-vulkan/atomic/mp", "spirv-empirical-new/atomic/mp", Map.of(1, 50, 2, 51, 7, 41, 8, 43),  List.of(), false},
+                {"litmus-vulkan/atomic/sb", "spirv-empirical-new/atomic/sb", Map.of(2, 49, 3, 50, 7, 41, 8, 42),  List.of(), false},
+                {"litmus-vulkan/mixed/mp/mo", "spirv-empirical-new/mixed/mp/mo", Map.of(1, 50, 2, 51, 7, 41, 8, 43),  List.of(), false},
+                {"litmus-vulkan/plain/lb", "spirv-empirical-new/plain/lb", Map.of(2, 49, 3, 51, 7, 41, 8, 43),  List.of(), false},
+                {"litmus-vulkan/plain/mp", "spirv-empirical-new/plain/mp", Map.of(1, 50, 2, 51, 7, 41, 8, 43),  List.of(), false},
+                {"litmus-vulkan/plain/sb", "spirv-empirical-new/plain/sb", Map.of(2, 49, 3, 50, 7, 41, 8, 42),  List.of(), false},
+                {"litmus-vulkan/sanity/storage-class", "spirv-empirical-new/sanity/storage-class", Map.of(1, 59, 5, 52),  List.of(), false},
+
+                {"litmus-vulkan/sanity/operands/load", "spirv-empirical-new/sanity/operands/load", Map.of(2, 49),  List.of("spirv-sanity-operands-avvis-illegal.txt"), false},
+                {"litmus-vulkan/sanity/operands/store", "spirv-empirical-new/sanity/operands/store", Map.of(1, 49),  List.of("spirv-sanity-operands-avvis-illegal.txt"), false},
+                {"litmus-vulkan/sanity/semantics/legal", "spirv-empirical-new/sanity/semantics/legal", Map.of(2, 49),  List.of("litmus-vulkan-sanity-semantics.txt", "spirv-empirical-sanity-semantics.txt"), false},
+
         });
     }
 

@@ -32,6 +32,9 @@ public class ExecutionTest extends AbstractTest {
             {"checks-spirv-verification", "spirv-verification", "spirv-check", CAT_SPEC},
             {"races-spirv-verification", "spirv-verification", "spirv", CAT_SPEC},
             {"spec-spirv-verification", "spirv-verification", "spirv", PROGRAM_SPEC},
+            {"checks-spirv-verification-new", "spirv-verification-new", "spirv-check", CAT_SPEC},
+            {"races-spirv-verification-new", "spirv-verification-new", "spirv", CAT_SPEC},
+            {"spec-spirv-verification-new", "spirv-verification-new", "spirv", PROGRAM_SPEC},
     };
 
     private final Map<String, Map<String, String>> results = new HashMap<>();
@@ -57,7 +60,7 @@ public class ExecutionTest extends AbstractTest {
                         if (cause instanceof NoViableAltException || cause instanceof InputMismatchException) {
                             data.put(key, "P_ERR");
                         } else {
-                            data.put(key, "ERR");
+                            data.put(key, e.getMessage());
                         }
                     }
                 }
