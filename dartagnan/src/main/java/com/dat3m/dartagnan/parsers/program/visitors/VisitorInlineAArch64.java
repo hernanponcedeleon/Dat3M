@@ -132,7 +132,6 @@ public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
         }
     }
 
-    // TODO should be deprecated
     private Type getTypeGivenReturnTypeString(String typeString) {
         Type res = null;
         String trimmed = typeString.contains(":") ? typeString.split(":")[1].trim() : typeString.trim();
@@ -254,7 +253,7 @@ public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
     }
 
     private Register getOrNewRegister(String nodeName) {
-        // if it is not in armToLlvmMap create the new register and create the local event
+        // if it is not in armToLlvmMap create the new register
         if (this.armToLlvmMap.containsKey(nodeName)) {
             return this.armToLlvmMap.get(nodeName);
         } else {
@@ -263,7 +262,6 @@ public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
             String registerName = makeRegisterName(nodeName);
             Register newRegister = llvmFunction.newRegister(registerName, type);
             this.armToLlvmMap.put(nodeName, newRegister);
-            // if it is part of return don't create the local event. It'll be fixed later on
             if (isPartOfReturnRegister(nodeName)) {
                 this.pendingRegisters.add(newRegister);
             }
@@ -351,7 +349,7 @@ public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
             registerNames.addLast(pointerRegister);
 
         }
-        System.out.println("Register names are" + this.registerNames);
+        // System.out.println("Register names are" + this.registerNames);
         // now we have all of the register names, we have to map following the rule
         // 1. first return values
         // 2. all of the other ones to fnParams ( if I see a $n it should be a pointer so has to be last one!)
@@ -359,12 +357,7 @@ public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
         // newRegister WIth asm name <- fnParams
         if (!this.registerNames.isEmpty()) {
             int index = 0;
-            if (this.returnValuesNumber == 1) {
-                Register newRegister = getOrNewRegister(this.registerNames.get(index));
-                armToLlvmMap.put(this.registerNames.get(index), newRegister);
-                events.add(EventFactory.newLocal(newRegister, this.returnRegister));
-                index++;
-            } else if (this.returnValuesNumber == 4) { // 'add' corner case
+            if (this.returnValuesNumber == 4) { // 'add' corner case
                 for (int i = 0; i < this.returnValuesNumber; i++) {
                     Register tmp = getOrNewRegister(this.registerNames.get(index));
                     if (i == 1 || i == 2) {
@@ -374,12 +367,25 @@ public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
                         events.add(EventFactory.newLocal(tmp, this.fnParameters.get(1)));
                     }
                 }
-            }
-            else {
+            } else {
+                if (this.returnValuesNumber == 1) { // if we have just one returnValue we allocate
+                    // else is handled by the visitMetadata 
+                    Register newRegister = getOrNewRegister(this.registerNames.get(index));
+                    armToLlvmMap.put(this.registerNames.get(index), newRegister);
+                    events.add(EventFactory.newLocal(newRegister, this.returnRegister));
+                } else{ // trying initializing with 0 to suppress the warning -- does not work
+                    while (index < this.returnValuesNumber){
+                    Register newRegister = getOrNewRegister(this.registerNames.get(index));
+                    armToLlvmMap.put(this.registerNames.get(index), newRegister);
+                    Type type = getTypeGivenReturnTypeString(this.returnRegisterTypes[index]);
+                    events.add(EventFactory.newLocal(newRegister,expressions.parseValue("0", (IntegerType) type)));
+                    index++;
+                    }
+                }
+                // now we can allocate the ('args') part
                 index = this.returnValuesNumber;
                 if (this.fnParameters != null) {
                     for (Expression register : this.fnParameters) {
-                        System.out.println("Index here is " + index);
                         Register newRegister = getOrNewRegister(this.registerNames.get(index));
                         armToLlvmMap.put(this.registerNames.get(index), newRegister);
                         events.add(EventFactory.newLocal(newRegister, (Register) register));
