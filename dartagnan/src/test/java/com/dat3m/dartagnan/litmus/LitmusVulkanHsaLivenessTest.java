@@ -34,6 +34,11 @@ public class LitmusVulkanHsaLivenessTest extends AbstractLitmusTest {
     }
 
     @Override
+    protected Provider<Integer> getBoundProvider() {
+        return Provider.fromSupplier(() -> 3);
+    }
+
+    @Override
     protected Provider<EnumSet<Property>> getPropertyProvider() {
         return Provider.fromSupplier(() -> EnumSet.of(Property.LIVENESS));
     }

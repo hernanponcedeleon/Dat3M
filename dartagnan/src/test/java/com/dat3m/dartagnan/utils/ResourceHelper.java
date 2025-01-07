@@ -34,6 +34,9 @@ public class ResourceHelper {
             HashMap<String, Result> data = new HashMap<>();
             String str;
             while((str = reader.readLine()) != null){
+                if(str.startsWith("//") || str.isBlank()) {
+                    continue;
+                }
                 String[] line = str.split(",");
                 if(line.length == 2){
                     data.put(getRootPath(line[0]), Integer.parseInt(line[1]) == 1 ? PASS : FAIL);
