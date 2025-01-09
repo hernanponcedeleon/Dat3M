@@ -7,9 +7,7 @@ import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.MemoryEvent;
 import com.dat3m.dartagnan.program.event.RegWriter;
-import com.dat3m.dartagnan.program.event.core.Local;
-import com.dat3m.dartagnan.program.event.core.MemoryCoreEvent;
-import com.dat3m.dartagnan.program.event.core.Store;
+import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Verify;
@@ -34,6 +32,7 @@ import static com.dat3m.dartagnan.expression.integers.IntBinaryOp.ADD;
  *
  * @author flo
  * @author xeren
+ * @author Tianrui Zheng
  */
 public class AndersenAliasAnalysis implements AliasAnalysis {
 
@@ -46,6 +45,7 @@ public class AndersenAliasAnalysis implements AliasAnalysis {
     private final Map<Register, Set<MemoryEvent>> events = new HashMap<>();
     private final Map<Register, Set<Location>> targets = new HashMap<>();
     private final Map<MemoryEvent, ImmutableSet<Location>> eventAddressSpaceMap = new HashMap<>();
+    private final Map<Alloc, ImmutableSet<Location>> allocAddressSpaceMap = new HashMap<>();
 
     // ================================ Construction ================================
 
@@ -73,19 +73,39 @@ public class AndersenAliasAnalysis implements AliasAnalysis {
     }
 
     @Override
+    public boolean mayAlias(Alloc alloc, MemoryCoreEvent e) {
+        checkHeapAlloc(alloc);
+        return !Sets.intersection(getAllocatedAddresses(alloc), getMaxAddressSet(e)).isEmpty();
+    }
+
+    @Override
     public boolean mustAlias(MemoryCoreEvent x, MemoryCoreEvent y) {
         return getMaxAddressSet(x).size() == 1 && getMaxAddressSet(x).containsAll(getMaxAddressSet(y));
+    }
+
+    @Override
+    public boolean mustAlias(Alloc alloc, MemoryCoreEvent e) {
+        checkHeapAlloc(alloc);
+        return getAllocatedAddresses(alloc).containsAll(getMaxAddressSet(e));
     }
 
     private ImmutableSet<Location> getMaxAddressSet(MemoryEvent e) {
         return eventAddressSpaceMap.get(e);
     }
 
+    private ImmutableSet<Location> getAllocatedAddresses(Alloc a) {
+        return allocAddressSpaceMap.get(a);
+    }
+
     // ================================ Processing ================================
 
     private void run(Program program) {
+        List<Alloc> allocs = program.getThreadEvents(Alloc.class);
         List<MemoryCoreEvent> memEvents = program.getThreadEvents(MemoryCoreEvent.class);
         List<Local> locals = program.getThreadEvents(Local.class);
+        for (Alloc a : allocs) {
+            processAllocs(a);
+        }
         for (MemoryCoreEvent e : memEvents) {
             processLocs(e);
         }
@@ -99,6 +119,22 @@ public class AndersenAliasAnalysis implements AliasAnalysis {
         }
         for (MemoryCoreEvent e : memEvents) {
             processResults(e);
+        }
+    }
+
+    private void processAllocs(Alloc a) {
+        if (!a.isHeapAllocation()) {
+            return;
+        }
+        if (a.getAllocationSize() instanceof IntLiteral sizeExpr) {
+            MemoryObject base = a.getAllocatedObject();
+            ImmutableSet.Builder<Location> builder = new ImmutableSet.Builder<>();
+            for (int offset = 0; offset < sizeExpr.getValueAsInt(); offset++) {
+                builder.add(new Location(base, offset));
+            }
+            allocAddressSpaceMap.put(a, builder.build());
+        } else {
+            throw new RuntimeException("Size of heap allocation is not integer");
         }
     }
 

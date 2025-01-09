@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan.program.analysis.alias;
 
+import com.dat3m.dartagnan.program.event.core.Alloc;
 import com.dat3m.dartagnan.program.event.core.MemoryCoreEvent;
 import com.dat3m.dartagnan.program.memory.VirtualMemoryObject;
 
@@ -21,6 +22,15 @@ public class VirtualAliasAnalysis implements AliasAnalysis {
     @Override
     public boolean mustAlias(MemoryCoreEvent e1, MemoryCoreEvent e2) {
         return samePhysicalAddress(e1, e2) || wrappedAnalysis.mustAlias(e1, e2);
+    }
+
+    @Override
+    public boolean mayAlias(Alloc a, MemoryCoreEvent e) {
+        return wrappedAnalysis.mayAlias(a, e);
+    }
+    @Override
+    public boolean mustAlias(Alloc a, MemoryCoreEvent e) {
+        return wrappedAnalysis.mustAlias(a, e);
     }
 
     // GPU memory models make use of virtual addresses.

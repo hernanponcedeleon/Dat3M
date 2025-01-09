@@ -620,6 +620,46 @@ public class AnalysisTest {
         assertAlias(MAY, a, me3, me4);
     }
 
+    @Test
+    public void fieldinsensitive6() throws InvalidConfigurationException {
+        program6(FIELD_INSENSITIVE, MAY, MUST, NONE, NONE);
+    }
+
+    private void program6(Alias method, Result... expect) throws InvalidConfigurationException {
+        ProgramBuilder b = ProgramBuilder.forLanguage(SourceLanguage.LITMUS);
+        MemoryObject x = b.newMemoryObject("x", 1);
+
+        b.newThread(0);
+        Register r0 = b.getOrNewRegister(0, "r0");
+        Alloc a = newHeapAlloc(r0, 2);
+        b.addChild(0, a);
+        Store e0 = newStore(r0, value(1));
+        b.addChild(0, e0);
+        Register r1 = b.getOrNewRegister(0, "r1");
+        Load e1 = newLoad(r1, x);
+        b.addChild(0, e1);
+
+        Program program = b.build();
+        for (Event e : program.getThreadEvents()) {
+            System.out.println(e.getClass());
+        }
+        System.out.println("----------------");
+        AliasAnalysis aa = analyze(program, method);
+        for (Event e : program.getThreadEvents()) {
+            System.out.println(e.getClass());
+        }
+        System.out.println("----------------");
+        System.out.println("----------------");
+        Alloc al = (Alloc) findMatchingEventAfterProcessing(program, a);
+        MemoryCoreEvent me0 = (MemoryCoreEvent) findMatchingEventAfterProcessing(program, e0);
+        MemoryCoreEvent me1 = (MemoryCoreEvent) findMatchingEventAfterProcessing(program, e1);
+
+        assertAlias(expect[0], aa, al, me0);
+        assertAlias(expect[1], aa, al, me0);
+        assertAlias(expect[2], aa, al, me1);
+        assertAlias(expect[3], aa, al, me1);
+    }
+
     private Load newLoad(Register value, Expression address) {
         return EventFactory.newLoad(value, address);
     }
@@ -630,6 +670,10 @@ public class AnalysisTest {
 
     private Store newStore(Expression address, Expression value) {
         return EventFactory.newStore(address, value);
+    }
+
+    private Alloc newHeapAlloc(Register resultReg, int size) {
+        return EventFactory.newAlloc(resultReg, types.getByteType(), value(size), true, true);
     }
 
     private Expression value(long v) {
@@ -647,6 +691,7 @@ public class AnalysisTest {
     private AliasAnalysis analyze(Program program, Alias method) throws InvalidConfigurationException {
         Configuration configuration = Configuration.builder()
                 .setOption(ALIAS_METHOD, method.asStringOption())
+                .setOption(PRINT_PROGRAM_BEFORE_PROCESSING, "true")
                 .build();
         ProcessingManager.fromConfig(configuration).run(program);
         Context analysisContext = Context.create();
@@ -657,6 +702,23 @@ public class AnalysisTest {
     }
 
     private void assertAlias(Result expect, AliasAnalysis a, MemoryCoreEvent x, MemoryCoreEvent y) {
+        switch (expect) {
+            case NONE:
+                assertFalse(a.mayAlias(x, y));
+                assertFalse(a.mustAlias(x, y));
+                break;
+            case MAY:
+                assertTrue(a.mayAlias(x, y));
+                assertFalse(a.mustAlias(x, y));
+                break;
+            case MUST:
+                assertTrue(a.mayAlias(x, y));
+                assertTrue(a.mustAlias(x, y));
+                break;
+        }
+    }
+
+    private void assertAlias(Result expect, AliasAnalysis a, Alloc x, MemoryCoreEvent y) {
         switch (expect) {
             case NONE:
                 assertFalse(a.mayAlias(x, y));

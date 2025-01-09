@@ -4,6 +4,7 @@ import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.RegWriter;
+import com.dat3m.dartagnan.program.event.core.Alloc;
 import com.dat3m.dartagnan.program.event.core.MemoryCoreEvent;
 import com.dat3m.dartagnan.wmm.utils.graph.mutable.MapEventGraph;
 import com.dat3m.dartagnan.wmm.utils.graph.mutable.MutableEventGraph;
@@ -68,6 +69,16 @@ public class EqualityAliasAnalysis implements AliasAnalysis {
 
     @Override
     public boolean mayAlias(MemoryCoreEvent a, MemoryCoreEvent b) {
+        return true;
+    }
+
+    @Override
+    public boolean mustAlias(Alloc a, MemoryCoreEvent e) {
+        return false;
+    }
+
+    @Override
+    public boolean mayAlias(Alloc a, MemoryCoreEvent e) {
         return true;
     }
 }

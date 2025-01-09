@@ -178,6 +178,16 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
     }
 
     @Override
+    public boolean mustAlias(Alloc a, MemoryCoreEvent e) {
+        return false;
+    }
+
+    @Override
+    public boolean mayAlias(Alloc a, MemoryCoreEvent e) {
+        return true;
+    }
+
+    @Override
     public Graphviz getGraphVisualization() {
         return graphviz;
     }

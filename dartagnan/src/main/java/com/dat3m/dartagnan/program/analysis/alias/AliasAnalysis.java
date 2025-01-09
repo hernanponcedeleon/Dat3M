@@ -4,8 +4,7 @@ import com.dat3m.dartagnan.configuration.Alias;
 import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.event.MemoryEvent;
-import com.dat3m.dartagnan.program.event.core.Init;
-import com.dat3m.dartagnan.program.event.core.MemoryCoreEvent;
+import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.event.metadata.SourceLocation;
 import com.dat3m.dartagnan.utils.Utils;
 import com.dat3m.dartagnan.verification.Context;
@@ -33,6 +32,16 @@ public interface AliasAnalysis {
     boolean mustAlias(MemoryCoreEvent a, MemoryCoreEvent b);
 
     boolean mayAlias(MemoryCoreEvent a, MemoryCoreEvent b);
+
+    boolean mustAlias(Alloc alloc, MemoryCoreEvent e);
+
+    boolean mayAlias(Alloc alloc, MemoryCoreEvent e);
+
+    default void checkHeapAlloc(Alloc alloc) {
+        if (!alloc.isHeapAllocation()) {
+            throw new IllegalArgumentException("Alias analysis can be performed only for heap allocation");
+        }
+    }
 
     static AliasAnalysis fromConfig(Program program, Context analysisContext, Configuration config) throws InvalidConfigurationException {
         Config c = new Config(config);
@@ -110,6 +119,16 @@ public interface AliasAnalysis {
         @Override
         public boolean mayAlias(MemoryCoreEvent a, MemoryCoreEvent b) {
             return a1.mayAlias(a, b) && a2.mayAlias(a, b);
+        }
+
+        @Override
+        public boolean mustAlias(Alloc alloc, MemoryCoreEvent e) {
+            return a1.mustAlias(alloc, e) || a2.mustAlias(alloc, e);
+        }
+
+        @Override
+        public boolean mayAlias(Alloc alloc, MemoryCoreEvent e) {
+            return a1.mayAlias(alloc, e) && a2.mayAlias(alloc, e);
         }
 
         @Override

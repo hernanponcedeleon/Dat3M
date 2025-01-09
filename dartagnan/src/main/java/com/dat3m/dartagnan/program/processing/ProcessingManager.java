@@ -157,7 +157,10 @@ public class ProcessingManager implements ProgramProcessor {
     // ==================================================
 
     public void run(Program program) {
-        programProcessors.forEach(p -> p.run(program));
+        programProcessors.forEach(p -> {
+                p.run(program);
+                p.printEvents(program);
+        });
     }
 
 

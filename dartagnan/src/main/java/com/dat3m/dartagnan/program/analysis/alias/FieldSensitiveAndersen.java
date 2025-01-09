@@ -56,6 +56,8 @@ public class FieldSensitiveAndersen implements AliasAnalysis {
     private final Map<Object, List<Offset<Collector>>> stores = new HashMap<>();
     ///Result sets
     private final Map<MemoryCoreEvent, ImmutableSet<Location>> eventAddressSpaceMap = new HashMap<>();
+    ///Maps alloc events to the locations allocated by them
+    private final Map<Alloc, ImmutableSet<Location>> allocAddressSpaceMap = new HashMap<>();
 
     // ================================ Construction ================================
 
@@ -75,19 +77,39 @@ public class FieldSensitiveAndersen implements AliasAnalysis {
     }
 
     @Override
+    public boolean mayAlias(Alloc alloc, MemoryCoreEvent e) {
+        checkHeapAlloc(alloc);
+        return !Sets.intersection(getAllocatedAddresses(alloc), getMaxAddressSet(e)).isEmpty();
+    }
+
+    @Override
     public boolean mustAlias(MemoryCoreEvent x, MemoryCoreEvent y) {
         Set<Location> a = getMaxAddressSet(x);
         return a.size() == 1 && a.containsAll(getMaxAddressSet(y));
+    }
+
+    @Override
+    public boolean mustAlias(Alloc alloc, MemoryCoreEvent e) {
+        checkHeapAlloc(alloc);
+        return getAllocatedAddresses(alloc).containsAll(getMaxAddressSet(e));
     }
 
     private ImmutableSet<Location> getMaxAddressSet(MemoryEvent e) {
         return eventAddressSpaceMap.get(e);
     }
 
+    private ImmutableSet<Location> getAllocatedAddresses(Alloc a) {
+        return allocAddressSpaceMap.get(a);
+    }
+
     // ================================ Processing ================================
 
     private void run(Program program) {
         checkArgument(program.isCompiled(), "The program must be compiled first.");
+        List<Alloc> allocs = program.getThreadEvents(Alloc.class);
+        for (Alloc a : allocs) {
+            processAllocs(a);
+        }
         List<MemoryCoreEvent> memEvents = program.getThreadEvents(MemoryCoreEvent.class);
         for (MemoryCoreEvent e : memEvents) {
             processLocs(e);
@@ -101,6 +123,22 @@ public class FieldSensitiveAndersen implements AliasAnalysis {
         }
         for (MemoryCoreEvent e : memEvents) {
             processResults(e);
+        }
+    }
+
+    protected void processAllocs(Alloc a) {
+        if (!a.isHeapAllocation()) {
+            return;
+        }
+        if (a.getAllocationSize() instanceof IntLiteral i) {
+            MemoryObject base = a.getAllocatedObject();
+            ImmutableSet.Builder<Location> builder = new ImmutableSet.Builder<>();
+            for (int offset = 0; offset < i.getValueAsInt(); offset++) {
+                builder.add(new Location(base, offset));
+            }
+            allocAddressSpaceMap.put(a, builder.build());
+        } else {
+            throw new RuntimeException("Size of heap allocation is not integer");
         }
     }
 
