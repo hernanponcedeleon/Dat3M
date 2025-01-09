@@ -12,15 +12,6 @@ public interface ProgramProcessor {
 
     void run(Program program);
 
-    default void printEvents(Program program) {
-        System.out.println("-----------------------------------");
-        System.out.println(this.getClass());
-        try {
-            program.getThreadEvents().stream().map(e -> e.getClass()).forEach(System.out::println);
-        } catch (IllegalStateException e) {}
-        System.out.println("-----------------------------------");
-    }
-
     // =========================== Static utility ===========================
 
     enum Target {

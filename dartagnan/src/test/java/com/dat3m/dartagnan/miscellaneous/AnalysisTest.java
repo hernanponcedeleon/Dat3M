@@ -621,8 +621,13 @@ public class AnalysisTest {
     }
 
     @Test
+    public void fieldsensitive6() throws InvalidConfigurationException {
+        program6(FIELD_SENSITIVE, MUST, NONE);
+    }
+
+    @Test
     public void fieldinsensitive6() throws InvalidConfigurationException {
-        program6(FIELD_INSENSITIVE, MAY, MUST, NONE, NONE);
+        program6(FIELD_INSENSITIVE, MAY, NONE);
     }
 
     private void program6(Alias method, Result... expect) throws InvalidConfigurationException {
@@ -638,26 +643,16 @@ public class AnalysisTest {
         Register r1 = b.getOrNewRegister(0, "r1");
         Load e1 = newLoad(r1, x);
         b.addChild(0, e1);
+        b.addChild(0, EventFactory.newFree(r0));
 
         Program program = b.build();
-        for (Event e : program.getThreadEvents()) {
-            System.out.println(e.getClass());
-        }
-        System.out.println("----------------");
         AliasAnalysis aa = analyze(program, method);
-        for (Event e : program.getThreadEvents()) {
-            System.out.println(e.getClass());
-        }
-        System.out.println("----------------");
-        System.out.println("----------------");
         Alloc al = (Alloc) findMatchingEventAfterProcessing(program, a);
         MemoryCoreEvent me0 = (MemoryCoreEvent) findMatchingEventAfterProcessing(program, e0);
         MemoryCoreEvent me1 = (MemoryCoreEvent) findMatchingEventAfterProcessing(program, e1);
 
         assertAlias(expect[0], aa, al, me0);
-        assertAlias(expect[1], aa, al, me0);
-        assertAlias(expect[2], aa, al, me1);
-        assertAlias(expect[3], aa, al, me1);
+        assertAlias(expect[1], aa, al, me1);
     }
 
     private Load newLoad(Register value, Expression address) {
@@ -691,7 +686,6 @@ public class AnalysisTest {
     private AliasAnalysis analyze(Program program, Alias method) throws InvalidConfigurationException {
         Configuration configuration = Configuration.builder()
                 .setOption(ALIAS_METHOD, method.asStringOption())
-                .setOption(PRINT_PROGRAM_BEFORE_PROCESSING, "true")
                 .build();
         ProcessingManager.fromConfig(configuration).run(program);
         Context analysisContext = Context.create();

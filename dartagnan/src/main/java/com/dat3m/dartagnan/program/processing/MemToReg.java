@@ -58,7 +58,6 @@ public class MemToReg implements FunctionProcessor {
         for (final Alloc allocation : function.getEvents(Alloc.class)) {
             // Allocations will usually not have users.  Otherwise, their object is not promotable.
             if (allocation.getUsers().isEmpty()) {
-                System.out.println("No users");
                 matcher.reachabilityGraph.put(allocation, new HashSet<>());
             }
         }
@@ -78,9 +77,6 @@ public class MemToReg implements FunctionProcessor {
         for (final Alloc allocation : function.getEvents(Alloc.class)) {
             if (matcher.reachabilityGraph.containsKey(allocation)) {
                 final Map<Integer, Type> registerTypes = getPrimitiveReplacementTypes(allocation);
-                if (registerTypes == null) {
-                    System.out.println("No register types");
-                }
                 if (registerTypes != null) {
                     replacingRegisters.put(allocation, new HashMap<>(Maps.transformValues(registerTypes, function::newRegister)));
                     boolean deleted = allocation.tryDelete();
