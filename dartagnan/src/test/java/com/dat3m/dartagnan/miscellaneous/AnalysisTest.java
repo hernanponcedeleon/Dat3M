@@ -622,27 +622,32 @@ public class AnalysisTest {
 
     @Test
     public void fieldsensitive6() throws InvalidConfigurationException {
-        program6(FIELD_SENSITIVE, MUST, NONE);
+        program6(FIELD_SENSITIVE, MUST, NONE, MUST, NONE);
     }
 
     @Test
     public void fieldinsensitive6() throws InvalidConfigurationException {
-        program6(FIELD_INSENSITIVE, MAY, NONE);
+        program6(FIELD_INSENSITIVE, MAY, NONE, MAY, MAY);
     }
 
     private void program6(Alias method, Result... expect) throws InvalidConfigurationException {
         ProgramBuilder b = ProgramBuilder.forLanguage(SourceLanguage.LITMUS);
+
         MemoryObject x = b.newMemoryObject("x", 1);
 
         b.newThread(0);
         Register r0 = b.getOrNewRegister(0, "r0");
         Alloc a = newHeapAlloc(r0, 2);
         b.addChild(0, a);
-        Store e0 = newStore(r0, value(1));
+        Store e0 = newStore(r0, value(2));
         b.addChild(0, e0);
         Register r1 = b.getOrNewRegister(0, "r1");
         Load e1 = newLoad(r1, x);
         b.addChild(0, e1);
+        Store e2 = newStore(plus(r0, 1), r1);
+        b.addChild(0, e2);
+        Store e3 = newStore(plus(r0, 2), r1);
+        b.addChild(0, e3);
         b.addChild(0, EventFactory.newFree(r0));
 
         Program program = b.build();
@@ -650,9 +655,13 @@ public class AnalysisTest {
         Alloc al = (Alloc) findMatchingEventAfterProcessing(program, a);
         MemoryCoreEvent me0 = (MemoryCoreEvent) findMatchingEventAfterProcessing(program, e0);
         MemoryCoreEvent me1 = (MemoryCoreEvent) findMatchingEventAfterProcessing(program, e1);
+        MemoryCoreEvent me2 = (MemoryCoreEvent) findMatchingEventAfterProcessing(program, e2);
+        MemoryCoreEvent me3 = (MemoryCoreEvent) findMatchingEventAfterProcessing(program, e3);
 
         assertAlias(expect[0], aa, al, me0);
         assertAlias(expect[1], aa, al, me1);
+        assertAlias(expect[2], aa, al, me2);
+        assertAlias(expect[3], aa, al, me3);
     }
 
     private Load newLoad(Register value, Expression address) {

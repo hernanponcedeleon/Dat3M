@@ -85,13 +85,15 @@ public class FieldSensitiveAndersen implements AliasAnalysis {
     @Override
     public boolean mustAlias(MemoryCoreEvent x, MemoryCoreEvent y) {
         Set<Location> a = getMaxAddressSet(x);
-        return a.size() == 1 && a.containsAll(getMaxAddressSet(y));
+        Set<Location> b = getMaxAddressSet(y);
+        return a.size() == 1 && b.size() == 1 && a.containsAll(b);
     }
 
     @Override
     public boolean mustAlias(Alloc alloc, MemoryCoreEvent e) {
         checkHeapAlloc(alloc);
-        return getAllocatedAddresses(alloc).containsAll(getMaxAddressSet(e));
+        return getMaxAddressSet(e).isEmpty() ?
+                false : getAllocatedAddresses(alloc).containsAll(getMaxAddressSet(e));
     }
 
     private ImmutableSet<Location> getMaxAddressSet(MemoryEvent e) {
