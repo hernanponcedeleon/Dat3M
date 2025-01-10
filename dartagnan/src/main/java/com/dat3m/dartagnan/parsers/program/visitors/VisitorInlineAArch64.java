@@ -6,8 +6,6 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 
-import org.antlr.v4.runtime.tree.TerminalNode;
-
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.Type;
@@ -76,12 +74,8 @@ public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
         this.pendingRegisters = new LinkedList<>();
         this.armToLlvmMap = new HashMap<>();
         this.registerNames = new LinkedList<>();
-        // System.out.println("I am parsing with " + argumentsRegisterAddresses);
-        // List<Register> registers = argumentsRegisterAddresses.stream()
-        //         .filter(expr -> expr instanceof Register)
-        //         .map(expr -> (Register) expr)
-        //         .collect(Collectors.toList());
         this.fnParameters = new LinkedList<>(argumentsRegisterAddresses); //reverseAndGetFnParams(llvmFunction.getParameterRegisters()); // these hold the original fn arguments
+        // todo set this to empty if we see something like (bv 0), as it is going to be a useless fence
         this.returnValuesNumber = initReturnValuesNumberInitReturnRegisterTypes(returnType);
         assert (this.returnValuesNumber >= 0);
         // populateRegisters(armToLlvmMap);
@@ -94,8 +88,8 @@ public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
     /* given the VariableInline as String it picks up if it is a 32 or 64 bit */
     public Type getArmVariableSize(String variable) {
         int width = - 1;
-        if (variable.length() == 2) {
-            return this.fnParameters.get(0).getType(); // get type of $n, which is fnParams(0)
+        if (variable.length() == 2 || variable.length() == 4) { // can be either $n or [$n]
+            return this.fnParameters.getLast().getType(); // get type of $n, which is fnParams(0)
         } else if (variable.startsWith("${") && variable.endsWith("}")) {
             if (isPartOfReturnRegister(variable)) {
                 int number = Integer.parseInt(Character.toString(variable.charAt(2)));
@@ -233,6 +227,7 @@ public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
     }
 
     // used if the return is AggregateType (size > 1)
+    // has to be changed for armv7
     private boolean isPartOfReturnRegister(String registerName) {
         if (!(registerName.startsWith("${") || registerName.endsWith("}"))) {
             return false;
@@ -308,9 +303,12 @@ public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
 
     @Override
     public Object visitAsm(InlineAArch64Parser.AsmContext ctx) {
-        String[] inlineAsmText = ctx.getText().split("\\\\0A");
+        int commaPos = ctx.getText().lastIndexOf("\",\"");
+        String[] instructions = ctx.getText().substring(0, commaPos).split("\\\\0A"); // Instructions part
+        String[] clobbers = ctx.getText().substring(commaPos + 3, ctx.getText().length() - 1).split(","); // Clobbers part, excluding the surrounding quotes
         boolean pointerAdded = false;
-        for (String instruction : inlineAsmText) {
+        for (String instruction : instructions) {
+            System.out.println(instruction);
             int len = instruction.length();
             for (int i = 0; i < len; i++) {
                 char c = instruction.charAt(i);
@@ -338,6 +336,8 @@ public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
                         if (!registerNames.contains(register)) {
                             this.registerNames.add(register);
                         }
+
+                        pointerAdded = true;
                         i = closeIndex + 1;
                     }
                 }
@@ -347,90 +347,146 @@ public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
         if (pointerAdded) { // this is used to check if the list has a $n. I want this one to be the last element in the list
             String pointerRegister = registerNames.removeFirst();
             registerNames.addLast(pointerRegister);
-
         }
-        // System.out.println("Register names are" + this.registerNames);
-        // now we have all of the register names, we have to map following the rule
+        // now for the clobber part
+        if (!registerNames.isEmpty() && !this.fnParameters.isEmpty()) {
+            System.out.println("RegisterNames is " + registerNames);
+            int registerNameIndex = 0;
+            for (String clobber : clobbers) {
+                if (clobber.matches("\\d+")) {
+                    // https://llvm.org/docs/LangRef.html#input-constraints
+                    // For example, a constraint string of “=r,0” says to assign a register for output, and use that register as an input as well (it being the 0’th constraint).
+                    // so we have to get the i-th return Value and map it to fnParams
+                    int number = Integer.parseInt(clobber);
+                    if (number >= 0 && number <= this.returnValuesNumber) {
+                        String name = registerNames.get(number);
+                        // Map the register to the corresponding function parameter
+                        Register toBeChanged = getOrNewRegister(name);
+                        events.add(EventFactory.newLocal(toBeChanged, this.fnParameters.get(registerNameIndex - this.returnValuesNumber)));
+                    } else {
+                        System.err.println("The number provided in the clobber is not a valid index for any return value");
+                    }
+                } else if (clobber.equals("=*m")) {
+                    //if clobber is =*m it means that such pointer is a memory location, so we do not map to any register, we just increase registerNameIndex as we don't want to pick it up
+                    registerNameIndex++;
+                } else if (!clobber.startsWith("~")) {
+                    System.out.println("Evaluating clobber " + clobber + " with registerNameIndex " + registerNameIndex);
+                    // if it is a valid clobber create the register
+                    String registerName = registerNames.get(registerNameIndex);
+                    Register newRegister = getOrNewRegister(registerName);
+                    armToLlvmMap.put(this.registerNames.get(registerNameIndex), newRegister);
+                    if (clobber.equals("=&r") || clobber.equals("=r")) {
+                        // USELESS initialize to 0 
+                        // Type type = getTypeGivenReturnTypeString(this.returnRegisterTypes[registerNameIndex]);
+                        // events.add(EventFactory.newLocal(newRegister, expressions.parseValue("0", (IntegerType) type)));
+                        // maps to returnValue, so we do nothing(?)
+                    } else if (clobber.equals("r") || clobber.equals("Q")) {
+                        // it has to be mapped to fnParams do as such
+                        events.add(EventFactory.newLocal(newRegister, this.fnParameters.get(registerNameIndex - this.returnValuesNumber)));
+                    } else {
+                        System.out.println("New type of clobber found, you have to add it! " + clobber);
+                    }
+                    registerNameIndex++;
+                }
+            }
+        }
+        // new (AGAIN) rule
+        // clobbers can be either 
+        // =&r which means I can write into => going to map to the returnValues
+        // r which means read only
+        // Q is a memory address, or can also be an r if I also have =*m like in ck
+
+        /*
+         * index = 0
+         * for each clobber in clobbers:
+         *      if clobber == '&=r':
+         *          allocate returnValue register
+         *          index += 1
+         *      elif clobber == 'r' || clobber == 'Q':
+         *          map clobbers[index] to fnParams(index-k ) or something
+         */
+        // in the end I'd expect something like "=&r,=&r,=&r,r,Q" to be 3 return values, clobbers[3] maps to fnParams[0] and clobbers[4] maps to fnParams[1] 
+        // old rule I guess
         // 1. first return values
         // 2. all of the other ones to fnParams ( if I see a $n it should be a pointer so has to be last one!)
         // create the registers 
         // newRegister WIth asm name <- fnParams
-        if (!this.registerNames.isEmpty()) {
-            int index = 0;
-            if (this.returnValuesNumber == 4) { // 'add' corner case
-                for (int i = 0; i < this.returnValuesNumber; i++) {
-                    Register tmp = getOrNewRegister(this.registerNames.get(index));
-                    if (i == 1 || i == 2) {
-                        events.add(EventFactory.newLocal(tmp, expressions.parseValue("0", this.integerType))); // maybe it is not necessary
-                    }
-                    if (i == 3) {
-                        events.add(EventFactory.newLocal(tmp, this.fnParameters.get(1)));
-                    }
-                }
-            } else {
-                if (this.returnValuesNumber == 1) { // if we have just one returnValue we allocate
-                    // else is handled by the visitMetadata 
-                    Register newRegister = getOrNewRegister(this.registerNames.get(index));
-                    armToLlvmMap.put(this.registerNames.get(index), newRegister);
-                    events.add(EventFactory.newLocal(newRegister, this.returnRegister));
-                } else{ // trying initializing with 0 to suppress the warning -- does not work
-                    while (index < this.returnValuesNumber){
-                    Register newRegister = getOrNewRegister(this.registerNames.get(index));
-                    armToLlvmMap.put(this.registerNames.get(index), newRegister);
-                    Type type = getTypeGivenReturnTypeString(this.returnRegisterTypes[index]);
-                    events.add(EventFactory.newLocal(newRegister,expressions.parseValue("0", (IntegerType) type)));
-                    index++;
-                    }
-                }
-                // now we can allocate the ('args') part
-                index = this.returnValuesNumber;
-                if (this.fnParameters != null) {
-                    for (Expression register : this.fnParameters) {
-                        Register newRegister = getOrNewRegister(this.registerNames.get(index));
-                        armToLlvmMap.put(this.registerNames.get(index), newRegister);
-                        events.add(EventFactory.newLocal(newRegister, (Register) register));
-                        index++;
-                    }
-                }
-            }
-        }
+        // if (!this.registerNames.isEmpty()) {
+        //     int index = 0;
+        //     if (this.returnValuesNumber == 4) { // 'add' corner case
+        //         for (int i = 0; i < this.returnValuesNumber; i++) {
+        //             Register tmp = getOrNewRegister(this.registerNames.get(index));
+        //             if (i == 1 || i == 2) {
+        //                 events.add(EventFactory.newLocal(tmp, expressions.parseValue("0", this.integerType))); // maybe it is not necessary
+        //             }
+        //             if (i == 3) {
+        //                 events.add(EventFactory.newLocal(tmp, this.fnParameters.get(1)));
+        //             }
+        //         }
+        //     } else {
+        //         if (this.returnValuesNumber == 1) { // if we have just one returnValue we allocate
+        //             // else is handled by the visitMetadata 
+        //             Register newRegister = getOrNewRegister(this.registerNames.get(index));
+        //             armToLlvmMap.put(this.registerNames.get(index), newRegister);
+        //             events.add(EventFactory.newLocal(newRegister, expressions.parseValue("0", this.integerType)));
+        //         } else { // trying initializing with 0 to suppress the warning -- does not work
+        //             while (index < this.returnValuesNumber) {
+        //                 Register newRegister = getOrNewRegister(this.registerNames.get(index));
+        //                 armToLlvmMap.put(this.registerNames.get(index), newRegister);
+        //                 Type type = getTypeGivenReturnTypeString(this.returnRegisterTypes[index]);
+        //                 events.add(EventFactory.newLocal(newRegister, expressions.parseValue("0", (IntegerType) type)));
+        //                 index++;
+        //             }
+        //         }
+        //         // now we can allocate the ('args') part
+        //         index = this.returnValuesNumber;
+        //         if (this.fnParameters != null) {
+        //             for (Expression register : this.fnParameters) {
+        //                 Register newRegister = getOrNewRegister(this.registerNames.get(index));
+        //                 armToLlvmMap.put(this.registerNames.get(index), newRegister);
+        //                 events.add(EventFactory.newLocal(newRegister, register));
+        //                 index++;
+        //             }
+        //         }
+        //     }
+        // }
         System.out.println("Currently the map contains " + armToLlvmMap);
         return visitChildren(ctx);
     }
 
     @Override
     public Object visitLoadReg(InlineAArch64Parser.LoadRegContext ctx) {
-        Register freshReturnRegister = (Register) ctx.register(0).accept(this);
-        Register directMemoryAccess = (Register) ctx.register(1).accept(this);
-        events.add(EventFactory.newLoad(freshReturnRegister, directMemoryAccess));
-        updateReturnRegisterIfModified(freshReturnRegister);
+        Register register = (Register) ctx.register(0).accept(this);
+        Register address = (Register) ctx.register(1).accept(this);
+        events.add(EventFactory.newLoad(register, address));
+        updateReturnRegisterIfModified(register);
         return visitChildren(ctx);
     }
 
     @Override
     public Object visitLoadAcquireReg(InlineAArch64Parser.LoadAcquireRegContext ctx) {
-        Register freshReturnRegister = (Register) ctx.register(0).accept(this);
-        Register directMemoryAccess = (Register) ctx.register(1).accept(this);
-        events.add(EventFactory.newLoadWithMo(freshReturnRegister, directMemoryAccess, Tag.ARMv8.MO_ACQ));
-        updateReturnRegisterIfModified(freshReturnRegister);
+        Register register = (Register) ctx.register(0).accept(this);
+        Register address = (Register) ctx.register(1).accept(this);
+        events.add(EventFactory.newLoadWithMo(register, address, Tag.ARMv8.MO_ACQ));
+        updateReturnRegisterIfModified(register);
         return visitChildren(ctx);
     }
 
     @Override
     public Object visitLoadExclusiveReg(InlineAArch64Parser.LoadExclusiveRegContext ctx) {
-        Register freshReturnRegister = (Register) ctx.register(0).accept(this);
-        Register directMemoryAccess = (Register) ctx.register(1).accept(this);
-        events.add(EventFactory.newRMWLoadExclusive(freshReturnRegister, directMemoryAccess));
-        updateReturnRegisterIfModified(freshReturnRegister);
+        Register register = (Register) ctx.register(0).accept(this);
+        Register address = (Register) ctx.register(1).accept(this);
+        events.add(EventFactory.newRMWLoadExclusive(register, address));
+        updateReturnRegisterIfModified(register);
         return visitChildren(ctx);
     }
 
     @Override
     public Object visitLoadAcquireExclusiveReg(InlineAArch64Parser.LoadAcquireExclusiveRegContext ctx) {
-        Register freshReturnRegister = (Register) ctx.register(0).accept(this);
-        Register directMemoryAccess = (Register) ctx.register(1).accept(this);
-        events.add(EventFactory.newRMWLoadExclusiveWithMo(freshReturnRegister, directMemoryAccess, Tag.ARMv8.MO_ACQ));
-        updateReturnRegisterIfModified(freshReturnRegister);
+        Register register = (Register) ctx.register(0).accept(this);
+        Register address = (Register) ctx.register(1).accept(this);
+        events.add(EventFactory.newRMWLoadExclusiveWithMo(register, address, Tag.ARMv8.MO_ACQ));
+        updateReturnRegisterIfModified(register);
         return visitChildren(ctx);
     }
 
@@ -484,35 +540,35 @@ public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
 
     @Override
     public Object visitStoreReg(InlineAArch64Parser.StoreRegContext ctx) {
-        Register firstRegister = (Register) ctx.register(0).accept(this);
-        Register secondRegister = (Register) ctx.register(1).accept(this);
-        events.add(EventFactory.newStore(secondRegister, firstRegister));
+        Register value = (Register) ctx.register(0).accept(this);
+        Register address = (Register) ctx.register(1).accept(this);
+        events.add(EventFactory.newStore(address, value));
         return visitChildren(ctx);
     }
 
     @Override
     public Object visitStoreReleaseReg(InlineAArch64Parser.StoreReleaseRegContext ctx) {
-        Register firstRegister = (Register) ctx.register(0).accept(this);
-        Register secondRegister = (Register) ctx.register(1).accept(this);
-        events.add(EventFactory.newStoreWithMo(secondRegister, firstRegister, Tag.ARMv8.MO_REL));
+        Register value = (Register) ctx.register(0).accept(this);
+        Register address = (Register) ctx.register(1).accept(this);
+        events.add(EventFactory.newStoreWithMo(address, value, Tag.ARMv8.MO_REL));
         return visitChildren(ctx);
     }
 
     @Override
     public Object visitStoreExclusiveRegister(InlineAArch64Parser.StoreExclusiveRegisterContext ctx) {
         Register freshResultRegister = (Register) ctx.register(0).accept(this);
-        Register firstRegister = (Register) ctx.register(1).accept(this);
-        Register secondRegister = (Register) ctx.register(2).accept(this);
-        events.add(EventFactory.Common.newExclusiveStore(freshResultRegister, secondRegister, firstRegister, Tag.ARMv8.MO_RX));
+        Register value = (Register) ctx.register(1).accept(this);
+        Register address = (Register) ctx.register(2).accept(this);
+        events.add(EventFactory.Common.newExclusiveStore(freshResultRegister, address, value, Tag.ARMv8.MO_RX));
         return visitChildren(ctx);
     }
 
     @Override
     public Object visitStoreReleaseExclusiveReg(InlineAArch64Parser.StoreReleaseExclusiveRegContext ctx) {
         Register freshResultRegister = (Register) ctx.register(0).accept(this);
-        Register firstRegister = (Register) ctx.register(1).accept(this);
-        Register secondRegister = (Register) ctx.register(2).accept(this);
-        events.add(EventFactory.Common.newExclusiveStore(freshResultRegister, secondRegister, firstRegister, Tag.ARMv8.MO_REL));
+        Register value = (Register) ctx.register(1).accept(this);
+        Register address = (Register) ctx.register(2).accept(this);
+        events.add(EventFactory.Common.newExclusiveStore(freshResultRegister, address, value, Tag.ARMv8.MO_REL));
         return visitChildren(ctx);
     }
 
@@ -586,7 +642,7 @@ public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
 
     @Override
     public Object visitRegister(InlineAArch64Parser.RegisterContext ctx) {
-        TerminalNode register = ctx.VariableInline() != null ? ctx.VariableInline() : ctx.ConstantInline();
-        return getOrNewRegister(register.getText());
+        // TerminalNode register = ctx.Register() != null ? ctx.VariableInline() : ctx.ConstantInline();
+        return getOrNewRegister(ctx.Register().getText());
     }
 }

@@ -57,7 +57,7 @@ storeReleaseReg : (StoreReleaseReg register)Comma register;
 storeExclusiveRegister : ((StoreExclusiveRegister register)Comma register)Comma register ;
 storeReleaseExclusiveReg : ((StoreReleaseExclusiveReg register)Comma register)Comma register;
 atomicAddDoubleWordRelease : (AtomicAddDoubleWordRelease register)Comma register;
-dataMemoryBarrier : DataMemoryBarrier DataMemoryBarrierOpt; //atm it is catched by the visitorLlvm so it should not be mandatory
+dataMemoryBarrier : DataMemoryBarrier DataMemoryBarrierOpt; // atm it is catched by the visitorLlvm so it should not be mandatory
 swapWordAcquire : ((SwapWordAcquire register)Comma register)Comma register;
 compare : (Compare register)Comma register;
 compareBranchNonZero : (CompareBranchNonZero register)Comma LabelReference;
@@ -80,10 +80,10 @@ yieldtask : YieldTask;
 
 // Note that since there is an isA between metaINstr and its children, in the AST you get two nodes and I think it is ok, it might be useful for analysis purposes
 metaInstr : metadataInline | clobber;
-metadataInline : OutputOpAssign | IsMemoryAddress | InputOpGeneralReg | MetadataExtraVariables;
+metadataInline : OutputOpAssign | IsMemoryAddress | InputOpGeneralReg | OverlapInOutRegister;
 
 clobber : Tilde LBrace clobberType RBrace;
 
 clobberType : ClobberMemory | ClobberModifyFlags | ClobberDirectionFlag | ClobberFlags | ClobberFloatPntStatusReg;
 
-register : VariableInline | ConstantInline;
+register : Register;
