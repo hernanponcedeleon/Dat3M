@@ -4,8 +4,8 @@ import BaseLexer;
 
 
 // instructions 
-LabelDefinition             : NumbersInline':'; // like '1:'
-AlignInline                 : '.align 'NumbersInline;
+LabelDefinition             : NumbersInline Colon; // like '1:'
+AlignInline                 : Period 'align 'NumbersInline;
 LoadReg                     : 'ldr';
 LoadAcquireReg              : 'ldar';
 LoadExclusiveReg            : 'ldxr';
@@ -37,8 +37,8 @@ YieldTask                   : 'yield'; // used to tell Hw that we're in a spinlo
 // metadata 
 OutputOpAssign              : Equals Amp GeneralPurposeReg;
 InputOpGeneralReg           : GeneralPurposeReg;
-IsMemoryAddress             : 'Q' | '*Q';
-MetadataExtraVariables      : '0' | '3'; // M3 mac produced inline with '0' in the metadata part of inline asm
+IsMemoryAddress             : 'Q' | Ast 'Q';
+OverlapInOutRegister        : '0' | '3'; // defines which returnvalue should be used both for input and output
 
 // clobbers
 ClobberMemory               : 'memory';
@@ -58,8 +58,8 @@ StartSymbol                 : 'asm';
 PrefetchStoreL1Once         : 'pstl1strm';
 NumbersInline               : [0-9]+;
 GeneralPurposeReg           : 'r'; // needed because both 'r' and '=&r' use the general purpose
-VariableInline              : '${' ( ~('}' | '$') )+ '}' ; // should match any ${*}
-ConstantInline              : '$' NumbersInline;   //if you see any $Number you state it is a constant
+Register                    : '${' ( ~('}' | '$') )+ '}' | '$' NumbersInline | '[$' NumbersInline ']'; // should match any ${*}
+// ConstantInline              : '$' NumbersInline;   //if you see any $Number you state it is a constant
 DataMemoryBarrierOpt        : 'ish' | 'ishld'; //Inner Shareable symbols
 LabelReference              : [a-zA-Z0-9_]+ ; //not sure if a label in arm can be like DD4 with capital letters, keeping them but might have to change it
 EndInstruction              :'\\0A';

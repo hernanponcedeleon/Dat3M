@@ -5,38 +5,31 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.EnumSet;
 
-import org.junit.runners.Parameterized;
-import org.sosy_lab.java_smt.SolverContextFactory;
-import org.sosy_lab.java_smt.api.SolverContext;
-import org.sosy_lab.common.ShutdownManager;
-import org.sosy_lab.common.configuration.Configuration;
-import org.sosy_lab.java_smt.SolverContextFactory.Solvers;
-import org.sosy_lab.common.configuration.InvalidConfigurationException;
-
+import static org.junit.Assert.assertEquals;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
-import static org.junit.Assert.assertEquals;
+import org.sosy_lab.common.ShutdownManager;
+import org.sosy_lab.common.configuration.Configuration;
+import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.common.log.BasicLogManager;
+import org.sosy_lab.java_smt.SolverContextFactory;
+import org.sosy_lab.java_smt.api.SolverContext;
 
 import com.dat3m.dartagnan.configuration.Arch;
+import static com.dat3m.dartagnan.configuration.Property.LIVENESS;
+import static com.dat3m.dartagnan.configuration.Property.PROGRAM_SPEC;
+import com.dat3m.dartagnan.encoding.ProverWithTracker;
+import com.dat3m.dartagnan.parsers.cat.ParserCat;
 import com.dat3m.dartagnan.parsers.program.ProgramParser;
 import com.dat3m.dartagnan.program.Program;
-import com.dat3m.dartagnan.parsers.cat.ParserCat;
 import static com.dat3m.dartagnan.utils.ResourceHelper.getRootPath;
 import static com.dat3m.dartagnan.utils.ResourceHelper.getTestResourcePath;
 import com.dat3m.dartagnan.utils.Result;
 import static com.dat3m.dartagnan.utils.Result.PASS;
-import static com.dat3m.dartagnan.utils.Result.UNKNOWN;
-import com.dat3m.dartagnan.utils.rules.Provider;
-import com.dat3m.dartagnan.utils.rules.Providers;
-import com.dat3m.dartagnan.verification.solving.RefinementSolver;
-import com.dat3m.dartagnan.encoding.ProverWithTracker;
 import com.dat3m.dartagnan.verification.VerificationTask;
-
-import static com.dat3m.dartagnan.configuration.Property.PROGRAM_SPEC;
-import static com.dat3m.dartagnan.configuration.Property.LIVENESS;
 import com.dat3m.dartagnan.verification.solving.AssumeSolver;
+import com.dat3m.dartagnan.verification.solving.RefinementSolver;
 import com.dat3m.dartagnan.wmm.Wmm;
 
 @RunWith(Parameterized.class)
@@ -65,7 +58,7 @@ public class InlineAsmTestSpinlocks {
             {"rec_mcslock", 3, PASS},
             {"rec_seqlock", 3, PASS},
             {"rec_spinlock", 3, PASS},
-            {"rwlock", 4, PASS},
+            {"rwlock", 4, PASS}, // might be 2 now
             {"semaphore", 3, PASS},
             {"seqcount", 1, PASS},
             {"seqlock", 3, PASS},
@@ -73,7 +66,8 @@ public class InlineAsmTestSpinlocks {
             {"twalock", 2, PASS},
         });
     }
-
+// arraylock, ttaslock, rwlock (with 2 now), semaphore, seqcount, seqlock, rec_spinlock(bound 1)
+// twalock, clhlock LIVENESS FAIL, rec_seqlock,  rec_mcslock, hemlock,  
     @Test
     public void testAllSolvers() throws Exception {
         long start = System.currentTimeMillis();
