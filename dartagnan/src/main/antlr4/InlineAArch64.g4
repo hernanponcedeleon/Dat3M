@@ -25,7 +25,7 @@ instr
     | storeReleaseExclusiveReg
     | storeReleaseReg
     | atomicAddDoubleWordRelease
-//    | dataMemoryBarrier captured by llvm + not needed if target is ARMv8
+    | dataMemoryBarrier 
     | swapWordAcquire
     | compare
     | compareBranchNonZero
@@ -44,7 +44,6 @@ instr
 
 // rules divised like this in order to generate single visitors
 loadReg : (LoadReg register)Comma register;
-// register : register | ConstantInline;
 loadAcquireReg : (LoadAcquireReg register)Comma register;
 loadExclusiveReg : (LoadExclusiveReg register)Comma register;
 loadAcquireExclusiveReg : (LoadAcquireExclusiveReg register)Comma register;
