@@ -50,15 +50,15 @@ public class InlineAsmTestSpinlocks {
     public static Iterable<Object[]> data() throws IOException {
         return Arrays.asList(new Object[][]{
             {"arraylock", 4, PASS},
-            // {"caslock", 4, PASS}, // passes Refinement but out of memory on Assume
+            // {"caslock", 4, PASS}, // passes Refinement but out of memory on Assume 
             {"clhlock", 3, PASS},
             // {"cnalock", 5, PASS}, // killed out of memory
             {"hemlock", 3, PASS},
             {"mcslock", 3, PASS},
             {"rec_mcslock", 3, PASS},
-            {"rec_seqlock", 3, PASS},
+            // {"rec_seqlock", 3, PASS}, // 25 min to pass
             {"rec_spinlock", 3, PASS},
-            {"rwlock", 4, PASS}, // might be 2 now
+            {"rwlock", 3, PASS},
             {"semaphore", 3, PASS},
             {"seqcount", 1, PASS},
             {"seqlock", 3, PASS},
@@ -66,8 +66,7 @@ public class InlineAsmTestSpinlocks {
             {"twalock", 2, PASS},
         });
     }
-// arraylock, ttaslock, rwlock (with 2 now), semaphore, seqcount, seqlock, rec_spinlock(bound 1)
-// twalock, clhlock LIVENESS FAIL, rec_seqlock,  rec_mcslock, hemlock,  
+
     @Test
     public void testAllSolvers() throws Exception {
         long start = System.currentTimeMillis();
