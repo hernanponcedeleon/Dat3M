@@ -8,7 +8,7 @@ LabelDefinition             : NumbersInline Colon; // like '1:'
 AlignInline                 : Period 'align 'NumbersInline;
 LoadReg                     : 'ldr';
 LoadAcquireReg              : 'ldar';
-LoadExclusiveReg            : 'ldxr';
+LoadExclusiveReg            : 'ldxr' | 'ldrex';
 LoadAcquireExclusiveReg     : 'ldaxr';
 Add                         : 'add';
 Sub                         : 'sub';
@@ -17,11 +17,11 @@ And                         : 'and';
 Compare                     : 'cmp';
 CompareBranchNonZero        : 'cbnz';
 BranchEqual                 : 'b.eq';
-BranchNotEqual              : 'b.ne';
+BranchNotEqual              : 'b.ne' | 'bne';
 SetEventLocally             : 'sevl';
 WaitForEvent                : 'wfe';
 StoreReg                    : 'str';
-StoreExclusiveRegister      : 'stxr';
+StoreExclusiveRegister      : 'stxr' | 'strex';
 StoreReleaseExclusiveReg    : 'stlxr';
 StoreReleaseReg             : 'stlr';
 AtomicAddDoubleWordRelease  : 'staddl';
@@ -58,7 +58,7 @@ StartSymbol                 : 'asm';
 PrefetchStoreL1Once         : 'pstl1strm';
 NumbersInline               : [0-9]+;
 GeneralPurposeReg           : 'r'; // needed because both 'r' and '=&r' use the general purpose
-Register                    : '${' ( ~('}' | '$') )+ '}' | '$' NumbersInline | '[$' NumbersInline ']'; // should match any ${*}
+Register                    : '${' ( ~('}' | '$') )+ '}' | '$' NumbersInline | '[$' NumbersInline ']' | '#' NumbersInline; // should match any ${*}
 // ConstantInline              : '$' NumbersInline;   //if you see any $Number you state it is a constant
 DataMemoryBarrierOpt        : 'ish' | 'ishld'; //Inner Shareable symbols
 LabelReference              : [a-zA-Z0-9_]+ ; //not sure if a label in arm can be like DD4 with capital letters, keeping them but might have to change it

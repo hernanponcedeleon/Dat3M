@@ -6,6 +6,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
@@ -89,27 +90,46 @@ public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
     }
 
     /* given the VariableInline as String it picks up if it is a 32 or 64 bit */
-    public Type getArmVariableSize(String variable) {
-        int width = - 1;
-        if (variable.length() == 2 || variable.length() == 4) { // can be either $n or [$n]
-            return this.fnParameters.getLast().getType(); // get type of $n, which is fnParams[-1]
-        } else if (variable.startsWith("${") && variable.endsWith("}")) {
-            if (isPartOfReturnRegister(variable)) {
-                int number = Integer.parseInt(Character.toString(variable.charAt(2)));
-                Type returnRegisterProjectionType = expressions.makeExtract(number, returnRegister).getType();
-                return returnRegisterProjectionType;
-            }
-            char letter = variable.charAt(4);
-            switch (letter) {
-                case 'w' ->
-                    width = 32;
-                case 'x' ->
-                    width = 64;
-                default ->
-                    throw new UnsupportedOperationException("Unrecognized pattern for variable : does not fit into ${NUM:x/w}");
+    // clean this 
+    public Type getArmVariableSize(String registerArmName) {
+        // int width = - 1;
+        int number = extractNumberFromRegisterName(registerArmName);
+        
+        // r7 = i32 asm code has to be checked in armv7
+        if (isPartOfAggregateReturnRegister(registerArmName)){
+            Type returnRegisterProjectionType = expressions.makeExtract(number, returnRegister).getType();
+            return returnRegisterProjectionType;
+        } else if(this.returnValuesNumber == 1 && registerArmName.startsWith("${") && registerArmName.endsWith("}")){
+            char letter = registerArmName.charAt(4);
+            if (letter == 'w'){
+                return types.getIntegerType(32);
+            } else if (letter == 'x'){
+                return types.getIntegerType(64);
+            } else {
+                throw new UnsupportedOperationException("Unrecognized pattern for variable : does not fit into ${NUM:x/w}");
             }
         }
-        return types.getIntegerType(width);
+        return this.fnParameters.get(number - this.returnValuesNumber).getType();
+        // if (registerArmName.startsWith("${") && registerArmName.endsWith("}")) {
+        //     if (isPartOfReturnRegister(registerArmName)) {
+        //         int number = Integer.parseInt(Character.toString(registerArmName.charAt(2)));
+        //         Type returnRegisterProjectionType = expressions.makeExtract(number, returnRegister).getType();
+        //         return returnRegisterProjectionType;
+        //     }
+        //     char letter = registerArmName.charAt(4);
+        //     switch (letter) {
+        //         case 'w' ->
+        //             width = 32;
+        //         case 'x' ->
+        //             width = 64;
+        //         default ->
+        //             throw new UnsupportedOperationException("Unrecognized pattern for variable : does not fit into ${NUM:x/w}");
+        //     }
+        // } else {
+        //     System.out.println("With " + registerArmName + " I have found out " + this.fnParameters.get(number - 1));
+        //     return this.fnParameters.get(number - 1 - this.returnValuesNumber).getType(); 
+        // }
+        // return types.getIntegerType(width);
     }
 
     //these are used to populate the armToLlvmMap
@@ -129,14 +149,26 @@ public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
         }
     }
 
+    int extractNumberFromRegisterName(String registerArmName){
+        int number = -1;
+        String innerString = registerArmName;
+        if (registerArmName.startsWith("r")){
+            innerString = registerArmName.substring(1);
+        }
+        if(innerString.startsWith("${") && innerString.endsWith("}")){ // ${N:x}
+            number = Integer.parseInt(Character.toString(innerString.charAt(2)));
+        } else if (innerString.length() ==  2) { // $n
+            number = Integer.parseInt(Character.toString(innerString.charAt(1)));
+        } else if ( innerString.length() == 4){ // [$n]
+            number = Integer.parseInt(Character.toString(innerString.charAt(2)));
+        }
+        return number;
+    }
 
     // used if the return is AggregateType (size > 1)
     // has to be changed for armv7
-    private boolean isPartOfReturnRegister(String registerName) {
-        if (!(registerName.startsWith("${") || registerName.endsWith("}"))) {
-            return false;
-        }
-        int number = Integer.parseInt(Character.toString(registerName.charAt(2)));
+    private boolean isPartOfAggregateReturnRegister(String registerName) {
+        int number = extractNumberFromRegisterName(registerName);
         return ((number < this.returnValuesNumber) && (this.returnValuesNumber > 1));
     }
 
@@ -161,27 +193,9 @@ public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
             String registerName = makeRegisterName(nodeName);
             Register newRegister = llvmFunction.newRegister(registerName, type);
             this.armToLlvmMap.put(nodeName, newRegister);
-            if (isPartOfReturnRegister(nodeName)) {
+            if (isPartOfAggregateReturnRegister(nodeName)) {
                 this.pendingRegisters.add(newRegister);
             }
-            // if (this.nameToRegisterMap.containsKey(nodeName)) {
-            //     return this.nameToRegisterMap.get(nodeName);
-            // } else {
-            //     Type type = getArmVariableSize(nodeName);
-            //     String registerName = makeRegisterName(nodeName);
-            //     Register newRegister = llvmFunction.newRegister(registerName, type);
-            //     this.nameToRegisterMap.put(nodeName, newRegister);
-            //     if (isPartOfReturnRegister(nodeName)) {
-            //         this.armToLlvmMap.put(nodeName, newRegister);
-            //         // int number = Integer.parseInt(Character.toString(nodeName.charAt(2)));
-            //         // assignment = expressions.makeExtract(number, returnRegister); // no need to initialize returnRegister at start
-            //         this.pendingRegisters.add(newRegister);
-            //     } else {
-            //         Expression assignment = this.armToLlvmMap.get(nodeName);
-            //         if (this.returnRegister == null || !((Register) assignment).equals(this.returnRegister)) {
-            //             events.add(EventFactory.newLocal(newRegister, assignment));
-            //         }
-            //     }
             return newRegister;
         }
     }
@@ -196,12 +210,11 @@ public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
 
     private void updateReturnRegisterIfModified(Register register) {
         String registerName = register.getName();
-        if (registerName.startsWith("${") && registerName.endsWith("}")) {
-            int registerId = Integer.parseInt(Character.toString(register.getName().charAt(3)));
-            if (registerId == 0 && this.returnValuesNumber == 1) { // it can only match if it is 0:w/x AND return value is single -- the aggregatetype is already covered 
-                System.out.println("Return register is " + this.returnRegister.getName() + " And modified one is " + register.getName());
-                events.add(EventFactory.newLocal(this.returnRegister, register));
-            }
+        // System.out.println("Return register is " + this.returnRegister.getName() + " And modified one is " + register.getName());
+        int number = extractNumberFromRegisterName(registerName);
+        if(number == 0 && this.returnValuesNumber == 1){
+            // System.out.println("Modifying returnRegister");
+            events.add(EventFactory.newLocal(this.returnRegister, register));
         }
     }
 
@@ -211,7 +224,12 @@ public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
         String[] instructions = ctx.getText().substring(0, commaPos).split("\\\\0A"); // Instructions part
         String[] clobbers = ctx.getText().substring(commaPos + 3, ctx.getText().length() - 1).split(","); // Clobbers part, excluding the surrounding quotes
         // we remove all of the "~{}" format flags
-        String[] filteredClobbers = Arrays.stream(clobbers).filter(s -> !s.startsWith("~")).toArray(String[]::new);
+        ArrayList<String> filteredClobbers = Arrays.stream(clobbers).filter(s -> !s.startsWith("~")).collect(Collectors.toCollection(ArrayList::new));
+
+        // later on this 
+        if(filteredClobbers.stream().anyMatch(s -> s.matches("\\d+"))){
+            Collections.reverse(this.fnParameters);
+        }
         boolean pointerAdded = false;
         for (String instruction : instructions) {
             System.out.println(instruction);
@@ -233,7 +251,7 @@ public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
                         if (!registerNames.contains(register)) {
                             this.registerNames.add(register);
                         }
-                        pointerAdded = true;
+                        pointerAdded = true; // this has to be changed for armv7 as it mixes up the values
                     }
                 } else if (c == '[' && i + 1 < instruction.length() && instruction.charAt(i + 1) == '$') {
                     int closeIndex = instruction.indexOf(']', i);
@@ -242,8 +260,7 @@ public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
                         if (!registerNames.contains(register)) {
                             this.registerNames.add(register);
                         }
-
-                        pointerAdded = true;
+                        pointerAdded = true; // this has to be changed for armv7 as it mixes up the values
                         i = closeIndex + 1;
                     }
                 }
@@ -258,6 +275,7 @@ public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
 
         if (!registerNames.isEmpty() && !this.fnParameters.isEmpty()) {
             System.out.println("RegisterNames is " + registerNames);
+            System.out.println("Fn params are " + this.fnParameters);
             int registerNameIndex = 0;
             for (String clobber : filteredClobbers) {
                 System.out.println("Current clobber is " + clobber);
@@ -293,12 +311,13 @@ public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
                         System.out.println("Trying to assign to " + newRegister + " expression " + this.fnParameters.get(registerNameIndex - this.returnValuesNumber));
                         events.add(EventFactory.newLocal(newRegister, this.fnParameters.get(registerNameIndex - this.returnValuesNumber)));
                         registerNameIndex++;
-                    } else if (clobber.equals("Q")){
+                    } else if (clobber.equals("Q")) {
                         // we are assured that last one is the pointer needed
-                        events.add(EventFactory.newLocal(newRegister, this.fnParameters.getLast()));
+                        System.out.println("Trying to assign to " + newRegister + " expression " + this.fnParameters.get(registerNameIndex - this.returnValuesNumber));
+                        events.add(EventFactory.newLocal(newRegister, this.fnParameters.get(registerNameIndex - this.returnValuesNumber)));
+                        registerNameIndex++;
                         // we do not increase index as we want to keep in the same fnParam
-                    } 
-                    else {
+                    } else {
                         System.out.println("New type of clobber found, you have to add it! " + clobber);
                     }
                 }
@@ -426,6 +445,7 @@ public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
     public Object visitCompare(InlineAArch64Parser.CompareContext ctx) {
         Register firstRegister = (Register) ctx.register(0).accept(this);
         Register secondRegister = (Register) ctx.register(1).accept(this);
+        System.out.println("The secondRegister is " + secondRegister);
         this.comparator.updateCompareExpression(firstRegister, IntCmpOp.EQ, secondRegister);
         return visitChildren(ctx);
     }
