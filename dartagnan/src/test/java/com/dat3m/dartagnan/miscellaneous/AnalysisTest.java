@@ -664,6 +664,73 @@ public class AnalysisTest {
         assertAlias(expect[3], aa, al, me3);
     }
 
+    @Test
+    public void fieldsensitive7() throws InvalidConfigurationException {
+        program7(FIELD_SENSITIVE, MUST, NONE, MUST, NONE, NONE, MAY, NONE, MUST, NONE, MUST, NONE, MAY);
+    }
+
+    @Test
+    public void fieldinsensitive7() throws InvalidConfigurationException {
+        program7(FIELD_INSENSITIVE, MAY, MAY, MAY, MAY, MAY, MAY, MAY, MAY, MAY, MAY, MAY, MAY);
+    }
+
+    private void program7(Alias method, Result... expect) throws InvalidConfigurationException{
+        ProgramBuilder b = ProgramBuilder.forLanguage(SourceLanguage.LITMUS);
+
+        b.newThread(0);
+        Register r0 = b.getOrNewRegister(0, "r0");
+        Alloc a0 = newHeapAlloc(r0, 3);
+        b.addChild(0, a0);
+        Register r1 = b.getOrNewRegister(0, "r1");
+        Alloc a1 = newHeapAlloc(r1, 4);
+        b.addChild(0, a1);
+        Store e0 = newStore(r0, r1);
+        b.addChild(0, e0);
+        Store e1 = newStore(r1, r0);
+        b.addChild(0, e1);
+        Register r2 = b.getOrNewRegister(0, "r2");
+        b.addChild(0, newLocal(r2, r0));
+        Store e2 = newStore(plus(r2, 2), value(1));
+        b.addChild(0, e2);
+        Register r3 = b.getOrNewRegister(0, "r3");
+        b.addChild(0, newLocal(r3, r1));
+        Store e3 = newStore(plus(r3, 3), value(1));
+        b.addChild(0, e3);
+        Store e4 = newStore(plus(r3, 4), value(1));
+        b.addChild(0, e4);
+        Register r4 = b.getOrNewRegister(0, "r4");
+        b.addChild(0, newLocal(r4, r0));
+        b.addChild(0, newLocal(r4, r1));
+        Store e5 = newStore(r4, value(1));
+        b.addChild(0, e5);
+        b.addChild(0, EventFactory.newFree(r0));
+        b.addChild(0, EventFactory.newFree(r1));
+
+        Program program = b.build();
+        AliasAnalysis aa = analyze(program, method);
+        Alloc al0 = (Alloc) findMatchingEventAfterProcessing(program, a0);
+        Alloc al1 = (Alloc) findMatchingEventAfterProcessing(program, a1);
+        MemoryCoreEvent me0 = (MemoryCoreEvent) findMatchingEventAfterProcessing(program, e0);
+        MemoryCoreEvent me1 = (MemoryCoreEvent) findMatchingEventAfterProcessing(program, e1);
+        MemoryCoreEvent me2 = (MemoryCoreEvent) findMatchingEventAfterProcessing(program, e2);
+        MemoryCoreEvent me3 = (MemoryCoreEvent) findMatchingEventAfterProcessing(program, e3);
+        MemoryCoreEvent me4 = (MemoryCoreEvent) findMatchingEventAfterProcessing(program, e4);
+        MemoryCoreEvent me5 = (MemoryCoreEvent) findMatchingEventAfterProcessing(program, e5);
+
+        assertAlias(expect[0], aa, al0, me0);
+        assertAlias(expect[1], aa, al0, me1);
+        assertAlias(expect[2], aa, al0, me2);
+        assertAlias(expect[3], aa, al0, me3);
+        assertAlias(expect[4], aa, al0, me4);
+        assertAlias(expect[5], aa, al0, me5);
+        assertAlias(expect[6], aa, al1, me0);
+        assertAlias(expect[7], aa, al1, me1);
+        assertAlias(expect[8], aa, al1, me2);
+        assertAlias(expect[9], aa, al1, me3);
+        assertAlias(expect[10], aa, al1, me4);
+        assertAlias(expect[11], aa, al1, me5);
+    }
+
     private Load newLoad(Register value, Expression address) {
         return EventFactory.newLoad(value, address);
     }
