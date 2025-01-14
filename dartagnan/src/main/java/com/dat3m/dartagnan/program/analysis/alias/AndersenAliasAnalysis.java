@@ -126,13 +126,17 @@ public class AndersenAliasAnalysis implements AliasAnalysis {
         if (!a.isHeapAllocation()) {
             return;
         }
+        Register r = a.getResultRegister();
         if (a.getAllocationSize() instanceof IntLiteral sizeExpr) {
             MemoryObject base = a.getAllocatedObject();
             ImmutableSet.Builder<Location> builder = new ImmutableSet.Builder<>();
             for (int offset = 0; offset < sizeExpr.getValueAsInt(); offset++) {
                 builder.add(new Location(base, offset));
             }
-            allocAddressSpaceMap.put(a, builder.build());
+            ImmutableSet<Location> locations = builder.build();
+            allocAddressSpaceMap.put(a, locations);
+            addAllAddresses(r, locations);
+            variables.add(r);
         } else {
             throw new RuntimeException("Size of heap allocation is not integer");
         }

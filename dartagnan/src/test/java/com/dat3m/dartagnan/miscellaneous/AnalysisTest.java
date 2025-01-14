@@ -627,7 +627,7 @@ public class AnalysisTest {
 
     @Test
     public void fieldinsensitive6() throws InvalidConfigurationException {
-        program6(FIELD_INSENSITIVE, MAY, NONE, MAY, MAY);
+        program6(FIELD_INSENSITIVE, MUST, NONE, MAY, MAY);
     }
 
     private void program6(Alias method, Result... expect) throws InvalidConfigurationException {
@@ -671,7 +671,7 @@ public class AnalysisTest {
 
     @Test
     public void fieldinsensitive7() throws InvalidConfigurationException {
-        program7(FIELD_INSENSITIVE, MAY, MAY, MAY, MAY, MAY, MAY, MAY, MAY, MAY, MAY, MAY, MAY);
+        program7(FIELD_INSENSITIVE, MUST, NONE, MAY, MAY, MAY, MAY, NONE, MUST, MAY, MAY, MAY, MAY);
     }
 
     private void program7(Alias method, Result... expect) throws InvalidConfigurationException{
