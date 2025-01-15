@@ -75,6 +75,7 @@ public class OptionNames {
 
     // Witness Options
     public static final String WITNESS_ORIGINAL_PROGRAM_PATH = "witness.originalProgramFilePath";
+    public static final String WITNESS_SHOW = "witness.show";
 
     // SVCOMP Options
     public static final String PROPERTYPATH = "svcomp.property";
