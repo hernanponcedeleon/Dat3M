@@ -6,10 +6,7 @@ import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.analysis.LoopAnalysis;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.Tag;
-import com.dat3m.dartagnan.program.event.core.CondJump;
-import com.dat3m.dartagnan.program.event.core.Local;
-import com.dat3m.dartagnan.program.event.core.MemoryCoreEvent;
-import com.dat3m.dartagnan.program.event.core.Store;
+import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.event.core.special.StateSnapshot;
 import com.dat3m.dartagnan.program.event.metadata.UnrollingId;
 import com.dat3m.dartagnan.verification.VerificationTask;
@@ -29,8 +26,9 @@ import static com.dat3m.dartagnan.wmm.RelationNameRepository.CO;
 import static com.dat3m.dartagnan.wmm.RelationNameRepository.RF;
 
 /*
-    Goal: Find a single execution that exhibits repeatable behaviour based on a decomposition
-          into prefix, infix, and (repeatable) suffix.
+    Goal: Find a single execution (fragment) that exhibits fairly repeatable behaviour.
+    Such behaviour witnesses the existence of infinite executions (by repeating it indefinitely) and thus a liveness issue.
+    The search is based on a decomposition of the execution into prefix, infix, and (repeatable) suffix.
 
     Intuition: The suffix consists of all non-terminating loop iterations (i.e., reaching some bound)
                and the infix consists of the preceding iterations. The prefix is the rest.
@@ -50,7 +48,6 @@ import static com.dat3m.dartagnan.wmm.RelationNameRepository.RF;
         (2) Infix and suffix must be equivalent:
             - Events in infix must have an equivalent event in suffix with same value/address
               (TODO: Can maybe be restricted to equivalence on non-dead events)
-              (FIXME: Loop unrolling + SCCP can hide local side-effect resulting in wrong equivalence verdicts)
             - rf/co-edges between infix events must have an equivalent edge in the suffix.
             - NOTE: In the special case where we have no infix but a suffix, the only requirement
               is that the local state at the beginning and the end of the suffix match.
@@ -73,7 +70,6 @@ import static com.dat3m.dartagnan.wmm.RelationNameRepository.RF;
     TODO: We have not considered uninit reads, i.e., reads without rf-edges in the implementation.
           There might be issues if init events are missing.
     TODO 2: We do not consider ControlBarriers at all. The current version is only for loop-based nontermination.
-    TODO 3: We do not (yet) consider fairness of weak atomics like StoreExclusive
  */
 public class NonTerminationEncoder {
 
@@ -192,14 +188,16 @@ public class NonTerminationEncoder {
 
     public BooleanFormula encodeNontermination() {
         final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
-        final BooleanFormula atLeastOneStuckLoop = encodeLoopsAreStuck();
+        // final BooleanFormula atLeastOneStuckLoop = encodeLoopsAreStuck();
+        final BooleanFormula nonTerminating = bmgr.or(encodeLoopsAreStuck(), encodeBarrierIsStuck());
         final BooleanFormula noExceptionalTermination = encodeNoExceptionalTermination();
         final BooleanFormula infixSuffixEquivalence = encodeInfixSuffixEquivalence();
         final BooleanFormula strongSuffixExtension = encodeStrongSuffixExtension();
 
         return bmgr.and(
                 noExceptionalTermination,
-                atLeastOneStuckLoop,
+                //atLeastOneStuckLoop,
+                nonTerminating,
                 infixSuffixEquivalence,
                 strongSuffixExtension
         );
@@ -220,6 +218,18 @@ public class NonTerminationEncoder {
                 .map(this::isNonterminating)
                 .reduce(bmgr.makeFalse(), bmgr::or);
         return atLeastOneNontermination;
+    }
+
+    private BooleanFormula encodeBarrierIsStuck() {
+        final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
+        return task.getProgram().getThreadEvents(ControlBarrier.class).stream()
+                .map(this::isStuckAtBarrier)
+                .reduce(bmgr.makeFalse(), bmgr::or);
+    }
+
+    private BooleanFormula isStuckAtBarrier(ControlBarrier barrier) {
+        final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
+        return bmgr.and(context.controlFlow(barrier), bmgr.not(context.execution(barrier)));
     }
 
     // ------------------------------------------------------------------------------------------------
@@ -360,6 +370,13 @@ public class NonTerminationEncoder {
             }
         });
 
+        // (4) Events that can spuriously fail must succeed in the suffix (infinite spurious failure is unfair)
+        for (RMWStoreExclusive exclStore : task.getProgram().getThreadEvents(RMWStoreExclusive.class)) {
+            if (isPossiblySuffix(exclStore)) {
+                enc.add(bmgr.implication(isCfInSuffix(exclStore), context.execution(exclStore)));
+            }
+        }
+
         return bmgr.and(enc);
     }
 
@@ -405,6 +422,19 @@ public class NonTerminationEncoder {
         }
         final List<NonterminationCase> cases = event2Cases.get(e);
         return bmgr.and(context.execution(e),
+                cases.stream().filter(c -> c.getSuffixEvents().contains(e))
+                        .map(this::isNonterminating)
+                        .reduce(bmgr.makeFalse(), bmgr::or)
+        );
+    }
+
+    private BooleanFormula isCfInSuffix(Event e) {
+        final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
+        if (!isPossiblySuffix(e)) {
+            return bmgr.makeFalse();
+        }
+        final List<NonterminationCase> cases = event2Cases.get(e);
+        return bmgr.and(context.controlFlow(e),
                 cases.stream().filter(c -> c.getSuffixEvents().contains(e))
                         .map(this::isNonterminating)
                         .reduce(bmgr.makeFalse(), bmgr::or)
