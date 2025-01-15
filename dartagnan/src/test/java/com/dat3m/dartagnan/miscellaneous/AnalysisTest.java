@@ -637,18 +637,18 @@ public class AnalysisTest {
 
         b.newThread(0);
         Register r0 = b.getOrNewRegister(0, "r0");
-        Alloc a = newHeapAlloc(r0, 2);
+        Alloc a = newHeapAlloc(r0, 2);                  // r0 = malloc(2)
         b.addChild(0, a);
-        Store e0 = newStore(r0, value(2));
+        Store e0 = newStore(r0, value(2));              // *r0 = 2
         b.addChild(0, e0);
         Register r1 = b.getOrNewRegister(0, "r1");
-        Load e1 = newLoad(r1, x);
+        Load e1 = newLoad(r1, x);                       // r1 = x
         b.addChild(0, e1);
-        Store e2 = newStore(plus(r0, 1), r1);
+        Store e2 = newStore(plus(r0, 1), r1);           // *(r0 + 1) = r1
         b.addChild(0, e2);
-        Store e3 = newStore(plus(r0, 2), r1);
+        Store e3 = newStore(plus(r0, 2), r1);           // *(r0 + 2) = r1
         b.addChild(0, e3);
-        b.addChild(0, EventFactory.newFree(r0));
+        b.addChild(0, EventFactory.newFree(r0));        // free(r0)
 
         Program program = b.build();
         AliasAnalysis aa = analyze(program, method);
@@ -679,32 +679,32 @@ public class AnalysisTest {
 
         b.newThread(0);
         Register r0 = b.getOrNewRegister(0, "r0");
-        Alloc a0 = newHeapAlloc(r0, 3);
+        Alloc a0 = newHeapAlloc(r0, 3);                    // r0 = malloc(3)
         b.addChild(0, a0);
         Register r1 = b.getOrNewRegister(0, "r1");
-        Alloc a1 = newHeapAlloc(r1, 4);
+        Alloc a1 = newHeapAlloc(r1, 4);                    // r1 = malloc(4)
         b.addChild(0, a1);
-        Store e0 = newStore(r0, r1);
+        Store e0 = newStore(r0, r1);                       // *r0 = r1
         b.addChild(0, e0);
-        Store e1 = newStore(r1, r0);
+        Store e1 = newStore(r1, r0);                       // *r1 = r0
         b.addChild(0, e1);
         Register r2 = b.getOrNewRegister(0, "r2");
-        b.addChild(0, newLocal(r2, r0));
-        Store e2 = newStore(plus(r2, 2), value(1));
+        b.addChild(0, newLocal(r2, r0));                   // r2 = r0
+        Store e2 = newStore(plus(r2, 2), value(1));        // *(r2 + 2) = 1
         b.addChild(0, e2);
         Register r3 = b.getOrNewRegister(0, "r3");
-        b.addChild(0, newLocal(r3, r1));
-        Store e3 = newStore(plus(r3, 3), value(1));
+        b.addChild(0, newLocal(r3, r1));                   // r3 = r1
+        Store e3 = newStore(plus(r3, 3), value(1));        // *(r3 + 3) = 1
         b.addChild(0, e3);
-        Store e4 = newStore(plus(r3, 4), value(1));
+        Store e4 = newStore(plus(r3, 4), value(1));        // *(r3 + 4) = 1
         b.addChild(0, e4);
         Register r4 = b.getOrNewRegister(0, "r4");
-        b.addChild(0, newLocal(r4, r0));
-        b.addChild(0, newLocal(r4, r1));
-        Store e5 = newStore(r4, value(1));
+        b.addChild(0, newLocal(r4, r0));                   // r4 = r0
+        b.addChild(0, newLocal(r4, r1));                   // r4 = r1
+        Store e5 = newStore(r4, value(1));                 // *r4 = 1
         b.addChild(0, e5);
-        b.addChild(0, EventFactory.newFree(r0));
-        b.addChild(0, EventFactory.newFree(r1));
+        b.addChild(0, EventFactory.newFree(r0));           // free(r0)
+        b.addChild(0, EventFactory.newFree(r1));           // free(r1)
 
         Program program = b.build();
         AliasAnalysis aa = analyze(program, method);
@@ -729,6 +729,65 @@ public class AnalysisTest {
         assertAlias(expect[9], aa, al1, me3);
         assertAlias(expect[10], aa, al1, me4);
         assertAlias(expect[11], aa, al1, me5);
+    }
+
+    @Test
+    public void fieldsensitive8() throws InvalidConfigurationException {
+        program8(FIELD_SENSITIVE, MUST, MUST, NONE, MUST, MUST, NONE);
+    }
+
+    @Test
+    public void fieldinsensitive8() throws InvalidConfigurationException {
+        program8(FIELD_INSENSITIVE, MUST, MAY, MAY, MUST, MAY, NONE);
+    }
+
+    private void program8(Alias method, Result... expect) throws InvalidConfigurationException {
+        ProgramBuilder b = ProgramBuilder.forLanguage(SourceLanguage.LITMUS);
+
+        MemoryObject x = b.newMemoryObject("x", 1);
+
+        b.newThread(0);
+        Register r0 = b.getOrNewRegister(0, "r0");
+        Alloc a0 = newHeapAlloc(r0, 3);                    // r0 = malloc(3)
+        b.addChild(0, a0);
+        Store e0 = newStore(r0, value(1));                 // *r0 = 1
+        b.addChild(0, e0);
+        Register r1 = b.getOrNewRegister(0, "r1");
+        b.addChild(0, newLocal(r1, plus(r0, 2)));          // r1 = r0 + 2
+        Store e1 = newStore(r1, value(1));                 // *r1 = 1
+        b.addChild(0, e1);
+        Register r2 = b.getOrNewRegister(0, "r2");
+        b.addChild(0, newLocal(r2, plus(r0, 3)));          // r2 = r0 + 3
+        Store e2 = newStore(r2, value(1));                 // *r2 = 1
+        b.addChild(0, e2);
+        Register r3 = b.getOrNewRegister(0, "r3");
+        b.addChild(0, newLocal(r3, r0));                   // r3 = r0
+        Store e3 = newStore(r3, value(1));                 // *r3 = 1
+        b.addChild(0, e3);
+        Register r4 = b.getOrNewRegister(0, "r4");
+        b.addChild(0, newLocal(r4, r1));                   // r4 = r1
+        Store e4 = newStore(r4, value(1));                 // *r4 = 1
+        b.addChild(0, e4);
+        Store e5 = newStore(x, value(1));                  // x = 1
+        b.addChild(0, e5);
+        b.addChild(0, EventFactory.newFree(r0));           // free(r0)
+
+        Program program = b.build();
+        AliasAnalysis aa = analyze(program, method);
+        Alloc al0 = (Alloc) findMatchingEventAfterProcessing(program, a0);
+        MemoryCoreEvent me0 = (MemoryCoreEvent) findMatchingEventAfterProcessing(program, e0);
+        MemoryCoreEvent me1 = (MemoryCoreEvent) findMatchingEventAfterProcessing(program, e1);
+        MemoryCoreEvent me2 = (MemoryCoreEvent) findMatchingEventAfterProcessing(program, e2);
+        MemoryCoreEvent me3 = (MemoryCoreEvent) findMatchingEventAfterProcessing(program, e3);
+        MemoryCoreEvent me4 = (MemoryCoreEvent) findMatchingEventAfterProcessing(program, e4);
+        MemoryCoreEvent me5 = (MemoryCoreEvent) findMatchingEventAfterProcessing(program, e5);
+
+        assertAlias(expect[0], aa, al0, me0);
+        assertAlias(expect[1], aa, al0, me1);
+        assertAlias(expect[2], aa, al0, me2);
+        assertAlias(expect[3], aa, al0, me3);
+        assertAlias(expect[4], aa, al0, me4);
+        assertAlias(expect[5], aa, al0, me5);
     }
 
     private Load newLoad(Register value, Expression address) {
