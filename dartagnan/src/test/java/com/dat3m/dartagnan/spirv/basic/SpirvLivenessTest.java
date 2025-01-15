@@ -48,7 +48,8 @@ public class SpirvLivenessTest {
     @Parameterized.Parameters(name = "{index}: {0}, {1}, {2}")
     public static Iterable<Object[]> data() throws IOException {
         return Arrays.asList(new Object[][]{
-                {"NonUniformBarrier.spv.dis", 1, PASS},
+                {"NonUniformBarrier-1.spv.dis", 1, PASS},
+                {"NonUniformBarrier-2.spv.dis", 1, FAIL},
         });
     }
 
