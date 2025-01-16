@@ -7,7 +7,7 @@ asm                                 // vvv this one is because the staddl starts
     (Quot(asmInstrEntries)*Quot)Comma (Quot(asmMetadataEntries)+ Quot)+ EOF?
 ;
 
-asmInstrEntries : EndInstruction?((instr)EndInstruction?);
+asmInstrEntries : EndInstruction?((instr)EndInstruction*);
 asmMetadataEntries : metaInstr(Comma metaInstr)*;
 
 
@@ -79,7 +79,7 @@ yieldtask : YieldTask;
 
 // Note that since there is an isA between metaINstr and its children, in the AST you get two nodes and I think it is ok, it might be useful for analysis purposes
 metaInstr : metadataInline | clobber;
-metadataInline : OutputOpAssign | IsMemoryAddress | InputOpGeneralReg | OverlapInOutRegister;
+metadataInline : OutputOpAssign | IsMemoryAddress | InputOpGeneralReg | OverlapInOutRegister | PointerToMemoryLocation;
 
 clobber : Tilde LBrace clobberType RBrace;
 
