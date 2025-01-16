@@ -35,10 +35,11 @@ YieldTask                   : 'yield'; // used to tell Hw that we're in a spinlo
 
 
 // metadata 
-OutputOpAssign              : Equals Amp GeneralPurposeReg;
+OutputOpAssign              : Equals Amp GeneralPurposeReg | Equals GeneralPurposeReg;
 InputOpGeneralReg           : GeneralPurposeReg;
 IsMemoryAddress             : 'Q' | Ast 'Q';
 OverlapInOutRegister        : '0' | '3'; // defines which returnvalue should be used both for input and output
+PointerToMemoryLocation     : Equals Ast 'm';
 
 // clobbers
 ClobberMemory               : 'memory';
