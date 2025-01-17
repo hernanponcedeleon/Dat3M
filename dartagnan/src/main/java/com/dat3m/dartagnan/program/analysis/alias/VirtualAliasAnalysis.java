@@ -1,6 +1,7 @@
 package com.dat3m.dartagnan.program.analysis.alias;
 
 import com.dat3m.dartagnan.program.event.core.Alloc;
+import com.dat3m.dartagnan.program.event.core.MemFree;
 import com.dat3m.dartagnan.program.event.core.MemoryCoreEvent;
 import com.dat3m.dartagnan.program.memory.VirtualMemoryObject;
 
@@ -26,11 +27,31 @@ public class VirtualAliasAnalysis implements AliasAnalysis {
 
     @Override
     public boolean mayAlias(Alloc a, MemoryCoreEvent e) {
-        return wrappedAnalysis.mayAlias(a, e);
+        throw new IllegalArgumentException("No dynamic memory allocation for virtual memory");
     }
     @Override
     public boolean mustAlias(Alloc a, MemoryCoreEvent e) {
-        return wrappedAnalysis.mustAlias(a, e);
+        throw new IllegalArgumentException("No dynamic memory allocation for virtual memory");
+    }
+
+    @Override
+    public boolean mayAlias(Alloc a, MemFree f) {
+        throw new IllegalArgumentException("No dynamic memory allocation for virtual memory");
+    }
+
+    @Override
+    public boolean mustAlias(Alloc a, MemFree f) {
+        throw new IllegalArgumentException("No dynamic memory allocation for virtual memory");
+    }
+
+    @Override
+    public boolean mayAlias(MemFree a, MemFree b) {
+        throw new IllegalArgumentException("No dynamic memory allocation for virtual memory");
+    }
+
+    @Override
+    public boolean mustAlias(MemFree a, MemFree b) {
+        throw new IllegalArgumentException("No dynamic memory allocation for virtual memory");
     }
 
     // GPU memory models make use of virtual addresses.

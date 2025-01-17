@@ -622,12 +622,12 @@ public class AnalysisTest {
 
     @Test
     public void fieldsensitive6() throws InvalidConfigurationException {
-        program6(FIELD_SENSITIVE, MUST, NONE, MUST, NONE);
+        program6(FIELD_SENSITIVE, MUST, NONE, MUST, MUST);
     }
 
     @Test
     public void fieldinsensitive6() throws InvalidConfigurationException {
-        program6(FIELD_INSENSITIVE, MUST, NONE, MAY, MAY);
+        program6(FIELD_INSENSITIVE, MUST, NONE, MAY, MUST);
     }
 
     private void program6(Alias method, Result... expect) throws InvalidConfigurationException {
@@ -646,9 +646,8 @@ public class AnalysisTest {
         b.addChild(0, e1);
         Store e2 = newStore(plus(r0, 1), r1);           // *(r0 + 1) = r1
         b.addChild(0, e2);
-        Store e3 = newStore(plus(r0, 2), r1);           // *(r0 + 2) = r1
-        b.addChild(0, e3);
-        b.addChild(0, EventFactory.newFree(r0));        // free(r0)
+        MemFree f = newFree(r0);                        // free(r0)
+        b.addChild(0, f);
 
         Program program = b.build();
         AliasAnalysis aa = analyze(program, method);
@@ -656,22 +655,22 @@ public class AnalysisTest {
         MemoryCoreEvent me0 = (MemoryCoreEvent) findMatchingEventAfterProcessing(program, e0);
         MemoryCoreEvent me1 = (MemoryCoreEvent) findMatchingEventAfterProcessing(program, e1);
         MemoryCoreEvent me2 = (MemoryCoreEvent) findMatchingEventAfterProcessing(program, e2);
-        MemoryCoreEvent me3 = (MemoryCoreEvent) findMatchingEventAfterProcessing(program, e3);
+        MemFree fr = (MemFree) findMatchingEventAfterProcessing(program, f);
 
         assertAlias(expect[0], aa, al, me0);
         assertAlias(expect[1], aa, al, me1);
         assertAlias(expect[2], aa, al, me2);
-        assertAlias(expect[3], aa, al, me3);
+        assertAlias(expect[3], aa, al, fr);
     }
 
     @Test
     public void fieldsensitive7() throws InvalidConfigurationException {
-        program7(FIELD_SENSITIVE, MUST, NONE, MUST, NONE, NONE, MAY, NONE, MUST, NONE, MUST, NONE, MAY);
+        program7(FIELD_SENSITIVE, MUST, NONE, MUST, NONE, MAY, NONE, MUST, NONE, MUST, MAY, MUST, NONE, NONE, MUST, NONE);
     }
 
     @Test
     public void fieldinsensitive7() throws InvalidConfigurationException {
-        program7(FIELD_INSENSITIVE, MUST, NONE, MAY, MAY, MAY, MAY, NONE, MUST, MAY, MAY, MAY, MAY);
+        program7(FIELD_INSENSITIVE, MUST, NONE, MAY, MAY, MAY, NONE, MUST, MAY, MAY, MAY, MUST, NONE, NONE, MUST, NONE);
     }
 
     private void program7(Alias method, Result... expect) throws InvalidConfigurationException{
@@ -696,15 +695,15 @@ public class AnalysisTest {
         b.addChild(0, newLocal(r3, r1));                   // r3 = r1
         Store e3 = newStore(plus(r3, 3), value(1));        // *(r3 + 3) = 1
         b.addChild(0, e3);
-        Store e4 = newStore(plus(r3, 4), value(1));        // *(r3 + 4) = 1
-        b.addChild(0, e4);
         Register r4 = b.getOrNewRegister(0, "r4");
         b.addChild(0, newLocal(r4, r0));                   // r4 = r0
         b.addChild(0, newLocal(r4, r1));                   // r4 = r1
-        Store e5 = newStore(r4, value(1));                 // *r4 = 1
-        b.addChild(0, e5);
-        b.addChild(0, EventFactory.newFree(r0));           // free(r0)
-        b.addChild(0, EventFactory.newFree(r1));           // free(r1)
+        Store e4 = newStore(r4, value(1));                 // *r4 = 1
+        b.addChild(0, e4);
+        MemFree f0 = newFree(r0);                          // free(r0)
+        b.addChild(0, f0);
+        MemFree f1 = newFree(r1);                          // free(r1)
+        b.addChild(0, f1);
 
         Program program = b.build();
         AliasAnalysis aa = analyze(program, method);
@@ -715,30 +714,34 @@ public class AnalysisTest {
         MemoryCoreEvent me2 = (MemoryCoreEvent) findMatchingEventAfterProcessing(program, e2);
         MemoryCoreEvent me3 = (MemoryCoreEvent) findMatchingEventAfterProcessing(program, e3);
         MemoryCoreEvent me4 = (MemoryCoreEvent) findMatchingEventAfterProcessing(program, e4);
-        MemoryCoreEvent me5 = (MemoryCoreEvent) findMatchingEventAfterProcessing(program, e5);
+        MemFree fr0 = (MemFree) findMatchingEventAfterProcessing(program, f0);
+        MemFree fr1 = (MemFree) findMatchingEventAfterProcessing(program, f1);
 
         assertAlias(expect[0], aa, al0, me0);
         assertAlias(expect[1], aa, al0, me1);
         assertAlias(expect[2], aa, al0, me2);
         assertAlias(expect[3], aa, al0, me3);
         assertAlias(expect[4], aa, al0, me4);
-        assertAlias(expect[5], aa, al0, me5);
-        assertAlias(expect[6], aa, al1, me0);
-        assertAlias(expect[7], aa, al1, me1);
-        assertAlias(expect[8], aa, al1, me2);
-        assertAlias(expect[9], aa, al1, me3);
-        assertAlias(expect[10], aa, al1, me4);
-        assertAlias(expect[11], aa, al1, me5);
+        assertAlias(expect[5], aa, al1, me0);
+        assertAlias(expect[6], aa, al1, me1);
+        assertAlias(expect[7], aa, al1, me2);
+        assertAlias(expect[8], aa, al1, me3);
+        assertAlias(expect[9], aa, al1, me4);
+        assertAlias(expect[10], aa, al0, fr0);
+        assertAlias(expect[11], aa, al0, fr1);
+        assertAlias(expect[12], aa, al1, fr0);
+        assertAlias(expect[13], aa, al1, fr1);
+        assertAlias(expect[14], aa, fr0, fr1);
     }
 
     @Test
     public void fieldsensitive8() throws InvalidConfigurationException {
-        program8(FIELD_SENSITIVE, MUST, MUST, NONE, MUST, MUST, NONE);
+        program8(FIELD_SENSITIVE, MUST, MUST, MUST, MUST, MUST, NONE, MUST);
     }
 
     @Test
     public void fieldinsensitive8() throws InvalidConfigurationException {
-        program8(FIELD_INSENSITIVE, MUST, MAY, MAY, MUST, MAY, NONE);
+        program8(FIELD_INSENSITIVE, MUST, MAY, MAY, MUST, MAY, NONE, MUST);
     }
 
     private void program8(Alias method, Result... expect) throws InvalidConfigurationException {
@@ -748,7 +751,7 @@ public class AnalysisTest {
 
         b.newThread(0);
         Register r0 = b.getOrNewRegister(0, "r0");
-        Alloc a0 = newHeapAlloc(r0, 3);                    // r0 = malloc(3)
+        Alloc a0 = newHeapAlloc(r0, 4);                    // r0 = malloc(4)
         b.addChild(0, a0);
         Store e0 = newStore(r0, value(1));                 // *r0 = 1
         b.addChild(0, e0);
@@ -770,7 +773,8 @@ public class AnalysisTest {
         b.addChild(0, e4);
         Store e5 = newStore(x, value(1));                  // x = 1
         b.addChild(0, e5);
-        b.addChild(0, EventFactory.newFree(r0));           // free(r0)
+        MemFree f0 = newFree(r3);                          // free(r3)
+        b.addChild(0, f0);
 
         Program program = b.build();
         AliasAnalysis aa = analyze(program, method);
@@ -781,6 +785,7 @@ public class AnalysisTest {
         MemoryCoreEvent me3 = (MemoryCoreEvent) findMatchingEventAfterProcessing(program, e3);
         MemoryCoreEvent me4 = (MemoryCoreEvent) findMatchingEventAfterProcessing(program, e4);
         MemoryCoreEvent me5 = (MemoryCoreEvent) findMatchingEventAfterProcessing(program, e5);
+        MemFree fr0 = (MemFree) findMatchingEventAfterProcessing(program, f0);
 
         assertAlias(expect[0], aa, al0, me0);
         assertAlias(expect[1], aa, al0, me1);
@@ -788,6 +793,159 @@ public class AnalysisTest {
         assertAlias(expect[3], aa, al0, me3);
         assertAlias(expect[4], aa, al0, me4);
         assertAlias(expect[5], aa, al0, me5);
+        assertAlias(expect[6], aa, al0, fr0);
+    }
+
+    @Test
+    public void fieldsensitive9() throws InvalidConfigurationException {
+        program9(FIELD_SENSITIVE, MUST, NONE, MUST, NONE, NONE, NONE, MAY, NONE, NONE,
+                NONE, MUST, NONE, NONE, NONE, NONE, NONE, MAY, NONE,
+                NONE, MUST, NONE, NONE, NONE, NONE, NONE, NONE,
+                NONE, NONE, NONE, NONE, NONE, NONE, NONE,
+                NONE, NONE, NONE, NONE, NONE, NONE,
+                NONE, MUST, NONE, NONE, NONE,
+                NONE, NONE, NONE, NONE,
+                NONE, NONE, NONE,
+                NONE, NONE,
+                NONE);
+    }
+
+    @Test
+    public void fieldinsensitive9() throws InvalidConfigurationException {
+        program9(FIELD_INSENSITIVE, MUST, NONE, MUST, NONE, MAY, NONE, MAY, MAY, MAY,
+                NONE, MUST, NONE, NONE, MAY, NONE, MAY, MAY, MAY,
+                NONE, MUST, NONE, MAY, NONE, MAY, MAY, MAY,
+                NONE, NONE, MAY, NONE, MAY, MAY, MAY,
+                NONE, MAY, NONE, MAY, MAY, MAY,
+                MAY, MUST, MAY, MAY, MAY,
+                MAY, MAY, MAY, MAY,
+                MAY, MAY, MAY,
+                MAY, MAY,
+                MAY);
+    }
+
+    // This program is wrong because it frees the same memory multiple times.
+    // But it is suitable to test the alias analysis.
+    private void program9(Alias method, Result... expect) throws InvalidConfigurationException {
+        ProgramBuilder b = ProgramBuilder.forLanguage(SourceLanguage.LITMUS);
+
+        MemoryObject x = b.newMemoryObject("x", 2);
+        x.setInitialValue(0, x);
+        MemoryObject y = b.newMemoryObject("y", 2);
+
+        b.newThread(0);
+        Register r0 = b.getOrNewRegister(0, "r0");
+        Alloc a0 = newHeapAlloc(r0, 2);                    // r0 = malloc(2)
+        b.addChild(0, a0);
+        Register r1 = b.getOrNewRegister(0, "r1");
+        Alloc a1 = newHeapAlloc(r1, 3);                    // r1 = malloc(3)
+        b.addChild(0, a1);
+        Register r2 = b.getOrNewRegister(0, "r2");
+        b.addChild(0, newLocal(r2, r0));                   // r2 = r0
+        Register r3 = b.getOrNewRegister(0, "r3");
+        b.addChild(0, newLoad(r3, x));                     // r3 = x
+        Register r4 = b.getOrNewRegister(0, "r4");
+        b.addChild(0, newLocal(r4, plus(r3, 1)));          // r4 = r3 + 1
+        MemFree f0 = newFree(r0);                          // free(r0)
+        b.addChild(0, f0);
+        MemFree f1 = newFree(r1);                          // free(r1)
+        b.addChild(0, f1);
+        MemFree f2 = newFree(r2);                          // free(r2)
+        b.addChild(0, f2);
+        MemFree f3 = newFree(r3);                          // free(r3)
+        b.addChild(0, f3);
+        MemFree f4 = newFree(r4);                          // free(r4)
+        b.addChild(0, f4);
+        MemFree f5 = newFree(x);                           // free(x)
+        b.addChild(0, f5);
+        Register r5 = b.getOrNewRegister(0, "r5");
+        b.addChild(0, newLocal(r5, plus(r0, 1)));          // r5 = r0 + 1
+        MemFree f6 = newFree(r5);                          // free(r5)
+        b.addChild(0, f6);
+        MemFree f7 = newFree(plus(r1, 2));                 // free(r1 + 2)
+        b.addChild(0, f7);
+        Register r6 = b.getOrNewRegister(0, "r6");
+        b.addChild(0, newLoad(r6, y));                     // r6 = y
+        MemFree f8 = newFree(r6);                          // free(r6)
+        b.addChild(0, f8);
+
+        Program program = b.build();
+        AliasAnalysis aa = analyze(program, method);
+        Alloc al0 = (Alloc) findMatchingEventAfterProcessing(program, a0);
+        Alloc al1 = (Alloc) findMatchingEventAfterProcessing(program, a1);
+        MemFree fr0 = (MemFree) findMatchingEventAfterProcessing(program, f0);
+        MemFree fr1 = (MemFree) findMatchingEventAfterProcessing(program, f1);
+        MemFree fr2 = (MemFree) findMatchingEventAfterProcessing(program, f2);
+        MemFree fr3 = (MemFree) findMatchingEventAfterProcessing(program, f3);
+        MemFree fr4 = (MemFree) findMatchingEventAfterProcessing(program, f4);
+        MemFree fr5 = (MemFree) findMatchingEventAfterProcessing(program, f5);
+        MemFree fr6 = (MemFree) findMatchingEventAfterProcessing(program, f6);
+        MemFree fr7 = (MemFree) findMatchingEventAfterProcessing(program, f7);
+        MemFree fr8 = (MemFree) findMatchingEventAfterProcessing(program, f8);
+
+        assertAlias(expect[0], aa, al0, fr0);
+        assertAlias(expect[1], aa, al0, fr1);
+        assertAlias(expect[2], aa, al0, fr2);
+        assertAlias(expect[3], aa, al0, fr3);
+        assertAlias(expect[4], aa, al0, fr4);
+        assertAlias(expect[5], aa, al0, fr5);
+        assertAlias(expect[6], aa, al0, fr6);
+        assertAlias(expect[7], aa, al0, fr7);
+        assertAlias(expect[8], aa, al0, fr8);
+
+        assertAlias(expect[9], aa, al1, fr0);
+        assertAlias(expect[10], aa, al1, fr1);
+        assertAlias(expect[11], aa, al1, fr2);
+        assertAlias(expect[12], aa, al1, fr3);
+        assertAlias(expect[13], aa, al1, fr4);
+        assertAlias(expect[14], aa, al1, fr5);
+        assertAlias(expect[15], aa, al1, fr6);
+        assertAlias(expect[16], aa, al1, fr7);
+        assertAlias(expect[17], aa, al1, fr8);
+
+        assertAlias(expect[18], aa, fr0, fr1);
+        assertAlias(expect[19], aa, fr0, fr2);
+        assertAlias(expect[20], aa, fr0, fr3);
+        assertAlias(expect[21], aa, fr0, fr4);
+        assertAlias(expect[22], aa, fr0, fr5);
+        assertAlias(expect[23], aa, fr0, fr6);
+        assertAlias(expect[24], aa, fr0, fr7);
+        assertAlias(expect[25], aa, fr0, fr8);
+
+        assertAlias(expect[26], aa, fr1, fr2);
+        assertAlias(expect[27], aa, fr1, fr3);
+        assertAlias(expect[28], aa, fr1, fr4);
+        assertAlias(expect[29], aa, fr1, fr5);
+        assertAlias(expect[30], aa, fr1, fr6);
+        assertAlias(expect[31], aa, fr1, fr7);
+        assertAlias(expect[32], aa, fr1, fr8);
+
+        assertAlias(expect[33], aa, fr2, fr3);
+        assertAlias(expect[34], aa, fr2, fr4);
+        assertAlias(expect[35], aa, fr2, fr5);
+        assertAlias(expect[36], aa, fr2, fr6);
+        assertAlias(expect[37], aa, fr2, fr7);
+        assertAlias(expect[38], aa, fr2, fr8);
+
+        assertAlias(expect[39], aa, fr3, fr4);
+        assertAlias(expect[40], aa, fr3, fr5);
+        assertAlias(expect[41], aa, fr3, fr6);
+        assertAlias(expect[42], aa, fr3, fr7);
+        assertAlias(expect[43], aa, fr3, fr8);
+
+        assertAlias(expect[44], aa, fr4, fr5);
+        assertAlias(expect[45], aa, fr4, fr6);
+        assertAlias(expect[46], aa, fr4, fr7);
+        assertAlias(expect[47], aa, fr4, fr8);
+
+        assertAlias(expect[48], aa, fr5, fr6);
+        assertAlias(expect[49], aa, fr5, fr7);
+        assertAlias(expect[50], aa, fr5, fr8);
+
+        assertAlias(expect[51], aa, fr6, fr7);
+        assertAlias(expect[52], aa, fr6, fr8);
+
+        assertAlias(expect[53], aa, fr7, fr8);
     }
 
     private Load newLoad(Register value, Expression address) {
@@ -848,6 +1006,40 @@ public class AnalysisTest {
     }
 
     private void assertAlias(Result expect, AliasAnalysis a, Alloc x, MemoryCoreEvent y) {
+        switch (expect) {
+            case NONE:
+                assertFalse(a.mayAlias(x, y));
+                assertFalse(a.mustAlias(x, y));
+                break;
+            case MAY:
+                assertTrue(a.mayAlias(x, y));
+                assertFalse(a.mustAlias(x, y));
+                break;
+            case MUST:
+                assertTrue(a.mayAlias(x, y));
+                assertTrue(a.mustAlias(x, y));
+                break;
+        }
+    }
+
+    private void assertAlias(Result expect, AliasAnalysis a, Alloc x, MemFree y) {
+        switch (expect) {
+            case NONE:
+                assertFalse(a.mayAlias(x, y));
+                assertFalse(a.mustAlias(x, y));
+                break;
+            case MAY:
+                assertTrue(a.mayAlias(x, y));
+                assertFalse(a.mustAlias(x, y));
+                break;
+            case MUST:
+                assertTrue(a.mayAlias(x, y));
+                assertTrue(a.mustAlias(x, y));
+                break;
+        }
+    }
+
+    private void assertAlias(Result expect, AliasAnalysis a, MemFree x, MemFree y) {
         switch (expect) {
             case NONE:
                 assertFalse(a.mayAlias(x, y));

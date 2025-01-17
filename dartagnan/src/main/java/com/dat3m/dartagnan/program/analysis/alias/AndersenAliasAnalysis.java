@@ -45,7 +45,8 @@ public class AndersenAliasAnalysis implements AliasAnalysis {
     private final Map<Register, Set<MemoryEvent>> events = new HashMap<>();
     private final Map<Register, Set<Location>> targets = new HashMap<>();
     private final Map<MemoryEvent, ImmutableSet<Location>> eventAddressSpaceMap = new HashMap<>();
-    private final Map<Alloc, ImmutableSet<Location>> allocAddressSpaceMap = new HashMap<>();
+    private final Map<Alloc, Integer> allocSizeMap = new HashMap<>();
+    private final Map<MemFree, ImmutableSet<Location>> freeAddressSpaceMap = new HashMap<>();
 
     // ================================ Construction ================================
 
@@ -73,37 +74,70 @@ public class AndersenAliasAnalysis implements AliasAnalysis {
     }
 
     @Override
-    public boolean mayAlias(Alloc alloc, MemoryCoreEvent e) {
-        checkHeapAlloc(alloc);
-        return !Sets.intersection(getAllocatedAddresses(alloc), getMaxAddressSet(e)).isEmpty();
-    }
-
-    @Override
     public boolean mustAlias(MemoryCoreEvent x, MemoryCoreEvent y) {
         return getMaxAddressSet(x).size() == 1 && getMaxAddressSet(x).containsAll(getMaxAddressSet(y));
     }
 
     @Override
-    public boolean mustAlias(Alloc alloc, MemoryCoreEvent e) {
-        checkHeapAlloc(alloc);
-        return getAllocatedAddresses(alloc).containsAll(getMaxAddressSet(e));
+    public boolean mayAlias(Alloc a, MemoryCoreEvent e) {
+        checkHeapAlloc(a);
+        return getMaxAddressSet(e).stream().anyMatch(
+                l -> l.base.equals(a.getAllocatedObject()) && l.offset < getAllocatedSize(a)
+        );
+    }
+
+    @Override
+    public boolean mustAlias(Alloc a, MemoryCoreEvent e) {
+        checkHeapAlloc(a);
+        return getMaxAddressSet(e).stream().allMatch(
+                l -> l.base.equals(a.getAllocatedObject()) && l.offset < getAllocatedSize(a)
+        );
+    }
+
+    @Override
+    public boolean mayAlias(Alloc a, MemFree f) {
+        checkHeapAlloc(a);
+        return getFreedAddresses(f).stream().anyMatch(
+                l -> l.base.equals(a.getAllocatedObject()) && l.offset < getAllocatedSize(a)
+        );
+    }
+
+    @Override
+    public boolean mustAlias(Alloc a, MemFree f) {
+        checkHeapAlloc(a);
+        Set<Location> freedLocs = getFreedAddresses(f);
+        return freedLocs.size() == 1
+                && freedLocs.iterator().next().equals(new Location(a.getAllocatedObject(), 0));
+    }
+
+    @Override
+    public boolean mayAlias(MemFree a, MemFree b) {
+        return !Sets.intersection(getFreedAddresses(a), getFreedAddresses(b)).isEmpty();
+    }
+
+    @Override
+    public boolean mustAlias(MemFree a, MemFree b) {
+        return getFreedAddresses(a).size() == 1 && getFreedAddresses(a).containsAll(getFreedAddresses(b));
     }
 
     private ImmutableSet<Location> getMaxAddressSet(MemoryEvent e) {
         return eventAddressSpaceMap.get(e);
     }
 
-    private ImmutableSet<Location> getAllocatedAddresses(Alloc a) {
-        return allocAddressSpaceMap.get(a);
+    private int getAllocatedSize(Alloc a) {
+        return allocSizeMap.get(a);
+    }
+
+    private ImmutableSet<Location> getFreedAddresses(MemFree f) {
+        return freeAddressSpaceMap.get(f);
     }
 
     // ================================ Processing ================================
 
     private void run(Program program) {
-        List<Alloc> allocs = program.getThreadEvents(Alloc.class);
         List<MemoryCoreEvent> memEvents = program.getThreadEvents(MemoryCoreEvent.class);
         List<Local> locals = program.getThreadEvents(Local.class);
-        for (Alloc a : allocs) {
+        for (Alloc a : program.getThreadEvents(Alloc.class)) {
             processAllocs(a);
         }
         for (MemoryCoreEvent e : memEvents) {
@@ -118,7 +152,10 @@ public class AndersenAliasAnalysis implements AliasAnalysis {
             processResults(e);
         }
         for (MemoryCoreEvent e : memEvents) {
-            processResults(e);
+            eventAddressSpaceMap.put(e, ImmutableSet.copyOf(getAddressSpace(e.getAddress())));
+        }
+        for (MemFree f : program.getThreadEvents(MemFree.class)) {
+            freeAddressSpaceMap.put(f, ImmutableSet.copyOf(getAddressSpace(f.getAddress())));
         }
     }
 
@@ -127,15 +164,10 @@ public class AndersenAliasAnalysis implements AliasAnalysis {
             return;
         }
         Register r = a.getResultRegister();
-        if (a.getAllocationSize() instanceof IntLiteral sizeExpr) {
+        if (a.getAllocationSize() instanceof IntLiteral i) {
+            allocSizeMap.put(a, i.getValueAsInt());
             MemoryObject base = a.getAllocatedObject();
-            ImmutableSet.Builder<Location> builder = new ImmutableSet.Builder<>();
-            for (int offset = 0; offset < sizeExpr.getValueAsInt(); offset++) {
-                builder.add(new Location(base, offset));
-            }
-            ImmutableSet<Location> locations = builder.build();
-            allocAddressSpaceMap.put(a, locations);
-            addAllAddresses(r, locations);
+            addAddress(r, new Location(base, 0));
             variables.add(r);
         } else {
             throw new RuntimeException("Size of heap allocation is not integer");
@@ -276,25 +308,24 @@ public class AndersenAliasAnalysis implements AliasAnalysis {
         }
     }
 
-    private void processResults(MemoryCoreEvent e) {
-        Expression address = e.getAddress();
+    private Set<Location> getAddressSpace(Expression addrExpr) {
         Set<Location> addresses;
-        if (address instanceof Register) {
-            Set<Location> target = targets.get(address);
-            addresses = target != null ? target : getAddresses(address);
+        if (addrExpr instanceof Register register) {
+            Set<Location> target = targets.get(register);
+            addresses = target != null ? target : getAddresses(addrExpr);
         } else {
-            Constant addressConstant = new Constant(address);
+            Constant addressConstant = new Constant(addrExpr);
             if (addressConstant.failed) {
                 addresses = maxAddressSet;
             } else {
-                Verify.verify(addressConstant.location != null, "memory event accessing a pure constant address");
+                Verify.verify(addressConstant.location != null, "accessing a pure constant address");
                 addresses = ImmutableSet.of(addressConstant.location);
             }
         }
         if (addresses.isEmpty()) {
             addresses = maxAddressSet;
         }
-        eventAddressSpaceMap.put(e, ImmutableSet.copyOf(addresses));
+        return addresses;
     }
 
     private static final class Constant {

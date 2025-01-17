@@ -33,9 +33,17 @@ public interface AliasAnalysis {
 
     boolean mayAlias(MemoryCoreEvent a, MemoryCoreEvent b);
 
-    boolean mustAlias(Alloc alloc, MemoryCoreEvent e);
+    boolean mustAlias(Alloc a, MemoryCoreEvent e);
 
-    boolean mayAlias(Alloc alloc, MemoryCoreEvent e);
+    boolean mayAlias(Alloc a, MemoryCoreEvent e);
+
+    boolean mustAlias(Alloc a, MemFree f);
+
+    boolean mayAlias(Alloc a, MemFree f);
+
+    boolean mustAlias(MemFree a, MemFree b);
+
+    boolean mayAlias(MemFree a, MemFree b);
 
     default void checkHeapAlloc(Alloc alloc) {
         if (!alloc.isHeapAllocation()) {
@@ -122,13 +130,33 @@ public interface AliasAnalysis {
         }
 
         @Override
-        public boolean mustAlias(Alloc alloc, MemoryCoreEvent e) {
-            return a1.mustAlias(alloc, e) || a2.mustAlias(alloc, e);
+        public boolean mustAlias(Alloc a, MemoryCoreEvent e) {
+            return a1.mustAlias(a, e) || a2.mustAlias(a, e);
         }
 
         @Override
-        public boolean mayAlias(Alloc alloc, MemoryCoreEvent e) {
-            return a1.mayAlias(alloc, e) && a2.mayAlias(alloc, e);
+        public boolean mayAlias(Alloc a, MemoryCoreEvent e) {
+            return a1.mayAlias(a, e) && a2.mayAlias(a, e);
+        }
+
+        @Override
+        public boolean mustAlias(Alloc a, MemFree f) {
+            return a1.mustAlias(a, f) || a2.mustAlias(a, f);
+        }
+
+        @Override
+        public boolean mayAlias(Alloc a, MemFree f) {
+            return a1.mayAlias(a, f) && a2.mayAlias(a, f);
+        }
+
+        @Override
+        public boolean mustAlias(MemFree a, MemFree b) {
+            return a1.mustAlias(a, b) || a2.mustAlias(a, b);
+        }
+
+        @Override
+        public boolean mayAlias(MemFree a, MemFree b) {
+            return a1.mayAlias(a, b) && a2.mayAlias(a, b);
         }
 
         @Override

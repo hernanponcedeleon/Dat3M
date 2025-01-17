@@ -56,8 +56,10 @@ public class FieldSensitiveAndersen implements AliasAnalysis {
     private final Map<Object, List<Offset<Collector>>> stores = new HashMap<>();
     ///Result sets
     private final Map<MemoryCoreEvent, ImmutableSet<Location>> eventAddressSpaceMap = new HashMap<>();
-    ///Maps alloc events to the locations allocated by them
-    private final Map<Alloc, ImmutableSet<Location>> allocAddressSpaceMap = new HashMap<>();
+    ///Maps alloc events to their allocation size
+    private final Map<Alloc, Integer> allocSizeMap = new HashMap<>();
+    ///Maps free events to the locations freed by them
+    private final Map<MemFree, ImmutableSet<Location>> freeAddressSpaceMap = new HashMap<>();
 
     // ================================ Construction ================================
 
@@ -77,12 +79,6 @@ public class FieldSensitiveAndersen implements AliasAnalysis {
     }
 
     @Override
-    public boolean mayAlias(Alloc alloc, MemoryCoreEvent e) {
-        checkHeapAlloc(alloc);
-        return !Sets.intersection(getAllocatedAddresses(alloc), getMaxAddressSet(e)).isEmpty();
-    }
-
-    @Override
     public boolean mustAlias(MemoryCoreEvent x, MemoryCoreEvent y) {
         Set<Location> a = getMaxAddressSet(x);
         Set<Location> b = getMaxAddressSet(y);
@@ -90,26 +86,67 @@ public class FieldSensitiveAndersen implements AliasAnalysis {
     }
 
     @Override
-    public boolean mustAlias(Alloc alloc, MemoryCoreEvent e) {
-        checkHeapAlloc(alloc);
-        return getMaxAddressSet(e).isEmpty() ?
-                false : getAllocatedAddresses(alloc).containsAll(getMaxAddressSet(e));
+    public boolean mayAlias(Alloc a, MemoryCoreEvent e) {
+        checkHeapAlloc(a);
+        return getMaxAddressSet(e).stream().anyMatch(
+                l -> l.base.equals(a.getAllocatedObject()) && l.offset < getAllocatedSize(a)
+        );
+    }
+
+    @Override
+    public boolean mustAlias(Alloc a, MemoryCoreEvent e) {
+        checkHeapAlloc(a);
+        Set<Location> locs = getMaxAddressSet(e);
+        return getMaxAddressSet(e).stream().allMatch(
+                l -> l.base.equals(a.getAllocatedObject()) && l.offset < getAllocatedSize(a)
+        );
+    }
+
+    @Override
+    public boolean mayAlias(Alloc a, MemFree f) {
+        checkHeapAlloc(a);
+        return getFreedAddresses(f).stream().anyMatch(
+                l -> l.base.equals(a.getAllocatedObject()) && l.offset < getAllocatedSize(a)
+        );
+    }
+
+    @Override
+    public boolean mustAlias(Alloc a, MemFree f) {
+        checkHeapAlloc(a);
+        Set<Location> freedLocs = getFreedAddresses(f);
+        return freedLocs.size() == 1
+                && freedLocs.iterator().next().equals(new Location(a.getAllocatedObject(), 0));
+    }
+
+    @Override
+    public boolean mayAlias(MemFree a, MemFree b) {
+        return !Sets.intersection(getFreedAddresses(a), getFreedAddresses(b)).isEmpty();
+    }
+
+    @Override
+    public boolean mustAlias(MemFree a, MemFree b) {
+        Set<Location> aLocs = getFreedAddresses(a);
+        Set<Location> bLocs = getFreedAddresses(b);
+        return aLocs.size() == 1 && bLocs.size() == 1 && aLocs.containsAll(bLocs);
     }
 
     private ImmutableSet<Location> getMaxAddressSet(MemoryEvent e) {
         return eventAddressSpaceMap.get(e);
     }
 
-    private ImmutableSet<Location> getAllocatedAddresses(Alloc a) {
-        return allocAddressSpaceMap.get(a);
+    private int getAllocatedSize(Alloc a) {
+        return allocSizeMap.get(a);
+    }
+
+    private ImmutableSet<Location> getFreedAddresses(MemFree f) {
+        return freeAddressSpaceMap.get(f);
     }
 
     // ================================ Processing ================================
 
     private void run(Program program) {
         checkArgument(program.isCompiled(), "The program must be compiled first.");
-        List<Alloc> allocs = program.getThreadEvents(Alloc.class);
-        for (Alloc a : allocs) {
+        for (Alloc a : program.getThreadEvents(Alloc.class)) {
             processAllocs(a);
         }
         List<MemoryCoreEvent> memEvents = program.getThreadEvents(MemoryCoreEvent.class);
@@ -124,7 +161,10 @@ public class FieldSensitiveAndersen implements AliasAnalysis {
             algorithm(variable);
         }
         for (MemoryCoreEvent e : memEvents) {
-            processResults(e);
+            eventAddressSpaceMap.put(e, getAddressSpace(e.getAddress()));
+        }
+        for (MemFree f : program.getThreadEvents(MemFree.class)) {
+            freeAddressSpaceMap.put(f, getAddressSpace(f.getAddress()));
         }
     }
 
@@ -133,12 +173,7 @@ public class FieldSensitiveAndersen implements AliasAnalysis {
             return;
         }
         if (a.getAllocationSize() instanceof IntLiteral i) {
-            MemoryObject base = a.getAllocatedObject();
-            ImmutableSet.Builder<Location> builder = new ImmutableSet.Builder<>();
-            for (int offset = 0; offset < i.getValueAsInt(); offset++) {
-                builder.add(new Location(base, offset));
-            }
-            allocAddressSpaceMap.put(a, builder.build());
+            allocSizeMap.put(a, i.getValueAsInt());
         } else {
             throw new RuntimeException("Size of heap allocation is not integer");
         }
@@ -221,14 +256,14 @@ public class FieldSensitiveAndersen implements AliasAnalysis {
         }
     }
 
-    protected void processResults(MemoryCoreEvent e) {
-        ImmutableSet.Builder<Location> addresses = ImmutableSet.builder();
-        Collector collector = new Collector(e.getAddress());
-        addresses.addAll(collector.address());
+    protected ImmutableSet<Location> getAddressSpace(Expression addrExpr) {
+        ImmutableSet.Builder<Location> builder = new ImmutableSet.Builder<>();
+        Collector collector = new Collector(addrExpr);
+        builder.addAll(collector.address());
         for (Offset<Register> r : collector.register()) {
-            addresses.addAll(fields(getAddresses(r.base), r.offset, r.alignment));
+            builder.addAll(fields(getAddresses(r.base), r.offset, r.alignment));
         }
-        eventAddressSpaceMap.put(e, addresses.build());
+        return builder.build();
     }
 
     private static final class Offset<Base> {
