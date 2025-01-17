@@ -774,14 +774,26 @@ public class NativeRelationAnalysis implements RelationAnalysis {
             MutableEventGraph must = new MapEventGraph();
             for (Alloc e1 : program.getThreadEvents(Alloc.class)) {
                 if (e1.isHeapAllocation()) {
-                    for (Event e2 : program.getThreadEvents(MemFree.class)) {
-                        may.add(e1, e2);
+                    for (MemFree e2 : program.getThreadEvents(MemFree.class)) {
+                        if (alias.mayAlias(e1, e2)) {
+                            if (alias.mustAlias(e1, e2)) {
+                                must.add(e1, e2);
+                            } else {
+                                may.add(e1, e2);
+                            }
+                        }
                     }
                 }
             }
-            for (Event e1 : program.getThreadEvents(MemFree.class)) {
-                for (Event e2 : program.getThreadEvents(MemFree.class)) {
-                    may.add(e1, e2);
+            for (MemFree e1 : program.getThreadEvents(MemFree.class)) {
+                for (MemFree e2 : program.getThreadEvents(MemFree.class)) {
+                    if (alias.mayAlias(e1, e2)) {
+                        if (alias.mustAlias(e1, e2)) {
+                            must.add(e1, e2);
+                        } else {
+                            may.add(e1, e2);
+                        }
+                    }
                 }
             }
             return new MutableKnowledge(may, must);
@@ -795,8 +807,14 @@ public class NativeRelationAnalysis implements RelationAnalysis {
             MutableEventGraph must = new MapEventGraph();
             for (Alloc e1 : program.getThreadEvents(Alloc.class)) {
                 if (e1.isHeapAllocation()) {
-                    for (Event e2 : program.getThreadEvents(MemoryEvent.class)) {
-                        may.add(e1, e2);
+                    for (MemoryCoreEvent e2 : program.getThreadEvents(MemoryCoreEvent.class)) {
+                        if (alias.mayAlias(e1, e2)) {
+                            if (alias.mustAlias(e1, e2)) {
+                                must.add(e1, e2);
+                            } else {
+                                may.add(e1, e2);
+                            }
+                        }
                     }
                 }
             }
