@@ -776,10 +776,9 @@ public class NativeRelationAnalysis implements RelationAnalysis {
                 if (e1.isHeapAllocation()) {
                     for (MemFree e2 : program.getThreadEvents(MemFree.class)) {
                         if (alias.mayAlias(e1, e2)) {
+                            may.add(e1, e2);
                             if (alias.mustAlias(e1, e2)) {
                                 must.add(e1, e2);
-                            } else {
-                                may.add(e1, e2);
                             }
                         }
                     }
@@ -788,10 +787,9 @@ public class NativeRelationAnalysis implements RelationAnalysis {
             for (MemFree e1 : program.getThreadEvents(MemFree.class)) {
                 for (MemFree e2 : program.getThreadEvents(MemFree.class)) {
                     if (alias.mayAlias(e1, e2)) {
+                        may.add(e1, e2);
                         if (alias.mustAlias(e1, e2)) {
                             must.add(e1, e2);
-                        } else {
-                            may.add(e1, e2);
                         }
                     }
                 }
@@ -809,10 +807,9 @@ public class NativeRelationAnalysis implements RelationAnalysis {
                 if (e1.isHeapAllocation()) {
                     for (MemoryCoreEvent e2 : program.getThreadEvents(MemoryCoreEvent.class)) {
                         if (alias.mayAlias(e1, e2)) {
+                            may.add(e1, e2);
                             if (alias.mustAlias(e1, e2)) {
                                 must.add(e1, e2);
-                            } else {
-                                may.add(e1, e2);
                             }
                         }
                     }
