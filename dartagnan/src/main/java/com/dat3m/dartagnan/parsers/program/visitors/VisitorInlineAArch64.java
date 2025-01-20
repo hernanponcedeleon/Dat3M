@@ -31,10 +31,12 @@ public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
         public Expression compareExpression;
         public Register firstRegister;
         public Expression secondRegister;
-        public Expression zeroRegister; // used to have register with value 0
+        public Expression zeroRegisterbv32; // used to have register with value 0
+        public Expression zeroRegisterbv64; // used to have register with value 0
 
         public CompareExpression() {
-            this.zeroRegister = expressions.parseValue("0", integerType);
+            this.zeroRegisterbv32 = expressions.parseValue("0", types.getIntegerType(32));
+            this.zeroRegisterbv64 = expressions.parseValue("0", types.getIntegerType(64));
         }
 
         public void updateCompareExpression(Register firstRegister, IntCmpOp intCmpOp, Expression secondRegister) {
@@ -45,6 +47,14 @@ public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
 
         public void updateCompareExpressionOperator(IntCmpOp intCmpOp) {
             this.compareExpression = expressions.makeIntCmp(this.firstRegister, intCmpOp, this.secondRegister);
+        }
+
+        public void updateCompareExpressionZero(Register firstRegister,IntCmpOp intCmpOp){
+            if(firstRegister.getType().equals(types.getIntegerType(32))){
+                this.updateCompareExpression(firstRegister, intCmpOp, this.zeroRegisterbv32);
+            } else{
+                this.updateCompareExpression(firstRegister, intCmpOp, this.zeroRegisterbv64);
+            }
         }
 
     }
@@ -74,12 +84,8 @@ public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
         this.armToLlvmMap = new HashMap<>();
         this.registerNames = new LinkedList<>();
         this.fnParameters = new LinkedList<>(argumentsRegisterAddresses);
-        // this.fnParameters = new LinkedList<>(llvmFunction.getParameterRegisters());
-        // Collections.reverse(this.fnParameters);
-        // todo set this to empty if we see something like (bv 0), as it is going to be a useless fence
         this.returnValuesNumber = initReturnValuesNumberInitReturnRegisterTypes(returnType);
         assert (this.returnValuesNumber >= 0);
-        // populateRegisters(armToLlvmMap);
     }
 
     public List<Event> getEvents() {
@@ -139,9 +145,7 @@ public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
         }
         System.out.println("innerStriong is is " + innerString);
         if(isArmv8Name(innerString)){ // ${N:x}
-            System.out.println("It is a armv8 name");
             number = Integer.parseInt(Character.toString(innerString.charAt(2)));
-            System.out.println("Number here is "+ number);
         } else if (innerString.length() ==  2) { // $n
             number = Integer.parseInt(Character.toString(innerString.charAt(1)));
         } else if ( innerString.length() == 4){ // [$n]
@@ -173,7 +177,6 @@ public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
         if (this.armToLlvmMap.containsKey(nodeName)) {
             return this.armToLlvmMap.get(nodeName);
         } else {
-            // make the new register
             Type type = getArmVariableSize(nodeName);
             String registerName = makeRegisterName(nodeName);
             Register newRegister = llvmFunction.newRegister(registerName, type);
@@ -195,12 +198,8 @@ public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
 
     private void updateReturnRegisterIfModified(Register register) {
         String registerName = register.getName();
-        System.out.println("Return register is " + this.returnRegister + " And modified one is " + register);
         int number = extractNumberFromRegisterName(registerName);
-        System.out.println("Number is " + number);
-        System.out.println("ReturnValues are " + this.returnValuesNumber);
         if(number == 0 && this.returnValuesNumber == 1){
-            System.out.println("Modifying returnRegister");
             events.add(EventFactory.newLocal(this.returnRegister, register));
         }
     }
@@ -210,15 +209,9 @@ public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
         int commaPos = ctx.getText().lastIndexOf("\",\"");
         String[] instructions = ctx.getText().substring(0, commaPos).split("\\\\0A"); // Instructions part
         String[] clobbers = ctx.getText().substring(commaPos + 3, ctx.getText().length() - 1).split(","); // Clobbers part, excluding the surrounding quotes
-        // we remove all of the "~{}" format flags
-        ArrayList<String> filteredClobbers = Arrays.stream(clobbers).filter(s -> !s.startsWith("~")).collect(Collectors.toCollection(ArrayList::new));
+        ArrayList<String> filteredClobbers = Arrays.stream(clobbers).filter(s -> !s.startsWith("~")).collect(Collectors.toCollection(ArrayList::new)); // Filter out the clobbers that start with ~
 
-        // workaround -- not really a solution!
-        // if(filteredClobbers.stream().anyMatch(s -> s.matches("\\d+"))){
-        //     Collections.reverse(this.fnParameters);
-        // }
         for (String instruction : instructions) {
-            System.out.println(instruction);
             int len = instruction.length();
             for (int i = 0; i < len; i++) {
                 char c = instruction.charAt(i);
@@ -250,24 +243,9 @@ public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
                 }
             }
         }
-
-        // Collections.sort(registerNames);
-        // LinkedList<String> tmp = new LinkedList<>();
-        // for(int i=0; i < registerNames.size(); i++){
-        //     String registerName = registerNames.get(i);
-        //     int number = extractNumberFromRegisterName(registerName);
-        //     tmp.add(number, registerName);
-        //     if (!isArmv8Name(registerName) && !registerName.startsWith("[")) {
-        //         tmp.add(registerName);
-        //         registerNames.remove(i);  
-        //         i--;  
-        //     }
-        // }
-        // this has to be done only if not all names are armv8(?)
         registerNames.sort((s1, s2) -> Integer.compare(extractNumberFromRegisterName(s1), extractNumberFromRegisterName(s2)));
         // System.out.println("Tmp is " + tmp);
-        System.out.println("registerNames is " + registerNames);
-        // registerNames.addAll(tmp);
+        // System.out.println("registerNames is " + registerNames);
 
         if (!registerNames.isEmpty() && !this.fnParameters.isEmpty()) {
             System.out.println("RegisterNames is " + registerNames);
@@ -285,7 +263,7 @@ public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
                         // Map the register to the corresponding function parameter
                         Register toBeChanged = getOrNewRegister(name);
                         System.out.println("Register is going to be assigned " + toBeChanged.getName() + " < - " + this.fnParameters.get(registerNameIndex - this.returnValuesNumber));
-                        System.out.println("Trying to change the value via local assignment -- read a d+");
+                        // System.out.println("Trying to change the value via local assignment -- read a d+");
                         // for consistency change also this one to use the extractValue
                         events.add(EventFactory.newLocal(toBeChanged, this.fnParameters.get(registerNameIndex - this.returnValuesNumber)));
                     } else {
@@ -445,7 +423,7 @@ public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
         Register firstRegister = (Register) ctx.register(0).accept(this);
         Register secondRegister = (Register) ctx.register(1).accept(this);
         if(isRegisterConstantValue(secondRegister.getName())){
-            this.comparator.updateCompareExpression(firstRegister, IntCmpOp.EQ, this.comparator.zeroRegister);
+            this.comparator.updateCompareExpressionZero(firstRegister,IntCmpOp.EQ);
         } else{
             this.comparator.updateCompareExpression(firstRegister, IntCmpOp.EQ, secondRegister);
         }
@@ -455,7 +433,7 @@ public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
     @Override
     public Object visitCompareBranchNonZero(InlineAArch64Parser.CompareBranchNonZeroContext ctx) {
         Register registerLlvm = (Register) ctx.register().accept(this);
-        this.comparator.updateCompareExpression(registerLlvm, IntCmpOp.NEQ, this.comparator.zeroRegister);
+        this.comparator.updateCompareExpressionZero(registerLlvm,IntCmpOp.NEQ);
         String cleanedLabelName = cleanLabel(ctx.LabelReference().getText());
         Label label = getOrNewLabel(cleanedLabelName);
         events.add(EventFactory.newJump(this.comparator.compareExpression, label));

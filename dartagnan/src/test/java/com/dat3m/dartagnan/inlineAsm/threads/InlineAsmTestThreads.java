@@ -68,16 +68,16 @@ public class InlineAsmTestThreads {
     @Test
     public void testAllSolvers() throws Exception {
         long start = System.currentTimeMillis();
+        System.out.println("\n " + this.programPath);
         try (SolverContext ctx = mkCtx(); ProverWithTracker prover = mkProver(ctx)) {
             assertEquals(expected, RefinementSolver.run(ctx, prover, mkTask()).getResult());
         }
-        
-        System.out.println((System.currentTimeMillis() - start) + " time elapsed Refinment");
+        System.out.println("\n" + (System.currentTimeMillis() - start) + " time elapsed Refinement for " + this.programPath);
         start = System.currentTimeMillis();
         try (SolverContext ctx = mkCtx(); ProverWithTracker prover = mkProver(ctx)) {
             assertEquals(expected, AssumeSolver.run(ctx, prover, mkTask()).getResult());
         }
-        System.out.println((System.currentTimeMillis() - start) + " time elapsed Assume");
+        System.out.println("\n" + (System.currentTimeMillis() - start) + " time elapsed Assume for " + this.programPath);
     }
 
     private SolverContext mkCtx() throws InvalidConfigurationException {
@@ -86,7 +86,7 @@ public class InlineAsmTestThreads {
                 cfg,
                 BasicLogManager.create(cfg),
                 ShutdownManager.create().getNotifier(),
-                SolverContextFactory.Solvers.YICES2);
+                SolverContextFactory.Solvers.Z3);
     }
 
     private ProverWithTracker mkProver(SolverContext ctx) {
