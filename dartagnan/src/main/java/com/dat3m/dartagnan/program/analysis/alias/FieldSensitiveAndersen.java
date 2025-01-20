@@ -97,7 +97,7 @@ public class FieldSensitiveAndersen implements AliasAnalysis {
     public boolean mustAlias(Alloc a, MemoryCoreEvent e) {
         checkHeapAlloc(a);
         Set<Location> locs = getMaxAddressSet(e);
-        return getMaxAddressSet(e).stream().allMatch(
+        return locs.isEmpty() ? false : locs.stream().allMatch(
                 l -> l.base.equals(a.getAllocatedObject()) && l.offset < getAllocatedSize(a)
         );
     }
