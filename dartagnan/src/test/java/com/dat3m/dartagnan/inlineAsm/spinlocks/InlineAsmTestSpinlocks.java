@@ -52,13 +52,13 @@ public class InlineAsmTestSpinlocks {
             {"arraylock", 4, PASS},
             // {"caslock", 4, PASS}, // passes Refinement but out of memory on Assume 
             {"clhlock", 3, PASS},
-            // {"cnalock", 5, PASS}, // killed out of memory
+            // {"cnalock", 5, PASS}, // takes 35 minutes
             {"hemlock", 3, PASS},
             {"mcslock", 3, PASS},
             {"rec_mcslock", 3, PASS},
             // {"rec_seqlock", 3, PASS}, // 25 min to pass
             {"rec_spinlock", 3, PASS},
-            {"rwlock", 3, PASS},
+            {"rwlock", 4, PASS},
             {"semaphore", 3, PASS},
             {"seqcount", 1, PASS},
             {"seqlock", 3, PASS},
@@ -70,17 +70,17 @@ public class InlineAsmTestSpinlocks {
     @Test
     public void testAllSolvers() throws Exception {
         long start = System.currentTimeMillis();
-        System.out.println(this.programPath);
+        System.out.println("\n " + this.programPath);
         try (SolverContext ctx = mkCtx(); ProverWithTracker prover = mkProver(ctx)) {
             assertEquals(expected, RefinementSolver.run(ctx, prover, mkTask()).getResult());
         }
         
-        System.out.println((System.currentTimeMillis() - start) + " time elapsed Refinment for " + this.programPath);
+        System.out.println("\n" + (System.currentTimeMillis() - start) + " time elapsed Refinment for " + this.programPath);
         start = System.currentTimeMillis();
         try (SolverContext ctx = mkCtx(); ProverWithTracker prover = mkProver(ctx)) {
             assertEquals(expected, AssumeSolver.run(ctx, prover, mkTask()).getResult());
         }
-        System.out.println((System.currentTimeMillis() - start) + " time elapsed Assume for " + this.programPath);
+        System.out.println("\n" + (System.currentTimeMillis() - start) + " time elapsed Assume for " + this.programPath);
     }
 
     private SolverContext mkCtx() throws InvalidConfigurationException {
