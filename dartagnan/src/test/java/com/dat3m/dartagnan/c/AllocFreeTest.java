@@ -1,32 +1,53 @@
 package com.dat3m.dartagnan.c;
 
+import com.dat3m.dartagnan.configuration.Alias;
 import com.dat3m.dartagnan.configuration.Arch;
-import com.dat3m.dartagnan.configuration.Property;
+import com.dat3m.dartagnan.configuration.OptionNames;
+import com.dat3m.dartagnan.encoding.ProverWithTracker;
+import com.dat3m.dartagnan.parsers.cat.ParserCat;
+import com.dat3m.dartagnan.parsers.program.ProgramParser;
+import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.utils.Result;
-import com.dat3m.dartagnan.utils.rules.Provider;
-import com.dat3m.dartagnan.utils.rules.Providers;
+import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.verification.solving.AssumeSolver;
 import com.dat3m.dartagnan.verification.solving.RefinementSolver;
 import com.dat3m.dartagnan.wmm.Wmm;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
+import org.sosy_lab.common.ShutdownManager;
+import org.sosy_lab.common.configuration.Configuration;
+import org.sosy_lab.common.configuration.InvalidConfigurationException;
+import org.sosy_lab.common.log.BasicLogManager;
+import org.sosy_lab.java_smt.SolverContextFactory;
+import org.sosy_lab.java_smt.api.SolverContext;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.EnumSet;
+import java.util.List;
 
+import static com.dat3m.dartagnan.configuration.Alias.*;
 import static com.dat3m.dartagnan.configuration.Arch.C11;
+import static com.dat3m.dartagnan.configuration.Property.CAT_SPEC;
+import static com.dat3m.dartagnan.utils.ResourceHelper.getRootPath;
 import static com.dat3m.dartagnan.utils.ResourceHelper.getTestResourcePath;
 import static com.dat3m.dartagnan.utils.Result.FAIL;
 import static com.dat3m.dartagnan.utils.Result.PASS;
 import static org.junit.Assert.assertEquals;
 
 @RunWith(Parameterized.class)
-public class AllocFreeTest extends AbstractCTest {
+public class AllocFreeTest {
+
+    private final String name;
+    private final Arch target;
+    private final Result expected;
 
     public AllocFreeTest(String name, Arch target, Result expected) {
-        super(name, target, expected);
+        this.name = name;
+        this.target = target;
+        this.expected = expected;
     }
 
     @Parameterized.Parameters(name = "{index}: {0}, target={1}")
@@ -46,36 +67,51 @@ public class AllocFreeTest extends AbstractCTest {
         });
     }
 
-    @Override
-    protected Provider<String> getProgramPathProvider() {
-        return () -> getTestResourcePath("alloc/" + name + ".ll");
-    }
-
-    @Override
-    protected long getTimeout() {
-        return 60000;
-    }
-
-    @Override
-    protected Provider<Wmm> getWmmProvider() {
-        return Providers.createWmmFromName(() -> "rc11");
-    }
-
-    @Override
-    protected Provider<EnumSet<Property>> getPropertyProvider() {
-        return Provider.fromSupplier(() -> EnumSet.of(Property.CAT_SPEC));
+    @Test
+    public void testAssume() throws Exception {
+        for (Alias aliasMethod :  List.of(FIELD_INSENSITIVE , FIELD_SENSITIVE, FULL)) {
+            Configuration cfg = mkConfiguration(aliasMethod);
+            SolverContext ctx = mkCtx(cfg);
+            AssumeSolver s = AssumeSolver.run(ctx, mkProver(ctx), mkTask(cfg));
+            assertEquals(expected, s.getResult());
+        }
     }
 
     @Test
-    public void testAssume() throws Exception {
-        AssumeSolver s = AssumeSolver.run(contextProvider.get(), proverProvider.get(), taskProvider.get());
-        assertEquals(expected, s.getResult());
+    public void testRefinement() throws Exception {
+        for (Alias aliasMethod :  List.of(FIELD_INSENSITIVE , FIELD_SENSITIVE, FULL)) {
+            Configuration cfg = mkConfiguration(aliasMethod);
+            SolverContext ctx = mkCtx(cfg);
+            RefinementSolver s = RefinementSolver.run(ctx, mkProver(ctx), mkTask(cfg));
+            assertEquals(expected, s.getResult());
+        }
     }
 
-    // TODO: Implement missing definitions (domain)
-    //@Test
-    public void testRefinement() throws Exception {
-        RefinementSolver s = RefinementSolver.run(contextProvider.get(), proverProvider.get(), taskProvider.get());
-        assertEquals(expected, s.getResult());
+    private SolverContext mkCtx(Configuration cfg) throws InvalidConfigurationException {
+        return SolverContextFactory.createSolverContext(
+                cfg,
+                BasicLogManager.create(cfg),
+                ShutdownManager.create().getNotifier(),
+                SolverContextFactory.Solvers.Z3);
+    }
+
+    private ProverWithTracker mkProver(SolverContext ctx) {
+        return new ProverWithTracker(ctx, "", SolverContext.ProverOptions.GENERATE_MODELS);
+    }
+
+    private VerificationTask mkTask(Configuration configuration) throws Exception {
+        VerificationTask.VerificationTaskBuilder builder = VerificationTask.builder()
+                .withConfig(configuration)
+                .withTarget(target);
+        Program program = new ProgramParser().parse(new File(getTestResourcePath("alloc/" + name + ".ll")));
+        Wmm mcm = new ParserCat().parse(new File(getRootPath("cat/rc11.cat")));
+        return builder.build(program, mcm, EnumSet.of(CAT_SPEC));
+    }
+
+    private Configuration mkConfiguration(Alias aliasMethod) throws InvalidConfigurationException {
+        return Configuration.builder()
+                .setOption(OptionNames.USE_INTEGERS, "true")
+                .setOption(OptionNames.ALIAS_METHOD, aliasMethod.asStringOption())
+                .build();
     }
 }
