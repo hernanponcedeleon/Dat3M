@@ -31,8 +31,8 @@ public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
         public Expression compareExpression;
         public Register firstRegister;
         public Expression secondRegister;
-        public Expression zeroRegisterbv32; // used to have register with value 0
-        public Expression zeroRegisterbv64; // used to have register with value 0
+        public Expression zeroRegisterbv32;
+        public Expression zeroRegisterbv64;
 
         public CompareExpression() {
             this.zeroRegisterbv32 = expressions.parseValue("0", types.getIntegerType(32));
@@ -104,19 +104,25 @@ public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
         return innerString.equals("#0");
     }
 
-    /* given the VariableInline as String it picks up if it is a 32 or 64 bit */
-    // clean this 
     public Type getArmVariableSize(String registerArmName) {
-        // int width = - 1;
         int number = extractNumberFromRegisterName(registerArmName);
-        if (isPartOfAggregateReturnRegister(registerArmName)){
-            Type returnRegisterProjectionType = expressions.makeExtract(number, returnRegister).getType();
-            return returnRegisterProjectionType;
-        }
-        if (this.returnValuesNumber == 1 && number == 0){
+        if(isPartOfReturnRegister(registerArmName)){
+            if(isReturnRegisterAggregate()){
+                Type returnRegisterProjectionType = expressions.makeExtract(number, returnRegister).getType();
+                return returnRegisterProjectionType;
+            }
             return this.returnRegister.getType();
         }
-        return this.fnParameters.get(number - this.returnValuesNumber).getType();
+        return this.fnParameters.get(number - this.returnValuesNumber).getType();        
+    }
+
+    private boolean isPartOfReturnRegister(String registerArmName){
+        int number = extractNumberFromRegisterName(registerArmName);
+        return (number < this.returnValuesNumber);
+    }
+
+    private boolean isReturnRegisterAggregate() {
+        return this.returnValuesNumber > 1;
     }
 
     //these are used to populate the armToLlvmMap
@@ -138,12 +144,10 @@ public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
 
     int extractNumberFromRegisterName(String registerArmName){
         int number = -1;
-        System.out.println("registerArmName is " + registerArmName);
         String innerString = registerArmName;
         if (registerArmName.startsWith("r")){
             innerString = registerArmName.substring(1);
         }
-        System.out.println("innerStriong is is " + innerString);
         if(isArmv8Name(innerString)){ // ${N:x}
             number = Integer.parseInt(Character.toString(innerString.charAt(2)));
         } else if (innerString.length() ==  2) { // $n
@@ -154,12 +158,6 @@ public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
         return number;
     }
 
-    // used if the return is AggregateType (size > 1)
-    // has to be changed for armv7
-    private boolean isPartOfAggregateReturnRegister(String registerName) {
-        int number = extractNumberFromRegisterName(registerName);
-        return ((number < this.returnValuesNumber) && (this.returnValuesNumber > 1));
-    }
 
     private Label getOrNewLabel(String labelName) {
         Label label;
@@ -181,7 +179,7 @@ public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
             String registerName = makeRegisterName(nodeName);
             Register newRegister = llvmFunction.newRegister(registerName, type);
             this.armToLlvmMap.put(nodeName, newRegister);
-            if (isPartOfAggregateReturnRegister(nodeName)) {
+            if (isPartOfReturnRegister(nodeName) && isReturnRegisterAggregate()) {
                 this.pendingRegisters.add(newRegister);
             }
             return newRegister;
@@ -196,19 +194,21 @@ public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
         return label.replaceAll("(\\d)[a-z]", "$1");
     }
 
+    // TODO TEST THIS
     private void updateReturnRegisterIfModified(Register register) {
         String registerName = register.getName();
         int number = extractNumberFromRegisterName(registerName);
-        if(number == 0 && this.returnValuesNumber == 1){
+        if(isPartOfReturnRegister(registerName) && !isReturnRegisterAggregate()){
             events.add(EventFactory.newLocal(this.returnRegister, register));
         }
     }
 
     @Override
     public Object visitAsm(InlineAArch64Parser.AsmContext ctx) {
-        int commaPos = ctx.getText().lastIndexOf("\",\"");
-        String[] instructions = ctx.getText().substring(0, commaPos).split("\\\\0A"); // Instructions part
-        String[] clobbers = ctx.getText().substring(commaPos + 3, ctx.getText().length() - 1).split(","); // Clobbers part, excluding the surrounding quotes
+        String asmCode = ctx.getText();
+        int commaPos = asmCode.lastIndexOf("\",\"");
+        String[] instructions = asmCode.substring(0, commaPos).split("\\\\0A"); // Instructions part
+        String[] clobbers = asmCode.substring(commaPos + 3, ctx.getText().length() - 1).split(","); // Clobbers part
         ArrayList<String> filteredClobbers = Arrays.stream(clobbers).filter(s -> !s.startsWith("~")).collect(Collectors.toCollection(ArrayList::new)); // Filter out the clobbers that start with ~
 
         for (String instruction : instructions) {
@@ -244,64 +244,54 @@ public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
             }
         }
         registerNames.sort((s1, s2) -> Integer.compare(extractNumberFromRegisterName(s1), extractNumberFromRegisterName(s2)));
-        // System.out.println("Tmp is " + tmp);
-        // System.out.println("registerNames is " + registerNames);
-
         if (!registerNames.isEmpty() && !this.fnParameters.isEmpty()) {
-            System.out.println("RegisterNames is " + registerNames);
-            System.out.println("Fn params are " + this.fnParameters);
+            // System.out.println("RegisterNames is " + registerNames);
+            // System.out.println("Fn params are " + this.fnParameters);
             int registerNameIndex = 0;
             for (String clobber : filteredClobbers) {
                 System.out.println("Current clobber is " + clobber);
                 if (clobber.matches("\\d+")) {
-                    // https://llvm.org/docs/LangRef.html#input-constraints
-                    // For example, a constraint string of “=r,0” says to assign a register for output, and use that register as an input as well (it being the 0’th constraint).
-                    // so we have to get the i-th return Value and map it to fnParams
-                    int number = Integer.parseInt(clobber);
-                    if (number >= 0 && number <= this.returnValuesNumber) {
-                        String name = registerNames.get(number);
-                        // Map the register to the corresponding function parameter
-                        Register toBeChanged = getOrNewRegister(name);
-                        System.out.println("Register is going to be assigned " + toBeChanged.getName() + " < - " + this.fnParameters.get(registerNameIndex - this.returnValuesNumber));
-                        // System.out.println("Trying to change the value via local assignment -- read a d+");
-                        // for consistency change also this one to use the extractValue
-                        events.add(EventFactory.newLocal(toBeChanged, this.fnParameters.get(registerNameIndex - this.returnValuesNumber)));
-                    } else {
-                        System.err.println("The number provided in the clobber is not a valid index for any return value");
-                    }
+                    processNumericClobber(clobber, registerNameIndex);
                 } else if (clobber.equals("=*m")) {
                     //if clobber is =*m it means that such pointer is a memory location, so we do not map to any register
-                    // we just increase registerNameIndex as we don't want to pick it up and it has no returnValue
-                    // registerNameIndex++;
                 } else {
-                    // System.out.println("Evaluating clobber " + clobber + " with registerNameIndex " + registerNameIndex);
-                    // if it is a valid clobber create the register
-                    String registerName = registerNames.get(registerNameIndex);
-                    Register newRegister = getOrNewRegister(registerName);
-                    armToLlvmMap.put(this.registerNames.get(registerNameIndex), newRegister);
-                    int number = extractNumberFromRegisterName(registerName); // better than picking registerName -- ck case
-                    if (clobber.equals("=&r") || clobber.equals("=r")) {
-                        // maps to returnValue, so we just skip it and increase the registerNameIndex
-                        registerNameIndex++;
-                    } else if (clobber.equals("r")) {
-                        // it has to be mapped to fnParams do as such
-                        System.out.println("Trying to assign to " + newRegister + " expression " + this.fnParameters.get(number - this.returnValuesNumber));
-                        events.add(EventFactory.newLocal(newRegister, this.fnParameters.get(number - this.returnValuesNumber)));
-                        registerNameIndex++;
-                    } else if (clobber.equals("Q") || clobber.equals("*Q")) {
-                        // we are assured that last one is a pointer type 
-                        System.out.println("Trying to assign to " + newRegister + " expression " + this.fnParameters.get(number - this.returnValuesNumber));
-                        events.add(EventFactory.newLocal(newRegister, this.fnParameters.get(number - this.returnValuesNumber)));
-                        registerNameIndex++;
-                        // we do not increase index as we want to keep in the same fnParam -- to be checked
-                    } else {
-                        System.err.println("New type of clobber found, you have to add it! " + clobber);
-                    }
+                    processGeneralPurposeClobber(clobber,registerNameIndex);
+                    registerNameIndex++;
                 }
             }
         }
         System.out.println("Currently the map contains " + armToLlvmMap);
         return visitChildren(ctx);
+    }
+    private void processNumericClobber(String clobber, int registerNameIndex){
+        // https://llvm.org/docs/LangRef.html#input-constraints
+        // For example, a constraint string of “=r,1” says to assign a register for output, and use that register as an input as well (it being the 1st constraint).
+        // so we have to get the i-th return Value and map it to fnParams
+        int number = Integer.parseInt(clobber);
+        if (number < 0 || number > this.returnValuesNumber) {
+            System.err.println("The number provided in the clobber is not a valid index for any return value");
+            return;
+        }
+        String name = registerNames.get(number);
+        Register toBeChanged = getOrNewRegister(name);
+        System.out.println("Register is going to be assigned " + toBeChanged.getName() + " < - " + this.fnParameters.get(registerNameIndex - this.returnValuesNumber));
+        events.add(EventFactory.newLocal(toBeChanged, this.fnParameters.get(registerNameIndex - this.returnValuesNumber)));
+    }
+
+    private void processGeneralPurposeClobber(String clobber, int registerNameIndex){
+        String registerName = registerNames.get(registerNameIndex);
+        Register newRegister = getOrNewRegister(registerName);
+        armToLlvmMap.put(registerName, newRegister);
+        if (clobber.equals("=&r") || clobber.equals("=r")) {
+            // Clobber maps to returnValue, we just skip it as we are assigning them later
+        }
+        else if (clobber.equals("r") || clobber.equals("Q") || clobber.equals("*Q")) {
+            int number = extractNumberFromRegisterName(registerName);
+            System.out.println("Trying to assign to " + newRegister + " expression " + this.fnParameters.get(number - this.returnValuesNumber));
+            events.add(EventFactory.newLocal(newRegister, this.fnParameters.get(number - this.returnValuesNumber)));
+        } else {
+            System.err.println("New type of clobber found, you have to add it! " + clobber);
+        }
     }
 
     @Override
