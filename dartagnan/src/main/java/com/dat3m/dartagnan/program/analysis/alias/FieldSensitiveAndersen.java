@@ -175,7 +175,7 @@ public class FieldSensitiveAndersen implements AliasAnalysis {
         if (a.getAllocationSize() instanceof IntLiteral i) {
             allocSizeMap.put(a, i.getValueAsInt());
         } else {
-            throw new RuntimeException("Size of heap allocation is not integer");
+            throw new IllegalArgumentException("Size of heap allocation is not integer");
         }
     }
 

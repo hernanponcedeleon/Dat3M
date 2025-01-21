@@ -170,7 +170,7 @@ public class AndersenAliasAnalysis implements AliasAnalysis {
             addAddress(r, new Location(base, 0));
             variables.add(r);
         } else {
-            throw new RuntimeException("Size of heap allocation is not integer");
+            throw new IllegalArgumentException("Size of heap allocation is not integer");
         }
     }
 
