@@ -17,15 +17,16 @@ import java.util.stream.Collectors;
 
 public class Program {
 
-    public enum SourceLanguage { LITMUS, LLVM, SPV }
+    public enum SourceLanguage { LITMUS, LLVM, SPV, SQL }
 
     public enum SpecificationType { EXISTS, FORALL, NOT_EXISTS, ASSERT }
 
-    private String name;
+    protected String name;
     private SpecificationType specificationType = SpecificationType.ASSERT;
     private Expression spec;
     private Expression filterSpec; // Acts like "assume" statements, filtering out executions
-    private final List<Thread> threads;
+    private List<Event> beforeEvents; // all events that happen before the execution of any threads
+    protected final List<Thread> threads;
     private final List<Function> functions;
     private final List<NonDetValue> constants = new ArrayList<>();
     private final Memory memory;
@@ -35,6 +36,7 @@ public class Program {
     private final SourceLanguage format;
 
     private int nextConstantId = 0;
+
 
     public Program(Memory memory, SourceLanguage format) {
         this("", memory, format);

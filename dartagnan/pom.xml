@@ -60,6 +60,7 @@
             <version>${z3.version}</version>
         </dependency>
 
+
         <!-- Test dependencies -->
         <dependency>
             <groupId>junit</groupId>

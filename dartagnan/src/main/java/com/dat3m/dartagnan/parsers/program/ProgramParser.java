@@ -27,8 +27,9 @@ public class ProgramParser {
     public static final String EXTENSION_LL = ".ll";
     public static final String EXTENSION_LITMUS = ".litmus";
     public static final String EXTENSION_SPV_DIS = ".spv.dis";
+    public static final String EXTENSION_SQL_APPLICATION = ".sqla";
     public static final List<String> SUPPORTED_EXTENSIONS = List.of(
-            EXTENSION_C, EXTENSION_I, EXTENSION_LL, EXTENSION_LITMUS, EXTENSION_SPV_DIS);
+            EXTENSION_C, EXTENSION_I, EXTENSION_LL, EXTENSION_LITMUS, EXTENSION_SPV_DIS,EXTENSION_SQL_APPLICATION);
 
     public Program parse(File file) throws Exception {
         if (needsClang(file)) {
@@ -91,6 +92,9 @@ public class ProgramParser {
         }
         if (name.endsWith(EXTENSION_LITMUS)) {
             return getConcreteLitmusParser(readFirstLine(file).toUpperCase());
+        }
+        if (name.endsWith(EXTENSION_SQL_APPLICATION)) {
+            return new ParserSqlApplication();
         }
         throw new ParsingException("Unknown input file type");
     }

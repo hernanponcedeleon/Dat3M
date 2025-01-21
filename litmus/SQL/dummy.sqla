@@ -1,0 +1,16 @@
+program_InitialTry
+
+table_definition:
+
+CREATE TABLE table_a (col1 INTEGER,col2 INTEGER ) ;
+CREATE TABLE table_b (col1 VARCHAR,col2 VARCHAR) ;
+
+assertions:
+
+SELECT * FROM table_a where col1>1;
+
+application:
+
+BEGIN TRANSACTION
+SELECT abc FROM table_a;
+END TRANSACTION

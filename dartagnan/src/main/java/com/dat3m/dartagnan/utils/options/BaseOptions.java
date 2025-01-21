@@ -63,7 +63,7 @@ public abstract class BaseOptions {
             name = SOLVER,
             description = "Uses the specified SMT solver as a backend.",
             toUppercase = true)
-    private Solvers solver = Solvers.Z3;
+    private Solvers solver = Solvers.CVC5;
 
     public Solvers getSolver() {
         return solver;
@@ -103,7 +103,7 @@ public abstract class BaseOptions {
     @Option(
             name = SMTLIB2,
             description = "Dump encoding to an SMTLIB2 file.")
-    private boolean smtlib = false;
+    private boolean smtlib = true;
 
     public boolean getDumpSmtLib() {
         return smtlib;

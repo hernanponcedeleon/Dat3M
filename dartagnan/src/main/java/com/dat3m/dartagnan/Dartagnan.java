@@ -23,10 +23,7 @@ import com.dat3m.dartagnan.utils.options.BaseOptions;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.verification.VerificationTask.VerificationTaskBuilder;
 import com.dat3m.dartagnan.verification.model.ExecutionModel;
-import com.dat3m.dartagnan.verification.solving.AssumeSolver;
-import com.dat3m.dartagnan.verification.solving.DataRaceSolver;
-import com.dat3m.dartagnan.verification.solving.ModelChecker;
-import com.dat3m.dartagnan.verification.solving.RefinementSolver;
+import com.dat3m.dartagnan.verification.solving.*;
 import com.dat3m.dartagnan.witness.WitnessType;
 import com.dat3m.dartagnan.witness.graphml.WitnessBuilder;
 import com.dat3m.dartagnan.witness.graphml.WitnessGraph;
@@ -189,6 +186,8 @@ public class Dartagnan extends BaseOptions {
                         System.exit(1);
                     }
                     modelChecker = DataRaceSolver.run(ctx, prover, task);
+                } else if (p.getFormat() == SourceLanguage.SQL) {
+                    modelChecker = SqlSolver.run(ctx, prover, task);
                 } else {
                     // Property is either PROGRAM_SPEC, LIVENESS, or CAT_SPEC
                     modelChecker = switch (o.getMethod()) {
