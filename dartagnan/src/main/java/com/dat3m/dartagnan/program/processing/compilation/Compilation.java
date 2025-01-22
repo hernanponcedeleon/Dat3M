@@ -132,6 +132,7 @@ public class Compilation implements ProgramProcessor {
             case LKMM -> new VisitorLKMM();
             case TSO -> new VisitorTso();
             case POWER -> new VisitorPower(useRC11Scheme, cToPowerScheme);
+            case ARM7 -> new VisitorArm7();
             case ARM8 -> new VisitorArm8(useRC11Scheme);
             case IMM -> new VisitorIMM();
             case RISCV -> new VisitorRISCV(useRC11Scheme);
