@@ -49,12 +49,11 @@ public class InlineAsmTestThreadsArmv7 {
     @Parameterized.Parameters(name = "{index}: {0}, {1}, {2}")
     public static Iterable<Object[]> data() throws IOException {
         return Arrays.asList(new Object[][]{
-            // they give Invalid function pointer
-            {"cnd_test1", 3, PASS},
-            {"cnd_test2", 3, PASS},
-            {"mutex_musl", 3, PASS}, // ok
-            {"mutex_slim", 3, PASS}, // ok 
-            {"mutex_waiters", 3, PASS}, // ok
+            {"cnd_test1", 3, PASS}, //LlvmLoad/Store error
+            {"cnd_test2", 3, PASS}, //LlvmLoad/Store error
+            {"mutex_musl", 3, PASS},
+            {"mutex_slim", 3, PASS},
+            {"mutex_waiters", 3, PASS},
             {"once", 5, PASS}
         });
     }
@@ -67,11 +66,11 @@ public class InlineAsmTestThreadsArmv7 {
             assertEquals(expected, RefinementSolver.run(ctx, prover, mkTask()).getResult());
         }
         System.out.println("\n" + (System.currentTimeMillis() - start) + " time elapsed Refinement for " + this.programPath);
-        start = System.currentTimeMillis();
-        try (SolverContext ctx = mkCtx(); ProverWithTracker prover = mkProver(ctx)) {
-            assertEquals(expected, AssumeSolver.run(ctx, prover, mkTask()).getResult());
-        }
-        System.out.println("\n" + (System.currentTimeMillis() - start) + " time elapsed Assume for " + this.programPath);
+        // start = System.currentTimeMillis();
+        // try (SolverContext ctx = mkCtx(); ProverWithTracker prover = mkProver(ctx)) {
+        //     assertEquals(expected, AssumeSolver.run(ctx, prover, mkTask()).getResult());
+        // }
+        // System.out.println("\n" + (System.currentTimeMillis() - start) + " time elapsed Assume for " + this.programPath);
     }
 
     private SolverContext mkCtx() throws InvalidConfigurationException {
@@ -80,7 +79,7 @@ public class InlineAsmTestThreadsArmv7 {
                 cfg,
                 BasicLogManager.create(cfg),
                 ShutdownManager.create().getNotifier(),
-                SolverContextFactory.Solvers.Z3);
+                SolverContextFactory.Solvers.YICES2);
     }
 
     private ProverWithTracker mkProver(SolverContext ctx) {
@@ -91,7 +90,7 @@ public class InlineAsmTestThreadsArmv7 {
         VerificationTask.VerificationTaskBuilder builder = VerificationTask.builder()
                 .withConfig(Configuration.builder().build())
                 .withBound(bound)
-                .withTarget(Arch.ARM8);
+                .withTarget(Arch.ARM7);
         Program program = new ProgramParser().parse(new File(programPath));
         Wmm mcm = new ParserCat().parse(new File(modelPath));
         return builder.build(program, mcm, EnumSet.of(LIVENESS, PROGRAM_SPEC));

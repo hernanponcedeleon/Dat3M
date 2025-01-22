@@ -485,7 +485,7 @@ public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
 
     @Override
     public Object visitDataMemoryBarrier(InlineAArch64Parser.DataMemoryBarrierContext ctx) {
-        System.out.println("Data Memory Barrier");
+        // System.out.println("Data Memory Barrier");
         String dataMemoryBarrierAndOpt = ctx.DataMemoryBarrier().getText() + " " + ctx.DataMemoryBarrierOpt().getText();
         switch (dataMemoryBarrierAndOpt) {
             case "dmb ish" ->

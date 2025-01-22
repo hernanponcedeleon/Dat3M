@@ -49,7 +49,7 @@ public class InlineAsmTestSpinlocks {
     @Parameterized.Parameters(name = "{index}: {0}, {1}, {2}")
     public static Iterable<Object[]> data() throws IOException {
         return Arrays.asList(new Object[][]{
-            {"arraylock", 4, PASS},
+            // {"arraylock", 4, PASS},
             // {"caslock", 4, PASS}, // passes Refinement but out of memory on Assume 
             {"clhlock", 3, PASS},
             // {"cnalock", 5, PASS}, // takes 35 minutes

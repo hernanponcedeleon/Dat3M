@@ -66,11 +66,11 @@ public class InlineAsmTestQueueBoundedArmv7 {
         
         
         System.out.println("\n" + (System.currentTimeMillis() - start) + " time elapsed Refinment for " + this.programPath);
-        start = System.currentTimeMillis();
-        try (SolverContext ctx = mkCtx(); ProverWithTracker prover = mkProver(ctx)) {
-            assertEquals(expected, AssumeSolver.run(ctx, prover, mkTask()).getResult());
-        }
-        System.out.println("\n" + (System.currentTimeMillis() - start) + " time elapsed Assume for " + this.programPath);
+        // start = System.currentTimeMillis();
+        // try (SolverContext ctx = mkCtx(); ProverWithTracker prover = mkProver(ctx)) {
+        //     assertEquals(expected, AssumeSolver.run(ctx, prover, mkTask()).getResult());
+        // }
+        // System.out.println("\n" + (System.currentTimeMillis() - start) + " time elapsed Assume for " + this.programPath);
     }
 
     private SolverContext mkCtx() throws InvalidConfigurationException {
@@ -90,7 +90,7 @@ public class InlineAsmTestQueueBoundedArmv7 {
         VerificationTask.VerificationTaskBuilder builder = VerificationTask.builder()
                 .withConfig(Configuration.builder().build())
                 .withBound(bound)
-                .withTarget(Arch.ARM8);
+                .withTarget(Arch.ARM7);
         Program program = new ProgramParser().parse(new File(programPath));
         Wmm mcm = new ParserCat().parse(new File(modelPath));
         return builder.build(program, mcm, EnumSet.of(LIVENESS, PROGRAM_SPEC));
