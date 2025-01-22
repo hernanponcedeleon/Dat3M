@@ -1,4 +1,4 @@
-package com.dat3m.dartagnan.inlineAsm.queue_bounded;
+package com.dat3m.dartagnan.inlineAsm.threads;
 
 import java.io.File;
 import java.io.IOException;
@@ -33,26 +33,29 @@ import com.dat3m.dartagnan.verification.solving.RefinementSolver;
 import com.dat3m.dartagnan.wmm.Wmm;
 
 @RunWith(Parameterized.class)
-public class InlineAsmTestQueueBoundedArmv7 {
+public class InlineAsmTestThreadsArmv7 {
 
     private final String modelPath = getRootPath("cat/arm.cat");
     private final String programPath;
     private final int bound;
     private final Result expected;
 
-    public InlineAsmTestQueueBoundedArmv7(String file, int bound, Result expected) {
-        this.programPath = getTestResourcePath("inlineasm/queue_bounded_armv7/" + file + ".ll");
+    public InlineAsmTestThreadsArmv7(String file, int bound, Result expected) {
+        this.programPath = getTestResourcePath("inlineasm/threads_armv7/" + file + ".ll");
         this.bound = bound;
         this.expected = expected;
     }
 
-
     @Parameterized.Parameters(name = "{index}: {0}, {1}, {2}")
     public static Iterable<Object[]> data() throws IOException {
         return Arrays.asList(new Object[][]{
-            {"bounded_spsc", 4, PASS}, 
-            {"bounded_mpmc_check_full", 5, PASS}, 
-            {"bounded_mpmc_check_empty", 4, PASS} 
+            // they give Invalid function pointer
+            {"cnd_test1", 3, PASS},
+            {"cnd_test2", 3, PASS},
+            {"mutex_musl", 3, PASS}, // ok
+            {"mutex_slim", 3, PASS}, // ok 
+            {"mutex_waiters", 3, PASS}, // ok
+            {"once", 5, PASS}
         });
     }
 
@@ -63,9 +66,7 @@ public class InlineAsmTestQueueBoundedArmv7 {
         try (SolverContext ctx = mkCtx(); ProverWithTracker prover = mkProver(ctx)) {
             assertEquals(expected, RefinementSolver.run(ctx, prover, mkTask()).getResult());
         }
-        
-        
-        System.out.println("\n" + (System.currentTimeMillis() - start) + " time elapsed Refinment for " + this.programPath);
+        System.out.println("\n" + (System.currentTimeMillis() - start) + " time elapsed Refinement for " + this.programPath);
         start = System.currentTimeMillis();
         try (SolverContext ctx = mkCtx(); ProverWithTracker prover = mkProver(ctx)) {
             assertEquals(expected, AssumeSolver.run(ctx, prover, mkTask()).getResult());
@@ -79,7 +80,7 @@ public class InlineAsmTestQueueBoundedArmv7 {
                 cfg,
                 BasicLogManager.create(cfg),
                 ShutdownManager.create().getNotifier(),
-                SolverContextFactory.Solvers.YICES2);
+                SolverContextFactory.Solvers.Z3);
     }
 
     private ProverWithTracker mkProver(SolverContext ctx) {

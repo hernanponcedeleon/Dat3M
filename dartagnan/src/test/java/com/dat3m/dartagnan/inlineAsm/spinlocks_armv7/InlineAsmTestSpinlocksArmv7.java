@@ -1,4 +1,4 @@
-package com.dat3m.dartagnan.inlineAsm.queue_bounded;
+package com.dat3m.dartagnan.inlineAsm.spinlocks;
 
 import java.io.File;
 import java.io.IOException;
@@ -33,26 +33,37 @@ import com.dat3m.dartagnan.verification.solving.RefinementSolver;
 import com.dat3m.dartagnan.wmm.Wmm;
 
 @RunWith(Parameterized.class)
-public class InlineAsmTestQueueBoundedArmv7 {
+public class InlineAsmTestSpinlocksArmv7 {
 
     private final String modelPath = getRootPath("cat/arm.cat");
     private final String programPath;
     private final int bound;
     private final Result expected;
 
-    public InlineAsmTestQueueBoundedArmv7(String file, int bound, Result expected) {
-        this.programPath = getTestResourcePath("inlineasm/queue_bounded_armv7/" + file + ".ll");
+    public InlineAsmTestSpinlocksArmv7(String file, int bound, Result expected) {
+        this.programPath = getTestResourcePath("inlineasm/spinlocks_armv7/" + file + ".ll");
         this.bound = bound;
         this.expected = expected;
     }
 
-
     @Parameterized.Parameters(name = "{index}: {0}, {1}, {2}")
     public static Iterable<Object[]> data() throws IOException {
         return Arrays.asList(new Object[][]{
-            {"bounded_spsc", 4, PASS}, 
-            {"bounded_mpmc_check_full", 5, PASS}, 
-            {"bounded_mpmc_check_empty", 4, PASS} 
+            {"arraylock", 4, PASS},
+            // {"caslock", 4, PASS}, // passes Refinement but out of memory on Assume 
+            {"clhlock", 3, PASS},
+            // {"cnalock", 5, PASS}, // takes 35 minutes
+            {"hemlock", 3, PASS},
+            {"mcslock", 3, PASS},
+            {"rec_mcslock", 3, PASS},
+            // {"rec_seqlock", 3, PASS}, // 25 min to pass
+            {"rec_spinlock", 3, PASS},
+            {"rwlock", 3, PASS},
+            {"semaphore", 3, PASS},
+            {"seqcount", 1, PASS},
+            {"seqlock", 3, PASS},
+            {"ttaslock", 3, PASS},
+            {"twalock", 2, PASS},
         });
     }
 
@@ -63,7 +74,6 @@ public class InlineAsmTestQueueBoundedArmv7 {
         try (SolverContext ctx = mkCtx(); ProverWithTracker prover = mkProver(ctx)) {
             assertEquals(expected, RefinementSolver.run(ctx, prover, mkTask()).getResult());
         }
-        
         
         System.out.println("\n" + (System.currentTimeMillis() - start) + " time elapsed Refinment for " + this.programPath);
         start = System.currentTimeMillis();
