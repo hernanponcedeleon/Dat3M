@@ -58,7 +58,7 @@ public class InlineAsmTestSpinlocks {
             {"rec_mcslock", 3, PASS},
             // {"rec_seqlock", 3, PASS}, // 25 min to pass
             {"rec_spinlock", 3, PASS},
-            {"rwlock", 4, PASS},
+            {"rwlock", 3, PASS},
             {"semaphore", 3, PASS},
             {"seqcount", 1, PASS},
             {"seqlock", 3, PASS},

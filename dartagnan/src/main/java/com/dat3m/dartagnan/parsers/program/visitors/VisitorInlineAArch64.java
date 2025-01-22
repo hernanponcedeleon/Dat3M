@@ -49,10 +49,10 @@ public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
             this.compareExpression = expressions.makeIntCmp(this.firstRegister, intCmpOp, this.secondRegister);
         }
 
-        public void updateCompareExpressionZero(Register firstRegister,IntCmpOp intCmpOp){
-            if(firstRegister.getType().equals(types.getIntegerType(32))){
+        public void updateCompareExpressionZero(Register firstRegister, IntCmpOp intCmpOp) {
+            if (firstRegister.getType().equals(types.getIntegerType(32))) {
                 this.updateCompareExpression(firstRegister, intCmpOp, this.zeroRegisterbv32);
-            } else{
+            } else {
                 this.updateCompareExpression(firstRegister, intCmpOp, this.zeroRegisterbv64);
             }
         }
@@ -92,31 +92,31 @@ public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
         return this.events;
     }
 
-    private boolean isArmv8Name(String registerName){
+    private boolean isArmv8Name(String registerName) {
         return registerName.startsWith("${") && registerName.endsWith("}");
-    } 
+    }
 
-    private boolean isRegisterConstantValue(String nodeName){
+    private boolean isRegisterConstantValue(String nodeName) {
         String innerString = nodeName;
-        if (nodeName.startsWith("r")){
+        if (nodeName.startsWith("r")) {
             innerString = nodeName.substring(1);
         }
-        return innerString.equals("#0");
+        return innerString.startsWith("#");
     }
 
     public Type getArmVariableSize(String registerArmName) {
         int number = extractNumberFromRegisterName(registerArmName);
-        if(isPartOfReturnRegister(registerArmName)){
-            if(isReturnRegisterAggregate()){
+        if (isPartOfReturnRegister(registerArmName)) {
+            if (isReturnRegisterAggregate()) {
                 Type returnRegisterProjectionType = expressions.makeExtract(number, returnRegister).getType();
                 return returnRegisterProjectionType;
             }
             return this.returnRegister.getType();
         }
-        return this.fnParameters.get(number - this.returnValuesNumber).getType();        
+        return this.fnParameters.get(number - this.returnValuesNumber).getType();
     }
 
-    private boolean isPartOfReturnRegister(String registerArmName){
+    private boolean isPartOfReturnRegister(String registerArmName) {
         int number = extractNumberFromRegisterName(registerArmName);
         return (number < this.returnValuesNumber);
     }
@@ -124,6 +124,7 @@ public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
     private boolean isReturnRegisterAggregate() {
         return this.returnValuesNumber > 1;
     }
+
 
     //these are used to populate the armToLlvmMap
     private int initReturnValuesNumberInitReturnRegisterTypes(Type returnType) {
@@ -142,22 +143,21 @@ public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
         }
     }
 
-    int extractNumberFromRegisterName(String registerArmName){
+    int extractNumberFromRegisterName(String registerArmName) {
         int number = -1;
         String innerString = registerArmName;
-        if (registerArmName.startsWith("r")){
+        if (registerArmName.startsWith("r")) {
             innerString = registerArmName.substring(1);
         }
-        if(isArmv8Name(innerString)){ // ${N:x}
+        if (isArmv8Name(innerString)) { // ${N:x}
             number = Integer.parseInt(Character.toString(innerString.charAt(2)));
-        } else if (innerString.length() ==  2) { // $n
+        } else if (innerString.length() == 2) { // $n
             number = Integer.parseInt(Character.toString(innerString.charAt(1)));
-        } else if ( innerString.length() == 4){ // [$n]
+        } else if (innerString.length() == 4) { // [$n]
             number = Integer.parseInt(Character.toString(innerString.charAt(2)));
         }
         return number;
     }
-
 
     private Label getOrNewLabel(String labelName) {
         Label label;
@@ -179,7 +179,7 @@ public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
             String registerName = makeRegisterName(nodeName);
             Register newRegister = llvmFunction.newRegister(registerName, type);
             this.armToLlvmMap.put(nodeName, newRegister);
-            if (isPartOfReturnRegister(nodeName) && isReturnRegisterAggregate()) {
+            if (isPartOfReturnRegister(nodeName) && isReturnRegisterAggregate() && !isRegisterConstantValue(nodeName)){
                 this.pendingRegisters.add(newRegister);
             }
             return newRegister;
@@ -194,11 +194,10 @@ public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
         return label.replaceAll("(\\d)[a-z]", "$1");
     }
 
-    // TODO TEST THIS
     private void updateReturnRegisterIfModified(Register register) {
         String registerName = register.getName();
         int number = extractNumberFromRegisterName(registerName);
-        if(isPartOfReturnRegister(registerName) && !isReturnRegisterAggregate()){
+        if (isPartOfReturnRegister(registerName) && !isReturnRegisterAggregate()) {
             events.add(EventFactory.newLocal(this.returnRegister, register));
         }
     }
@@ -249,21 +248,22 @@ public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
             // System.out.println("Fn params are " + this.fnParameters);
             int registerNameIndex = 0;
             for (String clobber : filteredClobbers) {
-                System.out.println("Current clobber is " + clobber);
+                // System.out.println("Current clobber is " + clobber);
                 if (clobber.matches("\\d+")) {
                     processNumericClobber(clobber, registerNameIndex);
                 } else if (clobber.equals("=*m")) {
                     //if clobber is =*m it means that such pointer is a memory location, so we do not map to any register
                 } else {
-                    processGeneralPurposeClobber(clobber,registerNameIndex);
+                    processGeneralPurposeClobber(clobber, registerNameIndex);
                     registerNameIndex++;
                 }
             }
         }
-        System.out.println("Currently the map contains " + armToLlvmMap);
+        // System.out.println("Currently the map contains " + armToLlvmMap);
         return visitChildren(ctx);
     }
-    private void processNumericClobber(String clobber, int registerNameIndex){
+
+    private void processNumericClobber(String clobber, int registerNameIndex) {
         // https://llvm.org/docs/LangRef.html#input-constraints
         // For example, a constraint string of “=r,1” says to assign a register for output, and use that register as an input as well (it being the 1st constraint).
         // so we have to get the i-th return Value and map it to fnParams
@@ -278,14 +278,13 @@ public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
         events.add(EventFactory.newLocal(toBeChanged, this.fnParameters.get(registerNameIndex - this.returnValuesNumber)));
     }
 
-    private void processGeneralPurposeClobber(String clobber, int registerNameIndex){
+    private void processGeneralPurposeClobber(String clobber, int registerNameIndex) {
         String registerName = registerNames.get(registerNameIndex);
         Register newRegister = getOrNewRegister(registerName);
         armToLlvmMap.put(registerName, newRegister);
         if (clobber.equals("=&r") || clobber.equals("=r")) {
             // Clobber maps to returnValue, we just skip it as we are assigning them later
-        }
-        else if (clobber.equals("r") || clobber.equals("Q") || clobber.equals("*Q")) {
+        } else if (clobber.equals("r") || clobber.equals("Q") || clobber.equals("*Q")) {
             int number = extractNumberFromRegisterName(registerName);
             System.out.println("Trying to assign to " + newRegister + " expression " + this.fnParameters.get(number - this.returnValuesNumber));
             events.add(EventFactory.newLocal(newRegister, this.fnParameters.get(number - this.returnValuesNumber)));
@@ -412,9 +411,9 @@ public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
     public Object visitCompare(InlineAArch64Parser.CompareContext ctx) {
         Register firstRegister = (Register) ctx.register(0).accept(this);
         Register secondRegister = (Register) ctx.register(1).accept(this);
-        if(isRegisterConstantValue(secondRegister.getName())){
-            this.comparator.updateCompareExpressionZero(firstRegister,IntCmpOp.EQ);
-        } else{
+        if (isRegisterConstantValue(secondRegister.getName())) {
+            this.comparator.updateCompareExpressionZero(firstRegister, IntCmpOp.EQ);
+        } else {
             this.comparator.updateCompareExpression(firstRegister, IntCmpOp.EQ, secondRegister);
         }
         return visitChildren(ctx);
@@ -423,7 +422,7 @@ public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
     @Override
     public Object visitCompareBranchNonZero(InlineAArch64Parser.CompareBranchNonZeroContext ctx) {
         Register registerLlvm = (Register) ctx.register().accept(this);
-        this.comparator.updateCompareExpressionZero(registerLlvm,IntCmpOp.NEQ);
+        this.comparator.updateCompareExpressionZero(registerLlvm, IntCmpOp.NEQ);
         String cleanedLabelName = cleanLabel(ctx.LabelReference().getText());
         Label label = getOrNewLabel(cleanedLabelName);
         events.add(EventFactory.newJump(this.comparator.compareExpression, label));
@@ -482,5 +481,20 @@ public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
     @Override
     public Object visitRegister(InlineAArch64Parser.RegisterContext ctx) {
         return getOrNewRegister(ctx.Register().getText());
+    }
+
+    @Override
+    public Object visitDataMemoryBarrier(InlineAArch64Parser.DataMemoryBarrierContext ctx) {
+        System.out.println("Data Memory Barrier");
+        String dataMemoryBarrierAndOpt = ctx.DataMemoryBarrier().getText() + " " + ctx.DataMemoryBarrierOpt().getText();
+        switch (dataMemoryBarrierAndOpt) {
+            case "dmb ish" ->
+                events.add(EventFactory.AArch64.DMB.newISHBarrier());
+            case "dmb ishld" ->
+                events.add(EventFactory.AArch64.DMB.newISHLDBarrier());
+            default ->
+                System.err.println("Data Memory Barrier not implemented");
+        }
+        return visitChildren(ctx);
     }
 }

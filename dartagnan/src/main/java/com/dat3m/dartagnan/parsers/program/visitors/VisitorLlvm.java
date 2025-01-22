@@ -508,8 +508,8 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
             case "mfence" -> fences.add(X86.newMemoryFence());
                 // Aarch64
             case "dmb sy" -> fences.add(AArch64.DMB.newSYBarrier());
-            case "dmb ish" -> fences.add(AArch64.DMB.newISHBarrier());
-            case "dmb ishld" -> fences.add(AArch64.DMB.newISHLDBarrier());
+            // case "dmb ish" -> fences.add(AArch64.DMB.newISHBarrier());
+            // case "dmb ishld" -> fences.add(AArch64.DMB.newISHLDBarrier());
             case "dmb ishst" -> fences.add(AArch64.DMB.newISHSTBarrier());
             case "dsb sy" -> fences.add(AArch64.DSB.newSYBarrier());
             case "dsb ish" -> fences.add(AArch64.DSB.newISHBarrier());
