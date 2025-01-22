@@ -10,11 +10,13 @@ spvHeaders : spvHeader*;
 spvHeader
     :   inputHeader
     |   outputHeader
+    |   filterHeader
     |   configHeader
     ;
 
 inputHeader : ModeHeader_Input ModeHeader_Colon initList;
 outputHeader : ModeHeader_Output ModeHeader_Colon assertionList;
+filterHeader : ModeHeader_Filter ModeHeader_Colon assertion;
 configHeader : ModeHeader_Config ModeHeader_Colon literanHeaderUnsignedInteger ModeHeader_Comma literanHeaderUnsignedInteger ModeHeader_Comma literanHeaderUnsignedInteger;
 initList : init (ModeHeader_Comma init)*;
 init : varName ModeHeader_Equal initValue;
