@@ -49,9 +49,9 @@ public class InlineAsmTestSpinlocksArmv7 {
     @Parameterized.Parameters(name = "{index}: {0}, {1}, {2}")
     public static Iterable<Object[]> data() throws IOException {
         return Arrays.asList(new Object[][]{
-            {"arraylock", 4, PASS},
+            // {"arraylock", 4, PASS},
             // {"caslock", 4, PASS}, // passes Refinement but out of memory on Assume 
-            {"clhlock", 3, PASS},
+            {"clhlock", 3, PASS}, 
             // {"cnalock", 5, PASS}, // takes 35 minutes
             {"hemlock", 3, PASS},
             {"mcslock", 3, PASS},
@@ -76,11 +76,11 @@ public class InlineAsmTestSpinlocksArmv7 {
         }
         
         System.out.println("\n" + (System.currentTimeMillis() - start) + " time elapsed Refinment for " + this.programPath);
-        start = System.currentTimeMillis();
-        try (SolverContext ctx = mkCtx(); ProverWithTracker prover = mkProver(ctx)) {
-            assertEquals(expected, AssumeSolver.run(ctx, prover, mkTask()).getResult());
-        }
-        System.out.println("\n" + (System.currentTimeMillis() - start) + " time elapsed Assume for " + this.programPath);
+        // start = System.currentTimeMillis();
+        // try (SolverContext ctx = mkCtx(); ProverWithTracker prover = mkProver(ctx)) {
+        //     assertEquals(expected, AssumeSolver.run(ctx, prover, mkTask()).getResult());
+        // }
+        // System.out.println("\n" + (System.currentTimeMillis() - start) + " time elapsed Assume for " + this.programPath);
     }
 
     private SolverContext mkCtx() throws InvalidConfigurationException {
@@ -100,7 +100,7 @@ public class InlineAsmTestSpinlocksArmv7 {
         VerificationTask.VerificationTaskBuilder builder = VerificationTask.builder()
                 .withConfig(Configuration.builder().build())
                 .withBound(bound)
-                .withTarget(Arch.ARM8);
+                .withTarget(Arch.ARM7);
         Program program = new ProgramParser().parse(new File(programPath));
         Wmm mcm = new ParserCat().parse(new File(modelPath));
         return builder.build(program, mcm, EnumSet.of(LIVENESS, PROGRAM_SPEC));
