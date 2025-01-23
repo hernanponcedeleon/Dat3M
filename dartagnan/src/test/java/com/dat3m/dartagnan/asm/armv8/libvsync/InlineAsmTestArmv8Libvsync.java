@@ -1,4 +1,4 @@
-package com.dat3m.dartagnan.inlineAsm.spinlocks;
+package com.dat3m.dartagnan.inlineAsm.armv8.libvsync;
 
 import java.io.File;
 import java.io.IOException;
@@ -33,15 +33,15 @@ import com.dat3m.dartagnan.verification.solving.RefinementSolver;
 import com.dat3m.dartagnan.wmm.Wmm;
 
 @RunWith(Parameterized.class)
-public class InlineAsmTestSpinlocks {
+public class InlineAsmTestArmv8Libvsync {
 
     private final String modelPath = getRootPath("cat/aarch64.cat");
     private final String programPath;
     private final int bound;
     private final Result expected;
 
-    public InlineAsmTestSpinlocks(String file, int bound, Result expected) {
-        this.programPath = getTestResourcePath("inlineasm/spinlocks/" + file + ".ll");
+    public InlineAsmTestArmv8Libvsync(String file, int bound, Result expected) {
+        this.programPath = getTestResourcePath("inlineasm/armv8/libvsync/" + file + ".ll");
         this.bound = bound;
         this.expected = expected;
     }
@@ -49,7 +49,21 @@ public class InlineAsmTestSpinlocks {
     @Parameterized.Parameters(name = "{index}: {0}, {1}, {2}")
     public static Iterable<Object[]> data() throws IOException {
         return Arrays.asList(new Object[][]{
-            // {"arraylock", 4, PASS},
+            //bounded_queue
+            {"bounded_spsc", 4, PASS},
+            {"bounded_mpmc_check_full", 5, PASS},
+            {"bounded_mpmc_check_empty", 4, PASS},
+
+            //unbounded_queue 
+            // missing generation from clang
+            // {"vqueue_ub_total_1", 4, PASS},
+            // {"vqueue_ub_total_2", 4, PASS},
+            // {"vqueue_ub_total_3", 4, PASS},
+            // {"vqueue_ub_total_4", 4, PASS},
+            // {"vqueue_ub_total_5", 4, PASS},
+            // {"vqueue_ub_total_6", 4, PASS},
+
+            //spinlocks
             // {"caslock", 4, PASS}, // passes Refinement but out of memory on Assume 
             {"clhlock", 3, PASS},
             // {"cnalock", 5, PASS}, // takes 35 minutes
@@ -64,6 +78,14 @@ public class InlineAsmTestSpinlocks {
             {"seqlock", 3, PASS},
             {"ttaslock", 3, PASS},
             {"twalock", 2, PASS},
+
+            //threads 
+            {"cnd_test1", 3, PASS},
+            {"cnd_test2", 3, PASS},
+            {"mutex_musl", 3, PASS},
+            {"mutex_slim", 3, PASS},
+            {"mutex_waiters", 3, PASS},
+            {"once", 5, PASS}
         });
     }
 
