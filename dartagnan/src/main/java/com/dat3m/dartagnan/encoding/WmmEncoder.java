@@ -144,6 +144,23 @@ public class WmmEncoder implements Encoder {
         return bmgr.and(enc);
     }
 
+    public BooleanFormula encodeConsistencyNoAcyclicity() {
+        logger.info("Encoding consistency");
+        Wmm memoryModel = context.getTask().getMemoryModel();
+        final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
+        RelationAnalysis ra = context.getAnalysisContext().get(RelationAnalysis.class);
+        List<BooleanFormula> enc = new ArrayList<>();
+        for (Axiom a : memoryModel.getAxioms()) {
+            if (!a.isFlagged() && !a.isAcyclicity()) {
+                logger.trace("Encoding axiom '{}'", a);
+                enc.addAll(a.consistent(context));
+            }
+        }
+        ra.getContradictions()
+                .apply((e1, e2) -> enc.add(bmgr.not(context.execution(e1, e2))));
+        return bmgr.and(enc);
+    }
+
     public EventGraph getEventGraph(Relation relation, Model model) {
         EncodingContext.EdgeEncoder edge = context.edge(relation);
         EventGraph encodeSet = encodeSets.getOrDefault(relation, new MapEventGraph())

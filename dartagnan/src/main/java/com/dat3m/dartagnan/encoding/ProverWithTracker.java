@@ -1,5 +1,9 @@
 package com.dat3m.dartagnan.encoding;
 
+import com.google.common.collect.ImmutableMap;
+import org.sosy_lab.java_smt.api.*;
+import org.sosy_lab.java_smt.api.SolverContext.ProverOptions;
+
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -8,16 +12,7 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
-
-import org.sosy_lab.java_smt.api.*;
-import org.sosy_lab.java_smt.api.SolverContext.ProverOptions;
-
-import com.google.common.collect.ImmutableMap;
+import java.util.*;
 
 public class ProverWithTracker implements ProverEnvironment {
 
@@ -32,6 +27,11 @@ public class ProverWithTracker implements ProverEnvironment {
         this.fileName = fileName;
         this.declarations = new HashSet<>();
         init();
+    }
+
+    @Override
+    public boolean registerUserPropagator(UserPropagator propagator) {
+        return prover.registerUserPropagator(propagator);
     }
 
     // An empty filename means there is no need to dump the encoding
