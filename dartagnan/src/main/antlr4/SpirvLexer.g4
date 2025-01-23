@@ -1691,6 +1691,7 @@ mode ModeHeader;
 
 ModeHeader_Input : 'Input';
 ModeHeader_Output : 'Output';
+ModeHeader_Filter : 'Filter';
 ModeHeader_Config : 'Config';
 ModeHeader_Id : '%' [A-Za-z0-9_]+ -> type(Id);
 ModeHeader_AssertionExists : 'exists';

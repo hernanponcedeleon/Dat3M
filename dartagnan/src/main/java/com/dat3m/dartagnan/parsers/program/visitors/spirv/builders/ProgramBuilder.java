@@ -100,6 +100,13 @@ public class ProgramBuilder {
         program.setSpecification(type, condition);
     }
 
+    public void setFilterSpecification(Expression condition) {
+        if (program.getFilterSpecification() != null) {
+            throw new ParsingException("Attempt to override program filter specification");
+        }
+        program.setFilterSpecification(condition);
+    }
+
     public boolean hasInput(String id) {
         return inputs.containsKey(id);
     }
