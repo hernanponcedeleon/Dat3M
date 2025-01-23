@@ -31,13 +31,6 @@ public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
         public Expression compareExpression;
         public Register firstRegister;
         public Expression secondRegister;
-        public Expression zeroRegisterbv32;
-        public Expression zeroRegisterbv64;
-
-        public CompareExpression() {
-            this.zeroRegisterbv32 = expressions.parseValue("0", types.getIntegerType(32));
-            this.zeroRegisterbv64 = expressions.parseValue("0", types.getIntegerType(64));
-        }
 
         public void updateCompareExpression(Register firstRegister, IntCmpOp intCmpOp, Expression secondRegister) {
             this.firstRegister = firstRegister;
@@ -50,11 +43,7 @@ public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
         }
 
         public void updateCompareExpressionZero(Register firstRegister, IntCmpOp intCmpOp) {
-            if (firstRegister.getType().equals(types.getIntegerType(32))) {
-                this.updateCompareExpression(firstRegister, intCmpOp, this.zeroRegisterbv32);
-            } else {
-                this.updateCompareExpression(firstRegister, intCmpOp, this.zeroRegisterbv64);
-            }
+            this.updateCompareExpression(firstRegister, intCmpOp, expressions.parseValue("0", (IntegerType) firstRegister.getType()));
         }
 
     }
@@ -196,25 +185,23 @@ public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
         }
     }
 
+
     @Override
     public List<Event> visitAsm(InlineAArch64Parser.AsmContext ctx) {
         List<InlineAArch64Parser.AsmInstrEntriesContext> instructions = ctx.asmInstrEntries();
         for (InlineAArch64Parser.AsmInstrEntriesContext instruction : instructions) {
-            for (ParseTree child : instruction.children) {
-                extractRegistersFromAsmInstruction(child);
+            InlineAArch64Parser.InstrContext instrCtx = instruction.instr();
+            if (instrCtx != null) {
+                collectRegisters(instrCtx);
             }
         }
         registerNames.sort((s1, s2) -> Integer.compare(extractNumberFromRegisterName(s1), extractNumberFromRegisterName(s2)));
 
         ArrayList<String> clobbers = new ArrayList<>();
         List<InlineAArch64Parser.AsmMetadataEntriesContext> metadataEntries = ctx.asmMetadataEntries();
-
         for (InlineAArch64Parser.AsmMetadataEntriesContext metadataEntry : metadataEntries) {
-            // Extract all metaInstr nodes
             List<InlineAArch64Parser.MetaInstrContext> metaInstrs = metadataEntry.metaInstr();
-
             for (InlineAArch64Parser.MetaInstrContext metaInstr : metaInstrs) {
-                // Check if the metaInstr is a clobber
                 if (metaInstr.clobber() != null) {
                     clobbers.add(metaInstr.clobber().getText());
                 }
@@ -223,9 +210,10 @@ public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
         if (!registerNames.isEmpty() && !this.fnParameters.isEmpty()) {
             // System.out.println("RegisterNames is " + registerNames);
             // System.out.println("Fn params are " + this.fnParameters);
+            // System.out.println("Clobbers are " + clobbers);
             int registerNameIndex = 0;
             for (String clobber : clobbers) {
-                // System.out.println("Current clobber is " + clobber);
+                System.out.println("Current clobber is " + clobber);
                 if (clobber.matches("\\d+")) {
                     processNumericClobber(clobber, registerNameIndex);
                 } else if (clobber.equals("=*m")) {
@@ -240,41 +228,21 @@ public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
         return this.events;
     }
 
-    private void extractRegistersFromAsmInstruction(ParseTree node){
-        String instruction = node.getText();
-        // System.out.println("Instruction is " + instruction);
-        int len = instruction.length();
-            for (int i = 0; i < len; i++) {
-                char c = instruction.charAt(i);
-                if (c == '$') {
-                    if (i + 1 < instruction.length() && instruction.charAt(i + 1) == '{') {
-                        int closeIndex = instruction.indexOf('}', i);
-                        if (closeIndex != -1) {
-                            String register = instruction.substring(i, closeIndex + 1);
-                            if (!registerNames.contains(register)) {
-                                this.registerNames.add(register);
-                            }
-                            i = closeIndex + 1;
-                        }
-                    } else if (i + 1 < instruction.length() && Character.isDigit(instruction.charAt(i + 1))) {
-                        String register = instruction.substring(i, i + 2);
-                        if (!registerNames.contains(register)) {
-                            this.registerNames.add(register);
-                        }
-                    }
-                } else if (c == '[' && i + 1 < instruction.length() && instruction.charAt(i + 1) == '$') {
-                    int closeIndex = instruction.indexOf(']', i);
-                    if (closeIndex != -1) {
-                        String register = instruction.substring(i, closeIndex + 1);
-                        if (!registerNames.contains(register)) {
-                            this.registerNames.add(register);
-                        }
-                        i = closeIndex + 1;
-                    }
-                }
+    private void collectRegisters(ParseTree node) {
+        if (node == null) {
+            return;
+        }
+        else if (node instanceof InlineAArch64Parser.RegisterContext) {
+            String registerName = node.getText();
+            if(registerName != null && !registerNames.contains(registerName) &&!isRegisterConstantValue(registerName)){
+                registerNames.add(registerName);
             }
-
+        }
+        for (int i = 0; i < node.getChildCount(); i++) {
+            collectRegisters(node.getChild(i));
+        }
     }
+
 
     private void processNumericClobber(String clobber, int registerNameIndex) {
         // https://llvm.org/docs/LangRef.html#input-constraints
