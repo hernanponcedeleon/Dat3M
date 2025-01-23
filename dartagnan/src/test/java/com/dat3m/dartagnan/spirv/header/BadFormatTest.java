@@ -57,6 +57,14 @@ public class BadFormatTest extends AbstractTest {
                 ; @Config: 1, 1, 1
                 """,
                         "Multiline assertion is not supported for type EXISTS"},
+                {"""
+                ; @Input: %v1=7, %v2=123, %v3=0
+                ; @Output: exists (%v1!=7)
+                ; @Filter: %v1!=7
+                ; @Filter: %v2!=123
+                ; @Config: 1, 1, 1
+                """,
+                        "Multiline filters are not supported"},
         });
     }
 

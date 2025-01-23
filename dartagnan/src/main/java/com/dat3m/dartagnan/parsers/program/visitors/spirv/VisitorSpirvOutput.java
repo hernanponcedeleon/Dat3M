@@ -30,6 +30,7 @@ public class VisitorSpirvOutput extends SpirvBaseVisitor<Expression> {
     private final ProgramBuilder builder;
     private Program.SpecificationType type;
     private Expression condition;
+    private Expression filter;
 
     public VisitorSpirvOutput(ProgramBuilder builder) {
         this.builder = builder;
@@ -40,6 +41,8 @@ public class VisitorSpirvOutput extends SpirvBaseVisitor<Expression> {
         for (SpirvParser.SpvHeaderContext header : ctx.spvHeader()) {
             if (header.outputHeader() != null && header.outputHeader().assertionList() != null) {
                 visitAssertionList(header.outputHeader().assertionList());
+            } else if (header.filterHeader() != null && header.filterHeader().assertion() != null) {
+                visitFilterHeader(header.filterHeader());
             }
         }
         if (type == null) {
@@ -47,6 +50,18 @@ public class VisitorSpirvOutput extends SpirvBaseVisitor<Expression> {
             condition = expressions.makeTrue();
         }
         builder.setSpecification(type, condition);
+        if (filter != null) {
+            builder.setFilterSpecification(filter);
+        }
+        return null;
+    }
+
+    @Override
+    public Expression visitFilterHeader(SpirvParser.FilterHeaderContext ctx) {
+        if (filter != null) {
+            throw new ParsingException("Multiline filters are not supported");
+        }
+        filter = ctx.assertion().accept(this);
         return null;
     }
 
@@ -54,8 +69,23 @@ public class VisitorSpirvOutput extends SpirvBaseVisitor<Expression> {
     public Expression visitAssertionList(SpirvParser.AssertionListContext ctx) {
         Program.SpecificationType parsedType = parseType(ctx);
         Expression parsedAssertion = ctx.assertion().accept(this);
-        appendAssertion(parsedType, parsedAssertion);
-        return null;
+        if (condition == null) {
+            type = parsedType;
+            condition = parsedAssertion;
+            return parsedAssertion;
+        }
+        if (parsedType.equals(type)) {
+            if (type.equals(FORALL)) {
+                condition = expressions.makeAnd(condition, parsedAssertion);
+                return parsedAssertion;
+            }
+            if (type.equals(NOT_EXISTS)) {
+                condition = expressions.makeOr(condition, parsedAssertion);
+                return parsedAssertion;
+            }
+            throw new ParsingException("Multiline assertion is not supported for type " + parsedType);
+        }
+        throw new ParsingException("Mixed assertion type is not supported");
     }
 
     @Override
@@ -102,23 +132,6 @@ public class VisitorSpirvOutput extends SpirvBaseVisitor<Expression> {
             return createFinalMemoryValue(base, indexes);
         }
         throw new ParsingException("Uninitialized location %s", name);
-    }
-
-    private void appendAssertion(Program.SpecificationType newType, Expression expression) {
-        if (condition == null) {
-            type = newType;
-            condition = expression;
-        } else if (newType.equals(type)) {
-            if (type.equals(FORALL)) {
-                condition = expressions.makeAnd(condition, expression);
-            } else if (type.equals(NOT_EXISTS)) {
-                condition = expressions.makeOr(condition, expression);
-            } else {
-                throw new ParsingException("Multiline assertion is not supported for type " + newType);
-            }
-        } else {
-            throw new ParsingException("Mixed assertion type is not supported");
-        }
     }
 
     private Expression normalize(Expression target, Expression other) {

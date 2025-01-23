@@ -43,6 +43,7 @@ import java.util.List;
 import java.util.Map;
 
 import static com.dat3m.dartagnan.configuration.OptionNames.INITIALIZE_REGISTERS;
+import static com.dat3m.dartagnan.configuration.OptionNames.IGNORE_FILTER_SPECIFICATION;
 import static com.google.common.collect.Lists.reverse;
 import static java.util.stream.Collectors.*;
 
@@ -57,6 +58,11 @@ public class ProgramEncoder implements Encoder {
             description = "Assume thread-local variables start off containing zero.",
             secure = true)
     private boolean initializeRegisters = false;
+
+    @Option(name = IGNORE_FILTER_SPECIFICATION,
+            description = "Ignore final states filter",
+            secure = true)
+    private boolean ignoreFilterSpec = false;
 
     // =====================================================================
 
@@ -76,6 +82,7 @@ public class ProgramEncoder implements Encoder {
         ProgramEncoder encoder = new ProgramEncoder(context);
         context.getTask().getConfig().inject(encoder);
         logger.info("{}: {}", INITIALIZE_REGISTERS, encoder.initializeRegisters);
+        logger.info("{}: {}", IGNORE_FILTER_SPECIFICATION, encoder.ignoreFilterSpec);
         return encoder;
     }
 
@@ -396,11 +403,12 @@ public class ProgramEncoder implements Encoder {
     }
 
     public BooleanFormula encodeFilter() {
-        return context.getTask().getProgram().getFilterSpecification() != null ?
-                context.encodeFinalExpressionAsBoolean(context.getTask().getProgram().getFilterSpecification()) :
-                context.getBooleanFormulaManager().makeTrue();
+        if (!ignoreFilterSpec && context.getTask().getProgram().getFilterSpecification() != null) {
+            return context.encodeFinalExpressionAsBoolean(context.getTask().getProgram().getFilterSpecification());
+        }
+        return context.getBooleanFormulaManager().makeTrue();
     }
-    
+
     public BooleanFormula encodeFinalRegisterValues() {
         final BooleanFormulaManager bmgr = context.getFormulaManager().getBooleanFormulaManager();
         if (context.getTask().getProgram().getFormat() != Program.SourceLanguage.LITMUS) {

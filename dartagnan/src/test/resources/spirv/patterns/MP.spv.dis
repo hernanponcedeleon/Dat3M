@@ -3,6 +3,7 @@
 ; @Input: %19 = {{0}}
 ; @Input: %20 = {{0}}
 ; @Output: forall (%19[0][0] != 1 or %20[0][0] == 1)
+; @Filter: %19[0][0] == 1
 ; @Config: 2, 1, 1
 ; SPIR-V
 ; Version: 1.6
@@ -61,6 +62,7 @@
        %bool = OpTypeBool
      %uint_1 = OpConstant %uint 1
     %uint_66 = OpConstant %uint 66
+    %uint_68 = OpConstant %uint 68
       %false = OpConstantFalse %bool
        %true = OpConstantTrue %bool
      %uint_4 = OpConstant %uint 4
@@ -100,7 +102,7 @@
                OpBranchConditional %49 %52 %55
          %52 = OpLabel
                OpStore %28 %uint_1 MakePointerAvailable|NonPrivatePointer %uint_1
-               OpAtomicStore %27 %uint_1 %uint_0 %uint_1
+               OpAtomicStore %27 %uint_1 %uint_68 %uint_1
                OpBranch %55
          %55 = OpLabel
                OpReturn
