@@ -78,10 +78,10 @@ yieldtask : YieldTask;
 
 
 // Note that since there is an isA between metaINstr and its children, in the AST you get two nodes and I think it is ok, it might be useful for analysis purposes
-metaInstr : metadataInline | clobber;
-metadataInline : OutputOpAssign | IsMemoryAddress | InputOpGeneralReg | OverlapInOutRegister | PointerToMemoryLocation;
+metaInstr : clobber | flag;
+clobber : OutputOpAssign | IsMemoryAddress | InputOpGeneralReg | OverlapInOutRegister | PointerToMemoryLocation;
 
-clobber : Tilde LBrace clobberType RBrace;
+flag : Tilde LBrace clobberType RBrace;
 
 clobberType : ClobberMemory | ClobberModifyFlags | ClobberDirectionFlag | ClobberFlags | ClobberFloatPntStatusReg;
 
