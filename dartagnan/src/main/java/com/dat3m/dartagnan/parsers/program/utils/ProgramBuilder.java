@@ -7,7 +7,6 @@ import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.Type;
 import com.dat3m.dartagnan.expression.integers.IntLiteral;
 import com.dat3m.dartagnan.expression.type.FunctionType;
-import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.program.*;
 import com.dat3m.dartagnan.program.Thread;
@@ -52,7 +51,10 @@ public class ProgramBuilder {
     // ----------------------------------------------------------------------------------------------------------------
     // Construction
     private ProgramBuilder(SourceLanguage format) {
-        this.program = new Program(new Memory(), format);
+        this.program = switch (format) {
+            case SQL -> new SqlProgram("SQL Program");
+            default -> new Program(new Memory(), format);
+        };
     }
 
     public static ProgramBuilder forArch(SourceLanguage format, Arch arch) {
@@ -63,21 +65,6 @@ public class ProgramBuilder {
 
     public static ProgramBuilder forLanguage(SourceLanguage format) {
         return new ProgramBuilder(format);
-    }
-
-    public Program build() {
-        for (Thread thread : program.getThreads()) {
-            final Label endOfThread = getEndOfThreadLabel(thread.getId());
-            // The terminator should not get inserted somewhere beforehand.
-            Verify.verify(endOfThread.getFunction() == null);
-            // Every event in litmus tests is non-optimisable
-            if (program.getFormat() == LITMUS) {
-                endOfThread.addTags(NOOPT);
-            }
-            thread.append(endOfThread);
-        }
-        processAfterParsing(program);
-        return program;
     }
 
     public static void processAfterParsing(Program program) {
@@ -112,6 +99,25 @@ public class ProgramBuilder {
         }
     }
 
+    public Program getProgram() {
+        return program;
+    }
+
+    public Program build() {
+        for (Thread thread : program.getThreads()) {
+            final Label endOfThread = getEndOfThreadLabel(thread.getId());
+            // The terminator should not get inserted somewhere beforehand.
+            Verify.verify(endOfThread.getFunction() == null);
+            // Every event in litmus tests is non-optimisable
+            if (program.getFormat() == LITMUS) {
+                endOfThread.addTags(NOOPT);
+            }
+            thread.append(endOfThread);
+        }
+        processAfterParsing(program);
+        return program;
+    }
+
     // ----------------------------------------------------------------------------------------------------------------
     // Misc
 
@@ -137,7 +143,7 @@ public class ProgramBuilder {
     // This method creates a "default" thread that has no parameters, no return value, and runs unconditionally.
     // It is only useful for creating threads of Litmus code.
     public Thread newThread(String name, int tid) {
-        if(id2FunctionsMap.containsKey(tid)) {
+        if (id2FunctionsMap.containsKey(tid)) {
             throw new MalformedProgramException("Function or thread with id " + tid + " already exists.");
         }
         final Thread thread = new Thread(name, DEFAULT_THREAD_TYPE, List.of(), tid, EventFactory.newThreadStart(null));
@@ -147,7 +153,7 @@ public class ProgramBuilder {
     }
 
     public Function newFunction(String name, int fid, FunctionType type, List<String> parameterNames) {
-        if(id2FunctionsMap.containsKey(fid)) {
+        if (id2FunctionsMap.containsKey(fid)) {
             throw new MalformedProgramException("Function or thread with id " + fid + " already exists.");
         }
         final Function func = new Function(name, type, parameterNames, fid, null);
@@ -233,11 +239,11 @@ public class ProgramBuilder {
         initLocEqConst(leftName, getOrNewMemoryObject(rightName));
     }
 
-    public void initLocEqLocVal(String leftName, String rightName){
-        initLocEqConst(leftName,getInitialValue(rightName));
+    public void initLocEqLocVal(String leftName, String rightName) {
+        initLocEqConst(leftName, getInitialValue(rightName));
     }
 
-    public void initLocEqConst(String locName, Expression iValue){
+    public void initLocEqConst(String locName, Expression iValue) {
         getOrNewMemoryObject(locName).setInitialValue(0, iValue);
     }
 
@@ -249,10 +255,10 @@ public class ProgramBuilder {
 
     public void initRegEqLocVal(int regThread, String regName, String locName, Type type) {
         Register reg = getOrNewRegister(regThread, regName, type);
-        addChild(regThread, EventFactory.newLocal(reg,getInitialValue(locName)));
+        addChild(regThread, EventFactory.newLocal(reg, getInitialValue(locName)));
     }
 
-    public void initRegEqConst(int regThread, String regName, Expression value){
+    public void initRegEqConst(int regThread, String regName, Expression value) {
         Preconditions.checkArgument(value.getRegs().isEmpty());
         addChild(regThread, EventFactory.newLocal(getOrNewRegister(regThread, regName, value.getType()), value));
     }
@@ -264,7 +270,7 @@ public class ProgramBuilder {
     // ----------------------------------------------------------------------------------------------------------------
     // Utility
 
-    public Register getRegister(int fid, String name){
+    public Register getRegister(int fid, String name) {
         return getFunctionOrError(fid).getRegister(name);
     }
 
@@ -286,7 +292,7 @@ public class ProgramBuilder {
         throw new IllegalStateException("Register " + fid + ":" + name + " is not initialised");
     }
 
-    public Label getOrCreateLabel(int funcId, String name){
+    public Label getOrCreateLabel(int funcId, String name) {
         return fid2LabelsMap
                 .computeIfAbsent(funcId, k -> new HashMap<>())
                 .computeIfAbsent(name, EventFactory::newLabel);
@@ -298,7 +304,7 @@ public class ProgramBuilder {
 
     // ----------------------------------------------------------------------------------------------------------------
     // GPU
-    public void newScopedThread(Arch arch, String name, int id, int ...scopeIds) {
+    public void newScopedThread(Arch arch, String name, int id, int... scopeIds) {
         ScopeHierarchy scopeHierarchy = switch (arch) {
             case PTX -> ScopeHierarchy.ScopeHierarchyForPTX(scopeIds[0], scopeIds[1]);
             case VULKAN -> ScopeHierarchy.ScopeHierarchyForVulkan(scopeIds[0], scopeIds[1], scopeIds[2]);
@@ -306,7 +312,7 @@ public class ProgramBuilder {
             default -> throw new UnsupportedOperationException("Unsupported architecture: " + arch);
         };
 
-        if(id2FunctionsMap.containsKey(id)) {
+        if (id2FunctionsMap.containsKey(id)) {
             throw new MalformedProgramException("Function or thread with id " + id + " already exists.");
         }
         // Litmus threads run unconditionally (have no creator) and have no parameters/return types.
@@ -316,48 +322,48 @@ public class ProgramBuilder {
         program.addThread(scopedThread);
     }
 
-    public void newScopedThread(Arch arch, int id, int ...ids) {
+    public void newScopedThread(Arch arch, int id, int... ids) {
         newScopedThread(arch, String.valueOf(id), id, ids);
     }
 
     // ----------------------------------------------------------------------------------------------------------------
     // PTX
-    public void initVirLocEqCon(String leftName, IntLiteral iValue){
+    public void initVirLocEqCon(String leftName, IntLiteral iValue) {
         MemoryObject object = locations.computeIfAbsent(
-                leftName, k->program.getMemory().allocateVirtual(ARCH_SIZE, true, null));
+                leftName, k -> program.getMemory().allocateVirtual(ARCH_SIZE, true, null));
         object.setName(leftName);
         object.setInitialValue(0, iValue);
     }
 
-    public void initVirLocEqLoc(String leftName, String rightName){
+    public void initVirLocEqLoc(String leftName, String rightName) {
         VirtualMemoryObject rightLocation = (VirtualMemoryObject) getMemoryObject(rightName);
         if (rightLocation == null) {
             throw new MalformedProgramException("Alias to non-exist location: " + rightName);
         }
         MemoryObject object = locations.computeIfAbsent(leftName,
-                k->program.getMemory().allocateVirtual(ARCH_SIZE, true, null));
+                k -> program.getMemory().allocateVirtual(ARCH_SIZE, true, null));
         object.setName(leftName);
-        object.setInitialValue(0,rightLocation.getInitialValue(0));
+        object.setInitialValue(0, rightLocation.getInitialValue(0));
     }
 
-    public void initVirLocEqLocAliasGen(String leftName, String rightName){
+    public void initVirLocEqLocAliasGen(String leftName, String rightName) {
         VirtualMemoryObject rightLocation = (VirtualMemoryObject) getMemoryObject(rightName);
         if (rightLocation == null) {
             throw new MalformedProgramException("Alias to non-exist location: " + rightName);
         }
         MemoryObject object = locations.computeIfAbsent(leftName,
-                k->program.getMemory().allocateVirtual(ARCH_SIZE, true, rightLocation));
+                k -> program.getMemory().allocateVirtual(ARCH_SIZE, true, rightLocation));
         object.setName(leftName);
-        object.setInitialValue(0,rightLocation.getInitialValue(0));
+        object.setInitialValue(0, rightLocation.getInitialValue(0));
     }
 
-    public void initVirLocEqLocAliasProxy(String leftName, String rightName){
+    public void initVirLocEqLocAliasProxy(String leftName, String rightName) {
         VirtualMemoryObject rightLocation = (VirtualMemoryObject) getMemoryObject(rightName);
         if (rightLocation == null) {
             throw new MalformedProgramException("Alias to non-exist location: " + rightName);
         }
         MemoryObject object = locations.computeIfAbsent(
-                leftName, k->program.getMemory().allocateVirtual(ARCH_SIZE, false, rightLocation));
+                leftName, k -> program.getMemory().allocateVirtual(ARCH_SIZE, false, rightLocation));
         object.setName(leftName);
         object.setInitialValue(0, rightLocation.getInitialValue(0));
     }

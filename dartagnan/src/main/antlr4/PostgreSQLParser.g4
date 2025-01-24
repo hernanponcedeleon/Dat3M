@@ -3616,7 +3616,7 @@ a_expr_is_not
 
 a_expr_compare
     : a_expr_like (
-        (LT | GT | EQUAL | LESS_EQUALS | GREATER_EQUALS | NOT_EQUALS) a_expr_like
+        cmp_token=(LT | GT | EQUAL | LESS_EQUALS | GREATER_EQUALS | NOT_EQUALS) a_expr_like
         | subquery_Op sub_type (select_with_parens | OPEN_PAREN a_expr CLOSE_PAREN) /*21*/
     )?
     ;

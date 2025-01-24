@@ -30,6 +30,7 @@ public abstract class AbstractEvent implements Event {
 
     protected AbstractEvent() {
         tags = new TagSet();
+        this.globalId = ggGlobalIdCounter++;
     }
 
     protected AbstractEvent(AbstractEvent other) {

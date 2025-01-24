@@ -165,9 +165,11 @@ public class Dartagnan extends BaseOptions {
             }
         });
 
+
         try {
             long startTime = System.currentTimeMillis();
             t.start();
+            /*
             Configuration solverConfig = Configuration.builder()
                     .setOption(PHANTOM_REFERENCES, valueOf(o.usePhantomReferences()))
                     .build();
@@ -195,10 +197,11 @@ public class Dartagnan extends BaseOptions {
                         case LAZY -> RefinementSolver.run(ctx, prover, task);
                     };
                 }
-
+               */
+                ModelChecker modelChecker = SqlSolver.run(null, null, task);
                 // Verification ended, we can interrupt the timeout Thread
                 t.interrupt();
-
+/*
                 if (modelChecker.hasModel() && o.getWitnessType().generateGraphviz()) {
                     generateExecutionGraphFile(task, prover, modelChecker, o.getWitnessType());
                 }
@@ -212,7 +215,7 @@ public class Dartagnan extends BaseOptions {
                 if (o.getWitnessType().equals(GRAPHML) && !o.runValidator()) {
                     generateWitnessIfAble(task, prover, modelChecker, summary);
                 }
-            }
+            }*/
         } catch (InterruptedException e) {
             logger.warn("Timeout elapsed. The SMT solver was stopped");
             System.out.println("TIMEOUT");

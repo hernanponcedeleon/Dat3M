@@ -6,7 +6,4 @@ import com.dat3m.dartagnan.program.event.AbstractEvent;
 
 public abstract class AbstractSqlEvent extends AbstractEvent {
 
-
-
-
 }

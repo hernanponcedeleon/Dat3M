@@ -7,10 +7,15 @@ CREATE TABLE table_b (col1 VARCHAR,col2 VARCHAR) ;
 
 assertions:
 
-SELECT * FROM table_a where col1>1;
+SELECT SUM(col1) FROM table_a WHERE col1>0 HAVING agg1>100 ;
 
 application:
 
 BEGIN TRANSACTION
 SELECT abc FROM table_a;
+SELECT abc FROM table_a;
+END TRANSACTION
+
+BEGIN TRANSACTION
+DELETE FROM table_a WHERE col1>0;
 END TRANSACTION
