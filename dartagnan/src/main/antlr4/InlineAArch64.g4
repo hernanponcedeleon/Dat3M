@@ -7,7 +7,7 @@ asm                                 // vvv this one is because the staddl starts
     (Quot(asmInstrEntries)*Quot)Comma (Quot(asmMetadataEntries)+ Quot)+ EOF?
 ;
 
-asmInstrEntries : EndInstruction?((armInstr | riscvInstr | ppcInstr | x86Instr )EndInstruction*);
+asmInstrEntries : EndInstruction?((armInstr | riscvInstr | ppcInstr | x86Instr )(EndInstruction | Semi)*);
 asmMetadataEntries : metaInstr(Comma metaInstr)*;
 
 

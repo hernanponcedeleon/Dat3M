@@ -215,6 +215,7 @@ public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
                 System.out.println("Current clobber is " + clobber);
                 if (clobber.matches("\\d+")) {
                     processNumericClobber(clobber, registerNameIndex);
+                    registerNameIndex++;
                 } else if (clobber.equals("=*m")) {
                     //if clobber is =*m it means that such pointer is a memory location, so we do not map to any register
                 } else {
@@ -475,6 +476,8 @@ public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
                 events.add(EventFactory.AArch64.DMB.newISHLDBarrier());
             case "dmb sy" ->
                 events.add(EventFactory.AArch64.DMB.newSYBarrier());
+            case "dmb st" -> 
+                events.add(EventFactory.AArch64.DMB.newSTBarrier());
             case "dmb ishst" ->
                 events.add(EventFactory.AArch64.DMB.newISHSTBarrier());
             case "dsb ish" ->
