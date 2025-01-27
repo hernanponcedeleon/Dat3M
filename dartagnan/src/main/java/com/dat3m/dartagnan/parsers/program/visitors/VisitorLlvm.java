@@ -539,13 +539,15 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
             final Type sizeType = parseType(ctx.typeValue().firstClassType());
             sizeExpression = checkExpression(sizeType, ctx.typeValue().value());
         }
+        final Event alloc;
         if(ctx.align() != null) {
             final Expression alignmentExpression = expressions.makeValue(parseBigInteger(ctx.align().IntLit()), types.getArchType());
-            block.events.add(EventFactory.newAlignedAlloc(register, elementType, sizeExpression, alignmentExpression, false, false));
-            return register;
+            alloc = EventFactory.newAlignedAlloc(register, elementType, sizeExpression, alignmentExpression, false, false);
+        } else {
+            alloc = EventFactory.newAlloc(register, elementType, sizeExpression, false, false);
         }
         //final int addressSpace = parseAddressSpace(ctx.addrSpace());
-        block.events.add(EventFactory.newAlloc(register, elementType, sizeExpression, false, false));
+        block.events.add(alloc);
         return register;
     }
 
