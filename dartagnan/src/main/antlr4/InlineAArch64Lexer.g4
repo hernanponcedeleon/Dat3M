@@ -37,7 +37,7 @@ YieldTask                   : 'yield'; // used to tell Hw that we're in a spinlo
 OutputOpAssign              : Equals Amp RLiteral | Equals RLiteral;
 InputOpGeneralReg           : RLiteral;
 IsMemoryAddress             : 'Q' | Ast 'Q';
-OverlapInOutRegister        : '0' | '3'; // defines which returnvalue should be used both for input and output
+OverlapInOutRegister        : NumbersInline; // defines which returnvalue should be used both for input and output
 PointerToMemoryLocation     : Equals Ast 'm';
 
 // clobbers
@@ -52,7 +52,7 @@ ClobberFlags                : 'flags';
 // fences
 DataMemoryBarrier           : 'dmb';
 DataSynchronizationBarrier  : 'dsb';
-FenceArmOpt                 : 'sy' | 'ish' | 'ishld' | 'ishst';
+FenceArmOpt                 : 'sy' | 'st' | 'ish' | 'ishld' | 'ishst';
 X86Fence                    : 'mfence';
 RISCVFence                  : 'fence';
 FenceRISCVOpt               : 'i' | 'o' | 'io' | RLiteral | RLiteral'w' | 'w' | 'tso';
@@ -65,7 +65,7 @@ NumbersInline               : [0-9]+;
 RLiteral                    : 'r'; // needed because both 'r' and '=&r' use the general purpose
 Register                    : '${' ( ~('}' | '$') )+ '}' | '$' NumbersInline | '[$' NumbersInline ']' | '#' NumbersInline; // should match any ${*}
 // ConstantInline              : '$' NumbersInline;   //if you see any $Number you state it is a constant
-LabelReference              : [a-zA-Z0-9_]+ ; //not sure if a label in arm can be like DD4 with capital letters, keeping them but might have to change it
+LabelReference              : [a-zA-Z0-9_]+ ;
 EndInstruction              :'\\0A';
 
 
