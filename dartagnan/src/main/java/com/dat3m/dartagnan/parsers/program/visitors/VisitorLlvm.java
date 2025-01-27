@@ -372,7 +372,6 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
             final Type argumentType = parseType(argument.concreteType());
             arguments.add(checkExpression(argumentType, argument.value()));
         }
-        this.argumentsRegisterAddresses = arguments;
 
         final Register resultRegister = currentRegisterName == null ? null :
                 getOrNewRegister(currentRegisterName, returnType);
@@ -381,20 +380,13 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
             // see https://llvm.org/docs/LangRef.html#inline-assembler-expressions
             //TODO add support form inline assembly
             //FIXME ignore side effects of inline assembly
-            if (resultRegister != null) {
-                // block.events.add(newLocal(resultRegister, program.newConstant(returnType)));
                 logger.warn(String.format("Interpreting inline assembly as an unconstrained value:  %s.", ctx.inlineAsm().getText()));
                 CharStream charStream = CharStreams.fromString(ctx.inlineAsm().StringLit(0).getText()+ ","+ ctx.inlineAsm().StringLit(1).getText());
-                ParserInlineAArch64 parser = new ParserInlineAArch64(function,resultRegister, returnType, this.argumentsRegisterAddresses);
-                parser.parse(charStream);
-                List<Event> events = parser.getEvents();
+                ParserInlineAArch64 parser = new ParserInlineAArch64(function,resultRegister, returnType, arguments);
+                List<Event> events = parser.parse(charStream);
                 if(!events.isEmpty()){
                     block.events.addAll(events);
                 }
-            } else {
-                // Note : we enter here with a normal call void asm "...", and then we enter the switch case one
-                ctx.inlineAsm().accept(this);
-            }
             return resultRegister;
         }
 
@@ -501,55 +493,51 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
 
     @Override 
     public Expression visitInlineAsm(InlineAsmContext ctx) {
-        final String asm = parseQuotedString(ctx.StringLit(0));
-        final LinkedList<Event> fences = new LinkedList<>();
-        switch(asm) {
-            // Compiler barrier, do nothing
-            // TODO update when we add support for interrupts
-            //case "" -> ;
-                // X86
-            case "mfence" -> fences.add(X86.newMemoryFence());
-                // Aarch64
-            case "dmb sy" -> fences.add(AArch64.DMB.newSYBarrier());
-            // case "dmb ish" -> fences.add(AArch64.DMB.newISHBarrier());
-            // case "dmb ishld" -> fences.add(AArch64.DMB.newISHLDBarrier());
-            case "dmb ishst" -> fences.add(AArch64.DMB.newISHSTBarrier());
-            case "dsb sy" -> fences.add(AArch64.DSB.newSYBarrier());
-            case "dsb ish" -> fences.add(AArch64.DSB.newISHBarrier());
-            case "dsb ishld" -> fences.add(AArch64.DSB.newISHLDBarrier());
-            case "dsb ishst" -> fences.add(AArch64.DSB.newISHSTBarrier());
-                // PPC
-            case "isync" -> fences.add(Power.newISyncBarrier());
-            case "sync" -> fences.add(Power.newSyncBarrier());
-            case "lwsync" -> fences.add(Power.newLwSyncBarrier());
-                // RISCV
-            case "fence r,r" -> fences.add(RISCV.newRRFence());
-            case "fence r,w" -> fences.add(RISCV.newRWFence());
-            case "fence r,rw" -> fences.add(RISCV.newRRWFence());
-            case "fence w,r" -> fences.add(RISCV.newWRFence());
-            case "fence w,w" -> fences.add(RISCV.newWWFence());
-            case "fence w,rw" -> fences.add(RISCV.newWRWFence());
-            case "fence rw,r" -> fences.add(RISCV.newRWRFence());
-            case "fence rw,w" -> fences.add(RISCV.newRWWFence());
-            case "fence rw,rw" -> fences.add(RISCV.newRWRWFence());
-            case "fence tso" -> fences.add(RISCV.newTsoFence());
-            case "fence i" -> fences.add(RISCV.newSynchronizeFence());
-            default -> {logger.warn(String.format("found asm in InlineAsm:  %s.", ctx.getText()));fences.addAll(inlineAArch64Wrapper(ctx.StringLit(0).getText()+", "+ ctx.StringLit(1).getText(), this.function, null, null));break;}//throw new ParsingException(String.format("Encountered unsupported inline assembly:  %s.", asm)); HAS TO BECOME INLINEWRAPPER
-            // this is without the Wrapper, but is ugly....
-            // default -> {logger.warn(String.format("found asm in InlineAsm:  %s.", ctx.getText()));String inlineAsmCode = ctx.StringLit(0).getText()+ ","+ ctx.StringLit(1).getText();CharStream charStream = CharStreams.fromString(inlineAsmCode);ParserInlineAArch64 parser = new ParserInlineAArch64(this.function,null,null, this.argumentsRegisterAddresses);parser.parse(charStream);fences.addAll(parser.getEvents());break;}//throw new ParsingException(String.format("Encountered unsupported inline assembly:  %s.", asm)); HAS TO BECOME INLINEWRAPPER
-        }
-        if(!fences.isEmpty()) {
-            block.events.addAll(fences);
-        }
+        // kept for reference, to be removed soon
+
+        // final String asm = parseQuotedString(ctx.StringLit(0));
+        // final LinkedList<Event> fences = new LinkedList<>();
+        // switch(asm) {
+        //     // Compiler barrier, do nothing
+        //     // TODO update when we add support for interrupts
+        //     //case "" -> ;
+        //         // X86
+        //     case "mfence" -> fences.add(X86.newMemoryFence());
+        //         // Aarch64
+        //     case "dmb sy" -> fences.add(AArch64.DMB.newSYBarrier());
+        //     // case "dmb ish" -> fences.add(AArch64.DMB.newISHBarrier());
+        //     // case "dmb ishld" -> fences.add(AArch64.DMB.newISHLDBarrier());
+        //     case "dmb ishst" -> fences.add(AArch64.DMB.newISHSTBarrier());
+        //     case "dsb sy" -> fences.add(AArch64.DSB.newSYBarrier());
+        //     case "dsb ish" -> fences.add(AArch64.DSB.newISHBarrier());
+        //     case "dsb ishld" -> fences.add(AArch64.DSB.newISHLDBarrier());
+        //     case "dsb ishst" -> fences.add(AArch64.DSB.newISHSTBarrier());
+        //         // PPC
+        //     case "isync" -> fences.add(Power.newISyncBarrier());
+        //     case "sync" -> fences.add(Power.newSyncBarrier());
+        //     case "lwsync" -> fences.add(Power.newLwSyncBarrier());
+        //         // RISCV
+        //     case "fence r,r" -> fences.add(RISCV.newRRFence());
+        //     case "fence r,w" -> fences.add(RISCV.newRWFence());
+        //     case "fence r,rw" -> fences.add(RISCV.newRRWFence());
+        //     case "fence w,r" -> fences.add(RISCV.newWRFence());
+        //     case "fence w,w" -> fences.add(RISCV.newWWFence());
+        //     case "fence w,rw" -> fences.add(RISCV.newWRWFence());
+        //     case "fence rw,r" -> fences.add(RISCV.newRWRFence());
+        //     case "fence rw,w" -> fences.add(RISCV.newRWWFence());
+        //     case "fence rw,rw" -> fences.add(RISCV.newRWRWFence());
+        //     case "fence tso" -> fences.add(RISCV.newTsoFence());
+        //     case "fence i" -> fences.add(RISCV.newSynchronizeFence());
+        //     default -> {throw new ParsingException(String.format("Encountered unsupported inline assembly:  %s.", asm));
+        //     // this is without the Wrapper, but is ugly....
+        //     // default -> {logger.warn(String.format("found asm in InlineAsm:  %s.", ctx.getText()));String inlineAsmCode = ctx.StringLit(0).getText()+ ","+ ctx.StringLit(1).getText();CharStream charStream = CharStreams.fromString(inlineAsmCode);ParserInlineAArch64 parser = new ParserInlineAArch64(this.function,null,null, this.argumentsRegisterAddresses);parser.parse(charStream);fences.addAll(parser.getEvents());break;}//throw new ParsingException(String.format("Encountered unsupported inline assembly:  %s.", asm)); HAS TO BECOME INLINEWRAPPER
+        // }
+        // if(!fences.isEmpty()) {
+        //     block.events.addAll(fences);
+        // }
         return null;
     }
 
-    public List<Event> inlineAArch64Wrapper(String inlineAsm, Function function, Register resultRegister, Type returnType){
-        CharStream charStream = CharStreams.fromString(inlineAsm);
-        ParserInlineAArch64 parser = new ParserInlineAArch64(function,resultRegister, returnType, this.argumentsRegisterAddresses);
-        parser.parse(charStream);
-        return parser.getEvents();
-    }
 
     // ----------------------------------------------------------------------------------------------------------------
     // Instructions producing a value
