@@ -243,7 +243,7 @@
                     <classifier>libcvc4parser</classifier>
                 </dependency>
 
-                <!-- CVC5 dependencies -->
+                <!-- CVC5 dependencies
                 <dependency>
                     <groupId>org.sosy-lab</groupId>
                     <artifactId>javasmt-solver-cvc5</artifactId>
@@ -285,6 +285,7 @@
                     <type>so</type>
                     <classifier>libpolyxx</classifier>
                 </dependency>
+                -->
 
                 <!-- OpenSMT dependencies -->
                 <dependency>
@@ -419,7 +420,7 @@
                                         <destFileName>libcvc4parser.so</destFileName>
                                     </artifactItem>
 
-                                    <!-- CVC5 dependencies -->
+                                    <!-- CVC5 dependencies
                                     <artifactItem>
                                         <groupId>org.sosy-lab</groupId>
                                         <artifactId>javasmt-solver-cvc5</artifactId>
@@ -455,6 +456,7 @@
                                         <classifier>libpolyxx</classifier>
                                         <destFileName>libpolyxx.so</destFileName>
                                     </artifactItem>
+                                    -->
 
                                     <!-- OpenSMT dependencies -->
                                     <artifactItem>
