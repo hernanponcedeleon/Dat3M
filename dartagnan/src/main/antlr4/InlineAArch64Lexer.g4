@@ -25,7 +25,6 @@ StoreExclusiveRegister      : 'stxr' | 'strex';
 StoreReleaseExclusiveReg    : 'stlxr';
 StoreReleaseReg             : 'stlr';
 AtomicAddDoubleWordRelease  : 'staddl';
-DataMemoryBarrier           : 'dmb'; 
 SwapWordAcquire             : 'swpa';
 CompareAndSwap              : 'cas';
 CompareAndSwapAcquire       : 'casa';
@@ -35,8 +34,8 @@ YieldTask                   : 'yield'; // used to tell Hw that we're in a spinlo
 
 
 // metadata 
-OutputOpAssign              : Equals Amp GeneralPurposeReg | Equals GeneralPurposeReg;
-InputOpGeneralReg           : GeneralPurposeReg;
+OutputOpAssign              : Equals Amp RLiteral | Equals RLiteral;
+InputOpGeneralReg           : RLiteral;
 IsMemoryAddress             : 'Q' | Ast 'Q';
 OverlapInOutRegister        : '0' | '3'; // defines which returnvalue should be used both for input and output
 PointerToMemoryLocation     : Equals Ast 'm';
@@ -49,18 +48,28 @@ ClobberFloatPntStatusReg    : 'fpsr';
 ClobberFlags                : 'flags';
 
 
-WS
-    :   [ \t\r\n]+
-        -> skip
-    ;
+
+// fences
+DataMemoryBarrier           : 'dmb';
+DataSynchronizationBarrier  : 'dsb';
+FenceArmOpt                 : 'sy' | 'ish' | 'ishld' | 'ishst';
+X86Fence                    : 'mfence';
+RISCVFence                  : 'fence';
+FenceRISCVOpt               : 'i' | 'o' | 'io' | RLiteral | RLiteral'w' | 'w' | 'tso';
+PPCFence                    : 'sync' | 'isync' | 'lwsync';
 
 // Metavariables
 StartSymbol                 : 'asm';
 PrefetchStoreL1Once         : 'pstl1strm';
 NumbersInline               : [0-9]+;
-GeneralPurposeReg           : 'r'; // needed because both 'r' and '=&r' use the general purpose
+RLiteral                    : 'r'; // needed because both 'r' and '=&r' use the general purpose
 Register                    : '${' ( ~('}' | '$') )+ '}' | '$' NumbersInline | '[$' NumbersInline ']' | '#' NumbersInline; // should match any ${*}
 // ConstantInline              : '$' NumbersInline;   //if you see any $Number you state it is a constant
-DataMemoryBarrierOpt        : 'ish' | 'ishld'; //Inner Shareable symbols
 LabelReference              : [a-zA-Z0-9_]+ ; //not sure if a label in arm can be like DD4 with capital letters, keeping them but might have to change it
 EndInstruction              :'\\0A';
+
+
+WS
+    :   [ \t\r\n]+
+        -> skip
+    ;

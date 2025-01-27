@@ -15,6 +15,7 @@ import com.dat3m.dartagnan.expression.type.AggregateType;
 import com.dat3m.dartagnan.expression.type.BooleanType;
 import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
+import com.dat3m.dartagnan.expression.type.VoidType;
 import com.dat3m.dartagnan.parsers.InlineAArch64BaseVisitor;
 import com.dat3m.dartagnan.parsers.InlineAArch64Parser;
 import com.dat3m.dartagnan.program.Function;
@@ -57,9 +58,7 @@ public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
     private final HashMap<String, Label> labelsDefined;
     private final HashMap<String, Register> armToLlvmMap; // maps arm names to LLVM names
     private final List<Expression> pendingRegisters; // used to create the final aggregatetype
-    // armtollvm part
     private final LinkedList<Expression> fnParameters;
-
     private final int returnValuesNumber;
     LinkedList<String> registerNames;
 
@@ -113,16 +112,16 @@ public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
         return this.returnValuesNumber > 1;
     }
 
-
     //these are used to populate the armToLlvmMap
     private int initReturnValuesNumber(Type returnType) {
         if (returnType instanceof IntegerType || returnType instanceof BooleanType) {
             return 1;
         } else if (returnType instanceof AggregateType at) {
             return at.getTypeOffsets().size();
-        } else if (returnType == null) {
+        } else if (returnType instanceof VoidType) {
             return 0;
         } else {
+            System.err.println("Unknown inline asm return type " + returnType);
             return -1;
         }
     }
@@ -163,7 +162,7 @@ public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
             String registerName = makeRegisterName(nodeName);
             Register newRegister = llvmFunction.newRegister(registerName, type);
             this.armToLlvmMap.put(nodeName, newRegister);
-            if (isPartOfReturnRegister(nodeName) && isReturnRegisterAggregate() && !isRegisterConstantValue(nodeName)){
+            if (isPartOfReturnRegister(nodeName) && isReturnRegisterAggregate() && !isRegisterConstantValue(nodeName)) {
                 this.pendingRegisters.add(newRegister);
             }
             return newRegister;
@@ -185,12 +184,12 @@ public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
         }
     }
 
-
     @Override
     public List<Event> visitAsm(InlineAArch64Parser.AsmContext ctx) {
         List<InlineAArch64Parser.AsmInstrEntriesContext> instructions = ctx.asmInstrEntries();
+        // TODO when adding new architecture it has to be a little bit different --instr := aarch | x86 | riscv | ppc
         for (InlineAArch64Parser.AsmInstrEntriesContext instruction : instructions) {
-            InlineAArch64Parser.InstrContext instrCtx = instruction.instr();
+            InlineAArch64Parser.ArmInstrContext instrCtx = instruction.armInstr();
             if (instrCtx != null) {
                 collectRegisters(instrCtx);
             }
@@ -231,10 +230,9 @@ public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
     private void collectRegisters(ParseTree node) {
         if (node == null) {
             return;
-        }
-        else if (node instanceof InlineAArch64Parser.RegisterContext) {
+        } else if (node instanceof InlineAArch64Parser.RegisterContext) {
             String registerName = node.getText();
-            if(registerName != null && !registerNames.contains(registerName) &&!isRegisterConstantValue(registerName)){
+            if (registerName != null && !registerNames.contains(registerName) && !isRegisterConstantValue(registerName)) {
                 registerNames.add(registerName);
             }
         }
@@ -242,7 +240,6 @@ public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
             collectRegisters(node.getChild(i));
         }
     }
-
 
     private void processNumericClobber(String clobber, int registerNameIndex) {
         // https://llvm.org/docs/LangRef.html#input-constraints
@@ -465,17 +462,95 @@ public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
     }
 
     @Override
-    public Object visitDataMemoryBarrier(InlineAArch64Parser.DataMemoryBarrierContext ctx) {
-        // System.out.println("Data Memory Barrier");
-        String dataMemoryBarrierAndOpt = ctx.DataMemoryBarrier().getText() + " " + ctx.DataMemoryBarrierOpt().getText();
-        switch (dataMemoryBarrierAndOpt) {
+    public Object visitAsmFence(InlineAArch64Parser.AsmFenceContext ctx) {
+        System.out.println("Fence is " + ctx.getText());
+        // check which type of fence it is : DataMemoryBarrier or DataSynchronizationBarrier
+        String type = ctx.DataMemoryBarrier() == null ? ctx.DataSynchronizationBarrier().getText() : ctx.DataMemoryBarrier().getText();
+        String option = ctx.FenceArmOpt().getText();
+        String barrier = type + " " + option;
+        switch (barrier) {
             case "dmb ish" ->
                 events.add(EventFactory.AArch64.DMB.newISHBarrier());
             case "dmb ishld" ->
                 events.add(EventFactory.AArch64.DMB.newISHLDBarrier());
+            case "dmb sy" ->
+                events.add(EventFactory.AArch64.DMB.newSYBarrier());
+            case "dmb ishst" ->
+                events.add(EventFactory.AArch64.DMB.newISHSTBarrier());
+            case "dsb ish" ->
+                events.add(EventFactory.AArch64.DSB.newISHBarrier());
+            case "dsb ishld" ->
+                events.add(EventFactory.AArch64.DSB.newISHLDBarrier());
+            case "dsb sy" ->
+                events.add(EventFactory.AArch64.DSB.newSYBarrier());
+            case "dsb ishst" ->
+                events.add(EventFactory.AArch64.DSB.newISHSTBarrier());
             default ->
-                System.err.println("Data Memory Barrier not implemented");
+                System.err.println("Barrier not implemented");
         }
         return null;
+    }
+
+    @Override
+    public Object visitRiscvFence(InlineAArch64Parser.RiscvFenceContext ctx) {
+        String type = ctx.RISCVFence().getText();
+        String firstOption = ctx.FenceRISCVOpt(0).getText();
+        String secondOption = ctx.FenceRISCVOpt(1) == null ? "" : ctx.FenceRISCVOpt(1).getText();
+        String barrier = type + " " + firstOption + " " + secondOption;
+        switch (barrier) {
+            case "fence r r" ->
+                events.add(EventFactory.RISCV.newRRFence());
+            case "fence r w" ->
+                events.add(EventFactory.RISCV.newRWFence());
+            case "fence r rw" ->
+                events.add(EventFactory.RISCV.newRRWFence());
+            case "fence w r" ->
+                events.add(EventFactory.RISCV.newWRFence());
+            case "fence w w" ->
+                events.add(EventFactory.RISCV.newWWFence());
+            case "fence w rw" ->
+                events.add(EventFactory.RISCV.newWRWFence());
+            case "fence rw r" ->
+                events.add(EventFactory.RISCV.newRWRFence());
+            case "fence rw w" ->
+                events.add(EventFactory.RISCV.newRWWFence());
+            case "fence rw rw" ->
+                events.add(EventFactory.RISCV.newRWRWFence());
+            case "fence tso" ->
+                events.add(EventFactory.RISCV.newTsoFence());
+            case "fence i" ->
+                events.add(EventFactory.RISCV.newSynchronizeFence());
+            default ->
+                System.err.println("Barrier not implemented");
+        }
+        return visitChildren(ctx);
+    }
+
+    @Override
+    public Object visitX86Fence(InlineAArch64Parser.X86FenceContext ctx) {
+        String barrier = ctx.X86Fence().getText();
+        switch (barrier) {
+            case "mfence" ->
+                events.add(EventFactory.X86.newMemoryFence());
+            default ->
+                System.err.println("Barrier not implemented");
+        }
+        return visitChildren(ctx);
+    }
+
+    @Override
+    public Object visitPpcFence(InlineAArch64Parser.PpcFenceContext ctx) {
+        String barrier = ctx.PPCFence().getText();
+        switch (barrier) {
+            case "sync" ->
+                events.add(EventFactory.Power.newSyncBarrier());
+            case "isync" ->
+                events.add(EventFactory.Power.newISyncBarrier());
+            case "lwsync" ->
+                events.add(EventFactory.Power.newLwSyncBarrier());
+            default ->
+                System.err.println("Barrier not implemented");
+        }
+        return visitChildren(ctx);
     }
 }

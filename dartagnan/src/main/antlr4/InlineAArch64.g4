@@ -7,11 +7,11 @@ asm                                 // vvv this one is because the staddl starts
     (Quot(asmInstrEntries)*Quot)Comma (Quot(asmMetadataEntries)+ Quot)+ EOF?
 ;
 
-asmInstrEntries : EndInstruction?((instr)EndInstruction*);
+asmInstrEntries : EndInstruction?((armInstr | riscvInstr | ppcInstr | x86Instr )EndInstruction*);
 asmMetadataEntries : metaInstr(Comma metaInstr)*;
 
 
-instr 
+armInstr 
     : loadReg
     | loadAcquireReg
     | loadExclusiveReg
@@ -25,7 +25,6 @@ instr
     | storeReleaseExclusiveReg
     | storeReleaseReg
     | atomicAddDoubleWordRelease
-    | dataMemoryBarrier 
     | swapWordAcquire
     | compare
     | compareBranchNonZero
@@ -40,7 +39,14 @@ instr
     | alignInline
     | prefetchMemory
     | yieldtask
+    | asmFence
+    | riscvFence
+    | x86Fence
+    | ppcFence
 ;
+riscvInstr : riscvFence;
+ppcInstr : ppcFence;
+x86Instr : x86Fence;
 
 // rules divised like this in order to generate single visitors
 loadReg : (LoadReg register)Comma register;
@@ -56,7 +62,6 @@ storeReleaseReg : (StoreReleaseReg register)Comma register;
 storeExclusiveRegister : ((StoreExclusiveRegister register)Comma register)Comma register ;
 storeReleaseExclusiveReg : ((StoreReleaseExclusiveReg register)Comma register)Comma register;
 atomicAddDoubleWordRelease : (AtomicAddDoubleWordRelease register)Comma register;
-dataMemoryBarrier : DataMemoryBarrier DataMemoryBarrierOpt; // atm it is catched by the visitorLlvm so it should not be mandatory
 swapWordAcquire : ((SwapWordAcquire register)Comma register)Comma register;
 compare : (Compare register)Comma register;
 compareBranchNonZero : (CompareBranchNonZero register)Comma LabelReference;
@@ -72,10 +77,12 @@ alignInline : AlignInline;
 prefetchMemory : (PrefetchMemory PrefetchStoreL1Once)Comma register;
 yieldtask : YieldTask;
 
-
-
-
-
+//fences
+// fence : DataMemoryBarrier FenceArmOpt | DataSynchronizationBarrier FenceArmOpt | RISCVFence FenceRISCVOpt | RISCVFence FenceRISCVOpt Comma FenceRISCVOpt | X86Fence | PPCFence;
+asmFence : DataMemoryBarrier FenceArmOpt | DataSynchronizationBarrier FenceArmOpt;
+riscvFence : RISCVFence FenceRISCVOpt | RISCVFence FenceRISCVOpt Comma FenceRISCVOpt;
+x86Fence : X86Fence;
+ppcFence : PPCFence;
 
 // Note that since there is an isA between metaINstr and its children, in the AST you get two nodes and I think it is ok, it might be useful for analysis purposes
 metaInstr : clobber | flag;
