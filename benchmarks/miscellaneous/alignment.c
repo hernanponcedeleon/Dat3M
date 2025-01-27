@@ -1,4 +1,3 @@
-#include <stdint.h>
 #include <assert.h>
 
 typedef struct {
@@ -8,7 +7,6 @@ typedef struct {
 int main()
 {
     A a;
-	assert(&a >= 128);
-
-	return 0;
+    assert(&a >= 128);
+    return 0;
 }
