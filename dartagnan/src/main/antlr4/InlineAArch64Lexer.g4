@@ -14,14 +14,14 @@ Add                         : 'add';
 Sub                         : 'sub';
 Or                          : 'orr';
 And                         : 'and';
-Compare                     : 'cmp';
+Compare                     : 'cmp' | 'cmpeq';
 CompareBranchNonZero        : 'cbnz';
-BranchEqual                 : 'b.eq';
+BranchEqual                 : 'b.eq' | 'beq';
 BranchNotEqual              : 'b.ne' | 'bne';
 SetEventLocally             : 'sevl';
 WaitForEvent                : 'wfe';
 StoreReg                    : 'str';
-StoreExclusiveRegister      : 'stxr' | 'strex';
+StoreExclusiveRegister      : 'stxr' | 'strex' | 'strexeq';
 StoreReleaseExclusiveReg    : 'stlxr';
 StoreReleaseReg             : 'stlr';
 AtomicAddDoubleWordRelease  : 'staddl';
@@ -31,6 +31,7 @@ CompareAndSwapAcquire       : 'casa';
 Move                        : 'mov';
 PrefetchMemory              : 'prfm';
 YieldTask                   : 'yield'; // used to tell Hw that we're in a spinlock. If not implemented it just NOPs
+IfThenThen                  : 'itt';
 
 
 // metadata 
@@ -61,6 +62,7 @@ PPCFence                    : 'sync' | 'isync' | 'lwsync';
 // Metavariables
 StartSymbol                 : 'asm';
 PrefetchStoreL1Once         : 'pstl1strm';
+IfThenThenOptions           : 'eq';
 NumbersInline               : [0-9]+;
 RLiteral                    : 'r'; // needed because both 'r' and '=&r' use the general purpose
 Register                    : '${' ( ~('}' | '$') )+ '}' | '$' NumbersInline | '[$' NumbersInline ']' | '#' NumbersInline; // should match any ${*}

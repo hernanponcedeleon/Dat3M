@@ -39,10 +39,8 @@ armInstr
     | alignInline
     | prefetchMemory
     | yieldtask
+    | ifThenThen
     | asmFence
-    | riscvFence
-    | x86Fence
-    | ppcFence
 ;
 riscvInstr : riscvFence;
 ppcInstr : ppcFence;
@@ -76,6 +74,7 @@ labelDefinition : LabelDefinition;
 alignInline : AlignInline;
 prefetchMemory : (PrefetchMemory PrefetchStoreL1Once)Comma register;
 yieldtask : YieldTask;
+ifThenThen : IfThenThen IfThenThenOptions;
 
 //fences
 // fence : DataMemoryBarrier FenceArmOpt | DataSynchronizationBarrier FenceArmOpt | RISCVFence FenceRISCVOpt | RISCVFence FenceRISCVOpt Comma FenceRISCVOpt | X86Fence | PPCFence;
