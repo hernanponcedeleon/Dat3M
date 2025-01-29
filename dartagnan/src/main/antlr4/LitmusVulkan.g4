@@ -136,7 +136,7 @@ memoryBarrierInstruction
     ;
 
 controlBarrierInstruction
-    :   ControlBarrier (scope | moAcq scope semSc+ semVis? | moRel scope semSc+ semAv? | moAcqRel scope semSc+ semAv? semVis?) value
+    :   ControlBarrier (scope | moAcq scope semSc+ semVis? | moRel scope semSc+ semAv? | moAcqRel scope semSc+ semAv? semVis?) constant
     ;
 
 localInstruction

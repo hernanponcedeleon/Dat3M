@@ -151,7 +151,7 @@ fenceAlias
     ;
 
 barrier
-    :   Barrier Period CTA Period barrierMode value
+    :   Barrier Period CTA Period barrierMode constant
     ;
 
 barrierMode

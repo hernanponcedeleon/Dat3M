@@ -1,6 +1,5 @@
 package com.dat3m.dartagnan.wmm.analysis;
 
-import com.dat3m.dartagnan.expression.integers.IntLiteral;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.Register.UsageType;
@@ -971,27 +970,14 @@ public class NativeRelationAnalysis implements RelationAnalysis {
 
         @Override
         public MutableKnowledge visitSyncBarrier(SyncBar syncBar) {
-            MutableEventGraph may = new MapEventGraph();
             MutableEventGraph must = new MapEventGraph();
             List<ControlBarrier> barriers = program.getThreadEvents(ControlBarrier.class);
-            for (ControlBarrier e1 : barriers) {
-                for (ControlBarrier e2 : barriers) {
-                    if (!exec.areMutuallyExclusive(e1, e2) && !e2.hasTag(PTX.ARRIVE)) {
-                        if (e1.getId() instanceof IntLiteral iLit1 && e2.getId() instanceof IntLiteral iLit2) {
-                            int id1 = iLit1.getValueAsInt();
-                            int id2 = iLit2.getValueAsInt();
-                            if (id1 != id2) {
-                                continue;
-                            }
-                        }
-                        may.add(e1, e2);
-                        if (e1.getId().equals(e2.getId())) {
-                            must.add(e1, e2);
-                        }
-                    }
+            barriers.forEach(e1 -> barriers.forEach(e2 -> {
+                if (e1.getId().equals(e2.getId()) && !exec.areMutuallyExclusive(e1, e2) && !e2.hasTag(PTX.ARRIVE)) {
+                    must.add(e1, e2);
                 }
-            }
-            return new MutableKnowledge(may, must);
+            }));
+            return new MutableKnowledge(must, MapEventGraph.from(must));
         }
 
         @Override

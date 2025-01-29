@@ -1,11 +1,9 @@
 package com.dat3m.dartagnan.encoding;
 
 import com.dat3m.dartagnan.configuration.Arch;
-import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.analysis.ReachingDefinitionsAnalysis;
 import com.dat3m.dartagnan.program.event.*;
-import com.dat3m.dartagnan.program.event.core.ControlBarrier;
 import com.dat3m.dartagnan.program.event.core.Load;
 import com.dat3m.dartagnan.program.event.core.MemoryCoreEvent;
 import com.dat3m.dartagnan.program.event.core.RMWStoreExclusive;
@@ -666,31 +664,6 @@ public class WmmEncoder implements Encoder {
                     }
                 }
             }
-            return null;
-        }
-
-        @Override
-        public Void visitSyncBarrier(SyncBar syncBar) {
-            final Relation rel = syncBar.getDefinedRelation();
-            EncodingContext.EdgeEncoder encoder = context.edge(rel);
-            EventGraph mustSet = ra.getKnowledge(rel).getMustSet();
-            encodeSets.get(rel).apply((e1, e2) -> {
-                ControlBarrier b1 = (ControlBarrier) e1;
-                ControlBarrier b2 = (ControlBarrier) e2;
-                BooleanFormula sameId;
-                // If they are in must, they are guaranteed to have the same id
-                if (mustSet.contains(b1, b2)) {
-                    sameId = bmgr.makeTrue();
-                } else {
-                    Expression id1 = b1.getId();
-                    Expression id2 = b2.getId();
-                    sameId = context.equal(context.encodeExpressionAt(id1, b1),
-                            context.encodeExpressionAt(id2, b2));
-                }
-                enc.add(bmgr.equivalence(
-                        encoder.encode(b1, b2),
-                        bmgr.and(execution(b1, b2), sameId)));
-            });
             return null;
         }
 

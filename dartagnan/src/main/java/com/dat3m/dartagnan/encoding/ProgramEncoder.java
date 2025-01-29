@@ -1,7 +1,6 @@
 package com.dat3m.dartagnan.encoding;
 
 import com.dat3m.dartagnan.configuration.ProgressModel;
-import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
@@ -265,15 +264,12 @@ public class ProgramEncoder implements Encoder {
 
         for (List<ControlBarrier> events : groups.values()) {
             for (ControlBarrier e1 : events) {
-                Expression id1 = e1.getId();
                 BooleanFormula allCF = context.controlFlow(e1);
                 for (ControlBarrier e2 : events) {
-                    if (!e1.getThread().equals(e2.getThread())) {
-                        Expression id2 = e2.getId();
-                        BooleanFormula sameId = context.equal(context.encodeExpressionAt(id1, e1), context.encodeExpressionAt(id2, e2));
-                        BooleanFormula cf = bmgr.or(context.controlFlow(e2), bmgr.not(sameId));
-                        allCF = bmgr.and(allCF, cf);
+                    if (!e1.equals(e2) && e1.getId().equals(e2.getId())) {
+                        allCF = bmgr.and(allCF, context.controlFlow(e2));
                     }
+
                 }
                 enc = bmgr.and(enc, bmgr.equivalence(allCF, context.execution(e1)));
             }
