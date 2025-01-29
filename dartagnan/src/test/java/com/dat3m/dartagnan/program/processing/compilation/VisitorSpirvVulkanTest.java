@@ -436,7 +436,7 @@ public class VisitorSpirvVulkanTest {
 
     private void doTestSpirvControlBarrier(Set<String> spvTags, Set<String> expected) {
         // given
-        ControlBarrier e = EventFactory.newControlBarrier("cbar", mock(Expression.class));
+        ControlBarrier e = EventFactory.newControlBarrier("test", "test");
         e.setFunction(mock(Function.class));
         e.addTags(Tag.Spirv.CONTROL);
         if (!spvTags.isEmpty()) {

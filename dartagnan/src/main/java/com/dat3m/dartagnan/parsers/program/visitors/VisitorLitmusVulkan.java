@@ -22,7 +22,6 @@ import com.dat3m.dartagnan.program.event.core.Store;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import org.antlr.v4.runtime.ParserRuleContext;
 
-
 public class VisitorLitmusVulkan extends LitmusVulkanBaseVisitor<Object> {
     private final ProgramBuilder programBuilder = ProgramBuilder.forArch(Program.SourceLanguage.LITMUS, Arch.VULKAN);
     private final ExpressionFactory expressions = programBuilder.getExpressionFactory();
@@ -257,9 +256,8 @@ public class VisitorLitmusVulkan extends LitmusVulkanBaseVisitor<Object> {
 
     @Override
     public Object visitControlBarrierInstruction(LitmusVulkanParser.ControlBarrierInstructionContext ctx) {
-        Expression barrierId = (Expression) ctx.value().accept(this);
-        String barrierIdString = ctx.getText().replace(barrierId.toString(), "");
-        Event barrier = EventFactory.newControlBarrier(barrierIdString.toLowerCase(), barrierId);
+        String name = ctx.getText().substring(0, ctx.getText().length() - ctx.constant().getText().length());
+        Event barrier = EventFactory.newControlBarrier(ctx.constant().getText(), name);
         barrier.addTags(Tag.Vulkan.CBAR, ctx.scope().content);
         String mo = getMemoryOrderOrDefault(ctx, null);
         if (mo != null) {
