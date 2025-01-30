@@ -1,8 +1,8 @@
-grammar InlineAArch64;
+grammar InlineAsm;
 
-options {tokenVocab=InlineAArch64Lexer;}
-/* each rule has the form asm sideeffect? "(instruction)*", "(metadata)*,~{clobber}*" */
-asm                                 // vvv this one is because the staddl starts with \0A for some reason
+options {tokenVocab=InlineAsmLexer;}
+
+asm                                 
     :
     (Quot(asmInstrEntries)*Quot)Comma (Quot(asmMetadataEntries)+ Quot)+ EOF?
 ;
@@ -77,13 +77,11 @@ yieldtask : YieldTask;
 ifThenThen : IfThenThen IfThenThenOptions;
 
 //fences
-// fence : DataMemoryBarrier FenceArmOpt | DataSynchronizationBarrier FenceArmOpt | RISCVFence FenceRISCVOpt | RISCVFence FenceRISCVOpt Comma FenceRISCVOpt | X86Fence | PPCFence;
 asmFence : DataMemoryBarrier FenceArmOpt | DataSynchronizationBarrier FenceArmOpt;
 riscvFence : RISCVFence FenceRISCVOpt | RISCVFence FenceRISCVOpt Comma FenceRISCVOpt;
 x86Fence : X86Fence;
 ppcFence : PPCFence;
 
-// Note that since there is an isA between metaINstr and its children, in the AST you get two nodes and I think it is ok, it might be useful for analysis purposes
 metaInstr : clobber | flag;
 clobber : OutputOpAssign | IsMemoryAddress | InputOpGeneralReg | OverlapInOutRegister | PointerToMemoryLocation;
 

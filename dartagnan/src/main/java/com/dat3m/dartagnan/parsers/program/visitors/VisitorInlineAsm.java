@@ -16,8 +16,8 @@ import com.dat3m.dartagnan.expression.type.BooleanType;
 import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.expression.type.VoidType;
-import com.dat3m.dartagnan.parsers.InlineAArch64BaseVisitor;
-import com.dat3m.dartagnan.parsers.InlineAArch64Parser;
+import com.dat3m.dartagnan.parsers.InlineAsmBaseVisitor;
+import com.dat3m.dartagnan.parsers.InlineAsmParser;
 import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Event;
@@ -25,7 +25,7 @@ import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.Label;
 
-public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
+public class VisitorInlineAsm extends InlineAsmBaseVisitor<Object> {
 
     private class CompareExpression {
 
@@ -43,7 +43,7 @@ public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
             this.compareExpression = expressions.makeIntCmp(this.firstRegister, intCmpOp, this.secondRegister);
         }
 
-        public void updateCompareExpressionZero(Register firstRegister, IntCmpOp intCmpOp) {
+        public void updateCompareExpressionWithZeroRegister(Register firstRegister, IntCmpOp intCmpOp) {
             this.updateCompareExpression(firstRegister, intCmpOp, expressions.parseValue("0", (IntegerType) firstRegister.getType()));
         }
 
@@ -54,15 +54,15 @@ public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
     private final Register returnRegister;
     private final ExpressionFactory expressions = ExpressionFactory.getInstance();
     private final TypeFactory types = TypeFactory.getInstance();
-    private final CompareExpression comparator; // class used to use compare and set flags
+    private final CompareExpression comparator;
     private final HashMap<String, Label> labelsDefined;
-    private final HashMap<String, Register> armToLlvmMap; // maps arm names to LLVM names
-    private final List<Expression> pendingRegisters; // used to create the final aggregatetype
+    private final HashMap<String, Register> armToLlvmMap;
+    private final List<Expression> pendingRegisters;
     private final LinkedList<Expression> fnParameters;
     private final int returnValuesNumber;
-    LinkedList<String> registerNames;
+    private final LinkedList<String> registerNames;
 
-    public VisitorInlineAArch64(Function llvmFunction, Register returnRegister, Type returnType, ArrayList<Expression> argumentsRegisterAddresses) {
+    public VisitorInlineAsm(Function llvmFunction, Register returnRegister, Type returnType, ArrayList<Expression> argumentsRegisterAddresses) {
         this.llvmFunction = llvmFunction;
         this.returnRegister = returnRegister;
         this.comparator = new CompareExpression();
@@ -185,38 +185,37 @@ public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
     }
 
     @Override
-    public List<Event> visitAsm(InlineAArch64Parser.AsmContext ctx) {
-        List<InlineAArch64Parser.AsmInstrEntriesContext> instructions = ctx.asmInstrEntries();
-        // TODO when adding new architecture it has to be a little bit different --instr := aarch | x86 | riscv | ppc
-        for (InlineAArch64Parser.AsmInstrEntriesContext instruction : instructions) {
-            InlineAArch64Parser.ArmInstrContext instrCtx = instruction.armInstr();
+    public List<Event> visitAsm(InlineAsmParser.AsmContext ctx) {
+
+        // extract registers from instructions
+        List<InlineAsmParser.AsmInstrEntriesContext> instructions = ctx.asmInstrEntries();
+        for (InlineAsmParser.AsmInstrEntriesContext instruction : instructions) {
+            InlineAsmParser.ArmInstrContext instrCtx = instruction.armInstr();
             if (instrCtx != null) {
                 collectRegisters(instrCtx);
             }
         }
         registerNames.sort((s1, s2) -> Integer.compare(extractNumberFromRegisterName(s1), extractNumberFromRegisterName(s2)));
 
+        //extract clobbers from the metdata
         ArrayList<String> clobbers = new ArrayList<>();
-        List<InlineAArch64Parser.AsmMetadataEntriesContext> metadataEntries = ctx.asmMetadataEntries();
-        for (InlineAArch64Parser.AsmMetadataEntriesContext metadataEntry : metadataEntries) {
-            List<InlineAArch64Parser.MetaInstrContext> metaInstrs = metadataEntry.metaInstr();
-            for (InlineAArch64Parser.MetaInstrContext metaInstr : metaInstrs) {
+        List<InlineAsmParser.AsmMetadataEntriesContext> metadataEntries = ctx.asmMetadataEntries();
+        for (InlineAsmParser.AsmMetadataEntriesContext metadataEntry : metadataEntries) {
+            List<InlineAsmParser.MetaInstrContext> metaInstrs = metadataEntry.metaInstr();
+            for (InlineAsmParser.MetaInstrContext metaInstr : metaInstrs) {
                 if (metaInstr.clobber() != null) {
                     clobbers.add(metaInstr.clobber().getText());
                 }
             }
         }
+        // by reading the clobbers we can map the arm registers to the llvm registers
         if (!registerNames.isEmpty() && !this.fnParameters.isEmpty()) {
-            // System.out.println("RegisterNames is " + registerNames);
-            // System.out.println("Fn params are " + this.fnParameters);
-            // System.out.println("Clobbers are " + clobbers);
             int registerNameIndex = 0;
             for (String clobber : clobbers) {
-                System.out.println("Current clobber is " + clobber);
-                if (clobber.matches("\\d+")) {
+                if (isClobberNumeric(clobber)) {
                     processNumericClobber(clobber, registerNameIndex);
                     registerNameIndex++;
-                } else if (clobber.equals("=*m")) {
+                } else if (isClobberMemoryLocation(clobber)) {
                     //if clobber is =*m it means that such pointer is a memory location, so we do not map to any register
                 } else {
                     processGeneralPurposeClobber(clobber, registerNameIndex);
@@ -227,11 +226,27 @@ public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
         visitChildren(ctx);
         return this.events;
     }
+    
+    private boolean isClobberNumeric(String clobber) {
+        return clobber.matches("\\d+");
+    }
+    
+    private boolean isClobberMemoryLocation(String clobber) {
+        return clobber.equals("=*m");
+    }
+    
+    private boolean isClobberOutputConstraint(String clobber) {
+        return clobber.equals("=&r") || clobber.equals("=r");
+    }
+    
+    private boolean isClobberInputConstraint(String clobber) {
+        return clobber.equals("r") || clobber.equals("Q") || clobber.equals("*Q");
+    }
 
     private void collectRegisters(ParseTree node) {
         if (node == null) {
             return;
-        } else if (node instanceof InlineAArch64Parser.RegisterContext) {
+        } else if (node instanceof InlineAsmParser.RegisterContext) {
             String registerName = node.getText();
             if (registerName != null && !registerNames.contains(registerName) && !isRegisterConstantValue(registerName)) {
                 registerNames.add(registerName);
@@ -253,7 +268,7 @@ public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
         }
         String name = registerNames.get(number);
         Register toBeChanged = getOrNewRegister(name);
-        System.out.println("Register is going to be assigned " + toBeChanged.getName() + " < - " + this.fnParameters.get(registerNameIndex - this.returnValuesNumber));
+        // System.out.println("Register is going to be assigned " + toBeChanged.getName() + " < - " + this.fnParameters.get(registerNameIndex - this.returnValuesNumber));
         events.add(EventFactory.newLocal(toBeChanged, this.fnParameters.get(registerNameIndex - this.returnValuesNumber)));
     }
 
@@ -261,19 +276,19 @@ public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
         String registerName = registerNames.get(registerNameIndex);
         Register newRegister = getOrNewRegister(registerName);
         armToLlvmMap.put(registerName, newRegister);
-        if (clobber.equals("=&r") || clobber.equals("=r")) {
+        if (isClobberOutputConstraint(clobber)) {
             // Clobber maps to returnValue, we just skip it as we are assigning them later
-        } else if (clobber.equals("r") || clobber.equals("Q") || clobber.equals("*Q")) {
+        } else if (isClobberInputConstraint(clobber)) {
             int number = extractNumberFromRegisterName(registerName);
-            System.out.println("Trying to assign to " + newRegister + " expression " + this.fnParameters.get(number - this.returnValuesNumber));
+            // System.out.println("Trying to assign to " + newRegister + " expression " + this.fnParameters.get(number - this.returnValuesNumber));
             events.add(EventFactory.newLocal(newRegister, this.fnParameters.get(number - this.returnValuesNumber)));
         } else {
-            System.err.println("New type of clobber found, you have to add it! " + clobber);
+            System.err.println("New type of clobber found! " + clobber);
         }
     }
 
     @Override
-    public Object visitLoadReg(InlineAArch64Parser.LoadRegContext ctx) {
+    public Object visitLoadReg(InlineAsmParser.LoadRegContext ctx) {
         Register register = (Register) ctx.register(0).accept(this);
         Register address = (Register) ctx.register(1).accept(this);
         events.add(EventFactory.newLoad(register, address));
@@ -282,7 +297,7 @@ public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
     }
 
     @Override
-    public Object visitLoadAcquireReg(InlineAArch64Parser.LoadAcquireRegContext ctx) {
+    public Object visitLoadAcquireReg(InlineAsmParser.LoadAcquireRegContext ctx) {
         Register register = (Register) ctx.register(0).accept(this);
         Register address = (Register) ctx.register(1).accept(this);
         events.add(EventFactory.newLoadWithMo(register, address, Tag.ARMv8.MO_ACQ));
@@ -291,7 +306,7 @@ public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
     }
 
     @Override
-    public Object visitLoadExclusiveReg(InlineAArch64Parser.LoadExclusiveRegContext ctx) {
+    public Object visitLoadExclusiveReg(InlineAsmParser.LoadExclusiveRegContext ctx) {
         Register register = (Register) ctx.register(0).accept(this);
         Register address = (Register) ctx.register(1).accept(this);
         events.add(EventFactory.newRMWLoadExclusive(register, address));
@@ -300,7 +315,7 @@ public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
     }
 
     @Override
-    public Object visitLoadAcquireExclusiveReg(InlineAArch64Parser.LoadAcquireExclusiveRegContext ctx) {
+    public Object visitLoadAcquireExclusiveReg(InlineAsmParser.LoadAcquireExclusiveRegContext ctx) {
         Register register = (Register) ctx.register(0).accept(this);
         Register address = (Register) ctx.register(1).accept(this);
         events.add(EventFactory.newRMWLoadExclusiveWithMo(register, address, Tag.ARMv8.MO_ACQ));
@@ -309,7 +324,7 @@ public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
     }
 
     @Override
-    public Object visitAdd(InlineAArch64Parser.AddContext ctx) {
+    public Object visitAdd(InlineAsmParser.AddContext ctx) {
         Register resultRegister = (Register) ctx.register(0).accept(this);
         Register leftRegister = (Register) ctx.register(1).accept(this);
         Register rightRegister = (Register) ctx.register(2).accept(this);
@@ -320,7 +335,7 @@ public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
     }
 
     @Override
-    public Object visitSub(InlineAArch64Parser.SubContext ctx) {
+    public Object visitSub(InlineAsmParser.SubContext ctx) {
         Register resultRegister = (Register) ctx.register(0).accept(this);
         Register leftRegister = (Register) ctx.register(1).accept(this);
         Register rightRegister = (Register) ctx.register(2).accept(this);
@@ -331,7 +346,7 @@ public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
     }
 
     @Override
-    public Object visitOr(InlineAArch64Parser.OrContext ctx) {
+    public Object visitOr(InlineAsmParser.OrContext ctx) {
         Register resultRegister = (Register) ctx.register(0).accept(this);
         Register leftRegister = (Register) ctx.register(1).accept(this);
         Register rightRegister = (Register) ctx.register(2).accept(this);
@@ -342,7 +357,7 @@ public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
     }
 
     @Override
-    public Object visitAnd(InlineAArch64Parser.AndContext ctx) {
+    public Object visitAnd(InlineAsmParser.AndContext ctx) {
         Register resultRegister = (Register) ctx.register(0).accept(this);
         Register leftRegister = (Register) ctx.register(1).accept(this);
         Register rightRegister = (Register) ctx.register(2).accept(this);
@@ -353,7 +368,7 @@ public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
     }
 
     @Override
-    public Object visitStoreReg(InlineAArch64Parser.StoreRegContext ctx) {
+    public Object visitStoreReg(InlineAsmParser.StoreRegContext ctx) {
         Register value = (Register) ctx.register(0).accept(this);
         Register address = (Register) ctx.register(1).accept(this);
         events.add(EventFactory.newStore(address, value));
@@ -361,7 +376,7 @@ public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
     }
 
     @Override
-    public Object visitStoreReleaseReg(InlineAArch64Parser.StoreReleaseRegContext ctx) {
+    public Object visitStoreReleaseReg(InlineAsmParser.StoreReleaseRegContext ctx) {
         Register value = (Register) ctx.register(0).accept(this);
         Register address = (Register) ctx.register(1).accept(this);
         events.add(EventFactory.newStoreWithMo(address, value, Tag.ARMv8.MO_REL));
@@ -369,7 +384,7 @@ public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
     }
 
     @Override
-    public Object visitStoreExclusiveRegister(InlineAArch64Parser.StoreExclusiveRegisterContext ctx) {
+    public Object visitStoreExclusiveRegister(InlineAsmParser.StoreExclusiveRegisterContext ctx) {
         Register freshResultRegister = (Register) ctx.register(0).accept(this);
         Register value = (Register) ctx.register(1).accept(this);
         Register address = (Register) ctx.register(2).accept(this);
@@ -378,7 +393,7 @@ public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
     }
 
     @Override
-    public Object visitStoreReleaseExclusiveReg(InlineAArch64Parser.StoreReleaseExclusiveRegContext ctx) {
+    public Object visitStoreReleaseExclusiveReg(InlineAsmParser.StoreReleaseExclusiveRegContext ctx) {
         Register freshResultRegister = (Register) ctx.register(0).accept(this);
         Register value = (Register) ctx.register(1).accept(this);
         Register address = (Register) ctx.register(2).accept(this);
@@ -387,11 +402,11 @@ public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
     }
 
     @Override
-    public Object visitCompare(InlineAArch64Parser.CompareContext ctx) {
+    public Object visitCompare(InlineAsmParser.CompareContext ctx) {
         Register firstRegister = (Register) ctx.register(0).accept(this);
         Register secondRegister = (Register) ctx.register(1).accept(this);
         if (isRegisterConstantValue(secondRegister.getName())) {
-            this.comparator.updateCompareExpressionZero(firstRegister, IntCmpOp.EQ);
+            this.comparator.updateCompareExpressionWithZeroRegister(firstRegister, IntCmpOp.EQ);
         } else {
             this.comparator.updateCompareExpression(firstRegister, IntCmpOp.EQ, secondRegister);
         }
@@ -399,9 +414,9 @@ public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
     }
 
     @Override
-    public Object visitCompareBranchNonZero(InlineAArch64Parser.CompareBranchNonZeroContext ctx) {
+    public Object visitCompareBranchNonZero(InlineAsmParser.CompareBranchNonZeroContext ctx) {
         Register registerLlvm = (Register) ctx.register().accept(this);
-        this.comparator.updateCompareExpressionZero(registerLlvm, IntCmpOp.NEQ);
+        this.comparator.updateCompareExpressionWithZeroRegister(registerLlvm, IntCmpOp.NEQ);
         String cleanedLabelName = cleanLabel(ctx.LabelReference().getText());
         Label label = getOrNewLabel(cleanedLabelName);
         events.add(EventFactory.newJump(this.comparator.compareExpression, label));
@@ -409,7 +424,7 @@ public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
     }
 
     @Override
-    public Object visitMove(InlineAArch64Parser.MoveContext ctx) {
+    public Object visitMove(InlineAsmParser.MoveContext ctx) {
         Register toRegister = (Register) ctx.register(0).accept(this);
         Register fromRegister = (Register) ctx.register(1).accept(this);
         events.add(EventFactory.newLocal(toRegister, fromRegister));
@@ -418,7 +433,7 @@ public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
     }
 
     @Override
-    public Object visitBranchEqual(InlineAArch64Parser.BranchEqualContext ctx) {
+    public Object visitBranchEqual(InlineAsmParser.BranchEqualContext ctx) {
         String cleanedLabelName = cleanLabel(ctx.LabelReference().getText());
         Label label = getOrNewLabel(cleanedLabelName);
         this.comparator.updateCompareExpressionOperator(IntCmpOp.EQ);
@@ -427,7 +442,7 @@ public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
     }
 
     @Override
-    public Object visitBranchNotEqual(InlineAArch64Parser.BranchNotEqualContext ctx) {
+    public Object visitBranchNotEqual(InlineAsmParser.BranchNotEqualContext ctx) {
         String cleanedLabelName = cleanLabel(ctx.LabelReference().getText());
         Label label = getOrNewLabel(cleanedLabelName);
         this.comparator.updateCompareExpressionOperator(IntCmpOp.NEQ);
@@ -436,7 +451,7 @@ public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
     }
 
     @Override
-    public Object visitLabelDefinition(InlineAArch64Parser.LabelDefinitionContext ctx) {
+    public Object visitLabelDefinition(InlineAsmParser.LabelDefinitionContext ctx) {
         String labelDefinitionNoColumn = ctx.LabelDefinition().getText().replace(":", "");
         Label label = getOrNewLabel(labelDefinitionNoColumn);
         events.add(label);
@@ -444,7 +459,7 @@ public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
     }
 
     @Override
-    public Object visitAsmMetadataEntries(InlineAArch64Parser.AsmMetadataEntriesContext ctx) {
+    public Object visitAsmMetadataEntries(InlineAsmParser.AsmMetadataEntriesContext ctx) {
         if (this.returnValuesNumber > 1) {
             List<Type> typesList = new LinkedList<>();
             for (Expression r : this.pendingRegisters) {
@@ -458,13 +473,12 @@ public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
     }
 
     @Override
-    public Object visitRegister(InlineAArch64Parser.RegisterContext ctx) {
+    public Object visitRegister(InlineAsmParser.RegisterContext ctx) {
         return getOrNewRegister(ctx.Register().getText());
     }
 
     @Override
-    public Object visitAsmFence(InlineAArch64Parser.AsmFenceContext ctx) {
-        System.out.println("Fence is " + ctx.getText());
+    public Object visitAsmFence(InlineAsmParser.AsmFenceContext ctx) {
         // check which type of fence it is : DataMemoryBarrier or DataSynchronizationBarrier
         String type = ctx.DataMemoryBarrier() == null ? ctx.DataSynchronizationBarrier().getText() : ctx.DataMemoryBarrier().getText();
         String option = ctx.FenceArmOpt().getText();
@@ -495,7 +509,7 @@ public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
     }
 
     @Override
-    public Object visitRiscvFence(InlineAArch64Parser.RiscvFenceContext ctx) {
+    public Object visitRiscvFence(InlineAsmParser.RiscvFenceContext ctx) {
         String type = ctx.RISCVFence().getText();
         String firstOption = ctx.FenceRISCVOpt(0).getText();
         String secondOption = ctx.FenceRISCVOpt(1) == null ? "" : ctx.FenceRISCVOpt(1).getText();
@@ -530,7 +544,7 @@ public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
     }
 
     @Override
-    public Object visitX86Fence(InlineAArch64Parser.X86FenceContext ctx) {
+    public Object visitX86Fence(InlineAsmParser.X86FenceContext ctx) {
         String barrier = ctx.X86Fence().getText();
         switch (barrier) {
             case "mfence" ->
@@ -542,7 +556,7 @@ public class VisitorInlineAArch64 extends InlineAArch64BaseVisitor<Object> {
     }
 
     @Override
-    public Object visitPpcFence(InlineAArch64Parser.PpcFenceContext ctx) {
+    public Object visitPpcFence(InlineAsmParser.PpcFenceContext ctx) {
         String barrier = ctx.PPCFence().getText();
         switch (barrier) {
             case "sync" ->

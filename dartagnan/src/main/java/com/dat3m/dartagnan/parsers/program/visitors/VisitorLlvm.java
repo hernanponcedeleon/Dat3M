@@ -35,7 +35,7 @@ import java.util.stream.Collectors;
 import org.antlr.v4.runtime.CharStream;
 import org.antlr.v4.runtime.CharStreams;
 
-import com.dat3m.dartagnan.parsers.program.ParserInlineAArch64;
+import com.dat3m.dartagnan.parsers.program.ParserInlineAsm;
 import static com.dat3m.dartagnan.program.event.EventFactory.*;
 import static com.dat3m.dartagnan.program.event.EventFactory.Llvm.newCompareExchange;
 import static com.google.common.base.Preconditions.checkState;
@@ -380,9 +380,9 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
             // see https://llvm.org/docs/LangRef.html#inline-assembler-expressions
             //TODO add support form inline assembly
             //FIXME ignore side effects of inline assembly
-                logger.warn(String.format("Interpreting inline assembly as an unconstrained value:  %s.", ctx.inlineAsm().getText()));
+                // logger.warn(String.format("Interpreting inline assembly as an unconstrained value:  %s.", ctx.inlineAsm().getText()));
                 CharStream charStream = CharStreams.fromString(ctx.inlineAsm().StringLit(0).getText()+ ","+ ctx.inlineAsm().StringLit(1).getText());
-                ParserInlineAArch64 parser = new ParserInlineAArch64(function,resultRegister, returnType, arguments);
+                ParserInlineAsm parser = new ParserInlineAsm(function,resultRegister, returnType, arguments);
                 List<Event> events = parser.parse(charStream);
                 if(!events.isEmpty()){
                     block.events.addAll(events);
@@ -530,7 +530,7 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
         //     case "fence i" -> fences.add(RISCV.newSynchronizeFence());
         //     default -> {throw new ParsingException(String.format("Encountered unsupported inline assembly:  %s.", asm));
         //     // this is without the Wrapper, but is ugly....
-        //     // default -> {logger.warn(String.format("found asm in InlineAsm:  %s.", ctx.getText()));String inlineAsmCode = ctx.StringLit(0).getText()+ ","+ ctx.StringLit(1).getText();CharStream charStream = CharStreams.fromString(inlineAsmCode);ParserInlineAArch64 parser = new ParserInlineAArch64(this.function,null,null, this.argumentsRegisterAddresses);parser.parse(charStream);fences.addAll(parser.getEvents());break;}//throw new ParsingException(String.format("Encountered unsupported inline assembly:  %s.", asm)); HAS TO BECOME INLINEWRAPPER
+        //     // default -> {logger.warn(String.format("found asm in InlineAsm:  %s.", ctx.getText()));String inlineAsmCode = ctx.StringLit(0).getText()+ ","+ ctx.StringLit(1).getText();CharStream charStream = CharStreams.fromString(inlineAsmCode);ParserInlineAsm parser = new ParserInlineAsm(this.function,null,null, this.argumentsRegisterAddresses);parser.parse(charStream);fences.addAll(parser.getEvents());break;}//throw new ParsingException(String.format("Encountered unsupported inline assembly:  %s.", asm)); HAS TO BECOME INLINEWRAPPER
         // }
         // if(!fences.isEmpty()) {
         //     block.events.addAll(fences);

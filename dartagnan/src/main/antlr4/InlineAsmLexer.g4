@@ -1,4 +1,4 @@
-lexer grammar InlineAArch64Lexer;
+lexer grammar InlineAsmLexer;
 
 import BaseLexer;
 
@@ -14,25 +14,26 @@ Add                         : 'add';
 Sub                         : 'sub';
 Or                          : 'orr';
 And                         : 'and';
-Compare                     : 'cmp' | 'cmpeq';
+Compare                     : 'cmp';
 CompareBranchNonZero        : 'cbnz';
 BranchEqual                 : 'b.eq' | 'beq';
 BranchNotEqual              : 'b.ne' | 'bne';
 SetEventLocally             : 'sevl';
 WaitForEvent                : 'wfe';
 StoreReg                    : 'str';
-StoreExclusiveRegister      : 'stxr' | 'strex' | 'strexeq';
+StoreExclusiveRegister      : 'stxr' | 'strex';
 StoreReleaseExclusiveReg    : 'stlxr';
 StoreReleaseReg             : 'stlr';
-AtomicAddDoubleWordRelease  : 'staddl';
-SwapWordAcquire             : 'swpa';
-CompareAndSwap              : 'cas';
-CompareAndSwapAcquire       : 'casa';
 Move                        : 'mov';
 PrefetchMemory              : 'prfm';
 YieldTask                   : 'yield'; // used to tell Hw that we're in a spinlock. If not implemented it just NOPs
 IfThenThen                  : 'itt';
 
+// those are not llsc
+AtomicAddDoubleWordRelease  : 'staddl';
+SwapWordAcquire             : 'swpa';
+CompareAndSwap              : 'cas';
+CompareAndSwapAcquire       : 'casa';
 
 // metadata 
 OutputOpAssign              : Equals Amp RLiteral | Equals RLiteral;

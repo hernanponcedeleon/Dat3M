@@ -54,7 +54,9 @@ public class InlineAsmTestArmv8Ck {
             {"declock", 3, Result.PASS},
             {"faslock", 3, Result.PASS},
             {"mcslock", 2, Result.PASS},
-            {"ticketlock", 1, Result.PASS}
+            {"ticketlock", 1, Result.PASS},
+            {"spsc_queue", 1, Result.PASS},
+            {"stack_empty", 1, Result.PASS},
         });
     }
 
@@ -80,7 +82,7 @@ public class InlineAsmTestArmv8Ck {
                 cfg,
                 BasicLogManager.create(cfg),
                 ShutdownManager.create().getNotifier(),
-                SolverContextFactory.Solvers.Z3);
+                SolverContextFactory.Solvers.YICES2);
     }
 
     private ProverWithTracker mkProver(SolverContext ctx) {
