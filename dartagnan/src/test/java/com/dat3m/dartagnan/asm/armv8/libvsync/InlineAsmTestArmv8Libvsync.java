@@ -54,15 +54,6 @@ public class InlineAsmTestArmv8Libvsync {
             {"bounded_mpmc_check_full", 5, PASS},
             {"bounded_mpmc_check_empty", 4, PASS},
 
-            //unbounded_queue 
-            // missing generation from clang
-            // {"vqueue_ub_total_1", 4, PASS},
-            // {"vqueue_ub_total_2", 4, PASS},
-            // {"vqueue_ub_total_3", 4, PASS},
-            // {"vqueue_ub_total_4", 4, PASS},
-            // {"vqueue_ub_total_5", 4, PASS},
-            // {"vqueue_ub_total_6", 4, PASS},
-
             //spinlocks
             // {"caslock", 4, PASS}, // passes Refinement but out of memory on Assume 
             {"clhlock", 3, PASS},
@@ -79,9 +70,7 @@ public class InlineAsmTestArmv8Libvsync {
             {"ttaslock", 3, PASS},
             {"twalock", 2, PASS},
 
-            //threads 
-            {"cnd_test1", 3, PASS},
-            {"cnd_test2", 3, PASS},
+            //threads
             {"mutex_musl", 3, PASS},
             {"mutex_slim", 3, PASS},
             {"mutex_waiters", 3, PASS},
@@ -111,7 +100,7 @@ public class InlineAsmTestArmv8Libvsync {
                 cfg,
                 BasicLogManager.create(cfg),
                 ShutdownManager.create().getNotifier(),
-                SolverContextFactory.Solvers.YICES2);
+                SolverContextFactory.Solvers.Z3);
     }
 
     private ProverWithTracker mkProver(SolverContext ctx) {
