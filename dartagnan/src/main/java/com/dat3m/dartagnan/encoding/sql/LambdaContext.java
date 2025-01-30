@@ -11,7 +11,6 @@ public class LambdaContext {
     private final TermManager tm;
 
     LambdaContext parent;
-    List<LambdaContext> children = new ArrayList<>();
 
     private CreateSqlEncoder.Table currentTable;
 
@@ -35,7 +34,7 @@ public class LambdaContext {
 
     public LambdaContext deriveContext(){
         LambdaContext child = new LambdaContext(tm,currentTable,this);
-        this.children.add(child)
+        child.currentTable = currentTable;
         return child;
     }
 
@@ -70,5 +69,21 @@ public class LambdaContext {
         this.currentinitialValue = initialval;
 
         return initialVariable;
+    }
+
+    public Term getInitialVariable() {
+        return initialVariable;
+    }
+
+    public Term getCurrentinitialValue() {
+        return currentinitialValue;
+    }
+
+    public Sort getCurrentinitialVariableSort() {
+        return currentinitialVariableSort;
+    }
+
+    public LambdaContext close() {
+        return parent;
     }
 }

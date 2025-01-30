@@ -169,7 +169,7 @@ public class Dartagnan extends BaseOptions {
         try {
             long startTime = System.currentTimeMillis();
             t.start();
-            /*
+
             Configuration solverConfig = Configuration.builder()
                     .setOption(PHANTOM_REFERENCES, valueOf(o.usePhantomReferences()))
                     .build();
@@ -178,9 +178,9 @@ public class Dartagnan extends BaseOptions {
                     BasicLogManager.create(solverConfig),
                     sdm.getNotifier(),
                     o.getSolver());
-                    ProverWithTracker prover = new ProverWithTracker(ctx,
-                        o.getDumpSmtLib() ? GlobalSettings.getOutputDirectory() + String.format("/%s.smt2", p.getName()) : "",
-                        ProverOptions.GENERATE_MODELS)) {
+                 ProverWithTracker prover = new ProverWithTracker(ctx,
+                         o.getDumpSmtLib() ? GlobalSettings.getOutputDirectory() + String.format("/%s.smt2", p.getName()) : "",
+                         ProverOptions.GENERATE_MODELS)) {
                 ModelChecker modelChecker;
                 if (properties.contains(DATARACEFREEDOM)) {
                     if (properties.size() > 1) {
@@ -197,11 +197,11 @@ public class Dartagnan extends BaseOptions {
                         case LAZY -> RefinementSolver.run(ctx, prover, task);
                     };
                 }
-               */
-                ModelChecker modelChecker = SqlSolver.run(null, null, task);
+
+                //ModelChecker modelChecker = SqlSolver.run(null, null, task);
                 // Verification ended, we can interrupt the timeout Thread
-                t.interrupt();
-/*
+                //t.interrupt();
+
                 if (modelChecker.hasModel() && o.getWitnessType().generateGraphviz()) {
                     generateExecutionGraphFile(task, prover, modelChecker, o.getWitnessType());
                 }
@@ -215,7 +215,7 @@ public class Dartagnan extends BaseOptions {
                 if (o.getWitnessType().equals(GRAPHML) && !o.runValidator()) {
                     generateWitnessIfAble(task, prover, modelChecker, summary);
                 }
-            }*/
+            }
         } catch (InterruptedException e) {
             logger.warn("Timeout elapsed. The SMT solver was stopped");
             System.out.println("TIMEOUT");
@@ -238,7 +238,7 @@ public class Dartagnan extends BaseOptions {
         final String progName = task.getProgram().getName();
         final int fileSuffixIndex = progName.lastIndexOf('.');
         final String name = progName.isEmpty() ? "unnamed_program" :
-                (fileSuffixIndex == - 1) ? progName : progName.substring(0, fileSuffixIndex);
+                (fileSuffixIndex == -1) ? progName : progName.substring(0, fileSuffixIndex);
         // RF edges give both ordering and data flow information, thus even when the pair is in PO
         // we get some data flow information by observing the edge
         // FR edges only give ordering information which is known if the pair is also in PO
@@ -249,7 +249,7 @@ public class Dartagnan extends BaseOptions {
     }
 
     private static void generateWitnessIfAble(VerificationTask task, ProverEnvironment prover,
-            ModelChecker modelChecker, String summary) {
+                                              ModelChecker modelChecker, String summary) {
         // ------------------ Generate Witness, if possible ------------------
         final EnumSet<Property> properties = task.getProperty();
         if (task.getProgram().getFormat().equals(SourceLanguage.LLVM) && modelChecker.hasModel()
@@ -268,7 +268,7 @@ public class Dartagnan extends BaseOptions {
     }
 
     public static String generateResultSummary(VerificationTask task, ProverEnvironment prover,
-            ModelChecker modelChecker) throws SolverException {
+                                               ModelChecker modelChecker) throws SolverException {
         // ----------------- Generate output of verification result -----------------
         final Program p = task.getProgram();
         final EnumSet<Property> props = task.getProperty();
@@ -289,7 +289,7 @@ public class Dartagnan extends BaseOptions {
                     for (Assert ass : p.getThreadEvents(Assert.class)) {
                         final boolean isViolated = TRUE.equals(model.evaluate(encCtx.execution(ass)))
                                 && FALSE.equals(
-                                        model.evaluate(encCtx.encodeExpressionAsBooleanAt(ass.getExpression(), ass)));
+                                model.evaluate(encCtx.encodeExpressionAsBooleanAt(ass.getExpression(), ass)));
                         if (isViolated) {
                             final String callStack = makeContextString(
                                     synContext.getContextInfo(ass).getContextOfType(CallContext.class), " -> ");
@@ -419,7 +419,7 @@ public class Dartagnan extends BaseOptions {
     }
 
     private static void increaseBoundAndDump(List<Event> boundEvents, Configuration config) throws IOException {
-        if(!config.hasProperty(BOUNDS_SAVE_PATH)) {
+        if (!config.hasProperty(BOUNDS_SAVE_PATH)) {
             return;
         }
         final File boundsFile = new File(config.getProperty(BOUNDS_SAVE_PATH));

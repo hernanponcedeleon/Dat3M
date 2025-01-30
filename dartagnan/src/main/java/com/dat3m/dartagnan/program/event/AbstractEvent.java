@@ -15,8 +15,6 @@ import java.util.*;
 
 public abstract class AbstractEvent implements Event {
 
-    private static int ggGlobalIdCounter=0;
-
     private final MetadataMap metadataMap = new MetadataMap();
     private final TagSet tags;
     private final Set<EventUser> currentUsers = new HashSet<>();
@@ -30,13 +28,11 @@ public abstract class AbstractEvent implements Event {
 
     protected AbstractEvent() {
         tags = new TagSet();
-        this.globalId = ggGlobalIdCounter++;
     }
 
     protected AbstractEvent(AbstractEvent other) {
         copyAllMetadataFrom(other);
         this.tags = other.tags.copy();
-        this.globalId = ggGlobalIdCounter++;
     }
 
     @Override

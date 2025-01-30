@@ -7,7 +7,7 @@ CREATE TABLE table_b (col1 VARCHAR,col2 VARCHAR) ;
 
 assertions:
 
-SELECT SUM(col1) FROM table_a WHERE col1>0 HAVING agg1>100 ;
+SELECT * FROM table_a WHERE col1>2;
 
 application:
 

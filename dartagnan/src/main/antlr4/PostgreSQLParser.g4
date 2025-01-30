@@ -2961,7 +2961,7 @@ select_no_parens
     ;
 
 select_clause
-    : simple_select_intersect ((UNION | EXCEPT) all_or_distinct? simple_select_intersect)*
+    : simple_select_intersect (j=(UNION | EXCEPT) all_or_distinct? simple_select_intersect)*
     ;
 
 simple_select_intersect

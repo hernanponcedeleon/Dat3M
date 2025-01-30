@@ -51,7 +51,7 @@ public class VisitorSqlApplication extends SqlApplicationBaseVisitor<Object> {
     @Override
     public Object visitAssertions(SqlApplication.AssertionsContext ctx){
         for(SqlApplication.SelectstmtContext sstm: ctx.selectstmt()){
-            SelectEvent select_event = new SelectEvent(sstm);
+            AssertionEvent select_event = new AssertionEvent(sstm);
             ((SqlProgram)programBuilder.getProgram()).add_assertion(select_event);
         }
 
@@ -81,8 +81,6 @@ public class VisitorSqlApplication extends SqlApplicationBaseVisitor<Object> {
 
     @Override
     public Object visitSelectstmt(SqlApplication.SelectstmtContext ctx) {
-
-
         return programBuilder.addChild(thread_id,new SelectEvent(ctx));
     }
 

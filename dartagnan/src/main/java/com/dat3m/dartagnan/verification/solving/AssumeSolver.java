@@ -62,6 +62,7 @@ public class AssumeSolver extends ModelChecker {
         prover.addConstraint(programEncoder.encodeFullProgram());
         prover.writeComment("Memory model encoding");
         prover.addConstraint(wmmEncoder.encodeFullMemoryModel());
+
         // For validation this contains information.
         // For verification graph.encode() just returns ctx.mkTrue()
         prover.writeComment("Witness encoding");

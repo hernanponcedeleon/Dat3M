@@ -10,6 +10,7 @@ import com.dat3m.dartagnan.expression.type.TypeOffset;
 import com.dat3m.dartagnan.parsers.SqlApplication;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.sql.AbstractSqlEvent;
+import com.dat3m.dartagnan.program.event.sql.AssertionEvent;
 import com.dat3m.dartagnan.program.event.sql.CreateEvent;
 import com.dat3m.dartagnan.program.event.sql.SelectEvent;
 import com.dat3m.dartagnan.program.memory.Memory;
@@ -22,7 +23,7 @@ import java.util.stream.Collectors;
 public class SqlProgram extends Program{
 
     private final List<CreateEvent> table_create_stms = new ArrayList<>();
-    private final List<SelectEvent> assertions = new ArrayList<>();;
+    private final List<AssertionEvent> assertions = new ArrayList<>();;
 
     public SqlProgram(String name){
         super(name,null, Program.SourceLanguage.SQL);
@@ -32,15 +33,15 @@ public class SqlProgram extends Program{
         this.table_create_stms.add(createEvent);
     }
 
-    public void add_assertion(SelectEvent selectEvent) {
-        assertions.add(selectEvent);
+    public void add_assertion(AssertionEvent assertionEvent) {
+        assertions.add(assertionEvent);
     }
 
     public List<CreateEvent> getTable_create_stms() {
         return table_create_stms;
     }
 
-    public List<SelectEvent> getAssertions() {
+    public List<AssertionEvent> getAssertions() {
         return assertions;
     }
 }
