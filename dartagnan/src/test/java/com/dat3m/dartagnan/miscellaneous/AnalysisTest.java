@@ -630,6 +630,11 @@ public class AnalysisTest {
         program6(FIELD_INSENSITIVE, MUST, NONE, MAY, MUST);
     }
 
+    @Test
+    public void full6() throws InvalidConfigurationException {
+        program6(FULL, MUST, NONE, MUST, MUST);
+    }
+
     private void program6(Alias method, Result... expect) throws InvalidConfigurationException {
         ProgramBuilder b = ProgramBuilder.forLanguage(SourceLanguage.LITMUS);
 
@@ -671,6 +676,11 @@ public class AnalysisTest {
     @Test
     public void fieldinsensitive7() throws InvalidConfigurationException {
         program7(FIELD_INSENSITIVE, MUST, NONE, MAY, MAY, MAY, NONE, MUST, MAY, MAY, MAY, MUST, NONE, NONE, MUST, NONE);
+    }
+
+    @Test
+    public void full7() throws InvalidConfigurationException {
+        program7(FULL, MUST, NONE, MUST, NONE, NONE, NONE, MUST, NONE, MUST, MUST, MUST, NONE, NONE, MUST, NONE);
     }
 
     private void program7(Alias method, Result... expect) throws InvalidConfigurationException{
@@ -744,6 +754,11 @@ public class AnalysisTest {
         program8(FIELD_INSENSITIVE, MUST, MAY, MAY, MUST, MAY, NONE, MUST);
     }
 
+    @Test
+    public void full8() throws InvalidConfigurationException {
+        program8(FULL, MUST, MUST, MUST, MUST, MUST, NONE, MUST);
+    }
+
     private void program8(Alias method, Result... expect) throws InvalidConfigurationException {
         ProgramBuilder b = ProgramBuilder.forLanguage(SourceLanguage.LITMUS);
 
@@ -798,8 +813,8 @@ public class AnalysisTest {
 
     @Test
     public void fieldsensitive9() throws InvalidConfigurationException {
-        program9(FIELD_SENSITIVE, MUST, NONE, MUST, NONE, NONE, NONE, MAY, NONE, NONE,
-                NONE, MUST, NONE, NONE, NONE, NONE, NONE, MAY, NONE,
+        program9(FIELD_SENSITIVE, MUST, NONE, MUST, NONE, NONE, NONE, NONE, NONE, NONE,
+                NONE, MUST, NONE, NONE, NONE, NONE, NONE, NONE, NONE,
                 NONE, MUST, NONE, NONE, NONE, NONE, NONE, NONE,
                 NONE, NONE, NONE, NONE, NONE, NONE, NONE,
                 NONE, NONE, NONE, NONE, NONE, NONE,
@@ -822,6 +837,20 @@ public class AnalysisTest {
                 MAY, MAY, MAY,
                 MAY, MAY,
                 MAY);
+    }
+
+    @Test
+    public void full9() throws InvalidConfigurationException {
+        program9(FULL, MUST, NONE, MUST, NONE, NONE, NONE, NONE, NONE, NONE,
+                NONE, MUST, NONE, NONE, NONE, NONE, NONE, NONE, NONE,
+                NONE, MUST, NONE, NONE, NONE, NONE, NONE, NONE,
+                NONE, NONE, NONE, NONE, NONE, NONE, NONE,
+                NONE, NONE, NONE, NONE, NONE, NONE,
+                NONE, MUST, NONE, NONE, NONE,
+                NONE, NONE, NONE, NONE,
+                NONE, NONE, NONE,
+                NONE, NONE,
+                NONE);
     }
 
     // This program is wrong because it frees the same memory multiple times.
@@ -988,58 +1017,7 @@ public class AnalysisTest {
         return AliasAnalysis.fromConfig(program, analysisContext, configuration);
     }
 
-    private void assertAlias(Result expect, AliasAnalysis a, MemoryCoreEvent x, MemoryCoreEvent y) {
-        switch (expect) {
-            case NONE:
-                assertFalse(a.mayAlias(x, y));
-                assertFalse(a.mustAlias(x, y));
-                break;
-            case MAY:
-                assertTrue(a.mayAlias(x, y));
-                assertFalse(a.mustAlias(x, y));
-                break;
-            case MUST:
-                assertTrue(a.mayAlias(x, y));
-                assertTrue(a.mustAlias(x, y));
-                break;
-        }
-    }
-
-    private void assertAlias(Result expect, AliasAnalysis a, Alloc x, MemoryCoreEvent y) {
-        switch (expect) {
-            case NONE:
-                assertFalse(a.mayAlias(x, y));
-                assertFalse(a.mustAlias(x, y));
-                break;
-            case MAY:
-                assertTrue(a.mayAlias(x, y));
-                assertFalse(a.mustAlias(x, y));
-                break;
-            case MUST:
-                assertTrue(a.mayAlias(x, y));
-                assertTrue(a.mustAlias(x, y));
-                break;
-        }
-    }
-
-    private void assertAlias(Result expect, AliasAnalysis a, Alloc x, MemFree y) {
-        switch (expect) {
-            case NONE:
-                assertFalse(a.mayAlias(x, y));
-                assertFalse(a.mustAlias(x, y));
-                break;
-            case MAY:
-                assertTrue(a.mayAlias(x, y));
-                assertFalse(a.mustAlias(x, y));
-                break;
-            case MUST:
-                assertTrue(a.mayAlias(x, y));
-                assertTrue(a.mustAlias(x, y));
-                break;
-        }
-    }
-
-    private void assertAlias(Result expect, AliasAnalysis a, MemFree x, MemFree y) {
+    private void assertAlias(Result expect, AliasAnalysis a, Event x, Event y) {
         switch (expect) {
             case NONE:
                 assertFalse(a.mayAlias(x, y));

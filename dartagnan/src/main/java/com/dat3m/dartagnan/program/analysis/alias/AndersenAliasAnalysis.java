@@ -5,6 +5,7 @@ import com.dat3m.dartagnan.expression.integers.IntBinaryExpr;
 import com.dat3m.dartagnan.expression.integers.IntLiteral;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
+import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.MemoryEvent;
 import com.dat3m.dartagnan.program.event.RegWriter;
 import com.dat3m.dartagnan.program.event.core.*;
@@ -44,9 +45,8 @@ public class AndersenAliasAnalysis implements AliasAnalysis {
     private final Map<Object, Set<Location>> addresses = new HashMap<>();
     private final Map<Register, Set<MemoryEvent>> events = new HashMap<>();
     private final Map<Register, Set<Location>> targets = new HashMap<>();
-    private final Map<MemoryEvent, ImmutableSet<Location>> eventAddressSpaceMap = new HashMap<>();
+    private final Map<Event, ImmutableSet<Location>> eventAddressSpaceMap = new HashMap<>();
     private final Map<Alloc, Integer> allocSizeMap = new HashMap<>();
-    private final Map<MemFree, ImmutableSet<Location>> freeAddressSpaceMap = new HashMap<>();
 
     // ================================ Construction ================================
 
@@ -69,67 +69,96 @@ public class AndersenAliasAnalysis implements AliasAnalysis {
     // ================================ API ================================
 
     @Override
-    public boolean mayAlias(MemoryCoreEvent x, MemoryCoreEvent y) {
+    public boolean mayAlias(Event a, Event b) {
+        if (a instanceof MemoryCoreEvent ma) {
+            if (b instanceof MemoryCoreEvent mb) {
+                return mayAccessSameAddress(ma, mb);
+            } else if (b instanceof Alloc ab) {
+                return mayAccessAllocatedBy(ab, ma);
+            }
+        } else if (a instanceof Alloc aa) {
+            if (b instanceof MemoryCoreEvent mb) {
+                return mayAccessAllocatedBy(aa, mb);
+            } else if (b instanceof MemFree fb) {
+                return mayAccessAllocatedBy(aa, fb);
+            }
+        } else if (a instanceof MemFree fa) {
+            if (b instanceof MemFree fb) {
+                return mayAccessSameAddress(fa, fb);
+            } else if (b instanceof Alloc ab) {
+                return mayAccessAllocatedBy(ab, fa);
+            }
+        }
+        throw new IllegalArgumentException("Unsupported event types for AndersenAliasAnalysis");
+    }
+
+    @Override
+    public boolean mustAlias(Event a, Event b) {
+        if (a instanceof MemoryCoreEvent ma) {
+            if (b instanceof MemoryCoreEvent mb) {
+                return mustAccessSameAddress(ma, mb);
+            } else if (b instanceof Alloc ab) {
+                return mustAccessAllocatedBy(ab, ma);
+            }
+        } else if (a instanceof Alloc aa) {
+            if (b instanceof MemoryCoreEvent mb) {
+                return mustAccessAllocatedBy(aa, mb);
+            } else if (b instanceof MemFree fb) {
+                return mustAccessAllocatedBy(aa, fb);
+            }
+        } else if (a instanceof MemFree fa) {
+            if (b instanceof MemFree fb) {
+                return mustAccessSameAddress(fa, fb);
+            } else if (b instanceof Alloc ab) {
+                return mustAccessAllocatedBy(ab, fa);
+            }
+        }
+        throw new IllegalArgumentException("Unsupported event types for AndersenAliasAnalysis");
+    }
+
+    private boolean mayAccessSameAddress(Event x, Event y) {
         return !Sets.intersection(getMaxAddressSet(x), getMaxAddressSet(y)).isEmpty();
     }
 
-    @Override
-    public boolean mustAlias(MemoryCoreEvent x, MemoryCoreEvent y) {
+    private boolean mustAccessSameAddress(Event x, Event y) {
         return getMaxAddressSet(x).size() == 1 && getMaxAddressSet(x).containsAll(getMaxAddressSet(y));
     }
 
-    @Override
-    public boolean mayAlias(Alloc a, MemoryCoreEvent e) {
-        checkHeapAlloc(a);
-        return getMaxAddressSet(e).stream().anyMatch(
-                l -> l.base.equals(a.getAllocatedObject()) && l.offset < getAllocatedSize(a)
-        );
+    private boolean mayAccessAllocatedBy(Alloc a, Event e) {
+        if (e instanceof MemoryCoreEvent m) {
+            return getMaxAddressSet(m).stream().anyMatch(
+                    l -> l.base.equals(a.getAllocatedObject()) && l.offset < getAllocatedSize(a)
+            );
+        } else {
+            assert e instanceof MemFree;
+            return getMaxAddressSet(e).stream().anyMatch(
+                    l -> l.base.equals(a.getAllocatedObject()) && l.offset == 0
+            );
+        }
     }
 
-    @Override
-    public boolean mustAlias(Alloc a, MemoryCoreEvent e) {
-        checkHeapAlloc(a);
-        return getMaxAddressSet(e).stream().allMatch(
-                l -> l.base.equals(a.getAllocatedObject()) && l.offset < getAllocatedSize(a)
-        );
+    private boolean mustAccessAllocatedBy(Alloc a, Event e) {
+        if (e instanceof MemoryCoreEvent m) {
+            return getMaxAddressSet(m).stream().allMatch(
+                    l -> l.base.equals(a.getAllocatedObject()) && l.offset < getAllocatedSize(a)
+            );
+        } else {
+            assert e instanceof MemFree;
+            Set<Location> freedLocs = getMaxAddressSet(e);
+            if (freedLocs.size() != 1) {
+                return false;
+            }
+            Location l = freedLocs.iterator().next();
+            return l.base.equals(a.getAllocatedObject()) && l.offset == 0;
+        }
     }
 
-    @Override
-    public boolean mayAlias(Alloc a, MemFree f) {
-        checkHeapAlloc(a);
-        return getFreedAddresses(f).stream().anyMatch(
-                l -> l.base.equals(a.getAllocatedObject()) && l.offset < getAllocatedSize(a)
-        );
-    }
-
-    @Override
-    public boolean mustAlias(Alloc a, MemFree f) {
-        checkHeapAlloc(a);
-        Set<Location> freedLocs = getFreedAddresses(f);
-        return freedLocs.size() == 1
-                && freedLocs.iterator().next().equals(new Location(a.getAllocatedObject(), 0));
-    }
-
-    @Override
-    public boolean mayAlias(MemFree a, MemFree b) {
-        return !Sets.intersection(getFreedAddresses(a), getFreedAddresses(b)).isEmpty();
-    }
-
-    @Override
-    public boolean mustAlias(MemFree a, MemFree b) {
-        return getFreedAddresses(a).size() == 1 && getFreedAddresses(a).containsAll(getFreedAddresses(b));
-    }
-
-    private ImmutableSet<Location> getMaxAddressSet(MemoryEvent e) {
+    private ImmutableSet<Location> getMaxAddressSet(Event e) {
         return eventAddressSpaceMap.get(e);
     }
 
     private int getAllocatedSize(Alloc a) {
         return allocSizeMap.get(a);
-    }
-
-    private ImmutableSet<Location> getFreedAddresses(MemFree f) {
-        return freeAddressSpaceMap.get(f);
     }
 
     // ================================ Processing ================================
@@ -155,14 +184,11 @@ public class AndersenAliasAnalysis implements AliasAnalysis {
             eventAddressSpaceMap.put(e, ImmutableSet.copyOf(getAddressSpace(e.getAddress())));
         }
         for (MemFree f : program.getThreadEvents(MemFree.class)) {
-            freeAddressSpaceMap.put(f, ImmutableSet.copyOf(getAddressSpace(f.getAddress())));
+            eventAddressSpaceMap.put(f, ImmutableSet.copyOf(getAddressSpace(f.getAddress())));
         }
     }
 
     private void processAllocs(Alloc a) {
-        if (!a.isHeapAllocation()) {
-            return;
-        }
         Register r = a.getResultRegister();
         if (a.getAllocationSize() instanceof IntLiteral i) {
             allocSizeMap.put(a, i.getValueAsInt());

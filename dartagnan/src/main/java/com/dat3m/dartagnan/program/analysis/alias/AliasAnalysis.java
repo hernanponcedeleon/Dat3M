@@ -3,8 +3,9 @@ package com.dat3m.dartagnan.program.analysis.alias;
 import com.dat3m.dartagnan.configuration.Alias;
 import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.program.Program;
-import com.dat3m.dartagnan.program.event.MemoryEvent;
-import com.dat3m.dartagnan.program.event.core.*;
+import com.dat3m.dartagnan.program.event.Event;
+import com.dat3m.dartagnan.program.event.core.Init;
+import com.dat3m.dartagnan.program.event.core.MemoryCoreEvent;
 import com.dat3m.dartagnan.program.event.metadata.SourceLocation;
 import com.dat3m.dartagnan.utils.Utils;
 import com.dat3m.dartagnan.verification.Context;
@@ -29,27 +30,9 @@ public interface AliasAnalysis {
 
     Logger logger = LogManager.getLogger(AliasAnalysis.class);
 
-    boolean mustAlias(MemoryCoreEvent a, MemoryCoreEvent b);
+    boolean mustAlias(Event a, Event b);
 
-    boolean mayAlias(MemoryCoreEvent a, MemoryCoreEvent b);
-
-    boolean mustAlias(Alloc a, MemoryCoreEvent e);
-
-    boolean mayAlias(Alloc a, MemoryCoreEvent e);
-
-    boolean mustAlias(Alloc a, MemFree f);
-
-    boolean mayAlias(Alloc a, MemFree f);
-
-    boolean mustAlias(MemFree a, MemFree b);
-
-    boolean mayAlias(MemFree a, MemFree b);
-
-    default void checkHeapAlloc(Alloc alloc) {
-        if (!alloc.isHeapAllocation()) {
-            throw new IllegalArgumentException("Alias analysis can be performed only for heap allocation");
-        }
-    }
+    boolean mayAlias(Event a, Event b);
 
     static AliasAnalysis fromConfig(Program program, Context analysisContext, Configuration config) throws InvalidConfigurationException {
         Config c = new Config(config);
@@ -120,42 +103,12 @@ public interface AliasAnalysis {
         }
 
         @Override
-        public boolean mustAlias(MemoryCoreEvent a, MemoryCoreEvent b) {
+        public boolean mustAlias(Event a, Event b) {
             return a1.mustAlias(a, b) || a2.mustAlias(a, b);
         }
 
         @Override
-        public boolean mayAlias(MemoryCoreEvent a, MemoryCoreEvent b) {
-            return a1.mayAlias(a, b) && a2.mayAlias(a, b);
-        }
-
-        @Override
-        public boolean mustAlias(Alloc a, MemoryCoreEvent e) {
-            return a1.mustAlias(a, e) || a2.mustAlias(a, e);
-        }
-
-        @Override
-        public boolean mayAlias(Alloc a, MemoryCoreEvent e) {
-            return a1.mayAlias(a, e) && a2.mayAlias(a, e);
-        }
-
-        @Override
-        public boolean mustAlias(Alloc a, MemFree f) {
-            return a1.mustAlias(a, f) || a2.mustAlias(a, f);
-        }
-
-        @Override
-        public boolean mayAlias(Alloc a, MemFree f) {
-            return a1.mayAlias(a, f) && a2.mayAlias(a, f);
-        }
-
-        @Override
-        public boolean mustAlias(MemFree a, MemFree b) {
-            return a1.mustAlias(a, b) || a2.mustAlias(a, b);
-        }
-
-        @Override
-        public boolean mayAlias(MemFree a, MemFree b) {
+        public boolean mayAlias(Event a, Event b) {
             return a1.mayAlias(a, b) && a2.mayAlias(a, b);
         }
 
@@ -227,7 +180,7 @@ public interface AliasAnalysis {
         }
     }
 
-    private static String repr(MemoryEvent event, Config configuration) {
+    private static String repr(Event event, Config configuration) {
         if (!configuration.graphvizShowAll && event instanceof Init) {
             return null;
         }

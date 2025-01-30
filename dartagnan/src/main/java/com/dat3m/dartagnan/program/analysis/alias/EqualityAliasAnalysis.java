@@ -4,9 +4,7 @@ import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.RegWriter;
-import com.dat3m.dartagnan.program.event.core.Alloc;
-import com.dat3m.dartagnan.program.event.core.MemFree;
-import com.dat3m.dartagnan.program.event.core.MemoryCoreEvent;
+import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.wmm.utils.graph.mutable.MapEventGraph;
 import com.dat3m.dartagnan.wmm.utils.graph.mutable.MutableEventGraph;
 import org.sosy_lab.common.configuration.Configuration;
@@ -31,7 +29,54 @@ public class EqualityAliasAnalysis implements AliasAnalysis {
     }
 
     @Override
-    public boolean mustAlias(MemoryCoreEvent a, MemoryCoreEvent b) {
+    public boolean mustAlias(Event a, Event b) {
+        if (a instanceof MemoryCoreEvent ma) {
+            if (b instanceof MemoryCoreEvent mb) {
+                return mustAccessSameAddress(ma, mb);
+            } else if (b instanceof Alloc ab) {
+                return false;
+            }
+        } else if (a instanceof Alloc aa) {
+            if (b instanceof MemoryCoreEvent mb) {
+                return false;
+            } else if (b instanceof MemFree fb) {
+                return false;
+            }
+        } else if (a instanceof MemFree fa) {
+            if (b instanceof MemFree fb) {
+                return false;
+            } else if (b instanceof Alloc ab) {
+                return false;
+            }
+        }
+        throw new IllegalArgumentException("Unsupported event types for EqualityAliasAnalysis");
+    }
+
+    @Override
+    public boolean mayAlias(Event a, Event b) {
+        if (a instanceof MemoryCoreEvent ma) {
+            if (b instanceof MemoryCoreEvent mb) {
+                return mayAccessSameAddress(ma, mb);
+            } else if (b instanceof Alloc ab) {
+                return true;
+            }
+        } else if (a instanceof Alloc aa) {
+            if (b instanceof MemoryCoreEvent mb) {
+                return true;
+            } else if (b instanceof MemFree fb) {
+                return true;
+            }
+        } else if (a instanceof MemFree fa) {
+            if (b instanceof MemFree fb) {
+                return true;
+            } else if (b instanceof Alloc ab) {
+                return true;
+            }
+        }
+        throw new IllegalArgumentException("Unsupported event types for EqualityAliasAnalysis");
+    }
+
+    private boolean mustAccessSameAddress(MemoryCoreEvent a, MemoryCoreEvent b) {
 
         if (a.getFunction() != b.getFunction()
                 || !a.getAddress().equals(b.getAddress())) {
@@ -68,42 +113,7 @@ public class EqualityAliasAnalysis implements AliasAnalysis {
         return true;
     }
 
-    @Override
-    public boolean mayAlias(MemoryCoreEvent a, MemoryCoreEvent b) {
-        return true;
-    }
-
-    @Override
-    public boolean mustAlias(Alloc a, MemoryCoreEvent e) {
-        checkHeapAlloc(a);
-        return false;
-    }
-
-    @Override
-    public boolean mayAlias(Alloc a, MemoryCoreEvent e) {
-        checkHeapAlloc(a);
-        return true;
-    }
-
-    @Override
-    public boolean mustAlias(Alloc a, MemFree f) {
-        checkHeapAlloc(a);
-        return false;
-    }
-
-    @Override
-    public boolean mayAlias(Alloc a, MemFree f) {
-        checkHeapAlloc(a);
-        return true;
-    }
-
-    @Override
-    public boolean mustAlias(MemFree a, MemFree b) {
-        return false;
-    }
-
-    @Override
-    public boolean mayAlias(MemFree a, MemFree b) {
+    private boolean mayAccessSameAddress(MemoryCoreEvent a, MemoryCoreEvent b) {
         return true;
     }
 }

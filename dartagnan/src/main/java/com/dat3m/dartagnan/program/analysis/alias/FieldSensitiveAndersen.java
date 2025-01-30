@@ -55,11 +55,9 @@ public class FieldSensitiveAndersen implements AliasAnalysis {
     ///Maps registers to matched value expressions of stores that use the register in their address
     private final Map<Object, List<Offset<Collector>>> stores = new HashMap<>();
     ///Result sets
-    private final Map<MemoryCoreEvent, ImmutableSet<Location>> eventAddressSpaceMap = new HashMap<>();
+    private final Map<Event, ImmutableSet<Location>> eventAddressSpaceMap = new HashMap<>();
     ///Maps alloc events to their allocation size
     private final Map<Alloc, Integer> allocSizeMap = new HashMap<>();
-    ///Maps free events to the locations freed by them
-    private final Map<MemFree, ImmutableSet<Location>> freeAddressSpaceMap = new HashMap<>();
 
     // ================================ Construction ================================
 
@@ -74,72 +72,99 @@ public class FieldSensitiveAndersen implements AliasAnalysis {
     // ================================ API ================================
 
     @Override
-    public boolean mayAlias(MemoryCoreEvent x, MemoryCoreEvent y) {
-        return !Sets.intersection(getMaxAddressSet(x), getMaxAddressSet(y)).isEmpty();
+    public boolean mayAlias(Event a, Event b) {
+        if (a instanceof MemoryCoreEvent ma) {
+            if (b instanceof MemoryCoreEvent mb) {
+                return mayAccessSameAddress(ma, mb);
+            } else if (b instanceof Alloc ab) {
+                return mayAccessAllocatedBy(ab, ma);
+            }
+        } else if (a instanceof Alloc aa) {
+            if (b instanceof MemoryCoreEvent mb) {
+                return mayAccessAllocatedBy(aa, mb);
+            } else if (b instanceof MemFree fb) {
+                return mayAccessAllocatedBy(aa, fb);
+            }
+        } else if (a instanceof MemFree fa) {
+            if (b instanceof MemFree fb) {
+                return mayAccessSameAddress(fa, fb);
+            } else if (b instanceof Alloc ab) {
+                return mayAccessAllocatedBy(ab, fa);
+            }
+        }
+        throw new IllegalArgumentException("Unsupported event types for FieldSensitiveAndersen");
     }
 
     @Override
-    public boolean mustAlias(MemoryCoreEvent x, MemoryCoreEvent y) {
+    public boolean mustAlias(Event a, Event b) {
+        if (a instanceof MemoryCoreEvent ma) {
+            if (b instanceof MemoryCoreEvent mb) {
+                return mustAccessSameAddress(ma, mb);
+            } else if (b instanceof Alloc ab) {
+                return mustAccessAllocatedBy(ab, ma);
+            }
+        } else if (a instanceof Alloc aa) {
+            if (b instanceof MemoryCoreEvent mb) {
+                return mustAccessAllocatedBy(aa, mb);
+            } else if (b instanceof MemFree fb) {
+                return mustAccessAllocatedBy(aa, fb);
+            }
+        } else if (a instanceof MemFree fa) {
+            if (b instanceof MemFree fb) {
+                return mustAccessSameAddress(fa, fb);
+            } else if (b instanceof Alloc ab) {
+                return mustAccessAllocatedBy(ab, fa);
+            }
+        }
+        throw new IllegalArgumentException("Unsupported event types for FieldSensitiveAndersen");
+    }
+
+    private boolean mayAccessSameAddress(Event x, Event y) {
+        return !Sets.intersection(getMaxAddressSet(x), getMaxAddressSet(y)).isEmpty();
+    }
+
+    private boolean mustAccessSameAddress(Event x, Event y) {
         Set<Location> a = getMaxAddressSet(x);
         Set<Location> b = getMaxAddressSet(y);
         return a.size() == 1 && b.size() == 1 && a.containsAll(b);
     }
 
-    @Override
-    public boolean mayAlias(Alloc a, MemoryCoreEvent e) {
-        checkHeapAlloc(a);
-        return getMaxAddressSet(e).stream().anyMatch(
-                l -> l.base.equals(a.getAllocatedObject()) && l.offset < getAllocatedSize(a)
-        );
+    private boolean mayAccessAllocatedBy(Alloc a, Event e) {
+        if (e instanceof MemoryCoreEvent me) {
+            return getMaxAddressSet(me).stream().anyMatch(
+                    l -> l.base.equals(a.getAllocatedObject()) && l.offset < getAllocatedSize(a)
+            );
+        } else {
+            assert e instanceof MemFree;
+            return getMaxAddressSet(e).stream().anyMatch(
+                    l -> l.base.equals(a.getAllocatedObject()) && l.offset == 0
+            );
+        }
     }
 
-    @Override
-    public boolean mustAlias(Alloc a, MemoryCoreEvent e) {
-        checkHeapAlloc(a);
-        Set<Location> locs = getMaxAddressSet(e);
-        return locs.isEmpty() ? false : locs.stream().allMatch(
-                l -> l.base.equals(a.getAllocatedObject()) && l.offset < getAllocatedSize(a)
-        );
+    private boolean mustAccessAllocatedBy(Alloc a, Event e) {
+        if (e instanceof MemoryCoreEvent me) {
+            Set<Location> locs = getMaxAddressSet(me);
+            return locs.size() == 1 && locs.stream().allMatch(
+                    l -> l.base.equals(a.getAllocatedObject()) && l.offset < getAllocatedSize(a)
+            );
+        } else {
+            assert e instanceof MemFree;
+            Set<Location> freedLocs = getMaxAddressSet(e);
+            if (freedLocs.size() != 1) {
+                return false;
+            }
+            Location l = freedLocs.iterator().next();
+            return l.base.equals(a.getAllocatedObject()) && l.offset == 0;
+        }
     }
 
-    @Override
-    public boolean mayAlias(Alloc a, MemFree f) {
-        checkHeapAlloc(a);
-        return getFreedAddresses(f).stream().anyMatch(
-                l -> l.base.equals(a.getAllocatedObject()) && l.offset < getAllocatedSize(a)
-        );
-    }
-
-    @Override
-    public boolean mustAlias(Alloc a, MemFree f) {
-        checkHeapAlloc(a);
-        Set<Location> freedLocs = getFreedAddresses(f);
-        return freedLocs.size() == 1
-                && freedLocs.iterator().next().equals(new Location(a.getAllocatedObject(), 0));
-    }
-
-    @Override
-    public boolean mayAlias(MemFree a, MemFree b) {
-        return !Sets.intersection(getFreedAddresses(a), getFreedAddresses(b)).isEmpty();
-    }
-
-    @Override
-    public boolean mustAlias(MemFree a, MemFree b) {
-        Set<Location> aLocs = getFreedAddresses(a);
-        Set<Location> bLocs = getFreedAddresses(b);
-        return aLocs.size() == 1 && bLocs.size() == 1 && aLocs.containsAll(bLocs);
-    }
-
-    private ImmutableSet<Location> getMaxAddressSet(MemoryEvent e) {
+    private ImmutableSet<Location> getMaxAddressSet(Event e) {
         return eventAddressSpaceMap.get(e);
     }
 
     private int getAllocatedSize(Alloc a) {
         return allocSizeMap.get(a);
-    }
-
-    private ImmutableSet<Location> getFreedAddresses(MemFree f) {
-        return freeAddressSpaceMap.get(f);
     }
 
     // ================================ Processing ================================
@@ -164,14 +189,11 @@ public class FieldSensitiveAndersen implements AliasAnalysis {
             eventAddressSpaceMap.put(e, getAddressSpace(e.getAddress()));
         }
         for (MemFree f : program.getThreadEvents(MemFree.class)) {
-            freeAddressSpaceMap.put(f, getAddressSpace(f.getAddress()));
+            eventAddressSpaceMap.put(f, getAddressSpace(f.getAddress()));
         }
     }
 
     protected void processAllocs(Alloc a) {
-        if (!a.isHeapAllocation()) {
-            return;
-        }
         if (a.getAllocationSize() instanceof IntLiteral i) {
             allocSizeMap.put(a, i.getValueAsInt());
         } else {
