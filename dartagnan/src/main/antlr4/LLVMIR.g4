@@ -20,7 +20,6 @@
 
 grammar LLVMIR;
 
-//import InlineAArch64Lexer, InlineAArch64;
 
 compilationUnit: topLevelEntity* EOF;
 
