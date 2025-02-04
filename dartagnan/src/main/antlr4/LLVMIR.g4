@@ -20,7 +20,10 @@
 
 grammar LLVMIR;
 
+<<<<<<< HEAD
 
+=======
+>>>>>>> adbadbb1b (removed useless import from llmvir grammar)
 
 compilationUnit: topLevelEntity* EOF;
 
