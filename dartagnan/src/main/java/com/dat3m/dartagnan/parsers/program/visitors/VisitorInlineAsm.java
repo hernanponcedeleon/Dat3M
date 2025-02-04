@@ -268,7 +268,6 @@ public class VisitorInlineAsm extends InlineAsmBaseVisitor<Object> {
         }
         String name = registerNames.get(number);
         Register toBeChanged = getOrNewRegister(name);
-        // System.out.println("Register is going to be assigned " + toBeChanged.getName() + " < - " + this.fnParameters.get(registerNameIndex - this.returnValuesNumber));
         events.add(EventFactory.newLocal(toBeChanged, this.fnParameters.get(registerNameIndex - this.returnValuesNumber)));
     }
 
@@ -280,7 +279,6 @@ public class VisitorInlineAsm extends InlineAsmBaseVisitor<Object> {
             // Clobber maps to returnValue, we just skip it as we are assigning them later
         } else if (isClobberInputConstraint(clobber)) {
             int number = extractNumberFromRegisterName(registerName);
-            // System.out.println("Trying to assign to " + newRegister + " expression " + this.fnParameters.get(number - this.returnValuesNumber));
             events.add(EventFactory.newLocal(newRegister, this.fnParameters.get(number - this.returnValuesNumber)));
         } else {
             System.err.println("New type of clobber found! " + clobber);

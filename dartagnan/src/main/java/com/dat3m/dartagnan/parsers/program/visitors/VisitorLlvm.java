@@ -378,9 +378,7 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
 
         if (ctx.inlineAsm() != null) {
             // see https://llvm.org/docs/LangRef.html#inline-assembler-expressions
-            //TODO add support form inline assembly
             //FIXME ignore side effects of inline assembly
-                // logger.warn(String.format("Interpreting inline assembly as an unconstrained value:  %s.", ctx.inlineAsm().getText()));
                 CharStream charStream = CharStreams.fromString(ctx.inlineAsm().StringLit(0).getText()+ ","+ ctx.inlineAsm().StringLit(1).getText());
                 ParserInlineAsm parser = new ParserInlineAsm(function,resultRegister, returnType, arguments);
                 List<Event> events = parser.parse(charStream);
@@ -490,54 +488,6 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
         block.events.add(Llvm.newFence(mo));
         return null;
     }
-
-    @Override 
-    public Expression visitInlineAsm(InlineAsmContext ctx) {
-        // kept for reference, to be removed soon
-
-        // final String asm = parseQuotedString(ctx.StringLit(0));
-        // final LinkedList<Event> fences = new LinkedList<>();
-        // switch(asm) {
-        //     // Compiler barrier, do nothing
-        //     // TODO update when we add support for interrupts
-        //     //case "" -> ;
-        //         // X86
-        //     case "mfence" -> fences.add(X86.newMemoryFence());
-        //         // Aarch64
-        //     case "dmb sy" -> fences.add(AArch64.DMB.newSYBarrier());
-        //     // case "dmb ish" -> fences.add(AArch64.DMB.newISHBarrier());
-        //     // case "dmb ishld" -> fences.add(AArch64.DMB.newISHLDBarrier());
-        //     case "dmb ishst" -> fences.add(AArch64.DMB.newISHSTBarrier());
-        //     case "dsb sy" -> fences.add(AArch64.DSB.newSYBarrier());
-        //     case "dsb ish" -> fences.add(AArch64.DSB.newISHBarrier());
-        //     case "dsb ishld" -> fences.add(AArch64.DSB.newISHLDBarrier());
-        //     case "dsb ishst" -> fences.add(AArch64.DSB.newISHSTBarrier());
-        //         // PPC
-        //     case "isync" -> fences.add(Power.newISyncBarrier());
-        //     case "sync" -> fences.add(Power.newSyncBarrier());
-        //     case "lwsync" -> fences.add(Power.newLwSyncBarrier());
-        //         // RISCV
-        //     case "fence r,r" -> fences.add(RISCV.newRRFence());
-        //     case "fence r,w" -> fences.add(RISCV.newRWFence());
-        //     case "fence r,rw" -> fences.add(RISCV.newRRWFence());
-        //     case "fence w,r" -> fences.add(RISCV.newWRFence());
-        //     case "fence w,w" -> fences.add(RISCV.newWWFence());
-        //     case "fence w,rw" -> fences.add(RISCV.newWRWFence());
-        //     case "fence rw,r" -> fences.add(RISCV.newRWRFence());
-        //     case "fence rw,w" -> fences.add(RISCV.newRWWFence());
-        //     case "fence rw,rw" -> fences.add(RISCV.newRWRWFence());
-        //     case "fence tso" -> fences.add(RISCV.newTsoFence());
-        //     case "fence i" -> fences.add(RISCV.newSynchronizeFence());
-        //     default -> {throw new ParsingException(String.format("Encountered unsupported inline assembly:  %s.", asm));
-        //     // this is without the Wrapper, but is ugly....
-        //     // default -> {logger.warn(String.format("found asm in InlineAsm:  %s.", ctx.getText()));String inlineAsmCode = ctx.StringLit(0).getText()+ ","+ ctx.StringLit(1).getText();CharStream charStream = CharStreams.fromString(inlineAsmCode);ParserInlineAsm parser = new ParserInlineAsm(this.function,null,null, this.argumentsRegisterAddresses);parser.parse(charStream);fences.addAll(parser.getEvents());break;}//throw new ParsingException(String.format("Encountered unsupported inline assembly:  %s.", asm)); HAS TO BECOME INLINEWRAPPER
-        // }
-        // if(!fences.isEmpty()) {
-        //     block.events.addAll(fences);
-        // }
-        return null;
-    }
-
 
     // ----------------------------------------------------------------------------------------------------------------
     // Instructions producing a value
