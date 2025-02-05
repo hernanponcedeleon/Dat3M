@@ -35,13 +35,18 @@ armInstr
     | alignInline
     | prefetchMemory
     | yieldtask
+<<<<<<< HEAD
     | armFence
+=======
+    | asmFence
+>>>>>>> 2d85efd32 (first cleaning pass, public and private, removed getEvents in InlineParser, removed unsupported operators and more consistent names in .g4)
 ;
 riscvInstr : riscvFence;
 ppcInstr : ppcFence;
 x86Instr : x86Fence;
 
 // rules divised like this in order to generate single visitors
+<<<<<<< HEAD
 load : Load register Comma register;
 loadAcquire : LoadAcquire register Comma register;
 loadExclusive : LoadExclusive register Comma register;
@@ -59,6 +64,25 @@ compareBranchNonZero : CompareBranchNonZero register Comma NumbersInline LetterI
 move : Move register Comma register;
 branchEqual : BranchEqual NumbersInline LetterInline;
 branchNotEqual : BranchNotEqual NumbersInline LetterInline;
+=======
+load : (Load register)Comma register;
+loadAcquire : (LoadAcquire register)Comma register;
+loadExclusive : (LoadExclusive register)Comma register;
+loadAcquireExclusive : (LoadAcquireExclusive register)Comma register;
+add : ((Add register)Comma register)Comma register;
+sub : ((Sub register)Comma register)Comma register;
+or : ((Or register)Comma register)Comma register;
+and : ((And register)Comma register)Comma register;
+store : (Store register)Comma register;
+storeRelease : (StoreRelease register)Comma register;
+storeExclusive : ((StoreExclusive register)Comma register)Comma register ;
+storeReleaseExclusive : ((StoreReleaseExclusive register)Comma register)Comma register;
+compare : (Compare register)Comma register;
+compareBranchNonZero : (CompareBranchNonZero register)Comma LabelReference;
+move : (Move register)Comma register;
+branchEqual : BranchEqual LabelReference;
+branchNotEqual : BranchNotEqual LabelReference;
+>>>>>>> 2d85efd32 (first cleaning pass, public and private, removed getEvents in InlineParser, removed unsupported operators and more consistent names in .g4)
 setEventLocally : SetEventLocally;
 waitForEvent : WaitForEvent;
 labelDefinition : NumbersInline Colon;

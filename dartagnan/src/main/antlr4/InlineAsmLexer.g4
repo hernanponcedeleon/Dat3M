@@ -26,6 +26,16 @@ StoreRelease                : 'stlr';
 Move                        : 'mov';
 PrefetchMemory              : 'prfm';
 YieldTask                   : 'yield';
+<<<<<<< HEAD
+=======
+
+// metadata 
+OutputOpAssign              : Equals Amp RLiteral | Equals RLiteral;
+InputOpGeneralReg           : RLiteral;
+IsMemoryAddress             : 'Q' | Ast 'Q';
+OverlapInOutRegister        : NumbersInline; // defines which returnvalue should be used both for input and output
+PointerToMemoryLocation     : Equals Ast 'm';
+>>>>>>> 2d85efd32 (first cleaning pass, public and private, removed getEvents in InlineParser, removed unsupported operators and more consistent names in .g4)
 
 // clobbers
 ClobberMemory               : 'memory';
@@ -61,8 +71,19 @@ RISCVFence                  : 'fence';
 TsoFence                    : 'tso';
 PPCFence                    : 'sync' | 'isync' | 'lwsync';
 
+<<<<<<< HEAD
 
 LetterInline                : [a-z]+;
+=======
+// Metavariables
+StartSymbol                 : 'asm';
+PrefetchStoreL1Once         : 'pstl1strm';
+IfThenThenOptions           : 'eq';
+NumbersInline               : [0-9]+;
+RLiteral                    : 'r'; // needed because both 'r' and '=&r' use the general purpose
+Register                    : '${' ( ~('}' | '$') )+ '}' | '$' NumbersInline | '[$' NumbersInline ']' | '#' NumbersInline; // should match any ${*}
+LabelReference              : [a-zA-Z0-9_]+ ;
+>>>>>>> 2d85efd32 (first cleaning pass, public and private, removed getEvents in InlineParser, removed unsupported operators and more consistent names in .g4)
 EndInstruction              :'\\0A';
 WS
     :   [ \t\r\n]+
