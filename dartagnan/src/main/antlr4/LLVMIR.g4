@@ -300,8 +300,12 @@ value:
 
 inlineAsm:
 	'asm' sideEffect = 'sideeffect'? alignStackTok = 'alignstack'? intelDialect = 'inteldialect'?
+<<<<<<< HEAD
 			unwind = 'unwind'? inlineAsmBody;
 inlineAsmBody : StringLit ',' StringLit;
+=======
+			unwind = 'unwind'? StringLit ',' StringLit ;
+>>>>>>> 2d85efd32 (first cleaning pass, public and private, removed getEvents in InlineParser, removed unsupported operators and more consistent names in .g4)
 
 mdString: '!' StringLit;
 mdFieldOrInt: IntLit | mdField;
@@ -645,7 +649,7 @@ selectInst:
 freezeInst: 'freeze' typeValue;
 callInst:
 	tail = ('musttail' | 'notail' | 'tail')? 'call' fastMathFlag* callingConv? returnAttribute*
-		addrSpace? type (inlineAsm | value)  '(' args ')' funcAttribute* (
+		addrSpace? type (inlineAsm | value) '(' args ')' funcAttribute* (
 		'[' operandBundle (',' operandBundle)* ']'
 	)?;
 vaargInst:
