@@ -32,9 +32,6 @@ public class ParserInlineAsm {
         this.returnType = returnType;
         this.argumentsRegisterAddresses = argumentsRegisterAddresses;
     }
-    public List<Event> getEvents(){
-        return this.visitor.getEvents();
-    }
 
     public List<Event> parse(CharStream charStream) {
         InlineAsmLexer lexer = new InlineAsmLexer(charStream);

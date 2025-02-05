@@ -6,10 +6,10 @@ import BaseLexer;
 // instructions 
 LabelDefinition             : NumbersInline Colon; // like '1:'
 AlignInline                 : Period 'align 'NumbersInline;
-LoadReg                     : 'ldr';
-LoadAcquireReg              : 'ldar';
-LoadExclusiveReg            : 'ldxr' | 'ldrex';
-LoadAcquireExclusiveReg     : 'ldaxr';
+Load                        : 'ldr';
+LoadAcquire                 : 'ldar';
+LoadExclusive               : 'ldxr' | 'ldrex';
+LoadAcquireExclusive        : 'ldaxr';
 Add                         : 'add';
 Sub                         : 'sub';
 Or                          : 'orr';
@@ -20,20 +20,13 @@ BranchEqual                 : 'b.eq' | 'beq';
 BranchNotEqual              : 'b.ne' | 'bne';
 SetEventLocally             : 'sevl';
 WaitForEvent                : 'wfe';
-StoreReg                    : 'str';
-StoreExclusiveRegister      : 'stxr' | 'strex';
-StoreReleaseExclusiveReg    : 'stlxr';
-StoreReleaseReg             : 'stlr';
+Store                       : 'str';
+StoreExclusive              : 'stxr' | 'strex';
+StoreReleaseExclusive       : 'stlxr';
+StoreRelease                : 'stlr';
 Move                        : 'mov';
 PrefetchMemory              : 'prfm';
-YieldTask                   : 'yield'; // used to tell Hw that we're in a spinlock. If not implemented it just NOPs
-IfThenThen                  : 'itt';
-
-// those are not llsc
-AtomicAddDoubleWordRelease  : 'staddl';
-SwapWordAcquire             : 'swpa';
-CompareAndSwap              : 'cas';
-CompareAndSwapAcquire       : 'casa';
+YieldTask                   : 'yield';
 
 // metadata 
 OutputOpAssign              : Equals Amp RLiteral | Equals RLiteral;
@@ -67,7 +60,6 @@ IfThenThenOptions           : 'eq';
 NumbersInline               : [0-9]+;
 RLiteral                    : 'r'; // needed because both 'r' and '=&r' use the general purpose
 Register                    : '${' ( ~('}' | '$') )+ '}' | '$' NumbersInline | '[$' NumbersInline ']' | '#' NumbersInline; // should match any ${*}
-// ConstantInline              : '$' NumbersInline;   //if you see any $Number you state it is a constant
 LabelReference              : [a-zA-Z0-9_]+ ;
 EndInstruction              :'\\0A';
 

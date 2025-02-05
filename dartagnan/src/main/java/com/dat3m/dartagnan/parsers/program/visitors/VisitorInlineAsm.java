@@ -29,21 +29,21 @@ public class VisitorInlineAsm extends InlineAsmBaseVisitor<Object> {
 
     private class CompareExpression {
 
-        public Expression compareExpression;
-        public Register firstRegister;
-        public Expression secondRegister;
+        private Expression compareExpression;
+        private Register firstRegister;
+        private Expression secondRegister;
 
-        public void updateCompareExpression(Register firstRegister, IntCmpOp intCmpOp, Expression secondRegister) {
+        private void updateCompareExpression(Register firstRegister, IntCmpOp intCmpOp, Expression secondRegister) {
             this.firstRegister = firstRegister;
             this.secondRegister = secondRegister;
             this.compareExpression = expressions.makeIntCmp(firstRegister, intCmpOp, secondRegister);
         }
 
-        public void updateCompareExpressionOperator(IntCmpOp intCmpOp) {
+        private void updateCompareExpressionOperator(IntCmpOp intCmpOp) {
             this.compareExpression = expressions.makeIntCmp(this.firstRegister, intCmpOp, this.secondRegister);
         }
 
-        public void updateCompareExpressionWithZeroRegister(Register firstRegister, IntCmpOp intCmpOp) {
+        private void updateCompareExpressionWithZeroRegister(Register firstRegister, IntCmpOp intCmpOp) {
             this.updateCompareExpression(firstRegister, intCmpOp, expressions.parseValue("0", (IntegerType) firstRegister.getType()));
         }
 
@@ -286,7 +286,7 @@ public class VisitorInlineAsm extends InlineAsmBaseVisitor<Object> {
     }
 
     @Override
-    public Object visitLoadReg(InlineAsmParser.LoadRegContext ctx) {
+    public Object visitLoad(InlineAsmParser.LoadContext ctx) {
         Register register = (Register) ctx.register(0).accept(this);
         Register address = (Register) ctx.register(1).accept(this);
         events.add(EventFactory.newLoad(register, address));
@@ -295,7 +295,7 @@ public class VisitorInlineAsm extends InlineAsmBaseVisitor<Object> {
     }
 
     @Override
-    public Object visitLoadAcquireReg(InlineAsmParser.LoadAcquireRegContext ctx) {
+    public Object visitLoadAcquire(InlineAsmParser.LoadAcquireContext ctx) {
         Register register = (Register) ctx.register(0).accept(this);
         Register address = (Register) ctx.register(1).accept(this);
         events.add(EventFactory.newLoadWithMo(register, address, Tag.ARMv8.MO_ACQ));
@@ -304,7 +304,7 @@ public class VisitorInlineAsm extends InlineAsmBaseVisitor<Object> {
     }
 
     @Override
-    public Object visitLoadExclusiveReg(InlineAsmParser.LoadExclusiveRegContext ctx) {
+    public Object visitLoadExclusive(InlineAsmParser.LoadExclusiveContext ctx) {
         Register register = (Register) ctx.register(0).accept(this);
         Register address = (Register) ctx.register(1).accept(this);
         events.add(EventFactory.newRMWLoadExclusive(register, address));
@@ -313,7 +313,7 @@ public class VisitorInlineAsm extends InlineAsmBaseVisitor<Object> {
     }
 
     @Override
-    public Object visitLoadAcquireExclusiveReg(InlineAsmParser.LoadAcquireExclusiveRegContext ctx) {
+    public Object visitLoadAcquireExclusive(InlineAsmParser.LoadAcquireExclusiveContext ctx) {
         Register register = (Register) ctx.register(0).accept(this);
         Register address = (Register) ctx.register(1).accept(this);
         events.add(EventFactory.newRMWLoadExclusiveWithMo(register, address, Tag.ARMv8.MO_ACQ));
@@ -366,7 +366,7 @@ public class VisitorInlineAsm extends InlineAsmBaseVisitor<Object> {
     }
 
     @Override
-    public Object visitStoreReg(InlineAsmParser.StoreRegContext ctx) {
+    public Object visitStore(InlineAsmParser.StoreContext ctx) {
         Register value = (Register) ctx.register(0).accept(this);
         Register address = (Register) ctx.register(1).accept(this);
         events.add(EventFactory.newStore(address, value));
@@ -374,7 +374,7 @@ public class VisitorInlineAsm extends InlineAsmBaseVisitor<Object> {
     }
 
     @Override
-    public Object visitStoreReleaseReg(InlineAsmParser.StoreReleaseRegContext ctx) {
+    public Object visitStoreRelease(InlineAsmParser.StoreReleaseContext ctx) {
         Register value = (Register) ctx.register(0).accept(this);
         Register address = (Register) ctx.register(1).accept(this);
         events.add(EventFactory.newStoreWithMo(address, value, Tag.ARMv8.MO_REL));
@@ -382,7 +382,7 @@ public class VisitorInlineAsm extends InlineAsmBaseVisitor<Object> {
     }
 
     @Override
-    public Object visitStoreExclusiveRegister(InlineAsmParser.StoreExclusiveRegisterContext ctx) {
+    public Object visitStoreExclusive(InlineAsmParser.StoreExclusiveContext ctx) {
         Register freshResultRegister = (Register) ctx.register(0).accept(this);
         Register value = (Register) ctx.register(1).accept(this);
         Register address = (Register) ctx.register(2).accept(this);
@@ -391,7 +391,7 @@ public class VisitorInlineAsm extends InlineAsmBaseVisitor<Object> {
     }
 
     @Override
-    public Object visitStoreReleaseExclusiveReg(InlineAsmParser.StoreReleaseExclusiveRegContext ctx) {
+    public Object visitStoreReleaseExclusive(InlineAsmParser.StoreReleaseExclusiveContext ctx) {
         Register freshResultRegister = (Register) ctx.register(0).accept(this);
         Register value = (Register) ctx.register(1).accept(this);
         Register address = (Register) ctx.register(2).accept(this);

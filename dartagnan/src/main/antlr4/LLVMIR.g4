@@ -296,7 +296,7 @@ value:
 
 inlineAsm:
 	'asm' sideEffect = 'sideeffect'? alignStackTok = 'alignstack'? intelDialect = 'inteldialect'?
-	unwind = 'unwind'? StringLit ',' StringLit ;
+			unwind = 'unwind'? StringLit ',' StringLit ;
 
 mdString: '!' StringLit;
 mdFieldOrInt: IntLit | mdField;
@@ -640,7 +640,7 @@ selectInst:
 freezeInst: 'freeze' typeValue;
 callInst:
 	tail = ('musttail' | 'notail' | 'tail')? 'call' fastMathFlag* callingConv? returnAttribute*
-		addrSpace? type (inlineAsm | value)  '(' args ')' funcAttribute* (
+		addrSpace? type (inlineAsm | value) '(' args ')' funcAttribute* (
 		'[' operandBundle (',' operandBundle)* ']'
 	)?;
 vaargInst:

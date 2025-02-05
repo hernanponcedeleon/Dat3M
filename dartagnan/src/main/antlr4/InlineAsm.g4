@@ -12,24 +12,20 @@ asmMetadataEntries : metaInstr(Comma metaInstr)*;
 
 
 armInstr 
-    : loadReg
-    | loadAcquireReg
-    | loadExclusiveReg
-    | loadAcquireExclusiveReg
+    : load
+    | loadAcquire
+    | loadExclusive
+    | loadAcquireExclusive
     | add
     | sub
     | or 
     | and
-    | storeReg
-    | storeExclusiveRegister
-    | storeReleaseExclusiveReg
-    | storeReleaseReg
-    | atomicAddDoubleWordRelease
-    | swapWordAcquire
+    | store
+    | storeExclusive
+    | storeReleaseExclusive
+    | storeRelease
     | compare
     | compareBranchNonZero
-    | compareAndSwap
-    | compareAndSwapAcquire
     | move
     | branchEqual
     | branchNotEqual
@@ -39,7 +35,6 @@ armInstr
     | alignInline
     | prefetchMemory
     | yieldtask
-    | ifThenThen
     | asmFence
 ;
 riscvInstr : riscvFence;
@@ -47,24 +42,20 @@ ppcInstr : ppcFence;
 x86Instr : x86Fence;
 
 // rules divised like this in order to generate single visitors
-loadReg : (LoadReg register)Comma register;
-loadAcquireReg : (LoadAcquireReg register)Comma register;
-loadExclusiveReg : (LoadExclusiveReg register)Comma register;
-loadAcquireExclusiveReg : (LoadAcquireExclusiveReg register)Comma register;
+load : (Load register)Comma register;
+loadAcquire : (LoadAcquire register)Comma register;
+loadExclusive : (LoadExclusive register)Comma register;
+loadAcquireExclusive : (LoadAcquireExclusive register)Comma register;
 add : ((Add register)Comma register)Comma register;
 sub : ((Sub register)Comma register)Comma register;
 or : ((Or register)Comma register)Comma register;
 and : ((And register)Comma register)Comma register;
-storeReg : (StoreReg register)Comma register;
-storeReleaseReg : (StoreReleaseReg register)Comma register;
-storeExclusiveRegister : ((StoreExclusiveRegister register)Comma register)Comma register ;
-storeReleaseExclusiveReg : ((StoreReleaseExclusiveReg register)Comma register)Comma register;
-atomicAddDoubleWordRelease : (AtomicAddDoubleWordRelease register)Comma register;
-swapWordAcquire : ((SwapWordAcquire register)Comma register)Comma register;
+store : (Store register)Comma register;
+storeRelease : (StoreRelease register)Comma register;
+storeExclusive : ((StoreExclusive register)Comma register)Comma register ;
+storeReleaseExclusive : ((StoreReleaseExclusive register)Comma register)Comma register;
 compare : (Compare register)Comma register;
 compareBranchNonZero : (CompareBranchNonZero register)Comma LabelReference;
-compareAndSwap : ((CompareAndSwap register)Comma register)Comma register;
-compareAndSwapAcquire :((CompareAndSwapAcquire register)Comma register)Comma register;
 move : (Move register)Comma register;
 branchEqual : BranchEqual LabelReference;
 branchNotEqual : BranchNotEqual LabelReference;
@@ -74,7 +65,6 @@ labelDefinition : LabelDefinition;
 alignInline : AlignInline;
 prefetchMemory : (PrefetchMemory PrefetchStoreL1Once)Comma register;
 yieldtask : YieldTask;
-ifThenThen : IfThenThen IfThenThenOptions;
 
 //fences
 asmFence : DataMemoryBarrier FenceArmOpt | DataSynchronizationBarrier FenceArmOpt;
