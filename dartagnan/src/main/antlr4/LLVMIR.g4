@@ -296,7 +296,8 @@ value:
 
 inlineAsm:
 	'asm' sideEffect = 'sideeffect'? alignStackTok = 'alignstack'? intelDialect = 'inteldialect'?
-			unwind = 'unwind'? StringLit ',' StringLit ;
+			unwind = 'unwind'? inlineAsmBody;
+inlineAsmBody : StringLit ',' StringLit;
 
 mdString: '!' StringLit;
 mdFieldOrInt: IntLit | mdField;
