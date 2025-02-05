@@ -94,33 +94,9 @@ public class VisitorInlineAsm extends InlineAsmBaseVisitor<Object> {
 
     private record CmpInstruction(Expression left, Expression right) {};
 
-<<<<<<< HEAD
     private final List<Local> inputAssignments = new ArrayList<>();
     private final List<Event> asmInstructions = new ArrayList<>();
     private final List<Local> outputAssignments = new ArrayList<>();
-=======
-        private Expression compareExpression;
-        private Register firstRegister;
-        private Expression secondRegister;
-
-        private void updateCompareExpression(Register firstRegister, IntCmpOp intCmpOp, Expression secondRegister) {
-            this.firstRegister = firstRegister;
-            this.secondRegister = secondRegister;
-            this.compareExpression = expressions.makeIntCmp(firstRegister, intCmpOp, secondRegister);
-        }
-
-        private void updateCompareExpressionOperator(IntCmpOp intCmpOp) {
-            this.compareExpression = expressions.makeIntCmp(this.firstRegister, intCmpOp, this.secondRegister);
-        }
-
-        private void updateCompareExpressionWithZeroRegister(Register firstRegister, IntCmpOp intCmpOp) {
-            this.updateCompareExpression(firstRegister, intCmpOp, expressions.parseValue("0", (IntegerType) firstRegister.getType()));
-        }
-
-    }
-
-    private final List<Event> events = new ArrayList<>();
->>>>>>> 2d85efd32 (first cleaning pass, public and private, removed getEvents in InlineParser, removed unsupported operators and more consistent names in .g4)
     private final Function llvmFunction;
     private final Register returnRegister;
     private final ExpressionFactory expressions = ExpressionFactory.getInstance();
