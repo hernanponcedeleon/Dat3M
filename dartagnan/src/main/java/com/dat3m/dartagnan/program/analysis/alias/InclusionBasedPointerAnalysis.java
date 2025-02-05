@@ -4,6 +4,7 @@ import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionVisitor;
 import com.dat3m.dartagnan.expression.integers.*;
 import com.dat3m.dartagnan.expression.misc.ITEExpr;
+import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.analysis.ReachingDefinitionsAnalysis;
@@ -155,14 +156,16 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
         if (vx.base == vy.base && isConstant(vx.modifier) && isConstant(vy.modifier)) {
             return vx.modifier.offset == vy.modifier.offset;
         }
-        final List<IncludeEdge> ox = new ArrayList<>(vx.base.includes);
-        ox.add(new IncludeEdge(vx.base, TRIVIAL_MODIFIER));
-        final List<IncludeEdge> oy = new ArrayList<>(vy.base.includes);
-        oy.add(new IncludeEdge(vy.base, TRIVIAL_MODIFIER));
+        final List<IncludeEdge> ox = toIncludeSet(vx.base);
+        final List<IncludeEdge> oy = toIncludeSet(vy.base);
         for (final IncludeEdge ax : ox) {
             for (final IncludeEdge ay : oy) {
-                if (ax.source == ay.source && overlaps(compose(ax.modifier, vx.modifier), compose(ay.modifier, vy.modifier))) {
-                    return true;
+                if (ax.source == ay.source) {
+                    final Modifier l = compose(ax.modifier, vx.modifier);
+                    final Modifier r = compose(ay.modifier, vy.modifier);
+                    if (overlaps(l, r)) {
+                        return true;
+                    }
                 }
             }
         }
@@ -175,6 +178,54 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
         final DerivedVariable vy = addressVariables.get(y);
         return vx != null && vy != null && vx.base == vy.base && vx.modifier.offset == vy.modifier.offset &&
                 isConstant(vx.modifier) && isConstant(vy.modifier);
+    }
+
+    @Override
+    public boolean mayMix(MemoryCoreEvent x, MemoryCoreEvent y) {
+        final DerivedVariable vx = addressVariables.get(x);
+        final DerivedVariable vy = addressVariables.get(y);
+        if (vx == null || vy == null) {
+            return true;
+        }
+        final TypeFactory types = TypeFactory.getInstance();
+        final int bytesX = types.getMemorySizeInBytes(x.getAccessType());
+        final int bytesY = types.getMemorySizeInBytes(y.getAccessType());
+        if (vx.base == vy.base && isConstant(vx.modifier) && isConstant(vy.modifier)) {
+            return Math.abs(vx.modifier.offset - vy.modifier.offset) % Math.min(bytesX, bytesY) != 0;
+        }
+        final List<IncludeEdge> oy = toIncludeSet(vy.base);
+        for (final IncludeEdge ax : toIncludeSet(vx.base)) {
+            for (final IncludeEdge ay : oy) {
+                if (ax.source == ay.source) {
+                    final Modifier l = compose(ax.modifier, vx.modifier);
+                    final Modifier r = compose(ay.modifier, vy.modifier);
+                    if (mayMix(l, bytesX, r, bytesY)) {
+                        return true;
+                    }
+                }
+            }
+        }
+        return false;
+    }
+
+    private List<IncludeEdge> toIncludeSet(Variable address) {
+        final List<IncludeEdge> set = new ArrayList<>(address.includes);
+        set.add(new IncludeEdge(address, TRIVIAL_MODIFIER));
+        return set;
+    }
+
+    private boolean mayMix(Modifier modifierLeft, int bytesLeft, Modifier modifierRight, int bytesRight) {
+        for (int i = 1; i < bytesLeft; i++) {
+            if (overlaps(compose(modifierLeft, modifier(i, List.of())), modifierRight)) {
+                return true;
+            }
+        }
+        for (int i = 1; i < bytesRight; i++) {
+            if (overlaps(modifierLeft, compose(modifierRight, modifier(i, List.of())))) {
+                return true;
+            }
+        }
+        return bytesLeft != bytesRight && overlaps(modifierLeft, modifierRight);
     }
 
     @Override

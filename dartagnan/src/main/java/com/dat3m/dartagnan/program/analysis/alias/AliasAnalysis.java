@@ -34,6 +34,50 @@ public interface AliasAnalysis {
 
     boolean mayAlias(MemoryCoreEvent a, MemoryCoreEvent b);
 
+    /**
+     * Checks if two accessed byte ranges may overlap, without matching perfectly.
+     * <p>
+     * Accesses to memory actually target a range of bytes,
+     * starting with the byte the address points to, inclusively,
+     * and ending with the byte offset from the start by the associated type's size in bytes, exclusively.
+     * This analysis calls a pair of accesses on memory mixing,
+     * if the accessed byte range overlaps, without also being equal.
+     * There are three cases how this can be achieved:
+     * <ul>
+     *     <li>The types match, but the address are offset by a too small margin.
+     *     <li>The addresses match exactly, as in {@link #mayAlias}, but the type sizes differ.
+     *     <li>A combination of the above.
+     * </ul>
+     * False positives may occur, but false negatives shall not occur,
+     * so long as the program features no undefined behavior, such as use-after-free or buffer overflows.
+     * @param a One memory access in the analyzed program.
+     * @param b Another memory access in the analyzed program.
+     * @return There could be executions, where {@code x} and {@code y} share, but do not exactly match, byte ranges.
+     */
+    default boolean mayMix(MemoryCoreEvent a, MemoryCoreEvent b) {
+        return true;
+    }
+
+    static Set<MemoryCoreEvent> getMayMixedSizeAccessesSet(AliasAnalysis analysis, List<MemoryCoreEvent> events) {
+        logger.trace("Checking for mixed-size accesses ({} events).", events.size());
+        //TODO The implementation could also deduce the proper granularity.  Here it defaults to 1 byte.
+        final var set = new HashSet<MemoryCoreEvent>();
+        for (int i = 0; i < events.size(); i++) {
+            final MemoryCoreEvent event0 = events.get(i);
+            boolean event0InSet = false;
+            for (MemoryCoreEvent event1 : events.subList(0, i)) {
+                // NOTE shortcut here, because mayMix may be expensive
+                if (!(event0InSet && set.contains(event1)) && analysis.mayMix(event0, event1)) {
+                    set.add(event0);
+                    set.add(event1);
+                    event0InSet = true;
+                }
+            }
+        }
+        logger.info("Number of mixed-size accesses: {}", set.size());
+        return set;
+    }
+
     static AliasAnalysis fromConfig(Program program, Context analysisContext, Configuration config) throws InvalidConfigurationException {
         Config c = new Config(config);
         logger.info("Selected alias analysis: {}", c.method);
@@ -110,6 +154,11 @@ public interface AliasAnalysis {
         @Override
         public boolean mayAlias(MemoryCoreEvent a, MemoryCoreEvent b) {
             return a1.mayAlias(a, b) && a2.mayAlias(a, b);
+        }
+
+        @Override
+        public boolean mayMix(MemoryCoreEvent a, MemoryCoreEvent b) {
+            return a1.mayMix(a, b) && a2.mayMix(a, b);
         }
 
         @Override
