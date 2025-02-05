@@ -11,6 +11,7 @@ import org.antlr.v4.runtime.DiagnosticErrorListener;
 import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.RecognitionException;
 import org.antlr.v4.runtime.Recognizer;
+import org.antlr.v4.runtime.Token;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -42,10 +43,7 @@ public class ParserInlineAsm {
         @Override
         public void syntaxError(Recognizer<?, ?> recognizer, Object offendingSymbol,
                 int line, int charPositionInLine, String msg, RecognitionException e) {
-            logger.warn("Syntax error: " + msg);
-            logger.warn("offending Symbol is " + offendingSymbol);
-            logger.warn("at " + line);
-            logger.warn("char position " + charPositionInLine);
+            logger.warn("Unrecognized token found in inline asm : " + ((Token) offendingSymbol).getText());
             this.errorOccurred = true;
         }
 
@@ -76,7 +74,6 @@ public class ParserInlineAsm {
         ParserRuleContext parserEntryPoint = parser.asm();
 
         if (errorListener.hasErrorOccurred()) {
-            logger.warn("UNRECOGNIZED TOKEN FOUND");
             Event event = EventFactory.newLocal(this.returnRegister, this.program.newConstant(returnType));
             return new ArrayList(Arrays.asList(event));
         }
