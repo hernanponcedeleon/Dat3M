@@ -21,16 +21,8 @@ public class ParserInlineAsm {
 
     private final VisitorInlineAsm visitor;
 
-<<<<<<< HEAD
     public ParserInlineAsm(Function llvmFunction, Register returnRegister, ArrayList<Expression> llvmArguments) {
         this.visitor = new VisitorInlineAsm(llvmFunction, returnRegister, llvmArguments);
-=======
-    public ParserInlineAsm(Function function, Register returnRegister,Type returnType,ArrayList<Expression> argumentsRegisterAddresses){
-        this.llvmFunction = function;
-        this.returnRegister = returnRegister;
-        this.returnType = returnType;
-        this.argumentsRegisterAddresses = argumentsRegisterAddresses;
->>>>>>> 2d85efd32 (first cleaning pass, public and private, removed getEvents in InlineParser, removed unsupported operators and more consistent names in .g4)
     }
 
     public List<Event> parse(CharStream charStream) throws ParsingException{

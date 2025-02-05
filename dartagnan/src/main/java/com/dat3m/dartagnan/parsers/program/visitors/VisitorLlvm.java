@@ -391,7 +391,6 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
                 logger.warn("Found unrecognized token for inline assembly : '{}'. Setting non deterministic value ", e.getMessage());
                 if(resultRegister != null){
                     events.add(EventFactory.Svcomp.newNonDetChoice(resultRegister));
-
                 }
             }
             if(!events.isEmpty()){
