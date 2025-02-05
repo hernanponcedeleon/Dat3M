@@ -9,7 +9,9 @@ import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.analysis.*;
 import com.dat3m.dartagnan.program.analysis.alias.AliasAnalysis;
 import com.dat3m.dartagnan.program.event.Event;
+import com.dat3m.dartagnan.program.event.core.MemoryCoreEvent;
 import com.dat3m.dartagnan.program.processing.ProcessingManager;
+import com.dat3m.dartagnan.program.processing.Tearing;
 import com.dat3m.dartagnan.utils.Result;
 import com.dat3m.dartagnan.verification.Context;
 import com.dat3m.dartagnan.verification.VerificationTask;
@@ -24,7 +26,9 @@ import org.sosy_lab.java_smt.api.Model;
 import org.sosy_lab.java_smt.api.ProverEnvironment;
 import org.sosy_lab.java_smt.api.SolverException;
 
+import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 import static com.dat3m.dartagnan.configuration.Property.CAT_SPEC;
 import static com.dat3m.dartagnan.program.analysis.SyntacticContextAnalysis.*;
@@ -80,11 +84,9 @@ public abstract class ModelChecker {
      * @exception UnsatisfiedRequirementException Some static analysis is missing.
      */
     public static void performStaticProgramAnalyses(VerificationTask task, Context analysisContext, Configuration config) throws InvalidConfigurationException {
+        doAliasAnalysis(task, analysisContext, config);
+        checkForMixedSizeAccesses(task, analysisContext, config);
         Program program = task.getProgram();
-        analysisContext.register(BranchEquivalence.class, BranchEquivalence.fromConfig(program, config));
-        analysisContext.register(ExecutionAnalysis.class, ExecutionAnalysis.fromConfig(program, task.getProgressModel(), analysisContext, config));
-        analysisContext.register(ReachingDefinitionsAnalysis.class, ReachingDefinitionsAnalysis.fromConfig(program, analysisContext, config));
-        analysisContext.register(AliasAnalysis.class, AliasAnalysis.fromConfig(program, analysisContext, config));
         analysisContext.register(ThreadSymmetry.class, ThreadSymmetry.fromConfig(program, config));
         for(Thread thread : program.getThreads()) {
             for(Event e : thread.getEvents()) {
@@ -92,6 +94,36 @@ public abstract class ModelChecker {
                 // which may rely on previous "global" analyses
                 e.runLocalAnalysis(program, analysisContext);
             }
+        }
+    }
+
+    private static void doAliasAnalysis(VerificationTask task, Context analysisContext, Configuration config) throws InvalidConfigurationException {
+        Program program = task.getProgram();
+        analysisContext.register(BranchEquivalence.class, BranchEquivalence.fromConfig(program, config));
+        analysisContext.register(ExecutionAnalysis.class, ExecutionAnalysis.fromConfig(program, task.getProgressModel(), analysisContext, config));
+        analysisContext.register(ReachingDefinitionsAnalysis.class, ReachingDefinitionsAnalysis.fromConfig(program, analysisContext, config));
+        analysisContext.register(AliasAnalysis.class, AliasAnalysis.fromConfig(program, analysisContext, config));
+    }
+
+    private static void undoAliasAnalysis(Context analysisContext) {
+        analysisContext.invalidate(AliasAnalysis.class);
+        analysisContext.invalidate(ReachingDefinitionsAnalysis.class);
+        analysisContext.invalidate(ExecutionAnalysis.class);
+        analysisContext.invalidate(BranchEquivalence.class);
+    }
+
+    private static void checkForMixedSizeAccesses(VerificationTask task, Context analysisContext, Configuration config) throws InvalidConfigurationException {
+        //TODO an option to omit this, if desired
+        Program program = task.getProgram();
+        List<MemoryCoreEvent> events = program.getThreadEvents(MemoryCoreEvent.class);
+        AliasAnalysis aliasAnalysis = analysisContext.requires(AliasAnalysis.class);
+        Set<MemoryCoreEvent> msaSet = AliasAnalysis.getMayMixedSizeAccessesSet(aliasAnalysis, events);
+        if (!msaSet.isEmpty()) {
+            for (MemoryCoreEvent e : msaSet) {
+                Tearing.applyReplacement(e);
+            }
+            undoAliasAnalysis(analysisContext);
+            doAliasAnalysis(task, analysisContext, config);
         }
     }
 
