@@ -399,7 +399,8 @@ public class PropertyEncoder implements Encoder {
     // ======================================================================
 
     private TrackableFormula encodeNontermination() {
-        final BooleanFormula hasNontermination = new NonTerminationEncoder(context.getTask(), context).encodeNontermination();
+        // final BooleanFormula hasNontermination = new NonTerminationEncoder(context.getTask(), context).encodeNontermination();
+        final BooleanFormula hasNontermination = new NonTerminationEncoderNew(context.getTask(), context).encodeNontermination();
         return new TrackableFormula(context.getBooleanFormulaManager().not(LIVENESS.getSMTVariable(context)), hasNontermination);
     }
 
