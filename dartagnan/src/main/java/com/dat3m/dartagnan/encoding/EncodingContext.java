@@ -17,10 +17,7 @@ import com.dat3m.dartagnan.program.analysis.alias.AliasAnalysis;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.MemoryEvent;
 import com.dat3m.dartagnan.program.event.RegWriter;
-import com.dat3m.dartagnan.program.event.core.CondJump;
-import com.dat3m.dartagnan.program.event.core.Load;
-import com.dat3m.dartagnan.program.event.core.MemoryCoreEvent;
-import com.dat3m.dartagnan.program.event.core.Store;
+import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.dat3m.dartagnan.verification.Context;
 import com.dat3m.dartagnan.verification.VerificationTask;
@@ -80,6 +77,7 @@ public final class EncodingContext {
 
     private final Map<Event, BooleanFormula> controlFlowVariables = new HashMap<>();
     private final Map<Event, BooleanFormula> executionVariables = new HashMap<>();
+    private final Map<NamedBarrier, BooleanFormula> syncVariables = new HashMap<>();
     private final Map<Event, Formula> addresses = new HashMap<>();
     private final Map<Event, Formula> values = new HashMap<>();
     private final Map<Event, Formula> results = new HashMap<>();
@@ -197,6 +195,10 @@ public final class EncodingContext {
         return encodeExpressionAsBooleanAt(event.getGuard(), event);
     }
 
+    public BooleanFormula sync(NamedBarrier event) {
+        return syncVariables.get(event);
+    }
+
     public BooleanFormula execution(Event event) {
         return (event.cfImpliesExec() ? controlFlowVariables : executionVariables).get(event);
     }
@@ -267,7 +269,7 @@ public final class EncodingContext {
         throw new UnsupportedOperationException(String.format("Unknown types for equal(%s,%s)", left, right));
     }
 
-    private IntegerFormula toInteger(Formula formula) {
+    public IntegerFormula toInteger(Formula formula) {
         if (formula instanceof IntegerFormula f) {
             return f;
         }
@@ -417,6 +419,9 @@ public final class EncodingContext {
 
         // ------- Event variables  -------
         for (Event e : verificationTask.getProgram().getThreadEvents()) {
+            if (e instanceof NamedBarrier b) {
+                syncVariables.put(b, booleanFormulaManager.makeVariable("sync " + e.getGlobalId()));
+            }
             if (!e.cfImpliesExec()) {
                 executionVariables.put(e, booleanFormulaManager.makeVariable("exec " + e.getGlobalId()));
             }
