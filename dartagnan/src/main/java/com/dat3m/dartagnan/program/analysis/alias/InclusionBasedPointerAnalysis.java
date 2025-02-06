@@ -18,6 +18,7 @@ import com.dat3m.dartagnan.verification.Context;
 import com.dat3m.dartagnan.witness.graphviz.Graphviz;
 import com.google.common.base.Supplier;
 import com.google.common.base.Suppliers;
+import com.google.common.collect.Sets;
 import com.google.common.math.IntMath;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -81,7 +82,7 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
     // For lazy cycle detection, it is grouped by the absolute value of IncludeEdge.modifier.offset.
     private final TreeMap<Integer, LinkedHashMap<Variable, List<IncludeEdge>>> queue = new TreeMap<>();
 
-    // Maps memory events and frees to variables representing their pointer set.
+    // Maps memory events, allocs, and frees to variables representing their pointer set.
     private final Map<Event, DerivedVariable> addressVariables = new HashMap<>();
 
     // Maps memory objects to variables representing their base address.
@@ -147,54 +148,7 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
     // ================================ API ================================
 
     @Override
-    public boolean mayAlias(Event a, Event b) {
-        if (a instanceof MemoryCoreEvent ma) {
-            if (b instanceof MemoryCoreEvent mb) {
-                return mayAccessSameAddress(ma, mb);
-            } else if (b instanceof Alloc ab) {
-                return mayAccessAllocatedBy(ab, ma);
-            }
-        } else if (a instanceof Alloc aa) {
-            if (b instanceof MemoryCoreEvent mb) {
-                return mayAccessAllocatedBy(aa, mb);
-            } else if (b instanceof MemFree fb) {
-                return mayAccessAllocatedBy(aa, fb);
-            }
-        } else if (a instanceof MemFree fa) {
-            if (b instanceof MemFree fb) {
-                return mayAccessSameAddress(fa, fb);
-            } else if (b instanceof Alloc ab) {
-                return mayAccessAllocatedBy(ab, fa);
-            }
-        }
-        throw new IllegalArgumentException("Unsupported event types for InclusionBasedPointerAnalysis");
-    }
-
-    @Override
-    public boolean mustAlias(Event a, Event b) {
-        if (a instanceof MemoryCoreEvent ma) {
-            if (b instanceof MemoryCoreEvent mb) {
-                return mustAccessSameAddress(ma, mb);
-            } else if (b instanceof Alloc ab) {
-                return mustAccessAllocatedBy(ab, ma);
-            }
-        } else if (a instanceof Alloc aa) {
-            if (b instanceof MemoryCoreEvent mb) {
-                return mustAccessAllocatedBy(aa, mb);
-            } else if (b instanceof MemFree fb) {
-                return mustAccessAllocatedBy(aa, fb);
-            }
-        } else if (a instanceof MemFree fa) {
-            if (b instanceof MemFree fb) {
-                return mustAccessSameAddress(fa, fb);
-            } else if (b instanceof Alloc ab) {
-                return mustAccessAllocatedBy(ab, fa);
-            }
-        }
-        throw new IllegalArgumentException("Unsupported event types for InclusionBasedPointerAnalysis");
-    }
-
-    private boolean mayAccessSameAddress(Event x, Event y) {
+    public boolean mayAlias(Event x, Event y) {
         final DerivedVariable vx = addressVariables.get(x);
         final DerivedVariable vy = addressVariables.get(y);
         if (vx == null || vy == null) {
@@ -217,99 +171,46 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
         return false;
     }
 
-    private boolean mustAccessSameAddress(Event x, Event y) {
+    @Override
+    public boolean mustAlias(Event x, Event y) {
         final DerivedVariable vx = addressVariables.get(x);
         final DerivedVariable vy = addressVariables.get(y);
         return vx != null && vy != null && vx.base == vy.base && vx.modifier.offset == vy.modifier.offset &&
                 isConstant(vx.modifier) && isConstant(vy.modifier);
     }
 
-    private boolean mayAccessAllocatedBy(Alloc a, Event e) {
-        final DerivedVariable v = addressVariables.get(e);
-        if (v == null) {
-            return true;
-        }
-        final MemoryObject base = a.getAllocatedObject();
-        if (e instanceof MemoryCoreEvent me) {
-            if (!base.hasKnownSize()) {
-                return true;
-            }
-            final int size = base.getKnownSize();
-            if (v.base.object == base && isConstant(v.modifier)) {
-                return v.modifier.offset < size && v.modifier.offset >= 0;
-            }
-            final List<IncludeEdge> includes = new ArrayList<>(v.base.includes);
-            includes.add(new IncludeEdge(v.base, TRIVIAL_MODIFIER));
-            for (final IncludeEdge i : includes) {
-                if (i.source.object != base) {
-                    continue;
-                }
-                final Modifier m = compose(i.modifier, v.modifier);
-                final boolean may = isConstant(m) ? m.offset < size && m.offset >= 0
-                        : m.alignment.stream().allMatch(al -> al + m.offset < size && al + m.offset >= 0);
-                if (may) {
-                    return true;
-                }
-            }
-            return false;
-        } else {
-            assert e instanceof MemFree;
-            if (v.base.object == base && isConstant(v.modifier)) {
-                return v.modifier.offset == 0;
-            }
-            final List<IncludeEdge> includes = new ArrayList<>(v.base.includes);
-            includes.add(new IncludeEdge(v.base, TRIVIAL_MODIFIER));
-            for (final IncludeEdge i : includes) {
-                if (i.source.object != base) {
-                    continue;
-                }
-                final Modifier m = compose(i.modifier, v.modifier);
-                if (isTrivial(m) ||
-                        (!isConstant(m) && m.alignment.stream().allMatch(al -> al + m.offset == 0))) {
-                    return true;
-                }
-            }
-            return false;
-        }
+    @Override
+    public boolean mayObjectAlias(Event a, Event b) {
+        final DerivedVariable va = addressVariables.get(a);
+        final DerivedVariable vb = addressVariables.get(b);
+        return va == null || vb == null || !Sets.intersection(getAccessibleObjects(va), getAccessibleObjects(vb)).isEmpty();
     }
 
-    private boolean mustAccessAllocatedBy(Alloc a, Event e) {
-        final DerivedVariable v = addressVariables.get(e);
-        if (v == null) {
+    @Override
+    public boolean mustObjectAlias(Event a, Event b) {
+        final DerivedVariable va = addressVariables.get(a);
+        final DerivedVariable vb = addressVariables.get(b);
+        if (va == null || vb == null) {
             return false;
         }
-        final MemoryObject base = a.getAllocatedObject();
-        if (e instanceof MemoryCoreEvent me) {
-            if (!base.hasKnownSize()) {
-                return false;
-            }
-            final int size = base.getKnownSize();
-            if (v.base.object == base && isConstant(v.modifier)) {
-                return v.modifier.offset < size && v.modifier.offset >= 0;
-            }
-            final List<IncludeEdge> includes = new ArrayList<>(v.base.includes);
-            includes.add(new IncludeEdge(v.base, TRIVIAL_MODIFIER));
-            for (final IncludeEdge i : includes) {
-                if (i.source.object != base) {
-                    return false; 
-                }
-                final Modifier m = compose(i.modifier, v.modifier);
-                final boolean must = isConstant(m) ? m.offset < size && m.offset >= 0
-                        : m.alignment.stream().allMatch(al -> al + m.offset < size && al + m.offset >= 0);
-                if (!must) {
-                    return false;
-                }
-            }
+        if (va.base == vb.base) {
             return true;
-        } else {
-            assert e instanceof MemFree;
-            return v.base.object == base && isTrivial(v.modifier);
         }
+        final Set<MemoryObject> objsA = getAccessibleObjects(va);
+        return objsA.size() == 1 && objsA.equals(getAccessibleObjects(vb));
     }
 
     @Override
     public Graphviz getGraphVisualization() {
         return graphviz;
+    }
+
+    private Set<MemoryObject> getAccessibleObjects(DerivedVariable address) {
+        final Set<MemoryObject> objs = new HashSet<>();
+        objs.add(address.base.object);
+        address.base.includes.stream().forEach(i -> objs.add(i.source.object));
+        objs.remove(null);
+        return objs;
     }
 
     // ================================ Processing ================================
@@ -321,6 +222,9 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
         for (final MemoryObject object : program.getMemory().getObjects()) {
             totalVariables++;
             objectVariables.put(object, new Variable(object, object.toString()));
+        }
+        for (final Alloc alloc : program.getThreadEvents(Alloc.class)) {
+            addressVariables.put(alloc, derive(objectVariables.get(alloc.getAllocatedObject())));
         }
         // Each expression gets a "res" variable representing its result value set.
         // Each register writer gets an "out" variable ("ld" for loads) representing its return value set.

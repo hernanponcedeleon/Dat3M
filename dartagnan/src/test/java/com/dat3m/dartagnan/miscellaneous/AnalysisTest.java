@@ -662,9 +662,9 @@ public class AnalysisTest {
         MemoryCoreEvent me2 = (MemoryCoreEvent) findMatchingEventAfterProcessing(program, e2);
         MemFree fr = (MemFree) findMatchingEventAfterProcessing(program, f);
 
-        assertAlias(expect[0], aa, al, me0);
-        assertAlias(expect[1], aa, al, me1);
-        assertAlias(expect[2], aa, al, me2);
+        assertObjectAlias(expect[0], aa, al, me0);
+        assertObjectAlias(expect[1], aa, al, me1);
+        assertObjectAlias(expect[2], aa, al, me2);
         assertAlias(expect[3], aa, al, fr);
     }
 
@@ -727,16 +727,16 @@ public class AnalysisTest {
         MemFree fr0 = (MemFree) findMatchingEventAfterProcessing(program, f0);
         MemFree fr1 = (MemFree) findMatchingEventAfterProcessing(program, f1);
 
-        assertAlias(expect[0], aa, al0, me0);
-        assertAlias(expect[1], aa, al0, me1);
-        assertAlias(expect[2], aa, al0, me2);
-        assertAlias(expect[3], aa, al0, me3);
-        assertAlias(expect[4], aa, al0, me4);
-        assertAlias(expect[5], aa, al1, me0);
-        assertAlias(expect[6], aa, al1, me1);
-        assertAlias(expect[7], aa, al1, me2);
-        assertAlias(expect[8], aa, al1, me3);
-        assertAlias(expect[9], aa, al1, me4);
+        assertObjectAlias(expect[0], aa, al0, me0);
+        assertObjectAlias(expect[1], aa, al0, me1);
+        assertObjectAlias(expect[2], aa, al0, me2);
+        assertObjectAlias(expect[3], aa, al0, me3);
+        assertObjectAlias(expect[4], aa, al0, me4);
+        assertObjectAlias(expect[5], aa, al1, me0);
+        assertObjectAlias(expect[6], aa, al1, me1);
+        assertObjectAlias(expect[7], aa, al1, me2);
+        assertObjectAlias(expect[8], aa, al1, me3);
+        assertObjectAlias(expect[9], aa, al1, me4);
         assertAlias(expect[10], aa, al0, fr0);
         assertAlias(expect[11], aa, al0, fr1);
         assertAlias(expect[12], aa, al1, fr0);
@@ -802,12 +802,12 @@ public class AnalysisTest {
         MemoryCoreEvent me5 = (MemoryCoreEvent) findMatchingEventAfterProcessing(program, e5);
         MemFree fr0 = (MemFree) findMatchingEventAfterProcessing(program, f0);
 
-        assertAlias(expect[0], aa, al0, me0);
-        assertAlias(expect[1], aa, al0, me1);
-        assertAlias(expect[2], aa, al0, me2);
-        assertAlias(expect[3], aa, al0, me3);
-        assertAlias(expect[4], aa, al0, me4);
-        assertAlias(expect[5], aa, al0, me5);
+        assertObjectAlias(expect[0], aa, al0, me0);
+        assertObjectAlias(expect[1], aa, al0, me1);
+        assertObjectAlias(expect[2], aa, al0, me2);
+        assertObjectAlias(expect[3], aa, al0, me3);
+        assertObjectAlias(expect[4], aa, al0, me4);
+        assertObjectAlias(expect[5], aa, al0, me5);
         assertAlias(expect[6], aa, al0, fr0);
     }
 
@@ -1030,6 +1030,23 @@ public class AnalysisTest {
             case MUST:
                 assertTrue(a.mayAlias(x, y));
                 assertTrue(a.mustAlias(x, y));
+                break;
+        }
+    }
+
+    private void assertObjectAlias(Result expect, AliasAnalysis a, Event x, Event y) {
+        switch (expect) {
+            case NONE:
+                assertFalse(a.mayObjectAlias(x, y));
+                assertFalse(a.mustObjectAlias(x, y));
+                break;
+            case MAY:
+                assertTrue(a.mayObjectAlias(x, y));
+                assertFalse(a.mustObjectAlias(x, y));
+                break;
+            case MUST:
+                assertTrue(a.mayObjectAlias(x, y));
+                assertTrue(a.mustObjectAlias(x, y));
                 break;
         }
     }

@@ -16,27 +16,29 @@ public class VirtualAliasAnalysis implements AliasAnalysis {
     }
 
     @Override
-    public boolean mustAlias(Event a, Event b) {
-        if (a instanceof MemoryCoreEvent ma && b instanceof MemoryCoreEvent mb) {
-            return mustAccessSameAddress(ma, mb);
+    public boolean mayAlias(Event e1, Event e2) {
+        if (e1 instanceof MemoryCoreEvent me1 && e2 instanceof MemoryCoreEvent me2) {
+            return samePhysicalAddress(me1, me2) || wrappedAnalysis.mayAlias(me1, me2);
         }
-        throw new IllegalArgumentException("Unsupported event types for VirtualAliasAnalysis");
+        return true;
     }
 
     @Override
-    public boolean mayAlias(Event a, Event b) {
-        if (a instanceof MemoryCoreEvent ma && b instanceof MemoryCoreEvent mb) {
-            return mayAccessSameAddress(ma, mb);
+    public boolean mustAlias(Event e1, Event e2) {
+        if (e1 instanceof MemoryCoreEvent me1 && e2 instanceof MemoryCoreEvent me2) {
+            return samePhysicalAddress(me1, me2) || wrappedAnalysis.mustAlias(me1, me2);
         }
-        throw new IllegalArgumentException("Unsupported event types for VirtualAliasAnalysis");
+        return false;
     }
 
-    private boolean mayAccessSameAddress(MemoryCoreEvent e1, MemoryCoreEvent e2) {
-        return samePhysicalAddress(e1, e2) || wrappedAnalysis.mayAlias(e1, e2);
+    @Override
+    public boolean mayObjectAlias(Event a, Event b) {
+        return true;
     }
 
-    private boolean mustAccessSameAddress(MemoryCoreEvent e1, MemoryCoreEvent e2) {
-        return samePhysicalAddress(e1, e2) || wrappedAnalysis.mustAlias(e1, e2);
+    @Override
+    public boolean mustObjectAlias(Event a, Event b) {
+        return false;
     }
 
     // GPU memory models make use of virtual addresses.

@@ -34,6 +34,10 @@ public interface AliasAnalysis {
 
     boolean mayAlias(Event a, Event b);
 
+    boolean mustObjectAlias(Event a, Event b);
+
+    boolean mayObjectAlias(Event a, Event b);
+
     static AliasAnalysis fromConfig(Program program, Context analysisContext, Configuration config) throws InvalidConfigurationException {
         Config c = new Config(config);
         logger.info("Selected alias analysis: {}", c.method);
@@ -110,6 +114,16 @@ public interface AliasAnalysis {
         @Override
         public boolean mayAlias(Event a, Event b) {
             return a1.mayAlias(a, b) && a2.mayAlias(a, b);
+        }
+
+        @Override
+        public boolean mustObjectAlias(Event a, Event b) {
+            return a1.mustObjectAlias(a, b) || a2.mustObjectAlias(a, b);
+        }
+
+        @Override
+        public boolean mayObjectAlias(Event a, Event b) {
+            return a1.mayObjectAlias(a, b) && a2.mayObjectAlias(a, b);
         }
 
         @Override

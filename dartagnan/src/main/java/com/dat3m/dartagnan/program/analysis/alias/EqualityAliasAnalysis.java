@@ -29,91 +29,60 @@ public class EqualityAliasAnalysis implements AliasAnalysis {
     }
 
     @Override
-    public boolean mustAlias(Event a, Event b) {
-        if (a instanceof MemoryCoreEvent ma) {
-            if (b instanceof MemoryCoreEvent mb) {
-                return mustAccessSameAddress(ma, mb);
-            } else if (b instanceof Alloc ab) {
-                return false;
-            }
-        } else if (a instanceof Alloc aa) {
-            if (b instanceof MemoryCoreEvent mb) {
-                return false;
-            } else if (b instanceof MemFree fb) {
-                return false;
-            }
-        } else if (a instanceof MemFree fa) {
-            if (b instanceof MemFree fb) {
-                return false;
-            } else if (b instanceof Alloc ab) {
-                return false;
-            }
-        }
-        throw new IllegalArgumentException("Unsupported event types for EqualityAliasAnalysis");
+    public boolean mayAlias(Event e1, Event e2) {
+        return true;
     }
 
     @Override
-    public boolean mayAlias(Event a, Event b) {
-        if (a instanceof MemoryCoreEvent ma) {
-            if (b instanceof MemoryCoreEvent mb) {
-                return mayAccessSameAddress(ma, mb);
-            } else if (b instanceof Alloc ab) {
+    public boolean mustAlias(Event e1, Event e2) {
+        if (e1 instanceof MemoryCoreEvent a && e2 instanceof MemoryCoreEvent b) {
+            if (a.getFunction() != b.getFunction()
+                    || !a.getAddress().equals(b.getAddress())) {
+                return false;
+            } else if (a == b) {
                 return true;
             }
-        } else if (a instanceof Alloc aa) {
-            if (b instanceof MemoryCoreEvent mb) {
-                return true;
-            } else if (b instanceof MemFree fb) {
+            // Normalize direction
+            if (a.getGlobalId() > b.getGlobalId()) {
+                MemoryCoreEvent temp = a;
+                a = b;
+                b = temp;
+            }
+
+            // Check cache
+            if (trueSet.contains(a, b)) {
                 return true;
             }
-        } else if (a instanceof MemFree fa) {
-            if (b instanceof MemFree fb) {
-                return true;
-            } else if (b instanceof Alloc ab) {
-                return true;
-            }
-        }
-        throw new IllegalArgumentException("Unsupported event types for EqualityAliasAnalysis");
-    }
-
-    private boolean mustAccessSameAddress(MemoryCoreEvent a, MemoryCoreEvent b) {
-
-        if (a.getFunction() != b.getFunction()
-                || !a.getAddress().equals(b.getAddress())) {
-            return false;
-        } else if (a == b) {
-            return true;
-        }
-        // Normalize direction
-        if (a.getGlobalId() > b.getGlobalId()) {
-            MemoryCoreEvent temp = a;
-            a = b;
-            b = temp;
-        }
-
-        // Check cache
-        if (trueSet.contains(a, b)) {
-            return true;
-        }
-        if (falseSet.contains(a, b)) {
-            return false;
-        }
-
-        // Establish that address expression evaluates to same value at both events.
-        Set<Register> addrRegs = a.getAddress().getRegs();
-        Event e = a.getSuccessor();
-        while (e != b) {
-            if (e instanceof RegWriter rw && addrRegs.contains(rw.getResultRegister())) {
-                falseSet.add(a, b);
+            if (falseSet.contains(a, b)) {
                 return false;
             }
-            e = e.getSuccessor();
+
+            // Establish that address expression evaluates to same value at both events.
+            Set<Register> addrRegs = a.getAddress().getRegs();
+            Event e = a.getSuccessor();
+            while (e != b) {
+                if (e instanceof RegWriter rw && addrRegs.contains(rw.getResultRegister())) {
+                    falseSet.add(a, b);
+                    return false;
+                }
+                e = e.getSuccessor();
+            }
+            trueSet.add(a, b);
+            return true;
         }
-        trueSet.add(a, b);
+        return false;
+    }
+
+    @Override
+    public boolean mayObjectAlias(Event a, Event b) {
         return true;
     }
 
-    private boolean mayAccessSameAddress(MemoryCoreEvent a, MemoryCoreEvent b) {
-        return true;
+    @Override
+    public boolean mustObjectAlias(Event a, Event b) {
+        if (a instanceof MemoryCoreEvent ma && b instanceof MemoryCoreEvent mb) {
+            return mustAlias(ma, mb);
+        }
+        return false;
     }
 }
