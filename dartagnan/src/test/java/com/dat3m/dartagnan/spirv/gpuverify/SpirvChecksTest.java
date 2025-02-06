@@ -173,7 +173,7 @@ public class SpirvChecksTest {
                 // {"test_mod_invariants/local_reduce_strength.spv.dis", 1, PASS},
 
                 // Unsupported control flow
-                // {"test_for_ssa_bug.spv.dis", 1, PASS},
+                {"test_for_ssa_bug.spv.dis", 8, PASS},
                 // {"transitiveclosuresimplified.spv.dis", 1, PASS},
 
                 // Unsupported spir-v ops

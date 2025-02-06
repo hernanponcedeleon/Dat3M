@@ -633,7 +633,7 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
         List<String> flags = ctx.openCLFenceFlags().openCLFenceFlag().stream().map(f -> f.flag).toList();
         String barrierScope = ctx.openCLScope() != null ? ctx.openCLScope().scope : Tag.OpenCL.WORK_GROUP;
         String name = String.format("barrier(%s.%s)", ctx.openCLFenceFlags().getText(), barrierScope).toLowerCase();
-        Event fence = EventFactory.newControlBarrier(ctx.barrierId().getText(), name);
+        Event fence = EventFactory.newControlBarrier(name, ctx.barrierId().getText());
         fence.addTags(flags);
         if (!Tag.OpenCL.WORK_GROUP.equals(barrierScope)) {
             throw new ParsingException("Unsupported control barrier scope '%s'", barrierScope);

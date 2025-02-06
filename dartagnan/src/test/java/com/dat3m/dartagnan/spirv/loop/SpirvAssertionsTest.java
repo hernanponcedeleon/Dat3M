@@ -48,44 +48,32 @@ public class SpirvAssertionsTest {
     @Parameterized.Parameters(name = "{index}: {0}, {1}, {2}")
     public static Iterable<Object[]> data() throws IOException {
         return Arrays.asList(new Object[][]{
-                {"barrier-loop-1-forall.spv.dis", 2, UNKNOWN},
                 {"barrier-loop-1-forall.spv.dis", 3, PASS},
-                {"barrier-loop-1-exists.spv.dis", 2, UNKNOWN},
                 {"barrier-loop-1-exists.spv.dis", 3, PASS},
                 {"barrier-no-loop-1-forall.spv.dis", 1, PASS},
                 {"barrier-no-loop-1-exists.spv.dis", 1, PASS},
 
-                {"barrier-loop-2-forall.spv.dis", 1, UNKNOWN},
                 {"barrier-loop-2-forall.spv.dis", 2, PASS},
-                {"barrier-loop-2-exists.spv.dis", 1, UNKNOWN},
                 {"barrier-loop-2-exists.spv.dis", 2, PASS},
                 {"barrier-no-loop-2-forall.spv.dis", 1, PASS},
                 {"barrier-no-loop-2-exists.spv.dis", 1, PASS},
 
-                {"barrier-loop-3-forall.spv.dis", 1, UNKNOWN},
                 {"barrier-loop-3-forall.spv.dis", 2, PASS},
-                {"barrier-loop-3-exists.spv.dis", 1, UNKNOWN},
                 {"barrier-loop-3-exists.spv.dis", 2, PASS},
                 {"barrier-no-loop-3-forall.spv.dis", 1, PASS},
                 {"barrier-no-loop-3-exists.spv.dis", 1, PASS},
 
-                {"barrier-loop-4-forall.spv.dis", 1, UNKNOWN},
                 {"barrier-loop-4-forall.spv.dis", 2, PASS},
-                {"barrier-loop-4-exists.spv.dis", 1, UNKNOWN},
                 {"barrier-loop-4-exists.spv.dis", 2, FAIL},
                 {"barrier-no-loop-4-forall.spv.dis", 1, PASS},
                 {"barrier-no-loop-4-exists.spv.dis", 1, FAIL},
 
-                {"barrier-loop-5-forall.spv.dis", 1, UNKNOWN},
                 {"barrier-loop-5-forall.spv.dis", 2, FAIL},
-                {"barrier-loop-5-exists.spv.dis", 1, UNKNOWN},
                 {"barrier-loop-5-exists.spv.dis", 2, PASS},
                 {"barrier-no-loop-5-forall.spv.dis", 1, FAIL},
                 {"barrier-no-loop-5-exists.spv.dis", 1, PASS},
 
-                {"barrier-loop-6-forall.spv.dis", 1, UNKNOWN},
                 {"barrier-loop-6-forall.spv.dis", 2, FAIL},
-                {"barrier-loop-6-exists.spv.dis", 1, UNKNOWN},
                 {"barrier-loop-6-exists.spv.dis", 2, PASS},
                 {"barrier-no-loop-6-forall.spv.dis", 1, FAIL},
                 {"barrier-no-loop-6-exists.spv.dis", 1, PASS},

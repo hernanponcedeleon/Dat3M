@@ -221,7 +221,7 @@ public class LoopUnrolling implements ProgramProcessor {
         while(cur != null && !cur.equals(until)){
             final Event copy = cur.getCopy();
             if (cur instanceof ControlBarrier curBar && copy instanceof ControlBarrier copyBar) {
-                copyBar.setId(String.format("%s%s", curBar.getId(), loopId));
+                copyBar.setInstanceId(String.format("%s.%s", curBar.getInstanceId(), loopId));
             }
             copies.add(copy);
             copyContext.put(cur, copy);

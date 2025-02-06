@@ -103,7 +103,7 @@ public class SpirvRacesTest {
                 {"test_local_id_inference.spv.dis", 1, PASS},
                 {"test_mod_invariants/global_reduce_strength.spv.dis", 1, UNKNOWN},
                 {"test_part_load_store/store_int_and_short.spv.dis", 1, PASS},
-                {"test_for_ssa_bug.spv.dis", 2, UNKNOWN},
+                {"test_for_ssa_bug.spv.dis", 8, PASS},
                 {"test_structs/use_array_element.spv.dis", 1, PASS},
                 {"test_structs/use_element.spv.dis", 1, PASS},
                 {"test_structs/use_struct_element.spv.dis", 1, PASS},

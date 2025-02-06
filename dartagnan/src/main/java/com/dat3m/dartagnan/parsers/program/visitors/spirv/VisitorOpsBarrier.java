@@ -26,7 +26,7 @@ public class VisitorOpsBarrier extends SpirvBaseVisitor<Event> {
         if (!Tag.Spirv.WORKGROUP.equals(execScope)) {
             throw new ParsingException("Control barrier with execution scope other than workgroup is not supported");
         }
-        Event barrier = EventFactory.newControlBarrier(Integer.toString(nextBarrierId++), "cbar");
+        Event barrier = EventFactory.newControlBarrier("cbar", Integer.toString(nextBarrierId++));
         barrier.addTags(Tag.Spirv.CONTROL);
         barrier.addTags(getScopeTag(ctx.memory().getText()));
         Set<String> tags = getMemorySemanticsTags(ctx.semantics().getText());

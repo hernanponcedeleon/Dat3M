@@ -1,12 +1,11 @@
 package com.dat3m.dartagnan.encoding;
 
 import com.dat3m.dartagnan.configuration.Arch;
+import com.dat3m.dartagnan.expression.integers.IntLiteral;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.analysis.ReachingDefinitionsAnalysis;
 import com.dat3m.dartagnan.program.event.*;
-import com.dat3m.dartagnan.program.event.core.Load;
-import com.dat3m.dartagnan.program.event.core.MemoryCoreEvent;
-import com.dat3m.dartagnan.program.event.core.RMWStoreExclusive;
+import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.utils.Utils;
 import com.dat3m.dartagnan.utils.dependable.DependencyGraph;
 import com.dat3m.dartagnan.wmm.Constraint;
@@ -664,6 +663,26 @@ public class WmmEncoder implements Encoder {
                     }
                 }
             }
+            return null;
+        }
+
+        @Override
+        public Void visitSyncBarrier(SyncBar syncBar) {
+            final Relation rel = syncBar.getDefinedRelation();
+            EncodingContext.EdgeEncoder encoder = context.edge(rel);
+            EventGraph mustSet = ra.getKnowledge(rel).getMustSet();
+            encodeSets.get(rel).apply((e1, e2) -> {
+                BooleanFormula condition = execution(e1, e2);
+                if (!mustSet.contains(e1, e2) && e1 instanceof NamedBarrier b1 && e2 instanceof NamedBarrier b2) {
+                    condition = bmgr.and(condition, context.sync(b1));
+                    if (!(b1.getResourceId() instanceof IntLiteral) || !(b2.getResourceId() instanceof IntLiteral)) {
+                        condition = bmgr.and(condition, context.equal(
+                                context.encodeExpressionAt(b1.getResourceId(), b1),
+                                context.encodeExpressionAt(b2.getResourceId(), b2)));
+                    }
+                }
+                enc.add(bmgr.equivalence(encoder.encode(e1, e2), condition));
+            });
             return null;
         }
 

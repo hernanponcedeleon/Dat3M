@@ -257,21 +257,32 @@ public class VisitorLitmusVulkan extends LitmusVulkanBaseVisitor<Object> {
     @Override
     public Object visitControlBarrierInstruction(LitmusVulkanParser.ControlBarrierInstructionContext ctx) {
         String name = ctx.getText().substring(0, ctx.getText().length() - ctx.constant().getText().length());
-        Event barrier = EventFactory.newControlBarrier(ctx.constant().getText(), name);
+        String instanceId = ctx.constant().getText();
+        Event barrier;
+        if (ctx.barrierId() == null) {
+            barrier = EventFactory.newControlBarrier(name, instanceId);
+        } else {
+            Expression id = (Expression) ctx.barrierId().accept(this);
+            Expression quorum = null;
+            if (ctx.barrierQuorum() != null) {
+                quorum = (Expression) ctx.barrierQuorum().accept(this);
+            }
+            barrier = EventFactory.newNamedBarrier(name, instanceId, id, quorum);
+        }
         barrier.addTags(Tag.Vulkan.CBAR, ctx.scope().content);
         String mo = getMemoryOrderOrDefault(ctx, null);
-        if (mo != null) {
-            barrier.addTags(mo);
-        } else {
+        if (mo == null) {
             barrier.removeTags(Tag.FENCE);
+        } else {
+            barrier.addTags(mo);
+            if (ctx.semAv() != null) {
+                barrier.addTags(Tag.Vulkan.SEM_AVAILABLE);
+            }
+            if (ctx.semVis() != null) {
+                barrier.addTags(Tag.Vulkan.SEM_VISIBLE);
+            }
+            barrier.addTags(ctx.semSc().stream().map(c -> c.content).toList());
         }
-        if (ctx.semAv() != null) {
-            barrier.addTags(Tag.Vulkan.SEM_AVAILABLE);
-        }
-        if (ctx.semVis() != null) {
-            barrier.addTags(Tag.Vulkan.SEM_VISIBLE);
-        }
-        barrier.addTags(ctx.semSc().stream().map(c -> c.content).toList());
         return programBuilder.addChild(mainThread, barrier);
     }
 

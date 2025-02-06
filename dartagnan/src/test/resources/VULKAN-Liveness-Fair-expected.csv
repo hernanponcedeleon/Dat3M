@@ -481,3 +481,13 @@ litmus/VULKAN/CADP/3_threads_4_instructions/101_simple.litmus,1
 litmus/VULKAN/CADP/3_threads_4_instructions/102_simple.litmus,1
 litmus/VULKAN/CADP/3_threads_4_instructions/103_simple.litmus,1
 litmus/VULKAN/CADP/3_threads_4_instructions/104_simple.litmus,1
+litmus/VULKAN/BarrierQuorum/test1-pass.litmus,1
+litmus/VULKAN/BarrierQuorum/test1-fail.litmus,1
+litmus/VULKAN/BarrierQuorum/test1-hang.litmus,0
+litmus/VULKAN/BarrierQuorum/test2-pass.litmus,1
+litmus/VULKAN/BarrierQuorum/test2-fail.litmus,1
+litmus/VULKAN/BarrierQuorum/test2-hang.litmus,0
+litmus/VULKAN/BarrierQuorum/test3-pass.litmus,1
+litmus/VULKAN/BarrierQuorum/test3-fail.litmus,1
+litmus/VULKAN/BarrierQuorum/test4-pass.litmus,1
+litmus/VULKAN/BarrierQuorum/test4-fail.litmus,1

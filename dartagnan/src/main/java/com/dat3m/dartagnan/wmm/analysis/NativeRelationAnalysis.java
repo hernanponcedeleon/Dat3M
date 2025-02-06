@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan.wmm.analysis;
 
+import com.dat3m.dartagnan.expression.integers.IntLiteral;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.Register.UsageType;
@@ -971,13 +972,32 @@ public class NativeRelationAnalysis implements RelationAnalysis {
         @Override
         public MutableKnowledge visitSyncBarrier(SyncBar syncBar) {
             MutableEventGraph must = new MapEventGraph();
-            List<ControlBarrier> barriers = program.getThreadEvents(ControlBarrier.class);
-            barriers.forEach(e1 -> barriers.forEach(e2 -> {
-                if (e1.getId().equals(e2.getId()) && !exec.areMutuallyExclusive(e1, e2) && !e2.hasTag(PTX.ARRIVE)) {
-                    must.add(e1, e2);
-                }
-            }));
-            return new MutableKnowledge(must, MapEventGraph.from(must));
+            List<ControlBarrier> barriers = program.getThreadEvents(ControlBarrier.class).stream()
+                    .filter(e -> !(e instanceof NamedBarrier))
+                    .toList();
+            barriers.forEach(e1 -> barriers.stream()
+                    .filter(e2 -> e1.getInstanceId().equals(e2.getInstanceId()))
+                    .filter(e2 -> !exec.areMutuallyExclusive(e1, e2))
+                    .filter(e2 -> !e2.hasTag(PTX.ARRIVE))
+                    .forEach(e2 -> must.add(e1, e2)));
+
+            MutableEventGraph may = MapEventGraph.from(must);
+            List<NamedBarrier> namedBarriers = program.getThreadEvents(NamedBarrier.class);
+            namedBarriers.forEach(e1 -> namedBarriers.stream()
+                    .filter(e2 -> e1.getInstanceId().equals(e2.getInstanceId()))
+                    .filter(e2 -> !exec.areMutuallyExclusive(e1, e2))
+                    .filter(e2 -> !e2.hasTag(PTX.ARRIVE))
+                    .forEach(e2 -> {
+                        if (e1.getResourceId().equals(e2.getResourceId())) {
+                            may.add(e1, e2);
+                            if (e1.getQuorum() == null) {
+                                must.add(e1, e2);
+                            }
+                        } else if (!(e1.getResourceId() instanceof IntLiteral) || !(e2.getResourceId() instanceof IntLiteral)) {
+                            may.add(e1, e2);
+                        }
+                    }));
+            return new MutableKnowledge(may, must);
         }
 
         @Override

@@ -109,3 +109,13 @@ litmus/VULKAN/Manual/xf-barrier-load-rlx-1.litmus,0
 litmus/VULKAN/Manual/xf-barrier-load-rlx-2.litmus,0
 litmus/VULKAN/Manual/xf-barrier-store-rlx-1.litmus,0
 litmus/VULKAN/Manual/xf-barrier-store-rlx-2.litmus,0
+litmus/VULKAN/BarrierQuorum/test1-pass.litmus,1
+litmus/VULKAN/BarrierQuorum/test1-fail.litmus,0
+litmus/VULKAN/BarrierQuorum/test1-hang.litmus,0
+litmus/VULKAN/BarrierQuorum/test2-pass.litmus,1
+litmus/VULKAN/BarrierQuorum/test2-fail.litmus,0
+litmus/VULKAN/BarrierQuorum/test2-hang.litmus,0
+litmus/VULKAN/BarrierQuorum/test3-pass.litmus,1
+litmus/VULKAN/BarrierQuorum/test3-fail.litmus,0
+litmus/VULKAN/BarrierQuorum/test4-pass.litmus,1
+litmus/VULKAN/BarrierQuorum/test4-fail.litmus,0

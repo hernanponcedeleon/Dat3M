@@ -6,29 +6,36 @@ import com.dat3m.dartagnan.program.event.Tag;
 import org.sosy_lab.java_smt.api.BooleanFormula;
 
 public class ControlBarrier extends GenericVisibleEvent {
-    private String id;
 
-    public ControlBarrier(String id, String name) {
+    // Identifier of a control barrier instance. Only barriers with the
+    // same instanceId can synchronize with each other.
+    // For kernel/shader code, barrier events will have the same instanceId
+    // iff they are generated from the same dynamic (unrolled) instance of
+    // a barrier instruction. In litmus tests, barrier instanceId should be
+    // specified explicitly.
+    private String instanceId;
+
+    public ControlBarrier(String name, String instanceId) {
         super(name, Tag.FENCE);
-        this.id = id;
+        this.instanceId = instanceId;
     }
 
-    private ControlBarrier(ControlBarrier other) {
+    protected ControlBarrier(ControlBarrier other) {
         super(other);
-        this.id = other.id;
+        this.instanceId = other.instanceId;
     }
 
-    public void setId(String id) {
-        this.id = id;
+    public void setInstanceId(String instanceId) {
+        this.instanceId = instanceId;
     }
 
-    public String getId() {
-        return id;
+    public String getInstanceId() {
+        return instanceId;
     }
 
     @Override
     public String defaultString() {
-        return String.format("%s := barrier_id[%s]", name, id);
+        return String.format("%s := barrier(%s)", name, instanceId);
     }
 
     @Override
