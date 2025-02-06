@@ -380,8 +380,15 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
             // see https://llvm.org/docs/LangRef.html#inline-assembler-expressions
             //FIXME ignore side effects of inline assembly
                 CharStream charStream = CharStreams.fromString(ctx.inlineAsm().inlineAsmBody().getText());
-                ParserInlineAsm parser = new ParserInlineAsm(function,resultRegister, returnType, arguments, program);
-                List<Event> events = parser.parse(charStream);
+                ParserInlineAsm parser = new ParserInlineAsm(function,resultRegister, returnType, arguments);
+                List<Event> events = new LinkedList<>();
+                try{
+                    events = parser.parse(charStream);
+                } catch (ParsingException e){
+                    if(resultRegister != null){
+                        events.add(EventFactory.newLocal(resultRegister,program.newConstant(resultRegister.getType())));
+                    }
+                }
                 if(!events.isEmpty()){
                     block.events.addAll(events);
                 }

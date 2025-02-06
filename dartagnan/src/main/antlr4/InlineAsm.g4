@@ -67,7 +67,7 @@ prefetchMemory : (PrefetchMemory PrefetchStoreL1Once)Comma register;
 yieldtask : YieldTask;
 
 //fences
-asmFence : DataMemoryBarrier FenceArmOpt | DataSynchronizationBarrier FenceArmOpt;
+asmFence : (DataMemoryBarrier | DataSynchronizationBarrier) FenceArmOpt;
 riscvFence : RISCVFence FenceRISCVOpt | RISCVFence FenceRISCVOpt Comma FenceRISCVOpt;
 x86Fence : X86Fence;
 ppcFence : PPCFence;

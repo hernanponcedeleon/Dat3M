@@ -21,9 +21,8 @@ The useful libvsync flags are :
 3. VSYNC_DISABLE_POLITE_AWAIT 
 2. VSYNC_VERIFICATION -- we are in verification mode
 4. VSYNC_VERIFICATION_DAT3M -- to tell it that we are using Dat3M to verify
-5. VSYNCER_CHECK=on -- to be paired with above
-6. TWA_A=128 -- in case we are generating a ll file for twalock.c
-7. VSYNC_VERIFICATION_QUICK -- reducing NTHREADS or READERS/WRITERS to speedup analysis
+5. TWA_A=128 -- in case we are generating a ll file for twalock.c
+6. VSYNC_VERIFICATION_QUICK -- reducing NTHREADS or READERS/WRITERS to speedup analysis
 
 For the architecture these are the options : 
 1. ```__aarch__``` to generate ARMV8
