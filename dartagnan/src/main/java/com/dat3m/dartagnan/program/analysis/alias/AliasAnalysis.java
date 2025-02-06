@@ -3,7 +3,7 @@ package com.dat3m.dartagnan.program.analysis.alias;
 import com.dat3m.dartagnan.configuration.Alias;
 import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.program.Program;
-import com.dat3m.dartagnan.program.event.MemoryEvent;
+import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.core.Init;
 import com.dat3m.dartagnan.program.event.core.MemoryCoreEvent;
 import com.dat3m.dartagnan.program.event.metadata.SourceLocation;
@@ -30,9 +30,13 @@ public interface AliasAnalysis {
 
     Logger logger = LogManager.getLogger(AliasAnalysis.class);
 
-    boolean mustAlias(MemoryCoreEvent a, MemoryCoreEvent b);
+    boolean mustAlias(Event a, Event b);
 
-    boolean mayAlias(MemoryCoreEvent a, MemoryCoreEvent b);
+    boolean mayAlias(Event a, Event b);
+
+    boolean mustObjectAlias(Event a, Event b);
+
+    boolean mayObjectAlias(Event a, Event b);
 
     static AliasAnalysis fromConfig(Program program, Context analysisContext, Configuration config) throws InvalidConfigurationException {
         Config c = new Config(config);
@@ -103,13 +107,23 @@ public interface AliasAnalysis {
         }
 
         @Override
-        public boolean mustAlias(MemoryCoreEvent a, MemoryCoreEvent b) {
+        public boolean mustAlias(Event a, Event b) {
             return a1.mustAlias(a, b) || a2.mustAlias(a, b);
         }
 
         @Override
-        public boolean mayAlias(MemoryCoreEvent a, MemoryCoreEvent b) {
+        public boolean mayAlias(Event a, Event b) {
             return a1.mayAlias(a, b) && a2.mayAlias(a, b);
+        }
+
+        @Override
+        public boolean mustObjectAlias(Event a, Event b) {
+            return a1.mustObjectAlias(a, b) || a2.mustObjectAlias(a, b);
+        }
+
+        @Override
+        public boolean mayObjectAlias(Event a, Event b) {
+            return a1.mayObjectAlias(a, b) && a2.mayObjectAlias(a, b);
         }
 
         @Override
@@ -180,7 +194,7 @@ public interface AliasAnalysis {
         }
     }
 
-    private static String repr(MemoryEvent event, Config configuration) {
+    private static String repr(Event event, Config configuration) {
         if (!configuration.graphvizShowAll && event instanceof Init) {
             return null;
         }

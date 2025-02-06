@@ -4,7 +4,7 @@ import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.RegWriter;
-import com.dat3m.dartagnan.program.event.core.MemoryCoreEvent;
+import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.wmm.utils.graph.mutable.MapEventGraph;
 import com.dat3m.dartagnan.wmm.utils.graph.mutable.MutableEventGraph;
 import org.sosy_lab.common.configuration.Configuration;
@@ -29,45 +29,60 @@ public class EqualityAliasAnalysis implements AliasAnalysis {
     }
 
     @Override
-    public boolean mustAlias(MemoryCoreEvent a, MemoryCoreEvent b) {
-
-        if (a.getFunction() != b.getFunction()
-                || !a.getAddress().equals(b.getAddress())) {
-            return false;
-        } else if (a == b) {
-            return true;
-        }
-        // Normalize direction
-        if (a.getGlobalId() > b.getGlobalId()) {
-            MemoryCoreEvent temp = a;
-            a = b;
-            b = temp;
-        }
-
-        // Check cache
-        if (trueSet.contains(a, b)) {
-            return true;
-        }
-        if (falseSet.contains(a, b)) {
-            return false;
-        }
-
-        // Establish that address expression evaluates to same value at both events.
-        Set<Register> addrRegs = a.getAddress().getRegs();
-        Event e = a.getSuccessor();
-        while (e != b) {
-            if (e instanceof RegWriter rw && addrRegs.contains(rw.getResultRegister())) {
-                falseSet.add(a, b);
-                return false;
-            }
-            e = e.getSuccessor();
-        }
-        trueSet.add(a, b);
+    public boolean mayAlias(Event e1, Event e2) {
         return true;
     }
 
     @Override
-    public boolean mayAlias(MemoryCoreEvent a, MemoryCoreEvent b) {
+    public boolean mustAlias(Event e1, Event e2) {
+        if (e1 instanceof MemoryCoreEvent a && e2 instanceof MemoryCoreEvent b) {
+            if (a.getFunction() != b.getFunction()
+                    || !a.getAddress().equals(b.getAddress())) {
+                return false;
+            } else if (a == b) {
+                return true;
+            }
+            // Normalize direction
+            if (a.getGlobalId() > b.getGlobalId()) {
+                MemoryCoreEvent temp = a;
+                a = b;
+                b = temp;
+            }
+
+            // Check cache
+            if (trueSet.contains(a, b)) {
+                return true;
+            }
+            if (falseSet.contains(a, b)) {
+                return false;
+            }
+
+            // Establish that address expression evaluates to same value at both events.
+            Set<Register> addrRegs = a.getAddress().getRegs();
+            Event e = a.getSuccessor();
+            while (e != b) {
+                if (e instanceof RegWriter rw && addrRegs.contains(rw.getResultRegister())) {
+                    falseSet.add(a, b);
+                    return false;
+                }
+                e = e.getSuccessor();
+            }
+            trueSet.add(a, b);
+            return true;
+        }
+        return false;
+    }
+
+    @Override
+    public boolean mayObjectAlias(Event a, Event b) {
         return true;
+    }
+
+    @Override
+    public boolean mustObjectAlias(Event a, Event b) {
+        if (a instanceof MemoryCoreEvent ma && b instanceof MemoryCoreEvent mb) {
+            return mustAlias(ma, mb);
+        }
+        return false;
     }
 }
