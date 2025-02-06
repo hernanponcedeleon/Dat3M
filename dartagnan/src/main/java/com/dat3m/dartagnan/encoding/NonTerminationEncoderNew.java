@@ -1,6 +1,7 @@
 package com.dat3m.dartagnan.encoding;
 
 import com.dat3m.dartagnan.expression.Expression;
+import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.analysis.LoopAnalysis;
@@ -724,8 +725,9 @@ public class NonTerminationEncoderNew {
     private record Iteration(Loop loop, LoopAnalysis.LoopIterationInfo loopIterInfo, List<Event> body) {
         @Override
         public String toString() {
-            return String.format("Iter#%s@L%s@%s", loopIterInfo.getIterationNumber(), loopIterInfo.getContainingLoop().loopNumber(),
-                    loopIterInfo.getContainingLoop().function().getName());
+            final Function containingFunc = loopIterInfo.getContainingLoop().function();
+            return String.format("Iter#%s@L%s@%s#%s", loopIterInfo.getIterationNumber(), loopIterInfo.getContainingLoop().loopNumber(),
+                    containingFunc.getName(), containingFunc.getId());
         }
 
         public String getUniqueId() { return toString(); }
