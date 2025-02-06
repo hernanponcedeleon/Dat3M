@@ -79,13 +79,9 @@ public class InlineAsmTestArmv7Libvsync {
 
     @Test
     public void testAllSolvers() throws Exception {
-        long start = System.currentTimeMillis();
-        System.out.println("\n " + this.programPath);
         try (SolverContext ctx = mkCtx(); ProverWithTracker prover = mkProver(ctx)) {
             assertEquals(expected, RefinementSolver.run(ctx, prover, mkTask()).getResult());
         }
-        
-        System.out.println("\n" + (System.currentTimeMillis() - start) + " time elapsed Refinment for " + this.programPath);
     }
 
     private SolverContext mkCtx() throws InvalidConfigurationException {

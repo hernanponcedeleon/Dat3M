@@ -7,8 +7,13 @@ import org.antlr.v4.runtime.CharStream;
 import org.antlr.v4.runtime.CommonTokenStream;
 import org.antlr.v4.runtime.ParserRuleContext;
 
+<<<<<<< HEAD
 import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.exception.UnrecognizedTokenListener;
+=======
+import com.dat3m.dartagnan.exception.AbortErrorListener;
+import com.dat3m.dartagnan.exception.ParsingException;
+>>>>>>> ffe9033f5 (better exception handling in parse(), removed useless flag in README, removed useless prints in inlineasm tests)
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.parsers.InlineAsmLexer;
 import com.dat3m.dartagnan.parsers.InlineAsmParser;
