@@ -11,6 +11,7 @@ import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.CondJump;
 import com.dat3m.dartagnan.program.event.core.Label;
+import com.dat3m.dartagnan.program.event.metadata.SourceLocation;
 import com.google.common.base.Preconditions;
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
@@ -101,11 +102,13 @@ public class NonterminationDetection implements ProgramProcessor {
         final Program program = loop.function().getProgram();
         final BooleanType boolType = TypeFactory.getInstance().getBooleanType();
         final Label endOfT = (Label) loop.function().getExit();
+        final Event loopHeader = loop.iterations().get(0).getIterationStart();
 
         for (LoopAnalysis.LoopIterationInfo iter : iters) {
             final Expression guess = program.newConstant(boolType);
             final Event nonterm = EventFactory.newJump(guess, endOfT);
             nonterm.addTags(Tag.NONTERMINATION);
+            nonterm.copyMetadataFrom(loopHeader, SourceLocation.class);
 
             iter.getIterationEnd().insertAfter(nonterm);
         }
