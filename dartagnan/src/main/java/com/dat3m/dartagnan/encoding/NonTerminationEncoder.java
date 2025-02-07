@@ -30,21 +30,38 @@ import static com.dat3m.dartagnan.wmm.RelationNameRepository.RF;
     Such behaviour witnesses the existence of infinite executions (by repeating it indefinitely) and thus a liveness issue.
     The search is based on a decomposition of the execution into prefix, infix, and (repeatable) suffix.
 
-    Intuition: The suffix consists of all non-terminating loop iterations (i.e., reaching some bound)
-               and the infix consists of the preceding iterations. The prefix is the rest.
-               If suffix and infix are equivalent, we have seen a single repetition.
-               If furthermore the shape of the suffix is "nice", we can conclude that if we can do it once
-               we can repeat it as often as we want.
+    Intuition: Consider a non-terminating loop with, for example, 6 iterations: 1;2;3;4;5;6.
+               We decompose the iterations into infix and suffix, say, 2;3 (infix) and 4;5;6 (suffix) (Iteration 1
+               and everything before the loop is considered "prefix").
+               If the last suffix iterations are equivalent to the infix iterations (here: 2;3 is equivalent to 5;6),
+               roughly meaning they do the same loads/stores and end up in the same local state,
+               then we observed a "repetition".
+               We can now construct an infinite loop execution by replacing (5;6) with the equivalent (2;3)
+               and extending (2;3) with (4;5;6):
+                          1;2;3;4;5;6 ~ 1;2;3;4;2;3 => 1;2;3;4;2;3;4;5;6 ~ 1;2;3;4;2;3;4;2;3 => ...
+               Furthermore, for this to be fairly and consistently repeatable, we need the suffix to be of "nice" shape.
+               To understand this, notice that (2;3) and (5;6) are not literally equivalent:
+               although they observe the same values, they generally do so from different stores, in particular,
+               (5;6) (actually 4;5;6) needs to read from co-later (or co-maximal) stores to establish memory fairness.
+
+               If many loops are involved in the non-termination, then they all need to be decomposed as above
+               and they have to interact "nicely" with each other.
 
     Approach:
-        (1) All executed events are separated into prefix, infix, and suffix
-            - Executed code outside of loops are always prefix events.
-            - For non-terminating loops, the last iteration has suffix events,
-              the second-to-last iteration infix events.
-              If a loop iterates only once (e.g. B=1, or due to no side-effect), we have no
-              corresponding infix events.
-              NOTE: For side-effectful loops, we need to have an infix which means we need to unroll
-              the program at least twice.
+        (1) All loop iterations of non-terminating loops are decomposed into prefix, infix, and suffix.
+            - The last (non-terminating) iteration of the loop is always in the suffix (but preceding iterations may
+              also be part of the suffix).
+            - For every iteration in the infix, there must be a matching (~equivalent) iteration in the suffix.
+              NOTE: The infix can actually be empty.
+            - We employ a special rule:
+               (i) a side-effect-free non-termination (spinloop) will have empty infix and exactly
+                   a single suffix iteration.
+              (ii) a side-effectful non-termination will have at least one infix iteration
+                   (this means there must be at least two unrollings)
+            --------------
+            - Events belong to prefix if they are not part of a loop or they are in a prefix iteration
+            - Events belong to infix/suffix IFF any iteration they are contained in belongs to infix/suffix
+              (notice that for nested loops, a single event can be part of multiple iterations/loops).
         (2) Infix and suffix must be equivalent:
             - Events in infix must have an equivalent event in suffix with same value/address
               (TODO: Can maybe be restricted to equivalence on non-dead events)
@@ -61,26 +78,24 @@ import static com.dat3m.dartagnan.wmm.RelationNameRepository.RF;
               but since we might not have encoded fr (lazy solving), we formulate this indirectly.
 
     ASSUMPTIONS:
+      - We assume the NonterminationDetection and DynamicSpinLoopDetection passes have marked
+        possible points of non-termination (otherwise the detection simply fails).
       - We assume co/fr-fairness only.
       - We assume that if the suffix is consistent with the infix and co/fr-fair, then it must be "strongly"
         consistent. This may not be true and we could possibly report a liveness violation that is not consistently
         repeatable. Fixing this would require additional checks relative to the memory model, possibly requiring
         encoding of the memory model or native handling in CAAT.
 
-    TODO: We have not considered uninit reads, i.e., reads without rf-edges in the implementation.
+     TODO: We have not considered uninit reads, i.e., reads without rf-edges in the implementation.
 
-    FIXME:
-     (1) To detect asymmetric non-termination patterns (L1 runs X times, but L2 runs k*X times), we need to find
-         such an asymmetric execution. However, since we unroll all the loops the same amount of times, they won't be asymmetric.
-         Potential solution: Allow loops to (spuriously) stop earlier (non-det bound event), so that asymmetry can be achieved
-         CAREFUL: Spurious bounds should be avoided when checking for bound reachability
-     (2) Cases where all iterations are claimed to be Suffix are not correctly covered: We still need to check
-         equivalent local state between beginning of first suffix iteration and end of last suffix iteration.
+     TODO: We currently do some approximations which may or may not be good:
+        (1) Cases where all iterations are claimed to be suffix are theoretically not correctly covered:
+         We still need to check equivalent local state between beginning of first suffix iteration and end of last suffix iteration.
          (If infixes are non-empty, we do this check automatically as part of infix-suffix-equivalence)
-         NOTE: Currently "fixed" by enforcing non-empty infix
-     (3) The requirement for visibility of prefix-stores is incorrect. Furthermore, we are not guaranteeing
+         NOTE: Currently "fixed" by enforcing non-empty infix for side-effectful non-termination.
+        (2) The requirement for visibility of prefix-stores is incorrect. Furthermore, we are not guaranteeing
          that the co-maximal prefix stores (at least observed one's) are correctly repeated in the cut.
-         NOTE: Currently "fixed" by enforcing a stronger condition
+         NOTE: Currently "fixed" by enforcing a stronger condition.
  */
 public class NonTerminationEncoder {
 
@@ -93,7 +108,6 @@ public class NonTerminationEncoder {
     private final Map<LoopAnalysis.LoopIterationInfo, Iteration> iterInfo2Iter = new HashMap<>();
     // Maps an event to all the loop iterations it is contained in (sorted from innermost to outermost loop)
     private final Map<Event, List<Iteration>> event2Iterations = new HashMap<>();
-
 
     public NonTerminationEncoder(VerificationTask task, EncodingContext context) {
         this.task = task;
@@ -117,9 +131,13 @@ public class NonTerminationEncoder {
         event2Iterations.values().forEach(iters -> iters.sort(Comparator.comparingInt(c -> c.body.size())));
         nonterm2Case.values().forEach(c -> c.getLoop().nontermCases.add(c));
         allLoops.forEach(loop -> loop.nontermCases.sort(Comparator.comparingInt(c -> c.iteration().getIterationNumber())));
+        // We remove all non-termination instrumentation events from loop bodies to avoid situations where
+        // bodies appear different because one is instrumented and the other is not.
+        allLoops.forEach(loop -> loop.getIterations().forEach(iter -> iter.body.removeIf(this::isNonterminationEvent)));
 
-        // Validate that all possible nontermination events are covered
-        assert program.getThreadEventsWithAllTags(Tag.NONTERMINATION).stream()
+        // Validate that all possible non-termination events are covered
+        assert program.getThreadEvents().stream()
+                .filter(this::isNonterminationEvent)
                 .allMatch(nonterm2Case::containsKey);
     }
 
@@ -136,32 +154,21 @@ public class NonTerminationEncoder {
             iterInfo2Iter.put(iter, iteration);
             body.forEach(e -> event2Iterations.computeIfAbsent(e, key -> new ArrayList<>()).add(iteration));
 
-            // NOTE: If a nontermination event is inside nested loops, we only want to associate
+            // NOTE: If a non-termination event is inside nested loops, we only want to associate
             //  it to the innermost loop it is contained within. To achieve this,
-            //  we assign it to the loop iteration with the smallest vody that contains the event.
-            // TODO: For now, we expect to only find spinloop nontermination, but we might want to
-            body.stream().filter(e -> e.hasTag(Tag.NONTERMINATION) && !e.hasTag(Tag.BOUND)).forEach(nonterm -> {
+            //  we assign it to the loop iteration with the smallest body that contains the event.
+            body.stream().filter(this::isNonterminationEvent).forEach(nonterm -> {
                 final NonterminationCase cNew = nonterm2Case.get(nonterm);
                 if (cNew == null || cNew.iteration.body.size() > body.size()) {
                     nonterm2Case.put(nonterm, new NonterminationCase(nonterm, iteration));
                 }
             });
-
-
-            if (!iter.isLast()) {
-                continue;
-            }
-
-            // ----------- Find bound event -----------
-            final Event lastEvent = body.get(body.size() - 1);
-            final Event bound = lastEvent.getSuccessor().getSuccessor();
-            if (!(bound instanceof CondJump && bound.hasTag(Tag.BOUND))) {
-                // Loop seems fully unrolled
-                return;
-            }
-
-            nonterm2Case.put(bound, new NonterminationCase(bound, iteration));
         }
+    }
+
+    // NOTE: We do NOT handle the loop bound event.
+    private boolean isNonterminationEvent(Event e) {
+        return e.hasTag(Tag.NONTERMINATION) && !e.hasTag(Tag.BOUND);
     }
 
     // ================================================================================================
@@ -186,10 +193,12 @@ public class NonTerminationEncoder {
         );
     }
 
+    // NOTE: We consider bound events as exceptional termination here.
     private BooleanFormula encodeNoExceptionalTermination() {
         final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
         final BooleanFormula noExceptionalTermination = task.getProgram()
-                .getThreadEventsWithAllTags(Tag.EXCEPTIONAL_TERMINATION).stream()
+                .getThreadEvents().stream().filter(e -> e.hasTag(Tag.EXCEPTIONAL_TERMINATION) || e.hasTag(Tag.BOUND))
+                //.getThreadEventsWithAllTags(Tag.EXCEPTIONAL_TERMINATION).stream()
                 .map(e -> bmgr.not(context.execution(e)))
                 .reduce(bmgr.makeTrue(), bmgr::and);
         return noExceptionalTermination;
@@ -203,11 +212,14 @@ public class NonTerminationEncoder {
         return atLeastOneNontermination;
     }
 
+    // FIXME: This is likely going to cause problems (wrong result) with executions where some thread is stuck in a loop
+    //  and another in a barrier. We could replace the code to check if ALL threads are stuck at a control-barrier
+    //  to avoid such wrong results.
     private BooleanFormula encodeBarrierIsStuck() {
         final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
         return task.getProgram().getThreadEvents(ControlBarrier.class).stream()
                 .map(this::isStuckAtBarrier)
-                .reduce(bmgr.makeFalse(), bmgr::or);
+                .reduce(bmgr.makeFalse(), bmgr::or); // TODO: Change to AND?
     }
 
     private BooleanFormula isStuckAtBarrier(ControlBarrier barrier) {
@@ -351,11 +363,14 @@ public class NonTerminationEncoder {
     }
 
     private BooleanFormula areEquivalent(Event x, Event y) {
-        assert x.getClass() == y.getClass();
         final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
+        if (x.getClass() != y.getClass()) {
+            return bmgr.makeFalse();
+        }
 
         BooleanFormula equality = bmgr.equivalence(context.execution(x), context.execution(y));
         if (x instanceof Local e && y instanceof Local f) {
+            // TODO: This should be covered by StateSnapshot, i.e., we do not need to consider dead variables.
             equality = bmgr.and(
                     equality,
                     context.equal(context.result(e), context.result(f))
@@ -401,7 +416,7 @@ public class NonTerminationEncoder {
         (4) Infix iterations are before suffix iterations
 
         We also enforce two special properties:
-        - Side-effectful nontermination requires at least one infix iteration (TODO)
+        - Side-effectful nontermination requires at least one infix iteration
         - Side-effectfree nontermination causes exactly one suffix iteration.
      */
     private BooleanFormula encodeInfixSuffixDecomposition() {
@@ -441,9 +456,9 @@ public class NonTerminationEncoder {
 
                 if (c.isSideEffectFree()) {
                     // For side-effect-free iterations, no preceding iteration is infix or suffix.
-                    final int iterNumber = c.iteration.loopIterInfo.getIterationNumber();
-                    if (iterNumber > 1) {
-                        final Iteration prev = c.getLoop().getIterations().get(iterNumber - 1);
+                    final int iterIndex = c.iteration.getIterationNumber() - 1;
+                    if (iterIndex > 0) {
+                        final Iteration prev = c.getLoop().getIterations().get(iterIndex - 1);
                         totalEnc.add(bmgr.implication(isNonterminating(c), bmgr.and(
                                 bmgr.not(isInInfixVar(prev)),
                                 bmgr.not(isInSuffixVar(prev))
@@ -454,8 +469,8 @@ public class NonTerminationEncoder {
                     //    For side-effectful iterations, we require existence of infixes
                     //    to compare local states because we do not have a state snapshot of the
                     //    local state right before entering the loop.
-                    final int iterNumber = c.iteration.loopIterInfo.getIterationNumber();
-                    final BooleanFormula someInfix = c.getLoop().getIterations().subList(0, iterNumber - 1).stream()
+                    final int iterIndex = c.iteration.getIterationNumber() - 1;
+                    final BooleanFormula someInfix = c.getLoop().getIterations().subList(0, iterIndex).stream()
                             .map(this::isInInfix)
                             .reduce(bmgr.makeFalse(), bmgr::or);
                     totalEnc.add(bmgr.implication(isNonterminating(c), someInfix));
@@ -530,6 +545,7 @@ public class NonTerminationEncoder {
             }
             final List<Iteration> xIters = event2Iterations.get(x);
             // TODO: isPossiblyInfix(Event) can be specialized to isPossiblyInfix(Event, Iteration/Loop)
+            //  for better precision.
 
             for (Event y : may.getOutMap().get(x)) {
                 if (!isPossiblyInfix(y)) {
@@ -570,10 +586,7 @@ public class NonTerminationEncoder {
 
     // Encodes the basic properties of the infix-suffix matching relation.
     // The semantics of what a matching actually implies is done by the above methods.
-    // FIXME: We assume side-effectful nontermination reaches the unrolling bound
-    //  which simplifies our matching algorithm. However, due to the potential need for
-    //  asymmetric non-termination witnesses (different loops execute a different number of iterations)
-    //  we might change this fact. Then this code needs to get updated
+    // NOTE: We do
     private BooleanFormula encodeInfixSuffixMatchingRelation(Loop loop) {
         final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
         final ImmutableList<Iteration> iterations = ImmutableList.copyOf(loop.getIterations());
@@ -582,34 +595,41 @@ public class NonTerminationEncoder {
             return bmgr.makeTrue();
         }
 
+
         final List<BooleanFormula> totalEnc = new ArrayList<>();
-        for (int infixSuffixStartIndex = 1; infixSuffixStartIndex < iterations.size(); infixSuffixStartIndex++) {
-            final Iteration firstSuffixIter = iterations.get(infixSuffixStartIndex);
-            final Iteration lastInfixIter = iterations.get(infixSuffixStartIndex - 1);
-
-            final BooleanFormula infixSuffixStarts = bmgr.and(
-                    isInSuffix(firstSuffixIter),
-                    isInInfix(lastInfixIter)
-            );
-
-            final List<BooleanFormula> enc = new ArrayList<>();
-            for (int i = 1; i <= infixSuffixStartIndex; i++) {
-                final Iteration infixIter = iterations.get(infixSuffixStartIndex - i);
-                // TODO: This might change (see FIXME)
-                final int matchingSuffixIterIndex = iterations.size() - i;
-
-                if (matchingSuffixIterIndex < infixSuffixStartIndex) {
-                    // No possible match, this iteration cannot be in infix
-                    enc.add(bmgr.not(isInInfix(infixIter)));
-                } else {
-                    // This infix iteration must match with corresponding suffix
-                    final Iteration suffixIter = iterations.get(matchingSuffixIterIndex);
-                    enc.add(bmgr.equivalence(isInInfix(infixIter), areInfixSuffixMatchingVar(infixIter, suffixIter)));
-                }
-
+        for (NonterminationCase c : loop.nontermCases) {
+            if (c.isSideEffectFree()) {
+                continue;
             }
 
-            totalEnc.add(bmgr.implication(infixSuffixStarts, bmgr.and(enc)));
+            final int nontermIterNum = c.iteration.getIterationNumber();
+            for (int infixSuffixStartIndex = 1; infixSuffixStartIndex < c.iteration.getIterationNumber(); infixSuffixStartIndex++) {
+                final Iteration firstSuffixIter = iterations.get(infixSuffixStartIndex);
+                final Iteration lastInfixIter = iterations.get(infixSuffixStartIndex - 1);
+
+                final BooleanFormula infixSuffixStarts = bmgr.and(
+                        isInSuffix(firstSuffixIter),
+                        isInInfix(lastInfixIter)
+                );
+
+                final List<BooleanFormula> enc = new ArrayList<>();
+                for (int i = 1; i <= infixSuffixStartIndex; i++) {
+                    final Iteration infixIter = iterations.get(infixSuffixStartIndex - i);
+                    final int matchingSuffixIterIndex = nontermIterNum - i;
+
+                    if (matchingSuffixIterIndex < infixSuffixStartIndex) {
+                        // No possible match, this iteration cannot be in infix
+                        enc.add(bmgr.not(isInInfix(infixIter)));
+                    } else {
+                        // This infix iteration must match with corresponding suffix
+                        final Iteration suffixIter = iterations.get(matchingSuffixIterIndex);
+                        enc.add(bmgr.equivalence(isInInfix(infixIter), areInfixSuffixMatchingVar(infixIter, suffixIter)));
+                    }
+
+                }
+
+                totalEnc.add(bmgr.implication(bmgr.and(isNonterminating(c), infixSuffixStarts), bmgr.and(enc)));
+            }
         }
 
         // TODO: Possibly make explicit which matchings cannot hold anymore?
@@ -747,7 +767,6 @@ public class NonTerminationEncoder {
     private record NonterminationCase(Event nontermEvent, Iteration iteration) {
 
         public boolean isSideEffectFree() { return nontermEvent.hasTag(Tag.SPINLOOP); }
-        public boolean isLoopBound() { return nontermEvent.hasTag(Tag.BOUND); }
 
         public Loop getLoop() { return iteration.loop; }
 
