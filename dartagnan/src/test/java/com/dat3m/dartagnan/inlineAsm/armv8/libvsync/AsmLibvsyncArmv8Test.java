@@ -33,14 +33,14 @@ import com.dat3m.dartagnan.verification.solving.RefinementSolver;
 import com.dat3m.dartagnan.wmm.Wmm;
 
 @RunWith(Parameterized.class)
-public class InlineAsmTestArmv8Libvsync {
+public class AsmLibvsyncArmv8Test {
 
     private final String modelPath = getRootPath("cat/aarch64.cat");
     private final String programPath;
     private final int bound;
     private final Result expected;
 
-    public InlineAsmTestArmv8Libvsync(String file, int bound, Result expected) {
+    public AsmLibvsyncArmv8Test (String file, int bound, Result expected) {
         this.programPath = getTestResourcePath("inlineasm/armv8/libvsync/" + file + ".ll");
         this.bound = bound;
         this.expected = expected;
@@ -80,18 +80,12 @@ public class InlineAsmTestArmv8Libvsync {
 
     @Test
     public void testAllSolvers() throws Exception {
-        long start = System.currentTimeMillis();
-        System.out.println("\n " + this.programPath);
         try (SolverContext ctx = mkCtx(); ProverWithTracker prover = mkProver(ctx)) {
             assertEquals(expected, RefinementSolver.run(ctx, prover, mkTask()).getResult());
         }
-        
-        System.out.println("\n" + (System.currentTimeMillis() - start) + " time elapsed Refinment for " + this.programPath);
-        start = System.currentTimeMillis();
         try (SolverContext ctx = mkCtx(); ProverWithTracker prover = mkProver(ctx)) {
             assertEquals(expected, AssumeSolver.run(ctx, prover, mkTask()).getResult());
         }
-        System.out.println("\n" + (System.currentTimeMillis() - start) + " time elapsed Assume for " + this.programPath);
     }
 
     private SolverContext mkCtx() throws InvalidConfigurationException {

@@ -1,4 +1,4 @@
-package com.dat3m.dartagnan.inlineAsm.armv7.ck;
+package com.dat3m.dartagnan.inlineAsm.armv8.ck;
 
 import java.io.File;
 import java.io.IOException;
@@ -32,15 +32,15 @@ import com.dat3m.dartagnan.verification.solving.RefinementSolver;
 import com.dat3m.dartagnan.wmm.Wmm;
 
 @RunWith(Parameterized.class)
-public class InlineAsmTestArmv7Ck {
+public class AsmCkArmv8Test {
 
-    private final String modelPath = getRootPath("cat/arm.cat");
+    private final String modelPath = getRootPath("cat/aarch64.cat");
     private final String programPath;
     private final int bound;
     private final Result expected;
 
-    public InlineAsmTestArmv7Ck(String file, int bound, Result expected) {
-        this.programPath = getTestResourcePath("inlineasm/armv7/ck/" + file + ".ll");
+    public AsmCkArmv8Test (String file, int bound, Result expected) {
+        this.programPath = getTestResourcePath("inlineasm/armv8/ck/" + file + ".ll");
         this.bound = bound;
         this.expected = expected;
     }
@@ -48,9 +48,15 @@ public class InlineAsmTestArmv7Ck {
     @Parameterized.Parameters(name = "{index}: {0}, {1}, {2}")
     public static Iterable<Object[]> data() throws IOException {
         return Arrays.asList(new Object[][]{
+            {"anderson", 3, Result.PASS},
+            {"caslock", 3, Result.PASS},
+            {"clhlock", 1, Result.PASS},
+            {"declock", 3, Result.PASS},
             {"faslock", 3, Result.PASS},
-            {"spsc_queue", 1, Result.PASS},
+            {"mcslock", 2, Result.PASS},
             {"ticketlock", 1, Result.PASS},
+            {"spsc_queue", 1, Result.PASS},
+            {"stack_empty", 1, Result.PASS},
         });
     }
 
@@ -58,6 +64,10 @@ public class InlineAsmTestArmv7Ck {
     public void testAllSolvers() throws Exception {
         try (SolverContext ctx = mkCtx(); ProverWithTracker prover = mkProver(ctx)) {
             assertEquals(expected, RefinementSolver.run(ctx, prover, mkTask()).getResult());
+        }
+        
+        try (SolverContext ctx = mkCtx(); ProverWithTracker prover = mkProver(ctx)) {
+            assertEquals(expected, AssumeSolver.run(ctx, prover, mkTask()).getResult());
         }
     }
 
@@ -78,7 +88,7 @@ public class InlineAsmTestArmv7Ck {
         VerificationTask.VerificationTaskBuilder builder = VerificationTask.builder()
                 .withConfig(Configuration.builder().build())
                 .withBound(bound)
-                .withTarget(Arch.ARM7);
+                .withTarget(Arch.ARM8);
         Program program = new ProgramParser().parse(new File(programPath));
         Wmm mcm = new ParserCat().parse(new File(modelPath));
         return builder.build(program, mcm, EnumSet.of(LIVENESS, PROGRAM_SPEC));

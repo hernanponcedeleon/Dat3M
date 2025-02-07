@@ -1,4 +1,4 @@
-package com.dat3m.dartagnan.inlineAsm.armv7.libvsync;
+package com.dat3m.dartagnan.inlineAsm.armv7.ck;
 
 import java.io.File;
 import java.io.IOException;
@@ -26,21 +26,21 @@ import com.dat3m.dartagnan.program.Program;
 import static com.dat3m.dartagnan.utils.ResourceHelper.getRootPath;
 import static com.dat3m.dartagnan.utils.ResourceHelper.getTestResourcePath;
 import com.dat3m.dartagnan.utils.Result;
-import static com.dat3m.dartagnan.utils.Result.PASS;
 import com.dat3m.dartagnan.verification.VerificationTask;
+import com.dat3m.dartagnan.verification.solving.AssumeSolver;
 import com.dat3m.dartagnan.verification.solving.RefinementSolver;
 import com.dat3m.dartagnan.wmm.Wmm;
 
 @RunWith(Parameterized.class)
-public class InlineAsmTestArmv7Libvsync {
+public class AsmCkArmv7Test {
 
     private final String modelPath = getRootPath("cat/arm.cat");
     private final String programPath;
     private final int bound;
     private final Result expected;
 
-    public InlineAsmTestArmv7Libvsync(String file, int bound, Result expected) {
-        this.programPath = getTestResourcePath("inlineasm/armv7/libvsync/" + file + ".ll");
+    public AsmCkArmv7Test(String file, int bound, Result expected) {
+        this.programPath = getTestResourcePath("inlineasm/armv7/ck/" + file + ".ll");
         this.bound = bound;
         this.expected = expected;
     }
@@ -48,32 +48,9 @@ public class InlineAsmTestArmv7Libvsync {
     @Parameterized.Parameters(name = "{index}: {0}, {1}, {2}")
     public static Iterable<Object[]> data() throws IOException {
         return Arrays.asList(new Object[][]{
-            //bounded_queue
-            {"bounded_spsc", 4, PASS},
-            {"bounded_mpmc_check_full", 5, PASS},
-            {"bounded_mpmc_check_empty", 4, PASS},
-
-            //spinlocks
-            // {"caslock", 4, PASS}, // passes Refinement but out of memory on Assume 
-            {"clhlock", 3, PASS},
-            // {"cnalock", 5, PASS}, // takes 35 minutes
-            {"hemlock", 3, PASS},
-            {"mcslock", 3, PASS},
-            {"rec_mcslock", 3, PASS},
-            // {"rec_seqlock", 3, PASS}, // 25 min to pass
-            {"rec_spinlock", 3, PASS},
-            {"rwlock", 3, PASS},
-            {"semaphore", 3, PASS},
-            {"seqcount", 1, PASS},
-            {"seqlock", 3, PASS},
-            {"ttaslock", 3, PASS},
-            {"twalock", 2, PASS},
-
-            //threads 
-            {"mutex_musl", 3, PASS},
-            {"mutex_slim", 3, PASS},
-            {"mutex_waiters", 3, PASS},
-            {"once", 5, PASS}
+            {"faslock", 3, Result.PASS},
+            {"spsc_queue", 1, Result.PASS},
+            {"ticketlock", 1, Result.PASS},
         });
     }
 
