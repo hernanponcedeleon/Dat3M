@@ -23,6 +23,11 @@ public class LitmusVulkanFairLivenessTest extends AbstractLitmusTest {
     }
 
     @Override
+    protected Provider<Integer> getBoundProvider() {
+        return () -> 4;
+    }
+
+    @Override
     protected Provider<Arch> getTargetProvider() {
         return () -> Arch.VULKAN;
     }

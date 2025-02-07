@@ -35,7 +35,7 @@ public class LitmusVulkanObeLivenessTest extends AbstractLitmusTest {
 
     @Override
     protected Provider<Integer> getBoundProvider() {
-        return Provider.fromSupplier(() -> 3);
+        return Provider.fromSupplier(() -> 4);
     }
 
     @Override
