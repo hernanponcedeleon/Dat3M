@@ -715,4 +715,67 @@ public class AnalysisTest {
     private Event findMatchingEventAfterProcessing(Program p, Event orig) {
         return p.getThreadEvents().stream().filter(e -> e.hasEqualMetadata(orig, OriginalId.class)).findFirst().get();
     }
+
+    @Test
+    public void allKindsOfMixedSizeAccesses() throws Exception {
+        TypeFactory types = TypeFactory.getInstance();
+        ExpressionFactory expressions = ExpressionFactory.getInstance();
+        IntegerType pointerType = types.getArchType();
+        ProgramBuilder b = ProgramBuilder.forLanguage(Program.SourceLanguage.LITMUS);
+        MemoryObject x = b.getOrNewMemoryObject("x", 16);
+        b.newThread(0);
+        Register r8 = b.getOrNewRegister(0, "r8", types.getIntegerType(8));
+        Register r16 = b.getOrNewRegister(0, "r16", types.getIntegerType(16));
+        Register r32 = b.getOrNewRegister(0, "r32", types.getIntegerType(32));
+        Register r64 = b.getOrNewRegister(0, "r64", types.getIntegerType(64));
+        // Reference access, regardless if load or store
+        Expression pivotAddress = expressions.makeAdd(x, expressions.makeValue(4, pointerType));
+        b.addChild(0, newLoad(r32, pivotAddress));
+        b.addChild(0, newStore(pivotAddress, r32));
+        // One load with non-deterministic access
+        StringBuilder expectation = new StringBuilder();
+        for (int i = 0; i < 4; i++) {
+            Register r = List.of(r8, r16, r32, r64).get(i);
+            int min = List.of(4, 3, 1, 0).get(i);
+            for (int j = 0; j < 9; j++) {
+                Expression address = expressions.makeAdd(x, expressions.makeValue(j, pointerType));
+                b.addChild(0, newLoad(r, address));
+                expectation.append(j >= min && j < 8 && (i != 2 || j != 4) ? 'x' : ' ');
+            }
+        }
+        Program program = b.build();
+        Configuration config = Configuration.defaultConfiguration();
+        ProcessingManager.fromConfig(config).run(program);
+        Context analysisContext = Context.create();
+        analysisContext.register(BranchEquivalence.class, BranchEquivalence.fromConfig(program, config));
+        analysisContext.register(ExecutionAnalysis.class, ExecutionAnalysis.fromConfig(program, ProgressModel.FAIR, analysisContext, config));
+        analysisContext.register(ReachingDefinitionsAnalysis.class, ReachingDefinitionsAnalysis.fromConfig(program, analysisContext, config));
+        AliasAnalysis analysis = AliasAnalysis.fromConfig(program, analysisContext, config);
+        List<MemoryCoreEvent> events = program.getThreadEvents(MemoryCoreEvent.class);
+
+        // mayMix is irreflexive
+        for (MemoryCoreEvent event : events) {
+            assertFalse(analysis.mayMix(event, event));
+        }
+
+        // mayMix is symmetric
+        for (int i = 0; i < events.size(); i++) {
+            MemoryCoreEvent ei = events.get(i);
+            for (MemoryCoreEvent ej : events.subList(0, i)) {
+                assertEquals(analysis.mayMix(ei, ej), analysis.mayMix(ej, ei));
+            }
+        }
+
+        // mayMix exactly where expected
+        for (MemoryCoreEvent pivot : events.subList(0, 2)) {
+            StringBuilder actual = new StringBuilder();
+            events.subList(2, 4 * 9 + 2).forEach(e -> actual.append(analysis.mayMix(e, pivot) ? 'x' : ' '));
+            for (int i = 0; i < 36; i++) {
+                if (expectation.toString().charAt(i) != actual.toString().charAt(i)) {
+                    analysis.mayMix(events.get(i + 2), pivot);
+                }
+            }
+            assertEquals(expectation.toString(), actual.toString());
+        }
+    }
 }
