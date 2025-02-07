@@ -10,10 +10,7 @@ import com.dat3m.dartagnan.program.analysis.alias.AliasAnalysis;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.MemoryEvent;
 import com.dat3m.dartagnan.program.event.Tag;
-import com.dat3m.dartagnan.program.event.core.Assert;
-import com.dat3m.dartagnan.program.event.core.Init;
-import com.dat3m.dartagnan.program.event.core.MemoryCoreEvent;
-import com.dat3m.dartagnan.program.event.core.Store;
+import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.event.metadata.MemoryOrder;
 import com.dat3m.dartagnan.wmm.Relation;
 import com.dat3m.dartagnan.wmm.Wmm;
@@ -130,7 +127,6 @@ public class PropertyEncoder implements Encoder {
         final List<TrackableFormula> trackableViolationEncodings = new ArrayList<>();
         if (properties.contains(LIVENESS)) {
             trackableViolationEncodings.add(encodeNontermination());
-            //trackableViolationEncodings.add(encodeDeadlocks());
         }
         if (properties.contains(DATARACEFREEDOM)) {
             trackableViolationEncodings.add(encodeDataRaces());
@@ -282,10 +278,14 @@ public class PropertyEncoder implements Encoder {
 
     private BooleanFormula encodeProgramTermination() {
         final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
-        BooleanFormula exitReached = bmgr.and(program.getThreads().stream()
+        final BooleanFormula exitReached = bmgr.and(program.getThreads().stream()
                 .map(t -> bmgr.equivalence(context.execution(t.getEntry()), context.execution(t.getExit())))
                 .toList());
-        return bmgr.and(exitReached, bmgr.not(encodeBoundEventExec()));
+        final BooleanFormula terminated = program.getThreadEventsWithAllTags(Tag.NONTERMINATION).stream()
+                .map(CondJump.class::cast)
+                .map(jump -> bmgr.not(bmgr.and(context.jumpCondition(jump), context.execution(jump))))
+                .reduce(bmgr.makeTrue(), bmgr::and);
+        return bmgr.and(exitReached, terminated);
     }
 
     // ======================================================================
