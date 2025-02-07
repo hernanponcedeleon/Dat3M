@@ -56,7 +56,6 @@ public class VisitorInlineAsm extends InlineAsmBaseVisitor<Object> {
     private final TypeFactory types = TypeFactory.getInstance();
     private final CompareExpression comparator;
     private final HashMap<String, Label> labelsDefined;
-    private final HashMap<String, Register> armToLlvmMap;
     private final List<Expression> pendingRegisters;
     private final LinkedList<Expression> fnParameters;
     private final int returnValuesNumber;
@@ -68,15 +67,10 @@ public class VisitorInlineAsm extends InlineAsmBaseVisitor<Object> {
         this.comparator = new CompareExpression();
         this.labelsDefined = new HashMap<>();
         this.pendingRegisters = new LinkedList<>();
-        this.armToLlvmMap = new HashMap<>();
         this.registerNames = new LinkedList<>();
         this.fnParameters = new LinkedList<>(argumentsRegisterAddresses);
         this.returnValuesNumber = initReturnValuesNumber(returnType);
         assert (this.returnValuesNumber >= 0);
-    }
-
-    public List<Event> getEvents() {
-        return this.events;
     }
 
     private boolean isArmv8Name(String registerName) {
@@ -112,7 +106,6 @@ public class VisitorInlineAsm extends InlineAsmBaseVisitor<Object> {
         return this.returnValuesNumber > 1;
     }
 
-    //these are used to populate the armToLlvmMap
     private int initReturnValuesNumber(Type returnType) {
         if (returnType instanceof IntegerType || returnType instanceof BooleanType) {
             return 1;
@@ -154,19 +147,13 @@ public class VisitorInlineAsm extends InlineAsmBaseVisitor<Object> {
     }
 
     private Register getOrNewRegister(String nodeName) {
-        // if it is not in armToLlvmMap create the new register
-        if (this.armToLlvmMap.containsKey(nodeName)) {
-            return this.armToLlvmMap.get(nodeName);
-        } else {
-            Type type = getArmVariableSize(nodeName);
-            String registerName = makeRegisterName(nodeName);
-            Register newRegister = llvmFunction.newRegister(registerName, type);
-            this.armToLlvmMap.put(nodeName, newRegister);
-            if (isPartOfReturnRegister(nodeName) && isReturnRegisterAggregate() && !isRegisterConstantValue(nodeName)) {
-                this.pendingRegisters.add(newRegister);
-            }
-            return newRegister;
+        Type type = getArmVariableSize(nodeName);
+        String registerName = makeRegisterName(nodeName);
+        Register newRegister = this.llvmFunction.getOrNewRegister(registerName, type);
+        if (!this.pendingRegisters.contains(newRegister) && isPartOfReturnRegister(nodeName) && isReturnRegisterAggregate() && !isRegisterConstantValue(nodeName)) {
+            this.pendingRegisters.add(newRegister);
         }
+        return newRegister;
     }
 
     private String makeRegisterName(String nodeName) {
@@ -274,7 +261,6 @@ public class VisitorInlineAsm extends InlineAsmBaseVisitor<Object> {
     private void processGeneralPurposeClobber(String clobber, int registerNameIndex) {
         String registerName = registerNames.get(registerNameIndex);
         Register newRegister = getOrNewRegister(registerName);
-        armToLlvmMap.put(registerName, newRegister);
         if (isClobberOutputConstraint(clobber)) {
             // Clobber maps to returnValue, we just skip it as we are assigning them later
         } else if (isClobberInputConstraint(clobber)) {
