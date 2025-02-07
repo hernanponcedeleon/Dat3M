@@ -25,6 +25,7 @@ import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.event.core.annotations.FunCallMarker;
 import com.dat3m.dartagnan.program.event.core.annotations.FunReturnMarker;
 import com.dat3m.dartagnan.program.event.core.annotations.StringAnnotation;
+import com.dat3m.dartagnan.program.event.core.annotations.TransactionMarker;
 import com.dat3m.dartagnan.program.event.core.threading.ThreadArgument;
 import com.dat3m.dartagnan.program.event.core.threading.ThreadCreate;
 import com.dat3m.dartagnan.program.event.core.threading.ThreadStart;
@@ -194,6 +195,14 @@ public class EventFactory {
 
     public static StringAnnotation newStringAnnotation(String annotation) {
         return new StringAnnotation(annotation);
+    }
+
+    public static TransactionMarker newTransactionBegin(Event instruction) {
+        return new TransactionMarker(instruction, null);
+    }
+
+    public static TransactionMarker newTransactionEnd(Event instruction, TransactionMarker begin) {
+        return new TransactionMarker(instruction, begin);
     }
 
     public static Local newLocal(Register register, Expression expr) {

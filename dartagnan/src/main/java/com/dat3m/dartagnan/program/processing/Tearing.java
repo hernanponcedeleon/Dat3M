@@ -12,6 +12,7 @@ import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.EventVisitor;
 import com.dat3m.dartagnan.program.event.core.Load;
 import com.dat3m.dartagnan.program.event.core.Store;
+import com.dat3m.dartagnan.program.event.core.annotations.TransactionMarker;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -52,10 +53,13 @@ public final class Tearing implements EventVisitor<List<Event>> {
         for (int i = 0; i < bytes; i++) {
             smallerRegisters.add(function.newRegister(types.getByteType()));
         }
+        TransactionMarker begin = EventFactory.newTransactionBegin(load);
+        replacement.add(begin);
         for (int i = 0; i < bytes; i++) {
             Expression a = expressions.makeAdd(addressRegister, expressions.makeValue(i, addressType));
             replacement.add(EventFactory.newLoad(smallerRegisters.get(i), a));
         }
+        replacement.add(EventFactory.newTransactionEnd(load, begin));
         Expression combination = expressions.makeCast(smallerRegisters.get(0), accessType);
         for (int i = 1; i < bytes; i++) {
             Expression wideValue = expressions.makeCast(smallerRegisters.get(i), accessType);
@@ -78,12 +82,15 @@ public final class Tearing implements EventVisitor<List<Event>> {
         Function function = store.getFunction();
         Register addressRegister = toRegister(store.getAddress(), function, replacement);
         Register valueRegister = toRegister(store.getMemValue(), function, replacement);
+        TransactionMarker begin = EventFactory.newTransactionBegin(store);
+        replacement.add(begin);
         for (int i = 0; i < bytes; i++) {
             Expression a = expressions.makeAdd(addressRegister, expressions.makeValue(i, addressType));
             Expression shiftedValue = expressions.makeRshift(valueRegister, expressions.makeValue(8L * i, accessType), false);
             Expression value = expressions.makeCast(shiftedValue, types.getByteType());
             replacement.add(EventFactory.newStore(a, value));
         }
+        replacement.add(EventFactory.newTransactionEnd(store, begin));
         return replacement;
     }
 
