@@ -23,8 +23,10 @@ import com.dat3m.dartagnan.program.event.functions.FunctionCall;
 import com.dat3m.dartagnan.program.memory.Memory;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.dat3m.dartagnan.program.misc.NonDetValue;
+import com.dat3m.dartagnan.program.processing.DebugPrint;
 import com.dat3m.dartagnan.program.processing.IdReassignment;
 import com.dat3m.dartagnan.program.processing.ProcessingManager;
+import com.dat3m.dartagnan.utils.printer.Printer;
 import com.dat3m.dartagnan.verification.Context;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.verification.solving.ModelChecker;
@@ -104,7 +106,7 @@ public class SimulationChecker {
 
                 final long beginTime = System.nanoTime();
                 System.out.println("====== Checking boundedness of loop " + SyntacticContextAnalysis.getSourceLocationString(loopBody.getIterationStart()));
-                for (int k = 1; k < 2; k++) {
+                for (int k = 1; k < 5; k++) {
                     final OpenFunction src = func.constructLoopBoundedCopy(k + 1);
                     final OpenFunction sim = func.constructLoopBoundedCopy(k);
                     if (canSimulate(src.getFunction(), sim.getFunction())) {
@@ -127,6 +129,7 @@ public class SimulationChecker {
 
         final Program commonProg = constructCommonProgram(src, sim, Program.SourceLanguage.LLVM);
         final SimulationCheck check = generateThreads(commonProg);
+        DebugPrint.withHeader("Program:", Printer.Mode.ALL).run(check.program);
         process(check);
         try {
             return check(check);
@@ -432,7 +435,6 @@ public class SimulationChecker {
             boolean canSimulate = prover.isUnsat();
 
             Model model = !canSimulate ? prover.getModel() : null;
-            int i = 5;
             return canSimulate;
         } catch (InterruptedException | SolverException e) {
             throw new RuntimeException(e);

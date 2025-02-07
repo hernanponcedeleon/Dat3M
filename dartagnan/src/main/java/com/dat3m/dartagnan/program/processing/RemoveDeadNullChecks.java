@@ -64,7 +64,7 @@ public class RemoveDeadNullChecks implements FunctionProcessor {
 
     @Override
     public void run(Function function) {
-        final List<LoopAnalysis.LoopInfo> loops = LoopAnalysis.onFunction(function).getLoopsOfFunction(function);
+        final List<LoopAnalysis.LoopInfo> loops = LoopAnalysis.onFunction(function, true).getLoopsOfFunction(function);
         if (loops.stream().anyMatch(loop -> !loop.isUnrolled())) {
             logger.warn("Skipping null check deletion on function with loops: {}", function);
             return;

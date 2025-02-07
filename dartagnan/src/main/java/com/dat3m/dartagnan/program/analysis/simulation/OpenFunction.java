@@ -20,7 +20,6 @@ import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.event.functions.AbortIf;
 import com.dat3m.dartagnan.program.event.functions.FunctionCall;
 import com.dat3m.dartagnan.program.event.functions.Return;
-import com.dat3m.dartagnan.program.event.lang.svcomp.NonDetChoice;
 import com.dat3m.dartagnan.program.processing.IdReassignment;
 import com.dat3m.dartagnan.program.processing.LoopUnrolling;
 import com.google.common.collect.Iterables;
@@ -118,7 +117,7 @@ public class OpenFunction {
 
         // ----- Early repeat
         final Register earlyExitChoiceReg = extendedFunc.newRegister("__early_exit", types.getBooleanType());
-        final Event earlyExitChoice = new NonDetChoice(earlyExitChoiceReg);
+        final Event earlyExitChoice = EventFactory.Svcomp.newNonDetChoice(earlyExitChoiceReg);
         final CondJump earlyExitJump = EventFactory.newJump(earlyExitChoiceReg, loopingExit.exitLabel());
 
         // ------------- Copy body up to loop backjump -------------
