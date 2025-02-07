@@ -78,6 +78,7 @@ public interface Constraint {
         default T visitProgramOrder(ProgramOrder po) { return visitDefinition(po); }
         default T visitExternal(External ext) { return visitDefinition(ext); }
         default T visitInternal(Internal internal) { return visitDefinition(internal); }
+        default T visitSameTransaction(SameTransaction sameTransaction) { return visitDefinition(sameTransaction); }
         default T visitInternalDataDependency(DirectDataDependency idd) { return visitDefinition(idd); }
         default T visitControlDependency(DirectControlDependency ctrlDirect) { return visitDefinition(ctrlDirect); }
         default T visitAddressDependency(DirectAddressDependency addrDirect) { return visitDefinition(addrDirect); }

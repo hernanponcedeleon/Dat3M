@@ -14,6 +14,7 @@ import com.dat3m.dartagnan.program.event.MemoryEvent;
 import com.dat3m.dartagnan.program.event.RegReader;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.*;
+import com.dat3m.dartagnan.program.event.core.annotations.TransactionMarker;
 import com.dat3m.dartagnan.program.event.lang.svcomp.EndAtomic;
 import com.dat3m.dartagnan.program.filter.Filter;
 import com.dat3m.dartagnan.program.memory.VirtualMemoryObject;
@@ -618,6 +619,21 @@ public class NativeRelationAnalysis implements RelationAnalysis {
                 if (e.hasTag(IMM.CASDEPORIGIN)) {
                     // The target of a CASDep is always the successor of the origin
                     must.add(e, e.getSuccessor());
+                }
+            }
+            return new MutableKnowledge(must, MapEventGraph.from(must));
+        }
+
+        @Override
+        public MutableKnowledge visitSameTransaction(SameTransaction sameTransaction) {
+            MutableEventGraph must = new MapEventGraph();
+            for (TransactionMarker end : program.getThreadEvents(TransactionMarker.class)) {
+                List<Event> events = end.getTransactionEvents().stream().filter(e -> e.hasTag(VISIBLE)).toList();
+                for (int i = 0; i < events.size(); i++) {
+                    Event e2 = events.get(i);
+                    for (Event e1 : events.subList(0, i)) {
+                        must.add(e1, e2);
+                    }
                 }
             }
             return new MutableKnowledge(must, MapEventGraph.from(must));

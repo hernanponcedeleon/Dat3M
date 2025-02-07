@@ -197,6 +197,7 @@ public class Wmm {
             case RF -> new ReadFrom(r);
             case RMW -> new ReadModifyWrites(r);
             case CASDEP -> new CASDependency(r);
+            case TRANSACT -> new SameTransaction(r);
             case CRIT -> new LinuxCriticalSections(r);
             case IDD -> new DirectDataDependency(r);
             case ADDRDIRECT -> new DirectAddressDependency(r);

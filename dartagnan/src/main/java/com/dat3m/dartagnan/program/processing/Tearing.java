@@ -17,7 +17,6 @@ import com.dat3m.dartagnan.program.event.core.annotations.TransactionMarker;
 import java.util.ArrayList;
 import java.util.List;
 
-//TODO Keep link between the teared events.  They belong to the same instruction.
 //TODO add Big Endian
 public final class Tearing implements EventVisitor<List<Event>> {
 

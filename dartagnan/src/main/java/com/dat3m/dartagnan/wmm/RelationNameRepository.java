@@ -20,6 +20,7 @@ public class RelationNameRepository {
     public static final String ADDR = "addr";
     public static final String CTRL = "ctrl";
     public static final String CASDEP = "casdep";
+    public static final String TRANSACT = "transact";
     public static final String SR = "sr";
     public static final String SCTA = "scta"; // same-cta, the same as same_block_r in alloy
     public static final String SSG = "ssg";
