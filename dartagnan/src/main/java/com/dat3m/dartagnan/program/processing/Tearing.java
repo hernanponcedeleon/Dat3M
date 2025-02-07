@@ -9,39 +9,50 @@ import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.EventFactory;
-import com.dat3m.dartagnan.program.event.EventVisitor;
 import com.dat3m.dartagnan.program.event.core.Load;
+import com.dat3m.dartagnan.program.event.core.MemoryCoreEvent;
+import com.dat3m.dartagnan.program.event.core.RMWStore;
 import com.dat3m.dartagnan.program.event.core.Store;
 import com.dat3m.dartagnan.program.event.core.annotations.TransactionMarker;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 
 //TODO add Big Endian
-public final class Tearing implements EventVisitor<List<Event>> {
+public final class Tearing {
 
     private static final TypeFactory types = TypeFactory.getInstance();
     private static final ExpressionFactory expressions = ExpressionFactory.getInstance();
 
-    public static void applyReplacement(Event event) {
-        List<Event> replacement = event.accept(new Tearing());
-        if (!replacement.equals(List.of(event))) {
-            event.replaceBy(event.accept(new Tearing()));
-        }
-    }
+    private final Map<MemoryCoreEvent, List<Event>> map = new HashMap<>();
 
     private Tearing() {}
 
-    @Override
-    public List<Event> visitEvent(Event e) {
-        return List.of(e);
+    public static void run(Collection<MemoryCoreEvent> events) {
+        new Tearing().replaceAll(events);
     }
 
-    @Override
-    public List<Event> visitLoad(Load load) {
+    private void replaceAll(Collection<MemoryCoreEvent> events) {
+        for (MemoryCoreEvent event : events) {
+            if (event instanceof Load load) {
+                map.put(load, replace(load));
+            }
+        }
+        for (MemoryCoreEvent event : events) {
+            if (event instanceof Store store) {
+                map.put(store, replace(store));
+            }
+        }
+        for (Map.Entry<MemoryCoreEvent, List<Event>> entry : map.entrySet()) {
+            if (!entry.getValue().equals(List.of(entry.getKey()))) {
+                entry.getKey().replaceBy(entry.getValue());
+            }
+        }
+    }
+
+    private List<Event> replace(Load load) {
         int bytes = types.getMemorySizeInBytes(load.getAccessType());
         if (bytes == 1) {
-            return visitEvent(load);
+            return List.of(load);
         }
         List<Event> replacement = new ArrayList<>();
         IntegerType addressType = checkIntegerType(load.getAddress().getType(), "Non-integer address in '%s'", load);
@@ -55,9 +66,10 @@ public final class Tearing implements EventVisitor<List<Event>> {
         TransactionMarker begin = EventFactory.newTransactionBegin(load);
         replacement.add(begin);
         for (int i = 0; i < bytes; i++) {
-            Expression a = expressions.makeAdd(addressRegister, expressions.makeValue(i, addressType));
-            Load byteLoad = EventFactory.newLoad(smallerRegisters.get(i), a);
-            byteLoad.addTags(load.getTags());
+            Expression address = expressions.makeAdd(addressRegister, expressions.makeValue(i, addressType));
+            Load byteLoad = load.getCopy();
+            byteLoad.setResultRegister(smallerRegisters.get(i));
+            byteLoad.setAddress(address);
             replacement.add(byteLoad);
         }
         replacement.add(EventFactory.newTransactionEnd(load, begin));
@@ -71,11 +83,10 @@ public final class Tearing implements EventVisitor<List<Event>> {
         return replacement;
     }
 
-    @Override
-    public List<Event> visitStore(Store store) {
+    private List<Event> replace(Store store) {
         int bytes = types.getMemorySizeInBytes(store.getAccessType());
         if (bytes == 1) {
-            return visitEvent(store);
+            return List.of(store);
         }
         List<Event> replacement = new ArrayList<>();
         IntegerType addressType = checkIntegerType(store.getAddress().getType(), "Non-integer address in '%s'", store);
@@ -83,14 +94,20 @@ public final class Tearing implements EventVisitor<List<Event>> {
         Function function = store.getFunction();
         Register addressRegister = toRegister(store.getAddress(), function, replacement);
         Register valueRegister = toRegister(store.getMemValue(), function, replacement);
+        List<Load> loads = store instanceof RMWStore st ? map.get(st.getLoadEvent()).stream()
+                .filter(Load.class::isInstance).map(Load.class::cast).toList() : null;
         TransactionMarker begin = EventFactory.newTransactionBegin(store);
         replacement.add(begin);
         for (int i = 0; i < bytes; i++) {
-            Expression a = expressions.makeAdd(addressRegister, expressions.makeValue(i, addressType));
+            Expression address = expressions.makeAdd(addressRegister, expressions.makeValue(i, addressType));
             Expression shiftedValue = expressions.makeRshift(valueRegister, expressions.makeValue(8L * i, accessType), false);
             Expression value = expressions.makeCast(shiftedValue, types.getByteType());
-            Store byteStore = EventFactory.newStore(a, value);
-            byteStore.addTags(store.getTags());
+            Store byteStore = store.getCopy();
+            byteStore.setAddress(address);
+            byteStore.setMemValue(value);
+            if (loads != null && byteStore instanceof RMWStore st) {
+                st.updateReferences(Map.of(st.getLoadEvent(), loads.get(i)));
+            }
             replacement.add(byteStore);
         }
         replacement.add(EventFactory.newTransactionEnd(store, begin));

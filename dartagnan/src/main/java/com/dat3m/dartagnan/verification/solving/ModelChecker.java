@@ -10,6 +10,7 @@ import com.dat3m.dartagnan.program.analysis.*;
 import com.dat3m.dartagnan.program.analysis.alias.AliasAnalysis;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.core.MemoryCoreEvent;
+import com.dat3m.dartagnan.program.processing.IdReassignment;
 import com.dat3m.dartagnan.program.processing.ProcessingManager;
 import com.dat3m.dartagnan.program.processing.Tearing;
 import com.dat3m.dartagnan.utils.Result;
@@ -119,9 +120,8 @@ public abstract class ModelChecker {
         AliasAnalysis aliasAnalysis = analysisContext.requires(AliasAnalysis.class);
         Set<MemoryCoreEvent> msaSet = AliasAnalysis.getMayMixedSizeAccessesSet(aliasAnalysis, events);
         if (!msaSet.isEmpty()) {
-            for (MemoryCoreEvent e : msaSet) {
-                Tearing.applyReplacement(e);
-            }
+            Tearing.run(msaSet);
+            IdReassignment.newInstance().run(program);
             undoAliasAnalysis(analysisContext);
             doAliasAnalysis(task, analysisContext, config);
         }

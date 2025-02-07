@@ -706,6 +706,16 @@ public class NativeRelationAnalysis implements RelationAnalysis {
             MutableEventGraph may = MapEventGraph.from(must);
             // LoadExcl -> StoreExcl
             for (Thread thread : program.getThreads()) {
+                // Currently likely empty, because mixed-size accesses are the only cause
+                var transactionMap = new HashMap<Event, Set<Event>>();
+                for (TransactionMarker end : thread.getEvents(TransactionMarker.class)) {
+                    List<Event> transaction = end.getTransactionEvents();
+                    for (Event event : transaction) {
+                        if (event.hasTag(EXCL)) {
+                            transactionMap.put(event, new HashSet<>(transaction));
+                        }
+                    }
+                }
                 List<Event> events = thread.getEvents().stream().filter(e -> e.hasTag(EXCL)).toList();
                 // assume order by globalId
                 // assume globalId describes a topological sorting over the control flow
@@ -726,10 +736,17 @@ public class NativeRelationAnalysis implements RelationAnalysis {
                         if (!(load instanceof Load) || intermediaries.stream().anyMatch(e -> exec.isImplied(load, e))) {
                             continue;
                         }
-                        may.add(load, store);
-                        if (intermediaries.stream().allMatch(e -> exec.areMutuallyExclusive(load, e)) &&
-                                (store.doesRequireMatchingAddresses() || alias.mustAlias((Load) load, store))) {
-                            must.add(load, store);
+                        boolean isMust = intermediaries.stream().allMatch(e -> exec.areMutuallyExclusive(load, e)) &&
+                                (store.doesRequireMatchingAddresses() || alias.mustAlias((Load) load, store));
+                        // Idea: For RMWs torn into bytewise transactions,
+                        // matching only occurs between the last load and the first store.
+                        // This implementation builds the complete bipartite graph between both transactions.
+                        Set<Event> st = transactionMap.getOrDefault(store, Set.of(store));
+                        for (Event ld : transactionMap.getOrDefault(load, Set.of(load))) {
+                            may.addRange(ld, st);
+                            if (isMust) {
+                                must.addRange(ld, st);
+                            }
                         }
                     }
                 }

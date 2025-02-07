@@ -30,9 +30,14 @@ import com.dat3m.dartagnan.program.processing.ProcessingManager;
 import com.dat3m.dartagnan.program.processing.compilation.Compilation;
 import com.dat3m.dartagnan.verification.Context;
 import com.dat3m.dartagnan.verification.VerificationTask;
+import com.dat3m.dartagnan.verification.solving.ModelChecker;
 import com.dat3m.dartagnan.wmm.Relation;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
+import com.dat3m.dartagnan.wmm.analysis.WmmAnalysis;
+import com.dat3m.dartagnan.wmm.axiom.Emptiness;
+import com.dat3m.dartagnan.wmm.definition.Composition;
+import com.dat3m.dartagnan.wmm.definition.Intersection;
 import org.junit.Test;
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
@@ -743,6 +748,7 @@ public class AnalysisTest {
                 expectation.append(j >= min && j < 8 && (i != 2 || j != 4) ? 'x' : ' ');
             }
         }
+
         Program program = b.build();
         Configuration config = Configuration.defaultConfiguration();
         ProcessingManager.fromConfig(config).run(program);
@@ -777,5 +783,51 @@ public class AnalysisTest {
             }
             assertEquals(expectation.toString(), actual.toString());
         }
+    }
+
+    @Test
+    public void mixedSizeReadModifyWrite() throws Exception {
+        TypeFactory types = TypeFactory.getInstance();
+        ExpressionFactory expressions = ExpressionFactory.getInstance();
+        ProgramBuilder b = ProgramBuilder.forLanguage(Program.SourceLanguage.LITMUS);
+        MemoryObject x = b.getOrNewMemoryObject("x", 16);
+        b.newThread(0);
+        b.newThread(1);
+        IntegerType u32 = types.getIntegerType(32);
+        IntegerType u64 = types.getIntegerType(64);
+        Register r64 = b.getOrNewRegister(0, "r64", u64);
+        b.addChild(0, newRMWLoadExclusive(r64, x));
+        b.addChild(0, newRMWStoreExclusive(x, expressions.makeValue(0, u64), true));
+        b.addChild(1, newStore(x, expressions.makeValue(0, u32)));
+
+        Program program = b.build();
+        Wmm wmm = new Wmm();
+        Relation rmw = wmm.getOrCreatePredefinedRelation("rmw");
+        Relation rf = wmm.getOrCreatePredefinedRelation("rf");
+        Relation co = wmm.getOrCreatePredefinedRelation("co");
+        Relation rfRmw = wmm.addDefinition(new Composition(wmm.newRelation(), rf, rmw));
+        Relation coCo = wmm.addDefinition(new Composition(wmm.newRelation(), co, co));
+        wmm.addConstraint(new Emptiness(wmm.addDefinition(new Intersection(wmm.newRelation(), rfRmw, coCo))));
+        Configuration config = Configuration.defaultConfiguration();
+        VerificationTask task = VerificationTask.builder().build(program, wmm, EnumSet.of(PROGRAM_SPEC));
+        Context analysisContext = Context.create();
+        ModelChecker.preprocessProgram(task, config);
+        ModelChecker.performStaticProgramAnalyses(task, analysisContext, config);
+
+        analysisContext.register(BranchEquivalence.class, BranchEquivalence.fromConfig(program, config));
+        analysisContext.register(ExecutionAnalysis.class, ExecutionAnalysis.fromConfig(program, ProgressModel.FAIR, analysisContext, config));
+        analysisContext.register(ReachingDefinitionsAnalysis.class, ReachingDefinitionsAnalysis.fromConfig(program, analysisContext, config));
+        analysisContext.register(AliasAnalysis.class, AliasAnalysis.fromConfig(program, analysisContext, config));
+        analysisContext.register(WmmAnalysis.class, WmmAnalysis.fromConfig(wmm, program.getArch(), config));
+        analysisContext.register(RelationAnalysis.class, RelationAnalysis.fromConfig(task, analysisContext, config));
+
+        RelationAnalysis.Knowledge rmwKnowledge = analysisContext.get(RelationAnalysis.class).getKnowledge(rmw);
+        //FIXME Debugging
+        RelationAnalysis.Knowledge rfKnowledge = analysisContext.get(RelationAnalysis.class).getKnowledge(rf);
+        RelationAnalysis.Knowledge coKnowledge = analysisContext.get(RelationAnalysis.class).getKnowledge(co);
+        RelationAnalysis.Knowledge coCoKnowledge = analysisContext.get(RelationAnalysis.class).getKnowledge(coCo);
+        RelationAnalysis.Knowledge rfRmwKnowledge = analysisContext.get(RelationAnalysis.class).getKnowledge(rfRmw);
+        System.out.printf("%d %d %d %d", rfKnowledge.getMaySet().size(), coKnowledge.getMaySet().size(), coCoKnowledge.getMaySet().size(), rfRmwKnowledge.getMaySet().size());
+        assertEquals(64, rmwKnowledge.getMaySet().size());
     }
 }
