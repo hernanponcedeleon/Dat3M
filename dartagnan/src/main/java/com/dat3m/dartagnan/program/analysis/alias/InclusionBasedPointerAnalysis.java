@@ -190,8 +190,8 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
         final TypeFactory types = TypeFactory.getInstance();
         final int bytesX = types.getMemorySizeInBytes(x.getAccessType());
         final int bytesY = types.getMemorySizeInBytes(y.getAccessType());
-        if (vx.base == vy.base && isConstant(vx.modifier) && isConstant(vy.modifier)) {
-            return Math.abs(vx.modifier.offset - vy.modifier.offset) % Math.min(bytesX, bytesY) != 0;
+        if (vx.base == vy.base) {
+            return mayMix(vx.modifier, bytesX, vy.modifier, bytesY);
         }
         final List<IncludeEdge> oy = toIncludeSet(vy.base);
         for (final IncludeEdge ax : toIncludeSet(vx.base)) {
