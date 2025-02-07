@@ -56,7 +56,9 @@ public final class Tearing implements EventVisitor<List<Event>> {
         replacement.add(begin);
         for (int i = 0; i < bytes; i++) {
             Expression a = expressions.makeAdd(addressRegister, expressions.makeValue(i, addressType));
-            replacement.add(EventFactory.newLoad(smallerRegisters.get(i), a));
+            Load byteLoad = EventFactory.newLoad(smallerRegisters.get(i), a);
+            byteLoad.addTags(load.getTags());
+            replacement.add(byteLoad);
         }
         replacement.add(EventFactory.newTransactionEnd(load, begin));
         Expression combination = expressions.makeCast(smallerRegisters.get(0), accessType);
@@ -87,7 +89,9 @@ public final class Tearing implements EventVisitor<List<Event>> {
             Expression a = expressions.makeAdd(addressRegister, expressions.makeValue(i, addressType));
             Expression shiftedValue = expressions.makeRshift(valueRegister, expressions.makeValue(8L * i, accessType), false);
             Expression value = expressions.makeCast(shiftedValue, types.getByteType());
-            replacement.add(EventFactory.newStore(a, value));
+            Store byteStore = EventFactory.newStore(a, value);
+            byteStore.addTags(store.getTags());
+            replacement.add(byteStore);
         }
         replacement.add(EventFactory.newTransactionEnd(store, begin));
         return replacement;
