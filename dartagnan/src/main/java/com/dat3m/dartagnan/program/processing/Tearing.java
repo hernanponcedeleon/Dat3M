@@ -24,7 +24,10 @@ public final class Tearing implements EventVisitor<List<Event>> {
     private static final ExpressionFactory expressions = ExpressionFactory.getInstance();
 
     public static void applyReplacement(Event event) {
-        event.replaceBy(event.accept(new Tearing()));
+        List<Event> replacement = event.accept(new Tearing());
+        if (!replacement.equals(List.of(event))) {
+            event.replaceBy(event.accept(new Tearing()));
+        }
     }
 
     private Tearing() {}
@@ -36,10 +39,13 @@ public final class Tearing implements EventVisitor<List<Event>> {
 
     @Override
     public List<Event> visitLoad(Load load) {
+        int bytes = types.getMemorySizeInBytes(load.getAccessType());
+        if (bytes == 1) {
+            return visitEvent(load);
+        }
         List<Event> replacement = new ArrayList<>();
         IntegerType addressType = checkIntegerType(load.getAddress().getType(), "Non-integer address in '%s'", load);
         IntegerType accessType = checkIntegerType(load.getAccessType(), "Non-integer mixed-size access in '%s'", load);
-        int bytes = types.getMemorySizeInBytes(accessType);
         Function function = load.getFunction();
         Register addressRegister = toRegister(load.getAddress(), function, replacement);
         List<Register> smallerRegisters = new ArrayList<>();
@@ -62,10 +68,13 @@ public final class Tearing implements EventVisitor<List<Event>> {
 
     @Override
     public List<Event> visitStore(Store store) {
+        int bytes = types.getMemorySizeInBytes(store.getAccessType());
+        if (bytes == 1) {
+            return visitEvent(store);
+        }
         List<Event> replacement = new ArrayList<>();
         IntegerType addressType = checkIntegerType(store.getAddress().getType(), "Non-integer address in '%s'", store);
         IntegerType accessType = checkIntegerType(store.getAccessType(), "Non-integer access in '%s'", store);
-        int bytes = types.getMemorySizeInBytes(accessType);
         Function function = store.getFunction();
         Register addressRegister = toRegister(store.getAddress(), function, replacement);
         Register valueRegister = toRegister(store.getMemValue(), function, replacement);
