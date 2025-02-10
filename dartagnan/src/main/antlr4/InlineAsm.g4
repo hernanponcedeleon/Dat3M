@@ -55,7 +55,7 @@ storeRelease : StoreRelease register Comma register;
 storeExclusive : StoreExclusive register Comma register Comma register ;
 storeReleaseExclusive : StoreReleaseExclusive register Comma register Comma register;
 compare : Compare register Comma expr;
-compareBranchNonZero : CompareBranchNonZero register Comma NumbersInline LetterInline;
+compareBranchNonZero : CompareBranchNonZero register Comma LabelReference;
 move : Move register Comma register;
 branchEqual : BranchEqual NumbersInline LetterInline;
 branchNotEqual : BranchNotEqual NumbersInline LetterInline;
