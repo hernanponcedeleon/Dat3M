@@ -31,7 +31,7 @@ YieldTask                   : 'yield';
 // metadata 
 OutputOpAssign              : Equals Amp? RLiteral;
 InputOpGeneralReg           : RLiteral;
-IsMemoryAddress             : 'Q' | Ast 'Q';
+MemoryAddress               : 'Q' | Ast 'Q';
 OverlapInOutRegister        : NumbersInline; // defines which returnvalue should be used both for input and output
 PointerToMemoryLocation     : Equals Ast 'm';
 

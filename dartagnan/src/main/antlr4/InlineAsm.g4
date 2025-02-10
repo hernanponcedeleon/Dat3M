@@ -35,7 +35,7 @@ armInstr
     | alignInline
     | prefetchMemory
     | yieldtask
-    | asmFence
+    | armFence
 ;
 riscvInstr : riscvFence;
 ppcInstr : ppcFence;
@@ -67,13 +67,13 @@ prefetchMemory : PrefetchMemory PrefetchStoreL1Once Comma register;
 yieldtask : YieldTask;
 
 //fences
-asmFence : (DataMemoryBarrier | DataSynchronizationBarrier) FenceArmOpt;
+armFence : (DataMemoryBarrier | DataSynchronizationBarrier) FenceArmOpt;
 riscvFence : RISCVFence FenceRISCVOpt (Comma FenceRISCVOpt)?;
 x86Fence : X86Fence;
 ppcFence : PPCFence;
 
 metaInstr : clobber | flag;
-clobber : OutputOpAssign | IsMemoryAddress | InputOpGeneralReg | OverlapInOutRegister | PointerToMemoryLocation;
+clobber : OutputOpAssign | MemoryAddress | InputOpGeneralReg | OverlapInOutRegister | PointerToMemoryLocation;
 
 flag : Tilde LBrace clobberType RBrace;
 

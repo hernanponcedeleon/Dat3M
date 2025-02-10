@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan.parsers.program.visitors;
 
+import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -7,6 +8,7 @@ import java.util.List;
 
 import org.antlr.v4.runtime.tree.ParseTree;
 
+import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.Type;
@@ -24,7 +26,7 @@ import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.Label;
-
+import static com.google.common.base.Preconditions.checkState;
 public class VisitorInlineAsm extends InlineAsmBaseVisitor<Object> {
 
     private class CmpInstruction {
@@ -48,6 +50,7 @@ public class VisitorInlineAsm extends InlineAsmBaseVisitor<Object> {
     private final List<Expression> pendingRegisters;
     private final LinkedList<Expression> fnParameters;
     private final LinkedList<String> registerNames;
+    private Type expectedType;
 
     public VisitorInlineAsm(Function llvmFunction, Register returnRegister, Type returnType, ArrayList<Expression> argumentsRegisterAddresses) {
         this.llvmFunction = llvmFunction;
@@ -95,8 +98,7 @@ public class VisitorInlineAsm extends InlineAsmBaseVisitor<Object> {
         } else if (returnType instanceof VoidType) {
             return 0;
         } else {
-            System.err.println("Unknown inline asm return type " + returnType);
-            return -1;
+            throw new ParsingException("Unknown inline asm return type " + returnType);
         }
     }
 
@@ -166,20 +168,20 @@ public class VisitorInlineAsm extends InlineAsmBaseVisitor<Object> {
         registerNames.sort((s1, s2) -> Integer.compare(extractNumberFromRegisterName(s1), extractNumberFromRegisterName(s2)));
 
         //extract clobbers from the metdata
-        ArrayList<String> clobbers = new ArrayList<>();
+        ArrayList<InlineAsmParser.ClobberContext> clobbers = new ArrayList<>();
         List<InlineAsmParser.AsmMetadataEntriesContext> metadataEntries = ctx.asmMetadataEntries();
         for (InlineAsmParser.AsmMetadataEntriesContext metadataEntry : metadataEntries) {
             List<InlineAsmParser.MetaInstrContext> metaInstrs = metadataEntry.metaInstr();
             for (InlineAsmParser.MetaInstrContext metaInstr : metaInstrs) {
                 if (metaInstr.clobber() != null) {
-                    clobbers.add(metaInstr.clobber().getText());
+                    clobbers.add(metaInstr.clobber());
                 }
             }
         }
         // by reading the clobbers we can map the arm registers to the llvm registers
         if (!registerNames.isEmpty() && !this.fnParameters.isEmpty()) {
             int registerNameIndex = 0;
-            for (String clobber : clobbers) {
+            for (InlineAsmParser.ClobberContext clobber : clobbers) {
                 if (isClobberNumeric(clobber)) {
                     processNumericClobber(clobber, registerNameIndex);
                     registerNameIndex++;
@@ -195,20 +197,20 @@ public class VisitorInlineAsm extends InlineAsmBaseVisitor<Object> {
         return this.events;
     }
 
-    private boolean isClobberNumeric(String clobber) {
-        return clobber.matches("\\d+");
+    private boolean isClobberNumeric(InlineAsmParser.ClobberContext clobber) {
+        return clobber.OverlapInOutRegister() != null;
     }
 
-    private boolean isClobberMemoryLocation(String clobber) {
-        return clobber.equals("=*m");
+    private boolean isClobberMemoryLocation(InlineAsmParser.ClobberContext clobber) {
+        return clobber.PointerToMemoryLocation() != null;
     }
 
-    private boolean isClobberOutputConstraint(String clobber) {
-        return clobber.equals("=&r") || clobber.equals("=r");
+    private boolean isClobberOutputConstraint(InlineAsmParser.ClobberContext clobber) {
+        return clobber.OutputOpAssign() != null;
     }
 
-    private boolean isClobberInputConstraint(String clobber) {
-        return clobber.equals("r") || clobber.equals("Q") || clobber.equals("*Q");
+    private boolean isClobberInputConstraint(InlineAsmParser.ClobberContext clobber) {
+        return clobber.MemoryAddress() != null || clobber.InputOpGeneralReg() != null;
     }
 
     private void collectRegisters(ParseTree node) {
@@ -225,21 +227,20 @@ public class VisitorInlineAsm extends InlineAsmBaseVisitor<Object> {
         }
     }
 
-    private void processNumericClobber(String clobber, int registerNameIndex) {
+    private void processNumericClobber(InlineAsmParser.ClobberContext clobber, int registerNameIndex) {
         // https://llvm.org/docs/LangRef.html#input-constraints
         // For example, a constraint string of “=r,1” says to assign a register for output, and use that register as an input as well (it being the 1st constraint).
         // so we have to get the i-th return Value and map it to fnParams
-        int number = Integer.parseInt(clobber);
+        int number = Integer.parseInt(clobber.getText());
         if (number < 0 || number > getSizeOfReturnValue()) {
-            System.err.println("The number provided in the clobber is not a valid index for any return value");
-            return;
+            throw new ParsingException("The number provided in the clobber is not a valid index for any return value");
         }
         String name = registerNames.get(number);
         Register toBeChanged = getOrNewRegister(name);
         events.add(EventFactory.newLocal(toBeChanged, this.fnParameters.get(registerNameIndex - getSizeOfReturnValue())));
     }
 
-    private void processGeneralPurposeClobber(String clobber, int registerNameIndex) {
+    private void processGeneralPurposeClobber(InlineAsmParser.ClobberContext clobber, int registerNameIndex) {
         String registerName = registerNames.get(registerNameIndex);
         Register newRegister = getOrNewRegister(registerName);
         if (isClobberOutputConstraint(clobber)) {
@@ -248,7 +249,7 @@ public class VisitorInlineAsm extends InlineAsmBaseVisitor<Object> {
             int number = extractNumberFromRegisterName(registerName);
             events.add(EventFactory.newLocal(newRegister, this.fnParameters.get(number - getSizeOfReturnValue())));
         } else {
-            System.err.println("New type of clobber found! " + clobber);
+            throw new ParsingException("Unknown clobber type " + clobber);
         }
     }
 
@@ -294,8 +295,8 @@ public class VisitorInlineAsm extends InlineAsmBaseVisitor<Object> {
         Register leftRegister = (Register) ctx.register(1).accept(this);
         Register rightRegister = (Register) ctx.register(2).accept(this);
         Expression exp = expressions.makeAdd(leftRegister, rightRegister);
-        updateReturnRegisterIfModified(resultRegister);
         events.add(EventFactory.newLocal(resultRegister, exp));
+        updateReturnRegisterIfModified(resultRegister);
         return null;
     }
 
@@ -305,8 +306,8 @@ public class VisitorInlineAsm extends InlineAsmBaseVisitor<Object> {
         Register leftRegister = (Register) ctx.register(1).accept(this);
         Register rightRegister = (Register) ctx.register(2).accept(this);
         Expression exp = expressions.makeSub(leftRegister, rightRegister);
-        updateReturnRegisterIfModified(resultRegister);
         events.add(EventFactory.newLocal(resultRegister, exp));
+        updateReturnRegisterIfModified(resultRegister);
         return null;
     }
 
@@ -316,8 +317,8 @@ public class VisitorInlineAsm extends InlineAsmBaseVisitor<Object> {
         Register leftRegister = (Register) ctx.register(1).accept(this);
         Register rightRegister = (Register) ctx.register(2).accept(this);
         Expression exp = expressions.makeIntOr(leftRegister, rightRegister);
-        updateReturnRegisterIfModified(resultRegister);
         events.add(EventFactory.newLocal(resultRegister, exp));
+        updateReturnRegisterIfModified(resultRegister);
         return null;
     }
 
@@ -327,8 +328,8 @@ public class VisitorInlineAsm extends InlineAsmBaseVisitor<Object> {
         Register leftRegister = (Register) ctx.register(1).accept(this);
         Register rightRegister = (Register) ctx.register(2).accept(this);
         Expression exp = expressions.makeIntAnd(leftRegister, rightRegister);
-        updateReturnRegisterIfModified(resultRegister);
         events.add(EventFactory.newLocal(resultRegister, exp));
+        updateReturnRegisterIfModified(resultRegister);
         return null;
     }
 
@@ -369,6 +370,7 @@ public class VisitorInlineAsm extends InlineAsmBaseVisitor<Object> {
     @Override
     public Object visitCompare(InlineAsmParser.CompareContext ctx) {
         Register firstRegister = (Register) ctx.register().accept(this);
+        expectedType = firstRegister.getType();
         Expression secondRegister = (Expression) ctx.expr().accept(this);
         this.comparator = new CmpInstruction(firstRegister, secondRegister);
         return null;
@@ -414,8 +416,8 @@ public class VisitorInlineAsm extends InlineAsmBaseVisitor<Object> {
 
     @Override
     public Object visitLabelDefinition(InlineAsmParser.LabelDefinitionContext ctx) {
-        String labelDefinitionNoColumn = ctx.LabelDefinition().getText().replace(":", "");
-        Label label = getOrNewLabel(labelDefinitionNoColumn);
+        String labelDefinitionNoColon = ctx.LabelDefinition().getText().replace(":", "");
+        Label label = getOrNewLabel(labelDefinitionNoColon);
         events.add(label);
         return null;
     }
@@ -436,12 +438,7 @@ public class VisitorInlineAsm extends InlineAsmBaseVisitor<Object> {
 
     @Override
     public Object visitExpr(InlineAsmParser.ExprContext ctx) {
-        if(ctx.register() != null){
-            return ctx.register().accept(this);
-        } else if (ctx.value() != null){
-            return ctx.value().accept(this);
-        }
-        return null;
+        return ctx.getChild(0).accept(this);
     }
 
     @Override
@@ -451,12 +448,14 @@ public class VisitorInlineAsm extends InlineAsmBaseVisitor<Object> {
 
     @Override
     public Object visitValue(InlineAsmParser.ValueContext ctx) {
-        String value = ctx.ConstantValue().getText().substring(1);
-        return expressions.parseValue(value, types.getIntegerType(32));
+        String valueString = ctx.ConstantValue().getText().substring(1);
+        BigInteger value = new BigInteger(valueString, 10);
+        checkState(expectedType instanceof IntegerType, "Expected type is not an integer type");
+        return expressions.makeValue(value, (IntegerType) expectedType);
     }
 
     @Override
-    public Object visitAsmFence(InlineAsmParser.AsmFenceContext ctx) {
+    public Object visitArmFence(InlineAsmParser.ArmFenceContext ctx) {
         // check which type of fence it is : DataMemoryBarrier or DataSynchronizationBarrier
         String type = ctx.DataMemoryBarrier() == null ? ctx.DataSynchronizationBarrier().getText() : ctx.DataMemoryBarrier().getText();
         String option = ctx.FenceArmOpt().getText();
@@ -481,7 +480,7 @@ public class VisitorInlineAsm extends InlineAsmBaseVisitor<Object> {
             case "dsb ishst" ->
                 events.add(EventFactory.AArch64.DSB.newISHSTBarrier());
             default ->
-                System.err.println("Barrier not implemented");
+                throw new ParsingException("Barrier not implemented");
         }
         return null;
     }
@@ -516,7 +515,7 @@ public class VisitorInlineAsm extends InlineAsmBaseVisitor<Object> {
             case "fence i" ->
                 events.add(EventFactory.RISCV.newSynchronizeFence());
             default ->
-                System.err.println("Barrier not implemented");
+                throw new ParsingException("Barrier not implemented");
         }
         return visitChildren(ctx);
     }
@@ -528,7 +527,7 @@ public class VisitorInlineAsm extends InlineAsmBaseVisitor<Object> {
             case "mfence" ->
                 events.add(EventFactory.X86.newMemoryFence());
             default ->
-                System.err.println("Barrier not implemented");
+                throw new ParsingException("Barrier not implemented");
         }
         return visitChildren(ctx);
     }
@@ -544,7 +543,7 @@ public class VisitorInlineAsm extends InlineAsmBaseVisitor<Object> {
             case "lwsync" ->
                 events.add(EventFactory.Power.newLwSyncBarrier());
             default ->
-                System.err.println("Barrier not implemented");
+                throw new ParsingException("Barrier not implemented");
         }
         return visitChildren(ctx);
     }
