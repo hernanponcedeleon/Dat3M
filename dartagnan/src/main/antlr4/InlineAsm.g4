@@ -54,7 +54,7 @@ store : Store register Comma register;
 storeRelease : StoreRelease register Comma register;
 storeExclusive : StoreExclusive register Comma register Comma register ;
 storeReleaseExclusive : StoreReleaseExclusive register Comma register Comma register;
-compare : Compare register Comma register;
+compare : Compare register Comma expr;
 compareBranchNonZero : CompareBranchNonZero register Comma LabelReference;
 move : Move register Comma register;
 branchEqual : BranchEqual LabelReference;
@@ -79,4 +79,6 @@ flag : Tilde LBrace clobberType RBrace;
 
 clobberType : ClobberMemory | ClobberModifyFlags | ClobberDirectionFlag | ClobberFlags | ClobberFloatPntStatusReg;
 
+expr : register | value;
 register : Register;
+value : ConstantValue;

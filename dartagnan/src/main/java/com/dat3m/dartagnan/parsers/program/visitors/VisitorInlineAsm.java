@@ -27,26 +27,15 @@ import com.dat3m.dartagnan.program.event.core.Label;
 
 public class VisitorInlineAsm extends InlineAsmBaseVisitor<Object> {
 
-    private class CompareExpression {
+    private class CmpInstruction {
 
-        private Expression compareExpression;
-        private Register firstRegister;
-        private Expression secondRegister;
+        private final Expression left;
+        private final Expression right;
 
-        private void updateCompareExpression(Register firstRegister, IntCmpOp intCmpOp, Expression secondRegister) {
-            this.firstRegister = firstRegister;
-            this.secondRegister = secondRegister;
-            this.compareExpression = expressions.makeIntCmp(firstRegister, intCmpOp, secondRegister);
+        public CmpInstruction(Expression left, Expression right) {
+            this.left = left;
+            this.right = right;
         }
-
-        private void updateCompareExpressionOperator(IntCmpOp intCmpOp) {
-            this.compareExpression = expressions.makeIntCmp(this.firstRegister, intCmpOp, this.secondRegister);
-        }
-
-        private void updateCompareExpressionWithZeroRegister(Register firstRegister, IntCmpOp intCmpOp) {
-            this.updateCompareExpression(firstRegister, intCmpOp, expressions.parseValue("0", (IntegerType) firstRegister.getType()));
-        }
-
     }
 
     private final List<Event> events = new ArrayList<>();
@@ -54,35 +43,23 @@ public class VisitorInlineAsm extends InlineAsmBaseVisitor<Object> {
     private final Register returnRegister;
     private final ExpressionFactory expressions = ExpressionFactory.getInstance();
     private final TypeFactory types = TypeFactory.getInstance();
-    private final CompareExpression comparator;
+    private CmpInstruction comparator;
     private final HashMap<String, Label> labelsDefined;
     private final List<Expression> pendingRegisters;
     private final LinkedList<Expression> fnParameters;
-    private final int returnValuesNumber;
     private final LinkedList<String> registerNames;
 
     public VisitorInlineAsm(Function llvmFunction, Register returnRegister, Type returnType, ArrayList<Expression> argumentsRegisterAddresses) {
         this.llvmFunction = llvmFunction;
         this.returnRegister = returnRegister;
-        this.comparator = new CompareExpression();
         this.labelsDefined = new HashMap<>();
         this.pendingRegisters = new LinkedList<>();
         this.registerNames = new LinkedList<>();
         this.fnParameters = new LinkedList<>(argumentsRegisterAddresses);
-        this.returnValuesNumber = initReturnValuesNumber(returnType);
-        assert (this.returnValuesNumber >= 0);
     }
 
     private boolean isArmv8Name(String registerName) {
         return registerName.startsWith("${") && registerName.endsWith("}");
-    }
-
-    private boolean isRegisterConstantValue(String nodeName) {
-        String innerString = nodeName;
-        if (nodeName.startsWith("r")) {
-            innerString = nodeName.substring(1);
-        }
-        return innerString.startsWith("#");
     }
 
     public Type getArmVariableSize(String registerArmName) {
@@ -94,19 +71,23 @@ public class VisitorInlineAsm extends InlineAsmBaseVisitor<Object> {
             }
             return this.returnRegister.getType();
         }
-        return this.fnParameters.get(number - this.returnValuesNumber).getType();
+        return this.fnParameters.get(number - getSizeOfReturnValue()).getType();
     }
 
     private boolean isPartOfReturnRegister(String registerArmName) {
         int number = extractNumberFromRegisterName(registerArmName);
-        return (number < this.returnValuesNumber);
+        return (number < getSizeOfReturnValue());
     }
 
     private boolean isReturnRegisterAggregate() {
-        return this.returnValuesNumber > 1;
+        return getSizeOfReturnValue() > 1;
     }
 
-    private int initReturnValuesNumber(Type returnType) {
+    private int getSizeOfReturnValue() {
+        if (this.returnRegister == null) {
+            return 0;
+        }
+        Type returnType = this.returnRegister.getType();
         if (returnType instanceof IntegerType || returnType instanceof BooleanType) {
             return 1;
         } else if (returnType instanceof AggregateType at) {
@@ -150,7 +131,7 @@ public class VisitorInlineAsm extends InlineAsmBaseVisitor<Object> {
         Type type = getArmVariableSize(nodeName);
         String registerName = makeRegisterName(nodeName);
         Register newRegister = this.llvmFunction.getOrNewRegister(registerName, type);
-        if (!this.pendingRegisters.contains(newRegister) && isPartOfReturnRegister(nodeName) && isReturnRegisterAggregate() && !isRegisterConstantValue(nodeName)) {
+        if (!this.pendingRegisters.contains(newRegister) && isPartOfReturnRegister(nodeName) && isReturnRegisterAggregate()) {
             this.pendingRegisters.add(newRegister);
         }
         return newRegister;
@@ -213,19 +194,19 @@ public class VisitorInlineAsm extends InlineAsmBaseVisitor<Object> {
         visitChildren(ctx);
         return this.events;
     }
-    
+
     private boolean isClobberNumeric(String clobber) {
         return clobber.matches("\\d+");
     }
-    
+
     private boolean isClobberMemoryLocation(String clobber) {
         return clobber.equals("=*m");
     }
-    
+
     private boolean isClobberOutputConstraint(String clobber) {
         return clobber.equals("=&r") || clobber.equals("=r");
     }
-    
+
     private boolean isClobberInputConstraint(String clobber) {
         return clobber.equals("r") || clobber.equals("Q") || clobber.equals("*Q");
     }
@@ -235,7 +216,7 @@ public class VisitorInlineAsm extends InlineAsmBaseVisitor<Object> {
             return;
         } else if (node instanceof InlineAsmParser.RegisterContext) {
             String registerName = node.getText();
-            if (registerName != null && !registerNames.contains(registerName) && !isRegisterConstantValue(registerName)) {
+            if (registerName != null && !registerNames.contains(registerName)) {
                 registerNames.add(registerName);
             }
         }
@@ -249,13 +230,13 @@ public class VisitorInlineAsm extends InlineAsmBaseVisitor<Object> {
         // For example, a constraint string of “=r,1” says to assign a register for output, and use that register as an input as well (it being the 1st constraint).
         // so we have to get the i-th return Value and map it to fnParams
         int number = Integer.parseInt(clobber);
-        if (number < 0 || number > this.returnValuesNumber) {
+        if (number < 0 || number > getSizeOfReturnValue()) {
             System.err.println("The number provided in the clobber is not a valid index for any return value");
             return;
         }
         String name = registerNames.get(number);
         Register toBeChanged = getOrNewRegister(name);
-        events.add(EventFactory.newLocal(toBeChanged, this.fnParameters.get(registerNameIndex - this.returnValuesNumber)));
+        events.add(EventFactory.newLocal(toBeChanged, this.fnParameters.get(registerNameIndex - getSizeOfReturnValue())));
     }
 
     private void processGeneralPurposeClobber(String clobber, int registerNameIndex) {
@@ -265,7 +246,7 @@ public class VisitorInlineAsm extends InlineAsmBaseVisitor<Object> {
             // Clobber maps to returnValue, we just skip it as we are assigning them later
         } else if (isClobberInputConstraint(clobber)) {
             int number = extractNumberFromRegisterName(registerName);
-            events.add(EventFactory.newLocal(newRegister, this.fnParameters.get(number - this.returnValuesNumber)));
+            events.add(EventFactory.newLocal(newRegister, this.fnParameters.get(number - getSizeOfReturnValue())));
         } else {
             System.err.println("New type of clobber found! " + clobber);
         }
@@ -387,23 +368,20 @@ public class VisitorInlineAsm extends InlineAsmBaseVisitor<Object> {
 
     @Override
     public Object visitCompare(InlineAsmParser.CompareContext ctx) {
-        Register firstRegister = (Register) ctx.register(0).accept(this);
-        Register secondRegister = (Register) ctx.register(1).accept(this);
-        if (isRegisterConstantValue(secondRegister.getName())) {
-            this.comparator.updateCompareExpressionWithZeroRegister(firstRegister, IntCmpOp.EQ);
-        } else {
-            this.comparator.updateCompareExpression(firstRegister, IntCmpOp.EQ, secondRegister);
-        }
+        Register firstRegister = (Register) ctx.register().accept(this);
+        Expression secondRegister = (Expression) ctx.expr().accept(this);
+        this.comparator = new CmpInstruction(firstRegister, secondRegister);
         return null;
     }
 
     @Override
     public Object visitCompareBranchNonZero(InlineAsmParser.CompareBranchNonZeroContext ctx) {
-        Register registerLlvm = (Register) ctx.register().accept(this);
-        this.comparator.updateCompareExpressionWithZeroRegister(registerLlvm, IntCmpOp.NEQ);
         String cleanedLabelName = cleanLabel(ctx.LabelReference().getText());
         Label label = getOrNewLabel(cleanedLabelName);
-        events.add(EventFactory.newJump(this.comparator.compareExpression, label));
+        Register firstRegister = (Register) ctx.register().accept(this);
+        Expression zero = expressions.makeZero((IntegerType) firstRegister.getType());
+        Expression expr = expressions.makeIntCmp(firstRegister, IntCmpOp.NEQ, zero);
+        events.add(EventFactory.newJump(expr, label));
         return null;
     }
 
@@ -420,8 +398,8 @@ public class VisitorInlineAsm extends InlineAsmBaseVisitor<Object> {
     public Object visitBranchEqual(InlineAsmParser.BranchEqualContext ctx) {
         String cleanedLabelName = cleanLabel(ctx.LabelReference().getText());
         Label label = getOrNewLabel(cleanedLabelName);
-        this.comparator.updateCompareExpressionOperator(IntCmpOp.EQ);
-        events.add(EventFactory.newJump(this.comparator.compareExpression, label));
+        Expression expr = expressions.makeIntCmp(comparator.left, IntCmpOp.EQ, comparator.right);
+        events.add(EventFactory.newJump(expr, label));
         return null;
     }
 
@@ -429,8 +407,8 @@ public class VisitorInlineAsm extends InlineAsmBaseVisitor<Object> {
     public Object visitBranchNotEqual(InlineAsmParser.BranchNotEqualContext ctx) {
         String cleanedLabelName = cleanLabel(ctx.LabelReference().getText());
         Label label = getOrNewLabel(cleanedLabelName);
-        this.comparator.updateCompareExpressionOperator(IntCmpOp.NEQ);
-        events.add(EventFactory.newJump(this.comparator.compareExpression, label));
+        Expression expr = expressions.makeIntCmp(comparator.left, IntCmpOp.NEQ, comparator.right);
+        events.add(EventFactory.newJump(expr, label));
         return null;
     }
 
@@ -444,7 +422,7 @@ public class VisitorInlineAsm extends InlineAsmBaseVisitor<Object> {
 
     @Override
     public Object visitAsmMetadataEntries(InlineAsmParser.AsmMetadataEntriesContext ctx) {
-        if (this.returnValuesNumber > 1) {
+        if (getSizeOfReturnValue() > 1) {
             List<Type> typesList = new LinkedList<>();
             for (Expression r : this.pendingRegisters) {
                 typesList.add(((Register) r).getType());
@@ -457,8 +435,24 @@ public class VisitorInlineAsm extends InlineAsmBaseVisitor<Object> {
     }
 
     @Override
+    public Object visitExpr(InlineAsmParser.ExprContext ctx) {
+        if(ctx.register() != null){
+            return ctx.register().accept(this);
+        } else if (ctx.value() != null){
+            return ctx.value().accept(this);
+        }
+        return null;
+    }
+
+    @Override
     public Object visitRegister(InlineAsmParser.RegisterContext ctx) {
         return getOrNewRegister(ctx.Register().getText());
+    }
+
+    @Override
+    public Object visitValue(InlineAsmParser.ValueContext ctx) {
+        String value = ctx.ConstantValue().getText().substring(1);
+        return expressions.parseValue(value, types.getIntegerType(32));
     }
 
     @Override
@@ -474,7 +468,7 @@ public class VisitorInlineAsm extends InlineAsmBaseVisitor<Object> {
                 events.add(EventFactory.AArch64.DMB.newISHLDBarrier());
             case "dmb sy" ->
                 events.add(EventFactory.AArch64.DMB.newSYBarrier());
-            case "dmb st" -> 
+            case "dmb st" ->
                 events.add(EventFactory.AArch64.DMB.newSTBarrier());
             case "dmb ishst" ->
                 events.add(EventFactory.AArch64.DMB.newISHSTBarrier());

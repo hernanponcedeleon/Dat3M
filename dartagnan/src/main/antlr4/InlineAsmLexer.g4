@@ -59,7 +59,8 @@ PrefetchStoreL1Once         : 'pstl1strm';
 IfThenThenOptions           : 'eq';
 NumbersInline               : [0-9]+;
 RLiteral                    : 'r'; // needed because both 'r' and '=&r' use the general purpose
-Register                    : '${' ( ~('}' | '$') )+ '}' | '$' NumbersInline | '[$' NumbersInline ']' | '#' NumbersInline; // should match any ${*}
+Register                    : '${' ( ~('}' | '$') )+ '}' | '$' NumbersInline | '[$' NumbersInline ']'; // should match any ${*}
+ConstantValue               : Num NumbersInline;
 LabelReference              : [a-zA-Z0-9_]+ ;
 EndInstruction              :'\\0A';
 
