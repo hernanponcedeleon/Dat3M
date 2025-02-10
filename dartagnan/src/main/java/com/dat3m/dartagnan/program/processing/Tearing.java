@@ -17,18 +17,24 @@ import com.dat3m.dartagnan.program.event.core.annotations.TransactionMarker;
 
 import java.util.*;
 
-//TODO add Big Endian
 public final class Tearing {
 
     private static final TypeFactory types = TypeFactory.getInstance();
     private static final ExpressionFactory expressions = ExpressionFactory.getInstance();
 
+    private final boolean bigEndian;
     private final Map<MemoryCoreEvent, List<Event>> map = new HashMap<>();
 
-    private Tearing() {}
+    private Tearing(boolean e) {
+        bigEndian = e;
+    }
 
     public static void run(Collection<MemoryCoreEvent> events) {
-        new Tearing().replaceAll(events);
+        if (events.isEmpty()) {
+            return;
+        }
+        boolean bigEndian = events.iterator().next().getFunction().getProgram().getMemory().isBigEndian();
+        new Tearing(bigEndian).replaceAll(events);
     }
 
     private void replaceAll(Collection<MemoryCoreEvent> events) {
@@ -68,7 +74,7 @@ public final class Tearing {
         for (int i = 0; i < bytes; i++) {
             Expression address = expressions.makeAdd(addressRegister, expressions.makeValue(i, addressType));
             Load byteLoad = load.getCopy();
-            byteLoad.setResultRegister(smallerRegisters.get(i));
+            byteLoad.setResultRegister(smallerRegisters.get(bigEndian ? bytes - 1 - i : i));
             byteLoad.setAddress(address);
             replacement.add(byteLoad);
         }
@@ -100,7 +106,8 @@ public final class Tearing {
         replacement.add(begin);
         for (int i = 0; i < bytes; i++) {
             Expression address = expressions.makeAdd(addressRegister, expressions.makeValue(i, addressType));
-            Expression shiftedValue = expressions.makeRshift(valueRegister, expressions.makeValue(8L * i, accessType), false);
+            Expression shiftBits = expressions.makeValue(8L * (bigEndian ? bytes - 1 - i : i), accessType);
+            Expression shiftedValue = expressions.makeRshift(valueRegister, shiftBits, false);
             Expression value = expressions.makeCast(shiftedValue, types.getByteType());
             Store byteStore = store.getCopy();
             byteStore.setAddress(address);
