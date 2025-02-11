@@ -203,8 +203,11 @@ public class ProgramBuilder {
             mem.setName(name);
             if (program.getFormat() == LITMUS) {
                 // Litmus code always initializes memory
-                final Expression zero = expressions.makeZero(types.getArchType());
-                for (int offset = 0; offset < size; offset++) {
+                final IntegerType archType = types.getArchType();
+                final int archSize = types.getMemorySizeInBytes(archType);
+                Preconditions.checkArgument(size % archSize == 0, "size {} not a multiple of archType size", size);
+                final Expression zero = expressions.makeZero(archType);
+                for (int offset = 0; offset < size; offset += archSize) {
                     mem.setInitialValue(offset, zero);
                 }
             }
