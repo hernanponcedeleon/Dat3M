@@ -635,7 +635,7 @@ public class NativeRelationAnalysis implements RelationAnalysis {
         }
 
         @Override
-        public MutableKnowledge visitSameTransaction(SameTransaction sameTransaction) {
+        public MutableKnowledge visitSameInstruction(SameInstruction si) {
             MutableEventGraph must = new MapEventGraph();
             for (TransactionMarker end : program.getThreadEvents(TransactionMarker.class)) {
                 List<Event> events = end.getTransactionEvents().stream().filter(e -> e.hasTag(VISIBLE)).toList();
