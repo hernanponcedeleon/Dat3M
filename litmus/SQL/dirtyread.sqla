@@ -1,0 +1,19 @@
+program_InitialTry
+
+table_definition:
+
+CREATE TABLE table_a (col1 INTEGER,col2 INTEGER ) ;
+CREATE TABLE table_b (col1 INTEGER,col2 INTEGER) ;
+
+assertions:
+
+SELECT * FROM table_a
+EXCEPT
+SELECT * FROM table_b;
+
+application:
+
+BEGIN TRANSACTION
+INSERT INTO table_a VALUES (1,2);
+INSERT INTO table_b VALUES (1,2);
+END TRANSACTION

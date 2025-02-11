@@ -23,10 +23,7 @@ import com.dat3m.dartagnan.utils.options.BaseOptions;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.verification.VerificationTask.VerificationTaskBuilder;
 import com.dat3m.dartagnan.verification.model.ExecutionModel;
-import com.dat3m.dartagnan.verification.solving.AssumeSolver;
-import com.dat3m.dartagnan.verification.solving.DataRaceSolver;
-import com.dat3m.dartagnan.verification.solving.ModelChecker;
-import com.dat3m.dartagnan.verification.solving.RefinementSolver;
+import com.dat3m.dartagnan.verification.solving.*;
 import com.dat3m.dartagnan.witness.WitnessType;
 import com.dat3m.dartagnan.witness.graphml.WitnessBuilder;
 import com.dat3m.dartagnan.witness.graphml.WitnessGraph;
@@ -168,9 +165,11 @@ public class Dartagnan extends BaseOptions {
             }
         });
 
+
         try {
             long startTime = System.currentTimeMillis();
             t.start();
+
             Configuration solverConfig = Configuration.builder()
                     .setOption(PHANTOM_REFERENCES, valueOf(o.usePhantomReferences()))
                     .build();
@@ -179,16 +178,20 @@ public class Dartagnan extends BaseOptions {
                     BasicLogManager.create(solverConfig),
                     sdm.getNotifier(),
                     o.getSolver());
-                    ProverWithTracker prover = new ProverWithTracker(ctx,
-                        o.getDumpSmtLib() ? GlobalSettings.getOutputDirectory() + String.format("/%s.smt2", p.getName()) : "",
-                        ProverOptions.GENERATE_MODELS)) {
+                 ProverWithTracker prover = new ProverWithTracker(ctx,
+                         o.getDumpSmtLib() ? GlobalSettings.getOutputDirectory() + String.format("/%s.smt2", p.getName()) : "",
+                         ProverOptions.GENERATE_MODELS,ProverOptions.GENERATE_UNSAT_CORE)) {
+
                 ModelChecker modelChecker;
+                logger.info("Solver version:{}", ctx.getVersion());
                 if (properties.contains(DATARACEFREEDOM)) {
                     if (properties.size() > 1) {
                         System.out.println("Data race detection cannot be combined with other properties");
                         System.exit(1);
                     }
                     modelChecker = DataRaceSolver.run(ctx, prover, task);
+                } else if (p.getFormat() == SourceLanguage.SQL) {
+                    modelChecker = SqlSolver.run(ctx, prover, task);
                 } else {
                     // Property is either PROGRAM_SPEC, LIVENESS, or CAT_SPEC
                     modelChecker = switch (o.getMethod()) {
@@ -198,7 +201,7 @@ public class Dartagnan extends BaseOptions {
                 }
 
                 // Verification ended, we can interrupt the timeout Thread
-                t.interrupt();
+                //t.interrupt();
 
                 if (modelChecker.hasModel() && o.getWitnessType().generateGraphviz()) {
                     generateExecutionGraphFile(task, prover, modelChecker, o.getWitnessType());
@@ -236,7 +239,7 @@ public class Dartagnan extends BaseOptions {
         final String progName = task.getProgram().getName();
         final int fileSuffixIndex = progName.lastIndexOf('.');
         final String name = progName.isEmpty() ? "unnamed_program" :
-                (fileSuffixIndex == - 1) ? progName : progName.substring(0, fileSuffixIndex);
+                (fileSuffixIndex == -1) ? progName : progName.substring(0, fileSuffixIndex);
         // RF edges give both ordering and data flow information, thus even when the pair is in PO
         // we get some data flow information by observing the edge
         // FR edges only give ordering information which is known if the pair is also in PO
@@ -247,7 +250,7 @@ public class Dartagnan extends BaseOptions {
     }
 
     private static void generateWitnessIfAble(VerificationTask task, ProverEnvironment prover,
-            ModelChecker modelChecker, String summary) {
+                                              ModelChecker modelChecker, String summary) {
         // ------------------ Generate Witness, if possible ------------------
         final EnumSet<Property> properties = task.getProperty();
         if (task.getProgram().getFormat().equals(SourceLanguage.LLVM) && modelChecker.hasModel()
@@ -266,7 +269,7 @@ public class Dartagnan extends BaseOptions {
     }
 
     public static String generateResultSummary(VerificationTask task, ProverEnvironment prover,
-            ModelChecker modelChecker) throws SolverException {
+                                               ModelChecker modelChecker) throws SolverException {
         // ----------------- Generate output of verification result -----------------
         final Program p = task.getProgram();
         final EnumSet<Property> props = task.getProperty();
@@ -287,7 +290,7 @@ public class Dartagnan extends BaseOptions {
                     for (Assert ass : p.getThreadEvents(Assert.class)) {
                         final boolean isViolated = TRUE.equals(model.evaluate(encCtx.execution(ass)))
                                 && FALSE.equals(
-                                        model.evaluate(encCtx.encodeExpressionAsBooleanAt(ass.getExpression(), ass)));
+                                model.evaluate(encCtx.encodeExpressionAsBooleanAt(ass.getExpression(), ass)));
                         if (isViolated) {
                             final String callStack = makeContextString(
                                     synContext.getContextInfo(ass).getContextOfType(CallContext.class), " -> ");
@@ -417,7 +420,7 @@ public class Dartagnan extends BaseOptions {
     }
 
     private static void increaseBoundAndDump(List<Event> boundEvents, Configuration config) throws IOException {
-        if(!config.hasProperty(BOUNDS_SAVE_PATH)) {
+        if (!config.hasProperty(BOUNDS_SAVE_PATH)) {
             return;
         }
         final File boundsFile = new File(config.getProperty(BOUNDS_SAVE_PATH));

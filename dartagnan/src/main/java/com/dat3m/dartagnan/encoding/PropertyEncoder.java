@@ -13,6 +13,7 @@ import com.dat3m.dartagnan.program.event.MemoryEvent;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.event.metadata.MemoryOrder;
+import com.dat3m.dartagnan.program.event.sql.AbstractSqlEvent;
 import com.dat3m.dartagnan.wmm.Relation;
 import com.dat3m.dartagnan.wmm.RelationNameRepository;
 import com.dat3m.dartagnan.wmm.Wmm;
@@ -36,6 +37,7 @@ import java.util.stream.Collectors;
 
 import static com.dat3m.dartagnan.configuration.Property.*;
 import static com.dat3m.dartagnan.program.Program.SourceLanguage.LLVM;
+import static com.dat3m.dartagnan.program.Program.SourceLanguage.SQL;
 import static com.dat3m.dartagnan.program.Program.SpecificationType.ASSERT;
 import static com.dat3m.dartagnan.wmm.RelationNameRepository.CO;
 
@@ -54,30 +56,6 @@ public class PropertyEncoder implements Encoder {
     // We may want to make this configurable or just keep the option fixed.
     private final boolean doWeakTracking = true;
 
-    /*
-        We use trackable formulas to find out why a disjunctive formula was satisfied:
-            - Consider Enc = (P or Q or R), where P, Q, and R are arbitrary formulas.
-            - In case of satisfaction of Enc, we want to track which of the 3 cases was true.
-            - We associate to each formula a tracking variable, V(P), V(Q), and V(R)
-            - We then encode "(V(P) or V(Q) or V(R)) and (V(P) <=> P) and (V(Q) <=> Q) and (V(R) <=> R).
-                - With "weak tracking", we encode an implication "V(P) => P" instead.
-            - In case of satisfaction, the variables will tell us which of the 3 formulas was true.
-
-       Since we encode a lot of potential violations, and we want to trace back which one lead to
-       our query being SAT, we use trackable formulas.
-     */
-    public static class TrackableFormula {
-        private final BooleanFormula trackingLiteral;
-        private final BooleanFormula trackedFormula;
-
-        public TrackableFormula(BooleanFormula trackingLit, BooleanFormula formula) {
-            this.trackingLiteral = trackingLit;
-            this.trackedFormula = formula;
-        }
-    }
-
-    // =====================================================================
-
     private PropertyEncoder(EncodingContext c) {
         Preconditions.checkArgument(c.getTask().getProgram().isCompiled(),
                 "The program must get compiled first before its properties can be encoded.");
@@ -88,6 +66,8 @@ public class PropertyEncoder implements Encoder {
         alias = c.getAnalysisContext().requires(AliasAnalysis.class);
         ra = c.getAnalysisContext().requires(RelationAnalysis.class);
     }
+
+    // =====================================================================
 
     public static PropertyEncoder withContext(EncodingContext context) throws InvalidConfigurationException {
         return new PropertyEncoder(context);
@@ -101,13 +81,20 @@ public class PropertyEncoder implements Encoder {
     }
 
     public BooleanFormula encodeProperties(EnumSet<Property> properties) {
+        if (program.getFormat() == SQL) {
+            return context.getBooleanFormulaManager().or(
+                    program.getThreadEvents().stream().filter(e -> e.hasTag("ASSERT_EMPTY")).map(e ->
+                            context.getBooleanFormulaManager().not(((AbstractSqlEvent) e).encode_empty(context))
+                    ).toList());
+        }
+
         Property.Type specType = Property.getCombinedType(properties, context.getTask());
         if (specType == Property.Type.MIXED) {
             final String warn = String.format(
                     "The set of properties %s are of mixed type (safety and reachability properties). " +
-                    "Cannot encode mixed properties into a single SMT-query. " +
-                    "You can select a different set of properties with option --property. " +
-                    "Defaulting to " + Property.PROGRAM_SPEC.asStringOption() + ".",
+                            "Cannot encode mixed properties into a single SMT-query. " +
+                            "You can select a different set of properties with option --property. " +
+                            "Defaulting to " + Property.PROGRAM_SPEC.asStringOption() + ".",
                     properties);
             logger.warn(warn);
             properties = EnumSet.of(Property.PROGRAM_SPEC);
@@ -122,6 +109,7 @@ public class PropertyEncoder implements Encoder {
             //  that are relevant for the specification (e.g., only variables that are used in spin loops).
             encoding = context.getBooleanFormulaManager().and(encoding, encodeLastCoConstraints());
         }
+
         return encoding;
     }
 
@@ -248,12 +236,6 @@ public class PropertyEncoder implements Encoder {
         return context.getBooleanFormulaManager().makeVariable("co_last(" + write.getGlobalId() + ")");
     }
 
-    // ======================================================================
-    // ======================================================================
-    // ======================= Program specification ========================
-    // ======================================================================
-    // ======================================================================
-
     private TrackableFormula encodeProgramSpecification() {
         logger.info("Encoding program specification");
         final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
@@ -282,6 +264,12 @@ public class PropertyEncoder implements Encoder {
         return new TrackableFormula(trackingLiteral, encoding);
     }
 
+    // ======================================================================
+    // ======================================================================
+    // ======================= Program specification ========================
+    // ======================================================================
+    // ======================================================================
+
     private BooleanFormula encodeProgramTermination() {
         final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
         BooleanFormula exitReached = bmgr.and(program.getThreads().stream()
@@ -289,12 +277,6 @@ public class PropertyEncoder implements Encoder {
                 .toList());
         return bmgr.and(exitReached, bmgr.not(encodeBoundEventExec()));
     }
-
-    // ======================================================================
-    // ======================================================================
-    // ======================== CAT Specification  ==========================
-    // ======================================================================
-    // ======================================================================
 
     /*
         CAT Properties are defined within the .cat model itself using flagged axioms.
@@ -322,7 +304,7 @@ public class PropertyEncoder implements Encoder {
 
     // ======================================================================
     // ======================================================================
-    // ============================ Data races ==============================
+    // ======================== CAT Specification  ==========================
     // ======================================================================
     // ======================================================================
 
@@ -356,25 +338,25 @@ public class PropertyEncoder implements Encoder {
         });
 
         BooleanFormula hasRace = bmgr.makeFalse();
-        for(Thread t1 : program.getThreads()) {
-            for(Thread t2 : program.getThreads()) {
-                if(t1 == t2) {
+        for (Thread t1 : program.getThreads()) {
+            for (Thread t2 : program.getThreads()) {
+                if (t1 == t2) {
                     continue;
                 }
                 for (Event e1 : t1.getEvents()) {
                     if (!e1.hasTag(Tag.WRITE) || e1.hasTag(Tag.INIT)) {
                         continue;
                     }
-                    MemoryCoreEvent w = (MemoryCoreEvent)e1;
+                    MemoryCoreEvent w = (MemoryCoreEvent) e1;
                     if (!canRace.test(w)) {
                         continue;
                     }
-                    for(Event e2 : t2.getEvents()) {
+                    for (Event e2 : t2.getEvents()) {
                         if (!e2.hasTag(Tag.MEMORY) || e2.hasTag(Tag.INIT)) {
                             continue;
                         }
-                        MemoryCoreEvent m = (MemoryCoreEvent)e2;
-                        if((w.hasTag(Tag.RMW) && m.hasTag(Tag.RMW)) || !canRace.test(m) || !alias.mayAlias(m, w)) {
+                        MemoryCoreEvent m = (MemoryCoreEvent) e2;
+                        if ((w.hasTag(Tag.RMW) && m.hasTag(Tag.RMW)) || !canRace.test(m) || !alias.mayAlias(m, w)) {
                             continue;
                         }
 
@@ -397,13 +379,41 @@ public class PropertyEncoder implements Encoder {
 
     // ======================================================================
     // ======================================================================
-    // ============================= Liveness ===============================
+    // ============================ Data races ==============================
     // ======================================================================
     // ======================================================================
 
     private TrackableFormula encodeDeadlocks() {
         logger.info("Encoding dead locks");
         return new LivenessEncoder().encodeLivenessBugs();
+    }
+
+    // ======================================================================
+    // ======================================================================
+    // ============================= Liveness ===============================
+    // ======================================================================
+    // ======================================================================
+
+    /*
+        We use trackable formulas to find out why a disjunctive formula was satisfied:
+            - Consider Enc = (P or Q or R), where P, Q, and R are arbitrary formulas.
+            - In case of satisfaction of Enc, we want to track which of the 3 cases was true.
+            - We associate to each formula a tracking variable, V(P), V(Q), and V(R)
+            - We then encode "(V(P) or V(Q) or V(R)) and (V(P) <=> P) and (V(Q) <=> Q) and (V(R) <=> R).
+                - With "weak tracking", we encode an implication "V(P) => P" instead.
+            - In case of satisfaction, the variables will tell us which of the 3 formulas was true.
+
+       Since we encode a lot of potential violations, and we want to trace back which one lead to
+       our query being SAT, we use trackable formulas.
+     */
+    public static class TrackableFormula {
+        private final BooleanFormula trackingLiteral;
+        private final BooleanFormula trackedFormula;
+
+        public TrackableFormula(BooleanFormula trackingLit, BooleanFormula formula) {
+            this.trackingLiteral = trackingLit;
+            this.trackedFormula = formula;
+        }
     }
 
     /*
@@ -483,12 +493,6 @@ public class PropertyEncoder implements Encoder {
 
         // ------------------------------------------------------------------------------
         // Liveness issue due to non-terminating loops (~ deadlocks)
-
-        private record SpinIteration(List<Event> body, List<CondJump> spinningJumps) {
-            // Execution of the <spinningJumps> means the loop performed a side-effect-free
-            // iteration without exiting. If such a jump is executed + all loads inside the loop
-            // were co-maximal, then we have a deadlock condition.
-        }
 
         private BooleanFormula generateSpinloopStucknessEncoding(Thread thread, EncodingContext context) {
             final LoopAnalysis loopAnalysis = LoopAnalysis.onFunction(thread);
@@ -582,6 +586,12 @@ public class PropertyEncoder implements Encoder {
             }
 
             return spinIterations;
+        }
+
+        private record SpinIteration(List<Event> body, List<CondJump> spinningJumps) {
+            // Execution of the <spinningJumps> means the loop performed a side-effect-free
+            // iteration without exiting. If such a jump is executed + all loads inside the loop
+            // were co-maximal, then we have a deadlock condition.
         }
     }
 }

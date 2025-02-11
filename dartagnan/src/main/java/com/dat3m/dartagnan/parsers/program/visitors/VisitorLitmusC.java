@@ -26,7 +26,7 @@ import static com.dat3m.dartagnan.program.event.Tag.C11;
 
 public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
 
-    private final ProgramBuilder programBuilder = ProgramBuilder.forLanguage(Program.SourceLanguage.LITMUS);
+    public final ProgramBuilder programBuilder = ProgramBuilder.forLanguage(Program.SourceLanguage.LITMUS);
     private final ExpressionFactory expressions = programBuilder.getExpressionFactory();
     private final IntegerType archType = programBuilder.getTypeFactory().getArchType();
     private final int archSize = TypeFactory.getInstance().getMemorySizeInBytes(archType);

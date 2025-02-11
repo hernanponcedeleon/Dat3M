@@ -34,9 +34,11 @@ public class ProverWithTracker implements ProverEnvironment {
         init();
     }
 
+    public ProverEnvironment getProverEnvironment() {return prover;}
+
     // An empty filename means there is no need to dump the encoding
     private boolean dump() {
-        return !fileName.isEmpty();
+        return false;//!fileName.isEmpty();
     }
 
     private void init() {

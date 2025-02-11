@@ -1,0 +1,21 @@
+program_InitialTry
+
+table_definition:
+
+CREATE TABLE table_a (col1 INTEGER,col2 INTEGER ) ;
+CREATE TABLE table_b (col1 VARCHAR,col2 VARCHAR) ;
+
+assertions:
+
+SELECT SUM(col1) FROM table_a WHERE col1>0 HAVING agg1>100 ;
+
+application:
+
+BEGIN TRANSACTION
+INSERT INTO table_a VALUES (1,2);
+DELETE FROM table_a;
+END TRANSACTION
+
+BEGIN TRANSACTION
+DELETE FROM table_a WHERE col1>0;
+END TRANSACTION

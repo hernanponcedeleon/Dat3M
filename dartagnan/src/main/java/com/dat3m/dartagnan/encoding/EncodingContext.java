@@ -1,6 +1,7 @@
 package com.dat3m.dartagnan.encoding;
 
 import com.dat3m.dartagnan.configuration.ProgressModel;
+import com.dat3m.dartagnan.encoding.sql.CreateSqlEncoder;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.Type;
 import com.dat3m.dartagnan.expression.integers.IntCmpOp;
@@ -24,6 +25,7 @@ import com.dat3m.dartagnan.wmm.Relation;
 import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
 import com.dat3m.dartagnan.wmm.axiom.Acyclicity;
 import com.dat3m.dartagnan.wmm.utils.graph.EventGraph;
+import io.github.cvc5.Solver;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
@@ -31,7 +33,10 @@ import org.sosy_lab.common.configuration.Option;
 import org.sosy_lab.common.configuration.Options;
 import org.sosy_lab.java_smt.api.*;
 import org.sosy_lab.java_smt.api.NumeralFormula.IntegerFormula;
+import org.sosy_lab.java_smt.solvers.cvc5.CVC5Formula;
+import org.sosy_lab.java_smt.solvers.cvc5.CVC5FormulaCreator;
 
+import java.lang.reflect.Constructor;
 import java.math.BigInteger;
 import java.util.HashMap;
 import java.util.Map;
@@ -54,6 +59,8 @@ public final class EncodingContext {
     private final RelationAnalysis relationAnalysis;
     private final FormulaManager formulaManager;
     private final BooleanFormulaManager booleanFormulaManager;
+    public final Solver solver;
+    public final CVC5FormulaCreator formula_creator;
 
     @Option(
             name=IDL_TO_SAT,
@@ -78,8 +85,9 @@ public final class EncodingContext {
     private final Map<Event, Formula> results = new HashMap<>();
     private final Map<MemoryObject, Formula> objAddress = new HashMap<>();
     private final Map<MemoryObject, Formula> objSize = new HashMap<>();
+    public final Map<String, CreateSqlEncoder.Table> tables = new HashMap<>();
 
-    private EncodingContext(VerificationTask t, Context a, FormulaManager m) {
+    private EncodingContext(VerificationTask t, Context a, FormulaManager m, Solver slv, CVC5FormulaCreator formula_creator) {
         verificationTask = checkNotNull(t);
         analysisContext = checkNotNull(a);
         a.requires(BranchEquivalence.class);
@@ -88,10 +96,27 @@ public final class EncodingContext {
         relationAnalysis = a.requires(RelationAnalysis.class);
         formulaManager = m;
         booleanFormulaManager = m.getBooleanFormulaManager();
-    }
 
+        solver = slv;
+        this.formula_creator=formula_creator;
+    }
     public static EncodingContext of(VerificationTask task, Context analysisContext, FormulaManager formulaManager) throws InvalidConfigurationException {
-        EncodingContext context = new EncodingContext(task, analysisContext, formulaManager);
+        EncodingContext context = new EncodingContext(task, analysisContext, formulaManager,null,null);
+        task.getConfig().inject(context);
+        logger.info("{}: {}", IDL_TO_SAT, context.useSATEncoding);
+        logger.info("{}: {}", MERGE_CF_VARS, context.shouldMergeCFVars);
+        context.initialize();
+        if (logger.isInfoEnabled()) {
+            logger.info("Number of encoded edges for acyclicity: {}",
+                    task.getMemoryModel().getAxioms().stream()
+                            .filter(Acyclicity.class::isInstance)
+                            .mapToInt(a -> ((Acyclicity) a).getEncodeGraphSize(analysisContext))
+                            .sum());
+        }
+        return context;
+    }
+    public static EncodingContext of(VerificationTask task, Context analysisContext, FormulaManager formulaManager,Solver slv,CVC5FormulaCreator formula_creator) throws InvalidConfigurationException {
+        EncodingContext context = new EncodingContext(task, analysisContext, formulaManager,slv,formula_creator);
         task.getConfig().inject(context);
         logger.info("{}: {}", IDL_TO_SAT, context.useSATEncoding);
         logger.info("{}: {}", MERGE_CF_VARS, context.shouldMergeCFVars);
@@ -325,11 +350,19 @@ public final class EncodingContext {
     }
 
     public IntegerFormula memoryOrderClock(Event write) {
-        checkArgument(write.hasTag(WRITE), "Cannot get a clock-var for non-writes.");
+        //checkArgument(write.hasTag(WRITE), "Cannot get a clock-var for non-writes.");
         if (write.hasTag(INIT)) {
             return formulaManager.getIntegerFormulaManager().makeNumber(0);
         }
         return formulaManager.getIntegerFormulaManager().makeVariable("co " + write.getGlobalId());
+    }
+
+    public IntegerFormula memoryOrderClockArbitration(Event write) {
+        //checkArgument(write.hasTag(WRITE), "Cannot get a clock-var for non-writes.");
+        if (write.hasTag(INIT)) {
+            return formulaManager.getIntegerFormulaManager().makeNumber(0);
+        }
+        return formulaManager.getIntegerFormulaManager().makeVariable("ar " + write.getGlobalId());
     }
 
     public BooleanFormula edgeVariable(String name, Event first, Event second) {

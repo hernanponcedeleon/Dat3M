@@ -11,6 +11,13 @@
     <packaging>jar</packaging>
 
     <dependencies>
+        <!--
+        <dependency>
+            <groupId>io.github.cvc5</groupId>
+            <artifactId>cvc5</artifactId>
+            <version>1.2.1</version>
+        </dependency>-->
+
         <!-- Basic dependencies -->
         <dependency>
             <groupId>org.antlr</groupId>
@@ -59,6 +66,7 @@
             <artifactId>javasmt-solver-z3</artifactId>
             <version>${z3.version}</version>
         </dependency>
+
 
         <!-- Test dependencies -->
         <dependency>

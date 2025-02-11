@@ -1,0 +1,23 @@
+(*
+Base Relations:
+po -> program order relates two events within the same transaction
+ar -> WriteWrite relation. Orders all writes to the same location
+vis -> Write Read Relation. Connects all writes and reads where the output of the write equals the input of the read.
+*)
+
+(* sameTxn is a equivalence relation between all *)
+let sameTxn = po | po^-1 | id
+
+(* siv connects read with writes. It expresses similar to from read that a value was not read *)
+let siv =  (vis^-1;ar) \ vis^-1
+(*empty siv & vis^-1 *)
+
+(* com: communication expresses if two events are aware of each other*)
+let com = vis | siv
+
+(*hb: happensBefore is a relation to express the knowledge about what event has happened before *)
+let hb = po | ar | com
+acyclic hb
+
+
+
