@@ -34,7 +34,6 @@ import com.dat3m.dartagnan.verification.solving.ModelChecker;
 import com.dat3m.dartagnan.wmm.Relation;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
-import com.dat3m.dartagnan.wmm.analysis.WmmAnalysis;
 import com.dat3m.dartagnan.wmm.axiom.Emptiness;
 import com.dat3m.dartagnan.wmm.definition.Composition;
 import com.dat3m.dartagnan.wmm.definition.Intersection;
@@ -813,21 +812,9 @@ public class AnalysisTest {
         Context analysisContext = Context.create();
         ModelChecker.preprocessProgram(task, config);
         ModelChecker.performStaticProgramAnalyses(task, analysisContext, config);
-
-        analysisContext.register(BranchEquivalence.class, BranchEquivalence.fromConfig(program, config));
-        analysisContext.register(ExecutionAnalysis.class, ExecutionAnalysis.fromConfig(program, ProgressModel.FAIR, analysisContext, config));
-        analysisContext.register(ReachingDefinitionsAnalysis.class, ReachingDefinitionsAnalysis.fromConfig(program, analysisContext, config));
-        analysisContext.register(AliasAnalysis.class, AliasAnalysis.fromConfig(program, analysisContext, config));
-        analysisContext.register(WmmAnalysis.class, WmmAnalysis.fromConfig(wmm, program.getArch(), config));
-        analysisContext.register(RelationAnalysis.class, RelationAnalysis.fromConfig(task, analysisContext, config));
+        ModelChecker.performStaticWmmAnalyses(task, analysisContext, config);
 
         RelationAnalysis.Knowledge rmwKnowledge = analysisContext.get(RelationAnalysis.class).getKnowledge(rmw);
-        //FIXME Debugging
-        RelationAnalysis.Knowledge rfKnowledge = analysisContext.get(RelationAnalysis.class).getKnowledge(rf);
-        RelationAnalysis.Knowledge coKnowledge = analysisContext.get(RelationAnalysis.class).getKnowledge(co);
-        RelationAnalysis.Knowledge coCoKnowledge = analysisContext.get(RelationAnalysis.class).getKnowledge(coCo);
-        RelationAnalysis.Knowledge rfRmwKnowledge = analysisContext.get(RelationAnalysis.class).getKnowledge(rfRmw);
-        System.out.printf("%d %d %d %d", rfKnowledge.getMaySet().size(), coKnowledge.getMaySet().size(), coCoKnowledge.getMaySet().size(), rfRmwKnowledge.getMaySet().size());
         assertEquals(64, rmwKnowledge.getMaySet().size());
     }
 }
