@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan.encoding.sql;
 
+import com.dat3m.dartagnan.encoding.EncodingContext;
 import com.dat3m.dartagnan.parsers.SqlApplication;
 import com.dat3m.dartagnan.parsers.SqlApplicationLexer;
 import com.dat3m.dartagnan.program.event.sql.AbstractSqlEvent;
@@ -16,8 +17,12 @@ public class SelectSqlEncoder extends StmEncoder {
     private Term currentinitialValue;
 
 
-    public SelectSqlEncoder(TermManager tm, int event_id, Map<String, CreateSqlEncoder.Table> tables) {
-        super(tm, tables, event_id);
+    public SelectSqlEncoder(int event_id, EncodingContext ctx) {
+        super(ctx, ctx.tables, event_id);
+    }
+
+    public SelectSqlEncoder(EncodingContext ctx,int event_id ) {
+        super(ctx, ctx.tables, event_id);
     }
 
     @Override
@@ -51,9 +56,9 @@ public class SelectSqlEncoder extends StmEncoder {
         for (int i = 1; i < ctx.simple_select_intersect().size(); i++) {
             r = switch (ctx.j.getType()) {
                 case SqlApplicationLexer.UNION ->
-                        tm.mkTerm(Kind.BAG_UNION_MAX, r, ctx.simple_select_intersect(i).accept(this));
+                        this.ctx.solver.mkTerm(Kind.BAG_UNION_MAX, r, ctx.simple_select_intersect(i).accept(this));
                 case SqlApplicationLexer.EXCEPT ->
-                        tm.mkTerm(Kind.BAG_DIFFERENCE_REMOVE, r, ctx.simple_select_intersect(i).accept(this));
+                        this.ctx.solver.mkTerm(Kind.BAG_DIFFERENCE_REMOVE, r, ctx.simple_select_intersect(i).accept(this));
                 default -> throw new UnsupportedOperationException("Select " + ctx.j + " is not supported");
             };
         }
@@ -80,7 +85,7 @@ public class SelectSqlEncoder extends StmEncoder {
             //Where clause
             if (ctx.where_clause() !=null) {
                 Term where_clause = ctx.where_clause().accept(this);
-                return_table = tm.mkTerm(Kind.BAG_FILTER, where_clause, return_table);
+                return_table = this.ctx.solver.mkTerm(Kind.BAG_FILTER, where_clause, return_table);
             }
 
             //Select Clause
@@ -92,18 +97,18 @@ public class SelectSqlEncoder extends StmEncoder {
 
             if (this.aggregateResult == AGG.IS_AGG) {
                 //Having clause
-                Term agg = tm.mkTerm(Kind.BAG_FOLD, selectTerm, this.currentinitialValue, return_table);
-                Term agg_bag = tm.mkTerm(Kind.BAG_MAKE, agg, tm.mkInteger(1));
+                Term agg = this.ctx.solver.mkTerm(Kind.BAG_FOLD, selectTerm, this.currentinitialValue, return_table);
+                Term agg_bag = this.ctx.solver.mkTerm(Kind.BAG_MAKE, agg, this.ctx.solver.mkInteger(1));
 
                 List<String> aggColumns = new ArrayList<>();
                 aggColumns.add("agg1");
 
                 this.currentTable = new CreateSqlEncoder.Table("", null, agg.getSort(), aggColumns);
-                this.context = LambdaContext.openLambdaContext(tm, currentTable);
+                this.context = LambdaContext.openLambdaContext(this.ctx, currentTable);
 
-                return_table = tm.mkTerm(Kind.BAG_FILTER, ctx.having_clause().accept(this), agg_bag);
+                return_table = this.ctx.solver.mkTerm(Kind.BAG_FILTER, ctx.having_clause().accept(this), agg_bag);
             } else {
-                return_table = tm.mkTerm(Kind.BAG_MAP, selectTerm, return_table);
+                return_table = this.ctx.solver.mkTerm(Kind.BAG_MAP, selectTerm, return_table);
             }
 
             return return_table;
@@ -121,9 +126,9 @@ public class SelectSqlEncoder extends StmEncoder {
                 terms.add(visit(a_expr));
             }
             if (bag == null) {
-                bag = tm.mkEmptyBag(tm.mkBagSort(tm.mkTuple(terms.toArray(new Term[0])).getSort()));
+                bag = this.ctx.solver.mkEmptyBag(this.ctx.solver.mkBagSort(this.ctx.solver.mkTuple(terms.stream().map(Term::getSort).toArray(Sort[]::new),terms.toArray(new Term[0])).getSort()));
             }
-            bag = tm.mkTerm(Kind.BAG_UNION_MAX, bag, tm.mkTerm(Kind.BAG_MAKE, tm.mkTuple(terms.toArray(new Term[0])), tm.mkInteger(1)));
+            bag = this.ctx.solver.mkTerm(Kind.BAG_UNION_MAX, bag, this.ctx.solver.mkTerm(Kind.BAG_MAKE, this.ctx.solver.mkTuple( terms.stream().map(Term::getSort).toArray(Sort[]::new),terms.toArray(new Term[0])), this.ctx.solver.mkInteger(1)));
         }
 
         return bag;
@@ -150,7 +155,7 @@ public class SelectSqlEncoder extends StmEncoder {
 
             Sort table_sort = tables.get(table_name).table();
             currentTable = tables.get(table_name);
-            Term input_table = tm.mkConst(table_sort, table_name + "_" + event_id + "_" + "in");
+            Term input_table = this.ctx.formula_creator.makeVariable(table_sort, "E%s_in_%s".formatted(event_id,table_name));
             inputTables.add(new AbstractSqlEvent.Table(table_name, input_table));
             return input_table;
         }
@@ -160,15 +165,15 @@ public class SelectSqlEncoder extends StmEncoder {
     @Override
     public Term visitWhere_clause(SqlApplication.Where_clauseContext ctx) {
 
-        this.context = LambdaContext.openLambdaContext(tm, currentTable);
+        this.context = LambdaContext.openLambdaContext(this.ctx, currentTable);
 
         Term currentRow = context.makeRowVariable("row_where" + "_" + event_id);
 
-        Term boundVars = tm.mkTerm(Kind.VARIABLE_LIST, currentRow);
+        Term boundVars = this.ctx.solver.mkTerm(Kind.VARIABLE_LIST, currentRow);
 
         Term condition = ctx.a_expr().a_expr_qual().accept(this);
 
-        return tm.mkTerm(Kind.LAMBDA, boundVars, condition);
+        return this.ctx.solver.mkTerm(Kind.LAMBDA, boundVars, condition);
     }
 
     //----- Encoding Select Clause
@@ -184,7 +189,7 @@ public class SelectSqlEncoder extends StmEncoder {
     public Term visitTarget_list(SqlApplication.Target_listContext ctx) {
 
 
-        this.context = LambdaContext.openLambdaContext(this.tm, currentTable);
+        this.context = LambdaContext.openLambdaContext(this.ctx, currentTable);
         Term currentRow = context.makeRowVariable("row_select" + "_" + event_id);
         Term boundVars;
         Term function;
@@ -205,24 +210,24 @@ public class SelectSqlEncoder extends StmEncoder {
 
         if (this.aggregateResult == AGG.IS_AGG) {
 
-            Term intialVariabl = tm.mkVar(tm.mkTupleSort(initialsSort.toArray(new Sort[0])), "inital_fold_var");
+            Term intialVariabl = this.ctx.solver.mkVar(this.ctx.solver.mkTupleSort(initialsSort.toArray(new Sort[0])), "inital_fold_var");
 
             DatatypeConstructor g = intialVariabl.getSort().getDatatype().getConstructor(0);
-            currentinitialValue = tm.mkTuple(initial_value.toArray(new Term[0]));
-            boundVars = tm.mkTerm(Kind.VARIABLE_LIST, currentRow, intialVariabl);
+            currentinitialValue = this.ctx.solver.mkTuple(initial_value.stream().map(Term::getSort).toArray(Sort[]::new),initial_value.toArray(new Term[0]));
+            boundVars = this.ctx.solver.mkTerm(Kind.VARIABLE_LIST, currentRow, intialVariabl);
             List<Term> appliedTerms = new ArrayList<>();
             for (int i = 0; i < terms.size(); i++) {
                 Term term = terms.get(i);
                 appliedTerms.add(
-                        tm.mkTerm(Kind.APPLY_UF,
-                                term, currentRow, tm.mkTerm(Kind.APPLY_SELECTOR, g.getSelector(i).getTerm(), intialVariabl)));
+                        this.ctx.solver.mkTerm(Kind.APPLY_UF,
+                                term, currentRow, this.ctx.solver.mkTerm(Kind.APPLY_SELECTOR, g.getSelector(i).getTerm(), intialVariabl)));
             }
-            function = tm.mkTuple(appliedTerms.toArray(new Term[0]));
+            function = this.ctx.solver.mkTuple(appliedTerms.stream().map(Term::getSort).toArray(Sort[]::new),appliedTerms.toArray(new Term[0]));
         } else {
-            function = tm.mkTuple(terms.toArray(new Term[0]));
-            boundVars = tm.mkTerm(Kind.VARIABLE_LIST, currentRow);
+            function = this.ctx.solver.mkTuple(terms.stream().map(Term::getSort).toArray(Sort[]::new),terms.toArray(new Term[0]));
+            boundVars = this.ctx.solver.mkTerm(Kind.VARIABLE_LIST, currentRow);
         }
-        return tm.mkTerm(Kind.LAMBDA, boundVars, function);
+        return this.ctx.solver.mkTerm(Kind.LAMBDA, boundVars, function);
     }
 
     @Override
@@ -239,9 +244,9 @@ public class SelectSqlEncoder extends StmEncoder {
 
 
         Term currentRow = context.makeRowVariable("aggregated_row");
-        Term boundVars = tm.mkTerm(Kind.VARIABLE_LIST, currentRow);
+        Term boundVars = this.ctx.solver.mkTerm(Kind.VARIABLE_LIST, currentRow);
 
-        return tm.mkTerm(Kind.LAMBDA, boundVars, ctx.a_expr().accept(this));
+        return this.ctx.solver.mkTerm(Kind.LAMBDA, boundVars, ctx.a_expr().accept(this));
     }
 
 

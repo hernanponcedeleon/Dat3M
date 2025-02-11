@@ -9,6 +9,9 @@ import com.dat3m.dartagnan.program.event.core.ControlBarrier;
 import com.dat3m.dartagnan.program.event.core.Load;
 import com.dat3m.dartagnan.program.event.core.MemoryCoreEvent;
 import com.dat3m.dartagnan.program.event.core.RMWStoreExclusive;
+import com.dat3m.dartagnan.program.event.sql.AbstractSqlEvent;
+import com.dat3m.dartagnan.program.event.sql.DeleteEvent;
+import com.dat3m.dartagnan.program.event.sql.InsertEvent;
 import com.dat3m.dartagnan.utils.Utils;
 import com.dat3m.dartagnan.utils.dependable.DependencyGraph;
 import com.dat3m.dartagnan.wmm.Constraint;
@@ -24,7 +27,13 @@ import com.dat3m.dartagnan.wmm.utils.Flag;
 import com.dat3m.dartagnan.wmm.utils.graph.EventGraph;
 import com.dat3m.dartagnan.wmm.utils.graph.mutable.MapEventGraph;
 import com.dat3m.dartagnan.wmm.utils.graph.mutable.MutableEventGraph;
+import com.google.common.base.Preconditions;
+import com.google.common.collect.Collections2;
 import com.google.common.collect.Iterables;
+import com.google.common.collect.Sets;
+import io.github.cvc5.Kind;
+import io.github.cvc5.Solver;
+import io.github.cvc5.Term;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
@@ -32,8 +41,12 @@ import org.sosy_lab.common.configuration.Option;
 import org.sosy_lab.common.configuration.Options;
 import org.sosy_lab.java_smt.api.*;
 
+import java.lang.reflect.InvocationTargetException;
 import java.util.*;
+import java.util.function.*;
+import java.util.stream.Collector;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static com.dat3m.dartagnan.configuration.OptionNames.*;
 import static com.dat3m.dartagnan.program.event.Tag.*;
@@ -223,6 +236,7 @@ public class WmmEncoder implements Encoder {
         final Program program = context.getTask().getProgram();
         final RelationAnalysis ra = context.getAnalysisContext().requires(RelationAnalysis.class);
         final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
+        final Solver solver = context.solver;
         final List<BooleanFormula> enc = new ArrayList<>();
 
         @Override
@@ -667,6 +681,149 @@ public class WmmEncoder implements Encoder {
                 }
             }
             return null;
+        }
+
+        @Override
+        public Void visitArbitration(Arbitration arDef){
+            Preconditions.checkArgument(!context.useSATEncoding,"Arbitration encoding uses IDR");
+
+            Relation ar = arDef.getDefinedRelation();
+
+            List<AbstractSqlEvent> allEvents = program.getThreadEvents(AbstractSqlEvent.class).stream()
+                    //.filter(e -> e.hasTag(WRITE))
+                    .sorted(Comparator.comparingInt(Event::getGlobalId))
+                    .toList();
+            EncodingContext.EdgeEncoder edge = context.edge(ar);
+            EventGraph maySet = ra.getKnowledge(ar).getMaySet();
+            EventGraph mustSet = ra.getKnowledge(ar).getMustSet();
+            EventGraph transCo = ra.findTransitivelyImpliedCo(ar);
+            IntegerFormulaManager imgr = context.getFormulaManager().getIntegerFormulaManager() ;
+
+            for (int i = 0; i < allEvents.size() - 1; i++) {
+                AbstractSqlEvent x = allEvents.get(i);
+                List<AbstractSqlEvent> potential_conflicts = allEvents
+                        .subList(i + 1, allEvents.size())
+                        .stream().filter(
+                                w-> x.getOutputTable().equals(w.getOutputTable()))
+                        .toList();
+                for (AbstractSqlEvent z : potential_conflicts) {
+                    boolean forwardPossible = maySet.contains(x, z);
+                    boolean backwardPossible = maySet.contains(z, x);
+                    if (!forwardPossible && !backwardPossible) {
+                        continue;
+                    }
+                    // everything always executes
+                    // BooleanFormula execPair = execution(x, z);
+                    // Same adress is checked via output tables
+                    // BooleanFormula sameAddress = context.sameAddress(x, z);
+                    // Therefore do not need to check if paired
+                    // BooleanFormula pairingCond = bmgr.and(execPair, sameAddress);
+                    BooleanFormula coF = forwardPossible ? edge.encode(x, z) : bmgr.makeFalse();
+                    BooleanFormula coB = backwardPossible ? edge.encode(z, x) : bmgr.makeFalse();
+                    // Coherence is not total for some architectures
+                    //Arbitration is total so either way needs to be
+                    enc.add( bmgr.or(coF, coB));
+
+                    enc.add(bmgr.implication(coF, transCo.contains(x, z) ? bmgr.makeTrue()
+                            : imgr.lessThan(context.memoryOrderClockArbitration(x), context.memoryOrderClockArbitration(z))));
+                    enc.add(bmgr.implication(coB, transCo.contains(z, x) ? bmgr.makeTrue()
+                            : imgr.lessThan(context.memoryOrderClockArbitration(z), context.memoryOrderClockArbitration(x))));
+                }
+            }
+
+            return null;
+        }
+
+        @Override
+        public Void visitVisibility(Visibility visDef) {
+            // TODO use Relation analysis knowledge
+            Preconditions.checkArgument(!context.useSATEncoding,"Arbitration encoding uses IDR");
+
+            Relation vis = visDef.getDefinedRelation();
+            Relation ar = context.getTask().getMemoryModel().getRelation("ar");
+
+            List<AbstractSqlEvent> allEvents = program.getThreadEvents(AbstractSqlEvent.class).stream()
+                    //.filter(e -> e.hasTag(WRITE))
+                    .sorted(Comparator.comparingInt(Event::getGlobalId)).toList();
+
+            EncodingContext.EdgeEncoder vis_edge = context.edge(vis);
+            EncodingContext.EdgeEncoder ar_edge= context.edge(ar);
+            // w-->r connection
+            EventGraph maySet = ra.getKnowledge(vis).getMaySet();
+            EventGraph mustSet = ra.getKnowledge(vis).getMustSet();
+            EventGraph transCo = ra.findTransitivelyImpliedCo(vis);
+            IntegerFormulaManager imgr = context.getFormulaManager().getIntegerFormulaManager() ;
+
+            Set<Event> readEvents = maySet.inverse().getDomain();
+            for(Event _read: readEvents) {
+                AbstractSqlEvent read = (AbstractSqlEvent) _read;
+                //TODO use multiple Events with communication over registers
+                Set<Event> writes = maySet.inverse().getRange(read);
+                for(String input_table: read.getInputTables()) {
+
+                    List<AbstractSqlEvent> potential_vis_set = writes.stream()
+                            .map(evt -> (AbstractSqlEvent) evt)
+                            .filter(evt -> !evt.equals(_read))
+                            .filter(evt -> !evt.hasTag(INIT))
+                            .filter(evt -> evt.getOutputTable() != null)
+                            .filter(evt -> input_table.equals(evt.getOutputTable()))
+                            .toList();
+                    //This section encodes the initial bag
+                    Term bag = getInitialBag(input_table,writes);
+
+                    for (Set<AbstractSqlEvent> subset : Sets.powerSet(new HashSet<>(potential_vis_set))) {
+                        List<BooleanFormula> premise_vis_list = new ArrayList<>();
+                        //Premise
+
+                        //VIS Premises
+                        for (AbstractSqlEvent evt : potential_vis_set) {
+                            BooleanFormula vis_edge_ = vis_edge.encode(evt,read);
+                            if (subset.contains(evt)) {
+                                premise_vis_list.add(vis_edge_);
+                            } else {
+                                premise_vis_list.add(bmgr.not(vis_edge_));
+                            }
+                        }
+                        for (List<AbstractSqlEvent> permutation :
+                                Collections2.permutations(subset).stream().toList()
+                        ) {
+                            //TODO some operation a commutative they dont need to be ordered.
+                            //TODO use may and must arbitration set
+                            List<BooleanFormula> premise_list = new ArrayList<>(premise_vis_list);
+
+                            //AR premises
+                            for (int idx = 0; idx < permutation.size(); idx++) {
+                                AbstractSqlEvent e = permutation.get(idx);
+                                if (idx > 0) {
+                                    premise_list.add(ar_edge.encode(permutation.get(idx - 1), e));
+                                }
+                                bag = e.encodeEffect(bag,context);
+                            }
+                            BooleanFormula premis = bmgr.and(premise_list);
+                            Term conclusion = solver.mkTerm(Kind.EQUAL, read.getInputConst(input_table,context), bag);
+                            BooleanFormula f = context.formula_creator.encapsulateBoolean(conclusion);
+
+                            enc.add(bmgr.implication(premis,f));
+                        }
+                    }
+                }
+            }
+
+            return null;
+        }
+
+        private Term getInitialBag(String input_table, Set<Event> events) {
+            List<AbstractSqlEvent> initial_evets = events.stream()
+                    .map(evt -> (AbstractSqlEvent) evt)
+                    .filter(evt -> evt.hasTag(INIT))
+                    .filter(evt -> evt.getOutputTable().contains(input_table))
+                    .sorted(Comparator.comparingInt(AbstractEvent::getGlobalId))
+                    .toList();
+            Term bag=null;
+            for(AbstractSqlEvent evt : initial_evets) {
+                bag = evt.encodeEffect(bag,context);
+            }
+            return bag;
         }
 
         @Override

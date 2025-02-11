@@ -17,13 +17,15 @@ import org.apache.logging.log4j.Logger;
 import java.util.ArrayList;
 import java.util.List;
 
+import static com.dat3m.dartagnan.program.event.Tag.VISIBLE;
+
 public class VisitorSqlApplication extends SqlApplicationBaseVisitor<Object> {
 
     private static final Logger logger = LogManager.getLogger(VisitorSqlApplication.class);
 
     public final ProgramBuilder programBuilder = ProgramBuilder.forLanguage(Program.SourceLanguage.SQL);
 
-    static int thread_id=0;
+    private int thread_id=0;
 
     @Override
     public SqlProgram visitApplication(SqlApplication.ApplicationContext ctx) {
@@ -35,14 +37,20 @@ public class VisitorSqlApplication extends SqlApplicationBaseVisitor<Object> {
         ctx.assertions().accept(this);
 
         visitProgramm(ctx.programm());
+
         return (SqlProgram) programBuilder.build();
     }
 
     @Override
     public Object visitTable_definitions(SqlApplication.Table_definitionsContext ctx){
+        //Initializer Thread
+        thread_id++;
+        String name = "init_"+thread_id;
+        programBuilder.newThread(name,thread_id);
+
         for(SqlApplication.CreatestmtContext cstm: ctx.createstmt()){
             CreateEvent create_event = new CreateEvent(cstm);
-            ((SqlProgram)programBuilder.getProgram()).add_Table_create_stms(create_event);
+            programBuilder.addChild(thread_id,create_event);
         }
 
         return null;
@@ -50,9 +58,15 @@ public class VisitorSqlApplication extends SqlApplicationBaseVisitor<Object> {
 
     @Override
     public Object visitAssertions(SqlApplication.AssertionsContext ctx){
+
         for(SqlApplication.SelectstmtContext sstm: ctx.selectstmt()){
-            AssertionEvent select_event = new AssertionEvent(sstm);
-            ((SqlProgram)programBuilder.getProgram()).add_assertion(select_event);
+            logger.info(ctx.getText());
+            thread_id++;
+            String name = "assertion_"+thread_id;
+            programBuilder.newThread(name,thread_id);
+            AssertionEvent assertion_event = new AssertionEvent(sstm);
+            assertion_event.addTags(VISIBLE);
+            programBuilder.addChild(thread_id,assertion_event);
         }
 
         return null;

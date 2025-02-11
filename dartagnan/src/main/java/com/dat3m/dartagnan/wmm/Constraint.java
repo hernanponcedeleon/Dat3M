@@ -94,5 +94,8 @@ public interface Constraint {
         default T visitSyncBarrier(SyncBar sync_bar){ return visitDefinition(sync_bar); }
         default T visitSyncFence(SyncFence sync_fen){ return visitDefinition(sync_fen); }
         default T visitSyncWith(SyncWith sync_with){ return visitDefinition(sync_with); }
+
+        default T visitArbitration(Arbitration ar){ return visitDefinition(ar); }
+        default T visitVisibility(Visibility vis){ return visitDefinition(vis); }
     }
 }

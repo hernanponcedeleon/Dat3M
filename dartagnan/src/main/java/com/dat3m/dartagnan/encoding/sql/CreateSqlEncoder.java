@@ -7,7 +7,7 @@ import com.dat3m.dartagnan.parsers.SqlApplicationBaseVisitor;
 import io.github.cvc5.Solver;
 import io.github.cvc5.Sort;
 import io.github.cvc5.Term;
-import io.github.cvc5.TermManager;
+import io.github.cvc5.Solver;
 import org.antlr.v4.runtime.tree.RuleNode;
 
 import java.util.ArrayList;
@@ -17,9 +17,9 @@ public class CreateSqlEncoder extends SqlApplicationBaseVisitor<CreateSqlEncoder
 
     public record Table(String name, Sort table,Sort row,List<String> col_names) { }
     
-    private final TermManager tm;
+    private final Solver tm;
 
-    public CreateSqlEncoder(TermManager tm){
+    public CreateSqlEncoder(Solver tm){
         super();
         this.tm = tm;
     }
@@ -38,9 +38,9 @@ public class CreateSqlEncoder extends SqlApplicationBaseVisitor<CreateSqlEncoder
         List<Sort> row_sorts = new ArrayList<>();
         List<String> col_names = new ArrayList<>();
         for(SqlApplication.TableelementContext table_element : ctx.opttableelementlist().tableelementlist().tableelement()){
-            //make with visitor pattern
-            Sort row_sort = switch (table_element.columnDef().typename().getText()) {
 
+            SqlApplication.ColumnDefContext colDef =table_element.columnDef();
+            Sort row_sort = switch (colDef.typename().getText()) {
                 case "INTEGER" -> tm.getIntegerSort();
                 case "VARCHAR" -> tm.getStringSort();
                 default ->
@@ -48,7 +48,7 @@ public class CreateSqlEncoder extends SqlApplicationBaseVisitor<CreateSqlEncoder
             };
 
             row_sorts.add(row_sort);
-            col_names.add(table_element.columnDef().colid().getText());
+            col_names.add(colDef.colid().getText());
 
         }
         Sort row = tm.mkTupleSort(row_sorts.toArray(new Sort[0]));

@@ -8,7 +8,7 @@ import java.util.List;
 
 public class LambdaContext {
 
-    private final TermManager tm;
+    private final Solver tm;
 
     LambdaContext parent;
 
@@ -22,14 +22,14 @@ public class LambdaContext {
     private Term initialVariable;
 
 
-    private LambdaContext(TermManager tm,CreateSqlEncoder.Table currentTable, LambdaContext parent){
+    private LambdaContext(Solver tm,CreateSqlEncoder.Table currentTable, LambdaContext parent){
         this.tm=tm;
         this.currentTable = currentTable;
         this.parent = parent;
     }
 
-    public static LambdaContext openLambdaContext(TermManager tm,CreateSqlEncoder.Table currentTable){
-        return new LambdaContext(tm,currentTable,null);
+    public static LambdaContext openLambdaContext(EncodingContext ctx,CreateSqlEncoder.Table currentTable){
+        return new LambdaContext(ctx.solver,currentTable,null);
     }
 
     public LambdaContext deriveContext(){

@@ -230,6 +230,8 @@ public class Wmm {
             case SYNCBAR -> new SyncBar(r);
             case SYNC_FENCE -> new SyncFence(r);
             case VLOC -> new SameVirtualLocation(r);
+            case AR -> new Arbitration(r);
+            case VIS -> new Visibility(r);
             default ->
                     throw new RuntimeException(name + " is part of RelationNameRepository but it has no associated relation.");
         };

@@ -23,10 +23,6 @@ import java.util.Set;
  */
 public class CoreCodeVerification implements FunctionProcessor {
 
-    public static CoreCodeVerification fromConfig(Configuration config) {
-        return new CoreCodeVerification();
-    }
-
     /*
         TODO: We list all core events explicitly because we have no marker to distinguish them from non-core events.
          Introducing a CoreEvent interface or a @Core annotation would do the trick.
@@ -41,12 +37,19 @@ public class CoreCodeVerification implements FunctionProcessor {
             BeginAtomic.class, EndAtomic.class
             // We add SVCOMP atomic blocks here as well, despite them not being part of the core package.
             // TODO: We might want to find a more systematic way to extend the core with these custom events.
+            // TODO: Lasse: Use common super class?
     ));
+
+    public static CoreCodeVerification fromConfig(Configuration config) {
+        return new CoreCodeVerification();
+    }
 
     @Override
     public void run(Function function) {
-        final List<Event> nonCoreEvents = function.getEvents().stream().
-                filter(e -> !(e instanceof CodeAnnotation) && !CORE_CLASSES.contains(e.getClass())).toList();
+        final List<Event> nonCoreEvents = function.getEvents().stream()
+                .filter(e -> !(e instanceof CodeAnnotation)
+                        && CORE_CLASSES.stream().noneMatch(c -> c.isAssignableFrom(e.getClass())))
+                .toList();
         if (!nonCoreEvents.isEmpty()) {
             System.out.println("ERROR: Found non-core events.");
             for (Event e : nonCoreEvents) {

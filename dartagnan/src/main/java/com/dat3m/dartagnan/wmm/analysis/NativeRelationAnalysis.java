@@ -4,6 +4,7 @@ import com.dat3m.dartagnan.expression.integers.IntLiteral;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.Register.UsageType;
+import com.dat3m.dartagnan.program.SqlProgram;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.analysis.BranchEquivalence;
 import com.dat3m.dartagnan.program.analysis.ExecutionAnalysis;
@@ -15,6 +16,9 @@ import com.dat3m.dartagnan.program.event.RegReader;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.event.lang.svcomp.EndAtomic;
+import com.dat3m.dartagnan.program.event.sql.AbstractSqlEvent;
+import com.dat3m.dartagnan.program.event.sql.DeleteEvent;
+import com.dat3m.dartagnan.program.event.sql.InsertEvent;
 import com.dat3m.dartagnan.program.filter.Filter;
 import com.dat3m.dartagnan.program.memory.VirtualMemoryObject;
 import com.dat3m.dartagnan.utils.dependable.DependencyGraph;
@@ -27,8 +31,8 @@ import com.dat3m.dartagnan.wmm.axiom.Axiom;
 import com.dat3m.dartagnan.wmm.axiom.Emptiness;
 import com.dat3m.dartagnan.wmm.axiom.Irreflexivity;
 import com.dat3m.dartagnan.wmm.definition.*;
-import com.dat3m.dartagnan.wmm.utils.graph.EventGraph;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
+import com.dat3m.dartagnan.wmm.utils.graph.EventGraph;
 import com.dat3m.dartagnan.wmm.utils.graph.mutable.MapEventGraph;
 import com.dat3m.dartagnan.wmm.utils.graph.mutable.MutableEventGraph;
 import org.apache.logging.log4j.LogManager;
@@ -90,6 +94,43 @@ public class NativeRelationAnalysis implements RelationAnalysis {
         return new NativeRelationAnalysis(task, context, config);
     }
 
+    private static Delta joinSet(MutableKnowledge k, List<Delta> l) {
+        verify(!l.isEmpty(), "empty update");
+        MutableEventGraph may = k.getMaySet();
+        MutableEventGraph must = k.getMustSet();
+        // NOTE optimization due to initial deltas carrying references to knowledge sets
+        MutableEventGraph maySet = may.isEmpty() || l.get(0).may == may ? may : new MapEventGraph();
+        MutableEventGraph mustSet = must.isEmpty() || l.get(0).must == must ? must : new MapEventGraph();
+        for (Delta d : l) {
+            d.may.apply((e1, e2) -> {
+                if (may.add(e1, e2)) {
+                    maySet.add(e1, e2);
+                }
+            });
+            d.must.apply((e1, e2) -> {
+                if (must.add(e1, e2)) {
+                    mustSet.add(e1, e2);
+                }
+            });
+        }
+        return new Delta(maySet, mustSet);
+    }
+
+    private static ExtendedDelta join(MutableKnowledge k, List<ExtendedDelta> l) {
+        verify(!l.isEmpty(), "empty update in extended analysis");
+        MutableEventGraph may = k.getMaySet();
+        MutableEventGraph must = k.getMustSet();
+        MutableEventGraph disableSet = new MapEventGraph();
+        MutableEventGraph enableSet = new MapEventGraph();
+        l.stream().map(d -> d.disabled).map(MapEventGraph::from).forEach(e -> e.filter(may::remove).apply(disableSet::add));
+        l.stream().map(d -> d.enabled).map(MapEventGraph::from).forEach(e -> e.filter(must::remove).apply(enableSet::add));
+        return new ExtendedDelta(disableSet, enableSet);
+    }
+
+    private static List<Event> visibleEvents(Thread t) {
+        return t.getEvents().stream().filter(e -> e.hasTag(VISIBLE)).toList();
+    }
+
     @Override
     public Knowledge getKnowledge(Relation relation) {
         return knowledgeMap.get(relation);
@@ -131,8 +172,8 @@ public class NativeRelationAnalysis implements RelationAnalysis {
         Map<Event, Set<Event>> mustIn = k.getMustSet().getInMap();
         Map<Event, Set<Event>> mustOut = k.getMustSet().getOutMap();
         k.getMaySet().apply((e1, e2) -> {
-            final MemoryEvent x = (MemoryEvent) e1;
-            final MemoryEvent z = (MemoryEvent) e2;
+            final Event x = e1;
+            final Event z = e2;
             boolean hasIntermediary = mustOut.getOrDefault(x, Set.of()).stream().anyMatch(y -> y != x && y != z &&
                     (exec.isImplied(x, y) || exec.isImplied(z, y)) &&
                     !k.getMaySet().contains(z, y))
@@ -292,37 +333,14 @@ public class NativeRelationAnalysis implements RelationAnalysis {
         return new Initializer();
     }
 
-    private static Delta joinSet(MutableKnowledge k, List<Delta> l) {
-        verify(!l.isEmpty(), "empty update");
-        MutableEventGraph may = k.getMaySet();
-        MutableEventGraph must = k.getMustSet();
-        // NOTE optimization due to initial deltas carrying references to knowledge sets
-        MutableEventGraph maySet = may.isEmpty() || l.get(0).may == may ? may : new MapEventGraph();
-        MutableEventGraph mustSet = must.isEmpty() || l.get(0).must == must ? must : new MapEventGraph();
-        for (Delta d : l) {
-            d.may.apply((e1, e2) -> {
-                if (may.add(e1, e2)) {
-                    maySet.add(e1, e2);
-                }
-            });
-            d.must.apply((e1, e2) -> {
-                if (must.add(e1, e2)) {
-                    mustSet.add(e1, e2);
-                }
-            });
-        }
-        return new Delta(maySet, mustSet);
+    @Override
+    public long countMaySet() {
+        return knowledgeMap.values().stream().mapToLong(k -> k.getMaySet().size()).sum();
     }
 
-    private static ExtendedDelta join(MutableKnowledge k, List<ExtendedDelta> l) {
-        verify(!l.isEmpty(), "empty update in extended analysis");
-        MutableEventGraph may = k.getMaySet();
-        MutableEventGraph must = k.getMustSet();
-        MutableEventGraph disableSet = new MapEventGraph();
-        MutableEventGraph enableSet = new MapEventGraph();
-        l.stream().map(d -> d.disabled).map(MapEventGraph::from).forEach(e -> e.filter(may::remove).apply(disableSet::add));
-        l.stream().map(d -> d.enabled).map(MapEventGraph::from).forEach(e -> e.filter(must::remove).apply(enableSet::add));
-        return new ExtendedDelta(disableSet, enableSet);
+    @Override
+    public long countMustSet() {
+        return knowledgeMap.values().stream().mapToLong(k -> k.getMustSet().size()).sum();
     }
 
     private static final class InitialKnowledgeCloser implements Constraint.Visitor<Map<Relation, ExtendedDelta>> {
@@ -463,6 +481,59 @@ public class NativeRelationAnalysis implements RelationAnalysis {
             newDisabled.retainAll(knowledge.getMaySet());
             logger.debug("Disabled {} edges in {}ms", newDisabled.size(), System.currentTimeMillis() - t0);
             return Map.of(rel, new ExtendedDelta(newDisabled, new MapEventGraph()));
+        }
+    }
+
+    protected static final class Delta {
+        public static final Delta EMPTY = new Delta(new MapEventGraph(), new MapEventGraph());
+
+        public final MutableEventGraph may;
+        public final MutableEventGraph must;
+
+        public Delta(MutableEventGraph maySet, MutableEventGraph mustSet) {
+            may = maySet;
+            must = mustSet;
+        }
+
+        public static Delta combine(List<Delta> deltas) {
+            if (deltas.size() == 1) {
+                return deltas.get(0);
+            }
+            MutableEventGraph mayDelta = new MapEventGraph();
+            MutableEventGraph mustDelta = new MapEventGraph();
+            for (Delta d : deltas) {
+                mayDelta.addAll(d.may);
+                mustDelta.addAll(d.must);
+            }
+            return new Delta(mayDelta, mustDelta);
+        }
+    }
+
+    //FIXME should be visible only to implementations of Constraint
+    private static final class ExtendedDelta {
+        final MutableEventGraph disabled;
+        final MutableEventGraph enabled;
+
+        public ExtendedDelta(MutableEventGraph d, MutableEventGraph e) {
+            disabled = d;
+            enabled = e;
+        }
+    }
+
+    protected static class MutableKnowledge extends Knowledge {
+
+        protected MutableKnowledge(MutableEventGraph maySet, MutableEventGraph mustSet) {
+            super(maySet, mustSet);
+        }
+
+        @Override
+        public MutableEventGraph getMaySet() {
+            return (MutableEventGraph) may;
+        }
+
+        @Override
+        public MutableEventGraph getMustSet() {
+            return (MutableEventGraph) must;
         }
     }
 
@@ -900,6 +971,60 @@ public class NativeRelationAnalysis implements RelationAnalysis {
                     must.add(e1, e2);
                 }
             });
+            return new MutableKnowledge(may, must);
+        }
+
+        @Override
+        public MutableKnowledge visitArbitration(Arbitration ar) {
+            List<Event> allWrites = new ArrayList<>(program.getThreadEventsWithAllTags(WRITE));
+
+            MutableEventGraph may = new MapEventGraph();
+
+            allWrites.stream().map(evt -> (AbstractSqlEvent) evt).forEach(w ->
+                    allWrites.stream()
+                            .map(evt -> (AbstractSqlEvent) evt)
+                            .filter(e -> w.getGlobalId() != e.getGlobalId())
+                            .filter(e-> !e.hasTag(INIT))
+                            .filter(e -> e.getOutputTable().equals(w.getOutputTable())).forEach(
+                                    pair -> may.add(w, pair)
+                            )
+            );
+
+            MutableEventGraph must = new MapEventGraph();
+            allWrites.stream().map(evt -> (AbstractSqlEvent) evt)
+                    .filter(evt -> evt.hasTag(INIT))
+                    .forEach(w ->
+                    allWrites.stream().map(evt -> (AbstractSqlEvent) evt)
+                            .filter(e -> w.getGlobalId() != e.getGlobalId())
+                            .filter(e -> e.getOutputTable().equals(w.getOutputTable())).forEach(
+                                    pair -> must.add(w, pair)
+                            )
+            );
+
+            return new MutableKnowledge(may, must);
+        }
+
+        @Override
+        public MutableKnowledge visitVisibility(Visibility vis) {
+            List<AbstractSqlEvent> allRead = new ArrayList<>(program.getThreadEvents(AbstractSqlEvent.class));
+            List<Event> allWrites = new ArrayList<>(program.getThreadEventsWithAllTags(WRITE));
+
+            MutableEventGraph may = new MapEventGraph();
+            MutableEventGraph must = new MapEventGraph();
+            for(AbstractSqlEvent read: allRead){
+                for(String inputTable : read.getInputTables()){
+                    for(Event w : allWrites){
+                        AbstractSqlEvent write = (AbstractSqlEvent) w;
+                        if(write.getOutputTable().equals(inputTable)){
+                            if (w.hasTag(INIT)){
+                                must.add(write, read);
+                            }
+                            may.add(write, read);
+                        }
+                    }
+                }
+            }
+
             return new MutableKnowledge(may, must);
         }
 
@@ -1389,56 +1514,6 @@ public class NativeRelationAnalysis implements RelationAnalysis {
         }
     }
 
-    private static List<Event> visibleEvents(Thread t) {
-        return t.getEvents().stream().filter(e -> e.hasTag(VISIBLE)).toList();
-    }
-
-    @Override
-    public long countMaySet() {
-        return knowledgeMap.values().stream().mapToLong(k -> k.getMaySet().size()).sum();
-    }
-
-    @Override
-    public long countMustSet() {
-        return knowledgeMap.values().stream().mapToLong(k -> k.getMustSet().size()).sum();
-    }
-
-    protected static final class Delta {
-        public static final Delta EMPTY = new Delta(new MapEventGraph(), new MapEventGraph());
-
-        public final MutableEventGraph may;
-        public final MutableEventGraph must;
-
-        public Delta(MutableEventGraph maySet, MutableEventGraph mustSet) {
-            may = maySet;
-            must = mustSet;
-        }
-
-        public static Delta combine(List<Delta> deltas) {
-            if (deltas.size() == 1) {
-                return deltas.get(0);
-            }
-            MutableEventGraph mayDelta = new MapEventGraph();
-            MutableEventGraph mustDelta = new MapEventGraph();
-            for (Delta d : deltas) {
-                mayDelta.addAll(d.may);
-                mustDelta.addAll(d.must);
-            }
-            return new Delta(mayDelta, mustDelta);
-        }
-    }
-
-    //FIXME should be visible only to implementations of Constraint
-    private static final class ExtendedDelta {
-        final MutableEventGraph disabled;
-        final MutableEventGraph enabled;
-
-        public ExtendedDelta(MutableEventGraph d, MutableEventGraph e) {
-            disabled = d;
-            enabled = e;
-        }
-    }
-
     protected final class Propagator implements Definition.Visitor<Delta> {
         private Relation source;
         private MutableEventGraph may;
@@ -1600,23 +1675,6 @@ public class NativeRelationAnalysis implements RelationAnalysis {
                 update = t.filter(outer::add);
             }
             return outer;
-        }
-    }
-
-    protected static class MutableKnowledge extends Knowledge {
-
-        protected MutableKnowledge(MutableEventGraph maySet, MutableEventGraph mustSet) {
-            super(maySet, mustSet);
-        }
-
-        @Override
-        public MutableEventGraph getMaySet() {
-            return (MutableEventGraph) may;
-        }
-
-        @Override
-        public MutableEventGraph getMustSet() {
-            return (MutableEventGraph) must;
         }
     }
 }

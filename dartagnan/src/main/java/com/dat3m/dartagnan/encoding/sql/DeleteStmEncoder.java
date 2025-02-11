@@ -1,11 +1,12 @@
 package com.dat3m.dartagnan.encoding.sql;
 
+import com.dat3m.dartagnan.encoding.EncodingContext;
 import com.dat3m.dartagnan.parsers.SqlApplication;
 import com.dat3m.dartagnan.program.event.sql.AbstractSqlEvent;
 import io.github.cvc5.Kind;
 import io.github.cvc5.Sort;
 import io.github.cvc5.Term;
-import io.github.cvc5.TermManager;
+import io.github.cvc5.Solver;
 
 import java.util.Map;
 
@@ -13,8 +14,8 @@ public class DeleteStmEncoder extends StmEncoder {
 
     public String table_name;
 
-    public DeleteStmEncoder(TermManager tm, Map<String, CreateSqlEncoder.Table> tables, int event_id) {
-        super(tm, tables, event_id);
+    public DeleteStmEncoder( EncodingContext ctx, int event_id) {
+        super(ctx, ctx.tables, event_id);
     }
 
     @Override
@@ -25,22 +26,22 @@ public class DeleteStmEncoder extends StmEncoder {
         currentTable = tables.get(table_name);
         Sort table_sort = currentTable.table();
 
-        Term input_table = tm.mkConst(table_sort, table_name + "_" + event_id + "_" + "in");
+        Term input_table = this.ctx.formula_creator.makeVariable(table_sort, table_name + "_" + event_id + "_" + "in");
         inputTables.add(new AbstractSqlEvent.Table(table_name,input_table));
 
         if (ctx.where_or_current_clause() == null) {
             return input_table;
         } else {
-            return tm.mkTerm(Kind.BAG_FILTER, ctx.where_or_current_clause().accept(this), input_table);
+            return this.ctx.solver.mkTerm(Kind.BAG_FILTER, ctx.where_or_current_clause().accept(this), input_table);
         }
     }
 
     @Override
     public Term visitWhere_or_current_clause(SqlApplication.Where_or_current_clauseContext ctx) {
-        this.context = LambdaContext.openLambdaContext(tm, currentTable);
+        this.context = LambdaContext.openLambdaContext(this.ctx, currentTable);
 
         Term row = context.makeRowVariable("delete" + "_" + event_id);
-        Term boundVariables = tm.mkTerm(Kind.VARIABLE_LIST, row);
-        return tm.mkTerm(Kind.LAMBDA, boundVariables, ctx.a_expr().accept(this));
+        Term boundVariables = this.ctx.solver.mkTerm(Kind.VARIABLE_LIST, row);
+        return this.ctx.solver.mkTerm(Kind.LAMBDA, boundVariables, ctx.a_expr().accept(this));
     }
 }

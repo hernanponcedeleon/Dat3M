@@ -25,7 +25,6 @@ public class Program {
     private SpecificationType specificationType = SpecificationType.ASSERT;
     private Expression spec;
     private Expression filterSpec; // Acts like "assume" statements, filtering out executions
-    private List<Event> beforeEvents; // all events that happen before the execution of any threads
     protected final List<Thread> threads;
     private final List<Function> functions;
     private final List<NonDetValue> constants = new ArrayList<>();
@@ -127,7 +126,7 @@ public class Program {
     }
 
     public List<Thread> getThreads() {
-        return threads;
+        return threads.stream().sorted(Comparator.comparing(Thread::getId)).collect(Collectors.toList());
     }
 
     public List<Function> getFunctions() { return functions; }

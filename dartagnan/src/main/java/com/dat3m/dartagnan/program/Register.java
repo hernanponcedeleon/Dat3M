@@ -18,7 +18,7 @@ public class Register extends LeafExpressionBase<Type> {
     private String cVar;
     private final Function function;
 
-    Register(String name, Function function, Type type) {
+    public Register(String name, Function function, Type type) {
         super(type);
         this.name = checkNotNull(name);
         this.function = function;

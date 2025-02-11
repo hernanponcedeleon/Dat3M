@@ -12,7 +12,7 @@ SELECT * FROM table_a WHERE col1>2;
 application:
 
 BEGIN TRANSACTION
-INSERT INTO table_a VALUES (1,2);
+INSERT INTO table_a VALUES (3,3);
 DELETE FROM table_a;
 END TRANSACTION
 

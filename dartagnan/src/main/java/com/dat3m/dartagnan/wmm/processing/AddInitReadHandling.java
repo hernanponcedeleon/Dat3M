@@ -33,6 +33,7 @@ public class AddInitReadHandling implements WmmProcessor {
         final Relation urloc = mm.addDefinition(new Composition(mm.newRelation(), ur, loc));
         final Relation urlociw = mm.addDefinition(new Composition(mm.newRelation(), urloc, iw));
 
+        //Each read event has a rf connection to a write event if one exists.
         mm.addConstraint(new Emptiness(urlociw));
     }
 }

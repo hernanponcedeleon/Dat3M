@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan.wmm;
 
+import com.dat3m.dartagnan.parsers.SqlApplication;
 import com.google.common.collect.ImmutableSet;
 
 import java.util.Arrays;
@@ -35,6 +36,10 @@ public class RelationNameRepository {
     public static final String ADDRDIRECT = "__addrDirect";
     public static final String CTRLDIRECT = "__ctrlDirect";
     public static final String IDDTRANS = "__iddTrans";
+
+    // Relations for SQL
+    public static final String AR = "ar"; //ARBITRATION
+    public static final String VIS = "vis"; //VISIBILITY
 
     public static final ImmutableSet<String> RELATION_NAMES;
 

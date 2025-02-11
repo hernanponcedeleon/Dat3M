@@ -1,5 +1,3 @@
-RA
-
 (*
 Base Relations:
 po -> program order relates two events within the same transaction
@@ -15,10 +13,11 @@ let siv =  (vis^-1;ar) \ vis^-1
 (*empty siv & vis^-1 *)
 
 (* com: communication expresses if two events are aware of each other*)
-let com =   vis
-            | siv
-            | (sameTxn;vis;sameTxn)
+let com = vis | siv
 
 (*hb: happensBefore is a relation to express the knowledge about what event has happened before *)
 let hb = po | ar | com
 acyclic hb
+
+
+

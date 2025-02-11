@@ -1,6 +1,7 @@
 package com.dat3m.dartagnan.encoding.sql;
 
 import com.dat3m.dartagnan.encoding.Encoder;
+import com.dat3m.dartagnan.encoding.EncodingContext;
 import com.dat3m.dartagnan.parsers.SqlApplication;
 import com.dat3m.dartagnan.parsers.SqlApplicationBaseVisitor;
 import com.dat3m.dartagnan.parsers.SqlApplicationLexer;
@@ -8,14 +9,14 @@ import com.dat3m.dartagnan.program.event.sql.AbstractSqlEvent;
 import io.github.cvc5.CVC5ApiException;
 import io.github.cvc5.Kind;
 import io.github.cvc5.Term;
-import io.github.cvc5.TermManager;
+import io.github.cvc5.Solver;
 import org.antlr.v4.runtime.tree.ParseTree;
 
 import java.util.*;
 
 public abstract class StmEncoder extends SqlApplicationBaseVisitor<Term> implements Encoder {
 
-    protected final TermManager tm;
+    protected final EncodingContext ctx;
     protected final Map<String, CreateSqlEncoder.Table> tables;
     protected final int event_id;
     /**
@@ -29,10 +30,10 @@ public abstract class StmEncoder extends SqlApplicationBaseVisitor<Term> impleme
 
     protected LambdaContext context;
 
-    protected StmEncoder(TermManager tm,Map<String, CreateSqlEncoder.Table> tables,int event_id) {
-        this.tm = tm;
+    protected StmEncoder(EncodingContext ctx, Map<String, CreateSqlEncoder.Table> tables,int event_id) {
         this.tables=tables;
         this.event_id = event_id;
+        this.ctx=ctx;
     }
 
     //---------Encoding the A Expr -------------------------
@@ -63,7 +64,7 @@ public abstract class StmEncoder extends SqlApplicationBaseVisitor<Term> impleme
     public Term visitA_expr_or(SqlApplication.A_expr_orContext ctx) {
         Term[] children = ctx.a_expr_and().stream().map(ctx_ -> ctx_.accept(this)).toList().toArray(new Term[0]);
         if (children.length > 1) {
-            return tm.mkTerm(Kind.OR, children);
+            return this.ctx.solver.mkTerm(Kind.OR, children);
         } else if (children.length == 1) {
             return children[0];
         }
@@ -75,7 +76,7 @@ public abstract class StmEncoder extends SqlApplicationBaseVisitor<Term> impleme
 
         Term[] children = ctx.a_expr_between().stream().map(ctx_ -> ctx_.accept(this)).toList().toArray(new Term[0]);
         if (children.length > 1) {
-            return tm.mkTerm(Kind.AND, children);
+            return this.ctx.solver.mkTerm(Kind.AND, children);
         } else if (children.length == 1) {
             return children[0];
         }
@@ -102,7 +103,7 @@ public abstract class StmEncoder extends SqlApplicationBaseVisitor<Term> impleme
     @Override
     public Term visitA_expr_unary_not(SqlApplication.A_expr_unary_notContext ctx) {
         if (ctx.getChildCount() == 2) {
-            return tm.mkTerm(Kind.NOT, ctx.a_expr_isnull().accept(this));
+            return this.ctx.solver.mkTerm(Kind.NOT, ctx.a_expr_isnull().accept(this));
         } else if (ctx.getChildCount() == 1) {
             return ctx.a_expr_isnull().accept(this);
         }
@@ -139,7 +140,7 @@ public abstract class StmEncoder extends SqlApplicationBaseVisitor<Term> impleme
                 default -> throw new UnsupportedOperationException("Unknown Compare operator");
             };
 
-            return tm.mkTerm(k, ctx.a_expr_like(0).accept(this), ctx.a_expr_like(1).accept(this));
+            return this.ctx.solver.mkTerm(k, ctx.a_expr_like(0).accept(this), ctx.a_expr_like(1).accept(this));
         }
         return ctx.a_expr_like(0).accept(this);
     }
@@ -172,14 +173,14 @@ public abstract class StmEncoder extends SqlApplicationBaseVisitor<Term> impleme
                 assert ctx.func_arg_list().getChildCount() == 1;
 
                 this.context = this.context.deriveContext();
-                Term initial_var = this.context.makeInitialVariable("summant", tm.getIntegerSort(), tm.mkInteger(0));
+                Term initial_var = this.context.makeInitialVariable("summant", this.ctx.solver.getIntegerSort(), this.ctx.solver.mkInteger(0));
                 Term row_var = this.context.makeRowVariable("summxx");
 
-                Term boundVars = tm.mkTerm(Kind.VARIABLE_LIST, new Term[]{row_var, initial_var});
+                Term boundVars = this.ctx.solver.mkTerm(Kind.VARIABLE_LIST, new Term[]{row_var, initial_var});
 
-                return tm.mkTerm(Kind.LAMBDA,
+                return this.ctx.solver.mkTerm(Kind.LAMBDA,
                         boundVars,
-                        tm.mkTerm(
+                        this.ctx.solver.mkTerm(
                                 Kind.ADD,
                                 ctx.func_arg_list().func_arg_expr(0).accept(this),
                                 initial_var));
@@ -210,7 +211,7 @@ public abstract class StmEncoder extends SqlApplicationBaseVisitor<Term> impleme
     public Term visitIconst(SqlApplication.IconstContext ctx) {
 
         try {
-            return tm.mkInteger(ctx.getText());
+            return this.ctx.solver.mkInteger(ctx.getText());
         } catch (CVC5ApiException e) {
             throw new RuntimeException(e);
         }

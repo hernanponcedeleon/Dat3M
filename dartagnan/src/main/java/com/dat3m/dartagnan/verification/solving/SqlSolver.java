@@ -1,241 +1,166 @@
 package com.dat3m.dartagnan.verification.solving;
 
-import com.dat3m.dartagnan.encoding.ProverWithTracker;
+import com.dat3m.dartagnan.encoding.*;
 import com.dat3m.dartagnan.encoding.sql.CreateSqlEncoder;
 import com.dat3m.dartagnan.program.SqlProgram;
-import com.dat3m.dartagnan.program.event.Event;
-import com.dat3m.dartagnan.program.event.sql.*;
+import com.dat3m.dartagnan.program.event.sql.AbstractSqlEvent;
+import com.dat3m.dartagnan.program.event.sql.CreateEvent;
+import com.dat3m.dartagnan.verification.Context;
 import com.dat3m.dartagnan.verification.VerificationTask;
-import com.google.common.collect.Collections2;
-import com.google.common.collect.Sets;
+import com.dat3m.dartagnan.wmm.Wmm;
+import com.google.common.collect.Table;
 import io.github.cvc5.*;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
-import org.sosy_lab.java_smt.api.SolverContext;
-import org.sosy_lab.java_smt.api.SolverException;
+import org.sosy_lab.java_smt.api.*;
+import org.sosy_lab.java_smt.solvers.cvc5.CVC5Formula;
+import org.sosy_lab.java_smt.solvers.cvc5.CVC5FormulaCreator;
+import org.sosy_lab.java_smt.solvers.cvc5.CVC5SolverContext;
 
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.util.*;
-import java.util.stream.Stream;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
+import java.util.ArrayList;
+import java.util.List;
+
+import static java.util.Collections.singletonList;
 
 
 public class SqlSolver extends ModelChecker {
     private static final Logger logger = LogManager.getLogger(AssumeSolver.class);
 
-    private final SolverContext ctx;
+    private final CVC5SolverContext ctx;
     private final ProverWithTracker prover;
     private final VerificationTask task;
 
     private final Solver solver;
-    private final TermManager tm;
+    private final CVC5FormulaCreator formula_creator;
 
-    private final Map<String, CreateSqlEncoder.Table> tables = new HashMap<>();
+    //private final Map<String, CreateSqlEncoder.Table> tables = new HashMap<>();
     public List<Term> inputVariables = new ArrayList<>();
 
-    private SqlSolver(SolverContext c, ProverWithTracker p, VerificationTask t) throws CVC5ApiException {
-        ctx = c;
-        prover = p;
+    private SqlSolver(SolverContext c, ProverWithTracker p, VerificationTask t) throws CVC5ApiException, NoSuchFieldException, IllegalAccessException, ClassNotFoundException {
+
+
         task = t;
+        ctx = (CVC5SolverContext) c;
+        prover = p;
+        formula_creator = (CVC5FormulaCreator) ((org.sosy_lab.java_smt.basicimpl.AbstractFormulaManager)ctx.getFormulaManager()).getFormulaCreator();
 
+        Class<?> clazz_basic = Class.forName("org.sosy_lab.java_smt.basicimpl.withAssumptionsWrapper.BasicProverWithAssumptionsWrapper");
+        Field proverField = clazz_basic.getDeclaredField("delegate");
+        proverField.setAccessible(true);
+        Object CVC5AbstractProver = proverField.get(prover.getProverEnvironment());
 
-        this.tm = new TermManager();
-        this.solver = new Solver(tm);
+        Class<?> clazz = Class.forName("org.sosy_lab.java_smt.solvers.cvc5.CVC5AbstractProver");
+        Field solverField = clazz.getDeclaredField("solver");
+        solverField.setAccessible(true);
+        this.solver = (Solver) solverField.get(CVC5AbstractProver);
 
         this.solver.setLogic("HO_ALL");
         this.solver.setOption("produce-models", "true");
-        this.solver.setOption("produce-unsat-cores", "true");
         this.solver.setOption("output-language", "smtlib2");
+
+
+//        for(String name :solver.getOptionNames()){
+//            try {
+//                logger.info("{} = {}", name, solver.getOption(name));
+//            } catch (Exception ignored) {}
+//        }
     }
 
     public static SqlSolver run(SolverContext ctx, ProverWithTracker prover, VerificationTask task)
-            throws InterruptedException, SolverException, InvalidConfigurationException, CVC5ApiException {
+            throws InterruptedException, SolverException, InvalidConfigurationException, CVC5ApiException, NoSuchFieldException, IllegalAccessException, ClassNotFoundException, InvocationTargetException, InstantiationException {
 
         SqlSolver s = new SqlSolver(ctx, prover, task);
         s.run();
         return s;
     }
 
-    private void run() throws InterruptedException, SolverException, InvalidConfigurationException {
+    private void run() throws InterruptedException, SolverException, InvalidConfigurationException, ClassNotFoundException, InvocationTargetException, InstantiationException, IllegalAccessException, NoSuchFieldException {
+        Wmm memoryModel = task.getMemoryModel();
+        com.dat3m.dartagnan.verification.Context analysisContext = Context.create();
+        Configuration config = task.getConfig();
 
-        SqlProgram program = (SqlProgram) task.getProgram();
+        memoryModel.configureAll(config);
 
-        List<AbstractSqlEvent> all_events = new ArrayList<>(program.getThreadEvents(AbstractSqlEvent.class));
-        all_events.addAll(program.getAssertions());
+        //For SQL Programs this does not do much but can in future iterations
+        preprocessProgram(task, config);
+        preprocessMemoryModel(task, config);
+        performStaticProgramAnalyses(task, analysisContext, config);
+        performStaticWmmAnalyses(task, analysisContext, config);
 
-        for (AbstractSqlEvent evt : all_events) {
-            logger.info("{}__{}", evt.getGlobalId(), evt);
-        }
+        context = EncodingContext.of(task, analysisContext, ctx.getFormulaManager(), solver, formula_creator);
+        ProgramEncoder programEncoder = ProgramEncoder.withContext(context);
+        PropertyEncoder propertyEncoder = PropertyEncoder.withContext(context);
+        WmmEncoder wmmEncoder = WmmEncoder.withContext(context);
+        SymmetryEncoder symmetryEncoder = SymmetryEncoder.withContext(context);
 
-        for (CreateEvent cEvt : program.getTable_create_stms()) {
-            CreateSqlEncoder.Table t = cEvt.sqlExpression.accept(new CreateSqlEncoder(tm));
+        logger.info("Starting encoding using " + ctx.getVersion());
+        prover.writeComment("Program encoding");
+        prover.addConstraint(programEncoder.encodeFullProgram());
+        prover.writeComment("Memory model encoding");
+        prover.addConstraint(wmmEncoder.encodeFullMemoryModel());
 
-            tables.put(t.name(), t);
-        }
-
-        for (AssertionEvent sEvt : program.getAssertions()) {
-            Term t = sEvt.encode(tm, tables);
-
-            solver.assertFormula(t);
-        }
-
-        for (AbstractSqlEvent sEvt : program.getThreadEvents(AbstractSqlEvent.class)) {
-            Term t = sEvt.encode(tm, tables);
-
-            solver.assertFormula(t);
-        }
-
-        //Encode the Dataflow
-        /*
-        Each operation/statement generates a patch/subset. A read the patches of all visible are stacked.
-         */
-        ConstHelper constHelper = new ConstHelper();
-
-        List<Term> dataflows = new ArrayList<>();
-        for (AbstractSqlEvent sEvt : all_events) {
-
-            for (AbstractSqlEvent.Table input : sEvt.getInputTables()) {
-                List<Term> implications = new ArrayList<>();
-                //This is the List of all Operations that write to the table
-                List<AbstractSqlEvent> potential_vis_set = all_events.stream()
-                        .filter(evt -> !evt.equals(sEvt))
-                        .filter(evt -> evt.getOutputTable() != null)
-                        .filter(evt -> input.table_name().equals(evt.getOutputTable().table_name()))
-                        .toList();
-
-                for (Set<AbstractSqlEvent> subset : Sets.powerSet(new HashSet<>(potential_vis_set))) {
-                    List<Term> premise_vis_list = new ArrayList<>();
-                    //Premise
-                    //VIS Premises
-                    for (AbstractSqlEvent evt : potential_vis_set) {
-                        Term vis_helper = constHelper.getVISConst(evt, sEvt);
-                        if (subset.contains(evt)) {
-                            premise_vis_list.add(vis_helper);
-                        } else {
-                            premise_vis_list.add(tm.mkTerm(Kind.NOT, vis_helper));
-                        }
-                    }
-                    //AR Premises
-                    for (List<AbstractSqlEvent> permutation :
-                            Collections2.permutations(subset).stream().toList()
-                    ) {
-                        List<Term> premise_list = new ArrayList<>(premise_vis_list);
-                        Term bag = tm.mkEmptyBag(tables.get(input.table_name()).table());
-                        for (int idx = 0; idx < permutation.size(); idx++) {
-                            AbstractSqlEvent e = permutation.get(idx);
-                            if (idx > 0) {
-                                premise_list.add(constHelper.getARConst(permutation.get(idx - 1), e));
-                            }
-                            if (e instanceof InsertEvent) {
-                                bag = tm.mkTerm(Kind.BAG_UNION_MAX, e.getOutputTable().constant(), bag);
-                            } else if (e instanceof DeleteEvent) {
-                                bag = tm.mkTerm(Kind.BAG_DIFFERENCE_SUBTRACT, bag, e.getOutputTable().constant());
-                            }
-
-                        }
-                        premise_list.add(tm.mkTrue());// just to make the code smaller.
-                        //if the list has only one member the true element is neutral against AND so avoid if clause
-                        Term premis = tm.mkTerm(Kind.AND, premise_list.toArray(new Term[0]));
-                        Term conclusion = tm.mkTerm(Kind.EQUAL, input.constant(), bag);
-
-                        implications.add(tm.mkTerm(Kind.IMPLIES, premis, conclusion));
-                    }
-
-                }
-                solver.assertFormula(tm.mkTerm(Kind.AND, implications.toArray(new Term[0])));
-            }
-
-        }
-
-
-        //TODO put in CAT
-        solver.assertFormula(constHelper.getARdistinct());
+        BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
+        BooleanFormula assumptionLiteral = bmgr.makeVariable("DAT3M_spec_assumption");
+        BooleanFormula propertyEncoding = propertyEncoder.encodeProperties(task.getProperty());
+        BooleanFormula assumedSpec = bmgr.implication(assumptionLiteral, propertyEncoding);
+        prover.writeComment("Property encoding");
+        prover.addConstraint(assumedSpec);
 
 
         File file = new File("cvc5_assertions.smt2");
         try (FileWriter writer = new FileWriter(file, false);
              PrintWriter printer = new PrintWriter(writer)) {
-            for (Term t : solver.getAssertions()) {
-                printer.append(t.toString());
+            for (Term t : context.solver.getAssertions()) {
+                printer.append(t.toString()).append("\n");
+                logger.info(t.toString());
             }
 
         } catch (IOException e) {
             e.printStackTrace();
         }
 
-        logger.info("Start solver ------");
+        logger.info("------ Start solver ------");
 
+        boolean any_execution = !prover.isUnsat();
 
-        Result r = solver.checkSat();
-        logger.info(r.isSat());
-        if (r.isSat()) {
-            Stream<Term> alltables = all_events.stream().flatMap(evt -> evt.getTables().stream());
-            Stream<Term> visibility = constHelper.vis_consts.values().stream();
-            Stream<Term> arbitration = constHelper.ar_consts.values().stream();
-
-            List<Term> terms = Stream.concat(alltables, Stream.concat(visibility, arbitration)).toList();
-            String model = solver.getModel(new Sort[0], terms.toArray(new Term[0]));
-
-            logger.info(model);
-        } else {
-            for (Term t : solver.getUnsatCore()) {
-                logger.info(t);
-            }
+        logger.info("Can there be any execution? {}", any_execution);
+        if(any_execution) {
+            Field field_variablesCache = CVC5FormulaCreator.class.getDeclaredField("variablesCache");
+            field_variablesCache.setAccessible(true);
+            Table<String, String, Term> variablesCache = (Table<String, String, Term>) field_variablesCache.get(context.formula_creator);
+            logger.info(solver.getModel(new Sort[0], variablesCache.values().toArray(new Term[0])));
+        }else{
+            for(Formula f :prover.getUnsatCore()){
+                logger.info(f);
+            };
         }
 
+        //Does one execution violates the property
+        prover.addConstraint(assumptionLiteral);
+        boolean isUnsat = prover.isUnsat();
+        logger.info("Is the Assertion Violated? {}", !isUnsat);
+        if(!isUnsat) {
+            Field field_variablesCache = CVC5FormulaCreator.class.getDeclaredField("variablesCache");
+            field_variablesCache.setAccessible(true);
+            Table<String, String, Term> variablesCache = (Table<String, String, Term>) field_variablesCache.get(context.formula_creator);
+            logger.info(solver.getModel(new Sort[0], variablesCache.values().toArray(new Term[0])));
+        }else{
+            for(Formula f :prover.getUnsatCore()){
+                logger.info(f);
+            };
+        }
+
+
+        //logger.info(prover.getModelAssignments());
 
     }
-
-    private class ConstHelper {
-        Map<String, Term> vis_consts = new HashMap<>();
-        Map<String, Term> ar_consts = new HashMap<>();
-
-        Term getVISConst(Event a, Event b) {
-            String name = "VIS_" + a.getGlobalId() + "_" + b.getGlobalId();
-
-            if (vis_consts.containsKey(name)) {
-                return vis_consts.get(name);
-            }
-            Term con = tm.mkConst(tm.getBooleanSort(), name);
-            vis_consts.put(name, con);
-            return con;
-        }
-
-        Term getARConst(Event a, Event b) {
-            String name = "AR_" + a.getGlobalId() + "_" + b.getGlobalId();
-
-            if (ar_consts.containsKey(name)) {
-                return ar_consts.get(name);
-            }
-            Term con = tm.mkConst(tm.getBooleanSort(), name);
-            ar_consts.put(name, con);
-            return con;
-        }
-
-        Term getARdistinct() {
-            if (ar_consts.isEmpty()) {
-                return tm.mkTrue();
-            }
-            List<Term> t = new ArrayList<>();
-            Set<String> ar_links = new HashSet<>(ar_consts.keySet());
-            for (String ar : ar_links) {
-                Term con = ar_consts.get(ar);
-
-                String[] parts = ar.split("_");
-                String ar_ = parts[0] + "_" + parts[2] + "_" + parts[1];
-
-                Term con_ = ar_consts.get(ar_);
-                //TODO avoid duplicate distinct
-                //ar_links.remove(ar_);
-
-                t.add(tm.mkTerm(Kind.DISTINCT, con, con_));
-
-            }
-            return tm.mkTerm(Kind.AND, t.toArray(new Term[0]));
-        }
-    }
-
 }

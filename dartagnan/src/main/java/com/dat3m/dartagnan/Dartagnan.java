@@ -180,8 +180,10 @@ public class Dartagnan extends BaseOptions {
                     o.getSolver());
                  ProverWithTracker prover = new ProverWithTracker(ctx,
                          o.getDumpSmtLib() ? GlobalSettings.getOutputDirectory() + String.format("/%s.smt2", p.getName()) : "",
-                         ProverOptions.GENERATE_MODELS)) {
+                         ProverOptions.GENERATE_MODELS,ProverOptions.GENERATE_UNSAT_CORE)) {
+
                 ModelChecker modelChecker;
+                logger.info("Solver version:{}", ctx.getVersion());
                 if (properties.contains(DATARACEFREEDOM)) {
                     if (properties.size() > 1) {
                         System.out.println("Data race detection cannot be combined with other properties");
@@ -198,7 +200,6 @@ public class Dartagnan extends BaseOptions {
                     };
                 }
 
-                //ModelChecker modelChecker = SqlSolver.run(null, null, task);
                 // Verification ended, we can interrupt the timeout Thread
                 //t.interrupt();
 

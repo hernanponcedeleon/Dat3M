@@ -1,50 +1,71 @@
 package com.dat3m.dartagnan.program.event.sql;
 
-import com.dat3m.dartagnan.encoding.sql.CreateSqlEncoder;
+import com.dat3m.dartagnan.encoding.EncodingContext;
 import com.dat3m.dartagnan.encoding.sql.InsertStmEncoder;
 import com.dat3m.dartagnan.parsers.SqlApplication;
-import com.dat3m.dartagnan.program.event.Event;
+import com.dat3m.dartagnan.program.event.Tag;
+import com.dat3m.dartagnan.program.event.core.GenericVisibleEvent;
 import io.github.cvc5.Kind;
 import io.github.cvc5.Term;
-import io.github.cvc5.TermManager;
+import org.sosy_lab.java_smt.api.BooleanFormula;
+import org.sosy_lab.java_smt.api.Formula;
 
-import java.util.*;
+import java.util.List;
 
-public class InsertEvent extends AbstractSqlEvent{
+public class InsertEvent extends AbstractSqlEvent {
 
-
-    public String affected_table;
     public SqlApplication.InsertstmtContext sstm;
-
     InsertStmEncoder enc;
 
-    Term output_const;
+    /*
+    This flag indicates if the insert statement has the attribute ifnotexits
+     */
+    boolean flag_ifnotexists;
 
     public InsertEvent(SqlApplication.InsertstmtContext sstm) {
-        this.sstm= sstm;
+        super("INSERT", Tag.WRITE);
+        this.sstm = sstm;
+        this.sstm.accept(new InsertTableReferenceVisitor());
     }
 
     @Override
-    protected String defaultString() {
+    public String defaultString() {
         return sstm.getText();
     }
 
     @Override
-    public Event getCopy() {
+    public GenericVisibleEvent getCopy() {
         return null;
     }
 
     @Override
-    public Term encode(TermManager tm, Map<String, CreateSqlEncoder.Table> tables) {
-        enc = new InsertStmEncoder(tm,tables,getLocalId());
+    public BooleanFormula encodeExec(EncodingContext ctx)  {
+        enc = new InsertStmEncoder(ctx, getGlobalId());
         Term t = sstm.accept(enc);
 
-        output_const = tm.mkConst(t.getSort(),"insert_"+enc.into_name+"_"+getGlobalId());
-        Term eq = tm.mkTerm(Kind.EQUAL,output_const,t);
+        Term output_const = getOutputConst(ctx);
+        Term eq = ctx.solver.mkTerm(Kind.EQUAL, output_const, t);
 
-        return eq;
+        return ctx.formula_creator.encapsulateBoolean(eq);
     }
 
-    public  Set<Table> getInputTables(){ return enc.inputTables;}
-    public  Table getOutputTable(){return new Table(enc.into_name,output_const);}
+    public List<String> getInputTables(){return input_tables;}
+    public String getOutputTable(){return output_table;}
+
+    public Term encodeEffect(Term bag, EncodingContext ctx){
+        return ctx.solver.mkTerm(
+                flag_ifnotexists? Kind.BAG_UNION_MAX : Kind.BAG_UNION_DISJOINT,
+                bag, getOutputConst(ctx)
+        );
+    }
+
+    protected class InsertTableReferenceVisitor extends StmtTableReferenceVisitor {
+
+        @Override
+        public Void visitInsert_target(SqlApplication.Insert_targetContext ctx){
+            output_table = ctx.getText();
+            return null;
+        }
+
+    }
 }

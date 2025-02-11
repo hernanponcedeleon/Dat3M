@@ -21,27 +21,16 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 public class SqlProgram extends Program{
-
-    private final List<CreateEvent> table_create_stms = new ArrayList<>();
-    private final List<AssertionEvent> assertions = new ArrayList<>();;
-
     public SqlProgram(String name){
-        super(name,null, Program.SourceLanguage.SQL);
+        super(name,new Memory(), Program.SourceLanguage.SQL);
     }
 
-    public void add_Table_create_stms(CreateEvent createEvent) {
-        this.table_create_stms.add(createEvent);
+    @Override
+    public boolean isUnrolled() {
+        return true;
     }
 
-    public void add_assertion(AssertionEvent assertionEvent) {
-        assertions.add(assertionEvent);
-    }
-
-    public List<CreateEvent> getTable_create_stms() {
-        return table_create_stms;
-    }
-
-    public List<AssertionEvent> getAssertions() {
-        return assertions;
+    public boolean hasReachabilitySpecification() {
+        return true;
     }
 }

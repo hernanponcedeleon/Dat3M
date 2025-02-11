@@ -32,6 +32,7 @@ import java.util.Map;
 
 import static com.dat3m.dartagnan.program.Program.SourceLanguage.LITMUS;
 import static com.dat3m.dartagnan.program.event.Tag.NOOPT;
+import static com.dat3m.dartagnan.program.event.Tag.VISIBLE;
 import static com.google.common.base.Preconditions.checkState;
 
 public class ProgramBuilder {
