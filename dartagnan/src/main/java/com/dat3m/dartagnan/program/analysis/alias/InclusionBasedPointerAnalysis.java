@@ -450,9 +450,10 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
         if (!includeEdge.source.object.hasKnownSize()) {
             return;
         }
-        final int remainingSize = includeEdge.source.object.getKnownSize() - modifier.offset;
+        final int accessSize = TypeFactory.getInstance().getMemorySizeInBytes(entry.getKey().getAccessType());
+        final int remainingSize = includeEdge.source.object.getKnownSize() - modifier.offset - (accessSize - 1);
         for (final Integer a : modifier.alignment) {
-            if (a < remainingSize) {
+            if (Math.abs(a) < remainingSize || a < 0 && modifier.offset + a >= 0) {
                 return;
             }
         }
