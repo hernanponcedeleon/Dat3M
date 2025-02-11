@@ -566,6 +566,16 @@ public class NativeRelationAnalysis implements RelationAnalysis {
                         }
                     }
                 }
+                // Events of the same instruction are not program-ordered
+                for (TransactionMarker end : t.getEvents(TransactionMarker.class)) {
+                    List<Event> transactionEvents = end.getTransactionEvents().stream().filter(type::apply).toList();
+                    for (int i = 0; i < transactionEvents.size(); i++) {
+                        Event e2 = transactionEvents.get(i);
+                        for (Event e1 : transactionEvents.subList(0, i)) {
+                            must.remove(e1, e2);
+                        }
+                    }
+                }
             }
             return new MutableKnowledge(must, MapEventGraph.from(must));
         }
