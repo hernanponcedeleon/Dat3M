@@ -38,24 +38,33 @@ public final class Tearing {
     }
 
     private void replaceAll(Collection<MemoryCoreEvent> events) {
+        // Generate transaction events for mixed-size accesses
+        //NOTE RMWStores need to access the associated load's replacements
         for (MemoryCoreEvent event : events) {
             if (event instanceof Load load) {
-                map.put(load, replace(load));
+                map.put(load, createTransaction(load));
             }
         }
         for (MemoryCoreEvent event : events) {
             if (event instanceof Store store) {
-                map.put(store, replace(store));
+                map.put(store, createTransaction(store));
+            }
+        }
+        // Replace instructions by transactions of events
+        //NOTE Some loads are used by stores, and cannot be replaced before them
+        for (Map.Entry<MemoryCoreEvent, List<Event>> entry : map.entrySet()) {
+            if (entry.getKey() instanceof Store store && !entry.getValue().equals(List.of(store))) {
+                store.replaceBy(entry.getValue());
             }
         }
         for (Map.Entry<MemoryCoreEvent, List<Event>> entry : map.entrySet()) {
-            if (!entry.getValue().equals(List.of(entry.getKey()))) {
-                entry.getKey().replaceBy(entry.getValue());
+            if (entry.getKey() instanceof Load load && !entry.getValue().equals(List.of(load))) {
+                load.replaceBy(entry.getValue());
             }
         }
     }
 
-    private List<Event> replace(Load load) {
+    private List<Event> createTransaction(Load load) {
         int bytes = types.getMemorySizeInBytes(load.getAccessType());
         if (bytes == 1) {
             return List.of(load);
@@ -89,7 +98,7 @@ public final class Tearing {
         return replacement;
     }
 
-    private List<Event> replace(Store store) {
+    private List<Event> createTransaction(Store store) {
         int bytes = types.getMemorySizeInBytes(store.getAccessType());
         if (bytes == 1) {
             return List.of(store);
