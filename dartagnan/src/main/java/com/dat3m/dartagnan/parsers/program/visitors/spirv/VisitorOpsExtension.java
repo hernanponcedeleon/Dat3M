@@ -63,7 +63,8 @@ public class VisitorOpsExtension extends SpirvBaseVisitor<Void> {
     public Set<String> getSupportedOps() {
         return Set.of(
                 "OpExtInstImport",
-                "OpExtInst"
+                "OpExtInst",
+                "OpExtension"
         );
     }
 }
