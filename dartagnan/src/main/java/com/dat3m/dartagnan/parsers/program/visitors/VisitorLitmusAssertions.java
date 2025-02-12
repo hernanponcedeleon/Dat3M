@@ -17,6 +17,8 @@ import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.misc.Interval;
 import org.antlr.v4.runtime.tree.TerminalNode;
 
+import java.math.BigInteger;
+
 import static com.dat3m.dartagnan.program.Program.SpecificationType.*;
 import static com.google.common.base.Preconditions.checkState;
 
@@ -104,8 +106,12 @@ class VisitorLitmusAssertions extends LitmusAssertionsBaseVisitor<Expression> {
     }
 
     private Expression acceptAssertionValue(LitmusAssertionsParser.AssertionValueContext ctx, boolean right) {
-        if (ctx.constant() != null) {
-            return expressions.parseValue(ctx.constant().getText(), archType);
+        LitmusAssertionsParser.ConstantContext constant = ctx.constant();
+        if (constant != null) {
+            if (constant.hex != null) {
+                return expressions.makeValue(new BigInteger(constant.hex.getText().substring(2), 16), archType);
+            }
+            return expressions.parseValue(constant.getText(), archType);
         }
         String name = ctx.varName().getText();
         if (ctx.threadId() != null) {

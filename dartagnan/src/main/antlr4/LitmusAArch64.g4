@@ -16,26 +16,16 @@ variableDeclaratorList
     ;
 
 variableDeclarator
-    :   variableDeclaratorLocation
-    |   variableDeclaratorRegister
-    |   variableDeclaratorRegisterLocation
-    |   variableDeclaratorLocationLocation
+    :   type location #typedVariableDeclarator
+    |   location Equals constant #variableDeclaratorLocation
+    |   location Equals Amp? location #variableDeclaratorLocationLocation
+    |   type threadId Colon register64 #typedRegisterDeclarator
+    |   threadId Colon register64 Equals constant #variableDeclaratorRegister
+    |   threadId Colon register64 Equals Amp? location #variableDeclaratorRegisterLocation
     ;
 
-variableDeclaratorLocation
-    :   location Equals constant
-    ;
-
-variableDeclaratorRegister
-    :   threadId Colon register64 Equals constant
-    ;
-
-variableDeclaratorRegisterLocation
-    :   threadId Colon register64 Equals Amp? location
-    ;
-
-variableDeclaratorLocationLocation
-    :   location Equals Amp? location
+type
+    :   Identifier
     ;
 
 variableList
@@ -222,6 +212,7 @@ expr32
 
 offset
     :   immediate
+    |   register64
     |   expressionConversion
     ;
 
