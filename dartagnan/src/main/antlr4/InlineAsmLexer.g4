@@ -32,7 +32,7 @@ YieldTask                   : 'yield';
 // metadata 
 OutputOpAssign              : Equals Amp? RLiteral;
 InputOpGeneralReg           : RLiteral;
-MemoryAddress               : 'Q' | Ast 'Q';
+MemoryAddress               : Ast? 'Q';
 OverlapInOutRegister        : NumbersInline; // defines which returnvalue should be used both for input and output
 PointerToMemoryLocation     : Equals Ast 'm';
 >>>>>>> 2d85efd32 (first cleaning pass, public and private, removed getEvents in InlineParser, removed unsupported operators and more consistent names in .g4)
