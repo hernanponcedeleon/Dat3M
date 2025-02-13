@@ -50,12 +50,16 @@ include "aarch64hwreqs.cat"
 
 (*** Coherence-after ***)
 let ca = fr | co
+let intervening(X,r) = r; [X]; r
 
 (*** TLBI-after, DC-after, IC-after ***)
 include "enumerations.cat"
-with TLBI-after from (all-TLBI-Imp_TTD_R-enums local-hw-reqs)
-with DC-after from (all-DC-Exp_W-enums local-hw-reqs)
-with IC-after from (all-IC-Imp_Instr_R-enums local-hw-reqs)
+(*with TLBI-after from (all-TLBI-Imp_TTD_R-enums local-hw-reqs)*)
+let TLBI-after = 0
+(*with DC-after from (all-DC-Exp_W-enums local-hw-reqs)*)
+let DC-after = 0
+(*with IC-after from (all-IC-Imp_Instr_R-enums local-hw-reqs)*)
+let IC-after = 0
 
 (*** Hazard-ordered-before ***)
 
@@ -69,9 +73,11 @@ let Exp-haz-ob =
 let TTD-read-ordered-before =
   TLBI-after; [TLBI]; po; [dsb.full]; po; [~(Imp & M)]
   | TLBI-after; [TLBI]; po; [dsb.full]; po; [CSE]; po; [Imp & M]
-  | (if "ETS2" then TLBI-after; [TLBI]; po; [dsb.full]; po; [Imp & TTD & M] else 0)
+  (*| (if "ETS2" then TLBI-after; [TLBI]; po; [dsb.full]; po; [Imp & TTD & M] else 0)*)
 
 (* TLBI-ordered-before *)
+let tr-ib = 0
+let po-va-loc = 0
 let TLBI-ob =
      TTD-read-ordered-before
    | tr-ib^-1; TTD-read-ordered-before & ext
@@ -82,7 +88,7 @@ let TLBI-ob =
 (* Instr-read-ordered-before *)
 let Instr-read-ordered-before =
   IC-after; [IC]; po; [dsb.full]; po; [~(Imp & M)]
-  | (if "DIC" then ca else 0)
+  (*| (if "DIC" then ca else 0)*)
 
 (* IC-ordered-before *)
 let IC-ob = [Imp & Instr & R]; po; [Imp & Instr & R]; Instr-read-ordered-before
@@ -92,7 +98,7 @@ let haz-ob =
   Exp-haz-ob | TLBI-ob | IC-ob
 
 (*** Hardware-required-ordered-before ***)
-let hw-reqs = local-hw-reqs | haz-ob
+let hw-reqs = haz-ob (*local-hw-reqs | haz-ob*)
 
 (*** Observed-by ***)
 
@@ -131,10 +137,10 @@ let TTD-obs =
 (** Instr-observed-by **)
 
 (* IC-coherence-after *)
-let IC-ca =
-    (if not "DIC" && not "IDC" then [IC]; IC-after; [Imp & Instr & R]; ca; [W]; DC-after; [DC.CVAU] else 0)
+let IC-ca = 0
+    (*(if not "DIC" && not "IDC" then [IC]; IC-after; [Imp & Instr & R]; ca; [W]; DC-after; [DC.CVAU] else 0)
     | (if not "DIC" && "IDC" then [IC]; IC-after; [Imp & Instr & R]; ca; [W] else 0)
-    | (if "DIC" && "IDC" then [Imp & Instr & R]; ca; [W] else 0)
+    | (if "DIC" && "IDC" then [Imp & Instr & R]; ca; [W] else 0)*)
 
 (* Instr-observed-by *)
 let Instr-obs =
@@ -144,6 +150,7 @@ let Instr-obs =
     | IC-ca
 
 (** Observed-by **)
+let sca-class = 0
 let obs =
     Exp-obs; sca-class?
     | Tag-obs; sca-class?
@@ -170,10 +177,12 @@ irreflexive [Exp & Tag & W]; po-loc; [Imp & Tag & R]; (ca & int) as coWR-MTE
 empty (rmw & (fr; co)) \ (([Exp]; rmw; [Exp]) & (fri ; [Exp & W]; coi)) as atomic
 
 (*** Break Before Make ***)
+let TTD-update-needsBBM = 0
 let BBM = ([TTDV]; ca; [TTDINV]; co; [TTDV])
 flag ~empty (TTD-update-needsBBM & ~BBM) as requires-BBM
 
 (*** Additional synchronisation requirements for CMODX ***)
+let same-loc = loc
 let CMODX-conflicts = same-loc & (
   (Imp & Instr & R & Within-CMODX-List) * W
   | (Imp & Instr & R) * (Within-CMODX-List & W)

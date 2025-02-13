@@ -1,6 +1,9 @@
 package com.dat3m.dartagnan.litmus;
 
 import com.dat3m.dartagnan.utils.Result;
+import com.dat3m.dartagnan.utils.rules.Provider;
+import com.dat3m.dartagnan.utils.rules.Providers;
+import com.dat3m.dartagnan.wmm.Wmm;
 import org.junit.runners.Parameterized;
 
 import java.io.IOException;
@@ -14,5 +17,15 @@ public class LitmusAARCH64MSATest extends LitmusAARCH64Test {
 
     public LitmusAARCH64MSATest(String path, Result expected) {
         super(path, expected);
+    }
+
+    @Override
+    protected Provider<Wmm> getWmmProvider() {
+        return Providers.createWmmFromName(() -> "aarch64_diy");
+    }
+
+    @Override
+    protected long getTimeout() {
+        return 1000;
     }
 }
