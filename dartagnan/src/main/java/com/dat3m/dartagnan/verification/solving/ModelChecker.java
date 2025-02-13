@@ -29,7 +29,6 @@ import org.sosy_lab.java_smt.api.SolverException;
 
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 
 import static com.dat3m.dartagnan.configuration.Property.CAT_SPEC;
 import static com.dat3m.dartagnan.program.analysis.SyntacticContextAnalysis.*;
@@ -118,9 +117,7 @@ public abstract class ModelChecker {
         Program program = task.getProgram();
         List<MemoryCoreEvent> events = program.getThreadEvents(MemoryCoreEvent.class);
         AliasAnalysis aliasAnalysis = analysisContext.requires(AliasAnalysis.class);
-        Set<MemoryCoreEvent> msaSet = AliasAnalysis.getMayMixedSizeAccessesSet(aliasAnalysis, events);
-        if (!msaSet.isEmpty()) {
-            Tearing.run(msaSet);
+        if (Tearing.run(aliasAnalysis, events)) {
             IdReassignment.newInstance().run(program);
             undoAliasAnalysis(analysisContext);
             doAliasAnalysis(task, analysisContext, config);

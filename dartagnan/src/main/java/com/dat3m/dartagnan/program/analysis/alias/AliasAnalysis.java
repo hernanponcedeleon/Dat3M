@@ -2,6 +2,7 @@ package com.dat3m.dartagnan.program.analysis.alias;
 
 import com.dat3m.dartagnan.configuration.Alias;
 import com.dat3m.dartagnan.configuration.Arch;
+import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.event.MemoryEvent;
 import com.dat3m.dartagnan.program.event.core.Init;
@@ -50,31 +51,15 @@ public interface AliasAnalysis {
      * </ul>
      * False positives may occur, but false negatives shall not occur,
      * so long as the program features no undefined behavior, such as use-after-free or buffer overflows.
-     * @param a One memory access in the analyzed program.
-     * @param b Another memory access in the analyzed program.
-     * @return There could be executions, where {@code x} and {@code y} share, but do not exactly match, byte ranges.
+     * @param event Memory access in the analyzed program.
+     * @return Sorted list of offsets, where another access' byte range may start or end.
      */
-    default boolean mayMix(MemoryCoreEvent a, MemoryCoreEvent b) {
-        return true;
-    }
-
-    static Set<MemoryCoreEvent> getMayMixedSizeAccessesSet(AliasAnalysis analysis, List<MemoryCoreEvent> events) {
-        logger.trace("Checking for mixed-size accesses ({} events).", events.size());
-        //TODO The implementation could also deduce the proper granularity.  Here it defaults to 1 byte.
-        final var set = new HashSet<MemoryCoreEvent>();
-        for (int i = 0; i < events.size(); i++) {
-            final MemoryCoreEvent event0 = events.get(i);
-            boolean event0InSet = false;
-            for (MemoryCoreEvent event1 : events.subList(0, i)) {
-                // NOTE shortcut here, because mayMix may be expensive
-                if (!(event0InSet && set.contains(event1)) && analysis.mayMix(event0, event1)) {
-                    set.add(event0);
-                    set.add(event1);
-                    event0InSet = true;
-                }
-            }
+    default List<Integer> mayMixedSizeAccesses(MemoryCoreEvent event) {
+        final var set = new ArrayList<Integer>();
+        final int bytes = TypeFactory.getInstance().getMemorySizeInBytes(event.getAccessType());
+        for (int i = 1; i < bytes; i++) {
+            set.add(i);
         }
-        logger.info("Number of mixed-size accesses: {}", set.size());
         return set;
     }
 
@@ -157,8 +142,15 @@ public interface AliasAnalysis {
         }
 
         @Override
-        public boolean mayMix(MemoryCoreEvent a, MemoryCoreEvent b) {
-            return a1.mayMix(a, b) && a2.mayMix(a, b);
+        public List<Integer> mayMixedSizeAccesses(MemoryCoreEvent a) {
+            final List<Integer> set1 = a1.mayMixedSizeAccesses(a);
+            final List<Integer> set2 = a2.mayMixedSizeAccesses(a);
+            // compute the intersection
+            if (set1.isEmpty() | set2.isEmpty()) {
+                return set1.isEmpty() ? set1 : set2;
+            }
+            final boolean smaller = set1.size() < set2.size();
+            return (smaller ? set1 : set2).stream().filter((smaller ? set2 : set1)::contains).toList();
         }
 
         @Override

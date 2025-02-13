@@ -92,6 +92,9 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
     // Non-trivial modifiers may only appear for singleton Locals.
     private final Map<List<RegWriter>, DerivedVariable> registerVariables = new HashMap<>();
 
+    // Maps memory events to additional offsets inside their byte range, which may match other accesses' bounds.
+    private final Map<MemoryCoreEvent, List<Integer>> mixedAccesses = new HashMap<>();
+
     // If enabled, the algorithm describes its internal graph to be written into a file.
     private Graphviz graphviz;
 
@@ -120,6 +123,7 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
         final ReachingDefinitionsAnalysis def = analysisContext.requires(ReachingDefinitionsAnalysis.class);
         final var analysis = new InclusionBasedPointerAnalysis(program, def);
         analysis.run(program, config);
+        analysis.detectMixedSizeAccesses();
         logger.debug("variable count: {}",
                 analysis.totalVariables);
         logger.debug("replacement count: {}",
@@ -181,17 +185,40 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
     }
 
     @Override
-    public boolean mayMix(MemoryCoreEvent x, MemoryCoreEvent y) {
+    public List<Integer> mayMixedSizeAccesses(MemoryCoreEvent event) {
+        return Collections.unmodifiableList(mixedAccesses.getOrDefault(event, List.of()));
+    }
+
+    // ================================ Mixed Size Access Detection ================================
+
+    private void detectMixedSizeAccesses() {
+        final List<MemoryCoreEvent> events = List.copyOf(addressVariables.keySet());
+        final List<Set<Integer>> offsets = new ArrayList<>();
+        for (int i = 0; i < events.size(); i++) {
+            final MemoryCoreEvent event0 = events.get(i);
+            final var set0 = new HashSet<Integer>();
+            for (int j = 0; j < i; j++) {
+                mayMix(event0, set0, events.get(j), offsets.get(j));
+            }
+            offsets.add(set0);
+        }
+        for (int i = 0; i < events.size(); i++) {
+            if (!offsets.get(i).isEmpty()) {
+                mixedAccesses.put(events.get(i), offsets.get(i).stream().sorted().toList());
+            }
+        }
+    }
+
+    private void mayMix(MemoryCoreEvent x, Set<Integer> xSet, MemoryCoreEvent y, Set<Integer> ySet) {
         final DerivedVariable vx = addressVariables.get(x);
         final DerivedVariable vy = addressVariables.get(y);
-        if (vx == null || vy == null) {
-            return true;
-        }
+        assert vx != null & vy != null;
         final TypeFactory types = TypeFactory.getInstance();
         final int bytesX = types.getMemorySizeInBytes(x.getAccessType());
         final int bytesY = types.getMemorySizeInBytes(y.getAccessType());
         if (vx.base == vy.base) {
-            return mayMix(vx.modifier, bytesX, vy.modifier, bytesY);
+            mayMix(xSet, vx.modifier, bytesX, ySet, vy.modifier, bytesY);
+            return;
         }
         final List<IncludeEdge> oy = toIncludeSet(vy.base);
         for (final IncludeEdge ax : toIncludeSet(vx.base)) {
@@ -199,14 +226,12 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
                 if (ax.source == ay.source) {
                     final Modifier l = compose(ax.modifier, vx.modifier);
                     final Modifier r = compose(ay.modifier, vy.modifier);
-                    if (mayMix(l, bytesX, r, bytesY)) {
-                        return true;
-                    }
+                    mayMix(xSet, l, bytesX, ySet, r, bytesY);
                 }
             }
         }
-        return false;
     }
+
 
     private List<IncludeEdge> toIncludeSet(Variable address) {
         final List<IncludeEdge> set = new ArrayList<>(address.includes);
@@ -214,18 +239,21 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
         return set;
     }
 
-    private boolean mayMix(Modifier modifierLeft, int bytesLeft, Modifier modifierRight, int bytesRight) {
-        for (int i = 1; i < bytesLeft; i++) {
-            if (overlaps(compose(modifierLeft, modifier(i, List.of())), modifierRight)) {
-                return true;
+    private void mayMix(Set<Integer> xSet, Modifier xModifier, int xBytes,
+            Set<Integer> ySet, Modifier yModifier, int yBytes) {
+        for (int i = 1; i < xBytes; i++) {
+            if (overlaps(compose(xModifier, modifier(i, List.of())), yModifier)) {
+                ySet.add(i);
             }
         }
-        for (int i = 1; i < bytesRight; i++) {
-            if (overlaps(modifierLeft, compose(modifierRight, modifier(i, List.of())))) {
-                return true;
+        for (int i = 1; i < yBytes; i++) {
+            if (overlaps(xModifier, compose(yModifier, modifier(i, List.of())))) {
+                xSet.add(i);
             }
         }
-        return bytesLeft != bytesRight && overlaps(modifierLeft, modifierRight);
+        if (xBytes != yBytes && overlaps(xModifier, yModifier)) {
+            (xBytes < yBytes ? ySet : xSet).add(Math.min(xBytes, yBytes));
+        }
     }
 
     @Override
