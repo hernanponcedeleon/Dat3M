@@ -74,11 +74,11 @@ import static com.google.common.base.Preconditions.checkState;
         //    1.5 we see that =*m is a reference to a memory location, so it would be $1 -> MEM and we do not pick it up
         //    2. we map $2 to r7 and $3 to r8 as they are the args
         // WE HAVE AN OVERLAP IN THE RETURN REGISTER AND THE ARGS
-        // f)   r10 = call { i32, i32, i32, i32 } asm "ldr $0, $4 ; add $1, $0, $3 ; add $2, $1, $4 ; ldr $2, $0", "=&r,=&r,=&r,=&r,*Q,3"(ptr r10, i32 r8)
+        // f)   r11 = call { i32, i32, i32, i32 } asm "ldr $0, $4 ; add $1, $0, $3 ; add $2, $1, $4 ; ldr $2, $0", "=&r,=&r,=&r,=&r,*Q,3"(ptr r10, i32 r8)
         // -> registerNames := [$0, $1, $2, $3, $4] ; fnParameters := [r10, r8] ; clobbers := [=&r, =&r, =&r, =&r, *Q, 3]
         //    1. we have 4 output clobbers, so we have an aggregate type and w.h. $0 -> r10[0], $1 -> r10[1], $2 -> r10[2], $3 -> r10[3]
-        //    2. we have to map $4 to r8
-        //    3. the meaning of the 3 is that the return register indexed at 3 is used both for returnRegister and as an argument, so we have to map $3 to r8 and override the previous mapping
+        //    2. we have to map $4 to r10, as it is the first argument passed to the asm
+        //    3. the meaning of the 3 is that the return register indexed at 3 is used both for returnRegister and as an argument, so we have to map $3 (referencing r11[3]) to r8 and override the previous mapping
 
 public class VisitorInlineAsm extends InlineAsmBaseVisitor<Object> {
 
@@ -135,6 +135,8 @@ public class VisitorInlineAsm extends InlineAsmBaseVisitor<Object> {
                 Type returnRegisterProjectionType = expressions.makeExtract(number, returnRegister).getType();
                 return returnRegisterProjectionType;
             }
+            // in case returnRegister is not aggregateType, we just pick its type
+            // e.g. r10 = call i32 asm "..." is going to have returnRegister r10 : i32. No extracting is needed.
             return this.returnRegister.getType();
         }
         // if it is not part of the return Register, it is part of the arguments
