@@ -2,9 +2,9 @@ package com.dat3m.dartagnan.parsers.program.visitors;
 
 import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.expression.*;
+import com.dat3m.dartagnan.expression.aggregates.ConstructExpr;
 import com.dat3m.dartagnan.expression.integers.IntBinaryOp;
 import com.dat3m.dartagnan.expression.integers.IntLiteral;
-import com.dat3m.dartagnan.expression.misc.ConstructExpr;
 import com.dat3m.dartagnan.expression.misc.GEPExpr;
 import com.dat3m.dartagnan.expression.processing.ExprTransformer;
 import com.dat3m.dartagnan.expression.type.*;
@@ -134,7 +134,7 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
         if (annotationOnlyConstants.containsKey("llvm.global.annotations")) {
             final MemoryObject annotationObj = (MemoryObject) constantMap.get("llvm.global.annotations");
             // Annotations are an array of 5-tuples (ptr var, ptr annotationName, ptr filePath, int32 ???, ptr args)
-            final List<Integer> initFields = annotationObj.getStaticallyInitializedFields().stream().sorted().toList();
+            final List<Integer> initFields = annotationObj.getInitializedFields().stream().sorted().toList();
             assert initFields.size() % 5 == 0;
             for (List<Integer> tuple : Lists.partition(initFields, 5)) {
                 // <var> may be a Function or a MemoryObject
@@ -145,11 +145,13 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
                 final boolean hasArgs = !(annotationObj.getInitialValue(tuple.get(4)) instanceof IntLiteral);
                 final MemoryObject argsObj = hasArgs ? (MemoryObject) annotationObj.getInitialValue(tuple.get(4)) : null;
 
-                final String name = byteArrayToLLVMString((ConstructExpr) annotationOnlyConstants.get(annotationName.getCVar()), true);
-                final String path = byteArrayToLLVMString((ConstructExpr) annotationOnlyConstants.get(annotationFile.getCVar()), true);
+                final String name = byteArrayToLLVMString((ConstructExpr) annotationOnlyConstants.get(annotationName.getName()), true);
+                final String path = byteArrayToLLVMString((ConstructExpr) annotationOnlyConstants.get(annotationFile.getName()), true);
                 final List<Expression> args = hasArgs ? flattenConstants(argsObj) : List.of();
 
                 final LLVMAnnotation annotation = new LLVMAnnotation(name, args);
+
+                // TODO: Do something with the annotations.
             }
 
         }
@@ -159,10 +161,10 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
         ExprTransformer flattener = new ExprTransformer() {
             @Override
             public Expression visitMemoryObject(MemoryObject memObj) {
-                if (memObj.getCVar() == null) {
+                if (memObj.getName() == null) {
                     return memObj;
                 }
-                return annotationOnlyConstants.getOrDefault(memObj.getCVar(), memObj);
+                return annotationOnlyConstants.getOrDefault(memObj.getName(), memObj);
             }
         };
         return expr.accept(flattener).getOperands();
@@ -1412,9 +1414,6 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
         final IntegerType byteType = types.getByteType();
         assert arrayType.getElementType().equals(byteType);
 
-        //TODO: Remove test code
-        removeTrailingZero = false;
-
         List<Expression> elements = array.getOperands();
         if (removeTrailingZero && ((IntLiteral)elements.get(elements.size() - 1)).isZero()) {
             elements = elements.subList(0, elements.size() - 1);
@@ -1423,19 +1422,7 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
         for (int i = 0; i < bytes.length; i++) {
             bytes[i] = (byte)((IntLiteral)elements.get(i)).getValueAsInt();
         }
-        final String retVal = new String(bytes, StandardCharsets.UTF_8);
-        StringBuilder printable = new StringBuilder();
-        for (byte b : bytes) {
-            // TODO: Convert non-printable/non-standard characters into \XY format.
-            if (Character.isISOControl(b)) {
-                printable.append("\\")
-                        .append(Integer.toString(b >>> 4, 16))
-                        .append(Integer.toString(b & 16, 16));
-            } else {
-                printable.append((char)b);
-            }
-        }
-        final String test = printable.toString();
+        final String retVal = new String(bytes, StandardCharsets.UTF_8).intern();
         return retVal;
     }
 
