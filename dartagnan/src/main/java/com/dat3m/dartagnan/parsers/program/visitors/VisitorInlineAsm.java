@@ -28,57 +28,82 @@ import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.Label;
 import static com.google.common.base.Preconditions.checkState;
 
-// NOTE : This is the core of the visitor, and it is a bit tricky to understand
-        // given this format 
-        //      Return Register = Type call asm sideeffect "asm code", "clobbers" ('args')
-        // we refer to "asm registers" as the one appearing inside of the inline asm code
-        // and we refer to llvm registers used as return Register and as arguments passed to the inline asm
-        // we save the register that appear in the inline asm in registerNames, args in fnParameters and clobbers in clobbers.
+// The trickiest part of handling inline assembly is matching input and output registers on the LLVM side with the registers in the assembly.
+// The matching depends on what is specified in the clobbers.
 
-        // the Clobbers tell us how to map asm registers to llvm ones
-        // if it is =r or =&r, it means that the register is a return register. These are called Output Clobber / output constraints
-        // if it is Q, *q or r it means that the register is an argument passed to the asm. These are called Input Clobbers / input constraints
-        // if it is =*m it means that the register is a memory location, and is not mapped to any register
-        // if it is a number, and this is the trickiest one, it means that "The return Register indexed at that number is used both for returnRegister and as an argument".
+// On the LLVM side, the 	inline assembly is called as follows
+//      Register = Type call asm sideeffect 'asm code', 'clobbers' ('args')
+// We call "asm registers" the ones appearing inside 'asm code'.
+// We call "llvm registers" the ones passed in 'args' (i.e. the function parameters) plus Register.
 
-        // the BASE rule to map return Registers is as follows :
-        //  1. map the first asm registers to the llvm return Registers
-        //  2. map the (args) the llvm registers passed to the asm
-        //  In case we have memory location pointers or numbers in the clobbers, we have to do some extra work. Refer to cases e) and f)
+// The clobbers tell us how to map asm registers to LLVM ones.
+// Clobbers form a list where each entry can be one of the following:
+// =r or =&r means we need to map an asm register to the return register. These are called Output Clobber / output constraints
+// Q, *Q or r means we need to map an LLVM register from 'args' to an asm register. These are called Input Clobbers / input constraints
+// =*m it means that the register is a memory location, and is not mapped to any register
+// a constant X, it means that a register from 'args' is mapped to the Xth asm register which in turn is mapped to the return register.
 
+// Here are some examples to understand what is happening.
+// We are going to use ARMV7 names for readability "$0, $1, $2, ...", but other inline asm formats follow the same pattern 
 
-        // here are some examples to understand what is happening, as it is a bit tricky
-        // we are going to use ARMV7 names for readability "$0, $1, $2, etc", but other inline asm formats follow the exact same pattern 
-        // BASE CASE
-        // a)  r10 = i32 call asm "ldr $0, $1"," =r, *Q"(ptr r9) -> registerNames := [$0, $1] ; fnParameters := [r9] ; clobbers := [=r, *Q]
-        //     1. we have to map $0 to r10, as it is the return register
-        //     2. we have to map $1 to r9, as it is the argument passed to the asm
-        // RETURN REGISTER IS AGGREGATE TYPE
-        // b) r10 = { i32, i32, i32 } asm "ldr $0, $3 ; ldr $1, $3 ; ldr $2, $3","=r, =r, =r, *Q"(ptr r9) -> registerNames := [$0, $1, $2, $3] ; fnParameters := [r9] ; clobbers := [=r, =r, =r, *Q]
-        //     1. In this case we are in an aggregateType and we know that by the fact that w.h. 3 output Clobbers
-        //         - $0 maps to r10[0]
-        //         - $1 maps to r10[1]
-        //         - $2 maps to r10[2] 
-        //      2. we have to map the arguments, so $3 maps to r9
-        // MULTIPLE ARGS
-        // c) r10 = i32 call asm "ldr $0, $1 ; ldr $0, $2 "," =r, r, *Q"(i32 r8, ptr r9) -> registerNames := [$0, $1, $2] ; fnParameters := [r8, r9] ; clobbers := [=r, r, *Q]
-        //    1. we have to map $0 to r10, as it is the return register (only 1 output clobber is provided)
-        //    2. we have to map $1 to r8 and $2 to r9, as it is the argument passed to the asm
-        // THERE IS NO RETURN REGISTER
-        // d) call void asm "stlr $0, $1", "r,*Q"(ptr r5, ptr r7) -> registerNames := [$0, $1] ; fnParameters := [r5, r7] ; clobbers := [r, *Q]
-        //    1. we do nothing as we do not have any return register
-        //    2. we have to map $0 to r5 and $1 to r7 as we have two input clobbers
-        // THERE IS A MEMORY LOCATION
-        // e) r10 = i32 call asm "ldr $0, $2 ; ldr $0, $3","=&r, =*m, r, r"(ptr r7, i32 r8) -> registerNames := [$0, $2, $3] ; fnParameters := [r7, r8] ; clobbers := [=&r, =*m, r, r]
-        //    1. we have to map $0 to r10, as it is the return register
-        //    1.5 we see that =*m is a reference to a memory location, so it would be $1 -> MEM and we do not pick it up
-        //    2. we map $2 to r7 and $3 to r8 as they are the args
-        // WE HAVE AN OVERLAP IN THE RETURN REGISTER AND THE ARGS
-        // f)   r11 = call { i32, i32, i32, i32 } asm "ldr $0, $4 ; add $1, $0, $3 ; add $2, $1, $4 ; ldr $2, $0", "=&r,=&r,=&r,=&r,*Q,3"(ptr r10, i32 r8)
-        // -> registerNames := [$0, $1, $2, $3, $4] ; fnParameters := [r10, r8] ; clobbers := [=&r, =&r, =&r, =&r, *Q, 3]
-        //    1. we have 4 output clobbers, so we have an aggregate type and w.h. $0 -> r10[0], $1 -> r10[1], $2 -> r10[2], $3 -> r10[3]
-        //    2. we have to map $4 to r10, as it is the first argument passed to the asm
-        //    3. the meaning of the 3 is that the return register indexed at 3 is used both for returnRegister and as an argument, so we have to map $3 (referencing r11[3]) to r8 and override the previous mapping
+// BASE CASE
+// a)  
+// asm: r10 = i32 call asm "ldr $0, $1"," =r, *Q"(ptr r9) 
+// Code variables: asmRegisterNames := [$0, $1] ; argsRegisters := [r9] ; clobbers := [=r, *Q]
+// Logic:
+//     1. the first asm register maps to the output, i.e. r10 <- $0
+//     2. the first args register maps to the next asm register, i.e. $1 <- r9
+
+// RETURN REGISTER IS AGGREGATE TYPE
+// b) 
+// asm: r10 = { i32, i32, i32 } asm "ldr $0, $3 ; ldr $1, $3 ; ldr $2, $3","=r, =r, =r, *Q"(ptr r9)
+// Code variables asmRegisterNames := [$0, $1, $2, $3] ; argsRegisters := [r9] ; clobbers := [=r, =r, =r, *Q]
+// Logic:
+//     1. the first 3 asm registers map to the output, i.e.
+//         - r10[0] <- $0
+//         - r10[1] <- $1
+//         - r10[2] <- $2
+//      2. the 1st args register maps to the next asm register, i.e. $3 <- r9
+
+// MULTIPLE ARGS
+// c) 
+// asm: r10 = i32 call asm "ldr $0, $1 ; ldr $0, $2 "," =r, r, *Q"(i32 r8, ptr r9)
+// Code variables: asmRegisterNames := [$0, $1, $2] ; argsRegisters := [r8, r9] ; clobbers := [=r, r, *Q]
+//    1. the 1st asm register maps to the output, i.e. r10 <- $0
+//    2. the two args registers map to the next two asm registers, i.e.
+//       - $1 <- r8
+//       - $2 <- r9
+
+// THERE IS NO RETURN REGISTER
+// d) 
+// asm: call void asm "stlr $0, $1", "r,*Q"(ptr r5, ptr r7)
+// Code variables: asmRegisterNames := [$0, $1] ; argsRegisters := [r5, r7] ; clobbers := [r, *Q]
+//    1. nothing to be done regarding output, i.e. there no return register
+//    2. the two args registers map to the next two asm registers, i.e.
+//       - $0 <- r5
+//       - $1 <- r7
+
+// THERE IS A MEMORY LOCATION
+// e) 
+// asm: r10 = i32 call asm "ldr $0, $2 ; ldr $0, $3","=&r, =*m, r, r"(ptr r7, i32 r8)
+// Code variables: asmRegisterNames := [$0, $2, $3] ; argsRegisters := [r7, r8] ; clobbers := [=&r, =*m, r, r]
+//    1. r10 <- $0
+//    1.5 we see that =*m is a reference to a memory location, so it would be $1 -> MEM and we do nothing
+//    2. the two args registers map to the next two asm registers,
+//       - $2 <- r7
+//       - $3 <- r8
+
+// WE HAVE AN OVERLAP IN THE RETURN REGISTER AND THE ARGS
+// f)
+// asm: r11 = call { i32, i32, i32, i32 } asm "ldr $0, $4 ; add $1, $0, $3 ; add $2, $1, $4 ; ldr $2, $0", "=&r,=&r,=&r,=&r,*Q,3"(ptr r10, i32 r8)
+// Code variables: asmRegisterNames := [$0, $1, $2, $3, $4] ; argsRegisters := [r10, r8] ; clobbers := [=&r, =&r, =&r, =&r, *Q, 3]
+//    1. we have 4 output clobbers, so we have an aggregate type for the return register
+//       - r11[0] <- $0
+//       - r11[1] <- $1
+//       - r11[2] <- $2
+//       - r11[3] <- $3
+//    2. map function parameter to next asm register, i.e. $4 <- r10
+//    3. the 3rd asm register is related both to the return register (already above in r11[3] <- $3) and to an args register, i.e. $3 <- r8
 
 public class VisitorInlineAsm extends InlineAsmBaseVisitor<Object> {
 
@@ -103,20 +128,20 @@ public class VisitorInlineAsm extends InlineAsmBaseVisitor<Object> {
     private final HashMap<String, Label> labelsDefined;
     // used to keep track of which asm register should map to the llvm return register if it is an aggregate type
     private final List<Expression> pendingRegisters;
-    // holds the LLVM registers that are passed as (args) to the the asm -> asm"..." (args)
-    private final LinkedList<Expression> fnParameters;
+    // holds the LLVM registers that are passed as (args) to the the asm -- asm"..." (args)
+    private final LinkedList<Expression> argsRegisters;
     // holds the names of the asm registers which appear in inlineasm e.g. $0, $1...
-    private final LinkedList<String> registerNames;
-    // expected type of RHS of the comparison
+    private final LinkedList<String> asmRegisterNames;
+    // expected type of RHS of a comparison
     private Type expectedType;
 
-    public VisitorInlineAsm(Function llvmFunction, Register returnRegister, Type returnType, ArrayList<Expression> argumentsRegisterAddresses) {
+    public VisitorInlineAsm(Function llvmFunction, Register returnRegister, Type returnType, ArrayList<Expression> llvmArguments) {
         this.llvmFunction = llvmFunction;
         this.returnRegister = returnRegister;
         this.labelsDefined = new HashMap<>();
         this.pendingRegisters = new LinkedList<>();
-        this.registerNames = new LinkedList<>();
-        this.fnParameters = new LinkedList<>(argumentsRegisterAddresses);
+        this.asmRegisterNames = new LinkedList<>();
+        this.argsRegisters = new LinkedList<>(llvmArguments);
     }
 
     // helper function to determine if a string representing a register is an ARMv8 register
@@ -125,12 +150,13 @@ public class VisitorInlineAsm extends InlineAsmBaseVisitor<Object> {
     }
 
     // given the asm register name it returns the size of the llvm register it is referencing
-    // e.g. if $1 is referencing i32 r9, it is going to return r9
-    public Type getArmVariableSize(String registerArmName) {
-        int number = extractNumberFromRegisterName(registerArmName);
+    // e.g. if $1 is referencing i32 r9, it is going to return i32
+    public Type getArmVariableSize(String registerAsmName) {
+        int number = extractNumberFromRegisterName(registerAsmName);
         // by 'isPart' we mean that the extracted number is LTE to the size of the return Register
-        // e.g. if we have a returnRegister of type { i32, i32 } and we have $1, it is part of the returnRegister
-        if (isPartOfReturnRegister(registerArmName)) {
+        // e.g. if we have a returnRegister of type { i32, i32 } and we have registerAsmName = $1
+        // it is part of the returnRegister, as from $1 we get 1, which is LTE returnRegisterType.size()
+        if (isPartOfReturnRegister(registerAsmName)) {
             if (isReturnRegisterAggregate()) {
                 Type returnRegisterProjectionType = expressions.makeExtract(number, returnRegister).getType();
                 return returnRegisterProjectionType;
@@ -142,26 +168,26 @@ public class VisitorInlineAsm extends InlineAsmBaseVisitor<Object> {
         // if it is not part of the return Register, it is part of the arguments
         // e.g. r10 { i32, i32 } is return Register, args contains (i64 r9)
         //  we want to get the type of $3, so we are going to return i64
-        return this.fnParameters.get(number - getSizeOfReturnValue()).getType();
+        return this.argsRegisters.get(number - getSizeOfReturnRegister()).getType();
     }
 
-    // we define a register to be part of the return register if its index gotten from the name
-    // is LTE than the size of the return register
-    private boolean isPartOfReturnRegister(String registerArmName) {
-        int number = extractNumberFromRegisterName(registerArmName);
-        return (number < getSizeOfReturnValue());
+    // we define a register to be part of the return register if its index
+    // gotten from the name is LTE than the size of the return register
+    private boolean isPartOfReturnRegister(String registerAsmName) {
+        int number = extractNumberFromRegisterName(registerAsmName);
+        return (number < getSizeOfReturnRegister());
     }
 
     // tells if the returnRegister is an AggregateType
     private boolean isReturnRegisterAggregate() {
-        return getSizeOfReturnValue() > 1;
+        return getSizeOfReturnRegister() > 1;
     }
 
     // returns the size of the return register
     // null / void -> 0
     // i32 / bool -> 1
     // aggregateType -> the size of the aggregate
-    private int getSizeOfReturnValue() {
+    private int getSizeOfReturnRegister() {
         if (this.returnRegister == null) {
             return 0;
         }
@@ -178,12 +204,13 @@ public class VisitorInlineAsm extends InlineAsmBaseVisitor<Object> {
     }
 
     // given a register name, it extracts the index contained in the name
-    // ${3:w} -> 3
-    int extractNumberFromRegisterName(String registerArmName) {
+    // ${3:w} -> 3 (armv8 name)
+    // $4 -> 4 (armv7 name)
+    int extractNumberFromRegisterName(String registerAsmName) {
         int number = -1;
-        String innerString = registerArmName;
-        if (registerArmName.startsWith("r")) {
-            innerString = registerArmName.substring(1);
+        String innerString = registerAsmName;
+        if (registerAsmName.startsWith("r")) {
+            innerString = registerAsmName.substring(1);
         }
         if (isArmv8Name(innerString)) { // ${N:x}
             number = Integer.parseInt(Character.toString(innerString.charAt(2)));
@@ -231,7 +258,7 @@ public class VisitorInlineAsm extends InlineAsmBaseVisitor<Object> {
 
     // creates a local event if the operation performed was referencing the returnRegister
     // if the index represented by the register if part of the returnRegister AND if it not an aggregate type
-    // this is done each time we modify the returnRegister as we could have some operations behind a branch
+    // this is performed each time we modify the returnRegister as we could have some operations behind a branch
     private void updateReturnRegisterIfModified(Register register) {
         String registerName = register.getName();
         if (isPartOfReturnRegister(registerName) && !isReturnRegisterAggregate()) {
@@ -240,9 +267,14 @@ public class VisitorInlineAsm extends InlineAsmBaseVisitor<Object> {
     }
 
     // in this function we are manually visiting the tree and not using the visitor pattern for a specific reason
-    // in order to understand which asm register references which llvm register, we have to read the clobbers
-    // since the visitor has to visit the Instructions first, we are forced to read the clobbers AND not execute any visitor code
-    // otherwise, the visitChildren would call the visitor code of the single instructions not knowing how to map the registers
+    // in order to understand which asm register references which llvm register (argsRegisters), we have to read the clobbers.
+    // In order to do this, we
+    // 1) collect the names of the asm registers that are present in hte asm code
+    // 2) collect the clobbers -- also done manually, as we cannot traverse the ANTLR tree from the VisitMetadata
+    //      as it would execute the mapping to "pendingRegister mentioned above".
+    // 3) Having registerNames AND clobbers, we can map using the rule explained in the first comment above.
+    // NOTE : visitChildren would call the visitor code of the single instructions not knowing how to map the registers. 
+    //            This is the main reason why we do it manually
     @Override
     public List<Event> visitAsm(InlineAsmParser.AsmContext ctx) {
 
@@ -257,7 +289,7 @@ public class VisitorInlineAsm extends InlineAsmBaseVisitor<Object> {
             }
         }
         // the registers have to be sorted in order to map them to the clobber
-        registerNames.sort((s1, s2) -> Integer.compare(extractNumberFromRegisterName(s1), extractNumberFromRegisterName(s2)));
+        asmRegisterNames.sort((s1, s2) -> Integer.compare(extractNumberFromRegisterName(s1), extractNumberFromRegisterName(s2)));
 
         // here we manually visit the clobbers and we can't use the visitor pattern as we would be forced to execute the asmMetadataEntries,
         // and such visitor has the task of mapping the operations performed in an aggregateType return Register to the llvm. 
@@ -275,20 +307,21 @@ public class VisitorInlineAsm extends InlineAsmBaseVisitor<Object> {
         
         // now that w.h. both all of the registers which appeared in the inline asm and the clobbers, we can finally map them
         // following the rule at the start of the file
-        if (!registerNames.isEmpty() && !this.fnParameters.isEmpty()) {
-            // this keeps track of where we are in the registerNames list
-            int registerNameIndex = 0;
+        if (!asmRegisterNames.isEmpty() && !this.argsRegisters.isEmpty()) {
+            // this keeps track of where we are in the asmRegisterNames list
+            int asmRegisterNameIndex = 0;
             for (InlineAsmParser.ClobberContext clobber : clobbers) {
-                // we have found something like '3', so we have to overlap the returnRegister[3] with the current argument
                 if (isClobberNumeric(clobber)) {
-                    processNumericClobber(clobber, registerNameIndex);
-                    registerNameIndex++;
+                    // we have found something like '3', so we have to overlap the returnRegister[3] with the current argument
+                    processNumericClobber(clobber, asmRegisterNameIndex);
+                    asmRegisterNameIndex++;
                 } else if (isClobberMemoryLocation(clobber)) {
                     //if clobber is =*m it means that such pointer is a memory location, so we do not map to any register
+                    // the if is still here to clarify the 
                 } else {
-                    // it can be either a standard Output clobber or a standard Input clobber, so we follow the aforementioned rules
-                    processGeneralPurposeClobber(clobber, registerNameIndex);
-                    registerNameIndex++;
+                    // it can be either an Output clobber or an Input clobber, so we follow the aforementioned rules
+                    processGeneralPurposeClobber(clobber, asmRegisterNameIndex);
+                    asmRegisterNameIndex++;
                 }
             }
         }
@@ -321,9 +354,9 @@ public class VisitorInlineAsm extends InlineAsmBaseVisitor<Object> {
         if (node == null) {
             return;
         } else if (node instanceof InlineAsmParser.RegisterContext) {
-            String registerName = node.getText();
-            if (registerName != null && !registerNames.contains(registerName)) {
-                registerNames.add(registerName);
+            String asmRegisterName = node.getText();
+            if (asmRegisterName != null && !asmRegisterNames.contains(asmRegisterName)) {
+                asmRegisterNames.add(asmRegisterName);
             }
         }
         for (int i = 0; i < node.getChildCount(); i++) {
@@ -331,39 +364,40 @@ public class VisitorInlineAsm extends InlineAsmBaseVisitor<Object> {
         }
     }
 
-    private void processNumericClobber(InlineAsmParser.ClobberContext clobber, int registerNameIndex) {
+    private void processNumericClobber(InlineAsmParser.ClobberContext clobber, int asmRegisterNameIndex) {
         // https://llvm.org/docs/LangRef.html#input-constraints
         // For example, a constraint string of “=r,1” says to assign a register for output, and use that register as an input as well (it being the 1st constraint).
-        // so we have to get the i-th return Value and map it to fnParams
+        // so we have to get the i-th return Value and map it to argsRegisters
         int number = Integer.parseInt(clobber.getText());
-        if (number < 0 || number > getSizeOfReturnValue()) {
+        if (number < 0 || number > getSizeOfReturnRegister()) {
             throw new ParsingException("The number provided in the clobber is not a valid index for any return value");
         }
-        String name = registerNames.get(number);
+        String name = asmRegisterNames.get(number);
         Register toBeChanged = getOrNewRegister(name);
-        // since we increment the registerNameIndex each time we traversed the clobbers, we have to shift it by the number of return values
+        // since we increment the asmRegisterNameIndex each time we traversed the clobbers, we have to shift it by the number of return values
         // r11 = call { i32, i32, i32, i32 } asm "...", "=&r,=&r,=&r,=&r,*Q,3"(ptr r10, i32 r8)
-        // we know from the number contained in the clobber that $3 has to be mapped to a fnParameter. 
-        // Since the value of registerNameIndex in this case is 5, we shift it by 4 (the number of return values) and we get 1
-        // we can therefore access fnParameters[1], which gives us the correct index for the register
-        events.add(EventFactory.newLocal(toBeChanged, this.fnParameters.get(registerNameIndex - getSizeOfReturnValue())));
+        // we know from the number contained in the clobber that $3 has to be mapped to an argsRegisters. 
+        // Since the value of asmRegisterNameIndex in this case is 5, we shift it by 4 (the number of return values) and we get 1
+        // we can therefore access argsRegisters[1], which gives us the correct index for the arg Register.
+        events.add(EventFactory.newLocal(toBeChanged, this.argsRegisters.get(asmRegisterNameIndex - getSizeOfReturnRegister())));
     }
 
-    private void processGeneralPurposeClobber(InlineAsmParser.ClobberContext clobber, int registerNameIndex) {
-        // via registerNameIndex we get the right register that we need to map
-        String registerName = registerNames.get(registerNameIndex);
+    private void processGeneralPurposeClobber(InlineAsmParser.ClobberContext clobber, int asmRegisterNameIndex) {
+        // via asmRegisterNameIndex we get the right register that we need to map
+        String registerName = asmRegisterNames.get(asmRegisterNameIndex);
         Register newRegister = getOrNewRegister(registerName);
         // after having created the register, we have to see if we have to map it to any llvm register
         if (isClobberOutputConstraint(clobber)) {
-            // Clobber maps to returnValue, we just skip it as we are assigning them later in the visitMetadataEntries
+            // Clobber maps to the returnRegister, we just skip it as we are assigning them later in the visitMetadataEntries
         } else if (isClobberInputConstraint(clobber)) {
             int number = extractNumberFromRegisterName(registerName);
             // now we have to shift the value contained inside the register name to the right index.
             // e.g. r13 = call { i32, i32 } asm "...", "=&r,=&r,r,r,*Q"(i32 r9, i32 r10, ptr r12)
-            // we "skipped" the first 2 as they are to be mapped to the returnRegister.
-            // let's say we are at $3. In order to access the correct "arg" in fnParameters, we have to shift by the size of return registers
-            // so we would get 3 ($3) -2 (size of return registers) = 1, which is the correct index for the fnParameters
-            events.add(EventFactory.newLocal(newRegister, this.fnParameters.get(number - getSizeOfReturnValue())));
+            // we "skipped" the first 2 as they are to be mapped to the returnRegister. 
+            // (Skipped here means we incremented asmRegisterNameIndex without mapping to anything)
+            // let's say we are at $3. In order to access the correct "arg" in argsRegisters, we have to shift by the size of return registers
+            // so we would get 3 (from $3) - 2 (from size of return registers) = 1, which is the correct index for the argsRegisters
+            events.add(EventFactory.newLocal(newRegister, this.argsRegisters.get(number - getSizeOfReturnRegister())));
         } else {
             throw new ParsingException("Unknown clobber type " + clobber);
         }
@@ -545,11 +579,11 @@ public class VisitorInlineAsm extends InlineAsmBaseVisitor<Object> {
     //    r$1 = load(r$4)
     //    ...
     //    {0 : bv32, 1 : bv32 } r10 <- { bv32 r$0, bv32 r$1 }
-    // it is put at the start of asmMetadataEntries rule, because we have to be sure that it is set after all the instructions have executed.
-    // we force this to be the last instruction executed as we want this local event to appear only once with the latest data
+    // it is put at the start of asmMetadataEntries rule, because we have to be sure that this event is created only after all the instructions have executed.
+    // Moreover, we force the creation of this event here, as it needs to have the latest data AND we want to be inserted into Dat3MIR only once.
     @Override
     public Object visitAsmMetadataEntries(InlineAsmParser.AsmMetadataEntriesContext ctx) {
-        if (getSizeOfReturnValue() > 1) {
+        if (getSizeOfReturnRegister() > 1) {
             List<Type> typesList = new LinkedList<>();
             for (Expression r : this.pendingRegisters) {
                 typesList.add(((Register) r).getType());
