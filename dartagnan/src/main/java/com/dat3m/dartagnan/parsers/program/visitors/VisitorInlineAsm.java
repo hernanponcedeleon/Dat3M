@@ -295,13 +295,11 @@ public class VisitorInlineAsm extends InlineAsmBaseVisitor<Object> {
         // and such visitor has the task of mapping the operations performed in an aggregateType return Register to the llvm. 
         // as before, in order to avoid executing the visitor code w.h. to manually traverse the tree
         ArrayList<InlineAsmParser.ClobberContext> clobbers = new ArrayList<>();
-        List<InlineAsmParser.AsmMetadataEntriesContext> metadataEntries = ctx.asmMetadataEntries();
-        for (InlineAsmParser.AsmMetadataEntriesContext metadataEntry : metadataEntries) {
-            List<InlineAsmParser.MetaInstrContext> metaInstrs = metadataEntry.metaInstr();
-            for (InlineAsmParser.MetaInstrContext metaInstr : metaInstrs) {
-                if (metaInstr.clobber() != null) {
-                    clobbers.add(metaInstr.clobber());
-                }
+        InlineAsmParser.AsmMetadataEntriesContext metadataEntries = ctx.asmMetadataEntries();
+        List<InlineAsmParser.MetaInstrContext> metaInstrs = metadataEntries.metaInstr();
+        for (InlineAsmParser.MetaInstrContext metaInstr : metaInstrs) {
+            if (metaInstr.clobber() != null) {
+                clobbers.add(metaInstr.clobber());
             }
         }
         
