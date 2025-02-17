@@ -148,7 +148,7 @@ public class WmmEncoder implements Encoder {
         EncodingContext.EdgeEncoder edge = context.edge(relation);
         EventGraph encodeSet = encodeSets.getOrDefault(relation, new MapEventGraph())
                 .filter((e1, e2) -> TRUE.equals(model.evaluate(edge.encode(e1, e2))));
-        EventGraph mustEncodeSet = context.getAnalysisContext().get(RelationAnalysis.class).getKnowledge(relation).getMustSet()
+        EventGraph mustEncodeSet = MapEventGraph.from(context.getAnalysisContext().get(RelationAnalysis.class).getKnowledge(relation).getMustSet())
                 .filter((e1, e2) -> TRUE.equals(model.evaluate(context.execution(e1, e2))));
         return EventGraph.union(encodeSet, mustEncodeSet);
     }
