@@ -22,7 +22,6 @@ import com.dat3m.dartagnan.program.event.core.Store;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import org.antlr.v4.runtime.ParserRuleContext;
 
-
 public class VisitorLitmusVulkan extends LitmusVulkanBaseVisitor<Object> {
     private final ProgramBuilder programBuilder = ProgramBuilder.forArch(Program.SourceLanguage.LITMUS, Arch.VULKAN);
     private final ExpressionFactory expressions = programBuilder.getExpressionFactory();
@@ -257,23 +256,33 @@ public class VisitorLitmusVulkan extends LitmusVulkanBaseVisitor<Object> {
 
     @Override
     public Object visitControlBarrierInstruction(LitmusVulkanParser.ControlBarrierInstructionContext ctx) {
-        Expression barrierId = (Expression) ctx.value().accept(this);
-        String barrierIdString = ctx.getText().replace(barrierId.toString(), "");
-        Event barrier = EventFactory.newControlBarrier(barrierIdString.toLowerCase(), barrierId);
+        String name = ctx.getText().substring(0, ctx.getText().length() - ctx.constant().getText().length());
+        String instanceId = ctx.constant().getText();
+        Event barrier;
+        if (ctx.barrierId() == null) {
+            barrier = EventFactory.newControlBarrier(name, instanceId);
+        } else {
+            Expression id = (Expression) ctx.barrierId().accept(this);
+            Expression quorum = null;
+            if (ctx.barrierQuorum() != null) {
+                quorum = (Expression) ctx.barrierQuorum().accept(this);
+            }
+            barrier = EventFactory.newNamedBarrier(name, instanceId, id, quorum);
+        }
         barrier.addTags(Tag.Vulkan.CBAR, ctx.scope().content);
         String mo = getMemoryOrderOrDefault(ctx, null);
-        if (mo != null) {
-            barrier.addTags(mo);
-        } else {
+        if (mo == null) {
             barrier.removeTags(Tag.FENCE);
+        } else {
+            barrier.addTags(mo);
+            if (ctx.semAv() != null) {
+                barrier.addTags(Tag.Vulkan.SEM_AVAILABLE);
+            }
+            if (ctx.semVis() != null) {
+                barrier.addTags(Tag.Vulkan.SEM_VISIBLE);
+            }
+            barrier.addTags(ctx.semSc().stream().map(c -> c.content).toList());
         }
-        if (ctx.semAv() != null) {
-            barrier.addTags(Tag.Vulkan.SEM_AVAILABLE);
-        }
-        if (ctx.semVis() != null) {
-            barrier.addTags(Tag.Vulkan.SEM_VISIBLE);
-        }
-        barrier.addTags(ctx.semSc().stream().map(c -> c.content).toList());
         return programBuilder.addChild(mainThread, barrier);
     }
 

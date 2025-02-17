@@ -54,6 +54,8 @@ public class SpirvRacesTest {
                 {"atomics/forloop.spv.dis", 1, FAIL},
                 {"atomics/histo.spv.dis", 1, PASS},
                 {"barrier_intervals/test1.spv.dis", 1, PASS},
+                {"barrier_intervals/test3.spv.dis", 2, UNKNOWN},
+                {"barrier_intervals/test4.spv.dis", 2, UNKNOWN},
                 {"basicbarrier.spv.dis", 1, PASS},
                 {"basicglobalarray.spv.dis", 1, PASS},
                 {"benign_race_tests/fail/writeafterread_addition.spv.dis", 1, FAIL},
@@ -73,8 +75,9 @@ public class SpirvRacesTest {
                 {"misc/fail/miscfail1.spv.dis", 1, FAIL},
                 {"misc/fail/miscfail3.spv.dis", 1, FAIL},
                 {"misc/fail/struct_member_race.spv.dis", 1, FAIL},
-                {"misc/pass/misc13.spv.dis", 1, PASS},
                 {"misc/pass/misc2.spv.dis", 1, PASS},
+                {"misc/pass/misc12.spv.dis", 3, PASS},
+                {"misc/pass/misc13.spv.dis", 1, PASS},
                 {"multidimarrays/test5.spv.dis", 1, FAIL},
                 {"no_log/pass.spv.dis", 1, FAIL},
                 {"null_pointers/null_pointer_assignment_equal.spv.dis", 1, FAIL},
@@ -83,6 +86,7 @@ public class SpirvRacesTest {
                 {"pointertests/test_return_pointer.spv.dis", 1, PASS},
                 {"report_global_id/test1.spv.dis", 1, PASS},
                 {"report_global_id/test2.spv.dis", 1, FAIL},
+                {"skeletonbinomialoptions.spv.dis", 2, UNKNOWN},
                 {"sourcelocation_tests/barrier_divergence/pass.spv.dis", 1, PASS},
                 {"sourcelocation_tests/needs_source_location_ensures.spv.dis", 1, PASS},
                 {"sourcelocation_tests/needs_source_location_requires.spv.dis", 1, PASS},
@@ -99,7 +103,7 @@ public class SpirvRacesTest {
                 {"test_local_id_inference.spv.dis", 1, PASS},
                 {"test_mod_invariants/global_reduce_strength.spv.dis", 1, UNKNOWN},
                 {"test_part_load_store/store_int_and_short.spv.dis", 1, PASS},
-                {"test_for_ssa_bug.spv.dis", 2, PASS},
+                {"test_for_ssa_bug.spv.dis", 8, PASS},
                 {"test_structs/use_array_element.spv.dis", 1, PASS},
                 {"test_structs/use_element.spv.dis", 1, PASS},
                 {"test_structs/use_struct_element.spv.dis", 1, PASS},
@@ -145,12 +149,6 @@ public class SpirvRacesTest {
                 // Unsupported cuda warps
                 // {"warpsync/intragroup_scan.spv.dis", 1, FAIL},
                 // {"warpsync/scan_warp.spv.dis", 1, FAIL},
-
-                // Unsupported barriers in a loop
-                // {"barrier_intervals/test3.spv.dis", 1, PASS},
-                // {"barrier_intervals/test4.spv.dis", 1, PASS},
-                // {"misc/pass/misc12.spv.dis", 1, PASS},
-                // {"skeletonbinomialoptions.spv.dis", 1, PASS},
 
                 // Unsupported non-constant tags
                 // {"inter_group_and_barrier_flag_tests/fail/bad_read_then_write.spv.dis", 1, FAIL},

@@ -98,3 +98,13 @@ litmus/VULKAN/Manual/counter-atomic-store-rmw.litmus,1
 litmus/VULKAN/Manual/counter-plain-store-rmw.litmus,1
 litmus/VULKAN/Manual/counter-plain-store-atomic-load.litmus,1
 litmus/VULKAN/Manual/counter-plain-store-plain-load.litmus,1
+litmus/VULKAN/BarrierQuorum/test1-pass.litmus,0
+litmus/VULKAN/BarrierQuorum/test1-fail.litmus,1
+litmus/VULKAN/BarrierQuorum/test1-hang.litmus,1
+litmus/VULKAN/BarrierQuorum/test2-pass.litmus,0
+litmus/VULKAN/BarrierQuorum/test2-fail.litmus,1
+litmus/VULKAN/BarrierQuorum/test2-hang.litmus,1
+litmus/VULKAN/BarrierQuorum/test3-pass.litmus,0
+litmus/VULKAN/BarrierQuorum/test3-fail.litmus,0
+litmus/VULKAN/BarrierQuorum/test4-pass.litmus,0
+litmus/VULKAN/BarrierQuorum/test4-fail.litmus,0

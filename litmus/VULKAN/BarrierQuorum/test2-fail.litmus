@@ -1,0 +1,9 @@
+Vulkan test2-fail
+{
+x=0;
+}
+ P0@sg 0, wg 0, qf 0            | P1@sg 1, wg 0, qf 0            | P2@sg 2, wg 0, qf 0            ;
+ ld.vis.dv.sc0 r0, x            | cbar.acq_rel.dv.semsc0 1, 1, 3 | cbar.acq_rel.dv.semsc0 1, 1, 3 ;
+ cbar.acq_rel.dv.semsc0 1, 1, 3 | st.av.dv.sc0 x, 1              |                                ;
+
+exists (P0:r0 == 1)

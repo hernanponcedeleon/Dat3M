@@ -163,6 +163,7 @@ public class Inlining implements ProgramProcessor {
             if (event instanceof Label label) {
                 label.setName(scope + ":" + label.getName());
             }
+            // TODO: Add support for control barriers
         }
 
         // Substitute registers in the copied body

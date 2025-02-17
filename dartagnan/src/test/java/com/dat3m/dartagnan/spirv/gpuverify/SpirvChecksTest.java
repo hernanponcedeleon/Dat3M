@@ -53,6 +53,8 @@ public class SpirvChecksTest {
                 {"atomics/forloop.spv.dis", 2, UNKNOWN},
                 {"atomics/histo.spv.dis", 1, PASS},
                 {"barrier_intervals/test1.spv.dis", 1, PASS},
+                {"barrier_intervals/test3.spv.dis", 2, UNKNOWN},
+                {"barrier_intervals/test4.spv.dis", 2, UNKNOWN},
                 {"basicbarrier.spv.dis", 1, PASS},
                 {"basicglobalarray.spv.dis", 1, PASS},
                 {"benign_race_tests/fail/writeafterread_addition.spv.dis", 1, PASS},
@@ -81,8 +83,9 @@ public class SpirvChecksTest {
                 {"misc/fail/miscfail1.spv.dis", 1, PASS},
                 {"misc/fail/miscfail3.spv.dis", 1, PASS},
                 {"misc/fail/struct_member_race.spv.dis", 1, PASS},
-                {"misc/pass/misc13.spv.dis", 1, PASS},
                 {"misc/pass/misc2.spv.dis", 1, PASS},
+                {"misc/pass/misc12.spv.dis", 3, PASS},
+                {"misc/pass/misc13.spv.dis", 1, PASS},
                 {"multidimarrays/test5.spv.dis", 1, PASS},
                 {"no_log/pass.spv.dis", 1, PASS},
                 {"null_pointers/null_pointer_assignment_equal.spv.dis", 1, PASS},
@@ -91,6 +94,7 @@ public class SpirvChecksTest {
                 {"pointertests/test_return_pointer.spv.dis", 1, PASS},
                 {"report_global_id/test1.spv.dis", 1, PASS},
                 {"report_global_id/test2.spv.dis", 1, PASS},
+                {"skeletonbinomialoptions.spv.dis", 2, UNKNOWN},
                 {"sourcelocation_tests/barrier_divergence/pass.spv.dis", 1, PASS},
                 {"sourcelocation_tests/needs_source_location_ensures.spv.dis", 1, PASS},
                 {"sourcelocation_tests/needs_source_location_requires.spv.dis", 1, PASS},
@@ -144,12 +148,6 @@ public class SpirvChecksTest {
                 // {"warpsync/intragroup_scan.spv.dis", 1, PASS},
                 // {"warpsync/scan_warp.spv.dis", 1, PASS},
 
-                // Unsupported barriers in a loop
-                // {"barrier_intervals/test3.spv.dis", 1, PASS},
-                // {"barrier_intervals/test4.spv.dis", 1, PASS},
-                // {"misc/pass/misc12.spv.dis", 1, PASS},
-                // {"skeletonbinomialoptions.spv.dis", 1, PASS},
-
                 // Unsupported non-constant tags
                 // {"inter_group_and_barrier_flag_tests/fail/bad_read_then_write.spv.dis", 1, PASS},
                 // {"inter_group_and_barrier_flag_tests/fail/bad_write_then_read.spv.dis", 1, PASS},
@@ -175,7 +173,7 @@ public class SpirvChecksTest {
                 // {"test_mod_invariants/local_reduce_strength.spv.dis", 1, PASS},
 
                 // Unsupported control flow
-                // {"test_for_ssa_bug.spv.dis", 1, PASS},
+                {"test_for_ssa_bug.spv.dis", 8, PASS},
                 // {"transitiveclosuresimplified.spv.dis", 1, PASS},
 
                 // Unsupported spir-v ops
