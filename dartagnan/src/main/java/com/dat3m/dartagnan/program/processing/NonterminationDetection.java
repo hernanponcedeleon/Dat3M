@@ -74,7 +74,9 @@ public class NonterminationDetection implements ProgramProcessor {
         Preconditions.checkArgument(program.isUnrolled());
         for (Thread thread : program.getThreads()) {
             final LoopAnalysis loopAnalysis = LoopAnalysis.onFunction(thread);
-            loopAnalysis.getLoopsOfFunction(thread).forEach(this::instrumentLoop);
+            loopAnalysis.getLoopsOfFunction(thread).stream()
+                    .filter(this::isPossiblyNonterminating)
+                    .forEach(this::instrumentLoop);
         }
 
         IdReassignment.newInstance().run(program);
@@ -84,11 +86,6 @@ public class NonterminationDetection implements ProgramProcessor {
     private void instrumentLoop(LoopAnalysis.LoopInfo loop) {
         Preconditions.checkArgument(loop.isUnrolled());
         Preconditions.checkArgument(loop.function() instanceof Thread);
-
-        if (isFullyUnrolled(loop)) {
-            // A fully unrolled loop is always terminating, no need to instrument it.
-            return;
-        }
 
         final List<LoopAnalysis.LoopIterationInfo> iters;
         if (mode == Mode.FULL) {
@@ -115,13 +112,15 @@ public class NonterminationDetection implements ProgramProcessor {
 
     }
 
-    private boolean isFullyUnrolled(LoopAnalysis.LoopInfo loop) {
+    private boolean isPossiblyNonterminating(LoopAnalysis.LoopInfo loop) {
         final LoopAnalysis.LoopIterationInfo lastIter = loop.iterations().get(loop.iterations().size() - 1);
         final Event lastEvent = lastIter.getIterationEnd();
 
+        // TODO: This is a naive and dangerous check: we assume the bound event is two events after the last loop event.
+        //  This can result in wrong non-termination verdicts.
         final Event bound = lastEvent.getSuccessor().getSuccessor();
-        if (!(bound instanceof CondJump && bound.hasTag(Tag.BOUND))) {
-            // Loop seems fully unrolled
+        if (bound instanceof CondJump && bound.hasTag(Tag.BOUND)) {
+            // Loop is not fully unrolled and thus might be non-terminating
             return true;
         }
         return false;

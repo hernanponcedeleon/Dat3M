@@ -9,12 +9,12 @@ import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.event.core.special.StateSnapshot;
-import com.dat3m.dartagnan.program.event.metadata.UnrollingId;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.wmm.Relation;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
 import com.dat3m.dartagnan.wmm.utils.graph.EventGraph;
+import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import org.sosy_lab.java_smt.api.BooleanFormula;
@@ -80,13 +80,15 @@ import static com.dat3m.dartagnan.wmm.RelationNameRepository.RF;
     ASSUMPTIONS:
       - We assume the NonterminationDetection and DynamicSpinLoopDetection passes have marked
         possible points of non-termination (otherwise the detection simply fails).
-      - We assume co/fr-fairness only.
+      - We assume co/fr-fairness only (fairness means prefix-finiteness in infinite executions).
       - We assume that if the suffix is consistent with the infix and co/fr-fair, then it must be "strongly"
         consistent. This may not be true and we could possibly report a liveness violation that is not consistently
         repeatable. Fixing this would require additional checks relative to the memory model, possibly requiring
         encoding of the memory model or native handling in CAAT.
 
      TODO: We have not considered uninit reads, i.e., reads without rf-edges in the implementation.
+           Such reads may induce fr-edges from suffix into prefix without it being detected by the encoding.
+           This would violate properties of the decomposition.
 
      TODO: We currently do some approximations which may or may not be good:
         (1) Cases where all iterations are claimed to be suffix are theoretically not correctly covered:
@@ -142,7 +144,7 @@ public class NonTerminationEncoder {
     }
 
     private void analyseLoop(LoopAnalysis.LoopInfo loopInfo) {
-        assert (loopInfo.isUnrolled());
+        Preconditions.checkArgument(loopInfo.isUnrolled());
 
         final Loop loop = new Loop(loopInfo);
         allLoops.add(loop);
@@ -166,9 +168,13 @@ public class NonTerminationEncoder {
         }
     }
 
-    // NOTE: We do NOT handle the loop bound event.
+    // NOTE: We treat the loop bound event as a terminator event for the purpose of this class.
     private boolean isNonterminationEvent(Event e) {
         return e.hasTag(Tag.NONTERMINATION) && !e.hasTag(Tag.BOUND);
+    }
+
+    private boolean isExceptionalTerminationEvent(Event e) {
+        return e.hasTag(Tag.EXCEPTIONAL_TERMINATION) || e.hasTag(Tag.BOUND);
     }
 
     // ================================================================================================
@@ -178,7 +184,7 @@ public class NonTerminationEncoder {
     public BooleanFormula encodeNontermination() {
         final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
         final BooleanFormula nonTerminating = bmgr.and(
-                bmgr.or(encodeLoopsAreStuck(), encodeBarrierIsStuck()),
+                bmgr.or(encodeLoopsAreStuck(), encodeBarriersAreStuck()),
                 encodeNoExceptionalTermination()
         );
         final BooleanFormula infixSuffixDecomposition = encodeInfixSuffixDecomposition();
@@ -197,8 +203,7 @@ public class NonTerminationEncoder {
     private BooleanFormula encodeNoExceptionalTermination() {
         final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
         final BooleanFormula noExceptionalTermination = task.getProgram()
-                .getThreadEvents().stream().filter(e -> e.hasTag(Tag.EXCEPTIONAL_TERMINATION) || e.hasTag(Tag.BOUND))
-                //.getThreadEventsWithAllTags(Tag.EXCEPTIONAL_TERMINATION).stream()
+                .getThreadEvents().stream().filter(this::isExceptionalTerminationEvent)
                 .map(e -> bmgr.not(context.execution(e)))
                 .reduce(bmgr.makeTrue(), bmgr::and);
         return noExceptionalTermination;
@@ -206,16 +211,16 @@ public class NonTerminationEncoder {
 
     private BooleanFormula encodeLoopsAreStuck() {
         final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
-        final BooleanFormula atLeastOneNontermination = nonterm2Case.values().stream()
+        final BooleanFormula atLeastOneLoopIsStuck = nonterm2Case.values().stream()
                 .map(this::isNonterminating)
                 .reduce(bmgr.makeFalse(), bmgr::or);
-        return atLeastOneNontermination;
+        return atLeastOneLoopIsStuck;
     }
 
     // FIXME: This is likely going to cause problems (wrong result) with executions where some thread is stuck in a loop
     //  and another in a barrier. We could replace the code to check if ALL threads are stuck at a control-barrier
     //  to avoid such wrong results.
-    private BooleanFormula encodeBarrierIsStuck() {
+    private BooleanFormula encodeBarriersAreStuck() {
         final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
         return task.getProgram().getThreadEvents(ControlBarrier.class).stream()
                 .map(this::isStuckAtBarrier)
@@ -266,19 +271,6 @@ public class NonTerminationEncoder {
         return arePossiblyEquivalent(a, b) && a.getIterationNumber() < b.getIterationNumber();
     }
 
-    // TODO: Do we need this?
-    private boolean arePossiblyEquivalent(Event e1, Event e2) {
-        if (e1.getClass() != e2.getClass()) {
-            return false;
-        }
-        if (!Objects.equals(e1.getMetadata(UnrollingId.class), e2.getMetadata(UnrollingId.class))) {
-            return false;
-        }
-        // TODO: Check that the expressions in the events are identical.
-
-        return true;
-    }
-
     // ------------------------------------------------------------------------------------------------------
     // Basic encoding primitives
 
@@ -312,15 +304,7 @@ public class NonTerminationEncoder {
 
     private BooleanFormula isInSuffix(Event e) {
         final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
-        if (!isPossiblySuffix(e)) {
-            return bmgr.makeFalse();
-        }
-
-        final List<Iteration> cases = event2Iterations.get(e);
-        return bmgr.and(context.execution(e),
-                cases.stream().map(this::isInSuffix)
-                        .reduce(bmgr.makeFalse(), bmgr::or)
-        );
+        return bmgr.and(context.execution(e), isCfInSuffix(e));
     }
 
     private BooleanFormula isCfInSuffix(Event e) {
@@ -336,19 +320,6 @@ public class NonTerminationEncoder {
         );
     }
 
-    private BooleanFormula isInInfix(Event e) {
-        final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
-        if (!isPossiblyInfix(e)) {
-            return bmgr.makeFalse();
-        }
-
-        final List<Iteration> cases = event2Iterations.get(e);
-        return bmgr.and(context.execution(e),
-                cases.stream().map(this::isInInfix)
-                        .reduce(bmgr.makeFalse(), bmgr::or)
-        );
-    }
-
     private BooleanFormula isInPrefix(Event e) {
         final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
         if (isAlwaysPrefix(e)) {
@@ -360,6 +331,24 @@ public class NonTerminationEncoder {
                 cases.stream().map(this::isInPrefix)
                         .reduce(bmgr.makeTrue(), bmgr::and)
         );
+    }
+
+    // Checks control-flow and data-flow equivalence between two iterations
+    private BooleanFormula areEquivalent(Iteration a, Iteration b) {
+        final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
+        if (!arePossiblyEquivalent(a, b)) {
+            return bmgr.makeFalse();
+        }
+        assert (a.body.size() == b.body.size());
+
+        final List<BooleanFormula> equalities = new ArrayList<>();
+        for (int i = 0; i < a.body.size(); i++) {
+            final Event x = a.body.get(i);
+            final Event y = b.body.get(i);
+            equalities.add(areEquivalent(x, y));
+        }
+
+        return bmgr.and(equalities);
     }
 
     private BooleanFormula areEquivalent(Event x, Event y) {
@@ -399,7 +388,11 @@ public class NonTerminationEncoder {
 
         }
 
-        // TODO: Check other types of events as well.
+        // TODO: Check other types of events as well. Technically we could end up judging non-equivalent events as
+        //  equivalent, but practically this is unlikely to be the case/cause any problems.
+        //  The reason is that since we compare events from the same loop, they will have the same tagging
+        //  and if we guarantee same values for live variables/memory events, then the data of all other events
+        //  will likely match automatically (unless they use non-det variables).
         return equality;
     }
 
@@ -416,8 +409,8 @@ public class NonTerminationEncoder {
         (4) Infix iterations are before suffix iterations
 
         We also enforce two special properties:
-        - Side-effectful nontermination requires at least one infix iteration
-        - Side-effectfree nontermination causes exactly one suffix iteration.
+        - Side-effectful non-termination requires at least one infix iteration
+        - Side-effect-free non-termination causes exactly one suffix iteration.
      */
     private BooleanFormula encodeInfixSuffixDecomposition() {
         final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
@@ -516,18 +509,7 @@ public class NonTerminationEncoder {
                 if (!arePossiblyInfixSuffixMatching(inf, suf)) {
                     continue;
                 }
-
-                final List<Event> bodyInfix = inf.body();
-                final List<Event> bodySuffix = suf.body();
-                assert bodyInfix.size() == bodySuffix.size();
-
-                final List<BooleanFormula> equalities = new ArrayList<>();
-                for (int i = 0; i < bodyInfix.size(); i++) {
-                    equalities.add(areEquivalent(bodyInfix.get(i), bodySuffix.get(i)));
-                }
-
-                final BooleanFormula match = areInfixSuffixMatching(inf, suf);
-                enc.add(bmgr.implication(match, bmgr.and(equalities)));
+                enc.add(bmgr.implication(areInfixSuffixMatching(inf, suf), areEquivalent(inf, suf)));
             }
         }
 

@@ -170,9 +170,9 @@ public class DynamicSpinLoopDetection implements ProgramProcessor {
 
         // Special snapshot event for non-termination detection
         if (!loop.writtenLiveOnBackjumpRegisters.isEmpty()) {
-            loop.getEnd().getPredecessor().insertAfter(List.of(
+            loop.getEnd().getPredecessor().insertAfter(
                     EventFactory.Special.newStateSnapshot(loop.writtenLiveOnBackjumpRegisters)
-            ));
+            );
         }
 
         // Special case: If the loop is fully side-effect-free, we can set its unrolling bound to 1.

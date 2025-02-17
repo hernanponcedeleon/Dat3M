@@ -339,7 +339,8 @@ public final class EncodingContext {
         return formulaManager.getIntegerFormulaManager().makeVariable(formulaManager.escape(name) + " " + event.getGlobalId());
     }
 
-    // TODO: The semantics of variable might not always be encoded. Be careful!
+    // Careful: The semantics of this variable is currently only encoded when doing liveness checking
+    //  or verifying litmus code.
     public BooleanFormula lastCoVar(Event write) {
         return booleanFormulaManager.makeVariable("co_last(" + write.getGlobalId() + ")");
     }
