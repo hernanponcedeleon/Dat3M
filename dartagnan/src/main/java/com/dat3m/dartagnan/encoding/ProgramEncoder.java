@@ -2,6 +2,8 @@ package com.dat3m.dartagnan.encoding;
 
 import com.dat3m.dartagnan.configuration.ProgressModel;
 import com.dat3m.dartagnan.expression.Expression;
+import com.dat3m.dartagnan.expression.integers.IntCmpOp;
+import com.dat3m.dartagnan.expression.integers.IntLiteral;
 import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
@@ -14,10 +16,7 @@ import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.RegReader;
 import com.dat3m.dartagnan.program.event.RegWriter;
 import com.dat3m.dartagnan.program.event.Tag;
-import com.dat3m.dartagnan.program.event.core.CondJump;
-import com.dat3m.dartagnan.program.event.core.ControlBarrier;
-import com.dat3m.dartagnan.program.event.core.Init;
-import com.dat3m.dartagnan.program.event.core.Label;
+import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.event.core.threading.ThreadStart;
 import com.dat3m.dartagnan.program.memory.Memory;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
@@ -37,10 +36,7 @@ import org.sosy_lab.java_smt.api.IntegerFormulaManager;
 import org.sosy_lab.java_smt.api.NumeralFormula.IntegerFormula;
 
 import java.math.BigInteger;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import static com.dat3m.dartagnan.configuration.OptionNames.INITIALIZE_REGISTERS;
 import static com.dat3m.dartagnan.configuration.OptionNames.IGNORE_FILTER_SPECIFICATION;
@@ -91,6 +87,7 @@ public class ProgramEncoder implements Encoder {
     public BooleanFormula encodeFullProgram() {
         return context.getBooleanFormulaManager().and(
                 encodeControlBarriers(),
+                encodeNamedControlBarriers(),
                 encodeConstants(),
                 encodeMemory(),
                 encodeControlFlow(),
@@ -258,27 +255,111 @@ public class ProgramEncoder implements Encoder {
     private BooleanFormula encodeControlBarriers() {
         BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
         BooleanFormula enc = bmgr.makeTrue();
-        Map<Integer, List<ControlBarrier>> groups = context.getTask().getProgram().getThreads().stream()
-                .filter(Thread::hasScope)
-                .collect(groupingBy(this::getWorkgroupId,
-                        flatMapping(t -> t.getEvents(ControlBarrier.class).stream(), toList())));
+        Map<String, BooleanFormula> allCfVariables = new HashMap<>();
 
-        for (List<ControlBarrier> events : groups.values()) {
-            for (ControlBarrier e1 : events) {
-                Expression id1 = e1.getId();
-                BooleanFormula allCF = context.controlFlow(e1);
-                for (ControlBarrier e2 : events) {
-                    if (!e1.getThread().equals(e2.getThread())) {
-                        Expression id2 = e2.getId();
-                        BooleanFormula sameId = context.equal(context.encodeExpressionAt(id1, e1), context.encodeExpressionAt(id2, e2));
-                        BooleanFormula cf = bmgr.or(context.controlFlow(e2), bmgr.not(sameId));
-                        allCF = bmgr.and(allCF, cf);
-                    }
-                }
-                enc = bmgr.and(enc, bmgr.equivalence(allCF, context.execution(e1)));
+        Map<String, List<ControlBarrier>> barriers = context.getTask().getProgram().getThreadEvents(ControlBarrier.class).stream()
+                .filter(b -> !(b instanceof NamedBarrier))
+                .collect(groupingBy(b -> "all_barriers_" + getWorkgroupId(b.getThread()) + "@" + b.getInstanceId()));
+
+        Map<String, BooleanFormula> allCfConjunctions = barriers.entrySet().stream()
+                .collect(toMap(Map.Entry::getKey, e -> bmgr.and(e.getValue().stream().map(context::controlFlow).toList())));
+
+        for (Map.Entry<String, BooleanFormula> entry : allCfConjunctions.entrySet()) {
+            BooleanFormula variable = bmgr.makeVariable(entry.getKey());
+            allCfVariables.put(entry.getKey(), variable);
+            enc = bmgr.and(enc, bmgr.equivalence(variable, entry.getValue()));
+        }
+
+        for (Map.Entry<String, List<ControlBarrier>> entry : barriers.entrySet()) {
+            BooleanFormula variable = allCfVariables.get(entry.getKey());
+            for (ControlBarrier barrier : entry.getValue()) {
+                enc = bmgr.and(enc, bmgr.equivalence(variable, context.execution(barrier)));
             }
         }
         return enc;
+    }
+
+    private BooleanFormula encodeNamedControlBarriers() {
+        BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
+        BooleanFormula enc = bmgr.makeTrue();
+
+        Map<String, List<NamedBarrier>> barriers = context.getTask().getProgram().getThreadEvents(NamedBarrier.class).stream()
+                .collect(groupingBy(b -> getWorkgroupId(b.getThread()) + "@" + b.getInstanceId()));
+
+        for (List<NamedBarrier> events : barriers.values()) {
+            for (NamedBarrier e1 : events) {
+                List<NamedBarrier> other = events;
+                if (e1.getResourceId() instanceof IntLiteral) {
+                    other = events.stream()
+                            .filter(e2 -> !(e2.getResourceId() instanceof IntLiteral) || e1.getResourceId().equals(e2.getResourceId()))
+                            .toList();
+                }
+                if (e1.getQuorum() != null) {
+                    enc = bmgr.and(enc, encodeNamedBarrierCfQuorum(e1, other));
+                } else {
+                    enc = bmgr.and(enc, encodeNamedBarrierCfAll(e1, other));
+                }
+            }
+        }
+        return enc;
+    }
+
+    private BooleanFormula encodeNamedBarrierCfAll(NamedBarrier e1, List<NamedBarrier> events) {
+        BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
+        Expression id1 = e1.getResourceId();
+        BooleanFormula allCF = bmgr.makeTrue();
+        for (NamedBarrier e2 : events) {
+            BooleanFormula sameId = context.equal(context.encodeExpressionAt(id1, e1), context.encodeExpressionAt(e2.getResourceId(), e2));
+            BooleanFormula cf = bmgr.or(context.controlFlow(e2), bmgr.not(sameId));
+            allCF = bmgr.and(allCF, cf);
+        }
+        return bmgr.and(context.sync(e1), bmgr.equivalence(allCF, context.execution(e1)));
+    }
+
+    /*
+     * Variables:
+     * - `bool: sync(e: NamedBarrier)` : defines whether `e` is in `syncbar` relation
+     * - `int: quorum(e: NamedBarrier)` : a parameter of `e` defining the minimal number of threads to reach the barrier
+     * - `cf_count(e: NamedBarrier)` : the number of threads that reached the barrier in control flow
+     * - `sync_count(e: NamedBarrier)` : the number of threads that synchronize on the barrier
+     *
+     * Note: `cf_count` and `sync_count` cannot use a single variable for the whole barrier and must be defined for each
+     * event, because for PTX `resourceId` may vary in different executions.
+     *
+     * Constraints:
+     * - `sync(e) => exec(e)`
+     * - `exec(e) <=> (cf(e) /\ (sync_count(e) >= quorum(e)))`
+     * - `(cf_count(e) >= quorum(e)) => (sync_count(e) >= quorum(e))`
+     * - `cf_count(e) <=> sum((cf(e1) /\ sameId(e, e1)), (cf(e2) /\ sameId(e, e2)), .., (cf(en) /\ sameId(e, en)))`
+     * - `sync_count(e) <=> sum((sync(e1) /\ sameId(e, e1)), (sync(e2) /\ sameId(e, e2)), .., (sync(en) /\ sameId(e, en)))`
+     */
+    private BooleanFormula encodeNamedBarrierCfQuorum(NamedBarrier e1, List<NamedBarrier> events) {
+        BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
+        IntegerFormulaManager imgr = context.getFormulaManager().getIntegerFormulaManager();
+        Expression id1 = e1.getResourceId();
+
+        List<IntegerFormula> cfCountMembers = new ArrayList<>();
+        List<IntegerFormula> syncCountMembers = new ArrayList<>();
+        for (NamedBarrier e2 : events) {
+            BooleanFormula sameId = context.equal(context.encodeExpressionAt(id1, e1), context.encodeExpressionAt(e2.getResourceId(), e2));
+            IntegerFormula iCf = context.toInteger(bmgr.and(sameId, context.controlFlow(e2)));
+            IntegerFormula iSync = context.toInteger(bmgr.and(sameId, context.sync(e2)));
+            cfCountMembers.add(iCf);
+            syncCountMembers.add(iSync);
+        }
+
+        IntegerFormula cfCount = imgr.makeVariable("cf_count(" + e1.getGlobalId() + ")");
+        IntegerFormula syncCount = imgr.makeVariable("sync_count(" + e1.getGlobalId() + ")");
+        BooleanFormula hasQuorum = bmgr.makeVariable("quorum(" + e1.getGlobalId() + ")");
+        Formula quorum = context.encodeExpressionAt(e1.getQuorum(), e1);
+
+        BooleanFormula enc = bmgr.equivalence(hasQuorum, context.encodeComparison(IntCmpOp.GTE, syncCount, quorum));
+        enc = bmgr.and(enc, bmgr.equivalence(context.execution(e1), bmgr.and(context.controlFlow(e1), hasQuorum)));
+        enc = bmgr.and(enc, bmgr.implication(context.encodeComparison(IntCmpOp.GTE, cfCount, quorum), hasQuorum));
+        enc = bmgr.and(enc, imgr.equal(cfCount, imgr.sum(cfCountMembers)));
+        enc = bmgr.and(enc, imgr.equal(syncCount, imgr.sum(syncCountMembers)));
+
+        return bmgr.and(enc, bmgr.implication(context.sync(e1), context.execution(e1)));
     }
 
     private BooleanFormula encodeForwardProgress(Program program, ProgressModel progressModel) {

@@ -1,47 +1,41 @@
 package com.dat3m.dartagnan.program.event.core;
 
 import com.dat3m.dartagnan.encoding.EncodingContext;
-import com.dat3m.dartagnan.expression.Expression;
-import com.dat3m.dartagnan.expression.ExpressionVisitor;
-import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.EventVisitor;
-import com.dat3m.dartagnan.program.event.RegReader;
 import com.dat3m.dartagnan.program.event.Tag;
 import org.sosy_lab.java_smt.api.BooleanFormula;
 
-import java.util.HashSet;
-import java.util.Set;
+public class ControlBarrier extends GenericVisibleEvent {
 
-public class ControlBarrier extends GenericVisibleEvent implements RegReader {
-    private Expression id;
+    // Identifier of a control barrier instance. Only barriers with the
+    // same instanceId can synchronize with each other.
+    // For kernel/shader code, barrier events will have the same instanceId
+    // iff they are generated from the same dynamic (unrolled) instance of
+    // a barrier instruction. In litmus tests, barrier instanceId should be
+    // specified explicitly.
+    private String instanceId;
 
-    public ControlBarrier(String name, Expression id) {
+    public ControlBarrier(String name, String instanceId) {
         super(name, Tag.FENCE);
-        this.id = id;
+        this.instanceId = instanceId;
     }
 
-    private ControlBarrier(ControlBarrier other) {
+    protected ControlBarrier(ControlBarrier other) {
         super(other);
-        this.id = other.id;
+        this.instanceId = other.instanceId;
     }
 
-    public Expression getId() {
-        return id;
+    public void setInstanceId(String instanceId) {
+        this.instanceId = instanceId;
     }
 
-    @Override
-    public void transformExpressions(ExpressionVisitor<? extends Expression> exprTransformer) {
-        this.id = id.accept(exprTransformer);
-    }
-
-    @Override
-    public Set<Register.Read> getRegisterReads() {
-        return Register.collectRegisterReads(id, Register.UsageType.OTHER, new HashSet<>());
+    public String getInstanceId() {
+        return instanceId;
     }
 
     @Override
     public String defaultString() {
-        return String.format("%s := barrier_id[%s]", name, id);
+        return String.format("%s := barrier(%s)", name, instanceId);
     }
 
     @Override

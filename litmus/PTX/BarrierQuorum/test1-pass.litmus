@@ -1,0 +1,9 @@
+PTX test1-pass
+{
+x=0;
+}
+ P0@cta 0,gpu 0       | P1@cta 0,gpu 0       | P2@cta 0,gpu 0       ;
+ st.weak x, 1         | bar.cta.sync 1, 1, 2 | bar.cta.sync 1, 1, 2 ;
+ bar.cta.sync 1, 1, 2 | ld.weak r0, x        |                      ;
+
+exists (P1:r0 == 0)

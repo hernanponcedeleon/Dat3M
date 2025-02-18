@@ -1,0 +1,9 @@
+PTX test2-hang
+{
+x=0;
+}
+ P0@cta 0,gpu 0       | P1@cta 0,gpu 0       | P2@cta 0,gpu 0       ;
+ ld.weak r0, x        | bar.cta.sync 1, 1, 4 | bar.cta.sync 1, 1, 4 ;
+ bar.cta.sync 1, 1, 4 | st.weak x, 1         |                      ;
+
+exists (P0:r0 == 1)

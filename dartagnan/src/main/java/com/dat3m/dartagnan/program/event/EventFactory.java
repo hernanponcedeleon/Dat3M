@@ -136,8 +136,12 @@ public class EventFactory {
         return fence;
     }
 
-    public static ControlBarrier newControlBarrier(String name, Expression fenceId) {
-        return new ControlBarrier(name, fenceId);
+    public static ControlBarrier newControlBarrier(String name, String instanceId) {
+        return new ControlBarrier(name, instanceId);
+    }
+
+    public static NamedBarrier newNamedBarrier(String name, String instanceId, Expression id, Expression quorum) {
+        return new NamedBarrier(name, instanceId, id, quorum);
     }
 
     public static Init newInit(MemoryObject base, int offset) {

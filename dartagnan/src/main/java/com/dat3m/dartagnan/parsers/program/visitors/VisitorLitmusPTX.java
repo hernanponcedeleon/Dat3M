@@ -298,8 +298,19 @@ public class VisitorLitmusPTX extends LitmusPTXBaseVisitor<Object> {
 
     @Override
     public Object visitBarrier(LitmusPTXParser.BarrierContext ctx) {
-        Expression barrierId = (Expression) ctx.value().accept(this);
-        Event barrier = EventFactory.newControlBarrier(ctx.getText().toLowerCase(), barrierId);
+        String name = ctx.barrierMode().getText();
+        String instanceId = ctx.constant().getText();
+        Event barrier;
+        if (ctx.barrierId() == null) {
+            barrier = EventFactory.newControlBarrier(name, instanceId);
+        } else {
+            Expression id = (Expression) ctx.barrierId().accept(this);
+            Expression quorum = null;
+            if (ctx.barrierQuorum() != null) {
+                quorum = (Expression) ctx.barrierQuorum().accept(this);
+            }
+            barrier = EventFactory.newNamedBarrier(name, instanceId, id, quorum);
+        }
         if(ctx.barrierMode().Arrive() != null) {
             barrier.addTags(Tag.PTX.ARRIVE);
         }

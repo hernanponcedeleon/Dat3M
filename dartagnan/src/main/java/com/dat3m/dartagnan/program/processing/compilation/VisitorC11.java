@@ -128,9 +128,9 @@ public class VisitorC11 extends VisitorBase {
 
     @Override
     public List<Event> visitControlBarrier(ControlBarrier e) {
-        Event entryFence = EventFactory.newControlBarrier(e.getName() + "_entry", e.getId());
+        Event entryFence = EventFactory.newControlBarrier(e.getName() + "_entry", e.getInstanceId());
         entryFence.addTags(Tag.OpenCL.ENTRY_FENCE, C11.MO_RELEASE);
-        Event exitFence = EventFactory.newControlBarrier(e.getName() + "_exit", e.getId());
+        Event exitFence = EventFactory.newControlBarrier(e.getName() + "_exit", e.getInstanceId());
         exitFence.addTags(Tag.OpenCL.EXIT_FENCE, C11.MO_ACQUIRE);
         return tagList(e, eventSequence(
                 entryFence,

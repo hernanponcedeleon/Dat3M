@@ -136,7 +136,7 @@ memoryBarrierInstruction
     ;
 
 controlBarrierInstruction
-    :   ControlBarrier (scope | moAcq scope semSc+ semVis? | moRel scope semSc+ semAv? | moAcqRel scope semSc+ semAv? semVis?) value
+    :   ControlBarrier (scope | moAcq scope semSc+ semVis? | moRel scope semSc+ semAv? | moAcqRel scope semSc+ semAv? semVis?) constant (Comma barrierId (Comma barrierQuorum)?)?
     ;
 
 localInstruction
@@ -158,6 +158,14 @@ condJumpInstruction
 deviceOperation
     :   AVDEVICE
     |   VISDEVICE
+    ;
+
+barrierId
+    : value
+    ;
+
+barrierQuorum
+    : value
     ;
 
 value

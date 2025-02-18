@@ -151,12 +151,20 @@ fenceAlias
     ;
 
 barrier
-    :   Barrier Period CTA Period barrierMode value
+    :   Barrier Period CTA Period barrierMode constant (Comma barrierId (Comma barrierQuorum)?)?
     ;
 
 barrierMode
     :   Sync
     |   Arrive
+    ;
+
+barrierId
+    : value
+    ;
+
+barrierQuorum
+    : value
     ;
 
 atomInstruction

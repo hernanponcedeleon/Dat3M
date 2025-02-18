@@ -1,6 +1,5 @@
 package com.dat3m.dartagnan.program.processing;
 
-import com.dat3m.dartagnan.GlobalSettings;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.Program;
@@ -11,6 +10,7 @@ import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.EventUser;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.CondJump;
+import com.dat3m.dartagnan.program.event.core.ControlBarrier;
 import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.event.lang.svcomp.LoopBound;
 import com.dat3m.dartagnan.program.event.metadata.UnrollingBound;
@@ -193,8 +193,9 @@ public class LoopUnrolling implements ProgramProcessor {
                 endOfLoopMarker.copyAllMetadataFrom(loopBackJump);
 
             } else {
+                final String loopId = String.format("%s%s%s%d", loopBegin.getName(), LOOP_INFO_SEPARATOR, LOOP_INFO_ITERATION_SUFFIX, iterCounter);
                 final Map<Event, Event> copyCtx = new HashMap<>();
-                final List<Event> copies = copyPath(loopBegin, loopBackJump, copyCtx);
+                final List<Event> copies = copyPath(loopBegin, loopBackJump, copyCtx, loopId);
 
                 // Insert copy of the loop
                 loopBegin.getPredecessor().insertAfter(copies);
@@ -208,18 +209,20 @@ public class LoopUnrolling implements ProgramProcessor {
 
                 // Rename label of iteration.
                 final Label loopBeginCopy = ((Label)copyCtx.get(loopBegin));
-                loopBeginCopy.setName(String.format("%s%s%s%d", loopBegin.getName(), LOOP_INFO_SEPARATOR, LOOP_INFO_ITERATION_SUFFIX, iterCounter));
+                loopBeginCopy.setName(loopId);
                 loopBeginCopy.addTags(Tag.NOOPT);
             }
         }
     }
 
-    private List<Event> copyPath(Event from, Event until, Map<Event, Event> copyContext) {
+    private List<Event> copyPath(Event from, Event until, Map<Event, Event> copyContext, String loopId) {
         final List<Event> copies = new ArrayList<>();
-
         Event cur = from;
         while(cur != null && !cur.equals(until)){
             final Event copy = cur.getCopy();
+            if (cur instanceof ControlBarrier curBar && copy instanceof ControlBarrier copyBar) {
+                copyBar.setInstanceId(String.format("%s.%s", curBar.getInstanceId(), loopId));
+            }
             copies.add(copy);
             copyContext.put(cur, copy);
             cur = cur.getSuccessor();

@@ -1,14 +1,11 @@
 package com.dat3m.dartagnan.encoding;
 
 import com.dat3m.dartagnan.configuration.Arch;
-import com.dat3m.dartagnan.expression.Expression;
+import com.dat3m.dartagnan.expression.integers.IntLiteral;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.analysis.ReachingDefinitionsAnalysis;
 import com.dat3m.dartagnan.program.event.*;
-import com.dat3m.dartagnan.program.event.core.ControlBarrier;
-import com.dat3m.dartagnan.program.event.core.Load;
-import com.dat3m.dartagnan.program.event.core.MemoryCoreEvent;
-import com.dat3m.dartagnan.program.event.core.RMWStoreExclusive;
+import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.utils.Utils;
 import com.dat3m.dartagnan.utils.dependable.DependencyGraph;
 import com.dat3m.dartagnan.wmm.Constraint;
@@ -148,7 +145,7 @@ public class WmmEncoder implements Encoder {
         EncodingContext.EdgeEncoder edge = context.edge(relation);
         EventGraph encodeSet = encodeSets.getOrDefault(relation, new MapEventGraph())
                 .filter((e1, e2) -> TRUE.equals(model.evaluate(edge.encode(e1, e2))));
-        EventGraph mustEncodeSet = context.getAnalysisContext().get(RelationAnalysis.class).getKnowledge(relation).getMustSet()
+        EventGraph mustEncodeSet = MapEventGraph.from(context.getAnalysisContext().get(RelationAnalysis.class).getKnowledge(relation).getMustSet())
                 .filter((e1, e2) -> TRUE.equals(model.evaluate(context.execution(e1, e2))));
         return EventGraph.union(encodeSet, mustEncodeSet);
     }
@@ -675,21 +672,16 @@ public class WmmEncoder implements Encoder {
             EncodingContext.EdgeEncoder encoder = context.edge(rel);
             EventGraph mustSet = ra.getKnowledge(rel).getMustSet();
             encodeSets.get(rel).apply((e1, e2) -> {
-                ControlBarrier b1 = (ControlBarrier) e1;
-                ControlBarrier b2 = (ControlBarrier) e2;
-                BooleanFormula sameId;
-                // If they are in must, they are guaranteed to have the same id
-                if (mustSet.contains(b1, b2)) {
-                    sameId = bmgr.makeTrue();
-                } else {
-                    Expression id1 = b1.getId();
-                    Expression id2 = b2.getId();
-                    sameId = context.equal(context.encodeExpressionAt(id1, b1),
-                            context.encodeExpressionAt(id2, b2));
+                BooleanFormula condition = execution(e1, e2);
+                if (!mustSet.contains(e1, e2) && e1 instanceof NamedBarrier b1 && e2 instanceof NamedBarrier b2) {
+                    condition = bmgr.and(condition, context.sync(b1));
+                    if (!(b1.getResourceId() instanceof IntLiteral) || !(b2.getResourceId() instanceof IntLiteral)) {
+                        condition = bmgr.and(condition, context.equal(
+                                context.encodeExpressionAt(b1.getResourceId(), b1),
+                                context.encodeExpressionAt(b2.getResourceId(), b2)));
+                    }
                 }
-                enc.add(bmgr.equivalence(
-                        encoder.encode(b1, b2),
-                        bmgr.and(execution(b1, b2), sameId)));
+                enc.add(bmgr.equivalence(encoder.encode(e1, e2), condition));
             });
             return null;
         }
