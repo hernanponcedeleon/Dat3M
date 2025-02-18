@@ -129,19 +129,19 @@ public class VisitorInlineAsm extends InlineAsmBaseVisitor<Object> {
     // used to keep track of which asm register should map to the llvm return register if it is an aggregate type
     private final List<Expression> pendingRegisters;
     // holds the LLVM registers that are passed as (args) to the the asm -- asm"..." (args)
-    private final LinkedList<Expression> argsRegisters;
+    private final List<Expression> argsRegisters;
     // holds the names of the asm registers which appear in inlineasm e.g. $0, $1...
-    private final LinkedList<String> asmRegisterNames;
+    private final ArrayList<String> asmRegisterNames;
     // expected type of RHS of a comparison
     private Type expectedType;
 
-    public VisitorInlineAsm(Function llvmFunction, Register returnRegister, Type returnType, ArrayList<Expression> llvmArguments) {
+    public VisitorInlineAsm(Function llvmFunction, Register returnRegister, Type returnType, List<Expression> llvmArguments) {
         this.llvmFunction = llvmFunction;
         this.returnRegister = returnRegister;
         this.labelsDefined = new HashMap<>();
         this.pendingRegisters = new LinkedList<>();
-        this.asmRegisterNames = new LinkedList<>();
-        this.argsRegisters = new LinkedList<>(llvmArguments);
+        this.asmRegisterNames = new ArrayList<>();
+        this.argsRegisters = llvmArguments;
     }
 
     // helper function to determine if a string representing a register is an ARMv8 register
