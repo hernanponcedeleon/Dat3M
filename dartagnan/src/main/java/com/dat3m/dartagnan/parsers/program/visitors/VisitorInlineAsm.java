@@ -141,7 +141,6 @@ public class VisitorInlineAsm extends InlineAsmBaseVisitor<Object> {
         this.returnRegister = returnRegister;
         this.labelsDefined = new HashMap<>();
         this.pendingRegisters = new LinkedList<>();
-        this.asmRegisterNames = new ArrayList<>();
         this.argsRegisters = llvmArguments;
     }
 
@@ -456,7 +455,6 @@ public class VisitorInlineAsm extends InlineAsmBaseVisitor<Object> {
         boolean outputRegistersInitialized = returnRegister == null;
         for(int i = 0; i < clobbers.size(); i++){
                 InlineAsmParser.ClobberContext clobber = clobbers.get(i);
-                System.out.println("Evaluating " + clobber.getText() + " with index " + i);
                 if(isClobberMemoryLocation(clobber)){
                     // the register that should be used as a returnRegister refers to a memory location
                     // and therefore we are sure that it does not contain any returnRegister
@@ -474,8 +472,8 @@ public class VisitorInlineAsm extends InlineAsmBaseVisitor<Object> {
                 } else{
                     // create the aggregate assignment and assign it to the returnRegister
                         Type aggregateType = types.getAggregateType(((AggregateType) returnRegister.getType()).getFields());
-                        System.out.println("Creating aggregate type " + aggregateType);
-                        System.out.println("Pending registers " + pendingRegisters);
+                        // System.out.println("Creating aggregate type " + aggregateType);
+                        // System.out.println("Pending registers " + pendingRegisters);
                         Expression finalAssignExpression = expressions.makeConstruct(aggregateType, this.pendingRegisters);
                         outputAssignments.add(EventFactory.newLocal(this.returnRegister, finalAssignExpression));
                     }
@@ -492,7 +490,7 @@ public class VisitorInlineAsm extends InlineAsmBaseVisitor<Object> {
                         continue;
                     }
                     Expression llvmRegister = argsRegisters.get(i - getSizeOfReturnRegister());
-                    System.out.println("Assigning "+ asmRegister + " to llvm one " + llvmRegister);
+                    // System.out.println("Assigning "+ asmRegister + " to llvm one " + llvmRegister);
                     inputAssignments.add(EventFactory.newLocal(asmRegister, llvmRegister));
                 } 
                 if (isClobberNumeric(clobber)){
