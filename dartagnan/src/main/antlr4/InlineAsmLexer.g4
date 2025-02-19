@@ -81,7 +81,9 @@ PrefetchStoreL1Once         : 'pstl1strm';
 IfThenThenOptions           : 'eq';
 NumbersInline               : [0-9]+;
 RLiteral                    : 'r'; // needed because both 'r' and '=&r' use the general purpose
-Register                    : '${' ( ~('}' | '$') )+ '}' | '$' NumbersInline | '[$' NumbersInline ']'; // should match any ${*}
+RegisterSizeHint            : 'x' | 'w';
+// Register                    : '${' ( ~('}' | '$') )+ '}' | '$' NumbersInline | '[$' NumbersInline ']'; // should match any ${*}
+Register                    : Dollar LBrace NumbersInline Colon RegisterSizeHint RBrace | Dollar NumbersInline | LBracket Dollar NumbersInline RBracket; // keep them like this for now
 ConstantValue               : Num NumbersInline;
 LabelReference              : [a-zA-Z0-9_]+ ;
 >>>>>>> 2d85efd32 (first cleaning pass, public and private, removed getEvents in InlineParser, removed unsupported operators and more consistent names in .g4)

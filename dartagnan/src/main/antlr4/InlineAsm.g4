@@ -8,7 +8,7 @@ asm
 ;
 
 asmInstrEntries : EndInstruction?((armInstr | riscvInstr | ppcInstr | x86Instr )(EndInstruction | Semi)*);
-asmMetadataEntries : (constraint Comma)* clobbers;
+asmMetadataEntries : (clobber Comma)* flags;
 
 
 armInstr 
@@ -72,7 +72,6 @@ riscvFence : RISCVFence FenceRISCVOpt (Comma FenceRISCVOpt)?;
 x86Fence : X86Fence;
 ppcFence : PPCFence;
 
-metaInstr : clobber | flag;
 clobber : OutputOpAssign | MemoryAddress | InputOpGeneralReg | OverlapInOutRegister | PointerToMemoryLocation;
 
 outputOpAssign              : Equals Amp? RLiteral;
