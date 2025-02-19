@@ -2,12 +2,9 @@ package com.dat3m.dartagnan.parsers.program.visitors;
 
 import java.math.BigInteger;
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Optional;
 
 import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.expression.Expression;
@@ -119,47 +116,6 @@ public class VisitorInlineAsm extends InlineAsmBaseVisitor<Object> {
             this.right = right;
         }
     }
-    public class RegisterManager {
-        private final List<Register> registers = new ArrayList<>();
-    
-        // Comparator that extracts the numeric part from "asm_<number>" and compares them.
-        private final Comparator<Register> registerComparator = Comparator.comparingInt(r -> extractNumber(r.getName()));
-    
-        private int extractNumber(String name) {
-            try {
-                return Integer.parseInt(name.substring(4));
-            } catch (NumberFormatException e) {
-                throw new IllegalArgumentException("Register name format is invalid: " + name);
-            }
-        }
-        // Adds a register while maintaining sorted order.
-        public void add(Register newRegister) {
-            // Find the insertion point using binarySearch.
-            int index = Collections.binarySearch(registers, newRegister, registerComparator);
-            if (index < 0) {
-                // binarySearch returns (-(insertion point) - 1) if not found.
-                index = -index - 1;
-            }
-            registers.add(index, newRegister);
-        }
-        public Optional<Register> find(String registerName){
-            for( Register r : registers){
-                if(r.getName().equals(registerName)){
-                    return Optional.of(r);
-                }
-            }
-            return Optional.empty();
-        }
-        public Register get(int index) {
-            return registers.get(index);
-        }
-        public boolean isEmpty(){
-            return registers.isEmpty();
-        }
-        public int size(){
-            return registers.size();
-        }
-    }    
 
     private final List<Local> inputAssignments = new ArrayList<>();
     private final List<Event> asmInstructions = new ArrayList<>();
@@ -175,13 +131,10 @@ public class VisitorInlineAsm extends InlineAsmBaseVisitor<Object> {
     private final List<Expression> pendingRegisters;
     // holds the LLVM registers that are passed as (args) to the the asm -- asm"..." (args)
     private final List<Expression> argsRegisters;
-    // holds the names of the asm registers which appear in inlineasm e.g. $0, $1...
-    private final ArrayList<String> asmRegisterNames;
     // expected type of RHS of a comparison
     private Type expectedType;
     // tests
-    // private RegisterManager registers = new RegisterManager();
-    private HashMap<Integer, Register> registers = new HashMap<>();
+    private final HashMap<Integer, Register> registers = new HashMap<>();
 
     public VisitorInlineAsm(Function llvmFunction, Register returnRegister, Type returnType, List<Expression> llvmArguments) {
         this.llvmFunction = llvmFunction;
@@ -269,37 +222,18 @@ public class VisitorInlineAsm extends InlineAsmBaseVisitor<Object> {
         List<Event> events = new ArrayList<>();
         // 
         events.addAll(inputAssignments);
-        for (Local e : inputAssignments){
-            System.out.println(e.toString());
-        }
+        // for (Local e : inputAssignments){
+        //     System.out.println(e.toString());
+        // }
         // should also set the '3' case 
         events.addAll(asmInstructions);
-        for (Event e : asmInstructions){
-            System.out.println(e.toString());
-        }
-        // when we modified any register which was referencing the returnRegister, and if it was a aggregate register, we appended into pendingRegisters
-        // now we create the aggregate Type based on those registers, and we create the event which links the inline asm registers to the return Register
-        // e.g. 
-        //    r$0 = load(r$3)
-        //    r$1 = load(r$4)
-        //    ...
-        //    {0 : bv32, 1 : bv32 } r10 <- { bv32 r$0, bv32 r$1 }
-        // it is put at the start of asmMetadataEntries rule, because we have to be sure that this event is created only after all the instructions have executed.
-        // Moreover, we force the creation of this event here, as it needs to have the latest data AND we want to be inserted into Dat3MIR only once.
-        // if (getSizeOfReturnRegister() > 1) {
-        //     List<Type> pendingRegisterTypes = new LinkedList<>();
-        //     System.out.println(pendingRegisters);
-        //     for (Expression r : this.pendingRegisters) {
-        //         pendingRegisterTypes.add(((Register) r).getType());
-        //     }
-        //     Type aggregateType = types.getAggregateType(pendingRegisterTypes);
-        //     Expression finalAssignExpression = expressions.makeConstruct(aggregateType, this.pendingRegisters);
-        //     events.add(EventFactory.newLocal(this.returnRegister, finalAssignExpression));
+        // for (Event e : asmInstructions){
+        //     System.out.println(e.toString());
         // }
         events.addAll(outputAssignments);
-        for (Local e : outputAssignments){
-            System.out.println(e.toString());
-        }
+        // for (Local e : outputAssignments){
+        //     System.out.println(e.toString());
+        // }
         return events;
     }
 
@@ -325,7 +259,6 @@ public class VisitorInlineAsm extends InlineAsmBaseVisitor<Object> {
         Register register = (Register) ctx.register(0).accept(this);
         Register address = (Register) ctx.register(1).accept(this);
         asmInstructions.add(EventFactory.newLoad(register, address));
-        // updateReturnRegisterIfModified(register);
         return null;
     }
 
@@ -334,7 +267,6 @@ public class VisitorInlineAsm extends InlineAsmBaseVisitor<Object> {
         Register register = (Register) ctx.register(0).accept(this);
         Register address = (Register) ctx.register(1).accept(this);
         asmInstructions.add(EventFactory.newLoadWithMo(register, address, Tag.ARMv8.MO_ACQ));
-        // updateReturnRegisterIfModified(register);
         return null;
     }
 
@@ -343,7 +275,6 @@ public class VisitorInlineAsm extends InlineAsmBaseVisitor<Object> {
         Register register = (Register) ctx.register(0).accept(this);
         Register address = (Register) ctx.register(1).accept(this);
         asmInstructions.add(EventFactory.newRMWLoadExclusive(register, address));
-        // updateReturnRegisterIfModified(register);
         return null;
     }
 
@@ -352,7 +283,6 @@ public class VisitorInlineAsm extends InlineAsmBaseVisitor<Object> {
         Register register = (Register) ctx.register(0).accept(this);
         Register address = (Register) ctx.register(1).accept(this);
         asmInstructions.add(EventFactory.newRMWLoadExclusiveWithMo(register, address, Tag.ARMv8.MO_ACQ));
-        // updateReturnRegisterIfModified(register);
         return null;
     }
 
@@ -363,7 +293,6 @@ public class VisitorInlineAsm extends InlineAsmBaseVisitor<Object> {
         Register rightRegister = (Register) ctx.register(2).accept(this);
         Expression exp = expressions.makeAdd(leftRegister, rightRegister);
         asmInstructions.add(EventFactory.newLocal(resultRegister, exp));
-        // updateReturnRegisterIfModified(resultRegister);
         return null;
     }
 
@@ -374,7 +303,6 @@ public class VisitorInlineAsm extends InlineAsmBaseVisitor<Object> {
         Register rightRegister = (Register) ctx.register(2).accept(this);
         Expression exp = expressions.makeSub(leftRegister, rightRegister);
         asmInstructions.add(EventFactory.newLocal(resultRegister, exp));
-        // updateReturnRegisterIfModified(resultRegister);
         return null;
     }
 
@@ -385,7 +313,6 @@ public class VisitorInlineAsm extends InlineAsmBaseVisitor<Object> {
         Register rightRegister = (Register) ctx.register(2).accept(this);
         Expression exp = expressions.makeIntOr(leftRegister, rightRegister);
         asmInstructions.add(EventFactory.newLocal(resultRegister, exp));
-        // updateReturnRegisterIfModified(resultRegister);
         return null;
     }
 
@@ -396,7 +323,6 @@ public class VisitorInlineAsm extends InlineAsmBaseVisitor<Object> {
         Register rightRegister = (Register) ctx.register(2).accept(this);
         Expression exp = expressions.makeIntAnd(leftRegister, rightRegister);
         asmInstructions.add(EventFactory.newLocal(resultRegister, exp));
-        // updateReturnRegisterIfModified(resultRegister);
         return null;
     }
 
@@ -461,7 +387,6 @@ public class VisitorInlineAsm extends InlineAsmBaseVisitor<Object> {
         Register toRegister = (Register) ctx.register(0).accept(this);
         Register fromRegister = (Register) ctx.register(1).accept(this);
         asmInstructions.add(EventFactory.newLocal(toRegister, fromRegister));
-        // updateReturnRegisterIfModified(toRegister);
         return null;
     }
 
