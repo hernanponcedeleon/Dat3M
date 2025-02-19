@@ -78,11 +78,9 @@ LetterInline                : [a-z]+;
 // Metavariables
 StartSymbol                 : 'asm';
 PrefetchStoreL1Once         : 'pstl1strm';
-IfThenThenOptions           : 'eq';
 NumbersInline               : [0-9]+;
 RLiteral                    : 'r'; // needed because both 'r' and '=&r' use the general purpose
 RegisterSizeHint            : 'x' | 'w';
-// Register                    : '${' ( ~('}' | '$') )+ '}' | '$' NumbersInline | '[$' NumbersInline ']'; // should match any ${*}
 Register                    : Dollar LBrace NumbersInline Colon RegisterSizeHint RBrace | Dollar NumbersInline | LBracket Dollar NumbersInline RBracket; // keep them like this for now
 ConstantValue               : Num NumbersInline;
 LabelReference              : [a-zA-Z0-9_]+ ;
