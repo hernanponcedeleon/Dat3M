@@ -123,7 +123,6 @@ public class VisitorInlineAsm extends InlineAsmBaseVisitor<Object> {
     private final Function llvmFunction;
     private final Register returnRegister;
     private final ExpressionFactory expressions = ExpressionFactory.getInstance();
-    private final TypeFactory types = TypeFactory.getInstance();
     private CmpInstruction comparator;
     // keeps track of all the labels defined in the the asm code
     private final HashMap<String, Label> labelsDefined;
@@ -149,10 +148,7 @@ public class VisitorInlineAsm extends InlineAsmBaseVisitor<Object> {
         return registerName.startsWith("${") && registerName.endsWith("}");
     }
 
-    // tells if the returnRegister is an AggregateType
-    private boolean isReturnRegisterAggregate() {
-        return getSizeOfReturnRegister() > 1;
-    }
+
 
     // returns the size of the return register
     // null / void -> 0
@@ -172,6 +168,14 @@ public class VisitorInlineAsm extends InlineAsmBaseVisitor<Object> {
         } else {
             throw new ParsingException("Unknown inline asm return type " + returnType);
         }
+    }
+    // tells if the returnRegister is an AggregateType
+    private boolean isReturnRegisterAggregate() {
+        return getSizeOfReturnRegister() > 1;
+    }
+    // tells if the registerID is part of the returnRegister
+    private boolean isPartOfReturnRegister(int registerID) {
+        return registerID < getSizeOfReturnRegister();
     }
 
     // given a register name, it extracts the index contained in the name
@@ -210,29 +214,30 @@ public class VisitorInlineAsm extends InlineAsmBaseVisitor<Object> {
         return "asm_" + registerID;
     }
 
+    // this function removes the letter from the asm label, as they are not needed.
+    // e.g. 2f becomes 2, 1b becomes 1.
     private String cleanLabel(String label) {
         return label.replaceAll("(\\d)[a-z]", "$1");
     }
 
     @Override
     public List<Event> visitAsm(InlineAsmParser.AsmContext ctx) {
-        System.out.println(ctx.getText());
+        // Given this format 
+        //      Register = Type call asm sideeffect 'asm code', 'clobbers' ('args')
+        // the visitor pattern is going to take care of first visiting all the 'asm code'
+        // which is going to populate all of the 'asmInstructions' and creating the asmRegisters.
+        // Then, by reading the clobbers, we are going to be able to understand which asmRegister
+        // maps to which llvmRegister.
         visitChildren(ctx);
-        List<Event> events = new ArrayList<>();
-        // 
+        // We have created first the asmInstructions, and then the inputAssignments and outputAssignments
+        List<Event> events = new ArrayList<>(); 
+        // this is going to define how the input operands (argsRegisters from llvm) should be mapped to the asm ones
         events.addAll(inputAssignments);
-        // for (Local e : inputAssignments){
-        //     System.out.println(e.toString());
-        // }
-        // should also set the '3' case 
+        // this is going to generate all of the events related to the asm code (load, store, cmp, jmp,...)
         events.addAll(asmInstructions);
-        // for (Event e : asmInstructions){
-        //     System.out.println(e.toString());
-        // }
+        // this has to be the last thing that we do, and it is going to map the asm registers to the returnRegister
+        // it is put as last so that we are sure that we are reading the latest data that was written to the register
         events.addAll(outputAssignments);
-        // for (Local e : outputAssignments){
-        //     System.out.println(e.toString());
-        // }
         return events;
     }
 
@@ -425,21 +430,34 @@ public class VisitorInlineAsm extends InlineAsmBaseVisitor<Object> {
         // TODO DO NOT USE extractNumberFromRegister -- make grammar work properly 
         String registerName = ctx.Register().getText();
         int registerID = extractNumberFromRegisterName(registerName);
+        // given a register context, the ID tells us everything that we need
+        // if w.h. the register, return it
         if(registers.containsKey(registerID)){
             return registers.get(registerID);
         } else {
+            // otherwise, pick up the correct type and create the new Register
             Type registerType;
-            if (registerID < getSizeOfReturnRegister()){
+            if (isPartOfReturnRegister(registerID)) {
                 if(returnRegister.getType() instanceof AggregateType at){
+                    // e.g. { i32, i32 } and w.h. registerId 1, we have to access returnRegister[1].getType()
                     registerType = at.getFields().get(registerID);
                 } else {
+                    // returnRegister is not an aggregate, we just get that type
                     registerType = returnRegister.getType();
                 }
             } else {
+                // in this case we have an index which is higher than the size of the return Register
+                // this means that, like in visitAsmMetadataEntries, we have to "shift" the value by the size of returnRegister type's size
+                // Same example as visitAsmMetadataEntries:
+                // e.g. { i32, i32 } "... $2", "=&r, =&r, r" (i32 r5)
+                // we have registerID 2, we have returnRegisterType size = 2, so we have to perform 2-2 = 0, which is the right index
+                // to get argsRegisters[2-2] = argsRegisters[0] = r5.
                 registerType = argsRegisters.get(registerID - getSizeOfReturnRegister()).getType();
             }
             Register newRegister = this.llvmFunction.getOrNewRegister(makeRegisterName(registerID), registerType);
-            if(registerID < getSizeOfReturnRegister() && isReturnRegisterAggregate()){
+            // if the register is part of the return register, we have to register it for the final assignment for the output
+            // as we are going to do it later when we have enough information in visitAsmMetadata when visiting the clobbers.
+            if(isPartOfReturnRegister(registerID) && isReturnRegisterAggregate()){
                 this.pendingRegisters.add(newRegister);
             }
             registers.put(registerID, newRegister);
@@ -463,22 +481,36 @@ public class VisitorInlineAsm extends InlineAsmBaseVisitor<Object> {
                     continue;
                 }
                 if(isClobberOutputConstraint(clobber)){
+                    // we keep proceding with the scan
                     continue;
                 }
                 if (!outputRegistersInitialized){
-                outputRegistersInitialized = true;
-                if (i == 1){
-                    outputAssignments.add(EventFactory.newLocal(returnRegister, registers.get(0)));
-                } else{
-                    // create the aggregate assignment and assign it to the returnRegister
-                        Type aggregateType = types.getAggregateType(((AggregateType) returnRegister.getType()).getFields());
-                        // System.out.println("Creating aggregate type " + aggregateType);
-                        // System.out.println("Pending registers " + pendingRegisters);
-                        Expression finalAssignExpression = expressions.makeConstruct(aggregateType, this.pendingRegisters);
-                        outputAssignments.add(EventFactory.newLocal(this.returnRegister, finalAssignExpression));
-                    }
+                    // Here we create the outputAssignment.
+                    // since we know that all of the output clobbers come before the input one
+                    // if we're here we're at the 1st input clobber found
+                    outputRegistersInitialized = true;
+                    // if we are at index 1 we only read a single output clobber e.g. "=&r, r" and we are at "r" now.
+                    if (i == 1){
+                        outputAssignments.add(EventFactory.newLocal(returnRegister, registers.get(0)));
+                    } else{
+                        // we know that the type of the returnRegister is something like { i32, i32 } or { i32, i32, i32} ...
+                        // so we have to slice from 0 to i-1 to get the aggregateType
+                        // create the aggregate assignment and assign it to the returnRegister
+                            Type aggregateType = TypeFactory.getInstance().getAggregateType(((AggregateType) returnRegister.getType()).getFields());
+                            // System.out.println("Creating aggregate type " + aggregateType);
+                            // System.out.println("Pending registers " + pendingRegisters);
+                            Expression finalAssignExpression = expressions.makeConstruct(aggregateType, this.pendingRegisters);
+                            outputAssignments.add(EventFactory.newLocal(this.returnRegister, finalAssignExpression));
+                        }
                 }
                 if(isClobberInputConstraint(clobber)){
+                    // here we have already passed all of the output clobbers and we are looking at the input ones.
+                    // e.g. { i32, i32 } "... $2", "=&r, =&r, r" (i32 r5)
+                    // we know that $0, $1 refers to the returnRegister
+                    // this means that, once we got the asmRegister $2, we have to assign it to the llvmRegister r5
+                    // in order to do so, we simply shift the index by the size of the returnRegister
+                    // which in turn lets us access argsRegisters(0) in this case
+                    // Of course it works with no return register or with a returnRegister which is NOT aggregate(simply substracting 0 or 1).
                     Register asmRegister = registers.get(i);
                     if(asmRegister == null){
                         // we are referencing a register that is not present in the asm code
