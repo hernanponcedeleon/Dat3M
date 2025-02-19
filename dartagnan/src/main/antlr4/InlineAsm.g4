@@ -8,7 +8,7 @@ asm
 ;
 
 asmInstrEntries : EndInstruction?((armInstr | riscvInstr | ppcInstr | x86Instr )(EndInstruction | Semi)*);
-asmMetadataEntries : metaInstr(Comma metaInstr)*;
+asmMetadataEntries : (clobber Comma)* flags;
 
 
 armInstr 
@@ -72,13 +72,14 @@ riscvFence : RISCVFence FenceRISCVOpt (Comma FenceRISCVOpt)?;
 x86Fence : X86Fence;
 ppcFence : PPCFence;
 
-metaInstr : clobber | flag;
 clobber : OutputOpAssign | MemoryAddress | InputOpGeneralReg | OverlapInOutRegister | PointerToMemoryLocation;
 
+flags : flag (Comma flag)*;
 flag : Tilde LBrace clobberType RBrace;
 
 clobberType : ClobberMemory | ClobberModifyFlags | ClobberDirectionFlag | ClobberFlags | ClobberFloatPntStatusReg;
 
 expr : register | value;
 register : Register;
+
 value : ConstantValue;
