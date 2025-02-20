@@ -143,12 +143,6 @@ public class VisitorInlineAsm extends InlineAsmBaseVisitor<Object> {
         this.argsRegisters = llvmArguments;
     }
 
-    // helper function to determine if a string representing a register is an ARMv8 register
-    private boolean isArmv8Name(String registerName) {
-        return registerName.startsWith("${") && registerName.endsWith("}");
-    }
-
-
 
     // returns the size of the return register
     // null / void -> 0
@@ -178,25 +172,6 @@ public class VisitorInlineAsm extends InlineAsmBaseVisitor<Object> {
         return registerID < getSizeOfReturnRegister();
     }
 
-    // given a register name, it extracts the index contained in the name
-    // ${3:w} -> 3 (armv8 name)
-    // $4 -> 4 (armv7 name)
-    int extractNumberFromRegisterName(String registerAsmName) {
-        int number = -1;
-        String innerString = registerAsmName;
-        if (registerAsmName.startsWith("r")) {
-            innerString = registerAsmName.substring(1);
-        }
-        if (isArmv8Name(innerString)) { // ${N:x}
-            number = Integer.parseInt(Character.toString(innerString.charAt(2)));
-        } else if (innerString.length() == 2) { // $n
-            number = Integer.parseInt(Character.toString(innerString.charAt(1)));
-        } else if (innerString.length() == 4) { // [$n]
-            number = Integer.parseInt(Character.toString(innerString.charAt(2)));
-        }
-        return number;
-    }
-
     // given a string of a label, it either creates a new label, or returns the existing one if it was already defined
     private Label getOrNewLabel(String labelName) {
         Label label;
@@ -212,12 +187,6 @@ public class VisitorInlineAsm extends InlineAsmBaseVisitor<Object> {
 
     private String makeRegisterName(int registerID) {
         return "asm_" + registerID;
-    }
-
-    // this function removes the letter from the asm label, as they are not needed.
-    // e.g. 2f becomes 2, 1b becomes 1.
-    private String cleanLabel(String label) {
-        return label.replaceAll("(\\d)[a-z]", "$1");
     }
 
     @Override
@@ -243,19 +212,19 @@ public class VisitorInlineAsm extends InlineAsmBaseVisitor<Object> {
 
     // tells if clobber is a numberic clobber e.g. '3'
     private boolean isClobberNumeric(InlineAsmParser.ClobberContext clobber) {
-        return clobber.OverlapInOutRegister() != null;
+        return clobber.overlapInOutRegister() != null;
     }
     // tells us is the clobber is a memory location '=*m'
     private boolean isClobberMemoryLocation(InlineAsmParser.ClobberContext clobber) {
-        return clobber.PointerToMemoryLocation() != null;
+        return clobber.pointerToMemoryLocation() != null;
     }
     // tells us if the clobber is an output clobber e.g. '=r' or '=&r'
     private boolean isClobberOutputConstraint(InlineAsmParser.ClobberContext clobber) {
-        return clobber.OutputOpAssign() != null;
+        return clobber.outputOpAssign() != null;
     }
     // tells us if the clobber is an input clobber e.g. 'Q' or 'r' or '*Q'
     private boolean isClobberInputConstraint(InlineAsmParser.ClobberContext clobber) {
-        return clobber.MemoryAddress() != null || clobber.InputOpGeneralReg() != null;
+        return clobber.memoryAddress() != null || clobber.inputOpGeneralReg() != null;
     }
 
     @Override
@@ -334,8 +303,6 @@ public class VisitorInlineAsm extends InlineAsmBaseVisitor<Object> {
     public Object visitStore(InlineAsmParser.StoreContext ctx) {
         Register value = (Register) ctx.register(0).accept(this);
         Register address = (Register) ctx.register(1).accept(this);
-        System.out.println("Value " + value);
-        System.out.println("Address " + address);
         asmInstructions.add(EventFactory.newStore(address, value));
         return null;
     }
@@ -377,8 +344,7 @@ public class VisitorInlineAsm extends InlineAsmBaseVisitor<Object> {
 
     @Override
     public Object visitCompareBranchNonZero(InlineAsmParser.CompareBranchNonZeroContext ctx) {
-        String cleanedLabelName = cleanLabel(ctx.LabelReference().getText());
-        Label label = getOrNewLabel(cleanedLabelName);
+        Label label = getOrNewLabel(ctx.NumbersInline().getText());
         Register firstRegister = (Register) ctx.register().accept(this);
         Expression zero = expressions.makeZero((IntegerType) firstRegister.getType());
         Expression expr = expressions.makeIntCmp(firstRegister, IntCmpOp.NEQ, zero);
@@ -396,8 +362,7 @@ public class VisitorInlineAsm extends InlineAsmBaseVisitor<Object> {
 
     @Override
     public Object visitBranchEqual(InlineAsmParser.BranchEqualContext ctx) {
-        String cleanedLabelName = cleanLabel(ctx.LabelReference().getText());
-        Label label = getOrNewLabel(cleanedLabelName);
+        Label label = getOrNewLabel(ctx.NumbersInline().getText());
         Expression expr = expressions.makeIntCmp(comparator.left, IntCmpOp.EQ, comparator.right);
         asmInstructions.add(EventFactory.newJump(expr, label));
         return null;
@@ -405,8 +370,7 @@ public class VisitorInlineAsm extends InlineAsmBaseVisitor<Object> {
 
     @Override
     public Object visitBranchNotEqual(InlineAsmParser.BranchNotEqualContext ctx) {
-        String cleanedLabelName = cleanLabel(ctx.LabelReference().getText());
-        Label label = getOrNewLabel(cleanedLabelName);
+        Label label = getOrNewLabel(ctx.NumbersInline().getText());
         Expression expr = expressions.makeIntCmp(comparator.left, IntCmpOp.NEQ, comparator.right);
         asmInstructions.add(EventFactory.newJump(expr, label));
         return null;
@@ -414,8 +378,8 @@ public class VisitorInlineAsm extends InlineAsmBaseVisitor<Object> {
 
     @Override
     public Object visitLabelDefinition(InlineAsmParser.LabelDefinitionContext ctx) {
-        String labelDefinitionNoColon = ctx.LabelDefinition().getText().replace(":", "");
-        Label label = getOrNewLabel(labelDefinitionNoColon);
+        String labelID = ctx.NumbersInline().getText();
+        Label label = getOrNewLabel(labelID);
         asmInstructions.add(label);
         return null;
     }
@@ -428,8 +392,8 @@ public class VisitorInlineAsm extends InlineAsmBaseVisitor<Object> {
     @Override
     public Object visitRegister(InlineAsmParser.RegisterContext ctx) {
         // TODO DO NOT USE extractNumberFromRegister -- make grammar work properly 
-        String registerName = ctx.Register().getText();
-        int registerID = extractNumberFromRegisterName(registerName);
+        String registerName = ctx.NumbersInline().getText();
+        int registerID = Integer.parseInt(registerName);
         // given a register context, the ID tells us everything that we need
         // if w.h. the register, return it
         if(registers.containsKey(registerID)){

@@ -55,13 +55,13 @@ storeRelease : StoreRelease register Comma register;
 storeExclusive : StoreExclusive register Comma register Comma register ;
 storeReleaseExclusive : StoreReleaseExclusive register Comma register Comma register;
 compare : Compare register Comma expr;
-compareBranchNonZero : CompareBranchNonZero register Comma LabelReference;
+compareBranchNonZero : CompareBranchNonZero register Comma NumbersInline LetterInline;
 move : Move register Comma register;
-branchEqual : BranchEqual LabelReference;
-branchNotEqual : BranchNotEqual LabelReference;
+branchEqual : BranchEqual NumbersInline LetterInline;
+branchNotEqual : BranchNotEqual NumbersInline LetterInline;
 setEventLocally : SetEventLocally;
 waitForEvent : WaitForEvent;
-labelDefinition : LabelDefinition;
+labelDefinition : NumbersInline Colon;
 alignInline : AlignInline;
 prefetchMemory : PrefetchMemory PrefetchStoreL1Once Comma register;
 yieldtask : YieldTask;
@@ -72,7 +72,13 @@ riscvFence : RISCVFence FenceRISCVOpt (Comma FenceRISCVOpt)?;
 x86Fence : X86Fence;
 ppcFence : PPCFence;
 
-clobber : OutputOpAssign | MemoryAddress | InputOpGeneralReg | OverlapInOutRegister | PointerToMemoryLocation;
+clobber : outputOpAssign | memoryAddress | inputOpGeneralReg | overlapInOutRegister | pointerToMemoryLocation;
+
+outputOpAssign              : Equals Amp? RLiteral;
+memoryAddress               : Ast? QCapitalLiteral;
+inputOpGeneralReg           : RLiteral;
+overlapInOutRegister        : NumbersInline;
+pointerToMemoryLocation     : Equals Ast MLiteral;
 
 flags : flag (Comma flag)*;
 flag : Tilde LBrace clobberType RBrace;
@@ -80,6 +86,6 @@ flag : Tilde LBrace clobberType RBrace;
 clobberType : ClobberMemory | ClobberModifyFlags | ClobberDirectionFlag | ClobberFlags | ClobberFloatPntStatusReg;
 
 expr : register | value;
-register : Register;
 
+register : Dollar NumbersInline | Dollar LBrace NumbersInline RegisterSizeHint RBrace | LBracket Dollar NumbersInline RBracket;
 value : ConstantValue;

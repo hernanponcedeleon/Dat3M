@@ -4,7 +4,6 @@ import BaseLexer;
 
 
 // instructions 
-LabelDefinition             : NumbersInline Colon; // like '1:'
 AlignInline                 : Period 'align 'NumbersInline;
 Load                        : 'ldr';
 LoadAcquire                 : 'ldar';
@@ -28,13 +27,6 @@ Move                        : 'mov';
 PrefetchMemory              : 'prfm';
 YieldTask                   : 'yield';
 
-// metadata 
-OutputOpAssign              : Equals Amp? RLiteral;
-InputOpGeneralReg           : RLiteral;
-MemoryAddress               : Ast? 'Q';
-OverlapInOutRegister        : NumbersInline; // defines which returnvalue should be used both for input and output
-PointerToMemoryLocation     : Equals Ast 'm';
-
 // clobbers
 ClobberMemory               : 'memory';
 ClobberModifyFlags          : 'cc';
@@ -43,6 +35,21 @@ ClobberFloatPntStatusReg    : 'fpsr';
 ClobberFlags                : 'flags';
 
 
+// Metavariables
+StartSymbol                 : 'asm';
+PrefetchStoreL1Once         : 'pstl1strm';
+// helpers for parser rules
+NumbersInline               : [0-9]+;
+RLiteral                    : 'r';
+XLiteral                    : 'x';
+WLiteral                    : 'w';
+ILiteral                    : 'i';
+OLiteral                    : 'o';
+MLiteral                    : 'm';
+QCapitalLiteral             : 'Q';
+RegisterSizeHint            : Colon (XLiteral | WLiteral);
+ConstantValue               : Num NumbersInline;
+
 
 // fences
 DataMemoryBarrier           : 'dmb';
@@ -50,21 +57,13 @@ DataSynchronizationBarrier  : 'dsb';
 FenceArmOpt                 : 'sy' | 'st' | 'ish' | 'ishld' | 'ishst';
 X86Fence                    : 'mfence';
 RISCVFence                  : 'fence';
-FenceRISCVOpt               : 'i' | 'o' | 'io' | RLiteral | RLiteral'w' | 'w' | 'tso';
+TsoFence                    : 'tso';
+FenceRISCVOpt               : ILiteral | OLiteral | ILiteral OLiteral | RLiteral | RLiteral WLiteral | WLiteral | TsoFence;
 PPCFence                    : 'sync' | 'isync' | 'lwsync';
 
-// Metavariables
-StartSymbol                 : 'asm';
-PrefetchStoreL1Once         : 'pstl1strm';
-NumbersInline               : [0-9]+;
-RLiteral                    : 'r'; // needed because both 'r' and '=&r' use the general purpose
-RegisterSizeHint            : 'x' | 'w';
-Register                    : Dollar LBrace NumbersInline Colon RegisterSizeHint RBrace | Dollar NumbersInline | LBracket Dollar NumbersInline RBracket; // keep them like this for now
-ConstantValue               : Num NumbersInline;
-LabelReference              : [a-zA-Z0-9_]+ ;
+
+LetterInline                : [a-z]+;
 EndInstruction              :'\\0A';
-
-
 WS
     :   [ \t\r\n]+
         -> skip
