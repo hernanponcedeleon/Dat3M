@@ -55,7 +55,7 @@ storeRelease : StoreRelease register Comma register;
 storeExclusive : StoreExclusive register Comma register Comma register ;
 storeReleaseExclusive : StoreReleaseExclusive register Comma register Comma register;
 compare : Compare register Comma expr;
-compareBranchNonZero : CompareBranchNonZero register Comma LabelReference;
+compareBranchNonZero : CompareBranchNonZero register Comma NumbersInline LetterInline;
 move : Move register Comma register;
 branchEqual : BranchEqual NumbersInline LetterInline;
 branchNotEqual : BranchNotEqual NumbersInline LetterInline;
@@ -72,7 +72,13 @@ riscvFence : RISCVFence FenceRISCVOpt (Comma FenceRISCVOpt)?;
 x86Fence : X86Fence;
 ppcFence : PPCFence;
 
-clobber : OutputOpAssign | MemoryAddress | InputOpGeneralReg | OverlapInOutRegister | PointerToMemoryLocation;
+clobber : outputOpAssign | memoryAddress | inputOpGeneralReg | overlapInOutRegister | pointerToMemoryLocation;
+
+outputOpAssign              : Equals Amp? RLiteral;
+memoryAddress               : Ast? QCapitalLiteral;
+inputOpGeneralReg           : RLiteral;
+overlapInOutRegister        : NumbersInline;
+pointerToMemoryLocation     : Equals Ast MLiteral;
 
 outputOpAssign              : Equals Amp? RLiteral;
 memoryAddress               : Ast? QCapitalLiteral;
