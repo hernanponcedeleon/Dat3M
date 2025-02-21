@@ -28,18 +28,20 @@ import com.dat3m.dartagnan.program.event.core.Local;
 import static com.google.common.base.Preconditions.checkState;
 
 // The trickiest part of handling inline assembly is matching input and output registers on the LLVM side with the registers in the assembly.
-// The matching depends on what is specified in the clobbers.
+// The matching depends on what is specified in the constraints.
 
 // On the LLVM side, the 	inline assembly is called as follows
-//      Register = Type call asm sideeffect 'asm code', 'clobbers' ('args')
+//      Register = Type call asm sideeffect 'asm code', 'constraints, clobbers' ('args')
 // We call "asm registers" the ones appearing inside 'asm code'.
 // We call "llvm registers" the ones passed in 'args' (i.e. the function parameters) plus Register.
+// The "clobbers" helps the compiler understand if the inline asm code is going to set conditional flags, perform memory operation and so on
+// Examples are ~{memory}, ~{flags},...
 
-// The clobbers tell us how to map asm registers to LLVM ones.
-// Clobbers form a list where each entry can be one of the following:
-// =r or =&r means we need to map an asm register to the return register. These are called Output Clobber / output constraints
-// Q, *Q or r means we need to map an LLVM register from 'args' to an asm register. These are called Input Clobbers / input constraints
-// =*m it means that the register is a memory location, and is not mapped to any register
+// The constraints tell us how to map asm registers to LLVM ones.
+// constraints form a list where each entry can be one of the following:
+// =r or =&r means we need to map an asm register to the return register. These are called Output constraints
+// Q, *Q or r means we need to map an LLVM register from 'args' to an asm register. These are called Input constraints
+// =*m it means that the register is a memory location, and is not mapped to any register. These are called Indirect constraints.
 // a constant X, it means that a register from 'args' is mapped to the Xth asm register which in turn is mapped to the return register.
 
 // Here are some examples to understand what is happening.
@@ -48,7 +50,7 @@ import static com.google.common.base.Preconditions.checkState;
 // BASE CASE
 // a)  
 // asm: r10 = i32 call asm "ldr $0, $1"," =r, *Q"(ptr r9) 
-// Code variables: asmRegisterNames := [$0, $1] ; argsRegisters := [r9] ; clobbers := [=r, *Q]
+// Code variables: asmRegisterNames := [$0, $1] ; argsRegisters := [r9] ; constraints := [=r, *Q]
 // Logic:
 //     1. the first asm register maps to the output, i.e. r10 <- $0
 //     2. the first args register maps to the next asm register, i.e. $1 <- r9
@@ -56,7 +58,7 @@ import static com.google.common.base.Preconditions.checkState;
 // RETURN REGISTER IS AGGREGATE TYPE
 // b) 
 // asm: r10 = { i32, i32, i32 } asm "ldr $0, $3 ; ldr $1, $3 ; ldr $2, $3","=r, =r, =r, *Q"(ptr r9)
-// Code variables asmRegisterNames := [$0, $1, $2, $3] ; argsRegisters := [r9] ; clobbers := [=r, =r, =r, *Q]
+// Code variables asmRegisterNames := [$0, $1, $2, $3] ; argsRegisters := [r9] ; constraints := [=r, =r, =r, *Q]
 // Logic:
 //     1. the first 3 asm registers map to the output, i.e.
 //         - r10[0] <- $0
@@ -67,7 +69,7 @@ import static com.google.common.base.Preconditions.checkState;
 // MULTIPLE ARGS
 // c) 
 // asm: r10 = i32 call asm "ldr $0, $1 ; ldr $0, $2 "," =r, r, *Q"(i32 r8, ptr r9)
-// Code variables: asmRegisterNames := [$0, $1, $2] ; argsRegisters := [r8, r9] ; clobbers := [=r, r, *Q]
+// Code variables: asmRegisterNames := [$0, $1, $2] ; argsRegisters := [r8, r9] ; constraints := [=r, r, *Q]
 //    1. the 1st asm register maps to the output, i.e. r10 <- $0
 //    2. the two args registers map to the next two asm registers, i.e.
 //       - $1 <- r8
@@ -76,7 +78,7 @@ import static com.google.common.base.Preconditions.checkState;
 // THERE IS NO RETURN REGISTER
 // d) 
 // asm: call void asm "stlr $0, $1", "r,*Q"(ptr r5, ptr r7)
-// Code variables: asmRegisterNames := [$0, $1] ; argsRegisters := [r5, r7] ; clobbers := [r, *Q]
+// Code variables: asmRegisterNames := [$0, $1] ; argsRegisters := [r5, r7] ; constraints := [r, *Q]
 //    1. nothing to be done regarding output, i.e. there no return register
 //    2. the two args registers map to the next two asm registers, i.e.
 //       - $0 <- r5
@@ -85,7 +87,7 @@ import static com.google.common.base.Preconditions.checkState;
 // THERE IS A MEMORY LOCATION
 // e) 
 // asm: r10 = i32 call asm "ldr $0, $2 ; ldr $0, $3","=&r, =*m, r, r"(ptr r7, i32 r8)
-// Code variables: asmRegisterNames := [$0, $2, $3] ; argsRegisters := [r7, r8] ; clobbers := [=&r, =*m, r, r]
+// Code variables: asmRegisterNames := [$0, $2, $3] ; argsRegisters := [r7, r8] ; constraints := [=&r, =*m, r, r]
 //    1. r10 <- $0
 //    1.5 we see that =*m is a reference to a memory location, so it would be $1 -> MEM and we do nothing
 //    2. the two args registers map to the next two asm registers,
@@ -95,8 +97,8 @@ import static com.google.common.base.Preconditions.checkState;
 // WE HAVE AN OVERLAP IN THE RETURN REGISTER AND THE ARGS
 // f)
 // asm: r11 = call { i32, i32, i32, i32 } asm "ldr $0, $4 ; add $1, $0, $3 ; add $2, $1, $4 ; ldr $2, $0", "=&r,=&r,=&r,=&r,*Q,3"(ptr r10, i32 r8)
-// Code variables: asmRegisterNames := [$0, $1, $2, $3, $4] ; argsRegisters := [r10, r8] ; clobbers := [=&r, =&r, =&r, =&r, *Q, 3]
-//    1. we have 4 output clobbers, so we have an aggregate type for the return register
+// Code variables: asmRegisterNames := [$0, $1, $2, $3, $4] ; argsRegisters := [r10, r8] ; constraints := [=&r, =&r, =&r, =&r, *Q, 3]
+//    1. we have 4 output constraints, so we have an aggregate type for the return register
 //       - r11[0] <- $0
 //       - r11[1] <- $1
 //       - r11[2] <- $2
@@ -192,10 +194,10 @@ public class VisitorInlineAsm extends InlineAsmBaseVisitor<Object> {
     @Override
     public List<Event> visitAsm(InlineAsmParser.AsmContext ctx) {
         // Given this format 
-        //      Register = Type call asm sideeffect 'asm code', 'clobbers' ('args')
+        //      Register = Type call asm sideeffect 'asm code', 'constraints, clobbers' ('args')
         // the visitor pattern is going to take care of first visiting all the 'asm code'
         // which is going to populate all of the 'asmInstructions' and creating the asmRegisters.
-        // Then, by reading the clobbers, we are going to be able to understand which asmRegister
+        // Then, by reading the constraints, we are going to be able to understand which asmRegister
         // maps to which llvmRegister.
         visitChildren(ctx);
         // We have created first the asmInstructions, and then the inputAssignments and outputAssignments
@@ -210,21 +212,21 @@ public class VisitorInlineAsm extends InlineAsmBaseVisitor<Object> {
         return events;
     }
 
-    // tells if clobber is a numberic clobber e.g. '3'
-    private boolean isClobberNumeric(InlineAsmParser.ClobberContext clobber) {
-        return clobber.overlapInOutRegister() != null;
+    // tells if constraint is a numberic constraint e.g. '3'
+    private boolean isConstraintNumeric(InlineAsmParser.ConstraintContext constraint) {
+        return constraint.overlapInOutRegister() != null;
     }
-    // tells us is the clobber is a memory location '=*m'
-    private boolean isClobberMemoryLocation(InlineAsmParser.ClobberContext clobber) {
-        return clobber.pointerToMemoryLocation() != null;
+    // tells us is the constraint is a memory location '=*m'
+    private boolean isConstraintMemoryLocation(InlineAsmParser.ConstraintContext constraint) {
+        return constraint.pointerToMemoryLocation() != null;
     }
-    // tells us if the clobber is an output clobber e.g. '=r' or '=&r'
-    private boolean isClobberOutputConstraint(InlineAsmParser.ClobberContext clobber) {
-        return clobber.outputOpAssign() != null;
+    // tells us if the constraint is an output constraint e.g. '=r' or '=&r'
+    private boolean isConstraintOutputConstraint(InlineAsmParser.ConstraintContext constraint) {
+        return constraint.outputOpAssign() != null;
     }
-    // tells us if the clobber is an input clobber e.g. 'Q' or 'r' or '*Q'
-    private boolean isClobberInputConstraint(InlineAsmParser.ClobberContext clobber) {
-        return clobber.memoryAddress() != null || clobber.inputOpGeneralReg() != null;
+    // tells us if the constraint is an input constraint e.g. 'Q' or 'r' or '*Q'
+    private boolean isConstraintInputConstraint(InlineAsmParser.ConstraintContext constraint) {
+        return constraint.memoryAddress() != null || constraint.inputOpGeneralReg() != null;
     }
 
     @Override
@@ -391,7 +393,6 @@ public class VisitorInlineAsm extends InlineAsmBaseVisitor<Object> {
 
     @Override
     public Object visitRegister(InlineAsmParser.RegisterContext ctx) {
-        // TODO DO NOT USE extractNumberFromRegister -- make grammar work properly 
         String registerName = ctx.NumbersInline().getText();
         int registerID = Integer.parseInt(registerName);
         // given a register context, the ID tells us everything that we need
@@ -420,7 +421,7 @@ public class VisitorInlineAsm extends InlineAsmBaseVisitor<Object> {
             }
             Register newRegister = this.llvmFunction.getOrNewRegister(makeRegisterName(registerID), registerType);
             // if the register is part of the return register, we have to register it for the final assignment for the output
-            // as we are going to do it later when we have enough information in visitAsmMetadata when visiting the clobbers.
+            // as we are going to do it later when we have enough information in visitAsmMetadata when visiting the constraints.
             if(isPartOfReturnRegister(registerID) && isReturnRegisterAggregate()){
                 this.pendingRegisters.add(newRegister);
             }
@@ -431,29 +432,29 @@ public class VisitorInlineAsm extends InlineAsmBaseVisitor<Object> {
     
     @Override 
     public Object visitAsmMetadataEntries(InlineAsmParser.AsmMetadataEntriesContext ctx) { 
-        List<InlineAsmParser.ClobberContext> clobbers = ctx.clobber();
+        List<InlineAsmParser.ConstraintContext> constraints = ctx.constraint();
         // we already have all of the registers from LHS of the context call (asmInstrEntries)
         // now it is time to generate the input and output assignments to let Dat3M understand the llvm to asm registers mapping
         boolean outputRegistersInitialized = returnRegister == null;
-        for(int i = 0; i < clobbers.size(); i++){
-                InlineAsmParser.ClobberContext clobber = clobbers.get(i);
-                if(isClobberMemoryLocation(clobber)){
+        for(int i = 0; i < constraints.size(); i++){
+                InlineAsmParser.ConstraintContext constraint = constraints.get(i);
+                if(isConstraintMemoryLocation(constraint)){
                     // the register that should be used as a returnRegister refers to a memory location
                     // and therefore we are sure that it does not contain any returnRegister
                     // therefore should avoid creating output assignments.
                     outputRegistersInitialized = true;
                     continue;
                 }
-                if(isClobberOutputConstraint(clobber)){
+                if(isConstraintOutputConstraint(constraint)){
                     // we keep proceding with the scan
                     continue;
                 }
                 if (!outputRegistersInitialized){
                     // Here we create the outputAssignment.
-                    // since we know that all of the output clobbers come before the input one
-                    // if we're here we're at the 1st input clobber found
+                    // since we know that all of the output constraints come before the input one
+                    // if we're here we're at the 1st input constraint found
                     outputRegistersInitialized = true;
-                    // if we are at index 1 we only read a single output clobber e.g. "=&r, r" and we are at "r" now.
+                    // if we are at index 1 we only read a single output constraint e.g. "=&r, r" and we are at "r" now.
                     if (i == 1){
                         outputAssignments.add(EventFactory.newLocal(returnRegister, registers.get(0)));
                     } else{
@@ -467,8 +468,8 @@ public class VisitorInlineAsm extends InlineAsmBaseVisitor<Object> {
                             outputAssignments.add(EventFactory.newLocal(this.returnRegister, finalAssignExpression));
                         }
                 }
-                if(isClobberInputConstraint(clobber)){
-                    // here we have already passed all of the output clobbers and we are looking at the input ones.
+                if(isConstraintInputConstraint(constraint)){
+                    // here we have already passed all of the output constraints and we are looking at the input ones.
                     // e.g. { i32, i32 } "... $2", "=&r, =&r, r" (i32 r5)
                     // we know that $0, $1 refers to the returnRegister
                     // this means that, once we got the asmRegister $2, we have to assign it to the llvmRegister r5
@@ -480,7 +481,7 @@ public class VisitorInlineAsm extends InlineAsmBaseVisitor<Object> {
                         // we are referencing a register that is not present in the asm code
                         // we can safely skip it as we are not going to assign it to anything
                         // this can happen if :
-                        // 1) call void "dmb ish", "r"(i32 0) -- "r" clobber refers to llvmRegister containing i32 0, but it is not present in the asm code
+                        // 1) call void "dmb ish", "r"(i32 0) -- "r" constraint refers to llvmRegister containing i32 0, but it is not present in the asm code
                         // 2) call void "str ${2:w}, [$1]", "=*m,r,r"(ptr %5, ptr %6, i32 %7)"
                         //      in this case =*m refers to a memory location which should be $0, but it is not present in the asm code.
                         continue;
@@ -489,15 +490,15 @@ public class VisitorInlineAsm extends InlineAsmBaseVisitor<Object> {
                     // System.out.println("Assigning "+ asmRegister + " to llvm one " + llvmRegister);
                     inputAssignments.add(EventFactory.newLocal(asmRegister, llvmRegister));
                 } 
-                if (isClobberNumeric(clobber)){
+                if (isConstraintNumeric(constraint)){
                     // https://llvm.org/docs/LangRef.html#input-constraints
                     // e.g. 
                     // r11 = call { i32, i32, i32, i32 } asm "...", "=&r,=&r,=&r,=&r,*Q,3"(ptr r10, i32 r8)
-                    // we know from the number contained in the clobber that $3 has to be mapped to an argsRegisters. 
+                    // we know from the number contained in the constraint that $3 has to be mapped to an argsRegisters. 
                     // Since the value of asmRegisterNameIndex in this case is 5, we shift it by 4 (the number of return values) and we get 1
                     // we can therefore access argsRegisters[1], which gives us the correct index for the arg Register.
-                    int clobberValue = Integer.parseInt(clobber.getText());
-                    inputAssignments.add(EventFactory.newLocal(registers.get(clobberValue), argsRegisters.get(i - getSizeOfReturnRegister())));
+                    int constraintValue = Integer.parseInt(constraint.getText());
+                    inputAssignments.add(EventFactory.newLocal(registers.get(constraintValue), argsRegisters.get(i - getSizeOfReturnRegister())));
                 }
             }
             return null;
