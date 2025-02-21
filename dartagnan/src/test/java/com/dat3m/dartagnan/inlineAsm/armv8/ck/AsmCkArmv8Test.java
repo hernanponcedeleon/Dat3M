@@ -52,6 +52,7 @@ public class AsmCkArmv8Test {
             {"caslock", 3, Result.PASS},
             {"clhlock", 1, Result.PASS},
             {"declock", 3, Result.PASS},
+            {"ebr", 5, Result.PASS},
             {"faslock", 3, Result.PASS},
             {"mcslock", 2, Result.PASS},
             {"ticketlock", 1, Result.PASS},

@@ -47,6 +47,7 @@ public class AsmCkArmv7Test {
     @Parameterized.Parameters(name = "{index}: {0}, {1}, {2}")
     public static Iterable<Object[]> data() throws IOException {
         return Arrays.asList(new Object[][]{
+            {"ebr", 5, Result.PASS},
             {"faslock", 3, Result.PASS},
             {"spsc_queue", 1, Result.PASS},
             {"ticketlock", 1, Result.PASS},
