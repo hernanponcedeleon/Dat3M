@@ -186,11 +186,44 @@ public class VisitorInlineAsm extends InlineAsmBaseVisitor<Object> {
         return label;
     }
 
+    // This function lets us know which type we need to assign to the created asm register.
+    // In order to do so, we have to understand which llvm register it is going to refer to.
+    // given the registerID of the register e.g. $2 -> registerID = 2
+    // return the type of the llvm register it is referencing
+    // if it is referencing the return register, return its type
+    private Type getLlvmRegisterTypeGivenAsmRegisterID(int registerID){
+        Type registerType;
+        if (isPartOfReturnRegister(registerID)) {
+            if(returnRegister.getType() instanceof AggregateType at){
+                // e.g. returnRegisterType = { i32, i32 } "... $1", "=&r, =&r, r" (i32 r5) 
+                //  w.h. registerID = 1, we have to access returnRegister[1].getType()
+                registerType = at.getFields().get(registerID);
+            } else {
+                // returnRegister is not an aggregate, we just get that type
+                registerType = returnRegister.getType();
+            }
+        } else {
+            // in this case we have an index which is higher than the size of the return Register
+            // this means that, like in visitAsmMetadataEntries, we have to "shift" the value by the size of returnRegister type's size
+            // Same example as visitAsmMetadataEntries:
+            // e.g. returnRegisterType = { i32, i32 } "... $2", "=&r, =&r, r" (i32 r5)
+            // we have registerID 2, we have returnRegisterType size = 2, so we have to perform 2-2 = 0, which is the right index
+            // to get argsRegisters[2-2] = argsRegisters[0] = r5.
+            registerType = argsRegisters.get(registerID - getSizeOfReturnRegister()).getType();
+        }
+        return registerType;
+    }
+
 
     private String makeRegisterName(int registerID) {
         return "asm_" + registerID;
     }
 
+    // this function is the entrypoint of the visitor.
+    // the events that are going to be generated are
+    // 1) inputAssignments -- how we map llvm registers to asm ones
+    // 2) asmInstructions -- the events representing the asm instructions
+    // 3) outputAssignments -- how we map the asm registers to the return Register
     @Override
     public List<Event> visitAsm(InlineAsmParser.AsmContext ctx) {
         // Given this format 
@@ -200,7 +233,8 @@ public class VisitorInlineAsm extends InlineAsmBaseVisitor<Object> {
         // Then, by reading the constraints, we are going to be able to understand which asmRegister
         // maps to which llvmRegister.
         visitChildren(ctx);
-        // We have created first the asmInstructions, and then the inputAssignments and outputAssignments
+        // We have created the asmInstructions first by visiting "asmInstrEntries"
+        // and then the inputAssignments and outputAssignments by visiting "asmMetadataEntries"
         List<Event> events = new ArrayList<>(); 
         // this is going to define how the input operands (argsRegisters from llvm) should be mapped to the asm ones
         events.addAll(inputAssignments);
@@ -224,7 +258,7 @@ public class VisitorInlineAsm extends InlineAsmBaseVisitor<Object> {
     private boolean isConstraintOutputConstraint(InlineAsmParser.ConstraintContext constraint) {
         return constraint.outputOpAssign() != null;
     }
-    // tells us if the constraint is an input constraint e.g. 'Q' or 'r' or '*Q'
+    // tells us if the constraint is an input constraint e.g. 'Q' or '*Q' or 'r' 
     private boolean isConstraintInputConstraint(InlineAsmParser.ConstraintContext constraint) {
         return constraint.memoryAddress() != null || constraint.inputOpGeneralReg() != null;
     }
@@ -391,6 +425,11 @@ public class VisitorInlineAsm extends InlineAsmBaseVisitor<Object> {
         return ctx.getChild(0).accept(this);
     }
 
+    // If the register with that ID was already defined, we simply return it
+    // otherwise, we create and return the new register.
+    // each time we call this visitor, it picks up the ID of the register -- e.g. $3 -> ID = 3.
+    // if we created a register which refers to the return Register, we have to add to "pendingRegisters", 
+    // as we are going to need it during visitMetadata part
     @Override
     public Object visitRegister(InlineAsmParser.RegisterContext ctx) {
         String registerName = ctx.NumbersInline().getText();
@@ -401,24 +440,7 @@ public class VisitorInlineAsm extends InlineAsmBaseVisitor<Object> {
             return registers.get(registerID);
         } else {
             // otherwise, pick up the correct type and create the new Register
-            Type registerType;
-            if (isPartOfReturnRegister(registerID)) {
-                if(returnRegister.getType() instanceof AggregateType at){
-                    // e.g. { i32, i32 } and w.h. registerId 1, we have to access returnRegister[1].getType()
-                    registerType = at.getFields().get(registerID);
-                } else {
-                    // returnRegister is not an aggregate, we just get that type
-                    registerType = returnRegister.getType();
-                }
-            } else {
-                // in this case we have an index which is higher than the size of the return Register
-                // this means that, like in visitAsmMetadataEntries, we have to "shift" the value by the size of returnRegister type's size
-                // Same example as visitAsmMetadataEntries:
-                // e.g. { i32, i32 } "... $2", "=&r, =&r, r" (i32 r5)
-                // we have registerID 2, we have returnRegisterType size = 2, so we have to perform 2-2 = 0, which is the right index
-                // to get argsRegisters[2-2] = argsRegisters[0] = r5.
-                registerType = argsRegisters.get(registerID - getSizeOfReturnRegister()).getType();
-            }
+            Type registerType = getLlvmRegisterTypeGivenAsmRegisterID(registerID);
             Register newRegister = this.llvmFunction.getOrNewRegister(makeRegisterName(registerID), registerType);
             // if the register is part of the return register, we have to register it for the final assignment for the output
             // as we are going to do it later when we have enough information in visitAsmMetadata when visiting the constraints.
@@ -430,6 +452,13 @@ public class VisitorInlineAsm extends InlineAsmBaseVisitor<Object> {
         }
     }
     
+    // This visitor generates the last two kind of events: 
+    // 1) inputAssignments -> how to map llvm registers (args) to asm ones used in the instructions
+    // 2) outputAssignments -> how to map asm registers to the return register
+    // when we reach this point we have already defined all of the asmInstructions events
+    // which means that we already have created all of the asm registers
+    // we just have to read the constraints, and based on their type, understand if they are going to map
+    // to the (args) llvm registers or to the llvm return Register.
     @Override 
     public Object visitAsmMetadataEntries(InlineAsmParser.AsmMetadataEntriesContext ctx) { 
         List<InlineAsmParser.ConstraintContext> constraints = ctx.constraint();
@@ -468,6 +497,7 @@ public class VisitorInlineAsm extends InlineAsmBaseVisitor<Object> {
                             outputAssignments.add(EventFactory.newLocal(this.returnRegister, finalAssignExpression));
                         }
                 }
+                // from here onwards we only generate inputAssignments
                 if(isConstraintInputConstraint(constraint)){
                     // here we have already passed all of the output constraints and we are looking at the input ones.
                     // e.g. { i32, i32 } "... $2", "=&r, =&r, r" (i32 r5)
