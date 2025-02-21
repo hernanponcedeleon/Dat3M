@@ -28,24 +28,20 @@ import static com.google.common.base.Preconditions.checkState;
 
 // The trickiest part of handling inline assembly is matching input and output registers on the LLVM side with the registers in the assembly.
 // The matching depends on what is specified in the constraints.
-
 // On the LLVM side, the 	inline assembly is called as follows
 //      Register = Type call asm sideeffect 'asm code', 'constraints, clobbers' ('args')
 // We call "asm registers" the ones appearing inside 'asm code'.
 // We call "llvm registers" the ones passed in 'args' (i.e. the function parameters) plus Register.
 // The "clobbers" helps the compiler understand if the inline asm code is going to set conditional flags, perform memory operation and so on
 // Examples are ~{memory}, ~{flags},...
-
 // The constraints tell us how to map asm registers to LLVM ones.
 // constraints form a list where each entry can be one of the following:
 // =r or =&r means we need to map an asm register to the return register. These are called Output constraints
 // Q, *Q or r means we need to map an LLVM register from 'args' to an asm register. These are called Input constraints
 // =*m it means that the register is a memory location, and is not mapped to any register. These are called Indirect constraints.
 // a constant X, it means that a register from 'args' is mapped to the Xth asm register which in turn is mapped to the return register.
-
 // Here are some examples to understand what is happening.
 // We are going to use ARMV7 names for readability "$0, $1, $2, ...", but other inline asm formats follow the same pattern 
-
 // BASE CASE
 // a)  
 // asm: r10 = i32 call asm "ldr $0, $1"," =r, *Q"(ptr r9) 
@@ -53,7 +49,6 @@ import static com.google.common.base.Preconditions.checkState;
 // Logic:
 //     1. the first asm register maps to the output, i.e. r10 <- $0
 //     2. the first args register maps to the next asm register, i.e. $1 <- r9
-
 // RETURN REGISTER IS AGGREGATE TYPE
 // b) 
 // asm: r10 = { i32, i32, i32 } asm "ldr $0, $3 ; ldr $1, $3 ; ldr $2, $3","=r, =r, =r, *Q"(ptr r9)
@@ -64,7 +59,6 @@ import static com.google.common.base.Preconditions.checkState;
 //         - r10[1] <- $1
 //         - r10[2] <- $2
 //      2. the 1st args register maps to the next asm register, i.e. $3 <- r9
-
 // MULTIPLE ARGS
 // c) 
 // asm: r10 = i32 call asm "ldr $0, $1 ; ldr $0, $2 "," =r, r, *Q"(i32 r8, ptr r9)
@@ -73,7 +67,6 @@ import static com.google.common.base.Preconditions.checkState;
 //    2. the two args registers map to the next two asm registers, i.e.
 //       - $1 <- r8
 //       - $2 <- r9
-
 // THERE IS NO RETURN REGISTER
 // d) 
 // asm: call void asm "stlr $0, $1", "r,*Q"(ptr r5, ptr r7)
@@ -82,7 +75,6 @@ import static com.google.common.base.Preconditions.checkState;
 //    2. the two args registers map to the next two asm registers, i.e.
 //       - $0 <- r5
 //       - $1 <- r7
-
 // THERE IS A MEMORY LOCATION
 // e) 
 // asm: r10 = i32 call asm "ldr $0, $2 ; ldr $0, $3","=&r, =*m, r, r"(ptr r7, i32 r8)
@@ -92,7 +84,6 @@ import static com.google.common.base.Preconditions.checkState;
 //    2. the two args registers map to the next two asm registers,
 //       - $2 <- r7
 //       - $3 <- r8
-
 // WE HAVE AN OVERLAP IN THE RETURN REGISTER AND THE ARGS
 // f)
 // asm: r11 = call { i32, i32, i32, i32 } asm "ldr $0, $4 ; add $1, $0, $3 ; add $2, $1, $4 ; ldr $2, $0", "=&r,=&r,=&r,=&r,*Q,3"(ptr r10, i32 r8)
@@ -104,7 +95,6 @@ import static com.google.common.base.Preconditions.checkState;
 //       - r11[3] <- $3
 //    2. map function parameter to next asm register, i.e. $4 <- r10
 //    3. the 3rd asm register is related both to the return register (already above in r11[3] <- $3) and to an args register, i.e. $3 <- r8
-
 public class VisitorInlineAsm extends InlineAsmBaseVisitor<Object> {
 
     private class CmpInstruction {
@@ -142,7 +132,6 @@ public class VisitorInlineAsm extends InlineAsmBaseVisitor<Object> {
         this.argsRegisters = llvmArguments;
     }
 
-
     // returns the size of the return register
     // null / void -> 0
     // i32 / bool -> 1
@@ -162,10 +151,12 @@ public class VisitorInlineAsm extends InlineAsmBaseVisitor<Object> {
             throw new ParsingException("Unknown inline asm return type " + returnType);
         }
     }
+
     // tells if the returnRegister is an AggregateType
     private boolean isReturnRegisterAggregate() {
         return getSizeOfReturnRegister() > 1;
     }
+
     // tells if the registerID is part of the returnRegister
     private boolean isPartOfReturnRegister(int registerID) {
         return registerID < getSizeOfReturnRegister();
@@ -188,10 +179,10 @@ public class VisitorInlineAsm extends InlineAsmBaseVisitor<Object> {
     // given the registerID of the register e.g. $2 -> registerID = 2
     // return the type of the llvm register it is referencing
     // if it is referencing the return register, return its type
-    private Type getLlvmRegisterTypeGivenAsmRegisterID(int registerID){
+    private Type getLlvmRegisterTypeGivenAsmRegisterID(int registerID) {
         Type registerType;
         if (isPartOfReturnRegister(registerID)) {
-            if(returnRegister.getType() instanceof AggregateType at){
+            if (returnRegister.getType() instanceof AggregateType at) {
                 // e.g. returnRegisterType = { i32, i32 } "... $1", "=&r, =&r, r" (i32 r5) 
                 //  w.h. registerID = 1, we have to access returnRegister[1].getType()
                 registerType = at.getFields().get(registerID);
@@ -210,7 +201,6 @@ public class VisitorInlineAsm extends InlineAsmBaseVisitor<Object> {
         }
         return registerType;
     }
-
 
     private String makeRegisterName(int registerID) {
         return "asm_" + registerID;
@@ -232,7 +222,7 @@ public class VisitorInlineAsm extends InlineAsmBaseVisitor<Object> {
         visitChildren(ctx);
         // We have created the asmInstructions first by visiting "asmInstrEntries"
         // and then the inputAssignments and outputAssignments by visiting "asmMetadataEntries"
-        List<Event> events = new ArrayList<>(); 
+        List<Event> events = new ArrayList<>();
         // this is going to define how the input operands (argsRegisters from llvm) should be mapped to the asm ones
         events.addAll(inputAssignments);
         // this is going to generate all of the events related to the asm code (load, store, cmp, jmp,...)
@@ -247,14 +237,17 @@ public class VisitorInlineAsm extends InlineAsmBaseVisitor<Object> {
     private boolean isConstraintNumeric(InlineAsmParser.ConstraintContext constraint) {
         return constraint.overlapInOutRegister() != null;
     }
+
     // tells us is the constraint is a memory location '=*m'
     private boolean isConstraintMemoryLocation(InlineAsmParser.ConstraintContext constraint) {
         return constraint.pointerToMemoryLocation() != null;
     }
+
     // tells us if the constraint is an output constraint e.g. '=r' or '=&r'
     private boolean isConstraintOutputConstraint(InlineAsmParser.ConstraintContext constraint) {
         return constraint.outputOpAssign() != null;
     }
+
     // tells us if the constraint is an input constraint e.g. 'Q' or '*Q' or 'r' 
     private boolean isConstraintInputConstraint(InlineAsmParser.ConstraintContext constraint) {
         return constraint.memoryAddress() != null || constraint.inputOpGeneralReg() != null;
@@ -431,9 +424,8 @@ public class VisitorInlineAsm extends InlineAsmBaseVisitor<Object> {
     public Object visitRegister(InlineAsmParser.RegisterContext ctx) {
         String registerName = ctx.NumbersInline().getText();
         int registerID = Integer.parseInt(registerName);
-        // given a register context, the ID tells us everything that we need
         // if w.h. the register, return it
-        if(asmRegisters.containsKey(registerID)){
+        if (asmRegisters.containsKey(registerID)) {
             return asmRegisters.get(registerID);
         } else {
             // otherwise, pick up the correct type and create the new Register
@@ -441,14 +433,14 @@ public class VisitorInlineAsm extends InlineAsmBaseVisitor<Object> {
             Register newRegister = this.llvmFunction.getOrNewRegister(makeRegisterName(registerID), registerType);
             // if the register is part of the return register, we have to register it for the final assignment for the output
             // as we are going to do it later when we have enough information in visitAsmMetadata when visiting the constraints.
-            if(isPartOfReturnRegister(registerID) && isReturnRegisterAggregate()){
+            if (isPartOfReturnRegister(registerID) && isReturnRegisterAggregate()) {
                 this.pendingRegisters.add(newRegister);
             }
             asmRegisters.put(registerID, newRegister);
             return newRegister;
         }
     }
-    
+
     // This visitor generates the last two kind of events: 
     // 1) inputAssignments -> how to map llvm registers (args) to asm ones used in the instructions
     // 2) outputAssignments -> how to map asm registers to the return register
@@ -456,81 +448,73 @@ public class VisitorInlineAsm extends InlineAsmBaseVisitor<Object> {
     // which means that we already have created all of the asm registers
     // we just have to read the constraints, and based on their type, understand if they are going to map
     // to the (args) llvm registers or to the llvm return Register.
-    @Override 
-    public Object visitAsmMetadataEntries(InlineAsmParser.AsmMetadataEntriesContext ctx) { 
+    @Override
+    public Object visitAsmMetadataEntries(InlineAsmParser.AsmMetadataEntriesContext ctx) {
         List<InlineAsmParser.ConstraintContext> constraints = ctx.constraint();
         // we already have all of the registers from LHS of the context call (asmInstrEntries)
         // now it is time to generate the input and output assignments to let Dat3M understand the llvm to asm registers mapping
         boolean outputRegistersInitialized = returnRegister == null;
-        for(int i = 0; i < constraints.size(); i++){
-                InlineAsmParser.ConstraintContext constraint = constraints.get(i);
-                if(isConstraintMemoryLocation(constraint)){
-                    // the register that should be used as a returnRegister refers to a memory location
-                    // and therefore we are sure that it does not contain any returnRegister
-                    // therefore should avoid creating output assignments.
-                    outputRegistersInitialized = true;
-                    continue;
-                }
-                if(isConstraintOutputConstraint(constraint)){
-                    // we keep proceding with the scan
-                    continue;
-                }
-                if (!outputRegistersInitialized){
-                    // Here we create the outputAssignment.
-                    // since we know that all of the output constraints come before the input one
-                    // if we're here we're at the 1st input constraint found
-                    outputRegistersInitialized = true;
-                    // if we are at index 1 we only read a single output constraint e.g. "=&r, r" and we are at "r" now.
-                    if (i == 1){
-                        outputAssignments.add(EventFactory.newLocal(returnRegister, asmRegisters.get(0)));
-                    } else{
-                        // we know that the type of the returnRegister is something like { i32, i32 } or { i32, i32, i32} ...
-                        // so we have to slice from 0 to i-1 to get the aggregateType
-                        // create the aggregate assignment and assign it to the returnRegister
-                            Type aggregateType = TypeFactory.getInstance().getAggregateType(((AggregateType) returnRegister.getType()).getFields());
-                            // System.out.println("Creating aggregate type " + aggregateType);
-                            // System.out.println("Pending registers " + pendingRegisters);
-                            Expression finalAssignExpression = expressions.makeConstruct(aggregateType, this.pendingRegisters);
-                            outputAssignments.add(EventFactory.newLocal(this.returnRegister, finalAssignExpression));
-                        }
-                }
-                // from here onwards we only generate inputAssignments
-                if(isConstraintInputConstraint(constraint)){
-                    // here we have already passed all of the output constraints and we are looking at the input ones.
-                    // e.g. { i32, i32 } "... $2", "=&r, =&r, r" (i32 r5)
-                    // we know that $0, $1 refers to the returnRegister
-                    // this means that, once we got the asmRegister $2, we have to assign it to the llvmRegister r5
-                    // in order to do so, we simply shift the index by the size of the returnRegister
-                    // which in turn lets us access argsRegisters(0) in this case
-                    // Of course it works with no return register or with a returnRegister which is NOT aggregate(simply substracting 0 or 1).
-                    Register asmRegister = asmRegisters.get(i);
-                    if(asmRegister == null){
-                        // we are referencing a register that is not present in the asm code
-                        // we can safely skip it as we are not going to assign it to anything
-                        // this can happen if :
-                        // 1) call void "dmb ish", "r"(i32 0) -- "r" constraint refers to llvmRegister containing i32 0, but it is not present in the asm code
-                        // 2) call void "str ${2:w}, [$1]", "=*m,r,r"(ptr %5, ptr %6, i32 %7)"
-                        //      in this case =*m refers to a memory location which should be $0, but it is not present in the asm code.
-                        continue;
-                    }
-                    Expression llvmRegister = argsRegisters.get(i - getSizeOfReturnRegister());
-                    // System.out.println("Assigning "+ asmRegister + " to llvm one " + llvmRegister);
-                    inputAssignments.add(EventFactory.newLocal(asmRegister, llvmRegister));
-                } 
-                if (isConstraintNumeric(constraint)){
-                    // https://llvm.org/docs/LangRef.html#input-constraints
-                    // e.g. 
-                    // r11 = call { i32, i32, i32, i32 } asm "...", "=&r,=&r,=&r,=&r,*Q,3"(ptr r10, i32 r8)
-                    // we know from the number contained in the constraint that $3 has to be mapped to an argsRegisters. 
-                    // Since the value of asmRegisterNameIndex in this case is 5, we shift it by 4 (the number of return values) and we get 1
-                    // we can therefore access argsRegisters[1], which gives us the correct index for the arg Register.
-                    int constraintValue = Integer.parseInt(constraint.getText());
-                    inputAssignments.add(EventFactory.newLocal(asmRegisters.get(constraintValue), argsRegisters.get(i - getSizeOfReturnRegister())));
+        for (int i = 0; i < constraints.size(); i++) {
+            InlineAsmParser.ConstraintContext constraint = constraints.get(i);
+            if (isConstraintMemoryLocation(constraint)) {
+                // the register that should be used as a returnRegister refers to a memory location
+                // and therefore we are sure that it does not contain any returnRegister
+                // therefore should avoid creating output assignments.
+                outputRegistersInitialized = true;
+                continue;
+            }
+            if (isConstraintOutputConstraint(constraint)) {
+                continue;
+            }
+            if (!outputRegistersInitialized) {
+                // Here we create the outputAssignment as we're here we're at the 1st input constraint found
+                // since we know that all of the output constraints come before the input one
+                outputRegistersInitialized = true;
+                // if we are at index 1 we only read a single output constraint e.g. "=&r, r" and we are at "r" now.
+                if (i == 1) {
+                    outputAssignments.add(EventFactory.newLocal(returnRegister, asmRegisters.get(0)));
+                } else {
+                    // we know that the type of the returnRegister is something like { i32, i32 } or { i32, i32, i32} ...
+                    // so we have to slice from 0 to i-1 to get the aggregateType
+                    // create the aggregate assignment and assign it to the returnRegister
+                    Type aggregateType = TypeFactory.getInstance().getAggregateType(((AggregateType) returnRegister.getType()).getFields());
+                    Expression finalAssignExpression = expressions.makeConstruct(aggregateType, this.pendingRegisters);
+                    outputAssignments.add(EventFactory.newLocal(this.returnRegister, finalAssignExpression));
                 }
             }
-            return null;
+            // from here onwards we only generate inputAssignments
+            if (isConstraintInputConstraint(constraint)) {
+                // here we have already passed all of the output constraints and we are looking at the input ones.
+                // e.g. { i32, i32 } "... $2", "=&r, =&r, r" (i32 r5)
+                // we know that $0, $1 refers to the returnRegister
+                // this means that, once we got the asmRegister $2, we have to assign it to the llvmRegister r5
+                // in order to do so, we simply shift the index by the size of the returnRegister
+                Register asmRegister = asmRegisters.get(i);
+                if (asmRegister == null) {
+                    // we are referencing a register that is not present in the asm code
+                    // we can safely skip it as we are not going to assign it to anything
+                    // this can happen if :
+                    // 1) call void "dmb ish", "r"(i32 0) -- "r" constraint refers to llvmRegister containing i32 0, but it is not present in the asm code
+                    // 2) call void "str ${2:w}, [$1]", "=*m,r,r"(ptr %5, ptr %6, i32 %7)"
+                    //      in this case =*m refers to a memory location which should be $0, but it is not present in the asm code.
+                    continue;
+                }
+                Expression llvmRegister = argsRegisters.get(i - getSizeOfReturnRegister());
+                inputAssignments.add(EventFactory.newLocal(asmRegister, llvmRegister));
+            }
+            if (isConstraintNumeric(constraint)) {
+                // https://llvm.org/docs/LangRef.html#input-constraints
+                // e.g. r11 = call { i32, i32, i32, i32 } asm "...", "=&r,=&r,=&r,=&r,*Q,3"(ptr r10, i32 r8)
+                // we know from the number contained in the constraint that $3 has to be mapped to an argsRegisters. 
+                // Since the value of asmRegisterNameIndex in this case is 5, we shift it by 4 (the number of return values) and we get 1
+                // we can therefore access argsRegisters[1], which gives us the correct index for the arg Register.
+                int constraintValue = Integer.parseInt(constraint.getText());
+                inputAssignments.add(EventFactory.newLocal(asmRegisters.get(constraintValue), argsRegisters.get(i - getSizeOfReturnRegister())));
+            }
         }
-    
+        return null;
+    }
+
     @Override
     public Object visitValue(InlineAsmParser.ValueContext ctx) {
         String valueString = ctx.ConstantValue().getText().substring(1);
