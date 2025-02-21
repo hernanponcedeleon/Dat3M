@@ -10,7 +10,6 @@ import org.antlr.v4.runtime.ParserRuleContext;
 import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.exception.UnrecognizedTokenListener;
 import com.dat3m.dartagnan.expression.Expression;
-import com.dat3m.dartagnan.expression.Type;
 import com.dat3m.dartagnan.parsers.InlineAsmLexer;
 import com.dat3m.dartagnan.parsers.InlineAsmParser;
 import com.dat3m.dartagnan.parsers.program.visitors.VisitorInlineAsm;
@@ -23,14 +22,12 @@ public class ParserInlineAsm {
     private VisitorInlineAsm visitor;
     private final Function llvmFunction;
     private final Register returnRegister;
-    private final Type returnType;
-    private final ArrayList<Expression> argumentsRegisterAddresses;
+    private final ArrayList<Expression> llvmArguments;
 
-    public ParserInlineAsm(Function function, Register returnRegister, Type returnType, ArrayList<Expression> argumentsRegisterAddresses) {
+    public ParserInlineAsm(Function function, Register returnRegister, ArrayList<Expression> llvmArguments) {
         this.llvmFunction = function;
         this.returnRegister = returnRegister;
-        this.returnType = returnType;
-        this.argumentsRegisterAddresses = argumentsRegisterAddresses;
+        this.llvmArguments = llvmArguments;
     }
 
     public List<Event> parse(CharStream charStream) throws ParsingException{
@@ -43,7 +40,7 @@ public class ParserInlineAsm {
         parser.removeErrorListeners(); // Remove default listeners
         parser.addErrorListener(new UnrecognizedTokenListener());
         ParserRuleContext parserEntryPoint = parser.asm();
-        visitor = new VisitorInlineAsm(this.llvmFunction,this.returnRegister, this.returnType, this.argumentsRegisterAddresses);
+        visitor = new VisitorInlineAsm(this.llvmFunction,this.returnRegister, this.llvmArguments);
         return (List<Event>) parserEntryPoint.accept(visitor);
     }
 }

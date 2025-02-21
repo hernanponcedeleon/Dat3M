@@ -3,7 +3,6 @@ package com.dat3m.dartagnan.parsers.program.visitors;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.LinkedList;
 import java.util.List;
 
 import com.dat3m.dartagnan.exception.ParsingException;
@@ -127,21 +126,19 @@ public class VisitorInlineAsm extends InlineAsmBaseVisitor<Object> {
     private final ExpressionFactory expressions = ExpressionFactory.getInstance();
     private CmpInstruction comparator;
     // keeps track of all the labels defined in the the asm code
-    private final HashMap<String, Label> labelsDefined;
+    private final HashMap<String, Label> labelsDefined = new HashMap<>();
     // used to keep track of which asm register should map to the llvm return register if it is an aggregate type
-    private final List<Expression> pendingRegisters;
+    private final List<Expression> pendingRegisters = new ArrayList<>();
     // holds the LLVM registers that are passed as (args) to the the asm -- asm"..." (args)
     private final List<Expression> argsRegisters;
-    // expected type of RHS of a comparison
+    // expected type of RHS of a comparison.
     private Type expectedType;
-    // tests
-    private final HashMap<Integer, Register> registers = new HashMap<>();
+    // map which holds, given the RegisterID, the register representing the asmRegister
+    private final HashMap<Integer, Register> asmRegisters = new HashMap<>();
 
-    public VisitorInlineAsm(Function llvmFunction, Register returnRegister, Type returnType, List<Expression> llvmArguments) {
+    public VisitorInlineAsm(Function llvmFunction, Register returnRegister, List<Expression> llvmArguments) {
         this.llvmFunction = llvmFunction;
         this.returnRegister = returnRegister;
-        this.labelsDefined = new HashMap<>();
-        this.pendingRegisters = new LinkedList<>();
         this.argsRegisters = llvmArguments;
     }
 
@@ -436,8 +433,8 @@ public class VisitorInlineAsm extends InlineAsmBaseVisitor<Object> {
         int registerID = Integer.parseInt(registerName);
         // given a register context, the ID tells us everything that we need
         // if w.h. the register, return it
-        if(registers.containsKey(registerID)){
-            return registers.get(registerID);
+        if(asmRegisters.containsKey(registerID)){
+            return asmRegisters.get(registerID);
         } else {
             // otherwise, pick up the correct type and create the new Register
             Type registerType = getLlvmRegisterTypeGivenAsmRegisterID(registerID);
@@ -447,7 +444,7 @@ public class VisitorInlineAsm extends InlineAsmBaseVisitor<Object> {
             if(isPartOfReturnRegister(registerID) && isReturnRegisterAggregate()){
                 this.pendingRegisters.add(newRegister);
             }
-            registers.put(registerID, newRegister);
+            asmRegisters.put(registerID, newRegister);
             return newRegister;
         }
     }
@@ -485,7 +482,7 @@ public class VisitorInlineAsm extends InlineAsmBaseVisitor<Object> {
                     outputRegistersInitialized = true;
                     // if we are at index 1 we only read a single output constraint e.g. "=&r, r" and we are at "r" now.
                     if (i == 1){
-                        outputAssignments.add(EventFactory.newLocal(returnRegister, registers.get(0)));
+                        outputAssignments.add(EventFactory.newLocal(returnRegister, asmRegisters.get(0)));
                     } else{
                         // we know that the type of the returnRegister is something like { i32, i32 } or { i32, i32, i32} ...
                         // so we have to slice from 0 to i-1 to get the aggregateType
@@ -506,7 +503,7 @@ public class VisitorInlineAsm extends InlineAsmBaseVisitor<Object> {
                     // in order to do so, we simply shift the index by the size of the returnRegister
                     // which in turn lets us access argsRegisters(0) in this case
                     // Of course it works with no return register or with a returnRegister which is NOT aggregate(simply substracting 0 or 1).
-                    Register asmRegister = registers.get(i);
+                    Register asmRegister = asmRegisters.get(i);
                     if(asmRegister == null){
                         // we are referencing a register that is not present in the asm code
                         // we can safely skip it as we are not going to assign it to anything
@@ -528,7 +525,7 @@ public class VisitorInlineAsm extends InlineAsmBaseVisitor<Object> {
                     // Since the value of asmRegisterNameIndex in this case is 5, we shift it by 4 (the number of return values) and we get 1
                     // we can therefore access argsRegisters[1], which gives us the correct index for the arg Register.
                     int constraintValue = Integer.parseInt(constraint.getText());
-                    inputAssignments.add(EventFactory.newLocal(registers.get(constraintValue), argsRegisters.get(i - getSizeOfReturnRegister())));
+                    inputAssignments.add(EventFactory.newLocal(asmRegisters.get(constraintValue), argsRegisters.get(i - getSizeOfReturnRegister())));
                 }
             }
             return null;
