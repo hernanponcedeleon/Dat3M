@@ -201,8 +201,12 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
         if (!atomicity) {
             object.addFeatureTag(C11.NON_ATOMIC_LOCATION);
         }
-        if (isOpenCL && ctx.pointerTypeSpecifier().openCLSpace() != null) {
-            object.addFeatureTag(ctx.pointerTypeSpecifier().openCLSpace().space);
+        if (isOpenCL) {
+            if (ctx.pointerTypeSpecifier().openCLSpace() != null) {
+                object.addFeatureTag(ctx.pointerTypeSpecifier().openCLSpace().space);
+            } else {
+                object.addFeatureTag(Tag.OpenCL.DEFAULT_SPACE);
+            }
         }
         programBuilder.addChild(currentThread, EventFactory.newLocal(register, object));
         return null;

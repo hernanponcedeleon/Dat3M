@@ -381,10 +381,12 @@ public final class Tag {
         // Space
         public static final String GLOBAL_SPACE = "GLOBAL";
         public static final String LOCAL_SPACE = "LOCAL";
+        public static final String GENERIC_SPACE = "GENERIC";
         // Barrier
         public static final String ENTRY_FENCE = "EF";
         public static final String EXIT_FENCE = "XF";
         // Default Tags
+        public static final String DEFAULT_SPACE = GENERIC_SPACE;
         public static final String DEFAULT_SCOPE = DEVICE;
         public static final String DEFAULT_WEAK_SCOPE = WORK_ITEM;
 
@@ -393,7 +395,7 @@ public final class Tag {
         }
 
         public static List<String> getSpaceTags() {
-            return List.of(GLOBAL_SPACE, LOCAL_SPACE);
+            return List.of(GLOBAL_SPACE, LOCAL_SPACE, GENERIC_SPACE);
         }
 
         public static List<String> getSpaceTags(Event e) {
@@ -514,6 +516,133 @@ public final class Tag {
                 throw new IllegalArgumentException("Multiple tags for " + type);
             }
             return filtered.get(0);
+        }
+
+        public static String toOpenCLTag(String tag) {
+            String model = "OpenCL";
+            return switch (tag) {
+                // Barriers
+                case CONTROL -> null;
+
+                // Memory order
+                case RELAXED -> C11.MO_RELAXED;
+                case ACQUIRE -> C11.MO_ACQUIRE;
+                case RELEASE -> C11.MO_RELEASE;
+                case ACQ_REL -> C11.MO_ACQUIRE_RELEASE;
+                case SEQ_CST -> C11.MO_SC;
+
+                // Scope
+                // TODO: OpenCL Kernel supports sub_group, but it's not mentioned in the model
+                case INVOCATION -> OpenCL.WORK_ITEM;
+                case SUBGROUP,
+                     WORKGROUP -> OpenCL.WORK_GROUP;
+                case DEVICE -> OpenCL.DEVICE;
+                case CROSS_DEVICE -> OpenCL.ALL;
+                case QUEUE_FAMILY,
+                     SHADER_CALL -> throw new UnsupportedOperationException(
+                             getErrorMsg(model, "scope", tag));
+
+                // Memory access (non-atomic)
+                case MEM_VOLATILE,
+                     MEM_NONTEMPORAL -> null;
+                case MEM_NON_PRIVATE,
+                     MEM_AVAILABLE,
+                     MEM_VISIBLE -> throw new UnsupportedOperationException(
+                             getErrorMsg(model, "memory access", tag));
+
+                // Memory semantics
+                case SEM_IMAGE -> null;
+                case SEM_SUBGROUP,
+                     SEM_WORKGROUP -> OpenCL.LOCAL_SPACE;
+                case SEM_CROSS_WORKGROUP,
+                     SEM_ATOMIC_COUNTER -> OpenCL.GLOBAL_SPACE;
+                case SEM_VOLATILE,
+                     SEM_UNIFORM,
+                     SEM_OUTPUT,
+                     SEM_AVAILABLE,
+                     SEM_VISIBLE -> throw new UnsupportedOperationException(
+                             getErrorMsg(model, "memory semantics", tag));
+
+                // Storage class
+                case SC_GENERIC -> OpenCL.GENERIC_SPACE;
+                case SC_FUNCTION,
+                     SC_INPUT,
+                     SC_WORKGROUP -> OpenCL.LOCAL_SPACE;
+                case SC_UNIFORM_CONSTANT,
+                     SC_PHYS_STORAGE_BUFFER,
+                     SC_CROSS_WORKGROUP -> OpenCL.GLOBAL_SPACE;
+                case SC_PUSH_CONSTANT,
+                     SC_UNIFORM,
+                     SC_OUTPUT,
+                     SC_STORAGE_BUFFER,
+                     SC_PRIVATE -> throw new UnsupportedOperationException(
+                             getErrorMsg(model, "storage class", tag));
+
+                default -> throw new IllegalArgumentException(
+                        String.format("Unexpected non Spir-V tag '%s'", tag));
+            };
+        }
+
+        public static String toVulkanTag(String tag) {
+            String model = "Vulkan";
+            return switch (tag) {
+                // Control barrier
+                case CONTROL -> Vulkan.CBAR;
+
+                // Storage class
+                case SC_UNIFORM_CONSTANT, SC_PUSH_CONSTANT
+                        -> null; // read-only
+                case SC_INPUT, SC_PRIVATE, SC_FUNCTION
+                        -> null; // private
+                case SC_UNIFORM, SC_OUTPUT, SC_STORAGE_BUFFER, SC_PHYS_STORAGE_BUFFER
+                        -> Vulkan.SC0;
+                case SC_WORKGROUP
+                        -> Vulkan.SC1;
+                case SC_CROSS_WORKGROUP, SC_GENERIC
+                        -> throw new UnsupportedOperationException(
+                        getErrorMsg(model, "storage class", tag));
+
+                // Scope
+                case SUBGROUP -> Vulkan.SUB_GROUP;
+                case WORKGROUP -> Vulkan.WORK_GROUP;
+                case QUEUE_FAMILY -> Vulkan.QUEUE_FAMILY;
+                // TODO: The model does not distinguish between these scopes
+                case INVOCATION, SHADER_CALL, DEVICE, CROSS_DEVICE -> Vulkan.DEVICE;
+
+                // Memory operands (non-atomic)
+                case MEM_VOLATILE, MEM_NONTEMPORAL -> null;
+                case MEM_NON_PRIVATE -> Vulkan.NON_PRIVATE;
+                case MEM_AVAILABLE -> Vulkan.AVAILABLE;
+                case MEM_VISIBLE -> Vulkan.VISIBLE;
+
+                // Memory semantics (misc)
+                case SEM_VOLATILE -> null;
+
+                // Memory semantics (memory order)
+                case RELAXED -> null;
+                case ACQUIRE -> Vulkan.ACQUIRE;
+                case RELEASE -> Vulkan.RELEASE;
+                case ACQ_REL -> Vulkan.ACQ_REL;
+                case SEQ_CST -> throw new UnsupportedOperationException(
+                        getErrorMsg(model, "memory order", tag));
+
+                // Memory semantics (storage class)
+                case SEM_UNIFORM, SEM_OUTPUT -> Vulkan.SEMSC0;
+                case SEM_WORKGROUP -> Vulkan.SEMSC1;
+                case SEM_SUBGROUP, SEM_CROSS_WORKGROUP, SEM_ATOMIC_COUNTER, SEM_IMAGE
+                        -> throw new UnsupportedOperationException(
+                                getErrorMsg(model, "memory semantics", tag));
+
+                // Memory semantics (av-vis)
+                case SEM_AVAILABLE -> Vulkan.SEM_AVAILABLE;
+                case SEM_VISIBLE -> Vulkan.SEM_VISIBLE;
+
+                default -> throw new IllegalArgumentException(String.format("Unexpected non Spir-V tag '%s'", tag));
+            };
+        }
+
+        private static String getErrorMsg(String memoryModel, String field, String tag) {
+            return String.format("Spir-V '%s' '%s' is not supported by '%s' memory model", field, tag, memoryModel);
         }
     }
 

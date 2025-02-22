@@ -39,7 +39,7 @@ public class SpirvChecksTest {
     private final Result expected;
 
     public SpirvChecksTest(String file, Result expected) {
-        this.programPath = getTestResourcePath("spirv/patterns/" + file);
+        this.programPath = getTestResourcePath("spirv/vulkan/patterns/" + file);
         this.expected = expected;
     }
 

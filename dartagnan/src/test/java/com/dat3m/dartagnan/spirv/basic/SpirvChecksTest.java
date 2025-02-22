@@ -26,7 +26,6 @@ import java.util.Arrays;
 import java.util.EnumSet;
 
 import static com.dat3m.dartagnan.configuration.Property.CAT_SPEC;
-import static com.dat3m.dartagnan.configuration.Property.PROGRAM_SPEC;
 import static com.dat3m.dartagnan.utils.ResourceHelper.getRootPath;
 import static com.dat3m.dartagnan.utils.ResourceHelper.getTestResourcePath;
 import static com.dat3m.dartagnan.utils.Result.*;

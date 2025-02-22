@@ -8,7 +8,7 @@ import com.dat3m.dartagnan.expression.aggregates.ConstructExpr;
 import com.dat3m.dartagnan.expression.type.ArrayType;
 import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
-import com.dat3m.dartagnan.parsers.program.visitors.spirv.utils.ThreadGrid;
+import com.dat3m.dartagnan.program.ThreadGrid;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 
 import java.util.ArrayList;
@@ -84,6 +84,8 @@ public class BuiltIn implements Decoration {
             case "WorkgroupId" -> makeArray(id, type, grid.wgId(tid), 0, 0);
             case "SubgroupSize" -> makeScalar(id, type, grid.sgSize());
             case "WorkgroupSize" -> makeArray(id, type, grid.wgSize(), 1, 1);
+            case "GlobalSize" -> makeArray(id, type, grid.dvSize(), 1, 1);
+            case "NumWorkgroups" -> makeArray(id, type, grid.dvSize() / grid.wgSize(), 1, 1);
             default -> throw new ParsingException("Unsupported decoration '%s'", mapping.get(id));
         };
     }

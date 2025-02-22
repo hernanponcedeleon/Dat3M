@@ -5,25 +5,17 @@ import com.dat3m.dartagnan.expression.integers.IntCmpOp;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.EventVisitor;
 import com.dat3m.dartagnan.program.event.Tag;
-import com.dat3m.dartagnan.program.event.common.RMWXchgBase;
+import com.dat3m.dartagnan.program.event.common.RMWExtremumBase;
 
-public class VulkanRMWExtremum extends RMWXchgBase {
-
-    private final IntCmpOp operator;
+public class VulkanRMWExtremum extends RMWExtremumBase {
 
     public VulkanRMWExtremum(Register register, Expression address, IntCmpOp op, Expression value, String mo, String scope) {
-        super(register, address, value, mo);
+        super(register, address, op, value, mo);
         this.addTags(Tag.Vulkan.ATOM, scope);
-        this.operator = op;
     }
 
     private VulkanRMWExtremum(VulkanRMWExtremum other) {
         super(other);
-        this.operator = other.operator;
-    }
-
-    public IntCmpOp getOperator() {
-        return operator;
     }
 
     @Override

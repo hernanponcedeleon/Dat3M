@@ -5,23 +5,22 @@ import com.dat3m.dartagnan.expression.ExpressionKind;
 import com.dat3m.dartagnan.expression.ExpressionVisitor;
 import com.dat3m.dartagnan.expression.Type;
 import com.dat3m.dartagnan.expression.base.LeafExpressionBase;
-import com.dat3m.dartagnan.expression.type.IntegerType;
-import com.dat3m.dartagnan.expression.type.TypeFactory;
+import com.dat3m.dartagnan.expression.type.ScopedPointerType;
 
 import java.util.Objects;
 
-public class ScopedPointer extends LeafExpressionBase<IntegerType> {
+public class ScopedPointer extends LeafExpressionBase<ScopedPointerType> {
 
     private final String id;
     private final String scopeId;
     private final Type innerType;
     private final Expression address;
 
-    public ScopedPointer(String id, String scopeId, Type innerType, Expression address) {
-        super(TypeFactory.getInstance().getArchType());
+    public ScopedPointer(String id, ScopedPointerType pointerType, Expression address) {
+        super(pointerType);
         this.id = id;
-        this.scopeId = scopeId;
-        this.innerType = innerType;
+        this.scopeId = pointerType.getScopeId();
+        this.innerType = pointerType.getPointedType();
         this.address = address;
     }
 
@@ -35,6 +34,14 @@ public class ScopedPointer extends LeafExpressionBase<IntegerType> {
 
     public Type getInnerType() {
         return innerType;
+    }
+
+    public Type getMemoryType() {
+        Type memoryType = innerType;
+        while (memoryType instanceof ScopedPointerType scopedPointerType) {
+            memoryType = scopedPointerType.getPointedType();
+        }
+        return memoryType;
     }
 
     public Expression getAddress() {

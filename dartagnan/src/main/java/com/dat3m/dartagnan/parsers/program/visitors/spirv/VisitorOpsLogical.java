@@ -59,7 +59,7 @@ public class VisitorOpsLogical extends SpirvBaseVisitor<Event> {
                     "expected two operands type '%s but received '%s' and '%s'",
                     id, type, op1.getType(), op2.getType());
         }
-        if (op1.getType() instanceof IntegerType || op1.getType() instanceof  BooleanType) {
+        if (op1.getType() instanceof IntegerType || op1.getType() instanceof BooleanType) {
             return builder.addEvent(new Local(register, expressions.makeITE(cond, op1, op2)));
         }
         throw new ParsingException("Illegal definition for '%s', " +

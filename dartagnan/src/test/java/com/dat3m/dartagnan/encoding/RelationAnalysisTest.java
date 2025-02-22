@@ -113,7 +113,7 @@ public class RelationAnalysisTest {
                 // https://github.com/hernanponcedeleon/Dat3M/issues/746
                 //{ "dartagnan/src/test/resources/miscellaneous", "cat/riscv.cat", Arch.RISCV },
 
-                { "dartagnan/src/test/resources/spirv/benchmarks", "cat/spirv.cat", Arch.VULKAN },
+                { "dartagnan/src/test/resources/spirv/vulkan/benchmarks", "cat/spirv.cat", Arch.VULKAN },
         });
     }
 

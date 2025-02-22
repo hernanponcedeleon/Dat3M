@@ -6,6 +6,7 @@ import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.Type;
 import com.dat3m.dartagnan.expression.aggregates.ConstructExpr;
 import com.dat3m.dartagnan.expression.integers.IntBinaryExpr;
+import com.dat3m.dartagnan.expression.integers.IntBinaryOp;
 import com.dat3m.dartagnan.expression.type.*;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.mocks.MockProgramBuilder;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.mocks.MockSpirvParser;
@@ -98,6 +99,27 @@ public class VisitorOpsMemoryTest {
             assertEquals(String.format("OpLoad cannot contain tag '%s'",
                     Tag.Spirv.MEM_AVAILABLE), e.getMessage());
         }
+    }
+
+    @Test
+    public void testLoadVector() {
+        // given
+        IntegerType integerType = builder.mockIntType("%int", 32);
+        builder.mockVectorType("%v4int4", "%int", 4);
+        builder.mockPtrType("%ptr_v4int4", "%int", "Uniform");
+        String input = """
+                %ptr = OpVariable %ptr_v4int4 Uniform
+                %result = OpLoad %v4int4 %ptr
+                """;
+
+        // when
+        parse(input);
+
+        // then
+        ConstructExpr pointerVariable = (ConstructExpr) builder.getExpression("%result");
+        assertNotNull(pointerVariable);
+        assertEquals(4, pointerVariable.getOperands().size());
+        assertEquals(integerType, pointerVariable.getOperands().get(0).getType());
     }
 
     @Test
@@ -699,6 +721,33 @@ public class VisitorOpsMemoryTest {
     }
 
     @Test
+    public void testPtrAccessChainArray() {
+        // given
+        String input = """
+                %13 = OpVariable %_ptr_Workgroup_uint Workgroup
+                %19 = OpPtrAccessChain %_ptr_Workgroup_uint %13 %18
+                """;
+
+        IntegerType iType = builder.mockIntType("%uint", 32);
+        builder.mockPtrType("%_ptr_Workgroup_uint", "%uint", "Workgroup");
+        builder.mockConstant("%18", "%_ptr_Workgroup_uint", 0);
+
+        // when
+        parse(input);
+
+        // then
+        ScopedPointer sp = (ScopedPointer) ((ScopedPointer) builder.getExpression("%19")).getAddress();
+        IntBinaryExpr addressExp = (IntBinaryExpr) sp.getAddress();
+        assertEquals(iType, sp.getInnerType());
+        assertEquals(builder.getExpression("%13"), addressExp.getLeft());
+        assertEquals(IntBinaryOp.ADD, addressExp.getKind());
+        assertEquals(IntBinaryOp.MUL, addressExp.getRight().getKind());
+        assertEquals(expressions.makeValue(4, types.getArchType()), ((IntBinaryExpr) addressExp.getRight()).getLeft());
+        assertEquals(expressions.makeCast(builder.getExpression("%18"), types.getArchType()),
+                ((IntBinaryExpr) addressExp.getRight()).getRight());
+    }
+
+    @Test
     public void testAccessChainStruct() {
         // given
         String input = """
@@ -911,9 +960,13 @@ public class VisitorOpsMemoryTest {
     }
 
     private Event getLastEvent() {
+        return getLastNEvent(0);
+    }
+
+    private Event getLastNEvent(int n) {
         List<Event> events = builder.getCurrentFunction().getEvents();
-        if (!events.isEmpty()) {
-            return events.get(events.size() - 1);
+        if (!events.isEmpty() && events.size() > n) {
+            return events.get(events.size() - 1 - n);
         }
         return null;
     }

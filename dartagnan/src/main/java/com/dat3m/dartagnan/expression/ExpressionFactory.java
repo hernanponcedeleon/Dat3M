@@ -288,11 +288,13 @@ public final class ExpressionFactory {
     }
 
     public ScopedPointer makeScopedPointer(String id, String scopeId, Type type, Expression address) {
-        return new ScopedPointer(id, scopeId, type, address);
+        ScopedPointerType pointerType = types.getScopedPointerType(scopeId, type);
+        return new ScopedPointer(id, pointerType, address);
     }
 
     public ScopedPointerVariable makeScopedPointerVariable(String id, String scopeId, Type type, MemoryObject address) {
-        return new ScopedPointerVariable(id, scopeId, type, address);
+        ScopedPointerType pointerType = types.getScopedPointerType(scopeId, type);
+        return new ScopedPointerVariable(id, pointerType, address);
     }
 
     // -----------------------------------------------------------------------------------------------------------------

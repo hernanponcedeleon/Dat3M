@@ -41,7 +41,7 @@ public class SpirvAssertionsTest {
     private final Result expected;
 
     public SpirvAssertionsTest(String file, Result expected) {
-        this.programPath = getTestResourcePath("spirv/patterns/" + file);
+        this.programPath = getTestResourcePath("spirv/vulkan/patterns/" + file);
         this.expected = expected;
     }
 

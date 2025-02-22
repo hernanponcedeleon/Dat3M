@@ -63,8 +63,7 @@ public class Inlining implements ProgramProcessor {
         }
     }
 
-    private record Snapshot(String name, List<Register> parameters, List<Event> events, List<Register> registers,
-            boolean isVarArgs) {}
+    private record Snapshot(String name, List<Register> parameters, List<Event> events, List<Register> registers, boolean isVarArgs) {}
 
     private boolean canInline(FunctionCall call) {
         return call.isDirectCall() && call.getCalledFunction().hasBody();
