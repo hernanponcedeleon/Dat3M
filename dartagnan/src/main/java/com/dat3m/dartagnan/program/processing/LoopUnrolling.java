@@ -198,7 +198,7 @@ public class LoopUnrolling implements ProgramProcessor {
             } else {
                 final String loopId = String.format("%s%s%s%d", loopBegin.getName(), LOOP_INFO_SEPARATOR, LOOP_INFO_ITERATION_SUFFIX, iterCounter);
                 final Map<Event, Event> copyCtx = new HashMap<>();
-                final List<Event> copies = IRHelper.copyPath(loopBegin, loopBackJump, Map.of(), copyCtx);
+                final List<Event> copies = IRHelper.copyPath(loopBegin, loopBackJump, e -> { }, copyCtx);
 
                 // Insert copy of the loop
                 loopBegin.getPredecessor().insertAfter(copies);

@@ -135,8 +135,7 @@ public class Inlining implements ProgramProcessor {
         }
 
         // --------- Inline call ---------
-        final List<Event> inlinedBody = IRHelper.copyEvents(callTarget.events, registerMap, new HashMap<>());
-        // TODO: Add support for control barriers
+        final List<Event> inlinedBody = IRHelper.copyEvents(callTarget.events, IRHelper.makeRegisterReplacer(registerMap), new HashMap<>());
         final Label returnLabel = newLabel("EXIT_OF_CALL_" + callTarget.name + "_" + scope);
         call.insertAfter(eventSequence(
                 parameterAssignments,

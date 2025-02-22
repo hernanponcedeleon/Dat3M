@@ -261,7 +261,7 @@ public class ThreadCreation implements ProgramProcessor {
         // ------------------- Copy function into thread -------------------
         final Map<Register, Register> registerReplacement = IRHelper.copyOverRegisters(function.getRegisters(), thread,
                 Register::getName, false);
-        final List<Event> body = IRHelper.copyEvents(function.getEvents(), registerReplacement, new HashMap<>());
+        final List<Event> body = IRHelper.copyEvents(function.getEvents(), IRHelper.makeRegisterReplacer(registerReplacement), new HashMap<>());
         thread.getEntry().insertAfter(body);
 
         // ------------------- Create thread-local variables -------------------

@@ -12,8 +12,10 @@ import com.dat3m.dartagnan.program.event.functions.AbortIf;
 import com.dat3m.dartagnan.program.event.functions.Return;
 import com.dat3m.dartagnan.program.event.lang.llvm.LlvmCmpXchg;
 import com.google.common.base.Preconditions;
+import com.google.common.base.Verify;
 
 import java.util.*;
+import java.util.function.Consumer;
 
 public class IRHelper {
 
@@ -46,60 +48,64 @@ public class IRHelper {
         final List<Event> events = new ArrayList<>();
         Event cur = from;
         do {
-            final boolean reachedEnd = (cur == to);
-            if (!reachedEnd || endInclusive) {
+            final boolean endReached = (cur == to);
+            if (!endReached || endInclusive) {
                 events.add(cur);
             }
-            if (reachedEnd) {
+            if (endReached) {
                 break;
             }
             cur = cur.getSuccessor();
         } while (cur != null);
-        assert cur != null;
+        Verify.verify(cur != null, "Event '{}' is not before '{}'", from, to);
 
         return events;
     }
 
     public static List<Event> copyEvents(Collection<? extends Event> events,
-                                         Map<Register, Register> regReplacement,
+                                         Consumer<Event> copyUpdater,
                                          Map<Event, Event> copyContext) {
         final List<Event> copies = new ArrayList<>();
         for (Event e : events) {
             final Event copy = e.getCopy();
+            copyUpdater.accept(copy);
             copies.add(copy);
             copyContext.put(e, copy);
         }
-
-        final ExprTransformer regSubstitutor = new ExprTransformer() {
-            @Override
-            public Expression visitRegister(Register reg) {
-                return regReplacement.getOrDefault(reg, reg);
-            }
-        };
 
         for (Event copy : copies) {
             if (copy instanceof EventUser user) {
                 user.updateReferences(copyContext);
             }
-            if (copy instanceof RegReader reader) {
-                reader.transformExpressions(regSubstitutor);
-            }
-            if (copy instanceof LlvmCmpXchg xchg) {
-                xchg.setStructRegister(0, (Register)xchg.getStructRegister(0).accept(regSubstitutor));
-                xchg.setStructRegister(1, (Register)xchg.getStructRegister(1).accept(regSubstitutor));
-            } else if (copy instanceof RegWriter regWriter) {
-                regWriter.setResultRegister((Register) regWriter.getResultRegister().accept(regSubstitutor));
-            }
-
         }
 
         return copies;
     }
 
     public static List<Event> copyPath(Event from, Event to,
-                                       Map<Register, Register> regReplacement,
+                                       Consumer<Event> copyUpdater,
                                        Map<Event, Event> copyContext) {
-        return copyEvents(getEventsFromTo(from, to, false), regReplacement, copyContext);
+        return copyEvents(getEventsFromTo(from, to, false), copyUpdater, copyContext);
+    }
+
+    public static Consumer<Event> makeRegisterReplacer(Map<Register, Register> regReplacer) {
+        final ExprTransformer regSubstitutor =  new ExprTransformer() {
+            @Override
+            public Expression visitRegister(Register reg) {
+                return regReplacer.getOrDefault(reg, reg);
+            }
+        };
+        return event -> {
+            if (event instanceof RegReader reader) {
+                reader.transformExpressions(regSubstitutor);
+            }
+            if (event instanceof LlvmCmpXchg xchg) {
+                xchg.setStructRegister(0, (Register)xchg.getStructRegister(0).accept(regSubstitutor));
+                xchg.setStructRegister(1, (Register)xchg.getStructRegister(1).accept(regSubstitutor));
+            } else if (event instanceof RegWriter regWriter) {
+                regWriter.setResultRegister((Register) regWriter.getResultRegister().accept(regSubstitutor));
+            }
+        };
     }
 
     public static Map<Register, Register> copyOverRegisters(Iterable<Register> toCopy, Function target,
