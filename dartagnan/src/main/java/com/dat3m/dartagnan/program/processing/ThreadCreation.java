@@ -232,7 +232,7 @@ public class ThreadCreation implements ProgramProcessor {
             replacement.add(EventFactory.newFunctionCallMarker(call.getCalledFunction().getName()));
             replacement.addAll(switchJumpTable);
             tid2joinCases.values().forEach(replacement::addAll);
-            replacement.addAll(Arrays.asList(
+            replacement.addAll(eventSequence(
                     joinEnd,
                     newJump(joinDummyReg, (Label)thread.getExit()),
                     // Note: In our modelling, pthread_join always succeeds if it returns

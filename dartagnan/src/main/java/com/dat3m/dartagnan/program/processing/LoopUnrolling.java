@@ -33,6 +33,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.Consumer;
 
 import static com.dat3m.dartagnan.configuration.OptionNames.*;
 
@@ -170,16 +171,17 @@ public class LoopUnrolling implements ProgramProcessor {
 
     private void unrollLoop(CondJump loopBackJump, int bound) {
         final Label loopBegin = loopBackJump.getLabel();
+        final String loopName = loopBegin.getName();
         Preconditions.checkArgument(bound >= 1, "Positive unrolling bound expected.");
         Preconditions.checkArgument(IRHelper.isBackJump(loopBackJump),
                 "The jump does not belong to a loop.");
 
         int iterCounter = 0;
         while (++iterCounter <= bound) {
+            final String loopId = String.format("%s%s%s%d", loopName, LOOP_INFO_SEPARATOR, LOOP_INFO_ITERATION_SUFFIX, iterCounter);
             if (iterCounter == bound) {
                 // Update loop iteration label
-                final String loopName = loopBegin.getName();
-                loopBegin.setName(String.format("%s%s%s%d", loopName, LOOP_INFO_SEPARATOR, LOOP_INFO_ITERATION_SUFFIX, iterCounter));
+                loopBegin.setName(loopId);
                 loopBegin.addTags(Tag.NOOPT);
 
                 // This is the last iteration, so we replace the back jump by a bound event.
@@ -194,11 +196,14 @@ public class LoopUnrolling implements ProgramProcessor {
                 boundEvent.copyAllMetadataFrom(loopBackJump);
                 boundEvent.setMetadata(new UnrollingBound(bound));
                 endOfLoopMarker.copyAllMetadataFrom(loopBackJump);
-
             } else {
-                final String loopId = String.format("%s%s%s%d", loopBegin.getName(), LOOP_INFO_SEPARATOR, LOOP_INFO_ITERATION_SUFFIX, iterCounter);
+                final Consumer<Event> copyUpdater = copy -> {
+                    if (copy instanceof ControlBarrier copyBar) {
+                        copyBar.setInstanceId(String.format("%s.%s", copyBar.getInstanceId(), loopId));
+                    }
+                };
                 final Map<Event, Event> copyCtx = new HashMap<>();
-                final List<Event> copies = IRHelper.copyPath(loopBegin, loopBackJump, e -> { }, copyCtx);
+                final List<Event> copies = IRHelper.copyPath(loopBegin, loopBackJump, copyUpdater, copyCtx);
 
                 // Insert copy of the loop
                 loopBegin.getPredecessor().insertAfter(copies);
@@ -216,25 +221,6 @@ public class LoopUnrolling implements ProgramProcessor {
                 loopBeginCopy.addTags(Tag.NOOPT);
             }
         }
-    }
-
-    private List<Event> copyPath(Event from, Event until, Map<Event, Event> copyContext, String loopId) {
-        final List<Event> copies = new ArrayList<>();
-        Event cur = from;
-        while(cur != null && !cur.equals(until)){
-            final Event copy = cur.getCopy();
-            if (cur instanceof ControlBarrier curBar && copy instanceof ControlBarrier copyBar) {
-                copyBar.setInstanceId(String.format("%s.%s", curBar.getInstanceId(), loopId));
-            }
-            copies.add(copy);
-            copyContext.put(cur, copy);
-            cur = cur.getSuccessor();
-        }
-
-        copies.stream()
-                .filter(EventUser.class::isInstance).map(EventUser.class::cast)
-                .forEach(e -> e.updateReferences(copyContext));
-        return copies;
     }
 
     private Event newBoundEvent(Function func) {

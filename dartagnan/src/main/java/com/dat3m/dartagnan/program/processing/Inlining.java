@@ -23,6 +23,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Consumer;
 
 import static com.dat3m.dartagnan.configuration.OptionNames.RECURSION_BOUND;
 import static com.dat3m.dartagnan.program.event.EventFactory.*;
@@ -135,7 +136,14 @@ public class Inlining implements ProgramProcessor {
         }
 
         // --------- Inline call ---------
-        final List<Event> inlinedBody = IRHelper.copyEvents(callTarget.events, IRHelper.makeRegisterReplacer(registerMap), new HashMap<>());
+        final Consumer<Event> copyUpdater = IRHelper.makeRegisterReplacer(registerMap)
+                .andThen(copy -> {
+                    if (copy instanceof Label label) {
+                        label.setName(scope + ":" + label.getName());
+                    }
+                    // TODO: Add support for control barriers
+                });
+        final List<Event> inlinedBody = IRHelper.copyEvents(callTarget.events, copyUpdater, new HashMap<>());
         final Label returnLabel = newLabel("EXIT_OF_CALL_" + callTarget.name + "_" + scope);
         call.insertAfter(eventSequence(
                 parameterAssignments,
@@ -144,24 +152,18 @@ public class Inlining implements ProgramProcessor {
         ));
 
         // --------- Post process inlined body ---------
+        // Replace Return events by (assignment + jump)
         final Register resultReg = call instanceof ValueFunctionCall c ? c.getResultRegister() : null;
-        for (Event event : inlinedBody) {
-            // (1) Update label names with scopes
-            if (event instanceof Label label) {
-                label.setName(scope + ":" + label.getName());
-            }
-            // (2) Replace Return events by (assignment + jump)
-            if (event instanceof Return returnEvent) {
-                final Expression expression = returnEvent.getValue().orElse(null);
-                checkReturnType(resultReg, expression);
-                final List<Event> replacement = eventSequence(
-                        expression != null ? newLocal(resultReg, expression) : null,
-                        newGoto(returnLabel)
-                );
-                replacement.forEach(e -> e.copyAllMetadataFrom(event));
-                event.replaceBy(replacement);
-            }
-        }
+        inlinedBody.stream().filter(Return.class::isInstance).map(Return.class::cast).forEach(returnEvent -> {
+            final Expression expression = returnEvent.getValue().orElse(null);
+            checkReturnType(resultReg, expression);
+            final List<Event> replacement = eventSequence(
+                    expression != null ? newLocal(resultReg, expression) : null,
+                    newGoto(returnLabel)
+            );
+            replacement.forEach(e -> e.copyAllMetadataFrom(returnEvent));
+            returnEvent.replaceBy(replacement);
+        });
 
         final Event successor = call.getSuccessor();
         call.tryDelete();
