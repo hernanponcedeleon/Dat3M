@@ -163,10 +163,20 @@ public class Function implements LeafExpression {
     }
 
     public void updateExit(Event event){
+        Preconditions.checkArgument(event.getFunction() == this);
         exit = event;
         Event next;
         while((next = exit.getSuccessor()) != null){
             exit = next;
+        }
+    }
+
+    public void updateEntry(Event event) {
+        Preconditions.checkArgument(event.getFunction() == this);
+        entry = event;
+        Event next;
+        while((next = entry.getPredecessor()) != null){
+            entry = next;
         }
     }
 

@@ -11,6 +11,7 @@ import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.Register;
+import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.arch.StoreExclusive;
 import com.dat3m.dartagnan.program.event.arch.ptx.PTXAtomCAS;
 import com.dat3m.dartagnan.program.event.arch.ptx.PTXAtomExch;
@@ -70,19 +71,35 @@ public class EventFactory {
 
     public static List<Event> eventSequence(Object... events) {
         List<Event> retVal = new ArrayList<>();
-        for (Object obj : events) {
+        eventSequenceInternal(Arrays.asList(events), retVal);
+        return retVal;
+    }
+
+    private static void eventSequenceInternal(Iterable<?> iterable, List<Event> collector) {
+        for (Object obj : iterable) {
             if (obj == null) {
                 continue;
             }
             if (obj instanceof Event) {
-                retVal.add((Event) obj);
-            } else if (obj instanceof Collection<?>) {
-                retVal.addAll((Collection<? extends Event>) obj);
+                collector.add((Event) obj);
+            } else if (obj instanceof Iterable<?> iter) {
+                eventSequenceInternal(iter, collector);
             } else {
                 throw new IllegalArgumentException("Cannot parse " + obj.getClass() + " as event.");
             }
         }
-        return retVal;
+    }
+
+    public static Event newTerminator(Function function, Expression guard, String... tags) {
+        final Event terminator = function instanceof Thread thread ?
+                EventFactory.newJump(guard, (Label) thread.getExit()) :
+                EventFactory.newAbortIf(guard);
+        terminator.addTags(tags);
+        return terminator;
+    }
+
+    public static Event newTerminator(Function function, String... tags) {
+        return newTerminator(function, ExpressionFactory.getInstance().makeTrue(), tags);
     }
 
 
@@ -150,12 +167,6 @@ public class EventFactory {
                 expressions.makeAdd(base, expressions.makeValue(offset, (IntegerType) base.getType()));
         final Init init = new Init(base, offset, address);
         init.addTags(base.getFeatureTags());
-        return init;
-    }
-
-    public static Init newC11Init(MemoryObject base, int offset) {
-        Init init = newInit(base, offset);
-        init.addTags(Tag.C11.NONATOMIC);
         return init;
     }
 

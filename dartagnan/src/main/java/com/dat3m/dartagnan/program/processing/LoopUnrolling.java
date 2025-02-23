@@ -1,10 +1,8 @@
 package com.dat3m.dartagnan.program.processing;
 
-import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.IRHelper;
 import com.dat3m.dartagnan.program.Program;
-import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.analysis.SyntacticContextAnalysis;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.EventFactory;
@@ -185,17 +183,15 @@ public class LoopUnrolling implements ProgramProcessor {
                 loopBegin.addTags(Tag.NOOPT);
 
                 // This is the last iteration, so we replace the back jump by a bound event.
-                final Event boundEvent = newBoundEvent(loopBackJump.getFunction());
-                loopBackJump.replaceBy(boundEvent);
+                final Event boundEvent = EventFactory.newTerminator(loopBackJump.getFunction(), Tag.BOUND, Tag.NONTERMINATION, Tag.NOOPT);
+                IRHelper.replaceWithMetadata(loopBackJump, boundEvent);
+                boundEvent.setMetadata(new UnrollingBound(bound));
 
                 // Mark end of loop, so we can find it later again
                 final Label endOfLoopMarker = EventFactory.newLabel(String.format("%s%s%s", loopName, LOOP_INFO_SEPARATOR, LOOP_INFO_BOUND_SUFFIX));
                 endOfLoopMarker.addTags(Tag.NOOPT);
-                boundEvent.getPredecessor().insertAfter(endOfLoopMarker);
-
-                boundEvent.copyAllMetadataFrom(loopBackJump);
-                boundEvent.setMetadata(new UnrollingBound(bound));
                 endOfLoopMarker.copyAllMetadataFrom(loopBackJump);
+                boundEvent.insertBefore(endOfLoopMarker);
             } else {
                 final Consumer<Event> copyUpdater = copy -> {
                     if (copy instanceof ControlBarrier copyBar) {
@@ -206,7 +202,7 @@ public class LoopUnrolling implements ProgramProcessor {
                 final List<Event> copies = IRHelper.copyPath(loopBegin, loopBackJump, copyUpdater, copyCtx);
 
                 // Insert copy of the loop
-                loopBegin.getPredecessor().insertAfter(copies);
+                loopBegin.insertBefore(copies);
                 if (iterCounter == 1) {
                     // This is the first unrolling; every outside jump to the loop header
                     // gets updated to jump to the first iteration instead.
@@ -221,14 +217,6 @@ public class LoopUnrolling implements ProgramProcessor {
                 loopBeginCopy.addTags(Tag.NOOPT);
             }
         }
-    }
-
-    private Event newBoundEvent(Function func) {
-        final Event boundEvent = func instanceof Thread thread ?
-                EventFactory.newGoto((Label) thread.getExit()) :
-                EventFactory.newAbortIf(ExpressionFactory.getInstance().makeTrue());
-        boundEvent.addTags(Tag.BOUND, Tag.NONTERMINATION, Tag.NOOPT);
-        return boundEvent;
     }
 
     // ------------------------------------------------------------------------

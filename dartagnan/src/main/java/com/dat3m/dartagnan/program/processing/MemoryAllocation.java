@@ -10,7 +10,9 @@ import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.EventFactory;
+import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.Alloc;
+import com.dat3m.dartagnan.program.event.core.Init;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.google.common.base.Preconditions;
 import org.sosy_lab.common.configuration.Configuration;
@@ -88,11 +90,11 @@ public class MemoryAllocation implements ProgramProcessor {
                 final String threadName = "Init_" + nextThreadId;
                 final Thread thread = new Thread(threadName, initThreadType, paramNames, nextThreadId,
                         EventFactory.newThreadStart(null));
+                final Init init = EventFactory.newInit(memObj, field);
                 if (program.getArch() == Arch.C11 || program.getArch() == Arch.OPENCL) {
-                    thread.append(EventFactory.newC11Init(memObj, field));
-                } else {
-                    thread.append(EventFactory.newInit(memObj, field));
+                    init.addTags(Tag.C11.NONATOMIC);
                 }
+                thread.append(init);
                 thread.append(EventFactory.newLabel("END_OF_T" + thread.getId()));
                 program.addThread(thread);
                 nextThreadId++;

@@ -21,6 +21,10 @@ public class IRHelper {
 
     private IRHelper() {}
 
+    public static boolean isBackJump(CondJump jump) {
+        return jump.getLocalId() > jump.getLabel().getLocalId();
+    }
+
     /*
         Returns true if the syntactic successor of <e> (e.getSuccessor()) is not (generally) a semantic successor,
         because <e> always jumps/branches/terminates etc.
@@ -41,6 +45,18 @@ public class IRHelper {
             }
         }
         return nonDeleted;
+    }
+
+    public static Event replaceWithMetadata(Event event, Event replacement) {
+        event.replaceBy(replacement);
+        replacement.copyAllMetadataFrom(event);
+        return replacement;
+    }
+
+    public static List<Event> replaceWithMetadata(Event event, List<Event> replacement) {
+        event.replaceBy(replacement);
+        replacement.forEach(ev -> ev.copyAllMetadataFrom(event));
+        return replacement;
     }
 
     public static List<Event> getEventsFromTo(Event from, Event to, boolean endInclusive) {
@@ -73,19 +89,16 @@ public class IRHelper {
             copyContext.put(e, copy);
         }
 
-        for (Event copy : copies) {
-            if (copy instanceof EventUser user) {
-                user.updateReferences(copyContext);
-            }
-        }
+        copies.stream().filter(EventUser.class::isInstance).map(EventUser.class::cast)
+                .forEach(user -> user.updateReferences(copyContext));
 
         return copies;
     }
 
-    public static List<Event> copyPath(Event from, Event to,
+    public static List<Event> copyPath(Event from, Event toExclusive,
                                        Consumer<Event> copyUpdater,
                                        Map<Event, Event> copyContext) {
-        return copyEvents(getEventsFromTo(from, to, false), copyUpdater, copyContext);
+        return copyEvents(getEventsFromTo(from, toExclusive, false), copyUpdater, copyContext);
     }
 
     public static Consumer<Event> makeRegisterReplacer(Map<Register, Register> regReplacer) {
@@ -109,20 +122,16 @@ public class IRHelper {
     }
 
     public static Map<Register, Register> copyOverRegisters(Iterable<Register> toCopy, Function target,
-                                                            java.util.function.Function<Register, String> registerRename,
+                                                            java.util.function.Function<Register, String> registerRenaming,
                                                             boolean guaranteeFreshRegisters) {
         final Map<Register, Register> registerMap = new HashMap<>();
         for (Register reg : toCopy) {
-            final String name = registerRename.apply(reg);
+            final String name = registerRenaming.apply(reg);
             final Register copiedReg = guaranteeFreshRegisters ?
                     target.newRegister(name, reg.getType())
                     : target.getOrNewRegister(name, reg.getType());
             registerMap.put(reg, copiedReg);
         }
         return registerMap;
-    }
-
-    public static boolean isBackJump(CondJump jump) {
-        return jump.getLocalId() > jump.getLabel().getLocalId();
     }
 }

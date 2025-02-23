@@ -172,9 +172,13 @@ public abstract class AbstractEvent implements Event {
         if (this.successor != null) {
             this.successor.predecessor = predecessor;
         }
+        if (function != null && this == function.getEntry()) {
+            function.updateEntry(this.successor);
+        }
         if (function != null && this == function.getExit()) {
             function.updateExit(this.predecessor);
         }
+
         this.function = null;
         this.predecessor = null;
         this.successor = null;
@@ -201,14 +205,11 @@ public abstract class AbstractEvent implements Event {
     @Override
     public void insertAfter(Event toBeInserted) {
         Preconditions.checkNotNull(toBeInserted);
-        insertBetween((AbstractEvent) toBeInserted, function, this, successor);
-        if (function.getExit() == this) {
-            function.updateExit(toBeInserted);
-        }
+        insertBetween((AbstractEvent) toBeInserted, function, this, this.successor);
     }
 
     @Override
-    public void insertAfter(List<Event> toBeInserted) {
+    public void insertAfter(Iterable<? extends Event> toBeInserted) {
         Event cur = this;
         for (Event next : toBeInserted) {
             cur.insertAfter(next);
@@ -217,20 +218,35 @@ public abstract class AbstractEvent implements Event {
     }
 
     @Override
-    public void replaceBy(Event replacement) {
+    public void insertBefore(Event toBeInserted) {
+        Preconditions.checkNotNull(toBeInserted);
+        insertBetween((AbstractEvent) toBeInserted, function, this.predecessor, this);
+    }
+
+    @Override
+    public void insertBefore(Iterable<? extends Event> toBeInserted) {
+        for (Event next : toBeInserted) {
+            this.insertBefore(next);
+        }
+    }
+
+    @Override
+    public Event replaceBy(Event replacement) {
         if (replacement == this) {
-            return;
+            return replacement;
         }
         Preconditions.checkState(currentUsers.isEmpty(), "Cannot replace event that is still in use.");
         this.insertAfter(replacement);
         this.forceDelete();
+        return replacement;
     }
 
     @Override
-    public void replaceBy(List<Event> replacement) {
+    public <TCol extends Iterable<? extends Event>> TCol replaceBy(TCol replacement) {
         Preconditions.checkState(currentUsers.isEmpty(), "Cannot replace event that is still in use.");
         this.insertAfter(replacement);
         this.forceDelete();
+        return replacement;
     }
 
     private static void insertBetween(AbstractEvent toBeInserted, Function func, AbstractEvent pred, AbstractEvent succ) {
@@ -243,10 +259,16 @@ public abstract class AbstractEvent implements Event {
 
         if (pred != null) {
             pred.successor = toBeInserted;
+        } else if (func != null) {
+            func.updateEntry(toBeInserted);
         }
+
         if (succ != null) {
             succ.predecessor = toBeInserted;
+        } else if (func != null) {
+            func.updateExit(toBeInserted);
         }
+
     }
 
     // ===============================================================================================

@@ -179,7 +179,7 @@ public class NormalizeLoops implements FunctionProcessor {
                                 enteringJump.getLocalId(), enteringJump, SyntacticContextAnalysis.getSourceLocationString(enteringJump));
                         throw new UnsupportedOperationException(error);
                     }
-                    enteringJump.getPredecessor().insertAfter(EventFactory.newLocal(entryPointReg, entryPointValue));
+                    enteringJump.insertBefore(EventFactory.newLocal(entryPointReg, entryPointValue));
                     enteringJump.updateReferences(Map.of(entryPoint, loopBegin));
                 }
 

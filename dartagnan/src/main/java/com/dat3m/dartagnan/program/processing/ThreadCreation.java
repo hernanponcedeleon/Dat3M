@@ -133,8 +133,7 @@ public class ThreadCreation implements ProgramProcessor {
                                 // TODO: Allow to return failure value (!= 0)
                                 newLocal(resultRegister, expressions.makeZero((IntegerType) resultRegister.getType()))
                         );
-                        replacement.forEach(e -> e.copyAllMetadataFrom(call));
-                        call.replaceBy(replacement);
+                        IRHelper.replaceWithMetadata(call, replacement);
 
                         final Thread spawnedThread = createThreadFromFunction(targetFunction, nextTid, createEvent, comAddress);
                         createEvent.setSpawnedThread(spawnedThread);
@@ -150,8 +149,7 @@ public class ThreadCreation implements ProgramProcessor {
                         final Expression tidExpr = expressions.makeValue(thread.getId(),
                                 (IntegerType) resultRegister.getType());
                         final Local tidAssignment = newLocal(resultRegister, tidExpr);
-                        tidAssignment.copyAllMetadataFrom(call);
-                        call.replaceBy(tidAssignment);
+                        IRHelper.replaceWithMetadata(call, tidAssignment);
                     }
                 }
             }
@@ -228,21 +226,17 @@ public class ThreadCreation implements ProgramProcessor {
             switchJumpTable.add(EventFactory.newGoto(joinEnd));
 
             // ----- Generate actual replacement for the pthread_join call -----
-            final List<Event> replacement = new ArrayList<>();
-            replacement.add(EventFactory.newFunctionCallMarker(call.getCalledFunction().getName()));
-            replacement.addAll(switchJumpTable);
-            tid2joinCases.values().forEach(replacement::addAll);
-            replacement.addAll(eventSequence(
+            final List<Event> replacement = eventSequence(
+                    EventFactory.newFunctionCallMarker(call.getCalledFunction().getName()),
+                    switchJumpTable,
+                    tid2joinCases.values(),
                     joinEnd,
                     newJump(joinDummyReg, (Label)thread.getExit()),
                     // Note: In our modelling, pthread_join always succeeds if it returns
                     newLocal(resultRegister, expressions.makeZero((IntegerType) resultRegister.getType())),
                     EventFactory.newFunctionReturnMarker(call.getCalledFunction().getName())
-            ));
-
-            replacement.forEach(e -> e.copyAllMetadataFrom(call));
-            call.replaceBy(replacement);
-
+            );
+            IRHelper.replaceWithMetadata(call, replacement);
             joinCounter++;
         }
     }
@@ -280,8 +274,7 @@ public class ThreadCreation implements ProgramProcessor {
             if (e instanceof AbortIf abort) {
                 final Event jumpToEnd = EventFactory.newJump(abort.getCondition(), threadEnd);
                 jumpToEnd.addTags(abort.getTags());
-                jumpToEnd.copyAllMetadataFrom(abort);
-                abort.replaceBy(jumpToEnd);
+                IRHelper.replaceWithMetadata(abort, jumpToEnd);
             } else if (e instanceof Return || (e instanceof FunctionCall call
                     && call.isDirectCall() && call.getCalledFunction().getName().equals("pthread_exit"))) {
                 final Expression retVal = (e instanceof Return ret) ? ret.getValue().orElse(null)
@@ -290,8 +283,7 @@ public class ThreadCreation implements ProgramProcessor {
                         returnRegister != null ? EventFactory.newLocal(returnRegister, retVal) : null,
                         EventFactory.newGoto(threadReturnLabel)
                 );
-                replacement.forEach(ev -> ev.copyAllMetadataFrom(e));
-                e.replaceBy(replacement);
+                IRHelper.replaceWithMetadata(e, replacement);
             }
         }
 

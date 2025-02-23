@@ -120,7 +120,7 @@ public class NaiveLoopBoundAnnotation implements FunctionProcessor {
                 final Expression boundExpr = computeLoopBound(loopBody, r, counterReg,
                         initValExpr.getValueAsInt(), useDefAnalysis, preDominatorTree);
                 if (boundExpr != null) {
-                    label.getPredecessor().insertAfter(EventFactory.Svcomp.newLoopBound(boundExpr));
+                    label.insertBefore(EventFactory.Svcomp.newLoopBound(boundExpr));
                     break;
                 }
             }

@@ -2,18 +2,17 @@ package com.dat3m.dartagnan.program.processing;
 
 import com.dat3m.dartagnan.exception.MalformedProgramException;
 import com.dat3m.dartagnan.expression.Expression;
-import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.*;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.Label;
-import com.dat3m.dartagnan.program.event.functions.AbortIf;
 import com.dat3m.dartagnan.program.event.functions.FunctionCall;
 import com.dat3m.dartagnan.program.event.functions.Return;
 import com.dat3m.dartagnan.program.event.functions.ValueFunctionCall;
 import com.dat3m.dartagnan.program.event.lang.svcomp.BeginAtomic;
+import com.dat3m.dartagnan.program.event.lang.svcomp.EndAtomic;
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.common.configuration.Option;
@@ -87,11 +86,8 @@ public class Inlining implements ProgramProcessor {
             exitToCallMap.computeIfAbsent(call.getSuccessor(), k -> new ArrayList<>()).add(callTarget);
             final long depth = exitToCallMap.values().stream().filter(c -> c.contains(callTarget)).count();
             if (depth > bound) {
-                final AbortIf boundEvent = newAbortIf(ExpressionFactory.getInstance().makeTrue());
-                boundEvent.copyAllMetadataFrom(call);
-                boundEvent.addTags(Tag.BOUND, Tag.NONTERMINATION, Tag.NOOPT);
-                call.replaceBy(boundEvent);
-                event = boundEvent;
+                final Event boundEvent = EventFactory.newTerminator(function, Tag.BOUND, Tag.NONTERMINATION, Tag.NOOPT);
+                event = IRHelper.replaceWithMetadata(call, boundEvent);
             } else {
                 if (callTarget instanceof Thread) {
                     throw new MalformedProgramException(
@@ -109,14 +105,15 @@ public class Inlining implements ProgramProcessor {
         final Event returnMarker = EventFactory.newFunctionReturnMarker(callTarget.name);
         callMarker.copyAllMetadataFrom(call);
         returnMarker.copyAllMetadataFrom(call);
-        call.getPredecessor().insertAfter(callMarker);
+        call.insertBefore(callMarker);
         call.insertAfter(returnMarker);
         //  --- SVCOMP-specific code ---
         final boolean isSvcompAtomic = callTarget.name.startsWith("__VERIFIER_atomic");
         if (isSvcompAtomic) {
             final BeginAtomic beginAtomic = EventFactory.Svcomp.newBeginAtomic();
-            call.getPredecessor().insertAfter(beginAtomic);
-            call.insertAfter(EventFactory.Svcomp.newEndAtomic(beginAtomic));
+            final EndAtomic endAtomic = EventFactory.Svcomp.newEndAtomic(beginAtomic);
+            call.insertBefore(beginAtomic);
+            call.insertAfter(endAtomic);
         }
         // =================================================================================
 
@@ -161,8 +158,7 @@ public class Inlining implements ProgramProcessor {
                     expression != null ? newLocal(resultReg, expression) : null,
                     newGoto(returnLabel)
             );
-            replacement.forEach(e -> e.copyAllMetadataFrom(returnEvent));
-            returnEvent.replaceBy(replacement);
+            IRHelper.replaceWithMetadata(returnEvent, replacement);
         });
 
         final Event successor = call.getSuccessor();
