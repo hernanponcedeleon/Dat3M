@@ -38,10 +38,11 @@ import org.sosy_lab.java_smt.api.NumeralFormula.IntegerFormula;
 import java.math.BigInteger;
 import java.util.*;
 
-import static com.dat3m.dartagnan.configuration.OptionNames.INITIALIZE_REGISTERS;
 import static com.dat3m.dartagnan.configuration.OptionNames.IGNORE_FILTER_SPECIFICATION;
+import static com.dat3m.dartagnan.configuration.OptionNames.INITIALIZE_REGISTERS;
 import static com.google.common.collect.Lists.reverse;
-import static java.util.stream.Collectors.*;
+import static java.util.stream.Collectors.groupingBy;
+import static java.util.stream.Collectors.toMap;
 
 @Options
 public class ProgramEncoder implements Encoder {
@@ -153,31 +154,16 @@ public class ProgramEncoder implements Encoder {
     // NOTE: Stuckness also considers bound events, i.e., insufficiently unrolled loops.
     private BooleanFormula threadIsStuckInLoop(Thread thread) {
         final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
-        final List<BooleanFormula> nonTerminationWitnesses = new ArrayList<>();
-        for (CondJump jump : thread.getEvents(CondJump.class)) {
-            if (jump.hasTag(Tag.NONTERMINATION)) {
-                nonTerminationWitnesses.add(bmgr.and(
-                        context.execution(jump),
-                        context.jumpCondition(jump)
-                ));
-            }
-        }
-
-        return bmgr.or(nonTerminationWitnesses);
-    }
-
-    private BooleanFormula barrierIsBlocking(ControlBarrier barrier) {
-        final BooleanFormulaManager bmgr = context.getFormulaManager().getBooleanFormulaManager();
-        return bmgr.and(
-                context.controlFlow(barrier),
-                bmgr.not(context.execution(barrier))
-        );
+        return thread.getEvents(CondJump.class).stream()
+                .filter(jump -> jump.hasTag(Tag.NONTERMINATION))
+                .map(context::jumpTaken)
+                .reduce(bmgr.makeFalse(), bmgr::or);
     }
 
     private BooleanFormula threadIsStuckInBarrier(Thread thread) {
         final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
         return thread.getEvents(ControlBarrier.class).stream()
-                .map(this::barrierIsBlocking)
+                .map(context::blocked)
                 .reduce(bmgr.makeFalse(), bmgr::or);
     }
 
@@ -231,14 +217,14 @@ public class ProgramEncoder implements Encoder {
             // Immediate control flow
             BooleanFormula cfCond = context.controlFlow(pred);
             if (pred instanceof CondJump jump) {
-                cfCond = bmgr.and(cfCond, bmgr.not(context.jumpCondition(jump)));
-            } else if (pred instanceof ControlBarrier) {
-                cfCond = bmgr.and(cfCond, context.execution(pred));
+                cfCond = bmgr.and(cfCond, bmgr.not(context.jumpTaken(jump)));
+            } else if (pred instanceof ControlBarrier cb) {
+                cfCond = bmgr.and(cfCond, context.unblocked(cb));
             }
 
             if (cur instanceof Label label) {
                 for (CondJump jump : label.getJumpSet()) {
-                    cfCond = bmgr.or(cfCond, bmgr.and(context.controlFlow(jump), context.jumpCondition(jump)));
+                    cfCond = bmgr.or(cfCond, context.jumpTaken(jump));
                 }
             }
 
@@ -551,7 +537,7 @@ public class ProgramEncoder implements Encoder {
                 }
                 final List<Event> succs = new ArrayList<>();
                 final BooleanFormula curCf = context.controlFlow(cur);
-                final BooleanFormula isNotBlocked = cur instanceof ControlBarrier ? context.execution(cur) : bmgr.makeTrue();
+                final BooleanFormula isNotBlocked = cur instanceof ControlBarrier cb ? context.unblocked(cb) : bmgr.makeTrue();
 
                 succs.add(cur.getSuccessor());
                 if (cur instanceof CondJump jump) {

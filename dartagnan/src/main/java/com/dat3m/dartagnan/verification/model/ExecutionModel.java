@@ -288,7 +288,7 @@ public class ExecutionModel {
                 }
                 // =========================
 
-                if (e instanceof CondJump jump && isTrue(encodingContext.jumpCondition(jump))) {
+                if (e instanceof CondJump jump && isTrue(encodingContext.jumpTaken(jump))) {
                     e = jump.getLabel();
                 } else {
                     e = e.getSuccessor();
@@ -375,7 +375,7 @@ public class ExecutionModel {
         } else if (data.isJump()) {
             // ===== Jumps =====
             // We override the meaning of execution here. A jump is executed IFF its condition was true.
-            data.setWasExecuted(isTrue(encodingContext.jumpCondition((CondJump) e)));
+            data.setWasExecuted(isTrue(encodingContext.jumpTaken((CondJump) e)));
         } else {
             //TODO: Maybe add some other events (e.g. assertions)
             // But for now all non-visible events are simply registered without
