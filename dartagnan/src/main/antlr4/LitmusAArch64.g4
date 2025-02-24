@@ -232,8 +232,9 @@ expressionImmediate
     :   immediate shift?
     ;
 
-expressionConversion
-    :   register32 Comma BitfieldOperator
+expressionConversion returns[boolean signed]
+    :   register32 Comma UXTW {$signed = false;}
+    |   register32 Comma SXTW {$signed = true;}
     ;
 
 address returns[String id]
@@ -377,10 +378,8 @@ LSL :   'LSL';   // Logical shift left
 LSR :   'LSR';   // Logical shift right
 ASR :   'ASR';   // Arithmetic shift right (preserves sign bit)
 
-BitfieldOperator
-    :   'UXTW' // Zero extends a 32-bit word (unsigned)
-    |   'SXTW' // Zero extends a 32-bit word (signed)
-    ;
+UXTW :  'UXTW' ; // Zero extends a 32-bit word (unsigned)
+SXTW :  'SXTW' ; // Zero extends a 32-bit word (signed)
 
 Register64
     :   'X' DigitSequence
