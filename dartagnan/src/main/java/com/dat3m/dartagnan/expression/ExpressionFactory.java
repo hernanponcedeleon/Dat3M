@@ -171,6 +171,30 @@ public final class ExpressionFactory {
         return makeIntBinary(leftOperand, signed ? IntBinaryOp.ARSHIFT : IntBinaryOp.RSHIFT, rightOperand);
     }
 
+    /// Effectively forms type-fitted (left | (right << (8 * sizeof(left)))).
+    public Expression makeIntConcat(Expression leftOperand, Expression rightOperand) {
+        //TODO properly model this operation
+        final var leftType = leftOperand.getType() instanceof IntegerType t ? t : null;
+        final var rightType = rightOperand.getType() instanceof IntegerType t ? t : null;
+        Preconditions.checkArgument(leftType != null & rightType != null,
+                "Cannot concatenate non-integers %s and %s", leftOperand, rightOperand);
+        final IntegerType type = types.getIntegerType(leftType.getBitWidth() + rightType.getBitWidth());
+        final Expression leftExtended = makeIntegerCast(leftOperand, type, false);
+        final Expression rightExtended = makeIntegerCast(rightOperand, type, false);
+        final Expression rightShifted = makeLshift(rightExtended, makeValue(leftType.getBitWidth(), type));
+        return makeIntOr(leftExtended, rightShifted);
+    }
+
+    /// Effectively forms type-fitted (operand >> start) & ((1 << (end-start)) - 1).
+    public Expression makeIntExtract(Expression operand, int start, int end) {
+        //TODO properly model this operation
+        final var operandType = operand.getType() instanceof IntegerType t ? t : null;
+        Preconditions.checkArgument(operandType != null, "Cannot extract bits from non-integer %s", operand);
+        final IntegerType type = types.getIntegerType(end - start);
+        final Expression leftShifted = makeRshift(operand, makeValue(start, operandType), false);
+        return makeIntegerCast(leftShifted, type, false);
+    }
+
     public Expression makeIntUnary(IntUnaryOp operator, Expression operand) {
         return new IntUnaryExpr(operator, operand);
     }
