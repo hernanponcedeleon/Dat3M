@@ -24,6 +24,7 @@ import org.apache.logging.log4j.Logger;
 
 import java.math.BigInteger;
 import java.util.*;
+import java.util.stream.IntStream;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Verify.verify;
@@ -70,6 +71,8 @@ import static com.google.common.base.Verify.verify;
 public class InclusionBasedPointerAnalysis implements AliasAnalysis {
 
     private static final Logger logger = LogManager.getLogger(InclusionBasedPointerAnalysis.class);
+
+    private static final TypeFactory types = TypeFactory.getInstance();
 
     // This analysis depends on another, that maps used registers to a list of possible direct writers.
     private final ReachingDefinitionsAnalysis dependency;
@@ -186,7 +189,12 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
 
     @Override
     public List<Integer> mayMixedSizeAccesses(MemoryCoreEvent event) {
-        return Collections.unmodifiableList(mixedAccesses.getOrDefault(event, List.of()));
+        final List<Integer> result = mixedAccesses.get(event);
+        if (result != null) {
+            return Collections.unmodifiableList(result);
+        }
+        final int bytes = types.getMemorySizeInBytes(event.getAccessType());
+        return IntStream.range(1, bytes).boxed().toList();
     }
 
     // ================================ Mixed Size Access Detection ================================
@@ -203,9 +211,7 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
             offsets.add(set0);
         }
         for (int i = 0; i < events.size(); i++) {
-            if (!offsets.get(i).isEmpty()) {
-                mixedAccesses.put(events.get(i), offsets.get(i).stream().sorted().toList());
-            }
+            mixedAccesses.put(events.get(i), offsets.get(i).stream().sorted().toList());
         }
     }
 
@@ -213,7 +219,6 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
         final DerivedVariable vx = addressVariables.get(x);
         final DerivedVariable vy = addressVariables.get(y);
         assert vx != null & vy != null;
-        final TypeFactory types = TypeFactory.getInstance();
         final int bytesX = types.getMemorySizeInBytes(x.getAccessType());
         final int bytesY = types.getMemorySizeInBytes(y.getAccessType());
         if (vx.base == vy.base) {
@@ -477,7 +482,7 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
         if (!includeEdge.source.object.hasKnownSize()) {
             return;
         }
-        final int accessSize = TypeFactory.getInstance().getMemorySizeInBytes(entry.getKey().getAccessType());
+        final int accessSize = types.getMemorySizeInBytes(entry.getKey().getAccessType());
         final int remainingSize = includeEdge.source.object.getKnownSize() - modifier.offset - (accessSize - 1);
         for (final Integer a : modifier.alignment) {
             if (Math.abs(a) < remainingSize || a < 0 && modifier.offset + a >= 0) {
