@@ -452,7 +452,7 @@ public class PropertyEncoder implements Encoder {
                         .getEvents().stream()
                         .filter(e -> e.hasTag(Tag.EXCEPTIONAL_TERMINATION) || e.hasTag(Tag.NONTERMINATION))
                         .map(CondJump.class::cast)
-                        .map(j -> bmgr.not(bmgr.and(context.execution(j), context.jumpCondition(j))))
+                        .map(j -> bmgr.not(context.jumpTaken(j)))
                         .reduce(bmgr.makeTrue(), bmgr::and);
 
                 atLeastOneStuck = bmgr.or(atLeastOneStuck, isStuck);
@@ -475,10 +475,9 @@ public class PropertyEncoder implements Encoder {
 
         private BooleanFormula generateBarrierStucknessEncoding(Thread thread, EncodingContext context) {
             final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
-            return bmgr.or(thread.getEvents().stream()
-                    .filter(ControlBarrier.class::isInstance)
-                    .map(e -> bmgr.and(context.controlFlow(e), bmgr.not(context.execution(e))))
-                    .toList());
+            return thread.getEvents(ControlBarrier.class).stream()
+                    .map(context::blocked)
+                    .reduce(bmgr.makeFalse(), bmgr::or);
         }
 
         // ------------------------------------------------------------------------------
@@ -511,7 +510,7 @@ public class PropertyEncoder implements Encoder {
             // was side-effect free.
             final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
             final BooleanFormula isSideEffectFree = loop.spinningJumps.stream()
-                    .map(j -> bmgr.and(context.execution(j), context.jumpCondition(j)))
+                    .map(context::jumpTaken)
                     .reduce(bmgr.makeFalse(), bmgr::or);
             return isSideEffectFree;
         }
