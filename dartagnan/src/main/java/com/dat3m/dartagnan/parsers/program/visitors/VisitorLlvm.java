@@ -380,14 +380,14 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
             // see https://llvm.org/docs/LangRef.html#inline-assembler-expressions
             //FIXME ignore side effects of inline assembly
             CharStream charStream = CharStreams.fromString(ctx.inlineAsm().inlineAsmBody().getText());
-            ParserInlineAsm parser = new ParserInlineAsm(function,resultRegister, arguments);
-            List<Event> events = new LinkedList<>();
+            ParserInlineAsm parser = new ParserInlineAsm(function, resultRegister, arguments);
+            List<Event> events = new ArrayList<>();
             try{
                 events = parser.parse(charStream);
             } catch (ParsingException e){
-                logger.warn("Found unrecognized token : '{}'. Setting non deterministic value ", e.getMessage());
+                logger.warn("Found unrecognized token for inline assembly : '{}'. Setting non deterministic value ", e.getMessage());
                 if(resultRegister != null){
-                    events.add(EventFactory.newLocal(resultRegister,program.newConstant(resultRegister.getType())));
+                    events.add(EventFactory.newLocal(resultRegister, program.newConstant(resultRegister.getType())));
                 }
             }
             if(!events.isEmpty()){

@@ -1,5 +1,5 @@
 # How to generate LLVM files with Inline Asm from Libvsync and Ck
-This readme serves as a small guideline in case you want to add or change some llvm files in here
+This readme explains how to generate llvm benchmarks with inline asm. We explain how to do this on arm (v7 and v8), but doing it on other devices is similar.
 
 *Note* : to generate those files you are going to need **Clang** which runs on an arm device.
 
@@ -51,10 +51,6 @@ The Custom flags should be set up accordingly to your client
 For the architecture these are the options : 
 1. ```__aarch__``` to generate ARMV8
 2. ```__arm__ ``` &&  ```__ARM_ARCH_7__``` to generate ARMV7.
-
-3. ```__riscv``` && ```__riscv_xlen=64`` to generate RISCV 
-
-**NOTE** In case you are on an **aarch64** machine, in order to generate **riscv** code you also have to undefine the flag via ```-U__aarch64__``.
 
 A valid example would therefore be, from ck's root.
 ```
