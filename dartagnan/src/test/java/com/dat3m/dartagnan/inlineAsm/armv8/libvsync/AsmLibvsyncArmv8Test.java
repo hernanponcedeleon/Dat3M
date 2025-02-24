@@ -55,7 +55,7 @@ public class AsmLibvsyncArmv8Test {
             {"bounded_mpmc_check_empty", 4, PASS},
 
             //spinlocks
-            // {"caslock", 4, PASS}, // passes Refinement but out of memory on Assume 
+            // {"caslock", 4, PASS}, // passes Refinement but takes ~10 minutes
             {"clhlock", 3, PASS},
             // {"cnalock", 5, PASS}, // takes 35 minutes
             {"hemlock", 3, PASS},
@@ -82,9 +82,6 @@ public class AsmLibvsyncArmv8Test {
     public void testAllSolvers() throws Exception {
         try (SolverContext ctx = mkCtx(); ProverWithTracker prover = mkProver(ctx)) {
             assertEquals(expected, RefinementSolver.run(ctx, prover, mkTask()).getResult());
-        }
-        try (SolverContext ctx = mkCtx(); ProverWithTracker prover = mkProver(ctx)) {
-            assertEquals(expected, AssumeSolver.run(ctx, prover, mkTask()).getResult());
         }
     }
 

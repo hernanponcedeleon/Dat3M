@@ -44,13 +44,13 @@ import static com.google.common.base.Preconditions.checkState;
 // We are going to use ARMV7 names for readability "$0, $1, $2, ...", but other inline asm formats follow the same pattern 
 // a) BASE CASE
 // asm: r10 = i32 call asm "ldr $0, $1"," =r, *Q"(ptr r9) 
-// Code variables: asmRegisterNames := [asm_0, asm_1] ; argsRegisters := [r9] ; constraints := [=r, *Q]
+// Code variables: asmRegisters := [asm_0, asm_1] ; argsRegisters := [r9] ; constraints := [=r, *Q]
 // Logic:
 //     1. the first asm register maps to the output, i.e. r10 <- asm_0
 //     2. the first args register maps to the next asm register, i.e. asm_1 <- r9
 // b) RETURN REGISTER IS AGGREGATE TYPE
 // asm: r10 = { i32, i32, i32 } asm "ldr $0, $3 ; ldr $1, $3 ; ldr $2, $3","=r, =r, =r, *Q"(ptr r9)
-// Code variables asmRegisterNames := [asm_0, asm_1, asm_2, asm_3] ; argsRegisters := [r9] ; constraints := [=r, =r, =r, *Q]
+// Code variables asmRegisters := [asm_0, asm_1, asm_2, asm_3] ; argsRegisters := [r9] ; constraints := [=r, =r, =r, *Q]
 // Logic:
 //     1. the first 3 asm registers map to the output, i.e.
 //         - r10[0] <- asm_0
@@ -59,7 +59,7 @@ import static com.google.common.base.Preconditions.checkState;
 //      2. the first args register maps to the next asm register, i.e. asm_3 <- r9
 // c) MULTIPLE ARGS
 // asm: r10 = i32 call asm "ldr $0, $1 ; ldr $0, $2 "," =r, r, *Q"(i32 r8, ptr r9)
-// Code variables: asmRegisterNames := [asm_0, asm_1, asm_2] ; argsRegisters := [r8, r9] ; constraints := [=r, r, *Q]
+// Code variables: asmRegisters := [asm_0, asm_1, asm_2] ; argsRegisters := [r8, r9] ; constraints := [=r, r, *Q]
 //    1. the first asm register maps to the output, i.e. r10 <- asm_0
 //    2. the two args registers map to the next two asm registers, i.e.
 //       - asm_1 <- r8
@@ -67,14 +67,14 @@ import static com.google.common.base.Preconditions.checkState;
 // THERE IS NO RETURN REGISTER
 // d) 
 // asm: call void asm "stlr $0, $1", "r,*Q"(ptr r5, ptr r7)
-// Code variables: asmRegisterNames := [asm_0, asm_1] ; argsRegisters := [r5, r7] ; constraints := [r, *Q]
+// Code variables: asmRegisters := [asm_0, asm_1] ; argsRegisters := [r5, r7] ; constraints := [r, *Q]
 //    1. nothing to be done regarding output, i.e. there is no return register
 //    2. the two args registers map to the next two asm registers, i.e.
 //       - asm_0 <- r5
 //       - asm_1 <- r7
 // e) THERE IS A MEMORY LOCATION
 // asm: r10 = i32 call asm "ldr $0, $2 ; ldr $0, $3","=&r, =*m, r, r"(ptr r7, i32 r8)
-// Code variables: asmRegisterNames := [asm_0, asm_2, asm_3] ; argsRegisters := [r7, r8] ; constraints := [=&r, =*m, r, r]
+// Code variables: asmRegisters := [asm_0, asm_2, asm_3] ; argsRegisters := [r7, r8] ; constraints := [=&r, =*m, r, r]
 //    1. r10 <- asm_0
 //    2. we see that =*m is a reference to a memory location, so it would be asm_1 -> MEM and we do nothing
 //    3. the two args registers map to the next two asm registers,
@@ -82,7 +82,7 @@ import static com.google.common.base.Preconditions.checkState;
 //       - asm_3 <- r8
 // f) WE HAVE AN OVERLAP IN THE RETURN REGISTER AND THE ARGS
 // asm: r11 = call { i32, i32, i32, i32 } asm "ldr $0, $4 ; add $1, $0, $3 ; add $2, $1, $4 ; ldr $2, $0", "=&r,=&r,=&r,=&r,*Q,3"(ptr r10, i32 r8)
-// Code variables: asmRegisterNames := [asm_0, asm_1, asm_2, asm_3, asm_4] ; argsRegisters := [r10, r8] ; constraints := [=&r, =&r, =&r, =&r, *Q, 3]
+// Code variables: asmRegisters := [asm_0, asm_1, asm_2, asm_3, asm_4] ; argsRegisters := [r10, r8] ; constraints := [=&r, =&r, =&r, =&r, *Q, 3]
 //    1. we have 4 output constraints, so we have an aggregate type for the return register
 //       - r11[0] <- asm_0
 //       - r11[1] <- asm_1
@@ -113,7 +113,7 @@ public class VisitorInlineAsm extends InlineAsmBaseVisitor<Object> {
     // keeps track of all the labels defined in the the asm code
     private final HashMap<String, Label> labelsDefined = new HashMap<>();
     // used to keep track of which asm register should map to the llvm return register if it is an aggregate type
-    private final List<Expression> pendingRegisters = new ArrayList<>();
+    private final List<Register> pendingRegisters = new ArrayList<>();
     // holds the LLVM registers that are passed (as args) to the the asm side
     private final List<Expression> argsRegisters;
     // expected type of RHS of a comparison.
@@ -196,14 +196,10 @@ public class VisitorInlineAsm extends InlineAsmBaseVisitor<Object> {
     // 1) inputAssignments -- how we map llvm registers in asm to asm ones
     // 2) asmInstructions -- the events representing the asm instructions
     // 3) outputAssignments -- how we map the asm registers to the return Register
+    // The visitor will first visit the asm code (which will create the events and asm registers) and then the constraints. 
+    // The latter will take care of creating input and output assignments.
     @Override
     public List<Event> visitAsm(InlineAsmParser.AsmContext ctx) {
-        // Given this format 
-        //      Register = Type call asm sideeffect 'asm code', 'constraints, clobbers' ('args')
-        // the visitor pattern is going to take care of first visiting all the 'asm code'
-        // which is going to populate all of the 'asmInstructions' and creating the asmRegisters.
-        // Then, by reading the constraints, we are going to be able to understand which asmRegister
-        // maps to which llvmRegister.
         visitChildren(ctx);
         List<Event> events = new ArrayList<>();
         events.addAll(inputAssignments);
