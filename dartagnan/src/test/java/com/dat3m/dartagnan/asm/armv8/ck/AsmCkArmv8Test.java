@@ -61,18 +61,10 @@ public class AsmCkArmv8Test {
     }
 
     @Test
-    public void testAllSolvers() throws Exception {
-<<<<<<< HEAD
-        // TODO : RefinementSolver takes too long to run, we have to investigate this
+    public void testAllSolvers() throws Exception {// TODO : RefinementSolver takes too long to run, we have to investigate this
         // try (SolverContext ctx = mkCtx(); ProverWithTracker prover = mkProver(ctx)) {
         //     assertEquals(expected, RefinementSolver.run(ctx, prover, mkTask()).getResult());
         // }
-=======
-        try (SolverContext ctx = mkCtx(); ProverWithTracker prover = mkProver(ctx)) {
-            assertEquals(expected, RefinementSolver.run(ctx, prover, mkTask()).getResult());
-        }
-        
->>>>>>> 646e6c271 (inline asm tests renaming)
         try (SolverContext ctx = mkCtx(); ProverWithTracker prover = mkProver(ctx)) {
             assertEquals(expected, AssumeSolver.run(ctx, prover, mkTask()).getResult());
         }
