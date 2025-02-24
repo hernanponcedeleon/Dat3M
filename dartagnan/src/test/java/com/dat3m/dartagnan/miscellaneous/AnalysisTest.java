@@ -261,8 +261,8 @@ public class AnalysisTest {
     private void program0(Alias method, Result... expect) throws InvalidConfigurationException {
         ProgramBuilder b = ProgramBuilder.forLanguage(SourceLanguage.LITMUS);
 
-        MemoryObject x = b.newMemoryObject("x", 2);
-        MemoryObject y = b.newMemoryObject("y", 1);
+        MemoryObject x = b.newMemoryObject("x", 16);
+        MemoryObject y = b.newMemoryObject("y", 8);
 
         b.newThread(0);
         Register r0 = b.getOrNewRegister(0, "r0");
@@ -271,7 +271,7 @@ public class AnalysisTest {
         b.addChild(0, newLocal(r0, mult(x, 1)));
         Store e0 = newStore(r0);
         b.addChild(0, e0);
-        Store e1 = newStore(plus(r0, 1));
+        Store e1 = newStore(plus(r0, 8));
         b.addChild(0, e1);
         Store e2 = newStore(x);
         b.addChild(0, e2);
@@ -310,18 +310,18 @@ public class AnalysisTest {
 
     private void program1(Alias method, Result... expect) throws InvalidConfigurationException {
         ProgramBuilder b = ProgramBuilder.forLanguage(SourceLanguage.LITMUS);
-        MemoryObject x = b.newMemoryObject("x", 3);
+        MemoryObject x = b.newMemoryObject("x", 24);
         x.setInitialValue(0, x);
 
         b.newThread(0);
-        Store e0 = newStore(plus(x, 1));
+        Store e0 = newStore(plus(x, 8));
         b.addChild(0, e0);
         Register r0 = b.getOrNewRegister(0, "r0");
         Load e1 = newLoad(r0, x);
         b.addChild(0, e1);
         Store e2 = newStore(r0);
         b.addChild(0, e2);
-        Store e3 = newStore(plus(r0, 1), r0);
+        Store e3 = newStore(plus(r0, 8), r0);
         b.addChild(0, e3);
 
         Program program = b.build();
@@ -357,7 +357,7 @@ public class AnalysisTest {
     private void program2(Alias method, Result... expect) throws InvalidConfigurationException {
         ProgramBuilder b = ProgramBuilder.forLanguage(SourceLanguage.LITMUS);
         IntegerType type = types.getArchType();
-        MemoryObject x = b.newMemoryObject("x", 3);
+        MemoryObject x = b.newMemoryObject("x", 24);
 
         b.newThread(0);
         Register r0 = b.getOrNewRegister(0, "r0");
@@ -368,15 +368,15 @@ public class AnalysisTest {
                 expressions.makeLT(r0, expressions.makeZero(type), true)), l0));
         Store e0 = newStore(x);
         b.addChild(0, e0);
-        Store e1 = newStore(plus(x, 1));
+        Store e1 = newStore(plus(x, 8));
         b.addChild(0, e1);
-        Store e2 = newStore(plus(x, 2));
+        Store e2 = newStore(plus(x, 16));
         b.addChild(0, e2);
         Register r1 = b.getOrNewRegister(0, "r1");
         b.addChild(0, newLocal(r1, expressions.makeZero(type)));
         Store e3 = newStore(expressions.makeAdd(
-                expressions.makeAdd(x, mult(r0, 2)),
-                mult(r1, 4)));
+                expressions.makeAdd(x, mult(r0, 16)),
+                mult(r1, 32)));
         b.addChild(0, e3);
         b.addChild(0, l0);
 
@@ -412,16 +412,16 @@ public class AnalysisTest {
 
     private void program3(Alias method, Result... expect) throws InvalidConfigurationException {
         ProgramBuilder b = ProgramBuilder.forLanguage(SourceLanguage.LITMUS);
-        MemoryObject x = b.newMemoryObject("x", 3);
+        MemoryObject x = b.newMemoryObject("x", 24);
         x.setInitialValue(0, x);
 
         b.newThread(0);
         Register r0 = b.getOrNewRegister(0, "r0");
         Load e0 = newLoad(r0, x);
         b.addChild(0, e0);
-        Store e1 = newStore(x, plus(r0, 1));
+        Store e1 = newStore(x, plus(r0, 8));
         b.addChild(0, e1);
-        Store e2 = newStore(plus(x, 2));
+        Store e2 = newStore(plus(x, 16));
         b.addChild(0, e2);
         Store e3 = newStore(r0);
         b.addChild(0, e3);
@@ -458,9 +458,9 @@ public class AnalysisTest {
 
     private void program4(Alias method, Result... expect) throws InvalidConfigurationException {
         ProgramBuilder b = ProgramBuilder.forLanguage(SourceLanguage.LITMUS);
-        MemoryObject x = b.newMemoryObject("x", 1);
-        MemoryObject y = b.newMemoryObject("y", 1);
-        MemoryObject z = b.newMemoryObject("z", 1);
+        MemoryObject x = b.newMemoryObject("x", 8);
+        MemoryObject y = b.newMemoryObject("y", 8);
+        MemoryObject z = b.newMemoryObject("z", 8);
 
         b.newThread(0);
         Register r0 = b.getOrNewRegister(0, "r0");
@@ -507,9 +507,9 @@ public class AnalysisTest {
 
     private void program5(Alias method, Result... expect) throws InvalidConfigurationException {
         ProgramBuilder b = ProgramBuilder.forLanguage(SourceLanguage.LITMUS);
-        MemoryObject x = b.newMemoryObject("x", 1);
-        MemoryObject y = b.newMemoryObject("y", 1);
-        MemoryObject z = b.newMemoryObject("z", 1);
+        MemoryObject x = b.newMemoryObject("x", 8);
+        MemoryObject y = b.newMemoryObject("y", 8);
+        MemoryObject z = b.newMemoryObject("z", 8);
 
         b.newThread(0);
         Register r0 = b.getOrNewRegister(0, "r0");
@@ -542,8 +542,8 @@ public class AnalysisTest {
     @Test
     public void fullPropagation0() throws InvalidConfigurationException {
         ProgramBuilder b = ProgramBuilder.forLanguage(SourceLanguage.LITMUS);
-        MemoryObject x = b.newMemoryObject("x", 1);
-        MemoryObject y = b.newMemoryObject("y", 1);
+        MemoryObject x = b.newMemoryObject("x", 8);
+        MemoryObject y = b.newMemoryObject("y", 8);
         x.setInitialValue(0, y);
         y.setInitialValue(0, x);
 
@@ -581,8 +581,8 @@ public class AnalysisTest {
     @Test
     public void fullPropagation1() throws InvalidConfigurationException {
         ProgramBuilder b = ProgramBuilder.forLanguage(SourceLanguage.LITMUS);
-        MemoryObject x = b.newMemoryObject("x", 1);
-        MemoryObject y = b.newMemoryObject("y", 1);
+        MemoryObject x = b.newMemoryObject("x", 8);
+        MemoryObject y = b.newMemoryObject("y", 8);
         x.setInitialValue(0, y);
         y.setInitialValue(0, x);
 

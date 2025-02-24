@@ -205,7 +205,7 @@ public class ProgramBuilder {
                 // Litmus code always initializes memory
                 final IntegerType archType = types.getArchType();
                 final int archSize = types.getMemorySizeInBytes(archType);
-                Preconditions.checkArgument(size % archSize == 0, "size {} not a multiple of archType size", size);
+                Preconditions.checkArgument(size % archSize == 0, "size %s not a multiple of archType size", size);
                 final Expression zero = expressions.makeZero(archType);
                 for (int offset = 0; offset < size; offset += archSize) {
                     mem.setInitialValue(offset, zero);
