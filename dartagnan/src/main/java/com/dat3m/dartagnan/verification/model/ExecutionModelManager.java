@@ -1,27 +1,27 @@
 package com.dat3m.dartagnan.verification.model;
 
 import com.dat3m.dartagnan.encoding.EncodingContext;
-import com.dat3m.dartagnan.program.event.*;
-import com.dat3m.dartagnan.program.event.core.*;
-import com.dat3m.dartagnan.program.filter.Filter;
-import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.Thread;
+import com.dat3m.dartagnan.program.event.Event;
+import com.dat3m.dartagnan.program.event.MemoryEvent;
+import com.dat3m.dartagnan.program.event.core.*;
+import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.dat3m.dartagnan.solver.caat.predicates.CAATPredicate;
 import com.dat3m.dartagnan.solver.caat.predicates.PredicateHierarchy;
-import com.dat3m.dartagnan.solver.caat.predicates.relationGraphs.base.SimpleGraph;
-import com.dat3m.dartagnan.solver.caat.predicates.relationGraphs.derived.*;
 import com.dat3m.dartagnan.solver.caat.predicates.relationGraphs.Edge;
 import com.dat3m.dartagnan.solver.caat.predicates.relationGraphs.RelationGraph;
+import com.dat3m.dartagnan.solver.caat.predicates.relationGraphs.base.SimpleGraph;
+import com.dat3m.dartagnan.solver.caat.predicates.relationGraphs.derived.*;
 import com.dat3m.dartagnan.solver.caat4wmm.EventDomainNext;
 import com.dat3m.dartagnan.utils.dependable.DependencyGraph;
-import com.dat3m.dartagnan.verification.model.event.*;
 import com.dat3m.dartagnan.verification.model.RelationModel.EdgeModel;
-import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
+import com.dat3m.dartagnan.verification.model.event.*;
 import com.dat3m.dartagnan.wmm.Constraint.Visitor;
-import com.dat3m.dartagnan.wmm.definition.*;
 import com.dat3m.dartagnan.wmm.Relation;
 import com.dat3m.dartagnan.wmm.Wmm;
+import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
+import com.dat3m.dartagnan.wmm.definition.*;
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
 import org.sosy_lab.java_smt.api.BooleanFormula;
@@ -30,9 +30,6 @@ import org.sosy_lab.java_smt.api.Model;
 
 import java.math.BigInteger;
 import java.util.*;
-
-import static com.dat3m.dartagnan.wmm.RelationNameRepository.*;
-import static com.google.common.base.Preconditions.checkNotNull;
 
 
 public class ExecutionModelManager {
@@ -102,7 +99,7 @@ public class ExecutionModelManager {
                 }
 
                 if (e instanceof CondJump jump
-                    && isTrue(context.jumpCondition(jump))) {
+                    && isTrue(context.jumpTaken(jump))) {
                     e = jump.getLabel();
                 } else {
                     e = e.getSuccessor();

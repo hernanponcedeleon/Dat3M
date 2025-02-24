@@ -195,6 +195,18 @@ public final class EncodingContext {
         return encodeExpressionAsBooleanAt(event.getGuard(), event);
     }
 
+    public BooleanFormula jumpTaken(CondJump jump) {
+        return booleanFormulaManager.and(execution(jump), jumpCondition(jump));
+    }
+
+    public BooleanFormula blocked(ControlBarrier barrier) {
+        return booleanFormulaManager.and(controlFlow(barrier), booleanFormulaManager.not(execution(barrier)));
+    }
+
+    public BooleanFormula unblocked(ControlBarrier barrier) {
+        return execution(barrier);
+    }
+
     public BooleanFormula sync(NamedBarrier event) {
         return syncVariables.get(event);
     }
