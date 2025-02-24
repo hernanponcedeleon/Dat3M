@@ -10,3 +10,5 @@ let coi = co & int
 let fri = fr & int
 
 let fencerel(F) = po;[F];po
+
+empty (([R] \ [range(rf)]);loc;[IW])
