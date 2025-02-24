@@ -27,8 +27,8 @@ import com.dat3m.dartagnan.wmm.axiom.Axiom;
 import com.dat3m.dartagnan.wmm.axiom.Emptiness;
 import com.dat3m.dartagnan.wmm.axiom.Irreflexivity;
 import com.dat3m.dartagnan.wmm.definition.*;
-import com.dat3m.dartagnan.wmm.utils.graph.EventGraph;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
+import com.dat3m.dartagnan.wmm.utils.graph.EventGraph;
 import com.dat3m.dartagnan.wmm.utils.graph.mutable.MapEventGraph;
 import com.dat3m.dartagnan.wmm.utils.graph.mutable.MutableEventGraph;
 import org.apache.logging.log4j.LogManager;
@@ -104,23 +104,29 @@ public class NativeRelationAnalysis implements RelationAnalysis {
     @Override
     public void populateQueue(Map<Relation, List<EventGraph>> queue, Set<Relation> relations) {
         Propagator p = new Propagator();
+        Initializer init = getInitializer();
         for (Relation r : relations) {
             MutableEventGraph may = new MapEventGraph();
             MutableEventGraph must = new MapEventGraph();
             if (r.getDependencies().isEmpty()) {
-                continue;
+                final Knowledge k = r.getDefinition().accept(init);
+                may.addAll(k.getMaySet());
+                must.addAll(k.getMustSet());
+            } else {
+                for (Relation c : r.getDependencies()) {
+                    p.setSource(c);
+                    p.setMay(getMutableKnowledge(p.getSource()).getMaySet());
+                    p.setMust(getMutableKnowledge(p.getSource()).getMustSet());
+                    Delta s = r.getDefinition().accept(p);
+                    may.addAll(s.may);
+                    must.addAll(s.must);
+                }
             }
-            for (Relation c : r.getDependencies()) {
-                p.setSource(c);
-                p.setMay(getMutableKnowledge(p.getSource()).getMaySet());
-                p.setMust(getMutableKnowledge(p.getSource()).getMustSet());
-                Delta s = r.getDefinition().accept(p);
-                may.addAll(s.may);
-                must.addAll(s.must);
-            }
+            // We can do a destructive update because we do not need <may> anymore
             may.removeAll(getKnowledge(r).getMaySet());
-            MutableEventGraph must2 = MutableEventGraph.difference(getKnowledge(r).getMustSet(), must);
-            queue.computeIfAbsent(r, k -> new ArrayList<>()).add(MutableEventGraph.union(may, must2));
+            MutableEventGraph mayDiff = may;
+            MutableEventGraph mustDiff = MutableEventGraph.difference(getKnowledge(r).getMustSet(), must);
+            queue.computeIfAbsent(r, k -> new ArrayList<>()).add(MutableEventGraph.union(mayDiff, mustDiff));
         }
     }
 
