@@ -5,15 +5,14 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import com.dat3m.dartagnan.expression.Type;
+import com.google.common.collect.Lists;
 
 public class AggregateType implements Type {
 
     private final List<TypeOffset> directFields;
-    private final List<Type> fields;
 
     AggregateType(List<Type> fields, List<Integer> offsets) {
         this.directFields = IntStream.range(0, fields.size()).boxed().map(i -> new TypeOffset(fields.get(i), offsets.get(i))).toList();
-        this.fields = fields;
     }
 
     public List<TypeOffset> getTypeOffsets() {
@@ -21,7 +20,7 @@ public class AggregateType implements Type {
     }
 
     public List<Type> getFields() {
-        return fields;
+        return Lists.transform(directFields, x -> x.type());
     }
 
     @Override
