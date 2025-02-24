@@ -198,7 +198,7 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
             final MemoryCoreEvent event0 = events.get(i);
             final var set0 = new HashSet<Integer>();
             for (int j = 0; j < i; j++) {
-                mayMix(event0, set0, events.get(j), offsets.get(j));
+                detectMixedSizeAccessPair(event0, set0, events.get(j), offsets.get(j));
             }
             offsets.add(set0);
         }
@@ -209,7 +209,7 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
         }
     }
 
-    private void mayMix(MemoryCoreEvent x, Set<Integer> xSet, MemoryCoreEvent y, Set<Integer> ySet) {
+    private void detectMixedSizeAccessPair(MemoryCoreEvent x, Set<Integer> xSet, MemoryCoreEvent y, Set<Integer> ySet) {
         final DerivedVariable vx = addressVariables.get(x);
         final DerivedVariable vy = addressVariables.get(y);
         assert vx != null & vy != null;
@@ -217,16 +217,16 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
         final int bytesX = types.getMemorySizeInBytes(x.getAccessType());
         final int bytesY = types.getMemorySizeInBytes(y.getAccessType());
         if (vx.base == vy.base) {
-            mayMix(xSet, vx.modifier, bytesX, ySet, vy.modifier, bytesY);
+            fetchAllMixedOffsets(xSet, vx.modifier, bytesX, ySet, vy.modifier, bytesY);
             return;
         }
         final List<IncludeEdge> oy = toIncludeSet(vy.base);
         for (final IncludeEdge ax : toIncludeSet(vx.base)) {
             for (final IncludeEdge ay : oy) {
                 if (ax.source == ay.source) {
-                    final Modifier l = compose(ax.modifier, vx.modifier);
-                    final Modifier r = compose(ay.modifier, vy.modifier);
-                    mayMix(xSet, l, bytesX, ySet, r, bytesY);
+                    final Modifier modifierX = compose(ax.modifier, vx.modifier);
+                    final Modifier modifierY = compose(ay.modifier, vy.modifier);
+                    fetchAllMixedOffsets(xSet, modifierX, bytesX, ySet, modifierY, bytesY);
                 }
             }
         }
@@ -239,20 +239,19 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
         return set;
     }
 
-    private void mayMix(Set<Integer> xSet, Modifier xModifier, int xBytes,
+    private void fetchAllMixedOffsets(Set<Integer> xSet, Modifier xModifier, int xBytes,
             Set<Integer> ySet, Modifier yModifier, int yBytes) {
-        for (int i = 1; i < xBytes; i++) {
-            if (overlaps(compose(xModifier, modifier(i, List.of())), yModifier)) {
-                ySet.add(i);
+        fetchMixedOffsets(xSet, xModifier, xBytes, yModifier, yBytes);
+        fetchMixedOffsets(ySet, yModifier, yBytes, xModifier, xBytes);
+    }
+
+    private void fetchMixedOffsets(Set<Integer> out, Modifier modifier0, int bytes0, Modifier modifier1, int bytes1) {
+        final Modifier next = compose(modifier1, modifier(bytes1, List.of()));
+        for (int i = 1; i < bytes0; i++) {
+            final Modifier offset = compose(modifier0, modifier(i, List.of()));
+            if (overlaps(offset, modifier1) || overlaps(offset, next)) {
+                out.add(i);
             }
-        }
-        for (int i = 1; i < yBytes; i++) {
-            if (overlaps(xModifier, compose(yModifier, modifier(i, List.of())))) {
-                xSet.add(i);
-            }
-        }
-        if (xBytes != yBytes && overlaps(xModifier, yModifier)) {
-            (xBytes < yBytes ? ySet : xSet).add(Math.min(xBytes, yBytes));
         }
     }
 
