@@ -249,3 +249,7 @@ litmus/PTX/BarrierQuorum/test3-pass.litmus,1
 litmus/PTX/BarrierQuorum/test3-fail.litmus,0
 litmus/PTX/BarrierQuorum/test4-pass.litmus,1
 litmus/PTX/BarrierQuorum/test4-fail.litmus,0
+litmus/PTX/Manual/counter-atomic-store-rmw.litmus,1
+litmus/PTX/Manual/counter-plain-store-rmw.litmus,1
+litmus/PTX/Manual/counter-plain-store-atomic-load.litmus,1
+litmus/PTX/Manual/counter-plain-store-plain-load.litmus,1
