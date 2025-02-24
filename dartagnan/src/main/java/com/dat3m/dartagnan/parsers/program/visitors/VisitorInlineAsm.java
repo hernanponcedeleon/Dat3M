@@ -475,8 +475,6 @@ public class VisitorInlineAsm extends InlineAsmBaseVisitor<Object> {
         String type = ctx.DataMemoryBarrier() == null ? ctx.DataSynchronizationBarrier().getText() : ctx.DataMemoryBarrier().getText();
         String option = ctx.FenceArmOpt().getText();
         String barrier = type + " " + option;
-        System.out.println("BArrier is " + barrier);
-        System.out.println("text is " + ctx.getText());
         switch (barrier) {
             case "dmb ish" ->
                 asmInstructions.add(EventFactory.AArch64.DMB.newISHBarrier());
