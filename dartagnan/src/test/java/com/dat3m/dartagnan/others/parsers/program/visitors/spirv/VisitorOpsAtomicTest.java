@@ -1,4 +1,4 @@
-package com.dat3m.dartagnan.parsers.program.visitors.spirv;
+package com.dat3m.dartagnan.others.parsers.program.visitors.spirv;
 
 import com.dat3m.dartagnan.expression.integers.IntBinaryOp;
 import com.dat3m.dartagnan.expression.integers.IntCmpOp;

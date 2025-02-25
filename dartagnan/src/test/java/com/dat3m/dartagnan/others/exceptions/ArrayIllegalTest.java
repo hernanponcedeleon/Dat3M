@@ -1,4 +1,4 @@
-package com.dat3m.dartagnan.exceptions;
+package com.dat3m.dartagnan.others.exceptions;
 
 import com.dat3m.dartagnan.parsers.program.ProgramParser;
 import org.junit.Test;

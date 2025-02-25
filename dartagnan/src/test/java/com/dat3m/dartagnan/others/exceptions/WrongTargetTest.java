@@ -1,4 +1,4 @@
-package com.dat3m.dartagnan.exceptions;
+package com.dat3m.dartagnan.others.exceptions;
 
 import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.parsers.program.ProgramParser;

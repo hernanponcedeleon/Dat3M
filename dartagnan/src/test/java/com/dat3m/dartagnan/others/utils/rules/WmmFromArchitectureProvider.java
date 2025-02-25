@@ -1,4 +1,4 @@
-package com.dat3m.dartagnan.utils.rules;
+package com.dat3m.dartagnan.others.utils.rules;
 
 import com.dat3m.dartagnan.parsers.cat.ParserCat;
 import com.dat3m.dartagnan.wmm.Wmm;

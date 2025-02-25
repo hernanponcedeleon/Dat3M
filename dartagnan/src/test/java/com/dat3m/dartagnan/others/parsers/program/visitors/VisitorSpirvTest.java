@@ -1,4 +1,4 @@
-package com.dat3m.dartagnan.parsers.program.visitors;
+package com.dat3m.dartagnan.others.parsers.program.visitors;
 
 import com.dat3m.dartagnan.parsers.SpirvParser;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.mocks.MockSpirvParser;

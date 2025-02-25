@@ -1,4 +1,4 @@
-package com.dat3m.dartagnan.parsers;
+package com.dat3m.dartagnan.others.parsers;
 
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.mocks.MockSpirvParser;
 import org.antlr.v4.runtime.ParserRuleContext;

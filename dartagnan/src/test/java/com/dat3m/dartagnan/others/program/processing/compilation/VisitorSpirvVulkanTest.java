@@ -1,4 +1,4 @@
-package com.dat3m.dartagnan.program.processing.compilation;
+package com.dat3m.dartagnan.others.program.processing.compilation;
 
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;

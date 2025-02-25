@@ -1,4 +1,4 @@
-package com.dat3m.dartagnan.encoding;
+package com.dat3m.dartagnan.others.encoding;
 
 import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.configuration.RelationAnalysisMethod;

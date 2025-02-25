@@ -1,4 +1,4 @@
-package com.dat3m.dartagnan.witness;
+package com.dat3m.dartagnan.others.witness;
 
 import com.dat3m.dartagnan.parsers.witness.ParserWitness;
 import com.dat3m.dartagnan.witness.graphml.Edge;

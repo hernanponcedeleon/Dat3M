@@ -1,4 +1,4 @@
-package com.dat3m.dartagnan.parsers.program.visitors.spirv.builders;
+package com.dat3m.dartagnan.others.parsers.program.visitors.spirv.builders;
 
 import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.expression.type.FunctionType;

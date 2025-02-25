@@ -1,4 +1,4 @@
-package com.dat3m.dartagnan.expression.type;
+package com.dat3m.dartagnan.others.expression.type;
 
 import com.dat3m.dartagnan.expression.Type;
 import org.junit.Test;

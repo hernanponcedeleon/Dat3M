@@ -1,4 +1,4 @@
-package com.dat3m.dartagnan.parsers.program.visitors.spirv.mocks;
+package com.dat3m.dartagnan.others.parsers.program.visitors.spirv.mocks;
 
 import com.dat3m.dartagnan.exception.AbortErrorListener;
 import com.dat3m.dartagnan.parsers.SpirvLexer;

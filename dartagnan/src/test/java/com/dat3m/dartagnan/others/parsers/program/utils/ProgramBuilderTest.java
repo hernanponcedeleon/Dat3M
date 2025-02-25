@@ -1,4 +1,4 @@
-package com.dat3m.dartagnan.parsers.program.utils;
+package com.dat3m.dartagnan.others.parsers.program.utils;
 
 import com.dat3m.dartagnan.exception.MalformedProgramException;
 import com.dat3m.dartagnan.parsers.program.ProgramParser;

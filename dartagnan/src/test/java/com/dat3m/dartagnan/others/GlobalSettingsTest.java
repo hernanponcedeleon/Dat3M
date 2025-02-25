@@ -1,4 +1,4 @@
-package com.dat3m.dartagnan;
+package com.dat3m.dartagnan.others;
 
 import org.junit.Test;
 

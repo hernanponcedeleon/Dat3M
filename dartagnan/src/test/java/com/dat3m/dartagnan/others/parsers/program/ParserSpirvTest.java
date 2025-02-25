@@ -1,4 +1,4 @@
-package com.dat3m.dartagnan.parsers.program;
+package com.dat3m.dartagnan.others.parsers.program;
 
 import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.program.Program;

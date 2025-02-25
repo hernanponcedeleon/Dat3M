@@ -1,4 +1,4 @@
-package com.dat3m.dartagnan.wmm.utils.graph.immutable;
+package com.dat3m.dartagnan.others.wmm.utils.graph.immutable;
 
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.core.Skip;

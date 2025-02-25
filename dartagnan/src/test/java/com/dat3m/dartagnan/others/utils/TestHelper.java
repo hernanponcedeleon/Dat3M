@@ -1,4 +1,4 @@
-package com.dat3m.dartagnan.utils;
+package com.dat3m.dartagnan.others.utils;
 
 import static com.dat3m.dartagnan.configuration.OptionNames.PHANTOM_REFERENCES;
 

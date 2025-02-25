@@ -1,4 +1,4 @@
-package com.dat3m.dartagnan.miscellaneous;
+package com.dat3m.dartagnan.others.miscellaneous;
 
 import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.configuration.Property;

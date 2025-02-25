@@ -1,4 +1,4 @@
-package com.dat3m.dartagnan.utils.rules;
+package com.dat3m.dartagnan.others.utils.rules;
 
 import org.junit.rules.TestWatcher;
 import org.junit.runner.Description;
