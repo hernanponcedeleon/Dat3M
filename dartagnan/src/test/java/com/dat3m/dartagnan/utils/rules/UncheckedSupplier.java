@@ -1,4 +1,4 @@
-package com.dat3m.dartagnan.others.utils.rules;
+package com.dat3m.dartagnan.utils.rules;
 
 import java.util.function.Supplier;
 

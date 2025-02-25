@@ -1,4 +1,4 @@
-package com.dat3m.dartagnan.others.utils.rules;
+package com.dat3m.dartagnan.utils.rules;
 
 import org.apache.logging.log4j.LogManager;
 import org.junit.rules.ExternalResource;

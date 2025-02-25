@@ -1,4 +1,4 @@
-package com.dat3m.dartagnan.others.utils;
+package com.dat3m.dartagnan.utils;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
