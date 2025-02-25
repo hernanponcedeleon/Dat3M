@@ -41,9 +41,3 @@ jobs:
     
     - name: Set DAT3M_OUTPUT
       run: echo "DAT3M_OUTPUT=$(echo $DAT3M_HOME)/output" >> $GITHUB_ENV
-
-  docker:
-    runs-on: ubuntu-latest
-
-    - name: Build the Docker image
-      run: docker build . --file Dockerfile
