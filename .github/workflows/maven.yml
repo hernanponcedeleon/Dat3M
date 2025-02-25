@@ -14,6 +14,8 @@ on:
     branches: [ master, development ]
   pull_request:
     branches: [ master, development ]
+  schedule:
+    - cron: '0 0 * * 3'  # Run weekly every Wednesday
   workflow_dispatch:
 
 jobs:
@@ -110,17 +112,10 @@ jobs:
     - name: SPIRV tests
       run: mvn test -Dtest="com/dat3m/dartagnan/spirv/*"
 
-name: Weekly
-on:
-  schedule:
-    // Every Wednesday
-    - cron: "0 * * * 3"
-
-jobs:
-  build:
+  weekly:
     name: All tests
     runs-on: ubuntu-latest
-
+    if: ${{ github.event_name == 'schedule' }}
     steps:
     - name: Checkout
       uses: actions/checkout@v4
