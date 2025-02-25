@@ -74,10 +74,10 @@ public interface Event extends Encoder, Comparable<Event> {
 
     void insertAfter(Event toBeInserted);
     void insertBefore(Event toBeInserted);
-    Event replaceBy(Event replacement);
+    void replaceBy(Event replacement);
     void insertAfter(Iterable<? extends Event> toBeInserted);
     void insertBefore(Iterable<? extends Event> toBeInserted);
-    <TCol extends Iterable<? extends Event>> TCol replaceBy(TCol replacement);
+    void replaceBy(Iterable<? extends Event> replacement);
 
     // ============================== Misc ==============================
 

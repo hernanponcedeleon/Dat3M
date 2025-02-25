@@ -13,6 +13,7 @@ import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.event.lang.llvm.LlvmCmpXchg;
 import com.dat3m.dartagnan.program.processing.Intrinsics;
 import com.google.common.base.Preconditions;
+import com.google.common.collect.Iterables;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -141,7 +142,8 @@ public class Function implements LeafExpression {
         return found;
     }
 
-    public void append(Event event){
+    public void append(Event event) {
+        Preconditions.checkNotNull(event);
         if (entry == null) {
             entry = exit = event;
             event.setFunction(this);
@@ -152,32 +154,32 @@ public class Function implements LeafExpression {
         }
     }
 
-    public void append(List<Event> events) {
-        if (events.isEmpty()) {
+    public void append(Iterable<? extends Event> events) {
+        if (Iterables.isEmpty(events)) {
             return;
         } else if (exit == null) {
-            append(events.get(0));
-            events = events.subList(1, events.size());
+            append(Iterables.getFirst(events, null));
+            events = Iterables.skip(events, 1);
         }
         exit.insertAfter(events);
     }
 
-    public void updateExit(Event event){
+    public void updateExit(Event event) {
         Preconditions.checkArgument(event.getFunction() == this);
-        exit = event;
-        Event next;
-        while((next = exit.getSuccessor()) != null){
-            exit = next;
+        Event cur = event;
+        while (cur.getSuccessor() != null) {
+            cur = cur.getSuccessor();
         }
+        exit = cur;
     }
 
     public void updateEntry(Event event) {
         Preconditions.checkArgument(event.getFunction() == this);
-        entry = event;
-        Event next;
-        while((next = entry.getPredecessor()) != null){
-            entry = next;
+        Event cur = event;
+        while (cur.getPredecessor() != null) {
+            cur = cur.getPredecessor();
         }
+        entry = cur;
     }
 
     public void validate() {

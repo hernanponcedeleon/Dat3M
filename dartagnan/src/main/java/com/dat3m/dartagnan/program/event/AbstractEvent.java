@@ -160,12 +160,12 @@ public abstract class AbstractEvent implements Event {
     /*
         Detaches this event from the control-flow graph.
         This does not properly delete the event, and it may be reinserted elsewhere.
-        TODO: We need to special-case handle detaching the entry event of a function.
+        TODO: We should handle the edge-case where a function becomes empty after detaching.
      */
     @Override
     public void detach() {
-        Preconditions.checkState(function == null || this != function.getEntry(),
-                "Cannot detach the entry event %s of function %s", this, getFunction());
+        Preconditions.checkState(function == null || function.getEntry() != function.getExit(),
+                "Cannot detach the only event %s of function %s", this, getFunction());
         if (this.predecessor != null) {
             this.predecessor.successor = successor;
         }
@@ -231,22 +231,20 @@ public abstract class AbstractEvent implements Event {
     }
 
     @Override
-    public Event replaceBy(Event replacement) {
+    public void replaceBy(Event replacement) {
         if (replacement == this) {
-            return replacement;
+            return;
         }
         Preconditions.checkState(currentUsers.isEmpty(), "Cannot replace event that is still in use.");
         this.insertAfter(replacement);
         this.forceDelete();
-        return replacement;
     }
 
     @Override
-    public <TCol extends Iterable<? extends Event>> TCol replaceBy(TCol replacement) {
+    public void replaceBy(Iterable<? extends Event> replacement) {
         Preconditions.checkState(currentUsers.isEmpty(), "Cannot replace event that is still in use.");
         this.insertAfter(replacement);
         this.forceDelete();
-        return replacement;
     }
 
     private static void insertBetween(AbstractEvent toBeInserted, Function func, AbstractEvent pred, AbstractEvent succ) {
