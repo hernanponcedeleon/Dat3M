@@ -4,7 +4,6 @@ import LitmusAssertions;
 
 @header{
 import com.dat3m.dartagnan.expression.integers.*;
-import static com.dat3m.dartagnan.program.event.Tag.ARMv8.*;
 }
 
 main
@@ -131,24 +130,40 @@ nop
     :   Nop
     ;
 
-loadInstruction locals [String mo]
-    :   LDR     {$mo = MO_RX;}
-    |   LDAR    {$mo = MO_ACQ;}
+loadInstruction locals [boolean acquire, boolean byteSize, boolean halfWordSize]
+    :   LDR
+    |   LDRB    {$byteSize = true;}
+    |   LDRH    {$halfWordSize = true;}
+    |   LDAR    {$acquire = true;}
+    |   LDARB   {$acquire = true; $byteSize = true;}
+    |   LDARH   {$acquire = true; $halfWordSize = true;}
     ;
 
-loadExclusiveInstruction locals [String mo]
-    :   LDXR    {$mo = MO_RX;}
-    |   LDAXR   {$mo = MO_ACQ;}
+loadExclusiveInstruction locals [boolean acquire, boolean byteSize, boolean halfWordSize]
+    :   LDXR
+    |   LDXRB    {$byteSize = true;}
+    |   LDXRH    {$halfWordSize = true;}
+    |   LDAXR    {$acquire = true;}
+    |   LDAXRB   {$acquire = true; $byteSize = true;}
+    |   LDAXRH   {$acquire = true; $halfWordSize = true;}
     ;
 
-storeInstruction locals [String mo]
-    :   STR     {$mo = MO_RX;}
-    |   STLR    {$mo = MO_REL;}
+storeInstruction locals [boolean release, boolean byteSize, boolean halfWordSize]
+    :   STR
+    |   STRB    {$byteSize = true;}
+    |   STRH    {$halfWordSize = true;}
+    |   STLR    {$release = true;}
+    |   STLRB   {$release = true; $byteSize = true;}
+    |   STLRH   {$release = true; $halfWordSize = true;}
     ;
 
-storeExclusiveInstruction locals [String mo]
-    :   STXR    {$mo = MO_RX;}
-    |   STLXR   {$mo = MO_REL;}
+storeExclusiveInstruction locals [boolean release, boolean byteSize, boolean halfWordSize]
+    :   STXR
+    |   STXRB    {$byteSize = true;}
+    |   STXRH    {$halfWordSize = true;}
+    |   STLXR    {$release = true;}
+    |   STLXRB   {$release = true; $byteSize = true;}
+    |   STLXRH   {$release = true; $halfWordSize = true;}
     ;
 
 arithmeticInstruction locals [IntBinaryOp op]
@@ -303,16 +318,32 @@ EON     :   'EON'   ;   // Invert and XOR
 // Load instructions
 
 LDR    :   'LDR'    ;
+LDRB   :   'LDRB'   ;
+LDRH   :   'LDRH'   ;
 LDAR   :   'LDAR'   ;
+LDARB  :   'LDARB'  ;
+LDARH  :   'LDARH'  ;
 LDXR   :   'LDXR'   ;
+LDXRB  :   'LDXRB'  ;
+LDXRH  :   'LDXRH'  ;
 LDAXR  :   'LDAXR'  ;
+LDAXRB :   'LDAXRB' ;
+LDAXRH :   'LDAXRH' ;
 
 // Store instructions
 
 STR    :   'STR'    ;
+STRB   :   'STRB'   ;
+STRH   :   'STRH'   ;
 STLR   :   'STLR'   ;
+STLRB  :   'STLRB'  ;
+STLRH  :   'STLRH'  ;
 STXR   :   'STXR'   ;
-STLXR  :   'STLXR'   ;
+STXRB  :   'STXRB'  ;
+STXRH  :   'STXRH'  ;
+STLXR  :   'STLXR'  ;
+STLXRB :   'STLXRB' ;
+STLXRH :   'STLXRH' ;
 
 MovInstruction
     :   'MOV'

@@ -100,8 +100,10 @@ class VisitorLitmusAssertions extends LitmusAssertionsBaseVisitor<Expression> {
 
     @Override
     public Expression visitAssertionBasic(LitmusAssertionsParser.AssertionBasicContext ctx) {
-        Expression expr1 = acceptAssertionValue(ctx.assertionValue(0), false);
-        Expression expr2 = acceptAssertionValue(ctx.assertionValue(1), true);
+        final Expression lhs = acceptAssertionValue(ctx.assertionValue(0), false);
+        final Expression rhs = acceptAssertionValue(ctx.assertionValue(1), true);
+        final Expression expr1 = expressions.makeIntegerCast(lhs, archType, false);
+        final Expression expr2 = expressions.makeIntegerCast(rhs, archType, false);
         return expressions.makeIntCmp(expr1, ctx.assertionCompare().op, expr2);
     }
 

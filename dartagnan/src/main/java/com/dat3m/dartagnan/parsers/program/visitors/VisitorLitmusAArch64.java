@@ -22,6 +22,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import static com.dat3m.dartagnan.parsers.program.utils.ProgramBuilder.replaceZeroRegisters;
+import static com.dat3m.dartagnan.program.event.Tag.ARMv8.*;
 import static com.google.common.base.Preconditions.checkArgument;
 
 public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object> {
@@ -31,6 +32,8 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object> {
     private final ProgramBuilder programBuilder = ProgramBuilder.forArch(Program.SourceLanguage.LITMUS, Arch.ARM8);
     private final TypeFactory types = programBuilder.getTypeFactory();
     private final IntegerType archType = types.getArchType();
+    private final IntegerType i8 = types.getIntegerType(8);
+    private final IntegerType i16 = types.getIntegerType(16);
     private final IntegerType i32 = types.getIntegerType(32);
     private final ExpressionFactory expressions = programBuilder.getExpressionFactory();
     private int mainThread;
@@ -124,45 +127,51 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object> {
     @Override
     public Object visitArithmetic(ArithmeticContext ctx) {
         final Register r64 = programBuilder.getOrNewRegister(mainThread, ctx.rD, archType);
-        final Register register = getOrNewRegister32(ctx.rD32, r64);
+        final Register register = getOrNewRegister32(ctx.rD32, r64, false, false);
         final Register operand = programBuilder.getOrErrorRegister(mainThread, ctx.rV);
         final Expression expr = (Expression) (ctx.expr32() != null ? ctx.expr32() : ctx.expr64()).accept(this);
         final Expression fittedOperand = expressions.makeCast(operand, expr.getType());
         final Expression result = expressions.makeIntBinary(fittedOperand, ctx.arithmeticInstruction().op, expr);
-        add(EventFactory.newLocal(register, result));
-        add32To64BitUpdate(r64, register);
+        add(EventFactory.newLocal(register, expressions.makeCast(result, register.getType())));
+        addRegister64Update(r64, register);
         return null;
     }
 
     @Override
     public Object visitLoad(LoadContext ctx) {
         final Register r64 = programBuilder.getOrNewRegister(mainThread, ctx.rD, archType);
-        final Register register = getOrNewRegister32(ctx.rD32, r64);
+        final LoadInstructionContext inst = ctx.loadInstruction();
+        final Register register = getOrNewRegister32(ctx.rD32, r64, inst.byteSize, inst.halfWordSize);
         final Register base = programBuilder.getOrErrorRegister(mainThread, ctx.address().id);
         final Expression address = applyOffset(ctx.offset(), base);
-        add(EventFactory.newLoadWithMo(register, address, ctx.loadInstruction().mo));
-        add32To64BitUpdate(r64, register);
+        final String mo = inst.acquire ? MO_ACQ : MO_RX;
+        add(EventFactory.newLoadWithMo(register, address, mo));
+        addRegister64Update(r64, register);
         return null;
     }
 
     @Override
     public Object visitLoadExclusive(LoadExclusiveContext ctx) {
         final Register r64 = programBuilder.getOrNewRegister(mainThread, ctx.rD, archType);
-        final Register register = getOrNewRegister32(ctx.rD32, r64);
+        final LoadExclusiveInstructionContext inst = ctx.loadExclusiveInstruction();
+        final Register register = getOrNewRegister32(ctx.rD32, r64, inst.byteSize, inst.halfWordSize);
         final Register base = programBuilder.getOrErrorRegister(mainThread, ctx.address().id);
         final Expression address = applyOffset(ctx.offset(), base);
-        add(EventFactory.newRMWLoadExclusiveWithMo(register, address, ctx.loadExclusiveInstruction().mo));
-        add32To64BitUpdate(r64, register);
+        final String mo = inst.acquire ? MO_ACQ : MO_RX;
+        add(EventFactory.newRMWLoadExclusiveWithMo(register, address, mo));
+        addRegister64Update(r64, register);
         return null;
     }
 
     @Override
     public Object visitStore(StoreContext ctx) {
         final Register r64 = programBuilder.getOrNewRegister(mainThread, ctx.rV, archType);
+        final StoreInstructionContext inst = ctx.storeInstruction();
         final Expression value = ctx.rV32 == null ? r64 : expressions.makeIntegerCast(r64, i32, false);
         final Register base = programBuilder.getOrErrorRegister(mainThread, ctx.address().id);
         final Expression address = applyOffset(ctx.offset(), base);
-        return add(EventFactory.newStoreWithMo(address, value, ctx.storeInstruction().mo));
+        final String mo = ctx.storeInstruction().release ? MO_REL : MO_RX;
+        return add(EventFactory.newStoreWithMo(address, value, mo));
     }
 
     @Override
@@ -172,7 +181,8 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object> {
         final Register status = programBuilder.getOrNewRegister(mainThread, ctx.rS, i32);
         final Register base = programBuilder.getOrErrorRegister(mainThread, ctx.address().id);
         final Expression address = applyOffset(ctx.offset(), base);
-        return add(EventFactory.Common.newExclusiveStore(status, address, value, ctx.storeExclusiveInstruction().mo));
+        final String mo = ctx.storeExclusiveInstruction().release ? MO_REL : MO_RX;
+        return add(EventFactory.Common.newExclusiveStore(status, address, value, mo));
     }
 
     @Override
@@ -278,17 +288,22 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object> {
         return expressions.parseValue(ctx.getText(), type);
     }
 
-    private Register getOrNewRegister32(Register32Context ctx, Register other) {
+    private Register getOrNewRegister32(Register32Context ctx, Register other, boolean byteSize, boolean halfWordSize) {
+        checkArgument(!byteSize | !halfWordSize, "Inconclusive access size");
+        if (byteSize) {
+            return programBuilder.getOrNewRegister(mainThread, "B" + other.getName().substring(1), i8);
+        }
+        if (halfWordSize) {
+            return programBuilder.getOrNewRegister(mainThread, "H" + other.getName().substring(1), i16);
+        }
         return ctx == null ? other : programBuilder.getOrNewRegister(mainThread, ctx.getText(), i32);
     }
 
-    private void add32To64BitUpdate(Register r64, Register r32) {
+    private void addRegister64Update(Register r64, Register value) {
         checkArgument(r64.getType().equals(archType), "Unexpectedly-typed register %s", r64);
-        if (r64 == r32) {
-            return;
+        if (r64 != value) {
+            add(EventFactory.newLocal(r64, expressions.makeIntegerCast(value, archType, false)));
         }
-        checkArgument(r32.getType().equals(i32), "Unexpectedly-typed register %s", r32);
-        add(EventFactory.newLocal(r64, expressions.makeIntegerCast(r32, archType, false)));
     }
 
     private Void add(Event event) {
