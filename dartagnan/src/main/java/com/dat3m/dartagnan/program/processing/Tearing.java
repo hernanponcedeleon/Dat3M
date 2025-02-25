@@ -6,15 +6,18 @@ import com.dat3m.dartagnan.expression.Type;
 import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.program.Function;
+import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.analysis.alias.AliasAnalysis;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.EventFactory;
+import com.dat3m.dartagnan.program.event.core.Init;
 import com.dat3m.dartagnan.program.event.core.Load;
 import com.dat3m.dartagnan.program.event.core.MemoryCoreEvent;
 import com.dat3m.dartagnan.program.event.core.RMWStore;
 import com.dat3m.dartagnan.program.event.core.Store;
 import com.dat3m.dartagnan.program.event.core.annotations.TransactionMarker;
+import com.dat3m.dartagnan.program.memory.MemoryObject;
 
 import java.util.*;
 
@@ -42,6 +45,7 @@ public final class Tearing {
 
     private boolean replaceAll(AliasAnalysis alias, List<MemoryCoreEvent> events) {
         // Generate transaction events for mixed-size accesses
+        tearInits(alias, events);
         //NOTE RMWStores need to access the associated load's replacements
         for (MemoryCoreEvent event : events) {
             final Load load = event instanceof Load l ? l : null;
@@ -51,7 +55,7 @@ public final class Tearing {
             }
         }
         for (MemoryCoreEvent event : events) {
-            final Store store = event instanceof Store s ? s : null;
+            final Store store = event instanceof Store s && !(event instanceof Init) ? s : null;
             final List<Integer> msa = store == null ? List.of() : alias.mayMixedSizeAccesses(event);
             if (!msa.isEmpty()) {
                 map.put(store, createTransaction(store, msa));
@@ -70,6 +74,41 @@ public final class Tearing {
             }
         }
         return !map.isEmpty();
+    }
+
+    private void tearInits(AliasAnalysis alias, List<MemoryCoreEvent> events) {
+        final Program program = events.get(0).getThread().getProgram();
+        for (MemoryCoreEvent event : events) {
+            final Init init = event instanceof Init i ? i : null;
+            final List<Integer> offsets = init == null ? List.of() : alias.mayMixedSizeAccesses(event);
+            if (offsets.isEmpty()) {
+                continue;
+            }
+            final int bytes = checkBytes(init, offsets);
+            final MemoryObject base = init.getBase();
+            final int offset = init.getOffset();
+            final Expression value = init.getValue();
+            final IntegerType type = checkIntegerType(value.getType(), "Non-integer value type in '%s'", init);
+            // Tear initial values
+            final Expression frontShiftBits = bigEndian ? expressions.makeValue(bytes - offsets.get(0), type) : null;
+            final Expression frontShifted = bigEndian ? expressions.makeRshift(value, frontShiftBits, false) : value;
+            final Expression frontValue = expressions.makeCast(frontShifted, types.getIntegerType(8 * offsets.get(0)));
+            base.setInitialValue(offset, frontValue);
+            for (int i = 0; i < offsets.size(); i++) {
+                final int begin = offsets.get(i);
+                final int end = i + 1 < offsets.size() ? offsets.get(i + 1) : bytes;
+                final int shift = bigEndian ? bytes - end : begin;
+                final Expression shiftBits = expressions.makeValue(8L * shift, type);
+                final Expression shifted = expressions.makeRshift(value, shiftBits, false);
+                final Expression tearedValue = expressions.makeCast(shifted, types.getIntegerType(8 * (end - begin)));
+                base.setInitialValue(offset + begin, tearedValue);
+            }
+            // Tear init event
+            init.setMemValue(frontValue);
+            for (int begin : offsets) {
+                program.addInit(base, offset + begin);
+            }
+        }
     }
 
     private List<Event> createTransaction(Load load, List<Integer> offsets) {
