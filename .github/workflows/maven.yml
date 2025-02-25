@@ -114,7 +114,7 @@ name: Weekly
 on:
   schedule:
     // Every Wednesday
-    - cron: '0 * * * 3'
+    - cron: "0 * * * 3"
 
 jobs:
   build:
