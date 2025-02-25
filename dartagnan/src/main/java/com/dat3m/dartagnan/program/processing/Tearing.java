@@ -101,8 +101,10 @@ public final class Tearing {
         replacement.add(EventFactory.newTransactionEnd(load, begin));
         Expression combination = expressions.makeCast(smallerRegisters.get(0), accessType);
         for (int i = 0; i < offsets.size(); i++) {
+            final int start = offsets.get(i);
+            final int end = i + 1 < offsets.size() ? offsets.get(i + 1) : bytes;
             Expression wideValue = expressions.makeCast(smallerRegisters.get(i + 1), accessType);
-            long shift = bigEndian ? i + 1 < offsets.size() ? bytes - offsets.get(i + 1) : 0 : offsets.get(i);
+            final long shift = bigEndian ? bytes - end : start;
             Expression shiftBits = expressions.makeValue(8L * shift, accessType);
             Expression shiftedValue = expressions.makeLshift(wideValue, shiftBits);
             combination = expressions.makeIntOr(combination, shiftedValue);
@@ -124,11 +126,14 @@ public final class Tearing {
         TransactionMarker begin = EventFactory.newTransactionBegin(store);
         replacement.add(begin);
         for (int i = -1; i < offsets.size(); i++) {
-            Expression address = expressions.makeAdd(addressRegister, expressions.makeValue(i + 1, addressType));
-            int shift = bigEndian ? i + 1 < offsets.size() ? bytes - offsets.get(i + 1) : 0 : i < 0 ? 0 : offsets.get(i);
+            final int start = i < 0 ? 0 : offsets.get(i);
+            final int end = i + 1 < offsets.size() ? offsets.get(i + 1) : bytes;
+            final Expression offset = expressions.makeValue(start, addressType);
+            final Expression address = expressions.makeAdd(addressRegister, offset);
+            final int shift = bigEndian ? bytes - end : start;
             Expression shiftBits = expressions.makeValue(8L * shift, accessType);
             Expression shiftedValue = expressions.makeRshift(valueRegister, shiftBits, false);
-            Expression value = expressions.makeCast(shiftedValue, types.getByteType());
+            Expression value = expressions.makeCast(shiftedValue, types.getIntegerType(8 * (end - start)));
             Store byteStore = store.getCopy();
             byteStore.setAddress(address);
             byteStore.setMemValue(value);
