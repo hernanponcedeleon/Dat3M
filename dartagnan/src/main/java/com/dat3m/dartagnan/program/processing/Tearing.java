@@ -36,7 +36,7 @@ public final class Tearing {
         if (events.isEmpty()) {
             return false;
         }
-        boolean bigEndian = events.iterator().next().getFunction().getProgram().getMemory().isBigEndian();
+        final boolean bigEndian = events.iterator().next().getFunction().getProgram().getMemory().isBigEndian();
         return new Tearing(bigEndian).replaceAll(alias, events);
     }
 
@@ -74,12 +74,14 @@ public final class Tearing {
 
     private List<Event> createTransaction(Load load, List<Integer> offsets) {
         final int bytes = checkBytes(load, offsets);
-        List<Event> replacement = new ArrayList<>();
-        IntegerType addressType = checkIntegerType(load.getAddress().getType(), "Non-integer address in '%s'", load);
-        IntegerType accessType = checkIntegerType(load.getAccessType(), "Non-integer mixed-size access in '%s'", load);
-        Function function = load.getFunction();
-        Register addressRegister = toRegister(load.getAddress(), function, replacement);
-        List<Register> smallerRegisters = new ArrayList<>();
+        final List<Event> replacement = new ArrayList<>();
+        final IntegerType addressType = checkIntegerType(load.getAddress().getType(),
+                "Non-integer address in '%s'", load);
+        final IntegerType accessType = checkIntegerType(load.getAccessType(),
+                "Non-integer mixed-size access in '%s'", load);
+        final Function function = load.getFunction();
+        final Register addressRegister = toRegister(load.getAddress(), function, replacement);
+        final List<Register> smallerRegisters = new ArrayList<>();
         for (int i = -1; i < offsets.size(); i++) {
             int start = i < 0 ? 0 : offsets.get(i);
             int end = i + 1 < offsets.size() ? offsets.get(i + 1) : bytes;
@@ -87,13 +89,13 @@ public final class Tearing {
             smallerRegisters.add(function.newRegister(types.getIntegerType(8 * (end - start))));
         }
         assert bytes == smallerRegisters.stream().mapToInt(t -> types.getMemorySizeInBytes(t.getType())).sum();
-        TransactionMarker begin = EventFactory.newTransactionBegin(load);
+        final TransactionMarker begin = EventFactory.newTransactionBegin(load);
         replacement.add(begin);
         for (int i = -1; i < offsets.size(); i++) {
-            int start = i < 0 ? 0 : offsets.get(i);
-            Expression offset = expressions.makeValue(start, addressType);
-            Expression address = expressions.makeAdd(addressRegister, offset);
-            Load byteLoad = load.getCopy();
+            final int start = i < 0 ? 0 : offsets.get(i);
+            final Expression offset = expressions.makeValue(start, addressType);
+            final Expression address = expressions.makeAdd(addressRegister, offset);
+            final Load byteLoad = load.getCopy();
             byteLoad.setResultRegister(smallerRegisters.get(i + 1));
             byteLoad.setAddress(address);
             replacement.add(byteLoad);
@@ -115,15 +117,17 @@ public final class Tearing {
 
     private List<Event> createTransaction(Store store, List<Integer> offsets) {
         final int bytes = checkBytes(store, offsets);
-        List<Event> replacement = new ArrayList<>();
-        IntegerType addressType = checkIntegerType(store.getAddress().getType(), "Non-integer address in '%s'", store);
-        IntegerType accessType = checkIntegerType(store.getAccessType(), "Non-integer access in '%s'", store);
-        Function function = store.getFunction();
-        Register addressRegister = toRegister(store.getAddress(), function, replacement);
-        Register valueRegister = toRegister(store.getMemValue(), function, replacement);
-        List<Load> loads = store instanceof RMWStore st ? map.get(st.getLoadEvent()).stream()
+        final List<Event> replacement = new ArrayList<>();
+        final IntegerType addressType = checkIntegerType(store.getAddress().getType(),
+                "Non-integer address in '%s'", store);
+        final IntegerType accessType = checkIntegerType(store.getAccessType(),
+                "Non-integer mixed-size access in '%s'", store);
+        final Function function = store.getFunction();
+        final Register addressRegister = toRegister(store.getAddress(), function, replacement);
+        final Register valueRegister = toRegister(store.getMemValue(), function, replacement);
+        final List<Load> loads = store instanceof RMWStore st ? map.get(st.getLoadEvent()).stream()
                 .filter(Load.class::isInstance).map(Load.class::cast).toList() : null;
-        TransactionMarker begin = EventFactory.newTransactionBegin(store);
+        final TransactionMarker begin = EventFactory.newTransactionBegin(store);
         replacement.add(begin);
         for (int i = -1; i < offsets.size(); i++) {
             final int start = i < 0 ? 0 : offsets.get(i);
@@ -131,10 +135,10 @@ public final class Tearing {
             final Expression offset = expressions.makeValue(start, addressType);
             final Expression address = expressions.makeAdd(addressRegister, offset);
             final int shift = bigEndian ? bytes - end : start;
-            Expression shiftBits = expressions.makeValue(8L * shift, accessType);
-            Expression shiftedValue = expressions.makeRshift(valueRegister, shiftBits, false);
-            Expression value = expressions.makeCast(shiftedValue, types.getIntegerType(8 * (end - start)));
-            Store byteStore = store.getCopy();
+            final Expression shiftBits = expressions.makeValue(8L * shift, accessType);
+            final Expression shiftedValue = expressions.makeRshift(valueRegister, shiftBits, false);
+            final Expression value = expressions.makeCast(shiftedValue, types.getIntegerType(8 * (end - start)));
+            final Store byteStore = store.getCopy();
             byteStore.setAddress(address);
             byteStore.setMemValue(value);
             if (loads != null && byteStore instanceof RMWStore st) {
@@ -147,7 +151,7 @@ public final class Tearing {
     }
 
     private IntegerType checkIntegerType(Type type, String message, Event event) {
-        IntegerType integerType = type instanceof IntegerType t ? t : null;
+        final IntegerType integerType = type instanceof IntegerType t ? t : null;
         if (integerType != null) {
             return integerType;
         }
@@ -158,13 +162,13 @@ public final class Tearing {
         if (expression instanceof Register r) {
             return r;
         }
-        Register r = function.newRegister(expression.getType());
+        final Register r = function.newRegister(expression.getType());
         replacement.add(EventFactory.newLocal(r, expression));
         return r;
     }
 
     private int checkBytes(MemoryCoreEvent event, List<Integer> offsets) {
-        int bytes = types.getMemorySizeInBytes(event.getAccessType());
+        final int bytes = types.getMemorySizeInBytes(event.getAccessType());
         checkArgument(offsets.stream().allMatch(i -> 0 < i && i < bytes), "offset out of range");
         checkArgument(isStrictlySorted(offsets), "unsorted offset list");
         return bytes;
