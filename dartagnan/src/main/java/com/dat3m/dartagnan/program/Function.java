@@ -6,10 +6,14 @@ import com.dat3m.dartagnan.expression.type.FunctionType;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.expression.type.VoidType;
 import com.dat3m.dartagnan.program.event.Event;
+import com.dat3m.dartagnan.program.event.RegReader;
+import com.dat3m.dartagnan.program.event.RegWriter;
 import com.dat3m.dartagnan.program.event.core.CondJump;
 import com.dat3m.dartagnan.program.event.core.Label;
+import com.dat3m.dartagnan.program.event.lang.llvm.LlvmCmpXchg;
 import com.dat3m.dartagnan.program.processing.Intrinsics;
 import com.google.common.base.Preconditions;
+import com.google.common.collect.Iterables;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -138,7 +142,8 @@ public class Function implements LeafExpression {
         return found;
     }
 
-    public void append(Event event){
+    public void append(Event event) {
+        Preconditions.checkNotNull(event);
         if (entry == null) {
             entry = exit = event;
             event.setFunction(this);
@@ -149,12 +154,32 @@ public class Function implements LeafExpression {
         }
     }
 
-    public void updateExit(Event event){
-        exit = event;
-        Event next;
-        while((next = exit.getSuccessor()) != null){
-            exit = next;
+    public void append(Iterable<? extends Event> events) {
+        if (Iterables.isEmpty(events)) {
+            return;
+        } else if (exit == null) {
+            append(Iterables.getFirst(events, null));
+            events = Iterables.skip(events, 1);
         }
+        exit.insertAfter(events);
+    }
+
+    public void updateExit(Event event) {
+        Preconditions.checkArgument(event.getFunction() == this);
+        Event cur = event;
+        while (cur.getSuccessor() != null) {
+            cur = cur.getSuccessor();
+        }
+        exit = cur;
+    }
+
+    public void updateEntry(Event event) {
+        Preconditions.checkArgument(event.getFunction() == this);
+        Event cur = event;
+        while (cur.getPredecessor() != null) {
+            cur = cur.getPredecessor();
+        }
+        entry = cur;
     }
 
     public void validate() {
@@ -178,6 +203,24 @@ public class Function implements LeafExpression {
                             label.getName(), this);
                     throw new MalformedProgramException(error);
                 }
+            }
+
+            final Set<Register> registers = new HashSet<>(getRegisters());
+            if (ev instanceof RegReader reader) {
+                reader.getRegisterReads().stream()
+                        .filter(read -> !registers.contains(read.register())).findFirst().ifPresent(read -> {
+                            final String error = String.format("Event %s of function %s reads from external register %s of" +
+                                            "function %s .", reader, this, read.register(), read.register().getFunction()
+                            );
+                            throw new MalformedProgramException(error);
+                        });
+            }
+
+            if (ev instanceof RegWriter writer && !(writer instanceof LlvmCmpXchg) && !registers.contains(writer.getResultRegister())) {
+                final String error = String.format("Event %s of function %s writes to external register %s of function %s",
+                        writer, this, writer.getResultRegister(), writer.getResultRegister().getFunction()
+                );
+                throw new MalformedProgramException(error);
             }
         }
     }

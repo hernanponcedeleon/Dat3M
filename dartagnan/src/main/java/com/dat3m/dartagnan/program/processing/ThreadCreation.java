@@ -4,16 +4,16 @@ import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.exception.MalformedProgramException;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
-import com.dat3m.dartagnan.expression.ExpressionVisitor;
 import com.dat3m.dartagnan.expression.integers.IntLiteral;
 import com.dat3m.dartagnan.expression.processing.ExprTransformer;
 import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
-import com.dat3m.dartagnan.program.Function;
-import com.dat3m.dartagnan.program.Program;
-import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.Thread;
-import com.dat3m.dartagnan.program.event.*;
+import com.dat3m.dartagnan.program.*;
+import com.dat3m.dartagnan.program.event.Event;
+import com.dat3m.dartagnan.program.event.EventFactory;
+import com.dat3m.dartagnan.program.event.RegReader;
+import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.event.core.Local;
 import com.dat3m.dartagnan.program.event.core.threading.ThreadCreate;
@@ -22,7 +22,6 @@ import com.dat3m.dartagnan.program.event.functions.AbortIf;
 import com.dat3m.dartagnan.program.event.functions.FunctionCall;
 import com.dat3m.dartagnan.program.event.functions.Return;
 import com.dat3m.dartagnan.program.event.functions.ValueFunctionCall;
-import com.dat3m.dartagnan.program.event.lang.llvm.LlvmCmpXchg;
 import com.dat3m.dartagnan.program.memory.Memory;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.dat3m.dartagnan.program.processing.compilation.Compilation;
@@ -134,8 +133,7 @@ public class ThreadCreation implements ProgramProcessor {
                                 // TODO: Allow to return failure value (!= 0)
                                 newLocal(resultRegister, expressions.makeZero((IntegerType) resultRegister.getType()))
                         );
-                        replacement.forEach(e -> e.copyAllMetadataFrom(call));
-                        call.replaceBy(replacement);
+                        IRHelper.replaceWithMetadata(call, replacement);
 
                         final Thread spawnedThread = createThreadFromFunction(targetFunction, nextTid, createEvent, comAddress);
                         createEvent.setSpawnedThread(spawnedThread);
@@ -151,8 +149,7 @@ public class ThreadCreation implements ProgramProcessor {
                         final Expression tidExpr = expressions.makeValue(thread.getId(),
                                 (IntegerType) resultRegister.getType());
                         final Local tidAssignment = newLocal(resultRegister, tidExpr);
-                        tidAssignment.copyAllMetadataFrom(call);
-                        call.replaceBy(tidAssignment);
+                        IRHelper.replaceWithMetadata(call, tidAssignment);
                     }
                 }
             }
@@ -229,21 +226,17 @@ public class ThreadCreation implements ProgramProcessor {
             switchJumpTable.add(EventFactory.newGoto(joinEnd));
 
             // ----- Generate actual replacement for the pthread_join call -----
-            final List<Event> replacement = new ArrayList<>();
-            replacement.add(EventFactory.newFunctionCallMarker(call.getCalledFunction().getName()));
-            replacement.addAll(switchJumpTable);
-            tid2joinCases.values().forEach(replacement::addAll);
-            replacement.addAll(Arrays.asList(
+            final List<Event> replacement = eventSequence(
+                    EventFactory.newFunctionCallMarker(call.getCalledFunction().getName()),
+                    switchJumpTable,
+                    tid2joinCases.values(),
                     joinEnd,
                     newJump(joinDummyReg, (Label)thread.getExit()),
                     // Note: In our modelling, pthread_join always succeeds if it returns
                     newLocal(resultRegister, expressions.makeZero((IntegerType) resultRegister.getType())),
                     EventFactory.newFunctionReturnMarker(call.getCalledFunction().getName())
-            ));
-
-            replacement.forEach(e -> e.copyAllMetadataFrom(call));
-            call.replaceBy(replacement);
-
+            );
+            IRHelper.replaceWithMetadata(call, replacement);
             joinCounter++;
         }
     }
@@ -259,37 +252,14 @@ public class ThreadCreation implements ProgramProcessor {
                 Lists.transform(function.getParameterRegisters(), Register::getName), tid, start);
         thread.copyDummyCountFrom(function);
 
-        // ------------------- Copy registers from target function into new thread -------------------
-        final Map<Register, Register> registerReplacement = new HashMap<>();
-        for (Register reg : function.getRegisters()) {
-            registerReplacement.put(reg, thread.getOrNewRegister(reg.getName(), reg.getType()));
-        }
-        final ExpressionVisitor<Expression> regSubstituter = new ExprTransformer() {
-            @Override
-            public Expression visitRegister(Register reg) {
-                return Preconditions.checkNotNull(registerReplacement.get(reg));
-            }
-        };
-
-        // ------------------- Copy, update, and append the function body to the thread -------------------
-        final List<Event> body = new ArrayList<>();
-        final Map<Event, Event> copyMap = new HashMap<>();
-        function.getEvents().forEach(e -> body.add(copyMap.computeIfAbsent(e, Event::getCopy)));
-        for (Event copy : body) {
-            if (copy instanceof EventUser user) {
-                user.updateReferences(copyMap);
-            }
-            if (copy instanceof RegReader reader) {
-                reader.transformExpressions(regSubstituter);
-            }
-            if (copy instanceof LlvmCmpXchg xchg) {
-                xchg.setStructRegister(0, registerReplacement.get(xchg.getStructRegister(0)));
-                xchg.setStructRegister(1, registerReplacement.get(xchg.getStructRegister(1)));
-            } else if (copy instanceof RegWriter regWriter) {
-                regWriter.setResultRegister(registerReplacement.get(regWriter.getResultRegister()));
-            }
-        }
+        // ------------------- Copy function into thread -------------------
+        final Map<Register, Register> registerReplacement = IRHelper.copyOverRegisters(function.getRegisters(), thread,
+                Register::getName, false);
+        final List<Event> body = IRHelper.copyEvents(function.getEvents(), IRHelper.makeRegisterReplacer(registerReplacement), new HashMap<>());
         thread.getEntry().insertAfter(body);
+
+        // ------------------- Create thread-local variables -------------------
+        replaceGlobalsByThreadLocals(function.getProgram().getMemory(), thread);
 
         // ------------------- Add end & return label -------------------
         final Label threadReturnLabel = EventFactory.newLabel("RETURN_OF_T" + tid);
@@ -304,8 +274,7 @@ public class ThreadCreation implements ProgramProcessor {
             if (e instanceof AbortIf abort) {
                 final Event jumpToEnd = EventFactory.newJump(abort.getCondition(), threadEnd);
                 jumpToEnd.addTags(abort.getTags());
-                jumpToEnd.copyAllMetadataFrom(abort);
-                abort.replaceBy(jumpToEnd);
+                IRHelper.replaceWithMetadata(abort, jumpToEnd);
             } else if (e instanceof Return || (e instanceof FunctionCall call
                     && call.isDirectCall() && call.getCalledFunction().getName().equals("pthread_exit"))) {
                 final Expression retVal = (e instanceof Return ret) ? ret.getValue().orElse(null)
@@ -314,8 +283,7 @@ public class ThreadCreation implements ProgramProcessor {
                         returnRegister != null ? EventFactory.newLocal(returnRegister, retVal) : null,
                         EventFactory.newGoto(threadReturnLabel)
                 );
-                replacement.forEach(ev -> ev.copyAllMetadataFrom(e));
-                e.replaceBy(replacement);
+                IRHelper.replaceWithMetadata(e, replacement);
             }
         }
 
@@ -338,10 +306,12 @@ public class ThreadCreation implements ProgramProcessor {
             threadReturnLabel.insertAfter(newReleaseStore(comAddr, expressions.makeFalse()));
         }
 
-        // ------------------- Create thread-local variables -------------------
-        final Memory memory = function.getProgram().getMemory();
-        final Map<Expression, Expression> global2ThreadLocal = new HashMap<>();
+        return thread;
+    }
+
+    private void replaceGlobalsByThreadLocals(Memory memory, Thread thread) {
         final ExprTransformer transformer = new ExprTransformer() {
+            final Map<Expression, Expression> global2ThreadLocal = new HashMap<>();
             @Override
             public Expression visitMemoryObject(MemoryObject memObj) {
                 if (memObj.isThreadLocal() && !global2ThreadLocal.containsKey(memObj)) {
@@ -358,11 +328,8 @@ public class ThreadCreation implements ProgramProcessor {
                 return global2ThreadLocal.getOrDefault(memObj, memObj);
             }
         };
-
         thread.getEvents(RegReader.class).forEach(reader -> reader.transformExpressions(transformer));
         // TODO: After creating all thread-local copies, we might want to delete the original variable?
-
-        return thread;
     }
 
     private Register getResultRegister(FunctionCall call) {
