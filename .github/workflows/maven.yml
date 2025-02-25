@@ -40,7 +40,7 @@ jobs:
       run: echo "DAT3M_OUTPUT=$(echo $DAT3M_HOME)/output" >> $GITHUB_ENV
 
     - name: Litmus tests
-      run: mvn test -Dtest="com/dat3m/dartagnan/litmus/*"
+      run: mvn test -Dtest="com/dat3m/dartagnan/litmus/**/*"
 
   llvm-tests:
     name: LLVM tests
@@ -63,7 +63,7 @@ jobs:
       run: echo "DAT3M_OUTPUT=$(echo $DAT3M_HOME)/output" >> $GITHUB_ENV
 
     - name: LLVM tests
-      run: mvn test -Dtest="com/dat3m/dartagnan/llvm/*"
+      run: mvn test -Dtest="com/dat3m/dartagnan/llvm/**/*"
 
   other-tests:
     name: Other tests
@@ -86,7 +86,7 @@ jobs:
       run: echo "DAT3M_OUTPUT=$(echo $DAT3M_HOME)/output" >> $GITHUB_ENV
 
     - name: Other tests
-      run: mvn test -Dtest="com/dat3m/dartagnan/others/*"
+      run: mvn test -Dtest="com/dat3m/dartagnan/others/**/*"
 
   spirv-tests:
     name: SPIRV tests
@@ -109,7 +109,7 @@ jobs:
       run: echo "DAT3M_OUTPUT=$(echo $DAT3M_HOME)/output" >> $GITHUB_ENV
 
     - name: SPIRV tests
-      run: mvn test -Dtest="com/dat3m/dartagnan/spirv/*"
+      run: mvn test -Dtest="com/dat3m/dartagnan/spirv/**/*"
 
   weekly:
     name: All tests

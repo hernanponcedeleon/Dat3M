@@ -1,4 +1,4 @@
-package com.dat3m.dartagnan.c;
+package com.dat3m.dartagnan.llvm;
 
 import com.dat3m.dartagnan.configuration.ProgressModel;
 import com.dat3m.dartagnan.configuration.Property;
