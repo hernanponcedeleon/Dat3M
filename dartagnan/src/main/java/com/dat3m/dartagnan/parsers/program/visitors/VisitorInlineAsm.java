@@ -499,10 +499,6 @@ public class VisitorInlineAsm extends InlineAsmBaseVisitor<Object> {
 
     @Override
     public Object visitRiscvFence(InlineAsmParser.RiscvFenceContext ctx) {
-        // String type = ctx.RISCVFence().getText();
-        // String firstOption = ctx.FenceRISCVOpt(0).getText();
-        // String secondOption = ctx.FenceRISCVOpt(1) == null ? "" : ctx.FenceRISCVOpt(1).getText();
-        // String barrier = type + " " + firstOption + " " + secondOption;
         String mo = ctx.fenceOptions().mode;
         Event fence = switch(mo) {
             case "r r" -> EventFactory.RISCV.newRRFence();
