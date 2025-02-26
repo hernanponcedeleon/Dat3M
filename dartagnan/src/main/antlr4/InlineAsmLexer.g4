@@ -40,14 +40,12 @@ StartSymbol                 : 'asm';
 PrefetchStoreL1Once         : 'pstl1strm';
 // helpers for parser rules
 NumbersInline               : [0-9]+;
-RLiteral                    : 'r';
 XLiteral                    : 'x';
-WLiteral                    : 'w';
 ILiteral                    : 'i';
 OLiteral                    : 'o';
 MLiteral                    : 'm';
 QCapitalLiteral             : 'Q';
-RegisterSizeHint            : Colon (XLiteral | WLiteral);
+RegisterSizeHint            : Colon (XLiteral | 'w');
 ConstantValue               : Num NumbersInline;
 
 
@@ -58,7 +56,7 @@ FenceArmOpt                 : 'sy' | 'st' | 'ish' | 'ishld' | 'ishst';
 X86Fence                    : 'mfence';
 RISCVFence                  : 'fence';
 TsoFence                    : 'tso';
-FenceRISCVOpt               : ILiteral | OLiteral | ILiteral OLiteral | RLiteral | RLiteral WLiteral | WLiteral | TsoFence;
+FenceRISCVOpt               : ILiteral | OLiteral | ILiteral OLiteral | 'r' | 'rw' | 'w' | TsoFence;
 PPCFence                    : 'sync' | 'isync' | 'lwsync';
 
 
