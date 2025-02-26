@@ -471,28 +471,29 @@ public class VisitorInlineAsm extends InlineAsmBaseVisitor<Object> {
         String type = ctx.DataMemoryBarrier() == null ? ctx.DataSynchronizationBarrier().getText() : ctx.DataMemoryBarrier().getText();
         String option = ctx.FenceArmOpt().getText();
         String barrier = type + " " + option;
-        switch (barrier) {
+        Event fence = switch (barrier) {
             case "dmb ish" ->
-                asmInstructions.add(EventFactory.AArch64.DMB.newISHBarrier());
+                EventFactory.AArch64.DMB.newISHBarrier();
             case "dmb ishld" ->
-                asmInstructions.add(EventFactory.AArch64.DMB.newISHLDBarrier());
+                EventFactory.AArch64.DMB.newISHLDBarrier();
             case "dmb sy" ->
-                asmInstructions.add(EventFactory.AArch64.DMB.newSYBarrier());
+                EventFactory.AArch64.DMB.newSYBarrier();
             case "dmb st" ->
-                asmInstructions.add(EventFactory.AArch64.DMB.newSTBarrier());
+                EventFactory.AArch64.DMB.newSTBarrier();
             case "dmb ishst" ->
-                asmInstructions.add(EventFactory.AArch64.DMB.newISHSTBarrier());
+                EventFactory.AArch64.DMB.newISHSTBarrier();
             case "dsb ish" ->
-                asmInstructions.add(EventFactory.AArch64.DSB.newISHBarrier());
+                EventFactory.AArch64.DSB.newISHBarrier();
             case "dsb ishld" ->
-                asmInstructions.add(EventFactory.AArch64.DSB.newISHLDBarrier());
+                EventFactory.AArch64.DSB.newISHLDBarrier();
             case "dsb sy" ->
-                asmInstructions.add(EventFactory.AArch64.DSB.newSYBarrier());
+                EventFactory.AArch64.DSB.newSYBarrier();
             case "dsb ishst" ->
-                asmInstructions.add(EventFactory.AArch64.DSB.newISHSTBarrier());
+                EventFactory.AArch64.DSB.newISHSTBarrier();
             default ->
                 throw new ParsingException("Barrier not implemented");
-        }
+        };
+        asmInstructions.add(fence);
         return null;
     }
 
@@ -502,60 +503,63 @@ public class VisitorInlineAsm extends InlineAsmBaseVisitor<Object> {
         String firstOption = ctx.FenceRISCVOpt(0).getText();
         String secondOption = ctx.FenceRISCVOpt(1) == null ? "" : ctx.FenceRISCVOpt(1).getText();
         String barrier = type + " " + firstOption + " " + secondOption;
-        switch (barrier) {
+        Event fence = switch (barrier) {
             case "fence r r" ->
-                asmInstructions.add(EventFactory.RISCV.newRRFence());
+                EventFactory.RISCV.newRRFence();
             case "fence r w" ->
-                asmInstructions.add(EventFactory.RISCV.newRWFence());
+                EventFactory.RISCV.newRWFence();
             case "fence r rw" ->
-                asmInstructions.add(EventFactory.RISCV.newRRWFence());
+                EventFactory.RISCV.newRRWFence();
             case "fence w r" ->
-                asmInstructions.add(EventFactory.RISCV.newWRFence());
+                EventFactory.RISCV.newWRFence();
             case "fence w w" ->
-                asmInstructions.add(EventFactory.RISCV.newWWFence());
+                EventFactory.RISCV.newWWFence();
             case "fence w rw" ->
-                asmInstructions.add(EventFactory.RISCV.newWRWFence());
+                EventFactory.RISCV.newWRWFence();
             case "fence rw r" ->
-                asmInstructions.add(EventFactory.RISCV.newRWRFence());
+                EventFactory.RISCV.newRWRFence();
             case "fence rw w" ->
-                asmInstructions.add(EventFactory.RISCV.newRWWFence());
+                EventFactory.RISCV.newRWWFence();
             case "fence rw rw" ->
-                asmInstructions.add(EventFactory.RISCV.newRWRWFence());
+                EventFactory.RISCV.newRWRWFence();
             case "fence tso" ->
-                asmInstructions.add(EventFactory.RISCV.newTsoFence());
+                EventFactory.RISCV.newTsoFence();
             case "fence i" ->
-                asmInstructions.add(EventFactory.RISCV.newSynchronizeFence());
+                EventFactory.RISCV.newSynchronizeFence();
             default ->
                 throw new ParsingException("Barrier not implemented");
-        }
-        return visitChildren(ctx);
+        };
+        asmInstructions.add(fence);
+        return null;
     }
 
     @Override
     public Object visitX86Fence(InlineAsmParser.X86FenceContext ctx) {
         String barrier = ctx.X86Fence().getText();
-        switch (barrier) {
+        Event fence = switch (barrier) {
             case "mfence" ->
-                asmInstructions.add(EventFactory.X86.newMemoryFence());
+                EventFactory.X86.newMemoryFence();
             default ->
                 throw new ParsingException("Barrier not implemented");
-        }
-        return visitChildren(ctx);
+        };
+        asmInstructions.add(fence);
+        return null;
     }
 
     @Override
     public Object visitPpcFence(InlineAsmParser.PpcFenceContext ctx) {
         String barrier = ctx.PPCFence().getText();
-        switch (barrier) {
+        Event fence = switch (barrier) {
             case "sync" ->
-                asmInstructions.add(EventFactory.Power.newSyncBarrier());
+                EventFactory.Power.newSyncBarrier();
             case "isync" ->
-                asmInstructions.add(EventFactory.Power.newISyncBarrier());
+                EventFactory.Power.newISyncBarrier();
             case "lwsync" ->
-                asmInstructions.add(EventFactory.Power.newLwSyncBarrier());
+                EventFactory.Power.newLwSyncBarrier();
             default ->
                 throw new ParsingException("Barrier not implemented");
-        }
-        return visitChildren(ctx);
+        };
+        asmInstructions.add(fence);
+        return null;
     }
 }
