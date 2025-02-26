@@ -41,6 +41,8 @@ PrefetchStoreL1Once         : 'pstl1strm';
 // helpers for parser rules
 NumbersInline               : [0-9]+;
 XLiteral                    : 'x';
+RLiteral                    : 'r';
+WLiteral                    : 'w';
 ILiteral                    : 'i';
 OLiteral                    : 'o';
 MLiteral                    : 'm';
@@ -56,7 +58,7 @@ FenceArmOpt                 : 'sy' | 'st' | 'ish' | 'ishld' | 'ishst';
 X86Fence                    : 'mfence';
 RISCVFence                  : 'fence';
 TsoFence                    : 'tso';
-FenceRISCVOpt               : ILiteral | OLiteral | ILiteral OLiteral | 'r' | 'rw' | 'w' | TsoFence;
+FenceRISCVOpt               : ILiteral | OLiteral | ILiteral OLiteral | RLiteral | RLiteral WLiteral | WLiteral | TsoFence;
 PPCFence                    : 'sync' | 'isync' | 'lwsync';
 
 
