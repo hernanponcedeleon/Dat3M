@@ -68,7 +68,22 @@ yieldtask : YieldTask;
 
 //fences
 armFence : (DataMemoryBarrier | DataSynchronizationBarrier) FenceArmOpt;
-riscvFence : RISCVFence FenceRISCVOpt (Comma FenceRISCVOpt)?;
+riscvFence : RISCVFence fenceOptions;
+
+fenceOptions returns [String mode]
+    :   RLiteral Comma RLiteral {$mode = "r r";}
+    |   RLiteral Comma WLiteral {$mode = "r w";}
+    |   RLiteral Comma RWLiteral {$mode = "r rw";}
+    |   WLiteral Comma RLiteral {$mode = "w r";}
+    |   WLiteral Comma WLiteral {$mode = "w w";}
+    |   WLiteral Comma RWLiteral {$mode = "w rw";}
+    |   RWLiteral Comma RLiteral {$mode = "rw r";}
+    |   RWLiteral Comma WLiteral {$mode = "rw w";}
+    |   RWLiteral Comma RWLiteral {$mode = "rw rw";}
+    |   TsoFence {$mode = "tso";}
+    |   ILiteral {$mode = "i";}
+    ;
+
 x86Fence : X86Fence;
 ppcFence : PPCFence;
 

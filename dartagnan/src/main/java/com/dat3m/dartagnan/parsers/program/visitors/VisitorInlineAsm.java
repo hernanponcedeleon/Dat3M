@@ -499,35 +499,24 @@ public class VisitorInlineAsm extends InlineAsmBaseVisitor<Object> {
 
     @Override
     public Object visitRiscvFence(InlineAsmParser.RiscvFenceContext ctx) {
-        String type = ctx.RISCVFence().getText();
-        String firstOption = ctx.FenceRISCVOpt(0).getText();
-        String secondOption = ctx.FenceRISCVOpt(1) == null ? "" : ctx.FenceRISCVOpt(1).getText();
-        String barrier = type + " " + firstOption + " " + secondOption;
-        Event fence = switch (barrier) {
-            case "fence r r" ->
-                EventFactory.RISCV.newRRFence();
-            case "fence r w" ->
-                EventFactory.RISCV.newRWFence();
-            case "fence r rw" ->
-                EventFactory.RISCV.newRRWFence();
-            case "fence w r" ->
-                EventFactory.RISCV.newWRFence();
-            case "fence w w" ->
-                EventFactory.RISCV.newWWFence();
-            case "fence w rw" ->
-                EventFactory.RISCV.newWRWFence();
-            case "fence rw r" ->
-                EventFactory.RISCV.newRWRFence();
-            case "fence rw w" ->
-                EventFactory.RISCV.newRWWFence();
-            case "fence rw rw" ->
-                EventFactory.RISCV.newRWRWFence();
-            case "fence tso" ->
-                EventFactory.RISCV.newTsoFence();
-            case "fence i" ->
-                EventFactory.RISCV.newSynchronizeFence();
-            default ->
-                throw new ParsingException("Barrier not implemented");
+        // String type = ctx.RISCVFence().getText();
+        // String firstOption = ctx.FenceRISCVOpt(0).getText();
+        // String secondOption = ctx.FenceRISCVOpt(1) == null ? "" : ctx.FenceRISCVOpt(1).getText();
+        // String barrier = type + " " + firstOption + " " + secondOption;
+        String mo = ctx.fenceOptions().mode;
+        Event fence = switch(mo) {
+            case "r r" -> EventFactory.RISCV.newRRFence();
+            case "r w" -> EventFactory.RISCV.newRWFence();
+            case "r rw" -> EventFactory.RISCV.newRRWFence();
+            case "w r" -> EventFactory.RISCV.newWRFence();
+            case "w w" -> EventFactory.RISCV.newWWFence();
+            case "w rw" -> EventFactory.RISCV.newWRWFence();
+            case "rw r" -> EventFactory.RISCV.newRWRFence();
+            case "rw w" -> EventFactory.RISCV.newRWWFence();
+            case "rw rw" -> EventFactory.RISCV.newRWRWFence();
+            case "tso" -> EventFactory.RISCV.newTsoFence();
+            case "i" -> EventFactory.RISCV.newSynchronizeFence();
+            default -> throw new ParsingException("Barrier not implemented");
         };
         asmInstructions.add(fence);
         return null;
