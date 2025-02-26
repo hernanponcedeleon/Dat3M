@@ -1,7 +1,7 @@
 package com.dat3m.dartagnan.parsers.program.visitors;
 
-import com.dat3m.dartagnan.parsers.SpirvParser;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.mocks.MockSpirvParser;
+import com.dat3m.dartagnan.parsers.SpirvParser;
 import org.junit.Test;
 
 import static org.junit.Assert.*;
