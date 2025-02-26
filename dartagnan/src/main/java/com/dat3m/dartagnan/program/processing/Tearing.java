@@ -45,7 +45,7 @@ public final class Tearing {
 
     private boolean replaceAll(AliasAnalysis alias, List<MemoryCoreEvent> events) {
         // Generate transaction events for mixed-size accesses
-        tearInits(alias, events);
+        boolean tearedInits = tearInits(alias, events);
         //NOTE RMWStores need to access the associated load's replacements
         for (MemoryCoreEvent event : events) {
             final Load load = event instanceof Load l ? l : null;
@@ -73,10 +73,11 @@ public final class Tearing {
                 load.replaceBy(entry.getValue());
             }
         }
-        return !map.isEmpty();
+        return tearedInits || !map.isEmpty();
     }
 
-    private void tearInits(AliasAnalysis alias, List<MemoryCoreEvent> events) {
+    private boolean tearInits(AliasAnalysis alias, List<MemoryCoreEvent> events) {
+        boolean some = false;
         final Program program = events.get(0).getThread().getProgram();
         for (MemoryCoreEvent event : events) {
             final Init init = event instanceof Init i ? i : null;
@@ -108,7 +109,9 @@ public final class Tearing {
             for (int begin : offsets) {
                 program.addInit(base, offset + begin);
             }
+            some = true;
         }
+        return some;
     }
 
     private List<Event> createTransaction(Load load, List<Integer> offsets) {
