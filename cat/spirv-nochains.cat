@@ -58,11 +58,6 @@ let posctosem = ((SC0 * SEMSC0) | (SC1 * SEMSC1)) & po
 let posemtosc = ((SEMSC0 * SC0) | (SEMSC1 * SC1)) & po
 
 let asmo = co & ((ATOM | IW) * ATOM)
-// From-read is defined based on scoped modification order
-// instead of coherence. For reads that read-from init, they
-// from-read all writes at the same location.
-let fr = (rf^-1; asmo) | (([IW]; rf)^-1; ((loc;[W]) \ id))
-let fre = fr & ext
 
 let imm(r) = r \ (r; r+)
 let rs = [REL & ATOM]; (imm(asmo); [RMW])*
@@ -129,6 +124,15 @@ let locord = loc &
                 (       ([W];        (hb & avvisinc);  avdv; (hb);                                [W]))        |   // WaW (via device domain)
                 (       ([W];        (hb & avvisinc);  avdv; (hb);       visdv; (hb & avvisinc);  [R]))            // RaW (via device domain)
              )
+
+// From-read is defined based on scoped modification order
+// instead of coherence. For reads that read-from init, they
+// from-read all writes at the same location.
+
+// The definition of the original Vulkan model is too restrictive and forbids CoWW-RR
+// let fr = (rf^-1 ; (W * W) & locord) | (rf^-1; asmo) | (([IW]; rf)^-1; ((loc;[W]) \ id))
+let fr = ((rf & locord)^-1 ; (W * W) & locord) | (rf^-1; asmo) | (([IW]; rf)^-1; ((loc;[W]) \ id))
+let fre = fr & ext
 
 (***********************)
 (* Memory Model Axioms *)
