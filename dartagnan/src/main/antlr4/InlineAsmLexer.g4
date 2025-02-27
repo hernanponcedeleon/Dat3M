@@ -42,8 +42,6 @@ PrefetchStoreL1Once         : 'pstl1strm';
 NumbersInline               : [0-9]+;
 XLiteral                    : 'x';
 RLiteral                    : 'r';
-WLiteral                    : 'w';
-RWLiteral                   : 'rw';
 ILiteral                    : 'i';
 OLiteral                    : 'o';
 IOLiteral                   : 'io';

@@ -494,26 +494,26 @@ public class VisitorInlineAsm extends InlineAsmBaseVisitor<Object> {
         return null;
     }
 
-    @Override
-    public Object visitRiscvFence(InlineAsmParser.RiscvFenceContext ctx) {
-        String mo = ctx.fenceOptions().mode;
-        Event fence = switch(mo) {
-            case "r r" -> EventFactory.RISCV.newRRFence();
-            case "r w" -> EventFactory.RISCV.newRWFence();
-            case "r rw" -> EventFactory.RISCV.newRRWFence();
-            case "w r" -> EventFactory.RISCV.newWRFence();
-            case "w w" -> EventFactory.RISCV.newWWFence();
-            case "w rw" -> EventFactory.RISCV.newWRWFence();
-            case "rw r" -> EventFactory.RISCV.newRWRFence();
-            case "rw w" -> EventFactory.RISCV.newRWWFence();
-            case "rw rw" -> EventFactory.RISCV.newRWRWFence();
-            case "tso" -> EventFactory.RISCV.newTsoFence();
-            case "i" -> EventFactory.RISCV.newSynchronizeFence();
-            default -> throw new ParsingException("Barrier not implemented");
-        };
-        asmInstructions.add(fence);
-        return null;
-    }
+    // @Override
+    // public Object visitRiscvFence(InlineAsmParser.RiscvFenceContext ctx) {
+    //     String mo = ctx.fenceOptions().mode;
+    //     Event fence = switch(mo) {
+    //         case "r r" -> EventFactory.RISCV.newRRFence();
+    //         case "r w" -> EventFactory.RISCV.newRWFence();
+    //         case "r rw" -> EventFactory.RISCV.newRRWFence();
+    //         case "w r" -> EventFactory.RISCV.newWRFence();
+    //         case "w w" -> EventFactory.RISCV.newWWFence();
+    //         case "w rw" -> EventFactory.RISCV.newWRWFence();
+    //         case "rw r" -> EventFactory.RISCV.newRWRFence();
+    //         case "rw w" -> EventFactory.RISCV.newRWWFence();
+    //         case "rw rw" -> EventFactory.RISCV.newRWRWFence();
+    //         case "tso" -> EventFactory.RISCV.newTsoFence();
+    //         case "i" -> EventFactory.RISCV.newSynchronizeFence();
+    //         default -> throw new ParsingException("Barrier not implemented");
+    //     };
+    //     asmInstructions.add(fence);
+    //     return null;
+    // }
 
     @Override
     public Object visitX86Fence(InlineAsmParser.X86FenceContext ctx) {

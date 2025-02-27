@@ -34,11 +34,13 @@ import java.math.BigInteger;
 import java.util.*;
 import java.util.stream.Collectors;
 
-
 import org.antlr.v4.runtime.CharStream;
 import org.antlr.v4.runtime.CharStreams;
 
+// import com.dat3m.dartagnan.parsers.program.ParserInlineAsm;
+
 import com.dat3m.dartagnan.parsers.program.ParserInlineAsm;
+import com.dat3m.dartagnan.parsers.program.ParserInlineRISCV;
 import static com.dat3m.dartagnan.program.event.EventFactory.*;
 import static com.dat3m.dartagnan.program.event.EventFactory.Llvm.newCompareExchange;
 import static com.google.common.base.Preconditions.checkState;
@@ -380,10 +382,9 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
                 getOrNewRegister(currentRegisterName, returnType);
 
         if (ctx.inlineAsm() != null) {
+            String asmCode = ctx.inlineAsm().inlineAsmBody().getText();
             // see https://llvm.org/docs/LangRef.html#inline-assembler-expressions
             //FIXME ignore side effects of inline assembly
-            CharStream charStream = CharStreams.fromString(ctx.inlineAsm().inlineAsmBody().getText());
-            ParserInlineAsm parser = new ParserInlineAsm(function, resultRegister, arguments);
             List<Event> events = new ArrayList<>();
             try{
                 events = parser.parse(charStream);
