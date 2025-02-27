@@ -22,6 +22,7 @@ jobs:
   litmus-tests:
     name: Litmus tests
     runs-on: ubuntu-latest
+    if: ${{ github.event_name != 'schedule' }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -40,12 +41,12 @@ jobs:
         run: echo "DAT3M_OUTPUT=$(echo $DAT3M_HOME)/output" >> $GITHUB_ENV
 
       - name: Litmus tests
-        if: ${{ github.event_name != 'schedule' }}
         run: mvn test -Dtest="com/dat3m/dartagnan/litmus/**/*" -f dartagnan/pom.xml
 
   llvm-tests:
     name: LLVM tests
     runs-on: ubuntu-latest
+    if: ${{ github.event_name != 'schedule' }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -64,12 +65,12 @@ jobs:
         run: echo "DAT3M_OUTPUT=$(echo $DAT3M_HOME)/output" >> $GITHUB_ENV
 
       - name: LLVM tests
-        if: ${{ github.event_name != 'schedule' }}
         run: mvn test -Dtest="com/dat3m/dartagnan/llvm/**/*" -f dartagnan/pom.xml
 
   other-tests:
     name: Other tests
     runs-on: ubuntu-latest
+    if: ${{ github.event_name != 'schedule' }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -88,12 +89,12 @@ jobs:
         run: echo "DAT3M_OUTPUT=$(echo $DAT3M_HOME)/output" >> $GITHUB_ENV
 
       - name: Other tests
-        if: ${{ github.event_name != 'schedule' }}
         run: mvn test -Dtest="com/dat3m/dartagnan/others/**/*" -f dartagnan/pom.xml
 
   spirv-tests:
     name: SPIRV tests
     runs-on: ubuntu-latest
+    if: ${{ github.event_name != 'schedule' }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -112,7 +113,6 @@ jobs:
         run: echo "DAT3M_OUTPUT=$(echo $DAT3M_HOME)/output" >> $GITHUB_ENV
 
       - name: SPIRV tests
-        if: ${{ github.event_name != 'schedule' }}
         run: mvn test -Dtest="com/dat3m/dartagnan/spirv/**/*" -f dartagnan/pom.xml
 
   weekly:
