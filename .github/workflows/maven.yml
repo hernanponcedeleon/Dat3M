@@ -114,9 +114,10 @@ jobs:
         if: ${{ github.event_name != 'schedule' }}
         run: mvn test -Dtest="com/dat3m/dartagnan/spirv/**/*" -f dartagnan/pom.xml
 
-  full:
+  weekly:
     name: All tests
     runs-on: ubuntu-latest
+    if: github.event_name == 'schedule'
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -141,14 +142,12 @@ jobs:
         run: echo "DAT3M_OUTPUT=$(echo $DAT3M_HOME)/output" >> $GITHUB_ENV
 
       - name: Build with Maven
-        if: ${{ github.event_name == 'schedule' }}
         run: mvn --batch-mode --update-snapshots install
 
       - name: Build the Docker image
         run: docker build . --file Dockerfile
 
       - name: Generate JaCoCo Badge
-        if: ${{ github.event_name == 'schedule' }}
         id: jacoco
         uses: cicirello/jacoco-badge-generator@v2
         with:
@@ -159,7 +158,6 @@ jobs:
           jacoco-csv-file: dartagnan/target/site/jacoco/jacoco.csv
 
       - name: Log coverage percentage
-        if: ${{ github.event_name == 'schedule' }}
         run: |
           echo "coverage = ${{ steps.jacoco.outputs.coverage }}"
           echo "branch coverage = ${{ steps.jacoco.outputs.branches }}"
