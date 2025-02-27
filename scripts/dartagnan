@@ -1,0 +1,70 @@
+#!/usr/bin/env sh
+set -e
+
+java_cmd="${DAT3M_JAVA}"
+jar=${DAT3M_HOME}/dartagnan/target/dartagnan.jar
+args=""
+this="$0"
+
+if [ -z "${java_cmd}" ]; then
+    java_cmd="java"
+fi
+
+usage () {
+    echo "${this} [-cat MODEL] [-target TARGET] [-property PROPERTY] <FILE>"
+}
+
+while [ "$#" != "0" ]; do
+    #echo ">> $@"
+    case "$1" in
+        -cat)
+            shift
+            cat="$1"
+        ;;
+        -target)
+            shift
+            target="$1"
+        ;;
+        -property)
+            shift
+            property="$1"
+        ;;
+        -help)
+            usage
+            exit
+        ;;
+        *)
+            args="${args} $1"
+        ;;
+    esac
+    shift
+done
+
+if [ -z "${cat}" ]; then
+    echo "error: no cat file specified"
+    exit 1
+elif [ ! -f "${cat}" ]; then
+    cat="${DAT3M_HOME}/cat/$cat".cat
+fi
+
+if [ -z "${target}" ] && [ ! -z "$(echo $cat | grep aarch64)" ] ; then
+    target="arm8"
+fi
+
+if [ -z "${target}" ]; then
+    echo "error: no target specified"
+    exit 1
+fi
+
+if [ -z "${property}" ]; then
+    property="program_spec"
+fi
+
+cmd="${java_cmd} -jar ${jar}"
+cmd="${cmd} ${cat}"
+cmd="${cmd} --target=${target}"
+cmd="${cmd} --property=${property}"
+cmd="${cmd} ${args}"
+
+echo "# ${cmd}"
+exec ${cmd}
