@@ -14,7 +14,7 @@ on:
   pull_request:
     branches: [ master, development ]
   schedule:
-    - cron: '0 * * * 4'  # Run weekly every Thursday
+    - cron: '30 8 * * 4'  # Run weekly every Thursday
   workflow_dispatch:
 
 jobs:
