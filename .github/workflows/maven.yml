@@ -19,6 +19,31 @@ on:
 
 jobs:
 
+  inlineAsm-tests:
+    name: InlineAsm tests
+    runs-on: ubuntu-latest
+    if: ${{ github.event_name != 'schedule' }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up the Java JDK
+        uses: actions/setup-java@v3
+        with:
+          java-version: '17'
+          distribution: 'adopt'
+          cache: maven
+
+      - name: Set DAT3M_HOME
+        run: echo "DAT3M_HOME=$(echo $GITHUB_WORKSPACE)" >> $GITHUB_ENV
+
+      - name: Set DAT3M_OUTPUT
+        run: echo "DAT3M_OUTPUT=$(echo $DAT3M_HOME)/output" >> $GITHUB_ENV
+
+      - name: Litmus tests
+        run: mvn test -Dtest="com/dat3m/dartagnan/inlineAsm/**/*" -f dartagnan/pom.xml
+
+
   litmus-tests:
     name: Litmus tests
     runs-on: ubuntu-latest
