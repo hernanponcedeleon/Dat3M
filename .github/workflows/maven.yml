@@ -9,9 +9,12 @@ concurrency:
   cancel-in-progress: true
 
 on:
+  push:
+    branches: [ master, development ]
+  pull_request:
+    branches: [ master, development ]
   schedule:
-    - cron: '30 9 * * 4'  # Run weekly every Thursday
-  workflow_dispatch:
+    - cron: '30 8 * * 4'  # Run weekly every Thursday
 
 jobs:
 
