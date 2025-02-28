@@ -8,9 +8,11 @@ import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.Type;
+import com.dat3m.dartagnan.expression.integers.IntCmpOp;
 import com.dat3m.dartagnan.expression.type.AggregateType;
 import com.dat3m.dartagnan.expression.type.BooleanType;
 import com.dat3m.dartagnan.expression.type.IntegerType;
+import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.expression.type.VoidType;
 import com.dat3m.dartagnan.parsers.InlineRISCVBaseVisitor;
 import com.dat3m.dartagnan.parsers.InlineRISCVParser;
@@ -18,6 +20,7 @@ import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.EventFactory;
+import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.event.core.Local;
 
@@ -219,254 +222,229 @@ public class VisitorInlineRISCV extends InlineRISCVBaseVisitor<Object> {
         return constraint.inputOpGeneralReg() != null;
     }
 
-    // @Override
-    // public Object visitLoad(InlineRISCVParser.LoadContext ctx) {
-    //     Register register = (Register) ctx.register(0).accept(this);
-    //     Register address = (Register) ctx.register(1).accept(this);
-    //     asmInstructions.add(EventFactory.newLoad(register, address));
-    //     return null;
-    // }
+    @Override
+    public Object visitLoad(InlineRISCVParser.LoadContext ctx) {
+        Register register = (Register) ctx.register(0).accept(this);
+        Register address = (Register) ctx.register(1).accept(this);
+        asmInstructions.add(EventFactory.newLoad(register, address));
+        return null;
+    }
 
-    // @Override
-    // public Object visitLoadAcquire(InlineRISCVParser.LoadAcquireContext ctx) {
-    //     Register register = (Register) ctx.register(0).accept(this);
-    //     Register address = (Register) ctx.register(1).accept(this);
-    //     asmInstructions.add(EventFactory.newLoadWithMo(register, address, Tag.ARMv8.MO_ACQ));
-    //     return null;
-    // }
+    @Override
+    public Object visitLoadExclusive(InlineRISCVParser.LoadExclusiveContext ctx) {
+        Register register = (Register) ctx.register(0).accept(this);
+        Register address = (Register) ctx.register(1).accept(this);
+        asmInstructions.add(EventFactory.newRMWLoadExclusive(register, address));
+        return null;
+    }
 
-    // @Override
-    // public Object visitLoadExclusive(InlineRISCVParser.LoadExclusiveContext ctx) {
-    //     Register register = (Register) ctx.register(0).accept(this);
-    //     Register address = (Register) ctx.register(1).accept(this);
-    //     asmInstructions.add(EventFactory.newRMWLoadExclusive(register, address));
-    //     return null;
-    // }
+    @Override
+    public Object visitLoadAcquireExclusive(InlineRISCVParser.LoadAcquireExclusiveContext ctx) {
+        Register register = (Register) ctx.register(0).accept(this);
+        Register address = (Register) ctx.register(1).accept(this);
+        asmInstructions.add(EventFactory.newRMWLoadExclusiveWithMo(register, address, Tag.RISCV.MO_ACQ));
+        return null;
+    }
 
-    // @Override
-    // public Object visitLoadAcquireExclusive(InlineRISCVParser.LoadAcquireExclusiveContext ctx) {
-        // Register register = (Register) ctx.register(0).accept(this);
-        // Register address = (Register) ctx.register(1).accept(this);
-        // asmInstructions.add(EventFactory.newRMWLoadExclusiveWithMo(register, address, Tag.ARMv8.MO_ACQ));
-    //     return null;
-    // }
+    @Override
+    public Object visitLoadAcquireReleaseExclusive(InlineRISCVParser.LoadAcquireReleaseExclusiveContext ctx) {
+        Register register = (Register) ctx.register(0).accept(this);
+        Register address = (Register) ctx.register(1).accept(this);
+        asmInstructions.add(EventFactory.newRMWLoadExclusiveWithMo(register, address, Tag.RISCV.MO_ACQ_REL));
+        return null;
+    }
 
-    // @Override
-    // public Object visitAdd(InlineRISCVParser.AddContext ctx) {
-    //     Register resultRegister = (Register) ctx.register(0).accept(this);
-    //     Register leftRegister = (Register) ctx.register(1).accept(this);
-    //     Register rightRegister = (Register) ctx.register(2).accept(this);
-    //     Expression exp = expressions.makeAdd(leftRegister, rightRegister);
-    //     asmInstructions.add(EventFactory.newLocal(resultRegister, exp));
-    //     return null;
-    // }
+    @Override
+    public Object visitAdd(InlineRISCVParser.AddContext ctx) {
+        Register resultRegister = (Register) ctx.register(0).accept(this);
+        Register leftRegister = (Register) ctx.register(1).accept(this);
+        Register rightRegister = (Register) ctx.register(2).accept(this);
+        Expression exp = expressions.makeAdd(leftRegister, rightRegister);
+        asmInstructions.add(EventFactory.newLocal(resultRegister, exp));
+        return null;
+    }
 
-    // @Override
-    // public Object visitSub(InlineRISCVParser.SubContext ctx) {
-    //     Register resultRegister = (Register) ctx.register(0).accept(this);
-    //     Register leftRegister = (Register) ctx.register(1).accept(this);
-    //     Register rightRegister = (Register) ctx.register(2).accept(this);
-    //     Expression exp = expressions.makeSub(leftRegister, rightRegister);
-    //     asmInstructions.add(EventFactory.newLocal(resultRegister, exp));
-    //     return null;
-    // }
+    @Override
+    public Object visitSub(InlineRISCVParser.SubContext ctx) {
+        Register resultRegister = (Register) ctx.register(0).accept(this);
+        Register leftRegister = (Register) ctx.register(1).accept(this);
+        Register rightRegister = (Register) ctx.register(2).accept(this);
+        Expression exp = expressions.makeSub(leftRegister, rightRegister);
+        asmInstructions.add(EventFactory.newLocal(resultRegister, exp));
+        return null;
+    }
 
-    // @Override
-    // public Object visitOr(InlineRISCVParser.OrContext ctx) {
-    //     Register resultRegister = (Register) ctx.register(0).accept(this);
-    //     Register leftRegister = (Register) ctx.register(1).accept(this);
-    //     Register rightRegister = (Register) ctx.register(2).accept(this);
-    //     Expression exp = expressions.makeIntOr(leftRegister, rightRegister);
-    //     asmInstructions.add(EventFactory.newLocal(resultRegister, exp));
-    //     return null;
-    // }
+    @Override
+    public Object visitStore(InlineRISCVParser.StoreContext ctx) {
+        Register value = (Register) ctx.register(0).accept(this);
+        Register address = (Register) ctx.register(1).accept(this);
+        asmInstructions.add(EventFactory.newStore(address, value));
+        return null;
+    }
 
-    // @Override
-    // public Object visitAnd(InlineRISCVParser.AndContext ctx) {
-    //     Register resultRegister = (Register) ctx.register(0).accept(this);
-    //     Register leftRegister = (Register) ctx.register(1).accept(this);
-    //     Register rightRegister = (Register) ctx.register(2).accept(this);
-    //     Expression exp = expressions.makeIntAnd(leftRegister, rightRegister);
-    //     asmInstructions.add(EventFactory.newLocal(resultRegister, exp));
-    //     return null;
-    // }
 
-    // @Override
-    // public Object visitStore(InlineRISCVParser.StoreContext ctx) {
-    //     Register value = (Register) ctx.register(0).accept(this);
-    //     Register address = (Register) ctx.register(1).accept(this);
-    //     asmInstructions.add(EventFactory.newStore(address, value));
-    //     return null;
-    // }
+    @Override
+    public Object visitStoreConditional(InlineRISCVParser.StoreConditionalContext ctx) {
+        Register freshResultRegister = (Register) ctx.register(0).accept(this);
+        Register value = (Register) ctx.register(1).accept(this);
+        Register address = (Register) ctx.register(2).accept(this);
+        asmInstructions.add(EventFactory.Common.newExclusiveStore(freshResultRegister, address, value, Tag.RISCV.MO_REL)); // for now I put Release semantics
+        return null;
+    }
 
-    // @Override
-    // public Object visitStoreRelease(InlineRISCVParser.StoreReleaseContext ctx) {
-    //     Register value = (Register) ctx.register(0).accept(this);
-    //     Register address = (Register) ctx.register(1).accept(this);
-    //     asmInstructions.add(EventFactory.newStoreWithMo(address, value, Tag.ARMv8.MO_REL));
-    //     return null;
-    // }
+    @Override
+    public Object visitStoreConditionalRelease(InlineRISCVParser.StoreConditionalReleaseContext ctx) {
+        Register freshResultRegister = (Register) ctx.register(0).accept(this);
+        Register value = (Register) ctx.register(1).accept(this);
+        Register address = (Register) ctx.register(2).accept(this);
+        asmInstructions.add(EventFactory.Common.newExclusiveStore(freshResultRegister, address, value, Tag.RISCV.MO_REL));
+        return null;
+    }
 
-    // @Override
-    // public Object visitStoreExclusive(InlineRISCVParser.StoreExclusiveContext ctx) {
-    //     Register freshResultRegister = (Register) ctx.register(0).accept(this);
-    //     Register value = (Register) ctx.register(1).accept(this);
-    //     Register address = (Register) ctx.register(2).accept(this);
-    //     asmInstructions.add(EventFactory.Common.newExclusiveStore(freshResultRegister, address, value, Tag.ARMv8.MO_RX));
-    //     return null;
-    // }
+    @Override
+    public Object visitMove(InlineRISCVParser.MoveContext ctx) {
+        Register toRegister = (Register) ctx.register(0).accept(this);
+        Register fromRegister = (Register) ctx.register(1).accept(this);
+        asmInstructions.add(EventFactory.newLocal(toRegister, fromRegister));
+        return null;
+    }
 
-    // @Override
-    // public Object visitStoreReleaseExclusive(InlineRISCVParser.StoreReleaseExclusiveContext ctx) {
-    //     Register freshResultRegister = (Register) ctx.register(0).accept(this);
-    //     Register value = (Register) ctx.register(1).accept(this);
-    //     Register address = (Register) ctx.register(2).accept(this);
-    //     asmInstructions.add(EventFactory.Common.newExclusiveStore(freshResultRegister, address, value, Tag.ARMv8.MO_REL));
-    //     return null;
-    // }
+    @Override
+    public Object visitBranchNotEqual(InlineRISCVParser.BranchNotEqualContext ctx) {
+        Label label = getOrNewLabel(ctx.NumbersInline().getText());
+        Register firstRegister = (Register) ctx.register(0).accept(this);
+        Register secondRegister = (Register) ctx.register(1).accept(this);
+        Expression expr = expressions.makeIntCmp(firstRegister, IntCmpOp.NEQ, secondRegister);
+        asmInstructions.add(EventFactory.newJump(expr, label));
+        return null;
+    }
 
-    // @Override
-    // public Object visitCompare(InlineRISCVParser.CompareContext ctx) {
-    //     Register firstRegister = (Register) ctx.register().accept(this);
-    //     expectedType = firstRegister.getType();
-    //     Expression secondRegister = (Expression) ctx.expr().accept(this);
-    //     this.comparator = new CmpInstruction(firstRegister, secondRegister);
-    //     return null;
-    // }
+    @Override
+    public Object visitBranchNotEqualZero(InlineRISCVParser.BranchNotEqualZeroContext ctx) {
+        Label label = getOrNewLabel(ctx.NumbersInline().getText());
+        Register firstRegister = (Register) ctx.register().accept(this);
+        Expression zero = expressions.makeZero((IntegerType) firstRegister.getType());
+        Expression expr = expressions.makeIntCmp(firstRegister, IntCmpOp.NEQ, zero);
+        asmInstructions.add(EventFactory.newJump(expr, label));
+        return null;
+    }
 
-    // @Override
-    // public Object visitCompareBranchNonZero(InlineRISCVParser.CompareBranchNonZeroContext ctx) {
-    //     Label label = getOrNewLabel(ctx.NumbersInline().getText());
-    //     Register firstRegister = (Register) ctx.register().accept(this);
-    //     Expression zero = expressions.makeZero((IntegerType) firstRegister.getType());
-    //     Expression expr = expressions.makeIntCmp(firstRegister, IntCmpOp.NEQ, zero);
-    //     asmInstructions.add(EventFactory.newJump(expr, label));
-    //     return null;
-    // }
+    @Override
+    public Object visitLabelDefinition(InlineRISCVParser.LabelDefinitionContext ctx) {
+        String labelID = ctx.NumbersInline().getText();
+        Label label = getOrNewLabel(labelID);
+        asmInstructions.add(label);
+        return null;
+    }
 
-    // @Override
-    // public Object visitMove(InlineRISCVParser.MoveContext ctx) {
-    //     Register toRegister = (Register) ctx.register(0).accept(this);
-    //     Register fromRegister = (Register) ctx.register(1).accept(this);
-    //     asmInstructions.add(EventFactory.newLocal(toRegister, fromRegister));
-    //     return null;
-    // }
+    @Override
+    public Object visitNegate(InlineRISCVParser.NegateContext ctx){
+        System.out.println("Reading" + ctx.getText());
+        return null;
+    }
 
-    // @Override
-    // public Object visitBranchEqual(InlineRISCVParser.BranchEqualContext ctx) {
-    //     Label label = getOrNewLabel(ctx.NumbersInline().getText());
-    //     Expression expr = expressions.makeIntCmp(comparator.left, IntCmpOp.EQ, comparator.right);
-    //     asmInstructions.add(EventFactory.newJump(expr, label));
-    //     return null;
-    // }
+    @Override
+    public Object visitAtomicAdd(InlineRISCVParser.AtomicAddContext ctx){
+        System.out.println("Reading" + ctx.getText());
+        return null;
+    }
+    @Override
+    public Object visitAtomicAddRelease(InlineRISCVParser.AtomicAddReleaseContext ctx){
+        System.out.println("Reading" + ctx.getText());
+        return null;
+    }
+    @Override
+    public Object visitAtomicAddAcquireRelease(InlineRISCVParser.AtomicAddAcquireReleaseContext ctx){
+        System.out.println("Reading" + ctx.getText());
+        return null;
+    }
+    // If the register with that ID was already defined, we simply return it
+    // otherwise, we create and return the new register.
+    // Each time we call this visitor, it picks up the ID of the register -- e.g. $3 -> ID = 3.
+    // if we created a register which will be mapped to the return Register, we have to add to "pendingRegisters", 
+    // as we are going to need it while visiting the metadata to create the output assignment
+    @Override
+    public Object visitRegister(InlineRISCVParser.RegisterContext ctx) {
+        String registerName = ctx.NumbersInline().getText();
+        int registerID = Integer.parseInt(registerName);
+        if (asmRegisters.containsKey(registerID)) {
+            return asmRegisters.get(registerID);
+        } else {
+            // Pick up the correct type and create the new Register
+            Type registerType = getLlvmRegisterTypeGivenAsmRegisterID(registerID);
+            Register newRegister = this.llvmFunction.getOrNewRegister(makeRegisterName(registerID), registerType);
+            if (isPartOfReturnRegister(registerID) && isReturnRegisterAggregate()) {
+                this.pendingRegisters.add(newRegister);
+            }
+            asmRegisters.put(registerID, newRegister);
+            return newRegister;
+        }
+    }
 
-    // @Override
-    // public Object visitBranchNotEqual(InlineRISCVParser.BranchNotEqualContext ctx) {
-    //     Label label = getOrNewLabel(ctx.NumbersInline().getText());
-    //     Expression expr = expressions.makeIntCmp(comparator.left, IntCmpOp.NEQ, comparator.right);
-    //     asmInstructions.add(EventFactory.newJump(expr, label));
-    //     return null;
-    // }
+    // This visitor generates two sets of events: 
+    // 1) inputAssignments -> how to map llvm registers from args to asm registers used in the asm instructions
+    // 2) outputAssignments -> how to map asm registers to the return register
+    // When this visitor is called, we have already created all of the asm registers.
+    // We just have to read the constraints, and based on their type, understand if they are going to be mapped
+    // to the args registers or to the return register.
+    @Override
+    public Object visitAsmMetadataEntries(InlineRISCVParser.AsmMetadataEntriesContext ctx) {
+        List<InlineRISCVParser.ConstraintContext> constraints = ctx.constraint();
+        boolean isOutputRegistersInitialized = returnRegister == null;
+        // We iterate until we find the first non-output constraint. Then we immediately initialize the return register
+        // (the right-hand side of the assignment will be either a single register or an aggregate type depending on how many output constraints we processed). 
+        // We then map args registers to asm registers (we need to shift the register ID to find the corresponding args position of the matching register).
+        // Numeric constraint just map the registerID with the corresponding numeric position. (https://llvm.org/docs/LangRef.html#input-constraints)
+        for (int i = 0; i < constraints.size(); i++) {
+            InlineRISCVParser.ConstraintContext constraint = constraints.get(i);
+            if (isConstraintMemoryLocation(constraint)) {
+                isOutputRegistersInitialized = true;
+                continue;
+            }
+            if (isConstraintOutputConstraint(constraint)) {
+                continue;
+            }
+            if (!isOutputRegistersInitialized) {
+                isOutputRegistersInitialized = true;
+                if (i == 1) {
+                    outputAssignments.add(EventFactory.newLocal(returnRegister, asmRegisters.get(0)));
+                } else {
+                    Type aggregateType = TypeFactory.getInstance().getAggregateType(((AggregateType) returnRegister.getType()).getFields());
+                    Expression finalAssignExpression = expressions.makeConstruct(aggregateType, this.pendingRegisters);
+                    outputAssignments.add(EventFactory.newLocal(this.returnRegister, finalAssignExpression));
+                }
+            }
+            if (isConstraintInputConstraint(constraint)) {
+                Register asmRegister = asmRegisters.get(i);
+                if (asmRegister == null) {
+                    continue;
+                }
+                Expression llvmRegister = argsRegisters.get(i - getSizeOfReturnRegister());
+                inputAssignments.add(EventFactory.newLocal(asmRegister, llvmRegister));
+            }
+        }
+        return null;
+    }
 
-    // @Override
-    // public Object visitLabelDefinition(InlineRISCVParser.LabelDefinitionContext ctx) {
-    //     String labelID = ctx.NumbersInline().getText();
-    //     Label label = getOrNewLabel(labelID);
-    //     asmInstructions.add(label);
-    //     return null;
-    // }
-
-    // // If the register with that ID was already defined, we simply return it
-    // // otherwise, we create and return the new register.
-    // // Each time we call this visitor, it picks up the ID of the register -- e.g. $3 -> ID = 3.
-    // // if we created a register which will be mapped to the return Register, we have to add to "pendingRegisters", 
-    // // as we are going to need it while visiting the metadata to create the output assignment
-    // @Override
-    // public Object visitRegister(InlineRISCVParser.RegisterContext ctx) {
-    //     String registerName = ctx.NumbersInline().getText();
-    //     int registerID = Integer.parseInt(registerName);
-    //     if (asmRegisters.containsKey(registerID)) {
-    //         return asmRegisters.get(registerID);
-    //     } else {
-    //         // Pick up the correct type and create the new Register
-    //         Type registerType = getLlvmRegisterTypeGivenAsmRegisterID(registerID);
-    //         Register newRegister = this.llvmFunction.getOrNewRegister(makeRegisterName(registerID), registerType);
-    //         if (isPartOfReturnRegister(registerID) && isReturnRegisterAggregate()) {
-    //             this.pendingRegisters.add(newRegister);
-    //         }
-    //         asmRegisters.put(registerID, newRegister);
-    //         return newRegister;
-    //     }
-    // }
-
-    // // This visitor generates two sets of events: 
-    // // 1) inputAssignments -> how to map llvm registers from args to asm registers used in the asm instructions
-    // // 2) outputAssignments -> how to map asm registers to the return register
-    // // When this visitor is called, we have already created all of the asm registers.
-    // // We just have to read the constraints, and based on their type, understand if they are going to be mapped
-    // // to the args registers or to the return register.
-    // @Override
-    // public Object visitAsmMetadataEntries(InlineRISCVParser.AsmMetadataEntriesContext ctx) {
-    //     List<InlineRISCVParser.ConstraintContext> constraints = ctx.constraint();
-    //     boolean isOutputRegistersInitialized = returnRegister == null;
-    //     // We iterate until we find the first non-output constraint. Then we immediately initialize the return register
-    //     // (the right-hand side of the assignment will be either a single register or an aggregate type depending on how many output constraints we processed). 
-    //     // We then map args registers to asm registers (we need to shift the register ID to find the corresponding args position of the matching register).
-    //     // Numeric constraint just map the registerID with the corresponding numeric position. (https://llvm.org/docs/LangRef.html#input-constraints)
-    //     for (int i = 0; i < constraints.size(); i++) {
-    //         InlineRISCVParser.ConstraintContext constraint = constraints.get(i);
-    //         if (isConstraintMemoryLocation(constraint)) {
-    //             isOutputRegistersInitialized = true;
-    //             continue;
-    //         }
-    //         if (isConstraintOutputConstraint(constraint)) {
-    //             continue;
-    //         }
-    //         if (!isOutputRegistersInitialized) {
-    //             isOutputRegistersInitialized = true;
-    //             if (i == 1) {
-    //                 outputAssignments.add(EventFactory.newLocal(returnRegister, asmRegisters.get(0)));
-    //             } else {
-    //                 Type aggregateType = TypeFactory.getInstance().getAggregateType(((AggregateType) returnRegister.getType()).getFields());
-    //                 Expression finalAssignExpression = expressions.makeConstruct(aggregateType, this.pendingRegisters);
-    //                 outputAssignments.add(EventFactory.newLocal(this.returnRegister, finalAssignExpression));
-    //             }
-    //         }
-    //         if (isConstraintInputConstraint(constraint)) {
-    //             Register asmRegister = asmRegisters.get(i);
-    //             if (asmRegister == null) {
-    //                 continue;
-    //             }
-    //             Expression llvmRegister = argsRegisters.get(i - getSizeOfReturnRegister());
-    //             inputAssignments.add(EventFactory.newLocal(asmRegister, llvmRegister));
-    //         }
-    //         if (isConstraintNumeric(constraint)) {
-    //             int constraintValue = Integer.parseInt(constraint.getText());
-    //             inputAssignments.add(EventFactory.newLocal(asmRegisters.get(constraintValue), argsRegisters.get(i - getSizeOfReturnRegister())));
-    //         }
-    //     }
-    //     return null;
-    // }
-
-    // @Override
-    // public Object visitRiscvFence(InlineRISCVParser.RiscvFenceContext ctx) {
-    //     String mo = ctx.fenceOptions().mode;
-    //     Event fence = switch(mo) {
-    //         case "r r" -> EventFactory.RISCV.newRRFence();
-    //         case "r w" -> EventFactory.RISCV.newRWFence();
-    //         case "r rw" -> EventFactory.RISCV.newRRWFence();
-    //         case "w r" -> EventFactory.RISCV.newWRFence();
-    //         case "w w" -> EventFactory.RISCV.newWWFence();
-    //         case "w rw" -> EventFactory.RISCV.newWRWFence();
-    //         case "rw r" -> EventFactory.RISCV.newRWRFence();
-    //         case "rw w" -> EventFactory.RISCV.newRWWFence();
-    //         case "rw rw" -> EventFactory.RISCV.newRWRWFence();
-    //         case "tso" -> EventFactory.RISCV.newTsoFence();
-    //         case "i" -> EventFactory.RISCV.newSynchronizeFence();
-    //         default -> throw new ParsingException("Barrier not implemented");
-    //     };
-    //     asmInstructions.add(fence);
-    //     return null;
-    // }
+    @Override
+    public Object visitRiscvFence(InlineRISCVParser.RiscvFenceContext ctx) {
+        String mo = ctx.fenceOptions().mode;
+        Event fence = switch(mo) {
+            case "r r" -> EventFactory.RISCV.newRRFence();
+            case "r w" -> EventFactory.RISCV.newRWFence();
+            case "r rw" -> EventFactory.RISCV.newRRWFence();
+            case "w r" -> EventFactory.RISCV.newWRFence();
+            case "w w" -> EventFactory.RISCV.newWWFence();
+            case "w rw" -> EventFactory.RISCV.newWRWFence();
+            case "rw r" -> EventFactory.RISCV.newRWRFence();
+            case "rw w" -> EventFactory.RISCV.newRWWFence();
+            case "rw rw" -> EventFactory.RISCV.newRWRWFence();
+            case "tso" -> EventFactory.RISCV.newTsoFence();
+            case "i" -> EventFactory.RISCV.newSynchronizeFence();
+            default -> throw new ParsingException("Barrier not implemented");
+        };
+        asmInstructions.add(fence);
+        return null;
+    }
 
 }
