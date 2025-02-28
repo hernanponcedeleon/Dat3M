@@ -5,9 +5,9 @@ import com.dat3m.dartagnan.parsers.SpirvBaseVisitor;
 import com.dat3m.dartagnan.parsers.SpirvParser;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.*;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.builders.ProgramBuilder;
-import com.dat3m.dartagnan.parsers.program.visitors.spirv.utils.ThreadGrid;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
+import com.dat3m.dartagnan.program.ThreadGrid;
 import org.antlr.v4.runtime.tree.ParseTree;
 
 import java.lang.reflect.Constructor;
@@ -139,8 +139,10 @@ public class VisitorSpirv extends SpirvBaseVisitor<Program> {
                 VisitorOpsAtomic.class,
                 VisitorOpsBarrier.class,
                 VisitorOpsBits.class,
+                VisitorOpsComposite.class,
                 VisitorOpsConstant.class,
                 VisitorOpsControlFlow.class,
+                VisitorOpsConversion.class,
                 VisitorOpsDebug.class,
                 VisitorOpsExtension.class,
                 VisitorOpsFunction.class,

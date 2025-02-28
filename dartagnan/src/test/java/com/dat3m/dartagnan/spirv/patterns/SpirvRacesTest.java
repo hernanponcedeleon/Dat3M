@@ -41,7 +41,7 @@ public class SpirvRacesTest {
     private final Result expected;
 
     public SpirvRacesTest(String file, boolean filter, Result expected) {
-        this.programPath = getTestResourcePath("spirv/patterns/" + file);
+        this.programPath = getTestResourcePath("spirv/vulkan/patterns/" + file);
         this.filter = filter;
         this.expected = expected;
     }

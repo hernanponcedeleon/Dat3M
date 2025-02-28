@@ -8,7 +8,7 @@ import com.dat3m.dartagnan.expression.integers.IntLiteral;
 import com.dat3m.dartagnan.expression.type.*;
 import com.dat3m.dartagnan.parsers.SpirvParser;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.builders.ProgramBuilder;
-import com.dat3m.dartagnan.parsers.program.visitors.spirv.utils.ThreadGrid;
+import com.dat3m.dartagnan.program.ThreadGrid;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.memory.ScopedPointerVariable;
 
@@ -29,67 +29,67 @@ public class VisitorExtensionClspvReflection extends VisitorExtension<Void> {
     }
 
     @Override
-    public Void visitKernel(SpirvParser.KernelContext ctx) {
+    public Void visitClspvReflection_kernel(SpirvParser.ClspvReflection_kernelContext ctx) {
         // Do nothing, kernel name and the number of arguments
         return null;
     }
 
     @Override
-    public Void visitArgumentInfo(SpirvParser.ArgumentInfoContext ctx) {
+    public Void visitClspvReflection_argumentInfo(SpirvParser.ClspvReflection_argumentInfoContext ctx) {
         // Do nothing, variable name in OpenCL
         return null;
     }
 
     @Override
-    public Void visitArgumentStorageBuffer(SpirvParser.ArgumentStorageBufferContext ctx) {
+    public Void visitClspvReflection_argumentStorageBuffer(SpirvParser.ClspvReflection_argumentStorageBufferContext ctx) {
         // Do nothing, variable index in OpenCL and Spir-V and descriptor set
         return null;
     }
 
     @Override
-    public Void visitArgumentWorkgroup(SpirvParser.ArgumentWorkgroupContext ctx) {
+    public Void visitClspvReflection_argumentWorkgroup(SpirvParser.ClspvReflection_argumentWorkgroupContext ctx) {
         // Do nothing, default size of workgroup buffer defined in spec constant
         return null;
     }
 
     @Override
-    public Void visitSpecConstantWorkgroupSize(SpirvParser.SpecConstantWorkgroupSizeContext ctx) {
+    public Void visitClspvReflection_specConstantWorkgroupSize(SpirvParser.ClspvReflection_specConstantWorkgroupSizeContext ctx) {
         // Do nothing, will be overwritten by BuiltIn WorkgroupSize
         return null;
     }
 
     @Override
-    public Void visitPushConstantGlobalOffset(SpirvParser.PushConstantGlobalOffsetContext ctx) {
+    public Void visitClspvReflection_pushConstantGlobalOffset(SpirvParser.ClspvReflection_pushConstantGlobalOffsetContext ctx) {
         return setPushConstantValue("PushConstantGlobalOffset", ctx.offsetIdRef().getText(), ctx.sizeIdRef().getText());
     }
 
     @Override
-    public Void visitPushConstantGlobalSize(SpirvParser.PushConstantGlobalSizeContext ctx) {
+    public Void visitClspvReflection_pushConstantGlobalSize(SpirvParser.ClspvReflection_pushConstantGlobalSizeContext ctx) {
         return setPushConstantValue("PushConstantGlobalSize", ctx.offsetIdRef().getText(), ctx.sizeIdRef().getText());
     }
 
     @Override
-    public Void visitPushConstantEnqueuedLocalSize(SpirvParser.PushConstantEnqueuedLocalSizeContext ctx) {
+    public Void visitClspvReflection_pushConstantEnqueuedLocalSize(SpirvParser.ClspvReflection_pushConstantEnqueuedLocalSizeContext ctx) {
         return setPushConstantValue("PushConstantEnqueuedLocalSize", ctx.offsetIdRef().getText(), ctx.sizeIdRef().getText());
     }
 
     @Override
-    public Void visitPushConstantNumWorkgroups(SpirvParser.PushConstantNumWorkgroupsContext ctx) {
+    public Void visitClspvReflection_pushConstantNumWorkgroups(SpirvParser.ClspvReflection_pushConstantNumWorkgroupsContext ctx) {
         return setPushConstantValue("PushConstantNumWorkgroups", ctx.offsetIdRef().getText(), ctx.sizeIdRef().getText());
     }
 
     @Override
-    public Void visitPushConstantRegionOffset(SpirvParser.PushConstantRegionOffsetContext ctx) {
+    public Void visitClspvReflection_pushConstantRegionOffset(SpirvParser.ClspvReflection_pushConstantRegionOffsetContext ctx) {
         return setPushConstantValue("PushConstantRegionOffset", ctx.offsetIdRef().getText(), ctx.sizeIdRef().getText());
     }
 
     @Override
-    public Void visitPushConstantRegionGroupOffset(SpirvParser.PushConstantRegionGroupOffsetContext ctx) {
+    public Void visitClspvReflection_pushConstantRegionGroupOffset(SpirvParser.ClspvReflection_pushConstantRegionGroupOffsetContext ctx) {
         return setPushConstantValue("PushConstantRegionGroupOffset", ctx.offsetIdRef().getText(), ctx.sizeIdRef().getText());
     }
 
     @Override
-    public Void visitArgumentPodPushConstant(SpirvParser.ArgumentPodPushConstantContext ctx) {
+    public Void visitClspvReflection_argumentPodPushConstant(SpirvParser.ClspvReflection_argumentPodPushConstantContext ctx) {
         initPushConstant();
         int argOffset = getExpressionAsConstInteger(ctx.offsetIdRef().getText());
         int argSize = getExpressionAsConstInteger(ctx.sizeIdRef().getText());
@@ -124,8 +124,8 @@ public class VisitorExtensionClspvReflection extends VisitorExtension<Void> {
             case "PushConstantEnqueuedLocalSize" -> List.of(grid.wgSize(), 1, 1);
             case "PushConstantNumWorkgroups" -> List.of(grid.qfSize() / grid.wgSize(), 1, 1);
             case "PushConstantGlobalOffset",
-                    "PushConstantRegionOffset",
-                    "PushConstantRegionGroupOffset" -> List.of(0, 0, 0);
+                 "PushConstantRegionOffset",
+                 "PushConstantRegionGroupOffset" -> List.of(0, 0, 0);
             default -> throw new ParsingException("Unsupported PushConstant command '%s'", command);
         };
     }

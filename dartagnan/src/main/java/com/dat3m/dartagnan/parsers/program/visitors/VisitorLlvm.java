@@ -40,7 +40,7 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
     private static final Logger logger = LogManager.getLogger(VisitorLlvm.class);
 
     // Global context
-    private final Program program = new Program(new Memory(), Program.SourceLanguage.LLVM);
+    private final Program program = new Program(new Memory(), Program.SourceLanguage.LLVM, null);
     private final TypeFactory types = TypeFactory.getInstance();
     private final ExpressionFactory expressions = ExpressionFactory.getInstance();
     private final Type pointerType = types.getPointerType();
@@ -62,6 +62,7 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
     private String currentRegisterName;
     // Nonnull, if a type has been parsed.
     private Type parsedType;
+    private final String DEFAULT_ENTRY_FUNCTION = "main";
 
     public VisitorLlvm() {}
 
@@ -128,6 +129,9 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
     @Override
     public Expression visitFuncHeader(FuncHeaderContext ctx) {
         final String name = globalIdent(ctx.GlobalIdent());
+        if (name.equals(DEFAULT_ENTRY_FUNCTION)) {
+            program.setEntryPoint(name);
+        }
         final Type returnType = parseType(ctx.type());
         final List<Type> parameterTypes = new ArrayList<>();
         final List<String> parameterNames = new ArrayList<>();

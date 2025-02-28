@@ -1,6 +1,7 @@
 package com.dat3m.dartagnan.program.event;
 
 import com.dat3m.dartagnan.program.event.arch.StoreExclusive;
+import com.dat3m.dartagnan.program.event.arch.opencl.OpenCLRMWExtremum;
 import com.dat3m.dartagnan.program.event.arch.ptx.PTXAtomCAS;
 import com.dat3m.dartagnan.program.event.arch.ptx.PTXAtomExch;
 import com.dat3m.dartagnan.program.event.arch.ptx.PTXAtomOp;
@@ -109,6 +110,7 @@ public interface EventVisitor<T> {
     default T visitVulkanRMWExtremum(VulkanRMWExtremum e) { return visitMemEvent(e); }
     default T visitVulkanRMWOp(VulkanRMWOp e) { return visitMemEvent(e); }
     default T visitVulkanCmpXchg(VulkanCmpXchg e) { return visitMemEvent(e); }
+    default T visitOpenCLRMWExtremum(OpenCLRMWExtremum e) { return visitMemEvent(e); }
 
     // ------------------ Spir-V Events ------------------
     default T visitSpirvLoad(SpirvLoad e) { return visitMemEvent(e); }

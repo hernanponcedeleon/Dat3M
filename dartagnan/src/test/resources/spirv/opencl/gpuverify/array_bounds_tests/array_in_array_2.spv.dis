@@ -1,0 +1,68 @@
+; @Config: 3, 1, 1
+; SPIR-V
+; Version: 1.0
+; Generator: Khronos LLVM/SPIR-V Translator; 14
+; Bound: 43
+; Schema: 0
+               OpCapability Addresses
+               OpCapability Linkage
+               OpCapability Kernel
+               OpCapability Int8
+          %1 = OpExtInstImport "OpenCL.std"
+               OpMemoryModel Physical32 OpenCL
+               OpEntryPoint Kernel %18 "foo" %__spirv_BuiltInGlobalInvocationId
+               OpSource OpenCL_C 200000
+               OpName %__const_foo_L "__const.foo.L"
+               OpName %__spirv_BuiltInGlobalInvocationId "__spirv_BuiltInGlobalInvocationId"
+               OpDecorate %__spirv_BuiltInGlobalInvocationId BuiltIn GlobalInvocationId
+               OpDecorate %__const_foo_L Constant
+               OpDecorate %__spirv_BuiltInGlobalInvocationId Constant
+               OpDecorate %__spirv_BuiltInGlobalInvocationId LinkageAttributes "__spirv_BuiltInGlobalInvocationId" Import
+               OpDecorate %__const_foo_L Alignment 4
+               OpDecorate %21 Alignment 4
+               OpDecorate %24 Alignment 4
+       %uint = OpTypeInt 32 0
+      %uchar = OpTypeInt 8 0
+    %uint_10 = OpConstant %uint 10
+    %uint_20 = OpConstant %uint 20
+    %uint_30 = OpConstant %uint 30
+    %uint_40 = OpConstant %uint 40
+    %uint_50 = OpConstant %uint 50
+     %uint_5 = OpConstant %uint 5
+     %uint_0 = OpConstant %uint 0
+%_arr_uint_uint_5 = OpTypeArray %uint %uint_5
+%_ptr_UniformConstant__arr_uint_uint_5 = OpTypePointer UniformConstant %_arr_uint_uint_5
+     %v3uint = OpTypeVector %uint 3
+%_ptr_Input_v3uint = OpTypePointer Input %v3uint
+       %void = OpTypeVoid
+         %17 = OpTypeFunction %void
+%_ptr_Function__arr_uint_uint_5 = OpTypePointer Function %_arr_uint_uint_5
+%_arr_uint_uint_40 = OpTypeArray %uint %uint_40
+%_ptr_Function__arr_uint_uint_40 = OpTypePointer Function %_arr_uint_uint_40
+%_ptr_Function_uchar = OpTypePointer Function %uchar
+%_ptr_UniformConstant_uchar = OpTypePointer UniformConstant %uchar
+%_ptr_Function_uint = OpTypePointer Function %uint
+         %10 = OpConstantComposite %_arr_uint_uint_5 %uint_10 %uint_20 %uint_30 %uint_40 %uint_50
+%__const_foo_L = OpVariable %_ptr_UniformConstant__arr_uint_uint_5 UniformConstant %10
+%__spirv_BuiltInGlobalInvocationId = OpVariable %_ptr_Input_v3uint Input
+         %18 = OpFunction %void DontInline %17
+         %19 = OpLabel
+         %21 = OpVariable %_ptr_Function__arr_uint_uint_5 Function
+         %24 = OpVariable %_ptr_Function__arr_uint_uint_40 Function
+         %27 = OpBitcast %_ptr_Function_uchar %21
+         %29 = OpBitcast %_ptr_UniformConstant_uchar %__const_foo_L
+               OpCopyMemorySized %27 %29 %uint_20 Aligned 4
+         %30 = OpLoad %v3uint %__spirv_BuiltInGlobalInvocationId Aligned 16
+         %31 = OpCompositeExtract %uint %30 1
+         %32 = OpUMod %uint %31 %uint_5
+         %35 = OpInBoundsPtrAccessChain %_ptr_Function_uint %21 %uint_0 %32
+         %36 = OpLoad %uint %35 Aligned 4
+         %37 = OpLoad %v3uint %__spirv_BuiltInGlobalInvocationId Aligned 16
+         %38 = OpCompositeExtract %uint %37 1
+         %39 = OpLoad %v3uint %__spirv_BuiltInGlobalInvocationId Aligned 16
+         %40 = OpCompositeExtract %uint %39 0
+         %41 = OpIMul %uint %38 %40
+         %42 = OpInBoundsPtrAccessChain %_ptr_Function_uint %24 %uint_0 %41
+               OpStore %42 %36 Aligned 4
+               OpReturn
+               OpFunctionEnd

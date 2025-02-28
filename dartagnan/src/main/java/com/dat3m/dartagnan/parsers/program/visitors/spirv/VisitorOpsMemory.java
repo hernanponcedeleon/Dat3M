@@ -13,16 +13,15 @@ import com.dat3m.dartagnan.parsers.program.visitors.spirv.helpers.HelperTypes;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.helpers.HelperInputs;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.helpers.HelperTags;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.builders.ProgramBuilder;
-import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.dat3m.dartagnan.program.memory.ScopedPointer;
 import com.dat3m.dartagnan.program.memory.ScopedPointerVariable;
-import com.dat3m.dartagnan.expression.type.ScopedPointerType;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.Tag;
 import org.antlr.v4.runtime.RuleContext;
 
+import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
@@ -58,15 +57,37 @@ public class VisitorOpsMemory extends SpirvBaseVisitor<Event> {
 
     @Override
     public Event visitOpLoad(SpirvParser.OpLoadContext ctx) {
-        Register register = builder.addRegister(ctx.idResult().getText(), ctx.idResultType().getText());
-        Expression pointer = builder.getExpression(ctx.pointer().getText());
-        Event event = EventFactory.newLoad(register, pointer);
+        String resultId = ctx.idResult().getText();
+        String pointerId = ctx.pointer().getText();
+        String resultType = ctx.idResultType().getText();
+        Expression pointer = builder.getExpression(pointerId);
+        List<Event> events = new ArrayList<>();
+        if (builder.getType(resultType) instanceof ArrayType arrayType) {
+            List<Expression> registers = new ArrayList<>();
+            for (int i = 0; i < arrayType.getNumElements(); i++) {
+                String elementId = resultId + "_" + i;
+                Register register = builder.addRegister(elementId, resultType);
+                registers.add(register);
+                List<Expression> index = List.of(expressions.makeValue(new BigInteger(Long.toString(i)), types.getArchType()));
+                Expression elementPointer = HelperTypes.getMemberAddress(pointerId, pointer, arrayType, index);
+                Event load = EventFactory.newLoad(register, elementPointer);
+                events.add(load);
+            }
+            Expression arrayRegister = expressions.makeArray(arrayType.getElementType(), registers, true);
+            builder.addExpression(resultId, arrayRegister);
+        } else {
+            Register register = builder.addRegister(resultId, resultType);
+            events.add(EventFactory.newLoad(register, pointer));
+        }
         Set<String> tags = parseMemoryAccessTags(ctx.memoryAccess());
         if (!tags.contains(Tag.Spirv.MEM_AVAILABLE)) {
             String storageClass = builder.getPointerStorageClass(ctx.pointer().getText());
-            event.addTags(tags);
-            event.addTags(storageClass);
-            return builder.addEvent(event);
+            events.forEach(e -> {
+                e.addTags(tags);
+                e.addTags(storageClass);
+                builder.addEvent(e);
+            });
+            return null;
         }
         throw new ParsingException("OpLoad cannot contain tag '%s'", Tag.Spirv.MEM_AVAILABLE);
     }
@@ -89,10 +110,7 @@ public class VisitorOpsMemory extends SpirvBaseVisitor<Event> {
             } else {
                 value = builder.makeUndefinedValue(type);
             }
-            int size = types.getMemorySizeInBytes(type);
-            MemoryObject memObj = builder.allocateVariable(id, size);
-            memObj.setInitialValue(0, value);
-            ScopedPointerVariable pointer = expressions.makeScopedPointerVariable(id, pointerType.getScopeId(), type, memObj);
+            ScopedPointerVariable pointer = builder.allocateScopedPointerVariable(id, value, pointerType.getScopeId(), type);
             validateVariableStorageClass(pointer, ctx.storageClass().getText());
             builder.addExpression(id, pointer);
             return null;
@@ -149,30 +167,71 @@ public class VisitorOpsMemory extends SpirvBaseVisitor<Event> {
         return null;
     }
 
+    @Override
+    public Event visitOpPtrAccessChain(SpirvParser.OpPtrAccessChainContext ctx) {
+        visitOpPtrAccessChain(ctx.idResult().getText(), ctx.idResultType().getText(),
+                ctx.base().getText(), ctx.element().getText(), ctx.indexesIdRef());
+        return null;
+    }
+
+    @Override
+    public Event visitOpInBoundsPtrAccessChain(SpirvParser.OpInBoundsPtrAccessChainContext ctx) {
+        visitOpPtrAccessChain(ctx.idResult().getText(), ctx.idResultType().getText(),
+                ctx.base().getText(), ctx.element().getText(), ctx.indexesIdRef());
+        return null;
+    }
+
+    private void visitOpPtrAccessChain(String id, String typeId, String baseId, String elementId,
+                                       List<SpirvParser.IndexesIdRefContext> idxContexts) {
+        if (builder.getType(typeId) instanceof ScopedPointerType pointerType) {
+            Expression basePointer = builder.getExpression(baseId);
+            Type basePointedType;
+            if (basePointer.getType() instanceof ScopedPointerType basePointerType) {
+                basePointedType = basePointerType.getPointedType();
+            } else if (basePointer instanceof ScopedPointer scopedPointer) {
+                basePointedType = scopedPointer.getInnerType();
+            } else {
+                throw new ParsingException("Invalid base pointer type '%s' in access chain '%s'", basePointer.getType(), id);
+            }
+            Expression element = builder.getExpression(elementId);
+            Expression address = HelperTypes.getPointerOffset(basePointer, basePointedType, element);
+            String baseWithOffsetId = baseId + "_" + elementId;
+            ScopedPointer baseWithOffset = expressions.makeScopedPointer(baseWithOffsetId, pointerType.getScopeId(), basePointedType, address);
+            visitAccessChain(id, pointerType, baseWithOffsetId, baseWithOffset, idxContexts);
+        } else {
+            throw new ParsingException("Type '%s' is not a pointer type", typeId);
+        }
+    }
+
     private void visitOpAccessChain(String id, String typeId, String baseId,
                                     List<SpirvParser.IndexesIdRefContext> idxContexts) {
         if (builder.getType(typeId) instanceof ScopedPointerType pointerType) {
             ScopedPointer base = (ScopedPointer) builder.getExpression(baseId);
-            Type baseType = base.getInnerType();
-            Type resultType = pointerType.getPointedType();
-            List<Integer> intIndexes = new ArrayList<>();
-            List<Expression> exprIndexes = new ArrayList<>();
-            idxContexts.forEach(c -> {
-                Expression expression = builder.getExpression(c.getText());
-                exprIndexes.add(expression);
-                intIndexes.add(expression instanceof IntLiteral intLiteral ? intLiteral.getValueAsInt() : -1);
-            });
-            Type runtimeResultType = HelperTypes.getMemberType(baseId, baseType, intIndexes);
-            if (!TypeFactory.isStaticTypeOf(runtimeResultType, resultType)) {
-                throw new ParsingException("Invalid result type in access chain '%s', " +
-                        "expected '%s' but received '%s'", id, resultType, runtimeResultType);
-            }
-            Expression expression = HelperTypes.getMemberAddress(baseId, base, baseType, exprIndexes);
-            ScopedPointer pointer = expressions.makeScopedPointer(id, pointerType.getScopeId(), runtimeResultType, expression);
-            builder.addExpression(id, pointer);
+            visitAccessChain(id, pointerType, baseId, base, idxContexts);
             return;
         }
         throw new ParsingException("Type '%s' is not a pointer type", typeId);
+    }
+
+    private void visitAccessChain(String id, ScopedPointerType pointerType, String baseId, ScopedPointer base,
+                                    List<SpirvParser.IndexesIdRefContext> idxContexts) {
+        Type baseType = base.getMemoryType();
+        Type resultType = pointerType.getPointedType();
+        List<Integer> intIndexes = new ArrayList<>();
+        List<Expression> exprIndexes = new ArrayList<>();
+        idxContexts.forEach(c -> {
+            Expression expression = builder.getExpression(c.getText());
+            exprIndexes.add(expression);
+            intIndexes.add(expression instanceof IntLiteral intLiteral ? intLiteral.getValueAsInt() : -1);
+        });
+        Type runtimeResultType = HelperTypes.getMemberType(baseId, baseType, intIndexes);
+        if (!TypeFactory.isStaticTypeOf(runtimeResultType, resultType)) {
+            throw new ParsingException("Invalid result type in access chain '%s', " +
+                    "expected '%s' but received '%s'", id, resultType, runtimeResultType);
+        }
+        Expression expression = HelperTypes.getMemberAddress(baseId, base, baseType, exprIndexes);
+        ScopedPointer pointer = expressions.makeScopedPointer(id, pointerType.getScopeId(), runtimeResultType, expression);
+        builder.addExpression(id, pointer);
     }
 
     private Set<String> parseMemoryAccessTags(SpirvParser.MemoryAccessContext ctx) {
@@ -192,7 +251,9 @@ public class VisitorOpsMemory extends SpirvBaseVisitor<Event> {
                 "OpLoad",
                 "OpStore",
                 "OpAccessChain",
-                "OpInBoundsAccessChain"
+                "OpInBoundsAccessChain",
+                "OpPtrAccessChain",
+                "OpInBoundsPtrAccessChain"
         );
     }
 }
