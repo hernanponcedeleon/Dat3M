@@ -41,6 +41,7 @@ import org.antlr.v4.runtime.CharStreams;
 
 import com.dat3m.dartagnan.exception.ProgramProcessingException;
 import com.dat3m.dartagnan.parsers.program.ParserInlineAsm;
+import com.dat3m.dartagnan.parsers.program.ParserInlinePPC;
 import com.dat3m.dartagnan.parsers.program.ParserInlineRISCV;
 import static com.dat3m.dartagnan.program.event.EventFactory.*;
 import static com.dat3m.dartagnan.program.event.EventFactory.Llvm.newCompareExchange;
