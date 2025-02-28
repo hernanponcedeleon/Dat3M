@@ -6,18 +6,20 @@ import BaseLexer;
 // instructions 
 Load                        : 'ld';
 LoadExclusive               : 'lr.d';
-LoadAcquireExclusive        : 'lr.d.aq' | 'lr.d.aqrl'; // the second one has both acquire and release!!!
+LoadAcquireExclusive        : 'lr.d.aq';
+LoadAcquireReleaseExclusive : 'lr.d.aqrl';
 Add                         : 'add';
 Sub                         : 'sub';
 BranchNotEqual              : 'bne';
 BranchNotEqualZero          : 'bnez';
 Store                       : 'sd';
-StoreExclusive              : 'sc.d';
-StoreReleaseExclusive       : 'sc.d.rl';
+StoreConditional            : 'sc.d';
+StoreConditionalRelease     : 'sc.d.rl';
 Move                        : 'mv';
 Negate                      : 'neg';
 AtomicAdd                   : 'amoadd.d';
-AtomicAddRelease            : 'amoadd.d.rl' | 'amoadd.d.aqrl'; // also this second one has both acquire and relase
+AtomicAddRelease            : 'amoadd.d.rl'; // also this second one has both acquire and relase
+AtomicAddAcquireRelease     : 'amoadd.d.aqrl';
 
 // clobbers
 ClobberMemory               : 'memory';

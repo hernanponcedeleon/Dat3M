@@ -15,11 +15,12 @@ instr
     : load
     | loadExclusive
     | loadAcquireExclusive
+    | loadAcquireReleaseExclusive
     | add
     | sub
     | store
-    | storeExclusive
-    | storeReleaseExclusive
+    | storeConditional
+    | storeConditionalRelease
     | move
     | branchNotEqual
     | branchNotEqualZero
@@ -28,24 +29,27 @@ instr
     | negate
     | atomicAdd
     | atomicAddRelease
+    | atomicAddAcquireRelease
 ;
 
 // rules divised like this in order to generate single visitors
 load : Load register Comma register;
 loadExclusive : LoadExclusive register Comma register;
 loadAcquireExclusive : LoadAcquireExclusive register Comma register;
+loadAcquireReleaseExclusive : LoadAcquireReleaseExclusive register Comma register;
 add : Add register Comma register Comma register;
 sub : Sub register Comma register Comma register;
 store : Store register Comma register;
-storeExclusive : StoreExclusive register Comma register Comma register ;
-storeReleaseExclusive : StoreReleaseExclusive register Comma register Comma register;
+storeConditional : StoreConditional register Comma register Comma register ;
+storeConditionalRelease : StoreConditionalRelease register Comma register Comma register;
 move : Move register Comma register;
-branchNotEqualZero : BranchNotEqualZero register Comma NumbersInline LetterInline;
 branchNotEqual : BranchNotEqual register Comma register Comma NumbersInline LetterInline;
+branchNotEqualZero : BranchNotEqualZero register Comma NumbersInline LetterInline;
 labelDefinition : NumbersInline Colon;
 negate : Negate register Comma register;
 atomicAdd : AtomicAdd register Comma register Comma register;
 atomicAddRelease : AtomicAddRelease register Comma register Comma register;
+atomicAddAcquireRelease : AtomicAddAcquireRelease register Comma register Comma register;
 
 
 //fences
