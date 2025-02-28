@@ -72,10 +72,8 @@ import static com.dat3m.dartagnan.wmm.RelationNameRepository.RF;
         (3) Suffix must be strongly(*) fair/consistent:
             - Prefix stores must be co-before suffix stores
             - Only suffix reads can read from suffix stores, prefix/infix reads can not.
-            - Suffix reads can only read from infix/suffix or from a co-last store of the prefix
-              if they access an address not stored to by infix/suffix.
-              To be clear, "co-last store" refers to the co-latest store among all prefix stores: this store
-              might not be globally co-maximal.
+            - Suffix reads can only read from prefix if there are no same-address stores in infix/suffix.
+              In that case, it further has to read the co-maximal store.
               Actually, this requirement is just that there are no fr-edges from suffix to prefix,
               but since we might not have encoded fr (lazy solving), we formulate this indirectly.
 
