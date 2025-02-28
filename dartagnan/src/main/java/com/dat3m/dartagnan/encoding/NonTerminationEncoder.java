@@ -162,7 +162,7 @@ public class NonTerminationEncoder {
             body.stream().filter(this::isNonterminationEvent).forEach(nonterm -> {
                 final NonterminationCase cNew = nonterm2Case.get(nonterm);
                 if (cNew == null || cNew.iteration.body.size() > body.size()) {
-                    nonterm2Case.put(nonterm, new NonterminationCase(nonterm, iteration));
+                    nonterm2Case.put(nonterm, new NonterminationCase((CondJump) nonterm, iteration));
                 }
             });
         }
@@ -223,13 +223,8 @@ public class NonTerminationEncoder {
     private BooleanFormula encodeBarriersAreStuck() {
         final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
         return task.getProgram().getThreadEvents(ControlBarrier.class).stream()
-                .map(this::isStuckAtBarrier)
+                .map(context::blocked)
                 .reduce(bmgr.makeFalse(), bmgr::or); // TODO: Change to AND?
-    }
-
-    private BooleanFormula isStuckAtBarrier(ControlBarrier barrier) {
-        final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
-        return bmgr.and(context.controlFlow(barrier), bmgr.not(context.execution(barrier)));
     }
 
     // ------------------------------------------------------------------------------------------------------
@@ -275,11 +270,7 @@ public class NonTerminationEncoder {
     // Basic encoding primitives
 
     private BooleanFormula isNonterminating(NonterminationCase iter) {
-        final CondJump jump = (CondJump) iter.nontermEvent;
-        return context.getBooleanFormulaManager().and(
-                context.jumpCondition(jump),
-                context.execution(iter.nontermEvent)
-        );
+        return context.jumpTaken(iter.nontermEvent);
     }
 
     private BooleanFormula isInSuffix(Iteration iter) {
@@ -746,7 +737,7 @@ public class NonTerminationEncoder {
         public int getIterationNumber() { return loopIterInfo().getIterationNumber(); }
     }
 
-    private record NonterminationCase(Event nontermEvent, Iteration iteration) {
+    private record NonterminationCase(CondJump nontermEvent, Iteration iteration) {
 
         public boolean isSideEffectFree() { return nontermEvent.hasTag(Tag.SPINLOOP); }
 
