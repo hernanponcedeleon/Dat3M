@@ -116,8 +116,10 @@ public class NonterminationDetection implements ProgramProcessor {
         final LoopAnalysis.LoopIterationInfo lastIter = loop.iterations().get(loop.iterations().size() - 1);
         final Event lastEvent = lastIter.getIterationEnd();
 
-        // TODO: This is a naive and dangerous check: we assume the bound event is two events after the last loop event.
+        // FIXME: This is a naive and dangerous check: we assume the bound event is two events after the last loop event.
         //  This can result in wrong non-termination verdicts.
+        //  To do this properly, we need to attach more information to bound events (during unrolling)
+        //  so that we can identify which loop they belong to.
         final Event bound = lastEvent.getSuccessor().getSuccessor();
         if (bound instanceof CondJump && bound.hasTag(Tag.BOUND)) {
             // Loop is not fully unrolled and thus might be non-terminating

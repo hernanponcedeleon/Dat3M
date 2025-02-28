@@ -59,9 +59,9 @@ import static com.dat3m.dartagnan.wmm.RelationNameRepository.RF;
               (ii) a side-effectful non-termination will have at least one infix iteration
                    (this means there must be at least two unrollings)
             --------------
-            - Events belong to prefix if they are not part of a loop or they are in a prefix iteration
             - Events belong to infix/suffix IFF any iteration they are contained in belongs to infix/suffix
               (notice that for nested loops, a single event can be part of multiple iterations/loops).
+            - All other events belong to prefix, in particular, all events outside of any loops.
         (2) Infix and suffix must be equivalent:
             - Events in infix must have an equivalent event in suffix with same value/address
               (TODO: Can maybe be restricted to equivalence on non-dead events)
@@ -69,13 +69,19 @@ import static com.dat3m.dartagnan.wmm.RelationNameRepository.RF;
             - NOTE: In the special case where we have no infix but a suffix, the only requirement
               is that the local state at the beginning and the end of the suffix match.
               This is always true for side-effect-free loops, the only one's where we do not have an infix!
-        (3) Suffix must be strongly fair/consistent:
+        (3) Suffix must be strongly(*) fair/consistent:
             - Prefix stores must be co-before suffix stores
             - Only suffix reads can read from suffix stores, prefix/infix reads can not.
-            - Suffix reads can only read from infix/suffix or from co-maximal stores in the prefix,
+            - Suffix reads can only read from infix/suffix or from a co-last store of the prefix
               if they access an address not stored to by infix/suffix.
+              To be clear, "co-last store" refers to the co-latest store among all prefix stores: this store
+              might not be globally co-maximal.
               Actually, this requirement is just that there are no fr-edges from suffix to prefix,
               but since we might not have encoded fr (lazy solving), we formulate this indirectly.
+
+              (*) "Strongness" here is a property that guarantees that not only the finite execution we see is
+                  consistent but that it will stay consistent when we repeatedly append the suffix.
+                  In particular, the infinite repetition of the suffix remains consistent (and fair).
 
     ASSUMPTIONS:
       - We assume the NonterminationDetection and DynamicSpinLoopDetection passes have marked
@@ -83,12 +89,14 @@ import static com.dat3m.dartagnan.wmm.RelationNameRepository.RF;
       - We assume co/fr-fairness only (fairness means prefix-finiteness in infinite executions).
       - We assume that if the suffix is consistent with the infix and co/fr-fair, then it must be "strongly"
         consistent. This may not be true and we could possibly report a liveness violation that is not consistently
-        repeatable. Fixing this would require additional checks relative to the memory model, possibly requiring
+        repeatable (i.e. spurious error).
+        Fixing this would require additional checks relative to the memory model, possibly requiring
         encoding of the memory model or native handling in CAAT.
 
      TODO: We have not considered uninit reads, i.e., reads without rf-edges in the implementation.
            Such reads may induce fr-edges from suffix into prefix without it being detected by the encoding.
            This would violate properties of the decomposition.
+           We could report FAIL although the non-terminating execution is actually unfair.
 
      TODO: We currently do some approximations which may or may not be good:
         (1) Cases where all iterations are claimed to be suffix are theoretically not correctly covered:
@@ -218,7 +226,7 @@ public class NonTerminationEncoder {
     }
 
     // FIXME: This is likely going to cause problems (wrong result) with executions where some thread is stuck in a loop
-    //  and another in a barrier. We could replace the code to check if ALL threads are stuck at a control-barrier
+    //  and another in a barrier. We could replace the code to check if ALL stuck threads are stuck at a control-barrier
     //  to avoid such wrong results.
     private BooleanFormula encodeBarriersAreStuck() {
         final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
@@ -559,7 +567,6 @@ public class NonTerminationEncoder {
 
     // Encodes the basic properties of the infix-suffix matching relation.
     // The semantics of what a matching actually implies is done by the above methods.
-    // NOTE: We do
     private BooleanFormula encodeInfixSuffixMatchingRelation(Loop loop) {
         final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
         final ImmutableList<Iteration> iterations = ImmutableList.copyOf(loop.getIterations());
@@ -702,8 +709,13 @@ public class NonTerminationEncoder {
 
     /*
         - A (possibly nonterminating) "Loop" contains a list of "NonterminationCase"s.
-        - A "NonterminationCase" is an "Iteration" + a nontermination event (marked by Tag.NONTERMINATION)
+        - A "NonterminationCase" is an "Iteration" + a non-termination event (marked by Tag.NONTERMINATION)
         - An "Iteration" is just a loop iteration with a cached body.
+
+        NOTE: Multiple non-termination events may exist inside a single iteration, for example, one that captures
+        side-effect-free non-termination (spinning) and another that captures side-effect-ful non-termination.
+        Also, not only the last loop iteration (the one that reaches the unrolling bound) may be non-terminating.
+        A non-termination case may be found earlier without exhausting the full unrolling bound.
      */
 
     private class Loop {

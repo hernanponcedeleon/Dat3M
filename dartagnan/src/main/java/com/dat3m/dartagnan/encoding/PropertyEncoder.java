@@ -283,7 +283,7 @@ public class PropertyEncoder implements Encoder {
                 .toList());
         final BooleanFormula terminated = program.getThreadEventsWithAllTags(Tag.NONTERMINATION).stream()
                 .map(CondJump.class::cast)
-                .map(jump -> bmgr.not(bmgr.and(context.jumpCondition(jump), context.execution(jump))))
+                .map(context::jumpTaken)
                 .reduce(bmgr.makeTrue(), bmgr::and);
         return bmgr.and(exitReached, terminated);
     }
