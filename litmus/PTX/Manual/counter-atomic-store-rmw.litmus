@@ -1,0 +1,13 @@
+PTX counter-atomic-store-rmw
+"Adapted from https://github.com/mc-imperial/gpuverify/blob/master/testsuite/OpenCL/atomics/counter/kernel.cl"
+{
+P0:r0 = 0;
+P1:r0 = 0;
+x=0;
+}
+ P0@cta 0,gpu 0                | P1@cta 0,gpu 0                ;
+ st.relaxed.gpu x, 1           | bar.cta.sync 0                ;
+ bar.cta.sync 0                | atom.acq_rel.gpu.add r0, x, 1 ;
+ atom.acq_rel.gpu.add r0, x, 1 |                               ;
+~exists
+(P0:r0 == 1 /\ P1:r0 == 1)

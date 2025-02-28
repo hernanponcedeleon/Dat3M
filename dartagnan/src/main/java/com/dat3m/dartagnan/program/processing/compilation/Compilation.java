@@ -2,6 +2,7 @@ package com.dat3m.dartagnan.program.processing.compilation;
 
 import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.program.Function;
+import com.dat3m.dartagnan.program.IRHelper;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.metadata.CompilationId;
@@ -144,15 +145,11 @@ public class Compilation implements ProgramProcessor {
             // In the special case where the compilation does nothing, we keep the event as is.
             return;
         }
-        if (!toBeCompiled.tryDelete()) {
-            final String error = String.format("Could not compile event '%d:  %s' because it is not deletable." +
-                    "The event is likely referenced by other events.", toBeCompiled.getGlobalId(), toBeCompiled);
+        if (!toBeCompiled.getUsers().isEmpty()) {
+            final String error = String.format("Could not compile event '%d:  %s' because it is referenced by other events.",
+                    toBeCompiled.getGlobalId(), toBeCompiled);
             throw new IllegalStateException(error);
         }
-        if (!compiledEvents.isEmpty()) {
-            // Insert result of compilation
-            compiledEvents.forEach(e -> e.copyAllMetadataFrom(toBeCompiled));
-            pred.insertAfter(compiledEvents);
-        }
+        IRHelper.replaceWithMetadata(toBeCompiled, compiledEvents);
     }
 }

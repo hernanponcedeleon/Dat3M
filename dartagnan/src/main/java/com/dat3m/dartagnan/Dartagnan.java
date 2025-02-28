@@ -20,10 +20,10 @@ import com.dat3m.dartagnan.program.processing.LoopUnrolling;
 import com.dat3m.dartagnan.utils.Result;
 import com.dat3m.dartagnan.utils.Utils;
 import com.dat3m.dartagnan.utils.options.BaseOptions;
-import com.dat3m.dartagnan.verification.model.ExecutionModelManager;
-import com.dat3m.dartagnan.verification.model.ExecutionModelNext;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.verification.VerificationTask.VerificationTaskBuilder;
+import com.dat3m.dartagnan.verification.model.ExecutionModelManager;
+import com.dat3m.dartagnan.verification.model.ExecutionModelNext;
 import com.dat3m.dartagnan.verification.solving.AssumeSolver;
 import com.dat3m.dartagnan.verification.solving.DataRaceSolver;
 import com.dat3m.dartagnan.verification.solving.ModelChecker;
@@ -309,8 +309,7 @@ public class Dartagnan extends BaseOptions {
                 if (props.contains(LIVENESS) && FALSE.equals(model.evaluate(LIVENESS.getSMTVariable(encCtx)))) {
                     summary.append("============ Liveness violation found ============\n");
                     for (CondJump e : p.getThreadEvents(CondJump.class)) {
-                        if (e.hasTag(Tag.NONTERMINATION) && TRUE.equals(model.evaluate(encCtx.execution(e)))
-                                && TRUE.equals(model.evaluate(encCtx.jumpCondition(e)))) {
+                        if (e.hasTag(Tag.SPINLOOP) && TRUE.equals(model.evaluate(encCtx.jumpTaken(e)))) {
                             final String callStack = makeContextString(
                                     synContext.getContextInfo(e).getContextOfType(CallContext.class), " -> ");
                             summary

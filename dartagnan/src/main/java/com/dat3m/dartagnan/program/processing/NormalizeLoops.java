@@ -5,6 +5,7 @@ import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.program.Function;
+import com.dat3m.dartagnan.program.IRHelper;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.analysis.SyntacticContextAnalysis;
 import com.dat3m.dartagnan.program.event.Event;
@@ -95,7 +96,7 @@ public class NormalizeLoops implements FunctionProcessor {
         int counter = 0;
         for (Label label : function.getEvents(Label.class)) {
             final List<CondJump> backJumps = label.getJumpSet().stream()
-                    .filter(j -> j.getLocalId() > label.getLocalId())
+                    .filter(IRHelper::isBackJump)
                     .sorted()
                     .toList();
 
@@ -126,7 +127,7 @@ public class NormalizeLoops implements FunctionProcessor {
         int loopCounter = 0;
         for (Label loopBegin : function.getEvents(Label.class)) {
             final List<CondJump> backJumps = loopBegin.getJumpSet().stream()
-                    .filter(j -> j.getLocalId() > loopBegin.getLocalId())
+                    .filter(IRHelper::isBackJump)
                     .sorted()
                     .toList();
             if (backJumps.isEmpty()) {
@@ -178,7 +179,7 @@ public class NormalizeLoops implements FunctionProcessor {
                                 enteringJump.getLocalId(), enteringJump, SyntacticContextAnalysis.getSourceLocationString(enteringJump));
                         throw new UnsupportedOperationException(error);
                     }
-                    enteringJump.getPredecessor().insertAfter(EventFactory.newLocal(entryPointReg, entryPointValue));
+                    enteringJump.insertBefore(EventFactory.newLocal(entryPointReg, entryPointValue));
                     enteringJump.updateReferences(Map.of(entryPoint, loopBegin));
                 }
 

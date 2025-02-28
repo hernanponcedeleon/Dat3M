@@ -71,10 +71,13 @@ public interface Event extends Encoder, Comparable<Event> {
     void detach();
     void forceDelete(); // DANGEROUS: Deletes the event, including all events that reference it.
     boolean tryDelete(); // Deletes the event only if no other event references it.
+
     void insertAfter(Event toBeInserted);
-    void insertAfter(List<Event> toBeInserted);
+    void insertBefore(Event toBeInserted);
     void replaceBy(Event replacement);
-    void replaceBy(List<Event> replacement);
+    void insertAfter(Iterable<? extends Event> toBeInserted);
+    void insertBefore(Iterable<? extends Event> toBeInserted);
+    void replaceBy(Iterable<? extends Event> replacement);
 
     // ============================== Misc ==============================
 

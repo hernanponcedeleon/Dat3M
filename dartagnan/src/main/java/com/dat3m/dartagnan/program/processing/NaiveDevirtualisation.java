@@ -10,6 +10,7 @@ import com.dat3m.dartagnan.expression.processing.ExpressionInspector;
 import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.program.Function;
+import com.dat3m.dartagnan.program.IRHelper;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.EventFactory;
@@ -180,9 +181,7 @@ public class NaiveDevirtualisation implements ProgramProcessor {
             callReplacement.add(endLabel);
             callReplacement.add(EventFactory.newStringAnnotation("=== End of devirtualized call ==="));
 
-            call.replaceBy(callReplacement);
-            callReplacement.forEach(e -> e.copyAllMetadataFrom(call));
-
+            IRHelper.replaceWithMetadata(call, callReplacement);
             devirtCounter++;
         }
     }

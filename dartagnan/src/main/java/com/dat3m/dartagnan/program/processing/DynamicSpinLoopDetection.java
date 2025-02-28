@@ -7,9 +7,12 @@ import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
-import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.analysis.LiveRegistersAnalysis;
 import com.dat3m.dartagnan.program.analysis.LoopAnalysis;
+import com.dat3m.dartagnan.program.event.Event;
+import com.dat3m.dartagnan.program.event.EventFactory;
+import com.dat3m.dartagnan.program.event.RegWriter;
+import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.*;
 import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.event.functions.FunctionCall;
@@ -154,7 +157,7 @@ public class DynamicSpinLoopDetection implements ProgramProcessor {
                 ));
 
             }
-            sideEffect.getPredecessor().insertAfter(updateSideEffect);
+            sideEffect.insertBefore(updateSideEffect);
         }
 
         // Check if any local or global side effects occurred. If not, spin!
@@ -163,14 +166,14 @@ public class DynamicSpinLoopDetection implements ProgramProcessor {
 
         final Event assignLocalSideEffectReg = EventFactory.newLocal(localSideEffectReg, expressions.makeNEQ(entryLiveStateRegister, liveRegistersVector));
         final Event assumeSideEffect = newSpinTerminator(expressions.makeNot(hasSideEffect), loop);
-        loop.getEnd().getPredecessor().insertAfter(List.of(
+        loop.getEnd().insertBefore(List.of(
                 assignLocalSideEffectReg,
                 assumeSideEffect
         ));
 
         // Special snapshot event for non-termination detection
         if (!loop.writtenLiveOnBackjumpRegisters.isEmpty()) {
-            loop.getEnd().getPredecessor().insertAfter(
+            loop.getEnd().insertBefore(
                     EventFactory.Special.newStateSnapshot(loop.writtenLiveOnBackjumpRegisters)
             );
         }
@@ -178,16 +181,13 @@ public class DynamicSpinLoopDetection implements ProgramProcessor {
         // Special case: If the loop is fully side-effect-free, we can set its unrolling bound to 1.
         if (loop.isSideEffectFree()) {
             final Event loopBound = EventFactory.Svcomp.newLoopBound(expressions.makeValue(1, types.getArchType()));
-            loop.getStart().getPredecessor().insertAfter(loopBound);
+            loop.getStart().insertBefore(loopBound);
         }
     }
 
     private Event newSpinTerminator(Expression guard, LoopData loop) {
         final Function func = loop.getStart().getFunction();
-        final Event terminator = func instanceof Thread thread ?
-                EventFactory.newJump(guard, (Label) thread.getExit())
-                : EventFactory.newAbortIf(guard);
-        terminator.addTags(Tag.SPINLOOP, Tag.NONTERMINATION);
+        final Event terminator = EventFactory.newTerminator(func, guard, Tag.SPINLOOP, Tag.NONTERMINATION);
         terminator.copyAllMetadataFrom(loop.getStart());
         return terminator;
     }
