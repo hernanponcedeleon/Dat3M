@@ -5,6 +5,7 @@ import java.util.HashMap;
 import java.util.List;
 
 import com.dat3m.dartagnan.exception.ParsingException;
+import com.dat3m.dartagnan.exception.ProgramProcessingException;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.Type;
@@ -198,7 +199,6 @@ public class VisitorInlineRISCV extends InlineRISCVBaseVisitor<Object> {
     // The latter will take care of creating input and output assignments.
     @Override
     public List<Event> visitAsm(InlineRISCVParser.AsmContext ctx) {
-        System.out.println(ctx.getText());
         visitChildren(ctx);
         List<Event> events = new ArrayList<>();
         events.addAll(inputAssignments);
@@ -288,7 +288,7 @@ public class VisitorInlineRISCV extends InlineRISCVBaseVisitor<Object> {
         Register freshResultRegister = (Register) ctx.register(0).accept(this);
         Register value = (Register) ctx.register(1).accept(this);
         Register address = (Register) ctx.register(2).accept(this);
-        asmInstructions.add(EventFactory.Common.newExclusiveStore(freshResultRegister, address, value, Tag.RISCV.MO_REL)); // for now I put Release semantics
+        asmInstructions.add(EventFactory.Common.newExclusiveStore(freshResultRegister, address, value, Tag.RISCV.STCOND));
         return null;
     }
 
@@ -339,7 +339,6 @@ public class VisitorInlineRISCV extends InlineRISCVBaseVisitor<Object> {
 
     @Override
     public Object visitNegate(InlineRISCVParser.NegateContext ctx){
-        System.out.println("Reading" + ctx.getText());
         // neg $0 $1 -> sub $0, #0, $1
         Register destinationRegister = (Register) ctx.register(0).accept(this);
         Register sourceRegister = (Register) ctx.register(1).accept(this);
@@ -351,18 +350,16 @@ public class VisitorInlineRISCV extends InlineRISCVBaseVisitor<Object> {
 
     @Override
     public Object visitAtomicAdd(InlineRISCVParser.AtomicAddContext ctx){
-        System.out.println("Reading" + ctx.getText());
-        return null;
+        throw new ProgramProcessingException(ctx.AtomicAdd().getText());
     }
     @Override
     public Object visitAtomicAddRelease(InlineRISCVParser.AtomicAddReleaseContext ctx){
-        System.out.println("Reading" + ctx.getText());
-        return null;
+        throw new ProgramProcessingException(ctx.AtomicAddRelease().getText());
     }
     @Override
     public Object visitAtomicAddAcquireRelease(InlineRISCVParser.AtomicAddAcquireReleaseContext ctx){
-        System.out.println("Reading" + ctx.getText());
-        return null;
+        throw new ProgramProcessingException(ctx.AtomicAddAcquireRelease().getText());
+        // return null;
     }
     // If the register with that ID was already defined, we simply return it
     // otherwise, we create and return the new register.
