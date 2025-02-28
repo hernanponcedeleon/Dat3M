@@ -199,18 +199,18 @@ public class VisitorInlineRISCV extends InlineRISCVBaseVisitor<Object> {
     @Override
     public List<Event> visitAsm(InlineRISCVParser.AsmContext ctx) {
         System.out.println(ctx.getText());
-        // visitChildren(ctx);
+        visitChildren(ctx);
         List<Event> events = new ArrayList<>();
-        // events.addAll(inputAssignments);
-        // events.addAll(asmInstructions);
-        // events.addAll(outputAssignments);
+        events.addAll(inputAssignments);
+        events.addAll(asmInstructions);
+        events.addAll(outputAssignments);
         return events;
     }
 
-    // Tells if the constraint is a memory location '=*m'
-    private boolean isConstraintMemoryLocation(InlineRISCVParser.ConstraintContext constraint) {
-        return constraint.pointerToMemoryLocation() != null;
-    }
+    // // Tells if the constraint is a memory location '=*m'
+    // private boolean isConstraintMemoryLocation(InlineRISCVParser.ConstraintContext constraint) {
+    //     return constraint.pointerToMemoryLocation() != null;
+    // }
 
     // Tells if the constraint is an output one, e.g. '=r' or '=&r'
     private boolean isConstraintOutputConstraint(InlineRISCVParser.ConstraintContext constraint) {
@@ -340,6 +340,12 @@ public class VisitorInlineRISCV extends InlineRISCVBaseVisitor<Object> {
     @Override
     public Object visitNegate(InlineRISCVParser.NegateContext ctx){
         System.out.println("Reading" + ctx.getText());
+        // neg $0 $1 -> sub $0, #0, $1
+        Register destinationRegister = (Register) ctx.register(0).accept(this);
+        Register sourceRegister = (Register) ctx.register(1).accept(this);
+        Expression zero = expressions.makeZero((IntegerType) sourceRegister.getType());
+        Expression exp = expressions.makeSub(zero, sourceRegister);
+        asmInstructions.add(EventFactory.newLocal(destinationRegister,exp));
         return null;
     }
 
@@ -394,13 +400,8 @@ public class VisitorInlineRISCV extends InlineRISCVBaseVisitor<Object> {
         // We iterate until we find the first non-output constraint. Then we immediately initialize the return register
         // (the right-hand side of the assignment will be either a single register or an aggregate type depending on how many output constraints we processed). 
         // We then map args registers to asm registers (we need to shift the register ID to find the corresponding args position of the matching register).
-        // Numeric constraint just map the registerID with the corresponding numeric position. (https://llvm.org/docs/LangRef.html#input-constraints)
         for (int i = 0; i < constraints.size(); i++) {
             InlineRISCVParser.ConstraintContext constraint = constraints.get(i);
-            if (isConstraintMemoryLocation(constraint)) {
-                isOutputRegistersInitialized = true;
-                continue;
-            }
             if (isConstraintOutputConstraint(constraint)) {
                 continue;
             }

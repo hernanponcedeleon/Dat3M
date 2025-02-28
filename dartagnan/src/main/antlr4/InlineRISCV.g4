@@ -69,11 +69,10 @@ fenceOptions returns [String mode]
     |   ILiteral {$mode = "i";}
     ;
 
-constraint : outputOpAssign | inputOpGeneralReg  | pointerToMemoryLocation;
+constraint : outputOpAssign | inputOpGeneralReg;
 
 outputOpAssign              : Equals Amp? RLiteral;
-inputOpGeneralReg           : RLiteral | ACapitalLiteral;
-pointerToMemoryLocation     : Equals Ast MLiteral;
+inputOpGeneralReg           : RLiteral | ACapitalLiteral | Equals Ast MLiteral;
 
 clobbers : clobber (Comma clobber)*;
 clobber : Tilde LBrace clobberType RBrace;
