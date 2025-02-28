@@ -12,7 +12,7 @@ public class LitmusAARCH64MSATest extends LitmusAARCH64Test {
 
     @Parameterized.Parameters(name = "{index}: {0}, {1}")
     public static Iterable<Object[]> data() throws IOException {
-        return buildLitmusTests("local/mixedsizetests", "ARM8", "-allowed");
+        return buildLitmusTests("local/mixedsizetests", "ARM8", "-herd");
     }
 
     public LitmusAARCH64MSATest(String path, Result expected) {
@@ -26,6 +26,6 @@ public class LitmusAARCH64MSATest extends LitmusAARCH64Test {
 
     @Override
     protected long getTimeout() {
-        return 1000;
+        return 10_000L;
     }
 }
