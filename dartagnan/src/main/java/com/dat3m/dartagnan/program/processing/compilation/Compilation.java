@@ -85,7 +85,13 @@ public class Compilation implements ProgramProcessor {
         // TODO: Refactor processors such that compiler is resolved
         //  based on the source language and target
         if (program.getFormat() == Program.SourceLanguage.SPV) {
-            compiler = new VisitorSpirvVulkan();
+            if (target == Arch.VULKAN) {
+                compiler = new VisitorSpirvVulkan();
+            } else if (target == Arch.OPENCL) {
+                compiler = new VisitorSpirvOpenCL();
+            } else {
+                throw new UnsupportedOperationException("SPIR-V can only be compiled to Vulkan or OpenCL");
+            }
         }
         program.getThreads().forEach(this::run);
         program.getFunctions().forEach(this::run);

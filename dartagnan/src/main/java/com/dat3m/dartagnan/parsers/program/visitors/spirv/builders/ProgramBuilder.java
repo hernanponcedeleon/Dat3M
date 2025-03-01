@@ -3,21 +3,29 @@ package com.dat3m.dartagnan.parsers.program.visitors.spirv.builders;
 import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.expression.Expression;
+import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.Type;
+import com.dat3m.dartagnan.expression.type.ArrayType;
 import com.dat3m.dartagnan.expression.type.FunctionType;
-import com.dat3m.dartagnan.parsers.program.visitors.spirv.decorations.BuiltIn;
-import com.dat3m.dartagnan.parsers.program.visitors.spirv.utils.ThreadCreator;
-import com.dat3m.dartagnan.parsers.program.visitors.spirv.utils.ThreadGrid;
-import com.dat3m.dartagnan.program.event.functions.FunctionCall;
-import com.dat3m.dartagnan.program.memory.ScopedPointer;
-import com.dat3m.dartagnan.program.memory.ScopedPointerVariable;
 import com.dat3m.dartagnan.expression.type.ScopedPointerType;
-import com.dat3m.dartagnan.program.*;
-import com.dat3m.dartagnan.program.event.*;
+import com.dat3m.dartagnan.expression.type.TypeFactory;
+import com.dat3m.dartagnan.parsers.program.visitors.spirv.decorations.BuiltIn;
+import com.dat3m.dartagnan.program.processing.transformers.MemoryTransformer;
+import com.dat3m.dartagnan.program.ThreadGrid;
+import com.dat3m.dartagnan.program.Function;
+import com.dat3m.dartagnan.program.Program;
+import com.dat3m.dartagnan.program.Register;
+import com.dat3m.dartagnan.program.event.Event;
+import com.dat3m.dartagnan.program.event.RegWriter;
+import com.dat3m.dartagnan.program.event.Tag;
+import com.dat3m.dartagnan.program.event.functions.FunctionCall;
 import com.dat3m.dartagnan.program.memory.Memory;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
+import com.dat3m.dartagnan.program.memory.ScopedPointerVariable;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import static com.dat3m.dartagnan.parsers.program.visitors.spirv.decorations.DecorationType.BUILT_IN;
@@ -39,7 +47,7 @@ public class ProgramBuilder {
 
     public ProgramBuilder(ThreadGrid grid) {
         this.grid = grid;
-        this.program = new Program(new Memory(), Program.SourceLanguage.SPV);
+        this.program = new Program(new Memory(), Program.SourceLanguage.SPV, grid);
         this.controlFlowBuilder = new ControlFlowBuilder(expressions);
         this.decorationsBuilder = new DecorationsBuilder(grid);
     }
@@ -48,7 +56,8 @@ public class ProgramBuilder {
         validateBeforeBuild();
         controlFlowBuilder.build();
         BuiltIn builtIn = (BuiltIn) decorationsBuilder.getDecoration(BUILT_IN);
-        new ThreadCreator(grid, getEntryPointFunction(), getVariables(), builtIn).create();
+        MemoryTransformer transformer = new MemoryTransformer(grid, getEntryPointFunction(), builtIn, getVariables());
+        program.addTransformer(transformer);
         return program;
     }
 
@@ -79,11 +88,16 @@ public class ProgramBuilder {
         this.nextOps = null;
     }
 
+    public String getEntryPointId() {
+        return entryPointId;
+    }
+
     public void setEntryPointId(String id) {
         if (entryPointId != null) {
             throw new ParsingException("Multiple entry points are not supported");
         }
         entryPointId = id;
+        program.setEntryPoint(id);
     }
 
     public void setArch(Arch arch) {
@@ -174,15 +188,20 @@ public class ProgramBuilder {
         return memObj;
     }
 
-    // TODO: Proper implementation of pointers
-    //  where ScopedPointer uses ScopedPointerType
+    public ScopedPointerVariable allocateScopedPointerVariable(String id, Expression initValue, String storageClass, Type pointedType) {
+        MemoryObject memObj = allocateVariable(id, TypeFactory.getInstance().getMemorySizeInBytes(pointedType));
+        memObj.setIsThreadLocal(false);
+        memObj.setInitialValue(0, initValue);
+        if (arch == Arch.OPENCL) {
+            String openCLSpace = Tag.Spirv.toOpenCLTag(Tag.Spirv.getStorageClassTag(Set.of(storageClass)));
+            memObj.addFeatureTag(openCLSpace);
+        }
+        return ExpressionFactory.getInstance().makeScopedPointerVariable(
+                id, storageClass, pointedType, memObj);
+    }
+
     public String getPointerStorageClass(String id) {
         Expression expression = getExpression(id);
-        // Pointers to variables and references from OpAccessChain
-        if (expression instanceof ScopedPointer pointer) {
-            return pointer.getScopeId();
-        }
-        // Pointers passed via function argument registers
         if (expression.getType() instanceof ScopedPointerType pointerType) {
             return pointerType.getScopeId();
         }
@@ -191,8 +210,9 @@ public class ProgramBuilder {
 
     public Register addRegister(String id, String typeId) {
         Type type = getType(typeId);
-        if (type instanceof ScopedPointerType) {
-            throw new ParsingException("Register cannot be a pointer");
+        // TODO: Remove this when we use single memory event for array
+        if (type instanceof ArrayType arrayType) {
+            type = arrayType.getElementType();
         }
         return getCurrentFunctionOrThrowError().newRegister(id, type);
     }
@@ -234,9 +254,6 @@ public class ProgramBuilder {
                     function.getName(), currentFunction.getName());
         }
         addExpression(function.getName(), function);
-        for (Register register : function.getParameterRegisters()) {
-            addExpression(register.getName(), register);
-        }
         program.addFunction(function);
         currentFunction = function;
     }

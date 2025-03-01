@@ -33,9 +33,10 @@ public class ScopedPointerType extends IntegerType {
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
-        if (!(o instanceof ScopedPointerType that)) return false;
-        if (!super.equals(o)) return false;
-        return Objects.equals(scopeId, that.scopeId) && Objects.equals(pointedType, that.pointedType);
+        if (o instanceof ScopedPointerType that) {
+            return Objects.equals(scopeId, that.scopeId) && Objects.equals(pointedType, that.pointedType);
+        }
+        return super.equals(o);
     }
 
     @Override

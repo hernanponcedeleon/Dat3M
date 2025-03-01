@@ -67,6 +67,7 @@ op
     |   opAliasScopeDeclINTEL
     |   opAliasScopeListDeclINTEL
     |   opAll
+    |   opAllocateNodePayloadsAMDX
     |   opAny
     |   opArbitraryFloatACosINTEL
     |   opArbitraryFloatACosPiINTEL
@@ -109,6 +110,7 @@ op
     |   opArbitraryFloatSinPiINTEL
     |   opArbitraryFloatSqrtINTEL
     |   opArbitraryFloatSubINTEL
+    |   opArithmeticFenceEXT
     |   opArrayLength
     |   opAsmCallINTEL
     |   opAsmINTEL
@@ -155,16 +157,19 @@ op
     |   opCommitWritePipe
     |   opCompositeConstruct
     |   opCompositeConstructContinuedINTEL
+    |   opCompositeConstructReplicateEXT
     |   opCompositeExtract
     |   opCompositeInsert
     |   opConstant
     |   opConstantComposite
     |   opConstantCompositeContinuedINTEL
+    |   opConstantCompositeReplicateEXT
     |   opConstantFalse
     |   opConstantFunctionPointerINTEL
     |   opConstantNull
     |   opConstantPipeStorage
     |   opConstantSampler
+    |   opConstantStringAMDX
     |   opConstantTrue
     |   opControlBarrier
     |   opControlBarrierArriveINTEL
@@ -184,19 +189,33 @@ op
     |   opConvertUToPtr
     |   opConvertUToSampledImageNV
     |   opConvertUToSamplerNV
+    |   opCooperativeMatrixConvertNV
     |   opCooperativeMatrixLengthKHR
     |   opCooperativeMatrixLengthNV
     |   opCooperativeMatrixLoadKHR
     |   opCooperativeMatrixLoadNV
+    |   opCooperativeMatrixLoadTensorNV
     |   opCooperativeMatrixMulAddKHR
     |   opCooperativeMatrixMulAddNV
+    |   opCooperativeMatrixPerElementOpNV
+    |   opCooperativeMatrixReduceNV
     |   opCooperativeMatrixStoreKHR
     |   opCooperativeMatrixStoreNV
+    |   opCooperativeMatrixStoreTensorNV
+    |   opCooperativeMatrixTransposeNV
+    |   opCooperativeVectorLoadNV
+    |   opCooperativeVectorMatrixMulAddNV
+    |   opCooperativeVectorMatrixMulNV
+    |   opCooperativeVectorOuterProductAccumulateNV
+    |   opCooperativeVectorReduceSumAccumulateNV
+    |   opCooperativeVectorStoreNV
     |   opCopyLogical
     |   opCopyMemory
     |   opCopyMemorySized
     |   opCopyObject
     |   opCreatePipeFromPipeStorage
+    |   opCreateTensorLayoutNV
+    |   opCreateTensorViewNV
     |   opCreateUserEvent
     |   opCrossWorkgroupCastToPtrINTEL
     |   opDPdx
@@ -208,10 +227,8 @@ op
     |   opDecorate
     |   opDecorateId
     |   opDecorateString
-    |   opDecorateStringGOOGLE
     |   opDecorationGroup
     |   opDemoteToHelperInvocation
-    |   opDemoteToHelperInvocationEXT
     |   opDepthAttachmentReadEXT
     |   opDot
     |   opEmitMeshTasksEXT
@@ -222,6 +239,7 @@ op
     |   opEndStreamPrimitive
     |   opEnqueueKernel
     |   opEnqueueMarker
+    |   opEnqueueNodePayloadsAMDX
     |   opEntryPoint
     |   opExecuteCallableKHR
     |   opExecuteCallableNV
@@ -254,7 +272,6 @@ op
     |   opFUnordNotEqual
     |   opFetchMicroTriangleVertexBarycentricNV
     |   opFetchMicroTriangleVertexPositionNV
-    |   opFinalizeNodePayloadsAMDX
     |   opFinishWritingNodePayloadAMDX
     |   opFixedCosINTEL
     |   opFixedCosPiINTEL
@@ -338,6 +355,8 @@ op
     |   opGroupNonUniformLogicalOr
     |   opGroupNonUniformLogicalXor
     |   opGroupNonUniformPartitionNV
+    |   opGroupNonUniformQuadAllKHR
+    |   opGroupNonUniformQuadAnyKHR
     |   opGroupNonUniformQuadBroadcast
     |   opGroupNonUniformQuadSwap
     |   opGroupNonUniformRotateKHR
@@ -362,11 +381,14 @@ op
     |   opGroupWaitEvents
     |   opHitObjectExecuteShaderNV
     |   opHitObjectGetAttributesNV
+    |   opHitObjectGetClusterIdNV
     |   opHitObjectGetCurrentTimeNV
     |   opHitObjectGetGeometryIndexNV
     |   opHitObjectGetHitKindNV
     |   opHitObjectGetInstanceCustomIndexNV
     |   opHitObjectGetInstanceIdNV
+    |   opHitObjectGetLSSPositionsNV
+    |   opHitObjectGetLSSRadiiNV
     |   opHitObjectGetObjectRayDirectionNV
     |   opHitObjectGetObjectRayOriginNV
     |   opHitObjectGetObjectToWorldNV
@@ -375,12 +397,16 @@ op
     |   opHitObjectGetRayTMinNV
     |   opHitObjectGetShaderBindingTableRecordIndexNV
     |   opHitObjectGetShaderRecordBufferHandleNV
+    |   opHitObjectGetSpherePositionNV
+    |   opHitObjectGetSphereRadiusNV
     |   opHitObjectGetWorldRayDirectionNV
     |   opHitObjectGetWorldRayOriginNV
     |   opHitObjectGetWorldToObjectNV
     |   opHitObjectIsEmptyNV
     |   opHitObjectIsHitNV
+    |   opHitObjectIsLSSHitNV
     |   opHitObjectIsMissNV
+    |   opHitObjectIsSphereHitNV
     |   opHitObjectRecordEmptyNV
     |   opHitObjectRecordHitMotionNV
     |   opHitObjectRecordHitNV
@@ -405,8 +431,12 @@ op
     |   opIgnoreIntersectionKHR
     |   opIgnoreIntersectionNV
     |   opImage
+    |   opImageBlockMatchGatherSADQCOM
+    |   opImageBlockMatchGatherSSDQCOM
     |   opImageBlockMatchSADQCOM
     |   opImageBlockMatchSSDQCOM
+    |   opImageBlockMatchWindowSADQCOM
+    |   opImageBlockMatchWindowSSDQCOM
     |   opImageBoxFilterQCOM
     |   opImageDrefGather
     |   opImageFetch
@@ -446,11 +476,11 @@ op
     |   opImageWrite
     |   opInBoundsAccessChain
     |   opInBoundsPtrAccessChain
-    |   opInitializeNodePayloadsAMDX
     |   opIsFinite
     |   opIsHelperInvocationEXT
     |   opIsInf
     |   opIsNan
+    |   opIsNodePayloadValidAMDX
     |   opIsNormal
     |   opIsValidEvent
     |   opIsValidReserveId
@@ -475,7 +505,6 @@ op
     |   opMatrixTimesVector
     |   opMemberDecorate
     |   opMemberDecorateString
-    |   opMemberDecorateStringGOOGLE
     |   opMemberName
     |   opMemoryBarrier
     |   opMemoryModel
@@ -484,6 +513,7 @@ op
     |   opName
     |   opNamedBarrierInitialize
     |   opNoLine
+    |   opNodePayloadArrayLengthAMDX
     |   opNop
     |   opNot
     |   opOrdered
@@ -496,8 +526,10 @@ op
     |   opPtrEqual
     |   opPtrNotEqual
     |   opQuantizeToF16
+    |   opRawAccessChainNV
     |   opRayQueryConfirmIntersectionKHR
     |   opRayQueryGenerateIntersectionKHR
+    |   opRayQueryGetClusterIdNV
     |   opRayQueryGetIntersectionBarycentricsKHR
     |   opRayQueryGetIntersectionCandidateAABBOpaqueKHR
     |   opRayQueryGetIntersectionFrontFaceKHR
@@ -505,10 +537,15 @@ op
     |   opRayQueryGetIntersectionInstanceCustomIndexKHR
     |   opRayQueryGetIntersectionInstanceIdKHR
     |   opRayQueryGetIntersectionInstanceShaderBindingTableRecordOffsetKHR
+    |   opRayQueryGetIntersectionLSSHitValueNV
+    |   opRayQueryGetIntersectionLSSPositionsNV
+    |   opRayQueryGetIntersectionLSSRadiiNV
     |   opRayQueryGetIntersectionObjectRayDirectionKHR
     |   opRayQueryGetIntersectionObjectRayOriginKHR
     |   opRayQueryGetIntersectionObjectToWorldKHR
     |   opRayQueryGetIntersectionPrimitiveIndexKHR
+    |   opRayQueryGetIntersectionSpherePositionNV
+    |   opRayQueryGetIntersectionSphereRadiusNV
     |   opRayQueryGetIntersectionTKHR
     |   opRayQueryGetIntersectionTriangleVertexPositionsKHR
     |   opRayQueryGetIntersectionTypeKHR
@@ -518,6 +555,8 @@ op
     |   opRayQueryGetWorldRayDirectionKHR
     |   opRayQueryGetWorldRayOriginKHR
     |   opRayQueryInitializeKHR
+    |   opRayQueryIsLSSHitNV
+    |   opRayQueryIsSphereHitNV
     |   opRayQueryProceedKHR
     |   opRayQueryTerminateKHR
     |   opReadClockKHR
@@ -527,7 +566,6 @@ op
     |   opReorderThreadWithHintNV
     |   opReorderThreadWithHitObjectNV
     |   opReportIntersectionKHR
-    |   opReportIntersectionNV
     |   opReserveReadPipePackets
     |   opReserveWritePipePackets
     |   opReservedReadPipe
@@ -540,8 +578,6 @@ op
     |   opSDiv
     |   opSDot
     |   opSDotAccSat
-    |   opSDotAccSatKHR
-    |   opSDotKHR
     |   opSGreaterThan
     |   opSGreaterThanEqual
     |   opSLessThan
@@ -552,8 +588,6 @@ op
     |   opSRem
     |   opSUDot
     |   opSUDotAccSat
-    |   opSUDotAccSatKHR
-    |   opSUDotKHR
     |   opSampledImage
     |   opSamplerImageAddressingModeNV
     |   opSatConvertSToU
@@ -574,11 +608,18 @@ op
     |   opSpecConstant
     |   opSpecConstantComposite
     |   opSpecConstantCompositeContinuedINTEL
+    |   opSpecConstantCompositeReplicateEXT
     |   opSpecConstantFalse
+    |   opSpecConstantStringAMDX
     |   opSpecConstantTrue
     |   opStencilAttachmentReadEXT
     |   opStore
     |   opString
+    |   opSubgroup2DBlockLoadINTEL
+    |   opSubgroup2DBlockLoadTransformINTEL
+    |   opSubgroup2DBlockLoadTransposeINTEL
+    |   opSubgroup2DBlockPrefetchINTEL
+    |   opSubgroup2DBlockStoreINTEL
     |   opSubgroupAllEqualKHR
     |   opSubgroupAllKHR
     |   opSubgroupAnyKHR
@@ -687,6 +728,7 @@ op
     |   opSubgroupAvcSicSetIntraLumaShapePenaltyINTEL
     |   opSubgroupAvcSicSetSkcForwardTransformEnableINTEL
     |   opSubgroupBallotKHR
+    |   opSubgroupBlockPrefetchINTEL
     |   opSubgroupBlockReadINTEL
     |   opSubgroupBlockWriteINTEL
     |   opSubgroupFirstInvocationKHR
@@ -694,12 +736,21 @@ op
     |   opSubgroupImageBlockWriteINTEL
     |   opSubgroupImageMediaBlockReadINTEL
     |   opSubgroupImageMediaBlockWriteINTEL
+    |   opSubgroupMatrixMultiplyAccumulateINTEL
     |   opSubgroupReadInvocationKHR
     |   opSubgroupShuffleDownINTEL
     |   opSubgroupShuffleINTEL
     |   opSubgroupShuffleUpINTEL
     |   opSubgroupShuffleXorINTEL
     |   opSwitch
+    |   opTensorLayoutSetBlockSizeNV
+    |   opTensorLayoutSetClampValueNV
+    |   opTensorLayoutSetDimensionNV
+    |   opTensorLayoutSetStrideNV
+    |   opTensorLayoutSliceNV
+    |   opTensorViewSetClipNV
+    |   opTensorViewSetDimensionNV
+    |   opTensorViewSetStrideNV
     |   opTerminateInvocation
     |   opTerminateRayKHR
     |   opTerminateRayNV
@@ -709,7 +760,6 @@ op
     |   opTraceRayMotionNV
     |   opTranspose
     |   opTypeAccelerationStructureKHR
-    |   opTypeAccelerationStructureNV
     |   opTypeArray
     |   opTypeAvcImeDualReferenceStreaminINTEL
     |   opTypeAvcImePayloadINTEL
@@ -727,6 +777,7 @@ op
     |   opTypeBufferSurfaceINTEL
     |   opTypeCooperativeMatrixKHR
     |   opTypeCooperativeMatrixNV
+    |   opTypeCooperativeVectorNV
     |   opTypeDeviceEvent
     |   opTypeEvent
     |   opTypeFloat
@@ -737,6 +788,7 @@ op
     |   opTypeInt
     |   opTypeMatrix
     |   opTypeNamedBarrier
+    |   opTypeNodePayloadArrayAMDX
     |   opTypeOpaque
     |   opTypePipe
     |   opTypePipeStorage
@@ -749,6 +801,9 @@ op
     |   opTypeSampler
     |   opTypeStruct
     |   opTypeStructContinuedINTEL
+    |   opTypeTensorLayoutNV
+    |   opTypeTensorViewNV
+    |   opTypeUntypedPointerKHR
     |   opTypeVector
     |   opTypeVmeImageINTEL
     |   opTypeVoid
@@ -761,8 +816,6 @@ op
     |   opUDiv
     |   opUDot
     |   opUDotAccSat
-    |   opUDotAccSatKHR
-    |   opUDotKHR
     |   opUGreaterThan
     |   opUGreaterThanEqual
     |   opULessThan
@@ -774,6 +827,13 @@ op
     |   opUndef
     |   opUnordered
     |   opUnreachable
+    |   opUntypedAccessChainKHR
+    |   opUntypedArrayLengthKHR
+    |   opUntypedInBoundsAccessChainKHR
+    |   opUntypedInBoundsPtrAccessChainKHR
+    |   opUntypedPrefetchKHR
+    |   opUntypedPtrAccessChainKHR
+    |   opUntypedVariableKHR
     |   opVariable
     |   opVariableLengthArrayINTEL
     |   opVectorExtractDynamic
@@ -795,9 +855,7 @@ opGroupDecorate : Op GroupDecorate decorationGroup targetsIdRef*;
 opGroupMemberDecorate : Op GroupMemberDecorate decorationGroup targetsPairIdRefLiteralInteger*;
 opDecorateId : Op DecorateId targetIdRef decoration;
 opDecorateString : Op DecorateString targetIdRef decoration;
-opDecorateStringGOOGLE : Op DecorateStringGOOGLE targetIdRef decoration;
 opMemberDecorateString : Op MemberDecorateString structType member decoration;
-opMemberDecorateStringGOOGLE : Op MemberDecorateStringGOOGLE structType member decoration;
 
 // Arithmetic Operations
 opSNegate : idResult Equals Op (SNegate idResultType | SpecConstantOp idResultType SNegate) operand;
@@ -828,18 +886,13 @@ opISubBorrow : idResult Equals Op (ISubBorrow idResultType | SpecConstantOp idRe
 opUMulExtended : idResult Equals Op (UMulExtended idResultType | SpecConstantOp idResultType UMulExtended) operand1 operand2;
 opSMulExtended : idResult Equals Op (SMulExtended idResultType | SpecConstantOp idResultType SMulExtended) operand1 operand2;
 opSDot : idResult Equals Op (SDot idResultType | SpecConstantOp idResultType SDot) vector1 vector2 packedVectorFormat?;
-opSDotKHR : idResult Equals Op (SDotKHR idResultType | SpecConstantOp idResultType SDotKHR) vector1 vector2 packedVectorFormat?;
 opUDot : idResult Equals Op (UDot idResultType | SpecConstantOp idResultType UDot) vector1 vector2 packedVectorFormat?;
-opUDotKHR : idResult Equals Op (UDotKHR idResultType | SpecConstantOp idResultType UDotKHR) vector1 vector2 packedVectorFormat?;
 opSUDot : idResult Equals Op (SUDot idResultType | SpecConstantOp idResultType SUDot) vector1 vector2 packedVectorFormat?;
-opSUDotKHR : idResult Equals Op (SUDotKHR idResultType | SpecConstantOp idResultType SUDotKHR) vector1 vector2 packedVectorFormat?;
 opSDotAccSat : idResult Equals Op (SDotAccSat idResultType | SpecConstantOp idResultType SDotAccSat) vector1 vector2 accumulator packedVectorFormat?;
-opSDotAccSatKHR : idResult Equals Op (SDotAccSatKHR idResultType | SpecConstantOp idResultType SDotAccSatKHR) vector1 vector2 accumulator packedVectorFormat?;
 opUDotAccSat : idResult Equals Op (UDotAccSat idResultType | SpecConstantOp idResultType UDotAccSat) vector1 vector2 accumulator packedVectorFormat?;
-opUDotAccSatKHR : idResult Equals Op (UDotAccSatKHR idResultType | SpecConstantOp idResultType UDotAccSatKHR) vector1 vector2 accumulator packedVectorFormat?;
 opSUDotAccSat : idResult Equals Op (SUDotAccSat idResultType | SpecConstantOp idResultType SUDotAccSat) vector1 vector2 accumulator packedVectorFormat?;
-opSUDotAccSatKHR : idResult Equals Op (SUDotAccSatKHR idResultType | SpecConstantOp idResultType SUDotAccSatKHR) vector1 vector2 accumulator packedVectorFormat?;
 opCooperativeMatrixMulAddKHR : idResult Equals Op (CooperativeMatrixMulAddKHR idResultType | SpecConstantOp idResultType CooperativeMatrixMulAddKHR) a b c cooperativeMatrixOperands?;
+opCooperativeMatrixReduceNV : idResult Equals Op (CooperativeMatrixReduceNV idResultType | SpecConstantOp idResultType CooperativeMatrixReduceNV) matrix reduce combineFunc;
 
 // Atomic Operations
 opAtomicLoad : idResult Equals Op (AtomicLoad idResultType | SpecConstantOp idResultType AtomicLoad) pointer memory semantics;
@@ -896,6 +949,7 @@ opCompositeInsert : idResult Equals Op (CompositeInsert idResultType | SpecConst
 opCopyObject : idResult Equals Op (CopyObject idResultType | SpecConstantOp idResultType CopyObject) operand;
 opTranspose : idResult Equals Op (Transpose idResultType | SpecConstantOp idResultType Transpose) matrix;
 opCopyLogical : idResult Equals Op (CopyLogical idResultType | SpecConstantOp idResultType CopyLogical) operand;
+opCompositeConstructReplicateEXT : idResult Equals Op (CompositeConstructReplicateEXT idResultType | SpecConstantOp idResultType CompositeConstructReplicateEXT) valueIdRef;
 opCompositeConstructContinuedINTEL : idResult Equals Op (CompositeConstructContinuedINTEL idResultType | SpecConstantOp idResultType CompositeConstructContinuedINTEL) constituents*;
 
 // Constant-Creation Operations
@@ -909,6 +963,8 @@ opSpecConstantTrue : idResult Equals Op (SpecConstantTrue idResultType | SpecCon
 opSpecConstantFalse : idResult Equals Op (SpecConstantFalse idResultType | SpecConstantOp idResultType SpecConstantFalse);
 opSpecConstant : idResult Equals Op (SpecConstant idResultType | SpecConstantOp idResultType SpecConstant) valueLiteralContextDependentNumber;
 opSpecConstantComposite : idResult Equals Op (SpecConstantComposite idResultType | SpecConstantOp idResultType SpecConstantComposite) constituents*;
+opConstantCompositeReplicateEXT : idResult Equals Op (ConstantCompositeReplicateEXT idResultType | SpecConstantOp idResultType ConstantCompositeReplicateEXT) valueIdRef;
+opSpecConstantCompositeReplicateEXT : idResult Equals Op (SpecConstantCompositeReplicateEXT idResultType | SpecConstantOp idResultType SpecConstantCompositeReplicateEXT) valueIdRef;
 opConstantCompositeContinuedINTEL : Op ConstantCompositeContinuedINTEL constituents*;
 opSpecConstantCompositeContinuedINTEL : Op SpecConstantCompositeContinuedINTEL constituents*;
 
@@ -928,7 +984,6 @@ opLifetimeStart : Op LifetimeStart pointer sizeLiteralInteger;
 opLifetimeStop : Op LifetimeStop pointer sizeLiteralInteger;
 opTerminateInvocation : Op TerminateInvocation;
 opDemoteToHelperInvocation : Op DemoteToHelperInvocation;
-opDemoteToHelperInvocationEXT : Op DemoteToHelperInvocationEXT;
 
 // Conversion Operations
 opConvertFToU : idResult Equals Op (ConvertFToU idResultType | SpecConstantOp idResultType ConvertFToU) floatValue;
@@ -947,6 +1002,8 @@ opPtrCastToGeneric : idResult Equals Op (PtrCastToGeneric idResultType | SpecCon
 opGenericCastToPtr : idResult Equals Op (GenericCastToPtr idResultType | SpecConstantOp idResultType GenericCastToPtr) pointer;
 opGenericCastToPtrExplicit : idResult Equals Op (GenericCastToPtrExplicit idResultType | SpecConstantOp idResultType GenericCastToPtrExplicit) pointer storage;
 opBitcast : idResult Equals Op (Bitcast idResultType | SpecConstantOp idResultType Bitcast) operand;
+opCooperativeMatrixConvertNV : idResult Equals Op (CooperativeMatrixConvertNV idResultType | SpecConstantOp idResultType CooperativeMatrixConvertNV) matrix;
+opCooperativeMatrixTransposeNV : idResult Equals Op (CooperativeMatrixTransposeNV idResultType | SpecConstantOp idResultType CooperativeMatrixTransposeNV) matrix;
 opConvertFToBF16INTEL : idResult Equals Op (ConvertFToBF16INTEL idResultType | SpecConstantOp idResultType ConvertFToBF16INTEL) floatValue;
 opConvertBF16ToFINTEL : idResult Equals Op (ConvertBF16ToFINTEL idResultType | SpecConstantOp idResultType ConvertBF16ToFINTEL) bFloat16Value;
 
@@ -1000,6 +1057,7 @@ opFunction : idResult Equals Op (Function idResultType | SpecConstantOp idResult
 opFunctionParameter : idResult Equals Op (FunctionParameter idResultType | SpecConstantOp idResultType FunctionParameter);
 opFunctionEnd : Op FunctionEnd;
 opFunctionCall : idResult Equals Op (FunctionCall idResultType | SpecConstantOp idResultType FunctionCall) function argument*;
+opCooperativeMatrixPerElementOpNV : idResult Equals Op (CooperativeMatrixPerElementOpNV idResultType | SpecConstantOp idResultType CooperativeMatrixPerElementOpNV) matrix func operands*;
 
 // Group Operations
 opGroupAsyncCopy : idResult Equals Op (GroupAsyncCopy idResultType | SpecConstantOp idResultType GroupAsyncCopy) execution destination sourceIdRef numElements stride event;
@@ -1040,6 +1098,13 @@ opSubgroupImageBlockReadINTEL : idResult Equals Op (SubgroupImageBlockReadINTEL 
 opSubgroupImageBlockWriteINTEL : Op SubgroupImageBlockWriteINTEL image coordinate data;
 opSubgroupImageMediaBlockReadINTEL : idResult Equals Op (SubgroupImageMediaBlockReadINTEL idResultType | SpecConstantOp idResultType SubgroupImageMediaBlockReadINTEL) image coordinate widthIdRef height;
 opSubgroupImageMediaBlockWriteINTEL : Op SubgroupImageMediaBlockWriteINTEL image coordinate widthIdRef height data;
+opSubgroupBlockPrefetchINTEL : Op SubgroupBlockPrefetchINTEL ptr numBytes memoryAccess?;
+opSubgroup2DBlockLoadINTEL : Op Subgroup2DBlockLoadINTEL elementSize blockWidth blockHeight blockCount srcBasePointer memoryWidth memoryHeight memoryPitch coordinate dstPointer;
+opSubgroup2DBlockLoadTransformINTEL : Op Subgroup2DBlockLoadTransformINTEL elementSize blockWidth blockHeight blockCount srcBasePointer memoryWidth memoryHeight memoryPitch coordinate dstPointer;
+opSubgroup2DBlockLoadTransposeINTEL : Op Subgroup2DBlockLoadTransposeINTEL elementSize blockWidth blockHeight blockCount srcBasePointer memoryWidth memoryHeight memoryPitch coordinate dstPointer;
+opSubgroup2DBlockPrefetchINTEL : Op Subgroup2DBlockPrefetchINTEL elementSize blockWidth blockHeight blockCount srcBasePointer memoryWidth memoryHeight memoryPitch coordinate;
+opSubgroup2DBlockStoreINTEL : Op Subgroup2DBlockStoreINTEL elementSize blockWidth blockHeight blockCount srcPointer dstBasePointer memoryWidth memoryHeight memoryPitch coordinate;
+opSubgroupMatrixMultiplyAccumulateINTEL : idResult Equals Op (SubgroupMatrixMultiplyAccumulateINTEL idResultType | SpecConstantOp idResultType SubgroupMatrixMultiplyAccumulateINTEL) kDim matrixA matrixB matrixC matrixMultiplyAccumulateOperands?;
 opGroupIMulKHR : idResult Equals Op (GroupIMulKHR idResultType | SpecConstantOp idResultType GroupIMulKHR) execution operation x;
 opGroupFMulKHR : idResult Equals Op (GroupFMulKHR idResultType | SpecConstantOp idResultType GroupFMulKHR) execution operation x;
 opGroupBitwiseAndKHR : idResult Equals Op (GroupBitwiseAndKHR idResultType | SpecConstantOp idResultType GroupBitwiseAndKHR) execution operation x;
@@ -1092,6 +1157,10 @@ opImageSampleWeightedQCOM : idResult Equals Op (ImageSampleWeightedQCOM idResult
 opImageBoxFilterQCOM : idResult Equals Op (ImageBoxFilterQCOM idResultType | SpecConstantOp idResultType ImageBoxFilterQCOM) texture coordinates boxSize;
 opImageBlockMatchSSDQCOM : idResult Equals Op (ImageBlockMatchSSDQCOM idResultType | SpecConstantOp idResultType ImageBlockMatchSSDQCOM) targetIdRef targetCoordinates reference referenceCoordinates blockSize;
 opImageBlockMatchSADQCOM : idResult Equals Op (ImageBlockMatchSADQCOM idResultType | SpecConstantOp idResultType ImageBlockMatchSADQCOM) targetIdRef targetCoordinates reference referenceCoordinates blockSize;
+opImageBlockMatchWindowSSDQCOM : idResult Equals Op (ImageBlockMatchWindowSSDQCOM idResultType | SpecConstantOp idResultType ImageBlockMatchWindowSSDQCOM) targetSampledImage targetCoordinates referenceSampledImage referenceCoordinates blockSize;
+opImageBlockMatchWindowSADQCOM : idResult Equals Op (ImageBlockMatchWindowSADQCOM idResultType | SpecConstantOp idResultType ImageBlockMatchWindowSADQCOM) targetSampledImage targetCoordinates referenceSampledImage referenceCoordinates blockSize;
+opImageBlockMatchGatherSSDQCOM : idResult Equals Op (ImageBlockMatchGatherSSDQCOM idResultType | SpecConstantOp idResultType ImageBlockMatchGatherSSDQCOM) targetSampledImage targetCoordinates referenceSampledImage referenceCoordinates blockSize;
+opImageBlockMatchGatherSADQCOM : idResult Equals Op (ImageBlockMatchGatherSADQCOM idResultType | SpecConstantOp idResultType ImageBlockMatchGatherSADQCOM) targetSampledImage targetCoordinates referenceSampledImage referenceCoordinates blockSize;
 opImageSampleFootprintNV : idResult Equals Op (ImageSampleFootprintNV idResultType | SpecConstantOp idResultType ImageSampleFootprintNV) sampledImage coordinate granularity coarse imageOperands?;
 
 // Memory Operations
@@ -1110,8 +1179,20 @@ opInBoundsPtrAccessChain : idResult Equals Op (InBoundsPtrAccessChain idResultTy
 opPtrEqual : idResult Equals Op (PtrEqual idResultType | SpecConstantOp idResultType PtrEqual) operand1 operand2;
 opPtrNotEqual : idResult Equals Op (PtrNotEqual idResultType | SpecConstantOp idResultType PtrNotEqual) operand1 operand2;
 opPtrDiff : idResult Equals Op (PtrDiff idResultType | SpecConstantOp idResultType PtrDiff) operand1 operand2;
+opUntypedVariableKHR : idResult Equals Op (UntypedVariableKHR idResultType | SpecConstantOp idResultType UntypedVariableKHR) storageClass (dataType initializer?)?;
+opUntypedAccessChainKHR : idResult Equals Op (UntypedAccessChainKHR idResultType | SpecConstantOp idResultType UntypedAccessChainKHR) baseType base indexesIdRef*;
+opUntypedInBoundsAccessChainKHR : idResult Equals Op (UntypedInBoundsAccessChainKHR idResultType | SpecConstantOp idResultType UntypedInBoundsAccessChainKHR) baseType base indexesIdRef*;
+opUntypedPtrAccessChainKHR : idResult Equals Op (UntypedPtrAccessChainKHR idResultType | SpecConstantOp idResultType UntypedPtrAccessChainKHR) baseType base element indexesIdRef*;
+opUntypedInBoundsPtrAccessChainKHR : idResult Equals Op (UntypedInBoundsPtrAccessChainKHR idResultType | SpecConstantOp idResultType UntypedInBoundsPtrAccessChainKHR) baseType base element indexesIdRef*;
+opUntypedArrayLengthKHR : idResult Equals Op (UntypedArrayLengthKHR idResultType | SpecConstantOp idResultType UntypedArrayLengthKHR) structure pointer arrayMember;
+opUntypedPrefetchKHR : Op UntypedPrefetchKHR pointerType numBytes (rW (locality cacheType?)?)?;
 opCooperativeMatrixLoadKHR : idResult Equals Op (CooperativeMatrixLoadKHR idResultType | SpecConstantOp idResultType CooperativeMatrixLoadKHR) pointer memoryLayout stride? memoryOperand?;
 opCooperativeMatrixStoreKHR : Op CooperativeMatrixStoreKHR pointer object memoryLayout stride? memoryOperand?;
+opCooperativeVectorLoadNV : idResult Equals Op (CooperativeVectorLoadNV idResultType | SpecConstantOp idResultType CooperativeVectorLoadNV) pointer offsetIdRef memoryAccess?;
+opCooperativeVectorStoreNV : Op CooperativeVectorStoreNV pointer offsetIdRef object memoryAccess?;
+opCooperativeMatrixLoadTensorNV : idResult Equals Op (CooperativeMatrixLoadTensorNV idResultType | SpecConstantOp idResultType CooperativeMatrixLoadTensorNV) pointer object tensorLayout memoryOperand tensorAddressingOperands;
+opCooperativeMatrixStoreTensorNV : Op CooperativeMatrixStoreTensorNV pointer object tensorLayout memoryOperand tensorAddressingOperands;
+opRawAccessChainNV : idResult Equals Op (RawAccessChainNV idResultType | SpecConstantOp idResultType RawAccessChainNV) base byteStride elementIndex byteOffsetIdRef rawAccessChainOperands?;
 opMaskedGatherINTEL : idResult Equals Op (MaskedGatherINTEL idResultType | SpecConstantOp idResultType MaskedGatherINTEL) ptrVector alignmentLiteralInteger mask fillEmpty;
 opMaskedScatterINTEL : Op MaskedScatterINTEL inputVector ptrVector alignmentLiteralInteger mask;
 
@@ -1122,6 +1203,7 @@ opSizeOf : idResult Equals Op (SizeOf idResultType | SpecConstantOp idResultType
 opCooperativeMatrixLengthKHR : idResult Equals Op (CooperativeMatrixLengthKHR idResultType | SpecConstantOp idResultType CooperativeMatrixLengthKHR) type;
 opAssumeTrueKHR : Op AssumeTrueKHR condition;
 opExpectKHR : idResult Equals Op (ExpectKHR idResultType | SpecConstantOp idResultType ExpectKHR) valueIdRef expectedValue;
+opArithmeticFenceEXT : idResult Equals Op (ArithmeticFenceEXT idResultType | SpecConstantOp idResultType ArithmeticFenceEXT) targetIdRef;
 
 // Mode-Setting Operations
 opMemoryModel : Op MemoryModel addressingModel memoryModel;
@@ -1165,6 +1247,8 @@ opGroupNonUniformLogicalOr : idResult Equals Op (GroupNonUniformLogicalOr idResu
 opGroupNonUniformLogicalXor : idResult Equals Op (GroupNonUniformLogicalXor idResultType | SpecConstantOp idResultType GroupNonUniformLogicalXor) execution operation valueIdRef clusterSize?;
 opGroupNonUniformQuadBroadcast : idResult Equals Op (GroupNonUniformQuadBroadcast idResultType | SpecConstantOp idResultType GroupNonUniformQuadBroadcast) execution valueIdRef indexIdRef;
 opGroupNonUniformQuadSwap : idResult Equals Op (GroupNonUniformQuadSwap idResultType | SpecConstantOp idResultType GroupNonUniformQuadSwap) execution valueIdRef direction;
+opGroupNonUniformQuadAllKHR : idResult Equals Op (GroupNonUniformQuadAllKHR idResultType | SpecConstantOp idResultType GroupNonUniformQuadAllKHR) predicate;
+opGroupNonUniformQuadAnyKHR : idResult Equals Op (GroupNonUniformQuadAnyKHR idResultType | SpecConstantOp idResultType GroupNonUniformQuadAnyKHR) predicate;
 opGroupNonUniformPartitionNV : idResult Equals Op (GroupNonUniformPartitionNV idResultType | SpecConstantOp idResultType GroupNonUniformPartitionNV) valueIdRef;
 
 // Pipe Operations
@@ -1249,9 +1333,14 @@ opRayQueryGetIntersectionTypeKHR : idResult Equals Op (RayQueryGetIntersectionTy
 opFragmentMaskFetchAMD : idResult Equals Op (FragmentMaskFetchAMD idResultType | SpecConstantOp idResultType FragmentMaskFetchAMD) image coordinate;
 opFragmentFetchAMD : idResult Equals Op (FragmentFetchAMD idResultType | SpecConstantOp idResultType FragmentFetchAMD) image coordinate fragmentIndex;
 opReadClockKHR : idResult Equals Op (ReadClockKHR idResultType | SpecConstantOp idResultType ReadClockKHR) scopeIdScope;
-opFinalizeNodePayloadsAMDX : Op FinalizeNodePayloadsAMDX payloadArray;
+opAllocateNodePayloadsAMDX : idResult Equals Op (AllocateNodePayloadsAMDX idResultType | SpecConstantOp idResultType AllocateNodePayloadsAMDX) visibility payloadCount nodeIndex;
+opEnqueueNodePayloadsAMDX : Op EnqueueNodePayloadsAMDX payloadArray;
+opTypeNodePayloadArrayAMDX : idResult Equals Op (TypeNodePayloadArrayAMDX  | SpecConstantOp  TypeNodePayloadArrayAMDX) payloadType;
 opFinishWritingNodePayloadAMDX : idResult Equals Op (FinishWritingNodePayloadAMDX idResultType | SpecConstantOp idResultType FinishWritingNodePayloadAMDX) payload;
-opInitializeNodePayloadsAMDX : Op InitializeNodePayloadsAMDX payloadArray visibility payloadCount nodeIndex;
+opNodePayloadArrayLengthAMDX : idResult Equals Op (NodePayloadArrayLengthAMDX idResultType | SpecConstantOp idResultType NodePayloadArrayLengthAMDX) payloadArray;
+opIsNodePayloadValidAMDX : idResult Equals Op (IsNodePayloadValidAMDX idResultType | SpecConstantOp idResultType IsNodePayloadValidAMDX) payloadType nodeIndex;
+opConstantStringAMDX : idResult Equals Op (ConstantStringAMDX  | SpecConstantOp  ConstantStringAMDX) literalStringLiteralString;
+opSpecConstantStringAMDX : idResult Equals Op (SpecConstantStringAMDX  | SpecConstantOp  SpecConstantStringAMDX) literalStringLiteralString;
 opHitObjectRecordHitMotionNV : Op HitObjectRecordHitMotionNV hitObject accelerationStructure instanceId primitiveId geometryIndex hitKind sBTRecordOffset sBTRecordStride origin tMin direction tMax currentTime hitObjectAttributes;
 opHitObjectRecordHitWithIndexMotionNV : Op HitObjectRecordHitWithIndexMotionNV hitObject accelerationStructure instanceId primitiveId geometryIndex hitKind sBTRecordIndex origin tMin direction tMax currentTime hitObjectAttributes;
 opHitObjectRecordMissMotionNV : Op HitObjectRecordMissMotionNV hitObject sBTIndex origin tMin direction tMax currentTime;
@@ -1284,12 +1373,15 @@ opHitObjectIsHitNV : idResult Equals Op (HitObjectIsHitNV idResultType | SpecCon
 opHitObjectIsMissNV : idResult Equals Op (HitObjectIsMissNV idResultType | SpecConstantOp idResultType HitObjectIsMissNV) hitObject;
 opReorderThreadWithHitObjectNV : Op ReorderThreadWithHitObjectNV hitObject (hint bits?)?;
 opReorderThreadWithHintNV : Op ReorderThreadWithHintNV hint bits;
+opCooperativeVectorMatrixMulNV : idResult Equals Op (CooperativeVectorMatrixMulNV idResultType | SpecConstantOp idResultType CooperativeVectorMatrixMulNV) input inputInterpretation matrix matrixOffset matrixInterpretation m k memoryLayout transpose matrixStrideIdRef? cooperativeMatrixOperands?;
+opCooperativeVectorOuterProductAccumulateNV : Op CooperativeVectorOuterProductAccumulateNV pointer offsetIdRef a b memoryLayout matrixInterpretation matrixStrideIdRef?;
+opCooperativeVectorReduceSumAccumulateNV : Op CooperativeVectorReduceSumAccumulateNV pointer offsetIdRef v;
+opCooperativeVectorMatrixMulAddNV : idResult Equals Op (CooperativeVectorMatrixMulAddNV idResultType | SpecConstantOp idResultType CooperativeVectorMatrixMulAddNV) input inputInterpretation matrix matrixOffset matrixInterpretation bias biasOffset biasInterpretation m k memoryLayout transpose matrixStrideIdRef? cooperativeMatrixOperands?;
 opEmitMeshTasksEXT : Op EmitMeshTasksEXT groupCountX groupCountY groupCountZ payload?;
 opSetMeshOutputsEXT : Op SetMeshOutputsEXT vertexCountIdRef primitiveCountIdRef;
 opWritePackedPrimitiveIndices4x8NV : Op WritePackedPrimitiveIndices4x8NV indexOffset packedIndices;
 opFetchMicroTriangleVertexPositionNV : idResult Equals Op (FetchMicroTriangleVertexPositionNV idResultType | SpecConstantOp idResultType FetchMicroTriangleVertexPositionNV) accel instanceId geometryIndex primitiveIndex barycentric;
 opFetchMicroTriangleVertexBarycentricNV : idResult Equals Op (FetchMicroTriangleVertexBarycentricNV idResultType | SpecConstantOp idResultType FetchMicroTriangleVertexBarycentricNV) accel instanceId geometryIndex primitiveIndex barycentric;
-opReportIntersectionNV : idResult Equals Op (ReportIntersectionNV idResultType | SpecConstantOp idResultType ReportIntersectionNV) hit hitKind;
 opReportIntersectionKHR : idResult Equals Op (ReportIntersectionKHR idResultType | SpecConstantOp idResultType ReportIntersectionKHR) hit hitKind;
 opIgnoreIntersectionNV : Op IgnoreIntersectionNV;
 opTerminateRayNV : Op TerminateRayNV;
@@ -1298,13 +1390,25 @@ opTraceMotionNV : Op TraceMotionNV accel rayFlagsIdRef cullMask sBTOffset sBTStr
 opTraceRayMotionNV : Op TraceRayMotionNV accel rayFlagsIdRef cullMask sBTOffset sBTStride missIndex rayOrigin rayTmin rayDirection rayTmax time payload;
 opRayQueryGetIntersectionTriangleVertexPositionsKHR : idResult Equals Op (RayQueryGetIntersectionTriangleVertexPositionsKHR idResultType | SpecConstantOp idResultType RayQueryGetIntersectionTriangleVertexPositionsKHR) rayQuery intersection;
 opExecuteCallableNV : Op ExecuteCallableNV sBTIndex callableDataId;
+opRayQueryGetClusterIdNV : idResult Equals Op (RayQueryGetClusterIdNV idResultType | SpecConstantOp idResultType RayQueryGetClusterIdNV) rayQuery intersection;
+opHitObjectGetClusterIdNV : idResult Equals Op (HitObjectGetClusterIdNV idResultType | SpecConstantOp idResultType HitObjectGetClusterIdNV) hitObject;
 opCooperativeMatrixLoadNV : idResult Equals Op (CooperativeMatrixLoadNV idResultType | SpecConstantOp idResultType CooperativeMatrixLoadNV) pointer stride columnMajor memoryAccess?;
 opCooperativeMatrixStoreNV : Op CooperativeMatrixStoreNV pointer object stride columnMajor memoryAccess?;
 opCooperativeMatrixMulAddNV : idResult Equals Op (CooperativeMatrixMulAddNV idResultType | SpecConstantOp idResultType CooperativeMatrixMulAddNV) a b c;
 opCooperativeMatrixLengthNV : idResult Equals Op (CooperativeMatrixLengthNV idResultType | SpecConstantOp idResultType CooperativeMatrixLengthNV) type;
 opBeginInvocationInterlockEXT : Op BeginInvocationInterlockEXT;
 opEndInvocationInterlockEXT : Op EndInvocationInterlockEXT;
+opCreateTensorLayoutNV : idResult Equals Op (CreateTensorLayoutNV idResultType | SpecConstantOp idResultType CreateTensorLayoutNV);
+opTensorLayoutSetDimensionNV : idResult Equals Op (TensorLayoutSetDimensionNV idResultType | SpecConstantOp idResultType TensorLayoutSetDimensionNV) tensorLayout dimIdRef*;
+opTensorLayoutSetStrideNV : idResult Equals Op (TensorLayoutSetStrideNV idResultType | SpecConstantOp idResultType TensorLayoutSetStrideNV) tensorLayout stride*;
+opTensorLayoutSliceNV : idResult Equals Op (TensorLayoutSliceNV idResultType | SpecConstantOp idResultType TensorLayoutSliceNV) tensorLayout operands*;
+opTensorLayoutSetClampValueNV : idResult Equals Op (TensorLayoutSetClampValueNV idResultType | SpecConstantOp idResultType TensorLayoutSetClampValueNV) tensorLayout valueIdRef;
+opCreateTensorViewNV : idResult Equals Op (CreateTensorViewNV idResultType | SpecConstantOp idResultType CreateTensorViewNV);
+opTensorViewSetDimensionNV : idResult Equals Op (TensorViewSetDimensionNV idResultType | SpecConstantOp idResultType TensorViewSetDimensionNV) tensorView dimIdRef*;
+opTensorViewSetStrideNV : idResult Equals Op (TensorViewSetStrideNV idResultType | SpecConstantOp idResultType TensorViewSetStrideNV) tensorView stride*;
 opIsHelperInvocationEXT : idResult Equals Op (IsHelperInvocationEXT idResultType | SpecConstantOp idResultType IsHelperInvocationEXT);
+opTensorViewSetClipNV : idResult Equals Op (TensorViewSetClipNV idResultType | SpecConstantOp idResultType TensorViewSetClipNV) tensorView clipRowOffset clipRowSpan clipColOffset clipColSpan;
+opTensorLayoutSetBlockSizeNV : idResult Equals Op (TensorLayoutSetBlockSizeNV idResultType | SpecConstantOp idResultType TensorLayoutSetBlockSizeNV) tensorLayout blockSize*;
 opConvertUToImageNV : idResult Equals Op (ConvertUToImageNV idResultType | SpecConstantOp idResultType ConvertUToImageNV) operand;
 opConvertUToSamplerNV : idResult Equals Op (ConvertUToSamplerNV idResultType | SpecConstantOp idResultType ConvertUToSamplerNV) operand;
 opConvertImageToUNV : idResult Equals Op (ConvertImageToUNV idResultType | SpecConstantOp idResultType ConvertImageToUNV) operand;
@@ -1312,6 +1416,19 @@ opConvertSamplerToUNV : idResult Equals Op (ConvertSamplerToUNV idResultType | S
 opConvertUToSampledImageNV : idResult Equals Op (ConvertUToSampledImageNV idResultType | SpecConstantOp idResultType ConvertUToSampledImageNV) operand;
 opConvertSampledImageToUNV : idResult Equals Op (ConvertSampledImageToUNV idResultType | SpecConstantOp idResultType ConvertSampledImageToUNV) operand;
 opSamplerImageAddressingModeNV : Op SamplerImageAddressingModeNV bitWidth;
+opRayQueryGetIntersectionSpherePositionNV : idResult Equals Op (RayQueryGetIntersectionSpherePositionNV idResultType | SpecConstantOp idResultType RayQueryGetIntersectionSpherePositionNV) rayQuery intersection;
+opRayQueryGetIntersectionSphereRadiusNV : idResult Equals Op (RayQueryGetIntersectionSphereRadiusNV idResultType | SpecConstantOp idResultType RayQueryGetIntersectionSphereRadiusNV) rayQuery intersection;
+opRayQueryGetIntersectionLSSPositionsNV : idResult Equals Op (RayQueryGetIntersectionLSSPositionsNV idResultType | SpecConstantOp idResultType RayQueryGetIntersectionLSSPositionsNV) rayQuery intersection;
+opRayQueryGetIntersectionLSSRadiiNV : idResult Equals Op (RayQueryGetIntersectionLSSRadiiNV idResultType | SpecConstantOp idResultType RayQueryGetIntersectionLSSRadiiNV) rayQuery intersection;
+opRayQueryGetIntersectionLSSHitValueNV : idResult Equals Op (RayQueryGetIntersectionLSSHitValueNV idResultType | SpecConstantOp idResultType RayQueryGetIntersectionLSSHitValueNV) rayQuery intersection;
+opHitObjectGetSpherePositionNV : idResult Equals Op (HitObjectGetSpherePositionNV idResultType | SpecConstantOp idResultType HitObjectGetSpherePositionNV) hitObject;
+opHitObjectGetSphereRadiusNV : idResult Equals Op (HitObjectGetSphereRadiusNV idResultType | SpecConstantOp idResultType HitObjectGetSphereRadiusNV) hitObject;
+opHitObjectGetLSSPositionsNV : idResult Equals Op (HitObjectGetLSSPositionsNV idResultType | SpecConstantOp idResultType HitObjectGetLSSPositionsNV) hitObject;
+opHitObjectGetLSSRadiiNV : idResult Equals Op (HitObjectGetLSSRadiiNV idResultType | SpecConstantOp idResultType HitObjectGetLSSRadiiNV) hitObject;
+opHitObjectIsSphereHitNV : idResult Equals Op (HitObjectIsSphereHitNV idResultType | SpecConstantOp idResultType HitObjectIsSphereHitNV) hitObject;
+opHitObjectIsLSSHitNV : idResult Equals Op (HitObjectIsLSSHitNV idResultType | SpecConstantOp idResultType HitObjectIsLSSHitNV) hitObject;
+opRayQueryIsSphereHitNV : idResult Equals Op (RayQueryIsSphereHitNV idResultType | SpecConstantOp idResultType RayQueryIsSphereHitNV) rayQuery intersection;
+opRayQueryIsLSSHitNV : idResult Equals Op (RayQueryIsLSSHitNV idResultType | SpecConstantOp idResultType RayQueryIsLSSHitNV) rayQuery intersection;
 opUCountLeadingZerosINTEL : idResult Equals Op (UCountLeadingZerosINTEL idResultType | SpecConstantOp idResultType UCountLeadingZerosINTEL) operand;
 opUCountTrailingZerosINTEL : idResult Equals Op (UCountTrailingZerosINTEL idResultType | SpecConstantOp idResultType UCountTrailingZerosINTEL) operand;
 opAbsISubINTEL : idResult Equals Op (AbsISubINTEL idResultType | SpecConstantOp idResultType AbsISubINTEL) operand1 operand2;
@@ -1351,7 +1468,7 @@ opTypeVoid : idResult Equals Op (TypeVoid  | SpecConstantOp  TypeVoid);
 opTypeBool : idResult Equals Op (TypeBool  | SpecConstantOp  TypeBool);
 opTypeInt : idResult Equals Op (TypeInt  | SpecConstantOp  TypeInt) widthLiteralInteger signedness;
 opTypeFloat : idResult Equals Op (TypeFloat  | SpecConstantOp  TypeFloat) widthLiteralInteger;
-opTypeVector : idResult Equals Op (TypeVector  | SpecConstantOp  TypeVector) componentType componentCount;
+opTypeVector : idResult Equals Op (TypeVector  | SpecConstantOp  TypeVector) componentTypeIdRef componentCountLiteralInteger;
 opTypeMatrix : idResult Equals Op (TypeMatrix  | SpecConstantOp  TypeMatrix) columnType columnCount;
 opTypeImage : idResult Equals Op (TypeImage  | SpecConstantOp  TypeImage) sampledType dim depthLiteralInteger arrayed mS sampled imageFormat accessQualifier?;
 opTypeSampler : idResult Equals Op (TypeSampler  | SpecConstantOp  TypeSampler);
@@ -1370,19 +1487,22 @@ opTypePipe : idResult Equals Op (TypePipe  | SpecConstantOp  TypePipe) qualifier
 opTypeForwardPointer : Op TypeForwardPointer pointerType storageClass;
 opTypePipeStorage : idResult Equals Op (TypePipeStorage  | SpecConstantOp  TypePipeStorage);
 opTypeNamedBarrier : idResult Equals Op (TypeNamedBarrier  | SpecConstantOp  TypeNamedBarrier);
-opTypeCooperativeMatrixKHR : idResult Equals Op (TypeCooperativeMatrixKHR  | SpecConstantOp  TypeCooperativeMatrixKHR) componentType scopeIdScope rows columns use;
+opTypeUntypedPointerKHR : idResult Equals Op (TypeUntypedPointerKHR  | SpecConstantOp  TypeUntypedPointerKHR) storageClass;
+opTypeCooperativeMatrixKHR : idResult Equals Op (TypeCooperativeMatrixKHR  | SpecConstantOp  TypeCooperativeMatrixKHR) componentTypeIdRef scopeIdScope rows columns use;
 opTypeRayQueryKHR : idResult Equals Op (TypeRayQueryKHR  | SpecConstantOp  TypeRayQueryKHR);
 opTypeHitObjectNV : idResult Equals Op (TypeHitObjectNV  | SpecConstantOp  TypeHitObjectNV);
-opTypeAccelerationStructureNV : idResult Equals Op (TypeAccelerationStructureNV  | SpecConstantOp  TypeAccelerationStructureNV);
+opTypeCooperativeVectorNV : idResult Equals Op (TypeCooperativeVectorNV  | SpecConstantOp  TypeCooperativeVectorNV) componentTypeIdRef componentCountIdRef;
 opTypeAccelerationStructureKHR : idResult Equals Op (TypeAccelerationStructureKHR  | SpecConstantOp  TypeAccelerationStructureKHR);
-opTypeCooperativeMatrixNV : idResult Equals Op (TypeCooperativeMatrixNV  | SpecConstantOp  TypeCooperativeMatrixNV) componentType execution rows columns;
+opTypeCooperativeMatrixNV : idResult Equals Op (TypeCooperativeMatrixNV  | SpecConstantOp  TypeCooperativeMatrixNV) componentTypeIdRef execution rows columns;
+opTypeTensorLayoutNV : idResult Equals Op (TypeTensorLayoutNV  | SpecConstantOp  TypeTensorLayoutNV) dimIdRef clampMode;
+opTypeTensorViewNV : idResult Equals Op (TypeTensorViewNV  | SpecConstantOp  TypeTensorViewNV) dimIdRef hasDimensions p*;
 opTypeBufferSurfaceINTEL : idResult Equals Op (TypeBufferSurfaceINTEL  | SpecConstantOp  TypeBufferSurfaceINTEL) accessQualifierAccessQualifier;
 opTypeStructContinuedINTEL : Op TypeStructContinuedINTEL memberType*;
 
 // exclude Operations
 opConstantFunctionPointerINTEL : idResult Equals Op (ConstantFunctionPointerINTEL idResultType | SpecConstantOp idResultType ConstantFunctionPointerINTEL) function;
 opFunctionPointerCallINTEL : idResult Equals Op (FunctionPointerCallINTEL idResultType | SpecConstantOp idResultType FunctionPointerCallINTEL) operand1*;
-opAsmTargetINTEL : idResult Equals Op (AsmTargetINTEL idResultType | SpecConstantOp idResultType AsmTargetINTEL) asmTarget;
+opAsmTargetINTEL : idResult Equals Op (AsmTargetINTEL  | SpecConstantOp  AsmTargetINTEL) asmTarget;
 opAsmINTEL : idResult Equals Op (AsmINTEL idResultType | SpecConstantOp idResultType AsmINTEL) asmType targetIdRef asmInstructions constraints;
 opAsmCallINTEL : idResult Equals Op (AsmCallINTEL idResultType | SpecConstantOp idResultType AsmCallINTEL) asm argument0*;
 opVmeImageINTEL : idResult Equals Op (VmeImageINTEL idResultType | SpecConstantOp idResultType VmeImageINTEL) imageType sampler;
@@ -1568,262 +1688,592 @@ opCrossWorkgroupCastToPtrINTEL : idResult Equals Op (CrossWorkgroupCastToPtrINTE
 literalExtInstInteger
     :   clspvReflection
     |   glsl
+    |   opencl
     ;
 
 
 // Extension clspvReflection
 clspvReflection
-    :   argumentInfo
-    |   argumentPodPushConstant
-    |   argumentPodStorageBuffer
-    |   argumentPodUniform
-    |   argumentPointerPushConstant
-    |   argumentPointerUniform
-    |   argumentSampledImage
-    |   argumentSampler
-    |   argumentStorageBuffer
-    |   argumentStorageImage
-    |   argumentStorageTexelBuffer
-    |   argumentUniform
-    |   argumentUniformTexelBuffer
-    |   argumentWorkgroup
-    |   constantDataPointerPushConstant
-    |   constantDataStorageBuffer
-    |   constantDataUniform
-    |   imageArgumentInfoChannelDataTypePushConstant
-    |   imageArgumentInfoChannelDataTypeUniform
-    |   imageArgumentInfoChannelOrderPushConstant
-    |   imageArgumentInfoChannelOrderUniform
-    |   kernel
-    |   literalSampler
-    |   normalizedSamplerMaskPushConstant
-    |   printfBufferPointerPushConstant
-    |   printfBufferStorageBuffer
-    |   printfInfo
-    |   programScopeVariablePointerPushConstant
-    |   programScopeVariablePointerRelocation
-    |   programScopeVariablesStorageBuffer
-    |   propertyRequiredWorkgroupSize
-    |   pushConstantEnqueuedLocalSize
-    |   pushConstantGlobalOffset
-    |   pushConstantGlobalSize
-    |   pushConstantNumWorkgroups
-    |   pushConstantRegionGroupOffset
-    |   pushConstantRegionOffset
-    |   specConstantGlobalOffset
-    |   specConstantSubgroupMaxSize
-    |   specConstantWorkDim
-    |   specConstantWorkgroupSize
+    :   clspvReflection_argumentInfo
+    |   clspvReflection_argumentPodPushConstant
+    |   clspvReflection_argumentPodStorageBuffer
+    |   clspvReflection_argumentPodUniform
+    |   clspvReflection_argumentPointerPushConstant
+    |   clspvReflection_argumentPointerUniform
+    |   clspvReflection_argumentSampledImage
+    |   clspvReflection_argumentSampler
+    |   clspvReflection_argumentStorageBuffer
+    |   clspvReflection_argumentStorageImage
+    |   clspvReflection_argumentStorageTexelBuffer
+    |   clspvReflection_argumentUniform
+    |   clspvReflection_argumentUniformTexelBuffer
+    |   clspvReflection_argumentWorkgroup
+    |   clspvReflection_constantDataPointerPushConstant
+    |   clspvReflection_constantDataStorageBuffer
+    |   clspvReflection_constantDataUniform
+    |   clspvReflection_imageArgumentInfoChannelDataTypePushConstant
+    |   clspvReflection_imageArgumentInfoChannelDataTypeUniform
+    |   clspvReflection_imageArgumentInfoChannelOrderPushConstant
+    |   clspvReflection_imageArgumentInfoChannelOrderUniform
+    |   clspvReflection_kernel
+    |   clspvReflection_literalSampler
+    |   clspvReflection_normalizedSamplerMaskPushConstant
+    |   clspvReflection_printfBufferPointerPushConstant
+    |   clspvReflection_printfBufferStorageBuffer
+    |   clspvReflection_printfInfo
+    |   clspvReflection_programScopeVariablePointerPushConstant
+    |   clspvReflection_programScopeVariablePointerRelocation
+    |   clspvReflection_programScopeVariablesStorageBuffer
+    |   clspvReflection_propertyRequiredWorkgroupSize
+    |   clspvReflection_pushConstantEnqueuedLocalSize
+    |   clspvReflection_pushConstantGlobalOffset
+    |   clspvReflection_pushConstantGlobalSize
+    |   clspvReflection_pushConstantNumWorkgroups
+    |   clspvReflection_pushConstantRegionGroupOffset
+    |   clspvReflection_pushConstantRegionOffset
+    |   clspvReflection_specConstantGlobalOffset
+    |   clspvReflection_specConstantSubgroupMaxSize
+    |   clspvReflection_specConstantWorkDim
+    |   clspvReflection_specConstantWorkgroupSize
     ;
 
-kernel : ModeExt_Kernel kernelIdRef nameIdRef (numArguments (flags attributes?)?)?;
-argumentInfo : ModeExt_ArgumentInfo nameIdRef (typeName (addressQualifier (accessQualifierIdRef typeQualifier?)?)?)?;
-argumentStorageBuffer : ModeExt_ArgumentStorageBuffer decl ordinal descriptorSetIdRef binding argInfo?;
-argumentUniform : ModeExt_ArgumentUniform decl ordinal descriptorSetIdRef binding argInfo?;
-argumentPodStorageBuffer : ModeExt_ArgumentPodStorageBuffer decl ordinal descriptorSetIdRef binding offsetIdRef sizeIdRef argInfo?;
-argumentPodUniform : ModeExt_ArgumentPodUniform decl ordinal descriptorSetIdRef binding offsetIdRef sizeIdRef argInfo?;
-argumentPodPushConstant : ModeExt_ArgumentPodPushConstant decl ordinal offsetIdRef sizeIdRef argInfo?;
-argumentSampledImage : ModeExt_ArgumentSampledImage decl ordinal descriptorSetIdRef binding argInfo?;
-argumentStorageImage : ModeExt_ArgumentStorageImage decl ordinal descriptorSetIdRef binding argInfo?;
-argumentSampler : ModeExt_ArgumentSampler decl ordinal descriptorSetIdRef binding argInfo?;
-argumentWorkgroup : ModeExt_ArgumentWorkgroup decl ordinal specId elemSize argInfo?;
-specConstantWorkgroupSize : ModeExt_SpecConstantWorkgroupSize x y z;
-specConstantGlobalOffset : ModeExt_SpecConstantGlobalOffset x y z;
-specConstantWorkDim : ModeExt_SpecConstantWorkDim dimIdRef;
-pushConstantGlobalOffset : ModeExt_PushConstantGlobalOffset offsetIdRef sizeIdRef;
-pushConstantEnqueuedLocalSize : ModeExt_PushConstantEnqueuedLocalSize offsetIdRef sizeIdRef;
-pushConstantGlobalSize : ModeExt_PushConstantGlobalSize offsetIdRef sizeIdRef;
-pushConstantRegionOffset : ModeExt_PushConstantRegionOffset offsetIdRef sizeIdRef;
-pushConstantNumWorkgroups : ModeExt_PushConstantNumWorkgroups offsetIdRef sizeIdRef;
-pushConstantRegionGroupOffset : ModeExt_PushConstantRegionGroupOffset offsetIdRef sizeIdRef;
-constantDataStorageBuffer : ModeExt_ConstantDataStorageBuffer descriptorSetIdRef binding data;
-constantDataUniform : ModeExt_ConstantDataUniform descriptorSetIdRef binding data;
-literalSampler : ModeExt_LiteralSampler descriptorSetIdRef binding mask;
-propertyRequiredWorkgroupSize : ModeExt_PropertyRequiredWorkgroupSize kernelIdRef x y z;
-specConstantSubgroupMaxSize : ModeExt_SpecConstantSubgroupMaxSize sizeIdRef;
-argumentPointerPushConstant : ModeExt_ArgumentPointerPushConstant kernelIdRef ordinal offsetIdRef sizeIdRef argInfo?;
-argumentPointerUniform : ModeExt_ArgumentPointerUniform kernelIdRef ordinal descriptorSetIdRef binding offsetIdRef sizeIdRef argInfo?;
-programScopeVariablesStorageBuffer : ModeExt_ProgramScopeVariablesStorageBuffer descriptorSetIdRef binding data;
-programScopeVariablePointerRelocation : ModeExt_ProgramScopeVariablePointerRelocation objectOffset pointerOffset pointerSize;
-imageArgumentInfoChannelOrderPushConstant : ModeExt_ImageArgumentInfoChannelOrderPushConstant kernelIdRef ordinal offsetIdRef sizeIdRef;
-imageArgumentInfoChannelDataTypePushConstant : ModeExt_ImageArgumentInfoChannelDataTypePushConstant kernelIdRef ordinal offsetIdRef sizeIdRef;
-imageArgumentInfoChannelOrderUniform : ModeExt_ImageArgumentInfoChannelOrderUniform kernelIdRef ordinal descriptorSetIdRef binding offsetIdRef sizeIdRef;
-imageArgumentInfoChannelDataTypeUniform : ModeExt_ImageArgumentInfoChannelDataTypeUniform kernelIdRef ordinal descriptorSetIdRef binding offsetIdRef sizeIdRef;
-argumentStorageTexelBuffer : ModeExt_ArgumentStorageTexelBuffer decl ordinal descriptorSetIdRef binding argInfo?;
-argumentUniformTexelBuffer : ModeExt_ArgumentUniformTexelBuffer decl ordinal descriptorSetIdRef binding argInfo?;
-constantDataPointerPushConstant : ModeExt_ConstantDataPointerPushConstant offsetIdRef sizeIdRef data;
-programScopeVariablePointerPushConstant : ModeExt_ProgramScopeVariablePointerPushConstant offsetIdRef sizeIdRef data;
-printfInfo : ModeExt_PrintfInfo printfID formatString argumentSizes*;
-printfBufferStorageBuffer : ModeExt_PrintfBufferStorageBuffer descriptorSetIdRef binding bufferSize;
-printfBufferPointerPushConstant : ModeExt_PrintfBufferPointerPushConstant offsetIdRef sizeIdRef bufferSize;
-normalizedSamplerMaskPushConstant : ModeExt_NormalizedSamplerMaskPushConstant kernelIdRef ordinal offsetIdRef sizeIdRef;
+clspvReflection_kernel : ModeExt_Kernel kernelIdRef nameIdRef (numArguments (flags attributes?)?)?;
+clspvReflection_argumentInfo : ModeExt_ArgumentInfo nameIdRef (typeName (addressQualifier (accessQualifierIdRef typeQualifier?)?)?)?;
+clspvReflection_argumentStorageBuffer : ModeExt_ArgumentStorageBuffer decl ordinal descriptorSetIdRef binding argInfo?;
+clspvReflection_argumentUniform : ModeExt_ArgumentUniform decl ordinal descriptorSetIdRef binding argInfo?;
+clspvReflection_argumentPodStorageBuffer : ModeExt_ArgumentPodStorageBuffer decl ordinal descriptorSetIdRef binding offsetIdRef sizeIdRef argInfo?;
+clspvReflection_argumentPodUniform : ModeExt_ArgumentPodUniform decl ordinal descriptorSetIdRef binding offsetIdRef sizeIdRef argInfo?;
+clspvReflection_argumentPodPushConstant : ModeExt_ArgumentPodPushConstant decl ordinal offsetIdRef sizeIdRef argInfo?;
+clspvReflection_argumentSampledImage : ModeExt_ArgumentSampledImage decl ordinal descriptorSetIdRef binding argInfo?;
+clspvReflection_argumentStorageImage : ModeExt_ArgumentStorageImage decl ordinal descriptorSetIdRef binding argInfo?;
+clspvReflection_argumentSampler : ModeExt_ArgumentSampler decl ordinal descriptorSetIdRef binding argInfo?;
+clspvReflection_argumentWorkgroup : ModeExt_ArgumentWorkgroup decl ordinal specId elemSize argInfo?;
+clspvReflection_specConstantWorkgroupSize : ModeExt_SpecConstantWorkgroupSize x y z;
+clspvReflection_specConstantGlobalOffset : ModeExt_SpecConstantGlobalOffset x y z;
+clspvReflection_specConstantWorkDim : ModeExt_SpecConstantWorkDim dimIdRef;
+clspvReflection_pushConstantGlobalOffset : ModeExt_PushConstantGlobalOffset offsetIdRef sizeIdRef;
+clspvReflection_pushConstantEnqueuedLocalSize : ModeExt_PushConstantEnqueuedLocalSize offsetIdRef sizeIdRef;
+clspvReflection_pushConstantGlobalSize : ModeExt_PushConstantGlobalSize offsetIdRef sizeIdRef;
+clspvReflection_pushConstantRegionOffset : ModeExt_PushConstantRegionOffset offsetIdRef sizeIdRef;
+clspvReflection_pushConstantNumWorkgroups : ModeExt_PushConstantNumWorkgroups offsetIdRef sizeIdRef;
+clspvReflection_pushConstantRegionGroupOffset : ModeExt_PushConstantRegionGroupOffset offsetIdRef sizeIdRef;
+clspvReflection_constantDataStorageBuffer : ModeExt_ConstantDataStorageBuffer descriptorSetIdRef binding data;
+clspvReflection_constantDataUniform : ModeExt_ConstantDataUniform descriptorSetIdRef binding data;
+clspvReflection_literalSampler : ModeExt_LiteralSampler descriptorSetIdRef binding mask;
+clspvReflection_propertyRequiredWorkgroupSize : ModeExt_PropertyRequiredWorkgroupSize kernelIdRef x y z;
+clspvReflection_specConstantSubgroupMaxSize : ModeExt_SpecConstantSubgroupMaxSize sizeIdRef;
+clspvReflection_argumentPointerPushConstant : ModeExt_ArgumentPointerPushConstant kernelIdRef ordinal offsetIdRef sizeIdRef argInfo?;
+clspvReflection_argumentPointerUniform : ModeExt_ArgumentPointerUniform kernelIdRef ordinal descriptorSetIdRef binding offsetIdRef sizeIdRef argInfo?;
+clspvReflection_programScopeVariablesStorageBuffer : ModeExt_ProgramScopeVariablesStorageBuffer descriptorSetIdRef binding data;
+clspvReflection_programScopeVariablePointerRelocation : ModeExt_ProgramScopeVariablePointerRelocation objectOffset pointerOffset pointerSize;
+clspvReflection_imageArgumentInfoChannelOrderPushConstant : ModeExt_ImageArgumentInfoChannelOrderPushConstant kernelIdRef ordinal offsetIdRef sizeIdRef;
+clspvReflection_imageArgumentInfoChannelDataTypePushConstant : ModeExt_ImageArgumentInfoChannelDataTypePushConstant kernelIdRef ordinal offsetIdRef sizeIdRef;
+clspvReflection_imageArgumentInfoChannelOrderUniform : ModeExt_ImageArgumentInfoChannelOrderUniform kernelIdRef ordinal descriptorSetIdRef binding offsetIdRef sizeIdRef;
+clspvReflection_imageArgumentInfoChannelDataTypeUniform : ModeExt_ImageArgumentInfoChannelDataTypeUniform kernelIdRef ordinal descriptorSetIdRef binding offsetIdRef sizeIdRef;
+clspvReflection_argumentStorageTexelBuffer : ModeExt_ArgumentStorageTexelBuffer decl ordinal descriptorSetIdRef binding argInfo?;
+clspvReflection_argumentUniformTexelBuffer : ModeExt_ArgumentUniformTexelBuffer decl ordinal descriptorSetIdRef binding argInfo?;
+clspvReflection_constantDataPointerPushConstant : ModeExt_ConstantDataPointerPushConstant offsetIdRef sizeIdRef data;
+clspvReflection_programScopeVariablePointerPushConstant : ModeExt_ProgramScopeVariablePointerPushConstant offsetIdRef sizeIdRef data;
+clspvReflection_printfInfo : ModeExt_PrintfInfo printfID formatString argumentSizes*;
+clspvReflection_printfBufferStorageBuffer : ModeExt_PrintfBufferStorageBuffer descriptorSetIdRef binding bufferSize;
+clspvReflection_printfBufferPointerPushConstant : ModeExt_PrintfBufferPointerPushConstant offsetIdRef sizeIdRef bufferSize;
+clspvReflection_normalizedSamplerMaskPushConstant : ModeExt_NormalizedSamplerMaskPushConstant kernelIdRef ordinal offsetIdRef sizeIdRef;
 
 // Extension glsl
 glsl
-    :   acos
-    |   acosh
-    |   asin
-    |   asinh
-    |   atan
-    |   atan2
-    |   atanh
-    |   ceil
-    |   cos
-    |   cosh
-    |   cross
-    |   degrees
-    |   determinant
-    |   distance
-    |   exp
-    |   exp2
-    |   fAbs
-    |   fClamp
-    |   fMax
-    |   fMin
-    |   fMix
-    |   fSign
-    |   faceForward
-    |   findILsb
-    |   findSMsb
-    |   findUMsb
-    |   floor
-    |   fma
-    |   fract
-    |   frexp
-    |   frexpStruct
-    |   iMix
-    |   interpolateAtCentroid
-    |   interpolateAtOffset
-    |   interpolateAtSample
-    |   inverseSqrt
-    |   ldexp
-    |   length
-    |   log
-    |   log2
-    |   matrixInverse
-    |   modf
-    |   modfStruct
-    |   nClamp
-    |   nMax
-    |   nMin
-    |   normalize
-    |   packDouble2x32
-    |   packHalf2x16
-    |   packSnorm2x16
-    |   packSnorm4x8
-    |   packUnorm2x16
-    |   packUnorm4x8
-    |   pow
-    |   radians
-    |   reflect
-    |   refract
-    |   round
-    |   roundEven
-    |   sAbs
-    |   sClamp
-    |   sMax
-    |   sMin
-    |   sSign
-    |   sin
-    |   sinh
-    |   smoothStep
-    |   sqrt
-    |   step
-    |   tan
-    |   tanh
-    |   trunc
-    |   uClamp
-    |   uMax
-    |   uMin
-    |   unpackDouble2x32
-    |   unpackHalf2x16
-    |   unpackSnorm2x16
-    |   unpackSnorm4x8
-    |   unpackUnorm2x16
-    |   unpackUnorm4x8
+    :   glsl_acos
+    |   glsl_acosh
+    |   glsl_asin
+    |   glsl_asinh
+    |   glsl_atan
+    |   glsl_atan2
+    |   glsl_atanh
+    |   glsl_ceil
+    |   glsl_cos
+    |   glsl_cosh
+    |   glsl_cross
+    |   glsl_degrees
+    |   glsl_determinant
+    |   glsl_distance
+    |   glsl_exp
+    |   glsl_exp2
+    |   glsl_fAbs
+    |   glsl_fClamp
+    |   glsl_fMax
+    |   glsl_fMin
+    |   glsl_fMix
+    |   glsl_fSign
+    |   glsl_faceForward
+    |   glsl_findILsb
+    |   glsl_findSMsb
+    |   glsl_findUMsb
+    |   glsl_floor
+    |   glsl_fma
+    |   glsl_fract
+    |   glsl_frexp
+    |   glsl_frexpStruct
+    |   glsl_iMix
+    |   glsl_interpolateAtCentroid
+    |   glsl_interpolateAtOffset
+    |   glsl_interpolateAtSample
+    |   glsl_inverseSqrt
+    |   glsl_ldexp
+    |   glsl_length
+    |   glsl_log
+    |   glsl_log2
+    |   glsl_matrixInverse
+    |   glsl_modf
+    |   glsl_modfStruct
+    |   glsl_nClamp
+    |   glsl_nMax
+    |   glsl_nMin
+    |   glsl_normalize
+    |   glsl_packDouble2x32
+    |   glsl_packHalf2x16
+    |   glsl_packSnorm2x16
+    |   glsl_packSnorm4x8
+    |   glsl_packUnorm2x16
+    |   glsl_packUnorm4x8
+    |   glsl_pow
+    |   glsl_radians
+    |   glsl_reflect
+    |   glsl_refract
+    |   glsl_round
+    |   glsl_roundEven
+    |   glsl_sAbs
+    |   glsl_sClamp
+    |   glsl_sMax
+    |   glsl_sMin
+    |   glsl_sSign
+    |   glsl_sin
+    |   glsl_sinh
+    |   glsl_smoothStep
+    |   glsl_sqrt
+    |   glsl_step
+    |   glsl_tan
+    |   glsl_tanh
+    |   glsl_trunc
+    |   glsl_uClamp
+    |   glsl_uMax
+    |   glsl_uMin
+    |   glsl_unpackDouble2x32
+    |   glsl_unpackHalf2x16
+    |   glsl_unpackSnorm2x16
+    |   glsl_unpackSnorm4x8
+    |   glsl_unpackUnorm2x16
+    |   glsl_unpackUnorm4x8
     ;
 
-round : ModeExt_Round x;
-roundEven : ModeExt_RoundEven x;
-trunc : ModeExt_Trunc x;
-fAbs : ModeExt_FAbs x;
-sAbs : ModeExt_SAbs x;
-fSign : ModeExt_FSign x;
-sSign : ModeExt_SSign x;
-floor : ModeExt_Floor x;
-ceil : ModeExt_Ceil x;
-fract : ModeExt_Fract x;
-radians : ModeExt_Radians degreesIdRef;
-degrees : ModeExt_Degrees radiansIdRef;
-sin : ModeExt_Sin x;
-cos : ModeExt_Cos x;
-tan : ModeExt_Tan x;
-asin : ModeExt_Asin x;
-acos : ModeExt_Acos x;
-atan : ModeExt_Atan y;
-sinh : ModeExt_Sinh x;
-cosh : ModeExt_Cosh x;
-tanh : ModeExt_Tanh x;
-asinh : ModeExt_Asinh x;
-acosh : ModeExt_Acosh x;
-atanh : ModeExt_Atanh x;
-atan2 : ModeExt_Atan2 y x;
-pow : ModeExt_Pow x y;
-exp : ModeExt_Exp x;
-log : ModeExt_Log x;
-exp2 : ModeExt_Exp2 x;
-log2 : ModeExt_Log2 x;
-sqrt : ModeExt_Sqrt x;
-inverseSqrt : ModeExt_InverseSqrt x;
-determinant : ModeExt_Determinant x;
-matrixInverse : ModeExt_MatrixInverse x;
-modf : ModeExt_Modf x iIdRef;
-modfStruct : ModeExt_ModfStruct x;
-fMin : ModeExt_FMin x y;
-uMin : ModeExt_UMin x y;
-sMin : ModeExt_SMin x y;
-fMax : ModeExt_FMax x y;
-uMax : ModeExt_UMax x y;
-sMax : ModeExt_SMax x y;
-fClamp : ModeExt_FClamp x minVal maxVal;
-uClamp : ModeExt_UClamp x minVal maxVal;
-sClamp : ModeExt_SClamp x minVal maxVal;
-fMix : ModeExt_FMix x y a;
-iMix : ModeExt_IMix x y a;
-step : ModeExt_Step edge x;
-smoothStep : ModeExt_SmoothStep edge0 edge1 x;
-fma : ModeExt_Fma a b c;
-frexp : ModeExt_Frexp x expIdRef;
-frexpStruct : ModeExt_FrexpStruct x;
-ldexp : ModeExt_Ldexp x expIdRef;
-packSnorm4x8 : ModeExt_PackSnorm4x8 v;
-packUnorm4x8 : ModeExt_PackUnorm4x8 v;
-packSnorm2x16 : ModeExt_PackSnorm2x16 v;
-packUnorm2x16 : ModeExt_PackUnorm2x16 v;
-packHalf2x16 : ModeExt_PackHalf2x16 v;
-packDouble2x32 : ModeExt_PackDouble2x32 v;
-unpackSnorm2x16 : ModeExt_UnpackSnorm2x16 p;
-unpackUnorm2x16 : ModeExt_UnpackUnorm2x16 p;
-unpackHalf2x16 : ModeExt_UnpackHalf2x16 v;
-unpackSnorm4x8 : ModeExt_UnpackSnorm4x8 p;
-unpackUnorm4x8 : ModeExt_UnpackUnorm4x8 p;
-unpackDouble2x32 : ModeExt_UnpackDouble2x32 v;
-length : ModeExt_Length x;
-distance : ModeExt_Distance p0 p1;
-cross : ModeExt_Cross x y;
-normalize : ModeExt_Normalize x;
-faceForward : ModeExt_FaceForward nIdRef iIdRef nref;
-reflect : ModeExt_Reflect iIdRef nIdRef;
-refract : ModeExt_Refract iIdRef nIdRef eta;
-findILsb : ModeExt_FindILsb valueIdRef;
-findSMsb : ModeExt_FindSMsb valueIdRef;
-findUMsb : ModeExt_FindUMsb valueIdRef;
-interpolateAtCentroid : ModeExt_InterpolateAtCentroid interpolant;
-interpolateAtSample : ModeExt_InterpolateAtSample interpolant sample;
-interpolateAtOffset : ModeExt_InterpolateAtOffset interpolant offsetIdRef;
-nMin : ModeExt_NMin x y;
-nMax : ModeExt_NMax x y;
-nClamp : ModeExt_NClamp x minVal maxVal;
+glsl_round : ModeExt_Round x;
+glsl_roundEven : ModeExt_RoundEven x;
+glsl_trunc : ModeExt_Trunc x;
+glsl_fAbs : ModeExt_FAbs x;
+glsl_sAbs : ModeExt_SAbs x;
+glsl_fSign : ModeExt_FSign x;
+glsl_sSign : ModeExt_SSign x;
+glsl_floor : ModeExt_Floor x;
+glsl_ceil : ModeExt_Ceil x;
+glsl_fract : ModeExt_Fract x;
+glsl_radians : ModeExt_Radians degreesIdRef;
+glsl_degrees : ModeExt_Degrees radiansIdRef;
+glsl_sin : ModeExt_Sin x;
+glsl_cos : ModeExt_Cos x;
+glsl_tan : ModeExt_Tan x;
+glsl_asin : ModeExt_Asin x;
+glsl_acos : ModeExt_Acos x;
+glsl_atan : ModeExt_Atan y;
+glsl_sinh : ModeExt_Sinh x;
+glsl_cosh : ModeExt_Cosh x;
+glsl_tanh : ModeExt_Tanh x;
+glsl_asinh : ModeExt_Asinh x;
+glsl_acosh : ModeExt_Acosh x;
+glsl_atanh : ModeExt_Atanh x;
+glsl_atan2 : ModeExt_Atan2 y x;
+glsl_pow : ModeExt_Pow x y;
+glsl_exp : ModeExt_Exp x;
+glsl_log : ModeExt_Log x;
+glsl_exp2 : ModeExt_Exp2 x;
+glsl_log2 : ModeExt_Log2 x;
+glsl_sqrt : ModeExt_Sqrt x;
+glsl_inverseSqrt : ModeExt_InverseSqrt x;
+glsl_determinant : ModeExt_Determinant x;
+glsl_matrixInverse : ModeExt_MatrixInverse x;
+glsl_modf : ModeExt_Modf x iIdRef;
+glsl_modfStruct : ModeExt_ModfStruct x;
+glsl_fMin : ModeExt_FMin x y;
+glsl_uMin : ModeExt_UMin x y;
+glsl_sMin : ModeExt_SMin x y;
+glsl_fMax : ModeExt_FMax x y;
+glsl_uMax : ModeExt_UMax x y;
+glsl_sMax : ModeExt_SMax x y;
+glsl_fClamp : ModeExt_FClamp x minVal maxVal;
+glsl_uClamp : ModeExt_UClamp x minVal maxVal;
+glsl_sClamp : ModeExt_SClamp x minVal maxVal;
+glsl_fMix : ModeExt_FMix x y a;
+glsl_iMix : ModeExt_IMix x y a;
+glsl_step : ModeExt_Step edge x;
+glsl_smoothStep : ModeExt_SmoothStep edge0 edge1 x;
+glsl_fma : ModeExt_Fma a b c;
+glsl_frexp : ModeExt_Frexp x expIdRef;
+glsl_frexpStruct : ModeExt_FrexpStruct x;
+glsl_ldexp : ModeExt_Ldexp x expIdRef;
+glsl_packSnorm4x8 : ModeExt_PackSnorm4x8 v;
+glsl_packUnorm4x8 : ModeExt_PackUnorm4x8 v;
+glsl_packSnorm2x16 : ModeExt_PackSnorm2x16 v;
+glsl_packUnorm2x16 : ModeExt_PackUnorm2x16 v;
+glsl_packHalf2x16 : ModeExt_PackHalf2x16 v;
+glsl_packDouble2x32 : ModeExt_PackDouble2x32 v;
+glsl_unpackSnorm2x16 : ModeExt_UnpackSnorm2x16 p;
+glsl_unpackUnorm2x16 : ModeExt_UnpackUnorm2x16 p;
+glsl_unpackHalf2x16 : ModeExt_UnpackHalf2x16 v;
+glsl_unpackSnorm4x8 : ModeExt_UnpackSnorm4x8 p;
+glsl_unpackUnorm4x8 : ModeExt_UnpackUnorm4x8 p;
+glsl_unpackDouble2x32 : ModeExt_UnpackDouble2x32 v;
+glsl_length : ModeExt_Length x;
+glsl_distance : ModeExt_Distance p0 p1;
+glsl_cross : ModeExt_Cross x y;
+glsl_normalize : ModeExt_Normalize x;
+glsl_faceForward : ModeExt_FaceForward nIdRef iIdRef nref;
+glsl_reflect : ModeExt_Reflect iIdRef nIdRef;
+glsl_refract : ModeExt_Refract iIdRef nIdRef eta;
+glsl_findILsb : ModeExt_FindILsb valueIdRef;
+glsl_findSMsb : ModeExt_FindSMsb valueIdRef;
+glsl_findUMsb : ModeExt_FindUMsb valueIdRef;
+glsl_interpolateAtCentroid : ModeExt_InterpolateAtCentroid interpolant;
+glsl_interpolateAtSample : ModeExt_InterpolateAtSample interpolant sample;
+glsl_interpolateAtOffset : ModeExt_InterpolateAtOffset interpolant offsetIdRef;
+glsl_nMin : ModeExt_NMin x y;
+glsl_nMax : ModeExt_NMax x y;
+glsl_nClamp : ModeExt_NClamp x minVal maxVal;
+
+// Extension opencl
+opencl
+    :   opencl_acos
+    |   opencl_acosh
+    |   opencl_acospi
+    |   opencl_asin
+    |   opencl_asinh
+    |   opencl_asinpi
+    |   opencl_atan
+    |   opencl_atan2
+    |   opencl_atan2pi
+    |   opencl_atanh
+    |   opencl_atanpi
+    |   opencl_bitselect
+    |   opencl_cbrt
+    |   opencl_ceil
+    |   opencl_clz
+    |   opencl_copysign
+    |   opencl_cos
+    |   opencl_cosh
+    |   opencl_cospi
+    |   opencl_cross
+    |   opencl_ctz
+    |   opencl_degrees
+    |   opencl_distance
+    |   opencl_erf
+    |   opencl_erfc
+    |   opencl_exp
+    |   opencl_exp10
+    |   opencl_exp2
+    |   opencl_expm1
+    |   opencl_fAbs
+    |   opencl_fClamp
+    |   opencl_fMax
+    |   opencl_fMin
+    |   opencl_fast_distance
+    |   opencl_fast_length
+    |   opencl_fast_normalize
+    |   opencl_fdim
+    |   opencl_floor
+    |   opencl_fma
+    |   opencl_fmax_common
+    |   opencl_fmin_common
+    |   opencl_fmod
+    |   opencl_fract
+    |   opencl_frexp
+    |   opencl_half_cos
+    |   opencl_half_divide
+    |   opencl_half_exp
+    |   opencl_half_exp10
+    |   opencl_half_exp2
+    |   opencl_half_log
+    |   opencl_half_log10
+    |   opencl_half_log2
+    |   opencl_half_powr
+    |   opencl_half_recip
+    |   opencl_half_rsqrt
+    |   opencl_half_sin
+    |   opencl_half_sqrt
+    |   opencl_half_tan
+    |   opencl_hypot
+    |   opencl_ilogb
+    |   opencl_ldexp
+    |   opencl_length
+    |   opencl_lgamma
+    |   opencl_lgamma_r
+    |   opencl_log
+    |   opencl_log10
+    |   opencl_log1p
+    |   opencl_log2
+    |   opencl_logb
+    |   opencl_mad
+    |   opencl_maxmag
+    |   opencl_minmag
+    |   opencl_mix
+    |   opencl_modf
+    |   opencl_nan
+    |   opencl_native_cos
+    |   opencl_native_divide
+    |   opencl_native_exp
+    |   opencl_native_exp10
+    |   opencl_native_exp2
+    |   opencl_native_log
+    |   opencl_native_log10
+    |   opencl_native_log2
+    |   opencl_native_powr
+    |   opencl_native_recip
+    |   opencl_native_rsqrt
+    |   opencl_native_sin
+    |   opencl_native_sqrt
+    |   opencl_native_tan
+    |   opencl_nextafter
+    |   opencl_normalize
+    |   opencl_popcount
+    |   opencl_pow
+    |   opencl_pown
+    |   opencl_powr
+    |   opencl_prefetch
+    |   opencl_printf
+    |   opencl_radians
+    |   opencl_remainder
+    |   opencl_remquo
+    |   opencl_rint
+    |   opencl_rootn
+    |   opencl_rotate
+    |   opencl_round
+    |   opencl_rsqrt
+    |   opencl_s_abs
+    |   opencl_s_abs_diff
+    |   opencl_s_add_sat
+    |   opencl_s_clamp
+    |   opencl_s_hadd
+    |   opencl_s_mad24
+    |   opencl_s_mad_hi
+    |   opencl_s_mad_sat
+    |   opencl_s_max
+    |   opencl_s_min
+    |   opencl_s_mul24
+    |   opencl_s_mul_hi
+    |   opencl_s_rhadd
+    |   opencl_s_sub_sat
+    |   opencl_s_upsample
+    |   opencl_select
+    |   opencl_shuffle
+    |   opencl_shuffle2
+    |   opencl_sign
+    |   opencl_sin
+    |   opencl_sincos
+    |   opencl_sinh
+    |   opencl_sinpi
+    |   opencl_smoothStep
+    |   opencl_sqrt
+    |   opencl_step
+    |   opencl_tan
+    |   opencl_tanh
+    |   opencl_tanpi
+    |   opencl_tgamma
+    |   opencl_trunc
+    |   opencl_u_abs
+    |   opencl_u_abs_diff
+    |   opencl_u_add_sat
+    |   opencl_u_clamp
+    |   opencl_u_hadd
+    |   opencl_u_mad24
+    |   opencl_u_mad_hi
+    |   opencl_u_mad_sat
+    |   opencl_u_max
+    |   opencl_u_min
+    |   opencl_u_mul24
+    |   opencl_u_mul_hi
+    |   opencl_u_rhadd
+    |   opencl_u_sub_sat
+    |   opencl_u_upsample
+    |   opencl_vload_half
+    |   opencl_vload_halfn
+    |   opencl_vloada_halfn
+    |   opencl_vloadn
+    |   opencl_vstore_half
+    |   opencl_vstore_half_r
+    |   opencl_vstore_halfn
+    |   opencl_vstore_halfn_r
+    |   opencl_vstorea_halfn
+    |   opencl_vstorea_halfn_r
+    |   opencl_vstoren
+    ;
+
+opencl_acos : ModeExt_acos x;
+opencl_acosh : ModeExt_acosh x;
+opencl_acospi : ModeExt_acospi x;
+opencl_asin : ModeExt_asin x;
+opencl_asinh : ModeExt_asinh x;
+opencl_asinpi : ModeExt_asinpi x;
+opencl_atan : ModeExt_atan x;
+opencl_atan2 : ModeExt_atan2 y x;
+opencl_atanh : ModeExt_atanh x;
+opencl_atanpi : ModeExt_atanpi x;
+opencl_atan2pi : ModeExt_atan2pi y x;
+opencl_cbrt : ModeExt_cbrt x;
+opencl_ceil : ModeExt_ceil x;
+opencl_copysign : ModeExt_copysign x y;
+opencl_cos : ModeExt_cos x;
+opencl_cosh : ModeExt_cosh x;
+opencl_cospi : ModeExt_cospi x;
+opencl_erfc : ModeExt_erfc x;
+opencl_erf : ModeExt_erf x;
+opencl_exp : ModeExt_exp x;
+opencl_exp2 : ModeExt_exp2 x;
+opencl_exp10 : ModeExt_exp10 x;
+opencl_expm1 : ModeExt_expm1 x;
+opencl_fAbs : ModeExt_fabs x;
+opencl_fdim : ModeExt_fdim x y;
+opencl_floor : ModeExt_floor x;
+opencl_fma : ModeExt_fma a b c;
+opencl_fMax : ModeExt_fmax x y;
+opencl_fMin : ModeExt_fmin x y;
+opencl_fmod : ModeExt_fmod x y;
+opencl_fract : ModeExt_fract x ptr;
+opencl_frexp : ModeExt_frexp x expIdRef;
+opencl_hypot : ModeExt_hypot x y;
+opencl_ilogb : ModeExt_ilogb x;
+opencl_ldexp : ModeExt_ldexp x k;
+opencl_lgamma : ModeExt_lgamma x;
+opencl_lgamma_r : ModeExt_lgamma_r x signp;
+opencl_log : ModeExt_log x;
+opencl_log2 : ModeExt_log2 x;
+opencl_log10 : ModeExt_log10 x;
+opencl_log1p : ModeExt_log1p x;
+opencl_logb : ModeExt_logb x;
+opencl_mad : ModeExt_mad a b c;
+opencl_maxmag : ModeExt_maxmag x y;
+opencl_minmag : ModeExt_minmag x y;
+opencl_modf : ModeExt_modf x iptr;
+opencl_nan : ModeExt_nan nancode;
+opencl_nextafter : ModeExt_nextafter x y;
+opencl_pow : ModeExt_pow x y;
+opencl_pown : ModeExt_pown x y;
+opencl_powr : ModeExt_powr x y;
+opencl_remainder : ModeExt_remainder x y;
+opencl_remquo : ModeExt_remquo x y quo;
+opencl_rint : ModeExt_rint x;
+opencl_rootn : ModeExt_rootn x y;
+opencl_round : ModeExt_round x;
+opencl_rsqrt : ModeExt_rsqrt x;
+opencl_sin : ModeExt_sin x;
+opencl_sincos : ModeExt_sincos x cosval;
+opencl_sinh : ModeExt_sinh x;
+opencl_sinpi : ModeExt_sinpi x;
+opencl_sqrt : ModeExt_sqrt x;
+opencl_tan : ModeExt_tan x;
+opencl_tanh : ModeExt_tanh x;
+opencl_tanpi : ModeExt_tanpi x;
+opencl_tgamma : ModeExt_tgamma x;
+opencl_trunc : ModeExt_trunc x;
+opencl_half_cos : ModeExt_half_cos x;
+opencl_half_divide : ModeExt_half_divide x y;
+opencl_half_exp : ModeExt_half_exp x;
+opencl_half_exp2 : ModeExt_half_exp2 x;
+opencl_half_exp10 : ModeExt_half_exp10 x;
+opencl_half_log : ModeExt_half_log x;
+opencl_half_log2 : ModeExt_half_log2 x;
+opencl_half_log10 : ModeExt_half_log10 x;
+opencl_half_powr : ModeExt_half_powr x y;
+opencl_half_recip : ModeExt_half_recip x;
+opencl_half_rsqrt : ModeExt_half_rsqrt x;
+opencl_half_sin : ModeExt_half_sin x;
+opencl_half_sqrt : ModeExt_half_sqrt x;
+opencl_half_tan : ModeExt_half_tan x;
+opencl_native_cos : ModeExt_native_cos x;
+opencl_native_divide : ModeExt_native_divide x y;
+opencl_native_exp : ModeExt_native_exp x;
+opencl_native_exp2 : ModeExt_native_exp2 x;
+opencl_native_exp10 : ModeExt_native_exp10 x;
+opencl_native_log : ModeExt_native_log x;
+opencl_native_log2 : ModeExt_native_log2 x;
+opencl_native_log10 : ModeExt_native_log10 x;
+opencl_native_powr : ModeExt_native_powr x y;
+opencl_native_recip : ModeExt_native_recip x;
+opencl_native_rsqrt : ModeExt_native_rsqrt x;
+opencl_native_sin : ModeExt_native_sin x;
+opencl_native_sqrt : ModeExt_native_sqrt x;
+opencl_native_tan : ModeExt_native_tan x;
+opencl_s_abs : ModeExt_s_abs x;
+opencl_s_abs_diff : ModeExt_s_abs_diff x y;
+opencl_s_add_sat : ModeExt_s_add_sat x y;
+opencl_u_add_sat : ModeExt_u_add_sat x y;
+opencl_s_hadd : ModeExt_s_hadd x y;
+opencl_u_hadd : ModeExt_u_hadd x y;
+opencl_s_rhadd : ModeExt_s_rhadd x y;
+opencl_u_rhadd : ModeExt_u_rhadd x y;
+opencl_s_clamp : ModeExt_s_clamp x minVal maxVal;
+opencl_u_clamp : ModeExt_u_clamp x minVal maxVal;
+opencl_clz : ModeExt_clz x;
+opencl_ctz : ModeExt_ctz x;
+opencl_s_mad_hi : ModeExt_s_mad_hi a b c;
+opencl_u_mad_sat : ModeExt_u_mad_sat x y z;
+opencl_s_mad_sat : ModeExt_s_mad_sat x y z;
+opencl_s_max : ModeExt_s_max x y;
+opencl_u_max : ModeExt_u_max x y;
+opencl_s_min : ModeExt_s_min x y;
+opencl_u_min : ModeExt_u_min x y;
+opencl_s_mul_hi : ModeExt_s_mul_hi x y;
+opencl_rotate : ModeExt_rotate v iIdRef;
+opencl_s_sub_sat : ModeExt_s_sub_sat x y;
+opencl_u_sub_sat : ModeExt_u_sub_sat x y;
+opencl_u_upsample : ModeExt_u_upsample hi lo;
+opencl_s_upsample : ModeExt_s_upsample hi lo;
+opencl_popcount : ModeExt_popcount x;
+opencl_s_mad24 : ModeExt_s_mad24 x y z;
+opencl_u_mad24 : ModeExt_u_mad24 x y z;
+opencl_s_mul24 : ModeExt_s_mul24 x y;
+opencl_u_mul24 : ModeExt_u_mul24 x y;
+opencl_u_abs : ModeExt_u_abs x;
+opencl_u_abs_diff : ModeExt_u_abs_diff x y;
+opencl_u_mul_hi : ModeExt_u_mul_hi x y;
+opencl_u_mad_hi : ModeExt_u_mad_hi a b c;
+opencl_fClamp : ModeExt_fclamp x minVal maxVal;
+opencl_degrees : ModeExt_degrees radiansIdRef;
+opencl_fmax_common : ModeExt_fmax_common x y;
+opencl_fmin_common : ModeExt_fmin_common x y;
+opencl_mix : ModeExt_mix x y a;
+opencl_radians : ModeExt_radians degreesIdRef;
+opencl_step : ModeExt_step edge x;
+opencl_smoothStep : ModeExt_smoothstep edge0 edge1 x;
+opencl_sign : ModeExt_sign x;
+opencl_cross : ModeExt_cross p0 p1;
+opencl_distance : ModeExt_distance p0 p1;
+opencl_length : ModeExt_length p;
+opencl_normalize : ModeExt_normalize p;
+opencl_fast_distance : ModeExt_fast_distance p0 p1;
+opencl_fast_length : ModeExt_fast_length p;
+opencl_fast_normalize : ModeExt_fast_normalize p;
+opencl_bitselect : ModeExt_bitselect a b c;
+opencl_select : ModeExt_select a b c;
+opencl_vloadn : ModeExt_vloadn offsetIdRef p nLiteralInteger;
+opencl_vstoren : ModeExt_vstoren data offsetIdRef p;
+opencl_vload_half : ModeExt_vload_half offsetIdRef p;
+opencl_vload_halfn : ModeExt_vload_halfn offsetIdRef p nLiteralInteger;
+opencl_vstore_half : ModeExt_vstore_half data offsetIdRef p;
+opencl_vstore_half_r : ModeExt_vstore_half_r data offsetIdRef p modeFPRoundingMode;
+opencl_vstore_halfn : ModeExt_vstore_halfn data offsetIdRef p;
+opencl_vstore_halfn_r : ModeExt_vstore_halfn_r data offsetIdRef p modeFPRoundingMode;
+opencl_vloada_halfn : ModeExt_vloada_halfn offsetIdRef p nLiteralInteger;
+opencl_vstorea_halfn : ModeExt_vstorea_halfn data offsetIdRef p;
+opencl_vstorea_halfn_r : ModeExt_vstorea_halfn_r data offsetIdRef p modeFPRoundingMode;
+opencl_shuffle : ModeExt_shuffle x shuffleMask;
+opencl_shuffle2 : ModeExt_shuffle2 x y shuffleMask;
+opencl_printf : ModeExt_printf format additionalArguments*;
+opencl_prefetch : ModeExt_prefetch ptr numElements;
 
 // Alias types
 a : idRef;
@@ -1833,6 +2283,7 @@ access : hostAccessQualifier;
 accessQualifierAccessQualifier : accessQualifier;
 accessQualifierIdRef : idRef;
 accumulator : idRef;
+additionalArguments : idRef;
 addressQualifier : idRef;
 addressWidth : literalInteger;
 aliasDomain : idRef;
@@ -1845,6 +2296,7 @@ argument : idRef;
 argument0 : idRef;
 argumentSizes : idRef;
 arrayMember : literalInteger;
+arraySize : idRef;
 arrayStride : literalInteger;
 arrayed : literalInteger;
 asm : idRef;
@@ -1863,29 +2315,45 @@ banks : literalInteger;
 barrierCount : literalInteger;
 barycentric : idRef;
 base : idRef;
+baseIndex : idRef;
+baseType : idRef;
+bias : idRef;
+biasInterpretation : idRef;
+biasOffset : idRef;
 bidirectionalWeight : idRef;
 binding : idRef;
 bindingPoint : literalInteger;
 bitWidth : literalInteger;
 bits : idRef;
 blockBasedSkipType : idRef;
+blockCount : idRef;
+blockHeight : idRef;
 blockSize : idRef;
+blockWidth : idRef;
 boxSize : idRef;
 branchWeights : literalInteger;
 bufferLocationID : literalInteger;
 bufferSize : idRef;
 bwdRefImage : idRef;
 bwdRefOffset : idRef;
-byteOffset : literalInteger;
+byteOffsetIdRef : idRef;
+byteOffsetLiteralInteger : literalInteger;
+byteStride : idRef;
 c : idRef;
 cacheControlLoadCacheControl : loadCacheControl;
 cacheControlStoreCacheControl : storeCacheControl;
 cacheLevel : literalInteger;
 cacheSizeInBytes : literalInteger;
+cacheType : idRef;
 callableData : idRef;
 callableDataId : idRef;
 capacity : literalInteger;
 chromaModeBasePenalty : idRef;
+clampMode : idRef;
+clipColOffset : idRef;
+clipColSpan : idRef;
+clipRowOffset : idRef;
+clipRowSpan : idRef;
 clusterSize : idRef;
 coarse : idRef;
 column : literalInteger;
@@ -1893,11 +2361,13 @@ columnCount : literalInteger;
 columnMajor : idRef;
 columnType : idRef;
 columns : idRef;
+combineFunc : idRef;
 comparator : idRef;
-componentCount : literalInteger;
+componentCountIdRef : idRef;
+componentCountLiteralInteger : literalInteger;
 componentIdRef : idRef;
 componentLiteralInteger : literalInteger;
-componentType : idRef;
+componentTypeIdRef : idRef;
 components : literalInteger;
 composite : idRef;
 condition : idRef;
@@ -1909,6 +2379,7 @@ controlType : literalInteger;
 coordinate : idRef;
 coordinates : idRef;
 costPrecision : idRef;
+cosval : idRef;
 count : idRef;
 counterBuffer : idRef;
 cullMask : idRef;
@@ -1917,6 +2388,7 @@ currentTime : idRef;
 cycles : literalInteger;
 d : idRef;
 data : idRef;
+dataType : idRef;
 dataWidth : literalInteger;
 decl : idRef;
 decorationGroup : idRef;
@@ -1930,12 +2402,16 @@ destination : idRef;
 dimIdRef : idRef;
 direction : idRef;
 directionCost : idRef;
+dstBasePointer : idRef;
+dstPointer : idRef;
 dualRef : idRef;
 edge : idRef;
 edge0 : idRef;
 edge1 : idRef;
 elemSize : idRef;
 element : idRef;
+elementIndex : idRef;
+elementSize : idRef;
 elementType : idRef;
 enable : literalInteger;
 enableSubnormals : literalInteger;
@@ -1949,17 +2425,20 @@ expIdRef : idRef;
 expectedValue : idRef;
 extension : literalString;
 falseLabel : idRef;
-fast : fPFastMathMode;
+fastFPFastMathMode : fPFastMathMode;
+fastIdRef : idRef;
 file : idRef;
 fillEmpty : idRef;
 flags : idRef;
 floatValue : idRef;
 floating : fPRoundingMode;
 forceKey : literalInteger;
+format : idRef;
 formatString : idRef;
 forwardReferenceFieldPolarity : idRef;
 fragmentIndex : idRef;
 fromSign : literalInteger;
+func : idRef;
 function : idRef;
 functionType : idRef;
 fwdRefImage : idRef;
@@ -1971,7 +2450,9 @@ granularity : idRef;
 groupCountX : idRef;
 groupCountY : idRef;
 groupCountZ : idRef;
+hasDimensions : idRef;
 height : idRef;
+hi : idRef;
 hint : idRef;
 hit : idRef;
 hitKind : idRef;
@@ -1994,6 +2475,7 @@ indexesIdRef : idRef;
 indexesLiteralInteger : literalInteger;
 initializer : idRef;
 input : idRef;
+inputInterpretation : idRef;
 inputType : idRef;
 inputVector : idRef;
 insert : idRef;
@@ -2007,6 +2489,10 @@ intraNeighbourAvailabilty : idRef;
 invocationId : idRef;
 invocations : literalInteger;
 invoke : idRef;
+iptr : idRef;
+isEntry : idRef;
+k : idRef;
+kDim : idRef;
 kernelIdRef : idRef;
 kind : literalInteger;
 latency : literalInteger;
@@ -2018,15 +2504,19 @@ lenght : idRef;
 lengthIdRef : idRef;
 levelOfDetail : idRef;
 line : literalInteger;
+literalStringLiteralString : literalString;
+lo : idRef;
 localId : idRef;
 localSize : idRef;
 localWorkSize : idRef;
+locality : idRef;
 location : literalInteger;
 loopControlParameters : literalInteger;
 lumaIntraPartitionMask : idRef;
 lumaModePenalty : idRef;
 lumaPackedNeighborModes : idRef;
 lumaPackedNonDcPenalty : idRef;
+m : idRef;
 m1 : literalInteger;
 m2 : literalInteger;
 mS : literalInteger;
@@ -2034,7 +2524,13 @@ majorShape : idRef;
 majorShapes : idRef;
 mask : idRef;
 matrix : idRef;
-matrixStride : literalInteger;
+matrixA : idRef;
+matrixB : idRef;
+matrixC : idRef;
+matrixInterpretation : idRef;
+matrixOffset : idRef;
+matrixStrideIdRef : idRef;
+matrixStrideLiteralInteger : literalInteger;
 max : literalInteger;
 maxBurstCount : literalInteger;
 maxByteOffsetIdRef : idRef;
@@ -2048,9 +2544,12 @@ maximumReplicates : literalInteger;
 member : literalInteger;
 memberType : idRef;
 memory : idScope;
+memoryHeight : idRef;
 memoryLayout : idRef;
 memoryOperand : memoryAccess;
+memoryPitch : idRef;
 memoryType : literalString;
+memoryWidth : idRef;
 mergeBlock : idRef;
 mergeKey : literalString;
 mergeType : literalString;
@@ -2058,6 +2557,7 @@ minVal : idRef;
 minorShapes : idRef;
 missIndex : idRef;
 modeExecutionMode : executionMode;
+modeFPRoundingMode : fPRoundingMode;
 modeLiteralInteger : literalInteger;
 motionVectors : idRef;
 mout : literalInteger;
@@ -2067,16 +2567,20 @@ nLiteralInteger : literalInteger;
 nameIdRef : idRef;
 nameLiteralString : literalString;
 namedBarrier : idRef;
+nancode : idRef;
 next : idRef;
 nodeIndex : idRef;
-nodeName : literalString;
+nodeName : idRef;
 nref : idRef;
 numArguments : idRef;
+numBytes : idRef;
 numElements : idRef;
 numEvents : idRef;
 numPackets : idRef;
 numberOf : literalInteger;
 numberOfRecursions : idRef;
+numberOfRegistersIdRef : idRef;
+numberOfRegistersLiteralInteger : literalInteger;
 o : literalInteger;
 object : idRef;
 object1 : idRef;
@@ -2087,6 +2591,7 @@ offsetLiteralInteger : literalInteger;
 operand : idRef;
 operand1 : idRef;
 operand2 : idRef;
+operands : idRef;
 operation : groupOperation;
 ordinal : idRef;
 origin : idRef;
@@ -2116,6 +2621,7 @@ payload : idRef;
 payloadArray : idRef;
 payloadCount : idRef;
 payloadId : idRef;
+payloadType : idRef;
 pipe : idRef;
 pipeStorage : idRef;
 pixelResolution : idRef;
@@ -2140,7 +2646,9 @@ q : literalInteger;
 qp : idRef;
 qualifier : accessQualifier;
 queue : idRef;
+quo : idRef;
 rI : literalInteger;
+rW : idRef;
 radiansIdRef : idRef;
 rayDirection : idRef;
 rayFlagsIdRef : idRef;
@@ -2149,6 +2657,7 @@ rayQuery : idRef;
 rayTmax : idRef;
 rayTmin : idRef;
 readWriteMode : accessQualifier;
+reduce : cooperativeMatrixReduce;
 refImage : idRef;
 refOffset : idRef;
 refWindowSize : idRef;
@@ -2156,6 +2665,7 @@ reference : idRef;
 referenceBasePenalty : idRef;
 referenceCoordinates : idRef;
 referenceFieldPolarity : idRef;
+referenceSampledImage : idRef;
 register : literalString;
 relativeCycle : literalInteger;
 relativeTo : literalInteger;
@@ -2190,8 +2700,10 @@ semantics : idMemorySemantics;
 set : idRef;
 shaderIndex : idRef;
 shift : idRef;
+shuffleMask : idRef;
 signedValue : idRef;
 signedness : literalInteger;
+signp : idRef;
 sizeIdRef : idRef;
 sizeLiteralInteger : literalInteger;
 skipBlockPartitionType : idRef;
@@ -2202,8 +2714,10 @@ sourceIdRef : idRef;
 sourceLiteralString : literalString;
 specId : idRef;
 specializationConstantID : literalInteger;
+srcBasePointer : idRef;
 srcCoord : idRef;
 srcImage : idRef;
+srcPointer : idRef;
 stallFreeReturn : literalInteger;
 status : idRef;
 storage : storageClass;
@@ -2227,14 +2741,19 @@ targetIdRef : idRef;
 targetLabel : idRef;
 targetLiteralInteger : literalInteger;
 targetPairLiteralIntegerIdRef : pairLiteralIntegerIdRef;
+targetSampledImage : idRef;
+targetType : idRef;
 targetWidth : literalInteger;
 targetsIdRef : idRef;
 targetsPairIdRefLiteralInteger : pairIdRefLiteralInteger;
+tensorLayout : idRef;
+tensorView : idRef;
 texel : idRef;
 texture : idRef;
 theNameOfTheOpaqueType : literalString;
 threshold : idRef;
 time : idRef;
+transpose : idRef;
 trigger : initializationModeQualifier;
 trueLabel : idRef;
 type : idRef;
@@ -2297,16 +2816,13 @@ addressingModel
     |   Physical32
     |   Physical64
     |   PhysicalStorageBuffer64
-    |   PhysicalStorageBuffer64EXT
     ;
 
 builtIn
     :   BaryCoordKHR
-    |   BaryCoordNV
     |   BaryCoordNoPerspAMD
     |   BaryCoordNoPerspCentroidAMD
     |   BaryCoordNoPerspKHR
-    |   BaryCoordNoPerspNV
     |   BaryCoordNoPerspSampleAMD
     |   BaryCoordPullModelAMD
     |   BaryCoordSmoothAMD
@@ -2316,7 +2832,7 @@ builtIn
     |   BaseVertex
     |   ClipDistance
     |   ClipDistancePerViewNV
-    |   CoalescedInputCountAMDX
+    |   ClusterIDNV
     |   CoreCountARM
     |   CoreIDARM
     |   CoreMaxIDARM
@@ -2333,7 +2849,6 @@ builtIn
     |   FragInvocationCountEXT
     |   FragSizeEXT
     |   FragStencilRefEXT
-    |   FragmentSizeNV
     |   FrontFacing
     |   FullyCoveredEXT
     |   GlobalInvocationId
@@ -2341,26 +2856,26 @@ builtIn
     |   GlobalOffset
     |   GlobalSize
     |   HelperInvocation
+    |   HitIsLSSNV
+    |   HitIsSphereNV
     |   HitKindBackFacingMicroTriangleNV
     |   HitKindFrontFacingMicroTriangleNV
     |   HitKindKHR
-    |   HitKindNV
+    |   HitLSSPositionsNV
+    |   HitLSSRadiiNV
     |   HitMicroTriangleVertexBarycentricsNV
     |   HitMicroTriangleVertexPositionsNV
+    |   HitSpherePositionNV
+    |   HitSphereRadiusNV
     |   HitTNV
     |   HitTriangleVertexPositionsKHR
     |   IncomingRayFlagsKHR
-    |   IncomingRayFlagsNV
     |   InstanceCustomIndexKHR
-    |   InstanceCustomIndexNV
     |   InstanceId
     |   InstanceIndex
     |   InvocationId
-    |   InvocationsPerPixelNV
     |   LaunchIdKHR
-    |   LaunchIdNV
     |   LaunchSizeKHR
-    |   LaunchSizeNV
     |   Layer
     |   LayerPerViewNV
     |   LocalInvocationId
@@ -2371,11 +2886,8 @@ builtIn
     |   NumSubgroups
     |   NumWorkgroups
     |   ObjectRayDirectionKHR
-    |   ObjectRayDirectionNV
     |   ObjectRayOriginKHR
-    |   ObjectRayOriginNV
     |   ObjectToWorldKHR
-    |   ObjectToWorldNV
     |   PatchVertices
     |   PointCoord
     |   PointSize
@@ -2390,9 +2902,8 @@ builtIn
     |   PrimitiveTriangleIndicesEXT
     |   RayGeometryIndexKHR
     |   RayTmaxKHR
-    |   RayTmaxNV
     |   RayTminKHR
-    |   RayTminNV
+    |   RemainingRecursionLevelsAMDX
     |   SMCountNV
     |   SMIDNV
     |   SampleId
@@ -2403,17 +2914,12 @@ builtIn
     |   ShaderIndexAMDX
     |   ShadingRateKHR
     |   SubgroupEqMask
-    |   SubgroupEqMaskKHR
     |   SubgroupGeMask
-    |   SubgroupGeMaskKHR
     |   SubgroupGtMask
-    |   SubgroupGtMaskKHR
     |   SubgroupId
     |   SubgroupLeMask
-    |   SubgroupLeMaskKHR
     |   SubgroupLocalInvocationId
     |   SubgroupLtMask
-    |   SubgroupLtMaskKHR
     |   SubgroupMaxSize
     |   SubgroupSize
     |   TaskCountNV
@@ -2434,11 +2940,8 @@ builtIn
     |   WorkgroupId
     |   WorkgroupSize
     |   WorldRayDirectionKHR
-    |   WorldRayDirectionNV
     |   WorldRayOriginKHR
-    |   WorldRayOriginNV
     |   WorldToObjectKHR
-    |   WorldToObjectNV
     ;
 
 capability
@@ -2446,9 +2949,11 @@ capability
     |   ArbitraryPrecisionFixedPointINTEL
     |   ArbitraryPrecisionFloatingPointINTEL
     |   ArbitraryPrecisionIntegersINTEL
+    |   ArithmeticFenceEXT
     |   AsmINTEL
     |   AtomicFloat16AddEXT
     |   AtomicFloat16MinMaxEXT
+    |   AtomicFloat16VectorNV
     |   AtomicFloat32AddEXT
     |   AtomicFloat32MinMaxEXT
     |   AtomicFloat64AddEXT
@@ -2461,15 +2966,22 @@ capability
     |   BlockingPipesINTEL
     |   CacheControlsINTEL
     |   ClipDistance
-    |   ComputeDerivativeGroupLinearNV
-    |   ComputeDerivativeGroupQuadsNV
+    |   ComputeDerivativeGroupLinearKHR
+    |   ComputeDerivativeGroupQuadsKHR
+    |   CooperativeMatrixBlockLoadsNV
+    |   CooperativeMatrixConversionsNV
     |   CooperativeMatrixKHR
+    |   CooperativeMatrixLayoutsARM
     |   CooperativeMatrixNV
+    |   CooperativeMatrixPerElementOperationsNV
+    |   CooperativeMatrixReductionsNV
+    |   CooperativeMatrixTensorAddressingNV
+    |   CooperativeVectorNV
+    |   CooperativeVectorTrainingNV
     |   CoreBuiltinsARM
     |   CullDistance
     |   DebugInfoModuleINTEL
     |   DemoteToHelperInvocation
-    |   DemoteToHelperInvocationEXT
     |   DenormFlushToZero
     |   DenormPreserve
     |   DerivativeControl
@@ -2478,12 +2990,8 @@ capability
     |   DisplacementMicromapNV
     |   DotProduct
     |   DotProductInput4x8Bit
-    |   DotProductInput4x8BitKHR
     |   DotProductInput4x8BitPacked
-    |   DotProductInput4x8BitPackedKHR
     |   DotProductInputAll
-    |   DotProductInputAllKHR
-    |   DotProductKHR
     |   DrawParameters
     |   ExpectAssumeKHR
     |   FPFastMathModeINTEL
@@ -2505,9 +3013,9 @@ capability
     |   Float16Buffer
     |   Float16ImageAMD
     |   Float64
+    |   FloatControls2
     |   FloatingPointModeINTEL
     |   FragmentBarycentricKHR
-    |   FragmentBarycentricNV
     |   FragmentDensityEXT
     |   FragmentFullyCoveredEXT
     |   FragmentMaskAMD
@@ -2553,9 +3061,7 @@ capability
     |   IndirectReferencesINTEL
     |   InputAttachment
     |   InputAttachmentArrayDynamicIndexing
-    |   InputAttachmentArrayDynamicIndexingEXT
     |   InputAttachmentArrayNonUniformIndexing
-    |   InputAttachmentArrayNonUniformIndexingEXT
     |   Int16
     |   Int64
     |   Int64Atomics
@@ -2578,30 +3084,35 @@ capability
     |   MultiView
     |   MultiViewport
     |   NamedBarrier
-    |   OptNoneINTEL
+    |   OptNoneEXT
     |   PerViewAttributesNV
     |   PhysicalStorageBufferAddresses
-    |   PhysicalStorageBufferAddressesEXT
     |   PipeStorage
     |   Pipes
+    |   QuadControlKHR
+    |   RawAccessChainsNV
     |   RayCullMaskKHR
     |   RayQueryKHR
     |   RayQueryPositionFetchKHR
     |   RayQueryProvisionalKHR
+    |   RayTracingClusterAccelerationStructureNV
     |   RayTracingDisplacementMicromapNV
     |   RayTracingKHR
+    |   RayTracingLinearSweptSpheresGeometryNV
     |   RayTracingMotionBlurNV
     |   RayTracingNV
     |   RayTracingOpacityMicromapEXT
     |   RayTracingPositionFetchKHR
     |   RayTracingProvisionalKHR
+    |   RayTracingSpheresGeometryNV
     |   RayTraversalPrimitiveCullingKHR
+    |   RegisterLimitsINTEL
+    |   ReplicatedCompositesEXT
     |   RoundToInfinityINTEL
     |   RoundingModeRTE
     |   RoundingModeRTZ
     |   RuntimeAlignedAttributeINTEL
     |   RuntimeDescriptorArray
-    |   RuntimeDescriptorArrayEXT
     |   SampleMaskOverrideCoverageNV
     |   SampleMaskPostDepthCoverage
     |   SampleRateShading
@@ -2610,7 +3121,6 @@ capability
     |   SampledCubeArray
     |   SampledImageArrayDynamicIndexing
     |   SampledImageArrayNonUniformIndexing
-    |   SampledImageArrayNonUniformIndexingEXT
     |   SampledRect
     |   Shader
     |   ShaderClockKHR
@@ -2618,14 +3128,11 @@ capability
     |   ShaderInvocationReorderNV
     |   ShaderLayer
     |   ShaderNonUniform
-    |   ShaderNonUniformEXT
     |   ShaderSMBuiltinsNV
     |   ShaderStereoViewNV
     |   ShaderViewportIndex
     |   ShaderViewportIndexLayerEXT
-    |   ShaderViewportIndexLayerNV
     |   ShaderViewportMaskNV
-    |   ShadingRateNV
     |   SignedZeroInfNanPreserve
     |   SparseResidency
     |   SplitBarrierINTEL
@@ -2634,10 +3141,8 @@ capability
     |   StorageBuffer8BitAccess
     |   StorageBufferArrayDynamicIndexing
     |   StorageBufferArrayNonUniformIndexing
-    |   StorageBufferArrayNonUniformIndexingEXT
     |   StorageImageArrayDynamicIndexing
     |   StorageImageArrayNonUniformIndexing
-    |   StorageImageArrayNonUniformIndexingEXT
     |   StorageImageExtendedFormats
     |   StorageImageMultisample
     |   StorageImageReadWithoutFormat
@@ -2646,23 +3151,26 @@ capability
     |   StoragePushConstant16
     |   StoragePushConstant8
     |   StorageTexelBufferArrayDynamicIndexing
-    |   StorageTexelBufferArrayDynamicIndexingEXT
     |   StorageTexelBufferArrayNonUniformIndexing
-    |   StorageTexelBufferArrayNonUniformIndexingEXT
-    |   StorageUniform16
-    |   StorageUniformBufferBlock16
+    |   Subgroup2DBlockIOINTEL
+    |   Subgroup2DBlockTransformINTEL
+    |   Subgroup2DBlockTransposeINTEL
     |   SubgroupAvcMotionEstimationChromaINTEL
     |   SubgroupAvcMotionEstimationINTEL
     |   SubgroupAvcMotionEstimationIntraINTEL
     |   SubgroupBallotKHR
     |   SubgroupBufferBlockIOINTEL
+    |   SubgroupBufferPrefetchINTEL
     |   SubgroupDispatch
     |   SubgroupImageBlockIOINTEL
     |   SubgroupImageMediaBlockIOINTEL
+    |   SubgroupMatrixMultiplyAccumulateINTEL
     |   SubgroupShuffleINTEL
     |   SubgroupVoteKHR
+    |   TensorAddressingNV
     |   Tessellation
     |   TessellationPointSize
+    |   TextureBlockMatch2QCOM
     |   TextureBlockMatchQCOM
     |   TextureBoxFilterQCOM
     |   TextureSampleWeightedQCOM
@@ -2675,13 +3183,11 @@ capability
     |   UniformAndStorageBuffer8BitAccess
     |   UniformBufferArrayDynamicIndexing
     |   UniformBufferArrayNonUniformIndexing
-    |   UniformBufferArrayNonUniformIndexingEXT
     |   UniformDecoration
     |   UniformTexelBufferArrayDynamicIndexing
-    |   UniformTexelBufferArrayDynamicIndexingEXT
     |   UniformTexelBufferArrayNonUniformIndexing
-    |   UniformTexelBufferArrayNonUniformIndexingEXT
     |   UnstructuredLoopControlsINTEL
+    |   UntypedPointersKHR
     |   VariableLengthArrayINTEL
     |   VariablePointers
     |   VariablePointersStorageBuffer
@@ -2690,15 +3196,33 @@ capability
     |   VectorComputeINTEL
     |   VulkanMemoryModel
     |   VulkanMemoryModelDeviceScope
-    |   VulkanMemoryModelDeviceScopeKHR
-    |   VulkanMemoryModelKHR
     |   WorkgroupMemoryExplicitLayout16BitAccessKHR
     |   WorkgroupMemoryExplicitLayout8BitAccessKHR
     |   WorkgroupMemoryExplicitLayoutKHR
     ;
 
+componentType
+    :   Float16NV
+    |   Float32NV
+    |   Float64NV
+    |   FloatE4M3NV
+    |   FloatE5M2NV
+    |   SignedInt16NV
+    |   SignedInt32NV
+    |   SignedInt64NV
+    |   SignedInt8NV
+    |   SignedInt8PackedNV
+    |   UnsignedInt16NV
+    |   UnsignedInt32NV
+    |   UnsignedInt64NV
+    |   UnsignedInt8NV
+    |   UnsignedInt8PackedNV
+    ;
+
 cooperativeMatrixLayout
-    :   ColumnMajorKHR
+    :   ColumnBlockedInterleavedARM
+    |   ColumnMajorKHR
+    |   RowBlockedInterleavedARM
     |   RowMajorKHR
     ;
 
@@ -2711,17 +3235,29 @@ cooperativeMatrixOperands
     |   SaturatingAccumulationKHR
     ;
 
+cooperativeMatrixReduce
+    :   Column
+    |   Def2x2
+    |   Row
+    ;
+
 cooperativeMatrixUse
     :   MatrixAKHR
     |   MatrixAccumulatorKHR
     |   MatrixBKHR
     ;
 
+cooperativeVectorMatrixLayout
+    :   ColumnMajorNV
+    |   InferencingOptimalNV
+    |   RowMajorNV
+    |   TrainingOptimalNV
+    ;
+
 decoration
     :   AliasScopeINTEL aliasingScopesList
     |   Aliased
     |   AliasedPointer
-    |   AliasedPointerEXT
     |   Alignment alignmentLiteralInteger
     |   AlignmentId alignmentIdRef
     |   ArrayStride arrayStride
@@ -2731,6 +3267,7 @@ decoration
     |   BindlessImageNV
     |   BindlessSamplerNV
     |   Block
+    |   BlockMatchSamplerQCOM
     |   BlockMatchTextureQCOM
     |   BoundImageNV
     |   BoundSamplerNV
@@ -2754,7 +3291,7 @@ decoration
     |   DontStaticallyCoalesceINTEL
     |   DoublepumpINTEL
     |   ExplicitInterpAMD
-    |   FPFastMathMode fast
+    |   FPFastMathMode fastFPFastMathMode
     |   FPMaxErrorDecorationINTEL maxError
     |   FPRoundingMode floating
     |   Flat
@@ -2769,8 +3306,6 @@ decoration
     |   GLSLShared
     |   GlobalVariableOffsetINTEL offsetLiteralInteger
     |   HitObjectShaderRecordBufferNV
-    |   HlslCounterBufferGOOGLE counterBuffer
-    |   HlslSemanticGOOGLE semantic
     |   HostAccessINTEL access nameLiteralString
     |   IOPipeStorageINTEL iOPipeID
     |   ImplementInRegisterMapINTEL valueLiteralInteger
@@ -2790,7 +3325,7 @@ decoration
     |   MMHostInterfaceReadWriteModeINTEL readWriteMode
     |   MMHostInterfaceWaitRequestINTEL waitrequest
     |   MathOpDSPModeINTEL modeLiteralInteger propagate
-    |   MatrixStride matrixStride
+    |   MatrixStride matrixStrideLiteralInteger
     |   MaxByteOffset maxByteOffsetLiteralInteger
     |   MaxByteOffsetId maxByteOffsetIdRef
     |   MaxConcurrencyINTEL invocations
@@ -2805,22 +3340,23 @@ decoration
     |   NoSignedWrap
     |   NoUnsignedWrap
     |   NodeMaxPayloadsAMDX maxNumberOfPayloads
-    |   NodeSharesPayloadLimitsWithAMDX payloadArray
+    |   NodeSharesPayloadLimitsWithAMDX payloadType
     |   NonReadable
     |   NonUniform
-    |   NonUniformEXT
     |   NonWritable
     |   NumbanksINTEL banks
-    |   Offset byteOffset
+    |   Offset byteOffsetLiteralInteger
     |   OverrideCoverageNV
     |   PassthroughNV
     |   Patch
+    |   PayloadDispatchIndirectAMDX
+    |   PayloadNodeArraySizeAMDX arraySize
+    |   PayloadNodeBaseIndexAMDX baseIndex
     |   PayloadNodeNameAMDX nodeName
+    |   PayloadNodeSparseArrayAMDX
     |   PerPrimitiveEXT
-    |   PerPrimitiveNV
     |   PerTaskNV
     |   PerVertexKHR
-    |   PerVertexNV
     |   PerViewNV
     |   PipelineEnableINTEL enable
     |   PrefetchINTEL prefetcherSizeInBytes
@@ -2830,7 +3366,6 @@ decoration
     |   RelaxedPrecision
     |   Restrict
     |   RestrictPointer
-    |   RestrictPointerEXT
     |   RowMajor
     |   SIMTCallINTEL nLiteralInteger
     |   Sample
@@ -2884,10 +3419,11 @@ executionMode
     |   DepthLess
     |   DepthReplacing
     |   DepthUnchanged
-    |   DerivativeGroupLinearNV
-    |   DerivativeGroupQuadsNV
+    |   DerivativeGroupLinearKHR
+    |   DerivativeGroupQuadsKHR
     |   EarlyAndLateFragmentTestsAMD
     |   EarlyFragmentTests
+    |   FPFastMathDefault targetType fastIdRef
     |   Finalizer
     |   FloatingPointModeALTINTEL targetWidth
     |   FloatingPointModeIEEEINTEL targetWidth
@@ -2897,6 +3433,7 @@ executionMode
     |   InputPoints
     |   InputTrianglesAdjacency
     |   Invocations numberOf
+    |   IsApiEntryAMDX isEntry
     |   Isolines
     |   LocalSize xSizeLiteralInteger ySizeLiteralInteger zSizeLiteralInteger
     |   LocalSizeHint xSizeLiteralInteger ySizeLiteralInteger zSizeLiteralInteger
@@ -2906,7 +3443,11 @@ executionMode
     |   MaxNumWorkgroupsAMDX xSizeIdRef ySizeIdRef zSizeIdRef
     |   MaxWorkDimINTEL max
     |   MaxWorkgroupSizeINTEL max max max
+    |   MaximallyReconvergesKHR
+    |   MaximumRegistersINTEL numberOfRegistersLiteralInteger
+    |   MaximumRegistersIdINTEL numberOfRegistersIdRef
     |   NamedBarrierCountINTEL barrierCount
+    |   NamedMaximumRegistersINTEL namedMaximumNumberOfRegisters
     |   NoGlobalOffsetINTEL
     |   NonCoherentColorAttachmentReadEXT
     |   NonCoherentDepthAttachmentReadEXT
@@ -2916,21 +3457,20 @@ executionMode
     |   OriginUpperLeft
     |   OutputLineStrip
     |   OutputLinesEXT
-    |   OutputLinesNV
     |   OutputPoints
     |   OutputPrimitivesEXT primitiveCountLiteralInteger
-    |   OutputPrimitivesNV primitiveCountLiteralInteger
     |   OutputTriangleStrip
     |   OutputTrianglesEXT
-    |   OutputTrianglesNV
     |   OutputVertices vertexCountLiteralInteger
     |   PixelCenterInteger
     |   PixelInterlockOrderedEXT
     |   PixelInterlockUnorderedEXT
     |   PointMode
     |   PostDepthCoverage
+    |   QuadDerivativesKHR
     |   Quads
     |   RegisterMapInterfaceINTEL waitForDoneWrite
+    |   RequireFullQuadsKHR
     |   RoundingModeRTE targetWidth
     |   RoundingModeRTNINTEL targetWidth
     |   RoundingModeRTPINTEL targetWidth
@@ -2942,6 +3482,7 @@ executionMode
     |   ShadingRateInterlockOrderedEXT
     |   ShadingRateInterlockUnorderedEXT
     |   SharedLocalMemorySizeINTEL sizeLiteralInteger
+    |   SharesInputWithAMDX nodeName shaderIndex
     |   SignedZeroInfNanPreserve targetWidth
     |   SpacingEqual
     |   SpacingFractionalEven
@@ -2968,23 +3509,17 @@ executionMode
 
 executionModel
     :   AnyHitKHR
-    |   AnyHitNV
     |   CallableKHR
-    |   CallableNV
     |   ClosestHitKHR
-    |   ClosestHitNV
     |   Fragment
     |   GLCompute
     |   Geometry
     |   IntersectionKHR
-    |   IntersectionNV
     |   Kernel
     |   MeshEXT
     |   MeshNV
     |   MissKHR
-    |   MissNV
     |   RayGenerationKHR
-    |   RayGenerationNV
     |   TaskEXT
     |   TaskNV
     |   TessellationControl
@@ -2998,9 +3533,10 @@ fPDenormMode
     ;
 
 fPFastMathMode
-    :   AllowContractFastINTEL
-    |   AllowReassocINTEL
+    :   AllowContract
+    |   AllowReassoc
     |   AllowRecip
+    |   AllowTransform
     |   Fast
     |   NSZ
     |   None
@@ -3032,7 +3568,7 @@ functionControl
     |   DontInline
     |   Inline
     |   None
-    |   OptNoneINTEL
+    |   OptNoneEXT
     |   Pure
     ;
 
@@ -3077,6 +3613,7 @@ imageChannelDataType
     |   UnormInt101010_2
     |   UnormInt16
     |   UnormInt24
+    |   UnormInt2_101010EXT
     |   UnormInt8
     |   UnormShort555
     |   UnormShort565
@@ -3162,12 +3699,9 @@ imageOperands
     |   Grad idRef idRef
     |   Lod idRef
     |   MakeTexelAvailable idScope
-    |   MakeTexelAvailableKHR idScope
     |   MakeTexelVisible idScope
-    |   MakeTexelVisibleKHR idScope
     |   MinLod idRef
     |   NonPrivateTexel
-    |   NonPrivateTexelKHR
     |   None
     |   Nontemporal
     |   Offset idRef
@@ -3175,7 +3709,6 @@ imageOperands
     |   Sample idRef
     |   SignExtend
     |   VolatileTexel
-    |   VolatileTexelKHR
     |   ZeroExtend
     ;
 
@@ -3232,6 +3765,24 @@ loopControl
     |   Unroll
     ;
 
+matrixMultiplyAccumulateOperands
+    :   MatrixAPackedBFloat16INTEL
+    |   MatrixAPackedFloat16INTEL
+    |   MatrixAPackedInt4INTEL
+    |   MatrixAPackedInt8INTEL
+    |   MatrixASignedComponentsINTEL
+    |   MatrixATF32INTEL
+    |   MatrixBPackedBFloat16INTEL
+    |   MatrixBPackedFloat16INTEL
+    |   MatrixBPackedInt4INTEL
+    |   MatrixBPackedInt8INTEL
+    |   MatrixBSignedComponentsINTEL
+    |   MatrixBTF32INTEL
+    |   MatrixCBFloat16INTEL
+    |   MatrixResultBFloat16INTEL
+    |   None
+    ;
+
 memoryAccess : memoryAccessTag (Pipe memoryAccessTag)* literalInteger? idRef*;
 
 memoryAccessTag
@@ -3254,7 +3805,6 @@ memoryModel
     |   OpenCL
     |   Simple
     |   Vulkan
-    |   VulkanKHR
     ;
 
 memorySemantics
@@ -3264,12 +3814,8 @@ memorySemantics
     |   CrossWorkgroupMemory
     |   ImageMemory
     |   MakeAvailable
-    |   MakeAvailableKHR
     |   MakeVisible
-    |   MakeVisibleKHR
-    |   None
     |   OutputMemory
-    |   OutputMemoryKHR
     |   Relaxed
     |   Release
     |   SequentiallyConsistent
@@ -3279,6 +3825,7 @@ memorySemantics
     |   WorkgroupMemory
     ;
 
+namedMaximumNumberOfRegisters : AutoINTEL;
 overflowModes
     :   SAT
     |   SAT_SYM
@@ -3286,11 +3833,7 @@ overflowModes
     |   WRAP
     ;
 
-packedVectorFormat
-    :   PackedVectorFormat4x8Bit
-    |   PackedVectorFormat4x8BitKHR
-    ;
-
+packedVectorFormat : PackedVectorFormat4x8Bit;
 quantizationModes
     :   RND
     |   RND_CONV
@@ -3300,6 +3843,12 @@ quantizationModes
     |   RND_ZERO
     |   TRN
     |   TRN_ZERO
+    ;
+
+rawAccessChainOperands
+    :   None
+    |   RobustnessPerComponentNV
+    |   RobustnessPerElementNV
     ;
 
 rayFlags
@@ -3351,7 +3900,6 @@ scope
     |   Device
     |   Invocation
     |   QueueFamily
-    |   QueueFamilyKHR
     |   ShaderCallKHR
     |   Subgroup
     |   Workgroup
@@ -3372,42 +3920,36 @@ sourceLanguage
     |   NZSL
     |   OpenCL_C
     |   OpenCL_CPP
+    |   Rust
     |   SYCL
     |   Slang
     |   Unknown
     |   WGSL
+    |   Zig
     ;
 
 storageClass
     :   AtomicCounter
     |   CallableDataKHR
-    |   CallableDataNV
     |   CodeSectionINTEL
     |   CrossWorkgroup
     |   DeviceOnlyINTEL
     |   Function
     |   Generic
     |   HitAttributeKHR
-    |   HitAttributeNV
     |   HitObjectAttributeNV
     |   HostOnlyINTEL
     |   Image
     |   IncomingCallableDataKHR
-    |   IncomingCallableDataNV
     |   IncomingRayPayloadKHR
-    |   IncomingRayPayloadNV
     |   Input
-    |   NodeOutputPayloadAMDX
     |   NodePayloadAMDX
     |   Output
     |   PhysicalStorageBuffer
-    |   PhysicalStorageBufferEXT
     |   Private
     |   PushConstant
     |   RayPayloadKHR
-    |   RayPayloadNV
     |   ShaderRecordBufferKHR
-    |   ShaderRecordBufferNV
     |   StorageBuffer
     |   TaskPayloadWorkgroupEXT
     |   TileImageEXT
@@ -3421,6 +3963,20 @@ storeCacheControl
     |   UncachedINTEL
     |   WriteBackINTEL
     |   WriteThroughINTEL
+    ;
+
+tensorAddressingOperands
+    :   DecodeFunc idRef
+    |   None
+    |   TensorView idRef
+    ;
+
+tensorClampMode
+    :   ClampToEdge
+    |   Constant
+    |   Repeat
+    |   RepeatMirrored
+    |   Undefined
     ;
 
 // Base types

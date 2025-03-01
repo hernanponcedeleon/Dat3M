@@ -70,7 +70,7 @@ public class VisitorSpirvVulkan extends VisitorVulkan {
     @Override
     public List<Event> visitSpirvXchg(SpirvXchg e) {
         String mo = moToVulkanTag(Tag.Spirv.getMoTag(e.getTags()));
-        String scope = toVulkanTag(Tag.Spirv.getScopeTag(e.getTags()));
+        String scope = Tag.Spirv.toVulkanTag(Tag.Spirv.getScopeTag(e.getTags()));
         VulkanRMW rmw = EventFactory.Vulkan.newRMW(e.getAddress(), e.getResultRegister(), e.getValue(), mo, scope);
         rmw.addTags(Tag.Vulkan.NON_PRIVATE, Tag.Vulkan.AVAILABLE, Tag.Vulkan.VISIBLE);
         addVulkanTags(e, rmw);
@@ -80,7 +80,7 @@ public class VisitorSpirvVulkan extends VisitorVulkan {
     @Override
     public List<Event> visitSpirvRMW(SpirvRmw e) {
         String mo = moToVulkanTag(Tag.Spirv.getMoTag(e.getTags()));
-        String scope = toVulkanTag(Tag.Spirv.getScopeTag(e.getTags()));
+        String scope = Tag.Spirv.toVulkanTag(Tag.Spirv.getScopeTag(e.getTags()));
         VulkanRMWOp rmwOp = EventFactory.Vulkan.newRMWOp(e.getAddress(), e.getResultRegister(), e.getOperand(),
                 e.getOperator(), mo, scope);
         rmwOp.addTags(Tag.Vulkan.NON_PRIVATE, Tag.Vulkan.AVAILABLE, Tag.Vulkan.VISIBLE);
@@ -91,7 +91,7 @@ public class VisitorSpirvVulkan extends VisitorVulkan {
     @Override
     public List<Event> visitSpirvRmwExtremum(SpirvRmwExtremum e) {
         String mo = moToVulkanTag(Tag.Spirv.getMoTag(e.getTags()));
-        String scope = toVulkanTag(Tag.Spirv.getScopeTag(e.getTags()));
+        String scope = Tag.Spirv.toVulkanTag(Tag.Spirv.getScopeTag(e.getTags()));
         VulkanRMWExtremum rmw = EventFactory.Vulkan.newRMWExtremum(e.getAddress(), e.getResultRegister(),
                 e.getOperator(), e.getValue(), mo, scope);
         addVulkanTags(e, rmw);
@@ -113,7 +113,7 @@ public class VisitorSpirvVulkan extends VisitorVulkan {
             throw new UnsupportedOperationException(
                     "Spir-V CmpXchg with unequal tag sets is not supported");
         }
-        String scope = toVulkanTag(Tag.Spirv.getScopeTag(e.getTags()));
+        String scope = Tag.Spirv.toVulkanTag(Tag.Spirv.getScopeTag(e.getTags()));
         VulkanCmpXchg cmpXchg = EventFactory.Vulkan.newVulkanCmpXchg(e.getAddress(), e.getResultRegister(),
                 e.getExpectedValue(), e.getStoreValue(), moToVulkanTag(spvMoEq), scope);
         addVulkanTags(e, cmpXchg);
@@ -124,7 +124,7 @@ public class VisitorSpirvVulkan extends VisitorVulkan {
     private Event addVulkanTags(Event source, Event target) {
         source.getTags().forEach(tag -> {
             if (Tag.Spirv.isSpirvTag(tag)) {
-                String vTag = toVulkanTag(tag);
+                String vTag = Tag.Spirv.toVulkanTag(tag);
                 if (vTag != null) {
                     target.addTags(vTag);
                 }
@@ -154,67 +154,10 @@ public class VisitorSpirvVulkan extends VisitorVulkan {
         }
     }
 
-    private String moToVulkanTag(String moSpv) {
+    private static String moToVulkanTag(String moSpv) {
         if (Tag.Spirv.RELAXED.equals(moSpv)) {
             return Tag.Vulkan.ATOM;
         }
-        return toVulkanTag(moSpv);
-    }
-
-    private String toVulkanTag(String tag) {
-        return switch (tag) {
-            // Control barrier
-            case Tag.Spirv.CONTROL -> Tag.Vulkan.CBAR;
-
-            // Storage class
-            case Tag.Spirv.SC_UNIFORM_CONSTANT, Tag.Spirv.SC_PUSH_CONSTANT
-                    -> null; // read-only
-            case Tag.Spirv.SC_INPUT, Tag.Spirv.SC_PRIVATE, Tag.Spirv.SC_FUNCTION
-                    -> null; // private
-            case Tag.Spirv.SC_UNIFORM, Tag.Spirv.SC_OUTPUT, Tag.Spirv.SC_STORAGE_BUFFER, Tag.Spirv.SC_PHYS_STORAGE_BUFFER
-                    -> Tag.Vulkan.SC0;
-            case Tag.Spirv.SC_WORKGROUP
-                    -> Tag.Vulkan.SC1;
-            case Tag.Spirv.SC_CROSS_WORKGROUP, Tag.Spirv.SC_GENERIC
-                    -> throw new UnsupportedOperationException(
-                    String.format("Spir-V storage class '%s' is not supported by Vulkan memory model", tag));
-
-            // Scope
-            case Tag.Spirv.SUBGROUP -> Tag.Vulkan.SUB_GROUP;
-            case Tag.Spirv.WORKGROUP -> Tag.Vulkan.WORK_GROUP;
-            case Tag.Spirv.QUEUE_FAMILY -> Tag.Vulkan.QUEUE_FAMILY;
-            // TODO: The model does not distinguish between these scopes
-            case Tag.Spirv.INVOCATION, Tag.Spirv.SHADER_CALL, Tag.Spirv.DEVICE, Tag.Spirv.CROSS_DEVICE -> Tag.Vulkan.DEVICE;
-
-            // Memory operands (non-atomic)
-            case Tag.Spirv.MEM_VOLATILE, Tag.Spirv.MEM_NONTEMPORAL -> null;
-            case Tag.Spirv.MEM_NON_PRIVATE -> Tag.Vulkan.NON_PRIVATE;
-            case Tag.Spirv.MEM_AVAILABLE -> Tag.Vulkan.AVAILABLE;
-            case Tag.Spirv.MEM_VISIBLE -> Tag.Vulkan.VISIBLE;
-
-            // Memory semantics (misc)
-            case Tag.Spirv.SEM_VOLATILE -> null;
-
-            // Memory semantics (memory order)
-            case Tag.Spirv.RELAXED -> null;
-            case Tag.Spirv.ACQUIRE -> Tag.Vulkan.ACQUIRE;
-            case Tag.Spirv.RELEASE -> Tag.Vulkan.RELEASE;
-            case Tag.Spirv.ACQ_REL -> Tag.Vulkan.ACQ_REL;
-            case Tag.Spirv.SEQ_CST -> throw new UnsupportedOperationException(
-                    String.format("Spir-V memory order '%s' is not supported by Vulkan memory model", tag));
-
-            // Memory semantics (storage class)
-            case Tag.Spirv.SEM_UNIFORM, Tag.Spirv.SEM_OUTPUT -> Tag.Vulkan.SEMSC0;
-            case Tag.Spirv.SEM_WORKGROUP -> Tag.Vulkan.SEMSC1;
-            case Tag.Spirv.SEM_SUBGROUP, Tag.Spirv.SEM_CROSS_WORKGROUP, Tag.Spirv.SEM_ATOMIC_COUNTER, Tag.Spirv.SEM_IMAGE
-                    -> throw new UnsupportedOperationException(
-                            String.format("Spir-V memory semantics '%s' is not supported by Vulkan memory model", tag));
-
-            // Memory semantics (av-vis)
-            case Tag.Spirv.SEM_AVAILABLE -> Tag.Vulkan.SEM_AVAILABLE;
-            case Tag.Spirv.SEM_VISIBLE -> Tag.Vulkan.SEM_VISIBLE;
-
-            default -> throw new IllegalArgumentException(String.format("Unexpected non Spir-V tag '%s'", tag));
-        };
+        return Tag.Spirv.toVulkanTag(moSpv);
     }
 }

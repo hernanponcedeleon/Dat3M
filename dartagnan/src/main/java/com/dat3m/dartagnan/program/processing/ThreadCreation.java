@@ -6,14 +6,12 @@ import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.integers.IntLiteral;
 import com.dat3m.dartagnan.expression.processing.ExprTransformer;
+import com.dat3m.dartagnan.expression.type.FunctionType;
 import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.*;
-import com.dat3m.dartagnan.program.event.Event;
-import com.dat3m.dartagnan.program.event.EventFactory;
-import com.dat3m.dartagnan.program.event.RegReader;
-import com.dat3m.dartagnan.program.event.Tag;
+import com.dat3m.dartagnan.program.event.*;
 import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.event.core.Local;
 import com.dat3m.dartagnan.program.event.core.threading.ThreadCreate;
@@ -25,6 +23,7 @@ import com.dat3m.dartagnan.program.event.functions.ValueFunctionCall;
 import com.dat3m.dartagnan.program.memory.Memory;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.dat3m.dartagnan.program.processing.compilation.Compilation;
+import com.dat3m.dartagnan.program.processing.transformers.MemoryTransformer;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import org.apache.logging.log4j.LogManager;
@@ -40,6 +39,7 @@ import static com.dat3m.dartagnan.configuration.OptionNames.THREAD_CREATE_ALWAYS
 import static com.dat3m.dartagnan.program.event.EventFactory.*;
 
 /*
+ * LLVM:
  * This pass handles (reachable) pthread-related function calls.
  * - each pthread_create call spawns a new Thread object.
  * - pthread_join calls are lowered to appropriate synchronization primitives.
@@ -52,6 +52,13 @@ import static com.dat3m.dartagnan.program.event.EventFactory.*;
  *  (2) Make this pass able to run after compilation.
  *  (3) Make sure that metadata is copied correctly.
  */
+
+/*
+ * SPIR-V:
+ * This pass creates new threads from the entry function of the program.
+ * The thread number is determined by the thread grid.
+ */
+
 @Options
 public class ThreadCreation implements ProgramProcessor {
 
@@ -65,6 +72,10 @@ public class ThreadCreation implements ProgramProcessor {
 
     private final Compilation compiler;
 
+    private final TypeFactory types = TypeFactory.getInstance();
+    private final ExpressionFactory expressions = ExpressionFactory.getInstance();
+    private final IntegerType archType = types.getArchType();
+
     private ThreadCreation(Configuration config) throws InvalidConfigurationException {
         config.inject(this);
         compiler = Compilation.fromConfig(config);
@@ -76,15 +87,18 @@ public class ThreadCreation implements ProgramProcessor {
 
     @Override
     public void run(Program program) {
-        if (!program.getFormat().equals(Program.SourceLanguage.LLVM)) {
-            return;
+        if (program.getFormat().equals(Program.SourceLanguage.LLVM)) {
+            createLLVMThreads(program);
+        } else if (program.getFormat().equals(Program.SourceLanguage.SPV)) {
+            createSPVThreads(program);
         }
+    }
 
-        final TypeFactory types = TypeFactory.getInstance();
-        final ExpressionFactory expressions = ExpressionFactory.getInstance();
-        final IntegerType archType = types.getArchType();
-
-        final Optional<Function> main = program.getFunctionByName("main");
+    // =============================================================================================
+    // =========================================== LLVM ============================================
+    // =============================================================================================
+    private void createLLVMThreads(Program program) {
+        final Optional<Function> main = program.getFunctionByName(program.getEntryPoint());
         if (main.isEmpty()) {
             throw new MalformedProgramException("Program contains no main function");
         }
@@ -95,7 +109,7 @@ public class ThreadCreation implements ProgramProcessor {
         int nextTid = 0;
 
         final Queue<Thread> workingQueue = new ArrayDeque<>();
-        workingQueue.add(createThreadFromFunction(main.get(), nextTid++, null, null));
+        workingQueue.add(createLLVMThreadFromFunction(main.get(), nextTid++, null, null));
 
         while (!workingQueue.isEmpty()) {
             final Thread thread = workingQueue.remove();
@@ -135,7 +149,7 @@ public class ThreadCreation implements ProgramProcessor {
                         );
                         IRHelper.replaceWithMetadata(call, replacement);
 
-                        final Thread spawnedThread = createThreadFromFunction(targetFunction, nextTid, createEvent, comAddress);
+                        final Thread spawnedThread = createLLVMThreadFromFunction(targetFunction, nextTid, createEvent, comAddress);
                         createEvent.setSpawnedThread(spawnedThread);
                         workingQueue.add(spawnedThread);
                         tid2ComAddrMap.put(tidExpr, comAddress);
@@ -167,8 +181,6 @@ public class ThreadCreation implements ProgramProcessor {
         Each candidate thread gets a switch-case which tries to synchronize with that thread.
      */
     private void handlePthreadJoins(Thread thread, Map<IntLiteral, Expression> tid2ComAddrMap) {
-        final TypeFactory types = TypeFactory.getInstance();
-        final ExpressionFactory expressions = ExpressionFactory.getInstance();
         int joinCounter = 0;
 
         for (FunctionCall call : thread.getEvents(FunctionCall.class)) {
@@ -241,10 +253,7 @@ public class ThreadCreation implements ProgramProcessor {
         }
     }
 
-    private Thread createThreadFromFunction(Function function, int tid, ThreadCreate creator, Expression comAddr) {
-        final ExpressionFactory expressions = ExpressionFactory.getInstance();
-        final TypeFactory types = TypeFactory.getInstance();
-
+    private Thread createLLVMThreadFromFunction(Function function, int tid, ThreadCreate creator, Expression comAddr) {
         // ------------------- Create new thread -------------------
         final ThreadStart start = EventFactory.newThreadStart(creator);
         start.setMayFailSpuriously(!forceStart);
@@ -351,5 +360,77 @@ public class ThreadCreation implements ProgramProcessor {
         return compiler.getCompilationResult(acquireLoad);
     }
 
+
+    // =============================================================================================
+    // ========================================== SPIR-V ===========================================
+    // =============================================================================================
+    private void createSPVThreads(Program program) {
+        ThreadGrid grid = program.getGrid();
+        List<ExprTransformer> transformers = program.getTransformers();
+        program.getFunctionByName(program.getEntryPoint()).ifPresent(entryFunction -> {
+            for (int tid = 0; tid < grid.dvSize(); tid++) {
+                final Thread thread = createSPVThreadFromFunction(entryFunction, tid, grid, transformers);
+                program.addThread(thread);
+            }
+            // Remove unused memory objects of the entry function
+            for (ExprTransformer transformer : transformers) {
+                if (transformer instanceof MemoryTransformer memoryTransformer) {
+                    Memory memory = entryFunction.getProgram().getMemory();
+                    for (MemoryObject memoryObject : memoryTransformer.getThreadLocalMemoryObjects()) {
+                        memory.deleteMemoryObject(memoryObject);
+                    }
+                }
+            }
+        });
+    }
+
+    private Thread createSPVThreadFromFunction(Function function, int tid, ThreadGrid grid, List<ExprTransformer> transformers) {
+        String name = function.getName();
+        FunctionType type = function.getFunctionType();
+        List<String> args = Lists.transform(function.getParameterRegisters(), Register::getName);
+        ThreadStart start = EventFactory.newThreadStart(null);
+        ScopeHierarchy scope = grid.getScoreHierarchy(tid);
+        Thread thread = new Thread(name, type, args, tid, start, scope, Set.of());
+        thread.copyDummyCountFrom(function);
+        Label returnLabel = EventFactory.newLabel("RETURN_OF_T" + thread.getId());
+        Label endLabel = EventFactory.newLabel("END_OF_T" + thread.getId());
+        copyThreadEvents(function, thread, transformers, endLabel);
+        for (Return event : thread.getEvents(Return.class)) {
+            event.replaceBy(EventFactory.newGoto(returnLabel));
+        }
+        thread.append(returnLabel);
+        thread.append(endLabel);
+        return thread;
+    }
+
+    private void copyThreadEvents(Function function, Thread thread, List<ExprTransformer> transformers, Label threadEnd) {
+        List<Event> body = new ArrayList<>();
+        Map<Event, Event> eventCopyMap = new HashMap<>();
+        function.getEvents().forEach(e -> body.add(eventCopyMap.computeIfAbsent(e, Event::getCopy)));
+        for (ExprTransformer transformer : transformers) {
+            if (transformer instanceof MemoryTransformer memoryTransformer) {
+                memoryTransformer.setThread(thread);
+                for (int i = 0; i < body.size(); i++) {
+                    Event copy = body.get(i);
+                    if (copy instanceof EventUser user) {
+                        user.updateReferences(eventCopyMap);
+                    }
+                    if (copy instanceof RegReader reader) {
+                        reader.transformExpressions(transformer);
+                    }
+                    if (copy instanceof RegWriter regWriter) {
+                        regWriter.setResultRegister(memoryTransformer.getRegisterMapping(regWriter.getResultRegister()));
+                    }
+                    if (copy instanceof AbortIf abort) {
+                        final Event jumpToEnd = EventFactory.newJump(abort.getCondition(), threadEnd);
+                        jumpToEnd.addTags(abort.getTags());
+                        jumpToEnd.copyAllMetadataFrom(abort);
+                        body.set(i, jumpToEnd);
+                    }
+                }
+            }
+        }
+        thread.getEntry().insertAfter(body);
+    }
 
 }

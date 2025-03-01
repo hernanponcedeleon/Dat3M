@@ -6,17 +6,16 @@ import com.dat3m.dartagnan.expression.Type;
 import com.dat3m.dartagnan.expression.booleans.BoolLiteral;
 import com.dat3m.dartagnan.expression.integers.IntLiteral;
 import com.dat3m.dartagnan.expression.type.*;
+import com.dat3m.dartagnan.parsers.program.visitors.spirv.builders.ProgramBuilder;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.decorations.Decoration;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.decorations.DecorationType;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.decorations.Offset;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.helpers.HelperTags;
-import com.dat3m.dartagnan.parsers.program.visitors.spirv.builders.ProgramBuilder;
-import com.dat3m.dartagnan.parsers.program.visitors.spirv.utils.ThreadGrid;
-import com.dat3m.dartagnan.program.memory.ScopedPointerVariable;
-import com.dat3m.dartagnan.expression.type.ScopedPointerType;
 import com.dat3m.dartagnan.program.Function;
+import com.dat3m.dartagnan.program.ThreadGrid;
 import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
+import com.dat3m.dartagnan.program.memory.ScopedPointerVariable;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -122,7 +121,7 @@ public class MockProgramBuilder extends ProgramBuilder {
     }
 
     public ScopedPointerVariable mockVariable(String id, String typeId) {
-        ScopedPointerType pointerType = (ScopedPointerType)getType(typeId);
+        ScopedPointerType pointerType = (ScopedPointerType) getType(typeId);
         Type pointedType = pointerType.getPointedType();
         String scopeId = pointerType.getScopeId();
         int bytes = typeFactory.getMemorySizeInBytes(pointedType);

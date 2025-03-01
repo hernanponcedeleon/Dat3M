@@ -22,6 +22,7 @@ OpenCL
 // LOCAL: local memory
 // EF: entry fence of barrier
 // XF: exit fence of barrier
+// NAL: non-atomic location
 
 // dynamic_tag relates events to itself that access an address whose init event is marked X or Fence tagged with X
 let dynamic_tag(X) = [range([IW & X]; loc)] | [X & F]
