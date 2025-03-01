@@ -1,5 +1,6 @@
 #include <pthread.h>
 #include <stdatomic.h>
+#include "dat3m.h"
 
 /*
     Test case: Every odd loop iteration is identical (repeating), but loop terminates nevertheless due to even iterations

@@ -1,5 +1,6 @@
 #include <pthread.h>
 #include <stdatomic.h>
+#include "dat3m.h"
 
 /*
     Test case: Non-termination with oscillating memory value

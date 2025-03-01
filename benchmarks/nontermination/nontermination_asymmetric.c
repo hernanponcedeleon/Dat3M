@@ -1,5 +1,6 @@
 #include <pthread.h>
 #include <stdatomic.h>
+#include "dat3m.h"
 
 /*
     Test case: Asymmetric non-termination where loop 1 runs twice as often as loop 2
