@@ -7,6 +7,7 @@ import com.dat3m.dartagnan.expression.Type;
 import com.dat3m.dartagnan.expression.base.LeafExpressionBase;
 import com.google.common.collect.ImmutableSet;
 
+import java.util.Collection;
 import java.util.Objects;
 import java.util.Set;
 
@@ -83,6 +84,13 @@ public class Register extends LeafExpressionBase<Type> {
 
     public static Set<Read> collectRegisterReads(Expression expr, Register.UsageType usageType, Set<Read> collector) {
         expr.getRegs().stream().map(r -> new Register.Read(r, usageType)).forEach(collector::add);
+        return collector;
+    }
+
+    public static Set<Read> collectRegisterReads(Collection<? extends Expression> exprs, Register.UsageType usageType, Set<Read> collector) {
+        for (Expression expr : exprs) {
+            collectRegisterReads(expr, usageType, collector);
+        }
         return collector;
     }
 

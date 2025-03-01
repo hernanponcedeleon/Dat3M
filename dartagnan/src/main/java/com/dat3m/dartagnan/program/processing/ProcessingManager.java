@@ -138,6 +138,7 @@ public class ProcessingManager implements ProgramProcessor {
                 ),
                 RemoveUnusedMemory.newInstance(),
                 MemoryAllocation.fromConfig(config),
+                NonterminationDetection.fromConfig(config),
                 // --- Statistics + verification ---
                 IdReassignment.newInstance(), // Normalize used Ids (remove any gaps)
                 printAfterProcessing ? DebugPrint.withHeader("After processing", Printer.Mode.THREADS) : null,

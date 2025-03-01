@@ -1,0 +1,14 @@
+AArch64 store-fairness
+{
+0:X0=x;
+x=0;
+}
+ P0               ;
+ L1:              ;
+ LDAXR W1,[X0]    ;
+ CMP W1,#0        ;
+ B.NE L2          ;
+ MOV W2,#2        ;
+ STLXR W3,W2,[X0] ;
+ CBNZ W3,L1       ;
+ L2:              ;

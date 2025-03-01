@@ -17,11 +17,11 @@ import java.util.Arrays;
 import java.util.EnumSet;
 
 import static com.dat3m.dartagnan.configuration.Arch.C11;
+import static com.dat3m.dartagnan.configuration.Property.*;
 import static com.dat3m.dartagnan.utils.ResourceHelper.getTestResourcePath;
 import static com.dat3m.dartagnan.utils.Result.PASS;
 import static com.dat3m.dartagnan.utils.Result.UNKNOWN;
 import static org.junit.Assert.assertEquals;
-import static com.dat3m.dartagnan.configuration.Property.*;
 
 @RunWith(Parameterized.class)
 public class LibvsyncTest extends AbstractCTest {
@@ -47,7 +47,7 @@ public class LibvsyncTest extends AbstractCTest {
 
     @Override
     protected Provider<EnumSet<Property>> getPropertyProvider() {
-        return () -> EnumSet.of(PROGRAM_SPEC, LIVENESS, CAT_SPEC);
+        return () -> EnumSet.of(PROGRAM_SPEC, TERMINATION, CAT_SPEC);
     }
 
     @Override

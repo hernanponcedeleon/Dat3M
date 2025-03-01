@@ -5,6 +5,7 @@ import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.event.core.annotations.CodeAnnotation;
+import com.dat3m.dartagnan.program.event.core.special.StateSnapshot;
 import com.dat3m.dartagnan.program.event.core.threading.ThreadArgument;
 import com.dat3m.dartagnan.program.event.core.threading.ThreadCreate;
 import com.dat3m.dartagnan.program.event.core.threading.ThreadStart;
@@ -38,7 +39,8 @@ public class CoreCodeVerification implements FunctionProcessor {
             Assume.class, Assert.class,
             ThreadCreate.class, ThreadArgument.class, ThreadStart.class,
             ControlBarrier.class, NamedBarrier.class,
-            BeginAtomic.class, EndAtomic.class
+            BeginAtomic.class, EndAtomic.class,
+            StateSnapshot.class
             // We add SVCOMP atomic blocks here as well, despite them not being part of the core package.
             // TODO: We might want to find a more systematic way to extend the core with these custom events.
     ));

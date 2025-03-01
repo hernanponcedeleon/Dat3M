@@ -9,10 +9,7 @@ import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.analysis.LiveRegistersAnalysis;
 import com.dat3m.dartagnan.program.analysis.LoopAnalysis;
-import com.dat3m.dartagnan.program.event.Event;
-import com.dat3m.dartagnan.program.event.EventFactory;
-import com.dat3m.dartagnan.program.event.RegWriter;
-import com.dat3m.dartagnan.program.event.Tag;
+import com.dat3m.dartagnan.program.event.*;
 import com.dat3m.dartagnan.program.event.functions.FunctionCall;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Iterables;
@@ -29,7 +26,7 @@ import java.util.Set;
 
 /*
     This pass instruments loops that do not cause a side effect in an iteration to terminate, i.e., to avoid spinning.
-    In other words, only the last loop iteration is allowed to be side-effect free.
+    In other words, only the last loop iteration is allowed to be side-effect-free.
 
     Instrumentation:
         loop_header:
@@ -51,7 +48,7 @@ import java.util.Set;
        and (2) that are potentially written to inside the loop (i.e. are not invariant).
 
 
-    NOTE: This pass is required to detect liveness violations.
+    NOTE: This pass is required to detect termination violations involving side-effect-free spinning.
  */
 public class DynamicSpinLoopDetection implements ProgramProcessor {
 
@@ -90,8 +87,12 @@ public class DynamicSpinLoopDetection implements ProgramProcessor {
 
     private void collectSideEffects(LoopData loop, LiveRegistersAnalysis liveRegsAna) {
         final Set<Register> writtenRegisters = new HashSet<>();
+        final Set<Register> readRegisters = new HashSet<>();
         Event cur = loop.getStart();
         do {
+            if (cur instanceof RegReader reader) {
+                reader.getRegisterReads().stream().map(Register.Read::register).forEach(readRegisters::add);
+            }
             if (cur instanceof RegWriter writer) {
                 writtenRegisters.add(writer.getResultRegister());
             }
@@ -105,9 +106,17 @@ public class DynamicSpinLoopDetection implements ProgramProcessor {
         } while ((cur = cur.getSuccessor()) != loop.getEnd().getSuccessor());
 
         // Every live register that is written to is a potential local side effect.
-        loop.writtenLiveRegisters.addAll(Sets.intersection(
+        final Set<Register> writtenLiveRegisters = Sets.intersection(
                 writtenRegisters,
                 liveRegsAna.getLiveRegistersAt(loop.getStart())
+        );
+        loop.writtenLiveRegisters.addAll(writtenLiveRegisters);
+
+        // Every written live register that is also read within the loop is potentially live on backjump.
+        // (This is a rough approximation).
+        loop.writtenLiveOnBackjumpRegisters.addAll(Sets.intersection(
+                writtenLiveRegisters,
+                readRegisters
         ));
     }
 
@@ -157,6 +166,13 @@ public class DynamicSpinLoopDetection implements ProgramProcessor {
                 assumeSideEffect
         ));
 
+        // Special snapshot event for non-termination detection
+        if (!loop.writtenLiveOnBackjumpRegisters.isEmpty()) {
+            loop.getEnd().insertBefore(
+                    EventFactory.Special.newStateSnapshot(loop.writtenLiveOnBackjumpRegisters)
+            );
+        }
+
         // Special case: If the loop is fully side-effect-free, we can set its unrolling bound to 1.
         if (loop.isSideEffectFree()) {
             final Event loopBound = EventFactory.Svcomp.newLoopBound(expressions.makeValue(1, types.getArchType()));
@@ -183,6 +199,7 @@ public class DynamicSpinLoopDetection implements ProgramProcessor {
         private final LoopAnalysis.LoopInfo loopInfo;
         private final List<Event> globalSideEffects = new ArrayList<>();
         private final List<Register> writtenLiveRegisters = new ArrayList<>();
+        private final List<Register> writtenLiveOnBackjumpRegisters = new ArrayList<>();
 
         public boolean isSideEffectFree() {
             return writtenLiveRegisters.isEmpty() && globalSideEffects.isEmpty();

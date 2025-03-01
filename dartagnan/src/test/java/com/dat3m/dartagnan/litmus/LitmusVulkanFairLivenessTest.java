@@ -23,12 +23,17 @@ public class LitmusVulkanFairLivenessTest extends AbstractLitmusTest {
     }
 
     @Override
+    protected Provider<Integer> getBoundProvider() {
+        return () -> 4;
+    }
+
+    @Override
     protected Provider<Arch> getTargetProvider() {
         return () -> Arch.VULKAN;
     }
 
     @Override
     protected Provider<EnumSet<Property>> getPropertyProvider() {
-        return Provider.fromSupplier(() -> EnumSet.of(Property.LIVENESS));
+        return Provider.fromSupplier(() -> EnumSet.of(Property.TERMINATION));
     }
 }
