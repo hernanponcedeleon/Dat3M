@@ -27,7 +27,7 @@ import static com.dat3m.dartagnan.wmm.RelationNameRepository.RF;
 
 /*
     Goal: Find a single execution (fragment) that exhibits fairly repeatable behaviour.
-    Such behaviour witnesses the existence of infinite executions (by repeating it indefinitely) and thus a liveness issue.
+    Such behaviour witnesses the existence of infinite executions (by repeating it indefinitely) and thus a termination issue.
     The search is based on a decomposition of the execution into prefix, infix, and (repeatable) suffix.
 
     Intuition: Consider a non-terminating loop with, for example, 6 iterations: 1;2;3;4;5;6.
@@ -86,7 +86,7 @@ import static com.dat3m.dartagnan.wmm.RelationNameRepository.RF;
         possible points of non-termination (otherwise the detection simply fails).
       - We assume co/fr-fairness only (fairness means prefix-finiteness in infinite executions).
       - We assume that if the suffix is consistent with the infix and co/fr-fair, then it must be "strongly"
-        consistent. This may not be true and we could possibly report a liveness violation that is not consistently
+        consistent. This may not be true and we could possibly report a termination violation that is not consistently
         repeatable (i.e. spurious error).
         Fixing this would require additional checks relative to the memory model, possibly requiring
         encoding of the memory model or native handling in CAAT.

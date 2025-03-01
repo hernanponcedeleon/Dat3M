@@ -23,12 +23,12 @@ import java.util.List;
 import static com.dat3m.dartagnan.configuration.OptionNames.NONTERMINATION_INSTRUMENTATION;
 
 /*
-    This pass instruments not-fully-unrolled loops to enable the detection of side-effectful non-termination.
+    This pass instruments not-fully-unrolled loops to enable the detection of side-effect-ful non-termination.
     It has three modes:
-       (i)   Only Spinloops: Detects only side-effectfree non-termination (spinning)
-       (ii)  Simple:         Detects simple forms of symmetric non-termination where all involved loops repeat the same
+       (i)   Only spin loops: Detects only side-effect-free non-termination (spinning)
+       (ii)  Simple:          Detects simple forms of symmetric non-termination where all involved loops repeat the same
                               number of times (incomplete)
-       (iii) Full:           Detects all forms of loop non-termination even where different loops run different
+       (iii) Full:            Detects all forms of loop non-termination even where different loops run different
                               number of times. See below for detail.
 
     Instrumentation for mode "Full":
@@ -116,10 +116,9 @@ public class NonterminationDetection implements ProgramProcessor {
         final LoopAnalysis.LoopIterationInfo lastIter = loop.iterations().get(loop.iterations().size() - 1);
         final Event lastEvent = lastIter.getIterationEnd();
 
-        // FIXME: This is a naive and dangerous check: we assume the bound event is two events after the last loop event.
-        //  This can result in wrong non-termination verdicts.
-        //  To do this properly, we need to attach more information to bound events (during unrolling)
-        //  so that we can identify which loop they belong to.
+        // TODO: This is a naive check: we assume the bound event is two events after the last loop event.
+        //  If it is not, we assume the loop is unrolled and do not instrument it.
+        //  This, however, only results in incompleteness of non-termination detection but causes no soundness issues.
         final Event bound = lastEvent.getSuccessor().getSuccessor();
         if (bound instanceof CondJump && bound.hasTag(Tag.BOUND)) {
             // Loop is not fully unrolled and thus might be non-terminating

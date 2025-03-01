@@ -9,12 +9,7 @@ import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.analysis.LiveRegistersAnalysis;
 import com.dat3m.dartagnan.program.analysis.LoopAnalysis;
-import com.dat3m.dartagnan.program.event.Event;
-import com.dat3m.dartagnan.program.event.EventFactory;
-import com.dat3m.dartagnan.program.event.RegWriter;
-import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.*;
-import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.event.functions.FunctionCall;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Iterables;
@@ -31,7 +26,7 @@ import java.util.Set;
 
 /*
     This pass instruments loops that do not cause a side effect in an iteration to terminate, i.e., to avoid spinning.
-    In other words, only the last loop iteration is allowed to be side-effect free.
+    In other words, only the last loop iteration is allowed to be side-effect-free.
 
     Instrumentation:
         loop_header:
@@ -53,7 +48,7 @@ import java.util.Set;
        and (2) that are potentially written to inside the loop (i.e. are not invariant).
 
 
-    NOTE: This pass is required to detect liveness violations.
+    NOTE: This pass is required to detect termination violations involving side-effect-free spinning.
  */
 public class DynamicSpinLoopDetection implements ProgramProcessor {
 
