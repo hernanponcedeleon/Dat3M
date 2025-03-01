@@ -40,6 +40,6 @@ public class LitmusVulkanHsaLivenessTest extends AbstractLitmusTest {
 
     @Override
     protected Provider<EnumSet<Property>> getPropertyProvider() {
-        return Provider.fromSupplier(() -> EnumSet.of(Property.LIVENESS));
+        return Provider.fromSupplier(() -> EnumSet.of(Property.TERMINATION));
     }
 }

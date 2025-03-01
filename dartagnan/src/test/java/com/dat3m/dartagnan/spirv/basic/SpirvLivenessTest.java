@@ -25,10 +25,11 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.EnumSet;
 
-import static com.dat3m.dartagnan.configuration.Property.LIVENESS;
+import static com.dat3m.dartagnan.configuration.Property.TERMINATION;
 import static com.dat3m.dartagnan.utils.ResourceHelper.getRootPath;
 import static com.dat3m.dartagnan.utils.ResourceHelper.getTestResourcePath;
-import static com.dat3m.dartagnan.utils.Result.*;
+import static com.dat3m.dartagnan.utils.Result.FAIL;
+import static com.dat3m.dartagnan.utils.Result.PASS;
 import static org.junit.Assert.assertEquals;
 
 @RunWith(Parameterized.class)
@@ -83,6 +84,6 @@ public class SpirvLivenessTest {
                 .withTarget(Arch.VULKAN);
         Program program = new ProgramParser().parse(new File(programPath));
         Wmm mcm = new ParserCat().parse(new File(modelPath));
-        return builder.build(program, mcm, EnumSet.of(LIVENESS));
+        return builder.build(program, mcm, EnumSet.of(TERMINATION));
     }
 }

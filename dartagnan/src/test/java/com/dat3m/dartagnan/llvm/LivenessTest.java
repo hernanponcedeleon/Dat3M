@@ -36,7 +36,7 @@ public class LivenessTest extends AbstractCTest {
 
     @Override
     protected Provider<EnumSet<Property>> getPropertyProvider() {
-        return () -> EnumSet.of(Property.LIVENESS);
+        return () -> EnumSet.of(Property.TERMINATION);
     }
 
     @Parameterized.Parameters(name = "{index}: {0}, target={1}")

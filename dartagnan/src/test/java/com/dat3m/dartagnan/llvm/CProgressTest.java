@@ -50,7 +50,7 @@ public class CProgressTest extends AbstractCTest {
 
     @Override
     protected Provider<EnumSet<Property>> getPropertyProvider() {
-        return () -> EnumSet.of(Property.LIVENESS);
+        return () -> EnumSet.of(Property.TERMINATION);
     }
 
     @Override

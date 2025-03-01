@@ -113,7 +113,7 @@ public class PropertyEncoder implements Encoder {
 
         BooleanFormula encoding = (specType == Property.Type.SAFETY) ?
                 encodePropertyViolations(properties) : encodePropertyWitnesses(properties);
-        if (!program.getFormat().equals(LLVM) || properties.contains(LIVENESS)) {
+        if (!program.getFormat().equals(LLVM) || properties.contains(TERMINATION)) {
             // Both litmus assertions and liveness need to identify
             // the final stores to addresses.
             // TODO Optimization: This encoding can be restricted to only those addresses
@@ -125,7 +125,7 @@ public class PropertyEncoder implements Encoder {
 
     private BooleanFormula encodePropertyViolations(EnumSet<Property> properties) {
         final List<TrackableFormula> trackableViolationEncodings = new ArrayList<>();
-        if (properties.contains(LIVENESS)) {
+        if (properties.contains(TERMINATION)) {
             trackableViolationEncodings.add(encodeNontermination());
         }
         if (properties.contains(DATARACEFREEDOM)) {
@@ -401,7 +401,7 @@ public class PropertyEncoder implements Encoder {
 
     private TrackableFormula encodeNontermination() {
         final BooleanFormula hasNontermination = new NonTerminationEncoder(context.getTask(), context).encodeNontermination();
-        return new TrackableFormula(context.getBooleanFormulaManager().not(LIVENESS.getSMTVariable(context)), hasNontermination);
+        return new TrackableFormula(context.getBooleanFormulaManager().not(TERMINATION.getSMTVariable(context)), hasNontermination);
     }
 
 }
