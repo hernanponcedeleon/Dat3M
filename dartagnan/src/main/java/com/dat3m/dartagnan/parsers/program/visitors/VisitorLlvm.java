@@ -419,10 +419,20 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
                             events.add(EventFactory.newLocal(resultRegister, program.newConstant(resultRegister.getType())));
                         }
                     } catch (ParsingException ppcParsingException) {
-                        logger.warn("Found unrecognized token for inline assembly : '{}'. Setting non deterministic value ", ppcParsingException.getMessage());
-                        // TODO ADD x86 Parser
-                        if(resultRegister != null){
-                            events.add(EventFactory.newLocal(resultRegister, program.newConstant(resultRegister.getType())));
+                        try {
+                            CharStream charStream = CharStreams.fromString(asmCode);
+                            ParserInlineX86 parserX86 = new ParserInlineX86(function, resultRegister, arguments);
+                            events = parserX86.parse(charStream);
+                        } catch (ProgramProcessingException x86ProgramProcessingException){
+                            logger.warn("Support for inline assembly instruction '{}' is not available. Setting non deterministic value ", x86ProgramProcessingException.getMessage());
+                            if(resultRegister != null){
+                                events.add(EventFactory.newLocal(resultRegister, program.newConstant(resultRegister.getType())));
+                            }
+                        } catch (ParsingException x86ParsingException){
+                            logger.warn("Found unrecognized token for inline assembly : '{}'. Setting non deterministic value ", x86ParsingException.getMessage());
+                            if(resultRegister != null){
+                                events.add(EventFactory.newLocal(resultRegister, program.newConstant(resultRegister.getType())));
+                            }
                         }
                     } 
                 }

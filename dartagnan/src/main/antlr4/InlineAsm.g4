@@ -74,12 +74,6 @@ inputOpGeneralReg           : RLiteral;
 overlapInOutRegister        : NumbersInline;
 pointerToMemoryLocation     : Equals Ast MLiteral;
 
-outputOpAssign              : Equals Amp? RLiteral;
-memoryAddress               : Ast? QCapitalLiteral;
-inputOpGeneralReg           : RLiteral;
-overlapInOutRegister        : NumbersInline;
-pointerToMemoryLocation     : Equals Ast MLiteral;
-
 clobbers : clobber (Comma clobber)*;
 clobber : Tilde LBrace clobberType RBrace;
 
