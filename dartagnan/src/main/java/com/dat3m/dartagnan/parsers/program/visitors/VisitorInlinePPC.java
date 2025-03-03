@@ -49,16 +49,17 @@ public class VisitorInlinePPC extends InlinePPCBaseVisitor<Object> {
     // Returns the size of the return register
     // null / void -> 0
     // i32 / bool -> 1
-    // aggregateType -> the size of the aggregate
-    private int getSizeOfReturnRegister() {
+    // aggregateType -> the amount of asm registers which are referred by the return registers
+    // e.g. { i32, i32 } -> 2
+    private int getNumASMReturnRegisters() {
         if (this.returnRegister == null) {
             return 0;
         }
         Type returnType = this.returnRegister.getType();
         if (returnType instanceof IntegerType || returnType instanceof BooleanType) {
             return 1;
-        } else if (returnType instanceof AggregateType at) {
-            return at.getTypeOffsets().size();
+        } else if (isReturnRegisterAggregate()) {
+            return ((AggregateType) returnType).getTypeOffsets().size();
         } else if (returnType instanceof VoidType) {
             return 0;
         } else {
@@ -68,12 +69,13 @@ public class VisitorInlinePPC extends InlinePPCBaseVisitor<Object> {
 
     // Tells if the returnRegister is an AggregateType
     private boolean isReturnRegisterAggregate() {
-        return getSizeOfReturnRegister() > 1;
+        Type returnRegisterType = this.returnRegister.getType();
+        return returnRegisterType != null && returnRegisterType instanceof AggregateType;
     }
 
     // Tells if the registerID is mapped to the returnRegister
     private boolean isPartOfReturnRegister(int registerID) {
-        return registerID < getSizeOfReturnRegister();
+        return registerID < getNumASMReturnRegisters();
     }
 
     // Given a string of a label, it either creates a new label, or returns the existing one if it was already defined
@@ -89,6 +91,8 @@ public class VisitorInlinePPC extends InlinePPCBaseVisitor<Object> {
     // Given the registerID of the register e.g. $2 -> registerID = 2
     // returns the type of the llvm register it is mapped to by the clobbers
     // if it is referencing the return register, return its type.
+    // As saif in the introduction, we are sure that an asm register is going to refer to a llvm one
+    // by the fact that the input is well formed.
     private Type getLlvmRegisterTypeGivenAsmRegisterID(int registerID) {
         Type registerType;
         if (isPartOfReturnRegister(registerID)) {
@@ -101,7 +105,7 @@ public class VisitorInlinePPC extends InlinePPCBaseVisitor<Object> {
             }
         } else {
             // registerID is mapped to a register in args. To get the correct position in args we need to shift the id by the size of the return register
-            registerType = argsRegisters.get(registerID - getSizeOfReturnRegister()).getType();
+            registerType = argsRegisters.get(registerID - getNumASMReturnRegisters()).getType();
         }
         return registerType;
     }

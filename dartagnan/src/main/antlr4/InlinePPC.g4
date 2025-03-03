@@ -1,6 +1,6 @@
 grammar InlinePPC;
 
-options {tokenVocab=InlineAsmLexer;}
+options {tokenVocab=InlinePPCLexer;}
 
 asm                                 
     :

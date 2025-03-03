@@ -55,9 +55,6 @@ DataMemoryBarrier           : 'dmb';
 DataSynchronizationBarrier  : 'dsb';
 FenceArmOpt                 : 'sy' | 'st' | 'ish' | 'ishld' | 'ishst';
 X86Fence                    : 'mfence';
-RISCVFence                  : 'fence';
-TsoFence                    : 'tso';
-PPCFence                    : 'sync' | 'isync' | 'lwsync';
 
 
 LetterInline                : [a-z]+;
