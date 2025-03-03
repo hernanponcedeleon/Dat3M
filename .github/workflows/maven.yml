@@ -40,7 +40,7 @@ jobs:
       - name: Set DAT3M_OUTPUT
         run: echo "DAT3M_OUTPUT=$(echo $DAT3M_HOME)/output" >> $GITHUB_ENV
 
-      - name: InlineAsm tests
+      - name: Asm tests
         run: mvn test -Dtest="com/dat3m/dartagnan/inlineAsm/**/*" -f dartagnan/pom.xml
 
 
