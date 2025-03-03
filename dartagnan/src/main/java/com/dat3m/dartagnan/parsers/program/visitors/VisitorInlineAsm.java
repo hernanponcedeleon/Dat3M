@@ -124,7 +124,7 @@ public class VisitorInlineAsm extends InlineAsmBaseVisitor<Object> {
     // i32 / bool -> 1
     // aggregateType -> the amount of registers which are referred by the return registers
     // e.g. { i32, i32 } -> 2
-    private int getNumAsmRegsFromReturnReg() {
+    private int getNumASMReturnRegisters() {
         if (this.returnRegister == null) {
             return 0;
         }
