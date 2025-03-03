@@ -1,0 +1,44 @@
+; @Input: %12={100, 7, {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59}}
+; @Output: forall (%12[0] == 100 and %12[1] == 7)
+; @Config: 1, 1, 1
+; SPIR-V
+; Version: 1.0
+; Generator: Khronos LLVM/SPIR-V Translator; 14
+; Bound: 23
+; Schema: 0
+               OpCapability Addresses
+               OpCapability Kernel
+               OpCapability Int8
+          %1 = OpExtInstImport "OpenCL.std"
+               OpMemoryModel Physical32 OpenCL
+               OpEntryPoint Kernel %4 "test"
+               OpSource OpenCL_C 200000
+               OpName %struct_A "struct.A"
+               OpDecorate %16 Alignment 1
+               OpDecorate %14 Alignment 4
+               OpDecorate %12 Alignment 64
+       %uint = OpTypeInt 32 0
+      %uchar = OpTypeInt 8 0
+    %uint_59 = OpConstant %uint 59
+     %uint_0 = OpConstant %uint 0
+     %uint_1 = OpConstant %uint 1
+       %void = OpTypeVoid
+          %3 = OpTypeFunction %void
+%_arr_uchar_uint_59 = OpTypeArray %uchar %uint_59
+   %struct_A = OpTypeStruct %uint %uchar %_arr_uchar_uint_59
+%_ptr_Function_struct_A = OpTypePointer Function %struct_A
+%_ptr_Function_uint = OpTypePointer Function %uint
+%_ptr_Function_uchar = OpTypePointer Function %uchar
+          %4 = OpFunction %void DontInline %3
+          %5 = OpLabel
+         %12 = OpVariable %_ptr_Function_struct_A Function
+         %14 = OpVariable %_ptr_Function_uint Function
+         %16 = OpVariable %_ptr_Function_uchar Function
+         %18 = OpInBoundsPtrAccessChain %_ptr_Function_uint %12 %uint_0 %uint_0
+         %19 = OpLoad %uint %18 Aligned 64
+               OpStore %14 %19 Aligned 4
+         %21 = OpInBoundsPtrAccessChain %_ptr_Function_uchar %12 %uint_0 %uint_1
+         %22 = OpLoad %uchar %21 Aligned 4
+               OpStore %16 %22 Aligned 1
+               OpReturn
+               OpFunctionEnd

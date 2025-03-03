@@ -114,7 +114,7 @@ public class MemoryTransformer extends ExprTransformer {
         Map<MemoryObject, MemoryObject> mapping = scopeMapping.get(scopeDepth);
         if (!mapping.containsKey(memObj)) {
             MemoryObject copy = memObj instanceof VirtualMemoryObject
-                    ? program.getMemory().allocateVirtual(memObj.getKnownSize(), true, null)
+                    ? program.getMemory().allocateVirtual(memObj.getKnownSize(), true, expressions.getDefaultAlignment(), null)
                     : program.getMemory().allocate(memObj.getKnownSize());
             copy.setName(makeVariableName(scopeDepth, memObj.getName()));
             for (int offset : memObj.getInitializedFields()) {

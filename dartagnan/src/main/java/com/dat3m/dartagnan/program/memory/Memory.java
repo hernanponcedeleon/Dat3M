@@ -16,7 +16,6 @@ public class Memory {
     private final ArrayList<MemoryObject> objects = new ArrayList<>();
     private final Type ptrType = TypeFactory.getInstance().getPointerType();
     private final IntegerType archType = TypeFactory.getInstance().getArchType();
-    private final Expression defaultAlignment = ExpressionFactory.getInstance().makeValue(8, archType);
 
     private int nextIndex = 1;
 
@@ -24,6 +23,7 @@ public class Memory {
     public MemoryObject allocate(int size) {
         Preconditions.checkArgument(size > 0, "Illegal allocation. Size must be positive");
         final Expression sizeExpr = ExpressionFactory.getInstance().makeValue(size, archType);
+        final Expression defaultAlignment = ExpressionFactory.getInstance().getDefaultAlignment();
         final MemoryObject memoryObject = new MemoryObject(nextIndex++, sizeExpr, defaultAlignment, null, ptrType);
         objects.add(memoryObject);
         return memoryObject;
@@ -38,10 +38,11 @@ public class Memory {
         return memoryObject;
     }
 
-    public VirtualMemoryObject allocateVirtual(int size, boolean generic, VirtualMemoryObject alias) {
+    public VirtualMemoryObject allocateVirtual(int size, boolean generic, Expression alignment,
+                                               VirtualMemoryObject alias) {
         Preconditions.checkArgument(size > 0, "Illegal allocation. Size must be positive");
         final Expression sizeExpr = ExpressionFactory.getInstance().makeValue(size, archType);
-        final VirtualMemoryObject address = new VirtualMemoryObject(nextIndex++, sizeExpr, defaultAlignment,
+        final VirtualMemoryObject address = new VirtualMemoryObject(nextIndex++, sizeExpr, alignment,
                 generic, alias, ptrType);
         objects.add(address);
         return address;
@@ -53,8 +54,8 @@ public class Memory {
 
     /**
      * Accesses all shared variables.
-     * @return
-     * Copy of the complete collection of allocated objects.
+     *
+     * @return Copy of the complete collection of allocated objects.
      */
     public ImmutableSet<MemoryObject> getObjects() {
         return ImmutableSet.copyOf(objects);
