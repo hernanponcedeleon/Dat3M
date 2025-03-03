@@ -148,7 +148,7 @@ public class VisitorInlineAsm extends InlineAsmBaseVisitor<Object> {
 
     // Tells if the registerID is mapped to the returnRegister
     private boolean isPartOfReturnRegister(int registerID) {
-        return registerID < getNumAsmRegsFromReturnReg();
+        return registerID < getNumASMReturnRegisters();
     }
 
     // Given a string of a label, it either creates a new label, or returns the existing one if it was already defined
@@ -178,7 +178,7 @@ public class VisitorInlineAsm extends InlineAsmBaseVisitor<Object> {
             }
         } else {
             // registerID is mapped to a register in args. To get the correct position in args we need to shift the id by the size of the return register
-            registerType = argsRegisters.get(registerID - getNumAsmRegsFromReturnReg()).getType();
+            registerType = argsRegisters.get(registerID - getNumASMReturnRegisters()).getType();
         }
         return registerType;
     }
@@ -442,12 +442,12 @@ public class VisitorInlineAsm extends InlineAsmBaseVisitor<Object> {
                 if (asmRegister == null) {
                     continue;
                 }
-                Expression llvmRegister = argsRegisters.get(i - getNumAsmRegsFromReturnReg());
+                Expression llvmRegister = argsRegisters.get(i - getNumASMReturnRegisters());
                 inputAssignments.add(EventFactory.newLocal(asmRegister, llvmRegister));
             }
             if (isConstraintNumeric(constraint)) {
                 int constraintValue = Integer.parseInt(constraint.getText());
-                inputAssignments.add(EventFactory.newLocal(asmRegisters.get(constraintValue), argsRegisters.get(i - getNumAsmRegsFromReturnReg())));
+                inputAssignments.add(EventFactory.newLocal(asmRegisters.get(constraintValue), argsRegisters.get(i - getNumASMReturnRegisters())));
             }
         }
         return null;
