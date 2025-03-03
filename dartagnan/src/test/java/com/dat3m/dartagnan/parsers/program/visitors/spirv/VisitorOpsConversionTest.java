@@ -105,6 +105,23 @@ public class VisitorOpsConversionTest {
     }
 
     @Test
+    public void opConvertUToPtrValid() {
+        // given
+        String input = "%value2 = OpConvertUToPtr %_ptr_Function_uint %value1";
+        builder.mockIntType("%uint", 32);
+        builder.mockPtrType("%_ptr_Function_uint", "%uint", "Function");
+        builder.mockConstant("%value1", "%uint", 1);
+        builder.mockFunctionStart(true);
+
+        // when
+        visit(input);
+
+        // then
+        Expression reg = builder.getExpression("%value2");
+        assertEquals(builder.getType("%_ptr_Function_uint"), reg.getType());
+    }
+
+    @Test
     public void opUConvertValidConstant() {
         // given
         String input = "%value2 = OpUConvert %uint64 %value1";

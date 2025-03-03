@@ -1,0 +1,70 @@
+; @Input: %output = {0, 0}
+; @Output: forall (%output[0] == 5 and %output[1] == 11)
+; @Config: 1, 1, 1
+; SPIR-V
+; Version: 1.0
+; Schema: 0
+               OpCapability Addresses
+               OpCapability Kernel
+               OpCapability GenericPointer
+          %1 = OpExtInstImport "OpenCL.std"
+               OpMemoryModel Physical32 OpenCL
+               OpEntryPoint Kernel %main "main"
+               OpSource OpenCL_C 200000
+
+               OpDecorate %aligned_data Alignment 16
+
+       %void = OpTypeVoid
+       %func = OpTypeFunction %void
+       %uint = OpTypeInt 32 0
+
+     %uint_0 = OpConstant %uint 0
+     %uint_1 = OpConstant %uint 1
+     %uint_2 = OpConstant %uint 2
+     %uint_3 = OpConstant %uint 3
+     %uint_4 = OpConstant %uint 4
+     %uint_5 = OpConstant %uint 5
+     %uint_6 = OpConstant %uint 6
+     %uint_7 = OpConstant %uint 7
+     %uint_8 = OpConstant %uint 8
+     %uint_9 = OpConstant %uint 9
+    %uint_10 = OpConstant %uint 10
+    %uint_11 = OpConstant %uint 11
+
+     %v3uint = OpTypeVector %uint 3
+%_arr2_v3uint = OpTypeArray %v3uint %uint_2
+%output_type = OpTypeRuntimeArray %uint
+
+  %ptr_uint = OpTypePointer CrossWorkgroup %uint
+%_ptr_CrossWorkgroup__arr2_v3uint = OpTypePointer CrossWorkgroup %_arr2_v3uint
+%_ptr_CrossWorkgroup_v3uint = OpTypePointer CrossWorkgroup %v3uint
+ %ptr_output = OpTypePointer CrossWorkgroup %output_type
+
+       %arr1 = OpConstantComposite %v3uint %uint_0 %uint_1 %uint_2
+       %arr2 = OpConstantComposite %v3uint %uint_3 %uint_4 %uint_5
+       %arr3 = OpConstantComposite %v3uint %uint_6 %uint_7 %uint_8
+       %arr4 = OpConstantComposite %v3uint %uint_9 %uint_10 %uint_11
+     %value1 = OpConstantComposite %_arr2_v3uint %arr1 %arr2
+     %value2 = OpConstantComposite %_arr2_v3uint %arr3 %arr4
+
+%aligned_data = OpVariable %_ptr_CrossWorkgroup__arr2_v3uint CrossWorkgroup %value1
+%normal_data = OpVariable %_ptr_CrossWorkgroup__arr2_v3uint CrossWorkgroup %value2
+     %output = OpVariable %ptr_output CrossWorkgroup
+
+       %main = OpFunction %void None %func
+      %label = OpLabel
+
+   %output_0 = OpAccessChain %ptr_uint %output %uint_0
+   %output_1 = OpAccessChain %ptr_uint %output %uint_1
+
+ %aligned_12 = OpInBoundsAccessChain %ptr_uint %aligned_data %uint_1 %uint_2
+  %normal_12 = OpInBoundsAccessChain %ptr_uint %normal_data %uint_1 %uint_2
+
+         %v0 = OpLoad %uint %aligned_12
+         %v1 = OpLoad %uint %normal_12
+
+               OpStore %output_0 %v0
+               OpStore %output_1 %v1
+
+               OpReturn
+               OpFunctionEnd

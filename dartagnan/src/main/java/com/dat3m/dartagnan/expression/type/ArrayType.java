@@ -6,10 +6,20 @@ public class ArrayType implements Type {
 
     private final Type elementType;
     private final int numElements;
+    private final int paddingStart;
 
     ArrayType(Type elementType, int numElements) {
+        this(elementType, numElements, numElements);
+    }
+
+    ArrayType(Type elementType, int numElements, int paddingStart) {
         this.elementType = elementType;
         this.numElements = numElements;
+        this.paddingStart = paddingStart;
+    }
+
+    public int getPaddingStart() {
+        return paddingStart;
     }
 
     // NOTE: We use empty arrays to represent unknown size.
