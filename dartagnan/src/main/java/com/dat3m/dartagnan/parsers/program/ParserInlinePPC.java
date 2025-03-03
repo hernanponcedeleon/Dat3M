@@ -20,15 +20,10 @@ import com.dat3m.dartagnan.program.event.Event;
 
 public class ParserInlinePPC {
 
-    private VisitorInlinePPC visitor;
-    private final Function llvmFunction;
-    private final Register returnRegister;
-    private final ArrayList<Expression> llvmArguments;
+    private final VisitorInlinePPC visitor;
 
-    public ParserInlinePPC(Function function, Register returnRegister, ArrayList<Expression> llvmArguments) {
-        this.llvmFunction = function;
-        this.returnRegister = returnRegister;
-        this.llvmArguments = llvmArguments;
+    public ParserInlinePPC(Function llvmFunction, Register returnRegister, ArrayList<Expression> llvmArguments) {
+        this.visitor = new VisitorInlinePPC(llvmFunction, returnRegister, llvmArguments);
     }
 
     public List<Event> parse(CharStream charStream) throws ParsingException, ProgramProcessingException {
@@ -41,7 +36,6 @@ public class ParserInlinePPC {
         parser.removeErrorListeners(); // Remove default listeners
         parser.addErrorListener(new UnrecognizedTokenListener());
         ParserRuleContext parserEntryPoint = parser.asm();
-        visitor = new VisitorInlinePPC(this.llvmFunction,this.returnRegister, this.llvmArguments);
         return (List<Event>) parserEntryPoint.accept(visitor);
     }
 }

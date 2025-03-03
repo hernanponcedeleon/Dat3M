@@ -43,6 +43,7 @@ import com.dat3m.dartagnan.exception.ProgramProcessingException;
 import com.dat3m.dartagnan.parsers.program.ParserInlineAsm;
 import com.dat3m.dartagnan.parsers.program.ParserInlinePPC;
 import com.dat3m.dartagnan.parsers.program.ParserInlineRISCV;
+import com.dat3m.dartagnan.parsers.program.ParserInlineX86;
 import static com.dat3m.dartagnan.program.event.EventFactory.*;
 import static com.dat3m.dartagnan.program.event.EventFactory.Llvm.newCompareExchange;
 import static com.google.common.base.Preconditions.checkState;
@@ -388,12 +389,42 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
             // see https://llvm.org/docs/LangRef.html#inline-assembler-expressions
             //FIXME ignore side effects of inline assembly
             List<Event> events = new ArrayList<>();
+            // try every possible visitor that we have 
             try{
                 events = parser.parse(charStream);
             } catch (ParsingException e){
                 logger.warn("Found unrecognized token for inline assembly : '{}'. Setting non deterministic value ", e.getMessage());
                 if(resultRegister != null){
-                    events.add(EventFactory.Svcomp.newNonDetChoice(resultRegister));
+                    events.add(EventFactory.newLocal(resultRegister, program.newConstant(resultRegister.getType())));
+                }
+            } catch (ParsingException armParsingException){
+                try {
+                    // we have to generate the stream again as the parser consumes it
+                    CharStream charStream = CharStreams.fromString(asmCode);
+                    ParserInlineRISCV parserRISCV = new ParserInlineRISCV(function, resultRegister, arguments);
+                    events = parserRISCV.parse(charStream);
+                } catch (ProgramProcessingException riscvProgramProcessingException){
+                    logger.warn("Support for inline assembly instruction '{}' is not available. Setting non deterministic value ", riscvProgramProcessingException.getMessage());
+                    if(resultRegister != null){
+                        events.add(EventFactory.newLocal(resultRegister, program.newConstant(resultRegister.getType())));
+                    }
+                } catch (ParsingException riscvParsingException) {
+                    try {
+                        CharStream charStream = CharStreams.fromString(asmCode);
+                        ParserInlinePPC parserPPC = new ParserInlinePPC(function, resultRegister, arguments);
+                        events = parserPPC.parse(charStream);
+                    } catch (ProgramProcessingException ppcProgramProcessingException){
+                        logger.warn("Support for inline assembly instruction '{}' is not available. Setting non deterministic value ", ppcProgramProcessingException.getMessage());
+                        if(resultRegister != null){
+                            events.add(EventFactory.newLocal(resultRegister, program.newConstant(resultRegister.getType())));
+                        }
+                    } catch (ParsingException ppcParsingException) {
+                        logger.warn("Found unrecognized token for inline assembly : '{}'. Setting non deterministic value ", ppcParsingException.getMessage());
+                        // TODO ADD x86 Parser
+                        if(resultRegister != null){
+                            events.add(EventFactory.newLocal(resultRegister, program.newConstant(resultRegister.getType())));
+                        }
+                    } 
                 }
             }
             if(!events.isEmpty()){

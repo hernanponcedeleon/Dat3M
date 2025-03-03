@@ -7,11 +7,11 @@ asm
     (Quot(asmInstrEntries)*Quot)Comma (Quot(asmMetadataEntries) Quot) EOF?
 ;
 
-asmInstrEntries : EndInstruction?((armInstr | x86Instr )(EndInstruction | Semi)*);
+asmInstrEntries : EndInstruction?( instr (EndInstruction | Semi)*);
 asmMetadataEntries : (constraint Comma)* clobbers;
 
 
-armInstr 
+instr 
     : load
     | loadAcquire
     | loadExclusive
@@ -37,7 +37,6 @@ armInstr
     | yieldtask
     | armFence
 ;
-x86Instr : x86Fence;
 
 // rules divised like this in order to generate single visitors
 load : Load register Comma register;
@@ -66,8 +65,6 @@ yieldtask : YieldTask;
 
 //fences
 armFence : (DataMemoryBarrier | DataSynchronizationBarrier) FenceArmOpt;
-
-x86Fence : X86Fence;
 
 constraint : outputOpAssign | memoryAddress | inputOpGeneralReg | overlapInOutRegister | pointerToMemoryLocation;
 
