@@ -32,6 +32,8 @@ import static com.google.common.base.Preconditions.checkState;
 //      Register = Type call asm sideeffect 'asm code', 'constraints, clobbers' ('args')
 // We call "asm registers" the ones appearing inside 'asm code'.
 // We call "llvm registers" the ones passed in 'args' (i.e. the function parameters) plus Register.
+// The asm registers must only refer to the llvm registers and the return register. Otherwise, the inline assembly is malformed.
+// We therefore assume the input to be well formed.
 // The "clobbers" helps the compiler understand if the inline asm code is going to set conditional flags, perform memory operation and so on.
 // Examples are ~{memory}, ~{flags}, ...
 // The constraints tell us how to map asm registers to LLVM ones.
@@ -120,8 +122,9 @@ public class VisitorInlineAsm extends InlineAsmBaseVisitor<Object> {
     // Returns the size of the return register
     // null / void -> 0
     // i32 / bool -> 1
-    // aggregateType -> the size of the aggregate
-    private int getSizeOfReturnRegister() {
+    // aggregateType -> the amount of registers which are referred by the return registers
+    // e.g. { i32, i32 } -> 2
+    private int getNumAsmRegsFromReturnReg() {
         if (this.returnRegister == null) {
             return 0;
         }
@@ -145,7 +148,7 @@ public class VisitorInlineAsm extends InlineAsmBaseVisitor<Object> {
 
     // Tells if the registerID is mapped to the returnRegister
     private boolean isPartOfReturnRegister(int registerID) {
-        return registerID < getSizeOfReturnRegister();
+        return registerID < getNumAsmRegsFromReturnReg();
     }
 
     // Given a string of a label, it either creates a new label, or returns the existing one if it was already defined
@@ -161,6 +164,8 @@ public class VisitorInlineAsm extends InlineAsmBaseVisitor<Object> {
     // Given the registerID of the register e.g. $2 -> registerID = 2
     // returns the type of the llvm register it is mapped to by the clobbers
     // if it is referencing the return register, return its type.
+    // As saif in the introduction, we are sure that an asm register is going to refer to a llvm one
+    // by the fact that the input is well formed.
     private Type getLlvmRegisterTypeGivenAsmRegisterID(int registerID) {
         Type registerType;
         if (isPartOfReturnRegister(registerID)) {
@@ -173,7 +178,7 @@ public class VisitorInlineAsm extends InlineAsmBaseVisitor<Object> {
             }
         } else {
             // registerID is mapped to a register in args. To get the correct position in args we need to shift the id by the size of the return register
-            registerType = argsRegisters.get(registerID - getSizeOfReturnRegister()).getType();
+            registerType = argsRegisters.get(registerID - getNumAsmRegsFromReturnReg()).getType();
         }
         return registerType;
     }
@@ -437,12 +442,12 @@ public class VisitorInlineAsm extends InlineAsmBaseVisitor<Object> {
                 if (asmRegister == null) {
                     continue;
                 }
-                Expression llvmRegister = argsRegisters.get(i - getSizeOfReturnRegister());
+                Expression llvmRegister = argsRegisters.get(i - getNumAsmRegsFromReturnReg());
                 inputAssignments.add(EventFactory.newLocal(asmRegister, llvmRegister));
             }
             if (isConstraintNumeric(constraint)) {
                 int constraintValue = Integer.parseInt(constraint.getText());
-                inputAssignments.add(EventFactory.newLocal(asmRegisters.get(constraintValue), argsRegisters.get(i - getSizeOfReturnRegister())));
+                inputAssignments.add(EventFactory.newLocal(asmRegisters.get(constraintValue), argsRegisters.get(i - getNumAsmRegsFromReturnReg())));
             }
         }
         return null;
