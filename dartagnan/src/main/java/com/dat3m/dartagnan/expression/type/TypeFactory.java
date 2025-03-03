@@ -1,5 +1,7 @@
 package com.dat3m.dartagnan.expression.type;
 
+import com.dat3m.dartagnan.expression.Expression;
+import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.Type;
 import com.dat3m.dartagnan.utils.Normalizer;
 import com.google.common.math.IntMath;
@@ -32,6 +34,10 @@ public final class TypeFactory {
     //TODO make this part of the program.
     public static TypeFactory getInstance() {
         return instance;
+    }
+
+    public Expression getDefaultAlignment() {
+        return ExpressionFactory.getInstance().makeValue(getMemorySizeInBytes(getArchType()), getArchType());
     }
 
     public BooleanType getBooleanType() {
@@ -115,6 +121,13 @@ public final class TypeFactory {
     public ArrayType getArrayType(Type element, int size) {
         checkArgument(0 <= size, "Negative element count in array.");
         return typeNormalizer.normalize(new ArrayType(element, size));
+    }
+
+    public ArrayType getArrayType(Type element, int size, int paddingStart) {
+        checkArgument(0 <= size, "Negative element count in array.");
+        checkArgument(0 <= paddingStart, "Negative padding start index in array.");
+        checkArgument(paddingStart <= size, "Padding start index %s is greater than array size %s", paddingStart, size);
+        return typeNormalizer.normalize(new ArrayType(element, size, paddingStart));
     }
 
     public IntegerType getArchType() {
@@ -262,7 +275,7 @@ public final class TypeFactory {
         }
         if (staticType instanceof ArrayType aStaticType && runtimeType instanceof ArrayType aRuntimeType) {
             int countStatic = aStaticType.getNumElements();
-            int countRuntime = aRuntimeType.getNumElements();
+            int countRuntime = Math.min(aRuntimeType.getPaddingStart(), aRuntimeType.getNumElements());
             if (countStatic != countRuntime && (countRuntime != -1 || countStatic <= 0)) {
                 return false;
             }
