@@ -27,7 +27,6 @@ usage () {
 }
 
 while [ "$#" != "0" ]; do
-    #echo ">> $@"
     case "$1" in
         -cat)
             shift
@@ -53,7 +52,7 @@ while [ "$#" != "0" ]; do
 done
 
 # cat argument is mandatory. If the argument is not a file, we guess it to be
-# a file in DAT3M_HOME with .cat suffix.
+# a file in DAT3M_HOME/cat with .cat suffix.
 if [ -z "${cat}" ]; then
     echo "error: no cat file specified"
     exit 1
@@ -61,7 +60,7 @@ elif [ ! -f "${cat}" ]; then
     cat="${DAT3M_HOME}/cat/$cat".cat
 fi
 
-# if target is not given, we try to guess the target
+# if target is not given, we try to guess the target from the cat file
 if [ -z "${target}" ]; then
 	case "$cat" in
 		*aarch64*)
