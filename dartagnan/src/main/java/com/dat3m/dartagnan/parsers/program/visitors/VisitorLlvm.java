@@ -21,6 +21,7 @@ import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
+
 import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.tree.TerminalNode;
 import org.apache.logging.log4j.LogManager;
@@ -30,6 +31,11 @@ import java.math.BigInteger;
 import java.util.*;
 import java.util.stream.Collectors;
 
+
+import org.antlr.v4.runtime.CharStream;
+import org.antlr.v4.runtime.CharStreams;
+
+import com.dat3m.dartagnan.parsers.program.ParserInlineAsm;
 import static com.dat3m.dartagnan.program.event.EventFactory.*;
 import static com.dat3m.dartagnan.program.event.EventFactory.Llvm.newCompareExchange;
 import static com.google.common.base.Preconditions.checkState;
@@ -372,13 +378,20 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
 
         if (ctx.inlineAsm() != null) {
             // see https://llvm.org/docs/LangRef.html#inline-assembler-expressions
-            //TODO add support form inline assembly
             //FIXME ignore side effects of inline assembly
-            if (resultRegister != null) {
-                block.events.add(newLocal(resultRegister, program.newConstant(returnType)));
-                logger.warn(String.format("Interpreting inline assembly as an unconstrained value:  %s.", ctx.inlineAsm().getText()));
-            } else {
-                ctx.inlineAsm().accept(this);
+            CharStream charStream = CharStreams.fromString(ctx.inlineAsm().inlineAsmBody().getText());
+            ParserInlineAsm parser = new ParserInlineAsm(function, resultRegister, arguments);
+            List<Event> events = new ArrayList<>();
+            try{
+                events = parser.parse(charStream);
+            } catch (ParsingException e){
+                logger.warn("Found unrecognized token for inline assembly : '{}'. Setting non deterministic value ", e.getMessage());
+                if(resultRegister != null){
+                    events.add(EventFactory.newLocal(resultRegister, program.newConstant(resultRegister.getType())));
+                }
+            }
+            if(!events.isEmpty()){
+                block.events.addAll(events);
             }
             return resultRegister;
         }
@@ -484,51 +497,8 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
         return null;
     }
 
-    @Override 
-    public Expression visitInlineAsm(InlineAsmContext ctx) {
-        final String asm = parseQuotedString(ctx.StringLit(0));
-        final Event fence = switch(asm) {
-            // Compiler barrier, do nothing
-            // TODO update when we add support for interrupts
-            case "" -> null;
-            // X86
-            case "mfence" -> X86.newMemoryFence();
-            // Aarch64
-            case "dmb sy" -> AArch64.DMB.newSYBarrier();
-            case "dmb ish" -> AArch64.DMB.newISHBarrier();
-            case "dmb ishld" -> AArch64.DMB.newISHLDBarrier();
-            case "dmb ishst" -> AArch64.DMB.newISHSTBarrier();
-            case "dsb sy" -> AArch64.DSB.newSYBarrier();
-            case "dsb ish" -> AArch64.DSB.newISHBarrier();
-            case "dsb ishld" -> AArch64.DSB.newISHLDBarrier();
-            case "dsb ishst" -> AArch64.DSB.newISHSTBarrier();
-            // PPC
-            case "isync" -> Power.newISyncBarrier();
-            case "sync" -> Power.newSyncBarrier();
-            case "lwsync" -> Power.newLwSyncBarrier();
-            // RISCV
-            case "fence r,r" -> RISCV.newRRFence();
-            case "fence r,w" -> RISCV.newRWFence();
-            case "fence r,rw" -> RISCV.newRRWFence();
-            case "fence w,r" -> RISCV.newWRFence();
-            case "fence w,w" -> RISCV.newWWFence();
-            case "fence w,rw" -> RISCV.newWRWFence();
-            case "fence rw,r" -> RISCV.newRWRFence();
-            case "fence rw,w" -> RISCV.newRWWFence();
-            case "fence rw,rw" -> RISCV.newRWRWFence();
-            case "fence tso" -> RISCV.newTsoFence();
-            case "fence i" -> RISCV.newSynchronizeFence();
-            default -> throw new ParsingException(String.format("Encountered unsupported inline assembly:  %s.", asm));
-        };
-        if(fence != null) {
-            block.events.add(fence);
-        }
-        return null;
-    }
-
     // ----------------------------------------------------------------------------------------------------------------
     // Instructions producing a value
-
     @Override
     public Expression visitAllocaInst(AllocaInstContext ctx) {
         // see https://llvm.org/docs/LangRef.html#alloca-instruction

@@ -20,6 +20,7 @@
 
 grammar LLVMIR;
 
+
 compilationUnit: topLevelEntity* EOF;
 
 targetDef: targetDataLayout | targetTriple;
@@ -292,9 +293,12 @@ value:
 	constant
 	// %42 %foo
 	| LocalIdent;
+
 inlineAsm:
 	'asm' sideEffect = 'sideeffect'? alignStackTok = 'alignstack'? intelDialect = 'inteldialect'?
-		unwind = 'unwind'? StringLit ',' StringLit;
+			unwind = 'unwind'? inlineAsmBody;
+inlineAsmBody : StringLit ',' StringLit;
+
 mdString: '!' StringLit;
 mdFieldOrInt: IntLit | mdField;
 diSPFlag: IntLit | DispFlag;
@@ -1346,6 +1350,8 @@ fragment GlobalId: '@' Id;
 fragment LocalName: '%' (Name | QuotedString);
 fragment LocalId: '%' Id;
 fragment QuotedString: '"' (~["\r\n])* '"';
+
+
 Comment: ';' .*? '\r'? '\n' -> channel(HIDDEN);
 WhiteSpace: [ \t\n\r]+ -> skip;
 IntLit: '-'? DecimalDigit+ | IntHexLit;
