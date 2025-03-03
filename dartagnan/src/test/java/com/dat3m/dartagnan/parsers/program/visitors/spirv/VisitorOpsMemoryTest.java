@@ -222,6 +222,37 @@ public class VisitorOpsMemoryTest {
     }
 
     @Test
+    public void testAlignedVariable() {
+        // given
+        String input = """
+            %v1 = OpVariable %int_ptr Uniform
+            %v2 = OpVariable %arr_ptr Uniform
+            """;
+
+        builder.mockIntType("%int", 128);
+        builder.mockVectorType("%arr", "%int", 3);
+        builder.mockPtrType("%int_ptr", "%int", "Uniform");
+        builder.mockPtrType("%arr_ptr", "%arr", "Uniform");
+        builder.mockPointerAlignment("%v1", 32);
+        builder.mockPointerAlignment("%v2", 64);
+
+
+        // when
+        parse(input);
+
+        // then
+        ScopedPointerVariable v1 = (ScopedPointerVariable) builder.getExpression("%v1");
+        assertNotNull(v1);
+        assertEquals(32, v1.getAddress().getKnownAlignment());
+        assertEquals(256, ((IntegerType) v1.getInnerType()).getBitWidth());
+        ScopedPointerVariable v2 = (ScopedPointerVariable) builder.getExpression("%v2");
+        assertNotNull(v2);
+        assertEquals(64, TypeFactory.getInstance().getMemorySizeInBytes(v2.getInnerType()));
+        assertEquals(4, ((ArrayType) v2.getInnerType()).getNumElements());
+        assertEquals(3, ((ArrayType) v2.getInnerType()).getPaddingStart());
+    }
+
+    @Test
     public void testInitializedVariableConstant() {
         String input = """
                 %v1 = OpVariable %b_ptr Uniform %b_const

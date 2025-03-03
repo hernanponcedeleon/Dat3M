@@ -2,11 +2,16 @@ package com.dat3m.dartagnan.parsers.program.visitors.spirv;
 
 import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.expression.Expression;
+import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.Type;
-import com.dat3m.dartagnan.expression.type.*;
+import com.dat3m.dartagnan.expression.type.FunctionType;
+import com.dat3m.dartagnan.expression.type.ScopedPointerType;
+import com.dat3m.dartagnan.expression.type.TypeFactory;
+import com.dat3m.dartagnan.expression.type.VoidType;
 import com.dat3m.dartagnan.parsers.SpirvBaseVisitor;
 import com.dat3m.dartagnan.parsers.SpirvParser;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.builders.ProgramBuilder;
+import com.dat3m.dartagnan.parsers.program.visitors.spirv.decorations.Alignment;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.helpers.HelperInputs;
 import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.Register;
@@ -20,6 +25,7 @@ import com.dat3m.dartagnan.program.memory.ScopedPointerVariable;
 import java.util.*;
 import java.util.stream.IntStream;
 
+import static com.dat3m.dartagnan.parsers.program.visitors.spirv.decorations.DecorationType.ALIGNMENT;
 import static com.dat3m.dartagnan.program.event.EventFactory.newValueFunctionCall;
 import static com.dat3m.dartagnan.program.event.EventFactory.newVoidFunctionCall;
 
@@ -27,10 +33,12 @@ public class VisitorOpsFunction extends SpirvBaseVisitor<Void> {
 
     private static final int DEFAULT_INPUT_SIZE = 10;
     private static final TypeFactory types = TypeFactory.getInstance();
+    private static final ExpressionFactory expressions = ExpressionFactory.getInstance();
     private final Map<String, Function> forwardFunctions = new HashMap<>();
     private final Map<String, Set<FunctionCall>> forwardCalls = new HashMap<>();
     private final Map<String, Expression> parameters = new HashMap<>();
     private final ProgramBuilder builder;
+    private final Alignment alignment;
     private String currentId;
     private FunctionType currentType;
     private List<String> currentArgs;
@@ -38,6 +46,7 @@ public class VisitorOpsFunction extends SpirvBaseVisitor<Void> {
 
     public VisitorOpsFunction(ProgramBuilder builder) {
         this.builder = builder;
+        this.alignment = (Alignment) builder.getDecorationsBuilder().getDecoration(ALIGNMENT);
     }
 
     @Override
@@ -181,12 +190,15 @@ public class VisitorOpsFunction extends SpirvBaseVisitor<Void> {
     }
 
     private Expression createEntryPointParameter(String id, Type type) {
+        Integer alignmentNum = alignment.getValue(id);
+        Expression alignmentExpr = alignmentNum == null ?
+                types.getDefaultAlignment() : expressions.makeValue(alignmentNum, types.getArchType());
         Expression value = createEntryPointParameterValue(id, type);
         if (type instanceof ScopedPointerType pType) {
             String ptrId = HelperInputs.castPointerId(id);
             pType = types.getScopedPointerType(pType.getScopeId(), value.getType());
             ScopedPointerVariable pointer = builder.allocateScopedPointerVariable(
-                    ptrId, value, pType.getScopeId(), value.getType());
+                    ptrId, value, alignmentExpr, pType.getScopeId(), value.getType());
             builder.addExpression(ptrId, pointer);
             value = pointer.getAddress();
         }

@@ -1,0 +1,94 @@
+; @Input: %21={0, 0, 0, 0}
+; @Output: forall (%21[0] == 0 and %21[1] == 22 and %21[2] == 2 and %21[3] == 3)
+; @Config: 1, 1, 1
+; SPIR-V
+; Version: 1.0
+; Generator: Khronos LLVM/SPIR-V Translator; 14
+; Bound: 60
+; Schema: 0
+               OpCapability Addresses
+               OpCapability Kernel
+               OpCapability GenericPointer
+               OpCapability Int8
+          %1 = OpExtInstImport "OpenCL.std"
+               OpMemoryModel Physical32 OpenCL
+               OpEntryPoint Kernel %20 "manual_vs_struct"
+               OpSource OpenCL_C 200000
+               OpName %struct_struct1 "struct.struct1"
+               OpName %manual_vs_struct_s1 "manual_vs_struct.s1"
+               OpName %struct_struct2 "struct.struct2"
+               OpName %manual_vs_struct_s2 "manual_vs_struct.s2"
+               OpDecorate %manual_vs_struct_s2 Alignment 4
+               OpDecorate %24 Alignment 4
+               OpDecorate %manual_vs_struct_s1 Alignment 16
+       %uint = OpTypeInt 32 0
+      %uchar = OpTypeInt 8 0
+          %3 = OpUndef %uint
+          %5 = OpUndef %uchar
+    %uint_11 = OpConstant %uint 11
+     %uint_0 = OpConstant %uint 0
+     %uint_1 = OpConstant %uint 1
+    %uchar_1 = OpConstant %uchar 1
+     %uint_2 = OpConstant %uint 2
+    %uchar_3 = OpConstant %uchar 3
+    %uint_22 = OpConstant %uint 22
+    %uint_33 = OpConstant %uint 33
+     %uint_3 = OpConstant %uint 3
+%_arr_uchar_uint_11 = OpTypeArray %uchar %uint_11
+%struct_struct1 = OpTypeStruct %uint %uchar %_arr_uchar_uint_11
+%_ptr_Workgroup_struct_struct1 = OpTypePointer Workgroup %struct_struct1
+%struct_struct2 = OpTypeStruct %uchar %uint
+%_ptr_Workgroup_struct_struct2 = OpTypePointer Workgroup %struct_struct2
+       %void = OpTypeVoid
+%_ptr_CrossWorkgroup_uchar = OpTypePointer CrossWorkgroup %uchar
+         %19 = OpTypeFunction %void %_ptr_CrossWorkgroup_uchar
+%_ptr_Function__ptr_CrossWorkgroup_uchar = OpTypePointer Function %_ptr_CrossWorkgroup_uchar
+%_ptr_Workgroup_uint = OpTypePointer Workgroup %uint
+%_ptr_Workgroup_uchar = OpTypePointer Workgroup %uchar
+%_ptr_Generic_uint = OpTypePointer Generic %uint
+          %8 = OpUndef %_arr_uchar_uint_11
+         %10 = OpConstantComposite %struct_struct1 %3 %5 %8
+%manual_vs_struct_s1 = OpVariable %_ptr_Workgroup_struct_struct1 Workgroup %10
+         %14 = OpConstantComposite %struct_struct2 %5 %3
+%manual_vs_struct_s2 = OpVariable %_ptr_Workgroup_struct_struct2 Workgroup %14
+         %20 = OpFunction %void DontInline %19
+         %21 = OpFunctionParameter %_ptr_CrossWorkgroup_uchar
+         %22 = OpLabel
+         %24 = OpVariable %_ptr_Function__ptr_CrossWorkgroup_uchar Function
+               OpStore %24 %21 Aligned 4
+         %27 = OpInBoundsPtrAccessChain %_ptr_Workgroup_uint %manual_vs_struct_s1 %uint_0 %uint_0
+               OpStore %27 %uint_0 Aligned 16
+         %30 = OpInBoundsPtrAccessChain %_ptr_Workgroup_uchar %manual_vs_struct_s1 %uint_0 %uint_1
+               OpStore %30 %uchar_1 Aligned 4
+         %32 = OpInBoundsPtrAccessChain %_ptr_Workgroup_uint %manual_vs_struct_s2 %uint_0 %uint_1
+               OpStore %32 %uint_2 Aligned 4
+         %34 = OpInBoundsPtrAccessChain %_ptr_Workgroup_uchar %manual_vs_struct_s2 %uint_0 %uint_0
+               OpStore %34 %uchar_3 Aligned 4
+         %36 = OpInBoundsPtrAccessChain %_ptr_Workgroup_uint %manual_vs_struct_s1 %uint_0 %uint_0
+         %37 = OpInBoundsPtrAccessChain %_ptr_Workgroup_uint %36 %uint_1
+         %39 = OpPtrCastToGeneric %_ptr_Generic_uint %37
+               OpStore %39 %uint_22 Aligned 4
+         %41 = OpInBoundsPtrAccessChain %_ptr_Workgroup_uint %manual_vs_struct_s2 %uint_0 %uint_1
+         %42 = OpInBoundsPtrAccessChain %_ptr_Workgroup_uint %41 %uint_1
+         %43 = OpPtrCastToGeneric %_ptr_Generic_uint %42
+               OpStore %43 %uint_33 Aligned 4
+         %45 = OpLoad %uint %27 Aligned 16
+         %46 = OpUConvert %uchar %45
+         %47 = OpLoad %_ptr_CrossWorkgroup_uchar %24 Aligned 4
+         %48 = OpInBoundsPtrAccessChain %_ptr_CrossWorkgroup_uchar %47 %uint_0
+               OpStore %48 %46 Aligned 1
+         %49 = OpLoad %uchar %30 Aligned 4
+         %50 = OpLoad %_ptr_CrossWorkgroup_uchar %24 Aligned 4
+         %51 = OpInBoundsPtrAccessChain %_ptr_CrossWorkgroup_uchar %50 %uint_1
+               OpStore %51 %49 Aligned 1
+         %52 = OpLoad %uint %32 Aligned 4
+         %53 = OpUConvert %uchar %52
+         %54 = OpLoad %_ptr_CrossWorkgroup_uchar %24 Aligned 4
+         %55 = OpInBoundsPtrAccessChain %_ptr_CrossWorkgroup_uchar %54 %uint_2
+               OpStore %55 %53 Aligned 1
+         %56 = OpLoad %uchar %34 Aligned 4
+         %57 = OpLoad %_ptr_CrossWorkgroup_uchar %24 Aligned 4
+         %59 = OpInBoundsPtrAccessChain %_ptr_CrossWorkgroup_uchar %57 %uint_3
+               OpStore %59 %56 Aligned 1
+               OpReturn
+               OpFunctionEnd
