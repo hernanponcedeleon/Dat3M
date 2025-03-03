@@ -12,8 +12,8 @@ import com.dat3m.dartagnan.expression.type.AggregateType;
 import com.dat3m.dartagnan.expression.type.BooleanType;
 import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.expression.type.VoidType;
-import com.dat3m.dartagnan.parsers.InlinePPCBaseVisitor;
-import com.dat3m.dartagnan.parsers.InlinePPCParser;
+import com.dat3m.dartagnan.parsers.InlineX86BaseVisitor;
+import com.dat3m.dartagnan.parsers.InlineX86Parser;
 import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Event;
@@ -21,7 +21,7 @@ import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.event.core.Local;
 
-public class VisitorInlinePPC extends InlinePPCBaseVisitor<Object> {
+public class VisitorInlineX86 extends InlineX86BaseVisitor<Object> {
 
     private final List<Local> inputAssignments = new ArrayList<>();
     private final List<Event> asmInstructions = new ArrayList<>();
@@ -40,7 +40,7 @@ public class VisitorInlinePPC extends InlinePPCBaseVisitor<Object> {
     // map from RegisterID to the corresponding asm register
     private final HashMap<Integer, Register> asmRegisters = new HashMap<>();
 
-    public VisitorInlinePPC(Function llvmFunction, Register returnRegister, List<Expression> llvmArguments) {
+    public VisitorInlineX86(Function llvmFunction, Register returnRegister, List<Expression> llvmArguments) {
         this.llvmFunction = llvmFunction;
         this.returnRegister = returnRegister;
         this.argsRegisters = llvmArguments;
@@ -91,7 +91,7 @@ public class VisitorInlinePPC extends InlinePPCBaseVisitor<Object> {
     // Given the registerID of the register e.g. $2 -> registerID = 2
     // returns the type of the llvm register it is mapped to by the clobbers
     // if it is referencing the return register, return its type.
-    // We are sure that an asm register is going to refer to a llvm one.
+    // We are sure that an asm register is going to refer to a llvm one
     // by the fact that the input is well formed.
     private Type getLlvmRegisterTypeGivenAsmRegisterID(int registerID) {
         Type registerType;
@@ -115,7 +115,7 @@ public class VisitorInlinePPC extends InlinePPCBaseVisitor<Object> {
     }
 
     @Override
-    public List<Event> visitAsm(InlinePPCParser.AsmContext ctx) {
+    public List<Event> visitAsm(InlineX86Parser.AsmContext ctx) {
         visitChildren(ctx);
         List<Event> events = new ArrayList<>();
         events.addAll(asmInstructions);
@@ -123,15 +123,11 @@ public class VisitorInlinePPC extends InlinePPCBaseVisitor<Object> {
     }
 
     @Override
-    public Object visitPpcFence(InlinePPCParser.PpcFenceContext ctx) {
-        String barrier = ctx.PPCFence().getText();
+    public Object visitX86Fence(InlineX86Parser.X86FenceContext ctx) {
+        String barrier = ctx.X86Fence().getText();
         Event fence = switch (barrier) {
-            case "sync" ->
-                EventFactory.Power.newSyncBarrier();
-            case "isync" ->
-                EventFactory.Power.newISyncBarrier();
-            case "lwsync" ->
-                EventFactory.Power.newLwSyncBarrier();
+            case "mfence" ->
+                EventFactory.X86.newMemoryFence();
             default ->
                 throw new ParsingException("Barrier not implemented");
         };

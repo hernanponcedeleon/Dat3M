@@ -160,7 +160,7 @@ public class VisitorInlineRISCV extends InlineRISCVBaseVisitor<Object> {
     // Given the registerID of the register e.g. $2 -> registerID = 2
     // returns the type of the llvm register it is mapped to by the clobbers
     // if it is referencing the return register, return its type.
-    // As saif in the introduction, we are sure that an asm register is going to refer to a llvm one
+    // As said in the introduction, we are sure that an asm register is going to refer to a llvm one
     // by the fact that the input is well formed.
     private Type getLlvmRegisterTypeGivenAsmRegisterID(int registerID) {
         Type registerType;

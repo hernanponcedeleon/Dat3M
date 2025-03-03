@@ -54,7 +54,6 @@ RegisterSizeHint            : Colon (XLiteral | 'w');
 DataMemoryBarrier           : 'dmb';
 DataSynchronizationBarrier  : 'dsb';
 FenceArmOpt                 : 'sy' | 'st' | 'ish' | 'ishld' | 'ishst';
-X86Fence                    : 'mfence';
 
 
 LetterInline                : [a-z]+;
