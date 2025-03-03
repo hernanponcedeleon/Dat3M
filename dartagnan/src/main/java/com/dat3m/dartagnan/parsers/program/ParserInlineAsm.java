@@ -19,7 +19,7 @@ import com.dat3m.dartagnan.program.event.Event;
 
 public class ParserInlineAsm {
 
-    private VisitorInlineAsm visitor;
+    private final VisitorInlineAsm visitor;
 
     public ParserInlineAsm(Function llvmFunction, Register returnRegister, ArrayList<Expression> llvmArguments) {
         this.visitor = new VisitorInlineAsm(llvmFunction, returnRegister, llvmArguments);
