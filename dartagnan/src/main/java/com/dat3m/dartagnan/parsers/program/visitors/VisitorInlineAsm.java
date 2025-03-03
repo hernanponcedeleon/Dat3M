@@ -64,8 +64,7 @@ import static com.google.common.base.Preconditions.checkState;
 //    2. the two args registers map to the next two asm registers, i.e.
 //       - asm_1 <- r8
 //       - asm_2 <- r9
-// THERE IS NO RETURN REGISTER
-// d) 
+// d) THERE IS NO RETURN REGISTER
 // asm: call void asm "stlr $0, $1", "r,*Q"(ptr r5, ptr r7)
 // Code variables: asmRegisters := [asm_0, asm_1] ; argsRegisters := [r5, r7] ; constraints := [r, *Q]
 //    1. nothing to be done regarding output, i.e. there is no return register
@@ -92,16 +91,7 @@ import static com.google.common.base.Preconditions.checkState;
 //    3. the third asm register is related both to the return register (already above in r11[3] <- asm_3) and to an args register, i.e. asm_3 <- r8
 public class VisitorInlineAsm extends InlineAsmBaseVisitor<Object> {
 
-    private class CmpInstruction {
-
-        private final Expression left;
-        private final Expression right;
-
-        private CmpInstruction(Expression left, Expression right) {
-            this.left = left;
-            this.right = right;
-        }
-    }
+    private record CmpInstruction(Expression left, Expression right) {};
 
     private final List<Local> inputAssignments = new ArrayList<>();
     private final List<Event> asmInstructions = new ArrayList<>();
@@ -110,11 +100,11 @@ public class VisitorInlineAsm extends InlineAsmBaseVisitor<Object> {
     private final Register returnRegister;
     private final ExpressionFactory expressions = ExpressionFactory.getInstance();
     private CmpInstruction comparator;
-    // keeps track of all the labels defined in the the asm code
+    // keeps track of all the labels defined in the asm code
     private final HashMap<String, Label> labelsDefined = new HashMap<>();
     // used to keep track of which asm register should map to the llvm return register if it is an aggregate type
     private final List<Register> pendingRegisters = new ArrayList<>();
-    // holds the LLVM registers that are passed (as args) to the the asm side
+    // holds the LLVM registers that are passed (as args) to the asm side
     private final List<Expression> argsRegisters;
     // expected type of RHS of a comparison.
     private Type expectedType;
@@ -138,8 +128,8 @@ public class VisitorInlineAsm extends InlineAsmBaseVisitor<Object> {
         Type returnType = this.returnRegister.getType();
         if (returnType instanceof IntegerType || returnType instanceof BooleanType) {
             return 1;
-        } else if (returnType instanceof AggregateType at) {
-            return at.getTypeOffsets().size();
+        } else if (isReturnRegisterAggregate()) {
+            return ((AggregateType) returnType).getTypeOffsets().size();
         } else if (returnType instanceof VoidType) {
             return 0;
         } else {
@@ -149,7 +139,8 @@ public class VisitorInlineAsm extends InlineAsmBaseVisitor<Object> {
 
     // Tells if the returnRegister is an AggregateType
     private boolean isReturnRegisterAggregate() {
-        return getSizeOfReturnRegister() > 1;
+        Type returnRegisterType = this.returnRegister.getType();
+        return returnRegisterType != null && returnRegisterType instanceof AggregateType;
     }
 
     // Tells if the registerID is mapped to the returnRegister
@@ -364,7 +355,7 @@ public class VisitorInlineAsm extends InlineAsmBaseVisitor<Object> {
     @Override
     public Object visitBranchEqual(InlineAsmParser.BranchEqualContext ctx) {
         Label label = getOrNewLabel(ctx.NumbersInline().getText());
-        Expression expr = expressions.makeIntCmp(comparator.left, IntCmpOp.EQ, comparator.right);
+        Expression expr = expressions.makeIntCmp(comparator.left(), IntCmpOp.EQ, comparator.right());
         asmInstructions.add(EventFactory.newJump(expr, label));
         return null;
     }
@@ -372,7 +363,7 @@ public class VisitorInlineAsm extends InlineAsmBaseVisitor<Object> {
     @Override
     public Object visitBranchNotEqual(InlineAsmParser.BranchNotEqualContext ctx) {
         Label label = getOrNewLabel(ctx.NumbersInline().getText());
-        Expression expr = expressions.makeIntCmp(comparator.left, IntCmpOp.NEQ, comparator.right);
+        Expression expr = expressions.makeIntCmp(comparator.left(), IntCmpOp.NEQ, comparator.right());
         asmInstructions.add(EventFactory.newJump(expr, label));
         return null;
     }
@@ -459,9 +450,9 @@ public class VisitorInlineAsm extends InlineAsmBaseVisitor<Object> {
 
     @Override
     public Object visitValue(InlineAsmParser.ValueContext ctx) {
+        checkState(expectedType instanceof IntegerType, "Expected type is not an integer type");
         String valueString = ctx.ConstantValue().getText().substring(1);
         BigInteger value = new BigInteger(valueString);
-        checkState(expectedType instanceof IntegerType, "Expected type is not an integer type");
         return expressions.makeValue(value, (IntegerType) expectedType);
     }
 
