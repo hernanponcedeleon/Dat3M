@@ -119,13 +119,31 @@ public class VisitorOpsConstant extends SpirvBaseVisitor<Expression> {
     public Expression visitOpConstantNull(SpirvParser.OpConstantNullContext ctx) {
         String id = ctx.idResult().getText();
         Type type = builder.getType(ctx.idResultType().getText());
+        Expression expression = getConstantNullExpression(type);
+        return builder.addExpression(id, expression);
+
+    }
+
+    private Expression getConstantNullExpression(Type type) {
+        if (type instanceof ArrayType arrayType) {
+            List<Expression> elements = new ArrayList<>();
+            for (int i = 0; i < arrayType.getNumElements(); i++) {
+                elements.add(getConstantNullExpression(arrayType.getElementType()));
+            }
+            return expressions.makeArray(arrayType.getElementType(), elements, true);
+        }
+        if (type instanceof AggregateType aggregateType) {
+            List<Expression> elements = new ArrayList<>();
+            for (TypeOffset field : aggregateType.getFields()) {
+                elements.add(getConstantNullExpression(field.type()));
+            }
+            return expressions.makeConstruct(aggregateType, elements);
+        }
         if (type instanceof BooleanType) {
-            Expression expression = expressions.makeFalse();
-            return builder.addExpression(id, expression);
+            return expressions.makeFalse();
         }
         if (type instanceof IntegerType iType) {
-            Expression expression = expressions.makeZero(iType);
-            return builder.addExpression(id, expression);
+            return expressions.makeZero(iType);
         }
         throw new ParsingException("Illegal NULL constant type '%s'", type);
     }

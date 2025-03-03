@@ -4,13 +4,15 @@ import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.Type;
+import com.dat3m.dartagnan.expression.aggregates.ConstructExpr;
 import com.dat3m.dartagnan.expression.integers.IntLiteral;
-import com.dat3m.dartagnan.expression.type.AggregateType;
-import com.dat3m.dartagnan.expression.type.ArrayType;
-import com.dat3m.dartagnan.expression.type.IntegerType;
-import com.dat3m.dartagnan.expression.type.TypeFactory;
+import com.dat3m.dartagnan.expression.type.*;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import static com.dat3m.dartagnan.expression.integers.IntBinaryOp.ADD;
 import static com.dat3m.dartagnan.expression.integers.IntBinaryOp.MUL;
@@ -66,13 +68,21 @@ public class HelperTypes {
         return base;
     }
 
-    public static Expression getPointerOffset(Expression base, Type type, Expression offset) {
-        int size = types.getMemorySizeInBytes(type);
-        IntLiteral sizeExpr = expressions.makeValue(size, archType);
-        Expression formattedOffset = expressions.makeIntegerCast(offset, archType, false);
-        Expression offsetExpr = expressions.makeBinary(sizeExpr, MUL, formattedOffset);
-        Expression formattedBase = expressions.makeIntegerCast(base, archType, false);
-        return expressions.makeBinary(formattedBase, ADD, offsetExpr);
+    public static Expression getAlignedValue(String id, Expression base, Type type) {
+        if (type instanceof AggregateType aggregateType && base instanceof ConstructExpr constructExpr) {
+            List<Expression> elements = IntStream.range(0, aggregateType.getFields().size())
+                    .mapToObj(i -> {
+                        Type elType = aggregateType.getFields().get(i).type();
+                        Expression elBase = constructExpr.getOperands().get(i);
+                        return getAlignedValue(id, elBase, elType);
+                    })
+                    .collect(Collectors.toList());
+            return expressions.makeConstruct(type, elements);
+        }
+        if (base.getType().equals(type)) {
+            return base;
+        }
+        throw new ParsingException("Cannot align initializer for variable '" + id + "' of type " + type);
     }
 
     private static Type getArrayMemberType(String id, ArrayType type, List<Integer> indexes) {
@@ -160,5 +170,43 @@ public class HelperTypes {
 
     private static String indexNonConstantForStructError(String id) {
         return String.format("Index of a struct member is non-constant for variable '%s'", id);
+    }
+
+    public static Type getAlignedType(Type type, int alignmentNum) {
+        if (type instanceof IntegerType) {
+            return types.getIntegerType(alignmentNum * 8);
+        }
+        if (type instanceof AggregateType aggregateType) {
+            List<Type> fieldTypes = new ArrayList<>();
+            for (int i = 0; i < aggregateType.getFields().size(); i++) {
+                Type fieldType = aggregateType.getFields().get(i).type();
+                if (types.getMemorySizeInBytes(fieldType) > alignmentNum) {
+                    fieldType = getAlignedType(fieldType, alignmentNum);
+                }
+                fieldTypes.add(fieldType);
+            }
+            List<Integer> alignmentList = new ArrayList<>(List.of(0));
+            IntStream.range(0, fieldTypes.size() - 1).forEach(i -> {
+                int fieldAlignment = types.getMemorySizeInBytes(fieldTypes.get(i));
+                alignmentList.add(fieldAlignment + alignmentList.get(i));
+            });
+            return types.getAggregateType(fieldTypes, alignmentList);
+        }
+        if (type instanceof ArrayType arrayType) {
+            Type elementType = arrayType.getElementType();
+            int elementAlignmentNum;
+            if (types.getMemorySizeInBytes(elementType) > alignmentNum) {
+                elementType = getAlignedType(elementType, alignmentNum);
+                elementAlignmentNum = types.getMemorySizeInBytes(elementType);
+            } else {
+                elementAlignmentNum = alignmentNum;
+            }
+            List<Type> elementTypes = Collections.nCopies(arrayType.getNumElements(), elementType);
+            List<Integer> alignmentList = IntStream.range(0, arrayType.getNumElements())
+                    .mapToObj(i -> i * elementAlignmentNum)
+                    .collect(Collectors.toList());
+            return types.getAggregateType(elementTypes, alignmentList);
+        }
+        throw new ParsingException("Invalid type '%s' for alignment '%d'", type, alignmentNum);
     }
 }

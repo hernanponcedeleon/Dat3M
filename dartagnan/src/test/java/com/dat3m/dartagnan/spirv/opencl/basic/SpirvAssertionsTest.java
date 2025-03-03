@@ -35,17 +35,29 @@ public class SpirvAssertionsTest {
 
     private final String modelPath = getRootPath("cat/opencl.cat");
     private final String programPath;
+    private final int bound;
     private final Result expected;
 
-    public SpirvAssertionsTest(String file, Result expected) {
+    public SpirvAssertionsTest(String file, int bound, Result expected) {
         this.programPath = getTestResourcePath("spirv/opencl/basic/" + file);
+        this.bound = bound;
         this.expected = expected;
     }
 
-    @Parameterized.Parameters(name = "{index}: {0}, {1}")
+    @Parameterized.Parameters(name = "{index}: {0}, {1}, {2}")
     public static Iterable<Object[]> data() throws IOException {
         return Arrays.asList(new Object[][]{
-                {"idx-overflow.spv.dis", PASS}
+                {"vector-aligned.spv.dis", 1, PASS},
+                {"idx-overflow.spv.dis", 1, PASS},
+                {"alignment1.spv.dis", 9, PASS},
+                {"alignment2.spv.dis", 1, PASS},
+                {"alignment3.spv.dis", 1, PASS},
+                {"alignment4.spv.dis", 1, PASS},
+                {"alignment5.spv.dis", 1, PASS},
+                {"alignment6.spv.dis", 1, PASS},
+                {"alignment7.spv.dis", 1, PASS},
+                {"alignment8.spv.dis", 1, PASS},
+                {"alignment9.spv.dis", 9, PASS},
         });
     }
 
@@ -72,6 +84,7 @@ public class SpirvAssertionsTest {
     private VerificationTask mkTask() throws Exception {
         VerificationTask.VerificationTaskBuilder builder = VerificationTask.builder()
                 .withConfig(Configuration.builder().build())
+                .withBound(bound)
                 .withTarget(Arch.OPENCL);
         Program program = new ProgramParser().parse(new File(programPath));
         Wmm mcm = new ParserCat().parse(new File(modelPath));

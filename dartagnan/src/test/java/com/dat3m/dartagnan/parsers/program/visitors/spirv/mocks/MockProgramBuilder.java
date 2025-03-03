@@ -154,6 +154,11 @@ public class MockProgramBuilder extends ProgramBuilder {
         }
     }
 
+    public void mockPointerAlignment(String id, int alignment) {
+        Decoration decoration = getDecorationsBuilder().getDecoration(DecorationType.ALIGNMENT);
+        decoration.addDecoration(id, Integer.toString(alignment));
+    }
+
     public void mockFunctionStart(boolean addStartLabel) {
         FunctionType type = typeFactory.getFunctionType(typeFactory.getVoidType(), List.of());
         startCurrentFunction(new Function("mock_function", type, List.of(), 0, null));

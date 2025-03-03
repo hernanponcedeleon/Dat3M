@@ -95,11 +95,45 @@ public class VisitorOpsConversion extends SpirvBaseVisitor<Void> {
         return null;
     }
 
+    @Override
+    public Void visitOpUConvert(SpirvParser.OpUConvertContext ctx) {
+        String id = ctx.idResult().getText();
+        String typeId = ctx.idResultType().getText();
+        Expression operandExpr = builder.getExpression(ctx.unsignedValue().getText());
+        convertAndAddLocal(typeId, id, operandExpr, false);
+        return null;
+    }
+
+    @Override
+    public Void visitOpSConvert(SpirvParser.OpSConvertContext ctx) {
+        String id = ctx.idResult().getText();
+        String typeId = ctx.idResultType().getText();
+        Expression operandExpr = builder.getExpression(ctx.signedValue().getText());
+        convertAndAddLocal(typeId, id, operandExpr, true);
+        return null;
+    }
+
+    private void convertAndAddLocal(String typeId, String id, Expression operandExpr, boolean isSigned) {
+        Type targetType = builder.getType(typeId);
+        Type operandType = operandExpr.getType() instanceof ScopedPointerType pointerType
+                ? pointerType.getPointedType()
+                : operandExpr.getType();
+        if (!(targetType instanceof IntegerType) || !(operandType instanceof IntegerType)) {
+            throw new ParsingException("OpUConvert: Invalid conversion from '%s' to '%s'", operandExpr.getType(), typeId);
+        }
+        // TODO: Support conversion between arrays
+        Expression convertedExpr = expressions.makeCast(operandExpr, targetType, isSigned);
+        Register reg = builder.addRegister(id, typeId);
+        builder.addEvent(new Local(reg, convertedExpr));
+    }
+
     public Set<String> getSupportedOps() {
         return Set.of(
                 "OpBitcast",
                 "OpConvertPtrToU",
-                "OpPtrCastToGeneric"
+                "OpPtrCastToGeneric",
+                "OpUConvert",
+                "OpSConvert"
         );
     }
 }
