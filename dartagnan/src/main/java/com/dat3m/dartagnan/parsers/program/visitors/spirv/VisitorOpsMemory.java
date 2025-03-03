@@ -8,18 +8,19 @@ import com.dat3m.dartagnan.expression.integers.IntLiteral;
 import com.dat3m.dartagnan.expression.type.*;
 import com.dat3m.dartagnan.parsers.SpirvBaseVisitor;
 import com.dat3m.dartagnan.parsers.SpirvParser;
+import com.dat3m.dartagnan.parsers.program.visitors.spirv.builders.ProgramBuilder;
+import com.dat3m.dartagnan.parsers.program.visitors.spirv.decorations.Alignment;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.decorations.BuiltIn;
-import com.dat3m.dartagnan.parsers.program.visitors.spirv.helpers.HelperTypes;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.helpers.HelperInputs;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.helpers.HelperTags;
-import com.dat3m.dartagnan.parsers.program.visitors.spirv.builders.ProgramBuilder;
-import com.dat3m.dartagnan.program.memory.ScopedPointer;
-import com.dat3m.dartagnan.program.memory.ScopedPointerVariable;
+import com.dat3m.dartagnan.parsers.program.visitors.spirv.helpers.HelperTypes;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.Load;
+import com.dat3m.dartagnan.program.memory.ScopedPointer;
+import com.dat3m.dartagnan.program.memory.ScopedPointerVariable;
 import org.antlr.v4.runtime.RuleContext;
 
 import java.util.ArrayList;
@@ -29,6 +30,7 @@ import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 
+import static com.dat3m.dartagnan.parsers.program.visitors.spirv.decorations.DecorationType.ALIGNMENT;
 import static com.dat3m.dartagnan.parsers.program.visitors.spirv.decorations.DecorationType.BUILT_IN;
 import static com.dat3m.dartagnan.expression.utils.ExpressionHelper.isScalar;
 
@@ -38,10 +40,12 @@ public class VisitorOpsMemory extends SpirvBaseVisitor<Event> {
     private static final ExpressionFactory expressions = ExpressionFactory.getInstance();
     private final ProgramBuilder builder;
     private final BuiltIn builtIn;
+    private final Alignment alignment;
 
     public VisitorOpsMemory(ProgramBuilder builder) {
         this.builder = builder;
         this.builtIn = (BuiltIn) builder.getDecorationsBuilder().getDecoration(BUILT_IN);
+        this.alignment = (Alignment) builder.getDecorationsBuilder().getDecoration(ALIGNMENT);
     }
 
     @Override
@@ -151,6 +155,12 @@ public class VisitorOpsMemory extends SpirvBaseVisitor<Event> {
         String typeId = ctx.idResultType().getText();
         if (builder.getType(typeId) instanceof ScopedPointerType pointerType) {
             Type type = pointerType.getPointedType();
+            Integer alignmentNum = alignment.getValue(id);
+            Expression alignmentExpr = alignmentNum == null ?
+                    types.getDefaultAlignment() : expressions.makeValue(alignmentNum, types.getArchType());
+            if (alignmentNum != null) {
+                type = HelperTypes.getAlignedType(type, alignmentNum);
+            }
             Expression value = getOpVariableInitialValue(ctx, type);
             if (value != null) {
                 if (!TypeFactory.isStaticTypeOf(value.getType(), type)) {
@@ -163,7 +173,8 @@ public class VisitorOpsMemory extends SpirvBaseVisitor<Event> {
             } else {
                 value = builder.makeUndefinedValue(type);
             }
-            ScopedPointerVariable pointer = builder.allocateScopedPointerVariable(id, value, pointerType.getScopeId(), type);
+            ScopedPointerVariable pointer = builder.allocateScopedPointerVariable(id, value, alignmentExpr,
+                    pointerType.getScopeId(), type);
             validateVariableStorageClass(pointer, ctx.storageClass().getText());
             builder.addExpression(id, pointer);
             return null;
@@ -187,10 +198,14 @@ public class VisitorOpsMemory extends SpirvBaseVisitor<Event> {
             }
             return builtIn.getDecoration(id, type);
         }
-        if (ctx.initializer() != null) {
-            return builder.getExpression(ctx.initializer().getText());
+        if (ctx.initializer() == null) {
+            return null;
         }
-        return null;
+        Expression initExpr = builder.getExpression(ctx.initializer().getText());
+        if (alignment.getValue(id) != null) {
+            initExpr = builder.getAlignedValue(id, initExpr, type);
+        }
+        return initExpr;
     }
 
     private void validateVariableStorageClass(ScopedPointerVariable pointer, String classToken) {
