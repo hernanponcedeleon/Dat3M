@@ -31,6 +31,8 @@ import com.dat3m.dartagnan.program.event.core.Local;
 //      Register = Type call asm sideeffect 'asm code', 'constraints, clobbers' ('args')
 // We call "asm registers" the ones appearing inside 'asm code'.
 // We call "llvm registers" the ones passed in 'args' (i.e. the function parameters) plus Register.
+// The asm registers must only refer to the llvm registers and the return register. Otherwise, the inline assembly is malformed.
+// We therefore assume the input to be well formed.
 // The "clobbers" helps the compiler understand if the inline asm code is going to set conditional flags, perform memory operation and so on.
 // Examples are ~{memory}, ~{flags}, ...
 // The constraints tell us how to map asm registers to LLVM ones.
@@ -63,8 +65,7 @@ import com.dat3m.dartagnan.program.event.core.Local;
 //    2. the two args registers map to the next two asm registers, i.e.
 //       - asm_1 <- r8
 //       - asm_2 <- r9
-// THERE IS NO RETURN REGISTER
-// d) 
+// d) THERE IS NO RETURN REGISTER
 // asm: call void asm "stlr $0, $1", "r,*Q"(ptr r5, ptr r7)
 // Code variables: asmRegisters := [asm_0, asm_1] ; argsRegisters := [r5, r7] ; constraints := [r, *Q]
 //    1. nothing to be done regarding output, i.e. there is no return register
@@ -91,24 +92,12 @@ import com.dat3m.dartagnan.program.event.core.Local;
 //    3. the third asm register is related both to the return register (already above in r11[3] <- asm_3) and to an args register, i.e. asm_3 <- r8
 public class VisitorInlineRISCV extends InlineRISCVBaseVisitor<Object> {
 
-    private class CmpInstruction {
-
-        private final Expression left;
-        private final Expression right;
-
-        private CmpInstruction(Expression left, Expression right) {
-            this.left = left;
-            this.right = right;
-        }
-    }
-
     private final List<Local> inputAssignments = new ArrayList<>();
     private final List<Event> asmInstructions = new ArrayList<>();
     private final List<Local> outputAssignments = new ArrayList<>();
     private final Function llvmFunction;
     private final Register returnRegister;
     private final ExpressionFactory expressions = ExpressionFactory.getInstance();
-    private CmpInstruction comparator;
     // keeps track of all the labels defined in the the asm code
     private final HashMap<String, Label> labelsDefined = new HashMap<>();
     // used to keep track of which asm register should map to the llvm return register if it is an aggregate type
@@ -129,16 +118,17 @@ public class VisitorInlineRISCV extends InlineRISCVBaseVisitor<Object> {
     // Returns the size of the return register
     // null / void -> 0
     // i32 / bool -> 1
-    // aggregateType -> the size of the aggregate
-    private int getSizeOfReturnRegister() {
+    // aggregateType -> the amount of asm registers which are referred by the return registers
+    // e.g. { i32, i32 } -> 2
+    private int getNumASMReturnRegisters() {
         if (this.returnRegister == null) {
             return 0;
         }
         Type returnType = this.returnRegister.getType();
         if (returnType instanceof IntegerType || returnType instanceof BooleanType) {
             return 1;
-        } else if (returnType instanceof AggregateType at) {
-            return at.getTypeOffsets().size();
+        } else if (isReturnRegisterAggregate()) {
+            return ((AggregateType) returnType).getTypeOffsets().size();
         } else if (returnType instanceof VoidType) {
             return 0;
         } else {
@@ -148,12 +138,13 @@ public class VisitorInlineRISCV extends InlineRISCVBaseVisitor<Object> {
 
     // Tells if the returnRegister is an AggregateType
     private boolean isReturnRegisterAggregate() {
-        return getSizeOfReturnRegister() > 1;
+        Type returnRegisterType = this.returnRegister.getType();
+        return returnRegisterType != null && returnRegisterType instanceof AggregateType;
     }
 
     // Tells if the registerID is mapped to the returnRegister
     private boolean isPartOfReturnRegister(int registerID) {
-        return registerID < getSizeOfReturnRegister();
+        return registerID < getNumASMReturnRegisters();
     }
 
     // Given a string of a label, it either creates a new label, or returns the existing one if it was already defined
@@ -169,6 +160,8 @@ public class VisitorInlineRISCV extends InlineRISCVBaseVisitor<Object> {
     // Given the registerID of the register e.g. $2 -> registerID = 2
     // returns the type of the llvm register it is mapped to by the clobbers
     // if it is referencing the return register, return its type.
+    // As saif in the introduction, we are sure that an asm register is going to refer to a llvm one
+    // by the fact that the input is well formed.
     private Type getLlvmRegisterTypeGivenAsmRegisterID(int registerID) {
         Type registerType;
         if (isPartOfReturnRegister(registerID)) {
@@ -181,7 +174,7 @@ public class VisitorInlineRISCV extends InlineRISCVBaseVisitor<Object> {
             }
         } else {
             // registerID is mapped to a register in args. To get the correct position in args we need to shift the id by the size of the return register
-            registerType = argsRegisters.get(registerID - getSizeOfReturnRegister()).getType();
+            registerType = argsRegisters.get(registerID - getNumASMReturnRegisters()).getType();
         }
         return registerType;
     }
@@ -417,7 +410,7 @@ public class VisitorInlineRISCV extends InlineRISCVBaseVisitor<Object> {
                 if (asmRegister == null) {
                     continue;
                 }
-                Expression llvmRegister = argsRegisters.get(i - getSizeOfReturnRegister());
+                Expression llvmRegister = argsRegisters.get(i - getNumASMReturnRegisters());
                 inputAssignments.add(EventFactory.newLocal(asmRegister, llvmRegister));
             }
         }
