@@ -5,20 +5,23 @@ import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.Type;
 import com.dat3m.dartagnan.expression.integers.IntLiteral;
-import com.dat3m.dartagnan.expression.type.*;
+import com.dat3m.dartagnan.expression.type.ArrayType;
+import com.dat3m.dartagnan.expression.type.ScopedPointerType;
+import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.parsers.SpirvBaseVisitor;
 import com.dat3m.dartagnan.parsers.SpirvParser;
+import com.dat3m.dartagnan.parsers.program.visitors.spirv.builders.ProgramBuilder;
+import com.dat3m.dartagnan.parsers.program.visitors.spirv.decorations.Alignment;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.decorations.BuiltIn;
-import com.dat3m.dartagnan.parsers.program.visitors.spirv.helpers.HelperTypes;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.helpers.HelperInputs;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.helpers.HelperTags;
-import com.dat3m.dartagnan.parsers.program.visitors.spirv.builders.ProgramBuilder;
-import com.dat3m.dartagnan.program.memory.ScopedPointer;
-import com.dat3m.dartagnan.program.memory.ScopedPointerVariable;
+import com.dat3m.dartagnan.parsers.program.visitors.spirv.helpers.HelperTypes;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.Tag;
+import com.dat3m.dartagnan.program.memory.ScopedPointer;
+import com.dat3m.dartagnan.program.memory.ScopedPointerVariable;
 import org.antlr.v4.runtime.RuleContext;
 
 import java.math.BigInteger;
@@ -26,6 +29,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
+import static com.dat3m.dartagnan.parsers.program.visitors.spirv.decorations.DecorationType.ALIGNMENT;
 import static com.dat3m.dartagnan.parsers.program.visitors.spirv.decorations.DecorationType.BUILT_IN;
 
 public class VisitorOpsMemory extends SpirvBaseVisitor<Event> {
@@ -34,10 +38,12 @@ public class VisitorOpsMemory extends SpirvBaseVisitor<Event> {
     private static final ExpressionFactory expressions = ExpressionFactory.getInstance();
     private final ProgramBuilder builder;
     private final BuiltIn builtIn;
+    private final Alignment alignment;
 
     public VisitorOpsMemory(ProgramBuilder builder) {
         this.builder = builder;
         this.builtIn = (BuiltIn) builder.getDecorationsBuilder().getDecoration(BUILT_IN);
+        this.alignment = (Alignment) builder.getDecorationsBuilder().getDecoration(ALIGNMENT);
     }
 
     @Override
@@ -110,7 +116,12 @@ public class VisitorOpsMemory extends SpirvBaseVisitor<Event> {
             } else {
                 value = builder.makeUndefinedValue(type);
             }
-            ScopedPointerVariable pointer = builder.allocateScopedPointerVariable(id, value, pointerType.getScopeId(), type);
+            Integer alignmentNum = alignment.getValue(id);
+            Expression alignment = alignmentNum == null ?
+                    expressions.getDefaultAlignment() :
+                    expressions.makeValue(alignmentNum, types.getArchType());
+            ScopedPointerVariable pointer = builder.allocateScopedPointerVariable(id, value, alignment,
+                    pointerType.getScopeId(), type);
             validateVariableStorageClass(pointer, ctx.storageClass().getText());
             builder.addExpression(id, pointer);
             return null;
@@ -214,7 +225,7 @@ public class VisitorOpsMemory extends SpirvBaseVisitor<Event> {
     }
 
     private void visitAccessChain(String id, ScopedPointerType pointerType, String baseId, ScopedPointer base,
-                                    List<SpirvParser.IndexesIdRefContext> idxContexts) {
+                                  List<SpirvParser.IndexesIdRefContext> idxContexts) {
         Type baseType = base.getMemoryType();
         Type resultType = pointerType.getPointedType();
         List<Integer> intIndexes = new ArrayList<>();
