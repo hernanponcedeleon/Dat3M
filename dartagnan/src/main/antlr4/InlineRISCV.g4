@@ -13,6 +13,7 @@ asmMetadataEntries : (constraint Comma)* clobbers;
 
 instr
     : load
+    | loadImmediate
     | loadExclusive
     | loadAcquireExclusive
     | loadAcquireReleaseExclusive
@@ -33,13 +34,14 @@ instr
 ;
 
 // rules divised like this in order to generate single visitors
-load : Load register Comma register;
+load : Load register Comma NumbersInline LPar register RPar;
+loadImmediate : LoadImmediate register Comma value;
 loadExclusive : LoadExclusive register Comma register;
 loadAcquireExclusive : LoadAcquireExclusive register Comma register;
 loadAcquireReleaseExclusive : LoadAcquireReleaseExclusive register Comma register;
 add : Add register Comma register Comma register;
 sub : Sub register Comma register Comma register;
-store : Store register Comma register;
+store : Store register Comma NumbersInline LPar register RPar;
 storeConditional : StoreConditional register Comma register Comma register ;
 storeConditionalRelease : StoreConditionalRelease register Comma register Comma register;
 move : Move register Comma register;
@@ -50,6 +52,7 @@ negate : Negate register Comma register;
 atomicAdd : AtomicAdd register Comma register Comma register;
 atomicAddRelease : AtomicAddRelease register Comma register Comma register;
 atomicAddAcquireRelease : AtomicAddAcquireRelease register Comma register Comma register;
+value : NumbersInline;
 
 
 //fences
@@ -69,14 +72,15 @@ fenceOptions returns [String mode]
     |   ILiteral {$mode = "i";}
     ;
 
-constraint : outputOpAssign | inputOpGeneralReg;
+constraint : outputOpAssign | inputOpGeneralReg | overlapInOutRegister;
 
 outputOpAssign              : Equals Amp? RLiteral;
 inputOpGeneralReg           : RLiteral | ACapitalLiteral | Equals Ast MLiteral;
+overlapInOutRegister        : NumbersInline;
 
 clobbers : clobber (Comma clobber)*;
 clobber : Tilde LBrace clobberType RBrace;
 
 clobberType : ClobberMemory | ClobberModifyFlags | ClobberDirectionFlag | ClobberFlags | ClobberFloatPntStatusReg;
 
-register : (NumbersInline LPar)? Dollar NumbersInline RPar?;
+register : Dollar NumbersInline;

@@ -1,6 +1,8 @@
 package com.dat3m.dartagnan.parsers.program.visitors;
 
+import java.math.BigInteger;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 
@@ -24,6 +26,7 @@ import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.event.core.Local;
+import static com.google.common.base.Preconditions.checkState;
 
 // The trickiest part of handling inline assembly is matching input and output registers on the LLVM side with the registers in the assembly.
 // The matching depends on what is specified in the constraints.
@@ -200,10 +203,10 @@ public class VisitorInlineRISCV extends InlineRISCVBaseVisitor<Object> {
         return events;
     }
 
-    // // Tells if the constraint is a memory location '=*m'
-    // private boolean isConstraintMemoryLocation(InlineRISCVParser.ConstraintContext constraint) {
-    //     return constraint.pointerToMemoryLocation() != null;
-    // }
+    // Tells if a constraint is a numeric one, e.g. '3'
+    private boolean isConstraintNumeric(InlineRISCVParser.ConstraintContext constraint) {
+        return constraint.overlapInOutRegister() != null;
+    }
 
     // Tells if the constraint is an output one, e.g. '=r' or '=&r'
     private boolean isConstraintOutputConstraint(InlineRISCVParser.ConstraintContext constraint) {
@@ -220,6 +223,15 @@ public class VisitorInlineRISCV extends InlineRISCVBaseVisitor<Object> {
         Register register = (Register) ctx.register(0).accept(this);
         Register address = (Register) ctx.register(1).accept(this);
         asmInstructions.add(EventFactory.newLoad(register, address));
+        return null;
+    }
+
+    @Override
+    public Object visitLoadImmediate(InlineRISCVParser.LoadImmediateContext ctx) {
+        Register register = (Register) ctx.register().accept(this);
+        expectedType = register.getType();
+        Expression value = (Expression) ctx.value().accept(this);
+        asmInstructions.add(EventFactory.newLoad(register, value));
         return null;
     }
 
@@ -361,12 +373,7 @@ public class VisitorInlineRISCV extends InlineRISCVBaseVisitor<Object> {
     // as we are going to need it while visiting the metadata to create the output assignment
     @Override
     public Object visitRegister(InlineRISCVParser.RegisterContext ctx) {
-        String registerName;
-        if(ctx.NumbersInline().size() == 1){
-            registerName = ctx.NumbersInline(0).getText();
-        } else {
-            registerName = ctx.NumbersInline(1).getText();
-        }
+        String registerName = ctx.NumbersInline().getText();
         int registerID = Integer.parseInt(registerName);
         if (asmRegisters.containsKey(registerID)) {
             return asmRegisters.get(registerID);
@@ -374,7 +381,9 @@ public class VisitorInlineRISCV extends InlineRISCVBaseVisitor<Object> {
             // Pick up the correct type and create the new Register
             Type registerType = getLlvmRegisterTypeGivenAsmRegisterID(registerID);
             Register newRegister = this.llvmFunction.getOrNewRegister(makeRegisterName(registerID), registerType);
+            System.out.println("Created register " + newRegister);
             if (isPartOfReturnRegister(registerID) && isReturnRegisterAggregate()) {
+                System.out.println("it is part of returnRegister");
                 this.pendingRegisters.add(newRegister);
             }
             asmRegisters.put(registerID, newRegister);
@@ -406,6 +415,9 @@ public class VisitorInlineRISCV extends InlineRISCVBaseVisitor<Object> {
                     outputAssignments.add(EventFactory.newLocal(returnRegister, asmRegisters.get(0)));
                 } else {
                     Type aggregateType = TypeFactory.getInstance().getAggregateType(((AggregateType) returnRegister.getType()).getFields());
+                    // %16 = call { ptr, i32, i64 } asm sideeffect "1:li $1, 1\0Alr.d $0, $2\0Abne $0, $4, 2f\0Asc.d $1, $3, $2\0Abnez $1, 1b\0A2:", "=&r,=&r,=r,r,r,2,~{memory}"(ptr %13, i64 %15, i64 %12) #7, !srcloc !18
+                    // args are not passed in order, sorting solves it
+                    this.pendingRegisters.sort(Comparator.comparing(Register::getName));
                     Expression finalAssignExpression = expressions.makeConstruct(aggregateType, this.pendingRegisters);
                     outputAssignments.add(EventFactory.newLocal(this.returnRegister, finalAssignExpression));
                 }
@@ -417,6 +429,10 @@ public class VisitorInlineRISCV extends InlineRISCVBaseVisitor<Object> {
                 }
                 Expression llvmRegister = argsRegisters.get(i - getNumASMReturnRegisters());
                 inputAssignments.add(EventFactory.newLocal(asmRegister, llvmRegister));
+            }
+            if (isConstraintNumeric(constraint)) {
+                int constraintValue = Integer.parseInt(constraint.getText());
+                inputAssignments.add(EventFactory.newLocal(asmRegisters.get(constraintValue), argsRegisters.get(i - getNumASMReturnRegisters())));
             }
         }
         return null;
@@ -441,6 +457,14 @@ public class VisitorInlineRISCV extends InlineRISCVBaseVisitor<Object> {
         };
         asmInstructions.add(fence);
         return null;
+    }
+
+    @Override
+    public Object visitValue(InlineRISCVParser.ValueContext ctx) {
+        checkState(expectedType instanceof IntegerType, "Expected type is not an integer type");
+        String valueString = ctx.NumbersInline().getText();
+        BigInteger value = new BigInteger(valueString);
+        return expressions.makeValue(value, (IntegerType) expectedType);
     }
 
 }
