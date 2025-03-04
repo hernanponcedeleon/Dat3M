@@ -4,7 +4,8 @@ import BaseLexer;
 
 
 // instructions 
-Load                        : 'ld';
+Load                        : 'ld' | 'lw'; // since it is using 64 bit, we can evaluate store word as normal one as it picks up 32
+LoadImmediate               : 'li';
 LoadExclusive               : 'lr.d';
 LoadAcquireExclusive        : 'lr.d.aq';
 LoadAcquireReleaseExclusive : 'lr.d.aqrl';
@@ -12,13 +13,13 @@ Add                         : 'add';
 Sub                         : 'sub';
 BranchNotEqual              : 'bne';
 BranchNotEqualZero          : 'bnez';
-Store                       : 'sd';
+Store                       : 'sd' | 'sw'; // since it is using 64 bit, we can evaluate store word as normal one as it picks up 32
 StoreConditional            : 'sc.d';
 StoreConditionalRelease     : 'sc.d.rl';
 Move                        : 'mv';
 Negate                      : 'neg';
 AtomicAdd                   : 'amoadd.d';
-AtomicAddRelease            : 'amoadd.d.rl'; // also this second one has both acquire and relase
+AtomicAddRelease            : 'amoadd.d.rl';
 AtomicAddAcquireRelease     : 'amoadd.d.aqrl';
 
 // clobbers
@@ -41,7 +42,6 @@ OLiteral                    : 'o';
 IOLiteral                   : 'io';
 MLiteral                    : 'm';
 ACapitalLiteral             : 'A';
-ConstantValue               : Num NumbersInline;
 
 
 // fences
