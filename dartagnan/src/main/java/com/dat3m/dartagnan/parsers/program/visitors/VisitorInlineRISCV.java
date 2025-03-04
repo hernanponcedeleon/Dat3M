@@ -361,7 +361,12 @@ public class VisitorInlineRISCV extends InlineRISCVBaseVisitor<Object> {
     // as we are going to need it while visiting the metadata to create the output assignment
     @Override
     public Object visitRegister(InlineRISCVParser.RegisterContext ctx) {
-        String registerName = ctx.NumbersInline().getText();
+        String registerName;
+        if(ctx.NumbersInline().size() == 1){
+            registerName = ctx.NumbersInline(0).getText();
+        } else {
+            registerName = ctx.NumbersInline(1).getText();
+        }
         int registerID = Integer.parseInt(registerName);
         if (asmRegisters.containsKey(registerID)) {
             return asmRegisters.get(registerID);

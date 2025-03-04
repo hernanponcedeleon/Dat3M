@@ -79,4 +79,4 @@ clobber : Tilde LBrace clobberType RBrace;
 
 clobberType : ClobberMemory | ClobberModifyFlags | ClobberDirectionFlag | ClobberFlags | ClobberFloatPntStatusReg;
 
-register : Dollar NumbersInline;
+register : (NumbersInline LPar)? Dollar NumbersInline RPar?;
