@@ -381,9 +381,7 @@ public class VisitorInlineRISCV extends InlineRISCVBaseVisitor<Object> {
             // Pick up the correct type and create the new Register
             Type registerType = getLlvmRegisterTypeGivenAsmRegisterID(registerID);
             Register newRegister = this.llvmFunction.getOrNewRegister(makeRegisterName(registerID), registerType);
-            System.out.println("Created register " + newRegister);
             if (isPartOfReturnRegister(registerID) && isReturnRegisterAggregate()) {
-                System.out.println("it is part of returnRegister");
                 this.pendingRegisters.add(newRegister);
             }
             asmRegisters.put(registerID, newRegister);
