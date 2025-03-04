@@ -203,13 +203,13 @@ public class MemToReg implements FunctionProcessor {
             final RegisterOffset addressExpression = matchGEP(load.getAddress());
             assert addressExpression == null || addressExpression.register != null;
             final AddressOffset addressBase = addressExpression == null ? null : state.get(addressExpression.register);
-            final var address = addressBase == null ? null : addressBase.increase(addressExpression.offset);
+            final AddressOffset address = addressBase == null ? null : addressBase.increase(addressExpression.offset);
             final boolean isDeletable = load.getUsers().isEmpty();
             // If too complex, treat like global address.
             if (addressExpression == null || !isDeletable) {
                 publishRegisters(load.getAddress().getRegs());
             }
-            final var value = address == null ? null : state.get(address);
+            final AddressOffset value = address == null ? null : state.get(address);
             update(accesses, load, address);
             update(state, register, value);
             return null;
@@ -251,16 +251,14 @@ public class MemToReg implements FunctionProcessor {
             final int localId = label.getLocalId();
             final boolean looping = label.getJumpSet().stream().anyMatch(jump -> localId < jump.getLocalId());
             final Map<Object, AddressOffset> restoredState = looping ? jumps.get(label) : jumps.remove(label);
-            if (restoredState != null) {
-                if (dead) {
-                    assert state.isEmpty();
-                    state.putAll(restoredState);
-                    dead = false;
-                } else {
-                    mergeInto(state, restoredState);
-                    mergeInto(restoredState, state);
-                }
-            } else {
+            if (restoredState != null && dead) {
+                assert state.isEmpty();
+                state.putAll(restoredState);
+                dead = false;
+            } else if (restoredState != null) {
+                mergeInto(state, restoredState);
+                mergeInto(restoredState, state);
+            } else if (!dead) {
                 jumps.put(label, new HashMap<>(state));
             }
             return null;
@@ -315,7 +313,7 @@ public class MemToReg implements FunctionProcessor {
             }
         }
 
-        private RegisterOffset matchGEP(Expression expression) {
+        private static RegisterOffset matchGEP(Expression expression) {
             long sum = 0;
             while (!(expression instanceof Register register)) {
                 if (!(expression instanceof IntBinaryExpr bin) ||
