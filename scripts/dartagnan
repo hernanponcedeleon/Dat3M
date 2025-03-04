@@ -1,0 +1,127 @@
+#!/usr/bin/env sh
+#
+# dartagnan -- script to simplify running dartagnan from the commandline
+#
+# Options:
+# * -cat      : memory model
+# * -target   : target architecture
+# * -property : property to be checked
+#
+# Environment variables:
+#
+# * DAT3M_JAVA : path to the java runtime binary to be used
+# * DAT3M_HOME : path to dat3m installation directory
+set -e
+
+java_cmd="${DAT3M_JAVA}"
+jar=${DAT3M_HOME}/dartagnan/target/dartagnan.jar
+args=""
+this="$0"
+
+if [ -z "${java_cmd}" ]; then
+    java_cmd="java"
+fi
+
+usage () {
+    echo "${this} [-cat MODEL] [-target TARGET] [-property PROPERTY] <FILE>"
+}
+
+while [ "$#" != "0" ]; do
+    case "$1" in
+        -cat)
+            shift
+            cat="$1"
+        ;;
+        -target)
+            shift
+            target="$1"
+        ;;
+        -property)
+            shift
+            property="$1"
+        ;;
+        -help)
+            usage
+            exit
+        ;;
+        *)
+            args="${args} $1"
+        ;;
+    esac
+    shift
+done
+
+# cat argument is mandatory. If the argument is not a file, we guess it to be
+# a file in DAT3M_HOME/cat with .cat suffix.
+if [ -z "${cat}" ]; then
+    echo "error: no cat file specified"
+    exit 1
+elif [ ! -f "${cat}" ]; then
+    cat="${DAT3M_HOME}/cat/$cat".cat
+fi
+
+# if target is not given, we try to guess the target from the cat file
+if [ -z "${target}" ]; then
+	case "$cat" in
+		*aarch64*)
+        		target=arm8
+                ;;
+		*c11*)
+        		target=c11
+                ;;
+		*imm*)
+        		target=imm
+                ;;
+		*linux-kernel*)
+        		target=lkmm
+                ;;
+		*opencl*)
+        		target=opencl
+                ;;
+		*power*)
+        		target=power
+                ;;
+		*ptx*)
+        		target=ptx
+                ;;
+		*rc11*)
+        		target=c11
+                ;;
+		*riscv*)
+        		target=riscv
+                ;;
+		*sc*)
+        		target=c11
+                ;;
+		*spirv*)
+        		target=vulkan
+                ;;
+		*tso*)
+        		target=tso
+                ;;
+		*vmm*)
+        		target=c11
+                ;;
+	esac
+fi
+
+if [ -z "${target}" ]; then
+    echo "error: no target specified"
+    exit 1
+fi
+
+# we select program_spec property by default
+if [ -z "${property}" ]; then
+    property="program_spec"
+fi
+
+# now we construct the full command
+cmd="${java_cmd} -jar ${jar}"
+cmd="${cmd} ${cat}"
+cmd="${cmd} --target=${target}"
+cmd="${cmd} --property=${property}"
+cmd="${cmd} ${args}"
+
+# before calling the command, print it on the screen for reference
+echo "# ${cmd}"
+exec ${cmd}
