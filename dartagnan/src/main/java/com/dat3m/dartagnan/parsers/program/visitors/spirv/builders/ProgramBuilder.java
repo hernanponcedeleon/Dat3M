@@ -5,7 +5,6 @@ import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.Type;
-import com.dat3m.dartagnan.expression.type.ArrayType;
 import com.dat3m.dartagnan.expression.type.FunctionType;
 import com.dat3m.dartagnan.expression.type.ScopedPointerType;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
@@ -208,13 +207,13 @@ public class ProgramBuilder {
         throw new ParsingException("Reference to undefined pointer '%s'", id);
     }
 
-    public Register addRegister(String id, String typeId) {
-        Type type = getType(typeId);
-        // TODO: Remove this when we use single memory event for array
-        if (type instanceof ArrayType arrayType) {
-            type = arrayType.getElementType();
-        }
+    // TODO: Remove after updating OpLoad to use vector registers
+    public Register addRegister(String id, Type type) {
         return getCurrentFunctionOrThrowError().newRegister(id, type);
+    }
+
+    public Register addRegister(String id, String typeId) {
+        return getCurrentFunctionOrThrowError().newRegister(id, getType(typeId));
     }
 
     public Expression makeUndefinedValue(Type type) {

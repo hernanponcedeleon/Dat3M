@@ -6,6 +6,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.dat3m.dartagnan.expression.type.*;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
@@ -29,10 +30,6 @@ import com.dat3m.dartagnan.encoding.formulas.TupleFormulaManager;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.Type;
 import com.dat3m.dartagnan.expression.integers.IntCmpOp;
-import com.dat3m.dartagnan.expression.type.AggregateType;
-import com.dat3m.dartagnan.expression.type.BooleanType;
-import com.dat3m.dartagnan.expression.type.IntegerType;
-import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.analysis.BranchEquivalence;
 import com.dat3m.dartagnan.program.analysis.ExecutionAnalysis;
@@ -484,13 +481,15 @@ public final class EncodingContext {
                 return formulaManager.getBitvectorFormulaManager().makeVariable(integerType.getBitWidth(), name);
             }
         }
-        if (type instanceof AggregateType) {
+        if (type instanceof AggregateType || type instanceof ArrayType) {
             final Map<Integer, Type> primitives = TypeFactory.getInstance().decomposeIntoPrimitives(type);
-            final List<Formula> elements = new ArrayList<>();
-            for (Type eleType : primitives.values()) {
-                elements.add(makeVariable(name + "@" + elements.size(), eleType));
+            if (primitives != null) {
+                final List<Formula> elements = new ArrayList<>();
+                for (Map.Entry<Integer, Type> entry : primitives.entrySet()) {
+                    elements.add(makeVariable(name + "@" + entry.getKey(), entry.getValue()));
+                }
+                return tupleFormulaManager.makeTuple(elements);
             }
-            return tupleFormulaManager.makeTuple(elements);
         }
         throw new UnsupportedOperationException(String.format("Cannot encode variable of type %s.", type));
     }
