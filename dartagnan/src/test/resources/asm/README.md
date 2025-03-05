@@ -32,3 +32,31 @@ A valid example would therefore be, from libvsync's root,
 ```
 clang -I ./include -I Dat3M_HOME/include -DVATOMIC_DISABLE_ARM64_LSE -DVSYNC_DISABLE_POLITE_AWAIT -DVSYNC_VERIFICATION -DVSYNC_VERIFICATION_DAT3M -DVSYNCER_CHECK=on -DVSYNC_VERIFICATION_QUICK -D__aarch__ -S -emit-llvm test/spinlock/ttaslock.c
 ```
+## Ck 
+You need to clone [concurrencykit/ck](https://github.com/concurrencykit/ck).
+
+DO NOT Install it via the ./configure script, as we want to generate inline asm independently from the underlying machine.
+
+In this case you have to generate the clients to leverage the API on your own.
+
+Then, follow this pattern :
+```
+clang <Includes> <custom flags> <architecture> -S -emit-llvm <file_path.c>
+```
+The Include should contain :
+1. path to ck/include
+2. path to ck/src folder in case you are using some of those implementation
+
+The Custom flags should be set up accordingly to your client
+
+For the architecture these are the options : 
+1. ```__aarch__``` to generate ARMV8
+2. ```__arm__ ``` &&  ```__ARM_ARCH_7__``` to generate ARMV7.
+3. ```__riscv``` && ```__riscv_xlen=64``` to generate RISCV (they support 64 bit version only).
+
+Please note that in case you want to generate ***riscv*** inline assembly, to avoid letting ```include/ck_pr.h``` include your architecture variant, you might want to state ```-U<architecture>``` to undefine your architecture variable depending on where it is located in the aformentioned file.
+
+A valid example would therefore be, from ck's root, assuming you have your clients under ```test``` folder : 
+```
+clang -I ./include -I DAT3M_HOME/include -D__arm__ -D__ARM_ARCH_7__ -S -emit-llvm tests/caslock.c
+```
