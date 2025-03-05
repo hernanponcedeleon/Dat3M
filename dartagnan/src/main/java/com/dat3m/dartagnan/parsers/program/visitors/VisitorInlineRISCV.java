@@ -13,12 +13,11 @@ import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.Type;
 import com.dat3m.dartagnan.expression.integers.IntCmpOp;
 import com.dat3m.dartagnan.expression.type.AggregateType;
-import com.dat3m.dartagnan.expression.type.BooleanType;
 import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
-import com.dat3m.dartagnan.expression.type.VoidType;
 import com.dat3m.dartagnan.parsers.InlineRISCVBaseVisitor;
 import com.dat3m.dartagnan.parsers.InlineRISCVParser;
+import com.dat3m.dartagnan.parsers.program.utils.InlineUtils;
 import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Event;
@@ -118,73 +117,6 @@ public class VisitorInlineRISCV extends InlineRISCVBaseVisitor<Object> {
         this.argsRegisters = llvmArguments;
     }
 
-    // Returns the size of the return register
-    // null / void -> 0
-    // i32 / bool -> 1
-    // aggregateType -> the amount of asm registers which are referred by the return registers
-    // e.g. { i32, i32 } -> 2
-    private int getNumASMReturnRegisters() {
-        if (this.returnRegister == null) {
-            return 0;
-        }
-        Type returnType = this.returnRegister.getType();
-        if (returnType instanceof IntegerType || returnType instanceof BooleanType) {
-            return 1;
-        } else if (isReturnRegisterAggregate()) {
-            return ((AggregateType) returnType).getTypeOffsets().size();
-        } else if (returnType instanceof VoidType) {
-            return 0;
-        } else {
-            throw new ParsingException("Unknown inline asm return type " + returnType);
-        }
-    }
-
-    // Tells if the returnRegister is an AggregateType
-    private boolean isReturnRegisterAggregate() {
-        Type returnRegisterType = this.returnRegister.getType();
-        return returnRegisterType != null && returnRegisterType instanceof AggregateType;
-    }
-
-    // Tells if the registerID is mapped to the returnRegister
-    private boolean isPartOfReturnRegister(int registerID) {
-        return registerID < getNumASMReturnRegisters();
-    }
-
-    // Given a string of a label, it either creates a new label, or returns the existing one if it was already defined
-    private Label getOrNewLabel(String labelName) {
-        if (!this.labelsDefined.containsKey(labelName)) {
-            this.labelsDefined.put(labelName, EventFactory.newLabel(labelName));
-        }
-        return this.labelsDefined.get(labelName);
-    }
-
-    // This function lets us know which type we need to assign to the created asm register.
-    // In order to do so, we have to understand which llvm register it is going to be mapped to.
-    // Given the registerID of the register e.g. $2 -> registerID = 2
-    // returns the type of the llvm register it is mapped to by the clobbers
-    // if it is referencing the return register, return its type.
-    // As said in the introduction, we are sure that an asm register is going to refer to a llvm one
-    // by the fact that the input is well formed.
-    private Type getLlvmRegisterTypeGivenAsmRegisterID(int registerID) {
-        Type registerType;
-        if (isPartOfReturnRegister(registerID)) {
-            if (returnRegister.getType() instanceof AggregateType at) {
-                // get the type from the corresponding field
-                registerType = at.getFields().get(registerID);
-            } else {
-                // returnRegister is not an aggregate, we just get that type
-                registerType = returnRegister.getType();
-            }
-        } else {
-            // registerID is mapped to a register in args. To get the correct position in args we need to shift the id by the size of the return register
-            registerType = argsRegisters.get(registerID - getNumASMReturnRegisters()).getType();
-        }
-        return registerType;
-    }
-
-    private String makeRegisterName(int registerID) {
-        return "asm_" + registerID;
-    }
 
     // This function is the entrypoint of the visitor.
     // the events that are going to be generated are
@@ -316,7 +248,7 @@ public class VisitorInlineRISCV extends InlineRISCVBaseVisitor<Object> {
 
     @Override
     public Object visitBranchNotEqual(InlineRISCVParser.BranchNotEqualContext ctx) {
-        Label label = getOrNewLabel(ctx.NumbersInline().getText());
+        Label label = InlineUtils.getOrNewLabel(labelsDefined, ctx.NumbersInline().getText());
         Register firstRegister = (Register) ctx.register(0).accept(this);
         Register secondRegister = (Register) ctx.register(1).accept(this);
         Expression expr = expressions.makeIntCmp(firstRegister, IntCmpOp.NEQ, secondRegister);
@@ -326,7 +258,7 @@ public class VisitorInlineRISCV extends InlineRISCVBaseVisitor<Object> {
 
     @Override
     public Object visitBranchNotEqualZero(InlineRISCVParser.BranchNotEqualZeroContext ctx) {
-        Label label = getOrNewLabel(ctx.NumbersInline().getText());
+        Label label = InlineUtils.getOrNewLabel(labelsDefined, ctx.NumbersInline().getText());
         Register firstRegister = (Register) ctx.register().accept(this);
         Expression zero = expressions.makeZero((IntegerType) firstRegister.getType());
         Expression expr = expressions.makeIntCmp(firstRegister, IntCmpOp.NEQ, zero);
@@ -337,7 +269,7 @@ public class VisitorInlineRISCV extends InlineRISCVBaseVisitor<Object> {
     @Override
     public Object visitLabelDefinition(InlineRISCVParser.LabelDefinitionContext ctx) {
         String labelID = ctx.NumbersInline().getText();
-        Label label = getOrNewLabel(labelID);
+        Label label = InlineUtils.getOrNewLabel(labelsDefined, labelID);
         asmInstructions.add(label);
         return null;
     }
@@ -373,15 +305,16 @@ public class VisitorInlineRISCV extends InlineRISCVBaseVisitor<Object> {
     // as we are going to need it while visiting the metadata to create the output assignment
     @Override
     public Object visitRegister(InlineRISCVParser.RegisterContext ctx) {
-        String registerName = ctx.NumbersInline().getText();
-        int registerID = Integer.parseInt(registerName);
+        String registerNumber = ctx.NumbersInline().getText();
+        int registerID = Integer.parseInt(registerNumber);
         if (asmRegisters.containsKey(registerID)) {
             return asmRegisters.get(registerID);
         } else {
             // Pick up the correct type and create the new Register
-            Type registerType = getLlvmRegisterTypeGivenAsmRegisterID(registerID);
-            Register newRegister = this.llvmFunction.getOrNewRegister(makeRegisterName(registerID), registerType);
-            if (isPartOfReturnRegister(registerID) && isReturnRegisterAggregate()) {
+            Type registerType = InlineUtils.getLlvmRegisterTypeGivenAsmRegisterID(this.argsRegisters,this.returnRegister,registerID);
+            String newRegisterName = InlineUtils.makeRegisterName(registerID);
+            Register newRegister = this.llvmFunction.getOrNewRegister(newRegisterName, registerType);
+            if (InlineUtils.isPartOfReturnRegister(this.returnRegister, registerID) && InlineUtils.isReturnRegisterAggregate(this.returnRegister)) {
                 this.pendingRegisters.add(newRegister);
             }
             asmRegisters.put(registerID, newRegister);
@@ -415,6 +348,7 @@ public class VisitorInlineRISCV extends InlineRISCVBaseVisitor<Object> {
                     Type aggregateType = TypeFactory.getInstance().getAggregateType(((AggregateType) returnRegister.getType()).getFields());
                     // %16 = call { ptr, i32, i64 } asm sideeffect "1:li $1, 1\0Alr.d $0, $2\0Abne $0, $4, 2f\0Asc.d $1, $3, $2\0Abnez $1, 1b\0A2:", "=&r,=&r,=r,r,r,2,~{memory}"(ptr %13, i64 %15, i64 %12) #7, !srcloc !18
                     // args are not passed in order, sorting solves it
+                    // we can do it only once here where we create the output assignment
                     this.pendingRegisters.sort(Comparator.comparing(Register::getName));
                     Expression finalAssignExpression = expressions.makeConstruct(aggregateType, this.pendingRegisters);
                     outputAssignments.add(EventFactory.newLocal(this.returnRegister, finalAssignExpression));
@@ -425,12 +359,12 @@ public class VisitorInlineRISCV extends InlineRISCVBaseVisitor<Object> {
                 if (asmRegister == null) {
                     continue;
                 }
-                Expression llvmRegister = argsRegisters.get(i - getNumASMReturnRegisters());
+                Expression llvmRegister = argsRegisters.get(i - InlineUtils.getNumASMReturnRegisters(this.returnRegister));
                 inputAssignments.add(EventFactory.newLocal(asmRegister, llvmRegister));
             }
             if (isConstraintNumeric(constraint)) {
                 int constraintValue = Integer.parseInt(constraint.getText());
-                inputAssignments.add(EventFactory.newLocal(asmRegisters.get(constraintValue), argsRegisters.get(i - getNumASMReturnRegisters())));
+                inputAssignments.add(EventFactory.newLocal(asmRegisters.get(constraintValue), argsRegisters.get(i - InlineUtils.getNumASMReturnRegisters(this.returnRegister))));
             }
         }
         return null;
