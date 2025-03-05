@@ -74,7 +74,7 @@ fenceOptions returns [String mode]
 
 constraint : outputOpAssign | inputOpGeneralReg | overlapInOutRegister;
 
-outputOpAssign              : Equals Amp? RLiteral;
+outputOpAssign              : Equals (Amp? RLiteral | Aliteral);
 inputOpGeneralReg           : RLiteral | ACapitalLiteral | Equals Ast MLiteral;
 overlapInOutRegister        : NumbersInline;
 
