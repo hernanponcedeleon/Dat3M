@@ -103,12 +103,28 @@ public class MockProgramBuilder extends ProgramBuilder {
     }
 
     private List<Expression> mockConstantArrayElements(Type elementType, Object value) {
-        if (elementType instanceof BooleanType) {
-            return ((List<?>) value).stream()
+        List<?> lValue = (List<?>) value;
+        if (lValue.isEmpty()) {
+            return List.of();
+        }
+        Object element = lValue.get(0);
+        if (element instanceof Expression) {
+            return lValue.stream()
+                    .map(v -> (Expression) v)
+                    .collect(Collectors.toList());
+        }
+        if (element instanceof String) {
+            return lValue.stream()
+                    .map(v -> getExpression((String) v))
+                    .collect(Collectors.toList());
+        }
+        if (element instanceof Boolean) {
+            return lValue.stream()
                     .map(v -> exprFactory.makeValue((boolean) v))
                     .collect(Collectors.toList());
-        } else if (elementType instanceof IntegerType iType) {
-            return ((List<?>) value).stream()
+        }
+        if (element instanceof Integer && elementType instanceof IntegerType iType) {
+            return lValue.stream()
                     .map(v -> exprFactory.makeValue((int) v, iType))
                     .collect(Collectors.toList());
         }
