@@ -10,12 +10,10 @@ import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.Type;
 import com.dat3m.dartagnan.expression.integers.IntCmpOp;
-import com.dat3m.dartagnan.expression.type.AggregateType;
-import com.dat3m.dartagnan.expression.type.BooleanType;
 import com.dat3m.dartagnan.expression.type.IntegerType;
-import com.dat3m.dartagnan.expression.type.VoidType;
 import com.dat3m.dartagnan.parsers.InlineAsmBaseVisitor;
 import com.dat3m.dartagnan.parsers.InlineAsmParser;
+import com.dat3m.dartagnan.parsers.program.utils.InlineUtils;
 import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Event;
@@ -116,74 +114,7 @@ public class VisitorInlineAsm extends InlineAsmBaseVisitor<Object> {
         this.llvmFunction = llvmFunction;
         this.returnRegister = returnRegister;
         this.argsRegisters = llvmArguments;
-    }
 
-    // Returns the size of the return register
-    // null / void -> 0
-    // i32 / bool -> 1
-    // aggregateType -> the amount of asm registers which are referred by the return registers
-    // e.g. { i32, i32 } -> 2
-    private int getNumASMReturnRegisters() {
-        if (this.returnRegister == null) {
-            return 0;
-        }
-        Type returnType = this.returnRegister.getType();
-        if (returnType instanceof IntegerType || returnType instanceof BooleanType) {
-            return 1;
-        } else if (isReturnRegisterAggregate()) {
-            return ((AggregateType) returnType).getFields().size();
-        } else if (returnType instanceof VoidType) {
-            return 0;
-        } else {
-            throw new ParsingException("Unknown inline asm return type " + returnType);
-        }
-    }
-
-    // Tells if the returnRegister is an AggregateType
-    private boolean isReturnRegisterAggregate() {
-        Type returnRegisterType = this.returnRegister.getType();
-        return returnRegisterType != null && returnRegisterType instanceof AggregateType;
-    }
-
-    // Tells if the registerID is mapped to the returnRegister
-    private boolean isPartOfReturnRegister(int registerID) {
-        return registerID < getNumASMReturnRegisters();
-    }
-
-    // Given a string of a label, it either creates a new label, or returns the existing one if it was already defined
-    private Label getOrNewLabel(String labelName) {
-        if (!this.labelsDefined.containsKey(labelName)) {
-            this.labelsDefined.put(labelName, EventFactory.newLabel(labelName));
-        }
-        return this.labelsDefined.get(labelName);
-    }
-
-    // This function lets us know which type we need to assign to the created asm register.
-    // In order to do so, we have to understand which llvm register it is going to be mapped to.
-    // Given the registerID of the register e.g. $2 -> registerID = 2
-    // returns the type of the llvm register it is mapped to by the clobbers
-    // if it is referencing the return register, return its type.
-    // As said in the introduction, we are sure that an asm register is going to refer to a llvm one
-    // by the fact that the input is well formed.
-    private Type getLlvmRegisterTypeGivenAsmRegisterID(int registerID) {
-        Type registerType;
-        if (isPartOfReturnRegister(registerID)) {
-            if (returnRegister.getType() instanceof AggregateType at) {
-                // get the type from the corresponding field
-                registerType = at.getFields().get(registerID).type();
-            } else {
-                // returnRegister is not an aggregate, we just get that type
-                registerType = returnRegister.getType();
-            }
-        } else {
-            // registerID is mapped to a register in args. To get the correct position in args we need to shift the id by the size of the return register
-            registerType = argsRegisters.get(registerID - getNumASMReturnRegisters()).getType();
-        }
-        return registerType;
-    }
-
-    private String makeRegisterName(int registerID) {
-        return "asm_" + registerID;
     }
 
     // This function is the entrypoint of the visitor.
@@ -342,7 +273,7 @@ public class VisitorInlineAsm extends InlineAsmBaseVisitor<Object> {
 
     @Override
     public Object visitCompareBranchNonZero(InlineAsmParser.CompareBranchNonZeroContext ctx) {
-        Label label = getOrNewLabel(ctx.NumbersInline().getText());
+        Label label = InlineUtils.getOrNewLabel(labelsDefined, ctx.NumbersInline().getText());
         Register firstRegister = (Register) ctx.register().accept(this);
         Expression zero = expressions.makeZero((IntegerType) firstRegister.getType());
         Expression expr = expressions.makeIntCmp(firstRegister, IntCmpOp.NEQ, zero);
@@ -360,7 +291,7 @@ public class VisitorInlineAsm extends InlineAsmBaseVisitor<Object> {
 
     @Override
     public Object visitBranchEqual(InlineAsmParser.BranchEqualContext ctx) {
-        Label label = getOrNewLabel(ctx.NumbersInline().getText());
+        Label label = InlineUtils.getOrNewLabel(labelsDefined, ctx.NumbersInline().getText());
         Expression expr = expressions.makeIntCmp(comparator.left(), IntCmpOp.EQ, comparator.right());
         asmInstructions.add(EventFactory.newJump(expr, label));
         return null;
@@ -368,7 +299,7 @@ public class VisitorInlineAsm extends InlineAsmBaseVisitor<Object> {
 
     @Override
     public Object visitBranchNotEqual(InlineAsmParser.BranchNotEqualContext ctx) {
-        Label label = getOrNewLabel(ctx.NumbersInline().getText());
+        Label label = InlineUtils.getOrNewLabel(labelsDefined, ctx.NumbersInline().getText());
         Expression expr = expressions.makeIntCmp(comparator.left(), IntCmpOp.NEQ, comparator.right());
         asmInstructions.add(EventFactory.newJump(expr, label));
         return null;
@@ -377,7 +308,7 @@ public class VisitorInlineAsm extends InlineAsmBaseVisitor<Object> {
     @Override
     public Object visitLabelDefinition(InlineAsmParser.LabelDefinitionContext ctx) {
         String labelID = ctx.NumbersInline().getText();
-        Label label = getOrNewLabel(labelID);
+        Label label = InlineUtils.getOrNewLabel(labelsDefined, labelID);
         asmInstructions.add(label);
         return null;
     }
@@ -389,15 +320,16 @@ public class VisitorInlineAsm extends InlineAsmBaseVisitor<Object> {
     // as we are going to need it while visiting the metadata to create the output assignment
     @Override
     public Object visitRegister(InlineAsmParser.RegisterContext ctx) {
-        String registerName = ctx.NumbersInline().getText();
-        int registerID = Integer.parseInt(registerName);
+        String registerNumber = ctx.NumbersInline().getText();
+        int registerID = Integer.parseInt(registerNumber);
         if (asmRegisters.containsKey(registerID)) {
             return asmRegisters.get(registerID);
         } else {
             // Pick up the correct type and create the new Register
-            Type registerType = getLlvmRegisterTypeGivenAsmRegisterID(registerID);
-            Register newRegister = this.llvmFunction.getOrNewRegister(makeRegisterName(registerID), registerType);
-            if (isPartOfReturnRegister(registerID) && isReturnRegisterAggregate()) {
+            Type registerType = InlineUtils.getLlvmRegisterTypeGivenAsmRegisterID(this.argsRegisters,this.returnRegister,registerID);
+            String newRegisterName = InlineUtils.makeRegisterName(registerID);
+            Register newRegister = this.llvmFunction.getOrNewRegister(newRegisterName, registerType);
+            if (InlineUtils.isPartOfReturnRegister(this.returnRegister, registerID) && InlineUtils.isReturnRegisterAggregate(this.returnRegister)) {
                 this.pendingRegisters.add(newRegister);
             }
             asmRegisters.put(registerID, newRegister);
@@ -443,12 +375,12 @@ public class VisitorInlineAsm extends InlineAsmBaseVisitor<Object> {
                 if (asmRegister == null) {
                     continue;
                 }
-                Expression llvmRegister = argsRegisters.get(i - getNumASMReturnRegisters());
+                Expression llvmRegister = argsRegisters.get(i - InlineUtils.getNumASMReturnRegisters(this.returnRegister));
                 inputAssignments.add(EventFactory.newLocal(asmRegister, llvmRegister));
             }
             if (isConstraintNumeric(constraint)) {
                 int constraintValue = Integer.parseInt(constraint.getText());
-                inputAssignments.add(EventFactory.newLocal(asmRegisters.get(constraintValue), argsRegisters.get(i - getNumASMReturnRegisters())));
+                inputAssignments.add(EventFactory.newLocal(asmRegisters.get(constraintValue), argsRegisters.get(i - InlineUtils.getNumASMReturnRegisters(this.returnRegister))));
             }
         }
         return null;
