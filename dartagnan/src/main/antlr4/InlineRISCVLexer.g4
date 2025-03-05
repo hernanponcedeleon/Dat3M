@@ -4,9 +4,9 @@ import BaseLexer;
 
 
 // instructions 
-Load                        : 'ld' | 'lw'; // since it is using 64 bit, we can evaluate store word as normal one as it picks up 32
+Load                        : 'ld' | 'lw' | 'lwu'; // since it is using 64 bit, we can evaluate store word as normal one as it picks up 32
 LoadImmediate               : 'li';
-LoadExclusive               : 'lr.d';
+LoadExclusive               : 'lr.d' | 'lr.w';
 LoadAcquireExclusive        : 'lr.d.aq';
 LoadAcquireReleaseExclusive : 'lr.d.aqrl';
 Add                         : 'add';
@@ -14,7 +14,7 @@ Sub                         : 'sub';
 BranchNotEqual              : 'bne';
 BranchNotEqualZero          : 'bnez';
 Store                       : 'sd' | 'sw'; // since it is using 64 bit, we can evaluate store word as normal one as it picks up 32
-StoreConditional            : 'sc.d';
+StoreConditional            : 'sc.d' | 'sc.w';
 StoreConditionalRelease     : 'sc.d.rl';
 Move                        : 'mv';
 Negate                      : 'neg';
