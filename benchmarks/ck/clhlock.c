@@ -30,6 +30,7 @@ void *run(void *arg)
 int main()
 {
     pthread_t threads[NTHREADS];
+    int tids[NTHREADS];
     int i;
 
     ck_spinlock_clh_t unowned;
