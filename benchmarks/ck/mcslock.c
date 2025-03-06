@@ -32,8 +32,7 @@ void *run(void *arg)
 int main()
 {
     pthread_t threads[NTHREADS];
-    long tids[NTHREADS];
-    long i;
+    int i;
 
     nodes = (ck_spinlock_mcs_t)malloc(NTHREADS * sizeof(ck_spinlock_mcs_t));
     if (nodes == NULL)
