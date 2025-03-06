@@ -5,11 +5,11 @@
 #include <ck_fifo.h>
 
 #ifndef NTHREADS
-    #define NTHREADS 2
+#define NTHREADS 2
 #endif
 
 #ifndef VALUES_TO_ENQUEUE
-    #define VALUES_TO_ENQUEUE 3
+#define VALUES_TO_ENQUEUE 3
 #endif
 
 typedef struct point_s

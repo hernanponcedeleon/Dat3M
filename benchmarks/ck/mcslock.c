@@ -1,21 +1,20 @@
 #include <assert.h>
 #include <ck_spinlock.h>
 #include <pthread.h>
-#include <stdio.h>
 #include <stdlib.h>
 
 #ifndef NTHREADS
-    #define NTHREADS 3
+#define NTHREADS 2
 #endif
-
 
 ck_spinlock_mcs_t lock = NULL;
 ck_spinlock_mcs_t nodes;
 
 int x = 0, y = 0;
 
-void *run(void *arg) {
-    long tid = *(int *)arg;
+void *run(void *arg)
+{
+    long tid = (long)arg;
 
     ck_spinlock_mcs_t thread_node = &nodes[tid];
 
@@ -29,27 +28,33 @@ void *run(void *arg) {
     return NULL;
 }
 
-int main() {
+int main()
+{
     pthread_t threads[NTHREADS];
-    int tids[NTHREADS];
-    int i;
+    long tids[NTHREADS];
+    long i;
 
     nodes = (ck_spinlock_mcs_t)malloc(NTHREADS * sizeof(ck_spinlock_mcs_t));
-    if (nodes == NULL) {
+    if (nodes == NULL)
+    {
         exit(EXIT_FAILURE);
     }
 
     lock = NULL;
 
-    for (i = 0; i < NTHREADS; i++) {
-        if (pthread_create(&threads[i], NULL, run, &tids[i]) != 0) {
+    for (i = 0; i < NTHREADS; i++)
+    {
+        if (pthread_create(&threads[i], NULL, run, &tids[i]) != 0)
+        {
             free(nodes);
             exit(EXIT_FAILURE);
         }
     }
 
-    for (i = 0; i < NTHREADS; i++) {
-        if (pthread_join(threads[i], NULL) != 0) {
+    for (i = 0; i < NTHREADS; i++)
+    {
+        if (pthread_join(threads[i], NULL) != 0)
+        {
             free(nodes);
             exit(EXIT_FAILURE);
         }

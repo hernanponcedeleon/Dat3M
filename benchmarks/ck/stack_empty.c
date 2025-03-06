@@ -4,15 +4,15 @@
 #include <assert.h>
 
 #ifndef NUM_PUSH_PER_THREADS
-    #define NUM_PUSH_PER_THREADS 3
+#define NUM_PUSH_PER_THREADS 3
 #endif
 
 #ifndef NUM_PUSHERS
-    #define NUM_PUSHERS 2
+#define NUM_PUSHERS 2
 #endif
 
 #ifndef NUM_POPPERS
-    #define NUM_POPPERS 2
+#define NUM_POPPERS 2
 #endif
 
 ck_stack_t stack = CK_STACK_INITIALIZER;
@@ -46,7 +46,9 @@ void *pusher_fn(void *arg)
 void *popper_fn(void *arg)
 {
     ck_stack_entry_t *entry;
-    while (!ck_pr_load_int(&pusher_done)){}
+    while (!ck_pr_load_int(&pusher_done))
+    {
+    }
 
     while ((entry = ck_stack_pop_upmc(&stack)) != NULL)
     {
@@ -87,14 +89,13 @@ int main(void)
         pthread_join(poppers[i], NULL);
     }
 
-// we do not want to assert the final state if we are compiling to armv8 
+// we do not want to assert the final state if we are compiling to armv8
 // https://github.com/hernanponcedeleon/Dat3M/issues/817
 #ifdef __aarch64__
-    #error dat3m is going to complain
+#error dat3m is going to complain
 #else
     assert(CK_STACK_ISEMPTY(&stack));
 #endif
-
 
     return EXIT_SUCCESS;
 }

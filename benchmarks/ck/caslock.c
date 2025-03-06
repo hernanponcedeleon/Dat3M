@@ -2,9 +2,10 @@
 #include <ck_spinlock.h>
 #include <dat3m.h>
 #include <pthread.h>
+#include <stdlib.h>
 
 #ifndef NTHREADS
-    #define NTHREADS 3
+#define NTHREADS 3
 #endif
 
 // RISCV asm uses amo instructions for ck_spinlock_cas_trylock -> ck_pr_fas_uint
@@ -13,15 +14,19 @@
 ck_spinlock_cas_t lock;
 int x = 0, y = 0;
 
-void *run(void *arg) {
+void *run(void *arg)
+{
     int tid = *(int *)arg;
 #ifdef __riscv
     ck_spinlock_cas_lock(&lock);
 #else
-    if (tid == NTHREADS - 1) {
+    if (tid == NTHREADS - 1)
+    {
         bool acquired = ck_spinlock_cas_trylock(&lock);
         __VERIFIER_assume(acquired);
-    } else {
+    }
+    else
+    {
         ck_spinlock_cas_lock(&lock);
     }
 #endif
@@ -31,18 +36,23 @@ void *run(void *arg) {
     return NULL;
 }
 
-int main() {
+int main()
+{
     pthread_t threads[NTHREADS];
     int tids[NTHREADS];
     int i;
     ck_spinlock_cas_init(&lock);
-    for (i = 0; i < NTHREADS; i++) {
-        if (pthread_create(&threads[i], NULL, run, &tids[i]) != 0) {
+    for (i = 0; i < NTHREADS; i++)
+    {
+        if (pthread_create(&threads[i], NULL, run, &tids[i]) != 0)
+        {
             exit(EXIT_FAILURE);
         }
     }
-    for (i = 0; i < NTHREADS; i++) {
-        if (pthread_join(threads[i], NULL) != 0) {
+    for (i = 0; i < NTHREADS; i++)
+    {
+        if (pthread_join(threads[i], NULL) != 0)
+        {
             exit(EXIT_FAILURE);
         };
     }

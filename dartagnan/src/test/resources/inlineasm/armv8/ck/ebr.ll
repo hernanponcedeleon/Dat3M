@@ -1,5 +1,5 @@
-; ModuleID = 'client-code.c'
-source_filename = "client-code.c"
+; ModuleID = 'ebr.c'
+source_filename = "ebr.c"
 target datalayout = "e-m:o-i64:64-i128:128-n32:64-S128-Fn32"
 target triple = "arm64-apple-macosx15.0.0"
 
@@ -15,10 +15,10 @@ target triple = "arm64-apple-macosx15.0.0"
 @stack_epoch = internal global %struct.ck_epoch zeroinitializer, align 8
 @records = global [4 x %struct.ck_epoch_record] zeroinitializer, align 64
 @__func__.thread = private unnamed_addr constant [7 x i8] c"thread\00", align 1
-@.str = private unnamed_addr constant [14 x i8] c"client-code.c\00", align 1
+@.str = private unnamed_addr constant [6 x i8] c"ebr.c\00", align 1
 @.str.1 = private unnamed_addr constant [41 x i8] c"!(local_epoch == 1 && global_epoch == 3)\00", align 1
 
-; Function Attrs: noinline nounwind ssp uwtable(sync)
+; Function Attrs: noinline nounwind optnone ssp uwtable(sync)
 define zeroext i1 @_ck_epoch_delref(ptr noundef %0, ptr noundef %1) #0 {
   %3 = alloca i1, align 1
   %4 = alloca ptr, align 8
@@ -99,7 +99,7 @@ define zeroext i1 @_ck_epoch_delref(ptr noundef %0, ptr noundef %1) #0 {
   ret i1 %57
 }
 
-; Function Attrs: noinline nounwind ssp uwtable(sync)
+; Function Attrs: noinline nounwind optnone ssp uwtable(sync)
 define internal void @ck_pr_md_store_uint(ptr noundef %0, i32 noundef %1) #0 {
   %3 = alloca ptr, align 8
   %4 = alloca i32, align 4
@@ -112,7 +112,7 @@ define internal void @ck_pr_md_store_uint(ptr noundef %0, i32 noundef %1) #0 {
   ret void
 }
 
-; Function Attrs: noinline nounwind ssp uwtable(sync)
+; Function Attrs: noinline nounwind optnone ssp uwtable(sync)
 define void @_ck_epoch_addref(ptr noundef %0, ptr noundef %1) #0 {
   %3 = alloca ptr, align 8
   %4 = alloca ptr, align 8
@@ -184,7 +184,7 @@ define void @_ck_epoch_addref(ptr noundef %0, ptr noundef %1) #0 {
   ret void
 }
 
-; Function Attrs: noinline nounwind ssp uwtable(sync)
+; Function Attrs: noinline nounwind optnone ssp uwtable(sync)
 define internal i32 @ck_pr_md_load_uint(ptr noundef %0) #0 {
   %2 = alloca ptr, align 8
   %3 = alloca i64, align 8
@@ -198,13 +198,13 @@ define internal i32 @ck_pr_md_load_uint(ptr noundef %0) #0 {
   ret i32 %7
 }
 
-; Function Attrs: noinline nounwind ssp uwtable(sync)
+; Function Attrs: noinline nounwind optnone ssp uwtable(sync)
 define internal void @ck_pr_fence_acqrel() #0 {
   call void @ck_pr_fence_strict_acqrel()
   ret void
 }
 
-; Function Attrs: noinline nounwind ssp uwtable(sync)
+; Function Attrs: noinline nounwind optnone ssp uwtable(sync)
 define void @ck_epoch_init(ptr noundef %0) #0 {
   %2 = alloca ptr, align 8
   store ptr %0, ptr %2, align 8
@@ -221,7 +221,7 @@ define void @ck_epoch_init(ptr noundef %0) #0 {
   ret void
 }
 
-; Function Attrs: noinline nounwind ssp uwtable(sync)
+; Function Attrs: noinline nounwind optnone ssp uwtable(sync)
 define internal void @ck_stack_init(ptr noundef %0) #0 {
   %2 = alloca ptr, align 8
   store ptr %0, ptr %2, align 8
@@ -234,13 +234,13 @@ define internal void @ck_stack_init(ptr noundef %0) #0 {
   ret void
 }
 
-; Function Attrs: noinline nounwind ssp uwtable(sync)
+; Function Attrs: noinline nounwind optnone ssp uwtable(sync)
 define internal void @ck_pr_fence_store() #0 {
   call void @ck_pr_fence_strict_store()
   ret void
 }
 
-; Function Attrs: noinline nounwind ssp uwtable(sync)
+; Function Attrs: noinline nounwind optnone ssp uwtable(sync)
 define ptr @ck_epoch_recycle(ptr noundef %0, ptr noundef %1) #0 {
   %3 = alloca ptr, align 8
   %4 = alloca ptr, align 8
@@ -327,7 +327,7 @@ define ptr @ck_epoch_recycle(ptr noundef %0, ptr noundef %1) #0 {
   ret ptr %50
 }
 
-; Function Attrs: noinline nounwind ssp uwtable(sync)
+; Function Attrs: noinline nounwind optnone ssp uwtable(sync)
 define internal ptr @ck_epoch_record_container(ptr noundef %0) #0 {
   %2 = alloca ptr, align 8
   store ptr %0, ptr %2, align 8
@@ -336,13 +336,13 @@ define internal ptr @ck_epoch_record_container(ptr noundef %0) #0 {
   ret ptr %4
 }
 
-; Function Attrs: noinline nounwind ssp uwtable(sync)
+; Function Attrs: noinline nounwind optnone ssp uwtable(sync)
 define internal void @ck_pr_fence_load() #0 {
   call void @ck_pr_fence_strict_load()
   ret void
 }
 
-; Function Attrs: noinline nounwind ssp uwtable(sync)
+; Function Attrs: noinline nounwind optnone ssp uwtable(sync)
 define internal i32 @ck_pr_fas_uint(ptr noundef %0, i32 noundef %1) #0 {
   %3 = alloca ptr, align 8
   %4 = alloca i32, align 4
@@ -361,7 +361,7 @@ define internal i32 @ck_pr_fas_uint(ptr noundef %0, i32 noundef %1) #0 {
   ret i32 %12
 }
 
-; Function Attrs: noinline nounwind ssp uwtable(sync)
+; Function Attrs: noinline nounwind optnone ssp uwtable(sync)
 define internal void @ck_pr_dec_uint(ptr noundef %0) #0 {
   %2 = alloca ptr, align 8
   %3 = alloca i32, align 4
@@ -378,7 +378,7 @@ define internal void @ck_pr_dec_uint(ptr noundef %0) #0 {
   ret void
 }
 
-; Function Attrs: noinline nounwind ssp uwtable(sync)
+; Function Attrs: noinline nounwind optnone ssp uwtable(sync)
 define internal void @ck_pr_md_store_ptr(ptr noundef %0, ptr noundef %1) #0 {
   %3 = alloca ptr, align 8
   %4 = alloca ptr, align 8
@@ -391,7 +391,7 @@ define internal void @ck_pr_md_store_ptr(ptr noundef %0, ptr noundef %1) #0 {
   ret void
 }
 
-; Function Attrs: noinline nounwind ssp uwtable(sync)
+; Function Attrs: noinline nounwind optnone ssp uwtable(sync)
 define void @ck_epoch_register(ptr noundef %0, ptr noundef %1, ptr noundef %2) #0 {
   %4 = alloca ptr, align 8
   %5 = alloca ptr, align 8
@@ -470,7 +470,7 @@ declare ptr @__memset_chk(ptr noundef, i32 noundef, i64 noundef, i64 noundef) #1
 ; Function Attrs: nocallback nofree nosync nounwind speculatable willreturn memory(none)
 declare i64 @llvm.objectsize.i64.p0(ptr, i1 immarg, i1 immarg, i1 immarg) #2
 
-; Function Attrs: noinline nounwind ssp uwtable(sync)
+; Function Attrs: noinline nounwind optnone ssp uwtable(sync)
 define internal void @ck_stack_push_upmc(ptr noundef %0, ptr noundef %1) #0 {
   %3 = alloca ptr, align 8
   %4 = alloca ptr, align 8
@@ -510,7 +510,7 @@ define internal void @ck_stack_push_upmc(ptr noundef %0, ptr noundef %1) #0 {
   ret void
 }
 
-; Function Attrs: noinline nounwind ssp uwtable(sync)
+; Function Attrs: noinline nounwind optnone ssp uwtable(sync)
 define void @ck_epoch_unregister(ptr noundef %0) #0 {
   %2 = alloca ptr, align 8
   %3 = alloca ptr, align 8
@@ -577,7 +577,7 @@ define void @ck_epoch_unregister(ptr noundef %0) #0 {
   ret void
 }
 
-; Function Attrs: noinline nounwind ssp uwtable(sync)
+; Function Attrs: noinline nounwind optnone ssp uwtable(sync)
 define internal void @ck_pr_inc_uint(ptr noundef %0) #0 {
   %2 = alloca ptr, align 8
   %3 = alloca i32, align 4
@@ -594,7 +594,7 @@ define internal void @ck_pr_inc_uint(ptr noundef %0) #0 {
   ret void
 }
 
-; Function Attrs: noinline nounwind ssp uwtable(sync)
+; Function Attrs: noinline nounwind optnone ssp uwtable(sync)
 define void @ck_epoch_reclaim(ptr noundef %0) #0 {
   %2 = alloca ptr, align 8
   %3 = alloca i32, align 4
@@ -623,7 +623,7 @@ define void @ck_epoch_reclaim(ptr noundef %0) #0 {
   ret void
 }
 
-; Function Attrs: noinline nounwind ssp uwtable(sync)
+; Function Attrs: noinline nounwind optnone ssp uwtable(sync)
 define internal i32 @ck_epoch_dispatch(ptr noundef %0, i32 noundef %1, ptr noundef %2) #0 {
   %4 = alloca ptr, align 8
   %5 = alloca i32, align 4
@@ -739,7 +739,7 @@ define internal i32 @ck_epoch_dispatch(ptr noundef %0, i32 noundef %1, ptr nound
   ret i32 %74
 }
 
-; Function Attrs: noinline nounwind ssp uwtable(sync)
+; Function Attrs: noinline nounwind optnone ssp uwtable(sync)
 define void @ck_epoch_synchronize_wait(ptr noundef %0, ptr noundef %1, ptr noundef %2) #0 {
   %4 = alloca ptr, align 8
   %5 = alloca ptr, align 8
@@ -776,15 +776,15 @@ define void @ck_epoch_synchronize_wait(ptr noundef %0, ptr noundef %1, ptr nound
   store ptr null, ptr %15, align 8
   br label %28
 
-28:                                               ; preds = %105, %3
+28:                                               ; preds = %104, %3
   %29 = load i32, ptr %19, align 4
   %30 = icmp ult i32 %29, 2
-  br i1 %30, label %31, label %108
+  br i1 %30, label %31, label %107
 
 31:                                               ; preds = %28
   br label %32
 
-32:                                               ; preds = %59, %31
+32:                                               ; preds = %84, %58, %31
   %33 = load ptr, ptr %12, align 8
   %34 = load ptr, ptr %15, align 8
   %35 = load i32, ptr %16, align 4
@@ -792,7 +792,7 @@ define void @ck_epoch_synchronize_wait(ptr noundef %0, ptr noundef %1, ptr nound
   store ptr %36, ptr %15, align 8
   %37 = load ptr, ptr %15, align 8
   %38 = icmp ne ptr %37, null
-  br i1 %38, label %39, label %86
+  br i1 %38, label %39, label %85
 
 39:                                               ; preds = %32
   call void @ck_pr_stall()
@@ -803,7 +803,7 @@ define void @ck_epoch_synchronize_wait(ptr noundef %0, ptr noundef %1, ptr nound
   %43 = load i32, ptr %22, align 4
   %44 = load i32, ptr %16, align 4
   %45 = icmp eq i32 %43, %44
-  br i1 %45, label %46, label %60
+  br i1 %45, label %46, label %59
 
 46:                                               ; preds = %39
   %47 = load ptr, ptr %12, align 8
@@ -827,107 +827,101 @@ define void @ck_epoch_synchronize_wait(ptr noundef %0, ptr noundef %1, ptr nound
   br label %58
 
 58:                                               ; preds = %46, %53
-  br label %59
-
-59:                                               ; preds = %58, %85
   br label %32, !llvm.loop !19
 
-60:                                               ; preds = %39
-  %61 = load i32, ptr %22, align 4
-  store i32 %61, ptr %16, align 4
-  %62 = load i32, ptr %18, align 4
-  %63 = load i32, ptr %17, align 4
-  %64 = icmp ugt i32 %62, %63
-  %65 = zext i1 %64 to i32
-  %66 = load i32, ptr %16, align 4
-  %67 = load i32, ptr %18, align 4
-  %68 = icmp uge i32 %66, %67
-  %69 = zext i1 %68 to i32
-  %70 = and i32 %65, %69
-  %71 = icmp ne i32 %70, 0
-  br i1 %71, label %72, label %73
+59:                                               ; preds = %39
+  %60 = load i32, ptr %22, align 4
+  store i32 %60, ptr %16, align 4
+  %61 = load i32, ptr %18, align 4
+  %62 = load i32, ptr %17, align 4
+  %63 = icmp ugt i32 %61, %62
+  %64 = zext i1 %63 to i32
+  %65 = load i32, ptr %16, align 4
+  %66 = load i32, ptr %18, align 4
+  %67 = icmp uge i32 %65, %66
+  %68 = zext i1 %67 to i32
+  %69 = and i32 %64, %68
+  %70 = icmp ne i32 %69, 0
+  br i1 %70, label %71, label %72
 
-72:                                               ; preds = %60
-  br label %110
+71:                                               ; preds = %59
+  br label %108
 
-73:                                               ; preds = %60
-  %74 = load ptr, ptr %12, align 8
-  %75 = load ptr, ptr %15, align 8
-  %76 = load ptr, ptr %13, align 8
-  %77 = load ptr, ptr %14, align 8
-  store ptr %74, ptr %8, align 8
-  store ptr %75, ptr %9, align 8
-  store ptr %76, ptr %10, align 8
-  store ptr %77, ptr %11, align 8
-  %78 = load ptr, ptr %10, align 8
-  %79 = icmp ne ptr %78, null
-  br i1 %79, label %80, label %85
+72:                                               ; preds = %59
+  %73 = load ptr, ptr %12, align 8
+  %74 = load ptr, ptr %15, align 8
+  %75 = load ptr, ptr %13, align 8
+  %76 = load ptr, ptr %14, align 8
+  store ptr %73, ptr %8, align 8
+  store ptr %74, ptr %9, align 8
+  store ptr %75, ptr %10, align 8
+  store ptr %76, ptr %11, align 8
+  %77 = load ptr, ptr %10, align 8
+  %78 = icmp ne ptr %77, null
+  br i1 %78, label %79, label %84
 
-80:                                               ; preds = %73
-  %81 = load ptr, ptr %10, align 8
-  %82 = load ptr, ptr %8, align 8
-  %83 = load ptr, ptr %9, align 8
-  %84 = load ptr, ptr %11, align 8
-  call void %81(ptr noundef %82, ptr noundef %83, ptr noundef %84) #5
-  br label %85
+79:                                               ; preds = %72
+  %80 = load ptr, ptr %10, align 8
+  %81 = load ptr, ptr %8, align 8
+  %82 = load ptr, ptr %9, align 8
+  %83 = load ptr, ptr %11, align 8
+  call void %80(ptr noundef %81, ptr noundef %82, ptr noundef %83) #5
+  br label %84
 
-85:                                               ; preds = %73, %80
+84:                                               ; preds = %72, %79
   store ptr null, ptr %15, align 8
-  br label %59
+  br label %32, !llvm.loop !19
 
-86:                                               ; preds = %32
-  %87 = load i8, ptr %20, align 1
-  %88 = trunc i8 %87 to i1
-  %89 = zext i1 %88 to i32
-  %90 = icmp eq i32 %89, 0
-  br i1 %90, label %91, label %92
+85:                                               ; preds = %32
+  %86 = load i8, ptr %20, align 1
+  %87 = trunc i8 %86 to i1
+  %88 = zext i1 %87 to i32
+  %89 = icmp eq i32 %88, 0
+  br i1 %89, label %90, label %91
 
-91:                                               ; preds = %86
-  br label %109
+90:                                               ; preds = %85
+  br label %107
 
-92:                                               ; preds = %86
-  %93 = load ptr, ptr %12, align 8
-  %94 = getelementptr inbounds %struct.ck_epoch, ptr %93, i32 0, i32 0
+91:                                               ; preds = %85
+  %92 = load ptr, ptr %12, align 8
+  %93 = getelementptr inbounds %struct.ck_epoch, ptr %92, i32 0, i32 0
+  %94 = load i32, ptr %16, align 4
   %95 = load i32, ptr %16, align 4
-  %96 = load i32, ptr %16, align 4
-  %97 = add i32 %96, 1
-  %98 = call zeroext i1 @ck_pr_cas_uint_value(ptr noundef %94, i32 noundef %95, i32 noundef %97, ptr noundef %16)
-  %99 = zext i1 %98 to i8
-  store i8 %99, ptr %21, align 1
+  %96 = add i32 %95, 1
+  %97 = call zeroext i1 @ck_pr_cas_uint_value(ptr noundef %93, i32 noundef %94, i32 noundef %96, ptr noundef %16)
+  %98 = zext i1 %97 to i8
+  store i8 %98, ptr %21, align 1
   call void @ck_pr_fence_atomic_load()
-  %100 = load i32, ptr %16, align 4
-  %101 = load i8, ptr %21, align 1
-  %102 = trunc i8 %101 to i1
-  %103 = zext i1 %102 to i32
-  %104 = add i32 %100, %103
-  store i32 %104, ptr %16, align 4
-  br label %105
+  %99 = load i32, ptr %16, align 4
+  %100 = load i8, ptr %21, align 1
+  %101 = trunc i8 %100 to i1
+  %102 = zext i1 %101 to i32
+  %103 = add i32 %99, %102
+  store i32 %103, ptr %16, align 4
+  br label %104
 
-105:                                              ; preds = %92
+104:                                              ; preds = %91
   store ptr null, ptr %15, align 8
-  %106 = load i32, ptr %19, align 4
-  %107 = add i32 %106, 1
-  store i32 %107, ptr %19, align 4
+  %105 = load i32, ptr %19, align 4
+  %106 = add i32 %105, 1
+  store i32 %106, ptr %19, align 4
   br label %28, !llvm.loop !20
 
-108:                                              ; preds = %28
-  br label %109
+107:                                              ; preds = %90, %28
+  br label %108
 
-109:                                              ; preds = %108, %91
-  br label %110
-
-110:                                              ; preds = %109, %72
+108:                                              ; preds = %107, %71
   call void @ck_pr_fence_memory()
   ret void
 }
 
-; Function Attrs: noinline nounwind ssp uwtable(sync)
+; Function Attrs: noinline nounwind optnone ssp uwtable(sync)
 define internal void @ck_pr_fence_memory() #0 {
   call void @ck_pr_fence_strict_memory()
   ret void
 }
 
-; Function Attrs: noinline nounwind ssp uwtable(sync)
+; Function Attrs: noinline nounwind optnone ssp uwtable(sync)
 define internal ptr @ck_epoch_scan(ptr noundef %0, ptr noundef %1, i32 noundef %2, ptr noundef %3) #0 {
   %5 = alloca ptr, align 8
   %6 = alloca ptr, align 8
@@ -966,10 +960,10 @@ define internal ptr @ck_epoch_scan(ptr noundef %0, ptr noundef %1, i32 noundef %
 25:                                               ; preds = %21, %15
   br label %26
 
-26:                                               ; preds = %42, %25
+26:                                               ; preds = %64, %38, %25
   %27 = load ptr, ptr %10, align 8
   %28 = icmp ne ptr %27, null
-  br i1 %28, label %29, label %69
+  br i1 %28, label %29, label %68
 
 29:                                               ; preds = %26
   %30 = load ptr, ptr %10, align 8
@@ -982,72 +976,69 @@ define internal ptr @ck_epoch_scan(ptr noundef %0, ptr noundef %1, i32 noundef %
   %35 = load i32, ptr %11, align 4
   %36 = and i32 %35, 1
   %37 = icmp ne i32 %36, 0
-  br i1 %37, label %38, label %43
+  br i1 %37, label %38, label %42
 
 38:                                               ; preds = %29
   %39 = load ptr, ptr %10, align 8
   %40 = getelementptr inbounds %struct.ck_stack_entry, ptr %39, i32 0, i32 0
   %41 = load ptr, ptr %40, align 8
   store ptr %41, ptr %10, align 8
-  br label %42
-
-42:                                               ; preds = %38, %65
   br label %26, !llvm.loop !21
 
-43:                                               ; preds = %29
-  %44 = load ptr, ptr %7, align 8
-  %45 = getelementptr inbounds %struct.ck_epoch_record, ptr %44, i32 0, i32 4
-  %46 = call i32 @ck_pr_md_load_uint(ptr noundef %45)
-  store i32 %46, ptr %12, align 4
-  %47 = load i32, ptr %12, align 4
-  %48 = load ptr, ptr %9, align 8
-  %49 = load i8, ptr %48, align 1
-  %50 = trunc i8 %49 to i1
-  %51 = zext i1 %50 to i32
-  %52 = or i32 %51, %47
-  %53 = icmp ne i32 %52, 0
-  %54 = zext i1 %53 to i8
-  store i8 %54, ptr %48, align 1
-  %55 = load i32, ptr %12, align 4
-  %56 = icmp ne i32 %55, 0
-  br i1 %56, label %57, label %65
+42:                                               ; preds = %29
+  %43 = load ptr, ptr %7, align 8
+  %44 = getelementptr inbounds %struct.ck_epoch_record, ptr %43, i32 0, i32 4
+  %45 = call i32 @ck_pr_md_load_uint(ptr noundef %44)
+  store i32 %45, ptr %12, align 4
+  %46 = load i32, ptr %12, align 4
+  %47 = load ptr, ptr %9, align 8
+  %48 = load i8, ptr %47, align 1
+  %49 = trunc i8 %48 to i1
+  %50 = zext i1 %49 to i32
+  %51 = or i32 %50, %46
+  %52 = icmp ne i32 %51, 0
+  %53 = zext i1 %52 to i8
+  store i8 %53, ptr %47, align 1
+  %54 = load i32, ptr %12, align 4
+  %55 = icmp ne i32 %54, 0
+  br i1 %55, label %56, label %64
 
-57:                                               ; preds = %43
-  %58 = load ptr, ptr %7, align 8
-  %59 = getelementptr inbounds %struct.ck_epoch_record, ptr %58, i32 0, i32 3
-  %60 = call i32 @ck_pr_md_load_uint(ptr noundef %59)
-  %61 = load i32, ptr %8, align 4
-  %62 = icmp ne i32 %60, %61
-  br i1 %62, label %63, label %65
+56:                                               ; preds = %42
+  %57 = load ptr, ptr %7, align 8
+  %58 = getelementptr inbounds %struct.ck_epoch_record, ptr %57, i32 0, i32 3
+  %59 = call i32 @ck_pr_md_load_uint(ptr noundef %58)
+  %60 = load i32, ptr %8, align 4
+  %61 = icmp ne i32 %59, %60
+  br i1 %61, label %62, label %64
 
-63:                                               ; preds = %57
-  %64 = load ptr, ptr %7, align 8
-  store ptr %64, ptr %5, align 8
-  br label %70
+62:                                               ; preds = %56
+  %63 = load ptr, ptr %7, align 8
+  store ptr %63, ptr %5, align 8
+  br label %69
 
-65:                                               ; preds = %57, %43
-  %66 = load ptr, ptr %10, align 8
-  %67 = getelementptr inbounds %struct.ck_stack_entry, ptr %66, i32 0, i32 0
-  %68 = load ptr, ptr %67, align 8
-  store ptr %68, ptr %10, align 8
-  br label %42
+64:                                               ; preds = %56, %42
+  %65 = load ptr, ptr %10, align 8
+  %66 = getelementptr inbounds %struct.ck_stack_entry, ptr %65, i32 0, i32 0
+  %67 = load ptr, ptr %66, align 8
+  store ptr %67, ptr %10, align 8
+  br label %26, !llvm.loop !21
 
-69:                                               ; preds = %26
+68:                                               ; preds = %26
   store ptr null, ptr %5, align 8
-  br label %70
+  br label %69
 
-70:                                               ; preds = %69, %63
-  %71 = load ptr, ptr %5, align 8
-  ret ptr %71
+69:                                               ; preds = %68, %62
+  %70 = load ptr, ptr %5, align 8
+  ret ptr %70
 }
 
-; Function Attrs: noinline nounwind ssp uwtable(sync)
+; Function Attrs: noinline nounwind optnone ssp uwtable(sync)
 define internal void @ck_pr_stall() #0 {
   call void asm sideeffect "", "~{memory}"() #5, !srcloc !22
   ret void
 }
 
-; Function Attrs: noinline nounwind ssp uwtable(sync)
+; Function Attrs: noinline nounwind optnone ssp uwtable(sync)
 define internal zeroext i1 @ck_pr_cas_uint_value(ptr noundef %0, i32 noundef %1, i32 noundef %2, ptr noundef %3) #0 {
   %5 = alloca ptr, align 8
   %6 = alloca i32, align 4
@@ -1076,13 +1067,13 @@ define internal zeroext i1 @ck_pr_cas_uint_value(ptr noundef %0, i32 noundef %1,
   ret i1 %21
 }
 
-; Function Attrs: noinline nounwind ssp uwtable(sync)
+; Function Attrs: noinline nounwind optnone ssp uwtable(sync)
 define internal void @ck_pr_fence_atomic_load() #0 {
   call void @ck_pr_fence_strict_atomic_load()
   ret void
 }
 
-; Function Attrs: noinline nounwind ssp uwtable(sync)
+; Function Attrs: noinline nounwind optnone ssp uwtable(sync)
 define void @ck_epoch_synchronize(ptr noundef %0) #0 {
   %2 = alloca ptr, align 8
   store ptr %0, ptr %2, align 8
@@ -1093,7 +1084,7 @@ define void @ck_epoch_synchronize(ptr noundef %0) #0 {
   ret void
 }
 
-; Function Attrs: noinline nounwind ssp uwtable(sync)
+; Function Attrs: noinline nounwind optnone ssp uwtable(sync)
 define void @ck_epoch_barrier(ptr noundef %0) #0 {
   %2 = alloca ptr, align 8
   store ptr %0, ptr %2, align 8
@@ -1104,7 +1095,7 @@ define void @ck_epoch_barrier(ptr noundef %0) #0 {
   ret void
 }
 
-; Function Attrs: noinline nounwind ssp uwtable(sync)
+; Function Attrs: noinline nounwind optnone ssp uwtable(sync)
 define void @ck_epoch_barrier_wait(ptr noundef %0, ptr noundef %1, ptr noundef %2) #0 {
   %4 = alloca ptr, align 8
   %5 = alloca ptr, align 8
@@ -1123,7 +1114,7 @@ define void @ck_epoch_barrier_wait(ptr noundef %0, ptr noundef %1, ptr noundef %
   ret void
 }
 
-; Function Attrs: noinline nounwind ssp uwtable(sync)
+; Function Attrs: noinline nounwind optnone ssp uwtable(sync)
 define zeroext i1 @ck_epoch_poll_deferred(ptr noundef %0, ptr noundef %1) #0 {
   %3 = alloca i1, align 1
   %4 = alloca ptr, align 8
@@ -1223,7 +1214,7 @@ define zeroext i1 @ck_epoch_poll_deferred(ptr noundef %0, ptr noundef %1) #0 {
   ret i1 %65
 }
 
-; Function Attrs: noinline nounwind ssp uwtable(sync)
+; Function Attrs: noinline nounwind optnone ssp uwtable(sync)
 define internal zeroext i1 @ck_pr_cas_uint(ptr noundef %0, i32 noundef %1, i32 noundef %2) #0 {
   %4 = alloca ptr, align 8
   %5 = alloca i32, align 4
@@ -1247,7 +1238,7 @@ define internal zeroext i1 @ck_pr_cas_uint(ptr noundef %0, i32 noundef %1, i32 n
   ret i1 %17
 }
 
-; Function Attrs: noinline nounwind ssp uwtable(sync)
+; Function Attrs: noinline nounwind optnone ssp uwtable(sync)
 define zeroext i1 @ck_epoch_poll(ptr noundef %0) #0 {
   %2 = alloca ptr, align 8
   store ptr %0, ptr %2, align 8
@@ -1256,7 +1247,7 @@ define zeroext i1 @ck_epoch_poll(ptr noundef %0) #0 {
   ret i1 %4
 }
 
-; Function Attrs: noinline nounwind ssp uwtable(sync)
+; Function Attrs: noinline nounwind optnone ssp uwtable(sync)
 define i32 @main(i32 noundef %0, ptr noundef %1) #0 {
   %3 = alloca i32, align 4
   %4 = alloca i32, align 4
@@ -1325,7 +1316,7 @@ define i32 @main(i32 noundef %0, ptr noundef %1) #0 {
 
 declare i32 @pthread_create(ptr noundef, ptr noundef, ptr noundef, ptr noundef) #3
 
-; Function Attrs: noinline nounwind ssp uwtable(sync)
+; Function Attrs: noinline nounwind optnone ssp uwtable(sync)
 define internal ptr @thread(ptr noundef %0) #0 {
   %2 = alloca i1, align 1
   %3 = alloca ptr, align 8
@@ -1447,7 +1438,7 @@ define internal ptr @thread(ptr noundef %0) #0 {
   br i1 %79, label %80, label %82
 
 80:                                               ; preds = %73
-  call void @__assert_rtn(ptr noundef @__func__.thread, ptr noundef @.str, i32 noundef 39, ptr noundef @.str.1) #6
+  call void @__assert_rtn(ptr noundef @__func__.thread, ptr noundef @.str, i32 noundef 37, ptr noundef @.str.1) #6
   unreachable
 
 81:                                               ; No predecessors!
@@ -1464,25 +1455,25 @@ define internal ptr @thread(ptr noundef %0) #0 {
 
 declare i32 @"\01_pthread_join"(ptr noundef, ptr noundef) #3
 
-; Function Attrs: noinline nounwind ssp uwtable(sync)
+; Function Attrs: noinline nounwind optnone ssp uwtable(sync)
 define internal void @ck_pr_fence_strict_acqrel() #0 {
   call void asm sideeffect "dmb ish", "r,~{memory}"(i32 0) #5, !srcloc !28
   ret void
 }
 
-; Function Attrs: noinline nounwind ssp uwtable(sync)
+; Function Attrs: noinline nounwind optnone ssp uwtable(sync)
 define internal void @ck_pr_fence_strict_store() #0 {
   call void asm sideeffect "dmb ishst", "r,~{memory}"(i32 0) #5, !srcloc !29
   ret void
 }
 
-; Function Attrs: noinline nounwind ssp uwtable(sync)
+; Function Attrs: noinline nounwind optnone ssp uwtable(sync)
 define internal void @ck_pr_fence_strict_load() #0 {
   call void asm sideeffect "dmb ishld", "r,~{memory}"(i32 0) #5, !srcloc !30
   ret void
 }
 
-; Function Attrs: noinline nounwind ssp uwtable(sync)
+; Function Attrs: noinline nounwind optnone ssp uwtable(sync)
 define internal ptr @ck_pr_md_load_ptr(ptr noundef %0) #0 {
   %2 = alloca ptr, align 8
   %3 = alloca i64, align 8
@@ -1496,7 +1487,7 @@ define internal ptr @ck_pr_md_load_ptr(ptr noundef %0) #0 {
   ret ptr %7
 }
 
-; Function Attrs: noinline nounwind ssp uwtable(sync)
+; Function Attrs: noinline nounwind optnone ssp uwtable(sync)
 define internal zeroext i1 @ck_pr_cas_ptr_value(ptr noundef %0, ptr noundef %1, ptr noundef %2, ptr noundef %3) #0 {
   %5 = alloca ptr, align 8
   %6 = alloca ptr, align 8
@@ -1525,7 +1516,7 @@ define internal zeroext i1 @ck_pr_cas_ptr_value(ptr noundef %0, ptr noundef %1, 
   ret i1 %21
 }
 
-; Function Attrs: noinline nounwind ssp uwtable(sync)
+; Function Attrs: noinline nounwind optnone ssp uwtable(sync)
 define internal ptr @ck_stack_batch_pop_upmc(ptr noundef %0) #0 {
   %2 = alloca ptr, align 8
   %3 = alloca ptr, align 8
@@ -1539,7 +1530,7 @@ define internal ptr @ck_stack_batch_pop_upmc(ptr noundef %0) #0 {
   ret ptr %7
 }
 
-; Function Attrs: noinline nounwind ssp uwtable(sync)
+; Function Attrs: noinline nounwind optnone ssp uwtable(sync)
 define internal ptr @ck_epoch_entry_container(ptr noundef %0) #0 {
   %2 = alloca ptr, align 8
   store ptr %0, ptr %2, align 8
@@ -1548,7 +1539,7 @@ define internal ptr @ck_epoch_entry_container(ptr noundef %0) #0 {
   ret ptr %4
 }
 
-; Function Attrs: noinline nounwind ssp uwtable(sync)
+; Function Attrs: noinline nounwind optnone ssp uwtable(sync)
 define internal void @ck_stack_push_spnc(ptr noundef %0, ptr noundef %1) #0 {
   %3 = alloca ptr, align 8
   %4 = alloca ptr, align 8
@@ -1567,7 +1558,7 @@ define internal void @ck_stack_push_spnc(ptr noundef %0, ptr noundef %1) #0 {
   ret void
 }
 
-; Function Attrs: noinline nounwind ssp uwtable(sync)
+; Function Attrs: noinline nounwind optnone ssp uwtable(sync)
 define internal void @ck_pr_add_uint(ptr noundef %0, i32 noundef %1) #0 {
   %3 = alloca ptr, align 8
   %4 = alloca i32, align 4
@@ -1585,7 +1576,7 @@ define internal void @ck_pr_add_uint(ptr noundef %0, i32 noundef %1) #0 {
   ret void
 }
 
-; Function Attrs: noinline nounwind ssp uwtable(sync)
+; Function Attrs: noinline nounwind optnone ssp uwtable(sync)
 define internal void @ck_pr_sub_uint(ptr noundef %0, i32 noundef %1) #0 {
   %3 = alloca ptr, align 8
   %4 = alloca i32, align 4
@@ -1603,7 +1594,7 @@ define internal void @ck_pr_sub_uint(ptr noundef %0, i32 noundef %1) #0 {
   ret void
 }
 
-; Function Attrs: noinline nounwind ssp uwtable(sync)
+; Function Attrs: noinline nounwind optnone ssp uwtable(sync)
 define internal ptr @ck_pr_fas_ptr(ptr noundef %0, ptr noundef %1) #0 {
   %3 = alloca ptr, align 8
   %4 = alloca ptr, align 8
@@ -1622,13 +1613,13 @@ define internal ptr @ck_pr_fas_ptr(ptr noundef %0, ptr noundef %1) #0 {
   ret ptr %12
 }
 
-; Function Attrs: noinline nounwind ssp uwtable(sync)
+; Function Attrs: noinline nounwind optnone ssp uwtable(sync)
 define internal void @ck_pr_fence_strict_memory() #0 {
   call void asm sideeffect "dmb ish", "r,~{memory}"(i32 0) #5, !srcloc !36
   ret void
 }
 
-; Function Attrs: noinline nounwind ssp uwtable(sync)
+; Function Attrs: noinline nounwind optnone ssp uwtable(sync)
 define internal void @ck_pr_fence_strict_atomic_load() #0 {
   call void asm sideeffect "dmb ish", "r,~{memory}"(i32 0) #5, !srcloc !37
   ret void
@@ -1637,19 +1628,19 @@ define internal void @ck_pr_fence_strict_atomic_load() #0 {
 ; Function Attrs: cold noreturn
 declare void @__assert_rtn(ptr noundef, ptr noundef, i32 noundef, ptr noundef) #4
 
-; Function Attrs: noinline nounwind ssp uwtable(sync)
+; Function Attrs: noinline nounwind optnone ssp uwtable(sync)
 define internal void @ck_pr_fence_release() #0 {
   call void @ck_pr_fence_strict_release()
   ret void
 }
 
-; Function Attrs: noinline nounwind ssp uwtable(sync)
+; Function Attrs: noinline nounwind optnone ssp uwtable(sync)
 define internal void @ck_pr_fence_strict_release() #0 {
   call void asm sideeffect "dmb ish", "r,~{memory}"(i32 0) #5, !srcloc !38
   ret void
 }
 
-attributes #0 = { noinline nounwind ssp uwtable(sync) "frame-pointer"="non-leaf" "no-trapping-math"="true" "stack-protector-buffer-size"="8" "target-cpu"="apple-m1" "target-features"="+aes,+altnzcv,+ccdp,+ccidx,+complxnum,+crc,+dit,+dotprod,+flagm,+fp-armv8,+fp16fml,+fptoint,+fullfp16,+jsconv,+lse,+neon,+pauth,+perfmon,+predres,+ras,+rcpc,+rdm,+sb,+sha2,+sha3,+specrestrict,+ssbs,+v8.1a,+v8.2a,+v8.3a,+v8.4a,+v8a,+zcm,+zcz" }
+attributes #0 = { noinline nounwind optnone ssp uwtable(sync) "frame-pointer"="non-leaf" "no-trapping-math"="true" "stack-protector-buffer-size"="8" "target-cpu"="apple-m1" "target-features"="+aes,+altnzcv,+ccdp,+ccidx,+complxnum,+crc,+dit,+dotprod,+flagm,+fp-armv8,+fp16fml,+fptoint,+fullfp16,+jsconv,+lse,+neon,+pauth,+perfmon,+predres,+ras,+rcpc,+rdm,+sb,+sha2,+sha3,+specrestrict,+ssbs,+v8.1a,+v8.2a,+v8.3a,+v8.4a,+v8a,+zcm,+zcz" }
 attributes #1 = { nounwind "frame-pointer"="non-leaf" "no-trapping-math"="true" "stack-protector-buffer-size"="8" "target-cpu"="apple-m1" "target-features"="+aes,+altnzcv,+ccdp,+ccidx,+complxnum,+crc,+dit,+dotprod,+flagm,+fp-armv8,+fp16fml,+fptoint,+fullfp16,+jsconv,+lse,+neon,+pauth,+perfmon,+predres,+ras,+rcpc,+rdm,+sb,+sha2,+sha3,+specrestrict,+ssbs,+v8.1a,+v8.2a,+v8.3a,+v8.4a,+v8a,+zcm,+zcz" }
 attributes #2 = { nocallback nofree nosync nounwind speculatable willreturn memory(none) }
 attributes #3 = { "frame-pointer"="non-leaf" "no-trapping-math"="true" "stack-protector-buffer-size"="8" "target-cpu"="apple-m1" "target-features"="+aes,+altnzcv,+ccdp,+ccidx,+complxnum,+crc,+dit,+dotprod,+flagm,+fp-armv8,+fp16fml,+fptoint,+fullfp16,+jsconv,+lse,+neon,+pauth,+perfmon,+predres,+ras,+rcpc,+rdm,+sb,+sha2,+sha3,+specrestrict,+ssbs,+v8.1a,+v8.2a,+v8.3a,+v8.4a,+v8a,+zcm,+zcz" }
@@ -1666,36 +1657,36 @@ attributes #6 = { cold noreturn }
 !3 = !{i32 7, !"uwtable", i32 1}
 !4 = !{i32 7, !"frame-pointer", i32 1}
 !5 = !{!"Homebrew clang version 19.1.7"}
-!6 = !{i64 2148858883}
-!7 = !{i64 2148855196}
+!6 = !{i64 2148858802}
+!7 = !{i64 2148855115}
 !8 = distinct !{!8, !9}
 !9 = !{!"llvm.loop.mustprogress"}
-!10 = !{i64 2148900369, i64 2148900482, i64 2148900553}
-!11 = !{i64 2148913582, i64 2148914171, i64 2148913744, i64 2148913816}
-!12 = !{i64 2148856980}
+!10 = !{i64 2148900288, i64 2148900401, i64 2148900472}
+!11 = !{i64 2148913501, i64 2148914090, i64 2148913663, i64 2148913735}
+!12 = !{i64 2148856899}
 !13 = distinct !{!13, !9}
 !14 = distinct !{!14, !9}
 !15 = distinct !{!15, !9}
-!16 = !{i64 2148912720, i64 2148913309, i64 2148912882, i64 2148912954}
+!16 = !{i64 2148912639, i64 2148913228, i64 2148912801, i64 2148912873}
 !17 = distinct !{!17, !9}
 !18 = distinct !{!18, !9}
 !19 = distinct !{!19, !9}
 !20 = distinct !{!20, !9}
 !21 = distinct !{!21, !9}
-!22 = !{i64 1356298}
-!23 = !{i64 2148883682, i64 2148883732, i64 2148883799, i64 2148883865, i64 2148883918, i64 2148883990, i64 2148884048}
+!22 = !{i64 1356217}
+!23 = !{i64 2148883601, i64 2148883651, i64 2148883718, i64 2148883784, i64 2148883837, i64 2148883909, i64 2148883967}
 !24 = distinct !{!24, !9}
-!25 = !{i64 2148884688, i64 2148884803, i64 2148884869, i64 2148884922, i64 2148884994, i64 2148885052}
+!25 = !{i64 2148884607, i64 2148884722, i64 2148884788, i64 2148884841, i64 2148884913, i64 2148884971}
 !26 = distinct !{!26, !9}
 !27 = distinct !{!27, !9}
-!28 = !{i64 2148852445}
-!29 = !{i64 2148850555}
-!30 = !{i64 2148851098}
-!31 = !{i64 2148853319}
-!32 = !{i64 2148874740, i64 2148874790, i64 2148874857, i64 2148874923, i64 2148874976, i64 2148875048, i64 2148875106}
-!33 = !{i64 2148944890, i64 2148945576, i64 2148945076, i64 2148945148}
-!34 = !{i64 2148946806, i64 2148947492, i64 2148946992, i64 2148947064}
-!35 = !{i64 2148898702, i64 2148898815, i64 2148898886}
-!36 = !{i64 2148851640}
-!37 = !{i64 2148849722}
-!38 = !{i64 2148852177}
+!28 = !{i64 2148852364}
+!29 = !{i64 2148850474}
+!30 = !{i64 2148851017}
+!31 = !{i64 2148853238}
+!32 = !{i64 2148874659, i64 2148874709, i64 2148874776, i64 2148874842, i64 2148874895, i64 2148874967, i64 2148875025}
+!33 = !{i64 2148944809, i64 2148945495, i64 2148944995, i64 2148945067}
+!34 = !{i64 2148946725, i64 2148947411, i64 2148946911, i64 2148946983}
+!35 = !{i64 2148898621, i64 2148898734, i64 2148898805}
+!36 = !{i64 2148851559}
+!37 = !{i64 2148849641}
+!38 = !{i64 2148852096}

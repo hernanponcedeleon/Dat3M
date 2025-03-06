@@ -1,5 +1,5 @@
-; ModuleID = 'anderson.c'
-source_filename = "anderson.c"
+; ModuleID = 'tests/anderson.c'
+source_filename = "tests/anderson.c"
 target datalayout = "e-m:o-i64:64-i128:128-n32:64-S128-Fn32"
 target triple = "arm64-apple-macosx15.0.0"
 
@@ -8,50 +8,28 @@ target triple = "arm64-apple-macosx15.0.0"
 
 @x = global i32 0, align 4
 @y = global i32 0, align 4
-@.str = private unnamed_addr constant [39 x i8] c"Thread %d: attempting to acquire lock\0A\00", align 1
 @lock = global %struct.ck_spinlock_anderson zeroinitializer, align 8
-@.str.1 = private unnamed_addr constant [26 x i8] c"Thread %d: acquired lock\0A\00", align 1
-@.str.2 = private unnamed_addr constant [27 x i8] c"Thread %d: x = %d, y = %d\0A\00", align 1
-@.str.3 = private unnamed_addr constant [26 x i8] c"Thread %d: released lock\0A\00", align 1
 @slots = global ptr null, align 8
 @__func__.main = private unnamed_addr constant [5 x i8] c"main\00", align 1
-@.str.4 = private unnamed_addr constant [11 x i8] c"anderson.c\00", align 1
-@.str.5 = private unnamed_addr constant [31 x i8] c"x == NTHREADS && y == NTHREADS\00", align 1
-@.str.6 = private unnamed_addr constant [61 x i8] c"All threads finished with x = %d, y = %d, and NTHREADS = %d\0A\00", align 1
+@.str = private unnamed_addr constant [11 x i8] c"anderson.c\00", align 1
+@.str.1 = private unnamed_addr constant [31 x i8] c"x == NTHREADS && y == NTHREADS\00", align 1
 
 ; Function Attrs: noinline nounwind optnone ssp uwtable(sync)
 define ptr @run(ptr noundef %0) #0 {
   %2 = alloca ptr, align 8
-  %3 = alloca i32, align 4
-  %4 = alloca ptr, align 8
+  %3 = alloca ptr, align 8
   store ptr %0, ptr %2, align 8
-  %5 = load ptr, ptr %2, align 8
-  %6 = ptrtoint ptr %5 to i64
-  %7 = trunc i64 %6 to i32
-  store i32 %7, ptr %3, align 4
-  %8 = load i32, ptr %3, align 4
-  %9 = call i32 (ptr, ...) @printf(ptr noundef @.str, i32 noundef %8)
-  call void @ck_spinlock_anderson_lock(ptr noundef @lock, ptr noundef %4)
-  %10 = load i32, ptr %3, align 4
-  %11 = call i32 (ptr, ...) @printf(ptr noundef @.str.1, i32 noundef %10)
-  %12 = load i32, ptr @x, align 4
-  %13 = add nsw i32 %12, 1
-  store i32 %13, ptr @x, align 4
-  %14 = load i32, ptr @y, align 4
-  %15 = add nsw i32 %14, 1
-  store i32 %15, ptr @y, align 4
-  %16 = load i32, ptr %3, align 4
-  %17 = load i32, ptr @x, align 4
-  %18 = load i32, ptr @y, align 4
-  %19 = call i32 (ptr, ...) @printf(ptr noundef @.str.2, i32 noundef %16, i32 noundef %17, i32 noundef %18)
-  %20 = load ptr, ptr %4, align 8
-  call void @ck_spinlock_anderson_unlock(ptr noundef @lock, ptr noundef %20)
-  %21 = load i32, ptr %3, align 4
-  %22 = call i32 (ptr, ...) @printf(ptr noundef @.str.3, i32 noundef %21)
+  call void @ck_spinlock_anderson_lock(ptr noundef @lock, ptr noundef %3)
+  %4 = load i32, ptr @x, align 4
+  %5 = add nsw i32 %4, 1
+  store i32 %5, ptr @x, align 4
+  %6 = load i32, ptr @y, align 4
+  %7 = add nsw i32 %6, 1
+  store i32 %7, ptr @y, align 4
+  %8 = load ptr, ptr %3, align 8
+  call void @ck_spinlock_anderson_unlock(ptr noundef @lock, ptr noundef %8)
   ret ptr null
 }
-
-declare i32 @printf(ptr noundef, ...) #1
 
 ; Function Attrs: noinline nounwind optnone ssp uwtable(sync)
 define internal void @ck_spinlock_anderson_lock(ptr noundef %0, ptr noundef %1) #0 {
@@ -243,108 +221,102 @@ define i32 @main() #0 {
   store i32 0, ptr %3, align 4
   br label %10
 
-10:                                               ; preds = %24, %8
+10:                                               ; preds = %21, %8
   %11 = load i32, ptr %3, align 4
   %12 = icmp slt i32 %11, 3
-  br i1 %12, label %13, label %27
+  br i1 %12, label %13, label %24
 
 13:                                               ; preds = %10
   %14 = load i32, ptr %3, align 4
   %15 = sext i32 %14 to i64
   %16 = getelementptr inbounds [3 x ptr], ptr %2, i64 0, i64 %15
-  %17 = load i32, ptr %3, align 4
-  %18 = sext i32 %17 to i64
-  %19 = inttoptr i64 %18 to ptr
-  %20 = call i32 @pthread_create(ptr noundef %16, ptr noundef null, ptr noundef @run, ptr noundef %19)
-  %21 = icmp ne i32 %20, 0
-  br i1 %21, label %22, label %23
+  %17 = call i32 @pthread_create(ptr noundef %16, ptr noundef null, ptr noundef @run, ptr noundef null)
+  %18 = icmp ne i32 %17, 0
+  br i1 %18, label %19, label %20
 
-22:                                               ; preds = %13
+19:                                               ; preds = %13
   call void @exit(i32 noundef 1) #6
   unreachable
 
-23:                                               ; preds = %13
-  br label %24
+20:                                               ; preds = %13
+  br label %21
 
-24:                                               ; preds = %23
-  %25 = load i32, ptr %3, align 4
-  %26 = add nsw i32 %25, 1
-  store i32 %26, ptr %3, align 4
+21:                                               ; preds = %20
+  %22 = load i32, ptr %3, align 4
+  %23 = add nsw i32 %22, 1
+  store i32 %23, ptr %3, align 4
   br label %10, !llvm.loop !9
 
-27:                                               ; preds = %10
+24:                                               ; preds = %10
   store i32 0, ptr %3, align 4
-  br label %28
+  br label %25
 
-28:                                               ; preds = %40, %27
+25:                                               ; preds = %37, %24
+  %26 = load i32, ptr %3, align 4
+  %27 = icmp slt i32 %26, 3
+  br i1 %27, label %28, label %40
+
+28:                                               ; preds = %25
   %29 = load i32, ptr %3, align 4
-  %30 = icmp slt i32 %29, 3
-  br i1 %30, label %31, label %43
+  %30 = sext i32 %29 to i64
+  %31 = getelementptr inbounds [3 x ptr], ptr %2, i64 0, i64 %30
+  %32 = load ptr, ptr %31, align 8
+  %33 = call i32 @"\01_pthread_join"(ptr noundef %32, ptr noundef null)
+  %34 = icmp ne i32 %33, 0
+  br i1 %34, label %35, label %36
 
-31:                                               ; preds = %28
-  %32 = load i32, ptr %3, align 4
-  %33 = sext i32 %32 to i64
-  %34 = getelementptr inbounds [3 x ptr], ptr %2, i64 0, i64 %33
-  %35 = load ptr, ptr %34, align 8
-  %36 = call i32 @"\01_pthread_join"(ptr noundef %35, ptr noundef null)
-  %37 = icmp ne i32 %36, 0
-  br i1 %37, label %38, label %39
-
-38:                                               ; preds = %31
+35:                                               ; preds = %28
   call void @exit(i32 noundef 1) #6
   unreachable
 
-39:                                               ; preds = %31
-  br label %40
+36:                                               ; preds = %28
+  br label %37
 
-40:                                               ; preds = %39
-  %41 = load i32, ptr %3, align 4
-  %42 = add nsw i32 %41, 1
-  store i32 %42, ptr %3, align 4
-  br label %28, !llvm.loop !10
+37:                                               ; preds = %36
+  %38 = load i32, ptr %3, align 4
+  %39 = add nsw i32 %38, 1
+  store i32 %39, ptr %3, align 4
+  br label %25, !llvm.loop !10
 
-43:                                               ; preds = %28
-  %44 = load i32, ptr @x, align 4
+40:                                               ; preds = %25
+  %41 = load i32, ptr @x, align 4
+  %42 = icmp eq i32 %41, 3
+  br i1 %42, label %43, label %46
+
+43:                                               ; preds = %40
+  %44 = load i32, ptr @y, align 4
   %45 = icmp eq i32 %44, 3
-  br i1 %45, label %46, label %49
+  br label %46
 
-46:                                               ; preds = %43
-  %47 = load i32, ptr @y, align 4
-  %48 = icmp eq i32 %47, 3
-  br label %49
+46:                                               ; preds = %43, %40
+  %47 = phi i1 [ false, %40 ], [ %45, %43 ]
+  %48 = xor i1 %47, true
+  %49 = zext i1 %48 to i32
+  %50 = sext i32 %49 to i64
+  %51 = icmp ne i64 %50, 0
+  br i1 %51, label %52, label %54
 
-49:                                               ; preds = %46, %43
-  %50 = phi i1 [ false, %43 ], [ %48, %46 ]
-  %51 = xor i1 %50, true
-  %52 = zext i1 %51 to i32
-  %53 = sext i32 %52 to i64
-  %54 = icmp ne i64 %53, 0
-  br i1 %54, label %55, label %57
-
-55:                                               ; preds = %49
-  call void @__assert_rtn(ptr noundef @__func__.main, ptr noundef @.str.4, i32 noundef 63, ptr noundef @.str.5) #7
+52:                                               ; preds = %46
+  call void @__assert_rtn(ptr noundef @__func__.main, ptr noundef @.str, i32 noundef 48, ptr noundef @.str.1) #7
   unreachable
 
-56:                                               ; No predecessors!
-  br label %58
+53:                                               ; No predecessors!
+  br label %55
 
-57:                                               ; preds = %49
-  br label %58
+54:                                               ; preds = %46
+  br label %55
 
-58:                                               ; preds = %57, %56
-  %59 = load i32, ptr @x, align 4
-  %60 = load i32, ptr @y, align 4
-  %61 = call i32 (ptr, ...) @printf(ptr noundef @.str.6, i32 noundef %59, i32 noundef %60, i32 noundef 3)
-  %62 = load ptr, ptr @slots, align 8
-  call void @free(ptr noundef %62)
+55:                                               ; preds = %54, %53
+  %56 = load ptr, ptr @slots, align 8
+  call void @free(ptr noundef %56)
   ret i32 0
 }
 
 ; Function Attrs: allocsize(0)
-declare ptr @malloc(i64 noundef) #2
+declare ptr @malloc(i64 noundef) #1
 
 ; Function Attrs: noreturn
-declare void @exit(i32 noundef) #3
+declare void @exit(i32 noundef) #2
 
 ; Function Attrs: noinline nounwind optnone ssp uwtable(sync)
 define internal void @ck_spinlock_anderson_init(ptr noundef %0, ptr noundef %1, i32 noundef %2) #0 {
@@ -438,14 +410,14 @@ define internal void @ck_spinlock_anderson_init(ptr noundef %0, ptr noundef %1, 
   ret void
 }
 
-declare i32 @pthread_create(ptr noundef, ptr noundef, ptr noundef, ptr noundef) #1
+declare i32 @pthread_create(ptr noundef, ptr noundef, ptr noundef, ptr noundef) #3
 
-declare i32 @"\01_pthread_join"(ptr noundef, ptr noundef) #1
+declare i32 @"\01_pthread_join"(ptr noundef, ptr noundef) #3
 
 ; Function Attrs: cold noreturn
 declare void @__assert_rtn(ptr noundef, ptr noundef, i32 noundef, ptr noundef) #4
 
-declare void @free(ptr noundef) #1
+declare void @free(ptr noundef) #3
 
 ; Function Attrs: noinline nounwind optnone ssp uwtable(sync)
 define internal i32 @ck_pr_md_load_uint(ptr noundef %0) #0 {
@@ -574,9 +546,9 @@ define internal void @ck_pr_barrier() #0 {
 }
 
 attributes #0 = { noinline nounwind optnone ssp uwtable(sync) "frame-pointer"="non-leaf" "no-trapping-math"="true" "stack-protector-buffer-size"="8" "target-cpu"="apple-m1" "target-features"="+aes,+altnzcv,+ccdp,+ccidx,+complxnum,+crc,+dit,+dotprod,+flagm,+fp-armv8,+fp16fml,+fptoint,+fullfp16,+jsconv,+lse,+neon,+pauth,+perfmon,+predres,+ras,+rcpc,+rdm,+sb,+sha2,+sha3,+specrestrict,+ssbs,+v8.1a,+v8.2a,+v8.3a,+v8.4a,+v8a,+zcm,+zcz" }
-attributes #1 = { "frame-pointer"="non-leaf" "no-trapping-math"="true" "stack-protector-buffer-size"="8" "target-cpu"="apple-m1" "target-features"="+aes,+altnzcv,+ccdp,+ccidx,+complxnum,+crc,+dit,+dotprod,+flagm,+fp-armv8,+fp16fml,+fptoint,+fullfp16,+jsconv,+lse,+neon,+pauth,+perfmon,+predres,+ras,+rcpc,+rdm,+sb,+sha2,+sha3,+specrestrict,+ssbs,+v8.1a,+v8.2a,+v8.3a,+v8.4a,+v8a,+zcm,+zcz" }
-attributes #2 = { allocsize(0) "frame-pointer"="non-leaf" "no-trapping-math"="true" "stack-protector-buffer-size"="8" "target-cpu"="apple-m1" "target-features"="+aes,+altnzcv,+ccdp,+ccidx,+complxnum,+crc,+dit,+dotprod,+flagm,+fp-armv8,+fp16fml,+fptoint,+fullfp16,+jsconv,+lse,+neon,+pauth,+perfmon,+predres,+ras,+rcpc,+rdm,+sb,+sha2,+sha3,+specrestrict,+ssbs,+v8.1a,+v8.2a,+v8.3a,+v8.4a,+v8a,+zcm,+zcz" }
-attributes #3 = { noreturn "frame-pointer"="non-leaf" "no-trapping-math"="true" "stack-protector-buffer-size"="8" "target-cpu"="apple-m1" "target-features"="+aes,+altnzcv,+ccdp,+ccidx,+complxnum,+crc,+dit,+dotprod,+flagm,+fp-armv8,+fp16fml,+fptoint,+fullfp16,+jsconv,+lse,+neon,+pauth,+perfmon,+predres,+ras,+rcpc,+rdm,+sb,+sha2,+sha3,+specrestrict,+ssbs,+v8.1a,+v8.2a,+v8.3a,+v8.4a,+v8a,+zcm,+zcz" }
+attributes #1 = { allocsize(0) "frame-pointer"="non-leaf" "no-trapping-math"="true" "stack-protector-buffer-size"="8" "target-cpu"="apple-m1" "target-features"="+aes,+altnzcv,+ccdp,+ccidx,+complxnum,+crc,+dit,+dotprod,+flagm,+fp-armv8,+fp16fml,+fptoint,+fullfp16,+jsconv,+lse,+neon,+pauth,+perfmon,+predres,+ras,+rcpc,+rdm,+sb,+sha2,+sha3,+specrestrict,+ssbs,+v8.1a,+v8.2a,+v8.3a,+v8.4a,+v8a,+zcm,+zcz" }
+attributes #2 = { noreturn "frame-pointer"="non-leaf" "no-trapping-math"="true" "stack-protector-buffer-size"="8" "target-cpu"="apple-m1" "target-features"="+aes,+altnzcv,+ccdp,+ccidx,+complxnum,+crc,+dit,+dotprod,+flagm,+fp-armv8,+fp16fml,+fptoint,+fullfp16,+jsconv,+lse,+neon,+pauth,+perfmon,+predres,+ras,+rcpc,+rdm,+sb,+sha2,+sha3,+specrestrict,+ssbs,+v8.1a,+v8.2a,+v8.3a,+v8.4a,+v8a,+zcm,+zcz" }
+attributes #3 = { "frame-pointer"="non-leaf" "no-trapping-math"="true" "stack-protector-buffer-size"="8" "target-cpu"="apple-m1" "target-features"="+aes,+altnzcv,+ccdp,+ccidx,+complxnum,+crc,+dit,+dotprod,+flagm,+fp-armv8,+fp16fml,+fptoint,+fullfp16,+jsconv,+lse,+neon,+pauth,+perfmon,+predres,+ras,+rcpc,+rdm,+sb,+sha2,+sha3,+specrestrict,+ssbs,+v8.1a,+v8.2a,+v8.3a,+v8.4a,+v8a,+zcm,+zcz" }
 attributes #4 = { cold noreturn "disable-tail-calls"="true" "frame-pointer"="non-leaf" "no-trapping-math"="true" "stack-protector-buffer-size"="8" "target-cpu"="apple-m1" "target-features"="+aes,+altnzcv,+ccdp,+ccidx,+complxnum,+crc,+dit,+dotprod,+flagm,+fp-armv8,+fp16fml,+fptoint,+fullfp16,+jsconv,+lse,+neon,+pauth,+perfmon,+predres,+ras,+rcpc,+rdm,+sb,+sha2,+sha3,+specrestrict,+ssbs,+v8.1a,+v8.2a,+v8.3a,+v8.4a,+v8a,+zcm,+zcz" }
 attributes #5 = { allocsize(0) }
 attributes #6 = { noreturn }
@@ -598,12 +570,12 @@ attributes #8 = { nounwind }
 !9 = distinct !{!9, !7}
 !10 = distinct !{!10, !7}
 !11 = distinct !{!11, !7}
-!12 = !{i64 2147759929}
-!13 = !{i64 2147788415, i64 2147788465, i64 2147788532, i64 2147788598, i64 2147788651, i64 2147788723, i64 2147788781}
-!14 = !{i64 2147883567, i64 2147883679, i64 2147883741, i64 2147883809}
-!15 = !{i64 261031}
-!16 = !{i64 2147763616}
-!17 = !{i64 2147755831}
-!18 = !{i64 2147757443}
-!19 = !{i64 2147757708}
-!20 = !{i64 414877}
+!12 = !{i64 2147763329}
+!13 = !{i64 2147791815, i64 2147791865, i64 2147791932, i64 2147791998, i64 2147792051, i64 2147792123, i64 2147792181}
+!14 = !{i64 2147886967, i64 2147887079, i64 2147887141, i64 2147887209}
+!15 = !{i64 264431}
+!16 = !{i64 2147767016}
+!17 = !{i64 2147759231}
+!18 = !{i64 2147760843}
+!19 = !{i64 2147761108}
+!20 = !{i64 418277}
