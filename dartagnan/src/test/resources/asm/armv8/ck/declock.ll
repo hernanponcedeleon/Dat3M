@@ -125,100 +125,99 @@ define internal void @ck_spinlock_dec_unlock(ptr noundef %0) #0 {
 define i32 @main() #0 {
   %1 = alloca i32, align 4
   %2 = alloca [2 x ptr], align 8
-  %3 = alloca [2 x i32], align 4
-  %4 = alloca i32, align 4
+  %3 = alloca i32, align 4
   store i32 0, ptr %1, align 4
   call void @ck_spinlock_dec_init(ptr noundef @lock)
-  store i32 0, ptr %4, align 4
-  br label %5
+  store i32 0, ptr %3, align 4
+  br label %4
 
-5:                                                ; preds = %19, %0
-  %6 = load i32, ptr %4, align 4
-  %7 = icmp slt i32 %6, 2
-  br i1 %7, label %8, label %22
+4:                                                ; preds = %18, %0
+  %5 = load i32, ptr %3, align 4
+  %6 = icmp slt i32 %5, 2
+  br i1 %6, label %7, label %21
 
-8:                                                ; preds = %5
-  %9 = load i32, ptr %4, align 4
-  %10 = sext i32 %9 to i64
-  %11 = getelementptr inbounds [2 x ptr], ptr %2, i64 0, i64 %10
-  %12 = load i32, ptr %4, align 4
-  %13 = sext i32 %12 to i64
-  %14 = getelementptr inbounds [2 x i32], ptr %3, i64 0, i64 %13
-  %15 = call i32 @pthread_create(ptr noundef %11, ptr noundef null, ptr noundef @run, ptr noundef %14)
-  %16 = icmp ne i32 %15, 0
-  br i1 %16, label %17, label %18
+7:                                                ; preds = %4
+  %8 = load i32, ptr %3, align 4
+  %9 = sext i32 %8 to i64
+  %10 = getelementptr inbounds [2 x ptr], ptr %2, i64 0, i64 %9
+  %11 = load i32, ptr %3, align 4
+  %12 = sext i32 %11 to i64
+  %13 = inttoptr i64 %12 to ptr
+  %14 = call i32 @pthread_create(ptr noundef %10, ptr noundef null, ptr noundef @run, ptr noundef %13)
+  %15 = icmp ne i32 %14, 0
+  br i1 %15, label %16, label %17
 
-17:                                               ; preds = %8
+16:                                               ; preds = %7
   call void @exit(i32 noundef 1) #4
   unreachable
 
-18:                                               ; preds = %8
-  br label %19
+17:                                               ; preds = %7
+  br label %18
 
-19:                                               ; preds = %18
-  %20 = load i32, ptr %4, align 4
-  %21 = add nsw i32 %20, 1
-  store i32 %21, ptr %4, align 4
-  br label %5, !llvm.loop !8
+18:                                               ; preds = %17
+  %19 = load i32, ptr %3, align 4
+  %20 = add nsw i32 %19, 1
+  store i32 %20, ptr %3, align 4
+  br label %4, !llvm.loop !8
 
-22:                                               ; preds = %5
-  store i32 0, ptr %4, align 4
-  br label %23
+21:                                               ; preds = %4
+  store i32 0, ptr %3, align 4
+  br label %22
 
-23:                                               ; preds = %35, %22
-  %24 = load i32, ptr %4, align 4
-  %25 = icmp slt i32 %24, 2
-  br i1 %25, label %26, label %38
+22:                                               ; preds = %34, %21
+  %23 = load i32, ptr %3, align 4
+  %24 = icmp slt i32 %23, 2
+  br i1 %24, label %25, label %37
 
-26:                                               ; preds = %23
-  %27 = load i32, ptr %4, align 4
-  %28 = sext i32 %27 to i64
-  %29 = getelementptr inbounds [2 x ptr], ptr %2, i64 0, i64 %28
-  %30 = load ptr, ptr %29, align 8
-  %31 = call i32 @"\01_pthread_join"(ptr noundef %30, ptr noundef null)
-  %32 = icmp ne i32 %31, 0
-  br i1 %32, label %33, label %34
+25:                                               ; preds = %22
+  %26 = load i32, ptr %3, align 4
+  %27 = sext i32 %26 to i64
+  %28 = getelementptr inbounds [2 x ptr], ptr %2, i64 0, i64 %27
+  %29 = load ptr, ptr %28, align 8
+  %30 = call i32 @"\01_pthread_join"(ptr noundef %29, ptr noundef null)
+  %31 = icmp ne i32 %30, 0
+  br i1 %31, label %32, label %33
 
-33:                                               ; preds = %26
+32:                                               ; preds = %25
   call void @exit(i32 noundef 1) #4
   unreachable
 
-34:                                               ; preds = %26
-  br label %35
+33:                                               ; preds = %25
+  br label %34
 
-35:                                               ; preds = %34
-  %36 = load i32, ptr %4, align 4
-  %37 = add nsw i32 %36, 1
-  store i32 %37, ptr %4, align 4
-  br label %23, !llvm.loop !9
+34:                                               ; preds = %33
+  %35 = load i32, ptr %3, align 4
+  %36 = add nsw i32 %35, 1
+  store i32 %36, ptr %3, align 4
+  br label %22, !llvm.loop !9
 
-38:                                               ; preds = %23
-  %39 = load i32, ptr @x, align 4
-  %40 = icmp eq i32 %39, 2
-  br i1 %40, label %41, label %44
+37:                                               ; preds = %22
+  %38 = load i32, ptr @x, align 4
+  %39 = icmp eq i32 %38, 2
+  br i1 %39, label %40, label %43
 
-41:                                               ; preds = %38
-  %42 = load i32, ptr @y, align 4
-  %43 = icmp eq i32 %42, 2
-  br label %44
+40:                                               ; preds = %37
+  %41 = load i32, ptr @y, align 4
+  %42 = icmp eq i32 %41, 2
+  br label %43
 
-44:                                               ; preds = %41, %38
-  %45 = phi i1 [ false, %38 ], [ %43, %41 ]
-  %46 = xor i1 %45, true
-  %47 = zext i1 %46 to i32
-  %48 = sext i32 %47 to i64
-  %49 = icmp ne i64 %48, 0
-  br i1 %49, label %50, label %52
+43:                                               ; preds = %40, %37
+  %44 = phi i1 [ false, %37 ], [ %42, %40 ]
+  %45 = xor i1 %44, true
+  %46 = zext i1 %45 to i32
+  %47 = sext i32 %46 to i64
+  %48 = icmp ne i64 %47, 0
+  br i1 %48, label %49, label %51
 
 49:                                               ; preds = %43
   call void @__assert_rtn(ptr noundef @__func__.main, ptr noundef @.str, i32 noundef 59, ptr noundef @.str.1) #5
   unreachable
 
-51:                                               ; No predecessors!
-  br label %53
+50:                                               ; No predecessors!
+  br label %52
 
-52:                                               ; preds = %44
-  br label %53
+51:                                               ; preds = %43
+  br label %52
 
 52:                                               ; preds = %51, %50
   ret i32 0

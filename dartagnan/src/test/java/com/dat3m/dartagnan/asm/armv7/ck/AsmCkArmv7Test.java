@@ -30,6 +30,8 @@ import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.verification.solving.RefinementSolver;
 import com.dat3m.dartagnan.wmm.Wmm;
 
+import ap.Prover;
+
 @RunWith(Parameterized.class)
 public class AsmCkArmv7Test {
 
@@ -67,7 +69,7 @@ public class AsmCkArmv7Test {
                 cfg,
                 BasicLogManager.create(cfg),
                 ShutdownManager.create().getNotifier(),
-                SolverContextFactory.Solvers.YICES2);
+                SolverContextFactory.Solvers.Z3);
     }
 
     private ProverWithTracker mkProver(SolverContext ctx) {
