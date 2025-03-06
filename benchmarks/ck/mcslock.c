@@ -1,7 +1,6 @@
 #include <assert.h>
 #include <ck_spinlock.h>
 #include <pthread.h>
-#include <stdio.h>
 #include <stdlib.h>
 
 #ifndef NTHREADS
@@ -33,8 +32,8 @@ void *run(void *arg)
 int main()
 {
     pthread_t threads[NTHREADS];
-    int tids[NTHREADS];
-    int i;
+    long tids[NTHREADS];
+    long i;
 
     nodes = (ck_spinlock_mcs_t)malloc(NTHREADS * sizeof(ck_spinlock_mcs_t));
     if (nodes == NULL)
