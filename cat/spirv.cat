@@ -119,6 +119,8 @@ let locord = loc &
                 (vloc & ([W \ PRIV]; (po? & avvisinc); avwg; (hb & swg); viswg; (po? & avvisinc); [R \ PRIV])) |   // RaW (via workgroup instance domain)
                 (vloc & ([W \ PRIV]; (po? & avvisinc); avqf; (hb & sqf);                          [W \ PRIV])) |   // WaW (via queue family instance domain)
                 (vloc & ([W \ PRIV]; (po? & avvisinc); avqf; (hb & sqf); visqf; (po? & avvisinc); [R \ PRIV])) |   // RaW (via queue family instance domain)
+                // the avvisinc (removed here) provides the ordering for (W * W) and (R * R) in the atomic MP test
+                // (vloc & ([W \ PRIV]; (po?); avqf; (hb & sqf); visqf; (po?); [R \ PRIV])) |   // RaW (via queue family instance domain)
                 (vloc & ([W \ PRIV]; (po? & avvisinc); avsh; (hb);                                [W \ PRIV])) |   // WaW (via shader domain)
                 (vloc & ([W \ PRIV]; (po? & avvisinc); avsh; (hb);       vissh; (po? & avvisinc); [R \ PRIV])) |   // RaW (via shader domain)
                 (       ([W];        (hb & avvisinc);  avdv; (hb);                                [W]))        |   // WaW (via device domain)

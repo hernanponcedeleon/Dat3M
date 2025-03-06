@@ -89,6 +89,7 @@
          %21 = OpVariable %_ptr_StorageBuffer__struct_17 StorageBuffer
          %24 = OpFunction %void None %23
          %25 = OpLabel
+   ;;;;;;;;;;;;;;;;;;;
          %28 = OpAccessChain %_ptr_Input_uint %gl_WorkGroupID %uint_0
          %29 = OpLoad %uint %28
          %32 = OpAccessChain %_ptr_PushConstant_uint %5 %uint_3 %uint_0
