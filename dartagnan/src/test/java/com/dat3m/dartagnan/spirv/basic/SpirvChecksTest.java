@@ -114,7 +114,9 @@ public class SpirvChecksTest {
                 {"rmw-extremum-false.spv.dis", 1, PASS},
                 {"push-constants.spv.dis", 1, PASS},
                 {"push-constants-pod.spv.dis", 1, PASS},
-                {"push-constant-mixed.spv.dis", 1, PASS}
+                {"push-constant-mixed.spv.dis", 1, PASS},
+                {"bitwise-scalar.spv.dis", 1, PASS},
+                {"bitwise-vector.spv.dis", 1, PASS}
         });
     }
 
