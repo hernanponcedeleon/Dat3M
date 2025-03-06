@@ -4,8 +4,13 @@
 #include <pthread.h>
 #include <ck_fifo.h>
 
-#define NTHREADS 2
-#define VALUES_TO_ENQUEUE 3
+#ifndef NTHREADS
+    #define NTHREADS 2
+#endif
+
+#ifndef VALUES_TO_ENQUEUE
+    #define VALUES_TO_ENQUEUE 3
+#endif
 
 typedef struct point_s
 {
@@ -38,7 +43,6 @@ void *producer(void *arg)
         ck_fifo_spsc_enqueue(&queue, entry, point);
     }
 
-    // Signal end of queue with NULL
     ck_fifo_spsc_entry_t *entry = malloc(sizeof(ck_fifo_spsc_entry_t));
     if (entry == NULL)
     {
@@ -54,14 +58,8 @@ void *consumer(void *arg)
 
     for (int i = 0; i < VALUES_TO_ENQUEUE; i++)
     {
-#ifdef VERIFICATION_DAT3M
         bool res = ck_fifo_spsc_dequeue(&queue, (void **)&point);
         __VERIFIER_assume(res);
-#else
-        while (!ck_fifo_spsc_dequeue(&queue, (void **)&point)){}
-#endif
-
-        // Validate dequeued value
         assert(point != NULL && "NULL point received");
         assert(point->x == point->y);
         assert(point->y == 1);

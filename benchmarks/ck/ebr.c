@@ -1,12 +1,12 @@
 #include <inttypes.h>
 #include <pthread.h>
 #include <stdint.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <strings.h>
 #include <unistd.h>
 #include <sys/time.h>
 
-// #include <ck_backoff.h>
 #include "ck_cc.h"
 #include "ck_pr.h"
 #include "stdbool.h"
@@ -27,7 +27,6 @@ static void *thread(void *arg)
 	ck_epoch_record_t *record = (ck_epoch_record_t *)arg;
 
 	// We do the registration in main to speed up verification (this removes a level of nondeterminism)
-	// ck_epoch_register(&stack_epoch, &record, NULL);
 
 	ck_epoch_begin(record, NULL);
 	int global_epoch = ck_pr_load_uint(&stack_epoch.epoch);

@@ -1,9 +1,13 @@
 #include <assert.h>
 #include <ck_spinlock.h>
 #include <pthread.h>
+#include <stdio.h>
 #include <stdlib.h>
 
-#define NTHREADS 3 
+#ifndef NTHREADS
+    #define NTHREADS 3
+#endif
+
 
 ck_spinlock_mcs_t lock = NULL;
 ck_spinlock_mcs_t nodes;
@@ -11,7 +15,7 @@ ck_spinlock_mcs_t nodes;
 int x = 0, y = 0;
 
 void *run(void *arg) {
-    long tid = (long)arg;
+    long tid = *(int *)arg;
 
     ck_spinlock_mcs_t thread_node = &nodes[tid];
 
@@ -27,6 +31,7 @@ void *run(void *arg) {
 
 int main() {
     pthread_t threads[NTHREADS];
+    int tids[NTHREADS];
     int i;
 
     nodes = (ck_spinlock_mcs_t)malloc(NTHREADS * sizeof(ck_spinlock_mcs_t));
@@ -37,7 +42,7 @@ int main() {
     lock = NULL;
 
     for (i = 0; i < NTHREADS; i++) {
-        if (pthread_create(&threads[i], NULL, run, (void *)(long)i) != 0) {
+        if (pthread_create(&threads[i], NULL, run, &tids[i]) != 0) {
             free(nodes);
             exit(EXIT_FAILURE);
         }

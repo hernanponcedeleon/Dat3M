@@ -3,21 +3,28 @@
 #include <dat3m.h>
 #include <pthread.h>
 
-// nthreads is 3
-#define NTHREADS 3
+#ifndef NTHREADS
+    #define NTHREADS 3
+#endif
+
+// RISCV asm uses amo instructions for ck_spinlock_cas_trylock -> ck_pr_fas_uint
+// In such a case we avoid trylock and simply use cas_lock
 
 ck_spinlock_cas_t lock;
 int x = 0, y = 0;
 
 void *run(void *arg) {
-    int tid = (int)(long)arg;
-
+    int tid = *(int *)arg;
+#ifdef __riscv
+    ck_spinlock_cas_lock(&lock);
+#else
     if (tid == NTHREADS - 1) {
         bool acquired = ck_spinlock_cas_trylock(&lock);
         __VERIFIER_assume(acquired);
     } else {
         ck_spinlock_cas_lock(&lock);
     }
+#endif
     x++;
     y++;
     ck_spinlock_cas_unlock(&lock);
@@ -26,10 +33,11 @@ void *run(void *arg) {
 
 int main() {
     pthread_t threads[NTHREADS];
+    int tids[NTHREADS];
     int i;
     ck_spinlock_cas_init(&lock);
     for (i = 0; i < NTHREADS; i++) {
-        if (pthread_create(&threads[i], NULL, run, (void *)(long)i) != 0) {
+        if (pthread_create(&threads[i], NULL, run, &tids[i]) != 0) {
             exit(EXIT_FAILURE);
         }
     }

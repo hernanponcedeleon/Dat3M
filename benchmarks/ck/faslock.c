@@ -4,13 +4,16 @@
 #include <stdlib.h>
 #include <dat3m.h>
 
-#define NTHREADS 3
+#ifndef NTHREADS
+    #define NTHREADS 3
+#endif
+
 
 int x = 0, y = 0;
 ck_spinlock_fas_t lock;
 
 void *run(void *arg) {
-    int tid = (int)(long)arg;
+    int tid = *(int *)arg;
     
     if(tid == NTHREADS - 1){
         bool acquired = ck_spinlock_fas_trylock(&lock);
@@ -26,10 +29,11 @@ void *run(void *arg) {
 
 int main() {
     pthread_t threads[NTHREADS];
+    int tids[NTHREADS];
     int i;
     ck_spinlock_fas_init(&lock);
     for (i = 0; i < NTHREADS; i++) {
-        if (pthread_create(&threads[i], NULL, run, (void *)(long)i) != 0) {
+        if (pthread_create(&threads[i], NULL, run, &tids[i]) != 0) {
             exit(EXIT_FAILURE);
         }
     }
