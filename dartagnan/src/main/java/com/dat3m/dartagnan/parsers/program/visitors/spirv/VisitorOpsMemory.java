@@ -63,10 +63,11 @@ public class VisitorOpsMemory extends SpirvBaseVisitor<Event> {
         Expression pointer = builder.getExpression(pointerId);
         List<Event> events = new ArrayList<>();
         if (builder.getType(resultType) instanceof ArrayType arrayType) {
+            Type elType = arrayType.getElementType();
             List<Expression> registers = new ArrayList<>();
             for (int i = 0; i < arrayType.getNumElements(); i++) {
                 String elementId = resultId + "_" + i;
-                Register register = builder.addRegister(elementId, resultType);
+                Register register = builder.addRegister(elementId, elType);
                 registers.add(register);
                 List<Expression> index = List.of(expressions.makeValue(new BigInteger(Long.toString(i)), types.getArchType()));
                 Expression elementPointer = HelperTypes.getMemberAddress(pointerId, pointer, arrayType, index);
