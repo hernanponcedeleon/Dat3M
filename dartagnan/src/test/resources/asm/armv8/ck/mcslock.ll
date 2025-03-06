@@ -170,9 +170,13 @@ define i32 @main() #0 {
   unreachable
 
 8:                                                ; preds = %0
+  call void @exit(i32 noundef 1) #6
+  unreachable
+
+9:                                                ; preds = %0
   store ptr null, ptr @lock, align 8
-  store i32 0, ptr %3, align 4
-  br label %9
+  store i64 0, ptr %4, align 8
+  br label %10
 
 9:                                                ; preds = %24, %8
   %10 = load i32, ptr %3, align 4
@@ -190,14 +194,14 @@ define i32 @main() #0 {
   %20 = icmp ne i32 %19, 0
   br i1 %20, label %21, label %23
 
-21:                                               ; preds = %12
-  %22 = load ptr, ptr @nodes, align 8
-  call void @free(ptr noundef %22)
+20:                                               ; preds = %13
+  %21 = load ptr, ptr @nodes, align 8
+  call void @free(ptr noundef %21)
   call void @exit(i32 noundef 1) #6
   unreachable
 
-23:                                               ; preds = %12
-  br label %24
+22:                                               ; preds = %13
+  br label %23
 
 24:                                               ; preds = %23
   %25 = load i32, ptr %3, align 4
@@ -205,9 +209,9 @@ define i32 @main() #0 {
   store i32 %26, ptr %3, align 4
   br label %9, !llvm.loop !8
 
-27:                                               ; preds = %9
-  store i32 0, ptr %3, align 4
-  br label %28
+26:                                               ; preds = %10
+  store i64 0, ptr %4, align 8
+  br label %27
 
 28:                                               ; preds = %41, %27
   %29 = load i32, ptr %3, align 4
@@ -223,14 +227,14 @@ define i32 @main() #0 {
   %37 = icmp ne i32 %36, 0
   br i1 %37, label %38, label %40
 
-38:                                               ; preds = %31
-  %39 = load ptr, ptr @nodes, align 8
-  call void @free(ptr noundef %39)
+36:                                               ; preds = %30
+  %37 = load ptr, ptr @nodes, align 8
+  call void @free(ptr noundef %37)
   call void @exit(i32 noundef 1) #6
   unreachable
 
-40:                                               ; preds = %31
-  br label %41
+38:                                               ; preds = %30
+  br label %39
 
 41:                                               ; preds = %40
   %42 = load i32, ptr %3, align 4
@@ -248,23 +252,23 @@ define i32 @main() #0 {
   %49 = icmp eq i32 %48, 2
   br label %50
 
-50:                                               ; preds = %47, %44
-  %51 = phi i1 [ false, %44 ], [ %49, %47 ]
-  %52 = xor i1 %51, true
-  %53 = zext i1 %52 to i32
-  %54 = sext i32 %53 to i64
-  %55 = icmp ne i64 %54, 0
-  br i1 %55, label %56, label %58
+48:                                               ; preds = %45, %42
+  %49 = phi i1 [ false, %42 ], [ %47, %45 ]
+  %50 = xor i1 %49, true
+  %51 = zext i1 %50 to i32
+  %52 = sext i32 %51 to i64
+  %53 = icmp ne i64 %52, 0
+  br i1 %53, label %54, label %56
 
 56:                                               ; preds = %50
   call void @__assert_rtn(ptr noundef @__func__.main, ptr noundef @.str, i32 noundef 63, ptr noundef @.str.1) #7
   unreachable
 
-57:                                               ; No predecessors!
-  br label %59
+55:                                               ; No predecessors!
+  br label %57
 
-58:                                               ; preds = %50
-  br label %59
+56:                                               ; preds = %48
+  br label %57
 
 59:                                               ; preds = %58, %57
   %60 = load ptr, ptr @nodes, align 8

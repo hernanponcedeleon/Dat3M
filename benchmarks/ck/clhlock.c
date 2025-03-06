@@ -30,8 +30,8 @@ void *run(void *arg)
 int main()
 {
     pthread_t threads[NTHREADS];
-    int tids[NTHREADS];
-    int i;
+    long tids[NTHREADS];
+    long i;
 
     ck_spinlock_clh_t unowned;
     ck_spinlock_clh_init(&lock, &unowned);
