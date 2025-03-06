@@ -40,6 +40,7 @@ void *run(void *arg)
 int main()
 {
     pthread_t threads[NTHREADS];
+    int tids[NTHREADS];
     int i;
     ck_spinlock_cas_init(&lock);
     for (i = 0; i < NTHREADS; i++)
