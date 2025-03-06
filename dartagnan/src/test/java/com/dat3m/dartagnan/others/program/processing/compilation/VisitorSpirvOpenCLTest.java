@@ -454,17 +454,15 @@ public class VisitorSpirvOpenCLTest {
     public void testSpirvControlBarrier() {
         doTestSpirvControlBarrier(
                 Set.of(),
-                Set.of(Tag.FENCE, Tag.OpenCL.ENTRY_FENCE, Tag.C11.MO_RELEASE),
-                Set.of(Tag.FENCE, Tag.OpenCL.EXIT_FENCE, Tag.C11.MO_ACQUIRE)
+                Set.of(Tag.FENCE, Tag.C11.MO_ACQUIRE, Tag.C11.MO_RELEASE)
         );
         doTestSpirvControlBarrier(
                 Set.of(Tag.Spirv.SC_CROSS_WORKGROUP, Tag.Spirv.DEVICE),
-                Set.of(Tag.FENCE, Tag.OpenCL.ENTRY_FENCE, Tag.C11.MO_RELEASE, Tag.OpenCL.GLOBAL_SPACE, Tag.OpenCL.DEVICE),
-                Set.of(Tag.FENCE, Tag.OpenCL.EXIT_FENCE, Tag.C11.MO_ACQUIRE, Tag.OpenCL.GLOBAL_SPACE, Tag.OpenCL.DEVICE)
+                Set.of(Tag.FENCE, Tag.C11.MO_ACQUIRE, Tag.C11.MO_RELEASE, Tag.OpenCL.GLOBAL_SPACE, Tag.OpenCL.DEVICE)
         );
     }
 
-    private void doTestSpirvControlBarrier(Set<String> spvTags, Set<String> entryExpected, Set<String> exitExpected) {
+    private void doTestSpirvControlBarrier(Set<String> spvTags, Set<String> expectedTags) {
         // given
         ControlBarrier e = EventFactory.newControlBarrier("cbar", "test");
         e.addTags(Tag.Spirv.CONTROL);
@@ -478,11 +476,9 @@ public class VisitorSpirvOpenCLTest {
         List<Event> seq = visitor.visitControlBarrier(e);
 
         // then
-        assertEquals(2, seq.size());
-        ControlBarrier entryFence = (ControlBarrier) seq.get(0);
-        ControlBarrier exitFence = (ControlBarrier) seq.get(1);
+        assertEquals(1, seq.size());
+        ControlBarrier controlBarrier = (ControlBarrier) seq.get(0);
         Set<String> baseTags = Set.of(Tag.VISIBLE);
-        assertEquals(Sets.union(baseTags, entryExpected), entryFence.getTags());
-        assertEquals(Sets.union(baseTags, exitExpected), exitFence.getTags());
+        assertEquals(Sets.union(baseTags, expectedTags), controlBarrier.getTags());
     }
 }

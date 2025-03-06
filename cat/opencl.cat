@@ -20,8 +20,6 @@ OpenCL
 // ALL: all-svm-devices scope
 // GLOBAL: global memory
 // LOCAL: local memory
-// EF: entry fence of barrier
-// XF: exit fence of barrier
 // NAL: non-atomic location
 
 // dynamic_tag relates events to itself that access an address whose init event is marked X or Fence tagged with X
@@ -57,7 +55,8 @@ let ra_sw(r) = ((r & [Rel]); Fsb?; [W \ WI]; rs?; r; rf; [R \ WI]; sbF?; ([Acq] 
 (* Barrier synchronisation *)
 // in OpenCL a barrier results in two fence operations: entry and exit fences:
 // https://registry.khronos.org/OpenCL/specs/3.0-unified/html/OpenCL_API.html#_work_group_functions
-let bar_sw(r) = (r & [EF]); syncbar & ~wi & swg; (r & [XF])
+// In our implementation, we use a single barrier event and omit the special EF and XF tags
+let bar_sw(r) = r; syncbar & ~wi & swg; r
 
 (* Allowed to synchronise on the other region *)
 let scf = (SC * SC) | ((dynamic_tag(GLOBAL) & dynamic_tag(LOCAL)); unv; (dynamic_tag(GLOBAL) & dynamic_tag(LOCAL)))
@@ -71,8 +70,9 @@ let lsw = ra_sw(dynamic_tag(LOCAL)) | bar_sw(dynamic_tag(LOCAL)) | (scf & ra_sw(
 (******************)
 
 (* Global and local happens-before *)
-let ghb = ((dynamic_tag(GLOBAL); sb; dynamic_tag(GLOBAL)) | (dynamic_tag(GLOBAL); IW * ~IW; dynamic_tag(GLOBAL)) | gsw)+
-let lhb = ((dynamic_tag(LOCAL); sb; dynamic_tag(LOCAL)) | (dynamic_tag(LOCAL); IW * ~IW; dynamic_tag(LOCAL)) | lsw)+
+// Since we use single barrier events, we exclude the identity relation from the happens-before relation
+let ghb = ((dynamic_tag(GLOBAL); sb; dynamic_tag(GLOBAL)) | (dynamic_tag(GLOBAL); IW * ~IW; dynamic_tag(GLOBAL)) | gsw)+ \ id
+let lhb = ((dynamic_tag(LOCAL); sb; dynamic_tag(LOCAL)) | (dynamic_tag(LOCAL); IW * ~IW; dynamic_tag(LOCAL)) | lsw)+ \ id
 
 irreflexive ghb as O-HbG
 irreflexive lhb as O-HbL
@@ -129,6 +129,8 @@ let ur = (wi & cnf & ~symm(sb)) \ id
 flag ~empty ur as unsequenced_race
 
 (* Barrier divergence *)
-let bsw = bar_sw(dynamic_tag(GLOBAL)) | bar_sw(dynamic_tag(LOCAL))
-let bd = [EF] &  ((~wi & swg); unv) \ (bsw ; unv)
-flag ~empty bd as barrier_divergence
+// EF: entry fence of barrier
+// XF: exit fence of barrier
+// let bsw = bar_sw(dynamic_tag(GLOBAL)) | bar_sw(dynamic_tag(LOCAL))
+// let bd = [EF] &  ((~wi & swg); unv) \ (bsw ; unv)
+// flag ~empty bd as barrier_divergence
