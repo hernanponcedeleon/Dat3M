@@ -2,9 +2,6 @@
 #include <ck_spinlock.h>
 #include <dat3m.h>
 #include <pthread.h>
-#include <stdio.h>
-#include <stdlib.h>
-// #include "lock.h"
 
 // nthreads is 3
 #define NTHREADS 3

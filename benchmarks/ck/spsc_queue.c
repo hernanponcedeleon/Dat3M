@@ -1,6 +1,5 @@
 #include <assert.h>
 #include <dat3m.h>
-#include <stdio.h>
 #include <stdlib.h>
 #include <pthread.h>
 #include <ck_fifo.h>
@@ -14,14 +13,12 @@ typedef struct point_s
     unsigned int y;
 } point_t;
 
-// FIFO queue and its structure
 ck_fifo_spsc_t queue;
 
 void *producer(void *arg)
 {
     for (int i = 0; i < VALUES_TO_ENQUEUE; i++)
     {
-        // Create a new point structure
         point_t *point = malloc(sizeof(point_t));
         if (point == NULL)
         {
@@ -31,7 +28,6 @@ void *producer(void *arg)
         point->x = 1;
         point->y = 1;
 
-        // Enqueue the point
         ck_fifo_spsc_entry_t *entry = malloc(sizeof(ck_fifo_spsc_entry_t));
         if (entry == NULL)
         {
@@ -62,10 +58,7 @@ void *consumer(void *arg)
         bool res = ck_fifo_spsc_dequeue(&queue, (void **)&point);
         __VERIFIER_assume(res);
 #else
-        while (!ck_fifo_spsc_dequeue(&queue, (void **)&point))
-        {
-            // Spin until a value is available
-        }
+        while (!ck_fifo_spsc_dequeue(&queue, (void **)&point)){}
 #endif
 
         // Validate dequeued value
@@ -90,20 +83,17 @@ int main(void)
     }
     ck_fifo_spsc_init(&queue, initial_entry);
 
-    // Create producer and consumer threads
     if (pthread_create(&threads[0], NULL, producer, NULL) != 0 ||
         pthread_create(&threads[1], NULL, consumer, NULL) != 0)
     {
         exit(EXIT_FAILURE);
     }
 
-    // Wait for threads to complete
     for (int i = 0; i < NTHREADS; i++)
     {
         pthread_join(threads[i], NULL);
     }
 
-    // Cleanup the FIFO queue
     ck_fifo_spsc_entry_t *garbage;
     ck_fifo_spsc_deinit(&queue, &garbage);
     free(garbage);

@@ -1,7 +1,5 @@
 #include <pthread.h>
 #include <stdlib.h>
-#include <stdio.h>
-#include <sched.h>
 #include <ck_stack.h>
 #include <assert.h>
 #include <dat3m.h>
@@ -27,7 +25,6 @@ void *pusher_fn(void *arg)
         ck_stack_push_upmc(&stack, entry);
     }
 
-    // Update pusher_done when all pushers finish
     pthread_mutex_lock(&done_mutex);
     pushers_finished++;
     if (pushers_finished == NUM_PUSHERS)
@@ -63,7 +60,6 @@ int main(void)
     pthread_t pushers[NUM_PUSHERS];
     pthread_t poppers[NUM_POPPERS];
 
-    // Spawn pusher threads
     for (int i = 0; i < NUM_PUSHERS; i++)
     {
         if (pthread_create(&pushers[i], NULL, pusher_fn, NULL) != 0)
@@ -72,7 +68,6 @@ int main(void)
         }
     }
 
-    // Spawn popper threads
     for (int i = 0; i < NUM_POPPERS; i++)
     {
         if (pthread_create(&poppers[i], NULL, popper_fn, NULL) != 0)
@@ -81,19 +76,16 @@ int main(void)
         }
     }
 
-    // Wait for all pushers to finish
     for (int i = 0; i < NUM_PUSHERS; i++)
     {
         pthread_join(pushers[i], NULL);
     }
 
-    // Wait for all poppers to finish
     for (int i = 0; i < NUM_POPPERS; i++)
     {
         pthread_join(poppers[i], NULL);
     }
 
-    // Verify stack is empty
     assert(CK_STACK_ISEMPTY(&stack));
 
     return EXIT_SUCCESS;

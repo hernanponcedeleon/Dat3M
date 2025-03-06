@@ -1,7 +1,6 @@
 #include <assert.h>
 #include <ck_spinlock.h>
 #include <pthread.h>
-#include <stdio.h>
 #include <stdlib.h>
 #include <dat3m.h>
 

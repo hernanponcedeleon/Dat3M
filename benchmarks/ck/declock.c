@@ -3,8 +3,6 @@
 #include <dat3m.h>
 #include <pthread.h>
 #include <stdbool.h>
-#include <stdio.h>
-#include <stdlib.h>
 
 #define NTHREADS 2
 
