@@ -16,7 +16,8 @@ int x = 0, y = 0;
 
 void *run(void *arg)
 {
-    int tid = *(int *)arg;
+    
+    intptr_t tid = ((intptr_t) arg);
 #ifdef __riscv
     ck_spinlock_cas_lock(&lock);
 #else
@@ -39,12 +40,11 @@ void *run(void *arg)
 int main()
 {
     pthread_t threads[NTHREADS];
-    int tids[NTHREADS];
     int i;
     ck_spinlock_cas_init(&lock);
     for (i = 0; i < NTHREADS; i++)
     {
-        if (pthread_create(&threads[i], NULL, run, &tids[i]) != 0)
+        if (pthread_create(&threads[i], NULL, run, (void *)(size_t) i) != 0)
         {
             exit(EXIT_FAILURE);
         }

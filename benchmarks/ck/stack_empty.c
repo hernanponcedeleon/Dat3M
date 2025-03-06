@@ -3,8 +3,8 @@
 #include <ck_stack.h>
 #include <assert.h>
 
-#ifndef NUM_PUSH_PER_THREADS
-#define NUM_PUSH_PER_THREADS 3
+#ifndef NUM_PUSH_PER_THREAD
+#define NUM_PUSH_PER_THREAD 3
 #endif
 
 #ifndef NUM_PUSHERS
@@ -89,13 +89,7 @@ int main(void)
         pthread_join(poppers[i], NULL);
     }
 
-// we do not want to assert the final state if we are compiling to armv8
-// https://github.com/hernanponcedeleon/Dat3M/issues/817
-#ifdef __aarch64__
-#error dat3m is going to complain
-#else
-    assert(CK_STACK_ISEMPTY(&stack));
-#endif
+assert(CK_STACK_ISEMPTY(&stack));
 
     return EXIT_SUCCESS;
 }

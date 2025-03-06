@@ -157,116 +157,118 @@ define internal void @ck_spinlock_mcs_unlock(ptr noundef %0, ptr noundef %1) #0 
 define i32 @main() #0 {
   %1 = alloca i32, align 4
   %2 = alloca [2 x ptr], align 8
-  %3 = alloca [2 x i64], align 8
-  %4 = alloca i64, align 8
+  %3 = alloca i32, align 4
   store i32 0, ptr %1, align 4
-  %5 = call ptr @malloc(i64 noundef 16) #5
-  store ptr %5, ptr @nodes, align 8
-  %6 = load ptr, ptr @nodes, align 8
-  %7 = icmp eq ptr %6, null
-  br i1 %7, label %8, label %9
+  %4 = call ptr @malloc(i64 noundef 16) #5
+  store ptr %4, ptr @nodes, align 8
+  %5 = load ptr, ptr @nodes, align 8
+  %6 = icmp eq ptr %5, null
+  br i1 %6, label %7, label %8
+
+7:                                                ; preds = %0
+  call void @exit(i32 noundef 1) #6
+  unreachable
 
 8:                                                ; preds = %0
-  call void @exit(i32 noundef 1) #6
-  unreachable
-
-9:                                                ; preds = %0
   store ptr null, ptr @lock, align 8
-  store i64 0, ptr %4, align 8
-  br label %10
+  store i32 0, ptr %3, align 4
+  br label %9
 
-10:                                               ; preds = %23, %9
-  %11 = load i64, ptr %4, align 8
-  %12 = icmp slt i64 %11, 2
-  br i1 %12, label %13, label %26
+9:                                                ; preds = %24, %8
+  %10 = load i32, ptr %3, align 4
+  %11 = icmp slt i32 %10, 2
+  br i1 %11, label %12, label %27
 
-13:                                               ; preds = %10
-  %14 = load i64, ptr %4, align 8
+12:                                               ; preds = %9
+  %13 = load i32, ptr %3, align 4
+  %14 = sext i32 %13 to i64
   %15 = getelementptr inbounds [2 x ptr], ptr %2, i64 0, i64 %14
-  %16 = load i64, ptr %4, align 8
-  %17 = getelementptr inbounds [2 x i64], ptr %3, i64 0, i64 %16
-  %18 = call i32 @pthread_create(ptr noundef %15, ptr noundef null, ptr noundef @run, ptr noundef %17)
-  %19 = icmp ne i32 %18, 0
-  br i1 %19, label %20, label %22
+  %16 = load i32, ptr %3, align 4
+  %17 = sext i32 %16 to i64
+  %18 = inttoptr i64 %17 to ptr
+  %19 = call i32 @pthread_create(ptr noundef %15, ptr noundef null, ptr noundef @run, ptr noundef %18)
+  %20 = icmp ne i32 %19, 0
+  br i1 %20, label %21, label %23
 
-20:                                               ; preds = %13
-  %21 = load ptr, ptr @nodes, align 8
-  call void @free(ptr noundef %21)
+21:                                               ; preds = %12
+  %22 = load ptr, ptr @nodes, align 8
+  call void @free(ptr noundef %22)
   call void @exit(i32 noundef 1) #6
   unreachable
 
-22:                                               ; preds = %13
-  br label %23
+23:                                               ; preds = %12
+  br label %24
 
-23:                                               ; preds = %22
-  %24 = load i64, ptr %4, align 8
-  %25 = add nsw i64 %24, 1
-  store i64 %25, ptr %4, align 8
-  br label %10, !llvm.loop !8
+24:                                               ; preds = %23
+  %25 = load i32, ptr %3, align 4
+  %26 = add nsw i32 %25, 1
+  store i32 %26, ptr %3, align 4
+  br label %9, !llvm.loop !8
 
-26:                                               ; preds = %10
-  store i64 0, ptr %4, align 8
-  br label %27
+27:                                               ; preds = %9
+  store i32 0, ptr %3, align 4
+  br label %28
 
-27:                                               ; preds = %39, %26
-  %28 = load i64, ptr %4, align 8
-  %29 = icmp slt i64 %28, 2
-  br i1 %29, label %30, label %42
+28:                                               ; preds = %41, %27
+  %29 = load i32, ptr %3, align 4
+  %30 = icmp slt i32 %29, 2
+  br i1 %30, label %31, label %44
 
-30:                                               ; preds = %27
-  %31 = load i64, ptr %4, align 8
-  %32 = getelementptr inbounds [2 x ptr], ptr %2, i64 0, i64 %31
-  %33 = load ptr, ptr %32, align 8
-  %34 = call i32 @"\01_pthread_join"(ptr noundef %33, ptr noundef null)
-  %35 = icmp ne i32 %34, 0
-  br i1 %35, label %36, label %38
+31:                                               ; preds = %28
+  %32 = load i32, ptr %3, align 4
+  %33 = sext i32 %32 to i64
+  %34 = getelementptr inbounds [2 x ptr], ptr %2, i64 0, i64 %33
+  %35 = load ptr, ptr %34, align 8
+  %36 = call i32 @"\01_pthread_join"(ptr noundef %35, ptr noundef null)
+  %37 = icmp ne i32 %36, 0
+  br i1 %37, label %38, label %40
 
-36:                                               ; preds = %30
-  %37 = load ptr, ptr @nodes, align 8
-  call void @free(ptr noundef %37)
+38:                                               ; preds = %31
+  %39 = load ptr, ptr @nodes, align 8
+  call void @free(ptr noundef %39)
   call void @exit(i32 noundef 1) #6
   unreachable
 
-38:                                               ; preds = %30
-  br label %39
+40:                                               ; preds = %31
+  br label %41
 
-39:                                               ; preds = %38
-  %40 = load i64, ptr %4, align 8
-  %41 = add nsw i64 %40, 1
-  store i64 %41, ptr %4, align 8
-  br label %27, !llvm.loop !9
+41:                                               ; preds = %40
+  %42 = load i32, ptr %3, align 4
+  %43 = add nsw i32 %42, 1
+  store i32 %43, ptr %3, align 4
+  br label %28, !llvm.loop !9
 
-42:                                               ; preds = %27
-  %43 = load i32, ptr @x, align 4
-  %44 = icmp eq i32 %43, 2
-  br i1 %44, label %45, label %48
+44:                                               ; preds = %28
+  %45 = load i32, ptr @x, align 4
+  %46 = icmp eq i32 %45, 2
+  br i1 %46, label %47, label %50
 
-45:                                               ; preds = %42
-  %46 = load i32, ptr @y, align 4
-  %47 = icmp eq i32 %46, 2
-  br label %48
+47:                                               ; preds = %44
+  %48 = load i32, ptr @y, align 4
+  %49 = icmp eq i32 %48, 2
+  br label %50
 
-48:                                               ; preds = %45, %42
-  %49 = phi i1 [ false, %42 ], [ %47, %45 ]
-  %50 = xor i1 %49, true
-  %51 = zext i1 %50 to i32
-  %52 = sext i32 %51 to i64
-  %53 = icmp ne i64 %52, 0
-  br i1 %53, label %54, label %56
+50:                                               ; preds = %47, %44
+  %51 = phi i1 [ false, %44 ], [ %49, %47 ]
+  %52 = xor i1 %51, true
+  %53 = zext i1 %52 to i32
+  %54 = sext i32 %53 to i64
+  %55 = icmp ne i64 %54, 0
+  br i1 %55, label %56, label %58
 
-54:                                               ; preds = %48
+56:                                               ; preds = %50
   call void @__assert_rtn(ptr noundef @__func__.main, ptr noundef @.str, i32 noundef 63, ptr noundef @.str.1) #7
   unreachable
 
-55:                                               ; No predecessors!
-  br label %57
+57:                                               ; No predecessors!
+  br label %59
 
-56:                                               ; preds = %48
-  br label %57
+58:                                               ; preds = %50
+  br label %59
 
-57:                                               ; preds = %56, %55
-  %58 = load ptr, ptr @nodes, align 8
-  call void @free(ptr noundef %58)
+59:                                               ; preds = %58, %57
+  %60 = load ptr, ptr @nodes, align 8
+  call void @free(ptr noundef %60)
   ret i32 0
 }
 
@@ -447,13 +449,13 @@ attributes #8 = { nounwind }
 !7 = !{!"llvm.loop.mustprogress"}
 !8 = distinct !{!8, !7}
 !9 = distinct !{!9, !7}
-!10 = !{i64 2147806896, i64 2147807009, i64 2147807080}
-!11 = !{i64 2147765174}
-!12 = !{i64 2147763390}
-!13 = !{i64 264492}
-!14 = !{i64 2147758196}
-!15 = !{i64 2147760904}
-!16 = !{i64 2147761513}
-!17 = !{i64 2147783940, i64 2147784055, i64 2147784121, i64 2147784174, i64 2147784246, i64 2147784304}
-!18 = !{i64 2147767077}
-!19 = !{i64 2147761169}
+!10 = !{i64 2147806890, i64 2147807003, i64 2147807074}
+!11 = !{i64 2147765168}
+!12 = !{i64 2147763384}
+!13 = !{i64 264486}
+!14 = !{i64 2147758190}
+!15 = !{i64 2147760898}
+!16 = !{i64 2147761507}
+!17 = !{i64 2147783934, i64 2147784049, i64 2147784115, i64 2147784168, i64 2147784240, i64 2147784298}
+!18 = !{i64 2147767071}
+!19 = !{i64 2147761163}

@@ -14,7 +14,8 @@ int x = 0, y = 0;
 
 void *run(void *arg)
 {
-    long tid = (long)arg;
+
+    intptr_t tid = ((intptr_t)arg);
 
     ck_spinlock_mcs_t thread_node = &nodes[tid];
 
@@ -31,8 +32,7 @@ void *run(void *arg)
 int main()
 {
     pthread_t threads[NTHREADS];
-    long tids[NTHREADS];
-    long i;
+    int i;
 
     nodes = (ck_spinlock_mcs_t)malloc(NTHREADS * sizeof(ck_spinlock_mcs_t));
     if (nodes == NULL)
@@ -44,7 +44,7 @@ int main()
 
     for (i = 0; i < NTHREADS; i++)
     {
-        if (pthread_create(&threads[i], NULL, run, &tids[i]) != 0)
+        if (pthread_create(&threads[i], NULL, run, (void *)(size_t)i) != 0)
         {
             free(nodes);
             exit(EXIT_FAILURE);

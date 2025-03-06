@@ -13,7 +13,7 @@ ck_spinlock_clh_t *nodes;
 
 void *run(void *arg)
 {
-    int tid = (long)arg;
+    intptr_t tid = ((intptr_t) arg);
 
     ck_spinlock_clh_t *thread_node = &nodes[tid];
 
@@ -30,8 +30,8 @@ void *run(void *arg)
 int main()
 {
     pthread_t threads[NTHREADS];
-    long tids[NTHREADS];
-    long i;
+    int tids[NTHREADS];
+    int i;
 
     ck_spinlock_clh_t unowned;
     ck_spinlock_clh_init(&lock, &unowned);
@@ -45,7 +45,7 @@ int main()
 
     for (i = 0; i < NTHREADS; i++)
     {
-        if (pthread_create(&threads[i], NULL, run, &tids[i]) != 0)
+        if (pthread_create(&threads[i], NULL, run, (void *)(size_t) i) != 0)
         {
             exit(EXIT_FAILURE);
         }
