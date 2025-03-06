@@ -56,9 +56,11 @@ public class MemToReg implements FunctionProcessor {
         final var matcher = new Matcher();
         // Initially, all locally-allocated addresses are potentially promotable.
         for (final Alloc allocation : function.getEvents(Alloc.class)) {
+            final Map<Integer, Type> fields = getPrimitiveReplacementTypes(allocation);
             // Allocations will usually not have users.  Otherwise, their object is not promotable.
-            if (allocation.getUsers().isEmpty()) {
+            if (fields == null || allocation.getUsers().isEmpty()) {
                 matcher.reachabilityGraph.put(allocation, new HashSet<>());
+                matcher.fields.put(allocation, fields);
             }
         }
         // This loop should terminate, since back jumps occur, only if changes were made.
@@ -142,6 +144,9 @@ public class MemToReg implements FunctionProcessor {
     // Returns a label, if it is program-ordered before the current event and its symbolic state was updated.
     private static final class Matcher implements EventVisitor<Label> {
 
+        // Allowed accesses into a heap-allocated object.
+        //TODO allow MSAs
+        private final Map<Alloc, Map<Integer, Type>> fields = new HashMap<>();
         // Current local symbolic state.  Missing values mean irreplaceable contents.
         private final Map<Object, AddressOffset> state = new HashMap<>();
         // Maps labels and jumps to symbolic state information.
@@ -201,12 +206,10 @@ public class MemToReg implements FunctionProcessor {
             // Each path must update state and accesses.
             final Register register = load.getResultRegister();
             final RegisterOffset addressExpression = matchGEP(load.getAddress());
-            assert addressExpression == null || addressExpression.register != null;
-            final AddressOffset addressBase = addressExpression == null ? null : state.get(addressExpression.register);
-            final AddressOffset address = addressBase == null ? null : addressBase.increase(addressExpression.offset);
+            final AddressOffset address = toAddressOffset(load, addressExpression);
             final boolean isDeletable = load.getUsers().isEmpty();
             // If too complex, treat like global address.
-            if (addressExpression == null || !isDeletable) {
+            if (address == null || !isDeletable) {
                 publishRegisters(load.getAddress().getRegs());
             }
             final AddressOffset value = address == null ? null : state.get(address);
@@ -222,15 +225,13 @@ public class MemToReg implements FunctionProcessor {
             }
             // Each path must update state and accesses.
             final RegisterOffset addressExpression = matchGEP(store.getAddress());
-            assert addressExpression == null || addressExpression.register != null;
-            final AddressOffset addressBase = addressExpression == null ? null : state.get(addressExpression.register);
-            final AddressOffset address = addressBase == null ? null : addressBase.increase(addressExpression.offset);
+            final AddressOffset address = toAddressOffset(store, addressExpression);
             final RegisterOffset valueExpression = matchGEP(store.getMemValue());
             assert valueExpression == null || valueExpression.register != null;
             final AddressOffset value = valueExpression == null ? null : state.get(valueExpression.register);
             final boolean isDeletable = store.getUsers().isEmpty();
             // On complex address expression, give up on any address that could contribute here.
-            if (addressExpression == null || !isDeletable) {
+            if (address == null || !isDeletable) {
                 publishRegisters(store.getAddress().getRegs());
             }
             // On ambiguous address, give up on any address that could be stored here.
@@ -311,6 +312,15 @@ public class MemToReg implements FunctionProcessor {
                     queue.addAll(reachableSet);
                 }
             }
+        }
+
+        private AddressOffset toAddressOffset(MemoryCoreEvent event, RegisterOffset gep) {
+            assert gep == null || gep.register != null;
+            final AddressOffset base = gep == null ? null : state.get(gep.register);
+            final AddressOffset unfiltered = base == null ? null : base.increase(gep.offset);
+            final Map<Integer, Type> accessedFields = unfiltered == null ? null : fields.get(unfiltered.base);
+            final Type fieldType = accessedFields == null ? null : accessedFields.get((int) unfiltered.offset);
+            return !event.getAccessType().equals(fieldType) ? null : unfiltered;
         }
 
         private static RegisterOffset matchGEP(Expression expression) {
