@@ -151,7 +151,3 @@ flag ~empty dr as data_race
 
 let ur = (wi & conflict & ~symm(po)) \ id
 flag ~empty ur as unsequenced_race
-
-// let bsw = bar_sw(dynamic_tag(GLOBAL)) | bar_sw(dynamic_tag(LOCAL))
-// let bd = [EF] & ((~wi & swg); unv) \ (bsw ; unv)
-// flag ~empty bd as barrier_divergence

@@ -127,10 +127,3 @@ flag ~empty dr as data_race
 let symm(r) = r | r^-1
 let ur = (wi & cnf & ~symm(sb)) \ id
 flag ~empty ur as unsequenced_race
-
-(* Barrier divergence *)
-// EF: entry fence of barrier
-// XF: exit fence of barrier
-// let bsw = bar_sw(dynamic_tag(GLOBAL)) | bar_sw(dynamic_tag(LOCAL))
-// let bd = [EF] &  ((~wi & swg); unv) \ (bsw ; unv)
-// flag ~empty bd as barrier_divergence
