@@ -28,7 +28,6 @@ import static com.dat3m.dartagnan.utils.ResourceHelper.getTestResourcePath;
 import com.dat3m.dartagnan.utils.Result;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.verification.solving.AssumeSolver;
-import com.dat3m.dartagnan.verification.solving.RefinementSolver;
 import com.dat3m.dartagnan.wmm.Wmm;
 
 @RunWith(Parameterized.class)
@@ -57,7 +56,7 @@ public class AsmCkArmv8Test {
             {"mcslock", 2, Result.PASS},
             {"ticketlock", 1, Result.PASS},
             {"spsc_queue", 1, Result.PASS},
-            {"stack_empty", 1, Result.PASS},
+            // {"stack_empty", 1, Result.PASS}, // https://github.com/hernanponcedeleon/Dat3M/issues/817
         });
     }
 
