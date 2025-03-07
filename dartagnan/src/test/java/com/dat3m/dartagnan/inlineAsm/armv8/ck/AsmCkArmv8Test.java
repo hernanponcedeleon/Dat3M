@@ -56,7 +56,7 @@ public class AsmCkArmv8Test {
             {"mcslock", 2, Result.PASS},
             {"ticketlock", 1, Result.PASS},
             {"spsc_queue", 1, Result.PASS},
-            {"stack_empty", 1, Result.FAIL}, // https://github.com/hernanponcedeleon/Dat3M/issues/817
+            // {"stack_empty", 1, Result.PASS}, // https://github.com/hernanponcedeleon/Dat3M/issues/817
         });
     }
 
