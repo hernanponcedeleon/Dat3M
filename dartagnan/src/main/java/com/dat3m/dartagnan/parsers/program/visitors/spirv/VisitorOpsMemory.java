@@ -4,7 +4,6 @@ import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.Type;
-import com.dat3m.dartagnan.expression.aggregates.ConstructExpr;
 import com.dat3m.dartagnan.expression.integers.IntLiteral;
 import com.dat3m.dartagnan.expression.type.ArrayType;
 import com.dat3m.dartagnan.expression.type.ScopedPointerType;
@@ -27,8 +26,11 @@ import org.antlr.v4.runtime.RuleContext;
 
 import java.math.BigInteger;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import static com.dat3m.dartagnan.parsers.program.visitors.spirv.decorations.DecorationType.ALIGNMENT;
 import static com.dat3m.dartagnan.parsers.program.visitors.spirv.decorations.DecorationType.BUILT_IN;
@@ -125,16 +127,10 @@ public class VisitorOpsMemory extends SpirvBaseVisitor<Event> {
             Expression alignment = expressions.getDefaultAlignment();
             if (alignmentNum != null) {
                 if (type instanceof ArrayType arrayType) {
-                    List<Type> elementTypes = new ArrayList<>();
-                    for (int i = 0; i < arrayType.getNumElements(); i++) {
-                        elementTypes.add(arrayType.getElementType());
-                    }
-                    int offset = 0;
-                    List<Integer> alignmentList = new ArrayList<>();
-                    for (int i = 0; i < arrayType.getNumElements(); i++) {
-                        alignmentList.add(offset);
-                        offset += alignmentNum;
-                    }
+                    List<Type> elementTypes = Collections.nCopies(arrayType.getNumElements(), arrayType.getElementType());
+                    List<Integer> alignmentList = IntStream.range(0, arrayType.getNumElements())
+                            .mapToObj(i -> i * alignmentNum)
+                            .collect(Collectors.toList());
                     type = types.getAggregateType(elementTypes, alignmentList);
                 } else {
                     alignment = expressions.makeValue(alignmentNum, types.getArchType());

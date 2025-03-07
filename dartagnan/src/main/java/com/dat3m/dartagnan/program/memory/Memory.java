@@ -42,6 +42,10 @@ public class Memory {
         return memoryObject;
     }
 
+    public VirtualMemoryObject allocateVirtual(int size, boolean generic, VirtualMemoryObject alias) {
+        return allocateVirtual(size, generic, ExpressionFactory.getInstance().getDefaultAlignment(), alias);
+    }
+
     public VirtualMemoryObject allocateVirtual(int size, boolean generic, Expression alignment,
                                                VirtualMemoryObject alias) {
         Preconditions.checkArgument(size > 0, "Illegal allocation. Size must be positive");
