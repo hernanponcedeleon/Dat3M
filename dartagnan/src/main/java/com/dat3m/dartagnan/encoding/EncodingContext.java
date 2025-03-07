@@ -257,8 +257,9 @@ public final class EncodingContext {
     public BooleanFormula equal(Formula left, Formula right, ConversionMode cMode) {
         if (cMode == ConversionMode.LEFT_TO_RIGHT) {
             return equal(right, left, ConversionMode.RIGHT_TO_LEFT);
-        } else if (cMode == ConversionMode.NO) {
-            new EncodingHelper(formulaManager).checkEqualTypes(left, right);
+        } else if (cMode == ConversionMode.NO && !new EncodingHelper(formulaManager).hasSameType(left, right)) {
+            final String error = String.format("Mismatching formula types: %s and %s", left, right);
+            throw new IllegalArgumentException(error);
         }
 
         if (left instanceof IntegerFormula l) {

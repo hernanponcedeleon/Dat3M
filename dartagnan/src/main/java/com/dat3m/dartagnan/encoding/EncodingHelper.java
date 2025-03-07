@@ -7,6 +7,7 @@ import com.google.common.base.Preconditions;
 import org.sosy_lab.java_smt.api.*;
 
 import java.math.BigInteger;
+import java.util.stream.IntStream;
 
 public class EncodingHelper {
 
@@ -126,7 +127,7 @@ public class EncodingHelper {
         return fmgr.getFormulaType(formula);
     }
 
-    public boolean checkEqualTypes(Formula left, Formula right) {
+    public boolean hasSameType(Formula left, Formula right) {
         if (left instanceof IntegerType && right instanceof IntegerType) {
             return true;
         } else if (left instanceof BooleanFormula && right instanceof BooleanFormula) {
@@ -135,13 +136,12 @@ public class EncodingHelper {
             final BitvectorFormulaManager bvmgr = fmgr.getBitvectorFormulaManager();
             return bvmgr.getLength(x) == bvmgr.getLength(y);
         } else if (left instanceof TupleFormula x && right instanceof TupleFormula y) {
-            boolean same = (x.getElements().size() == y.getElements().size());
-            if (same) {
-                for (int i = 0; i < x.getElements().size(); i++) {
-                    same &= checkEqualTypes(x.getElements().get(i), y.getElements().get(i));
-                }
+            if (x.getElements().size() != y.getElements().size()) {
+                return false;
             }
-            return same;
+            return IntStream.range(0, x.getElements().size()).allMatch(
+                    i -> hasSameType(x.getElements().get(i), y.getElements().get(i))
+            );
         }
 
         return false;
