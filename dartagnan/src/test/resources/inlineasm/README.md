@@ -1,4 +1,4 @@
-# How to generate LLVM files with Inline Asm from Libvsync and Ck
+# How to generate LLVM files with Inline Asm with Libvsync
 This readme explains how to generate llvm benchmarks with inline asm. We explain how to do this on arm (v7 and v8), but doing it on other devices is similar.
 
 *Note* : to generate those files you are going to need **Clang** which runs on an arm device.
@@ -31,28 +31,4 @@ For the architecture these are the options :
 A valid example would therefore be, from libvsync's root,
 ```
 clang -I ./include -I Dat3M_HOME/include -DVATOMIC_DISABLE_ARM64_LSE -DVSYNC_DISABLE_POLITE_AWAIT -DVSYNC_VERIFICATION -DVSYNC_VERIFICATION_DAT3M -DVSYNCER_CHECK=on -DVSYNC_VERIFICATION_QUICK -D__aarch__ -S -emit-llvm test/spinlock/ttaslock.c
-```
-## Ck 
-You need to clone [concurrencykit/ck](https://github.com/concurrencykit/ck).
-
-DO NOT Install it via the ./configure script, as we want to generate inline asm independently from the underlying machine.
-
-In this case you have to generate the clients to leverage the API on your own.
-
-Then, follow this pattern :
-```
-clang <Includes> <custom flags> <architecture> -S -emit-llvm <file_path.c>
-```
-The Include should contain :
-1. path to ck/include
-
-The Custom flags should be set up accordingly to your client
-
-For the architecture these are the options : 
-1. ```__aarch__``` to generate ARMV8
-2. ```__arm__ ``` &&  ```__ARM_ARCH_7__``` to generate ARMV7.
-
-A valid example would therefore be, from ck's root.
-```
-clang -I ./include -I DAT3M_HOME/include -D__arm__ -D__ARM_ARCH_7__ -S -emit-llvm tests/caslock.c
 ```

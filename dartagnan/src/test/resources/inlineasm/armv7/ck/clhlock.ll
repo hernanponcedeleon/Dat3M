@@ -278,15 +278,19 @@ define internal ptr @ck_pr_fas_ptr(ptr noundef %0, ptr noundef %1) #0 {
   %6 = alloca ptr, align 8
   store ptr %0, ptr %3, align 8
   store ptr %1, ptr %4, align 8
-  %7 = load ptr, ptr %3, align 8
-  %8 = load ptr, ptr %4, align 8
-  %9 = call { ptr, ptr } asm sideeffect "1:ldxr $0, [$2]\0Astxr ${1:w}, $3, [$2]\0Acbnz ${1:w}, 1b\0A", "=&r,=&r,r,r,~{memory},~{cc}"(ptr %7, ptr %8) #8, !srcloc !11
-  %10 = extractvalue { ptr, ptr } %9, 0
-  %11 = extractvalue { ptr, ptr } %9, 1
-  store ptr %10, ptr %5, align 8
-  store ptr %11, ptr %6, align 8
-  %12 = load ptr, ptr %5, align 8
-  ret ptr %12
+  store ptr null, ptr %5, align 8
+  store ptr null, ptr %6, align 8
+  %7 = load ptr, ptr %5, align 8
+  %8 = load ptr, ptr %6, align 8
+  %9 = load ptr, ptr %3, align 8
+  %10 = load ptr, ptr %4, align 8
+  %11 = call { ptr, ptr } asm sideeffect "1:ldrex $0, [$2];strex $1, $3, [$2];cmp $1, #0;bne 1b;", "=&r,=&r,r,r,0,1,~{memory},~{cc}"(ptr %9, ptr %10, ptr %7, ptr %8) #8, !srcloc !11
+  %12 = extractvalue { ptr, ptr } %11, 0
+  %13 = extractvalue { ptr, ptr } %11, 1
+  store ptr %12, ptr %5, align 8
+  store ptr %13, ptr %6, align 8
+  %14 = load ptr, ptr %5, align 8
+  ret ptr %14
 }
 
 ; Function Attrs: noinline nounwind optnone ssp uwtable(sync)
@@ -302,7 +306,7 @@ define internal i32 @ck_pr_md_load_uint(ptr noundef %0) #0 {
   store ptr %0, ptr %2, align 8
   store i64 0, ptr %3, align 8
   %4 = load ptr, ptr %2, align 8
-  %5 = call i64 asm sideeffect "ldr ${0:w}, [$1]\0A", "=r,r,~{memory}"(ptr %4) #8, !srcloc !12
+  %5 = call i64 asm sideeffect "ldr $0, [$1];", "=r,r,~{memory}"(ptr %4) #8, !srcloc !12
   store i64 %5, ptr %3, align 8
   %6 = load i64, ptr %3, align 8
   %7 = trunc i64 %6 to i32
@@ -323,19 +327,19 @@ define internal void @ck_pr_fence_lock() #0 {
 
 ; Function Attrs: noinline nounwind optnone ssp uwtable(sync)
 define internal void @ck_pr_fence_strict_store_atomic() #0 {
-  call void asm sideeffect "dmb ishst", "r,~{memory}"(i32 0) #8, !srcloc !14
+  call void asm sideeffect "dmb st", "r,~{memory}"(i32 0) #8, !srcloc !14
   ret void
 }
 
 ; Function Attrs: noinline nounwind optnone ssp uwtable(sync)
 define internal void @ck_pr_fence_strict_load() #0 {
-  call void asm sideeffect "dmb ishld", "r,~{memory}"(i32 0) #8, !srcloc !15
+  call void asm sideeffect "dmb ish", "~{memory}"() #8, !srcloc !15
   ret void
 }
 
 ; Function Attrs: noinline nounwind optnone ssp uwtable(sync)
 define internal void @ck_pr_fence_strict_lock() #0 {
-  call void asm sideeffect "dmb ish", "r,~{memory}"(i32 0) #8, !srcloc !16
+  call void asm sideeffect "dmb ish", "~{memory}"() #8, !srcloc !16
   ret void
 }
 
@@ -352,15 +356,14 @@ define internal void @ck_pr_md_store_uint(ptr noundef %0, i32 noundef %1) #0 {
   store ptr %0, ptr %3, align 8
   store i32 %1, ptr %4, align 4
   %5 = load ptr, ptr %3, align 8
-  %6 = load ptr, ptr %3, align 8
-  %7 = load i32, ptr %4, align 4
-  call void asm sideeffect "str ${2:w}, [$1]", "=*m,r,r,~{memory}"(ptr elementtype(i32) %5, ptr %6, i32 %7) #8, !srcloc !17
+  %6 = load i32, ptr %4, align 4
+  call void asm sideeffect "str $1, [$0]", "r,r,~{memory}"(ptr %5, i32 %6) #8, !srcloc !17
   ret void
 }
 
 ; Function Attrs: noinline nounwind optnone ssp uwtable(sync)
 define internal void @ck_pr_fence_strict_unlock() #0 {
-  call void asm sideeffect "dmb ish", "r,~{memory}"(i32 0) #8, !srcloc !18
+  call void asm sideeffect "dmb ish", "~{memory}"() #8, !srcloc !18
   ret void
 }
 
@@ -394,12 +397,12 @@ attributes #8 = { nounwind }
 !8 = distinct !{!8, !7}
 !9 = distinct !{!9, !7}
 !10 = distinct !{!10, !7}
-!11 = !{i64 2147807022, i64 2147807135, i64 2147807206}
-!12 = !{i64 2147763516}
-!13 = !{i64 264618}
-!14 = !{i64 2147758322}
-!15 = !{i64 2147759418}
-!16 = !{i64 2147761030}
-!17 = !{i64 2147767203}
-!18 = !{i64 2147761295}
-!19 = !{i64 418464}
+!11 = !{i64 2147818332}
+!12 = !{i64 2147781175}
+!13 = !{i64 264627}
+!14 = !{i64 2147775120}
+!15 = !{i64 2147776048}
+!16 = !{i64 2147777382}
+!17 = !{i64 2147787914}
+!18 = !{i64 2147777601}
+!19 = !{i64 438598}
