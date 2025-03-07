@@ -1,6 +1,8 @@
 package com.dat3m.dartagnan.expression.processing;
 
 
+import java.math.BigInteger;
+
 import com.dat3m.dartagnan.expression.BinaryExpression;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionKind;
@@ -8,13 +10,22 @@ import com.dat3m.dartagnan.expression.aggregates.AggregateCmpExpr;
 import com.dat3m.dartagnan.expression.aggregates.AggregateCmpOp;
 import com.dat3m.dartagnan.expression.aggregates.ConstructExpr;
 import com.dat3m.dartagnan.expression.aggregates.ExtractExpr;
-import com.dat3m.dartagnan.expression.booleans.*;
-import com.dat3m.dartagnan.expression.integers.*;
+import com.dat3m.dartagnan.expression.booleans.BoolBinaryExpr;
+import com.dat3m.dartagnan.expression.booleans.BoolBinaryOp;
+import com.dat3m.dartagnan.expression.booleans.BoolLiteral;
+import com.dat3m.dartagnan.expression.booleans.BoolUnaryExpr;
+import com.dat3m.dartagnan.expression.booleans.BoolUnaryOp;
+import com.dat3m.dartagnan.expression.integers.IntBinaryExpr;
+import com.dat3m.dartagnan.expression.integers.IntBinaryOp;
+import com.dat3m.dartagnan.expression.integers.IntCmpExpr;
+import com.dat3m.dartagnan.expression.integers.IntCmpOp;
+import com.dat3m.dartagnan.expression.integers.IntLiteral;
+import com.dat3m.dartagnan.expression.integers.IntSizeCast;
+import com.dat3m.dartagnan.expression.integers.IntUnaryExpr;
+import com.dat3m.dartagnan.expression.integers.IntUnaryOp;
 import com.dat3m.dartagnan.expression.misc.ITEExpr;
 import com.dat3m.dartagnan.expression.utils.IntegerHelper;
 import com.google.common.base.VerifyException;
-
-import java.math.BigInteger;
 
 public class ExprSimplifier extends ExprTransformer {
 

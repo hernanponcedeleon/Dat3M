@@ -71,6 +71,7 @@ public class SpirvAssertionsTest {
                 {"array-of-vector.spv.dis", 1, PASS},
                 {"array-of-vector1.spv.dis", 1, PASS},
                 {"vector-read-write.spv.dis", 1, PASS},
+                {"composite-extract.spv.dis", 1, PASS},
                 {"spec-id-integer.spv.dis", 1, PASS},
                 {"spec-id-boolean.spv.dis", 1, PASS},
                 {"mixed-size.spv.dis", 1, PASS},
@@ -113,7 +114,9 @@ public class SpirvAssertionsTest {
                 {"rmw-extremum-false.spv.dis", 1, FAIL},
                 {"push-constants.spv.dis", 1, PASS},
                 {"push-constants-pod.spv.dis", 1, PASS},
-                {"push-constant-mixed.spv.dis", 1, PASS}
+                {"push-constant-mixed.spv.dis", 1, PASS},
+                {"bitwise-scalar.spv.dis", 1, PASS},
+                {"bitwise-vector.spv.dis", 1, PASS}
         });
     }
 

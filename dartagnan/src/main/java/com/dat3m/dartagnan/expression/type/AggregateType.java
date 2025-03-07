@@ -1,10 +1,11 @@
 package com.dat3m.dartagnan.expression.type;
 
-import com.dat3m.dartagnan.expression.Type;
-
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+
+import com.dat3m.dartagnan.expression.Type;
+import com.google.common.collect.Lists;
 
 public class AggregateType implements Type {
 
@@ -16,6 +17,10 @@ public class AggregateType implements Type {
 
     public List<TypeOffset> getTypeOffsets() {
         return directFields;
+    }
+
+    public List<Type> getFields() {
+        return Lists.transform(directFields, x -> x.type());
     }
 
     @Override

@@ -526,6 +526,10 @@ public class EventFactory {
                 return newFence("DMB.SY");
             }
 
+            public static GenericVisibleEvent newSTBarrier() {
+                return newFence("DMB.ST");
+            }
+
             public static GenericVisibleEvent newISHBarrier() {
                 return newFence("DMB.ISH");
             }
