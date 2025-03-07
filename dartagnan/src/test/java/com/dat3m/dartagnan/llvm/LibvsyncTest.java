@@ -35,6 +35,13 @@ public class LibvsyncTest extends AbstractCTest {
         return () -> getTestResourcePath("libvsync/" + name + "-opt.ll");
     }
 
+    protected Provider<Integer> getBoundProvider() {
+        return () -> switch (name) {
+            case "cachedq" -> 2;
+            default -> 1;
+        };
+    }
+
     @Override
     protected Configuration getConfiguration(){
         return Configuration.defaultConfiguration();
@@ -59,6 +66,7 @@ public class LibvsyncTest extends AbstractCTest {
     public static Iterable<Object[]> data() throws IOException {
         return Arrays.asList(new Object[][]{
                 {"caslock", C11, UNKNOWN},
+                {"cachedq", C11, PASS},
                 {"mcslock", C11, UNKNOWN},
                 {"rec_mcslock", C11, UNKNOWN},
                 {"rec_spinlock", C11, UNKNOWN},
