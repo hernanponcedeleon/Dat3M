@@ -4,20 +4,24 @@ import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.Type;
-import com.dat3m.dartagnan.expression.type.AggregateType;
-import com.dat3m.dartagnan.expression.type.ArrayType;
-import com.dat3m.dartagnan.expression.type.ScopedPointerType;
-import com.dat3m.dartagnan.expression.type.TypeFactory;
+import com.dat3m.dartagnan.expression.aggregates.ConstructExpr;
+import com.dat3m.dartagnan.expression.floats.FloatLiteral;
+import com.dat3m.dartagnan.expression.integers.IntLiteral;
+import com.dat3m.dartagnan.expression.type.*;
 import com.dat3m.dartagnan.parsers.SpirvBaseVisitor;
 import com.dat3m.dartagnan.parsers.SpirvParser;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.builders.ProgramBuilder;
+import com.dat3m.dartagnan.parsers.program.visitors.spirv.helpers.HelperTypes;
+import com.dat3m.dartagnan.program.Register;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
 public class VisitorOpsComposite extends SpirvBaseVisitor<Void> {
 
     private final ProgramBuilder builder;
+    private final ExpressionFactory expressions = ExpressionFactory.getInstance();
 
     public VisitorOpsComposite(ProgramBuilder builder) {
         this.builder = builder;
@@ -39,7 +43,7 @@ public class VisitorOpsComposite extends SpirvBaseVisitor<Void> {
         }
         if (type instanceof ScopedPointerType scopedPointerType) {
             Type pointedType = scopedPointerType.getPointedType();
-            if (pointedType == element.getType() || TypeFactory.isStaticTypeOf(element.getType(), pointedType)) {
+            if (TypeFactory.isStaticTypeOf(element.getType(), pointedType)) {
                 builder.addExpression(id, element);
                 return null;
             }
@@ -67,9 +71,80 @@ public class VisitorOpsComposite extends SpirvBaseVisitor<Void> {
         return result;
     }
 
+    @Override
+    public Void visitOpCompositeInsert(SpirvParser.OpCompositeInsertContext ctx) {
+        String id = ctx.idResult().getText();
+        String typeId = ctx.idResultType().getText();
+        String compositeId = ctx.composite().getText();
+        String objectId = ctx.object().getText();
+        Type resultType = builder.getType(typeId);
+        Expression compositeExpr = builder.getExpression(compositeId);
+        Expression objectExpr = builder.getExpression(objectId);
+        Type compositeType = compositeExpr.getType();
+
+        if (!compositeType.equals(resultType)) {
+            throw new ParsingException("Type mismatch in OpCompositeInsert, " +
+                    "result '%s' and composite '%s' must be the same for id '%s'", typeId, compositeId, id);
+        }
+
+        List<Integer> intIndexes = ctx.indexesLiteralInteger().stream()
+                .map(c -> Integer.parseInt(c.getText()))
+                .toList();
+
+        Type memberType = HelperTypes.getMemberType(id, compositeType, intIndexes);
+        if (!memberType.equals(objectExpr.getType())) {
+            throw new ParsingException("Type mismatch in OpCompositeInsert, " +
+                    "object '%s' and member '%s' must be the same for id '%s'", objectId, compositeId, id);
+        }
+
+        Expression copy = copyCompositeAndInsert(compositeExpr, objectExpr, intIndexes);
+        builder.addExpression(id, copy);
+        return null;
+    }
+
+    private Expression copyCompositeAndInsert(Expression compositeExpr, Expression objectExpr, List<Integer> indexes) {
+        if (indexes.isEmpty()) {
+            return objectExpr;
+        }
+        if (compositeExpr instanceof ConstructExpr constructExpr) {
+            List<Expression> items = new ArrayList<>();
+            int index = indexes.get(0);
+            for (int i = 0; i < constructExpr.getOperands().size(); i++) {
+                Expression item = constructExpr.getOperands().get(i);
+                if (i == index) {
+                    items.add(copyCompositeAndInsert(item, objectExpr, indexes.subList(1, indexes.size())));
+                } else {
+                    items.add(copyElement(item));
+                }
+            }
+            return expressions.makeConstruct(constructExpr.getType(), items);
+        } else {
+            throw new ParsingException("Unsupported type '%s' for OpCompositeInsert", compositeExpr.getType());
+        }
+    }
+
+    private Expression copyElement(Expression element) {
+        if (element instanceof IntLiteral iElement) {
+            return expressions.makeValue((iElement.getValueAsInt()), (IntegerType) element.getType());
+        } else if (element instanceof FloatLiteral fElement) {
+            return expressions.makeValue((fElement.getValue()), (FloatType) element.getType());
+        } else if (element instanceof ConstructExpr constructExpr) {
+            List<Expression> items = new ArrayList<>();
+            for (int i = 0; i < ((ArrayType) element.getType()).getNumElements(); i++) {
+                items.add(copyElement(constructExpr.getOperands().get(i)));
+            }
+            return expressions.makeConstruct(constructExpr.getType(), items);
+        } else if (element instanceof Register reg) {
+            return reg;
+        } else {
+            throw new ParsingException("Unsupported type '%s' for OpCompositeInsert", element.getType());
+        }
+    }
+
     public Set<String> getSupportedOps() {
         return Set.of(
-                "OpCompositeExtract"
+                "OpCompositeExtract",
+                "OpCompositeInsert"
         );
     }
 }
