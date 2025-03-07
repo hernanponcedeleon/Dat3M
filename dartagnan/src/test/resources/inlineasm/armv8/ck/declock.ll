@@ -1,5 +1,5 @@
-; ModuleID = 'declock.c'
-source_filename = "declock.c"
+; ModuleID = 'tests/declock.c'
+source_filename = "tests/declock.c"
 target datalayout = "e-m:o-i64:64-i128:128-n32:64-S128-Fn32"
 target triple = "arm64-apple-macosx15.0.0"
 
@@ -7,67 +7,49 @@ target triple = "arm64-apple-macosx15.0.0"
 
 @x = global i32 0, align 4
 @y = global i32 0, align 4
-@.str = private unnamed_addr constant [39 x i8] c"Thread %d: attempting to acquire lock\0A\00", align 1
 @lock = global %struct.ck_spinlock_dec zeroinitializer, align 4
-@.str.1 = private unnamed_addr constant [26 x i8] c"Thread %d: acquired lock\0A\00", align 1
-@.str.2 = private unnamed_addr constant [27 x i8] c"Thread %d: x = %d, y = %d\0A\00", align 1
-@.str.3 = private unnamed_addr constant [26 x i8] c"Thread %d: released lock\0A\00", align 1
 @__func__.main = private unnamed_addr constant [5 x i8] c"main\00", align 1
-@.str.4 = private unnamed_addr constant [10 x i8] c"declock.c\00", align 1
-@.str.5 = private unnamed_addr constant [31 x i8] c"x == NTHREADS && y == NTHREADS\00", align 1
-@.str.6 = private unnamed_addr constant [61 x i8] c"All threads finished with x = %d, y = %d, and NTHREADS = %d\0A\00", align 1
+@.str = private unnamed_addr constant [10 x i8] c"declock.c\00", align 1
+@.str.1 = private unnamed_addr constant [31 x i8] c"x == NTHREADS && y == NTHREADS\00", align 1
 @nodes = global ptr null, align 8
 
 ; Function Attrs: noinline nounwind optnone ssp uwtable(sync)
 define ptr @run(ptr noundef %0) #0 {
   %2 = alloca ptr, align 8
-  %3 = alloca i32, align 4
+  %3 = alloca i64, align 8
   %4 = alloca i8, align 1
   store ptr %0, ptr %2, align 8
   %5 = load ptr, ptr %2, align 8
   %6 = ptrtoint ptr %5 to i64
-  %7 = trunc i64 %6 to i32
-  store i32 %7, ptr %3, align 4
-  %8 = load i32, ptr %3, align 4
-  %9 = call i32 (ptr, ...) @printf(ptr noundef @.str, i32 noundef %8)
-  %10 = load i32, ptr %3, align 4
-  %11 = icmp eq i32 %10, 1
-  br i1 %11, label %12, label %18
+  store i64 %6, ptr %3, align 8
+  %7 = load i64, ptr %3, align 8
+  %8 = icmp eq i64 %7, 1
+  br i1 %8, label %9, label %15
 
-12:                                               ; preds = %1
-  %13 = call zeroext i1 @ck_spinlock_dec_trylock(ptr noundef @lock)
-  %14 = zext i1 %13 to i8
-  store i8 %14, ptr %4, align 1
-  %15 = load i8, ptr %4, align 1
-  %16 = trunc i8 %15 to i1
-  %17 = zext i1 %16 to i32
-  call void @__VERIFIER_assume(i32 noundef %17)
-  br label %19
+9:                                                ; preds = %1
+  %10 = call zeroext i1 @ck_spinlock_dec_trylock(ptr noundef @lock)
+  %11 = zext i1 %10 to i8
+  store i8 %11, ptr %4, align 1
+  %12 = load i8, ptr %4, align 1
+  %13 = trunc i8 %12 to i1
+  %14 = zext i1 %13 to i32
+  call void @__VERIFIER_assume(i32 noundef %14)
+  br label %16
 
-18:                                               ; preds = %1
+15:                                               ; preds = %1
   call void @ck_spinlock_dec_lock(ptr noundef @lock)
-  br label %19
+  br label %16
 
-19:                                               ; preds = %18, %12
-  %20 = load i32, ptr %3, align 4
-  %21 = call i32 (ptr, ...) @printf(ptr noundef @.str.1, i32 noundef %20)
-  %22 = load i32, ptr @x, align 4
-  %23 = add nsw i32 %22, 1
-  store i32 %23, ptr @x, align 4
-  %24 = load i32, ptr @y, align 4
-  %25 = add nsw i32 %24, 1
-  store i32 %25, ptr @y, align 4
-  %26 = load i32, ptr %3, align 4
-  %27 = load i32, ptr @x, align 4
-  %28 = load i32, ptr @y, align 4
-  %29 = call i32 (ptr, ...) @printf(ptr noundef @.str.2, i32 noundef %26, i32 noundef %27, i32 noundef %28)
+16:                                               ; preds = %15, %9
+  %17 = load i32, ptr @x, align 4
+  %18 = add nsw i32 %17, 1
+  store i32 %18, ptr @x, align 4
+  %19 = load i32, ptr @y, align 4
+  %20 = add nsw i32 %19, 1
+  store i32 %20, ptr @y, align 4
   call void @ck_spinlock_dec_unlock(ptr noundef @lock)
-  %30 = load i32, ptr %3, align 4
-  %31 = call i32 (ptr, ...) @printf(ptr noundef @.str.3, i32 noundef %30)
   ret ptr null
 }
-
-declare i32 @printf(ptr noundef, ...) #1
 
 ; Function Attrs: noinline nounwind optnone ssp uwtable(sync)
 define internal zeroext i1 @ck_spinlock_dec_trylock(ptr noundef %0) #0 {
@@ -228,7 +210,7 @@ define i32 @main() #0 {
   br i1 %48, label %49, label %51
 
 49:                                               ; preds = %43
-  call void @__assert_rtn(ptr noundef @__func__.main, ptr noundef @.str.4, i32 noundef 56, ptr noundef @.str.5) #5
+  call void @__assert_rtn(ptr noundef @__func__.main, ptr noundef @.str, i32 noundef 59, ptr noundef @.str.1) #5
   unreachable
 
 50:                                               ; No predecessors!
@@ -238,9 +220,6 @@ define i32 @main() #0 {
   br label %52
 
 52:                                               ; preds = %51, %50
-  %53 = load i32, ptr @x, align 4
-  %54 = load i32, ptr @y, align 4
-  %55 = call i32 (ptr, ...) @printf(ptr noundef @.str.6, i32 noundef %53, i32 noundef %54, i32 noundef 2)
   ret i32 0
 }
 
@@ -444,12 +423,12 @@ attributes #6 = { nounwind }
 !7 = !{!"llvm.loop.mustprogress"}
 !8 = distinct !{!8, !7}
 !9 = distinct !{!9, !7}
-!10 = !{i64 2147804564, i64 2147804677, i64 2147804748}
-!11 = !{i64 2147756905}
-!12 = !{i64 2147759391}
-!13 = !{i64 260493}
+!10 = !{i64 2147808477, i64 2147808590, i64 2147808661}
+!11 = !{i64 2147760818}
+!12 = !{i64 2147763304}
+!13 = !{i64 264406}
 !14 = distinct !{!14, !7}
-!15 = !{i64 2147787877, i64 2147787927, i64 2147787994, i64 2147788060, i64 2147788113, i64 2147788185, i64 2147788243}
-!16 = !{i64 2147763078}
-!17 = !{i64 2147757170}
-!18 = !{i64 414339}
+!15 = !{i64 2147791790, i64 2147791840, i64 2147791907, i64 2147791973, i64 2147792026, i64 2147792098, i64 2147792156}
+!16 = !{i64 2147766991}
+!17 = !{i64 2147761083}
+!18 = !{i64 418252}
