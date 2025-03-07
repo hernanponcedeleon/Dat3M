@@ -269,8 +269,8 @@ public final class EncodingContext {
             BitvectorFormulaManager bvmgr = formulaManager.getBitvectorFormulaManager();
             return bvmgr.equal(l, toBitvector(right, bvmgr.getLength(l)));
         }
-        if (left instanceof BooleanFormula l && right instanceof BooleanFormula r) {
-            return booleanFormulaManager.equivalence(l, r);
+        if (left instanceof BooleanFormula l) {
+            return booleanFormulaManager.equivalence(l, toBoolean(right));
         }
         if (left instanceof TupleFormula l && right instanceof TupleFormula r) {
             return tupleFormulaManager.equal(l, r);
@@ -296,6 +296,13 @@ public final class EncodingContext {
             return formulaManager.getBitvectorFormulaManager().toIntegerFormula(f, false);
         }
         throw new UnsupportedOperationException(String.format("Unknown type for toInteger(%s).", formula));
+    }
+
+    private BooleanFormula toBoolean(Formula formula) {
+        if (formula instanceof BooleanFormula f) {
+            return f;
+        }
+        return booleanFormulaManager.not(equalZero(formula));
     }
 
     private BitvectorFormula toBitvector(Formula formula, int length) {
