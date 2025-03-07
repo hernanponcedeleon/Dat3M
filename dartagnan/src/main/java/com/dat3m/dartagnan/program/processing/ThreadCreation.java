@@ -216,7 +216,7 @@ public class ThreadCreation implements ProgramProcessor {
                         //  It has been added to test memory leak detection (alloc without free).
                         //  In the final version we need either to add a proper implementation for thread_join
                         //  or to remove alloc-without-free detection for now.
-                        new Assume(ExpressionFactory.getInstance().makeEQ(joinDummyReg, ExpressionFactory.getInstance().makeFalse())),
+                        // new Assume(ExpressionFactory.getInstance().makeEQ(joinDummyReg, ExpressionFactory.getInstance().makeFalse())),
                         EventFactory.newGoto(joinEnd)
                 );
                 tid2joinCases.put(tidCandidate, caseBody);

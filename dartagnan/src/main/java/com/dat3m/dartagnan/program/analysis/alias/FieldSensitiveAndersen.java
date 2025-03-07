@@ -55,7 +55,7 @@ public class FieldSensitiveAndersen implements AliasAnalysis {
     ///Maps registers to matched value expressions of stores that use the register in their address
     private final Map<Object, List<Offset<Collector>>> stores = new HashMap<>();
     ///Result sets
-    private final Map<MemoryCoreEvent, ImmutableSet<Location>> eventAddressSpaceMap = new HashMap<>();
+    private final Map<Event, ImmutableSet<Location>> eventAddressSpaceMap = new HashMap<>();
 
     // ================================ Construction ================================
 
@@ -70,24 +70,47 @@ public class FieldSensitiveAndersen implements AliasAnalysis {
     // ================================ API ================================
 
     @Override
-    public boolean mayAlias(MemoryCoreEvent x, MemoryCoreEvent y) {
+    public boolean mayAlias(Event x, Event y) {
         return !Sets.intersection(getMaxAddressSet(x), getMaxAddressSet(y)).isEmpty();
     }
 
     @Override
-    public boolean mustAlias(MemoryCoreEvent x, MemoryCoreEvent y) {
+    public boolean mustAlias(Event x, Event y) {
         Set<Location> a = getMaxAddressSet(x);
-        return a.size() == 1 && a.containsAll(getMaxAddressSet(y));
+        return a.size() == 1 && a.equals(getMaxAddressSet(y));
     }
 
-    private ImmutableSet<Location> getMaxAddressSet(MemoryEvent e) {
+    @Override
+    public boolean mayObjectAlias(Event a, Event b) {
+        return !Sets.intersection(getAccessibleObjects(a), getAccessibleObjects(b)).isEmpty();
+    }
+
+    @Override
+    public boolean mustObjectAlias(Event a, Event b) {
+        Set<MemoryObject> objsA = getAccessibleObjects(a);
+        return objsA.size() == 1 && objsA.equals(getAccessibleObjects(b));
+    }
+
+    private ImmutableSet<Location> getMaxAddressSet(Event e) {
         return eventAddressSpaceMap.get(e);
+    }
+
+    private Set<MemoryObject> getAccessibleObjects(Event e) {
+        Set<MemoryObject> objs = new HashSet<>();
+        Set<Location> locs = getMaxAddressSet(e);
+        if (locs != null) {
+            locs.stream().forEach(l -> objs.add(l.base));
+        }
+        return objs;
     }
 
     // ================================ Processing ================================
 
     private void run(Program program) {
         checkArgument(program.isCompiled(), "The program must be compiled first.");
+        for (Alloc a : program.getThreadEvents(Alloc.class)) {
+            eventAddressSpaceMap.put(a, ImmutableSet.of(new Location(a.getAllocatedObject(), 0)));
+        }
         List<MemoryCoreEvent> memEvents = program.getThreadEvents(MemoryCoreEvent.class);
         for (MemoryCoreEvent e : memEvents) {
             processLocs(e);
@@ -100,7 +123,10 @@ public class FieldSensitiveAndersen implements AliasAnalysis {
             algorithm(variable);
         }
         for (MemoryCoreEvent e : memEvents) {
-            processResults(e);
+            eventAddressSpaceMap.put(e, getAddressSpace(e.getAddress()));
+        }
+        for (MemFree f : program.getThreadEvents(MemFree.class)) {
+            eventAddressSpaceMap.put(f, getAddressSpace(f.getAddress()));
         }
     }
 
@@ -181,14 +207,14 @@ public class FieldSensitiveAndersen implements AliasAnalysis {
         }
     }
 
-    protected void processResults(MemoryCoreEvent e) {
-        ImmutableSet.Builder<Location> addresses = ImmutableSet.builder();
-        Collector collector = new Collector(e.getAddress());
-        addresses.addAll(collector.address());
+    protected ImmutableSet<Location> getAddressSpace(Expression addrExpr) {
+        ImmutableSet.Builder<Location> builder = new ImmutableSet.Builder<>();
+        Collector collector = new Collector(addrExpr);
+        builder.addAll(collector.address());
         for (Offset<Register> r : collector.register()) {
-            addresses.addAll(fields(getAddresses(r.base), r.offset, r.alignment));
+            builder.addAll(fields(getAddresses(r.base), r.offset, r.alignment));
         }
-        eventAddressSpaceMap.put(e, addresses.build());
+        return builder.build();
     }
 
     private static final class Offset<Base> {
