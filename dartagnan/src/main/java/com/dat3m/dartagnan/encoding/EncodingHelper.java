@@ -1,5 +1,8 @@
 package com.dat3m.dartagnan.encoding;
 
+import com.dat3m.dartagnan.encoding.formulas.TupleFormula;
+import com.dat3m.dartagnan.encoding.formulas.TupleValue;
+import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.google.common.base.Preconditions;
 import org.sosy_lab.java_smt.api.*;
 
@@ -121,5 +124,40 @@ public class EncodingHelper {
 
     public FormulaType<?> typeOf(Formula formula) {
         return fmgr.getFormulaType(formula);
+    }
+
+    public boolean checkEqualTypes(Formula left, Formula right) {
+        if (left instanceof IntegerType && right instanceof IntegerType) {
+            return true;
+        } else if (left instanceof BooleanFormula && right instanceof BooleanFormula) {
+            return true;
+        } else if (left instanceof BitvectorFormula x && right instanceof BitvectorFormula y) {
+            final BitvectorFormulaManager bvmgr = fmgr.getBitvectorFormulaManager();
+            return bvmgr.getLength(x) == bvmgr.getLength(y);
+        } else if (left instanceof TupleFormula x && right instanceof TupleFormula y) {
+            boolean same = (x.getElements().size() == y.getElements().size());
+            if (same) {
+                for (int i = 0; i < x.getElements().size(); i++) {
+                    same &= checkEqualTypes(x.getElements().get(i), y.getElements().get(i));
+                }
+            }
+            return same;
+        }
+
+        return false;
+    }
+
+
+    // ======================================== Static utility ========================================
+
+    public static Object evaluate(Formula f, Model model) {
+        if (f instanceof TupleFormula tf) {
+            return evaluate(tf, model);
+        }
+        return model.evaluate(f);
+    }
+
+    public static TupleValue evaluate(TupleFormula tupleFormula, Model model) {
+        return new TupleValue(tupleFormula.getElements().stream().map(v -> evaluate(v, model)).toList());
     }
 }

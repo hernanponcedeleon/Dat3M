@@ -1,6 +1,7 @@
 package com.dat3m.dartagnan.verification.model;
 
 import com.dat3m.dartagnan.encoding.EncodingContext;
+import com.dat3m.dartagnan.encoding.EncodingHelper;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.Event;
@@ -269,7 +270,7 @@ public class ExecutionModelManager {
     }
 
     private Object evaluateByModel(Formula formula) {
-        return model.evaluate(formula);
+        return EncodingHelper.evaluate(formula, model);
     }
 
 
