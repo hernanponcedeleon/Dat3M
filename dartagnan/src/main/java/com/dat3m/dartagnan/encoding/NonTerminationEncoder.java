@@ -342,7 +342,14 @@ public class NonTerminationEncoder {
         for (int i = 0; i < a.body.size(); i++) {
             final Event x = a.body.get(i);
             final Event y = b.body.get(i);
-            equalities.add(areEquivalent(x, y));
+            final BooleanFormula equiv = areEquivalent(x, y);
+            if (!equiv.equals(bmgr.makeFalse())) {
+                equalities.add(areEquivalent(x, y));
+            } else {
+                equalities.clear();
+                equalities.add(bmgr.makeFalse());
+                break;
+            }
         }
 
         return bmgr.and(equalities);
