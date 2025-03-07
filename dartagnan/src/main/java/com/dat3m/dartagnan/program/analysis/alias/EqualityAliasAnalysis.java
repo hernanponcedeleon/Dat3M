@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan.program.analysis.alias;
 
+import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Event;
@@ -29,48 +30,46 @@ public class EqualityAliasAnalysis implements AliasAnalysis {
     }
 
     @Override
-    public boolean mayAlias(Event e1, Event e2) {
+    public boolean mayAlias(Event a, Event b) {
         return true;
     }
 
     @Override
-    public boolean mustAlias(Event e1, Event e2) {
-        if (e1 instanceof MemoryCoreEvent a && e2 instanceof MemoryCoreEvent b) {
-            if (a.getFunction() != b.getFunction()
-                    || !a.getAddress().equals(b.getAddress())) {
-                return false;
-            } else if (a == b) {
-                return true;
-            }
-            // Normalize direction
-            if (a.getGlobalId() > b.getGlobalId()) {
-                MemoryCoreEvent temp = a;
-                a = b;
-                b = temp;
-            }
-
-            // Check cache
-            if (trueSet.contains(a, b)) {
-                return true;
-            }
-            if (falseSet.contains(a, b)) {
-                return false;
-            }
-
-            // Establish that address expression evaluates to same value at both events.
-            Set<Register> addrRegs = a.getAddress().getRegs();
-            Event e = a.getSuccessor();
-            while (e != b) {
-                if (e instanceof RegWriter rw && addrRegs.contains(rw.getResultRegister())) {
-                    falseSet.add(a, b);
-                    return false;
-                }
-                e = e.getSuccessor();
-            }
-            trueSet.add(a, b);
+    public boolean mustAlias(Event a, Event b) {
+        Expression addrA = getAddress(a);
+        Expression addrB = getAddress(b);
+        if (a.getFunction() != b.getFunction() || !addrA.equals(addrB)) {
+            return false;
+        } else if (a == b) {
             return true;
         }
-        return false;
+        // Normalize direction
+        if (a.getGlobalId() > b.getGlobalId()) {
+            Event temp = a;
+            a = b;
+            b = temp;
+        }
+
+        // Check cache
+        if (trueSet.contains(a, b)) {
+            return true;
+        }
+        if (falseSet.contains(a, b)) {
+            return false;
+        }
+
+        // Establish that address expression evaluates to same value at both events.
+        Set<Register> addrRegs = addrA.getRegs();
+        Event e = a.getSuccessor();
+        while (e != b) {
+            if (e instanceof RegWriter rw && addrRegs.contains(rw.getResultRegister())) {
+                falseSet.add(a, b);
+                return false;
+            }
+            e = e.getSuccessor();
+        }
+        trueSet.add(a, b);
+        return true;
     }
 
     @Override
@@ -80,9 +79,18 @@ public class EqualityAliasAnalysis implements AliasAnalysis {
 
     @Override
     public boolean mustObjectAlias(Event a, Event b) {
-        if (a instanceof MemoryCoreEvent ma && b instanceof MemoryCoreEvent mb) {
-            return mustAlias(ma, mb);
-        }
         return false;
+    }
+
+    private Expression getAddress(Event e) {
+        if (e instanceof MemoryCoreEvent me) {
+            return me.getAddress();
+        } else if (e instanceof MemFree f) {
+            return f.getAddress();
+        } else if (e instanceof Alloc a) {
+            return a.getAllocatedObject();
+        } else {
+            throw new UnsupportedOperationException("Event type has no address: " + e.getClass().getSimpleName());
+        }
     }
 }

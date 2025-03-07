@@ -85,6 +85,9 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
     // Maps memory events, allocs, and frees to variables representing their pointer set.
     private final Map<Event, DerivedVariable> addressVariables = new HashMap<>();
 
+    // Maps pointer sets to their accessible memory objects.
+    private final Map<DerivedVariable, Set<MemoryObject>> accessibleObjects = new HashMap<>();
+
     // Maps memory objects to variables representing their base address.
     // These Variables should always have empty includes-sets.
     private final Map<MemoryObject, Variable> objectVariables = new HashMap<>();
@@ -183,7 +186,7 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
     public boolean mayObjectAlias(Event a, Event b) {
         final DerivedVariable va = addressVariables.get(a);
         final DerivedVariable vb = addressVariables.get(b);
-        return va == null || vb == null || !Sets.intersection(getAccessibleObjects(va), getAccessibleObjects(vb)).isEmpty();
+        return va == null || vb == null || !Sets.intersection(accessibleObjects.get(va), accessibleObjects.get(vb)).isEmpty();
     }
 
     @Override
@@ -196,8 +199,8 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
         if (va.base == vb.base) {
             return true;
         }
-        final Set<MemoryObject> objsA = getAccessibleObjects(va);
-        return objsA.size() == 1 && objsA.equals(getAccessibleObjects(vb));
+        final Set<MemoryObject> objsA = accessibleObjects.get(va);
+        return objsA.size() == 1 && objsA.equals(accessibleObjects.get(vb));
     }
 
     @Override
@@ -208,7 +211,7 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
     private Set<MemoryObject> getAccessibleObjects(DerivedVariable address) {
         final Set<MemoryObject> objs = new HashSet<>();
         objs.add(address.base.object);
-        address.base.includes.stream().forEach(i -> objs.add(i.source.object));
+        address.base.includes.forEach(i -> objs.add(i.source.object));
         objs.remove(null);
         return objs;
     }
@@ -252,6 +255,9 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
         }
         for (final Map.Entry<Event, DerivedVariable> entry : addressVariables.entrySet()) {
             postProcess(entry);
+        }
+        for (final DerivedVariable v : addressVariables.values()) {
+            accessibleObjects.computeIfAbsent(v, k -> getAccessibleObjects(v));
         }
         objectVariables.clear();
         registerVariables.clear();

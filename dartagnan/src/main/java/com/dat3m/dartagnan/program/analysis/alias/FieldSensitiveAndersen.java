@@ -91,26 +91,6 @@ public class FieldSensitiveAndersen implements AliasAnalysis {
         return objsA.size() == 1 && objsA.equals(getAccessibleObjects(b));
     }
 
-    // private boolean mayAccessAllocatedBy(Alloc a, MemoryCoreEvent e) {
-    //     MemoryObject base = a.getAllocatedObject();
-    //     if (base.hasKnownSize()) {
-    //         return getMaxAddressSet(e).stream().anyMatch(
-    //                 l -> l.base.equals(base) && l.offset < base.getKnownSize()
-    //         );
-    //     }
-    //     return getMaxAddressSet(e).stream().anyMatch(l -> l.base.equals(base));
-    // }
-
-    // private boolean mustAccessAllocatedBy(Alloc a, MemoryCoreEvent e) {
-    //     MemoryObject base = a.getAllocatedObject();
-    //     if (base.hasKnownSize()) {
-    //         return getMaxAddressSet(e).stream().allMatch(
-    //                 l -> l.base.equals(base) && l.offset < base.getKnownSize()
-    //         );
-    //     }
-    //     return getMaxAddressSet(e).stream().allMatch(l -> l.base.equals(base));
-    // }
-
     private ImmutableSet<Location> getMaxAddressSet(Event e) {
         return eventAddressSpaceMap.get(e);
     }
