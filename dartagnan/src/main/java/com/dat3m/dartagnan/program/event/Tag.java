@@ -382,9 +382,6 @@ public final class Tag {
         public static final String GLOBAL_SPACE = "GLOBAL";
         public static final String LOCAL_SPACE = "LOCAL";
         public static final String GENERIC_SPACE = "GENERIC";
-        // Barrier
-        public static final String ENTRY_FENCE = "EF";
-        public static final String EXIT_FENCE = "XF";
         // Default Tags
         public static final String DEFAULT_SPACE = GENERIC_SPACE;
         public static final String DEFAULT_SCOPE = DEVICE;
