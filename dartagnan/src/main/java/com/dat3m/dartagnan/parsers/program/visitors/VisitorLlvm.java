@@ -672,7 +672,7 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
         Expression expression = checkExpression(type, ctx.typeValue().value());
         for (final TerminalNode literalNode : ctx.IntLit()) {
             final int index = Integer.parseInt(literalNode.getText());
-            expression = expressions.makeExtract(index, expression);
+            expression = expressions.makeExtract(expression, index);
         }
         return assignToRegister(expression);
     }

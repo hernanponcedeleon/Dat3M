@@ -14,6 +14,7 @@ import com.dat3m.dartagnan.expression.misc.GEPExpr;
 import com.dat3m.dartagnan.expression.misc.ITEExpr;
 import com.dat3m.dartagnan.program.Register;
 
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -88,7 +89,7 @@ public final class ExpressionPrinter implements ExpressionVisitor<String> {
 
     @Override
     public String visitExtractExpression(ExtractExpr extract) {
-        return visit(extract.getOperand()) + "[" + extract.getFieldIndex() + "]";
+        return visit(extract.getOperand()) + extract.getIndices().stream().map(Objects::toString).collect(Collectors.joining(",", "[", "]"));
     }
 
     @Override

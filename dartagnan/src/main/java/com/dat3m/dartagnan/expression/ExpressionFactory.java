@@ -14,6 +14,8 @@ import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.dat3m.dartagnan.program.memory.ScopedPointer;
 import com.dat3m.dartagnan.program.memory.ScopedPointerVariable;
 import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Iterables;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
@@ -269,8 +271,15 @@ public final class ExpressionFactory {
         return new ConstructExpr(type, items);
     }
 
-    public Expression makeExtract(int fieldIndex, Expression object) {
-        return new ExtractExpr(fieldIndex, object);
+    public Expression makeExtract(Expression object, int index) {
+        return makeExtract(object, ImmutableList.of(index));
+    }
+
+    public Expression makeExtract(Expression object, Iterable<Integer> indices) {
+        if (Iterables.isEmpty(indices)) {
+            return object;
+        }
+        return new ExtractExpr(object, indices);
     }
 
     public Expression makeAggregateCmp(Expression x, AggregateCmpOp op, Expression y) {

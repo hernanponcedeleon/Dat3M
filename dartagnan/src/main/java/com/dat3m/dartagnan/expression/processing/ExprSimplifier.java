@@ -1,8 +1,6 @@
 package com.dat3m.dartagnan.expression.processing;
 
 
-import java.math.BigInteger;
-
 import com.dat3m.dartagnan.expression.BinaryExpression;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionKind;
@@ -10,22 +8,15 @@ import com.dat3m.dartagnan.expression.aggregates.AggregateCmpExpr;
 import com.dat3m.dartagnan.expression.aggregates.AggregateCmpOp;
 import com.dat3m.dartagnan.expression.aggregates.ConstructExpr;
 import com.dat3m.dartagnan.expression.aggregates.ExtractExpr;
-import com.dat3m.dartagnan.expression.booleans.BoolBinaryExpr;
-import com.dat3m.dartagnan.expression.booleans.BoolBinaryOp;
-import com.dat3m.dartagnan.expression.booleans.BoolLiteral;
-import com.dat3m.dartagnan.expression.booleans.BoolUnaryExpr;
-import com.dat3m.dartagnan.expression.booleans.BoolUnaryOp;
-import com.dat3m.dartagnan.expression.integers.IntBinaryExpr;
-import com.dat3m.dartagnan.expression.integers.IntBinaryOp;
-import com.dat3m.dartagnan.expression.integers.IntCmpExpr;
-import com.dat3m.dartagnan.expression.integers.IntCmpOp;
-import com.dat3m.dartagnan.expression.integers.IntLiteral;
-import com.dat3m.dartagnan.expression.integers.IntSizeCast;
-import com.dat3m.dartagnan.expression.integers.IntUnaryExpr;
-import com.dat3m.dartagnan.expression.integers.IntUnaryOp;
+import com.dat3m.dartagnan.expression.booleans.*;
+import com.dat3m.dartagnan.expression.integers.*;
 import com.dat3m.dartagnan.expression.misc.ITEExpr;
 import com.dat3m.dartagnan.expression.utils.IntegerHelper;
 import com.google.common.base.VerifyException;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Iterables;
+
+import java.math.BigInteger;
 
 public class ExprSimplifier extends ExprTransformer {
 
@@ -319,11 +310,21 @@ public class ExprSimplifier extends ExprTransformer {
 
     @Override
     public Expression visitExtractExpression(ExtractExpr expr) {
-        final Expression inner = expr.getOperand().accept(this);
-        if (inner instanceof ConstructExpr construct) {
-            return construct.getOperands().get(expr.getFieldIndex());
+        Expression inner = expr.getOperand().accept(this);
+
+        final ImmutableList<Integer> indices = expr.getIndices();
+        int indexCursor = 0;
+        while(indexCursor < indices.size() && (inner instanceof ConstructExpr construct)) {
+            inner = construct.getOperands().get(indices.indexOf(indexCursor));
+            indexCursor++;
         }
-        return expressions.makeExtract(expr.getFieldIndex(), inner);
+
+        final ImmutableList<Integer> newIndices = indices.subList(indexCursor, indices.size());
+        if (inner instanceof ExtractExpr extract) {
+            // Merge multiple extracts
+            return expressions.makeExtract(inner, Iterables.concat(extract.getIndices(), newIndices));
+        }
+        return expressions.makeExtract(inner, newIndices);
     }
 
     @Override

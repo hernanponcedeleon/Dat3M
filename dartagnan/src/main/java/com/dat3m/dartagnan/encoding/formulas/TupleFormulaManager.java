@@ -39,6 +39,18 @@ public final class TupleFormulaManager {
         return f.elements.get(index);
     }
 
+    public Formula extract(TupleFormula f, Iterable<Integer> indices) {
+        Formula extract = f;
+        for (int i : indices) {
+            if (extract instanceof TupleFormula tuple) {
+                extract = tuple.elements.get(i);
+            } else {
+                throw new IllegalArgumentException("Cannot extract from a non-tuple formula '%s'");
+            }
+        }
+        return extract;
+    }
+
     public TupleFormula makeTuple(List<Formula> elements) {
         return new TupleFormula(elements);
     }

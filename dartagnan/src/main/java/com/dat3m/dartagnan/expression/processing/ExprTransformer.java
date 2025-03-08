@@ -91,7 +91,7 @@ public abstract class ExprTransformer implements ExpressionVisitor<Expression> {
 
     @Override
     public Expression visitExtractExpression(ExtractExpr expr) {
-        return expressions.makeExtract(expr.getFieldIndex(), expr.getOperand().accept(this));
+        return expressions.makeExtract(expr.getOperand().accept(this), expr.getIndices());
     }
 
     @Override
