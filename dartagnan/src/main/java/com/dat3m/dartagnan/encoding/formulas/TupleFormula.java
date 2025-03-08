@@ -19,6 +19,11 @@ public class TupleFormula implements Formula {
         this.elements = ImmutableList.copyOf(elements);
     }
 
+    // WARNING: Avoid using this method if possible.
+    public List<Formula> getElements() {
+        return elements;
+    }
+
     @Override
     public String toString() {
         return elements.stream()
