@@ -1,5 +1,7 @@
 package com.dat3m.dartagnan.verification.model;
 
+import com.dat3m.dartagnan.encoding.formulas.TupleValue;
+
 import java.math.BigInteger;
 
 
@@ -11,7 +13,7 @@ public class ValueModel {
     public ValueModel(Object literal) {
         if (literal == null) {
             value = null;
-        } else if (literal instanceof BigInteger || literal instanceof Boolean) {
+        } else if (literal instanceof BigInteger || literal instanceof Boolean || literal instanceof TupleValue) {
             value = literal;
         } else {
             throw new IllegalArgumentException("Unsupported value type: " + literal.getClass());

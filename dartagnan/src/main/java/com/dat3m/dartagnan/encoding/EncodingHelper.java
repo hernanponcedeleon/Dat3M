@@ -1,9 +1,13 @@
 package com.dat3m.dartagnan.encoding;
 
+import com.dat3m.dartagnan.encoding.formulas.TupleFormula;
+import com.dat3m.dartagnan.encoding.formulas.TupleValue;
 import com.google.common.base.Preconditions;
 import org.sosy_lab.java_smt.api.*;
+import org.sosy_lab.java_smt.api.NumeralFormula.IntegerFormula;
 
 import java.math.BigInteger;
+import java.util.stream.IntStream;
 
 public class EncodingHelper {
 
@@ -14,7 +18,7 @@ public class EncodingHelper {
     }
 
     public BooleanFormula equals(Formula left, Formula right) {
-        if (left instanceof NumeralFormula.IntegerFormula iLeft && right instanceof NumeralFormula.IntegerFormula iRight) {
+        if (left instanceof IntegerFormula iLeft && right instanceof IntegerFormula iRight) {
             return fmgr.getIntegerFormulaManager().equal(iLeft, iRight);
         }
 
@@ -28,7 +32,7 @@ public class EncodingHelper {
     }
 
     public BooleanFormula greaterThan(Formula left, Formula right, boolean signed) {
-        if (left instanceof NumeralFormula.IntegerFormula iLeft && right instanceof NumeralFormula.IntegerFormula iRight) {
+        if (left instanceof IntegerFormula iLeft && right instanceof IntegerFormula iRight) {
             return fmgr.getIntegerFormulaManager().greaterThan(iLeft, iRight);
         }
 
@@ -42,7 +46,7 @@ public class EncodingHelper {
     }
 
     public BooleanFormula greaterOrEquals(Formula left, Formula right, boolean signed) {
-        if (left instanceof NumeralFormula.IntegerFormula iLeft && right instanceof NumeralFormula.IntegerFormula iRight) {
+        if (left instanceof IntegerFormula iLeft && right instanceof IntegerFormula iRight) {
             return fmgr.getIntegerFormulaManager().greaterOrEquals(iLeft, iRight);
         }
 
@@ -56,7 +60,7 @@ public class EncodingHelper {
     }
 
     public Formula add(Formula left, Formula right) {
-        if (left instanceof NumeralFormula.IntegerFormula iLeft && right instanceof NumeralFormula.IntegerFormula iRight) {
+        if (left instanceof IntegerFormula iLeft && right instanceof IntegerFormula iRight) {
             return fmgr.getIntegerFormulaManager().add(iLeft, iRight);
         }
 
@@ -70,7 +74,7 @@ public class EncodingHelper {
     }
 
     public Formula subtract(Formula left, Formula right) {
-        if (left instanceof NumeralFormula.IntegerFormula iLeft && right instanceof NumeralFormula.IntegerFormula iRight) {
+        if (left instanceof IntegerFormula iLeft && right instanceof IntegerFormula iRight) {
             return fmgr.getIntegerFormulaManager().subtract(iLeft, iRight);
         }
 
@@ -87,7 +91,7 @@ public class EncodingHelper {
         //FIXME: integer modulo and BV modulo have different semantics, the former is always positive, the latter
         // returns a value whose sign depends on one of the two BVs.
         // The results in this implementation will match if the denominator <right> is positive which is the most usual case.
-        if (left instanceof NumeralFormula.IntegerFormula iLeft && right instanceof NumeralFormula.IntegerFormula iRight) {
+        if (left instanceof IntegerFormula iLeft && right instanceof IntegerFormula iRight) {
             return fmgr.getIntegerFormulaManager().modulo(iLeft, iRight);
         }
 
@@ -121,5 +125,39 @@ public class EncodingHelper {
 
     public FormulaType<?> typeOf(Formula formula) {
         return fmgr.getFormulaType(formula);
+    }
+
+    public boolean hasSameType(Formula left, Formula right) {
+        if (left instanceof IntegerFormula && right instanceof IntegerFormula) {
+            return true;
+        } else if (left instanceof BooleanFormula && right instanceof BooleanFormula) {
+            return true;
+        } else if (left instanceof BitvectorFormula x && right instanceof BitvectorFormula y) {
+            final BitvectorFormulaManager bvmgr = fmgr.getBitvectorFormulaManager();
+            return bvmgr.getLength(x) == bvmgr.getLength(y);
+        } else if (left instanceof TupleFormula x && right instanceof TupleFormula y) {
+            if (x.getElements().size() != y.getElements().size()) {
+                return false;
+            }
+            return IntStream.range(0, x.getElements().size()).allMatch(
+                    i -> hasSameType(x.getElements().get(i), y.getElements().get(i))
+            );
+        }
+
+        return false;
+    }
+
+
+    // ======================================== Static utility ========================================
+
+    public static Object evaluate(Formula f, Model model) {
+        if (f instanceof TupleFormula tf) {
+            return evaluate(tf, model);
+        }
+        return model.evaluate(f);
+    }
+
+    public static TupleValue evaluate(TupleFormula tupleFormula, Model model) {
+        return new TupleValue(tupleFormula.getElements().stream().map(v -> evaluate(v, model)).toList());
     }
 }

@@ -5,7 +5,10 @@ import com.dat3m.dartagnan.expression.integers.IntLiteral;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.analysis.ReachingDefinitionsAnalysis;
 import com.dat3m.dartagnan.program.event.*;
-import com.dat3m.dartagnan.program.event.core.*;
+import com.dat3m.dartagnan.program.event.core.Load;
+import com.dat3m.dartagnan.program.event.core.MemoryCoreEvent;
+import com.dat3m.dartagnan.program.event.core.NamedBarrier;
+import com.dat3m.dartagnan.program.event.core.RMWStoreExclusive;
 import com.dat3m.dartagnan.utils.Utils;
 import com.dat3m.dartagnan.utils.dependable.DependencyGraph;
 import com.dat3m.dartagnan.wmm.Constraint;
@@ -33,6 +36,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import static com.dat3m.dartagnan.configuration.OptionNames.*;
+import static com.dat3m.dartagnan.encoding.EncodingContext.ConversionMode.LEFT_TO_RIGHT;
 import static com.dat3m.dartagnan.program.event.Tag.*;
 import static com.dat3m.dartagnan.wmm.RelationNameRepository.RF;
 import static com.google.common.base.Verify.verify;
@@ -569,7 +573,7 @@ public class WmmEncoder implements Encoder {
                 MemoryCoreEvent r = (MemoryCoreEvent) e2;
                 BooleanFormula e = edge.encode(w, r);
                 BooleanFormula sameAddress = context.sameAddress(w, r);
-                BooleanFormula sameValue = context.equal(context.value(w), context.value(r));
+                BooleanFormula sameValue = context.equal(context.value(w), context.value(r), LEFT_TO_RIGHT);
                 edgeMap.computeIfAbsent(r, key -> new ArrayList<>()).add(e);
                 enc.add(bmgr.implication(e, bmgr.and(execution(w, r), sameAddress, sameValue)));
             });
