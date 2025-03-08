@@ -315,7 +315,7 @@ public class ExprSimplifier extends ExprTransformer {
         final ImmutableList<Integer> indices = expr.getIndices();
         int indexCursor = 0;
         while(indexCursor < indices.size() && (inner instanceof ConstructExpr construct)) {
-            inner = construct.getOperands().get(indices.indexOf(indexCursor));
+            inner = construct.getOperands().get(indices.get(indexCursor));
             indexCursor++;
         }
 
