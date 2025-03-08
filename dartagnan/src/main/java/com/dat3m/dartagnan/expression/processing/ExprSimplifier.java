@@ -327,6 +327,8 @@ public class ExprSimplifier extends ExprTransformer {
         return expressions.makeExtract(inner, newIndices);
     }
 
+    // TODO: Add simplifications for InsertExpr
+
     @Override
     public Expression visitAggregateCmpExpression(AggregateCmpExpr expr) {
         final Expression left = expr.getLeft().accept(this);

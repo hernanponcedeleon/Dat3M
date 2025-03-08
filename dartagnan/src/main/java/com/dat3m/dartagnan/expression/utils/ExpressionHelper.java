@@ -17,6 +17,11 @@ public class ExpressionHelper {
                 "The types of %s and %s do not match.", x, y);
     }
 
+    public static void checkSameType(Type x, Type y) {
+        Preconditions.checkArgument(x.equals(y),
+                "The types %s and %s do not match.", x, y);
+    }
+
     public static void checkExpectedType(Expression expr, Class<? extends Type> expectedClass) {
         final Class<? extends Type> exprClass = expr.getType().getClass();
         Preconditions.checkArgument(expectedClass.isAssignableFrom(exprClass),

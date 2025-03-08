@@ -8,6 +8,7 @@ import com.dat3m.dartagnan.expression.base.NaryExpressionBase;
 import com.dat3m.dartagnan.expression.type.AggregateType;
 import com.dat3m.dartagnan.expression.type.ArrayType;
 import com.dat3m.dartagnan.expression.type.TypeOffset;
+import com.dat3m.dartagnan.expression.utils.ExpressionHelper;
 import com.google.common.collect.ImmutableList;
 
 import java.util.List;
@@ -19,7 +20,7 @@ public final class ConstructExpr extends NaryExpressionBase<Type, ExpressionKind
 
     public ConstructExpr(Type type, List<? extends Expression> arguments) {
         super(type, ExpressionKind.Other.CONSTRUCT, ImmutableList.copyOf(arguments));
-        checkArgument(type instanceof AggregateType || type instanceof ArrayType,
+        checkArgument(ExpressionHelper.isAggregateLike(type),
                 "Non-constructible type %s.", type);
         checkArgument(!(type instanceof AggregateType a) ||
                 arguments.stream().map(Expression::getType).toList()

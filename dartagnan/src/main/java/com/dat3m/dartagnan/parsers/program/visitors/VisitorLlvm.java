@@ -669,12 +669,22 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
     public Expression visitExtractValueInst(ExtractValueInstContext ctx) {
         final Type type = parseType(ctx.typeValue().firstClassType());
         check(type instanceof AggregateType, "Non-aggregate type in %s.", ctx);
-        Expression expression = checkExpression(type, ctx.typeValue().value());
-        for (final TerminalNode literalNode : ctx.IntLit()) {
-            final int index = Integer.parseInt(literalNode.getText());
-            expression = expressions.makeExtract(expression, index);
-        }
-        return assignToRegister(expression);
+        final Expression aggregate = checkExpression(type, ctx.typeValue().value());
+        final ImmutableList<Integer> indices =
+                ctx.IntLit().stream().map(n -> Integer.parseInt(n.getText())).collect(ImmutableList.toImmutableList());
+        return assignToRegister(expressions.makeExtract(aggregate, indices));
+    }
+
+    @Override
+    public Expression visitInsertValueInst(InsertValueInstContext ctx) {
+        final Type typeAgg = parseType(ctx.typeValue(0));
+        final Type insertType = parseType(ctx.typeValue(1));
+        check(typeAgg instanceof AggregateType, "Non-aggregate type in %s.", ctx);
+        final Expression aggregate = checkExpression(typeAgg, ctx.typeValue(0));
+        final Expression insertValue = checkExpression(insertType, ctx.typeValue(1));
+        final ImmutableList<Integer> indices =
+                ctx.IntLit().stream().map(n -> Integer.parseInt(n.getText())).collect(ImmutableList.toImmutableList());
+        return assignToRegister(expressions.makeInsert(aggregate, insertValue, indices));
     }
 
     @Override

@@ -1,9 +1,6 @@
 package com.dat3m.dartagnan.expression;
 
-import com.dat3m.dartagnan.expression.aggregates.AggregateCmpExpr;
-import com.dat3m.dartagnan.expression.aggregates.AggregateCmpOp;
-import com.dat3m.dartagnan.expression.aggregates.ConstructExpr;
-import com.dat3m.dartagnan.expression.aggregates.ExtractExpr;
+import com.dat3m.dartagnan.expression.aggregates.*;
 import com.dat3m.dartagnan.expression.booleans.*;
 import com.dat3m.dartagnan.expression.floats.*;
 import com.dat3m.dartagnan.expression.integers.*;
@@ -280,6 +277,17 @@ public final class ExpressionFactory {
             return object;
         }
         return new ExtractExpr(object, indices);
+    }
+
+    public Expression makeInsert(Expression aggregate, Expression value, int index) {
+        return makeInsert(aggregate, value, ImmutableList.of(index));
+    }
+
+    public Expression makeInsert(Expression aggregate, Expression value, Iterable<Integer> indices) {
+        if (Iterables.isEmpty(indices)) {
+            return aggregate;
+        }
+        return new InsertExpr(aggregate, indices, value);
     }
 
     public Expression makeAggregateCmp(Expression x, AggregateCmpOp op, Expression y) {
