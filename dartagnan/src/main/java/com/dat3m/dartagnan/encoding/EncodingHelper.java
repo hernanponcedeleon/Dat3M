@@ -2,9 +2,9 @@ package com.dat3m.dartagnan.encoding;
 
 import com.dat3m.dartagnan.encoding.formulas.TupleFormula;
 import com.dat3m.dartagnan.encoding.formulas.TupleValue;
-import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.google.common.base.Preconditions;
 import org.sosy_lab.java_smt.api.*;
+import org.sosy_lab.java_smt.api.NumeralFormula.IntegerFormula;
 
 import java.math.BigInteger;
 import java.util.stream.IntStream;
@@ -18,7 +18,7 @@ public class EncodingHelper {
     }
 
     public BooleanFormula equals(Formula left, Formula right) {
-        if (left instanceof NumeralFormula.IntegerFormula iLeft && right instanceof NumeralFormula.IntegerFormula iRight) {
+        if (left instanceof IntegerFormula iLeft && right instanceof IntegerFormula iRight) {
             return fmgr.getIntegerFormulaManager().equal(iLeft, iRight);
         }
 
@@ -32,7 +32,7 @@ public class EncodingHelper {
     }
 
     public BooleanFormula greaterThan(Formula left, Formula right, boolean signed) {
-        if (left instanceof NumeralFormula.IntegerFormula iLeft && right instanceof NumeralFormula.IntegerFormula iRight) {
+        if (left instanceof IntegerFormula iLeft && right instanceof IntegerFormula iRight) {
             return fmgr.getIntegerFormulaManager().greaterThan(iLeft, iRight);
         }
 
@@ -46,7 +46,7 @@ public class EncodingHelper {
     }
 
     public BooleanFormula greaterOrEquals(Formula left, Formula right, boolean signed) {
-        if (left instanceof NumeralFormula.IntegerFormula iLeft && right instanceof NumeralFormula.IntegerFormula iRight) {
+        if (left instanceof IntegerFormula iLeft && right instanceof IntegerFormula iRight) {
             return fmgr.getIntegerFormulaManager().greaterOrEquals(iLeft, iRight);
         }
 
@@ -60,7 +60,7 @@ public class EncodingHelper {
     }
 
     public Formula add(Formula left, Formula right) {
-        if (left instanceof NumeralFormula.IntegerFormula iLeft && right instanceof NumeralFormula.IntegerFormula iRight) {
+        if (left instanceof IntegerFormula iLeft && right instanceof IntegerFormula iRight) {
             return fmgr.getIntegerFormulaManager().add(iLeft, iRight);
         }
 
@@ -74,7 +74,7 @@ public class EncodingHelper {
     }
 
     public Formula subtract(Formula left, Formula right) {
-        if (left instanceof NumeralFormula.IntegerFormula iLeft && right instanceof NumeralFormula.IntegerFormula iRight) {
+        if (left instanceof IntegerFormula iLeft && right instanceof IntegerFormula iRight) {
             return fmgr.getIntegerFormulaManager().subtract(iLeft, iRight);
         }
 
@@ -91,7 +91,7 @@ public class EncodingHelper {
         //FIXME: integer modulo and BV modulo have different semantics, the former is always positive, the latter
         // returns a value whose sign depends on one of the two BVs.
         // The results in this implementation will match if the denominator <right> is positive which is the most usual case.
-        if (left instanceof NumeralFormula.IntegerFormula iLeft && right instanceof NumeralFormula.IntegerFormula iRight) {
+        if (left instanceof IntegerFormula iLeft && right instanceof IntegerFormula iRight) {
             return fmgr.getIntegerFormulaManager().modulo(iLeft, iRight);
         }
 
@@ -128,7 +128,7 @@ public class EncodingHelper {
     }
 
     public boolean hasSameType(Formula left, Formula right) {
-        if (left instanceof IntegerType && right instanceof IntegerType) {
+        if (left instanceof IntegerFormula && right instanceof IntegerFormula) {
             return true;
         } else if (left instanceof BooleanFormula && right instanceof BooleanFormula) {
             return true;
