@@ -55,9 +55,8 @@ public final class TupleFormulaManager {
     }
 
     public TupleFormula insert(TupleFormula f, Formula value, Iterable<Integer> indices) {
-        Preconditions.checkArgument(!Iterables.isEmpty(indices));
-
         final int index = Iterables.getFirst(indices, -1);
+        Preconditions.checkArgument(0 <= index && index < f.elements.size());
         final Iterable<Integer> subindices = Iterables.skip(indices, 1);
         final boolean recurse = !Iterables.isEmpty(subindices);
         final List<Formula> newElements = IntStream.range(0, f.elements.size())
