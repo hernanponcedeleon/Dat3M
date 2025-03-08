@@ -5,18 +5,19 @@ import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.Type;
 import com.dat3m.dartagnan.expression.aggregates.ConstructExpr;
-import com.dat3m.dartagnan.expression.floats.FloatLiteral;
-import com.dat3m.dartagnan.expression.integers.IntLiteral;
-import com.dat3m.dartagnan.expression.type.*;
+import com.dat3m.dartagnan.expression.type.AggregateType;
+import com.dat3m.dartagnan.expression.type.ArrayType;
+import com.dat3m.dartagnan.expression.type.ScopedPointerType;
+import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.parsers.SpirvBaseVisitor;
 import com.dat3m.dartagnan.parsers.SpirvParser;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.builders.ProgramBuilder;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.helpers.HelperTypes;
-import com.dat3m.dartagnan.program.Register;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 public class VisitorOpsComposite extends SpirvBaseVisitor<Void> {
 
@@ -107,37 +108,15 @@ public class VisitorOpsComposite extends SpirvBaseVisitor<Void> {
             return objectExpr;
         }
         if (compositeExpr instanceof ConstructExpr constructExpr) {
-            List<Expression> items = new ArrayList<>();
             int index = indexes.get(0);
-            for (int i = 0; i < constructExpr.getOperands().size(); i++) {
-                Expression item = constructExpr.getOperands().get(i);
-                if (i == index) {
-                    items.add(copyCompositeAndInsert(item, objectExpr, indexes.subList(1, indexes.size())));
-                } else {
-                    items.add(copyElement(item));
-                }
-            }
+            List<Expression> items = IntStream.range(0, constructExpr.getOperands().size())
+                    .mapToObj(i -> i == index
+                            ? copyCompositeAndInsert(constructExpr.getOperands().get(i), objectExpr, indexes.subList(1, indexes.size()))
+                            : constructExpr.getOperands().get(i))
+                    .collect(Collectors.toList());
             return expressions.makeConstruct(constructExpr.getType(), items);
         } else {
             throw new ParsingException("Unsupported type '%s' for OpCompositeInsert", compositeExpr.getType());
-        }
-    }
-
-    private Expression copyElement(Expression element) {
-        if (element instanceof IntLiteral iElement) {
-            return expressions.makeValue((iElement.getValueAsInt()), (IntegerType) element.getType());
-        } else if (element instanceof FloatLiteral fElement) {
-            return expressions.makeValue((fElement.getValue()), (FloatType) element.getType());
-        } else if (element instanceof ConstructExpr constructExpr) {
-            List<Expression> items = new ArrayList<>();
-            for (int i = 0; i < ((ArrayType) element.getType()).getNumElements(); i++) {
-                items.add(copyElement(constructExpr.getOperands().get(i)));
-            }
-            return expressions.makeConstruct(constructExpr.getType(), items);
-        } else if (element instanceof Register reg) {
-            return reg;
-        } else {
-            throw new ParsingException("Unsupported type '%s' for OpCompositeInsert", element.getType());
         }
     }
 
