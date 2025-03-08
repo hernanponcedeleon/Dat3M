@@ -5,8 +5,8 @@ import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionKind;
 import com.dat3m.dartagnan.expression.Type;
 import com.dat3m.dartagnan.program.event.common.NoInterface;
+import com.google.common.collect.ImmutableList;
 
-import java.util.List;
 import java.util.Objects;
 
 @NoInterface
@@ -32,7 +32,7 @@ public abstract class CastExpressionBase<TTargetType extends Type, TSourceType e
     public Expression getOperand() { return operand; }
 
     @Override
-    public List<Expression> getOperands() { return List.of(operand); }
+    public ImmutableList<Expression> getOperands() { return ImmutableList.of(operand); }
 
     @Override
     public ExpressionKind.Other getKind() { return ExpressionKind.Other.CAST; }
