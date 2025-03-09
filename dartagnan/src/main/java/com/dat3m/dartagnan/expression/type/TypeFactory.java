@@ -10,12 +10,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.IntStream;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
 
-import com.dat3m.dartagnan.expression.Type;
-import com.dat3m.dartagnan.utils.Normalizer;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 

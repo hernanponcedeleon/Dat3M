@@ -1,0 +1,57 @@
+; @Input: %output = {0, 0}
+; @Output: forall (%output[0] == 0 and %output[1] == 0)
+; @Config: 1, 1, 1
+; SPIR-V
+; Version: 1.0
+; Schema: 0
+               OpCapability Addresses
+               OpCapability Kernel
+               OpCapability GenericPointer
+          %1 = OpExtInstImport "OpenCL.std"
+               OpMemoryModel Physical32 OpenCL
+               OpEntryPoint Kernel %main "main"
+               OpSource OpenCL_C 200000
+
+               OpDecorate %aligned_data Alignment 16
+
+       %void = OpTypeVoid
+       %func = OpTypeFunction %void
+       %uint = OpTypeInt 32 0
+
+     %uint_0 = OpConstant %uint 0
+     %uint_1 = OpConstant %uint 1
+     %uint_2 = OpConstant %uint 2
+
+     %v3uint = OpTypeVector %uint 3
+%_arr_v3uint_uint_2 = OpTypeArray %v3uint %uint_2
+%output_type = OpTypeRuntimeArray %uint
+
+  %ptr_uint = OpTypePointer Workgroup %uint
+%_ptr_Workgroup__arr_v3uint_uint_2 = OpTypePointer Workgroup %_arr_v3uint_uint_2
+%_ptr_Workgroup_v3uint = OpTypePointer Workgroup %v3uint
+%ptr_output = OpTypePointer Workgroup %output_type
+
+%aligned_data = OpVariable %_ptr_Workgroup__arr_v3uint_uint_2 Workgroup
+%normal_data = OpVariable %_ptr_Workgroup__arr_v3uint_uint_2 Workgroup
+     %output = OpVariable %ptr_output Workgroup
+
+       %main = OpFunction %void None %func
+      %label = OpLabel
+
+   %output_0 = OpAccessChain %ptr_uint %output %uint_0
+   %output_1 = OpAccessChain %ptr_uint %output %uint_1
+
+ %aligned_00 = OpInBoundsPtrAccessChain %_ptr_Workgroup_v3uint %aligned_data %uint_0 %uint_0
+  %normal_00 = OpInBoundsPtrAccessChain %_ptr_Workgroup_v3uint %normal_data %uint_0 %uint_0
+
+ %aligned_v3 = OpLoad %v3uint %aligned_00 Aligned 16
+  %normal_v3 = OpLoad %v3uint %normal_00 Aligned 4
+
+         %v0 = OpCompositeExtract %uint %aligned_v3 0
+         %v1 = OpCompositeExtract %uint %normal_v3 0
+
+               OpStore %output_0 %v0
+               OpStore %output_1 %v1
+
+               OpReturn
+               OpFunctionEnd
