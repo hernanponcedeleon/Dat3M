@@ -48,8 +48,7 @@ public class NonterminationDetection implements ProgramProcessor {
     }
 
     @Option(name = NONTERMINATION_INSTRUMENTATION,
-            description = "(EXPERIMENTAL) " +
-                    "Sets the precision of non-termination detection: only_spinloops, simple, full (default).",
+            description = "Sets the precision of non-termination instrumentation: only_spinloops, simple, full (default).",
             secure = true)
     private Mode mode = Mode.FULL;
 
