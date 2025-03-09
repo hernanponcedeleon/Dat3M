@@ -4,8 +4,6 @@ import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.Type;
-import com.dat3m.dartagnan.expression.type.AggregateType;
-import com.dat3m.dartagnan.expression.type.ArrayType;
 import com.dat3m.dartagnan.expression.type.ScopedPointerType;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.parsers.SpirvBaseVisitor;
@@ -48,23 +46,11 @@ public class VisitorOpsComposite extends SpirvBaseVisitor<Void> {
     }
 
     private Expression getElement(Expression base, List<Integer> indexes, String id) {
-        Expression result = base;
-        for (Integer index : indexes) {
-            Type type = result.getType();
-            if (type instanceof AggregateType aType) {
-                if (index >= aType.getTypeOffsets().size()) {
-                    throw new ParsingException(String.format("Index out of bounds in OpCompositeExtract for '%s'", id));
-                }
-            } else if (type instanceof ArrayType aType) {
-                if (aType.getNumElements() >= 0 && index >= aType.getNumElements()) {
-                    throw new ParsingException(String.format("Index out of bounds in OpCompositeExtract for '%s'", id));
-                }
-            } else {
-                throw new ParsingException(String.format("Index is too deep in OpCompositeExtract for '%s'", id));
-            }
-            result = ExpressionFactory.getInstance().makeExtract(index, result);
+        try {
+            return ExpressionFactory.getInstance().makeExtract(base, indexes);
+        } catch (Exception e) {
+            throw new ParsingException(String.format("Index out of bounds in OpCompositeExtract for '%s'", id));
         }
-        return result;
     }
 
     public Set<String> getSupportedOps() {

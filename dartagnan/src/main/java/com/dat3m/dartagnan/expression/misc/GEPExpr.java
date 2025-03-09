@@ -10,15 +10,15 @@ import com.dat3m.dartagnan.expression.type.ArrayType;
 import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.expression.utils.ExpressionHelper;
 import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableList;
 
-import java.util.ArrayList;
 import java.util.List;
 
 public final class GEPExpr extends NaryExpressionBase<Type, ExpressionKind.Other> {
 
     private final Type indexingType;
 
-    public GEPExpr(Type indexType, Expression base, List<Expression> offsets) {
+    public GEPExpr(Type indexType, Expression base, List<? extends Expression> offsets) {
         super(base.getType(), ExpressionKind.Other.GEP, concat(base, offsets));
         ExpressionHelper.checkExpectedType(base, IntegerType.class);
         if (offsets.size() > 1) {
@@ -28,11 +28,11 @@ public final class GEPExpr extends NaryExpressionBase<Type, ExpressionKind.Other
         this.indexingType = indexType;
     }
 
-    private static List<Expression> concat(Expression base, List<Expression> offsets) {
-        final List<Expression> ops = new ArrayList<>(offsets.size() + 1);
-        ops.add(base);
-        ops.addAll(offsets);
-        return ops;
+    private static ImmutableList<Expression> concat(Expression base, List<? extends Expression> offsets) {
+        return ImmutableList.<Expression>builderWithExpectedSize(offsets.size() + 1)
+                .add(base)
+                .addAll(offsets)
+                .build();
     }
 
     public Type getIndexingType() {
@@ -43,7 +43,7 @@ public final class GEPExpr extends NaryExpressionBase<Type, ExpressionKind.Other
         return operands.get(0);
     }
 
-    public List<Expression> getOffsets() {
+    public ImmutableList<Expression> getOffsets() {
         return operands.subList(1, operands.size());
     }
 

@@ -1,10 +1,5 @@
 package com.dat3m.dartagnan.parsers.program.visitors;
 
-import java.math.BigInteger;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-
 import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
@@ -13,7 +8,6 @@ import com.dat3m.dartagnan.expression.integers.IntCmpOp;
 import com.dat3m.dartagnan.expression.type.AggregateType;
 import com.dat3m.dartagnan.expression.type.BooleanType;
 import com.dat3m.dartagnan.expression.type.IntegerType;
-import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.expression.type.VoidType;
 import com.dat3m.dartagnan.parsers.InlineAsmBaseVisitor;
 import com.dat3m.dartagnan.parsers.InlineAsmParser;
@@ -24,6 +18,12 @@ import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.event.core.Local;
+
+import java.math.BigInteger;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+
 import static com.google.common.base.Preconditions.checkState;
 
 // The trickiest part of handling inline assembly is matching input and output registers on the LLVM side with the registers in the assembly.
@@ -132,7 +132,7 @@ public class VisitorInlineAsm extends InlineAsmBaseVisitor<Object> {
         if (returnType instanceof IntegerType || returnType instanceof BooleanType) {
             return 1;
         } else if (isReturnRegisterAggregate()) {
-            return ((AggregateType) returnType).getTypeOffsets().size();
+            return ((AggregateType) returnType).getFields().size();
         } else if (returnType instanceof VoidType) {
             return 0;
         } else {
@@ -171,7 +171,7 @@ public class VisitorInlineAsm extends InlineAsmBaseVisitor<Object> {
         if (isPartOfReturnRegister(registerID)) {
             if (returnRegister.getType() instanceof AggregateType at) {
                 // get the type from the corresponding field
-                registerType = at.getFields().get(registerID);
+                registerType = at.getFields().get(registerID).type();
             } else {
                 // returnRegister is not an aggregate, we just get that type
                 registerType = returnRegister.getType();
@@ -432,7 +432,7 @@ public class VisitorInlineAsm extends InlineAsmBaseVisitor<Object> {
                 if (i == 1) {
                     outputAssignments.add(EventFactory.newLocal(returnRegister, asmRegisters.get(0)));
                 } else {
-                    Type aggregateType = TypeFactory.getInstance().getAggregateType(((AggregateType) returnRegister.getType()).getFields());
+                    Type aggregateType = returnRegister.getType();
                     Expression finalAssignExpression = expressions.makeConstruct(aggregateType, this.pendingRegisters);
                     outputAssignments.add(EventFactory.newLocal(this.returnRegister, finalAssignExpression));
                 }

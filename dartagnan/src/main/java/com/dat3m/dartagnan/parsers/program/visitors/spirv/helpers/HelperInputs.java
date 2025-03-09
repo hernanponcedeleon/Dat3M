@@ -34,15 +34,15 @@ public class HelperInputs {
     }
 
     private static Type castAggregateInputType(String id, ScopedPointerType pointer, AggregateType type) {
-        int uniqueTypesCount = type.getTypeOffsets().stream()
+        int uniqueTypesCount = type.getFields().stream()
                 .map(TypeOffset::type)
                 .collect(Collectors.toSet())
                 .size();
         if (uniqueTypesCount != 1) {
             throw new ParsingException(errorMixedTypeElements(id));
         }
-        Type member = type.getTypeOffsets().get(0).type();
-        int count = type.getTypeOffsets().size();
+        Type member = type.getFields().get(0).type();
+        int count = type.getFields().size();
         if (count == 1 || member instanceof IntegerType) {
             return TypeFactory.getInstance().getArrayType(castInputType(String.format("%s[0]", id), pointer, member), count);
         }
@@ -87,17 +87,17 @@ public class HelperInputs {
 
     private static Expression castAggregate(String id, AggregateType type, Expression value) {
         if (value instanceof ConstructExpr aValue) {
-            int expectedSize = type.getTypeOffsets().size();
+            int expectedSize = type.getFields().size();
             int actualSize = aValue.getOperands().size();
             if (expectedSize != actualSize) {
                 throw new ParsingException(errorMismatchingElementCount(id, expectedSize, actualSize));
             }
             List<Expression> elements = new ArrayList<>();
             for (int i = 0; i < actualSize; i++) {
-                elements.add(castInput(id, type.getTypeOffsets().get(i).type(), aValue.getOperands().get(i)));
+                elements.add(castInput(id, type.getFields().get(i).type(), aValue.getOperands().get(i)));
             }
             List<Type> fields = elements.stream().map(Expression::getType).toList();
-            List<Integer> offsets = type.getTypeOffsets().stream().map(TypeOffset::offset).toList();
+            List<Integer> offsets = type.getFields().stream().map(TypeOffset::offset).toList();
             AggregateType aType = types.getAggregateType(fields, offsets);
             return expressions.makeConstruct(aType, elements);
         }

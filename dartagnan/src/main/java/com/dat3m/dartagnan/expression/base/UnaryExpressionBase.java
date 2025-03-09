@@ -5,8 +5,8 @@ import com.dat3m.dartagnan.expression.ExpressionKind;
 import com.dat3m.dartagnan.expression.Type;
 import com.dat3m.dartagnan.expression.UnaryExpression;
 import com.dat3m.dartagnan.program.event.common.NoInterface;
+import com.google.common.collect.ImmutableList;
 
-import java.util.List;
 import java.util.Objects;
 
 @NoInterface
@@ -25,7 +25,7 @@ public abstract class UnaryExpressionBase<TType extends Type, TKind extends Expr
     public Expression getOperand() { return operand; }
 
     @Override
-    public List<Expression> getOperands() { return List.of(operand); }
+    public ImmutableList<Expression> getOperands() { return ImmutableList.of(operand); }
 
     @Override
     public TKind getKind() { return kind; }

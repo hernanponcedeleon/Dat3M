@@ -109,15 +109,15 @@ public class AggregateTypeTest {
 
     private void testDefaultOffsets(List<Type> fields, List<Integer> offsets, int size) {
         AggregateType type = types.getAggregateType(fields);
-        assertEquals(fields, type.getTypeOffsets().stream().map(TypeOffset::type).toList());
-        assertEquals(offsets, type.getTypeOffsets().stream().map(TypeOffset::offset).toList());
+        assertEquals(fields, type.getFields().stream().map(TypeOffset::type).toList());
+        assertEquals(offsets, type.getFields().stream().map(TypeOffset::offset).toList());
         assertEquals(size, types.getMemorySizeInBytes(type));
     }
 
     private void testExplicitOffsets(List<Type> fields, List<Integer> offsets, int size) {
         AggregateType type = types.getAggregateType(fields, offsets);
-        assertEquals(fields, type.getTypeOffsets().stream().map(TypeOffset::type).toList());
-        assertEquals(offsets, type.getTypeOffsets().stream().map(TypeOffset::offset).toList());
+        assertEquals(fields, type.getFields().stream().map(TypeOffset::type).toList());
+        assertEquals(offsets, type.getFields().stream().map(TypeOffset::offset).toList());
         assertEquals(size, types.getMemorySizeInBytes(type));
     }
 

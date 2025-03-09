@@ -7,6 +7,7 @@ import com.dat3m.dartagnan.expression.LeafExpression;
 import com.dat3m.dartagnan.expression.aggregates.AggregateCmpExpr;
 import com.dat3m.dartagnan.expression.aggregates.ConstructExpr;
 import com.dat3m.dartagnan.expression.aggregates.ExtractExpr;
+import com.dat3m.dartagnan.expression.aggregates.InsertExpr;
 import com.dat3m.dartagnan.expression.booleans.BoolBinaryExpr;
 import com.dat3m.dartagnan.expression.booleans.BoolUnaryExpr;
 import com.dat3m.dartagnan.expression.floats.FloatBinaryExpr;
@@ -91,7 +92,12 @@ public abstract class ExprTransformer implements ExpressionVisitor<Expression> {
 
     @Override
     public Expression visitExtractExpression(ExtractExpr expr) {
-        return expressions.makeExtract(expr.getFieldIndex(), expr.getOperand().accept(this));
+        return expressions.makeExtract(expr.getOperand().accept(this), expr.getIndices());
+    }
+
+    @Override
+    public Expression visitInsertExpression(InsertExpr insert) {
+        return expressions.makeInsert(insert.getAggregate(), insert.getInsertedValue(), insert.getIndices());
     }
 
     @Override

@@ -43,8 +43,8 @@ public class VisitorExtensionOpenClStd extends VisitorExtension<Expression> {
             List<Expression> sums = new ArrayList<>();
             for (int i = 0; i < xType.getNumElements(); i++) {
                 sums.add(expressions.makeAdd(
-                        expressions.makeExtract(i, x),
-                        expressions.makeExtract(i, y)
+                        expressions.makeExtract(x, i),
+                        expressions.makeExtract(y, i)
                 ));
             }
             return expressions.makeArray(xType.getElementType(), sums, true);
@@ -65,8 +65,8 @@ public class VisitorExtensionOpenClStd extends VisitorExtension<Expression> {
             List<Expression> subs = new ArrayList<>();
             for (int i = 0; i < xType.getNumElements(); i++) {
                 subs.add(expressions.makeSub(
-                        expressions.makeExtract(i, x),
-                        expressions.makeExtract(i, y)
+                        expressions.makeExtract(x, i),
+                        expressions.makeExtract(y, i)
                 ));
             }
             return expressions.makeArray(xType.getElementType(), subs, true);

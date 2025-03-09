@@ -1,25 +1,25 @@
 package com.dat3m.dartagnan.expression.type;
 
 import com.dat3m.dartagnan.expression.Type;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 
-import java.util.Arrays;
 import java.util.List;
 
 public final class FunctionType implements Type {
 
     private final Type returnType;
-    private final Type[] parameterTypes;
+    private final ImmutableList<Type> parameterTypes;
     private final boolean isVarArgs;
 
-    FunctionType(Type returnType, Type[] parameterTypes, boolean isVarArgs) {
+    FunctionType(Type returnType, List<? extends Type> parameterTypes, boolean isVarArgs) {
         this.returnType = returnType;
-        this.parameterTypes = parameterTypes;
+        this.parameterTypes = ImmutableList.copyOf(parameterTypes);
         this.isVarArgs = isVarArgs;
     }
 
     public Type getReturnType() { return this.returnType; }
-    public List<Type> getParameterTypes() { return Arrays.asList(this.parameterTypes); }
+    public ImmutableList<Type> getParameterTypes() { return parameterTypes; }
     public boolean isVarArgs() { return this.isVarArgs; }
 
     @Override
@@ -29,19 +29,19 @@ public final class FunctionType implements Type {
         }
         return (obj instanceof FunctionType other)
                 && other.returnType.equals(this.returnType)
-                && Arrays.equals(other.parameterTypes, this.parameterTypes)
+                && other.parameterTypes.equals(this.parameterTypes)
                 && other.isVarArgs == this.isVarArgs;
     }
 
     @Override
     public int hashCode() {
-        return 127 * Boolean.hashCode(isVarArgs) + 31 * returnType.hashCode() + Arrays.hashCode(parameterTypes);
+        return 127 * Boolean.hashCode(isVarArgs) + 31 * returnType.hashCode() + parameterTypes.hashCode();
     }
 
     @Override
     public String toString() {
         return String.format("(%s%s) -> %s",
-                String.join(", ", Lists.transform(Arrays.asList(parameterTypes), Object::toString)),
+                String.join(", ", Lists.transform(parameterTypes, Object::toString)),
                 isVarArgs ? ", ..." : "",
                 returnType);
     }

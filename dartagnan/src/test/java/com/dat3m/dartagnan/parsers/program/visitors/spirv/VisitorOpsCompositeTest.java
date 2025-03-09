@@ -37,7 +37,7 @@ public class VisitorOpsCompositeTest {
 
         // then
         ExtractExpr extract = (ExtractExpr) builder.getExpression("%extract");
-        assertEquals(2, extract.getFieldIndex());
+        assertEquals(List.of(2), extract.getIndices());
         assertEquals(builder.getType("%uint"), extract.getType());
     }
 
@@ -57,7 +57,7 @@ public class VisitorOpsCompositeTest {
 
         // then
         ExtractExpr extract = (ExtractExpr) builder.getExpression("%extract");
-        assertEquals(2, extract.getFieldIndex());
+        assertEquals(List.of(2), extract.getIndices());
         assertEquals(builder.getType("%uint"), extract.getType());
     }
 
@@ -81,7 +81,7 @@ public class VisitorOpsCompositeTest {
 
         // then
         ExtractExpr extract = (ExtractExpr) builder.getExpression("%extract");
-        assertEquals(2, extract.getFieldIndex());
+        assertEquals(List.of(1, 2), extract.getIndices());
         assertEquals(builder.getType("%uint"), extract.getType());
     }
 
@@ -105,7 +105,7 @@ public class VisitorOpsCompositeTest {
 
         // then
         ExtractExpr extract = (ExtractExpr) builder.getExpression("%extract");
-        assertEquals(2, extract.getFieldIndex());
+        assertEquals(List.of(1, 2), extract.getIndices());
         assertEquals(builder.getType("%uint"), extract.getType());
     }
 
@@ -136,7 +136,7 @@ public class VisitorOpsCompositeTest {
 
         // then
         ExtractExpr extract = (ExtractExpr) builder.getExpression("%extract");
-        assertEquals(0, extract.getFieldIndex());
+        assertEquals(List.of(0), extract.getIndices());
         assertEquals(builder.getType("%uint"), extract.getType());
     }
 
@@ -176,7 +176,7 @@ public class VisitorOpsCompositeTest {
             visit(input);
             fail("Should throw exception");
         } catch (ParsingException e) {
-            assertEquals("Index is too deep in OpCompositeExtract for '%extract'", e.getMessage());
+            assertEquals("Index out of bounds in OpCompositeExtract for '%extract'", e.getMessage());
         }
     }
 
@@ -207,7 +207,7 @@ public class VisitorOpsCompositeTest {
             visit(input);
             fail("Should throw exception");
         } catch (ParsingException e) {
-            assertEquals("Index is too deep in OpCompositeExtract for '%extract'", e.getMessage());
+            assertEquals("Index out of bounds in OpCompositeExtract for '%extract'", e.getMessage());
         }
     }
 

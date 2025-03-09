@@ -4,14 +4,13 @@ import com.dat3m.dartagnan.expression.processing.ExpressionInspector;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.memory.FinalMemoryValue;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
-
-import java.util.List;
 
 public interface Expression {
 
     Type getType();
-    List<Expression> getOperands();
+    ImmutableList<Expression> getOperands();
     ExpressionKind getKind();
     <T> T accept(ExpressionVisitor<T> visitor);
 

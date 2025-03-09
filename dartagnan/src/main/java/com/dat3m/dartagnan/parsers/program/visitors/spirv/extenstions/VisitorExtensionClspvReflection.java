@@ -160,7 +160,7 @@ public class VisitorExtensionClspvReflection extends VisitorExtension<Void> {
 
     private TypeOffset getTypeOffset(String argument, AggregateType type, int argOffset, int argSize) {
         TypeOffset lastOffset = null;
-        for (TypeOffset typeOffset : type.getTypeOffsets()) {
+        for (TypeOffset typeOffset : type.getFields()) {
             if (argOffset <= typeOffset.offset()) {
                 if (argOffset == typeOffset.offset()) {
                     lastOffset = typeOffset;

@@ -3,6 +3,7 @@ package com.dat3m.dartagnan.expression;
 import com.dat3m.dartagnan.expression.aggregates.AggregateCmpExpr;
 import com.dat3m.dartagnan.expression.aggregates.ConstructExpr;
 import com.dat3m.dartagnan.expression.aggregates.ExtractExpr;
+import com.dat3m.dartagnan.expression.aggregates.InsertExpr;
 import com.dat3m.dartagnan.expression.booleans.BoolBinaryExpr;
 import com.dat3m.dartagnan.expression.booleans.BoolLiteral;
 import com.dat3m.dartagnan.expression.booleans.BoolUnaryExpr;
@@ -49,6 +50,7 @@ public interface ExpressionVisitor<TRet> {
     // =================================== Aggregates ===================================
     default TRet visitAggregateCmpExpression(AggregateCmpExpr expr) { return  visitBinaryExpression(expr); }
     default TRet visitExtractExpression(ExtractExpr extract) { return visitUnaryExpression(extract); }
+    default TRet visitInsertExpression(InsertExpr insert) { return visitBinaryExpression(insert); }
     default TRet visitConstructExpression(ConstructExpr construct) { return visitExpression(construct); }
 
     // =================================== Pointer ===================================
