@@ -70,7 +70,7 @@ public final class TypeFactory {
         checkNotNull(returnType);
         checkNotNull(parameterTypes);
         checkArgument(parameterTypes.stream().noneMatch(t -> t == voidType), "Void parameters are not allowed");
-        return typeNormalizer.normalize(new FunctionType(returnType, parameterTypes.toArray(new Type[0]), isVarArg));
+        return typeNormalizer.normalize(new FunctionType(returnType, parameterTypes, isVarArg));
     }
 
     public AggregateType getAggregateType(List<Type> fields) {
