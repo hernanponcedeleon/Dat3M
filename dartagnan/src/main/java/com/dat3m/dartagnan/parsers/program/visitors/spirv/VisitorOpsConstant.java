@@ -8,8 +8,8 @@ import com.dat3m.dartagnan.expression.integers.IntLiteral;
 import com.dat3m.dartagnan.expression.type.*;
 import com.dat3m.dartagnan.parsers.SpirvBaseVisitor;
 import com.dat3m.dartagnan.parsers.SpirvParser;
-import com.dat3m.dartagnan.parsers.program.visitors.spirv.decorations.BuiltIn;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.builders.ProgramBuilder;
+import com.dat3m.dartagnan.parsers.program.visitors.spirv.decorations.BuiltIn;
 import com.dat3m.dartagnan.program.Register;
 import org.antlr.v4.runtime.RuleContext;
 
@@ -166,7 +166,7 @@ public class VisitorOpsConstant extends SpirvBaseVisitor<Expression> {
     }
 
     private Expression makeConstantStruct(String id, AggregateType type, List<String> elementIds) {
-        List<TypeOffset> elementTypes = type.getTypeOffsets();
+        List<TypeOffset> elementTypes = type.getFields();
         if (elementTypes.size() != elementIds.size()) {
             throw new ParsingException("Mismatching number of elements in the composite constant '%s', " +
                     "expected %d elements but received %d elements", id, elementTypes.size(), elementIds.size());

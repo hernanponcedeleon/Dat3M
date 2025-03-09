@@ -38,7 +38,7 @@ public class ExpressionHelper {
         Preconditions.checkArgument(isAggregateLike(aggregateType), "Non-aggregate type %s.", aggregateType);
         Preconditions.checkArgument(index >= 0, "Negative index: %s.", index);
         if (aggregateType instanceof AggregateType aggType) {
-            checkArgument(index < aggType.getTypeOffsets().size(),
+            checkArgument(index < aggType.getFields().size(),
                     "Index %s out of bounds for type %s.",
                     index, aggregateType);
         } else if (aggregateType instanceof ArrayType arrayType) {
@@ -60,7 +60,7 @@ public class ExpressionHelper {
         for (int index : indices) {
             checkInbounds(type, index);
             if (type instanceof AggregateType aggregateType) {
-                type = aggregateType.getTypeOffsets().get(index).type();
+                type = aggregateType.getFields().get(index).type();
             } else if (type instanceof ArrayType arrayType) {
                 type = arrayType.getElementType();
             } else {

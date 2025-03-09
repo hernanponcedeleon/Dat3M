@@ -326,8 +326,8 @@ public final class ExpressionFactory {
             }
             return makeArray(arrayType.getElementType(), zeroes, true);
         } else if (type instanceof AggregateType structType) {
-            List<Expression> zeroes = new ArrayList<>(structType.getTypeOffsets().size());
-            for (TypeOffset typeOffset : structType.getTypeOffsets()) {
+            List<Expression> zeroes = new ArrayList<>(structType.getFields().size());
+            for (TypeOffset typeOffset : structType.getFields()) {
                 zeroes.add(makeGeneralZero(typeOffset.type()));
             }
             return makeConstruct(structType, zeroes);

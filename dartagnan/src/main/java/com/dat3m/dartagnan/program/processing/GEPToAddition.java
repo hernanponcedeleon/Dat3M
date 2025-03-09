@@ -86,7 +86,7 @@ public class GEPToAddition implements ProgramProcessor {
                     final int intOffset = types.getOffsetInBytes(aggType, intIndex);
 
                     offset = expressions.makeValue(intOffset, offsetType);
-                    indexingType = aggType.getTypeOffsets().get(intIndex).type();
+                    indexingType = aggType.getFields().get(intIndex).type();
                 } else if (indexingType instanceof ArrayType arrayType) {
                     final int elementSize = types.getMemorySizeInBytes(arrayType.getElementType());
                     final Expression scaling = expressions.makeValue(elementSize, offsetType);

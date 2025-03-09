@@ -24,7 +24,7 @@ public final class ConstructExpr extends NaryExpressionBase<Type, ExpressionKind
                 "Non-constructible type %s.", type);
         checkArgument(!(type instanceof AggregateType a) ||
                 arguments.stream().map(Expression::getType).toList()
-                        .equals(a.getTypeOffsets().stream().map(TypeOffset::type).toList()),
+                        .equals(a.getFields().stream().map(TypeOffset::type).toList()),
                 "Arguments do not match the constructor signature.");
         checkArgument(!(type instanceof ArrayType a) ||
                 !a.hasKnownNumElements() ||

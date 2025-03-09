@@ -171,8 +171,8 @@ public class Program {
             return expressions.makeArray(arrayType.getElementType(), entries, true);
         }
         if (type instanceof AggregateType aggregateType) {
-            final List<Expression> elements = new ArrayList<>(aggregateType.getTypeOffsets().size());
-            for (TypeOffset typeOffset : aggregateType.getTypeOffsets()) {
+            final List<Expression> elements = new ArrayList<>(aggregateType.getFields().size());
+            for (TypeOffset typeOffset : aggregateType.getFields()) {
                 elements.add(newConstant(typeOffset.type()));
             }
             return expressions.makeConstruct(type, elements);
