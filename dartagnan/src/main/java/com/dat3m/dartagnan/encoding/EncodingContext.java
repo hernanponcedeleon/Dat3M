@@ -362,6 +362,12 @@ public final class EncodingContext {
         return formulaManager.getIntegerFormulaManager().makeVariable(formulaManager.escape(name) + " " + event.getGlobalId());
     }
 
+    // Careful: The semantics of this variable is currently only encoded when doing liveness checking
+    //  or verifying litmus code.
+    public BooleanFormula lastCoVar(Event write) {
+        return booleanFormulaManager.makeVariable("co_last(" + write.getGlobalId() + ")");
+    }
+
     public IntegerFormula memoryOrderClock(Event write) {
         checkArgument(write.hasTag(WRITE), "Cannot get a clock-var for non-writes.");
         if (write.hasTag(INIT)) {

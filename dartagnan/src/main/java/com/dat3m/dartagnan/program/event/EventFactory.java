@@ -27,6 +27,7 @@ import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.event.core.annotations.FunCallMarker;
 import com.dat3m.dartagnan.program.event.core.annotations.FunReturnMarker;
 import com.dat3m.dartagnan.program.event.core.annotations.StringAnnotation;
+import com.dat3m.dartagnan.program.event.core.special.StateSnapshot;
 import com.dat3m.dartagnan.program.event.core.threading.ThreadArgument;
 import com.dat3m.dartagnan.program.event.core.threading.ThreadCreate;
 import com.dat3m.dartagnan.program.event.core.threading.ThreadStart;
@@ -324,6 +325,16 @@ public class EventFactory {
 
     public static ThreadStart newThreadStart(ThreadCreate creator) {
         return new ThreadStart(creator);
+    }
+
+    public static class Special {
+        private Special() {
+        }
+
+
+        public static StateSnapshot newStateSnapshot(List<? extends Expression> expressions) {
+            return new StateSnapshot(expressions);
+        }
     }
 
     // =============================================================================================

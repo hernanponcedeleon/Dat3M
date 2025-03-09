@@ -40,7 +40,7 @@ public class VMMLocksTest extends AbstractCTest {
 
     @Override
     protected Provider<EnumSet<Property>> getPropertyProvider() {
-        return () -> EnumSet.of(PROGRAM_SPEC, LIVENESS, CAT_SPEC);
+        return () -> EnumSet.of(PROGRAM_SPEC, TERMINATION, CAT_SPEC);
     }
 
     @Override

@@ -8,25 +8,19 @@ public enum Method implements OptionInterface {
     // Used for options in the console
     @Override
     public String asStringOption() {
-        switch (this) {
-            case EAGER:
-                return "eager";
-            case LAZY:
-                return "lazy";
-        }
-        throw new UnsupportedOperationException("Unrecognized analysis " + this);
+        return switch (this) {
+            case EAGER -> "eager";
+            case LAZY -> "lazy";
+        };
     }
 
     // Used to display in UI
     @Override
     public String toString() {
-        switch (this) {
-            case EAGER:
-                return "Eager analysis";
-            case LAZY:
-                return "Lazy analysis";
-        }
-        throw new UnsupportedOperationException("Unrecognized analysis " + this);
+        return switch (this) {
+            case EAGER -> "Eager analysis";
+            case LAZY -> "Lazy analysis";
+        };
     }
 
     public static Method getDefault() {

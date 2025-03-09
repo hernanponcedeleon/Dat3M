@@ -1,0 +1,51 @@
+; @Config: 2, 1, 2
+; SPIR-V
+; Version: 1.6
+; Generator: Google Clspv; 0
+; Bound: 34
+; Schema: 0
+               OpCapability Shader
+         %28 = OpExtInstImport "NonSemantic.ClspvReflection.5"
+               OpMemoryModel Logical Vulkan
+               OpEntryPoint GLCompute %13 "non_uniform_barrier" %gl_LocalInvocationID %10
+               OpSource OpenCL_C 300
+         %29 = OpString "non_uniform_barrier"
+         %30 = OpString "__kernel"
+               OpDecorate %gl_LocalInvocationID BuiltIn LocalInvocationId
+               OpDecorate %gl_WorkGroupSize BuiltIn WorkgroupSize
+               OpDecorate %5 SpecId 0
+               OpDecorate %6 SpecId 1
+               OpDecorate %7 SpecId 2
+       %uint = OpTypeInt 32 0
+     %v3uint = OpTypeVector %uint 3
+%_ptr_Input_v3uint = OpTypePointer Input %v3uint
+          %5 = OpSpecConstant %uint 1
+          %6 = OpSpecConstant %uint 1
+          %7 = OpSpecConstant %uint 1
+%gl_WorkGroupSize = OpSpecConstantComposite %v3uint %5 %6 %7
+%_ptr_Private_v3uint = OpTypePointer Private %v3uint
+       %void = OpTypeVoid
+         %12 = OpTypeFunction %void
+%_ptr_Input_uint = OpTypePointer Input %uint
+     %uint_0 = OpConstant %uint 0
+       %bool = OpTypeBool
+     %uint_2 = OpConstant %uint 2
+    %uint_72 = OpConstant %uint 72
+     %uint_1 = OpConstant %uint 1
+%gl_LocalInvocationID = OpVariable %_ptr_Input_v3uint Input
+         %10 = OpVariable %_ptr_Private_v3uint Private %gl_WorkGroupSize
+         %13 = OpFunction %void None %12
+         %14 = OpLabel
+         %17 = OpAccessChain %_ptr_Input_uint %gl_LocalInvocationID %uint_0
+         %18 = OpLoad %uint %17 Aligned 16
+         %20 = OpIEqual %bool %18 %uint_0
+               OpSelectionMerge %27 None
+               OpBranchConditional %20 %23 %27
+         %23 = OpLabel
+               OpControlBarrier %uint_2 %uint_2 %uint_72
+               OpBranch %27
+         %27 = OpLabel
+               OpReturn
+               OpFunctionEnd
+         %31 = OpExtInst %void %28 Kernel %13 %29 %uint_0 %uint_0 %30
+         %33 = OpExtInst %void %28 SpecConstantWorkgroupSize %uint_0 %uint_1 %uint_2

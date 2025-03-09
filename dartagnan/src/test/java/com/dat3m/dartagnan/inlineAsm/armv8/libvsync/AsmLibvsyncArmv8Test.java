@@ -1,11 +1,14 @@
 package com.dat3m.dartagnan.inlineAsm.armv8.libvsync;
 
-import java.io.File;
-import java.io.IOException;
-import java.util.Arrays;
-import java.util.EnumSet;
-
-import static org.junit.Assert.assertEquals;
+import com.dat3m.dartagnan.configuration.Arch;
+import com.dat3m.dartagnan.encoding.ProverWithTracker;
+import com.dat3m.dartagnan.parsers.cat.ParserCat;
+import com.dat3m.dartagnan.parsers.program.ProgramParser;
+import com.dat3m.dartagnan.program.Program;
+import com.dat3m.dartagnan.utils.Result;
+import com.dat3m.dartagnan.verification.VerificationTask;
+import com.dat3m.dartagnan.verification.solving.AssumeSolver;
+import com.dat3m.dartagnan.wmm.Wmm;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -16,21 +19,17 @@ import org.sosy_lab.common.log.BasicLogManager;
 import org.sosy_lab.java_smt.SolverContextFactory;
 import org.sosy_lab.java_smt.api.SolverContext;
 
-import com.dat3m.dartagnan.configuration.Arch;
-import static com.dat3m.dartagnan.configuration.Property.LIVENESS;
+import java.io.File;
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.EnumSet;
+
 import static com.dat3m.dartagnan.configuration.Property.PROGRAM_SPEC;
-import com.dat3m.dartagnan.encoding.ProverWithTracker;
-import com.dat3m.dartagnan.parsers.cat.ParserCat;
-import com.dat3m.dartagnan.parsers.program.ProgramParser;
-import com.dat3m.dartagnan.program.Program;
+import static com.dat3m.dartagnan.configuration.Property.TERMINATION;
 import static com.dat3m.dartagnan.utils.ResourceHelper.getRootPath;
 import static com.dat3m.dartagnan.utils.ResourceHelper.getTestResourcePath;
-import com.dat3m.dartagnan.utils.Result;
 import static com.dat3m.dartagnan.utils.Result.PASS;
-import com.dat3m.dartagnan.verification.VerificationTask;
-import com.dat3m.dartagnan.verification.solving.AssumeSolver;
-import com.dat3m.dartagnan.verification.solving.RefinementSolver;
-import com.dat3m.dartagnan.wmm.Wmm;
+import static org.junit.Assert.assertEquals;
 
 @RunWith(Parameterized.class)
 public class AsmLibvsyncArmv8Test {
@@ -109,6 +108,6 @@ public class AsmLibvsyncArmv8Test {
                 .withTarget(Arch.ARM8);
         Program program = new ProgramParser().parse(new File(programPath));
         Wmm mcm = new ParserCat().parse(new File(modelPath));
-        return builder.build(program, mcm, EnumSet.of(LIVENESS, PROGRAM_SPEC));
+        return builder.build(program, mcm, EnumSet.of(TERMINATION, PROGRAM_SPEC));
     }
 }
