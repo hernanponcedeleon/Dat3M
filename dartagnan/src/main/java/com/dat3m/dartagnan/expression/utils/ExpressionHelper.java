@@ -64,7 +64,8 @@ public class ExpressionHelper {
             } else if (type instanceof ArrayType arrayType) {
                 type = arrayType.getElementType();
             } else {
-                assert false : "unreachable";
+                // Actually unreachable, because checkInbounds does this already.
+                throw new IllegalArgumentException("Cannot extract from non-aggregate type " + type);
             }
         }
         return type;

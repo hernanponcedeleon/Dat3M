@@ -34,6 +34,7 @@ import java.math.BigInteger;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static com.dat3m.dartagnan.expression.utils.ExpressionHelper.isAggregateLike;
 import static com.dat3m.dartagnan.program.event.EventFactory.*;
 import static com.dat3m.dartagnan.program.event.EventFactory.Llvm.newCompareExchange;
 import static com.google.common.base.Preconditions.checkState;
@@ -42,6 +43,7 @@ import static com.google.common.base.Verify.verify;
 public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
 
     private static final Logger logger = LogManager.getLogger(VisitorLlvm.class);
+    private static final String DEFAULT_ENTRY_FUNCTION = "main";
 
     // Global context
     private final Program program = new Program(new Memory(), Program.SourceLanguage.LLVM, null);
@@ -66,7 +68,6 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
     private String currentRegisterName;
     // Nonnull, if a type has been parsed.
     private Type parsedType;
-    private final String DEFAULT_ENTRY_FUNCTION = "main";
 
     public VisitorLlvm() {}
 
@@ -668,7 +669,7 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
     @Override
     public Expression visitExtractValueInst(ExtractValueInstContext ctx) {
         final Type type = parseType(ctx.typeValue().firstClassType());
-        check(type instanceof AggregateType, "Non-aggregate type in %s.", ctx);
+        check(isAggregateLike(type), "Non-aggregate type in %s.", ctx);
         final Expression aggregate = checkExpression(type, ctx.typeValue().value());
         final ImmutableList<Integer> indices =
                 ctx.IntLit().stream().map(n -> Integer.parseInt(n.getText())).collect(ImmutableList.toImmutableList());
@@ -679,7 +680,7 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
     public Expression visitInsertValueInst(InsertValueInstContext ctx) {
         final Type typeAgg = parseType(ctx.typeValue(0));
         final Type insertType = parseType(ctx.typeValue(1));
-        check(typeAgg instanceof AggregateType, "Non-aggregate type in %s.", ctx);
+        check(isAggregateLike(typeAgg), "Non-aggregate type in %s.", ctx);
         final Expression aggregate = checkExpression(typeAgg, ctx.typeValue(0));
         final Expression insertValue = checkExpression(insertType, ctx.typeValue(1));
         final ImmutableList<Integer> indices =
