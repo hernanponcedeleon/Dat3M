@@ -3,9 +3,6 @@
 #include <ck_stack.h>
 #include <assert.h>
 
-#ifndef NUM_PUSH_PER_THREAD
-#define NUM_PUSH_PER_THREAD 2
-#endif
 
 #ifndef NUM_PUSHERS
 #define NUM_PUSHERS 1
@@ -15,15 +12,12 @@
 #define NUM_POPPERS 2
 #endif
 
-#if NUM_POPPERS != NUM_PUSH_PER_THREAD
-#error "NUM_POPPERS must be equal to NUM_PUSH_PER_THREAD"
-#endif
 
 ck_stack_t stack = CK_STACK_INITIALIZER;
 
 void *pusher_fn(void *arg)
 {
-    for (int i = 0; i < NUM_PUSH_PER_THREAD; i++)
+    for (int i = 0; i < NUM_POPPERS; i++)
     {
         ck_stack_entry_t *entry = malloc(sizeof(ck_stack_entry_t));
         if (!entry)
