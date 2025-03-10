@@ -30,7 +30,7 @@ public class InlineUtils {
         if (returnType instanceof IntegerType || returnType instanceof BooleanType) {
             return 1;
         } else if (isReturnRegisterAggregate(returnRegister)) {
-            return ((AggregateType) returnType).getTypeOffsets().size();
+            return ((AggregateType) returnType).getFields().size();
         } else if (returnType instanceof VoidType) {
             return 0;
         } else {
@@ -69,7 +69,7 @@ public class InlineUtils {
         if (isPartOfReturnRegister(returnRegister, registerID)) {
             if (returnRegister.getType() instanceof AggregateType at) {
                 // get the type from the corresponding field
-                registerType = at.getFields().get(registerID);
+                registerType = at.getFields().get(registerID).type();
             } else {
                 // returnRegister is not an aggregate, we just get that type
                 registerType = returnRegister.getType();

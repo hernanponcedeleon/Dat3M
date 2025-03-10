@@ -12,9 +12,7 @@ import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.Type;
 import com.dat3m.dartagnan.expression.integers.IntCmpOp;
-import com.dat3m.dartagnan.expression.type.AggregateType;
 import com.dat3m.dartagnan.expression.type.IntegerType;
-import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.parsers.InlineRISCVBaseVisitor;
 import com.dat3m.dartagnan.parsers.InlineRISCVParser;
 import com.dat3m.dartagnan.parsers.program.utils.InlineUtils;
@@ -345,7 +343,7 @@ public class VisitorInlineRISCV extends InlineRISCVBaseVisitor<Object> {
                 if (i == 1) {
                     outputAssignments.add(EventFactory.newLocal(returnRegister, asmRegisters.get(0)));
                 } else {
-                    Type aggregateType = TypeFactory.getInstance().getAggregateType(((AggregateType) returnRegister.getType()).getFields());
+                    Type aggregateType = returnRegister.getType();
                     // %16 = call { ptr, i32, i64 } asm sideeffect "1:li $1, 1\0Alr.d $0, $2\0Abne $0, $4, 2f\0Asc.d $1, $3, $2\0Abnez $1, 1b\0A2:", "=&r,=&r,=r,r,r,2,~{memory}"(ptr %13, i64 %15, i64 %12) #7, !srcloc !18
                     // args are not passed in order, sorting solves it
                     // we can do it only once here where we create the output assignment
