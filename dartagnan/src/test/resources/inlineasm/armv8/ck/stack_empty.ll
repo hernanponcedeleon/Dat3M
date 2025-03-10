@@ -1,5 +1,5 @@
-; ModuleID = 'tests/stack_empty.c'
-source_filename = "tests/stack_empty.c"
+; ModuleID = 'benchmarks/ck/stack_empty.c'
+source_filename = "benchmarks/ck/stack_empty.c"
 target datalayout = "e-m:o-i64:64-i128:128-n32:64-S128-Fn32"
 target triple = "arm64-apple-macosx15.0.0"
 
@@ -309,7 +309,7 @@ define i32 @main() #0 {
   br i1 %69, label %70, label %72
 
 70:                                               ; preds = %63
-  call void @__assert_rtn(ptr noundef @__func__.main, ptr noundef @.str, i32 noundef 73, ptr noundef @.str.1) #7
+  call void @__assert_rtn(ptr noundef @__func__.main, ptr noundef @.str, i32 noundef 71, ptr noundef @.str.1) #7
   unreachable
 
 71:                                               ; No predecessors!
@@ -429,7 +429,7 @@ attributes #8 = { nounwind }
 !12 = distinct !{!12, !7}
 !13 = distinct !{!13, !7}
 !14 = distinct !{!14, !7}
-!15 = !{i64 2148649152}
-!16 = !{i64 2148670575, i64 2148670625, i64 2148670692, i64 2148670758, i64 2148670811, i64 2148670883, i64 2148670941}
-!17 = !{i64 2148646388}
-!18 = !{i64 2148646931}
+!15 = !{i64 2148649080}
+!16 = !{i64 2148670503, i64 2148670553, i64 2148670620, i64 2148670686, i64 2148670739, i64 2148670811, i64 2148670869}
+!17 = !{i64 2148646316}
+!18 = !{i64 2148646859}
