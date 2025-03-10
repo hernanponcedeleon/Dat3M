@@ -63,14 +63,14 @@ import static com.dat3m.dartagnan.wmm.RelationNameRepository.RF;
               (notice that for nested loops, a single event can be part of multiple iterations/loops).
             - All other events belong to prefix, in particular, all events outside of any loops.
         (2) Infix and suffix must be equivalent:
-            - Events in infix must have an equivalent event in suffix with same value/address
+            - Events in infix must have an equivalent event in suffix with same value/address.
               (TODO: Can maybe be restricted to equivalence on non-dead events)
             - rf/co-edges between infix events must have an equivalent edge in the suffix.
             - NOTE: In the special case where we have no infix but a suffix, the only requirement
               is that the local state at the beginning and the end of the suffix match.
               This is always true for side-effect-free loops, the only one's where we do not have an infix!
         (3) Suffix must be strongly(*) fair/consistent:
-            - Prefix stores must be co-before suffix stores
+            - Prefix stores must be co-before suffix stores.
             - Only suffix reads can read from suffix stores, prefix/infix reads can not.
             - Suffix reads can only read from prefix if there are no same-address stores in infix/suffix.
               In that case, it further has to read the co-maximal store.
@@ -83,7 +83,7 @@ import static com.dat3m.dartagnan.wmm.RelationNameRepository.RF;
 
     ASSUMPTIONS:
       - We assume the NonterminationDetection and DynamicSpinLoopDetection passes have marked
-        possible points of non-termination (otherwise the detection simply fails).
+        possible points of loop-non-termination. We only encode loop-non-termination for marked loops.
       - We assume co/fr-fairness only (fairness means prefix-finiteness in infinite executions).
       - We assume that if the suffix is consistent with the infix and co/fr-fair, then it must be "strongly"
         consistent. This may not be true and we could possibly report a termination violation that is not consistently
