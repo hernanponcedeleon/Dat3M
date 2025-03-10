@@ -15,7 +15,7 @@ public record TypeOffset(Type type, int offset) {
             return new TypeOffset(elType, types.getMemorySizeInBytes(elType) * index);
         }
         if (type instanceof AggregateType aggregateType) {
-            return aggregateType.getTypeOffsets().get(index);
+            return aggregateType.getFields().get(index);
         }
         String error = String.format("Cannot compute offset of index %d into type %s.", index, type);
         throw new UnsupportedOperationException(error);

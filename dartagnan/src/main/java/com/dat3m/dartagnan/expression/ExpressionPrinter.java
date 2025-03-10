@@ -2,6 +2,7 @@ package com.dat3m.dartagnan.expression;
 
 import com.dat3m.dartagnan.expression.aggregates.ConstructExpr;
 import com.dat3m.dartagnan.expression.aggregates.ExtractExpr;
+import com.dat3m.dartagnan.expression.aggregates.InsertExpr;
 import com.dat3m.dartagnan.expression.booleans.BoolBinaryOp;
 import com.dat3m.dartagnan.expression.booleans.BoolUnaryOp;
 import com.dat3m.dartagnan.expression.floats.FloatSizeCast;
@@ -14,6 +15,7 @@ import com.dat3m.dartagnan.expression.misc.GEPExpr;
 import com.dat3m.dartagnan.expression.misc.ITEExpr;
 import com.dat3m.dartagnan.program.Register;
 
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -88,7 +90,15 @@ public final class ExpressionPrinter implements ExpressionVisitor<String> {
 
     @Override
     public String visitExtractExpression(ExtractExpr extract) {
-        return visit(extract.getOperand()) + "[" + extract.getFieldIndex() + "]";
+        return visit(extract.getOperand()) + extract.getIndices().stream().map(Objects::toString).collect(Collectors.joining(",", "[", "]"));
+    }
+
+    @Override
+    public String visitInsertExpression(InsertExpr insert) {
+        return String.format("insert(%s%s, %s)",
+                visit(insert.getAggregate()),
+                insert.getIndices().stream().map(Objects::toString).collect(Collectors.joining(",", "[", "]")),
+                visit(insert.getInsertedValue()));
     }
 
     @Override

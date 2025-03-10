@@ -30,6 +30,7 @@ public class VisitorSpirvVulkanTest {
     private static final TypeFactory types = TypeFactory.getInstance();
     private static final ExpressionFactory expressions = ExpressionFactory.getInstance();
     private static final IntegerType archType = types.getArchType();
+    private static final FunctionType funcType = types.getFunctionType(types.getVoidType(), List.of());
 
     private final VisitorSpirvVulkan visitor = new VisitorSpirvVulkan();
 
@@ -205,7 +206,7 @@ public class VisitorSpirvVulkanTest {
 
     private void doTestSpirvXchg(Set<String> spvTags, Set<String> loadTags, Set<String> storeTags) {
         // given
-        Function function = new Function("mock", mock(FunctionType.class), List.of(), 0, null);
+        Function function = new Function("mock", funcType, List.of(), 0, null);
         Register register = function.newRegister(types.getBooleanType());
         Expression value = mock(Expression.class);
         MemoryObject address = mock(MemoryObject.class);
@@ -256,7 +257,7 @@ public class VisitorSpirvVulkanTest {
 
     private void doTestSpirvRmw(Set<String> spvTags, Set<String> loadTags, Set<String> storeTags) {
         // given
-        Function function = new Function("mock", mock(FunctionType.class), List.of(), 0, null);
+        Function function = new Function("mock", funcType, List.of(), 0, null);
         Register register = function.newRegister(archType);
         Expression value = expressions.makeValue(1, archType);
         MemoryObject address = mock(MemoryObject.class);
@@ -311,7 +312,7 @@ public class VisitorSpirvVulkanTest {
 
     private void doTestSpirvCmpXchg(String scope, Set<String> eqTags, Set<String> neqTags, Set<String> loadTags, Set<String> storeTags) {
         // given
-        Function function = new Function("mock", mock(FunctionType.class), List.of(), 0, null);
+        Function function = new Function("mock", funcType, List.of(), 0, null);
         Register register = function.newRegister(archType);
         Expression cmp = expressions.makeValue(0, archType);
         Expression value = expressions.makeValue(1, archType);
@@ -356,7 +357,7 @@ public class VisitorSpirvVulkanTest {
 
     private void doTestSpirvCmpXchgIllegal(Set<String> eqTags, Set<String> neqTags, String error) {
         // given
-        Function function = new Function("mock", mock(FunctionType.class), List.of(), 0, null);
+        Function function = new Function("mock", funcType, List.of(), 0, null);
         Register register = function.newRegister(archType);
         Expression cmp = expressions.makeValue(0, archType);
         Expression value = expressions.makeValue(1, archType);

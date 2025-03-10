@@ -10,12 +10,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.IntStream;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
 
-import com.dat3m.dartagnan.expression.Type;
-import com.dat3m.dartagnan.utils.Normalizer;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 
@@ -75,7 +70,7 @@ public final class TypeFactory {
         checkNotNull(returnType);
         checkNotNull(parameterTypes);
         checkArgument(parameterTypes.stream().noneMatch(t -> t == voidType), "Void parameters are not allowed");
-        return typeNormalizer.normalize(new FunctionType(returnType, parameterTypes.toArray(new Type[0]), isVarArg));
+        return typeNormalizer.normalize(new FunctionType(returnType, parameterTypes, isVarArg));
     }
 
     public AggregateType getAggregateType(List<Type> fields) {
@@ -152,8 +147,8 @@ public final class TypeFactory {
             return -1;
         }
         if (type instanceof AggregateType aType) {
-            List<TypeOffset> typeOffsets = aType.getTypeOffsets();
-            if (aType.getTypeOffsets().stream().anyMatch(o -> !hasKnownSize(o.type()))) {
+            List<TypeOffset> typeOffsets = aType.getFields();
+            if (aType.getFields().stream().anyMatch(o -> !hasKnownSize(o.type()))) {
                 return -1;
             }
             if (typeOffsets.isEmpty()) {
@@ -177,7 +172,7 @@ public final class TypeFactory {
             return getAlignment(arrayType.getElementType());
         }
         if (type instanceof AggregateType aType) {
-            return aType.getTypeOffsets().stream().map(o -> getAlignment(o.type())).max(Integer::compare).orElse(1);
+            return aType.getFields().stream().map(o -> getAlignment(o.type())).max(Integer::compare).orElse(1);
         }
         throw new UnsupportedOperationException("Cannot compute memory layout of type " + type);
     }
@@ -216,7 +211,7 @@ public final class TypeFactory {
                 }
             }
         } else if (type instanceof AggregateType aggregateType) {
-            for (TypeOffset typeOffset : aggregateType.getTypeOffsets()) {
+            for (TypeOffset typeOffset : aggregateType.getFields()) {
                 final Map<Integer, Type> innerDecomposition = decomposeIntoPrimitives(typeOffset.type());
                 if (innerDecomposition == null) {
                     return null;
@@ -241,7 +236,7 @@ public final class TypeFactory {
             return aType.hasKnownNumElements() && isStaticType(aType.getElementType());
         }
         if (type instanceof AggregateType aType) {
-            return aType.getTypeOffsets().stream().allMatch(o -> isStaticType(o.type()));
+            return aType.getFields().stream().allMatch(o -> isStaticType(o.type()));
         }
         throw new UnsupportedOperationException("Cannot compute if type '" + type + "' is static");
     }
@@ -251,13 +246,13 @@ public final class TypeFactory {
             return true;
         }
         if (staticType instanceof AggregateType aStaticType && runtimeType instanceof AggregateType aRuntimeType) {
-            int size = aStaticType.getTypeOffsets().size();
-            if (size != aRuntimeType.getTypeOffsets().size()) {
+            int size = aStaticType.getFields().size();
+            if (size != aRuntimeType.getFields().size()) {
                 return false;
             }
             for (int i = 0; i < size; i++) {
-                TypeOffset staticTypeOffset = aStaticType.getTypeOffsets().get(i);
-                TypeOffset runtimeTypeOffset = aRuntimeType.getTypeOffsets().get(i);
+                TypeOffset staticTypeOffset = aStaticType.getFields().get(i);
+                TypeOffset runtimeTypeOffset = aRuntimeType.getFields().get(i);
                 if (staticTypeOffset.offset() != runtimeTypeOffset.offset()
                         || !isStaticTypeOf(staticTypeOffset.type(), runtimeTypeOffset.type())) {
                     return false;
