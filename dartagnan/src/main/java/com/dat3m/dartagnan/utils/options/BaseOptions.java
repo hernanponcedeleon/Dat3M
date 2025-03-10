@@ -18,7 +18,7 @@ public abstract class BaseOptions {
 
     @Option(
             name = PROPERTY,
-            description = "A combination of properties to check for: program_spec, liveness, cat_spec (defaults to all).",
+            description = "A combination of properties to check for: program_spec, termination, cat_spec (defaults to all).",
             toUppercase = true)
     private EnumSet<Property> property = Property.getDefault();
 

@@ -31,7 +31,7 @@ public class LitmusPTXv7_5LivenessTest extends AbstractLitmusTest {
 
     @Override
     protected Provider<EnumSet<Property>> getPropertyProvider() {
-        return Provider.fromSupplier(() -> EnumSet.of(Property.LIVENESS));
+        return Provider.fromSupplier(() -> EnumSet.of(Property.TERMINATION));
     }
 
     @Override

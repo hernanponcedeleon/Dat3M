@@ -15,6 +15,7 @@ import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.Assert;
 import com.dat3m.dartagnan.program.event.core.CondJump;
+import com.dat3m.dartagnan.program.event.core.ControlBarrier;
 import com.dat3m.dartagnan.program.event.core.Load;
 import com.dat3m.dartagnan.program.processing.LoopUnrolling;
 import com.dat3m.dartagnan.utils.Result;
@@ -191,7 +192,7 @@ public class Dartagnan extends BaseOptions {
                     }
                     modelChecker = DataRaceSolver.run(ctx, prover, task);
                 } else {
-                    // Property is either PROGRAM_SPEC, LIVENESS, or CAT_SPEC
+                    // Property is either PROGRAM_SPEC, TERMINATION, or CAT_SPEC
                     modelChecker = switch (o.getMethod()) {
                         case EAGER -> AssumeSolver.run(ctx, prover, task);
                         case LAZY -> RefinementSolver.run(ctx, prover, task);
@@ -306,10 +307,16 @@ public class Dartagnan extends BaseOptions {
                     }
                     summary.append("=================================================\n");
                 }
-                if (props.contains(LIVENESS) && FALSE.equals(model.evaluate(LIVENESS.getSMTVariable(encCtx)))) {
-                    summary.append("============ Liveness violation found ============\n");
-                    for (CondJump e : p.getThreadEvents(CondJump.class)) {
-                        if (e.hasTag(Tag.SPINLOOP) && TRUE.equals(model.evaluate(encCtx.jumpTaken(e)))) {
+                if (props.contains(TERMINATION) && FALSE.equals(model.evaluate(TERMINATION.getSMTVariable(encCtx)))) {
+                    summary.append("============ Termination violation found ============\n");
+                    for (Event e : p.getThreadEvents()) {
+                        final boolean isStuckLoop = e instanceof CondJump jump
+                                && e.hasTag(Tag.NONTERMINATION) && !e.hasTag(Tag.BOUND)
+                                && TRUE.equals(model.evaluate(encCtx.jumpTaken(jump)));
+                        final boolean isStuckBarrier = e instanceof ControlBarrier barrier
+                                && TRUE.equals(model.evaluate(encCtx.blocked(barrier)));
+
+                        if (isStuckLoop || isStuckBarrier) {
                             final String callStack = makeContextString(
                                     synContext.getContextInfo(e).getContextOfType(CallContext.class), " -> ");
                             summary
