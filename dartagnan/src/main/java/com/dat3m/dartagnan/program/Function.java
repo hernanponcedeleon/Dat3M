@@ -13,6 +13,7 @@ import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.event.lang.llvm.LlvmCmpXchg;
 import com.dat3m.dartagnan.program.processing.Intrinsics;
 import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 
 import java.util.*;
@@ -64,8 +65,8 @@ public class Function implements LeafExpression {
     }
 
     @Override
-    public List<Expression> getOperands() {
-        return List.of();
+    public ImmutableList<Expression> getOperands() {
+        return ImmutableList.of();
     }
 
     @Override

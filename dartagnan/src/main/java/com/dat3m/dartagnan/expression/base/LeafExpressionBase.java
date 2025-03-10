@@ -4,8 +4,7 @@ import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.LeafExpression;
 import com.dat3m.dartagnan.expression.Type;
 import com.dat3m.dartagnan.program.event.common.NoInterface;
-
-import java.util.List;
+import com.google.common.collect.ImmutableList;
 
 @NoInterface
 public abstract class LeafExpressionBase<TType extends Type> extends ExpressionBase<TType> implements LeafExpression {
@@ -15,7 +14,7 @@ public abstract class LeafExpressionBase<TType extends Type> extends ExpressionB
     }
 
     @Override
-    public List<Expression> getOperands() { return List.of(); }
+    public ImmutableList<Expression> getOperands() { return ImmutableList.of(); }
 
     @Override
     public int hashCode() {

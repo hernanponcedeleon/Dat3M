@@ -5,7 +5,10 @@ import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.Type;
 import com.dat3m.dartagnan.expression.integers.IntLiteral;
-import com.dat3m.dartagnan.expression.type.*;
+import com.dat3m.dartagnan.expression.type.AggregateType;
+import com.dat3m.dartagnan.expression.type.ArrayType;
+import com.dat3m.dartagnan.expression.type.IntegerType;
+import com.dat3m.dartagnan.expression.type.TypeFactory;
 
 import java.util.List;
 
@@ -83,8 +86,8 @@ public class HelperTypes {
     private static Type getStructMemberType(String id, AggregateType type, List<Integer> indexes) {
         int index = indexes.get(0);
         if (index >= 0) {
-            if (index < type.getTypeOffsets().size()) {
-                return getMemberType(id, type.getTypeOffsets().get(index).type(), indexes.subList(1, indexes.size()));
+            if (index < type.getFields().size()) {
+                return getMemberType(id, type.getFields().get(index).type(), indexes.subList(1, indexes.size()));
             }
             throw new ParsingException(indexOutOfBoundsError(id));
         }
@@ -107,9 +110,9 @@ public class HelperTypes {
     private static int getStructMemberOffset(String id, int offset, AggregateType type, List<Integer> indexes) {
         int index = indexes.get(0);
         if (index >= 0) {
-            if (index < type.getTypeOffsets().size()) {
-                offset += type.getTypeOffsets().get(index).offset();
-                Type elType = type.getTypeOffsets().get(index).type();
+            if (index < type.getFields().size()) {
+                offset += type.getFields().get(index).offset();
+                Type elType = type.getFields().get(index).type();
                 return getMemberOffset(id, offset, elType, indexes.subList(1, indexes.size()));
             }
             throw new ParsingException(indexOutOfBoundsError(id));
@@ -131,9 +134,9 @@ public class HelperTypes {
         Expression indexExpr = indexes.get(0);
         if (indexExpr instanceof IntLiteral intLiteral) {
             int index = intLiteral.getValueAsInt();
-            if (index < type.getTypeOffsets().size()) {
-                Type subType = type.getTypeOffsets().get(index).type();
-                int offset = type.getTypeOffsets().get(index).offset();
+            if (index < type.getFields().size()) {
+                Type subType = type.getFields().get(index).type();
+                int offset = type.getFields().get(index).offset();
                 IntLiteral offsetExpr = expressions.makeValue(offset, archType);
                 Expression expression = expressions.makeBinary(base, ADD, offsetExpr);
                 return getMemberAddress(id, expression, subType, indexes.subList(1, indexes.size()));
