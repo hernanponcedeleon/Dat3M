@@ -161,7 +161,9 @@ public class VisitorInlineRISCV extends InlineRISCVBaseVisitor<Object> {
         Register register = (Register) ctx.register().accept(this);
         expectedType = register.getType();
         Expression value = (Expression) ctx.value().accept(this);
-        asmInstructions.add(EventFactory.newLoad(register, value));
+        // asmInstructions.add(EventFactory.newLoad(register, value));
+        // load immediate 1 is the same as a local assignment(?)
+        asmInstructions.add(EventFactory.newLocal(register, value));
         return null;
     }
 
