@@ -774,35 +774,39 @@ public class NativeRelationAnalysis implements RelationAnalysis {
         }
 
         @Override
-        // TODO: Alias analysis for alloc-free pointers
-        public MutableKnowledge visitAllocPtr(AllocPtr aref) {
+        public MutableKnowledge visitAllocPtr(AllocPtr allocPtr) {
             MutableEventGraph may = new MapEventGraph();
             MutableEventGraph must = new MapEventGraph();
-            for (Alloc e1 : program.getThreadEvents(Alloc.class)) {
-                if (e1.isHeapAllocation()) {
-                    for (Event e2 : program.getThreadEvents(MemFree.class)) {
+            List<Event> allocs = program.getThreadEventsWithAllTags(ALLOC);
+            List<MemFree> frees = program.getThreadEvents(MemFree.class);
+            List<? extends Event> allocAndFrees = Stream.concat(allocs.stream(), frees.stream()).toList();
+            for (Event e1 : allocAndFrees) {
+                for (MemFree e2 : frees) {
+                    if (alias.mayAlias(e1, e2)) {
                         may.add(e1, e2);
+                        if (alias.mustAlias(e1, e2)) {
+                            must.add(e1, e2);
+                        }
                     }
-                }
-            }
-            for (Event e1 : program.getThreadEvents(MemFree.class)) {
-                for (Event e2 : program.getThreadEvents(MemFree.class)) {
-                    may.add(e1, e2);
                 }
             }
             return new MutableKnowledge(may, must);
         }
 
         @Override
-        // TODO: Alias analysis for alloc and memory accesses
-        //  (note that we should consider the whole allocated region, not only the pointer)
-        public MutableKnowledge visitAllocMem(AllocMem aloc) {
+        public MutableKnowledge visitAllocMem(AllocMem allocMem) {
             MutableEventGraph may = new MapEventGraph();
             MutableEventGraph must = new MapEventGraph();
-            for (Alloc e1 : program.getThreadEvents(Alloc.class)) {
-                if (e1.isHeapAllocation()) {
-                    for (Event e2 : program.getThreadEvents(MemoryEvent.class)) {
+            List<MemoryCoreEvent> memEvents = program.getThreadEvents(MemoryCoreEvent.class);
+            List<Event> allocs = program.getThreadEventsWithAllTags(ALLOC);
+            for (Event e1 : allocs) {
+                for (MemoryCoreEvent e2 : memEvents) {
+                    if (e2 instanceof Init) { continue; }
+                    if (alias.mayObjectAlias(e1, e2)) {
                         may.add(e1, e2);
+                        if (alias.mustObjectAlias(e1, e2)) {
+                            must.add(e1, e2);
+                        }
                     }
                 }
             }

@@ -1,10 +1,11 @@
 package com.dat3m.dartagnan.program.analysis.alias;
 
+import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.RegWriter;
-import com.dat3m.dartagnan.program.event.core.MemoryCoreEvent;
+import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.wmm.utils.graph.mutable.MapEventGraph;
 import com.dat3m.dartagnan.wmm.utils.graph.mutable.MutableEventGraph;
 import org.sosy_lab.common.configuration.Configuration;
@@ -29,17 +30,22 @@ public class EqualityAliasAnalysis implements AliasAnalysis {
     }
 
     @Override
-    public boolean mustAlias(MemoryCoreEvent a, MemoryCoreEvent b) {
+    public boolean mayAlias(Event a, Event b) {
+        return true;
+    }
 
-        if (a.getFunction() != b.getFunction()
-                || !a.getAddress().equals(b.getAddress())) {
+    @Override
+    public boolean mustAlias(Event a, Event b) {
+        Expression addrA = getAddress(a);
+        Expression addrB = getAddress(b);
+        if (a.getFunction() != b.getFunction() || !addrA.equals(addrB)) {
             return false;
         } else if (a == b) {
             return true;
         }
         // Normalize direction
         if (a.getGlobalId() > b.getGlobalId()) {
-            MemoryCoreEvent temp = a;
+            Event temp = a;
             a = b;
             b = temp;
         }
@@ -53,7 +59,7 @@ public class EqualityAliasAnalysis implements AliasAnalysis {
         }
 
         // Establish that address expression evaluates to same value at both events.
-        Set<Register> addrRegs = a.getAddress().getRegs();
+        Set<Register> addrRegs = addrA.getRegs();
         Event e = a.getSuccessor();
         while (e != b) {
             if (e instanceof RegWriter rw && addrRegs.contains(rw.getResultRegister())) {
@@ -67,7 +73,24 @@ public class EqualityAliasAnalysis implements AliasAnalysis {
     }
 
     @Override
-    public boolean mayAlias(MemoryCoreEvent a, MemoryCoreEvent b) {
+    public boolean mayObjectAlias(Event a, Event b) {
         return true;
+    }
+
+    @Override
+    public boolean mustObjectAlias(Event a, Event b) {
+        return false;
+    }
+
+    private Expression getAddress(Event e) {
+        if (e instanceof MemoryCoreEvent me) {
+            return me.getAddress();
+        } else if (e instanceof MemFree f) {
+            return f.getAddress();
+        } else if (e instanceof Alloc a) {
+            return a.getAllocatedObject();
+        } else {
+            throw new UnsupportedOperationException("Event type has no address: " + e.getClass().getSimpleName());
+        }
     }
 }
