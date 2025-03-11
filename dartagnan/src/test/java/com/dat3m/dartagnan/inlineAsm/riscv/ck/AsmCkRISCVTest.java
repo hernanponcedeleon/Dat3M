@@ -17,7 +17,7 @@ import org.sosy_lab.java_smt.SolverContextFactory;
 import org.sosy_lab.java_smt.api.SolverContext;
 
 import com.dat3m.dartagnan.configuration.Arch;
-import static com.dat3m.dartagnan.configuration.Property.LIVENESS;
+import static com.dat3m.dartagnan.configuration.Property.TERMINATION;
 import static com.dat3m.dartagnan.configuration.Property.PROGRAM_SPEC;
 import com.dat3m.dartagnan.encoding.ProverWithTracker;
 import com.dat3m.dartagnan.parsers.cat.ParserCat;
@@ -83,6 +83,6 @@ public class AsmCkRISCVTest {
                 .withTarget(Arch.RISCV);
         Program program = new ProgramParser().parse(new File(programPath));
         Wmm mcm = new ParserCat().parse(new File(modelPath));
-        return builder.build(program, mcm, EnumSet.of(LIVENESS, PROGRAM_SPEC));
+        return builder.build(program, mcm, EnumSet.of(TERMINATION, PROGRAM_SPEC));
     }
 }
