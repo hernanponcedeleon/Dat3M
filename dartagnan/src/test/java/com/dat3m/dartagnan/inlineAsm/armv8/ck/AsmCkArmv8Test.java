@@ -56,7 +56,7 @@ public class AsmCkArmv8Test {
             {"mcslock", 2, Result.PASS},
             {"ticketlock", 1, Result.PASS},
             {"spsc_queue", 1, Result.PASS},
-            {"stack_empty", 2, Result.UNKNOWN},
+            {"stack_empty_assume", 2, Result.UNKNOWN},
         });
     }
 
