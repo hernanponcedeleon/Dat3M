@@ -1,14 +1,11 @@
 package com.dat3m.dartagnan.inlineAsm.armv8.ck;
 
-import com.dat3m.dartagnan.configuration.Arch;
-import com.dat3m.dartagnan.encoding.ProverWithTracker;
-import com.dat3m.dartagnan.parsers.cat.ParserCat;
-import com.dat3m.dartagnan.parsers.program.ProgramParser;
-import com.dat3m.dartagnan.program.Program;
-import com.dat3m.dartagnan.utils.Result;
-import com.dat3m.dartagnan.verification.VerificationTask;
-import com.dat3m.dartagnan.verification.solving.AssumeSolver;
-import com.dat3m.dartagnan.wmm.Wmm;
+import java.io.File;
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.EnumSet;
+
+import static org.junit.Assert.assertEquals;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -19,16 +16,19 @@ import org.sosy_lab.common.log.BasicLogManager;
 import org.sosy_lab.java_smt.SolverContextFactory;
 import org.sosy_lab.java_smt.api.SolverContext;
 
-import java.io.File;
-import java.io.IOException;
-import java.util.Arrays;
-import java.util.EnumSet;
-
+import com.dat3m.dartagnan.configuration.Arch;
 import static com.dat3m.dartagnan.configuration.Property.PROGRAM_SPEC;
 import static com.dat3m.dartagnan.configuration.Property.TERMINATION;
+import com.dat3m.dartagnan.encoding.ProverWithTracker;
+import com.dat3m.dartagnan.parsers.cat.ParserCat;
+import com.dat3m.dartagnan.parsers.program.ProgramParser;
+import com.dat3m.dartagnan.program.Program;
 import static com.dat3m.dartagnan.utils.ResourceHelper.getRootPath;
 import static com.dat3m.dartagnan.utils.ResourceHelper.getTestResourcePath;
-import static org.junit.Assert.assertEquals;
+import com.dat3m.dartagnan.utils.Result;
+import com.dat3m.dartagnan.verification.VerificationTask;
+import com.dat3m.dartagnan.verification.solving.AssumeSolver;
+import com.dat3m.dartagnan.wmm.Wmm;
 
 @RunWith(Parameterized.class)
 public class AsmCkArmv8Test {
@@ -56,7 +56,7 @@ public class AsmCkArmv8Test {
             {"mcslock", 2, Result.PASS},
             {"ticketlock", 1, Result.PASS},
             {"spsc_queue", 1, Result.PASS},
-            {"stack_empty_assume", 2, Result.UNKNOWN},
+            {"stack_empty", 2, Result.UNKNOWN},
         });
     }
 
