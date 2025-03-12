@@ -6,6 +6,7 @@ import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.analysis.LoopAnalysis;
 import com.dat3m.dartagnan.program.event.Event;
+import com.dat3m.dartagnan.program.event.RegWriter;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.event.core.special.StateSnapshot;
@@ -362,7 +363,7 @@ public class NonTerminationEncoder {
         }
 
         BooleanFormula equality = bmgr.equivalence(context.execution(x), context.execution(y));
-        if (x instanceof Local e && y instanceof Local f) {
+        if (x instanceof RegWriter e && y instanceof RegWriter f) {
             // TODO: This should be covered by StateSnapshot, i.e., we do not need to consider dead variables.
             equality = bmgr.and(
                     equality,
@@ -384,11 +385,10 @@ public class NonTerminationEncoder {
             }
         }
         if (x instanceof MemoryCoreEvent e && y instanceof MemoryCoreEvent f) {
-            equality = bmgr.and(
-                    equality,
-                    context.equal(context.value(e), context.value(f)),
-                    context.equal(context.address(e), context.address(f))
-            );
+            equality = bmgr.and(equality, context.equal(context.address(e), context.address(f)));
+            if (x instanceof Store || x instanceof Load) {
+                equality = bmgr.and(equality, context.equal(context.value(e), context.value(f)));
+            }
 
         }
 
@@ -580,7 +580,6 @@ public class NonTerminationEncoder {
             return bmgr.makeTrue();
         }
 
-
         final List<BooleanFormula> totalEnc = new ArrayList<>();
         for (NonterminationCase c : loop.nontermCases) {
             if (c.isSideEffectFree()) {
@@ -608,7 +607,7 @@ public class NonTerminationEncoder {
                     } else {
                         // This infix iteration must match with corresponding suffix
                         final Iteration suffixIter = iterations.get(matchingSuffixIterIndex);
-                        enc.add(bmgr.equivalence(isInInfix(infixIter), areInfixSuffixMatchingVar(infixIter, suffixIter)));
+                        enc.add(bmgr.equivalence(isInInfix(infixIter), areInfixSuffixMatching(infixIter, suffixIter)));
                     }
 
                 }
