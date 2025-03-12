@@ -39,7 +39,7 @@ public class AsmCkArmv8Test {
     private final Result expected;
 
     public AsmCkArmv8Test (String file, int bound, Result expected) {
-        this.programPath = getTestResourcePath("inlineasm/armv8/ck/" + file + ".ll");
+        this.programPath = getTestResourcePath("asm/armv8/ck/" + file + ".ll");
         this.bound = bound;
         this.expected = expected;
     }

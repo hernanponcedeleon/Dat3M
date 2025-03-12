@@ -40,7 +40,7 @@ public class AsmLibvsyncArmv7Test {
     private final Result expected;
 
     public AsmLibvsyncArmv7Test(String file, int bound, Result expected) {
-        this.programPath = getTestResourcePath("inlineasm/armv7/libvsync/" + file + ".ll");
+        this.programPath = getTestResourcePath("asm/armv7/libvsync/" + file + ".ll");
         this.bound = bound;
         this.expected = expected;
     }
