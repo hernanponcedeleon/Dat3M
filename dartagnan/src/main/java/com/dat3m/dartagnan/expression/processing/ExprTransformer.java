@@ -97,7 +97,8 @@ public abstract class ExprTransformer implements ExpressionVisitor<Expression> {
 
     @Override
     public Expression visitInsertExpression(InsertExpr insert) {
-        return expressions.makeInsert(insert.getAggregate(), insert.getInsertedValue(), insert.getIndices());
+        return expressions.makeInsert(insert.getAggregate().accept(this),
+                insert.getInsertedValue().accept(this), insert.getIndices());
     }
 
     @Override
