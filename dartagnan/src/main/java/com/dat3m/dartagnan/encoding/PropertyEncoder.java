@@ -36,6 +36,7 @@ import static com.dat3m.dartagnan.configuration.Property.*;
 import static com.dat3m.dartagnan.program.Program.SourceLanguage.LLVM;
 import static com.dat3m.dartagnan.program.Program.SpecificationType.ASSERT;
 import static com.dat3m.dartagnan.wmm.RelationNameRepository.CO;
+import static com.dat3m.dartagnan.encoding.EncodingContext.ConversionMode.LEFT_TO_RIGHT;
 
 public class PropertyEncoder implements Encoder {
 
@@ -210,7 +211,7 @@ public class PropertyEncoder implements Encoder {
                     BooleanFormula sameAddress = context.sameAddress(init, w1);
                     int size = types.getMemorySizeInBits(init.getValue().getType());
                     Formula v2 = context.lastValue(init.getBase(), init.getOffset(), size);
-                    BooleanFormula sameValue = context.equal(context.value(w1), v2);
+                    BooleanFormula sameValue = context.equal(context.value(w1), v2, LEFT_TO_RIGHT);
                     enc.add(bmgr.implication(bmgr.and(lastCoExpr, sameAddress), sameValue));
                 }
             }
