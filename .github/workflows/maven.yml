@@ -20,7 +20,7 @@ on:
 jobs:
 
   Ck-armv7-tests:
-    name: Ck armv7 tests
+    name: Concurrency Kit armv7 tests
     runs-on: ubuntu-latest
     if: ${{ github.event_name != 'schedule' }}
     steps:
@@ -40,11 +40,11 @@ jobs:
       - name: Set DAT3M_OUTPUT
         run: echo "DAT3M_OUTPUT=$(echo $DAT3M_HOME)/output" >> $GITHUB_ENV
 
-      - name: Ck armv7 tests
-        run: mvn test -Dtest="com/dat3m/dartagnan/inlineAsm/armv7/ck" -f dartagnan/pom.xml
+      - name: Concurrency Kit armv7 tests
+        run: mvn test -Dtest="com/dat3m/dartagnan/asm/armv7/ck/*" -f dartagnan/pom.xml
 
   Ck-armv8-tests:
-    name: Ck armv8 tests
+    name: Concurrency Kit armv8 tests
     runs-on: ubuntu-latest
     if: ${{ github.event_name != 'schedule' }}
     steps:
@@ -64,8 +64,8 @@ jobs:
       - name: Set DAT3M_OUTPUT
         run: echo "DAT3M_OUTPUT=$(echo $DAT3M_HOME)/output" >> $GITHUB_ENV
 
-      - name: Ck armv8 tests
-        run: mvn test -Dtest="com/dat3m/dartagnan/inlineAsm/armv8/ck" -f dartagnan/pom.xml
+      - name: Concurrency Kit armv8 tests
+        run: mvn test -Dtest="com/dat3m/dartagnan/asm/armv8/ck/*" -f dartagnan/pom.xml
   
   Libvsync-armv7-tests:
     name: Libvsync armv7 tests
@@ -89,7 +89,7 @@ jobs:
         run: echo "DAT3M_OUTPUT=$(echo $DAT3M_HOME)/output" >> $GITHUB_ENV
 
       - name: Libvsync armv7 tests
-        run: mvn test -Dtest="com/dat3m/dartagnan/inlineAsm/armv7/libvsync" -f dartagnan/pom.xml
+        run: mvn test -Dtest="com/dat3m/dartagnan/asm/armv7/libvsync/*" -f dartagnan/pom.xml
   
   Libvsync-armv8-tests:
     name: Libvsync armv8 tests
@@ -113,7 +113,7 @@ jobs:
         run: echo "DAT3M_OUTPUT=$(echo $DAT3M_HOME)/output" >> $GITHUB_ENV
 
       - name: Libvsync armv8 tests
-        run: mvn test -Dtest="com/dat3m/dartagnan/inlineAsm/armv8/libvsync" -f dartagnan/pom.xml
+        run: mvn test -Dtest="com/dat3m/dartagnan/asm/armv8/libvsync/*" -f dartagnan/pom.xml
 
 
   litmus-tests:

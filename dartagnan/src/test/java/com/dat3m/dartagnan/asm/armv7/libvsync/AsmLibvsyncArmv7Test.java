@@ -1,4 +1,4 @@
-package com.dat3m.dartagnan.inlineAsm.armv8.ck;
+package com.dat3m.dartagnan.asm.armv7.libvsync;
 
 import java.io.File;
 import java.io.IOException;
@@ -26,20 +26,21 @@ import com.dat3m.dartagnan.program.Program;
 import static com.dat3m.dartagnan.utils.ResourceHelper.getRootPath;
 import static com.dat3m.dartagnan.utils.ResourceHelper.getTestResourcePath;
 import com.dat3m.dartagnan.utils.Result;
+import static com.dat3m.dartagnan.utils.Result.PASS;
 import com.dat3m.dartagnan.verification.VerificationTask;
-import com.dat3m.dartagnan.verification.solving.AssumeSolver;
+import com.dat3m.dartagnan.verification.solving.RefinementSolver;
 import com.dat3m.dartagnan.wmm.Wmm;
 
 @RunWith(Parameterized.class)
-public class AsmCkArmv8Test {
+public class AsmLibvsyncArmv7Test {
 
-    private final String modelPath = getRootPath("cat/aarch64.cat");
+    private final String modelPath = getRootPath("cat/arm.cat");
     private final String programPath;
     private final int bound;
     private final Result expected;
 
-    public AsmCkArmv8Test (String file, int bound, Result expected) {
-        this.programPath = getTestResourcePath("inlineasm/armv8/ck/" + file + ".ll");
+    public AsmLibvsyncArmv7Test(String file, int bound, Result expected) {
+        this.programPath = getTestResourcePath("inlineasm/armv7/libvsync/" + file + ".ll");
         this.bound = bound;
         this.expected = expected;
     }
@@ -47,27 +48,39 @@ public class AsmCkArmv8Test {
     @Parameterized.Parameters(name = "{index}: {0}, {1}, {2}")
     public static Iterable<Object[]> data() throws IOException {
         return Arrays.asList(new Object[][]{
-            {"anderson", 3, Result.PASS},
-            {"caslock", 3, Result.PASS},
-            {"clhlock", 1, Result.PASS},
-            {"declock", 3, Result.PASS},
-            {"ebr", 5, Result.PASS},
-            {"faslock", 3, Result.PASS},
-            {"mcslock", 2, Result.PASS},
-            {"ticketlock", 1, Result.PASS},
-            {"spsc_queue", 1, Result.PASS},
-            {"stack_empty", 2, Result.UNKNOWN},
+            //bounded_queue
+            {"bounded_spsc", 1, PASS},
+            {"bounded_mpmc_check_full", 3, PASS},
+            {"bounded_mpmc_check_empty", 4, PASS},
+
+            //spinlocks
+            // {"caslock", 4, PASS}, // passes Refinement but takes ~10 minutes 
+            {"clhlock", 3, PASS},
+            // {"cnalock", 5, PASS}, // takes 35 minutes
+            {"hemlock", 3, PASS},
+            {"mcslock", 3, PASS},
+            {"rec_mcslock", 3, PASS},
+            // {"rec_seqlock", 3, PASS}, // 25 min to pass
+            {"rec_spinlock", 3, PASS},
+            {"rwlock", 3, PASS},
+            {"semaphore", 3, PASS},
+            {"seqcount", 1, PASS},
+            {"seqlock", 3, PASS},
+            {"ttaslock", 3, PASS},
+            {"twalock", 2, PASS},
+
+            //threads 
+            {"mutex_musl", 3, PASS},
+            {"mutex_slim", 2, PASS},
+            {"mutex_waiters", 2, PASS},
+            {"once", 2, PASS}
         });
     }
 
     @Test
     public void testAllSolvers() throws Exception {
-        // TODO : RefinementSolver takes too long to run, we have to investigate this
-        // try (SolverContext ctx = mkCtx(); ProverWithTracker prover = mkProver(ctx)) {
-        //     assertEquals(expected, RefinementSolver.run(ctx, prover, mkTask()).getResult());
-        // }
         try (SolverContext ctx = mkCtx(); ProverWithTracker prover = mkProver(ctx)) {
-            assertEquals(expected, AssumeSolver.run(ctx, prover, mkTask()).getResult());
+            assertEquals(expected, RefinementSolver.run(ctx, prover, mkTask()).getResult());
         }
     }
 
@@ -88,7 +101,7 @@ public class AsmCkArmv8Test {
         VerificationTask.VerificationTaskBuilder builder = VerificationTask.builder()
                 .withConfig(Configuration.builder().build())
                 .withBound(bound)
-                .withTarget(Arch.ARM8);
+                .withTarget(Arch.ARM7);
         Program program = new ProgramParser().parse(new File(programPath));
         Wmm mcm = new ParserCat().parse(new File(modelPath));
         return builder.build(program, mcm, EnumSet.of(TERMINATION, PROGRAM_SPEC));

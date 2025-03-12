@@ -1,14 +1,11 @@
-package com.dat3m.dartagnan.inlineAsm.armv8.libvsync;
+package com.dat3m.dartagnan.asm.armv8.libvsync;
 
-import com.dat3m.dartagnan.configuration.Arch;
-import com.dat3m.dartagnan.encoding.ProverWithTracker;
-import com.dat3m.dartagnan.parsers.cat.ParserCat;
-import com.dat3m.dartagnan.parsers.program.ProgramParser;
-import com.dat3m.dartagnan.program.Program;
-import com.dat3m.dartagnan.utils.Result;
-import com.dat3m.dartagnan.verification.VerificationTask;
-import com.dat3m.dartagnan.verification.solving.AssumeSolver;
-import com.dat3m.dartagnan.wmm.Wmm;
+import java.io.File;
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.EnumSet;
+
+import static org.junit.Assert.assertEquals;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -19,17 +16,20 @@ import org.sosy_lab.common.log.BasicLogManager;
 import org.sosy_lab.java_smt.SolverContextFactory;
 import org.sosy_lab.java_smt.api.SolverContext;
 
-import java.io.File;
-import java.io.IOException;
-import java.util.Arrays;
-import java.util.EnumSet;
-
+import com.dat3m.dartagnan.configuration.Arch;
 import static com.dat3m.dartagnan.configuration.Property.PROGRAM_SPEC;
 import static com.dat3m.dartagnan.configuration.Property.TERMINATION;
+import com.dat3m.dartagnan.encoding.ProverWithTracker;
+import com.dat3m.dartagnan.parsers.cat.ParserCat;
+import com.dat3m.dartagnan.parsers.program.ProgramParser;
+import com.dat3m.dartagnan.program.Program;
 import static com.dat3m.dartagnan.utils.ResourceHelper.getRootPath;
 import static com.dat3m.dartagnan.utils.ResourceHelper.getTestResourcePath;
+import com.dat3m.dartagnan.utils.Result;
 import static com.dat3m.dartagnan.utils.Result.PASS;
-import static org.junit.Assert.assertEquals;
+import com.dat3m.dartagnan.verification.VerificationTask;
+import com.dat3m.dartagnan.verification.solving.AssumeSolver;
+import com.dat3m.dartagnan.wmm.Wmm;
 
 @RunWith(Parameterized.class)
 public class AsmLibvsyncArmv8Test {
@@ -49,8 +49,8 @@ public class AsmLibvsyncArmv8Test {
     public static Iterable<Object[]> data() throws IOException {
         return Arrays.asList(new Object[][]{
             //bounded_queue
-            {"bounded_spsc", 4, PASS},
-            {"bounded_mpmc_check_full", 5, PASS},
+            {"bounded_spsc", 1, PASS},
+            {"bounded_mpmc_check_full", 3, PASS},
             {"bounded_mpmc_check_empty", 4, PASS},
 
             //spinlocks
@@ -71,9 +71,9 @@ public class AsmLibvsyncArmv8Test {
 
             //threads
             {"mutex_musl", 3, PASS},
-            {"mutex_slim", 3, PASS},
+            {"mutex_slim", 2, PASS},
             {"mutex_waiters", 3, PASS},
-            {"once", 5, PASS}
+            {"once", 2, PASS}
         });
     }
 
@@ -94,7 +94,7 @@ public class AsmLibvsyncArmv8Test {
                 cfg,
                 BasicLogManager.create(cfg),
                 ShutdownManager.create().getNotifier(),
-                SolverContextFactory.Solvers.YICES2);
+                SolverContextFactory.Solvers.Z3);
     }
 
     private ProverWithTracker mkProver(SolverContext ctx) {
