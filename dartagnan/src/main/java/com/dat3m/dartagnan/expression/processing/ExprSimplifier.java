@@ -250,7 +250,7 @@ public class ExprSimplifier extends ExprTransformer {
                 default -> false;
             };
             final boolean isOneNeutral = lit.isOne() && switch (op) {
-                case MUL, DIV, UDIV -> true;
+                //case MUL, DIV, UDIV -> true;
                 default -> false;
             };
             if (isZeroNeutral || isOneNeutral) {

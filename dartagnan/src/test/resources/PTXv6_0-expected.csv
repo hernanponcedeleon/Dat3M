@@ -124,3 +124,5 @@ litmus/PTX/Manual/counter-atomic-store-rmw.litmus,1
 litmus/PTX/Manual/counter-plain-store-rmw.litmus,1
 litmus/PTX/Manual/counter-plain-store-atomic-load.litmus,1
 litmus/PTX/Manual/counter-plain-store-plain-load.litmus,1
+litmus/PTX/Manual/fencefence3.litmus,0
+litmus/PTX/Manual/fencefence4.litmus,1

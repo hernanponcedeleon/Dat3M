@@ -37,6 +37,7 @@ public class VisitorOpsComposite extends SpirvBaseVisitor<Void> {
             builder.addExpression(id, element);
             return null;
         }
+        // TODO: Is it really needed?
         if (type instanceof ScopedPointerType scopedPointerType) {
             Type pointedType = scopedPointerType.getPointedType();
             if (pointedType == element.getType() || TypeFactory.isStaticTypeOf(element.getType(), pointedType)) {

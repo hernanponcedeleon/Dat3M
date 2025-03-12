@@ -1,0 +1,23 @@
+C example1
+
+{ [x] = 0; [y] = 0; [z] = 0;}
+
+P0 (int* x, atomic_int* y) {
+  *x = 1;
+  atomic_thread_fence(memory_order_release);
+  atomic_store_explicit(y, 1, memory_order_relaxed);
+}
+
+P1 (atomic_int* y, atomic_int* z) {
+  int r0 = atomic_load_explicit(y, memory_order_relaxed);
+  atomic_thread_fence(memory_order_acq_rel);
+  atomic_store_explicit(z, 1, memory_order_relaxed);
+}
+
+P2 (atomic_int* z, int* x) {
+  int r1 = atomic_load_explicit(z, memory_order_relaxed);
+  atomic_thread_fence(memory_order_acquire);
+  int r2 = *x;
+}
+
+exists (1:r0 = 1 /\ 2:r1 = 1 /\ 2:r2 = 0)

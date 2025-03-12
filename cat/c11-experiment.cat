@@ -1,0 +1,32 @@
+C "C++11"
+
+// dynamic_tag relates events to itself that access an address whose init event is marked X
+let dynamic_tag(X) = [range([IW & X]; loc)]
+
+let asw = IW * (M \ IW)
+let sb = po
+let mo = dynamic_tag(~NAL); co; dynamic_tag(~NAL)
+
+let Acq = ACQ | ACQ_REL
+let Rel = REL | ACQ_REL
+
+let fsb = [F] ; sb
+let sbf = sb ; [F]
+
+let rs_prime = int | (_ * (R & W))
+let rs = mo & rs_prime \ ((mo \ rs_prime) ; mo)
+let swra = ext & ([Rel] ; fsb? ; [A & W] ; rs? ; rf ; [R & A] ; sbf? ; [Acq])
+
+let sw = asw | swra
+let ithbr = sw | (sw ; sb)
+let ithb = (ithbr | (sb ; ithbr))+
+let hb = sb | ithb
+
+(* coherent_memory_use *)
+let hbl = hb & loc
+
+(* visible_side_effect_set *)
+let vis = ([W] ; hbl ; [R]) & ~(hbl; [W]; hbl)
+
+(* consistent_non_atomic_rf  *)
+empty ((rf ; [R \ A]) \ vis) as NaRf

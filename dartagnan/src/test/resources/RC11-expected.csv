@@ -134,3 +134,9 @@ litmus/C11/manual/imm-R2-alt.litmus,1
 litmus/C11/manual/mp_relaxed.litmus,1
 litmus/C11/manual/IRIW-sc-sc-acq-sc-acq-sc.litmus,1
 litmus/C11/manual/imm-E3.7.litmus,0
+litmus/C11/manual/fencefence3.litmus,0
+litmus/C11/manual/fencefence4.litmus,1
+litmus/C11/manual/fencefence5.litmus,0
+litmus/C11/manual/fencefence6.litmus,0
+litmus/C11/manual/fencefence7.litmus,1
+litmus/C11/manual/fencefence8.litmus,1

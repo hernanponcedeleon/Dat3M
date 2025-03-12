@@ -1,0 +1,18 @@
+RC11
+
+(*
+ * Repaired C11 codel, following
+ * "Repairing Sequential Consistency in C/C++11" in PLDI 2017  , by
+ * Ori Lahav, Viktor Vafeiadis, Jeehoon Kang, Chung-Kil Hur, and Derek Dreyer
+ * Cat coding by Sicon Colin.
+ *)
+
+(* Define co (and fr) *)
+include "cos.cat"
+
+let eco = (rf | co | fr)+
+let rs = [W]; (po & loc)?; [W & (RLX | REL)]
+let sw = [(REL | ACQ_REL)]; ([F]; po)?; rs; rf; [R & (RLX | ACQ)]; (po; [F])?; [(ACQ | ACQ_REL)]
+let hb = (po | sw)+
+
+irreflexive hb; eco? as coherence1

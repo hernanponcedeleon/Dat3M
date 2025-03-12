@@ -108,3 +108,9 @@ litmus/VULKAN/BarrierQuorum/test3-pass.litmus,0
 litmus/VULKAN/BarrierQuorum/test3-fail.litmus,0
 litmus/VULKAN/BarrierQuorum/test4-pass.litmus,0
 litmus/VULKAN/BarrierQuorum/test4-fail.litmus,0
+litmus/VULKAN/Data-Race/fencefence3-filter.litmus,1
+litmus/VULKAN/Data-Race/fencefence4-filter.litmus,0
+litmus/VULKAN/Data-Race/fencefence5-filter.litmus,1
+litmus/VULKAN/Data-Race/fencefence6-filter.litmus,1
+litmus/VULKAN/Data-Race/fencefence7-filter.litmus,0
+litmus/VULKAN/Data-Race/fencefence8-filter.litmus,0
