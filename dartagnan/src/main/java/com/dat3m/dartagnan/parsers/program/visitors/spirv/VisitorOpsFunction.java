@@ -28,6 +28,7 @@ import static com.dat3m.dartagnan.program.event.EventFactory.newVoidFunctionCall
 public class VisitorOpsFunction extends SpirvBaseVisitor<Void> {
 
     private static final TypeFactory types = TypeFactory.getInstance();
+    private static final ExpressionFactory expressions = ExpressionFactory.getInstance();
     private static final int DEFAULT_SIZE = 10;
     private final Map<String, Function> forwardFunctions = new HashMap<>();
     private final Map<String, Set<FunctionCall>> forwardCalls = new HashMap<>();
@@ -112,8 +113,8 @@ public class VisitorOpsFunction extends SpirvBaseVisitor<Void> {
     private void createParameterVariable(String id, Type type) {
         if (type instanceof ScopedPointerType pType) {
             Expression externalValue = createExternalVariable(id, pType);
-            ScopedPointerVariable aggregatePointer = builder.allocateScopedPointerVariable(
-                    HelperInputs.castPointerId(id), externalValue, pType.getScopeId(), externalValue.getType());
+            ScopedPointerVariable aggregatePointer = builder.allocateScopedPointerVariable(HelperInputs.castPointerId(id),
+                    externalValue, expressions.getDefaultAlignment(), pType.getScopeId(), externalValue.getType());
             Expression zero = ExpressionFactory.getInstance().makeZero(TypeFactory.getInstance().getArchType());
             int depth = getFirstElementDepth(id, pType.getPointedType());
             List<Expression> indexes = Collections.nCopies(depth, zero);

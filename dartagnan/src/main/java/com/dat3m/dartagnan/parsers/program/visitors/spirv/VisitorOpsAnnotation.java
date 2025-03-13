@@ -3,9 +3,9 @@ package com.dat3m.dartagnan.parsers.program.visitors.spirv;
 import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.parsers.SpirvBaseVisitor;
 import com.dat3m.dartagnan.parsers.SpirvParser;
+import com.dat3m.dartagnan.parsers.program.visitors.spirv.builders.ProgramBuilder;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.decorations.Decoration;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.decorations.DecorationType;
-import com.dat3m.dartagnan.parsers.program.visitors.spirv.builders.ProgramBuilder;
 
 import java.util.Set;
 
@@ -15,10 +15,12 @@ public class VisitorOpsAnnotation extends SpirvBaseVisitor<Void> {
 
     private final Decoration builtIn;
     private final Decoration offset;
+    private final Decoration alignment;
 
     public VisitorOpsAnnotation(ProgramBuilder builder) {
         this.builtIn = builder.getDecorationsBuilder().getDecoration(BUILT_IN);
         this.offset = builder.getDecorationsBuilder().getDecoration(OFFSET);
+        this.alignment = builder.getDecorationsBuilder().getDecoration(ALIGNMENT);
     }
 
     @Override
@@ -30,11 +32,15 @@ public class VisitorOpsAnnotation extends SpirvBaseVisitor<Void> {
                 String value = ctx.decoration().builtIn().getText();
                 builtIn.addDecoration(id, value);
             }
+            case ALIGNMENT -> {
+                String value = ctx.decoration().alignmentLiteralInteger().getText();
+                alignment.addDecoration(id, value);
+            }
             case BINDING, SPEC_ID -> {
                 // Skip, defines the order of pointers passed by the host
             }
-            case ARRAY_STRIDE, BLOCK, BUFFER_BLOCK, COHERENT, DESCRIPTOR_SET, NO_CONTRACTION, NO_PERSPECTIVE, NON_WRITABLE,
-                 ALIGNMENT, CONSTANT, FUNC_PARAM_ATTR, LINKAGE_ATTRIBUTES -> {
+            case ARRAY_STRIDE, BLOCK, BUFFER_BLOCK, COHERENT, DESCRIPTOR_SET, NO_CONTRACTION, NO_PERSPECTIVE,
+                 NON_WRITABLE, CONSTANT, FUNC_PARAM_ATTR, LINKAGE_ATTRIBUTES -> {
                 // TODO: Implementation
             }
             default -> throw new ParsingException("Unsupported decoration '%s'", type);
