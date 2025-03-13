@@ -32,6 +32,10 @@ public final class ExpressionPrinter implements ExpressionVisitor<String> {
 
     private static final Set<ExpressionKind> SIMPLE_UNARY_OPERATIONS = Set.of(BoolUnaryOp.NOT, IntUnaryOp.MINUS);
 
+    private static final Set<ExpressionKind> AGGREGATE_OPERATIONS = Set.of(
+            ExpressionKind.Other.INSERT, ExpressionKind.Other.EXTRACT, ExpressionKind.Other.CONSTRUCT
+    );
+
     // If not printing in program / global scope, then printing in function / local scope.
     public ExpressionPrinter(boolean globalScope) {
         this.printRegistersWithFunctionId = globalScope;
@@ -44,6 +48,7 @@ public final class ExpressionPrinter implements ExpressionVisitor<String> {
         final boolean noParentheses = parentKind == null || // Omit at top level.
                 SIMPLE_UNARY_OPERATIONS.contains(kind) || // Omit at e.g. negations.
                 ASSOCIATIVE_OPERATIONS.contains(kind) && parentKind == kind || // Omit at e.g. A+B+C.
+                AGGREGATE_OPERATIONS.contains(kind) ||  // Aggregates have their own parenthesis/brackets
                 expr.getOperands().isEmpty(); // Omit at registers, non-det values and literals.
         kind = parentKind;
         return noParentheses ? inner : "(" + inner + ")";
@@ -90,14 +95,14 @@ public final class ExpressionPrinter implements ExpressionVisitor<String> {
 
     @Override
     public String visitExtractExpression(ExtractExpr extract) {
-        return visit(extract.getOperand()) + extract.getIndices().stream().map(Objects::toString).collect(Collectors.joining(",", "[", "]"));
+        return visit(extract.getOperand()) + extract.getIndices().stream().map(Objects::toString).collect(Collectors.joining(".", "[", "]"));
     }
 
     @Override
     public String visitInsertExpression(InsertExpr insert) {
-        return String.format("insert(%s%s, %s)",
+        return String.format("%s[%s <- %s]",
                 visit(insert.getAggregate()),
-                insert.getIndices().stream().map(Objects::toString).collect(Collectors.joining(",", "[", "]")),
+                insert.getIndices().stream().map(Objects::toString).collect(Collectors.joining(".")),
                 visit(insert.getInsertedValue()));
     }
 
