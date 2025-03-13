@@ -3,6 +3,20 @@ lexer grammar InlinePPCLexer;
 import BaseLexer;
 
 // instructions are empty as we don't have inline PPC assembly atm
+Load                        : 'lwz' | 'ld';
+LoadReserve                 : 'lwarx' | 'ldarx';
+Compare                     : 'cmpw' | 'cmpd';
+BranchNotEqual              : 'bne-';
+Store                       : 'stw' | 'std';
+StoreConditional            : 'stwcx.' | 'stdcx.';
+Or                          : 'or'; 
+Add                         : 'add';
+AddImmediateCarry           : 'addic';
+SubtractFrom                : 'subf';
+
+
+
+
 
 // clobbers
 ClobberMemory               : 'memory';
