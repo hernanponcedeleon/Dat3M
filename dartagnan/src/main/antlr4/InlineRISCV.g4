@@ -34,14 +34,14 @@ instr
 ;
 
 // rules divised like this in order to generate single visitors
-load : Load register Comma NumbersInline LPar register RPar;
+load : Load register Comma value LPar register RPar;
 loadImmediate : LoadImmediate register Comma value;
 loadExclusive : LoadExclusive register Comma register;
 loadAcquireExclusive : LoadAcquireExclusive register Comma register;
 loadAcquireReleaseExclusive : LoadAcquireReleaseExclusive register Comma register;
 add : Add register Comma register Comma register;
 sub : Sub register Comma register Comma register;
-store : Store register Comma NumbersInline LPar register RPar;
+store : Store register Comma value LPar register RPar;
 storeConditional : StoreConditional register Comma register Comma register ;
 storeConditionalRelease : StoreConditionalRelease register Comma register Comma register;
 move : Move register Comma register;
