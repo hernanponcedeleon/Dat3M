@@ -152,7 +152,10 @@ public class VisitorInlineRISCV extends InlineRISCVBaseVisitor<Object> {
     public Object visitLoad(InlineRISCVParser.LoadContext ctx) {
         Register register = (Register) ctx.register(0).accept(this);
         Register address = (Register) ctx.register(1).accept(this);
-        asmInstructions.add(EventFactory.newLoad(register, address));
+        expectedType = address.getType();
+        Expression offset = (Expression) ctx.value().accept(this);
+        Expression newAddress = expressions.makeAdd(address,offset);
+        asmInstructions.add(EventFactory.newLoad(register, newAddress));
         return null;
     }
 
@@ -213,7 +216,10 @@ public class VisitorInlineRISCV extends InlineRISCVBaseVisitor<Object> {
     public Object visitStore(InlineRISCVParser.StoreContext ctx) {
         Register value = (Register) ctx.register(0).accept(this);
         Register address = (Register) ctx.register(1).accept(this);
-        asmInstructions.add(EventFactory.newStore(address, value));
+        expectedType = address.getType();
+        Expression offset = (Expression) ctx.value().accept(this);
+        Expression newAddress = expressions.makeAdd(address,offset);
+        asmInstructions.add(EventFactory.newStore(newAddress, value));
         return null;
     }
 
