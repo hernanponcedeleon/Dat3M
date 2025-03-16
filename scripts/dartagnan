@@ -23,7 +23,7 @@ if [ -z "${java_cmd}" ]; then
 fi
 
 usage () {
-    echo "${this} [-cat MODEL] [-target TARGET] [-property PROPERTY] <FILE>"
+    echo "${this} [-cat MODEL] [-target TARGET] [-property PROPERTY] [-bound BOUND] <FILE>"
 }
 
 while [ "$#" != "0" ]; do
@@ -39,6 +39,10 @@ while [ "$#" != "0" ]; do
         -property)
             shift
             property="$1"
+        ;;
+        -bound)
+            shift
+            bound="$1"
         ;;
         -help)
             usage
@@ -115,11 +119,16 @@ if [ -z "${property}" ]; then
     property="program_spec"
 fi
 
+if [ -z "${bound}" ]; then
+    bound=1
+fi
+
 # now we construct the full command
 cmd="${java_cmd} -jar ${jar}"
 cmd="${cmd} ${cat}"
 cmd="${cmd} --target=${target}"
 cmd="${cmd} --property=${property}"
+cmd="${cmd} --bound=${bound}"
 cmd="${cmd} ${args}"
 
 # before calling the command, print it on the screen for reference
