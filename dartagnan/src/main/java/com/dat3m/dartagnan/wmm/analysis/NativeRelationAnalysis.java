@@ -643,8 +643,12 @@ public class NativeRelationAnalysis implements RelationAnalysis {
                     Event e2 = events.get(i);
                     for (Event e1 : events.subList(0, i)) {
                         must.add(e1, e2);
+                        must.add(e2, e1);
                     }
                 }
+            }
+            for (Event e : program.getThreadEventsWithAllTags(VISIBLE)) {
+                must.add(e, e);
             }
             return new MutableKnowledge(must, MapEventGraph.from(must));
         }

@@ -3,7 +3,7 @@ package com.dat3m.dartagnan.verification.model;
 import com.dat3m.dartagnan.encoding.EncodingContext;
 import com.dat3m.dartagnan.program.event.*;
 import com.dat3m.dartagnan.program.event.core.*;
-import com.dat3m.dartagnan.program.filter.Filter;
+import com.dat3m.dartagnan.program.event.core.annotations.TransactionMarker;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.Thread;
@@ -30,9 +30,6 @@ import org.sosy_lab.java_smt.api.Model;
 
 import java.math.BigInteger;
 import java.util.*;
-
-import static com.dat3m.dartagnan.wmm.RelationNameRepository.*;
-import static com.google.common.base.Preconditions.checkNotNull;
 
 
 public class ExecutionModelManager {
@@ -291,6 +288,28 @@ public class ExecutionModelManager {
                     for (int j = i + 1; j < eventList.size(); j++) {
                         EventModel e2 = eventList.get(j);
                         rg.add(new Edge(e1.getId(), e2.getId()));
+                    }
+                }
+            }
+            return null;
+        }
+
+        @Override
+        public Void visitSameInstruction(SameInstruction si) {
+            final SimpleGraph rg = (SimpleGraph) relGraphCache.get(si.getDefinedRelation());
+            final Map<Event, List<Event>> instructionMap = new HashMap<>();
+            for (TransactionMarker end : context.getTask().getProgram().getThreadEvents(TransactionMarker.class)) {
+                //NOTE begin markers return empty transaction event lists
+                final List<Event> events = end.getTransactionEvents();
+                for (Event event : events) {
+                    instructionMap.put(event, events);
+                }
+            }
+            for (EventModel e1 : executionModel.getEventModels()) {
+                for (Event e2 : instructionMap.getOrDefault(e1.getEvent(), List.of(e1.getEvent()))) {
+                    final EventModel e3 = executionModel.getEventModelByEvent(e2);
+                    if (e3 != null) {
+                        rg.add(new Edge(e1.getId(), e3.getId()));
                     }
                 }
             }
