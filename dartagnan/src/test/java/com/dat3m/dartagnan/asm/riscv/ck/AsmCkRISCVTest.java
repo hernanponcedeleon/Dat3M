@@ -1,4 +1,4 @@
-package com.dat3m.dartagnan.inlineAsm.armv7.ck;
+package com.dat3m.dartagnan.asm.riscv.ck;
 
 import java.io.File;
 import java.io.IOException;
@@ -17,8 +17,8 @@ import org.sosy_lab.java_smt.SolverContextFactory;
 import org.sosy_lab.java_smt.api.SolverContext;
 
 import com.dat3m.dartagnan.configuration.Arch;
-import static com.dat3m.dartagnan.configuration.Property.TERMINATION;
 import static com.dat3m.dartagnan.configuration.Property.PROGRAM_SPEC;
+import static com.dat3m.dartagnan.configuration.Property.TERMINATION;
 import com.dat3m.dartagnan.encoding.ProverWithTracker;
 import com.dat3m.dartagnan.parsers.cat.ParserCat;
 import com.dat3m.dartagnan.parsers.program.ProgramParser;
@@ -40,7 +40,7 @@ public class AsmCkRISCVTest {
     private final Result expected;
 
     public AsmCkRISCVTest(String file, int bound, Result expected) {
-        this.programPath = getTestResourcePath("inlineasm/riscv/ck/" + file + ".ll");
+        this.programPath = getTestResourcePath("asm/riscv/ck/" + file + ".ll");
         this.bound = bound;
         this.expected = expected;
     }
@@ -49,7 +49,7 @@ public class AsmCkRISCVTest {
     public static Iterable<Object[]> data() throws IOException {
         return Arrays.asList(new Object[][]{
             {"spsc_queue", 1, Result.PASS},
-            {"stack_empty", 1, Result.PASS},
+            {"stack_empty", 2, Result.FAIL}, // w.h. to check the 'extra load'
         });
     }
 
