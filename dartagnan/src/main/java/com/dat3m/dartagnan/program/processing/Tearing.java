@@ -3,6 +3,7 @@ package com.dat3m.dartagnan.program.processing;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.Type;
+import com.dat3m.dartagnan.expression.processing.ExprTransformer;
 import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.program.Function;
@@ -17,6 +18,7 @@ import com.dat3m.dartagnan.program.event.core.MemoryCoreEvent;
 import com.dat3m.dartagnan.program.event.core.RMWStore;
 import com.dat3m.dartagnan.program.event.core.Store;
 import com.dat3m.dartagnan.program.event.core.annotations.TransactionMarker;
+import com.dat3m.dartagnan.program.memory.FinalMemoryValue;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 
 import java.util.*;
@@ -35,18 +37,15 @@ public final class Tearing {
         bigEndian = e;
     }
 
-    public static boolean run(AliasAnalysis alias, List<MemoryCoreEvent> events) {
-        if (events.isEmpty()) {
-            return false;
-        }
-        final boolean bigEndian = events.iterator().next().getFunction().getProgram().getMemory().isBigEndian();
-        return new Tearing(bigEndian).replaceAll(alias, events);
+    public static boolean run(Program program, AliasAnalysis alias) {
+        return new Tearing(program.getMemory().isBigEndian()).replaceAll(program, alias);
     }
 
-    private boolean replaceAll(AliasAnalysis alias, List<MemoryCoreEvent> events) {
+    private boolean replaceAll(Program program, AliasAnalysis alias) {
         // Generate transaction events for mixed-size accesses
-        boolean tearedInits = tearInits(alias, events);
+        final boolean tearedInits = tearInits(program, alias);
         //NOTE RMWStores need to access the associated load's replacements
+        final List<MemoryCoreEvent> events = program.getThreadEvents(MemoryCoreEvent.class);
         for (MemoryCoreEvent event : events) {
             final Load load = event instanceof Load l ? l : null;
             final List<Integer> msa = load == null ? List.of() : alias.mayMixedSizeAccesses(event);
@@ -76,42 +75,57 @@ public final class Tearing {
         return tearedInits || !map.isEmpty();
     }
 
-    private boolean tearInits(AliasAnalysis alias, List<MemoryCoreEvent> events) {
+    private boolean tearInits(Program program, AliasAnalysis alias) {
         boolean some = false;
-        final Program program = events.get(0).getThread().getProgram();
-        for (MemoryCoreEvent event : events) {
-            final Init init = event instanceof Init i ? i : null;
-            final List<Integer> offsets = init == null ? List.of() : alias.mayMixedSizeAccesses(event);
+        for (Init init : program.getThreadEvents(Init.class)) {
+            final List<Integer> offsets = alias.mayMixedSizeAccesses(init);
             if (offsets.isEmpty()) {
                 continue;
             }
             final int bytes = checkBytes(init, offsets);
             final MemoryObject base = init.getBase();
-            final int offset = init.getOffset();
+            final int initOffset = init.getOffset();
             final Expression value = init.getValue();
-            final IntegerType type = checkIntegerType(value.getType(), "Non-integer value type in '%s'", init);
             // Tear initial values
-            final Expression frontShiftBits = bigEndian ? expressions.makeValue(bytes - offsets.get(0), type) : null;
-            final Expression frontShifted = bigEndian ? expressions.makeRshift(value, frontShiftBits, false) : value;
-            final Expression frontValue = expressions.makeCast(frontShifted, types.getIntegerType(8 * offsets.get(0)));
-            base.setInitialValue(offset, frontValue);
+            final int frontBegin = bigEndian ? bytes - offsets.get(0) : 0;
+            final int frontEnd = bigEndian ? bytes : offsets.get(0);
+            final Expression frontValue = expressions.makeIntExtract(value, 8 * frontBegin, 8 * frontEnd);
+            base.setInitialValue(initOffset, frontValue);
             for (int i = 0; i < offsets.size(); i++) {
-                final int begin = offsets.get(i);
-                final int end = i + 1 < offsets.size() ? offsets.get(i + 1) : bytes;
-                final int shift = bigEndian ? bytes - end : begin;
-                final Expression shiftBits = expressions.makeValue(8L * shift, type);
-                final Expression shifted = expressions.makeRshift(value, shiftBits, false);
-                final Expression tearedValue = expressions.makeCast(shifted, types.getIntegerType(8 * (end - begin)));
-                base.setInitialValue(offset + begin, tearedValue);
+                final int offset = offsets.get(i);
+                final int next = i + 1 < offsets.size() ? offsets.get(i + 1) : bytes;
+                final int begin = bigEndian ? bytes - next : offset;
+                final int end = bigEndian ? bytes - offset : next;
+                final Expression tearedValue = expressions.makeIntExtract(value, 8 * begin, 8 * end);
+                base.setInitialValue(initOffset + offset, tearedValue);
             }
             // Tear init event
             init.setMemValue(frontValue);
             for (int begin : offsets) {
-                program.addInit(base, offset + begin);
+                program.addInit(base, initOffset + begin);
             }
             some = true;
         }
+        tearExpressions(program);
         return some;
+    }
+
+    private void tearExpressions(Program program) {
+        //TODO currently, FinalMemoryValue only occurs in the program's final state expressions.
+        final Expression specification = program.getSpecification();
+        final Expression filter = program.getFilterSpecification();
+        if (specification == null && filter == null) {
+            return;
+        }
+        final var substitution = new FinalValueTearSubstitution();
+        for (Init init : program.getThreadEvents(Init.class)) {
+            substitution.typesByObject.computeIfAbsent(init.getBase(), k -> new HashMap<>())
+                    .put(init.getOffset(), init.getAccessType());
+        }
+        final Expression updatedSpecification = specification == null ? null : specification.accept(substitution);
+        final Expression updatedFilter = filter == null ? null : filter.accept(substitution);
+        program.setSpecification(program.getSpecificationType(), updatedSpecification);
+        program.setFilterSpecification(updatedFilter);
     }
 
     private List<Event> createTransaction(Load load, List<Integer> offsets) {
@@ -119,8 +133,7 @@ public final class Tearing {
         final List<Event> replacement = new ArrayList<>();
         final IntegerType addressType = checkIntegerType(load.getAddress().getType(),
                 "Non-integer address in '%s'", load);
-        final IntegerType accessType = checkIntegerType(load.getAccessType(),
-                "Non-integer mixed-size access in '%s'", load);
+        checkIntegerType(load.getAccessType(), "Non-integer mixed-size access in '%s'", load);
         final Function function = load.getFunction();
         final Register addressRegister = toRegister(load.getAddress(), function, replacement);
         final List<Register> smallerRegisters = new ArrayList<>();
@@ -143,16 +156,7 @@ public final class Tearing {
             replacement.add(byteLoad);
         }
         replacement.add(EventFactory.newTransactionEnd(load, begin));
-        Expression combination = expressions.makeCast(smallerRegisters.get(0), accessType);
-        for (int i = 0; i < offsets.size(); i++) {
-            final int start = offsets.get(i);
-            final int end = i + 1 < offsets.size() ? offsets.get(i + 1) : bytes;
-            Expression wideValue = expressions.makeCast(smallerRegisters.get(i + 1), accessType);
-            final long shift = bigEndian ? bytes - end : start;
-            Expression shiftBits = expressions.makeValue(8L * shift, accessType);
-            Expression shiftedValue = expressions.makeLshift(wideValue, shiftBits);
-            combination = expressions.makeIntOr(combination, shiftedValue);
-        }
+        final Expression combination = expressions.makeIntConcat(smallerRegisters);
         replacement.add(EventFactory.newLocal(load.getResultRegister(), combination));
         return replacement;
     }
@@ -162,24 +166,21 @@ public final class Tearing {
         final List<Event> replacement = new ArrayList<>();
         final IntegerType addressType = checkIntegerType(store.getAddress().getType(),
                 "Non-integer address in '%s'", store);
-        final IntegerType accessType = checkIntegerType(store.getAccessType(),
-                "Non-integer mixed-size access in '%s'", store);
+        checkIntegerType(store.getAccessType(), "Non-integer mixed-size access in '%s'", store);
         final Function function = store.getFunction();
         final Register addressRegister = toRegister(store.getAddress(), function, replacement);
         final Register valueRegister = toRegister(store.getMemValue(), function, replacement);
         final List<Load> loads = store instanceof RMWStore st ? map.get(st.getLoadEvent()).stream()
                 .filter(Load.class::isInstance).map(Load.class::cast).toList() : null;
-        final TransactionMarker begin = EventFactory.newTransactionBegin(store);
-        replacement.add(begin);
+        final TransactionMarker beginTransaction = EventFactory.newTransactionBegin(store);
+        replacement.add(beginTransaction);
         for (int i = -1; i < offsets.size(); i++) {
-            final int start = i < 0 ? 0 : offsets.get(i);
-            final int end = i + 1 < offsets.size() ? offsets.get(i + 1) : bytes;
-            final Expression offset = expressions.makeValue(start, addressType);
-            final Expression address = expressions.makeAdd(addressRegister, offset);
-            final int shift = bigEndian ? bytes - end : start;
-            final Expression shiftBits = expressions.makeValue(8L * shift, accessType);
-            final Expression shiftedValue = expressions.makeRshift(valueRegister, shiftBits, false);
-            final Expression value = expressions.makeCast(shiftedValue, types.getIntegerType(8 * (end - start)));
+            final int offset = i < 0 ? 0 : offsets.get(i);
+            final int next = i + 1 < offsets.size() ? offsets.get(i + 1) : bytes;
+            final int begin = bigEndian ? bytes - next : offset;
+            final int end = bigEndian ? bytes - offset : next;
+            final Expression address = expressions.makeAdd(addressRegister, expressions.makeValue(offset, addressType));
+            final Expression value = expressions.makeIntExtract(valueRegister, 8 * begin, 8 * end);
             final Store byteStore = store.getCopy();
             byteStore.setAddress(address);
             byteStore.setMemValue(value);
@@ -188,7 +189,7 @@ public final class Tearing {
             }
             replacement.add(byteStore);
         }
-        replacement.add(EventFactory.newTransactionEnd(store, begin));
+        replacement.add(EventFactory.newTransactionEnd(store, beginTransaction));
         return replacement;
     }
 
@@ -223,5 +224,30 @@ public final class Tearing {
             }
         }
         return true;
+    }
+
+    private static final class FinalValueTearSubstitution extends ExprTransformer {
+
+        // Teared types, Grouped by object and reverse-ordered by offset.
+        private final Map<MemoryObject, Map<Integer, Type>> typesByObject = new HashMap<>();
+
+        @Override
+        public Expression visitFinalMemoryValue(FinalMemoryValue value) {
+            final Map<Integer, Type> typesByOffset = typesByObject.get(value.getMemoryObject());
+            if (typesByOffset == null) {
+                // Object unaffected from MSAs; nothing to do
+                return value;
+            }
+            final int begin = value.getOffset();
+            final int end = begin + types.getMemorySizeInBytes(value.getType());
+            final List<Expression> result = new ArrayList<>();
+            for (int offset = begin; offset < end;) {
+                final Type t = typesByOffset.get(offset);
+                result.add(new FinalMemoryValue(value.getName(), t, value.getMemoryObject(), offset));
+                offset += types.getMemorySizeInBytes(t);
+            }
+            final Expression combined = result.size() == 1 ? result.get(0) : expressions.makeIntConcat(result);
+            return expressions.makeCast(combined, value.getType());
+        }
     }
 }

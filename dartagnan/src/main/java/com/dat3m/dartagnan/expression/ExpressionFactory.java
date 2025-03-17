@@ -172,17 +172,25 @@ public final class ExpressionFactory {
     }
 
     /// Effectively forms type-fitted (left | (right << (8 * sizeof(left)))).
-    public Expression makeIntConcat(Expression leftOperand, Expression rightOperand) {
-        //TODO properly model this operation
-        final var leftType = leftOperand.getType() instanceof IntegerType t ? t : null;
-        final var rightType = rightOperand.getType() instanceof IntegerType t ? t : null;
-        Preconditions.checkArgument(leftType != null & rightType != null,
-                "Cannot concatenate non-integers %s and %s", leftOperand, rightOperand);
-        final IntegerType type = types.getIntegerType(leftType.getBitWidth() + rightType.getBitWidth());
-        final Expression leftExtended = makeIntegerCast(leftOperand, type, false);
-        final Expression rightExtended = makeIntegerCast(rightOperand, type, false);
-        final Expression rightShifted = makeLshift(rightExtended, makeValue(leftType.getBitWidth(), type));
-        return makeIntOr(leftExtended, rightShifted);
+    public Expression makeIntConcat(List<? extends Expression> operands) {
+        final var offsets = new ArrayList<Integer>();
+        int bits = 0;
+        for (Expression operand : operands) {
+            final IntegerType type = operand.getType() instanceof IntegerType t ? t : null;
+            Preconditions.checkArgument(type != null, "Cannot concatenate non-integers %s.", operands);
+            offsets.add(bits);
+            bits += type.getBitWidth();
+        }
+        final IntegerType target = types.getIntegerType(bits);
+        Expression result = makeIntegerCast(operands.get(0), target, false);
+        for (int i = 1; i < operands.size(); i++) {
+            final Expression operand = makeIntegerCast(operands.get(i), target, false);
+            final Expression shift = makeValue(offsets.get(i), target);
+            final Expression shifted = makeLshift(operand, shift);
+            final Expression coerced = makeIntegerCast(shifted, target, false);
+            result = makeIntOr(result, coerced);
+        }
+        return result;
     }
 
     /// Effectively forms type-fitted (operand >> start) & ((1 << (end-start)) - 1).

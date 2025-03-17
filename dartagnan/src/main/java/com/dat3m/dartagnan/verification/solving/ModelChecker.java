@@ -9,7 +9,6 @@ import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.analysis.*;
 import com.dat3m.dartagnan.program.analysis.alias.AliasAnalysis;
 import com.dat3m.dartagnan.program.event.Event;
-import com.dat3m.dartagnan.program.event.core.MemoryCoreEvent;
 import com.dat3m.dartagnan.program.processing.IdReassignment;
 import com.dat3m.dartagnan.program.processing.ProcessingManager;
 import com.dat3m.dartagnan.program.processing.Tearing;
@@ -27,7 +26,6 @@ import org.sosy_lab.java_smt.api.Model;
 import org.sosy_lab.java_smt.api.ProverEnvironment;
 import org.sosy_lab.java_smt.api.SolverException;
 
-import java.util.List;
 import java.util.Optional;
 
 import static com.dat3m.dartagnan.configuration.Property.CAT_SPEC;
@@ -115,9 +113,8 @@ public abstract class ModelChecker {
     private static void checkForMixedSizeAccesses(VerificationTask task, Context analysisContext, Configuration config) throws InvalidConfigurationException {
         //TODO an option to omit this, if desired
         Program program = task.getProgram();
-        List<MemoryCoreEvent> events = program.getThreadEvents(MemoryCoreEvent.class);
         AliasAnalysis aliasAnalysis = analysisContext.requires(AliasAnalysis.class);
-        if (Tearing.run(aliasAnalysis, events)) {
+        if (Tearing.run(program, aliasAnalysis)) {
             IdReassignment.newInstance().run(program);
             undoAliasAnalysis(analysisContext);
             doAliasAnalysis(task, analysisContext, config);
