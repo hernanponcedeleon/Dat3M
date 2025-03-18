@@ -14,10 +14,10 @@ asmMetadataEntries : (constraint Comma)* clobbers;
 instr 
     : load 
     | loadReserve
-    | compare
-    | branchNotEqual
     | store
     | storeConditional
+    | compare
+    | branchNotEqual
     | or
     | add
     | addImmediateCarry
@@ -27,14 +27,14 @@ instr
 ;
 
 load : Load register Comma register;
-loadReserve : LoadReserve register Comma NumbersInline Comma register;
-compare : Compare NumbersInline Comma register Comma register;
+loadReserve : LoadReserve register Comma value Comma register;
+compare : Compare value Comma register Comma register;
 branchNotEqual : BranchNotEqual NumbersInline LetterInline;
 store : Store register Comma register;
-storeConditional : StoreConditional register Comma NumbersInline Comma register; 
-or : Or NumbersInline Comma NumbersInline Comma NumbersInline;
+storeConditional : StoreConditional register Comma value Comma register; 
+or : Or value Comma value Comma value;
 add : Add register Comma register Comma register;
-addImmediateCarry : AddImmediateCarry register Comma register Comma NumbersInline;
+addImmediateCarry : AddImmediateCarry register Comma register Comma value;
 subtractFrom : SubtractFrom register Comma register Comma register;
 labelDefinition : NumbersInline Colon;
 ppcFence : PPCFence;
@@ -43,10 +43,10 @@ ppcFence : PPCFence;
 constraint : outputOpAssign | memoryAddress | inputOpGeneralReg | overlapInOutRegister | pointerToMemoryLocation;
 
 outputOpAssign              : Equals Amp? RLiteral;
-memoryAddress               : Ast? QCapitalLiteral;
+memoryAddress               : Ast? QCapitalLiteral | Equals Ast MLiteral;
 inputOpGeneralReg           : RLiteral;
 overlapInOutRegister        : NumbersInline;
-pointerToMemoryLocation     : Equals? Ast MLiteral;
+pointerToMemoryLocation     : Ast MLiteral;
 
 clobbers : clobber (Comma clobber)*;
 clobber : Tilde LBrace clobberType RBrace;
@@ -56,4 +56,4 @@ clobberType : ClobberMemory | ClobberModifyFlags | ClobberDirectionFlag | Clobbe
 expr : register | value;
 
 register : Dollar NumbersInline;
-value : ConstantValue;
+value : NumbersInline;
