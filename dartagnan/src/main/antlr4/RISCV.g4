@@ -1,6 +1,6 @@
-grammar InlineRISCV;
+grammar RISCV;
 
-options {tokenVocab=InlineRISCVLexer;}
+options {tokenVocab=RISCVLexer;}
 
 asm                                 
     :
@@ -45,14 +45,14 @@ store : Store register Comma value LPar register RPar;
 storeConditional : StoreConditional register Comma register Comma register ;
 storeConditionalRelease : StoreConditionalRelease register Comma register Comma register;
 move : Move register Comma register;
-branchNotEqual : BranchNotEqual register Comma register Comma NumbersInline LetterInline;
-branchNotEqualZero : BranchNotEqualZero register Comma NumbersInline LetterInline;
-labelDefinition : NumbersInline Colon;
+branchNotEqual : BranchNotEqual register Comma register Comma Numbers Literal;
+branchNotEqualZero : BranchNotEqualZero register Comma Numbers Literal;
+labelDefinition : Numbers Colon;
 negate : Negate register Comma register;
 atomicAdd : AtomicAdd register Comma register Comma register;
 atomicAddRelease : AtomicAddRelease register Comma register Comma register;
 atomicAddAcquireRelease : AtomicAddAcquireRelease register Comma register Comma register;
-value : NumbersInline;
+value : Numbers;
 
 
 //fences
@@ -76,11 +76,11 @@ constraint : outputOpAssign | inputOpGeneralReg | overlapInOutRegister;
 
 outputOpAssign              : Equals (Amp? RLiteral | ACapitalLiteral);
 inputOpGeneralReg           : RLiteral | ACapitalLiteral | Equals Ast MLiteral;
-overlapInOutRegister        : NumbersInline;
+overlapInOutRegister        : Numbers;
 
 clobbers : clobber (Comma clobber)*;
 clobber : Tilde LBrace clobberType RBrace;
 
 clobberType : ClobberMemory | ClobberModifyFlags | ClobberDirectionFlag | ClobberFlags | ClobberFloatPntStatusReg;
 
-register : Dollar NumbersInline;
+register : Dollar Numbers;

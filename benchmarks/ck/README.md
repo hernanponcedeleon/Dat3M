@@ -16,8 +16,9 @@ The Include should contain :
 The Custom flags should be set up accordingly to your client
 
 For the architecture these are the options : 
-1. ```__aarch__``` to generate ARMV8
+1. ```__aarch__``` to generate ARMV8.
 2. ```__arm__ ``` &&  ```__ARM_ARCH_7__``` to generate ARMV7.
+3. ```__ppc64__``` to generate Power PC 64 bit.
 
 A valid example would therefore be, from ck's root.
 ```

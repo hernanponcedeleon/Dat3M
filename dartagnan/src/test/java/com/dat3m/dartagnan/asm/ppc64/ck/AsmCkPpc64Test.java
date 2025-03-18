@@ -56,7 +56,7 @@ public class AsmCkPpc64Test {
             {"mcslock", 2, Result.PASS},
             {"ticketlock", 1, Result.PASS},
             {"spsc_queue", 1, Result.PASS},
-            // {"stack_empty", 3, Result.PASS}, // It should be UNKNOWN
+            {"stack_empty", 3, Result.PASS}, // It should be UNKNOWN
         });
     }
 

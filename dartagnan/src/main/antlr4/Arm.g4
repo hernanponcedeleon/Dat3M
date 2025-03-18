@@ -1,6 +1,6 @@
-grammar InlineAsm;
+grammar Arm;
 
-options {tokenVocab=InlineAsmLexer;}
+options {tokenVocab=ArmLexer;}
 
 asm                                 
     :
@@ -52,13 +52,13 @@ storeRelease : StoreRelease register Comma register;
 storeExclusive : StoreExclusive register Comma register Comma register ;
 storeReleaseExclusive : StoreReleaseExclusive register Comma register Comma register;
 compare : Compare register Comma expr;
-compareBranchNonZero : CompareBranchNonZero register Comma NumbersInline LetterInline;
+compareBranchNonZero : CompareBranchNonZero register Comma Numbers Literal;
 move : Move register Comma register;
-branchEqual : BranchEqual NumbersInline LetterInline;
-branchNotEqual : BranchNotEqual NumbersInline LetterInline;
+branchEqual : BranchEqual Numbers Literal;
+branchNotEqual : BranchNotEqual Numbers Literal;
 setEventLocally : SetEventLocally;
 waitForEvent : WaitForEvent;
-labelDefinition : NumbersInline Colon;
+labelDefinition : Numbers Colon;
 alignInline : AlignInline;
 prefetchMemory : PrefetchMemory PrefetchStoreL1Once Comma register;
 yieldtask : YieldTask;
@@ -71,7 +71,7 @@ constraint : outputOpAssign | memoryAddress | inputOpGeneralReg | overlapInOutRe
 outputOpAssign              : Equals Amp? RLiteral;
 memoryAddress               : Ast? QCapitalLiteral;
 inputOpGeneralReg           : RLiteral;
-overlapInOutRegister        : NumbersInline;
+overlapInOutRegister        : Numbers;
 pointerToMemoryLocation     : Equals Ast MLiteral;
 
 clobbers : clobber (Comma clobber)*;

@@ -1,6 +1,6 @@
-grammar InlineX86;
+grammar X86;
 
-options {tokenVocab=InlineX86Lexer;}
+options {tokenVocab=X86Lexer;}
 
 asm                                 
     :
@@ -23,7 +23,7 @@ constraint : outputOpAssign | memoryAddress | inputOpGeneralReg | overlapInOutRe
 outputOpAssign              : Equals Amp? RLiteral;
 memoryAddress               : Ast? QCapitalLiteral;
 inputOpGeneralReg           : RLiteral;
-overlapInOutRegister        : NumbersInline;
+overlapInOutRegister        : Numbers;
 pointerToMemoryLocation     : Equals Ast MLiteral;
 
 clobbers : clobber (Comma clobber)*;
@@ -33,5 +33,5 @@ clobberType : ClobberMemory | ClobberModifyFlags | ClobberDirectionFlag | Clobbe
 
 expr : register | value;
 
-register : Dollar NumbersInline;
+register : Dollar Numbers;
 value : ConstantValue;

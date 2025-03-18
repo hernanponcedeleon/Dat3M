@@ -1,10 +1,10 @@
-lexer grammar InlineAsmLexer;
+lexer grammar ArmLexer;
 
 import BaseLexer;
 
 
 // instructions 
-AlignInline                 : Period 'align 'NumbersInline;
+AlignInline                 : Period 'align 'Numbers;
 Load                        : 'ldr';
 LoadAcquire                 : 'ldar';
 LoadExclusive               : 'ldxr' | 'ldrex';
@@ -39,7 +39,7 @@ ClobberFlags                : 'flags';
 StartSymbol                 : 'asm';
 PrefetchStoreL1Once         : 'pstl1strm';
 // helpers for parser rules
-NumbersInline               : [0-9]+;
+Numbers                     : [0-9]+;
 XLiteral                    : 'x';
 RLiteral                    : 'r';
 ILiteral                    : 'i';
@@ -56,7 +56,7 @@ DataSynchronizationBarrier  : 'dsb';
 FenceArmOpt                 : 'sy' | 'st' | 'ish' | 'ishld' | 'ishst';
 
 
-LetterInline                : [a-z]+;
+Literal                     : [a-z]+;
 EndInstruction              :'\\0A';
 WS
     :   [ \t\r\n]+

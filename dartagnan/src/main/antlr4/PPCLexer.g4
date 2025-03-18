@@ -1,4 +1,4 @@
-lexer grammar InlinePPCLexer;
+lexer grammar PPCLexer;
 
 import BaseLexer;
 
@@ -29,7 +29,7 @@ ClobberFlags                : 'flags';
 // Metavariables
 StartSymbol                 : 'asm';
 // helpers for parser rules
-NumbersInline               : [0-9]+;
+Numbers                     : [0-9]+;
 XLiteral                    : 'x';
 RLiteral                    : 'r';
 ILiteral                    : 'i';
@@ -37,14 +37,14 @@ OLiteral                    : 'o';
 IOLiteral                   : 'io';
 MLiteral                    : 'm';
 QCapitalLiteral             : 'Q';
-ConstantValue               : Num NumbersInline;
+ConstantValue               : Num Numbers;
 
 
 // fences
 PPCFence                    : 'sync' | 'isync' | 'lwsync';
 
 
-LetterInline                : [a-z]+;
+Literal                     : [a-z]+;
 EndInstruction              :'\\0A';
 WS
     :   [ \t\r\n]+
