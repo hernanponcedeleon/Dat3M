@@ -18,7 +18,7 @@ instr
     | storeConditional
     | compare
     | branchNotEqual
-    | or
+    | nop
     | add
     | addImmediateCarry
     | subtractFrom
@@ -32,7 +32,7 @@ compare : Compare value Comma register Comma register;
 branchNotEqual : BranchNotEqual Numbers Literal;
 store : Store register Comma register;
 storeConditional : StoreConditional register Comma value Comma register; 
-or : Or value Comma value Comma value;
+nop : Or value Comma value Comma value;
 add : Add register Comma register Comma register;
 addImmediateCarry : AddImmediateCarry register Comma register Comma value;
 subtractFrom : SubtractFrom register Comma register Comma register;

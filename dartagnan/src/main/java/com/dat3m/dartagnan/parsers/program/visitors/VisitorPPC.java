@@ -133,8 +133,8 @@ public class VisitorPPC extends PPCBaseVisitor<Object> {
     }
 
     @Override
-    public Object visitOr(PPCParser.OrContext ctx) {
-        // TODO add this later 
+    public Object visitNop(PPCParser.NopContext ctx) {
+        // or 1, 1, 1 is a nop, so we do not perform anything.
         return null;
     }
 
