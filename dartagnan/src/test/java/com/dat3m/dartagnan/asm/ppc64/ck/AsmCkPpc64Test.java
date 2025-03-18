@@ -47,15 +47,15 @@ public class AsmCkPpc64Test {
     @Parameterized.Parameters(name = "{index}: {0}, {1}, {2}")
     public static Iterable<Object[]> data() throws IOException {
         return Arrays.asList(new Object[][]{
-            // {"anderson", 3, Result.PASS},
-            // {"caslock", 3, Result.PASS},
-            // {"clhlock", 1, Result.PASS},
-            // {"declock", 3, Result.PASS},
+            {"anderson", 3, Result.PASS},
+            {"caslock", 3, Result.PASS},
+            {"clhlock", 1, Result.PASS},
+            {"declock", 3, Result.PASS},
             {"ebr", 5, Result.PASS},
-            // {"faslock", 3, Result.PASS},
-            // {"mcslock", 2, Result.PASS},
-            // {"ticketlock", 1, Result.PASS},
-            // {"spsc_queue", 1, Result.PASS},
+            {"faslock", 3, Result.PASS},
+            {"mcslock", 2, Result.PASS},
+            {"ticketlock", 1, Result.PASS},
+            {"spsc_queue", 1, Result.PASS},
             // {"stack_empty", 3, Result.PASS}, // It should be UNKNOWN
         });
     }
@@ -76,7 +76,7 @@ public class AsmCkPpc64Test {
                 cfg,
                 BasicLogManager.create(cfg),
                 ShutdownManager.create().getNotifier(),
-                SolverContextFactory.Solvers.Z3);
+                SolverContextFactory.Solvers.YICES2);
     }
 
     private ProverWithTracker mkProver(SolverContext ctx) {
