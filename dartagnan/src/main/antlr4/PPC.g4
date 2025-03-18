@@ -1,6 +1,6 @@
-grammar InlinePPC;
+grammar PPC;
 
-options {tokenVocab=InlinePPCLexer;}
+options {tokenVocab=PPCLexer;}
 
 asm                                 
     :
@@ -29,31 +29,27 @@ instr
 load : Load register Comma register;
 loadReserve : LoadReserve register Comma value Comma register;
 compare : Compare value Comma register Comma register;
-branchNotEqual : BranchNotEqual NumbersInline LetterInline;
+branchNotEqual : BranchNotEqual Numbers Literal;
 store : Store register Comma register;
 storeConditional : StoreConditional register Comma value Comma register; 
 or : Or value Comma value Comma value;
 add : Add register Comma register Comma register;
 addImmediateCarry : AddImmediateCarry register Comma register Comma value;
 subtractFrom : SubtractFrom register Comma register Comma register;
-labelDefinition : NumbersInline Colon;
+labelDefinition : Numbers Colon;
 ppcFence : PPCFence;
 
 // these are defined but not used
-constraint : outputOpAssign | memoryAddress | inputOpGeneralReg | overlapInOutRegister | pointerToMemoryLocation;
+constraint : outputOpAssign | inputOpGeneralReg | overlapInOutRegister;
 
 outputOpAssign              : Equals Amp? RLiteral;
-memoryAddress               : Ast? QCapitalLiteral | Equals Ast MLiteral;
-inputOpGeneralReg           : RLiteral;
-overlapInOutRegister        : NumbersInline;
-pointerToMemoryLocation     : Ast MLiteral;
+inputOpGeneralReg           : RLiteral | Equals? Ast MLiteral;
+overlapInOutRegister        : Numbers;
 
 clobbers : clobber (Comma clobber)*;
 clobber : Tilde LBrace clobberType RBrace;
 
 clobberType : ClobberMemory | ClobberModifyFlags | ClobberDirectionFlag | ClobberFlags | ClobberFloatPntStatusReg;
 
-expr : register | value;
-
-register : Dollar NumbersInline;
-value : NumbersInline;
+register : Dollar Numbers;
+value : Numbers;

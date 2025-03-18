@@ -6,7 +6,7 @@ import com.dat3m.dartagnan.expression.integers.IntBinaryOp;
 import com.dat3m.dartagnan.expression.type.*;
 import com.dat3m.dartagnan.parsers.LLVMIRBaseVisitor;
 import com.dat3m.dartagnan.parsers.LLVMIRParser.*;
-import com.dat3m.dartagnan.parsers.program.ParserInlineAsm;
+import com.dat3m.dartagnan.parsers.program.ParserArm;
 import com.dat3m.dartagnan.parsers.program.utils.ProgramBuilder;
 import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.Program;
@@ -37,9 +37,9 @@ import java.util.stream.Collectors;
 
 import com.dat3m.dartagnan.exception.ProgramProcessingException;
 import static com.dat3m.dartagnan.expression.utils.ExpressionHelper.isAggregateLike;
-import com.dat3m.dartagnan.parsers.program.ParserInlinePPC;
-import com.dat3m.dartagnan.parsers.program.ParserInlineRISCV;
-import com.dat3m.dartagnan.parsers.program.ParserInlineX86;
+import com.dat3m.dartagnan.parsers.program.ParserPPC;
+import com.dat3m.dartagnan.parsers.program.ParserRISCV;
+import com.dat3m.dartagnan.parsers.program.ParserX86;
 import static com.dat3m.dartagnan.program.event.EventFactory.*;
 import static com.dat3m.dartagnan.program.event.EventFactory.Llvm.newCompareExchange;
 import static com.google.common.base.Preconditions.checkState;
@@ -388,7 +388,7 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
             // try every possible visitor that we have 
             try{
                 CharStream charStream = CharStreams.fromString(asmCode);
-                ParserInlineAsm parserArm = new ParserInlineAsm(function, resultRegister, arguments);
+                ParserArm parserArm = new ParserArm(function, resultRegister, arguments);
                 events = parserArm.parse(charStream);
             } catch (ProgramProcessingException armProgramProcessingException){
                 logger.warn("Support for inline assembly instruction '{}' is not available. Setting non deterministic value ", armProgramProcessingException.getMessage());
@@ -399,7 +399,7 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
                 try {
                     // we have to generate the stream again as the parser consumes it
                     CharStream charStream = CharStreams.fromString(asmCode);
-                    ParserInlineRISCV parserRISCV = new ParserInlineRISCV(function, resultRegister, arguments);
+                    ParserRISCV parserRISCV = new ParserRISCV(function, resultRegister, arguments);
                     events = parserRISCV.parse(charStream);
                 } catch (ProgramProcessingException riscvProgramProcessingException){
                     logger.warn("Support for inline assembly instruction '{}' is not available. Setting non deterministic value ", riscvProgramProcessingException.getMessage());
@@ -409,7 +409,7 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
                 } catch (ParsingException riscvParsingException) {
                     try {
                         CharStream charStream = CharStreams.fromString(asmCode);
-                        ParserInlinePPC parserPPC = new ParserInlinePPC(function, resultRegister, arguments);
+                        ParserPPC parserPPC = new ParserPPC(function, resultRegister, arguments);
                         events = parserPPC.parse(charStream);
                     } catch (ProgramProcessingException ppcProgramProcessingException){
                         logger.warn("Support for inline assembly instruction '{}' is not available. Setting non deterministic value ", ppcProgramProcessingException.getMessage());
@@ -419,7 +419,7 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
                     } catch (ParsingException ppcParsingException) {
                         try {
                             CharStream charStream = CharStreams.fromString(asmCode);
-                            ParserInlineX86 parserX86 = new ParserInlineX86(function, resultRegister, arguments);
+                            ParserX86 parserX86 = new ParserX86(function, resultRegister, arguments);
                             events = parserX86.parse(charStream);
                         } catch (ProgramProcessingException x86ProgramProcessingException){
                             logger.warn("Support for inline assembly instruction '{}' is not available. Setting non deterministic value ", x86ProgramProcessingException.getMessage());

@@ -1,4 +1,4 @@
-lexer grammar InlineX86Lexer;
+lexer grammar X86Lexer;
 
 import BaseLexer;
 
@@ -15,7 +15,7 @@ ClobberFlags                : 'flags';
 // Metavariables
 StartSymbol                 : 'asm';
 // helpers for parser rules
-NumbersInline               : [0-9]+;
+Numbers                     : [0-9]+;
 XLiteral                    : 'x';
 RLiteral                    : 'r';
 ILiteral                    : 'i';
@@ -23,14 +23,14 @@ OLiteral                    : 'o';
 IOLiteral                   : 'io';
 MLiteral                    : 'm';
 QCapitalLiteral             : 'Q';
-ConstantValue               : Num NumbersInline;
+ConstantValue               : Num Numbers;
 
 
 // fences
 X86Fence                    : 'mfence';
 
 
-LetterInline                : [a-z]+;
+Literal                     : [a-z]+;
 EndInstruction              :'\\0A';
 WS
     :   [ \t\r\n]+

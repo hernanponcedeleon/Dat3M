@@ -1,4 +1,4 @@
-lexer grammar InlineRISCVLexer;
+lexer grammar RISCVLexer;
 
 import BaseLexer;
 
@@ -33,7 +33,7 @@ ClobberFlags                : 'flags';
 // Metavariables
 StartSymbol                 : 'asm';
 // helpers for parser rules
-NumbersInline               : [0-9]+;
+Numbers                     : [0-9]+;
 RLiteral                    : 'r';
 WLiteral                    : 'w';
 RWLiteral                   : 'rw';
@@ -49,7 +49,7 @@ RISCVFence                  : 'fence';
 TsoFence                    : 'tso';
 
 
-LetterInline                : [a-z]+;
+Literal                     : [a-z]+;
 EndInstruction              :'\\0A';
 WS
     :   [ \t\r\n]+

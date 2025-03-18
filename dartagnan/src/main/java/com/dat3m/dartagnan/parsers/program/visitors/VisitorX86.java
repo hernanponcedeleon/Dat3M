@@ -8,8 +8,8 @@ import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.Type;
-import com.dat3m.dartagnan.parsers.InlineX86BaseVisitor;
-import com.dat3m.dartagnan.parsers.InlineX86Parser;
+import com.dat3m.dartagnan.parsers.X86BaseVisitor;
+import com.dat3m.dartagnan.parsers.X86Parser;
 import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Event;
@@ -17,7 +17,7 @@ import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.event.core.Local;
 
-public class VisitorInlineX86 extends InlineX86BaseVisitor<Object> {
+public class VisitorX86 extends X86BaseVisitor<Object> {
 
     private final List<Local> inputAssignments = new ArrayList<>();
     private final List<Event> asmInstructions = new ArrayList<>();
@@ -36,14 +36,14 @@ public class VisitorInlineX86 extends InlineX86BaseVisitor<Object> {
     // map from RegisterID to the corresponding asm register
     private final HashMap<Integer, Register> asmRegisters = new HashMap<>();
 
-    public VisitorInlineX86(Function llvmFunction, Register returnRegister, List<Expression> llvmArguments) {
+    public VisitorX86(Function llvmFunction, Register returnRegister, List<Expression> llvmArguments) {
         this.llvmFunction = llvmFunction;
         this.returnRegister = returnRegister;
         this.argsRegisters = llvmArguments;
     }
 
     @Override
-    public List<Event> visitAsm(InlineX86Parser.AsmContext ctx) {
+    public List<Event> visitAsm(X86Parser.AsmContext ctx) {
         visitChildren(ctx);
         List<Event> events = new ArrayList<>();
         events.addAll(asmInstructions);
@@ -51,7 +51,7 @@ public class VisitorInlineX86 extends InlineX86BaseVisitor<Object> {
     }
 
     @Override
-    public Object visitX86Fence(InlineX86Parser.X86FenceContext ctx) {
+    public Object visitX86Fence(X86Parser.X86FenceContext ctx) {
         String barrier = ctx.X86Fence().getText();
         Event fence = switch (barrier) {
             case "mfence" ->
