@@ -2,18 +2,28 @@ package com.dat3m.dartagnan.verification.solving;
 
 import com.dat3m.dartagnan.configuration.Property;
 import com.dat3m.dartagnan.encoding.*;
+import com.dat3m.dartagnan.expression.type.IntegerType;
+import com.dat3m.dartagnan.program.event.Event;
+import com.dat3m.dartagnan.program.event.core.Load;
+import com.dat3m.dartagnan.program.event.core.Store;
 import com.dat3m.dartagnan.utils.Result;
 import com.dat3m.dartagnan.verification.Context;
 import com.dat3m.dartagnan.verification.VerificationTask;
+import com.dat3m.dartagnan.verification.model.ExecutionModelManager;
+import com.dat3m.dartagnan.verification.model.event.EventModel;
+import com.dat3m.dartagnan.verification.model.event.MemoryEventModel;
 import com.dat3m.dartagnan.wmm.Wmm;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
-import org.sosy_lab.java_smt.api.BooleanFormula;
-import org.sosy_lab.java_smt.api.BooleanFormulaManager;
-import org.sosy_lab.java_smt.api.SolverContext;
-import org.sosy_lab.java_smt.api.SolverException;
+import org.sosy_lab.java_smt.api.*;
+
+import java.math.BigInteger;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.Set;
 
 import static com.dat3m.dartagnan.utils.Result.FAIL;
 import static com.dat3m.dartagnan.utils.Result.PASS;
@@ -69,6 +79,10 @@ public class AssumeSolver extends ModelChecker {
         prover.writeComment("Symmetry breaking encoding");
         prover.addConstraint(symmetryEncoder.encodeFullSymmetryBreaking());
 
+        // ----------------------------------------
+        analyzeValueRanges(prover);
+        // ----------------------------------------
+
         BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
         BooleanFormula assumptionLiteral = bmgr.makeVariable("DAT3M_spec_assumption");
         BooleanFormula propertyEncoding = propertyEncoder.encodeProperties(task.getProperty());
@@ -98,5 +112,100 @@ public class AssumeSolver extends ModelChecker {
         // For Safety specs, we have SAT=FAIL, but for reachability specs, we have SAT=PASS
         res = Property.getCombinedType(task.getProperty(), task) == Property.Type.SAFETY ? res : res.invert();
         logger.info("Verification finished with result " + res);
+    }
+
+
+    private boolean trackEvent(Event e) {
+        return e instanceof Load load && load.getResultRegister().getType() instanceof IntegerType
+                || e instanceof Store store && store.getMemValue().getType() instanceof IntegerType;
+    }
+
+    private void analyzeValueRanges(ProverEnvironment prover) throws InterruptedException, SolverException {
+        final BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
+
+        final Map<Event, Set<BigInteger>> valuesPerEvent = new LinkedHashMap<>();
+        for (Event e : task.getProgram().getThreadEvents()) {
+            if (trackEvent(e)) {
+                valuesPerEvent.put(e, new HashSet<>());
+            }
+        }
+
+        prover.push();
+
+        for (Event e : valuesPerEvent.keySet()) {
+            System.out.println("======== Analyzing values of " + e.getGlobalId() + ": " + e);
+            prover.push();
+
+            // Execute event
+            prover.addConstraint(context.execution(e));
+
+            // Avoid already seen values
+            for (BigInteger value : valuesPerEvent.get(e)) {
+                prover.addConstraint(bmgr.not(makeEqual(e, value)));
+            }
+
+            // Try to find new values
+            while (!prover.isUnsat()) {
+                try (Model model = prover.getModel()) {
+                    final var exec = new ExecutionModelManager().buildExecutionModel(context, model);
+                    for (EventModel eModel : exec.getEventModels()) {
+                        if (!valuesPerEvent.containsKey(eModel.getEvent()) || !(eModel instanceof MemoryEventModel memModel)) {
+                            continue;
+                        }
+
+                        final BigInteger value = memModel.getValue().getValue() instanceof BigInteger val ? val : null;
+                        if (value != null) {
+                            valuesPerEvent.get(eModel.getEvent()).add(value);
+                            if (eModel.getEvent() == e) {
+                                prover.addConstraint(bmgr.not(makeEqual(e, value)));
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Found all possible values
+            prover.pop();
+            System.out.println("     " + valuesPerEvent.get(e));
+            BooleanFormula values = bmgr.makeFalse();
+            for (BigInteger value : valuesPerEvent.get(e)) {
+                values = bmgr.or(values, makeEqual(e, value));
+            }
+            prover.addConstraint(bmgr.implication(context.execution(e), values));
+        }
+        // ===============================================================================
+
+        // NOTE: If we remove this pop, then all the range information will be inside the prover environment
+        // for the actual check by the AssumeSolver.
+        prover.pop();
+
+        computeMaxBitRange(valuesPerEvent);
+    }
+
+    private static void computeMaxBitRange(Map<Event, Set<BigInteger>> valuesPerEvent) {
+        BigInteger min = BigInteger.ZERO;
+        BigInteger max = BigInteger.ZERO;
+
+        for (var col : valuesPerEvent.values()) {
+            for (BigInteger value : col) {
+                min = min.min(value);
+                max = max.max(value);
+            }
+        }
+
+        BigInteger diff = max.subtract(min);
+        System.out.println("Necessary bits: " + diff.bitLength());
+    }
+
+    private BooleanFormula makeEqual(Event e, BigInteger value) {
+        final BitvectorFormulaManager bvmgr = ctx.getFormulaManager().getBitvectorFormulaManager();
+        if (e instanceof Load load) {
+            final int width = load.getResultRegister().getType() instanceof IntegerType t ? t.getBitWidth() : -1;
+            return context.equal(context.value(load), bvmgr.makeBitvector(width, value));
+        } else if (e instanceof Store store) {
+            final int width = store.getMemValue().getType() instanceof IntegerType t ? t.getBitWidth() : -1;
+            return context.equal(context.value(store), bvmgr.makeBitvector(width, value));
+        }
+        throw new RuntimeException("Unknown event type: " + e);
     }
 }
