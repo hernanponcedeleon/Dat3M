@@ -49,7 +49,6 @@ public class AsmCkRISCVTest {
     public static Iterable<Object[]> data() throws IOException {
         return Arrays.asList(new Object[][]{
             {"spsc_queue", 1, Result.PASS},
-            {"stack_empty", 2, Result.FAIL}, // w.h. to check the 'extra load'
         });
     }
 

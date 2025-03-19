@@ -14,7 +14,8 @@ import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.core.Label;
 
-// this class contains common functions which are independent from the grammar for inline assembly
+// this class contains common functions which are independent from the asm grammar
+// and are used in every asm visitor
 public class AsmUtils {
 
     // Returns the size of the return register

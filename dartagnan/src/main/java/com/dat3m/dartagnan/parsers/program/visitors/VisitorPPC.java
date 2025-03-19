@@ -60,7 +60,7 @@ public class VisitorPPC extends PPCBaseVisitor<Object> {
         return constraint.outputOpAssign() != null;
     }
 
-    // Tells us if the constraint is an input one, e.g. 'Q' or '*Q' or 'r' 
+    // Tells us if the constraint is an input one, e.g. 'r' or '*m'
     private boolean isConstraintInputConstraint(PPCParser.ConstraintContext constraint) {
         return constraint.inputOpGeneralReg() != null;
     }
@@ -109,7 +109,7 @@ public class VisitorPPC extends PPCBaseVisitor<Object> {
         expectedType = address.getType();
         Expression offset = (Expression) ctx.value().accept(this);
         Expression newAddress = expressions.makeAdd(address,offset);
-        Register resultRegister = llvmFunction.getOrNewRegister("CondStoreResRegister", value.getType());
+        Register resultRegister = llvmFunction.getOrNewRegister("CondStoreResult", value.getType());
         this.comparator = new CmpInstruction(resultRegister,expressions.makeZero((IntegerType) value.getType()));
         asmInstructions.add(EventFactory.Common.newExclusiveStore(resultRegister, newAddress, value, ""));
         return null;
