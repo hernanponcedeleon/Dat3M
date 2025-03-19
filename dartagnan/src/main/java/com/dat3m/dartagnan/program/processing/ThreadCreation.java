@@ -216,10 +216,32 @@ public class ThreadCreation implements ProgramProcessor {
                 }
 
                 final Label joinCase = EventFactory.newLabel("__joinWithT" + tid + "#" + joinCounter);
+
+                // Construct a spinloop waiting for the joining thread.
+                // Note: This loop is constructed as how it should be after the unrolling pass so that
+                //       the processing pipeline does not have to be changed.
+                final Event loopBound = EventFactory.Svcomp.newLoopBound(expressions.makeValue(1, types.getArchType()));
+                final Label waitingLoopBegin = EventFactory.newLabel("l-wait-" + joinCounter + ".loop/itr_1");
+                waitingLoopBegin.addTags(Tag.NOOPT);
+                final Label spinGuard = EventFactory.newLabel("l-wait" + joinCounter + ".guard");
+                final Event terminator = EventFactory.newGoto((Label) thread.getExit());
+                terminator.addTags(Tag.SPINLOOP, Tag.NONTERMINATION);
+                final Label endMarker = EventFactory.newLabel("l-wait-" + joinCounter + ".loop/bound");
+                endMarker.addTags(Tag.NOOPT);
+                final Event boundEvent = newJump(expressions.makeTrue(), (Label) thread.getExit());
+                boundEvent.addTags(Tag.BOUND, Tag.NONTERMINATION, Tag.NOOPT);
+
                 final List<Event> caseBody = eventSequence(
                         joinCase,
+                        loopBound,
+                        waitingLoopBegin,
                         newAcquireLoad(joinDummyReg, comAddrOfThreadToJoinWith),
-                        EventFactory.newGoto(joinEnd)
+                        newJump(joinDummyReg, spinGuard),
+                        EventFactory.newGoto(joinEnd),
+                        spinGuard,
+                        terminator,
+                        endMarker,
+                        boundEvent
                 );
                 tid2joinCases.put(tidCandidate, caseBody);
             }
