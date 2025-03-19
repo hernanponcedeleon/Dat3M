@@ -7,7 +7,6 @@ import java.util.HashMap;
 import java.util.List;
 
 import com.dat3m.dartagnan.exception.ParsingException;
-import com.dat3m.dartagnan.exception.ProgramProcessingException;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.Type;
@@ -225,15 +224,15 @@ public class VisitorRISCV extends RISCVBaseVisitor<Object> {
 
     @Override
     public Object visitAtomicAdd(RISCVParser.AtomicAddContext ctx){
-        throw new ProgramProcessingException(ctx.AtomicAdd().getText());
+        throw new ParsingException(ctx.AtomicAdd().getText());
     }
     @Override
     public Object visitAtomicAddRelease(RISCVParser.AtomicAddReleaseContext ctx){
-        throw new ProgramProcessingException(ctx.AtomicAddRelease().getText());
+        throw new ParsingException(ctx.AtomicAddRelease().getText());
     }
     @Override
     public Object visitAtomicAddAcquireRelease(RISCVParser.AtomicAddAcquireReleaseContext ctx){
-        throw new ProgramProcessingException(ctx.AtomicAddAcquireRelease().getText());
+        throw new ParsingException(ctx.AtomicAddAcquireRelease().getText());
     }
     // If the register with that ID was already defined, we simply return it
     // otherwise, we create and return the new register.
