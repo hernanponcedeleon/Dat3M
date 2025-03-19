@@ -167,7 +167,8 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object> {
     public Object visitStore(StoreContext ctx) {
         final Register r64 = programBuilder.getOrNewRegister(mainThread, ctx.rV, archType);
         final StoreInstructionContext inst = ctx.storeInstruction();
-        final Expression value = ctx.rV32 == null ? r64 : expressions.makeIntegerCast(r64, i32, false);
+        final IntegerType type = inst.byteSize ? i8 : inst.halfWordSize ? i16 : i32;
+        final Expression value = ctx.rV32 == null ? r64 : expressions.makeIntegerCast(r64, type, false);
         final Register base = programBuilder.getOrErrorRegister(mainThread, ctx.address().id);
         final Expression address = applyOffset(ctx.offset(), base);
         final String mo = ctx.storeInstruction().release ? MO_REL : MO_RX;
@@ -177,7 +178,9 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object> {
     @Override
     public Object visitStoreExclusive(StoreExclusiveContext ctx) {
         final Register r64 = programBuilder.getOrNewRegister(mainThread, ctx.rV, archType);
-        final Expression value = ctx.rV32 == null ? r64 : expressions.makeIntegerCast(r64, i32, false);
+        final StoreExclusiveInstructionContext inst = ctx.storeExclusiveInstruction();
+        final IntegerType type = inst.byteSize ? i8 : inst.halfWordSize ? i16 : i32;
+        final Expression value = ctx.rV32 == null ? r64 : expressions.makeIntegerCast(r64, type, false);
         final Register status = programBuilder.getOrNewRegister(mainThread, ctx.rS, i32);
         final Register base = programBuilder.getOrErrorRegister(mainThread, ctx.address().id);
         final Expression address = applyOffset(ctx.offset(), base);
