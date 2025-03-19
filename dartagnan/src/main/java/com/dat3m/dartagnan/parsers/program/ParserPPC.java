@@ -18,7 +18,7 @@ import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Event;
 
-public class ParserPPC {
+public class ParserPPC extends ParserAsm{
 
     private final VisitorPPC visitor;
 
@@ -26,6 +26,7 @@ public class ParserPPC {
         this.visitor = new VisitorPPC(llvmFunction, returnRegister, llvmArguments);
     }
 
+    @Override
     public List<Event> parse(CharStream charStream) throws ParsingException, ProgramProcessingException {
         PPCLexer lexer = new PPCLexer(charStream);
         lexer.removeErrorListeners(); // Remove default listeners

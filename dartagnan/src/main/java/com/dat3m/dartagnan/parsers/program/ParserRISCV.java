@@ -18,7 +18,7 @@ import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Event;
 
-public class ParserRISCV {
+public class ParserRISCV extends ParserAsm{
 
     private final VisitorRISCV visitor;
 
@@ -26,6 +26,7 @@ public class ParserRISCV {
         this.visitor = new VisitorRISCV(llvmFunction, returnRegister, llvmArguments);
     }
 
+    @Override
     public List<Event> parse(CharStream charStream) throws ParsingException, ProgramProcessingException {
         RISCVLexer lexer = new RISCVLexer(charStream);
         lexer.removeErrorListeners(); // Remove default listeners
