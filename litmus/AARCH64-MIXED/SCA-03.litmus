@@ -1,0 +1,17 @@
+AArch64 SCA-03
+"Rfiw0q0 Friq0w4 Rfew4q0 Freq0w0"
+Generator=diyone7 (version 7.52+9(dev))
+Prefetch=
+Com=Rf Fr
+Orig=Rfiw0q0 Friq0w4 Rfew4q0 Freq0w0
+{
+uint64_t x; uint64_t 1:X0; uint64_t 0:X2;
+
+0:X0=0x1010101; 0:X1=x; 0:X3=0x2020202;
+1:X1=x;
+}
+ P0             | P1          ;
+ STR W0,[X1]    | LDR X0,[X1] ;
+ LDR X2,[X1]    |             ;
+ STR W3,[X1,#4] |             ;
+exists (0:X2=0x1010101 /\ 1:X0=0x202020200000000 /\ x=0x202020201010101)

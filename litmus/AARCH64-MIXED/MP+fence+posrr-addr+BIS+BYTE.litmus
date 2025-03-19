@@ -1,0 +1,16 @@
+AArch64 MP+fence+posrr-addr+BIS+BYTE
+"DMB.SYdWWb0b1 Rfeb0h0 PosRRh0b1 DpAddrdRb1b0 Freb0b0"
+{
+uint32_t y; uint32_t x; uint32_t 1:X4; uint32_t 1:X0;
+
+0:X1=x; 0:X3=y;
+1:X1=y; 1:X5=x;
+}
+ P0              | P1                   ;
+ MOV W0,#1       | LDRH W0,[X1]         ;
+ STRB W0,[X1]    | LDRB W2,[X1,#1]      ;
+ DMB SY          | LDRB W4,[X5,W2,SXTW] ;
+ MOV W2,#1       |                      ;
+ STRB W2,[X3]    |                      ;
+exists
+(1:X0=0x1 /\ 1:X4=0x0 /\ 1:X2=0x0)
