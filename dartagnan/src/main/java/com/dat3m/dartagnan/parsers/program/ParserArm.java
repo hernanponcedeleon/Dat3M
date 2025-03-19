@@ -18,14 +18,15 @@ import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Event;
 
-public class ParserArm {
+public class ParserArm extends ParserAsm{
 
     private final VisitorArm visitor;
 
     public ParserArm(Function llvmFunction, Register returnRegister, ArrayList<Expression> llvmArguments) {
         this.visitor = new VisitorArm(llvmFunction, returnRegister, llvmArguments);
     }
-
+    
+    @Override
     public List<Event> parse(CharStream charStream) throws ParsingException, ProgramProcessingException{
         ArmLexer lexer = new ArmLexer(charStream);
         lexer.removeErrorListeners(); // Remove default listeners

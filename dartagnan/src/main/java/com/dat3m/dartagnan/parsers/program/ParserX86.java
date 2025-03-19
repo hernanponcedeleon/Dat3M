@@ -18,7 +18,7 @@ import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Event;
 
-public class ParserX86 {
+public class ParserX86 extends ParserAsm{
 
     private final VisitorX86 visitor;
 
@@ -26,6 +26,7 @@ public class ParserX86 {
         this.visitor = new VisitorX86(llvmFunction, returnRegister, llvmArguments);
     }
 
+    @Override
     public List<Event> parse(CharStream charStream) throws ParsingException, ProgramProcessingException {
         X86Lexer lexer = new X86Lexer(charStream);
         lexer.removeErrorListeners(); // Remove default listeners
