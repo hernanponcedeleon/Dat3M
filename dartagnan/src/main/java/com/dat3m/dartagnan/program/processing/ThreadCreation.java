@@ -221,12 +221,13 @@ public class ThreadCreation implements ProgramProcessor {
                 // Note: This loop is constructed as how it should be after the unrolling pass so that
                 //       the processing pipeline does not have to be changed.
                 final Event loopBound = EventFactory.Svcomp.newLoopBound(expressions.makeValue(1, types.getArchType()));
-                final Label waitingLoopBegin = EventFactory.newLabel("l-wait-" + joinCounter + ".loop/itr_1");
+                final String loopLabelPrefix = "l_waitForT" + tid + "#" + joinCounter;
+                final Label waitingLoopBegin = EventFactory.newLabel(loopLabelPrefix + ".loop/itr_1");
                 waitingLoopBegin.addTags(Tag.NOOPT);
-                final Label spinGuard = EventFactory.newLabel("l-wait" + joinCounter + ".guard");
+                final Label spinGuard = EventFactory.newLabel(loopLabelPrefix + ".guard");
                 final Event terminator = EventFactory.newGoto((Label) thread.getExit());
                 terminator.addTags(Tag.SPINLOOP, Tag.NONTERMINATION);
-                final Label endMarker = EventFactory.newLabel("l-wait-" + joinCounter + ".loop/bound");
+                final Label endMarker = EventFactory.newLabel(loopLabelPrefix + ".loop/bound");
                 endMarker.addTags(Tag.NOOPT);
                 final Event boundEvent = newJump(expressions.makeTrue(), (Label) thread.getExit());
                 boundEvent.addTags(Tag.BOUND, Tag.NONTERMINATION, Tag.NOOPT);
