@@ -77,7 +77,7 @@ public class VisitorRISCV extends RISCVBaseVisitor<Object> {
         return constraint.outputOpAssign() != null;
     }
 
-    // Tells us if the constraint is an input one, e.g. 'Q' or '*Q' or 'r' 
+    // Tells us if the constraint is an input one, e.g 'r' or 'A'
     private boolean isConstraintInputConstraint(RISCVParser.ConstraintContext constraint) {
         return constraint.inputOpGeneralReg() != null;
     }
@@ -234,7 +234,6 @@ public class VisitorRISCV extends RISCVBaseVisitor<Object> {
     @Override
     public Object visitAtomicAddAcquireRelease(RISCVParser.AtomicAddAcquireReleaseContext ctx){
         throw new ProgramProcessingException(ctx.AtomicAddAcquireRelease().getText());
-        // return null;
     }
     // If the register with that ID was already defined, we simply return it
     // otherwise, we create and return the new register.
@@ -284,7 +283,7 @@ public class VisitorRISCV extends RISCVBaseVisitor<Object> {
                     outputAssignments.add(EventFactory.newLocal(returnRegister, asmRegisters.get(0)));
                 } else {
                     Type aggregateType = returnRegister.getType();
-                    // %16 = call { ptr, i32, i64 } asm sideeffect "1:li $1, 1\0Alr.d $0, $2\0Abne $0, $4, 2f\0Asc.d $1, $3, $2\0Abnez $1, 1b\0A2:", "=&r,=&r,=r,r,r,2,~{memory}"(ptr %13, i64 %15, i64 %12) #7, !srcloc !18
+                    // %16 = call { ptr, i32, i64 } asm sideeffect "asm code", "=&r,=&r,=r,r,r,2,~{memory}"(ptr %13, i64 %15, i64 %12)
                     // args are not passed in order, sorting solves it
                     // we can do it only once here where we create the output assignment
                     this.pendingRegisters.sort(Comparator.comparing(Register::getName));
