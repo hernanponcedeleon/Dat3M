@@ -396,11 +396,11 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
                 // we have to generate the stream each time as the parser consumes it
                 CharStream charStream = CharStreams.fromString(asmCode);
                 try {
-                    events = tryParse(parser,charStream);    
-                } catch (ProgramProcessingException e) {
+                    events = tryParse(parser,charStream);
+                } catch (ParsingException e) {
                     logger.warn("Support for inline assembly instruction '{}' is not available for parser '{}'. Setting non deterministic value ", e.getMessage(), parser.getClass().getSimpleName());
                     if(resultRegister != null){
-                        Event nonDeterministicValue = EventFactory.newLocal(resultRegister, program.newConstant(resultRegister.getType()));
+                        Event nonDeterministicValue = EventFactory.Svcomp.newNonDetChoice(resultRegister);
                         events = Optional.of(List.of(nonDeterministicValue));
                         break;    
                     }
@@ -1517,11 +1517,8 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
     // ----------------------------------------------------------------------------------------------------------------
     // Helper to parse inline asm code
     private Optional<List<Event>> tryParse(ParserAsm parser, CharStream asmCode) throws ProgramProcessingException{
-        try {
-            List<Event> events = parser.parse(asmCode);    
-            return (events != null) ? Optional.of(events) : Optional.empty();
-        } catch (ParsingException e) {}
-        return Optional.empty();
+        List<Event> events = parser.parse(asmCode);
+        return (events != null) ? Optional.of(events) : Optional.empty();
     }
 
 }

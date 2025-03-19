@@ -8,7 +8,6 @@ import org.antlr.v4.runtime.CommonTokenStream;
 import org.antlr.v4.runtime.ParserRuleContext;
 
 import com.dat3m.dartagnan.exception.ParsingException;
-import com.dat3m.dartagnan.exception.ProgramProcessingException;
 import com.dat3m.dartagnan.exception.UnrecognizedTokenListener;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.parsers.ArmLexer;
@@ -27,7 +26,7 @@ public class ParserArm extends ParserAsm{
     }
     
     @Override
-    public List<Event> parse(CharStream charStream) throws ParsingException, ProgramProcessingException{
+    public List<Event> parse(CharStream charStream) throws ParsingException{
         ArmLexer lexer = new ArmLexer(charStream);
         lexer.removeErrorListeners(); // Remove default listeners
         lexer.addErrorListener(new UnrecognizedTokenListener());
