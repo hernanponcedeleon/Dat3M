@@ -437,15 +437,6 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
         return resultRegister;
     }
 
-    Optional<List<Event>> tryParse(ParserAsm parser, CharStream asmCode) throws ProgramProcessingException{
-        try {
-            List<Event> events = parser.parse(asmCode);    
-            return (events != null) ? Optional.of(events) : Optional.empty();
-        } catch (ParsingException e) {}
-        return Optional.empty();
-    }
-    
-
 
     @Override
     public Expression visitRetTerm(RetTermContext ctx) {
@@ -1521,6 +1512,16 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
             }
             return Optional.empty();
         }
+    }
+    
+    // ----------------------------------------------------------------------------------------------------------------
+    // Helper to parse inline asm code
+    private Optional<List<Event>> tryParse(ParserAsm parser, CharStream asmCode) throws ProgramProcessingException{
+        try {
+            List<Event> events = parser.parse(asmCode);    
+            return (events != null) ? Optional.of(events) : Optional.empty();
+        } catch (ParsingException e) {}
+        return Optional.empty();
     }
 
 }
