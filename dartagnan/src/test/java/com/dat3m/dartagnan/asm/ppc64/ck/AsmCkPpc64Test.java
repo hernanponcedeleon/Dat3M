@@ -27,7 +27,7 @@ import static com.dat3m.dartagnan.utils.ResourceHelper.getRootPath;
 import static com.dat3m.dartagnan.utils.ResourceHelper.getTestResourcePath;
 import com.dat3m.dartagnan.utils.Result;
 import com.dat3m.dartagnan.verification.VerificationTask;
-import com.dat3m.dartagnan.verification.solving.AssumeSolver;
+import com.dat3m.dartagnan.verification.solving.RefinementSolver;
 import com.dat3m.dartagnan.wmm.Wmm;
 
 @RunWith(Parameterized.class)
@@ -62,11 +62,8 @@ public class AsmCkPpc64Test {
 
     @Test
     public void testAllSolvers() throws Exception {// TODO : RefinementSolver takes too long to run, we have to investigate this
-        // try (SolverContext ctx = mkCtx(); ProverWithTracker prover = mkProver(ctx)) {
-        //     assertEquals(expected, RefinementSolver.run(ctx, prover, mkTask()).getResult());
-        // }
         try (SolverContext ctx = mkCtx(); ProverWithTracker prover = mkProver(ctx)) {
-            assertEquals(expected, AssumeSolver.run(ctx, prover, mkTask()).getResult());
+            assertEquals(expected, RefinementSolver.run(ctx, prover, mkTask()).getResult());
         }
     }
 
