@@ -58,8 +58,10 @@ instruction
     |   mov
     |   arithmetic
     |   load
+    |   loadPair
     |   loadExclusive
     |   store
+    |   storePair
     |   storeExclusive
     |   cmp
     |   branch
@@ -85,24 +87,34 @@ arithmetic locals [String rD, String rV, int size]
     |   arithmeticInstruction rD64 = register64 Comma rV64 = register64 Comma expr64 {$rD = $rD64.id; $rV = $rV64.id; $size = 64;}
     ;
 
-load  locals [String rD, int size]
-    :   loadInstruction rD32 = register32 Comma LBracket address (Comma offset)? RBracket {$rD = $rD32.id; $size = 32;}
-    |   loadInstruction rD64 = register64 Comma LBracket address (Comma offset)? RBracket {$rD = $rD64.id; $size = 64;}
+load
+    :   loadInstruction rD32 = register32 Comma LBracket address RBracket
+    |   loadInstruction rD64 = register64 Comma LBracket address RBracket
     ;
 
-loadExclusive  locals [String rD, int size]
-    :   loadExclusiveInstruction rD32 = register32 Comma LBracket address (Comma offset)? RBracket {$rD = $rD32.id; $size = 32;}
-    |   loadExclusiveInstruction rD64 = register64 Comma LBracket address (Comma offset)? RBracket {$rD = $rD64.id; $size = 64;}
+loadPair
+    :   LDP rD032 = register32 Comma rD132 = register32 Comma LBracket address RBracket
+    |   LDP rD064 = register64 Comma rD164 = register64 Comma LBracket address RBracket
     ;
 
-store  locals [String rV, int size]
-    :   storeInstruction rV32 = register32 Comma LBracket address (Comma offset)? RBracket {$rV = $rV32.id; $size = 32;}
-    |   storeInstruction rV64 = register64 Comma LBracket address (Comma offset)? RBracket {$rV = $rV64.id; $size = 64;}
+loadExclusive
+    :   loadExclusiveInstruction rD32 = register32 Comma LBracket address RBracket
+    |   loadExclusiveInstruction rD64 = register64 Comma LBracket address RBracket
     ;
 
-storeExclusive  locals [String rS, String rV, int size]
-    :   storeExclusiveInstruction rS32 = register32 Comma rV32 = register32 Comma LBracket address (Comma offset)? RBracket {$rS = $rS32.id; $rV = $rV32.id; $size = 32;}
-    |   storeExclusiveInstruction rS32 = register32 Comma rV64 = register64 Comma LBracket address (Comma offset)? RBracket {$rS = $rS32.id; $rV = $rV64.id; $size = 64;}
+store
+    :   storeInstruction rV32 = register32 Comma LBracket address RBracket
+    |   storeInstruction rV64 = register64 Comma LBracket address RBracket
+    ;
+
+storePair
+    :   STP r032 = register32 Comma r132 = register32 Comma LBracket address RBracket
+    |   STP r064 = register64 Comma r164 = register64 Comma LBracket address RBracket
+    ;
+
+storeExclusive
+    :   storeExclusiveInstruction rS32 = register32 Comma rV32 = register32 Comma LBracket address RBracket
+    |   storeExclusiveInstruction rS32 = register32 Comma rV64 = register64 Comma LBracket address RBracket
     ;
 
 fence locals [String opt]
@@ -226,6 +238,10 @@ expr32
     |   expressionImmediate
     ;
 
+address
+    :   register64 (Comma offset)?
+    ;
+
 offset
     :   immediate
     |   register64
@@ -251,10 +267,6 @@ expressionImmediate
 expressionConversion returns[boolean signed]
     :   register32 Comma UXTW {$signed = false;}
     |   register32 Comma SXTW {$signed = true;}
-    ;
-
-address returns[String id]
-    :   r = register64 {$id = $r.id;}
     ;
 
 register64 returns[String id]
@@ -324,6 +336,7 @@ LDRH   :   'LDRH'   ;
 LDAR   :   'LDAR'   ;
 LDARB  :   'LDARB'  ;
 LDARH  :   'LDARH'  ;
+LDP    :   'LDP'    ;
 LDXR   :   'LDXR'   ;
 LDXRB  :   'LDXRB'  ;
 LDXRH  :   'LDXRH'  ;
@@ -339,6 +352,7 @@ STRH   :   'STRH'   ;
 STLR   :   'STLR'   ;
 STLRB  :   'STLRB'  ;
 STLRH  :   'STLRH'  ;
+STP    :   'STP'    ;
 STXR   :   'STXR'   ;
 STXRB  :   'STXRB'  ;
 STXRH  :   'STXRH'  ;
