@@ -12,11 +12,11 @@ import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.EventFactory;
 
-public class VisitorX86 extends X86BaseVisitor<Object> {
+public class VisitorAsmX86 extends X86BaseVisitor<Object> {
 
     private final List<Event> asmInstructions = new ArrayList<>();
 
-    public VisitorX86(Function llvmFunction, Register returnRegister, List<Expression> llvmArguments) {}
+    public VisitorAsmX86(Function llvmFunction, Register returnRegister, List<Expression> llvmArguments) {}
 
     @Override
     public List<Event> visitAsm(X86Parser.AsmContext ctx) {

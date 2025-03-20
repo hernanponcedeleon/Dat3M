@@ -22,7 +22,7 @@ import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.event.core.Local;
 import static com.google.common.base.Preconditions.checkState;
 
-public class VisitorPPC extends PPCBaseVisitor<Object> {
+public class VisitorAsmPPC extends PPCBaseVisitor<Object> {
 
     private record CmpInstruction(Expression left, Expression right) {};
 
@@ -44,7 +44,7 @@ public class VisitorPPC extends PPCBaseVisitor<Object> {
     // map from RegisterID to the corresponding asm register
     private final HashMap<Integer, Register> asmRegisters = new HashMap<>();
 
-    public VisitorPPC(Function llvmFunction, Register returnRegister, List<Expression> llvmArguments) {
+    public VisitorAsmPPC(Function llvmFunction, Register returnRegister, List<Expression> llvmArguments) {
         this.llvmFunction = llvmFunction;
         this.returnRegister = returnRegister;
         this.argsRegisters = llvmArguments;
