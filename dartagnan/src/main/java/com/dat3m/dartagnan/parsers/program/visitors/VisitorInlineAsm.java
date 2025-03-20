@@ -259,8 +259,8 @@ public class VisitorInlineAsm extends InlineAsmBaseVisitor<Object> {
     public Object visitAdd(InlineAsmParser.AddContext ctx) {
         Register resultRegister = (Register) ctx.register(0).accept(this);
         Register lhs = (Register) ctx.register(1).accept(this);
-        Expression rhs = (Expression) ctx.expr().accept(this);
         expectedType = lhs.getType();
+        Expression rhs = (Expression) ctx.expr().accept(this);
         Expression exp = expressions.makeAdd(lhs, rhs);
         asmInstructions.add(EventFactory.newLocal(resultRegister, exp));
         return null;
@@ -270,10 +270,7 @@ public class VisitorInlineAsm extends InlineAsmBaseVisitor<Object> {
     public Object visitSub(InlineAsmParser.SubContext ctx) {
         Register resultRegister = (Register) ctx.register(0).accept(this);
         Register lhs = (Register) ctx.register(1).accept(this);
-        this.expectedType = lhs.getType();
-        System.out.println("In visitSub resultRegister is " + resultRegister);
-        System.out.println("In visitSub lhs is " + lhs);
-        System.out.println("In visitSub expectedType is " + this.expectedType);
+        expectedType = lhs.getType();
         Expression rhs = (Expression) ctx.expr().accept(this);
         Expression exp = expressions.makeAdd(lhs, rhs);
         asmInstructions.add(EventFactory.newLocal(resultRegister, exp));
@@ -338,7 +335,6 @@ public class VisitorInlineAsm extends InlineAsmBaseVisitor<Object> {
     public Object visitCompare(InlineAsmParser.CompareContext ctx) {
         Register firstRegister = (Register) ctx.register().accept(this);
         expectedType = firstRegister.getType();
-        System.out.println("In cmp expectedType is " + expectedType);
         Expression secondRegister = (Expression) ctx.expr().accept(this);
         this.comparator = new CmpInstruction(firstRegister, secondRegister);
         return null;
@@ -460,7 +456,6 @@ public class VisitorInlineAsm extends InlineAsmBaseVisitor<Object> {
 
     @Override
     public Object visitValue(InlineAsmParser.ValueContext ctx) {
-        System.out.println("In visitValue expectedType is " + ((IntegerType) this.expectedType).toString());
         checkState(expectedType instanceof IntegerType, "Expected type is not an integer type");
         String valueString = ctx.NumbersInline().getText();
         BigInteger value = new BigInteger(valueString);
