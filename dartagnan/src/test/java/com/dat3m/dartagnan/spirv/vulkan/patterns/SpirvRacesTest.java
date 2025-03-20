@@ -1,4 +1,4 @@
-package com.dat3m.dartagnan.spirv.patterns;
+package com.dat3m.dartagnan.spirv.vulkan.patterns;
 
 import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.encoding.ProverWithTracker;
@@ -49,16 +49,16 @@ public class SpirvRacesTest {
     @Parameterized.Parameters(name = "{index}: {0}, {1}, {2}")
     public static Iterable<Object[]> data() throws IOException {
         return Arrays.asList(new Object[][]{
-                {"CORR.spv.dis", false, PASS},
-                {"IRIW.spv.dis", false, PASS},
-                {"SB.spv.dis", false, PASS},
+                {"corr.spv.dis", false, PASS},
+                {"iriw.spv.dis", false, PASS},
+                {"sb.spv.dis", false, PASS},
 
-                {"MP.spv.dis", false, FAIL},
-                {"MP.spv.dis", true, PASS},
-                {"MP-acq2rx.spv.dis", false, FAIL},
-                {"MP-acq2rx.spv.dis", true, FAIL},
-                {"MP-rel2rx.spv.dis", false, FAIL},
-                {"MP-rel2rx.spv.dis", true, FAIL},
+                {"mp.spv.dis", false, FAIL},
+                {"mp.spv.dis", true, PASS},
+                {"mp-acq2rx.spv.dis", false, FAIL},
+                {"mp-acq2rx.spv.dis", true, FAIL},
+                {"mp-rel2rx.spv.dis", false, FAIL},
+                {"mp-rel2rx.spv.dis", true, FAIL},
         });
     }
 

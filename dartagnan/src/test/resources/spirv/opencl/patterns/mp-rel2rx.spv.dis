@@ -2,12 +2,13 @@
 ; @Input: %11 = {{0}}
 ; @Input: %12 = {{0}}
 ; @Input: %13 = {{0}}
-; @Output: forall (%12[0][0] == 0 or %13[0][0] == 1)
+; @Output: forall (%12[0][0] != 1 or %13[0][0] == 1)
+; @Filter: %12[0][0] == 1
 ; @Config: 2, 1, 1
 ; SPIR-V
 ; Version: 1.0
 ; Generator: Khronos LLVM/SPIR-V Translator; 14
-; Bound: 42
+; Bound: 41
 ; Schema: 0
                OpCapability Addresses
                OpCapability Linkage
@@ -29,7 +30,6 @@
      %uint_0 = OpConstant %uint 0
      %uint_1 = OpConstant %uint 1
      %uint_4 = OpConstant %uint 4
-     %uint_2 = OpConstant %uint 2
      %v3uint = OpTypeVector %uint 3
 %_ptr_Input_v3uint = OpTypePointer Input %v3uint
        %void = OpTypeVoid
@@ -67,13 +67,13 @@
          %16 = OpLabel
          %34 = OpLoad %_ptr_CrossWorkgroup_uint %19 Aligned 4
          %35 = OpPtrCastToGeneric %_ptr_Generic_uint %34
-         %37 = OpAtomicLoad %uint %35 %uint_1 %uint_2
-         %38 = OpLoad %_ptr_CrossWorkgroup_uint %21 Aligned 4
-               OpStore %38 %37 Aligned 4
-         %39 = OpLoad %_ptr_CrossWorkgroup_uint %20 Aligned 4
-         %40 = OpLoad %uint %39 Aligned 4
-         %41 = OpLoad %_ptr_CrossWorkgroup_uint %22 Aligned 4
-               OpStore %41 %40 Aligned 4
+         %36 = OpAtomicLoad %uint %35 %uint_1 %uint_0
+         %37 = OpLoad %_ptr_CrossWorkgroup_uint %21 Aligned 4
+               OpStore %37 %36 Aligned 4
+         %38 = OpLoad %_ptr_CrossWorkgroup_uint %20 Aligned 4
+         %39 = OpLoad %uint %38 Aligned 4
+         %40 = OpLoad %_ptr_CrossWorkgroup_uint %22 Aligned 4
+               OpStore %40 %39 Aligned 4
                OpBranch %17
          %17 = OpLabel
                OpReturn
