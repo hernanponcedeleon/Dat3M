@@ -134,24 +134,22 @@ let bob = po; [dmb.full]; po
 let tob = [R & T]; intrinsic; [M \ T]
 
 (* Locally-ordered-before *)
-let rec lob = lws; si
+(* originally transitive *)
+let lob = lws; si
             | dob
             | aob
             | bob
             | tob
-            | lob; lob
 
 (* Ordered-before *)
-let rec ob = obs; si
-        | lob
-	| ob; ob
+let ob = (obs; si | lob)^+
 
 (* Tag-location-ordered *)
 let tlo = [R & T]; tob; loc; tob^-1; [R & T]
 
 (* Internal visibility requirement *)
-let Exp = [M]\[domain(tob)]
-let po-loc = (po-loc & Exp;_*_;Exp) | (po & tlo)
+let exp = [M]\[domain(tob)]
+let po-loc = (exp;po-loc;exp) | (po & tlo)
 acyclic po-loc | ca | rf as internal
 
 (* Basic single copy atomicity *)
@@ -164,7 +162,7 @@ acyclic (co|rfe|fr);si as mca
 let mca = (co|rfe|fr);si
 
 (* External visibility requirement *)
-irreflexive ob as external
+acyclic ob as external
 
 (* Atomic: Basic LDXR/STXR constraint to forbid intervening writes. *)
 empty rmw & (fre; coe) as atomic

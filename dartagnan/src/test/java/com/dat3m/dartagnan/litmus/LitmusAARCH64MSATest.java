@@ -32,7 +32,7 @@ public class LitmusAARCH64MSATest extends LitmusAARCH64Test {
 
     @Override
     protected Provider<Wmm> getWmmProvider() {
-        return Providers.createWmmFromName(() -> "aarch64_diy");
+        return Providers.createWmmFromName(() -> "aarch64-mixed");
     }
 
     @Override
