@@ -42,6 +42,8 @@ public class SVCOMPRunner extends BaseOptions {
         //TODO process the property file instead of assuming its contents based of its name
         if(p.contains("no-data-race")) {
             property = Property.DATARACEFREEDOM;
+        } else if(p.contains("termination")) {
+            property = Property.TERMINATION;
         } else if(p.contains("unreach-call") || p.contains("no-overflow") || p.contains("valid-memsafety")) {
             property = Property.PROGRAM_SPEC;
         } else {

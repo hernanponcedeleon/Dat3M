@@ -17,6 +17,8 @@ import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.common.configuration.Option;
 import org.sosy_lab.common.configuration.Options;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.util.List;
 
@@ -41,6 +43,8 @@ import static com.dat3m.dartagnan.configuration.OptionNames.NONTERMINATION_INSTR
 @Options
 public class NonterminationDetection implements ProgramProcessor {
     
+    private static final Logger logger = LogManager.getLogger(NonterminationDetection.class);
+
     public enum Mode {
         ONLY_SPINLOOPS,
         SIMPLE,
@@ -66,6 +70,7 @@ public class NonterminationDetection implements ProgramProcessor {
 
     @Override
     public void run(Program program) {
+        logger.info("Non-termination detection mode {}", mode);
         if (mode == Mode.ONLY_SPINLOOPS) {
             // Done by DynamicSpinLoopDetection
             return;
@@ -91,7 +96,7 @@ public class NonterminationDetection implements ProgramProcessor {
             iters = loop.iterations();
         } else if (mode == Mode.SIMPLE) {
             final int last = loop.iterations().size() - 1;
-            iters = List.of(loop.iterations().get(last - 1));
+            iters = List.of(loop.iterations().get(last));
         } else {
             throw new IllegalStateException("Unexpected mode: " + mode);
         }
