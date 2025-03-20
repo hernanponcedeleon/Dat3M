@@ -37,6 +37,6 @@ public class LitmusAARCH64MSATest extends LitmusAARCH64Test {
 
     @Override
     protected long getTimeout() {
-        return 10_000L;
+        return 1_000L;
     }
 }

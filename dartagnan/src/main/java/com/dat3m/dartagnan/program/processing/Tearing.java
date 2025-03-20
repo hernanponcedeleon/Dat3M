@@ -64,6 +64,8 @@ public final class Tearing {
         //NOTE Some loads are used by stores, and cannot be replaced before them
         for (Map.Entry<MemoryCoreEvent, List<Event>> entry : map.entrySet()) {
             if (entry.getKey() instanceof Store store && !entry.getValue().equals(List.of(store))) {
+                Event firstStore = entry.getValue().stream().filter(Store.class::isInstance).findFirst().orElseThrow();
+                store.getUsers().forEach(u -> u.updateReferences(Map.of(store, firstStore)));
                 store.replaceBy(entry.getValue());
             }
         }

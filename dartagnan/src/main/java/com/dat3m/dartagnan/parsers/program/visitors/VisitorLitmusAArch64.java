@@ -186,13 +186,16 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object> {
     public Object visitLoadPair(LoadPairContext ctx) {
         final boolean extended = ctx.rD064 != null;
         final Register r064 = parseRegister64(ctx.rD032, ctx.rD064);
-        final Register r164 = parseRegister64(ctx.rD032, ctx.rD164);
+        final Register r164 = parseRegister64(ctx.rD132, ctx.rD164);
         final Register value0 = extended ? r064 : getOrNewRegister32(ctx.rD032, r064, false, false);
         final Register value1 = extended ? r164 : getOrNewRegister32(ctx.rD132, r164, false, false);
         final Expression address0 = parseAddress(ctx.address());
         final Expression address1 = expressions.makeAdd(address0, expressions.makeValue(extended ? 8 : 4, archType));
         add(EventFactory.newLoad(value0, address0));
-        return add(EventFactory.newLoad(value1, address1));
+        add(EventFactory.newLoad(value1, address1));
+        addRegister64Update(r064, value0);
+        addRegister64Update(r164, value1);
+        return null;
     }
 
     @Override
