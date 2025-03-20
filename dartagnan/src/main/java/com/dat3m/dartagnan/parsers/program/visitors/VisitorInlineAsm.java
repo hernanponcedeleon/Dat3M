@@ -1,5 +1,10 @@
 package com.dat3m.dartagnan.parsers.program.visitors;
 
+import java.math.BigInteger;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+
 import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
@@ -18,12 +23,6 @@ import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.event.core.Local;
-
-import java.math.BigInteger;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-
 import static com.google.common.base.Preconditions.checkState;
 
 // The trickiest part of handling inline assembly is matching input and output registers on the LLVM side with the registers in the assembly.
@@ -259,9 +258,10 @@ public class VisitorInlineAsm extends InlineAsmBaseVisitor<Object> {
     @Override
     public Object visitAdd(InlineAsmParser.AddContext ctx) {
         Register resultRegister = (Register) ctx.register(0).accept(this);
-        Register leftRegister = (Register) ctx.register(1).accept(this);
-        Register rightRegister = (Register) ctx.register(2).accept(this);
-        Expression exp = expressions.makeAdd(leftRegister, rightRegister);
+        Register lhs = (Register) ctx.register(1).accept(this);
+        Expression rhs = (Expression) ctx.expr().accept(this);
+        expectedType = lhs.getType();
+        Expression exp = expressions.makeAdd(lhs, rhs);
         asmInstructions.add(EventFactory.newLocal(resultRegister, exp));
         return null;
     }
@@ -269,9 +269,13 @@ public class VisitorInlineAsm extends InlineAsmBaseVisitor<Object> {
     @Override
     public Object visitSub(InlineAsmParser.SubContext ctx) {
         Register resultRegister = (Register) ctx.register(0).accept(this);
-        Register leftRegister = (Register) ctx.register(1).accept(this);
-        Register rightRegister = (Register) ctx.register(2).accept(this);
-        Expression exp = expressions.makeSub(leftRegister, rightRegister);
+        Register lhs = (Register) ctx.register(1).accept(this);
+        this.expectedType = lhs.getType();
+        System.out.println("In visitSub resultRegister is " + resultRegister);
+        System.out.println("In visitSub lhs is " + lhs);
+        System.out.println("In visitSub expectedType is " + this.expectedType);
+        Expression rhs = (Expression) ctx.expr().accept(this);
+        Expression exp = expressions.makeAdd(lhs, rhs);
         asmInstructions.add(EventFactory.newLocal(resultRegister, exp));
         return null;
     }
@@ -334,6 +338,7 @@ public class VisitorInlineAsm extends InlineAsmBaseVisitor<Object> {
     public Object visitCompare(InlineAsmParser.CompareContext ctx) {
         Register firstRegister = (Register) ctx.register().accept(this);
         expectedType = firstRegister.getType();
+        System.out.println("In cmp expectedType is " + expectedType);
         Expression secondRegister = (Expression) ctx.expr().accept(this);
         this.comparator = new CmpInstruction(firstRegister, secondRegister);
         return null;
@@ -455,8 +460,9 @@ public class VisitorInlineAsm extends InlineAsmBaseVisitor<Object> {
 
     @Override
     public Object visitValue(InlineAsmParser.ValueContext ctx) {
+        System.out.println("In visitValue expectedType is " + ((IntegerType) this.expectedType).toString());
         checkState(expectedType instanceof IntegerType, "Expected type is not an integer type");
-        String valueString = ctx.ConstantValue().getText().substring(1);
+        String valueString = ctx.NumbersInline().getText();
         BigInteger value = new BigInteger(valueString);
         return expressions.makeValue(value, (IntegerType) expectedType);
     }

@@ -50,7 +50,6 @@ IOLiteral                   : 'io';
 MLiteral                    : 'm';
 QCapitalLiteral             : 'Q';
 RegisterSizeHint            : Colon (XLiteral | 'w');
-ConstantValue               : Num NumbersInline;
 
 
 // fences
