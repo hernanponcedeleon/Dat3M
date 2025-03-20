@@ -361,7 +361,9 @@ public class Intrinsics {
     }
 
     private List<Event> inlineExit(FunctionCall ignored) {
-        return List.of(EventFactory.newAbortIf(expressions.makeTrue()));
+        final Event exit = EventFactory.newAbortIf(expressions.makeTrue());
+        exit.addTags(Tag.EXCEPTIONAL_TERMINATION);
+        return List.of(exit);
     }
 
     private List<Event> inlineLoopBegin(FunctionCall ignored) {

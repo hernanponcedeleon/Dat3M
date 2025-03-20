@@ -154,7 +154,8 @@ public class LivenessTest extends AbstractCTest {
                 {"nontermination/nontermination_oscillation_simple", TSO, FAIL},
                 {"nontermination/nontermination_oscillation_long", TSO, FAIL},
                 {"nontermination/nontermination_unstructured_spin", TSO, PASS},
-                {"nontermination/termination_repetition", TSO, UNKNOWN}
+                {"nontermination/termination_repetition", TSO, UNKNOWN},
+                {"nontermination/locks_abort", IMM, PASS}
         });
     }
 
