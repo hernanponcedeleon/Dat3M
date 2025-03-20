@@ -7,7 +7,6 @@ import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.Type;
 import com.dat3m.dartagnan.expression.integers.IntLiteral;
 import com.dat3m.dartagnan.expression.type.FunctionType;
-import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.program.*;
 import com.dat3m.dartagnan.program.Thread;
@@ -203,13 +202,7 @@ public class ProgramBuilder {
             mem.setName(name);
             if (program.getFormat() == LITMUS) {
                 // Litmus code always initializes memory
-                final IntegerType archType = types.getArchType();
-                final int archSize = types.getMemorySizeInBytes(archType);
-                Preconditions.checkArgument(size % archSize == 0, "size %s not a multiple of archType size", size);
-                final Expression zero = expressions.makeZero(archType);
-                for (int offset = 0; offset < size; offset += archSize) {
-                    mem.setInitialValue(offset, zero);
-                }
+                mem.setInitialValue(0, expressions.makeZero(types.getIntegerType(8 * size)));
             }
             locations.put(name, mem);
         }
@@ -278,6 +271,8 @@ public class ProgramBuilder {
     public Register getOrNewRegister(int fid, String name, Type type) {
         Function func = getFunctionOrError(fid);
         Register register = name == null ? func.newRegister(type) : func.getRegister(name);
+        Verify.verify(register == null || type.equals(register.getType()),
+                "Expected %s, got %s", type, register);
         return register != null ? register : func.newRegister(name, type);
     }
 

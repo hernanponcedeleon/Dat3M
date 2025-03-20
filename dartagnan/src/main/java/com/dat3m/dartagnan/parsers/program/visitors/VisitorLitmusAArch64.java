@@ -15,6 +15,7 @@ import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.core.Label;
+import org.antlr.v4.runtime.tree.TerminalNode;
 
 import java.math.BigInteger;
 import java.util.Arrays;
@@ -62,6 +63,26 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object> {
     // Variable declarator list, e.g., { 0:EAX=0; 1:EAX=1; x=2; }
 
     @Override
+    public Object visitTypedVariableDeclarator(TypedVariableDeclaratorContext ctx) {
+        final int typeBytes = typeBytes(ctx.type());
+        if (ctx.constant() != null) {
+            final IntegerType type = types.getIntegerType(8 * typeBytes);
+            programBuilder.initLocEqConst(ctx.location().getText(), parseValue(ctx.constant(), type));
+        } else {
+            programBuilder.newMemoryObject(ctx.location().getText(), typeBytes);
+        }
+        return null;
+    }
+
+    @Override
+    public Object visitTypedArrayDeclarator(TypedArrayDeclaratorContext ctx) {
+        final int typeBytes = typeBytes(ctx.type());
+        final int arraySize = toInt(ctx.constant());
+        programBuilder.newMemoryObject(ctx.location().getText(), typeBytes * arraySize);
+        return null;
+    }
+
+    @Override
     public Object visitVariableDeclaratorLocation(VariableDeclaratorLocationContext ctx) {
         programBuilder.initLocEqConst(ctx.location().getText(), parseValue(ctx.constant(), archType));
         return null;
@@ -70,6 +91,18 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object> {
     @Override
     public Object visitVariableDeclaratorRegister(VariableDeclaratorRegisterContext ctx) {
         programBuilder.initRegEqConst(ctx.threadId().id, ctx.register64().id, parseValue(ctx.constant(), archType));
+        return null;
+    }
+
+    @Override
+    public Object visitTypedRegisterDeclarator(TypedRegisterDeclaratorContext ctx) {
+        final int typeSize = typeBytes(ctx.type());
+        final IntegerType type = types.getIntegerType(8 * typeSize);
+        if (ctx.constant() == null) {
+            programBuilder.getOrNewRegister(ctx.threadId().id, ctx.register64().id, type);
+        } else {
+            programBuilder.initRegEqConst(ctx.threadId().id, ctx.register64().id, parseValue(ctx.constant(), type));
+        }
         return null;
     }
 
@@ -282,6 +315,17 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object> {
         final int radix = ctx.Hexa() != null ? 16 : 10;
         BigInteger value = new BigInteger(ctx.constant().getText(), radix);
         return expressions.makeValue(value, archType);
+    }
+
+    private int toInt(ConstantContext ctx) {
+        final int radix = ctx.hex == null ? 10 : 16;
+        final TerminalNode node = ctx.hex == null ? ctx.DigitSequence() : ctx.HexDigitSequence();
+        return Integer.parseInt(node.getText(), radix);
+    }
+
+    private int typeBytes(TypeContext ignore) {
+        //defaults to 64 bits
+        return 8;
     }
 
     private IntLiteral parseValue(ConstantContext ctx, IntegerType type) {

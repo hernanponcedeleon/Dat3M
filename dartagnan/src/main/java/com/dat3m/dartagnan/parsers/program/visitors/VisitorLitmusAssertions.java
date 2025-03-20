@@ -4,6 +4,7 @@ import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.type.IntegerType;
+import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.parsers.LitmusAssertionsBaseVisitor;
 import com.dat3m.dartagnan.parsers.LitmusAssertionsLexer;
 import com.dat3m.dartagnan.parsers.LitmusAssertionsParser;
@@ -25,11 +26,13 @@ import static com.google.common.base.Preconditions.checkState;
 class VisitorLitmusAssertions extends LitmusAssertionsBaseVisitor<Expression> {
 
     private final ProgramBuilder programBuilder;
+    private final TypeFactory types;
     private final ExpressionFactory expressions;
     private final IntegerType archType;
 
     private VisitorLitmusAssertions(ProgramBuilder programBuilder) {
         this.programBuilder = programBuilder;
+        this.types = programBuilder.getTypeFactory();
         this.expressions = programBuilder.getExpressionFactory();
         this.archType = programBuilder.getTypeFactory().getArchType();
     }
@@ -123,6 +126,7 @@ class VisitorLitmusAssertions extends LitmusAssertionsBaseVisitor<Expression> {
         checkState(base != null, "uninitialized location %s", name);
         TerminalNode offset = ctx.DigitSequence();
         int o = offset == null ? 0 : Integer.parseInt(offset.getText());
-        return right && offset == null ? base : new FinalMemoryValue(name, archType, base, o);
+        final IntegerType type = types.getIntegerType(Math.min(64, 8 * base.getKnownSize()));
+        return right && offset == null ? base : new FinalMemoryValue(name, type, base, o);
     }
 }

@@ -15,10 +15,11 @@ variableDeclaratorList
     ;
 
 variableDeclarator
-    :   type location #typedVariableDeclarator
+    :   type location (Equals constant)? #typedVariableDeclarator
+    |   type location LBracket constant RBracket #typedArrayDeclarator
     |   location Equals constant #variableDeclaratorLocation
     |   location Equals Amp? location #variableDeclaratorLocationLocation
-    |   type threadId Colon register64 #typedRegisterDeclarator
+    |   type threadId Colon register64 (Equals constant)? #typedRegisterDeclarator
     |   threadId Colon register64 Equals constant #variableDeclaratorRegister
     |   threadId Colon register64 Equals Amp? location #variableDeclaratorRegisterLocation
     ;
