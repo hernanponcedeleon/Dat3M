@@ -14,13 +14,13 @@ import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.EventFactory;
+import com.dat3m.dartagnan.program.event.arch.Xchg;
 import com.dat3m.dartagnan.program.event.core.Label;
+import com.dat3m.dartagnan.program.event.metadata.CustomPrinting;
 import org.antlr.v4.runtime.tree.TerminalNode;
 
 import java.math.BigInteger;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 import static com.dat3m.dartagnan.parsers.program.utils.ProgramBuilder.replaceZeroRegisters;
 import static com.dat3m.dartagnan.program.event.Tag.ARMv8.*;
@@ -245,6 +245,49 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object> {
         final String mo = ctx.storeExclusiveInstruction().release ? MO_REL : MO_RX;
         return add(EventFactory.Common.newExclusiveStore(status, address, value, mo));
     }
+
+    private static final CustomPrinting SWP_PRINTER = e -> {
+        if (!(e instanceof Xchg xchg)) {
+            return Optional.empty();
+        }
+        final String acq = e.hasTag(MO_ACQ) ? "A" : "";
+        final String rel = e.hasTag(MO_REL) ? "L" : "";
+        final Expression value = xchg.getValue();
+        final Register loadReg = xchg.getResultRegister();
+        final Expression address = xchg.getAddress();
+
+        return Optional.of(String.format("SWP%s%s %s, %s, [%s]", acq, rel, value, loadReg, address));
+    };
+
+    // FIXME: SWP into a zero register (WZR or XZR) acts like a store, in particular SWPA(L) does not give
+    //  acquire semantics then.
+    @Override
+    public Object visitSwapWord(SwapWordContext ctx) {
+        final boolean extended = ctx.rD64 != null;
+        final Register r64 = parseRegister64(ctx.rD32, ctx.rD64);
+        final Register lReg = getOrNewRegister32(ctx.rD32, r64, false, false);
+        final Register sReg = parseRegister64(ctx.rS32, ctx.rS64);
+        final Expression value = extended ? sReg : expressions.makeCast(sReg, lReg.getType(), false);
+        final Expression address = parseAddress(ctx.address());
+
+        final List<String> mo = new ArrayList<>();
+        if (ctx.swapWordInstruction().acquire) {
+            mo.add(MO_ACQ);
+        }
+        if (ctx.swapWordInstruction().release) {
+            mo.add(MO_REL);
+        }
+
+        // TODO: Can lReg and sReg match? If so, we get a problem here.
+        final Xchg xchg = EventFactory.Common.newXchg(lReg, address, value);
+        xchg.addTags(mo);
+        xchg.setMetadata(SWP_PRINTER);
+
+        add(xchg);
+        addRegister64Update(r64, lReg);
+        return null;
+    }
+
 
     @Override
     public Object visitBranch(BranchContext ctx) {

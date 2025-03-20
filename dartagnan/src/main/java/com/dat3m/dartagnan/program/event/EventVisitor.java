@@ -1,6 +1,7 @@
 package com.dat3m.dartagnan.program.event;
 
 import com.dat3m.dartagnan.program.event.arch.StoreExclusive;
+import com.dat3m.dartagnan.program.event.arch.Xchg;
 import com.dat3m.dartagnan.program.event.arch.ptx.PTXAtomCAS;
 import com.dat3m.dartagnan.program.event.arch.ptx.PTXAtomExch;
 import com.dat3m.dartagnan.program.event.arch.ptx.PTXAtomOp;
@@ -18,9 +19,9 @@ import com.dat3m.dartagnan.program.event.lang.llvm.*;
 import com.dat3m.dartagnan.program.event.lang.pthread.InitLock;
 import com.dat3m.dartagnan.program.event.lang.pthread.Lock;
 import com.dat3m.dartagnan.program.event.lang.pthread.Unlock;
+import com.dat3m.dartagnan.program.event.lang.spirv.*;
 import com.dat3m.dartagnan.program.event.lang.svcomp.BeginAtomic;
 import com.dat3m.dartagnan.program.event.lang.svcomp.EndAtomic;
-import com.dat3m.dartagnan.program.event.lang.spirv.*;
 
 public interface EventVisitor<T> {
 
@@ -57,8 +58,9 @@ public interface EventVisitor<T> {
     default T visitLock(Lock e) { return visitMemEvent(e); }
     default T visitUnlock(Unlock e) { return visitMemEvent(e); }
 
-    // ------------------ AARCH64 Events ------------------
+    // ------------------ Common Events ------------------
     default T visitStoreExclusive(StoreExclusive e) { return visitMemEvent(e); }
+    default T visitXchg(Xchg xchg) { return visitMemEvent(xchg); };
 
     // ------------------ Linux Events ------------------
     default T visitLKMMAddUnless(LKMMAddUnless e) { return visitMemEvent(e); }
@@ -117,4 +119,5 @@ public interface EventVisitor<T> {
     default T visitSpirvXchg(SpirvXchg e) { return visitMemEvent(e); }
     default T visitSpirvCmpXchg(SpirvCmpXchg e) { return visitMemEvent(e); }
     default T visitSpirvRmwExtremum(SpirvRmwExtremum e) { return visitMemEvent(e); }
+
 }

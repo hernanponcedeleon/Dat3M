@@ -12,6 +12,7 @@ import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.arch.StoreExclusive;
+import com.dat3m.dartagnan.program.event.arch.Xchg;
 import com.dat3m.dartagnan.program.event.arch.ptx.PTXAtomCAS;
 import com.dat3m.dartagnan.program.event.arch.ptx.PTXAtomExch;
 import com.dat3m.dartagnan.program.event.arch.ptx.PTXAtomOp;
@@ -331,6 +332,10 @@ public class EventFactory {
 
         public static StoreExclusive newExclusiveStore(Register register, Expression address, Expression value, String mo) {
             return new StoreExclusive(register, address, value, mo);
+        }
+
+        public static Xchg newXchg(Register register, Expression address, Expression storeValue) {
+            return new Xchg(register, address, storeValue);
         }
     }
 

@@ -63,6 +63,7 @@ instruction
     |   store
     |   storePair
     |   storeExclusive
+    |   swapWord
     |   cmp
     |   branch
     |   branchRegister
@@ -115,6 +116,11 @@ storePair
 storeExclusive
     :   storeExclusiveInstruction rS32 = register32 Comma rV32 = register32 Comma LBracket address RBracket
     |   storeExclusiveInstruction rS32 = register32 Comma rV64 = register64 Comma LBracket address RBracket
+    ;
+
+swapWord
+    :   swapWordInstruction rS32 = register32 Comma rD32 = register32 Comma LBracket address RBracket
+    |   swapWordInstruction rS64 = register64 Comma rD64 = register64 Comma LBracket address RBracket
     ;
 
 fence locals [String opt]
@@ -177,6 +183,13 @@ storeExclusiveInstruction locals [boolean release, boolean byteSize, boolean hal
     |   STLXR    {$release = true;}
     |   STLXRB   {$release = true; $byteSize = true;}
     |   STLXRH   {$release = true; $halfWordSize = true;}
+    ;
+
+swapWordInstruction locals [boolean acquire, boolean release]
+    : SWP
+    | SWPA {$acquire = true;}
+    | SWPL {$release = true;}
+    | SWPAL {$acquire = true; $release = true;}
     ;
 
 arithmeticInstruction locals [IntBinaryOp op]
@@ -359,6 +372,13 @@ STXRH  :   'STXRH'  ;
 STLXR  :   'STLXR'  ;
 STLXRB :   'STLXRB' ;
 STLXRH :   'STLXRH' ;
+
+// Swap word instructions (~ Exchange)
+
+SWP    :   'SWP'    ;
+SWPA   :   'SWPA'   ;
+SWPL   :   'SWPL'   ;
+SWPAL  :   'SWPAL'  ;
 
 MovInstruction
     :   'MOV'
