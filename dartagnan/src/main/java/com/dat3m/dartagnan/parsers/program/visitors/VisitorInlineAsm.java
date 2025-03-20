@@ -218,7 +218,7 @@ public class VisitorInlineAsm extends InlineAsmBaseVisitor<Object> {
         return constraint.outputOpAssign() != null;
     }
 
-    // Tells us if the constraint is an input one, e.g. 'Q' or '*Q' or 'r' 
+    // Tells us if the constraint is an input one, e.g. 'Q' or '*Q' or 'r'
     private boolean isConstraintInputConstraint(InlineAsmParser.ConstraintContext constraint) {
         return constraint.memoryAddress() != null || constraint.inputOpGeneralReg() != null;
     }
