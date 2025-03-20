@@ -188,9 +188,9 @@ public class VisitorInlineAsm extends InlineAsmBaseVisitor<Object> {
 
     // This function is the entrypoint of the visitor.
     // the events that are going to be generated are
-    // 1) inputAssignments -- how we map llvm registers in asm to asm ones
-    // 2) asmInstructions -- the events representing the asm instructions
-    // 3) outputAssignments -- how we map the asm registers to the return Register
+    // 1) inputAssignments -- how we map llvm registers in asm to asm ones.
+    // 2) asmInstructions -- the events representing the asm instructions.
+    // 3) outputAssignments -- how we map the asm registers to the return Register.
     // The visitor will first visit the asm code (which will create the events and asm registers) and then the constraints. 
     // The latter will take care of creating input and output assignments.
     @Override
