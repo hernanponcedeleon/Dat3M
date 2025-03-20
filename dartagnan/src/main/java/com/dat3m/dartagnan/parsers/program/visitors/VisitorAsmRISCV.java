@@ -23,7 +23,7 @@ import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.event.core.Local;
 import static com.google.common.base.Preconditions.checkState;
-public class VisitorRISCV extends RISCVBaseVisitor<Object> {
+public class VisitorAsmRISCV extends RISCVBaseVisitor<Object> {
 
     private final List<Local> inputAssignments = new ArrayList<>();
     private final List<Event> asmInstructions = new ArrayList<>();
@@ -42,7 +42,7 @@ public class VisitorRISCV extends RISCVBaseVisitor<Object> {
     // map from RegisterID to the corresponding asm register
     private final HashMap<Integer, Register> asmRegisters = new HashMap<>();
 
-    public VisitorRISCV(Function llvmFunction, Register returnRegister, List<Expression> llvmArguments) {
+    public VisitorAsmRISCV(Function llvmFunction, Register returnRegister, List<Expression> llvmArguments) {
         this.llvmFunction = llvmFunction;
         this.returnRegister = returnRegister;
         this.argsRegisters = llvmArguments;
@@ -224,15 +224,15 @@ public class VisitorRISCV extends RISCVBaseVisitor<Object> {
 
     @Override
     public Object visitAtomicAdd(RISCVParser.AtomicAddContext ctx){
-        throw new ParsingException(ctx.AtomicAdd().getText());
+        throw new UnsupportedOperationException(ctx.AtomicAdd().getText());
     }
     @Override
     public Object visitAtomicAddRelease(RISCVParser.AtomicAddReleaseContext ctx){
-        throw new ParsingException(ctx.AtomicAddRelease().getText());
+        throw new UnsupportedOperationException(ctx.AtomicAddRelease().getText());
     }
     @Override
     public Object visitAtomicAddAcquireRelease(RISCVParser.AtomicAddAcquireReleaseContext ctx){
-        throw new ParsingException(ctx.AtomicAddAcquireRelease().getText());
+        throw new UnsupportedOperationException(ctx.AtomicAddAcquireRelease().getText());
     }
     // If the register with that ID was already defined, we simply return it
     // otherwise, we create and return the new register.

@@ -88,7 +88,7 @@ import static com.google.common.base.Preconditions.checkState;
 //       - r11[3] <- asm_3
 //    2. map function parameter to next asm register, i.e. asm_4 <- r10
 //    3. the third asm register is related both to the return register (already above in r11[3] <- asm_3) and to an args register, i.e. asm_3 <- r8
-public class VisitorArm extends ArmBaseVisitor<Object> {
+public class VisitorAsmArm extends ArmBaseVisitor<Object> {
 
     private record CmpInstruction(Expression left, Expression right) {};
 
@@ -110,7 +110,7 @@ public class VisitorArm extends ArmBaseVisitor<Object> {
     // map from RegisterID to the corresponding asm register
     private final HashMap<Integer, Register> asmRegisters = new HashMap<>();
 
-    public VisitorArm(Function llvmFunction, Register returnRegister, List<Expression> llvmArguments) {
+    public VisitorAsmArm(Function llvmFunction, Register returnRegister, List<Expression> llvmArguments) {
         this.llvmFunction = llvmFunction;
         this.returnRegister = returnRegister;
         this.argsRegisters = llvmArguments;

@@ -12,21 +12,21 @@ import com.dat3m.dartagnan.exception.UnrecognizedTokenListener;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.parsers.PPCLexer;
 import com.dat3m.dartagnan.parsers.PPCParser;
-import com.dat3m.dartagnan.parsers.program.visitors.VisitorPPC;
+import com.dat3m.dartagnan.parsers.program.visitors.VisitorAsmPPC;
 import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Event;
 
-public class ParserPPC extends ParserAsm{
+public class ParserAsmPPC extends ParserAsm{
 
-    private final VisitorPPC visitor;
+    private final VisitorAsmPPC visitor;
 
-    public ParserPPC(Function llvmFunction, Register returnRegister, ArrayList<Expression> llvmArguments) {
-        this.visitor = new VisitorPPC(llvmFunction, returnRegister, llvmArguments);
+    public ParserAsmPPC(Function llvmFunction, Register returnRegister, ArrayList<Expression> llvmArguments) {
+        this.visitor = new VisitorAsmPPC(llvmFunction, returnRegister, llvmArguments);
     }
 
     @Override
-    public List<Event> parse(CharStream charStream) throws ParsingException {
+    public List<Event> parse(CharStream charStream) throws ParsingException, UnsupportedOperationException{
         PPCLexer lexer = new PPCLexer(charStream);
         lexer.removeErrorListeners(); // Remove default listeners
         lexer.addErrorListener(new UnrecognizedTokenListener());
