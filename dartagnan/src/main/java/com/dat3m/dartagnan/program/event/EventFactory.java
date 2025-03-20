@@ -193,9 +193,7 @@ public class EventFactory {
     }
 
     public static AbortIf newAbortIf(Expression condition) {
-        final AbortIf abort = new AbortIf(condition);
-        abort.addTags(Tag.EXCEPTIONAL_TERMINATION);
-        return abort;
+        return new AbortIf(condition);
     }
 
     // ------------------------------------------ Local events ------------------------------------------
