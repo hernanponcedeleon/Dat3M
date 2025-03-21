@@ -46,8 +46,8 @@ load : Load register Comma register;
 loadAcquire : LoadAcquire register Comma register;
 loadExclusive : LoadExclusive register Comma register;
 loadAcquireExclusive : LoadAcquireExclusive register Comma register;
-add : Add register Comma register Comma register;
-sub : Sub register Comma register Comma register;
+add : Add register Comma register Comma expr;
+sub : Sub register Comma register Comma expr;
 or : Or register Comma register Comma register;
 and : And register Comma register Comma register;
 store : Store register Comma register;
@@ -103,4 +103,4 @@ clobberType : ClobberMemory | ClobberModifyFlags | ClobberDirectionFlag | Clobbe
 expr : register | value;
 
 register : Dollar NumbersInline | Dollar LBrace NumbersInline RegisterSizeHint RBrace | LBracket Dollar NumbersInline RBracket;
-value : ConstantValue;
+value : Num NumbersInline;

@@ -1,5 +1,10 @@
 package com.dat3m.dartagnan.parsers.program.visitors;
 
+import java.math.BigInteger;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+
 import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
@@ -18,12 +23,6 @@ import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.event.core.Local;
-
-import java.math.BigInteger;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-
 import static com.google.common.base.Preconditions.checkState;
 
 // The trickiest part of handling inline assembly is matching input and output registers on the LLVM side with the registers in the assembly.
@@ -189,9 +188,9 @@ public class VisitorInlineAsm extends InlineAsmBaseVisitor<Object> {
 
     // This function is the entrypoint of the visitor.
     // the events that are going to be generated are
-    // 1) inputAssignments -- how we map llvm registers in asm to asm ones
-    // 2) asmInstructions -- the events representing the asm instructions
-    // 3) outputAssignments -- how we map the asm registers to the return Register
+    // 1) inputAssignments -- how we map llvm registers in asm to asm ones.
+    // 2) asmInstructions -- the events representing the asm instructions.
+    // 3) outputAssignments -- how we map the asm registers to the return Register.
     // The visitor will first visit the asm code (which will create the events and asm registers) and then the constraints. 
     // The latter will take care of creating input and output assignments.
     @Override
@@ -219,7 +218,7 @@ public class VisitorInlineAsm extends InlineAsmBaseVisitor<Object> {
         return constraint.outputOpAssign() != null;
     }
 
-    // Tells us if the constraint is an input one, e.g. 'Q' or '*Q' or 'r' 
+    // Tells us if the constraint is an input one, e.g. 'Q' or '*Q' or 'r'
     private boolean isConstraintInputConstraint(InlineAsmParser.ConstraintContext constraint) {
         return constraint.memoryAddress() != null || constraint.inputOpGeneralReg() != null;
     }
@@ -259,9 +258,10 @@ public class VisitorInlineAsm extends InlineAsmBaseVisitor<Object> {
     @Override
     public Object visitAdd(InlineAsmParser.AddContext ctx) {
         Register resultRegister = (Register) ctx.register(0).accept(this);
-        Register leftRegister = (Register) ctx.register(1).accept(this);
-        Register rightRegister = (Register) ctx.register(2).accept(this);
-        Expression exp = expressions.makeAdd(leftRegister, rightRegister);
+        Register lhs = (Register) ctx.register(1).accept(this);
+        expectedType = lhs.getType();
+        Expression rhs = (Expression) ctx.expr().accept(this);
+        Expression exp = expressions.makeAdd(lhs, rhs);
         asmInstructions.add(EventFactory.newLocal(resultRegister, exp));
         return null;
     }
@@ -269,9 +269,10 @@ public class VisitorInlineAsm extends InlineAsmBaseVisitor<Object> {
     @Override
     public Object visitSub(InlineAsmParser.SubContext ctx) {
         Register resultRegister = (Register) ctx.register(0).accept(this);
-        Register leftRegister = (Register) ctx.register(1).accept(this);
-        Register rightRegister = (Register) ctx.register(2).accept(this);
-        Expression exp = expressions.makeSub(leftRegister, rightRegister);
+        Register lhs = (Register) ctx.register(1).accept(this);
+        expectedType = lhs.getType();
+        Expression rhs = (Expression) ctx.expr().accept(this);
+        Expression exp = expressions.makeAdd(lhs, rhs);
         asmInstructions.add(EventFactory.newLocal(resultRegister, exp));
         return null;
     }
@@ -456,7 +457,7 @@ public class VisitorInlineAsm extends InlineAsmBaseVisitor<Object> {
     @Override
     public Object visitValue(InlineAsmParser.ValueContext ctx) {
         checkState(expectedType instanceof IntegerType, "Expected type is not an integer type");
-        String valueString = ctx.ConstantValue().getText().substring(1);
+        String valueString = ctx.NumbersInline().getText();
         BigInteger value = new BigInteger(valueString);
         return expressions.makeValue(value, (IntegerType) expectedType);
     }

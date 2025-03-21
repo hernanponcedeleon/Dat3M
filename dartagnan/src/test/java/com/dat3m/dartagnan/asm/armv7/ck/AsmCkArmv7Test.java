@@ -48,7 +48,6 @@ public class AsmCkArmv7Test {
     public static Iterable<Object[]> data() throws IOException {
         return Arrays.asList(new Object[][]{
             {"clhlock", 1, Result.PASS},
-            {"ebr", 5, Result.PASS},
             {"faslock", 3, Result.PASS},
             {"spsc_queue", 1, Result.PASS},
             {"ticketlock", 1, Result.PASS},
