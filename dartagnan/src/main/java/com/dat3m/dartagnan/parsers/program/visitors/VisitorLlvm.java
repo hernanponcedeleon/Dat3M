@@ -6,7 +6,11 @@ import com.dat3m.dartagnan.expression.integers.IntBinaryOp;
 import com.dat3m.dartagnan.expression.type.*;
 import com.dat3m.dartagnan.parsers.LLVMIRBaseVisitor;
 import com.dat3m.dartagnan.parsers.LLVMIRParser.*;
-import com.dat3m.dartagnan.parsers.program.ParserInlineAsm;
+import com.dat3m.dartagnan.parsers.program.ParserAsm;
+import com.dat3m.dartagnan.parsers.program.ParserAsmPPC;
+import com.dat3m.dartagnan.parsers.program.ParserAsmRISCV;
+import com.dat3m.dartagnan.parsers.program.ParserAsmX86;
+import com.dat3m.dartagnan.parsers.program.ParserAsmArm;
 import com.dat3m.dartagnan.parsers.program.utils.ProgramBuilder;
 import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.Program;
@@ -23,6 +27,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
+
 import org.antlr.v4.runtime.CharStream;
 import org.antlr.v4.runtime.CharStreams;
 import org.antlr.v4.runtime.ParserRuleContext;
@@ -34,7 +39,9 @@ import java.math.BigInteger;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import com.dat3m.dartagnan.exception.ProgramProcessingException;
 import static com.dat3m.dartagnan.expression.utils.ExpressionHelper.isAggregateLike;
+
 import static com.dat3m.dartagnan.program.event.EventFactory.*;
 import static com.dat3m.dartagnan.program.event.EventFactory.Llvm.newCompareExchange;
 import static com.google.common.base.Preconditions.checkState;
@@ -376,21 +383,41 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
                 getOrNewRegister(currentRegisterName, returnType);
 
         if (ctx.inlineAsm() != null) {
+            String asmCode = ctx.inlineAsm().inlineAsmBody().getText();
             // see https://llvm.org/docs/LangRef.html#inline-assembler-expressions
             //FIXME ignore side effects of inline assembly
-            CharStream charStream = CharStreams.fromString(ctx.inlineAsm().inlineAsmBody().getText());
-            ParserInlineAsm parser = new ParserInlineAsm(function, resultRegister, arguments);
-            List<Event> events = new ArrayList<>();
-            try{
-                events = parser.parse(charStream);
-            } catch (ParsingException e){
-                logger.warn("Found unrecognized token for inline assembly : '{}'. Setting non deterministic value ", e.getMessage());
-                if(resultRegister != null){
-                    events.add(EventFactory.Svcomp.newNonDetChoice(resultRegister));
+            final List<ParserAsm> parsers = List.of(
+                    new ParserAsmArm(function, resultRegister, arguments),
+                    new ParserAsmRISCV(function, resultRegister, arguments),
+                    new ParserAsmPPC(function, resultRegister, arguments),
+                    new ParserAsmX86(function, resultRegister, arguments)
+            );
+            Optional<List<Event>> events = Optional.empty();
+            boolean unsupportedEncountered = false;
+            for(ParserAsm parser : parsers){
+                // we have to generate the stream each time as the parser consumes it
+                CharStream charStream = CharStreams.fromString(asmCode);
+                try {
+                    events = tryParse(parser,charStream);
+                    if(events.isPresent()){
+                        block.events.addAll(events.get());
+                        break;
+                    }
+                } catch (UnsupportedOperationException e) {
+                    logger.warn("Support for inline assembly instruction '{}' is not available for parser '{}'. Setting non deterministic value ", e.getMessage(), parser.getClass().getSimpleName());
+                    if(resultRegister != null){
+                        Event nonDeterministicValue = EventFactory.Svcomp.newNonDetChoice(resultRegister);
+                        events = Optional.of(List.of(nonDeterministicValue));
+                    }
+                    unsupportedEncountered = true;
+                    break;
                 }
             }
-            if(!events.isEmpty()){
-                block.events.addAll(events);
+            if(!unsupportedEncountered && events.isEmpty()){
+                logger.warn("None of the parsers succeeded for inline assembly. Setting non deterministic value");
+                if(resultRegister != null){
+                    block.events.add(EventFactory.Svcomp.newNonDetChoice(resultRegister));
+                }
             }
             return resultRegister;
         }
@@ -411,6 +438,7 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
         block.events.add(call);
         return resultRegister;
     }
+
 
     @Override
     public Expression visitRetTerm(RetTermContext ctx) {
@@ -1486,6 +1514,16 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
             }
             return Optional.empty();
         }
+    }
+    
+    // ----------------------------------------------------------------------------------------------------------------
+    // Helper to parse inline asm code
+    private Optional<List<Event>> tryParse(ParserAsm parser, CharStream asmCode) throws ProgramProcessingException{
+        try{
+            List<Event> events = parser.parse(asmCode);
+            return (events != null) ? Optional.of(events) : Optional.empty();
+        } catch (ParsingException e){}
+        return Optional.empty();
     }
 
 }

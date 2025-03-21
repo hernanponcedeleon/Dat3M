@@ -66,6 +66,54 @@ jobs:
 
       - name: Concurrency Kit armv8 tests
         run: mvn test -Dtest="com/dat3m/dartagnan/asm/armv8/ck/*" -f dartagnan/pom.xml
+
+  Ck-ppc-tests:
+    name: Concurrency Kit ppc tests
+    runs-on: ubuntu-latest
+    if: ${{ github.event_name != 'schedule' }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up the Java JDK
+        uses: actions/setup-java@v3
+        with:
+          java-version: '17'
+          distribution: 'adopt'
+          cache: maven
+
+      - name: Set DAT3M_HOME
+        run: echo "DAT3M_HOME=$(echo $GITHUB_WORKSPACE)" >> $GITHUB_ENV
+
+      - name: Set DAT3M_OUTPUT
+        run: echo "DAT3M_OUTPUT=$(echo $DAT3M_HOME)/output" >> $GITHUB_ENV
+
+      - name: Concurrency Kit ppc tests
+        run: mvn test -Dtest="com/dat3m/dartagnan/asm/ppc64/ck/*" -f dartagnan/pom.xml
+  
+  Ck-riscv-tests:
+    name: Concurrency Kit riscv tests
+    runs-on: ubuntu-latest
+    if: ${{ github.event_name != 'schedule' }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up the Java JDK
+        uses: actions/setup-java@v3
+        with:
+          java-version: '17'
+          distribution: 'adopt'
+          cache: maven
+
+      - name: Set DAT3M_HOME
+        run: echo "DAT3M_HOME=$(echo $GITHUB_WORKSPACE)" >> $GITHUB_ENV
+
+      - name: Set DAT3M_OUTPUT
+        run: echo "DAT3M_OUTPUT=$(echo $DAT3M_HOME)/output" >> $GITHUB_ENV
+
+      - name: Concurrency Kit riscv tests
+        run: mvn test -Dtest="com/dat3m/dartagnan/asm/riscv/ck/*" -f dartagnan/pom.xml
   
   Libvsync-armv7-tests:
     name: Libvsync armv7 tests
