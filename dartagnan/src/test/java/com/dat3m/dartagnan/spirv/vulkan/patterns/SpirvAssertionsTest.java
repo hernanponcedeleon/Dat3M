@@ -53,6 +53,7 @@ public class SpirvAssertionsTest {
                 {"mp.spv.dis", PASS},
                 {"mp-acq2rx.spv.dis", FAIL},
                 {"mp-rel2rx.spv.dis", FAIL},
+                {"MP-bug-2-final.spv.dis", PASS},
                 {"sb.spv.dis", PASS},
         });
     }

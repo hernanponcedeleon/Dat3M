@@ -52,6 +52,7 @@ public class HelperTypes {
         return offset;
     }
 
+    // TODO: Revise if can be replaced with GEP
     public static Expression getMemberAddress(String id, Expression base, Type type, List<Expression> indexes) {
         if (!indexes.isEmpty()) {
             id += "[" + indexes.get(0) + "]";
@@ -64,15 +65,6 @@ public class HelperTypes {
             throw new ParsingException(indexTooDeepError(id));
         }
         return base;
-    }
-
-    public static Expression getPointerOffset(Expression base, Type type, Expression offset) {
-        int size = types.getMemorySizeInBytes(type);
-        IntLiteral sizeExpr = expressions.makeValue(size, archType);
-        Expression formattedOffset = expressions.makeIntegerCast(offset, archType, false);
-        Expression offsetExpr = expressions.makeBinary(sizeExpr, MUL, formattedOffset);
-        Expression formattedBase = expressions.makeIntegerCast(base, archType, false);
-        return expressions.makeBinary(formattedBase, ADD, offsetExpr);
     }
 
     private static Type getArrayMemberType(String id, ArrayType type, List<Integer> indexes) {

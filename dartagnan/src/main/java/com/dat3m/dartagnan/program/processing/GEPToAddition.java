@@ -71,6 +71,7 @@ public class GEPToAddition implements ProgramProcessor {
 
         @Override
         public Expression visitGEPExpression(GEPExpr gep) {
+            //System.out.println(gep.getBase() + " " + gep.getIndexingType() + " " + gep.getOffsets());
             final List<Expression> indices = gep.getOffsets();
             final IntegerType offsetType = (IntegerType) indices.get(0).getType();
 
@@ -98,12 +99,15 @@ public class GEPToAddition implements ProgramProcessor {
                     final String error = String.format("Invalid GEP indexing: Type %s, index %s", indexingType, index);
                     throw new MalformedProgramException(error);
                 }
+                //System.out.println(offset);
                 totalOffset = expressions.makeAdd(totalOffset, offset);
             }
 
             final Expression base = gep.getBase().accept(this);
             final Expression castOffset = expressions.makeCast(totalOffset, base.getType(), true);
-            return expressions.makeAdd(base, castOffset);
+            Expression result = expressions.makeAdd(base, castOffset);
+            //System.out.println(result);
+            return result;
         }
     }
 }

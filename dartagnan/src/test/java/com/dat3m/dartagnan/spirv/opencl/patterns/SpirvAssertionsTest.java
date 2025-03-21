@@ -71,7 +71,7 @@ public class SpirvAssertionsTest {
                 cfg,
                 BasicLogManager.create(cfg),
                 ShutdownManager.create().getNotifier(),
-                SolverContextFactory.Solvers.YICES2);
+                SolverContextFactory.Solvers.Z3);
     }
 
     private ProverWithTracker mkProver(SolverContext ctx) {
