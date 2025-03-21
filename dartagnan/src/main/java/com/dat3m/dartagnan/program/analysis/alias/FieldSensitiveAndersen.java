@@ -10,15 +10,12 @@ import com.dat3m.dartagnan.expression.misc.ITEExpr;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Event;
-import com.dat3m.dartagnan.program.event.MemoryEvent;
 import com.dat3m.dartagnan.program.event.RegWriter;
 import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.event.core.threading.ThreadArgument;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
-import org.sosy_lab.common.configuration.Configuration;
-import org.sosy_lab.common.configuration.InvalidConfigurationException;
 
 import java.math.BigInteger;
 import java.util.*;
@@ -26,6 +23,7 @@ import java.util.*;
 import static com.dat3m.dartagnan.expression.integers.IntBinaryOp.*;
 import static com.dat3m.dartagnan.expression.integers.IntUnaryOp.MINUS;
 import static com.google.common.base.Preconditions.checkArgument;
+import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Verify.verify;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.IntStream.range;
@@ -44,6 +42,8 @@ import static java.util.stream.IntStream.range;
  */
 public class FieldSensitiveAndersen implements AliasAnalysis {
 
+    private final Config config;
+
     ///When a pointer set gains new content, it is added to this queue
     private final LinkedHashSet<Object> variables = new LinkedHashSet<>();
 
@@ -59,13 +59,15 @@ public class FieldSensitiveAndersen implements AliasAnalysis {
 
     // ================================ Construction ================================
 
-    public static FieldSensitiveAndersen fromConfig(Program program, Configuration config) throws InvalidConfigurationException {
-        var analysis = new FieldSensitiveAndersen();
+    public static FieldSensitiveAndersen fromConfig(Program program, Config config) {
+        var analysis = new FieldSensitiveAndersen(config);
         analysis.run(program);
         return analysis;
     }
 
-    private FieldSensitiveAndersen() { }
+    private FieldSensitiveAndersen(Config c) {
+        config = checkNotNull(c);
+    }
 
     // ================================ API ================================
 
@@ -80,7 +82,12 @@ public class FieldSensitiveAndersen implements AliasAnalysis {
         return a.size() == 1 && a.containsAll(getMaxAddressSet(y));
     }
 
-    private ImmutableSet<Location> getMaxAddressSet(MemoryEvent e) {
+    @Override
+    public List<Integer> mayMixedSizeAccesses(MemoryCoreEvent event) {
+        return config.defaultMayMixedSizeAccesses(event);
+    }
+
+    private ImmutableSet<Location> getMaxAddressSet(MemoryCoreEvent e) {
         return eventAddressSpaceMap.get(e);
     }
 

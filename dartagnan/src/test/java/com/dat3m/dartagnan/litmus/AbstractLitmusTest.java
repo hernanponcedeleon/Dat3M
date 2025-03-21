@@ -34,8 +34,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Stream;
 
-import static com.dat3m.dartagnan.configuration.OptionNames.INITIALIZE_REGISTERS;
-import static com.dat3m.dartagnan.configuration.OptionNames.USE_INTEGERS;
+import static com.dat3m.dartagnan.configuration.OptionNames.*;
 import static com.dat3m.dartagnan.utils.ResourceHelper.getRootPath;
 import static com.google.common.io.Files.getNameWithoutExtension;
 import static org.junit.Assert.assertEquals;
@@ -89,6 +88,7 @@ public abstract class AbstractLitmusTest {
         return Provider.fromSupplier(() -> Configuration.builder()
                 .setOption(INITIALIZE_REGISTERS, "true")
                 .setOption(USE_INTEGERS, "true")
+                .setOption(ALIAS_MIXED_SIZE, "false")
                 .build());
     }
 

@@ -126,7 +126,9 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
         final ReachingDefinitionsAnalysis def = analysisContext.requires(ReachingDefinitionsAnalysis.class);
         final var analysis = new InclusionBasedPointerAnalysis(program, def);
         analysis.run(program, config);
-        analysis.detectMixedSizeAccesses();
+        if (config.detectMixedSizeAccesses) {
+            analysis.detectMixedSizeAccesses();
+        }
         logger.debug("variable count: {}",
                 analysis.totalVariables);
         logger.debug("replacement count: {}",

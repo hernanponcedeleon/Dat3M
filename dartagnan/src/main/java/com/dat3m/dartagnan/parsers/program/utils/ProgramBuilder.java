@@ -271,8 +271,6 @@ public class ProgramBuilder {
     public Register getOrNewRegister(int fid, String name, Type type) {
         Function func = getFunctionOrError(fid);
         Register register = name == null ? func.newRegister(type) : func.getRegister(name);
-        Verify.verify(register == null || type.equals(register.getType()),
-                "Expected %s, got %s", type, register);
         return register != null ? register : func.newRegister(name, type);
     }
 

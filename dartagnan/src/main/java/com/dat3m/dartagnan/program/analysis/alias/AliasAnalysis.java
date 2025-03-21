@@ -54,27 +54,20 @@ public interface AliasAnalysis {
      * @param event Memory access in the analyzed program.
      * @return Sorted list of offsets, where another access' byte range may start or end.
      */
-    default List<Integer> mayMixedSizeAccesses(MemoryCoreEvent event) {
-        final var set = new ArrayList<Integer>();
-        final int bytes = TypeFactory.getInstance().getMemorySizeInBytes(event.getAccessType());
-        for (int i = 1; i < bytes; i++) {
-            set.add(i);
-        }
-        return set;
-    }
+    List<Integer> mayMixedSizeAccesses(MemoryCoreEvent event);
 
     static AliasAnalysis fromConfig(Program program, Context analysisContext, Configuration config) throws InvalidConfigurationException {
         Config c = new Config(config);
         logger.info("Selected alias analysis: {}", c.method);
         long t0 = System.currentTimeMillis();
         AliasAnalysis a = switch (c.method) {
-            case FIELD_SENSITIVE -> FieldSensitiveAndersen.fromConfig(program, config);
-            case FIELD_INSENSITIVE -> AndersenAliasAnalysis.fromConfig(program, config);
+            case FIELD_SENSITIVE -> FieldSensitiveAndersen.fromConfig(program, c);
+            case FIELD_INSENSITIVE -> AndersenAliasAnalysis.fromConfig(program, c);
             case FULL -> InclusionBasedPointerAnalysis.fromConfig(program, analysisContext, c);
         };
-        a = new CombinedAliasAnalysis(a, EqualityAliasAnalysis.fromConfig(program, config));
+        a = new CombinedAliasAnalysis(a, EqualityAliasAnalysis.fromConfig(program, c));
         if (Arch.supportsVirtualAddressing(program.getArch())) {
-            a = VirtualAliasAnalysis.wrap(a);
+            a = VirtualAliasAnalysis.wrap(a, c);
         }
         if (c.graphviz) {
             a.generateGraph(program, c);
@@ -90,6 +83,14 @@ public interface AliasAnalysis {
         @Option(name = ALIAS_METHOD,
                 description = "General type of analysis that approximates the 'loc' relationship between memory events.")
         private Alias method = Alias.getDefault();
+
+        @Option(name = ALIAS_MIXED_SIZE,
+                description = "If 'true', checks for mixed-size and misaligned memory accesses." +
+                        " This also enables a subsequent program transformation to handle these events." +
+                        " Otherwise, assumes that no such happen in any checked execution." +
+                        " Defaults to 'true'.",
+                secure = true)
+        boolean detectMixedSizeAccesses = true;
 
         @Option(name = ALIAS_GRAPHVIZ,
                 description = "If 'true', stores the results of the alias analysis as a PNG image." +
@@ -118,6 +119,17 @@ public interface AliasAnalysis {
 
         private Config(Configuration config) throws InvalidConfigurationException {
             config.inject(this);
+        }
+
+        List<Integer> defaultMayMixedSizeAccesses(MemoryCoreEvent event) {
+            final var set = new ArrayList<Integer>();
+            if (detectMixedSizeAccesses) {
+                final int bytes = TypeFactory.getInstance().getMemorySizeInBytes(event.getAccessType());
+                for (int i = 1; i < bytes; i++) {
+                    set.add(i);
+                }
+            }
+            return set;
         }
     }
 
