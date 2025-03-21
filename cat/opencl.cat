@@ -1,0 +1,129 @@
+OpenCL
+(* OpenCL Memory Model *)
+
+(*
+* This model is based on:
+* https://multicore.doc.ic.ac.uk/overhauling/opencl_base.cat
+* https://multicore.doc.ic.ac.uk/overhauling/opencl_scopedsc.cat
+*)
+
+// Base relations:
+// int: same work-item
+// swg: same work-group
+// sdv: same device
+// syncbar: same barrier id
+
+// Tags:
+// WI: work-item scope
+// WG: work-group scope
+// DV: device scope
+// ALL: all-svm-devices scope
+// GLOBAL: global memory
+// LOCAL: local memory
+// NAL: non-atomic location
+
+// dynamic_tag relates events to itself that access an address whose init event is marked X or Fence tagged with X
+let dynamic_tag(X) = [range([IW & X]; loc)] | [X & F]
+
+let mo = dynamic_tag(~NAL); co; dynamic_tag(~NAL)
+let sb = po
+let rb = rf^-1;mo | ([R] \ [range(rf)]);loc;[W]
+let unv = _ * _
+let wi = int
+
+(* Inclusive scopes *)
+let incl = (swg & (WG * WG)) | (sdv & (DV * DV)) | (ALL * ALL)
+
+(*******************)
+(* Synchronisation *)
+(*******************)
+
+let Acq = (ACQ | SC | ACQ_REL) & (R | F)
+let Rel = (REL | SC | ACQ_REL) & (W | F)
+
+(* Fences sequenced before or after *)
+let Fsb = [F]; sb
+let sbF = sb; [F]
+
+(* Release sequence *)
+let rs_prime = (_ * RMW) | wi
+let rs = mo & rs_prime & ~((mo & ~rs_prime) ; mo)
+
+(* Release-acquire synchronisation *)
+let ra_sw(r) = ((r & [Rel]); Fsb?; [W \ WI]; rs?; r; rf; [R \ WI]; sbF?; ([Acq] & r)) & incl & ~wi
+
+(* Barrier synchronisation *)
+// in OpenCL a barrier results in two fence operations: entry and exit fences:
+// https://registry.khronos.org/OpenCL/specs/3.0-unified/html/OpenCL_API.html#_work_group_functions
+// In our implementation, we use a single barrier event and omit the special EF and XF tags
+let bar_sw(r) = r; syncbar & ~wi & swg; r
+
+(* Allowed to synchronise on the other region *)
+let scf = (SC * SC) | ((dynamic_tag(GLOBAL) & dynamic_tag(LOCAL)); unv; (dynamic_tag(GLOBAL) & dynamic_tag(LOCAL)))
+
+(* Global and local synchronises-with *)
+let gsw = ra_sw(dynamic_tag(GLOBAL)) | bar_sw(dynamic_tag(GLOBAL)) | (scf & ra_sw(dynamic_tag(LOCAL)))
+let lsw = ra_sw(dynamic_tag(LOCAL)) | bar_sw(dynamic_tag(LOCAL)) | (scf & ra_sw(dynamic_tag(GLOBAL)))
+
+(******************)
+(* Happens-before *)
+(******************)
+
+(* Global and local happens-before *)
+// Since we use single barrier events, we exclude the identity relation from the happens-before relation
+let ghb = ((dynamic_tag(GLOBAL); sb; dynamic_tag(GLOBAL)) | (dynamic_tag(GLOBAL); IW * ~IW; dynamic_tag(GLOBAL)) | gsw)+ \ id
+let lhb = ((dynamic_tag(LOCAL); sb; dynamic_tag(LOCAL)) | (dynamic_tag(LOCAL); IW * ~IW; dynamic_tag(LOCAL)) | lsw)+ \ id
+
+irreflexive ghb as O-HbG
+irreflexive lhb as O-HbL
+
+(*************)
+(* Coherence *)
+(*************)
+
+let coh(hb) = (rf^-1)?; mo; rf?; hb
+irreflexive coh(ghb) as O-CohG
+irreflexive coh(lhb) as O-CohL
+
+(************************)
+(* Consistency of reads *)
+(************************)
+
+(* A load can only read from a store that already happened. *)
+irreflexive rf; (ghb | lhb) as O-Rf
+
+(* Visible side effects *)
+let vis(hb) = (W * R) & hb & loc & ~((hb & loc); [W]; hb)
+
+(* A non-atomic load can only read from a store that is visible. *)
+empty (rf; (dynamic_tag(NAL) & dynamic_tag(GLOBAL))) \ vis(ghb) as O-NaRfG
+empty (rf; (dynamic_tag(NAL) & dynamic_tag(LOCAL))) \ vis(lhb) as O-NaRfL
+
+(* Consistency of RMWs *)
+// The original model was tested with Herd, which treats RMW as a single atomic operation.
+// We have modified the model to handle RMW as a sequence of atomic operations.
+// irreflexive rf | (mo;mo;rf^-1) | (mo;rf) as O-Rmw
+empty rmw & (fre; coe) as atomic
+
+(****************************************)
+(* Sequential consistency, simplified,  *)
+(* with scoped SC axioms                *)
+(****************************************)
+
+let scp = Fsb?; (rb | mo | (ghb | lhb)); sbF?
+acyclic (SC*SC) & scp & incl as O-Sscoped
+
+(***************)
+(*    Races    *)
+(***************)
+
+(* data_races *)
+let cnf = ((W * W) | (W * R) | (R * W)) & loc
+// TODO: "there is exactly one initial event per location", in current implementation, memory object like global scope id is initialized by three write events
+let dr = cnf & ~(ghb | lhb) & ~(ghb | lhb)^-1 & ~wi & ~incl \ ((_ * IW) | (IW * _))
+flag ~empty dr as data_race
+
+(* unsequenced_races *)
+let symm(r) = r | r^-1
+let ur = (wi & cnf & ~symm(sb)) \ id
+flag ~empty ur as unsequenced_race

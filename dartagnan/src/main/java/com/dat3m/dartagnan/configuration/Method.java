@@ -3,49 +3,35 @@ package com.dat3m.dartagnan.configuration;
 import java.util.Arrays;
 
 public enum Method implements OptionInterface {
-	ASSUME, INCREMENTAL, TWO, CAAT;
-	
-	// Used for options in the console
-	@Override
-	public String asStringOption() {
-        switch(this) {
-        	case TWO:
-        		return "two";
-        	case INCREMENTAL:
-        		return "incremental";
-        	case ASSUME:
-        		return "assume";
-			case CAAT:
-				return "caat";
-        }
-        throw new UnsupportedOperationException("Unrecognized analysis " + this);
-	}
+    EAGER, LAZY;
 
-	// Used to display in UI
-	@Override
-	public String toString() {
-        switch(this) {
-			case TWO:
-				return "Two Solvers";
-			case INCREMENTAL:
-				return "Incremental Solver";
-			case ASSUME:
-            	return "Solver with Assumption";
-            case CAAT:
-            	return "CAAT Solver";
-        }
-        throw new UnsupportedOperationException("Unrecognized analysis " + this);
-	}
+    // Used for options in the console
+    @Override
+    public String asStringOption() {
+        return switch (this) {
+            case EAGER -> "eager";
+            case LAZY -> "lazy";
+        };
+    }
 
-	public static Method getDefault() {
-		return CAAT;
-	}
-	
-	// Used to decide the order shown by the selector in the UI
-	public static Method[] orderedValues() {
-		Method[] order = { INCREMENTAL, ASSUME, TWO, CAAT};
-		// Be sure no element is missing
-		assert(Arrays.asList(order).containsAll(Arrays.asList(values())));
-		return order;
-	}
+    // Used to display in UI
+    @Override
+    public String toString() {
+        return switch (this) {
+            case EAGER -> "Eager analysis";
+            case LAZY -> "Lazy analysis";
+        };
+    }
+
+    public static Method getDefault() {
+        return LAZY;
+    }
+
+    // Used to decide the order shown by the selector in the UI
+    public static Method[] orderedValues() {
+        Method[] order = { LAZY, EAGER };
+        // Be sure no element is missing
+        assert (Arrays.asList(order).containsAll(Arrays.asList(values())));
+        return order;
+    }
 }

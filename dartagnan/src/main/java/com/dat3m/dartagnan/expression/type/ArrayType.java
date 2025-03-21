@@ -1,5 +1,7 @@
 package com.dat3m.dartagnan.expression.type;
 
+import com.dat3m.dartagnan.expression.Type;
+
 public class ArrayType implements Type {
 
     private final Type elementType;

@@ -3,21 +3,17 @@ package com.dat3m.dartagnan.solver.caat4wmm;
 
 import com.dat3m.dartagnan.encoding.EncodingContext;
 import com.dat3m.dartagnan.solver.caat.CAATSolver;
-import com.dat3m.dartagnan.solver.caat.reasoning.CAATLiteral;
 import com.dat3m.dartagnan.solver.caat4wmm.coreReasoning.CoreLiteral;
 import com.dat3m.dartagnan.solver.caat4wmm.coreReasoning.CoreReasoner;
 import com.dat3m.dartagnan.utils.logic.Conjunction;
 import com.dat3m.dartagnan.utils.logic.DNF;
 import com.dat3m.dartagnan.verification.Context;
-import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.verification.model.ExecutionModel;
-import com.dat3m.dartagnan.wmm.Relation;
 import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
+import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.java_smt.api.Model;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Set;
 
 /*
@@ -30,16 +26,19 @@ public class WMMSolver {
     private final CAATSolver solver;
     private final CoreReasoner reasoner;
 
-    private WMMSolver(VerificationTask task, Context analysisContext, Set<Relation> cutRelations, ExecutionModel m) {
-        analysisContext.requires(RelationAnalysis.class);
-        this.executionGraph = new ExecutionGraph(task, analysisContext, cutRelations, true);
+    private WMMSolver(RefinementModel refinementModel, Context analysisContext, ExecutionModel m) {
+        final RelationAnalysis ra = analysisContext.requires(RelationAnalysis.class);
+        this.executionGraph = new ExecutionGraph(refinementModel, ra);
         this.executionModel = m;
-        this.reasoner = new CoreReasoner(task, analysisContext, executionGraph);
+        this.reasoner = new CoreReasoner(analysisContext, executionGraph);
         this.solver = CAATSolver.create();
     }
 
-    public static WMMSolver withContext(EncodingContext context, Set<Relation> cutRelations, VerificationTask task, Context analysisContext) throws InvalidConfigurationException {
-        return new WMMSolver(task, analysisContext, cutRelations, ExecutionModel.withContext(context));
+    public static WMMSolver withContext(RefinementModel refinementModel, EncodingContext context,
+            Context analysisContext, Configuration config) throws InvalidConfigurationException {
+        final var solver = new WMMSolver(refinementModel, analysisContext, ExecutionModel.withContext(context));
+        config.inject(solver.reasoner);
+        return solver;
     }
 
     public ExecutionModel getExecution() {
@@ -67,10 +66,7 @@ public class WMMSolver {
         if (result.getStatus() == CAATSolver.Status.INCONSISTENT) {
             // ============== Compute Core reasons ==============
             curTime = System.currentTimeMillis();
-            List<Conjunction<CoreLiteral>> coreReasons = new ArrayList<>(caatResult.getBaseReasons().getNumberOfCubes());
-            for (Conjunction<CAATLiteral> baseReason : caatResult.getBaseReasons().getCubes()) {
-                coreReasons.add(reasoner.toCoreReason(baseReason));
-            }
+            Set<Conjunction<CoreLiteral>> coreReasons = reasoner.toCoreReasons(caatResult.getBaseReasons());
             stats.numComputedCoreReasons = coreReasons.size();
             result.coreReasons = new DNF<>(coreReasons);
             stats.numComputedReducedCoreReasons = result.coreReasons.getNumberOfCubes();

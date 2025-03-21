@@ -1,23 +1,25 @@
 package com.dat3m.dartagnan.program;
 
 import com.dat3m.dartagnan.exception.MalformedProgramException;
-import com.dat3m.dartagnan.expression.Expression;
-import com.dat3m.dartagnan.expression.IConst;
-import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
+import com.dat3m.dartagnan.expression.*;
 import com.dat3m.dartagnan.expression.type.FunctionType;
-import com.dat3m.dartagnan.expression.type.Type;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.expression.type.VoidType;
+import com.dat3m.dartagnan.program.event.Event;
+import com.dat3m.dartagnan.program.event.RegReader;
+import com.dat3m.dartagnan.program.event.RegWriter;
 import com.dat3m.dartagnan.program.event.core.CondJump;
-import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.Label;
+import com.dat3m.dartagnan.program.event.lang.llvm.LlvmCmpXchg;
 import com.dat3m.dartagnan.program.processing.Intrinsics;
 import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Iterables;
 
 import java.util.*;
 import java.util.stream.Collectors;
 
-public class Function implements Expression {
+public class Function implements LeafExpression {
 
     protected String name;
     protected Event entry; // Can be null for intrinsics
@@ -60,6 +62,16 @@ public class Function implements Expression {
     @Override
     public Type getType() {
         return TypeFactory.getInstance().getArchType();
+    }
+
+    @Override
+    public ImmutableList<Expression> getOperands() {
+        return ImmutableList.of();
+    }
+
+    @Override
+    public ExpressionKind getKind() {
+        return ExpressionKind.Other.FUNCTION_ADDR;
     }
 
     public String getName() { return this.name; }
@@ -131,7 +143,8 @@ public class Function implements Expression {
         return found;
     }
 
-    public void append(Event event){
+    public void append(Event event) {
+        Preconditions.checkNotNull(event);
         if (entry == null) {
             entry = exit = event;
             event.setFunction(this);
@@ -142,12 +155,32 @@ public class Function implements Expression {
         }
     }
 
-    public void updateExit(Event event){
-        exit = event;
-        Event next;
-        while((next = exit.getSuccessor()) != null){
-            exit = next;
+    public void append(Iterable<? extends Event> events) {
+        if (Iterables.isEmpty(events)) {
+            return;
+        } else if (exit == null) {
+            append(Iterables.getFirst(events, null));
+            events = Iterables.skip(events, 1);
         }
+        exit.insertAfter(events);
+    }
+
+    public void updateExit(Event event) {
+        Preconditions.checkArgument(event.getFunction() == this);
+        Event cur = event;
+        while (cur.getSuccessor() != null) {
+            cur = cur.getSuccessor();
+        }
+        exit = cur;
+    }
+
+    public void updateEntry(Event event) {
+        Preconditions.checkArgument(event.getFunction() == this);
+        Event cur = event;
+        while (cur.getPredecessor() != null) {
+            cur = cur.getPredecessor();
+        }
+        entry = cur;
     }
 
     public void validate() {
@@ -172,6 +205,24 @@ public class Function implements Expression {
                     throw new MalformedProgramException(error);
                 }
             }
+
+            final Set<Register> registers = new HashSet<>(getRegisters());
+            if (ev instanceof RegReader reader) {
+                reader.getRegisterReads().stream()
+                        .filter(read -> !registers.contains(read.register())).findFirst().ifPresent(read -> {
+                            final String error = String.format("Event %s of function %s reads from external register %s of" +
+                                            "function %s .", reader, this, read.register(), read.register().getFunction()
+                            );
+                            throw new MalformedProgramException(error);
+                        });
+            }
+
+            if (ev instanceof RegWriter writer && !(writer instanceof LlvmCmpXchg) && !registers.contains(writer.getResultRegister())) {
+                final String error = String.format("Event %s of function %s writes to external register %s of function %s",
+                        writer, this, writer.getResultRegister(), writer.getResultRegister().getFunction()
+                );
+                throw new MalformedProgramException(error);
+            }
         }
     }
 
@@ -185,12 +236,7 @@ public class Function implements Expression {
 
     @Override
     public <T> T accept(ExpressionVisitor<T> visitor) {
-        return visitor.visit(this);
-    }
-
-    @Override
-    public IConst reduce() {
-        throw new UnsupportedOperationException("Cannot reduce functions");
+        return visitor.visitFunction(this);
     }
 
     // TODO: Ugly function, but we need it for now to create copies of functions.

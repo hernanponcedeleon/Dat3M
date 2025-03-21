@@ -7,10 +7,6 @@ import com.dat3m.dartagnan.wmm.Definition;
 import com.dat3m.dartagnan.wmm.Relation;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.definition.Difference;
-import com.dat3m.dartagnan.wmm.definition.DomainIdentity;
-import com.dat3m.dartagnan.wmm.definition.Inverse;
-import com.dat3m.dartagnan.wmm.definition.RangeIdentity;
-import com.dat3m.dartagnan.wmm.definition.TransitiveClosure;
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.common.configuration.Option;
@@ -18,20 +14,20 @@ import org.sosy_lab.common.configuration.Options;
 
 import java.util.Set;
 
-import static com.dat3m.dartagnan.configuration.OptionNames.LOCALLY_CONSISTENT;
+import static com.dat3m.dartagnan.configuration.OptionNames.WMM_ATOMICITY;
+import static com.dat3m.dartagnan.configuration.OptionNames.WMM_LOCALLY_CONSISTENT;
 
 @Options
 public class WmmAnalysis {
 
     // =========================== Configurables ===========================
 
-    @Option(
-            name= LOCALLY_CONSISTENT,
+    @Option(name= WMM_LOCALLY_CONSISTENT,
             description="Assumes local consistency for all created wmms.",
             secure=true)
     private boolean assumeLocalConsistency = true;
 
-    @Option(
+    @Option(name=WMM_ATOMICITY,
             description="Assumes the WMM respects atomic blocks for optimization (only the case for SVCOMP right now).",
             secure=true)
     private boolean respectsAtomicBlocks = true;
@@ -70,12 +66,7 @@ public class WmmAnalysis {
         for (Set<DependencyGraph<Relation>.Node> scc : depGraph.getSCCs()) {
             for (DependencyGraph<Relation>.Node node : scc) {
                 final Definition d = node.getContent().getDefinition();
-                if ((d instanceof Inverse || d instanceof DomainIdentity || d instanceof RangeIdentity || d instanceof TransitiveClosure) && scc.size() > 1) {
-                    // Unary relations are not implemented in recursions right now
-                    throw new UnsupportedOperationException(String.format(
-                            "Unary relation %s not supported in recursive definitions.", node.getContent()
-                    ));
-                } else if (d instanceof Difference diff && scc.contains(depGraph.get(diff.complement))) {
+                if (d instanceof Difference diff && scc.contains(depGraph.get(diff.getSubtrahend()))) {
                     // Non-monotonic recursion gives ill-defined memory models.
                     throw new MalformedMemoryModelException(String.format(
                             "Non-monotonic recursion is not supported: %s", node.getContent()

@@ -1,17 +1,17 @@
 package com.dat3m.dartagnan.verification.model;
 
 import com.dat3m.dartagnan.encoding.EncodingContext;
+import com.dat3m.dartagnan.encoding.EncodingHelper;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.Thread;
-import com.dat3m.dartagnan.program.event.Tag;
+import com.dat3m.dartagnan.program.event.*;
 import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.event.core.threading.ThreadArgument;
-import com.dat3m.dartagnan.program.event.core.utils.RegReader;
-import com.dat3m.dartagnan.program.event.core.utils.RegWriter;
 import com.dat3m.dartagnan.program.event.lang.svcomp.BeginAtomic;
 import com.dat3m.dartagnan.program.event.lang.svcomp.EndAtomic;
 import com.dat3m.dartagnan.program.filter.Filter;
+import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.dat3m.dartagnan.utils.dependable.DependencyGraph;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.wmm.Wmm;
@@ -23,15 +23,15 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.java_smt.api.BooleanFormula;
-import org.sosy_lab.java_smt.api.FormulaManager;
+import org.sosy_lab.java_smt.api.Formula;
 import org.sosy_lab.java_smt.api.Model;
 
 import java.math.BigInteger;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.CO;
-import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.RF;
+import static com.dat3m.dartagnan.wmm.RelationNameRepository.CO;
+import static com.dat3m.dartagnan.wmm.RelationNameRepository.RF;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 /*
@@ -48,7 +48,6 @@ public class ExecutionModel {
 
     // ============= Model specific  =============
     private Model model;
-    private FormulaManager formulaManager;
     private Filter eventFilter;
     private boolean extractCoherences;
 
@@ -56,6 +55,7 @@ public class ExecutionModel {
     // The event list is sorted lexicographically by (threadID, cID)
     private final ArrayList<EventData> eventList;
     private final ArrayList<Thread> threadList;
+    private final Map<MemoryObject, MemoryObjectModel> memoryLayoutMap;
     private final Map<Thread, List<EventData>> threadEventsMap;
     private final Map<Thread, List<List<EventData>>> atomicBlocksMap;
     private final Map<EventData, EventData> readWriteMap;
@@ -75,6 +75,7 @@ public class ExecutionModel {
     // The following are a read-only views which get passed to the outside
     private List<EventData> eventListView;
     private List<Thread> threadListView;
+    private Map<MemoryObject, MemoryObjectModel> memoryLayoutMapView;
     private Map<Thread, List<EventData>> threadEventsMapView;
     private Map<Thread, List<List<EventData>>> atomicBlocksMapView;
     private Map<EventData, EventData> readWriteMapView;
@@ -96,6 +97,7 @@ public class ExecutionModel {
         eventList = new ArrayList<>(100);
         threadList = new ArrayList<>(getProgram().getThreads().size());
         threadEventsMap = new HashMap<>(getProgram().getThreads().size() * 4/3, 0.75f);
+        memoryLayoutMap = new HashMap<>();
         atomicBlocksMap = new HashMap<>();
         readWriteMap = new HashMap<>();
         writeReadsMap = new HashMap<>();
@@ -119,6 +121,7 @@ public class ExecutionModel {
     private void createViews() {
         eventListView = Collections.unmodifiableList(eventList);
         threadListView = Collections.unmodifiableList(threadList);
+        memoryLayoutMapView = Collections.unmodifiableMap(memoryLayoutMap);
         threadEventsMapView = Collections.unmodifiableMap(threadEventsMap);
         atomicBlocksMapView = Collections.unmodifiableMap(atomicBlocksMap);
         readWriteMapView = Collections.unmodifiableMap(readWriteMap);
@@ -169,7 +172,8 @@ public class ExecutionModel {
     public List<Thread> getThreads() {
         return threadListView;
     }
-    
+
+    public Map<MemoryObject, MemoryObjectModel> getMemoryLayoutMap() { return memoryLayoutMapView; }
     public Map<Thread, List<EventData>> getThreadEventsMap() {
         return threadEventsMapView;
     }
@@ -221,13 +225,13 @@ public class ExecutionModel {
     public void initialize(Model model, Filter eventFilter, boolean extractCoherences) {
         // We populate here, instead of on construction,
         // to reuse allocated data structures (since these data structures already adapted
-        // their capacity in previous iterations and thus we should have less overhead in future populations)
+        // their capacity in previous iterations, and thus we should have less overhead in future populations)
         // However, for all intents and purposes, this serves as a constructor.
         this.model = model;
-        formulaManager = encodingContext.getFormulaManager();
         this.eventFilter = eventFilter;
         this.extractCoherences = extractCoherences;
         extractEventsFromModel();
+        extractMemoryLayout();
         extractReadsFrom();
         coherenceMap.clear();
         if (extractCoherences) {
@@ -285,7 +289,7 @@ public class ExecutionModel {
                 }
                 // =========================
 
-                if (e instanceof CondJump jump && isTrue(encodingContext.jumpCondition(jump))) {
+                if (e instanceof CondJump jump && isTrue(encodingContext.jumpTaken(jump))) {
                     e = jump.getLabel();
                 } else {
                     e = e.getSuccessor();
@@ -337,13 +341,8 @@ public class ExecutionModel {
             }
 
             if (data.isRead() || data.isWrite()) {
-                String valueString = String.valueOf(model.evaluate(encodingContext.value((MemoryEvent) e)));
-                BigInteger value = switch(valueString) {
-                    case "false" -> BigInteger.ZERO;
-                    case "true" -> BigInteger.ONE;
-                    default -> new BigInteger(valueString);
-                };
-                data.setValue(value);
+                Formula valueFormula = encodingContext.value((MemoryCoreEvent)e);
+                data.setValue(EncodingHelper.evaluate(valueFormula, model));
             }
 
             if (data.isRead()) {
@@ -368,7 +367,7 @@ public class ExecutionModel {
         } else if (data.isJump()) {
             // ===== Jumps =====
             // We override the meaning of execution here. A jump is executed IFF its condition was true.
-            data.setWasExecuted(isTrue(encodingContext.jumpCondition((CondJump) e)));
+            data.setWasExecuted(isTrue(encodingContext.jumpTaken((CondJump) e)));
         } else {
             //TODO: Maybe add some other events (e.g. assertions)
             // But for now all non-visible events are simply registered without
@@ -459,7 +458,7 @@ public class ExecutionModel {
             } else if (regWriter instanceof RegReader regReader) {
                 // Note: This code might work for more cases than we check for here,
                 // but we want to throw an exception if an unexpected event appears.
-                assert regWriter instanceof Local;
+                assert regWriter instanceof Local || regWriter instanceof Alloc;
                 // ---- internal data dependency ----
                 final Set<EventData> dataDeps = new HashSet<>();
                 for (Register.Read regRead : regReader.getRegisterReads()) {
@@ -484,6 +483,18 @@ public class ExecutionModel {
 
     // ===================================================
 
+    private void extractMemoryLayout() {
+        memoryLayoutMap.clear();
+        for (MemoryObject obj : getProgram().getMemory().getObjects()) {
+            final boolean isAllocated = obj.isStaticallyAllocated() || isTrue(encodingContext.execution(obj.getAllocationSite()));
+            if (isAllocated) {
+                final ValueModel address = new ValueModel(model.evaluate(encodingContext.address(obj)));
+                final BigInteger size = (BigInteger) model.evaluate(encodingContext.size(obj));
+                memoryLayoutMap.put(obj, new MemoryObjectModel(obj, address, size));
+            }
+        }
+    }
+
     private void extractReadsFrom() {
         final EncodingContext.EdgeEncoder rf = encodingContext.edge(encodingContext.getTask().getMemoryModel().getRelation(RF));
         readWriteMap.clear();
@@ -493,9 +504,6 @@ public class ExecutionModel {
             for (EventData read : addressedReads.getValue()) {
                 for (EventData write : addressWritesMap.get(address)) {
                     BooleanFormula rfExpr = rf.encode(write.getEvent(), read.getEvent());
-                    // The null check in isTrue is important: Currently there are cases where no rf-edge between
-                    // init writes and loads get encoded (in case of arrays/structs). This is usually no problem,
-                    // since in a well-initialized program, the init write should not be readable anyway.
                     if (isTrue(rfExpr)) {
                         readWriteMap.put(read, write);
                         read.setReadFrom(write);

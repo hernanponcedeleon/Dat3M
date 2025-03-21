@@ -1,0 +1,16 @@
+PTX Proxy-MP-gpu2
+"https://github.com/NVlabs/mixedproxy/blob/main/tests/MP_gpu.test"
+{
+x = 0;
+t @ texture aliases x;
+s @ surface aliases x;
+flag = 0;
+P1:r0=0;
+P1:r1=0;
+}
+ P0@cta 0,gpu 0                   |P1@cta 1,gpu 0                    ;
+ st.weak x, 2                     |ld.acquire.gpu r0, flag           ;
+                                  |                                  ;
+ st.release.gpu flag, 1           |suld.weak r1, s                   ;
+exists
+(P1:r0 == 1 /\ P1:r1 != 2)

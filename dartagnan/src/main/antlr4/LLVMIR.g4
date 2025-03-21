@@ -20,6 +20,7 @@
 
 grammar LLVMIR;
 
+
 compilationUnit: topLevelEntity* EOF;
 
 targetDef: targetDataLayout | targetTriple;
@@ -33,7 +34,6 @@ topLevelEntity:
 	| moduleAsm
 	| typeDef
 	| comdatDef
-	| globalDecl
 	| globalDef
 	| indirectSymbolDef
 	| funcDecl
@@ -53,14 +53,9 @@ comdatDef:
 		| 'nodeduplicate'
 		| 'samesize'
 	);
-globalDecl:
-	GlobalIdent '=' externalLinkage preemption? visibility? dllStorageClass? threadLocal?
-		unnamedAddr? addrSpace? externallyInitialized? immutable type (
-		',' globalField
-	)* (',' metadataAttachment)* funcAttribute*;
 globalDef:
-	GlobalIdent '=' internalLinkage? preemption? visibility? dllStorageClass? threadLocal?
-		unnamedAddr? addrSpace? externallyInitialized? immutable type constant (
+	GlobalIdent '=' (externalLinkage | internalLinkage)? preemption? visibility? dllStorageClass? threadLocal?
+		unnamedAddr? addrSpace? externallyInitialized? immutable type constant? (
 		',' globalField
 	)* (',' metadataAttachment)* funcAttribute*;
 
@@ -110,7 +105,7 @@ gc: 'gc' StringLit;
 prefix: 'prefix' typeConst;
 prologue: 'prologue' typeConst;
 personality: 'personality' typeConst;
-returnAttribute: returnAttr | dereferenceable;
+returnAttribute: returnAttr | dereferenceable | align;
 funcBody: '{' basicBlock+ useListOrder* '}';
 basicBlock: LabelIdent? instruction* terminator;
 instruction: // Instructions producing values.
@@ -298,9 +293,12 @@ value:
 	constant
 	// %42 %foo
 	| LocalIdent;
+
 inlineAsm:
 	'asm' sideEffect = 'sideeffect'? alignStackTok = 'alignstack'? intelDialect = 'inteldialect'?
-		unwind = 'unwind'? StringLit ',' StringLit;
+			unwind = 'unwind'? inlineAsmBody;
+inlineAsmBody : StringLit ',' StringLit;
+
 mdString: '!' StringLit;
 mdFieldOrInt: IntLit | mdField;
 diSPFlag: IntLit | DispFlag;
@@ -746,7 +744,17 @@ funcAttr:
 	| 'sspstrong'
 	| 'strictfp'
 	| 'willreturn'
-	| 'writeonly';
+	| 'writeonly'
+	| 'memory(' memoryEffect+ ')';
+memoryEffect
+	: accessKind
+	| 'argmem:' accessKind
+	| 'inaccessiblemem:' accessKind;
+accessKind
+	: 'none'
+	| 'readwrite'
+	| 'read'
+	| 'write';
 distinct: 'distinct';
 inBounds: 'inbounds';
 returnAttr:
@@ -1269,7 +1277,7 @@ linkageNameField: 'linkageName:' StringLit;
 lowerBoundField: 'lowerBound:' mdFieldOrInt;
 macrosField: 'macros:' mdField;
 nameTableKindField:
-	'nameTableKind:' nameTableKind = ('GNU' | 'None' | 'Default');
+	'nameTableKind:' nameTableKind = ('Apple' | 'GNU' | 'None' | 'Default');
 nodesField: 'nodes:' mdField;
 offsetField:
 	// TODO: rename OffsetField= attribute to Offset= when inspirer/textmapper#13 is resolved
@@ -1342,6 +1350,8 @@ fragment GlobalId: '@' Id;
 fragment LocalName: '%' (Name | QuotedString);
 fragment LocalId: '%' Id;
 fragment QuotedString: '"' (~["\r\n])* '"';
+
+
 Comment: ';' .*? '\r'? '\n' -> channel(HIDDEN);
 WhiteSpace: [ \t\n\r]+ -> skip;
 IntLit: '-'? DecimalDigit+ | IntHexLit;

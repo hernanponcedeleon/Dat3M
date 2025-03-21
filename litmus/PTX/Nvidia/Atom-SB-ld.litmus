@@ -1,5 +1,6 @@
 PTX Atom-SB-ld
 "RMW store buffering load by non-RMW"
+"https://github.com/NVlabs/mixedproxy/blob/main/tests/SB_rmw_2.test"
 {
 P0:r1=0;
 P0:r2=0;
@@ -8,7 +9,7 @@ x=0;
 y=0;
 }
  P0@cta 0,gpu 0                       | P1@cta 1,gpu 0                         ;
- atom.acq_rel.gpu.plus r1, x, 1       | st.relaxed.gpu y, 1                    ;
- atom.acq_rel.gpu.plus r2, y, 1       | ld.relaxed.gpu r3, x                   ;
+ atom.acq_rel.gpu.add r1, x, 1        | st.relaxed.gpu y, 1                    ;
+ atom.acq_rel.gpu.add r2, y, 1        | ld.relaxed.gpu r3, x                   ;
 exists
 (P0:r2 == 0 /\ P1:r3 == 0)

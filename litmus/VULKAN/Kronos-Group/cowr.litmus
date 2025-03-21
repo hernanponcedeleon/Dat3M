@@ -1,6 +1,7 @@
 Vulkan cowr
 "CoWR litmus test. Coherence order for x is 2,1, and is enforced by the"
 "third invocation observing it. Invocation 0 can't see 2 after it stores 1."
+"https://github.com/KhronosGroup/Vulkan-MemoryModel/blob/master/alloy/tests/cowr.test"
 {
 P0:r0=0;
 P2:r1=0;

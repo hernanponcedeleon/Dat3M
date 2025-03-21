@@ -4,7 +4,7 @@ import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.type.FunctionType;
 import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.Register;
-import com.dat3m.dartagnan.program.event.core.utils.RegWriter;
+import com.dat3m.dartagnan.program.event.RegWriter;
 import com.google.common.base.Preconditions;
 
 import java.util.List;
@@ -36,11 +36,8 @@ public class ValueFunctionCall extends FunctionCall implements RegWriter {
 
     @Override
     protected String defaultString() {
-        if (isDirectCall()) {
-            return String.format("%s <- call %s(%s)", resultRegister, ((Function)callTarget).getName(), super.argumentsToString());
-        } else {
-            return String.format("%s <- call %s(%s)", resultRegister, callTarget, super.argumentsToString());
-        }
+        final Object target = isDirectCall() ? ((Function)callTarget).getName() : callTarget;
+        return String.format("%s <- call %s(%s)", resultRegister, target, super.argumentsToString());
     }
 
     @Override

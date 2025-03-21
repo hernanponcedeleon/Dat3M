@@ -1,0 +1,17 @@
+PTX Proxy-SingleThread-rf-surW-surxF-texF-texR
+"The rf over different non-generic proxies with both proxy fences in correct order are enough, the result will be guaranteed"
+"The generic memory is synchronize with surface cache by surface fence, then texture fence synchronize the data from generic memory to texture cache. Hence the tld is guaranteed to rf sust"
+"https://github.com/NVlabs/mixedproxy/blob/main/tests/CoWR.test"
+{
+x = 0;
+t @ texture aliases x;
+s @ surface aliases x;
+P0:r0=0;
+}
+ P0@cta 0,gpu 0                   ;
+ sust.weak s, 1                   ;
+ fence.proxy.surface              ;
+ fence.proxy.texture              ;
+ tld.weak r0, t                   ;
+forall
+(P0:r0 == 1)

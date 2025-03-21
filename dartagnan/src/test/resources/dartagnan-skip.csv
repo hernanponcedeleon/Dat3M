@@ -3,6 +3,7 @@
 
 // sb (po) is different for C11 than hardware models. In particular it is not a total order (due to C11 not guaranteeing the evaluation order of function parameters). See https://github.com/herd/herdtools7/issues/394 for a discussion
 litmus/C11/auto/linearisation.litmus
+litmus/OPENCL/portedFromC11/auto/linearisation.litmus
 
 // The following contains AMO instructions which we currently do not support
 litmus/RISCV/2+2Swap+Acqs.litmus
@@ -158,3 +159,29 @@ litmus/RISCV/SB+popar+poarar+NEW.litmus
 litmus/RISCV/SB+popar+poarp+NEW.litmus
 litmus/RISCV/SB+popars+NEW.litmus
 litmus/RISCV/SB+porlps+NEW.litmus
+
+// The following tests have spinloops which are not side-effect-free (due to the use of Exch) and thus we cannot verify their liveness
+litmus/PTX/Liveness/2_threads_4_instructions/62_simple.litmus
+litmus/PTX/Liveness/2_threads_4_instructions/63_simple.litmus
+litmus/PTX/Liveness/2_threads_4_instructions/100_simple.litmus
+litmus/PTX/Liveness/2_threads_4_instructions/101_simple.litmus
+litmus/PTX/Liveness/2_threads_4_instructions/124_simple.litmus,1
+litmus/PTX/Liveness/2_threads_4_instructions/125_simple.litmus,1
+litmus/PTX/Liveness/2_threads_4_instructions/128_simple.litmus
+litmus/PTX/Liveness/2_threads_4_instructions/129_simple.litmus
+litmus/PTX/Liveness/2_threads_4_instructions/130_simple.litmus
+litmus/PTX/Liveness/2_threads_4_instructions/131_simple.litmus
+litmus/PTX/Liveness/2_threads_4_instructions/132_simple.litmus
+litmus/PTX/Liveness/2_threads_4_instructions/133_simple.litmus
+litmus/PTX/Liveness/2_threads_4_instructions/134_simple.litmus
+litmus/PTX/Liveness/2_threads_4_instructions/135_simple.litmus
+litmus/PTX/Liveness/2_threads_4_instructions/144_simple.litmus
+litmus/PTX/Liveness/2_threads_4_instructions/145_simple.litmus
+
+// The following tests have loops we cannot currently normalize
+litmus/VULKAN/CADP/2_threads_4_instructions/133_simple.litmus
+litmus/VULKAN/CADP/2_threads_4_instructions/144_simple.litmus
+litmus/VULKAN/CADP/2_threads_4_instructions/145_simple.litmus
+litmus/VULKAN/CADP/2_threads_4_instructions/62_simple.litmus
+litmus/VULKAN/CADP/2_threads_4_instructions/63_simple.litmus
+litmus/VULKAN/CADP/2_threads_4_instructions/132_simple.litmus

@@ -2,11 +2,10 @@ package com.dat3m.dartagnan.program.processing;
 
 import com.dat3m.dartagnan.exception.MalformedProgramException;
 import com.dat3m.dartagnan.program.Function;
-import com.dat3m.dartagnan.program.event.core.FenceWithId;
+import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.event.core.annotations.CodeAnnotation;
-import com.dat3m.dartagnan.program.event.core.rmw.RMWStore;
-import com.dat3m.dartagnan.program.event.core.rmw.RMWStoreExclusive;
+import com.dat3m.dartagnan.program.event.core.special.StateSnapshot;
 import com.dat3m.dartagnan.program.event.core.threading.ThreadArgument;
 import com.dat3m.dartagnan.program.event.core.threading.ThreadCreate;
 import com.dat3m.dartagnan.program.event.core.threading.ThreadStart;
@@ -36,11 +35,12 @@ public class CoreCodeVerification implements FunctionProcessor {
     private static final Set<Class<? extends Event>> CORE_CLASSES = new HashSet<>(Arrays.asList(
             Load.class, Store.class, Init.class, GenericMemoryEvent.class, GenericVisibleEvent.class,
             CondJump.class, IfAsJump.class, ExecutionStatus.class, Label.class, Local.class,
-            Skip.class, Assume.class, RMWStore.class, RMWStoreExclusive.class,
-            Assert.class,
+            Skip.class, RMWStore.class, RMWStoreExclusive.class, Alloc.class,
+            Assume.class, Assert.class,
             ThreadCreate.class, ThreadArgument.class, ThreadStart.class,
-            FenceWithId.class, // For PTX and Vulkan
-            BeginAtomic.class, EndAtomic.class
+            ControlBarrier.class, NamedBarrier.class,
+            BeginAtomic.class, EndAtomic.class,
+            StateSnapshot.class
             // We add SVCOMP atomic blocks here as well, despite them not being part of the core package.
             // TODO: We might want to find a more systematic way to extend the core with these custom events.
     ));

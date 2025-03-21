@@ -2,26 +2,29 @@ package com.dat3m.dartagnan.parsers.program.visitors;
 
 import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.expression.*;
-import com.dat3m.dartagnan.expression.op.IOpBin;
-import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
+import com.dat3m.dartagnan.expression.integers.IntBinaryOp;
 import com.dat3m.dartagnan.expression.type.*;
 import com.dat3m.dartagnan.parsers.LLVMIRBaseVisitor;
 import com.dat3m.dartagnan.parsers.LLVMIRParser.*;
+import com.dat3m.dartagnan.parsers.program.ParserInlineAsm;
 import com.dat3m.dartagnan.parsers.program.utils.ProgramBuilder;
 import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
+import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.Tag;
-import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.event.metadata.Metadata;
 import com.dat3m.dartagnan.program.event.metadata.SourceLocation;
 import com.dat3m.dartagnan.program.memory.Memory;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
+import org.antlr.v4.runtime.CharStream;
+import org.antlr.v4.runtime.CharStreams;
 import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.tree.TerminalNode;
 import org.apache.logging.log4j.LogManager;
@@ -31,6 +34,7 @@ import java.math.BigInteger;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static com.dat3m.dartagnan.expression.utils.ExpressionHelper.isAggregateLike;
 import static com.dat3m.dartagnan.program.event.EventFactory.*;
 import static com.dat3m.dartagnan.program.event.EventFactory.Llvm.newCompareExchange;
 import static com.google.common.base.Preconditions.checkState;
@@ -39,9 +43,10 @@ import static com.google.common.base.Verify.verify;
 public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
 
     private static final Logger logger = LogManager.getLogger(VisitorLlvm.class);
+    private static final String DEFAULT_ENTRY_FUNCTION = "main";
 
     // Global context
-    private final Program program = new Program(new Memory(), Program.SourceLanguage.LLVM);
+    private final Program program = new Program(new Memory(), Program.SourceLanguage.LLVM, null);
     private final TypeFactory types = TypeFactory.getInstance();
     private final ExpressionFactory expressions = ExpressionFactory.getInstance();
     private final Type pointerType = types.getPointerType();
@@ -73,9 +78,13 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
 
     @Override
     public Expression visitCompilationUnit(CompilationUnitContext ctx) {
-        // Create the metadata mapping beforehand, so that instructions can get all attachments
+        // Create the metadata mapping beforehand, so that instructions can get all attachments.
+        // Also parse all type definitions.
         for (final TopLevelEntityContext entity : ctx.topLevelEntity()) {
             if (entity.metadataDef() != null) {
+                entity.accept(this);
+            }
+            if (entity.typeDef() != null) {
                 entity.accept(this);
             }
         }
@@ -88,20 +97,21 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
             if (entity.funcDef() != null) {
                 visitFuncHeader(entity.funcDef().funcHeader());
             }
-            // FIXME: Declare global variables
+            if (entity.globalDef() != null) {
+                visitGlobalDeclaration(entity.globalDef());
+            }
         }
+
+        // Parse global definitions after declarations.
         for (final TopLevelEntityContext entity : ctx.topLevelEntity()) {
-            //FIXME: We need to parse the declaration of globals (similar to func headers) first
-            // because the initializer may refer to other globals.
-            if (entity.globalDecl() != null || entity.globalDef() != null || entity.typeDef() != null) {
-                entity.accept(this);
+            if (entity.globalDef() != null) {
+                visitGlobalDef(entity.globalDef());
             }
         }
 
         // Parse definitions
         for (final TopLevelEntityContext entity : ctx.topLevelEntity()) {
             if (entity.metadataDef() == null &&
-                    entity.globalDecl() == null &&
                     entity.globalDef() == null &&
                     entity.typeDef() == null &&
                     entity.funcDecl() == null) {
@@ -124,6 +134,9 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
     @Override
     public Expression visitFuncHeader(FuncHeaderContext ctx) {
         final String name = globalIdent(ctx.GlobalIdent());
+        if (name.equals(DEFAULT_ENTRY_FUNCTION)) {
+            program.setEntryPoint(name);
+        }
         final Type returnType = parseType(ctx.type());
         final List<Type> parameterTypes = new ArrayList<>();
         final List<String> parameterNames = new ArrayList<>();
@@ -164,7 +177,7 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
         for (final BasicBlockContext basicBlockContext : ctx.funcBody().basicBlock()) {
             block = getBlock(basicBlockContext.LabelIdent());
             final List<Metadata> blockHeaderMetadata;
-            if (basicBlockContext.instruction().size() > 0) {
+            if (!basicBlockContext.instruction().isEmpty()) {
                 blockHeaderMetadata = parseMetadataAttachment(basicBlockContext.instruction(0).metadataAttachment());
             } else {
                 blockHeaderMetadata = parseMetadataAttachment(basicBlockContext.terminator().metadataAttachment());
@@ -232,57 +245,38 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
         return getBlock(labelName);
     }
 
-    @Override
-    public Expression visitGlobalDecl(GlobalDeclContext ctx) {
-        checkSupport(false, "Declared but undefined constants are not supported", ctx);
-        // FIXME: See <visitGlobalDef> on how to handle this
-        return null;
+    public void visitGlobalDeclaration(GlobalDefContext ctx) {
+        final String name = globalIdent(ctx.GlobalIdent());
+        check(!constantMap.containsKey(name), "Redeclared constant in %s.", ctx);
+        final int size = types.getMemorySizeInBytes(parseType(ctx.type()));
+        if (size > 0) {
+            final MemoryObject globalObject = program.getMemory().allocate(size);
+            globalObject.setName(name);
+            if (ctx.threadLocal() != null) {
+                globalObject.setIsThreadLocal(true);
+            }
+            // TODO: mark the global as constant, if possible.
+            constantMap.put(name, globalObject);
+            return;
+        }
+        throw new ParsingException(String.format("Cannot compute memory size for '%s'", name));
     }
 
     @Override
     public Expression visitGlobalDef(GlobalDefContext ctx) {
         final String name = globalIdent(ctx.GlobalIdent());
-        check(!constantMap.containsKey(name), "Redefined constant in %s.", ctx);
+        final MemoryObject globalObject = (MemoryObject) constantMap.get(name);
         final Type type = parseType(ctx.type());
-        final int size = types.getMemorySizeInBytes(type);
-        final MemoryObject globalObject = program.getMemory().allocate(size, true);
-        globalObject.setCVar(name);
-        if (ctx.threadLocal() != null) {
-            globalObject.setIsThreadLocal(true);
-        }
+        final boolean isExternal = ctx.externalLinkage() != null;
+        final boolean hasInitializer = ctx.constant() != null;
 
-        //TODO: Merge GlobalDef/GlobalDecl in the LLVM grammar into one single rule with an optional "constant".
-        // If no constant is provided, we can generate a nondeterministic value
-        final Expression value = checkExpression(type, ctx.constant());
-        setInitialMemoryFromConstant(globalObject, 0, value);
-        // TODO: mark the global as constant, if possible.
-        constantMap.put(name, globalObject);
+        check (!(isExternal && hasInitializer), "External global cannot have initializer: %s", ctx);
+        check (isExternal || hasInitializer, "Global without initializer; %s", ctx);
+
+        final Expression value;
+        value = hasInitializer ? checkExpression(type, ctx.constant()) : program.newConstant(type);
+        globalObject.setInitialValue(0, value);
         return null;
-    }
-
-    private void setInitialMemoryFromConstant(MemoryObject memObj, int offset, Expression constant) {
-        if (constant.getType() instanceof ArrayType arrayType) {
-            assert constant instanceof Construction;
-            final Construction constArray = (Construction) constant;
-            final List<Expression> arrayElements = constArray.getArguments();
-            final int stepSize = types.getMemorySizeInBytes(arrayType.getElementType());
-            for (int i = 0; i < arrayElements.size(); i++) {
-                setInitialMemoryFromConstant(memObj, offset + i * stepSize, arrayElements.get(i));
-            }
-        } else if (constant.getType() instanceof AggregateType) {
-            assert constant instanceof Construction;
-            final Construction constStruct = (Construction) constant;
-            final List<Expression> structElements = constStruct.getArguments();
-            int currentOffset = offset;
-            for (Expression structElement : structElements) {
-                setInitialMemoryFromConstant(memObj, currentOffset, structElement);
-                currentOffset += types.getMemorySizeInBytes(structElement.getType());
-            }
-        } else if (constant.getType() instanceof IntegerType) {
-            memObj.setInitialValue(offset, constant);
-        } else {
-            throw new UnsupportedOperationException("Unrecognized constant value: " + constant);
-        }
     }
 
     private Block getBlock(String label) {
@@ -295,7 +289,7 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
     }
 
     private List<Metadata> parseMetadataAttachment(List<MetadataAttachmentContext> metadataAttachmentContexts) {
-        if (metadataAttachmentContexts.size() == 0) {
+        if (metadataAttachmentContexts.isEmpty()) {
             return List.of();
         }
 
@@ -313,9 +307,13 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
                     scope = (SpecialMdTupleNode) metadataSymbolTable.get(scope.<MdReference>getField("scope").orElseThrow().mdName());
                 }
                 assert scope.nodeType() == SpecialMdTupleNode.Type.DIFile;
+                // https://llvm.org/docs/LangRef.html#difile suggests that "file" and "directory" 
+                // are mandatory fields and thus the ElseThrow
                 final String filename = scope.<MdGenericValue<String>>getField("filename").orElseThrow().value();
                 final String directory = scope.<MdGenericValue<String>>getField("directory").orElseThrow().value();
-                final int lineNumber = diLocationNode.<MdGenericValue<BigInteger>>getField("line").orElseThrow().value().intValue();
+                // Field "line" is optional. When missing we assume value 0
+                final int lineNumber = diLocationNode.<MdGenericValue<BigInteger>>getField("line")
+                        .orElse(new MdGenericValue<BigInteger>(BigInteger.ZERO)).value().intValue();
                 metadata.add(new SourceLocation((directory + "/" + filename).intern(), lineNumber));
             }
         }
@@ -358,16 +356,7 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
 
     @Override
     public Expression visitCallInst(CallInstContext ctx) {
-        if (ctx.inlineAsm() != null) {
-            // FIXME: We ignore all inline assembly.
-            return null;
-        }
-        final Expression callTarget = checkPointerExpression(ctx.value());
-        if (callTarget == null) {
-            //FIXME ignores metadata functions, but also undeclared functions
-            return null;
-        }
-        //checkSupport(callTarget instanceof Function, "Indirect call in %s.", ctx);
+        // see https://llvm.org/docs/LangRef.html#call-instruction
         final Type type = parseType(ctx.type());
         // Calls can either list the full function type or just the return type.
         final Type returnType = type instanceof FunctionType funcType ? funcType.getReturnType() : type;
@@ -383,16 +372,39 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
             arguments.add(checkExpression(argumentType, argument.value()));
         }
 
-        final FunctionType funcType;
-        if (type instanceof FunctionType) {
-            funcType = (FunctionType) type;
-        } else {
-            // Build FunctionType from return type and argument types
-            funcType = types.getFunctionType(returnType, Lists.transform(arguments, Expression::getType));
-        }
-
         final Register resultRegister = currentRegisterName == null ? null :
                 getOrNewRegister(currentRegisterName, returnType);
+
+        if (ctx.inlineAsm() != null) {
+            // see https://llvm.org/docs/LangRef.html#inline-assembler-expressions
+            //FIXME ignore side effects of inline assembly
+            CharStream charStream = CharStreams.fromString(ctx.inlineAsm().inlineAsmBody().getText());
+            ParserInlineAsm parser = new ParserInlineAsm(function, resultRegister, arguments);
+            List<Event> events = new ArrayList<>();
+            try{
+                events = parser.parse(charStream);
+            } catch (ParsingException e){
+                logger.warn("Found unrecognized token for inline assembly : '{}'. Setting non deterministic value ", e.getMessage());
+                if(resultRegister != null){
+                    events.add(EventFactory.Svcomp.newNonDetChoice(resultRegister));
+                }
+            }
+            if(!events.isEmpty()){
+                block.events.addAll(events);
+            }
+            return resultRegister;
+        }
+
+        final Expression callTarget = checkPointerExpression(ctx.value());
+        if (callTarget == null) {
+            //FIXME ignores metadata functions, but also undeclared functions
+            return null;
+        }
+
+        // Build FunctionType from return type and argument types
+        final FunctionType funcType = type instanceof FunctionType t ? t :
+                types.getFunctionType(returnType, Lists.transform(arguments, Expression::getType));
+
         final Event call = currentRegisterName == null ?
                 newVoidFunctionCall(funcType, callTarget, arguments) :
                 newValueFunctionCall(resultRegister, funcType, callTarget, arguments);
@@ -486,7 +498,6 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
 
     // ----------------------------------------------------------------------------------------------------------------
     // Instructions producing a value
-
     @Override
     public Expression visitAllocaInst(AllocaInstContext ctx) {
         // see https://llvm.org/docs/LangRef.html#alloca-instruction
@@ -501,9 +512,15 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
             final Type sizeType = parseType(ctx.typeValue().firstClassType());
             sizeExpression = checkExpression(sizeType, ctx.typeValue().value());
         }
-        //final int alignment = parseAlignment(ctx.align());
+        final Event alloc;
+        if(ctx.align() != null) {
+            final Expression alignmentExpression = expressions.makeValue(parseBigInteger(ctx.align().IntLit()), types.getArchType());
+            alloc = EventFactory.newAlignedAlloc(register, elementType, sizeExpression, alignmentExpression, false, false);
+        } else {
+            alloc = EventFactory.newAlloc(register, elementType, sizeExpression, false, false);
+        }
         //final int addressSpace = parseAddressSpace(ctx.addrSpace());
-        block.events.add(EventFactory.newAlloc(register, elementType, sizeExpression, false));
+        block.events.add(alloc);
         return register;
     }
 
@@ -559,82 +576,63 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
     public Expression visitAddInst(AddInstContext ctx) {
         final Expression left = visitTypeValue(ctx.typeValue());
         final Expression right = checkExpression(left.getType(), ctx.value());
-        return assignToRegister(expressions.makeADD(left, right));
+        return assignToRegister(expressions.makeAdd(left, right));
     }
 
     @Override
     public Expression visitSubInst(SubInstContext ctx) {
         final Expression left = visitTypeValue(ctx.typeValue());
         final Expression right = checkExpression(left.getType(), ctx.value());
-        return assignToRegister(expressions.makeSUB(left, right));
+        return assignToRegister(expressions.makeSub(left, right));
     }
 
     @Override
     public Expression visitMulInst(MulInstContext ctx) {
         final Expression left = visitTypeValue(ctx.typeValue());
         final Expression right = checkExpression(left.getType(), ctx.value());
-        return assignToRegister(expressions.makeMUL(left, right));
+        return assignToRegister(expressions.makeMul(left, right));
     }
 
     @Override
     public Expression visitShlInst(ShlInstContext ctx) {
         final Expression left = visitTypeValue(ctx.typeValue());
         final Expression right = checkExpression(left.getType(), ctx.value());
-        return assignToRegister(expressions.makeLSH(left, right));
+        return assignToRegister(expressions.makeLshift(left, right));
     }
 
     @Override
     public Expression visitLShrInst(LShrInstContext ctx) {
         final Expression left = visitTypeValue(ctx.typeValue());
         final Expression right = checkExpression(left.getType(), ctx.value());
-        return assignToRegister(expressions.makeRSH(left, right, false));
+        return assignToRegister(expressions.makeRshift(left, right, false));
     }
 
     @Override
     public Expression visitAShrInst(AShrInstContext ctx) {
         final Expression left = visitTypeValue(ctx.typeValue());
         final Expression right = checkExpression(left.getType(), ctx.value());
-        return assignToRegister(expressions.makeRSH(left, right, true));
+        return assignToRegister(expressions.makeRshift(left, right, true));
     }
 
     @Override
     public Expression visitAndInst(AndInstContext ctx) {
         final Expression left = visitTypeValue(ctx.typeValue());
         final Expression right = checkExpression(left.getType(), ctx.value());
-        return assignToRegister(expressions.makeAND(left, right));
+        return assignToRegister(expressions.makeIntAnd(left, right));
     }
 
     @Override
     public Expression visitOrInst(OrInstContext ctx) {
         final Expression left = visitTypeValue(ctx.typeValue());
         final Expression right = checkExpression(left.getType(), ctx.value());
-        return assignToRegister(expressions.makeOR(left, right));
+        return assignToRegister(expressions.makeIntOr(left, right));
     }
 
     @Override
     public Expression visitXorInst(XorInstContext ctx) {
         final Expression left = visitTypeValue(ctx.typeValue());
         final Expression right = checkExpression(left.getType(), ctx.value());
-        final Expression xorExpr;
-        if ((right instanceof IValue iValue && iValue.getType().isMathematical()
-            && (iValue.isZero() || iValue.isOne()))) {
-            // NOTE: If we parse the program with mathematical integers, we try to eliminate "xor 1" expressions.
-            // The reason is that "xor 1" is used to implement boolean negations, i.e., even if the C source program
-            // has no bitwise operators, "xor 1" is frequently added by the compiler.
-            // Not eliminating this operator frequently results in theory-mixing that the SMT-backend cannot handle.
-            if (iValue.isZero()) {
-                xorExpr = left;
-            } else {
-                //FIXME: This is only valid on "xor 1" applied to "i1" operators, but is unsound for any other bit-width.
-                xorExpr = expressions.makeConditional(
-                        expressions.makeEQ(left, expressions.makeGeneralZero(left.getType())),
-                        expressions.makeOne((IntegerType) left.getType()),
-                        expressions.makeZero((IntegerType) left.getType())
-                );
-            }
-        } else {
-            xorExpr = expressions.makeXOR(left, right);
-        }
+        final Expression xorExpr = expressions.makeIntXor(left, right);
         return assignToRegister(xorExpr);
     }
 
@@ -642,28 +640,28 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
     public Expression visitSRemInst(SRemInstContext ctx) {
         final Expression left = visitTypeValue(ctx.typeValue());
         final Expression right = checkExpression(left.getType(), ctx.value());
-        return assignToRegister(expressions.makeREM(left, right, true));
+        return assignToRegister(expressions.makeRem(left, right, true));
     }
 
     @Override
     public Expression visitURemInst(URemInstContext ctx) {
         final Expression left = visitTypeValue(ctx.typeValue());
         final Expression right = checkExpression(left.getType(), ctx.value());
-        return assignToRegister(expressions.makeREM(left, right, false));
+        return assignToRegister(expressions.makeRem(left, right, false));
     }
 
     @Override
     public Expression visitUDivInst(UDivInstContext ctx) {
         final Expression left = visitTypeValue(ctx.typeValue());
         final Expression right = checkExpression(left.getType(), ctx.value());
-        return assignToRegister(expressions.makeDIV(left, right, false));
+        return assignToRegister(expressions.makeDiv(left, right, false));
     }
 
     @Override
     public Expression visitSDivInst(SDivInstContext ctx) {
         final Expression left = visitTypeValue(ctx.typeValue());
         final Expression right = checkExpression(left.getType(), ctx.value());
-        return assignToRegister(expressions.makeDIV(left, right, true));
+        return assignToRegister(expressions.makeDiv(left, right, true));
     }
 
     // Aggregate instructions
@@ -671,13 +669,23 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
     @Override
     public Expression visitExtractValueInst(ExtractValueInstContext ctx) {
         final Type type = parseType(ctx.typeValue().firstClassType());
-        check(type instanceof AggregateType, "Non-aggregate type in %s.", ctx);
-        Expression expression = checkExpression(type, ctx.typeValue().value());
-        for (final TerminalNode literalNode : ctx.IntLit()) {
-            final int index = Integer.parseInt(literalNode.getText());
-            expression = expressions.makeExtract(index, expression);
-        }
-        return assignToRegister(expression);
+        check(isAggregateLike(type), "Non-aggregate type in %s.", ctx);
+        final Expression aggregate = checkExpression(type, ctx.typeValue().value());
+        final ImmutableList<Integer> indices =
+                ctx.IntLit().stream().map(n -> Integer.parseInt(n.getText())).collect(ImmutableList.toImmutableList());
+        return assignToRegister(expressions.makeExtract(aggregate, indices));
+    }
+
+    @Override
+    public Expression visitInsertValueInst(InsertValueInstContext ctx) {
+        final Type typeAgg = parseType(ctx.typeValue(0));
+        final Type insertType = parseType(ctx.typeValue(1));
+        check(isAggregateLike(typeAgg), "Non-aggregate type in %s.", ctx);
+        final Expression aggregate = checkExpression(typeAgg, ctx.typeValue(0));
+        final Expression insertValue = checkExpression(insertType, ctx.typeValue(1));
+        final ImmutableList<Integer> indices =
+                ctx.IntLit().stream().map(n -> Integer.parseInt(n.getText())).collect(ImmutableList.toImmutableList());
+        return assignToRegister(expressions.makeInsert(aggregate, insertValue, indices));
     }
 
     @Override
@@ -699,7 +707,7 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
         final Expression trueValue = visitTypeValue(ctx.typeValue(1));
         final Expression falseValue = visitTypeValue(ctx.typeValue(2));
         final Expression cast = expressions.makeBooleanCast(guard);
-        return assignToRegister(expressions.makeConditional(cast, trueValue, falseValue));
+        return assignToRegister(expressions.makeITE(cast, trueValue, falseValue));
     }
 
     @Override
@@ -719,7 +727,8 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
                 getOrNewCurrentRegister(types.getAggregateType(List.of(comparator.getType(), getIntegerType(1))));
         if (register != null) {
             final Expression cast = expressions.makeIntegerCast(asExpected, getIntegerType(1), false);
-            final Expression result = expressions.makeConstruct(List.of(value, cast));
+            final Type type = types.getAggregateType(List.of(value.getType(), cast.getType()));
+            final Expression result = expressions.makeConstruct(type, List.of(value, cast));
             block.events.add(newLocal(register, result));
         }
         return register;
@@ -737,12 +746,12 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
         if (operator.equals("xchg")) {
             event = Llvm.newExchange(register, address, operand, mo);
         } else {
-            final IOpBin op = switch (operator) {
-                case "add" -> IOpBin.ADD;
-                case "sub" -> IOpBin.SUB;
-                case "and" -> IOpBin.AND;
-                case "or" -> IOpBin.OR;
-                case "xor" -> IOpBin.XOR;
+            final IntBinaryOp op = switch (operator) {
+                case "add" -> IntBinaryOp.ADD;
+                case "sub" -> IntBinaryOp.SUB;
+                case "and" -> IntBinaryOp.AND;
+                case "or" -> IntBinaryOp.OR;
+                case "xor" -> IntBinaryOp.XOR;
                 //TODO nand, min, umin, max, umax, uinc_wrap, udec_wrap, fadd, fsub, fmax, fmin
                 default -> throw new UnsupportedOperationException(String.format("Unknown atomic operand %s.", ctx.getText()));
             };
@@ -860,12 +869,16 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
     }
 
     @Override
+    public Expression visitPoisonConst(PoisonConstContext ctx) {
+        // It is correct to replace a poison value with an undef value or any value of the type.
+        return program.newConstant(expectedType);
+    }
+
+    @Override
     public Expression visitStructConst(StructConstContext ctx) {
-        List<Expression> structMembers = new ArrayList<>();
-        for (TypeConstContext typeCtx : ctx.typeConst()) {
-            structMembers.add(visitTypeConst(typeCtx));
-        }
-        return expressions.makeConstruct(structMembers);
+        List<Expression> structMembers = ctx.typeConst().stream().map(this::visitTypeConst).toList();
+        List<Type> structTypes = structMembers.stream().map(Expression::getType).toList();
+        return expressions.makeConstruct(types.getAggregateType(structTypes), structMembers);
     }
 
     @Override
@@ -886,7 +899,7 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
         assert ctx.typeConst().size() == 2;
         final Expression left = visitTypeConst(ctx.typeConst(0));
         final Expression right = visitTypeConst(ctx.typeConst(1));
-        return expressions.makeADD(left, right);
+        return expressions.makeAdd(left, right);
     }
 
     @Override
@@ -894,7 +907,7 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
         assert ctx.typeConst().size() == 2;
         final Expression left = visitTypeConst(ctx.typeConst(0));
         final Expression right = visitTypeConst(ctx.typeConst(1));
-        return expressions.makeSUB(left, right);
+        return expressions.makeSub(left, right);
     }
 
     @Override
@@ -902,7 +915,7 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
         assert ctx.typeConst().size() == 2;
         final Expression left = visitTypeConst(ctx.typeConst(0));
         final Expression right = visitTypeConst(ctx.typeConst(1));
-        return expressions.makeMUL(left, right);
+        return expressions.makeMul(left, right);
     }
 
     @Override
@@ -910,7 +923,7 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
         assert ctx.typeConst().size() == 2;
         final Expression left = visitTypeConst(ctx.typeConst(0));
         final Expression right = visitTypeConst(ctx.typeConst(1));
-        return expressions.makeLSH(left, right);
+        return expressions.makeLshift(left, right);
     }
 
     @Override
@@ -918,7 +931,7 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
         assert ctx.typeConst().size() == 2;
         final Expression left = visitTypeConst(ctx.typeConst(0));
         final Expression right = visitTypeConst(ctx.typeConst(1));
-        return expressions.makeRSH(left, right, false);
+        return expressions.makeRshift(left, right, false);
     }
 
     @Override
@@ -926,7 +939,7 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
         assert ctx.typeConst().size() == 2;
         final Expression left = visitTypeConst(ctx.typeConst(0));
         final Expression right = visitTypeConst(ctx.typeConst(1));
-        return expressions.makeRSH(left, right, true);
+        return expressions.makeRshift(left, right, true);
     }
 
     @Override
@@ -934,7 +947,7 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
         assert ctx.typeConst().size() == 2;
         final Expression left = visitTypeConst(ctx.typeConst(0));
         final Expression right = visitTypeConst(ctx.typeConst(1));
-        return expressions.makeAND(left, right);
+        return expressions.makeIntAnd(left, right);
     }
 
     @Override
@@ -942,7 +955,7 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
         assert ctx.typeConst().size() == 2;
         final Expression left = visitTypeConst(ctx.typeConst(0));
         final Expression right = visitTypeConst(ctx.typeConst(1));
-        return expressions.makeOR(left, right);
+        return expressions.makeIntOr(left, right);
     }
 
     @Override
@@ -950,7 +963,7 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
         assert ctx.typeConst().size() == 2;
         final Expression left = visitTypeConst(ctx.typeConst(0));
         final Expression right = visitTypeConst(ctx.typeConst(1));
-        return expressions.makeXOR(left, right);
+        return expressions.makeIntXor(left, right);
     }
 
     // Conversions
@@ -1008,7 +1021,7 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
         final Expression trueValue = visitTypeConst(ctx.typeConst(1));
         final Expression falseValue = visitTypeConst(ctx.typeConst(2));
         final Expression cast = expressions.makeBooleanCast(guard);
-        return expressions.makeConditional(cast, trueValue, falseValue);
+        return expressions.makeITE(cast, trueValue, falseValue);
     }
 
     @Override
@@ -1293,12 +1306,22 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
         return pointerType;
     }
 
-    private boolean parseBoolean(TerminalNode node) {
-        return Boolean.parseBoolean(node.getText());
-    }
-
     private BigInteger parseBigInteger(TerminalNode node) {
-        return new BigInteger(node.getText());
+        final String nodeString = node.getText();
+        final int radix;
+        final String valueString;
+        // Hexa numbers are used for floating point in llvm.
+        // Prefix "u" is used to force interpreting them as hexa ints
+        // https://stackoverflow.com/questions/16310509/is-it-possible-to-specify-a-hexadecimal-number-in-llvm-ir-code
+        if (nodeString.startsWith("u0x")) {
+           radix = 16;
+           // Get rid of u0x prefix
+           valueString = nodeString.substring(3);
+        } else {
+           radix = 10;
+           valueString = nodeString;
+        }
+        return new BigInteger(valueString, radix);
     }
 
     private String parseQuotedString(TerminalNode node) {
@@ -1323,15 +1346,42 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
     }
 
     private static String globalIdent(TerminalNode node) {
+        //see https://llvm.org/docs/LangRef.html#identifiers
+        // Names can be quoted, to allow escaping and other characters than .
+        // This should not bother us after parsing: @fun and @"fun" should be identical.
         final String ident = node.getText();
         assert ident.startsWith("@");
-        return ident.substring(1).replace(".loop", ".\\loop");
+        final String unescapedIdent = unescape(ident.substring(1));
+        // LLVM prepends \01 to a global, if subsequent name mangling should be disabled.
+        // Clang produces this flag, when a C declaration contains an explicit __asm alias.
+        // We ignore this flag.
+        final String trimmedIdent = unescapedIdent.startsWith("\1") ? unescapedIdent.substring(1) : unescapedIdent;
+        return trimmedIdent.replace(".loop", ".\\loop");
     }
 
     private static String localIdent(TerminalNode node) {
         final String ident = node.getText();
         assert ident.startsWith("%");
-        return ident.substring(1).replace(".loop", ".\\loop");
+        return unescape(ident.substring(1)).replace(".loop", ".\\loop");
+    }
+
+    private static String unescape(String original) {
+        final boolean quoted = original.startsWith("\"");
+        assert quoted == (original.endsWith("\""));
+        final String unquoted = quoted ? original.substring(1, original.length() - 1) : original;
+        int escape = unquoted.indexOf('\\');
+        if (escape == -1) {
+            return unquoted;
+        }
+        final StringBuilder sb = new StringBuilder(unquoted.length());
+        int progress = 0;
+        do {
+            sb.append(unquoted, progress, escape);
+            progress = escape + 3;
+            sb.append((char) Integer.parseInt(unquoted.substring(escape + 1, progress), 16));
+            escape = unquoted.indexOf('\\', progress);
+        } while (escape != -1);
+        return sb.append(unquoted, progress, unquoted.length()).toString();
     }
 
     private Register getOrNewRegister(String name, Type type) {
@@ -1358,15 +1408,25 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
     private interface MdNode extends Expression {
 
         Type TYPE = new Type() { };
+        ExpressionKind MdKind = new ExpressionKind() {
+            @Override
+            public String getSymbol() { return "Md"; }
+            @Override
+            public String getName() { return "Metadata"; }
+            @Override
+            public String toString() { return getName(); }
+        };
 
         @Override
         default Type getType() { return TYPE; }
         @Override
-        default ImmutableSet<Register> getRegs() { throw new UnsupportedOperationException();}
+        default ImmutableSet<Register> getRegs() { throw new UnsupportedOperationException(); }
         @Override
-        default <T> T accept(ExpressionVisitor<T> visitor) { return null;}
+        default <T> T accept(ExpressionVisitor<T> visitor) { throw new UnsupportedOperationException(); }
         @Override
-        default IConst reduce() { throw new UnsupportedOperationException(); }
+        default ImmutableList<Expression> getOperands() { return ImmutableList.of(); }
+        @Override
+        default ExpressionKind getKind() { return MdKind; }
     }
 
     private static final MdNode MD_NULL = new MdNode() {

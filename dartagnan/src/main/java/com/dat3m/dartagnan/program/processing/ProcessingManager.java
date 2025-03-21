@@ -1,19 +1,28 @@
 package com.dat3m.dartagnan.program.processing;
 
-import com.dat3m.dartagnan.program.Program;
-import com.dat3m.dartagnan.program.processing.compilation.Compilation;
-import com.dat3m.dartagnan.utils.printer.Printer;
-import org.sosy_lab.common.configuration.Configuration;
-import org.sosy_lab.common.configuration.InvalidConfigurationException;
-import org.sosy_lab.common.configuration.Option;
-import org.sosy_lab.common.configuration.Options;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 
-import static com.dat3m.dartagnan.configuration.OptionNames.*;
+import org.sosy_lab.common.configuration.Configuration;
+import org.sosy_lab.common.configuration.InvalidConfigurationException;
+import org.sosy_lab.common.configuration.Option;
+import org.sosy_lab.common.configuration.Options;
+
+import static com.dat3m.dartagnan.configuration.OptionNames.ASSIGNMENT_INLINING;
+import static com.dat3m.dartagnan.configuration.OptionNames.CONSTANT_PROPAGATION;
+import static com.dat3m.dartagnan.configuration.OptionNames.DEAD_ASSIGNMENT_ELIMINATION;
+import static com.dat3m.dartagnan.configuration.OptionNames.DYNAMIC_SPINLOOP_DETECTION;
+import static com.dat3m.dartagnan.configuration.OptionNames.PRINT_PROGRAM_AFTER_COMPILATION;
+import static com.dat3m.dartagnan.configuration.OptionNames.PRINT_PROGRAM_AFTER_PROCESSING;
+import static com.dat3m.dartagnan.configuration.OptionNames.PRINT_PROGRAM_AFTER_SIMPLIFICATION;
+import static com.dat3m.dartagnan.configuration.OptionNames.PRINT_PROGRAM_AFTER_UNROLLING;
+import static com.dat3m.dartagnan.configuration.OptionNames.PRINT_PROGRAM_BEFORE_PROCESSING;
+import static com.dat3m.dartagnan.configuration.OptionNames.REDUCE_SYMMETRY;
+import com.dat3m.dartagnan.program.Program;
+import com.dat3m.dartagnan.program.processing.compilation.Compilation;
+import com.dat3m.dartagnan.utils.printer.Printer;
 
 @Options
 public class ProcessingManager implements ProgramProcessor {
@@ -21,7 +30,6 @@ public class ProcessingManager implements ProgramProcessor {
     private final List<ProgramProcessor> programProcessors = new ArrayList<>();
 
     // =========================== Configurables ===========================
-
     @Option(name = REDUCE_SYMMETRY,
             description = "Reduces the symmetry of the program (unsound in general).",
             secure = true)
@@ -35,15 +43,19 @@ public class ProcessingManager implements ProgramProcessor {
     @Option(name = DEAD_ASSIGNMENT_ELIMINATION,
             description = "Performs dead code elimination.",
             secure = true)
-    private boolean dce = true;
+    private boolean performDce = true;
 
-    @Option(name = DYNAMIC_PURE_LOOP_CUTTING,
+    @Option(name = ASSIGNMENT_INLINING,
+            description = "Performs inlining of assignments that are used only once to avoid intermediary variables.",
+            secure = true)
+    private boolean performAssignmentInlining = true;
+
+    @Option(name = DYNAMIC_SPINLOOP_DETECTION,
             description = "Instruments loops to terminate early when spinning.",
             secure = true)
-    private boolean dynamicPureLoopCutting = true;
+    private boolean dynamicSpinLoopDetection = true;
 
     // =================== Debugging options ===================
-
     @Option(name = PRINT_PROGRAM_BEFORE_PROCESSING,
             description = "Prints the program before any processing.",
             secure = true)
@@ -69,18 +81,17 @@ public class ProcessingManager implements ProgramProcessor {
             secure = true)
     private boolean printAfterProcessing = false;
 
-
 // ======================================================================
-
     private ProcessingManager(Configuration config) throws InvalidConfigurationException {
         config.inject(this);
-        final Intrinsics intrinsics = Intrinsics.newInstance();
+        final Intrinsics intrinsics = Intrinsics.fromConfig(config);
         final FunctionProcessor sccp = constantPropagation ? SparseConditionalConstantPropagation.fromConfig(config) : null;
+        final FunctionProcessor dce = performDce ? DeadAssignmentElimination.fromConfig(config) : null;
+        final FunctionProcessor removeDeadJumps = RemoveDeadCondJumps.fromConfig(config);
         programProcessors.addAll(Arrays.asList(
                 printBeforeProcessing ? DebugPrint.withHeader("Before processing", Printer.Mode.ALL) : null,
                 intrinsics.markIntrinsicsPass(),
                 GEPToAddition.newInstance(),
-                RegisterDecomposition.newInstance(),
                 NaiveDevirtualisation.newInstance(),
                 Inlining.fromConfig(config),
                 ProgramProcessor.fromFunctionProcessor(
@@ -90,33 +101,49 @@ public class ProcessingManager implements ProgramProcessor {
                                 ComplexBlockSplitting.newInstance(),
                                 BranchReordering.fromConfig(config),
                                 Simplifier.fromConfig(config)
-                        ), Target.FUNCTIONS, true
+                        ), Target.ALL, true
                 ),
+                ProgramProcessor.fromFunctionProcessor(NormalizeLoops.newInstance(), Target.ALL, true),
                 RemoveDeadFunctions.newInstance(),
                 printAfterSimplification ? DebugPrint.withHeader("After simplification", Printer.Mode.ALL) : null,
-                LoopFormVerification.fromConfig(config),
                 Compilation.fromConfig(config), // We keep compilation global for now
+                LoopFormVerification.fromConfig(config),
                 printAfterCompilation ? DebugPrint.withHeader("After compilation", Printer.Mode.ALL) : null,
-                ProgramProcessor.fromFunctionProcessor(
-                        SimpleSpinLoopDetection.fromConfig(config),
-                        Target.FUNCTIONS, false
-                ),
+                ProgramProcessor.fromFunctionProcessor(MemToReg.fromConfig(config), Target.FUNCTIONS, true),
                 ProgramProcessor.fromFunctionProcessor(sccp, Target.FUNCTIONS, false),
+                dynamicSpinLoopDetection ? DynamicSpinLoopDetection.fromConfig(config) : null,
+                ProgramProcessor.fromFunctionProcessor(NaiveLoopBoundAnnotation.fromConfig(config), Target.FUNCTIONS, true),
                 LoopUnrolling.fromConfig(config), // We keep unrolling global for now
                 printAfterUnrolling ? DebugPrint.withHeader("After loop unrolling", Printer.Mode.ALL) : null,
-                dynamicPureLoopCutting ? DynamicPureLoopCutting.fromConfig(config) : null,
                 ProgramProcessor.fromFunctionProcessor(
                         FunctionProcessor.chain(
+                                ResolveLLVMObjectSizeCalls.fromConfig(config),
                                 sccp,
-                                dce ? DeadAssignmentElimination.fromConfig(config) : null,
-                                RemoveDeadCondJumps.fromConfig(config)
+                                dce,
+                                removeDeadJumps
                         ), Target.FUNCTIONS, true
                 ),
                 ThreadCreation.fromConfig(config),
+                ResolveNonDetChoices.newInstance(),
                 reduceSymmetry ? SymmetryReduction.fromConfig(config) : null,
                 intrinsics.lateInliningPass(),
+                ProgramProcessor.fromFunctionProcessor(
+                        FunctionProcessor.chain(
+                                RemoveDeadNullChecks.newInstance(),
+                                MemToReg.fromConfig(config)
+                        ), Target.THREADS, true
+                ),
+                ProgramProcessor.fromFunctionProcessor(
+                        FunctionProcessor.chain(
+                                performAssignmentInlining ? AssignmentInlining.newInstance() : null,
+                                sccp,
+                                dce,
+                                removeDeadJumps
+                        ), Target.THREADS, true
+                ),
                 RemoveUnusedMemory.newInstance(),
-                MemoryAllocation.newInstance(),
+                MemoryAllocation.fromConfig(config),
+                NonterminationDetection.fromConfig(config),
                 // --- Statistics + verification ---
                 IdReassignment.newInstance(), // Normalize used Ids (remove any gaps)
                 printAfterProcessing ? DebugPrint.withHeader("After processing", Printer.Mode.THREADS) : null,
@@ -134,10 +161,8 @@ public class ProcessingManager implements ProgramProcessor {
     }
 
     // ==================================================
-
     public void run(Program program) {
         programProcessors.forEach(p -> p.run(program));
     }
-
 
 }

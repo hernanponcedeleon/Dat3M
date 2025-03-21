@@ -1,6 +1,6 @@
-litmus/VULKAN/DR/mp3transitive-filter.litmus,0
-litmus/VULKAN/DR/mp3transitive2-filter.litmus,0
-litmus/VULKAN/DR/mp3transitive3-filter.litmus,0
-litmus/VULKAN/DR/mp3transitive4-filter.litmus,0
-litmus/VULKAN/DR/mp3transitivefail-filter.litmus,0
-litmus/VULKAN/DR/mp3transitivefail2-filter.litmus,0
+litmus/VULKAN/Data-Race/mp3transitive-filter.litmus,0
+litmus/VULKAN/Data-Race/mp3transitive2-filter.litmus,0
+litmus/VULKAN/Data-Race/mp3transitive3-filter.litmus,0
+litmus/VULKAN/Data-Race/mp3transitive4-filter.litmus,0
+litmus/VULKAN/Data-Race/mp3transitivefail-filter.litmus,0
+litmus/VULKAN/Data-Race/mp3transitivefail2-filter.litmus,0

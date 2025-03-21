@@ -1,5 +1,6 @@
 VULKAN ssw7
 "Pass: write-after-read hazard of private memory accesses with SSW.SSW in between"
+"https://github.com/KhronosGroup/Vulkan-MemoryModel/blob/master/alloy/tests/ssw7.test"
 {
 P0:r0=0;
 P1:r1=0;

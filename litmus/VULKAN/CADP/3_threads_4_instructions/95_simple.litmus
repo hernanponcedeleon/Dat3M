@@ -1,0 +1,16 @@
+VULKAN 95_simple
+"https://github.com/tyler-utah/AlloyForwardProgress/blob/master/artifact/cadp/3_threads_4_instructions/alloy_output/95/95_simple.txt"
+{
+Mem0=0;
+P1:r0=0;
+P2:r1=0;
+}
+P0@sg 0,wg 0, qf 0               | P1@sg 0,wg 0, qf 0               | P2@sg 0,wg 0, qf 0               ;
+LC00:                            | LC10:                            | LC20:                            ;
+st.atom.wg.sc0 Mem0, 1           | rmw.atom.wg.sc0 r0, Mem0, 0      | rmw.atom.wg.sc0 r1, Mem0, 0      ;
+LC01:                            | bne r0, 0, LC11                  | bne r1, 0, LC21                  ;
+                                 | goto LC10                        | goto LC22                        ;
+                                 | LC11:                            | LC21:                            ;
+                                 |                                  | st.atom.wg.sc0 Mem0, 1           ;
+                                 |                                  | LC22:                            ;
+exists 0==0

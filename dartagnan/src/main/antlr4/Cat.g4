@@ -5,19 +5,24 @@ import com.dat3m.dartagnan.wmm.axiom.*;
 }
 
 mcm
-    :   (NAME)? definition+ EOF
+    :   (NAME)? (QUOTED_STRING)? (definition | include | show)+ EOF
     ;
 
 definition
     :   axiomDefinition
+    |   letFuncDefinition
     |   letDefinition
     |   letRecDefinition
     ;
 
 axiomDefinition locals [Class<?> cls]
-    :   (flag = FLAG)? (negate = NOT)? ACYCLIC { $cls = Acyclic.class; } e = expression (AS NAME)?
-    |   (flag = FLAG)? (negate = NOT)? IRREFLEXIVE { $cls = Irreflexive.class; } e = expression (AS NAME)?
-    |   (flag = FLAG)? (negate = NOT)? EMPTY { $cls = Empty.class; } e = expression (AS NAME)?
+    :   (flag = FLAG)? (negate = NOT)? ACYCLIC { $cls = Acyclicity.class; } e = expression (AS NAME)?
+    |   (flag = FLAG)? (negate = NOT)? IRREFLEXIVE { $cls = Irreflexivity.class; } e = expression (AS NAME)?
+    |   (flag = FLAG)? (negate = NOT)? EMPTY { $cls = Emptiness.class; } e = expression (AS NAME)?
+    ;
+
+letFuncDefinition
+    :   LET (fname = NAME) LPAR params = parameterList RPAR EQ e = expression
     ;
 
 letDefinition
@@ -46,9 +51,26 @@ expression
     |   LBRAC DOMAIN LPAR e = expression RPAR RBRAC                     # exprDomainIdentity
     |   LBRAC RANGE LPAR e = expression RPAR RBRAC                      # exprRangeIdentity
     |   (TOID LPAR e = expression RPAR | LBRAC e = expression RBRAC)    # exprIdentity
-    |   FENCEREL LPAR e = expression RPAR                               # exprFencerel
     |   LPAR e = expression RPAR                                        # expr
     |   n = NAME                                                        # exprBasic
+    |   call = NEW LPAR RPAR                                            # exprNew
+    |   call = NAME LPAR args = argumentList RPAR                       # exprCall
+    ;
+
+include
+    :   INCLUDE path = QUOTED_STRING
+    ;
+
+show
+    :   SHOW expression (AS NAME)?
+    ;
+
+parameterList
+    : (NAME (COMMA NAME)*)
+    ;
+
+argumentList
+    : expression (COMMA expression)*
     ;
 
 LET     :   'let';
@@ -56,6 +78,8 @@ REC     :   'rec';
 AND     :   'and';
 AS      :   'as';
 TOID    :   'toid';
+SHOW    :   'show';
+INCLUDE :   'include';
 
 ACYCLIC     :   'acyclic';
 IRREFLEXIVE :   'irreflexive';
@@ -77,12 +101,15 @@ LPAR    :   '(';
 RPAR    :   ')';
 LBRAC   :   '[';
 RBRAC   :   ']';
+COMMA   :   ',';
 
-FENCEREL    :   'fencerel';
 DOMAIN      :   'domain';
 RANGE       :   'range';
+NEW         :   'new';
 
 FLAG       :   'flag';
+
+QUOTED_STRING : '"' .*? '"';
 
 NAME    : [A-Za-z0-9\-_.]+;
 
@@ -98,15 +125,5 @@ BLOCK_COMMENT
 
 WS
     :   [ \t\r\n]+
-        -> skip
-    ;
-
-INCLUDE
-    :   'include "' .*? '"'
-        -> skip
-    ;
-
-MODELNAME
-    :   '"' .*? '"'
         -> skip
     ;

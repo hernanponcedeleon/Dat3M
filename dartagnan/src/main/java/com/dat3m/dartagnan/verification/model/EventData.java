@@ -1,8 +1,8 @@
 package com.dat3m.dartagnan.verification.model;
 
 import com.dat3m.dartagnan.program.Thread;
+import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.core.CondJump;
-import com.dat3m.dartagnan.program.event.core.Event;
 
 import java.math.BigInteger;
 
@@ -15,7 +15,7 @@ public class EventData implements Comparable<EventData> {
     private EventData readFrom;
     private int id = -1;
     private int localId = -1;
-    private BigInteger value;
+    private Object value;
     private BigInteger accessedAddress;
     private int coIndex = Integer.MIN_VALUE;
     private boolean wasExecuted;
@@ -52,10 +52,10 @@ public class EventData implements Comparable<EventData> {
     	accessedAddress = address;
     }
 
-    public BigInteger getValue() {
+    public Object getValue() {
     	return value;
     }
-    void setValue(BigInteger val) {
+    void setValue(Object val) {
     	value = val;
     }
 

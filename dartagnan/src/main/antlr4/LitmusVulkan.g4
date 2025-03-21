@@ -3,7 +3,7 @@ grammar LitmusVulkan;
 import LitmusAssertions;
 
 @header{
-import com.dat3m.dartagnan.expression.op.*;
+import com.dat3m.dartagnan.expression.integers.*;
 }
 
 main
@@ -83,8 +83,12 @@ queuefamilyScope
     :   Queuefamily scopeID
     ;
 
+scopeID returns [int id]
+    :   t = DigitSequence {$id = Integer.parseInt($t.text);}
+    ;
+
 instructionList
-    :   (instructionRow) +
+    :   instructionRow+
     ;
 
 instructionRow
@@ -95,55 +99,60 @@ instruction
     :
     |   storeInstruction
     |   loadInstruction
-    |   rmwInstruction
-    |   fenceInstruction
+    |   atomicStoreInstruction
+    |   atomicLoadInstruction
+    |   atomicRmwInstruction
+    |   memoryBarrierInstruction
+    |   controlBarrierInstruction
+    |   localInstruction
+    |   labelInstruction
+    |   jumpInstruction
+    |   condJumpInstruction
     |   deviceOperation
-    |   label
-    |   branchCond
-    |   jump
     ;
 
 storeInstruction
-    :   Store atomic mo? avvis? scope? storageClass storageClassSemanticList avvisSemanticList location Comma value
+    :   Store (nonpriv | (av scope))? sc location Comma value
     ;
 
 loadInstruction
-    :   localConstant
-    |   loadLocation
+    :   Load (nonpriv | (vis scope))? sc register Comma location
     ;
 
-localConstant
-    :   Load atomic mo? avvis? scope? storageClass storageClassSemanticList avvisSemanticList register Comma constant
+atomicStoreInstruction
+    :   Store Period Atom (scope sc | moRel scope sc semSc+ semAv?) location Comma value
     ;
 
-loadLocation
-    :   Load atomic mo? avvis? scope? storageClass storageClassSemanticList avvisSemanticList register Comma location
+atomicLoadInstruction
+    :   Load Period Atom (scope sc | moAcq scope sc semSc+ semVis?) register Comma location
     ;
 
-rmwInstruction
-    :   rmwConstant
-    |   rmwConstantOp
+atomicRmwInstruction
+    :   RMW Period Atom (scope sc | moAcq scope sc semSc+ semVis? | moRel scope sc semSc+ semAv? | moAcqRel scope sc semSc+ semAv? semVis?) (Period operation)? register Comma location Comma value
     ;
 
-rmwConstant
-    :   RMW atomic mo? avvis? scope? storageClass storageClassSemanticList avvisSemanticList register Comma location Comma constant
+memoryBarrierInstruction
+    :   MemoryBarrier (moAcq scope semSc+ semVis? | moRel scope semSc+ semAv? | moAcqRel scope semSc+ semAv? semVis?)
     ;
 
-rmwConstantOp
-    :   RMW atomic mo? avvis? scope? storageClass storageClassSemanticList avvisSemanticList operation register Comma location Comma constant
+controlBarrierInstruction
+    :   ControlBarrier (scope | moAcq scope semSc+ semVis? | moRel scope semSc+ semAv? | moAcqRel scope semSc+ semAv? semVis?) constant (Comma barrierId (Comma barrierQuorum)?)?
     ;
 
-fenceInstruction
-    :   memoryBarrier
-    |   controlBarrier
+localInstruction
+    :   operation register Comma value Comma value
     ;
 
-memoryBarrier
-    :   MemoryBarrier mo? avvis? scope? storageClassSemanticList avvisSemanticList
+labelInstruction
+    :   Label Colon
     ;
 
-controlBarrier
-    :   ControlBarrier mo? avvis? scope? storageClassSemanticList avvisSemanticList value
+jumpInstruction
+    :   Goto Label
+    ;
+
+condJumpInstruction
+    :   cond value Comma value Comma Label
     ;
 
 deviceOperation
@@ -151,16 +160,12 @@ deviceOperation
     |   VISDEVICE
     ;
 
-label
-    :   Label Colon
+barrierId
+    : value
     ;
 
-branchCond
-    :   cond register Comma register Comma Label
-    ;
-
-jump
-    :   Goto Label
+barrierQuorum
+    : value
     ;
 
 value
@@ -182,9 +187,36 @@ assertionValue
     |   constant
     ;
 
-atomic returns [Boolean isAtomic]
-    :   Period Atom {$isAtomic = true;}
-    |   {$isAtomic = false;}
+moAcq
+    :   Period Acquire
+    ;
+
+moRel
+    :   Period Release
+    ;
+
+moAcqRel
+    :   Period Acq_rel
+    ;
+
+nonpriv
+    :   Period Nonprivate
+    ;
+
+av
+    :   Period Available
+    ;
+
+vis
+    :   Period Visible
+    ;
+
+semAv
+    :   Period SemAv
+    ;
+
+semVis
+    :   Period SemVis
     ;
 
 scope returns [String content]
@@ -192,64 +224,35 @@ scope returns [String content]
     |   Period Workgroup {$content = "WG";}
     |   Period Queuefamily {$content = "QF";}
     |   Period Device {$content = "DV";}
-    |   Period Nonprivate {$content = "NONPRIV";}
     ;
 
-scopeID returns [int id]
-    :   t = DigitSequence {$id = Integer.parseInt($t.text);}
-    ;
-
-mo returns [String content]
-    :   Period Acquire {$content = "ACQ";}
-    |   Period Release {$content = "REL";}
-    |   Period Acq_rel {$content = "ACQ_REL";}
-    ;
-
-avvis returns [String content]
-    :   Period Visible {$content = "VIS";}
-    |   Period Available {$content = "AV";}
-    ;
-
-storageClass returns [String content]
+sc returns [String content]
     :   Period Sc0 {$content = "SC0";}
     |   Period Sc1 {$content = "SC1";}
     ;
 
-storageClassSemantic returns [String content]
+semSc returns [String content]
     :   Period Semsc0 {$content = "SEMSC0";}
     |   Period Semsc1 {$content = "SEMSC1";}
     ;
 
-storageClassSemanticList
-    :   (storageClassSemantic)*
+operation locals [IntBinaryOp op]
+    :   Add {$op = IntBinaryOp.ADD;}
+    |   Sub {$op = IntBinaryOp.SUB;}
+    |   Mul {$op = IntBinaryOp.MUL;}
+    |   Div {$op = IntBinaryOp.DIV;}
+    |   And {$op = IntBinaryOp.AND;}
+    |   Or {$op = IntBinaryOp.OR;}
+    |   Xor {$op = IntBinaryOp.XOR;}
     ;
 
-avvisSemantic returns [String content]
-    :   Period SemVis {$content = "SEMVIS";}
-    |   Period SemAv {$content = "SEMAV";}
-    ;
-
-avvisSemanticList
-    :   (avvisSemantic)*
-    ;
-
-operation locals [IOpBin op]
-    :   Period Add {$op = IOpBin.ADD;}
-    |   Period Sub {$op = IOpBin.SUB;}
-    |   Period Mult {$op = IOpBin.MUL;}
-    |   Period Div {$op = IOpBin.DIV;}
-    |   Period And {$op = IOpBin.AND;}
-    |   Period Or {$op = IOpBin.OR;}
-    |   Period Xor {$op = IOpBin.XOR;}
-    ;
-
-cond returns [COpBin op]
-    :   Beq {$op = COpBin.EQ;}
-    |   Bne {$op = COpBin.NEQ;}
-    |   Bge {$op = COpBin.GTE;}
-    |   Ble {$op = COpBin.LTE;}
-    |   Bgt {$op = COpBin.GT;}
-    |   Blt {$op = COpBin.LT;}
+cond returns [IntCmpOp op]
+    :   Beq {$op = IntCmpOp.EQ;}
+    |   Bne {$op = IntCmpOp.NEQ;}
+    |   Bge {$op = IntCmpOp.GTE;}
+    |   Ble {$op = IntCmpOp.LTE;}
+    |   Bgt {$op = IntCmpOp.GT;}
+    |   Blt {$op = IntCmpOp.LT;}
     ;
 
 Locations
@@ -309,9 +312,9 @@ Bgt             :   'bgt';
 Ble             :   'ble';
 Bge             :   'bge';
 
-Add             :   'plus';
-Sub             :   'minus';
-Mult            :   'mult';
+Add             :   'add';
+Sub             :   'sub';
+Mul             :   'mul';
 Div             :   'div';
 And             :   'and';
 Or              :   'or';

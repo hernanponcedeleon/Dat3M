@@ -2,8 +2,9 @@ package com.dat3m.dartagnan.program.processing.compilation;
 
 import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.program.Function;
+import com.dat3m.dartagnan.program.IRHelper;
 import com.dat3m.dartagnan.program.Program;
-import com.dat3m.dartagnan.program.event.core.Event;
+import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.metadata.CompilationId;
 import com.dat3m.dartagnan.program.processing.IdReassignment;
 import com.dat3m.dartagnan.program.processing.ProgramProcessor;
@@ -81,7 +82,17 @@ public class Compilation implements ProgramProcessor {
             logger.warn("Skipped compilation: Program is already compiled to {}", program.getArch());
             return;
         }
-
+        // TODO: Refactor processors such that compiler is resolved
+        //  based on the source language and target
+        if (program.getFormat() == Program.SourceLanguage.SPV) {
+            if (target == Arch.VULKAN) {
+                compiler = new VisitorSpirvVulkan();
+            } else if (target == Arch.OPENCL) {
+                compiler = new VisitorSpirvOpenCL();
+            } else {
+                throw new UnsupportedOperationException("SPIR-V can only be compiled to Vulkan or OpenCL");
+            }
+        }
         program.getThreads().forEach(this::run);
         program.getFunctions().forEach(this::run);
         program.setArch(target);
@@ -117,10 +128,11 @@ public class Compilation implements ProgramProcessor {
 
     private VisitorBase getCompiler() {
         return switch (target) {
-            case C11 -> new VisitorC11();
+            case C11, OPENCL -> new VisitorC11();
             case LKMM -> new VisitorLKMM();
             case TSO -> new VisitorTso();
             case POWER -> new VisitorPower(useRC11Scheme, cToPowerScheme);
+            case ARM7 -> new VisitorArm7();
             case ARM8 -> new VisitorArm8(useRC11Scheme);
             case IMM -> new VisitorIMM();
             case RISCV -> new VisitorRISCV(useRC11Scheme);
@@ -140,15 +152,11 @@ public class Compilation implements ProgramProcessor {
             // In the special case where the compilation does nothing, we keep the event as is.
             return;
         }
-        if (!toBeCompiled.tryDelete()) {
-            final String error = String.format("Could not compile event '%d:  %s' because it is not deletable." +
-                    "The event is likely referenced by other events.", toBeCompiled.getGlobalId(), toBeCompiled);
+        if (!toBeCompiled.getUsers().isEmpty()) {
+            final String error = String.format("Could not compile event '%d:  %s' because it is referenced by other events.",
+                    toBeCompiled.getGlobalId(), toBeCompiled);
             throw new IllegalStateException(error);
         }
-        if (!compiledEvents.isEmpty()) {
-            // Insert result of compilation
-            compiledEvents.forEach(e -> e.copyAllMetadataFrom(toBeCompiled));
-            pred.insertAfter(compiledEvents);
-        }
+        IRHelper.replaceWithMetadata(toBeCompiled, compiledEvents);
     }
 }

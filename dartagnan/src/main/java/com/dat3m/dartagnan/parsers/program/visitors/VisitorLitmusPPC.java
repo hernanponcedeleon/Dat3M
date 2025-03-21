@@ -4,24 +4,22 @@ import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
-import com.dat3m.dartagnan.expression.IValue;
+import com.dat3m.dartagnan.expression.integers.IntLiteral;
 import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.parsers.LitmusPPCBaseVisitor;
 import com.dat3m.dartagnan.parsers.LitmusPPCParser;
-import com.dat3m.dartagnan.parsers.program.utils.AssertionHelper;
 import com.dat3m.dartagnan.parsers.program.utils.ProgramBuilder;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.core.Label;
 import com.google.common.collect.ImmutableSet;
-import org.antlr.v4.runtime.misc.Interval;
 
 import java.util.HashMap;
 import java.util.Map;
 
-import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.*;
+import static com.dat3m.dartagnan.program.event.FenceNameRepository.*;
 
 public class VisitorLitmusPPC extends LitmusPPCBaseVisitor<Object> {
 
@@ -56,18 +54,7 @@ public class VisitorLitmusPPC extends LitmusPPCBaseVisitor<Object> {
         visitThreadDeclaratorList(ctx.program().threadDeclaratorList());
         visitVariableDeclaratorList(ctx.variableDeclaratorList());
         visitInstructionList(ctx.program().instructionList());
-        if(ctx.assertionList() != null){
-            int a = ctx.assertionList().getStart().getStartIndex();
-            int b = ctx.assertionList().getStop().getStopIndex();
-            String raw = ctx.assertionList().getStart().getInputStream().getText(new Interval(a, b));
-            programBuilder.setAssert(AssertionHelper.parseAssertionList(programBuilder, raw));
-        }
-        if(ctx.assertionFilter() != null){
-            int a = ctx.assertionFilter().getStart().getStartIndex();
-            int b = ctx.assertionFilter().getStop().getStopIndex();
-            String raw = ctx.assertionFilter().getStart().getInputStream().getText(new Interval(a, b));
-            programBuilder.setAssertFilter(AssertionHelper.parseAssertionFilter(programBuilder, raw));
-        }
+        VisitorLitmusAssertions.parseAssertions(programBuilder, ctx.assertionList(), ctx.assertionFilter());
         return programBuilder.build();
     }
 
@@ -77,14 +64,14 @@ public class VisitorLitmusPPC extends LitmusPPCBaseVisitor<Object> {
 
     @Override
     public Object visitVariableDeclaratorLocation(LitmusPPCParser.VariableDeclaratorLocationContext ctx) {
-        IValue value = expressions.parseValue(ctx.constant().getText(), archType);
+        IntLiteral value = expressions.parseValue(ctx.constant().getText(), archType);
         programBuilder.initLocEqConst(ctx.location().getText(), value);
         return null;
     }
 
     @Override
     public Object visitVariableDeclaratorRegister(LitmusPPCParser.VariableDeclaratorRegisterContext ctx) {
-        IValue value = expressions.parseValue(ctx.constant().getText(), archType);
+        IntLiteral value = expressions.parseValue(ctx.constant().getText(), archType);
         programBuilder.initRegEqConst(ctx.threadId().id, ctx.register().getText(), value);
         return null;
     }
@@ -129,15 +116,15 @@ public class VisitorLitmusPPC extends LitmusPPCBaseVisitor<Object> {
 
     @Override
     public Object visitLi(LitmusPPCParser.LiContext ctx) {
-        Register register = programBuilder.getOrNewRegister(mainThread, ctx.register().getText(), archType);
-        IValue constant = expressions.parseValue(ctx.constant().getText(), archType);
+        Register register = (Register) ctx.register().accept(this);
+        IntLiteral constant = expressions.parseValue(ctx.constant().getText(), archType);
         return programBuilder.addChild(mainThread, EventFactory.newLocal(register, constant));
     }
 
     @Override
     public Object visitLwz(LitmusPPCParser.LwzContext ctx) {
-        Register r1 = programBuilder.getOrNewRegister(mainThread, ctx.register(0).getText(), archType);
-        Register ra = programBuilder.getOrErrorRegister(mainThread, ctx.register(1).getText());
+        Register r1 = (Register) ctx.register(0).accept(this);
+        Register ra = (Register) ctx.register(1).accept(this);
         return programBuilder.addChild(mainThread, EventFactory.newLoad(r1, ra));
     }
 
@@ -148,9 +135,17 @@ public class VisitorLitmusPPC extends LitmusPPCBaseVisitor<Object> {
     }
 
     @Override
+    public Object visitLwarx(LitmusPPCParser.LwarxContext ctx) {
+        Register r1 = (Register) ctx.register(0).accept(this);
+        Register ra = (Register) ctx.register(1).accept(this);
+        Register rb = (Register) ctx.register(2).accept(this);
+        return programBuilder.addChild(mainThread, EventFactory.newRMWLoadExclusive(r1, expressions.makeAdd(ra, rb)));
+    }
+
+    @Override
     public Object visitStw(LitmusPPCParser.StwContext ctx) {
-        Register r1 = programBuilder.getOrErrorRegister(mainThread, ctx.register(0).getText());
-        Register ra = programBuilder.getOrErrorRegister(mainThread, ctx.register(1).getText());
+        Register r1 = (Register) ctx.register(0).accept(this);
+        Register ra = (Register) ctx.register(1).accept(this);
         return programBuilder.addChild(mainThread, EventFactory.newStore(ra, r1));
     }
 
@@ -161,32 +156,44 @@ public class VisitorLitmusPPC extends LitmusPPCBaseVisitor<Object> {
     }
 
     @Override
+    public Object visitStwcx(LitmusPPCParser.StwcxContext ctx) {
+        // This instruction is usually followed by a branch instruction.
+        // Thus, the execution status of the store is saved in r0
+        // (the default register for branch conditions).
+        Register rs = programBuilder.getOrNewRegister(mainThread, "r0", types.getBooleanType());
+        Register r1 = (Register) ctx.register(0).accept(this);
+        Register ra = (Register) ctx.register(1).accept(this);
+        Register rb = (Register) ctx.register(2).accept(this);
+        return programBuilder.addChild(mainThread, EventFactory.Common.newExclusiveStore(rs, expressions.makeAdd(ra, rb), r1, ""));
+    }
+
+    @Override
     public Object visitMr(LitmusPPCParser.MrContext ctx) {
-        Register r1 = programBuilder.getOrNewRegister(mainThread, ctx.register(0).getText(), archType);
-        Register r2 = programBuilder.getOrErrorRegister(mainThread, ctx.register(1).getText());
+        Register r1 = (Register) ctx.register(0).accept(this);
+        Register r2 = (Register) ctx.register(1).accept(this);
         return programBuilder.addChild(mainThread, EventFactory.newLocal(r1, r2));
     }
 
     @Override
     public Object visitAddi(LitmusPPCParser.AddiContext ctx) {
-        Register r1 = programBuilder.getOrNewRegister(mainThread, ctx.register(0).getText(), archType);
-        Register r2 = programBuilder.getOrErrorRegister(mainThread, ctx.register(1).getText());
-        IValue constant = expressions.parseValue(ctx.constant().getText(), archType);
-        return programBuilder.addChild(mainThread, EventFactory.newLocal(r1, expressions.makeADD(r2, constant)));
+        Register r1 = (Register) ctx.register(0).accept(this);
+        Register r2 = (Register) ctx.register(1).accept(this);
+        IntLiteral constant = expressions.parseValue(ctx.constant().getText(), archType);
+        return programBuilder.addChild(mainThread, EventFactory.newLocal(r1, expressions.makeAdd(r2, constant)));
     }
 
     @Override
     public Object visitXor(LitmusPPCParser.XorContext ctx) {
-        Register r1 = programBuilder.getOrNewRegister(mainThread, ctx.register(0).getText(), archType);
-        Register r2 = programBuilder.getOrErrorRegister(mainThread, ctx.register(1).getText());
-        Register r3 = programBuilder.getOrErrorRegister(mainThread, ctx.register(2).getText());
-        return programBuilder.addChild(mainThread, EventFactory.newLocal(r1, expressions.makeXOR(r2, r3)));
+        Register r1 = (Register) ctx.register(0).accept(this);
+        Register r2 = (Register) ctx.register(1).accept(this);
+        Register r3 = (Register) ctx.register(2).accept(this);
+        return programBuilder.addChild(mainThread, EventFactory.newLocal(r1, expressions.makeIntXor(r2, r3)));
     }
 
     @Override
     public Object visitCmpw(LitmusPPCParser.CmpwContext ctx) {
-        Register r1 = programBuilder.getOrErrorRegister(mainThread, ctx.register(0).getText());
-        Register r2 = programBuilder.getOrErrorRegister(mainThread, ctx.register(1).getText());
+        Register r1 = (Register) ctx.register(0).accept(this);
+        Register r2 = (Register) ctx.register(1).accept(this);
         lastCmpInstructionPerThread.put(mainThread, new CmpInstruction(r1, r2));
         return null;
     }
@@ -195,10 +202,11 @@ public class VisitorLitmusPPC extends LitmusPPCBaseVisitor<Object> {
     public Object visitBranchCond(LitmusPPCParser.BranchCondContext ctx) {
         Label label = programBuilder.getOrCreateLabel(mainThread, ctx.Label().getText());
         CmpInstruction cmp = lastCmpInstructionPerThread.put(mainThread, null);
-        if(cmp == null){
-            throw new ParsingException("Invalid syntax near " + ctx.getText());
-        }
-        Expression expr = expressions.makeBinary(cmp.left, ctx.cond().op, cmp.right);
+        Expression expr = cmp == null ?
+            // In PPC, when there is no previous comparison instruction,
+            // the value of r0 is used as the branching condition
+            expressions.makeBooleanCast(programBuilder.getOrNewRegister(mainThread, "r0")) :
+            expressions.makeIntCmp(cmp.left, ctx.cond().op, cmp.right);
         return programBuilder.addChild(mainThread, EventFactory.newJump(expr, label));
     }
 
@@ -215,4 +223,10 @@ public class VisitorLitmusPPC extends LitmusPPCBaseVisitor<Object> {
         }
         throw new ParsingException("Unrecognised fence " + name);
     }
+
+    @Override
+    public Register visitRegister(LitmusPPCParser.RegisterContext ctx) {
+        return programBuilder.getOrNewRegister(mainThread, ctx.getText(), archType);
+    }
+
 }

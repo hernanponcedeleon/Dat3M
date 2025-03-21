@@ -2,8 +2,8 @@ package com.dat3m.dartagnan.program.analysis;
 
 import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.Program;
+import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.core.CondJump;
-import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.Label;
 import com.google.common.base.Verify;
 import com.google.common.collect.ImmutableList;
@@ -178,7 +178,7 @@ public class LoopAnalysis {
 
     private ImmutableList<LoopInfo> findLoopsInFunction(Function function) {
         final List<CondJump> backJumps = function.getEvents(CondJump.class).stream()
-                .filter(j -> j.getLabel().getGlobalId() < j.getGlobalId())
+                .filter(j -> j.getLabel().getLocalId() < j.getLocalId())
                 .toList();
 
         final List<LoopInfo> loops = new ArrayList<>();

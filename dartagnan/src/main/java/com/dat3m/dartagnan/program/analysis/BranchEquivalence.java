@@ -3,8 +3,9 @@ package com.dat3m.dartagnan.program.analysis;
 import com.dat3m.dartagnan.exception.MalformedProgramException;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Thread;
+import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.core.CondJump;
-import com.dat3m.dartagnan.program.event.core.Event;
+import com.dat3m.dartagnan.program.event.core.ControlBarrier;
 import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.event.core.threading.ThreadStart;
 import com.dat3m.dartagnan.utils.dependable.DependencyGraph;
@@ -30,6 +31,9 @@ import java.util.stream.Collectors;
     TODO: (5) Transitively close the merged implication graph,
               and saturate the mutual exclusion relation using the rule
                    A => B, B ~ C, C <= D   ---->   A ~ D  (where ~ denotes mutual exclusion)
+
+    NOTE: BranchEquivalence assumes a strong forward progress model when computing equivalence:
+          when an event is in the control-flow then so is one of its successors.
 */
 
 public class BranchEquivalence extends AbstractEquivalence<Event> {
@@ -143,6 +147,11 @@ public class BranchEquivalence extends AbstractEquivalence<Event> {
                     b2.parents.add(branch);
                     return branch;
                 }
+            } else if (succ instanceof ControlBarrier barrier) {
+                final Branch succBranch = computeBranchDecomposition(barrier.getSuccessor(), event2BranchMap, branches);
+                branch.children.add(succBranch);
+                succBranch.parents.add(branch);
+                return branch;
             } else {
                 // No branching happened, thus we stay on the current branch
                 succ = succ.getSuccessor();
@@ -265,16 +274,26 @@ public class BranchEquivalence extends AbstractEquivalence<Event> {
         Set<Branch> commonSucc = null;
         for (Branch br : b.children) {
             computeMustSuccSet(br);
-            if (commonSucc == null) {
-                commonSucc = new HashSet<>(br.mustSucc);
-            } else {
-                commonSucc.retainAll(br.mustSucc);
+            if (!isEndingWithControlBarrier(b)) {
+                if (commonSucc == null) {
+                    commonSucc = new HashSet<>(br.mustSucc);
+                } else {
+                    commonSucc.retainAll(br.mustSucc);
+                }
             }
         }
         if (commonSucc != null) {
             b.mustSucc.addAll(commonSucc);
         }
         b.mustSuccComputed = true;
+    }
+
+    private boolean isEndingWithControlBarrier(Branch branch) {
+        if (!branch.events.isEmpty()) {
+            int last = branch.events.size() - 1;
+            return branch.events.get(last) instanceof ControlBarrier;
+        }
+        return false;
     }
 
     //========================== Equivalence class computations =========================

@@ -1,15 +1,15 @@
 package com.dat3m.dartagnan.program.analysis.alias;
 
 import com.dat3m.dartagnan.expression.Expression;
-import com.dat3m.dartagnan.expression.IConst;
-import com.dat3m.dartagnan.expression.IExprBin;
+import com.dat3m.dartagnan.expression.integers.IntBinaryExpr;
+import com.dat3m.dartagnan.expression.integers.IntLiteral;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
+import com.dat3m.dartagnan.program.event.MemoryEvent;
+import com.dat3m.dartagnan.program.event.RegWriter;
 import com.dat3m.dartagnan.program.event.core.Local;
 import com.dat3m.dartagnan.program.event.core.MemoryCoreEvent;
-import com.dat3m.dartagnan.program.event.core.MemoryEvent;
 import com.dat3m.dartagnan.program.event.core.Store;
-import com.dat3m.dartagnan.program.event.core.utils.RegWriter;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Verify;
@@ -22,7 +22,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-import static com.dat3m.dartagnan.expression.op.IOpBin.ADD;
+import static com.dat3m.dartagnan.expression.integers.IntBinaryOp.ADD;
 
 /**
  * Inclusion-based pointer analysis by Andersen.
@@ -53,7 +53,7 @@ public class AndersenAliasAnalysis implements AliasAnalysis {
         Preconditions.checkArgument(program.isCompiled(), "The program must be compiled first.");
         ImmutableSet.Builder<Location> builder = new ImmutableSet.Builder<>();
         for (MemoryObject a : program.getMemory().getObjects()) {
-            for (int i = 0; i < a.size(); i++) {
+            for (int i = 0; i < a.getKnownSize(); i++) {
                 builder.add(new Location(a, i));
             }
         }
@@ -89,7 +89,7 @@ public class AndersenAliasAnalysis implements AliasAnalysis {
         for (MemoryCoreEvent e : memEvents) {
             processLocs(e);
         }
-        //FIXME: Add handling for thread parameters (or get rid of this class)
+        //FIXME: Add handling for thread parameters and allocations (or get rid of this class)
         for (Local e : locals) {
             processRegs(e);
         }
@@ -154,7 +154,7 @@ public class AndersenAliasAnalysis implements AliasAnalysis {
         if (expr instanceof Register) {
             // r1 = r2 -> add edge r2 --> r1
             addEdge(expr, register);
-        } else if (expr instanceof IExprBin iBin && iBin.getLHS() instanceof Register) {
+        } else if (expr instanceof IntBinaryExpr iBin && iBin.getLeft() instanceof Register) {
             addAllAddresses(register, maxAddressSet);
             variables.add(register);
         } else if (expr instanceof MemoryObject mem) {
@@ -206,14 +206,13 @@ public class AndersenAliasAnalysis implements AliasAnalysis {
             addTarget(reg, new Location(mem, 0));
             return;
         }
-        if (!(exp instanceof IExprBin iBin)) {
+        if (!(exp instanceof IntBinaryExpr iBin)) {
             return;
         }
-        Expression base = iBin.getLHS();
+        Expression base = iBin.getLeft();
         if (base instanceof MemoryObject mem) {
-            Expression rhs = iBin.getRHS();
-            //FIXME Address extends IConst
-            if (rhs instanceof IConst ic) {
+            Expression rhs = iBin.getRight();
+            if (rhs instanceof IntLiteral ic) {
                 addTarget(reg, new Location(mem, ic.getValueAsInt()));
             } else {
                 addTargetArray(reg, (MemoryObject) base);
@@ -225,11 +224,10 @@ public class AndersenAliasAnalysis implements AliasAnalysis {
         }
         //accept register2 = register1 + constant
         for (Location target : targets.getOrDefault(base, Set.of())) {
-            Expression rhs = ((IExprBin) exp).getRHS();
-            //FIXME Address extends IConst
-            if (rhs instanceof IConst ic) {
+            Expression rhs = ((IntBinaryExpr) exp).getRight();
+            if (rhs instanceof IntLiteral ic) {
                 int o = target.offset + ic.getValueAsInt();
-                if (o < target.base.size()) {
+                if (o < target.base.getKnownSize()) {
                     addTarget(reg, new Location(target.base, o));
                 }
             } else {
@@ -253,7 +251,7 @@ public class AndersenAliasAnalysis implements AliasAnalysis {
                 addresses = ImmutableSet.of(addressConstant.location);
             }
         }
-        if (addresses.size() == 0) {
+        if (addresses.isEmpty()) {
             addresses = maxAddressSet;
         }
         eventAddressSpaceMap.put(e, ImmutableSet.copyOf(addresses));
@@ -269,15 +267,20 @@ public class AndersenAliasAnalysis implements AliasAnalysis {
          * Tries to match an expression as a constant address.
          */
         Constant(Expression x) {
-            if (x instanceof IConst) {
-                location = x instanceof MemoryObject mem ? new Location(mem, 0) : null;
+            if (x instanceof MemoryObject mem) {
+                location = new Location(mem, 0);
                 failed = false;
                 return;
             }
-            if (x instanceof IExprBin iBin && iBin.getOp() == ADD) {
-                Expression lhs = iBin.getLHS();
-                Expression rhs = iBin.getRHS();
-                if (lhs instanceof MemoryObject mem && rhs instanceof IConst ic && !(rhs instanceof MemoryObject)) {
+            if (x instanceof IntLiteral) {
+                location = null;
+                failed = false;
+                return;
+            }
+            if (x instanceof IntBinaryExpr iBin && iBin.getKind() == ADD) {
+                Expression lhs = iBin.getLeft();
+                Expression rhs = iBin.getRight();
+                if (lhs instanceof MemoryObject mem && rhs instanceof IntLiteral ic) {
                     location = new Location(mem, ic.getValueAsInt());
                     failed = false;
                     return;
@@ -299,7 +302,7 @@ public class AndersenAliasAnalysis implements AliasAnalysis {
         final int offset;
 
         Location(MemoryObject b, int o) {
-            Preconditions.checkArgument(0 <= o && o < b.size(), "Array out of bounds");
+            Preconditions.checkArgument(b.isInRange(o), "Array out of bounds");
             base = b;
             offset = o;
         }
@@ -353,7 +356,7 @@ public class AndersenAliasAnalysis implements AliasAnalysis {
     }
 
     private void addTargetArray(Register r, MemoryObject b) {
-        targets.put(r, IntStream.range(0, b.size())
+        targets.put(r, IntStream.range(0, b.getKnownSize())
                 .mapToObj(i -> new Location(b, i))
                 .collect(Collectors.toSet()));
     }

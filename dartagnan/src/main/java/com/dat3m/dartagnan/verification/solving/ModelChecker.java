@@ -8,13 +8,8 @@ import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.analysis.*;
 import com.dat3m.dartagnan.program.analysis.alias.AliasAnalysis;
-import com.dat3m.dartagnan.program.event.core.Assert;
-import com.dat3m.dartagnan.program.event.core.Event;
+import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.processing.ProcessingManager;
-import com.dat3m.dartagnan.program.specification.AbstractAssert;
-import com.dat3m.dartagnan.program.specification.AssertCompositeAnd;
-import com.dat3m.dartagnan.program.specification.AssertInline;
-import com.dat3m.dartagnan.program.specification.AssertTrue;
 import com.dat3m.dartagnan.utils.Result;
 import com.dat3m.dartagnan.verification.Context;
 import com.dat3m.dartagnan.verification.VerificationTask;
@@ -22,20 +17,18 @@ import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
 import com.dat3m.dartagnan.wmm.analysis.WmmAnalysis;
 import com.dat3m.dartagnan.wmm.axiom.Axiom;
-import com.dat3m.dartagnan.wmm.utils.Tuple;
+import com.dat3m.dartagnan.wmm.processing.WmmProcessingManager;
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.java_smt.api.Model;
 import org.sosy_lab.java_smt.api.ProverEnvironment;
 import org.sosy_lab.java_smt.api.SolverException;
 
-import java.util.List;
 import java.util.Optional;
 
 import static com.dat3m.dartagnan.configuration.Property.CAT_SPEC;
 import static com.dat3m.dartagnan.program.analysis.SyntacticContextAnalysis.*;
-import static com.dat3m.dartagnan.utils.Result.FAIL;
-import static com.dat3m.dartagnan.utils.Result.PASS;
+import static com.dat3m.dartagnan.utils.Result.*;
 import static java.lang.Boolean.FALSE;
 
 public abstract class ModelChecker {
@@ -58,7 +51,8 @@ public abstract class ModelChecker {
         final Property.Type propType = Property.getCombinedType(context.getTask().getProperty(), context.getTask());
         final boolean hasViolationWitnesses = res == FAIL && propType == Property.Type.SAFETY;
         final boolean hasPositiveWitnesses = res == PASS && propType == Property.Type.REACHABILITY;
-        return (hasViolationWitnesses || hasPositiveWitnesses);
+        final boolean hasReachedBounds = res == UNKNOWN && propType == Property.Type.SAFETY;
+        return (hasViolationWitnesses || hasPositiveWitnesses || hasReachedBounds);
     }
 
     /**
@@ -70,14 +64,10 @@ public abstract class ModelChecker {
     public static void preprocessProgram(VerificationTask task, Configuration config) throws InvalidConfigurationException {
         Program program = task.getProgram();
         ProcessingManager.fromConfig(config).run(program);
-        // This is used to distinguish between Litmus tests (whose assertions are defined differently)
-        // and C tests.
-        if(program.getFormat() != Program.SourceLanguage.LITMUS) {
-            computeSpecificationFromProgramAssertions(program);
-        }
     }
-    public static void preprocessMemoryModel(VerificationTask task) throws InvalidConfigurationException {
-        task.getMemoryModel().simplify();
+    public static void preprocessMemoryModel(VerificationTask task, Configuration config) throws InvalidConfigurationException{
+        final Wmm memoryModel = task.getMemoryModel();
+        WmmProcessingManager.fromConfig(config).run(memoryModel);
     }
 
     /**
@@ -92,9 +82,9 @@ public abstract class ModelChecker {
     public static void performStaticProgramAnalyses(VerificationTask task, Context analysisContext, Configuration config) throws InvalidConfigurationException {
         Program program = task.getProgram();
         analysisContext.register(BranchEquivalence.class, BranchEquivalence.fromConfig(program, config));
-        analysisContext.register(ExecutionAnalysis.class, ExecutionAnalysis.fromConfig(program, analysisContext, config));
-        analysisContext.register(Dependency.class, Dependency.fromConfig(program, analysisContext, config));
-        analysisContext.register(AliasAnalysis.class, AliasAnalysis.fromConfig(program, config));
+        analysisContext.register(ExecutionAnalysis.class, ExecutionAnalysis.fromConfig(program, task.getProgressModel(), analysisContext, config));
+        analysisContext.register(ReachingDefinitionsAnalysis.class, ReachingDefinitionsAnalysis.fromConfig(program, analysisContext, config));
+        analysisContext.register(AliasAnalysis.class, AliasAnalysis.fromConfig(program, analysisContext, config));
         analysisContext.register(ThreadSymmetry.class, ThreadSymmetry.fromConfig(program, config));
         for(Thread thread : program.getThreads()) {
             for(Event e : thread.getEvents()) {
@@ -119,21 +109,6 @@ public abstract class ModelChecker {
         analysisContext.register(RelationAnalysis.class, RelationAnalysis.fromConfig(task, analysisContext, config));
     }
 
-    private static void computeSpecificationFromProgramAssertions(Program program) {
-        // We generate a program-spec from the user-placed assertions inside the C code.
-        // For litmus tests, this function should not be called.
-        final List<Assert> assertions = program.getThreadEvents(Assert.class);
-        AbstractAssert spec = new AssertTrue();
-        if(!assertions.isEmpty()) {
-            spec = new AssertInline(assertions.get(0));
-            for(int i = 1; i < assertions.size(); i++) {
-                spec = new AssertCompositeAnd(spec, new AssertInline(assertions.get(i)));
-            }
-        }
-        spec.setType(AbstractAssert.ASSERT_TYPE_FORALL);
-        program.setSpecification(spec);
-    }
-
     protected void saveFlaggedPairsOutput(Wmm wmm, WmmEncoder encoder, ProverEnvironment prover, EncodingContext ctx, Program program) throws SolverException {
         if (!ctx.getTask().getProperty().contains(CAT_SPEC)) {
             return;
@@ -143,24 +118,24 @@ public abstract class ModelChecker {
         for(Axiom ax : wmm.getAxioms()) {
             if(ax.isFlagged() && FALSE.equals(model.evaluate(CAT_SPEC.getSMTVariable(ax, ctx)))) {
                 StringBuilder violatingPairs = new StringBuilder("Flag " + Optional.ofNullable(ax.getName()).orElse(ax.getRelation().getNameOrTerm())).append("\n");
-                for(Tuple tuple : encoder.getTuples(ax.getRelation(), model)) {
+                encoder.getEventGraph(ax.getRelation(), model).apply((e1, e2) -> {
                     final String callSeparator = " -> ";
                     final String callStackFirst = makeContextString(
-                            synContext.getContextInfo(tuple.getFirst()).getContextOfType(CallContext.class),
+                            synContext.getContextInfo(e1).getContextOfType(CallContext.class),
                             callSeparator);
                     final String callStackSecond = makeContextString(
-                            synContext.getContextInfo(tuple.getSecond()).getContextOfType(CallContext.class),
+                            synContext.getContextInfo(e2).getContextOfType(CallContext.class),
                             callSeparator);
 
                     violatingPairs
-                        .append("\tE").append(tuple.getFirst().getGlobalId())
-                        .append(" / E").append(tuple.getSecond().getGlobalId())
-                        .append("\t").append(callStackFirst).append(callStackFirst.isEmpty() ? "" : callSeparator)
-                        .append(getSourceLocationString(tuple.getFirst()))
-                        .append(" / ").append(callStackSecond).append(callStackSecond.isEmpty() ? "" : callSeparator)
-                        .append(getSourceLocationString(tuple.getSecond()))
-                        .append("\n");
-                }
+                            .append("\tE").append(e1.getGlobalId())
+                            .append(" / E").append(e2.getGlobalId())
+                            .append("\t").append(callStackFirst).append(callStackFirst.isEmpty() ? "" : callSeparator)
+                            .append(getSourceLocationString(e1))
+                            .append(" / ").append(callStackSecond).append(callStackSecond.isEmpty() ? "" : callSeparator)
+                            .append(getSourceLocationString(e2))
+                            .append("\n");
+                });
                 flaggedPairsOutput += violatingPairs.toString();
             }
         }

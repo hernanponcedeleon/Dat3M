@@ -24,6 +24,6 @@ public class CartesianProduct extends Definition {
 
     @Override
     public <T> T accept(Visitor<? extends T> v) {
-        return v.visitProduct(definedRelation, filter1, filter2);
+        return v.visitProduct(this);
     }
 }

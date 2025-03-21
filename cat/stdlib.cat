@@ -1,0 +1,15 @@
+let fr = rf^-1;co | ([R] \ [range(rf)]);loc;[W]
+
+let po-loc = po & loc
+
+let rfe = rf & ext
+let coe = co & ext
+let fre = fr & ext
+let rfi = rf & int
+let coi = co & int
+let fri = fr & int
+
+let fencerel(F) = po;[F];po
+
+// Enforce that reads from uninitialized memory are impossible if an init write exists.
+empty (([R] \ [range(rf)]);loc;[IW])

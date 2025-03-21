@@ -1,0 +1,13 @@
+Vulkan PC-bar-acq-rel-nonpriv
+"Producer-Consumer pattern using named barriers. 
+ Load and store are non-private and thus in locord. 
+ Barriers are acq_rel and thus they are in sw."
+{
+x=0;
+P0:r0=0
+}
+ P0@sg 0, wg 0, qf 0      | P1@sg 0,wg 0, qf 0       ;
+ ld.nonpriv.sc0 r0, x     | cbar.acq_rel.wg.semsc0 0 ;
+ cbar.acq_rel.wg.semsc0 0 | st.nonpriv.sc0 x, 1      ;
+~exists
+ (P0:r0 == 1)

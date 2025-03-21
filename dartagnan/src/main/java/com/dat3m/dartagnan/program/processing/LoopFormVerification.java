@@ -3,9 +3,9 @@ package com.dat3m.dartagnan.program.processing;
 import com.dat3m.dartagnan.exception.MalformedProgramException;
 import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.Program;
+import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.CondJump;
-import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.Label;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -41,7 +41,7 @@ public class LoopFormVerification implements ProgramProcessor {
     @Override
     public void run(Program program) {
         final int numberOfLoops = Stream.concat(program.getThreads().stream(), program.getFunctions().stream())
-                .mapToInt(f -> checkAndCountLoops(f, Event::getGlobalId)).sum();
+                .mapToInt(f -> checkAndCountLoops(f, Event::getLocalId)).sum();
         logger.info("Detected {} loops in the program.", numberOfLoops);
     }
 
@@ -51,7 +51,7 @@ public class LoopFormVerification implements ProgramProcessor {
             final List<CondJump> backJumps = label.getJumpSet().stream()
                     .filter(j -> linId.applyAsInt(j) > linId.applyAsInt(label))
                     .toList();
-            final boolean isLoop = backJumps.size() > 0;
+            final boolean isLoop = !backJumps.isEmpty();
 
             if (!isLoop) {
                 continue;

@@ -5,13 +5,8 @@ import org.sosy_lab.common.configuration.Option;
 import org.sosy_lab.common.configuration.Options;
 
 import java.io.IOException;
-import java.lang.reflect.Field;
-import java.lang.reflect.Member;
 import java.lang.reflect.Method;
-import java.lang.reflect.Modifier;
-import java.lang.reflect.ParameterizedType;
-import java.lang.reflect.Type;
-import java.lang.reflect.WildcardType;
+import java.lang.reflect.*;
 import java.util.Arrays;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -47,7 +42,7 @@ public final class OptionInfo implements Comparable<OptionInfo> {
         ClassPath classPath;
         try {
             classPath = ClassPath.from(OptionInfo.class.getClassLoader());
-        } catch(IOException e) {
+        } catch (IOException e) {
             return Stream.empty();
         }
 
@@ -57,7 +52,7 @@ public final class OptionInfo implements Comparable<OptionInfo> {
     private static Stream<Class<?>> load(ClassPath.ClassInfo i) {
         try {
             return Stream.of(i.load());
-        } catch(LinkageError e) {
+        } catch (LinkageError e) {
             return Stream.empty();
         }
     }
@@ -70,11 +65,11 @@ public final class OptionInfo implements Comparable<OptionInfo> {
     private static Stream<OptionInfo> collectOptions(Class<?> c) {
 
         Options o = c.getAnnotation(Options.class);
-        if(o == null) {
+        if (o == null) {
             return Stream.empty();
         }
 
-        if(!PROJECT_CLASSES.matcher(c.getCanonicalName()).matches()) {
+        if (!PROJECT_CLASSES.matcher(c.getCanonicalName()).matches()) {
             return Stream.empty();
         }
 
@@ -94,18 +89,18 @@ public final class OptionInfo implements Comparable<OptionInfo> {
 
         Stream<OptionInfo> of(Field f) {
             Option o = f.getAnnotation(Option.class);
-            if(o == null) {
+            if (o == null) {
                 return Stream.empty();
             }
-            return Stream.of(new OptionInfo(this,o,f,f.getGenericType()));
+            return Stream.of(new OptionInfo(this, o, f, f.getGenericType()));
         }
 
         Stream<OptionInfo> of(Method m) {
             Option o = m.getAnnotation(Option.class);
-            if(o == null) {
+            if (o == null) {
                 return Stream.empty();
             }
-            return Stream.of(new OptionInfo(this,o,m,m.getGenericParameterTypes()[0]));
+            return Stream.of(new OptionInfo(this, o, m, m.getGenericParameterTypes()[0]));
         }
     }
 
@@ -120,13 +115,17 @@ public final class OptionInfo implements Comparable<OptionInfo> {
         option = o;
         member = m;
         type = t;
-        Type raw = t instanceof ParameterizedType ? ((ParameterizedType)t).getRawType() : t;
+        Type raw = t instanceof ParameterizedType ? ((ParameterizedType) t).getRawType() : t;
         verify(raw instanceof Class);
-        domain = (Class<?>)raw;
+        domain = (Class<?>) raw;
     }
 
     public String getName() {
         return option.name();
+    }
+
+    public String getDescription() {
+        return option.description();
     }
 
     public Class<?> getDomain() {
@@ -134,43 +133,43 @@ public final class OptionInfo implements Comparable<OptionInfo> {
     }
 
     public Stream<String> getAvailableValues() {
-        if(domain.isEnum()) {
+        if (domain.isEnum()) {
             return Stream.of(domain.getEnumConstants()).map(Object::toString);
         }
-        if(domain.equals(Class.class)) {
+        if (domain.equals(Class.class)) {
             verify(type instanceof ParameterizedType);
-            Type[] argument = ((ParameterizedType)type).getActualTypeArguments();
+            Type[] argument = ((ParameterizedType) type).getActualTypeArguments();
             verify(argument.length == 1);
             verify(argument[0] instanceof WildcardType);
-            WildcardType variable = (WildcardType)argument[0];
+            WildcardType variable = (WildcardType) argument[0];
             verify(variable.getLowerBounds().length == 0);
             Type[] bound = variable.getUpperBounds();
             verify(bound.length == 1);
             verify(bound[0] instanceof Class);
-            Class<?> base = (Class<?>)bound[0];
-            return classes().filter(base::isAssignableFrom).filter(c->!Modifier.isAbstract(c.getModifiers())).map(Class::getName);
+            Class<?> base = (Class<?>) bound[0];
+            return classes().filter(base::isAssignableFrom).filter(c -> !Modifier.isAbstract(c.getModifiers())).map(Class::getName);
         }
         return Stream.empty();
     }
 
     @Override
     public String toString() {
-    	return String.format("\n[-] %s%s : %s\n\t%s\n",
-            parent.prefix,
-            option.name().isEmpty() ? member.getName() : option.name(),
-            domain.isEnum() ? 
-            		"[" + String.join(", ", Arrays.stream(domain.getEnumConstants())
-            				.map(o -> o instanceof OptionInterface ? 
-            						((OptionInterface)o).asStringOption() : 
-            						o.toString().toLowerCase())
-            				.collect(Collectors.toList())) + 
-            		"]" : 
-        			domain.getSimpleName(),
-            option.description());
+        return String.format("\n[-] %s%s : %s\n\t%s\n",
+                parent.prefix,
+                option.name().isEmpty() ? member.getName() : option.name(),
+                domain.isEnum() ?
+                        "[" + Arrays.stream(domain.getEnumConstants())
+                                .map(o -> o instanceof OptionInterface ?
+                                        ((OptionInterface) o).asStringOption() :
+                                        o.toString().toLowerCase())
+                                .collect(Collectors.joining(", ")) +
+                                "]" :
+                        domain.getSimpleName(),
+                option.description());
     }
 
-	@Override
-	public int compareTo(OptionInfo o) {
-		return toString().compareTo(o.toString());
-	}
+    @Override
+    public int compareTo(OptionInfo o) {
+        return toString().compareTo(o.toString());
+    }
 }

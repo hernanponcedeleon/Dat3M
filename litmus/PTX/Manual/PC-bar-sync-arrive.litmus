@@ -1,0 +1,14 @@
+PTX PC-bar-sync-arrive
+"Producer-Consumer pattern using named barriers. 
+ Arrive does not block P1.
+ Load and store are not ordered."
+{
+x=0;
+P0:r0=0
+}
+ P0@cta 0,gpu 0   | P1@cta 0,gpu 0   ;
+ ld.weak r0, x    | bar.cta.arrive 1 ;
+ bar.cta.sync 0   | st.weak x, 1     ;
+ bar.cta.arrive 1 | bar.cta.sync 0   ;
+exists
+ (P0:r0 == 1)

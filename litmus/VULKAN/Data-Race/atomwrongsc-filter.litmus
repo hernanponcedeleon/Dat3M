@@ -1,0 +1,17 @@
+Vulkan atomwrongsc
+"There's a WaR hazard between an atomic load and a non-atomic store."
+"This test exercises that using only semsc0 is sufficient to synchronize"
+"them, because the atomic also has semsc0 in its semantics."
+"https://github.com/KhronosGroup/Vulkan-MemoryModel/blob/master/alloy/tests/atomwrongsc.test"
+{
+P0:r0=0;
+P1:r1=0;
+x=0;
+y=0;
+z aliases x;
+}
+ P0@sg 0, wg 0, qf 0                 | P1@sg 1,wg 0, qf 0                  ;
+ ld.atom.acq.wg.sc1.semsc0 r0, x     | ld.atom.acq.wg.sc0.semsc0 r1, y     ;
+ st.atom.rel.wg.sc0.semsc0 y, 1      | st.av.dv.sc0 z, 1                   ;
+filter
+(P0:r0 == 0 /\ P1:r1 == 1)

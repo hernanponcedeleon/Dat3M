@@ -1,0 +1,20 @@
+PTX IRWIW_gl_cta
+"CoRR"
+"https://github.com/johnwickerson/memalloy/blob/master/ptx_testing/IRWIW_gl_cta/IRWIW_gl_cta.litmus"
+{
+P0:r0=0;
+P1:r0=0;
+P1:r2=0;
+P2:r0=0;
+P3:r0=0;
+P3:r2=0;
+x=0;
+y=0;
+}
+ P0@cta 0,gpu 0           | P1@cta 1,gpu 0           | P2@cta 1,gpu 0           | P3@cta 1,gpu 0           ;
+ ld r0, 2                 | ld r2, 1                 | ld r0, 2                 | ld r2, 2                 ;
+ st.weak x, r0            | ld.weak r0, x            | st.weak y, r0            | ld.weak r0, y            ;
+                          | fence.sc.gpu             |                          | fence.sc.cta             ;
+                          | st.weak y, r2            |                          | st.weak x, r2            ;
+exists
+(P1:r0 == 2 /\ P3:r0 == 2 /\ x == 2 /\ y == 2)

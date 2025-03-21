@@ -2,10 +2,10 @@ package com.dat3m.dartagnan.program.event.lang.svcomp;
 
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.analysis.BranchEquivalence;
+import com.dat3m.dartagnan.program.event.AbstractEvent;
+import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.EventUser;
-import com.dat3m.dartagnan.program.event.core.AbstractEvent;
-import com.dat3m.dartagnan.program.event.core.Event;
-import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
+import com.dat3m.dartagnan.program.event.EventVisitor;
 import com.dat3m.dartagnan.verification.Context;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
@@ -52,12 +52,12 @@ public class EndAtomic extends AbstractEvent implements EventUser {
 
     private void findEnclosedEvents(BranchEquivalence eq) {
         enclosedEvents = new ArrayList<>();
-        if (eq.areMutuallyExclusive(begin, this) || this.getGlobalId() < begin.getGlobalId()) {
-            logger.warn("BeginAtomic" + begin.getGlobalId() + "can't reach EndAtomic " + this.getGlobalId());
+        if (eq.areMutuallyExclusive(begin, this) || this.getLocalId() < begin.getLocalId()) {
+            logger.warn("BeginAtomic" + begin.getLocalId() + "can't reach EndAtomic " + this.getLocalId());
         }
 
         Event e = begin.getSuccessor();
-        while (e.getGlobalId() < this.getGlobalId()) {
+        while (e.getLocalId() < this.getLocalId()) {
             if (!eq.areMutuallyExclusive(begin, e)) {
                 if (!eq.isImplied(e, begin)) {
                     logger.warn(e + " is inside atomic block but can be reached from the outside");

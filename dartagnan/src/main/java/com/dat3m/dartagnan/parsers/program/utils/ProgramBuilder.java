@@ -4,20 +4,16 @@ import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.exception.MalformedProgramException;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
-import com.dat3m.dartagnan.expression.IConst;
-import com.dat3m.dartagnan.expression.INonDet;
+import com.dat3m.dartagnan.expression.Type;
+import com.dat3m.dartagnan.expression.integers.IntLiteral;
 import com.dat3m.dartagnan.expression.type.FunctionType;
-import com.dat3m.dartagnan.expression.type.IntegerType;
-import com.dat3m.dartagnan.expression.type.Type;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
-import com.dat3m.dartagnan.program.Function;
-import com.dat3m.dartagnan.program.Program;
-import com.dat3m.dartagnan.program.Program.SourceLanguage;
-import com.dat3m.dartagnan.program.Register;
-import com.dat3m.dartagnan.program.ScopeHierarchy;
+import com.dat3m.dartagnan.program.*;
 import com.dat3m.dartagnan.program.Thread;
+import com.dat3m.dartagnan.program.Program.SourceLanguage;
+import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.EventFactory;
-import com.dat3m.dartagnan.program.event.core.Event;
+import com.dat3m.dartagnan.program.event.RegWriter;
 import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.event.core.threading.ThreadStart;
 import com.dat3m.dartagnan.program.event.metadata.OriginalId;
@@ -25,7 +21,7 @@ import com.dat3m.dartagnan.program.memory.Memory;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.dat3m.dartagnan.program.memory.VirtualMemoryObject;
 import com.dat3m.dartagnan.program.processing.IdReassignment;
-import com.dat3m.dartagnan.program.specification.AbstractAssert;
+import com.google.common.base.Preconditions;
 import com.google.common.base.Verify;
 import com.google.common.collect.Iterables;
 
@@ -42,6 +38,7 @@ public class ProgramBuilder {
 
     private static final TypeFactory types = TypeFactory.getInstance();
     private static final ExpressionFactory expressions = ExpressionFactory.getInstance();
+    private static final int ARCH_SIZE = types.getMemorySizeInBytes(types.getArchType());
     private static final FunctionType DEFAULT_THREAD_TYPE =
             types.getFunctionType(types.getVoidType(), List.of());
 
@@ -54,7 +51,7 @@ public class ProgramBuilder {
     // ----------------------------------------------------------------------------------------------------------------
     // Construction
     private ProgramBuilder(SourceLanguage format) {
-        this.program = new Program(new Memory(), format);
+        this.program = new Program(new Memory(), format, null);
     }
 
     public static ProgramBuilder forArch(SourceLanguage format, Arch arch) {
@@ -93,6 +90,27 @@ public class ProgramBuilder {
         }
     }
 
+    public static void replaceZeroRegisters(Program program, List<String> zeroRegNames) {
+        for (Function func : Iterables.concat(program.getThreads(), program.getFunctions())) {
+            if (func.hasBody()) {
+                for (String zeroRegName : zeroRegNames) {
+                    Register zr = func.getRegister(zeroRegName);
+                    if (zr != null) {
+                        for (RegWriter rw : func.getEvents(RegWriter.class)) {
+                            if (rw.getResultRegister().equals(zr)) {
+                                Register dummy = rw.getThread().getOrNewRegister("__zeroRegDummy_" + zr.getName(), zr.getType());
+                                rw.setResultRegister(dummy);
+                            }
+                        }
+                        // This comes after the loop to avoid the renaming in the initialization event
+                        Event initToZero = EventFactory.newLocal(zr, expressions.makeGeneralZero(zr.getType()));
+                        func.getEntry().insertAfter(initToZero);
+                    }
+                }
+            }
+        }
+    }
+
     // ----------------------------------------------------------------------------------------------------------------
     // Misc
 
@@ -104,11 +122,11 @@ public class ProgramBuilder {
         return expressions;
     }
 
-    public void setAssert(AbstractAssert ass) {
-        program.setSpecification(ass);
+    public void setAssert(Program.SpecificationType type, Expression ass) {
+        program.setSpecification(type, ass);
     }
 
-    public void setAssertFilter(AbstractAssert ass) {
+    public void setAssertFilter(Expression ass) {
         program.setFilterSpecification(ass);
     }
 
@@ -177,25 +195,35 @@ public class ProgramBuilder {
         return locations.get(name);
     }
 
-    public MemoryObject getOrNewMemoryObject(String name) {
-        final MemoryObject mem = locations.computeIfAbsent(name, k -> program.getMemory().allocate(1, true));
-        mem.setCVar(name);
+    public MemoryObject getOrNewMemoryObject(String name, int size) {
+        MemoryObject mem = locations.get(name);
+        if (mem == null) {
+            mem = program.getMemory().allocate(size);
+            mem.setName(name);
+            if (program.getFormat() == LITMUS) {
+                // Litmus code always initializes memory
+                final Expression zero = expressions.makeZero(types.getArchType());
+                for (int offset = 0; offset < size; offset++) {
+                    mem.setInitialValue(offset, zero);
+                }
+            }
+            locations.put(name, mem);
+        }
         return mem;
+    }
+
+    public MemoryObject getOrNewMemoryObject(String name) {
+        return getOrNewMemoryObject(name, ARCH_SIZE);
     }
 
     public MemoryObject newMemoryObject(String name, int size) {
         checkState(!locations.containsKey(name),
                 "Illegal allocation. Memory object %s is already defined", name);
-        final MemoryObject mem = program.getMemory().allocate(size, true);
-        mem.setCVar(name);
-        locations.put(name, mem);
-        return mem;
+        return getOrNewMemoryObject(name, size);
     }
 
-    public INonDet newConstant(IntegerType type, boolean signed) {
-        var constant = new INonDet(program.getConstants().size(), type, signed);
-        program.addConstant(constant);
-        return constant;
+    public Expression newConstant(Type type) {
+        return program.newConstant(type);
     }
 
     // ----------------------------------------------------------------------------------------------------------------
@@ -209,7 +237,7 @@ public class ProgramBuilder {
     }
 
     public void initLocEqConst(String locName, Expression iValue){
-        getOrNewMemoryObject(locName).setInitialValue(0,iValue);
+        getOrNewMemoryObject(locName).setInitialValue(0, iValue);
     }
 
     public void initRegEqLocPtr(int regThread, String regName, String locName, Type type) {
@@ -223,8 +251,9 @@ public class ProgramBuilder {
         addChild(regThread, EventFactory.newLocal(reg,getInitialValue(locName)));
     }
 
-    public void initRegEqConst(int regThread, String regName, IConst iValue){
-        addChild(regThread, EventFactory.newLocal(getOrNewRegister(regThread, regName, iValue.getType()), iValue));
+    public void initRegEqConst(int regThread, String regName, Expression value){
+        Preconditions.checkArgument(value.getRegs().isEmpty());
+        addChild(regThread, EventFactory.newLocal(getOrNewRegister(regThread, regName, value.getType()), value));
     }
 
     private Expression getInitialValue(String name) {
@@ -267,21 +296,21 @@ public class ProgramBuilder {
     }
 
     // ----------------------------------------------------------------------------------------------------------------
-    // PTX
-
+    // GPU
     public void newScopedThread(Arch arch, String name, int id, int ...scopeIds) {
+        ScopeHierarchy scopeHierarchy = switch (arch) {
+            case PTX -> ScopeHierarchy.ScopeHierarchyForPTX(scopeIds[0], scopeIds[1]);
+            case VULKAN -> ScopeHierarchy.ScopeHierarchyForVulkan(scopeIds[0], scopeIds[1], scopeIds[2]);
+            case OPENCL -> ScopeHierarchy.ScopeHierarchyForOpenCL(scopeIds[0], scopeIds[1]);
+            default -> throw new UnsupportedOperationException("Unsupported architecture: " + arch);
+        };
+
         if(id2FunctionsMap.containsKey(id)) {
             throw new MalformedProgramException("Function or thread with id " + id + " already exists.");
         }
         // Litmus threads run unconditionally (have no creator) and have no parameters/return types.
         ThreadStart threadEntry = EventFactory.newThreadStart(null);
-        Thread scopedThread = switch (arch) {
-            case PTX -> new Thread(name, DEFAULT_THREAD_TYPE, List.of(), id, threadEntry,
-                    ScopeHierarchy.ScopeHierarchyForPTX(scopeIds[0], scopeIds[1]), new HashSet<>());
-            case VULKAN -> new Thread(name, DEFAULT_THREAD_TYPE, List.of(), id, threadEntry,
-                    ScopeHierarchy.ScopeHierarchyForVulkan(scopeIds[0], scopeIds[1], scopeIds[2]), new HashSet<>());
-            default -> throw new UnsupportedOperationException("Unsupported architecture: " + arch);
-        };
+        Thread scopedThread = new Thread(name, DEFAULT_THREAD_TYPE, List.of(), id, threadEntry, scopeHierarchy, new HashSet<>());
         id2FunctionsMap.put(id, scopedThread);
         program.addThread(scopedThread);
     }
@@ -290,10 +319,12 @@ public class ProgramBuilder {
         newScopedThread(arch, String.valueOf(id), id, ids);
     }
 
-    public void initVirLocEqCon(String leftName, IConst iValue){
+    // ----------------------------------------------------------------------------------------------------------------
+    // PTX
+    public void initVirLocEqCon(String leftName, IntLiteral iValue){
         MemoryObject object = locations.computeIfAbsent(
-                leftName, k->program.getMemory().allocateVirtual(1, true, true, null));
-        object.setCVar(leftName);
+                leftName, k->program.getMemory().allocateVirtual(ARCH_SIZE, true, null));
+        object.setName(leftName);
         object.setInitialValue(0, iValue);
     }
 
@@ -303,8 +334,8 @@ public class ProgramBuilder {
             throw new MalformedProgramException("Alias to non-exist location: " + rightName);
         }
         MemoryObject object = locations.computeIfAbsent(leftName,
-                k->program.getMemory().allocateVirtual(1, true, true, null));
-        object.setCVar(leftName);
+                k->program.getMemory().allocateVirtual(ARCH_SIZE, true, null));
+        object.setName(leftName);
         object.setInitialValue(0,rightLocation.getInitialValue(0));
     }
 
@@ -314,8 +345,8 @@ public class ProgramBuilder {
             throw new MalformedProgramException("Alias to non-exist location: " + rightName);
         }
         MemoryObject object = locations.computeIfAbsent(leftName,
-                k->program.getMemory().allocateVirtual(1, true, true, rightLocation));
-        object.setCVar(leftName);
+                k->program.getMemory().allocateVirtual(ARCH_SIZE, true, rightLocation));
+        object.setName(leftName);
         object.setInitialValue(0,rightLocation.getInitialValue(0));
     }
 
@@ -325,9 +356,9 @@ public class ProgramBuilder {
             throw new MalformedProgramException("Alias to non-exist location: " + rightName);
         }
         MemoryObject object = locations.computeIfAbsent(
-                leftName, k->program.getMemory().allocateVirtual(1, true, false, rightLocation));
-        object.setCVar(leftName);
-        object.setInitialValue(0,rightLocation.getInitialValue(0));
+                leftName, k->program.getMemory().allocateVirtual(ARCH_SIZE, false, rightLocation));
+        object.setName(leftName);
+        object.setInitialValue(0, rightLocation.getInitialValue(0));
     }
 
     // ----------------------------------------------------------------------------------------------------------------

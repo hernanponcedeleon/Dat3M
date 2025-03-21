@@ -1,5 +1,6 @@
 Vulkan mptransitivefail
 "Missing AVWG in invocation 0, so AVDEV in invocation 1 isn't sufficient"
+"https://github.com/KhronosGroup/Vulkan-MemoryModel/blob/master/alloy/tests/mp3transitivefail.test"
 {
 P1:r0=0;
 P2:r1=0;

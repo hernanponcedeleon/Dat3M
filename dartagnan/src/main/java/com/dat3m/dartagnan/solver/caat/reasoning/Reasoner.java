@@ -8,6 +8,7 @@ import com.dat3m.dartagnan.solver.caat.predicates.Derivable;
 import com.dat3m.dartagnan.solver.caat.predicates.misc.PredicateVisitor;
 import com.dat3m.dartagnan.solver.caat.predicates.relationGraphs.Edge;
 import com.dat3m.dartagnan.solver.caat.predicates.relationGraphs.RelationGraph;
+import com.dat3m.dartagnan.solver.caat.predicates.relationGraphs.derived.ProjectionIdentityGraph;
 import com.dat3m.dartagnan.solver.caat.predicates.sets.Element;
 import com.dat3m.dartagnan.solver.caat.predicates.sets.SetPredicate;
 import com.dat3m.dartagnan.utils.logic.Conjunction;
@@ -190,14 +191,14 @@ public class Reasoner {
             RelationGraph lhs = (RelationGraph) graph.getDependencies().get(0);
             RelationGraph rhs = (RelationGraph) graph.getDependencies().get(1);
 
-            if (rhs.getDependencies().size() > 0) {
+            if (!rhs.getDependencies().isEmpty()) {
                 throw new IllegalStateException(
                         String.format("Cannot compute reason of edge %s in difference graph %s because its right-hand side %s " +
                                 "is derived.", edge, graph, rhs));
             }
 
             Conjunction<CAATLiteral> reason = computeReason(lhs, edge)
-                    .and(new EdgeLiteral(rhs.getName(), edge, true).toSingletonReason());
+                    .and(new EdgeLiteral(rhs, edge, false).toSingletonReason());
             assert !reason.isFalse();
             return reason;
         }
@@ -220,19 +221,24 @@ public class Reasoner {
         }
 
         @Override
-        public Conjunction<CAATLiteral> visitRangeIdentity(RelationGraph graph, Edge edge, Void unused) {
+        public Conjunction<CAATLiteral> visitProjectionIdentity(RelationGraph graph, Edge edge, Void unused) {
             assert edge.isLoop();
 
             RelationGraph inner = (RelationGraph) graph.getDependencies().get(0);
-            for (Edge inEdge : inner.inEdges(edge.getSecond())) {
+            ProjectionIdentityGraph.Dimension dim = ((ProjectionIdentityGraph)graph).getProjectionDimension();
+            Iterable<Edge> edges = switch (dim) {
+                case RANGE -> inner.inEdges(edge.getSecond());
+                case DOMAIN -> inner.outEdges(edge.getFirst());
+            };
+            for (Edge e : edges) {
                 // We use the first edge we find
-                if (inEdge.getDerivationLength() < edge.getDerivationLength()) {
-                    Conjunction<CAATLiteral> reason = computeReason(inner, inEdge);
+                if (e.getDerivationLength() < edge.getDerivationLength()) {
+                    Conjunction<CAATLiteral> reason = computeReason(inner, e);
                     assert !reason.isFalse();
                     return reason;
                 }
             }
-            throw new IllegalStateException("RangeIdentityGraph: No matching edge is found");
+            throw new IllegalStateException("ProjectionIdentityGraph: No matching edge is found");
         }
 
         @Override
@@ -267,7 +273,7 @@ public class Reasoner {
 
         @Override
         public Conjunction<CAATLiteral> visitBaseGraph(RelationGraph graph, Edge edge, Void unused) {
-            return new EdgeLiteral(graph.getName(), edge, false).toSingletonReason();
+            return new EdgeLiteral(graph, edge, true).toSingletonReason();
         }
     }
 
@@ -311,20 +317,20 @@ public class Reasoner {
             SetPredicate lhs = set.getDependencies().get(0);
             SetPredicate rhs = set.getDependencies().get(1);
 
-            if (rhs.getDependencies().size() > 0) {
+            if (!rhs.getDependencies().isEmpty()) {
                 throw new IllegalStateException(String.format("Cannot compute reason of element %s in " +
                         "set difference %s because its right-hand side %s is derived.", ele, set, rhs));
             }
 
             Conjunction<CAATLiteral> reason = computeReason(lhs, ele)
-                    .and(new ElementLiteral(rhs.getName(), ele, true).toSingletonReason());
+                    .and(new ElementLiteral(rhs, ele, false).toSingletonReason());
             assert !reason.isFalse();
             return reason;
         }
 
         @Override
         public Conjunction<CAATLiteral> visitBaseSet(SetPredicate set, Element ele, Void unused) {
-            return new ElementLiteral(set.getName(), ele, false).toSingletonReason();
+            return new ElementLiteral(set, ele, true).toSingletonReason();
         }
     }
 }

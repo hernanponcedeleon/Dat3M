@@ -3,21 +3,19 @@ package com.dat3m.dartagnan.parsers.program.visitors;
 import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
-import com.dat3m.dartagnan.expression.IValue;
+import com.dat3m.dartagnan.expression.integers.IntLiteral;
 import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.parsers.LitmusX86BaseVisitor;
 import com.dat3m.dartagnan.parsers.LitmusX86Parser;
-import com.dat3m.dartagnan.parsers.program.utils.AssertionHelper;
 import com.dat3m.dartagnan.parsers.program.utils.ProgramBuilder;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.google.common.collect.ImmutableSet;
-import org.antlr.v4.runtime.misc.Interval;
 
-import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.MFENCE;
+import static com.dat3m.dartagnan.program.event.FenceNameRepository.*;
 
 public class VisitorLitmusX86 extends LitmusX86BaseVisitor<Object> {
 
@@ -41,18 +39,7 @@ public class VisitorLitmusX86 extends LitmusX86BaseVisitor<Object> {
         visitThreadDeclaratorList(ctx.program().threadDeclaratorList());
         visitVariableDeclaratorList(ctx.variableDeclaratorList());
         visitInstructionList(ctx.program().instructionList());
-        if(ctx.assertionList() != null){
-            int a = ctx.assertionList().getStart().getStartIndex();
-            int b = ctx.assertionList().getStop().getStopIndex();
-            String raw = ctx.assertionList().getStart().getInputStream().getText(new Interval(a, b));
-            programBuilder.setAssert(AssertionHelper.parseAssertionList(programBuilder, raw));
-        }
-        if(ctx.assertionFilter() != null){
-            int a = ctx.assertionFilter().getStart().getStartIndex();
-            int b = ctx.assertionFilter().getStop().getStopIndex();
-            String raw = ctx.assertionFilter().getStart().getInputStream().getText(new Interval(a, b));
-            programBuilder.setAssertFilter(AssertionHelper.parseAssertionFilter(programBuilder, raw));
-        }
+        VisitorLitmusAssertions.parseAssertions(programBuilder, ctx.assertionList(), ctx.assertionFilter());
         return programBuilder.build();
     }
 
@@ -62,14 +49,14 @@ public class VisitorLitmusX86 extends LitmusX86BaseVisitor<Object> {
 
     @Override
     public Object visitVariableDeclaratorLocation(LitmusX86Parser.VariableDeclaratorLocationContext ctx) {
-        IValue value = expressions.parseValue(ctx.constant().getText(), archType);
+        IntLiteral value = expressions.parseValue(ctx.constant().getText(), archType);
         programBuilder.initLocEqConst(ctx.location().getText(), value);
         return null;
     }
 
     @Override
     public Object visitVariableDeclaratorRegister(LitmusX86Parser.VariableDeclaratorRegisterContext ctx) {
-        IValue value = expressions.parseValue(ctx.constant().getText(), archType);
+        IntLiteral value = expressions.parseValue(ctx.constant().getText(), archType);
         programBuilder.initRegEqConst(ctx.threadId().id, ctx.register().getText(), value);
         return null;
     }
@@ -115,7 +102,7 @@ public class VisitorLitmusX86 extends LitmusX86BaseVisitor<Object> {
     @Override
     public Object visitLoadValueToRegister(LitmusX86Parser.LoadValueToRegisterContext ctx) {
         Register register = programBuilder.getOrNewRegister(mainThread, ctx.register().getText(), archType);
-        IValue constant = expressions.parseValue(ctx.constant().getText(), archType);
+        IntLiteral constant = expressions.parseValue(ctx.constant().getText(), archType);
         return programBuilder.addChild(mainThread, EventFactory.newLocal(register, constant));
     }
 
@@ -129,7 +116,7 @@ public class VisitorLitmusX86 extends LitmusX86BaseVisitor<Object> {
     @Override
     public Object visitStoreValueToLocation(LitmusX86Parser.StoreValueToLocationContext ctx) {
         MemoryObject object = programBuilder.getOrNewMemoryObject(ctx.location().getText());
-        IValue constant = expressions.parseValue(ctx.constant().getText(), archType);
+        IntLiteral constant = expressions.parseValue(ctx.constant().getText(), archType);
         return programBuilder.addChild(mainThread, EventFactory.newStore(object, constant));
     }
 

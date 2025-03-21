@@ -1,0 +1,13 @@
+VULKAN test16
+"Fails because there is no availability operation from the atomics"
+"https://github.com/KhronosGroup/Vulkan-MemoryModel/blob/master/alloy/tests/test16.test"
+{
+P1:r0=0;
+P1:r1=0;
+a=0;
+}
+ P0@sg 0,wg 0, qf 0               | P1@sg 1,wg 0, qf 0               ;
+ st.atom.wg.sc0 a, 1              | ld.atom.wg.sc0 r0, a             ;
+                                  | ld.vis.dv.sc0 r1, a              ;
+filter
+(P1:r0 == 1)

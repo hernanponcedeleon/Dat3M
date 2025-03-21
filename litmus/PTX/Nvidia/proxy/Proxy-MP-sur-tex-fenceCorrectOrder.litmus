@@ -1,0 +1,18 @@
+PTX Proxy-MP-sur-tex-surF-texF-correctOrder
+"The generic memory is synchronize with surface cache by surface fence, then texture fence synchronize the data from generic memory to texture cache. Hence the tld is guaranteed to rf sust"
+"https://github.com/NVlabs/mixedproxy/blob/main/tests/MP_cta.test"
+{
+x = 0;
+t @ texture aliases x;
+s @ surface aliases x;
+flag = 0;
+P1:r0=0;
+P1:r1=0;
+}
+ P0@cta 0,gpu 0                   |P1@cta 0,gpu 0                    ;
+ sust.weak s, 2                   |ld.acquire.cta r0, flag           ;
+ fence.proxy.surface              |                                  ;
+ fence.proxy.texture              |                                  ;
+ st.release.cta flag, 1           |tld.weak r1, t                    ;
+~exists
+(P1:r0 == 1 /\ P1:r1 != 2)

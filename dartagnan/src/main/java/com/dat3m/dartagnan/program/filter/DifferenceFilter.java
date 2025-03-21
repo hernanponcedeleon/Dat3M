@@ -1,6 +1,6 @@
 package com.dat3m.dartagnan.program.filter;
 
-import com.dat3m.dartagnan.program.event.core.Event;
+import com.dat3m.dartagnan.program.event.Event;
 
 public class DifferenceFilter extends Filter {
 

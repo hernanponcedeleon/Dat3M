@@ -12,7 +12,7 @@ import java.util.Optional;
 
 public enum Property implements OptionInterface {
     PROGRAM_SPEC,        // Litmus queries OR assertion safety in C-code
-    LIVENESS,            // Liveness property
+    TERMINATION,         // All executions terminate (absence of deadlocks/livelocks)
     CAT_SPEC,            // CAT-spec defined via flagged axioms in .cat file (~bug specification)
     DATARACEFREEDOM;     // Special option for data-race detection in SVCOMP only
 
@@ -26,18 +26,12 @@ public enum Property implements OptionInterface {
     // Used to display in UI
     @Override
     public String toString() {
-        switch (this) {
-            case PROGRAM_SPEC:
-                return "Program specification";
-            case DATARACEFREEDOM:
-                return "Data-race freedom (SVCOMP only)";
-            case LIVENESS:
-                return "Liveness";
-            case CAT_SPEC:
-                return "CAT specification";
-            default:
-                throw new UnsupportedOperationException("Unrecognized property: " + this);
-        }
+        return switch (this) {
+            case PROGRAM_SPEC -> "Program specification";
+            case DATARACEFREEDOM -> "Data-race freedom (SVCOMP only)";
+            case TERMINATION -> "Termination";
+            case CAT_SPEC -> "CAT specification";
+        };
     }
 
     @Override
@@ -46,7 +40,7 @@ public enum Property implements OptionInterface {
     }
 
     public Type getType(VerificationTask context) {
-        if (this == PROGRAM_SPEC && !context.getProgram().getSpecification().isSafetySpec()) {
+        if (this == PROGRAM_SPEC && context.getProgram().hasReachabilitySpecification()) {
             return Type.REACHABILITY;
         } else {
             return Type.SAFETY;
@@ -59,19 +53,20 @@ public enum Property implements OptionInterface {
 
     public BooleanFormula getSMTVariable(Axiom ax, EncodingContext ctx) {
         Preconditions.checkState(this == CAT_SPEC);
-        return ctx.getBooleanFormulaManager()
-                .makeVariable("Flag " + Optional.ofNullable(ax.getName()).orElse(ax.getRelation().getNameOrTerm()));
+        final String varName = ctx.getFormulaManager().escape("Flag " +
+                Optional.ofNullable(ax.getName()).orElse(ax.getRelation().getNameOrTerm()));
+        return ctx.getBooleanFormulaManager().makeVariable(varName);
     }
 
     // ------------------------- Static -------------------------
 
     public static EnumSet<Property> getDefault() {
-        return EnumSet.of(PROGRAM_SPEC);
+        return EnumSet.of(PROGRAM_SPEC, TERMINATION, CAT_SPEC);
     }
 
     // Used to decide the order shown by the selector in the UI
     public static Property[] orderedValues() {
-        Property[] order = {PROGRAM_SPEC, LIVENESS, CAT_SPEC, DATARACEFREEDOM};
+        Property[] order = {PROGRAM_SPEC, TERMINATION, CAT_SPEC, DATARACEFREEDOM};
         // Be sure no element is missing
         assert (Arrays.asList(order).containsAll(Arrays.asList(values())));
         return order;

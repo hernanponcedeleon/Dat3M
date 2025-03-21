@@ -33,6 +33,7 @@ public class WmmFromArchitectureProvider extends AbstractProvider<Wmm> {
         ARCH_WMM_MAP.put(Arch.LKMM, () -> new ParserCat().parse(new File(getRootPath("cat/linux-kernel.cat"))));
         ARCH_WMM_MAP.put(Arch.IMM, () -> new ParserCat().parse(new File(getRootPath("cat/imm.cat"))));
         ARCH_WMM_MAP.put(Arch.VULKAN, () -> new ParserCat().parse(new File(getRootPath("cat/spirv.cat"))));
+        ARCH_WMM_MAP.put(Arch.OPENCL, () -> new ParserCat().parse(new File(getRootPath("cat/opencl.cat"))));
     }
 
     private final Supplier<Arch> archSupplier;

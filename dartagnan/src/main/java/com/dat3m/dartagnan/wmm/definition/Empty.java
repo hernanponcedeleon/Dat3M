@@ -2,7 +2,7 @@ package com.dat3m.dartagnan.wmm.definition;
 
 import com.dat3m.dartagnan.wmm.Definition;
 import com.dat3m.dartagnan.wmm.Relation;
-import com.dat3m.dartagnan.wmm.relation.RelationNameRepository;
+import com.dat3m.dartagnan.wmm.RelationNameRepository;
 
 public class Empty extends Definition {
 
@@ -12,6 +12,6 @@ public class Empty extends Definition {
 
     @Override
     public <T> T accept(Visitor<? extends T> v) {
-        return v.visitEmpty(definedRelation);
+        return v.visitEmpty(this);
     }
 }

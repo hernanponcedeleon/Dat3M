@@ -1,0 +1,62 @@
+; @Config: 3, 1, 3
+; SPIR-V
+; Version: 1.0
+; Generator: Khronos LLVM/SPIR-V Translator; 14
+; Bound: 34
+; Schema: 0
+               OpCapability Addresses
+               OpCapability Kernel
+          %1 = OpExtInstImport "OpenCL.std"
+               OpMemoryModel Physical32 OpenCL
+               OpEntryPoint Kernel %4 "foo"
+               OpSource OpenCL_C 200000
+               OpDecorate %16 Alignment 4
+               OpDecorate %17 Alignment 4
+       %uint = OpTypeInt 32 0
+     %uint_0 = OpConstant %uint 0
+     %uint_2 = OpConstant %uint 2
+     %uint_1 = OpConstant %uint 1
+       %void = OpTypeVoid
+          %3 = OpTypeFunction %void
+%_ptr_Function_uint = OpTypePointer Function %uint
+       %bool = OpTypeBool
+          %4 = OpFunction %void DontInline %3
+          %5 = OpLabel
+         %16 = OpVariable %_ptr_Function_uint Function
+         %17 = OpVariable %_ptr_Function_uint Function
+               OpStore %16 %uint_0 Aligned 4
+               OpBranch %6
+          %6 = OpLabel
+         %19 = OpLoad %uint %16 Aligned 4
+         %22 = OpSLessThan %bool %19 %uint_2
+               OpBranchConditional %22 %7 %9
+          %7 = OpLabel
+         %23 = OpLoad %uint %16 Aligned 4
+         %25 = OpIAdd %uint %23 %uint_1
+               OpStore %16 %25 Aligned 4
+               OpBranch %8
+          %8 = OpLabel
+         %26 = OpLoad %uint %16 Aligned 4
+         %27 = OpIAdd %uint %26 %uint_1
+               OpStore %16 %27 Aligned 4
+               OpBranch %6
+          %9 = OpLabel
+               OpStore %17 %uint_0 Aligned 4
+               OpBranch %10
+         %10 = OpLabel
+         %28 = OpLoad %uint %17 Aligned 4
+         %29 = OpSLessThan %bool %28 %uint_2
+               OpBranchConditional %29 %11 %13
+         %11 = OpLabel
+         %30 = OpLoad %uint %17 Aligned 4
+         %31 = OpIAdd %uint %30 %uint_1
+               OpStore %17 %31 Aligned 4
+               OpBranch %12
+         %12 = OpLabel
+         %32 = OpLoad %uint %17 Aligned 4
+         %33 = OpIAdd %uint %32 %uint_1
+               OpStore %17 %33 Aligned 4
+               OpBranch %10
+         %13 = OpLabel
+               OpReturn
+               OpFunctionEnd

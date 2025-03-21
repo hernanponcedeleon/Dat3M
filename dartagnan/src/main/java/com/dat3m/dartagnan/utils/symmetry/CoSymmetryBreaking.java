@@ -5,14 +5,14 @@ import com.dat3m.dartagnan.encoding.SymmetryEncoder;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.analysis.ThreadSymmetry;
 import com.dat3m.dartagnan.program.analysis.alias.AliasAnalysis;
-import com.dat3m.dartagnan.program.event.core.Event;
+import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.core.Store;
 import com.dat3m.dartagnan.utils.equivalence.EquivalenceClass;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.wmm.Relation;
+import com.dat3m.dartagnan.wmm.RelationNameRepository;
 import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
 import com.dat3m.dartagnan.wmm.axiom.Axiom;
-import com.dat3m.dartagnan.wmm.relation.RelationNameRepository;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -22,7 +22,6 @@ import org.sosy_lab.java_smt.api.BooleanFormulaManager;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-
 
 /*
     Coherence-based symmetry breaking
@@ -123,11 +122,11 @@ public class CoSymmetryBreaking {
         Map<Store, Integer> syncDegreeMap = new HashMap<>(writes.size());
         for (final Axiom ax : axioms) {
             final RelationAnalysis.Knowledge k = ra.getKnowledge(ax.getRelation());
-            final Function<Event, Collection<Tuple>> mustIn = k.getMustIn();
-            final Function<Event, Collection<Tuple>> mustOut = k.getMustOut();
+            final Map<Event, Set<Event>> mustIn = k.getMustSet().getInMap();
+            final Map<Event, Set<Event>> mustOut = k.getMustSet().getOutMap();
             for (final Store w : writes) {
-                final int in = 1 + mustIn.apply(w).size();
-                final int out = 1 + mustOut.apply(w).size();
+                final int in = 1 + mustIn.getOrDefault(w, Set.of()).size();
+                final int out = 1 + mustOut.getOrDefault(w, Set.of()).size();
                 syncDegreeMap.merge(w, in * out, Integer::sum);
             }
         }
@@ -221,7 +220,7 @@ public class CoSymmetryBreaking {
             r1.add(context.execution(info.writes.get(0)));
         }
         for (Tuple t : r1Tuples) {
-            r1.add(edge.encode(t));
+            r1.add(edge.encode(t.first(), t.second()));
         }
         // Construct symmetric rows
         List<BooleanFormula> enc = new ArrayList<>();
@@ -229,13 +228,13 @@ public class CoSymmetryBreaking {
         for (int i = 1; i < symmThreads.size(); i++) {
             Thread t2 = symmThreads.get(i);
             Function<Event, Event> p = symm.createEventTransposition(t1, t2);
-            List<Tuple> r2Tuples = r1Tuples.stream().map(t -> t.permute(p)).collect(Collectors.toList());
+            List<Tuple> r2Tuples = r1Tuples.stream().map(t -> new Tuple(p.apply(t.first()), p.apply(t.second()))).collect(Collectors.toList());
             List<BooleanFormula> r2 = new ArrayList<>(r2Tuples.size() + 1);
             if (info.hasMustEdges) {
                 r2.add(context.execution(symm.map(info.writes.get(0), t2)));
             }
             for (Tuple t : r2Tuples) {
-                r2.add(edge.encode(t));
+                r2.add(edge.encode(t.first(), t.second()));
             }
 
             final String id = "_" + rep.getId() + "_" + i;

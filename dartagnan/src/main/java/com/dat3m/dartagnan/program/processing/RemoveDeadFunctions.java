@@ -4,7 +4,7 @@ import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.processing.ExpressionInspector;
 import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.Program;
-import com.dat3m.dartagnan.program.event.core.utils.RegReader;
+import com.dat3m.dartagnan.program.event.RegReader;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -46,7 +46,7 @@ public class RemoveDeadFunctions implements ProgramProcessor {
 
         // (1) Find functions referenced by memory
         for (MemoryObject memoryObject : program.getMemory().getObjects()) {
-            for (Integer field : memoryObject.getStaticallyInitializedFields()) {
+            for (Integer field : memoryObject.getInitializedFields()) {
                 memoryObject.getInitialValue(field).accept(functionCollector);
             }
         }
@@ -55,7 +55,9 @@ public class RemoveDeadFunctions implements ProgramProcessor {
         final Set<Function> reachableFunctions = new HashSet<>();
         reachableFunctions.addAll(functionCollector.collectedFunctions);
         reachableFunctions.addAll(program.getThreads()); // threads are reachable
-        program.getFunctionByName("main").ifPresent(reachableFunctions::add); // "main" is reachable
+        if (program.getEntryPoint() != null) {
+            program.getFunctionByName(program.getEntryPoint()).ifPresent(reachableFunctions::add); // entry point is reachable
+        }
         program.getFunctions().stream().filter(Function::isIntrinsic).forEach(reachableFunctions::add); // intrinsics
 
         // (3) For all reachable functions, find which other functions it can reach.
@@ -82,7 +84,7 @@ public class RemoveDeadFunctions implements ProgramProcessor {
         public void reset() { collectedFunctions.clear(); }
 
         @Override
-        public Expression visit(Function function) {
+        public Expression visitFunction(Function function) {
             collectedFunctions.add(function);
             return function;
         }

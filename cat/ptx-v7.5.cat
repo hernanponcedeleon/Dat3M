@@ -5,7 +5,7 @@ PTX
 // vloc: virtual address mapping to the same generic address
 // sr: same-scope
 // scta: same-cta
-// sync_barrier: synchronize by barriers with same logical barrier resource (barID)
+// syncbar: synchronize by barriers with same logical barrier resource (barID)
 // sync_fence: synchronize by morally strong fence.sc
 
 // Scope Tags:
@@ -30,8 +30,12 @@ PTX
 (*   Auxiliaries   *)
 (*******************)
 
+let sync_barrier = syncbar & scta
+
 // Explicitly add transitivity for coherence since the co in PTX is not total
+// and recompute fr based on the new co
 let co = co+
+let fr = rf^-1; co
 
 (* Events *)
 let strong-write = W & (RLX | REL)
@@ -75,8 +79,6 @@ let proxy-preserved-cause-base
                 | vloc & (cause-base & (proxy-fence-ops^-1); cause-base; [GEN])
                 | vloc & ([GEN]; cause-base; cause-base & proxy-fence-ops)
                 | vloc & (cause-base & (proxy-fence-ops^-1); cause-base; cause-base & proxy-fence-ops)
-                // The alloy model does not support the constant proxy below
-                | loc & ([M & CON]; cause-base; [F & CON]; cause-base; [M & CON])
                 | loc & ([GEN]; cause-base; [F & ALIAS]; cause-base; [GEN])
                 | loc & (cause-base & (proxy-fence-ops^-1); cause-base; [F & ALIAS]; cause-base; [GEN])
                 | loc & ([GEN]; cause-base; [F & ALIAS]; cause-base; cause-base & proxy-fence-ops)

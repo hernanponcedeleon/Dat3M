@@ -1,0 +1,47 @@
+; @Input: %v1={0, 1, 2}
+; @Input: %v2={0, 1, 2, 3, 4, 5, 6, 7}
+; @Output: forall (%v1[0]==0 and %v1[1]==1 and %v1[2]==2)
+; @Output: forall (%v2[0]==0 and %v2[1]==1 and %v2[2]==2 and %v2[3]==3)
+; @Output: forall (%v2[4]==4 and %v2[5]==5 and %v2[6]==6 and %v2[7]==7)
+; @Config: 1, 1, 1
+; SPIR-V
+; Version: 1.0
+; Schema: 0
+               OpCapability Shader
+               OpCapability VulkanMemoryModel
+               OpMemoryModel Logical Vulkan
+               OpEntryPoint GLCompute %main "main"
+               OpSource GLSL 450
+               OpMemberDecorate %struct1 0 Offset 0
+               OpMemberDecorate %struct1 1 Offset 2
+               OpMemberDecorate %struct1 2 Offset 6
+               OpMemberDecorate %struct2 0 Offset 0
+               OpMemberDecorate %struct2 1 Offset 1
+               OpMemberDecorate %struct2 2 Offset 3
+               OpMemberDecorate %struct2 3 Offset 6
+               OpMemberDecorate %struct2 4 Offset 10
+               OpMemberDecorate %struct2 5 Offset 15
+               OpMemberDecorate %struct2 6 Offset 21
+               OpMemberDecorate %struct2 7 Offset 28
+       %void = OpTypeVoid
+       %uint = OpTypeInt 64 0
+   %ptr_uint = OpTypePointer Uniform %uint
+       %func = OpTypeFunction %void
+      %uint8 = OpTypeInt 8 0
+     %uint16 = OpTypeInt 16 0
+     %uint24 = OpTypeInt 24 0
+     %uint32 = OpTypeInt 32 0
+     %uint40 = OpTypeInt 40 0
+     %uint48 = OpTypeInt 48 0
+     %uint56 = OpTypeInt 56 0
+     %uint64 = OpTypeInt 64 0
+    %struct1 = OpTypeStruct %uint16 %uint32 %uint64
+    %struct2 = OpTypeStruct %uint8 %uint16 %uint24 %uint32 %uint40 %uint48 %uint56 %uint64
+%ptr_struct1 = OpTypePointer Uniform %struct1
+%ptr_struct2 = OpTypePointer Uniform %struct2
+         %v1 = OpVariable %ptr_struct1 Uniform
+         %v2 = OpVariable %ptr_struct2 Uniform
+       %main = OpFunction %void None %func
+      %label = OpLabel
+               OpReturn
+               OpFunctionEnd

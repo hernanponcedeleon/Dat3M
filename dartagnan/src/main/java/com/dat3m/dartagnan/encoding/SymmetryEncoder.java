@@ -3,13 +3,16 @@ package com.dat3m.dartagnan.encoding;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.analysis.BranchEquivalence;
 import com.dat3m.dartagnan.program.analysis.ThreadSymmetry;
-import com.dat3m.dartagnan.program.event.Tag;
-import com.dat3m.dartagnan.program.event.core.Event;
+import com.dat3m.dartagnan.program.event.Event;
+import com.dat3m.dartagnan.program.event.core.MemoryCoreEvent;
 import com.dat3m.dartagnan.utils.equivalence.EquivalenceClass;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
 import com.dat3m.dartagnan.wmm.axiom.Axiom;
+import com.dat3m.dartagnan.wmm.utils.graph.EventGraph;
+import com.dat3m.dartagnan.wmm.utils.graph.mutable.MapEventGraph;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
+import com.dat3m.dartagnan.wmm.utils.graph.mutable.MutableEventGraph;
 import com.google.common.base.Preconditions;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -84,14 +87,14 @@ public class SymmetryEncoder implements Encoder {
 
     public BooleanFormula encodeFullSymmetryBreaking() {
         final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
-        final Set<Tuple> maySet;
+        final EventGraph maySet;
         final EncodingContext.EdgeEncoder edgeEncoder;
         switch(symmBreakTarget) {
             case "":
                 return bmgr.makeTrue();
             case "_cf":
                 maySet = cfSet();
-                edgeEncoder = t -> context.execution(t.getFirst(), t.getSecond());
+                edgeEncoder = context::execution;
                 break;
             default:
                 Wmm baseline = this.memoryModel;
@@ -108,7 +111,7 @@ public class SymmetryEncoder implements Encoder {
                 .reduce(bmgr.makeTrue(), bmgr::and);
     }
 
-    private BooleanFormula encodeSymmetryBreakingOnClass(Set<Tuple> maySet, EncodingContext.EdgeEncoder edge, EquivalenceClass<Thread> symmClass) {
+    private BooleanFormula encodeSymmetryBreakingOnClass(EventGraph maySet, EncodingContext.EdgeEncoder edge, EquivalenceClass<Thread> symmClass) {
         Preconditions.checkArgument(symmClass.getEquivalence() == symm,
                 "Symmetry class belongs to unexpected symmetry relation.");
 
@@ -121,26 +124,17 @@ public class SymmetryEncoder implements Encoder {
         // IMPORTANT: Each thread writes to its own special location for the purpose of starting/terminating threads
         // These need to get skipped.
         Thread t1 = symmThreads.get(0);
-        List<Tuple> t1Tuples = new ArrayList<>();
-        for (Tuple t : maySet) {
-            Event a = t.getFirst();
-            Event b = t.getSecond();
-            if (!a.hasTag(Tag.C11.PTHREAD) && !b.hasTag(Tag.C11.PTHREAD)
-                    && a.getThread() == t1 && symmClass.contains(b.getThread())) {
-                t1Tuples.add(t);
-            }
-        }
-        sort(t1Tuples);
+        List<Tuple> t1Tuples = computeThreadTuples(maySet, symmClass, t1);
 
         // Construct symmetric rows
         List<BooleanFormula> enc = new ArrayList<>();
         for (int i = 1; i < symmThreads.size(); i++) {
             Thread t2 = symmThreads.get(i);
             Function<Event, Event> p = symm.createEventTransposition(t1, t2);
-            List<Tuple> t2Tuples = t1Tuples.stream().map(t -> t.permute(p)).collect(Collectors.toList());
+            List<Tuple> t2Tuples = t1Tuples.stream().map(t -> new Tuple(p.apply(t.first()), p.apply(t.second()))).toList();
 
-            List<BooleanFormula> r1 = t1Tuples.stream().map(edge::encode).collect(Collectors.toList());
-            List<BooleanFormula> r2 = t2Tuples.stream().map(edge::encode).collect(Collectors.toList());
+            List<BooleanFormula> r1 = t1Tuples.stream().map(t -> edge.encode(t.first(), t.second())).toList();
+            List<BooleanFormula> r2 = t2Tuples.stream().map(t -> edge.encode(t.first(), t.second())).toList();
             final String id = "_" + rep.getId() + "_" + i;
             enc.add(encodeLexLeader(id, r2, r1, context)); // r1 >= r2
             t1 = t2;
@@ -148,6 +142,19 @@ public class SymmetryEncoder implements Encoder {
         }
 
         return bmgr.and(enc);
+    }
+
+    private List<Tuple> computeThreadTuples(EventGraph maySet, EquivalenceClass<Thread> symmClass, Thread thread) {
+        List<Tuple> tuples = new ArrayList<>();
+        List<MemoryCoreEvent> spawned = thread.getSpawningEvents();
+        maySet.apply((a, b) -> {
+            if (!spawned.contains(a) && !spawned.contains(b)
+                    && a.getThread() == thread && symmClass.contains(b.getThread())) {
+                tuples.add(new Tuple(a, b));
+            }
+        });
+        sort(tuples);
+        return tuples;
     }
 
     private void sort(List<Tuple> row) {
@@ -163,32 +170,28 @@ public class SymmetryEncoder implements Encoder {
         final Set<Event> inEvents = new HashSet<>();
         final Set<Event> outEvents = new HashSet<>();
         for (Tuple t : row) {
-            inEvents.add(t.getFirst());
-            outEvents.add(t.getSecond());
+            inEvents.add(t.first());
+            outEvents.add(t.second());
         }
 
         final List<RelationAnalysis.Knowledge> knowledge = acycAxioms.stream()
                 .map(a -> ra.getKnowledge(a.getRelation()))
-                .collect(Collectors.toList());
-        final List<Function<Event, Collection<Tuple>>> mustIn = knowledge.stream()
-                .map(RelationAnalysis.Knowledge::getMustIn)
-                .collect(Collectors.toList());
-        final List<Function<Event, Collection<Tuple>>> mustOut = knowledge.stream()
-                .map(RelationAnalysis.Knowledge::getMustOut)
-                .collect(Collectors.toList());
+                .toList();
+        final List<Map<Event, Set<Event>>> mustIn = knowledge.stream().map(k -> k.getMustSet().getInMap()).toList();
+        final List<Map<Event, Set<Event>>> mustOut = knowledge.stream().map(k -> k.getMustSet().getOutMap()).toList();
         final Map<Event, Integer> combinedInDegree = new HashMap<>(inEvents.size());
         final Map<Event, Integer> combinedOutDegree = new HashMap<>(outEvents.size());
         for (Event e : inEvents) {
-            int syncDeg = mustIn.stream().mapToInt(m -> m.apply(e).size() + 1).max().orElse(0);
+            int syncDeg = mustIn.stream().map(m -> m.getOrDefault(e, Set.of()).size() + 1).reduce(0, Integer::max);
             combinedInDegree.put(e, syncDeg);
         }
         for (Event e : outEvents) {
-            int syncDec = mustOut.stream().mapToInt(m -> m.apply(e).size() + 1).max().orElse(0);
+            int syncDec = mustOut.stream().map(m -> m.getOrDefault(e, Set.of()).size() + 1).reduce(0, Integer::max);
             combinedOutDegree.put(e, syncDec);
         }
 
         // Sort by sync degrees
-        row.sort(Comparator.<Tuple>comparingInt(t -> combinedInDegree.get(t.getFirst()) * combinedOutDegree.get(t.getSecond())).reversed());
+        row.sort(Comparator.<Tuple>comparingInt(t -> combinedInDegree.get(t.first()) * combinedOutDegree.get(t.second())).reversed());
     }
 
     // ========================= Static utility ===========================
@@ -243,12 +246,15 @@ public class SymmetryEncoder implements Encoder {
         return bmgr.and(enc);
     }
 
-    private Set<Tuple> cfSet() {
+    private EventGraph cfSet() {
         final BranchEquivalence branchEq = context.getAnalysisContext().requires(BranchEquivalence.class);
-        return branchEq.getAllEquivalenceClasses().stream()
-                .filter(c -> c != branchEq.getInitialClass() && c != branchEq.getUnreachableClass())
-                .map(EquivalenceClass::getRepresentative)
-                .map(rep -> new Tuple(rep, rep))
-                .collect(Collectors.toSet());
+        MutableEventGraph cfSet = new MapEventGraph();
+        branchEq.getAllEquivalenceClasses().forEach(c -> {
+            if (c != branchEq.getInitialClass() && c != branchEq.getUnreachableClass()) {
+                Event rep = c.getRepresentative();
+                cfSet.add(rep, rep);
+            }
+        });
+        return cfSet;
     }
 }

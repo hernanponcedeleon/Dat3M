@@ -1,7 +1,9 @@
 package com.dat3m.dartagnan.litmus;
 
 import com.dat3m.dartagnan.configuration.Arch;
+import com.dat3m.dartagnan.configuration.ProgressModel;
 import com.dat3m.dartagnan.configuration.Property;
+import com.dat3m.dartagnan.encoding.ProverWithTracker;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.utils.ResourceHelper;
 import com.dat3m.dartagnan.utils.Result;
@@ -9,8 +11,8 @@ import com.dat3m.dartagnan.utils.rules.Provider;
 import com.dat3m.dartagnan.utils.rules.Providers;
 import com.dat3m.dartagnan.utils.rules.RequestShutdownOnError;
 import com.dat3m.dartagnan.verification.VerificationTask;
+import com.dat3m.dartagnan.verification.solving.AssumeSolver;
 import com.dat3m.dartagnan.verification.solving.RefinementSolver;
-import com.dat3m.dartagnan.verification.solving.TwoSolvers;
 import com.dat3m.dartagnan.wmm.Wmm;
 import org.junit.Rule;
 import org.junit.Test;
@@ -18,7 +20,7 @@ import org.junit.rules.RuleChain;
 import org.junit.rules.Timeout;
 import org.sosy_lab.common.ShutdownManager;
 import org.sosy_lab.common.configuration.Configuration;
-import org.sosy_lab.java_smt.api.ProverEnvironment;
+import org.sosy_lab.java_smt.SolverContextFactory.Solvers;
 import org.sosy_lab.java_smt.api.SolverContext;
 import org.sosy_lab.java_smt.api.SolverContext.ProverOptions;
 
@@ -26,7 +28,10 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.EnumSet;
+import java.util.Map;
+import java.util.Set;
 import java.util.stream.Stream;
 
 import static com.dat3m.dartagnan.configuration.OptionNames.INITIALIZE_REGISTERS;
@@ -87,6 +92,10 @@ public abstract class AbstractLitmusTest {
                 .build());
     }
 
+    protected Provider<ProgressModel> getProgressModelProvider() {
+        return () -> ProgressModel.FAIR;
+    }
+
     protected Provider<Integer> getBoundProvider() {
         return Provider.fromSupplier(() -> 1);
     }
@@ -104,13 +113,14 @@ public abstract class AbstractLitmusTest {
     protected final Provider<Integer> boundProvider = getBoundProvider();
     protected final Provider<Program> programProvider = Providers.createProgramFromPath(filePathProvider);
     protected final Provider<Wmm> wmmProvider = getWmmProvider();
+    protected final Provider<ProgressModel> progressModelProvider = getProgressModelProvider();
     protected final Provider<EnumSet<Property>> propertyProvider = getPropertyProvider();
     protected final Provider<Result> expectedResultProvider = Provider.fromSupplier(() -> expectedResults.get(filePathProvider.get().substring(filePathProvider.get().indexOf("/") + 1)));
     protected final Provider<Configuration> configProvider = getConfigurationProvider();
-    protected final Provider<VerificationTask> taskProvider = Providers.createTask(programProvider, wmmProvider, propertyProvider, targetProvider, boundProvider, configProvider);
-    protected final Provider<SolverContext> contextProvider = Providers.createSolverContextFromManager(shutdownManagerProvider);
-    protected final Provider<ProverEnvironment> proverProvider = Providers.createProverWithFixedOptions(contextProvider, ProverOptions.GENERATE_MODELS);
-    protected final Provider<ProverEnvironment> prover2Provider = Providers.createProverWithFixedOptions(contextProvider, ProverOptions.GENERATE_MODELS);
+    protected final Provider<VerificationTask> taskProvider = Providers.createTask(programProvider, wmmProvider, propertyProvider, targetProvider, progressModelProvider, boundProvider, configProvider);
+    protected final Provider<SolverContext> contextProvider = Providers.createSolverContextFromManager(shutdownManagerProvider, () -> Solvers.Z3);
+    protected final Provider<ProverWithTracker> proverProvider = Providers.createProverWithFixedOptions(contextProvider, ProverOptions.GENERATE_MODELS);
+    protected final Provider<ProverWithTracker> prover2Provider = Providers.createProverWithFixedOptions(contextProvider, ProverOptions.GENERATE_MODELS);
 
     private final Timeout timeout = Timeout.millis(getTimeout());
     private final RequestShutdownOnError shutdownOnError = RequestShutdownOnError.create(shutdownManagerProvider);
@@ -123,6 +133,7 @@ public abstract class AbstractLitmusTest {
             .around(boundProvider)
             .around(programProvider)
             .around(wmmProvider)
+            .around(progressModelProvider)
             .around(propertyProvider)
             .around(configProvider)
             .around(taskProvider)
@@ -135,8 +146,8 @@ public abstract class AbstractLitmusTest {
 
 
     @Test
-    public void test() throws Exception {
-        TwoSolvers s = TwoSolvers.run(contextProvider.get(), proverProvider.get(), prover2Provider.get(), taskProvider.get());
+    public void testAssume() throws Exception {
+        AssumeSolver s = AssumeSolver.run(contextProvider.get(), proverProvider.get(), taskProvider.get());
         assertEquals(expected, s.getResult());
     }
 

@@ -1,0 +1,39 @@
+C C-Jakub-listen
+
+(*
+ * Result: Never
+ *
+ * Message-ID: <20230126133322.3bfab5e0@kernel.org>
+ *)
+
+{
+}
+
+P0(int *ss, int *smv, spinlock_t *gbl)
+{
+	WRITE_ONCE(*ss, 1);
+}
+
+P1(int *ss, int *smv, spinlock_t *gbl)
+{
+        int r1;
+
+	r1 = READ_ONCE(*ss);
+	spin_lock(gbl);
+	WRITE_ONCE(*smv, 1);
+	spin_unlock(gbl);
+}
+
+P2(int *ss, int *smv, spinlock_t *gbl)
+{
+	int r1;
+        int r2;
+
+	spin_lock(gbl);
+	r1 = READ_ONCE(*smv);
+	r2 = READ_ONCE(*ss);
+	spin_unlock(gbl);
+}
+
+exists
+(1:r1=1 /\ 2:r1=1 /\ 2:r2=0)

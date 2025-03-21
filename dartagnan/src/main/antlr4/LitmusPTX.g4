@@ -3,7 +3,7 @@ grammar LitmusPTX;
 import LitmusAssertions;
 
 @header{
-import com.dat3m.dartagnan.expression.op.*;
+import com.dat3m.dartagnan.expression.integers.*;
 }
 
 main
@@ -94,25 +94,36 @@ instruction
     ;
 
 storeInstruction
-    :   storeConstant
-    |   storeRegister
-    ;
-
-storeConstant
-    :   store Period mo (Period scope)? location Comma constant
-    ;
-
-storeRegister
-    :   store Period mo (Period scope)? location Comma register
+    :   store Period mo (Period scope)? location Comma value
     ;
 
 loadInstruction
-    :   localConstant
+    :   localValue
+    |   localAdd
+    |   localSub
+    |   localMul
+    |   localDiv
     |   loadLocation
     ;
 
-localConstant
-    :   load Period mo (Period scope)? register Comma constant
+localValue
+    :   load register Comma value
+    ;
+
+localAdd
+    :   Add register Comma value Comma value
+    ;
+
+localSub
+    :   Sub register Comma value Comma value
+    ;
+
+localMul
+    :   Mul register Comma value Comma value
+    ;
+
+localDiv
+    :   Div register Comma value Comma value
     ;
 
 loadLocation
@@ -140,37 +151,46 @@ fenceAlias
     ;
 
 barrier
-    :   Barrier Period CTA Period Sync barID
+    :   Barrier Period CTA Period barrierMode constant (Comma barrierId (Comma barrierQuorum)?)?
+    ;
+
+barrierMode
+    :   Sync
+    |   Arrive
+    ;
+
+barrierId
+    : value
+    ;
+
+barrierQuorum
+    : value
     ;
 
 atomInstruction
-    :   atomConstant
-    |   atomRegister
+    :   atomOp
+    |   atomCAS
+    |   atomExchange
     ;
 
-atomConstant
-    :   atom Period mo Period scope Period operation register Comma location Comma constant
+atomOp
+    :   atom Period mo Period scope Period operation register Comma location Comma value
     ;
 
-atomRegister
-    :   atom Period mo Period scope Period operation register Comma location Comma register
+atomCAS
+    :   atom Period mo Period scope Period Cas register Comma location Comma value Comma value
+    ;
+
+atomExchange
+    :   atom Period mo Period scope Period Exch register Comma location Comma value
     ;
 
 redInstruction
-    :   redConstant
-    |   redRegister
-    ;
-
-redConstant
-    :   red Period mo Period scope Period operation location Comma constant
-    ;
-
-redRegister
-    :   red Period mo Period scope Period operation location Comma register
+    :   red Period mo Period scope Period operation location Comma value
     ;
 
 branchCond
-    :   cond register Comma register Comma Label
+    :   cond value Comma value Comma Label
     ;
 
 jump
@@ -195,23 +215,23 @@ register
     :   Register
     ;
 
-operation locals [IOpBin op]
-    :   Add {$op = IOpBin.ADD;}
-    |   Sub {$op = IOpBin.SUB;}
-    |   Mult {$op = IOpBin.MUL;}
-    |   Div {$op = IOpBin.DIV;}
-    |   And {$op = IOpBin.AND;}
-    |   Or {$op = IOpBin.OR;}
-    |   Xor {$op = IOpBin.XOR;}
+operation locals [IntBinaryOp op]
+    :   Add {$op = IntBinaryOp.ADD;}
+    |   Sub {$op = IntBinaryOp.SUB;}
+    |   Mul {$op = IntBinaryOp.MUL;}
+    |   Div {$op = IntBinaryOp.DIV;}
+    |   And {$op = IntBinaryOp.AND;}
+    |   Or {$op = IntBinaryOp.OR;}
+    |   Xor {$op = IntBinaryOp.XOR;}
     ;
 
-cond returns [COpBin op]
-    :   Beq {$op = COpBin.EQ;}
-    |   Bne {$op = COpBin.NEQ;}
-    |   Bge {$op = COpBin.GTE;}
-    |   Ble {$op = COpBin.LTE;}
-    |   Bgt {$op = COpBin.GT;}
-    |   Blt {$op = COpBin.LT;}
+cond returns [IntCmpOp op]
+    :   Beq {$op = IntCmpOp.EQ;}
+    |   Bne {$op = IntCmpOp.NEQ;}
+    |   Bge {$op = IntCmpOp.GTE;}
+    |   Ble {$op = IntCmpOp.LTE;}
+    |   Bgt {$op = IntCmpOp.GT;}
+    |   Blt {$op = IntCmpOp.LT;}
     ;
 
 assertionValue
@@ -228,7 +248,7 @@ gpuID returns [int id]
     :   t = DigitSequence {$id = Integer.parseInt($t.text);}
     ;
 
-barID
+value
     :   constant
     |   register
     ;
@@ -294,6 +314,7 @@ Fence   :   'fence';
 Barrier :   'bar';
 
 Sync    :   'sync';
+Arrive  :   'arrive';
 
 CTA     :   'cta';
 GPU     :   'gpu';
@@ -306,13 +327,16 @@ Release :   'release';
 Acq_rel :   'acq_rel';
 Sc      :   'sc';
 
-Add    :   'plus';
-Sub    :   'minus';
-Mult    :   'mult';
+Add     :   'add';
+Sub     :   'sub';
+Mul     :   'mul';
 Div     :   'div';
 And     :   'and';
 Or      :   'or';
 Xor     :   'xor';
+
+Cas     :   'cas';
+Exch    :   'exch';
 
 Proxy       :   'proxy';
 Generic     :   'generic';

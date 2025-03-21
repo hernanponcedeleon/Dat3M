@@ -63,8 +63,10 @@ instruction
     |   li
     |   lwz
     |   lwzx
+    |   lwarx
     |   stw
     |   stwx
+    |   stwcx
     |   mr
     |   addi
     |   xor
@@ -86,12 +88,20 @@ lwzx
     :   Lwzx register Comma register Comma register
     ;
 
+lwarx
+    :   Lwarx register Comma register Comma register
+    ;
+
 stw
     :   Stw register Comma offset LPar register RPar
     ;
 
 stwx
     :   Stwx register Comma register Comma register
+    ;
+
+stwcx
+    :   Stwcx register Comma register Comma register
     ;
 
 mr
@@ -124,6 +134,7 @@ fence
 
 location
     :   Identifier
+    |   LBracket Identifier RBracket
     ;
 
 register
@@ -134,13 +145,13 @@ offset
     :   DigitSequence
     ;
 
-cond returns [COpBin op]
-    :   Beq {$op = COpBin.EQ;}
-    |   Bne {$op = COpBin.NEQ;}
-    |   Bge {$op = COpBin.GTE;}
-    |   Ble {$op = COpBin.LTE;}
-    |   Bgt {$op = COpBin.GT;}
-    |   Blt {$op = COpBin.LT;}
+cond returns [IntCmpOp op]
+    :   Beq {$op = IntCmpOp.EQ;}
+    |   Bne {$op = IntCmpOp.NEQ;}
+    |   Bge {$op = IntCmpOp.GTE;}
+    |   Ble {$op = IntCmpOp.LTE;}
+    |   Bgt {$op = IntCmpOp.GT;}
+    |   Blt {$op = IntCmpOp.LT;}
     ;
 
 assertionValue
@@ -187,11 +198,18 @@ Bge
 Li  :   'li'
     ;
 
+Lwarx:   'lwarx'
+    ;
+
 Lwzx:   'lwzx'
     ;
 
 Lwz
     :   'lwz'
+    ;
+
+Stwcx
+    :   'stwcx.'
     ;
 
 Stwx
@@ -223,7 +241,7 @@ Register
     ;
 
 Label
-    :   'LC' DigitSequence
+    :   'L' Identifier
     ;
 
 LitmusLanguage

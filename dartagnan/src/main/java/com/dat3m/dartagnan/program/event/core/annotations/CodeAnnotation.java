@@ -1,7 +1,7 @@
 package com.dat3m.dartagnan.program.event.core.annotations;
 
-import com.dat3m.dartagnan.program.event.core.AbstractEvent;
-import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
+import com.dat3m.dartagnan.program.event.AbstractEvent;
+import com.dat3m.dartagnan.program.event.EventVisitor;
 
 /*
     Annotation events have no semantics (like skip).

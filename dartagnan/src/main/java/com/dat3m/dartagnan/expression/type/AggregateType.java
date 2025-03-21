@@ -1,17 +1,23 @@
 package com.dat3m.dartagnan.expression.type;
 
+import com.dat3m.dartagnan.expression.Type;
+import com.google.common.collect.ImmutableList;
+
 import java.util.List;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
-public final class AggregateType implements Type {
+public class AggregateType implements Type {
 
-    private final List<Type> fields;
+    private final ImmutableList<TypeOffset> fields;
 
-    AggregateType(List<Type> directFields) {
-        this.fields = List.copyOf(directFields);
+    AggregateType(List<? extends Type> fields, List<Integer> offsets) {
+        this.fields = IntStream.range(0, fields.size())
+                .mapToObj(i -> new TypeOffset(fields.get(i), offsets.get(i)))
+                .collect(ImmutableList.toImmutableList());
     }
 
-    public List<Type> getDirectFields() {
+    public ImmutableList<TypeOffset> getFields() {
         return fields;
     }
 
@@ -27,6 +33,7 @@ public final class AggregateType implements Type {
 
     @Override
     public String toString() {
-        return fields.stream().map(Type::toString).collect(Collectors.joining(", ", "{ ", " }"));
+        return fields.stream().map(f -> f.offset() + ": " + f.type())
+                .collect(Collectors.joining(", ", "{ ", " }"));
     }
 }

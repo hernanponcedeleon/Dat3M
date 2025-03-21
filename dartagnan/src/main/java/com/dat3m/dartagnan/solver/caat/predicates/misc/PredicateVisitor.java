@@ -17,7 +17,7 @@ public interface PredicateVisitor<TRet, TData, TContext> {
     default TRet visitCartesian(RelationGraph graph, TData data, TContext context) { return visitGraph(graph, data, context); }
     default TRet visitInverse(RelationGraph graph, TData data, TContext context) { return visitGraph(graph, data, context); }
     default TRet visitSetIdentity(RelationGraph graph, TData data, TContext context) { return visitGraph(graph, data, context); }
-    default TRet visitRangeIdentity(RelationGraph graph, TData data, TContext context) { return visitGraph(graph, data, context); }
+    default TRet visitProjectionIdentity(RelationGraph graph, TData data, TContext context) { return visitGraph(graph, data, context); }
     default TRet visitReflexiveClosure(RelationGraph graph, TData data, TContext context) { return visitGraph(graph, data, context); }
     default TRet visitTransitiveClosure(RelationGraph graph, TData data, TContext context) { return visitGraph(graph, data, context); }
     default TRet visitRecursiveGraph(RelationGraph graph, TData data, TContext context) { return visitGraph(graph, data, context); }

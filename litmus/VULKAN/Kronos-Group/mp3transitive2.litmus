@@ -3,6 +3,7 @@ Vulkan mptransitive2
 "Invocation 1 then does a bulk av operation with device scope."
 "Invocation 2 does a bulk vis op with device scope."
 "Invocation 3 does a bulk vis op with workgroup scope"
+"https://github.com/KhronosGroup/Vulkan-MemoryModel/blob/master/alloy/tests/mp3transitive2.test"
 {
 P1:r0=0;
 P2:r1=0;

@@ -1,0 +1,15 @@
+PTX Proxy-SingleThread-rf-surW-surF-genR
+"The rf over different proxies with corresponding proxy fence, the result will be guaranteed"
+"https://github.com/NVlabs/mixedproxy/blob/main/tests/CoWR.test"
+{
+x = 0;
+t @ texture aliases x;
+s @ surface aliases x;
+P0:r0=0;
+}
+ P0@cta 0,gpu 0                   ;
+ sust.weak s, 1                   ;
+ fence.proxy.surface              ;
+ ld.weak r0, x                    ;
+forall
+(P0:r0 == 1)

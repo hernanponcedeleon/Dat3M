@@ -2,15 +2,16 @@ package com.dat3m.dartagnan.program.analysis;
 
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Thread;
-import com.dat3m.dartagnan.program.event.core.Event;
+import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.core.annotations.FunCallMarker;
 import com.dat3m.dartagnan.program.event.core.annotations.FunReturnMarker;
 import com.dat3m.dartagnan.program.event.metadata.SourceLocation;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Stack;
 import java.util.function.Predicate;
@@ -23,6 +24,8 @@ import java.util.stream.Stream;
  */
 public class SyntacticContextAnalysis {
 
+    private static final Logger logger = LogManager.getLogger(SyntacticContextAnalysis.class);
+
     // ============================================================================
     // ============================== Helper classes ==============================
     // ============================================================================
@@ -32,7 +35,8 @@ public class SyntacticContextAnalysis {
         Contexts represent information surrounding an event like the executing thread, the call stack
         and the iteration numbers of loops.
      */
-    public interface Context { }
+    public interface Context {
+    }
 
     public record ThreadContext(Thread thread) implements Context {
         @Override
@@ -69,9 +73,17 @@ public class SyntacticContextAnalysis {
             this.contextStack = contextStack;
         }
 
-        public Event getEvent() { return this.event; }
-        public ImmutableList<Context> getContextStack() { return this.contextStack; }
-        public boolean hasContext() { return !contextStack.isEmpty(); }
+        public Event getEvent() {
+            return this.event;
+        }
+
+        public ImmutableList<Context> getContextStack() {
+            return this.contextStack;
+        }
+
+        public boolean hasContext() {
+            return !contextStack.isEmpty();
+        }
 
         public <T extends Context> ImmutableList<T> getContextOfType(Class<T> contextClass) {
             final Stream<T> filteredContext = contextStack.stream()
@@ -91,9 +103,6 @@ public class SyntacticContextAnalysis {
         }
     }
 
-    // We use this enum to track loop nesting
-    private enum LoopMarkerTypes { START, INC, END }
-
     // ============================================================================
 
     private final Map<Event, Info> infoMap = new HashMap<>();
@@ -106,7 +115,8 @@ public class SyntacticContextAnalysis {
         return retVal;
     }
 
-    private SyntacticContextAnalysis() {}
+    private SyntacticContextAnalysis() {
+    }
 
     public static SyntacticContextAnalysis newInstance(Program program) {
         final SyntacticContextAnalysis analysis = new SyntacticContextAnalysis();
@@ -116,6 +126,19 @@ public class SyntacticContextAnalysis {
 
     public static SyntacticContextAnalysis getEmptyInstance() {
         return new SyntacticContextAnalysis();
+    }
+
+    public String getSourceLocationWithContext(Event e, boolean addGlobalId) {
+        final StringBuilder builder = new StringBuilder();
+        final String ctx = makeContextString(this.getContextInfo(e).getContextStack(), " -> ");
+        if (addGlobalId) {
+            builder.append("E").append(e.getGlobalId()).append(": \t");
+        }
+        builder
+                .append(ctx.isEmpty() ? ctx : ctx + " -> ")
+                .append(getSourceLocationString(e));
+
+        return builder.toString();
     }
 
     // ============================================================================
@@ -128,7 +151,7 @@ public class SyntacticContextAnalysis {
     }
 
     private void run(Thread thread, LoopAnalysis loops) {
-        final Map<Event, LoopMarkerTypes> loopMarkerTypesMap = getLoopMarkerTypesMap(thread, loops);
+        final Map<Event, LoopAnalysis.LoopIterationInfo> loopMarkerTypesMap = getLoopMarkerTypesMap(thread, loops);
 
         Stack<Context> curContextStack = new Stack<>();
         curContextStack.push(new ThreadContext(thread));
@@ -146,37 +169,44 @@ public class SyntacticContextAnalysis {
                     // FIXME: DCE can sometimes delete the end marker of functions if those never return
                     //  (e.g., "reach_error() { abort(0); }").
                     //  Here we try to also pop those calls that have missing markers.
-                    assert curContextStack.peek() instanceof CallContext;
-                    topCallCtx = (CallContext) curContextStack.pop();
+                    if(curContextStack.peek() instanceof CallContext) {
+                        topCallCtx = (CallContext) curContextStack.pop();
+                    } else {
+                        logger.warn("Found a FunCallMarker without a matching FunReturnMarker. Giving up the analysis");
+                        break;
+                    }
                 } while (!topCallCtx.funCallMarker.getFunctionName().equals(retMarker.getFunctionName()));
             }
 
-            if (loopMarkerTypesMap.containsKey(ev)) {
-                switch (loopMarkerTypesMap.get(ev)) {
-                    case START -> curContextStack.push(new LoopContext(ev, 1));
-                    case INC -> {
-                        assert curContextStack.peek() instanceof LoopContext;
-                        int iterNum = ((LoopContext) curContextStack.pop()).iterationNumber;
-                        curContextStack.push(new LoopContext(ev, iterNum + 1));
-                    }
-                    case END -> {
-                        assert curContextStack.peek() instanceof LoopContext;
+            final LoopAnalysis.LoopIterationInfo iteration = loopMarkerTypesMap.get(ev);
+            if (iteration != null) {
+                final boolean start = ev == iteration.getIterationStart();
+                final boolean end = ev == iteration.getIterationEnd();
+                assert start || end;
+                if (start) {
+                    curContextStack.push(new LoopContext(ev, iteration.getIterationNumber()));
+                }
+                if (end) {
+                    if (curContextStack.peek() instanceof LoopContext c &&
+                            c.loopMarker == iteration.getIterationStart() &&
+                            c.iterationNumber == iteration.getIterationNumber()) {
                         curContextStack.pop();
+                    } else {
+                        logger.warn("Found a IterationStart without a matching IterationEnd. Giving up the analysis");
+                        break;
                     }
                 }
             }
         }
     }
 
-    private Map<Event, LoopMarkerTypes> getLoopMarkerTypesMap(Thread thread, LoopAnalysis loopAnalysis) {
-        final Map<Event, LoopMarkerTypes> loopMarkerTypesMap = new HashMap<>();
+    private Map<Event, LoopAnalysis.LoopIterationInfo> getLoopMarkerTypesMap(Thread thread, LoopAnalysis loopAnalysis) {
+        final Map<Event, LoopAnalysis.LoopIterationInfo> loopMarkerTypesMap = new HashMap<>();
         for (LoopAnalysis.LoopInfo loop : loopAnalysis.getLoopsOfFunction(thread)) {
-            final List<LoopAnalysis.LoopIterationInfo> iterations = loop.iterations();
-
-            loopMarkerTypesMap.put(iterations.get(0).getIterationStart(), LoopMarkerTypes.START);
-            iterations.subList(1, iterations.size())
-                    .forEach(iter -> loopMarkerTypesMap.put(iter.getIterationStart(), LoopMarkerTypes.INC));
-            loopMarkerTypesMap.put(iterations.get(iterations.size() - 1).getIterationEnd(), LoopMarkerTypes.END);
+            for (LoopAnalysis.LoopIterationInfo iteration : loop.iterations()) {
+                loopMarkerTypesMap.put(iteration.getIterationStart(), iteration);
+                loopMarkerTypesMap.put(iteration.getIterationEnd(), iteration);
+            }
         }
         return loopMarkerTypesMap;
     }

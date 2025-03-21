@@ -1,4 +1,5 @@
 Vulkan fencefence
+"https://github.com/KhronosGroup/Vulkan-MemoryModel/blob/master/alloy/tests/fencefence.test"
 {
 P1:r0=1;
 P1:r1=0;

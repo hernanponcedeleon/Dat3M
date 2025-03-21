@@ -4,12 +4,11 @@ import com.dat3m.dartagnan.encoding.EncodingContext;
 import com.dat3m.dartagnan.verification.Context;
 import com.dat3m.dartagnan.wmm.Relation;
 import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
-import com.dat3m.dartagnan.wmm.utils.Tuple;
+import com.dat3m.dartagnan.wmm.utils.graph.EventGraph;
 import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.BooleanFormulaManager;
 
 import java.util.List;
-import java.util.Set;
 
 /*
     This is a fake axiom that forces a relation to get encoded!
@@ -24,14 +23,19 @@ public class ForceEncodeAxiom extends Axiom {
     }
 
     @Override
-    protected Set<Tuple> getEncodeTupleSet(Context analysisContext) {
+    protected EventGraph getEncodeGraph(Context analysisContext) {
         return analysisContext.requires(RelationAnalysis.class).getKnowledge(rel).getMaySet();
     }
 
     @Override
     public List<BooleanFormula> consistent(EncodingContext ctx) {
         BooleanFormulaManager bmgr = ctx.getBooleanFormulaManager();
-		return negated ? List.of(bmgr.makeFalse()) : List.of();
+        return negated ? List.of(bmgr.makeFalse()) : List.of();
+    }
+
+    @Override
+    public <T> T accept(Visitor<? extends T> visitor) {
+        return visitor.visitForceEncodeAxiom(this);
     }
 
     @Override

@@ -2,15 +2,14 @@ package com.dat3m.dartagnan.program.analysis.alias;
 
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
-import com.dat3m.dartagnan.program.event.core.Event;
+import com.dat3m.dartagnan.program.event.Event;
+import com.dat3m.dartagnan.program.event.RegWriter;
 import com.dat3m.dartagnan.program.event.core.MemoryCoreEvent;
-import com.dat3m.dartagnan.program.event.core.utils.RegWriter;
-import com.dat3m.dartagnan.wmm.utils.Tuple;
+import com.dat3m.dartagnan.wmm.utils.graph.mutable.MapEventGraph;
+import com.dat3m.dartagnan.wmm.utils.graph.mutable.MutableEventGraph;
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Set;
 
 /**
@@ -22,7 +21,8 @@ import java.util.Set;
  */
 public class EqualityAliasAnalysis implements AliasAnalysis {
 
-    private final Map<Tuple, Boolean> cache = new HashMap<>();
+    private final MutableEventGraph trueSet = new MapEventGraph();
+    private final MutableEventGraph falseSet = new MapEventGraph();
 
     public static EqualityAliasAnalysis fromConfig(Program program, Configuration config) throws InvalidConfigurationException {
         return new EqualityAliasAnalysis();
@@ -45,9 +45,11 @@ public class EqualityAliasAnalysis implements AliasAnalysis {
         }
 
         // Check cache
-        Tuple t = new Tuple(a, b);
-        if (cache.containsKey(t)) {
-            return cache.get(t);
+        if (trueSet.contains(a, b)) {
+            return true;
+        }
+        if (falseSet.contains(a, b)) {
+            return false;
         }
 
         // Establish that address expression evaluates to same value at both events.
@@ -55,12 +57,12 @@ public class EqualityAliasAnalysis implements AliasAnalysis {
         Event e = a.getSuccessor();
         while (e != b) {
             if (e instanceof RegWriter rw && addrRegs.contains(rw.getResultRegister())) {
-                cache.put(t, Boolean.FALSE);
+                falseSet.add(a, b);
                 return false;
             }
             e = e.getSuccessor();
         }
-        cache.put(t, Boolean.TRUE);
+        trueSet.add(a, b);
         return true;
     }
 

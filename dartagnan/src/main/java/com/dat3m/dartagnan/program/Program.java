@@ -1,10 +1,16 @@
 package com.dat3m.dartagnan.program;
 
 import com.dat3m.dartagnan.configuration.Arch;
-import com.dat3m.dartagnan.expression.INonDet;
-import com.dat3m.dartagnan.program.event.core.Event;
+import com.dat3m.dartagnan.expression.Expression;
+import com.dat3m.dartagnan.expression.ExpressionFactory;
+import com.dat3m.dartagnan.expression.Type;
+import com.dat3m.dartagnan.expression.processing.ExprTransformer;
+import com.dat3m.dartagnan.expression.type.AggregateType;
+import com.dat3m.dartagnan.expression.type.ArrayType;
+import com.dat3m.dartagnan.expression.type.TypeOffset;
+import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.memory.Memory;
-import com.dat3m.dartagnan.program.specification.AbstractAssert;
+import com.dat3m.dartagnan.program.misc.NonDetValue;
 import com.google.common.base.Preconditions;
 
 import java.util.*;
@@ -12,30 +18,39 @@ import java.util.stream.Collectors;
 
 public class Program {
 
-    public enum SourceLanguage { LITMUS, LLVM }
+    public enum SourceLanguage { LITMUS, LLVM, SPV }
+
+    public enum SpecificationType { EXISTS, FORALL, NOT_EXISTS, ASSERT }
 
     private String name;
-    private AbstractAssert spec;
-    private AbstractAssert filterSpec; // Acts like "assume" statements, filtering out executions
+    private SpecificationType specificationType = SpecificationType.ASSERT;
+    private Expression spec;
+    private Expression filterSpec; // Acts like "assume" statements, filtering out executions
     private final List<Thread> threads;
     private final List<Function> functions;
-    private final List<INonDet> constants = new ArrayList<>();
+    private final List<NonDetValue> constants = new ArrayList<>();
     private final Memory memory;
     private Arch arch;
     private int unrollingBound = 0;
     private boolean isCompiled;
     private final SourceLanguage format;
+    private final ThreadGrid grid;
+    private String entryPoint;
+    private final List<ExprTransformer> transformers = new ArrayList<>();
 
-    public Program(Memory memory, SourceLanguage format) {
-        this("", memory, format);
+    private int nextConstantId = 0;
+
+    public Program(Memory memory, SourceLanguage format, ThreadGrid grid) {
+        this("", memory, format, grid);
     }
 
-    public Program(String name, Memory memory, SourceLanguage format) {
+    public Program(String name, Memory memory, SourceLanguage format, ThreadGrid grid) {
         this.name = name;
         this.memory = memory;
         this.threads = new ArrayList<>();
         this.functions = new ArrayList<>();
         this.format = format;
+        this.grid = grid;
     }
 
     public SourceLanguage getFormat() {
@@ -74,20 +89,28 @@ public class Program {
         return this.memory;
     }
 
-    public AbstractAssert getSpecification() {
+    public SpecificationType getSpecificationType() {
+        return specificationType;
+    }
+
+    public boolean hasReachabilitySpecification() {
+        return SpecificationType.EXISTS.equals(specificationType);
+    }
+
+    public Expression getSpecification() {
         return spec;
     }
 
-    public void setSpecification(AbstractAssert spec) {
+    public void setSpecification(SpecificationType type, Expression spec) {
+        this.specificationType = type;
         this.spec = spec;
     }
 
-    public AbstractAssert getFilterSpecification() {
+    public Expression getFilterSpecification() {
         return filterSpec;
     }
 
-    public void setFilterSpecification(AbstractAssert spec) {
-        Preconditions.checkArgument(spec == null || AbstractAssert.ASSERT_TYPE_FORALL.equals(spec.getType()));
+    public void setFilterSpecification(Expression spec) {
         this.filterSpec = spec;
     }
 
@@ -117,11 +140,49 @@ public class Program {
         return functions.stream().filter(f -> f.getName().equals(name)).findFirst();
     }
 
-    public void addConstant(INonDet constant) {
-        constants.add(constant);
+    public void setEntryPoint(String entryPoint) {
+        this.entryPoint = entryPoint;
     }
 
-    public Collection<INonDet> getConstants() {
+    public String getEntryPoint() {
+        return entryPoint;
+    }
+
+    public ThreadGrid getGrid() {
+        return grid;
+    }
+
+    public void addTransformer(ExprTransformer transformer) {
+        transformers.add(transformer);
+    }
+
+    public List<ExprTransformer> getTransformers() {
+        return transformers;
+    }
+
+    public Expression newConstant(Type type) {
+        final ExpressionFactory expressions = ExpressionFactory.getInstance();
+
+        if (type instanceof ArrayType arrayType) {
+            final List<Expression> entries = new ArrayList<>(arrayType.getNumElements());
+            for (int i = 0; i < arrayType.getNumElements(); i++) {
+                entries.add(newConstant(arrayType.getElementType()));
+            }
+            return expressions.makeArray(arrayType.getElementType(), entries, true);
+        }
+        if (type instanceof AggregateType aggregateType) {
+            final List<Expression> elements = new ArrayList<>(aggregateType.getFields().size());
+            for (TypeOffset typeOffset : aggregateType.getFields()) {
+                elements.add(newConstant(typeOffset.type()));
+            }
+            return expressions.makeConstruct(type, elements);
+        }
+        var expression = new NonDetValue(type, nextConstantId++);
+        constants.add(expression);
+        return expression;
+    }
+
+    public Collection<NonDetValue> getConstants() {
         return Collections.unmodifiableCollection(constants);
     }
 

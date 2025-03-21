@@ -44,7 +44,8 @@ let inscope = (DV * DV) |
               (swg & ((DV | QF | WG) * (DV | QF | WG))) |
               (ssg & ((DV | QF | WG | SG) * (DV | QF | WG | SG)))
 
-let mutordatom = (loc & vloc & inscope & (ATOM * ATOM)) \ id // mutually ordered atomics
+// mutually ordered atomics
+let mutordatom = (loc & vloc & inscope & (ATOM * ATOM)) \ id
 
 let avvisSem = ((SC0 | SC1) * (AVDEVICE | VISDEVICE))
                 | (SC0 * ((SEMAV | SEMVIS) & SEMSC0))
@@ -56,9 +57,11 @@ let avvisinc = ((avvisSem | avvisSem^-1) \ id) |
 let posctosem = ((SC0 * SEMSC0) | (SC1 * SEMSC1)) & po
 let posemtosc = ((SEMSC0 * SC0) | (SEMSC1 * SC1)) & po
 
-let asmo = co & (ATOM * ATOM)
-let rs = [REL & ATOM]; ((asmo \ (asmo; asmo+)); [RMW])*
-let hypors = [W & ATOM]; ((asmo \ (asmo; asmo+)); [RMW])*
+let asmo = co & ((ATOM | IW) * ATOM)
+
+let imm(r) = r \ (r; r+)
+let rs = [REL & ATOM]; (imm(asmo); [RMW])*
+let hypors = [W & ATOM]; (imm(asmo); [RMW])*
 
 // synchronizes-with is similar to C++, with an additional case for fence->cbar->cbar->fence
 let sw = inscope & (
@@ -122,7 +125,14 @@ let locord = loc &
                 (       ([W];        (hb & avvisinc);  avdv; (hb);       visdv; (hb & avvisinc);  [R]))            // RaW (via device domain)
              )
 
-let w-locord = [W]; locord
+// From-read is defined based on scoped modification order
+// instead of coherence. For reads that read-from init, they
+// from-read all writes at the same location.
+
+// The definition of the original Vulkan model is too restrictive and forbids CoWW-RR
+// let fr = (rf^-1 ; (W * W) & locord) | (rf^-1; asmo) | (([IW]; rf)^-1; ((loc;[W]) \ id))
+let fr = ((rf & locord)^-1 ; (W * W) & locord) | (rf^-1; asmo) | (([IW]; rf)^-1; ((loc;[W]) \ id))
+let fre = fr & ext
 
 (***********************)
 (* Memory Model Axioms *)
@@ -138,7 +148,7 @@ acyclic (locord | rf | fr | asmo) as consistency-cycle
 empty (rf; ([R \ ATOM])) & (([W]; locord); ([W]; locord)+) as consistency-rf
 
 // rmw events are atomic
-empty rmw & (fre; coe) as atomic
+empty rmw & (fre; (asmo & ext)) as atomic
 
 let non-rmw-reads = (R \ RMW) * (R \ RMW)
 empty ((((locord | locord^-1) | mutordatom) \ non-rmw-reads) \ (loc \ id \ non-rmw-reads)) as locord-complete

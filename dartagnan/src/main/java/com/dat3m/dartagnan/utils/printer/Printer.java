@@ -3,7 +3,7 @@ package com.dat3m.dartagnan.utils.printer;
 import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Thread;
-import com.dat3m.dartagnan.program.event.core.Event;
+import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.core.Init;
 import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.event.core.Skip;
@@ -113,7 +113,9 @@ public class Printer {
             if(!(event instanceof Label)) {
                 result.append("   ");
             }
-            result.append(padding, idSb.length(), padding.length());
+            if (idSb.length() < padding.length()) {
+                result.append(padding, idSb.length(), padding.length());
+            }
             result.append(event).append("\n");
         }
     }

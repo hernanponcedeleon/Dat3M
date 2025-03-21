@@ -1,10 +1,12 @@
 package com.dat3m.dartagnan.program.processing.compilation;
 
 import com.dat3m.dartagnan.expression.Expression;
+import com.dat3m.dartagnan.expression.Type;
 import com.dat3m.dartagnan.expression.type.BooleanType;
 import com.dat3m.dartagnan.expression.type.IntegerType;
-import com.dat3m.dartagnan.expression.type.Type;
 import com.dat3m.dartagnan.program.Register;
+import com.dat3m.dartagnan.program.event.Event;
+import com.dat3m.dartagnan.program.event.MemoryEvent;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.arch.tso.TSOXchg;
 import com.dat3m.dartagnan.program.event.core.*;
@@ -53,6 +55,8 @@ class VisitorTso extends VisitorBase {
         Register dummy = e.getFunction().newRegister(type);
         // We implement locks as spinlocks which are guaranteed to succeed, i.e. we can
         // use assumes. Nothing else is needed to guarantee acquire semantics in TSO.
+        // TODO: Lock events are only used for implementing condvar intrinsic.
+        // If we have an alternative implementation for that, we can get rid of these events.
         Load load = newRMWLoad(dummy, e.getAddress());
         return eventSequence(
                 load,
@@ -111,7 +115,7 @@ class VisitorTso extends VisitorBase {
 
         return tagList(eventSequence(
                 load,
-                newLocal(dummyReg, expressions.makeBinary(resultRegister, e.getOperator(), e.getOperand())),
+                newLocal(dummyReg, expressions.makeIntBinary(resultRegister, e.getOperator(), e.getOperand())),
                 newRMWStore(load, address, dummyReg)
         ));
     }
@@ -200,7 +204,7 @@ class VisitorTso extends VisitorBase {
 
         return tagList(eventSequence(
                 load,
-                newLocal(dummyReg, expressions.makeBinary(resultRegister, e.getOperator(), e.getOperand())),
+                newLocal(dummyReg, expressions.makeIntBinary(resultRegister, e.getOperator(), e.getOperand())),
                 newRMWStore(load, address, dummyReg)
         ));
     }

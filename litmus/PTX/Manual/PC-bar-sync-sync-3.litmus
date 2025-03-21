@@ -1,0 +1,13 @@
+PTX PC-bar-sync-sync-3
+"Producer-Consumer pattern using named barriers. 
+ Deadlock."
+{
+x=0;
+P0:r0=0
+}
+ P0@cta 0,gpu 0 | P1@cta 0,gpu 0 ;
+ ld.weak r0, x  | bar.cta.sync 1 ;
+ bar.cta.sync 0 | st.weak x, 1   ;
+ bar.cta.sync 1 | bar.cta.sync 0 ;
+~exists
+ (P0:r0 == 1)

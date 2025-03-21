@@ -1,4 +1,5 @@
 VULKAN ssw1
+"https://github.com/KhronosGroup/Vulkan-MemoryModel/blob/master/alloy/tests/ssw1.test"
 {
 P2:r0=0;
 x=0;
@@ -9,7 +10,7 @@ ssw 0 1;
 ssw 1 2;
 }
  P0@sg 0,wg 0, qf 0               | P1@sg 1,wg 0, qf 0               | P2@sg 2,wg 0, qf 0               ;
- st.sc0 x, 1                      | avdevice                         | ld.sc1 r0, x                     ;
+ st.sc0 x, 1                      | avdevice                         | ld.sc1 r0, y                     ;
                                   | visdevice                        |                                  ;
 exists
 (P2:r0 == 1)

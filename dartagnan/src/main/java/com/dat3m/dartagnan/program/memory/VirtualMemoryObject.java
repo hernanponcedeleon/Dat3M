@@ -1,5 +1,10 @@
 package com.dat3m.dartagnan.program.memory;
 
+import com.dat3m.dartagnan.expression.Expression;
+import com.dat3m.dartagnan.expression.Type;
+
+import java.util.Objects;
+
 import static com.google.common.base.Preconditions.checkArgument;
 
 /**
@@ -11,8 +16,8 @@ public class VirtualMemoryObject extends MemoryObject {
     // the generic address of this virtual address
     private final VirtualMemoryObject genericAddress;
 
-    VirtualMemoryObject(int index, int size, boolean isStaticallyAllocated, boolean generic, VirtualMemoryObject alias) {
-        super(index, size, isStaticallyAllocated);
+    VirtualMemoryObject(int index, Expression size, Expression alignment, boolean generic, VirtualMemoryObject alias, Type ptrType) {
+        super(index, size, alignment, null, ptrType);
         checkArgument(generic || alias != null,
                 "Non-generic virtualMemoryObject must have generic address it alias target");
         if (alias == null) {
@@ -37,5 +42,36 @@ public class VirtualMemoryObject extends MemoryObject {
 
     public VirtualMemoryObject getPhysicalAddress() {
         return physicalAddress;
+    }
+
+    @Override
+    public int hashCode() {
+        int parentHash = super.hashCode();
+        return Objects.hash(parentHash,
+                this == physicalAddress ? parentHash : physicalAddress,
+                this == genericAddress ? parentHash : genericAddress);
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof VirtualMemoryObject that)) return false;
+        if (!super.equals(o)) return false;
+        if (!equalsPhysical(that)) return false;
+        return equalsGeneric(that);
+    }
+
+    private boolean equalsGeneric(VirtualMemoryObject that) {
+        if (this == this.genericAddress) {
+            return super.equals(that.genericAddress);
+        }
+        return this.genericAddress.equals(that.genericAddress);
+    }
+
+    private boolean equalsPhysical(VirtualMemoryObject that) {
+        if (this == this.physicalAddress) {
+            return super.equals(that.physicalAddress);
+        }
+        return this.physicalAddress.equals(that.physicalAddress);
     }
 }

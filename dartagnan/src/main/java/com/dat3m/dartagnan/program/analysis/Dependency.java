@@ -3,11 +3,13 @@ package com.dat3m.dartagnan.program.analysis;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.Thread;
+import com.dat3m.dartagnan.program.event.Event;
+import com.dat3m.dartagnan.program.event.RegReader;
+import com.dat3m.dartagnan.program.event.RegWriter;
 import com.dat3m.dartagnan.program.event.core.CondJump;
-import com.dat3m.dartagnan.program.event.core.Event;
-import com.dat3m.dartagnan.program.event.core.utils.RegReader;
-import com.dat3m.dartagnan.program.event.core.utils.RegWriter;
 import com.dat3m.dartagnan.verification.Context;
+import com.google.common.base.Supplier;
+import com.google.common.base.Suppliers;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.sosy_lab.common.configuration.Configuration;
@@ -27,14 +29,17 @@ import static java.util.stream.IntStream.range;
  * Instances of this class store the results of the analysis,
  * which was performed on the instance's creation.
  */
-public final class Dependency {
+public final class Dependency implements ReachingDefinitionsAnalysis {
 
     private static final Logger logger = LogManager.getLogger(Dependency.class);
 
     private final HashMap<Event, Map<Register, State>> map = new HashMap<>();
     private final Map<Register, State> finalWriters = new HashMap<>();
 
-    private Dependency() {
+    private final Supplier<SyntacticContextAnalysis> synCtx;
+
+    private Dependency(Program program) {
+        synCtx = Suppliers.memoize(() -> SyntacticContextAnalysis.newInstance(program));
     }
 
     /**
@@ -51,7 +56,7 @@ public final class Dependency {
     public static Dependency fromConfig(Program program, Context analysisContext, Configuration config) throws InvalidConfigurationException {
         logger.info("Analyze dependencies");
         ExecutionAnalysis exec = analysisContext.requires(ExecutionAnalysis.class);
-        Dependency result = new Dependency();
+        Dependency result = new Dependency(program);
         for (Thread t : program.getThreads()) {
             result.process(t, exec);
         }
@@ -62,19 +67,20 @@ public final class Dependency {
      * Queries the collection of providers for a variable, given a certain state of the program.
      *
      * @param reader   Event containing some computation over values of the register space.
-     * @param register Thread-local program variable used by {@code reader}.
      * @return Local result of this analysis.
      */
-    public State of(Event reader, Register register) {
-        return map.getOrDefault(reader, Map.of()).getOrDefault(register, new State(false, List.of(), List.of()));
+    @Override
+    public Writers getWriters(RegReader reader) {
+        return new StateMap(map.getOrDefault(reader, Map.of()));
     }
 
     /**
      * @return Complete set of registers of the analyzed program,
      * mapped to program-ordered list of writers.
      */
-    public Map<Register, State> finalWriters() {
-        return finalWriters;
+    @Override
+    public Writers getFinalWriters() {
+        return new StateMap(finalWriters);
     }
 
     /**
@@ -126,10 +132,9 @@ public final class Dependency {
                     } else {
                         writers = process(event, state, register, exec);
                         if (!writers.initialized) {
-                            logger.warn("Uninitialized register {} read by event {} of thread {}",
-                                    register,
-                                    event,
-                                    thread.getId());
+                            logger.warn("Uninitialized register {} read by event {}\n {}",
+                                    register, event,
+                                    synCtx.get().getSourceLocationWithContext(event, true));
                         }
                     }
                     result.put(register, writers);
@@ -142,7 +147,7 @@ public final class Dependency {
                 if (event.cfImpliesExec()) {
                     state.removeIf(e -> e.register.equals(register));
                 }
-                state.add(new Writer(register, event));
+                state.add(new Writer(register, rw));
             }
             //copy state, if branching
             if (event instanceof CondJump jump) {
@@ -166,18 +171,18 @@ public final class Dependency {
     }
 
     private static State process(Event reader, Set<Writer> state, Register register, ExecutionAnalysis exec) {
-        List<Event> candidates = state.stream()
+        List<RegWriter> candidates = state.stream()
                 .filter(e -> e.register.equals(register))
                 .map(e -> e.event)
                 .filter(e -> reader == null || !exec.areMutuallyExclusive(reader, e))
-                .collect(toList());
+                .toList();
         //NOTE if candidates is empty, the reader is unreachable
-        List<Event> mays = candidates.stream()
+        List<RegWriter> mays = candidates.stream()
                 .filter(Objects::nonNull)
                 .sorted(Comparator.comparingInt(Event::getGlobalId))
                 .collect(Collectors.toCollection(ArrayList::new));
         int end = mays.size();
-        List<Event> musts = range(0, end)
+        List<RegWriter> musts = range(0, end)
                 .filter(i -> mays.subList(i + 1, end).stream().allMatch(j -> exec.areMutuallyExclusive(mays.get(i), j)))
                 .mapToObj(mays::get)
                 .collect(toList());
@@ -186,9 +191,9 @@ public final class Dependency {
 
     private static final class Writer {
         final Register register;
-        final Event event;
+        final RegWriter event;
 
-        Writer(Register r, Event e) {
+        Writer(Register r, RegWriter e) {
             register = checkNotNull(r);
             event = e;
         }
@@ -211,31 +216,65 @@ public final class Dependency {
      * Indirectly associated with an instance of {@link Register}, as well as an optional event of the respective thread.
      * When no such event exists, the instance describes the final register values.
      */
-    public static final class State {
+    public static final class State implements RegisterWriters {
 
         /**
          * The analysis was able to determine that in all executions, there is a provider for the register.
          */
-        public final boolean initialized;
+        private final boolean initialized;
 
         /**
          * Complete, but unsound, program-ordered list of direct providers for the register:
          * If there is a program execution where an event of the program was the latest writer, that event is contained in this list.
          */
-        public final List<Event> may;
+        private final List<RegWriter> may;
 
         /**
          * Sound, but incomplete, program-ordered list of direct providers with no overwriting event in between:
          * Each event in this list will be the latest writer in any execution that contains that event.
          */
-        public final List<Event> must;
+        private final List<RegWriter> must;
 
-        private State(boolean initialized, List<Event> may, List<Event> must) {
+        private State(boolean initialized, List<RegWriter> may, List<RegWriter> must) {
             verify(new HashSet<>(may).containsAll(must), "Each must-writer must also be a may-writer.");
             verify(may.isEmpty() || must.contains(may.get(may.size() - 1)), "The last may-writer must also be a must-writer.");
             this.initialized = initialized;
             this.may = may;
             this.must = must;
+        }
+
+        @Override
+        public boolean mustBeInitialized() {
+            return initialized;
+        }
+
+        @Override
+        public List<RegWriter> getMayWriters() {
+            return Collections.unmodifiableList(may);
+        }
+
+        @Override
+        public List<RegWriter> getMustWriters() {
+            return Collections.unmodifiableList(must);
+        }
+    }
+
+    private static final class StateMap implements Writers {
+
+        private final Map<Register, State> map;
+
+        private StateMap(Map<Register, State> m) {
+            map = m;
+        }
+
+        @Override
+        public Set<Register> getUsedRegisters() {
+            return Collections.unmodifiableSet(map.keySet());
+        }
+
+        @Override
+        public RegisterWriters ofRegister(Register register) {
+            return map.getOrDefault(register, new State(false, List.of(), List.of()));
         }
     }
 }

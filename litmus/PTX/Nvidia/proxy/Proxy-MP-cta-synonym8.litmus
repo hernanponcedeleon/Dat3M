@@ -1,0 +1,18 @@
+PTX Proxy-MP-cta-synonym7
+"https://github.com/NVlabs/mixedproxy/blob/main/tests/MP_gpu_synonym.test"
+{
+x = 0;
+y @ generic aliases x;
+s1 @ surface aliases x;
+s2 @ surface aliases y;
+t @ texture aliases y;
+flag = 0;
+P1:r0=0;
+P1:r1=0;
+}
+ P0@cta 0,gpu 0                   |P1@cta 0,gpu 0                    ;
+ sust.weak s1, 2                  |ld.acquire.cta r0, flag           ;
+ fence.proxy.texture              |                                  ;
+ st.release.cta flag, 1           |tld.weak r1, t                    ;
+exists
+(P1:r0 == 1 /\ P1:r1 != 2)

@@ -15,7 +15,7 @@ public class LitmusVulkanRacesTest extends AbstractLitmusTest {
 
     @Parameterized.Parameters(name = "{index}: {0}, {1}")
     public static Iterable<Object[]> data() throws IOException {
-        return buildLitmusTests("litmus/VULKAN/DR/", "VULKAN", "-DR");
+        return buildLitmusTests("litmus/VULKAN/", "VULKAN", "-DR");
     }
 
     @Override

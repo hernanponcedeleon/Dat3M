@@ -1,12 +1,10 @@
 package com.dat3m.dartagnan.program.processing;
 
-import com.dat3m.dartagnan.expression.BConst;
 import com.dat3m.dartagnan.program.Function;
+import com.dat3m.dartagnan.program.IRHelper;
 import com.dat3m.dartagnan.program.Thread;
+import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.core.CondJump;
-import com.dat3m.dartagnan.program.event.core.Event;
-import com.dat3m.dartagnan.program.event.functions.AbortIf;
-import com.dat3m.dartagnan.program.event.functions.Return;
 import com.dat3m.dartagnan.utils.dependable.DependencyGraph;
 import com.google.common.collect.Lists;
 import org.sosy_lab.common.configuration.Configuration;
@@ -66,8 +64,12 @@ public class BranchReordering implements FunctionProcessor {
 
     private class FunctionReordering {
         private class MovableBranch {
-            int id = 0;
+            final int id;
             final List<Event> events = new ArrayList<>();
+
+            private MovableBranch(int id) {
+                this.id = id;
+            }
 
             @Override
             public int hashCode() {
@@ -100,9 +102,9 @@ public class BranchReordering implements FunctionProcessor {
         private void computeBranchDecomposition() {
             final Event exit = function.getExit();
 
-            MovableBranch curBranch = new MovableBranch();
+            int nextId = 0;
+            MovableBranch curBranch = new MovableBranch(nextId++);
             branches.add(curBranch);
-            int id = 1;
             Event e = function.getEntry();
             while (e != null) {
                 curBranch.events.add(e);
@@ -111,19 +113,12 @@ public class BranchReordering implements FunctionProcessor {
                 if (e.equals(exit)) {
                     break;
                 }
-                if (isAlwaysBranching(e)) {
-                    curBranch = new MovableBranch();
-                    curBranch.id = id++;
+                if (IRHelper.isAlwaysBranching(e)) {
+                    curBranch = new MovableBranch(nextId++);
                     branches.add(curBranch);
                 }
                 e = e.getSuccessor();
             }
-        }
-
-        private boolean isAlwaysBranching(Event e) {
-            return e instanceof Return
-                    || e instanceof AbortIf abort && abort.getCondition() instanceof BConst b && b.getValue()
-                    || e instanceof CondJump jump && jump.isGoto();
         }
 
         private List<MovableBranch> computeReordering(final List<MovableBranch> movables) {

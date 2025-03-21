@@ -1,0 +1,150 @@
+/*
+ * Copyright (C) Huawei Technologies Co., Ltd. 2024. All rights reserved.
+ * SPDX-License-Identifier: MIT
+ *
+ * Version 0.9.3
+ */
+
+(* Notation
+  We will use a, b, c, ... for non-atomic but shared locations, r, r1, r2, .. for non-shared locations (each thread has its own set of these), and x, y, z for shared locations.
+  We use x_BAR for reading x with barrier BAR, and x =_BAR ... for storing to x with barrier BAR. 
+  T1 || T2 means running the codes T1 and T2 in parallel in different threads.
+  C1 ~~> C2 means C1 "can be transformed to" C2 by the compiler.
+
+  Cheat sheet
+  Operators:
+   r&s = both r and s
+   r|s = either r or s
+   r;s = first r then s
+   ~r  = not r 
+   r*  = zero or more r
+   r+  = one or more r
+   r?  = one or zero r
+   [t] = relates all events with tag t to themselves
+
+   domain(r) = all events with outgoing r edges 
+   range(r)  = all events with incoming r edges
+
+  Tags:
+   IW = initial write
+   M = any memory access
+   R = read access 
+   W = write access
+   F = fences
+   RLX, REL, ACQ, SC = barrier modes
+
+  Relations:
+   ext = external, different threads
+   int = internal, same threads
+
+   rf = reads from, W -> R
+   fr = from-reads, R -> W
+   co = coherence,  W -> W
+
+   rmw = read-modify-write, relates R and W events of a single atomic operation like atomic increment
+   po = program order, relates events of the same thread according to order in program text. NB: Not always a total relation even in one thread because of C's sequencing rules.
+   loc = relate events to the same location
+   po-loc = po & loc
+   data, addr, ctrl = data (x =_rlx y_rlx), address (*(y_rlx) =_rlx ...), control (if (y_rlx) x =_rlx ...) dependencies.
+      The real model only considers "real" dependencies that the compiler doesn't know how to bypass.
+      Example:
+        if (x_rlx==1) {} y_rlx=1;
+      has no real ctrl edge. However, tools may not implement this rigorously and can have some false positive dependencies.
+   
+*)
+
+let ext = ext & ((~IW) * M)
+let int = int | (IW * M)
+let rfe = rf & ext
+let coe = co & ext
+let fre = fr & ext
+let rfi = rf & int
+let coi = co & int
+let fri = fr & int
+
+(** Atomicity **)
+empty rmw & (fre;coe)
+
+(** SC per location **)
+acyclic co | rf | fr | po-loc
+
+let Marked = RLX | ACQ | REL | SC
+let Plain = ~Marked
+let Acq = (ACQ | SC) & (R | F)
+let Rel = (REL | SC) & (W | F)
+
+(** Ordering **)
+(* In our model, dependencies only order stores:
+  r1 = x_rlx;
+  r2 = *r1;
+  if (r2 == 1) {
+    y =_rlx 1;  // always after x_rlx
+    r3 = z_rlx; // may be before x_rlx
+  }
+
+  In this example, the load *r1 carries the dependency from r1 = x_rlx to y =_rlx 1.
+  To make such examples work in VMM, we define a carry-dep relation, and extend all dependencies to not only include the immediate dependency, but also any dependencies carried over from earlier loads.
+ *)
+let carry-dep = data;rfi | addr | ctrl
+let ctrl = carry-dep* ; ctrl
+let addr = carry-dep* ; addr
+let data = carry-dep* ; data
+let dep = ctrl | addr | data
+
+(* Note: Plain writes can be elided and therefore are generally not ordered by things that order writes *)
+(* Barrier Ordered-Before: barrier ordering rules *)
+let bob = [Acq];po | po;[Rel] | [SC];po;[SC] | po;[SC & F];po | [R];po;[Acq & F];po | po;[Rel & F];po;[W & Marked]
+(* Preserved Program-Order: these are never visibly reordered by compiler and hardware. 
+   Includes both barrier ordering, and dependency ordering + same-address ordering *)
+let ppo = bob | [Marked];(dep | coi | fri);[W & Marked]
+
+(* Important: these relations satisfy
+    ppo ; [~Marked] ; po <= ppo
+    po ;  [~R] & [~Marked] ; ppo <= ppo
+  I.e., the only way to order an unmarked operation on the right (unmarked operation other than reads on the left), is through a barrier that will also order everything that comes after (before) the unmarked orperation.
+ *)
+
+(* 
+   If there is no w-race (defined below), plain writes are slightly better-behaved: if they are read-from, then either 
+    1) they exist and provide ordering, or 
+    2) an older store with the same value exists and that store is also a candidate for the read, in which case the ordering provided in this graph is ignored in the graph in which the older store is observed
+   
+   However, the plain writes  may not exist in the form supposed by dependencies etc.
+   This is especially true for data dependencies, which may be speculatively elided:
+     a = y ~~> r = y; a = 42; if (r != 42) a = r;
+   Only ctrl and addr dependencies are not elided, because the compiler is not allowed to speculatively modify memory regions (which might be protected by a lock owned by another thread).
+*)
+let WRF-ppo = po;[Rel & F];po;[W & Plain] | [Marked];(ctrl | addr);[W & Plain]
+
+let hb = ppo | WRF-ppo | rfe | fre | coe
+acyclic hb
+
+(** Data Races **)
+
+let w-race-fix = ([Marked] | ppo);hb+;([Marked] | ppo)
+
+let w-race = coe \ w-race-fix
+let w-racy = [domain(w-race)] | [range(w-race)]
+flag ~empty w-racy as w-data-race
+
+(*
+  If there is no w-race, then WRF-ppo also provides ordering. 
+  Besides the definition in hb above, this is relevant for fre & r-race below, 
+  where the store cannot occur before the read (i.e. they are actually ordered)
+    as long as the read is ordered and the store is ordered by WRF-ppo. Example:
+
+    r = a; x =_rel 1; || if (x_rlx == 1) a = 1;
+  Here the second thread is only ordered by WRF-ppo, but r can not be 1 and it is not a data race.
+
+  It is not relevant for rfe & r-race, since there the plain store would be in the range (but WRF-ppo only orders stores in the domain); and reading from it without proper synchronization is a data race too anyways.     
+*)
+let r-race-fix = ([Marked] | ppo);hb+; WRF-ppo
+
+let r-race = ((fre \ r-race-fix) | rfe) \ w-race-fix
+let r-racy = [domain(r-race)] | [range(r-race)]
+(* a read is observed through a dependency if the value is eventually used to determine a control or address dependency, or the value is stored (through data dependencies) in a location that is read by another thread.
+  In those cases, if the read was data racy and returned a trashy value (e.g. due to torn read/write or other compiler optimizations like store value speculation), this trashy value will actually affect the execution, which is UB.
+  As long as the value is not observed in this manner, r-race is well-defined behavior.
+ *)
+let obs-dep = ctrl | addr | data;rfe
+flag ~empty [domain(obs-dep)] & r-racy as r-data-race
