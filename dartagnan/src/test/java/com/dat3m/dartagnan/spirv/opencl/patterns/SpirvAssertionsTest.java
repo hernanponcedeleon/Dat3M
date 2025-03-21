@@ -1,4 +1,4 @@
-package com.dat3m.dartagnan.spirv.opencl.benchmarks;
+package com.dat3m.dartagnan.spirv.opencl.patterns;
 
 import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.encoding.ProverWithTracker;
@@ -36,46 +36,22 @@ public class SpirvAssertionsTest {
 
     private final String modelPath = getRootPath("cat/opencl.cat");
     private final String programPath;
-    private final int bound;
     private final Result expected;
 
-    public SpirvAssertionsTest(String file, int bound, Result expected) {
-        this.programPath = getTestResourcePath("spirv/opencl/benchmarks/" + file);
-        this.bound = bound;
+    public SpirvAssertionsTest(String file, Result expected) {
+        this.programPath = getTestResourcePath("spirv/opencl/patterns/" + file);
         this.expected = expected;
     }
 
-    @Parameterized.Parameters(name = "{index}: {0}, {1}, {2}")
+    @Parameterized.Parameters(name = "{index}: {0}, {1}")
     public static Iterable<Object[]> data() throws IOException {
         return Arrays.asList(new Object[][]{
-                {"caslock-1.1.2.spv.dis", 2, UNKNOWN},
-                {"caslock-2.1.1.spv.dis", 2, UNKNOWN},
-                {"caslock-acq2rx.spv.dis", 2, FAIL},
-                {"caslock-rel2rx.spv.dis", 2, FAIL},
-                {"caslock-dv2wg-2.1.1.spv.dis", 2, UNKNOWN},
-                {"caslock-dv2wg-1.1.2.spv.dis", 2, FAIL},
-                {"ticketlock-1.1.2.spv.dis", 1, PASS},
-                {"ticketlock-2.1.1.spv.dis", 1, PASS},
-                {"ticketlock-acq2rx.spv.dis", 1, FAIL},
-                {"ticketlock-rel2rx.spv.dis", 1, FAIL},
-                {"ticketlock-dv2wg-2.1.1.spv.dis", 2, PASS},
-                {"ticketlock-dv2wg-1.1.2.spv.dis", 1, FAIL},
-                {"ttaslock-1.1.2.spv.dis", 2, PASS},
-                {"ttaslock-2.1.1.spv.dis", 2, PASS},
-                {"ttaslock-acq2rx.spv.dis", 1, FAIL},
-                {"ttaslock-rel2rx.spv.dis", 1, FAIL},
-                {"ttaslock-dv2wg-2.1.1.spv.dis", 2, PASS},
-                {"ttaslock-dv2wg-1.1.2.spv.dis", 1, FAIL},
-
-                {"xf-barrier-2.1.2.spv.dis", 9, PASS},
-                // {"xf-barrier-3.1.3.spv.dis", 9, PASS},
-                // {"xf-barrier-1.1.2.spv.dis", 2, PASS},
-                {"xf-barrier-2.1.1.spv.dis", 9, PASS},
-                {"xf-barrier-fail1.spv.dis", 9, FAIL},
-                {"xf-barrier-fail2.spv.dis", 9, FAIL},
-                {"xf-barrier-fail3.spv.dis", 9, FAIL},
-                {"xf-barrier-fail4.spv.dis", 9, FAIL},
-                {"xf-barrier-weakest.spv.dis", 9, FAIL},
+                {"corr.spv.dis", PASS},
+                {"iriw.spv.dis", PASS},
+                {"mp.spv.dis", PASS},
+                {"mp-acq2rx.spv.dis", FAIL},
+                {"mp-rel2rx.spv.dis", FAIL},
+                {"sb.spv.dis", PASS},
         });
     }
 
@@ -105,7 +81,6 @@ public class SpirvAssertionsTest {
     private VerificationTask mkTask() throws Exception {
         VerificationTask.VerificationTaskBuilder builder = VerificationTask.builder()
                 .withConfig(Configuration.builder().build())
-                .withBound(bound)
                 .withTarget(Arch.OPENCL);
         Program program = new ProgramParser().parse(new File(programPath));
         Wmm mcm = new ParserCat().parse(new File(modelPath));

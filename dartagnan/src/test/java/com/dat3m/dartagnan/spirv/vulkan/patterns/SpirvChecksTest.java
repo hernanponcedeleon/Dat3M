@@ -1,4 +1,4 @@
-package com.dat3m.dartagnan.spirv.patterns;
+package com.dat3m.dartagnan.spirv.vulkan.patterns;
 
 import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.encoding.ProverWithTracker;
@@ -8,7 +8,6 @@ import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.utils.Result;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.verification.solving.AssumeSolver;
-import com.dat3m.dartagnan.verification.solving.RefinementSolver;
 import com.dat3m.dartagnan.wmm.Wmm;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -26,21 +25,20 @@ import java.util.Arrays;
 import java.util.EnumSet;
 
 import static com.dat3m.dartagnan.configuration.OptionNames.IGNORE_FILTER_SPECIFICATION;
-import static com.dat3m.dartagnan.configuration.Property.PROGRAM_SPEC;
+import static com.dat3m.dartagnan.configuration.Property.CAT_SPEC;
 import static com.dat3m.dartagnan.utils.ResourceHelper.getRootPath;
 import static com.dat3m.dartagnan.utils.ResourceHelper.getTestResourcePath;
-import static com.dat3m.dartagnan.utils.Result.FAIL;
 import static com.dat3m.dartagnan.utils.Result.PASS;
 import static org.junit.Assert.assertEquals;
 
 @RunWith(Parameterized.class)
-public class SpirvAssertionsTest {
+public class SpirvChecksTest {
 
-    private final String modelPath = getRootPath("cat/spirv.cat");
+    private final String modelPath = getRootPath("cat/spirv-check.cat");
     private final String programPath;
     private final Result expected;
 
-    public SpirvAssertionsTest(String file, Result expected) {
+    public SpirvChecksTest(String file, Result expected) {
         this.programPath = getTestResourcePath("spirv/vulkan/patterns/" + file);
         this.expected = expected;
     }
@@ -48,20 +46,21 @@ public class SpirvAssertionsTest {
     @Parameterized.Parameters(name = "{index}: {0}, {1}, {2}")
     public static Iterable<Object[]> data() throws IOException {
         return Arrays.asList(new Object[][]{
-                {"CORR.spv.dis", PASS},
-                {"IRIW.spv.dis", PASS},
-                {"MP.spv.dis", PASS},
-                {"MP-acq2rx.spv.dis", FAIL},
-                {"MP-rel2rx.spv.dis", FAIL},
-                {"SB.spv.dis", PASS},
+                {"corr.spv.dis", PASS},
+                {"iriw.spv.dis", PASS},
+                {"mp.spv.dis", PASS},
+                {"mp-acq2rx.spv.dis", PASS},
+                {"mp-rel2rx.spv.dis", PASS},
+                {"sb.spv.dis", PASS},
         });
     }
 
     @Test
     public void testAllSolvers() throws Exception {
+        /* TODO: Very slow, enable when Vulkan memory model is more efficient in CAAT
         try (SolverContext ctx = mkCtx(); ProverWithTracker prover = mkProver(ctx)) {
              assertEquals(expected, RefinementSolver.run(ctx, prover, mkTask()).getResult());
-        }
+        }*/
         try (SolverContext ctx = mkCtx(); ProverWithTracker prover = mkProver(ctx)) {
             assertEquals(expected, AssumeSolver.run(ctx, prover, mkTask()).getResult());
         }
@@ -86,6 +85,6 @@ public class SpirvAssertionsTest {
                 .withTarget(Arch.VULKAN);
         Program program = new ProgramParser().parse(new File(programPath));
         Wmm mcm = new ParserCat().parse(new File(modelPath));
-        return builder.build(program, mcm, EnumSet.of(PROGRAM_SPEC));
+        return builder.build(program, mcm, EnumSet.of(CAT_SPEC));
     }
 }

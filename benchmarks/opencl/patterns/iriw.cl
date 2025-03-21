@@ -1,4 +1,4 @@
-// clspv IRIW.cl --cl-std=CL2.0 --inline-entry-points --spv-version=1.6
+// clspv iriw.cl --cl-std=CL2.0 --inline-entry-points --spv-version=1.6
 // spirv-dis a.spv
 
 __kernel void test(global atomic_uint* x, global atomic_uint* y, global uint* r0, global uint* r1, global uint* r2, global uint* r3) {

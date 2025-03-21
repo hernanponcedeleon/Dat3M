@@ -1,4 +1,4 @@
-// clspv SB.cl --cl-std=CL2.0 --inline-entry-points --spv-version=1.6
+// clspv sb.cl --cl-std=CL2.0 --inline-entry-points --spv-version=1.6
 // spirv-dis a.spv
 
 #ifdef ACQ2RX

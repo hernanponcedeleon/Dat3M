@@ -55,12 +55,6 @@ public class SpirvRacesTest {
                 {"caslock-dv2wg-1.1.2.spv.dis", 1, FAIL},
                 {"caslock-dv2wg-2.2.1.spv.dis", 2, UNKNOWN},
                 {"caslock-dv2wg-2.2.2.spv.dis", 1, FAIL},
-                {"CORR.spv.dis", 1, PASS},
-                {"IRIW.spv.dis", 1, PASS},
-                {"MP.spv.dis", 1, FAIL},
-                {"MP-acq2rx.spv.dis", 1, FAIL},
-                {"MP-rel2rx.spv.dis", 1, FAIL},
-                {"SB.spv.dis", 1, PASS},
                 {"ticketlock-1.1.2.spv.dis", 2, PASS},
                 {"ticketlock-2.1.1.spv.dis", 2, PASS},
                 {"ticketlock-acq2rx.spv.dis", 1, FAIL},
@@ -92,7 +86,7 @@ public class SpirvRacesTest {
 
     @Test
     public void testAllSolvers() throws Exception {
-        /* TODO: Very slow, enable when Vulkan memory model is more efficient in CAAT
+        /* TODO: Very slow, enable when OpenCL memory model is more efficient in CAAT
         try (SolverContext ctx = mkCtx(); ProverWithTracker prover = mkProver(ctx)) {
              assertEquals(expected, RefinementSolver.run(ctx, prover, mkTask()).getResult());
         }*/
