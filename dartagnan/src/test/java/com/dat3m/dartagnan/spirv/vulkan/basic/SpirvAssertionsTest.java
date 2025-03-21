@@ -1,4 +1,4 @@
-package com.dat3m.dartagnan.spirv.basic;
+package com.dat3m.dartagnan.spirv.vulkan.basic;
 
 import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.encoding.ProverWithTracker;
@@ -25,22 +25,22 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.EnumSet;
 
-import static com.dat3m.dartagnan.configuration.Property.CAT_SPEC;
+import static com.dat3m.dartagnan.configuration.Property.PROGRAM_SPEC;
 import static com.dat3m.dartagnan.utils.ResourceHelper.getRootPath;
 import static com.dat3m.dartagnan.utils.ResourceHelper.getTestResourcePath;
 import static com.dat3m.dartagnan.utils.Result.*;
 import static org.junit.Assert.assertEquals;
 
 @RunWith(Parameterized.class)
-public class SpirvChecksTest {
+public class SpirvAssertionsTest {
 
-    private final String modelPath = getRootPath("cat/spirv-check.cat");
+    private final String modelPath = getRootPath("cat/spirv.cat");
     private final String programPath;
     private final int bound;
     private final Result expected;
 
-    public SpirvChecksTest(String file, int bound, Result expected) {
-        this.programPath = getTestResourcePath("spirv/basic/" + file);
+    public SpirvAssertionsTest(String file, int bound, Result expected) {
+        this.programPath = getTestResourcePath("spirv/vulkan/basic/" + file);
         this.bound = bound;
         this.expected = expected;
     }
@@ -48,22 +48,22 @@ public class SpirvChecksTest {
     @Parameterized.Parameters(name = "{index}: {0}, {1}, {2}")
     public static Iterable<Object[]> data() throws IOException {
         return Arrays.asList(new Object[][]{
-                {"empty-exists-false.spv.dis", 1, PASS},
+                {"empty-exists-false.spv.dis", 1, FAIL},
                 {"empty-exists-true.spv.dis", 1, PASS},
-                {"empty-forall-false.spv.dis", 1, PASS},
+                {"empty-forall-false.spv.dis", 1, FAIL},
                 {"empty-forall-true.spv.dis", 1, PASS},
                 {"empty-not-exists-false.spv.dis", 1, PASS},
-                {"empty-not-exists-true.spv.dis", 1, PASS},
+                {"empty-not-exists-true.spv.dis", 1, FAIL},
                 {"init-forall.spv.dis", 1, PASS},
                 {"init-forall-split.spv.dis", 1, PASS},
                 {"init-forall-not-exists.spv.dis", 1, PASS},
-                {"init-forall-not-exists-fail.spv.dis", 1, PASS},
+                {"init-forall-not-exists-fail.spv.dis", 1, FAIL},
                 {"uninitialized-exists.spv.dis", 1, PASS},
-                {"uninitialized-forall.spv.dis", 1, PASS},
+                {"uninitialized-forall.spv.dis", 1, FAIL},
                 {"uninitialized-private-exists.spv.dis", 1, PASS},
-                {"uninitialized-private-forall.spv.dis", 1, PASS},
+                {"uninitialized-private-forall.spv.dis", 1, FAIL},
                 {"undef-exists.spv.dis", 1, PASS},
-                {"undef-forall.spv.dis", 1, PASS},
+                {"undef-forall.spv.dis", 1, FAIL},
                 {"read-write.spv.dis", 1, PASS},
                 {"vector-init.spv.dis", 1, PASS},
                 {"vector.spv.dis", 1, PASS},
@@ -111,12 +111,13 @@ public class SpirvChecksTest {
                 {"cmpxchg-reg-reg.spv.dis", 1, PASS},
                 {"memory-scopes.spv.dis", 1, PASS},
                 {"rmw-extremum-true.spv.dis", 1, PASS},
-                {"rmw-extremum-false.spv.dis", 1, PASS},
+                {"rmw-extremum-false.spv.dis", 1, FAIL},
                 {"push-constants.spv.dis", 1, PASS},
                 {"push-constants-pod.spv.dis", 1, PASS},
                 {"push-constant-mixed.spv.dis", 1, PASS},
                 {"bitwise-scalar.spv.dis", 1, PASS},
-                {"bitwise-vector.spv.dis", 1, PASS}
+                {"bitwise-vector.spv.dis", 1, PASS},
+                {"idx-overflow.spv.dis", 1, PASS}
         });
     }
 
@@ -150,6 +151,6 @@ public class SpirvChecksTest {
                 .withTarget(Arch.VULKAN);
         Program program = new ProgramParser().parse(new File(programPath));
         Wmm mcm = new ParserCat().parse(new File(modelPath));
-        return builder.build(program, mcm, EnumSet.of(CAT_SPEC));
+        return builder.build(program, mcm, EnumSet.of(PROGRAM_SPEC));
     }
 }
