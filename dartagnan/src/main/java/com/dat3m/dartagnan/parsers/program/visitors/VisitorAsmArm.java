@@ -389,7 +389,7 @@ public class VisitorAsmArm extends ArmBaseVisitor<Object> {
     @Override
     public Object visitValue(ArmParser.ValueContext ctx) {
         checkState(expectedType instanceof IntegerType, "Expected type is not an integer type");
-        String valueString = ctx.NumbersInline().getText();
+        String valueString = ctx.Numbers().getText();
         BigInteger value = new BigInteger(valueString);
         return expressions.makeValue(value, (IntegerType) expectedType);
     }
