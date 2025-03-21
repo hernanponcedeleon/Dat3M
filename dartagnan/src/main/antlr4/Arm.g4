@@ -81,5 +81,5 @@ clobberType : ClobberMemory | ClobberModifyFlags | ClobberDirectionFlag | Clobbe
 
 expr : register | value;
 
-register : Dollar NumbersInline | Dollar LBrace NumbersInline RegisterSizeHint RBrace | LBracket Dollar NumbersInline RBracket;
-value : Num NumbersInline;
+register : Dollar Numbers | Dollar LBrace Numbers RegisterSizeHint RBrace | LBracket Dollar Numbers RBracket;
+value : Num Numbers;
