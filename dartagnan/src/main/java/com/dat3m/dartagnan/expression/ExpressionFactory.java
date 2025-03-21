@@ -9,7 +9,6 @@ import com.dat3m.dartagnan.expression.misc.ITEExpr;
 import com.dat3m.dartagnan.expression.type.*;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.dat3m.dartagnan.program.memory.ScopedPointer;
-import com.dat3m.dartagnan.program.memory.ScopedPointerVariable;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
@@ -304,14 +303,8 @@ public final class ExpressionFactory {
         return new GEPExpr(indexingType, base, offsets);
     }
 
-    public ScopedPointer makeScopedPointer(String id, String scopeId, Type type, Expression address) {
-        ScopedPointerType pointerType = types.getScopedPointerType(scopeId, type);
-        return new ScopedPointer(id, pointerType, address);
-    }
-
-    public ScopedPointerVariable makeScopedPointerVariable(String id, String scopeId, Type type, MemoryObject address) {
-        ScopedPointerType pointerType = types.getScopedPointerType(scopeId, type);
-        return new ScopedPointerVariable(id, pointerType, address);
+    public ScopedPointer makeScopedPointer(String id, ScopedPointerType type, MemoryObject address) {
+        return new ScopedPointer(id, type, address);
     }
 
     // -----------------------------------------------------------------------------------------------------------------

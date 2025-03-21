@@ -10,7 +10,7 @@ import com.dat3m.dartagnan.parsers.SpirvParser;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.builders.ProgramBuilder;
 import com.dat3m.dartagnan.program.ThreadGrid;
 import com.dat3m.dartagnan.program.event.Tag;
-import com.dat3m.dartagnan.program.memory.ScopedPointerVariable;
+import com.dat3m.dartagnan.program.memory.ScopedPointer;
 
 import java.util.List;
 import java.util.Set;
@@ -21,7 +21,7 @@ public class VisitorExtensionClspvReflection extends VisitorExtension<Void> {
     private static final ExpressionFactory expressions = ExpressionFactory.getInstance();
 
     private final ProgramBuilder builder;
-    private ScopedPointerVariable pushConstant;
+    private ScopedPointer pushConstant;
     private AggregateType pushConstantType;
 
     public VisitorExtensionClspvReflection(ProgramBuilder builder) {
@@ -108,7 +108,7 @@ public class VisitorExtensionClspvReflection extends VisitorExtension<Void> {
                 int offset = typeOffset.offset();
                 for (int value : computePushConstantValue(argument)) {
                     Expression elExpr = expressions.makeValue(value, iType);
-                    pushConstant.setInitialValue(offset, elExpr);
+                    pushConstant.getAddress().setInitialValue(offset, elExpr);
                     offset += types.getMemorySizeInBytes(elExpr.getType());
                 }
                 return null;
@@ -133,7 +133,7 @@ public class VisitorExtensionClspvReflection extends VisitorExtension<Void> {
     // TODO: Better way to identify PushConstant using kernel and arg info methods
     private void initPushConstant() {
         if (pushConstant == null) {
-            List<ScopedPointerVariable> variables = builder.getVariables().stream()
+            List<ScopedPointer> variables = builder.getVariables().stream()
                     .filter(v -> Tag.Spirv.SC_PUSH_CONSTANT.equals(v.getScopeId()))
                     .toList();
             if (variables.size() == 1) {

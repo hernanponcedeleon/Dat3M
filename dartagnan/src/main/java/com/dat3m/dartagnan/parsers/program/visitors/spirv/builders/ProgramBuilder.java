@@ -3,12 +3,12 @@ package com.dat3m.dartagnan.parsers.program.visitors.spirv.builders;
 import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.expression.Expression;
-import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.Type;
 import com.dat3m.dartagnan.expression.type.FunctionType;
 import com.dat3m.dartagnan.expression.type.ScopedPointerType;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.decorations.BuiltIn;
+import com.dat3m.dartagnan.program.memory.ScopedPointer;
 import com.dat3m.dartagnan.program.processing.transformers.MemoryTransformer;
 import com.dat3m.dartagnan.program.ThreadGrid;
 import com.dat3m.dartagnan.program.Function;
@@ -16,11 +16,9 @@ import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.RegWriter;
-import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.functions.FunctionCall;
 import com.dat3m.dartagnan.program.memory.Memory;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
-import com.dat3m.dartagnan.program.memory.ScopedPointerVariable;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -174,29 +172,21 @@ public class ProgramBuilder {
         return value;
     }
 
-    public Set<ScopedPointerVariable> getVariables() {
+    public Set<ScopedPointer> getVariables() {
         return expressions.values().stream()
-                .filter(ScopedPointerVariable.class::isInstance)
-                .map(v -> (ScopedPointerVariable) v)
+                .filter(ScopedPointer.class::isInstance)
+                .map(v -> (ScopedPointer) v)
                 .collect(Collectors.toSet());
     }
 
-    public MemoryObject allocateVariable(String id, int bytes) {
+    public MemoryObject allocateMemory(String id, String scopeId, Expression value) {
+        int bytes = TypeFactory.getInstance().getMemorySizeInBytes(value.getType());
         MemoryObject memObj = program.getMemory().allocateVirtual(bytes, true, null);
         memObj.setName(id);
-        return memObj;
-    }
-
-    public ScopedPointerVariable allocateScopedPointerVariable(String id, Expression initValue, String storageClass, Type pointedType) {
-        MemoryObject memObj = allocateVariable(id, TypeFactory.getInstance().getMemorySizeInBytes(pointedType));
         memObj.setIsThreadLocal(false);
-        memObj.setInitialValue(0, initValue);
-        if (arch == Arch.OPENCL) {
-            String openCLSpace = Tag.Spirv.toOpenCLTag(Tag.Spirv.getStorageClassTag(Set.of(storageClass)));
-            memObj.addFeatureTag(openCLSpace);
-        }
-        return ExpressionFactory.getInstance().makeScopedPointerVariable(
-                id, storageClass, pointedType, memObj);
+        memObj.setInitialValue(0, value);
+        memObj.addFeatureTag(scopeId);
+        return memObj;
     }
 
     public String getPointerStorageClass(String id) {

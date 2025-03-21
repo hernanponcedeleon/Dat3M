@@ -5,11 +5,9 @@ import com.dat3m.dartagnan.expression.ExpressionKind;
 import com.dat3m.dartagnan.expression.ExpressionVisitor;
 import com.dat3m.dartagnan.expression.Type;
 import com.dat3m.dartagnan.expression.base.NaryExpressionBase;
-import com.dat3m.dartagnan.expression.type.AggregateType;
-import com.dat3m.dartagnan.expression.type.ArrayType;
-import com.dat3m.dartagnan.expression.type.IntegerType;
+import com.dat3m.dartagnan.expression.integers.IntLiteral;
+import com.dat3m.dartagnan.expression.type.*;
 import com.dat3m.dartagnan.expression.utils.ExpressionHelper;
-import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 
 import java.util.List;
@@ -19,13 +17,27 @@ public final class GEPExpr extends NaryExpressionBase<Type, ExpressionKind.Other
     private final Type indexingType;
 
     public GEPExpr(Type indexType, Expression base, List<? extends Expression> offsets) {
-        super(base.getType(), ExpressionKind.Other.GEP, concat(base, offsets));
+        super(resultType(base.getType(), offsets, 0), ExpressionKind.Other.GEP, concat(base, offsets));
         ExpressionHelper.checkExpectedType(base, IntegerType.class);
-        if (offsets.size() > 1) {
-            Preconditions.checkArgument(indexType instanceof AggregateType || indexType instanceof ArrayType,
-                    "Indexing with multiple indices into non-aggregate type.");
-        }
         this.indexingType = indexType;
+    }
+
+    private static Type resultType(Type baseType, List<? extends Expression> offsets, int idx) {
+        if (idx == offsets.size()) {
+            return baseType;
+        }
+        if (baseType instanceof ScopedPointerType pType) {
+            Type innerType = resultType(pType.getPointedType(), offsets, idx + 1);
+            return TypeFactory.getInstance().getScopedPointerType(pType.getScopeId(), innerType);
+        }
+        if (baseType instanceof ArrayType aType) {
+            return resultType(aType.getElementType(), offsets, idx + 1);
+        }
+        Expression offset = offsets.get(idx);
+        if (baseType instanceof AggregateType aType && offset instanceof IntLiteral lit) {
+            return resultType(aType.getFields().get(lit.getValueAsInt()).type(), offsets, idx + 1);
+        }
+        throw new IllegalArgumentException("Indexing with multiple indices into non-aggregate type");
     }
 
     private static ImmutableList<Expression> concat(Expression base, List<? extends Expression> offsets) {

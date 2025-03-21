@@ -1,4 +1,4 @@
-package com.dat3m.dartagnan.spirv.basic;
+package com.dat3m.dartagnan.spirv.opencl.basic;
 
 import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.encoding.ProverWithTracker;
@@ -25,32 +25,29 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.EnumSet;
 
-import static com.dat3m.dartagnan.configuration.Property.TERMINATION;
+import static com.dat3m.dartagnan.configuration.Property.CAT_SPEC;
+import static com.dat3m.dartagnan.configuration.Property.PROGRAM_SPEC;
 import static com.dat3m.dartagnan.utils.ResourceHelper.getRootPath;
 import static com.dat3m.dartagnan.utils.ResourceHelper.getTestResourcePath;
-import static com.dat3m.dartagnan.utils.Result.FAIL;
 import static com.dat3m.dartagnan.utils.Result.PASS;
 import static org.junit.Assert.assertEquals;
 
 @RunWith(Parameterized.class)
-public class SpirvLivenessTest {
+public class SpirvRacesTest {
 
-    private final String modelPath = getRootPath("cat/spirv.cat");
+    private final String modelPath = getRootPath("cat/opencl.cat");
     private final String programPath;
-    private final int bound;
     private final Result expected;
 
-    public SpirvLivenessTest(String file, int bound, Result expected) {
-        this.programPath = getTestResourcePath("spirv/basic/" + file);
-        this.bound = bound;
+    public SpirvRacesTest(String file, Result expected) {
+        this.programPath = getTestResourcePath("spirv/opencl/basic/" + file);
         this.expected = expected;
     }
 
-    @Parameterized.Parameters(name = "{index}: {0}, {1}, {2}")
+    @Parameterized.Parameters(name = "{index}: {0}, {1}")
     public static Iterable<Object[]> data() throws IOException {
         return Arrays.asList(new Object[][]{
-                {"non-uniform-barrier-1.spv.dis", 1, PASS},
-                {"non-uniform-barrier-2.spv.dis", 1, FAIL},
+                {"idx-overflow.spv.dis", PASS}
         });
     }
 
@@ -70,7 +67,7 @@ public class SpirvLivenessTest {
                 cfg,
                 BasicLogManager.create(cfg),
                 ShutdownManager.create().getNotifier(),
-                SolverContextFactory.Solvers.Z3);
+                SolverContextFactory.Solvers.YICES2);
     }
 
     private ProverWithTracker mkProver(SolverContext ctx) {
@@ -80,10 +77,9 @@ public class SpirvLivenessTest {
     private VerificationTask mkTask() throws Exception {
         VerificationTask.VerificationTaskBuilder builder = VerificationTask.builder()
                 .withConfig(Configuration.builder().build())
-                .withBound(bound)
-                .withTarget(Arch.VULKAN);
+                .withTarget(Arch.OPENCL);
         Program program = new ProgramParser().parse(new File(programPath));
         Wmm mcm = new ParserCat().parse(new File(modelPath));
-        return builder.build(program, mcm, EnumSet.of(TERMINATION));
+        return builder.build(program, mcm, EnumSet.of(CAT_SPEC));
     }
 }

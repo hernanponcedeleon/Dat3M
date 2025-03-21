@@ -167,9 +167,7 @@ public class EventFactory {
         // meaning that <addr> and <addr + 0> are treated differently.
         final Expression address = offset == 0 ? base :
                 expressions.makeAdd(base, expressions.makeValue(offset, (IntegerType) base.getType()));
-        final Init init = new Init(base, offset, address);
-        init.addTags(base.getFeatureTags());
-        return init;
+        return new Init(base, offset, address);
     }
 
     public static ValueFunctionCall newValueFunctionCall(Register resultRegister, Function function, List<Expression> arguments) {

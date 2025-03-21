@@ -1,6 +1,5 @@
 package com.dat3m.dartagnan.program.memory;
 
-import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionKind;
 import com.dat3m.dartagnan.expression.ExpressionVisitor;
 import com.dat3m.dartagnan.expression.Type;
@@ -13,14 +12,12 @@ public class ScopedPointer extends LeafExpressionBase<ScopedPointerType> {
 
     private final String id;
     private final String scopeId;
-    private final Type innerType;
-    private final Expression address;
+    private final MemoryObject address;
 
-    public ScopedPointer(String id, ScopedPointerType pointerType, Expression address) {
+    public ScopedPointer(String id, ScopedPointerType pointerType, MemoryObject address) {
         super(pointerType);
         this.id = id;
         this.scopeId = pointerType.getScopeId();
-        this.innerType = pointerType.getPointedType();
         this.address = address;
     }
 
@@ -33,18 +30,10 @@ public class ScopedPointer extends LeafExpressionBase<ScopedPointerType> {
     }
 
     public Type getInnerType() {
-        return innerType;
+        return type.getPointedType();
     }
 
-    public Type getMemoryType() {
-        Type memoryType = innerType;
-        while (memoryType instanceof ScopedPointerType scopedPointerType) {
-            memoryType = scopedPointerType.getPointedType();
-        }
-        return memoryType;
-    }
-
-    public Expression getAddress() {
+    public MemoryObject getAddress() {
         return address;
     }
 
@@ -63,11 +52,13 @@ public class ScopedPointer extends LeafExpressionBase<ScopedPointerType> {
         if (this == o) return true;
         if (!(o instanceof ScopedPointer that)) return false;
         if (!super.equals(o)) return false;
-        return Objects.equals(id, that.id) && Objects.equals(scopeId, that.scopeId) && Objects.equals(innerType, that.innerType) && Objects.equals(address, that.address);
+        return Objects.equals(id, that.id)
+                && Objects.equals(scopeId, that.scopeId)
+                && Objects.equals(address, that.address);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(super.hashCode(), id, scopeId, innerType, address);
+        return Objects.hash(super.hashCode(), id, scopeId, address);
     }
 }

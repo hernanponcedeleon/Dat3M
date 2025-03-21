@@ -93,6 +93,12 @@ public class MemoryAllocation implements ProgramProcessor {
                 final Init init = EventFactory.newInit(memObj, field);
                 if (program.getArch() == Arch.C11 || program.getArch() == Arch.OPENCL) {
                     init.addTags(Tag.C11.NONATOMIC);
+                    if (program.getFormat() == Program.SourceLanguage.SPV) {
+                        // TODO: Ideally this should be done by the compilation pass
+                        init.addTags(memObj.getFeatureTags().stream().map(Tag.Spirv::toOpenCLTag).toList());
+                    } else if (program.getArch() == Arch.OPENCL) {
+                        init.addTags(memObj.getFeatureTags());
+                    }
                 }
                 thread.append(init);
                 thread.append(EventFactory.newLabel("END_OF_T" + thread.getId()));

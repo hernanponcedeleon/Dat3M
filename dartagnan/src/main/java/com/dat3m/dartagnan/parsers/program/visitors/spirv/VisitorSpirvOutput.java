@@ -15,7 +15,7 @@ import com.dat3m.dartagnan.parsers.program.visitors.spirv.helpers.HelperTypes;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.memory.FinalMemoryValue;
-import com.dat3m.dartagnan.program.memory.ScopedPointerVariable;
+import com.dat3m.dartagnan.program.memory.ScopedPointer;
 
 import java.util.List;
 
@@ -127,7 +127,7 @@ public class VisitorSpirvOutput extends SpirvBaseVisitor<Expression> {
         if (expression instanceof Register && expression.getType() instanceof ScopedPointerType) {
             expression = builder.getExpression(HelperInputs.castPointerId(name));
         }
-        if (expression instanceof ScopedPointerVariable base) {
+        if (expression instanceof ScopedPointer base) {
             List<Integer> indexes = ctx.indexValue().stream()
                     .map(c -> Integer.parseInt(c.ModeHeader_PositiveInteger().getText()))
                     .toList();
@@ -190,7 +190,7 @@ public class VisitorSpirvOutput extends SpirvBaseVisitor<Expression> {
         throw new ParsingException("Unrecognised comparison operator");
     }
 
-    private FinalMemoryValue createFinalMemoryValue(ScopedPointerVariable base, List<Integer> indexes) {
+    private FinalMemoryValue createFinalMemoryValue(ScopedPointer base, List<Integer> indexes) {
         String name = indexes.isEmpty() ? base.getId() :
                 base.getId() + "[" + String.join("][", indexes.stream().map(Object::toString).toArray(String[]::new)) + "]";
         Type elType = HelperTypes.getMemberType(base.getId(), base.getInnerType(), indexes);
