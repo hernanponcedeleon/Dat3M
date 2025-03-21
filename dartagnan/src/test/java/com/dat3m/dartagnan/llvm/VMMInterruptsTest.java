@@ -1,4 +1,4 @@
-package com.dat3m.dartagnan.c;
+package com.dat3m.dartagnan.llvm;
 
 import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.parsers.cat.ParserCat;
@@ -15,9 +15,11 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
 
-import static com.dat3m.dartagnan.configuration.Arch.*;
-import static com.dat3m.dartagnan.utils.ResourceHelper.*;
-import static com.dat3m.dartagnan.utils.Result.*;
+import static com.dat3m.dartagnan.configuration.Arch.C11;
+import static com.dat3m.dartagnan.utils.ResourceHelper.getRootPath;
+import static com.dat3m.dartagnan.utils.ResourceHelper.getTestResourcePath;
+import static com.dat3m.dartagnan.utils.Result.FAIL;
+import static com.dat3m.dartagnan.utils.Result.PASS;
 import static org.junit.Assert.assertEquals;
 
 @RunWith(Parameterized.class)
@@ -39,7 +41,7 @@ public class VMMInterruptsTest extends AbstractCTest {
 
     @Override
     protected Provider<Wmm> getWmmProvider() {
-        return Provider.fromSupplier(() -> new ParserCat().parse(new File(getRootPath("cat/vmm.cat"))));
+        return Provider.fromSupplier(() -> new ParserCat().parse(new File(getRootPath("cat/vmm-interrupts.cat"))));
     }
 
     @Parameterized.Parameters(name = "{index}: {0}, target={1}")
