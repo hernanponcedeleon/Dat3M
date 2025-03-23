@@ -919,12 +919,11 @@ public class NativeRelationAnalysis implements RelationAnalysis {
                     if (!usageTypes.contains(regRead.usageType())) {
                         continue;
                     }
-                    final Register register = regRead.register();
-                    final List<? extends Event> writers = state.ofRegister(register).getMayWriters();
-                    for (Event regWriter : writers) {
+                    final var reachDef = state.ofRegister(regRead.register());
+                    for (Event regWriter : reachDef.getMayWriters()) {
                         may.add(regWriter, regReader);
                     }
-                    for (Event regWriter : writers) {
+                    for (Event regWriter : reachDef.getMustWriters()) {
                         must.add(regWriter, regReader);
                     }
                 }

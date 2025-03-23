@@ -63,6 +63,7 @@ public class MiscellaneousTest extends AbstractCTest {
     public static Iterable<Object[]> data() throws IOException {
         return Arrays.asList(new Object[][]{
                 {"idd_dynamic", ARM8, FAIL, 1},
+                {"idd_dynamic_2", ARM8, FAIL, 1},
                 {"propagatableSideEffects", ARM8, FAIL, 1},
                 {"SB-RMW", TSO, PASS, 1},
                 {"SB-RMW", IMM, PASS, 1},
