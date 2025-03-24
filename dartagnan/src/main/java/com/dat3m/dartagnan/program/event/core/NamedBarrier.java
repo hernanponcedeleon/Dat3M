@@ -6,6 +6,7 @@ import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.RegReader;
 
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 public class NamedBarrier extends ControlBarrier implements RegReader {
@@ -67,11 +68,7 @@ public class NamedBarrier extends ControlBarrier implements RegReader {
 
     @Override
     public Set<Register.Read> getRegisterReads() {
-        Set<Register.Read> result = new HashSet<>();
-        resourceId.getRegs().forEach(r -> result.add(new Register.Read(r, Register.UsageType.OTHER)));
-        if (quorum != null) {
-            quorum.getRegs().forEach(r -> result.add(new Register.Read(r, Register.UsageType.OTHER)));
-        }
-        return result;
+        final List<Expression> exprs = quorum != null ? List.of(resourceId, quorum) : List.of(resourceId);
+        return Register.collectRegisterReads(exprs, Register.UsageType.OTHER, new HashSet<>());
     }
 }
