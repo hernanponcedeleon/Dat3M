@@ -33,7 +33,6 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
-import static com.dat3m.dartagnan.configuration.Arch.RISCV;
 import static com.dat3m.dartagnan.program.Register.UsageType.*;
 import static com.dat3m.dartagnan.program.event.Tag.FENCE;
 import static com.dat3m.dartagnan.program.event.Tag.VISIBLE;
@@ -217,40 +216,46 @@ public class LazyRelationAnalysis extends NativeRelationAnalysis {
         @Override
         public RelationAnalysis.Knowledge visitAddressDependency(DirectAddressDependency definition) {
             long start = System.currentTimeMillis();
-            EventGraph must = computeInternalDependencies(EnumSet.of(ADDR));
+            RelationAnalysis.Knowledge know = computeInternalDependencies(EnumSet.of(ADDR));
             time(definition, start, System.currentTimeMillis());
-            return new RelationAnalysis.Knowledge(must, must);
+            return know;
         }
 
         @Override
         public RelationAnalysis.Knowledge visitInternalDataDependency(DirectDataDependency definition) {
             long start = System.currentTimeMillis();
             // FIXME: Our "internal data dependency" relation is quite odd an contains all but address dependencies.
-            EventGraph must = computeInternalDependencies(EnumSet.of(DATA, CTRL, OTHER));
+            RelationAnalysis.Knowledge know = computeInternalDependencies(EnumSet.of(DATA, CTRL, OTHER));
             time(definition, start, System.currentTimeMillis());
-            return new RelationAnalysis.Knowledge(must, must);
+            return know;
         }
 
-        private EventGraph computeInternalDependencies(Set<Register.UsageType> usageTypes) {
-            Map<Event, Set<Event>> data = new HashMap<>();
+        private RelationAnalysis.Knowledge computeInternalDependencies(Set<Register.UsageType> usageTypes) {
+            Map<Event, Set<Event>> may = new HashMap<>();
+            Map<Event, Set<Event>> must = new HashMap<>();
             program.getThreadEvents(RegReader.class).forEach(reader -> {
                 ReachingDefinitionsAnalysis.Writers state = definitions.getWriters(reader);
                 reader.getRegisterReads().forEach(read -> {
                     if (usageTypes.contains(read.usageType())) {
                         Register register = read.register();
                         state.ofRegister(register).getMayWriters()
-                                .forEach(writer -> data.computeIfAbsent(writer, x -> new HashSet<>()).add(reader));
+                                .forEach(writer -> may.computeIfAbsent(writer, x -> new HashSet<>()).add(reader));
+                        state.ofRegister(register).getMustWriters()
+                                .forEach(writer -> may.computeIfAbsent(writer, x -> new HashSet<>()).add(reader));
                     }
                 });
             });
             if (usageTypes.contains(DATA)) {
                 program.getThreadEvents(ExecutionStatus.class).forEach(execStatus -> {
                     if (execStatus.doesTrackDep()) {
-                        data.computeIfAbsent(execStatus.getStatusEvent(), x -> new HashSet<>()).add(execStatus);
+                        may.computeIfAbsent(execStatus.getStatusEvent(), x -> new HashSet<>()).add(execStatus);
                     }
                 });
             }
-            return new ImmutableMapEventGraph(data);
+            return new RelationAnalysis.Knowledge(
+                    new ImmutableMapEventGraph(may),
+                    new ImmutableMapEventGraph(must)
+            );
         }
 
         @Override
