@@ -34,4 +34,4 @@ clobberType : ClobberMemory | ClobberModifyFlags | ClobberDirectionFlag | Clobbe
 expr : register | value;
 
 register : Dollar Numbers;
-value : ConstantValue;
+value : Num Numbers;

@@ -24,7 +24,6 @@ OLiteral                    : 'o';
 IOLiteral                   : 'io';
 MLiteral                    : 'm';
 QCapitalLiteral             : 'Q';
-ConstantValue               : Num Numbers;
 
 // fences
 X86Fence                    : 'mfence';
