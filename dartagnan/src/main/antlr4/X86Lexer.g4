@@ -2,7 +2,7 @@ lexer grammar X86Lexer;
 
 import BaseLexer;
 
-// instructions are empty as we don't have inline PPC assembly atm
+// instructions are empty as we don't have inline x86 assembly atm
 
 // clobbers
 ClobberMemory               : 'memory';
