@@ -1,11 +1,12 @@
 package com.dat3m.dartagnan.program.event.core;
 
 import com.dat3m.dartagnan.encoding.EncodingContext;
+import com.dat3m.dartagnan.program.event.BlockingEvent;
 import com.dat3m.dartagnan.program.event.EventVisitor;
 import com.dat3m.dartagnan.program.event.Tag;
 import org.sosy_lab.java_smt.api.BooleanFormula;
 
-public class ControlBarrier extends GenericVisibleEvent {
+public class ControlBarrier extends GenericVisibleEvent implements BlockingEvent {
 
     // Identifier of a control barrier instance. Only barriers with the
     // same instanceId can synchronize with each other.
@@ -51,10 +52,5 @@ public class ControlBarrier extends GenericVisibleEvent {
     @Override
     public BooleanFormula encodeExec(EncodingContext ctx) {
         return ctx.getBooleanFormulaManager().implication(ctx.execution(this), ctx.controlFlow(this));
-    }
-
-    @Override
-    public boolean cfImpliesExec() {
-        return false;
     }
 }

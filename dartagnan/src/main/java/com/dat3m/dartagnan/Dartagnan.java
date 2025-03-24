@@ -11,11 +11,11 @@ import com.dat3m.dartagnan.parsers.witness.ParserWitness;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Program.SourceLanguage;
 import com.dat3m.dartagnan.program.analysis.SyntacticContextAnalysis;
+import com.dat3m.dartagnan.program.event.BlockingEvent;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.Assert;
 import com.dat3m.dartagnan.program.event.core.CondJump;
-import com.dat3m.dartagnan.program.event.core.ControlBarrier;
 import com.dat3m.dartagnan.program.event.core.Load;
 import com.dat3m.dartagnan.program.processing.LoopUnrolling;
 import com.dat3m.dartagnan.utils.Result;
@@ -313,7 +313,7 @@ public class Dartagnan extends BaseOptions {
                         final boolean isStuckLoop = e instanceof CondJump jump
                                 && e.hasTag(Tag.NONTERMINATION) && !e.hasTag(Tag.BOUND)
                                 && TRUE.equals(model.evaluate(encCtx.jumpTaken(jump)));
-                        final boolean isStuckBarrier = e instanceof ControlBarrier barrier
+                        final boolean isStuckBarrier = e instanceof BlockingEvent barrier
                                 && TRUE.equals(model.evaluate(encCtx.blocked(barrier)));
 
                         if (isStuckLoop || isStuckBarrier) {
