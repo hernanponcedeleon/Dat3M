@@ -39,7 +39,6 @@ subtractFrom : SubtractFrom register Comma register Comma register;
 labelDefinition : Numbers Colon;
 ppcFence : PPCFence;
 
-// these are defined but not used
 constraint : outputOpAssign | inputOpGeneralReg | overlapInOutRegister;
 
 outputOpAssign              : Equals Amp? RLiteral;

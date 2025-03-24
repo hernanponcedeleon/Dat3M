@@ -14,6 +14,7 @@ ClobberFlags                : 'flags';
 
 // Metavariables
 StartSymbol                 : 'asm';
+
 // helpers for parser rules
 Numbers                     : [0-9]+;
 XLiteral                    : 'x';
@@ -25,11 +26,10 @@ MLiteral                    : 'm';
 QCapitalLiteral             : 'Q';
 ConstantValue               : Num Numbers;
 
-
 // fences
 X86Fence                    : 'mfence';
 
-
+// misc
 Literal                     : [a-z]+;
 EndInstruction              :'\\0A';
 WS

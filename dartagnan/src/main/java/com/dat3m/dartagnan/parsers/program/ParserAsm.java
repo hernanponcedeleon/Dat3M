@@ -7,12 +7,6 @@ import org.antlr.v4.runtime.CharStream;
 import com.dat3m.dartagnan.program.event.Event;
 
 
-public class ParserAsm {
-
-    public ParserAsm() {
-    }
-
-    public List<Event> parse(CharStream charStream) {
-        return null;
-    }
+public abstract class ParserAsm {
+    public abstract List<Event> parse(CharStream charStream);
 }

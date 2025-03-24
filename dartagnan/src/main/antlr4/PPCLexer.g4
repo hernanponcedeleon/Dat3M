@@ -2,7 +2,7 @@ lexer grammar PPCLexer;
 
 import BaseLexer;
 
-// instructions are empty as we don't have inline PPC assembly atm
+// instructions 
 Load                        : 'lwz' | 'ld';
 LoadReserve                 : 'lwarx' | 'ldarx';
 Compare                     : 'cmpw' | 'cmpd';
@@ -14,10 +14,6 @@ Add                         : 'add';
 AddImmediateCarry           : 'addic';
 SubtractFrom                : 'subf';
 
-
-
-
-
 // clobbers
 ClobberMemory               : 'memory';
 ClobberModifyFlags          : 'cc';
@@ -25,9 +21,9 @@ ClobberDirectionFlag        : 'dirflag';
 ClobberFloatPntStatusReg    : 'fpsr';
 ClobberFlags                : 'flags';
 
-
 // Metavariables
 StartSymbol                 : 'asm';
+
 // helpers for parser rules
 Numbers                     : [0-9]+;
 XLiteral                    : 'x';
@@ -39,11 +35,10 @@ MLiteral                    : 'm';
 QCapitalLiteral             : 'Q';
 ConstantValue               : Num Numbers;
 
-
 // fences
 PPCFence                    : 'sync' | 'isync' | 'lwsync';
 
-
+// misc
 Literal                     : [a-z]+;
 EndInstruction              :'\\0A';
 WS

@@ -34,10 +34,10 @@ ClobberDirectionFlag        : 'dirflag';
 ClobberFloatPntStatusReg    : 'fpsr';
 ClobberFlags                : 'flags';
 
-
 // Metavariables
 StartSymbol                 : 'asm';
 PrefetchStoreL1Once         : 'pstl1strm';
+
 // helpers for parser rules
 Numbers                     : [0-9]+;
 XLiteral                    : 'x';
@@ -48,7 +48,6 @@ IOLiteral                   : 'io';
 MLiteral                    : 'm';
 QCapitalLiteral             : 'Q';
 RegisterSizeHint            : Colon (XLiteral | 'w');
-
 
 // fences
 DataMemoryBarrier           : 'dmb';

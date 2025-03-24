@@ -226,14 +226,17 @@ public class VisitorAsmRISCV extends RISCVBaseVisitor<Object> {
     public Object visitAtomicAdd(RISCVParser.AtomicAddContext ctx){
         throw new UnsupportedOperationException(ctx.AtomicAdd().getText());
     }
+    
     @Override
     public Object visitAtomicAddRelease(RISCVParser.AtomicAddReleaseContext ctx){
         throw new UnsupportedOperationException(ctx.AtomicAddRelease().getText());
     }
+
     @Override
     public Object visitAtomicAddAcquireRelease(RISCVParser.AtomicAddAcquireReleaseContext ctx){
         throw new UnsupportedOperationException(ctx.AtomicAddAcquireRelease().getText());
     }
+
     // If the register with that ID was already defined, we simply return it
     // otherwise, we create and return the new register.
     // Each time we call this visitor, it picks up the ID of the register -- e.g. $3 -> ID = 3.

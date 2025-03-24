@@ -18,6 +18,8 @@ StoreConditional            : 'sc.d' | 'sc.w';
 StoreConditionalRelease     : 'sc.d.rl';
 Move                        : 'mv';
 Negate                      : 'neg';
+
+// at the moment these instructions are NOT supported by dat3m
 AtomicAdd                   : 'amoadd.d';
 AtomicAddRelease            : 'amoadd.d.rl';
 AtomicAddAcquireRelease     : 'amoadd.d.aqrl';
@@ -29,9 +31,9 @@ ClobberDirectionFlag        : 'dirflag';
 ClobberFloatPntStatusReg    : 'fpsr';
 ClobberFlags                : 'flags';
 
-
 // Metavariables
 StartSymbol                 : 'asm';
+
 // helpers for parser rules
 Numbers                     : [0-9]+;
 RLiteral                    : 'r';
@@ -43,12 +45,11 @@ IOLiteral                   : 'io';
 MLiteral                    : 'm';
 ACapitalLiteral             : 'A';
 
-
 // fences
 RISCVFence                  : 'fence';
 TsoFence                    : 'tso';
 
-
+// misc
 Literal                     : [a-z]+;
 EndInstruction              :'\\0A';
 WS
