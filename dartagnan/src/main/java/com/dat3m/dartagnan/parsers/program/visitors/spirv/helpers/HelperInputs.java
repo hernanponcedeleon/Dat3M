@@ -9,6 +9,7 @@ import com.dat3m.dartagnan.expression.integers.IntLiteral;
 import com.dat3m.dartagnan.expression.type.*;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -44,7 +45,7 @@ public class HelperInputs {
         Type member = type.getFields().get(0).type();
         int count = type.getFields().size();
         if (count == 1 || member instanceof IntegerType) {
-            return TypeFactory.getInstance().getArrayType(castInputType(String.format("%s[0]", id), pointer, member), count);
+            return types.getArrayType(castInputType(String.format("%s[0]", id), pointer, member), count);
         }
         throw new ParsingException(errorMismatchingElementCount(id, 1, count));
     }
@@ -53,12 +54,67 @@ public class HelperInputs {
         Type member = type.getElementType();
         int count = type.getNumElements();
         if (count == 1 || member instanceof IntegerType) {
-            return TypeFactory.getInstance().getArrayType(castInputType(String.format("%s[0]", id), pointer, member), count);
+            return types.getArrayType(castInputType(String.format("%s[0]", id), pointer, member), count);
         }
         throw new ParsingException(errorMismatchingElementCount(id, 1, count));
     }
 
+    private static int getTypeDepth(String id, Type type) {
+        if (type instanceof ScopedPointerType pType) {
+            return getTypeDepth(id, pType.getPointedType());
+        }
+        if (type instanceof ArrayType aType) {
+            return getTypeDepth(id, aType.getElementType()) + 1;
+        }
+        if (type instanceof AggregateType aType) {
+            return aType.getFields().stream()
+                    .mapToInt(f -> getTypeDepth(id, f.type()))
+                    .max().orElse(0) + 1;
+        }
+        if (type instanceof BooleanType || type instanceof IntegerType || type instanceof FloatType) {
+            return 0;
+        }
+        throw new ParsingException(errorUnexpectedInputType(id));
+    }
+
     public static Expression castInput(String id, Type type, Expression value) {
+        int targetDepth = getTypeDepth(id, type);
+        int valueDepth = getTypeDepth(id, value.getType());
+        //System.out.println("target: " + type + " " + targetDepth);
+        //System.out.println("value: " + value.getType() + " " + valueDepth);
+
+        if (targetDepth == valueDepth) {
+            if (type instanceof ScopedPointerType pType) {
+                return doCastInput(id, pType.getPointedType(), value);
+            }
+            return doCastInput(id, type, value);
+        }
+
+        // Adjust depth for input pointer with a single element.
+        // Convenience: allow same depth annotations in OpenCL and Vulkan flavors.
+        if (valueDepth > targetDepth && type instanceof ScopedPointerType pType) {
+            int depth = valueDepth - targetDepth - 1;
+            Expression newValue = value;
+            for (int i = 0; i < depth; i++) {
+                if (!(newValue instanceof ConstructExpr cExp) || cExp.getOperands().size() != 1) {
+                    throw new ParsingException("dfdfgdfgdfg");
+                }
+                newValue = newValue.getOperands().get(0);
+            }
+            if (newValue instanceof ConstructExpr cExp) {
+                Type newType = types.getArrayType(pType.getPointedType(), cExp.getOperands().size());
+                newValue = doCastInput(id, newType, newValue);
+                for (int i = 0; i < depth; i++) {
+                    newValue = expressions.makeConstruct(types.getArrayType(newValue.getType(), 1), List.of(newValue));
+                }
+                return newValue;
+            }
+        }
+        throw new ParsingException("Mismatching value type for variable '%s', " +
+                "expected '%s' but received '%s'", id, type, value.getType());
+    }
+
+    private static Expression doCastInput(String id, Type type, Expression value) {
         if (type instanceof ArrayType aType) {
             return castArray(id, aType, value);
         }

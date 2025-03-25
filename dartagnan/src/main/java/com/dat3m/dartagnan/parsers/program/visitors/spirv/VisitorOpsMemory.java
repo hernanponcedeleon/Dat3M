@@ -199,7 +199,7 @@ public class VisitorOpsMemory extends SpirvBaseVisitor<Event> {
             intIndexes.add(expression instanceof IntLiteral literal ? literal.getValueAsInt() : -1);
         });
         Type memberType = HelperTypes.getMemberType(baseCtx.getText(), baseType, intIndexes);
-        if (!TypeFactory.isStaticTypeOf(resultType, memberType)) {
+        if (!TypeFactory.isStaticTypeOf(memberType, resultType)) {
             throw new ParsingException("Invalid result type in access chain '%s', " +
                     "expected '%s' but received '%s'", idCtx.getText(), resultType, memberType);
         }

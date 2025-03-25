@@ -9,6 +9,7 @@ import com.dat3m.dartagnan.parsers.SpirvBaseVisitor;
 import com.dat3m.dartagnan.parsers.SpirvParser;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.builders.ProgramBuilder;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.helpers.HelperInputs;
+import com.dat3m.dartagnan.parsers.program.visitors.spirv.helpers.HelperTypes;
 import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.EventFactory;
@@ -89,7 +90,9 @@ public class VisitorOpsFunction extends SpirvBaseVisitor<Void> {
         }
         currentArgs.add(id);
         if (currentId.equals(builder.getEntryPointId())) {
-            parameters.put(id, createEntryPointParameter(id, type));
+            Expression result = createEntryPointParameter(id, type);
+            parameters.put(id, result);
+            //System.out.println(id + " " + result);
         }
         if (currentArgs.size() == currentType.getParameterTypes().size()) {
             createFunction();
@@ -184,24 +187,61 @@ public class VisitorOpsFunction extends SpirvBaseVisitor<Void> {
 
     private Expression createEntryPointParameter(String id, Type type) {
         Expression value = createEntryPointParameterValue(id, type);
+        //System.out.println("value=" + value);
         if (type instanceof ScopedPointerType pType) {
             String ptrId = HelperInputs.castPointerId(id);
             pType = types.getScopedPointerType(pType.getScopeId(), value.getType());
             MemoryObject memObj = builder.allocateMemory(ptrId, pType.getScopeId(), value);
             ScopedPointer pointer = expressions.makeScopedPointer(ptrId, pType, memObj);
             builder.addExpression(ptrId, pointer);
+            //System.out.println(ptrId + " " + pointer + " " + pointer.getAddress().getClass().getSimpleName() + " " + pointer.getInnerType());
             value = pointer.getAddress();
         }
         return value;
     }
 
+    /*
+    private int getFirstElementDepth(String id, Type type) {
+        if (type instanceof ArrayType || type instanceof AggregateType) {
+            Type elementType = HelperTypes.getMemberType(id, type, List.of(0));
+            return 1 + getFirstElementDepth(id, elementType);
+        }
+        return 0;
+    }
+
+    private void createParameterVariable(String id, Type type) {
+        if (type instanceof ScopedPointerType pType) {
+            Expression externalValue = createExternalVariable(id, pType);
+            ScopedPointer aggregatePointer = builder.allocateScopedPointerVariable(
+                    HelperInputs.castPointerId(id), externalValue, pType.getScopeId(), externalValue.getType());
+            Expression zero = ExpressionFactory.getInstance().makeZero(TypeFactory.getInstance().getArchType());
+            int depth = getFirstElementDepth(id, pType.getPointedType());
+            List<Expression> indexes = Collections.nCopies(depth, zero);
+            Expression ptr = HelperTypes.getMemberAddress(id, aggregatePointer.getAddress(), externalValue.getType(), indexes);
+            builder.addExpression(HelperInputs.castPointerId(id), aggregatePointer);
+            addParameterVariable(id, ptr);
+        } else {
+            if (builder.hasInput(id)) {
+                Expression input = builder.getInput(id);
+                Expression ptr = HelperInputs.castInput(id, type, input);
+                addParameterVariable(id, ptr);
+            }
+        }
+    }*/
+
     private Expression createEntryPointParameterValue(String id, Type type) {
         if (builder.hasInput(id)) {
             Expression input = builder.getInput(id);
-            if (type instanceof ScopedPointerType pType) {
-                type = HelperInputs.castInputType(id, pType, input.getType());
-            }
-            return HelperInputs.castInput(id, type, input);
+            //if (type instanceof ScopedPointerType pType) {
+                //System.out.println("pointer type: " + pType.getPointedType());
+                //type = HelperInputs.castInputType(id, pType, input.getType());
+                //type = pType.getPointedType();
+            //}
+            //System.out.println("type: " + type);
+            //System.out.println("input before: " + input);
+            Expression result = HelperInputs.castInput(id, type, input);
+            //System.out.println("input after: " + result);
+            return result;
         }
         if (type instanceof ScopedPointerType pType) {
             type = types.getArrayType(pType.getPointedType(), DEFAULT_INPUT_SIZE);
