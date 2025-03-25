@@ -45,11 +45,13 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.maven.model.io.xpp3.MavenXpp3Reader;
 import org.sosy_lab.common.ShutdownManager;
+import org.sosy_lab.common.ShutdownNotifier;
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.common.configuration.Options;
 import org.sosy_lab.common.log.BasicLogManager;
 import org.sosy_lab.java_smt.SolverContextFactory;
+import org.sosy_lab.java_smt.SolverContextFactory.Solvers;
 import org.sosy_lab.java_smt.api.Model;
 import org.sosy_lab.java_smt.api.ProverEnvironment;
 import org.sosy_lab.java_smt.api.SolverContext;
@@ -100,6 +102,26 @@ public class Dartagnan extends BaseOptions {
         }
         final CharSource source = CharSource.concat(CharSource.wrap(preamble), CharSource.wrap(options));
         return Configuration.builder().loadFromSource(source, ".", ".").build();
+    }
+
+    private static SolverContext createSolverContext(Configuration config, ShutdownNotifier notifier, Solvers solver) throws Exception {
+        // Try using NativeLibraries::loadLibrary. Fallback to System::loadLibrary
+        // if NativeLibraries failed, for example, because the operating system is
+        // not supported,
+        try {
+            return SolverContextFactory.createSolverContext(
+                config,
+                BasicLogManager.create(config),
+                notifier,
+                solver);
+        } catch (Exception e) {
+            SolverContextFactory factory = new SolverContextFactory(
+                config,
+                BasicLogManager.create(config),
+                notifier,
+                System::loadLibrary);
+            return factory.generateContext(solver);
+        }
     }
 
     public static void main(String[] args) throws Exception {
@@ -176,9 +198,8 @@ public class Dartagnan extends BaseOptions {
             Configuration solverConfig = Configuration.builder()
                     .setOption(PHANTOM_REFERENCES, valueOf(o.usePhantomReferences()))
                     .build();
-            try (SolverContext ctx = SolverContextFactory.createSolverContext(
+            try (SolverContext ctx = createSolverContext(
                     solverConfig,
-                    BasicLogManager.create(solverConfig),
                     sdm.getNotifier(),
                     o.getSolver());
                     ProverWithTracker prover = new ProverWithTracker(ctx,
