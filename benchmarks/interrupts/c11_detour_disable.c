@@ -45,7 +45,7 @@ int main()
     pthread_join(t1, 0);
     pthread_join(t2, 0);
 
-    assert(!(b == 1 && a == 3 && y == 3));
+    __VERIFIER_assert(!(b == 1 && a == 3 && y == 3));
 
     return 0;
 }

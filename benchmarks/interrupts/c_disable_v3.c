@@ -20,7 +20,7 @@ void *handler(void *arg)
     int i = cnt++;
     as[i].a = tindex;
     as[i].b = tindex;
-    assert(as[i].a == as[i].b);
+    __VERIFIER_assert(as[i].a == as[i].b);
     __VERIFIER_enable_irq();
 
     return NULL;
@@ -36,7 +36,7 @@ void *run(void *arg)
     int i = cnt++;
     as[i].a = tindex;
     as[i].b = tindex;
-    assert(as[i].a == as[i].b);
+    __VERIFIER_assert(as[i].a == as[i].b);
     __VERIFIER_enable_irq();
 
     pthread_join(h, NULL);

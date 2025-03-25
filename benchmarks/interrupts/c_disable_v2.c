@@ -21,7 +21,7 @@ void *handler(void *arg)
     as[i].a = tindex;
     as[i].b = tindex;
     __VERIFIER_enable_irq();
-    assert(as[i].a == as[i].b);
+    __VERIFIER_assert(as[i].a == as[i].b);
 
     return NULL;
 }
@@ -37,7 +37,7 @@ void *run(void *arg)
     as[i].a = tindex;
     as[i].b = tindex;
     __VERIFIER_enable_irq();
-    assert(as[i].a == as[i].b);
+    __VERIFIER_assert(as[i].a == as[i].b);
 
     pthread_join(h, NULL);
 

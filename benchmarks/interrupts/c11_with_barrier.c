@@ -20,7 +20,7 @@ void *handler(void *arg)
     __VERIFIER_make_cb();
     as[i].a = tindex;
     as[i].b = tindex;
-    assert(as[i].a == as[i].b);
+    __VERIFIER_assert(as[i].a == as[i].b);
 
     return NULL;
 }
@@ -35,7 +35,7 @@ void *run(void *arg)
     __VERIFIER_make_cb();
     as[i].a = tindex;
     as[i].b = tindex;
-    assert(as[i].a == as[i].b);
+    __VERIFIER_assert(as[i].a == as[i].b);
 
     pthread_join(h, NULL);
 

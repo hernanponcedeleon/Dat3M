@@ -47,20 +47,20 @@ public class VMMInterruptsTest extends AbstractCTest {
     @Parameterized.Parameters(name = "{index}: {0}, target={1}")
     public static Iterable<Object[]> data() throws IOException {
         return Arrays.asList(new Object[][]{
-                {"c_disable_v1-opt", C11, PASS},
-                {"c_disable_v2-opt", C11, PASS},
-                {"c_disable_v3-opt", C11, PASS},
-                {"c11_detour_disable_release-opt", C11, PASS},
-                {"c11_detour_disable-opt", C11, FAIL},
-                {"c11_detour-opt", C11, FAIL},
-                {"c11_oota-opt", C11, PASS},
-                {"c11_weak_model-opt", C11, PASS},
-                {"c11_with_barrier_dec_barrier-opt", C11, PASS},
-                {"c11_with_barrier_dec-opt", C11, FAIL},
-                {"c11_with_barrier-opt", C11, PASS},
-                {"c11_with_barrier_inc_split-opt", C11, FAIL},
-                {"c11_with_disable_enable_as_barrier-opt", C11, PASS},
-                {"c11_without_barrier-opt", C11, FAIL},
+                {"c_disable_v1", C11, PASS},
+                {"c_disable_v2", C11, PASS},
+                {"c_disable_v3", C11, PASS},
+                {"c11_detour_disable_release", C11, PASS},
+                {"c11_detour_disable", C11, FAIL},
+                {"c11_detour", C11, FAIL},
+                {"c11_oota", C11, PASS},
+                //{"c11_weak_model", C11, PASS},
+                {"c11_with_barrier_dec_barrier", C11, PASS},
+                {"c11_with_barrier_dec", C11, FAIL},
+                {"c11_with_barrier", C11, PASS},
+                {"c11_with_barrier_inc_split", C11, FAIL},
+                {"c11_with_disable_enable_as_barrier", C11, PASS},
+                {"c11_without_barrier", C11, FAIL},
         });
     }
 

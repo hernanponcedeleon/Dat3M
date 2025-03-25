@@ -56,7 +56,7 @@ int main()
     bool reorder_bx = (t1 == 1 && t2 == 0); 
     bool reorder_ya = (u1 == 1 && u2 == 0);
     if (r1 == 1 && r2 == 0) { 
-        assert (! reorder_bx || ! reorder_ya);
+        __VERIFIER_assert(! reorder_bx || ! reorder_ya);
     }
 
     return 0;

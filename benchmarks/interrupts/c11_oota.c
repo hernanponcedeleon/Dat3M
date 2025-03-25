@@ -10,7 +10,7 @@ pthread_t h;
 void *handler(void *arg)
 {
     atomic_store_explicit(&z, 3, memory_order_relaxed);
-    assert(atomic_load_explicit(&y, memory_order_relaxed) == 0);
+    __VERIFIER_assert(atomic_load_explicit(&y, memory_order_relaxed) == 0);
     return NULL;
 }
 
