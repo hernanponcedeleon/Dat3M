@@ -118,14 +118,6 @@ public class VisitorAsmRISCV extends RISCVBaseVisitor<Object> {
     }
 
     @Override
-    public Object visitLoadAcquireReleaseExclusive(RISCVParser.LoadAcquireReleaseExclusiveContext ctx) {
-        Register register = (Register) ctx.register(0).accept(this);
-        Register address = (Register) ctx.register(1).accept(this);
-        asmInstructions.add(EventFactory.newRMWLoadExclusiveWithMo(register, address, Tag.RISCV.MO_ACQ_REL));
-        return null;
-    }
-
-    @Override
     public Object visitAdd(RISCVParser.AddContext ctx) {
         Register resultRegister = (Register) ctx.register(0).accept(this);
         Register leftRegister = (Register) ctx.register(1).accept(this);

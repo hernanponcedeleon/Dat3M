@@ -16,7 +16,6 @@ instr
     | loadImmediate
     | loadExclusive
     | loadAcquireExclusive
-    | loadAcquireReleaseExclusive
     | add
     | sub
     | store
@@ -38,7 +37,6 @@ load : Load register Comma value LPar register RPar;
 loadImmediate : LoadImmediate register Comma value;
 loadExclusive : LoadExclusive register Comma register;
 loadAcquireExclusive : LoadAcquireExclusive register Comma register;
-loadAcquireReleaseExclusive : LoadAcquireReleaseExclusive register Comma register;
 add : Add register Comma register Comma register;
 sub : Sub register Comma register Comma register;
 store : Store register Comma value LPar register RPar;

@@ -8,7 +8,6 @@ Load                        : 'ld' | 'lw' | 'lwu';
 LoadImmediate               : 'li';
 LoadExclusive               : 'lr.d' | 'lr.w';
 LoadAcquireExclusive        : 'lr.d.aq';
-LoadAcquireReleaseExclusive : 'lr.d.aqrl';
 Add                         : 'add';
 Sub                         : 'sub';
 BranchNotEqual              : 'bne';
