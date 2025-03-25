@@ -6,6 +6,7 @@
 # * -cat      : memory model
 # * -target   : target architecture
 # * -property : property to be checked
+# * ... see usage function for other options
 #
 # Environment variables:
 #
@@ -23,7 +24,14 @@ if [ -z "${java_cmd}" ]; then
 fi
 
 usage () {
-    echo "${this} [-cat MODEL] [-target TARGET] [-property PROPERTY] [-bound BOUND] <FILE>"
+    echo "${this} [OPTIONS] <FILE>"
+    echo
+    echo "OPTIONS:"
+    echo "\t-cat MODEL"
+    echo "\t-target TARGET"
+    echo "\t-property PROPERTY"
+    echo "\t-bound BOUND"
+    echo "\t-solver SOLVER"
 }
 
 while [ "$#" != "0" ]; do
@@ -43,6 +51,10 @@ while [ "$#" != "0" ]; do
         -bound)
             shift
             bound="$1"
+        ;;
+        -solver)
+            shift
+            solver="$1"
         ;;
         -help)
             usage
@@ -122,6 +134,9 @@ fi
 if [ -z "${bound}" ]; then
     bound=1
 fi
+if [ -z "${solver}" ]; then
+    solver=z3
+fi
 
 # now we construct the full command
 cmd="${java_cmd} -jar ${jar}"
@@ -129,6 +144,7 @@ cmd="${cmd} ${cat}"
 cmd="${cmd} --target=${target}"
 cmd="${cmd} --property=${property}"
 cmd="${cmd} --bound=${bound}"
+cmd="${cmd} --solver=${solver}"
 cmd="${cmd} ${args}"
 
 # before calling the command, print it on the screen for reference
