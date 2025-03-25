@@ -11,6 +11,7 @@ import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.analysis.BranchEquivalence;
 import com.dat3m.dartagnan.program.analysis.ExecutionAnalysis;
 import com.dat3m.dartagnan.program.analysis.alias.AliasAnalysis;
+import com.dat3m.dartagnan.program.event.BlockingEvent;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.MemoryEvent;
 import com.dat3m.dartagnan.program.event.RegWriter;
@@ -196,11 +197,11 @@ public final class EncodingContext {
         return booleanFormulaManager.and(execution(jump), jumpCondition(jump));
     }
 
-    public BooleanFormula blocked(ControlBarrier barrier) {
+    public BooleanFormula blocked(BlockingEvent barrier) {
         return booleanFormulaManager.and(controlFlow(barrier), booleanFormulaManager.not(execution(barrier)));
     }
 
-    public BooleanFormula unblocked(ControlBarrier barrier) {
+    public BooleanFormula unblocked(BlockingEvent barrier) {
         return execution(barrier);
     }
 

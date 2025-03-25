@@ -12,10 +12,7 @@ import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.analysis.BranchEquivalence;
 import com.dat3m.dartagnan.program.analysis.ExecutionAnalysis;
 import com.dat3m.dartagnan.program.analysis.ReachingDefinitionsAnalysis;
-import com.dat3m.dartagnan.program.event.Event;
-import com.dat3m.dartagnan.program.event.RegReader;
-import com.dat3m.dartagnan.program.event.RegWriter;
-import com.dat3m.dartagnan.program.event.Tag;
+import com.dat3m.dartagnan.program.event.*;
 import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.event.core.threading.ThreadStart;
 import com.dat3m.dartagnan.program.memory.Memory;
@@ -160,9 +157,9 @@ public class ProgramEncoder implements Encoder {
                 .reduce(bmgr.makeFalse(), bmgr::or);
     }
 
-    private BooleanFormula threadIsStuckInBarrier(Thread thread) {
+    private BooleanFormula threadIsBlocked(Thread thread) {
         final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
-        return thread.getEvents(ControlBarrier.class).stream()
+        return thread.getEvents(BlockingEvent.class).stream()
                 .map(context::blocked)
                 .reduce(bmgr.makeFalse(), bmgr::or);
     }
@@ -218,8 +215,8 @@ public class ProgramEncoder implements Encoder {
             BooleanFormula cfCond = context.controlFlow(pred);
             if (pred instanceof CondJump jump) {
                 cfCond = bmgr.and(cfCond, bmgr.not(context.jumpTaken(jump)));
-            } else if (pred instanceof ControlBarrier cb) {
-                cfCond = bmgr.and(cfCond, context.unblocked(cb));
+            } else if (pred instanceof BlockingEvent barrier) {
+                cfCond = bmgr.and(cfCond, context.unblocked(barrier));
             }
 
             if (cur instanceof Label label) {
@@ -537,7 +534,7 @@ public class ProgramEncoder implements Encoder {
                 }
                 final List<Event> succs = new ArrayList<>();
                 final BooleanFormula curCf = context.controlFlow(cur);
-                final BooleanFormula isNotBlocked = cur instanceof ControlBarrier cb ? context.unblocked(cb) : bmgr.makeTrue();
+                final BooleanFormula isNotBlocked = cur instanceof BlockingEvent cb ? context.unblocked(cb) : bmgr.makeTrue();
 
                 succs.add(cur.getSuccessor());
                 if (cur instanceof CondJump jump) {
@@ -574,7 +571,7 @@ public class ProgramEncoder implements Encoder {
                 // so we can (unfairly) schedule the blocked thread indefinitely
                 // TODO: We may revise this and disallow blocked threads from getting scheduled again.
                 aThreadIsStuck = bmgr.or(aThreadIsStuck,
-                        bmgr.or(threadIsStuckInLoop(t), threadIsStuckInBarrier(t))
+                        bmgr.or(threadIsStuckInLoop(t), threadIsBlocked(t))
                 );
             }
 
