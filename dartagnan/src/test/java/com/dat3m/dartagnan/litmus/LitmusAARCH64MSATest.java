@@ -34,9 +34,4 @@ public class LitmusAARCH64MSATest extends LitmusAARCH64Test {
     protected Provider<Wmm> getWmmProvider() {
         return Providers.createWmmFromName(() -> "aarch64-mixed");
     }
-
-    @Override
-    protected long getTimeout() {
-        return 1_000L;
-    }
 }
