@@ -12,10 +12,7 @@ import com.dat3m.dartagnan.expression.booleans.BoolUnaryExpr;
 import com.dat3m.dartagnan.expression.floats.FloatBinaryExpr;
 import com.dat3m.dartagnan.expression.floats.FloatCmpExpr;
 import com.dat3m.dartagnan.expression.floats.FloatUnaryExpr;
-import com.dat3m.dartagnan.expression.integers.IntBinaryExpr;
-import com.dat3m.dartagnan.expression.integers.IntCmpExpr;
-import com.dat3m.dartagnan.expression.integers.IntSizeCast;
-import com.dat3m.dartagnan.expression.integers.IntUnaryExpr;
+import com.dat3m.dartagnan.expression.integers.*;
 import com.dat3m.dartagnan.expression.misc.GEPExpr;
 import com.dat3m.dartagnan.expression.misc.ITEExpr;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
@@ -50,6 +47,17 @@ public abstract class ExprTransformer implements ExpressionVisitor<Expression> {
     @Override
     public Expression visitIntUnaryExpression(IntUnaryExpr expr) {
         return expressions.makeIntUnary(expr.getKind(), expr.getOperand().accept(this));
+    }
+
+    @Override
+    public Expression visitIntConcat(IntConcat expr) {
+        return expressions.makeIntConcat(expr.getOperands().stream().map(e -> e.accept(this)).toList());
+    }
+
+    @Override
+    public Expression visitIntExtract(IntExtract expr) {
+        // FIXME: The off-by-one index is confusing an we should not have it
+        return expressions.makeIntExtract(expr.getOperand().accept(this), expr.getLowBit(), expr.getHighBit() + 1);
     }
 
     @Override

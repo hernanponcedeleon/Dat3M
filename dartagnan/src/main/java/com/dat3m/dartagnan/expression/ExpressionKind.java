@@ -21,7 +21,9 @@ public interface ExpressionKind {
         GEP,
         CONSTRUCT,
         ITE,
-        EXTRACT;
+        EXTRACT,
+        BV_EXTRACT,
+        BV_CONCAT;
 
         @Override
         public String getSymbol() {

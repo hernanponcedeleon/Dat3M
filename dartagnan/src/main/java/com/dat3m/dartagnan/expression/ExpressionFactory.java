@@ -14,6 +14,7 @@ import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.dat3m.dartagnan.program.memory.ScopedPointer;
 import com.dat3m.dartagnan.program.memory.ScopedPointerVariable;
 import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableList;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
@@ -171,36 +172,13 @@ public final class ExpressionFactory {
         return makeIntBinary(leftOperand, signed ? IntBinaryOp.ARSHIFT : IntBinaryOp.RSHIFT, rightOperand);
     }
 
-    /// Effectively forms type-fitted (left | (right << (8 * sizeof(left)))).
     public Expression makeIntConcat(List<? extends Expression> operands) {
-        final var offsets = new ArrayList<Integer>();
-        int bits = 0;
-        for (Expression operand : operands) {
-            final IntegerType type = operand.getType() instanceof IntegerType t ? t : null;
-            Preconditions.checkArgument(type != null, "Cannot concatenate non-integers %s.", operands);
-            offsets.add(bits);
-            bits += type.getBitWidth();
-        }
-        final IntegerType target = types.getIntegerType(bits);
-        Expression result = makeIntegerCast(operands.get(0), target, false);
-        for (int i = 1; i < operands.size(); i++) {
-            final Expression operand = makeIntegerCast(operands.get(i), target, false);
-            final Expression shift = makeValue(offsets.get(i), target);
-            final Expression shifted = makeLshift(operand, shift);
-            final Expression coerced = makeIntegerCast(shifted, target, false);
-            result = makeIntOr(result, coerced);
-        }
-        return result;
+        return new IntConcat(ImmutableList.copyOf(operands));
     }
 
-    /// Effectively forms type-fitted (operand >> start) & ((1 << (end-start)) - 1).
-    public Expression makeIntExtract(Expression operand, int start, int end) {
-        //TODO properly model this operation
-        final var operandType = operand.getType() instanceof IntegerType t ? t : null;
-        Preconditions.checkArgument(operandType != null, "Cannot extract bits from non-integer %s", operand);
-        final IntegerType type = types.getIntegerType(end - start);
-        final Expression leftShifted = makeRshift(operand, makeValue(start, operandType), false);
-        return makeIntegerCast(leftShifted, type, false);
+    public Expression makeIntExtract(Expression operand, int start, int endExclusive) {
+        // FIXME: The off-by-one in the end index is not nice
+        return new IntExtract(operand, start, endExclusive - 1);
     }
 
     public Expression makeIntUnary(IntUnaryOp operator, Expression operand) {

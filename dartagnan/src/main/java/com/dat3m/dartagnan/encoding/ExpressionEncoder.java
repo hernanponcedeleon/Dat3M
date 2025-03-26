@@ -281,6 +281,24 @@ class ExpressionEncoder implements ExpressionVisitor<Formula> {
     }
 
     @Override
+    public Formula visitIntConcat(IntConcat expr) {
+        final BitvectorFormulaManager bvmgr = bitvectorFormulaManager();
+        final List<Expression> operands = expr.getOperands();
+        BitvectorFormula enc = (BitvectorFormula) operands.get(0).accept(this);
+        for (Expression op : operands.subList(1, operands.size())) {
+            enc = bvmgr.concat((BitvectorFormula) op.accept(this), enc);
+        }
+        return enc;
+    }
+
+    @Override
+    public Formula visitIntExtract(IntExtract expr) {
+        final BitvectorFormulaManager bvmgr = bitvectorFormulaManager();
+        BitvectorFormula operandEnc = (BitvectorFormula) expr.getOperand().accept(this);
+        return bvmgr.extract(operandEnc, expr.getHighBit(), expr.getLowBit());
+    }
+
+    @Override
     public Formula visitITEExpression(ITEExpr iteExpr) {
         BooleanFormula guard = encodeAsBoolean(iteExpr.getCondition());
         Formula tBranch = encode(iteExpr.getTrueCase());
