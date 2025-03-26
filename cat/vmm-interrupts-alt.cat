@@ -1,0 +1,52 @@
+include "interrupts-defs.cat"
+
+let Marked = RLX | ACQ | REL | SC
+let Plain = ~Marked
+let Acq = ACQ | (SC & R)
+let Rel = REL | (SC & W)
+
+(** Atomicity **)
+empty rmw & (fre;coe)
+
+(** SC per location **)
+acyclic co | rf | fr | po-loc
+
+(** Ordering **)
+let dep = (data;rfi | addr | ctrl)*;(ctrl | addr | data)
+
+(* Plain writes can be elided and therefore are generally not ordered by things that order writes *)
+let bob = [Acq];po | po;[Rel] | [SC];po;[SC] | po;[SC & F];po | [R];po;[Acq & F];po | po;[Rel & F];po;[W & Marked]
+let ppo = bob | [Marked];(dep | coi | fri);[W & Marked]
+
+(* 
+   If there is no w-race, plain writes are slightly better-behaved: if they are read-from, then either 
+    1) they exist and provide ordering, or 
+    2) an older store with the same value exists and that store is also a candidate for the read, in which case the ordering provided in this graph is ignored in the graph in which the older store is observed
+   
+   However, the plain writes  may not exist in the form supposed by dependencies etc.
+   This is especially true for data dependencies, which may be speculatively elided.
+   Only ctrl and addr dependencies are not elided, because the compiler is not allowed to speculatively modify memory regions (which might be protected by a lock owned by another thread).
+*)
+let WRF-ppo = po;[Rel & F];po;[W & Plain] | [Marked];(ctrl | addr);[W & Plain]
+
+let hb = ppo | WRF-ppo | rfe | fre | coe
+acyclic hb
+
+(** Interrupt Axioms **)
+let barrier = po?; [cb | Marked | F | ENABLE_INTERRUPT | DISABLE_INTERRUPT]; po? | [HARMLESS_RACY]
+include "interrupts-axioms.cat"
+
+(** Data Races **)
+
+let w-race-fix = ([Marked] | ppo);hb+;([Marked] | ppo)
+
+let w-race = coe \ w-race-fix
+let w-racy = [domain(w-race)] | [range(w-race)]
+flag ~empty w-racy as w-data-race
+
+let r-race-fix = w-race-fix | ([Marked] | ppo);hb+; WRF-ppo
+
+let r-race = (fre | rfe) \ r-race-fix
+let r-racy = [domain(r-race)] | [range(r-race)]
+let obs-dep = (data;rfi)*;(ctrl | addr | data;rfe)
+flag ~empty [domain(obs-dep)] & r-racy as r-data-race
