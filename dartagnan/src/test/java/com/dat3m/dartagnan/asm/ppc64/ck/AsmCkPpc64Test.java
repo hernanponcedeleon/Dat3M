@@ -1,4 +1,4 @@
-package com.dat3m.dartagnan.asm.armv8.ck;
+package com.dat3m.dartagnan.asm.ppc64.ck;
 
 import java.io.File;
 import java.io.IOException;
@@ -27,19 +27,19 @@ import static com.dat3m.dartagnan.utils.ResourceHelper.getRootPath;
 import static com.dat3m.dartagnan.utils.ResourceHelper.getTestResourcePath;
 import com.dat3m.dartagnan.utils.Result;
 import com.dat3m.dartagnan.verification.VerificationTask;
-import com.dat3m.dartagnan.verification.solving.AssumeSolver;
+import com.dat3m.dartagnan.verification.solving.RefinementSolver;
 import com.dat3m.dartagnan.wmm.Wmm;
 
 @RunWith(Parameterized.class)
-public class AsmCkArmv8Test {
+public class AsmCkPpc64Test {
 
-    private final String modelPath = getRootPath("cat/aarch64.cat");
+    private final String modelPath = getRootPath("cat/power.cat");
     private final String programPath;
     private final int bound;
     private final Result expected;
 
-    public AsmCkArmv8Test (String file, int bound, Result expected) {
-        this.programPath = getTestResourcePath("asm/armv8/ck/" + file + ".ll");
+    public AsmCkPpc64Test (String file, int bound, Result expected) {
+        this.programPath = getTestResourcePath("asm/ppc64/ck/" + file + ".ll");
         this.bound = bound;
         this.expected = expected;
     }
@@ -51,22 +51,18 @@ public class AsmCkArmv8Test {
             {"caslock", 3, Result.PASS},
             {"clhlock", 1, Result.PASS},
             {"declock", 3, Result.PASS},
-            {"ebr", 5, Result.PASS},
             {"faslock", 3, Result.PASS},
             {"mcslock", 2, Result.PASS},
             {"ticketlock", 1, Result.PASS},
             {"spsc_queue", 1, Result.PASS},
-            {"stack_empty", 2, Result.UNKNOWN},
+            {"stack_empty", 3, Result.PASS},
         });
     }
 
     @Test
     public void testAllSolvers() throws Exception {// TODO : RefinementSolver takes too long to run, we have to investigate this
-        // try (SolverContext ctx = mkCtx(); ProverWithTracker prover = mkProver(ctx)) {
-        //     assertEquals(expected, RefinementSolver.run(ctx, prover, mkTask()).getResult());
-        // }
         try (SolverContext ctx = mkCtx(); ProverWithTracker prover = mkProver(ctx)) {
-            assertEquals(expected, AssumeSolver.run(ctx, prover, mkTask()).getResult());
+            assertEquals(expected, RefinementSolver.run(ctx, prover, mkTask()).getResult());
         }
     }
 
@@ -87,7 +83,7 @@ public class AsmCkArmv8Test {
         VerificationTask.VerificationTaskBuilder builder = VerificationTask.builder()
                 .withConfig(Configuration.builder().build())
                 .withBound(bound)
-                .withTarget(Arch.ARM8);
+                .withTarget(Arch.POWER);
         Program program = new ProgramParser().parse(new File(programPath));
         Wmm mcm = new ParserCat().parse(new File(modelPath));
         return builder.build(program, mcm, EnumSet.of(TERMINATION, PROGRAM_SPEC));

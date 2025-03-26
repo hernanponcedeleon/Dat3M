@@ -1,10 +1,10 @@
-lexer grammar InlineAsmLexer;
+lexer grammar AsmArmLexer;
 
 import BaseLexer;
 
 
 // instructions 
-AlignInline                 : Period 'align 'NumbersInline;
+AlignInline                 : Period 'align 'Numbers;
 Load                        : 'ldr';
 LoadAcquire                 : 'ldar';
 LoadExclusive               : 'ldxr' | 'ldrex';
@@ -34,16 +34,14 @@ ClobberDirectionFlag        : 'dirflag';
 ClobberFloatPntStatusReg    : 'fpsr';
 ClobberFlags                : 'flags';
 
-
 // Metavariables
 StartSymbol                 : 'asm';
 PrefetchStoreL1Once         : 'pstl1strm';
+
 // helpers for parser rules
-NumbersInline               : [0-9]+;
+Numbers                     : [0-9]+;
 XLiteral                    : 'x';
 RLiteral                    : 'r';
-WLiteral                    : 'w';
-RWLiteral                   : 'rw';
 ILiteral                    : 'i';
 OLiteral                    : 'o';
 IOLiteral                   : 'io';
@@ -51,18 +49,13 @@ MLiteral                    : 'm';
 QCapitalLiteral             : 'Q';
 RegisterSizeHint            : Colon (XLiteral | 'w');
 
-
 // fences
 DataMemoryBarrier           : 'dmb';
 DataSynchronizationBarrier  : 'dsb';
 FenceArmOpt                 : 'sy' | 'st' | 'ish' | 'ishld' | 'ishst';
-X86Fence                    : 'mfence';
-RISCVFence                  : 'fence';
-TsoFence                    : 'tso';
-PPCFence                    : 'sync' | 'isync' | 'lwsync';
 
 
-LetterInline                : [a-z]+;
+Literal                     : [a-z]+;
 EndInstruction              :'\\0A';
 WS
     :   [ \t\r\n]+

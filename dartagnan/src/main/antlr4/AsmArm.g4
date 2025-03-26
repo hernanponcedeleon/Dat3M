@@ -1,17 +1,17 @@
-grammar InlineAsm;
+grammar AsmArm;
 
-options {tokenVocab=InlineAsmLexer;}
+options {tokenVocab=AsmArmLexer;}
 
 asm                                 
     :
     (Quot(asmInstrEntries)*Quot)Comma (Quot(asmMetadataEntries) Quot) EOF?
 ;
 
-asmInstrEntries : EndInstruction?((armInstr | riscvInstr | ppcInstr | x86Instr )(EndInstruction | Semi)*);
+asmInstrEntries : EndInstruction?( instr (EndInstruction | Semi)*);
 asmMetadataEntries : (constraint Comma)* clobbers;
 
 
-armInstr 
+instr 
     : load
     | loadAcquire
     | loadExclusive
@@ -37,9 +37,6 @@ armInstr
     | yieldtask
     | armFence
 ;
-riscvInstr : riscvFence;
-ppcInstr : ppcFence;
-x86Instr : x86Fence;
 
 // rules divised like this in order to generate single visitors
 load : Load register Comma register;
@@ -55,44 +52,26 @@ storeRelease : StoreRelease register Comma register;
 storeExclusive : StoreExclusive register Comma register Comma register ;
 storeReleaseExclusive : StoreReleaseExclusive register Comma register Comma register;
 compare : Compare register Comma expr;
-compareBranchNonZero : CompareBranchNonZero register Comma NumbersInline LetterInline;
+compareBranchNonZero : CompareBranchNonZero register Comma Numbers Literal;
 move : Move register Comma register;
-branchEqual : BranchEqual NumbersInline LetterInline;
-branchNotEqual : BranchNotEqual NumbersInline LetterInline;
+branchEqual : BranchEqual Numbers Literal;
+branchNotEqual : BranchNotEqual Numbers Literal;
 setEventLocally : SetEventLocally;
 waitForEvent : WaitForEvent;
-labelDefinition : NumbersInline Colon;
+labelDefinition : Numbers Colon;
 alignInline : AlignInline;
 prefetchMemory : PrefetchMemory PrefetchStoreL1Once Comma register;
 yieldtask : YieldTask;
 
 //fences
 armFence : (DataMemoryBarrier | DataSynchronizationBarrier) FenceArmOpt;
-riscvFence : RISCVFence fenceOptions;
-
-fenceOptions returns [String mode]
-    :   RLiteral Comma RLiteral {$mode = "r r";}
-    |   RLiteral Comma WLiteral {$mode = "r w";}
-    |   RLiteral Comma RWLiteral {$mode = "r rw";}
-    |   WLiteral Comma RLiteral {$mode = "w r";}
-    |   WLiteral Comma WLiteral {$mode = "w w";}
-    |   WLiteral Comma RWLiteral {$mode = "w rw";}
-    |   RWLiteral Comma RLiteral {$mode = "rw r";}
-    |   RWLiteral Comma WLiteral {$mode = "rw w";}
-    |   RWLiteral Comma RWLiteral {$mode = "rw rw";}
-    |   TsoFence {$mode = "tso";}
-    |   ILiteral {$mode = "i";}
-    ;
-
-x86Fence : X86Fence;
-ppcFence : PPCFence;
 
 constraint : outputOpAssign | memoryAddress | inputOpGeneralReg | overlapInOutRegister | pointerToMemoryLocation;
 
 outputOpAssign              : Equals Amp? RLiteral;
 memoryAddress               : Ast? QCapitalLiteral;
 inputOpGeneralReg           : RLiteral;
-overlapInOutRegister        : NumbersInline;
+overlapInOutRegister        : Numbers;
 pointerToMemoryLocation     : Equals Ast MLiteral;
 
 clobbers : clobber (Comma clobber)*;
@@ -102,5 +81,5 @@ clobberType : ClobberMemory | ClobberModifyFlags | ClobberDirectionFlag | Clobbe
 
 expr : register | value;
 
-register : Dollar NumbersInline | Dollar LBrace NumbersInline RegisterSizeHint RBrace | LBracket Dollar NumbersInline RBracket;
-value : Num NumbersInline;
+register : Dollar Numbers | Dollar LBrace Numbers RegisterSizeHint RBrace | LBracket Dollar Numbers RBracket;
+value : Num Numbers;

@@ -10,28 +10,29 @@ import org.antlr.v4.runtime.ParserRuleContext;
 import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.exception.UnrecognizedTokenListener;
 import com.dat3m.dartagnan.expression.Expression;
-import com.dat3m.dartagnan.parsers.InlineAsmLexer;
-import com.dat3m.dartagnan.parsers.InlineAsmParser;
-import com.dat3m.dartagnan.parsers.program.visitors.VisitorInlineAsm;
+import com.dat3m.dartagnan.parsers.AsmX86Lexer;
+import com.dat3m.dartagnan.parsers.AsmX86Parser;
+import com.dat3m.dartagnan.parsers.program.visitors.VisitorAsmX86;
 import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Event;
 
-public class ParserInlineAsm {
+public class ParserAsmX86 extends ParserAsm{
 
-    private final VisitorInlineAsm visitor;
+    private final VisitorAsmX86 visitor;
 
-    public ParserInlineAsm(Function llvmFunction, Register returnRegister, ArrayList<Expression> llvmArguments) {
-        this.visitor = new VisitorInlineAsm(llvmFunction, returnRegister, llvmArguments);
+    public ParserAsmX86(Function llvmFunction, Register returnRegister, ArrayList<Expression> llvmArguments) {
+        this.visitor = new VisitorAsmX86(llvmFunction, returnRegister, llvmArguments);
     }
 
-    public List<Event> parse(CharStream charStream) throws ParsingException{
-        InlineAsmLexer lexer = new InlineAsmLexer(charStream);
+    @Override
+    public List<Event> parse(CharStream charStream) throws ParsingException, UnsupportedOperationException{
+        AsmX86Lexer lexer = new AsmX86Lexer(charStream);
         lexer.removeErrorListeners(); // Remove default listeners
         lexer.addErrorListener(new UnrecognizedTokenListener());
         CommonTokenStream tokenStream = new CommonTokenStream(lexer);
 
-        InlineAsmParser parser = new InlineAsmParser(tokenStream);
+        AsmX86Parser parser = new AsmX86Parser(tokenStream);
         parser.removeErrorListeners(); // Remove default listeners
         parser.addErrorListener(new UnrecognizedTokenListener());
         ParserRuleContext parserEntryPoint = parser.asm();
