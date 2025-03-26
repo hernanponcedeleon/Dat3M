@@ -55,7 +55,7 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object> {
         visitInstructionList(ctx.program().instructionList());
         VisitorLitmusAssertions.parseAssertions(programBuilder, ctx.assertionList(), ctx.assertionFilter());
         Program prog = programBuilder.build();
-        replaceZeroRegisters(prog, Arrays.asList("XZR, WZR"));
+        replaceZeroRegisters(prog, Arrays.asList("XZR", "WZR"));
         return prog;
     }
 

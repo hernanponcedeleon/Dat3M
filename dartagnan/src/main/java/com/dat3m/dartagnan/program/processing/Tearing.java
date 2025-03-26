@@ -12,20 +12,22 @@ import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.analysis.alias.AliasAnalysis;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.EventFactory;
-import com.dat3m.dartagnan.program.event.core.Init;
-import com.dat3m.dartagnan.program.event.core.Load;
-import com.dat3m.dartagnan.program.event.core.MemoryCoreEvent;
-import com.dat3m.dartagnan.program.event.core.RMWStore;
-import com.dat3m.dartagnan.program.event.core.Store;
+import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.event.core.annotations.TransactionMarker;
+import com.dat3m.dartagnan.program.event.metadata.SourceLocation;
 import com.dat3m.dartagnan.program.memory.FinalMemoryValue;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
+import com.google.common.collect.Ordering;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.util.*;
 
 import static com.google.common.base.Preconditions.checkArgument;
 
 public final class Tearing {
+
+    private static final Logger logger = LogManager.getLogger(Tearing.class);
 
     private static final TypeFactory types = TypeFactory.getInstance();
     private static final ExpressionFactory expressions = ExpressionFactory.getInstance();
@@ -38,12 +40,14 @@ public final class Tearing {
     }
 
     public static boolean run(Program program, AliasAnalysis alias) {
-        return new Tearing(program.getMemory().isBigEndian()).replaceAll(program, alias);
+        final boolean isBigEndian = program.getMemory().isBigEndian();
+        logger.info("Running Tearing assuming {}", isBigEndian ? "big-endian" : "little-endian");
+        return new Tearing(isBigEndian).replaceAll(program, alias);
     }
 
     private boolean replaceAll(Program program, AliasAnalysis alias) {
         // Generate transaction events for mixed-size accesses
-        final boolean tearedInits = tearInits(program, alias);
+        final int numTearedInits = tearInits(program, alias);
         //NOTE RMWStores need to access the associated load's replacements
         final List<MemoryCoreEvent> events = program.getThreadEvents(MemoryCoreEvent.class);
         for (MemoryCoreEvent event : events) {
@@ -74,11 +78,28 @@ public final class Tearing {
                 load.replaceBy(entry.getValue());
             }
         }
-        return tearedInits || !map.isEmpty();
+
+        final int numTearedNonInit = map.size();
+        logger.info("Teared {} init and {} non-init events.", numTearedInits, numTearedNonInit);
+        if (logger.isDebugEnabled()) {
+            final List<SourceLocation> sortedLocs = map.keySet().stream()
+                    .map(e -> e.getMetadata(SourceLocation.class))
+                    .filter(Objects::nonNull)
+                    .distinct()
+                    .sorted(Ordering.usingToString())
+                    .toList();
+            StringBuilder info = new StringBuilder();
+            info.append("\n").append("======== Tearing source information ========");
+            sortedLocs.forEach(loc -> info.append("\n\t").append(loc));
+            info.append("\n").append("============================================");
+            logger.debug(info);
+        }
+
+        return (numTearedInits + numTearedNonInit) > 0;
     }
 
-    private boolean tearInits(Program program, AliasAnalysis alias) {
-        boolean some = false;
+    private int tearInits(Program program, AliasAnalysis alias) {
+        int numTearings = 0;
         for (Init init : program.getThreadEvents(Init.class)) {
             final List<Integer> offsets = alias.mayMixedSizeAccesses(init);
             if (offsets.isEmpty()) {
@@ -106,10 +127,10 @@ public final class Tearing {
             for (int begin : offsets) {
                 program.addInit(base, initOffset + begin);
             }
-            some = true;
+            numTearings++;
         }
         tearExpressions(program);
-        return some;
+        return numTearings;
     }
 
     private void tearExpressions(Program program) {
