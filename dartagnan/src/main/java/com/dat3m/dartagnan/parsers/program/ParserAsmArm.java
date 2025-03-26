@@ -10,8 +10,8 @@ import org.antlr.v4.runtime.ParserRuleContext;
 import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.exception.UnrecognizedTokenListener;
 import com.dat3m.dartagnan.expression.Expression;
-import com.dat3m.dartagnan.parsers.ArmLexer;
-import com.dat3m.dartagnan.parsers.ArmParser;
+import com.dat3m.dartagnan.parsers.AsmArmLexer;
+import com.dat3m.dartagnan.parsers.AsmArmParser;
 import com.dat3m.dartagnan.parsers.program.visitors.VisitorAsmArm;
 import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.Register;
@@ -27,12 +27,12 @@ public class ParserAsmArm extends ParserAsm{
     
     @Override
     public List<Event> parse(CharStream charStream) throws ParsingException, UnsupportedOperationException{
-        ArmLexer lexer = new ArmLexer(charStream);
+        AsmArmLexer lexer = new AsmArmLexer(charStream);
         lexer.removeErrorListeners(); // Remove default listeners
         lexer.addErrorListener(new UnrecognizedTokenListener());
         CommonTokenStream tokenStream = new CommonTokenStream(lexer);
 
-        ArmParser parser = new ArmParser(tokenStream);
+        AsmArmParser parser = new AsmArmParser(tokenStream);
         parser.removeErrorListeners(); // Remove default listeners
         parser.addErrorListener(new UnrecognizedTokenListener());
         ParserRuleContext parserEntryPoint = parser.asm();

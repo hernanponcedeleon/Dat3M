@@ -1,6 +1,6 @@
-grammar PPC;
+grammar AsmPPC;
 
-options {tokenVocab=PPCLexer;}
+options {tokenVocab=AsmPPCLexer;}
 
 asm                                 
     :

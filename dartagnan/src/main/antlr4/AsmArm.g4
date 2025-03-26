@@ -1,6 +1,6 @@
-grammar Arm;
+grammar AsmArm;
 
-options {tokenVocab=ArmLexer;}
+options {tokenVocab=AsmArmLexer;}
 
 asm                                 
     :

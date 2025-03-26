@@ -1,4 +1,4 @@
-lexer grammar RISCVLexer;
+lexer grammar AsmRISCVLexer;
 
 import BaseLexer;
 

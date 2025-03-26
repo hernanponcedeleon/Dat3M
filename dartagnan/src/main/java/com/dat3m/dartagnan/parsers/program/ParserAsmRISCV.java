@@ -10,8 +10,8 @@ import org.antlr.v4.runtime.ParserRuleContext;
 import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.exception.UnrecognizedTokenListener;
 import com.dat3m.dartagnan.expression.Expression;
-import com.dat3m.dartagnan.parsers.RISCVLexer;
-import com.dat3m.dartagnan.parsers.RISCVParser;
+import com.dat3m.dartagnan.parsers.AsmRISCVLexer;
+import com.dat3m.dartagnan.parsers.AsmRISCVParser;
 import com.dat3m.dartagnan.parsers.program.visitors.VisitorAsmRISCV;
 import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.Register;
@@ -27,12 +27,12 @@ public class ParserAsmRISCV extends ParserAsm{
 
     @Override
     public List<Event> parse(CharStream charStream) throws ParsingException, UnsupportedOperationException {
-        RISCVLexer lexer = new RISCVLexer(charStream);
+        AsmRISCVLexer lexer = new AsmRISCVLexer(charStream);
         lexer.removeErrorListeners(); // Remove default listeners
         lexer.addErrorListener(new UnrecognizedTokenListener());
         CommonTokenStream tokenStream = new CommonTokenStream(lexer);
 
-        RISCVParser parser = new RISCVParser(tokenStream);
+        AsmRISCVParser parser = new AsmRISCVParser(tokenStream);
         parser.removeErrorListeners(); // Remove default listeners
         parser.addErrorListener(new UnrecognizedTokenListener());
         ParserRuleContext parserEntryPoint = parser.asm();

@@ -1,6 +1,6 @@
-grammar RISCV;
+grammar AsmRISCV;
 
-options {tokenVocab=RISCVLexer;}
+options {tokenVocab=AsmRISCVLexer;}
 
 asm                                 
     :

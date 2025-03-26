@@ -1,6 +1,6 @@
-grammar X86;
+grammar AsmX86;
 
-options {tokenVocab=X86Lexer;}
+options {tokenVocab=AsmX86Lexer;}
 
 asm                                 
     :

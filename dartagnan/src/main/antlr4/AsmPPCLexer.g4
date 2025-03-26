@@ -1,4 +1,4 @@
-lexer grammar PPCLexer;
+lexer grammar AsmPPCLexer;
 
 import BaseLexer;
 

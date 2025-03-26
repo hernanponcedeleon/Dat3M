@@ -1,4 +1,4 @@
-lexer grammar ArmLexer;
+lexer grammar AsmArmLexer;
 
 import BaseLexer;
 

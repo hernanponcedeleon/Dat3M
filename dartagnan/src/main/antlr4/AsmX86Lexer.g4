@@ -1,4 +1,4 @@
-lexer grammar X86Lexer;
+lexer grammar AsmX86Lexer;
 
 import BaseLexer;
 
