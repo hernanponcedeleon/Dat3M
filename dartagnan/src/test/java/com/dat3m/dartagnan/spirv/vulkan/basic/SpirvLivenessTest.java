@@ -1,4 +1,4 @@
-package com.dat3m.dartagnan.spirv.vulkan.patterns;
+package com.dat3m.dartagnan.spirv.vulkan.basic;
 
 import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.encoding.ProverWithTracker;
@@ -24,34 +24,32 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.EnumSet;
 
-import static com.dat3m.dartagnan.configuration.OptionNames.IGNORE_FILTER_SPECIFICATION;
-import static com.dat3m.dartagnan.configuration.Property.CAT_SPEC;
+import static com.dat3m.dartagnan.configuration.Property.TERMINATION;
 import static com.dat3m.dartagnan.utils.ResourceHelper.getRootPath;
 import static com.dat3m.dartagnan.utils.ResourceHelper.getTestResourcePath;
+import static com.dat3m.dartagnan.utils.Result.FAIL;
 import static com.dat3m.dartagnan.utils.Result.PASS;
 import static org.junit.Assert.assertEquals;
 
 @RunWith(Parameterized.class)
-public class SpirvChecksTest {
+public class SpirvLivenessTest {
 
-    private final String modelPath = getRootPath("cat/spirv-check.cat");
+    private final String modelPath = getRootPath("cat/spirv.cat");
     private final String programPath;
+    private final int bound;
     private final Result expected;
 
-    public SpirvChecksTest(String file, Result expected) {
-        this.programPath = getTestResourcePath("spirv/vulkan/patterns/" + file);
+    public SpirvLivenessTest(String file, int bound, Result expected) {
+        this.programPath = getTestResourcePath("spirv/vulkan/basic/" + file);
+        this.bound = bound;
         this.expected = expected;
     }
 
     @Parameterized.Parameters(name = "{index}: {0}, {1}, {2}")
     public static Iterable<Object[]> data() throws IOException {
         return Arrays.asList(new Object[][]{
-                {"corr.spv.dis", PASS},
-                {"iriw.spv.dis", PASS},
-                {"mp.spv.dis", PASS},
-                {"mp-acq2rx.spv.dis", PASS},
-                {"mp-rel2rx.spv.dis", PASS},
-                {"sb.spv.dis", PASS},
+                {"non-uniform-barrier-1.spv.dis", 1, PASS},
+                {"non-uniform-barrier-2.spv.dis", 1, FAIL},
         });
     }
 
@@ -77,10 +75,11 @@ public class SpirvChecksTest {
 
     private VerificationTask mkTask() throws Exception {
         VerificationTask.VerificationTaskBuilder builder = VerificationTask.builder()
-                .withConfig(Configuration.builder().setOption(IGNORE_FILTER_SPECIFICATION, "true").build())
+                .withConfig(Configuration.builder().build())
+                .withBound(bound)
                 .withTarget(Arch.VULKAN);
         Program program = new ProgramParser().parse(new File(programPath));
         Wmm mcm = new ParserCat().parse(new File(modelPath));
-        return builder.build(program, mcm, EnumSet.of(CAT_SPEC));
+        return builder.build(program, mcm, EnumSet.of(TERMINATION));
     }
 }
