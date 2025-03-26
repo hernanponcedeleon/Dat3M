@@ -1,145 +1,526 @@
 package com.dat3m.dartagnan.parsers.program.visitors.spirv.helpers;
 
 import com.dat3m.dartagnan.exception.ParsingException;
+import com.dat3m.dartagnan.expression.Expression;
+import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.Type;
+import com.dat3m.dartagnan.expression.aggregates.ConstructExpr;
+import com.dat3m.dartagnan.expression.type.AggregateType;
+import com.dat3m.dartagnan.expression.type.ArrayType;
 import com.dat3m.dartagnan.expression.type.IntegerType;
-import com.dat3m.dartagnan.expression.type.ScopedPointerType;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
-import com.dat3m.dartagnan.program.event.Tag;
+import org.junit.Before;
 import org.junit.Test;
 
+import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
-import static com.dat3m.dartagnan.parsers.program.visitors.spirv.helpers.HelperInputs.castInputType;
+import static com.dat3m.dartagnan.parsers.program.visitors.spirv.helpers.HelperInputs.castInput;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
 public class HelperInputsTest {
 
     private static final TypeFactory types = TypeFactory.getInstance();
+    private static final ExpressionFactory expressions = ExpressionFactory.getInstance();
 
-    @Test
-    public void testPointerTypeScalar() {
-        IntegerType int32 = types.getIntegerType(32);
-        IntegerType int64 = types.getIntegerType(64);
+    private IntegerType int32;
+    private IntegerType int64;
+    private Expression[] i32;
+    private Expression[] i64;
 
-        ScopedPointerType ptr32 = types.getScopedPointerType(Tag.Spirv.SC_GENERIC, int32);
-        assertEquals(int32, castInputType("test", ptr32, int32));
-        assertEquals(int32, castInputType("test", ptr32, int64));
-
-        ScopedPointerType ptr64 = types.getScopedPointerType(Tag.Spirv.SC_GENERIC, int64);
-        assertEquals(int64, castInputType("test", ptr64, int32));
-        assertEquals(int64, castInputType("test", ptr64, int64));
+    @Before
+    public void before() {
+        int32 = types.getIntegerType(32);
+        int64 = types.getIntegerType(64);
+        i32 = IntStream.range(0, 4).boxed()
+                .map(i -> expressions.makeValue(i, int32))
+                .toArray(Expression[]::new);
+        i64 = IntStream.range(0, 4).boxed()
+                .map(i -> expressions.makeValue(i, int64))
+                .toArray(Expression[]::new);
     }
 
     @Test
-    public void testPointerTypeComposite() {
-        IntegerType int32 = types.getIntegerType(32);
-        IntegerType int64 = types.getIntegerType(64);
-        Type agg32 = types.getAggregateType(List.of(int32, int32, int32));
-        Type agg64 = types.getAggregateType(List.of(int64, int64, int64));
-        Type arr32 = types.getArrayType(int32, 3);
-        Type arr64 = types.getArrayType(int64, 3);
+    public void testBoolean() {
+        Type iType = types.getBooleanType();
 
-        ScopedPointerType ptr32 = types.getScopedPointerType(Tag.Spirv.SC_GENERIC, int32);
-        assertEquals(arr32, castInputType("test", ptr32, agg32));
-        assertEquals(arr32, castInputType("test", ptr32, arr32));
-        assertEquals(arr32, castInputType("test", ptr32, agg64));
-        assertEquals(arr32, castInputType("test", ptr32, arr64));
+        Expression[] iValues = {
+                i32[0],
+                i32[1],
+                i64[0],
+                i64[1]
+        };
 
-        ScopedPointerType ptr64 = types.getScopedPointerType(Tag.Spirv.SC_GENERIC, int64);
-        assertEquals(arr64, castInputType("test", ptr64, agg32));
-        assertEquals(arr64, castInputType("test", ptr64, arr32));
-        assertEquals(arr64, castInputType("test", ptr64, agg64));
-        assertEquals(arr64, castInputType("test", ptr64, arr64));
+        Expression[] expected = {
+                expressions.makeFalse(),
+                expressions.makeTrue()
+        };
+
+        for (int i = 0; i < iValues.length; i++) {
+            assertEquals(expected[i % 2], castInput("test", iType, iValues[i]));
+        }
     }
 
     @Test
-    public void testPointerTypeCompositeNested() {
-        IntegerType int32 = types.getIntegerType(32);
-        IntegerType int64 = types.getIntegerType(64);
-        Type agg = types.getAggregateType(List.of(int64, int64, int64));
-        Type arr = types.getArrayType(int64, 3);
+    public void testInteger() {
+        Type[] iTypes = {
+                int32,
+                int64
+        };
 
-        ScopedPointerType ptr32 = types.getScopedPointerType(Tag.Spirv.SC_GENERIC, int32);
-        Type exp32 = types.getArrayType(types.getArrayType(int32, 3), 1);
-        assertEquals(exp32, castInputType("test", ptr32, types.getAggregateType(List.of(agg))));
-        assertEquals(exp32, castInputType("test", ptr32, types.getAggregateType(List.of(arr))));
-        assertEquals(exp32, castInputType("test", ptr32, types.getArrayType(agg, 1)));
-        assertEquals(exp32, castInputType("test", ptr32, types.getArrayType(arr, 1)));
+        Expression[] iValues = {
+                i32[0],
+                i64[0]
+        };
 
-        ScopedPointerType ptr64 = types.getScopedPointerType(Tag.Spirv.SC_GENERIC, int64);
-        Type exp64 = types.getArrayType(types.getArrayType(int64, 3), 1);
-        assertEquals(exp64, castInputType("test", ptr64, types.getAggregateType(List.of(agg))));
-        assertEquals(exp64, castInputType("test", ptr64, types.getAggregateType(List.of(arr))));
-        assertEquals(exp64, castInputType("test", ptr64, types.getArrayType(agg, 1)));
-        assertEquals(exp64, castInputType("test", ptr64, types.getArrayType(arr, 1)));
+        Expression[] expected = {
+                i32[0],
+                i64[0]
+        };
+
+        for (Expression input : iValues) {
+            for (int i = 0; i < iTypes.length; i++) {
+                assertEquals(expected[i], castInput("test", iTypes[i], input));
+            }
+        }
     }
 
     @Test
-    public void testInvalidPointerConversion() {
-        IntegerType int32 = types.getIntegerType(32);
-        IntegerType int64 = types.getIntegerType(64);
+    public void testArray() {
+        Type[] iTypes = {
+                types.getArrayType(int32),
+                types.getArrayType(int64),
+                types.getArrayType(int32, 3),
+                types.getArrayType(int64, 3)
+        };
 
-        Type agg1 = types.getAggregateType(List.of(int64));
-        Type agg2 = types.getAggregateType(List.of(int64, int64));
-        Type agg3 = types.getAggregateType(List.of(int64, int64, int64));
+        Expression[] iValues = {
+                makeConstruct(i64[0], i64[1], i64[2]),
+                makeArray(i64[0], i64[1], i64[2])
+        };
 
-        Type arr1 = types.getArrayType(int64, 1);
-        Type arr2 = types.getArrayType(int64, 2);
-        Type arr3 = types.getArrayType(int64, 3);
+        Expression[] expected = {
+                makeArray(i32[0], i32[1], i32[2]),
+                makeArray(i64[0], i64[1], i64[2])
+        };
 
-        doTestInvalidInput(int32, types.getAggregateType(List.of(agg1, agg1, agg1)),
-                getUnexpectedNumberElementsError("test", 1, 3));
-        doTestInvalidInput(int32, types.getAggregateType(List.of(agg1, agg2)),
-                getMismatchingValueTypeError("test"));
-        doTestInvalidInput(int32, types.getAggregateType(List.of(agg3, agg3)),
-                getUnexpectedNumberElementsError("test", 1, 2));
-
-        doTestInvalidInput(int32, types.getAggregateType(List.of(arr1, arr1, arr1)),
-                getUnexpectedNumberElementsError("test", 1, 3));
-        doTestInvalidInput(int32, types.getAggregateType(List.of(arr1, arr2)),
-                getMismatchingValueTypeError("test"));
-        doTestInvalidInput(int32, types.getAggregateType(List.of(arr3, arr3)),
-                getUnexpectedNumberElementsError("test", 1, 2));
-
-        doTestInvalidInput(int32, types.getAggregateType(List.of(arr1, agg1)),
-                getMismatchingValueTypeError("test"));
-        doTestInvalidInput(int32, types.getAggregateType(List.of(types.getAggregateType(List.of(int64, int64, agg1)))),
-                getMismatchingValueTypeError("test[0]"));
-
-        doTestInvalidInput(int32, types.getArrayType(agg1, 3),
-                getUnexpectedNumberElementsError("test", 1, 3));
-        doTestInvalidInput(int32, types.getArrayType(agg3, 2),
-                getUnexpectedNumberElementsError("test", 1, 2));
-        doTestInvalidInput(int32, types.getArrayType(arr1, 3),
-                getUnexpectedNumberElementsError("test", 1, 3));
-        doTestInvalidInput(int32, types.getArrayType(arr3, 2),
-                getUnexpectedNumberElementsError("test", 1, 2));
-
-        doTestInvalidInput(int32, types.getArrayType(arr3, 0),
-                getUnexpectedNumberElementsError("test", 1, 0));
-        doTestInvalidInput(int32, types.getArrayType(arr3),
-                getUnexpectedNumberElementsError("test", 1, -1));
-        doTestInvalidInput(int32, types.getAggregateType(List.of()),
-                getMismatchingValueTypeError("test"));
+        for (Expression input : iValues) {
+            for (int i = 0; i < iTypes.length; i++) {
+                assertEquals(expected[i % 2], castInput("test", iTypes[i], input));
+            }
+        }
     }
 
-    private String getUnexpectedNumberElementsError(String name, int expected, int received) {
-        return "Unexpected number of elements in variable '" + name + "', expected " + expected + " but received " + received;
+    @Test
+    public void testAggregate() {
+        Type[] iTypes = {
+                types.getAggregateType(List.of(int32, int32, int32)),
+                types.getAggregateType(List.of(int64, int64, int64)),
+                types.getAggregateType(List.of(int32, int64, int32))
+        };
+
+        Expression[] iValues = {
+                makeConstruct(i64[0], i64[1], i64[2]),
+                makeArray(i64[0], i64[1], i64[2])
+        };
+
+        Expression[] expected = {
+                makeConstruct(i32[0], i32[1], i32[2]),
+                makeConstruct(i64[0], i64[1], i64[2]),
+                makeConstruct(i32[0], i64[1], i32[2])
+        };
+
+        for (Expression input : iValues) {
+            for (int i = 0; i < iTypes.length; i++) {
+                assertEquals(expected[i], castInput("test", iTypes[i], input));
+            }
+        }
     }
 
-    private String getMismatchingValueTypeError(String name) {
-        return "Mismatching value type for variable '" + name + "', expected same-type elements but received elements of different types";
+    @Test
+    public void testNestedArray1() {
+        Type[] iSubTypes = {
+                types.getArrayType(int32),
+                types.getArrayType(int64),
+                types.getArrayType(int32, 2),
+                types.getArrayType(int64, 2),
+        };
+
+        Type[] iTypes = {
+                types.getArrayType(iSubTypes[0]),
+                types.getArrayType(iSubTypes[1]),
+                types.getArrayType(iSubTypes[2]),
+                types.getArrayType(iSubTypes[3]),
+                types.getArrayType(iSubTypes[0], 2),
+                types.getArrayType(iSubTypes[1], 2),
+                types.getArrayType(iSubTypes[2], 2),
+                types.getArrayType(iSubTypes[3], 2),
+        };
+
+        Expression[] iValues = {
+                makeConstruct(makeConstruct(i64[0], i64[1]), makeConstruct(i64[2], i64[3])),
+                makeArray(makeArray(i64[0], i64[1]), makeArray(i64[2], i64[3]))
+        };
+
+        Expression[] expected = {
+                makeArray(makeArray(i32[0], i32[1]), makeArray(i32[2], i32[3])),
+                makeArray(makeArray(i64[0], i64[1]), makeArray(i64[2], i64[3]))
+        };
+
+        for (Expression input : iValues) {
+            for (int i = 0; i < iTypes.length; i++) {
+                assertEquals(expected[i % 2], castInput("test", iTypes[i], input));
+            }
+        }
     }
 
-    private void doTestInvalidInput(Type inner, Type outer, String error) {
-        ScopedPointerType pointer = types.getScopedPointerType(Tag.Spirv.SC_GENERIC, inner);
+    @Test
+    public void testNestedArray2() {
+        Type[] iSubTypes = {
+                types.getAggregateType(List.of(int32, int32)),
+                types.getAggregateType(List.of(int64, int64))
+        };
+
+        Type[] iTypes = {
+                types.getArrayType(iSubTypes[0]),
+                types.getArrayType(iSubTypes[1]),
+                types.getArrayType(iSubTypes[0], 2),
+                types.getArrayType(iSubTypes[1], 2)
+        };
+
+        Expression[] iValues = {
+                makeConstruct(makeConstruct(i64[0], i64[1]), makeConstruct(i64[2], i64[3])),
+                makeArray(makeConstruct(i64[0], i64[1]), makeConstruct(i64[2], i64[3]))
+        };
+
+        Expression[] expected = {
+                makeArray(makeConstruct(i32[0], i32[1]), makeConstruct(i32[2], i32[3])),
+                makeArray(makeConstruct(i64[0], i64[1]), makeConstruct(i64[2], i64[3]))
+        };
+
+        for (Expression input : iValues) {
+            for (int i = 0; i < iTypes.length; i++) {
+                assertEquals(expected[i % 2], castInput("test", iTypes[i], input));
+            }
+        }
+    }
+
+    @Test
+    public void testNestedAggregate1() {
+        Type[] iSubTypes = {
+                types.getAggregateType(List.of(int32)),
+                types.getAggregateType(List.of(int32, int32)),
+                types.getAggregateType(List.of(int32, int32, int32)),
+                types.getAggregateType(List.of(int64)),
+                types.getAggregateType(List.of(int64, int64)),
+                types.getAggregateType(List.of(int64, int64, int64))
+        };
+
+        Type[] iTypes = {
+                types.getAggregateType(List.of(iSubTypes[0], iSubTypes[1], iSubTypes[2])),
+                types.getAggregateType(List.of(iSubTypes[3], iSubTypes[4], iSubTypes[5]))
+        };
+
+        Expression[] iValues = {
+                makeConstruct(makeConstruct(i64[0]), makeConstruct(i64[0], i64[1]), makeConstruct(i64[0], i64[1], i64[2]))
+        };
+
+        Expression[] expected = {
+                makeConstruct(makeConstruct(i32[0]), makeConstruct(i32[0], i32[1]), makeConstruct(i32[0], i32[1], i32[2])),
+                makeConstruct(makeConstruct(i64[0]), makeConstruct(i64[0], i64[1]), makeConstruct(i64[0], i64[1], i64[2]))
+        };
+
+        assertEquals(expected[0], castInput("test", iTypes[0], iValues[0]));
+        assertEquals(expected[1], castInput("test", iTypes[1], iValues[0]));
+    }
+
+    @Test
+    public void testNestedAggregate2() {
+        Type[] iSubTypes = {
+                types.getAggregateType(List.of(int32, int32)),
+                types.getAggregateType(List.of(int64, int64)),
+                types.getAggregateType(List.of(int32, int64)),
+                types.getAggregateType(List.of(int64, int32))
+        };
+
+        Type[] iTypes = {
+                types.getAggregateType(List.of(iSubTypes[0], iSubTypes[0])),
+                types.getAggregateType(List.of(iSubTypes[1], iSubTypes[1])),
+                types.getAggregateType(List.of(iSubTypes[0], iSubTypes[1])),
+                types.getAggregateType(List.of(iSubTypes[2], iSubTypes[3])),
+                types.getAggregateType(List.of(iSubTypes[3], iSubTypes[2]))
+        };
+
+        Expression[] iValues = {
+                makeConstruct(makeConstruct(i64[0], i64[1]), makeConstruct(i64[2], i64[3])),
+                makeArray(makeArray(i64[0], i64[1]), makeArray(i64[2], i64[3]))
+        };
+
+        Expression[] expected = {
+                makeConstruct(makeConstruct(i32[0], i32[1]), makeConstruct(i32[2], i32[3])),
+                makeConstruct(makeConstruct(i64[0], i64[1]), makeConstruct(i64[2], i64[3])),
+                makeConstruct(makeConstruct(i32[0], i32[1]), makeConstruct(i64[2], i64[3])),
+                makeConstruct(makeConstruct(i32[0], i64[1]), makeConstruct(i64[2], i32[3])),
+                makeConstruct(makeConstruct(i64[0], i32[1]), makeConstruct(i32[2], i64[3]))
+        };
+
+        for (Expression input : iValues) {
+            for (int i = 0; i < iTypes.length; i++) {
+                assertEquals(expected[i], castInput("test", iTypes[i], input));
+            }
+        }
+    }
+
+    @Test
+    public void testPointer1() {
+        Type[] iSubTypes = {
+                types.getScopedPointerType("test", int32),
+                types.getScopedPointerType("test", int64)
+        };
+
+        Type[] iTypes = {
+                iSubTypes[0],
+                iSubTypes[1],
+                types.getScopedPointerType("test", iSubTypes[0]),
+                types.getScopedPointerType("test", iSubTypes[1]),
+        };
+
+        Expression[] iValues = {
+                i32[0],
+                i64[0],
+                makeConstruct(i32[0], i32[1]),
+                makeConstruct(i64[0], i64[1]),
+                makeArray(i32[0], i32[1]),
+                makeArray(i64[0], i64[1])
+        };
+
+        for (Expression input : iValues) {
+            for (Type type : iTypes) {
+                doTestInvalidType(type, input, "test", type, input.getType());
+            }
+        }
+    }
+
+    @Test
+    public void testPointer2() {
+        Type[] iSubTypes = {
+                types.getScopedPointerType("test", int32),
+                types.getScopedPointerType("test", int64)
+        };
+
+        ArrayType[] iTypes = {
+                types.getArrayType(iSubTypes[0]),
+                types.getArrayType(iSubTypes[1])
+        };
+
+        Expression[] iValues = {
+                makeConstruct(i32[0], i32[1]),
+                makeConstruct(i64[0], i64[1]),
+                makeArray(i32[0], i32[1]),
+                makeArray(i64[0], i64[1])
+        };
+
+        for (Expression input : iValues) {
+            for (ArrayType type : iTypes) {
+                doTestInvalidType(type, input, "test[0]", type.getElementType(), input.getOperands().get(0).getType());
+            }
+        }
+    }
+
+    @Test
+    public void testInvalidTypeToScalar() {
+        Type[] iTypes = {
+                int32,
+                int64
+        };
+
+        Expression[] iValues = {
+                makeConstruct(i32[0]),
+                makeConstruct(i64[0]),
+                makeArray(i32[0]),
+                makeArray(i64[0])
+        };
+
+        for (Expression input : iValues) {
+            for (Type type : iTypes) {
+                doTestInvalidType(type, input, "test", type, input.getType());
+            }
+        }
+    }
+
+    @Test
+    public void testInvalidTypeToArray1() {
+        ArrayType[] iTypes = {
+                types.getArrayType(int32, 2),
+                types.getArrayType(int64, 2)
+        };
+
+        Expression[] iValues = {
+                makeConstruct(i32[0]),
+                makeConstruct(i64[0]),
+                makeConstruct(i32[0], i32[1], i32[2]),
+                makeConstruct(i64[0], i64[1], i64[2]),
+                makeArray(i32[0]),
+                makeArray(i64[0]),
+                makeArray(i32[0], i32[1], i32[2]),
+                makeArray(i64[0], i64[1], i64[2])
+        };
+
+        for (Expression input : iValues) {
+            for (ArrayType type : iTypes) {
+                doTestInvalidType(type, input, "test", type, input.getType());
+            }
+        }
+    }
+
+    @Test
+    public void testInvalidTypeToArray2() {
+        ArrayType[] iTypes = {
+                types.getArrayType(int32),
+                types.getArrayType(int64),
+                types.getArrayType(int32, 2),
+                types.getArrayType(int64, 2)
+        };
+
+        Expression[] iValues = {
+                makeArray(makeArray(i32[0], i32[1]), makeArray(i32[2], i32[3])),
+                makeArray(makeArray(i64[0], i64[1]), makeArray(i64[2], i64[3])),
+                makeConstruct(makeConstruct(i32[0], i32[1]), makeConstruct(i32[2], i32[3])),
+                makeConstruct(makeConstruct(i64[0], i64[1]), makeConstruct(i64[2], i64[3]))
+        };
+
+        for (Expression input : iValues) {
+            for (ArrayType type : iTypes) {
+                doTestInvalidType(type, input, "test[0]", type.getElementType(),
+                        input.getOperands().get(0).getType());
+            }
+        }
+    }
+
+    @Test
+    public void testInvalidTypeToArray3() {
+        Type[] iSubTypes = {
+                types.getArrayType(int32, 2),
+                types.getArrayType(int64, 2)
+        };
+
+        ArrayType[] iTypes = {
+                types.getArrayType(iSubTypes[0], 2),
+                types.getArrayType(iSubTypes[1], 2)
+        };
+
+        Expression[] iValues = {
+                makeConstruct(i32[0], i32[1]),
+                makeConstruct(i64[0], i64[1]),
+                makeArray(i32[0], i32[1]),
+                makeArray(i64[0], i64[1])
+        };
+
+        for (Expression input : iValues) {
+            for (ArrayType type : iTypes) {
+                doTestInvalidType(type, input, "test[0]", type.getElementType(),
+                        input.getOperands().get(0).getType());
+            }
+        }
+    }
+
+    @Test
+    public void testInvalidTypeToAggregate() {
+        AggregateType[] iTypes = {
+                types.getAggregateType(List.of(int32, int32)),
+                types.getAggregateType(List.of(int64, int64)),
+                types.getAggregateType(List.of(int32, int64))
+        };
+
+        Expression[] iValues = {
+                makeConstruct(i32[0]),
+                makeConstruct(i64[0]),
+                makeConstruct(i32[0], i32[1], i32[2]),
+                makeConstruct(i64[0], i64[1], i64[2]),
+                makeArray(i32[0]),
+                makeArray(i64[0]),
+                makeArray(i32[0], i32[1], i32[2]),
+                makeArray(i64[0], i64[1], i64[2])
+        };
+
+        for (Expression input : iValues) {
+            for (AggregateType type : iTypes) {
+                doTestInvalidType(type, input, "test", type, input.getType());
+            }
+        }
+    }
+
+    @Test
+    public void testInvalidTypeToAggregate2() {
+        AggregateType[] iTypes = {
+                types.getAggregateType(List.of(int32, int32)),
+                types.getAggregateType(List.of(int64, int64))
+        };
+
+        Expression[] iValues = {
+                makeConstruct(makeConstruct(i32[0], i32[1]), makeConstruct(i32[2], i32[3])),
+                makeConstruct(makeConstruct(i64[0], i64[1]), makeConstruct(i64[2], i64[3])),
+                makeArray(makeArray(i32[0], i32[1]), makeArray(i32[2], i32[3])),
+                makeArray(makeArray(i64[0], i64[1]), makeArray(i64[2], i64[3]))
+        };
+
+        for (Expression input : iValues) {
+            for (AggregateType type : iTypes) {
+                doTestInvalidType(type, input, "test[0]", type.getFields().get(0).type(),
+                        input.getOperands().get(0).getType());
+            }
+        }
+    }
+
+    @Test
+    public void testInvalidTypeToAggregate3() {
+        Type[] iSubTypes = {
+                types.getAggregateType(List.of(int32, int32)),
+                types.getAggregateType(List.of(int64, int64))
+        };
+
+        AggregateType[] iTypes = {
+                types.getAggregateType(List.of(iSubTypes[0], iSubTypes[0])),
+                types.getAggregateType(List.of(iSubTypes[1], iSubTypes[1]))
+        };
+
+        Expression[] iValues = {
+                makeConstruct(i32[0], i32[1]),
+                makeConstruct(i64[0], i64[1]),
+                makeArray(i32[0], i32[1]),
+                makeArray(i64[0], i64[1])
+        };
+
+        for (Expression input : iValues) {
+            for (AggregateType type : iTypes) {
+                doTestInvalidType(type, input, "test[0]",
+                        type.getFields().get(0).type(),
+                        input.getOperands().get(0).getType());
+            }
+        }
+    }
+
+    private void doTestInvalidType(Type type, Expression value, String id, Type expected, Type actual) {
         try {
-            castInputType("test", pointer, outer);
+            castInput("test", type, value);
             fail("Should throw exception");
         } catch (ParsingException e) {
-            assertEquals(error, e.getMessage());
+            assertEquals(String.format("Mismatching value type for variable '%s', " +
+                    "expected '%s' but received '%s'", id, expected, actual), e.getMessage());
         }
+    }
+
+    private ConstructExpr makeConstruct(Expression... elements) {
+        Type type = types.getAggregateType(Stream.of(elements).map(Expression::getType).toList());
+        return (ConstructExpr) expressions.makeConstruct(type, Arrays.asList(elements));
+    }
+
+    private ConstructExpr makeArray(Expression... elements) {
+        assertEquals(1, Stream.of(elements).map(Expression::getType).collect(Collectors.toSet()).size());
+        return (ConstructExpr) expressions.makeArray(elements[0].getType(), Arrays.asList(elements), true);
     }
 }
