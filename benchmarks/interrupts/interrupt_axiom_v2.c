@@ -32,7 +32,7 @@ void *thread_2(void *arg)
 {
     if(atomic_load_explicit(&z, memory_order_relaxed) == 1 && atomic_load_explicit(&y, memory_order_relaxed) == 1) {
         atomic_thread_fence(memory_order_seq_cst);
-        assert(atomic_load_explicit(&x, memory_order_relaxed) == 1);
+        __VERIFIER_assert(atomic_load_explicit(&x, memory_order_relaxed) == 1);
     }
     return NULL;
 }

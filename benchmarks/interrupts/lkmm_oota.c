@@ -10,7 +10,7 @@ pthread_t h;
 void *handler(void *arg)
 {
     WRITE_ONCE(z, 3);
-    assert(READ_ONCE(y) == 0);
+    __VERIFIER_assert(READ_ONCE(y) == 0);
     return NULL;
 }
 

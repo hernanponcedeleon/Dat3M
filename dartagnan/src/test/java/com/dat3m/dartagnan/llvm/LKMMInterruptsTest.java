@@ -47,21 +47,21 @@ public class LKMMInterruptsTest extends AbstractCTest {
     @Parameterized.Parameters(name = "{index}: {0}, target={1}")
     public static Iterable<Object[]> data() throws IOException {
         return Arrays.asList(new Object[][]{
-                {"c_disable_v1-opt", LKMM, PASS},
-                {"c_disable_v2-opt", LKMM, PASS},
-                {"c_disable_v3-opt", LKMM, PASS},
-                {"lkmm_detour_disable_release-opt", LKMM, PASS},
-                {"lkmm_detour_disable-opt", LKMM, FAIL},
-                {"lkmm_detour-opt", LKMM, FAIL},
-                {"lkmm_oota-opt", LKMM, PASS},
-                // {"lkmm_weak_model-opt", LKMM, PASS},
-                {"lkmm_with_barrier_dec_barrier-opt", LKMM, PASS},
-                {"lkmm_with_barrier_dec_wmb-opt", LKMM, PASS},
-                {"lkmm_with_barrier_dec-opt", LKMM, FAIL},
-                {"lkmm_with_barrier-opt", LKMM, PASS},
-                {"lkmm_with_barrier_inc_split-opt", LKMM, FAIL},
-                {"lkmm_with_disable_enable_as_barrier-opt", LKMM, PASS},
-                {"lkmm_without_barrier-opt", LKMM, FAIL},
+                {"c_disable_v1", LKMM, PASS},
+                {"c_disable_v2", LKMM, PASS},
+                {"c_disable_v3", LKMM, PASS},
+                {"lkmm_detour_disable_release", LKMM, PASS},
+                {"lkmm_detour_disable", LKMM, FAIL},
+                {"lkmm_detour", LKMM, FAIL},
+                {"lkmm_oota", LKMM, PASS},
+                // {"lkmm_weak_model", LKMM, PASS},
+                {"lkmm_with_barrier_dec_barrier", LKMM, PASS},
+                {"lkmm_with_barrier_dec_wmb", LKMM, PASS},
+                {"lkmm_with_barrier_dec", LKMM, FAIL},
+                {"lkmm_with_barrier", LKMM, PASS},
+                {"lkmm_with_barrier_inc_split", LKMM, FAIL},
+                {"lkmm_with_disable_enable_as_barrier", LKMM, PASS},
+                {"lkmm_without_barrier", LKMM, FAIL},
         });
     }
 
