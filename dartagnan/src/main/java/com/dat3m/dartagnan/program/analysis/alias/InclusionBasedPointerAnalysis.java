@@ -2,6 +2,8 @@ package com.dat3m.dartagnan.program.analysis.alias;
 
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionVisitor;
+import com.dat3m.dartagnan.expression.aggregates.ConstructExpr;
+import com.dat3m.dartagnan.expression.aggregates.ExtractExpr;
 import com.dat3m.dartagnan.expression.integers.*;
 import com.dat3m.dartagnan.expression.misc.ITEExpr;
 import com.dat3m.dartagnan.expression.processing.ExpressionInspector;
@@ -276,7 +278,7 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
         // Each memory object gets a variable representing its base address value.
         for (final MemoryObject object : program.getMemory().getObjects()) {
             totalVariables++;
-            objectVariables.put(object, new Variable(object, object.toString()));
+            objectVariables.put(object, new Variable(object, null, object.toString()));
         }
         // Each expression gets a "res" variable representing its result value set.
         // Each register writer gets an "out" variable ("ld" for loads) representing its return value set.
@@ -511,10 +513,13 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
         private final Set<Variable> seeAlso = new LinkedHashSet<>();
         // If nonnull, this variable represents that object's base address.
         private final MemoryObject object;
+        // If nonnull, this variable represents an aggregate of field variables.
+        private final DerivedVariable[] aggregate;
         // For visualization.
         private final String name;
-        private Variable(MemoryObject o, String n) {
+        private Variable(MemoryObject o, DerivedVariable[] a, String n) {
             object = o;
+            aggregate = a;
             name = n;
         }
         @Override public String toString() { return name; }
@@ -563,7 +568,7 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
 
     private Variable newVariable(String name) {
         totalVariables++;
-        return new Variable(null, name);
+        return new Variable(null, null, name);
     }
 
     // Inserts a single inclusion relationship into the graph.
@@ -936,17 +941,7 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
     private DerivedVariable getResultVariable(Expression expression, RegReader reader) {
         final var collector = new Collector(reader);
         final List<IncludeEdge> result = expression.accept(collector);
-        if (result.isEmpty()) {
-            return null;
-        }
-        if (result.size() == 1) {
-            return new DerivedVariable(result.get(0).source, result.get(0).modifier);
-        }
-        final Variable variable = newVariable("res" + reader.getGlobalId() + "(" + expression + ")");
-        for (IncludeEdge edge : result) {
-            addInclude(variable, edge);
-        }
-        return derive(variable);
+        return getOrNewVariable(result, String.format("res%d(%s)", reader.getGlobalId(), expression));
     }
 
     // Fetches the node for address values that can be read from a register at a specific program point.
@@ -967,6 +962,20 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
             addInclude(result, includeEdge(writerVariable));
         }
         return registerVariables.compute(writers, (k, v) -> derive(result));
+    }
+
+    private DerivedVariable getOrNewVariable(List<IncludeEdge> edges, String name) {
+        if (edges.isEmpty()) {
+            return null;
+        }
+        if (edges.size() == 1) {
+            return new DerivedVariable(edges.get(0).source, edges.get(0).modifier);
+        }
+        final Variable base = newVariable(name);
+        for (IncludeEdge edge : edges) {
+            addInclude(base, edge);
+        }
+        return derive(base);
     }
 
     private final class Collector implements ExpressionVisitor<List<IncludeEdge>> {
@@ -1080,7 +1089,41 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
         @Override
         public List<IncludeEdge> visitRegister(Register r) {
             DerivedVariable phiVariable = getPhiNodeVariable(r, reader);
-            return List.of(new IncludeEdge(phiVariable.base, phiVariable.modifier));
+            return List.of(includeEdge(phiVariable));
+        }
+
+        @Override
+        public List<IncludeEdge> visitExtractExpression(ExtractExpr extract) {
+            final List<IncludeEdge> result = new ArrayList<>();
+            final int index = extract.getFieldIndex();
+            for (IncludeEdge operand : extract.getOperand().accept(this)) {
+                final DerivedVariable[] aggregate = operand.source.aggregate;
+                final DerivedVariable field = aggregate == null || aggregate.length <= index ? null : aggregate[index];
+                final Variable source = field == null ? operand.source : field.base;
+                final Modifier modifier = field == null ? RELAXED_MODIFIER : compose(field.modifier, operand.modifier);
+                result.add(new IncludeEdge(source, modifier));
+            }
+            return result;
+        }
+
+        @Override
+        public List<IncludeEdge> visitConstructExpression(ConstructExpr construct) {
+            final List<IncludeEdge> result = new ArrayList<>();
+            final var operands = new DerivedVariable[construct.getOperands().size()];
+            final String name = construct.toString();
+            for (int i = 0; i < construct.getOperands().size(); i++) {
+                final String fieldName = String.format("%s[%d]", name, i);
+                operands[i] = getOrNewVariable(construct.getOperands().get(i).accept(this), fieldName);
+            }
+            final Variable proxy = new Variable(null, operands, name);
+            totalVariables++;
+            for (DerivedVariable operand : operands) {
+                if (operand != null) {
+                    addInclude(proxy, includeEdge(operand));
+                }
+            }
+            result.add(new IncludeEdge(proxy, TRIVIAL_MODIFIER));
+            return result;
         }
     }
 
