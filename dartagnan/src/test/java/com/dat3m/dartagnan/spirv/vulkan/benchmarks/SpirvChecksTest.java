@@ -97,11 +97,7 @@ public class SpirvChecksTest {
     }
 
     @Test
-    public void testAllSolvers() throws Exception {
-        /* TODO: Very slow, enable when Vulkan memory model is more efficient in CAAT
-        try (SolverContext ctx = mkCtx(); ProverWithTracker prover = mkProver(ctx)) {
-             assertEquals(expected, RefinementSolver.run(ctx, prover, mkTask()).getResult());
-        }*/
+    public void test() throws Exception {
         try (SolverContext ctx = mkCtx(); ProverWithTracker prover = mkProver(ctx)) {
             assertEquals(expected, AssumeSolver.run(ctx, prover, mkTask()).getResult());
         }

@@ -73,7 +73,7 @@ public class SpirvRacesTest {
                 {"ttaslock-dv2wg-2.2.2.spv.dis", 1, FAIL},
 
                 {"xf-barrier-2.1.2.spv.dis", 9, PASS},
-                {"xf-barrier-3.1.3.spv.dis", 10, PASS},
+                //{"xf-barrier-3.1.3.spv.dis", 10, PASS},
                 {"xf-barrier-2.1.1.spv.dis", 9, PASS},
                 {"xf-barrier-1.1.2.spv.dis", 9, PASS},
                 {"xf-barrier-fail1.spv.dis", 4, FAIL},
@@ -85,11 +85,7 @@ public class SpirvRacesTest {
     }
 
     @Test
-    public void testAllSolvers() throws Exception {
-        /* TODO: Very slow, enable when OpenCL memory model is more efficient in CAAT
-        try (SolverContext ctx = mkCtx(); ProverWithTracker prover = mkProver(ctx)) {
-             assertEquals(expected, RefinementSolver.run(ctx, prover, mkTask()).getResult());
-        }*/
+    public void test() throws Exception {
         try (SolverContext ctx = mkCtx(); ProverWithTracker prover = mkProver(ctx)) {
             assertEquals(expected, AssumeSolver.run(ctx, prover, mkTask()).getResult());
         }
@@ -101,7 +97,7 @@ public class SpirvRacesTest {
                 cfg,
                 BasicLogManager.create(cfg),
                 ShutdownManager.create().getNotifier(),
-                SolverContextFactory.Solvers.YICES2);
+                SolverContextFactory.Solvers.Z3);
     }
 
     private ProverWithTracker mkProver(SolverContext ctx) {

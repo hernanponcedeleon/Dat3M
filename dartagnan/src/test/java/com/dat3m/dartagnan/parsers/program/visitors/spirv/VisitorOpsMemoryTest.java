@@ -5,8 +5,7 @@ import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.Type;
 import com.dat3m.dartagnan.expression.aggregates.ConstructExpr;
-import com.dat3m.dartagnan.expression.integers.IntBinaryExpr;
-import com.dat3m.dartagnan.expression.integers.IntBinaryOp;
+import com.dat3m.dartagnan.expression.misc.GEPExpr;
 import com.dat3m.dartagnan.expression.type.*;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.mocks.MockProgramBuilder;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.mocks.MockSpirvParser;
@@ -683,112 +682,77 @@ public class VisitorOpsMemoryTest {
     public void testAccessChainArray() {
         // given
         String input = """
-                %variable = OpVariable %v2v2v2i_ptr Uniform %const
+                %variable = OpVariable %v3_ptr Uniform %a3
                 %element = OpAccessChain %i_ptr %variable %1 %0 %1
                 """;
 
-        IntegerType iType = builder.mockIntType("%int", 32);
-        ArrayType v2iType = builder.mockVectorType("%v2i", "%int", 2);
-        ArrayType v2v2iType = builder.mockVectorType("%v2v2i", "%v2i", 2);
-        builder.mockVectorType("%v2v2v2i", "%v2v2i", 2);
+        builder.mockIntType("%int", 32);
+        builder.mockVectorType("%v1", "%int", 2);
+        builder.mockVectorType("%v2", "%v1", 2);
+        builder.mockVectorType("%v3", "%v2", 2);
+        builder.mockPtrType("%v3_ptr", "%v3", "Uniform");
         builder.mockPtrType("%i_ptr", "%int", "Uniform");
-        builder.mockPtrType("%v2v2v2i_ptr", "%v2v2v2i", "Uniform");
 
-        Expression i32 = expressions.makeValue(1, iType);
-        Expression arr1 = expressions.makeArray(iType, List.of(i32, i32), true);
-        Expression arr2 = expressions.makeArray(v2iType, List.of(arr1, arr1), true);
-        Expression arr3 = expressions.makeArray(v2v2iType, List.of(arr2, arr2), true);
-
-        builder.addExpression("%const", arr3);
-
-        Expression i0 = builder.addExpression("%0", expressions.makeValue(0, iType));
-        Expression i1 = builder.addExpression("%1", expressions.makeValue(1, iType));
+        Expression i0 = builder.mockConstant("%0", "%i_ptr", 0);
+        Expression i1 = builder.mockConstant("%1", "%i_ptr", 1);
+        builder.mockConstant("%a1", "%v1", List.of("%1", "%0"));
+        builder.mockConstant("%a2", "%v2", List.of("%a1", "%a1"));
+        builder.mockConstant("%a3", "%v3", List.of("%a2", "%a2"));
 
         // when
         parse(input);
 
         // then
-        IntBinaryExpr e1 = (IntBinaryExpr) ((ScopedPointer)builder.getExpression("%element")).getAddress();
-        assertEquals(types.getArchType(), e1.getType());
-        assertEquals(makeOffset(i1, 4), e1.getRight());
+        ScopedPointer pointer = (ScopedPointer) builder.getExpression("%element");
+        assertEquals(builder.getType("%i_ptr"), pointer.getType());
 
-        IntBinaryExpr e2 = (IntBinaryExpr) e1.getLeft();
-        assertEquals(makeOffset(i0, 8), e2.getRight());
-
-        IntBinaryExpr e3 = (IntBinaryExpr) e2.getLeft();
-        assertEquals(makeOffset(i1, 16), e3.getRight());
-        assertEquals(builder.getExpression("%variable"), e3.getLeft());
-    }
-
-    @Test
-    public void testPtrAccessChainArray() {
-        // given
-        String input = """
-                %13 = OpVariable %_ptr_Workgroup_uint Workgroup
-                %19 = OpPtrAccessChain %_ptr_Workgroup_uint %13 %18
-                """;
-
-        IntegerType iType = builder.mockIntType("%uint", 32);
-        builder.mockPtrType("%_ptr_Workgroup_uint", "%uint", "Workgroup");
-        builder.mockConstant("%18", "%_ptr_Workgroup_uint", 0);
-
-        // when
-        parse(input);
-
-        // then
-        ScopedPointer sp = (ScopedPointer) ((ScopedPointer) builder.getExpression("%19")).getAddress();
-        IntBinaryExpr addressExp = (IntBinaryExpr) sp.getAddress();
-        assertEquals(iType, sp.getInnerType());
-        assertEquals(builder.getExpression("%13"), addressExp.getLeft());
-        assertEquals(IntBinaryOp.ADD, addressExp.getKind());
-        assertEquals(IntBinaryOp.MUL, addressExp.getRight().getKind());
-        assertEquals(expressions.makeValue(4, types.getArchType()), ((IntBinaryExpr) addressExp.getRight()).getLeft());
-        assertEquals(expressions.makeCast(builder.getExpression("%18"), types.getArchType()),
-                ((IntBinaryExpr) addressExp.getRight()).getRight());
+        GEPExpr gep = (GEPExpr) pointer.getAddress();
+        assertEquals(builder.getExpression("%variable"), gep.getBase());
+        assertEquals(builder.getType("%v3_ptr"), gep.getType());
+        assertEquals(builder.getType("%v3"), gep.getIndexingType());
+        assertEquals(List.of(i0, i1, i0, i1), gep.getOffsets());
     }
 
     @Test
     public void testAccessChainStruct() {
         // given
         String input = """
-                %variable = OpVariable %agg2_ptr Uniform %const
+                %variable = OpVariable %agg2_ptr Uniform %s2
                 %element = OpAccessChain %i32_ptr %variable %4 %2
                 """;
 
-        BooleanType boolType = builder.mockBoolType("%bool");
-        IntegerType i16Type = builder.mockIntType("%int16", 16);
-        IntegerType i32Type = builder.mockIntType("%int32", 32);
-        IntegerType i64Type = builder.mockIntType("%int64", 64);
-        AggregateType a1Type = types.getAggregateType(List.of(boolType, i16Type, i32Type, i64Type));
-        AggregateType a2Type = types.getAggregateType(List.of(boolType, i16Type, i32Type, i64Type, a1Type));
-
+        builder.mockBoolType("%bool");
+        builder.mockIntType("%int16", 16);
+        builder.mockIntType("%int32", 32);
+        builder.mockIntType("%int64", 64);
         builder.mockAggregateType("%agg1", "%bool", "%int16", "%int32", "%int64");
         builder.mockAggregateType("%agg2", "%bool", "%int16", "%int32", "%int64", "%agg1");
         builder.mockPtrType("%i32_ptr", "%int32", "Uniform");
         builder.mockPtrType("%agg2_ptr", "%agg2", "Uniform");
 
-        Expression b = expressions.makeFalse();
-        Expression i16 = expressions.makeValue(1, i16Type);
-        Expression i32 = expressions.makeValue(11, i32Type);
-        Expression i64 = expressions.makeValue(111, i64Type);
-        Expression agg1 = expressions.makeConstruct(a1Type, List.of(b, i16, i32, i64));
-        Expression agg2 = expressions.makeConstruct(a2Type, List.of(b, i16, i32, i64, agg1));
+        builder.mockConstant("%false", "%bool", false);
+        builder.mockConstant("%int_1", "%int16", 1);
+        builder.mockConstant("%int_11", "%int32", 11);
+        builder.mockConstant("%int_111", "%int64", 111);
+        builder.mockConstant("%s1", "%agg1", List.of("%false", "%int_1", "%int_11", "%int_111"));
+        builder.mockConstant("%s2", "%agg2", List.of("%false", "%int_1", "%int_11", "%int_111", "%s1"));
 
-        builder.addExpression("%const", agg2);
-
-        builder.addExpression("%2", expressions.makeValue(2, i32Type));
-        builder.addExpression("%4", expressions.makeValue(4, i32Type));
+        Expression i0 = builder.mockConstant("%0", "%int32", 0);
+        Expression i2 = builder.mockConstant("%2", "%int32", 2);
+        Expression i4 = builder.mockConstant("%4", "%int32", 4);
 
         // when
         parse(input);
 
         // then
-        IntBinaryExpr e1 = (IntBinaryExpr) ((ScopedPointer)builder.getExpression("%element")).getAddress();
-        assertEquals(types.getArchType(), e1.getType());
-        assertEquals(expressions.makeValue(4, i64Type), e1.getRight());
-        IntBinaryExpr e2 = (IntBinaryExpr) e1.getLeft();
-        assertEquals(expressions.makeValue(16, i64Type), e2.getRight());
-        assertEquals(builder.getExpression("%variable"), e2.getLeft());
+        ScopedPointer pointer = (ScopedPointer) builder.getExpression("%element");
+        assertEquals(builder.getType("%i32_ptr"), pointer.getType());
+
+        GEPExpr gep = (GEPExpr) pointer.getAddress();
+        assertEquals(builder.getExpression("%variable"), gep.getBase());
+        assertEquals(builder.getType("%agg2_ptr"), gep.getType());
+        assertEquals(builder.getType("%agg2"), gep.getIndexingType());
+        assertEquals(List.of(i0, i4, i2), gep.getOffsets());
     }
 
     @Test
@@ -799,27 +763,30 @@ public class VisitorOpsMemoryTest {
                 %element = OpAccessChain %i_ptr %variable %register
                 """;
 
-        IntegerType i32Type = builder.mockIntType("%int", 32);
+        builder.mockIntType("%int", 32);
         builder.mockVectorType("%v2i", "%int", 2);
         builder.mockPtrType("%v2i_ptr", "%v2i", "Uniform");
         builder.mockPtrType("%i_ptr", "%int", "Uniform");
 
-        Expression i1 = expressions.makeValue(1, i32Type);
-        Expression i2 = expressions.makeValue(2, i32Type);
-        Expression arr = expressions.makeArray(i32Type, List.of(i1, i2), true);
-
-        builder.addExpression("%const", arr);
+        Expression i0 = builder.mockConstant("%i0", "%int", 0);
+        Expression i1 = builder.mockConstant("%i1", "%int", 1);
+        Expression i2 = builder.mockConstant("%i2", "%int", 2);
+        builder.mockConstant("%const", "%v2i", List.of(i1, i2));
 
         // when
         builder.mockFunctionStart(true);
-        Register register = (Register) builder.addExpression("%register", builder.addRegister("%register", "%int"));
+        builder.addExpression("%register", builder.addRegister("%register", "%int"));
         new MockSpirvParser(input).spv().accept(new VisitorOpsMemory(builder));
 
         // then
-        IntBinaryExpr e = (IntBinaryExpr) ((ScopedPointer)builder.getExpression("%element")).getAddress();
-        assertEquals(types.getArchType(), e.getType());
-        assertEquals(builder.getExpression("%variable"), e.getLeft());
-        assertEquals(makeOffset(register, 4), e.getRight());
+        ScopedPointer pointer = (ScopedPointer) builder.getExpression("%element");
+        assertEquals(builder.getType("%i_ptr"), pointer.getType());
+
+        GEPExpr gep = (GEPExpr) pointer.getAddress();
+        assertEquals(builder.getExpression("%variable"), gep.getBase());
+        assertEquals(builder.getType("%v2i_ptr"), gep.getType());
+        assertEquals(builder.getType("%v2i"), gep.getIndexingType());
+        assertEquals(List.of(i0, builder.getExpression("%register")), gep.getOffsets());
     }
 
     @Test
@@ -830,18 +797,16 @@ public class VisitorOpsMemoryTest {
                 %element = OpAccessChain %i16_ptr %variable %register
                 """;
 
-        IntegerType i16Type = builder.mockIntType("%int16", 16);
-        IntegerType i32Type = builder.mockIntType("%int32", 32);
-        AggregateType aType = builder.mockAggregateType("%agg", "%int16", "%int32");
-
+        builder.mockIntType("%int16", 16);
+        builder.mockIntType("%int32", 32);
+        builder.mockAggregateType("%agg", "%int16", "%int32");
         builder.mockPtrType("%i16_ptr", "%int16", "Uniform");
         builder.mockPtrType("%agg_ptr", "%agg", "Uniform");
 
-        Expression i1 = expressions.makeValue(1, i16Type);
-        Expression i2 = expressions.makeValue(2, i32Type);
-        Expression struct = expressions.makeConstruct(aType, List.of(i1, i2));
+        builder.mockConstant("%i1", "%int16", 1);
+        builder.mockConstant("%i2", "%int32", 2);
+        builder.mockConstant("%const", "%agg", List.of("%i1", "%i2"));
 
-        builder.addExpression("%const", struct);
         builder.mockFunctionStart(true);
         builder.addExpression("%register", builder.addRegister("%register", "%int32"));
         VisitorOpsMemory visitor = new VisitorOpsMemory(builder);
@@ -859,6 +824,65 @@ public class VisitorOpsMemoryTest {
     }
 
     @Test
+    public void testPtrAccessChainPointer() {
+        // given
+        String input = """
+                %variable = OpVariable %i_ptr Workgroup
+                %element = OpPtrAccessChain %i_ptr %variable %1
+                """;
+
+        builder.mockIntType("%int", 32);
+        builder.mockPtrType("%i_ptr", "%int", "Workgroup");
+        Expression i1 = builder.mockConstant("%1", "%i_ptr", 1);
+
+        // when
+        parse(input);
+
+        // then
+        ScopedPointer pointer = (ScopedPointer) builder.getExpression("%element");
+        assertEquals(builder.getType("%i_ptr"), pointer.getType());
+
+        GEPExpr gep = (GEPExpr) pointer.getAddress();
+        assertEquals(builder.getExpression("%variable"), gep.getBase());
+        assertEquals(builder.getType("%i_ptr"), gep.getType());
+        assertEquals(builder.getType("%int"), gep.getIndexingType());
+        assertEquals(List.of(i1), gep.getOffsets());
+    }
+
+    @Test
+    public void testPtrAccessChainArray() {
+        // given
+        String input = """
+                %variable = OpVariable %v2_ptr Workgroup
+                %element = OpPtrAccessChain %i_ptr %variable %1 %2 %3
+                """;
+
+        builder.mockIntType("%int", 32);
+        builder.mockVectorType("%v1", "%int", 4);
+        builder.mockVectorType("%v2", "%v1", 3);
+        builder.mockPtrType("%v2_ptr", "%v2", "Workgroup");
+        builder.mockPtrType("%i_ptr", "%int", "Workgroup");
+
+
+        Expression i1 = builder.mockConstant("%1", "%i_ptr", 1);
+        Expression i2 = builder.mockConstant("%2", "%i_ptr", 2);
+        Expression i3 = builder.mockConstant("%3", "%i_ptr", 3);
+
+        // when
+        parse(input);
+
+        // then
+        ScopedPointer pointer = (ScopedPointer) builder.getExpression("%element");
+        assertEquals(builder.getType("%i_ptr"), pointer.getType());
+
+        GEPExpr gep = (GEPExpr) pointer.getAddress();
+        assertEquals(builder.getExpression("%variable"), gep.getBase());
+        assertEquals(builder.getType("%v2_ptr"), gep.getType());
+        assertEquals(builder.getType("%v2"), gep.getIndexingType());
+        assertEquals(List.of(i1, i2, i3), gep.getOffsets());
+    }
+
+    @Test
     public void testAccessChainWrongDepth() {
         // given
         String input = """
@@ -866,17 +890,15 @@ public class VisitorOpsMemoryTest {
                 %element = OpAccessChain %i_ptr %variable %0 %0
                 """;
 
-        IntegerType iType = builder.mockIntType("%int", 32);
+        builder.mockIntType("%int", 32);
         builder.mockVectorType("%v2i", "%int", 2);
         builder.mockPtrType("%i_ptr", "%int", "Uniform");
         builder.mockPtrType("%v2i_ptr", "%v2i", "Uniform");
 
-        Expression i1 = expressions.makeValue(1, iType);
-        Expression i2 = expressions.makeValue(2, iType);
-        Expression arr = expressions.makeArray(iType, List.of(i1, i2), true);
-
-        builder.addExpression("%const", arr);
-        builder.addExpression("%0", expressions.makeValue(0, iType));
+        builder.mockConstant("%0", "%int", 0);
+        builder.mockConstant("%1", "%int", 1);
+        builder.mockConstant("%2", "%int", 2);
+        builder.mockConstant("%const", "%v2i", List.of("%1", "%2"));
 
         try {
             // when
@@ -896,18 +918,16 @@ public class VisitorOpsMemoryTest {
                 %element = OpAccessChain %i16_ptr %variable %0
                 """;
 
-        IntegerType i32Type = builder.mockIntType("%int32", 32);
+        builder.mockIntType("%int32", 32);
         builder.mockVectorType("%v2i", "%int32", 2);
         builder.mockPtrType("%v2i_ptr", "%v2i", "Uniform");
         builder.mockIntType("%int16", 16);
         builder.mockPtrType("%i16_ptr", "%int16", "Uniform");
 
-        Expression i1 = expressions.makeValue(1, i32Type);
-        Expression i2 = expressions.makeValue(2, i32Type);
-        Expression arr = expressions.makeArray(i32Type, List.of(i1, i2), true);
-
-        builder.addExpression("%const", arr);
-        builder.addExpression("%0", expressions.makeValue(0, i32Type));
+        builder.mockConstant("%0", "%int32", 0);
+        builder.mockConstant("%1", "%int32", 1);
+        builder.mockConstant("%2", "%int32", 2);
+        builder.mockConstant("%const", "%v2i", List.of("%1", "%2"));
 
         try {
             // when
@@ -928,19 +948,15 @@ public class VisitorOpsMemoryTest {
                 %element = OpAccessChain %i16_ptr %variable %1
                 """;
 
-        IntegerType i16Type = builder.mockIntType("%int16", 16);
-        IntegerType i32Type = builder.mockIntType("%int32", 32);
-        AggregateType aType = builder.mockAggregateType("%agg", "%int16", "%int32");
-
+        builder.mockIntType("%int16", 16);
+        builder.mockIntType("%int32", 32);
+        builder.mockAggregateType("%agg", "%int16", "%int32");
         builder.mockPtrType("%i16_ptr", "%int16", "Uniform");
         builder.mockPtrType("%agg_ptr", "%agg", "Uniform");
 
-        Expression i1 = expressions.makeValue(1, i16Type);
-        Expression i2 = expressions.makeValue(2, i32Type);
-        Expression struct = expressions.makeConstruct(aType, List.of(i1, i2));
-
-        builder.addExpression("%const", struct);
-        builder.addExpression("%1", expressions.makeValue(1, i32Type));
+        builder.mockConstant("%1", "%int16", 1);
+        builder.mockConstant("%2", "%int32", 2);
+        builder.mockConstant("%const", "%agg", List.of("%1", "%2"));
 
         try {
             // when
@@ -953,20 +969,10 @@ public class VisitorOpsMemoryTest {
         }
     }
 
-    private Expression makeOffset(Expression stepExpr, int stepSize) {
-        IntegerType archType = types.getArchType();
-        Expression stepCastExpr = expressions.makeCast(stepExpr, archType);
-        return expressions.makeMul(expressions.makeValue(stepSize, archType), stepCastExpr);
-    }
-
     private Event getLastEvent() {
-        return getLastNEvent(0);
-    }
-
-    private Event getLastNEvent(int n) {
         List<Event> events = builder.getCurrentFunction().getEvents();
-        if (!events.isEmpty() && events.size() > n) {
-            return events.get(events.size() - 1 - n);
+        if (!events.isEmpty()) {
+            return events.get(events.size() - 1);
         }
         return null;
     }
