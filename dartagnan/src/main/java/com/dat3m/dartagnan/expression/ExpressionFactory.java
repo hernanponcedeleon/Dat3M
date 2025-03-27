@@ -176,9 +176,8 @@ public final class ExpressionFactory {
         return new IntConcat(ImmutableList.copyOf(operands));
     }
 
-    public Expression makeIntExtract(Expression operand, int start, int endExclusive) {
-        // FIXME: The off-by-one in the end index is not nice
-        return new IntExtract(operand, start, endExclusive - 1);
+    public Expression makeIntExtract(Expression operand, int lowBit, int highBit) {
+        return new IntExtract(operand, lowBit, highBit);
     }
 
     public Expression makeIntUnary(IntUnaryOp operator, Expression operand) {

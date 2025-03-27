@@ -344,7 +344,7 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object> {
     @Override
     public Expression visitExpressionRegister32(ExpressionRegister32Context ctx) {
         final Register r64 = programBuilder.getOrNewRegister(mainThread, ctx.register32().id, archType);
-        final Expression expr = expressions.makeIntExtract(r64, 0, 32);
+        final Expression expr = expressions.makeIntExtract(r64, 0, 31);
         if (ctx.shift() == null) {
             return expr;
         }
@@ -365,7 +365,7 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object> {
     @Override
     public Expression visitExpressionConversion(ExpressionConversionContext ctx) {
         final Register r64 = programBuilder.getOrNewRegister(mainThread, ctx.register32().id, archType);
-        return expressions.makeIntegerCast(expressions.makeIntExtract(r64, 0, 32), archType, ctx.signed);
+        return expressions.makeIntegerCast(expressions.makeIntExtract(r64, 0, 31), archType, ctx.signed);
     }
 
     @Override

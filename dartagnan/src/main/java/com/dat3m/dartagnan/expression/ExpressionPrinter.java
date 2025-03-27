@@ -62,7 +62,7 @@ public final class ExpressionPrinter implements ExpressionVisitor<String> {
 
     @Override
     public String visitIntConcat(IntConcat expr) {
-        return Lists.reverse(expr.getOperands()).stream().map(this::visit).collect(Collectors.joining(":"));
+        return Lists.reverse(expr.getOperands()).stream().map(this::visit).collect(Collectors.joining("::"));
     }
 
     @Override

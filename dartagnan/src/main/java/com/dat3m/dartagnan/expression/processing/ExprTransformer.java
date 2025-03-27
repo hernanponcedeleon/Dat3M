@@ -56,8 +56,7 @@ public abstract class ExprTransformer implements ExpressionVisitor<Expression> {
 
     @Override
     public Expression visitIntExtract(IntExtract expr) {
-        // FIXME: The off-by-one index is confusing an we should not have it
-        return expressions.makeIntExtract(expr.getOperand().accept(this), expr.getLowBit(), expr.getHighBit() + 1);
+        return expressions.makeIntExtract(expr.getOperand().accept(this), expr.getLowBit(), expr.getHighBit());
     }
 
     @Override
