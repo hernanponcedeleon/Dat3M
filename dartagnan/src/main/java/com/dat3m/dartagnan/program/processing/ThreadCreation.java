@@ -37,6 +37,7 @@ import java.util.*;
 
 import static com.dat3m.dartagnan.configuration.OptionNames.THREAD_CREATE_ALWAYS_SUCCEEDS;
 import static com.dat3m.dartagnan.program.event.EventFactory.*;
+import static com.dat3m.dartagnan.program.processing.LoopUnrolling.*;
 
 /*
  * LLVM:
@@ -216,10 +217,35 @@ public class ThreadCreation implements ProgramProcessor {
                 }
 
                 final Label joinCase = EventFactory.newLabel("__joinWithT" + tid + "#" + joinCounter);
+
+                // Construct a spinloop waiting for the joining thread.
+                // FIXME: It serves as a temporary solution by constructing the spinloop as how it should be
+                //        after the unrolling pass so that the processing pipeline does not have to be changed.
+                final Event loopBound = EventFactory.Svcomp.newLoopBound(expressions.makeValue(1, types.getArchType()));
+                final String loopLabelPrefix = "l_waitForT" + tid + "#" + joinCounter;
+                final Label waitingLoopBegin = EventFactory.newLabel(String.format("%s%s%s%s%s", loopLabelPrefix,
+                        LOOP_LABEL_IDENTIFIER, LOOP_INFO_SEPARATOR, LOOP_INFO_ITERATION_SUFFIX, 1));
+                waitingLoopBegin.addTags(Tag.NOOPT);
+                final Label joinFailedMarker = EventFactory.newLabel(loopLabelPrefix + ".failed");
+                final Event terminator = EventFactory.newGoto((Label) thread.getExit());
+                terminator.addTags(Tag.SPINLOOP, Tag.NONTERMINATION);
+                final Label endMarker = EventFactory.newLabel(String.format("%s%s%s%s", loopLabelPrefix,
+                        LOOP_LABEL_IDENTIFIER, LOOP_INFO_SEPARATOR, LOOP_INFO_BOUND_SUFFIX));
+                endMarker.addTags(Tag.NOOPT);
+                final Event boundEvent = newJump(expressions.makeTrue(), (Label) thread.getExit());
+                boundEvent.addTags(Tag.BOUND, Tag.NONTERMINATION, Tag.NOOPT);
+
                 final List<Event> caseBody = eventSequence(
                         joinCase,
+                        loopBound,
+                        waitingLoopBegin,
                         newAcquireLoad(joinDummyReg, comAddrOfThreadToJoinWith),
-                        EventFactory.newGoto(joinEnd)
+                        newJump(joinDummyReg, joinFailedMarker),
+                        EventFactory.newGoto(joinEnd),
+                        joinFailedMarker,
+                        terminator,
+                        endMarker,
+                        boundEvent
                 );
                 tid2joinCases.put(tidCandidate, caseBody);
             }
