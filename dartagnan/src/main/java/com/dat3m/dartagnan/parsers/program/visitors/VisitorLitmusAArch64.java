@@ -25,16 +25,7 @@ import com.dat3m.dartagnan.program.event.core.Load;
 
 public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object> {
 
-    private static class CmpInstruction {
-        private final Expression left;
-        private final Expression right;
-
-        public CmpInstruction(Expression left, Expression right) {
-            this.left = left;
-            this.right = right;
-        }
-    }
-
+    private record CmpInstruction(Expression left, Expression right) {};
     private final ProgramBuilder programBuilder = ProgramBuilder.forArch(Program.SourceLanguage.LITMUS, Arch.ARM8);
     private final TypeFactory types = programBuilder.getTypeFactory();
     private final IntegerType archType = types.getArchType();
