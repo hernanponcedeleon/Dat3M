@@ -264,6 +264,8 @@ public class ExprSimplifier extends ExprTransformer {
         return expressions.makeIntBinary(left, op, right);
     }
 
+    // TODO: Add simplifications for IntExtract and IntConcat expressions
+
     @Override
     public Expression visitITEExpression(ITEExpr expr) {
         final Expression cond = expr.getCondition().accept(this);
