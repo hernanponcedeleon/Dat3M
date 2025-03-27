@@ -12,6 +12,7 @@ import com.dat3m.dartagnan.program.memory.ScopedPointer;
 import com.dat3m.dartagnan.program.memory.ScopedPointerVariable;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Iterables;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
@@ -170,7 +171,7 @@ public final class ExpressionFactory {
     }
 
     public Expression makeIntConcat(List<? extends Expression> operands) {
-        return new IntConcat(ImmutableList.copyOf(operands));
+        return new IntConcat(operands);
     }
 
     public Expression makeIntExtract(Expression operand, int lowBit, int highBit) {

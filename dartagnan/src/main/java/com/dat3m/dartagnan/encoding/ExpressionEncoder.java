@@ -294,6 +294,11 @@ class ExpressionEncoder implements ExpressionVisitor<Formula> {
 
     @Override
     public Formula visitIntExtract(IntExtract expr) {
+        Formula inner = encode(expr.getOperand());
+        if (inner instanceof IntegerFormula) {
+            //FIXME Constrain the value. Maybe modulo computation?
+            return inner;
+        }
         final BitvectorFormulaManager bvmgr = bitvectorFormulaManager();
         BitvectorFormula operandEnc = (BitvectorFormula) expr.getOperand().accept(this);
         return bvmgr.extract(operandEnc, expr.getHighBit(), expr.getLowBit());
