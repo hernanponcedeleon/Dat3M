@@ -1095,13 +1095,18 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
         @Override
         public List<IncludeEdge> visitExtractExpression(ExtractExpr extract) {
             final List<IncludeEdge> result = new ArrayList<>();
-            final int index = extract.getFieldIndex();
             for (IncludeEdge operand : extract.getOperand().accept(this)) {
-                final DerivedVariable[] aggregate = operand.source.aggregate;
-                final DerivedVariable field = aggregate == null || aggregate.length <= index ? null : aggregate[index];
-                final Variable source = field == null ? operand.source : field.base;
-                final Modifier modifier = field == null ? RELAXED_MODIFIER : compose(field.modifier, operand.modifier);
-                result.add(new IncludeEdge(source, modifier));
+                DerivedVariable field = new DerivedVariable(operand.source, operand.modifier);
+                for (int index : extract.getIndices()) {
+                    final DerivedVariable[] aggregate = operand.source.aggregate;
+                    final DerivedVariable f = aggregate == null || aggregate.length <= index ? null : aggregate[index];
+                    if (f == null) {
+                        field = compose(field, RELAXED_MODIFIER);
+                        break;
+                    }
+                    field = compose(f, field.modifier);
+                }
+                result.add(includeEdge(field));
             }
             return result;
         }
