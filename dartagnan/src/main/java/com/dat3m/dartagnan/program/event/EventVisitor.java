@@ -2,6 +2,7 @@ package com.dat3m.dartagnan.program.event;
 
 import com.dat3m.dartagnan.program.event.arch.StoreExclusive;
 import com.dat3m.dartagnan.program.event.arch.Xchg;
+import com.dat3m.dartagnan.program.event.arch.opencl.OpenCLRMWExtremum;
 import com.dat3m.dartagnan.program.event.arch.ptx.PTXAtomCAS;
 import com.dat3m.dartagnan.program.event.arch.ptx.PTXAtomExch;
 import com.dat3m.dartagnan.program.event.arch.ptx.PTXAtomOp;
@@ -28,11 +29,13 @@ public interface EventVisitor<T> {
     // ============================== General events ==============================
     T visitEvent(Event e);
     default T visitMemEvent(MemoryEvent e) { return visitEvent(e); }
+    default T visitBlockingEvent(BlockingEvent e) { return visitEvent(e); }
 
     // ============================== Core-level events ==============================
     default T visitAssume(Assume e) { return visitEvent(e); }
     default T visitAssert(Assert e) { return visitEvent(e); }
     default T visitCondJump(CondJump e) { return visitEvent(e); }
+    default T visitControlBarrier(ControlBarrier e) { return visitBlockingEvent(e); }
     default T visitExecutionStatus(ExecutionStatus e) { return visitEvent(e); }
     default T visitIfAsJump(IfAsJump e) { return visitCondJump(e); }
     default T visitLabel(Label e) { return visitEvent(e); }
@@ -102,7 +105,6 @@ public interface EventVisitor<T> {
     default T visitEndAtomic(EndAtomic e) { return visitEvent(e); }
 
     // ------------------ GPU Events ------------------
-    default T visitControlBarrier(ControlBarrier e) { return visitEvent(e); }
     default T visitPtxRedOp(PTXRedOp e) { return visitMemEvent(e); }
     default T visitPtxAtomOp(PTXAtomOp e) { return visitMemEvent(e); }
     default T visitPtxAtomCAS(PTXAtomCAS e) { return visitMemEvent(e); }
@@ -111,6 +113,7 @@ public interface EventVisitor<T> {
     default T visitVulkanRMWExtremum(VulkanRMWExtremum e) { return visitMemEvent(e); }
     default T visitVulkanRMWOp(VulkanRMWOp e) { return visitMemEvent(e); }
     default T visitVulkanCmpXchg(VulkanCmpXchg e) { return visitMemEvent(e); }
+    default T visitOpenCLRMWExtremum(OpenCLRMWExtremum e) { return visitMemEvent(e); }
 
     // ------------------ Spir-V Events ------------------
     default T visitSpirvLoad(SpirvLoad e) { return visitMemEvent(e); }

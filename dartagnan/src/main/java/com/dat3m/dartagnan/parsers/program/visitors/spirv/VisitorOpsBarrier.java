@@ -1,10 +1,6 @@
 package com.dat3m.dartagnan.parsers.program.visitors.spirv;
 
 import com.dat3m.dartagnan.exception.ParsingException;
-import com.dat3m.dartagnan.expression.Expression;
-import com.dat3m.dartagnan.expression.ExpressionFactory;
-import com.dat3m.dartagnan.expression.type.IntegerType;
-import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.parsers.SpirvBaseVisitor;
 import com.dat3m.dartagnan.parsers.SpirvParser;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.helpers.HelperTags;
@@ -17,8 +13,6 @@ import java.util.Set;
 
 public class VisitorOpsBarrier extends SpirvBaseVisitor<Event> {
 
-    private static final ExpressionFactory expressions = ExpressionFactory.getInstance();
-    private final IntegerType archType = TypeFactory.getInstance().getArchType();
     private final ProgramBuilder builder;
     private int nextBarrierId = 0;
 
@@ -32,8 +26,7 @@ public class VisitorOpsBarrier extends SpirvBaseVisitor<Event> {
         if (!Tag.Spirv.WORKGROUP.equals(execScope)) {
             throw new ParsingException("Control barrier with execution scope other than workgroup is not supported");
         }
-        Expression barrierId = expressions.makeValue(nextBarrierId++, archType);
-        Event barrier = EventFactory.newControlBarrier("cbar", barrierId);
+        Event barrier = EventFactory.newControlBarrier("cbar", Integer.toString(nextBarrierId++));
         barrier.addTags(Tag.Spirv.CONTROL);
         barrier.addTags(getScopeTag(ctx.memory().getText()));
         Set<String> tags = getMemorySemanticsTags(ctx.semantics().getText());

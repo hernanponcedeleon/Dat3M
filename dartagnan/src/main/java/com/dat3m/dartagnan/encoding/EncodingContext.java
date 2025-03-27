@@ -1,5 +1,28 @@
 package com.dat3m.dartagnan.encoding;
 
+import java.math.BigInteger;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.sosy_lab.common.configuration.InvalidConfigurationException;
+import org.sosy_lab.common.configuration.Option;
+import org.sosy_lab.common.configuration.Options;
+import org.sosy_lab.java_smt.api.BitvectorFormula;
+import org.sosy_lab.java_smt.api.BitvectorFormulaManager;
+import org.sosy_lab.java_smt.api.BooleanFormula;
+import org.sosy_lab.java_smt.api.BooleanFormulaManager;
+import org.sosy_lab.java_smt.api.Formula;
+import org.sosy_lab.java_smt.api.FormulaManager;
+import org.sosy_lab.java_smt.api.IntegerFormulaManager;
+import org.sosy_lab.java_smt.api.NumeralFormula.IntegerFormula;
+
+import static com.dat3m.dartagnan.configuration.OptionNames.IDL_TO_SAT;
+import static com.dat3m.dartagnan.configuration.OptionNames.MERGE_CF_VARS;
+import static com.dat3m.dartagnan.configuration.OptionNames.USE_INTEGERS;
 import com.dat3m.dartagnan.configuration.ProgressModel;
 import com.dat3m.dartagnan.encoding.formulas.TupleFormula;
 import com.dat3m.dartagnan.encoding.formulas.TupleFormulaManager;
@@ -7,6 +30,7 @@ import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.Type;
 import com.dat3m.dartagnan.expression.integers.IntCmpOp;
 import com.dat3m.dartagnan.expression.type.AggregateType;
+import com.dat3m.dartagnan.expression.type.ArrayType;
 import com.dat3m.dartagnan.expression.type.BooleanType;
 import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
@@ -14,12 +38,16 @@ import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.analysis.BranchEquivalence;
 import com.dat3m.dartagnan.program.analysis.ExecutionAnalysis;
 import com.dat3m.dartagnan.program.analysis.alias.AliasAnalysis;
+import com.dat3m.dartagnan.program.event.BlockingEvent;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.MemoryEvent;
 import com.dat3m.dartagnan.program.event.RegWriter;
+import static com.dat3m.dartagnan.program.event.Tag.INIT;
+import static com.dat3m.dartagnan.program.event.Tag.WRITE;
 import com.dat3m.dartagnan.program.event.core.CondJump;
 import com.dat3m.dartagnan.program.event.core.Load;
 import com.dat3m.dartagnan.program.event.core.MemoryCoreEvent;
+import com.dat3m.dartagnan.program.event.core.NamedBarrier;
 import com.dat3m.dartagnan.program.event.core.Store;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.dat3m.dartagnan.verification.Context;
@@ -28,23 +56,6 @@ import com.dat3m.dartagnan.wmm.Relation;
 import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
 import com.dat3m.dartagnan.wmm.axiom.Acyclicity;
 import com.dat3m.dartagnan.wmm.utils.graph.EventGraph;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-import org.sosy_lab.common.configuration.InvalidConfigurationException;
-import org.sosy_lab.common.configuration.Option;
-import org.sosy_lab.common.configuration.Options;
-import org.sosy_lab.java_smt.api.*;
-import org.sosy_lab.java_smt.api.NumeralFormula.IntegerFormula;
-
-import java.math.BigInteger;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
-import static com.dat3m.dartagnan.configuration.OptionNames.*;
-import static com.dat3m.dartagnan.program.event.Tag.INIT;
-import static com.dat3m.dartagnan.program.event.Tag.WRITE;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 
@@ -80,6 +91,7 @@ public final class EncodingContext {
 
     private final Map<Event, BooleanFormula> controlFlowVariables = new HashMap<>();
     private final Map<Event, BooleanFormula> executionVariables = new HashMap<>();
+    private final Map<NamedBarrier, BooleanFormula> syncVariables = new HashMap<>();
     private final Map<Event, Formula> addresses = new HashMap<>();
     private final Map<Event, Formula> values = new HashMap<>();
     private final Map<Event, Formula> results = new HashMap<>();
@@ -197,6 +209,22 @@ public final class EncodingContext {
         return encodeExpressionAsBooleanAt(event.getGuard(), event);
     }
 
+    public BooleanFormula jumpTaken(CondJump jump) {
+        return booleanFormulaManager.and(execution(jump), jumpCondition(jump));
+    }
+
+    public BooleanFormula blocked(BlockingEvent barrier) {
+        return booleanFormulaManager.and(controlFlow(barrier), booleanFormulaManager.not(execution(barrier)));
+    }
+
+    public BooleanFormula unblocked(BlockingEvent barrier) {
+        return execution(barrier);
+    }
+
+    public BooleanFormula sync(NamedBarrier event) {
+        return syncVariables.get(event);
+    }
+
     public BooleanFormula execution(Event event) {
         return (event.cfImpliesExec() ? controlFlowVariables : executionVariables).get(event);
     }
@@ -237,29 +265,30 @@ public final class EncodingContext {
         return formulaManager.getBitvectorFormulaManager().makeVariable(size, name);
     }
 
-    public BooleanFormula equal(Formula left, Formula right) {
-        //FIXME: We should avoid the automatic conversion, or standardize what conversion we expect.
-        // For example, when encoding rf(w, r), we always want to convert the store value type to the read value type
-        // for otherwise, we might get an under-constrained value for val(r) (e.g., its upper bits might be unconstrained,
-        // if we truncate it to smaller size of the store value).
+    public enum ConversionMode {
+        NO,
+        LEFT_TO_RIGHT,
+        RIGHT_TO_LEFT,
+    }
+
+    public BooleanFormula equal(Formula left, Formula right, ConversionMode cMode) {
+        if (cMode == ConversionMode.LEFT_TO_RIGHT) {
+            return equal(right, left, ConversionMode.RIGHT_TO_LEFT);
+        } else if (cMode == ConversionMode.NO && !new EncodingHelper(formulaManager).hasSameType(left, right)) {
+            final String error = String.format("Mismatching formula types: %s and %s", left, right);
+            throw new IllegalArgumentException(error);
+        }
+
         if (left instanceof IntegerFormula l) {
             IntegerFormulaManager imgr = formulaManager.getIntegerFormulaManager();
             return imgr.equal(l, toInteger(right));
-        }
-        if (right instanceof IntegerFormula r) {
-            IntegerFormulaManager imgr = formulaManager.getIntegerFormulaManager();
-            return imgr.equal(toInteger(left), r);
         }
         if (left instanceof BitvectorFormula l) {
             BitvectorFormulaManager bvmgr = formulaManager.getBitvectorFormulaManager();
             return bvmgr.equal(l, toBitvector(right, bvmgr.getLength(l)));
         }
-        if (right instanceof BitvectorFormula r) {
-            BitvectorFormulaManager bvmgr = formulaManager.getBitvectorFormulaManager();
-            return bvmgr.equal(toBitvector(left, bvmgr.getLength(r)), r);
-        }
-        if (left instanceof BooleanFormula l && right instanceof BooleanFormula r) {
-            return booleanFormulaManager.equivalence(l, r);
+        if (left instanceof BooleanFormula l) {
+            return booleanFormulaManager.equivalence(l, toBoolean(right));
         }
         if (left instanceof TupleFormula l && right instanceof TupleFormula r) {
             return tupleFormulaManager.equal(l, r);
@@ -267,7 +296,11 @@ public final class EncodingContext {
         throw new UnsupportedOperationException(String.format("Unknown types for equal(%s,%s)", left, right));
     }
 
-    private IntegerFormula toInteger(Formula formula) {
+    public BooleanFormula equal(Formula left, Formula right) {
+        return equal(left, right, ConversionMode.NO);
+    }
+
+    public IntegerFormula toInteger(Formula formula) {
         if (formula instanceof IntegerFormula f) {
             return f;
         }
@@ -281,6 +314,13 @@ public final class EncodingContext {
             return formulaManager.getBitvectorFormulaManager().toIntegerFormula(f, false);
         }
         throw new UnsupportedOperationException(String.format("Unknown type for toInteger(%s).", formula));
+    }
+
+    private BooleanFormula toBoolean(Formula formula) {
+        if (formula instanceof BooleanFormula f) {
+            return f;
+        }
+        return booleanFormulaManager.not(equalZero(formula));
     }
 
     private BitvectorFormula toBitvector(Formula formula, int length) {
@@ -337,6 +377,12 @@ public final class EncodingContext {
 
     public IntegerFormula clockVariable(String name, Event event) {
         return formulaManager.getIntegerFormulaManager().makeVariable(formulaManager.escape(name) + " " + event.getGlobalId());
+    }
+
+    // Careful: The semantics of this variable is currently only encoded when doing liveness checking
+    //  or verifying litmus code.
+    public BooleanFormula lastCoVar(Event write) {
+        return booleanFormulaManager.makeVariable("co_last(" + write.getGlobalId() + ")");
     }
 
     public IntegerFormula memoryOrderClock(Event write) {
@@ -417,6 +463,9 @@ public final class EncodingContext {
 
         // ------- Event variables  -------
         for (Event e : verificationTask.getProgram().getThreadEvents()) {
+            if (e instanceof NamedBarrier b) {
+                syncVariables.put(b, booleanFormulaManager.makeVariable("sync " + e.getGlobalId()));
+            }
             if (!e.cfImpliesExec()) {
                 executionVariables.put(e, booleanFormulaManager.makeVariable("exec " + e.getGlobalId()));
             }
@@ -454,13 +503,15 @@ public final class EncodingContext {
                 return formulaManager.getBitvectorFormulaManager().makeVariable(integerType.getBitWidth(), name);
             }
         }
-        if (type instanceof AggregateType) {
+        if (type instanceof AggregateType || type instanceof ArrayType) {
             final Map<Integer, Type> primitives = TypeFactory.getInstance().decomposeIntoPrimitives(type);
-            final List<Formula> elements = new ArrayList<>();
-            for (Type eleType : primitives.values()) {
-                elements.add(makeVariable(name + "@" + elements.size(), eleType));
+            if (primitives != null) {
+                final List<Formula> elements = new ArrayList<>();
+                for (Map.Entry<Integer, Type> entry : primitives.entrySet()) {
+                    elements.add(makeVariable(name + "@" + entry.getKey(), entry.getValue()));
+                }
+                return tupleFormulaManager.makeTuple(elements);
             }
-            return tupleFormulaManager.makeTuple(elements);
         }
         throw new UnsupportedOperationException(String.format("Cannot encode variable of type %s.", type));
     }

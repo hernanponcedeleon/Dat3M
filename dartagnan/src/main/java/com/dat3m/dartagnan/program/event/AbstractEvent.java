@@ -160,21 +160,25 @@ public abstract class AbstractEvent implements Event {
     /*
         Detaches this event from the control-flow graph.
         This does not properly delete the event, and it may be reinserted elsewhere.
-        TODO: We need to special-case handle detaching the entry event of a function.
+        TODO: We should handle the edge-case where a function becomes empty after detaching.
      */
     @Override
     public void detach() {
-        Preconditions.checkState(function == null || this != function.getEntry(),
-                "Cannot detach the entry event %s of function %s", this, getFunction());
+        Preconditions.checkState(function == null || function.getEntry() != function.getExit(),
+                "Cannot detach the only event %s of function %s", this, getFunction());
         if (this.predecessor != null) {
             this.predecessor.successor = successor;
         }
         if (this.successor != null) {
             this.successor.predecessor = predecessor;
         }
+        if (function != null && this == function.getEntry()) {
+            function.updateEntry(this.successor);
+        }
         if (function != null && this == function.getExit()) {
             function.updateExit(this.predecessor);
         }
+
         this.function = null;
         this.predecessor = null;
         this.successor = null;
@@ -201,18 +205,28 @@ public abstract class AbstractEvent implements Event {
     @Override
     public void insertAfter(Event toBeInserted) {
         Preconditions.checkNotNull(toBeInserted);
-        insertBetween((AbstractEvent) toBeInserted, function, this, successor);
-        if (function.getExit() == this) {
-            function.updateExit(toBeInserted);
-        }
+        insertBetween((AbstractEvent) toBeInserted, function, this, this.successor);
     }
 
     @Override
-    public void insertAfter(List<Event> toBeInserted) {
+    public void insertAfter(Iterable<? extends Event> toBeInserted) {
         Event cur = this;
         for (Event next : toBeInserted) {
             cur.insertAfter(next);
             cur = next;
+        }
+    }
+
+    @Override
+    public void insertBefore(Event toBeInserted) {
+        Preconditions.checkNotNull(toBeInserted);
+        insertBetween((AbstractEvent) toBeInserted, function, this.predecessor, this);
+    }
+
+    @Override
+    public void insertBefore(Iterable<? extends Event> toBeInserted) {
+        for (Event next : toBeInserted) {
+            this.insertBefore(next);
         }
     }
 
@@ -227,7 +241,7 @@ public abstract class AbstractEvent implements Event {
     }
 
     @Override
-    public void replaceBy(List<Event> replacement) {
+    public void replaceBy(Iterable<? extends Event> replacement) {
         Preconditions.checkState(currentUsers.isEmpty(), "Cannot replace event that is still in use.");
         this.insertAfter(replacement);
         this.forceDelete();
@@ -243,10 +257,16 @@ public abstract class AbstractEvent implements Event {
 
         if (pred != null) {
             pred.successor = toBeInserted;
+        } else if (func != null) {
+            func.updateEntry(toBeInserted);
         }
+
         if (succ != null) {
             succ.predecessor = toBeInserted;
+        } else if (func != null) {
+            func.updateExit(toBeInserted);
         }
+
     }
 
     // ===============================================================================================
@@ -292,7 +312,9 @@ public abstract class AbstractEvent implements Event {
 
     // This method needs to get overwritten for conditional events.
     @Override
-    public boolean cfImpliesExec() { return true; }
+    public boolean cfImpliesExec() {
+        return !(this instanceof BlockingEvent);
+    }
 
     @Override
     public BooleanFormula encodeExec(EncodingContext ctx) {

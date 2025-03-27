@@ -1,6 +1,7 @@
 package com.dat3m.dartagnan.verification.model;
 
 import com.dat3m.dartagnan.encoding.EncodingContext;
+import com.dat3m.dartagnan.encoding.EncodingHelper;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.Thread;
@@ -288,7 +289,7 @@ public class ExecutionModel {
                 }
                 // =========================
 
-                if (e instanceof CondJump jump && isTrue(encodingContext.jumpCondition(jump))) {
+                if (e instanceof CondJump jump && isTrue(encodingContext.jumpTaken(jump))) {
                     e = jump.getLabel();
                 } else {
                     e = e.getSuccessor();
@@ -341,16 +342,7 @@ public class ExecutionModel {
 
             if (data.isRead() || data.isWrite()) {
                 Formula valueFormula = encodingContext.value((MemoryCoreEvent)e);
-                assert valueFormula != null;
-                String valueString = String.valueOf(model.evaluate(valueFormula));
-                BigInteger value = switch(valueString) {
-                    // NULL case can happen if the solver optimized away a variable.
-                    // This should only happen if the value is irrelevant, so we will just pick 0.
-                    case "false", "null" -> BigInteger.ZERO;
-                    case "true" -> BigInteger.ONE;
-                    default -> new BigInteger(valueString);
-                };
-                data.setValue(value);
+                data.setValue(EncodingHelper.evaluate(valueFormula, model));
             }
 
             if (data.isRead()) {
@@ -375,7 +367,7 @@ public class ExecutionModel {
         } else if (data.isJump()) {
             // ===== Jumps =====
             // We override the meaning of execution here. A jump is executed IFF its condition was true.
-            data.setWasExecuted(isTrue(encodingContext.jumpCondition((CondJump) e)));
+            data.setWasExecuted(isTrue(encodingContext.jumpTaken((CondJump) e)));
         } else {
             //TODO: Maybe add some other events (e.g. assertions)
             // But for now all non-visible events are simply registered without

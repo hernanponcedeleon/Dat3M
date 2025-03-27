@@ -1,0 +1,133 @@
+; @Config: 3, 1, 1
+; SPIR-V
+; Version: 1.0
+; Generator: Khronos LLVM/SPIR-V Translator; 14
+; Bound: 111
+; Schema: 0
+               OpCapability Addresses
+               OpCapability Kernel
+               OpCapability Int64
+               OpCapability Int64Atomics
+          %1 = OpExtInstImport "OpenCL.std"
+               OpMemoryModel Physical32 OpenCL
+               OpEntryPoint Kernel %7 "definitions"
+               OpSource OpenCL_C 200000
+               OpDecorate %14 Alignment 4
+               OpDecorate %15 Alignment 4
+               OpDecorate %17 Alignment 4
+               OpDecorate %18 Alignment 4
+      %ulong = OpTypeInt 64 0
+       %uint = OpTypeInt 32 0
+     %uint_2 = OpConstant %uint 2
+     %uint_0 = OpConstant %uint 0
+   %ulong_10 = OpConstant %ulong 10
+       %void = OpTypeVoid
+%_ptr_Workgroup_ulong = OpTypePointer Workgroup %ulong
+%_ptr_CrossWorkgroup_ulong = OpTypePointer CrossWorkgroup %ulong
+          %6 = OpTypeFunction %void %_ptr_Workgroup_ulong %_ptr_Workgroup_ulong %_ptr_CrossWorkgroup_ulong %_ptr_CrossWorkgroup_ulong
+%_ptr_Function__ptr_Workgroup_ulong = OpTypePointer Function %_ptr_Workgroup_ulong
+%_ptr_Function__ptr_CrossWorkgroup_ulong = OpTypePointer Function %_ptr_CrossWorkgroup_ulong
+          %7 = OpFunction %void DontInline %6
+          %8 = OpFunctionParameter %_ptr_Workgroup_ulong
+          %9 = OpFunctionParameter %_ptr_Workgroup_ulong
+         %10 = OpFunctionParameter %_ptr_CrossWorkgroup_ulong
+         %11 = OpFunctionParameter %_ptr_CrossWorkgroup_ulong
+         %12 = OpLabel
+         %14 = OpVariable %_ptr_Function__ptr_Workgroup_ulong Function
+         %15 = OpVariable %_ptr_Function__ptr_Workgroup_ulong Function
+         %17 = OpVariable %_ptr_Function__ptr_CrossWorkgroup_ulong Function
+         %18 = OpVariable %_ptr_Function__ptr_CrossWorkgroup_ulong Function
+               OpStore %14 %8 Aligned 4
+               OpStore %15 %9 Aligned 4
+               OpStore %17 %10 Aligned 4
+               OpStore %18 %11 Aligned 4
+         %19 = OpLoad %_ptr_Workgroup_ulong %14 Aligned 4
+         %24 = OpAtomicIAdd %ulong %19 %uint_2 %uint_0 %ulong_10
+         %25 = OpLoad %_ptr_Workgroup_ulong %14 Aligned 4
+         %26 = OpAtomicISub %ulong %25 %uint_2 %uint_0 %ulong_10
+         %27 = OpLoad %_ptr_Workgroup_ulong %14 Aligned 4
+         %28 = OpAtomicExchange %ulong %27 %uint_2 %uint_0 %ulong_10
+         %29 = OpLoad %_ptr_Workgroup_ulong %14 Aligned 4
+         %30 = OpAtomicSMin %ulong %29 %uint_2 %uint_0 %ulong_10
+         %31 = OpLoad %_ptr_Workgroup_ulong %14 Aligned 4
+         %32 = OpAtomicSMax %ulong %31 %uint_2 %uint_0 %ulong_10
+         %33 = OpLoad %_ptr_Workgroup_ulong %14 Aligned 4
+         %34 = OpAtomicAnd %ulong %33 %uint_2 %uint_0 %ulong_10
+         %35 = OpLoad %_ptr_Workgroup_ulong %14 Aligned 4
+         %36 = OpAtomicOr %ulong %35 %uint_2 %uint_0 %ulong_10
+         %37 = OpLoad %_ptr_Workgroup_ulong %14 Aligned 4
+         %38 = OpAtomicXor %ulong %37 %uint_2 %uint_0 %ulong_10
+         %39 = OpLoad %_ptr_Workgroup_ulong %14 Aligned 4
+         %40 = OpAtomicIIncrement %ulong %39 %uint_2 %uint_0
+         %41 = OpLoad %_ptr_Workgroup_ulong %14 Aligned 4
+         %42 = OpAtomicIDecrement %ulong %41 %uint_2 %uint_0
+         %43 = OpLoad %_ptr_Workgroup_ulong %14 Aligned 4
+         %44 = OpAtomicCompareExchange %ulong %43 %uint_2 %uint_0 %uint_0 %ulong_10 %ulong_10
+         %45 = OpLoad %_ptr_Workgroup_ulong %15 Aligned 4
+         %46 = OpAtomicIAdd %ulong %45 %uint_2 %uint_0 %ulong_10
+         %47 = OpLoad %_ptr_Workgroup_ulong %15 Aligned 4
+         %48 = OpAtomicISub %ulong %47 %uint_2 %uint_0 %ulong_10
+         %49 = OpLoad %_ptr_Workgroup_ulong %15 Aligned 4
+         %50 = OpAtomicExchange %ulong %49 %uint_2 %uint_0 %ulong_10
+         %51 = OpLoad %_ptr_Workgroup_ulong %15 Aligned 4
+         %52 = OpAtomicUMin %ulong %51 %uint_2 %uint_0 %ulong_10
+         %53 = OpLoad %_ptr_Workgroup_ulong %15 Aligned 4
+         %54 = OpAtomicUMax %ulong %53 %uint_2 %uint_0 %ulong_10
+         %55 = OpLoad %_ptr_Workgroup_ulong %15 Aligned 4
+         %56 = OpAtomicAnd %ulong %55 %uint_2 %uint_0 %ulong_10
+         %57 = OpLoad %_ptr_Workgroup_ulong %15 Aligned 4
+         %58 = OpAtomicOr %ulong %57 %uint_2 %uint_0 %ulong_10
+         %59 = OpLoad %_ptr_Workgroup_ulong %15 Aligned 4
+         %60 = OpAtomicXor %ulong %59 %uint_2 %uint_0 %ulong_10
+         %61 = OpLoad %_ptr_Workgroup_ulong %15 Aligned 4
+         %62 = OpAtomicIIncrement %ulong %61 %uint_2 %uint_0
+         %63 = OpLoad %_ptr_Workgroup_ulong %15 Aligned 4
+         %64 = OpAtomicIDecrement %ulong %63 %uint_2 %uint_0
+         %65 = OpLoad %_ptr_Workgroup_ulong %15 Aligned 4
+         %66 = OpAtomicCompareExchange %ulong %65 %uint_2 %uint_0 %uint_0 %ulong_10 %ulong_10
+         %67 = OpLoad %_ptr_CrossWorkgroup_ulong %17 Aligned 4
+         %68 = OpAtomicIAdd %ulong %67 %uint_2 %uint_0 %ulong_10
+         %69 = OpLoad %_ptr_CrossWorkgroup_ulong %17 Aligned 4
+         %70 = OpAtomicISub %ulong %69 %uint_2 %uint_0 %ulong_10
+         %71 = OpLoad %_ptr_CrossWorkgroup_ulong %17 Aligned 4
+         %72 = OpAtomicExchange %ulong %71 %uint_2 %uint_0 %ulong_10
+         %73 = OpLoad %_ptr_CrossWorkgroup_ulong %17 Aligned 4
+         %74 = OpAtomicSMin %ulong %73 %uint_2 %uint_0 %ulong_10
+         %75 = OpLoad %_ptr_CrossWorkgroup_ulong %17 Aligned 4
+         %76 = OpAtomicSMax %ulong %75 %uint_2 %uint_0 %ulong_10
+         %77 = OpLoad %_ptr_CrossWorkgroup_ulong %17 Aligned 4
+         %78 = OpAtomicAnd %ulong %77 %uint_2 %uint_0 %ulong_10
+         %79 = OpLoad %_ptr_CrossWorkgroup_ulong %17 Aligned 4
+         %80 = OpAtomicOr %ulong %79 %uint_2 %uint_0 %ulong_10
+         %81 = OpLoad %_ptr_CrossWorkgroup_ulong %17 Aligned 4
+         %82 = OpAtomicXor %ulong %81 %uint_2 %uint_0 %ulong_10
+         %83 = OpLoad %_ptr_CrossWorkgroup_ulong %17 Aligned 4
+         %84 = OpAtomicIIncrement %ulong %83 %uint_2 %uint_0
+         %85 = OpLoad %_ptr_CrossWorkgroup_ulong %17 Aligned 4
+         %86 = OpAtomicIDecrement %ulong %85 %uint_2 %uint_0
+         %87 = OpLoad %_ptr_CrossWorkgroup_ulong %17 Aligned 4
+         %88 = OpAtomicCompareExchange %ulong %87 %uint_2 %uint_0 %uint_0 %ulong_10 %ulong_10
+         %89 = OpLoad %_ptr_CrossWorkgroup_ulong %18 Aligned 4
+         %90 = OpAtomicIAdd %ulong %89 %uint_2 %uint_0 %ulong_10
+         %91 = OpLoad %_ptr_CrossWorkgroup_ulong %18 Aligned 4
+         %92 = OpAtomicISub %ulong %91 %uint_2 %uint_0 %ulong_10
+         %93 = OpLoad %_ptr_CrossWorkgroup_ulong %18 Aligned 4
+         %94 = OpAtomicExchange %ulong %93 %uint_2 %uint_0 %ulong_10
+         %95 = OpLoad %_ptr_CrossWorkgroup_ulong %18 Aligned 4
+         %96 = OpAtomicUMin %ulong %95 %uint_2 %uint_0 %ulong_10
+         %97 = OpLoad %_ptr_CrossWorkgroup_ulong %18 Aligned 4
+         %98 = OpAtomicUMax %ulong %97 %uint_2 %uint_0 %ulong_10
+         %99 = OpLoad %_ptr_CrossWorkgroup_ulong %18 Aligned 4
+        %100 = OpAtomicAnd %ulong %99 %uint_2 %uint_0 %ulong_10
+        %101 = OpLoad %_ptr_CrossWorkgroup_ulong %18 Aligned 4
+        %102 = OpAtomicOr %ulong %101 %uint_2 %uint_0 %ulong_10
+        %103 = OpLoad %_ptr_CrossWorkgroup_ulong %18 Aligned 4
+        %104 = OpAtomicXor %ulong %103 %uint_2 %uint_0 %ulong_10
+        %105 = OpLoad %_ptr_CrossWorkgroup_ulong %18 Aligned 4
+        %106 = OpAtomicIIncrement %ulong %105 %uint_2 %uint_0
+        %107 = OpLoad %_ptr_CrossWorkgroup_ulong %18 Aligned 4
+        %108 = OpAtomicIDecrement %ulong %107 %uint_2 %uint_0
+        %109 = OpLoad %_ptr_CrossWorkgroup_ulong %18 Aligned 4
+        %110 = OpAtomicCompareExchange %ulong %109 %uint_2 %uint_0 %uint_0 %ulong_10 %ulong_10
+               OpReturn
+               OpFunctionEnd

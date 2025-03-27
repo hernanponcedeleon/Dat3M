@@ -39,3 +39,8 @@ Thumbs.db
 # Output #
 ##########
 /output
+
+##########
+# Antlr Caches #
+##########
+dartagnan/src/main/antlr4/.antlr/

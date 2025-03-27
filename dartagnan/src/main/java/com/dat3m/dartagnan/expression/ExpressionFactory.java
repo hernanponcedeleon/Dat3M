@@ -1,9 +1,6 @@
 package com.dat3m.dartagnan.expression;
 
-import com.dat3m.dartagnan.expression.aggregates.AggregateCmpExpr;
-import com.dat3m.dartagnan.expression.aggregates.AggregateCmpOp;
-import com.dat3m.dartagnan.expression.aggregates.ConstructExpr;
-import com.dat3m.dartagnan.expression.aggregates.ExtractExpr;
+import com.dat3m.dartagnan.expression.aggregates.*;
 import com.dat3m.dartagnan.expression.booleans.*;
 import com.dat3m.dartagnan.expression.floats.*;
 import com.dat3m.dartagnan.expression.integers.*;
@@ -14,6 +11,8 @@ import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.dat3m.dartagnan.program.memory.ScopedPointer;
 import com.dat3m.dartagnan.program.memory.ScopedPointerVariable;
 import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Iterables;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
@@ -301,8 +300,26 @@ public final class ExpressionFactory {
         return new ConstructExpr(type, items);
     }
 
-    public Expression makeExtract(int fieldIndex, Expression object) {
-        return new ExtractExpr(fieldIndex, object);
+    public Expression makeExtract(Expression object, int index) {
+        return makeExtract(object, ImmutableList.of(index));
+    }
+
+    public Expression makeExtract(Expression object, Iterable<Integer> indices) {
+        if (Iterables.isEmpty(indices)) {
+            return object;
+        }
+        return new ExtractExpr(object, indices);
+    }
+
+    public Expression makeInsert(Expression aggregate, Expression value, int index) {
+        return makeInsert(aggregate, value, ImmutableList.of(index));
+    }
+
+    public Expression makeInsert(Expression aggregate, Expression value, Iterable<Integer> indices) {
+        if (Iterables.isEmpty(indices)) {
+            return aggregate;
+        }
+        return new InsertExpr(aggregate, indices, value);
     }
 
     public Expression makeAggregateCmp(Expression x, AggregateCmpOp op, Expression y) {
@@ -320,11 +337,13 @@ public final class ExpressionFactory {
     }
 
     public ScopedPointer makeScopedPointer(String id, String scopeId, Type type, Expression address) {
-        return new ScopedPointer(id, scopeId, type, address);
+        ScopedPointerType pointerType = types.getScopedPointerType(scopeId, type);
+        return new ScopedPointer(id, pointerType, address);
     }
 
     public ScopedPointerVariable makeScopedPointerVariable(String id, String scopeId, Type type, MemoryObject address) {
-        return new ScopedPointerVariable(id, scopeId, type, address);
+        ScopedPointerType pointerType = types.getScopedPointerType(scopeId, type);
+        return new ScopedPointerVariable(id, pointerType, address);
     }
 
     // -----------------------------------------------------------------------------------------------------------------
@@ -339,8 +358,8 @@ public final class ExpressionFactory {
             }
             return makeArray(arrayType.getElementType(), zeroes, true);
         } else if (type instanceof AggregateType structType) {
-            List<Expression> zeroes = new ArrayList<>(structType.getTypeOffsets().size());
-            for (TypeOffset typeOffset : structType.getTypeOffsets()) {
+            List<Expression> zeroes = new ArrayList<>(structType.getFields().size());
+            for (TypeOffset typeOffset : structType.getFields()) {
                 zeroes.add(makeGeneralZero(typeOffset.type()));
             }
             return makeConstruct(structType, zeroes);

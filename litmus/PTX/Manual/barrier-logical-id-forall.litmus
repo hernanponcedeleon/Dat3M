@@ -1,0 +1,12 @@
+PTX barrier-logical-id-forall
+{
+x0=0; x1=0; y0=0; y1=0;
+}
+ P0@cta 0,gpu 0    | P1@cta 0,gpu 0    | P2@cta 0,gpu 0    | P3@cta 0,gpu 0    ;
+ st.weak x0, 1     | st.weak y0, 1     | st.weak x1, 1     | st.weak y1, 1     ;
+ bar.cta.sync 1, 1 | bar.cta.sync 1, 1 | bar.cta.sync 1, 2 | bar.cta.sync 1, 2 ;
+ ld.weak r0, y0    | ld.weak r0, x0    | ld.weak r0, y0    | ld.weak r0, x0    ;
+ ld.weak r1, y1    | ld.weak r1, x1    | ld.weak r1, y1    | ld.weak r1, x1    ;
+
+forall
+((P0:r0 == 1 \/ P1:r0 == 1) /\ (P2:r1 == 1 \/ P3:r1 == 1))

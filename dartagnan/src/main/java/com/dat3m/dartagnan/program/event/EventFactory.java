@@ -11,8 +11,10 @@ import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.Register;
+import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.arch.StoreExclusive;
 import com.dat3m.dartagnan.program.event.arch.Xchg;
+import com.dat3m.dartagnan.program.event.arch.opencl.OpenCLRMWExtremum;
 import com.dat3m.dartagnan.program.event.arch.ptx.PTXAtomCAS;
 import com.dat3m.dartagnan.program.event.arch.ptx.PTXAtomExch;
 import com.dat3m.dartagnan.program.event.arch.ptx.PTXAtomOp;
@@ -27,6 +29,7 @@ import com.dat3m.dartagnan.program.event.core.annotations.FunCallMarker;
 import com.dat3m.dartagnan.program.event.core.annotations.FunReturnMarker;
 import com.dat3m.dartagnan.program.event.core.annotations.StringAnnotation;
 import com.dat3m.dartagnan.program.event.core.annotations.TransactionMarker;
+import com.dat3m.dartagnan.program.event.core.special.StateSnapshot;
 import com.dat3m.dartagnan.program.event.core.threading.ThreadArgument;
 import com.dat3m.dartagnan.program.event.core.threading.ThreadCreate;
 import com.dat3m.dartagnan.program.event.core.threading.ThreadStart;
@@ -72,19 +75,35 @@ public class EventFactory {
 
     public static List<Event> eventSequence(Object... events) {
         List<Event> retVal = new ArrayList<>();
-        for (Object obj : events) {
+        eventSequenceInternal(Arrays.asList(events), retVal);
+        return retVal;
+    }
+
+    private static void eventSequenceInternal(Iterable<?> iterable, List<Event> collector) {
+        for (Object obj : iterable) {
             if (obj == null) {
                 continue;
             }
             if (obj instanceof Event) {
-                retVal.add((Event) obj);
-            } else if (obj instanceof Collection<?>) {
-                retVal.addAll((Collection<? extends Event>) obj);
+                collector.add((Event) obj);
+            } else if (obj instanceof Iterable<?> iter) {
+                eventSequenceInternal(iter, collector);
             } else {
                 throw new IllegalArgumentException("Cannot parse " + obj.getClass() + " as event.");
             }
         }
-        return retVal;
+    }
+
+    public static Event newTerminator(Function function, Expression guard, String... tags) {
+        final Event terminator = function instanceof Thread thread ?
+                EventFactory.newJump(guard, (Label) thread.getExit()) :
+                EventFactory.newAbortIf(guard);
+        terminator.addTags(tags);
+        return terminator;
+    }
+
+    public static Event newTerminator(Function function, String... tags) {
+        return newTerminator(function, ExpressionFactory.getInstance().makeTrue(), tags);
     }
 
 
@@ -137,8 +156,12 @@ public class EventFactory {
         return fence;
     }
 
-    public static ControlBarrier newControlBarrier(String name, Expression fenceId) {
-        return new ControlBarrier(name, fenceId);
+    public static ControlBarrier newControlBarrier(String name, String instanceId) {
+        return new ControlBarrier(name, instanceId);
+    }
+
+    public static NamedBarrier newNamedBarrier(String name, String instanceId, Expression id, Expression quorum) {
+        return new NamedBarrier(name, instanceId, id, quorum);
     }
 
     public static Init newInit(MemoryObject base, int offset) {
@@ -146,13 +169,8 @@ public class EventFactory {
         // meaning that <addr> and <addr + 0> are treated differently.
         final Expression address = offset == 0 ? base :
                 expressions.makeAdd(base, expressions.makeValue(offset, (IntegerType) base.getType()));
-        return new Init(base, offset, address);
-    }
-
-    public static Init newC11Init(MemoryObject base, int offset) {
-        Init init = newInit(base, offset);
+        final Init init = new Init(base, offset, address);
         init.addTags(base.getFeatureTags());
-        init.addTags(Tag.C11.NONATOMIC);
         return init;
     }
 
@@ -319,6 +337,16 @@ public class EventFactory {
         return new ThreadStart(creator);
     }
 
+    public static class Special {
+        private Special() {
+        }
+
+
+        public static StateSnapshot newStateSnapshot(List<? extends Expression> expressions) {
+            return new StateSnapshot(expressions);
+        }
+    }
+
     // =============================================================================================
     // ========================================== Common ===========================================
     // =============================================================================================
@@ -407,6 +435,10 @@ public class EventFactory {
 
         public static AtomicXchg newExchange(Register register, Expression address, Expression value, String mo) {
             return new AtomicXchg(register, address, value, mo);
+        }
+
+        public static OpenCLRMWExtremum newRMWExtremum(Register register, Expression address, IntCmpOp op, Expression value, String mo) {
+            return new OpenCLRMWExtremum(register, address, op, value, mo);
         }
     }
     // =============================================================================================
@@ -506,6 +538,10 @@ public class EventFactory {
 
             public static GenericVisibleEvent newSYBarrier() {
                 return newFence("DMB.SY");
+            }
+
+            public static GenericVisibleEvent newSTBarrier() {
+                return newFence("DMB.ST");
             }
 
             public static GenericVisibleEvent newISHBarrier() {

@@ -201,8 +201,12 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
         if (!atomicity) {
             object.addFeatureTag(C11.NON_ATOMIC_LOCATION);
         }
-        if (isOpenCL && ctx.pointerTypeSpecifier().openCLSpace() != null) {
-            object.addFeatureTag(ctx.pointerTypeSpecifier().openCLSpace().space);
+        if (isOpenCL) {
+            if (ctx.pointerTypeSpecifier().openCLSpace() != null) {
+                object.addFeatureTag(ctx.pointerTypeSpecifier().openCLSpace().space);
+            } else {
+                object.addFeatureTag(Tag.OpenCL.DEFAULT_SPACE);
+            }
         }
         programBuilder.addChild(currentThread, EventFactory.newLocal(register, object));
         return null;
@@ -630,13 +634,15 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
 
     @Override
     public Object visitNreOpenCLBarrier(LitmusCParser.NreOpenCLBarrierContext ctx){
-        Expression barrierId = expressions.makeValue(ctx.barrierId().id, archType);
         List<String> flags = ctx.openCLFenceFlags().openCLFenceFlag().stream().map(f -> f.flag).toList();
-        Event fence = EventFactory.newControlBarrier(ctx.getText().toLowerCase(), barrierId);
+        String barrierScope = ctx.openCLScope() != null ? ctx.openCLScope().scope : Tag.OpenCL.WORK_GROUP;
+        String name = String.format("barrier(%s.%s)", ctx.openCLFenceFlags().getText(), barrierScope).toLowerCase();
+        Event fence = EventFactory.newControlBarrier(name, ctx.barrierId().getText());
         fence.addTags(flags);
-        if (ctx.openCLScope() != null) {
-            fence.addTags(ctx.openCLScope().scope);
+        if (!Tag.OpenCL.WORK_GROUP.equals(barrierScope)) {
+            throw new ParsingException("Unsupported control barrier scope '%s'", barrierScope);
         }
+        fence.addTags(barrierScope);
         return programBuilder.addChild(currentThread, fence);
     }
 

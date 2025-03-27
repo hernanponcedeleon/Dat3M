@@ -13,6 +13,8 @@ import com.dat3m.dartagnan.expression.integers.*;
 import com.dat3m.dartagnan.expression.misc.ITEExpr;
 import com.dat3m.dartagnan.expression.utils.IntegerHelper;
 import com.google.common.base.VerifyException;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Iterables;
 
 import java.math.BigInteger;
 
@@ -308,12 +310,24 @@ public class ExprSimplifier extends ExprTransformer {
 
     @Override
     public Expression visitExtractExpression(ExtractExpr expr) {
-        final Expression inner = expr.getOperand().accept(this);
-        if (inner instanceof ConstructExpr construct) {
-            return construct.getOperands().get(expr.getFieldIndex());
+        Expression inner = expr.getOperand().accept(this);
+
+        final ImmutableList<Integer> indices = expr.getIndices();
+        int indexCursor = 0;
+        while(indexCursor < indices.size() && (inner instanceof ConstructExpr construct)) {
+            inner = construct.getOperands().get(indices.get(indexCursor));
+            indexCursor++;
         }
-        return expressions.makeExtract(expr.getFieldIndex(), inner);
+
+        final ImmutableList<Integer> newIndices = indices.subList(indexCursor, indices.size());
+        if (inner instanceof ExtractExpr extract) {
+            // Merge multiple extracts
+            return expressions.makeExtract(inner, Iterables.concat(extract.getIndices(), newIndices));
+        }
+        return expressions.makeExtract(inner, newIndices);
     }
+
+    // TODO: Add simplifications for InsertExpr
 
     @Override
     public Expression visitAggregateCmpExpression(AggregateCmpExpr expr) {

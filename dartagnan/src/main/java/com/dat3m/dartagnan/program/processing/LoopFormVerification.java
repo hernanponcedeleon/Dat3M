@@ -51,7 +51,7 @@ public class LoopFormVerification implements ProgramProcessor {
             final List<CondJump> backJumps = label.getJumpSet().stream()
                     .filter(j -> linId.applyAsInt(j) > linId.applyAsInt(label))
                     .toList();
-            final boolean isLoop = backJumps.size() > 0;
+            final boolean isLoop = !backJumps.isEmpty();
 
             if (!isLoop) {
                 continue;

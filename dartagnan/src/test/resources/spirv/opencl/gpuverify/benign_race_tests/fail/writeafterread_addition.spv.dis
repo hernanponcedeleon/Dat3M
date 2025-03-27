@@ -1,0 +1,39 @@
+; @Config: 3, 1, 1
+; SPIR-V
+; Version: 1.0
+; Generator: Khronos LLVM/SPIR-V Translator; 14
+; Bound: 22
+; Schema: 0
+               OpCapability Addresses
+               OpCapability Kernel
+          %1 = OpExtInstImport "OpenCL.std"
+               OpMemoryModel Physical32 OpenCL
+               OpEntryPoint Kernel %6 "foo"
+               OpSource OpenCL_C 200000
+               OpDecorate %10 Alignment 4
+               OpDecorate %12 Alignment 4
+       %uint = OpTypeInt 32 0
+     %uint_0 = OpConstant %uint 0
+     %uint_1 = OpConstant %uint 1
+       %void = OpTypeVoid
+%_ptr_Workgroup_uint = OpTypePointer Workgroup %uint
+          %5 = OpTypeFunction %void %_ptr_Workgroup_uint
+%_ptr_Function__ptr_Workgroup_uint = OpTypePointer Function %_ptr_Workgroup_uint
+%_ptr_Function_uint = OpTypePointer Function %uint
+          %6 = OpFunction %void DontInline %5
+          %7 = OpFunctionParameter %_ptr_Workgroup_uint
+          %8 = OpLabel
+         %10 = OpVariable %_ptr_Function__ptr_Workgroup_uint Function
+         %12 = OpVariable %_ptr_Function_uint Function
+               OpStore %10 %7 Aligned 4
+         %13 = OpLoad %_ptr_Workgroup_uint %10 Aligned 4
+         %15 = OpInBoundsPtrAccessChain %_ptr_Workgroup_uint %13 %uint_0
+         %16 = OpLoad %uint %15 Aligned 4
+               OpStore %12 %16 Aligned 4
+         %17 = OpLoad %uint %12 Aligned 4
+         %19 = OpIAdd %uint %17 %uint_1
+         %20 = OpLoad %_ptr_Workgroup_uint %10 Aligned 4
+         %21 = OpInBoundsPtrAccessChain %_ptr_Workgroup_uint %20 %uint_0
+               OpStore %21 %19 Aligned 4
+               OpReturn
+               OpFunctionEnd

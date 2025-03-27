@@ -1,16 +1,14 @@
 package com.dat3m.dartagnan.program.processing;
 
-import com.dat3m.dartagnan.GlobalSettings;
-import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.program.Function;
+import com.dat3m.dartagnan.program.IRHelper;
 import com.dat3m.dartagnan.program.Program;
-import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.analysis.SyntacticContextAnalysis;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.EventFactory;
-import com.dat3m.dartagnan.program.event.EventUser;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.CondJump;
+import com.dat3m.dartagnan.program.event.core.ControlBarrier;
 import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.event.lang.svcomp.LoopBound;
 import com.dat3m.dartagnan.program.event.metadata.UnrollingBound;
@@ -29,7 +27,11 @@ import java.io.IOException;
 import java.io.Reader;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.*;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.function.Consumer;
 
 import static com.dat3m.dartagnan.configuration.OptionNames.*;
 
@@ -141,7 +143,7 @@ public class LoopUnrolling implements ProgramProcessor {
                 curBoundAnnotation = boundAnnotation;
             } else if (event instanceof Label label) {
                 final Optional<CondJump> backjump = label.getJumpSet().stream()
-                        .filter(j -> j.getLocalId() > label.getLocalId()).findFirst();
+                        .filter(IRHelper::isBackJump).findFirst();
                 final boolean isLoop = backjump.isPresent();
 
                 if (isLoop) {
@@ -167,37 +169,40 @@ public class LoopUnrolling implements ProgramProcessor {
 
     private void unrollLoop(CondJump loopBackJump, int bound) {
         final Label loopBegin = loopBackJump.getLabel();
+        final String loopName = loopBegin.getName();
         Preconditions.checkArgument(bound >= 1, "Positive unrolling bound expected.");
-        Preconditions.checkArgument(loopBegin.getLocalId() < loopBackJump.getLocalId(),
+        Preconditions.checkArgument(IRHelper.isBackJump(loopBackJump),
                 "The jump does not belong to a loop.");
 
         int iterCounter = 0;
         while (++iterCounter <= bound) {
+            final String loopId = String.format("%s%s%s%d", loopName, LOOP_INFO_SEPARATOR, LOOP_INFO_ITERATION_SUFFIX, iterCounter);
             if (iterCounter == bound) {
                 // Update loop iteration label
-                final String loopName = loopBegin.getName();
-                loopBegin.setName(String.format("%s%s%s%d", loopName, LOOP_INFO_SEPARATOR, LOOP_INFO_ITERATION_SUFFIX, iterCounter));
+                loopBegin.setName(loopId);
                 loopBegin.addTags(Tag.NOOPT);
 
                 // This is the last iteration, so we replace the back jump by a bound event.
-                final Event boundEvent = newBoundEvent(loopBackJump.getFunction());
-                loopBackJump.replaceBy(boundEvent);
+                final Event boundEvent = EventFactory.newTerminator(loopBackJump.getFunction(), Tag.BOUND, Tag.NONTERMINATION, Tag.NOOPT);
+                IRHelper.replaceWithMetadata(loopBackJump, boundEvent);
+                boundEvent.setMetadata(new UnrollingBound(bound));
 
                 // Mark end of loop, so we can find it later again
                 final Label endOfLoopMarker = EventFactory.newLabel(String.format("%s%s%s", loopName, LOOP_INFO_SEPARATOR, LOOP_INFO_BOUND_SUFFIX));
                 endOfLoopMarker.addTags(Tag.NOOPT);
-                boundEvent.getPredecessor().insertAfter(endOfLoopMarker);
-
-                boundEvent.copyAllMetadataFrom(loopBackJump);
-                boundEvent.setMetadata(new UnrollingBound(bound));
                 endOfLoopMarker.copyAllMetadataFrom(loopBackJump);
-
+                boundEvent.insertBefore(endOfLoopMarker);
             } else {
+                final Consumer<Event> copyUpdater = copy -> {
+                    if (copy instanceof ControlBarrier copyBar) {
+                        copyBar.setInstanceId(String.format("%s.%s", copyBar.getInstanceId(), loopId));
+                    }
+                };
                 final Map<Event, Event> copyCtx = new HashMap<>();
-                final List<Event> copies = copyPath(loopBegin, loopBackJump, copyCtx);
+                final List<Event> copies = IRHelper.copyPath(loopBegin, loopBackJump, copyUpdater, copyCtx);
 
                 // Insert copy of the loop
-                loopBegin.getPredecessor().insertAfter(copies);
+                loopBegin.insertBefore(copies);
                 if (iterCounter == 1) {
                     // This is the first unrolling; every outside jump to the loop header
                     // gets updated to jump to the first iteration instead.
@@ -208,35 +213,10 @@ public class LoopUnrolling implements ProgramProcessor {
 
                 // Rename label of iteration.
                 final Label loopBeginCopy = ((Label)copyCtx.get(loopBegin));
-                loopBeginCopy.setName(String.format("%s%s%s%d", loopBegin.getName(), LOOP_INFO_SEPARATOR, LOOP_INFO_ITERATION_SUFFIX, iterCounter));
+                loopBeginCopy.setName(loopId);
                 loopBeginCopy.addTags(Tag.NOOPT);
             }
         }
-    }
-
-    private List<Event> copyPath(Event from, Event until, Map<Event, Event> copyContext) {
-        final List<Event> copies = new ArrayList<>();
-
-        Event cur = from;
-        while(cur != null && !cur.equals(until)){
-            final Event copy = cur.getCopy();
-            copies.add(copy);
-            copyContext.put(cur, copy);
-            cur = cur.getSuccessor();
-        }
-
-        copies.stream()
-                .filter(EventUser.class::isInstance).map(EventUser.class::cast)
-                .forEach(e -> e.updateReferences(copyContext));
-        return copies;
-    }
-
-    private Event newBoundEvent(Function func) {
-        final Event boundEvent = func instanceof Thread thread ?
-                EventFactory.newGoto((Label) thread.getExit()) :
-                EventFactory.newAbortIf(ExpressionFactory.getInstance().makeTrue());
-        boundEvent.addTags(Tag.BOUND, Tag.NONTERMINATION, Tag.NOOPT);
-        return boundEvent;
     }
 
     // ------------------------------------------------------------------------

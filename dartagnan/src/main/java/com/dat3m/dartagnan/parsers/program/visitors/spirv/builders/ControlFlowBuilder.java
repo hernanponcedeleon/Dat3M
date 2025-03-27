@@ -41,7 +41,7 @@ public class ControlFlowBuilder {
                     Event event = EventFactory.newLocal(k, expressions.get(v));
                     SourceLocation loc = getPhiLocation(blockId, k);
                     if (loc != null) { event.setMetadata(loc); }
-                    lastBlockEvents.get(blockId).getPredecessor().insertAfter(event);
+                    lastBlockEvents.get(blockId).insertBefore(event);
                 }));
     }
 

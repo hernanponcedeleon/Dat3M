@@ -2,6 +2,8 @@ package com.dat3m.dartagnan.encoding;
 
 import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.configuration.RelationAnalysisMethod;
+import com.dat3m.dartagnan.encoding.EncodingContext;
+import com.dat3m.dartagnan.encoding.WmmEncoder;
 import com.dat3m.dartagnan.parsers.cat.ParserCat;
 import com.dat3m.dartagnan.parsers.program.ProgramParser;
 import com.dat3m.dartagnan.program.Program;
@@ -111,7 +113,7 @@ public class RelationAnalysisTest {
                 // https://github.com/hernanponcedeleon/Dat3M/issues/746
                 //{ "dartagnan/src/test/resources/miscellaneous", "cat/riscv.cat", Arch.RISCV },
 
-                { "dartagnan/src/test/resources/spirv/benchmarks", "cat/spirv.cat", Arch.VULKAN },
+                { "dartagnan/src/test/resources/spirv/vulkan/benchmarks", "cat/spirv.cat", Arch.VULKAN },
         });
     }
 

@@ -2,30 +2,30 @@ package com.dat3m.dartagnan.program.processing;
 
 import com.dat3m.dartagnan.exception.MalformedProgramException;
 import com.dat3m.dartagnan.expression.Expression;
-import com.dat3m.dartagnan.expression.ExpressionFactory;
-import com.dat3m.dartagnan.expression.processing.ExprTransformer;
-import com.dat3m.dartagnan.program.Function;
-import com.dat3m.dartagnan.program.Program;
-import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.Thread;
-import com.dat3m.dartagnan.program.event.*;
+import com.dat3m.dartagnan.program.*;
+import com.dat3m.dartagnan.program.event.Event;
+import com.dat3m.dartagnan.program.event.EventFactory;
+import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.Label;
-import com.dat3m.dartagnan.program.event.functions.AbortIf;
 import com.dat3m.dartagnan.program.event.functions.FunctionCall;
 import com.dat3m.dartagnan.program.event.functions.Return;
 import com.dat3m.dartagnan.program.event.functions.ValueFunctionCall;
-import com.dat3m.dartagnan.program.event.lang.llvm.LlvmCmpXchg;
 import com.dat3m.dartagnan.program.event.lang.svcomp.BeginAtomic;
+import com.dat3m.dartagnan.program.event.lang.svcomp.EndAtomic;
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.common.configuration.Option;
 import org.sosy_lab.common.configuration.Options;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.function.Consumer;
 
 import static com.dat3m.dartagnan.configuration.OptionNames.RECURSION_BOUND;
 import static com.dat3m.dartagnan.program.event.EventFactory.*;
-import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Verify.verify;
 
 @Options
@@ -63,8 +63,7 @@ public class Inlining implements ProgramProcessor {
         }
     }
 
-    private record Snapshot(String name, List<Register> parameters, List<Event> events, List<Register> registers,
-            boolean isVarArgs) {}
+    private record Snapshot(String name, List<Register> parameters, List<Event> events, List<Register> registers, boolean isVarArgs) {}
 
     private boolean canInline(FunctionCall call) {
         return call.isDirectCall() && call.getCalledFunction().hasBody();
@@ -86,11 +85,8 @@ public class Inlining implements ProgramProcessor {
             exitToCallMap.computeIfAbsent(call.getSuccessor(), k -> new ArrayList<>()).add(callTarget);
             final long depth = exitToCallMap.values().stream().filter(c -> c.contains(callTarget)).count();
             if (depth > bound) {
-                final AbortIf boundEvent = newAbortIf(ExpressionFactory.getInstance().makeTrue());
-                boundEvent.copyAllMetadataFrom(call);
-                boundEvent.addTags(Tag.BOUND, Tag.NONTERMINATION, Tag.NOOPT);
-                call.replaceBy(boundEvent);
-                event = boundEvent;
+                final Event boundEvent = EventFactory.newTerminator(function, Tag.BOUND, Tag.NONTERMINATION, Tag.NOOPT);
+                event = IRHelper.replaceWithMetadata(call, boundEvent);
             } else {
                 if (callTarget instanceof Thread) {
                     throw new MalformedProgramException(
@@ -103,104 +99,67 @@ public class Inlining implements ProgramProcessor {
 
     // Returns the first event of the inlined code, from where to continue from
     private static Event inlineBody(FunctionCall call, Snapshot callTarget, int scope) {
+        // ================================ Add marker events ================================
         final Event callMarker = EventFactory.newFunctionCallMarker(callTarget.name);
         final Event returnMarker = EventFactory.newFunctionReturnMarker(callTarget.name);
         callMarker.copyAllMetadataFrom(call);
         returnMarker.copyAllMetadataFrom(call);
-        call.getPredecessor().insertAfter(callMarker);
+        call.insertBefore(callMarker);
         call.insertAfter(returnMarker);
         //  --- SVCOMP-specific code ---
-        if (callTarget.name.startsWith("__VERIFIER_atomic")) {
+        final boolean isSvcompAtomic = callTarget.name.startsWith("__VERIFIER_atomic");
+        if (isSvcompAtomic) {
             final BeginAtomic beginAtomic = EventFactory.Svcomp.newBeginAtomic();
-            call.getPredecessor().insertAfter(beginAtomic);
-            call.insertAfter(EventFactory.Svcomp.newEndAtomic(beginAtomic));
+            final EndAtomic endAtomic = EventFactory.Svcomp.newEndAtomic(beginAtomic);
+            call.insertBefore(beginAtomic);
+            call.insertAfter(endAtomic);
         }
-        // -----------------------------
-        // Calls with result will write the return value to this register.
-        final Register result = call instanceof ValueFunctionCall c ? c.getResultRegister() : null;
-        // All occurrences of return events will jump here instead.
-        Label exitLabel = newLabel("EXIT_OF_CALL_" + callTarget.name + "_" + scope);
-        var inlinedBody = new ArrayList<Event>();
-        var replacementMap = new HashMap<Event, Event>();
-        var registerMap = new HashMap<Register, Register>();
+        // =================================================================================
+
+        // ================================ Main logic =====================================
+        // --------- Compute register replacements & parameter assignments  ---------
+        final Map<Register, Register> registerMap = IRHelper.copyOverRegisters(callTarget.registers, call.getFunction(),
+                reg -> scope + ":" + reg.getName(), true);
+
         final List<Expression> arguments = call.getArguments();
         //TODO add support for __VA_INIT
         verify(callTarget.isVarArgs ? arguments.size() >= callTarget.parameters.size() :
                 arguments.size() == callTarget.parameters.size(), "Parameter mismatch at %s", call);
-        // All registers have to be replaced
-        for (final Register register : callTarget.registers) {
-            final String newName = scope + ":" + register.getName();
-            registerMap.put(register, call.getFunction().newRegister(newName, register.getType()));
-        }
-        var parameterAssignments = new ArrayList<Event>();
-        var returnEvents = new HashSet<Event>();
+        final ArrayList<Event> parameterAssignments = new ArrayList<>();
         for (int j = 0; j < callTarget.parameters.size(); j++) {
-            Register register = registerMap.get(callTarget.parameters.get(j));
+            final Register register = registerMap.get(callTarget.parameters.get(j));
             parameterAssignments.add(newLocal(register, arguments.get(j)));
         }
-        for (Event functionEvent : callTarget.events) {
-            if (functionEvent instanceof Return returnEvent) {
-                final Expression expression = returnEvent.getValue().orElse(null);
-                checkReturnType(result, expression);
-                if (expression != null) {
-                    final Event assignment = newLocal(result, expression);
-                    returnEvents.add(assignment);
-                    inlinedBody.add(assignment);
-                }
-                inlinedBody.add(newGoto(exitLabel));
-            } else {
-                Event copy = functionEvent.getCopy();
-                inlinedBody.add(copy);
-                replacementMap.put(functionEvent, copy);
-            }
-        }
 
-        // Post process copies.
-        for (Event event : inlinedBody) {
-            if (event instanceof EventUser user) {
-                user.updateReferences(replacementMap);
-            }
-            if (event instanceof Label label) {
-                label.setName(scope + ":" + label.getName());
-            }
-        }
+        // --------- Inline call ---------
+        final Consumer<Event> copyUpdater = IRHelper.makeRegisterReplacer(registerMap)
+                .andThen(copy -> {
+                    if (copy instanceof Label label) {
+                        label.setName(scope + ":" + label.getName());
+                    }
+                    // TODO: Add support for control barriers
+                });
+        final List<Event> inlinedBody = IRHelper.copyEvents(callTarget.events, copyUpdater, new HashMap<>());
+        final Label returnLabel = newLabel("EXIT_OF_CALL_" + callTarget.name + "_" + scope);
+        call.insertAfter(eventSequence(
+                parameterAssignments,
+                inlinedBody,
+                returnLabel
+        ));
 
-        // Substitute registers in the copied body
-        var substitution = new ExprTransformer() {
-            @Override
-            public Expression visitRegister(Register register) {
-                return checkNotNull(registerMap.get(register));
-            }
-        };
-        for (Event event : inlinedBody) {
-            if (event instanceof RegReader reader) {
-                reader.transformExpressions(substitution);
-            }
-            if (event instanceof RegWriter writer && !(writer instanceof LlvmCmpXchg) && !returnEvents.contains(event)) {
-                Register oldRegister = writer.getResultRegister();
-                Register newRegister = registerMap.get(oldRegister);
-                assert newRegister != null || writer.getResultRegister() == oldRegister;
-                if (newRegister != null) {
-                    writer.setResultRegister(newRegister);
-                }
-            }
-            if (event instanceof LlvmCmpXchg cmpXchg) {
-                Register oldResultRegister = cmpXchg.getStructRegister(0);
-                Register newResultRegister = registerMap.get(oldResultRegister);
-                assert newResultRegister != null;
-                cmpXchg.setStructRegister(0, newResultRegister);
-                Register oldExpectationRegister = cmpXchg.getStructRegister(1);
-                Register newExpectationRegister = registerMap.get(oldExpectationRegister);
-                assert newExpectationRegister != null;
-                cmpXchg.setStructRegister(1, newExpectationRegister);
-            }
-        }
+        // --------- Post process inlined body ---------
+        // Replace Return events by (assignment + jump)
+        final Register resultReg = call instanceof ValueFunctionCall c ? c.getResultRegister() : null;
+        inlinedBody.stream().filter(Return.class::isInstance).map(Return.class::cast).forEach(returnEvent -> {
+            final Expression expression = returnEvent.getValue().orElse(null);
+            checkReturnType(resultReg, expression);
+            final List<Event> replacement = eventSequence(
+                    expression != null ? newLocal(resultReg, expression) : null,
+                    newGoto(returnLabel)
+            );
+            IRHelper.replaceWithMetadata(returnEvent, replacement);
+        });
 
-        // Replace call with replacement
-        // this places parameterAssignments before inlinedBody
-        call.insertAfter(exitLabel);
-        call.insertAfter(inlinedBody);
-        call.insertAfter(parameterAssignments);
         final Event successor = call.getSuccessor();
         call.tryDelete();
         return successor;

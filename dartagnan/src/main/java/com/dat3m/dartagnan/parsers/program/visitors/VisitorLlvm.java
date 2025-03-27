@@ -1,11 +1,17 @@
 package com.dat3m.dartagnan.parsers.program.visitors;
 
 import com.dat3m.dartagnan.exception.ParsingException;
+import com.dat3m.dartagnan.exception.ProgramProcessingException;
 import com.dat3m.dartagnan.expression.*;
 import com.dat3m.dartagnan.expression.integers.IntBinaryOp;
 import com.dat3m.dartagnan.expression.type.*;
 import com.dat3m.dartagnan.parsers.LLVMIRBaseVisitor;
 import com.dat3m.dartagnan.parsers.LLVMIRParser.*;
+import com.dat3m.dartagnan.parsers.program.ParserAsm;
+import com.dat3m.dartagnan.parsers.program.ParserAsmPPC;
+import com.dat3m.dartagnan.parsers.program.ParserAsmRISCV;
+import com.dat3m.dartagnan.parsers.program.ParserAsmX86;
+import com.dat3m.dartagnan.parsers.program.ParserAsmArm;
 import com.dat3m.dartagnan.parsers.program.utils.ProgramBuilder;
 import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.Program;
@@ -18,8 +24,12 @@ import com.dat3m.dartagnan.program.event.metadata.Metadata;
 import com.dat3m.dartagnan.program.event.metadata.SourceLocation;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
+
+import org.antlr.v4.runtime.CharStream;
+import org.antlr.v4.runtime.CharStreams;
 import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.tree.TerminalNode;
 import org.apache.logging.log4j.LogManager;
@@ -29,6 +39,7 @@ import java.math.BigInteger;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static com.dat3m.dartagnan.expression.utils.ExpressionHelper.isAggregateLike;
 import static com.dat3m.dartagnan.program.event.EventFactory.*;
 import static com.dat3m.dartagnan.program.event.EventFactory.Llvm.newCompareExchange;
 import static com.google.common.base.Preconditions.checkState;
@@ -37,6 +48,7 @@ import static com.google.common.base.Verify.verify;
 public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
 
     private static final Logger logger = LogManager.getLogger(VisitorLlvm.class);
+    private static final String DEFAULT_ENTRY_FUNCTION = "main";
 
     // Global context
     private final Program program;
@@ -129,6 +141,9 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
     @Override
     public Expression visitFuncHeader(FuncHeaderContext ctx) {
         final String name = globalIdent(ctx.GlobalIdent());
+        if (name.equals(DEFAULT_ENTRY_FUNCTION)) {
+            program.setEntryPoint(name);
+        }
         final Type returnType = parseType(ctx.type());
         final List<Type> parameterTypes = new ArrayList<>();
         final List<String> parameterNames = new ArrayList<>();
@@ -368,14 +383,41 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
                 getOrNewRegister(currentRegisterName, returnType);
 
         if (ctx.inlineAsm() != null) {
+            String asmCode = ctx.inlineAsm().inlineAsmBody().getText();
             // see https://llvm.org/docs/LangRef.html#inline-assembler-expressions
-            //TODO add support form inline assembly
             //FIXME ignore side effects of inline assembly
-            if (resultRegister != null) {
-                block.events.add(newLocal(resultRegister, program.newConstant(returnType)));
-                logger.warn(String.format("Interpreting inline assembly as an unconstrained value:  %s.", ctx.inlineAsm().getText()));
-            } else {
-                ctx.inlineAsm().accept(this);
+            final List<ParserAsm> parsers = List.of(
+                    new ParserAsmArm(function, resultRegister, arguments),
+                    new ParserAsmRISCV(function, resultRegister, arguments),
+                    new ParserAsmPPC(function, resultRegister, arguments),
+                    new ParserAsmX86(function, resultRegister, arguments)
+            );
+            Optional<List<Event>> events = Optional.empty();
+            boolean unsupportedEncountered = false;
+            for(ParserAsm parser : parsers){
+                // we have to generate the stream each time as the parser consumes it
+                CharStream charStream = CharStreams.fromString(asmCode);
+                try {
+                    events = tryParse(parser,charStream);
+                    if(events.isPresent()){
+                        block.events.addAll(events.get());
+                        break;
+                    }
+                } catch (UnsupportedOperationException e) {
+                    logger.warn("Support for inline assembly instruction '{}' is not available for parser '{}'. Setting non deterministic value ", e.getMessage(), parser.getClass().getSimpleName());
+                    if(resultRegister != null){
+                        Event nonDeterministicValue = EventFactory.Svcomp.newNonDetChoice(resultRegister);
+                        events = Optional.of(List.of(nonDeterministicValue));
+                    }
+                    unsupportedEncountered = true;
+                    break;
+                }
+            }
+            if(!unsupportedEncountered && events.isEmpty()){
+                logger.warn("None of the parsers succeeded for inline assembly. Setting non deterministic value");
+                if(resultRegister != null){
+                    block.events.add(EventFactory.Svcomp.newNonDetChoice(resultRegister));
+                }
             }
             return resultRegister;
         }
@@ -396,6 +438,7 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
         block.events.add(call);
         return resultRegister;
     }
+
 
     @Override
     public Expression visitRetTerm(RetTermContext ctx) {
@@ -481,51 +524,8 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
         return null;
     }
 
-    @Override 
-    public Expression visitInlineAsm(InlineAsmContext ctx) {
-        final String asm = parseQuotedString(ctx.StringLit(0));
-        final Event fence = switch(asm) {
-            // Compiler barrier, do nothing
-            // TODO update when we add support for interrupts
-            case "" -> null;
-            // X86
-            case "mfence" -> X86.newMemoryFence();
-            // Aarch64
-            case "dmb sy" -> AArch64.DMB.newSYBarrier();
-            case "dmb ish" -> AArch64.DMB.newISHBarrier();
-            case "dmb ishld" -> AArch64.DMB.newISHLDBarrier();
-            case "dmb ishst" -> AArch64.DMB.newISHSTBarrier();
-            case "dsb sy" -> AArch64.DSB.newSYBarrier();
-            case "dsb ish" -> AArch64.DSB.newISHBarrier();
-            case "dsb ishld" -> AArch64.DSB.newISHLDBarrier();
-            case "dsb ishst" -> AArch64.DSB.newISHSTBarrier();
-            // PPC
-            case "isync" -> Power.newISyncBarrier();
-            case "sync" -> Power.newSyncBarrier();
-            case "lwsync" -> Power.newLwSyncBarrier();
-            // RISCV
-            case "fence r,r" -> RISCV.newRRFence();
-            case "fence r,w" -> RISCV.newRWFence();
-            case "fence r,rw" -> RISCV.newRRWFence();
-            case "fence w,r" -> RISCV.newWRFence();
-            case "fence w,w" -> RISCV.newWWFence();
-            case "fence w,rw" -> RISCV.newWRWFence();
-            case "fence rw,r" -> RISCV.newRWRFence();
-            case "fence rw,w" -> RISCV.newRWWFence();
-            case "fence rw,rw" -> RISCV.newRWRWFence();
-            case "fence tso" -> RISCV.newTsoFence();
-            case "fence i" -> RISCV.newSynchronizeFence();
-            default -> throw new ParsingException(String.format("Encountered unsupported inline assembly:  %s.", asm));
-        };
-        if(fence != null) {
-            block.events.add(fence);
-        }
-        return null;
-    }
-
     // ----------------------------------------------------------------------------------------------------------------
     // Instructions producing a value
-
     @Override
     public Expression visitAllocaInst(AllocaInstContext ctx) {
         // see https://llvm.org/docs/LangRef.html#alloca-instruction
@@ -697,13 +697,23 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
     @Override
     public Expression visitExtractValueInst(ExtractValueInstContext ctx) {
         final Type type = parseType(ctx.typeValue().firstClassType());
-        check(type instanceof AggregateType, "Non-aggregate type in %s.", ctx);
-        Expression expression = checkExpression(type, ctx.typeValue().value());
-        for (final TerminalNode literalNode : ctx.IntLit()) {
-            final int index = Integer.parseInt(literalNode.getText());
-            expression = expressions.makeExtract(index, expression);
-        }
-        return assignToRegister(expression);
+        check(isAggregateLike(type), "Non-aggregate type in %s.", ctx);
+        final Expression aggregate = checkExpression(type, ctx.typeValue().value());
+        final ImmutableList<Integer> indices =
+                ctx.IntLit().stream().map(n -> Integer.parseInt(n.getText())).collect(ImmutableList.toImmutableList());
+        return assignToRegister(expressions.makeExtract(aggregate, indices));
+    }
+
+    @Override
+    public Expression visitInsertValueInst(InsertValueInstContext ctx) {
+        final Type typeAgg = parseType(ctx.typeValue(0));
+        final Type insertType = parseType(ctx.typeValue(1));
+        check(isAggregateLike(typeAgg), "Non-aggregate type in %s.", ctx);
+        final Expression aggregate = checkExpression(typeAgg, ctx.typeValue(0));
+        final Expression insertValue = checkExpression(insertType, ctx.typeValue(1));
+        final ImmutableList<Integer> indices =
+                ctx.IntLit().stream().map(n -> Integer.parseInt(n.getText())).collect(ImmutableList.toImmutableList());
+        return assignToRegister(expressions.makeInsert(aggregate, insertValue, indices));
     }
 
     @Override
@@ -1442,7 +1452,7 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
         @Override
         default <T> T accept(ExpressionVisitor<T> visitor) { throw new UnsupportedOperationException(); }
         @Override
-        default List<Expression> getOperands() { return List.of(); }
+        default ImmutableList<Expression> getOperands() { return ImmutableList.of(); }
         @Override
         default ExpressionKind getKind() { return MdKind; }
     }
@@ -1504,6 +1514,16 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
             }
             return Optional.empty();
         }
+    }
+
+    // ----------------------------------------------------------------------------------------------------------------
+    // Helper to parse inline asm code
+    private Optional<List<Event>> tryParse(ParserAsm parser, CharStream asmCode) throws ProgramProcessingException{
+        try{
+            List<Event> events = parser.parse(asmCode);
+            return (events != null) ? Optional.of(events) : Optional.empty();
+        } catch (ParsingException e){}
+        return Optional.empty();
     }
 
 }

@@ -6,8 +6,7 @@ import com.dat3m.dartagnan.expression.ExpressionVisitor;
 import com.dat3m.dartagnan.expression.Type;
 import com.dat3m.dartagnan.expression.base.ExpressionBase;
 import com.dat3m.dartagnan.expression.type.BooleanType;
-
-import java.util.List;
+import com.google.common.collect.ImmutableList;
 
 import static com.google.common.base.Preconditions.checkArgument;
 
@@ -41,8 +40,8 @@ public final class ITEExpr extends ExpressionBase<Type> {
     }
 
     @Override
-    public List<Expression> getOperands() {
-        return List.of(condition, trueCase, falseCase);
+    public ImmutableList<Expression> getOperands() {
+        return ImmutableList.of(condition, trueCase, falseCase);
     }
 
     @Override

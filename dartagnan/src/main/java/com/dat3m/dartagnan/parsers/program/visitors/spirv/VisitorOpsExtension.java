@@ -6,6 +6,7 @@ import com.dat3m.dartagnan.parsers.SpirvParser;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.extenstions.VisitorExtension;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.extenstions.VisitorExtensionClspvReflection;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.builders.ProgramBuilder;
+import com.dat3m.dartagnan.parsers.program.visitors.spirv.extenstions.VisitorExtensionOpenClStd;
 import org.antlr.v4.runtime.tree.ParseTree;
 import org.antlr.v4.runtime.tree.TerminalNode;
 
@@ -20,8 +21,20 @@ public class VisitorOpsExtension extends SpirvBaseVisitor<Void> {
 
     public VisitorOpsExtension(ProgramBuilder builder) {
         VisitorExtensionClspvReflection clspv = new VisitorExtensionClspvReflection(builder);
+        VisitorExtensionOpenClStd opencl = new VisitorExtensionOpenClStd(builder);
         this.availableVisitors.put("NonSemantic.ClspvReflection.5", clspv);
         this.availableVisitors.put("NonSemantic.ClspvReflection.6", clspv);
+        this.availableVisitors.put("OpenCL.std", opencl);
+    }
+
+    @Override
+    public Void visitOpExtension(SpirvParser.OpExtensionContext ctx) {
+        String name = ctx.nameLiteralString().getText();
+        name = name.substring(1, name.length() - 1);
+        if (!"SPV_KHR_vulkan_memory_model".equals(name)) {
+            throw new ParsingException("Unsupported extension '%s'", name);
+        }
+        return null;
     }
 
     @Override
@@ -62,6 +75,7 @@ public class VisitorOpsExtension extends SpirvBaseVisitor<Void> {
 
     public Set<String> getSupportedOps() {
         return Set.of(
+                "OpExtension",
                 "OpExtInstImport",
                 "OpExtInst"
         );

@@ -1,12 +1,11 @@
 package com.dat3m.dartagnan.program.memory;
 
 import com.dat3m.dartagnan.expression.Expression;
-import com.dat3m.dartagnan.expression.Type;
+import com.dat3m.dartagnan.expression.type.ScopedPointerType;
 
 public class ScopedPointerVariable extends ScopedPointer {
-
-    public ScopedPointerVariable(String id, String scopeId, Type innerType, MemoryObject address) {
-        super(id, scopeId, innerType, address);
+    public ScopedPointerVariable(String id, ScopedPointerType pointerType, MemoryObject address) {
+        super(id, pointerType, address);
     }
 
     @Override

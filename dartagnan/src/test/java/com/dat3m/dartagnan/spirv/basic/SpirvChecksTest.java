@@ -26,7 +26,6 @@ import java.util.Arrays;
 import java.util.EnumSet;
 
 import static com.dat3m.dartagnan.configuration.Property.CAT_SPEC;
-import static com.dat3m.dartagnan.configuration.Property.PROGRAM_SPEC;
 import static com.dat3m.dartagnan.utils.ResourceHelper.getRootPath;
 import static com.dat3m.dartagnan.utils.ResourceHelper.getTestResourcePath;
 import static com.dat3m.dartagnan.utils.Result.*;
@@ -72,6 +71,7 @@ public class SpirvChecksTest {
                 {"array-of-vector.spv.dis", 1, PASS},
                 {"array-of-vector1.spv.dis", 1, PASS},
                 {"vector-read-write.spv.dis", 1, PASS},
+                {"composite-extract.spv.dis", 1, PASS},
                 {"spec-id-integer.spv.dis", 1, PASS},
                 {"spec-id-boolean.spv.dis", 1, PASS},
                 {"mixed-size.spv.dis", 1, PASS},
@@ -114,7 +114,9 @@ public class SpirvChecksTest {
                 {"rmw-extremum-false.spv.dis", 1, PASS},
                 {"push-constants.spv.dis", 1, PASS},
                 {"push-constants-pod.spv.dis", 1, PASS},
-                {"push-constant-mixed.spv.dis", 1, PASS}
+                {"push-constant-mixed.spv.dis", 1, PASS},
+                {"bitwise-scalar.spv.dis", 1, PASS},
+                {"bitwise-vector.spv.dis", 1, PASS}
         });
     }
 

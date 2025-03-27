@@ -11,6 +11,7 @@ import com.dat3m.dartagnan.parsers.witness.ParserWitness;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Program.SourceLanguage;
 import com.dat3m.dartagnan.program.analysis.SyntacticContextAnalysis;
+import com.dat3m.dartagnan.program.event.BlockingEvent;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.Assert;
@@ -20,10 +21,10 @@ import com.dat3m.dartagnan.program.processing.LoopUnrolling;
 import com.dat3m.dartagnan.utils.Result;
 import com.dat3m.dartagnan.utils.Utils;
 import com.dat3m.dartagnan.utils.options.BaseOptions;
-import com.dat3m.dartagnan.verification.model.ExecutionModelManager;
-import com.dat3m.dartagnan.verification.model.ExecutionModelNext;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.verification.VerificationTask.VerificationTaskBuilder;
+import com.dat3m.dartagnan.verification.model.ExecutionModelManager;
+import com.dat3m.dartagnan.verification.model.ExecutionModelNext;
 import com.dat3m.dartagnan.verification.solving.AssumeSolver;
 import com.dat3m.dartagnan.verification.solving.DataRaceSolver;
 import com.dat3m.dartagnan.verification.solving.ModelChecker;
@@ -44,11 +45,13 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.maven.model.io.xpp3.MavenXpp3Reader;
 import org.sosy_lab.common.ShutdownManager;
+import org.sosy_lab.common.ShutdownNotifier;
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.common.configuration.Options;
 import org.sosy_lab.common.log.BasicLogManager;
 import org.sosy_lab.java_smt.SolverContextFactory;
+import org.sosy_lab.java_smt.SolverContextFactory.Solvers;
 import org.sosy_lab.java_smt.api.Model;
 import org.sosy_lab.java_smt.api.ProverEnvironment;
 import org.sosy_lab.java_smt.api.SolverContext;
@@ -99,6 +102,26 @@ public class Dartagnan extends BaseOptions {
         }
         final CharSource source = CharSource.concat(CharSource.wrap(preamble), CharSource.wrap(options));
         return Configuration.builder().loadFromSource(source, ".", ".").build();
+    }
+
+    private static SolverContext createSolverContext(Configuration config, ShutdownNotifier notifier, Solvers solver) throws Exception {
+        // Try using NativeLibraries::loadLibrary. Fallback to System::loadLibrary
+        // if NativeLibraries failed, for example, because the operating system is
+        // not supported,
+        try {
+            return SolverContextFactory.createSolverContext(
+                config,
+                BasicLogManager.create(config),
+                notifier,
+                solver);
+        } catch (Exception e) {
+            SolverContextFactory factory = new SolverContextFactory(
+                config,
+                BasicLogManager.create(config),
+                notifier,
+                System::loadLibrary);
+            return factory.generateContext(solver);
+        }
     }
 
     public static void main(String[] args) throws Exception {
@@ -175,9 +198,8 @@ public class Dartagnan extends BaseOptions {
             Configuration solverConfig = Configuration.builder()
                     .setOption(PHANTOM_REFERENCES, valueOf(o.usePhantomReferences()))
                     .build();
-            try (SolverContext ctx = SolverContextFactory.createSolverContext(
+            try (SolverContext ctx = createSolverContext(
                     solverConfig,
-                    BasicLogManager.create(solverConfig),
                     sdm.getNotifier(),
                     o.getSolver());
                     ProverWithTracker prover = new ProverWithTracker(ctx,
@@ -191,7 +213,7 @@ public class Dartagnan extends BaseOptions {
                     }
                     modelChecker = DataRaceSolver.run(ctx, prover, task);
                 } else {
-                    // Property is either PROGRAM_SPEC, LIVENESS, or CAT_SPEC
+                    // Property is either PROGRAM_SPEC, TERMINATION, or CAT_SPEC
                     modelChecker = switch (o.getMethod()) {
                         case EAGER -> AssumeSolver.run(ctx, prover, task);
                         case LAZY -> RefinementSolver.run(ctx, prover, task);
@@ -306,11 +328,16 @@ public class Dartagnan extends BaseOptions {
                     }
                     summary.append("=================================================\n");
                 }
-                if (props.contains(LIVENESS) && FALSE.equals(model.evaluate(LIVENESS.getSMTVariable(encCtx)))) {
-                    summary.append("============ Liveness violation found ============\n");
-                    for (CondJump e : p.getThreadEvents(CondJump.class)) {
-                        if (e.hasTag(Tag.SPINLOOP) && TRUE.equals(model.evaluate(encCtx.execution(e)))
-                                && TRUE.equals(model.evaluate(encCtx.jumpCondition(e)))) {
+                if (props.contains(TERMINATION) && FALSE.equals(model.evaluate(TERMINATION.getSMTVariable(encCtx)))) {
+                    summary.append("============ Termination violation found ============\n");
+                    for (Event e : p.getThreadEvents()) {
+                        final boolean isStuckLoop = e instanceof CondJump jump
+                                && e.hasTag(Tag.NONTERMINATION) && !e.hasTag(Tag.BOUND)
+                                && TRUE.equals(model.evaluate(encCtx.jumpTaken(jump)));
+                        final boolean isStuckBarrier = e instanceof BlockingEvent barrier
+                                && TRUE.equals(model.evaluate(encCtx.blocked(barrier)));
+
+                        if (isStuckLoop || isStuckBarrier) {
                             final String callStack = makeContextString(
                                     synContext.getContextInfo(e).getContextOfType(CallContext.class), " -> ");
                             summary

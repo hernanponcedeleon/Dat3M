@@ -28,8 +28,8 @@ import com.dat3m.dartagnan.wmm.axiom.Axiom;
 import com.dat3m.dartagnan.wmm.axiom.Emptiness;
 import com.dat3m.dartagnan.wmm.axiom.Irreflexivity;
 import com.dat3m.dartagnan.wmm.definition.*;
-import com.dat3m.dartagnan.wmm.utils.graph.EventGraph;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
+import com.dat3m.dartagnan.wmm.utils.graph.EventGraph;
 import com.dat3m.dartagnan.wmm.utils.graph.mutable.MapEventGraph;
 import com.dat3m.dartagnan.wmm.utils.graph.mutable.MutableEventGraph;
 import org.apache.logging.log4j.LogManager;
@@ -105,23 +105,29 @@ public class NativeRelationAnalysis implements RelationAnalysis {
     @Override
     public void populateQueue(Map<Relation, List<EventGraph>> queue, Set<Relation> relations) {
         Propagator p = new Propagator();
+        Initializer init = getInitializer();
         for (Relation r : relations) {
             MutableEventGraph may = new MapEventGraph();
             MutableEventGraph must = new MapEventGraph();
             if (r.getDependencies().isEmpty()) {
-                continue;
+                final Knowledge k = r.getDefinition().accept(init);
+                may.addAll(k.getMaySet());
+                must.addAll(k.getMustSet());
+            } else {
+                for (Relation c : r.getDependencies()) {
+                    p.setSource(c);
+                    p.setMay(getMutableKnowledge(p.getSource()).getMaySet());
+                    p.setMust(getMutableKnowledge(p.getSource()).getMustSet());
+                    Delta s = r.getDefinition().accept(p);
+                    may.addAll(s.may);
+                    must.addAll(s.must);
+                }
             }
-            for (Relation c : r.getDependencies()) {
-                p.setSource(c);
-                p.setMay(getMutableKnowledge(p.getSource()).getMaySet());
-                p.setMust(getMutableKnowledge(p.getSource()).getMustSet());
-                Delta s = r.getDefinition().accept(p);
-                may.addAll(s.may);
-                must.addAll(s.must);
-            }
+            // We can do a destructive update because we do not need <may> anymore
             may.removeAll(getKnowledge(r).getMaySet());
-            MutableEventGraph must2 = MutableEventGraph.difference(getKnowledge(r).getMustSet(), must);
-            queue.computeIfAbsent(r, k -> new ArrayList<>()).add(MutableEventGraph.union(may, must2));
+            MutableEventGraph mayDiff = may;
+            MutableEventGraph mustDiff = MutableEventGraph.difference(getKnowledge(r).getMustSet(), must);
+            queue.computeIfAbsent(r, k -> new ArrayList<>()).add(MutableEventGraph.union(mayDiff, mustDiff));
         }
     }
 
@@ -960,12 +966,11 @@ public class NativeRelationAnalysis implements RelationAnalysis {
                     if (!usageTypes.contains(regRead.usageType())) {
                         continue;
                     }
-                    final Register register = regRead.register();
-                    final List<? extends Event> writers = state.ofRegister(register).getMayWriters();
-                    for (Event regWriter : writers) {
+                    final var reachDef = state.ofRegister(regRead.register());
+                    for (Event regWriter : reachDef.getMayWriters()) {
                         may.add(regWriter, regReader);
                     }
-                    for (Event regWriter : writers) {
+                    for (Event regWriter : reachDef.getMustWriters()) {
                         must.add(regWriter, regReader);
                     }
                 }
@@ -1018,26 +1023,32 @@ public class NativeRelationAnalysis implements RelationAnalysis {
 
         @Override
         public MutableKnowledge visitSyncBarrier(SyncBar syncBar) {
-            MutableEventGraph may = new MapEventGraph();
             MutableEventGraph must = new MapEventGraph();
-            List<ControlBarrier> barriers = program.getThreadEvents(ControlBarrier.class);
-            for (ControlBarrier e1 : barriers) {
-                for (ControlBarrier e2 : barriers) {
-                    if (!exec.areMutuallyExclusive(e1, e2) && !e2.hasTag(PTX.ARRIVE)) {
-                        if (e1.getId() instanceof IntLiteral iLit1 && e2.getId() instanceof IntLiteral iLit2) {
-                            int id1 = iLit1.getValueAsInt();
-                            int id2 = iLit2.getValueAsInt();
-                            if (id1 != id2) {
-                                continue;
+            List<ControlBarrier> barriers = program.getThreadEvents(ControlBarrier.class).stream()
+                    .filter(e -> !(e instanceof NamedBarrier))
+                    .toList();
+            barriers.forEach(e1 -> barriers.stream()
+                    .filter(e2 -> e1.getInstanceId().equals(e2.getInstanceId()))
+                    .filter(e2 -> !exec.areMutuallyExclusive(e1, e2))
+                    .filter(e2 -> !e2.hasTag(PTX.ARRIVE))
+                    .forEach(e2 -> must.add(e1, e2)));
+
+            MutableEventGraph may = MapEventGraph.from(must);
+            List<NamedBarrier> namedBarriers = program.getThreadEvents(NamedBarrier.class);
+            namedBarriers.forEach(e1 -> namedBarriers.stream()
+                    .filter(e2 -> e1.getInstanceId().equals(e2.getInstanceId()))
+                    .filter(e2 -> !exec.areMutuallyExclusive(e1, e2))
+                    .filter(e2 -> !e2.hasTag(PTX.ARRIVE))
+                    .forEach(e2 -> {
+                        if (e1.getResourceId().equals(e2.getResourceId())) {
+                            may.add(e1, e2);
+                            if (e1.getQuorum() == null) {
+                                must.add(e1, e2);
                             }
+                        } else if (!(e1.getResourceId() instanceof IntLiteral) || !(e2.getResourceId() instanceof IntLiteral)) {
+                            may.add(e1, e2);
                         }
-                        may.add(e1, e2);
-                        if (e1.getId().equals(e2.getId())) {
-                            must.add(e1, e2);
-                        }
-                    }
-                }
-            }
+                    }));
             return new MutableKnowledge(may, must);
         }
 

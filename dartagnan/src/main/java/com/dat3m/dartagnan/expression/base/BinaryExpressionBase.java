@@ -5,8 +5,8 @@ import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionKind;
 import com.dat3m.dartagnan.expression.Type;
 import com.dat3m.dartagnan.program.event.common.NoInterface;
+import com.google.common.collect.ImmutableList;
 
-import java.util.List;
 import java.util.Objects;
 
 @NoInterface
@@ -28,7 +28,7 @@ public abstract class BinaryExpressionBase<TType extends Type, TKind extends Exp
     public Expression getRight() { return right; }
 
     @Override
-    public List<Expression> getOperands() { return List.of(left, right); }
+    public ImmutableList<Expression> getOperands() { return ImmutableList.of(left, right); }
 
     @Override
     public TKind getKind() { return kind; }

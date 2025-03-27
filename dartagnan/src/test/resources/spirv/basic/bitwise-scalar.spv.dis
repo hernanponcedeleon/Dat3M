@@ -1,0 +1,35 @@
+; @Input: %output = {0, 0, 0}
+; @Output: forall (%output[0] == 80 and %output[1] == 245 and %output[2] == 165)
+; @Config: 1, 1, 1
+; SPIR-V
+; Version: 1.0
+; Schema: 0
+                 OpCapability Shader
+                 OpCapability VulkanMemoryModel
+                 OpMemoryModel Logical Vulkan
+                 OpEntryPoint GLCompute %main "main"
+         %void = OpTypeVoid
+         %func = OpTypeFunction %void
+         %uint = OpTypeInt 32 0
+       %uint_0 = OpConstant %uint 0
+       %uint_1 = OpConstant %uint 1
+       %uint_2 = OpConstant %uint 2
+      %uint_85 = OpConstant %uint 85    ; 0101 0101
+     %uint_240 = OpConstant %uint 240   ; 1111 0000
+  %output_type = OpTypeRuntimeArray %uint
+   %ptr_output = OpTypePointer Uniform %output_type
+     %ptr_uint = OpTypePointer Uniform %uint
+       %output = OpVariable %ptr_output Uniform
+         %main = OpFunction %void None %func
+        %label = OpLabel
+     %output_0 = OpAccessChain %ptr_uint %output %uint_0
+     %output_1 = OpAccessChain %ptr_uint %output %uint_1
+     %output_2 = OpAccessChain %ptr_uint %output %uint_2
+          %and = OpBitwiseAnd %uint %uint_85 %uint_240
+           %or = OpBitwiseOr %uint %uint_85 %uint_240
+          %xor = OpBitwiseXor %uint %uint_85 %uint_240
+                 OpStore %output_0 %and
+                 OpStore %output_1 %or
+                 OpStore %output_2 %xor
+                 OpReturn
+                 OpFunctionEnd

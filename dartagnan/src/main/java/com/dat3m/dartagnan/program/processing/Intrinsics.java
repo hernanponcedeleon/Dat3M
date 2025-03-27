@@ -9,6 +9,7 @@ import com.dat3m.dartagnan.expression.integers.IntLiteral;
 import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.program.Function;
+import com.dat3m.dartagnan.program.IRHelper;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Event;
@@ -320,18 +321,16 @@ public class Intrinsics {
                 final Map<Event, Event> updateMapping = Map.of(call, replacement.get(0));
                 ImmutableList.copyOf(call.getUsers()).forEach(user -> user.updateReferences(updateMapping));
             }
-            call.replaceBy(replacement);
-            replacement.forEach(e -> e.copyAllMetadataFrom(call));
-
             // NOTE: We deliberately do not use the call markers, because (1) we want to distinguish between
             // intrinsics and normal calls, and (2) we do not want to have intrinsics in the call stack.
             // We may want to change this behaviour though.
-            replacement.get(0).getPredecessor().insertAfter(EventFactory.newStringAnnotation(
+            call.insertBefore(EventFactory.newStringAnnotation(
                     String.format("=== Calling intrinsic %s ===", call.getCalledFunction().getName())
             ));
-            replacement.get(replacement.size() - 1).insertAfter(EventFactory.newStringAnnotation(
+            call.insertAfter(EventFactory.newStringAnnotation(
                     String.format("=== Returning from intrinsic %s ===", call.getCalledFunction().getName())
             ));
+            IRHelper.replaceWithMetadata(call, replacement);
         }
     }
 
@@ -362,7 +361,9 @@ public class Intrinsics {
     }
 
     private List<Event> inlineExit(FunctionCall ignored) {
-        return List.of(EventFactory.newAbortIf(expressions.makeTrue()));
+        final Event exit = EventFactory.newAbortIf(expressions.makeTrue());
+        exit.addTags(Tag.EXCEPTIONAL_TERMINATION);
+        return List.of(exit);
     }
 
     private List<Event> inlineLoopBegin(FunctionCall ignored) {

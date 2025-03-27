@@ -1,0 +1,16 @@
+PTX SB+named-bar-dyn-reg-const
+"SB is not allowed because fences can have the same id and thus they do synchronize"
+{
+x=0;
+y=0;
+z=0;
+P0:r0=0; P0:r2=0;
+P1:r1=0; P1:r3=0;
+}
+ P0@cta 0,gpu 0     | P1@cta 0,gpu 0    | P2@cta 0,gpu 0 ;
+ st.weak x, 1       | st.weak y, 1      | st.weak z, 1   ;
+ ld.weak r2, z      | bar.cta.sync 1, 1 |                ;
+ bar.cta.sync 1, r2 | ld.weak r1, x     |                ;
+ ld.weak r0, y      |                   |                ;
+forall
+(P0:r2 != 1 \/ P0:r0 == 1 \/ P1:r1 == 1)

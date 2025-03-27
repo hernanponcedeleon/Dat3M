@@ -58,9 +58,9 @@ public class VisitorOpsType extends SpirvBaseVisitor<Type> {
     @Override
     public Type visitOpTypeVector(SpirvParser.OpTypeVectorContext ctx) {
         String id = ctx.idResult().getText();
-        String elementTypeName = ctx.componentType().getText();
+        String elementTypeName = ctx.componentTypeIdRef().getText();
         Type elementType = builder.getType(elementTypeName);
-        int size = Integer.parseInt(ctx.componentCount().getText());
+        int size = Integer.parseInt(ctx.componentCountLiteralInteger().getText());
         Type type = types.getArrayType(elementType, size);
         return builder.addType(id, type);
     }
@@ -110,7 +110,8 @@ public class VisitorOpsType extends SpirvBaseVisitor<Type> {
             }
             throw new ParsingException("Illegal member offset decorations for struct '%s'", id);
         }
-        throw new ParsingException("Missing member offset decorations for struct '%s'", id);
+        Type type = types.getAggregateType(memberTypes);
+        return builder.addType(id, type);
     }
 
     @Override
