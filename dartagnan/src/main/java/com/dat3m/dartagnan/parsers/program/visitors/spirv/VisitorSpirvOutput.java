@@ -15,7 +15,8 @@ import com.dat3m.dartagnan.parsers.program.visitors.spirv.helpers.HelperTypes;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.memory.FinalMemoryValue;
-import com.dat3m.dartagnan.program.memory.ScopedPointerVariable;
+import com.dat3m.dartagnan.program.memory.MemoryObject;
+import com.dat3m.dartagnan.program.memory.ScopedPointer;
 
 import java.util.List;
 
@@ -127,7 +128,7 @@ public class VisitorSpirvOutput extends SpirvBaseVisitor<Expression> {
         if (expression instanceof Register && expression.getType() instanceof ScopedPointerType) {
             expression = builder.getExpression(HelperInputs.castPointerId(name));
         }
-        if (expression instanceof ScopedPointerVariable base) {
+        if (expression instanceof ScopedPointer base) {
             List<Integer> indexes = ctx.indexValue().stream()
                     .map(c -> Integer.parseInt(c.ModeHeader_PositiveInteger().getText()))
                     .toList();
@@ -190,14 +191,15 @@ public class VisitorSpirvOutput extends SpirvBaseVisitor<Expression> {
         throw new ParsingException("Unrecognised comparison operator");
     }
 
-    private FinalMemoryValue createFinalMemoryValue(ScopedPointerVariable base, List<Integer> indexes) {
+    private FinalMemoryValue createFinalMemoryValue(ScopedPointer base, List<Integer> indexes) {
         String name = indexes.isEmpty() ? base.getId() :
                 base.getId() + "[" + String.join("][", indexes.stream().map(Object::toString).toArray(String[]::new)) + "]";
+        // TODO: Use GEPExpression
         Type elType = HelperTypes.getMemberType(base.getId(), base.getType().getPointedType(), indexes);
         if (elType instanceof ArrayType || elType instanceof AggregateType) {
             throw new ParsingException("Index is not deep enough for variable '%s'", name);
         }
         int offset = HelperTypes.getMemberOffset(base.getId(), 0, base.getType().getPointedType(), indexes);
-        return new FinalMemoryValue(name, elType, base.getAddress(), offset);
+        return expressions.makeFinalMemoryValue(name, elType, (MemoryObject) base.getAddress(), offset);
     }
 }

@@ -9,6 +9,7 @@ import com.dat3m.dartagnan.expression.type.FunctionType;
 import com.dat3m.dartagnan.expression.type.ScopedPointerType;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.decorations.BuiltIn;
+import com.dat3m.dartagnan.program.memory.ScopedPointer;
 import com.dat3m.dartagnan.program.processing.transformers.MemoryTransformer;
 import com.dat3m.dartagnan.program.ThreadGrid;
 import com.dat3m.dartagnan.program.Function;
@@ -20,12 +21,11 @@ import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.functions.FunctionCall;
 import com.dat3m.dartagnan.program.memory.Memory;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
-import com.dat3m.dartagnan.program.memory.ScopedPointerVariable;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import static com.dat3m.dartagnan.parsers.program.visitors.spirv.decorations.DecorationType.BUILT_IN;
 
@@ -34,7 +34,8 @@ public class ProgramBuilder {
     protected final Map<String, Type> types = new HashMap<>();
     protected final Map<String, Expression> expressions = new HashMap<>();
     protected final Map<String, Expression> inputs = new HashMap<>();
-    protected final Map<String, String> debugInfos = new HashMap<>();
+    protected final Set<ScopedPointer> allocations = new HashSet<>();
+    protected final Map<String, String> debugInfo = new HashMap<>();
     protected final ThreadGrid grid;
     protected final Program program;
     protected ControlFlowBuilder controlFlowBuilder;
@@ -55,7 +56,7 @@ public class ProgramBuilder {
         validateBeforeBuild();
         controlFlowBuilder.build();
         BuiltIn builtIn = (BuiltIn) decorationsBuilder.getDecoration(BUILT_IN);
-        MemoryTransformer transformer = new MemoryTransformer(grid, getEntryPointFunction(), builtIn, getVariables());
+        MemoryTransformer transformer = new MemoryTransformer(grid, getEntryPointFunction(), builtIn, allocations);
         program.addTransformer(transformer);
         return program;
     }
@@ -174,28 +175,23 @@ public class ProgramBuilder {
         return value;
     }
 
-    public Set<ScopedPointerVariable> getVariables() {
-        return expressions.values().stream()
-                .filter(ScopedPointerVariable.class::isInstance)
-                .map(v -> (ScopedPointerVariable) v)
-                .collect(Collectors.toSet());
+    public Set<ScopedPointer> getAllocation() {
+        return allocations;
     }
 
-    public MemoryObject allocateVariable(String id, int bytes) {
+    public ScopedPointer allocateMemory(String id, ScopedPointerType type, Expression value) {
+        int bytes = TypeFactory.getInstance().getMemorySizeInBytes(type.getPointedType());
         MemoryObject memObj = program.getMemory().allocateVirtual(bytes, true, null);
         memObj.setName(id);
-        return memObj;
-    }
-
-    public ScopedPointerVariable allocateScopedPointerVariable(String id, ScopedPointerType type, Expression initValue) {
-        MemoryObject memObj = allocateVariable(id, TypeFactory.getInstance().getMemorySizeInBytes(type.getPointedType()));
         memObj.setIsThreadLocal(false);
-        memObj.setInitialValue(0, initValue);
+        memObj.setInitialValue(0, value);
         if (arch == Arch.OPENCL) {
             String openCLSpace = Tag.Spirv.toOpenCLTag(Tag.Spirv.getStorageClassTag(Set.of(type.getScopeId())));
             memObj.addFeatureTag(openCLSpace);
         }
-        return ExpressionFactory.getInstance().makeScopedPointerVariable(id, type, memObj);
+        ScopedPointer pointer = ExpressionFactory.getInstance().makeScopedPointer(id, type, memObj);
+        allocations.add(pointer);
+        return pointer;
     }
 
     public String getPointerStorageClass(String id) {
@@ -264,17 +260,17 @@ public class ProgramBuilder {
     }
 
     public void addDebugInfo(String id, String info) {
-        if (debugInfos.containsKey(id)) {
+        if (debugInfo.containsKey(id)) {
             throw new ParsingException("Attempt to add debug information with duplicate id");
         }
-        debugInfos.put(id, info);
+        debugInfo.put(id, info);
     }
 
     public String getDebugInfo(String id) {
-        if (!debugInfos.containsKey(id)) {
+        if (!debugInfo.containsKey(id)) {
             throw new ParsingException("No debug information with id '%s'", id);
         }
-        return debugInfos.get(id);
+        return debugInfo.get(id);
     }
 
     private void validateBeforeBuild() {

@@ -14,8 +14,7 @@ import com.dat3m.dartagnan.parsers.program.visitors.spirv.helpers.HelperTags;
 import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.ThreadGrid;
 import com.dat3m.dartagnan.program.event.core.Label;
-import com.dat3m.dartagnan.program.memory.MemoryObject;
-import com.dat3m.dartagnan.program.memory.ScopedPointerVariable;
+import com.dat3m.dartagnan.program.memory.ScopedPointer;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -136,14 +135,12 @@ public class MockProgramBuilder extends ProgramBuilder {
         return addExpression(id, expression);
     }
 
-    public ScopedPointerVariable mockVariable(String id, String typeId) {
-        ScopedPointerType pointerType = (ScopedPointerType) getType(typeId);
-        Type pointedType = pointerType.getPointedType();
-        int bytes = typeFactory.getMemorySizeInBytes(pointedType);
-        MemoryObject memoryObject = program.getMemory().allocate(bytes);
-        memoryObject.setName(id);
-        ScopedPointerVariable pointer = exprFactory.makeScopedPointerVariable(id, pointerType, memoryObject);
-        return (ScopedPointerVariable) addExpression(id, pointer);
+    public ScopedPointer mockVariable(String id, String typeId) {
+        ScopedPointerType type = (ScopedPointerType) getType(typeId);
+        Expression value = makeUndefinedValue(type.getPointedType());
+        ScopedPointer pointer = allocateMemory(id, type, value);
+        addExpression(id, pointer);
+        return pointer;
     }
 
     public void mockStructMemberOffsets(String id, Integer... offsets) {

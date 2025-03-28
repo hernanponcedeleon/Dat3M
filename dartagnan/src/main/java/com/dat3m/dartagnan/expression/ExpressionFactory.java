@@ -7,9 +7,9 @@ import com.dat3m.dartagnan.expression.integers.*;
 import com.dat3m.dartagnan.expression.misc.GEPExpr;
 import com.dat3m.dartagnan.expression.misc.ITEExpr;
 import com.dat3m.dartagnan.expression.type.*;
+import com.dat3m.dartagnan.program.memory.FinalMemoryValue;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.dat3m.dartagnan.program.memory.ScopedPointer;
-import com.dat3m.dartagnan.program.memory.ScopedPointerVariable;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
@@ -308,8 +308,8 @@ public final class ExpressionFactory {
         return new ScopedPointer(id, type, address);
     }
 
-    public ScopedPointerVariable makeScopedPointerVariable(String id, ScopedPointerType type, MemoryObject address) {
-        return new ScopedPointerVariable(id, type, address);
+    public FinalMemoryValue makeFinalMemoryValue(String id, Type type, MemoryObject base, int offset) {
+        return new FinalMemoryValue(id, type, base, offset);
     }
 
     // -----------------------------------------------------------------------------------------------------------------

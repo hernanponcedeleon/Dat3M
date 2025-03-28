@@ -4,7 +4,8 @@ import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.expression.integers.IntLiteral;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.mocks.MockProgramBuilder;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.mocks.MockSpirvParser;
-import com.dat3m.dartagnan.program.memory.ScopedPointerVariable;
+import com.dat3m.dartagnan.program.memory.MemoryObject;
+import com.dat3m.dartagnan.program.memory.ScopedPointer;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
@@ -29,15 +30,16 @@ public class VisitorOpsExtensionTest {
         builder.mockConstant("%uint_0", "%uint", 0);
         builder.mockConstant("%uint_12", "%uint", 12);
 
-        ScopedPointerVariable pointer = builder.mockVariable("%var", "%ptr_1x_v3uint");
+        ScopedPointer pointer = builder.mockVariable("%var", "%ptr_1x_v3uint");
 
         // when
         visit(input);
 
         // then
-        assertEquals(1, ((IntLiteral) pointer.getAddress().getInitialValue(0)).getValueAsInt());
-        assertEquals(1, ((IntLiteral) pointer.getAddress().getInitialValue(4)).getValueAsInt());
-        assertEquals(1, ((IntLiteral) pointer.getAddress().getInitialValue(8)).getValueAsInt());
+        MemoryObject pushConstant = (MemoryObject) pointer.getAddress();
+        assertEquals(1, ((IntLiteral) pushConstant.getInitialValue(0)).getValueAsInt());
+        assertEquals(1, ((IntLiteral) pushConstant.getInitialValue(4)).getValueAsInt());
+        assertEquals(1, ((IntLiteral) pushConstant.getInitialValue(8)).getValueAsInt());
     }
 
     @Test

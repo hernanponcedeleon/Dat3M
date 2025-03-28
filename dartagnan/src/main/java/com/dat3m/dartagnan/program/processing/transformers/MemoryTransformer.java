@@ -7,7 +7,7 @@ import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.*;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
-import com.dat3m.dartagnan.program.memory.ScopedPointerVariable;
+import com.dat3m.dartagnan.program.memory.ScopedPointer;
 import com.dat3m.dartagnan.program.memory.VirtualMemoryObject;
 import com.dat3m.dartagnan.program.misc.NonDetValue;
 
@@ -26,20 +26,20 @@ public class MemoryTransformer extends ExprTransformer {
     private final Program program;
     private final Function function;
     private final BuiltIn builtIn;
+    private final Map<MemoryObject, ScopedPointer> pointerMapping;
     private final List<? extends Map<MemoryObject, MemoryObject>> scopeMapping;
-    private final Map<MemoryObject, ScopedPointerVariable> pointerMapping;
     private final List<IntUnaryOperator> scopeIdProvider;
     private final List<IntUnaryOperator> namePrefixIdxProvider;
     private Map<Register, Register> registerMapping;
     private Map<NonDetValue, NonDetValue> nonDetMapping;
     private int tid;
 
-    public MemoryTransformer(ThreadGrid grid, Function function, BuiltIn builtIn, Set<ScopedPointerVariable> variables) {
+    public MemoryTransformer(ThreadGrid grid, Function function, BuiltIn builtIn, Set<ScopedPointer> allocation) {
         this.program = function.getProgram();
         this.function = function;
         this.builtIn = builtIn;
+        this.pointerMapping = allocation.stream().collect(Collectors.toMap(a -> (MemoryObject) a.getAddress(), a -> a));
         this.scopeMapping = Stream.generate(() -> new HashMap<MemoryObject, MemoryObject>()).limit(namePrefixes.size()).toList();
-        this.pointerMapping = variables.stream().collect(Collectors.toMap((ScopedPointerVariable::getAddress), (v -> v)));
         this.scopeIdProvider = List.of(grid::thId, grid::sgId, grid::wgId, grid::qfId, grid::dvId);
         this.namePrefixIdxProvider = List.of(
                 i -> i,
@@ -64,16 +64,6 @@ public class MemoryTransformer extends ExprTransformer {
         registerMapping = function.getRegisters().stream().collect(
                 toMap(r -> r, r -> thread.getOrNewRegister(r.getName(), r.getType())));
         nonDetMapping = new HashMap<>();
-    }
-
-    public List<MemoryObject> getThreadLocalMemoryObjects() {
-        List<MemoryObject> threadLocalMemoryObjects = new ArrayList<>();
-        for (MemoryObject memoryObject : pointerMapping.keySet()) {
-            if (memoryObject.isThreadLocal()) {
-                threadLocalMemoryObjects.add(memoryObject);
-            }
-        }
-        return threadLocalMemoryObjects;
     }
 
     @Override

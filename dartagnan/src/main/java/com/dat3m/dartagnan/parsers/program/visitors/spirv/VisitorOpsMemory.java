@@ -14,7 +14,6 @@ import com.dat3m.dartagnan.parsers.program.visitors.spirv.helpers.HelperInputs;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.helpers.HelperTags;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.builders.ProgramBuilder;
 import com.dat3m.dartagnan.program.memory.ScopedPointer;
-import com.dat3m.dartagnan.program.memory.ScopedPointerVariable;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.EventFactory;
@@ -112,8 +111,8 @@ public class VisitorOpsMemory extends SpirvBaseVisitor<Event> {
             } else {
                 value = builder.makeUndefinedValue(type);
             }
-            ScopedPointerVariable pointer = builder.allocateScopedPointerVariable(id, pointerType, value);
-            validateVariableStorageClass(pointer, ctx.storageClass().getText());
+            validateVariableStorageClass(id, pointerType.getScopeId(), ctx.storageClass().getText());
+            ScopedPointer pointer = builder.allocateMemory(id, pointerType, value);
             builder.addExpression(id, pointer);
             return null;
         }
@@ -142,16 +141,14 @@ public class VisitorOpsMemory extends SpirvBaseVisitor<Event> {
         return null;
     }
 
-    private void validateVariableStorageClass(ScopedPointerVariable pointer, String classToken) {
-        String ptrStorageClass = pointer.getType().getScopeId();
+    private void validateVariableStorageClass(String id, String expected, String classToken) {
         String varStorageClass = HelperTags.parseStorageClass(classToken);
-        if (!varStorageClass.equals(ptrStorageClass)) {
+        if (!varStorageClass.equals(expected)) {
             throw new ParsingException("Storage class of variable '%s' " +
-                    "does not match the pointer storage class", pointer.getId());
+                    "does not match the pointer storage class", id);
         }
-        if (Tag.Spirv.SC_GENERIC.equals(ptrStorageClass)) {
-            throw new ParsingException("Variable '%s' has illegal storage class '%s'",
-                    pointer.getId(), classToken);
+        if (Tag.Spirv.SC_GENERIC.equals(expected)) {
+            throw new ParsingException("Variable '%s' has illegal storage class '%s'", id, classToken);
         }
     }
 

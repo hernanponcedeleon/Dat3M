@@ -366,21 +366,15 @@ public class ThreadCreation implements ProgramProcessor {
     // =============================================================================================
     private void createSPVThreads(Program program) {
         ThreadGrid grid = program.getGrid();
+        List<MemoryObject> localMemObjects = program.getMemory().getObjects().stream()
+                .filter(MemoryObject::isThreadLocal).toList();
         List<ExprTransformer> transformers = program.getTransformers();
         program.getFunctionByName(program.getEntryPoint()).ifPresent(entryFunction -> {
             for (int tid = 0; tid < grid.dvSize(); tid++) {
-                final Thread thread = createSPVThreadFromFunction(entryFunction, tid, grid, transformers);
-                program.addThread(thread);
+                program.addThread(createSPVThreadFromFunction(entryFunction, tid, grid, transformers));
             }
-            // Remove unused memory objects of the entry function
-            for (ExprTransformer transformer : transformers) {
-                if (transformer instanceof MemoryTransformer memoryTransformer) {
-                    Memory memory = entryFunction.getProgram().getMemory();
-                    for (MemoryObject memoryObject : memoryTransformer.getThreadLocalMemoryObjects()) {
-                        memory.deleteMemoryObject(memoryObject);
-                    }
-                }
-            }
+            Memory memory = entryFunction.getProgram().getMemory();
+            localMemObjects.forEach(memory::deleteMemoryObject);
         });
     }
 
