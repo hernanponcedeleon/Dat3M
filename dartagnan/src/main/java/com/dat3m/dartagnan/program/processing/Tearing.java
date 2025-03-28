@@ -17,7 +17,7 @@ import com.dat3m.dartagnan.program.analysis.alias.AliasAnalysis;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.core.*;
-import com.dat3m.dartagnan.program.event.core.annotations.TransactionMarker;
+import com.dat3m.dartagnan.program.event.core.InstructionBoundary;
 import com.dat3m.dartagnan.program.event.metadata.SourceLocation;
 import com.dat3m.dartagnan.program.memory.FinalMemoryValue;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
@@ -185,7 +185,7 @@ public final class Tearing implements ProgramProcessor {
             smallerRegisters.add(function.newRegister(types.getIntegerType(8 * (end - start))));
         }
         assert bytes == smallerRegisters.stream().mapToInt(t -> types.getMemorySizeInBytes(t.getType())).sum();
-        final TransactionMarker begin = EventFactory.newTransactionBegin(load);
+        final InstructionBoundary begin = EventFactory.newInstructionBegin();
         replacement.add(begin);
         for (int i = -1; i < offsets.size(); i++) {
             final int start = i < 0 ? 0 : offsets.get(i);
@@ -196,7 +196,7 @@ public final class Tearing implements ProgramProcessor {
             byteLoad.setAddress(address);
             replacement.add(byteLoad);
         }
-        replacement.add(EventFactory.newTransactionEnd(load, begin));
+        replacement.add(EventFactory.newInstructionEnd(begin));
         final Expression combination = expressions.makeIntConcat(smallerRegisters);
         replacement.add(EventFactory.newLocal(load.getResultRegister(), combination));
         return replacement;
@@ -213,15 +213,15 @@ public final class Tearing implements ProgramProcessor {
         final Register valueRegister = toRegister(store.getMemValue(), function, replacement);
         final List<Load> loads = store instanceof RMWStore st ? map.get(st.getLoadEvent()).stream()
                 .filter(Load.class::isInstance).map(Load.class::cast).toList() : null;
-        final TransactionMarker beginTransaction = EventFactory.newTransactionBegin(store);
-        replacement.add(beginTransaction);
+        final InstructionBoundary begin = EventFactory.newInstructionBegin();
+        replacement.add(begin);
         for (int i = -1; i < offsets.size(); i++) {
             final int offset = i < 0 ? 0 : offsets.get(i);
             final int next = i + 1 < offsets.size() ? offsets.get(i + 1) : bytes;
-            final int begin = bigEndian ? bytes - next : offset;
+            final int start = bigEndian ? bytes - next : offset;
             final int end = bigEndian ? bytes - offset : next;
             final Expression address = expressions.makeAdd(addressRegister, expressions.makeValue(offset, addressType));
-            final Expression value = expressions.makeIntExtract(valueRegister, 8 * begin, 8 * end - 1);
+            final Expression value = expressions.makeIntExtract(valueRegister, 8 * start, 8 * end - 1);
             final Store byteStore = store.getCopy();
             byteStore.setAddress(address);
             byteStore.setMemValue(value);
@@ -230,7 +230,7 @@ public final class Tearing implements ProgramProcessor {
             }
             replacement.add(byteStore);
         }
-        replacement.add(EventFactory.newTransactionEnd(store, beginTransaction));
+        replacement.add(EventFactory.newInstructionEnd(begin));
         return replacement;
     }
 

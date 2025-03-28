@@ -7,7 +7,7 @@ import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.MemoryEvent;
 import com.dat3m.dartagnan.program.event.core.*;
-import com.dat3m.dartagnan.program.event.core.annotations.TransactionMarker;
+import com.dat3m.dartagnan.program.event.core.InstructionBoundary;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.dat3m.dartagnan.solver.caat.predicates.CAATPredicate;
 import com.dat3m.dartagnan.solver.caat.predicates.PredicateHierarchy;
@@ -300,7 +300,7 @@ public class ExecutionModelManager {
         public Void visitSameInstruction(SameInstruction si) {
             final SimpleGraph rg = (SimpleGraph) relGraphCache.get(si.getDefinedRelation());
             final Map<Event, List<Event>> instructionMap = new HashMap<>();
-            for (TransactionMarker end : context.getTask().getProgram().getThreadEvents(TransactionMarker.class)) {
+            for (InstructionBoundary end : context.getTask().getProgram().getThreadEvents(InstructionBoundary.class)) {
                 //NOTE begin markers return empty transaction event lists
                 final List<Event> events = end.getTransactionEvents();
                 for (Event event : events) {

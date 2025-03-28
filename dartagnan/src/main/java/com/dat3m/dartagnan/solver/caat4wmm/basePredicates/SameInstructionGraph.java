@@ -1,7 +1,7 @@
 package com.dat3m.dartagnan.solver.caat4wmm.basePredicates;
 
 import com.dat3m.dartagnan.program.event.Event;
-import com.dat3m.dartagnan.program.event.core.annotations.TransactionMarker;
+import com.dat3m.dartagnan.program.event.core.InstructionBoundary;
 import com.dat3m.dartagnan.solver.caat.misc.EdgeDirection;
 import com.dat3m.dartagnan.solver.caat.predicates.relationGraphs.Edge;
 import com.dat3m.dartagnan.verification.model.EventData;
@@ -42,7 +42,7 @@ public class SameInstructionGraph extends StaticWMMGraph {
     public void repopulate() {
         this.transactions = new HashMap<>();
         size = model.getEventList().size();
-        for (TransactionMarker end : model.getProgram().getThreadEvents(TransactionMarker.class)) {
+        for (InstructionBoundary end : model.getProgram().getThreadEvents(InstructionBoundary.class)) {
             final List<Event> events = end.getTransactionEvents();
             final List<Integer> transaction = new ArrayList<>();
             for (Event event : events) {

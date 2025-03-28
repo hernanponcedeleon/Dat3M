@@ -14,7 +14,7 @@ import com.dat3m.dartagnan.program.event.MemoryEvent;
 import com.dat3m.dartagnan.program.event.RegReader;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.*;
-import com.dat3m.dartagnan.program.event.core.annotations.TransactionMarker;
+import com.dat3m.dartagnan.program.event.core.InstructionBoundary;
 import com.dat3m.dartagnan.program.event.lang.svcomp.EndAtomic;
 import com.dat3m.dartagnan.program.filter.Filter;
 import com.dat3m.dartagnan.program.memory.VirtualMemoryObject;
@@ -573,7 +573,7 @@ public class NativeRelationAnalysis implements RelationAnalysis {
                     }
                 }
                 // Events of the same instruction are not program-ordered
-                for (TransactionMarker end : t.getEvents(TransactionMarker.class)) {
+                for (InstructionBoundary end : t.getEvents(InstructionBoundary.class)) {
                     List<Event> transactionEvents = end.getTransactionEvents().stream().filter(type::apply).toList();
                     for (int i = 0; i < transactionEvents.size(); i++) {
                         Event e2 = transactionEvents.get(i);
@@ -643,7 +643,7 @@ public class NativeRelationAnalysis implements RelationAnalysis {
         @Override
         public MutableKnowledge visitSameInstruction(SameInstruction si) {
             MutableEventGraph must = new MapEventGraph();
-            for (TransactionMarker end : program.getThreadEvents(TransactionMarker.class)) {
+            for (InstructionBoundary end : program.getThreadEvents(InstructionBoundary.class)) {
                 List<Event> events = end.getTransactionEvents().stream().filter(e -> e.hasTag(VISIBLE)).toList();
                 for (int i = 0; i < events.size(); i++) {
                     Event e2 = events.get(i);
@@ -728,7 +728,7 @@ public class NativeRelationAnalysis implements RelationAnalysis {
             for (Thread thread : program.getThreads()) {
                 // Currently likely empty, because mixed-size accesses are the only cause
                 var transactionMap = new HashMap<Event, Set<Event>>();
-                for (TransactionMarker end : thread.getEvents(TransactionMarker.class)) {
+                for (InstructionBoundary end : thread.getEvents(InstructionBoundary.class)) {
                     List<Event> transaction = end.getTransactionEvents();
                     for (Event event : transaction) {
                         if (event.hasTag(EXCL)) {

@@ -9,7 +9,7 @@ import com.dat3m.dartagnan.program.event.core.Load;
 import com.dat3m.dartagnan.program.event.core.MemoryCoreEvent;
 import com.dat3m.dartagnan.program.event.core.NamedBarrier;
 import com.dat3m.dartagnan.program.event.core.RMWStoreExclusive;
-import com.dat3m.dartagnan.program.event.core.annotations.TransactionMarker;
+import com.dat3m.dartagnan.program.event.core.InstructionBoundary;
 import com.dat3m.dartagnan.utils.Utils;
 import com.dat3m.dartagnan.utils.dependable.DependencyGraph;
 import com.dat3m.dartagnan.wmm.Constraint;
@@ -489,7 +489,7 @@ public class WmmEncoder implements Encoder {
             final Map<Event, Set<Event>> mayIn = k.getMaySet().getInMap();
             final Map<Event, Set<Event>> mayOut = k.getMaySet().getOutMap();
             final Map<Event, Event> siMap = new HashMap<>();
-            for (TransactionMarker end : program.getThreadEvents(TransactionMarker.class)) {
+            for (InstructionBoundary end : program.getThreadEvents(InstructionBoundary.class)) {
                 final List<Event> events = end.getTransactionEvents().stream().filter(e -> e.hasTag(EXCL)).toList();
                 for (Event event : events) {
                     siMap.put(event, events.get(0));

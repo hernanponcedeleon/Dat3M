@@ -2,7 +2,7 @@ package com.dat3m.dartagnan.solver.caat4wmm.basePredicates;
 
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.Event;
-import com.dat3m.dartagnan.program.event.core.annotations.TransactionMarker;
+import com.dat3m.dartagnan.program.event.core.InstructionBoundary;
 import com.dat3m.dartagnan.solver.caat.misc.EdgeDirection;
 import com.dat3m.dartagnan.solver.caat.predicates.relationGraphs.Edge;
 import com.dat3m.dartagnan.verification.model.EventData;
@@ -51,7 +51,7 @@ public class ProgramOrderGraph extends StaticWMMGraph {
         for (List<EventData> threadEvents : threadEventsMap.values()) {
             size += ((threadEvents.size() - 1) * threadEvents.size()) >> 1;
         }
-        for (TransactionMarker end : model.getProgram().getThreadEvents(TransactionMarker.class)) {
+        for (InstructionBoundary end : model.getProgram().getThreadEvents(InstructionBoundary.class)) {
             final List<Event> events = end.getTransactionEvents();
             final List<Integer> transaction = new ArrayList<>();
             for (Event event : events) {
