@@ -11,14 +11,14 @@ import java.io.IOException;
 
 import static com.dat3m.dartagnan.configuration.OptionNames.*;
 
-public class LitmusAARCH64MSATest extends LitmusAARCH64Test {
+public class LitmusAARCH64MixedTest extends LitmusAARCH64Test {
 
     @Parameterized.Parameters(name = "{index}: {0}, {1}")
     public static Iterable<Object[]> data() throws IOException {
         return buildLitmusTests("litmus/AARCH64-MIXED", "ARM8", "-MIXED");
     }
 
-    public LitmusAARCH64MSATest(String path, Result expected) {
+    public LitmusAARCH64MixedTest(String path, Result expected) {
         super(path, expected);
     }
 
