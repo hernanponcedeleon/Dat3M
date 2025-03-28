@@ -88,7 +88,7 @@ public class MemoryTransformer extends ExprTransformer {
 
     @Override
     public Expression visitMemoryObject(MemoryObject memObj) {
-        String storageClass = pointerMapping.get(memObj).getScopeId();
+        String storageClass = pointerMapping.get(memObj).getType().getScopeId();
         return switch (storageClass) {
             // Device-level memory (keep the same instance)
             case Tag.Spirv.SC_UNIFORM_CONSTANT,
@@ -124,7 +124,7 @@ public class MemoryTransformer extends ExprTransformer {
                 }
                 copy.setInitialValue(offset, value);
             }
-            builtIn.decorate(memObj.getName(), copy, pointerMapping.get(memObj).getInnerType());
+            builtIn.decorate(memObj.getName(), copy, pointerMapping.get(memObj).getType().getPointedType());
             mapping.put(memObj, copy);
         }
         return mapping.getOrDefault(memObj, memObj);

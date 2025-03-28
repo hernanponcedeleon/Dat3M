@@ -139,11 +139,10 @@ public class MockProgramBuilder extends ProgramBuilder {
     public ScopedPointerVariable mockVariable(String id, String typeId) {
         ScopedPointerType pointerType = (ScopedPointerType) getType(typeId);
         Type pointedType = pointerType.getPointedType();
-        String scopeId = pointerType.getScopeId();
         int bytes = typeFactory.getMemorySizeInBytes(pointedType);
         MemoryObject memoryObject = program.getMemory().allocate(bytes);
         memoryObject.setName(id);
-        ScopedPointerVariable pointer = exprFactory.makeScopedPointerVariable(id, scopeId, pointedType, memoryObject);
+        ScopedPointerVariable pointer = exprFactory.makeScopedPointerVariable(id, pointerType, memoryObject);
         return (ScopedPointerVariable) addExpression(id, pointer);
     }
 

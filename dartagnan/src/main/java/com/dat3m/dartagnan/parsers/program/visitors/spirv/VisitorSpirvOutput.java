@@ -193,11 +193,11 @@ public class VisitorSpirvOutput extends SpirvBaseVisitor<Expression> {
     private FinalMemoryValue createFinalMemoryValue(ScopedPointerVariable base, List<Integer> indexes) {
         String name = indexes.isEmpty() ? base.getId() :
                 base.getId() + "[" + String.join("][", indexes.stream().map(Object::toString).toArray(String[]::new)) + "]";
-        Type elType = HelperTypes.getMemberType(base.getId(), base.getInnerType(), indexes);
+        Type elType = HelperTypes.getMemberType(base.getId(), base.getType().getPointedType(), indexes);
         if (elType instanceof ArrayType || elType instanceof AggregateType) {
             throw new ParsingException("Index is not deep enough for variable '%s'", name);
         }
-        int offset = HelperTypes.getMemberOffset(base.getId(), 0, base.getInnerType(), indexes);
+        int offset = HelperTypes.getMemberOffset(base.getId(), 0, base.getType().getPointedType(), indexes);
         return new FinalMemoryValue(name, elType, base.getAddress(), offset);
     }
 }

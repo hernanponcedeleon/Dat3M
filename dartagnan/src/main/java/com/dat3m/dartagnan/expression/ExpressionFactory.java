@@ -304,14 +304,12 @@ public final class ExpressionFactory {
         return new GEPExpr(indexingType, base, offsets);
     }
 
-    public ScopedPointer makeScopedPointer(String id, String scopeId, Type type, Expression address) {
-        ScopedPointerType pointerType = types.getScopedPointerType(scopeId, type);
-        return new ScopedPointer(id, pointerType, address);
+    public ScopedPointer makeScopedPointer(String id, ScopedPointerType type, Expression address) {
+        return new ScopedPointer(id, type, address);
     }
 
-    public ScopedPointerVariable makeScopedPointerVariable(String id, String scopeId, Type type, MemoryObject address) {
-        ScopedPointerType pointerType = types.getScopedPointerType(scopeId, type);
-        return new ScopedPointerVariable(id, pointerType, address);
+    public ScopedPointerVariable makeScopedPointerVariable(String id, ScopedPointerType type, MemoryObject address) {
+        return new ScopedPointerVariable(id, type, address);
     }
 
     // -----------------------------------------------------------------------------------------------------------------

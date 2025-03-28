@@ -14,7 +14,6 @@ import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.Local;
 import com.dat3m.dartagnan.program.event.functions.FunctionCall;
-import com.dat3m.dartagnan.program.memory.ScopedPointer;
 import com.dat3m.dartagnan.program.memory.ScopedPointerVariable;
 
 import java.util.*;
@@ -109,10 +108,7 @@ public class VisitorOpsFunction extends SpirvBaseVisitor<Void> {
         Type returnType = builder.getType(typeId);
         List<Expression> args = ctx.argument().stream()
                 .map(a -> builder.getExpression(a.getText())).toList();
-        List<Type> argTypes = args.stream()
-                .map(e -> e instanceof ScopedPointer pBase
-                        ? types.getScopedPointerType(pBase.getScopeId(), pBase.getInnerType())
-                        : e.getType()).toList();
+        List<Type> argTypes = args.stream().map(Expression::getType).toList();
         FunctionType functionType = types.getFunctionType(builder.getType(typeId), argTypes);
         Function function = getCalledFunction(functionId, functionType);
         FunctionCall event;
@@ -186,7 +182,7 @@ public class VisitorOpsFunction extends SpirvBaseVisitor<Void> {
             String ptrId = HelperInputs.castPointerId(id);
             pType = types.getScopedPointerType(pType.getScopeId(), value.getType());
             ScopedPointerVariable pointer = builder.allocateScopedPointerVariable(
-                    HelperInputs.castPointerId(id), value, pType.getScopeId(), value.getType());
+                    HelperInputs.castPointerId(id), pType, value);
             builder.addExpression(ptrId, pointer);
             value = pointer.getAddress();
         }

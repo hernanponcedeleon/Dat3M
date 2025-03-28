@@ -602,7 +602,7 @@ public class VisitorOpsFunctionTest {
         assertEquals(builder.getType("%int_ptr"), function.getParameterRegisters().get(0).getType());
         assertEquals(HelperInputs.castPointerId("%param"), ((VirtualMemoryObject) local.getExpr()).getName());
         assertEquals(builder.getExpression("%param"), local.getResultRegister());
-        ArrayType type = (ArrayType) ((ScopedPointerVariable) builder.getExpression(HelperInputs.castPointerId("%param"))).getInnerType();
+        ArrayType type = (ArrayType) ((ScopedPointerVariable) builder.getExpression(HelperInputs.castPointerId("%param"))).getType().getPointedType();
         assertEquals(builder.getType("%int"), type.getElementType());
         assertEquals(10, type.getNumElements());
     }

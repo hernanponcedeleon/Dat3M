@@ -108,7 +108,7 @@ public class VisitorExtensionClspvReflection extends VisitorExtension<Void> {
                 int offset = typeOffset.offset();
                 for (int value : computePushConstantValue(argument)) {
                     Expression elExpr = expressions.makeValue(value, iType);
-                    pushConstant.setInitialValue(offset, elExpr);
+                    pushConstant.getAddress().setInitialValue(offset, elExpr);
                     offset += types.getMemorySizeInBytes(elExpr.getType());
                 }
                 return null;
@@ -134,11 +134,11 @@ public class VisitorExtensionClspvReflection extends VisitorExtension<Void> {
     private void initPushConstant() {
         if (pushConstant == null) {
             List<ScopedPointerVariable> variables = builder.getVariables().stream()
-                    .filter(v -> Tag.Spirv.SC_PUSH_CONSTANT.equals(v.getScopeId()))
+                    .filter(v -> Tag.Spirv.SC_PUSH_CONSTANT.equals(v.getType().getScopeId()))
                     .toList();
             if (variables.size() == 1) {
                 pushConstant = variables.get(0);
-                Type type = pushConstant.getInnerType();
+                Type type = pushConstant.getType().getPointedType();
                 if (type instanceof AggregateType agType) {
                     pushConstantType = agType;
                     return;

@@ -106,12 +106,13 @@ public class VisitorOpsMemory extends SpirvBaseVisitor<Event> {
                             "expected '%s' but received '%s'", id, type, value.getType());
                 }
                 type = value.getType();
+                pointerType = types.getScopedPointerType(pointerType.getScopeId(), type);
             } else if (!TypeFactory.isStaticType(type)) {
                 throw new ParsingException("Missing initial value for runtime variable '%s'", id);
             } else {
                 value = builder.makeUndefinedValue(type);
             }
-            ScopedPointerVariable pointer = builder.allocateScopedPointerVariable(id, value, pointerType.getScopeId(), type);
+            ScopedPointerVariable pointer = builder.allocateScopedPointerVariable(id, pointerType, value);
             validateVariableStorageClass(pointer, ctx.storageClass().getText());
             builder.addExpression(id, pointer);
             return null;
@@ -142,7 +143,7 @@ public class VisitorOpsMemory extends SpirvBaseVisitor<Event> {
     }
 
     private void validateVariableStorageClass(ScopedPointerVariable pointer, String classToken) {
-        String ptrStorageClass = pointer.getScopeId();
+        String ptrStorageClass = pointer.getType().getScopeId();
         String varStorageClass = HelperTags.parseStorageClass(classToken);
         if (!varStorageClass.equals(ptrStorageClass)) {
             throw new ParsingException("Storage class of variable '%s' " +

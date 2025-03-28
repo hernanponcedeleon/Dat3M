@@ -187,16 +187,15 @@ public class ProgramBuilder {
         return memObj;
     }
 
-    public ScopedPointerVariable allocateScopedPointerVariable(String id, Expression initValue, String storageClass, Type pointedType) {
-        MemoryObject memObj = allocateVariable(id, TypeFactory.getInstance().getMemorySizeInBytes(pointedType));
+    public ScopedPointerVariable allocateScopedPointerVariable(String id, ScopedPointerType type, Expression initValue) {
+        MemoryObject memObj = allocateVariable(id, TypeFactory.getInstance().getMemorySizeInBytes(type.getPointedType()));
         memObj.setIsThreadLocal(false);
         memObj.setInitialValue(0, initValue);
         if (arch == Arch.OPENCL) {
-            String openCLSpace = Tag.Spirv.toOpenCLTag(Tag.Spirv.getStorageClassTag(Set.of(storageClass)));
+            String openCLSpace = Tag.Spirv.toOpenCLTag(Tag.Spirv.getStorageClassTag(Set.of(type.getScopeId())));
             memObj.addFeatureTag(openCLSpace);
         }
-        return ExpressionFactory.getInstance().makeScopedPointerVariable(
-                id, storageClass, pointedType, memObj);
+        return ExpressionFactory.getInstance().makeScopedPointerVariable(id, type, memObj);
     }
 
     public String getPointerStorageClass(String id) {
