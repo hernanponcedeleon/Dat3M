@@ -1,0 +1,14 @@
+AArch64 MP+str+ldp
+(* str vs. ldp, double word aligned *)
+{
+uint64_t x;
+0:X4=x; 1:X4=x;
+uint64_t 0:X1 = 0x0000000200000001;
+uint32_t 1:X20;
+uint32_t 1:X21;
+}
+P0             | P1               ;
+STR X1,[X4]    | LDP W20,W21,[X4] ;
+exists (1:X20=1 /\ 1:X21=0) \/
+       (1:X20=0 /\ 1:X21=2)
+

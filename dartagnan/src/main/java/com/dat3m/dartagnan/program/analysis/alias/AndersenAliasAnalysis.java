@@ -15,8 +15,6 @@ import com.google.common.base.Preconditions;
 import com.google.common.base.Verify;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
-import org.sosy_lab.common.configuration.Configuration;
-import org.sosy_lab.common.configuration.InvalidConfigurationException;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -37,6 +35,7 @@ import static com.dat3m.dartagnan.expression.integers.IntBinaryOp.ADD;
  */
 public class AndersenAliasAnalysis implements AliasAnalysis {
 
+    private final AliasAnalysis.Config config;
     ///When a pointer set gains new content, it is added to this queue
     private final Queue<Object> variables = new ArrayDeque<>();
     ///Super set of all pointer sets in this analysis
@@ -49,8 +48,9 @@ public class AndersenAliasAnalysis implements AliasAnalysis {
 
     // ================================ Construction ================================
 
-    private AndersenAliasAnalysis(Program program) {
+    private AndersenAliasAnalysis(Program program, Config c) {
         Preconditions.checkArgument(program.isCompiled(), "The program must be compiled first.");
+        config = c;
         ImmutableSet.Builder<Location> builder = new ImmutableSet.Builder<>();
         for (MemoryObject a : program.getMemory().getObjects()) {
             for (int i = 0; i < a.getKnownSize(); i++) {
@@ -61,8 +61,8 @@ public class AndersenAliasAnalysis implements AliasAnalysis {
         run(program);
     }
 
-    public static AndersenAliasAnalysis fromConfig(Program program, Configuration config) throws InvalidConfigurationException {
-        return new AndersenAliasAnalysis(program);
+    public static AndersenAliasAnalysis fromConfig(Program program, Config config) {
+        return new AndersenAliasAnalysis(program, config);
     }
 
     // ================================ API ================================
@@ -75,6 +75,11 @@ public class AndersenAliasAnalysis implements AliasAnalysis {
     @Override
     public boolean mustAlias(MemoryCoreEvent x, MemoryCoreEvent y) {
         return getMaxAddressSet(x).size() == 1 && getMaxAddressSet(x).containsAll(getMaxAddressSet(y));
+    }
+
+    @Override
+    public List<Integer> mayMixedSizeAccesses(MemoryCoreEvent event) {
+        return config.defaultMayMixedSizeAccesses(event);
     }
 
     private ImmutableSet<Location> getMaxAddressSet(MemoryEvent e) {

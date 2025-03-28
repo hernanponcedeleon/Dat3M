@@ -1,0 +1,18 @@
+AArch64 CO-MIXED-6-mergedsep+reader
+"Coherence test, mixed-size accesses"
+
+{
+uint64_t x = 0;
+0:X5 = x; 1:X5 = x; 2:X5 = x; 3:X5 = x;
+uint64_t 0:X1 = 0x0000000100000001;
+uint64_t 1:X1 = 0x0000000200000002;
+uint32_t 2:X1 = 0x00000003;
+uint64_t 3:X3 = 0;
+}
+
+P0           | P1          | P2             | P3                  ;
+STR X1,[X5]  | STR X1,[X5] | STR W1,[X5,#4] | LDR W1,[X5,#4]      ;
+             |             |                | EOR W2,W1,W1        ;
+             |             |                | LDR X3,[X5,W2,SXTW] ;
+
+exists (x=0x0000000300000002 (* (1,1) --co--> (2,2) --co--> (3,_) *) /\ 3:X1 = 0x00000003 /\ 3:X3  = 0x0000000300000001)

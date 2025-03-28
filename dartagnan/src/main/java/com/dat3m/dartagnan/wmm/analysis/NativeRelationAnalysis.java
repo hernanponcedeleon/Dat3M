@@ -14,6 +14,7 @@ import com.dat3m.dartagnan.program.event.MemoryEvent;
 import com.dat3m.dartagnan.program.event.RegReader;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.*;
+import com.dat3m.dartagnan.program.event.core.InstructionBoundary;
 import com.dat3m.dartagnan.program.event.lang.svcomp.EndAtomic;
 import com.dat3m.dartagnan.program.filter.Filter;
 import com.dat3m.dartagnan.program.memory.VirtualMemoryObject;
@@ -571,6 +572,16 @@ public class NativeRelationAnalysis implements RelationAnalysis {
                         }
                     }
                 }
+                // Events of the same instruction are not program-ordered
+                for (InstructionBoundary end : t.getEvents(InstructionBoundary.class)) {
+                    List<Event> transactionEvents = end.getTransactionEvents().stream().filter(type::apply).toList();
+                    for (int i = 0; i < transactionEvents.size(); i++) {
+                        Event e2 = transactionEvents.get(i);
+                        for (Event e1 : transactionEvents.subList(0, i)) {
+                            must.remove(e1, e2);
+                        }
+                    }
+                }
             }
             return new MutableKnowledge(must, MapEventGraph.from(must));
         }
@@ -625,6 +636,25 @@ public class NativeRelationAnalysis implements RelationAnalysis {
                     // The target of a CASDep is always the successor of the origin
                     must.add(e, e.getSuccessor());
                 }
+            }
+            return new MutableKnowledge(must, MapEventGraph.from(must));
+        }
+
+        @Override
+        public MutableKnowledge visitSameInstruction(SameInstruction si) {
+            MutableEventGraph must = new MapEventGraph();
+            for (InstructionBoundary end : program.getThreadEvents(InstructionBoundary.class)) {
+                List<Event> events = end.getTransactionEvents().stream().filter(e -> e.hasTag(VISIBLE)).toList();
+                for (int i = 0; i < events.size(); i++) {
+                    Event e2 = events.get(i);
+                    for (Event e1 : events.subList(0, i)) {
+                        must.add(e1, e2);
+                        must.add(e2, e1);
+                    }
+                }
+            }
+            for (Event e : program.getThreadEventsWithAllTags(VISIBLE)) {
+                must.add(e, e);
             }
             return new MutableKnowledge(must, MapEventGraph.from(must));
         }
@@ -696,6 +726,16 @@ public class NativeRelationAnalysis implements RelationAnalysis {
             MutableEventGraph may = MapEventGraph.from(must);
             // LoadExcl -> StoreExcl
             for (Thread thread : program.getThreads()) {
+                // Currently likely empty, because mixed-size accesses are the only cause
+                var transactionMap = new HashMap<Event, Set<Event>>();
+                for (InstructionBoundary end : thread.getEvents(InstructionBoundary.class)) {
+                    List<Event> transaction = end.getTransactionEvents();
+                    for (Event event : transaction) {
+                        if (event.hasTag(EXCL)) {
+                            transactionMap.put(event, new HashSet<>(transaction));
+                        }
+                    }
+                }
                 List<Event> events = thread.getEvents().stream().filter(e -> e.hasTag(EXCL)).toList();
                 // assume order by globalId
                 // assume globalId describes a topological sorting over the control flow
@@ -716,10 +756,17 @@ public class NativeRelationAnalysis implements RelationAnalysis {
                         if (!(load instanceof Load) || intermediaries.stream().anyMatch(e -> exec.isImplied(load, e))) {
                             continue;
                         }
-                        may.add(load, store);
-                        if (intermediaries.stream().allMatch(e -> exec.areMutuallyExclusive(load, e)) &&
-                                (store.doesRequireMatchingAddresses() || alias.mustAlias((Load) load, store))) {
-                            must.add(load, store);
+                        boolean isMust = intermediaries.stream().allMatch(e -> exec.areMutuallyExclusive(load, e)) &&
+                                (store.doesRequireMatchingAddresses() || alias.mustAlias((Load) load, store));
+                        // Idea: For RMWs torn into bytewise transactions,
+                        // matching only occurs between the last load and the first store.
+                        // This implementation builds the complete bipartite graph between both transactions.
+                        Set<Event> st = transactionMap.getOrDefault(store, Set.of(store));
+                        for (Event ld : transactionMap.getOrDefault(load, Set.of(load))) {
+                            may.addRange(ld, st);
+                            if (isMust) {
+                                must.addRange(ld, st);
+                            }
                         }
                     }
                 }

@@ -7,6 +7,7 @@ import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.MemoryEvent;
 import com.dat3m.dartagnan.program.event.core.*;
+import com.dat3m.dartagnan.program.event.core.InstructionBoundary;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.dat3m.dartagnan.solver.caat.predicates.CAATPredicate;
 import com.dat3m.dartagnan.solver.caat.predicates.PredicateHierarchy;
@@ -289,6 +290,28 @@ public class ExecutionModelManager {
                     for (int j = i + 1; j < eventList.size(); j++) {
                         EventModel e2 = eventList.get(j);
                         rg.add(new Edge(e1.getId(), e2.getId()));
+                    }
+                }
+            }
+            return null;
+        }
+
+        @Override
+        public Void visitSameInstruction(SameInstruction si) {
+            final SimpleGraph rg = (SimpleGraph) relGraphCache.get(si.getDefinedRelation());
+            final Map<Event, List<Event>> instructionMap = new HashMap<>();
+            for (InstructionBoundary end : context.getTask().getProgram().getThreadEvents(InstructionBoundary.class)) {
+                //NOTE begin markers return empty transaction event lists
+                final List<Event> events = end.getTransactionEvents();
+                for (Event event : events) {
+                    instructionMap.put(event, events);
+                }
+            }
+            for (EventModel e1 : executionModel.getEventModels()) {
+                for (Event e2 : instructionMap.getOrDefault(e1.getEvent(), List.of(e1.getEvent()))) {
+                    final EventModel e3 = executionModel.getEventModelByEvent(e2);
+                    if (e3 != null) {
+                        rg.add(new Edge(e1.getId(), e3.getId()));
                     }
                 }
             }

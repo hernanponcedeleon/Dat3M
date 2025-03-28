@@ -10,6 +10,7 @@ import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.Tag.ARMv8;
 import com.dat3m.dartagnan.program.event.Tag.C11;
 import com.dat3m.dartagnan.program.event.arch.StoreExclusive;
+import com.dat3m.dartagnan.program.event.arch.Xchg;
 import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.event.lang.catomic.*;
 import com.dat3m.dartagnan.program.event.lang.linux.*;
@@ -41,6 +42,19 @@ class VisitorArm8 extends VisitorBase {
         return eventSequence(
                 store,
                 newExecutionStatus(e.getResultRegister(), store)
+        );
+    }
+
+    @Override
+    public List<Event> visitXchg(Xchg xchg) {
+        Register resultRegister = xchg.getResultRegister();
+        Expression address = xchg.getAddress();
+        String loadMo = xchg.hasTag(ARMv8.MO_ACQ) ? ARMv8.MO_ACQ : null;
+        String storeMo = xchg.hasTag(ARMv8.MO_REL) ? ARMv8.MO_REL : null;
+
+        return eventSequence(
+                newRMWLoadExclusiveWithMo(resultRegister, address, loadMo),
+                newRMWStoreExclusiveWithMo(address, xchg.getValue(), true, storeMo)
         );
     }
 

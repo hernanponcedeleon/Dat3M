@@ -1,0 +1,18 @@
+AArch64 SCA-11
+"Friw0q0 Rfiq0w4 Frew4q0 Rfeq0w0"
+Generator=diyone7 (version 7.52+9(dev))
+Prefetch=
+Com=Fr Rf
+Orig=Friw0q0 Rfiq0w4 Frew4q0 Rfeq0w0
+{
+uint64_t x; uint32_t 0:X3; uint32_t 0:X0;
+
+0:X1=x; 0:X2=0x101010101010101;
+1:X0=0x202020202020202; 1:X1=x;
+}
+ P0             | P1          ;
+ LDR W0,[X1]    | STR X0,[X1] ;
+ STR X2,[X1]    |             ;
+ LDR W3,[X1,#4] |             ;
+locations [x;0:X0;0:X3;]
+exists 0:X0=0x2020202 /\ 0:X3=0x1010101 /\ x=0x0202020201010101
