@@ -63,7 +63,7 @@ public class MixedTest extends AbstractCTest {
     public static Iterable<Object[]> data() throws IOException {
         return Arrays.asList(new Object[][]{
             {"lockref1", ARM8, PASS},
-            //{"lockref2", ARM8, PASS},
+            {"lockref2", ARM8, PASS},
         });
     }
 

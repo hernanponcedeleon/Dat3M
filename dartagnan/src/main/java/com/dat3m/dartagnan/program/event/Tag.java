@@ -37,6 +37,7 @@ public final class Tag {
     // Some events should not be optimized (e.g. fake dependencies) or deleted (e.g. bounds)
     public static final String NOOPT            = "__NOOPT";
     public static final String STARTLOAD        = "__STARTLOAD";
+    public static final String NO_INSTRUCTION    = "__NO_INSTRUCTION";
 
     // =============================================================================================
     // =========================================== ARMv8 ===========================================

@@ -1364,26 +1364,15 @@ public class Intrinsics {
             throw new UnsupportedOperationException(error);
         }
         final int count = countValue.getValueAsInt();
+        final Register register = caller.newRegister(types.getIntegerType(8 * count));
+        final ValueFunctionCall valueCall = call instanceof ValueFunctionCall c ? c : null;
 
-        final List<Event> replacement = new ArrayList<>(2 * count + 1);
-        for (int i = 0; i < count; i++) {
-            final Expression offset = expressions.makeValue(i, types.getArchType());
-            final Expression srcAddr = expressions.makeAdd(src, offset);
-            final Expression destAddr = expressions.makeAdd(dest, offset);
-            // FIXME: We have no other choice but to load ptr-sized chunks for now
-            final Register reg = caller.getOrNewRegister("__memcpy_" + i, types.getArchType());
-
-            replacement.addAll(List.of(
-                    EventFactory.newLoad(reg, srcAddr),
-                    EventFactory.newStore(destAddr, reg)
-            ));
-        }
-        if (call instanceof ValueFunctionCall valueCall) {
-            // std.memcpy returns the destination address, llvm.memcpy has no return value
-            replacement.add(EventFactory.newLocal(valueCall.getResultRegister(), dest));
-        }
-
-        return replacement;
+        final Event load = EventFactory.newLoad(register, src);
+        load.addTags(Tag.NO_INSTRUCTION);
+        final Event store = EventFactory.newStore(dest, register);
+        store.addTags(Tag.NO_INSTRUCTION);
+        final Event returnValue = valueCall == null ? null : EventFactory.newLocal(valueCall.getResultRegister(), dest);
+        return EventFactory.eventSequence(load, store, returnValue);
     }
 
     // https://en.cppreference.com/w/c/string/byte/memcpy
