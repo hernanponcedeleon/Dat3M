@@ -88,7 +88,6 @@ public abstract class AbstractLitmusTest {
         return Provider.fromSupplier(() -> Configuration.builder()
                 .setOption(INITIALIZE_REGISTERS, "true")
                 .setOption(USE_INTEGERS, "true")
-                .setOption(ALIAS_MIXED_SIZE, "false")
                 .build());
     }
 

@@ -88,9 +88,9 @@ public interface AliasAnalysis {
                 description = "If 'true', checks for mixed-size and misaligned memory accesses." +
                         " This also enables a subsequent program transformation to handle these events." +
                         " Otherwise, assumes that no such happen in any checked execution." +
-                        " Defaults to 'true'.",
+                        " Defaults to 'false'.",
                 secure = true)
-        boolean detectMixedSizeAccesses = true;
+        boolean detectMixedSizeAccesses = false;
 
         @Option(name = ALIAS_GRAPHVIZ,
                 description = "If 'true', stores the results of the alias analysis as a PNG image." +

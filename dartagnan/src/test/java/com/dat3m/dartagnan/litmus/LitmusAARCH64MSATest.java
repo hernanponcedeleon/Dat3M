@@ -9,8 +9,7 @@ import org.sosy_lab.common.configuration.Configuration;
 
 import java.io.IOException;
 
-import static com.dat3m.dartagnan.configuration.OptionNames.INITIALIZE_REGISTERS;
-import static com.dat3m.dartagnan.configuration.OptionNames.USE_INTEGERS;
+import static com.dat3m.dartagnan.configuration.OptionNames.*;
 
 public class LitmusAARCH64MSATest extends LitmusAARCH64Test {
 
@@ -27,6 +26,7 @@ public class LitmusAARCH64MSATest extends LitmusAARCH64Test {
         return Provider.fromSupplier(() -> Configuration.builder()
                 .setOption(INITIALIZE_REGISTERS, "true")
                 .setOption(USE_INTEGERS, "false")
+                .setOption(ALIAS_MIXED_SIZE, "true")
                 .build());
     }
 
