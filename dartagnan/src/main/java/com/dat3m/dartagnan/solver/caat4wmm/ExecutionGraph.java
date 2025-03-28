@@ -15,7 +15,6 @@ import com.dat3m.dartagnan.utils.dependable.DependencyGraph;
 import com.dat3m.dartagnan.verification.model.ExecutionModel;
 import com.dat3m.dartagnan.wmm.Relation;
 import com.dat3m.dartagnan.wmm.Wmm;
-import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
 import com.dat3m.dartagnan.wmm.axiom.Axiom;
 import com.dat3m.dartagnan.wmm.axiom.ForceEncodeAxiom;
 import com.dat3m.dartagnan.wmm.definition.*;
@@ -30,6 +29,9 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import static com.dat3m.dartagnan.wmm.RelationNameRepository.CO;
+import static com.dat3m.dartagnan.wmm.RelationNameRepository.RF;
+
 public class ExecutionGraph {
 
     // ================== Fields =====================
@@ -39,7 +41,6 @@ public class ExecutionGraph {
     // assigned during construction.
 
     private final RefinementModel refinementModel;
-    private final RelationAnalysis ra;
     private final BiMap<Relation, RelationGraph> relationGraphMap;
     private final BiMap<Filter, SetPredicate> filterSetMap;
     private final BiMap<Axiom, Constraint> constraintMap;
@@ -52,14 +53,13 @@ public class ExecutionGraph {
 
     // ============= Construction & Init ===============
 
-    public ExecutionGraph(RefinementModel refinementModel, RelationAnalysis ra) {
+    public ExecutionGraph(RefinementModel refinementModel) {
         this.refinementModel = refinementModel;
-        this.ra = ra;
         relationGraphMap = HashBiMap.create();
         filterSetMap = HashBiMap.create();
         constraintMap = HashBiMap.create();
         cutRelations = refinementModel.computeBoundaryRelations().stream()
-                .filter(r -> r.getName().map(n -> !Wmm.ANARCHIC_CORE_RELATIONS.contains(n)).orElse(true))
+                .filter(r -> r.getName().map(n -> !(n.equals(CO) || n.equals(RF))).orElse(true))
                 .map(refinementModel::translateToOriginal)
                 .collect(Collectors.toSet());
 
@@ -258,8 +258,6 @@ public class ExecutionGraph {
             SetPredicate lhs = getOrCreateSetFromFilter(cartRel.getFirstFilter());
             SetPredicate rhs = getOrCreateSetFromFilter(cartRel.getSecondFilter());
             graph = new CartesianGraph(lhs, rhs);
-        } else if (relClass == ReadModifyWrites.class) {
-            graph = new RMWGraph();
         } else if (relClass == External.class) {
             graph = new ExternalGraph();
         } else if (relClass == Internal.class) {
