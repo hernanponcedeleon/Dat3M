@@ -256,7 +256,7 @@ public class AnalysisTest {
 
     @Test
     public void full0() throws InvalidConfigurationException {
-        program0(FULL, NONE, MAY, MAY, NONE, NONE, NONE);
+        program0(FULL, NONE, MUST, NONE, NONE, NONE, NONE);
     }
 
     private void program0(Alias method, Result... expect) throws InvalidConfigurationException {
@@ -267,8 +267,7 @@ public class AnalysisTest {
 
         b.newThread(0);
         Register r0 = b.getOrNewRegister(0, "r0");
-        //this is undefined behavior in C11
-        //the expression does not match a sum, but x occurs in it
+        //In C11, this is well-defined: ((uint64_t*) ((uintptr_t) x * 1))
         b.addChild(0, newLocal(r0, mult(x, 1)));
         Store e0 = newStore(r0);
         b.addChild(0, e0);
@@ -814,7 +813,7 @@ public class AnalysisTest {
         Relation rfRmw = wmm.addDefinition(new Composition(wmm.newRelation(), rf, rmw));
         Relation coCo = wmm.addDefinition(new Composition(wmm.newRelation(), co, co));
         wmm.addConstraint(new Emptiness(wmm.addDefinition(new Intersection(wmm.newRelation(), rfRmw, coCo))));
-        Configuration config = Configuration.defaultConfiguration();
+        Configuration config = Configuration.builder().setOption(MIXED_SIZE, "true").build();
         VerificationTask task = VerificationTask.builder().build(program, wmm, EnumSet.of(PROGRAM_SPEC));
         Context analysisContext = Context.create();
         ModelChecker.preprocessProgram(task, config);
