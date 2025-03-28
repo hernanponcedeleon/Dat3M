@@ -58,6 +58,8 @@ public class Intrinsics {
             secure = true)
     private EnumSet<AssertionType> notToInline = EnumSet.noneOf(AssertionType.class);
 
+    private final boolean detectMixedSizeAccesses;
+
     private enum AssertionType { USER, OVERFLOW, INVALIDDEREF }
 
     private static final TypeFactory types = TypeFactory.getInstance();
@@ -66,15 +68,17 @@ public class Intrinsics {
     //FIXME This might have concurrency issues if processing multiple programs at the same time.
     private BeginAtomic currentAtomicBegin;
 
-    private Intrinsics() {
+    private Intrinsics(boolean msa) {
+        detectMixedSizeAccesses = msa;
     }
 
     public static Intrinsics newInstance() {
-        return new Intrinsics();
+        return new Intrinsics(false);
     }
     
-    public static Intrinsics fromConfig(Configuration config) throws InvalidConfigurationException {
-        Intrinsics instance = newInstance();
+    public static Intrinsics fromConfig(Configuration config, boolean detectMixedSizeAccesses)
+            throws InvalidConfigurationException {
+        Intrinsics instance = new Intrinsics(detectMixedSizeAccesses);
         config.inject(instance);
         return instance;
     }
@@ -1364,15 +1368,32 @@ public class Intrinsics {
             throw new UnsupportedOperationException(error);
         }
         final int count = countValue.getValueAsInt();
-        final Register register = caller.newRegister(types.getIntegerType(8 * count));
-        final ValueFunctionCall valueCall = call instanceof ValueFunctionCall c ? c : null;
 
-        final Event load = EventFactory.newLoad(register, src);
-        load.addTags(Tag.NO_INSTRUCTION);
-        final Event store = EventFactory.newStore(dest, register);
-        store.addTags(Tag.NO_INSTRUCTION);
-        final Event returnValue = valueCall == null ? null : EventFactory.newLocal(valueCall.getResultRegister(), dest);
-        return EventFactory.eventSequence(load, store, returnValue);
+        final List<Event> replacement = new ArrayList<>(2 * count + 1);
+        //FIXME without MSA detection, each byte is treated as a 64-bit value.
+        final IntegerType type = detectMixedSizeAccesses ? types.getIntegerType(8 * count) : types.getArchType();
+        final int typeSize = detectMixedSizeAccesses ? count : 1;
+        for (int i = 0; i < count; i += typeSize) {
+            final Expression offset = expressions.makeValue(i, types.getArchType());
+            final Expression srcAddr = expressions.makeAdd(src, offset);
+            final Expression destAddr = expressions.makeAdd(dest, offset);
+            final Register reg = caller.getOrNewRegister("__memcpy_" + i, type);
+
+            final Event load = EventFactory.newLoad(reg, srcAddr);
+            final Event store = EventFactory.newStore(destAddr, reg);
+
+            // communicate to Tearing to not create same-instruction blocks
+            load.addTags(Tag.NO_INSTRUCTION);
+            store.addTags(Tag.NO_INSTRUCTION);
+
+            replacement.addAll(List.of(load, store));
+        }
+        if (call instanceof ValueFunctionCall valueCall) {
+            // std.memcpy returns the destination address, llvm.memcpy has no return value
+            replacement.add(EventFactory.newLocal(valueCall.getResultRegister(), dest));
+        }
+
+        return replacement;
     }
 
     // https://en.cppreference.com/w/c/string/byte/memcpy

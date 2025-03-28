@@ -84,7 +84,7 @@ public class ProcessingManager implements ProgramProcessor {
 // ======================================================================
     private ProcessingManager(Configuration config) throws InvalidConfigurationException {
         config.inject(this);
-        final Intrinsics intrinsics = Intrinsics.fromConfig(config);
+        final Intrinsics intrinsics = Intrinsics.fromConfig(config, detectMixedSizeAccesses);
         final FunctionProcessor sccp = constantPropagation ? SparseConditionalConstantPropagation.fromConfig(config) : null;
         final FunctionProcessor dce = performDce ? DeadAssignmentElimination.fromConfig(config) : null;
         final FunctionProcessor removeDeadJumps = RemoveDeadCondJumps.fromConfig(config);
@@ -133,10 +133,6 @@ public class ProcessingManager implements ProgramProcessor {
                                 MemToReg.fromConfig(config)
                         ), Target.THREADS, true
                 ),
-                RemoveUnusedMemory.newInstance(),
-                MemoryAllocation.fromConfig(config),
-                detectMixedSizeAccesses ? Tearing.fromConfig(config) : null,
-                detectMixedSizeAccesses ? IdReassignment.newInstance() : null,
                 ProgramProcessor.fromFunctionProcessor(
                         FunctionProcessor.chain(
                                 performAssignmentInlining ? AssignmentInlining.newInstance() : null,
@@ -145,6 +141,18 @@ public class ProcessingManager implements ProgramProcessor {
                                 removeDeadJumps
                         ), Target.THREADS, true
                 ),
+                RemoveUnusedMemory.newInstance(),
+                MemoryAllocation.fromConfig(config),
+                detectMixedSizeAccesses ? Tearing.fromConfig(config) : null,
+                detectMixedSizeAccesses ? IdReassignment.newInstance() : null,
+                detectMixedSizeAccesses ? ProgramProcessor.fromFunctionProcessor(
+                        FunctionProcessor.chain(
+                                performAssignmentInlining ? AssignmentInlining.newInstance() : null,
+                                sccp,
+                                dce,
+                                removeDeadJumps
+                        ), Target.THREADS, true
+                ) : null,
                 NonterminationDetection.fromConfig(config),
                 // --- Statistics + verification ---
                 IdReassignment.newInstance(), // Normalize used Ids (remove any gaps)
