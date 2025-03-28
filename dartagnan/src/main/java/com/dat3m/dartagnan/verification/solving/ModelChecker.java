@@ -86,7 +86,7 @@ public abstract class ModelChecker {
                 analysisContext, config));
         analysisContext.register(ReachingDefinitionsAnalysis.class, ReachingDefinitionsAnalysis.fromConfig(program,
                 analysisContext, config));
-        analysisContext.register(AliasAnalysis.class, AliasAnalysis.fromConfig(program, analysisContext, config));
+        analysisContext.register(AliasAnalysis.class, AliasAnalysis.fromConfig(program, analysisContext, config, false));
         analysisContext.register(ThreadSymmetry.class, ThreadSymmetry.fromConfig(program, config));
         for(Thread thread : program.getThreads()) {
             for(Event e : thread.getEvents()) {

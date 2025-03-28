@@ -26,7 +26,7 @@ public class LitmusAARCH64MixedTest extends LitmusAARCH64Test {
         return Provider.fromSupplier(() -> Configuration.builder()
                 .setOption(INITIALIZE_REGISTERS, "true")
                 .setOption(USE_INTEGERS, "false")
-                .setOption(ALIAS_MIXED_SIZE, "true")
+                .setOption(MIXED_SIZE, "true")
                 .build());
     }
 

@@ -60,7 +60,7 @@ public final class Tearing implements ProgramProcessor {
                     analysisContext, configuration));
             analysisContext.register(ReachingDefinitionsAnalysis.class, ReachingDefinitionsAnalysis.fromConfig(program,
                     analysisContext, configuration));
-            alias = AliasAnalysis.fromConfig(program, analysisContext, configuration);
+            alias = AliasAnalysis.fromConfig(program, analysisContext, configuration, true);
         } catch (InvalidConfigurationException ignore) {
             return;
         }

@@ -658,7 +658,7 @@ public class AnalysisTest {
         analysisContext.register(BranchEquivalence.class, BranchEquivalence.fromConfig(program, configuration));
         analysisContext.register(ExecutionAnalysis.class, ExecutionAnalysis.fromConfig(program, ProgressModel.FAIR, analysisContext, configuration));
         analysisContext.register(ReachingDefinitionsAnalysis.class, ReachingDefinitionsAnalysis.fromConfig(program, analysisContext, configuration));
-        return AliasAnalysis.fromConfig(program, analysisContext, configuration);
+        return AliasAnalysis.fromConfig(program, analysisContext, configuration, false);
     }
 
     private void assertAlias(Result expect, AliasAnalysis a, MemoryCoreEvent x, MemoryCoreEvent y) {
@@ -775,7 +775,7 @@ public class AnalysisTest {
         analysisContext.register(ExecutionAnalysis.class, ExecutionAnalysis.fromConfig(program, ProgressModel.FAIR, analysisContext, config));
         analysisContext.register(ReachingDefinitionsAnalysis.class, ReachingDefinitionsAnalysis.fromConfig(program, analysisContext, config));
         assertTrue(program.getThreadEvents(Init.class).isEmpty());
-        AliasAnalysis alias = AliasAnalysis.fromConfig(program, analysisContext, config);
+        AliasAnalysis alias = AliasAnalysis.fromConfig(program, analysisContext, config, true);
         List<MemoryCoreEvent> events = program.getThreadEvents(MemoryCoreEvent.class);
         final var actual = new ArrayList<String>();
         for (int i = 0; i < 16; i++) {

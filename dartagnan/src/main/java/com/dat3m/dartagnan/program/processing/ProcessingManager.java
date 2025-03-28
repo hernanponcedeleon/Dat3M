@@ -10,19 +10,11 @@ import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.common.configuration.Option;
 import org.sosy_lab.common.configuration.Options;
 
-import static com.dat3m.dartagnan.configuration.OptionNames.ASSIGNMENT_INLINING;
-import static com.dat3m.dartagnan.configuration.OptionNames.CONSTANT_PROPAGATION;
-import static com.dat3m.dartagnan.configuration.OptionNames.DEAD_ASSIGNMENT_ELIMINATION;
-import static com.dat3m.dartagnan.configuration.OptionNames.DYNAMIC_SPINLOOP_DETECTION;
-import static com.dat3m.dartagnan.configuration.OptionNames.PRINT_PROGRAM_AFTER_COMPILATION;
-import static com.dat3m.dartagnan.configuration.OptionNames.PRINT_PROGRAM_AFTER_PROCESSING;
-import static com.dat3m.dartagnan.configuration.OptionNames.PRINT_PROGRAM_AFTER_SIMPLIFICATION;
-import static com.dat3m.dartagnan.configuration.OptionNames.PRINT_PROGRAM_AFTER_UNROLLING;
-import static com.dat3m.dartagnan.configuration.OptionNames.PRINT_PROGRAM_BEFORE_PROCESSING;
-import static com.dat3m.dartagnan.configuration.OptionNames.REDUCE_SYMMETRY;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.processing.compilation.Compilation;
 import com.dat3m.dartagnan.utils.printer.Printer;
+
+import static com.dat3m.dartagnan.configuration.OptionNames.*;
 
 @Options
 public class ProcessingManager implements ProgramProcessor {
@@ -54,6 +46,14 @@ public class ProcessingManager implements ProgramProcessor {
             description = "Instruments loops to terminate early when spinning.",
             secure = true)
     private boolean dynamicSpinLoopDetection = true;
+
+    @Option(name = MIXED_SIZE,
+            description = "If 'true', checks for mixed-size and misaligned memory accesses." +
+                    " This also enables a subsequent program transformation to handle these events." +
+                    " Otherwise, assumes that no such happen in any checked execution." +
+                    " Defaults to 'false'.",
+            secure = true)
+    private boolean detectMixedSizeAccesses = false;
 
     // =================== Debugging options ===================
     @Option(name = PRINT_PROGRAM_BEFORE_PROCESSING,
@@ -135,8 +135,8 @@ public class ProcessingManager implements ProgramProcessor {
                 ),
                 RemoveUnusedMemory.newInstance(),
                 MemoryAllocation.fromConfig(config),
-                Tearing.fromConfig(config),
-                IdReassignment.newInstance(),
+                detectMixedSizeAccesses ? Tearing.fromConfig(config) : null,
+                detectMixedSizeAccesses ? IdReassignment.newInstance() : null,
                 ProgramProcessor.fromFunctionProcessor(
                         FunctionProcessor.chain(
                                 performAssignmentInlining ? AssignmentInlining.newInstance() : null,

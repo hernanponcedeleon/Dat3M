@@ -56,8 +56,9 @@ public interface AliasAnalysis {
      */
     List<Integer> mayMixedSizeAccesses(MemoryCoreEvent event);
 
-    static AliasAnalysis fromConfig(Program program, Context analysisContext, Configuration config) throws InvalidConfigurationException {
-        Config c = new Config(config);
+    static AliasAnalysis fromConfig(Program program, Context analysisContext, Configuration config,
+            boolean detectMixedSizeAccesses) throws InvalidConfigurationException {
+        Config c = new Config(config, detectMixedSizeAccesses);
         logger.info("Selected alias analysis: {}", c.method);
         long t0 = System.currentTimeMillis();
         AliasAnalysis a = switch (c.method) {
@@ -84,14 +85,6 @@ public interface AliasAnalysis {
                 description = "General type of analysis that approximates the 'loc' relationship between memory events.")
         private Alias method = Alias.getDefault();
 
-        @Option(name = ALIAS_MIXED_SIZE,
-                description = "If 'true', checks for mixed-size and misaligned memory accesses." +
-                        " This also enables a subsequent program transformation to handle these events." +
-                        " Otherwise, assumes that no such happen in any checked execution." +
-                        " Defaults to 'false'.",
-                secure = true)
-        boolean detectMixedSizeAccesses = false;
-
         @Option(name = ALIAS_GRAPHVIZ,
                 description = "If 'true', stores the results of the alias analysis as a PNG image." +
                         " Defaults to 'false'.")
@@ -117,7 +110,10 @@ public interface AliasAnalysis {
                         " Defaults to 'false'.", secure = true)
         boolean graphvizInternal;
 
-        private Config(Configuration config) throws InvalidConfigurationException {
+        final boolean detectMixedSizeAccesses;
+
+        private Config(Configuration config, boolean msa) throws InvalidConfigurationException {
+            detectMixedSizeAccesses = msa;
             config.inject(this);
         }
 

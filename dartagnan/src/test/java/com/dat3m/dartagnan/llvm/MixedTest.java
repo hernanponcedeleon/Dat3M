@@ -16,7 +16,7 @@ import java.io.IOException;
 import java.util.Arrays;
 
 import static com.dat3m.dartagnan.configuration.Arch.*;
-import static com.dat3m.dartagnan.configuration.OptionNames.ALIAS_MIXED_SIZE;
+import static com.dat3m.dartagnan.configuration.OptionNames.MIXED_SIZE;
 import static com.dat3m.dartagnan.utils.ResourceHelper.getTestResourcePath;
 import static com.dat3m.dartagnan.utils.Result.PASS;
 import static org.junit.Assert.assertEquals;
@@ -55,7 +55,7 @@ public class MixedTest extends AbstractCTest {
     @Override
     protected Configuration getConfiguration() throws InvalidConfigurationException {
         return Configuration.builder()
-                .setOption(ALIAS_MIXED_SIZE, "true")
+                .setOption(MIXED_SIZE, "true")
                 .build();
     }
 
