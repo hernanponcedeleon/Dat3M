@@ -133,6 +133,10 @@ public class ProcessingManager implements ProgramProcessor {
                                 MemToReg.fromConfig(config)
                         ), Target.THREADS, true
                 ),
+                RemoveUnusedMemory.newInstance(),
+                MemoryAllocation.fromConfig(config),
+                Tearing.fromConfig(config),
+                IdReassignment.newInstance(),
                 ProgramProcessor.fromFunctionProcessor(
                         FunctionProcessor.chain(
                                 performAssignmentInlining ? AssignmentInlining.newInstance() : null,
@@ -141,8 +145,6 @@ public class ProcessingManager implements ProgramProcessor {
                                 removeDeadJumps
                         ), Target.THREADS, true
                 ),
-                RemoveUnusedMemory.newInstance(),
-                MemoryAllocation.fromConfig(config),
                 NonterminationDetection.fromConfig(config),
                 // --- Statistics + verification ---
                 IdReassignment.newInstance(), // Normalize used Ids (remove any gaps)

@@ -36,7 +36,7 @@ public class CoreCodeVerification implements FunctionProcessor {
             Load.class, Store.class, Init.class, GenericMemoryEvent.class, GenericVisibleEvent.class,
             CondJump.class, IfAsJump.class, ExecutionStatus.class, Label.class, Local.class,
             Skip.class, RMWStore.class, RMWStoreExclusive.class, Alloc.class,
-            Assume.class, Assert.class,
+            Assume.class, Assert.class, InstructionBoundary.class,
             ThreadCreate.class, ThreadArgument.class, ThreadStart.class,
             ControlBarrier.class, NamedBarrier.class,
             BeginAtomic.class, EndAtomic.class,

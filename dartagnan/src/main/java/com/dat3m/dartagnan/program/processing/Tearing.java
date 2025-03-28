@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan.program.processing;
 
+import com.dat3m.dartagnan.configuration.ProgressModel;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.Type;
@@ -9,6 +10,9 @@ import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
+import com.dat3m.dartagnan.program.analysis.BranchEquivalence;
+import com.dat3m.dartagnan.program.analysis.ExecutionAnalysis;
+import com.dat3m.dartagnan.program.analysis.ReachingDefinitionsAnalysis;
 import com.dat3m.dartagnan.program.analysis.alias.AliasAnalysis;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.EventFactory;
@@ -17,37 +21,53 @@ import com.dat3m.dartagnan.program.event.core.annotations.TransactionMarker;
 import com.dat3m.dartagnan.program.event.metadata.SourceLocation;
 import com.dat3m.dartagnan.program.memory.FinalMemoryValue;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
+import com.dat3m.dartagnan.verification.Context;
 import com.google.common.collect.Ordering;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.sosy_lab.common.configuration.Configuration;
+import org.sosy_lab.common.configuration.InvalidConfigurationException;
 
 import java.util.*;
 
 import static com.google.common.base.Preconditions.checkArgument;
 
-public final class Tearing {
+public final class Tearing implements ProgramProcessor {
 
     private static final Logger logger = LogManager.getLogger(Tearing.class);
 
     private static final TypeFactory types = TypeFactory.getInstance();
     private static final ExpressionFactory expressions = ExpressionFactory.getInstance();
 
-    private final boolean bigEndian;
-    private final Map<MemoryCoreEvent, List<Event>> map = new HashMap<>();
+    private final Configuration configuration;
 
-    private Tearing(boolean e) {
-        bigEndian = e;
+    private Tearing(Configuration c) {
+        configuration = c;
     }
 
-    public static boolean run(Program program, AliasAnalysis alias) {
-        final boolean isBigEndian = program.getMemory().isBigEndian();
-        logger.info("Running Tearing assuming {}", isBigEndian ? "big-endian" : "little-endian");
-        return new Tearing(isBigEndian).replaceAll(program, alias);
+    public static Tearing fromConfig(Configuration config) throws InvalidConfigurationException {
+        return new Tearing(config);
     }
 
-    private boolean replaceAll(Program program, AliasAnalysis alias) {
+    public void run(Program program) {
+        logger.trace("Perform analyses");
+        AliasAnalysis alias;
+        try {
+            final Context analysisContext = Context.create();
+            analysisContext.register(BranchEquivalence.class, BranchEquivalence.fromConfig(program, configuration));
+            analysisContext.register(ExecutionAnalysis.class, ExecutionAnalysis.fromConfig(program, ProgressModel.FAIR,
+                    analysisContext, configuration));
+            analysisContext.register(ReachingDefinitionsAnalysis.class, ReachingDefinitionsAnalysis.fromConfig(program,
+                    analysisContext, configuration));
+            alias = AliasAnalysis.fromConfig(program, analysisContext, configuration);
+        } catch (InvalidConfigurationException ignore) {
+            return;
+        }
+        final boolean bigEndian = program.getMemory().isBigEndian();
+        logger.info("Running Tearing assuming {}", bigEndian ? "big-endian" : "little-endian");
+        final Map<MemoryCoreEvent, List<Event>> map = new HashMap<>();
         // Generate transaction events for mixed-size accesses
-        final int numTearedInits = tearInits(program, alias);
+        final int numTearedInits = tearInits(program, alias, bigEndian);
         //NOTE RMWStores need to access the associated load's replacements
         final List<MemoryCoreEvent> events = program.getThreadEvents(MemoryCoreEvent.class);
         for (MemoryCoreEvent event : events) {
@@ -61,7 +81,7 @@ public final class Tearing {
             final Store store = event instanceof Store s && !(event instanceof Init) ? s : null;
             final List<Integer> msa = store == null ? List.of() : alias.mayMixedSizeAccesses(event);
             if (!msa.isEmpty()) {
-                map.put(store, createTransaction(store, msa));
+                map.put(store, createTransaction(store, msa, map, bigEndian));
             }
         }
         // Replace instructions by transactions of events
@@ -94,11 +114,9 @@ public final class Tearing {
             info.append("\n").append("============================================");
             logger.debug(info);
         }
-
-        return (numTearedInits + numTearedNonInit) > 0;
     }
 
-    private int tearInits(Program program, AliasAnalysis alias) {
+    private int tearInits(Program program, AliasAnalysis alias, boolean bigEndian) {
         int numTearings = 0;
         for (Init init : program.getThreadEvents(Init.class)) {
             final List<Integer> offsets = alias.mayMixedSizeAccesses(init);
@@ -184,7 +202,7 @@ public final class Tearing {
         return replacement;
     }
 
-    private List<Event> createTransaction(Store store, List<Integer> offsets) {
+    private List<Event> createTransaction(Store store, List<Integer> offsets, Map<MemoryCoreEvent, List<Event>> map, boolean bigEndian) {
         final int bytes = checkBytes(store, offsets);
         final List<Event> replacement = new ArrayList<>();
         final IntegerType addressType = checkIntegerType(store.getAddress().getType(),
