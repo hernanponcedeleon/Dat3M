@@ -17,7 +17,6 @@ import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.RegWriter;
-import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.functions.FunctionCall;
 import com.dat3m.dartagnan.program.memory.Memory;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
@@ -180,15 +179,12 @@ public class ProgramBuilder {
     }
 
     public ScopedPointer allocateMemory(String id, ScopedPointerType type, Expression value) {
-        int bytes = TypeFactory.getInstance().getMemorySizeInBytes(type.getPointedType());
+        int bytes = TypeFactory.getInstance().getMemorySizeInBytes(value.getType());
         MemoryObject memObj = program.getMemory().allocateVirtual(bytes, true, null);
         memObj.setName(id);
         memObj.setIsThreadLocal(false);
         memObj.setInitialValue(0, value);
-        if (arch == Arch.OPENCL) {
-            String openCLSpace = Tag.Spirv.toOpenCLTag(Tag.Spirv.getStorageClassTag(Set.of(type.getScopeId())));
-            memObj.addFeatureTag(openCLSpace);
-        }
+        memObj.addFeatureTag(type.getScopeId());
         ScopedPointer pointer = ExpressionFactory.getInstance().makeScopedPointer(id, type, memObj);
         allocations.add(pointer);
         return pointer;
