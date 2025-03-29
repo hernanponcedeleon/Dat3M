@@ -174,20 +174,20 @@ public class ProgramBuilder {
         return value;
     }
 
-    public Set<ScopedPointer> getAllocation() {
+    public Set<ScopedPointer> getAllocations() {
         return allocations;
     }
 
-    public ScopedPointer allocateMemory(String id, ScopedPointerType type, Expression value) {
+    public MemoryObject allocateMemory(String id, String scopeId, Expression value) {
         int bytes = TypeFactory.getInstance().getMemorySizeInBytes(value.getType());
         MemoryObject memObj = program.getMemory().allocateVirtual(bytes, true, null);
         memObj.setName(id);
         memObj.setIsThreadLocal(false);
         memObj.setInitialValue(0, value);
-        memObj.addFeatureTag(type.getScopeId());
-        ScopedPointer pointer = ExpressionFactory.getInstance().makeScopedPointer(id, type, memObj);
-        allocations.add(pointer);
-        return pointer;
+        memObj.addFeatureTag(scopeId);
+        ScopedPointerType type = TypeFactory.getInstance().getScopedPointerType(scopeId, value.getType());
+        allocations.add(ExpressionFactory.getInstance().makeScopedPointer(id, type, memObj));
+        return memObj;
     }
 
     public String getPointerStorageClass(String id) {

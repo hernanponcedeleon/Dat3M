@@ -134,7 +134,7 @@ public class VisitorExtensionClspvReflection extends VisitorExtension<Void> {
     // TODO: Better way to identify PushConstant using kernel and arg info methods
     private void initPushConstant() {
         if (pushConstant == null) {
-            List<ScopedPointer> variables = builder.getAllocation().stream()
+            List<ScopedPointer> variables = builder.getAllocations().stream()
                     .filter(v -> Tag.Spirv.SC_PUSH_CONSTANT.equals(v.getType().getScopeId()))
                     .toList();
             if (variables.size() == 1) {

@@ -7,7 +7,6 @@ import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.Type;
 import com.dat3m.dartagnan.expression.type.ArrayType;
 import com.dat3m.dartagnan.expression.type.IntegerType;
-import com.dat3m.dartagnan.parsers.program.visitors.spirv.helpers.HelperInputs;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.mocks.MockProgramBuilder;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.mocks.MockSpirvParser;
 import com.dat3m.dartagnan.program.Function;
@@ -541,7 +540,7 @@ public class VisitorOpsFunctionTest {
         assertEquals(1, function.getParameterRegisters().size());
         assertEquals("%param", function.getParameterRegisters().get(0).getName());
         assertEquals(builder.getType("%int_ptr"), function.getParameterRegisters().get(0).getType());
-        assertEquals(HelperInputs.castPointerId("%param"), ((MemoryObject) local.getExpr()).getName());
+        assertEquals("%param", ((MemoryObject) local.getExpr()).getName());
         assertEquals(expressions.makeZero((IntegerType) builder.getType("%int")), ((MemoryObject) local.getExpr()).getInitialValue(0));
         assertEquals(builder.getExpression("%param"), local.getResultRegister());
     }
@@ -572,7 +571,7 @@ public class VisitorOpsFunctionTest {
         assertEquals(1, function.getParameterRegisters().size());
         assertEquals("%param", function.getParameterRegisters().get(0).getName());
         assertEquals(builder.getType("%int_ptr"), function.getParameterRegisters().get(0).getType());
-        assertEquals(HelperInputs.castPointerId("%param"), ((MemoryObject) local.getExpr()).getName());
+        assertEquals("%param", ((MemoryObject) local.getExpr()).getName());
         assertEquals(paramInput.getOperands().get(0), ((MemoryObject) local.getExpr()).getInitialValue(0));
         assertEquals(paramInput.getOperands().get(1), ((MemoryObject) local.getExpr()).getInitialValue(8));
         assertEquals(builder.getExpression("%param"), local.getResultRegister());
@@ -600,13 +599,13 @@ public class VisitorOpsFunctionTest {
         assertEquals(1, function.getParameterRegisters().size());
         assertEquals("%param", function.getParameterRegisters().get(0).getName());
         assertEquals(builder.getType("%int_ptr"), function.getParameterRegisters().get(0).getType());
-        assertEquals(HelperInputs.castPointerId("%param"), ((MemoryObject) local.getExpr()).getName());
+        assertEquals("%param", ((MemoryObject) local.getExpr()).getName());
         assertEquals(builder.getExpression("%param"), local.getResultRegister());
-        ArrayType type = (ArrayType) ((ScopedPointer) builder.getExpression(HelperInputs.castPointerId("%param"))).getType().getPointedType();
+        ScopedPointer pointer = builder.getAllocations().stream().findFirst().orElseThrow();
+        ArrayType type = (ArrayType) pointer.getType().getPointedType();
         assertEquals(builder.getType("%int"), type.getElementType());
         assertEquals(10, type.getNumElements());
     }
-
 
     private void visit(String text) {
         builder.getControlFlowBuilder().getOrCreateLabel("%mock_label");

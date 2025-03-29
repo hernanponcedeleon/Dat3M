@@ -13,6 +13,7 @@ import com.dat3m.dartagnan.parsers.program.visitors.spirv.helpers.HelperTypes;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.helpers.HelperInputs;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.helpers.HelperTags;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.builders.ProgramBuilder;
+import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.dat3m.dartagnan.program.memory.ScopedPointer;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Event;
@@ -112,7 +113,8 @@ public class VisitorOpsMemory extends SpirvBaseVisitor<Event> {
                 value = builder.makeUndefinedValue(type);
             }
             validateVariableStorageClass(id, pointerType.getScopeId(), ctx.storageClass().getText());
-            ScopedPointer pointer = builder.allocateMemory(id, pointerType, value);
+            MemoryObject memObj = builder.allocateMemory(id, pointerType.getScopeId(), value);
+            ScopedPointer pointer = expressions.makeScopedPointer(id, pointerType, memObj);
             builder.addExpression(id, pointer);
             return null;
         }

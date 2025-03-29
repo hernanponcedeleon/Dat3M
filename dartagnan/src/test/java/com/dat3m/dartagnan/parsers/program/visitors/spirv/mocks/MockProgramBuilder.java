@@ -14,6 +14,7 @@ import com.dat3m.dartagnan.parsers.program.visitors.spirv.helpers.HelperTags;
 import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.ThreadGrid;
 import com.dat3m.dartagnan.program.event.core.Label;
+import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.dat3m.dartagnan.program.memory.ScopedPointer;
 
 import java.util.*;
@@ -138,7 +139,8 @@ public class MockProgramBuilder extends ProgramBuilder {
     public ScopedPointer mockVariable(String id, String typeId) {
         ScopedPointerType type = (ScopedPointerType) getType(typeId);
         Expression value = makeUndefinedValue(type.getPointedType());
-        ScopedPointer pointer = allocateMemory(id, type, value);
+        MemoryObject memObj = allocateMemory(id, type.getScopeId(), value);
+        ScopedPointer pointer = exprFactory.makeScopedPointer(id, type, memObj);
         addExpression(id, pointer);
         return pointer;
     }

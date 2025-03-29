@@ -10,10 +10,8 @@ import com.dat3m.dartagnan.expression.type.*;
 import com.dat3m.dartagnan.parsers.SpirvBaseVisitor;
 import com.dat3m.dartagnan.parsers.SpirvParser;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.builders.ProgramBuilder;
-import com.dat3m.dartagnan.parsers.program.visitors.spirv.helpers.HelperInputs;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.helpers.HelperTypes;
 import com.dat3m.dartagnan.program.Program;
-import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.memory.FinalMemoryValue;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.dat3m.dartagnan.program.memory.ScopedPointer;
@@ -123,19 +121,15 @@ public class VisitorSpirvOutput extends SpirvBaseVisitor<Expression> {
         if (ctx.initBaseValue() != null) {
             return expressions.parseValue(ctx.initBaseValue().getText(), types.getArchType());
         }
-        String name = ctx.varName().getText();
-        Expression expression = builder.getExpression(name);
-        if (expression instanceof Register && expression.getType() instanceof ScopedPointerType) {
-            expression = builder.getExpression(HelperInputs.castPointerId(name));
-        }
-        if (expression instanceof ScopedPointer base) {
-            List<Integer> indexes = ctx.indexValue().stream()
-                    .map(c -> Integer.parseInt(c.ModeHeader_PositiveInteger().getText()))
-                    .toList();
-            return createFinalMemoryValue(base, indexes);
-        } else {
-            throw new ParsingException("Uninitialized location %s", name);
-        }
+        String id = ctx.varName().getText();
+        ScopedPointer base = builder.getAllocations().stream()
+                .filter(a -> a.getId().equals(id))
+                .findFirst()
+                .orElseThrow(() -> new ParsingException("Annotation refers to an undefined expression '%s'", id));
+        List<Integer> indexes = ctx.indexValue().stream()
+                .map(c -> Integer.parseInt(c.ModeHeader_PositiveInteger().getText()))
+                .toList();
+        return createFinalMemoryValue(base, indexes);
     }
 
     private Expression normalize(Expression target, Expression other) {

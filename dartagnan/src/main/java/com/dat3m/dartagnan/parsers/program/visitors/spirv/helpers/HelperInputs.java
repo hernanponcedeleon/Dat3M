@@ -19,10 +19,6 @@ public class HelperInputs {
     private HelperInputs() {
     }
 
-    public static String castPointerId(String id) {
-        return "&" + id;
-    }
-
     public static Expression castInput(String id, Type type, Expression value) {
         if (type instanceof ArrayType aType) {
             return castArray(id, aType, value);

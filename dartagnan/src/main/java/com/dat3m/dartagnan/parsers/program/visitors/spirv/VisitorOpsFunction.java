@@ -14,7 +14,6 @@ import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.Local;
 import com.dat3m.dartagnan.program.event.functions.FunctionCall;
-import com.dat3m.dartagnan.program.memory.ScopedPointer;
 
 import java.util.*;
 import java.util.stream.IntStream;
@@ -176,11 +175,7 @@ public class VisitorOpsFunction extends SpirvBaseVisitor<Void> {
     private Expression createEntryPointParameter(String id, Type type) {
         Expression value = createEntryPointParameterValue(id, type);
         if (type instanceof ScopedPointerType pType) {
-            String ptrId = HelperInputs.castPointerId(id);
-            pType = types.getScopedPointerType(pType.getScopeId(), value.getType());
-            ScopedPointer pointer = builder.allocateMemory(ptrId, pType, value);
-            builder.addExpression(ptrId, pointer);
-            value = pointer.getAddress();
+            return builder.allocateMemory(id, pType.getScopeId(), value);
         }
         return value;
     }
