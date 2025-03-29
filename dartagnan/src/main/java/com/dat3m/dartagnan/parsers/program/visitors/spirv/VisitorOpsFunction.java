@@ -28,7 +28,6 @@ public class VisitorOpsFunction extends SpirvBaseVisitor<Void> {
     private static final TypeFactory types = TypeFactory.getInstance();
     private final Map<String, Function> forwardFunctions = new HashMap<>();
     private final Map<String, Set<FunctionCall>> forwardCalls = new HashMap<>();
-    private final Map<String, Expression> parameters = new HashMap<>();
     private final ProgramBuilder builder;
     private String currentId;
     private FunctionType currentType;
@@ -85,9 +84,6 @@ public class VisitorOpsFunction extends SpirvBaseVisitor<Void> {
             throw new ParsingException("Duplicated parameter id '%s' in function '%s'", id, currentId);
         }
         currentArgs.add(id);
-        if (currentId.equals(builder.getEntryPointId())) {
-            parameters.put(id, createEntryPointParameter(id, type));
-        }
         if (currentArgs.size() == currentType.getParameterTypes().size()) {
             createFunction();
         }
@@ -131,7 +127,8 @@ public class VisitorOpsFunction extends SpirvBaseVisitor<Void> {
         function.getParameterRegisters().forEach(r -> builder.addExpression(r.getName(), r));
         if (currentId.equals(builder.getEntryPointId())) {
             function.getParameterRegisters().forEach(r -> {
-                Local local = EventFactory.newLocal(r, parameters.get(r.getName()));
+                Expression value = createEntryPointParameter(r.getName(), r.getType());
+                Local local = EventFactory.newLocal(r, value);
                 local.addTags(Tag.NOOPT);
                 function.append(local);
             });
