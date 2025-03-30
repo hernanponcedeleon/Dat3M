@@ -241,7 +241,7 @@ public class LazyRelationAnalysis extends NativeRelationAnalysis {
                         state.ofRegister(register).getMayWriters()
                                 .forEach(writer -> may.computeIfAbsent(writer, x -> new HashSet<>()).add(reader));
                         state.ofRegister(register).getMustWriters()
-                                .forEach(writer -> may.computeIfAbsent(writer, x -> new HashSet<>()).add(reader));
+                                .forEach(writer -> must.computeIfAbsent(writer, x -> new HashSet<>()).add(reader));
                     }
                 });
             });
