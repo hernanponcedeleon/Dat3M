@@ -12,12 +12,12 @@ import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.IRHelper;
 import com.dat3m.dartagnan.program.Program;
+import com.dat3m.dartagnan.program.event.CallEvent;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.RegReader;
 import com.dat3m.dartagnan.program.event.core.CondJump;
 import com.dat3m.dartagnan.program.event.core.Label;
-import com.dat3m.dartagnan.program.event.functions.FunctionCall;
 import com.dat3m.dartagnan.program.memory.Memory;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.google.common.base.Verify;
@@ -116,8 +116,8 @@ public class NaiveDevirtualisation implements ProgramProcessor {
     }
 
     private void applyTransformerToEvent(Event e, ExpressionVisitor<Expression> transformer) {
-        if (e instanceof FunctionCall call) {
-            if (call.isDirectCall() && call.getCalledFunction().getIntrinsicInfo() == Intrinsics.Info.P_THREAD_CREATE) {
+        if (e instanceof CallEvent call) {
+            if (call.isDirectCall() && call.getDirectCallTarget().getIntrinsicInfo() == Intrinsics.Info.P_THREAD_CREATE) {
                 // We avoid transforming functions passed as call target to pthread_create
                 // However, we still collect the last argument of the call, because it
                 // is the argument passed to the created thread (which might be a pointer to a function).
@@ -135,7 +135,7 @@ public class NaiveDevirtualisation implements ProgramProcessor {
         final ExpressionFactory expressions = ExpressionFactory.getInstance();
 
         int devirtCounter = 0;
-        for (FunctionCall call : function.getEvents(FunctionCall.class)) {
+        for (CallEvent call : function.getEvents(CallEvent.class)) {
             if (!needsDevirtualization(call)) {
                 continue;
             }
@@ -186,18 +186,18 @@ public class NaiveDevirtualisation implements ProgramProcessor {
         }
     }
 
-    private boolean needsDevirtualization(FunctionCall call) {
+    private boolean needsDevirtualization(CallEvent call) {
         return !call.isDirectCall() ||
-                (call.getCalledFunction().getIntrinsicInfo() == Intrinsics.Info.P_THREAD_CREATE
+                (call.getDirectCallTarget().getIntrinsicInfo() == Intrinsics.Info.P_THREAD_CREATE
                 && !(call.getArguments().get(2) instanceof Function));
     }
 
-    private List<Function> getPossibleTargets(FunctionCall call, Map<Function, IntLiteral> func2AddressMap) {
+    private List<Function> getPossibleTargets(CallEvent call, Map<Function, IntLiteral> func2AddressMap) {
         final List<Function> possibleTargets;
         if (!call.isDirectCall()) {
             possibleTargets = func2AddressMap.keySet().stream()
                     .filter(f -> f.getFunctionType() == call.getCallType()).collect(Collectors.toList());
-        } else if (call.getCalledFunction().getIntrinsicInfo() == Intrinsics.Info.P_THREAD_CREATE) {
+        } else if (call.getDirectCallTarget().getIntrinsicInfo() == Intrinsics.Info.P_THREAD_CREATE) {
             final TypeFactory types = TypeFactory.getInstance();
             final Type ptrType = types.getPointerType();
             final Type threadType = types.getFunctionType(ptrType, List.of(ptrType));
@@ -211,26 +211,26 @@ public class NaiveDevirtualisation implements ProgramProcessor {
         return possibleTargets;
     }
 
-    private FunctionCall devirtualiseCall(FunctionCall virtCall, Function devirtCallTarget) {
-        final FunctionCall devirtCall = virtCall.getCopy();
+    private CallEvent devirtualiseCall(CallEvent virtCall, Function devirtCallTarget) {
+        final CallEvent devirtCall = virtCall.getCopy();
         setFunctionPointer(devirtCall, devirtCallTarget);
         return devirtCall;
     }
 
-    private Expression getFunctionPointer(FunctionCall call) {
+    private Expression getFunctionPointer(CallEvent call) {
         if (!call.isDirectCall()) {
             return call.getCallTarget();
-        } else if (call.getCalledFunction().getIntrinsicInfo() == Intrinsics.Info.P_THREAD_CREATE) {
+        } else if (call.getDirectCallTarget().getIntrinsicInfo() == Intrinsics.Info.P_THREAD_CREATE) {
             return call.getArguments().get(2);
         }
         throwInternalError(call);
         return null;
     }
 
-    private void setFunctionPointer(FunctionCall call, Expression functionPtr) {
+    private void setFunctionPointer(CallEvent call, Expression functionPtr) {
         if (!call.isDirectCall()) {
             call.setCallTarget(functionPtr);
-        } else if (call.getCalledFunction().getIntrinsicInfo() == Intrinsics.Info.P_THREAD_CREATE) {
+        } else if (call.getDirectCallTarget().getIntrinsicInfo() == Intrinsics.Info.P_THREAD_CREATE) {
             call.setArgument(2, functionPtr);
         } else {
             throwInternalError(call);
@@ -238,7 +238,7 @@ public class NaiveDevirtualisation implements ProgramProcessor {
     }
 
     @SuppressWarnings("all")
-    private void throwInternalError(FunctionCall virtCall) {
+    private void throwInternalError(CallEvent virtCall) {
         Verify.verify(false, "Encountered unexpected virtual function call: " + virtCall);
     }
 
