@@ -263,19 +263,24 @@ public class ProgramEncoder implements Encoder {
             enc.add(bmgr.implication(bmgr.and(terminated, joinCf), joinExec));
 
             final List<ThreadReturn> returns = join.getJoinThread().getEvents(ThreadReturn.class);
-            Verify.verify(returns.size() == 1, "Unexpected number of ThreadReturn events.");
-            final ThreadReturn ret = returns.get(0);
-            // FIXME: here we assume that proper thread termination implies that ThreadReturn was executed.
-            //  While this should be true, we currently do not make explicit checks for this, so the code
-            //  is a little dangerous.
-            if (ret.hasValue()) {
-                enc.add(bmgr.implication(
-                        joinExec,
-                        context.equal(
-                                context.result(join),
-                                context.encodeExpressionAt(ret.getValue().get(), ret)
-                        )
-                ));
+            Verify.verify(returns.size() <= 1, "Unexpected number of ThreadReturn events.");
+            // NOTE: No ThreadReturn is currently allowed, if the ThreadReturn event is unreachable and thus is deletable.
+            // In this case, the thread never terminates properly, so we do not encode anything.
+            // TODO: We might want to make ThreadReturn non-deletable, at least the one we generate in ThreadCreation?
+            if (returns.size() == 1) {
+                final ThreadReturn ret = returns.get(0);
+                // FIXME: here we assume that proper thread termination implies that ThreadReturn was executed.
+                //  While this should be true, we currently do not make explicit checks for this, so the code
+                //  is a little dangerous.
+                if (ret.hasValue()) {
+                    enc.add(bmgr.implication(
+                            joinExec,
+                            context.equal(
+                                    context.result(join),
+                                    context.encodeExpressionAt(ret.getValue().get(), ret)
+                            )
+                    ));
+                }
             }
         }
 
