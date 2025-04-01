@@ -3,7 +3,6 @@ package com.dat3m.dartagnan.program.processing;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.ExpressionVisitor;
-import com.dat3m.dartagnan.expression.Type;
 import com.dat3m.dartagnan.expression.integers.IntLiteral;
 import com.dat3m.dartagnan.expression.processing.ExprTransformer;
 import com.dat3m.dartagnan.expression.processing.ExpressionInspector;
@@ -29,18 +28,13 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 /*
-    This pass performs "devirtualisation" (replacing indirect/dynamic function calls by direct/static calls).
+    This pass performs "devirtualisation" (replacing indirect/dynamic calls by direct/static calls).
     It does so in the following way:
         - Every non-standard use (i.e., no direct call) of a function expression is registered.
         - All registered functions get an address value assigned.
         - All non-standard uses are replaced by their address values.
         - Every indirect call is replaced by a switch statement over all registered functions that have a matching type.
           Each case of the switch statement contains a direct call to the corresponding function.
-
-     TODO: We also need to devirtualize intrinsic functions that expect function pointers.
-      For now, we only devirtualize pthread_create based on its third parameter.
-      More generally, we could extend IntrinsicInfo to tell for each intrinsic which parameters are function pointers and
-      need devirtualization.
  */
 public class NaiveDevirtualisation implements ProgramProcessor {
 
@@ -117,15 +111,7 @@ public class NaiveDevirtualisation implements ProgramProcessor {
 
     private void applyTransformerToEvent(Event e, ExpressionVisitor<Expression> transformer) {
         if (e instanceof CallEvent call) {
-            if (call.isDirectCall() && call.getDirectCallTarget().getIntrinsicInfo() == Intrinsics.Info.P_THREAD_CREATE) {
-                // We avoid transforming functions passed as call target to pthread_create
-                // However, we still collect the last argument of the call, because it
-                // is the argument passed to the created thread (which might be a pointer to a function).
-                final Expression transformed = call.getArguments().get(call.getArguments().size() - 1).accept(transformer);
-                call.getArguments().set(call.getArguments().size() - 1, transformed);
-            } else {
-                call.getArguments().replaceAll(arg -> arg.accept(transformer));
-            }
+            call.getArguments().replaceAll(arg -> arg.accept(transformer));
         } else if (e instanceof RegReader reader) {
             reader.transformExpressions(transformer);
         }
@@ -187,9 +173,7 @@ public class NaiveDevirtualisation implements ProgramProcessor {
     }
 
     private boolean needsDevirtualization(CallEvent call) {
-        return !call.isDirectCall() ||
-                (call.getDirectCallTarget().getIntrinsicInfo() == Intrinsics.Info.P_THREAD_CREATE
-                && !(call.getArguments().get(2) instanceof Function));
+        return !call.isDirectCall();
     }
 
     private List<Function> getPossibleTargets(CallEvent call, Map<Function, IntLiteral> func2AddressMap) {
@@ -197,12 +181,6 @@ public class NaiveDevirtualisation implements ProgramProcessor {
         if (!call.isDirectCall()) {
             possibleTargets = func2AddressMap.keySet().stream()
                     .filter(f -> f.getFunctionType() == call.getCallType()).collect(Collectors.toList());
-        } else if (call.getDirectCallTarget().getIntrinsicInfo() == Intrinsics.Info.P_THREAD_CREATE) {
-            final TypeFactory types = TypeFactory.getInstance();
-            final Type ptrType = types.getPointerType();
-            final Type threadType = types.getFunctionType(ptrType, List.of(ptrType));
-            possibleTargets = func2AddressMap.keySet().stream()
-                    .filter(f -> f.getFunctionType() == threadType).collect(Collectors.toList());
         } else {
             possibleTargets = List.of();
             throwInternalError(call);
@@ -220,8 +198,6 @@ public class NaiveDevirtualisation implements ProgramProcessor {
     private Expression getFunctionPointer(CallEvent call) {
         if (!call.isDirectCall()) {
             return call.getCallTarget();
-        } else if (call.getDirectCallTarget().getIntrinsicInfo() == Intrinsics.Info.P_THREAD_CREATE) {
-            return call.getArguments().get(2);
         }
         throwInternalError(call);
         return null;
@@ -230,8 +206,6 @@ public class NaiveDevirtualisation implements ProgramProcessor {
     private void setFunctionPointer(CallEvent call, Expression functionPtr) {
         if (!call.isDirectCall()) {
             call.setCallTarget(functionPtr);
-        } else if (call.getDirectCallTarget().getIntrinsicInfo() == Intrinsics.Info.P_THREAD_CREATE) {
-            call.setArgument(2, functionPtr);
         } else {
             throwInternalError(call);
         }

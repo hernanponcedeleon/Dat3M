@@ -14,6 +14,7 @@ import com.dat3m.dartagnan.program.analysis.ExecutionAnalysis;
 import com.dat3m.dartagnan.program.analysis.ReachingDefinitionsAnalysis;
 import com.dat3m.dartagnan.program.event.*;
 import com.dat3m.dartagnan.program.event.core.*;
+import com.dat3m.dartagnan.program.event.core.threading.ThreadJoin;
 import com.dat3m.dartagnan.program.event.core.threading.ThreadStart;
 import com.dat3m.dartagnan.program.memory.Memory;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
@@ -86,12 +87,14 @@ public class ProgramEncoder implements Encoder {
         return context.getBooleanFormulaManager().and(
                 encodeControlBarriers(),
                 encodeNamedControlBarriers(),
+                encodeThreadJoining(),
                 encodeConstants(),
                 encodeMemory(),
                 encodeControlFlow(),
                 encodeFinalRegisterValues(),
                 encodeFilter(),
-                encodeDependencies());
+                encodeDependencies()
+        );
     }
 
     public BooleanFormula encodeConstants() {
@@ -146,6 +149,15 @@ public class ProgramEncoder implements Encoder {
                 context.execution(thread.getExit()), // Also guarantees that we are not stuck in a barrier
                 bmgr.not(threadIsStuckInLoop(thread))
         );
+    }
+
+    private BooleanFormula threadHasTerminatedNormally(Thread thread) {
+        final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
+        final BooleanFormula exception = thread.getEvents(CondJump.class).stream()
+                .filter(jump -> jump.hasTag(Tag.EXCEPTIONAL_TERMINATION))
+                .map(context::jumpTaken)
+                .reduce(bmgr.makeFalse(), bmgr::or);
+        return bmgr.and(threadHasTerminated(thread), bmgr.not(exception));
     }
 
     // NOTE: Stuckness also considers bound events, i.e., insufficiently unrolled loops.
@@ -232,6 +244,24 @@ public class ProgramEncoder implements Encoder {
             // TODO: Maybe add "exec => cf" implications automatically.
             //  We probably never want events that can execute without being in the control-flow.
         }
+        return bmgr.and(enc);
+    }
+
+    private BooleanFormula encodeThreadJoining() {
+        final Program program = context.getTask().getProgram();
+        final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
+
+        List<BooleanFormula> enc = new ArrayList<>();
+        for (ThreadJoin join : program.getThreadEvents(ThreadJoin.class)) {
+            final BooleanFormula joinCf = context.controlFlow(join);
+            final BooleanFormula joinExec = context.execution(join);
+            final BooleanFormula terminated = threadHasTerminatedNormally(join.getJoinThread());
+
+            enc.add(bmgr.implication(joinExec, terminated));
+            enc.add(bmgr.implication(bmgr.and(terminated, joinCf), joinExec));
+            // TODO: Encode retVal.
+        }
+
         return bmgr.and(enc);
     }
 

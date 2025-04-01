@@ -6,6 +6,7 @@ import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.Type;
 import com.dat3m.dartagnan.expression.integers.IntBinaryOp;
 import com.dat3m.dartagnan.expression.integers.IntLiteral;
+import com.dat3m.dartagnan.expression.type.FunctionType;
 import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.program.Function;
@@ -21,6 +22,7 @@ import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.event.core.Local;
 import com.dat3m.dartagnan.program.event.functions.FunctionCall;
 import com.dat3m.dartagnan.program.event.functions.ValueFunctionCall;
+import com.dat3m.dartagnan.program.event.lang.dat3m.DynamicThreadCreate;
 import com.dat3m.dartagnan.program.event.lang.svcomp.BeginAtomic;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.google.common.collect.ImmutableList;
@@ -37,6 +39,7 @@ import java.util.function.BiPredicate;
 import java.util.stream.Collectors;
 
 import static com.dat3m.dartagnan.configuration.OptionNames.REMOVE_ASSERTION_OF_TYPE;
+import static com.dat3m.dartagnan.program.event.EventFactory.*;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 
@@ -65,6 +68,7 @@ public class Intrinsics {
 
     //FIXME This might have concurrency issues if processing multiple programs at the same time.
     private BeginAtomic currentAtomicBegin;
+    private long uniqueId = 0;
 
     private Intrinsics() {
     }
@@ -109,7 +113,7 @@ public class Intrinsics {
 
     public enum Info {
         // --------------------------- pthread threading ---------------------------
-        P_THREAD_CREATE("pthread_create", true, false, true, false, null),
+        P_THREAD_CREATE("pthread_create", true, false, true, true, Intrinsics::inlinePthreadCreate),
         P_THREAD_EXIT("pthread_exit", false, false, false, false, null),
         P_THREAD_JOIN(List.of("pthread_join", "_pthread_join", "__pthread_join"), false, true, false, false, null),
         P_THREAD_BARRIER_WAIT("pthread_barrier_wait", false, false, true, true, Intrinsics::inlineAsZero),
@@ -396,6 +400,32 @@ public class Intrinsics {
         return List.of(EventFactory.Svcomp.newEndAtomic(checkNotNull(currentAtomicBegin)));
     }
 
+    private final static FunctionType PTHREAD_THREAD_TYPE = types.getFunctionType(
+            types.getPointerType(), List.of(types.getPointerType())
+    );
+
+    private List<Event> inlinePthreadCreate(FunctionCall call) {
+        final List<Expression> arguments = call.getArguments();
+        assert arguments.size() == 4;
+        final Expression pidResultAddress = arguments.get(0);
+        //final Expression attributes = arguments.get(1);
+        final Expression targetFunction = arguments.get(2);
+        final Expression argument = arguments.get(3);
+
+        final Register resultRegister = getResultRegister(call);
+        assert resultRegister.getType() instanceof IntegerType;
+
+        final Register tidReg = call.getFunction().getOrNewRegister("__tid#" + (uniqueId++), types.getArchType());
+        final DynamicThreadCreate createEvent = newDynamicThreadCreate(tidReg, PTHREAD_THREAD_TYPE, targetFunction, List.of(argument));
+
+        return eventSequence(
+                createEvent,
+                newStore(pidResultAddress, tidReg),
+                // TODO: Allow to return failure value (!= 0)
+                newLocal(resultRegister, expressions.makeZero((IntegerType) resultRegister.getType()))
+        );
+    }
+
     private List<Event> inlinePthreadEqual(FunctionCall call) {
         final Register resultRegister = getResultRegisterAndCheckArguments(2, call);
         final Expression leftId = call.getArguments().get(0);
@@ -431,7 +461,7 @@ public class Intrinsics {
         if (initial || suffix.equals("destroy")) {
             final Expression flag = expressions.makeValue(initial);
             return List.of(
-                    EventFactory.newStore(attrAddress, flag),
+                    newStore(attrAddress, flag),
                     assignSuccess(errorRegister)
             );
         }
@@ -453,7 +483,7 @@ public class Intrinsics {
         //final Expression attributes = call.getArguments().get(1);
         final Expression initializedState = expressions.makeTrue();
         return List.of(
-                EventFactory.newStore(condAddress, initializedState),
+                newStore(condAddress, initializedState),
                 assignSuccess(errorRegister)
         );
     }
@@ -464,7 +494,7 @@ public class Intrinsics {
         final Expression condAddress = call.getArguments().get(0);
         final Expression finalizedState = expressions.makeFalse();
         return List.of(
-                EventFactory.newStore(condAddress, finalizedState),
+                newStore(condAddress, finalizedState),
                 assignSuccess(errorRegister)
         );
     }
@@ -527,7 +557,7 @@ public class Intrinsics {
         final Expression attrAddress = call.getArguments().get(0);
         checkUnknownIntrinsic(init || destroy, call);
         return List.of(
-                EventFactory.newStore(attrAddress, expressions.makeValue(init)),
+                newStore(attrAddress, expressions.makeValue(init)),
                 assignSuccess(errorRegister)
         );
     }
@@ -546,8 +576,8 @@ public class Intrinsics {
         //TODO call destructor at each thread's normal exit
         return List.of(
                 EventFactory.newAlloc(storageAddressRegister, types.getArchType(), size, true, true),
-                EventFactory.newStore(keyAddress, storageAddressRegister),
-                EventFactory.newStore(expressions.makeAdd(storageAddressRegister, destructorOffset), destructor),
+                newStore(keyAddress, storageAddressRegister),
+                newStore(expressions.makeAdd(storageAddressRegister, destructorOffset), destructor),
                 assignSuccess(errorRegister)
         );
     }
@@ -582,7 +612,7 @@ public class Intrinsics {
         final int threadID = call.getThread().getId();
         final Expression offset = expressions.makeValue(threadID, (IntegerType) key.getType());
         return List.of(
-                EventFactory.newStore(expressions.makeAdd(key, offset), value),
+                newStore(expressions.makeAdd(key, offset), value),
                 assignSuccess(errorRegister)
         );
     }
@@ -669,7 +699,7 @@ public class Intrinsics {
         final Expression lockAddress = call.getArguments().get(0);
         final Expression locked = expressions.makeOne(type);
         final Expression unlocked = expressions.makeZero(type);
-        return EventFactory.eventSequence(
+        return eventSequence(
                 EventFactory.Llvm.newLoad(oldValueRegister, lockAddress, Tag.C11.MO_RELAXED),
                 notToInline.contains(AssertionType.USER) ? null : EventFactory.newAssert(expressions.makeEQ(oldValueRegister, locked), "Unlocking an already unlocked mutex"),
                 EventFactory.Llvm.newStore(lockAddress, unlocked, Tag.C11.MO_RELEASE),
@@ -689,7 +719,7 @@ public class Intrinsics {
         final Expression attrAddress = call.getArguments().get(0);
         if (init || destroy) {
             return List.of(
-                    EventFactory.newStore(attrAddress, expressions.makeValue(init)),
+                    newStore(attrAddress, expressions.makeValue(init)),
                     assignSuccess(errorRegister)
             );
         }
@@ -711,7 +741,7 @@ public class Intrinsics {
         final Expression lockAddress = call.getArguments().get(0);
         //final Expression attributes = call.getArguments().get(1);
         return List.of(
-                EventFactory.newStore(lockAddress, getRwlockUnlockedValue()),
+                newStore(lockAddress, getRwlockUnlockedValue()),
                 assignSuccess(errorRegister)
         );
     }
@@ -868,7 +898,7 @@ public class Intrinsics {
         final Expression attrAddress = call.getArguments().get(0);
         if (init || destroy) {
             return List.of(
-                    EventFactory.newStore(attrAddress, expressions.makeValue(init)),
+                    newStore(attrAddress, expressions.makeValue(init)),
                     assignSuccess(errorRegister)
             );
         }
@@ -1375,7 +1405,7 @@ public class Intrinsics {
 
             replacement.addAll(List.of(
                     EventFactory.newLoad(reg, srcAddr),
-                    EventFactory.newStore(destAddr, reg)
+                    newStore(destAddr, reg)
             ));
         }
         if (call instanceof ValueFunctionCall valueCall) {
@@ -1465,7 +1495,7 @@ public class Intrinsics {
             final Expression destAddr = expressions.makeAdd(dest, offset);
             final Expression zero = expressions.makeZero(types.getArchType());
             replacement.add(
-                EventFactory.newStore(destAddr, zero)
+                newStore(destAddr, zero)
             );
         }
         replacement.addAll(List.of(
@@ -1485,7 +1515,7 @@ public class Intrinsics {
 
             replacement.addAll(List.of(
                     EventFactory.newLoad(reg, srcAddr),
-                    EventFactory.newStore(destAddr, reg)
+                    newStore(destAddr, reg)
             ));
         }
         replacement.addAll(List.of(
@@ -1567,7 +1597,7 @@ public class Intrinsics {
             final Expression offset = expressions.makeValue(i, types.getArchType());
             final Expression destAddr = expressions.makeAdd(dest, offset);
 
-            replacement.add(EventFactory.newStore(destAddr, zero));
+            replacement.add(newStore(destAddr, zero));
         }
         if (call instanceof ValueFunctionCall valueCall) {
             // std.memset returns the destination address, llvm.memset has no return value

@@ -2,8 +2,8 @@ package com.dat3m.dartagnan.program.processing;
 
 import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.exception.MalformedProgramException;
-import com.dat3m.dartagnan.expression.Expression;
-import com.dat3m.dartagnan.expression.ExpressionFactory;
+import com.dat3m.dartagnan.expression.*;
+import com.dat3m.dartagnan.expression.base.LeafExpressionBase;
 import com.dat3m.dartagnan.expression.integers.IntLiteral;
 import com.dat3m.dartagnan.expression.processing.ExprTransformer;
 import com.dat3m.dartagnan.expression.type.FunctionType;
@@ -20,11 +20,13 @@ import com.dat3m.dartagnan.program.event.functions.AbortIf;
 import com.dat3m.dartagnan.program.event.functions.FunctionCall;
 import com.dat3m.dartagnan.program.event.functions.Return;
 import com.dat3m.dartagnan.program.event.functions.ValueFunctionCall;
+import com.dat3m.dartagnan.program.event.lang.dat3m.DynamicThreadCreate;
 import com.dat3m.dartagnan.program.memory.Memory;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.dat3m.dartagnan.program.processing.compilation.Compilation;
 import com.dat3m.dartagnan.program.processing.transformers.MemoryTransformer;
 import com.google.common.base.Preconditions;
+import com.google.common.base.Verify;
 import com.google.common.collect.Lists;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -37,7 +39,6 @@ import java.util.*;
 
 import static com.dat3m.dartagnan.configuration.OptionNames.THREAD_CREATE_ALWAYS_SUCCEEDS;
 import static com.dat3m.dartagnan.program.event.EventFactory.*;
-import static com.dat3m.dartagnan.program.processing.LoopUnrolling.*;
 
 /*
  * LLVM:
@@ -98,93 +99,73 @@ public class ThreadCreation implements ProgramProcessor {
     // =============================================================================================
     // =========================================== LLVM ============================================
     // =============================================================================================
+
     private void createLLVMThreads(Program program) {
+        final List<ThreadData> threadData = createThreads(program);
+        resolvePthreadSelf(program);
+        resolvePthreadJoin(program, threadData);
+        IdReassignment.newInstance().run(program);
+        resolveTidExpressions(program);
+
+        logger.info("Number of threads (including main): {}", program.getThreads().size());
+    }
+
+    private List<ThreadData> createThreads(Program program) {
         final Optional<Function> main = program.getFunctionByName(program.getEntryPoint());
         if (main.isEmpty()) {
-            throw new MalformedProgramException("Program contains no main function");
+            throw new MalformedProgramException("Program contains no entry point function. Missing main method?");
         }
 
         // NOTE: We start from id = 0 which overlaps with existing function ids.
         // However, we reassign ids after thread creation so that functions get higher ids.
-        // TODO: Do we even need ids for functions?
         int nextTid = 0;
 
+        // We collect metadata about each spawned thread. This is later used to resolve pthread_join
+        final List<ThreadData> threadData = new ArrayList<>();
+        final Thread entryPoint = createLLVMThreadFromFunction(main.get(), nextTid++, null, null);
+        threadData.add(new ThreadData(entryPoint, null));
+
         final Queue<Thread> workingQueue = new ArrayDeque<>();
-        workingQueue.add(createLLVMThreadFromFunction(main.get(), nextTid++, null, null));
+        workingQueue.add(entryPoint);
 
         while (!workingQueue.isEmpty()) {
             final Thread thread = workingQueue.remove();
-            program.addThread(thread);
+            for (DynamicThreadCreate create : thread.getEvents(DynamicThreadCreate.class)) {
+                Verify.verify(create.isDirectCall());
+                final Register tidRegister = create.getResultRegister();
+                final Function targetFunction = create.getDirectCallTarget();
+                final List<Expression> arguments = create.getArguments();
 
-            // We collect the communication addresses we use for each thread id.
-            // These are used later to lower pthread_join.
-            final Map<IntLiteral, Expression> tid2ComAddrMap = new LinkedHashMap<>();
-            for (FunctionCall call : thread.getEvents(FunctionCall.class)) {
-                if (!call.isDirectCall()) {
-                    continue;
-                }
-                final List<Expression> arguments = call.getArguments();
-                switch (call.getCalledFunction().getIntrinsicInfo()) {
-                    case P_THREAD_CREATE -> {
-                        assert arguments.size() == 4;
-                        final Expression pidResultAddress = arguments.get(0);
-                        //final Expression attributes = arguments.get(1);
-                        final Function targetFunction = (Function)arguments.get(2);
-                        final Expression argument = arguments.get(3);
+                final ThreadCreate createEvent = newThreadCreate(arguments);
+                final MemoryObject comAddress = program.getMemory().allocate(1);
+                comAddress.setName("__com" + nextTid + "__" + targetFunction.getName());
+                comAddress.setInitialValue(0, expressions.makeFalse());
 
-                        final Register resultRegister = getResultRegister(call);
-                        assert resultRegister.getType() instanceof IntegerType;
+                final Thread spawnedThread = createLLVMThreadFromFunction(targetFunction, nextTid, createEvent, comAddress);
+                createEvent.setSpawnedThread(spawnedThread);
+                workingQueue.add(spawnedThread);
+                threadData.add(new ThreadData(spawnedThread, comAddress));
 
-                        final ThreadCreate createEvent = newThreadCreate(List.of(argument));
-                        final IntLiteral tidExpr = expressions.makeValue(nextTid, archType);
-                        final MemoryObject comAddress = program.getMemory().allocate(1);
-                        comAddress.setName("__com" + nextTid + "__" + targetFunction.getName());
-                        comAddress.setInitialValue(0, expressions.makeZero(archType));
+                final List<Event> replacement = eventSequence(
+                        newReleaseStore(comAddress, expressions.makeTrue()),
+                        createEvent,
+                        newLocal(tidRegister, new TIdExpr(archType, spawnedThread))
+                );
+                IRHelper.replaceWithMetadata(create, replacement);
 
-                        final List<Event> replacement = eventSequence(
-                                newReleaseStore(comAddress, expressions.makeTrue()),
-                                createEvent,
-                                newStore(pidResultAddress, tidExpr),
-                                // TODO: Allow to return failure value (!= 0)
-                                newLocal(resultRegister, expressions.makeZero((IntegerType) resultRegister.getType()))
-                        );
-                        IRHelper.replaceWithMetadata(call, replacement);
-
-                        final Thread spawnedThread = createLLVMThreadFromFunction(targetFunction, nextTid, createEvent, comAddress);
-                        createEvent.setSpawnedThread(spawnedThread);
-                        workingQueue.add(spawnedThread);
-                        tid2ComAddrMap.put(tidExpr, comAddress);
-
-                        nextTid++;
-                    }
-                    case P_THREAD_SELF -> {
-                        final Register resultRegister = getResultRegister(call);
-                        assert resultRegister.getType() instanceof IntegerType;
-                        assert arguments.isEmpty();
-                        final Expression tidExpr = expressions.makeValue(thread.getId(),
-                                (IntegerType) resultRegister.getType());
-                        final Local tidAssignment = newLocal(resultRegister, tidExpr);
-                        IRHelper.replaceWithMetadata(call, tidAssignment);
-                    }
-                }
+                nextTid++;
             }
-
-            // FIXME: This only allows joining with child threads that were created by this thread.
-            handlePthreadJoins(thread, tid2ComAddrMap);
         }
-
-        IdReassignment.newInstance().run(program);
-        logger.info("Number of threads (including main): " + program.getThreads().size());
+        return threadData;
     }
 
     /*
-        This method replaces in <thread> all pthread_join calls by a switch over all possible tids.
-        Each candidate thread gets a switch-case which tries to synchronize with that thread.
+        This method replaces in all pthread_join calls by a switch over all joinable threads.
      */
-    private void handlePthreadJoins(Thread thread, Map<IntLiteral, Expression> tid2ComAddrMap) {
+    private void resolvePthreadJoin(Program program, List<ThreadData> threadData) {
         int joinCounter = 0;
 
-        for (FunctionCall call : thread.getEvents(FunctionCall.class)) {
+        for (FunctionCall call : program.getThreadEvents(FunctionCall.class)) {
             if (!call.isDirectCall()) {
                 continue;
             }
@@ -192,61 +173,48 @@ public class ThreadCreation implements ProgramProcessor {
                 continue;
             }
 
+            final Thread caller = call.getThread();
             final List<Expression> arguments = call.getArguments();
             assert arguments.size() == 2;
             final Expression tidExpr = arguments.get(0);
             // TODO: support return values for threads
             // final Expression returnAddr = arguments.get(1);
 
-            final Register resultRegister = getResultRegister(call);
-            assert resultRegister.getType() instanceof IntegerType;
+            final Register successRegister = getResultRegister(call);
+            assert successRegister.getType() instanceof IntegerType;
+            final Expression successValue = expressions.makeZero((IntegerType) successRegister.getType());
+            // TODO: This does not align with the true error values
+            final Expression errorValue = expressions.makeValue(1, (IntegerType) successRegister.getType());
 
-            // This register will hold the value "false" IFF the join succeeds.
-            final Register joinDummyReg = thread.getOrNewRegister("__joinFail#" + joinCounter, types.getBooleanType());
-            final Label joinEnd = EventFactory.newLabel("__joinEnd#" + joinCounter);
+            final Register retValRegister = caller.getOrNewRegister("__joinRetVal#" + joinCounter, types.getPointerType());
+            final Register syncRegister = caller.getOrNewRegister("__joinSync#" + joinCounter, types.getBooleanType());
 
             // ----- Construct a switch case for each possible tid -----
+            final Label joinEnd = EventFactory.newLabel("__joinEnd#" + joinCounter);
             final Map<Expression, List<Event>> tid2joinCases = new LinkedHashMap<>();
-            for (IntLiteral tidCandidate : tid2ComAddrMap.keySet()) {
-                final int tid = tidCandidate.getValueAsInt();
-                final Expression comAddrOfThreadToJoinWith = tid2ComAddrMap.get(tidCandidate);
+            for (ThreadData data : threadData) {
+                if (!data.isJoinable()) {
+                    continue;
+                }
+                Verify.verify(retValRegister.getType().equals(data.thread.getFunctionType().getReturnType()));
 
+                final int tid = data.thread().getId();
                 if (tidExpr instanceof IntLiteral iConst && iConst.getValueAsInt() != tid) {
                     // Little optimization if we join with a constant address
                     continue;
                 }
 
                 final Label joinCase = EventFactory.newLabel("__joinWithT" + tid + "#" + joinCounter);
-
-                // Construct a spinloop waiting for the joining thread.
-                // FIXME: It serves as a temporary solution by constructing the spinloop as how it should be
-                //        after the unrolling pass so that the processing pipeline does not have to be changed.
-                final Event loopBound = EventFactory.Svcomp.newLoopBound(expressions.makeValue(1, types.getArchType()));
-                final String loopLabelPrefix = "l_waitForT" + tid + "#" + joinCounter;
-                final Label waitingLoopBegin = EventFactory.newLabel(String.format("%s%s%s%s%s", loopLabelPrefix,
-                        LOOP_LABEL_IDENTIFIER, LOOP_INFO_SEPARATOR, LOOP_INFO_ITERATION_SUFFIX, 1));
-                waitingLoopBegin.addTags(Tag.NOOPT);
-                final Label joinFailedMarker = EventFactory.newLabel(loopLabelPrefix + ".failed");
-                final Event terminator = EventFactory.newGoto((Label) thread.getExit());
-                terminator.addTags(Tag.SPINLOOP, Tag.NONTERMINATION);
-                final Label endMarker = EventFactory.newLabel(String.format("%s%s%s%s", loopLabelPrefix,
-                        LOOP_LABEL_IDENTIFIER, LOOP_INFO_SEPARATOR, LOOP_INFO_BOUND_SUFFIX));
-                endMarker.addTags(Tag.NOOPT);
-                final Event boundEvent = newJump(expressions.makeTrue(), (Label) thread.getExit());
-                boundEvent.addTags(Tag.BOUND, Tag.NONTERMINATION, Tag.NOOPT);
-
                 final List<Event> caseBody = eventSequence(
                         joinCase,
-                        loopBound,
-                        waitingLoopBegin,
-                        newAcquireLoad(joinDummyReg, comAddrOfThreadToJoinWith),
-                        newJump(joinDummyReg, joinFailedMarker),
-                        EventFactory.newGoto(joinEnd),
-                        joinFailedMarker,
-                        terminator,
-                        endMarker,
-                        boundEvent
+                        newThreadJoin(retValRegister, data.thread()),
+                        // TODO: store retVal at retAddr (if retAddr != null)
+                        newAcquireLoad(syncRegister, data.comAddress),
+                        newAssume(expressions.makeNot(syncRegister)),
+                        newLocal(successRegister, successValue),
+                        EventFactory.newGoto(joinEnd)
                 );
+                Expression tidCandidate = new TIdExpr((IntegerType) tidExpr.getType(), data.thread());
                 tid2joinCases.put(tidCandidate, caseBody);
             }
 
@@ -257,10 +225,9 @@ public class ThreadCreation implements ProgramProcessor {
                         expressions.makeEQ(tidExpr, tid), (Label)tid2joinCases.get(tid).get(0))
                 );
             }
-            // Add default case for when no tid matches. We make the join just fail here as if it
-            // was waiting for a never-terminating thread.
-            // FIXME: This does not align with the correct pthread_join semantics.
-            switchJumpTable.add(EventFactory.newLocal(joinDummyReg, expressions.makeTrue()));
+            // In the case where no tid matches, we give an error.
+            switchJumpTable.add(EventFactory.newLocal(successRegister, errorValue));
+            switchJumpTable.add(EventFactory.newAssert(expressions.makeFalse(), "pthread_join on invalid thread id."));
             switchJumpTable.add(EventFactory.newGoto(joinEnd));
 
             // ----- Generate actual replacement for the pthread_join call -----
@@ -269,13 +236,26 @@ public class ThreadCreation implements ProgramProcessor {
                     switchJumpTable,
                     tid2joinCases.values(),
                     joinEnd,
-                    newJump(joinDummyReg, (Label)thread.getExit()),
-                    // Note: In our modelling, pthread_join always succeeds if it returns
-                    newLocal(resultRegister, expressions.makeZero((IntegerType) resultRegister.getType())),
                     EventFactory.newFunctionReturnMarker(call.getCalledFunction().getName())
             );
             IRHelper.replaceWithMetadata(call, replacement);
             joinCounter++;
+        }
+    }
+
+    private void resolvePthreadSelf(Program program) {
+        for (FunctionCall call : program.getThreadEvents(FunctionCall.class)) {
+            if (!call.isDirectCall()) {
+                continue;
+            }
+            if (call.getCalledFunction().getIntrinsicInfo() == Intrinsics.Info.P_THREAD_SELF) {
+                final Register resultRegister = getResultRegister(call);
+                assert resultRegister.getType() instanceof IntegerType;
+                assert call.getArguments().isEmpty();
+                final Expression tidExpr = new TIdExpr((IntegerType) resultRegister.getType(), call.getThread());
+                final Local tidAssignment = newLocal(resultRegister, tidExpr);
+                IRHelper.replaceWithMetadata(call, tidAssignment);
+            }
         }
     }
 
@@ -286,6 +266,7 @@ public class ThreadCreation implements ProgramProcessor {
         final Thread thread = new Thread(function.getName(), function.getFunctionType(),
                 Lists.transform(function.getParameterRegisters(), Register::getName), tid, start);
         thread.copyDummyCountFrom(function);
+        function.getProgram().addThread(thread);
 
         // ------------------- Copy function into thread -------------------
         final Map<Register, Register> registerReplacement = IRHelper.copyOverRegisters(function.getRegisters(), thread,
@@ -365,6 +346,22 @@ public class ThreadCreation implements ProgramProcessor {
         };
         thread.getEvents(RegReader.class).forEach(reader -> reader.transformExpressions(transformer));
         // TODO: After creating all thread-local copies, we might want to delete the original variable?
+    }
+
+    private void resolveTidExpressions(Program program) {
+        final ExprTransformer transformer = new ExprTransformer() {
+            final ExpressionFactory expressions = ExpressionFactory.getInstance();
+            @Override
+            public Expression visitLeafExpression(LeafExpression expr) {
+                if (expr instanceof TIdExpr tid) {
+                    return expressions.makeValue(tid.thread.getId(), tid.getType());
+                }
+                return super.visitLeafExpression(expr);
+            }
+        };
+        for (RegReader reader : program.getThreadEvents(RegReader.class)) {
+            reader.transformExpressions(transformer);
+        }
     }
 
     private Register getResultRegister(FunctionCall call) {
@@ -458,5 +455,42 @@ public class ThreadCreation implements ProgramProcessor {
         }
         thread.getEntry().insertAfter(body);
     }
+
+    // ==============================================================================================================
+    // Helper classes
+
+    private record ThreadData(Thread thread, MemoryObject comAddress) {
+        public boolean isDynamic() { return comAddress != null; }
+        // We assume all dynamically created threads are joinable.
+        // This is not true for pthread_join in general
+        public boolean isJoinable() { return isDynamic(); }
+    }
+
+    // We use this class to refer to thread ids before we have (re)assigned proper ids for all threads.
+    // After assigning proper ids, we replace all occurrences of TidExpr with a constant tid.
+    public static class TIdExpr extends LeafExpressionBase<IntegerType> {
+        private final Thread thread;
+
+        public TIdExpr(IntegerType type, Thread thread) {
+            super(type);
+            this.thread = thread;
+        }
+
+        @Override
+        public ExpressionKind getKind() {
+            return () -> "Tid";
+        }
+
+        @Override
+        public String toString() {
+            return String.format("tid(%s#%d)", thread.getName(), thread.getId());
+        }
+
+        @Override
+        public <T> T accept(ExpressionVisitor<T> visitor) {
+            return visitor.visitLeafExpression(this);
+        }
+    }
+
 
 }
