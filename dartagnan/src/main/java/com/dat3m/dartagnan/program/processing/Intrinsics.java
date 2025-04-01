@@ -67,7 +67,6 @@ public class Intrinsics {
 
     //FIXME This might have concurrency issues if processing multiple programs at the same time.
     private BeginAtomic currentAtomicBegin;
-    private long uniqueId = 0;
 
     private Intrinsics() {
     }
@@ -415,7 +414,7 @@ public class Intrinsics {
         final Register resultRegister = getResultRegister(call);
         assert resultRegister.getType() instanceof IntegerType;
 
-        final Register tidReg = call.getFunction().getOrNewRegister("__tid#" + (uniqueId++), types.getArchType());
+        final Register tidReg = call.getFunction().newUniqueRegister("__tid", types.getArchType());
         final DynamicThreadCreate createEvent = newDynamicThreadCreate(tidReg, PTHREAD_THREAD_TYPE, targetFunction, List.of(argument));
 
         return eventSequence(
@@ -437,7 +436,7 @@ public class Intrinsics {
         assert resultRegister.getType() instanceof IntegerType;
 
         final Type joinType = types.getAggregateType(List.of(types.getIntegerType(8), PTHREAD_THREAD_TYPE.getReturnType()));
-        final Register joinReg = call.getFunction().getOrNewRegister("__joinReg", joinType);
+        final Register joinReg = call.getFunction().newUniqueRegister("__joinReg", joinType);
 
         final Expression status = expressions.makeExtract(joinReg, 0);
         final Expression retVal = expressions.makeExtract(joinReg, 1);
@@ -445,16 +444,15 @@ public class Intrinsics {
         final Expression statusSuccess = expressions.makeValue(SUCCESS.ordinal(), (IntegerType) status.getType());
         final Expression statusInvalidTId = expressions.makeValue(INVALID_TID.ordinal(), (IntegerType) status.getType());
 
-
-        final Label onFail;
+        final Label joinEnd;
         final Store storeRetVal;
         final CondJump jump;
         if (hasReturnAddr) {
-            onFail = newLabel("__joinFail");
+            joinEnd = newLabel("__pthread_join_end");
             storeRetVal = newStore(returnAddr, retVal);
-            jump = newJump(expressions.makeNEQ(status, statusSuccess), onFail);
+            jump = newJump(expressions.makeNEQ(status, statusSuccess), joinEnd);
         } else {
-            onFail = null;
+            joinEnd = null;
             storeRetVal = null;
             jump = null;
         }
@@ -466,8 +464,10 @@ public class Intrinsics {
                 newLocal(resultRegister, expressions.makeCast(status, resultRegister.getType())),
                 jump,
                 storeRetVal,
-                onFail,
-                newAssert(expressions.makeNEQ(status, statusInvalidTId), "Invalid thread id in pthread_join.")
+                joinEnd,
+                newAssert(expressions.makeNEQ(status, statusInvalidTId), "Invalid thread id in pthread_join."),
+                // TODO: The following should not be able to happen, but we go save here just in case :)
+                newAssert(expressions.makeEQ(status, statusSuccess), "Unsuccessful pthread_join: reason unknown.")
         );
 
     }

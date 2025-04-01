@@ -181,9 +181,9 @@ public class ThreadCreation implements ProgramProcessor {
             final Expression invalidTidValue = expressions.makeValue(INVALID_TID.ordinal(), statusType);
             final Expression invalidRetType = expressions.makeValue(INVALID_RETURN_TYPE.ordinal(), statusType);
 
-            final Register statusRegister = caller.getOrNewRegister("__joinStatus#" + joinCounter, statusType);
-            final Register retValRegister = caller.getOrNewRegister("__joinRetVal#" + joinCounter, retValType);
-            final Register syncRegister = caller.getOrNewRegister("__joinSync#" + joinCounter, types.getBooleanType());
+            final Register statusRegister = caller.newRegister("__joinStatus#" + joinCounter, statusType);
+            final Register retValRegister = caller.newRegister("__joinRetVal#" + joinCounter, retValType);
+            final Register syncRegister = caller.newRegister("__joinSync#" + joinCounter, types.getBooleanType());
 
             // ----- Construct a switch case for each possible tid -----
             final Label joinEnd = EventFactory.newLabel("__joinEnd#" + joinCounter);
@@ -269,7 +269,7 @@ public class ThreadCreation implements ProgramProcessor {
         start.setMayFailSpuriously(!forceStart);
         final Thread thread = new Thread(function.getName(), function.getFunctionType(),
                 Lists.transform(function.getParameterRegisters(), Register::getName), tid, start);
-        thread.copyDummyCountFrom(function);
+        thread.copyUniqueIdsFrom(function);
         function.getProgram().addThread(thread);
 
         // ------------------- Copy function into thread -------------------
@@ -418,7 +418,7 @@ public class ThreadCreation implements ProgramProcessor {
         ThreadStart start = EventFactory.newThreadStart(null);
         ScopeHierarchy scope = grid.getScoreHierarchy(tid);
         Thread thread = new Thread(name, type, args, tid, start, scope, Set.of());
-        thread.copyDummyCountFrom(function);
+        thread.copyUniqueIdsFrom(function);
         Label returnLabel = EventFactory.newLabel("RETURN_OF_T" + thread.getId());
         Label endLabel = EventFactory.newLabel("END_OF_T" + thread.getId());
         copyThreadEvents(function, thread, transformers, endLabel);
