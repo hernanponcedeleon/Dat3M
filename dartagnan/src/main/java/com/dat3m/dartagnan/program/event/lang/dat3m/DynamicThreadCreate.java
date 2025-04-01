@@ -10,6 +10,11 @@ import com.google.common.base.Preconditions;
 
 import java.util.List;
 
+/*
+    This event dynamically spawns a single thread when executed.
+    - The spawned thread executes the given function with the given set of arguments
+    - Writes the spawned thread's id into the return register.
+ */
 public class DynamicThreadCreate extends CallBase implements RegWriter {
 
     protected Register tidRegister;

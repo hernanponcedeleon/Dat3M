@@ -6,6 +6,7 @@ import com.dat3m.dartagnan.expression.*;
 import com.dat3m.dartagnan.expression.base.LeafExpressionBase;
 import com.dat3m.dartagnan.expression.integers.IntLiteral;
 import com.dat3m.dartagnan.expression.processing.ExprTransformer;
+import com.dat3m.dartagnan.expression.type.AggregateType;
 import com.dat3m.dartagnan.expression.type.FunctionType;
 import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
@@ -21,6 +22,7 @@ import com.dat3m.dartagnan.program.event.functions.FunctionCall;
 import com.dat3m.dartagnan.program.event.functions.Return;
 import com.dat3m.dartagnan.program.event.functions.ValueFunctionCall;
 import com.dat3m.dartagnan.program.event.lang.dat3m.DynamicThreadCreate;
+import com.dat3m.dartagnan.program.event.lang.dat3m.DynamicThreadJoin;
 import com.dat3m.dartagnan.program.memory.Memory;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.dat3m.dartagnan.program.processing.compilation.Compilation;
@@ -39,6 +41,7 @@ import java.util.*;
 
 import static com.dat3m.dartagnan.configuration.OptionNames.THREAD_CREATE_ALWAYS_SUCCEEDS;
 import static com.dat3m.dartagnan.program.event.EventFactory.*;
+import static com.dat3m.dartagnan.program.event.lang.dat3m.DynamicThreadJoin.Status.*;
 
 /*
  * LLVM:
@@ -103,7 +106,7 @@ public class ThreadCreation implements ProgramProcessor {
     private void createLLVMThreads(Program program) {
         final List<ThreadData> threadData = createThreads(program);
         resolvePthreadSelf(program);
-        resolvePthreadJoin(program, threadData);
+        resolveDynamicThreadJoin(program, threadData);
         IdReassignment.newInstance().run(program);
         resolveTidExpressions(program);
 
@@ -160,33 +163,26 @@ public class ThreadCreation implements ProgramProcessor {
     }
 
     /*
-        This method replaces in all pthread_join calls by a switch over all joinable threads.
-     */
-    private void resolvePthreadJoin(Program program, List<ThreadData> threadData) {
+    This method replaces in all pthread_join calls by a switch over all joinable threads.
+ */
+    private void resolveDynamicThreadJoin(Program program, List<ThreadData> threadData) {
         int joinCounter = 0;
 
-        for (FunctionCall call : program.getThreadEvents(FunctionCall.class)) {
-            if (!call.isDirectCall()) {
-                continue;
-            }
-            if (call.getCalledFunction().getIntrinsicInfo() != Intrinsics.Info.P_THREAD_JOIN) {
-                continue;
-            }
-
-            final Thread caller = call.getThread();
-            final List<Expression> arguments = call.getArguments();
-            assert arguments.size() == 2;
-            final Expression tidExpr = arguments.get(0);
+        for (DynamicThreadJoin join : program.getThreadEvents(DynamicThreadJoin.class)) {
+            final Thread caller = join.getThread();
+            final Expression tidExpr = join.getTid();
             // TODO: support return values for threads
-            // final Expression returnAddr = arguments.get(1);
 
-            final Register successRegister = getResultRegister(call);
-            assert successRegister.getType() instanceof IntegerType;
-            final Expression successValue = expressions.makeZero((IntegerType) successRegister.getType());
-            // TODO: This does not align with the true error values
-            final Expression errorValue = expressions.makeValue(1, (IntegerType) successRegister.getType());
+            final Register joinRegister = join.getResultRegister();
+            final IntegerType statusType = (IntegerType) ((AggregateType)joinRegister.getType()).getFields().get(0).type();
+            final Type retValType = ((AggregateType)joinRegister.getType()).getFields().get(1).type();
 
-            final Register retValRegister = caller.getOrNewRegister("__joinRetVal#" + joinCounter, types.getPointerType());
+            final Expression successValue = expressions.makeValue(SUCCESS.ordinal(), statusType);
+            final Expression invalidTidValue = expressions.makeValue(INVALID_TID.ordinal(), statusType);
+            final Expression invalidRetType = expressions.makeValue(INVALID_RETURN_TYPE.ordinal(), statusType);
+
+            final Register statusRegister = caller.getOrNewRegister("__joinStatus#" + joinCounter, statusType);
+            final Register retValRegister = caller.getOrNewRegister("__joinRetVal#" + joinCounter, retValType);
             final Register syncRegister = caller.getOrNewRegister("__joinSync#" + joinCounter, types.getBooleanType());
 
             // ----- Construct a switch case for each possible tid -----
@@ -205,17 +201,27 @@ public class ThreadCreation implements ProgramProcessor {
                 }
 
                 final Label joinCase = EventFactory.newLabel("__joinWithT" + tid + "#" + joinCounter);
-                final List<Event> caseBody = eventSequence(
-                        joinCase,
-                        newThreadJoin(retValRegister, data.thread()),
-                        // TODO: store retVal at retAddr (if retAddr != null)
-                        newAcquireLoad(syncRegister, data.comAddress),
-                        newAssume(expressions.makeNot(syncRegister)),
-                        newLocal(successRegister, successValue),
-                        EventFactory.newGoto(joinEnd)
-                );
-                Expression tidCandidate = new TIdExpr((IntegerType) tidExpr.getType(), data.thread());
-                tid2joinCases.put(tidCandidate, caseBody);
+                final List<Event> caseBody;
+                if (data.thread().getFunctionType().getReturnType().equals(retValType)) {
+                    // Successful join
+                    caseBody = eventSequence(
+                            joinCase,
+                            newThreadJoin(retValRegister, data.thread()),
+                            // TODO: store retVal at retAddr (if retAddr != null)
+                            newAcquireLoad(syncRegister, data.comAddress),
+                            newAssume(expressions.makeNot(syncRegister)),
+                            newLocal(statusRegister, successValue),
+                            EventFactory.newGoto(joinEnd)
+                    );
+                } else {
+                    // Wrong return type
+                    caseBody = eventSequence(
+                            joinCase,
+                            newLocal(statusRegister, invalidRetType),
+                            EventFactory.newGoto(joinEnd)
+                    );
+                }
+                tid2joinCases.put(new TIdExpr((IntegerType) tidExpr.getType(), data.thread()), caseBody);
             }
 
             // ----- Construct the actual switch (a simple jump table) -----
@@ -225,20 +231,18 @@ public class ThreadCreation implements ProgramProcessor {
                         expressions.makeEQ(tidExpr, tid), (Label)tid2joinCases.get(tid).get(0))
                 );
             }
-            // In the case where no tid matches, we give an error.
-            switchJumpTable.add(EventFactory.newLocal(successRegister, errorValue));
-            switchJumpTable.add(EventFactory.newAssert(expressions.makeFalse(), "pthread_join on invalid thread id."));
+            // In the case where no tid matches, we return an error status.
+            switchJumpTable.add(EventFactory.newLocal(statusRegister, invalidTidValue));
             switchJumpTable.add(EventFactory.newGoto(joinEnd));
 
-            // ----- Generate actual replacement for the pthread_join call -----
+            // ----- Generate actual replacement for the DynamicJoinEvent -----
             final List<Event> replacement = eventSequence(
-                    EventFactory.newFunctionCallMarker(call.getCalledFunction().getName()),
                     switchJumpTable,
                     tid2joinCases.values(),
                     joinEnd,
-                    EventFactory.newFunctionReturnMarker(call.getCalledFunction().getName())
+                    newLocal(joinRegister, expressions.makeConstruct(joinRegister.getType(), List.of(statusRegister, retValRegister)))
             );
-            IRHelper.replaceWithMetadata(call, replacement);
+            IRHelper.replaceWithMetadata(join, replacement);
             joinCounter++;
         }
     }
@@ -462,7 +466,7 @@ public class ThreadCreation implements ProgramProcessor {
     private record ThreadData(Thread thread, MemoryObject comAddress) {
         public boolean isDynamic() { return comAddress != null; }
         // We assume all dynamically created threads are joinable.
-        // This is not true for pthread_join in general
+        // This is not true for pthread_join in general.
         public boolean isJoinable() { return isDynamic(); }
     }
 

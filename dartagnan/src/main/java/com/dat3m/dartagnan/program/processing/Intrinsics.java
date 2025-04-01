@@ -16,10 +16,7 @@ import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.Tag;
-import com.dat3m.dartagnan.program.event.core.CondJump;
-import com.dat3m.dartagnan.program.event.core.ExecutionStatus;
-import com.dat3m.dartagnan.program.event.core.Label;
-import com.dat3m.dartagnan.program.event.core.Local;
+import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.event.functions.FunctionCall;
 import com.dat3m.dartagnan.program.event.functions.ValueFunctionCall;
 import com.dat3m.dartagnan.program.event.lang.dat3m.DynamicThreadCreate;
@@ -40,6 +37,8 @@ import java.util.stream.Collectors;
 
 import static com.dat3m.dartagnan.configuration.OptionNames.REMOVE_ASSERTION_OF_TYPE;
 import static com.dat3m.dartagnan.program.event.EventFactory.*;
+import static com.dat3m.dartagnan.program.event.lang.dat3m.DynamicThreadJoin.Status.INVALID_TID;
+import static com.dat3m.dartagnan.program.event.lang.dat3m.DynamicThreadJoin.Status.SUCCESS;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 
@@ -115,7 +114,7 @@ public class Intrinsics {
         // --------------------------- pthread threading ---------------------------
         P_THREAD_CREATE("pthread_create", true, false, true, true, Intrinsics::inlinePthreadCreate),
         P_THREAD_EXIT("pthread_exit", false, false, false, false, null),
-        P_THREAD_JOIN(List.of("pthread_join", "_pthread_join", "__pthread_join"), false, true, false, false, null),
+        P_THREAD_JOIN(List.of("pthread_join", "_pthread_join", "__pthread_join"), false, true, false, true, Intrinsics::inlinePthreadJoin),
         P_THREAD_BARRIER_WAIT("pthread_barrier_wait", false, false, true, true, Intrinsics::inlineAsZero),
         P_THREAD_SELF(List.of("pthread_self", "__VERIFIER_tid"), false, false, true, false, null),
         P_THREAD_EQUAL("pthread_equal", false, false, true, false, Intrinsics::inlinePthreadEqual),
@@ -290,6 +289,7 @@ public class Intrinsics {
         }
     }
 
+
     @FunctionalInterface
     private interface Replacer {
         List<Event> replace(Intrinsics self, FunctionCall call);
@@ -425,6 +425,53 @@ public class Intrinsics {
                 newLocal(resultRegister, expressions.makeZero((IntegerType) resultRegister.getType()))
         );
     }
+
+    private List<Event> inlinePthreadJoin(FunctionCall call) {
+        final List<Expression> arguments = call.getArguments();
+        assert arguments.size() == 2;
+        final Expression tidExpr = arguments.get(0);
+        final Expression returnAddr = arguments.get(1);
+        final boolean hasReturnAddr = !(returnAddr instanceof IntLiteral lit && lit.isZero());
+
+        final Register resultRegister = getResultRegister(call);
+        assert resultRegister.getType() instanceof IntegerType;
+
+        final Type joinType = types.getAggregateType(List.of(types.getIntegerType(8), PTHREAD_THREAD_TYPE.getReturnType()));
+        final Register joinReg = call.getFunction().getOrNewRegister("__joinReg", joinType);
+
+        final Expression status = expressions.makeExtract(joinReg, 0);
+        final Expression retVal = expressions.makeExtract(joinReg, 1);
+
+        final Expression statusSuccess = expressions.makeValue(SUCCESS.ordinal(), (IntegerType) status.getType());
+        final Expression statusInvalidTId = expressions.makeValue(INVALID_TID.ordinal(), (IntegerType) status.getType());
+
+
+        final Label onFail;
+        final Store storeRetVal;
+        final CondJump jump;
+        if (hasReturnAddr) {
+            onFail = newLabel("__joinFail");
+            storeRetVal = newStore(returnAddr, retVal);
+            jump = newJump(expressions.makeNEQ(status, statusSuccess), onFail);
+        } else {
+            onFail = null;
+            storeRetVal = null;
+            jump = null;
+        }
+
+        return eventSequence(
+                newDynamicThreadJoin(joinReg, tidExpr),
+                // TODO: We use our internal error codes which do not match with pthread's error codes,
+                //  except for the success case (error code == 0).
+                newLocal(resultRegister, expressions.makeCast(status, resultRegister.getType())),
+                jump,
+                storeRetVal,
+                onFail,
+                newAssert(expressions.makeNEQ(status, statusInvalidTId), "Invalid thread id in pthread_join.")
+        );
+
+    }
+
 
     private List<Event> inlinePthreadEqual(FunctionCall call) {
         final Register resultRegister = getResultRegisterAndCheckArguments(2, call);
