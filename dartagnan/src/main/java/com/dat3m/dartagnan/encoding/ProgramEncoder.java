@@ -15,11 +15,13 @@ import com.dat3m.dartagnan.program.analysis.ReachingDefinitionsAnalysis;
 import com.dat3m.dartagnan.program.event.*;
 import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.event.core.threading.ThreadJoin;
+import com.dat3m.dartagnan.program.event.core.threading.ThreadReturn;
 import com.dat3m.dartagnan.program.event.core.threading.ThreadStart;
 import com.dat3m.dartagnan.program.memory.Memory;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.dat3m.dartagnan.program.misc.NonDetValue;
 import com.google.common.base.Preconditions;
+import com.google.common.base.Verify;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import org.apache.logging.log4j.LogManager;
@@ -259,7 +261,22 @@ public class ProgramEncoder implements Encoder {
 
             enc.add(bmgr.implication(joinExec, terminated));
             enc.add(bmgr.implication(bmgr.and(terminated, joinCf), joinExec));
-            // TODO: Encode retVal.
+
+            final List<ThreadReturn> returns = join.getJoinThread().getEvents(ThreadReturn.class);
+            Verify.verify(returns.size() == 1, "Unexpected number of ThreadReturn events.");
+            final ThreadReturn ret = returns.get(0);
+            // FIXME: here we assume that proper thread termination implies that ThreadReturn was executed.
+            //  While this should be true, we currently do not make explicit checks for this, so the code
+            //  is a little dangerous.
+            if (ret.hasValue()) {
+                enc.add(bmgr.implication(
+                        joinExec,
+                        context.equal(
+                                context.result(join),
+                                context.encodeExpressionAt(ret.getValue().get(), ret)
+                        )
+                ));
+            }
         }
 
         return bmgr.and(enc);

@@ -83,6 +83,8 @@ public class MiscellaneousTest extends AbstractCTest {
                 {"thread_local", IMM, PASS, 1},
                 {"thread_loop", IMM, FAIL, 1},
                 {"thread_id", IMM, PASS, 1},
+                {"thread_return_val", IMM, PASS, 1},
+                {"thread_invalid_join", IMM, FAIL, 1},
                 {"funcPtrInStaticMemory", IMM, PASS, 1},
                 {"verifierAssert", ARM8, FAIL, 1},
                 {"uninitRead", IMM, FAIL, 1},

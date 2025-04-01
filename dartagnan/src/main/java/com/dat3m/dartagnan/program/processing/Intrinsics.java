@@ -112,8 +112,8 @@ public class Intrinsics {
     public enum Info {
         // --------------------------- pthread threading ---------------------------
         P_THREAD_CREATE("pthread_create", true, false, true, true, Intrinsics::inlinePthreadCreate),
-        P_THREAD_EXIT("pthread_exit", false, false, false, false, null),
-        P_THREAD_JOIN(List.of("pthread_join", "_pthread_join", "__pthread_join"), false, true, false, true, Intrinsics::inlinePthreadJoin),
+        P_THREAD_EXIT("pthread_exit", false, false, true, true, Intrinsics::inlinePthreadExit),
+        P_THREAD_JOIN(List.of("pthread_join", "_pthread_join", "__pthread_join"), true, true, false, true, Intrinsics::inlinePthreadJoin),
         P_THREAD_BARRIER_WAIT("pthread_barrier_wait", false, false, true, true, Intrinsics::inlineAsZero),
         P_THREAD_SELF(List.of("pthread_self", "__VERIFIER_tid"), false, false, true, false, null),
         P_THREAD_EQUAL("pthread_equal", false, false, true, false, Intrinsics::inlinePthreadEqual),
@@ -465,11 +465,15 @@ public class Intrinsics {
                 jump,
                 storeRetVal,
                 joinEnd,
-                newAssert(expressions.makeNEQ(status, statusInvalidTId), "Invalid thread id in pthread_join."),
-                // TODO: The following should not be able to happen, but we go save here just in case :)
-                newAssert(expressions.makeEQ(status, statusSuccess), "Unsuccessful pthread_join: reason unknown.")
+                newAssert(expressions.makeNEQ(status, statusInvalidTId), "Invalid thread id in pthread_join.")
         );
+    }
 
+    private List<Event> inlinePthreadExit(FunctionCall call) {
+        final List<Expression> arguments = call.getArguments();
+        assert arguments.size() == 1 && arguments.get(0).getType().equals(PTHREAD_THREAD_TYPE.getReturnType());
+
+        return List.of(newThreadReturn(arguments.get(0)));
     }
 
 

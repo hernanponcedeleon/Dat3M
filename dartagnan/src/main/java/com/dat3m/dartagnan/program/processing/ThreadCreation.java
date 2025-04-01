@@ -16,6 +16,7 @@ import com.dat3m.dartagnan.program.event.*;
 import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.event.core.Local;
 import com.dat3m.dartagnan.program.event.core.threading.ThreadCreate;
+import com.dat3m.dartagnan.program.event.core.threading.ThreadReturn;
 import com.dat3m.dartagnan.program.event.core.threading.ThreadStart;
 import com.dat3m.dartagnan.program.event.functions.AbortIf;
 import com.dat3m.dartagnan.program.event.functions.FunctionCall;
@@ -123,7 +124,7 @@ public class ThreadCreation implements ProgramProcessor {
         // However, we reassign ids after thread creation so that functions get higher ids.
         int nextTid = 0;
 
-        // We collect metadata about each spawned thread. This is later used to resolve pthread_join
+        // We collect metadata about each spawned thread. This is later used to resolve thread joining.
         final List<ThreadData> threadData = new ArrayList<>();
         final Thread entryPoint = createLLVMThreadFromFunction(main.get(), nextTid++, null, null);
         threadData.add(new ThreadData(entryPoint, null));
@@ -163,8 +164,9 @@ public class ThreadCreation implements ProgramProcessor {
     }
 
     /*
-    This method replaces in all pthread_join calls by a switch over all joinable threads.
- */
+        This method replaces in all DynamicThreadJoin events by a switch over all joinable threads.
+        Each switch case contains a static ThreadJoin event.
+    */
     private void resolveDynamicThreadJoin(Program program, List<ThreadData> threadData) {
         int joinCounter = 0;
 
@@ -189,7 +191,9 @@ public class ThreadCreation implements ProgramProcessor {
             final Label joinEnd = EventFactory.newLabel("__joinEnd#" + joinCounter);
             final Map<Expression, List<Event>> tid2joinCases = new LinkedHashMap<>();
             for (ThreadData data : threadData) {
-                if (!data.isJoinable()) {
+                if (!data.isJoinable() || data.thread() == caller) {
+                    // NOTE: We treat self-joins as an invalid tid id error (~ in alignment with pthread_join semantics)
+                    // We could alternatively make this a non-termination case
                     continue;
                 }
                 Verify.verify(retValRegister.getType().equals(data.thread.getFunctionType().getReturnType()));
@@ -202,22 +206,21 @@ public class ThreadCreation implements ProgramProcessor {
 
                 final Label joinCase = EventFactory.newLabel("__joinWithT" + tid + "#" + joinCounter);
                 final List<Event> caseBody;
-                if (data.thread().getFunctionType().getReturnType().equals(retValType)) {
-                    // Successful join
-                    caseBody = eventSequence(
-                            joinCase,
-                            newThreadJoin(retValRegister, data.thread()),
-                            // TODO: store retVal at retAddr (if retAddr != null)
-                            newAcquireLoad(syncRegister, data.comAddress),
-                            newAssume(expressions.makeNot(syncRegister)),
-                            newLocal(statusRegister, successValue),
-                            EventFactory.newGoto(joinEnd)
-                    );
-                } else {
+                if (!data.thread().getFunctionType().getReturnType().equals(retValType)) {
                     // Wrong return type
                     caseBody = eventSequence(
                             joinCase,
                             newLocal(statusRegister, invalidRetType),
+                            EventFactory.newGoto(joinEnd)
+                    );
+                } else {
+                    // Successful join
+                    caseBody = eventSequence(
+                            joinCase,
+                            newThreadJoin(retValRegister, data.thread()),
+                            newAcquireLoad(syncRegister, data.comAddress),
+                            newAssume(expressions.makeNot(syncRegister)),
+                            newLocal(statusRegister, successValue),
                             EventFactory.newGoto(joinEnd)
                     );
                 }
@@ -282,23 +285,21 @@ public class ThreadCreation implements ProgramProcessor {
         replaceGlobalsByThreadLocals(function.getProgram().getMemory(), thread);
 
         // ------------------- Add end & return label -------------------
-        final Label threadReturnLabel = EventFactory.newLabel("RETURN_OF_T" + tid);
-        final Label threadEnd = EventFactory.newLabel("END_OF_T" + tid);
-        thread.append(threadReturnLabel);
-        thread.append(threadEnd);
-
-        // ------------------- Replace AbortIf, Return, and pthread_exit -------------------
         final Register returnRegister = function.hasReturnValue() ?
                 thread.newRegister("__retval", function.getFunctionType().getReturnType()) : null;
+        final Label threadReturnLabel = EventFactory.newLabel("RETURN_OF_T" + tid);
+        final Label threadEnd = EventFactory.newLabel("END_OF_T" + tid);
+
+        // ------------------- Replace AbortIf, (Thread)Return, and pthread_exit -------------------
         for (Event e : thread.getEvents()) {
             if (e instanceof AbortIf abort) {
                 final Event jumpToEnd = EventFactory.newJump(abort.getCondition(), threadEnd);
                 jumpToEnd.addTags(abort.getTags());
                 IRHelper.replaceWithMetadata(abort, jumpToEnd);
-            } else if (e instanceof Return || (e instanceof FunctionCall call
-                    && call.isDirectCall() && call.getCalledFunction().getName().equals("pthread_exit"))) {
+            } else if (e instanceof Return || e instanceof ThreadReturn) {
+                // NOTE: We also replace ThreadReturn but generate a single new one (normalization) afterward.
                 final Expression retVal = (e instanceof Return ret) ? ret.getValue().orElse(null)
-                        : ((FunctionCall)e).getArguments().get(0);
+                        : ((ThreadReturn)e).getValue().orElse(null);
                 final List<Event> replacement = eventSequence(
                         returnRegister != null ? EventFactory.newLocal(returnRegister, retVal) : null,
                         EventFactory.newGoto(threadReturnLabel)
@@ -306,6 +307,13 @@ public class ThreadCreation implements ProgramProcessor {
                 IRHelper.replaceWithMetadata(e, replacement);
             }
         }
+
+        final Event threadReturn = EventFactory.newThreadReturn(returnRegister);
+        thread.append(List.of(
+                threadReturnLabel,
+                threadReturn,
+                threadEnd
+        ));
 
         // ------------------- Add Sync, End, and Argument events if this thread was spawned -------------------
         if (creator != null) {
