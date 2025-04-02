@@ -10,7 +10,6 @@ import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.analysis.LiveRegistersAnalysis;
 import com.dat3m.dartagnan.program.analysis.LoopAnalysis;
 import com.dat3m.dartagnan.program.event.*;
-import com.dat3m.dartagnan.program.event.functions.FunctionCall;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
@@ -96,10 +95,10 @@ public class DynamicSpinLoopDetection implements ProgramProcessor {
             if (cur instanceof RegWriter writer) {
                 writtenRegisters.add(writer.getResultRegister());
             }
-            if (cur.hasTag(Tag.WRITE) || (cur instanceof FunctionCall call &&
+            if (cur.hasTag(Tag.WRITE) || (cur instanceof CallEvent call &&
                     (!call.isDirectCall()
-                            || !call.getCalledFunction().isIntrinsic()
-                            || call.getCalledFunction().getIntrinsicInfo().writesMemory()))) {
+                            || !call.getDirectCallTarget().isIntrinsic()
+                            || call.getDirectCallTarget().getIntrinsicInfo().writesMemory()))) {
                 // We assume side effects for all writes, writing intrinsics, and non-intrinsic function calls.
                 loop.globalSideEffects.add(cur);
             }

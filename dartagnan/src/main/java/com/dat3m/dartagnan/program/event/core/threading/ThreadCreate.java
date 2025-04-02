@@ -5,7 +5,6 @@ import com.dat3m.dartagnan.expression.ExpressionVisitor;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.AbstractEvent;
-import com.dat3m.dartagnan.program.event.EventVisitor;
 import com.dat3m.dartagnan.program.event.RegReader;
 
 import java.util.ArrayList;
@@ -42,12 +41,6 @@ public class ThreadCreate extends AbstractEvent implements RegReader {
     @Override
     public ThreadCreate getCopy() {
         return new ThreadCreate(this);
-    }
-
-    @Override
-    public <T> T accept(EventVisitor<T> visitor) {
-        // TODO
-        return visitor.visitEvent(this);
     }
 
     @Override

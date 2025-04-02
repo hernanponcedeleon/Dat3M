@@ -12,6 +12,7 @@ import com.dat3m.dartagnan.program.event.core.CondJump;
 import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.event.lang.llvm.LlvmCmpXchg;
 import com.dat3m.dartagnan.program.processing.Intrinsics;
+import com.dat3m.dartagnan.utils.UniqueIdGenerator;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
@@ -33,7 +34,7 @@ public class Function implements LeafExpression {
 
     protected Program program;
     protected Map<String, Register> registers = new HashMap<>();
-    protected int dummyCount = 0;
+    protected final UniqueIdGenerator uniqueId = UniqueIdGenerator.fresh();
 
     public Function(String name, FunctionType type, List<String> parameterNames, int id, Event entry) {
         Preconditions.checkArgument(type.getParameterTypes().size() == parameterNames.size());
@@ -120,7 +121,11 @@ public class Function implements LeafExpression {
     }
 
     public Register newRegister(Type type) {
-        return newRegister("DUMMY_REG_" + dummyCount++, type);
+        return newUniqueRegister("DUMMY_REG", type);
+    }
+
+    public Register newUniqueRegister(String baseName, Type type) {
+        return newRegister(uniqueId.getUniqueName(baseName), type);
     }
 
     public Register newRegister(String name, Type type) {
@@ -240,7 +245,7 @@ public class Function implements LeafExpression {
     }
 
     // TODO: Ugly function, but we need it for now to create copies of functions.
-    public void copyDummyCountFrom(Function func) {
-        this.dummyCount = func.dummyCount;
+    public void copyUniqueIdsFrom(Function func) {
+        this.uniqueId.max(func.uniqueId);
     }
 }

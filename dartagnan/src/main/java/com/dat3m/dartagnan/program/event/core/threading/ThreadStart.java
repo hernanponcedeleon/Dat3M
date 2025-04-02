@@ -3,7 +3,6 @@ package com.dat3m.dartagnan.program.event.core.threading;
 import com.dat3m.dartagnan.program.event.AbstractEvent;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.EventUser;
-import com.dat3m.dartagnan.program.event.EventVisitor;
 
 import java.util.Map;
 import java.util.Set;
@@ -51,12 +50,6 @@ public class ThreadStart extends AbstractEvent implements EventUser {
     @Override
     public ThreadStart getCopy() {
         return new ThreadStart(this);
-    }
-
-    @Override
-    public <T> T accept(EventVisitor<T> visitor) {
-        // TODO
-        return visitor.visitEvent(this);
     }
 
     @Override

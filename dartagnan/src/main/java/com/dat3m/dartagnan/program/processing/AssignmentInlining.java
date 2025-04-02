@@ -1,6 +1,7 @@
 package com.dat3m.dartagnan.program.processing;
 
 import com.dat3m.dartagnan.expression.Expression;
+import com.dat3m.dartagnan.expression.aggregates.ConstructExpr;
 import com.dat3m.dartagnan.expression.processing.ExprTransformer;
 import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.Register;
@@ -19,8 +20,12 @@ import java.util.Map;
           RegReader(r);      =====>       RegReader(someExpr); // uses "someExpr" directly
 
     The inlined assignments are dead and can be eliminated by dead assignment eliminations.
-    To avoid duplication of "someExpr", the pass only inlines assignments if the assigned register is used only once.
+    To avoid duplication of "someExpr", the pass only inlines assignments if the assigned register is used only once
+    or it leads to simplifications(*).
     To achieve this, the pass scans the code twice: once to collect usage statistics and once to perform the inlining.
+
+    (*) Currently, we aggressively inline ConstructExprs because they are likely to get combined with an ExtractExpr
+        and then removed by SCCP.
  */
 public class AssignmentInlining implements FunctionProcessor {
 
@@ -70,11 +75,13 @@ public class AssignmentInlining implements FunctionProcessor {
                     usageCounter.compute(lastAssignment, (k, v) -> v == null ? 1 : v + 1);
                     return reg;
                 } else if (
-                        // The default case is awkward, but it can happen for locals of the form "r = f(r)"
+                        // A usage counter may be missing for assignments of the form "r = f(r)"
                         // which do not allow for substituting r for f(r) in later usages.
-                        usageCounter.getOrDefault(lastAssignment, 0) == 1
+                        usageCounter.containsKey(lastAssignment)
                         && preDominatorTree.isDominatedBy(curEvent, lastAssignment)
                         && !curEvent.hasTag(Tag.NOOPT)
+                        // Inline if the expression is only used once or if it leads to simplifications.
+                        && (usageCounter.get(lastAssignment) == 1 || allowsSimplification(curEvent, reg, lastAssignment.getExpr()))
                 ) {
                     assert mode == Mode.REPLACE;
                     return lastAssignment.getExpr();
@@ -83,6 +90,10 @@ public class AssignmentInlining implements FunctionProcessor {
                 return reg;
             }
         };
+
+        private boolean allowsSimplification(Event curEvent, Register replacedReg, Expression inlineValue) {
+            return inlineValue instanceof ConstructExpr;
+        }
 
         private Processor(Function function) {
             preDominatorTree = DominatorAnalysis.computePreDominatorTree(function.getEntry(), function.getExit());
