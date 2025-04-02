@@ -25,6 +25,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 /*
     This pass performs "devirtualisation" (replacing indirect/dynamic calls by direct/static calls).
@@ -177,7 +178,7 @@ public class NaiveDevirtualisation implements ProgramProcessor {
         Preconditions.checkArgument(needsDevirtualization(call));
         return func2AddressMap.keySet().stream()
                 .filter(f -> f.getFunctionType() == call.getCallType())
-                .toList();
+                .collect(Collectors.toCollection(ArrayList::new));
     }
 
     private CallEvent devirtualiseCall(CallEvent virtCall, Function devirtCallTarget) {

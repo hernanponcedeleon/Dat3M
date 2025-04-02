@@ -125,13 +125,11 @@ public class ThreadCreation implements ProgramProcessor {
         int nextTid = 0;
 
         // We collect metadata about each spawned thread. This is later used to resolve thread joining.
-        final List<ThreadData> threadData = new ArrayList<>();
+        final List<ThreadData> allThreads = new ArrayList<>();
         final ThreadData entryPoint = createLLVMThreadFromFunction(main.get(), nextTid++, null);
-        threadData.add(entryPoint);
+        allThreads.add(entryPoint);
 
-        final Queue<ThreadData> workingQueue = new ArrayDeque<>();
-        workingQueue.add(entryPoint);
-
+        final Queue<ThreadData> workingQueue = new ArrayDeque<>(allThreads);
         while (!workingQueue.isEmpty()) {
             final Thread thread = workingQueue.remove().thread();
             for (DynamicThreadCreate create : thread.getEvents(DynamicThreadCreate.class)) {
@@ -141,9 +139,10 @@ public class ThreadCreation implements ProgramProcessor {
                 final List<Expression> arguments = create.getArguments();
 
                 final ThreadCreate createEvent = newThreadCreate(arguments);
-
                 final ThreadData spawnedThread = createLLVMThreadFromFunction(targetFunction, nextTid, createEvent);
+                assert spawnedThread.isDynamic();
                 workingQueue.add(spawnedThread);
+                allThreads.add(spawnedThread);
 
                 final List<Event> replacement = eventSequence(
                         newReleaseStore(spawnedThread.comAddress(), expressions.makeTrue()),
@@ -155,7 +154,7 @@ public class ThreadCreation implements ProgramProcessor {
                 nextTid++;
             }
         }
-        return threadData;
+        return allThreads;
     }
 
     /*
@@ -319,7 +318,7 @@ public class ThreadCreation implements ProgramProcessor {
 
             // We use accesses to a common memory object to synchronize creator and thread.
             final MemoryObject comAddress = function.getProgram().getMemory().allocate(1);
-            comAddress.setName("__com" + tid + "__" + function.getName());
+            comAddress.setName("__com_" + function.getName() + "#" + tid);
             comAddress.setInitialValue(0, expressions.makeFalse());
 
             // Sync
