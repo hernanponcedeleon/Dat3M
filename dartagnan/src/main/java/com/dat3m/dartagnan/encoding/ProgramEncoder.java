@@ -270,8 +270,10 @@ public class ProgramEncoder implements Encoder {
             if (returns.size() == 1) {
                 final ThreadReturn ret = returns.get(0);
                 // FIXME: here we assume that proper thread termination implies that ThreadReturn was executed.
-                //  While this should be true, we currently do not make explicit checks for this, so the code
+                //  While this should be true, we currently do not explicitly checks for this, so the code
                 //  is a little dangerous.
+                //  It would probably good to give each thread a single ThreadReturn event that is executed
+                //   IFF the thread terminates properly.
                 if (ret.hasValue()) {
                     enc.add(bmgr.implication(
                             joinExec,

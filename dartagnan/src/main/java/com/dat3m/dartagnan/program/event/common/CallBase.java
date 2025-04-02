@@ -68,7 +68,7 @@ public abstract class CallBase extends AbstractEvent implements CallEvent {
     @Override
     public Set<Register.Read> getRegisterReads() {
         final Set<Register.Read> regReads = new HashSet<>();
-        Register.collectRegisterReads(callTarget, UsageType.ADDR, regReads);
+        Register.collectRegisterReads(callTarget, UsageType.CTRL, regReads);
         Register.collectRegisterReads(arguments, UsageType.DATA, regReads);
         return regReads;
     }

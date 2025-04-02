@@ -126,14 +126,14 @@ public class ThreadCreation implements ProgramProcessor {
 
         // We collect metadata about each spawned thread. This is later used to resolve thread joining.
         final List<ThreadData> threadData = new ArrayList<>();
-        final Thread entryPoint = createLLVMThreadFromFunction(main.get(), nextTid++, null, null);
-        threadData.add(new ThreadData(entryPoint, null));
+        final ThreadData entryPoint = createLLVMThreadFromFunction(main.get(), nextTid++, null);
+        threadData.add(entryPoint);
 
-        final Queue<Thread> workingQueue = new ArrayDeque<>();
+        final Queue<ThreadData> workingQueue = new ArrayDeque<>();
         workingQueue.add(entryPoint);
 
         while (!workingQueue.isEmpty()) {
-            final Thread thread = workingQueue.remove();
+            final Thread thread = workingQueue.remove().thread();
             for (DynamicThreadCreate create : thread.getEvents(DynamicThreadCreate.class)) {
                 Verify.verify(create.isDirectCall());
                 final Register tidRegister = create.getResultRegister();
@@ -141,19 +141,14 @@ public class ThreadCreation implements ProgramProcessor {
                 final List<Expression> arguments = create.getArguments();
 
                 final ThreadCreate createEvent = newThreadCreate(arguments);
-                final MemoryObject comAddress = program.getMemory().allocate(1);
-                comAddress.setName("__com" + nextTid + "__" + targetFunction.getName());
-                comAddress.setInitialValue(0, expressions.makeFalse());
 
-                final Thread spawnedThread = createLLVMThreadFromFunction(targetFunction, nextTid, createEvent, comAddress);
-                createEvent.setSpawnedThread(spawnedThread);
+                final ThreadData spawnedThread = createLLVMThreadFromFunction(targetFunction, nextTid, createEvent);
                 workingQueue.add(spawnedThread);
-                threadData.add(new ThreadData(spawnedThread, comAddress));
 
                 final List<Event> replacement = eventSequence(
-                        newReleaseStore(comAddress, expressions.makeTrue()),
+                        newReleaseStore(spawnedThread.comAddress(), expressions.makeTrue()),
                         createEvent,
-                        newLocal(tidRegister, new TIdExpr(archType, spawnedThread))
+                        newLocal(tidRegister, new TIdExpr(archType, spawnedThread.thread()))
                 );
                 IRHelper.replaceWithMetadata(create, replacement);
 
@@ -173,7 +168,6 @@ public class ThreadCreation implements ProgramProcessor {
         for (DynamicThreadJoin join : program.getThreadEvents(DynamicThreadJoin.class)) {
             final Thread caller = join.getThread();
             final Expression tidExpr = join.getTid();
-            // TODO: support return values for threads
 
             final Register joinRegister = join.getResultRegister();
             final IntegerType statusType = (IntegerType) ((AggregateType)joinRegister.getType()).getFields().get(0).type();
@@ -266,7 +260,7 @@ public class ThreadCreation implements ProgramProcessor {
         }
     }
 
-    private Thread createLLVMThreadFromFunction(Function function, int tid, ThreadCreate creator, Expression comAddr) {
+    private ThreadData createLLVMThreadFromFunction(Function function, int tid, ThreadCreate creator) {
         // ------------------- Create new thread -------------------
         final ThreadStart start = EventFactory.newThreadStart(creator);
         start.setMayFailSpuriously(!forceStart);
@@ -323,18 +317,26 @@ public class ThreadCreation implements ProgramProcessor {
                 thread.getEntry().insertAfter(newThreadArgument(params.get(i), creator, i));
             }
 
+            // We use accesses to a common memory object to synchronize creator and thread.
+            final MemoryObject comAddress = function.getProgram().getMemory().allocate(1);
+            comAddress.setName("__com" + tid + "__" + function.getName());
+            comAddress.setInitialValue(0, expressions.makeFalse());
+
             // Sync
             final Register startSignal = thread.newRegister("__startT" + tid, types.getBooleanType());
             thread.getEntry().insertAfter(eventSequence(
-                    newAcquireLoad(startSignal, comAddr),
+                    newAcquireLoad(startSignal, comAddress),
                     newAssume(startSignal)
             ));
 
             // End
-            threadReturnLabel.insertAfter(newReleaseStore(comAddr, expressions.makeFalse()));
+            threadReturnLabel.insertAfter(newReleaseStore(comAddress, expressions.makeFalse()));
+
+            creator.setSpawnedThread(thread);
+            return new ThreadData(thread, comAddress);
         }
 
-        return thread;
+        return new ThreadData(thread, null);
     }
 
     private void replaceGlobalsByThreadLocals(Memory memory, Thread thread) {

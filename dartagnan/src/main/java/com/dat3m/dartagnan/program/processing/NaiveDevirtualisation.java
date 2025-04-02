@@ -19,13 +19,12 @@ import com.dat3m.dartagnan.program.event.core.CondJump;
 import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.memory.Memory;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
-import com.google.common.base.Verify;
+import com.google.common.base.Preconditions;
 import com.google.common.collect.Iterables;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.util.*;
-import java.util.stream.Collectors;
 
 /*
     This pass performs "devirtualisation" (replacing indirect/dynamic calls by direct/static calls).
@@ -110,9 +109,7 @@ public class NaiveDevirtualisation implements ProgramProcessor {
     }
 
     private void applyTransformerToEvent(Event e, ExpressionVisitor<Expression> transformer) {
-        if (e instanceof CallEvent call) {
-            call.getArguments().replaceAll(arg -> arg.accept(transformer));
-        } else if (e instanceof RegReader reader) {
+        if (e instanceof RegReader reader) {
             reader.transformExpressions(transformer);
         }
     }
@@ -138,11 +135,11 @@ public class NaiveDevirtualisation implements ProgramProcessor {
                 logger.warn("Cannot resolve dynamic call \"{}\", no matching functions found.", call);
             }
 
-            logger.trace("Devirtualizing call \"{}\" with possible targets: {}", call, possibleTargets);
+            logger.trace("Devirtualising call \"{}\" with possible targets: {}", call, possibleTargets);
 
             final List<Label> caseLabels = new ArrayList<>(possibleTargets.size());
             final List<CondJump> caseJumps = new ArrayList<>(possibleTargets.size());
-            final Expression funcPtr = getFunctionPointer(call);
+            final Expression funcPtr = call.getCallTarget();
             // Construct call table
             for (Function possibleTarget : possibleTargets) {
                 final IntLiteral targetAddress = func2AddressMap.get(possibleTarget);
@@ -177,45 +174,21 @@ public class NaiveDevirtualisation implements ProgramProcessor {
     }
 
     private List<Function> getPossibleTargets(CallEvent call, Map<Function, IntLiteral> func2AddressMap) {
-        final List<Function> possibleTargets;
-        if (!call.isDirectCall()) {
-            possibleTargets = func2AddressMap.keySet().stream()
-                    .filter(f -> f.getFunctionType() == call.getCallType()).collect(Collectors.toList());
-        } else {
-            possibleTargets = List.of();
-            throwInternalError(call);
-        }
-
-        return possibleTargets;
+        Preconditions.checkArgument(needsDevirtualization(call));
+        return func2AddressMap.keySet().stream()
+                .filter(f -> f.getFunctionType() == call.getCallType())
+                .toList();
     }
 
     private CallEvent devirtualiseCall(CallEvent virtCall, Function devirtCallTarget) {
+        Preconditions.checkArgument(needsDevirtualization(virtCall));
         final CallEvent devirtCall = virtCall.getCopy();
-        setFunctionPointer(devirtCall, devirtCallTarget);
+        devirtCall.setCallTarget(devirtCallTarget);
         return devirtCall;
     }
 
-    private Expression getFunctionPointer(CallEvent call) {
-        if (!call.isDirectCall()) {
-            return call.getCallTarget();
-        }
-        throwInternalError(call);
-        return null;
-    }
-
-    private void setFunctionPointer(CallEvent call, Expression functionPtr) {
-        if (!call.isDirectCall()) {
-            call.setCallTarget(functionPtr);
-        } else {
-            throwInternalError(call);
-        }
-    }
-
-    @SuppressWarnings("all")
-    private void throwInternalError(CallEvent virtCall) {
-        Verify.verify(false, "Encountered unexpected virtual function call: " + virtCall);
-    }
-
+    // ================================================================================
+    // Helper classes
 
     private static class FunctionCollector implements ExpressionInspector {
 

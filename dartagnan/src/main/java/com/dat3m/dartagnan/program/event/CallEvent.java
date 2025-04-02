@@ -11,9 +11,7 @@ import java.util.List;
     A CallEvent is an event that abstractly calls a "callable" (i.e., function) with arguments.
     Currently,
         - The only callables are functions
-        - The only call events are function calls
-    TODO:
-        ThreadCreation shall be a callable.
+        - The only call events are function calls and (dynamic) thread creation.
  */
 public interface CallEvent extends RegReader {
 

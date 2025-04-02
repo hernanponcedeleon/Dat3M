@@ -4,7 +4,6 @@ import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.AbstractEvent;
 import com.dat3m.dartagnan.program.event.BlockingEvent;
-import com.dat3m.dartagnan.program.event.EventVisitor;
 import com.dat3m.dartagnan.program.event.RegWriter;
 import com.google.common.base.Preconditions;
 
@@ -46,12 +45,6 @@ public class ThreadJoin extends AbstractEvent implements RegWriter, BlockingEven
     @Override
     public ThreadJoin getCopy() {
         return new ThreadJoin(this);
-    }
-
-    @Override
-    public <T> T accept(EventVisitor<T> visitor) {
-        // TODO
-        return visitor.visitEvent(this);
     }
 
 }
