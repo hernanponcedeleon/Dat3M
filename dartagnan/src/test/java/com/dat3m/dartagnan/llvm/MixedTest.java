@@ -40,11 +40,7 @@ public class MixedTest extends AbstractCTest {
 
     @Override
     protected Provider<Integer> getBoundProvider() {
-        return () -> switch (name) {
-            case "lockref1" -> 2;
-            case "lockref2" -> 3;
-            default -> 1;
-        };
+        return () -> 3;
     }
 
     @Override
