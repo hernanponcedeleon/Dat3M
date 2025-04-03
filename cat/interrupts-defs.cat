@@ -2,7 +2,7 @@ let po-until(set) = po \ (po;[set];po)
 
 (* Basic interrupt relations *)
 let IHSpawn = [range([INTERRUPT_HANDLER];po-until(THREAD_CREATE))]
-let ih = int;IHSpawn;rf;int
+let ih = int;(IHSpawn;rf;int)+  // (...)+ to handle nested IHs
 
 (* Interrupt points *)
 let beforeIP = (new() & id)
