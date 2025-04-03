@@ -14,18 +14,26 @@ import java.util.Set;
 
 public class Thread extends Function {
 
+    public enum Type {
+        STANDARD,
+        INTERRUPT_HANDLER,
+    }
+
     // Scope hierarchy of the thread
     private final Optional<ScopeHierarchy> scopeHierarchy;
 
     // Threads that are system-synchronized-with this thread
     private final Optional<Set<Thread>> syncSet;
 
-    public Thread(String name, FunctionType funcType, List<String> parameterNames, int id, ThreadStart entry) {
+    private final Thread.Type threadType;
+
+    public Thread(String name, FunctionType funcType, List<String> parameterNames, int id, ThreadStart entry, Thread.Type type) {
         super(name, funcType, parameterNames, id, entry);
         Preconditions.checkArgument(id >= 0, "Invalid thread ID");
         Preconditions.checkNotNull(entry, "Thread entry event must be not null");
         this.scopeHierarchy = Optional.empty();
         this.syncSet = Optional.empty();
+        this.threadType = type;
     }
 
     public Thread(String name, FunctionType funcType, List<String> parameterNames, int id, ThreadStart entry,
@@ -37,6 +45,7 @@ public class Thread extends Function {
         Preconditions.checkNotNull(syncSet, "Thread syncSet must be not null");
         this.scopeHierarchy = Optional.of(scopeHierarchy);
         this.syncSet = Optional.of(syncSet);
+        this.threadType = Type.STANDARD;
     }
 
     public boolean hasScope() {
@@ -81,4 +90,5 @@ public class Thread extends Function {
         
         return List.of(startLoad, startStore);
     }
+
 }

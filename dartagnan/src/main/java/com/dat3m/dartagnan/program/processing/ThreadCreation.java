@@ -266,7 +266,7 @@ public class ThreadCreation implements ProgramProcessor {
         final ThreadStart start = EventFactory.newThreadStart(creator);
         start.setMayFailSpuriously(!forceStart);
         final Thread thread = new Thread(function.getName(), function.getFunctionType(),
-                Lists.transform(function.getParameterRegisters(), Register::getName), tid, start);
+                Lists.transform(function.getParameterRegisters(), Register::getName), tid, start, Thread.Type.STANDARD);
         thread.copyUniqueIdsFrom(function);
         function.getProgram().addThread(thread);
 
