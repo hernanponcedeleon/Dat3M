@@ -28,14 +28,14 @@ import com.dat3m.dartagnan.program.event.core.annotations.FunCallMarker;
 import com.dat3m.dartagnan.program.event.core.annotations.FunReturnMarker;
 import com.dat3m.dartagnan.program.event.core.annotations.StringAnnotation;
 import com.dat3m.dartagnan.program.event.core.special.StateSnapshot;
-import com.dat3m.dartagnan.program.event.core.threading.ThreadArgument;
-import com.dat3m.dartagnan.program.event.core.threading.ThreadCreate;
-import com.dat3m.dartagnan.program.event.core.threading.ThreadStart;
+import com.dat3m.dartagnan.program.event.core.threading.*;
 import com.dat3m.dartagnan.program.event.functions.AbortIf;
 import com.dat3m.dartagnan.program.event.functions.Return;
 import com.dat3m.dartagnan.program.event.functions.ValueFunctionCall;
 import com.dat3m.dartagnan.program.event.functions.VoidFunctionCall;
 import com.dat3m.dartagnan.program.event.lang.catomic.*;
+import com.dat3m.dartagnan.program.event.lang.dat3m.DynamicThreadCreate;
+import com.dat3m.dartagnan.program.event.lang.dat3m.DynamicThreadJoin;
 import com.dat3m.dartagnan.program.event.lang.linux.*;
 import com.dat3m.dartagnan.program.event.lang.llvm.*;
 import com.dat3m.dartagnan.program.event.lang.pthread.InitLock;
@@ -315,8 +315,20 @@ public class EventFactory {
 
     // ------------------------------------------ Threading events ------------------------------------------
 
+    public static DynamicThreadCreate newDynamicThreadCreate(Register tidRegister, FunctionType funcType, Expression functionPtr, List<Expression> arguments) {
+        return new DynamicThreadCreate(tidRegister, funcType, functionPtr, arguments);
+    }
+
+    public static DynamicThreadJoin newDynamicThreadJoin(Register resultRegister, Expression tidExpr) {
+        return new DynamicThreadJoin(resultRegister, tidExpr);
+    }
+
     public static ThreadCreate newThreadCreate(List<Expression> arguments) {
         return new ThreadCreate(arguments);
+    }
+
+    public static ThreadJoin newThreadJoin(Register resultRegister, Thread thread) {
+        return new ThreadJoin(resultRegister, thread);
     }
 
     public static ThreadArgument newThreadArgument(Register resultReg, ThreadCreate creator, int argIndex) {
@@ -325,6 +337,10 @@ public class EventFactory {
 
     public static ThreadStart newThreadStart(ThreadCreate creator) {
         return new ThreadStart(creator);
+    }
+
+    public static ThreadReturn newThreadReturn(Expression value) {
+        return new ThreadReturn(value);
     }
 
     public static class Special {

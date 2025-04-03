@@ -1,5 +1,8 @@
 package com.dat3m.dartagnan.parsers.program.visitors;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.expression.Expression;
@@ -13,26 +16,15 @@ import com.dat3m.dartagnan.parsers.program.utils.ProgramBuilder;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.EventFactory;
+import static com.dat3m.dartagnan.program.event.FenceNameRepository.ISYNC;
+import static com.dat3m.dartagnan.program.event.FenceNameRepository.LWSYNC;
+import static com.dat3m.dartagnan.program.event.FenceNameRepository.SYNC;
 import com.dat3m.dartagnan.program.event.core.Label;
 import com.google.common.collect.ImmutableSet;
 
-import java.util.HashMap;
-import java.util.Map;
-
-import static com.dat3m.dartagnan.program.event.FenceNameRepository.*;
-
 public class VisitorLitmusPPC extends LitmusPPCBaseVisitor<Object> {
 
-    private static class CmpInstruction {
-        private final Expression left;
-        private final Expression right;
-
-        public CmpInstruction(Register left, Expression comparand) {
-            this.left = left;
-            this.right = comparand;
-        }
-    }
-
+    private record CmpInstruction(Expression left, Expression right) {};
     private final static ImmutableSet<String> fences = ImmutableSet.of(SYNC, LWSYNC, ISYNC);
 
     private final ProgramBuilder programBuilder = ProgramBuilder.forArch(Program.SourceLanguage.LITMUS, Arch.POWER);

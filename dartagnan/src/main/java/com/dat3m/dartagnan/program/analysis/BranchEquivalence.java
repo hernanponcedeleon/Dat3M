@@ -3,9 +3,9 @@ package com.dat3m.dartagnan.program.analysis;
 import com.dat3m.dartagnan.exception.MalformedProgramException;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Thread;
+import com.dat3m.dartagnan.program.event.BlockingEvent;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.core.CondJump;
-import com.dat3m.dartagnan.program.event.core.ControlBarrier;
 import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.event.core.threading.ThreadStart;
 import com.dat3m.dartagnan.utils.dependable.DependencyGraph;
@@ -147,7 +147,7 @@ public class BranchEquivalence extends AbstractEquivalence<Event> {
                     b2.parents.add(branch);
                     return branch;
                 }
-            } else if (succ instanceof ControlBarrier barrier) {
+            } else if (succ instanceof BlockingEvent barrier) {
                 final Branch succBranch = computeBranchDecomposition(barrier.getSuccessor(), event2BranchMap, branches);
                 branch.children.add(succBranch);
                 succBranch.parents.add(branch);
@@ -274,7 +274,7 @@ public class BranchEquivalence extends AbstractEquivalence<Event> {
         Set<Branch> commonSucc = null;
         for (Branch br : b.children) {
             computeMustSuccSet(br);
-            if (!isEndingWithControlBarrier(b)) {
+            if (!isEndingWithBlockingEvent(b)) {
                 if (commonSucc == null) {
                     commonSucc = new HashSet<>(br.mustSucc);
                 } else {
@@ -288,10 +288,10 @@ public class BranchEquivalence extends AbstractEquivalence<Event> {
         b.mustSuccComputed = true;
     }
 
-    private boolean isEndingWithControlBarrier(Branch branch) {
+    private boolean isEndingWithBlockingEvent(Branch branch) {
         if (!branch.events.isEmpty()) {
             int last = branch.events.size() - 1;
-            return branch.events.get(last) instanceof ControlBarrier;
+            return branch.events.get(last) instanceof BlockingEvent;
         }
         return false;
     }

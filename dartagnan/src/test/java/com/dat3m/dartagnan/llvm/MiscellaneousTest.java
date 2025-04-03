@@ -63,6 +63,7 @@ public class MiscellaneousTest extends AbstractCTest {
     public static Iterable<Object[]> data() throws IOException {
         return Arrays.asList(new Object[][]{
                 {"idd_dynamic", ARM8, FAIL, 1},
+                {"idd_dynamic_2", ARM8, FAIL, 1},
                 {"propagatableSideEffects", ARM8, FAIL, 1},
                 {"SB-RMW", TSO, PASS, 1},
                 {"SB-RMW", IMM, PASS, 1},
@@ -82,6 +83,8 @@ public class MiscellaneousTest extends AbstractCTest {
                 {"thread_local", IMM, PASS, 1},
                 {"thread_loop", IMM, FAIL, 1},
                 {"thread_id", IMM, PASS, 1},
+                {"thread_return_val", IMM, PASS, 1},
+                {"thread_invalid_join", IMM, FAIL, 1},
                 {"funcPtrInStaticMemory", IMM, PASS, 1},
                 {"verifierAssert", ARM8, FAIL, 1},
                 {"uninitRead", IMM, FAIL, 1},

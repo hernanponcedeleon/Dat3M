@@ -240,7 +240,7 @@ public class ExecutionModelManager {
     }
 
     private RelationGraph createGraph(Relation r) {
-        RelationGraph rg = r.getDependencies().size() == 0 ? new SimpleGraph() : r.getDefinition().accept(graphBuilder);
+        RelationGraph rg = r.getDependencies().isEmpty() ? new SimpleGraph() : r.getDefinition().accept(graphBuilder);
         rg.setName(r.getNameOrTerm());
         if (!r.isRecursive()) {
             relGraphCache.put(r, rg);
@@ -283,8 +283,11 @@ public class ExecutionModelManager {
             SimpleGraph rg = (SimpleGraph) relGraphCache.get(po.getDefinedRelation());
             for (ThreadModel tm : executionModel.getThreadModels()) {
                 List<EventModel> eventList = tm.getVisibleEventModels();
-                if (eventList.size() <= 1) { continue; }
-                for (int i = 1; i < eventList.size(); i++) {
+                if (eventList.size() <= 1) {
+                    continue;
+                }
+
+                for (int i = 0; i < eventList.size(); i++) {
                     EventModel e1 = eventList.get(i);
                     for (int j = i + 1; j < eventList.size(); j++) {
                         EventModel e2 = eventList.get(j);

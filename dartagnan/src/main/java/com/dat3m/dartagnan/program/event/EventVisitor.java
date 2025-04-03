@@ -19,20 +19,22 @@ import com.dat3m.dartagnan.program.event.lang.llvm.*;
 import com.dat3m.dartagnan.program.event.lang.pthread.InitLock;
 import com.dat3m.dartagnan.program.event.lang.pthread.Lock;
 import com.dat3m.dartagnan.program.event.lang.pthread.Unlock;
+import com.dat3m.dartagnan.program.event.lang.spirv.*;
 import com.dat3m.dartagnan.program.event.lang.svcomp.BeginAtomic;
 import com.dat3m.dartagnan.program.event.lang.svcomp.EndAtomic;
-import com.dat3m.dartagnan.program.event.lang.spirv.*;
 
 public interface EventVisitor<T> {
 
     // ============================== General events ==============================
     T visitEvent(Event e);
     default T visitMemEvent(MemoryEvent e) { return visitEvent(e); }
+    default T visitBlockingEvent(BlockingEvent e) { return visitEvent(e); }
 
     // ============================== Core-level events ==============================
     default T visitAssume(Assume e) { return visitEvent(e); }
     default T visitAssert(Assert e) { return visitEvent(e); }
     default T visitCondJump(CondJump e) { return visitEvent(e); }
+    default T visitControlBarrier(ControlBarrier e) { return visitBlockingEvent(e); }
     default T visitExecutionStatus(ExecutionStatus e) { return visitEvent(e); }
     default T visitIfAsJump(IfAsJump e) { return visitCondJump(e); }
     default T visitLabel(Label e) { return visitEvent(e); }
@@ -101,7 +103,6 @@ public interface EventVisitor<T> {
     default T visitEndAtomic(EndAtomic e) { return visitEvent(e); }
 
     // ------------------ GPU Events ------------------
-    default T visitControlBarrier(ControlBarrier e) { return visitEvent(e); }
     default T visitPtxRedOp(PTXRedOp e) { return visitMemEvent(e); }
     default T visitPtxAtomOp(PTXAtomOp e) { return visitMemEvent(e); }
     default T visitPtxAtomCAS(PTXAtomCAS e) { return visitMemEvent(e); }

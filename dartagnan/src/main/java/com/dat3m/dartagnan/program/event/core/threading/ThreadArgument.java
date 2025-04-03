@@ -2,7 +2,10 @@ package com.dat3m.dartagnan.program.event.core.threading;
 
 import com.dat3m.dartagnan.encoding.EncodingContext;
 import com.dat3m.dartagnan.program.Register;
-import com.dat3m.dartagnan.program.event.*;
+import com.dat3m.dartagnan.program.event.AbstractEvent;
+import com.dat3m.dartagnan.program.event.Event;
+import com.dat3m.dartagnan.program.event.EventUser;
+import com.dat3m.dartagnan.program.event.RegWriter;
 import com.google.common.base.Preconditions;
 import org.sosy_lab.java_smt.api.BooleanFormula;
 
@@ -63,12 +66,6 @@ public class ThreadArgument extends AbstractEvent implements RegWriter, EventUse
     @Override
     public ThreadArgument getCopy() {
         return new ThreadArgument(this);
-    }
-
-    @Override
-    public <T> T accept(EventVisitor<T> visitor) {
-        // TODO
-        return visitor.visitEvent(this);
     }
 
     @Override

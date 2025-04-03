@@ -1,11 +1,11 @@
 package com.dat3m.dartagnan.expression.type;
 
-import com.dat3m.dartagnan.expression.Type;
-import com.google.common.collect.ImmutableList;
-
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+
+import com.dat3m.dartagnan.expression.Type;
+import com.google.common.collect.ImmutableList;
 
 public class AggregateType implements Type {
 

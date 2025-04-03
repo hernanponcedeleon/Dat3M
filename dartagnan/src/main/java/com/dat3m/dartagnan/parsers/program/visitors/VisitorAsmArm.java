@@ -10,12 +10,10 @@ import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.Type;
 import com.dat3m.dartagnan.expression.integers.IntCmpOp;
-import com.dat3m.dartagnan.expression.type.AggregateType;
-import com.dat3m.dartagnan.expression.type.BooleanType;
 import com.dat3m.dartagnan.expression.type.IntegerType;
-import com.dat3m.dartagnan.expression.type.VoidType;
-import com.dat3m.dartagnan.parsers.InlineAsmBaseVisitor;
-import com.dat3m.dartagnan.parsers.InlineAsmParser;
+import com.dat3m.dartagnan.parsers.AsmArmBaseVisitor;
+import com.dat3m.dartagnan.parsers.AsmArmParser;
+import com.dat3m.dartagnan.parsers.program.utils.AsmUtils;
 import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Event;
@@ -90,7 +88,7 @@ import static com.google.common.base.Preconditions.checkState;
 //       - r11[3] <- asm_3
 //    2. map function parameter to next asm register, i.e. asm_4 <- r10
 //    3. the third asm register is related both to the return register (already above in r11[3] <- asm_3) and to an args register, i.e. asm_3 <- r8
-public class VisitorInlineAsm extends InlineAsmBaseVisitor<Object> {
+public class VisitorAsmArm extends AsmArmBaseVisitor<Object> {
 
     private record CmpInstruction(Expression left, Expression right) {};
 
@@ -112,78 +110,11 @@ public class VisitorInlineAsm extends InlineAsmBaseVisitor<Object> {
     // map from RegisterID to the corresponding asm register
     private final HashMap<Integer, Register> asmRegisters = new HashMap<>();
 
-    public VisitorInlineAsm(Function llvmFunction, Register returnRegister, List<Expression> llvmArguments) {
+    public VisitorAsmArm(Function llvmFunction, Register returnRegister, List<Expression> llvmArguments) {
         this.llvmFunction = llvmFunction;
         this.returnRegister = returnRegister;
         this.argsRegisters = llvmArguments;
-    }
 
-    // Returns the size of the return register
-    // null / void -> 0
-    // i32 / bool -> 1
-    // aggregateType -> the amount of asm registers which are referred by the return registers
-    // e.g. { i32, i32 } -> 2
-    private int getNumASMReturnRegisters() {
-        if (this.returnRegister == null) {
-            return 0;
-        }
-        Type returnType = this.returnRegister.getType();
-        if (returnType instanceof IntegerType || returnType instanceof BooleanType) {
-            return 1;
-        } else if (isReturnRegisterAggregate()) {
-            return ((AggregateType) returnType).getFields().size();
-        } else if (returnType instanceof VoidType) {
-            return 0;
-        } else {
-            throw new ParsingException("Unknown inline asm return type " + returnType);
-        }
-    }
-
-    // Tells if the returnRegister is an AggregateType
-    private boolean isReturnRegisterAggregate() {
-        Type returnRegisterType = this.returnRegister.getType();
-        return returnRegisterType != null && returnRegisterType instanceof AggregateType;
-    }
-
-    // Tells if the registerID is mapped to the returnRegister
-    private boolean isPartOfReturnRegister(int registerID) {
-        return registerID < getNumASMReturnRegisters();
-    }
-
-    // Given a string of a label, it either creates a new label, or returns the existing one if it was already defined
-    private Label getOrNewLabel(String labelName) {
-        if (!this.labelsDefined.containsKey(labelName)) {
-            this.labelsDefined.put(labelName, EventFactory.newLabel(labelName));
-        }
-        return this.labelsDefined.get(labelName);
-    }
-
-    // This function lets us know which type we need to assign to the created asm register.
-    // In order to do so, we have to understand which llvm register it is going to be mapped to.
-    // Given the registerID of the register e.g. $2 -> registerID = 2
-    // returns the type of the llvm register it is mapped to by the clobbers
-    // if it is referencing the return register, return its type.
-    // As said in the introduction, we are sure that an asm register is going to refer to a llvm one
-    // by the fact that the input is well formed.
-    private Type getLlvmRegisterTypeGivenAsmRegisterID(int registerID) {
-        Type registerType;
-        if (isPartOfReturnRegister(registerID)) {
-            if (returnRegister.getType() instanceof AggregateType at) {
-                // get the type from the corresponding field
-                registerType = at.getFields().get(registerID).type();
-            } else {
-                // returnRegister is not an aggregate, we just get that type
-                registerType = returnRegister.getType();
-            }
-        } else {
-            // registerID is mapped to a register in args. To get the correct position in args we need to shift the id by the size of the return register
-            registerType = argsRegisters.get(registerID - getNumASMReturnRegisters()).getType();
-        }
-        return registerType;
-    }
-
-    private String makeRegisterName(int registerID) {
-        return "asm_" + registerID;
     }
 
     // This function is the entrypoint of the visitor.
@@ -194,7 +125,7 @@ public class VisitorInlineAsm extends InlineAsmBaseVisitor<Object> {
     // The visitor will first visit the asm code (which will create the events and asm registers) and then the constraints. 
     // The latter will take care of creating input and output assignments.
     @Override
-    public List<Event> visitAsm(InlineAsmParser.AsmContext ctx) {
+    public List<Event> visitAsm(AsmArmParser.AsmContext ctx) {
         visitChildren(ctx);
         List<Event> events = new ArrayList<>();
         events.addAll(inputAssignments);
@@ -204,27 +135,27 @@ public class VisitorInlineAsm extends InlineAsmBaseVisitor<Object> {
     }
 
     // Tells if a constraint is a numeric one, e.g. '3'
-    private boolean isConstraintNumeric(InlineAsmParser.ConstraintContext constraint) {
+    private boolean isConstraintNumeric(AsmArmParser.ConstraintContext constraint) {
         return constraint.overlapInOutRegister() != null;
     }
 
     // Tells if the constraint is a memory location '=*m'
-    private boolean isConstraintMemoryLocation(InlineAsmParser.ConstraintContext constraint) {
+    private boolean isConstraintMemoryLocation(AsmArmParser.ConstraintContext constraint) {
         return constraint.pointerToMemoryLocation() != null;
     }
 
     // Tells if the constraint is an output one, e.g. '=r' or '=&r'
-    private boolean isConstraintOutputConstraint(InlineAsmParser.ConstraintContext constraint) {
+    private boolean isConstraintOutputConstraint(AsmArmParser.ConstraintContext constraint) {
         return constraint.outputOpAssign() != null;
     }
 
-    // Tells us if the constraint is an input one, e.g. 'Q' or '*Q' or 'r'
-    private boolean isConstraintInputConstraint(InlineAsmParser.ConstraintContext constraint) {
+    // Tells us if the constraint is an input one, e.g. 'Q' or '*Q' or 'r' 
+    private boolean isConstraintInputConstraint(AsmArmParser.ConstraintContext constraint) {
         return constraint.memoryAddress() != null || constraint.inputOpGeneralReg() != null;
     }
 
     @Override
-    public Object visitLoad(InlineAsmParser.LoadContext ctx) {
+    public Object visitLoad(AsmArmParser.LoadContext ctx) {
         Register register = (Register) ctx.register(0).accept(this);
         Register address = (Register) ctx.register(1).accept(this);
         asmInstructions.add(EventFactory.newLoad(register, address));
@@ -232,7 +163,7 @@ public class VisitorInlineAsm extends InlineAsmBaseVisitor<Object> {
     }
 
     @Override
-    public Object visitLoadAcquire(InlineAsmParser.LoadAcquireContext ctx) {
+    public Object visitLoadAcquire(AsmArmParser.LoadAcquireContext ctx) {
         Register register = (Register) ctx.register(0).accept(this);
         Register address = (Register) ctx.register(1).accept(this);
         asmInstructions.add(EventFactory.newLoadWithMo(register, address, Tag.ARMv8.MO_ACQ));
@@ -240,7 +171,7 @@ public class VisitorInlineAsm extends InlineAsmBaseVisitor<Object> {
     }
 
     @Override
-    public Object visitLoadExclusive(InlineAsmParser.LoadExclusiveContext ctx) {
+    public Object visitLoadExclusive(AsmArmParser.LoadExclusiveContext ctx) {
         Register register = (Register) ctx.register(0).accept(this);
         Register address = (Register) ctx.register(1).accept(this);
         asmInstructions.add(EventFactory.newRMWLoadExclusive(register, address));
@@ -248,7 +179,7 @@ public class VisitorInlineAsm extends InlineAsmBaseVisitor<Object> {
     }
 
     @Override
-    public Object visitLoadAcquireExclusive(InlineAsmParser.LoadAcquireExclusiveContext ctx) {
+    public Object visitLoadAcquireExclusive(AsmArmParser.LoadAcquireExclusiveContext ctx) {
         Register register = (Register) ctx.register(0).accept(this);
         Register address = (Register) ctx.register(1).accept(this);
         asmInstructions.add(EventFactory.newRMWLoadExclusiveWithMo(register, address, Tag.ARMv8.MO_ACQ));
@@ -256,7 +187,7 @@ public class VisitorInlineAsm extends InlineAsmBaseVisitor<Object> {
     }
 
     @Override
-    public Object visitAdd(InlineAsmParser.AddContext ctx) {
+    public Object visitAdd(AsmArmParser.AddContext ctx) {
         Register resultRegister = (Register) ctx.register(0).accept(this);
         Register lhs = (Register) ctx.register(1).accept(this);
         expectedType = lhs.getType();
@@ -267,7 +198,7 @@ public class VisitorInlineAsm extends InlineAsmBaseVisitor<Object> {
     }
 
     @Override
-    public Object visitSub(InlineAsmParser.SubContext ctx) {
+    public Object visitSub(AsmArmParser.SubContext ctx) {
         Register resultRegister = (Register) ctx.register(0).accept(this);
         Register lhs = (Register) ctx.register(1).accept(this);
         expectedType = lhs.getType();
@@ -278,7 +209,7 @@ public class VisitorInlineAsm extends InlineAsmBaseVisitor<Object> {
     }
 
     @Override
-    public Object visitOr(InlineAsmParser.OrContext ctx) {
+    public Object visitOr(AsmArmParser.OrContext ctx) {
         Register resultRegister = (Register) ctx.register(0).accept(this);
         Register leftRegister = (Register) ctx.register(1).accept(this);
         Register rightRegister = (Register) ctx.register(2).accept(this);
@@ -288,7 +219,7 @@ public class VisitorInlineAsm extends InlineAsmBaseVisitor<Object> {
     }
 
     @Override
-    public Object visitAnd(InlineAsmParser.AndContext ctx) {
+    public Object visitAnd(AsmArmParser.AndContext ctx) {
         Register resultRegister = (Register) ctx.register(0).accept(this);
         Register leftRegister = (Register) ctx.register(1).accept(this);
         Register rightRegister = (Register) ctx.register(2).accept(this);
@@ -298,7 +229,7 @@ public class VisitorInlineAsm extends InlineAsmBaseVisitor<Object> {
     }
 
     @Override
-    public Object visitStore(InlineAsmParser.StoreContext ctx) {
+    public Object visitStore(AsmArmParser.StoreContext ctx) {
         Register value = (Register) ctx.register(0).accept(this);
         Register address = (Register) ctx.register(1).accept(this);
         asmInstructions.add(EventFactory.newStore(address, value));
@@ -306,7 +237,7 @@ public class VisitorInlineAsm extends InlineAsmBaseVisitor<Object> {
     }
 
     @Override
-    public Object visitStoreRelease(InlineAsmParser.StoreReleaseContext ctx) {
+    public Object visitStoreRelease(AsmArmParser.StoreReleaseContext ctx) {
         Register value = (Register) ctx.register(0).accept(this);
         Register address = (Register) ctx.register(1).accept(this);
         asmInstructions.add(EventFactory.newStoreWithMo(address, value, Tag.ARMv8.MO_REL));
@@ -314,7 +245,7 @@ public class VisitorInlineAsm extends InlineAsmBaseVisitor<Object> {
     }
 
     @Override
-    public Object visitStoreExclusive(InlineAsmParser.StoreExclusiveContext ctx) {
+    public Object visitStoreExclusive(AsmArmParser.StoreExclusiveContext ctx) {
         Register freshResultRegister = (Register) ctx.register(0).accept(this);
         Register value = (Register) ctx.register(1).accept(this);
         Register address = (Register) ctx.register(2).accept(this);
@@ -323,7 +254,7 @@ public class VisitorInlineAsm extends InlineAsmBaseVisitor<Object> {
     }
 
     @Override
-    public Object visitStoreReleaseExclusive(InlineAsmParser.StoreReleaseExclusiveContext ctx) {
+    public Object visitStoreReleaseExclusive(AsmArmParser.StoreReleaseExclusiveContext ctx) {
         Register freshResultRegister = (Register) ctx.register(0).accept(this);
         Register value = (Register) ctx.register(1).accept(this);
         Register address = (Register) ctx.register(2).accept(this);
@@ -332,7 +263,7 @@ public class VisitorInlineAsm extends InlineAsmBaseVisitor<Object> {
     }
 
     @Override
-    public Object visitCompare(InlineAsmParser.CompareContext ctx) {
+    public Object visitCompare(AsmArmParser.CompareContext ctx) {
         Register firstRegister = (Register) ctx.register().accept(this);
         expectedType = firstRegister.getType();
         Expression secondRegister = (Expression) ctx.expr().accept(this);
@@ -341,8 +272,8 @@ public class VisitorInlineAsm extends InlineAsmBaseVisitor<Object> {
     }
 
     @Override
-    public Object visitCompareBranchNonZero(InlineAsmParser.CompareBranchNonZeroContext ctx) {
-        Label label = getOrNewLabel(ctx.NumbersInline().getText());
+    public Object visitCompareBranchNonZero(AsmArmParser.CompareBranchNonZeroContext ctx) {
+        Label label = AsmUtils.getOrNewLabel(labelsDefined, ctx.Numbers().getText());
         Register firstRegister = (Register) ctx.register().accept(this);
         Expression zero = expressions.makeZero((IntegerType) firstRegister.getType());
         Expression expr = expressions.makeIntCmp(firstRegister, IntCmpOp.NEQ, zero);
@@ -351,7 +282,7 @@ public class VisitorInlineAsm extends InlineAsmBaseVisitor<Object> {
     }
 
     @Override
-    public Object visitMove(InlineAsmParser.MoveContext ctx) {
+    public Object visitMove(AsmArmParser.MoveContext ctx) {
         Register toRegister = (Register) ctx.register(0).accept(this);
         Register fromRegister = (Register) ctx.register(1).accept(this);
         asmInstructions.add(EventFactory.newLocal(toRegister, fromRegister));
@@ -359,25 +290,25 @@ public class VisitorInlineAsm extends InlineAsmBaseVisitor<Object> {
     }
 
     @Override
-    public Object visitBranchEqual(InlineAsmParser.BranchEqualContext ctx) {
-        Label label = getOrNewLabel(ctx.NumbersInline().getText());
+    public Object visitBranchEqual(AsmArmParser.BranchEqualContext ctx) {
+        Label label = AsmUtils.getOrNewLabel(labelsDefined, ctx.Numbers().getText());
         Expression expr = expressions.makeIntCmp(comparator.left(), IntCmpOp.EQ, comparator.right());
         asmInstructions.add(EventFactory.newJump(expr, label));
         return null;
     }
 
     @Override
-    public Object visitBranchNotEqual(InlineAsmParser.BranchNotEqualContext ctx) {
-        Label label = getOrNewLabel(ctx.NumbersInline().getText());
+    public Object visitBranchNotEqual(AsmArmParser.BranchNotEqualContext ctx) {
+        Label label = AsmUtils.getOrNewLabel(labelsDefined, ctx.Numbers().getText());
         Expression expr = expressions.makeIntCmp(comparator.left(), IntCmpOp.NEQ, comparator.right());
         asmInstructions.add(EventFactory.newJump(expr, label));
         return null;
     }
 
     @Override
-    public Object visitLabelDefinition(InlineAsmParser.LabelDefinitionContext ctx) {
-        String labelID = ctx.NumbersInline().getText();
-        Label label = getOrNewLabel(labelID);
+    public Object visitLabelDefinition(AsmArmParser.LabelDefinitionContext ctx) {
+        String labelID = ctx.Numbers().getText();
+        Label label = AsmUtils.getOrNewLabel(labelsDefined, labelID);
         asmInstructions.add(label);
         return null;
     }
@@ -388,16 +319,17 @@ public class VisitorInlineAsm extends InlineAsmBaseVisitor<Object> {
     // if we created a register which will be mapped to the return Register, we have to add to "pendingRegisters", 
     // as we are going to need it while visiting the metadata to create the output assignment
     @Override
-    public Object visitRegister(InlineAsmParser.RegisterContext ctx) {
-        String registerName = ctx.NumbersInline().getText();
-        int registerID = Integer.parseInt(registerName);
+    public Object visitRegister(AsmArmParser.RegisterContext ctx) {
+        String registerNumber = ctx.Numbers().getText();
+        int registerID = Integer.parseInt(registerNumber);
         if (asmRegisters.containsKey(registerID)) {
             return asmRegisters.get(registerID);
         } else {
             // Pick up the correct type and create the new Register
-            Type registerType = getLlvmRegisterTypeGivenAsmRegisterID(registerID);
-            Register newRegister = this.llvmFunction.getOrNewRegister(makeRegisterName(registerID), registerType);
-            if (isPartOfReturnRegister(registerID) && isReturnRegisterAggregate()) {
+            Type registerType = AsmUtils.getLlvmRegisterTypeGivenAsmRegisterID(this.argsRegisters,this.returnRegister,registerID);
+            String newRegisterName = AsmUtils.makeRegisterName(registerID);
+            Register newRegister = this.llvmFunction.getOrNewRegister(newRegisterName, registerType);
+            if (AsmUtils.isPartOfReturnRegister(this.returnRegister, registerID) && AsmUtils.isReturnRegisterAggregate(this.returnRegister)) {
                 this.pendingRegisters.add(newRegister);
             }
             asmRegisters.put(registerID, newRegister);
@@ -412,15 +344,15 @@ public class VisitorInlineAsm extends InlineAsmBaseVisitor<Object> {
     // We just have to read the constraints, and based on their type, understand if they are going to be mapped
     // to the args registers or to the return register.
     @Override
-    public Object visitAsmMetadataEntries(InlineAsmParser.AsmMetadataEntriesContext ctx) {
-        List<InlineAsmParser.ConstraintContext> constraints = ctx.constraint();
+    public Object visitAsmMetadataEntries(AsmArmParser.AsmMetadataEntriesContext ctx) {
+        List<AsmArmParser.ConstraintContext> constraints = ctx.constraint();
         boolean isOutputRegistersInitialized = returnRegister == null;
         // We iterate until we find the first non-output constraint. Then we immediately initialize the return register
         // (the right-hand side of the assignment will be either a single register or an aggregate type depending on how many output constraints we processed). 
         // We then map args registers to asm registers (we need to shift the register ID to find the corresponding args position of the matching register).
         // Numeric constraint just map the registerID with the corresponding numeric position. (https://llvm.org/docs/LangRef.html#input-constraints)
         for (int i = 0; i < constraints.size(); i++) {
-            InlineAsmParser.ConstraintContext constraint = constraints.get(i);
+            AsmArmParser.ConstraintContext constraint = constraints.get(i);
             if (isConstraintMemoryLocation(constraint)) {
                 isOutputRegistersInitialized = true;
                 continue;
@@ -443,27 +375,27 @@ public class VisitorInlineAsm extends InlineAsmBaseVisitor<Object> {
                 if (asmRegister == null) {
                     continue;
                 }
-                Expression llvmRegister = argsRegisters.get(i - getNumASMReturnRegisters());
+                Expression llvmRegister = argsRegisters.get(i - AsmUtils.getNumASMReturnRegisters(this.returnRegister));
                 inputAssignments.add(EventFactory.newLocal(asmRegister, llvmRegister));
             }
             if (isConstraintNumeric(constraint)) {
                 int constraintValue = Integer.parseInt(constraint.getText());
-                inputAssignments.add(EventFactory.newLocal(asmRegisters.get(constraintValue), argsRegisters.get(i - getNumASMReturnRegisters())));
+                inputAssignments.add(EventFactory.newLocal(asmRegisters.get(constraintValue), argsRegisters.get(i - AsmUtils.getNumASMReturnRegisters(this.returnRegister))));
             }
         }
         return null;
     }
 
     @Override
-    public Object visitValue(InlineAsmParser.ValueContext ctx) {
+    public Object visitValue(AsmArmParser.ValueContext ctx) {
         checkState(expectedType instanceof IntegerType, "Expected type is not an integer type");
-        String valueString = ctx.NumbersInline().getText();
+        String valueString = ctx.Numbers().getText();
         BigInteger value = new BigInteger(valueString);
         return expressions.makeValue(value, (IntegerType) expectedType);
     }
 
     @Override
-    public Object visitArmFence(InlineAsmParser.ArmFenceContext ctx) {
+    public Object visitArmFence(AsmArmParser.ArmFenceContext ctx) {
         // check which type of fence it is : DataMemoryBarrier or DataSynchronizationBarrier
         String type = ctx.DataMemoryBarrier() == null ? ctx.DataSynchronizationBarrier().getText() : ctx.DataMemoryBarrier().getText();
         String option = ctx.FenceArmOpt().getText();
@@ -487,57 +419,6 @@ public class VisitorInlineAsm extends InlineAsmBaseVisitor<Object> {
                 EventFactory.AArch64.DSB.newSYBarrier();
             case "dsb ishst" ->
                 EventFactory.AArch64.DSB.newISHSTBarrier();
-            default ->
-                throw new ParsingException("Barrier not implemented");
-        };
-        asmInstructions.add(fence);
-        return null;
-    }
-
-    @Override
-    public Object visitRiscvFence(InlineAsmParser.RiscvFenceContext ctx) {
-        String mo = ctx.fenceOptions().mode;
-        Event fence = switch(mo) {
-            case "r r" -> EventFactory.RISCV.newRRFence();
-            case "r w" -> EventFactory.RISCV.newRWFence();
-            case "r rw" -> EventFactory.RISCV.newRRWFence();
-            case "w r" -> EventFactory.RISCV.newWRFence();
-            case "w w" -> EventFactory.RISCV.newWWFence();
-            case "w rw" -> EventFactory.RISCV.newWRWFence();
-            case "rw r" -> EventFactory.RISCV.newRWRFence();
-            case "rw w" -> EventFactory.RISCV.newRWWFence();
-            case "rw rw" -> EventFactory.RISCV.newRWRWFence();
-            case "tso" -> EventFactory.RISCV.newTsoFence();
-            case "i" -> EventFactory.RISCV.newSynchronizeFence();
-            default -> throw new ParsingException("Barrier not implemented");
-        };
-        asmInstructions.add(fence);
-        return null;
-    }
-
-    @Override
-    public Object visitX86Fence(InlineAsmParser.X86FenceContext ctx) {
-        String barrier = ctx.X86Fence().getText();
-        Event fence = switch (barrier) {
-            case "mfence" ->
-                EventFactory.X86.newMemoryFence();
-            default ->
-                throw new ParsingException("Barrier not implemented");
-        };
-        asmInstructions.add(fence);
-        return null;
-    }
-
-    @Override
-    public Object visitPpcFence(InlineAsmParser.PpcFenceContext ctx) {
-        String barrier = ctx.PPCFence().getText();
-        Event fence = switch (barrier) {
-            case "sync" ->
-                EventFactory.Power.newSyncBarrier();
-            case "isync" ->
-                EventFactory.Power.newISyncBarrier();
-            case "lwsync" ->
-                EventFactory.Power.newLwSyncBarrier();
             default ->
                 throw new ParsingException("Barrier not implemented");
         };

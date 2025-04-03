@@ -312,7 +312,9 @@ public abstract class AbstractEvent implements Event {
 
     // This method needs to get overwritten for conditional events.
     @Override
-    public boolean cfImpliesExec() { return true; }
+    public boolean cfImpliesExec() {
+        return !(this instanceof BlockingEvent);
+    }
 
     @Override
     public BooleanFormula encodeExec(EncodingContext ctx) {

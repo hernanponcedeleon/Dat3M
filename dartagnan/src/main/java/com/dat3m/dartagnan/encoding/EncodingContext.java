@@ -11,6 +11,7 @@ import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.analysis.BranchEquivalence;
 import com.dat3m.dartagnan.program.analysis.ExecutionAnalysis;
 import com.dat3m.dartagnan.program.analysis.alias.AliasAnalysis;
+import com.dat3m.dartagnan.program.event.BlockingEvent;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.MemoryEvent;
 import com.dat3m.dartagnan.program.event.RegWriter;
@@ -22,6 +23,7 @@ import com.dat3m.dartagnan.wmm.Relation;
 import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
 import com.dat3m.dartagnan.wmm.axiom.Acyclicity;
 import com.dat3m.dartagnan.wmm.utils.graph.EventGraph;
+import com.google.common.base.Preconditions;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
@@ -196,11 +198,11 @@ public final class EncodingContext {
         return booleanFormulaManager.and(execution(jump), jumpCondition(jump));
     }
 
-    public BooleanFormula blocked(ControlBarrier barrier) {
+    public BooleanFormula blocked(BlockingEvent barrier) {
         return booleanFormulaManager.and(controlFlow(barrier), booleanFormulaManager.not(execution(barrier)));
     }
 
-    public BooleanFormula unblocked(ControlBarrier barrier) {
+    public BooleanFormula unblocked(BlockingEvent barrier) {
         return execution(barrier);
     }
 
@@ -486,15 +488,20 @@ public final class EncodingContext {
                 return formulaManager.getBitvectorFormulaManager().makeVariable(integerType.getBitWidth(), name);
             }
         }
-        if (type instanceof AggregateType || type instanceof ArrayType) {
-            final Map<Integer, Type> primitives = TypeFactory.getInstance().decomposeIntoPrimitives(type);
-            if (primitives != null) {
-                final List<Formula> elements = new ArrayList<>();
-                for (Map.Entry<Integer, Type> entry : primitives.entrySet()) {
-                    elements.add(makeVariable(name + "@" + entry.getKey(), entry.getValue()));
-                }
-                return tupleFormulaManager.makeTuple(elements);
+        if (type instanceof AggregateType aggType) {
+            final List<Formula> fields = new ArrayList<>(aggType.getFields().size());
+            for (TypeOffset field : aggType.getFields()) {
+                fields.add(makeVariable(name + "@" + field.offset(), field.type()));
             }
+            return tupleFormulaManager.makeTuple(fields);
+        }
+        if (type instanceof ArrayType arrType) {
+            Preconditions.checkArgument(arrType.hasKnownNumElements(), "Cannot encode array of unknown size.");
+            final List<Formula> elements = new ArrayList<>(arrType.getNumElements());
+            for (int i = 0; i < arrType.getNumElements(); i++) {
+                elements.add(makeVariable(name + "[" + i + "]", arrType.getElementType()));
+            }
+            return tupleFormulaManager.makeTuple(elements);
         }
         throw new UnsupportedOperationException(String.format("Cannot encode variable of type %s.", type));
     }

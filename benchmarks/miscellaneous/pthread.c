@@ -249,7 +249,7 @@ void cond_test()
     }
 
     void* result = thread_join(worker);
-    //assert(result == message); //TODO add support for return values
+    assert(result == message);
 
     cond_destroy(&cond);
     mutex_destroy(&cond_mutex);
@@ -404,7 +404,7 @@ void key_test()
     assert(status == 0);
 
     void* result = thread_join(worker);
-    //assert(result == message); //TODO add support for return values
+    assert(result == message);
 
     status = pthread_key_delete(local_data);
     assert(status == 0);

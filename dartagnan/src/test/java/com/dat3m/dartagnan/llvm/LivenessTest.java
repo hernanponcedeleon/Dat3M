@@ -155,7 +155,13 @@ public class LivenessTest extends AbstractCTest {
                 {"nontermination/nontermination_oscillation_long", TSO, FAIL},
                 {"nontermination/nontermination_unstructured_spin", TSO, PASS},
                 {"nontermination/termination_repetition", TSO, UNKNOWN},
-                {"nontermination/locks_abort", IMM, PASS}
+                {"nontermination/locks_abort", IMM, PASS},
+                // Termination tests related to pthread_join() modeling
+                {"nontermination/nontermination_pthread_join_1", IMM, PASS},
+                {"nontermination/nontermination_pthread_join_2", IMM, PASS},
+                {"nontermination/nontermination_pthread_join_3", IMM, PASS},
+                {"nontermination/nontermination_pthread_join_4", IMM, FAIL},
+                {"nontermination/nontermination_pthread_join_5", IMM, FAIL}
         });
     }
 

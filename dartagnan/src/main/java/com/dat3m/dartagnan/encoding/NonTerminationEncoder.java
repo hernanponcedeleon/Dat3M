@@ -5,6 +5,7 @@ import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.analysis.LoopAnalysis;
+import com.dat3m.dartagnan.program.event.BlockingEvent;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.RegWriter;
 import com.dat3m.dartagnan.program.event.Tag;
@@ -229,7 +230,7 @@ public class NonTerminationEncoder {
     //  to avoid such wrong results.
     private BooleanFormula encodeBarriersAreStuck() {
         final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
-        return task.getProgram().getThreadEvents(ControlBarrier.class).stream()
+        return task.getProgram().getThreadEvents(BlockingEvent.class).stream()
                 .map(context::blocked)
                 .reduce(bmgr.makeFalse(), bmgr::or); // TODO: Change to AND?
     }
