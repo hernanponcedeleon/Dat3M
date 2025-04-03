@@ -13,10 +13,7 @@ import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.*;
 import com.dat3m.dartagnan.program.event.*;
-import com.dat3m.dartagnan.program.event.core.Label;
-import com.dat3m.dartagnan.program.event.core.Load;
-import com.dat3m.dartagnan.program.event.core.Local;
-import com.dat3m.dartagnan.program.event.core.Store;
+import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.event.core.threading.ThreadCreate;
 import com.dat3m.dartagnan.program.event.core.threading.ThreadReturn;
 import com.dat3m.dartagnan.program.event.core.threading.ThreadStart;
@@ -107,6 +104,7 @@ public class ThreadCreation implements ProgramProcessor {
     // =============================================================================================
 
     private void createLLVMThreads(Program program) {
+        markInterruptCreations(program);
         final List<ThreadData> threadData = createThreads(program);
         resolvePthreadSelf(program);
         resolveDynamicThreadJoin(program, threadData);
@@ -114,6 +112,22 @@ public class ThreadCreation implements ProgramProcessor {
         resolveTidExpressions(program);
 
         logger.info("Number of threads (including main): {}", program.getThreads().size());
+    }
+
+    private void markInterruptCreations(Program program) {
+        for (Function func : program.getFunctions()) {
+            boolean nextIsInterrupt = false;
+            for (Event e : func.getEvents()) {
+                if (e instanceof GenericVisibleEvent vis && vis.hasTag(Tag.INTERRUPT_HANDLER)) {
+                    nextIsInterrupt = true;
+                }
+
+                if (e instanceof DynamicThreadCreate create && nextIsInterrupt) {
+                    create.setThreadType(Thread.Type.INTERRUPT_HANDLER);
+                    nextIsInterrupt = false;
+                }
+            }
+        }
     }
 
     private List<ThreadData> createThreads(Program program) {
@@ -128,7 +142,7 @@ public class ThreadCreation implements ProgramProcessor {
 
         // We collect metadata about each spawned thread. This is later used to resolve thread joining.
         final List<ThreadData> allThreads = new ArrayList<>();
-        final ThreadData entryPoint = createLLVMThreadFromFunction(main.get(), nextTid++, null);
+        final ThreadData entryPoint = createLLVMThreadFromFunction(main.get(), nextTid++, null, Thread.Type.STANDARD);
         allThreads.add(entryPoint);
 
         final Queue<ThreadData> workingQueue = new ArrayDeque<>(allThreads);
@@ -141,7 +155,7 @@ public class ThreadCreation implements ProgramProcessor {
                 final List<Expression> arguments = create.getArguments();
 
                 final ThreadCreate createEvent = newThreadCreate(arguments);
-                final ThreadData spawnedThread = createLLVMThreadFromFunction(targetFunction, nextTid, createEvent);
+                final ThreadData spawnedThread = createLLVMThreadFromFunction(targetFunction, nextTid, createEvent, create.getThreadType());
                 assert spawnedThread.isDynamic();
                 workingQueue.add(spawnedThread);
                 allThreads.add(spawnedThread);
@@ -261,12 +275,12 @@ public class ThreadCreation implements ProgramProcessor {
         }
     }
 
-    private ThreadData createLLVMThreadFromFunction(Function function, int tid, ThreadCreate creator) {
+    private ThreadData createLLVMThreadFromFunction(Function function, int tid, ThreadCreate creator, Thread.Type type) {
         // ------------------- Create new thread -------------------
         final ThreadStart start = EventFactory.newThreadStart(creator);
         start.setMayFailSpuriously(!forceStart);
         final Thread thread = new Thread(function.getName(), function.getFunctionType(),
-                Lists.transform(function.getParameterRegisters(), Register::getName), tid, start, Thread.Type.STANDARD);
+                Lists.transform(function.getParameterRegisters(), Register::getName), tid, start, type);
         thread.copyUniqueIdsFrom(function);
         function.getProgram().addThread(thread);
 

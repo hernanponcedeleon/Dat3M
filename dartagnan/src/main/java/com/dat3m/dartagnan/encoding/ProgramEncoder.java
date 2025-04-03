@@ -11,6 +11,7 @@ import com.dat3m.dartagnan.program.ScopeHierarchy;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.analysis.BranchEquivalence;
 import com.dat3m.dartagnan.program.analysis.ExecutionAnalysis;
+import com.dat3m.dartagnan.program.analysis.InterruptAnalysis;
 import com.dat3m.dartagnan.program.analysis.ReachingDefinitionsAnalysis;
 import com.dat3m.dartagnan.program.event.*;
 import com.dat3m.dartagnan.program.event.core.*;
@@ -578,25 +579,61 @@ public class ProgramEncoder implements Encoder {
             final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
             final List<BooleanFormula> enc = new ArrayList<>();
 
+            // ------------------------------------------------------------
+            final InterruptAnalysis.Info info = InterruptAnalysis.computeInterruptInfo(thread);
+            final BooleanFormula interruptsDidTerminate = info.interrupts().stream()
+                    .map(ih -> bmgr.or(threadHasTerminatedNormally(ih), bmgr.not(threadHasStarted(ih))))
+                    .reduce(bmgr.makeTrue(), bmgr::and);
+
+            // ----------------------------------------------------------------------
+
             // An enabled thread eventually gets started/scheduled
+            // TODO: Maybe relax for interrupt handlers (do they need to run?)
+            // TODO 2: Can IH run at all if permanently disabled since spawning?
+            //if (thread.getThreadType() != Thread.Type.INTERRUPT_HANDLER) {
             enc.add(bmgr.implication(threadIsEnabled(thread), threadHasStarted(thread)));
+            //}
 
             // For every event in the cf a successor will be in the cf (unless a barrier is blocking).
+            // ... or some interrupt handler failed to terminate
             for (Event cur : thread.getEvents()) {
                 if (cur == thread.getExit()) {
                     break;
                 }
                 final List<Event> succs = new ArrayList<>();
-                final BooleanFormula curCf = context.controlFlow(cur);
-                final BooleanFormula isNotBlocked = cur instanceof BlockingEvent cb ? context.unblocked(cb) : bmgr.makeTrue();
-
                 succs.add(cur.getSuccessor());
                 if (cur instanceof CondJump jump) {
                     succs.add(jump.getLabel());
                 }
-                enc.add(bmgr.implication(bmgr.and(curCf, isNotBlocked), bmgr.or(Lists.transform(succs, context::controlFlow))));
+
+                final BooleanFormula curCf = context.controlFlow(cur);
+                final BooleanFormula isNotBlocked = cur instanceof BlockingEvent cb ? context.unblocked(cb) : bmgr.makeTrue();
+                final BooleanFormula isNotInterruptable = bmgr.not(isInterruptable(cur, info));
+                enc.add(bmgr.implication(
+                        bmgr.and(curCf, isNotBlocked, bmgr.or(isNotInterruptable, interruptsDidTerminate)),
+                        bmgr.or(Lists.transform(succs, context::controlFlow))
+                ));
             }
+
             return bmgr.and(enc);
+        }
+
+        private BooleanFormula isInterruptable(Event cur, InterruptAnalysis.Info info) {
+            final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
+            final List<Event> irqBarriers = info.getImmediateIRQBarriersBefore(cur, exec);
+            BooleanFormula isInterruptable = bmgr.makeTrue();
+            for (int i = 0; i < irqBarriers.size(); i++) {
+                final Event disable = irqBarriers.get(i);
+                if (disable.hasTag(Tag.DISABLE_INTERRUPT)) {
+                    final BooleanFormula wasNotReenabled = irqBarriers.subList(i + 1, irqBarriers.size()).stream()
+                            .filter(b -> b.hasTag(Tag.ENABLE_INTERRUPT))
+                            .map(b -> bmgr.not(context.execution(b)))
+                            .reduce(bmgr.makeTrue(), bmgr::and);
+                    final BooleanFormula isDisabled = bmgr.and(context.execution(disable), wasNotReenabled);
+                    isInterruptable = bmgr.and(isInterruptable, bmgr.not(isDisabled));
+                }
+            }
+            return isInterruptable;
         }
 
         /*

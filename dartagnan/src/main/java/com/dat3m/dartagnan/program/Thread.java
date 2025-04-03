@@ -48,6 +48,8 @@ public class Thread extends Function {
         this.threadType = Type.STANDARD;
     }
 
+    public Type getThreadType() { return threadType; }
+
     public boolean hasScope() {
         return scopeHierarchy.isPresent();
     }

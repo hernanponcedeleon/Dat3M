@@ -17,6 +17,12 @@ extern void __VERIFIER_disable_irq(void);
 extern void __VERIFIER_enable_irq(void);
 extern void __VERIFIER_make_cb(void);
 
+#define __VERIFIER_register_interrupt_handler(func) \
+        ({ pthread_t h;                                \
+        __VERIFIER_make_interrupt_handler();        \
+        pthread_create(&h, NULL, func, NULL);        \
+        h; })
+
 extern int __VERIFIER_racy_read(int*);
 extern void __VERIFIER_racy_write(int*, int);
 
