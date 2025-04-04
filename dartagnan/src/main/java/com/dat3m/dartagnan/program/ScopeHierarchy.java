@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 public class ScopeHierarchy{
 
@@ -70,5 +71,12 @@ public class ScopeHierarchy{
         int thisId = this.getScopeId(scope);
         int otherId = other.getScopeId(scope);
         return (thisId == otherId && thisId != -1);
+    }
+
+    @Override
+    public String toString() {
+        return scopeIds.entrySet().stream()
+                .map(entry -> entry.getKey() + ":" + entry.getValue())
+                .collect(Collectors.joining(",", "[", "]"));
     }
 }
