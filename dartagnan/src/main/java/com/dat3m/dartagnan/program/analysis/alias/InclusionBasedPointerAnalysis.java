@@ -484,7 +484,8 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
         final Modifier modifier = compose(includeEdge.modifier, address.modifier);
         assert includeEdge.source.object != null;
         // If the only included address refers to the last element, treat it as a direct static offset instead.
-        if (!includeEdge.source.object.hasKnownSize()) {
+        // This only works on concrete objects, where size is reliable.
+        if (!includeEdge.source.object.getClass().equals(MemoryObject.class) || !includeEdge.source.object.hasKnownSize()) {
             return;
         }
         final int accessSize = types.getMemorySizeInBytes(entry.getKey().getAccessType());
