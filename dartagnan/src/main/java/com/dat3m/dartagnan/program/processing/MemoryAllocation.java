@@ -21,6 +21,8 @@ import org.sosy_lab.common.configuration.Option;
 import org.sosy_lab.common.configuration.Options;
 
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /*
@@ -93,6 +95,14 @@ public class MemoryAllocation implements ProgramProcessor {
                 final Init init = EventFactory.newInit(memObj, field);
                 if (program.getArch() == Arch.C11 || program.getArch() == Arch.OPENCL) {
                     init.addTags(Tag.C11.NONATOMIC);
+                    if (program.getArch() == Arch.OPENCL) {
+                        Set<String> tags = memObj.getFeatureTags();
+                        // TODO: Ideally this should be done by the compilation pass
+                        if (program.getFormat() == Program.SourceLanguage.SPV) {
+                            tags = tags.stream().map(Tag.Spirv::toOpenCLTag).collect(Collectors.toSet());
+                        }
+                        init.addTags(tags);
+                    }
                 }
                 thread.append(init);
                 thread.append(EventFactory.newLabel("END_OF_T" + thread.getId()));

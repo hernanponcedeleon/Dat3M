@@ -14,9 +14,9 @@ import com.dat3m.dartagnan.expression.misc.ITEExpr;
 import com.dat3m.dartagnan.expression.utils.IntegerHelper;
 import com.google.common.base.VerifyException;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Iterables;
 
 import java.math.BigInteger;
+import java.util.stream.Stream;
 
 public class ExprSimplifier extends ExprTransformer {
 
@@ -322,7 +322,7 @@ public class ExprSimplifier extends ExprTransformer {
         final ImmutableList<Integer> newIndices = indices.subList(indexCursor, indices.size());
         if (inner instanceof ExtractExpr extract) {
             // Merge multiple extracts
-            return expressions.makeExtract(inner, Iterables.concat(extract.getIndices(), newIndices));
+            return expressions.makeExtract(inner, Stream.concat(extract.getIndices().stream(), newIndices.stream()).toList());
         }
         return expressions.makeExtract(inner, newIndices);
     }

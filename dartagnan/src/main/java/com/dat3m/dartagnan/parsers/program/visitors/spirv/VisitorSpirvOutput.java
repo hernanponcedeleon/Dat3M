@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan.parsers.program.visitors.spirv;
 
+import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
@@ -10,16 +11,16 @@ import com.dat3m.dartagnan.expression.type.*;
 import com.dat3m.dartagnan.parsers.SpirvBaseVisitor;
 import com.dat3m.dartagnan.parsers.SpirvParser;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.builders.ProgramBuilder;
-import com.dat3m.dartagnan.parsers.program.visitors.spirv.helpers.HelperInputs;
-import com.dat3m.dartagnan.parsers.program.visitors.spirv.helpers.HelperTypes;
 import com.dat3m.dartagnan.program.Program;
-import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.memory.FinalMemoryValue;
-import com.dat3m.dartagnan.program.memory.ScopedPointerVariable;
+import com.dat3m.dartagnan.program.memory.MemoryObject;
 
+import java.util.LinkedList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import static com.dat3m.dartagnan.expression.integers.IntCmpOp.*;
+import static com.dat3m.dartagnan.expression.utils.ExpressionHelper.extractType;
 import static com.dat3m.dartagnan.program.Program.SpecificationType.*;
 
 public class VisitorSpirvOutput extends SpirvBaseVisitor<Expression> {
@@ -118,23 +119,32 @@ public class VisitorSpirvOutput extends SpirvBaseVisitor<Expression> {
     }
 
     @Override
+    // TODO: Use GEPExpression in FinalMemoryValue
     public Expression visitAssertionValue(SpirvParser.AssertionValueContext ctx) {
         if (ctx.initBaseValue() != null) {
             return expressions.parseValue(ctx.initBaseValue().getText(), types.getArchType());
         }
-        String name = ctx.varName().getText();
-        Expression expression = builder.getExpression(name);
-        if (expression instanceof Register && expression.getType() instanceof ScopedPointerType) {
-            expression = builder.getExpression(HelperInputs.castPointerId(name));
+        String id = ctx.varName().getText();
+        MemoryObject base = getMemoryObject(id);
+        Type resultType = ((PointerType) base.getType()).getPointedType();
+        int offset = 0;
+        if (!ctx.indexValue().isEmpty()) {
+            LinkedList<String> idxStr = ctx.indexValue().stream()
+                    .map(i -> i.ModeHeader_PositiveInteger().getText())
+                    .collect(Collectors.toCollection(LinkedList::new));
+            id += "[" + String.join("][", idxStr) + "]";
+            if (Arch.OPENCL.equals(builder.getArch())) {
+                String first = idxStr.removeFirst();
+                offset = Integer.parseInt(first) * types.getMemorySizeInBytes(resultType);
+            }
+            List<Integer> idxInt = idxStr.stream().map(Integer::parseInt).toList();
+            offset = getMemberOffset(base.getName(), offset, resultType, idxInt);
+            resultType = extractType(resultType, idxInt);
+            if (resultType instanceof ArrayType || resultType instanceof AggregateType) {
+                throw new ParsingException("Index is not deep enough for '%s'", id);
+            }
         }
-        if (expression instanceof ScopedPointerVariable base) {
-            List<Integer> indexes = ctx.indexValue().stream()
-                    .map(c -> Integer.parseInt(c.ModeHeader_PositiveInteger().getText()))
-                    .toList();
-            return createFinalMemoryValue(base, indexes);
-        } else {
-            throw new ParsingException("Uninitialized location %s", name);
-        }
+        return new FinalMemoryValue(id, resultType, base, offset);
     }
 
     private Expression normalize(Expression target, Expression other) {
@@ -190,14 +200,52 @@ public class VisitorSpirvOutput extends SpirvBaseVisitor<Expression> {
         throw new ParsingException("Unrecognised comparison operator");
     }
 
-    private FinalMemoryValue createFinalMemoryValue(ScopedPointerVariable base, List<Integer> indexes) {
-        String name = indexes.isEmpty() ? base.getId() :
-                base.getId() + "[" + String.join("][", indexes.stream().map(Object::toString).toArray(String[]::new)) + "]";
-        Type elType = HelperTypes.getMemberType(base.getId(), base.getInnerType(), indexes);
-        if (elType instanceof ArrayType || elType instanceof AggregateType) {
-            throw new ParsingException("Index is not deep enough for variable '%s'", name);
+    private MemoryObject getMemoryObject(String id) {
+        for (MemoryObject memObj : builder.getMemoryObjects()) {
+            if (id.equals(memObj.getName())) {
+                return memObj;
+            }
         }
-        int offset = HelperTypes.getMemberOffset(base.getId(), 0, base.getInnerType(), indexes);
-        return new FinalMemoryValue(name, elType, base.getAddress(), offset);
+        throw new ParsingException("Annotation refers to an undefined expression '%s'", id);
+    }
+
+    public int getMemberOffset(String id, int offset, Type type, List<Integer> indexes) {
+        if (!indexes.isEmpty()) {
+            id += "[" + indexes.get(0) + "]";
+            if (type instanceof ArrayType aType) {
+                return getArrayMemberOffset(id, offset, aType, indexes);
+            }
+            if (type instanceof AggregateType aType) {
+                return getStructMemberOffset(id, offset, aType, indexes);
+            }
+            throw new ParsingException("Index is too deep for '%s'", id);
+        }
+        return offset;
+    }
+
+    private int getArrayMemberOffset(String id, int offset, ArrayType type, List<Integer> indexes) {
+        int index = indexes.get(0);
+        if (index >= 0) {
+            if (type.getNumElements() < 0 || index < type.getNumElements()) {
+                Type elType = type.getElementType();
+                offset += types.getOffsetInBytes(type, index);
+                return getMemberOffset(id, offset, elType, indexes.subList(1, indexes.size()));
+            }
+            throw new ParsingException("Index is out of bounds for '%s'", id);
+        }
+        throw new ParsingException("Index is negative for '%s'", id);
+    }
+
+    private int getStructMemberOffset(String id, int offset, AggregateType type, List<Integer> indexes) {
+        int index = indexes.get(0);
+        if (index >= 0) {
+            if (index < type.getFields().size()) {
+                offset += type.getFields().get(index).offset();
+                Type elType = type.getFields().get(index).type();
+                return getMemberOffset(id, offset, elType, indexes.subList(1, indexes.size()));
+            }
+            throw new ParsingException("Index is out of bounds for '%s'", id);
+        }
+        throw new ParsingException("Index is negative for '%s'", id);
     }
 }

@@ -2,18 +2,18 @@ package com.dat3m.dartagnan.program.processing.transformers;
 
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.processing.ExprTransformer;
+import com.dat3m.dartagnan.expression.type.PointerType;
+import com.dat3m.dartagnan.expression.type.ScopedPointerType;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.decorations.BuiltIn;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.*;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
-import com.dat3m.dartagnan.program.memory.ScopedPointerVariable;
 import com.dat3m.dartagnan.program.memory.VirtualMemoryObject;
 import com.dat3m.dartagnan.program.misc.NonDetValue;
 
 import java.util.*;
 import java.util.function.IntUnaryOperator;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static java.util.stream.Collectors.toMap;
@@ -27,19 +27,17 @@ public class MemoryTransformer extends ExprTransformer {
     private final Function function;
     private final BuiltIn builtIn;
     private final List<? extends Map<MemoryObject, MemoryObject>> scopeMapping;
-    private final Map<MemoryObject, ScopedPointerVariable> pointerMapping;
     private final List<IntUnaryOperator> scopeIdProvider;
     private final List<IntUnaryOperator> namePrefixIdxProvider;
     private Map<Register, Register> registerMapping;
     private Map<NonDetValue, NonDetValue> nonDetMapping;
     private int tid;
 
-    public MemoryTransformer(ThreadGrid grid, Function function, BuiltIn builtIn, Set<ScopedPointerVariable> variables) {
+    public MemoryTransformer(ThreadGrid grid, Function function, BuiltIn builtIn) {
         this.program = function.getProgram();
         this.function = function;
         this.builtIn = builtIn;
         this.scopeMapping = Stream.generate(() -> new HashMap<MemoryObject, MemoryObject>()).limit(namePrefixes.size()).toList();
-        this.pointerMapping = variables.stream().collect(Collectors.toMap((ScopedPointerVariable::getAddress), (v -> v)));
         this.scopeIdProvider = List.of(grid::thId, grid::sgId, grid::wgId, grid::qfId, grid::dvId);
         this.namePrefixIdxProvider = List.of(
                 i -> i,
@@ -66,16 +64,6 @@ public class MemoryTransformer extends ExprTransformer {
         nonDetMapping = new HashMap<>();
     }
 
-    public List<MemoryObject> getThreadLocalMemoryObjects() {
-        List<MemoryObject> threadLocalMemoryObjects = new ArrayList<>();
-        for (MemoryObject memoryObject : pointerMapping.keySet()) {
-            if (memoryObject.isThreadLocal()) {
-                threadLocalMemoryObjects.add(memoryObject);
-            }
-        }
-        return threadLocalMemoryObjects;
-    }
-
     @Override
     public Expression visitRegister(Register register) {
         return registerMapping.get(register);
@@ -88,7 +76,7 @@ public class MemoryTransformer extends ExprTransformer {
 
     @Override
     public Expression visitMemoryObject(MemoryObject memObj) {
-        String storageClass = pointerMapping.get(memObj).getScopeId();
+        String storageClass = ((ScopedPointerType) memObj.getType()).getScopeId();
         return switch (storageClass) {
             // Device-level memory (keep the same instance)
             case Tag.Spirv.SC_UNIFORM_CONSTANT,
@@ -124,7 +112,7 @@ public class MemoryTransformer extends ExprTransformer {
                 }
                 copy.setInitialValue(offset, value);
             }
-            builtIn.decorate(memObj.getName(), copy, pointerMapping.get(memObj).getInnerType());
+            builtIn.decorate(memObj.getName(), copy, ((PointerType) memObj.getType()).getPointedType());
             mapping.put(memObj, copy);
         }
         return mapping.getOrDefault(memObj, memObj);

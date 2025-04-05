@@ -8,11 +8,13 @@ import com.dat3m.dartagnan.expression.base.BinaryExpressionBase;
 import com.dat3m.dartagnan.expression.utils.ExpressionHelper;
 import com.google.common.collect.ImmutableList;
 
+import java.util.List;
+
 public final class InsertExpr extends BinaryExpressionBase<Type, ExpressionKind.Other> {
 
     private final ImmutableList<Integer> indices;
 
-    public InsertExpr(Expression aggregate, Iterable<Integer> indices, Expression value) {
+    public InsertExpr(Expression aggregate, List<Integer> indices, Expression value) {
         super(aggregate.getType(), ExpressionKind.Other.INSERT, aggregate, value);
         ExpressionHelper.checkSameType(ExpressionHelper.extractType(aggregate.getType(), indices), value.getType());
         this.indices = ImmutableList.copyOf(indices);

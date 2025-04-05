@@ -7,9 +7,6 @@ import com.dat3m.dartagnan.expression.integers.*;
 import com.dat3m.dartagnan.expression.misc.GEPExpr;
 import com.dat3m.dartagnan.expression.misc.ITEExpr;
 import com.dat3m.dartagnan.expression.type.*;
-import com.dat3m.dartagnan.program.memory.MemoryObject;
-import com.dat3m.dartagnan.program.memory.ScopedPointer;
-import com.dat3m.dartagnan.program.memory.ScopedPointerVariable;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
@@ -18,6 +15,8 @@ import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.List;
+
+import static com.dat3m.dartagnan.expression.utils.ExpressionHelper.extractType;
 
 public final class ExpressionFactory {
 
@@ -272,7 +271,7 @@ public final class ExpressionFactory {
         return makeExtract(object, ImmutableList.of(index));
     }
 
-    public Expression makeExtract(Expression object, Iterable<Integer> indices) {
+    public Expression makeExtract(Expression object, List<Integer> indices) {
         if (Iterables.isEmpty(indices)) {
             return object;
         }
@@ -283,8 +282,8 @@ public final class ExpressionFactory {
         return makeInsert(aggregate, value, ImmutableList.of(index));
     }
 
-    public Expression makeInsert(Expression aggregate, Expression value, Iterable<Integer> indices) {
-        if (Iterables.isEmpty(indices)) {
+    public Expression makeInsert(Expression aggregate, Expression value, List<Integer> indices) {
+        if (indices.isEmpty()) {
             return aggregate;
         }
         return new InsertExpr(aggregate, indices, value);
@@ -296,22 +295,14 @@ public final class ExpressionFactory {
 
     // -----------------------------------------------------------------------------------------------------------------
     // Pointers
-
-    public Expression makeGetElementPointer(Type indexingType, Expression base, List<Expression> offsets) {
-        //TODO getPointerType()
-        Preconditions.checkArgument(base.getType().equals(types.getArchType()),
+    public GEPExpr makeGetElementPointer(Type indexingType, Expression base, List<Expression> offsets) {
+        Preconditions.checkArgument(types.getArchType().getClass().isAssignableFrom(base.getType().getClass()),
                 "Applying offsets to non-pointer expression.");
-        return new GEPExpr(indexingType, base, offsets);
-    }
-
-    public ScopedPointer makeScopedPointer(String id, String scopeId, Type type, Expression address) {
-        ScopedPointerType pointerType = types.getScopedPointerType(scopeId, type);
-        return new ScopedPointer(id, pointerType, address);
-    }
-
-    public ScopedPointerVariable makeScopedPointerVariable(String id, String scopeId, Type type, MemoryObject address) {
-        ScopedPointerType pointerType = types.getScopedPointerType(scopeId, type);
-        return new ScopedPointerVariable(id, pointerType, address);
+        Type pointedType = extractType(indexingType, offsets.subList(1, offsets.size()));
+        PointerType type = base.getType() instanceof ScopedPointerType pType
+                ? types.getScopedPointerType(pType.getScopeId(), pointedType)
+                : types.getPointerType(pointedType);
+        return new GEPExpr(type, indexingType, base, offsets);
     }
 
     // -----------------------------------------------------------------------------------------------------------------

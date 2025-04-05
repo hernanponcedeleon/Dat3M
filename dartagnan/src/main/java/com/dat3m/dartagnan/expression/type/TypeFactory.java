@@ -49,6 +49,11 @@ public final class TypeFactory {
         return typeNormalizer.normalize(new IntegerType(bitWidth));
     }
 
+    public PointerType getPointerType(Type pointedType) {
+        checkNotNull(pointedType);
+        return typeNormalizer.normalize(new PointerType(pointedType));
+    }
+
     public ScopedPointerType getScopedPointerType(String scopeId, Type pointedType) {
         checkNotNull(scopeId);
         checkNotNull(pointedType);
@@ -224,7 +229,6 @@ public final class TypeFactory {
             // Primitive type
             decomposition.put(0, type);
         }
-
         return decomposition;
     }
 

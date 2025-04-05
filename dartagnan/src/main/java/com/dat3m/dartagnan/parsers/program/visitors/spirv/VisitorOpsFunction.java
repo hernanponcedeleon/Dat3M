@@ -14,8 +14,6 @@ import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.Local;
 import com.dat3m.dartagnan.program.event.functions.FunctionCall;
-import com.dat3m.dartagnan.program.memory.ScopedPointer;
-import com.dat3m.dartagnan.program.memory.ScopedPointerVariable;
 
 import java.util.*;
 import java.util.stream.IntStream;
@@ -25,11 +23,10 @@ import static com.dat3m.dartagnan.program.event.EventFactory.newVoidFunctionCall
 
 public class VisitorOpsFunction extends SpirvBaseVisitor<Void> {
 
-    private static final int DEFAULT_INPUT_SIZE = 10;
+    static final int DEFAULT_INPUT_SIZE = 10;
     private static final TypeFactory types = TypeFactory.getInstance();
     private final Map<String, Function> forwardFunctions = new HashMap<>();
     private final Map<String, Set<FunctionCall>> forwardCalls = new HashMap<>();
-    private final Map<String, Expression> parameters = new HashMap<>();
     private final ProgramBuilder builder;
     private String currentId;
     private FunctionType currentType;
@@ -86,9 +83,6 @@ public class VisitorOpsFunction extends SpirvBaseVisitor<Void> {
             throw new ParsingException("Duplicated parameter id '%s' in function '%s'", id, currentId);
         }
         currentArgs.add(id);
-        if (currentId.equals(builder.getEntryPointId())) {
-            parameters.put(id, createEntryPointParameter(id, type));
-        }
         if (currentArgs.size() == currentType.getParameterTypes().size()) {
             createFunction();
         }
@@ -109,10 +103,7 @@ public class VisitorOpsFunction extends SpirvBaseVisitor<Void> {
         Type returnType = builder.getType(typeId);
         List<Expression> args = ctx.argument().stream()
                 .map(a -> builder.getExpression(a.getText())).toList();
-        List<Type> argTypes = args.stream()
-                .map(e -> e instanceof ScopedPointer pBase
-                        ? types.getScopedPointerType(pBase.getScopeId(), pBase.getInnerType())
-                        : e.getType()).toList();
+        List<Type> argTypes = args.stream().map(Expression::getType).toList();
         FunctionType functionType = types.getFunctionType(builder.getType(typeId), argTypes);
         Function function = getCalledFunction(functionId, functionType);
         FunctionCall event;
@@ -135,7 +126,8 @@ public class VisitorOpsFunction extends SpirvBaseVisitor<Void> {
         function.getParameterRegisters().forEach(r -> builder.addExpression(r.getName(), r));
         if (currentId.equals(builder.getEntryPointId())) {
             function.getParameterRegisters().forEach(r -> {
-                Local local = EventFactory.newLocal(r, parameters.get(r.getName()));
+                Expression value = createEntryPointParameter(r.getName(), r.getType());
+                Local local = EventFactory.newLocal(r, value);
                 local.addTags(Tag.NOOPT);
                 function.append(local);
             });
@@ -183,12 +175,7 @@ public class VisitorOpsFunction extends SpirvBaseVisitor<Void> {
     private Expression createEntryPointParameter(String id, Type type) {
         Expression value = createEntryPointParameterValue(id, type);
         if (type instanceof ScopedPointerType pType) {
-            String ptrId = HelperInputs.castPointerId(id);
-            pType = types.getScopedPointerType(pType.getScopeId(), value.getType());
-            ScopedPointerVariable pointer = builder.allocateScopedPointerVariable(
-                    HelperInputs.castPointerId(id), value, pType.getScopeId(), value.getType());
-            builder.addExpression(ptrId, pointer);
-            value = pointer.getAddress();
+            return builder.allocateMemory(id, pType, value);
         }
         return value;
     }
@@ -196,8 +183,10 @@ public class VisitorOpsFunction extends SpirvBaseVisitor<Void> {
     private Expression createEntryPointParameterValue(String id, Type type) {
         if (builder.hasInput(id)) {
             if (type instanceof ScopedPointerType pType) {
-                // TODO: Apply decoration FuncParamAttr: ByVal (no array creation),
-                //  Sext (sign extended) and Zext (zero extended)
+                // TODO: Apply decoration FuncParamAttr:
+                //  ByVal (no array creation),
+                //  Sext (sign extended)
+                //  Zext (zero extended)
                 return HelperInputs.castInput(id, types.getArrayType(pType.getPointedType()), builder.getInput(id));
             }
             return HelperInputs.castInput(id, type, builder.getInput(id));

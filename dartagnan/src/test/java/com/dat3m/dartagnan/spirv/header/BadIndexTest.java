@@ -25,22 +25,22 @@ public class BadIndexTest extends AbstractTest {
     public static Iterable<Object[]> data() {
         return Arrays.asList(new Object[][]{
                 {"; @Output: forall %v8[0][0][0]==0",
-                        "Index is too deep for variable '%v8[0][0][0]'"},
+                        "Index is too deep for '%v8[0][0][0]'"},
                 {"; @Output: forall %v8[0]==0",
-                        "Index is not deep enough for variable '%v8[0]'"},
+                        "Index is not deep enough for '%v8[0]'"},
                 {"; @Output: forall %v8[1][0]==0",
-                        "Index is out of bounds for variable '%v8[1]'"},
+                        "Index is out of bounds for '%v8[1]'"},
                 {"; @Output: forall %v8[0][1]==0",
-                        "Index is out of bounds for variable '%v8[0][1]'"},
+                        "Index is out of bounds for '%v8[0][1]'"},
                 {"; @Input: %v8={{{0}}}",
-                        "Mismatching value type for variable '%v8[0][0]', expected 'bv64' but received '{ 0: bv64 }'"},
+                        "Mismatching value type for '%v8[0][0]', expected 'bv64' but received '{ 0: bv64 }'"},
                 {"; @Input: %v8={0}",
-                        "Mismatching value type for variable '%v8[0]', expected '[1 x bv64]' but received 'bv64'"},
+                        "Mismatching value type for '%v8[0]', expected '[1 x bv64]' but received 'bv64'"},
                 {"; @Input: %v8={{0}, {0}}",
-                        "Mismatching value type for variable '%v8', " +
+                        "Mismatching value type for '%v8', " +
                                 "expected '[1 x [1 x bv64]]' but received '{ 0: { 0: bv64 }, 8: { 0: bv64 } }'"},
                 {"; @Input: %v8={{0, 0}}",
-                        "Mismatching value type for variable '%v8[0]', " +
+                        "Mismatching value type for '%v8[0]', " +
                                 "expected '[1 x bv64]' but received '{ 0: bv64, 8: bv64 }'"},
         });
     }
@@ -51,7 +51,7 @@ public class BadIndexTest extends AbstractTest {
             // when
             parse(input);
             fail("Should throw exception");
-        } catch (ParsingException e) {
+        } catch (Exception e) {
             // then
             assertEquals(error, e.getMessage());
         }

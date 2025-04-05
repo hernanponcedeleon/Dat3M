@@ -4,25 +4,17 @@ import com.dat3m.dartagnan.expression.Type;
 
 import java.util.Objects;
 
-public class ScopedPointerType extends IntegerType {
-
-    private static final int ARCH_SIZE = TypeFactory.getInstance().getArchType().getBitWidth();
+public class ScopedPointerType extends PointerType {
 
     private final String scopeId;
-    private final Type pointedType;
 
     ScopedPointerType(String scopeId, Type pointedType) {
-        super(ARCH_SIZE);
+        super(pointedType);
         this.scopeId = scopeId;
-        this.pointedType = pointedType;
     }
 
     public String getScopeId() {
         return scopeId;
-    }
-
-    public Type getPointedType() {
-        return pointedType;
     }
 
     @Override
@@ -33,14 +25,13 @@ public class ScopedPointerType extends IntegerType {
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
-        if (o instanceof ScopedPointerType that) {
-            return Objects.equals(scopeId, that.scopeId) && Objects.equals(pointedType, that.pointedType);
-        }
-        return super.equals(o);
+        if (!(o instanceof ScopedPointerType that)) return false;
+        if (!super.equals(o)) return false;
+        return Objects.equals(scopeId, that.scopeId);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(super.hashCode(), scopeId, pointedType);
+        return Objects.hash(super.hashCode(), scopeId);
     }
 }

@@ -2,7 +2,6 @@ package com.dat3m.dartagnan.program.processing;
 
 import com.dat3m.dartagnan.exception.MalformedProgramException;
 import com.dat3m.dartagnan.expression.Expression;
-import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.Type;
 import com.dat3m.dartagnan.expression.integers.IntLiteral;
 import com.dat3m.dartagnan.expression.misc.GEPExpr;
@@ -10,7 +9,6 @@ import com.dat3m.dartagnan.expression.processing.ExprTransformer;
 import com.dat3m.dartagnan.expression.type.AggregateType;
 import com.dat3m.dartagnan.expression.type.ArrayType;
 import com.dat3m.dartagnan.expression.type.IntegerType;
-import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.event.RegReader;
@@ -65,9 +63,6 @@ public class GEPToAddition implements ProgramProcessor {
     }
 
     private static final class GEPToAdditionTransformer extends ExprTransformer {
-
-        private final TypeFactory types = TypeFactory.getInstance();
-        private final ExpressionFactory expressions = ExpressionFactory.getInstance();
 
         @Override
         public Expression visitGEPExpression(GEPExpr gep) {

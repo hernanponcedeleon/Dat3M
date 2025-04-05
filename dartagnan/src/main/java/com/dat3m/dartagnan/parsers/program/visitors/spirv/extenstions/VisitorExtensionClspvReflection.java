@@ -10,7 +10,7 @@ import com.dat3m.dartagnan.parsers.SpirvParser;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.builders.ProgramBuilder;
 import com.dat3m.dartagnan.program.ThreadGrid;
 import com.dat3m.dartagnan.program.event.Tag;
-import com.dat3m.dartagnan.program.memory.ScopedPointerVariable;
+import com.dat3m.dartagnan.program.memory.MemoryObject;
 
 import java.util.List;
 import java.util.Set;
@@ -21,7 +21,7 @@ public class VisitorExtensionClspvReflection extends VisitorExtension<Void> {
     private static final ExpressionFactory expressions = ExpressionFactory.getInstance();
 
     private final ProgramBuilder builder;
-    private ScopedPointerVariable pushConstant;
+    private MemoryObject pushConstant;
     private AggregateType pushConstantType;
 
     public VisitorExtensionClspvReflection(ProgramBuilder builder) {
@@ -133,18 +133,22 @@ public class VisitorExtensionClspvReflection extends VisitorExtension<Void> {
     // TODO: Better way to identify PushConstant using kernel and arg info methods
     private void initPushConstant() {
         if (pushConstant == null) {
-            List<ScopedPointerVariable> variables = builder.getVariables().stream()
-                    .filter(v -> Tag.Spirv.SC_PUSH_CONSTANT.equals(v.getScopeId()))
-                    .toList();
+            List<MemoryObject> variables = builder.getMemoryObjects().stream()
+                    .filter(v -> {
+                        if (v.getType() instanceof ScopedPointerType pType) {
+                            return Tag.Spirv.SC_PUSH_CONSTANT.equals(pType.getScopeId());
+                        }
+                        return false;
+                    }).toList();
             if (variables.size() == 1) {
                 pushConstant = variables.get(0);
-                Type type = pushConstant.getInnerType();
+                Type type = ((PointerType) pushConstant.getType()).getPointedType();
                 if (type instanceof AggregateType agType) {
                     pushConstantType = agType;
                     return;
                 }
                 throw new ParsingException("Unexpected type '%s' for PushConstant '%s'",
-                        type, pushConstant.getId());
+                        type, pushConstant.getName());
             }
             throw new ParsingException("Cannot identify PushConstant referenced by CLSPV extension");
         }

@@ -3,11 +3,11 @@ package com.dat3m.dartagnan.parsers.program.visitors.spirv;
 import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.expression.Expression;
-import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.Type;
-import com.dat3m.dartagnan.expression.type.ArrayType;
-import com.dat3m.dartagnan.expression.type.IntegerType;
-import com.dat3m.dartagnan.parsers.program.visitors.spirv.helpers.HelperInputs;
+import com.dat3m.dartagnan.expression.integers.IntLiteral;
+import com.dat3m.dartagnan.expression.misc.GEPExpr;
+import com.dat3m.dartagnan.expression.type.ScopedPointerType;
+import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.mocks.MockProgramBuilder;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.mocks.MockSpirvParser;
 import com.dat3m.dartagnan.program.Function;
@@ -17,18 +17,21 @@ import com.dat3m.dartagnan.program.event.core.Local;
 import com.dat3m.dartagnan.program.event.core.Skip;
 import com.dat3m.dartagnan.program.event.functions.ValueFunctionCall;
 import com.dat3m.dartagnan.program.event.functions.VoidFunctionCall;
-import com.dat3m.dartagnan.program.memory.ScopedPointerVariable;
-import com.dat3m.dartagnan.program.memory.VirtualMemoryObject;
+import com.dat3m.dartagnan.program.memory.MemoryObject;
+import com.dat3m.dartagnan.program.misc.NonDetValue;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.util.Arrays;
 import java.util.List;
+import java.util.function.BiPredicate;
+import java.util.function.Predicate;
 
 import static org.junit.Assert.*;
 
 public class VisitorOpsFunctionTest {
 
-    private static final ExpressionFactory expressions = ExpressionFactory.getInstance();
+    private static final TypeFactory types = TypeFactory.getInstance();
     private final MockProgramBuilder builder = new MockProgramBuilder();
     private final VisitorOpsFunction visitor = new VisitorOpsFunction(builder);
 
@@ -36,8 +39,8 @@ public class VisitorOpsFunctionTest {
     public void before() {
         builder.mockVoidType("%void");
         builder.mockBoolType("%bool");
-        builder.mockIntType("%int", 64);
-        builder.mockVectorType("%arr", "%int", 4);
+        builder.mockIntType("%int", 32);
+        builder.mockVectorType("%arr", "%int", 3);
         builder.mockPtrType("%bool_ptr", "%bool", "Uniform");
         builder.mockPtrType("%int_ptr", "%int", "Uniform");
         builder.mockPtrType("%arr_ptr", "%arr", "Uniform");
@@ -489,7 +492,7 @@ public class VisitorOpsFunctionTest {
     }
 
     @Test
-    public void testScalaFunctionParameterWithInput() {
+    public void testScalarFunctionParameterWithInput() {
         // given
         String input = """
                 %func = OpFunction %void None %void_func
@@ -498,22 +501,15 @@ public class VisitorOpsFunctionTest {
 
         builder.mockFunctionType("%void_func", "%void", "%int");
         builder.setEntryPointId("%func");
-        Expression parmInput = expressions.makeValue(1, (IntegerType) builder.getType("%int"));
-        builder.addInput("%param", parmInput);
+        Expression value = builder.mockConstant("%int_1", "%int", 1);
+        builder.addInput("%param", value);
 
         // when
         visit(input);
 
         // then
-        Function function = builder.getCurrentFunction();
-        Local local = (Local) function.getEvents().get(0);
-        assertNotNull(function);
-        assertEquals("%func", function.getName());
-        assertEquals(1, function.getParameterRegisters().size());
-        assertEquals("%param", function.getParameterRegisters().get(0).getName());
-        assertEquals(builder.getType("%int"), function.getParameterRegisters().get(0).getType());
-        assertEquals(parmInput, local.getExpr());
-        assertEquals(builder.getExpression("%param"), local.getResultRegister());
+        verifyEntryPointFunctionSignature("%int");
+        verifyEntryPointFunctionScalarParameter(e -> e.equals(value));
     }
 
     @Test
@@ -526,24 +522,22 @@ public class VisitorOpsFunctionTest {
 
         builder.mockFunctionType("%void_func", "%void", "%int_ptr");
         builder.setEntryPointId("%func");
-        builder.mockConstant("%0", "%int", 0);
-        builder.mockConstant("%input", "%arr", List.of("%0", "%0", "%0", "%0"));
-        builder.addInput("%param", builder.getExpression("%input"));
+
+        Expression[] elements = {
+                builder.mockConstant("%0", "%int", 0),
+                builder.mockConstant("%1", "%int", 1),
+                builder.mockConstant("%2", "%int", 2)
+        };
+        Expression value = builder.mockConstant("%input", "%arr", Arrays.asList(elements));
+        builder.addInput("%param", value);
 
         // when
         visit(input);
 
         // then
-        Function function = builder.getCurrentFunction();
-        Local local = (Local) function.getEvents().get(0);
-        assertNotNull(function);
-        assertEquals("%func", function.getName());
-        assertEquals(1, function.getParameterRegisters().size());
-        assertEquals("%param", function.getParameterRegisters().get(0).getName());
-        assertEquals(builder.getType("%int_ptr"), function.getParameterRegisters().get(0).getType());
-        assertEquals(HelperInputs.castPointerId("%param"), ((VirtualMemoryObject) local.getExpr()).getName());
-        assertEquals(expressions.makeZero((IntegerType) builder.getType("%int")), ((VirtualMemoryObject) local.getExpr()).getInitialValue(0));
-        assertEquals(builder.getExpression("%param"), local.getResultRegister());
+        verifyEntryPointFunctionSignature("%int_ptr");
+        verifyEntryPointFunctionPointerParameter("%int_ptr", 3,
+                (e, i) -> e.equals(elements[i]));
     }
 
     @Test
@@ -551,35 +545,57 @@ public class VisitorOpsFunctionTest {
         // given
         String input = """
                 %func = OpFunction %void None %void_func
-                %param = OpFunctionParameter %int_ptr
+                %param = OpFunctionParameter %arr_ptr
                 """;
 
-        builder.mockFunctionType("%void_func", "%void", "%int_ptr");
+        builder.mockFunctionType("%void_func", "%void", "%arr_ptr");
+        builder.mockVectorType("%arr_arr", "%arr", 2);
         builder.setEntryPointId("%func");
-        Expression i1 = expressions.makeValue(1, (IntegerType) builder.getType("%int"));
-        Expression i2 = expressions.makeValue(2, (IntegerType) builder.getType("%int"));
-        Expression parmInput = expressions.makeArray(builder.getType("%int"), List.of(i1, i2), true);
-        builder.addInput("%param", parmInput);
+
+        Expression[] elements = {
+                builder.mockConstant("%0", "%int", 0),
+                builder.mockConstant("%1", "%int", 1),
+                builder.mockConstant("%2", "%int", 2),
+                builder.mockConstant("%3", "%int", 3),
+                builder.mockConstant("%4", "%int", 4),
+                builder.mockConstant("%5", "%int", 5)
+        };
+        Expression value = builder.mockConstant("%input", "%arr_arr", List.of(
+                builder.mockConstant("%arr1", "%arr", List.of(elements[0], elements[1], elements[2])),
+                builder.mockConstant("%arr2", "%arr", List.of(elements[3], elements[4], elements[5]))
+        ));
+        builder.addInput("%param", value);
 
         // when
         visit(input);
 
         // then
-        Function function = builder.getCurrentFunction();
-        Local local = (Local) function.getEvents().get(0);
-        assertNotNull(function);
-        assertEquals("%func", function.getName());
-        assertEquals(1, function.getParameterRegisters().size());
-        assertEquals("%param", function.getParameterRegisters().get(0).getName());
-        assertEquals(builder.getType("%int_ptr"), function.getParameterRegisters().get(0).getType());
-        assertEquals(HelperInputs.castPointerId("%param"), ((VirtualMemoryObject) local.getExpr()).getName());
-        assertEquals(parmInput.getOperands().get(0), ((VirtualMemoryObject) local.getExpr()).getInitialValue(0));
-        assertEquals(parmInput.getOperands().get(1), ((VirtualMemoryObject) local.getExpr()).getInitialValue(8));
-        assertEquals(builder.getExpression("%param"), local.getResultRegister());
+        verifyEntryPointFunctionSignature("%arr_ptr");
+        verifyEntryPointFunctionPointerParameter("%arr_ptr", 2,
+                (e, i) -> e.equals(elements[i]));
     }
 
     @Test
-    public void testPointerFunctionParameterWithNoInput() {
+    public void testScalarFunctionParameterWithoutInput() {
+        // given
+        String input = """
+                %func = OpFunction %void None %void_func
+                %param = OpFunctionParameter %int
+                """;
+
+        builder.mockFunctionType("%void_func", "%void", "%int");
+        builder.setEntryPointId("%func");
+
+        // when
+        visit(input);
+
+        // then
+        verifyEntryPointFunctionSignature("%int");
+        verifyEntryPointFunctionScalarParameter(e -> e instanceof NonDetValue);
+    }
+
+    @Test
+    public void testPointerFunctionParameterWithoutInput() {
         // given
         String input = """
                 %func = OpFunction %void None %void_func
@@ -593,20 +609,70 @@ public class VisitorOpsFunctionTest {
         visit(input);
 
         // then
+        verifyEntryPointFunctionSignature("%int_ptr");
+        verifyEntryPointFunctionPointerParameter("%int_ptr", VisitorOpsFunction.DEFAULT_INPUT_SIZE,
+                (e, i) -> e instanceof NonDetValue);
+    }
+
+    @Test
+    public void testArrayPointerFunctionParameterWithoutInput() {
+        // given
+        String input = """
+                %func = OpFunction %void None %void_func
+                %param = OpFunctionParameter %arr_ptr
+                """;
+
+        builder.mockFunctionType("%void_func", "%void", "%arr_ptr");
+        builder.mockVectorType("%arr_arr", "%arr", 2);
+        builder.setEntryPointId("%func");
+
+        // when
+        visit(input);
+
+        // then
+        verifyEntryPointFunctionSignature("%arr_ptr");
+        verifyEntryPointFunctionPointerParameter("%arr_ptr", VisitorOpsFunction.DEFAULT_INPUT_SIZE,
+                (e, i) -> e instanceof NonDetValue);
+    }
+
+    private void verifyEntryPointFunctionSignature(String typeId) {
         Function function = builder.getCurrentFunction();
         Local local = (Local) function.getEvents().get(0);
-        assertNotNull(function);
         assertEquals("%func", function.getName());
         assertEquals(1, function.getParameterRegisters().size());
         assertEquals("%param", function.getParameterRegisters().get(0).getName());
-        assertEquals(builder.getType("%int_ptr"), function.getParameterRegisters().get(0).getType());
-        assertEquals(HelperInputs.castPointerId("%param"), ((VirtualMemoryObject) local.getExpr()).getName());
+        assertEquals(builder.getType(typeId), function.getParameterRegisters().get(0).getType());
         assertEquals(builder.getExpression("%param"), local.getResultRegister());
-        ArrayType type = (ArrayType) ((ScopedPointerVariable) builder.getExpression(HelperInputs.castPointerId("%param"))).getInnerType();
-        assertEquals(builder.getType("%int"), type.getElementType());
-        assertEquals(10, type.getNumElements());
     }
 
+    private void verifyEntryPointFunctionScalarParameter(Predicate<Expression> f) {
+        Function function = builder.getCurrentFunction();
+        Local local = (Local) function.getEvents().get(0);
+        assertTrue(f.test(local.getExpr()));
+    }
+
+    private void verifyEntryPointFunctionPointerParameter(String typeId, int count, BiPredicate<Expression, Integer> f) {
+        Function function = builder.getCurrentFunction();
+        Local local = (Local) function.getEvents().get(0);
+        GEPExpr ptr = (GEPExpr) local.getExpr();
+        ScopedPointerType ptrType = (ScopedPointerType) builder.getType(typeId);
+        MemoryObject memObj = builder.getProgram().getMemory().getObjects().stream()
+                .filter(o -> o.getName().equals("%param")).findFirst().orElseThrow();
+
+        assertEquals(ptrType, ptr.getType());
+        assertEquals(memObj, ptr.getBase());
+        assertEquals(ptrType.getPointedType(), ptr.getIndexingType());
+        assertEquals(1, ptr.getOffsets().size());
+        assertEquals(0, ((IntLiteral) ptr.getOffsets().get(0)).getValueAsInt());
+
+        int totalSize = types.getMemorySizeInBytes(ptrType.getPointedType()) * count;
+        int elementSize = types.getMemorySizeInBytes(builder.getType("%int"));
+        assertEquals(ptrType, memObj.getType());
+        assertEquals(totalSize, memObj.getKnownSize());
+        for (int i = 0; i < totalSize / elementSize; i++) {
+            assertTrue(f.test(memObj.getInitialValue(i * elementSize), i));
+        }
+    }
 
     private void visit(String text) {
         builder.getControlFlowBuilder().getOrCreateLabel("%mock_label");

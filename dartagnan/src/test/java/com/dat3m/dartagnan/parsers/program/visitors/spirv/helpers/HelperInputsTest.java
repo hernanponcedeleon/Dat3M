@@ -509,7 +509,7 @@ public class HelperInputsTest {
             castInput("test", type, value);
             fail("Should throw exception");
         } catch (ParsingException e) {
-            assertEquals(String.format("Mismatching value type for variable '%s', " +
+            assertEquals(String.format("Mismatching value type for '%s', " +
                     "expected '%s' but received '%s'", id, expected, actual), e.getMessage());
         }
     }

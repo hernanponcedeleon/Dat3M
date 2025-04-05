@@ -19,10 +19,6 @@ public class HelperInputs {
     private HelperInputs() {
     }
 
-    public static String castPointerId(String id) {
-        return "&" + id;
-    }
-
     public static Expression castInput(String id, Type type, Expression value) {
         if (type instanceof ArrayType aType) {
             return castArray(id, aType, value);
@@ -82,7 +78,7 @@ public class HelperInputs {
     }
 
     private static String errorMismatchingType(String id, Type expected, Type actual) {
-        return String.format("Mismatching value type for variable '%s', " +
+        return String.format("Mismatching value type for '%s', " +
                 "expected '%s' but received '%s'", id, expected, actual);
     }
 }
