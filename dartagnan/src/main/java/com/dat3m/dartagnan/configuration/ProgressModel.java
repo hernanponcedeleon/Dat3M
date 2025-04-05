@@ -110,7 +110,7 @@ public enum ProgressModel {
                             .split(value);
                     final Map<String, ProgressModel> parsed = Maps.transformValues(split, ProgressModel::valueOf);
                     final ProgressModel defaultProg = parsed.getOrDefault("default", ProgressModel.getDefault());
-                    final Map<String, ProgressModel> result = ImmutableMap.copyOf(Maps.filterKeys(parsed, k -> k.equals("default")));
+                    final Map<String, ProgressModel> result = ImmutableMap.copyOf(Maps.filterKeys(parsed, k -> !k.equals("default")));
                     return scoped(defaultProg, result);
                 } catch (Exception ex) {
                     throw new InvalidConfigurationException(ex.getMessage());
