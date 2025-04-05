@@ -5,15 +5,16 @@ import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.integers.IntCmpOp;
 import com.dat3m.dartagnan.expression.integers.IntLiteral;
 import com.dat3m.dartagnan.expression.type.IntegerType;
-import com.dat3m.dartagnan.program.Program;
-import com.dat3m.dartagnan.program.Register;
-import com.dat3m.dartagnan.program.ScopeHierarchy;
 import com.dat3m.dartagnan.program.Thread;
+import com.dat3m.dartagnan.program.*;
 import com.dat3m.dartagnan.program.analysis.BranchEquivalence;
 import com.dat3m.dartagnan.program.analysis.ExecutionAnalysis;
 import com.dat3m.dartagnan.program.analysis.ReachingDefinitionsAnalysis;
 import com.dat3m.dartagnan.program.event.*;
-import com.dat3m.dartagnan.program.event.core.*;
+import com.dat3m.dartagnan.program.event.core.CondJump;
+import com.dat3m.dartagnan.program.event.core.ControlBarrier;
+import com.dat3m.dartagnan.program.event.core.Label;
+import com.dat3m.dartagnan.program.event.core.NamedBarrier;
 import com.dat3m.dartagnan.program.event.core.threading.ThreadStart;
 import com.dat3m.dartagnan.program.memory.Memory;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
@@ -112,10 +113,6 @@ public class ProgramEncoder implements Encoder {
 
     // ====================================== Control flow ======================================
 
-    private boolean isInitThread(Thread thread) {
-        return thread.getEntry().getSuccessor() instanceof Init;
-    }
-
     /*
         A thread is enabled if it has no creator or the corresponding ThreadCreate
         event was executed (and didn't fail spuriously).
@@ -180,17 +177,21 @@ public class ProgramEncoder implements Encoder {
     public BooleanFormula encodeControlFlow() {
         logger.info("Encoding program control flow with progress model {}", context.getTask().getProgressModel());
 
+        final Program program = context.getTask().getProgram();
         final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
         final ForwardProgressEncoder progressEncoder = new ForwardProgressEncoder();
         List<BooleanFormula> enc = new ArrayList<>();
-        for(Thread t : context.getTask().getProgram().getThreads()){
+        for(Thread t : program.getThreads()){
             enc.add(encodeConsistentThreadCF(t));
-            if (isInitThread(t)) {
-                // Init threads are always scheduled fairly
+            if (IRHelper.isInitThread(t)) {
+                // Init threads are always progressing
                 enc.add(progressEncoder.encodeFairForwardProgress(t));
             }
         }
-        enc.add(encodeForwardProgress(context.getTask().getProgram(), context.getTask().getProgressModel()));
+
+        // Actual forward progress
+        enc.add(progressEncoder.encodeForwardProgress(program, context.getTask().getProgressModel()));
+
         return bmgr.and(enc);
     }
 
@@ -343,16 +344,6 @@ public class ProgramEncoder implements Encoder {
         enc = bmgr.and(enc, imgr.equal(syncCount, imgr.sum(syncCountMembers)));
 
         return bmgr.and(enc, bmgr.implication(context.sync(e1), context.execution(e1)));
-    }
-
-    private BooleanFormula encodeForwardProgress(Program program, ProgressModel progressModel) {
-        final ForwardProgressEncoder progressEncoder = new ForwardProgressEncoder();
-        return switch (progressModel) {
-            case FAIR -> progressEncoder.encodeFairForwardProgress(program);
-            case HSA -> progressEncoder.encodeHSAForwardProgress(program);
-            case OBE -> progressEncoder.encodeOBEForwardProgress(program);
-            case UNFAIR -> progressEncoder.encodeUnfairForwardProgress(program);
-        };
     }
 
     // ====================================== Memory layout ======================================
@@ -517,7 +508,7 @@ public class ProgramEncoder implements Encoder {
     private class ForwardProgressEncoder {
 
         /*
-            Encodes fair forward progress for a single thread: the thread will eventually get scheduled (if it is enabled).
+            Encodes fair forward progress for a single thread: the thread will eventually get scheduled (if it is schedulable).
             In particular, if the thread is enabled then it will eventually execute.
          */
         private BooleanFormula encodeFairForwardProgress(Thread thread) {
@@ -545,99 +536,119 @@ public class ProgramEncoder implements Encoder {
             return bmgr.and(enc);
         }
 
-        /*
-            Minimal progress means that at least one thread must get scheduled, i.e., the execution cannot just stop.
-            In particular, a single-threaded program must progress and concurrent programs with only finite threads
-            must terminate (unless blocked).
+        // ================================================= New Encoding =================================================
 
-            NOTE: For producing correct verdicts on loop-based nontermination, we do not really require
-                  minimal progress guarantees.
-                  This may change in the presence of control barriers, depending on how they affect scheduling,
-                  i.e., do blocked threads remain eligible for scheduling?
-         */
-        private BooleanFormula encodeMinimalProgress(Program program) {
-            final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
-
-            BooleanFormula allThreadsTerminated = bmgr.makeTrue();
-            BooleanFormula aThreadIsStuck = bmgr.makeFalse();
-            for (Thread t : program.getThreads()) {
-                if (isInitThread(t)) {
-                    continue;
-                }
-                allThreadsTerminated = bmgr.and(allThreadsTerminated,
-                        bmgr.or(bmgr.not(threadIsEnabled(t)), threadHasTerminated(t))
-                );
-                // Here we assume that a thread stuck in a barrier is eligible for scheduling
-                // so we can (unfairly) schedule the blocked thread indefinitely
-                // TODO: We may revise this and disallow blocked threads from getting scheduled again.
-                aThreadIsStuck = bmgr.or(aThreadIsStuck,
-                        bmgr.or(threadIsStuckInLoop(t), threadIsBlocked(t))
-                );
-            }
-
-            return bmgr.or(allThreadsTerminated, aThreadIsStuck);
+        private BooleanFormula hasForwardProgressVar(ThreadHierarchy threadHierarchy) {
+            return context.getBooleanFormulaManager().makeVariable("hasProgress " + threadHierarchy.toString());
         }
 
-        // ---------------------------------------------------------------------------
+        private BooleanFormula isSchedulable(ThreadHierarchy threadHierarchy) {
+            return context.getBooleanFormulaManager().makeVariable("schedulable " + threadHierarchy.toString());
+        }
 
-        // FAIR: All threads have fair forward progress
-        private BooleanFormula encodeFairForwardProgress(Program program) {
+        private BooleanFormula wasScheduledOnce(ThreadHierarchy threadHierarchy) {
+            return context.getBooleanFormulaManager().makeVariable("wasScheduledOnce " + threadHierarchy.toString());
+        }
+
+        private BooleanFormula encodeForwardProgress(Program program, ProgressModel.Hierarchy progressModel) {
             final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
-            final List<BooleanFormula> enc = new ArrayList<>();
-            for (Thread thread : program.getThreads()) {
-                if (!isInitThread(thread)) {
-                    // We skip init threads because they get special treatment.
-                    enc.add(encodeFairForwardProgress(thread));
+            List<BooleanFormula> enc = new ArrayList<>();
+
+            // Step (1): Find hierarchy (this does not contain init threads)
+            final ThreadHierarchy root = ThreadHierarchy.from(program);
+            final List<ThreadHierarchy> allGroups = root.getFlattened();
+
+            // Step (2): Encode basic properties
+
+            // (2.0 Global Progress)
+            enc.add(hasForwardProgressVar(root));
+
+            // (2.1 Consistent Progress): Progress/Schedulability in group implies progress/schedulability in parent
+            for (ThreadHierarchy group : allGroups) {
+                if (!group.isRoot()) {
+                    enc.add(bmgr.implication(hasForwardProgressVar(group), hasForwardProgressVar(group.getParent())));
+                    enc.add(bmgr.implication(isSchedulable(group), isSchedulable(group.getParent())));
+                    enc.add(bmgr.implication(wasScheduledOnce(group), wasScheduledOnce(group.getParent())));
                 }
             }
+
+            // (2.2 Minimal Progress Forwarding): Progress in schedulable group implies progress in some schedulable child
+            for (ThreadHierarchy group : allGroups) {
+                if (group.isLeaf()) {
+                    continue;
+                }
+                enc.add(bmgr.implication(bmgr.and(hasForwardProgressVar(group), isSchedulable(group)),
+                        group.getChildren().stream()
+                                .map(c -> bmgr.and(hasForwardProgressVar(c), isSchedulable(c)))
+                                .reduce(bmgr.makeFalse(), bmgr::or)
+                        ));
+            }
+
+            // (2.3 Base cases for threads)
+            allGroups.stream()
+                    .filter(ThreadHierarchy.Leaf.class::isInstance)
+                    .map(ThreadHierarchy.Leaf.class::cast)
+                    .forEach(leaf -> {
+                        final Thread t = leaf.thread();
+
+                        // Schedulability
+                        final BooleanFormula schedulable = bmgr.and(
+                                threadIsEnabled(t),
+                                bmgr.not(threadHasTerminated(t)),
+                                bmgr.not(threadIsBlocked(t))
+                        );
+                        enc.add(bmgr.equivalence(schedulable, isSchedulable(leaf)));
+                        // Forward Progress
+                        enc.add(bmgr.implication(hasForwardProgressVar(leaf), encodeFairForwardProgress(t)));
+                        // For OBE
+                        enc.add(bmgr.equivalence(threadHasStarted(t), wasScheduledOnce(leaf)));
+                    });
+
+
+            // (3) Encode actual progress hierarchy
+            allGroups.stream()
+                    .filter(g -> !g.isLeaf())
+                    .forEach(g -> enc.add(encodeProgressForwarding(g, progressModel.getProgressAtScope(g.getScope()))));
+
             return bmgr.and(enc);
         }
 
-        // UNFAIR: No threads have fair forward progress
-        private BooleanFormula encodeUnfairForwardProgress(Program program) {
-            return encodeMinimalProgress(program);
-        }
-
-        // OBE: All executing threads are scheduled fairly.
-        private BooleanFormula encodeOBEForwardProgress(Program program) {
+        private BooleanFormula encodeProgressForwarding(ThreadHierarchy group, ProgressModel progressModel) {
             final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
             final List<BooleanFormula> enc = new ArrayList<>();
-            for (Thread thread : program.getThreads()) {
-                if (isInitThread(thread)) {
-                    continue;
+
+            switch (progressModel) {
+                case FAIR -> {
+                    group.getChildren().stream()
+                            .map(this::hasForwardProgressVar)
+                            .forEach(enc::add);
                 }
-                final BooleanFormula wasScheduledOnce = threadHasStarted(thread);
-                final BooleanFormula fairProgress = encodeFairForwardProgress(thread);
-                enc.add(bmgr.implication(wasScheduledOnce, fairProgress));
+                case HSA -> {
+                    final List<ThreadHierarchy> sortedChildren = group.getChildren().stream()
+                            .sorted(Comparator.comparingInt(ThreadHierarchy::getId))
+                            .toList();
+                    for (int i = 0; i < sortedChildren.size(); i++) {
+                        final ThreadHierarchy child = sortedChildren.get(i);
+                        final BooleanFormula noLowerIdSchedulable =
+                                bmgr.not(sortedChildren.subList(0, i).stream()
+                                        .map(this::isSchedulable)
+                                        .reduce(bmgr.makeFalse(), bmgr::or));
+
+                        enc.add(bmgr.implication(noLowerIdSchedulable, hasForwardProgressVar(child)));
+                    }
+                }
+                case OBE -> {
+                    group.getChildren().stream()
+                            .map(c -> bmgr.implication(wasScheduledOnce(c), hasForwardProgressVar(c)))
+                            .forEach(enc::add);
+                }
+                case UNFAIR -> {
+                    // Do nothing
+                }
             }
-            enc.add(encodeMinimalProgress(program));
-            return bmgr.and(enc);
+
+            return bmgr.implication(hasForwardProgressVar(group), bmgr.and(enc));
         }
-
-        // HSA: Lowest id thread is scheduled fairly.
-        private BooleanFormula encodeHSAForwardProgress(Program program) {
-            final List<Thread> threads = new ArrayList<>(program.getThreads());
-            threads.sort(Comparator.comparingInt(Thread::getId));
-            final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
-
-            final List<BooleanFormula> enc = new ArrayList<>();
-            for (int i = 0; i < threads.size(); i++) {
-                final Thread thread = threads.get(i);
-                if (isInitThread(thread)) {
-                    continue;
-                }
-                final List<BooleanFormula> allLowerIdThreadsTerminated = new ArrayList<>();
-                for (Thread t : threads.subList(0, i)) {
-                    allLowerIdThreadsTerminated.add(bmgr.or(threadHasTerminated(t), bmgr.not(threadIsEnabled(t))));
-                }
-                final BooleanFormula threadHasLowestIdAmongActiveThreads = bmgr.and(allLowerIdThreadsTerminated);
-                final BooleanFormula fairProgress = encodeFairForwardProgress(thread);
-                enc.add(bmgr.implication(threadHasLowestIdAmongActiveThreads, fairProgress));
-            }
-            enc.add(encodeMinimalProgress(program));
-            return bmgr.and(enc);
-        }
-
     }
 }
 

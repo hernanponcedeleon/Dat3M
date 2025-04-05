@@ -8,7 +8,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-public class ScopeHierarchy{
+public class ScopeHierarchy {
 
     // There is a hierarchy of scopes, the order of keys
     // is important, thus we use a LinkedHashMap
