@@ -482,8 +482,8 @@ public class WmmEncoder implements Encoder {
         }
 
         @Override
-        public Void visitReadModifyWrites(ReadModifyWrites rmwDef) {
-            final Relation rmw = rmwDef.getDefinedRelation();
+        public Void visitExclusivePairs(ExclusivePairs lxsxDef) {
+            final Relation rmw = lxsxDef.getDefinedRelation();
             BooleanFormula unpredictable = bmgr.makeFalse();
             final RelationAnalysis.Knowledge k = ra.getKnowledge(rmw);
             final Map<Event, Set<Event>> mayIn = k.getMaySet().getInMap();

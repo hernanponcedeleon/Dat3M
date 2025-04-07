@@ -162,8 +162,13 @@ public final class ConstraintCopier implements Constraint.Visitor<Constraint> {
     }
 
     @Override
-    public ReadModifyWrites visitReadModifyWrites(ReadModifyWrites rmw) {
-        return new ReadModifyWrites(translate(rmw.getDefinedRelation()));
+    public AtomicMemoryOperations visitAtomicMemoryOperations(AtomicMemoryOperations amo) {
+        return new AtomicMemoryOperations(translate(amo.getDefinedRelation()));
+    }
+
+    @Override
+    public ExclusivePairs visitExclusivePairs(ExclusivePairs lxsx) {
+        return new ExclusivePairs(translate(lxsx.getDefinedRelation()));
     }
 
     @Override

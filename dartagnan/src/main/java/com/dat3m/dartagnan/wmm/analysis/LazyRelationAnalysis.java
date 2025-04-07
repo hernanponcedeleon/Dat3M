@@ -280,9 +280,19 @@ public class LazyRelationAnalysis extends NativeRelationAnalysis {
         }
 
         @Override
-        public RelationAnalysis.Knowledge visitReadModifyWrites(ReadModifyWrites definition) {
+        public RelationAnalysis.Knowledge visitAtomicMemoryOperations(AtomicMemoryOperations definition) {
             long start = System.currentTimeMillis();
-            RelationAnalysis.Knowledge base = nativeInitializer.visitReadModifyWrites(definition);
+            RelationAnalysis.Knowledge base = nativeInitializer.visitAtomicMemoryOperations(definition);
+            EventGraph may = ImmutableMapEventGraph.from(base.getMaySet());
+            EventGraph must = ImmutableMapEventGraph.from(base.getMustSet());
+            time(definition, start, System.currentTimeMillis());
+            return new RelationAnalysis.Knowledge(may, must);
+        }
+
+        @Override
+        public RelationAnalysis.Knowledge visitExclusivePairs(ExclusivePairs definition) {
+            long start = System.currentTimeMillis();
+            RelationAnalysis.Knowledge base = nativeInitializer.visitExclusivePairs(definition);
             EventGraph may = ImmutableMapEventGraph.from(base.getMaySet());
             EventGraph must = ImmutableMapEventGraph.from(base.getMustSet());
             time(definition, start, System.currentTimeMillis());

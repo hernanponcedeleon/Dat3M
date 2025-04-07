@@ -195,7 +195,9 @@ public class Wmm {
             case EXT -> new External(r);
             case CO -> new Coherence(r);
             case RF -> new ReadFrom(r);
-            case RMW -> new ReadModifyWrites(r);
+            case RMW -> union(r, getOrCreatePredefinedRelation(AMO), getOrCreatePredefinedRelation(LXSX));
+            case AMO -> new AtomicMemoryOperations(r);
+            case LXSX -> new ExclusivePairs(r);
             case CASDEP -> new CASDependency(r);
             case SI -> new SameInstruction(r);
             case CRIT -> new LinuxCriticalSections(r);

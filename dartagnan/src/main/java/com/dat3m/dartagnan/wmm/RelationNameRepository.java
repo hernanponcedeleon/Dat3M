@@ -14,6 +14,8 @@ public class RelationNameRepository {
     public static final String CO = "co";
     public static final String RF = "rf";
     public static final String RMW = "rmw";
+    public static final String AMO = "amo";
+    public static final String LXSX = "lxsx";
     public static final String CRIT = "rcu-rscs";
     public static final String EMPTY = "0";
     public static final String DATA = "data";

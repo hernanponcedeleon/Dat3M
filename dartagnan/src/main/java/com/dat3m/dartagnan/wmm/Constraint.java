@@ -82,7 +82,8 @@ public interface Constraint {
         default T visitInternalDataDependency(DirectDataDependency idd) { return visitDefinition(idd); }
         default T visitControlDependency(DirectControlDependency ctrlDirect) { return visitDefinition(ctrlDirect); }
         default T visitAddressDependency(DirectAddressDependency addrDirect) { return visitDefinition(addrDirect); }
-        default T visitReadModifyWrites(ReadModifyWrites rmw) { return visitDefinition(rmw); }
+        default T visitAtomicMemoryOperations(AtomicMemoryOperations amo) { return visitDefinition(amo); }
+        default T visitExclusivePairs(ExclusivePairs lxsx) { return visitDefinition(lxsx); }
         default T visitCoherence(Coherence co) { return visitDefinition(co); }
         default T visitSameLocation(SameLocation loc) { return visitDefinition(loc); }
         default T visitReadFrom(ReadFrom rf) { return visitDefinition(rf); }

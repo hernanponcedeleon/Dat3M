@@ -360,16 +360,24 @@ public class ExecutionModelManager {
         }
 
         @Override
-        public Void visitReadModifyWrites(ReadModifyWrites rmw) {
-            Relation relation = rmw.getDefinedRelation();
+        public Void visitAtomicMemoryOperations(AtomicMemoryOperations rmw) {
+            return visitReadModifyWrites(rmw.getDefinedRelation());
+        }
+
+        @Override
+        public Void visitExclusivePairs(ExclusivePairs lxsx) {
+            return visitReadModifyWrites(lxsx.getDefinedRelation());
+        }
+
+        private Void visitReadModifyWrites(Relation relation) {
             SimpleGraph rg = (SimpleGraph) relGraphCache.get(relation);
             EncodingContext.EdgeEncoder edge = context.edge(relation);
 
             for (Map.Entry<ValueModel, Set<LoadModel>> reads : executionModel.getAddressReadsMap().entrySet()) {
-                ValueModel address = reads.getKey();
-                if (!executionModel.getAddressWritesMap().containsKey(address)) { continue; }
+                final Set<StoreModel> writes = executionModel.getAddressWritesMap().get(reads.getKey());
+                if (writes == null) { continue; }
                 for (LoadModel read : reads.getValue()) {
-                    for (StoreModel write : executionModel.getAddressWritesMap().get(address)) {
+                    for (StoreModel write : writes) {
                         if (isTrue(edge.encode(read.getEvent(), write.getEvent()))) {
                             rg.add(new Edge(read.getId(), write.getId()));
                         }

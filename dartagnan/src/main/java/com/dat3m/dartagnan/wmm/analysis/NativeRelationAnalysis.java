@@ -701,7 +701,7 @@ public class NativeRelationAnalysis implements RelationAnalysis {
         }
 
         @Override
-        public MutableKnowledge visitReadModifyWrites(ReadModifyWrites rmw) {
+        public MutableKnowledge visitAtomicMemoryOperations(AtomicMemoryOperations amo) {
             //NOTE: Changes to the semantics of this method may need to be reflected in RMWGraph for Refinement!
             // ----- Compute must set -----
             MutableEventGraph must = new MapEventGraph();
@@ -709,7 +709,6 @@ public class NativeRelationAnalysis implements RelationAnalysis {
             for (RMWStore store : program.getThreadEvents(RMWStore.class)) {
                 must.add(store.getLoadEvent(), store);
             }
-
             // Atomics blocks: BeginAtomic -> EndAtomic
             for (EndAtomic end : program.getThreadEvents(EndAtomic.class)) {
                 List<Event> block = end.getBlock().stream().filter(x -> x.hasTag(VISIBLE)).toList();
@@ -722,8 +721,14 @@ public class NativeRelationAnalysis implements RelationAnalysis {
                     }
                 }
             }
-            // ----- Compute may set -----
-            MutableEventGraph may = MapEventGraph.from(must);
+            return new MutableKnowledge(must, MapEventGraph.from(must));
+        }
+
+        @Override
+        public MutableKnowledge visitExclusivePairs(ExclusivePairs lxsx) {
+            //NOTE: Changes to the semantics of this method may need to be reflected in RMWGraph for Refinement!
+            final MutableEventGraph must = new MapEventGraph();
+            final MutableEventGraph may = new MapEventGraph();
             // LoadExcl -> StoreExcl
             for (Thread thread : program.getThreads()) {
                 // Currently likely empty, because mixed-size accesses are the only cause

@@ -97,7 +97,12 @@ public class LazyEncodeSets implements Constraint.Visitor<Boolean> {
     }
 
     @Override
-    public Boolean visitReadModifyWrites(ReadModifyWrites definition) {
+    public Boolean visitAtomicMemoryOperations(AtomicMemoryOperations definition) {
+        return doUpdateSelf(definition);
+    }
+
+    @Override
+    public Boolean visitExclusivePairs(ExclusivePairs definition) {
         return doUpdateSelf(definition);
     }
 
