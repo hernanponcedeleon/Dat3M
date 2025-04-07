@@ -13,6 +13,7 @@ import com.dat3m.dartagnan.parsers.program.visitors.spirv.decorations.Decoration
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.decorations.Offset;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.helpers.HelperTags;
 import com.dat3m.dartagnan.program.Function;
+import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.ThreadGrid;
 import com.dat3m.dartagnan.program.event.core.Label;
 
@@ -158,6 +159,10 @@ public class MockProgramBuilder extends ProgramBuilder {
             controlFlowBuilder.startBlock("%mock_label");
             addEvent(label);
         }
+    }
+
+    public Program getProgram() {
+        return program;
     }
 
     public Function getCurrentFunction() {

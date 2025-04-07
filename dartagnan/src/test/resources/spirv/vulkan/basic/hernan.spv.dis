@@ -1,0 +1,105 @@
+; @Input: %flag = {{0, 0}}
+; @Input: %counter = {{0}}
+; @Config: 2, 1, 2
+; SPIR-V
+; Version: 1.5
+; Generator: Khronos; 40
+; Bound: 64
+; Schema: 0
+               OpCapability Shader
+               OpCapability VulkanMemoryModel
+;;               OpExtension "SPV_KHR_storage_buffer_storage_class"
+               OpExtension "SPV_KHR_vulkan_memory_model"
+               OpMemoryModel Logical Vulkan
+               OpEntryPoint GLCompute %Main "main" %counter %gid %flag %gl_LocalInvocationID
+               OpExecutionMode %Main LocalSize 2 1 1
+               OpSource Slang 1
+               OpName %RWStructuredBuffer "RWStructuredBuffer"
+               OpName %counter "counter"
+               OpName %gid "gid"
+               OpName %flag "flag"
+               OpName %Main "Main"
+               OpDecorate %gl_LocalInvocationID BuiltIn LocalInvocationId
+               OpDecorate %_runtimearr_uint ArrayStride 4
+               OpDecorate %RWStructuredBuffer Block
+               OpMemberDecorate %RWStructuredBuffer 0 Offset 0
+               OpDecorate %counter Binding 1
+               OpDecorate %counter DescriptorSet 0
+               OpDecorate %flag Binding 0
+               OpDecorate %flag DescriptorSet 0
+       %void = OpTypeVoid
+          %3 = OpTypeFunction %void
+       %uint = OpTypeInt 32 0
+     %v3uint = OpTypeVector %uint 3
+%_ptr_Input_v3uint = OpTypePointer Input %v3uint
+       %bool = OpTypeBool
+     %uint_0 = OpConstant %uint 0
+        %int = OpTypeInt 32 1
+      %int_0 = OpConstant %int 0
+%_ptr_StorageBuffer_uint = OpTypePointer StorageBuffer %uint
+%_runtimearr_uint = OpTypeRuntimeArray %uint
+%RWStructuredBuffer = OpTypeStruct %_runtimearr_uint
+%_ptr_StorageBuffer_RWStructuredBuffer = OpTypePointer StorageBuffer %RWStructuredBuffer
+     %uint_1 = OpConstant %uint 1
+%_ptr_Workgroup_uint = OpTypePointer Workgroup %uint
+     %uint_2 = OpConstant %uint 2
+   %uint_264 = OpConstant %uint 264
+    %uint_66 = OpConstant %uint 66
+    %uint_68 = OpConstant %uint 68
+%gl_LocalInvocationID = OpVariable %_ptr_Input_v3uint Input
+    %counter = OpVariable %_ptr_StorageBuffer_RWStructuredBuffer StorageBuffer
+        %gid = OpVariable %_ptr_Workgroup_uint Workgroup
+       %flag = OpVariable %_ptr_StorageBuffer_RWStructuredBuffer StorageBuffer
+     %uint_5 = OpConstant %uint 5
+       %Main = OpFunction %void None %3
+          %4 = OpLabel
+         %22 = OpLoad %v3uint %gl_LocalInvocationID
+         %25 = OpCompositeExtract %uint %22 0
+         %27 = OpIEqual %bool %25 %uint_0
+               OpSelectionMerge %6 None
+               OpBranchConditional %27 %5 %6
+          %5 = OpLabel
+         %33 = OpAccessChain %_ptr_StorageBuffer_uint %counter %int_0 %int_0
+         %39 = OpAtomicIAdd %uint %33 %uint_5 %uint_0 %uint_1
+               OpStore %gid %39 MakePointerAvailable|NonPrivatePointer %uint_2
+               OpBranch %6
+          %6 = OpLabel
+               OpControlBarrier %uint_2 %uint_2 %uint_264
+         %47 = OpLoad %uint %gid MakePointerVisible|NonPrivatePointer %uint_2
+         %48 = OpIEqual %bool %47 %uint_0
+               OpSelectionMerge %19 None
+               OpBranchConditional %48 %18 %7
+          %7 = OpLabel
+               OpBranch %8
+          %8 = OpLabel
+               OpLoopMerge %13 %17 None
+               OpBranch %9
+          %9 = OpLabel
+               OpBranch %10
+         %10 = OpLabel
+               OpBranch %11
+         %11 = OpLabel
+         %50 = OpAccessChain %_ptr_StorageBuffer_uint %flag %int_0 %int_0
+         %53 = OpAtomicLoad %uint %50 %uint_5 %uint_66
+         %54 = OpIEqual %bool %53 %uint_0
+               OpSelectionMerge %14 None
+               OpBranchConditional %54 %14 %12
+         %12 = OpLabel
+               OpBranch %13
+         %14 = OpLabel
+               OpBranch %15
+         %15 = OpLabel
+               OpBranch %16
+         %16 = OpLabel
+               OpBranch %17
+         %17 = OpLabel
+               OpBranch %8
+         %13 = OpLabel
+               OpBranch %19
+         %18 = OpLabel
+         %61 = OpAccessChain %_ptr_StorageBuffer_uint %flag %int_0 %int_0
+               OpAtomicStore %61 %uint_5 %uint_68 %uint_1
+               OpBranch %19
+         %19 = OpLabel
+               OpReturn
+               OpFunctionEnd

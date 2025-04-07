@@ -5,6 +5,8 @@ import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.Type;
+import com.dat3m.dartagnan.expression.misc.GEPExpr;
+import com.dat3m.dartagnan.expression.type.ArrayType;
 import com.dat3m.dartagnan.expression.type.FunctionType;
 import com.dat3m.dartagnan.expression.type.ScopedPointerType;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
@@ -16,16 +18,11 @@ import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.RegWriter;
-import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.functions.FunctionCall;
 import com.dat3m.dartagnan.program.memory.Memory;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
-import com.dat3m.dartagnan.program.memory.ScopedPointerVariable;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Set;
-import java.util.stream.Collectors;
+import java.util.*;
 
 import static com.dat3m.dartagnan.parsers.program.visitors.spirv.decorations.DecorationType.BUILT_IN;
 
@@ -34,7 +31,7 @@ public class ProgramBuilder {
     protected final Map<String, Type> types = new HashMap<>();
     protected final Map<String, Expression> expressions = new HashMap<>();
     protected final Map<String, Expression> inputs = new HashMap<>();
-    protected final Map<String, String> debugInfos = new HashMap<>();
+    protected final Map<String, String> debugInfo = new HashMap<>();
     protected final ThreadGrid grid;
     protected final Program program;
     protected ControlFlowBuilder controlFlowBuilder;
@@ -55,7 +52,7 @@ public class ProgramBuilder {
         validateBeforeBuild();
         controlFlowBuilder.build();
         BuiltIn builtIn = (BuiltIn) decorationsBuilder.getDecoration(BUILT_IN);
-        MemoryTransformer transformer = new MemoryTransformer(grid, getEntryPointFunction(), builtIn, getVariables());
+        MemoryTransformer transformer = new MemoryTransformer(grid, getEntryPointFunction(), builtIn);
         program.addTransformer(transformer);
         return program;
     }
@@ -97,6 +94,10 @@ public class ProgramBuilder {
         }
         entryPointId = id;
         program.setEntryPoint(id);
+    }
+
+    public Arch getArch() {
+        return arch;
     }
 
     public void setArch(Arch arch) {
@@ -174,37 +175,27 @@ public class ProgramBuilder {
         return value;
     }
 
-    public Set<ScopedPointerVariable> getVariables() {
-        return expressions.values().stream()
-                .filter(ScopedPointerVariable.class::isInstance)
-                .map(v -> (ScopedPointerVariable) v)
-                .collect(Collectors.toSet());
+    public Set<MemoryObject> getMemoryObjects() {
+        return program.getMemory().getObjects();
     }
 
-    public MemoryObject allocateVariable(String id, int bytes) {
-        MemoryObject memObj = program.getMemory().allocateVirtual(bytes, true, null);
-        memObj.setName(id);
-        return memObj;
-    }
-
-    public ScopedPointerVariable allocateScopedPointerVariable(String id, Expression initValue, String storageClass, Type pointedType) {
-        MemoryObject memObj = allocateVariable(id, TypeFactory.getInstance().getMemorySizeInBytes(pointedType));
-        memObj.setIsThreadLocal(false);
-        memObj.setInitialValue(0, initValue);
-        if (arch == Arch.OPENCL) {
-            String openCLSpace = Tag.Spirv.toOpenCLTag(Tag.Spirv.getStorageClassTag(Set.of(storageClass)));
-            memObj.addFeatureTag(openCLSpace);
+    // TODO: Refactoring
+    public GEPExpr allocateMemory(String id, ScopedPointerType type, Expression value) {
+        if (value.getType() instanceof ArrayType aType && aType.getElementType().equals(type.getPointedType())
+            && aType.getNumElements() > 0) {
+            int size = TypeFactory.getInstance().getMemorySizeInBytes(aType);
+            MemoryObject memObj = program.getMemory().allocateVirtual(type, size, true, null);
+            memObj.setName(id);
+            memObj.setIsThreadLocal(false);
+            memObj.setInitialValue(0, value);
+            memObj.addFeatureTag(type.getScopeId());
+            // TODO: Catch possible error in GEP and re-throw with a better message
+            return ExpressionFactory.getInstance()
+                    .makeGetElementPointer(type.getPointedType(), memObj, List.of(ExpressionFactory.getInstance()
+                            .makeZero(TypeFactory.getInstance().getArchType())));
         }
-        return ExpressionFactory.getInstance().makeScopedPointerVariable(
-                id, storageClass, pointedType, memObj);
-    }
-
-    public String getPointerStorageClass(String id) {
-        Expression expression = getExpression(id);
-        if (expression.getType() instanceof ScopedPointerType pointerType) {
-            return pointerType.getScopeId();
-        }
-        throw new ParsingException("Reference to undefined pointer '%s'", id);
+        // TODO: Better text
+        throw new ParsingException("Mismatching input types for ...");
     }
 
     // TODO: Remove after updating OpLoad to use vector registers
@@ -265,17 +256,17 @@ public class ProgramBuilder {
     }
 
     public void addDebugInfo(String id, String info) {
-        if (debugInfos.containsKey(id)) {
+        if (debugInfo.containsKey(id)) {
             throw new ParsingException("Attempt to add debug information with duplicate id");
         }
-        debugInfos.put(id, info);
+        debugInfo.put(id, info);
     }
 
     public String getDebugInfo(String id) {
-        if (!debugInfos.containsKey(id)) {
+        if (!debugInfo.containsKey(id)) {
             throw new ParsingException("No debug information with id '%s'", id);
         }
-        return debugInfos.get(id);
+        return debugInfo.get(id);
     }
 
     private void validateBeforeBuild() {

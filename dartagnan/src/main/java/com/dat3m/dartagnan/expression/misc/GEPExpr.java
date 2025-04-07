@@ -12,7 +12,7 @@ import com.google.common.collect.ImmutableList;
 
 import java.util.List;
 
-public final class GEPExpr extends NaryExpressionBase<Type, ExpressionKind.Other> {
+public final class GEPExpr extends NaryExpressionBase<PointerType, ExpressionKind.Other> {
 
     private final Type indexingType;
 
