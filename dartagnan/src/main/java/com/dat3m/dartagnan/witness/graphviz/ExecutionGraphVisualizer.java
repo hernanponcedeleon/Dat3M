@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan.witness.graphviz;
 
+import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.analysis.SyntacticContextAnalysis;
 import com.dat3m.dartagnan.program.event.core.Init;
 import com.dat3m.dartagnan.program.event.metadata.MemoryOrder;
@@ -303,13 +304,15 @@ public class ExecutionGraphVisualizer {
         } else if (e instanceof AssertModel am) {
             tag = String.format("Assertion(%s)", am.getResult());
         }
+        final Thread thread = e.getThreadModel().getThread();
         final String callStack = makeContextString(
             synContext.getContextInfo(e.getEvent()).getContextOfType(CallContext.class), " -> \\n");
-        final String nodeString = String.format("%s:T%s/E%s%s\\n%s%s\n%s",
+        final String scope = thread.hasScope() ? "@" + thread.getScopeHierarchy() : "";
+        final String nodeString = String.format("%s:T%s%s\\nE%s %s%s\n%s",
                 e.getThreadModel().getName(),
                 e.getThreadModel().getId(),
+                scope,
                 e.getEvent().getGlobalId(),
-                Optional.ofNullable(e.getThreadModel().getThread().getScopeHierarchy()).map(s -> " " + s).orElse(""),
                 callStack.isEmpty() ? callStack : callStack + " -> \\n",
                 getSourceLocationString(e.getEvent()),
                 tag)
