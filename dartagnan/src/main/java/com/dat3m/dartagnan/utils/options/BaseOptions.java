@@ -30,7 +30,7 @@ public abstract class BaseOptions {
             name = PROGRESSMODEL,
             description = """
                         The progress model to assume: fair (default), hsa, obe, unfair.
-                        To specify progress models per scope, use [<scope>=<progressModel>, ...].
+                        To specify progress models per scope, use [<scope>=<progressModel>,...].
                         Defaults to "fair" for unspecified scopes unless "default=<progressModel>" is specified.
                         """,
             toUppercase = true)

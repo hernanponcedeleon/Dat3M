@@ -507,6 +507,18 @@ public class ProgramEncoder implements Encoder {
 
     private class ForwardProgressEncoder {
 
+        private BooleanFormula hasForwardProgress(ThreadHierarchy threadHierarchy) {
+            return context.getBooleanFormulaManager().makeVariable("hasProgress " + threadHierarchy.toString());
+        }
+
+        private BooleanFormula isSchedulable(ThreadHierarchy threadHierarchy) {
+            return context.getBooleanFormulaManager().makeVariable("schedulable " + threadHierarchy.toString());
+        }
+
+        private BooleanFormula wasScheduledOnce(ThreadHierarchy threadHierarchy) {
+            return context.getBooleanFormulaManager().makeVariable("wasScheduledOnce " + threadHierarchy.toString());
+        }
+
         /*
             Encodes fair forward progress for a single thread: the thread will eventually get scheduled (if it is schedulable).
             In particular, if the thread is enabled then it will eventually execute.
@@ -536,20 +548,6 @@ public class ProgramEncoder implements Encoder {
             return bmgr.and(enc);
         }
 
-        // ================================================= New Encoding =================================================
-
-        private BooleanFormula hasForwardProgressVar(ThreadHierarchy threadHierarchy) {
-            return context.getBooleanFormulaManager().makeVariable("hasProgress " + threadHierarchy.toString());
-        }
-
-        private BooleanFormula isSchedulable(ThreadHierarchy threadHierarchy) {
-            return context.getBooleanFormulaManager().makeVariable("schedulable " + threadHierarchy.toString());
-        }
-
-        private BooleanFormula wasScheduledOnce(ThreadHierarchy threadHierarchy) {
-            return context.getBooleanFormulaManager().makeVariable("wasScheduledOnce " + threadHierarchy.toString());
-        }
-
         private BooleanFormula encodeForwardProgress(Program program, ProgressModel.Hierarchy progressModel) {
             final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
             List<BooleanFormula> enc = new ArrayList<>();
@@ -561,12 +559,12 @@ public class ProgramEncoder implements Encoder {
             // Step (2): Encode basic properties
 
             // (2.0 Global Progress)
-            enc.add(hasForwardProgressVar(root));
+            enc.add(hasForwardProgress(root));
 
             // (2.1 Consistent Progress): Progress/Schedulability in group implies progress/schedulability in parent
             for (ThreadHierarchy group : allGroups) {
                 if (!group.isRoot()) {
-                    enc.add(bmgr.implication(hasForwardProgressVar(group), hasForwardProgressVar(group.getParent())));
+                    enc.add(bmgr.implication(hasForwardProgress(group), hasForwardProgress(group.getParent())));
                     enc.add(bmgr.implication(isSchedulable(group), isSchedulable(group.getParent())));
                     enc.add(bmgr.implication(wasScheduledOnce(group), wasScheduledOnce(group.getParent())));
                 }
@@ -577,9 +575,9 @@ public class ProgramEncoder implements Encoder {
                 if (group.isLeaf()) {
                     continue;
                 }
-                enc.add(bmgr.implication(bmgr.and(hasForwardProgressVar(group), isSchedulable(group)),
+                enc.add(bmgr.implication(bmgr.and(hasForwardProgress(group), isSchedulable(group)),
                         group.getChildren().stream()
-                                .map(c -> bmgr.and(hasForwardProgressVar(c), isSchedulable(c)))
+                                .map(c -> bmgr.and(hasForwardProgress(c), isSchedulable(c)))
                                 .reduce(bmgr.makeFalse(), bmgr::or)
                         ));
             }
@@ -599,7 +597,7 @@ public class ProgramEncoder implements Encoder {
                         );
                         enc.add(bmgr.equivalence(schedulable, isSchedulable(leaf)));
                         // Forward Progress
-                        enc.add(bmgr.implication(hasForwardProgressVar(leaf), encodeFairForwardProgress(t)));
+                        enc.add(bmgr.implication(hasForwardProgress(leaf), encodeFairForwardProgress(t)));
                         // For OBE
                         enc.add(bmgr.equivalence(threadHasStarted(t), wasScheduledOnce(leaf)));
                     });
@@ -620,7 +618,7 @@ public class ProgramEncoder implements Encoder {
             switch (progressModel) {
                 case FAIR -> {
                     group.getChildren().stream()
-                            .map(this::hasForwardProgressVar)
+                            .map(this::hasForwardProgress)
                             .forEach(enc::add);
                 }
                 case HSA -> {
@@ -634,12 +632,12 @@ public class ProgramEncoder implements Encoder {
                                         .map(this::isSchedulable)
                                         .reduce(bmgr.makeFalse(), bmgr::or));
 
-                        enc.add(bmgr.implication(noLowerIdSchedulable, hasForwardProgressVar(child)));
+                        enc.add(bmgr.implication(noLowerIdSchedulable, hasForwardProgress(child)));
                     }
                 }
                 case OBE -> {
                     group.getChildren().stream()
-                            .map(c -> bmgr.implication(wasScheduledOnce(c), hasForwardProgressVar(c)))
+                            .map(c -> bmgr.implication(wasScheduledOnce(c), hasForwardProgress(c)))
                             .forEach(enc::add);
                 }
                 case UNFAIR -> {
@@ -647,7 +645,7 @@ public class ProgramEncoder implements Encoder {
                 }
             }
 
-            return bmgr.implication(hasForwardProgressVar(group), bmgr.and(enc));
+            return bmgr.implication(hasForwardProgress(group), bmgr.and(enc));
         }
     }
 }
