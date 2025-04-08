@@ -34,10 +34,10 @@ public abstract class BaseOptions {
                         Defaults to "fair" for unspecified scopes unless "default=<progressModel>" is specified.
                         """,
             toUppercase = true)
-    private ProgressModel.Hierarchy progressModelHierarchy = ProgressModel.defaultHierarchy();
+    private ProgressModel.Hierarchy progressModel = ProgressModel.defaultHierarchy();
 
-    public ProgressModel.Hierarchy getProgressModelHierarchy() {
-        return this.progressModelHierarchy;
+    public ProgressModel.Hierarchy getProgressModel() {
+        return this.progressModel;
     }
 
     @Option(

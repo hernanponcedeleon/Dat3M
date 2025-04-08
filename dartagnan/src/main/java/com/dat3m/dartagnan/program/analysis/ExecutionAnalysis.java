@@ -68,7 +68,7 @@ class DefaultExecutionAnalysis implements ExecutionAnalysis {
         }
 
         // weakest implication holds but not strongest & model is uniform: progress model decides
-        final boolean implication = switch (progressModel.getProgressAtScope("ALL")) {
+        final boolean implication = switch (progressModel.getDefaultProgress()) {
             case FAIR -> weakestImplication; // TRUE
             case HSA -> implied.getThread() == lowestIdThread;
             case OBE -> isSameThread(start, implied);

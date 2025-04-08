@@ -171,7 +171,7 @@ public class Dartagnan extends BaseOptions {
 
         VerificationTaskBuilder builder = VerificationTask.builder()
                 .withConfig(config)
-                .withProgressModel(o.getProgressModelHierarchy())
+                .withProgressModel(o.getProgressModel())
                 .withWitness(witness);
         // If the arch has been set during parsing (this only happens for litmus tests)
         // and the user did not explicitly add the target option, we use the one
