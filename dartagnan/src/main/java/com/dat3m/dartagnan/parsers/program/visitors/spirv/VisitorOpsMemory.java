@@ -150,7 +150,7 @@ public class VisitorOpsMemory extends SpirvBaseVisitor<Event> {
 
     private Type getAlignedType(Type type, int alignmentNum) {
         if (type instanceof IntegerType) {
-            return type;
+            return types.getIntegerType(alignmentNum * 8);
         }
         if (type instanceof AggregateType aggregateType) {
             List<Type> fieldTypes = new ArrayList<>(aggregateType.getFields().stream()
