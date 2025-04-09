@@ -1,4 +1,8 @@
+<<<<<<<< HEAD:dartagnan/src/test/java/com/dat3m/dartagnan/spirv/vulkan/termination/SpirvLivenessTest.java
 package com.dat3m.dartagnan.spirv.vulkan.basic;
+========
+package com.dat3m.dartagnan.spirv.termination;
+>>>>>>>> 79eff3e33 (Add MP with mixed scope hierarchy):dartagnan/src/test/java/com/dat3m/dartagnan/spirv/termination/SpirvLivenessTest.java
 
 import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.encoding.ProverWithTracker;
@@ -59,11 +63,23 @@ public class SpirvLivenessTest {
         ProgressModel.Hierarchy qfObeSgUnfair = ProgressModel.scoped(ProgressModel.FAIR, Map.of(
                                                         Tag.Vulkan.QUEUE_FAMILY, ProgressModel.OBE,
                                                         Tag.Vulkan.SUB_GROUP, ProgressModel.UNFAIR));
+        ProgressModel.Hierarchy qfObeSgObe = ProgressModel.scoped(ProgressModel.FAIR, Map.of(
+                                                    Tag.Vulkan.QUEUE_FAMILY, ProgressModel.OBE,
+                                                    Tag.Vulkan.SUB_GROUP, ProgressModel.OBE));
+        ProgressModel.Hierarchy qfObeSgHsa = ProgressModel.scoped(ProgressModel.FAIR, Map.of(
+                                                    Tag.Vulkan.QUEUE_FAMILY, ProgressModel.OBE,
+                                                    Tag.Vulkan.SUB_GROUP, ProgressModel.HSA));
         ProgressModel.Hierarchy qfHsa = ProgressModel.scoped(ProgressModel.FAIR, Map.of(
                                                 Tag.Vulkan.QUEUE_FAMILY, ProgressModel.HSA));
         ProgressModel.Hierarchy qfHsaSgUnfair = ProgressModel.scoped(ProgressModel.FAIR, Map.of(
+                                                        Tag.Vulkan.QUEUE_FAMILY, ProgressModel.HSA,
+                                                        Tag.Vulkan.SUB_GROUP, ProgressModel.UNFAIR));
+        ProgressModel.Hierarchy qfHsaSgHsa = ProgressModel.scoped(ProgressModel.FAIR, Map.of(
                                                     Tag.Vulkan.QUEUE_FAMILY, ProgressModel.HSA,
-                                                    Tag.Vulkan.SUB_GROUP, ProgressModel.UNFAIR));
+                                                    Tag.Vulkan.SUB_GROUP, ProgressModel.HSA));
+        ProgressModel.Hierarchy qfHsaSgObe = ProgressModel.scoped(ProgressModel.FAIR, Map.of(
+                                                    Tag.Vulkan.QUEUE_FAMILY, ProgressModel.HSA,
+                                                    Tag.Vulkan.SUB_GROUP, ProgressModel.OBE));
 
         return Arrays.asList(new Object[][]{
                 {"non-uniform-barrier-1.spv.dis", 1, fairUniform, PASS},
@@ -76,6 +92,19 @@ public class SpirvLivenessTest {
                 {"mp-atomicAdd-groupID.spv.dis", 1, qfObe, PASS},
                 {"mp-atomicAdd-groupID.spv.dis", 1, qfObeSgUnfair, PASS},
                 {"mp-atomicAdd-groupID.spv.dis", 1, qfHsa, FAIL},
+                {"mp-wg_obe-t_obe.spv.dis", 1, qfObeSgObe, PASS},
+                {"mp-wg_obe-t_obe.spv.dis", 1, qfObeSgHsa, FAIL},
+                {"mp-wg_obe-t_obe.spv.dis", 1, qfHsa, FAIL},
+                {"mp-wg_obe-t_hsa.spv.dis", 1, qfObeSgHsa, PASS},
+                {"mp-wg_obe-t_hsa.spv.dis", 1, qfObeSgObe, PASS},
+                {"mp-wg_obe-t_hsa.spv.dis", 1, qfObeSgUnfair, FAIL},
+                {"mp-wg_obe-t_hsa.spv.dis", 1, qfHsa, FAIL},
+                {"mp-wg_hsa-t_obe.spv.dis", 1, qfHsaSgObe, PASS},
+                {"mp-wg_hsa-t_obe.spv.dis", 1, qfHsaSgHsa, FAIL},
+                {"mp-wg_hsa-t_obe.spv.dis", 1, qfObe, FAIL},
+                {"mp-wg_hsa-t_hsa.spv.dis", 1, qfHsaSgHsa, PASS},
+                {"mp-wg_hsa-t_hsa.spv.dis", 1, qfHsaSgObe, FAIL},
+                {"mp-wg_hsa-t_hsa.spv.dis", 1, qfObe, FAIL},
         });
     }
 
