@@ -2,8 +2,6 @@ package com.dat3m.dartagnan.litmus;
 
 import com.dat3m.dartagnan.utils.Result;
 import com.dat3m.dartagnan.utils.rules.Provider;
-import com.dat3m.dartagnan.utils.rules.Providers;
-import com.dat3m.dartagnan.wmm.Wmm;
 import org.junit.runners.Parameterized;
 import org.sosy_lab.common.configuration.Configuration;
 
@@ -22,16 +20,16 @@ public class LitmusAARCH64MixedTest extends LitmusAARCH64Test {
         super(path, expected);
     }
 
+    @Override
+    protected long getTimeout() {
+        return 60_000;
+    }
+
     protected Provider<Configuration> getConfigurationProvider() {
         return Provider.fromSupplier(() -> Configuration.builder()
                 .setOption(INITIALIZE_REGISTERS, "true")
                 .setOption(USE_INTEGERS, "false")
                 .setOption(MIXED_SIZE, "true")
                 .build());
-    }
-
-    @Override
-    protected Provider<Wmm> getWmmProvider() {
-        return Providers.createWmmFromName(() -> "aarch64-mixed");
     }
 }

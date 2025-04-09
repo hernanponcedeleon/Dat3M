@@ -1,10 +1,10 @@
-ignoreDueToAliasPrecision/AARCH64-MIXED/MP+dmb.sy+addrXW+1.litmus,0
-ignoreDueToAliasPrecision/AARCH64-MIXED/MP+dmb.sy+addrXW+124.litmus,0
-ignoreDueToAliasPrecision/AARCH64-MIXED/MP+dmb.sy+addrXW+60.litmus,0
-ignoreDueToAliasPrecision/AARCH64-MIXED/MP+dmbsy+misaligned2+0.litmus,0
-ignoreDueToAliasPrecision/AARCH64-MIXED/MP+dmbsy+misaligned2+0x.litmus,0
-ignoreDueToAliasPrecision/AARCH64-MIXED/MP+misaligned2+0+addr.litmus,0
-ignoreDueToAliasPrecision/AARCH64-MIXED/MP+misaligned2+0x+addr.litmus,0
+litmus/AARCH64-MIXED/MP+dmb.sy+addrXW+1.litmus,0
+litmus/AARCH64-MIXED/MP+dmb.sy+addrXW+124.litmus,0
+litmus/AARCH64-MIXED/MP+dmb.sy+addrXW+60.litmus,0
+litmus/AARCH64-MIXED/MP+dmbsy+misaligned2+0.litmus,0
+litmus/AARCH64-MIXED/MP+dmbsy+misaligned2+0x.litmus,0
+litmus/AARCH64-MIXED/MP+misaligned2+0+addr.litmus,0
+litmus/AARCH64-MIXED/MP+misaligned2+0x+addr.litmus,0
 litmus/AARCH64-MIXED/2+2W+dmb.sy+data-rfihw-poswh-addr.litmus,1
 litmus/AARCH64-MIXED/2+2W+dmb.sy+data-rfihw-poswh-ctrl.litmus,1
 litmus/AARCH64-MIXED/2+2W+dmb.sy+data-rfihw-poswh-data.litmus,1
