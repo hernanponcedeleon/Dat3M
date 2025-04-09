@@ -126,6 +126,8 @@ public class SpirvAssertionsTest {
                 {"bitwise-scalar.spv.dis", VULKAN, 1, PASS},
                 {"bitwise-vector.spv.dis", VULKAN, 1, PASS},
                 {"alignment.spv.dis", OPENCL, 9, PASS},
+                {"alignment2.spv.dis", OPENCL, 1, PASS},
+                {"alignment3.spv.dis", OPENCL, 1, PASS},
         });
     }
 

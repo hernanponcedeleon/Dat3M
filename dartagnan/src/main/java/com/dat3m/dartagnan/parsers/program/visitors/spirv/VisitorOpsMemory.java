@@ -5,9 +5,7 @@ import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.Type;
 import com.dat3m.dartagnan.expression.integers.IntLiteral;
-import com.dat3m.dartagnan.expression.type.ArrayType;
-import com.dat3m.dartagnan.expression.type.ScopedPointerType;
-import com.dat3m.dartagnan.expression.type.TypeFactory;
+import com.dat3m.dartagnan.expression.type.*;
 import com.dat3m.dartagnan.parsers.SpirvBaseVisitor;
 import com.dat3m.dartagnan.parsers.SpirvParser;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.builders.ProgramBuilder;
@@ -124,17 +122,10 @@ public class VisitorOpsMemory extends SpirvBaseVisitor<Event> {
         if (builder.getType(typeId) instanceof ScopedPointerType pointerType) {
             Type type = pointerType.getPointedType();
             Integer alignmentNum = alignment.getValue(id);
-            Expression alignmentExpr = expressions.getDefaultAlignment();
+            Expression alignmentExpr = alignmentNum == null ?
+                    expressions.getDefaultAlignment() : expressions.makeValue(alignmentNum, types.getArchType());
             if (alignmentNum != null) {
-                if (type instanceof ArrayType arrayType) {
-                    List<Type> elementTypes = Collections.nCopies(arrayType.getNumElements(), arrayType.getElementType());
-                    List<Integer> alignmentList = IntStream.range(0, arrayType.getNumElements())
-                            .mapToObj(i -> i * alignmentNum)
-                            .collect(Collectors.toList());
-                    type = types.getAggregateType(elementTypes, alignmentList);
-                } else {
-                    alignmentExpr = expressions.makeValue(alignmentNum, types.getArchType());
-                }
+                type = getAlignedType(type, alignmentNum);
             }
             Expression value = getOpVariableInitialValue(ctx, type);
             if (value != null) {
@@ -155,6 +146,33 @@ public class VisitorOpsMemory extends SpirvBaseVisitor<Event> {
             return null;
         }
         throw new ParsingException("Type '%s' is not a pointer type", typeId);
+    }
+
+    private Type getAlignedType(Type type, int alignmentNum) {
+        if (type instanceof IntegerType) {
+            return type;
+        }
+        if (type instanceof AggregateType aggregateType) {
+            List<Type> fieldTypes = new ArrayList<>(aggregateType.getFields().stream()
+                    .map(TypeOffset::type)
+                    .toList());
+            List<Integer> alignmentList = new ArrayList<>(List.of(0));
+            IntStream.range(0, fieldTypes.size() - 1).forEach(i -> {
+                int fieldAlignment = types.getMemorySizeInBytes(fieldTypes.get(i));
+                alignmentList.add(fieldAlignment + alignmentList.get(i));
+            });
+            return types.getAggregateType(fieldTypes, alignmentList);
+        }
+        if (type instanceof ArrayType arrayType) {
+            Type elementType = arrayType.getElementType();
+            List<Type> elementTypes = Collections.nCopies(arrayType.getNumElements(), elementType);
+            int elementAlignmentNum = Math.max(types.getMemorySizeInBytes(elementType), alignmentNum);
+            List<Integer> alignmentList = IntStream.range(0, arrayType.getNumElements())
+                    .mapToObj(i -> i * elementAlignmentNum)
+                    .collect(Collectors.toList());
+            return types.getAggregateType(elementTypes, alignmentList);
+        }
+        throw new ParsingException("Invalid type '%s' for alignment '%d'", type, alignmentNum);
     }
 
     private Expression getOpVariableInitialValue(SpirvParser.OpVariableContext ctx, Type type) {
