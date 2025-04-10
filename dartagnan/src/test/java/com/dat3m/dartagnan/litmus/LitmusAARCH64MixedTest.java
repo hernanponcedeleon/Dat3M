@@ -22,7 +22,7 @@ public class LitmusAARCH64MixedTest extends LitmusAARCH64Test {
 
     @Override
     protected long getTimeout() {
-        return 60_000;
+        return 120_000;
     }
 
     protected Provider<Configuration> getConfigurationProvider() {

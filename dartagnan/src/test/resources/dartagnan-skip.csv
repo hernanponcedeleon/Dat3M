@@ -5,52 +5,6 @@
 litmus/C11/auto/linearisation.litmus
 litmus/OPENCL/portedFromC11/auto/linearisation.litmus
 
-// The following have herd raise "Unaligned or out-of-bound access"
-//
-// > herd7 -version
-// 7.58, Rev: exported
-// > herd7 -variant mixed -model ./cat/aarch64.cat -I ./cat $filename
-litmus/AARCH64-MIXED/MP+misaligned2+511+addr.litmus
-litmus/AARCH64-MIXED/MP+dmb.sy+addrXW+124.litmus
-litmus/AARCH64-MIXED/MP+misaligned2+1+addr.litmus
-litmus/AARCH64-MIXED/MP+misaligned2+15x+addr.litmus
-litmus/AARCH64-MIXED/MP+dmbsy+misaligned2+63x.litmus
-litmus/AARCH64-MIXED/MP+dmbsy+misaligned2+1x.litmus
-litmus/AARCH64-MIXED/MP+misaligned2+511x+addr.litmus
-litmus/AARCH64-MIXED/MP+misaligned2+63x+addr.litmus
-litmus/AARCH64-MIXED/MP+misaligned2+31x+addr.litmus
-litmus/AARCH64-MIXED/MP+dmbsy+misaligned2+63.litmus
-litmus/AARCH64-MIXED/MP+dmb.sy+addrXW+60.litmus
-litmus/AARCH64-MIXED/MP+misaligned2+3x+addr.litmus
-litmus/AARCH64-MIXED/MP+dmbsy+misaligned2+3x.litmus
-litmus/AARCH64-MIXED/MP+dmbsy+misaligned2+127x.litmus
-litmus/AARCH64-MIXED/MP+dmbsy+misaligned2+511.litmus
-litmus/AARCH64-MIXED/MP+misaligned2+7+addr.litmus
-litmus/AARCH64-MIXED/MP+dmb.sy+addrXW+1.litmus
-litmus/AARCH64-MIXED/MP+misaligned2+127x+addr.litmus
-litmus/AARCH64-MIXED/LB+data+data-misaligned.litmus
-litmus/AARCH64-MIXED/MP+misaligned2+255+addr.litmus
-litmus/AARCH64-MIXED/MP+dmbsy+misaligned2+255x.litmus
-litmus/AARCH64-MIXED/MP+misaligned2+63+addr.litmus
-litmus/AARCH64-MIXED/MP+misaligned2+7x+addr.litmus
-litmus/AARCH64-MIXED/MP+dmbsy+misaligned2+255.litmus
-litmus/AARCH64-MIXED/MP+misaligned2+127+addr.litmus
-litmus/AARCH64-MIXED/MP+dmbsy+misaligned2+7x.litmus
-litmus/AARCH64-MIXED/MP+dmbsy+misaligned2+127.litmus
-litmus/AARCH64-MIXED/MP+dmbsy+misaligned2+31x.litmus
-litmus/AARCH64-MIXED/MP+misaligned2+1x+addr.litmus
-litmus/AARCH64-MIXED/MP+misaligned2+31+addr.litmus
-litmus/AARCH64-MIXED/MP+dmbsy+misaligned2+7.litmus
-litmus/AARCH64-MIXED/MP+dmbsy+misaligned2+3.litmus
-litmus/AARCH64-MIXED/MP+misaligned2+15+addr.litmus
-litmus/AARCH64-MIXED/MP+misaligned2+3+addr.litmus
-litmus/AARCH64-MIXED/MP+dmbsy+misaligned2+15x.litmus
-litmus/AARCH64-MIXED/MP+misaligned2+255x+addr.litmus
-litmus/AARCH64-MIXED/MP+dmbsy+misaligned2+1.litmus
-litmus/AARCH64-MIXED/MP+dmbsy+misaligned2+15.litmus
-litmus/AARCH64-MIXED/MP+dmbsy+misaligned2+511x.litmus
-litmus/AARCH64-MIXED/MP+dmbsy+misaligned2+31.litmus
-
 // The following contains AMO instructions which we currently do not support
 litmus/RISCV/2+2Swap+Acqs.litmus
 litmus/RISCV/2+2Swap.litmus

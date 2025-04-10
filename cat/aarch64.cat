@@ -50,7 +50,7 @@
  * location and then consequently defines the fr relation using co and
  * rf.
  *)
-include "cos.cat"
+include "coscat.cat"
 
 (*
  * Include aarch64fences.cat to define barriers.
