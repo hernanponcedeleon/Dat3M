@@ -305,7 +305,7 @@ public class ExecutionModelManager {
             final Map<Event, List<Event>> instructionMap = new HashMap<>();
             for (InstructionBoundary end : context.getTask().getProgram().getThreadEvents(InstructionBoundary.class)) {
                 //NOTE begin markers return empty transaction event lists
-                final List<Event> events = end.getTransactionEvents();
+                final List<Event> events = end.getInstructionEvents();
                 for (Event event : events) {
                     instructionMap.put(event, events);
                 }
@@ -360,12 +360,12 @@ public class ExecutionModelManager {
         }
 
         @Override
-        public Void visitAtomicMemoryOperations(AtomicMemoryOperations rmw) {
+        public Void visitAMOPairs(AMOPairs rmw) {
             return visitReadModifyWrites(rmw.getDefinedRelation());
         }
 
         @Override
-        public Void visitExclusivePairs(ExclusivePairs lxsx) {
+        public Void visitLXSXPairs(LXSXPairs lxsx) {
             return visitReadModifyWrites(lxsx.getDefinedRelation());
         }
 

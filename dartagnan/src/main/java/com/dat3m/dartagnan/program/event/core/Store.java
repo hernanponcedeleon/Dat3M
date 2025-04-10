@@ -42,7 +42,6 @@ public class Store extends AbstractMemoryCoreEvent {
 
     public void setMemValue(Expression value) {
         this.value = value;
-        setAccessType(value.getType());
     }
 
     public String defaultString() {

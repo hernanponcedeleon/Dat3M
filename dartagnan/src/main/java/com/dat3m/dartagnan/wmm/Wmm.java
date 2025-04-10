@@ -39,7 +39,7 @@ public class Wmm {
 
     // These relations are part of every memory model (even the "empty" one) because they are
     // necessary to specify the anarchic program semantics.
-    public final static ImmutableSet<String> ANARCHIC_CORE_RELATIONS = ImmutableSet.of(CO, RF, AMO, LXSX);
+    public final static ImmutableSet<String> ANARCHIC_CORE_RELATIONS = ImmutableSet.of(CO, RF, LXSX);
 
     private final List<Constraint> constraints = new ArrayList<>(); // NOTE: Stores only non-defining constraints
     private final Set<Relation> relations = new HashSet<>();
@@ -195,9 +195,8 @@ public class Wmm {
             case EXT -> new External(r);
             case CO -> new Coherence(r);
             case RF -> new ReadFrom(r);
-            case RMW -> union(r, getOrCreatePredefinedRelation(AMO), getOrCreatePredefinedRelation(LXSX));
-            case AMO -> new AtomicMemoryOperations(r);
-            case LXSX -> new ExclusivePairs(r);
+            case AMO -> new AMOPairs(r);
+            case LXSX -> new LXSXPairs(r);
             case CASDEP -> new CASDependency(r);
             case SI -> new SameInstruction(r);
             case CRIT -> new LinuxCriticalSections(r);

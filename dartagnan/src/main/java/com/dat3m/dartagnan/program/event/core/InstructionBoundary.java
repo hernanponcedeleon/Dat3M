@@ -29,7 +29,7 @@ public final class InstructionBoundary extends AbstractEvent {
         begin = other.begin;
     }
 
-    public List<Event> getTransactionEvents() {
+    public List<Event> getInstructionEvents() {
         if (begin == null) {
             return List.of();
         }

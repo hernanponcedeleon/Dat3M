@@ -43,7 +43,7 @@ public class SameInstructionGraph extends StaticWMMGraph {
         this.transactions = new HashMap<>();
         size = model.getEventList().size();
         for (InstructionBoundary end : model.getProgram().getThreadEvents(InstructionBoundary.class)) {
-            final List<Event> events = end.getTransactionEvents();
+            final List<Event> events = end.getInstructionEvents();
             final List<Integer> transaction = new ArrayList<>();
             for (Event event : events) {
                 final int id = model.getData(event).map(EventData::getId).orElse(-1);

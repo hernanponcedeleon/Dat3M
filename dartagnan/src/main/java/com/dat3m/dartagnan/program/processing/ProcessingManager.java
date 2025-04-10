@@ -50,7 +50,7 @@ public class ProcessingManager implements ProgramProcessor {
     @Option(name = MIXED_SIZE,
             description = "If 'true', checks for mixed-size and misaligned memory accesses." +
                     " This also enables a subsequent program transformation to handle these events." +
-                    " Otherwise, assumes that no such happen in any checked execution." +
+                    " Otherwise, assumes that no such accesses happen in any execution." +
                     " Defaults to 'false'.",
             secure = true)
     private boolean detectMixedSizeAccesses = false;
@@ -144,7 +144,6 @@ public class ProcessingManager implements ProgramProcessor {
                 RemoveUnusedMemory.newInstance(),
                 MemoryAllocation.fromConfig(config),
                 detectMixedSizeAccesses ? Tearing.fromConfig(config) : null,
-                detectMixedSizeAccesses ? IdReassignment.newInstance() : null,
                 detectMixedSizeAccesses ? ProgramProcessor.fromFunctionProcessor(
                         FunctionProcessor.chain(
                                 performAssignmentInlining ? AssignmentInlining.newInstance() : null,

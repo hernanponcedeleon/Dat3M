@@ -115,6 +115,7 @@ public final class Tearing implements ProgramProcessor {
             info.append("\n").append("============================================");
             logger.debug(info);
         }
+        IdReassignment.newInstance().run(program);
     }
 
     private int tearInits(Program program, AliasAnalysis alias, boolean bigEndian) {
@@ -143,6 +144,7 @@ public final class Tearing implements ProgramProcessor {
             }
             // Tear init event
             init.setMemValue(frontValue);
+            init.setAccessType(frontValue.getType());
             for (int begin : offsets) {
                 program.addInit(base, initOffset + begin);
             }
@@ -195,7 +197,9 @@ public final class Tearing implements ProgramProcessor {
             final Expression offset = expressions.makeValue(start, addressType);
             final Expression address = expressions.makeAdd(addressRegister, offset);
             final Load byteLoad = load.getCopy();
-            byteLoad.setResultRegister(smallerRegisters.get(i + 1));
+            final Register result = smallerRegisters.get(i + 1);
+            byteLoad.setResultRegister(result);
+            byteLoad.setAccessType(result.getType());
             byteLoad.setAddress(address);
             replacement.add(byteLoad);
         }
@@ -232,6 +236,7 @@ public final class Tearing implements ProgramProcessor {
             final Store byteStore = store.getCopy();
             byteStore.setAddress(address);
             byteStore.setMemValue(value);
+            byteStore.setAccessType(value.getType());
             if (loads != null && byteStore instanceof RMWStore st) {
                 st.updateReferences(Map.of(st.getLoadEvent(), loads.get(i + 1)));
             }

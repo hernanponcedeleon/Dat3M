@@ -482,7 +482,7 @@ public class WmmEncoder implements Encoder {
         }
 
         @Override
-        public Void visitExclusivePairs(ExclusivePairs lxsxDef) {
+        public Void visitLXSXPairs(LXSXPairs lxsxDef) {
             final Relation rmw = lxsxDef.getDefinedRelation();
             BooleanFormula unpredictable = bmgr.makeFalse();
             final RelationAnalysis.Knowledge k = ra.getKnowledge(rmw);
@@ -490,7 +490,7 @@ public class WmmEncoder implements Encoder {
             final Map<Event, Set<Event>> mayOut = k.getMaySet().getOutMap();
             final Map<Event, Event> siMap = new HashMap<>();
             for (InstructionBoundary end : program.getThreadEvents(InstructionBoundary.class)) {
-                final List<Event> events = end.getTransactionEvents().stream().filter(e -> e.hasTag(EXCL)).toList();
+                final List<Event> events = end.getInstructionEvents().stream().filter(e -> e.hasTag(EXCL)).toList();
                 for (Event event : events) {
                     siMap.put(event, events.get(0));
                 }

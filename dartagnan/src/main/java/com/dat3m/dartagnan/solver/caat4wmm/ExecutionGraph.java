@@ -228,8 +228,6 @@ public class ExecutionGraph {
             graph = new LocationGraph();
         } else if (relClass == ProgramOrder.class) {
             graph = new ProgramOrderGraph();
-        } else if (relClass == SameInstruction.class) {
-            graph = new SameInstructionGraph();
         } else if (relClass == Coherence.class) {
             graph = new CoherenceGraph();
         } else if (relClass == RangeIdentity.class || relClass == DomainIdentity.class) {
