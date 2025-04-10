@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan.parsers.program.visitors.spirv.decorations;
 
+import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
@@ -9,6 +10,7 @@ import com.dat3m.dartagnan.expression.type.ArrayType;
 import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.program.ThreadGrid;
+import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 
 import java.util.ArrayList;
@@ -20,13 +22,16 @@ public class BuiltIn implements Decoration {
 
     private static final TypeFactory types = TypeFactory.getInstance();
     private static final ExpressionFactory expressions = ExpressionFactory.getInstance();
-    private final ThreadGrid grid;
+    private ThreadGrid grid;
     private final Map<String, String> mapping;
     private int tid;
 
-    public BuiltIn(ThreadGrid grid) {
-        this.grid = grid;
+    public BuiltIn() {
         this.mapping = new HashMap<>();
+    }
+
+    public void setThreadGrid(ThreadGrid grid) {
+        this.grid = grid;
     }
 
     public void setThreadId(int tid) {
@@ -73,21 +78,42 @@ public class BuiltIn implements Decoration {
     }
 
     private Expression getDecorationExpressions(String id, Type type) {
-        return switch (mapping.get(id)) {
-            // BuiltIn decorations according to the Vulkan API
-            case "SubgroupLocalInvocationId" -> makeScalar(id, type, tid % grid.sgSize());
-            case "LocalInvocationId" -> makeArray(id, type, tid % grid.wgSize(), 0, 0);
-            case "LocalInvocationIndex" -> makeScalar(id, type, tid % grid.wgSize()); // scalar of LocalInvocationId
-            case "GlobalInvocationId" -> makeArray(id, type, tid % grid.dvSize(), 0, 0);
-            case "DeviceIndex" -> makeScalar(id, type, 0);
-            case "SubgroupId" -> makeScalar(id, type, grid.sgId(tid));
-            case "WorkgroupId" -> makeArray(id, type, grid.wgId(tid), 0, 0);
-            case "SubgroupSize" -> makeScalar(id, type, grid.sgSize());
-            case "WorkgroupSize" -> makeArray(id, type, grid.wgSize(), 1, 1);
-            case "GlobalSize" -> makeArray(id, type, grid.dvSize(), 1, 1);
-            case "NumWorkgroups" -> makeArray(id, type, grid.dvSize() / grid.wgSize(), 1, 1);
-            default -> throw new ParsingException("Unsupported decoration '%s'", mapping.get(id));
-        };
+        if (grid.getArch() == Arch.VULKAN) {
+            return switch (mapping.get(id)) {
+                // BuiltIn decorations according to the Vulkan API
+                case "SubgroupLocalInvocationId" -> makeScalar(id, type, tid % grid.getSize(Tag.Vulkan.SUB_GROUP));
+                case "LocalInvocationId" -> makeArray(id, type, tid % grid.getSize(Tag.Vulkan.WORK_GROUP), 0, 0);
+                case "LocalInvocationIndex" ->
+                        makeScalar(id, type, tid % grid.getSize(Tag.Vulkan.WORK_GROUP)); // scalar of LocalInvocationId
+                case "GlobalInvocationId" -> makeArray(id, type, tid % grid.getSize(Tag.Vulkan.DEVICE), 0, 0);
+                case "DeviceIndex" -> makeScalar(id, type, grid.getId(Tag.Vulkan.DEVICE, tid));
+                case "SubgroupId" -> makeScalar(id, type, grid.getId(Tag.Vulkan.SUB_GROUP, tid));
+                case "WorkgroupId" -> makeArray(id, type, grid.getId(Tag.Vulkan.WORK_GROUP, tid), 0, 0);
+                case "SubgroupSize" -> makeScalar(id, type, grid.getSize(Tag.Vulkan.SUB_GROUP));
+                case "WorkgroupSize" -> makeArray(id, type, grid.getSize(Tag.Vulkan.WORK_GROUP), 1, 1);
+                case "GlobalSize" -> makeArray(id, type, grid.getSize(Tag.Vulkan.DEVICE), 1, 1);
+                case "NumWorkgroups" ->
+                        makeArray(id, type, grid.getSize(Tag.Vulkan.DEVICE) / grid.getSize(Tag.Vulkan.WORK_GROUP), 1, 1);
+                default -> throw new ParsingException("Unsupported decoration '%s'", mapping.get(id));
+            };
+        }
+        if (grid.getArch() == Arch.OPENCL) {
+            return switch (mapping.get(id)) {
+                // BuiltIn decorations according to the OpenCL API
+                case "GlobalInvocationId" -> makeArray(id, type, tid % grid.getSize(Tag.OpenCL.DEVICE), 0, 0);
+                case "SubgroupLocalInvocationId" -> makeScalar(id, type, tid % grid.getSize(Tag.OpenCL.SUB_GROUP));
+                case "SubgroupId" -> makeScalar(id, type, grid.getId(Tag.OpenCL.SUB_GROUP, tid));
+                case "SubgroupSize" -> makeScalar(id, type, grid.getSize(Tag.OpenCL.SUB_GROUP));
+                case "GlobalSize" -> makeArray(id, type, grid.getSize(Tag.OpenCL.DEVICE), 1, 1);
+                case "LocalInvocationId" -> makeArray(id, type, tid % grid.getSize(Tag.OpenCL.WORK_GROUP), 0, 0);
+                case "WorkgroupId" -> makeArray(id, type, grid.getId(Tag.OpenCL.WORK_GROUP, tid), 0, 0);
+                case "WorkgroupSize" -> makeArray(id, type, grid.getSize(Tag.OpenCL.WORK_GROUP), 1, 1);
+                case "NumWorkgroups" ->
+                        makeArray(id, type, grid.getSize(Tag.OpenCL.DEVICE) / grid.getSize(Tag.OpenCL.WORK_GROUP), 1, 1);
+                default -> throw new ParsingException("Unsupported decoration '%s'", mapping.get(id));
+            };
+        }
+        throw new ParsingException("Unsupported architecture '%s'", grid.getArch());
     }
 
     private Expression makeArray(String id, Type type, int x, int y, int z) {

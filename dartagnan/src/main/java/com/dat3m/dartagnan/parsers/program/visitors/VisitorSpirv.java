@@ -7,16 +7,12 @@ import com.dat3m.dartagnan.parsers.program.visitors.spirv.*;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.builders.ProgramBuilder;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
-import com.dat3m.dartagnan.program.ThreadGrid;
 import org.antlr.v4.runtime.tree.ParseTree;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 public class VisitorSpirv extends SpirvBaseVisitor<Program> {
 
@@ -61,7 +57,7 @@ public class VisitorSpirv extends SpirvBaseVisitor<Program> {
     }
 
     private ProgramBuilder createBuilder(SpirvParser.SpvContext ctx) {
-        ThreadGrid grid = new ThreadGrid(1, 1, 1, 1);
+        List<Integer> scopeSizes = Arrays.asList(1, 1, 1);
         boolean hasConfig = false;
         for (SpirvParser.SpvHeaderContext header : ctx.spvHeaders().spvHeader()) {
             SpirvParser.ConfigHeaderContext cfgCtx = header.configHeader();
@@ -71,13 +67,13 @@ public class VisitorSpirv extends SpirvBaseVisitor<Program> {
                 }
                 hasConfig = true;
                 List<SpirvParser.LiteranHeaderUnsignedIntegerContext> literals = cfgCtx.literanHeaderUnsignedInteger();
-                int sg = Integer.parseInt(literals.get(0).getText());
-                int wg = Integer.parseInt(literals.get(1).getText());
-                int qf = Integer.parseInt(literals.get(2).getText());
-                grid = new ThreadGrid(sg, wg, qf, 1);
+                scopeSizes = literals.stream()
+                        .map(SpirvParser.LiteranHeaderUnsignedIntegerContext::getText)
+                        .map(Integer::parseInt)
+                        .toList();
             }
         }
-        return new ProgramBuilder(grid);
+        return new ProgramBuilder(scopeSizes);
     }
 
     private void initializeVisitors() {

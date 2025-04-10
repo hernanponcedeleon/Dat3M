@@ -4,11 +4,11 @@ import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.expression.type.FunctionType;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.program.Function;
-import com.dat3m.dartagnan.program.ThreadGrid;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.core.Skip;
 import org.junit.Test;
 
+import java.util.Arrays;
 import java.util.List;
 
 import static com.dat3m.dartagnan.program.event.EventFactory.newVoidFunctionCall;
@@ -19,7 +19,7 @@ public class ProgramBuilderTest {
 
     private static final TypeFactory types = TypeFactory.getInstance();
 
-    private final ProgramBuilder builder = new ProgramBuilder(new ThreadGrid(1, 1, 1, 1));
+    private final ProgramBuilder builder = new ProgramBuilder(Arrays.asList(1, 1, 1, 1));
     private final ControlFlowBuilder cfBuilder = builder.getControlFlowBuilder();
 
     @Test

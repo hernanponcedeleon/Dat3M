@@ -16,9 +16,15 @@ public class DecorationsBuilder {
 
     private final EnumMap<DecorationType, Decoration> mapping = new EnumMap<>(DecorationType.class);
 
-    public DecorationsBuilder(ThreadGrid grid) {
-        mapping.put(BUILT_IN, new BuiltIn(grid));
+    public DecorationsBuilder() {
+        mapping.put(BUILT_IN, new BuiltIn());
         mapping.put(OFFSET, new Offset());
+    }
+
+    public void setThreadGrid(ThreadGrid grid) {
+        if (mapping.containsKey(BUILT_IN)) {
+            ((BuiltIn) mapping.get(BUILT_IN)).setThreadGrid(grid);
+        }
     }
 
     public Decoration getDecoration(DecorationType type) {

@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan.program.processing.transformers;
 
+import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.processing.ExprTransformer;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.decorations.BuiltIn;
@@ -40,13 +41,46 @@ public class MemoryTransformer extends ExprTransformer {
         this.builtIn = builtIn;
         this.scopeMapping = Stream.generate(() -> new HashMap<MemoryObject, MemoryObject>()).limit(namePrefixes.size()).toList();
         this.pointerMapping = variables.stream().collect(Collectors.toMap((ScopedPointerVariable::getAddress), (v -> v)));
-        this.scopeIdProvider = List.of(grid::thId, grid::sgId, grid::wgId, grid::qfId, grid::dvId);
-        this.namePrefixIdxProvider = List.of(
-                i -> i,
-                i -> i / grid.sgSize(),
-                i -> i / grid.wgSize(),
-                i -> i / grid.qfSize(),
-                i -> i / grid.dvSize());
+        this.scopeIdProvider = getScopeIdProvider(grid);
+        this.namePrefixIdxProvider = getNamePrefixIdxProvider(grid);
+    }
+
+    private List<IntUnaryOperator> getScopeIdProvider(ThreadGrid grid) {
+        if (grid.getArch() == Arch.VULKAN) {
+            return List.of(
+                    tid1 -> grid.getId(Tag.Vulkan.INVOCATION, tid1),
+                    tid2 -> grid.getId(Tag.Vulkan.SUB_GROUP, tid2),
+                    tid3 -> grid.getId(Tag.Vulkan.WORK_GROUP, tid3),
+                    tid4 -> grid.getId(Tag.Vulkan.QUEUE_FAMILY, tid4),
+                    tid5 -> grid.getId(Tag.Vulkan.DEVICE, tid5));
+        }
+        if (grid.getArch() == Arch.OPENCL) {
+            return List.of(
+                    tid1 -> grid.getId(Tag.OpenCL.WORK_ITEM, tid1),
+                    tid2 -> grid.getId(Tag.OpenCL.SUB_GROUP, tid2),
+                    tid3 -> grid.getId(Tag.OpenCL.WORK_GROUP, tid3),
+                    tid4 -> grid.getId(Tag.OpenCL.DEVICE, tid4));
+        }
+        throw new UnsupportedOperationException("Thread grid not supported for architecture: " + grid.getArch());
+    }
+
+    private List<IntUnaryOperator> getNamePrefixIdxProvider(ThreadGrid grid) {
+        if (grid.getArch() == Arch.VULKAN) {
+            return List.of(
+                    i -> i,
+                    i -> i / grid.getSize(Tag.Vulkan.SUB_GROUP),
+                    i -> i / grid.getSize(Tag.Vulkan.WORK_GROUP),
+                    i -> i / grid.getSize(Tag.Vulkan.QUEUE_FAMILY),
+                    i -> i / grid.getSize(Tag.Vulkan.DEVICE));
+        }
+        if (grid.getArch() == Arch.OPENCL) {
+            return List.of(
+                    i -> i,
+                    i -> i / grid.getSize(Tag.OpenCL.SUB_GROUP),
+                    i -> i / grid.getSize(Tag.OpenCL.WORK_GROUP),
+                    i -> i / grid.getSize(Tag.OpenCL.DEVICE));
+        }
+        throw new UnsupportedOperationException("Thread grid not supported for architecture: " + grid.getArch());
     }
 
     public Register getRegisterMapping(Register register) {

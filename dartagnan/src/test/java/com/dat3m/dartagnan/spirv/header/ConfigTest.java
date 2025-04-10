@@ -29,7 +29,7 @@ public class ConfigTest extends AbstractTest {
         // then
         int size = scopes.stream().reduce(1, (a, b) -> a * b);
         ThreadGrid grid = program.getGrid();
-        assertEquals(size, grid.dvSize());
+        assertEquals(size, grid.getSize(Tag.Vulkan.DEVICE));
 
         int sg_size = scopes.get(0);
         int wg_size = scopes.get(1) * sg_size;
@@ -48,7 +48,7 @@ public class ConfigTest extends AbstractTest {
         doTestIllegalConfig("; @Config: 1, 1",
                 "Line 2:16 mismatched input 'Op' expecting ','");
         doTestIllegalConfig("; @Config: 1, 1, 0",
-                "Thread grid dimensions must be positive");
+                "Thread grid of Vulkan dimensions must be of length 3 and positive");
         doTestIllegalConfig("""
                         ; @Output: forall (1 == 1)
                         ; @Config: 1, 1, 1

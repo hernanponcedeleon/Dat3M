@@ -1,11 +1,11 @@
 package com.dat3m.dartagnan.parsers.program.visitors.spirv.extensions;
 
+import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.expression.integers.IntLiteral;
+import com.dat3m.dartagnan.parsers.program.visitors.spirv.extenstions.VisitorExtensionClspvReflection;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.mocks.MockProgramBuilder;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.mocks.MockSpirvParser;
-import com.dat3m.dartagnan.parsers.program.visitors.spirv.extenstions.VisitorExtensionClspvReflection;
-import com.dat3m.dartagnan.program.ThreadGrid;
 import com.dat3m.dartagnan.program.memory.ScopedPointerVariable;
 import org.junit.Before;
 import org.junit.Test;
@@ -17,7 +17,7 @@ import static org.junit.Assert.fail;
 
 public class VisitorExtensionClspvReflectionTest {
 
-    private final MockProgramBuilder builder = new MockProgramBuilder(new ThreadGrid(2, 3, 4, 1));
+    private final MockProgramBuilder builder = new MockProgramBuilder(Arch.VULKAN, List.of(2, 3, 4));
 
     @Before
     public void before() {

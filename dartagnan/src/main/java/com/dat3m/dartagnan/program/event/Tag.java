@@ -329,6 +329,7 @@ public final class Tag {
         public static final String AVDEVICE = "AVDEVICE";
         public static final String VISDEVICE = "VISDEVICE";
         // Scopes
+        public static final String INVOCATION = "INV";
         public static final String SUB_GROUP = "SG";
         public static final String WORK_GROUP = "WG";
         public static final String QUEUE_FAMILY = "QF";
@@ -375,6 +376,7 @@ public final class Tag {
     public static final class OpenCL {
         // Scopes
         public static final String WORK_ITEM = "WI";
+        public static final String SUB_GROUP = "SG";
         public static final String WORK_GROUP = "WG";
         public static final String DEVICE = "DV";
         public static final String ALL = "ALL";
@@ -529,10 +531,9 @@ public final class Tag {
                 case SEQ_CST -> C11.MO_SC;
 
                 // Scope
-                // TODO: OpenCL Kernel supports sub_group, but it's not mentioned in the model
                 case INVOCATION -> OpenCL.WORK_ITEM;
-                case SUBGROUP,
-                     WORKGROUP -> OpenCL.WORK_GROUP;
+                case SUBGROUP -> OpenCL.SUB_GROUP;
+                case WORKGROUP -> OpenCL.WORK_GROUP;
                 case DEVICE -> OpenCL.DEVICE;
                 case CROSS_DEVICE -> OpenCL.ALL;
                 case QUEUE_FAMILY,
