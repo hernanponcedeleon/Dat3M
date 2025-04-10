@@ -96,8 +96,8 @@ public abstract class AbstractCompilationTest {
     protected final Provider<Wmm> wmm2Provider = getTargetWmmProvider();
     protected final Provider<EnumSet<Property>> propertyProvider = getPropertyProvider();
     protected final Provider<Configuration> configProvider = getConfigurationProvider();
-    protected final Provider<VerificationTask> task1Provider = Providers.createTask(program1Provider, wmm1Provider, propertyProvider, sourceProvider, () -> ProgressModel.FAIR, () -> 1, configProvider);
-    protected final Provider<VerificationTask> task2Provider = Providers.createTask(program2Provider, wmm2Provider, propertyProvider, targetProvider, () -> ProgressModel.FAIR, () -> 1, configProvider);
+    protected final Provider<VerificationTask> task1Provider = Providers.createTask(program1Provider, wmm1Provider, propertyProvider, sourceProvider, ProgressModel::defaultHierarchy, () -> 1, configProvider);
+    protected final Provider<VerificationTask> task2Provider = Providers.createTask(program2Provider, wmm2Provider, propertyProvider, targetProvider, ProgressModel::defaultHierarchy, () -> 1, configProvider);
     protected final Provider<SolverContext> context1Provider = Providers.createSolverContextFromManager(shutdownManagerProvider, () -> Solvers.Z3);
     protected final Provider<SolverContext> context2Provider = Providers.createSolverContextFromManager(shutdownManagerProvider, () -> Solvers.Z3);
     protected final Provider<ProverWithTracker> prover1Provider = Providers.createProverWithFixedOptions(context1Provider, ProverOptions.GENERATE_MODELS);

@@ -19,7 +19,6 @@ import org.junit.rules.Timeout;
 import org.sosy_lab.common.ShutdownManager;
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.java_smt.SolverContextFactory.Solvers;
-import org.sosy_lab.java_smt.api.ProverEnvironment;
 import org.sosy_lab.java_smt.api.SolverContext;
 import org.sosy_lab.java_smt.api.SolverContext.ProverOptions;
 
@@ -29,14 +28,12 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.EnumSet;
-import java.util.List;
 import java.util.Set;
 import java.util.stream.Stream;
 
 import static com.dat3m.dartagnan.configuration.OptionNames.INITIALIZE_REGISTERS;
 import static com.dat3m.dartagnan.configuration.OptionNames.USE_INTEGERS;
 import static com.dat3m.dartagnan.utils.ResourceHelper.getRootPath;
-import static java.util.Collections.emptyList;
 import static org.junit.Assert.assertEquals;
 
 public abstract class AbstractComparisonTest {
@@ -94,8 +91,8 @@ public abstract class AbstractComparisonTest {
     protected final Provider<Wmm> wmm2Provider = getTargetWmmProvider();
     protected final Provider<EnumSet<Property>> propertyProvider = getPropertyProvider();
     protected final Provider<Configuration> configProvider = getConfigurationProvider();
-    protected final Provider<VerificationTask> task1Provider = Providers.createTask(program1Provider, wmm1Provider, propertyProvider, sourceProvider, () -> ProgressModel.FAIR, () -> 1, configProvider);
-    protected final Provider<VerificationTask> task2Provider = Providers.createTask(program2Provider, wmm2Provider, propertyProvider, targetProvider,  () -> ProgressModel.FAIR, () -> 1, configProvider);
+    protected final Provider<VerificationTask> task1Provider = Providers.createTask(program1Provider, wmm1Provider, propertyProvider, sourceProvider, ProgressModel::defaultHierarchy, () -> 1, configProvider);
+    protected final Provider<VerificationTask> task2Provider = Providers.createTask(program2Provider, wmm2Provider, propertyProvider, targetProvider, ProgressModel::defaultHierarchy, () -> 1, configProvider);
     protected final Provider<SolverContext> context1Provider = Providers.createSolverContextFromManager(shutdownManagerProvider, () -> Solvers.Z3);
     protected final Provider<SolverContext> context2Provider = Providers.createSolverContextFromManager(shutdownManagerProvider, () -> Solvers.Z3);
     protected final Provider<ProverWithTracker> prover1Provider = Providers.createProverWithFixedOptions(context1Provider, ProverOptions.GENERATE_MODELS);

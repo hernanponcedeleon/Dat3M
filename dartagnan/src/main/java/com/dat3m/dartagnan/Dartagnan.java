@@ -1,6 +1,7 @@
 package com.dat3m.dartagnan;
 
 import com.dat3m.dartagnan.configuration.OptionNames;
+import com.dat3m.dartagnan.configuration.ProgressModel;
 import com.dat3m.dartagnan.configuration.Property;
 import com.dat3m.dartagnan.encoding.EncodingContext;
 import com.dat3m.dartagnan.encoding.ProverWithTracker;
@@ -101,7 +102,9 @@ public class Dartagnan extends BaseOptions {
             }
         }
         final CharSource source = CharSource.concat(CharSource.wrap(preamble), CharSource.wrap(options));
-        return Configuration.builder().loadFromSource(source, ".", ".").build();
+        return Configuration.builder()
+                .addConverter(ProgressModel.Hierarchy.class, ProgressModel.HIERARCHY_CONVERTER)
+                .loadFromSource(source, ".", ".").build();
     }
 
     private static SolverContext createSolverContext(Configuration config, ShutdownNotifier notifier, Solvers solver) throws Exception {

@@ -63,13 +63,13 @@ public class Providers {
     // =========================== Task related providers ==============================
 
     public static Provider<VerificationTask> createTask(Supplier<Program> programSupplier, Supplier<Wmm> wmmSupplier, Supplier<EnumSet<Property>> propertySupplier,
-                                                        Supplier<Arch> targetSupplier, Supplier<ProgressModel> progressModelSupplier, Supplier<Integer> boundSupplier, Supplier<Configuration> config) {
-    	return Provider.fromSupplier(() -> VerificationTask.builder().
-    	        withConfig(config.get()).
-    			withTarget(targetSupplier.get()).
-    			withBound(boundSupplier.get()).
+                                                        Supplier<Arch> targetSupplier, Supplier<ProgressModel.Hierarchy> progressModelSupplier, Supplier<Integer> boundSupplier, Supplier<Configuration> config) {
+        return Provider.fromSupplier(() -> VerificationTask.builder().
+                withConfig(config.get()).
+                withTarget(targetSupplier.get()).
+                withBound(boundSupplier.get()).
                 withProgressModel(progressModelSupplier.get()).
-    			build(programSupplier.get(), wmmSupplier.get(), propertySupplier.get()));
+                build(programSupplier.get(), wmmSupplier.get(), propertySupplier.get()));
     }
 
     // =========================== Solving related providers ==============================
