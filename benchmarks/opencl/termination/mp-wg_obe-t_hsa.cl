@@ -1,5 +1,5 @@
 __kernel void test(global atomic_uint* dev_flag, local atomic_uint* wg_flag, global atomic_uint* wg_counter) {
-    
+
     __local uint wg_ticket;
     uint group_id;
     uint local_id = get_local_id(0);
@@ -9,8 +9,8 @@ __kernel void test(global atomic_uint* dev_flag, local atomic_uint* wg_flag, glo
         wg_ticket = atomic_fetch_add_explicit(wg_counter, 1, memory_order_acq_rel);
     }
     // This barrier guarantees termination even for progress=[QF=obe,SG=obe].
-    // The reason is that threads in the WG will block here, forcing others 
-    // threads in the same WG to start. Then SG=obe guarantees termination 
+    // The reason is that threads in the WG will block here, forcing others
+    // threads in the same WG to start. Then SG=obe guarantees termination.
     // of the spinloop on wg_flag.
     barrier(CLK_LOCAL_MEM_FENCE);
     group_id = wg_ticket;

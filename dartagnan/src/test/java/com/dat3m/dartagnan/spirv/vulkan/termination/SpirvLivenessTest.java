@@ -1,8 +1,4 @@
-<<<<<<<< HEAD:dartagnan/src/test/java/com/dat3m/dartagnan/spirv/vulkan/termination/SpirvLivenessTest.java
-package com.dat3m.dartagnan.spirv.vulkan.basic;
-========
-package com.dat3m.dartagnan.spirv.termination;
->>>>>>>> 79eff3e33 (Add MP with mixed scope hierarchy):dartagnan/src/test/java/com/dat3m/dartagnan/spirv/termination/SpirvLivenessTest.java
+package com.dat3m.dartagnan.spirv.vulkan.termination;
 
 import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.encoding.ProverWithTracker;

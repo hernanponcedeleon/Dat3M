@@ -1,5 +1,5 @@
 __kernel void test(global atomic_uint* dev_flag, local atomic_uint* wg_flag) {
-    
+
     uint group_id = get_group_id(0);
     uint local_id = get_local_id(0);
 

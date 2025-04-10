@@ -1,5 +1,5 @@
 __kernel void test(global atomic_uint* dev_flag, local atomic_uint* wg_flag, global atomic_uint* wg_counter, local atomic_uint* t_counter) {
-    
+
     __local uint wg_ticket;
     uint group_id;
     uint local_id = atomic_fetch_add_explicit(t_counter, 1, memory_order_acq_rel);
