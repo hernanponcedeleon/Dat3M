@@ -1,18 +1,14 @@
 package com.dat3m.dartagnan.parsers.program.visitors.spirv;
 
 import com.dat3m.dartagnan.exception.ParsingException;
-import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.aggregates.ExtractExpr;
-import com.dat3m.dartagnan.expression.type.ArrayType;
-import com.dat3m.dartagnan.parsers.program.visitors.spirv.helpers.HelperTypes;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.mocks.MockProgramBuilder;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.mocks.MockSpirvParser;
 import com.dat3m.dartagnan.program.Register;
-import com.dat3m.dartagnan.program.event.EventFactory;
 import org.junit.Test;
 
-import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.IntStream;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
@@ -25,9 +21,6 @@ public class VisitorOpsCompositeTest {
     public void testCompositeExtractArray() {
         // given
         String input = "%extract = OpCompositeExtract %uint %base 2";
-
-        builder.mockFunctionStart(true);
-
         builder.mockIntType("%uint", 32);
         builder.mockVectorType("%array", "%uint", 4);
         builder.mockConstant("%base", "%array", List.of(1, 2, 3, 4));
@@ -45,9 +38,6 @@ public class VisitorOpsCompositeTest {
     public void testCompositeExtractRuntimeArray() {
         // given
         String input = "%extract = OpCompositeExtract %uint %base 2";
-
-        builder.mockFunctionStart(true);
-
         builder.mockIntType("%uint", 32);
         builder.mockVectorType("%array", "%uint", -1);
         builder.mockConstant("%base", "%array", List.of(1, 2, 3, 4));
@@ -65,13 +55,9 @@ public class VisitorOpsCompositeTest {
     public void testCompositeExtractNestedArray() {
         // given
         String input = "%extract = OpCompositeExtract %uint %base 1 2";
-
-        builder.mockFunctionStart(true);
-
         builder.mockIntType("%uint", 32);
         builder.mockVectorType("%array", "%uint", 4);
         builder.mockAggregateType("%struct", "%uint", "%array");
-
         builder.mockConstant("%member_0", "%uint", 1);
         builder.mockConstant("%member_1", "%array", List.of(1, 2, 3, 4));
         builder.mockConstant("%base", "%struct", List.of("%member_0", "%member_1"));
@@ -89,13 +75,9 @@ public class VisitorOpsCompositeTest {
     public void testCompositeExtractNestedRuntimeArray() {
         // given
         String input = "%extract = OpCompositeExtract %uint %base 1 2";
-
-        builder.mockFunctionStart(true);
-
         builder.mockIntType("%uint", 32);
         builder.mockVectorType("%array", "%uint", -1);
         builder.mockVectorType("%array2", "%array", -1);
-
         builder.mockConstant("%member_0", "%array", List.of(1, 2, 3, 4));
         builder.mockConstant("%member_1", "%array", List.of(5, 6, 7, 8));
         builder.mockConstant("%base", "%array2", List.of("%member_0", "%member_1"));
@@ -113,22 +95,12 @@ public class VisitorOpsCompositeTest {
     public void testCompositeExtractArrayRegister() {
         // given
         String input = "%extract = OpCompositeExtract %uint %base 0";
-
-        builder.mockFunctionStart(true);
-
         builder.mockIntType("%uint", 32);
-        ArrayType arrayType = builder.mockVectorType("%array", "%uint", 4);
-        builder.mockPtrType("%_ptr_Function_uint_4", "%array", "Function");
-        Expression pointer = builder.mockVariable("%value", "%_ptr_Function_uint_4");
-
-        List<Expression> registers = new ArrayList<>();
-        for (int i = 0; i < 4; i++) {
-            Register register = builder.addRegister("%r" + i, "%uint");
-            Expression index = builder.mockConstant("%uint_" + i, "%uint", i);
-            Expression elementPointer = HelperTypes.getMemberAddress("%value", pointer, arrayType, List.of(index));
-            builder.addEvent(EventFactory.newLoad(register, elementPointer));
-            registers.add(register);
-        }
+        builder.mockVectorType("%array", "%uint", 4);
+        builder.mockFunctionStart(true);
+        List<Register> registers = IntStream.range(0, 4).boxed()
+                .map(i -> builder.addRegister("%r" + i, "%uint"))
+                .toList();
         builder.mockConstant("%base", "%array", registers);
 
         // when
@@ -167,21 +139,25 @@ public class VisitorOpsCompositeTest {
 
     @Test
     public void testCompositeExtractElementNotConstructExpr() {
+        // given
         String input = "%extract = OpCompositeExtract %uint %base 0";
         builder.mockFunctionStart(true);
         builder.mockIntType("%uint", 32);
         builder.mockConstant("%base", "%uint", 1);
 
         try {
+            // when
             visit(input);
             fail("Should throw exception");
         } catch (ParsingException e) {
+            // then
             assertEquals("Index out of bounds in OpCompositeExtract for '%extract'", e.getMessage());
         }
     }
 
     @Test
     public void testCompositeExtractIndexOutOfBounds() {
+        // given
         String input = "%extract = OpCompositeExtract %uint %base 5";
         builder.mockFunctionStart(true);
         builder.mockIntType("%uint", 32);
@@ -189,24 +165,29 @@ public class VisitorOpsCompositeTest {
         builder.mockConstant("%base", "%array", List.of(1, 2, 3, 4));
 
         try {
+            // when
             visit(input);
             fail("Should throw exception");
         } catch (ParsingException e) {
+            // then
             assertEquals("Index out of bounds in OpCompositeExtract for '%extract'", e.getMessage());
         }
     }
 
     @Test
     public void testCompositeExtractIndexTooDeep() {
+        // given
         String input = "%extract = OpCompositeExtract %uint %base 0 0";
         builder.mockIntType("%uint", 32);
         builder.mockVectorType("%array", "%uint", 4);
         builder.mockConstant("%base", "%array", List.of(1, 2, 3, 4));
 
         try {
+            // when
             visit(input);
             fail("Should throw exception");
         } catch (ParsingException e) {
+            // then
             assertEquals("Index out of bounds in OpCompositeExtract for '%extract'", e.getMessage());
         }
     }

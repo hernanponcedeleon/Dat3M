@@ -526,8 +526,9 @@ public class VisitorOpsFunctionTest {
 
         builder.mockFunctionType("%void_func", "%void", "%int_ptr");
         builder.setEntryPointId("%func");
-        Expression parmInput = expressions.makeValue(1, (IntegerType) builder.getType("%int"));
-        builder.addInput("%param", parmInput);
+        builder.mockConstant("%0", "%int", 0);
+        builder.mockConstant("%input", "%arr", List.of("%0", "%0", "%0", "%0"));
+        builder.addInput("%param", builder.getExpression("%input"));
 
         // when
         visit(input);
@@ -541,7 +542,7 @@ public class VisitorOpsFunctionTest {
         assertEquals("%param", function.getParameterRegisters().get(0).getName());
         assertEquals(builder.getType("%int_ptr"), function.getParameterRegisters().get(0).getType());
         assertEquals(HelperInputs.castPointerId("%param"), ((VirtualMemoryObject) local.getExpr()).getName());
-        assertEquals(parmInput, ((VirtualMemoryObject) local.getExpr()).getInitialValue(0));
+        assertEquals(expressions.makeZero((IntegerType) builder.getType("%int")), ((VirtualMemoryObject) local.getExpr()).getInitialValue(0));
         assertEquals(builder.getExpression("%param"), local.getResultRegister());
     }
 
