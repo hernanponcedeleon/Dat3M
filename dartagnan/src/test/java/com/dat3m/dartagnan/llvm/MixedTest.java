@@ -3,9 +3,7 @@ package com.dat3m.dartagnan.llvm;
 import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.utils.Result;
 import com.dat3m.dartagnan.utils.rules.Provider;
-import com.dat3m.dartagnan.utils.rules.Providers;
 import com.dat3m.dartagnan.verification.solving.AssumeSolver;
-import com.dat3m.dartagnan.wmm.Wmm;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -31,11 +29,6 @@ public class MixedTest extends AbstractCTest {
     @Override
     protected Provider<String> getProgramPathProvider() {
         return () -> getTestResourcePath("mixed/" + name + ".ll");
-    }
-
-    @Override
-    protected Provider<Wmm> getWmmProvider() {
-        return Providers.createWmmFromName(() -> "aarch64-mixed");
     }
 
     @Override
