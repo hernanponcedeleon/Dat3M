@@ -24,8 +24,8 @@ public class LitmusVulkanObeLivenessTest extends AbstractLitmusTest {
     }
 
     @Override
-    protected Provider<ProgressModel> getProgressModelProvider() {
-        return () -> ProgressModel.OBE;
+    protected Provider<ProgressModel.Hierarchy> getProgressModelProvider() {
+        return () -> ProgressModel.uniform(ProgressModel.OBE);
     }
 
     @Override

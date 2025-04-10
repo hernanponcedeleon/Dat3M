@@ -24,8 +24,8 @@ public class LitmusVulkanHsaLivenessTest extends AbstractLitmusTest {
     }
 
     @Override
-    protected Provider<ProgressModel> getProgressModelProvider() {
-        return () -> ProgressModel.HSA;
+    protected Provider<ProgressModel.Hierarchy> getProgressModelProvider() {
+        return () -> ProgressModel.uniform(ProgressModel.HSA);
     }
 
     @Override

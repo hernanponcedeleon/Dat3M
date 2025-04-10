@@ -24,12 +24,12 @@ public class VerificationTask {
     // Data objects
     private final Program program;
     private final Wmm memoryModel;
-    private final ProgressModel progressModel;
+    private final ProgressModel.Hierarchy progressModel;
     private final EnumSet<Property> property;
     private final WitnessGraph witness;
     private final Configuration config;
 
-    protected VerificationTask(Program program, Wmm memoryModel, ProgressModel progressModel,
+    protected VerificationTask(Program program, Wmm memoryModel, ProgressModel.Hierarchy progressModel,
                                EnumSet<Property> property, WitnessGraph witness, Configuration config)
     throws InvalidConfigurationException {
         this.program = checkNotNull(program);
@@ -46,7 +46,7 @@ public class VerificationTask {
 
     public Program getProgram() { return program; }
     public Wmm getMemoryModel() { return memoryModel; }
-    public ProgressModel getProgressModel() { return progressModel; }
+    public ProgressModel.Hierarchy getProgressModel() { return progressModel; }
     public Configuration getConfig() { return this.config; }
     public WitnessGraph getWitness() { return witness; }
     public EnumSet<Property> getProperty() { return property; }
@@ -57,7 +57,7 @@ public class VerificationTask {
     public static class VerificationTaskBuilder {
         protected WitnessGraph witness = new WitnessGraph();
         protected ConfigurationBuilder config = Configuration.builder();
-        protected ProgressModel progressModel = ProgressModel.getDefault();
+        protected ProgressModel.Hierarchy progressModel = ProgressModel.defaultHierarchy();
 
         protected VerificationTaskBuilder() { }
 
@@ -78,7 +78,7 @@ public class VerificationTask {
             return this;
         }
 
-        public VerificationTaskBuilder withProgressModel(ProgressModel progressModel) {
+        public VerificationTaskBuilder withProgressModel(ProgressModel.Hierarchy progressModel) {
             this.progressModel = progressModel;
             return this;
         }

@@ -91,8 +91,8 @@ public abstract class AbstractLitmusTest {
                 .build());
     }
 
-    protected Provider<ProgressModel> getProgressModelProvider() {
-        return () -> ProgressModel.FAIR;
+    protected Provider<ProgressModel.Hierarchy> getProgressModelProvider() {
+        return ProgressModel::defaultHierarchy;
     }
 
     protected Provider<Integer> getBoundProvider() {
@@ -112,7 +112,7 @@ public abstract class AbstractLitmusTest {
     protected final Provider<Integer> boundProvider = getBoundProvider();
     protected final Provider<Program> programProvider = Providers.createProgramFromPath(filePathProvider);
     protected final Provider<Wmm> wmmProvider = getWmmProvider();
-    protected final Provider<ProgressModel> progressModelProvider = getProgressModelProvider();
+    protected final Provider<ProgressModel.Hierarchy> progressModelProvider = getProgressModelProvider();
     protected final Provider<EnumSet<Property>> propertyProvider = getPropertyProvider();
     protected final Provider<Result> expectedResultProvider = Provider.fromSupplier(() -> expectedResults.get(filePathProvider.get().substring(filePathProvider.get().indexOf("/") + 1)));
     protected final Provider<Configuration> configProvider = getConfigurationProvider();
