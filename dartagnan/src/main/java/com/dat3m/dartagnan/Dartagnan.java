@@ -20,6 +20,7 @@ import com.dat3m.dartagnan.program.event.core.CondJump;
 import com.dat3m.dartagnan.program.event.core.Load;
 import com.dat3m.dartagnan.program.processing.LoopUnrolling;
 import com.dat3m.dartagnan.utils.Result;
+import com.dat3m.dartagnan.utils.ExitCode;
 import com.dat3m.dartagnan.utils.Utils;
 import com.dat3m.dartagnan.utils.options.BaseOptions;
 import com.dat3m.dartagnan.verification.VerificationTask;
@@ -74,6 +75,7 @@ import static com.dat3m.dartagnan.configuration.Property.*;
 import static com.dat3m.dartagnan.program.analysis.SyntacticContextAnalysis.*;
 import static com.dat3m.dartagnan.utils.GitInfo.*;
 import static com.dat3m.dartagnan.utils.Result.*;
+import static com.dat3m.dartagnan.utils.ExitCode.*;
 import static com.dat3m.dartagnan.witness.WitnessType.GRAPHML;
 import static com.dat3m.dartagnan.witness.graphviz.ExecutionGraphVisualizer.generateGraphvizFile;
 import static java.lang.Boolean.FALSE;
@@ -231,23 +233,24 @@ public class Dartagnan extends BaseOptions {
                 }
 
                 long endTime = System.currentTimeMillis();
-                String summary = generateResultSummary(task, prover, modelChecker);
+                ResultSummary summary = generateResultSummary(task, prover, modelChecker);
                 System.out.print(summary);
                 System.out.println("Total verification time: " + Utils.toTimeString(endTime - startTime));
 
                 // We only generate witnesses if we are not validating one.
                 if (o.getWitnessType().equals(GRAPHML) && !o.runValidator()) {
-                    generateWitnessIfAble(task, prover, modelChecker, summary);
+                    generateWitnessIfAble(task, prover, modelChecker, summary.toString());
                 }
+                System.exit(summary.getExitCode());
             }
         } catch (InterruptedException e) {
             logger.warn("Timeout elapsed. The SMT solver was stopped");
             System.out.println("TIMEOUT");
-            System.exit(0);
+            System.exit(TIMEOUT_ELAPSED.getExitCode());
         } catch (Exception e) {
             logger.error(e.getMessage(), e);
             System.out.println("ERROR");
-            System.exit(1);
+            System.exit(UNKNOWN_ERROR.getExitCode());
         }
     }
 
@@ -294,7 +297,7 @@ public class Dartagnan extends BaseOptions {
         }
     }
 
-    public static String generateResultSummary(VerificationTask task, ProverEnvironment prover,
+    public static ResultSummary generateResultSummary(VerificationTask task, ProverEnvironment prover,
             ModelChecker modelChecker) throws SolverException {
         // ----------------- Generate output of verification result -----------------
         final Program p = task.getProgram();
@@ -330,6 +333,8 @@ public class Dartagnan extends BaseOptions {
                         }
                     }
                     summary.append("=================================================\n");
+                    summary.append(result).append("\n");
+                    return new ResultSummary(summary.toString(), PROGRAM_SPEC_VIOLATION.getExitCode());
                 }
                 if (props.contains(TERMINATION) && FALSE.equals(model.evaluate(TERMINATION.getSMTVariable(encCtx)))) {
                     summary.append("============ Termination violation found ============\n");
@@ -352,10 +357,14 @@ public class Dartagnan extends BaseOptions {
                         }
                     }
                     summary.append("=================================================\n");
+                    summary.append(result).append("\n");
+                    return new ResultSummary(summary.toString(), TERMINATION_VIOLATION.getExitCode());
                 }
                 if (props.contains(DATARACEFREEDOM) && FALSE.equals(model.evaluate(DATARACEFREEDOM.getSMTVariable(encCtx)))) {
                     summary.append("============= SVCOMP data race found ============\n");
                     summary.append("=================================================\n");
+                    summary.append(result).append("\n");
+                    return new ResultSummary(summary.toString(), DATA_RACE_FREEDOM_VIOLATION.getExitCode());
                 }
                 final List<Axiom> violatedCATSpecs = task.getMemoryModel().getAxioms().stream()
                         .filter(Axiom::isFlagged)
@@ -367,6 +376,8 @@ public class Dartagnan extends BaseOptions {
                     // Computed by the model checker since it needs access to the WmmEncoder
                     summary.append(modelChecker.getFlaggedPairsOutput());
                     summary.append("=================================================\n");
+                    summary.append(result).append("\n");
+                    return new ResultSummary(summary.toString(), CAT_SPEC_VIOLATION.getExitCode());
                 }
             } else if (hasPositiveWitnesses) {
                 if (props.contains(PROGRAM_SPEC) && TRUE.equals(model.evaluate(PROGRAM_SPEC.getSMTVariable(encCtx)))) {
@@ -396,8 +407,11 @@ public class Dartagnan extends BaseOptions {
                 } catch (IOException e) {
                     logger.warn("Failed to save bounds file: {}", e.getLocalizedMessage());
                 }
+                summary.append(result).append("\n");
+                return new ResultSummary(summary.toString(), BOUNDED_RESULT.getExitCode());
             }
             summary.append(result).append("\n");
+            return new ResultSummary(summary.toString(), NORMAL_TERMINATION.getExitCode());
         } else {
             // Litmus-specific output format that matches with Herd7 (as good as it can)
             if (p.getFilterSpecification() != null) {
@@ -447,7 +461,9 @@ public class Dartagnan extends BaseOptions {
                 }
             }
         }
-        return summary.toString();
+        // We consider those cases without an explicit return to yield normal termination.
+        // This includes verification of litmus code, independent of the verification result.
+        return new ResultSummary(summary.toString(), NORMAL_TERMINATION.getExitCode());
     }
 
     private static void increaseBoundAndDump(List<Event> boundEvents, Configuration config) throws IOException {
@@ -514,5 +530,24 @@ public class Dartagnan extends BaseOptions {
             init = true;
         }
         sb.append("\n");
+    }
+
+    private static class ResultSummary {
+        private String summary;
+        private int code;
+
+        private ResultSummary(String summary, int code) {
+            this.summary = summary;
+            this.code = code;
+        }
+
+        @Override
+        public String toString() {
+            return summary;
+        }
+
+        public int getExitCode() {
+            return code;
+        }
     }
 }
