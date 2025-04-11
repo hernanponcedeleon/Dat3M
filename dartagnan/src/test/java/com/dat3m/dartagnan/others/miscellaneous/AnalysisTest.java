@@ -54,7 +54,7 @@ import static com.dat3m.dartagnan.program.event.EventFactory.*;
 import static com.dat3m.dartagnan.utils.ResourceHelper.getRootPath;
 import static com.dat3m.dartagnan.utils.ResourceHelper.getTestResourcePath;
 import static com.dat3m.dartagnan.verification.solving.ModelChecker.*;
-import static com.dat3m.dartagnan.wmm.RelationNameRepository.LOC;
+import static com.dat3m.dartagnan.wmm.RelationNameRepository.*;
 import static org.junit.Assert.*;
 
 public class AnalysisTest {
@@ -809,9 +809,9 @@ public class AnalysisTest {
 
         Program program = b.build();
         Wmm wmm = new Wmm();
-        Relation rmw = wmm.getOrCreatePredefinedRelation("rmw");
-        Relation rf = wmm.getOrCreatePredefinedRelation("rf");
-        Relation co = wmm.getOrCreatePredefinedRelation("co");
+        Relation rmw = wmm.getOrCreatePredefinedRelation(LXSX);
+        Relation rf = wmm.getOrCreatePredefinedRelation(RF);
+        Relation co = wmm.getOrCreatePredefinedRelation(CO);
         Relation rfRmw = wmm.addDefinition(new Composition(wmm.newRelation(), rf, rmw));
         Relation coCo = wmm.addDefinition(new Composition(wmm.newRelation(), co, co));
         wmm.addConstraint(new Emptiness(wmm.addDefinition(new Intersection(wmm.newRelation(), rfRmw, coCo))));
