@@ -144,12 +144,13 @@ public abstract class AbstractLitmusTest {
             .around(prover2Provider);
 
 
+    @Test
     public void testAssume() throws Exception {
         AssumeSolver s = AssumeSolver.run(contextProvider.get(), proverProvider.get(), taskProvider.get());
         assertEquals(expected, s.getResult());
     }
 
-    @Test
+    //@Test
     public void testRefinement() throws Exception {
         RefinementSolver s = RefinementSolver.run(contextProvider.get(), proverProvider.get(), taskProvider.get());
         assertEquals(expected, s.getResult());
