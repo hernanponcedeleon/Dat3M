@@ -129,6 +129,7 @@ public class SpirvAssertionsTest {
                 {"alignment2.spv.dis", OPENCL, 1, PASS},
                 {"alignment3.spv.dis", OPENCL, 1, PASS},
                 {"alignment4.spv.dis", OPENCL, 1, PASS},
+                {"alignment-mixed-type.spv.dis", OPENCL, 1, PASS},
         });
     }
 

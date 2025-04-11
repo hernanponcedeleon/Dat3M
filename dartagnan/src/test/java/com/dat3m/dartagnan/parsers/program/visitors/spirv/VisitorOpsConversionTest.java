@@ -78,6 +78,46 @@ public class VisitorOpsConversionTest {
         assertEquals(builder.getType("%uint"), reg.getType());
     }
 
+    @Test
+    public void opUConvertValidIntConst() {
+        builder.mockIntType("%uint", 32);
+        builder.mockIntType("%uchar", 8);
+        builder.mockConstant("%value1", "%uint", 1);
+        String input = "%value2 = OpUConvert %uchar %value1";
+
+        visit(input);
+        Expression reg = builder.getExpression("%value2");
+        assertEquals(builder.getType("%uchar"), reg.getType());
+    }
+
+    @Test
+    public void opUConvertValidIntVariable() {
+        builder.mockIntType("%uint", 32);
+        builder.mockIntType("%uchar", 8);
+        builder.mockPtrType("%_ptr_Function_uint", "%uint", "Function");
+        builder.mockVariable("%value1", "%_ptr_Function_uint");
+        String input = "%value2 = OpUConvert %uchar %value1";
+
+        visit(input);
+        Expression reg = builder.getExpression("%value2");
+        assertEquals(builder.getType("%uchar"), reg.getType());
+    }
+
+    @Test
+    public void opUConvertInvalidIntConst() {
+        builder.mockIntType("%uint", 32);
+        builder.mockBoolType("%bool");
+        builder.mockConstant("%value1", "%uint", 1);
+        String input = "%value2 = OpUConvert %bool %value1";
+
+        try {
+            visit(input);
+            fail("Should throw exception");
+        } catch (ParsingException e) {
+            assertEquals("OpUConvert: Invalid conversion from 'bv32' to '%bool'", e.getMessage());
+        }
+    }
+
     private void visit(String input) {
         builder.mockFunctionStart(true);
         new MockSpirvParser(input).op().accept(new VisitorOpsConversion(builder));
