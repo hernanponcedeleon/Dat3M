@@ -30,6 +30,7 @@ import static com.dat3m.dartagnan.utils.Result.PASS;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.verification.solving.AssumeSolver;
 import com.dat3m.dartagnan.verification.solving.RefinementSolver;
+import com.dat3m.dartagnan.wmm.Wmm;
 
 @RunWith(Parameterized.class)
 public class AsmProgress64Armv8Test {
