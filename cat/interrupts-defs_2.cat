@@ -1,0 +1,47 @@
+let po-until(set) = po \ (po;[set];po)
+
+(* Basic interrupt relations *)
+let IHSpawn = [range([INTERRUPT_HANDLER];po-until(THREAD_CREATE))]
+let IHStart = [range(IHSpawn;rf)]
+let ih = int;(IHSpawn;rf;int)+  // (...)+ to handle nested IHs
+let ihImm = int;IHSpawn;rf
+
+(* Guess a total execution order on the IHs for each thread (in case there are multiple) *)
+let ihOrderPre = (IHSpawn;new();IHSpawn & int)+ \ id
+empty ((IHSpawn;_*_;IHSpawn & int) \ (ihOrderPre | ihOrderPre^-1 | id))
+acyclic(ihOrderPre)
+let ihOrder = IHStart;rf^-1;ihOrderPre;rf;IHStart
+
+(* Define interrupt points *)
+let beforeIPs = (new() & ihImm;IHStart) | IHSpawn;rf
+// IPs cannot occur when interrupts are disabled.
+let beforeIPs = beforeIPs | ([DISABLE_INTERRUPT];po-until(ENABLE_INTERRUPT))^-1;beforeIPs
+// IPs respect ihOrder
+let beforeIPs = beforeIPs;ihOrder?
+
+let afterIPs = ((ihImm;IHStart) \ beforeIPs)^-1
+
+// Extend beforeIPs/afterIPs to include all events of IH and even nested IHs
+let beforeIPExt = beforeIPs;(ih | po?)
+let afterIPExt = (ih | po?)^-1;afterIPs
+
+(* Extend po/int/ext based on IPs *)
+let po_orig = po
+let po = po | beforeIPExt | afterIPExt
+let int = int | ih | ih^-1 | (IW * M)
+let ext = ext \ int
+
+let ctrl = ctrl ; po*
+
+let po-loc = po & loc
+let rfe = rf & ext
+let coe = co & ext
+let fre = fr & ext
+let rfi = rf & int
+let coi = co & int
+let fri = fr & int
+
+// NOTE: beforeIPs must be prefix-closed under the barrier ordering of the WMM
+// Since this depends on the WMM, we do not define it here and instead rely on the WMM adding the axiom
+// empty ((barrier;beforeIP) \ beforeIP)
+// This can be achieved by include "interrupts-axioms.cat" inside the WMM

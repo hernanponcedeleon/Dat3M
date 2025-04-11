@@ -41,7 +41,7 @@ public class VMMInterruptsTest extends AbstractCTest {
 
     @Override
     protected Provider<Wmm> getWmmProvider() {
-        return Provider.fromSupplier(() -> new ParserCat().parse(new File(getRootPath("cat/vmm-interrupts.cat"))));
+        return Provider.fromSupplier(() -> new ParserCat().parse(new File(getRootPath("cat/vmm-interrupts-alt.cat"))));
     }
 
     @Parameterized.Parameters(name = "{index}: {0}, target={1}")

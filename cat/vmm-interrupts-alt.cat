@@ -1,4 +1,4 @@
-include "interrupts-defs.cat"
+include "interrupts-defs_2.cat"
 
 let Marked = RLX | ACQ | REL | SC
 let Plain = ~Marked
@@ -33,8 +33,8 @@ let hb = ppo | WRF-ppo | rfe | fre | coe
 acyclic hb
 
 (** Interrupt Axioms **)
-let barrier = po?; [cb | Marked | F | ENABLE_INTERRUPT | DISABLE_INTERRUPT]; po? | [HARMLESS_RACY]
-include "interrupts-axioms.cat"
+let barrier = po_orig?; [cb | Marked | F | ENABLE_INTERRUPT | DISABLE_INTERRUPT]; po_orig? | [HARMLESS_RACY]
+include "interrupts-axioms_2.cat"
 
 (** Data Races **)
 
