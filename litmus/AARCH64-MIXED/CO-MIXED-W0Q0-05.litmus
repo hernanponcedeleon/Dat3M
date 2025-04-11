@@ -1,0 +1,17 @@
+AArch64 CO-MIXED-W0Q0-05
+{
+uint64_t x;
+0:X1=x; 1:X1=x;
+uint32_t 0:X2=0x1;
+uint64_t 0:X4;
+uint64_t 0:X5;
+uint64_t 1:X3=0x200000002;
+}
+
+P0           | P1           ;
+STR W2, [X1] | LDR W7, [X1] ;
+LDR X4, [X1] | CMP W7, #1   ;
+             | B.EQ L0      ;
+             | STR X3, [X1] ; 
+             |L0:           ;
+exists(0:X4 = 0x200000001)

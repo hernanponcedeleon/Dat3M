@@ -1,0 +1,21 @@
+AArch64 RWC+posb0h0+rfib1h0+b0
+"Rfeb0b0 PosRRb0h0 Freh0b1 Rfib1h0 Freh0b0"
+Cycle=Rfeb0b0 PosRRb0h0 Freh0b1 Rfib1h0 Freh0b0
+Relax=Rfib1h0
+Safe=Rfeb0b0 PosRRb0h0 Freh0b0 Freh0b1
+Generator=diy7 (version 7.52+9(dev))
+Prefetch=
+Com=Rf Fr Fr
+Orig=Rfeb0b0 PosRRb0h0 Freh0b1 Rfib1h0 Freh0b0
+{
+uint32_t x; uint32_t 2:X2; uint32_t 1:X2; uint32_t 1:X0;
+
+0:X1=x;
+1:X1=x;
+2:X1=x;
+}
+ P0           | P1           | P2              ;
+ MOV W0,#1    | LDRB W0,[X1] | MOV W0,#2       ;
+ STRB W0,[X1] | LDRH W2,[X1] | STRB W0,[X1,#1] ;
+              |              | LDRH W2,[X1]    ;
+exists (1:X0=0x0 /\ 1:X2=0x1 /\ 2:X2=0x200 /\ x=0x201) \/ (1:X0=0x1 /\ 1:X2=0x1 /\ 2:X2=0x200 /\ x=0x201)

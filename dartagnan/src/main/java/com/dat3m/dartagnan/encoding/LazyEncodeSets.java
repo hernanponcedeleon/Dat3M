@@ -97,7 +97,12 @@ public class LazyEncodeSets implements Constraint.Visitor<Boolean> {
     }
 
     @Override
-    public Boolean visitReadModifyWrites(ReadModifyWrites definition) {
+    public Boolean visitAMOPairs(AMOPairs definition) {
+        return doUpdateSelf(definition);
+    }
+
+    @Override
+    public Boolean visitLXSXPairs(LXSXPairs definition) {
         return doUpdateSelf(definition);
     }
 

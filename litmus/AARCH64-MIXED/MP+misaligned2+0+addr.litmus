@@ -1,0 +1,13 @@
+AArch64 MP+misaligned2+0+addr
+{
+  uint8_t x[128];  (* two cache lines *)
+  0:X5=x; 1:X5=x;
+  uint32_t 0:X0=0;
+  uint32_t 0:X11=0x1122;
+}
+P0                                         | P1                                 ;
+STRH W11,[X5,W0,SXTW] (* W x+0/2=0x1122 *) | LDRB W1,[X5,#1] (* R x+1/1=0x11 *) ;
+                                           | EOR  W3,W1,W1   (* addr *)         ;
+                                           | ADD  W4,W3,#0                      ;
+                                           | LDRB W2,[X5,W4,SXTW] (* R x+0/1=0x00 *) ;
+exists (1:X1=0x11 /\ 1:X2=0x00)

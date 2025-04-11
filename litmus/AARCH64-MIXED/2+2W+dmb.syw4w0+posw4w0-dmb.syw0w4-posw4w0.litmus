@@ -1,0 +1,23 @@
+AArch64 2+2W+dmb.syw4w0+posw4w0-dmb.syw0w4-posw4w0
+"DMB.SYdWWw4w0 Wsew0w4 PosWWw4w0 DMB.SYdWWw0w4 PosWWw4w0 Wsew0w4"
+Cycle=Wsew0w4 PosWWw4w0 DMB.SYdWWw0w4 PosWWw4w0 Wsew0w4 DMB.SYdWWw4w0
+Relax=PosWWw4w0
+Safe=Wsew0w4 DMB.SYdWWw0w4 DMB.SYdWWw4w0
+Prefetch=0:x=F,0:y=W,1:y=F,1:x=W
+Com=Ws Ws
+Orig=DMB.SYdWWw4w0 Wsew0w4 PosWWw4w0 DMB.SYdWWw0w4 PosWWw4w0 Wsew0w4
+{
+uint64_t y; uint64_t x; uint64_t 1:X6; uint64_t 0:X4;
+
+0:X0=0x3030303; 0:X1=x; 0:X2=0x1010101; 0:X3=y;
+1:X0=0x2020202; 1:X1=y; 1:X2=0x3030303; 1:X3=0x1010101; 1:X4=x; 1:X5=0x2020202;
+}
+ P0             | P1             ;
+ STR W0,[X1,#4] | STR W0,[X1,#4] ;
+ DMB SY         | STR W2,[X1]    ;
+ STR W2,[X3]    | DMB SY         ;
+ LDR X4,[X3]    | STR W3,[X4,#4] ;
+                | STR W5,[X4]    ;
+                | LDR X6,[X4]    ;
+exists
+(x=0x303030302020202 /\ y=0x202020203030303 /\ 0:X4=0x2020202 /\ 1:X6=0x3030303)
