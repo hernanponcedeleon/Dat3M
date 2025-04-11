@@ -48,12 +48,8 @@ public class AsmProgress64Armv8Test {
     @Parameterized.Parameters(name = "{index}: {0}, {1}, {2}")
     public static Iterable<Object[]> data() throws IOException {
         return Arrays.asList(new Object[][]{
-            // hemlock fails I don't know why
-            // the other ones either have
-            // ldxarh or ldxarb -> mixed size analysis 
-            // or they use unsupported intrinsics e.g. p64malloc which uses malloc -> I could change the src code but does it make sense?
             {"rwlock", 1, PASS},
-            {"rwsync", 3, PASS},
+            {"seqlock", 3, PASS},
         });
     }
 
