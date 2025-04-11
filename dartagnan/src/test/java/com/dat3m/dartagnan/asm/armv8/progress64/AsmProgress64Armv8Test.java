@@ -29,7 +29,7 @@ import com.dat3m.dartagnan.utils.Result;
 import static com.dat3m.dartagnan.utils.Result.PASS;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.verification.solving.AssumeSolver;
-import com.dat3m.dartagnan.wmm.Wmm;
+import com.dat3m.dartagnan.verification.solving.RefinementSolver;
 
 @RunWith(Parameterized.class)
 public class AsmProgress64Armv8Test {
@@ -55,10 +55,9 @@ public class AsmProgress64Armv8Test {
 
     @Test
     public void testAllSolvers() throws Exception {
-        // TODO : RefinementSolver takes too long to run, we have to investigate this
-        // try (SolverContext ctx = mkCtx(); ProverWithTracker prover = mkProver(ctx)) {
-        //     assertEquals(expected, RefinementSolver.run(ctx, prover, mkTask()).getResult());
-        // }
+        try (SolverContext ctx = mkCtx(); ProverWithTracker prover = mkProver(ctx)) {
+            assertEquals(expected, RefinementSolver.run(ctx, prover, mkTask()).getResult());
+        }
         try (SolverContext ctx = mkCtx(); ProverWithTracker prover = mkProver(ctx)) {
             assertEquals(expected, AssumeSolver.run(ctx, prover, mkTask()).getResult());
         }
