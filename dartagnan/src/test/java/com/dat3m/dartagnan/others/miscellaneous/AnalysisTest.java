@@ -771,8 +771,10 @@ public class AnalysisTest {
 
         Context analysisContext = Context.create();
         analysisContext.register(BranchEquivalence.class, BranchEquivalence.fromConfig(program, config));
-        analysisContext.register(ExecutionAnalysis.class, ExecutionAnalysis.fromConfig(program, ProgressModel.FAIR, analysisContext, config));
-        analysisContext.register(ReachingDefinitionsAnalysis.class, ReachingDefinitionsAnalysis.fromConfig(program, analysisContext, config));
+        analysisContext.register(ExecutionAnalysis.class, ExecutionAnalysis.fromConfig(program,
+                ProgressModel.defaultHierarchy(), analysisContext, config));
+        analysisContext.register(ReachingDefinitionsAnalysis.class,
+                ReachingDefinitionsAnalysis.fromConfig(program, analysisContext, config));
         assertTrue(program.getThreadEvents(Init.class).isEmpty());
         AliasAnalysis alias = AliasAnalysis.fromConfig(program, analysisContext, config, true);
         List<MemoryCoreEvent> events = program.getThreadEvents(MemoryCoreEvent.class);

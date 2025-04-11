@@ -56,8 +56,8 @@ public final class Tearing implements ProgramProcessor {
         try {
             final Context analysisContext = Context.create();
             analysisContext.register(BranchEquivalence.class, BranchEquivalence.fromConfig(program, configuration));
-            analysisContext.register(ExecutionAnalysis.class, ExecutionAnalysis.fromConfig(program, ProgressModel.FAIR,
-                    analysisContext, configuration));
+            analysisContext.register(ExecutionAnalysis.class, ExecutionAnalysis.fromConfig(program,
+                    ProgressModel.defaultHierarchy(), analysisContext, configuration));
             analysisContext.register(ReachingDefinitionsAnalysis.class, ReachingDefinitionsAnalysis.fromConfig(program,
                     analysisContext, configuration));
             alias = AliasAnalysis.fromConfig(program, analysisContext, configuration, true);
