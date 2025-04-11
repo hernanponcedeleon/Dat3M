@@ -7,6 +7,7 @@ import com.dat3m.dartagnan.program.*;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.Tag;
+import com.dat3m.dartagnan.program.event.core.ControlBarrier;
 import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.event.functions.FunctionCall;
 import com.dat3m.dartagnan.program.event.functions.Return;
@@ -137,7 +138,10 @@ public class Inlining implements ProgramProcessor {
                     if (copy instanceof Label label) {
                         label.setName(scope + ":" + label.getName());
                     }
-                    // TODO: Add support for control barriers
+                    if (copy instanceof ControlBarrier barrier) {
+                        barrier.setInstanceId(String.format("%s:%d:%s",
+                                call.getFunction().getName(), scope, barrier.getInstanceId()));
+                    }
                 });
         final List<Event> inlinedBody = IRHelper.copyEvents(callTarget.events, copyUpdater, new HashMap<>());
         final Label returnLabel = newLabel("EXIT_OF_CALL_" + callTarget.name + "_" + scope);
