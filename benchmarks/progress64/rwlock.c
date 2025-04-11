@@ -1,8 +1,5 @@
 #include <pthread.h>
 #include <assert.h>
-#include <stdlib.h>
-#include <pthread.h>
-#include <assert.h>
 #include "p64_rwlock.c"
 
 #define NTHREADS 3
