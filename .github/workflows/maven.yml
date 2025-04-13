@@ -14,7 +14,7 @@ on:
   pull_request:
     branches: [ master, development ]
   schedule:
-    - cron: '0 0 * * 0'  # Run weekly every Sunday at midnight
+    - cron: '0 0 * * 1'  # Run weekly
   workflow_dispatch:
 
 jobs:
@@ -145,8 +145,10 @@ jobs:
     runs-on: ubuntu-latest
     if: github.event_name == 'schedule' && github.ref == 'refs/heads/development'
     steps:
-      - name: Checkout
+      - name: Checkout development branch
         uses: actions/checkout@v4
+        with:
+          ref: development
 
       - name: Checkout badges branch dedicated to storing badges only
         uses: actions/checkout@v4
