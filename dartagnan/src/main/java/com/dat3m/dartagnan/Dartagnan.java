@@ -530,11 +530,11 @@ public class Dartagnan extends BaseOptions {
         sb.append("\n");
     }
 
-    private static class ResultSummary {
+    public static class ResultSummary {
         private String summary;
         private int code;
 
-        private ResultSummary(String summary, int code) {
+        public ResultSummary(String summary, int code) {
             this.summary = summary;
             this.code = code;
         }
