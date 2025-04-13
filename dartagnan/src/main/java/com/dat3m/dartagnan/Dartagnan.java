@@ -401,7 +401,6 @@ public class Dartagnan extends BaseOptions {
                             .append("\n");
                 }
                 summary.append("=================================================\n");
-
                 try {
                     increaseBoundAndDump(reachedBounds, task.getConfig());
                 } catch (IOException e) {
@@ -411,7 +410,6 @@ public class Dartagnan extends BaseOptions {
                 return new ResultSummary(summary.toString(), BOUNDED_RESULT.getExitCode());
             }
             summary.append(result).append("\n");
-            return new ResultSummary(summary.toString(), NORMAL_TERMINATION.getExitCode());
         } else {
             // Litmus-specific output format that matches with Herd7 (as good as it can)
             if (p.getFilterSpecification() != null) {
