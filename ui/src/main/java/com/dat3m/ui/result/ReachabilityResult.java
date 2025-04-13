@@ -100,7 +100,7 @@ public class ReachabilityResult {
                 };
                 // Verification ended, we can interrupt the timeout Thread
                 t.interrupt();
-                verdict = Dartagnan.generateResultSummary(task, prover, modelChecker);
+                verdict = Dartagnan.generateResultSummary(task, prover, modelChecker).toString();
 
                 if (modelChecker.hasModel() && modelChecker.getResult() != Result.UNKNOWN) {
                     witnessFile = Dartagnan.generateExecutionGraphFile(task, prover, modelChecker, WitnessType.PNG);
