@@ -39,8 +39,8 @@ public class CProgressTest extends AbstractCTest {
     }
 
     @Override
-    protected Provider<ProgressModel> getProgressModelProvider() {
-        return () -> progressModel;
+    protected Provider<ProgressModel.Hierarchy> getProgressModelProvider() {
+        return () -> uniform(progressModel);
     }
 
     @Override

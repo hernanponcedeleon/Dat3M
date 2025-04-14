@@ -1,20 +1,16 @@
 package com.dat3m.dartagnan.witness.graphviz;
 
+import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.analysis.SyntacticContextAnalysis;
 import com.dat3m.dartagnan.program.event.core.Init;
 import com.dat3m.dartagnan.program.event.metadata.MemoryOrder;
 import com.dat3m.dartagnan.utils.dependable.DependencyGraph;
-import com.dat3m.dartagnan.verification.model.event.*;
-import com.dat3m.dartagnan.verification.model.ExecutionModelNext;
-import com.dat3m.dartagnan.verification.model.MemoryObjectModel;
-import com.dat3m.dartagnan.verification.model.RelationModel;
+import com.dat3m.dartagnan.verification.model.*;
 import com.dat3m.dartagnan.verification.model.RelationModel.EdgeModel;
-import com.dat3m.dartagnan.verification.model.ThreadModel;
-import com.dat3m.dartagnan.verification.model.ValueModel;
+import com.dat3m.dartagnan.verification.model.event.*;
 import com.dat3m.dartagnan.wmm.definition.Coherence;
 import com.dat3m.dartagnan.wmm.definition.ProgramOrder;
 import com.dat3m.dartagnan.wmm.definition.ReadFrom;
-import com.dat3m.dartagnan.wmm.Relation;
 import com.google.common.collect.Lists;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -30,7 +26,6 @@ import java.io.Writer;
 import java.math.BigInteger;
 import java.util.*;
 import java.util.function.BiPredicate;
-import java.util.stream.Collectors;
 
 import static com.dat3m.dartagnan.configuration.OptionNames.WITNESS_SHOW;
 import static com.dat3m.dartagnan.program.analysis.SyntacticContextAnalysis.*;
@@ -309,11 +304,14 @@ public class ExecutionGraphVisualizer {
         } else if (e instanceof AssertModel am) {
             tag = String.format("Assertion(%s)", am.getResult());
         }
+        final Thread thread = e.getThreadModel().getThread();
         final String callStack = makeContextString(
             synContext.getContextInfo(e.getEvent()).getContextOfType(CallContext.class), " -> \\n");
-        final String nodeString = String.format("%s:T%s/E%s\\n%s%s\n%s",
+        final String scope = thread.hasScope() ? "@" + thread.getScopeHierarchy() : "";
+        final String nodeString = String.format("%s:T%s%s\\nE%s %s%s\n%s",
                 e.getThreadModel().getName(),
                 e.getThreadModel().getId(),
+                scope,
                 e.getEvent().getGlobalId(),
                 callStack.isEmpty() ? callStack : callStack + " -> \\n",
                 getSourceLocationString(e.getEvent()),

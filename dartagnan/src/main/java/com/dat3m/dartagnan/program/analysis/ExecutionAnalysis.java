@@ -19,7 +19,7 @@ public interface ExecutionAnalysis {
 
 
 
-    static ExecutionAnalysis fromConfig(Program program, ProgressModel progressModel, Context context, Configuration config)
+    static ExecutionAnalysis fromConfig(Program program, ProgressModel.Hierarchy progressModel, Context context, Configuration config)
             throws InvalidConfigurationException {
         final BranchEquivalence eq = context.requires(BranchEquivalence.class);
         return new DefaultExecutionAnalysis(program, eq, progressModel);
@@ -33,11 +33,11 @@ public interface ExecutionAnalysis {
 class DefaultExecutionAnalysis implements ExecutionAnalysis {
 
     private final BranchEquivalence eq;
-    private final ProgressModel progressModel;
+    private final ProgressModel.Hierarchy progressModel;
     private final Thread lowestIdThread; // For HSA
     private final Set<Thread> interruptableThreads; // To weaken progress on interruptible threads
 
-    public DefaultExecutionAnalysis(Program program, BranchEquivalence eq, ProgressModel progressModel) {
+    public DefaultExecutionAnalysis(Program program, BranchEquivalence eq, ProgressModel.Hierarchy progressModel) {
         this.eq = eq;
         this.progressModel = progressModel;
 
@@ -68,12 +68,17 @@ class DefaultExecutionAnalysis implements ExecutionAnalysis {
             return true;
         }
 
+        if (!progressModel.isUniform()) {
+            // For mixed-hierarchy models, we only rely on strongest implication.
+            return strongestImplication; // FALSE
+        }
+
         if (interruptableThreads.contains(implied.getThread())) {
             return strongestImplication; // FALSE
         }
 
-        // weakest implication holds but not strongest: progress model decides
-        final boolean implication = switch (progressModel) {
+        // weakest implication holds but not strongest & model is uniform: progress model decides
+        final boolean implication = switch (progressModel.getDefaultProgress()) {
             case FAIR -> weakestImplication; // TRUE
             case HSA -> implied.getThread() == lowestIdThread;
             case OBE -> isSameThread(start, implied);
