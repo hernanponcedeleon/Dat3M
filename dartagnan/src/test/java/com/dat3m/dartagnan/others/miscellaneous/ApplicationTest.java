@@ -101,7 +101,7 @@ public class ApplicationTest {
 
         dartagnanOptions[0] = getTestResourcePath("locks/ttas.ll");
         dartagnanOptions[1] = getRootPath("cat/svcomp.cat");
-        dartagnanOptions[2] = String.format("--%s=%s", BOUND, 2);
+        dartagnanOptions[2] = String.format("--%s=%s", BOUND, 3);
         dartagnanOptions[3] = String.format("--%s=%s", PROPERTY, property);
         dartagnanOptions[4] = String.format("--%s=%s", METHOD, method);
         dartagnanOptions[5] = String.format("--%s=%s", SOLVER, solver);

@@ -241,7 +241,10 @@ public class Dartagnan extends BaseOptions {
                 if (o.getWitnessType().equals(GRAPHML) && !o.runValidator()) {
                     generateWitnessIfAble(task, prover, modelChecker, summary.toString());
                 }
-                System.exit(summary.code().asInt());
+                int exitCode = summary.code().asInt();
+                if(exitCode > 0) {
+                    System.exit(exitCode);
+                }
             }
         } catch (InterruptedException e) {
             logger.warn("Timeout elapsed. The SMT solver was stopped");
@@ -334,7 +337,9 @@ public class Dartagnan extends BaseOptions {
                     }
                     summary.append("=================================================\n");
                     summary.append(result).append("\n");
-                    return new ResultSummary(summary.toString(), PROGRAM_SPEC_VIOLATION);
+                    // In validation mode, we expect to find the violation, thus NORMAL_TERMINATION
+                    ExitCode code = task.getWitness().isEmpty() ? PROGRAM_SPEC_VIOLATION : NORMAL_TERMINATION;
+                    return new ResultSummary(summary.toString(), code);
                 }
                 if (props.contains(TERMINATION) && FALSE.equals(model.evaluate(TERMINATION.getSMTVariable(encCtx)))) {
                     summary.append("============ Termination violation found ============\n");
@@ -358,13 +363,17 @@ public class Dartagnan extends BaseOptions {
                     }
                     summary.append("=================================================\n");
                     summary.append(result).append("\n");
-                    return new ResultSummary(summary.toString(), TERMINATION_VIOLATION);
+                    // In validation mode, we expect to find the violation, thus NORMAL_TERMINATION
+                    ExitCode code = task.getWitness().isEmpty() ? TERMINATION_VIOLATION : NORMAL_TERMINATION;
+                    return new ResultSummary(summary.toString(), code);
                 }
                 if (props.contains(DATARACEFREEDOM) && FALSE.equals(model.evaluate(DATARACEFREEDOM.getSMTVariable(encCtx)))) {
                     summary.append("============= SVCOMP data race found ============\n");
                     summary.append("=================================================\n");
                     summary.append(result).append("\n");
-                    return new ResultSummary(summary.toString(), DATA_RACE_FREEDOM_VIOLATION);
+                    // In validation mode, we expect to find the violation, thus NORMAL_TERMINATION
+                    ExitCode code = task.getWitness().isEmpty() ? DATA_RACE_FREEDOM_VIOLATION : NORMAL_TERMINATION;
+                    return new ResultSummary(summary.toString(), code);
                 }
                 final List<Axiom> violatedCATSpecs = task.getMemoryModel().getAxioms().stream()
                         .filter(Axiom::isFlagged)
@@ -377,7 +386,8 @@ public class Dartagnan extends BaseOptions {
                     summary.append(modelChecker.getFlaggedPairsOutput());
                     summary.append("=================================================\n");
                     summary.append(result).append("\n");
-                    return new ResultSummary(summary.toString(), CAT_SPEC_VIOLATION);
+                    ExitCode code = task.getWitness().isEmpty() ? CAT_SPEC_VIOLATION : NORMAL_TERMINATION;
+                    return new ResultSummary(summary.toString(), code);
                 }
             } else if (hasPositiveWitnesses) {
                 if (props.contains(PROGRAM_SPEC) && TRUE.equals(model.evaluate(PROGRAM_SPEC.getSMTVariable(encCtx)))) {
