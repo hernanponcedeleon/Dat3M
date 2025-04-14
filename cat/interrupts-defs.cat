@@ -1,21 +1,42 @@
 let po-until(set) = po \ (po;[set];po)
 
 (* Basic interrupt relations *)
-let IHSpawn = [range([INTERRUPT_HANDLER];po-until(THREAD_CREATE))]
-let ih = int;(IHSpawn;rf;int)+  // (...)+ to handle nested IHs
+let IHCreate = [range([INTERRUPT_HANDLER];po-until(THREAD_CREATE))]
+let create2Ih = IHCreate;rf
+let IHStart = [range(create2Ih)]
+let it2ih = int;(create2Ih;int)+  // (...)+ to handle nested IHs
 
-(* Interrupt points *)
-let beforeIP = (new() & [domain(ih)])
-// If it contains DISABLE_INTERRUPT it must contain the whole region up to next ENABLE_INTERRUPT
-let beforeIP = beforeIP | [range((beforeIP & [DISABLE_INTERRUPT]);po-until(ENABLE_INTERRUPT))]
-let afterIP = [domain(ih)] \ beforeIP
+(* Guess a total execution order on the IHs for each thread (in case there are multiple) *)
+let ihOrderPre = (new() & (IHCreate;int;IHCreate)) \ id
+empty (IHCreate;int;IHCreate) \ (ihOrderPre | ihOrderPre^-1 | id)
+acyclic ihOrderPre
+let ihOrder = IHStart;rf^-1;ihOrderPre;rf;IHStart
 
-(* Extend po/int/ext based on IP *)
-let int = int | ih | ih^-1 | (IW * M)
+(* Define interrupt points *)
+let beforeIPs = (new() & (int;create2Ih)) | create2Ih
+// IPs cannot occur when interrupts are disabled.
+let beforeIPs = beforeIPs | ([DISABLE_INTERRUPT];po-until(ENABLE_INTERRUPT))^-1;beforeIPs
+// IPs respect ihOrder
+let beforeIPs = beforeIPs;ihOrder?
+
+let afterIPs = ((int;create2Ih) \ beforeIPs)^-1
+
+// Extend beforeIPs/afterIPs to include all events of IH and even nested IHs
+let beforeIPExt = beforeIPs;(it2ih | po?)
+let afterIPExt = (it2ih | po?)^-1;afterIPs
+let ihOrderExt = int;ihOrder;(it2ih | po?)
+
+(* Extend po/int/ext based on IPs *)
+let po_orig = po
+
+let poReorder = beforeIPs;afterIPs
+let poExt = beforeIPExt | afterIPExt | ihOrderExt
+// TODO: With "po \ poReorder^-1", the compiler barrier should ensure that po-loc and dep are preserved.
+//  Otherwise, we get SC-per-loc violations
+let po = (po \ poReorder^-1) | poReorder | poExt
+let int = int | (it2ih^-1)?;it2ih | (IW * M)
 let ext = ext \ int
-let po = po | beforeIP;ih | ih^-1;afterIP
-// NOTE: Restricting po to "po \ (afterIP ; _*_ ; beforeIP)" does not work out-of-the-box.
-// We would need to make the original po available and let the WMM use that one to define barrier orderings
+
 let ctrl = ctrl ; po*
 
 let po-loc = po & loc
@@ -26,12 +47,12 @@ let rfi = rf & int
 let coi = co & int
 let fri = fr & int
 
-(* If IH fails to terminate, some events in the execution are not actually executed: restrict their communication *)
-let non-exec = [range([NONTERM];ih^-1;afterIP)]
+(* Events after non-terminating IH are never really executed: restrict their communication *)
+let non-exec = [range([NONTERM];afterIPExt)]
 let exec = id \ non-exec
 empty (non-exec;(rf | co);exec)
 
-// NOTE: beforeIP must be prefix-closed under the barrier ordering of the WMM
+// NOTE: beforeIPs must be prefix-closed under the barrier ordering of the WMM
 // Since this depends on the WMM, we do not define it here and instead rely on the WMM adding the axiom
-// empty ([domain(barrier;beforeIP)] \ beforeIP)
-// This can be achieved by include "interrupts-axioms.cat" inside the wmm
+// empty ((barrier;beforeIPs) \ beforeIPs)
+// This can be achieved by include "interrupts-axioms.cat" inside the WMM

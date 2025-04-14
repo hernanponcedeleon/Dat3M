@@ -183,19 +183,15 @@ irreflexive rb as rcu
  * let xb = hb | pb | rb
  * acyclic xb as executes-before
  *)
- 
-//let full-hb = hb | pb | rb
-let CBs = Barrier | Rmb | Wmb | Mb | Sync-rcu | Sync-srcu |
-          		Before-atomic | After-atomic | Acquire | Release |
-          		Rcu-lock | Rcu-unlock | Srcu-lock | Srcu-unlock |
-                  ENABLE_INTERRUPT | DISABLE_INTERRUPT
-let barrier = po?;[CBs];po? |
-	(po ; [Release]) | ([Acquire] ; po) | (([Marked] ; po)? ; [Marked]) | [HARMLESS_RACY]
 
-let hbOld = hb
-let hb = hb | pb | rb
+let CBs = Barrier | Rmb | Wmb | Mb | Sync-rcu | Sync-srcu |
+                Before-atomic | After-atomic | Acquire | Release |
+                Rcu-lock | Rcu-unlock | Srcu-lock | Srcu-unlock |
+                  ENABLE_INTERRUPT | DISABLE_INTERRUPT
+let barrier = po_orig?;[CBs];po_orig? |
+    (po_orig ; [Release]) | ([Acquire] ; po_orig) | (([Marked] ; po_orig)? ; [Marked]) | [HARMLESS_RACY]
+
 include "interrupts-axioms.cat"
-let hb = hbOld
 
 
 (*********************************)
