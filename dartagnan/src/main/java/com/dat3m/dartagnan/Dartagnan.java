@@ -234,23 +234,23 @@ public class Dartagnan extends BaseOptions {
 
                 long endTime = System.currentTimeMillis();
                 ResultSummary summary = generateResultSummary(task, prover, modelChecker);
-                System.out.print(summary);
+                System.out.print(summary.text());
                 System.out.println("Total verification time: " + Utils.toTimeString(endTime - startTime));
 
                 // We only generate witnesses if we are not validating one.
                 if (o.getWitnessType().equals(GRAPHML) && !o.runValidator()) {
                     generateWitnessIfAble(task, prover, modelChecker, summary.toString());
                 }
-                System.exit(summary.getExitCode());
+                System.exit(summary.code().asInt());
             }
         } catch (InterruptedException e) {
             logger.warn("Timeout elapsed. The SMT solver was stopped");
             System.out.println("TIMEOUT");
-            System.exit(TIMEOUT_ELAPSED.getExitCode());
+            System.exit(TIMEOUT_ELAPSED.asInt());
         } catch (Exception e) {
             logger.error(e.getMessage(), e);
             System.out.println("ERROR");
-            System.exit(UNKNOWN_ERROR.getExitCode());
+            System.exit(UNKNOWN_ERROR.asInt());
         }
     }
 
@@ -334,7 +334,7 @@ public class Dartagnan extends BaseOptions {
                     }
                     summary.append("=================================================\n");
                     summary.append(result).append("\n");
-                    return new ResultSummary(summary.toString(), PROGRAM_SPEC_VIOLATION.getExitCode());
+                    return new ResultSummary(summary.toString(), PROGRAM_SPEC_VIOLATION);
                 }
                 if (props.contains(TERMINATION) && FALSE.equals(model.evaluate(TERMINATION.getSMTVariable(encCtx)))) {
                     summary.append("============ Termination violation found ============\n");
@@ -358,13 +358,13 @@ public class Dartagnan extends BaseOptions {
                     }
                     summary.append("=================================================\n");
                     summary.append(result).append("\n");
-                    return new ResultSummary(summary.toString(), TERMINATION_VIOLATION.getExitCode());
+                    return new ResultSummary(summary.toString(), TERMINATION_VIOLATION);
                 }
                 if (props.contains(DATARACEFREEDOM) && FALSE.equals(model.evaluate(DATARACEFREEDOM.getSMTVariable(encCtx)))) {
                     summary.append("============= SVCOMP data race found ============\n");
                     summary.append("=================================================\n");
                     summary.append(result).append("\n");
-                    return new ResultSummary(summary.toString(), DATA_RACE_FREEDOM_VIOLATION.getExitCode());
+                    return new ResultSummary(summary.toString(), DATA_RACE_FREEDOM_VIOLATION);
                 }
                 final List<Axiom> violatedCATSpecs = task.getMemoryModel().getAxioms().stream()
                         .filter(Axiom::isFlagged)
@@ -377,7 +377,7 @@ public class Dartagnan extends BaseOptions {
                     summary.append(modelChecker.getFlaggedPairsOutput());
                     summary.append("=================================================\n");
                     summary.append(result).append("\n");
-                    return new ResultSummary(summary.toString(), CAT_SPEC_VIOLATION.getExitCode());
+                    return new ResultSummary(summary.toString(), CAT_SPEC_VIOLATION);
                 }
             } else if (hasPositiveWitnesses) {
                 if (props.contains(PROGRAM_SPEC) && TRUE.equals(model.evaluate(PROGRAM_SPEC.getSMTVariable(encCtx)))) {
@@ -407,7 +407,7 @@ public class Dartagnan extends BaseOptions {
                     logger.warn("Failed to save bounds file: {}", e.getLocalizedMessage());
                 }
                 summary.append(result).append("\n");
-                return new ResultSummary(summary.toString(), BOUNDED_RESULT.getExitCode());
+                return new ResultSummary(summary.toString(), BOUNDED_RESULT);
             }
             summary.append(result).append("\n");
         } else {
@@ -461,7 +461,7 @@ public class Dartagnan extends BaseOptions {
         }
         // We consider those cases without an explicit return to yield normal termination.
         // This includes verification of litmus code, independent of the verification result.
-        return new ResultSummary(summary.toString(), NORMAL_TERMINATION.getExitCode());
+        return new ResultSummary(summary.toString(), NORMAL_TERMINATION);
     }
 
     private static void increaseBoundAndDump(List<Event> boundEvents, Configuration config) throws IOException {
@@ -530,22 +530,11 @@ public class Dartagnan extends BaseOptions {
         sb.append("\n");
     }
 
-    public static class ResultSummary {
-        private String summary;
-        private int code;
-
-        public ResultSummary(String summary, int code) {
-            this.summary = summary;
-            this.code = code;
-        }
-
+    public static record ResultSummary (String text, ExitCode code) {
         @Override
         public String toString() {
-            return summary;
-        }
-
-        public int getExitCode() {
-            return code;
+            return String.format("%s%s(exit-code: %s)", text, text.endsWith("\n") ? "" : " ", code.asInt());
         }
     }
+
 }
