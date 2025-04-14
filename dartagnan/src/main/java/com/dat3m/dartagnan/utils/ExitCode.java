@@ -8,7 +8,7 @@ public enum ExitCode {
     // Unexpected results
     UNKNOWN_ERROR, TIMEOUT_ELAPSED;
 
-    public int getExitCode() {
+    public int asInt() {
         return switch (this) {
             case NORMAL_TERMINATION -> 0;
             case BOUNDED_RESULT -> 1;
