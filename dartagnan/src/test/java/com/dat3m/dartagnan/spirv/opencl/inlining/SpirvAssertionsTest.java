@@ -67,6 +67,16 @@ public class SpirvAssertionsTest {
                 {"barrier-inlining-3-exists-correct.spv.dis", 1, PASS},
                 {"barrier-inlining-3-forall-wrong.spv.dis", 1, FAIL},
                 {"barrier-inlining-3-exists-wrong.spv.dis", 1, FAIL},
+
+                {"barrier-inlining-4-forall-correct.spv.dis", 3, PASS},
+                {"barrier-inlining-4-exists-correct.spv.dis", 3, PASS},
+                {"barrier-inlining-4-forall-wrong.spv.dis", 3, FAIL},
+                {"barrier-inlining-4-exists-wrong.spv.dis", 3, FAIL},
+
+                {"barrier-inlining-5-forall-correct.spv.dis", 3, PASS},
+                {"barrier-inlining-5-exists-correct.spv.dis", 3, PASS},
+                {"barrier-inlining-5-forall-wrong.spv.dis", 3, FAIL},
+                {"barrier-inlining-5-exists-wrong.spv.dis", 3, FAIL}
         });
     }
 
