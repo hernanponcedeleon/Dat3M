@@ -74,6 +74,13 @@ class DefaultExecutionAnalysis implements ExecutionAnalysis {
         }
 
         if (interruptableThreads.contains(implied.getThread())) {
+            // Interruptible threads have possibly weak progress
+            return strongestImplication; // FALSE
+        }
+
+        if (!isSameThread(implied, start) && (start.getThread().getThreadType() == Thread.Type.INTERRUPT_HANDLER
+                || implied.getThread().getThreadType() == Thread.Type.INTERRUPT_HANDLER)) {
+            // Interrupt handlers might never start
             return strongestImplication; // FALSE
         }
 
