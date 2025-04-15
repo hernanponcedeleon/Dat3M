@@ -386,6 +386,7 @@ public class Dartagnan extends BaseOptions {
                     summary.append(modelChecker.getFlaggedPairsOutput());
                     summary.append("=================================================\n");
                     summary.append(result).append("\n");
+                    // In validation mode, we expect to find the violation, thus NORMAL_TERMINATION
                     ExitCode code = task.getWitness().isEmpty() ? CAT_SPEC_VIOLATION : NORMAL_TERMINATION;
                     return new ResultSummary(summary.toString(), code);
                 }
@@ -471,7 +472,9 @@ public class Dartagnan extends BaseOptions {
         }
         // We consider those cases without an explicit return to yield normal termination.
         // This includes verification of litmus code, independent of the verification result.
-        return new ResultSummary(summary.toString(), NORMAL_TERMINATION);
+        // In validation mode, we expect to find the violation, thus the WITNESS_NOT_VALIDATED error
+        ExitCode code = task.getWitness().isEmpty() ? NORMAL_TERMINATION : WITNESS_NOT_VALIDATED;
+        return new ResultSummary(summary.toString(), code);
     }
 
     private static void increaseBoundAndDump(List<Event> boundEvents, Configuration config) throws IOException {
