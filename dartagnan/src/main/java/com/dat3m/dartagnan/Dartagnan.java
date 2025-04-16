@@ -241,9 +241,9 @@ public class Dartagnan extends BaseOptions {
                 if (o.getWitnessType().equals(GRAPHML) && !o.runValidator()) {
                     generateWitnessIfAble(task, prover, modelChecker, summary.toString());
                 }
-                int exitCode = summary.code().asInt();
-                if(exitCode > 0) {
-                    System.exit(exitCode);
+                ExitCode code = summary.code();
+                if(code.isError()) {
+                    System.exit(code.asInt());
                 }
             }
         } catch (InterruptedException e) {

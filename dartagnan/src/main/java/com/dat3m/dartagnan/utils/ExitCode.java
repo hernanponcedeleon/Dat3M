@@ -24,4 +24,9 @@ public enum ExitCode {
             case TIMEOUT_ELAPSED -> 31;
         };
     }
+
+    public boolean isError() {
+        return asInt() > 0;
+    }
+
 }
