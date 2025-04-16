@@ -37,6 +37,7 @@ public class ThreadGrid {
         tg.scopeSizes.put(Tag.OpenCL.SUB_GROUP, sizes.get(0));
         tg.scopeSizes.put(Tag.OpenCL.WORK_GROUP, sizes.get(1));
         tg.scopeSizes.put(Tag.OpenCL.DEVICE, sizes.get(2));
+        tg.scopeSizes.put(Tag.OpenCL.ALL, 1);
         return tg;
     }
 
@@ -80,6 +81,12 @@ public class ThreadGrid {
 
     private int getOpenCLSize(String scope) {
         switch (scope) {
+            case Tag.OpenCL.ALL -> {
+                return  scopeSizes.get((Tag.OpenCL.ALL))
+                        * scopeSizes.get(Tag.OpenCL.DEVICE)
+                        * scopeSizes.get(Tag.OpenCL.WORK_GROUP)
+                        * scopeSizes.get(Tag.OpenCL.SUB_GROUP);
+            }
             case Tag.OpenCL.DEVICE -> {
                 return scopeSizes.get(Tag.OpenCL.DEVICE)
                         * scopeSizes.get(Tag.OpenCL.WORK_GROUP)
@@ -129,6 +136,9 @@ public class ThreadGrid {
 
     private int getOpenCLId(String scope, int tid) {
         switch (scope) {
+            case Tag.OpenCL.ALL -> {
+                return tid / getSize(Tag.OpenCL.ALL);
+            }
             case Tag.OpenCL.DEVICE -> {
                 return tid / getSize(Tag.OpenCL.DEVICE);
             }

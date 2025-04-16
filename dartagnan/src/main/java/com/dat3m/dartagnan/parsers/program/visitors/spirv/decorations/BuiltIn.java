@@ -100,11 +100,11 @@ public class BuiltIn implements Decoration {
         if (grid.getArch() == Arch.OPENCL) {
             return switch (mapping.get(id)) {
                 // BuiltIn decorations according to the OpenCL API
-                case "GlobalInvocationId" -> makeArray(id, type, tid % grid.getSize(Tag.OpenCL.DEVICE), 0, 0);
+                case "GlobalInvocationId" -> makeArray(id, type, tid % grid.getSize(Tag.OpenCL.ALL), 0, 0);
                 case "SubgroupLocalInvocationId" -> makeScalar(id, type, tid % grid.getSize(Tag.OpenCL.SUB_GROUP));
                 case "SubgroupId" -> makeScalar(id, type, grid.getId(Tag.OpenCL.SUB_GROUP, tid));
                 case "SubgroupSize" -> makeScalar(id, type, grid.getSize(Tag.OpenCL.SUB_GROUP));
-                case "GlobalSize" -> makeArray(id, type, grid.getSize(Tag.OpenCL.DEVICE), 1, 1);
+                case "GlobalSize" -> makeArray(id, type, grid.getSize(Tag.OpenCL.ALL), 1, 1);
                 case "LocalInvocationId" -> makeArray(id, type, tid % grid.getSize(Tag.OpenCL.WORK_GROUP), 0, 0);
                 case "WorkgroupId" -> makeArray(id, type, grid.getId(Tag.OpenCL.WORK_GROUP, tid), 0, 0);
                 case "WorkgroupSize" -> makeArray(id, type, grid.getSize(Tag.OpenCL.WORK_GROUP), 1, 1);

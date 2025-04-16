@@ -22,7 +22,8 @@ import static java.util.stream.Collectors.toMap;
 public class MemoryTransformer extends ExprTransformer {
 
     // Thread / Subgroup / Workgroup / QueueFamily / Device
-    private static final List<String> namePrefixes = List.of("T", "S", "W", "Q", "D");
+    private static final List<String> namePrefixesVulkan = List.of("T", "S", "W", "Q", "D");
+    private static final List<String> namePrefixesOpenCL = List.of("T", "S", "W", "D", "A");
 
     private final Program program;
     private final Function function;
@@ -39,7 +40,9 @@ public class MemoryTransformer extends ExprTransformer {
         this.program = function.getProgram();
         this.function = function;
         this.builtIn = builtIn;
-        this.scopeMapping = Stream.generate(() -> new HashMap<MemoryObject, MemoryObject>()).limit(namePrefixes.size()).toList();
+        this.scopeMapping = grid.getArch() == Arch.VULKAN ?
+                Stream.generate(() -> new HashMap<MemoryObject, MemoryObject>()).limit(namePrefixesVulkan.size()).toList() :
+                Stream.generate(() -> new HashMap<MemoryObject, MemoryObject>()).limit(namePrefixesOpenCL.size()).toList();
         this.pointerMapping = variables.stream().collect(Collectors.toMap((ScopedPointerVariable::getAddress), (v -> v)));
         this.scopeIdProvider = getScopeIdProvider(grid);
         this.namePrefixIdxProvider = getNamePrefixIdxProvider(grid);
@@ -59,7 +62,8 @@ public class MemoryTransformer extends ExprTransformer {
                     tid1 -> grid.getId(Tag.OpenCL.WORK_ITEM, tid1),
                     tid2 -> grid.getId(Tag.OpenCL.SUB_GROUP, tid2),
                     tid3 -> grid.getId(Tag.OpenCL.WORK_GROUP, tid3),
-                    tid4 -> grid.getId(Tag.OpenCL.DEVICE, tid4));
+                    tid4 -> grid.getId(Tag.OpenCL.DEVICE, tid4),
+                    tid5 -> grid.getId(Tag.OpenCL.ALL, tid5));
         }
         throw new UnsupportedOperationException("Thread grid not supported for architecture: " + grid.getArch());
     }
@@ -78,7 +82,8 @@ public class MemoryTransformer extends ExprTransformer {
                     i -> i,
                     i -> i / grid.getSize(Tag.OpenCL.SUB_GROUP),
                     i -> i / grid.getSize(Tag.OpenCL.WORK_GROUP),
-                    i -> i / grid.getSize(Tag.OpenCL.DEVICE));
+                    i -> i / grid.getSize(Tag.OpenCL.DEVICE),
+                    i -> i / grid.getSize(Tag.OpenCL.ALL));
         }
         throw new UnsupportedOperationException("Thread grid not supported for architecture: " + grid.getArch());
     }
@@ -124,7 +129,7 @@ public class MemoryTransformer extends ExprTransformer {
     public Expression visitMemoryObject(MemoryObject memObj) {
         String storageClass = pointerMapping.get(memObj).getScopeId();
         return switch (storageClass) {
-            // Device-level memory (keep the same instance)
+            // Device/All-level memory (keep the same instance)
             case Tag.Spirv.SC_UNIFORM_CONSTANT,
                  Tag.Spirv.SC_UNIFORM,
                  Tag.Spirv.SC_GENERIC,
@@ -174,7 +179,7 @@ public class MemoryTransformer extends ExprTransformer {
     }
 
     private String makeVariableName(int idx, String base) {
-        return String.format("%s@%s%s", base, namePrefixes.get(idx),
-                namePrefixIdxProvider.get(idx).applyAsInt(tid));
+        List<String> namePrefixes = program.getArch() == Arch.OPENCL ? namePrefixesOpenCL : namePrefixesVulkan;
+        return String.format("%s@%s%s", base, namePrefixes.get(idx), namePrefixIdxProvider.get(idx).applyAsInt(tid));
     }
 }
