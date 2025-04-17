@@ -640,6 +640,10 @@ public class ProgramEncoder implements Encoder {
                             .map(c -> bmgr.implication(wasScheduledOnce(c), hasForwardProgress(c)))
                             .forEach(enc::add);
                 }
+                case HSA_OBE -> {
+                    enc.add(encodeProgressForwarding(group, ProgressModel.OBE));
+                    enc.add(encodeProgressForwarding(group, ProgressModel.HSA));
+                }
                 case LOBE -> {
                     final List<ThreadHierarchy> sortedChildren = group.getChildren().stream()
                             .sorted(Comparator.comparingInt(ThreadHierarchy::getId))
