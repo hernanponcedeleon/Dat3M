@@ -241,10 +241,7 @@ public class Dartagnan extends BaseOptions {
                 if (o.getWitnessType().equals(GRAPHML) && !o.runValidator()) {
                     generateWitnessIfAble(task, prover, modelChecker, summary.toString());
                 }
-                ExitCode code = summary.code();
-                if(code.isError()) {
-                    System.exit(code.asInt());
-                }
+                System.exit(summary.code().asInt());
             }
         } catch (InterruptedException e) {
             logger.warn("Timeout elapsed. The SMT solver was stopped");
