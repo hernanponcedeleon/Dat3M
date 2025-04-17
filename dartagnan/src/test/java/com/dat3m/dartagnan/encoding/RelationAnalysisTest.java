@@ -37,6 +37,10 @@ import static com.dat3m.dartagnan.utils.ResourceHelper.getRootPath;
 import static com.dat3m.dartagnan.verification.solving.ModelChecker.*;
 import static org.junit.Assert.assertEquals;
 import static org.sosy_lab.java_smt.SolverContextFactory.createSolverContext;
+import static com.dat3m.dartagnan.parsers.program.EXTENSION_LITMUS;
+import static com.dat3m.dartagnan.parsers.program.EXTENSION_LL;
+import static com.dat3m.dartagnan.parsers.program.EXTENSION_SPV_DIS;
+import static com.dat3m.dartagnan.parsers.program.EXTENSION_SPVASM;
 
 @RunWith(Parameterized.class)
 public class RelationAnalysisTest {
@@ -132,7 +136,7 @@ public class RelationAnalysisTest {
                     result.addAll(listFiles(file.toAbsolutePath()));
                 } else {
                     String filePath = file.toAbsolutePath().toString();
-                    if (filePath.endsWith(".litmus") || filePath.endsWith(".ll") || filePath.endsWith(".spv.dis")) {
+                    if (filePath.endsWith(EXTENSION_LITMUS) || filePath.endsWith(EXTENSION_LL) || filePath.endsWith(EXTENSION_SPV_DIS) || filePath.endsWith(EXTENSION_SPVASM)) {
                         result.add(filePath);
                     }
                 }

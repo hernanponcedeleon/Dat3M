@@ -26,9 +26,10 @@ public class ProgramParser {
     public static final String EXTENSION_I = ".i";
     public static final String EXTENSION_LL = ".ll";
     public static final String EXTENSION_LITMUS = ".litmus";
-    public static final String EXTENSION_SPV_DIS = ".spv.dis";
+    public static final String EXTENSION_SPV_DIS = ".spv.dis"; // Deprecated.
+    public static final String EXTENSION_SPVASM = ".spvasm";
     public static final List<String> SUPPORTED_EXTENSIONS = List.of(
-            EXTENSION_C, EXTENSION_I, EXTENSION_LL, EXTENSION_LITMUS, EXTENSION_SPV_DIS);
+            EXTENSION_C, EXTENSION_I, EXTENSION_LL, EXTENSION_LITMUS, EXTENSION_SPV_DIS, EXTENSION_SPVASM);
 
     public Program parse(File file) throws Exception {
         if (needsClang(file)) {
