@@ -29,6 +29,7 @@ import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.LinkedList;
 import java.util.List;
+import com.dat3m.dartagnan.parsers.program.ProgramParser;
 
 import static com.dat3m.dartagnan.configuration.Alias.FIELD_SENSITIVE;
 import static com.dat3m.dartagnan.configuration.OptionNames.*;
@@ -37,10 +38,6 @@ import static com.dat3m.dartagnan.utils.ResourceHelper.getRootPath;
 import static com.dat3m.dartagnan.verification.solving.ModelChecker.*;
 import static org.junit.Assert.assertEquals;
 import static org.sosy_lab.java_smt.SolverContextFactory.createSolverContext;
-import static com.dat3m.dartagnan.parsers.program.EXTENSION_LITMUS;
-import static com.dat3m.dartagnan.parsers.program.EXTENSION_LL;
-import static com.dat3m.dartagnan.parsers.program.EXTENSION_SPV_DIS;
-import static com.dat3m.dartagnan.parsers.program.EXTENSION_SPVASM;
 
 @RunWith(Parameterized.class)
 public class RelationAnalysisTest {
@@ -136,7 +133,7 @@ public class RelationAnalysisTest {
                     result.addAll(listFiles(file.toAbsolutePath()));
                 } else {
                     String filePath = file.toAbsolutePath().toString();
-                    if (filePath.endsWith(EXTENSION_LITMUS) || filePath.endsWith(EXTENSION_LL) || filePath.endsWith(EXTENSION_SPV_DIS) || filePath.endsWith(EXTENSION_SPVASM)) {
+                    if (filePath.endsWith(ProgramParser.EXTENSION_LITMUS) || filePath.endsWith(ProgramParser.EXTENSION_LL) || filePath.endsWith(ProgramParser.EXTENSION_SPV_DIS) || filePath.endsWith(ProgramParser.EXTENSION_SPVASM)) {
                         result.add(filePath);
                     }
                 }
