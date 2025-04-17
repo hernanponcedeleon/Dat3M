@@ -641,9 +641,18 @@ public class ProgramEncoder implements Encoder {
                             .forEach(enc::add);
                 }
                 case LOBE -> {
-                    // LOBE is just HSA + OBE
-                    enc.add(encodeProgressForwarding(group, ProgressModel.OBE));
-                    enc.add(encodeProgressForwarding(group, ProgressModel.HSA));
+                    final List<ThreadHierarchy> sortedChildren = group.getChildren().stream()
+                            .sorted(Comparator.comparingInt(ThreadHierarchy::getId))
+                            .toList();
+                    for (int i = 0; i < sortedChildren.size(); i++) {
+                        final ThreadHierarchy child = sortedChildren.get(i);
+                        final BooleanFormula sameOrHigherIDThreadWasScheduledOnce =
+                                sortedChildren.subList(i , sortedChildren.size()).stream()
+                                        .map(this::wasScheduledOnce)
+                                        .reduce(bmgr.makeFalse(), bmgr::or);
+
+                        enc.add(bmgr.implication(sameOrHigherIDThreadWasScheduledOnce, hasForwardProgress(child)));
+                    }
                 }
                 case UNFAIR -> {
                     // Do nothing
