@@ -19,6 +19,7 @@ public enum ProgressModel {
     FAIR,       // All threads are fairly scheduled.
     HSA,        // Lowest id thread gets fairly scheduled.
     OBE,        // Threads that made at least one step get fairly scheduled.
+    LOBE,       // basically HSA + OBE
     UNFAIR;     // No fair scheduling.
 
     public static ProgressModel getDefault() {

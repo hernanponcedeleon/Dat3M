@@ -640,6 +640,11 @@ public class ProgramEncoder implements Encoder {
                             .map(c -> bmgr.implication(wasScheduledOnce(c), hasForwardProgress(c)))
                             .forEach(enc::add);
                 }
+                case LOBE -> {
+                    // LOBE is just HSA + OBE
+                    enc.add(encodeProgressForwarding(group, ProgressModel.OBE));
+                    enc.add(encodeProgressForwarding(group, ProgressModel.HSA));
+                }
                 case UNFAIR -> {
                     // Do nothing
                 }
