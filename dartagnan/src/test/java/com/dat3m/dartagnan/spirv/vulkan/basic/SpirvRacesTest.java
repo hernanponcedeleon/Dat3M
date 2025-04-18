@@ -45,7 +45,7 @@ public class SpirvRacesTest {
     @Parameterized.Parameters(name = "{index}: {0}, {1}")
     public static Iterable<Object[]> data() throws IOException {
         return Arrays.asList(new Object[][]{
-                {"idx-overflow.spv.dis", PASS}
+                {"idx-overflow.spvasm", PASS}
         });
     }
 

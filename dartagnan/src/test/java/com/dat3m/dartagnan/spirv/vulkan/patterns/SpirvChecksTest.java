@@ -46,12 +46,12 @@ public class SpirvChecksTest {
     @Parameterized.Parameters(name = "{index}: {0}, {1}, {2}")
     public static Iterable<Object[]> data() throws IOException {
         return Arrays.asList(new Object[][]{
-                {"corr.spv.dis", PASS},
-                {"iriw.spv.dis", PASS},
-                {"mp.spv.dis", PASS},
-                {"mp-acq2rx.spv.dis", PASS},
-                {"mp-rel2rx.spv.dis", PASS},
-                {"sb.spv.dis", PASS},
+                {"corr.spvasm", PASS},
+                {"iriw.spvasm", PASS},
+                {"mp.spvasm", PASS},
+                {"mp-acq2rx.spvasm", PASS},
+                {"mp-rel2rx.spvasm", PASS},
+                {"sb.spvasm", PASS},
         });
     }
 

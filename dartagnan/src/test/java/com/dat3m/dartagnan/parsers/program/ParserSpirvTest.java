@@ -18,31 +18,31 @@ public class ParserSpirvTest {
 
     @Test
     public void testParsingProgram() throws IOException {
-        doTestParsingValidProgram("fibonacci.spv.dis");
-        doTestParsingValidProgram("mp-memory-operands.spv.dis");
+        doTestParsingValidProgram("fibonacci.spvasm");
+        doTestParsingValidProgram("mp-memory-operands.spvasm");
     }
 
     @Test
     public void testInvalidControlFlow() throws IOException {
         String error = "Unexpected operation 'OpLogicalNot'";
-        doTestParsingInvalidProgram("control-flow/malformed-selection-merge-label.spv.dis", error);
-        doTestParsingInvalidProgram("control-flow/malformed-selection-merge.spv.dis", error);
-        doTestParsingInvalidProgram("control-flow/malformed-loop-merge.spv.dis", error);
-        doTestParsingInvalidProgram("control-flow/malformed-loop-merge-true-label.spv.dis", error);
+        doTestParsingInvalidProgram("control-flow/malformed-selection-merge-label.spvasm", error);
+        doTestParsingInvalidProgram("control-flow/malformed-selection-merge.spvasm", error);
+        doTestParsingInvalidProgram("control-flow/malformed-loop-merge.spvasm", error);
+        doTestParsingInvalidProgram("control-flow/malformed-loop-merge-true-label.spvasm", error);
     }
 
     @Test
     public void testInvalidMemoryOperands() throws IOException {
-        doTestParsingInvalidProgram("memory-operands/illegal-parameter-order-1.spv.dis", null);
-        doTestParsingInvalidProgram("memory-operands/illegal-parameter-order-2.spv.dis", null);
-        doTestParsingInvalidProgram("memory-operands/missing-alignment.spv.dis", null);
-        doTestParsingInvalidProgram("memory-operands/missing-scope-1.spv.dis", null);
-        doTestParsingInvalidProgram("memory-operands/missing-scope-2.spv.dis", null);
-        doTestParsingInvalidProgram("memory-operands/unnecessary-alignment-1.spv.dis", null);
-        doTestParsingInvalidProgram("memory-operands/unnecessary-alignment-2.spv.dis", null);
-        doTestParsingInvalidProgram("memory-operands/unnecessary-alignment-3.spv.dis", null);
-        doTestParsingInvalidProgram("memory-operands/unnecessary-scope-1.spv.dis", null);
-        doTestParsingInvalidProgram("memory-operands/unnecessary-scope-2.spv.dis", null);
+        doTestParsingInvalidProgram("memory-operands/illegal-parameter-order-1.spvasm", null);
+        doTestParsingInvalidProgram("memory-operands/illegal-parameter-order-2.spvasm", null);
+        doTestParsingInvalidProgram("memory-operands/missing-alignment.spvasm", null);
+        doTestParsingInvalidProgram("memory-operands/missing-scope-1.spvasm", null);
+        doTestParsingInvalidProgram("memory-operands/missing-scope-2.spvasm", null);
+        doTestParsingInvalidProgram("memory-operands/unnecessary-alignment-1.spvasm", null);
+        doTestParsingInvalidProgram("memory-operands/unnecessary-alignment-2.spvasm", null);
+        doTestParsingInvalidProgram("memory-operands/unnecessary-alignment-3.spvasm", null);
+        doTestParsingInvalidProgram("memory-operands/unnecessary-scope-1.spvasm", null);
+        doTestParsingInvalidProgram("memory-operands/unnecessary-scope-2.spvasm", null);
     }
 
     private void doTestParsingValidProgram(String file) throws IOException {
