@@ -9,14 +9,14 @@
 
 struct lockref my_lockref;
 
-void *get(void *unsued) {
+void *get(void *unused) {
 
     lockref_get(&my_lockref);
 
     return NULL;
 }
 
-void *ret(void *unsued) {
+void *ret(void *unused) {
 
     lockref_put_return(&my_lockref);
 
@@ -42,7 +42,7 @@ int main() {
 
     for (int i = 0; i < NTHREADS; i++)
         pthread_join(r[i], 0);
-    assert(my_lockref.count == 0); // Wrong since some decrement might not have effect (if not matche with a previous increment)
+    assert(my_lockref.count == 0); // Wrong since some decrement might have no effect if there is no matching increment
 
     return 0;
 }

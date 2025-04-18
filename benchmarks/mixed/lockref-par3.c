@@ -9,14 +9,14 @@
 
 struct lockref my_lockref;
 
-void *get(void *unsued) {
+void *get(void *unused) {
 
     lockref_get(&my_lockref);
 
     return NULL;
 }
 
-void *ret(void *unsued) {
+void *ret(void *unused) {
 
     lockref_put_return(&my_lockref);
 
