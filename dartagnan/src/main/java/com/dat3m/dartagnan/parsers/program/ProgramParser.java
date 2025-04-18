@@ -4,7 +4,8 @@ import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.program.Program;
 import org.antlr.v4.runtime.CharStream;
 import org.antlr.v4.runtime.CharStreams;
-
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import java.io.*;
 import java.util.List;
 
@@ -12,6 +13,8 @@ import static com.dat3m.dartagnan.parsers.program.utils.Compilation.applyLlvmPas
 import static com.dat3m.dartagnan.parsers.program.utils.Compilation.compileWithClang;
 
 public class ProgramParser {
+
+    private static final Logger logger = LogManager.getLogger(ProgramParser.class);
 
     private static final String TYPE_LITMUS_AARCH64 = "AARCH64";
     private static final String TYPE_LITMUS_PPC = "PPC";
@@ -72,7 +75,11 @@ public class ProgramParser {
             case EXTENSION_LL -> {
                 return new ParserLlvm().parse(CharStreams.fromString(raw));
             }
+            case EXTENSION_SPVASM -> {
+                return new ParserSpirv().parse(CharStreams.fromString(raw));
+            }
             case EXTENSION_SPV_DIS -> {
+                logger.warn(String.format("Extension %s is deprecated. Please rename your file to %s instead.", EXTENSION_SPV_DIS, EXTENSION_SPVASM));
                 return new ParserSpirv().parse(CharStreams.fromString(raw));
             }
             case EXTENSION_LITMUS -> {
@@ -88,6 +95,10 @@ public class ProgramParser {
             return new ParserLlvm();
         }
         if (name.endsWith(EXTENSION_SPV_DIS)) {
+                logger.warn(String.format("Extension %s is deprecated. Please rename your file to %s instead.", EXTENSION_SPV_DIS, EXTENSION_SPVASM));
+            return new ParserSpirv();
+        }
+        if (name.endsWith(EXTENSION_SPVASM)) {
             return new ParserSpirv();
         }
         if (name.endsWith(EXTENSION_LITMUS)) {
