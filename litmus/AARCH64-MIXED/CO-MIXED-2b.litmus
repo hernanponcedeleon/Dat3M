@@ -1,0 +1,17 @@
+AArch64 CO-MIXED-2b
+"Coherence test, mixed-size accesses"
+{
+uint64_t x; 0:X5 = x; 1:X5 = x; 2:X5 = x;
+
+uint64_t 0:X1 = 0x0000000100000001;
+
+uint32_t 1:X1 = 0x2;
+
+uint64_t 2:X1;
+uint64_t 2:X2;
+}
+
+P0           | P1           | P2           ;
+STR X1,[X5]  | STR W1,[X5]  | LDR X1,[X5]  ;
+             |              | LDR X2,[X5]  ;
+exists (x=0x0000000100000002 /\ 2:X1=0x2 /\ 2:X2=0x0000000100000002)

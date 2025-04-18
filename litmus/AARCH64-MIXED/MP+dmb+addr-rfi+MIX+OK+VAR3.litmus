@@ -1,0 +1,22 @@
+AArch64 MP+dmb+addr-rfi+MIX+OK+VAR3
+Prefetch=0:x=F,0:y=W,1:y=F,1:x=T
+Com=Rf Fr
+(* Non ambiguous-version of MP+dmb+addr-rfi+MIX
+   with an extra read at the end of P1, and addr-dep *)
+{
+uint16_t y; uint16_t x; uint16_t 1:X5; uint16_t 1:X0;
+uint8_t 1:X6;
+
+0:X0=0x11; 0:X1=x; 0:X2=0x1111; 0:X3=y;
+1:X1=y; 1:X4=x; 1:X9=0x22
+}
+ P0           | P1                   ;
+ STRB W0,[X1] | LDRH W0,[X1]         ;
+              | AND W2,W0,#1 ;
+ DMB SY       | STRB W9,[X4,W2,SXTW] ;
+ STRH W2,[X3] | LDRH W5,[X4]         ;
+              | EOR W7,W5,W5         ;
+              | LDRB W6,[X4,W7,SXTW] ;
+
+locations [x;1:X5;1:X0;]
+exists 1:X0=0x1111 /\ 1:X5=0x2200 /\ x=0x2211 /\ 1:X6=0

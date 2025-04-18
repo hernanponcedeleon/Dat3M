@@ -1,0 +1,17 @@
+AArch64 WW+R+posq0w0+q0+variant
+(*based on "PosWWq0w0 Rfew0q0 Freq0q0"*)
+Generator=diyone7 (version 7.50+1(dev))
+Prefetch=
+Com=Rf Fr
+Orig=PosWWq0w0 Rfew0q0 Freq0q0
+{
+uint64_t x; uint64_t 1:X0;uint64_t 1:X3;
+
+0:X0=0x101010101010101; 0:X1=x; 0:X2=0x2020202;
+1:X1=x;
+}
+ P0          | P1          ;
+ STR X0,[X1] | LDR X0,[X1] ;
+ STR W2,[X1] | LDR X3,[X1] ;
+
+exists(1:X0=0x2020202 /\ 1:X3=0x101010101010101) 
