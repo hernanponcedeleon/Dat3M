@@ -17,7 +17,7 @@ import java.util.Arrays;
 import static com.dat3m.dartagnan.configuration.Arch.*;
 import static com.dat3m.dartagnan.configuration.OptionNames.MIXED_SIZE;
 import static com.dat3m.dartagnan.utils.ResourceHelper.getTestResourcePath;
-import static com.dat3m.dartagnan.utils.Result.PASS;
+import static com.dat3m.dartagnan.utils.Result.*;
 import static org.junit.Assert.assertEquals;
 
 @RunWith(Parameterized.class)
@@ -54,6 +54,10 @@ public class MixedTest extends AbstractCTest {
         return Arrays.asList(new Object[][]{
             {"lockref1", ARM8, PASS},
             {"lockref2", ARM8, PASS},
+            {"lockref-seq", ARM8, PASS},
+            {"lockref-par1", ARM8, FAIL},
+            {"lockref-par2", ARM8, PASS},
+            {"lockref-par3", ARM8, FAIL},
         });
     }
 
