@@ -120,9 +120,10 @@ public class VisitorExtensionClspvReflection extends VisitorExtension<Void> {
     private List<Integer> computePushConstantValue(String command) {
         ThreadGrid grid = builder.getThreadGrid();
         return switch (command) {
-            case "PushConstantGlobalSize" -> List.of(grid.dvSize(), 1, 1);
-            case "PushConstantEnqueuedLocalSize" -> List.of(grid.wgSize(), 1, 1);
-            case "PushConstantNumWorkgroups" -> List.of(grid.qfSize() / grid.wgSize(), 1, 1);
+            case "PushConstantGlobalSize" -> List.of(grid.getSize(Tag.Vulkan.DEVICE), 1, 1);
+            case "PushConstantEnqueuedLocalSize" -> List.of(grid.getSize(Tag.Vulkan.WORK_GROUP), 1, 1);
+            case "PushConstantNumWorkgroups" ->
+                    List.of(grid.getSize(Tag.Vulkan.QUEUE_FAMILY) / grid.getSize(Tag.Vulkan.WORK_GROUP), 1, 1);
             case "PushConstantGlobalOffset",
                  "PushConstantRegionOffset",
                  "PushConstantRegionGroupOffset" -> List.of(0, 0, 0);

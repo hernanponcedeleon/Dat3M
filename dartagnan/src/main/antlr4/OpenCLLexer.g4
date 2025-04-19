@@ -10,6 +10,7 @@ OpenCLAtomicFenceWI           :   'atomic_work_item_fence';
 OpenCLBarrier                 :   'barrier';
 
 OpenCLMemoryScopeWI           :   'memory_scope_work_item';
+OpenCLMemoryScopeSG           :   'memory_scope_sub_group';
 OpenCLMemoryScopeWG           :   'memory_scope_work_group';
 OpenCLMemoryScopeDEV          :   'memory_scope_device';
 OpenCLMemoryScopeALL          :   'memory_scope_all_svm_devices';

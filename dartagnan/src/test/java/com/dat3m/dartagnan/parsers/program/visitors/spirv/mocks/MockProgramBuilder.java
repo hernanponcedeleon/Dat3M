@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan.parsers.program.visitors.spirv.mocks;
 
+import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.Type;
@@ -12,7 +13,6 @@ import com.dat3m.dartagnan.parsers.program.visitors.spirv.decorations.Decoration
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.decorations.Offset;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.helpers.HelperTags;
 import com.dat3m.dartagnan.program.Function;
-import com.dat3m.dartagnan.program.ThreadGrid;
 import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.dat3m.dartagnan.program.memory.ScopedPointerVariable;
@@ -26,11 +26,12 @@ public class MockProgramBuilder extends ProgramBuilder {
     private static final ExpressionFactory exprFactory = ExpressionFactory.getInstance();
 
     public MockProgramBuilder() {
-        this(new ThreadGrid(1, 1, 1, 1));
+        this(Arch.VULKAN, List.of(1, 1, 1)); // Default to Vulkan
     }
 
-    public MockProgramBuilder(ThreadGrid grid) {
-        super(grid);
+    public MockProgramBuilder(Arch arch, List<Integer> scopeSizes) {
+        super(scopeSizes);
+        super.setArch(arch);
         controlFlowBuilder = new MockControlFlowBuilder(expressions);
     }
 

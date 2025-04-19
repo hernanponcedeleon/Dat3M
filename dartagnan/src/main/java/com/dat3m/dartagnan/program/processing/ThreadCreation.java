@@ -394,7 +394,12 @@ public class ThreadCreation implements ProgramProcessor {
         ThreadGrid grid = program.getGrid();
         List<ExprTransformer> transformers = program.getTransformers();
         program.getFunctionByName(program.getEntryPoint()).ifPresent(entryFunction -> {
-            for (int tid = 0; tid < grid.dvSize(); tid++) {
+            int threadSize = switch (grid.getArch()) {
+                case VULKAN -> grid.getSize(Tag.Vulkan.DEVICE);
+                case OPENCL -> grid.getSize(Tag.OpenCL.DEVICE);
+                default -> throw new MalformedProgramException("Thread grid not supported for architecture: " + grid.getArch());
+            };
+            for (int tid = 0; tid < threadSize; tid++) {
                 final Thread thread = createSPVThreadFromFunction(entryFunction, tid, grid, transformers);
                 program.addThread(thread);
             }

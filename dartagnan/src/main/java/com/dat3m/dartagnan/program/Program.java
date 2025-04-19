@@ -34,22 +34,25 @@ public class Program {
     private int unrollingBound = 0;
     private boolean isCompiled;
     private final SourceLanguage format;
-    private final ThreadGrid grid;
+    private ThreadGrid grid;
     private String entryPoint;
     private final List<ExprTransformer> transformers = new ArrayList<>();
 
     private int nextConstantId = 0;
 
-    public Program(Memory memory, SourceLanguage format, ThreadGrid grid) {
-        this("", memory, format, grid);
+    public Program(Memory memory, SourceLanguage format) {
+        this("", memory, format);
     }
 
-    public Program(String name, Memory memory, SourceLanguage format, ThreadGrid grid) {
+    public Program(String name, Memory memory, SourceLanguage format) {
         this.name = name;
         this.memory = memory;
         this.threads = new ArrayList<>();
         this.functions = new ArrayList<>();
         this.format = format;
+    }
+
+    public void setGrid(ThreadGrid grid) {
         this.grid = grid;
     }
 

@@ -268,6 +268,7 @@ openCLSpace returns [String space]
 
 openCLScope returns [String scope]
     :   OpenCLMemoryScopeWI    {$scope = OpenCL.WORK_ITEM;}
+    |   OpenCLMemoryScopeSG    {$scope = OpenCL.SUB_GROUP;}
     |   OpenCLMemoryScopeWG    {$scope = OpenCL.WORK_GROUP;}
     |   OpenCLMemoryScopeDEV   {$scope = OpenCL.DEVICE;}
     |   OpenCLMemoryScopeALL   {$scope = OpenCL.ALL;}

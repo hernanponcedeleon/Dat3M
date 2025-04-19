@@ -53,7 +53,7 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
     private static final String DEFAULT_ENTRY_FUNCTION = "main";
 
     // Global context
-    private final Program program = new Program(new Memory(), Program.SourceLanguage.LLVM, null);
+    private final Program program = new Program(new Memory(), Program.SourceLanguage.LLVM);
     private final TypeFactory types = TypeFactory.getInstance();
     private final ExpressionFactory expressions = ExpressionFactory.getInstance();
     private final Type pointerType = types.getPointerType();
