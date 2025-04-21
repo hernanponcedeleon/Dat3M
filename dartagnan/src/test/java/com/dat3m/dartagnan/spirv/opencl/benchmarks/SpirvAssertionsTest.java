@@ -24,6 +24,8 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.EnumSet;
 
+import static com.dat3m.dartagnan.configuration.Alias.FIELD_SENSITIVE;
+import static com.dat3m.dartagnan.configuration.OptionNames.ALIAS_METHOD;
 import static com.dat3m.dartagnan.configuration.Property.PROGRAM_SPEC;
 import static com.dat3m.dartagnan.utils.ResourceHelper.getRootPath;
 import static com.dat3m.dartagnan.utils.ResourceHelper.getTestResourcePath;
@@ -100,7 +102,9 @@ public class SpirvAssertionsTest {
 
     private VerificationTask mkTask() throws Exception {
         VerificationTask.VerificationTaskBuilder builder = VerificationTask.builder()
-                .withConfig(Configuration.builder().build())
+                .withConfig(Configuration.builder()
+                        .setOption(ALIAS_METHOD, FIELD_SENSITIVE.asStringOption())
+                        .build())
                 .withBound(bound)
                 .withTarget(Arch.OPENCL);
         Program program = new ProgramParser().parse(new File(programPath));

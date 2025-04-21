@@ -2,9 +2,14 @@ package com.dat3m.dartagnan.expression.utils;
 
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.Type;
+import com.dat3m.dartagnan.expression.integers.IntLiteral;
 import com.dat3m.dartagnan.expression.type.AggregateType;
 import com.dat3m.dartagnan.expression.type.ArrayType;
+import com.dat3m.dartagnan.expression.type.PointerType;
+import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.google.common.base.Preconditions;
+
+import java.util.List;
 
 import static com.google.common.base.Preconditions.checkArgument;
 
@@ -13,8 +18,16 @@ public class ExpressionHelper {
     private ExpressionHelper() {}
 
     public static void checkSameType(Expression x, Expression y) {
-        Preconditions.checkArgument(x.getType().equals(y.getType()),
-                "The types of %s and %s do not match.", x, y);
+        if (x.getType() instanceof PointerType) {
+            Preconditions.checkArgument((y.getType() instanceof PointerType) || y.getType().equals(TypeFactory.getInstance().getArchType()),
+                    "The types of %s and %s do not match.", x, y);
+        } else if (y.getType() instanceof PointerType) {
+            Preconditions.checkArgument((x.getType() instanceof PointerType) || x.getType().equals(TypeFactory.getInstance().getArchType()),
+                    "The types of %s and %s do not match.", x, y);
+        } else {
+            Preconditions.checkArgument(x.getType().equals(y.getType()),
+                    "The types of %s and %s do not match.", x, y);
+        }
     }
 
     public static void checkSameType(Type x, Type y) {
@@ -34,20 +47,6 @@ public class ExpressionHelper {
         checkExpectedType(x, expectedClass);
     }
 
-    public static void checkInbounds(Type aggregateType, int index) {
-        Preconditions.checkArgument(isAggregateLike(aggregateType), "Non-aggregate type %s.", aggregateType);
-        Preconditions.checkArgument(index >= 0, "Negative index: %s.", index);
-        if (aggregateType instanceof AggregateType aggType) {
-            checkArgument(index < aggType.getFields().size(),
-                    "Index %s out of bounds for type %s.",
-                    index, aggregateType);
-        } else if (aggregateType instanceof ArrayType arrayType) {
-            checkArgument(!arrayType.hasKnownNumElements() || index < arrayType.getNumElements(),
-                    "Index %s out of bounds for type %s.",
-                    index, arrayType);
-        }
-    }
-
     public static boolean isAggregateLike(Type type) {
         return type instanceof AggregateType || type instanceof ArrayType;
     }
@@ -56,18 +55,40 @@ public class ExpressionHelper {
         return isAggregateLike(expr.getType());
     }
 
-    public static Type extractType(Type type, Iterable<Integer> indices) {
-        for (int index : indices) {
-            checkInbounds(type, index);
+    public static Type extractType(Type type, List<?> indices) {
+        for (Object index : indices) {
+            if (index instanceof Integer intIdx) {
+                checkInbounds(type, intIdx);
+            } else if (index instanceof IntLiteral intLit) {
+                checkInbounds(type, intLit.getValueAsInt());
+            }
             if (type instanceof AggregateType aggregateType) {
-                type = aggregateType.getFields().get(index).type();
+                if (index instanceof Integer iIndex) {
+                    type = aggregateType.getFields().get(iIndex).type();
+                } else if (index instanceof IntLiteral eIndex) {
+                    type = aggregateType.getFields().get(eIndex.getValueAsInt()).type();
+                } else {
+                    throw new IllegalArgumentException("Non-constant index of a struct member");
+                }
             } else if (type instanceof ArrayType arrayType) {
                 type = arrayType.getElementType();
             } else {
-                // Actually unreachable, because checkInbounds does this already.
-                throw new IllegalArgumentException("Cannot extract from non-aggregate type " + type);
+                throw new IllegalArgumentException("Index is too deep");
             }
         }
         return type;
+    }
+
+    private static void checkInbounds(Type aggregateType, int index) {
+        Preconditions.checkArgument(index >= 0, "Index is negative");
+        if (aggregateType instanceof AggregateType aggType) {
+            checkArgument(index < aggType.getFields().size(),
+                    "Index is out of bounds",
+                    index, aggregateType);
+        } else if (aggregateType instanceof ArrayType arrayType) {
+            checkArgument(!arrayType.hasKnownNumElements() || index < arrayType.getNumElements(),
+                    "Index is out of bounds",
+                    index, arrayType);
+        }
     }
 }

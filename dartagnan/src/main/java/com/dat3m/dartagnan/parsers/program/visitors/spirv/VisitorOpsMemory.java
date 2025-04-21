@@ -4,17 +4,13 @@ import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.Type;
-import com.dat3m.dartagnan.expression.integers.IntLiteral;
 import com.dat3m.dartagnan.expression.type.*;
 import com.dat3m.dartagnan.parsers.SpirvBaseVisitor;
 import com.dat3m.dartagnan.parsers.SpirvParser;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.decorations.BuiltIn;
-import com.dat3m.dartagnan.parsers.program.visitors.spirv.helpers.HelperTypes;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.helpers.HelperInputs;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.helpers.HelperTags;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.builders.ProgramBuilder;
-import com.dat3m.dartagnan.program.memory.ScopedPointer;
-import com.dat3m.dartagnan.program.memory.ScopedPointerVariable;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.EventFactory;
@@ -25,6 +21,7 @@ import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import static com.dat3m.dartagnan.parsers.program.visitors.spirv.decorations.DecorationType.BUILT_IN;
 
@@ -47,9 +44,8 @@ public class VisitorOpsMemory extends SpirvBaseVisitor<Event> {
         Event event = EventFactory.newStore(pointer, value);
         Set<String> tags = parseMemoryAccessTags(ctx.memoryAccess());
         if (!tags.contains(Tag.Spirv.MEM_VISIBLE)) {
-            String storageClass = builder.getPointerStorageClass(ctx.pointer().getText());
             event.addTags(tags);
-            event.addTags(storageClass);
+            event.addTags(getStorageClassTag(ctx.pointer().getText()));
             return builder.addEvent(event);
         }
         throw new ParsingException("OpStore cannot contain tag '%s'", Tag.Spirv.MEM_VISIBLE);
@@ -69,9 +65,14 @@ public class VisitorOpsMemory extends SpirvBaseVisitor<Event> {
                 String elementId = resultId + "_" + i;
                 Register register = builder.addRegister(elementId, elType);
                 registers.add(register);
-                List<Expression> index = List.of(expressions.makeValue(i, types.getArchType()));
-                Expression elementPointer = expressions.makeGetElementPointer(arrayType, pointer, index);
-                Event load = EventFactory.newLoad(register, elementPointer);
+                List<Expression> indexes = List.of(expressions.makeValue(i, types.getArchType()));
+                Expression elPointer;
+                try {
+                    elPointer = expressions.makeGetElementPointer(elType, pointer, indexes);
+                } catch (Exception e) {
+                    throw new ParsingException("%s in assignment to '%s'", e.getMessage(), resultId);
+                }
+                Event load = EventFactory.newLoad(register, elPointer);
                 events.add(load);
             }
             Expression arrayRegister = expressions.makeArray(arrayType.getElementType(), registers, true);
@@ -82,7 +83,7 @@ public class VisitorOpsMemory extends SpirvBaseVisitor<Event> {
         }
         Set<String> tags = parseMemoryAccessTags(ctx.memoryAccess());
         if (!tags.contains(Tag.Spirv.MEM_AVAILABLE)) {
-            String storageClass = builder.getPointerStorageClass(ctx.pointer().getText());
+            String storageClass = getStorageClassTag(ctx.pointer().getText());
             events.forEach(e -> {
                 e.addTags(tags);
                 e.addTags(storageClass);
@@ -102,17 +103,19 @@ public class VisitorOpsMemory extends SpirvBaseVisitor<Event> {
             Expression value = getOpVariableInitialValue(ctx, type);
             if (value != null) {
                 if (!TypeFactory.isStaticTypeOf(value.getType(), type)) {
-                    throw new ParsingException("Mismatching value type for variable '%s', " +
+                    throw new ParsingException("Mismatching value type for '%s', " +
                             "expected '%s' but received '%s'", id, type, value.getType());
                 }
                 type = value.getType();
+                pointerType = types.getScopedPointerType(pointerType.getScopeId(), type);
             } else if (!TypeFactory.isStaticType(type)) {
                 throw new ParsingException("Missing initial value for runtime variable '%s'", id);
             } else {
                 value = builder.makeUndefinedValue(type);
             }
-            ScopedPointerVariable pointer = builder.allocateScopedPointerVariable(id, value, pointerType.getScopeId(), type);
-            validateVariableStorageClass(pointer, ctx.storageClass().getText());
+            validateVariableStorageClass(id, pointerType.getScopeId(), ctx.storageClass().getText());
+            value = expressions.makeConstruct(types.getArrayType(pointerType.getPointedType(), 1), List.of(value));
+            Expression pointer = builder.allocateMemory(id, pointerType, value);
             builder.addExpression(id, pointer);
             return null;
         }
@@ -133,6 +136,7 @@ public class VisitorOpsMemory extends SpirvBaseVisitor<Event> {
                 throw new ParsingException("The original value of variable '%s' " +
                         "cannot be overwritten by a decoration", id);
             }
+            // TODO: Where used?
             return builtIn.getDecoration(id, type);
         }
         if (ctx.initializer() != null) {
@@ -141,16 +145,14 @@ public class VisitorOpsMemory extends SpirvBaseVisitor<Event> {
         return null;
     }
 
-    private void validateVariableStorageClass(ScopedPointerVariable pointer, String classToken) {
-        String ptrStorageClass = pointer.getScopeId();
+    private void validateVariableStorageClass(String id, String expected, String classToken) {
         String varStorageClass = HelperTags.parseStorageClass(classToken);
-        if (!varStorageClass.equals(ptrStorageClass)) {
+        if (!varStorageClass.equals(expected)) {
             throw new ParsingException("Storage class of variable '%s' " +
-                    "does not match the pointer storage class", pointer.getId());
+                    "does not match the pointer storage class", id);
         }
-        if (Tag.Spirv.SC_GENERIC.equals(ptrStorageClass)) {
-            throw new ParsingException("Variable '%s' has illegal storage class '%s'",
-                    pointer.getId(), classToken);
+        if (Tag.Spirv.SC_GENERIC.equals(expected)) {
+            throw new ParsingException("Variable '%s' has illegal storage class '%s'", id, classToken);
         }
     }
 
@@ -181,35 +183,40 @@ public class VisitorOpsMemory extends SpirvBaseVisitor<Event> {
         if (!(builder.getType(typeIdCtx.getText()) instanceof ScopedPointerType resultPointerType)) {
             throw new ParsingException("Invalid result type in access chain '%s', result and base must be pointers", idCtx.getText());
         }
-        if (!(base.getType() instanceof ScopedPointerType basePointerType)) {
+        if (!(base.getType() instanceof ScopedPointerType pType)) {
             throw new ParsingException("Invalid base type in access chain '%s', result and base must be pointers", idCtx.getText());
         }
         if (elCtx == null && idxCtx.isEmpty()) {
             throw new ParsingException("Empty element indexes in access chain '%s'", idCtx.getText());
         }
-        Type baseType = basePointerType.getPointedType();
-        Type resultType = resultPointerType.getPointedType();
-        LinkedList<Expression> exprIndexes = new LinkedList<>();
-        LinkedList<Integer> intIndexes = new LinkedList<>();
-        idxCtx.forEach(ctx -> {
-            Expression expression = builder.getExpression(ctx.getText());
-            exprIndexes.add(expression);
-            intIndexes.add(expression instanceof IntLiteral literal ? literal.getValueAsInt() : -1);
-        });
-        Type memberType = HelperTypes.getMemberType(baseCtx.getText(), baseType, intIndexes);
-        if (!TypeFactory.isStaticTypeOf(resultType, memberType)) {
-            throw new ParsingException("Invalid result type in access chain '%s', " +
-                    "expected '%s' but received '%s'", idCtx.getText(), resultType, memberType);
-        }
+        LinkedList<Expression> exprIndexes = idxCtx.stream()
+                .map(ctx -> builder.getExpression(ctx.getText()))
+                .collect(Collectors.toCollection(LinkedList::new));
         if (elCtx == null) {
             exprIndexes.addFirst(expressions.makeZero((IntegerType) exprIndexes.get(0).getType()));
         } else {
             exprIndexes.addFirst(builder.getExpression(elCtx.getText()));
         }
-        Expression expression = expressions.makeGetElementPointer(baseType, base, exprIndexes);
-        expression = new ScopedPointer(idCtx.getText(), resultPointerType, expression);
-        builder.addExpression(idCtx.getText(), expression);
-        return null;
+        Expression expression;
+        try {
+            expression = expressions.makeGetElementPointer(pType.getPointedType(), base, exprIndexes);
+        } catch (Exception e) {
+            throw new ParsingException("%s in assignment to '%s'", e.getMessage(), idCtx.getText());
+        }
+            Type memberType = expression.getType();
+            if (!TypeFactory.isStaticTypeOf(resultPointerType, memberType)) {
+                throw new ParsingException("Invalid result type in access chain '%s', " +
+                        "expected '%s' but received '%s'", idCtx.getText(), resultPointerType, memberType);
+            }
+            builder.addExpression(idCtx.getText(), expression);
+            return null;
+    }
+
+    private String getStorageClassTag(String id) {
+        if (builder.getExpression(id).getType() instanceof ScopedPointerType pType) {
+            return pType.getScopeId();
+        }
+        throw new ParsingException("Expression '%s' is not a pointer", id);
     }
 
     private Set<String> parseMemoryAccessTags(SpirvParser.MemoryAccessContext ctx) {

@@ -2,9 +2,7 @@ package com.dat3m.dartagnan.program.memory;
 
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
-import com.dat3m.dartagnan.expression.Type;
-import com.dat3m.dartagnan.expression.type.IntegerType;
-import com.dat3m.dartagnan.expression.type.TypeFactory;
+import com.dat3m.dartagnan.expression.type.*;
 import com.dat3m.dartagnan.program.event.core.Alloc;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
@@ -13,18 +11,22 @@ import java.util.ArrayList;
 
 public class Memory {
 
+    private static final TypeFactory types = TypeFactory.getInstance();
+    private static final ExpressionFactory expressions = ExpressionFactory.getInstance();
+
     private final ArrayList<MemoryObject> objects = new ArrayList<>();
-    private final Type ptrType = TypeFactory.getInstance().getPointerType();
-    private final IntegerType archType = TypeFactory.getInstance().getArchType();
-    private final Expression defaultAlignment = ExpressionFactory.getInstance().makeValue(8, archType);
+    private final IntegerType archType = types.getArchType();
+    private final Expression defaultAlignment = expressions.makeValue(8, archType);
 
     private int nextIndex = 1;
 
+    // TODO: This should be a pointer too
     // Generates a new, statically allocated memory object.
     public MemoryObject allocate(int size) {
         Preconditions.checkArgument(size > 0, "Illegal allocation. Size must be positive");
-        final Expression sizeExpr = ExpressionFactory.getInstance().makeValue(size, archType);
-        final MemoryObject memoryObject = new MemoryObject(nextIndex++, sizeExpr, defaultAlignment, null, ptrType);
+        final Expression sizeExpr = expressions.makeValue(size, archType);
+        final MemoryObject memoryObject = new MemoryObject(nextIndex++, sizeExpr, defaultAlignment, null,
+                types.getPointerType(types.getVoidType()));
         objects.add(memoryObject);
         return memoryObject;
     }
@@ -33,18 +35,18 @@ public class Memory {
     public MemoryObject allocate(Alloc allocationSite) {
         Preconditions.checkNotNull(allocationSite);
         final MemoryObject memoryObject = new MemoryObject(nextIndex++, allocationSite.getAllocationSize(),
-                allocationSite.getAlignment(), allocationSite, ptrType);
+                allocationSite.getAlignment(), allocationSite, types.getPointerType(types.getVoidType()));
         objects.add(memoryObject);
         return memoryObject;
     }
 
-    public VirtualMemoryObject allocateVirtual(int size, boolean generic, VirtualMemoryObject alias) {
+    public VirtualMemoryObject allocateVirtual(PointerType type, int size, boolean generic, VirtualMemoryObject alias) {
         Preconditions.checkArgument(size > 0, "Illegal allocation. Size must be positive");
-        final Expression sizeExpr = ExpressionFactory.getInstance().makeValue(size, archType);
-        final VirtualMemoryObject address = new VirtualMemoryObject(nextIndex++, sizeExpr, defaultAlignment,
-                generic, alias, ptrType);
-        objects.add(address);
-        return address;
+        final Expression sizeExpr = expressions.makeValue(size, archType);
+        final VirtualMemoryObject memoryObject = new VirtualMemoryObject(nextIndex++, sizeExpr,
+                defaultAlignment, generic, alias, type);
+        objects.add(memoryObject);
+        return memoryObject;
     }
 
     public boolean deleteMemoryObject(MemoryObject obj) {

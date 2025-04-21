@@ -324,7 +324,7 @@ type:
 	| type '(' params ')'
 	| intType
 	| floatType
-	| type addrSpace? '*'
+	| type addrSpace? Asterics
 	| opaquePointerType
 	| vectorType
 	| labelType
@@ -410,7 +410,7 @@ concreteType:
 
 intType: IntType;
 floatType: floatKind;
-pointerType: type addrSpace? '*' | opaquePointerType;
+pointerType: type addrSpace? Asterics | opaquePointerType;
 vectorType:
 	'<' IntLit 'x' type '>'
 	| '<' 'vscale' 'x' IntLit 'x' type '>';
@@ -1376,3 +1376,4 @@ DwarfVirtuality:
 	'DW_VIRTUALITY_' (AsciiLetter | DecimalDigit | '_')*;
 DwarfMacinfo: 'DW_MACINFO_' (AsciiLetter | DecimalDigit | '_')*;
 DwarfOp: 'DW_OP_' (AsciiLetter | DecimalDigit | '_')*;
+Asterics: '*';

@@ -539,7 +539,7 @@ public class Intrinsics {
         final Expression destructor = call.getArguments().get(1);
         final Program program = call.getFunction().getProgram();
         final long threadCount = program.getThreads().size();
-        final int pointerBytes = types.getMemorySizeInBytes(types.getPointerType());
+        final int pointerBytes = types.getMemorySizeInBytes(types.getArchType());
         final Register storageAddressRegister = call.getFunction().newRegister(types.getArchType());
         final Expression size = expressions.makeValue((threadCount + 1) * pointerBytes, types.getArchType());
         final Expression destructorOffset = expressions.makeValue(threadCount * pointerBytes, types.getArchType());

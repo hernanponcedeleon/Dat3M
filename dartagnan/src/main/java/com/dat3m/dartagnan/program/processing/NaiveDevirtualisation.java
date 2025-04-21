@@ -199,7 +199,7 @@ public class NaiveDevirtualisation implements ProgramProcessor {
                     .filter(f -> f.getFunctionType() == call.getCallType()).collect(Collectors.toList());
         } else if (call.getCalledFunction().getIntrinsicInfo() == Intrinsics.Info.P_THREAD_CREATE) {
             final TypeFactory types = TypeFactory.getInstance();
-            final Type ptrType = types.getPointerType();
+            final Type ptrType = types.getArchType();
             final Type threadType = types.getFunctionType(ptrType, List.of(ptrType));
             possibleTargets = func2AddressMap.keySet().stream()
                     .filter(f -> f.getFunctionType() == threadType).collect(Collectors.toList());

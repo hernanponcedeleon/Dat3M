@@ -34,6 +34,7 @@ public class MemoryObject extends LeafExpressionBase<Type> {
 
     private final Map<Integer, Expression> initialValues = new TreeMap<>();
 
+    // TODO: type should be a pointer type, not archType
     MemoryObject(int id, Expression size, Expression alignment, Alloc allocationSite, Type ptrType) {
         super(ptrType);
         final TypeFactory types = TypeFactory.getInstance();
