@@ -54,6 +54,17 @@ public final class TypeFactory {
         return typeNormalizer.normalize(new PointerType(pointedType));
     }
 
+    public PointerType getPointerTypeBuilder() {
+        return new PointerType(null);
+    }
+
+    public PointerType setPointedType(PointerType pointerType, Type pointedType) {
+        checkArgument(pointerType.getPointedType() == null, "Attempt to redefine pointed type");
+        pointerType.setPointedType(pointedType);
+        return pointerType;
+        //return typeNormalizer.normalize(pointerType);
+    }
+
     public ScopedPointerType getScopedPointerType(String scopeId, Type pointedType) {
         checkNotNull(scopeId);
         checkNotNull(pointedType);

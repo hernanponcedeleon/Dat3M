@@ -43,7 +43,8 @@ public class IntegerType implements Type {
         if (obj == this) {
             return true;
         }
-        return obj instanceof IntegerType other && other.bitWidth == this.bitWidth;
+        if (obj == null || getClass() != obj.getClass()) return false;
+        return ((IntegerType)obj).bitWidth == this.bitWidth;
     }
 
     @Override
