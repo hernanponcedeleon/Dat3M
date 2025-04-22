@@ -1,4 +1,4 @@
-package com.dat3m.dartagnan.spirv.vulkan.loops;
+package com.dat3m.dartagnan.spirv.vulkan.barrier.loops;
 
 import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.encoding.ProverWithTracker;
@@ -40,7 +40,7 @@ public class SpirvChecksTest {
     private final Result expected;
 
     public SpirvChecksTest(String file, int bound, Result expected) {
-        this.programPath = getTestResourcePath("spirv/vulkan/loops/" + file);
+        this.programPath = getTestResourcePath("spirv/vulkan/barrier/loops/" + file);
         this.bound = bound;
         this.expected = expected;
     }
