@@ -285,6 +285,9 @@ class ExpressionEncoder implements ExpressionVisitor<Formula> {
     public Formula visitIntConcat(IntConcat expr) {
         final BitvectorFormulaManager bvmgr = bitvectorFormulaManager();
         final List<Expression> operands = expr.getOperands();
+        if (operands.isEmpty()) {
+            return visitExpression(expr);
+        }
         BitvectorFormula enc = (BitvectorFormula) operands.get(0).accept(this);
         for (Expression op : operands.subList(1, operands.size())) {
             enc = bvmgr.concat((BitvectorFormula) op.accept(this), enc);

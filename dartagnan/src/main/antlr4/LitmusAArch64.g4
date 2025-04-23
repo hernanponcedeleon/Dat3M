@@ -63,7 +63,7 @@ instruction
     |   store
     |   storePair
     |   storeExclusive
-    |   swapWord
+    |   swap
     |   cmp
     |   branch
     |   branchRegister
@@ -73,19 +73,19 @@ instruction
     |   nop
     ;
 
-mov locals [String rD, int size]
-    :   MovInstruction r32 = register32 Comma expr32 {$rD = $r32.id; $size = 32;}
-    |   MovInstruction r64 = register64 Comma expr64 {$rD = $r64.id; $size = 64;}
+mov
+    :   MovInstruction r32 = register32 Comma expr32
+    |   MovInstruction r64 = register64 Comma expr64
     ;
 
-cmp locals [String rD, int size]
-    :   CmpInstruction r32 = register32 Comma expr32 {$rD = $r32.id; $size = 32;}
-    |   CmpInstruction r64 = register64 Comma expr64 {$rD = $r64.id; $size = 64;}
+cmp
+    :   CmpInstruction r32 = register32 Comma expr32
+    |   CmpInstruction r64 = register64 Comma expr64
     ;
 
-arithmetic locals [String rD, String rV, int size]
-    :   arithmeticInstruction rD32 = register32 Comma rV32 = register32 Comma expr32 {$rD = $rD32.id; $rV = $rV32.id; $size = 32;}
-    |   arithmeticInstruction rD64 = register64 Comma rV64 = register64 Comma expr64 {$rD = $rD64.id; $rV = $rV64.id; $size = 64;}
+arithmetic
+    :   arithmeticInstruction rD32 = register32 Comma rV32 = register32 Comma expr32
+    |   arithmeticInstruction rD64 = register64 Comma rV64 = register64 Comma expr64
     ;
 
 load
@@ -118,9 +118,9 @@ storeExclusive
     |   storeExclusiveInstruction rS32 = register32 Comma rV64 = register64 Comma LBracket address RBracket
     ;
 
-swapWord
-    :   swapWordInstruction rS32 = register32 Comma rD32 = register32 Comma LBracket address RBracket
-    |   swapWordInstruction rS64 = register64 Comma rD64 = register64 Comma LBracket address RBracket
+swap
+    :   swapInstruction rS32 = register32 Comma rD32 = register32 Comma LBracket address RBracket
+    |   swapInstruction rS64 = register64 Comma rD64 = register64 Comma LBracket address RBracket
     ;
 
 fence locals [String opt]
@@ -185,11 +185,19 @@ storeExclusiveInstruction locals [boolean release, boolean byteSize, boolean hal
     |   STLXRH   {$release = true; $halfWordSize = true;}
     ;
 
-swapWordInstruction locals [boolean acquire, boolean release]
+swapInstruction locals [boolean acquire, boolean release, boolean byteSize, boolean halfWordSize]
     : SWP
+    | SWPB {$byteSize = true;}
+    | SWPH {$halfWordSize = true;}
     | SWPA {$acquire = true;}
+    | SWPAB {$acquire = true; $byteSize = true;}
+    | SWPAH {$acquire = true; $halfWordSize = true;}
     | SWPL {$release = true;}
+    | SWPLB {$release = true; $byteSize = true;}
+    | SWPLH {$release = true; $halfWordSize = true;}
     | SWPAL {$acquire = true; $release = true;}
+    | SWPALB {$acquire = true; $release = true; $byteSize = true;}
+    | SWPALH {$acquire = true; $release = true; $halfWordSize = true;}
     ;
 
 arithmeticInstruction locals [IntBinaryOp op]
@@ -376,9 +384,17 @@ STLXRH :   'STLXRH' ;
 // Swap word instructions (~ Exchange)
 
 SWP    :   'SWP'    ;
+SWPB   :   'SWPB'   ;
+SWPH   :   'SWPH'   ;
 SWPA   :   'SWPA'   ;
+SWPAB  :   'SWPAB'  ;
+SWPAH  :   'SWPAH'  ;
 SWPL   :   'SWPL'   ;
+SWPLB  :   'SWPLB'  ;
+SWPLH  :   'SWPLH'  ;
 SWPAL  :   'SWPAL'  ;
+SWPALB :   'SWPALB' ;
+SWPALH :   'SWPALH' ;
 
 MovInstruction
     :   'MOV'

@@ -47,7 +47,7 @@ public final class Tag {
         private ARMv8() {
         }
 
-        public static final String MO_RX        = "RX";
+        public static final String MO_RX        = "";
         public static final String MO_REL       = "L";
         public static final String MO_ACQ       = "A";
         public static final String MO_ACQ_PC    = "Q";
