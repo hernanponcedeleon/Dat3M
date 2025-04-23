@@ -29,6 +29,7 @@ import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.LinkedList;
 import java.util.List;
+import com.dat3m.dartagnan.parsers.program.ProgramParser;
 
 import static com.dat3m.dartagnan.configuration.Alias.FIELD_SENSITIVE;
 import static com.dat3m.dartagnan.configuration.OptionNames.*;
@@ -132,7 +133,7 @@ public class RelationAnalysisTest {
                     result.addAll(listFiles(file.toAbsolutePath()));
                 } else {
                     String filePath = file.toAbsolutePath().toString();
-                    if (filePath.endsWith(".litmus") || filePath.endsWith(".ll") || filePath.endsWith(".spv.dis")) {
+                    if (filePath.endsWith(ProgramParser.EXTENSION_LITMUS) || filePath.endsWith(ProgramParser.EXTENSION_LL) || filePath.endsWith(ProgramParser.EXTENSION_SPV_DIS) || filePath.endsWith(ProgramParser.EXTENSION_SPVASM)) {
                         result.add(filePath);
                     }
                 }

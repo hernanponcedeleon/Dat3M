@@ -18,7 +18,7 @@ java_cmd="${DAT3M_JAVA}"
 jar=${DAT3M_HOME}/dartagnan/target/dartagnan.jar
 args=""
 this="$0"
-log=${DAT3M_HOME}/dartagnan/src/main/resources/off.xml
+log=${DAT3M_HOME}/dartagnan/src/main/resources/warn.xml
 
 if [ -z "${java_cmd}" ]; then
     java_cmd="java"

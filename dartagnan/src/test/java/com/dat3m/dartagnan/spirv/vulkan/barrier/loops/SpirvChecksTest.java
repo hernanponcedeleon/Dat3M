@@ -1,4 +1,4 @@
-package com.dat3m.dartagnan.spirv.vulkan.loops;
+package com.dat3m.dartagnan.spirv.vulkan.barrier.loops;
 
 import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.encoding.ProverWithTracker;
@@ -40,7 +40,7 @@ public class SpirvChecksTest {
     private final Result expected;
 
     public SpirvChecksTest(String file, int bound, Result expected) {
-        this.programPath = getTestResourcePath("spirv/vulkan/loops/" + file);
+        this.programPath = getTestResourcePath("spirv/vulkan/barrier/loops/" + file);
         this.bound = bound;
         this.expected = expected;
     }
@@ -48,35 +48,35 @@ public class SpirvChecksTest {
     @Parameterized.Parameters(name = "{index}: {0}, {1}, {2}")
     public static Iterable<Object[]> data() throws IOException {
         return Arrays.asList(new Object[][]{
-                {"barrier-loop-1-forall.spv.dis", 3, PASS},
-                {"barrier-loop-1-exists.spv.dis", 3, PASS},
-                {"barrier-no-loop-1-forall.spv.dis", 1, PASS},
-                {"barrier-no-loop-1-exists.spv.dis", 1, PASS},
+                {"barrier-loop-1-forall.spvasm", 3, PASS},
+                {"barrier-loop-1-exists.spvasm", 3, PASS},
+                {"barrier-no-loop-1-forall.spvasm", 1, PASS},
+                {"barrier-no-loop-1-exists.spvasm", 1, PASS},
 
-                {"barrier-loop-2-forall.spv.dis", 2, PASS},
-                {"barrier-loop-2-exists.spv.dis", 2, PASS},
-                {"barrier-no-loop-2-forall.spv.dis", 1, PASS},
-                {"barrier-no-loop-2-exists.spv.dis", 1, PASS},
+                {"barrier-loop-2-forall.spvasm", 2, PASS},
+                {"barrier-loop-2-exists.spvasm", 2, PASS},
+                {"barrier-no-loop-2-forall.spvasm", 1, PASS},
+                {"barrier-no-loop-2-exists.spvasm", 1, PASS},
 
-                {"barrier-loop-3-forall.spv.dis", 2, PASS},
-                {"barrier-loop-3-exists.spv.dis", 2, PASS},
-                {"barrier-no-loop-3-forall.spv.dis", 1, PASS},
-                {"barrier-no-loop-3-exists.spv.dis", 1, PASS},
+                {"barrier-loop-3-forall.spvasm", 2, PASS},
+                {"barrier-loop-3-exists.spvasm", 2, PASS},
+                {"barrier-no-loop-3-forall.spvasm", 1, PASS},
+                {"barrier-no-loop-3-exists.spvasm", 1, PASS},
 
-                {"barrier-loop-4-forall.spv.dis", 2, PASS},
-                {"barrier-loop-4-exists.spv.dis", 2, PASS},
-                {"barrier-no-loop-4-forall.spv.dis", 1, PASS},
-                {"barrier-no-loop-4-exists.spv.dis", 1, PASS},
+                {"barrier-loop-4-forall.spvasm", 2, PASS},
+                {"barrier-loop-4-exists.spvasm", 2, PASS},
+                {"barrier-no-loop-4-forall.spvasm", 1, PASS},
+                {"barrier-no-loop-4-exists.spvasm", 1, PASS},
 
-                {"barrier-loop-5-forall.spv.dis", 2, PASS},
-                {"barrier-loop-5-exists.spv.dis", 2, PASS},
-                {"barrier-no-loop-5-forall.spv.dis", 1, PASS},
-                {"barrier-no-loop-5-exists.spv.dis", 1, PASS},
+                {"barrier-loop-5-forall.spvasm", 2, PASS},
+                {"barrier-loop-5-exists.spvasm", 2, PASS},
+                {"barrier-no-loop-5-forall.spvasm", 1, PASS},
+                {"barrier-no-loop-5-exists.spvasm", 1, PASS},
 
-                {"barrier-loop-6-forall.spv.dis", 2, PASS},
-                {"barrier-loop-6-exists.spv.dis", 2, PASS},
-                {"barrier-no-loop-6-forall.spv.dis", 1, PASS},
-                {"barrier-no-loop-6-exists.spv.dis", 1, PASS},
+                {"barrier-loop-6-forall.spvasm", 2, PASS},
+                {"barrier-loop-6-exists.spvasm", 2, PASS},
+                {"barrier-no-loop-6-forall.spvasm", 1, PASS},
+                {"barrier-no-loop-6-exists.spvasm", 1, PASS},
         });
     }
 

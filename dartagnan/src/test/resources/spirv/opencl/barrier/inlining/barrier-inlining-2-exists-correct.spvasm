@@ -1,0 +1,124 @@
+; @Input: %50 = {0, 0}
+; @Output: exists (%50[0]==2 and %50[1]==2)
+; @Config: 2, 1, 2
+; SPIR-V
+; Version: 1.0
+; Generator: Khronos LLVM/SPIR-V Translator; 14
+; Bound: 68
+; Schema: 0
+               OpCapability Addresses
+               OpCapability Linkage
+               OpCapability Kernel
+          %1 = OpExtInstImport "OpenCL.std"
+               OpMemoryModel Physical32 OpenCL
+               OpEntryPoint Kernel %49 "test" %__spirv_BuiltInWorkgroupId %__spirv_BuiltInLocalInvocationId
+               OpSource OpenCL_C 200000
+               OpName %__spirv_BuiltInWorkgroupId "__spirv_BuiltInWorkgroupId"
+               OpName %__spirv_BuiltInLocalInvocationId "__spirv_BuiltInLocalInvocationId"
+               OpName %synchronized_increment "synchronized_increment"
+               OpName %agent_function1 "agent_function1"
+               OpName %agent_function2 "agent_function2"
+               OpDecorate %__spirv_BuiltInWorkgroupId BuiltIn WorkgroupId
+               OpDecorate %__spirv_BuiltInLocalInvocationId BuiltIn LocalInvocationId
+               OpDecorate %__spirv_BuiltInWorkgroupId Constant
+               OpDecorate %__spirv_BuiltInLocalInvocationId Constant
+               OpDecorate %agent_function1 LinkageAttributes "agent_function1" Export
+               OpDecorate %agent_function2 LinkageAttributes "agent_function2" Export
+               OpDecorate %synchronized_increment LinkageAttributes "synchronized_increment" Export
+               OpDecorate %__spirv_BuiltInWorkgroupId LinkageAttributes "__spirv_BuiltInWorkgroupId" Import
+               OpDecorate %__spirv_BuiltInLocalInvocationId LinkageAttributes "__spirv_BuiltInLocalInvocationId" Import
+               OpDecorate %17 Alignment 4
+               OpDecorate %19 Alignment 4
+               OpDecorate %34 Alignment 4
+               OpDecorate %35 Alignment 4
+               OpDecorate %43 Alignment 4
+               OpDecorate %44 Alignment 4
+               OpDecorate %52 Alignment 4
+               OpDecorate %53 Alignment 4
+       %uint = OpTypeInt 32 0
+     %uint_2 = OpConstant %uint 2
+   %uint_528 = OpConstant %uint 528
+     %uint_0 = OpConstant %uint 0
+     %uint_1 = OpConstant %uint 1
+     %v3uint = OpTypeVector %uint 3
+%_ptr_Input_v3uint = OpTypePointer Input %v3uint
+       %void = OpTypeVoid
+%_ptr_CrossWorkgroup_uint = OpTypePointer CrossWorkgroup %uint
+          %9 = OpTypeFunction %void %_ptr_CrossWorkgroup_uint %uint
+%_ptr_Function__ptr_CrossWorkgroup_uint = OpTypePointer Function %_ptr_CrossWorkgroup_uint
+%_ptr_Function_uint = OpTypePointer Function %uint
+       %bool = OpTypeBool
+         %48 = OpTypeFunction %void %_ptr_CrossWorkgroup_uint
+%__spirv_BuiltInWorkgroupId = OpVariable %_ptr_Input_v3uint Input
+%__spirv_BuiltInLocalInvocationId = OpVariable %_ptr_Input_v3uint Input
+%synchronized_increment = OpFunction %void DontInline %9
+         %11 = OpFunctionParameter %_ptr_CrossWorkgroup_uint
+         %12 = OpFunctionParameter %uint
+         %13 = OpLabel
+         %17 = OpVariable %_ptr_Function__ptr_CrossWorkgroup_uint Function
+         %19 = OpVariable %_ptr_Function_uint Function
+               OpStore %17 %11 Aligned 4
+               OpStore %19 %12 Aligned 4
+               OpControlBarrier %uint_2 %uint_2 %uint_528
+         %22 = OpLoad %uint %19 Aligned 4
+         %25 = OpIEqual %bool %22 %uint_0
+               OpBranchConditional %25 %14 %15
+         %14 = OpLabel
+         %26 = OpLoad %_ptr_CrossWorkgroup_uint %17 Aligned 4
+         %27 = OpLoad %uint %26 Aligned 4
+         %29 = OpIAdd %uint %27 %uint_1
+               OpStore %26 %29 Aligned 4
+               OpBranch %15
+         %15 = OpLabel
+               OpControlBarrier %uint_2 %uint_2 %uint_528
+               OpReturn
+               OpFunctionEnd
+%agent_function1 = OpFunction %void DontInline %9
+         %31 = OpFunctionParameter %_ptr_CrossWorkgroup_uint
+         %32 = OpFunctionParameter %uint
+         %33 = OpLabel
+         %34 = OpVariable %_ptr_Function__ptr_CrossWorkgroup_uint Function
+         %35 = OpVariable %_ptr_Function_uint Function
+               OpStore %34 %31 Aligned 4
+               OpStore %35 %32 Aligned 4
+         %36 = OpLoad %_ptr_CrossWorkgroup_uint %34 Aligned 4
+         %37 = OpLoad %uint %35 Aligned 4
+         %38 = OpFunctionCall %void %synchronized_increment %36 %37
+               OpReturn
+               OpFunctionEnd
+%agent_function2 = OpFunction %void DontInline %9
+         %40 = OpFunctionParameter %_ptr_CrossWorkgroup_uint
+         %41 = OpFunctionParameter %uint
+         %42 = OpLabel
+         %43 = OpVariable %_ptr_Function__ptr_CrossWorkgroup_uint Function
+         %44 = OpVariable %_ptr_Function_uint Function
+               OpStore %43 %40 Aligned 4
+               OpStore %44 %41 Aligned 4
+         %45 = OpLoad %_ptr_CrossWorkgroup_uint %43 Aligned 4
+         %46 = OpLoad %uint %44 Aligned 4
+         %47 = OpFunctionCall %void %synchronized_increment %45 %46
+               OpReturn
+               OpFunctionEnd
+         %49 = OpFunction %void DontInline %48
+         %50 = OpFunctionParameter %_ptr_CrossWorkgroup_uint
+         %51 = OpLabel
+         %52 = OpVariable %_ptr_Function__ptr_CrossWorkgroup_uint Function
+         %53 = OpVariable %_ptr_Function_uint Function
+               OpStore %52 %50 Aligned 4
+         %54 = OpLoad %v3uint %__spirv_BuiltInWorkgroupId Aligned 16
+         %55 = OpCompositeExtract %uint %54 0
+               OpStore %53 %55 Aligned 4
+         %56 = OpLoad %_ptr_CrossWorkgroup_uint %52 Aligned 4
+         %57 = OpLoad %uint %53 Aligned 4
+         %58 = OpInBoundsPtrAccessChain %_ptr_CrossWorkgroup_uint %56 %57
+         %59 = OpLoad %v3uint %__spirv_BuiltInLocalInvocationId Aligned 16
+         %60 = OpCompositeExtract %uint %59 0
+         %61 = OpFunctionCall %void %agent_function1 %58 %60
+         %62 = OpLoad %_ptr_CrossWorkgroup_uint %52 Aligned 4
+         %63 = OpLoad %uint %53 Aligned 4
+         %64 = OpInBoundsPtrAccessChain %_ptr_CrossWorkgroup_uint %62 %63
+         %65 = OpLoad %v3uint %__spirv_BuiltInLocalInvocationId Aligned 16
+         %66 = OpCompositeExtract %uint %65 0
+         %67 = OpFunctionCall %void %agent_function2 %64 %66
+               OpReturn
+               OpFunctionEnd
