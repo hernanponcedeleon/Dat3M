@@ -118,7 +118,7 @@ public class VisitorOpsConversion extends SpirvBaseVisitor<Void> {
         Type operandType = operandExpr.getType();
         if (!(targetType instanceof IntegerType) || !(operandType instanceof IntegerType)) {
             // TODO: Support conversion between arrays
-            throw new ParsingException("Unsupported conversion from '%s' to '%s'", operandExpr.getType(), typeId);
+            throw new ParsingException("Unsupported conversion to type '%s' for id '%s'", typeId, id);
         }
         Expression convertedExpr = expressions.makeCast(operandExpr, targetType, isSigned);
         Register reg = builder.addRegister(id, typeId);

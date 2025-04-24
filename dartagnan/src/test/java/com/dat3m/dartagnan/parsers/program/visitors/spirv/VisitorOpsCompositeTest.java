@@ -194,7 +194,7 @@ public class VisitorOpsCompositeTest {
     }
 
     @Test
-    public void testCompositeInsertValid() {
+    public void testCompositeInsertArray() {
         // given
         String input = "%insert = OpCompositeInsert %array %value %base 2";
         builder.mockIntType("%uint", 32);
@@ -214,14 +214,156 @@ public class VisitorOpsCompositeTest {
     }
 
     @Test
-    public void testCompositeInsertTypeMismatch() {
+    public void testCompositeInsertRuntimeArray() {
         // given
         String input = "%insert = OpCompositeInsert %array %value %base 2";
         builder.mockIntType("%uint", 32);
-        builder.mockIntType("%uint64", 64);
-        builder.mockVectorType("%array", "%uint", 4);
+        builder.mockVectorType("%array", "%uint", -1);
+        builder.mockVectorType("%array_static", "%uint", 4);
         builder.mockConstant("%base", "%array", List.of(1, 2, 3, 4));
+        builder.mockConstant("%value", "%uint", 99);
+
+        // when
+        visit(input);
+
+        // then
+        InsertExpr insert = (InsertExpr) builder.getExpression("%insert");
+        assertEquals(List.of(2), insert.getIndices());
+        assertEquals(builder.getType("%array_static"), insert.getType());
+        assertEquals(builder.getExpression("%value"), insert.getInsertedValue());
+        assertEquals(builder.getExpression("%base"), insert.getAggregate());
+    }
+
+    @Test
+    public void testCompositeInsertNestedArray() {
+        // given
+        String input = "%insert = OpCompositeInsert %struct %value %base 1 2";
+        builder.mockIntType("%uint", 32);
+        builder.mockVectorType("%array", "%uint", 4);
+        builder.mockAggregateType("%struct", "%uint", "%array");
+        builder.mockConstant("%member_0", "%uint", 1);
+        builder.mockConstant("%member_1", "%array", List.of(1, 2, 3, 4));
+        builder.mockConstant("%base", "%struct", List.of("%member_0", "%member_1"));
+        builder.mockConstant("%value", "%uint", 99);
+
+        // when
+        visit(input);
+
+        // then
+        InsertExpr insert = (InsertExpr) builder.getExpression("%insert");
+        assertEquals(List.of(1, 2), insert.getIndices());
+        assertEquals(builder.getType("%struct"), insert.getType());
+        assertEquals(builder.getExpression("%value"), insert.getInsertedValue());
+        assertEquals(builder.getExpression("%base"), insert.getAggregate());
+    }
+
+    @Test
+    public void testCompositeInsertNestedRuntimeArray() {
+        // given
+        String input = "%insert = OpCompositeInsert %array2 %value %base 1 2";
+        builder.mockIntType("%uint", 32);
+        builder.mockVectorType("%array", "%uint", -1);
+        builder.mockVectorType("%array2", "%array", -1);
+        builder.mockVectorType("%array2_static", "%array", 2);
+        builder.mockConstant("%member_0", "%array", List.of(1, 2, 3, 4));
+        builder.mockConstant("%member_1", "%array", List.of(5, 6, 7, 8));
+        builder.mockConstant("%base", "%array2", List.of("%member_0", "%member_1"));
+        builder.mockConstant("%value", "%uint", 99);
+
+        // when
+        visit(input);
+
+        // then
+        InsertExpr insert = (InsertExpr) builder.getExpression("%insert");
+        assertEquals(List.of(1, 2), insert.getIndices());
+        assertEquals(builder.getType("%array2_static"), insert.getType());
+        assertEquals(builder.getExpression("%value"), insert.getInsertedValue());
+        assertEquals(builder.getExpression("%base"), insert.getAggregate());
+    }
+
+    @Test
+    public void testCompositeInsertArrayRegister() {
+        // given
+        String input = "%insert = OpCompositeInsert %array %value %base 0";
+        builder.mockIntType("%uint", 32);
+        builder.mockVectorType("%array", "%uint", 4);
+        builder.mockFunctionStart(true);
+        List<Register> registers = IntStream.range(0, 4).boxed()
+                .map(i -> builder.addRegister("%r" + i, "%uint"))
+                .toList();
+        builder.mockConstant("%base", "%array", registers);
+        builder.mockConstant("%value", "%uint", 99);
+
+        // when
+        visit(input);
+
+        // then
+        InsertExpr insert = (InsertExpr) builder.getExpression("%insert");
+        assertEquals(List.of(0), insert.getIndices());
+        assertEquals(builder.getType("%array"), insert.getType());
+        assertEquals(builder.getExpression("%value"), insert.getInsertedValue());
+        assertEquals(builder.getExpression("%base"), insert.getAggregate());
+    }
+
+    @Test
+    public void testCompositeInsertWrongType() {
+        // given
+        String input = "%insert = OpCompositeInsert %struct %value %base 0 0";
+        builder.mockFunctionStart(true);
+        builder.mockIntType("%uint32", 32);
+        builder.mockIntType("%uint64", 64);
+        builder.mockVectorType("%array", "%uint32", 4);
+        builder.mockAggregateType("%struct", "%uint32", "%array");
+
+        builder.mockConstant("%t1", "%uint32", 1);
+        builder.mockConstant("%test", "%array", List.of(1, 2, 3, 4));
+        builder.mockConstant("%base", "%struct", List.of("%t1", "%test"));
         builder.mockConstant("%value", "%uint64", 99);
+
+        try {
+            // when
+            visit(input);
+            fail("Should throw exception");
+        } catch (Exception e) {
+            // then
+            assertEquals("Element type mismatch or index out of bounds in OpCompositeInsert for '%insert'", e.getMessage());
+        }
+    }
+
+    @Test
+    public void testCompositeInsertWrongType1() {
+        // given
+        String input = "%insert = OpCompositeInsert %struct1 %value %base 0 0";
+        builder.mockFunctionStart(true);
+        builder.mockIntType("%uint32", 32);
+        builder.mockVectorType("%array", "%uint32", 4);
+        builder.mockVectorType("%array1", "%uint32", 2);
+        builder.mockAggregateType("%struct", "%array1", "%array");
+        builder.mockAggregateType("%struct1", "%array", "%array1");
+
+        builder.mockConstant("%test", "%array", List.of(1, 2, 3, 4));
+        builder.mockConstant("%test1", "%array", List.of(1, 2));
+        builder.mockConstant("%base", "%struct", List.of("%test1", "%test"));
+        builder.mockConstant("%value", "%uint32", 99);
+
+        try {
+            // when
+            visit(input);
+            fail("Should throw exception");
+        } catch (Exception e) {
+            // then
+            assertEquals("Type mismatch in composite insert for '%insert'", e.getMessage());
+        }
+    }
+
+    @Test
+    public void testCompositeInsertElementNotConstructExpr() {
+        // given
+        String input = "%insert = OpCompositeInsert %uint %value %base 0";
+        builder.mockFunctionStart(true);
+        builder.mockIntType("%uint", 32);
+        builder.mockConstant("%base", "%uint", 1);
+        builder.mockConstant("%value", "%uint", 99);
 
         try {
             // when
@@ -229,7 +371,7 @@ public class VisitorOpsCompositeTest {
             fail("Should throw exception");
         } catch (ParsingException e) {
             // then
-            assertEquals("Type mismatch in OpCompositeInsert, element of composite '%base' and object '%value' must be the same for id '%insert'", e.getMessage());
+            assertEquals("Element type mismatch or index out of bounds in OpCompositeInsert for '%insert'", e.getMessage());
         }
     }
 
@@ -237,6 +379,7 @@ public class VisitorOpsCompositeTest {
     public void testCompositeInsertIndexOutOfBounds() {
         // given
         String input = "%insert = OpCompositeInsert %array %value %base 5";
+        builder.mockFunctionStart(true);
         builder.mockIntType("%uint", 32);
         builder.mockVectorType("%array", "%uint", 4);
         builder.mockConstant("%base", "%array", List.of(1, 2, 3, 4));
@@ -248,7 +391,26 @@ public class VisitorOpsCompositeTest {
             fail("Should throw exception");
         } catch (ParsingException e) {
             // then
-            assertEquals("Index is out of bounds for variable '%insert[5]'", e.getMessage());
+            assertEquals("Element type mismatch or index out of bounds in OpCompositeInsert for '%insert'", e.getMessage());
+        }
+    }
+
+    @Test
+    public void testCompositeInsertIndexTooDeep() {
+        // given
+        String input = "%insert = OpCompositeInsert %array %value %base 0 0";
+        builder.mockIntType("%uint", 32);
+        builder.mockVectorType("%array", "%uint", 4);
+        builder.mockConstant("%base", "%array", List.of(1, 2, 3, 4));
+        builder.mockConstant("%value", "%uint", 99);
+
+        try {
+            // when
+            visit(input);
+            fail("Should throw exception");
+        } catch (ParsingException e) {
+            // then
+            assertEquals("Element type mismatch or index out of bounds in OpCompositeInsert for '%insert'", e.getMessage());
         }
     }
 
