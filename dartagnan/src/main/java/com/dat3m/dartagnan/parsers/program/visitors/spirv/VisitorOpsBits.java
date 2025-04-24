@@ -17,6 +17,7 @@ import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.core.Local;
+import com.dat3m.dartagnan.parsers.program.visitors.spirv.helpers.HelperTypes;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -74,7 +75,7 @@ public class VisitorOpsBits extends SpirvBaseVisitor<Event> {
         Expression op2 = builder.getExpression(op2Id);
         if (type.equals(op1.getType()) && type.equals(op2.getType())) {
             if (!(type instanceof ArrayType aType) || aType.hasKnownNumElements()) {
-                Expression expression = createResultExpression(id, type, op1, op2, op);
+                Expression expression = HelperTypes.createResultExpression(id, type, op1, op2, op);
                 Register register = builder.addRegister(id, typeId);
                 Local event = EventFactory.newLocal(register, expression);
                 return builder.addEvent(event);
@@ -82,22 +83,6 @@ public class VisitorOpsBits extends SpirvBaseVisitor<Event> {
             throw new ParsingException("Illegal definition for '%s', vector expressions must have fixed size", id);
         }
         throw new ParsingException("Illegal definition for '%s', result type doesn't match operand types", id);
-    }
-
-    private Expression createResultExpression(String id, Type type, Expression op1, Expression op2, IntBinaryOp op) {
-        if (type instanceof BooleanType || type instanceof IntegerType || type instanceof FloatType) {
-            return expressions.makeBinary(op1, op, op2);
-        }
-        if (type instanceof ArrayType aType && op1 instanceof ConstructExpr cop1 && op2 instanceof ConstructExpr cop2) {
-            List<Expression> elements = new ArrayList<>();
-            for (int i = 0; i < aType.getNumElements(); i++) {
-                Expression elementOp1 = cop1.getOperands().get(i);
-                Expression elementOp2 = cop2.getOperands().get(i);
-                elements.add(expressions.makeBinary(elementOp1, op, elementOp2));
-            }
-            return expressions.makeConstruct(type, elements);
-        }
-        throw new ParsingException("Illegal result type in definition of '%s'", id);
     }
 
     public Set<String> getSupportedOps() {

@@ -5,11 +5,11 @@ import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.Type;
 import com.dat3m.dartagnan.expression.integers.IntLiteral;
-import com.dat3m.dartagnan.expression.type.AggregateType;
-import com.dat3m.dartagnan.expression.type.ArrayType;
-import com.dat3m.dartagnan.expression.type.IntegerType;
-import com.dat3m.dartagnan.expression.type.TypeFactory;
+import com.dat3m.dartagnan.expression.integers.IntBinaryOp;
+import com.dat3m.dartagnan.expression.type.*;
+import com.dat3m.dartagnan.expression.aggregates.ConstructExpr;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import static com.dat3m.dartagnan.expression.integers.IntBinaryOp.ADD;
@@ -73,6 +73,23 @@ public class HelperTypes {
         Expression offsetExpr = expressions.makeBinary(sizeExpr, MUL, formattedOffset);
         Expression formattedBase = expressions.makeIntegerCast(base, archType, false);
         return expressions.makeBinary(formattedBase, ADD, offsetExpr);
+    }
+
+    public static Expression createResultExpression(String id, Type type, Expression op1, Expression op2, IntBinaryOp op) {
+        if (type instanceof BooleanType || type instanceof IntegerType || type instanceof FloatType) {
+            return expressions.makeBinary(op1, op, op2);
+        }
+        if (type instanceof ArrayType aType) {
+            List<Expression> elements = new ArrayList<>();
+            boolean directOpAccess = op1 instanceof ConstructExpr cop1 && op2 instanceof ConstructExpr cop2;
+            for (int i = 0; i < aType.getNumElements(); i++) {
+                Expression elementOp1 = directOpAccess ? op1.getOperands().get(i) : expressions.makeExtract(op1, i);
+                Expression elementOp2 = directOpAccess ? op2.getOperands().get(i) : expressions.makeExtract(op2, i);
+                elements.add(expressions.makeBinary(elementOp1, op, elementOp2));
+            }
+            return expressions.makeArray(aType.getElementType(), elements, true);
+        }
+        throw new ParsingException("Illegal result type in definition of '%s'", id);
     }
 
     private static Type getArrayMemberType(String id, ArrayType type, List<Integer> indexes) {
