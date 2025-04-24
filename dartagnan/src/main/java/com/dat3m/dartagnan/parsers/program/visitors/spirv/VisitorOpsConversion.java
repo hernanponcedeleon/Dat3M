@@ -115,13 +115,11 @@ public class VisitorOpsConversion extends SpirvBaseVisitor<Void> {
 
     private void convertAndAddLocal(String typeId, String id, Expression operandExpr, boolean isSigned) {
         Type targetType = builder.getType(typeId);
-        Type operandType = operandExpr.getType() instanceof ScopedPointerType pointerType
-                ? pointerType.getPointedType()
-                : operandExpr.getType();
+        Type operandType = operandExpr.getType();
         if (!(targetType instanceof IntegerType) || !(operandType instanceof IntegerType)) {
-            throw new ParsingException("OpUConvert: Invalid conversion from '%s' to '%s'", operandExpr.getType(), typeId);
+            // TODO: Support conversion between arrays
+            throw new ParsingException("Unsupported conversion from '%s' to '%s'", operandExpr.getType(), typeId);
         }
-        // TODO: Support conversion between arrays
         Expression convertedExpr = expressions.makeCast(operandExpr, targetType, isSigned);
         Register reg = builder.addRegister(id, typeId);
         builder.addEvent(new Local(reg, convertedExpr));

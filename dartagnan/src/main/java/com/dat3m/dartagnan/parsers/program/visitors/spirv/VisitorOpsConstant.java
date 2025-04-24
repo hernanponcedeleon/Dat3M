@@ -13,10 +13,7 @@ import com.dat3m.dartagnan.parsers.program.visitors.spirv.decorations.BuiltIn;
 import com.dat3m.dartagnan.program.Register;
 import org.antlr.v4.runtime.RuleContext;
 
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 import static com.dat3m.dartagnan.parsers.program.visitors.spirv.decorations.DecorationType.BUILT_IN;
 
@@ -126,10 +123,11 @@ public class VisitorOpsConstant extends SpirvBaseVisitor<Expression> {
 
     private Expression getConstantNullExpression(Type type) {
         if (type instanceof ArrayType arrayType) {
-            List<Expression> elements = new ArrayList<>();
-            for (int i = 0; i < arrayType.getNumElements(); i++) {
-                elements.add(getConstantNullExpression(arrayType.getElementType()));
+            if (!arrayType.hasKnownNumElements()) {
+                throw new ParsingException("Cannot create NULL constant for array type '%s' with unknown size", type);
             }
+            Expression exp = getConstantNullExpression(arrayType.getElementType());
+            List<Expression> elements = Collections.nCopies(arrayType.getNumElements(), exp);
             return expressions.makeArray(arrayType.getElementType(), elements, true);
         }
         if (type instanceof AggregateType aggregateType) {

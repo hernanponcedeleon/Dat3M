@@ -78,6 +78,30 @@ public class VisitorOpsConversionTest {
         assertEquals(builder.getType("%uint"), reg.getType());
     }
 
+    @Test
+    public void opUConvertValid() {
+        builder.mockIntType("%uint", 32);
+        builder.mockIntType("%uint64", 64);
+        builder.mockConstant("%value1", "%uint", 1);
+        String input = "%value2 = OpUConvert %uint64 %value1";
+
+        visit(input);
+        Expression reg = builder.getExpression("%value2");
+        assertEquals(builder.getType("%uint64"), reg.getType());
+    }
+
+    @Test
+    public void opSConvertValid() {
+        builder.mockIntType("%uint", 32);
+        builder.mockIntType("%uint64", 64);
+        builder.mockConstant("%value1", "%uint", 1);
+        String input = "%value2 = OpSConvert %uint64 %value1";
+
+        visit(input);
+        Expression reg = builder.getExpression("%value2");
+        assertEquals(builder.getType("%uint64"), reg.getType());
+    }
+
     private void visit(String input) {
         builder.mockFunctionStart(true);
         new MockSpirvParser(input).op().accept(new VisitorOpsConversion(builder));

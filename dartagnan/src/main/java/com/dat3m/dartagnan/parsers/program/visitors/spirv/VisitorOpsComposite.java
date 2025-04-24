@@ -49,7 +49,7 @@ public class VisitorOpsComposite extends SpirvBaseVisitor<Void> {
 
     private Expression getElement(Expression base, List<Integer> indexes, String id) {
         try {
-            return ExpressionFactory.getInstance().makeExtract(base, indexes);
+            return expressions.makeExtract(base, indexes);
         } catch (Exception e) {
             throw new ParsingException(String.format("Index out of bounds in OpCompositeExtract for '%s'", id));
         }
@@ -68,7 +68,7 @@ public class VisitorOpsComposite extends SpirvBaseVisitor<Void> {
 
         if (!compositeType.equals(resultType)) {
             throw new ParsingException("Type mismatch in OpCompositeInsert, " +
-                    "result '%s' and composite '%s' must be the same for id '%s'", typeId, compositeId, id);
+                    "element of composite '%s' and object '%s' must be the same for id '%s'", compositeId, objectId, id);
         }
 
         List<Integer> intIndexes = ctx.indexesLiteralInteger().stream()
@@ -78,7 +78,7 @@ public class VisitorOpsComposite extends SpirvBaseVisitor<Void> {
         Type memberType = HelperTypes.getMemberType(id, compositeType, intIndexes);
         if (!memberType.equals(objectExpr.getType())) {
             throw new ParsingException("Type mismatch in OpCompositeInsert, " +
-                    "object '%s' and member '%s' must be the same for id '%s'", objectId, compositeId, id);
+                    "element of composite '%s' and object '%s' must be the same for id '%s'", compositeId, objectId, id);
         }
 
         Expression copy = expressions.makeInsert(compositeExpr, objectExpr, intIndexes);

@@ -2,6 +2,7 @@ package com.dat3m.dartagnan.parsers.program.visitors.spirv;
 
 import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.expression.aggregates.ExtractExpr;
+import com.dat3m.dartagnan.expression.aggregates.InsertExpr;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.mocks.MockProgramBuilder;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.mocks.MockSpirvParser;
 import com.dat3m.dartagnan.program.Register;
@@ -189,6 +190,65 @@ public class VisitorOpsCompositeTest {
         } catch (ParsingException e) {
             // then
             assertEquals("Index out of bounds in OpCompositeExtract for '%extract'", e.getMessage());
+        }
+    }
+
+    @Test
+    public void testCompositeInsertValid() {
+        // given
+        String input = "%insert = OpCompositeInsert %array %value %base 2";
+        builder.mockIntType("%uint", 32);
+        builder.mockVectorType("%array", "%uint", 4);
+        builder.mockConstant("%base", "%array", List.of(1, 2, 3, 4));
+        builder.mockConstant("%value", "%uint", 99);
+
+        // when
+        visit(input);
+
+        // then
+        InsertExpr insert = (InsertExpr) builder.getExpression("%insert");
+        assertEquals(List.of(2), insert.getIndices());
+        assertEquals(builder.getType("%array"), insert.getType());
+        assertEquals(builder.getExpression("%value"), insert.getInsertedValue());
+        assertEquals(builder.getExpression("%base"), insert.getAggregate());
+    }
+
+    @Test
+    public void testCompositeInsertTypeMismatch() {
+        // given
+        String input = "%insert = OpCompositeInsert %array %value %base 2";
+        builder.mockIntType("%uint", 32);
+        builder.mockIntType("%uint64", 64);
+        builder.mockVectorType("%array", "%uint", 4);
+        builder.mockConstant("%base", "%array", List.of(1, 2, 3, 4));
+        builder.mockConstant("%value", "%uint64", 99);
+
+        try {
+            // when
+            visit(input);
+            fail("Should throw exception");
+        } catch (ParsingException e) {
+            // then
+            assertEquals("Type mismatch in OpCompositeInsert, element of composite '%base' and object '%value' must be the same for id '%insert'", e.getMessage());
+        }
+    }
+
+    @Test
+    public void testCompositeInsertIndexOutOfBounds() {
+        // given
+        String input = "%insert = OpCompositeInsert %array %value %base 5";
+        builder.mockIntType("%uint", 32);
+        builder.mockVectorType("%array", "%uint", 4);
+        builder.mockConstant("%base", "%array", List.of(1, 2, 3, 4));
+        builder.mockConstant("%value", "%uint", 99);
+
+        try {
+            // when
+            visit(input);
+            fail("Should throw exception");
+        } catch (ParsingException e) {
+            // then
+            assertEquals("Index is out of bounds for variable '%insert[5]'", e.getMessage());
         }
     }
 
