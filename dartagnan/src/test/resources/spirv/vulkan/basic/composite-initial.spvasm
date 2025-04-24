@@ -1,0 +1,107 @@
+; @Input: %output = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
+; @Output: forall (%output[0] == 0 and %output[1] == 0 and %output[2] == 0)
+; @Output: forall (%output[3] == 0 and %output[4] == 0 and %output[5] == 0)
+; @Output: forall (%output[6] == 0 and %output[7] == 0 and %output[8] == 0)
+; @Output: forall (%output[9] == 0 and %output[10] == 0 and %output[11] == 0)
+; @Config: 1, 1, 1
+; SPIR-V
+; Version: 1.0
+; Schema: 0
+                 OpCapability Shader
+                 OpCapability VulkanMemoryModel
+                 OpMemoryModel Logical Vulkan
+                 OpEntryPoint GLCompute %main "main"
+         %void = OpTypeVoid
+         %func = OpTypeFunction %void
+         %uint = OpTypeInt 64 0
+
+       %uint_0 = OpConstant %uint 0
+       %uint_1 = OpConstant %uint 1
+       %uint_2 = OpConstant %uint 2
+       %uint_3 = OpConstant %uint 3
+       %uint_4 = OpConstant %uint 4
+       %uint_5 = OpConstant %uint 5
+       %uint_6 = OpConstant %uint 6
+       %uint_7 = OpConstant %uint 7
+       %uint_8 = OpConstant %uint 8
+       %uint_9 = OpConstant %uint 9
+      %uint_10 = OpConstant %uint 10
+      %uint_11 = OpConstant %uint 11
+
+       %vector = OpTypeVector %uint 3
+      %vector2 = OpTypeVector %vector 2
+        %array = OpTypeArray %uint %uint_3
+       %array2 = OpTypeArray %array %uint_2
+  %output_type = OpTypeRuntimeArray %uint
+
+    %v_vector1 = OpConstantComposite %vector %uint_0 %uint_0 %uint_0
+    %v_vector2 = OpConstantComposite %vector %uint_0 %uint_0 %uint_0
+     %v_vector = OpConstantComposite %vector2 %v_vector1 %v_vector2
+     %v_array1 = OpConstantComposite %array %uint_0 %uint_0 %uint_0
+     %v_array2 = OpConstantComposite %array %uint_0 %uint_0 %uint_0
+      %v_array = OpConstantComposite %array2 %v_array1 %v_array2
+
+   %ptr_output = OpTypePointer Uniform %output_type
+     %ptr_uint = OpTypePointer Uniform %uint
+       %output = OpVariable %ptr_output Uniform
+
+         %main = OpFunction %void None %func
+        %label = OpLabel
+
+            %0 = OpCompositeInsert %vector2 %uint_0 %v_vector 0 0
+            %1 = OpCompositeInsert %vector2 %uint_1 %v_vector 0 1
+            %2 = OpCompositeInsert %vector2 %uint_2 %v_vector 0 2
+            %3 = OpCompositeInsert %vector2 %uint_3 %v_vector 1 0
+            %4 = OpCompositeInsert %vector2 %uint_4 %v_vector 1 1
+            %5 = OpCompositeInsert %vector2 %uint_5 %v_vector 1 2
+            %6 = OpCompositeInsert %array2 %uint_6 %v_array 0 0
+            %7 = OpCompositeInsert %array2 %uint_7 %v_array 0 1
+            %8 = OpCompositeInsert %array2 %uint_8 %v_array 0 2
+            %9 = OpCompositeInsert %array2 %uint_9 %v_array 1 0
+           %10 = OpCompositeInsert %array2 %uint_10 %v_array 1 1
+           %11 = OpCompositeInsert %array2 %uint_11 %v_array 1 2
+
+    %vector_00 = OpAccessChain %ptr_uint %output %uint_0
+    %vector_01 = OpAccessChain %ptr_uint %output %uint_1
+    %vector_02 = OpAccessChain %ptr_uint %output %uint_2
+    %vector_10 = OpAccessChain %ptr_uint %output %uint_3
+    %vector_11 = OpAccessChain %ptr_uint %output %uint_4
+    %vector_12 = OpAccessChain %ptr_uint %output %uint_5
+
+     %array_00 = OpAccessChain %ptr_uint %output %uint_6
+     %array_01 = OpAccessChain %ptr_uint %output %uint_7
+     %array_02 = OpAccessChain %ptr_uint %output %uint_8
+     %array_10 = OpAccessChain %ptr_uint %output %uint_9
+     %array_11 = OpAccessChain %ptr_uint %output %uint_10
+     %array_12 = OpAccessChain %ptr_uint %output %uint_11
+
+          %v00 = OpCompositeExtract %uint %v_vector 0 0
+          %v01 = OpCompositeExtract %uint %v_vector 0 1
+          %v02 = OpCompositeExtract %uint %v_vector 0 2
+          %v10 = OpCompositeExtract %uint %v_vector 1 0
+          %v11 = OpCompositeExtract %uint %v_vector 1 1
+          %v12 = OpCompositeExtract %uint %v_vector 1 2
+
+          %a00 = OpCompositeExtract %uint %v_array 0 0
+          %a01 = OpCompositeExtract %uint %v_array 0 1
+          %a02 = OpCompositeExtract %uint %v_array 0 2
+          %a10 = OpCompositeExtract %uint %v_array 1 0
+          %a11 = OpCompositeExtract %uint %v_array 1 1
+          %a12 = OpCompositeExtract %uint %v_array 1 2
+
+                 OpStore %vector_00 %v00
+                 OpStore %vector_01 %v01
+                 OpStore %vector_02 %v02
+                 OpStore %vector_10 %v10
+                 OpStore %vector_11 %v11
+                 OpStore %vector_12 %v12
+
+                 OpStore %array_00 %a00
+                 OpStore %array_01 %a01
+                 OpStore %array_02 %a02
+                 OpStore %array_10 %a10
+                 OpStore %array_11 %a11
+                 OpStore %array_12 %a12
+
+                 OpReturn
+                 OpFunctionEnd

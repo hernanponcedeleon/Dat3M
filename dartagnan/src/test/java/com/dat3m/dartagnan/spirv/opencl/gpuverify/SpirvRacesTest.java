@@ -102,6 +102,7 @@ public class SpirvRacesTest {
                 {"test_structs/use_array_element.spvasm", 1, PASS},
                 {"test_structs/use_element.spvasm", 1, PASS},
                 {"test_structs/use_struct_element.spvasm", 1, PASS},
+                {"vectortests/addressofvector.spvasm", 1, PASS},
 
                 // Fails in gpu-verify, but should pass (even according to the annotation in the test)
                 {"saturate/sadd.spvasm", 1, PASS},
@@ -336,7 +337,6 @@ public class SpirvRacesTest {
                 // {"test_structs/store_element.spvasm", 1, PASS},
                 // {"test_structs/store_struct_element.spvasm", 1, PASS},
                 // {"unusedreturn.spvasm", 1, PASS},
-                // {"vectortests/addressofvector.spvasm", 1, PASS},
                 // {"vectortests/double2simpleaccess.spvasm", 1, PASS},
                 // {"vectortests/double4simpleaccess.spvasm", 1, PASS},
                 // {"vectortests/float2simpleaccess.spvasm", 1, PASS},
