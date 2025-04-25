@@ -389,9 +389,11 @@ public class ExpressionEncoder {
         public TypedFormula<IntegerType, ?> visitIntSizeCastExpression(IntSizeCast expr) {
             final TypedFormula<IntegerType, ?> inner = encodeIntegerExpr(expr.getOperand());
 
-            if (context.useIntegers || expr.isNoop()) {
-                //TODO If narrowing, constrain the value.
+            if (expr.isNoop()) {
                 return inner;
+            } else if (context.useIntegers) {
+                //TODO If narrowing, constrain the value.
+                return new TypedFormula<>(expr.getType(), inner.formula());
             } else {
                 assert inner.formula() instanceof BitvectorFormula;
 
@@ -401,13 +403,9 @@ public class ExpressionEncoder {
                 final int sourceBitWidth = expr.getSourceType().getBitWidth();
                 assert (sourceBitWidth == bvmgr.getLength(innerBv));
 
-                final BitvectorFormula result;
-                if (expr.isExtension()) {
-                    result = bvmgr.extend(innerBv, targetBitWidth - sourceBitWidth, expr.preservesSign());
-                } else {
-                    result = bvmgr.extract(innerBv, targetBitWidth - 1, 0);
-                }
-
+                final BitvectorFormula result = expr.isExtension()
+                        ? bvmgr.extend(innerBv, targetBitWidth - sourceBitWidth, expr.preservesSign())
+                        : bvmgr.extract(innerBv, targetBitWidth - 1, 0);
                 return new TypedFormula<IntegerType, Formula>(expr.getType(), result);
             }
         }
