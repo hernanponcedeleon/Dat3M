@@ -219,7 +219,7 @@ public class VisitorOpsCompositeTest {
         String input = "%insert = OpCompositeInsert %array %value %base 2";
         builder.mockIntType("%uint", 32);
         builder.mockVectorType("%array", "%uint", -1);
-        builder.mockVectorType("%array_static", "%uint", 4);
+        builder.mockVectorType("%array2", "%uint", 4);
         builder.mockConstant("%base", "%array", List.of(1, 2, 3, 4));
         builder.mockConstant("%value", "%uint", 99);
 
@@ -229,7 +229,7 @@ public class VisitorOpsCompositeTest {
         // then
         InsertExpr insert = (InsertExpr) builder.getExpression("%insert");
         assertEquals(List.of(2), insert.getIndices());
-        assertEquals(builder.getType("%array_static"), insert.getType());
+        assertEquals(builder.getType("%array2"), insert.getType());
         assertEquals(builder.getExpression("%value"), insert.getInsertedValue());
         assertEquals(builder.getExpression("%base"), insert.getAggregate());
     }
@@ -264,7 +264,7 @@ public class VisitorOpsCompositeTest {
         builder.mockIntType("%uint", 32);
         builder.mockVectorType("%array", "%uint", -1);
         builder.mockVectorType("%array2", "%array", -1);
-        builder.mockVectorType("%array2_static", "%array", 2);
+        builder.mockVectorType("%array3", "%array", 2);
         builder.mockConstant("%member_0", "%array", List.of(1, 2, 3, 4));
         builder.mockConstant("%member_1", "%array", List.of(5, 6, 7, 8));
         builder.mockConstant("%base", "%array2", List.of("%member_0", "%member_1"));
@@ -276,7 +276,7 @@ public class VisitorOpsCompositeTest {
         // then
         InsertExpr insert = (InsertExpr) builder.getExpression("%insert");
         assertEquals(List.of(1, 2), insert.getIndices());
-        assertEquals(builder.getType("%array2_static"), insert.getType());
+        assertEquals(builder.getType("%array3"), insert.getType());
         assertEquals(builder.getExpression("%value"), insert.getInsertedValue());
         assertEquals(builder.getExpression("%base"), insert.getAggregate());
     }
