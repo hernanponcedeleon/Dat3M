@@ -79,12 +79,11 @@ public class HelperTypes {
         if (type instanceof BooleanType || type instanceof IntegerType || type instanceof FloatType) {
             return expressions.makeBinary(op1, op, op2);
         }
-        if (type instanceof ArrayType aType) {
+        if (type instanceof ArrayType aType && aType.getElementType() instanceof IntegerType) {
             List<Expression> elements = new ArrayList<>();
-            boolean directOpAccess = op1 instanceof ConstructExpr cop1 && op2 instanceof ConstructExpr cop2;
             for (int i = 0; i < aType.getNumElements(); i++) {
-                Expression elementOp1 = directOpAccess ? op1.getOperands().get(i) : expressions.makeExtract(op1, i);
-                Expression elementOp2 = directOpAccess ? op2.getOperands().get(i) : expressions.makeExtract(op2, i);
+                Expression elementOp1 = op1 instanceof ConstructExpr ? op1.getOperands().get(i) : expressions.makeExtract(op1, i);
+                Expression elementOp2 = op2 instanceof ConstructExpr ? op2.getOperands().get(i) : expressions.makeExtract(op2, i);
                 elements.add(expressions.makeBinary(elementOp1, op, elementOp2));
             }
             return expressions.makeArray(aType.getElementType(), elements, true);
