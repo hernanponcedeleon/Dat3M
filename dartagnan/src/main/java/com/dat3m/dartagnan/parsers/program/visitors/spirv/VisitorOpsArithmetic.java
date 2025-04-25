@@ -19,8 +19,6 @@ import com.dat3m.dartagnan.parsers.program.visitors.spirv.helpers.HelperTypes;
 
 import java.util.Set;
 import java.util.function.Function;
-import java.util.ArrayList;
-import java.util.List;
 
 import static com.dat3m.dartagnan.expression.integers.IntBinaryOp.*;
 import static com.dat3m.dartagnan.expression.integers.IntUnaryOp.MINUS;

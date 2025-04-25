@@ -4,12 +4,8 @@ import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.Type;
-import com.dat3m.dartagnan.expression.aggregates.ConstructExpr;
 import com.dat3m.dartagnan.expression.integers.IntBinaryOp;
 import com.dat3m.dartagnan.expression.type.ArrayType;
-import com.dat3m.dartagnan.expression.type.BooleanType;
-import com.dat3m.dartagnan.expression.type.FloatType;
-import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.parsers.SpirvBaseVisitor;
 import com.dat3m.dartagnan.parsers.SpirvParser;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.builders.ProgramBuilder;
@@ -19,13 +15,9 @@ import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.core.Local;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.helpers.HelperTypes;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Set;
 
 public class VisitorOpsBits extends SpirvBaseVisitor<Event> {
-
-    private static final ExpressionFactory expressions = ExpressionFactory.getInstance();
 
     private final ProgramBuilder builder;
 
