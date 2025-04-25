@@ -2,16 +2,14 @@ package com.dat3m.dartagnan.program.event.core;
 
 import com.dat3m.dartagnan.encoding.EncodingContext;
 import com.dat3m.dartagnan.encoding.EncodingHelper;
-import com.dat3m.dartagnan.expression.Type;
+import com.dat3m.dartagnan.encoding.ExpressionEncoder;
+import com.dat3m.dartagnan.encoding.formulas.TypedFormula;
 import com.dat3m.dartagnan.expression.type.BooleanType;
-import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.*;
 import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.BooleanFormulaManager;
-import org.sosy_lab.java_smt.api.Formula;
 
-import java.math.BigInteger;
 import java.util.Map;
 import java.util.Set;
 
@@ -64,24 +62,17 @@ public class ExecutionStatus extends AbstractEvent implements RegWriter, EventUs
     @Override
     public BooleanFormula encodeExec(EncodingContext context) {
         final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
+        final ExpressionEncoder exprEncoder = context.getExpressionEncoder();
         final EncodingHelper encHelper = new EncodingHelper(context);
-        final Type type = register.getType();
-        final BooleanFormula eventExecuted = context.execution(event);
-        final Formula result = context.result(this);
 
-        if (type instanceof IntegerType integerType) {
-            final Formula one = context.makeLiteral(integerType, BigInteger.ONE);
-            return bmgr.and(super.encodeExec(context),
-                    bmgr.ifThenElse(eventExecuted, encHelper.equalZero(result), encHelper.equal(result, one))
-            );
-        } else if (type instanceof BooleanType) {
-            //TODO: We have "result == not exec(event)", because we use 0/false for executed events.
-            // The reason is that ExecutionStatus follows the behavior of Store-Conditionals on hardware.
-            // However, this is very counterintuitive and I think we should return 1/true on success and instead
-            // change the compilation of Store-Conditional to invert the value.
-            return bmgr.and(super.encodeExec(context), encHelper.equal(result, bmgr.not(eventExecuted)));
-        }
-        throw new UnsupportedOperationException(String.format("Encoding ExecutionStatus on type %s.", type));
+        //TODO: We have "result == not exec(event)", because we use 0/false for executed events.
+        // The reason is that ExecutionStatus follows the behavior of Store-Conditionals on hardware.
+        // However, this is very counterintuitive and I think we should return 1/true on success and instead
+        // change the compilation of Store-Conditional to invert the value.
+        final TypedFormula<BooleanType, BooleanFormula> notExec = exprEncoder.wrap(bmgr.not(context.execution(event)));
+        return bmgr.and(super.encodeExec(context),
+                encHelper.equal(context.result(this), exprEncoder.convert(notExec, register.getType()).formula())
+        );
     }
 
     @Override

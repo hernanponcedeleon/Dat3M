@@ -3,7 +3,6 @@ package com.dat3m.dartagnan.encoding;
 import com.dat3m.dartagnan.encoding.formulas.TupleFormulaManager;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.Type;
-import com.dat3m.dartagnan.expression.type.*;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.analysis.BranchEquivalence;
 import com.dat3m.dartagnan.program.analysis.ExecutionAnalysis;
@@ -31,10 +30,7 @@ import org.sosy_lab.java_smt.api.Formula;
 import org.sosy_lab.java_smt.api.FormulaManager;
 import org.sosy_lab.java_smt.api.NumeralFormula.IntegerFormula;
 
-import java.math.BigInteger;
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 import static com.dat3m.dartagnan.configuration.OptionNames.*;
@@ -57,7 +53,7 @@ public final class EncodingContext {
     private final BooleanFormulaManager booleanFormulaManager;
     private final TupleFormulaManager tupleFormulaManager;
     private final EncodingHelper encHelper;
-    private final ExpressionEncoderNew exprEncoder;
+    private final ExpressionEncoder exprEncoder;
 
     @Option(
             name=IDL_TO_SAT,
@@ -95,7 +91,7 @@ public final class EncodingContext {
         booleanFormulaManager = m.getBooleanFormulaManager();
         tupleFormulaManager = new TupleFormulaManager(this);
         encHelper = new EncodingHelper(this);
-        exprEncoder = new ExpressionEncoderNew(this);
+        exprEncoder = new ExpressionEncoder(this);
     }
 
     public static EncodingContext of(VerificationTask task, Context analysisContext, FormulaManager formulaManager) throws InvalidConfigurationException {
@@ -138,6 +134,11 @@ public final class EncodingContext {
         return tupleFormulaManager;
     }
 
+    public ExpressionEncoder getExpressionEncoder() { return exprEncoder; }
+
+    // ====================================================================================
+    // TODO: These should go
+
     public Formula encodeFinalExpression(Expression expression) {
         return exprEncoder.encode(expression, null).formula();
     }
@@ -153,6 +154,9 @@ public final class EncodingContext {
     public Formula encodeExpressionAt(Expression expression, Event event) {
         return exprEncoder.encode(expression, event).formula();
     }
+
+    // ====================================================================================
+    // Control flow
 
     public BooleanFormula controlFlow(Event event) {
         return controlFlowVariables.get(event);
@@ -205,6 +209,9 @@ public final class EncodingContext {
         return booleanFormulaManager.and(execution(x), execution(y));
     }
 
+    // ====================================================================================
+    // Data flow
+
     public BooleanFormula dependency(Event first, Event second) {
         return booleanFormulaManager.makeVariable("idd " + first.getGlobalId() + " " + second.getGlobalId());
     }
@@ -216,14 +223,6 @@ public final class EncodingContext {
             return formulaManager.getIntegerFormulaManager().makeVariable(name);
         }
         return formulaManager.getBitvectorFormulaManager().makeVariable(size, name);
-    }
-
-    public BooleanFormula equal(Formula left, Formula right, EncodingHelper.ConversionMode cMode) {
-        return encHelper.equal(left, right, cMode);
-    }
-
-    public BooleanFormula equal(Formula left, Formula right) {
-        return equal(left, right, EncodingHelper.ConversionMode.NO);
     }
 
     public BooleanFormula sameAddress(MemoryCoreEvent first, MemoryCoreEvent second) {
@@ -254,6 +253,17 @@ public final class EncodingContext {
         return results.get(event);
     }
 
+    // ====================================================================================
+    // Relations
+
+    public IntegerFormula memoryOrderClock(Event write) {
+        checkArgument(write.hasTag(WRITE), "Cannot get a clock-var for non-writes.");
+        if (write.hasTag(INIT)) {
+            return formulaManager.getIntegerFormulaManager().makeNumber(0);
+        }
+        return formulaManager.getIntegerFormulaManager().makeVariable("co " + write.getGlobalId());
+    }
+
     public IntegerFormula clockVariable(String name, Event event) {
         return formulaManager.getIntegerFormulaManager().makeVariable(formulaManager.escape(name) + " " + event.getGlobalId());
     }
@@ -262,14 +272,6 @@ public final class EncodingContext {
     //  or verifying litmus code.
     public BooleanFormula lastCoVar(Event write) {
         return booleanFormulaManager.makeVariable("co_last(" + write.getGlobalId() + ")");
-    }
-
-    public IntegerFormula memoryOrderClock(Event write) {
-        checkArgument(write.hasTag(WRITE), "Cannot get a clock-var for non-writes.");
-        if (write.hasTag(INIT)) {
-            return formulaManager.getIntegerFormulaManager().makeNumber(0);
-        }
-        return formulaManager.getIntegerFormulaManager().makeVariable("co " + write.getGlobalId());
     }
 
     public BooleanFormula edgeVariable(String name, Event first, Event second) {
@@ -301,19 +303,19 @@ public final class EncodingContext {
         return edge(relation).encode(first, second);
     }
 
-    public Formula makeLiteral(Type type, BigInteger value) {
-        if (type instanceof BooleanType) {
-            return booleanFormulaManager.makeBoolean(!value.equals(BigInteger.ZERO));
-        }
-        if (type instanceof IntegerType integerType) {
-            if (useIntegers) {
-                return formulaManager.getIntegerFormulaManager().makeNumber(value);
-            } else {
-                return formulaManager.getBitvectorFormulaManager().makeBitvector(integerType.getBitWidth(), value);
-            }
-        }
-        throw new UnsupportedOperationException(String.format("Encoding variable of type %s.", type));
+    // ====================================================================================
+    // TODO: These should go
+
+    public BooleanFormula equal(Formula left, Formula right, EncodingHelper.ConversionMode cMode) {
+        return encHelper.equal(left, right, cMode);
     }
+
+    public BooleanFormula equal(Formula left, Formula right) {
+        return equal(left, right, EncodingHelper.ConversionMode.NO);
+    }
+
+    // ====================================================================================
+    // Private implementation
 
     private void initialize() {
         // ------- Control flow variables -------
@@ -336,8 +338,8 @@ public final class EncodingContext {
 
         // ------- Memory object variables -------
         for (MemoryObject memoryObject : verificationTask.getProgram().getMemory().getObjects()) {
-            objAddress.put(memoryObject, makeVariable(String.format("addrof(%s)", memoryObject), memoryObject.getType()));
-            objSize.put(memoryObject, makeVariable(String.format("sizeof(%s)", memoryObject), memoryObject.getType()));
+            objAddress.put(memoryObject, exprEncoder.makeVariable(String.format("addrof(%s)", memoryObject), memoryObject.getType()).formula());
+            objSize.put(memoryObject, exprEncoder.makeVariable(String.format("sizeof(%s)", memoryObject), memoryObject.getType()).formula());
         }
 
         // ------- Event variables  -------
@@ -353,7 +355,7 @@ public final class EncodingContext {
                 Register register = rw.getResultRegister();
                 String name = register.getName() + "(" + e.getGlobalId() + "_result)";
                 Type type = register.getType();
-                r = makeVariable(name, type);
+                r = exprEncoder.makeVariable(name, type).formula();
             } else {
                 r = null;
             }
@@ -369,29 +371,5 @@ public final class EncodingContext {
                 results.put(e, r);
             }
         }
-    }
-
-    Formula makeVariable(String name, Type type) {
-        if (type instanceof BooleanType) {
-            return booleanFormulaManager.makeVariable(name);
-        }
-        if (type instanceof IntegerType integerType) {
-            if (useIntegers) {
-                return formulaManager.getIntegerFormulaManager().makeVariable(name);
-            } else {
-                return formulaManager.getBitvectorFormulaManager().makeVariable(integerType.getBitWidth(), name);
-            }
-        }
-        if (type instanceof AggregateType || type instanceof ArrayType) {
-            final Map<Integer, Type> primitives = TypeFactory.getInstance().decomposeIntoPrimitives(type);
-            if (primitives != null) {
-                final List<Formula> elements = new ArrayList<>();
-                for (Map.Entry<Integer, Type> entry : primitives.entrySet()) {
-                    elements.add(makeVariable(name + "@" + entry.getKey(), entry.getValue()));
-                }
-                return tupleFormulaManager.makeTuple(elements);
-            }
-        }
-        throw new UnsupportedOperationException(String.format("Cannot encode variable of type %s.", type));
     }
 }
