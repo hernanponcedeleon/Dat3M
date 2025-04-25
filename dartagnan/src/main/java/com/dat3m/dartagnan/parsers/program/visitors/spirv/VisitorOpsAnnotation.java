@@ -30,11 +30,15 @@ public class VisitorOpsAnnotation extends SpirvBaseVisitor<Void> {
                 String value = ctx.decoration().builtIn().getText();
                 builtIn.addDecoration(id, value);
             }
-            case BINDING, SPEC_ID -> {
-                // Skip, defines the order of pointers passed by the host
+            case BINDING, DESCRIPTOR_SET, SPEC_ID, NON_WRITABLE -> {
+                // Skip
+                // BINDING - The order of arguments to the entry point
+                // DESCRIPTOR_SET - Linkage to arguments of the entry point
+                // SPEC_ID - The order of spec constants
+                // NON_WRITABLE - Read-only pointer
             }
-            case ARRAY_STRIDE, BLOCK, BUFFER_BLOCK, COHERENT, DESCRIPTOR_SET, NO_CONTRACTION, NO_PERSPECTIVE, NON_WRITABLE,
-                 ALIGNMENT, CONSTANT, FUNC_PARAM_ATTR, LINKAGE_ATTRIBUTES -> {
+            case ALIGNMENT, ARRAY_STRIDE, BLOCK, BUFFER_BLOCK, COHERENT, CONSTANT, FUNC_PARAM_ATTR, LINKAGE_ATTRIBUTES,
+                    NO_CONTRACTION, NO_PERSPECTIVE -> {
                 // TODO: Implementation
             }
             default -> throw new ParsingException("Unsupported decoration '%s'", type);
@@ -51,6 +55,10 @@ public class VisitorOpsAnnotation extends SpirvBaseVisitor<Void> {
             case OFFSET -> {
                 String value = ctx.decoration().byteOffsetLiteralInteger().getText();
                 offset.addDecoration(id, index, value);
+            }
+            case NON_WRITABLE -> {
+                // Skip
+                // NON_WRITABLE - Read-only element
             }
             default -> throw new ParsingException("Unsupported member decoration '%s'", type);
         }
