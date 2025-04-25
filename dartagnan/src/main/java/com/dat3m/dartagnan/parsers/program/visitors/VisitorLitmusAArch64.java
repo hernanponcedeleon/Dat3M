@@ -176,7 +176,7 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object> {
         final LoadInstructionContext inst = ctx.loadInstruction();
         final Register register = shrinkRegister(r64, ctx.rD32, inst.halfWordSize, inst.byteSize);
         final Expression address = parseAddress(ctx.address());
-        final String mo = inst.acquire ? MO_ACQ : MO_RX;
+        final String mo = inst.acquire ? MO_ACQ : "";
         add(EventFactory.newLoadWithMo(register, address, mo));
         addRegister64Update(r64, register);
         return null;
@@ -204,7 +204,7 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object> {
         final LoadExclusiveInstructionContext inst = ctx.loadExclusiveInstruction();
         final Register register = shrinkRegister(r64, ctx.rD32, inst.halfWordSize, inst.byteSize);
         final Expression address = parseAddress(ctx.address());
-        final String mo = inst.acquire ? MO_ACQ : MO_RX;
+        final String mo = inst.acquire ? MO_ACQ : "";
         add(EventFactory.newRMWLoadExclusiveWithMo(register, address, mo));
         addRegister64Update(r64, register);
         return null;
@@ -217,7 +217,7 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object> {
         final IntegerType type = inst.byteSize ? i8 : inst.halfWordSize ? i16 : i32;
         final Expression value = ctx.rV64 != null ? r64 : expressions.makeIntegerCast(r64, type, false);
         final Expression address = parseAddress(ctx.address());
-        final String mo = ctx.storeInstruction().release ? MO_REL : MO_RX;
+        final String mo = ctx.storeInstruction().release ? MO_REL : "";
         return add(EventFactory.newStoreWithMo(address, value, mo));
     }
 
@@ -242,7 +242,7 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object> {
         final Expression value = ctx.rV64 != null ? r64 : expressions.makeIntegerCast(r64, type, false);
         final Register status = parseRegister64(ctx.rS32);
         final Expression address = parseAddress(ctx.address());
-        final String mo = ctx.storeExclusiveInstruction().release ? MO_REL : MO_RX;
+        final String mo = ctx.storeExclusiveInstruction().release ? MO_REL : "";
         return add(EventFactory.Common.newExclusiveStore(status, address, value, mo));
     }
 
