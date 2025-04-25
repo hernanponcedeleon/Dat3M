@@ -39,6 +39,32 @@ public class VisitorOpsComposite extends SpirvBaseVisitor<Void> {
         throw new ParsingException(String.format("Type mismatch in composite extraction for: %s", id));
     }
 
+    @Override
+    public Void visitOpCompositeConstruct(SpirvParser.OpCompositeConstructContext ctx) {
+        String id = ctx.idResult().getText();
+        Type type = builder.getType(ctx.idResultType().getText());
+        if (type instanceof AggregateType aggregateType) {
+            final List<Expression> elements = new ArrayList<>(aggregateType.getFields().size());
+            for (SpirvParser.ConstituentsContext vCtx : ctx.constituents()) {
+                String idCtx = vCtx.idRef().getText();
+                elements.add(builder.getExpression(idCtx));
+            }
+            builder.addExpression(id, expressions.makeConstruct(aggregateType, elements));
+        }
+        if (type instanceof ArrayType arrayType) {
+            if (arrayType.getElementType() instanceof ArrayType) {
+                throw new ParsingException("Unsupported OpCompositeConstruct for vector of vectors");
+            }
+            final List<Expression> elements = new ArrayList<>(arrayType.getNumElements());
+            for (SpirvParser.ConstituentsContext vCtx : ctx.constituents()) {
+                String idCtx = vCtx.idRef().getText();
+                elements.add(builder.getExpression(idCtx));
+            }
+            builder.addExpression(id, expressions.makeArray(arrayType.getElementType(), elements, true));
+        }
+        return null;
+    }
+
     private Expression getElement(Expression base, List<Integer> indexes, String id) {
         try {
             return expressions.makeExtract(base, indexes);
@@ -118,7 +144,8 @@ public class VisitorOpsComposite extends SpirvBaseVisitor<Void> {
         return Set.of(
                 "OpCompositeExtract",
                 "OpCompositeInsert",
-                "OpVectorShuffle"
+                "OpVectorShuffle",
+                "OpCompositeConstruct"
         );
     }
 }
