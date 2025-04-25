@@ -57,6 +57,7 @@ public final class EncodingContext {
     private final BooleanFormulaManager booleanFormulaManager;
     private final TupleFormulaManager tupleFormulaManager;
     private final EncodingHelper encHelper;
+    private final ExpressionEncoderNew exprEncoder;
 
     @Option(
             name=IDL_TO_SAT,
@@ -94,6 +95,7 @@ public final class EncodingContext {
         booleanFormulaManager = m.getBooleanFormulaManager();
         tupleFormulaManager = new TupleFormulaManager(this);
         encHelper = new EncodingHelper(this);
+        exprEncoder = new ExpressionEncoderNew(this);
     }
 
     public static EncodingContext of(VerificationTask task, Context analysisContext, FormulaManager formulaManager) throws InvalidConfigurationException {
@@ -137,19 +139,19 @@ public final class EncodingContext {
     }
 
     public Formula encodeFinalExpression(Expression expression) {
-        return new ExpressionEncoder(this, null).encode(expression);
+        return exprEncoder.encode(expression, null).formula();
     }
 
     public BooleanFormula encodeFinalExpressionAsBoolean(Expression expression) {
-        return new ExpressionEncoder(this, null).encodeAsBoolean(expression);
+        return exprEncoder.convertToBool(exprEncoder.encode(expression, null)).formula();
     }
 
     public BooleanFormula encodeExpressionAsBooleanAt(Expression expression, Event event) {
-        return new ExpressionEncoder(this, event).encodeAsBoolean(expression);
+        return exprEncoder.convertToBool(exprEncoder.encode(expression, event)).formula();
     }
 
     public Formula encodeExpressionAt(Expression expression, Event event) {
-        return new ExpressionEncoder(this, event).encode(expression);
+        return exprEncoder.encode(expression, event).formula();
     }
 
     public BooleanFormula controlFlow(Event event) {
