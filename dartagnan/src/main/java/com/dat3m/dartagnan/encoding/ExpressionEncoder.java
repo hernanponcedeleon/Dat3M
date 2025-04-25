@@ -77,7 +77,7 @@ class ExpressionEncoder implements ExpressionVisitor<Formula> {
     public Formula visitIntCmpExpression(IntCmpExpr cmp) {
         Formula lhs = encode(cmp.getLeft());
         Formula rhs = encode(cmp.getRight());
-        return context.encodeComparison(cmp.getKind(), lhs, rhs);
+        return new EncodingHelper(context).encodeComparison(cmp.getKind(), lhs, rhs);
     }
 
     @Override

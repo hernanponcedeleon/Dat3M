@@ -1,6 +1,7 @@
 package com.dat3m.dartagnan.program.event.core;
 
 import com.dat3m.dartagnan.encoding.EncodingContext;
+import com.dat3m.dartagnan.encoding.EncodingHelper;
 import com.dat3m.dartagnan.expression.Type;
 import com.dat3m.dartagnan.expression.type.BooleanType;
 import com.dat3m.dartagnan.expression.type.IntegerType;
@@ -63,6 +64,7 @@ public class ExecutionStatus extends AbstractEvent implements RegWriter, EventUs
     @Override
     public BooleanFormula encodeExec(EncodingContext context) {
         final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
+        final EncodingHelper encHelper = new EncodingHelper(context);
         final Type type = register.getType();
         final BooleanFormula eventExecuted = context.execution(event);
         final Formula result = context.result(this);
@@ -70,14 +72,14 @@ public class ExecutionStatus extends AbstractEvent implements RegWriter, EventUs
         if (type instanceof IntegerType integerType) {
             final Formula one = context.makeLiteral(integerType, BigInteger.ONE);
             return bmgr.and(super.encodeExec(context),
-                    bmgr.ifThenElse(eventExecuted, context.equalZero(result), context.equal(result, one))
+                    bmgr.ifThenElse(eventExecuted, encHelper.equalZero(result), encHelper.equal(result, one))
             );
         } else if (type instanceof BooleanType) {
             //TODO: We have "result == not exec(event)", because we use 0/false for executed events.
             // The reason is that ExecutionStatus follows the behavior of Store-Conditionals on hardware.
             // However, this is very counterintuitive and I think we should return 1/true on success and instead
             // change the compilation of Store-Conditional to invert the value.
-            return bmgr.and(super.encodeExec(context), context.equal(result, bmgr.not(eventExecuted)));
+            return bmgr.and(super.encodeExec(context), encHelper.equal(result, bmgr.not(eventExecuted)));
         }
         throw new UnsupportedOperationException(String.format("Encoding ExecutionStatus on type %s.", type));
     }

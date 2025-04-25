@@ -33,10 +33,10 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import static com.dat3m.dartagnan.configuration.Property.*;
+import static com.dat3m.dartagnan.encoding.EncodingHelper.ConversionMode.LEFT_TO_RIGHT;
 import static com.dat3m.dartagnan.program.Program.SourceLanguage.LLVM;
 import static com.dat3m.dartagnan.program.Program.SpecificationType.ASSERT;
 import static com.dat3m.dartagnan.wmm.RelationNameRepository.CO;
-import static com.dat3m.dartagnan.encoding.EncodingContext.ConversionMode.LEFT_TO_RIGHT;
 
 public class PropertyEncoder implements Encoder {
 

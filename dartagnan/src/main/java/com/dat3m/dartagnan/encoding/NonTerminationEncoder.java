@@ -19,10 +19,11 @@ import com.dat3m.dartagnan.wmm.utils.graph.EventGraph;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
-import org.sosy_lab.java_smt.api.BooleanFormula;
-import org.sosy_lab.java_smt.api.BooleanFormulaManager;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.sosy_lab.java_smt.api.BooleanFormula;
+import org.sosy_lab.java_smt.api.BooleanFormulaManager;
+
 import java.util.*;
 
 import static com.dat3m.dartagnan.wmm.RelationNameRepository.CO;
@@ -369,10 +370,7 @@ public class NonTerminationEncoder {
         BooleanFormula equality = bmgr.equivalence(context.execution(x), context.execution(y));
         if (x instanceof RegWriter e && y instanceof RegWriter f) {
             // TODO: This should be covered by StateSnapshot, i.e., we do not need to consider dead variables.
-            equality = bmgr.and(
-                    equality,
-                    context.equal(context.result(e), context.result(f))
-            );
+            equality = bmgr.and(equality, context.sameResult(e, f));
         }
         if (x instanceof StateSnapshot e && y instanceof StateSnapshot f) {
             if (e.getExpressions().size() != f.getExpressions().size()) {
@@ -389,9 +387,9 @@ public class NonTerminationEncoder {
             }
         }
         if (x instanceof MemoryCoreEvent e && y instanceof MemoryCoreEvent f) {
-            equality = bmgr.and(equality, context.equal(context.address(e), context.address(f)));
+            equality = bmgr.and(equality, context.sameAddress(e, f));
             if (x instanceof Store || x instanceof Load) {
-                equality = bmgr.and(equality, context.equal(context.value(e), context.value(f)));
+                equality = bmgr.and(equality, context.sameValue(e, f));
             }
 
         }
