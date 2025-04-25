@@ -44,13 +44,42 @@ public class VisitorOpsMemory extends SpirvBaseVisitor<Event> {
     public Event visitOpStore(SpirvParser.OpStoreContext ctx) {
         Expression pointer = builder.getExpression(ctx.pointer().getText());
         Expression value = builder.getExpression(ctx.object().getText());
-        Event event = EventFactory.newStore(pointer, value);
+        List<Event> events = new ArrayList<>();
+        if (value.getType() instanceof ArrayType arrayType) {
+            Type elType = arrayType.getElementType();
+            if(!(elType instanceof BooleanType || elType instanceof IntegerType || elType instanceof FloatType)) {
+                throw new ParsingException("OpStore can only write vector values of scalar type, but'%s' was found", arrayType);
+            }
+            for (int i = 0; i < arrayType.getNumElements(); i++) {
+                List<Expression> index = List.of(expressions.makeValue(i, types.getArchType()));
+                Expression address = expressions.makeGetElementPointer(arrayType.getElementType(), pointer, index);
+                Expression element = expressions.makeExtract(value, i);
+                Event store = EventFactory.newStore(address, element);
+                events.add(store);
+            }
+        } else if (value.getType() instanceof AggregateType aggregateType) {
+            if(aggregateType.getFields().stream().map(TypeOffset::type).anyMatch(t -> !(t instanceof BooleanType || t instanceof IntegerType || t instanceof FloatType))) {
+                throw new ParsingException("OpStore can only write aggregate values of scalar type, but'%s' was found", aggregateType);
+            }
+            for (int i = 0; i < aggregateType.getFields().size(); i++) {
+                List<Expression> index = List.of(expressions.makeValue(i, types.getArchType()));
+                Expression address = expressions.makeGetElementPointer(aggregateType.getFields().get(i).type(), pointer, index);
+                Expression element = expressions.makeExtract(value, i);
+                Event store = EventFactory.newStore(address, element);
+                events.add(store);
+            }
+        } else {
+            events.add(EventFactory.newStore(pointer, value));
+        }
         Set<String> tags = parseMemoryAccessTags(ctx.memoryAccess());
         if (!tags.contains(Tag.Spirv.MEM_VISIBLE)) {
             String storageClass = builder.getPointerStorageClass(ctx.pointer().getText());
-            event.addTags(tags);
-            event.addTags(storageClass);
-            return builder.addEvent(event);
+            events.forEach(e -> {
+                e.addTags(tags);
+                e.addTags(storageClass);
+                builder.addEvent(e);
+            });
+            return null;
         }
         throw new ParsingException("OpStore cannot contain tag '%s'", Tag.Spirv.MEM_VISIBLE);
     }
@@ -64,6 +93,9 @@ public class VisitorOpsMemory extends SpirvBaseVisitor<Event> {
         List<Event> events = new ArrayList<>();
         if (builder.getType(resultType) instanceof ArrayType arrayType) {
             Type elType = arrayType.getElementType();
+            if(!(elType instanceof BooleanType || elType instanceof IntegerType || elType instanceof FloatType)) {
+                throw new ParsingException("OpLoad can only read vector values of scalar type, but'%s' was found", arrayType);
+            }
             List<Expression> registers = new ArrayList<>();
             for (int i = 0; i < arrayType.getNumElements(); i++) {
                 String elementId = resultId + "_" + i;
@@ -76,6 +108,23 @@ public class VisitorOpsMemory extends SpirvBaseVisitor<Event> {
             }
             Expression arrayRegister = expressions.makeArray(arrayType.getElementType(), registers, true);
             builder.addExpression(resultId, arrayRegister);
+        } else if (builder.getType(resultType) instanceof AggregateType aggregateType) {
+            if(aggregateType.getFields().stream().map(TypeOffset::type).anyMatch(t -> !(t instanceof BooleanType || t instanceof IntegerType || t instanceof FloatType))) {
+                throw new ParsingException("OpLoad can only read vector values of scalar type, but'%s' was found", aggregateType);
+            }
+            List<Expression> registers = new ArrayList<>();
+            for (int i = 0; i < aggregateType.getFields().size(); i++) {
+                String elementId = resultId + "_" + i;
+                Type elType = aggregateType.getFields().get(i).type();
+                Register register = builder.addRegister(elementId, elType);
+                registers.add(register);
+                List<Expression> index = List.of(expressions.makeValue(i, types.getArchType()));
+                Expression elementPointer = expressions.makeGetElementPointer(elType, pointer, index);
+                Event load = EventFactory.newLoad(register, elementPointer);
+                events.add(load);
+            }
+            Expression construct = expressions.makeConstruct(aggregateType, registers);
+            builder.addExpression(resultId, construct);
         } else {
             Register register = builder.addRegister(resultId, resultType);
             events.add(EventFactory.newLoad(register, pointer));
