@@ -14,6 +14,10 @@ import java.util.stream.IntStream;
 
 /*
     This class provides general-purpose functionality for SMT formulas.
+
+    TODO: This class should probably be extended to wrap a SolverContext
+          and basically enrich it with new custom theories (see TupleFormulaManager)
+          and convenience functions.
  */
 public class EncodingHelper {
 
