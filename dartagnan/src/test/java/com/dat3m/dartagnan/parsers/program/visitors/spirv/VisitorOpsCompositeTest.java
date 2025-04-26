@@ -557,6 +557,23 @@ public class VisitorOpsCompositeTest {
         assertEquals(builder.getExpression("%bv32(6)"), shuffle.getOperands().get(3));
     }
 
+    public void testCompositeConstructMismatchingTypeStruct() {
+        // given
+        String input = "%result = OpCompositeConstruct %composite %member1 %member2";
+        builder.mockBoolType("%bool");
+        builder.mockIntType("%uint", 32);
+        builder.mockAggregateType("%composite", "%bool", "%uint");
+        builder.mockConstant("%member1", "%uint", 1);
+        builder.mockConstant("%member2", "%uint", 2);
+
+        try {
+            visit(input);
+            fail("Should throw exception");
+        } catch (Exception e) {
+            assertEquals("Arguments do not match the constructor signature. Offending id: '%result'", e.getMessage());
+        }
+    }
+
     private void visit(String input) {
         new MockSpirvParser(input).spv().accept(new VisitorOpsComposite(builder));
     }

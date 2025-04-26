@@ -49,7 +49,11 @@ public class VisitorOpsComposite extends SpirvBaseVisitor<Void> {
                 String idCtx = vCtx.idRef().getText();
                 elements.add(builder.getExpression(idCtx));
             }
-            builder.addExpression(id, expressions.makeConstruct(aggregateType, elements));
+            try {
+                builder.addExpression(id, expressions.makeConstruct(aggregateType, elements));
+            } catch (Exception e) {
+                throw new ParsingException(String.format("%s Offending id: '%s'", e.getMessage(), id));
+            }
         }
         if (type instanceof ArrayType arrayType) {
             if (arrayType.getElementType() instanceof ArrayType) {
@@ -60,7 +64,11 @@ public class VisitorOpsComposite extends SpirvBaseVisitor<Void> {
                 String idCtx = vCtx.idRef().getText();
                 elements.add(builder.getExpression(idCtx));
             }
-            builder.addExpression(id, expressions.makeArray(arrayType.getElementType(), elements, true));
+            try {
+                builder.addExpression(id, expressions.makeArray(arrayType.getElementType(), elements, true));
+            } catch (Exception e) {
+                throw new ParsingException(String.format("%s Offending id: '%s'", e.getMessage(), id));
+            }
         }
         return null;
     }
