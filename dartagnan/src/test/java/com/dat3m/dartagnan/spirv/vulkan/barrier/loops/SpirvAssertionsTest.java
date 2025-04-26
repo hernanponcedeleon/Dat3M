@@ -1,4 +1,4 @@
-package com.dat3m.dartagnan.spirv.opencl.basic;
+package com.dat3m.dartagnan.spirv.vulkan.barrier.loops;
 
 import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.encoding.ProverWithTracker;
@@ -27,19 +27,19 @@ import java.util.EnumSet;
 import static com.dat3m.dartagnan.configuration.Property.PROGRAM_SPEC;
 import static com.dat3m.dartagnan.utils.ResourceHelper.getRootPath;
 import static com.dat3m.dartagnan.utils.ResourceHelper.getTestResourcePath;
-import static com.dat3m.dartagnan.utils.Result.PASS;
+import static com.dat3m.dartagnan.utils.Result.*;
 import static org.junit.Assert.assertEquals;
 
 @RunWith(Parameterized.class)
 public class SpirvAssertionsTest {
 
-    private final String modelPath = getRootPath("cat/opencl.cat");
+    private final String modelPath = getRootPath("cat/spirv.cat");
     private final String programPath;
     private final int bound;
     private final Result expected;
 
     public SpirvAssertionsTest(String file, int bound, Result expected) {
-        this.programPath = getTestResourcePath("spirv/opencl/basic/" + file);
+        this.programPath = getTestResourcePath("spirv/vulkan/barrier/loops/" + file);
         this.bound = bound;
         this.expected = expected;
     }
@@ -47,7 +47,35 @@ public class SpirvAssertionsTest {
     @Parameterized.Parameters(name = "{index}: {0}, {1}, {2}")
     public static Iterable<Object[]> data() throws IOException {
         return Arrays.asList(new Object[][]{
-                {"idx-overflow.spvasm", 1, PASS},
+                {"barrier-loop-1-forall.spvasm", 3, PASS},
+                {"barrier-loop-1-exists.spvasm", 3, PASS},
+                {"barrier-no-loop-1-forall.spvasm", 1, PASS},
+                {"barrier-no-loop-1-exists.spvasm", 1, PASS},
+
+                {"barrier-loop-2-forall.spvasm", 2, PASS},
+                {"barrier-loop-2-exists.spvasm", 2, PASS},
+                {"barrier-no-loop-2-forall.spvasm", 1, PASS},
+                {"barrier-no-loop-2-exists.spvasm", 1, PASS},
+
+                {"barrier-loop-3-forall.spvasm", 2, PASS},
+                {"barrier-loop-3-exists.spvasm", 2, PASS},
+                {"barrier-no-loop-3-forall.spvasm", 1, PASS},
+                {"barrier-no-loop-3-exists.spvasm", 1, PASS},
+
+                {"barrier-loop-4-forall.spvasm", 2, PASS},
+                {"barrier-loop-4-exists.spvasm", 2, FAIL},
+                {"barrier-no-loop-4-forall.spvasm", 1, PASS},
+                {"barrier-no-loop-4-exists.spvasm", 1, FAIL},
+
+                {"barrier-loop-5-forall.spvasm", 2, FAIL},
+                {"barrier-loop-5-exists.spvasm", 2, PASS},
+                {"barrier-no-loop-5-forall.spvasm", 1, FAIL},
+                {"barrier-no-loop-5-exists.spvasm", 1, PASS},
+
+                {"barrier-loop-6-forall.spvasm", 2, FAIL},
+                {"barrier-loop-6-exists.spvasm", 2, PASS},
+                {"barrier-no-loop-6-forall.spvasm", 1, FAIL},
+                {"barrier-no-loop-6-exists.spvasm", 1, PASS},
         });
     }
 
@@ -75,7 +103,7 @@ public class SpirvAssertionsTest {
         VerificationTask.VerificationTaskBuilder builder = VerificationTask.builder()
                 .withConfig(Configuration.builder().build())
                 .withBound(bound)
-                .withTarget(Arch.OPENCL);
+                .withTarget(Arch.VULKAN);
         Program program = new ProgramParser().parse(new File(programPath));
         Wmm mcm = new ParserCat().parse(new File(modelPath));
         return builder.build(program, mcm, EnumSet.of(PROGRAM_SPEC));
