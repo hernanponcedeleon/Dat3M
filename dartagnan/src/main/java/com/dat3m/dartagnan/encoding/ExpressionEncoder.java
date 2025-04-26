@@ -2,8 +2,10 @@ package com.dat3m.dartagnan.encoding;
 
 import com.dat3m.dartagnan.encoding.formulas.TupleFormula;
 import com.dat3m.dartagnan.encoding.formulas.TypedFormula;
+import com.dat3m.dartagnan.encoding.formulas.TypedValue;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionVisitor;
+import com.dat3m.dartagnan.expression.LeafExpression;
 import com.dat3m.dartagnan.expression.Type;
 import com.dat3m.dartagnan.expression.aggregates.AggregateCmpExpr;
 import com.dat3m.dartagnan.expression.aggregates.ConstructExpr;
@@ -63,24 +65,39 @@ public class ExpressionEncoder {
     // ====================================================================================
     // Public API
 
-    public TypedFormula<?, ?> encode(Expression expression, Event at) {
+    public TypedFormula<?, ?> encodeAt(Expression expression, Event at) {
+        Preconditions.checkNotNull(at);
         visitor.setEvent(at);
         return expression.accept(visitor);
     }
 
-    public TypedFormula<IntegerType, ?> encodeIntegerExpr(Expression expression, Event at) {
-        visitor.setEvent(at);
-        return visitor.encodeIntegerExpr(expression);
+    public TypedFormula<?, ?> encodeFinal(Expression expression) {
+        visitor.setEvent(null);
+        return expression.accept(visitor);
     }
 
-    public TypedFormula<BooleanType, BooleanFormula> encodeBooleanExpr(Expression expression, Event at) {
-        visitor.setEvent(at);
-        return visitor.encodeBooleanExpr(expression);
+    @SuppressWarnings("unchecked")
+    public TypedFormula<BooleanType, BooleanFormula> encodeBooleanAt(Expression expression, Event at) {
+        Preconditions.checkArgument(expression.getType() instanceof BooleanType);
+        return (TypedFormula<BooleanType, BooleanFormula>) encodeAt(expression, at);
     }
 
-    public TypedFormula<?, TupleFormula> encodeAggregateExpr(Expression expression, Event at) {
-        visitor.setEvent(at);
-        return visitor.encodeAggregateExpr(expression);
+    @SuppressWarnings("unchecked")
+    public TypedFormula<BooleanType, BooleanFormula> encodeBooleanFinal(Expression expression) {
+        Preconditions.checkArgument(expression.getType() instanceof BooleanType);
+        return (TypedFormula<BooleanType, BooleanFormula>) encodeFinal(expression);
+    }
+
+    @SuppressWarnings("unchecked")
+    public TypedFormula<IntegerType, ?> encodeIntegerAt(Expression expression, Event at) {
+        Preconditions.checkArgument(expression.getType() instanceof IntegerType);
+        return (TypedFormula<IntegerType, ?>) encodeAt(expression, at);
+    }
+
+    @SuppressWarnings("unchecked")
+    public TypedFormula<IntegerType, ?> encodeIntegerFinal(Expression expression) {
+        Preconditions.checkArgument(expression.getType() instanceof IntegerType);
+        return (TypedFormula<IntegerType, ?>) encodeFinal(expression);
     }
 
     public <TType extends Type> TypedFormula<TType, ?> makeZero(TType type) {
@@ -140,6 +157,14 @@ public class ExpressionEncoder {
 
     public TypedFormula<BooleanType, BooleanFormula> wrap(BooleanFormula formula) {
         return new TypedFormula<>(types.getBooleanType(), formula);
+    }
+
+    public <TType extends Type, TFormula extends Formula> TypedFormula<TType, TFormula> wrap(TType type, TFormula formula) {
+        return new TypedFormula<>(type, formula);
+    }
+
+    public <TType extends Type, TFormula extends Formula> TypedValue<TType, ?> evaluate(TypedFormula<TType, TFormula> typedFormula, Model model) {
+        return new TypedValue<>(typedFormula.type(), EncodingHelper.evaluate(typedFormula.formula(), model));
     }
 
     // ====================================================================================
@@ -263,6 +288,14 @@ public class ExpressionEncoder {
             assert typedFormula.type() == expression.getType();
             assert typedFormula.formula() instanceof TupleFormula;
             return (TypedFormula<?, TupleFormula>) typedFormula;
+        }
+
+        @Override
+        public TypedFormula<?, ?> visitLeafExpression(LeafExpression expr) {
+            if (expr instanceof TypedFormula<?,?> typedFormula) {
+                return typedFormula;
+            }
+            return visitExpression(expr);
         }
 
         // ====================================================================================
@@ -540,8 +573,7 @@ public class ExpressionEncoder {
 
         @Override
         public TypedFormula<?, ?> visitMemoryObject(MemoryObject memObj) {
-            // TODO: Once we have a PointerType, this needs to get updated.
-            return new TypedFormula<>(memObj.getType(), context.address(memObj));
+            return context.address(memObj);
         }
 
         @Override

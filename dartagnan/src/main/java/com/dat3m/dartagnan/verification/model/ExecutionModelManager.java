@@ -2,6 +2,7 @@ package com.dat3m.dartagnan.verification.model;
 
 import com.dat3m.dartagnan.encoding.EncodingContext;
 import com.dat3m.dartagnan.encoding.EncodingHelper;
+import com.dat3m.dartagnan.encoding.formulas.TypedFormula;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.Event;
@@ -271,6 +272,10 @@ public class ExecutionModelManager {
 
     private Object evaluateByModel(Formula formula) {
         return EncodingHelper.evaluate(formula, model);
+    }
+
+    private Object evaluateByModel(TypedFormula<?, ?> formula) {
+        return context.getExpressionEncoder().evaluate(formula, model).value();
     }
 
 

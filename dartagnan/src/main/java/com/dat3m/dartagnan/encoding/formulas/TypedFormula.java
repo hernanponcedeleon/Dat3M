@@ -1,7 +1,8 @@
 package com.dat3m.dartagnan.encoding.formulas;
 
-import com.dat3m.dartagnan.expression.Type;
+import com.dat3m.dartagnan.expression.*;
 import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableList;
 import org.sosy_lab.java_smt.api.Formula;
 
 /*
@@ -55,7 +56,8 @@ import org.sosy_lab.java_smt.api.Formula;
         Similarly, the metadata could even carry the original type from which M was constructed if it helps in any way.
         Metadata then needs to be preserved even over extract/concatenation operations.
  */
-public record TypedFormula<TType extends Type, TFormula extends Formula>(TType type, TFormula formula) {
+public record TypedFormula<TType extends Type, TFormula extends Formula>(TType type, TFormula formula)
+    implements LeafExpression {
 
     public TypedFormula {
         Preconditions.checkNotNull(type);
@@ -65,5 +67,25 @@ public record TypedFormula<TType extends Type, TFormula extends Formula>(TType t
     @Override
     public String toString() {
         return String.format("(%s: %s)", type, formula);
+    }
+
+    @Override
+    public TType getType() {
+        return type;
+    }
+
+    @Override
+    public ImmutableList<Expression> getOperands() {
+        return ImmutableList.of();
+    }
+
+    @Override
+    public ExpressionKind getKind() {
+        return () -> "FORMULA";
+    }
+
+    @Override
+    public <T> T accept(ExpressionVisitor<T> visitor) {
+        return visitor.visitLeafExpression(this);
     }
 }

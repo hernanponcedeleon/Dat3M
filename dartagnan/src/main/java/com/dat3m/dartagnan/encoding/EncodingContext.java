@@ -1,6 +1,7 @@
 package com.dat3m.dartagnan.encoding;
 
 import com.dat3m.dartagnan.encoding.formulas.TupleFormulaManager;
+import com.dat3m.dartagnan.encoding.formulas.TypedFormula;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.Type;
 import com.dat3m.dartagnan.program.Register;
@@ -77,8 +78,10 @@ public final class EncodingContext {
     private final Map<Event, Formula> addresses = new HashMap<>();
     private final Map<Event, Formula> values = new HashMap<>();
     private final Map<Event, Formula> results = new HashMap<>();
-    private final Map<MemoryObject, Formula> objAddress = new HashMap<>();
-    private final Map<MemoryObject, Formula> objSize = new HashMap<>();
+
+    // TODO: Once we have a PointerType, this needs to get updated.
+    private final Map<MemoryObject, TypedFormula<?, ?>> objAddress = new HashMap<>();
+    private final Map<MemoryObject, TypedFormula<?, ?>> objSize = new HashMap<>();
 
     private EncodingContext(VerificationTask t, Context a, FormulaManager m) {
         verificationTask = checkNotNull(t);
@@ -139,20 +142,12 @@ public final class EncodingContext {
     // ====================================================================================
     // TODO: These should go
 
-    public Formula encodeFinalExpression(Expression expression) {
-        return exprEncoder.encode(expression, null).formula();
-    }
-
-    public BooleanFormula encodeFinalExpressionAsBoolean(Expression expression) {
-        return exprEncoder.convertToBool(exprEncoder.encode(expression, null)).formula();
-    }
-
     public BooleanFormula encodeExpressionAsBooleanAt(Expression expression, Event event) {
-        return exprEncoder.convertToBool(exprEncoder.encode(expression, event)).formula();
+        return exprEncoder.convertToBool(exprEncoder.encodeAt(expression, event)).formula();
     }
 
     public Formula encodeExpressionAt(Expression expression, Event event) {
-        return exprEncoder.encode(expression, event).formula();
+        return exprEncoder.encodeAt(expression, event).formula();
     }
 
     // ====================================================================================
@@ -212,9 +207,7 @@ public final class EncodingContext {
     // ====================================================================================
     // Data flow
 
-    public BooleanFormula dependency(Event first, Event second) {
-        return booleanFormulaManager.makeVariable("idd " + first.getGlobalId() + " " + second.getGlobalId());
-    }
+    // TODO: Change all to TypedFormula
 
     public Formula lastValue(MemoryObject base, int offset, int size) {
         checkArgument(base.isInRange(offset), "Array index out of bounds");
@@ -241,9 +234,11 @@ public final class EncodingContext {
         return addresses.get(event);
     }
 
-    public Formula address(MemoryObject memoryObject) { return objAddress.get(memoryObject); }
+    public TypedFormula<?, ?> address(MemoryObject memoryObject) { return objAddress.get(memoryObject); }
 
-    public Formula size(MemoryObject memoryObject) { return objSize.get(memoryObject); }
+    public TypedFormula<?, ?> size(MemoryObject memoryObject) {
+        return objSize.get(memoryObject);
+    }
 
     public Formula value(MemoryEvent event) {
         return values.get(event);
@@ -255,6 +250,10 @@ public final class EncodingContext {
 
     // ====================================================================================
     // Relations
+
+    public BooleanFormula dependency(Event first, Event second) {
+        return booleanFormulaManager.makeVariable("idd " + first.getGlobalId() + " " + second.getGlobalId());
+    }
 
     public IntegerFormula memoryOrderClock(Event write) {
         checkArgument(write.hasTag(WRITE), "Cannot get a clock-var for non-writes.");
@@ -338,8 +337,9 @@ public final class EncodingContext {
 
         // ------- Memory object variables -------
         for (MemoryObject memoryObject : verificationTask.getProgram().getMemory().getObjects()) {
-            objAddress.put(memoryObject, exprEncoder.makeVariable(String.format("addrof(%s)", memoryObject), memoryObject.getType()).formula());
-            objSize.put(memoryObject, exprEncoder.makeVariable(String.format("sizeof(%s)", memoryObject), memoryObject.getType()).formula());
+
+            objAddress.put(memoryObject, exprEncoder.makeVariable(String.format("addrof(%s)", memoryObject), memoryObject.getType()));
+            objSize.put(memoryObject, exprEncoder.makeVariable(String.format("sizeof(%s)", memoryObject), memoryObject.getType()));
         }
 
         // ------- Event variables  -------

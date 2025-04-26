@@ -251,18 +251,20 @@ public class PropertyEncoder implements Encoder {
 
     private TrackableFormula encodeProgramSpecification() {
         logger.info("Encoding program specification");
+        final ExpressionEncoder exprEnc = context.getExpressionEncoder();
         final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
         // We can only perform existential queries to the SMT-engine, so for
         // safety specs we need to query for a violation (= negation of the spec)
         BooleanFormula encoding = switch (program.getSpecificationType()) {
-            case EXISTS, NOT_EXISTS -> context.encodeFinalExpressionAsBoolean(program.getSpecification());
-            case FORALL -> bmgr.not(context.encodeFinalExpressionAsBoolean(program.getSpecification()));
+            case EXISTS, NOT_EXISTS -> exprEnc.encodeBooleanFinal(program.getSpecification()).formula();
+            case FORALL -> bmgr.not(exprEnc.encodeBooleanFinal(program.getSpecification()).formula());
             case ASSERT -> {
                 // User-placed assertions inside C code.
                 List<BooleanFormula> assertionsHold = new ArrayList<>();
                 for (Assert assertion : program.getThreadEvents(Assert.class)) {
                     assertionsHold.add(bmgr.implication(context.execution(assertion),
-                            context.encodeExpressionAsBooleanAt(assertion.getExpression(), assertion)));
+                            exprEnc.encodeBooleanAt(assertion.getExpression(), assertion).formula()
+                    ));
                 }
                 yield bmgr.not(bmgr.and(assertionsHold));
             }

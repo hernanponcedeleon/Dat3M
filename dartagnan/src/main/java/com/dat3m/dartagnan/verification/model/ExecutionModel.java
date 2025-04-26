@@ -2,6 +2,7 @@ package com.dat3m.dartagnan.verification.model;
 
 import com.dat3m.dartagnan.encoding.EncodingContext;
 import com.dat3m.dartagnan.encoding.EncodingHelper;
+import com.dat3m.dartagnan.encoding.ExpressionEncoder;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.Thread;
@@ -484,12 +485,14 @@ public class ExecutionModel {
     // ===================================================
 
     private void extractMemoryLayout() {
+        final ExpressionEncoder exprEnc = encodingContext.getExpressionEncoder();
         memoryLayoutMap.clear();
         for (MemoryObject obj : getProgram().getMemory().getObjects()) {
             final boolean isAllocated = obj.isStaticallyAllocated() || isTrue(encodingContext.execution(obj.getAllocationSite()));
             if (isAllocated) {
-                final ValueModel address = new ValueModel(model.evaluate(encodingContext.address(obj)));
-                final BigInteger size = (BigInteger) model.evaluate(encodingContext.size(obj));
+                // TODO: Get rid of ValueModel: replace by TypedValue
+                final ValueModel address = new ValueModel(exprEnc.evaluate(encodingContext.address(obj), model).value());
+                final BigInteger size = (BigInteger) exprEnc.evaluate(encodingContext.size(obj), model).value();
                 memoryLayoutMap.put(obj, new MemoryObjectModel(obj, address, size));
             }
         }

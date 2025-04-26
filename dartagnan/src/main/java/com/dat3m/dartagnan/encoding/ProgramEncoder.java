@@ -1,10 +1,13 @@
 package com.dat3m.dartagnan.encoding;
 
 import com.dat3m.dartagnan.configuration.ProgressModel;
+import com.dat3m.dartagnan.encoding.formulas.TypedFormula;
 import com.dat3m.dartagnan.expression.Expression;
+import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.integers.IntCmpOp;
 import com.dat3m.dartagnan.expression.integers.IntLiteral;
 import com.dat3m.dartagnan.expression.type.IntegerType;
+import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.*;
 import com.dat3m.dartagnan.program.analysis.BranchEquivalence;
@@ -35,6 +38,7 @@ import org.sosy_lab.java_smt.api.NumeralFormula.IntegerFormula;
 
 import java.math.BigInteger;
 import java.util.*;
+import java.util.function.BiFunction;
 
 import static com.dat3m.dartagnan.configuration.OptionNames.IGNORE_FILTER_SPECIFICATION;
 import static com.dat3m.dartagnan.configuration.OptionNames.INITIALIZE_REGISTERS;
@@ -97,10 +101,12 @@ public class ProgramEncoder implements Encoder {
 
     public BooleanFormula encodeConstants() {
         List<BooleanFormula> enc = new ArrayList<>();
+        final ExpressionEncoder exprEnc = context.getExpressionEncoder();
         for (NonDetValue value : context.getTask().getProgram().getConstants()) {
-            final Formula formula = context.encodeFinalExpression(value);
-            if (formula instanceof IntegerFormula intFormula && value.getType() instanceof IntegerType intType) {
+            final TypedFormula<?, ?> formula = exprEnc.encodeFinal(value);
+            if (context.useIntegers && formula.type() instanceof IntegerType intType) {
                 // This special case is for when we encode BVs with integers.
+                final IntegerFormula intFormula = (IntegerFormula) formula.formula();
                 final IntegerFormulaManager imgr = context.getFormulaManager().getIntegerFormulaManager();
                 final IntegerFormula min = imgr.makeNumber(intType.getMinimumValue(value.isSigned()));
                 final IntegerFormula max = imgr.makeNumber(intType.getMaximumValue(value.isSigned()));
@@ -359,7 +365,9 @@ public class ProgramEncoder implements Encoder {
 
     private BooleanFormula encodeMemoryLayout(Memory memory) {
         final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
-        final EncodingHelper helper = new EncodingHelper(context);
+        final ExpressionEncoder exprEnc = context.getExpressionEncoder();
+        final IntegerType archType = TypeFactory.getInstance().getArchType();
+        final ExpressionFactory exprs = ExpressionFactory.getInstance();
         final List<BooleanFormula> enc = new ArrayList<>();
 
         // TODO: We could sort the objects to generate better encoding:
@@ -369,42 +377,47 @@ public class ProgramEncoder implements Encoder {
         final List<MemoryObject> memoryObjects = ImmutableList.copyOf(memory.getObjects());
         for (int i = 0; i < memoryObjects.size(); i++) {
             final MemoryObject cur = memoryObjects.get(i);
-            final Formula addr = context.address(cur);
-            final Formula size = context.size(cur);
-            final Formula alignment;
+            final Expression addrVar = context.address(cur);
+            final Expression sizeVar = context.size(cur);
 
+            final Expression size;
+            final Expression alignment;
             // Encode size & compute alignment
             if (cur.isStaticallyAllocated()) {
-                Formula right = context.encodeFinalExpression(cur.size());
-                enc.add(helper.equal(size, right));
-                alignment = context.encodeFinalExpression(cur.alignment());
+                size = cur.size();
+                alignment = cur.alignment();
             } else {
-                // Non-allocated objects, i.e. objects whose Alloc event was not executed, get size 0
-                Formula right = bmgr.ifThenElse(context.execution(cur.getAllocationSite()),
-                        context.encodeExpressionAt(cur.size(), cur.getAllocationSite()),
-                        helper.value(BigInteger.ZERO, helper.typeOf(size)));
-                enc.add(helper.equal(size, right)
-                );
-                // Non-allocated objects with variable alignment get alignment 1
-                alignment = cur.hasKnownAlignment() ? context.encodeExpressionAt(cur.alignment(), cur.getAllocationSite())
-                        : bmgr.ifThenElse(context.execution(cur.getAllocationSite()),
-                        context.encodeExpressionAt(cur.alignment(), cur.getAllocationSite()),
-                        helper.value(BigInteger.ONE, helper.typeOf(size)));
+                final Expression exec = exprEnc.wrap(context.execution(cur.getAllocationSite()));
+                final Expression zero = exprs.makeValue(BigInteger.ZERO, archType);
+                final Expression one = exprs.makeValue(BigInteger.ONE, archType);
+
+                size = exprs.makeITE(exec, cur.size(), zero);
+                alignment = cur.hasKnownAlignment() ? cur.alignment() : exprs.makeITE(exec, cur.alignment(), one);
             }
+
+            final BiFunction<Expression, Expression, BooleanFormula> equate = (a, b) -> {
+                final Expression equality = exprs.makeEQ(a, b);
+                return (cur.isStaticallyAllocated()
+                        ? exprEnc.encodeBooleanFinal(equality)
+                        : exprEnc.encodeBooleanAt(equality, cur.getAllocationSite())).formula();
+            };
+
+            enc.add(equate.apply(sizeVar, size));
 
             // Encode address (we even give non-allocated objects a proper, well-aligned address)
             final MemoryObject prev = i > 0 ? memoryObjects.get(i - 1) : null;
             if (prev == null) {
                 // First object is placed at alignment
-                enc.add(helper.equal(addr, alignment));
+                enc.add(equate.apply(addrVar, alignment));
             } else {
-                final Formula prevAddr = context.address(prev);
-                final Formula prevSize = context.size(prev);
-                final Formula nextAvailableAddr = helper.add(prevAddr, prevSize);
-                final Formula nextAlignedAddr = helper.add(nextAvailableAddr,
-                        helper.subtract(alignment, helper.remainder(nextAvailableAddr, alignment))
+                final Expression prevAddr = context.address(prev);
+                final Expression prevSize = context.size(prev);
+                final Expression nextAvailableAddr = exprs.makeAdd(prevAddr, prevSize);
+                final Expression nextAlignedAddr = exprs.makeAdd(nextAvailableAddr,
+                        exprs.makeSub(alignment, exprs.makeRem(nextAvailableAddr, alignment,  true))
                 );
-                enc.add(helper.equal(addr, nextAlignedAddr));
+
+                enc.add(equate.apply(addrVar, nextAlignedAddr));
             }
         }
 
@@ -462,8 +475,9 @@ public class ProgramEncoder implements Encoder {
     }
 
     public BooleanFormula encodeFilter() {
+        final ExpressionEncoder exprEnc = context.getExpressionEncoder();
         if (!ignoreFilterSpec && context.getTask().getProgram().getFilterSpecification() != null) {
-            return context.encodeFinalExpressionAsBoolean(context.getTask().getProgram().getFilterSpecification());
+            return exprEnc.convertToBool(exprEnc.encodeFinal(context.getTask().getProgram().getFilterSpecification())).formula();
         }
         return context.getBooleanFormulaManager().makeTrue();
     }
@@ -481,7 +495,7 @@ public class ProgramEncoder implements Encoder {
         List<BooleanFormula> enc = new ArrayList<>();
         final ReachingDefinitionsAnalysis.Writers finalState = definitions.getFinalWriters();
         for (Register register : finalState.getUsedRegisters()) {
-            final Formula value = context.encodeFinalExpression(register);
+            final Formula value = context.getExpressionEncoder().encodeFinal(register).formula();
             final ReachingDefinitionsAnalysis.RegisterWriters registerWriters = finalState.ofRegister(register);
             final List<RegWriter> writers = registerWriters.getMayWriters();
             if (initializeRegisters && !registerWriters.mustBeInitialized()) {
