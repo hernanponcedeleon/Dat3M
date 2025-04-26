@@ -9,11 +9,10 @@ import com.dat3m.dartagnan.expression.type.FunctionType;
 import com.dat3m.dartagnan.expression.type.ScopedPointerType;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.decorations.BuiltIn;
-import com.dat3m.dartagnan.program.processing.transformers.MemoryTransformer;
-import com.dat3m.dartagnan.program.ThreadGrid;
 import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
+import com.dat3m.dartagnan.program.ThreadGrid;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.RegWriter;
 import com.dat3m.dartagnan.program.event.Tag;
@@ -21,6 +20,7 @@ import com.dat3m.dartagnan.program.event.functions.FunctionCall;
 import com.dat3m.dartagnan.program.memory.Memory;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.dat3m.dartagnan.program.memory.ScopedPointerVariable;
+import com.dat3m.dartagnan.program.processing.transformers.MemoryTransformer;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -42,6 +42,7 @@ public class ProgramBuilder {
     protected Function currentFunction;
     protected String entryPointId;
     protected Arch arch;
+    protected Expression filterSpec;
     protected Set<String> nextOps;
 
     public ProgramBuilder(ThreadGrid grid) {
@@ -114,10 +115,11 @@ public class ProgramBuilder {
     }
 
     public void setFilterSpecification(Expression condition) {
-        if (program.getFilterSpecification() != null) {
+        if (this.filterSpec != null) {
             throw new ParsingException("Attempt to override program filter specification");
         }
-        program.setFilterSpecification(condition);
+        this.filterSpec = condition;
+        program.setFilterSpecification(this.filterSpec);
     }
 
     public boolean hasInput(String id) {

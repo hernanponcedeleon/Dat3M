@@ -927,7 +927,7 @@ public class Intrinsics {
         }
         assert call.getArguments().size() == 1;
         final Expression condition = call.getArguments().get(0);
-        final Event assertion = EventFactory.newAssert(condition, errorMsg);
+        final Event assertion = EventFactory.newAssert(expressions.makeBooleanCast(condition), errorMsg);
         return List.of(assertion);
     }
 
