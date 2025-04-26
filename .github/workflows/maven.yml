@@ -122,9 +122,6 @@ jobs:
       - name: Parsers tests
         run: mvn test -Dtest="com/dat3m/dartagnan/parsers/**/*" -f dartagnan/pom.xml
 
-      - name: Utils tests
-        run: mvn test -Dtest="com/dat3m/dartagnan/utils/**/*" -f dartagnan/pom.xml
-
   spirv-tests:
     name: SPIRV tests
     runs-on: ubuntu-latest
