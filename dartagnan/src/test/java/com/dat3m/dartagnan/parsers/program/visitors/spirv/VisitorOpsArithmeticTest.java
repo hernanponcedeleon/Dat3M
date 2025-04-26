@@ -1,10 +1,12 @@
 package com.dat3m.dartagnan.parsers.program.visitors.spirv;
 
 import com.dat3m.dartagnan.exception.ParsingException;
+import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.integers.IntBinaryExpr;
 import com.dat3m.dartagnan.expression.integers.IntBinaryOp;
 import com.dat3m.dartagnan.expression.integers.IntUnaryExpr;
 import com.dat3m.dartagnan.expression.integers.IntUnaryOp;
+import com.dat3m.dartagnan.expression.aggregates.ConstructExpr;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.mocks.MockProgramBuilder;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.mocks.MockSpirvParser;
 import com.dat3m.dartagnan.program.event.core.Local;
@@ -69,6 +71,35 @@ public class VisitorOpsArithmeticTest {
         assertEquals(builder.getExpression("%v1"), expr.getLeft());
         assertEquals(builder.getExpression("%v2"), expr.getRight());
         assertEquals(op, expr.getKind());
+    }
+
+    @Test
+    public void testOpsVectorBin() {
+        doTestOpsVectorBin("OpIAdd", ADD);
+        doTestOpsVectorBin("OpISub", SUB);
+        doTestOpsVectorBin("OpIMul", MUL);
+        doTestOpsVectorBin("OpUDiv", UDIV);
+        doTestOpsVectorBin("OpSDiv", DIV);
+    }
+
+    private void doTestOpsVectorBin(String name, IntBinaryOp op) {
+        // given
+        MockProgramBuilder builder = new MockProgramBuilder();
+        builder.mockIntType("%int", 64);
+        builder.mockVectorType("%vector", "%int", 4);
+        builder.mockConstant("%v1", "%vector", List.of(1, 2, 3, 4));
+        builder.mockConstant("%v2", "%vector", List.of(5, 6, 7, 8));
+        String input = String.format("%%reg = %s %%vector %%v1 %%v2", name);
+
+        // when
+        Local local = visit(builder, input);
+
+        // then
+        assertEquals(builder.getExpression("%reg"), local.getResultRegister());
+        ConstructExpr expr = (ConstructExpr) local.getExpr();
+        for(Expression operand : expr.getOperands()) {
+            assertEquals(op, operand.getKind());
+        }
     }
 
     @Test
@@ -137,27 +168,6 @@ public class VisitorOpsArithmeticTest {
     }
 
     @Test
-    public void testUnsupportedResultType() {
-        // given
-        MockProgramBuilder builder = new MockProgramBuilder();
-        builder.mockIntType("%int", 64);
-        builder.mockVectorType("%vector", "%int", 4);
-        builder.mockConstant("%v1", "%vector", List.of(1, 2, 3, 4));
-        builder.mockConstant("%v2", "%vector", List.of(5, 6, 7, 8));
-        String input = "%reg = OpIAdd %vector %v1 %v2";
-
-        try {
-            // when
-            visit(builder, input);
-            fail("Should throw exception");
-        } catch (ParsingException e) {
-            // then
-            assertEquals("Unsupported result type for '%reg', " +
-                    "vector types are not supported", e.getMessage());
-        }
-    }
-
-    @Test
     public void testIllegalResultType() {
         // given
         MockProgramBuilder builder = new MockProgramBuilder();
@@ -173,7 +183,9 @@ public class VisitorOpsArithmeticTest {
             fail("Should throw exception");
         } catch (ParsingException e) {
             // then
-            assertEquals("Illegal result type for '%reg'", e.getMessage());
+            assertEquals("Illegal definition for '%reg', " +
+                    "types do not match: '%v1' is 'bv64', '%v2' is 'bv64' " +
+                    "and '%bool' is 'bool'", e.getMessage());
         }
     }
 
