@@ -63,6 +63,8 @@ public class SpirvChecksTest {
                 {"uninitialized-private-forall.spvasm", 1, PASS},
                 {"undef-exists.spvasm", 1, PASS},
                 {"undef-forall.spvasm", 1, PASS},
+                {"read-write-struct.spvasm", 1, PASS},
+                {"read-write-vector.spvasm", 1, PASS},
                 {"read-write.spvasm", 1, PASS},
                 {"vector-init.spvasm", 1, PASS},
                 {"vector.spvasm", 1, PASS},
@@ -70,6 +72,7 @@ public class SpirvChecksTest {
                 {"array-of-vector.spvasm", 1, PASS},
                 {"array-of-vector1.spvasm", 1, PASS},
                 {"vector-read-write.spvasm", 1, PASS},
+                {"composite-construct.spvasm", 1, PASS},
                 {"composite-extract.spvasm", 1, PASS},
                 {"spec-id-integer.spvasm", 1, PASS},
                 {"spec-id-boolean.spvasm", 1, PASS},
@@ -115,10 +118,7 @@ public class SpirvChecksTest {
                 {"push-constants-pod.spvasm", 1, PASS},
                 {"push-constant-mixed.spvasm", 1, PASS},
                 {"bitwise-scalar.spvasm", 1, PASS},
-                {"bitwise-vector.spvasm", 1, PASS},
-                {"composite-construct.spvasm", 1, PASS},
-                {"v3.spvasm", 1, PASS},
-                {"monoid.spvasm", 1, PASS}
+                {"bitwise-vector.spvasm", 1, PASS}
         });
     }
 
