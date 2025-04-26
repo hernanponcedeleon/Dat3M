@@ -16,7 +16,7 @@ public class Utils {
         milliseconds -= TimeUnit.SECONDS.toMillis(seconds);
 
         if (hours == 0 && minutes == 0) {
-            return String.format("%d.%d secs", seconds, milliseconds);
+            return String.format("%d.%03d secs", seconds, milliseconds);
         } else if (hours == 0) {
             return String.format("%d:%02d mins", minutes, seconds);
         } else {
