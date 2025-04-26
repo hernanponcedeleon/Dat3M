@@ -19,7 +19,7 @@ on:
 
 jobs:
   
-  Asm-tests:
+  asm-tests:
     name: Asm tests
     runs-on: ubuntu-latest
     if: ${{ github.event_name != 'schedule' }}
@@ -115,6 +115,15 @@ jobs:
 
       - name: Other tests
         run: mvn test -Dtest="com/dat3m/dartagnan/others/**/*" -f dartagnan/pom.xml
+
+      - name: Encoding tests
+        run: mvn test -Dtest="com/dat3m/dartagnan/encoding/**/*" -f dartagnan/pom.xml
+
+      - name: Parsers tests
+        run: mvn test -Dtest="com/dat3m/dartagnan/parsers/**/*" -f dartagnan/pom.xml
+
+      - name: Utils tests
+        run: mvn test -Dtest="com/dat3m/dartagnan/utils/**/*" -f dartagnan/pom.xml
 
   spirv-tests:
     name: SPIRV tests
