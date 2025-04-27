@@ -573,21 +573,18 @@ public class WmmEncoder implements Encoder {
             ra.getKnowledge(rf).getMaySet().apply((e1, e2) -> {
                 final MemoryCoreEvent w = (MemoryCoreEvent) e1;
                 final MemoryCoreEvent r = (MemoryCoreEvent) e2;
-                final Expression wVal = exprEncoder.wrap(w.getAccessType(), context.value(w));
-                final Expression rVal = exprEncoder.wrap(r.getAccessType(), context.value(r));
 
                 BooleanFormula e = edge.encode(w, r);
                 BooleanFormula sameAddress = context.sameAddress(w, r);
-                BooleanFormula sameValue = exprEncoder.equals(wVal, rVal, LEFT_TO_RIGHT);
+                BooleanFormula sameValue = context.sameValue(w, r, LEFT_TO_RIGHT);
                 edgeMap.computeIfAbsent(r, key -> new ArrayList<>()).add(e);
                 enc.add(bmgr.implication(e, bmgr.and(execution(w, r), sameAddress, sameValue)));
             });
             for (Load r : program.getThreadEvents(Load.class)) {
                 final BooleanFormula uninit = getUninitReadVar(r);
                 if (memoryIsZeroed) {
-                    final Expression rVal = exprEncoder.wrap(r.getAccessType(), context.value(r));
                     final Expression zero = exprEncoder.makeZero(r.getAccessType());
-                    enc.add(bmgr.implication(uninit, exprEncoder.equals(rVal, zero)));
+                    enc.add(bmgr.implication(uninit, exprEncoder.equals(context.value(r), zero)));
                 }
 
                 final List<BooleanFormula> rfEdges = edgeMap.getOrDefault(r, List.of());

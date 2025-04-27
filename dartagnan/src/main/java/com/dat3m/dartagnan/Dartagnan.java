@@ -313,7 +313,7 @@ public class Dartagnan extends BaseOptions {
         if (p.getFormat() != SourceLanguage.LITMUS) {
             final SyntacticContextAnalysis synContext = newInstance(p);
             if (hasViolations) {
-                printWarningIfThreadStartFailed(p, encCtx, prover);
+                printWarningIfThreadStartFailed(p, encCtx, model);
                 if (props.contains(PROGRAM_SPEC) && FALSE.equals(model.evaluate(PROGRAM_SPEC.getSMTVariable(encCtx)))) {
                     summary.append("===== Program specification violation found =====\n");
                     for (Assert ass : p.getThreadEvents(Assert.class)) {
@@ -511,11 +511,9 @@ public class Dartagnan extends BaseOptions {
         }
     }
 
-    private static void printWarningIfThreadStartFailed(Program p, EncodingContext encoder, ProverEnvironment prover)
-            throws SolverException {
-        for (Event e : p.getThreadEvents()) {
-            if (e.hasTag(Tag.STARTLOAD)
-                    && BigInteger.ZERO.equals(prover.getModel().evaluate(encoder.value((Load) e)))) {
+    private static void printWarningIfThreadStartFailed(Program p, EncodingContext ctx, Model model) {
+        for (Load e : p.getThreadEvents(Load.class)) {
+            if (e.hasTag(Tag.STARTLOAD) && BigInteger.ZERO.equals(ctx.evaluate(ctx.value(e), model).value())) {
                 // This msg should be displayed even if the logging is off
                 System.out.printf(
                         "[WARNING] The call to pthread_create of thread %s failed. To force thread creation to succeed use --%s=true%n",

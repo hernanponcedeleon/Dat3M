@@ -2,11 +2,13 @@ package com.dat3m.dartagnan.verification.model;
 
 import com.dat3m.dartagnan.encoding.EncodingContext;
 import com.dat3m.dartagnan.encoding.ExpressionEncoder;
-import com.dat3m.dartagnan.encoding.formulas.FormulaManagerExt;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.Thread;
-import com.dat3m.dartagnan.program.event.*;
+import com.dat3m.dartagnan.program.event.Event;
+import com.dat3m.dartagnan.program.event.RegReader;
+import com.dat3m.dartagnan.program.event.RegWriter;
+import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.event.core.threading.ThreadArgument;
 import com.dat3m.dartagnan.program.event.lang.svcomp.BeginAtomic;
@@ -24,7 +26,6 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.java_smt.api.BooleanFormula;
-import org.sosy_lab.java_smt.api.Formula;
 import org.sosy_lab.java_smt.api.Model;
 
 import java.math.BigInteger;
@@ -45,7 +46,7 @@ public class ExecutionModel {
 
     private static final Logger logger = LogManager.getLogger(ExecutionModel.class);
 
-    private final EncodingContext encodingContext;
+    private final EncodingContext ctx;
 
     // ============= Model specific  =============
     private Model model;
@@ -93,7 +94,7 @@ public class ExecutionModel {
     private Map<BigInteger, List<EventData>> coherenceMapView;
 
     private ExecutionModel(EncodingContext c) {
-        this.encodingContext = checkNotNull(c);
+        this.ctx = checkNotNull(c);
 
         eventList = new ArrayList<>(100);
         threadList = new ArrayList<>(getProgram().getThreads().size());
@@ -141,15 +142,15 @@ public class ExecutionModel {
 
     // General data
     public VerificationTask getTask() {
-        return encodingContext.getTask();
+        return ctx.getTask();
     }
     
     public Wmm getMemoryModel() {
-        return encodingContext.getTask().getMemoryModel();
+        return ctx.getTask().getMemoryModel();
     }
 
     public Program getProgram() {
-        return encodingContext.getTask().getProgram();
+        return ctx.getTask().getProgram();
     }
 
     // Model specific data
@@ -157,7 +158,7 @@ public class ExecutionModel {
         return model;
     }
     public EncodingContext getContext() {
-        return encodingContext;
+        return ctx;
     }
     public Filter getEventFilter() {
         return eventFilter;
@@ -271,7 +272,7 @@ public class ExecutionModel {
             int atomicBegin = -1;
             int localId = 0;
             do {
-                if (!isTrue(encodingContext.execution(e))) {
+                if (!isTrue(ctx.execution(e))) {
                     e = e.getSuccessor();
                     continue;
                 }
@@ -290,7 +291,7 @@ public class ExecutionModel {
                 }
                 // =========================
 
-                if (e instanceof CondJump jump && isTrue(encodingContext.jumpTaken(jump))) {
+                if (e instanceof CondJump jump && isTrue(ctx.jumpTaken(jump))) {
                     e = jump.getLabel();
                 } else {
                     e = e.getSuccessor();
@@ -333,7 +334,7 @@ public class ExecutionModel {
         data.setWasExecuted(true);
         if (data.isMemoryEvent()) {
             // ===== Memory Events =====
-            Object addressObject = checkNotNull(encodingContext.getExpressionEncoder().evaluate(encodingContext.address((MemoryEvent) e), model).value());
+            Object addressObject = checkNotNull(ctx.evaluate(ctx.address((MemoryCoreEvent) e), model).value());
             BigInteger address = new BigInteger(addressObject.toString());
             data.setAccessedAddress(address);
             if (!addressReadsMap.containsKey(address)) {
@@ -342,8 +343,7 @@ public class ExecutionModel {
             }
 
             if (data.isRead() || data.isWrite()) {
-                Formula valueFormula = encodingContext.value((MemoryCoreEvent)e);
-                data.setValue(FormulaManagerExt.evaluate(valueFormula, model));
+                data.setValue(ctx.evaluate(ctx.value((MemoryCoreEvent) e), model).value());
             }
 
             if (data.isRead()) {
@@ -368,7 +368,7 @@ public class ExecutionModel {
         } else if (data.isJump()) {
             // ===== Jumps =====
             // We override the meaning of execution here. A jump is executed IFF its condition was true.
-            data.setWasExecuted(isTrue(encodingContext.jumpTaken((CondJump) e)));
+            data.setWasExecuted(isTrue(ctx.jumpTaken((CondJump) e)));
         } else {
             //TODO: Maybe add some other events (e.g. assertions)
             // But for now all non-visible events are simply registered without
@@ -485,21 +485,21 @@ public class ExecutionModel {
     // ===================================================
 
     private void extractMemoryLayout() {
-        final ExpressionEncoder exprEnc = encodingContext.getExpressionEncoder();
+        final ExpressionEncoder exprEnc = ctx.getExpressionEncoder();
         memoryLayoutMap.clear();
         for (MemoryObject obj : getProgram().getMemory().getObjects()) {
-            final boolean isAllocated = obj.isStaticallyAllocated() || isTrue(encodingContext.execution(obj.getAllocationSite()));
+            final boolean isAllocated = obj.isStaticallyAllocated() || isTrue(ctx.execution(obj.getAllocationSite()));
             if (isAllocated) {
                 // TODO: Get rid of ValueModel: replace by TypedValue
-                final ValueModel address = new ValueModel(exprEnc.evaluate(encodingContext.address(obj), model).value());
-                final BigInteger size = (BigInteger) exprEnc.evaluate(encodingContext.size(obj), model).value();
+                final ValueModel address = new ValueModel(exprEnc.evaluate(ctx.address(obj), model).value());
+                final BigInteger size = (BigInteger) exprEnc.evaluate(ctx.size(obj), model).value();
                 memoryLayoutMap.put(obj, new MemoryObjectModel(obj, address, size));
             }
         }
     }
 
     private void extractReadsFrom() {
-        final EncodingContext.EdgeEncoder rf = encodingContext.edge(encodingContext.getTask().getMemoryModel().getRelation(RF));
+        final EncodingContext.EdgeEncoder rf = ctx.edge(ctx.getTask().getMemoryModel().getRelation(RF));
         readWriteMap.clear();
 
         for (Map.Entry<BigInteger, Set<EventData>> addressedReads : addressReadsMap.entrySet()) {
@@ -519,14 +519,14 @@ public class ExecutionModel {
     }
 
     private void extractCoherences() {
-        final EncodingContext.EdgeEncoder co = encodingContext.edge(encodingContext.getTask().getMemoryModel().getRelation(CO));
+        final EncodingContext.EdgeEncoder co = ctx.edge(ctx.getTask().getMemoryModel().getRelation(CO));
 
         for (Map.Entry<BigInteger, Set<EventData>> addrWrites : addressWritesMap.entrySet()) {
             final BigInteger addr = addrWrites.getKey();
             final Set<EventData> writes = addrWrites.getValue();
 
             List<EventData> coSortedWrites;
-            if (encodingContext.usesSATEncoding()) {
+            if (ctx.usesSATEncoding()) {
                 // --- Extracting co from SAT-based encoding ---
                 Map<EventData, List<EventData>> coEdges = new HashMap<>();
                 for (EventData w1 : writes) {
@@ -543,7 +543,7 @@ public class ExecutionModel {
                 // --- Extracting co from IDL-based encoding using clock variables ---
                 Map<EventData, BigInteger> writeClockMap = new HashMap<>(writes.size() * 4 / 3, 0.75f);
                 for (EventData w : writes) {
-                    writeClockMap.put(w, model.evaluate(encodingContext.memoryOrderClock(w.getEvent())));
+                    writeClockMap.put(w, model.evaluate(ctx.memoryOrderClock(w.getEvent())));
                 }
                 coSortedWrites = writes.stream().sorted(Comparator.comparing(writeClockMap::get)).collect(Collectors.toList());
             }

@@ -213,7 +213,7 @@ public class PropertyEncoder implements Encoder {
                     BooleanFormula sameAddress = context.sameAddress(init, w1);
                     final BooleanFormula sameValue = exprEncoder.equals(
                             new FinalMemoryValue(null, init.getValue().getType(), init.getBase(), init.getOffset()),
-                            exprEncoder.wrap(w1.getMemValue().getType(), context.value(w1)),
+                            context.value(w1),
                             RIGHT_TO_LEFT
                     );
                     enc.add(bmgr.implication(bmgr.and(lastCoExpr, sameAddress), sameValue));
@@ -232,7 +232,7 @@ public class PropertyEncoder implements Encoder {
                 Expression finalValue = new FinalMemoryValue(null, init.getValue().getType(), init.getBase(), init.getOffset());
                 BooleanFormula readFromInit = exprEncoder.equals(
                         finalValue,
-                        exprEncoder.wrap(init.getValue().getType(), context.value(init)),
+                        context.value(init),
                         RIGHT_TO_LEFT
                 );
                 for (Store w : program.getThreadEvents(Store.class)) {
@@ -243,7 +243,7 @@ public class PropertyEncoder implements Encoder {
                     BooleanFormula sameAddr = context.sameAddress(init, w);
                     BooleanFormula sameValue = exprEncoder.equals(
                             finalValue,
-                            exprEncoder.wrap(w.getMemValue().getType(), context.value(w)),
+                            context.value(w),
                             RIGHT_TO_LEFT
                     );
                     lastValueEnc = bmgr.or(lastValueEnc, bmgr.and(isLast, sameAddr, sameValue));

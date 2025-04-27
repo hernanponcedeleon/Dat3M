@@ -1,7 +1,6 @@
 package com.dat3m.dartagnan.verification.model;
 
 import com.dat3m.dartagnan.encoding.EncodingContext;
-import com.dat3m.dartagnan.encoding.formulas.FormulaManagerExt;
 import com.dat3m.dartagnan.encoding.formulas.TypedFormula;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.Thread;
@@ -115,7 +114,7 @@ public class ExecutionModelManager {
 
     private void extractEvent(Event e, ThreadModel tm, int id) {
         EventModel em;
-        if (e instanceof MemoryEvent memEvent) {
+        if (e instanceof MemoryCoreEvent memEvent) {
             ValueModel address = new ValueModel(evaluateByModel(context.address(memEvent)));
             ValueModel value = new ValueModel(evaluateByModel(context.value(memEvent)));
 
@@ -271,11 +270,11 @@ public class ExecutionModelManager {
     }
 
     private Object evaluateByModel(Formula formula) {
-        return FormulaManagerExt.evaluate(formula, model);
+        return context.evaluate(formula, model);
     }
 
     private Object evaluateByModel(TypedFormula<?, ?> formula) {
-        return context.getExpressionEncoder().evaluate(formula, model).value();
+        return context.evaluate(formula.formula(), model);
     }
 
 

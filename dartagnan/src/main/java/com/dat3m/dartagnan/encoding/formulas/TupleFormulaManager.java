@@ -19,7 +19,7 @@ public final class TupleFormulaManager {
 
     private final FormulaManagerExt fmgr;
 
-    public TupleFormulaManager(FormulaManagerExt fmgr) {
+    TupleFormulaManager(FormulaManagerExt fmgr) {
         this.fmgr = fmgr;
     }
 

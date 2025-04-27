@@ -47,11 +47,11 @@ public class FormulaManagerExt {
             final BitvectorFormulaManager bvmgr = getBitvectorFormulaManager();
             return bvmgr.getLength(x) == bvmgr.getLength(y);
         } else if (left instanceof TupleFormula x && right instanceof TupleFormula y) {
-            if (x.getElements().size() != y.getElements().size()) {
+            if (x.elements.size() != y.elements.size()) {
                 return false;
             }
-            return IntStream.range(0, x.getElements().size()).allMatch(
-                    i -> hasSameType(x.getElements().get(i), y.getElements().get(i))
+            return IntStream.range(0, x.elements.size()).allMatch(
+                    i -> hasSameType(x.elements.get(i), y.elements.get(i))
             );
         }
 
@@ -68,10 +68,10 @@ public class FormulaManagerExt {
         } else if (left instanceof BooleanFormula l) {
             return getBooleanFormulaManager().equivalence(l, (BooleanFormula) right);
         } else if (left instanceof TupleFormula l && right instanceof TupleFormula r) {
-            Preconditions.checkArgument(l.getElements().size() == r.getElements().size());
+            Preconditions.checkArgument(l.elements.size() == r.elements.size());
             final BooleanFormulaManager bmgr = getBooleanFormulaManager();
-            return IntStream.range(0, l.getElements().size())
-                    .mapToObj(i -> equal(l.getElements().get(i), r.getElements().get(i)))
+            return IntStream.range(0, l.elements.size())
+                    .mapToObj(i -> equal(l.elements.get(i), r.elements.get(i)))
                     .reduce(bmgr.makeTrue(), bmgr::and);
         }
 
@@ -83,8 +83,8 @@ public class FormulaManagerExt {
         Preconditions.checkArgument(hasSameType(thenF, elseF));
 
         if (thenF instanceof TupleFormula thenT && elseF instanceof TupleFormula elseT) {
-            final List<Formula> inner = IntStream.range(0, thenT.getElements().size())
-                    .mapToObj(i -> ifThenElse(guard, thenT.getElements().get(i), elseT.getElements().get(i)))
+            final List<Formula> inner = IntStream.range(0, thenT.elements.size())
+                    .mapToObj(i -> ifThenElse(guard, thenT.elements.get(i), elseT.elements.get(i)))
                     .collect(ImmutableList.toImmutableList());
             return (TFormula) getTupleFormulaManager().makeTuple(inner);
         }
@@ -95,15 +95,15 @@ public class FormulaManagerExt {
     // =====================================================================================
     // Model
 
-    public static Object evaluate(Formula f, Model model) {
+    public Object evaluate(Formula f, Model model) {
         if (f instanceof TupleFormula tf) {
             return evaluate(tf, model);
         }
         return model.evaluate(f);
     }
 
-    public static TupleValue evaluate(TupleFormula tupleFormula, Model model) {
-        return new TupleValue(tupleFormula.getElements().stream().map(v -> evaluate(v, model)).toList());
+    public TupleValue evaluate(TupleFormula tupleFormula, Model model) {
+        return new TupleValue(tupleFormula.elements.stream().map(v -> evaluate(v, model)).toList());
     }
 
 }

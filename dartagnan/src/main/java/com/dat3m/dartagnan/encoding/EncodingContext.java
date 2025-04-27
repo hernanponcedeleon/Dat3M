@@ -2,6 +2,8 @@ package com.dat3m.dartagnan.encoding;
 
 import com.dat3m.dartagnan.encoding.formulas.FormulaManagerExt;
 import com.dat3m.dartagnan.encoding.formulas.TypedFormula;
+import com.dat3m.dartagnan.encoding.formulas.TypedValue;
+import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.Type;
 import com.dat3m.dartagnan.program.Register;
@@ -10,7 +12,6 @@ import com.dat3m.dartagnan.program.analysis.ExecutionAnalysis;
 import com.dat3m.dartagnan.program.analysis.alias.AliasAnalysis;
 import com.dat3m.dartagnan.program.event.BlockingEvent;
 import com.dat3m.dartagnan.program.event.Event;
-import com.dat3m.dartagnan.program.event.MemoryEvent;
 import com.dat3m.dartagnan.program.event.RegWriter;
 import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
@@ -25,10 +26,7 @@ import org.apache.logging.log4j.Logger;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.common.configuration.Option;
 import org.sosy_lab.common.configuration.Options;
-import org.sosy_lab.java_smt.api.BooleanFormula;
-import org.sosy_lab.java_smt.api.BooleanFormulaManager;
-import org.sosy_lab.java_smt.api.Formula;
-import org.sosy_lab.java_smt.api.FormulaManager;
+import org.sosy_lab.java_smt.api.*;
 import org.sosy_lab.java_smt.api.NumeralFormula.IntegerFormula;
 
 import java.util.HashMap;
@@ -76,7 +74,7 @@ public final class EncodingContext {
     private final Map<Event, BooleanFormula> executionVariables = new HashMap<>();
     private final Map<NamedBarrier, BooleanFormula> syncVariables = new HashMap<>();
 
-    private final Map<Event, Formula> values = new HashMap<>();
+    private final Map<Event, TypedFormula<?, ?>> values = new HashMap<>();
     private final Map<Event, TypedFormula<?, ?>> results = new HashMap<>();
 
     // TODO: Once we have a PointerType, this needs to get updated.
@@ -135,6 +133,23 @@ public final class EncodingContext {
     public ExpressionEncoder getExpressionEncoder() { return exprEncoder; }
 
     public ExpressionFactory getExpressionFactory() { return exprs; }
+
+    // ====================================================================================
+    // Utility
+
+    // TODO: Unclear if these convenience functions are necessary.
+
+    public Object evaluate(Formula formula, Model model) {
+        return formulaManager.evaluate(formula, model);
+    }
+
+    public <TType extends Type> TypedValue<TType, ?> evaluate(TypedFormula<TType, ?> formula, Model model) {
+        return exprEncoder.evaluate(formula, model);
+    }
+
+    public TypedValue<?, ?> evaluateAt(Expression expr, Event at, Model model) {
+        return exprEncoder.evaluateAt(expr, at, model);
+    }
 
     // ====================================================================================
     // Control flow
@@ -203,11 +218,15 @@ public final class EncodingContext {
         return exprEncoder.equals(result(first), result(second));
     }
 
-    public BooleanFormula sameValue(MemoryCoreEvent first, MemoryCoreEvent second) {
-        return formulaManager.equal(value(first), value(second));
+    public BooleanFormula sameValue(MemoryCoreEvent first, MemoryCoreEvent second, ExpressionEncoder.ConversionMode cmode) {
+        return exprEncoder.equals(value(first), value(second), cmode);
     }
 
-    public TypedFormula<?, ?> address(MemoryEvent event) {
+    public BooleanFormula sameValue(MemoryCoreEvent first, MemoryCoreEvent second) {
+        return sameValue(first, second, ExpressionEncoder.ConversionMode.NO);
+    }
+
+    public TypedFormula<?, ?> address(MemoryCoreEvent event) {
         return addresses.get(event);
     }
 
@@ -217,8 +236,7 @@ public final class EncodingContext {
         return objSize.get(memoryObject);
     }
 
-    // TODO: Change all to TypedFormula
-    public Formula value(MemoryEvent event) {
+    public TypedFormula<?, ?> value(MemoryCoreEvent event) {
         return values.get(event);
     }
 
@@ -304,7 +322,6 @@ public final class EncodingContext {
 
         // ------- Memory object variables -------
         for (MemoryObject memoryObject : verificationTask.getProgram().getMemory().getObjects()) {
-
             objAddress.put(memoryObject, exprEncoder.makeVariable(String.format("addrof(%s)", memoryObject), memoryObject.getType()));
             objSize.put(memoryObject, exprEncoder.makeVariable(String.format("sizeof(%s)", memoryObject), memoryObject.getType()));
         }
@@ -329,9 +346,9 @@ public final class EncodingContext {
             if (e instanceof MemoryCoreEvent memEvent) {
                 addresses.put(e, exprEncoder.encodeAt(memEvent.getAddress(), memEvent));
                 if (e instanceof Load) {
-                    values.put(e, r.formula());
+                    values.put(e, r);
                 } else if (e instanceof Store store) {
-                    values.put(e, exprEncoder.encodeAt(store.getMemValue(), e).formula());
+                    values.put(e, exprEncoder.encodeAt(store.getMemValue(), e));
                 }
             }
             if (r != null) {

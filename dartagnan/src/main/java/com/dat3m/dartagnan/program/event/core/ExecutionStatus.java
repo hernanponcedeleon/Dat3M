@@ -2,10 +2,7 @@ package com.dat3m.dartagnan.program.event.core;
 
 import com.dat3m.dartagnan.encoding.EncodingContext;
 import com.dat3m.dartagnan.encoding.ExpressionEncoder;
-import com.dat3m.dartagnan.encoding.formulas.TypedFormula;
 import com.dat3m.dartagnan.expression.Expression;
-import com.dat3m.dartagnan.expression.ExpressionFactory;
-import com.dat3m.dartagnan.expression.type.BooleanType;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.*;
 import org.sosy_lab.java_smt.api.BooleanFormula;
@@ -13,6 +10,8 @@ import org.sosy_lab.java_smt.api.BooleanFormulaManager;
 
 import java.util.Map;
 import java.util.Set;
+
+import static com.dat3m.dartagnan.encoding.ExpressionEncoder.ConversionMode.RIGHT_TO_LEFT;
 
 public class ExecutionStatus extends AbstractEvent implements RegWriter, EventUser {
 
@@ -64,17 +63,15 @@ public class ExecutionStatus extends AbstractEvent implements RegWriter, EventUs
     public BooleanFormula encodeExec(EncodingContext context) {
         final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
         final ExpressionEncoder exprEncoder = context.getExpressionEncoder();
-        final ExpressionFactory exprs = context.getExpressionFactory();
 
         //TODO: We have "result == not exec(event)", because we use 0/false for executed events.
         // The reason is that ExecutionStatus follows the behavior of Store-Conditionals on hardware.
         // However, this is very counterintuitive and I think we should return 1/true on success and instead
         // change the compilation of Store-Conditional to invert the value.
-        final TypedFormula<BooleanType, BooleanFormula> notExec = exprEncoder.wrap(bmgr.not(context.execution(event)));
-        final Expression successEq = exprs.makeEQ(context.result(this), exprEncoder.convert(notExec, register.getType()));
+        final Expression notExec = exprEncoder.wrap(bmgr.not(context.execution(event)));
         return bmgr.and(
                 super.encodeExec(context),
-                exprEncoder.encodeBooleanAt(successEq, this).formula()
+                context.getExpressionEncoder().equals(context.result(this), notExec, RIGHT_TO_LEFT)
         );
     }
 

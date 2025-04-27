@@ -166,7 +166,7 @@ public class ExpressionEncoder {
     }
 
     public <TType extends Type, TFormula extends Formula> TypedValue<TType, ?> evaluate(TypedFormula<TType, TFormula> typedFormula, Model model) {
-        return new TypedValue<>(typedFormula.type(), FormulaManagerExt.evaluate(typedFormula.formula(), model));
+        return new TypedValue<>(typedFormula.type(), fmgr.evaluate(typedFormula.formula(), model));
     }
 
     public TypedValue<?, ?> evaluateAt(Expression expression, Event at, Model model) {
