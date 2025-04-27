@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan.encoding;
 
+import com.dat3m.dartagnan.encoding.formulas.FormulaManagerExt;
 import com.dat3m.dartagnan.encoding.formulas.TupleFormula;
 import com.dat3m.dartagnan.encoding.formulas.TypedFormula;
 import com.dat3m.dartagnan.encoding.formulas.TypedValue;
@@ -33,6 +34,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkState;
 import static java.util.Arrays.asList;
 
@@ -44,7 +46,7 @@ public class ExpressionEncoder {
     private static final TypeFactory types = TypeFactory.getInstance();
 
     private final EncodingContext context;
-    private final FormulaManager fmgr;
+    private final FormulaManagerExt fmgr;
     private final BooleanFormulaManager bmgr;
     private final Visitor visitor = new Visitor();
 
@@ -145,7 +147,7 @@ public class ExpressionEncoder {
                 for (Map.Entry<Integer, Type> entry : primitives.entrySet()) {
                     elements.add(makeVariable(name + "@" + entry.getKey(), entry.getValue()).formula());
                 }
-                variable = context.getTupleFormulaManager().makeTuple(elements);
+                variable = fmgr.getTupleFormulaManager().makeTuple(elements);
             }
         }
 
@@ -164,7 +166,41 @@ public class ExpressionEncoder {
     }
 
     public <TType extends Type, TFormula extends Formula> TypedValue<TType, ?> evaluate(TypedFormula<TType, TFormula> typedFormula, Model model) {
-        return new TypedValue<>(typedFormula.type(), EncodingHelper.evaluate(typedFormula.formula(), model));
+        return new TypedValue<>(typedFormula.type(), FormulaManagerExt.evaluate(typedFormula.formula(), model));
+    }
+
+    public TypedValue<?, ?> evaluateAt(Expression expression, Event at, Model model) {
+        return evaluate(encodeAt(expression, at), model);
+    }
+
+    @SuppressWarnings("Unchecked")
+    public TypedValue<BooleanType, Boolean> evaluateBooleanAt(Expression expression, Event at, Model model) {
+        return (TypedValue<BooleanType, Boolean>) evaluate(encodeBooleanAt(expression, at), model);
+    }
+
+    // ====================================================================================
+    // Utility
+
+    public BooleanFormula equals(Expression left, Expression right, ConversionMode cMode) {
+        if (cMode == ConversionMode.LEFT_TO_RIGHT) {
+            return equals(right, left, ConversionMode.RIGHT_TO_LEFT);
+        } else if (cMode == ConversionMode.RIGHT_TO_LEFT) {
+            right = convert(encodeFinal(right), left.getType());
+        }
+
+        return encodeBooleanFinal(context.getExpressionFactory().makeEQ(left, right)).formula();
+    }
+
+    public BooleanFormula equals(Expression left, Expression right) {
+        return equals(left, right, ConversionMode.NO);
+    }
+
+    public BooleanFormula equalsAt(Expression left, Event leftAt, Expression right, Event rightAt, ConversionMode cMode) {
+        return equals(encodeAt(left, leftAt), encodeAt(right, rightAt), cMode);
+    }
+
+    public BooleanFormula equalsAt(Expression left, Event leftAt, Expression right, Event rightAt) {
+        return equals(encodeAt(left, leftAt), encodeAt(right, rightAt));
     }
 
     // ====================================================================================
@@ -226,7 +262,7 @@ public class ExpressionEncoder {
                 zero = bvmgr.makeBitvector(targetType.getBitWidth(), 0);
                 one = bvmgr.makeBitvector(targetType.getBitWidth(), 1);
             }
-            return new TypedFormula<>(targetType, bmgr.ifThenElse(boolForm, one, zero));
+            return new TypedFormula<>(targetType, fmgr.ifThenElse(boolForm, one, zero));
         } else if (form.type() instanceof IntegerType sourceType) {
             if (context.useIntegers) {
                 // TODO: Add truncation
@@ -247,6 +283,12 @@ public class ExpressionEncoder {
             final String error = String.format("Cannot convert typed formula %s to type %s", form, targetType);
             throw new UnsupportedOperationException(error);
         }
+    }
+
+    public enum ConversionMode {
+        NO,
+        LEFT_TO_RIGHT,
+        RIGHT_TO_LEFT,
     }
 
     // ====================================================================================
@@ -388,7 +430,7 @@ public class ExpressionEncoder {
                                 imgr.distinct(asList(modulo, zero)),
                                 imgr.lessThan(i1, zero)
                         );
-                        yield bmgr.ifThenElse(cond, imgr.subtract(modulo, i2), modulo);
+                        yield fmgr.ifThenElse(cond, imgr.subtract(modulo, i2), modulo);
                     }
                 };
 
@@ -472,7 +514,7 @@ public class ExpressionEncoder {
                         for (int i = bvLength - 1; i >= 0; i--) {
                             BitvectorFormula bvi = bvmgr.makeBitvector(bvLength, i);
                             BitvectorFormula bvbit = bvmgr.extract(bv, bvLength - (i + 1), bvLength - (i + 1));
-                            ctlz = bmgr.ifThenElse(bvmgr.equal(bvbit, bv1), bvi, ctlz);
+                            ctlz = fmgr.ifThenElse(bvmgr.equal(bvbit, bv1), bvi, ctlz);
                         }
                         yield ctlz;
                     }
@@ -485,7 +527,7 @@ public class ExpressionEncoder {
                         for (int i = bvLength - 1; i >= 0; i--) {
                             BitvectorFormula bvi = bvmgr.makeBitvector(bvLength, i);
                             BitvectorFormula bvbit = bvmgr.extract(bv, i, i);
-                            cttz = bmgr.ifThenElse(bvmgr.equal(bvbit, bv1), bvi, cttz);
+                            cttz = fmgr.ifThenElse(bvmgr.equal(bvbit, bv1), bvi, cttz);
                         }
                         yield cttz;
                     }
@@ -499,8 +541,40 @@ public class ExpressionEncoder {
         public TypedFormula<BooleanType, BooleanFormula> visitIntCmpExpression(IntCmpExpr cmp) {
             final TypedFormula<?, ?> lhs = encode(cmp.getLeft());
             final TypedFormula<?, ?> rhs = encode(cmp.getRight());
-            return new TypedFormula<>(types.getBooleanType(),
-                    new EncodingHelper(context).encodeComparison(cmp.getKind(), lhs.formula(), rhs.formula()));
+            final IntCmpOp op = cmp.getKind();
+
+            if (context.useIntegers) {
+                final IntegerFormulaManager imgr = fmgr.getIntegerFormulaManager();
+                final IntegerFormula l = (IntegerFormula) lhs.formula();
+                final IntegerFormula r = (IntegerFormula) rhs.formula();
+
+                final BooleanFormula result = switch (op) {
+                    case EQ -> imgr.equal(l, r);
+                    case NEQ -> fmgr.getBooleanFormulaManager().not(imgr.equal(l, r));
+                    case LT, ULT -> imgr.lessThan(l, r);
+                    case LTE, ULTE -> imgr.lessOrEquals(l, r);
+                    case GT, UGT -> imgr.greaterThan(l, r);
+                    case GTE, UGTE -> imgr.greaterOrEquals(l, r);
+                };
+
+                return new TypedFormula<>(types.getBooleanType(), result);
+            } else {
+                final BitvectorFormulaManager bvmgr = fmgr.getBitvectorFormulaManager();
+                final BitvectorFormula l = (BitvectorFormula) lhs.formula();
+                final BitvectorFormula r = (BitvectorFormula) rhs.formula();
+                final boolean isSigned = op.isSigned();
+
+                final BooleanFormula result = switch (op) {
+                    case EQ -> bvmgr.equal(l, r);
+                    case NEQ -> fmgr.getBooleanFormulaManager().not(bvmgr.equal(l, r));
+                    case LT, ULT -> bvmgr.lessThan(l, r, isSigned);
+                    case LTE, ULTE -> bvmgr.lessOrEquals(l, r, isSigned);
+                    case GT, UGT -> bvmgr.greaterThan(l, r, isSigned);
+                    case GTE, UGTE -> bvmgr.greaterOrEquals(l, r, isSigned);
+                };
+
+                return new TypedFormula<>(types.getBooleanType(), result);
+            }
         }
 
         // ====================================================================================
@@ -512,7 +586,7 @@ public class ExpressionEncoder {
             for (Expression inner : construct.getOperands()) {
                 elements.add(encode(inner).formula());
             }
-            return new TypedFormula<>(construct.getType(), context.getTupleFormulaManager().makeTuple(elements));
+            return new TypedFormula<>(construct.getType(), fmgr.getTupleFormulaManager().makeTuple(elements));
         }
 
         @Override
@@ -520,7 +594,7 @@ public class ExpressionEncoder {
             final TypedFormula<?, TupleFormula> left = encodeAggregateExpr(expr.getLeft());
             final TypedFormula<?, TupleFormula> right = encodeAggregateExpr(expr.getRight());
 
-            final BooleanFormula eq = new EncodingHelper(context).equal(left.formula(), right.formula());
+            final BooleanFormula eq = fmgr.equal(left.formula(), right.formula());
             final BooleanFormula result = switch (expr.getKind()) {
                 case EQ -> eq;
                 case NEQ -> context.getBooleanFormulaManager().not(eq);
@@ -531,7 +605,7 @@ public class ExpressionEncoder {
         @Override
         public TypedFormula<?, ?> visitExtractExpression(ExtractExpr extract) {
             final TypedFormula<?, TupleFormula> inner = encodeAggregateExpr(extract.getOperand());
-            final Formula extractForm = context.getTupleFormulaManager().extract(inner.formula(), extract.getIndices());
+            final Formula extractForm = fmgr.getTupleFormulaManager().extract(inner.formula(), extract.getIndices());
             return new TypedFormula<>(extract.getType(), extractForm);
         }
 
@@ -539,7 +613,7 @@ public class ExpressionEncoder {
         public TypedFormula<?, TupleFormula> visitInsertExpression(InsertExpr insert) {
             final TupleFormula agg = encodeAggregateExpr(insert.getAggregate()).formula();
             final Formula value = encode(insert.getInsertedValue()).formula();
-            final TupleFormula insertForm = context.getTupleFormulaManager().insert(agg, value, insert.getIndices());
+            final TupleFormula insertForm = fmgr.getTupleFormulaManager().insert(agg, value, insert.getIndices());
             return new TypedFormula<>(insert.getType(), insertForm);
         }
 
@@ -551,7 +625,7 @@ public class ExpressionEncoder {
             final BooleanFormula guard = encodeBooleanExpr(iteExpr.getCondition()).formula();
             final Formula tBranch = encode(iteExpr.getTrueCase()).formula();
             final Formula fBranch = encode(iteExpr.getFalseCase()).formula();
-            final Formula ite = bmgr.ifThenElse(guard, tBranch, fBranch);
+            final Formula ite = fmgr.ifThenElse(guard, tBranch, fBranch);
             return new TypedFormula<>(iteExpr.getType(), ite);
         }
 
@@ -579,8 +653,11 @@ public class ExpressionEncoder {
         @Override
         public TypedFormula<?, ?> visitFinalMemoryValue(FinalMemoryValue val) {
             checkState(event == null, "Cannot evaluate final memory value of %s at event %s.", val, event);
-            final int size = types.getMemorySizeInBits(val.getType());
-            return new TypedFormula<>(val.getType(), context.lastValue(val.getMemoryObject(), val.getOffset(), size));
+            final MemoryObject base = val.getMemoryObject();
+            final int offset = val.getOffset();
+            checkArgument(base.isInRange(offset), "Array index out of bounds");
+            final String name = String.format("last_val_at_%s_%d", base, offset);
+            return makeVariable(name, val.getType());
         }
     }
 }

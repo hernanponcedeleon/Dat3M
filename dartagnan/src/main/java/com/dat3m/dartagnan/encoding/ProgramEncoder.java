@@ -4,7 +4,6 @@ import com.dat3m.dartagnan.configuration.ProgressModel;
 import com.dat3m.dartagnan.encoding.formulas.TypedFormula;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
-import com.dat3m.dartagnan.expression.integers.IntCmpOp;
 import com.dat3m.dartagnan.expression.integers.IntLiteral;
 import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
@@ -32,7 +31,6 @@ import org.sosy_lab.common.configuration.Option;
 import org.sosy_lab.common.configuration.Options;
 import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.BooleanFormulaManager;
-import org.sosy_lab.java_smt.api.Formula;
 import org.sosy_lab.java_smt.api.IntegerFormulaManager;
 import org.sosy_lab.java_smt.api.NumeralFormula.IntegerFormula;
 
@@ -296,10 +294,9 @@ public class ProgramEncoder implements Encoder {
 
     private BooleanFormula encodeNamedBarrierCfAll(NamedBarrier e1, List<NamedBarrier> events) {
         BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
-        Expression id1 = e1.getResourceId();
         BooleanFormula allCF = bmgr.makeTrue();
         for (NamedBarrier e2 : events) {
-            BooleanFormula sameId = context.equal(context.encodeExpressionAt(id1, e1), context.encodeExpressionAt(e2.getResourceId(), e2));
+            BooleanFormula sameId = context.getExpressionEncoder().equalsAt(e1.getResourceId(), e1, e2.getResourceId(), e2);
             BooleanFormula cf = bmgr.or(context.controlFlow(e2), bmgr.not(sameId));
             allCF = bmgr.and(allCF, cf);
         }
@@ -324,33 +321,33 @@ public class ProgramEncoder implements Encoder {
      * - `sync_count(e) <=> sum((sync(e1) /\ sameId(e, e1)), (sync(e2) /\ sameId(e, e2)), .., (sync(en) /\ sameId(e, en)))`
      */
     private BooleanFormula encodeNamedBarrierCfQuorum(NamedBarrier e1, List<NamedBarrier> events) {
-        BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
-        IntegerFormulaManager imgr = context.getFormulaManager().getIntegerFormulaManager();
-        final EncodingHelper encHelper = new EncodingHelper(context);
-        Expression id1 = e1.getResourceId();
+        final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
+        final ExpressionEncoder exprEncoder = context.getExpressionEncoder();
+        final ExpressionFactory exprs = ExpressionFactory.getInstance();
+        final IntegerType numType = (IntegerType) e1.getQuorum().getType();
 
-
-        List<IntegerFormula> cfCountMembers = new ArrayList<>();
-        List<IntegerFormula> syncCountMembers = new ArrayList<>();
+        Expression cfSum = exprs.makeZero(numType);
+        Expression syncSum = exprs.makeZero(numType);
         for (NamedBarrier e2 : events) {
-            BooleanFormula sameId = encHelper.equal(context.encodeExpressionAt(id1, e1), context.encodeExpressionAt(e2.getResourceId(), e2));
-            IntegerFormula iCf = encHelper.toInteger(bmgr.and(sameId, context.controlFlow(e2)));
-            IntegerFormula iSync = encHelper.toInteger(bmgr.and(sameId, context.sync(e2)));
-            cfCountMembers.add(iCf);
-            syncCountMembers.add(iSync);
+            BooleanFormula sameId = exprEncoder.equalsAt(e1.getResourceId(), e1, e2.getResourceId(), e2);
+            Expression iCf = exprs.makeCast(exprEncoder.wrap(bmgr.and(sameId, context.controlFlow(e2))), numType);
+            Expression iSync = exprs.makeCast(exprEncoder.wrap(bmgr.and(sameId, context.sync(e2))), numType);
+            cfSum = exprs.makeAdd(cfSum, iCf);
+            syncSum = exprs.makeAdd(syncSum, iSync);
         }
 
-        // FIXME: Don't use integer types. Use types matching quorum type (usually BV)
-        IntegerFormula cfCount = imgr.makeVariable("cf_count(" + e1.getGlobalId() + ")");
-        IntegerFormula syncCount = imgr.makeVariable("sync_count(" + e1.getGlobalId() + ")");
-        BooleanFormula hasQuorum = bmgr.makeVariable("quorum(" + e1.getGlobalId() + ")");
-        Formula quorum = context.encodeExpressionAt(e1.getQuorum(), e1);
+        final Expression cfCount = exprEncoder.makeVariable("cf_count(" + e1.getGlobalId() + ")", numType);
+        final Expression syncCount = exprEncoder.makeVariable("sync_count(" + e1.getGlobalId() + ")", numType);
+        final Expression quorum = exprEncoder.encodeAt(e1.getQuorum(), e1);
+        final BooleanFormula hasQuorum = bmgr.makeVariable("quorum(" + e1.getGlobalId() + ")");
+        final BooleanFormula syncGTEQuorum = exprEncoder.encodeBooleanFinal(exprs.makeGTE(syncCount, quorum, false)).formula();
+        final BooleanFormula cfCountGTEQuorum = exprEncoder.encodeBooleanFinal(exprs.makeGTE(cfCount, quorum, false)).formula();
 
-        BooleanFormula enc = bmgr.equivalence(hasQuorum, encHelper.encodeComparison(IntCmpOp.GTE, syncCount, quorum));
+        BooleanFormula enc = bmgr.equivalence(hasQuorum, syncGTEQuorum);
         enc = bmgr.and(enc, bmgr.equivalence(context.execution(e1), bmgr.and(context.controlFlow(e1), hasQuorum)));
-        enc = bmgr.and(enc, bmgr.implication(encHelper.encodeComparison(IntCmpOp.GTE, cfCount, quorum), hasQuorum));
-        enc = bmgr.and(enc, imgr.equal(cfCount, imgr.sum(cfCountMembers)));
-        enc = bmgr.and(enc, imgr.equal(syncCount, imgr.sum(syncCountMembers)));
+        enc = bmgr.and(enc, bmgr.implication(cfCountGTEQuorum, hasQuorum));
+        enc = bmgr.and(enc, exprEncoder.equals(cfCount, cfSum));
+        enc = bmgr.and(enc, exprEncoder.equals(syncCount, syncSum));
 
         return bmgr.and(enc, bmgr.implication(context.sync(e1), context.execution(e1)));
     }
@@ -436,12 +433,13 @@ public class ProgramEncoder implements Encoder {
     public BooleanFormula encodeDependencies() {
         logger.info("Encoding dependencies");
         final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
-        final EncodingHelper encHelper = new EncodingHelper(context);
+        final ExpressionEncoder exprEncoder = context.getExpressionEncoder();
+        final ExpressionFactory exprs = ExpressionFactory.getInstance();
+
         List<BooleanFormula> enc = new ArrayList<>();
         for (RegReader reader : context.getTask().getProgram().getThreadEvents(RegReader.class)) {
             final ReachingDefinitionsAnalysis.Writers writers = definitions.getWriters(reader);
             for (Register register : writers.getUsedRegisters()) {
-                final Formula value = context.encodeExpressionAt(register, reader);
                 final List<BooleanFormula> overwrite = new ArrayList<>();
                 final ReachingDefinitionsAnalysis.RegisterWriters reg = writers.ofRegister(register);
                 for (RegWriter writer : reverse(reg.getMayWriters())) {
@@ -461,12 +459,15 @@ public class ProgramEncoder implements Encoder {
                         edge = context.dependency(writer, reader);
                         enc.add(bmgr.equivalence(edge, bmgr.and(context.execution(writer), context.controlFlow(reader), bmgr.not(bmgr.or(overwrite)))));
                     }
-                    enc.add(bmgr.implication(edge, encHelper.equal(value, context.result(writer))));
+                    BooleanFormula equalValue = exprEncoder.equalsAt(register, reader, context.result(writer), writer);
+                    enc.add(bmgr.implication(edge, equalValue));
                     overwrite.add(context.execution(writer));
                 }
+
                 if(initializeRegisters && !reg.mustBeInitialized()) {
+                    final Expression zero = exprs.makeGeneralZero(register.getType());
                     overwrite.add(bmgr.not(context.controlFlow(reader)));
-                    overwrite.add(encHelper.equalZero(value));
+                    overwrite.add(exprEncoder.equalsAt(register, reader, zero, reader));
                     enc.add(bmgr.or(overwrite));
                 }
             }
@@ -484,7 +485,8 @@ public class ProgramEncoder implements Encoder {
 
     public BooleanFormula encodeFinalRegisterValues() {
         final BooleanFormulaManager bmgr = context.getFormulaManager().getBooleanFormulaManager();
-        final EncodingHelper encHelper = new EncodingHelper(context);
+        final ExpressionFactory exprs = context.getExpressionFactory();
+        final ExpressionEncoder exprEncoder = context.getExpressionEncoder();
         if (context.getTask().getProgram().getFormat() != Program.SourceLanguage.LITMUS) {
             // LLVM code does not have assertions over final register values, so we do not need to encode them.
             logger.info("Skipping encoding of final register values: C-Code has no assertions over those values.");
@@ -495,12 +497,12 @@ public class ProgramEncoder implements Encoder {
         List<BooleanFormula> enc = new ArrayList<>();
         final ReachingDefinitionsAnalysis.Writers finalState = definitions.getFinalWriters();
         for (Register register : finalState.getUsedRegisters()) {
-            final Formula value = context.getExpressionEncoder().encodeFinal(register).formula();
             final ReachingDefinitionsAnalysis.RegisterWriters registerWriters = finalState.ofRegister(register);
             final List<RegWriter> writers = registerWriters.getMayWriters();
             if (initializeRegisters && !registerWriters.mustBeInitialized()) {
                 List<BooleanFormula> clause = new ArrayList<>();
-                clause.add(encHelper.equalZero(value));
+                final Expression equalZero = exprs.makeEQ(register, exprs.makeGeneralZero(register.getType()));
+                clause.add(exprEncoder.encodeBooleanFinal(equalZero).formula());
                 for (Event w : writers) {
                     clause.add(context.execution(w));
                 }
@@ -509,7 +511,8 @@ public class ProgramEncoder implements Encoder {
             for (int i = 0; i < writers.size(); i++) {
                 final RegWriter writer = writers.get(i);
                 List<BooleanFormula> clause = new ArrayList<>();
-                clause.add(encHelper.equal(value, context.result(writer)));
+                final Expression equalValue = exprs.makeEQ(register, context.result(writer));
+                clause.add(exprEncoder.encodeBooleanFinal(equalValue).formula());
                 clause.add(bmgr.not(context.execution(writer)));
                 for (Event w : writers.subList(i + 1, writers.size())) {
                     if (!exec.areMutuallyExclusive(writer, w)) {

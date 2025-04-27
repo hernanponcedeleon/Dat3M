@@ -61,9 +61,11 @@ public class Local extends AbstractEvent implements RegWriter, RegReader {
 
     @Override
     public BooleanFormula encodeExec(EncodingContext context) {
+        final Expression equalValue = context.getExpressionFactory().makeEQ(context.result(this), expr);
         return context.getBooleanFormulaManager().and(
                 super.encodeExec(context),
-                context.equal(context.result(this), context.encodeExpressionAt(expr, this)));
+                context.getExpressionEncoder().encodeBooleanAt(equalValue, this).formula()
+        );
     }
 
     @Override

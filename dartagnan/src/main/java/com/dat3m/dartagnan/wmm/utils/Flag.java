@@ -1,8 +1,8 @@
 package com.dat3m.dartagnan.wmm.utils;
 
+import com.dat3m.dartagnan.encoding.formulas.FormulaManagerExt;
 import com.google.common.collect.ImmutableSet;
 import org.sosy_lab.java_smt.api.BooleanFormula;
-import org.sosy_lab.java_smt.api.FormulaManager;
 
 public enum  Flag {
     ARM_UNPREDICTABLE_BEHAVIOUR,
@@ -11,8 +11,8 @@ public enum  Flag {
     // TODO: Add linux when implemented
     public static final ImmutableSet<Flag> ALL = ImmutableSet.of(ARM_UNPREDICTABLE_BEHAVIOUR);
 
-    public BooleanFormula repr(FormulaManager m){
-    	return m.getBooleanFormulaManager().makeVariable(code());
+    public BooleanFormula repr(FormulaManagerExt m){
+        return m.getBooleanFormulaManager().makeVariable(code());
     }
 
     @Override

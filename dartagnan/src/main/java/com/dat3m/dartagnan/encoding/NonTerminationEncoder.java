@@ -379,10 +379,7 @@ public class NonTerminationEncoder {
                 for (int i = 0; i < e.getExpressions().size(); i++) {
                     final Expression exprE = e.getExpressions().get(i);
                     final Expression exprF = f.getExpressions().get(i);
-                    equality = bmgr.and(
-                            equality,
-                            context.equal(context.encodeExpressionAt(exprE, e), context.encodeExpressionAt(exprF, f))
-                    );
+                    equality = bmgr.and(equality, context.getExpressionEncoder().equalsAt(exprE, e, exprF, f));
                 }
             }
         }

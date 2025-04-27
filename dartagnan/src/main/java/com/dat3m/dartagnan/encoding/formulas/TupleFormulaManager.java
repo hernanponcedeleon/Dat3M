@@ -1,7 +1,5 @@
 package com.dat3m.dartagnan.encoding.formulas;
 
-import com.dat3m.dartagnan.encoding.EncodingContext;
-import com.dat3m.dartagnan.encoding.EncodingHelper;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
@@ -19,15 +17,14 @@ import java.util.stream.IntStream;
  */
 public final class TupleFormulaManager {
 
-    private final EncodingContext context;
+    private final FormulaManagerExt fmgr;
 
-    public TupleFormulaManager(EncodingContext context) {
-        this.context = context;
-
+    public TupleFormulaManager(FormulaManagerExt fmgr) {
+        this.fmgr = fmgr;
     }
 
     public BooleanFormula equal(TupleFormula x, TupleFormula y) {
-        return new EncodingHelper(context).equal(x, y);
+        return fmgr.equal(x, y);
     }
 
     public Formula extract(TupleFormula f, int index) {

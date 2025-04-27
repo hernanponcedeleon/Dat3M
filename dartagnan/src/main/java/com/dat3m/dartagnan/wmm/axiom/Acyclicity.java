@@ -1,6 +1,7 @@
 package com.dat3m.dartagnan.wmm.axiom;
 
 import com.dat3m.dartagnan.encoding.EncodingContext;
+import com.dat3m.dartagnan.encoding.formulas.FormulaManagerExt;
 import com.dat3m.dartagnan.program.analysis.ExecutionAnalysis;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.Tag;
@@ -8,15 +9,14 @@ import com.dat3m.dartagnan.utils.dependable.DependencyGraph;
 import com.dat3m.dartagnan.verification.Context;
 import com.dat3m.dartagnan.wmm.Relation;
 import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
+import com.dat3m.dartagnan.wmm.utils.Tuple;
 import com.dat3m.dartagnan.wmm.utils.graph.EventGraph;
 import com.dat3m.dartagnan.wmm.utils.graph.mutable.MapEventGraph;
-import com.dat3m.dartagnan.wmm.utils.Tuple;
 import com.dat3m.dartagnan.wmm.utils.graph.mutable.MutableEventGraph;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.BooleanFormulaManager;
-import org.sosy_lab.java_smt.api.FormulaManager;
 import org.sosy_lab.java_smt.api.IntegerFormulaManager;
 
 import java.util.*;
@@ -211,7 +211,7 @@ public class Acyclicity extends Axiom {
     }
 
     private List<BooleanFormula> inconsistentSAT(EventGraph toBeEncoded, EncodingContext context) {
-        final FormulaManager fmgr = context.getFormulaManager();
+        final FormulaManagerExt fmgr = context.getFormulaManager();
         final BooleanFormulaManager bmgr = fmgr.getBooleanFormulaManager();
         final Relation rel = this.rel;
         List<BooleanFormula> enc = new ArrayList<>();
@@ -259,7 +259,7 @@ public class Acyclicity extends Axiom {
 
     private List<BooleanFormula> consistentSAT(EventGraph toBeEncoded, EncodingContext context) {
         // We use a vertex-elimination graph based encoding.
-        final FormulaManager fmgr = context.getFormulaManager();
+        final FormulaManagerExt fmgr = context.getFormulaManager();
         final BooleanFormulaManager bmgr = fmgr.getBooleanFormulaManager();
         final ExecutionAnalysis exec = context.getAnalysisContext().requires(ExecutionAnalysis.class);
         final RelationAnalysis ra = context.getAnalysisContext().requires(RelationAnalysis.class);
@@ -366,11 +366,11 @@ public class Acyclicity extends Axiom {
         return enc;
     }
 
-    private BooleanFormula cycleVar(Event event, FormulaManager m) {
+    private BooleanFormula cycleVar(Event event, FormulaManagerExt m) {
         return m.getBooleanFormulaManager().makeVariable(String.format("cycle %s %d", m.escape(getNameOrTerm()), event.getGlobalId()));
     }
 
-    private BooleanFormula getSMTCycleVar(Event e1, Event e2, FormulaManager m) {
+    private BooleanFormula getSMTCycleVar(Event e1, Event e2, FormulaManagerExt m) {
         return m.getBooleanFormulaManager().makeVariable(String.format("cycle %s %d %d", m.escape(getNameOrTerm()), e1.getGlobalId(), e2.getGlobalId()));
     }
 

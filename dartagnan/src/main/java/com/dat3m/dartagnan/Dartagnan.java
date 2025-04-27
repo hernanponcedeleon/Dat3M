@@ -19,8 +19,8 @@ import com.dat3m.dartagnan.program.event.core.Assert;
 import com.dat3m.dartagnan.program.event.core.CondJump;
 import com.dat3m.dartagnan.program.event.core.Load;
 import com.dat3m.dartagnan.program.processing.LoopUnrolling;
-import com.dat3m.dartagnan.utils.Result;
 import com.dat3m.dartagnan.utils.ExitCode;
+import com.dat3m.dartagnan.utils.Result;
 import com.dat3m.dartagnan.utils.Utils;
 import com.dat3m.dartagnan.utils.options.BaseOptions;
 import com.dat3m.dartagnan.verification.VerificationTask;
@@ -73,9 +73,9 @@ import static com.dat3m.dartagnan.configuration.OptionInfo.collectOptions;
 import static com.dat3m.dartagnan.configuration.OptionNames.*;
 import static com.dat3m.dartagnan.configuration.Property.*;
 import static com.dat3m.dartagnan.program.analysis.SyntacticContextAnalysis.*;
+import static com.dat3m.dartagnan.utils.ExitCode.*;
 import static com.dat3m.dartagnan.utils.GitInfo.*;
 import static com.dat3m.dartagnan.utils.Result.*;
-import static com.dat3m.dartagnan.utils.ExitCode.*;
 import static com.dat3m.dartagnan.witness.WitnessType.GRAPHML;
 import static com.dat3m.dartagnan.witness.graphviz.ExecutionGraphVisualizer.generateGraphvizFile;
 import static java.lang.Boolean.FALSE;
@@ -318,8 +318,7 @@ public class Dartagnan extends BaseOptions {
                     summary.append("===== Program specification violation found =====\n");
                     for (Assert ass : p.getThreadEvents(Assert.class)) {
                         final boolean isViolated = TRUE.equals(model.evaluate(encCtx.execution(ass)))
-                                && FALSE.equals(
-                                        model.evaluate(encCtx.encodeExpressionAsBooleanAt(ass.getExpression(), ass)));
+                                && FALSE.equals(model.evaluate(encCtx.getExpressionEncoder().encodeBooleanAt(ass.getExpression(), ass).formula()));
                         if (isViolated) {
                             final String callStack = makeContextString(
                                     synContext.getContextInfo(ass).getContextOfType(CallContext.class), " -> ");

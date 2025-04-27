@@ -1,6 +1,7 @@
 package com.dat3m.dartagnan.encoding;
 
 import com.dat3m.dartagnan.configuration.Arch;
+import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.integers.IntLiteral;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.analysis.ReachingDefinitionsAnalysis;
@@ -36,7 +37,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import static com.dat3m.dartagnan.configuration.OptionNames.*;
-import static com.dat3m.dartagnan.encoding.EncodingHelper.ConversionMode.LEFT_TO_RIGHT;
+import static com.dat3m.dartagnan.encoding.ExpressionEncoder.ConversionMode.LEFT_TO_RIGHT;
 import static com.dat3m.dartagnan.program.event.Tag.*;
 import static com.dat3m.dartagnan.wmm.RelationNameRepository.RF;
 import static com.google.common.base.Verify.verify;
@@ -565,23 +566,28 @@ public class WmmEncoder implements Encoder {
 
         @Override
         public Void visitReadFrom(ReadFrom rfDef) {
-            final EncodingHelper encHelper = new EncodingHelper(context);
+            final ExpressionEncoder exprEncoder = context.getExpressionEncoder();
             final Relation rf = rfDef.getDefinedRelation();
             Map<MemoryEvent, List<BooleanFormula>> edgeMap = new HashMap<>();
             final EncodingContext.EdgeEncoder edge = context.edge(rf);
             ra.getKnowledge(rf).getMaySet().apply((e1, e2) -> {
-                MemoryCoreEvent w = (MemoryCoreEvent) e1;
-                MemoryCoreEvent r = (MemoryCoreEvent) e2;
+                final MemoryCoreEvent w = (MemoryCoreEvent) e1;
+                final MemoryCoreEvent r = (MemoryCoreEvent) e2;
+                final Expression wVal = exprEncoder.wrap(w.getAccessType(), context.value(w));
+                final Expression rVal = exprEncoder.wrap(r.getAccessType(), context.value(r));
+
                 BooleanFormula e = edge.encode(w, r);
                 BooleanFormula sameAddress = context.sameAddress(w, r);
-                BooleanFormula sameValue = encHelper.equal(context.value(w), context.value(r), LEFT_TO_RIGHT);
+                BooleanFormula sameValue = exprEncoder.equals(wVal, rVal, LEFT_TO_RIGHT);
                 edgeMap.computeIfAbsent(r, key -> new ArrayList<>()).add(e);
                 enc.add(bmgr.implication(e, bmgr.and(execution(w, r), sameAddress, sameValue)));
             });
             for (Load r : program.getThreadEvents(Load.class)) {
                 final BooleanFormula uninit = getUninitReadVar(r);
                 if (memoryIsZeroed) {
-                    enc.add(bmgr.implication(uninit, encHelper.equalZero(context.value(r))));
+                    final Expression rVal = exprEncoder.wrap(r.getAccessType(), context.value(r));
+                    final Expression zero = exprEncoder.makeZero(r.getAccessType());
+                    enc.add(bmgr.implication(uninit, exprEncoder.equals(rVal, zero)));
                 }
 
                 final List<BooleanFormula> rfEdges = edgeMap.getOrDefault(r, List.of());
@@ -681,9 +687,9 @@ public class WmmEncoder implements Encoder {
                 if (!mustSet.contains(e1, e2) && e1 instanceof NamedBarrier b1 && e2 instanceof NamedBarrier b2) {
                     condition = bmgr.and(condition, context.sync(b1));
                     if (!(b1.getResourceId() instanceof IntLiteral) || !(b2.getResourceId() instanceof IntLiteral)) {
-                        condition = bmgr.and(condition, context.equal(
-                                context.encodeExpressionAt(b1.getResourceId(), b1),
-                                context.encodeExpressionAt(b2.getResourceId(), b2)));
+                        condition = bmgr.and(condition, context.getExpressionEncoder().equalsAt(
+                                b1.getResourceId(), b1, b2.getResourceId(), b2)
+                        );
                     }
                 }
                 enc.add(bmgr.equivalence(encoder.encode(e1, e2), condition));

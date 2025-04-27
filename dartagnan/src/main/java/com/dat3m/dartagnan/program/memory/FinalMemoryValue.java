@@ -22,7 +22,7 @@ public class FinalMemoryValue extends LeafExpressionBase<Type> {
     }
 
     public String getName() {
-        return name;
+        return base.getName();
     }
 
     public MemoryObject getMemoryObject() {

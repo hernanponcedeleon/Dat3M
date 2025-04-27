@@ -1,6 +1,7 @@
 package com.dat3m.dartagnan.program.event.core.threading;
 
 import com.dat3m.dartagnan.encoding.EncodingContext;
+import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.*;
 import com.google.common.base.Preconditions;
@@ -53,10 +54,12 @@ public class ThreadArgument extends AbstractEvent implements RegWriter, EventUse
 
     @Override
     public BooleanFormula encodeExec(EncodingContext context) {
+        final Expression equalValue = context.getExpressionFactory()
+                .makeEQ(context.result(this), creator.getArguments().get(argIndex));
         return context.getBooleanFormulaManager().and(
                 super.encodeExec(context),
-                context.equal(context.result(this),
-                        context.encodeExpressionAt(creator.getArguments().get(argIndex), creator)));
+                context.getExpressionEncoder().encodeBooleanAt(equalValue, creator).formula()
+        );
     }
 
 

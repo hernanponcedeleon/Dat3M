@@ -1,7 +1,7 @@
 package com.dat3m.dartagnan.verification.model;
 
 import com.dat3m.dartagnan.encoding.EncodingContext;
-import com.dat3m.dartagnan.encoding.EncodingHelper;
+import com.dat3m.dartagnan.encoding.formulas.FormulaManagerExt;
 import com.dat3m.dartagnan.encoding.formulas.TypedFormula;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.Thread;
@@ -136,7 +136,7 @@ public class ExecutionModelManager {
             em = new GenericVisibleEventModel(visible, tm, id);
         } else if (e instanceof Assert assrt) {
             em = new AssertModel(
-                assrt, tm, id, isTrue(context.encodeExpressionAsBooleanAt(assrt.getExpression(), assrt))
+                assrt, tm, id, isTrue(context.getExpressionEncoder().encodeBooleanAt(assrt.getExpression(), assrt).formula())
             );
         } else if (e instanceof Local local) {
             ValueModel value = new ValueModel(evaluateByModel(context.result(local)));
@@ -271,7 +271,7 @@ public class ExecutionModelManager {
     }
 
     private Object evaluateByModel(Formula formula) {
-        return EncodingHelper.evaluate(formula, model);
+        return FormulaManagerExt.evaluate(formula, model);
     }
 
     private Object evaluateByModel(TypedFormula<?, ?> formula) {

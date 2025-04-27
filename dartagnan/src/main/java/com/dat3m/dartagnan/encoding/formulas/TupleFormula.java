@@ -20,7 +20,7 @@ public class TupleFormula implements Formula {
     }
 
     // WARNING: Avoid using this method if possible.
-    public List<Formula> getElements() {
+    public ImmutableList<Formula> getElements() {
         return elements;
     }
 

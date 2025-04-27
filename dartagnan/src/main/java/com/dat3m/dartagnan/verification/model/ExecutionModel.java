@@ -1,8 +1,8 @@
 package com.dat3m.dartagnan.verification.model;
 
 import com.dat3m.dartagnan.encoding.EncodingContext;
-import com.dat3m.dartagnan.encoding.EncodingHelper;
 import com.dat3m.dartagnan.encoding.ExpressionEncoder;
+import com.dat3m.dartagnan.encoding.formulas.FormulaManagerExt;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.Thread;
@@ -333,7 +333,7 @@ public class ExecutionModel {
         data.setWasExecuted(true);
         if (data.isMemoryEvent()) {
             // ===== Memory Events =====
-            Object addressObject = checkNotNull(model.evaluate(encodingContext.address((MemoryEvent) e)));
+            Object addressObject = checkNotNull(encodingContext.getExpressionEncoder().evaluate(encodingContext.address((MemoryEvent) e), model).value());
             BigInteger address = new BigInteger(addressObject.toString());
             data.setAccessedAddress(address);
             if (!addressReadsMap.containsKey(address)) {
@@ -343,7 +343,7 @@ public class ExecutionModel {
 
             if (data.isRead() || data.isWrite()) {
                 Formula valueFormula = encodingContext.value((MemoryCoreEvent)e);
-                data.setValue(EncodingHelper.evaluate(valueFormula, model));
+                data.setValue(FormulaManagerExt.evaluate(valueFormula, model));
             }
 
             if (data.isRead()) {

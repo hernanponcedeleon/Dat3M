@@ -1,8 +1,8 @@
 package com.dat3m.dartagnan.encoding;
 
-import com.dat3m.dartagnan.encoding.formulas.TupleFormulaManager;
+import com.dat3m.dartagnan.encoding.formulas.FormulaManagerExt;
 import com.dat3m.dartagnan.encoding.formulas.TypedFormula;
-import com.dat3m.dartagnan.expression.Expression;
+import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.Type;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.analysis.BranchEquivalence;
@@ -50,11 +50,11 @@ public final class EncodingContext {
     private final ExecutionAnalysis executionAnalysis;
     private final AliasAnalysis aliasAnalysis;
     private final RelationAnalysis relationAnalysis;
-    private final FormulaManager formulaManager;
+    private final FormulaManagerExt formulaManager;
     private final BooleanFormulaManager booleanFormulaManager;
-    private final TupleFormulaManager tupleFormulaManager;
-    private final EncodingHelper encHelper;
     private final ExpressionEncoder exprEncoder;
+
+    private final ExpressionFactory exprs = ExpressionFactory.getInstance();
 
     @Option(
             name=IDL_TO_SAT,
@@ -75,11 +75,12 @@ public final class EncodingContext {
     private final Map<Event, BooleanFormula> controlFlowVariables = new HashMap<>();
     private final Map<Event, BooleanFormula> executionVariables = new HashMap<>();
     private final Map<NamedBarrier, BooleanFormula> syncVariables = new HashMap<>();
-    private final Map<Event, Formula> addresses = new HashMap<>();
+
     private final Map<Event, Formula> values = new HashMap<>();
-    private final Map<Event, Formula> results = new HashMap<>();
+    private final Map<Event, TypedFormula<?, ?>> results = new HashMap<>();
 
     // TODO: Once we have a PointerType, this needs to get updated.
+    private final Map<Event, TypedFormula<?, ?>> addresses = new HashMap<>();
     private final Map<MemoryObject, TypedFormula<?, ?>> objAddress = new HashMap<>();
     private final Map<MemoryObject, TypedFormula<?, ?>> objSize = new HashMap<>();
 
@@ -90,10 +91,8 @@ public final class EncodingContext {
         executionAnalysis = a.requires(ExecutionAnalysis.class);
         aliasAnalysis = a.requires(AliasAnalysis.class);
         relationAnalysis = a.requires(RelationAnalysis.class);
-        formulaManager = m;
-        booleanFormulaManager = m.getBooleanFormulaManager();
-        tupleFormulaManager = new TupleFormulaManager(this);
-        encHelper = new EncodingHelper(this);
+        formulaManager = new FormulaManagerExt(m);
+        booleanFormulaManager = formulaManager.getBooleanFormulaManager();
         exprEncoder = new ExpressionEncoder(this);
     }
 
@@ -125,7 +124,7 @@ public final class EncodingContext {
         return analysisContext;
     }
 
-    public FormulaManager getFormulaManager() {
+    public FormulaManagerExt getFormulaManager() {
         return formulaManager;
     }
 
@@ -133,22 +132,9 @@ public final class EncodingContext {
         return booleanFormulaManager;
     }
 
-    public TupleFormulaManager getTupleFormulaManager() {
-        return tupleFormulaManager;
-    }
-
     public ExpressionEncoder getExpressionEncoder() { return exprEncoder; }
 
-    // ====================================================================================
-    // TODO: These should go
-
-    public BooleanFormula encodeExpressionAsBooleanAt(Expression expression, Event event) {
-        return exprEncoder.convertToBool(exprEncoder.encodeAt(expression, event)).formula();
-    }
-
-    public Formula encodeExpressionAt(Expression expression, Event event) {
-        return exprEncoder.encodeAt(expression, event).formula();
-    }
+    public ExpressionFactory getExpressionFactory() { return exprs; }
 
     // ====================================================================================
     // Control flow
@@ -158,7 +144,7 @@ public final class EncodingContext {
     }
 
     public BooleanFormula jumpCondition(CondJump event) {
-        return encodeExpressionAsBooleanAt(event.getGuard(), event);
+        return exprEncoder.encodeBooleanAt(event.getGuard(), event).formula();
     }
 
     public BooleanFormula jumpTaken(CondJump jump) {
@@ -207,30 +193,21 @@ public final class EncodingContext {
     // ====================================================================================
     // Data flow
 
-    // TODO: Change all to TypedFormula
-
-    public Formula lastValue(MemoryObject base, int offset, int size) {
-        checkArgument(base.isInRange(offset), "Array index out of bounds");
-        final String name = String.format("last_val_at_%s_%d", base, offset);
-        if (useIntegers) {
-            return formulaManager.getIntegerFormulaManager().makeVariable(name);
-        }
-        return formulaManager.getBitvectorFormulaManager().makeVariable(size, name);
-    }
-
     public BooleanFormula sameAddress(MemoryCoreEvent first, MemoryCoreEvent second) {
-        return aliasAnalysis.mustAlias(first, second) ? booleanFormulaManager.makeTrue() : equal(address(first), address(second));
+        return aliasAnalysis.mustAlias(first, second)
+                ? booleanFormulaManager.makeTrue()
+                : exprEncoder.equals(address(first), address(second));
     }
 
     public BooleanFormula sameResult(RegWriter first, RegWriter second) {
-        return equal(result(first), result(second));
+        return exprEncoder.equals(result(first), result(second));
     }
 
     public BooleanFormula sameValue(MemoryCoreEvent first, MemoryCoreEvent second) {
-        return equal(value(first), value(second));
+        return formulaManager.equal(value(first), value(second));
     }
 
-    public Formula address(MemoryEvent event) {
+    public TypedFormula<?, ?> address(MemoryEvent event) {
         return addresses.get(event);
     }
 
@@ -240,11 +217,12 @@ public final class EncodingContext {
         return objSize.get(memoryObject);
     }
 
+    // TODO: Change all to TypedFormula
     public Formula value(MemoryEvent event) {
         return values.get(event);
     }
 
-    public Formula result(RegWriter event) {
+    public TypedFormula<?, ?> result(RegWriter event) {
         return results.get(event);
     }
 
@@ -303,17 +281,6 @@ public final class EncodingContext {
     }
 
     // ====================================================================================
-    // TODO: These should go
-
-    public BooleanFormula equal(Formula left, Formula right, EncodingHelper.ConversionMode cMode) {
-        return encHelper.equal(left, right, cMode);
-    }
-
-    public BooleanFormula equal(Formula left, Formula right) {
-        return equal(left, right, EncodingHelper.ConversionMode.NO);
-    }
-
-    // ====================================================================================
     // Private implementation
 
     private void initialize() {
@@ -350,21 +317,21 @@ public final class EncodingContext {
             if (!e.cfImpliesExec()) {
                 executionVariables.put(e, booleanFormulaManager.makeVariable("exec " + e.getGlobalId()));
             }
-            Formula r;
+            TypedFormula<?, ?> r;
             if (e instanceof RegWriter rw) {
                 Register register = rw.getResultRegister();
                 String name = register.getName() + "(" + e.getGlobalId() + "_result)";
                 Type type = register.getType();
-                r = exprEncoder.makeVariable(name, type).formula();
+                r = exprEncoder.makeVariable(name, type);
             } else {
                 r = null;
             }
             if (e instanceof MemoryCoreEvent memEvent) {
-                addresses.put(e, encodeExpressionAt(memEvent.getAddress(), e));
+                addresses.put(e, exprEncoder.encodeAt(memEvent.getAddress(), memEvent));
                 if (e instanceof Load) {
-                    values.put(e, r);
+                    values.put(e, r.formula());
                 } else if (e instanceof Store store) {
-                    values.put(e, encodeExpressionAt(store.getMemValue(), e));
+                    values.put(e, exprEncoder.encodeAt(store.getMemValue(), e).formula());
                 }
             }
             if (r != null) {
