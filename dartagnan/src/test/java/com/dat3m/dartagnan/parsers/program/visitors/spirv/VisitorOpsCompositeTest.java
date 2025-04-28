@@ -473,7 +473,7 @@ public class VisitorOpsCompositeTest {
     }
 
     @Test
-    public void testVectorShuffleMissmatchFirstParameterType() {
+    public void testVectorShuffleMismatchFirstParameterType() {
         // given
         String input = "%shuffle = OpVectorShuffle %v4uint %v1 %v2 0 0 0 0";
         builder.mockIntType("%uint", 32);
@@ -489,12 +489,12 @@ public class VisitorOpsCompositeTest {
             fail("Should throw exception");
         } catch (ParsingException e) {
             // then
-            assertEquals("Type missmatch in OpVectorShuffle '%shuffle' between result type bv32 and components bool", e.getMessage());
+            assertEquals("Type mismatch in OpVectorShuffle '%shuffle' between result type bv32 and components bool", e.getMessage());
         }
     }
 
     @Test
-    public void testVectorShuffleMissmatchSecondParameterType() {
+    public void testVectorShuffleMismatchSecondParameterType() {
         // given
         String input = "%shuffle = OpVectorShuffle %v4uint %v1 %v2 0 0 0 0";
         builder.mockIntType("%uint", 32);
@@ -510,12 +510,12 @@ public class VisitorOpsCompositeTest {
             fail("Should throw exception");
         } catch (ParsingException e) {
             // then
-            assertEquals("Type missmatch in OpVectorShuffle '%shuffle' between result type bv32 and components bool", e.getMessage());
+            assertEquals("Type mismatch in OpVectorShuffle '%shuffle' between result type bv32 and components bool", e.getMessage());
         }
     }
 
     @Test
-    public void testVectorShuffleSizeMissmatch() {
+    public void testVectorShuffleSizeMismatch() {
         // given
         String input = "%shuffle = OpVectorShuffle %v4uint %v1 %v2 0 0 0";
         builder.mockIntType("%uint", 32);
@@ -529,7 +529,7 @@ public class VisitorOpsCompositeTest {
             fail("Should throw exception");
         } catch (ParsingException e) {
             // then
-            assertEquals("Size missmatch in OpVectorShuffle '%shuffle' between result type [4 x bv32] and components [0, 0, 0]", e.getMessage());
+            assertEquals("Size mismatch in OpVectorShuffle '%shuffle' between result type [4 x bv32] and components [0, 0, 0]", e.getMessage());
         }
     }
 

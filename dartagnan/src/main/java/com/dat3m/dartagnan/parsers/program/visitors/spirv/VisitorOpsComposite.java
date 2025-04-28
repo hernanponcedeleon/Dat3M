@@ -78,39 +78,39 @@ public class VisitorOpsComposite extends SpirvBaseVisitor<Void> {
             .map(Integer::parseInt)
             .toList();
         Type type = builder.getType(ctx.idResultType().getText());
-        if (type instanceof ArrayType aType) {
-            Type eType = aType.getElementType();
-            if (v1.getType() instanceof ArrayType aType1) {
-                if (!eType.equals(aType1.getElementType())) {
-                    throw new ParsingException("Type missmatch in OpVectorShuffle '%s' between result type %s and components %s", id, eType, aType1.getElementType());
-                }
-                if(v2.getType() instanceof ArrayType aType2) {
-                    if (!eType.equals(aType2.getElementType())) {
-                        throw new ParsingException("Type missmatch in OpVectorShuffle '%s' between result type %s and components %s", id, eType, aType2.getElementType());
-                    }
-                    if (aType.getNumElements() != components.size()) {
-                        throw new ParsingException("Size missmatch in OpVectorShuffle '%s' between result type %s and components %s", id, aType, components);
-                    }
-                    int s1 = aType1.getNumElements();
-                    int s2 = aType2.getNumElements();
-                    List<Expression> concat = new ArrayList<>();
-                    for (Integer index : components) {
-                        if (index >= 0 && index < s1) {
-                            concat.add(v1.getOperands().get(index));
-                        } else if (index >= s1 && index < s1 + s2) {
-                            concat.add(v2.getOperands().get(index - s1));
-                        } else {
-                            throw new ParsingException("Index %s out of bounds in OpVectorShuffle '%s'", index, id);
-                        }
-                    }
-                    builder.addExpression(id, expressions.makeArray(aType1.getElementType(), concat, true));
-                    return null;
-                }
-                throw new ParsingException("Parameter %s of OpVectorShuffle '%s' is not a vector", v2Id, id);
-            }
+        if (!(type instanceof ArrayType aType)) {
+            throw new ParsingException("Return type %s of OpVectorShuffle '%s' is not a vector", type, id);
+        }
+        Type eType = aType.getElementType();
+        if (!(v1.getType() instanceof ArrayType aType1)) {
             throw new ParsingException("Parameter %s of OpVectorShuffle '%s' is not a vector", v1Id, id);
         }
-        throw new ParsingException("Return type %s of OpVectorShuffle '%s' is not a vector", type, id);
+        if(!(v2.getType() instanceof ArrayType aType2)) {
+            throw new ParsingException("Parameter %s of OpVectorShuffle '%s' is not a vector", v2Id, id);
+        }
+        if (!eType.equals(aType1.getElementType())) {
+            throw new ParsingException("Type mismatch in OpVectorShuffle '%s' between result type %s and components %s", id, eType, aType1.getElementType());
+        }
+        if (!eType.equals(aType2.getElementType())) {
+            throw new ParsingException("Type mismatch in OpVectorShuffle '%s' between result type %s and components %s", id, eType, aType2.getElementType());
+        }
+        if (aType.getNumElements() != components.size()) {
+            throw new ParsingException("Size mismatch in OpVectorShuffle '%s' between result type %s and components %s", id, aType, components);
+        }
+        int s1 = aType1.getNumElements();
+        int s2 = aType2.getNumElements();
+        List<Expression> concat = new ArrayList<>();
+        for (Integer index : components) {
+            if (index >= 0 && index < s1) {
+                concat.add(v1.getOperands().get(index));
+            } else if (index >= s1 && index < s1 + s2) {
+                concat.add(v2.getOperands().get(index - s1));
+            } else {
+                throw new ParsingException("Index %s out of bounds in OpVectorShuffle '%s'", index, id);
+            }
+        }
+        builder.addExpression(id, expressions.makeArray(aType1.getElementType(), concat, true));
+        return null;
     }
 
     private Expression getInsertion(Expression compositeExpr, Expression objectExpr, List<Integer> indexes, String id) {
