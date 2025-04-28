@@ -227,29 +227,21 @@ public class PropertyEncoder implements Encoder {
             //           \/ (exists w2 : lastCo(w2) /\ lastVal(w.address) = w2.val))
             final ExpressionEncoder exprEncoder = context.getExpressionEncoder();
             for (Init init : program.getThreadEvents(Init.class)) {
-                BooleanFormula lastValueEnc = bmgr.makeFalse();
+                BooleanFormula readLastStore = bmgr.makeFalse();
                 BooleanFormula lastStoreExistsEnc = bmgr.makeFalse();
                 Expression finalValue = new FinalMemoryValue(null, init.getValue().getType(), init.getBase(), init.getOffset());
-                BooleanFormula readFromInit = exprEncoder.equal(
-                        finalValue,
-                        context.value(init),
-                        RIGHT_TO_LEFT
-                );
                 for (Store w : program.getThreadEvents(Store.class)) {
                     if (!alias.mayAlias(w, init)) {
                         continue;
                     }
                     BooleanFormula isLast = context.lastCoVar(w);
                     BooleanFormula sameAddr = context.sameAddress(init, w);
-                    BooleanFormula sameValue = exprEncoder.equal(
-                            finalValue,
-                            context.value(w),
-                            RIGHT_TO_LEFT
-                    );
-                    lastValueEnc = bmgr.or(lastValueEnc, bmgr.and(isLast, sameAddr, sameValue));
+                    BooleanFormula sameValue = exprEncoder.equal(finalValue, context.value(w), RIGHT_TO_LEFT);
+                    readLastStore = bmgr.or(readLastStore, bmgr.and(isLast, sameAddr, sameValue));
                     lastStoreExistsEnc = bmgr.or(lastStoreExistsEnc, bmgr.and(isLast, sameAddr));
                 }
-                enc.add(bmgr.ifThenElse(lastStoreExistsEnc, lastValueEnc, readFromInit));
+                BooleanFormula readInitValue = exprEncoder.equal(finalValue, context.value(init), RIGHT_TO_LEFT);
+                enc.add(bmgr.ifThenElse(lastStoreExistsEnc, readLastStore, readInitValue));
             }
         }
         return bmgr.and(enc);
