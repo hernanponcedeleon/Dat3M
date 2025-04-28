@@ -12,7 +12,7 @@ public record TypedValue<TType extends Type, TValue> (TType type, TValue value) 
 
     @Override
     public String toString() {
-        return String.format("(%s: %s)", type, value);
+        return String.format("%s: %s", type, value);
     }
 
 }
