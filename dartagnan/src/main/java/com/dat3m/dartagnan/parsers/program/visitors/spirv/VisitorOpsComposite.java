@@ -79,9 +79,6 @@ public class VisitorOpsComposite extends SpirvBaseVisitor<Void> {
             .toList();
         Type type = builder.getType(ctx.idResultType().getText());
         if (type instanceof ArrayType aType) {
-            if (aType.getNumElements() != components.size()) {
-                throw new ParsingException("Size missmatch in OpVectorShuffle '%s' between result type %s and components %s", id, aType, components);
-            }
             Type eType = aType.getElementType();
             if (v1.getType() instanceof ArrayType aType1) {
                 if (!eType.equals(aType1.getElementType())) {
@@ -90,6 +87,9 @@ public class VisitorOpsComposite extends SpirvBaseVisitor<Void> {
                 if(v2.getType() instanceof ArrayType aType2) {
                     if (!eType.equals(aType2.getElementType())) {
                         throw new ParsingException("Type missmatch in OpVectorShuffle '%s' between result type %s and components %s", id, eType, aType2.getElementType());
+                    }
+                    if (aType.getNumElements() != components.size()) {
+                        throw new ParsingException("Size missmatch in OpVectorShuffle '%s' between result type %s and components %s", id, aType, components);
                     }
                     int s1 = aType1.getNumElements();
                     int s2 = aType2.getNumElements();
