@@ -63,16 +63,16 @@ public class ExecutionModel {
     private final Map<EventData, EventData> readWriteMap;
     private final Map<EventData, Set<EventData>> writeReadsMap;
     private final Map<String, Set<EventData>> fenceMap;
-    private final Map<BigInteger, Set<EventData>> addressReadsMap;
-    private final Map<BigInteger, Set<EventData>> addressWritesMap; // This ALSO contains the init writes
-    private final Map<BigInteger, EventData> addressInitMap;
+    private final Map<Object, Set<EventData>> addressReadsMap;
+    private final Map<Object, Set<EventData>> addressWritesMap; // This ALSO contains the init writes
+    private final Map<Object, EventData> addressInitMap;
     //Note, we could merge the three above maps into a single one that holds writes, reads and init writes.
 
     private final Map<EventData, Set<EventData>> dataDepMap;
     private final Map<EventData, Set<EventData>> addrDepMap;
     private final Map<EventData, Set<EventData>> ctrlDepMap;
 
-    private final Map<BigInteger, List<EventData>> coherenceMap;
+    private final Map<Object, List<EventData>> coherenceMap;
 
     // The following are a read-only views which get passed to the outside
     private List<EventData> eventListView;
@@ -83,15 +83,15 @@ public class ExecutionModel {
     private Map<EventData, EventData> readWriteMapView;
     private Map<EventData, Set<EventData>> writeReadsMapView;
     private Map<String, Set<EventData>> fenceMapView;
-    private Map<BigInteger, Set<EventData>> addressReadsMapView;
-    private Map<BigInteger, Set<EventData>> addressWritesMapView;
-    private Map<BigInteger, EventData> addressInitMapView;
+    private Map<Object, Set<EventData>> addressReadsMapView;
+    private Map<Object, Set<EventData>> addressWritesMapView;
+    private Map<Object, EventData> addressInitMapView;
 
     private Map<EventData, Set<EventData>> dataDepMapView;
     private Map<EventData, Set<EventData>> addrDepMapView;
     private Map<EventData, Set<EventData>> ctrlDepMapView;
 
-    private Map<BigInteger, List<EventData>> coherenceMapView;
+    private Map<Object, List<EventData>> coherenceMapView;
 
     private ExecutionModel(EncodingContext c) {
         this.ctx = checkNotNull(c);
@@ -189,19 +189,19 @@ public class ExecutionModel {
     public Map<String, Set<EventData>> getFenceMap() {
         return fenceMapView;
     }
-    public Map<BigInteger, Set<EventData>> getAddressReadsMap() {
+    public Map<Object, Set<EventData>> getAddressReadsMap() {
         return addressReadsMapView;
     }
-    public Map<BigInteger, Set<EventData>> getAddressWritesMap() {
+    public Map<Object, Set<EventData>> getAddressWritesMap() {
         return addressWritesMapView;
     }
-    public Map<BigInteger, EventData> getAddressInitMap() {
+    public Map<Object, EventData> getAddressInitMap() {
         return addressInitMapView;
     }
     public Map<EventData, Set<EventData>> getAddrDepMap() { return addrDepMapView; }
     public Map<EventData, Set<EventData>> getDataDepMap() { return dataDepMapView; }
     public Map<EventData, Set<EventData>> getCtrlDepMap() { return ctrlDepMapView; }
-    public Map<BigInteger, List<EventData>> getCoherenceMap() { return coherenceMapView; }
+    public Map<Object, List<EventData>> getCoherenceMap() { return coherenceMapView; }
 
 
 
@@ -334,8 +334,7 @@ public class ExecutionModel {
         data.setWasExecuted(true);
         if (data.isMemoryEvent()) {
             // ===== Memory Events =====
-            Object addressObject = checkNotNull(ctx.evaluate(ctx.address((MemoryCoreEvent) e), model).value());
-            BigInteger address = new BigInteger(addressObject.toString());
+            Object address = checkNotNull(ctx.evaluate(ctx.address((MemoryCoreEvent) e), model).value());
             data.setAccessedAddress(address);
             if (!addressReadsMap.containsKey(address)) {
                 addressReadsMap.put(address, new HashSet<>());
@@ -502,8 +501,8 @@ public class ExecutionModel {
         final EncodingContext.EdgeEncoder rf = ctx.edge(ctx.getTask().getMemoryModel().getRelation(RF));
         readWriteMap.clear();
 
-        for (Map.Entry<BigInteger, Set<EventData>> addressedReads : addressReadsMap.entrySet()) {
-            BigInteger address = addressedReads.getKey();
+        for (Map.Entry<Object, Set<EventData>> addressedReads : addressReadsMap.entrySet()) {
+            Object address = addressedReads.getKey();
             for (EventData read : addressedReads.getValue()) {
                 for (EventData write : addressWritesMap.get(address)) {
                     BooleanFormula rfExpr = rf.encode(write.getEvent(), read.getEvent());
@@ -521,8 +520,8 @@ public class ExecutionModel {
     private void extractCoherences() {
         final EncodingContext.EdgeEncoder co = ctx.edge(ctx.getTask().getMemoryModel().getRelation(CO));
 
-        for (Map.Entry<BigInteger, Set<EventData>> addrWrites : addressWritesMap.entrySet()) {
-            final BigInteger addr = addrWrites.getKey();
+        for (Map.Entry<Object, Set<EventData>> addrWrites : addressWritesMap.entrySet()) {
+            final Object addr = addrWrites.getKey();
             final Set<EventData> writes = addrWrites.getValue();
 
             List<EventData> coSortedWrites;

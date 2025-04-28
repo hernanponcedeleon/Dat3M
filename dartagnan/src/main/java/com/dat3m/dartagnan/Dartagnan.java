@@ -318,7 +318,7 @@ public class Dartagnan extends BaseOptions {
                     summary.append("===== Program specification violation found =====\n");
                     for (Assert ass : p.getThreadEvents(Assert.class)) {
                         final boolean isViolated = TRUE.equals(model.evaluate(encCtx.execution(ass)))
-                                && FALSE.equals(model.evaluate(encCtx.getExpressionEncoder().encodeBooleanAt(ass.getExpression(), ass).formula()));
+                                && FALSE.equals(encCtx.evaluateAt(ass.getExpression(), ass, model).value());
                         if (isViolated) {
                             final String callStack = makeContextString(
                                     synContext.getContextInfo(ass).getContextOfType(CallContext.class), " -> ");

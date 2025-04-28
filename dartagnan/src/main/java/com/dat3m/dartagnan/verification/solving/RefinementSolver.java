@@ -52,7 +52,6 @@ import org.sosy_lab.common.configuration.Option;
 import org.sosy_lab.common.configuration.Options;
 import org.sosy_lab.java_smt.api.*;
 
-import java.math.BigInteger;
 import java.text.DecimalFormat;
 import java.util.*;
 import java.util.function.BiPredicate;
@@ -351,7 +350,7 @@ public class RefinementSolver extends ModelChecker {
             synContext = newInstance(task.getProgram());
         }
 
-        final Map<BigInteger, Set<EventData>> addr2Events = new HashMap<>();
+        final Map<Object, Set<EventData>> addr2Events = new HashMap<>();
         model.getAddressReadsMap().forEach((addr, reads) -> addr2Events.computeIfAbsent(addr, key -> new HashSet<>()).addAll(reads));
         model.getAddressWritesMap().forEach((addr, writes) -> addr2Events.computeIfAbsent(addr, key -> new HashSet<>()).addAll(writes));
         model.getAddressInitMap().forEach((addr, init) -> addr2Events.computeIfAbsent(addr, key -> new HashSet<>()).add(init));
