@@ -295,7 +295,7 @@ public class ProgramEncoder implements Encoder {
         BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
         BooleanFormula allCF = bmgr.makeTrue();
         for (NamedBarrier e2 : events) {
-            BooleanFormula sameId = context.getExpressionEncoder().equalsAt(e1.getResourceId(), e1, e2.getResourceId(), e2);
+            BooleanFormula sameId = context.getExpressionEncoder().equalAt(e1.getResourceId(), e1, e2.getResourceId(), e2);
             BooleanFormula cf = bmgr.or(context.controlFlow(e2), bmgr.not(sameId));
             allCF = bmgr.and(allCF, cf);
         }
@@ -328,7 +328,7 @@ public class ProgramEncoder implements Encoder {
         Expression cfSum = exprs.makeZero(numType);
         Expression syncSum = exprs.makeZero(numType);
         for (NamedBarrier e2 : events) {
-            BooleanFormula sameId = exprEncoder.equalsAt(e1.getResourceId(), e1, e2.getResourceId(), e2);
+            BooleanFormula sameId = exprEncoder.equalAt(e1.getResourceId(), e1, e2.getResourceId(), e2);
             Expression iCf = exprs.makeCast(exprEncoder.wrap(bmgr.and(sameId, context.controlFlow(e2))), numType);
             Expression iSync = exprs.makeCast(exprEncoder.wrap(bmgr.and(sameId, context.sync(e2))), numType);
             cfSum = exprs.makeAdd(cfSum, iCf);
@@ -345,8 +345,8 @@ public class ProgramEncoder implements Encoder {
         BooleanFormula enc = bmgr.equivalence(hasQuorum, syncGTEQuorum);
         enc = bmgr.and(enc, bmgr.equivalence(context.execution(e1), bmgr.and(context.controlFlow(e1), hasQuorum)));
         enc = bmgr.and(enc, bmgr.implication(cfCountGTEQuorum, hasQuorum));
-        enc = bmgr.and(enc, exprEncoder.equals(cfCount, cfSum));
-        enc = bmgr.and(enc, exprEncoder.equals(syncCount, syncSum));
+        enc = bmgr.and(enc, exprEncoder.equal(cfCount, cfSum));
+        enc = bmgr.and(enc, exprEncoder.equal(syncCount, syncSum));
 
         return bmgr.and(enc, bmgr.implication(context.sync(e1), context.execution(e1)));
     }
@@ -392,10 +392,10 @@ public class ProgramEncoder implements Encoder {
             }
 
             final BiFunction<Expression, Expression, BooleanFormula> equate = (a, b) -> {
-                final Expression equality = exprs.makeEQ(a, b);
+                final Event alloc = cur.getAllocationSite();
                 return cur.isStaticallyAllocated()
-                        ? exprEnc.encodeBooleanFinal(equality).formula()
-                        : exprEnc.encodeBooleanAt(equality, cur.getAllocationSite()).formula();
+                        ? exprEnc.equal(a, b)
+                        : exprEnc.equalAt(a, alloc, b, alloc);
             };
 
             enc.add(equate.apply(sizeVar, size));
@@ -456,7 +456,7 @@ public class ProgramEncoder implements Encoder {
                         edge = context.dependency(writer, reader);
                         enc.add(bmgr.equivalence(edge, bmgr.and(context.execution(writer), context.controlFlow(reader), bmgr.not(bmgr.or(overwrite)))));
                     }
-                    BooleanFormula equalValue = exprEncoder.equalsAt(register, reader, context.result(writer), writer);
+                    BooleanFormula equalValue = exprEncoder.equalAt(register, reader, context.result(writer), writer);
                     enc.add(bmgr.implication(edge, equalValue));
                     overwrite.add(context.execution(writer));
                 }
@@ -464,7 +464,7 @@ public class ProgramEncoder implements Encoder {
                 if(initializeRegisters && !reg.mustBeInitialized()) {
                     final Expression zero = exprs.makeGeneralZero(register.getType());
                     overwrite.add(bmgr.not(context.controlFlow(reader)));
-                    overwrite.add(exprEncoder.equalsAt(register, reader, zero, reader));
+                    overwrite.add(exprEncoder.equalAt(register, reader, zero, reader));
                     enc.add(bmgr.or(overwrite));
                 }
             }
@@ -498,7 +498,7 @@ public class ProgramEncoder implements Encoder {
             final List<RegWriter> writers = registerWriters.getMayWriters();
             if (initializeRegisters && !registerWriters.mustBeInitialized()) {
                 List<BooleanFormula> clause = new ArrayList<>();
-                clause.add(exprEncoder.equals(register, exprs.makeGeneralZero(register.getType())));
+                clause.add(exprEncoder.equal(register, exprs.makeGeneralZero(register.getType())));
                 for (Event w : writers) {
                     clause.add(context.execution(w));
                 }
@@ -507,7 +507,7 @@ public class ProgramEncoder implements Encoder {
             for (int i = 0; i < writers.size(); i++) {
                 final RegWriter writer = writers.get(i);
                 List<BooleanFormula> clause = new ArrayList<>();
-                clause.add(exprEncoder.equals(register, context.result(writer)));
+                clause.add(exprEncoder.equal(register, context.result(writer)));
                 clause.add(bmgr.not(context.execution(writer)));
                 for (Event w : writers.subList(i + 1, writers.size())) {
                     if (!exec.areMutuallyExclusive(writer, w)) {

@@ -583,8 +583,8 @@ public class WmmEncoder implements Encoder {
             for (Load r : program.getThreadEvents(Load.class)) {
                 final BooleanFormula uninit = getUninitReadVar(r);
                 if (memoryIsZeroed) {
-                    final Expression zero = exprEncoder.makeZero(r.getAccessType());
-                    enc.add(bmgr.implication(uninit, exprEncoder.equals(context.value(r), zero)));
+                    final Expression zero = context.getExpressionFactory().makeGeneralZero(r.getAccessType());
+                    enc.add(bmgr.implication(uninit, exprEncoder.equal(context.value(r), zero)));
                 }
 
                 final List<BooleanFormula> rfEdges = edgeMap.getOrDefault(r, List.of());
@@ -684,7 +684,7 @@ public class WmmEncoder implements Encoder {
                 if (!mustSet.contains(e1, e2) && e1 instanceof NamedBarrier b1 && e2 instanceof NamedBarrier b2) {
                     condition = bmgr.and(condition, context.sync(b1));
                     if (!(b1.getResourceId() instanceof IntLiteral) || !(b2.getResourceId() instanceof IntLiteral)) {
-                        condition = bmgr.and(condition, context.getExpressionEncoder().equalsAt(
+                        condition = bmgr.and(condition, context.getExpressionEncoder().equalAt(
                                 b1.getResourceId(), b1, b2.getResourceId(), b2)
                         );
                     }

@@ -158,12 +158,8 @@ public final class EncodingContext {
         return controlFlowVariables.get(event);
     }
 
-    public BooleanFormula jumpCondition(CondJump event) {
-        return exprEncoder.encodeBooleanAt(event.getGuard(), event).formula();
-    }
-
     public BooleanFormula jumpTaken(CondJump jump) {
-        return booleanFormulaManager.and(execution(jump), jumpCondition(jump));
+        return booleanFormulaManager.and(execution(jump), exprEncoder.encodeBooleanAt(jump.getGuard(), jump).formula());
     }
 
     public BooleanFormula blocked(BlockingEvent barrier) {
@@ -211,15 +207,15 @@ public final class EncodingContext {
     public BooleanFormula sameAddress(MemoryCoreEvent first, MemoryCoreEvent second) {
         return aliasAnalysis.mustAlias(first, second)
                 ? booleanFormulaManager.makeTrue()
-                : exprEncoder.equals(address(first), address(second));
+                : exprEncoder.equal(address(first), address(second));
     }
 
     public BooleanFormula sameResult(RegWriter first, RegWriter second) {
-        return exprEncoder.equals(result(first), result(second));
+        return exprEncoder.equal(result(first), result(second));
     }
 
     public BooleanFormula sameValue(MemoryCoreEvent first, MemoryCoreEvent second, ExpressionEncoder.ConversionMode cmode) {
-        return exprEncoder.equals(value(first), value(second), cmode);
+        return exprEncoder.equal(value(first), value(second), cmode);
     }
 
     public BooleanFormula sameValue(MemoryCoreEvent first, MemoryCoreEvent second) {

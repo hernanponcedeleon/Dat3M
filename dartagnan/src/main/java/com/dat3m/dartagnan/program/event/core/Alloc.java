@@ -133,7 +133,7 @@ public final class Alloc extends AbstractEvent implements RegReader, RegWriter {
     public BooleanFormula encodeExec(EncodingContext ctx) {
         return ctx.getBooleanFormulaManager().and(
                 super.encodeExec(ctx),
-                ctx.getExpressionEncoder().equalsAt(ctx.result(this), this, getAllocatedObject(), this)
+                ctx.getExpressionEncoder().equalAt(ctx.result(this), this, getAllocatedObject(), this)
         );
     }
 }

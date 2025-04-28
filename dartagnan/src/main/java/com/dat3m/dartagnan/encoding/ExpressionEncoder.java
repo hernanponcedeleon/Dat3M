@@ -29,7 +29,6 @@ import com.google.common.base.Preconditions;
 import org.sosy_lab.java_smt.api.*;
 import org.sosy_lab.java_smt.api.NumeralFormula.IntegerFormula;
 
-import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -90,46 +89,17 @@ public class ExpressionEncoder {
         return (TypedFormula<BooleanType, BooleanFormula>) encodeFinal(expression);
     }
 
-    @SuppressWarnings("unchecked")
-    public TypedFormula<IntegerType, ?> encodeIntegerAt(Expression expression, Event at) {
-        Preconditions.checkArgument(expression.getType() instanceof IntegerType);
-        return (TypedFormula<IntegerType, ?>) encodeAt(expression, at);
+    public <TType extends Type, TFormula extends Formula> TypedValue<TType, ?> evaluate(TypedFormula<TType, TFormula> typedFormula, Model model) {
+        return new TypedValue<>(typedFormula.type(), fmgr.evaluate(typedFormula.formula(), model));
     }
 
-    @SuppressWarnings("unchecked")
-    public TypedFormula<IntegerType, ?> encodeIntegerFinal(Expression expression) {
-        Preconditions.checkArgument(expression.getType() instanceof IntegerType);
-        return (TypedFormula<IntegerType, ?>) encodeFinal(expression);
+    public TypedValue<?, ?> evaluateAt(Expression expression, Event at, Model model) {
+        return evaluate(encodeAt(expression, at), model);
     }
 
-    public <TType extends Type> TypedFormula<TType, ?> makeZero(TType type) {
-        final Formula form;
-        if (type instanceof BooleanType) {
-            form = bmgr.makeFalse();
-        } else if (type instanceof IntegerType intType) {
-            form = context.useIntegers ?
-                    integerFormulaManager().makeNumber(0) :
-                    bitvectorFormulaManager().makeBitvector(intType.getBitWidth(), 0);
-        } else {
-            final String error = String.format("Cannot make zero formula for type %s", type);
-            throw new UnsupportedOperationException(error);
-        }
-
-        return new TypedFormula<>(type, form);
-    }
-
-    public <TType extends Type> TypedFormula<TType, ?> makeLiteral(TType type, BigInteger value) {
-        final Formula formula;
-        if (type instanceof BooleanType) {
-            formula = bmgr.makeBoolean(!value.equals(BigInteger.ZERO));
-        } else if (type instanceof IntegerType integerType) {
-            formula = context.useIntegers
-                    ? integerFormulaManager().makeNumber(value)
-                    : bitvectorFormulaManager().makeBitvector(integerType.getBitWidth(), value);
-        } else {
-            throw new UnsupportedOperationException(String.format("Encoding variable of type %s.", type));
-        }
-        return new TypedFormula<>(type, formula);
+    @SuppressWarnings("Unchecked")
+    public TypedValue<BooleanType, Boolean> evaluateBooleanAt(Expression expression, Event at, Model model) {
+        return (TypedValue<BooleanType, Boolean>) evaluate(encodeBooleanAt(expression, at), model);
     }
 
     public <TType extends Type> TypedFormula<TType, ?> makeVariable(String name, TType type) {
@@ -152,7 +122,7 @@ public class ExpressionEncoder {
         }
 
         if (variable == null) {
-            throw new UnsupportedOperationException(String.format("Cannot encode variable of type %s.", type));
+            throw new UnsupportedOperationException(String.format("Cannot make variable of type %s.", type));
         }
         return new TypedFormula<>(type, variable);
     }
@@ -165,25 +135,12 @@ public class ExpressionEncoder {
         return new TypedFormula<>(type, formula);
     }
 
-    public <TType extends Type, TFormula extends Formula> TypedValue<TType, ?> evaluate(TypedFormula<TType, TFormula> typedFormula, Model model) {
-        return new TypedValue<>(typedFormula.type(), fmgr.evaluate(typedFormula.formula(), model));
-    }
-
-    public TypedValue<?, ?> evaluateAt(Expression expression, Event at, Model model) {
-        return evaluate(encodeAt(expression, at), model);
-    }
-
-    @SuppressWarnings("Unchecked")
-    public TypedValue<BooleanType, Boolean> evaluateBooleanAt(Expression expression, Event at, Model model) {
-        return (TypedValue<BooleanType, Boolean>) evaluate(encodeBooleanAt(expression, at), model);
-    }
-
     // ====================================================================================
     // Utility
 
-    public BooleanFormula equals(Expression left, Expression right, ConversionMode cMode) {
+    public BooleanFormula equal(Expression left, Expression right, ConversionMode cMode) {
         if (cMode == ConversionMode.LEFT_TO_RIGHT) {
-            return equals(right, left, ConversionMode.RIGHT_TO_LEFT);
+            return equal(right, left, ConversionMode.RIGHT_TO_LEFT);
         } else if (cMode == ConversionMode.RIGHT_TO_LEFT) {
             right = convert(encodeFinal(right), left.getType());
         }
@@ -191,25 +148,27 @@ public class ExpressionEncoder {
         return encodeBooleanFinal(context.getExpressionFactory().makeEQ(left, right)).formula();
     }
 
-    public BooleanFormula equals(Expression left, Expression right) {
-        return equals(left, right, ConversionMode.NO);
+    public BooleanFormula equal(Expression left, Expression right) {
+        return equal(left, right, ConversionMode.NO);
     }
 
-    public BooleanFormula equalsAt(Expression left, Event leftAt, Expression right, Event rightAt, ConversionMode cMode) {
-        return equals(encodeAt(left, leftAt), encodeAt(right, rightAt), cMode);
+    public BooleanFormula equalAt(Expression left, Event leftAt, Expression right, Event rightAt, ConversionMode cMode) {
+        return equal(encodeAt(left, leftAt), encodeAt(right, rightAt), cMode);
     }
 
-    public BooleanFormula equalsAt(Expression left, Event leftAt, Expression right, Event rightAt) {
-        return equals(encodeAt(left, leftAt), encodeAt(right, rightAt));
+    public BooleanFormula equalAt(Expression left, Event leftAt, Expression right, Event rightAt) {
+        return equal(encodeAt(left, leftAt), encodeAt(right, rightAt));
     }
 
     // ====================================================================================
     // (Dynamic) Conversation operations
 
-    // TODO: We might want to have an universal intermediate type T with the following properties:
+    // TODO 1: The conversion operation should be an IR expression, then these explicit methods beecome unnecessary.
+    // TODO 2: We might want to have an universal intermediate type T with the following properties:
     //  (1) every other type has a lossless conversion to T
     //  (2) T can be converted to every other type (possibly with loss)
     //  (3) A round-trip through T is always lossless.
+    //  See comments on TypedFormula class for more details.
     public TypedFormula<?, ?> convert(TypedFormula<?, ?> form, Type targetType) {
         if (form.type() == targetType) {
             return form;
@@ -372,7 +331,10 @@ public class ExpressionEncoder {
 
         @Override
         public TypedFormula<IntegerType, ?> visitIntLiteral(IntLiteral intLiteral) {
-            return makeLiteral(intLiteral.getType(), intLiteral.getValue());
+            final Formula result = context.useIntegers
+                    ? integerFormulaManager().makeNumber(intLiteral.getValue())
+                    : bitvectorFormulaManager().makeBitvector(intLiteral.getType().getBitWidth(), intLiteral.getValue());
+            return new TypedFormula<>(intLiteral.getType(), result);
         }
 
         @Override

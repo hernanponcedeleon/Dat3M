@@ -71,7 +71,7 @@ public class ExecutionStatus extends AbstractEvent implements RegWriter, EventUs
         final Expression notExec = exprEncoder.wrap(bmgr.not(context.execution(event)));
         return bmgr.and(
                 super.encodeExec(context),
-                context.getExpressionEncoder().equals(context.result(this), notExec, RIGHT_TO_LEFT)
+                context.getExpressionEncoder().equal(context.result(this), notExec, RIGHT_TO_LEFT)
         );
     }
 
