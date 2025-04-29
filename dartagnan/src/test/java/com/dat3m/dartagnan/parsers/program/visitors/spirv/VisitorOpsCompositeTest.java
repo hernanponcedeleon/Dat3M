@@ -449,7 +449,7 @@ public class VisitorOpsCompositeTest {
             fail("Should throw exception");
         } catch (ParsingException e) {
             // then
-            assertEquals("Parameter %v1 of OpVectorShuffle '%shuffle' is not a vector", e.getMessage());
+            assertEquals("Parameter of OpVectorShuffle '%shuffle' is not a vector", e.getMessage());
         }
     }
 
@@ -468,7 +468,7 @@ public class VisitorOpsCompositeTest {
             fail("Should throw exception");
         } catch (ParsingException e) {
             // then
-            assertEquals("Parameter %v2 of OpVectorShuffle '%shuffle' is not a vector", e.getMessage());
+            assertEquals("Parameter of OpVectorShuffle '%shuffle' is not a vector", e.getMessage());
         }
     }
 
@@ -489,7 +489,7 @@ public class VisitorOpsCompositeTest {
             fail("Should throw exception");
         } catch (ParsingException e) {
             // then
-            assertEquals("Type mismatch in OpVectorShuffle '%shuffle' between result type bv32 and components bool", e.getMessage());
+            assertEquals("Type mismatch in OpVectorShuffle '%shuffle' between result type and components", e.getMessage());
         }
     }
 
@@ -510,7 +510,7 @@ public class VisitorOpsCompositeTest {
             fail("Should throw exception");
         } catch (ParsingException e) {
             // then
-            assertEquals("Type mismatch in OpVectorShuffle '%shuffle' between result type bv32 and components bool", e.getMessage());
+            assertEquals("Type mismatch in OpVectorShuffle '%shuffle' between result type and components", e.getMessage());
         }
     }
 

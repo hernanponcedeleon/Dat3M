@@ -5,7 +5,6 @@ import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.Type;
 import com.dat3m.dartagnan.expression.type.*;
-import com.dat3m.dartagnan.expression.aggregates.ConstructExpr;
 import com.dat3m.dartagnan.parsers.SpirvBaseVisitor;
 import com.dat3m.dartagnan.parsers.SpirvParser;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.builders.ProgramBuilder;
@@ -82,17 +81,11 @@ public class VisitorOpsComposite extends SpirvBaseVisitor<Void> {
             throw new ParsingException("Return type %s of OpVectorShuffle '%s' is not a vector", type, id);
         }
         Type eType = aType.getElementType();
-        if (!(v1.getType() instanceof ArrayType aType1)) {
-            throw new ParsingException("Parameter %s of OpVectorShuffle '%s' is not a vector", v1Id, id);
+        if (!(v1.getType() instanceof ArrayType aType1) || !(v2.getType() instanceof ArrayType aType2)) {
+            throw new ParsingException("Parameter of OpVectorShuffle '%s' is not a vector", id);
         }
-        if(!(v2.getType() instanceof ArrayType aType2)) {
-            throw new ParsingException("Parameter %s of OpVectorShuffle '%s' is not a vector", v2Id, id);
-        }
-        if (!eType.equals(aType1.getElementType())) {
-            throw new ParsingException("Type mismatch in OpVectorShuffle '%s' between result type %s and components %s", id, eType, aType1.getElementType());
-        }
-        if (!eType.equals(aType2.getElementType())) {
-            throw new ParsingException("Type mismatch in OpVectorShuffle '%s' between result type %s and components %s", id, eType, aType2.getElementType());
+        if (!eType.equals(aType1.getElementType()) || !eType.equals(aType2.getElementType())) {
+            throw new ParsingException("Type mismatch in OpVectorShuffle '%s' between result type and components", id);
         }
         if (aType.getNumElements() != components.size()) {
             throw new ParsingException("Size mismatch in OpVectorShuffle '%s' between result type %s and components %s", id, aType, components);
