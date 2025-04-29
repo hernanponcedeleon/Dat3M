@@ -574,6 +574,23 @@ public class VisitorOpsCompositeTest {
         }
     }
 
+    @Test
+    public void testCompositeConstructMismatchingTypeArray() {
+        // given
+        String input = "%result = OpCompositeConstruct %composite %member1 %member2";
+        builder.mockIntType("%uint", 32);
+        builder.mockVectorType("%composite", "%uint", 2);
+        builder.mockConstant("%member1", "%uint", 1);
+        builder.mockConstant("%member2", "%composite", List.of(2, 3));
+
+        try {
+            visit(input);
+            fail("Should throw exception");
+        } catch (Exception e) {
+            assertEquals("All elements in an array must have the same type. Offending id: '%result'", e.getMessage());
+        }
+    }
+
     private void visit(String input) {
         new MockSpirvParser(input).spv().accept(new VisitorOpsComposite(builder));
     }
