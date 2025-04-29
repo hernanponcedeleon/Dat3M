@@ -53,7 +53,7 @@ public class Intrinsics {
     private static final Logger logger = LogManager.getLogger(Intrinsics.class);
 
     @Option(name = REMOVE_ASSERTION_OF_TYPE,
-            description = "Remove assertions of type [user, overflow, invalidderef].",
+            description = "Remove assertions of type [user, overflow, invalidderef, unknown_function].",
             toUppercase=true,
             secure = true)
     private EnumSet<AssertionType> notToInline = EnumSet.noneOf(AssertionType.class);
