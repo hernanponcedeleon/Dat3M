@@ -169,7 +169,7 @@ public class VisitorOpsMemory extends SpirvBaseVisitor<Event> {
         }
         Expression initExpr = builder.getExpression(ctx.initializer().getText());
         if (alignment.getValue(id) != null) {
-            initExpr = HelperTypes.getAlignedValue(id, initExpr, type);
+            initExpr = builder.getAlignedValue(id, initExpr, type);
         }
         return initExpr;
     }

@@ -123,6 +123,13 @@ public final class TypeFactory {
         return typeNormalizer.normalize(new ArrayType(element, size));
     }
 
+    public ArrayType getArrayType(Type element, int size, int paddingStart) {
+        checkArgument(0 <= size, "Negative element count in array.");
+        checkArgument(0 <= paddingStart, "Negative padding start index in array.");
+        checkArgument(paddingStart <= size, "Padding start index %s is greater than array size %s", paddingStart, size);
+        return typeNormalizer.normalize(new ArrayType(element, size, paddingStart));
+    }
+
     public IntegerType getArchType() {
         return pointerDifferenceType;
     }
@@ -268,7 +275,7 @@ public final class TypeFactory {
         }
         if (staticType instanceof ArrayType aStaticType && runtimeType instanceof ArrayType aRuntimeType) {
             int countStatic = aStaticType.getNumElements();
-            int countRuntime = aRuntimeType.getNumElements();
+            int countRuntime = Math.min(aRuntimeType.getPaddingStart(), aRuntimeType.getNumElements());
             if (countStatic != countRuntime && (countRuntime != -1 || countStatic <= 0)) {
                 return false;
             }

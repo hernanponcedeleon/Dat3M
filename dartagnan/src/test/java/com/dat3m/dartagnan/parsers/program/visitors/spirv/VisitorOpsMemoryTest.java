@@ -247,7 +247,9 @@ public class VisitorOpsMemoryTest {
         assertEquals(256, ((IntegerType) v1.getInnerType()).getBitWidth());
         ScopedPointerVariable v2 = (ScopedPointerVariable) builder.getExpression("%v2");
         assertNotNull(v2);
-        assertEquals(64, ((AggregateType) v2.getInnerType()).getFields().get(1).offset());
+        assertEquals(64, TypeFactory.getInstance().getMemorySizeInBytes(v2.getInnerType()));
+        assertEquals(4, ((ArrayType) v2.getInnerType()).getNumElements());
+        assertEquals(3, ((ArrayType) v2.getInnerType()).getPaddingStart());
     }
 
     @Test

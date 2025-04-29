@@ -5,9 +5,8 @@ import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.Type;
-import com.dat3m.dartagnan.expression.type.FunctionType;
-import com.dat3m.dartagnan.expression.type.ScopedPointerType;
-import com.dat3m.dartagnan.expression.type.TypeFactory;
+import com.dat3m.dartagnan.expression.aggregates.ConstructExpr;
+import com.dat3m.dartagnan.expression.type.*;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.decorations.BuiltIn;
 import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.Program;
@@ -23,9 +22,11 @@ import com.dat3m.dartagnan.program.memory.ScopedPointerVariable;
 import com.dat3m.dartagnan.program.processing.transformers.MemoryTransformer;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import static com.dat3m.dartagnan.parsers.program.visitors.spirv.decorations.DecorationType.BUILT_IN;
 
@@ -49,6 +50,34 @@ public class ProgramBuilder {
         this.program = new Program(new Memory(), Program.SourceLanguage.SPV, grid);
         this.controlFlowBuilder = new ControlFlowBuilder(expressions);
         this.decorationsBuilder = new DecorationsBuilder(grid);
+    }
+
+    public Expression getAlignedValue(String id, Expression base, Type type) {
+        if (type instanceof AggregateType aggregateType && base instanceof ConstructExpr constructExpr) {
+            List<Expression> elements = aggregateType.getFields().stream()
+                    .map(field -> {
+                        int index = aggregateType.getFields().indexOf(field);
+                        return getAlignedValue(id, constructExpr.getOperands().get(index), field.type());
+                    })
+                    .collect(Collectors.toList());
+            return ExpressionFactory.getInstance().makeConstruct(type, elements);
+        }
+        if (type instanceof ArrayType arrayType && base instanceof ConstructExpr constructExpr) {
+            int numOperands = constructExpr.getOperands().size();
+            if (arrayType.getNumElements() < numOperands) {
+                throw new ParsingException("Array initializer has too many elements for variable '%s'", id);
+            }
+            List<Expression> elements = IntStream.range(0, arrayType.getNumElements())
+                    .mapToObj(i -> i < numOperands
+                            ? getAlignedValue(id, constructExpr.getOperands().get(i), arrayType.getElementType())
+                            : makeUndefinedValue(arrayType.getElementType()))
+                    .collect(Collectors.toList());
+            return ExpressionFactory.getInstance().makeArray(arrayType.getElementType(), elements, true);
+        }
+        if (base.getType().equals(type)) {
+            return base;
+        }
+        throw new ParsingException("Cannot align initializer for variable '" + id + "' of type " + type);
     }
 
     public Program build() {
