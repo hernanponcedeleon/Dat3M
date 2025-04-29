@@ -73,6 +73,7 @@ public class VisitorOpsMemory extends SpirvBaseVisitor<Event> {
         }
         Set<String> tags = parseMemoryAccessTags(ctx.memoryAccess());
         checkAndPropagateTags(events, tags, Tag.Spirv.MEM_VISIBLE, ctx.pointer().getText(), "OpStore");
+        return null;
     }
 
     @Override
@@ -122,6 +123,7 @@ public class VisitorOpsMemory extends SpirvBaseVisitor<Event> {
         }
         Set<String> tags = parseMemoryAccessTags(ctx.memoryAccess());
         checkAndPropagateTags(events, tags, Tag.Spirv.MEM_AVAILABLE, ctx.pointer().getText(), "OpLoad");
+        return null;
     }
 
     private void checkAndPropagateTags(List<Event> events, Set<String> tags, String checkTag, String pointerId, String op) {
@@ -132,7 +134,7 @@ public class VisitorOpsMemory extends SpirvBaseVisitor<Event> {
                 e.addTags(storageClass);
                 builder.addEvent(e);
             });
-            return null;
+            return;
         }
         throw new ParsingException("%s cannot contain tag '%s'", op, checkTag);
     }
