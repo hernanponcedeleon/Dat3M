@@ -13,7 +13,6 @@ import com.dat3m.dartagnan.parsers.SpirvParser;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.builders.ProgramBuilder;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.decorations.Alignment;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.helpers.HelperInputs;
-import com.dat3m.dartagnan.parsers.program.visitors.spirv.helpers.HelperTypes;
 import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.EventFactory;
@@ -193,7 +192,7 @@ public class VisitorOpsFunction extends SpirvBaseVisitor<Void> {
     private Expression createEntryPointParameter(String id, Type type) {
         Integer alignmentNum = alignment.getValue(id);
         Expression alignmentExpr = alignmentNum == null ?
-                expressions.getDefaultAlignment() : expressions.makeValue(alignmentNum, types.getArchType());
+                types.getDefaultAlignment() : expressions.makeValue(alignmentNum, types.getArchType());
         Expression value = createEntryPointParameterValue(id, type);
         if (type instanceof ScopedPointerType pType) {
             String ptrId = HelperInputs.castPointerId(id);

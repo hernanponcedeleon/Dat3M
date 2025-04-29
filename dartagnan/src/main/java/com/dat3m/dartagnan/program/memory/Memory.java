@@ -16,12 +16,13 @@ public class Memory {
     private final ArrayList<MemoryObject> objects = new ArrayList<>();
     private final Type ptrType = TypeFactory.getInstance().getPointerType();
     private final IntegerType archType = TypeFactory.getInstance().getArchType();
+    private final TypeFactory types = TypeFactory.getInstance();
 
     private int nextIndex = 1;
 
     // Generates a new, statically allocated memory object.
     public MemoryObject allocate(int size) {
-        final Expression defaultAlignment = ExpressionFactory.getInstance().getDefaultAlignment();
+        final Expression defaultAlignment = types.getDefaultAlignment();
         return allocate(size, defaultAlignment);
     }
 
@@ -43,7 +44,7 @@ public class Memory {
     }
 
     public VirtualMemoryObject allocateVirtual(int size, boolean generic, VirtualMemoryObject alias) {
-        return allocateVirtual(size, generic, ExpressionFactory.getInstance().getDefaultAlignment(), alias);
+        return allocateVirtual(size, generic, types.getDefaultAlignment(), alias);
     }
 
     public VirtualMemoryObject allocateVirtual(int size, boolean generic, Expression alignment,

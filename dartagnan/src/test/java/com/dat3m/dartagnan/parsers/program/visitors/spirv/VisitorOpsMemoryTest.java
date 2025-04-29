@@ -233,8 +233,8 @@ public class VisitorOpsMemoryTest {
         builder.mockVectorType("%arr", "%int", 3);
         builder.mockPtrType("%int_ptr", "%int", "Uniform");
         builder.mockPtrType("%arr_ptr", "%arr", "Uniform");
-        builder.mockPointerAlignment("%v1", 128);
-        builder.mockPointerAlignment("%v2", 512);
+        builder.mockPointerAlignment("%v1", 32);
+        builder.mockPointerAlignment("%v2", 64);
 
 
         // when
@@ -243,11 +243,11 @@ public class VisitorOpsMemoryTest {
         // then
         ScopedPointerVariable v1 = (ScopedPointerVariable) builder.getExpression("%v1");
         assertNotNull(v1);
-        assertEquals(128, v1.getAddress().getKnownAlignment());
-        assertEquals(128, ((IntegerType) v1.getInnerType()).getBitWidth());
+        assertEquals(32, v1.getAddress().getKnownAlignment());
+        assertEquals(256, ((IntegerType) v1.getInnerType()).getBitWidth());
         ScopedPointerVariable v2 = (ScopedPointerVariable) builder.getExpression("%v2");
         assertNotNull(v2);
-        assertEquals(512, ((AggregateType) v2.getInnerType()).getFields().get(1).offset());
+        assertEquals(64, ((AggregateType) v2.getInnerType()).getFields().get(1).offset());
     }
 
     @Test

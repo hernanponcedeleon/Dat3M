@@ -1,5 +1,7 @@
 package com.dat3m.dartagnan.expression.type;
 
+import com.dat3m.dartagnan.expression.Expression;
+import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.Type;
 import com.dat3m.dartagnan.utils.Normalizer;
 import com.google.common.math.IntMath;
@@ -32,6 +34,10 @@ public final class TypeFactory {
     //TODO make this part of the program.
     public static TypeFactory getInstance() {
         return instance;
+    }
+
+    public Expression getDefaultAlignment() {
+        return ExpressionFactory.getInstance().makeValue(getMemorySizeInBytes(getArchType()), getArchType());
     }
 
     public BooleanType getBooleanType() {

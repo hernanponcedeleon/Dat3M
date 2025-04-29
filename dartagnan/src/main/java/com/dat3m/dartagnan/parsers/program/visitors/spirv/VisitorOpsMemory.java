@@ -123,7 +123,7 @@ public class VisitorOpsMemory extends SpirvBaseVisitor<Event> {
             Type type = pointerType.getPointedType();
             Integer alignmentNum = alignment.getValue(id);
             Expression alignmentExpr = alignmentNum == null ?
-                    expressions.getDefaultAlignment() : expressions.makeValue(alignmentNum, types.getArchType());
+                    types.getDefaultAlignment() : expressions.makeValue(alignmentNum, types.getArchType());
             if (alignmentNum != null) {
                 type = HelperTypes.getAlignedType(type, alignmentNum);
             }

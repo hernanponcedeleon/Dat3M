@@ -27,16 +27,12 @@ public final class ExpressionFactory {
     private final BooleanType booleanType = types.getBooleanType();
     private final BoolLiteral falseConstant = new BoolLiteral(booleanType, false);
     private final BoolLiteral trueConstant = new BoolLiteral(booleanType, true);
-    private final Expression defaultAlignment = makeValue(8, types.getArchType());
 
-    private ExpressionFactory() {}
+    private ExpressionFactory() {
+    }
 
     public static ExpressionFactory getInstance() {
         return instance;
-    }
-
-    public Expression getDefaultAlignment() {
-        return defaultAlignment;
     }
 
     // -----------------------------------------------------------------------------------------------------------------
