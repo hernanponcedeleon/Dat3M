@@ -591,6 +591,22 @@ public class VisitorOpsCompositeTest {
         }
     }
 
+    @Test
+    public void testCompositeConstructResultNotComposite() {
+        // given
+        String input = "%result = OpCompositeConstruct %uint %member1 %member2";
+        builder.mockIntType("%uint", 32);
+        builder.mockConstant("%member1", "%uint", 1);
+        builder.mockConstant("%member2", "%uint", 2);
+
+        try {
+            visit(input);
+            fail("Should throw exception");
+        } catch (Exception e) {
+            assertEquals("Result type of CompositeConstruct must be a composite. Offending id: '%result'", e.getMessage());
+        }
+    }
+
     private void visit(String input) {
         new MockSpirvParser(input).spv().accept(new VisitorOpsComposite(builder));
     }
