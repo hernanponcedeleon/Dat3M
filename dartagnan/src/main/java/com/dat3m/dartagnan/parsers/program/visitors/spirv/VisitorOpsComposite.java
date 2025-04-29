@@ -36,53 +36,14 @@ public class VisitorOpsComposite extends SpirvBaseVisitor<Void> {
             builder.addExpression(id, element);
             return null;
         }
-        throw new ParsingException(String.format("Type mismatch in composite extraction for: %s", id));
-    }
-
-    @Override
-    public Void visitOpCompositeConstruct(SpirvParser.OpCompositeConstructContext ctx) {
-        String id = ctx.idResult().getText();
-        Type type = builder.getType(ctx.idResultType().getText());
-        if (!(type instanceof AggregateType || type instanceof ArrayType)) {
-            throw new ParsingException(String.format("Result type of CompositeConstruct must be a composite. Offending id: '%s'", id));
-        }
-        if (type instanceof AggregateType aggregateType) {
-            final List<Expression> elements = new ArrayList<>(aggregateType.getFields().size());
-            for (SpirvParser.ConstituentsContext vCtx : ctx.constituents()) {
-                String idCtx = vCtx.idRef().getText();
-                elements.add(builder.getExpression(idCtx));
-            }
-            try {
-                builder.addExpression(id, expressions.makeConstruct(type, elements));
-            } catch (Exception e) {
-                throw new ParsingException(String.format("%s Offending id: '%s'", e.getMessage(), id));
-            }
-        }
-        if (type instanceof ArrayType arrayType) {
-            final List<Expression> elements = new ArrayList<>(arrayType.getNumElements());
-            for (SpirvParser.ConstituentsContext vCtx : ctx.constituents()) {
-                String idCtx = vCtx.idRef().getText();
-                Expression elem = builder.getExpression(idCtx);
-                if (elem.getType().equals(type)) {
-                    elements.addAll(elem.getOperands());
-                } else {
-                    elements.add(elem);
-                }
-            }
-            try {
-                builder.addExpression(id, expressions.makeArray(arrayType.getElementType(), elements, true));
-            } catch (Exception e) {
-                throw new ParsingException(String.format("%s Offending id: '%s'", e.getMessage(), id));
-            }
-        }
-        return null;
+        throw new ParsingException(String.format("Type mismatch in composite extraction for '%s'", id));
     }
 
     private Expression getElement(Expression base, List<Integer> indexes, String id) {
         try {
             return expressions.makeExtract(base, indexes);
         } catch (Exception e) {
-            throw new ParsingException(String.format("Index out of bounds in OpCompositeExtract for '%s'", id));
+            throw new ParsingException(String.format("%s Offending id: '%s'", e.getMessage(), id));
         }
     }
 
@@ -149,7 +110,54 @@ public class VisitorOpsComposite extends SpirvBaseVisitor<Void> {
         try {
             return expressions.makeInsert(compositeExpr, objectExpr, indexes);
         } catch (Exception e) {
-            throw new ParsingException("Element type mismatch or index out of bounds in OpCompositeInsert for '%s'", id);
+            throw new ParsingException(String.format("%s Offending id: '%s'", e.getMessage(), id));
+        }
+    }
+
+    @Override
+    public Void visitOpCompositeConstruct(SpirvParser.OpCompositeConstructContext ctx) {
+        String id = ctx.idResult().getText();
+        Type type = builder.getType(ctx.idResultType().getText());
+        if (!(type instanceof AggregateType || type instanceof ArrayType)) {
+            throw new ParsingException(String.format("Result type of CompositeConstruct must be a composite for '%s'", id));
+        }
+        if (type instanceof AggregateType aggregateType) {
+            final List<Expression> elements = new ArrayList<>(aggregateType.getFields().size());
+            for (SpirvParser.ConstituentsContext vCtx : ctx.constituents()) {
+                String idCtx = vCtx.idRef().getText();
+                elements.add(builder.getExpression(idCtx));
+            }
+            builder.addExpression(id, getConstruct(type, elements, id));
+        }
+        if (type instanceof ArrayType arrayType) {
+            final List<Expression> elements = new ArrayList<>(arrayType.getNumElements());
+            for (SpirvParser.ConstituentsContext vCtx : ctx.constituents()) {
+                String idCtx = vCtx.idRef().getText();
+                Expression elem = builder.getExpression(idCtx);
+                if (elem.getType().equals(type)) {
+                    elements.addAll(elem.getOperands());
+                } else {
+                    elements.add(elem);
+                }
+            }
+            builder.addExpression(id, getArray(arrayType.getElementType(), elements, id));
+        }
+        return null;
+    }
+
+    private Expression getConstruct(Type type, List<Expression> elements, String id) {
+        try {
+            return expressions.makeConstruct(type, elements);
+        } catch (Exception e) {
+            throw new ParsingException(String.format("%s Offending id: '%s'", e.getMessage(), id));
+        }
+    }
+
+    private Expression getArray(Type eType, List<Expression> elements, String id) {
+        try {
+            return expressions.makeArray(eType, elements, true);
+        } catch (Exception e) {
+            throw new ParsingException(String.format("%s Offending id: '%s'", e.getMessage(), id));
         }
     }
 

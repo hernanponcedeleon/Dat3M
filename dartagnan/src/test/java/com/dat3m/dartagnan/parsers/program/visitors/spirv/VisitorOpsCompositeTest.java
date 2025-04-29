@@ -136,7 +136,7 @@ public class VisitorOpsCompositeTest {
             fail("Should throw exception");
         } catch (Exception e) {
             // then
-            assertEquals("Type mismatch in composite extraction for: %extract", e.getMessage());
+            assertEquals("Type mismatch in composite extraction for '%extract'", e.getMessage());
         }
     }
 
@@ -154,7 +154,7 @@ public class VisitorOpsCompositeTest {
             fail("Should throw exception");
         } catch (ParsingException e) {
             // then
-            assertEquals("Index out of bounds in OpCompositeExtract for '%extract'", e.getMessage());
+            assertEquals("Non-aggregate type bv32. Offending id: '%extract'", e.getMessage());
         }
     }
 
@@ -173,7 +173,7 @@ public class VisitorOpsCompositeTest {
             fail("Should throw exception");
         } catch (ParsingException e) {
             // then
-            assertEquals("Index out of bounds in OpCompositeExtract for '%extract'", e.getMessage());
+            assertEquals("Index 5 out of bounds for type [4 x bv32]. Offending id: '%extract'", e.getMessage());
         }
     }
 
@@ -191,7 +191,7 @@ public class VisitorOpsCompositeTest {
             fail("Should throw exception");
         } catch (ParsingException e) {
             // then
-            assertEquals("Index out of bounds in OpCompositeExtract for '%extract'", e.getMessage());
+            assertEquals("Non-aggregate type bv32. Offending id: '%extract'", e.getMessage());
         }
     }
 
@@ -328,7 +328,7 @@ public class VisitorOpsCompositeTest {
             fail("Should throw exception");
         } catch (Exception e) {
             // then
-            assertEquals("Element type mismatch or index out of bounds in OpCompositeInsert for '%insert'", e.getMessage());
+            assertEquals("Non-aggregate type bv32. Offending id: '%insert'", e.getMessage());
         }
     }
 
@@ -373,7 +373,7 @@ public class VisitorOpsCompositeTest {
             fail("Should throw exception");
         } catch (ParsingException e) {
             // then
-            assertEquals("Element type mismatch or index out of bounds in OpCompositeInsert for '%insert'", e.getMessage());
+            assertEquals("Non-aggregate type bv32. Offending id: '%insert'", e.getMessage());
         }
     }
 
@@ -393,7 +393,7 @@ public class VisitorOpsCompositeTest {
             fail("Should throw exception");
         } catch (ParsingException e) {
             // then
-            assertEquals("Element type mismatch or index out of bounds in OpCompositeInsert for '%insert'", e.getMessage());
+            assertEquals("Index 5 out of bounds for type [4 x bv32]. Offending id: '%insert'", e.getMessage());
         }
     }
 
@@ -412,7 +412,7 @@ public class VisitorOpsCompositeTest {
             fail("Should throw exception");
         } catch (ParsingException e) {
             // then
-            assertEquals("Element type mismatch or index out of bounds in OpCompositeInsert for '%insert'", e.getMessage());
+            assertEquals("Non-aggregate type bv32. Offending id: '%insert'", e.getMessage());
         }
     }
 
@@ -605,7 +605,7 @@ public class VisitorOpsCompositeTest {
             visit(input);
             fail("Should throw exception");
         } catch (Exception e) {
-            assertEquals("Result type of CompositeConstruct must be a composite. Offending id: '%result'", e.getMessage());
+            assertEquals("Result type of CompositeConstruct must be a composite for '%result'", e.getMessage());
         }
     }
 
