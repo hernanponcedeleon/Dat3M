@@ -66,6 +66,8 @@ public class Intrinsics {
     //FIXME This might have concurrency issues if processing multiple programs at the same time.
     private BeginAtomic currentAtomicBegin;
 
+    Set<String> unknown_functions = new HashSet<>();
+
     private Intrinsics() {
     }
 
@@ -952,8 +954,10 @@ public class Intrinsics {
             replacement.addAll(inlineCallAsNonDet(call));
             opt = "Replacing return value by non-deterministic value. ";
         }
-        logger.warn(String.format("Found unknown function %s. %s" +
-            "Detecting calls to unknown functions requires --property=program_spec", funcName, opt));
+        if (unknown_functions.add(funcName)) {
+            logger.warn(String.format("Found unknown function %s. %s" +
+                "Detecting calls to unknown functions requires --property=program_spec", funcName, opt));
+        }
         replacement.addAll(inlineAssert(call, AssertionType.UNKNOWN_FUNCTION, "Calling unknown function " + funcName));
         return replacement;
     }
