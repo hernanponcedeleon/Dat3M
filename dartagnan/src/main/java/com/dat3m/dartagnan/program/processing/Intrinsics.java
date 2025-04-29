@@ -945,7 +945,13 @@ public class Intrinsics {
     }
 
     private List<Event> inlineUnknownFunction(FunctionCall call) {
-        return inlineAssert(call, AssertionType.UNKNOWN_FUNCTION, "Unknown function " + call.getCalledFunction().getName());
+        String funcName = call.getCalledFunction().getName();
+        logger.warn(String.format("Found unknown function %s. Replacing return value by non-deterministic value. " +
+            "Detecting calls to unknown functions requires --property=program_spec", funcName));
+        final List<Event> replacement = new ArrayList<>();
+        replacement.addAll(inlineCallAsNonDet(call));
+        replacement.addAll(inlineAssert(call, AssertionType.UNKNOWN_FUNCTION, "Calling unknown function " + funcName));
+        return replacement;
     }
 
 
