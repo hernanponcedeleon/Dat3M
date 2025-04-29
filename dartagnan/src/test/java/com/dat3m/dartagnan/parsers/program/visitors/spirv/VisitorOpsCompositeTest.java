@@ -2,6 +2,7 @@ package com.dat3m.dartagnan.parsers.program.visitors.spirv;
 
 import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.expression.aggregates.ExtractExpr;
+import com.dat3m.dartagnan.expression.aggregates.ConstructExpr;
 import com.dat3m.dartagnan.expression.aggregates.InsertExpr;
 import com.dat3m.dartagnan.expression.aggregates.ConstructExpr;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.mocks.MockProgramBuilder;
@@ -578,10 +579,11 @@ public class VisitorOpsCompositeTest {
     public void testCompositeConstructMismatchingTypeArray() {
         // given
         String input = "%result = OpCompositeConstruct %composite %member1 %member2";
+        builder.mockBoolType("%bool");
         builder.mockIntType("%uint", 32);
         builder.mockVectorType("%composite", "%uint", 2);
         builder.mockConstant("%member1", "%uint", 1);
-        builder.mockConstant("%member2", "%composite", List.of(2, 3));
+        builder.mockConstant("%member2", "%bool", true);
 
         try {
             visit(input);
@@ -605,6 +607,49 @@ public class VisitorOpsCompositeTest {
         } catch (Exception e) {
             assertEquals("Result type of CompositeConstruct must be a composite. Offending id: '%result'", e.getMessage());
         }
+    }
+
+    @Test
+    public void testCompositeConstructNestedVectorWrongType() {
+        // given
+        String input = "%result = OpCompositeConstruct %composite %member1 %member2";
+        builder.mockIntType("%uint", 32);
+        builder.mockVectorType("%composite", "%uint", 2);
+        builder.mockVectorType("%composite-composite", "%composite", 2);
+        builder.mockConstant("%member1", "%uint", 1);
+        builder.mockConstant("%v1", "%composite", List.of(2, 3));
+        builder.mockConstant("%v2", "%composite", List.of(4, 5));
+        builder.mockConstant("%member2", "%composite-composite",
+            List.of(builder.getExpression("%v1"), builder.getExpression("%v2")));
+
+        try {
+            visit(input);
+            fail("Should throw exception");
+        } catch (Exception e) {
+            assertEquals("All elements in an array must have the same type. Offending id: '%result'", e.getMessage());
+        }
+    }
+
+    @Test
+    public void testCompositeConstructNestedVectorCorrectType() {
+        // given
+        String input = "%result = OpCompositeConstruct %composite %member1 %member2";
+        builder.mockIntType("%uint", 32);
+        builder.mockVectorType("%composite", "%uint", 2);
+        builder.mockConstant("%member1", "%uint", 1);
+        builder.mockConstant("%member2", "%composite", List.of(2, 3));
+        builder.mockConstant("%bv32(1)", "%uint", 1);
+        builder.mockConstant("%bv32(2)", "%uint", 2);
+        builder.mockConstant("%bv32(3)", "%uint", 3);
+
+        // when
+        visit(input);
+
+        // then
+        ConstructExpr shuffle = (ConstructExpr) builder.getExpression("%result");
+        assertEquals(builder.getExpression("%bv32(1)"), shuffle.getOperands().get(0));
+        assertEquals(builder.getExpression("%bv32(2)"), shuffle.getOperands().get(1));
+        assertEquals(builder.getExpression("%bv32(3)"), shuffle.getOperands().get(2));
     }
 
     private void visit(String input) {
