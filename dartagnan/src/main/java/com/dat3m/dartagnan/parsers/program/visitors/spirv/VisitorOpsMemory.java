@@ -72,16 +72,7 @@ public class VisitorOpsMemory extends SpirvBaseVisitor<Event> {
             events.add(EventFactory.newStore(pointer, value));
         }
         Set<String> tags = parseMemoryAccessTags(ctx.memoryAccess());
-        if (!tags.contains(Tag.Spirv.MEM_VISIBLE)) {
-            String storageClass = builder.getPointerStorageClass(ctx.pointer().getText());
-            events.forEach(e -> {
-                e.addTags(tags);
-                e.addTags(storageClass);
-                builder.addEvent(e);
-            });
-            return null;
-        }
-        throw new ParsingException("OpStore cannot contain tag '%s'", Tag.Spirv.MEM_VISIBLE);
+        checkAndPropagateTags(events, tags, Tag.Spirv.MEM_VISIBLE, ctx.pointer().getText(), "OpStore");
     }
 
     @Override
@@ -130,8 +121,12 @@ public class VisitorOpsMemory extends SpirvBaseVisitor<Event> {
             events.add(EventFactory.newLoad(register, pointer));
         }
         Set<String> tags = parseMemoryAccessTags(ctx.memoryAccess());
-        if (!tags.contains(Tag.Spirv.MEM_AVAILABLE)) {
-            String storageClass = builder.getPointerStorageClass(ctx.pointer().getText());
+        checkAndPropagateTags(events, tags, Tag.Spirv.MEM_AVAILABLE, ctx.pointer().getText(), "OpLoad");
+    }
+
+    private void checkAndPropagateTags(List<Event> events, Set<String> tags, String checkTag, String pointerId, String op) {
+        if (!tags.contains(checkTag)) {
+            String storageClass = builder.getPointerStorageClass(pointerId);
             events.forEach(e -> {
                 e.addTags(tags);
                 e.addTags(storageClass);
@@ -139,7 +134,7 @@ public class VisitorOpsMemory extends SpirvBaseVisitor<Event> {
             });
             return null;
         }
-        throw new ParsingException("OpLoad cannot contain tag '%s'", Tag.Spirv.MEM_AVAILABLE);
+        throw new ParsingException("%s cannot contain tag '%s'", op, checkTag);
     }
 
     @Override
