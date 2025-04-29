@@ -66,8 +66,6 @@ public class Intrinsics {
     //FIXME This might have concurrency issues if processing multiple programs at the same time.
     private BeginAtomic currentAtomicBegin;
 
-    Set<String> unknown_functions = new HashSet<>();
-
     private Intrinsics() {
     }
 
@@ -296,14 +294,21 @@ public class Intrinsics {
     }
 
     private void markIntrinsics(Program program) {
+        final var missingSymbols = new TreeSet<String>();
         for (Function func : program.getFunctions()) {
             if (!func.hasBody()) {
                 final String funcName = func.getName();
                 Arrays.stream(Info.values())
                         .filter(info -> info.matches(funcName))
                         .findFirst()
-                        .ifPresentOrElse(func::setIntrinsicInfo, () -> func.setIntrinsicInfo(Info.MISSING));
+                        .ifPresentOrElse(func::setIntrinsicInfo, () -> {
+                            missingSymbols.add(funcName);
+                            func.setIntrinsicInfo(Info.MISSING);});
             }
+        }
+        if (!missingSymbols.isEmpty()) {
+            logger.warn(missingSymbols.stream().collect(Collectors.joining(", ", "Unknown intrinsics ", "")) +
+                ". Detecting calls to unknown functions requires --property=program_spec.");
         }
     }
 
@@ -947,18 +952,12 @@ public class Intrinsics {
     }
 
     private List<Event> inlineUnknownFunction(FunctionCall call) {
-        String funcName = call.getCalledFunction().getName();
-        String opt = "";
         final List<Event> replacement = new ArrayList<>();
         if (call instanceof ValueFunctionCall) {
             replacement.addAll(inlineCallAsNonDet(call));
-            opt = "Replacing return value by non-deterministic value. ";
         }
-        if (unknown_functions.add(funcName)) {
-            logger.warn(String.format("Found unknown function %s. %s" +
-                "Detecting calls to unknown functions requires --property=program_spec", funcName, opt));
-        }
-        replacement.addAll(inlineAssert(call, AssertionType.UNKNOWN_FUNCTION, "Calling unknown function " + funcName));
+        replacement.addAll(inlineAssert(call, AssertionType.UNKNOWN_FUNCTION,
+            "Calling unknown function " + call.getCalledFunction().getName()));
         return replacement;
     }
 
