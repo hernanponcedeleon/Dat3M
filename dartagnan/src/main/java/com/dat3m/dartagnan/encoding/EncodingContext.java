@@ -41,6 +41,7 @@ import static com.dat3m.dartagnan.program.event.Tag.INIT;
 import static com.dat3m.dartagnan.program.event.Tag.WRITE;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
+import static com.dat3m.dartagnan.expression.utils.ExpressionHelper.isAggregateLike;
 
 @Options
 public final class EncodingContext {
@@ -486,7 +487,7 @@ public final class EncodingContext {
                 return formulaManager.getBitvectorFormulaManager().makeVariable(integerType.getBitWidth(), name);
             }
         }
-        if (type instanceof AggregateType || type instanceof ArrayType) {
+        if (isAggregateLike(type)) {
             final Map<Integer, Type> primitives = TypeFactory.getInstance().decomposeIntoPrimitives(type);
             if (primitives != null) {
                 final List<Formula> elements = new ArrayList<>();
