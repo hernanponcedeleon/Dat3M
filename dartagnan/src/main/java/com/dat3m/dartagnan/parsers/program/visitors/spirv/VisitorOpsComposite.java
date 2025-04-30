@@ -13,6 +13,8 @@ import java.util.List;
 import java.util.Set;
 import java.util.ArrayList;
 
+import static com.dat3m.dartagnan.expression.utils.ExpressionHelper.isAggregateLike;
+
 public class VisitorOpsComposite extends SpirvBaseVisitor<Void> {
 
     private final ProgramBuilder builder;
@@ -118,7 +120,7 @@ public class VisitorOpsComposite extends SpirvBaseVisitor<Void> {
     public Void visitOpCompositeConstruct(SpirvParser.OpCompositeConstructContext ctx) {
         String id = ctx.idResult().getText();
         Type type = builder.getType(ctx.idResultType().getText());
-        if (!(type instanceof AggregateType || type instanceof ArrayType)) {
+        if (!isAggregateLike(type)) {
             throw new ParsingException(String.format("Result type of CompositeConstruct must be a composite for '%s'", id));
         }
         if (type instanceof AggregateType aggregateType) {

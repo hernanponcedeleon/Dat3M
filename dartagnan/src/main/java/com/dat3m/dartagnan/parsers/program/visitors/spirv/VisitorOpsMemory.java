@@ -30,6 +30,7 @@ import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 
 import static com.dat3m.dartagnan.parsers.program.visitors.spirv.decorations.DecorationType.BUILT_IN;
+import static com.dat3m.dartagnan.expression.utils.ExpressionHelper.isScalar;
 
 public class VisitorOpsMemory extends SpirvBaseVisitor<Event> {
 
@@ -95,7 +96,7 @@ public class VisitorOpsMemory extends SpirvBaseVisitor<Event> {
         List<Event> events = new ArrayList<>();
         if (type instanceof ArrayType arrayType) {
             Type elType = arrayType.getElementType();
-            if(!isScalarType(elType)) {
+            if(!isScalar(elType)) {
                 throw new ParsingException("Unsupported type of memory access to '%s', " +
                         "expected an array of scalars but received %s", id, type);
             }
@@ -106,7 +107,7 @@ public class VisitorOpsMemory extends SpirvBaseVisitor<Event> {
             }
         } else if (type instanceof AggregateType aggregateType) {
             if(aggregateType.getFields().stream().map(TypeOffset::type)
-                    .anyMatch(t -> !isScalarType(t))) {
+                    .anyMatch(t -> !isScalar(t))) {
                 throw new ParsingException("Unsupported type of memory access to '%s', " +
                         "expected an struct of scalars but received %s", id, type);
             }

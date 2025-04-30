@@ -14,6 +14,7 @@ import java.util.List;
 
 import static com.dat3m.dartagnan.expression.integers.IntBinaryOp.ADD;
 import static com.dat3m.dartagnan.expression.integers.IntBinaryOp.MUL;
+import static com.dat3m.dartagnan.expression.utils.ExpressionHelper.isScalar;
 
 public class HelperTypes {
 
@@ -76,7 +77,7 @@ public class HelperTypes {
     }
 
     public static Expression createResultExpression(String id, Type type, Expression op1, Expression op2, IntBinaryOp op) {
-        if (isScalarType(type)) {
+        if (isScalar(type)) {
             return expressions.makeBinary(op1, op, op2);
         }
         if (type instanceof ArrayType aType && aType.getElementType() instanceof IntegerType) {
@@ -89,10 +90,6 @@ public class HelperTypes {
             return expressions.makeArray(aType.getElementType(), elements, true);
         }
         throw new ParsingException("Illegal result type in definition of '%s'", id);
-    }
-
-    public static boolean isScalarType(Type type) {
-        return type instanceof BooleanType || type instanceof IntegerType || type instanceof FloatType;
     }
 
     private static Type getArrayMemberType(String id, ArrayType type, List<Integer> indexes) {
