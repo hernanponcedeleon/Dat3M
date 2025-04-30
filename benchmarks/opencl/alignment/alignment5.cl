@@ -1,6 +1,6 @@
 // clang -x cl -cl-std=CL2.0 -target spir-unknown-unknown -cl-opt-disable -emit-llvm -c alignment5.cl -o a.bc
 // llvm-spirv a.bc -o a.spv
-// spirv-dis a.spv > alignment5.spv.dis
+// spirv-dis a.spv > alignment5.spvasm
 
 struct struct1 {
     int a;    // 4 bytes, aligned to 4

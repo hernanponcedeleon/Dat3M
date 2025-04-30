@@ -1,6 +1,6 @@
 // clang -x cl -cl-std=CL2.0 -target spir-unknown-unknown -cl-opt-disable -emit-llvm -c alignment1.cl -o a.bc
 // llvm-spirv a.bc -o a.spv
-// spirv-dis a.spv > alignment1.spv.dis
+// spirv-dis a.spv > alignment1.spvasm
 
 __kernel void test(global uint *x)
 {

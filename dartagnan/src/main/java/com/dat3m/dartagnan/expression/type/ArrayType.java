@@ -9,7 +9,7 @@ public class ArrayType implements Type {
     private final int paddingStart;
 
     ArrayType(Type elementType, int numElements) {
-        this(elementType, numElements, numElements + 1);
+        this(elementType, numElements, numElements);
     }
 
     ArrayType(Type elementType, int numElements, int paddingStart) {

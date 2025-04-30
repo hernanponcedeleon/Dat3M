@@ -67,6 +67,20 @@ public class VisitorOpsConversion extends SpirvBaseVisitor<Void> {
     }
 
     @Override
+    public Void visitOpConvertUToPtr(SpirvParser.OpConvertUToPtrContext ctx) {
+        String id = ctx.idResult().getText();
+        String typeId = ctx.idResultType().getText();
+        if (!(builder.getType(typeId) instanceof ScopedPointerType)) {
+            throw new ParsingException("Type '%s' is not a pointer type for id '%s'", typeId, id);
+        }
+        Expression integerExpr = builder.getExpression(ctx.integerValue().getText());
+        Expression convertedInteger = expressions.makeCast(integerExpr, builder.getType(typeId), false);
+        Register reg = builder.addRegister(id, typeId);
+        builder.addEvent(new Local(reg, convertedInteger));
+        return null;
+    }
+
+    @Override
     public Void visitOpPtrCastToGeneric(SpirvParser.OpPtrCastToGenericContext ctx) {
         String id = ctx.idResult().getText();
         String typeId = ctx.idResultType().getText();
@@ -129,6 +143,7 @@ public class VisitorOpsConversion extends SpirvBaseVisitor<Void> {
         return Set.of(
                 "OpBitcast",
                 "OpConvertPtrToU",
+                "OpConvertUToPtr",
                 "OpPtrCastToGeneric",
                 "OpUConvert",
                 "OpSConvert"

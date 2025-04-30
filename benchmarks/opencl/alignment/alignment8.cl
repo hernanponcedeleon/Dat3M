@@ -1,6 +1,6 @@
 // clang -x cl -cl-std=CL2.0 -target spir-unknown-unknown -cl-opt-disable -emit-llvm -c alignment8.cl -o a.bc
 // llvm-spirv a.bc -o a.spv
-// spirv-dis a.spv > alignment8.spv.dis
+// spirv-dis a.spv > alignment8.spvasm
 
 struct aligned_struct {
     unsigned int e0 __attribute__ ((aligned (16)));

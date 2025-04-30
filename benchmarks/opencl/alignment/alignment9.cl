@@ -1,6 +1,6 @@
 // clang -x cl -cl-std=CL2.0 -target spir-unknown-unknown -cl-opt-disable -emit-llvm -c alignment9.cl -o a.bc
 // llvm-spirv a.bc -o a.spv
-// spirv-dis a.spv > alignment9.spv.dis
+// spirv-dis a.spv > alignment9.spvasm
 
 struct aligned_struct {
     uint3 data[2];

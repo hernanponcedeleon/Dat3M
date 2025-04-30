@@ -57,7 +57,8 @@ public class SpirvAssertionsTest {
                 {"alignment6.spvasm", 1, PASS},
                 {"alignment7.spvasm", 1, PASS},
                 {"alignment8.spvasm", 1, PASS},
-                {"alignment9.spvasm", 9, PASS}
+                {"alignment9.spvasm", 9, PASS},
+                {"alignment10.spvasm", 9, PASS}
         });
     }
 

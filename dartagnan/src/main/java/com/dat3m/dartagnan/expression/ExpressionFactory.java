@@ -28,8 +28,7 @@ public final class ExpressionFactory {
     private final BoolLiteral falseConstant = new BoolLiteral(booleanType, false);
     private final BoolLiteral trueConstant = new BoolLiteral(booleanType, true);
 
-    private ExpressionFactory() {
-    }
+    private ExpressionFactory() {}
 
     public static ExpressionFactory getInstance() {
         return instance;
