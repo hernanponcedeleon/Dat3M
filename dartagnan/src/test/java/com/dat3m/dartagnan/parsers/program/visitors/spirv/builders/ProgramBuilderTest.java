@@ -19,7 +19,7 @@ public class ProgramBuilderTest {
 
     private static final TypeFactory types = TypeFactory.getInstance();
 
-    private final ProgramBuilder builder = new ProgramBuilder(new ThreadGrid(1, 1, 1, 1));
+    private final ProgramBuilder builder = new ProgramBuilder(new ThreadGrid(1, 1, 1, 1, 1));
     private final ControlFlowBuilder cfBuilder = builder.getControlFlowBuilder();
 
     @Test
