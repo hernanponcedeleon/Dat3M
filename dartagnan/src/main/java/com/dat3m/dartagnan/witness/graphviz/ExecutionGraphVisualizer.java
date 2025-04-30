@@ -185,18 +185,53 @@ public class ExecutionGraphVisualizer {
 
     private ExecutionGraphVisualizer addRelation(RelationModel rm, String name) {
         graphviz.beginSubgraph(name);
-        String attributes = String.format("color=%s", colorMap.getColor(name));
+        String attributes = String.format("color=%s, label=\"%s\"", colorMap.getColor(name), name);
         graphviz.setEdgeAttributes(attributes);
-        String label = String.format("label=\"%s\"", name);
         BiPredicate<EventModel, EventModel> filter = rm.getRelation().getDefinition().getClass() == ReadFrom.class ?
             rfFilter : getFilter(name);
+        boolean hasse = name.equals("po");
+        Map<EventModel, Set<EventModel>> edges = new HashMap<>();
         for (EdgeModel edge : rm.getEdgeModels()) {
             EventModel from = edge.getFrom();
             EventModel to = edge.getTo();
 
-            if (!filter.test(from, to)) { continue; }
-
-            appendEdge(from, to, label);
+            if (filter.test(from, to)) {
+                edges.computeIfAbsent(from, k -> new HashSet<>()).add(to);
+            }
+        }
+        if (hasse) {
+            // remove transitive edges
+            DependencyGraph<EventModel> graph = DependencyGraph.from(edges.keySet(), edges);
+            for (Set<DependencyGraph<EventModel>.Node> scc : graph.getSCCs()) {
+                Set<DependencyGraph<EventModel>.Node> successors = new HashSet<>();
+                for (DependencyGraph<EventModel>.Node node : scc) {
+                    for (EventModel to : edges.getOrDefault(node.getContent(), new HashSet<>())) {
+                        DependencyGraph<EventModel>.Node n = graph.get(to);
+                        if (n.getTopologicalIndex() != node.getTopologicalIndex()) {
+                            successors.add(n);
+                        }
+                    }
+                }
+                for (DependencyGraph<EventModel>.Node node : scc) {
+                    Set<EventModel> toBeRemoved = new HashSet<>();
+                    for (EventModel to : edges.getOrDefault(node.getContent(), new HashSet<>())) {
+                        DependencyGraph<EventModel>.Node n = graph.get(to);
+                        for (DependencyGraph<EventModel>.Node s : successors) {
+                            if (s.getTopologicalIndex() != n.getTopologicalIndex() && s.getDependencies().contains(n)) {
+                                toBeRemoved.add(to);
+                                break;
+                            }
+                        }
+                    }
+                    edges.getOrDefault(node.getContent(), new HashSet<>()).removeAll(toBeRemoved);
+                }
+            }
+        }
+        for (Map.Entry<EventModel, Set<EventModel>> entry : edges.entrySet()) {
+            EventModel from = entry.getKey();
+            for (EventModel to : entry.getValue()) {
+                appendEdge(from, to);
+            }
         }
         graphviz.end();
         return this;
