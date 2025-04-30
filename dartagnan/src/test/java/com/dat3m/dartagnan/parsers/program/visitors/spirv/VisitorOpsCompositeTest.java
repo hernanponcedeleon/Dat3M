@@ -3,6 +3,7 @@ package com.dat3m.dartagnan.parsers.program.visitors.spirv;
 import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.expression.aggregates.ExtractExpr;
 import com.dat3m.dartagnan.expression.aggregates.InsertExpr;
+import com.dat3m.dartagnan.expression.aggregates.ConstructExpr;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.mocks.MockProgramBuilder;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.mocks.MockSpirvParser;
 import com.dat3m.dartagnan.program.Register;
@@ -412,6 +413,148 @@ public class VisitorOpsCompositeTest {
             // then
             assertEquals("Element type mismatch or index out of bounds in OpCompositeInsert for '%insert'", e.getMessage());
         }
+    }
+
+    @Test
+    public void testVectorShuffleReturnType() {
+        // given
+        String input = "%shuffle = OpVectorShuffle %uint %v1 %v2 0 0 0 0";
+        builder.mockIntType("%uint", 32);
+        builder.mockVectorType("%v4uint", "%uint", 4);
+        builder.mockConstant("%v1", "%v4uint", List.of(1, 2, 3, 4));
+        builder.mockConstant("%v2", "%v4uint", List.of(5, 6, 7, 8));
+
+        try {
+            // when
+            visit(input);
+            fail("Should throw exception");
+        } catch (ParsingException e) {
+            // then
+            assertEquals("Return type bv32 of OpVectorShuffle '%shuffle' is not a vector", e.getMessage());
+        }
+    }
+
+    @Test
+    public void testVectorShuffleFirstParameterType() {
+        // given
+        String input = "%shuffle = OpVectorShuffle %v4uint %v1 %v2 0 0 0 0";
+        builder.mockIntType("%uint", 32);
+        builder.mockVectorType("%v4uint", "%uint", 4);
+        builder.mockConstant("%v1", "%uint", 1);
+        builder.mockConstant("%v2", "%v4uint", List.of(5, 6, 7, 8));
+
+        try {
+            // when
+            visit(input);
+            fail("Should throw exception");
+        } catch (ParsingException e) {
+            // then
+            assertEquals("Parameter of OpVectorShuffle '%shuffle' is not a vector", e.getMessage());
+        }
+    }
+
+    @Test
+    public void testVectorShuffleSecondParameterType() {
+        // given
+        String input = "%shuffle = OpVectorShuffle %v4uint %v1 %v2 0 0 0 0";
+        builder.mockIntType("%uint", 32);
+        builder.mockVectorType("%v4uint", "%uint", 4);
+        builder.mockConstant("%v1", "%v4uint", List.of(5, 6, 7, 8));
+        builder.mockConstant("%v2", "%uint", 1);
+
+        try {
+            // when
+            visit(input);
+            fail("Should throw exception");
+        } catch (ParsingException e) {
+            // then
+            assertEquals("Parameter of OpVectorShuffle '%shuffle' is not a vector", e.getMessage());
+        }
+    }
+
+    @Test
+    public void testVectorShuffleMismatchFirstParameterType() {
+        // given
+        String input = "%shuffle = OpVectorShuffle %v4uint %v1 %v2 0 0 0 0";
+        builder.mockIntType("%uint", 32);
+        builder.mockBoolType("%bool");
+        builder.mockVectorType("%v4uint", "%uint", 4);
+        builder.mockVectorType("%v4bool", "%bool", 4);
+        builder.mockConstant("%v1", "%v4uint", List.of(1, 2, 3, 4));
+        builder.mockConstant("%v2", "%v4bool", List.of(true, true, true, true));
+
+        try {
+            // when
+            visit(input);
+            fail("Should throw exception");
+        } catch (ParsingException e) {
+            // then
+            assertEquals("Type mismatch in OpVectorShuffle '%shuffle' between result type and components", e.getMessage());
+        }
+    }
+
+    @Test
+    public void testVectorShuffleMismatchSecondParameterType() {
+        // given
+        String input = "%shuffle = OpVectorShuffle %v4uint %v1 %v2 0 0 0 0";
+        builder.mockIntType("%uint", 32);
+        builder.mockBoolType("%bool");
+        builder.mockVectorType("%v4uint", "%uint", 4);
+        builder.mockVectorType("%v4bool", "%bool", 4);
+        builder.mockConstant("%v1", "%v4bool", List.of(true, true, true, true));
+        builder.mockConstant("%v2", "%v4uint", List.of(1, 2, 3, 4));
+
+        try {
+            // when
+            visit(input);
+            fail("Should throw exception");
+        } catch (ParsingException e) {
+            // then
+            assertEquals("Type mismatch in OpVectorShuffle '%shuffle' between result type and components", e.getMessage());
+        }
+    }
+
+    @Test
+    public void testVectorShuffleSizeMismatch() {
+        // given
+        String input = "%shuffle = OpVectorShuffle %v4uint %v1 %v2 0 0 0";
+        builder.mockIntType("%uint", 32);
+        builder.mockVectorType("%v4uint", "%uint", 4);
+        builder.mockConstant("%v1", "%v4uint", List.of(1, 2, 3, 4));
+        builder.mockConstant("%v2", "%v4uint", List.of(5, 6, 7, 8));
+
+        try {
+            // when
+            visit(input);
+            fail("Should throw exception");
+        } catch (ParsingException e) {
+            // then
+            assertEquals("Size mismatch in OpVectorShuffle '%shuffle' between result type [4 x bv32] and components [0, 0, 0]", e.getMessage());
+        }
+    }
+
+    @Test
+    public void testVectorShuffle() {
+        // given
+        String input = "%shuffle = OpVectorShuffle %v4uint %v1 %v2 0 1 4 5";
+        builder.mockIntType("%uint", 32);
+        builder.mockVectorType("%v4uint", "%uint", 4);
+        builder.mockConstant("%v1", "%v4uint", List.of(1, 2, 3, 4));
+        builder.mockConstant("%v2", "%v4uint", List.of(5, 6, 7, 8));
+        builder.mockConstant("%bv32(1)", "%uint", 1);
+        builder.mockConstant("%bv32(2)", "%uint", 2);
+        builder.mockConstant("%bv32(5)", "%uint", 5);
+        builder.mockConstant("%bv32(6)", "%uint", 6);
+
+        // when
+        visit(input);
+
+        // then
+        ConstructExpr shuffle = (ConstructExpr) builder.getExpression("%shuffle");
+        assertEquals(builder.getExpression("%bv32(1)"), shuffle.getOperands().get(0));
+        assertEquals(builder.getExpression("%bv32(2)"), shuffle.getOperands().get(1));
+        assertEquals(builder.getExpression("%bv32(5)"), shuffle.getOperands().get(2));
+        assertEquals(builder.getExpression("%bv32(6)"), shuffle.getOperands().get(3));
     }
 
     private void visit(String input) {
