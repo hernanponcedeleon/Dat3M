@@ -16,14 +16,11 @@ void *handler(void *arg)
 
 void *thread_1(void *arg)
 {
-    __VERIFIER_make_interrupt_handler();
-    pthread_create(&h, NULL, handler, NULL);
+    __VERIFIER_register_interrupt_handler(handler);
 
     if(READ_ONCE(x) == 1) {
         WRITE_ONCE(y, 2);
     }
-
-    pthread_join(h, 0);
 
     return NULL;
 }

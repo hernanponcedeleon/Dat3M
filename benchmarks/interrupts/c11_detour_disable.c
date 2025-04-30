@@ -16,15 +16,12 @@ void *handler(void *arg)
 
 void *thread_1(void *arg)
 {
-    __VERIFIER_make_interrupt_handler();
-    pthread_create(&h, NULL, handler, NULL);
+    __VERIFIER_register_interrupt_handler(handler);
 
     __VERIFIER_disable_irq();
     atomic_store_explicit(&x, 1, memory_order_relaxed);
     a = atomic_load_explicit(&y, memory_order_relaxed);
     __VERIFIER_enable_irq();
-
-    pthread_join(h, 0);
 
     return NULL;
 }

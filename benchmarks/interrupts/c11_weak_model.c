@@ -19,8 +19,7 @@ void *handler(void *arg)
 
 void *thread_1(void *arg)
 {
-    __VERIFIER_make_interrupt_handler();
-    pthread_create(&h, NULL, handler, NULL);
+    __VERIFIER_register_interrupt_handler(handler);
 
     atomic_store_explicit(&b1, 1, memory_order_relaxed);
     atomic_store_explicit(&x, 1, memory_order_relaxed);
@@ -28,8 +27,6 @@ void *thread_1(void *arg)
     atomic_store_explicit(&b2, 1, memory_order_relaxed);
     atomic_store_explicit(&y, 1, memory_order_relaxed);
     atomic_store_explicit(&a2, 1, memory_order_relaxed);
-
-    pthread_join(h, 0);
 
     return NULL;
 }

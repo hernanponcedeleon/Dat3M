@@ -28,8 +28,7 @@ void *handler(void *arg)
 
 void *run(void *arg)
 {
-    __VERIFIER_make_interrupt_handler();
-    pthread_create(&h, NULL, handler, 0);
+    __VERIFIER_register_interrupt_handler(handler);
 
     int tindex = ((intptr_t) arg);
     __VERIFIER_disable_irq();
@@ -38,8 +37,6 @@ void *run(void *arg)
     as[i].a = tindex;
     as[i].b = tindex;
     __VERIFIER_assert(as[i].a == as[i].b);
-
-    pthread_join(h, NULL);
 
     return NULL;
 }

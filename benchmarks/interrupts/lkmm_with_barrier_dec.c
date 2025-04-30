@@ -29,8 +29,7 @@ void *handler(void *arg)
 
 void *run(void *arg)
 {
-    __VERIFIER_make_interrupt_handler(); // Buggy without this marker
-    pthread_create(&h, NULL, handler, 0);
+    __VERIFIER_register_interrupt_handler(handler);
 
     int tindex = ((intptr_t) arg);
     int i = cnt++;
@@ -40,8 +39,6 @@ void *run(void *arg)
     __VERIFIER_assert(as[i].a == as[i].b);
 
     cnt--;
-
-    pthread_join(h, NULL);
 
     return NULL;
 }
