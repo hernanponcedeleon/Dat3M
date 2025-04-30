@@ -65,7 +65,8 @@ public class VMMInterruptsTest extends AbstractCTest {
                 {"assert_assume_race_v1", C11, PASS},
                 {"assert_assume_race_v2", C11, FAIL},
                 // Miscellaneous
-                {"ih_disabled_forever", C11, PASS},
+                {"ih_disabled_forever_v1", C11, PASS},
+                {"ih_disabled_forever_v2", C11, PASS},
                 {"multiple_ih_consistent_reorder", C11, PASS},
                 {"multiple_ih_diffIP", C11, FAIL},
                 {"multiple_ih_ordered_ihs", C11, PASS},

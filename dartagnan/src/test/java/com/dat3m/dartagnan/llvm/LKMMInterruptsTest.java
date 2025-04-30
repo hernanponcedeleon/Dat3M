@@ -63,7 +63,8 @@ public class LKMMInterruptsTest extends AbstractCTest {
                 {"lkmm_with_disable_enable_as_barrier", LKMM, PASS},
                 {"lkmm_without_barrier", LKMM, FAIL},
                 // Miscellaneous
-                {"ih_disabled_forever", LKMM, PASS},
+                {"ih_disabled_forever_v1", LKMM, PASS},
+                {"ih_disabled_forever_v2", LKMM, PASS},
                 {"multiple_ih_consistent_reorder", LKMM, PASS},
                 {"multiple_ih_diffIP", LKMM, FAIL},
                 {"multiple_ih_ordered_ihs", LKMM, PASS},

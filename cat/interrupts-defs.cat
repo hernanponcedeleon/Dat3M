@@ -14,10 +14,10 @@ let ihOrder = IHStart;rf^-1;ihOrderPre;rf;IHStart
 
 (* Define interrupt points *)
 let beforeIPs = (new() & (int;create2Ih)) | create2Ih
-// IPs cannot occur when interrupts are disabled.
-let beforeIPs = beforeIPs | ([DISABLE_INTERRUPT];po-until(ENABLE_INTERRUPT))^-1;beforeIPs
 // IPs respect ihOrder
 let beforeIPs = beforeIPs;ihOrder?
+// IPs cannot occur when interrupts are disabled.
+empty ([DISABLE_INTERRUPT]; beforeIPs) \ ([DISABLE_INTERRUPT]; po; [ENABLE_INTERRUPT]; beforeIPs)
 
 let afterIPs = ((int;create2Ih) \ beforeIPs)^-1
 

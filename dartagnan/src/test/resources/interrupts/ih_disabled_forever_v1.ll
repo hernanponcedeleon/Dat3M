@@ -1,10 +1,10 @@
-; ModuleID = 'benchmarks/interrupts/misc/ih_disabled_forever.c'
-source_filename = "benchmarks/interrupts/misc/ih_disabled_forever.c"
+; ModuleID = 'benchmarks/interrupts/misc/ih_disabled_forever_v1.c'
+source_filename = "benchmarks/interrupts/misc/ih_disabled_forever_v1.c"
 target datalayout = "e-m:o-i64:64-i128:128-n32:64-S128-Fn32"
 target triple = "arm64-apple-macosx15.0.0"
 
 @__func__.handler = private unnamed_addr constant [8 x i8] c"handler\00", align 1, !dbg !0
-@.str = private unnamed_addr constant [22 x i8] c"ih_disabled_forever.c\00", align 1, !dbg !8
+@.str = private unnamed_addr constant [25 x i8] c"ih_disabled_forever_v1.c\00", align 1, !dbg !8
 @.str.1 = private unnamed_addr constant [2 x i8] c"0\00", align 1, !dbg !13
 
 ; Function Attrs: noinline nounwind ssp uwtable(sync)
@@ -52,7 +52,7 @@ attributes #3 = { cold noreturn }
 
 !0 = !DIGlobalVariableExpression(var: !1, expr: !DIExpression())
 !1 = distinct !DIGlobalVariable(scope: null, file: !2, line: 12, type: !3, isLocal: true, isDefinition: true)
-!2 = !DIFile(filename: "benchmarks/interrupts/misc/ih_disabled_forever.c", directory: "/Users/r/git/dat3m", checksumkind: CSK_MD5, checksum: "adf0984dcb76955f8ac5be25fd60a578")
+!2 = !DIFile(filename: "benchmarks/interrupts/misc/ih_disabled_forever_v1.c", directory: "/Users/r/git/dat3m", checksumkind: CSK_MD5, checksum: "adf0984dcb76955f8ac5be25fd60a578")
 !3 = !DICompositeType(tag: DW_TAG_array_type, baseType: !4, size: 64, elements: !6)
 !4 = !DIDerivedType(tag: DW_TAG_const_type, baseType: !5)
 !5 = !DIBasicType(name: "char", size: 8, encoding: DW_ATE_signed_char)
@@ -60,9 +60,9 @@ attributes #3 = { cold noreturn }
 !7 = !DISubrange(count: 8)
 !8 = !DIGlobalVariableExpression(var: !9, expr: !DIExpression())
 !9 = distinct !DIGlobalVariable(scope: null, file: !2, line: 12, type: !10, isLocal: true, isDefinition: true)
-!10 = !DICompositeType(tag: DW_TAG_array_type, baseType: !5, size: 176, elements: !11)
+!10 = !DICompositeType(tag: DW_TAG_array_type, baseType: !5, size: 200, elements: !11)
 !11 = !{!12}
-!12 = !DISubrange(count: 22)
+!12 = !DISubrange(count: 25)
 !13 = !DIGlobalVariableExpression(var: !14, expr: !DIExpression())
 !14 = distinct !DIGlobalVariable(scope: null, file: !2, line: 12, type: !15, isLocal: true, isDefinition: true)
 !15 = !DICompositeType(tag: DW_TAG_array_type, baseType: !5, size: 16, elements: !16)
