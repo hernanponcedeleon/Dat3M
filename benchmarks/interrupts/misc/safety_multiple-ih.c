@@ -7,7 +7,7 @@
 // ISSUE: Multiple IHs for the same thread: one is stuck and should stop the other from running
 // Expected: FAIL for termination, PASS for program_spec
 
-atomic_int x, y;
+volatile int x, y;
 
 void *handler(void *arg)
 {

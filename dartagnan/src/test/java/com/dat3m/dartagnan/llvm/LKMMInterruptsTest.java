@@ -41,7 +41,7 @@ public class LKMMInterruptsTest extends AbstractCTest {
 
     @Override
     protected Provider<Wmm> getWmmProvider() {
-        return Provider.fromSupplier(() -> new ParserCat().parse(new File(getRootPath("cat/lkmm-interrupts.cat"))));
+        return Provider.fromSupplier(() -> new ParserCat().parse(new File(getRootPath("cat/lkmm-interrupts-alt.cat"))));
     }
 
     @Parameterized.Parameters(name = "{index}: {0}, target={1}")
@@ -62,6 +62,14 @@ public class LKMMInterruptsTest extends AbstractCTest {
                 {"lkmm_with_barrier_inc_split", LKMM, FAIL},
                 {"lkmm_with_disable_enable_as_barrier", LKMM, PASS},
                 {"lkmm_without_barrier", LKMM, FAIL},
+                // Miscellaneous
+                {"ih_disabled_forever", LKMM, PASS},
+                {"multiple_ih_consistent_reorder", LKMM, PASS},
+                {"multiple_ih_diffIP", LKMM, FAIL},
+                {"multiple_ih_ordered_ihs", LKMM, PASS},
+                {"multiple_ih_sameIP", LKMM, FAIL},
+                {"reorder_same_loc", LKMM, PASS},
+                {"safety_multiple-ih", LKMM, PASS},
         });
     }
 

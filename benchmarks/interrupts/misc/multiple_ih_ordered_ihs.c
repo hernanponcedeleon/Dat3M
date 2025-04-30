@@ -7,8 +7,7 @@
 // ISSUE: Multiple IHs for the same thread: IHs are ordered
 // Expected: PASS
 
-volatile int x;
-atomic_int y, z;
+volatile int x, y, z;
 
 void *handler(void *arg)
 {

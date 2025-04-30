@@ -64,6 +64,14 @@ public class VMMInterruptsTest extends AbstractCTest {
                 // Sanity
                 {"assert_assume_race_v1", C11, PASS},
                 {"assert_assume_race_v2", C11, FAIL},
+                // Miscellaneous
+                {"ih_disabled_forever", C11, PASS},
+                {"multiple_ih_consistent_reorder", C11, PASS},
+                {"multiple_ih_diffIP", C11, FAIL},
+                {"multiple_ih_ordered_ihs", C11, PASS},
+                {"multiple_ih_sameIP", C11, FAIL},
+                {"reorder_same_loc", C11, PASS},
+                {"safety_multiple-ih", C11, PASS},
         });
     }
 

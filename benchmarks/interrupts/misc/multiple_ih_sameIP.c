@@ -7,7 +7,7 @@
 // ISSUE: Multiple IHs for the same thread, interrupting at the same point.
 // Expected: FAIL
 
-atomic_int x, y;
+volatile int x, y;
 
 void *handler(void *arg)
 {
