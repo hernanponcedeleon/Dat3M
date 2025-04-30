@@ -1,116 +1,120 @@
-; ModuleID = '/Users/thomashaas/IdeaProjects/Dat3M/benchmarks/interrupts/assert_assume_race_v2.c'
-source_filename = "/Users/thomashaas/IdeaProjects/Dat3M/benchmarks/interrupts/assert_assume_race_v2.c"
-target datalayout = "e-m:o-i64:64-i128:128-n32:64-S128"
-target triple = "arm64-apple-macosx14.0.0"
+; ModuleID = 'benchmarks/interrupts/assert_assume_race_v2.c'
+source_filename = "benchmarks/interrupts/assert_assume_race_v2.c"
+target datalayout = "e-m:o-i64:64-i128:128-n32:64-S128-Fn32"
+target triple = "arm64-apple-macosx15.0.0"
 
-%struct._opaque_pthread_t = type { i64, %struct.__darwin_pthread_handler_rec*, [8176 x i8] }
-%struct.__darwin_pthread_handler_rec = type { void (i8*)*, i8*, %struct.__darwin_pthread_handler_rec* }
-%struct._opaque_pthread_attr_t = type { i64, [56 x i8] }
+@__func__.handler = private unnamed_addr constant [8 x i8] c"handler\00", align 1, !dbg !0
+@.str = private unnamed_addr constant [24 x i8] c"assert_assume_race_v2.c\00", align 1, !dbg !8
+@.str.1 = private unnamed_addr constant [2 x i8] c"0\00", align 1, !dbg !13
 
-@__func__.handler = private unnamed_addr constant [8 x i8] c"handler\00", align 1
-@.str = private unnamed_addr constant [24 x i8] c"assert_assume_race_v2.c\00", align 1
-@.str.1 = private unnamed_addr constant [2 x i8] c"0\00", align 1
-
-; Function Attrs: noinline nounwind ssp uwtable
-define i8* @handler(i8* noundef %0) #0 !dbg !15 {
-  %2 = alloca i8*, align 8
-  store i8* %0, i8** %2, align 8
-  call void @llvm.dbg.declare(metadata i8** %2, metadata !20, metadata !DIExpression()), !dbg !21
-  call void @__assert_rtn(i8* noundef getelementptr inbounds ([8 x i8], [8 x i8]* @__func__.handler, i64 0, i64 0), i8* noundef getelementptr inbounds ([24 x i8], [24 x i8]* @.str, i64 0, i64 0), i32 noundef 12, i8* noundef getelementptr inbounds ([2 x i8], [2 x i8]* @.str.1, i64 0, i64 0)) #4, !dbg !22
-  unreachable, !dbg !22
+; Function Attrs: noinline nounwind ssp uwtable(sync)
+define ptr @handler(ptr noundef %0) #0 !dbg !29 {
+  %2 = alloca ptr, align 8
+  store ptr %0, ptr %2, align 8
+    #dbg_declare(ptr %2, !33, !DIExpression(), !34)
+  call void @__assert_rtn(ptr noundef @__func__.handler, ptr noundef @.str, i32 noundef 12, ptr noundef @.str.1) #3, !dbg !35
+  unreachable, !dbg !35
 }
-
-; Function Attrs: nofree nosync nounwind readnone speculatable willreturn
-declare void @llvm.dbg.declare(metadata, metadata, metadata) #1
 
 ; Function Attrs: cold noreturn
-declare void @__assert_rtn(i8* noundef, i8* noundef, i32 noundef, i8* noundef) #2
+declare void @__assert_rtn(ptr noundef, ptr noundef, i32 noundef, ptr noundef) #1
 
-; Function Attrs: noinline nounwind ssp uwtable
-define i32 @main() #0 !dbg !23 {
+; Function Attrs: noinline nounwind ssp uwtable(sync)
+define i32 @main() #0 !dbg !36 {
   %1 = alloca i32, align 4
-  %2 = alloca %struct._opaque_pthread_t*, align 8
-  %3 = alloca %struct._opaque_pthread_t*, align 8
-  store i32 0, i32* %1, align 4
-  call void @llvm.dbg.declare(metadata %struct._opaque_pthread_t** %2, metadata !27, metadata !DIExpression()), !dbg !53
-  call void @__VERIFIER_make_interrupt_handler(), !dbg !53
-  %4 = call i32 @pthread_create(%struct._opaque_pthread_t** noundef %2, %struct._opaque_pthread_attr_t* noundef null, i8* (i8*)* noundef @handler, i8* noundef null), !dbg !53
-  %5 = load %struct._opaque_pthread_t*, %struct._opaque_pthread_t** %2, align 8, !dbg !53
-  store %struct._opaque_pthread_t* %5, %struct._opaque_pthread_t** %3, align 8, !dbg !53
-  %6 = load %struct._opaque_pthread_t*, %struct._opaque_pthread_t** %3, align 8, !dbg !53
-  call void @__VERIFIER_assume(i32 noundef 0), !dbg !54
-  ret i32 0, !dbg !55
+  %2 = alloca ptr, align 8
+  %3 = alloca ptr, align 8
+  store i32 0, ptr %1, align 4
+    #dbg_declare(ptr %2, !40, !DIExpression(), !65)
+  call void @__VERIFIER_make_interrupt_handler(), !dbg !65
+  %4 = call i32 @pthread_create(ptr noundef %2, ptr noundef null, ptr noundef @handler, ptr noundef null), !dbg !65
+  %5 = load ptr, ptr %2, align 8, !dbg !65
+  store ptr %5, ptr %3, align 8, !dbg !65
+  %6 = load ptr, ptr %3, align 8, !dbg !65
+  call void @__VERIFIER_assume(i32 noundef 0), !dbg !66
+  ret i32 0, !dbg !67
 }
 
-declare void @__VERIFIER_make_interrupt_handler() #3
+declare void @__VERIFIER_make_interrupt_handler() #2
 
-declare i32 @pthread_create(%struct._opaque_pthread_t** noundef, %struct._opaque_pthread_attr_t* noundef, i8* (i8*)* noundef, i8* noundef) #3
+declare i32 @pthread_create(ptr noundef, ptr noundef, ptr noundef, ptr noundef) #2
 
-declare void @__VERIFIER_assume(i32 noundef) #3
+declare void @__VERIFIER_assume(i32 noundef) #2
 
-attributes #0 = { noinline nounwind ssp uwtable "frame-pointer"="non-leaf" "min-legal-vector-width"="0" "no-trapping-math"="true" "stack-protector-buffer-size"="8" "target-cpu"="apple-m1" "target-features"="+aes,+crc,+crypto,+dotprod,+fp-armv8,+fp16fml,+fullfp16,+lse,+neon,+ras,+rcpc,+rdm,+sha2,+v8.5a,+zcm,+zcz" }
-attributes #1 = { nofree nosync nounwind readnone speculatable willreturn }
-attributes #2 = { cold noreturn "disable-tail-calls"="true" "frame-pointer"="non-leaf" "no-trapping-math"="true" "stack-protector-buffer-size"="8" "target-cpu"="apple-m1" "target-features"="+aes,+crc,+crypto,+dotprod,+fp-armv8,+fp16fml,+fullfp16,+lse,+neon,+ras,+rcpc,+rdm,+sha2,+v8.5a,+zcm,+zcz" }
-attributes #3 = { "frame-pointer"="non-leaf" "no-trapping-math"="true" "stack-protector-buffer-size"="8" "target-cpu"="apple-m1" "target-features"="+aes,+crc,+crypto,+dotprod,+fp-armv8,+fp16fml,+fullfp16,+lse,+neon,+ras,+rcpc,+rdm,+sha2,+v8.5a,+zcm,+zcz" }
-attributes #4 = { cold noreturn }
+attributes #0 = { noinline nounwind ssp uwtable(sync) "frame-pointer"="non-leaf" "no-trapping-math"="true" "stack-protector-buffer-size"="8" "target-cpu"="apple-m1" "target-features"="+aes,+altnzcv,+ccdp,+ccidx,+complxnum,+crc,+dit,+dotprod,+flagm,+fp-armv8,+fp16fml,+fptoint,+fullfp16,+jsconv,+lse,+neon,+pauth,+perfmon,+predres,+ras,+rcpc,+rdm,+sb,+sha2,+sha3,+specrestrict,+ssbs,+v8.1a,+v8.2a,+v8.3a,+v8.4a,+v8a,+zcm,+zcz" }
+attributes #1 = { cold noreturn "disable-tail-calls"="true" "frame-pointer"="non-leaf" "no-trapping-math"="true" "stack-protector-buffer-size"="8" "target-cpu"="apple-m1" "target-features"="+aes,+altnzcv,+ccdp,+ccidx,+complxnum,+crc,+dit,+dotprod,+flagm,+fp-armv8,+fp16fml,+fptoint,+fullfp16,+jsconv,+lse,+neon,+pauth,+perfmon,+predres,+ras,+rcpc,+rdm,+sb,+sha2,+sha3,+specrestrict,+ssbs,+v8.1a,+v8.2a,+v8.3a,+v8.4a,+v8a,+zcm,+zcz" }
+attributes #2 = { "frame-pointer"="non-leaf" "no-trapping-math"="true" "stack-protector-buffer-size"="8" "target-cpu"="apple-m1" "target-features"="+aes,+altnzcv,+ccdp,+ccidx,+complxnum,+crc,+dit,+dotprod,+flagm,+fp-armv8,+fp16fml,+fptoint,+fullfp16,+jsconv,+lse,+neon,+pauth,+perfmon,+predres,+ras,+rcpc,+rdm,+sb,+sha2,+sha3,+specrestrict,+ssbs,+v8.1a,+v8.2a,+v8.3a,+v8.4a,+v8a,+zcm,+zcz" }
+attributes #3 = { cold noreturn }
 
-!llvm.dbg.cu = !{!0}
-!llvm.module.flags = !{!4, !5, !6, !7, !8, !9, !10, !11, !12, !13}
-!llvm.ident = !{!14}
+!llvm.dbg.cu = !{!18}
+!llvm.module.flags = !{!22, !23, !24, !25, !26, !27}
+!llvm.ident = !{!28}
 
-!0 = distinct !DICompileUnit(language: DW_LANG_C99, file: !1, producer: "Homebrew clang version 14.0.6", isOptimized: false, runtimeVersion: 0, emissionKind: FullDebug, retainedTypes: !2, splitDebugInlining: false, nameTableKind: None, sysroot: "/Library/Developer/CommandLineTools/SDKs/MacOSX13.sdk", sdk: "MacOSX13.sdk")
-!1 = !DIFile(filename: "/Users/thomashaas/IdeaProjects/Dat3M/benchmarks/interrupts/assert_assume_race_v2.c", directory: "/Users/thomashaas/IdeaProjects/Dat3M")
-!2 = !{!3}
-!3 = !DIDerivedType(tag: DW_TAG_pointer_type, baseType: null, size: 64)
-!4 = !{i32 7, !"Dwarf Version", i32 4}
-!5 = !{i32 2, !"Debug Info Version", i32 3}
-!6 = !{i32 1, !"wchar_size", i32 4}
-!7 = !{i32 1, !"branch-target-enforcement", i32 0}
-!8 = !{i32 1, !"sign-return-address", i32 0}
-!9 = !{i32 1, !"sign-return-address-all", i32 0}
-!10 = !{i32 1, !"sign-return-address-with-bkey", i32 0}
-!11 = !{i32 7, !"PIC Level", i32 2}
-!12 = !{i32 7, !"uwtable", i32 1}
-!13 = !{i32 7, !"frame-pointer", i32 1}
-!14 = !{!"Homebrew clang version 14.0.6"}
-!15 = distinct !DISubprogram(name: "handler", scope: !16, file: !16, line: 10, type: !17, scopeLine: 11, flags: DIFlagPrototyped, spFlags: DISPFlagDefinition, unit: !0, retainedNodes: !19)
-!16 = !DIFile(filename: "benchmarks/interrupts/assert_assume_race_v2.c", directory: "/Users/thomashaas/IdeaProjects/Dat3M")
-!17 = !DISubroutineType(types: !18)
-!18 = !{!3, !3}
-!19 = !{}
-!20 = !DILocalVariable(name: "arg", arg: 1, scope: !15, file: !16, line: 10, type: !3)
-!21 = !DILocation(line: 10, column: 21, scope: !15)
-!22 = !DILocation(line: 12, column: 5, scope: !15)
-!23 = distinct !DISubprogram(name: "main", scope: !16, file: !16, line: 17, type: !24, scopeLine: 18, spFlags: DISPFlagDefinition, unit: !0, retainedNodes: !19)
-!24 = !DISubroutineType(types: !25)
-!25 = !{!26}
-!26 = !DIBasicType(name: "int", size: 32, encoding: DW_ATE_signed)
-!27 = !DILocalVariable(name: "h", scope: !28, file: !16, line: 19, type: !29)
-!28 = distinct !DILexicalBlock(scope: !23, file: !16, line: 19, column: 5)
-!29 = !DIDerivedType(tag: DW_TAG_typedef, name: "pthread_t", file: !30, line: 31, baseType: !31)
-!30 = !DIFile(filename: "/Library/Developer/CommandLineTools/SDKs/MacOSX13.sdk/usr/include/sys/_pthread/_pthread_t.h", directory: "")
-!31 = !DIDerivedType(tag: DW_TAG_typedef, name: "__darwin_pthread_t", file: !32, line: 118, baseType: !33)
-!32 = !DIFile(filename: "/Library/Developer/CommandLineTools/SDKs/MacOSX13.sdk/usr/include/sys/_pthread/_pthread_types.h", directory: "")
-!33 = !DIDerivedType(tag: DW_TAG_pointer_type, baseType: !34, size: 64)
-!34 = distinct !DICompositeType(tag: DW_TAG_structure_type, name: "_opaque_pthread_t", file: !32, line: 103, size: 65536, elements: !35)
-!35 = !{!36, !38, !48}
-!36 = !DIDerivedType(tag: DW_TAG_member, name: "__sig", scope: !34, file: !32, line: 104, baseType: !37, size: 64)
-!37 = !DIBasicType(name: "long", size: 64, encoding: DW_ATE_signed)
-!38 = !DIDerivedType(tag: DW_TAG_member, name: "__cleanup_stack", scope: !34, file: !32, line: 105, baseType: !39, size: 64, offset: 64)
-!39 = !DIDerivedType(tag: DW_TAG_pointer_type, baseType: !40, size: 64)
-!40 = distinct !DICompositeType(tag: DW_TAG_structure_type, name: "__darwin_pthread_handler_rec", file: !32, line: 57, size: 192, elements: !41)
-!41 = !{!42, !46, !47}
-!42 = !DIDerivedType(tag: DW_TAG_member, name: "__routine", scope: !40, file: !32, line: 58, baseType: !43, size: 64)
-!43 = !DIDerivedType(tag: DW_TAG_pointer_type, baseType: !44, size: 64)
-!44 = !DISubroutineType(types: !45)
-!45 = !{null, !3}
-!46 = !DIDerivedType(tag: DW_TAG_member, name: "__arg", scope: !40, file: !32, line: 59, baseType: !3, size: 64, offset: 64)
-!47 = !DIDerivedType(tag: DW_TAG_member, name: "__next", scope: !40, file: !32, line: 60, baseType: !39, size: 64, offset: 128)
-!48 = !DIDerivedType(tag: DW_TAG_member, name: "__opaque", scope: !34, file: !32, line: 106, baseType: !49, size: 65408, offset: 128)
-!49 = !DICompositeType(tag: DW_TAG_array_type, baseType: !50, size: 65408, elements: !51)
-!50 = !DIBasicType(name: "char", size: 8, encoding: DW_ATE_signed_char)
-!51 = !{!52}
-!52 = !DISubrange(count: 8176)
-!53 = !DILocation(line: 19, column: 5, scope: !28)
-!54 = !DILocation(line: 21, column: 5, scope: !23)
-!55 = !DILocation(line: 23, column: 5, scope: !23)
+!0 = !DIGlobalVariableExpression(var: !1, expr: !DIExpression())
+!1 = distinct !DIGlobalVariable(scope: null, file: !2, line: 12, type: !3, isLocal: true, isDefinition: true)
+!2 = !DIFile(filename: "benchmarks/interrupts/assert_assume_race_v2.c", directory: "/Users/r/git/dat3m", checksumkind: CSK_MD5, checksum: "da789b380d9ad4da2991534aaf548152")
+!3 = !DICompositeType(tag: DW_TAG_array_type, baseType: !4, size: 64, elements: !6)
+!4 = !DIDerivedType(tag: DW_TAG_const_type, baseType: !5)
+!5 = !DIBasicType(name: "char", size: 8, encoding: DW_ATE_signed_char)
+!6 = !{!7}
+!7 = !DISubrange(count: 8)
+!8 = !DIGlobalVariableExpression(var: !9, expr: !DIExpression())
+!9 = distinct !DIGlobalVariable(scope: null, file: !2, line: 12, type: !10, isLocal: true, isDefinition: true)
+!10 = !DICompositeType(tag: DW_TAG_array_type, baseType: !5, size: 192, elements: !11)
+!11 = !{!12}
+!12 = !DISubrange(count: 24)
+!13 = !DIGlobalVariableExpression(var: !14, expr: !DIExpression())
+!14 = distinct !DIGlobalVariable(scope: null, file: !2, line: 12, type: !15, isLocal: true, isDefinition: true)
+!15 = !DICompositeType(tag: DW_TAG_array_type, baseType: !5, size: 16, elements: !16)
+!16 = !{!17}
+!17 = !DISubrange(count: 2)
+!18 = distinct !DICompileUnit(language: DW_LANG_C11, file: !2, producer: "Homebrew clang version 19.1.7", isOptimized: false, runtimeVersion: 0, emissionKind: FullDebug, retainedTypes: !19, globals: !21, splitDebugInlining: false, nameTableKind: Apple, sysroot: "/")
+!19 = !{!20}
+!20 = !DIDerivedType(tag: DW_TAG_pointer_type, baseType: null, size: 64)
+!21 = !{!0, !8, !13}
+!22 = !{i32 7, !"Dwarf Version", i32 5}
+!23 = !{i32 2, !"Debug Info Version", i32 3}
+!24 = !{i32 1, !"wchar_size", i32 4}
+!25 = !{i32 8, !"PIC Level", i32 2}
+!26 = !{i32 7, !"uwtable", i32 1}
+!27 = !{i32 7, !"frame-pointer", i32 1}
+!28 = !{!"Homebrew clang version 19.1.7"}
+!29 = distinct !DISubprogram(name: "handler", scope: !2, file: !2, line: 10, type: !30, scopeLine: 11, flags: DIFlagPrototyped, spFlags: DISPFlagDefinition, unit: !18, retainedNodes: !32)
+!30 = !DISubroutineType(types: !31)
+!31 = !{!20, !20}
+!32 = !{}
+!33 = !DILocalVariable(name: "arg", arg: 1, scope: !29, file: !2, line: 10, type: !20)
+!34 = !DILocation(line: 10, column: 21, scope: !29)
+!35 = !DILocation(line: 12, column: 5, scope: !29)
+!36 = distinct !DISubprogram(name: "main", scope: !2, file: !2, line: 17, type: !37, scopeLine: 18, spFlags: DISPFlagDefinition, unit: !18, retainedNodes: !32)
+!37 = !DISubroutineType(types: !38)
+!38 = !{!39}
+!39 = !DIBasicType(name: "int", size: 32, encoding: DW_ATE_signed)
+!40 = !DILocalVariable(name: "h", scope: !41, file: !2, line: 19, type: !42)
+!41 = distinct !DILexicalBlock(scope: !36, file: !2, line: 19, column: 5)
+!42 = !DIDerivedType(tag: DW_TAG_typedef, name: "pthread_t", file: !43, line: 31, baseType: !44)
+!43 = !DIFile(filename: "/usr/local/include/sys/_pthread/_pthread_t.h", directory: "", checksumkind: CSK_MD5, checksum: "086fc6d7dc3c67fdb87e7376555dcfd7")
+!44 = !DIDerivedType(tag: DW_TAG_typedef, name: "__darwin_pthread_t", file: !45, line: 118, baseType: !46)
+!45 = !DIFile(filename: "/usr/local/include/sys/_pthread/_pthread_types.h", directory: "", checksumkind: CSK_MD5, checksum: "4e2ea0e1af95894da0a6030a21a8ebee")
+!46 = !DIDerivedType(tag: DW_TAG_pointer_type, baseType: !47, size: 64)
+!47 = distinct !DICompositeType(tag: DW_TAG_structure_type, name: "_opaque_pthread_t", file: !45, line: 103, size: 65536, elements: !48)
+!48 = !{!49, !51, !61}
+!49 = !DIDerivedType(tag: DW_TAG_member, name: "__sig", scope: !47, file: !45, line: 104, baseType: !50, size: 64)
+!50 = !DIBasicType(name: "long", size: 64, encoding: DW_ATE_signed)
+!51 = !DIDerivedType(tag: DW_TAG_member, name: "__cleanup_stack", scope: !47, file: !45, line: 105, baseType: !52, size: 64, offset: 64)
+!52 = !DIDerivedType(tag: DW_TAG_pointer_type, baseType: !53, size: 64)
+!53 = distinct !DICompositeType(tag: DW_TAG_structure_type, name: "__darwin_pthread_handler_rec", file: !45, line: 57, size: 192, elements: !54)
+!54 = !{!55, !59, !60}
+!55 = !DIDerivedType(tag: DW_TAG_member, name: "__routine", scope: !53, file: !45, line: 58, baseType: !56, size: 64)
+!56 = !DIDerivedType(tag: DW_TAG_pointer_type, baseType: !57, size: 64)
+!57 = !DISubroutineType(types: !58)
+!58 = !{null, !20}
+!59 = !DIDerivedType(tag: DW_TAG_member, name: "__arg", scope: !53, file: !45, line: 59, baseType: !20, size: 64, offset: 64)
+!60 = !DIDerivedType(tag: DW_TAG_member, name: "__next", scope: !53, file: !45, line: 60, baseType: !52, size: 64, offset: 128)
+!61 = !DIDerivedType(tag: DW_TAG_member, name: "__opaque", scope: !47, file: !45, line: 106, baseType: !62, size: 65408, offset: 128)
+!62 = !DICompositeType(tag: DW_TAG_array_type, baseType: !5, size: 65408, elements: !63)
+!63 = !{!64}
+!64 = !DISubrange(count: 8176)
+!65 = !DILocation(line: 19, column: 5, scope: !41)
+!66 = !DILocation(line: 21, column: 5, scope: !36)
+!67 = !DILocation(line: 23, column: 5, scope: !36)
