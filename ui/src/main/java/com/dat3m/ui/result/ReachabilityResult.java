@@ -2,6 +2,8 @@ package com.dat3m.ui.result;
 
 import com.dat3m.dartagnan.Dartagnan;
 import com.dat3m.dartagnan.configuration.Arch;
+import com.dat3m.dartagnan.configuration.ProgressModel;
+import com.dat3m.dartagnan.encoding.ProverWithTracker;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.utils.Result;
 import com.dat3m.dartagnan.verification.VerificationTask;
@@ -10,7 +12,6 @@ import com.dat3m.dartagnan.verification.solving.ModelChecker;
 import com.dat3m.dartagnan.verification.solving.RefinementSolver;
 import com.dat3m.dartagnan.witness.WitnessType;
 import com.dat3m.dartagnan.wmm.Wmm;
-import com.dat3m.dartagnan.encoding.ProverWithTracker;
 import com.dat3m.ui.utils.UiOptions;
 import com.dat3m.ui.utils.Utils;
 import org.sosy_lab.common.ShutdownManager;
@@ -79,7 +80,7 @@ public class ReachabilityResult {
                     .withBound(options.bound())
                     .withSolverTimeout(options.timeout())
                     .withTarget(arch)
-                    .withProgressModel(options.progress())
+                    .withProgressModel(ProgressModel.uniform(options.progress()))
                     .build(program, wmm, options.properties());
 
             t.start();
@@ -99,7 +100,7 @@ public class ReachabilityResult {
                 };
                 // Verification ended, we can interrupt the timeout Thread
                 t.interrupt();
-                verdict = Dartagnan.generateResultSummary(task, prover, modelChecker);
+                verdict = Dartagnan.generateResultSummary(task, prover, modelChecker).text();
 
                 if (modelChecker.hasModel() && modelChecker.getResult() != Result.UNKNOWN) {
                     witnessFile = Dartagnan.generateExecutionGraphFile(task, prover, modelChecker, WitnessType.PNG);

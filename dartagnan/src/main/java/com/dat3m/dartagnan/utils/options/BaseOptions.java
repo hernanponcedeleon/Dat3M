@@ -28,12 +28,16 @@ public abstract class BaseOptions {
 
     @Option(
             name = PROGRESSMODEL,
-            description = "The progress model to assume: fair (default), hsa, obe, unfair",
+            description = """
+                        The progress model to assume: fair (default), hsa, obe, unfair.
+                        To specify progress models per scope, use [<scope>=<progressModel>,...].
+                        Defaults to "fair" for unspecified scopes unless "default=<progressModel>" is specified.
+                        """,
             toUppercase = true)
-    private ProgressModel progressModel = ProgressModel.getDefault();
+    private ProgressModel.Hierarchy progressModel = ProgressModel.defaultHierarchy();
 
-    public ProgressModel getProgressModel() {
-        return progressModel;
+    public ProgressModel.Hierarchy getProgressModel() {
+        return this.progressModel;
     }
 
     @Option(

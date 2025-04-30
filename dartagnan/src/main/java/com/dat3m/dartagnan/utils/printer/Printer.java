@@ -92,7 +92,11 @@ public class Printer {
     private void appendFunction(Function func) {
         result.append("\n[").append(func.getId()).append("]");
         result.append(func instanceof Thread ? " thread " : " function ");
-        result.append(functionSignatureToString(func)).append("\n");
+        result.append(functionSignatureToString(func));
+        if (func instanceof Thread t && t.hasScope()) {
+           result.append(" ").append(t.getScopeHierarchy());
+        }
+        result.append("\n");
         for (Event e : func.getEvents()) {
             appendEvent(e);
         }

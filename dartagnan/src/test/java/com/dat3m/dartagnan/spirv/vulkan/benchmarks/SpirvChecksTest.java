@@ -48,60 +48,56 @@ public class SpirvChecksTest {
     @Parameterized.Parameters(name = "{index}: {0}, {1}, {2}")
     public static Iterable<Object[]> data() throws IOException {
         return Arrays.asList(new Object[][]{
-                {"caslock-1.1.2.spv.dis", 2, PASS},
-                {"caslock-2.1.1.spv.dis", 2, PASS},
-                {"caslock-acq2rx.spv.dis", 1, PASS},
-                {"caslock-rel2rx.spv.dis", 1, PASS},
-                {"caslock-dv2wg-2.1.1.spv.dis", 2, PASS},
-                {"caslock-dv2wg-1.1.2.spv.dis", 1, PASS},
-                {"caslock-dv2wg-2.2.1.spv.dis", 2, PASS},
-                {"caslock-dv2wg-2.2.2.spv.dis", 1, PASS},
-                {"ticketlock-1.1.2.spv.dis", 2, PASS},
-                {"ticketlock-2.1.1.spv.dis", 2, PASS},
-                {"ticketlock-acq2rx.spv.dis", 1, PASS},
-                {"ticketlock-rel2rx.spv.dis", 1, PASS},
-                {"ticketlock-dv2wg-2.1.1.spv.dis", 2, PASS},
-                {"ticketlock-dv2wg-1.1.2.spv.dis", 1, PASS},
-                {"ticketlock-dv2wg-2.2.1.spv.dis", 2, PASS},
-                {"ticketlock-dv2wg-2.2.2.spv.dis", 1, PASS},
+                {"caslock-1.1.2.spvasm", 2, PASS},
+                {"caslock-2.1.1.spvasm", 2, PASS},
+                {"caslock-acq2rx.spvasm", 1, PASS},
+                {"caslock-rel2rx.spvasm", 1, PASS},
+                {"caslock-dv2wg-2.1.1.spvasm", 2, PASS},
+                {"caslock-dv2wg-1.1.2.spvasm", 1, PASS},
+                {"caslock-dv2wg-2.2.1.spvasm", 2, PASS},
+                {"caslock-dv2wg-2.2.2.spvasm", 1, PASS},
+                {"ticketlock-1.1.2.spvasm", 2, PASS},
+                {"ticketlock-2.1.1.spvasm", 2, PASS},
+                {"ticketlock-acq2rx.spvasm", 1, PASS},
+                {"ticketlock-rel2rx.spvasm", 1, PASS},
+                {"ticketlock-dv2wg-2.1.1.spvasm", 2, PASS},
+                {"ticketlock-dv2wg-1.1.2.spvasm", 1, PASS},
+                {"ticketlock-dv2wg-2.2.1.spvasm", 2, PASS},
+                {"ticketlock-dv2wg-2.2.2.spvasm", 1, PASS},
                 // TODO: Why UNKNOWN if concrete result for assertions
-                {"ttaslock-1.1.2.spv.dis", 2, UNKNOWN},
-                {"ttaslock-2.1.1.spv.dis", 2, UNKNOWN},
-                {"ttaslock-acq2rx.spv.dis", 2, UNKNOWN},
-                {"ttaslock-rel2rx.spv.dis", 2, UNKNOWN},
-                {"ttaslock-dv2wg-2.1.1.spv.dis", 2, UNKNOWN},
-                {"ttaslock-dv2wg-1.1.2.spv.dis", 2, UNKNOWN},
-                {"ttaslock-dv2wg-2.2.1.spv.dis", 2, UNKNOWN},
-                {"ttaslock-dv2wg-2.2.2.spv.dis", 2, UNKNOWN},
+                {"ttaslock-1.1.2.spvasm", 2, UNKNOWN},
+                {"ttaslock-2.1.1.spvasm", 2, UNKNOWN},
+                {"ttaslock-acq2rx.spvasm", 2, UNKNOWN},
+                {"ttaslock-rel2rx.spvasm", 2, UNKNOWN},
+                {"ttaslock-dv2wg-2.1.1.spvasm", 2, UNKNOWN},
+                {"ttaslock-dv2wg-1.1.2.spvasm", 2, UNKNOWN},
+                {"ttaslock-dv2wg-2.2.1.spvasm", 2, UNKNOWN},
+                {"ttaslock-dv2wg-2.2.2.spvasm", 2, UNKNOWN},
 
-                {"xf-barrier-2.1.2.spv.dis", 4, PASS},
-                {"xf-barrier-3.1.3.spv.dis", 9, PASS},
-                {"xf-barrier-2.1.1.spv.dis", 2, PASS},
-                {"xf-barrier-1.1.2.spv.dis", 2, PASS},
-                {"xf-barrier-fail1.spv.dis", 4, PASS},
-                {"xf-barrier-fail2.spv.dis", 4, PASS},
-                {"xf-barrier-fail3.spv.dis", 4, PASS},
-                {"xf-barrier-fail4.spv.dis", 4, PASS},
-                {"xf-barrier-weakest.spv.dis", 4, PASS},
+                {"xf-barrier-2.1.2.spvasm", 4, PASS},
+                {"xf-barrier-3.1.3.spvasm", 9, PASS},
+                {"xf-barrier-2.1.1.spvasm", 2, PASS},
+                {"xf-barrier-1.1.2.spvasm", 2, PASS},
+                {"xf-barrier-fail1.spvasm", 4, PASS},
+                {"xf-barrier-fail2.spvasm", 4, PASS},
+                {"xf-barrier-fail3.spvasm", 4, PASS},
+                {"xf-barrier-fail4.spvasm", 4, PASS},
+                {"xf-barrier-weakest.spvasm", 4, PASS},
 
-                {"xf-barrier-local-2.1.2.spv.dis", 4, PASS},
-                {"xf-barrier-local-3.1.3.spv.dis", 9, PASS},
-                {"xf-barrier-local-2.1.1.spv.dis", 2, PASS},
-                {"xf-barrier-local-1.1.2.spv.dis", 2, PASS},
-                {"xf-barrier-local-fail1.spv.dis", 4, PASS},
-                {"xf-barrier-local-fail2.spv.dis", 4, PASS},
-                {"xf-barrier-local-fail3.spv.dis", 4, PASS},
-                {"xf-barrier-local-fail4.spv.dis", 4, PASS},
-                {"xf-barrier-local-weakest.spv.dis", 4, PASS},
+                {"xf-barrier-local-2.1.2.spvasm", 4, PASS},
+                {"xf-barrier-local-3.1.3.spvasm", 9, PASS},
+                {"xf-barrier-local-2.1.1.spvasm", 2, PASS},
+                {"xf-barrier-local-1.1.2.spvasm", 2, PASS},
+                {"xf-barrier-local-fail1.spvasm", 4, PASS},
+                {"xf-barrier-local-fail2.spvasm", 4, PASS},
+                {"xf-barrier-local-fail3.spvasm", 4, PASS},
+                {"xf-barrier-local-fail4.spvasm", 4, PASS},
+                {"xf-barrier-local-weakest.spvasm", 4, PASS},
         });
     }
 
     @Test
-    public void testAllSolvers() throws Exception {
-        /* TODO: Very slow, enable when Vulkan memory model is more efficient in CAAT
-        try (SolverContext ctx = mkCtx(); ProverWithTracker prover = mkProver(ctx)) {
-             assertEquals(expected, RefinementSolver.run(ctx, prover, mkTask()).getResult());
-        }*/
+    public void test() throws Exception {
         try (SolverContext ctx = mkCtx(); ProverWithTracker prover = mkProver(ctx)) {
             assertEquals(expected, AssumeSolver.run(ctx, prover, mkTask()).getResult());
         }

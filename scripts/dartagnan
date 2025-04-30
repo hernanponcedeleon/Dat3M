@@ -18,6 +18,7 @@ java_cmd="${DAT3M_JAVA}"
 jar=${DAT3M_HOME}/dartagnan/target/dartagnan.jar
 args=""
 this="$0"
+log=${DAT3M_HOME}/dartagnan/src/main/resources/warn.xml
 
 if [ -z "${java_cmd}" ]; then
     java_cmd="java"
@@ -32,6 +33,7 @@ usage () {
     echo "\t-property PROPERTY"
     echo "\t-bound BOUND"
     echo "\t-solver SOLVER"
+    echo "\t-v"
 }
 
 while [ "$#" != "0" ]; do
@@ -55,6 +57,9 @@ while [ "$#" != "0" ]; do
         -solver)
             shift
             solver="$1"
+        ;;
+        -v)
+            log="${DAT3M_HOME}"/dartagnan/src/main/resources/info.xml
         ;;
         -help)
             usage
@@ -139,7 +144,7 @@ if [ -z "${solver}" ]; then
 fi
 
 # now we construct the full command
-cmd="${java_cmd} -jar ${jar}"
+cmd="${java_cmd} -jar -Dlog4j2.configurationFile=file:${log} ${jar}"
 cmd="${cmd} ${cat}"
 cmd="${cmd} --target=${target}"
 cmd="${cmd} --property=${property}"
@@ -148,5 +153,7 @@ cmd="${cmd} --solver=${solver}"
 cmd="${cmd} ${args}"
 
 # before calling the command, print it on the screen for reference
-echo "# ${cmd}"
+if [ "$log" = "${DAT3M_HOME}"/dartagnan/src/main/resources/info.xml ]; then
+    echo "# ${cmd}"
+fi
 exec ${cmd}

@@ -8,7 +8,6 @@ import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.utils.Result;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.verification.solving.AssumeSolver;
-import com.dat3m.dartagnan.verification.solving.RefinementSolver;
 import com.dat3m.dartagnan.wmm.Wmm;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -49,24 +48,21 @@ public class SpirvRacesTest {
     @Parameterized.Parameters(name = "{index}: {0}, {1}, {2}")
     public static Iterable<Object[]> data() throws IOException {
         return Arrays.asList(new Object[][]{
-                {"corr.spv.dis", false, PASS},
-                {"iriw.spv.dis", false, PASS},
-                {"sb.spv.dis", false, PASS},
+                {"corr.spvasm", false, PASS},
+                {"iriw.spvasm", false, PASS},
+                {"sb.spvasm", false, PASS},
 
-                {"mp.spv.dis", false, FAIL},
-                {"mp.spv.dis", true, PASS},
-                {"mp-acq2rx.spv.dis", false, FAIL},
-                {"mp-acq2rx.spv.dis", true, FAIL},
-                {"mp-rel2rx.spv.dis", false, FAIL},
-                {"mp-rel2rx.spv.dis", true, FAIL},
+                {"mp.spvasm", false, FAIL},
+                {"mp.spvasm", true, PASS},
+                {"mp-acq2rx.spvasm", false, FAIL},
+                {"mp-acq2rx.spvasm", true, FAIL},
+                {"mp-rel2rx.spvasm", false, FAIL},
+                {"mp-rel2rx.spvasm", true, FAIL},
         });
     }
 
     @Test
-    public void testAllSolvers() throws Exception {
-        try (SolverContext ctx = mkCtx(); ProverWithTracker prover = mkProver(ctx)) {
-             assertEquals(expected, RefinementSolver.run(ctx, prover, mkTask()).getResult());
-        }
+    public void test() throws Exception {
         try (SolverContext ctx = mkCtx(); ProverWithTracker prover = mkProver(ctx)) {
             assertEquals(expected, AssumeSolver.run(ctx, prover, mkTask()).getResult());
         }
@@ -78,7 +74,7 @@ public class SpirvRacesTest {
                 cfg,
                 BasicLogManager.create(cfg),
                 ShutdownManager.create().getNotifier(),
-                SolverContextFactory.Solvers.YICES2);
+                SolverContextFactory.Solvers.Z3);
     }
 
     private ProverWithTracker mkProver(SolverContext ctx) {

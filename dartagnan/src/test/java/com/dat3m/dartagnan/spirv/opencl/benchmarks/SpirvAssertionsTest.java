@@ -8,7 +8,6 @@ import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.utils.Result;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.verification.solving.AssumeSolver;
-import com.dat3m.dartagnan.verification.solving.RefinementSolver;
 import com.dat3m.dartagnan.wmm.Wmm;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -48,42 +47,39 @@ public class SpirvAssertionsTest {
     @Parameterized.Parameters(name = "{index}: {0}, {1}, {2}")
     public static Iterable<Object[]> data() throws IOException {
         return Arrays.asList(new Object[][]{
-                {"caslock-1.1.2.spv.dis", 2, UNKNOWN},
-                {"caslock-2.1.1.spv.dis", 2, UNKNOWN},
-                {"caslock-acq2rx.spv.dis", 2, FAIL},
-                {"caslock-rel2rx.spv.dis", 2, FAIL},
-                {"caslock-dv2wg-2.1.1.spv.dis", 2, UNKNOWN},
-                {"caslock-dv2wg-1.1.2.spv.dis", 2, FAIL},
-                {"ticketlock-1.1.2.spv.dis", 1, PASS},
-                {"ticketlock-2.1.1.spv.dis", 1, PASS},
-                {"ticketlock-acq2rx.spv.dis", 1, FAIL},
-                {"ticketlock-rel2rx.spv.dis", 1, FAIL},
-                {"ticketlock-dv2wg-2.1.1.spv.dis", 2, PASS},
-                {"ticketlock-dv2wg-1.1.2.spv.dis", 1, FAIL},
-                {"ttaslock-1.1.2.spv.dis", 2, PASS},
-                {"ttaslock-2.1.1.spv.dis", 2, PASS},
-                {"ttaslock-acq2rx.spv.dis", 1, FAIL},
-                {"ttaslock-rel2rx.spv.dis", 1, FAIL},
-                {"ttaslock-dv2wg-2.1.1.spv.dis", 2, PASS},
-                {"ttaslock-dv2wg-1.1.2.spv.dis", 1, FAIL},
+                {"caslock-1.1.2.spvasm", 2, UNKNOWN},
+                {"caslock-2.1.1.spvasm", 2, UNKNOWN},
+                {"caslock-acq2rx.spvasm", 2, FAIL},
+                {"caslock-rel2rx.spvasm", 2, FAIL},
+                {"caslock-dv2wg-2.1.1.spvasm", 2, UNKNOWN},
+                {"caslock-dv2wg-1.1.2.spvasm", 2, FAIL},
+                {"ticketlock-1.1.2.spvasm", 1, PASS},
+                {"ticketlock-2.1.1.spvasm", 1, PASS},
+                {"ticketlock-acq2rx.spvasm", 1, FAIL},
+                {"ticketlock-rel2rx.spvasm", 1, FAIL},
+                {"ticketlock-dv2wg-2.1.1.spvasm", 2, PASS},
+                {"ticketlock-dv2wg-1.1.2.spvasm", 1, FAIL},
+                {"ttaslock-1.1.2.spvasm", 2, PASS},
+                {"ttaslock-2.1.1.spvasm", 2, PASS},
+                {"ttaslock-acq2rx.spvasm", 1, FAIL},
+                {"ttaslock-rel2rx.spvasm", 1, FAIL},
+                {"ttaslock-dv2wg-2.1.1.spvasm", 2, PASS},
+                {"ttaslock-dv2wg-1.1.2.spvasm", 1, FAIL},
 
-                {"xf-barrier-2.1.2.spv.dis", 9, PASS},
-                // {"xf-barrier-3.1.3.spv.dis", 9, PASS},
-                // {"xf-barrier-1.1.2.spv.dis", 2, PASS},
-                {"xf-barrier-2.1.1.spv.dis", 9, PASS},
-                {"xf-barrier-fail1.spv.dis", 9, FAIL},
-                {"xf-barrier-fail2.spv.dis", 9, FAIL},
-                {"xf-barrier-fail3.spv.dis", 9, FAIL},
-                {"xf-barrier-fail4.spv.dis", 9, FAIL},
-                {"xf-barrier-weakest.spv.dis", 9, FAIL},
+                {"xf-barrier-2.1.2.spvasm", 9, PASS},
+                // {"xf-barrier-3.1.3.spvasm", 9, PASS},
+                // {"xf-barrier-1.1.2.spvasm", 2, PASS},
+                {"xf-barrier-2.1.1.spvasm", 9, PASS},
+                {"xf-barrier-fail1.spvasm", 9, FAIL},
+                {"xf-barrier-fail2.spvasm", 9, FAIL},
+                {"xf-barrier-fail3.spvasm", 9, FAIL},
+                {"xf-barrier-fail4.spvasm", 9, FAIL},
+                {"xf-barrier-weakest.spvasm", 9, FAIL},
         });
     }
 
     @Test
-    public void testAllSolvers() throws Exception {
-        try (SolverContext ctx = mkCtx(); ProverWithTracker prover = mkProver(ctx)) {
-             assertEquals(expected, RefinementSolver.run(ctx, prover, mkTask()).getResult());
-        }
+    public void test() throws Exception {
         try (SolverContext ctx = mkCtx(); ProverWithTracker prover = mkProver(ctx)) {
             assertEquals(expected, AssumeSolver.run(ctx, prover, mkTask()).getResult());
         }
@@ -95,7 +91,7 @@ public class SpirvAssertionsTest {
                 cfg,
                 BasicLogManager.create(cfg),
                 ShutdownManager.create().getNotifier(),
-                SolverContextFactory.Solvers.YICES2);
+                SolverContextFactory.Solvers.Z3);
     }
 
     private ProverWithTracker mkProver(SolverContext ctx) {

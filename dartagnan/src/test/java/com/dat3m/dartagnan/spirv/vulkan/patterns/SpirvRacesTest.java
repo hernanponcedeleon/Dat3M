@@ -49,25 +49,21 @@ public class SpirvRacesTest {
     @Parameterized.Parameters(name = "{index}: {0}, {1}, {2}")
     public static Iterable<Object[]> data() throws IOException {
         return Arrays.asList(new Object[][]{
-                {"corr.spv.dis", false, PASS},
-                {"iriw.spv.dis", false, PASS},
-                {"sb.spv.dis", false, PASS},
+                {"corr.spvasm", false, PASS},
+                {"iriw.spvasm", false, PASS},
+                {"sb.spvasm", false, PASS},
 
-                {"mp.spv.dis", false, FAIL},
-                {"mp.spv.dis", true, PASS},
-                {"mp-acq2rx.spv.dis", false, FAIL},
-                {"mp-acq2rx.spv.dis", true, FAIL},
-                {"mp-rel2rx.spv.dis", false, FAIL},
-                {"mp-rel2rx.spv.dis", true, FAIL},
+                {"mp.spvasm", false, FAIL},
+                {"mp.spvasm", true, PASS},
+                {"mp-acq2rx.spvasm", false, FAIL},
+                {"mp-acq2rx.spvasm", true, FAIL},
+                {"mp-rel2rx.spvasm", false, FAIL},
+                {"mp-rel2rx.spvasm", true, FAIL},
         });
     }
 
     @Test
-    public void testAllSolvers() throws Exception {
-        /* TODO: Very slow, enable when Vulkan memory model is more efficient in CAAT
-        try (SolverContext ctx = mkCtx(); ProverWithTracker prover = mkProver(ctx)) {
-             assertEquals(expected, RefinementSolver.run(ctx, prover, mkTask()).getResult());
-        }*/
+    public void test() throws Exception {
         try (SolverContext ctx = mkCtx(); ProverWithTracker prover = mkProver(ctx)) {
             assertEquals(expected, AssumeSolver.run(ctx, prover, mkTask()).getResult());
         }

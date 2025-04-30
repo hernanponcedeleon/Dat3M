@@ -21,7 +21,8 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.BooleanFormulaManager;
-
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import java.util.*;
 
 import static com.dat3m.dartagnan.wmm.RelationNameRepository.CO;
@@ -109,9 +110,10 @@ import static com.dat3m.dartagnan.wmm.RelationNameRepository.RF;
  */
 public class NonTerminationEncoder {
 
+    private static final Logger logger = LogManager.getLogger(NonTerminationEncoder.class);
+
     private final EncodingContext context;
     private final VerificationTask task;
-
 
     private final List<Loop> allLoops = new ArrayList<>();
     private final Map<Event, NonterminationCase> nonterm2Case = new HashMap<>();
@@ -190,6 +192,7 @@ public class NonTerminationEncoder {
     // ================================================================================================
 
     public BooleanFormula encodeNontermination() {
+        logger.info("Encoding non-termination specification");
         final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
         final BooleanFormula nonTerminating = bmgr.and(
                 bmgr.or(encodeLoopsAreStuck(), encodeBarriersAreStuck()),

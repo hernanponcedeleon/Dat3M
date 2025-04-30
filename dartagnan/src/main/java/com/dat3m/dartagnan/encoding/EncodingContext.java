@@ -426,7 +426,7 @@ public final class EncodingContext {
         // Only for the standard fair progress model we can merge CF variables.
         // TODO: It would also be possible for OBE/HSA in some cases if we refine the cf-equivalence classes
         //  to classes per thread.
-        final boolean mergeCFVars = shouldMergeCFVars && verificationTask.getProgressModel() == ProgressModel.FAIR;
+        final boolean mergeCFVars = shouldMergeCFVars && verificationTask.getProgressModel().isFair();
         if (mergeCFVars) {
             for (BranchEquivalence.Class cls : analysisContext.get(BranchEquivalence.class).getAllEquivalenceClasses()) {
                 BooleanFormula v = booleanFormulaManager.makeVariable("cf " + cls.getRepresentative().getGlobalId());
