@@ -19,12 +19,15 @@ import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.Tag;
+import com.dat3m.dartagnan.program.event.core.Load;
 import org.antlr.v4.runtime.RuleContext;
 
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
+import java.util.function.BiFunction;
+import java.util.stream.Collectors;
 
 import static com.dat3m.dartagnan.parsers.program.visitors.spirv.decorations.DecorationType.BUILT_IN;
 
@@ -43,34 +46,14 @@ public class VisitorOpsMemory extends SpirvBaseVisitor<Event> {
     @Override
     public Event visitOpStore(SpirvParser.OpStoreContext ctx) {
         Expression pointer = builder.getExpression(ctx.pointer().getText());
-        Expression value = builder.getExpression(ctx.object().getText());
-        List<Event> events = new ArrayList<>();
-        if (value.getType() instanceof ArrayType arrayType) {
-            Type elType = arrayType.getElementType();
-            if(!(elType instanceof BooleanType || elType instanceof IntegerType || elType instanceof FloatType)) {
-                throw new ParsingException("OpStore can only write vector values of scalar type, but'%s' was found", arrayType);
-            }
-            for (int i = 0; i < arrayType.getNumElements(); i++) {
-                List<Expression> index = List.of(expressions.makeValue(i, types.getArchType()));
-                Expression address = expressions.makeGetElementPointer(arrayType.getElementType(), pointer, index);
-                Expression element = expressions.makeExtract(value, i);
-                Event store = EventFactory.newStore(address, element);
-                events.add(store);
-            }
-        } else if (value.getType() instanceof AggregateType aggregateType) {
-            if(aggregateType.getFields().stream().map(TypeOffset::type).anyMatch(t -> !(t instanceof BooleanType || t instanceof IntegerType || t instanceof FloatType))) {
-                throw new ParsingException("OpStore can only write aggregate values of scalar type, but'%s' was found", aggregateType);
-            }
-            for (int i = 0; i < aggregateType.getFields().size(); i++) {
-                List<Expression> index = List.of(expressions.makeValue(i, types.getArchType()));
-                Expression address = expressions.makeGetElementPointer(aggregateType.getFields().get(i).type(), pointer, index);
-                Expression element = expressions.makeExtract(value, i);
-                Event store = EventFactory.newStore(address, element);
-                events.add(store);
-            }
-        } else {
-            events.add(EventFactory.newStore(pointer, value));
-        }
+        String valueId = ctx.object().getText();
+        Expression value = builder.getExpression(valueId);
+        Type type = value.getType();
+        List<Event> events = visitMemoryAccess(valueId, type, pointer, (i, exp) -> {
+            return i == -1 ?
+                EventFactory.newStore(exp, value) :
+                EventFactory.newStore(exp, expressions.makeExtract(value, i));
+            });
         Set<String> tags = parseMemoryAccessTags(ctx.memoryAccess());
         checkAndPropagateTags(events, tags, Tag.Spirv.MEM_VISIBLE, ctx.pointer().getText(), "OpStore");
         return null;
@@ -79,51 +62,63 @@ public class VisitorOpsMemory extends SpirvBaseVisitor<Event> {
     @Override
     public Event visitOpLoad(SpirvParser.OpLoadContext ctx) {
         String resultId = ctx.idResult().getText();
-        String pointerId = ctx.pointer().getText();
-        String resultType = ctx.idResultType().getText();
-        Expression pointer = builder.getExpression(pointerId);
-        List<Event> events = new ArrayList<>();
-        if (builder.getType(resultType) instanceof ArrayType arrayType) {
-            Type elType = arrayType.getElementType();
-            if(!(elType instanceof BooleanType || elType instanceof IntegerType || elType instanceof FloatType)) {
-                throw new ParsingException("OpLoad can only read vector values of scalar type, but'%s' was found", arrayType);
+        Expression pointer = builder.getExpression(ctx.pointer().getText());
+        Type type = builder.getType(ctx.idResultType().getText());
+        List<Event> events = visitMemoryAccess(resultId, type, pointer, (i, exp) -> {
+            String regId = resultId;
+            Type regType = type;
+            if (i != -1) {
+                regId += "_" + i;
+                if (type instanceof AggregateType aggregateType) {
+                    regType = aggregateType.getFields().get(i).type();
+                }
+                if (type instanceof ArrayType arrayType) {
+                    regType = arrayType.getElementType();
+                }
             }
-            List<Expression> registers = new ArrayList<>();
-            for (int i = 0; i < arrayType.getNumElements(); i++) {
-                String elementId = resultId + "_" + i;
-                Register register = builder.addRegister(elementId, elType);
-                registers.add(register);
-                List<Expression> index = List.of(expressions.makeValue(i, types.getArchType()));
-                Expression elementPointer = expressions.makeGetElementPointer(elType, pointer, index);
-                Event load = EventFactory.newLoad(register, elementPointer);
-                events.add(load);
-            }
-            Expression arrayRegister = expressions.makeArray(arrayType.getElementType(), registers, true);
-            builder.addExpression(resultId, arrayRegister);
-        } else if (builder.getType(resultType) instanceof AggregateType aggregateType) {
-            if(aggregateType.getFields().stream().map(TypeOffset::type).anyMatch(t -> !(t instanceof BooleanType || t instanceof IntegerType || t instanceof FloatType))) {
-                throw new ParsingException("OpLoad can only read vector values of scalar type, but'%s' was found", aggregateType);
-            }
-            List<Expression> registers = new ArrayList<>();
-            for (int i = 0; i < aggregateType.getFields().size(); i++) {
-                String elementId = resultId + "_" + i;
-                Type elType = aggregateType.getFields().get(i).type();
-                Register register = builder.addRegister(elementId, elType);
-                registers.add(register);
-                List<Expression> index = List.of(expressions.makeValue(i, types.getArchType()));
-                Expression elementPointer = expressions.makeGetElementPointer(elType, pointer, index);
-                Event load = EventFactory.newLoad(register, elementPointer);
-                events.add(load);
-            }
-            Expression construct = expressions.makeConstruct(aggregateType, registers);
-            builder.addExpression(resultId, construct);
-        } else {
-            Register register = builder.addRegister(resultId, resultType);
-            events.add(EventFactory.newLoad(register, pointer));
+            Register register = builder.addRegister(regId, regType);
+            return EventFactory.newLoad(register, exp);
+            });
+        List<Expression> registers = events.stream().map(Load.class::cast).map(Load::getResultRegister).collect(Collectors.toList());
+        if (type instanceof AggregateType) {
+            builder.addExpression(resultId, expressions.makeConstruct(type, registers));
+        }
+        if (type instanceof ArrayType arrayType) {
+            builder.addExpression(resultId, expressions.makeArray(arrayType.getElementType(), registers, true));
         }
         Set<String> tags = parseMemoryAccessTags(ctx.memoryAccess());
         checkAndPropagateTags(events, tags, Tag.Spirv.MEM_AVAILABLE, ctx.pointer().getText(), "OpLoad");
         return null;
+    }
+
+    private List<Event> visitMemoryAccess(String id, Type type, Expression pointer, BiFunction<Integer, Expression, Event> f) {
+        List<Event> events = new ArrayList<>();
+        if (type instanceof ArrayType arrayType) {
+            Type elType = arrayType.getElementType();
+            if(!isScalarType(elType)) {
+                throw new ParsingException("Unsupported type of memory access to '%s', " +
+                        "expected an array of scalars but received %s", id, type);
+            }
+            for (int i = 0; i < arrayType.getNumElements(); i++) {
+                List<Expression> index = List.of(expressions.makeValue(i, types.getArchType()));
+                Expression address = expressions.makeGetElementPointer(arrayType.getElementType(), pointer, index);
+                events.add(f.apply(i, address));
+            }
+        } else if (type instanceof AggregateType aggregateType) {
+            if(aggregateType.getFields().stream().map(TypeOffset::type)
+                    .anyMatch(t -> !isScalarType(t))) {
+                throw new ParsingException("Unsupported type of memory access to '%s', " +
+                        "expected an struct of scalars but received %s", id, type);
+            }
+            for (int i = 0; i < aggregateType.getFields().size(); i++) {
+                List<Expression> index = List.of(expressions.makeValue(i, types.getArchType()));
+                Expression address = expressions.makeGetElementPointer(aggregateType.getFields().get(i).type(), pointer, index);
+                events.add(f.apply(i, address));
+            }
+        } else {
+            events.add(f.apply(-1, pointer));
+        }
+        return events;
     }
 
     private Set<String> parseMemoryAccessTags(SpirvParser.MemoryAccessContext ctx) {
