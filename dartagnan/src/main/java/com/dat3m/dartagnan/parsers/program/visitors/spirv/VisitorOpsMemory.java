@@ -126,6 +126,17 @@ public class VisitorOpsMemory extends SpirvBaseVisitor<Event> {
         return null;
     }
 
+    private Set<String> parseMemoryAccessTags(SpirvParser.MemoryAccessContext ctx) {
+        if (ctx != null) {
+            List<String> operands = ctx.memoryAccessTag().stream().map(RuleContext::getText).toList();
+            Integer alignment = ctx.literalInteger() != null ? Integer.parseInt(ctx.literalInteger().getText()) : null;
+            List<String> paramIds = ctx.idRef().stream().map(RuleContext::getText).toList();
+            List<Expression> paramsValues = ctx.idRef().stream().map(c -> builder.getExpression(c.getText())).toList();
+            return HelperTags.parseMemoryOperandsTags(operands, alignment, paramIds, paramsValues);
+        }
+        return Set.of();
+    }
+
     private void checkAndPropagateTags(List<Event> events, Set<String> tags, String checkTag, String pointerId, String op) {
         if (!tags.contains(checkTag)) {
             String storageClass = builder.getPointerStorageClass(pointerId);
@@ -256,17 +267,6 @@ public class VisitorOpsMemory extends SpirvBaseVisitor<Event> {
         expression = new ScopedPointer(idCtx.getText(), resultPointerType, expression);
         builder.addExpression(idCtx.getText(), expression);
         return null;
-    }
-
-    private Set<String> parseMemoryAccessTags(SpirvParser.MemoryAccessContext ctx) {
-        if (ctx != null) {
-            List<String> operands = ctx.memoryAccessTag().stream().map(RuleContext::getText).toList();
-            Integer alignment = ctx.literalInteger() != null ? Integer.parseInt(ctx.literalInteger().getText()) : null;
-            List<String> paramIds = ctx.idRef().stream().map(RuleContext::getText).toList();
-            List<Expression> paramsValues = ctx.idRef().stream().map(c -> builder.getExpression(c.getText())).toList();
-            return HelperTags.parseMemoryOperandsTags(operands, alignment, paramIds, paramsValues);
-        }
-        return Set.of();
     }
 
     public Set<String> getSupportedOps() {
