@@ -35,7 +35,7 @@ public class ConfigTest extends AbstractTest {
         int wg_size = scopes.get(1) * sg_size;
         int qf_size = scopes.get(2) * wg_size;
         for (int i = 0; i < size; i++) {
-            ScopeHierarchy hierarchy = grid.getScoreHierarchy(i);
+            ScopeHierarchy hierarchy = ScopeHierarchy.ScopeHierarchyForVulkan(grid.qfId(i), grid.wgId(i), grid.sgId(i));
             assertEquals(((i % qf_size) % wg_size) / sg_size, hierarchy.getScopeId(Tag.Vulkan.SUB_GROUP));
             assertEquals((i % qf_size) / wg_size, hierarchy.getScopeId(Tag.Vulkan.WORK_GROUP));
             assertEquals(i / qf_size, hierarchy.getScopeId(Tag.Vulkan.QUEUE_FAMILY));
