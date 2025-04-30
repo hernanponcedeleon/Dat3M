@@ -203,16 +203,26 @@ public class Wmm {
             case CTRLDIRECT -> new DirectControlDependency(r);
             case EMPTY -> new Empty(r);
             case IDDTRANS -> new TransitiveClosure(r, getOrCreatePredefinedRelation(IDD));
-            case DATA -> intersection(r,
-                    getOrCreatePredefinedRelation(IDDTRANS),
-                    addDefinition(product(newRelation(), Tag.MEMORY, Tag.MEMORY))
-            );
+            // case DATA -> intersection(r,
+            //         getOrCreatePredefinedRelation(IDDTRANS),
+            //         addDefinition(product(newRelation(), Tag.MEMORY, Tag.MEMORY))
+            // );
+            case DATA -> {
+                Relation mm = addDefinition(product(newRelation(), Tag.MEMORY, Tag.MEMORY));
+                Relation am = addDefinition(product(newRelation(), Tag.ALLOC, Tag.MEMORY));
+                Relation productUnion = addDefinition(union(newRelation(), am, mm));
+                yield intersection(r, getOrCreatePredefinedRelation(IDDTRANS), productUnion);
+            }
             case ADDR -> {
                 Relation addrdirect = getOrCreatePredefinedRelation(ADDRDIRECT);
                 Relation comp = addDefinition(composition(newRelation(), getOrCreatePredefinedRelation(IDDTRANS), addrdirect));
                 Relation union = addDefinition(union(newRelation(), addrdirect, comp));
                 Relation mm = addDefinition(product(newRelation(), Tag.MEMORY, Tag.MEMORY));
-                yield intersection(r, union, mm);
+                Relation am = addDefinition(product(newRelation(), Tag.ALLOC, Tag.MEMORY));
+                Relation mf = addDefinition(product(newRelation(), Tag.MEMORY, Tag.FREE));
+                Relation af = addDefinition(product(newRelation(), Tag.ALLOC, Tag.FREE));
+                Relation productUnion = addDefinition(union(newRelation(), mm, mf, af));
+                yield intersection(r, union, productUnion);
             }
             case CTRL -> {
                 Relation comp = addDefinition(composition(newRelation(), getOrCreatePredefinedRelation(IDDTRANS),
@@ -238,8 +248,8 @@ public class Wmm {
         return addDefinition(def);
     }
 
-    private Definition union(Relation r0, Relation r1, Relation r2) {
-        return new Union(r0, r1, r2);
+    private Definition union(Relation r0, Relation... others) {
+        return new Union(r0, others);
     }
 
     private Definition intersection(Relation r0, Relation r1, Relation r2) {

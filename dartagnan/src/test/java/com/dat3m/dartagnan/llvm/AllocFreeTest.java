@@ -104,7 +104,7 @@ public class AllocFreeTest {
                 .withConfig(configuration)
                 .withTarget(target);
         Program program = new ProgramParser().parse(new File(getTestResourcePath("alloc/" + name + ".ll")));
-        Wmm mcm = new ParserCat().parse(new File(getRootPath("cat/rc11.cat")));
+        Wmm mcm = new ParserCat().parse(new File(getRootPath("cat/vmm.cat")));
         return builder.build(program, mcm, EnumSet.of(CAT_SPEC));
     }
 

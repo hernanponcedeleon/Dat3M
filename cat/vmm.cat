@@ -96,7 +96,8 @@ let dep = ctrl | addr | data
 let bob = [Acq];po | po;[Rel] | [SC];po;[SC] | po;[SC & F];po | [R];po;[Acq & F];po | po;[Rel & F];po;[W & Marked]
 (* Preserved Program-Order: these are never visibly reordered by compiler and hardware. 
    Includes both barrier ordering, and dependency ordering + same-address ordering *)
-let ppo = bob | [Marked];(dep | coi | fri);[W & Marked]
+// let ppo = bob | [Marked];(dep | coi | fri);[W & Marked] | [ALLOC];(addr | data) | addr;[FREE]
+let ppo = bob | [Marked];(dep | coi | fri);[W & Marked] | [ALLOC];(addr | data)
 
 (* Important: these relations satisfy
     ppo ; [~Marked] ; po <= ppo
@@ -118,10 +119,12 @@ let WRF-ppo = po;[Rel & F];po;[W & Plain] | [Marked];(ctrl | addr);[W & Plain]
 
 let hb = ppo | WRF-ppo | rfe | fre | coe
 acyclic hb
+let hbp = hb+
 
 (** Data Races **)
 
-let w-race-fix = ([Marked] | ppo);hb+;([Marked] | ppo)
+// let w-race-fix = ([Marked] | ppo);hb+;([Marked] | ppo)
+let w-race-fix = ([Marked] | ppo);hbp;([Marked] | ppo)
 
 let w-race = coe \ w-race-fix
 let w-racy = [domain(w-race)] | [range(w-race)]
@@ -138,7 +141,8 @@ flag ~empty w-racy as w-data-race
 
   It is not relevant for rfe & r-race, since there the plain store would be in the range (but WRF-ppo only orders stores in the domain); and reading from it without proper synchronization is a data race too anyways.     
 *)
-let r-race-fix = ([Marked] | ppo);hb+; WRF-ppo
+// let r-race-fix = ([Marked] | ppo);hb+; WRF-ppo
+let r-race-fix = ([Marked] | ppo);hbp; WRF-ppo
 
 let r-race = ((fre \ r-race-fix) | rfe) \ w-race-fix
 let r-racy = [domain(r-race)] | [range(r-race)]
@@ -155,11 +159,16 @@ flag ~empty [domain(obs-dep)] & r-racy as r-data-race
  * allocptr - relates (ALLOC | FREE) -> (FREE) when both events use the same pointer
  * allocmem - relates (ALLOC) -> (M) when the second event accesses the memory allocated by the first event
  *)
-flag ~empty (((ALLOC * FREE) & allocptr) \ hb+) as alloc-race
+flag ~empty (((ALLOC * FREE) & allocptr) \ hbp) as alloc-race
 flag ~empty (((FREE * FREE) \ id) & allocptr) as double-free
 flag ~empty ([FREE] \ [range(allocptr & (ALLOC * FREE))]) as free-without-alloc
-flag ~empty (allocmem \ hb+) as use-before-alloc
-flag ~empty ((allocmem^-1 ; (allocptr & (ALLOC * FREE))) \ hb+) as use-after-free
+flag ~empty (allocmem \ hbp) as use-before-alloc
+
+// flag ~empty ((allocmem^-1 ; (allocptr & (ALLOC * FREE))) \ hb+) as use-after-free
+let memfree = allocmem^-1 ; (allocptr & (ALLOC * FREE))
+let uaf = memfree \ hbp
+// flag ~empty (memfree \ hb+) as use-after-free
+flag ~empty uaf as use-after-free
 
 // TODO: Non-monotonic! (see ThreadCreation class)
 flag ~empty ([ALLOC] \ [domain(allocptr)]) as alloc-without-free

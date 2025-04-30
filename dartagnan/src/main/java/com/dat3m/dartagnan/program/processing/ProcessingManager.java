@@ -100,7 +100,7 @@ public class ProcessingManager implements ProgramProcessor {
                 Compilation.fromConfig(config), // We keep compilation global for now
                 LoopFormVerification.fromConfig(config),
                 printAfterCompilation ? DebugPrint.withHeader("After compilation", Printer.Mode.ALL) : null,
-                ProgramProcessor.fromFunctionProcessor(MemToReg.fromConfig(config), Target.FUNCTIONS, true),
+                // ProgramProcessor.fromFunctionProcessor(MemToReg.fromConfig(config), Target.FUNCTIONS, true),
                 ProgramProcessor.fromFunctionProcessor(sccp, Target.FUNCTIONS, false),
                 dynamicSpinLoopDetection ? DynamicSpinLoopDetection.fromConfig(config) : null,
                 ProgramProcessor.fromFunctionProcessor(NaiveLoopBoundAnnotation.fromConfig(config), Target.FUNCTIONS, true),
@@ -120,8 +120,9 @@ public class ProcessingManager implements ProgramProcessor {
                 intrinsics.lateInliningPass(),
                 ProgramProcessor.fromFunctionProcessor(
                         FunctionProcessor.chain(
-                                RemoveDeadNullChecks.newInstance(),
-                                MemToReg.fromConfig(config)
+                                RemoveDeadNullChecks.newInstance()
+                                // RemoveDeadNullChecks.newInstance(),
+                                // MemToReg.fromConfig(config)
                         ), Target.THREADS, true
                 ),
                 ProgramProcessor.fromFunctionProcessor(
