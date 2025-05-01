@@ -8,6 +8,7 @@ import com.dat3m.dartagnan.expression.integers.IntBinaryOp;
 import com.dat3m.dartagnan.expression.integers.IntLiteral;
 import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
+import com.dat3m.dartagnan.expression.type.VoidType;
 import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.IRHelper;
 import com.dat3m.dartagnan.program.Program;
@@ -1584,7 +1585,7 @@ public class Intrinsics {
 
             replacement.add(EventFactory.newStore(destAddr, zero));
         }
-        if (call instanceof ValueFunctionCall valueCall) {
+        if (call instanceof ValueFunctionCall valueCall && !(valueCall.getResultRegister().getType() instanceof VoidType)) {
             // std.memset returns the destination address, llvm.memset has no return value
             replacement.add(EventFactory.newLocal(valueCall.getResultRegister(), dest));
         }
