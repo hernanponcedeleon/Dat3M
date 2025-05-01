@@ -8,6 +8,7 @@ import com.dat3m.dartagnan.expression.Type;
 import com.dat3m.dartagnan.expression.type.FunctionType;
 import com.dat3m.dartagnan.expression.type.ScopedPointerType;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
+import com.dat3m.dartagnan.expression.type.VoidType;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.decorations.BuiltIn;
 import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.Program;
@@ -316,7 +317,7 @@ public class ProgramBuilder {
             throw new ParsingException("Cannot build the program, missing function definition '%s'", entryPointId);
         }
         if (expression instanceof Function function) {
-            if (function.hasReturnValue()) {
+            if (!(function.getFunctionType().getReturnType() instanceof VoidType)) {
                 throw new ParsingException("Entry point function %s is not a void function", entryPointId);
             }
             return function;

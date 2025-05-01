@@ -2,13 +2,13 @@ package com.dat3m.dartagnan.program.event.functions;
 
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionVisitor;
+import com.dat3m.dartagnan.expression.type.VoidType;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.AbstractEvent;
 import com.dat3m.dartagnan.program.event.RegReader;
 import com.google.common.base.Preconditions;
 
 import java.util.HashSet;
-import java.util.Optional;
 import java.util.Set;
 
 public class Return extends AbstractEvent implements RegReader {
@@ -16,7 +16,7 @@ public class Return extends AbstractEvent implements RegReader {
     protected Expression expression;
 
     public Return(Expression expression) {
-        this.expression =  Preconditions.checkNotNull(expression);
+        this.expression = Preconditions.checkNotNull(expression);
     }
 
     protected Return(Return other) {
@@ -24,8 +24,12 @@ public class Return extends AbstractEvent implements RegReader {
         this.expression = other.expression;
     }
 
-    public Optional<Expression> getValue() {
-        return Optional.ofNullable(expression);
+    public Expression getValue() {
+        return expression;
+    }
+
+    public boolean returnsUnit() {
+        return getValue().getType() instanceof VoidType;
     }
 
     @Override

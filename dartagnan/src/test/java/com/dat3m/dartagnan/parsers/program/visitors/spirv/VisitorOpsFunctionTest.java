@@ -15,7 +15,7 @@ import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.core.Local;
 import com.dat3m.dartagnan.program.event.core.Skip;
-import com.dat3m.dartagnan.program.event.functions.ValueFunctionCall;
+import com.dat3m.dartagnan.program.event.functions.FunctionCall;
 import com.dat3m.dartagnan.program.memory.ScopedPointerVariable;
 import com.dat3m.dartagnan.program.memory.VirtualMemoryObject;
 import org.junit.Before;
@@ -244,7 +244,7 @@ public class VisitorOpsFunctionTest {
         Function func = (Function) builder.getExpression("%func");
         Function main = (Function) builder.getExpression("%main");
 
-        ValueFunctionCall call = (ValueFunctionCall) main.getEvents().get(0);
+        FunctionCall call = (FunctionCall) main.getEvents().get(0);
         assertEquals(main, call.getFunction());
         assertEquals(func, call.getCalledFunction());
         assertEquals(main.getRegister("%ret"), call.getResultRegister());
@@ -277,7 +277,7 @@ public class VisitorOpsFunctionTest {
 
         // then
         Function func = (Function) builder.getExpression("%func");
-        ValueFunctionCall call = (ValueFunctionCall) func.getEvents().get(0);
+        FunctionCall call = (FunctionCall) func.getEvents().get(0);
         assertEquals(func, call.getFunction());
         assertEquals(func, call.getCalledFunction());
         assertEquals(func.getRegister("%ret"), call.getResultRegister());
@@ -315,7 +315,7 @@ public class VisitorOpsFunctionTest {
         Function main = (Function) builder.getExpression("%main");
         Function func = (Function) builder.getExpression("%func");
 
-        ValueFunctionCall call = (ValueFunctionCall) main.getEvents().get(0);
+        FunctionCall call = (FunctionCall) main.getEvents().get(0);
         assertEquals(main, call.getFunction());
         assertEquals(func, call.getCalledFunction());
         assertEquals(main.getRegister("%ret"), call.getResultRegister());
@@ -452,12 +452,12 @@ public class VisitorOpsFunctionTest {
         Function f2 = (Function) builder.getExpression("%f2");
         Function f3 = (Function) builder.getExpression("%f3");
 
-        ValueFunctionCall c11 = (ValueFunctionCall) f1.getEvents().get(0);
-        ValueFunctionCall c12 = (ValueFunctionCall) f1.getEvents().get(1);
-        ValueFunctionCall c13 = (ValueFunctionCall) f1.getEvents().get(2);
-        ValueFunctionCall c21 = (ValueFunctionCall) f2.getEvents().get(0);
-        ValueFunctionCall c22 = (ValueFunctionCall) f2.getEvents().get(1);
-        ValueFunctionCall c23 = (ValueFunctionCall) f2.getEvents().get(2);
+        FunctionCall c11 = (FunctionCall) f1.getEvents().get(0);
+        FunctionCall c12 = (FunctionCall) f1.getEvents().get(1);
+        FunctionCall c13 = (FunctionCall) f1.getEvents().get(2);
+        FunctionCall c21 = (FunctionCall) f2.getEvents().get(0);
+        FunctionCall c22 = (FunctionCall) f2.getEvents().get(1);
+        FunctionCall c23 = (FunctionCall) f2.getEvents().get(2);
 
         assertEquals(f1, c11.getFunction());
         assertEquals(f1, c11.getCalledFunction());

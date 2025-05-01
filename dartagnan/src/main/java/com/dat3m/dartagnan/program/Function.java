@@ -4,7 +4,6 @@ import com.dat3m.dartagnan.exception.MalformedProgramException;
 import com.dat3m.dartagnan.expression.*;
 import com.dat3m.dartagnan.expression.type.FunctionType;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
-import com.dat3m.dartagnan.expression.type.VoidType;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.RegReader;
 import com.dat3m.dartagnan.program.event.RegWriter;
@@ -89,7 +88,6 @@ public class Function implements LeafExpression {
     public void setProgram(Program program) { this.program = program; }
 
     public boolean hasBody() { return entry != null; }
-    public boolean hasReturnValue() { return !(functionType.getReturnType() instanceof VoidType); }
 
     public boolean isIntrinsic() { return !hasBody() && intrinsicInfo != null; }
     public Intrinsics.Info getIntrinsicInfo() { return intrinsicInfo; }

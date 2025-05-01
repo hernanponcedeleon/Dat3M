@@ -614,7 +614,7 @@ public class VisitorOpsControlFlowTest {
         // then
         Return event = (Return) function.getEvents().get(1);
         assertNotNull(event);
-        assertTrue(event.getValue().isEmpty());
+        assertTrue(event.returnsUnit());
         assertTrue(cfBuilder.getBlockStack().isEmpty());
     }
 
@@ -633,7 +633,7 @@ public class VisitorOpsControlFlowTest {
 
         // then
         Return event = (Return) function.getEvents().get(1);
-        assertEquals(builder.getExpression("%value"), event.getValue().orElseThrow());
+        assertEquals(builder.getExpression("%value"), event.getValue());
         assertTrue(cfBuilder.getBlockStack().isEmpty());
     }
 

@@ -19,7 +19,6 @@ import com.dat3m.dartagnan.program.event.core.threading.ThreadStart;
 import com.dat3m.dartagnan.program.event.functions.AbortIf;
 import com.dat3m.dartagnan.program.event.functions.FunctionCall;
 import com.dat3m.dartagnan.program.event.functions.Return;
-import com.dat3m.dartagnan.program.event.functions.ValueFunctionCall;
 import com.dat3m.dartagnan.program.memory.Memory;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.dat3m.dartagnan.program.processing.compilation.Compilation;
@@ -311,7 +310,7 @@ public class ThreadCreation implements ProgramProcessor {
                 IRHelper.replaceWithMetadata(abort, jumpToEnd);
             } else if (e instanceof Return || (e instanceof FunctionCall call
                     && call.isDirectCall() && call.getCalledFunction().getName().equals("pthread_exit"))) {
-                final Expression retVal = (e instanceof Return ret) ? ret.getValue().orElse(expressions.makeUnit())
+                final Expression retVal = (e instanceof Return ret) ? ret.getValue()
                         : ((FunctionCall)e).getArguments().get(0);
                 final List<Event> replacement = eventSequence(
                         EventFactory.newLocal(returnRegister, retVal),
@@ -367,8 +366,7 @@ public class ThreadCreation implements ProgramProcessor {
     }
 
     private Register getResultRegister(FunctionCall call) {
-        assert call instanceof ValueFunctionCall;
-        return ((ValueFunctionCall) call).getResultRegister();
+        return call.getResultRegister();
     }
 
     private List<Event> newReleaseStore(Expression address, Expression storeValue) {
