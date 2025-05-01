@@ -72,6 +72,11 @@ public class LazyEncodeSets implements Constraint.Visitor<Boolean> {
     }
 
     @Override
+    public Boolean visitSameInstruction(SameInstruction definition) {
+        return doUpdateSelf(definition);
+    }
+
+    @Override
     public Boolean visitControlDependency(DirectControlDependency definition) {
         return doUpdateSelf(definition);
     }
