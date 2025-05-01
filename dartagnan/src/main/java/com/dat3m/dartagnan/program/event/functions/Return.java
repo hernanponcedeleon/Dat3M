@@ -5,6 +5,7 @@ import com.dat3m.dartagnan.expression.ExpressionVisitor;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.AbstractEvent;
 import com.dat3m.dartagnan.program.event.RegReader;
+import com.google.common.base.Preconditions;
 
 import java.util.HashSet;
 import java.util.Optional;
@@ -12,19 +13,15 @@ import java.util.Set;
 
 public class Return extends AbstractEvent implements RegReader {
 
-    protected Expression expression; // May be NULL
+    protected Expression expression;
 
     public Return(Expression expression) {
-        this.expression = expression;
+        this.expression =  Preconditions.checkNotNull(expression);
     }
 
     protected Return(Return other) {
         super(other);
         this.expression = other.expression;
-    }
-
-    public boolean hasValue() {
-        return expression != null;
     }
 
     public Optional<Expression> getValue() {
@@ -33,7 +30,7 @@ public class Return extends AbstractEvent implements RegReader {
 
     @Override
     protected String defaultString() {
-        return hasValue() ? String.format("return %s", expression) : "return";
+        return  String.format("return %s", expression);
     }
 
     @Override
@@ -43,16 +40,11 @@ public class Return extends AbstractEvent implements RegReader {
 
     @Override
     public Set<Register.Read> getRegisterReads() {
-        if (!hasValue()) {
-            return new HashSet<>();
-        }
         return Register.collectRegisterReads(expression, Register.UsageType.DATA, new HashSet<>());
     }
 
     @Override
     public void transformExpressions(ExpressionVisitor<? extends Expression> exprTransformer) {
-        if (expression != null) {
-            expression = expression.accept(exprTransformer);
-        }
+        expression = expression.accept(exprTransformer);
     }
 }

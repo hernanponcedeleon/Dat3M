@@ -15,7 +15,8 @@ import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.event.functions.Return;
 
-import java.util.*;
+import java.util.List;
+import java.util.Set;
 
 import static com.dat3m.dartagnan.program.event.EventFactory.newFunctionReturn;
 
@@ -120,7 +121,7 @@ public class VisitorOpsControlFlow extends SpirvBaseVisitor<Event> {
     public Event visitOpReturn(SpirvParser.OpReturnContext ctx) {
         Type returnType = builder.getCurrentFunctionType().getReturnType();
         if (types.getVoidType().equals(returnType)) {
-            Return event = newFunctionReturn(null);
+            Return event = newFunctionReturn(ExpressionFactory.getInstance().makeUnit());
             builder.addEvent(event);
             return cfBuilder.endBlock(event);
         }

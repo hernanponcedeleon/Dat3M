@@ -9,11 +9,10 @@ import com.dat3m.dartagnan.expression.type.FunctionType;
 import com.dat3m.dartagnan.expression.type.ScopedPointerType;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.decorations.BuiltIn;
-import com.dat3m.dartagnan.program.processing.transformers.MemoryTransformer;
-import com.dat3m.dartagnan.program.ThreadGrid;
 import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
+import com.dat3m.dartagnan.program.ThreadGrid;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.RegWriter;
 import com.dat3m.dartagnan.program.event.Tag;
@@ -21,6 +20,7 @@ import com.dat3m.dartagnan.program.event.functions.FunctionCall;
 import com.dat3m.dartagnan.program.memory.Memory;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.dat3m.dartagnan.program.memory.ScopedPointerVariable;
+import com.dat3m.dartagnan.program.processing.transformers.MemoryTransformer;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -216,6 +216,10 @@ public class ProgramBuilder {
         return getCurrentFunctionOrThrowError().newRegister(id, getType(typeId));
     }
 
+    public Register getUnitRegister() {
+        return getCurrentFunctionOrThrowError().getOrNewRegister("__", TypeFactory.getInstance().getVoidType());
+    }
+
     public Expression makeUndefinedValue(Type type) {
         return program.newConstant(type);
     }
@@ -230,7 +234,7 @@ public class ProgramBuilder {
         if (controlFlowBuilder.hasCurrentLocation()) {
             event.setMetadata(controlFlowBuilder.getCurrentLocation());
         }
-        if (event instanceof RegWriter regWriter) {
+        if (event instanceof RegWriter regWriter && regWriter.getResultRegister() != getUnitRegister()) {
             Register register = regWriter.getResultRegister();
             addExpression(register.getName(), register);
         }

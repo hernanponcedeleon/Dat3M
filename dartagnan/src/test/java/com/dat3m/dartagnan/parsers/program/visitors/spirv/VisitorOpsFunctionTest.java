@@ -16,7 +16,6 @@ import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.core.Local;
 import com.dat3m.dartagnan.program.event.core.Skip;
 import com.dat3m.dartagnan.program.event.functions.ValueFunctionCall;
-import com.dat3m.dartagnan.program.event.functions.VoidFunctionCall;
 import com.dat3m.dartagnan.program.memory.ScopedPointerVariable;
 import com.dat3m.dartagnan.program.memory.VirtualMemoryObject;
 import org.junit.Before;
@@ -453,10 +452,10 @@ public class VisitorOpsFunctionTest {
         Function f2 = (Function) builder.getExpression("%f2");
         Function f3 = (Function) builder.getExpression("%f3");
 
-        VoidFunctionCall c11 = (VoidFunctionCall) f1.getEvents().get(0);
+        ValueFunctionCall c11 = (ValueFunctionCall) f1.getEvents().get(0);
         ValueFunctionCall c12 = (ValueFunctionCall) f1.getEvents().get(1);
         ValueFunctionCall c13 = (ValueFunctionCall) f1.getEvents().get(2);
-        VoidFunctionCall c21 = (VoidFunctionCall) f2.getEvents().get(0);
+        ValueFunctionCall c21 = (ValueFunctionCall) f2.getEvents().get(0);
         ValueFunctionCall c22 = (ValueFunctionCall) f2.getEvents().get(1);
         ValueFunctionCall c23 = (ValueFunctionCall) f2.getEvents().get(2);
 

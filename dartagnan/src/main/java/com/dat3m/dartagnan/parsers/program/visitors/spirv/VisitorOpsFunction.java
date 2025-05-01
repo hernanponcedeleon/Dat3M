@@ -3,7 +3,10 @@ package com.dat3m.dartagnan.parsers.program.visitors.spirv;
 import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.Type;
-import com.dat3m.dartagnan.expression.type.*;
+import com.dat3m.dartagnan.expression.type.FunctionType;
+import com.dat3m.dartagnan.expression.type.ScopedPointerType;
+import com.dat3m.dartagnan.expression.type.TypeFactory;
+import com.dat3m.dartagnan.expression.type.VoidType;
 import com.dat3m.dartagnan.parsers.SpirvBaseVisitor;
 import com.dat3m.dartagnan.parsers.SpirvParser;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.builders.ProgramBuilder;
@@ -21,7 +24,6 @@ import java.util.*;
 import java.util.stream.IntStream;
 
 import static com.dat3m.dartagnan.program.event.EventFactory.newValueFunctionCall;
-import static com.dat3m.dartagnan.program.event.EventFactory.newVoidFunctionCall;
 
 public class VisitorOpsFunction extends SpirvBaseVisitor<Void> {
 
@@ -117,7 +119,8 @@ public class VisitorOpsFunction extends SpirvBaseVisitor<Void> {
         Function function = getCalledFunction(functionId, functionType);
         FunctionCall event;
         if (returnType instanceof VoidType) {
-            event = newVoidFunctionCall(function, args);
+            Register register = builder.getUnitRegister();
+            event = newValueFunctionCall(register, function, args);
         } else {
             Register register = builder.addRegister(id, typeId);
             event = newValueFunctionCall(register, function, args);
