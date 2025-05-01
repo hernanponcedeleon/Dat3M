@@ -415,7 +415,15 @@ public class ThreadCreation implements ProgramProcessor {
         FunctionType type = function.getFunctionType();
         List<String> args = Lists.transform(function.getParameterRegisters(), Register::getName);
         ThreadStart start = EventFactory.newThreadStart(null);
-        ScopeHierarchy scope = grid.getScoreHierarchy(tid);
+        Arch arch = function.getProgram().getArch();
+        ScopeHierarchy scope;
+        if (arch == Arch.VULKAN) {
+            scope = ScopeHierarchy.ScopeHierarchyForVulkan(grid.qfId(tid), grid.wgId(tid), grid.sgId(tid));
+        } else if (arch == Arch.OPENCL) {
+            scope = ScopeHierarchy.ScopeHierarchyForOpenCL(grid.dvId(tid), grid.wgId(tid), grid.sgId(tid));
+        } else {
+            throw new MalformedProgramException("Unsupported architecture for thread creation: " + arch);
+        }
         Thread thread = new Thread(name, type, args, tid, start, scope, Set.of());
         thread.copyDummyCountFrom(function);
         Label returnLabel = EventFactory.newLabel("RETURN_OF_T" + thread.getId());

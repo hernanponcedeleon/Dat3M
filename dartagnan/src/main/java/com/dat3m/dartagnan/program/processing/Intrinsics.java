@@ -53,14 +53,14 @@ public class Intrinsics {
     private static final Logger logger = LogManager.getLogger(Intrinsics.class);
 
     @Option(name = REMOVE_ASSERTION_OF_TYPE,
-            description = "Remove assertions of type [user, overflow, invalidderef].",
+            description = "Remove assertions of type [user, overflow, invalidderef, unknown_function].",
             toUppercase=true,
             secure = true)
     private EnumSet<AssertionType> notToInline = EnumSet.noneOf(AssertionType.class);
 
-    private final boolean detectMixedSizeAccesses;
+    private enum AssertionType { USER, OVERFLOW, INVALIDDEREF, UNKNOWN_FUNCTION }
 
-    private enum AssertionType { USER, OVERFLOW, INVALIDDEREF }
+    private final boolean detectMixedSizeAccesses;
 
     private static final TypeFactory types = TypeFactory.getInstance();
     private static final ExpressionFactory expressions = ExpressionFactory.getInstance();
@@ -236,6 +236,8 @@ public class Intrinsics {
                 false, false, false, true, Intrinsics::inlineIntegerOverflow),
         UBSAN_TYPE_MISSMATCH(List.of("__ubsan_handle_type_mismatch_v1"), 
                 false, false, false, true, Intrinsics::inlineInvalidDereference),
+        // ------------------------- Unknown function ---------------------------
+        MISSING(List.of(), false, false, false, true, Intrinsics::inlineUnknownFunction),
         ;
 
         private final List<String> variants;
@@ -303,12 +305,14 @@ public class Intrinsics {
                 Arrays.stream(Info.values())
                         .filter(info -> info.matches(funcName))
                         .findFirst()
-                        .ifPresentOrElse(func::setIntrinsicInfo, () -> missingSymbols.add(funcName));
+                        .ifPresentOrElse(func::setIntrinsicInfo, () -> {
+                            missingSymbols.add(funcName);
+                            func.setIntrinsicInfo(Info.MISSING);});
             }
         }
         if (!missingSymbols.isEmpty()) {
-            throw new UnsupportedOperationException(
-                    missingSymbols.stream().collect(Collectors.joining(", ", "Unknown intrinsics ", "")));
+            logger.warn(missingSymbols.stream().collect(Collectors.joining(", ", "Unknown intrinsics ", "")) +
+                ". Detecting calls to unknown functions requires --property=program_spec.");
         }
     }
 
@@ -950,6 +954,17 @@ public class Intrinsics {
     private List<Event> inlineInvalidDereference(FunctionCall call) {
         return inlineAssert(call, AssertionType.INVALIDDEREF, "invalid dereference");
     }
+
+    private List<Event> inlineUnknownFunction(FunctionCall call) {
+        final List<Event> replacement = new ArrayList<>();
+        if (call instanceof ValueFunctionCall) {
+            replacement.addAll(inlineCallAsNonDet(call));
+        }
+        replacement.addAll(inlineAssert(call, AssertionType.UNKNOWN_FUNCTION,
+            "Calling unknown function " + call.getCalledFunction().getName()));
+        return replacement;
+    }
+
 
     // --------------------------------------------------------------------------------------------------------
     // LLVM intrinsics

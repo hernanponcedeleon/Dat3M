@@ -1755,7 +1755,7 @@ fragment LiteralHexFloat : '-'? '0x' ([0-9]+ '.'? | [0-9]* '.' [0-9]+) [Pp]? [+-
 fragment LiteralBaseFloat : '-'? [0-9]+ '.' [0-9]*;
 LiteralFloat : LiteralHexFloat | LiteralSciFloat | LiteralBaseFloat;
 LiteralInteger : '-'? [0-9]+;
-LiteralString : '"' ~[\n"]* '"';
+LiteralString : '"' (('\\\\')*'\\"')* (~["]|(~[\\]('\\\\')*'\\"'))* '"';
 LineComment : ';' ~[\n@]* -> skip;
 HeaderStart : [@] -> pushMode(ModeHeader), skip;
 Whitespace : [ \t\r\n]+ -> skip;

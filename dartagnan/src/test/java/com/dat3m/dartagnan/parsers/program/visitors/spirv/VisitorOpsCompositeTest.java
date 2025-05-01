@@ -2,6 +2,8 @@ package com.dat3m.dartagnan.parsers.program.visitors.spirv;
 
 import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.expression.aggregates.ExtractExpr;
+import com.dat3m.dartagnan.expression.aggregates.InsertExpr;
+import com.dat3m.dartagnan.expression.aggregates.ConstructExpr;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.mocks.MockProgramBuilder;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.mocks.MockSpirvParser;
 import com.dat3m.dartagnan.program.Register;
@@ -190,6 +192,369 @@ public class VisitorOpsCompositeTest {
             // then
             assertEquals("Index out of bounds in OpCompositeExtract for '%extract'", e.getMessage());
         }
+    }
+
+    @Test
+    public void testCompositeInsertArray() {
+        // given
+        String input = "%insert = OpCompositeInsert %array %value %base 2";
+        builder.mockIntType("%uint", 32);
+        builder.mockVectorType("%array", "%uint", 4);
+        builder.mockConstant("%base", "%array", List.of(1, 2, 3, 4));
+        builder.mockConstant("%value", "%uint", 99);
+
+        // when
+        visit(input);
+
+        // then
+        InsertExpr insert = (InsertExpr) builder.getExpression("%insert");
+        assertEquals(List.of(2), insert.getIndices());
+        assertEquals(builder.getType("%array"), insert.getType());
+        assertEquals(builder.getExpression("%value"), insert.getInsertedValue());
+        assertEquals(builder.getExpression("%base"), insert.getAggregate());
+    }
+
+    @Test
+    public void testCompositeInsertRuntimeArray() {
+        // given
+        String input = "%insert = OpCompositeInsert %array %value %base 2";
+        builder.mockIntType("%uint", 32);
+        builder.mockVectorType("%array", "%uint", -1);
+        builder.mockVectorType("%array2", "%uint", 4);
+        builder.mockConstant("%base", "%array", List.of(1, 2, 3, 4));
+        builder.mockConstant("%value", "%uint", 99);
+
+        // when
+        visit(input);
+
+        // then
+        InsertExpr insert = (InsertExpr) builder.getExpression("%insert");
+        assertEquals(List.of(2), insert.getIndices());
+        assertEquals(builder.getType("%array2"), insert.getType());
+        assertEquals(builder.getExpression("%value"), insert.getInsertedValue());
+        assertEquals(builder.getExpression("%base"), insert.getAggregate());
+    }
+
+    @Test
+    public void testCompositeInsertNestedArray() {
+        // given
+        String input = "%insert = OpCompositeInsert %struct %value %base 1 2";
+        builder.mockIntType("%uint", 32);
+        builder.mockVectorType("%array", "%uint", 4);
+        builder.mockAggregateType("%struct", "%uint", "%array");
+        builder.mockConstant("%member_0", "%uint", 1);
+        builder.mockConstant("%member_1", "%array", List.of(1, 2, 3, 4));
+        builder.mockConstant("%base", "%struct", List.of("%member_0", "%member_1"));
+        builder.mockConstant("%value", "%uint", 99);
+
+        // when
+        visit(input);
+
+        // then
+        InsertExpr insert = (InsertExpr) builder.getExpression("%insert");
+        assertEquals(List.of(1, 2), insert.getIndices());
+        assertEquals(builder.getType("%struct"), insert.getType());
+        assertEquals(builder.getExpression("%value"), insert.getInsertedValue());
+        assertEquals(builder.getExpression("%base"), insert.getAggregate());
+    }
+
+    @Test
+    public void testCompositeInsertNestedRuntimeArray() {
+        // given
+        String input = "%insert = OpCompositeInsert %array2 %value %base 1 2";
+        builder.mockIntType("%uint", 32);
+        builder.mockVectorType("%array", "%uint", -1);
+        builder.mockVectorType("%array2", "%array", -1);
+        builder.mockVectorType("%array3", "%array", 2);
+        builder.mockConstant("%member_0", "%array", List.of(1, 2, 3, 4));
+        builder.mockConstant("%member_1", "%array", List.of(5, 6, 7, 8));
+        builder.mockConstant("%base", "%array2", List.of("%member_0", "%member_1"));
+        builder.mockConstant("%value", "%uint", 99);
+
+        // when
+        visit(input);
+
+        // then
+        InsertExpr insert = (InsertExpr) builder.getExpression("%insert");
+        assertEquals(List.of(1, 2), insert.getIndices());
+        assertEquals(builder.getType("%array3"), insert.getType());
+        assertEquals(builder.getExpression("%value"), insert.getInsertedValue());
+        assertEquals(builder.getExpression("%base"), insert.getAggregate());
+    }
+
+    @Test
+    public void testCompositeInsertArrayRegister() {
+        // given
+        String input = "%insert = OpCompositeInsert %array %value %base 0";
+        builder.mockIntType("%uint", 32);
+        builder.mockVectorType("%array", "%uint", 4);
+        builder.mockFunctionStart(true);
+        List<Register> registers = IntStream.range(0, 4).boxed()
+                .map(i -> builder.addRegister("%r" + i, "%uint"))
+                .toList();
+        builder.mockConstant("%base", "%array", registers);
+        builder.mockConstant("%value", "%uint", 99);
+
+        // when
+        visit(input);
+
+        // then
+        InsertExpr insert = (InsertExpr) builder.getExpression("%insert");
+        assertEquals(List.of(0), insert.getIndices());
+        assertEquals(builder.getType("%array"), insert.getType());
+        assertEquals(builder.getExpression("%value"), insert.getInsertedValue());
+        assertEquals(builder.getExpression("%base"), insert.getAggregate());
+    }
+
+    @Test
+    public void testCompositeInsertWrongType() {
+        // given
+        String input = "%insert = OpCompositeInsert %struct %value %base 0 0";
+        builder.mockFunctionStart(true);
+        builder.mockIntType("%uint32", 32);
+        builder.mockIntType("%uint64", 64);
+        builder.mockVectorType("%array", "%uint32", 4);
+        builder.mockAggregateType("%struct", "%uint32", "%array");
+
+        builder.mockConstant("%t1", "%uint32", 1);
+        builder.mockConstant("%test", "%array", List.of(1, 2, 3, 4));
+        builder.mockConstant("%base", "%struct", List.of("%t1", "%test"));
+        builder.mockConstant("%value", "%uint64", 99);
+
+        try {
+            // when
+            visit(input);
+            fail("Should throw exception");
+        } catch (Exception e) {
+            // then
+            assertEquals("Element type mismatch or index out of bounds in OpCompositeInsert for '%insert'", e.getMessage());
+        }
+    }
+
+    @Test
+    public void testCompositeInsertWrongType1() {
+        // given
+        String input = "%insert = OpCompositeInsert %struct1 %value %base 0 0";
+        builder.mockFunctionStart(true);
+        builder.mockIntType("%uint32", 32);
+        builder.mockVectorType("%array", "%uint32", 4);
+        builder.mockVectorType("%array1", "%uint32", 2);
+        builder.mockAggregateType("%struct", "%array1", "%array");
+        builder.mockAggregateType("%struct1", "%array", "%array1");
+
+        builder.mockConstant("%test", "%array", List.of(1, 2, 3, 4));
+        builder.mockConstant("%test1", "%array", List.of(1, 2));
+        builder.mockConstant("%base", "%struct", List.of("%test1", "%test"));
+        builder.mockConstant("%value", "%uint32", 99);
+
+        try {
+            // when
+            visit(input);
+            fail("Should throw exception");
+        } catch (Exception e) {
+            // then
+            assertEquals("Type mismatch in composite insert for '%insert'", e.getMessage());
+        }
+    }
+
+    @Test
+    public void testCompositeInsertElementNotConstructExpr() {
+        // given
+        String input = "%insert = OpCompositeInsert %uint %value %base 0";
+        builder.mockFunctionStart(true);
+        builder.mockIntType("%uint", 32);
+        builder.mockConstant("%base", "%uint", 1);
+        builder.mockConstant("%value", "%uint", 99);
+
+        try {
+            // when
+            visit(input);
+            fail("Should throw exception");
+        } catch (ParsingException e) {
+            // then
+            assertEquals("Element type mismatch or index out of bounds in OpCompositeInsert for '%insert'", e.getMessage());
+        }
+    }
+
+    @Test
+    public void testCompositeInsertIndexOutOfBounds() {
+        // given
+        String input = "%insert = OpCompositeInsert %array %value %base 5";
+        builder.mockFunctionStart(true);
+        builder.mockIntType("%uint", 32);
+        builder.mockVectorType("%array", "%uint", 4);
+        builder.mockConstant("%base", "%array", List.of(1, 2, 3, 4));
+        builder.mockConstant("%value", "%uint", 99);
+
+        try {
+            // when
+            visit(input);
+            fail("Should throw exception");
+        } catch (ParsingException e) {
+            // then
+            assertEquals("Element type mismatch or index out of bounds in OpCompositeInsert for '%insert'", e.getMessage());
+        }
+    }
+
+    @Test
+    public void testCompositeInsertIndexTooDeep() {
+        // given
+        String input = "%insert = OpCompositeInsert %array %value %base 0 0";
+        builder.mockIntType("%uint", 32);
+        builder.mockVectorType("%array", "%uint", 4);
+        builder.mockConstant("%base", "%array", List.of(1, 2, 3, 4));
+        builder.mockConstant("%value", "%uint", 99);
+
+        try {
+            // when
+            visit(input);
+            fail("Should throw exception");
+        } catch (ParsingException e) {
+            // then
+            assertEquals("Element type mismatch or index out of bounds in OpCompositeInsert for '%insert'", e.getMessage());
+        }
+    }
+
+    @Test
+    public void testVectorShuffleReturnType() {
+        // given
+        String input = "%shuffle = OpVectorShuffle %uint %v1 %v2 0 0 0 0";
+        builder.mockIntType("%uint", 32);
+        builder.mockVectorType("%v4uint", "%uint", 4);
+        builder.mockConstant("%v1", "%v4uint", List.of(1, 2, 3, 4));
+        builder.mockConstant("%v2", "%v4uint", List.of(5, 6, 7, 8));
+
+        try {
+            // when
+            visit(input);
+            fail("Should throw exception");
+        } catch (ParsingException e) {
+            // then
+            assertEquals("Return type bv32 of OpVectorShuffle '%shuffle' is not a vector", e.getMessage());
+        }
+    }
+
+    @Test
+    public void testVectorShuffleFirstParameterType() {
+        // given
+        String input = "%shuffle = OpVectorShuffle %v4uint %v1 %v2 0 0 0 0";
+        builder.mockIntType("%uint", 32);
+        builder.mockVectorType("%v4uint", "%uint", 4);
+        builder.mockConstant("%v1", "%uint", 1);
+        builder.mockConstant("%v2", "%v4uint", List.of(5, 6, 7, 8));
+
+        try {
+            // when
+            visit(input);
+            fail("Should throw exception");
+        } catch (ParsingException e) {
+            // then
+            assertEquals("Parameter of OpVectorShuffle '%shuffle' is not a vector", e.getMessage());
+        }
+    }
+
+    @Test
+    public void testVectorShuffleSecondParameterType() {
+        // given
+        String input = "%shuffle = OpVectorShuffle %v4uint %v1 %v2 0 0 0 0";
+        builder.mockIntType("%uint", 32);
+        builder.mockVectorType("%v4uint", "%uint", 4);
+        builder.mockConstant("%v1", "%v4uint", List.of(5, 6, 7, 8));
+        builder.mockConstant("%v2", "%uint", 1);
+
+        try {
+            // when
+            visit(input);
+            fail("Should throw exception");
+        } catch (ParsingException e) {
+            // then
+            assertEquals("Parameter of OpVectorShuffle '%shuffle' is not a vector", e.getMessage());
+        }
+    }
+
+    @Test
+    public void testVectorShuffleMismatchFirstParameterType() {
+        // given
+        String input = "%shuffle = OpVectorShuffle %v4uint %v1 %v2 0 0 0 0";
+        builder.mockIntType("%uint", 32);
+        builder.mockBoolType("%bool");
+        builder.mockVectorType("%v4uint", "%uint", 4);
+        builder.mockVectorType("%v4bool", "%bool", 4);
+        builder.mockConstant("%v1", "%v4uint", List.of(1, 2, 3, 4));
+        builder.mockConstant("%v2", "%v4bool", List.of(true, true, true, true));
+
+        try {
+            // when
+            visit(input);
+            fail("Should throw exception");
+        } catch (ParsingException e) {
+            // then
+            assertEquals("Type mismatch in OpVectorShuffle '%shuffle' between result type and components", e.getMessage());
+        }
+    }
+
+    @Test
+    public void testVectorShuffleMismatchSecondParameterType() {
+        // given
+        String input = "%shuffle = OpVectorShuffle %v4uint %v1 %v2 0 0 0 0";
+        builder.mockIntType("%uint", 32);
+        builder.mockBoolType("%bool");
+        builder.mockVectorType("%v4uint", "%uint", 4);
+        builder.mockVectorType("%v4bool", "%bool", 4);
+        builder.mockConstant("%v1", "%v4bool", List.of(true, true, true, true));
+        builder.mockConstant("%v2", "%v4uint", List.of(1, 2, 3, 4));
+
+        try {
+            // when
+            visit(input);
+            fail("Should throw exception");
+        } catch (ParsingException e) {
+            // then
+            assertEquals("Type mismatch in OpVectorShuffle '%shuffle' between result type and components", e.getMessage());
+        }
+    }
+
+    @Test
+    public void testVectorShuffleSizeMismatch() {
+        // given
+        String input = "%shuffle = OpVectorShuffle %v4uint %v1 %v2 0 0 0";
+        builder.mockIntType("%uint", 32);
+        builder.mockVectorType("%v4uint", "%uint", 4);
+        builder.mockConstant("%v1", "%v4uint", List.of(1, 2, 3, 4));
+        builder.mockConstant("%v2", "%v4uint", List.of(5, 6, 7, 8));
+
+        try {
+            // when
+            visit(input);
+            fail("Should throw exception");
+        } catch (ParsingException e) {
+            // then
+            assertEquals("Size mismatch in OpVectorShuffle '%shuffle' between result type [4 x bv32] and components [0, 0, 0]", e.getMessage());
+        }
+    }
+
+    @Test
+    public void testVectorShuffle() {
+        // given
+        String input = "%shuffle = OpVectorShuffle %v4uint %v1 %v2 0 1 4 5";
+        builder.mockIntType("%uint", 32);
+        builder.mockVectorType("%v4uint", "%uint", 4);
+        builder.mockConstant("%v1", "%v4uint", List.of(1, 2, 3, 4));
+        builder.mockConstant("%v2", "%v4uint", List.of(5, 6, 7, 8));
+        builder.mockConstant("%bv32(1)", "%uint", 1);
+        builder.mockConstant("%bv32(2)", "%uint", 2);
+        builder.mockConstant("%bv32(5)", "%uint", 5);
+        builder.mockConstant("%bv32(6)", "%uint", 6);
+
+        // when
+        visit(input);
+
+        // then
+        ConstructExpr shuffle = (ConstructExpr) builder.getExpression("%shuffle");
+        assertEquals(builder.getExpression("%bv32(1)"), shuffle.getOperands().get(0));
+        assertEquals(builder.getExpression("%bv32(2)"), shuffle.getOperands().get(1));
+        assertEquals(builder.getExpression("%bv32(5)"), shuffle.getOperands().get(2));
+        assertEquals(builder.getExpression("%bv32(6)"), shuffle.getOperands().get(3));
     }
 
     private void visit(String input) {

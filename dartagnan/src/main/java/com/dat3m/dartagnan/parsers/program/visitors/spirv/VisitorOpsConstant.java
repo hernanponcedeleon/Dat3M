@@ -13,10 +13,7 @@ import com.dat3m.dartagnan.parsers.program.visitors.spirv.decorations.BuiltIn;
 import com.dat3m.dartagnan.program.Register;
 import org.antlr.v4.runtime.RuleContext;
 
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 import static com.dat3m.dartagnan.parsers.program.visitors.spirv.decorations.DecorationType.BUILT_IN;
 
@@ -118,16 +115,35 @@ public class VisitorOpsConstant extends SpirvBaseVisitor<Expression> {
     @Override
     public Expression visitOpConstantNull(SpirvParser.OpConstantNullContext ctx) {
         String id = ctx.idResult().getText();
-        Type type = builder.getType(ctx.idResultType().getText());
+        String typeId = ctx.idResultType().getText();
+        Type type = builder.getType(typeId);
+        Expression expression = getConstantNullExpression(typeId, type);
+        return builder.addExpression(id, expression);
+    }
+
+    private Expression getConstantNullExpression(String typeId, Type type) {
+        if (type instanceof ArrayType arrayType) {
+            if (!arrayType.hasKnownNumElements()) {
+                throw new ParsingException("Cannot create NULL constant for '%s' with unknown size array type", typeId);
+            }
+            Expression exp = getConstantNullExpression(typeId, arrayType.getElementType());
+            List<Expression> elements = Collections.nCopies(arrayType.getNumElements(), exp);
+            return expressions.makeArray(arrayType.getElementType(), elements, true);
+        }
+        if (type instanceof AggregateType aggregateType) {
+            List<Expression> elements = new ArrayList<>();
+            for (TypeOffset field : aggregateType.getFields()) {
+                elements.add(getConstantNullExpression(typeId, field.type()));
+            }
+            return expressions.makeConstruct(aggregateType, elements);
+        }
         if (type instanceof BooleanType) {
-            Expression expression = expressions.makeFalse();
-            return builder.addExpression(id, expression);
+            return expressions.makeFalse();
         }
         if (type instanceof IntegerType iType) {
-            Expression expression = expressions.makeZero(iType);
-            return builder.addExpression(id, expression);
+            return expressions.makeZero(iType);
         }
-        throw new ParsingException("Illegal NULL constant type '%s'", type);
+        throw new ParsingException("Unsupported NULL constant type '%s'", typeId);
     }
 
     public void visitOpSpecConstantOp(Register register) {

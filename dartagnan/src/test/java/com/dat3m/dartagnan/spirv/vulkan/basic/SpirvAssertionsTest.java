@@ -71,6 +71,8 @@ public class SpirvAssertionsTest {
                 {"array-of-vector1.spvasm", 1, PASS},
                 {"vector-read-write.spvasm", 1, PASS},
                 {"composite-extract.spvasm", 1, PASS},
+                {"composite-initial.spvasm", 1, PASS},
+                {"composite-insert.spvasm", 1, PASS},
                 {"spec-id-integer.spvasm", 1, PASS},
                 {"spec-id-boolean.spvasm", 1, PASS},
                 {"mixed-size.spvasm", 1, PASS},

@@ -97,6 +97,7 @@ public class MiscellaneousTest extends AbstractCTest {
                 {"nondet_alloc_2", IMM, PASS, 1},
                 {"nondet_aligned_alloc", IMM, PASS, 1},
                 {"alignment", IMM, PASS, 1},
+                {"unknown_function", IMM, FAIL, 1},
         });
     }
 

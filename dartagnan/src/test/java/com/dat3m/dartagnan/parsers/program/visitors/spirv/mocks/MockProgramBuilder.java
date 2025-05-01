@@ -26,7 +26,7 @@ public class MockProgramBuilder extends ProgramBuilder {
     private static final ExpressionFactory exprFactory = ExpressionFactory.getInstance();
 
     public MockProgramBuilder() {
-        this(new ThreadGrid(1, 1, 1, 1));
+        this(new ThreadGrid(1, 1, 1, 1, 1));
     }
 
     public MockProgramBuilder(ThreadGrid grid) {

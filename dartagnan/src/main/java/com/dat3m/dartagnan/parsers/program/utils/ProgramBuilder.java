@@ -298,7 +298,7 @@ public class ProgramBuilder {
         ScopeHierarchy scopeHierarchy = switch (arch) {
             case PTX -> ScopeHierarchy.ScopeHierarchyForPTX(scopeIds[0], scopeIds[1]);
             case VULKAN -> ScopeHierarchy.ScopeHierarchyForVulkan(scopeIds[0], scopeIds[1], scopeIds[2]);
-            case OPENCL -> ScopeHierarchy.ScopeHierarchyForOpenCL(scopeIds[0], scopeIds[1]);
+            case OPENCL -> ScopeHierarchy.ScopeHierarchyForOpenCL(scopeIds[0], scopeIds[1], scopeIds[2]);
             default -> throw new UnsupportedOperationException("Unsupported architecture: " + arch);
         };
 
