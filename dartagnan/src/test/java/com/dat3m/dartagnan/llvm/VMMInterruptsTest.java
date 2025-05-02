@@ -55,7 +55,7 @@ public class VMMInterruptsTest extends AbstractCTest {
                 {"c11_detour_disable", C11, FAIL},
                 {"c11_detour", C11, FAIL},
                 {"c11_oota", C11, PASS},
-                //{"c11_weak_model", C11, PASS},
+                {"c11_weak_model", C11, PASS},
                 {"c11_with_barrier_dec_barrier", C11, PASS},
                 {"c11_with_barrier_dec", C11, FAIL},
                 {"c11_with_barrier", C11, PASS},

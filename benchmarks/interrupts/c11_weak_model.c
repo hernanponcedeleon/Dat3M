@@ -5,6 +5,8 @@
 #include <assert.h>
 #include <dat3m.h>
 
+// ISSUE: Two-channel Message Passing with the sender fence inside the interrupt handler.
+// Expected: PASS because the interrupt point is constrained to be convenient for at least one channel (a or b).
 atomic_int x, y, a1, a2, b1, b2;
 int r1, r2, t1, u1, t2, u2;
 
@@ -12,7 +14,7 @@ pthread_t h;
 void *handler(void *arg)
 {
     r1 = atomic_load_explicit(&x, memory_order_relaxed);
-    atomic_thread_fence(memory_order_seq_cst);
+    atomic_thread_fence(memory_order_release);
     r2 = atomic_load_explicit(&y, memory_order_relaxed);
     return NULL;
 }
@@ -28,16 +30,17 @@ void *thread_1(void *arg)
     atomic_store_explicit(&y, 1, memory_order_relaxed);
     atomic_store_explicit(&a2, 1, memory_order_relaxed);
 
+    __VERIFIER_disable_irq();
     return NULL;
 }
 
 void *thread_2(void *arg)
 {
-    t1 = atomic_load_explicit(&a1, memory_order_relaxed);
-    u1 = atomic_load_explicit(&b1, memory_order_relaxed);
-    atomic_thread_fence(memory_order_seq_cst);
-    t2 = atomic_load_explicit(&a2, memory_order_relaxed);
-    u2 = atomic_load_explicit(&b2, memory_order_relaxed);
+    t1 = atomic_load_explicit(&a2, memory_order_relaxed);
+    u1 = atomic_load_explicit(&b2, memory_order_relaxed);
+    atomic_thread_fence(memory_order_acquire);
+    t2 = atomic_load_explicit(&a1, memory_order_relaxed);
+    u2 = atomic_load_explicit(&b1, memory_order_relaxed);
     return NULL;
 }
 

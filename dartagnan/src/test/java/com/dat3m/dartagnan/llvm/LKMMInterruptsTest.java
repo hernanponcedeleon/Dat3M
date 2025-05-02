@@ -54,7 +54,7 @@ public class LKMMInterruptsTest extends AbstractCTest {
                 {"lkmm_detour_disable", LKMM, FAIL},
                 {"lkmm_detour", LKMM, FAIL},
                 {"lkmm_oota", LKMM, PASS},
-                // {"lkmm_weak_model", LKMM, PASS},
+                {"lkmm_weak_model", LKMM, PASS},
                 {"lkmm_with_barrier_dec_barrier", LKMM, PASS},
                 {"lkmm_with_barrier_dec_wmb", LKMM, PASS},
                 {"lkmm_with_barrier_dec", LKMM, FAIL},
