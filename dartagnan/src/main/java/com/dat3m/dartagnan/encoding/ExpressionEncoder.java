@@ -18,6 +18,7 @@ import com.dat3m.dartagnan.expression.booleans.BoolUnaryExpr;
 import com.dat3m.dartagnan.expression.booleans.BoolUnaryOp;
 import com.dat3m.dartagnan.expression.integers.*;
 import com.dat3m.dartagnan.expression.misc.ITEExpr;
+import com.dat3m.dartagnan.expression.pointers.*;
 import com.dat3m.dartagnan.expression.type.*;
 import com.dat3m.dartagnan.expression.utils.ExpressionHelper;
 import com.dat3m.dartagnan.program.Register;
@@ -110,6 +111,10 @@ public class ExpressionEncoder {
             variable = context.useIntegers
                     ? integerFormulaManager().makeVariable(name)
                     : bitvectorFormulaManager().makeVariable(integerType.getBitWidth(), name);
+        } else if (type instanceof PointerType pointerType) {
+            variable = context.useIntegers
+                    ? integerFormulaManager().makeVariable(name)
+                    : bitvectorFormulaManager().makeVariable(types.getArchType().getBitWidth(), name);
         } else if (type instanceof AggregateType || type instanceof ArrayType) {
             final Map<Integer, Type> primitives = types.decomposeIntoPrimitives(type);
             if (primitives != null) {
@@ -271,6 +276,15 @@ public class ExpressionEncoder {
             assert typedFormula.type() == expression.getType();
             assert typedFormula.formula() instanceof IntegerFormula || typedFormula.formula() instanceof BitvectorFormula;
             return (TypedFormula<IntegerType, ?>) typedFormula;
+        }
+
+        @SuppressWarnings("unchecked")
+        public TypedFormula<PointerType, ?> encodePointerExpr(Expression expression) {
+            Preconditions.checkArgument(expression.getType() instanceof PointerType);
+            final TypedFormula<?, ?> typedFormula = encode(expression);
+            assert typedFormula.type() == expression.getType();
+            assert typedFormula.formula() instanceof IntegerFormula || typedFormula.formula() instanceof BitvectorFormula;
+            return (TypedFormula<PointerType, ?>) typedFormula;
         }
 
         @SuppressWarnings("unchecked")
@@ -589,6 +603,60 @@ public class ExpressionEncoder {
             final Formula fBranch = encode(iteExpr.getFalseCase()).formula();
             final Formula ite = fmgr.ifThenElse(guard, tBranch, fBranch);
             return new TypedFormula<>(iteExpr.getType(), ite);
+        }
+
+        // ====================================================================================
+        // Pointers
+
+        @Override
+        public TypedFormula<PointerType, ?> visitPointerAddExpression(PointerAddExpr expr) {
+            final TypedFormula<PointerType, ?> base = encodePointerExpr(expr.getBase());
+            final TypedFormula<IntegerType, ?> offset = encodeIntegerExpr(expr.getOffset());
+
+            if (context.useIntegers) {
+                final IntegerFormula baseForm = (IntegerFormula) base.formula();
+                final IntegerFormula offsetForm = (IntegerFormula) offset.formula();
+
+                return new TypedFormula<>(base.getType(), integerFormulaManager().add(baseForm, offsetForm));
+            } else {
+                final BitvectorFormula baseForm = (BitvectorFormula) base.formula();
+                final BitvectorFormula offsetForm = (BitvectorFormula) offset.formula();
+
+                return new TypedFormula<>(base.getType(), bitvectorFormulaManager().add(baseForm, offsetForm));
+            }
+        }
+
+        @Override
+        public TypedFormula<IntegerType, ?> visitPtrToIntCastExperssion(PtrToIntCast expr) {
+            return new TypedFormula<>(
+                    types.getArchType(),
+                    expr.getOperand().accept(this).formula()
+            );
+        }
+
+        @Override
+        public TypedFormula<PointerType, ?> visitIntToPtrCastExpression(IntToPtrCast expr) {
+            return new TypedFormula<>(
+                    types.getPointerType(),
+                    expr.getOperand().accept(this).formula()
+            );
+        }
+
+        @Override
+        public TypedFormula<BooleanType, BooleanFormula> visitPtrCmpExpression(PtrCmpExpr expr) {
+            final TypedFormula<PointerType, ?> left = encodePointerExpr(expr.getLeft());
+            final TypedFormula<PointerType, ?> right = encodePointerExpr(expr.getRight());
+
+            return new TypedFormula<>(types.getBooleanType(), fmgr.equal(left.formula(), right.formula()));
+        }
+
+        @Override
+        public TypedFormula<PointerType, ?> visitNullLiteral(NullLiteral lit) {
+            final Formula result = context.useIntegers
+                    ? integerFormulaManager().makeNumber(0)
+                    : bitvectorFormulaManager().makeBitvector(types.getArchType().getBitWidth(), 0);
+
+            return new TypedFormula<>(lit.getType(), result);
         }
 
         // ====================================================================================

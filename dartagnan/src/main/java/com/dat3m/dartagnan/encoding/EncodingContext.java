@@ -6,6 +6,8 @@ import com.dat3m.dartagnan.encoding.formulas.TypedValue;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.Type;
+import com.dat3m.dartagnan.expression.type.IntegerType;
+import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.analysis.BranchEquivalence;
 import com.dat3m.dartagnan.program.analysis.ExecutionAnalysis;
@@ -80,7 +82,7 @@ public final class EncodingContext {
     // TODO: Once we have a PointerType, this needs to get updated.
     private final Map<Event, TypedFormula<?, ?>> addresses = new HashMap<>();
     private final Map<MemoryObject, TypedFormula<?, ?>> objAddress = new HashMap<>();
-    private final Map<MemoryObject, TypedFormula<?, ?>> objSize = new HashMap<>();
+    private final Map<MemoryObject, TypedFormula<IntegerType, ?>> objSize = new HashMap<>();
 
     private EncodingContext(VerificationTask t, Context a, FormulaManager m) {
         verificationTask = checkNotNull(t);
@@ -228,7 +230,7 @@ public final class EncodingContext {
 
     public TypedFormula<?, ?> address(MemoryObject memoryObject) { return objAddress.get(memoryObject); }
 
-    public TypedFormula<?, ?> size(MemoryObject memoryObject) {
+    public TypedFormula<IntegerType, ?> size(MemoryObject memoryObject) {
         return objSize.get(memoryObject);
     }
 
@@ -298,6 +300,7 @@ public final class EncodingContext {
     // Private implementation
 
     private void initialize() {
+        final TypeFactory types = TypeFactory.getInstance();
         // ------- Control flow variables -------
         // Only for the standard fair progress model we can merge CF variables.
         // TODO: It would also be possible for OBE/HSA in some cases if we refine the cf-equivalence classes
@@ -319,7 +322,7 @@ public final class EncodingContext {
         // ------- Memory object variables -------
         for (MemoryObject memoryObject : verificationTask.getProgram().getMemory().getObjects()) {
             objAddress.put(memoryObject, exprEncoder.makeVariable(String.format("addrof(%s)", memoryObject), memoryObject.getType()));
-            objSize.put(memoryObject, exprEncoder.makeVariable(String.format("sizeof(%s)", memoryObject), memoryObject.getType()));
+            objSize.put(memoryObject, exprEncoder.makeVariable(String.format("sizeof(%s)", memoryObject), types.getArchType()));
         }
 
         // ------- Event variables  -------

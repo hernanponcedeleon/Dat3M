@@ -152,7 +152,7 @@ public class CLocksTest extends AbstractCTest {
         });
     }
 
-    // @Test
+    @Test
     public void testAssume() throws Exception {
         AssumeSolver s = AssumeSolver.run(contextProvider.get(), proverProvider.get(), taskProvider.get());
         assertEquals(expected, s.getResult());

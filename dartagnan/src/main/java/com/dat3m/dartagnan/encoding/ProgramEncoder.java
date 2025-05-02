@@ -373,7 +373,7 @@ public class ProgramEncoder implements Encoder {
         final List<MemoryObject> memoryObjects = ImmutableList.copyOf(memory.getObjects());
         for (int i = 0; i < memoryObjects.size(); i++) {
             final MemoryObject cur = memoryObjects.get(i);
-            final Expression addrVar = context.address(cur);
+            final Expression addrVar = exprs.makePtrToIntCast(context.address(cur));
             final Expression sizeVar = context.size(cur);
 
             final Expression size;
@@ -406,9 +406,12 @@ public class ProgramEncoder implements Encoder {
                 // First object is placed at alignment
                 enc.add(equate.apply(addrVar, alignment));
             } else {
-                final Expression nextAvailableAddr = exprs.makeAdd(context.address(prev), context.size(prev));
+                final Expression nextAvailableAddr = exprs.makeAdd(
+                        exprs.makePtrToIntCast(context.address(prev)),
+                        context.size(prev)
+                );
                 final Expression nextAlignedAddr = exprs.makeAdd(nextAvailableAddr,
-                        exprs.makeSub(alignment, exprs.makeRem(nextAvailableAddr, alignment,  true))
+                        exprs.makeSub(alignment, exprs.makeRem(nextAvailableAddr, alignment,true))
                 );
 
                 enc.add(equate.apply(addrVar, nextAlignedAddr));

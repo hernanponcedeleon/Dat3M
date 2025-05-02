@@ -20,4 +20,9 @@ public class NullLiteral extends LeafExpressionBase<PointerType> {
     public <T> T accept(ExpressionVisitor<T> visitor) {
         return visitor.visitNullLiteral(this);
     }
+
+    @Override
+    public String toString() {
+        return "nullptr";
+    }
 }

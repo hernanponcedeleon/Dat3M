@@ -1,28 +1,19 @@
 package com.dat3m.dartagnan.program.processing;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Objects;
-
+import com.dat3m.dartagnan.program.Program;
+import com.dat3m.dartagnan.program.processing.compilation.Compilation;
+import com.dat3m.dartagnan.utils.printer.Printer;
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.common.configuration.Option;
 import org.sosy_lab.common.configuration.Options;
 
-import static com.dat3m.dartagnan.configuration.OptionNames.ASSIGNMENT_INLINING;
-import static com.dat3m.dartagnan.configuration.OptionNames.CONSTANT_PROPAGATION;
-import static com.dat3m.dartagnan.configuration.OptionNames.DEAD_ASSIGNMENT_ELIMINATION;
-import static com.dat3m.dartagnan.configuration.OptionNames.DYNAMIC_SPINLOOP_DETECTION;
-import static com.dat3m.dartagnan.configuration.OptionNames.PRINT_PROGRAM_AFTER_COMPILATION;
-import static com.dat3m.dartagnan.configuration.OptionNames.PRINT_PROGRAM_AFTER_PROCESSING;
-import static com.dat3m.dartagnan.configuration.OptionNames.PRINT_PROGRAM_AFTER_SIMPLIFICATION;
-import static com.dat3m.dartagnan.configuration.OptionNames.PRINT_PROGRAM_AFTER_UNROLLING;
-import static com.dat3m.dartagnan.configuration.OptionNames.PRINT_PROGRAM_BEFORE_PROCESSING;
-import static com.dat3m.dartagnan.configuration.OptionNames.REDUCE_SYMMETRY;
-import com.dat3m.dartagnan.program.Program;
-import com.dat3m.dartagnan.program.processing.compilation.Compilation;
-import com.dat3m.dartagnan.utils.printer.Printer;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Objects;
+
+import static com.dat3m.dartagnan.configuration.OptionNames.*;
 
 @Options
 public class ProcessingManager implements ProgramProcessor {
@@ -59,7 +50,7 @@ public class ProcessingManager implements ProgramProcessor {
     @Option(name = PRINT_PROGRAM_BEFORE_PROCESSING,
             description = "Prints the program before any processing.",
             secure = true)
-    private boolean printBeforeProcessing = false;
+    private boolean printBeforeProcessing = true;
 
     @Option(name = PRINT_PROGRAM_AFTER_SIMPLIFICATION,
             description = "Prints the program after simplification.",
@@ -79,7 +70,7 @@ public class ProcessingManager implements ProgramProcessor {
     @Option(name = PRINT_PROGRAM_AFTER_PROCESSING,
             description = "Prints the program after all processing.",
             secure = true)
-    private boolean printAfterProcessing = false;
+    private boolean printAfterProcessing = true;
 
 // ======================================================================
     private ProcessingManager(Configuration config) throws InvalidConfigurationException {
@@ -88,6 +79,7 @@ public class ProcessingManager implements ProgramProcessor {
         final FunctionProcessor sccp = constantPropagation ? SparseConditionalConstantPropagation.fromConfig(config) : null;
         final FunctionProcessor dce = performDce ? DeadAssignmentElimination.fromConfig(config) : null;
         final FunctionProcessor removeDeadJumps = RemoveDeadCondJumps.fromConfig(config);
+        final FunctionProcessor mem2Reg = null; //MemToReg.fromConfig(config);
         programProcessors.addAll(Arrays.asList(
                 printBeforeProcessing ? DebugPrint.withHeader("Before processing", Printer.Mode.ALL) : null,
                 intrinsics.markIntrinsicsPass(),
@@ -109,7 +101,7 @@ public class ProcessingManager implements ProgramProcessor {
                 Compilation.fromConfig(config), // We keep compilation global for now
                 LoopFormVerification.fromConfig(config),
                 printAfterCompilation ? DebugPrint.withHeader("After compilation", Printer.Mode.ALL) : null,
-                ProgramProcessor.fromFunctionProcessor(MemToReg.fromConfig(config), Target.FUNCTIONS, true),
+                ProgramProcessor.fromFunctionProcessor(mem2Reg, Target.FUNCTIONS, true),
                 ProgramProcessor.fromFunctionProcessor(sccp, Target.FUNCTIONS, false),
                 dynamicSpinLoopDetection ? DynamicSpinLoopDetection.fromConfig(config) : null,
                 ProgramProcessor.fromFunctionProcessor(NaiveLoopBoundAnnotation.fromConfig(config), Target.FUNCTIONS, true),
@@ -130,7 +122,7 @@ public class ProcessingManager implements ProgramProcessor {
                 ProgramProcessor.fromFunctionProcessor(
                         FunctionProcessor.chain(
                                 RemoveDeadNullChecks.newInstance(),
-                                MemToReg.fromConfig(config)
+                                mem2Reg
                         ), Target.THREADS, true
                 ),
                 ProgramProcessor.fromFunctionProcessor(

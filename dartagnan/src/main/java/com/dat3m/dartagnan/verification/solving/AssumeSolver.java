@@ -57,6 +57,10 @@ public class AssumeSolver extends ModelChecker {
         WmmEncoder wmmEncoder = WmmEncoder.withContext(context);
         SymmetryEncoder symmetryEncoder = SymmetryEncoder.withContext(context);
 
+        final BooleanFormula progEnc = programEncoder.encodeFullProgram();
+        final BooleanFormula propEnc = propertyEncoder.encodeProperties(task.getProperty());
+        final BooleanFormula wmmEnc = wmmEncoder.encodeFullMemoryModel();
+
         logger.info("Starting encoding using " + ctx.getVersion());
         prover.writeComment("Program encoding");
         prover.addConstraint(programEncoder.encodeFullProgram());
