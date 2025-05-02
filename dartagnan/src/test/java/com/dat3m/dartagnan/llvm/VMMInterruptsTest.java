@@ -50,6 +50,7 @@ public class VMMInterruptsTest extends AbstractCTest {
                 {"c_disable_v1", C11, PASS},
                 {"c_disable_v2", C11, PASS},
                 {"c_disable_v3", C11, PASS},
+                {"c11_ih_after_pthread_exit", C11, FAIL},
                 {"c11_detour_disable_release", C11, PASS},
                 {"c11_detour_disable", C11, FAIL},
                 {"c11_detour", C11, FAIL},
