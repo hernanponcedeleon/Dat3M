@@ -102,8 +102,8 @@ public class GEPToAddition implements ProgramProcessor {
             }
 
             final Expression base = gep.getBase().accept(this);
-            final Expression castOffset = expressions.makeCast(totalOffset, base.getType(), true);
-            return expressions.makeAdd(base, castOffset);
+            final Expression castOffset = expressions.makeCast(totalOffset, types.getArchType(), true);
+            return expressions.makePtrAdd(base, castOffset);
         }
     }
 }

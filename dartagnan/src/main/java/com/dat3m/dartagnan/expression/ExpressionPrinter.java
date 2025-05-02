@@ -13,6 +13,9 @@ import com.dat3m.dartagnan.expression.integers.IntSizeCast;
 import com.dat3m.dartagnan.expression.integers.IntUnaryOp;
 import com.dat3m.dartagnan.expression.misc.GEPExpr;
 import com.dat3m.dartagnan.expression.misc.ITEExpr;
+import com.dat3m.dartagnan.expression.pointers.IntToPtrCast;
+import com.dat3m.dartagnan.expression.pointers.PointerAddExpr;
+import com.dat3m.dartagnan.expression.pointers.PtrToIntCast;
 import com.dat3m.dartagnan.program.Register;
 
 import java.util.Objects;
@@ -115,6 +118,22 @@ public final class ExpressionPrinter implements ExpressionVisitor<String> {
     public String visitGEPExpression(GEPExpr expr) {
         return expr.getOperands().stream().map(this::visit).collect(Collectors.joining(", ", "GEP(", ")"));
     }
+
+    @Override
+    public String visitIntToPtrCastExpression(IntToPtrCast expr) {
+        return String.format("%s to %s", visit(expr.getOperand()), expr.getTargetType());
+    }
+
+    @Override
+    public String visitPtrToIntCastExperssion(PtrToIntCast expr) {
+        return String.format("%s to %s", visit(expr.getOperand()), expr.getTargetType());
+    }
+
+    @Override
+    public String visitPointerAddExpression(PointerAddExpr expr) {
+        return String.format("%s + %s", visit(expr.getBase()), visit(expr.getOffset()));
+    }
+
 
     @Override
     public String visitITEExpression(ITEExpr expr) {

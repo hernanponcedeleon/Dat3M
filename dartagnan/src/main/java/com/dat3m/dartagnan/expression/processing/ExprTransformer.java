@@ -19,6 +19,10 @@ import com.dat3m.dartagnan.expression.integers.IntSizeCast;
 import com.dat3m.dartagnan.expression.integers.IntUnaryExpr;
 import com.dat3m.dartagnan.expression.misc.GEPExpr;
 import com.dat3m.dartagnan.expression.misc.ITEExpr;
+import com.dat3m.dartagnan.expression.pointers.IntToPtrCast;
+import com.dat3m.dartagnan.expression.pointers.PointerAddExpr;
+import com.dat3m.dartagnan.expression.pointers.PtrCmpExpr;
+import com.dat3m.dartagnan.expression.pointers.PtrToIntCast;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
 
 import java.util.ArrayList;
@@ -118,6 +122,33 @@ public abstract class ExprTransformer implements ExpressionVisitor<Expression> {
             offsets.add(offset.accept(this));
         }
         return expressions.makeGetElementPointer(gep.getIndexingType(), base, offsets);
+    }
+
+    @Override
+    public Expression visitPointerAddExpression(PointerAddExpr expr) {
+        return expressions.makePtrAdd(
+                expr.getBase().accept(this),
+                expr.getOffset().accept(this)
+        );
+    }
+
+    @Override
+    public Expression visitPtrCmpExpression(PtrCmpExpr expr) {
+        return expressions.makePtrCmp(
+                expr.getLeft().accept(this),
+                expr.getKind(),
+                expr.getRight().accept(this)
+        );
+    }
+
+    @Override
+    public Expression visitPtrToIntCastExperssion(PtrToIntCast expr) {
+        return expressions.makePtrToIntCast(expr.getOperand().accept(this));
+    }
+
+    @Override
+    public Expression visitIntToPtrCastExpression(IntToPtrCast expr) {
+        return expressions.makeIntToPtrCast(expr.getOperand().accept(this));
     }
 
     @Override

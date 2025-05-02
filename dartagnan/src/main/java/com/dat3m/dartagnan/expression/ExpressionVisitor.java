@@ -11,6 +11,7 @@ import com.dat3m.dartagnan.expression.floats.*;
 import com.dat3m.dartagnan.expression.integers.*;
 import com.dat3m.dartagnan.expression.misc.GEPExpr;
 import com.dat3m.dartagnan.expression.misc.ITEExpr;
+import com.dat3m.dartagnan.expression.pointers.*;
 import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.memory.FinalMemoryValue;
@@ -55,6 +56,11 @@ public interface ExpressionVisitor<TRet> {
 
     // =================================== Pointer ===================================
     default TRet visitGEPExpression(GEPExpr expr) { return visitExpression(expr); }
+    default TRet visitPointerAddExpression(PointerAddExpr expr) { return visitExpression(expr); }
+    default TRet visitIntToPtrCastExpression(IntToPtrCast expr) { return visitCastExpression(expr); }
+    default TRet visitPtrToIntCastExperssion(PtrToIntCast expr) { return visitCastExpression(expr); }
+    default TRet visitPtrCmpExpression(PtrCmpExpr expr) { return visitBinaryExpression(expr); }
+    default TRet visitNullLiteral(NullLiteral lit) { return visitLeafExpression(lit); }
 
     // =================================== Generic ===================================
     default TRet visitITEExpression(ITEExpr expr) { return visitExpression(expr); }
