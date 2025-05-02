@@ -23,8 +23,6 @@ import com.dat3m.dartagnan.program.memory.ScopedPointerVariable;
 import java.util.*;
 import java.util.stream.IntStream;
 
-import static com.dat3m.dartagnan.program.event.EventFactory.newValueFunctionCall;
-
 public class VisitorOpsFunction extends SpirvBaseVisitor<Void> {
 
     private static final int DEFAULT_INPUT_SIZE = 10;
@@ -120,10 +118,10 @@ public class VisitorOpsFunction extends SpirvBaseVisitor<Void> {
         FunctionCall event;
         if (returnType instanceof VoidType) {
             Register register = builder.getUnitRegister();
-            event = newValueFunctionCall(register, function, args);
+            event = EventFactory.newFunctionCall(register, function, args);
         } else {
             Register register = builder.addRegister(id, typeId);
-            event = newValueFunctionCall(register, function, args);
+            event = EventFactory.newFunctionCall(register, function, args);
         }
         if (!builder.hasDefinition(functionId)) {
             forwardCalls.computeIfAbsent(functionId, x -> new HashSet<>()).add(event);

@@ -7,12 +7,12 @@ import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.ThreadGrid;
 import com.dat3m.dartagnan.program.event.Event;
+import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.core.Skip;
 import org.junit.Test;
 
 import java.util.List;
 
-import static com.dat3m.dartagnan.program.event.EventFactory.newValueFunctionCall;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
@@ -69,7 +69,7 @@ public class ProgramBuilderTest {
         builder.startCurrentFunction(new Function("test_func", type, List.of(), 0, null));
         cfBuilder.getOrCreateLabel("test_label");
         cfBuilder.startBlock("test_label");
-        builder.addEvent(newValueFunctionCall(returnReg, called, List.of()));
+        builder.addEvent(EventFactory.newFunctionCall(returnReg, called, List.of()));
         cfBuilder.endBlock(new Skip());
         builder.endCurrentFunction();
 

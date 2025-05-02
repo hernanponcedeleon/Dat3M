@@ -429,8 +429,8 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
                 types.getFunctionType(returnType, Lists.transform(arguments, Expression::getType));
 
         final Event call = currentRegisterName == null ?
-                newValueFunctionCall(function.getOrNewRegister("_", types.getVoidType()), funcType, callTarget, arguments) :
-                newValueFunctionCall(resultRegister, funcType, callTarget, arguments);
+                newFunctionCall(function.getOrNewRegister("_", types.getVoidType()), funcType, callTarget, arguments) :
+                newFunctionCall(resultRegister, funcType, callTarget, arguments);
         block.events.add(call);
         return resultRegister;
     }

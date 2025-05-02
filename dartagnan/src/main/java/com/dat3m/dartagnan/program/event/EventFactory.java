@@ -171,12 +171,12 @@ public class EventFactory {
         return init;
     }
 
-    public static FunctionCall newValueFunctionCall(Register resultRegister, Function function, List<Expression> arguments) {
-        return new FunctionCall(resultRegister, function.getFunctionType(), function, arguments);
+    public static FunctionCall newFunctionCall(Register resultRegister, Function function, List<Expression> arguments) {
+        return newFunctionCall(resultRegister, function.getFunctionType(), function, arguments);
     }
 
-    public static FunctionCall newValueFunctionCall(Register resultRegister, FunctionType funcType,
-                                                         Expression funcPtr, List<Expression> arguments) {
+    public static FunctionCall newFunctionCall(Register resultRegister, FunctionType funcType,
+                                               Expression funcPtr, List<Expression> arguments) {
         return new FunctionCall(resultRegister, funcType, funcPtr, arguments);
     }
 
