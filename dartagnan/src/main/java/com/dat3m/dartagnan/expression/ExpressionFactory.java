@@ -77,6 +77,8 @@ public final class ExpressionFactory {
             return operand;
         } else if (sourceType instanceof IntegerType intType) {
             return makeNEQ(operand, makeZero(intType));
+        } else if (sourceType instanceof PointerType pointerType) {
+            return makePtrCmp(operand, PointerCmpOp.NEQ, makeNullLiteral(pointerType));
         }
         throw new UnsupportedOperationException(String.format("Cannot cast %s to %s.", sourceType, booleanType));
     }
@@ -378,14 +380,17 @@ public final class ExpressionFactory {
     }
 
     public Expression makeCast(Expression expression, Type type, boolean signed) {
+        if (type.equals(expression.getType())) {
+            return expression;
+        }
         if (type instanceof BooleanType) {
             return makeBooleanCast(expression);
         } else if (type instanceof IntegerType integerType) {
             return makeIntegerCast(expression, integerType, signed);
         } else if (type instanceof FloatType floatType) {
             return makeFloatCast(expression, floatType, signed);
-        } else if (type instanceof PointerType && expression.getType().equals(types.getArchType())) {
-            return makeIntToPtrCast(expression);
+        } else if (type instanceof PointerType) {
+            return makeIntToPtrCast(makeCast(expression, types.getArchType()));
         }
         throw new UnsupportedOperationException(String.format("Cast %s into %s unsupported.", expression, type));
     }

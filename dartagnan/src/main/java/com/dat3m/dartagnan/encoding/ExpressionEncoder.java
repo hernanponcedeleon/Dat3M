@@ -4,10 +4,7 @@ import com.dat3m.dartagnan.encoding.formulas.FormulaManagerExt;
 import com.dat3m.dartagnan.encoding.formulas.TupleFormula;
 import com.dat3m.dartagnan.encoding.formulas.TypedFormula;
 import com.dat3m.dartagnan.encoding.formulas.TypedValue;
-import com.dat3m.dartagnan.expression.Expression;
-import com.dat3m.dartagnan.expression.ExpressionVisitor;
-import com.dat3m.dartagnan.expression.LeafExpression;
-import com.dat3m.dartagnan.expression.Type;
+import com.dat3m.dartagnan.expression.*;
 import com.dat3m.dartagnan.expression.aggregates.AggregateCmpExpr;
 import com.dat3m.dartagnan.expression.aggregates.ConstructExpr;
 import com.dat3m.dartagnan.expression.aggregates.ExtractExpr;
@@ -181,6 +178,8 @@ public class ExpressionEncoder {
             return convertToBool(form);
         } else if (targetType instanceof IntegerType intType) {
             return convertToInteger(form, intType);
+        } else if (targetType instanceof PointerType pointerType) {
+            return convertToPointer(form, pointerType);
         } else {
             final String error = String.format("Cannot convert typed formula %s to type %s", form, targetType);
             throw new UnsupportedOperationException(error);
@@ -203,6 +202,9 @@ public class ExpressionEncoder {
                 final BitvectorFormula zero = bvmgr.makeBitvector(bvmgr.getLength(bvForm), 0);
                 return new TypedFormula<>(types.getBooleanType(), bvmgr.greaterThan(bvForm, zero, false));
             }
+        } else if(form.type() instanceof PointerType) {
+            final ExpressionFactory exprs = context.getExpressionFactory();
+            return visitor.encodeBooleanExpr(exprs.makeBooleanCast(form));
         } else {
             final String error = String.format("Cannot convert typed formula %s to type %s", form, types.getBooleanType());
             throw new UnsupportedOperationException(error);
@@ -243,10 +245,17 @@ public class ExpressionEncoder {
                         bvmgr.extend(bvForm, targetWidth - sourceWidth, false);
                 return new TypedFormula<IntegerType, Formula>(targetType, result);
             }
+        } else if (form.type() instanceof PointerType) {
+            final ExpressionFactory exprs = context.getExpressionFactory();
+            return visitor.encodeIntegerExpr(exprs.makeIntegerCast(exprs.makePtrToIntCast(form), targetType, false));
         } else {
             final String error = String.format("Cannot convert typed formula %s to type %s", form, targetType);
             throw new UnsupportedOperationException(error);
         }
+    }
+
+    private TypedFormula<PointerType, ?> convertToPointer(TypedFormula<?, ?> form, PointerType pointerType) {
+        return visitor.encodePointerExpr(context.getExpressionFactory().makeCast(form, pointerType));
     }
 
     public enum ConversionMode {

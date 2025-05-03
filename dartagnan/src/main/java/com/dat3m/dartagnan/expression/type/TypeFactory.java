@@ -169,7 +169,8 @@ public final class TypeFactory {
     }
 
     public int getAlignment(Type type) {
-        if (type instanceof BooleanType || type instanceof IntegerType || type instanceof FloatType) {
+        if (type instanceof BooleanType || type instanceof IntegerType || type instanceof FloatType
+            || type instanceof PointerType) {
             return getMemorySizeInBytes(type);
         }
         if (type instanceof ArrayType arrayType) {
