@@ -6,6 +6,7 @@ import com.google.common.collect.Iterables;
 import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.Formula;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.stream.IntStream;
 
@@ -44,6 +45,10 @@ public final class TupleFormulaManager {
         return extract;
     }
 
+    public TupleFormula insert(TupleFormula f, Formula value, int index) {
+        return insert(f, value, ImmutableList.of(index));
+    }
+
     public TupleFormula insert(TupleFormula f, Formula value, Iterable<Integer> indices) {
         final int index = Iterables.getFirst(indices, -1);
         Preconditions.checkArgument(0 <= index && index < f.elements.size());
@@ -57,6 +62,10 @@ public final class TupleFormulaManager {
                 )
                 .collect(ImmutableList.toImmutableList());
         return makeTuple(newElements);
+    }
+
+    public TupleFormula makeTuple(Formula... elements) {
+        return makeTuple(Arrays.asList(elements));
     }
 
     public TupleFormula makeTuple(List<Formula> elements) {

@@ -2,8 +2,8 @@ package com.dat3m.dartagnan.program.memory;
 
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
-import com.dat3m.dartagnan.expression.Type;
 import com.dat3m.dartagnan.expression.type.IntegerType;
+import com.dat3m.dartagnan.expression.type.PointerType;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.program.event.core.Alloc;
 import com.google.common.base.Preconditions;
@@ -14,7 +14,7 @@ import java.util.ArrayList;
 public class Memory {
 
     private final ArrayList<MemoryObject> objects = new ArrayList<>();
-    private final Type ptrType = TypeFactory.getInstance().getPointerType();
+    private final PointerType ptrType = TypeFactory.getInstance().getPointerType();
     private final IntegerType archType = TypeFactory.getInstance().getArchType();
     private final Expression defaultAlignment = ExpressionFactory.getInstance().makeValue(8, archType);
 

@@ -19,6 +19,8 @@ public class TupleFormula implements Formula {
         this.elements = ImmutableList.copyOf(elements);
     }
 
+    public int getSize() { return elements.size(); }
+
     @Override
     public String toString() {
         return elements.stream()

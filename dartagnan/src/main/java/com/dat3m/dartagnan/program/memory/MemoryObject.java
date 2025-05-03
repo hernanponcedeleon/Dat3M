@@ -3,7 +3,6 @@ package com.dat3m.dartagnan.program.memory;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionKind;
 import com.dat3m.dartagnan.expression.ExpressionVisitor;
-import com.dat3m.dartagnan.expression.Type;
 import com.dat3m.dartagnan.expression.aggregates.ConstructExpr;
 import com.dat3m.dartagnan.expression.base.LeafExpressionBase;
 import com.dat3m.dartagnan.expression.integers.IntLiteral;
@@ -19,7 +18,7 @@ import static com.google.common.base.Preconditions.checkState;
 /**
  * Associated with an array of memory locations.
  */
-public class MemoryObject extends LeafExpressionBase<Type> {
+public class MemoryObject extends LeafExpressionBase<PointerType> {
 
     // TODO: (TH) I think <id> is mostly useless.
     //  Its only benefit is that we can have different memory objects with the same name (but why would we?)
@@ -34,7 +33,7 @@ public class MemoryObject extends LeafExpressionBase<Type> {
 
     private final Map<Integer, Expression> initialValues = new TreeMap<>();
 
-    MemoryObject(int id, Expression size, Expression alignment, Alloc allocationSite, Type ptrType) {
+    MemoryObject(int id, Expression size, Expression alignment, Alloc allocationSite, PointerType ptrType) {
         super(ptrType);
         final TypeFactory types = TypeFactory.getInstance();
         Preconditions.checkArgument(size.getType() instanceof IntegerType, "Size %s must be of integer type.", size);

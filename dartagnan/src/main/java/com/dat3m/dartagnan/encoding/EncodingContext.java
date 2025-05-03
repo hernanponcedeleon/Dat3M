@@ -56,6 +56,13 @@ public final class EncodingContext {
 
     private final ExpressionFactory exprs = ExpressionFactory.getInstance();
 
+    public enum ProvenanceModel {
+        NO,
+        SIMPLE
+    }
+
+    ProvenanceModel provenance = ProvenanceModel.SIMPLE;
+
     @Option(
             name=IDL_TO_SAT,
             description = "Use SAT-based encoding for totality and acyclicity.",
@@ -321,7 +328,7 @@ public final class EncodingContext {
 
         // ------- Memory object variables -------
         for (MemoryObject memoryObject : verificationTask.getProgram().getMemory().getObjects()) {
-            objAddress.put(memoryObject, exprEncoder.makeVariable(String.format("addrof(%s)", memoryObject), memoryObject.getType()));
+            objAddress.put(memoryObject, exprEncoder.encodeFinal(memoryObject));
             objSize.put(memoryObject, exprEncoder.makeVariable(String.format("sizeof(%s)", memoryObject), types.getArchType()));
         }
 
