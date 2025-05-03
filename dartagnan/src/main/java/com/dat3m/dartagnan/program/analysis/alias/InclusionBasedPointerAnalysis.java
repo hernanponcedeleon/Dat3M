@@ -4,6 +4,8 @@ import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionVisitor;
 import com.dat3m.dartagnan.expression.integers.*;
 import com.dat3m.dartagnan.expression.misc.ITEExpr;
+import com.dat3m.dartagnan.expression.pointers.PointerAddExpr;
+import com.dat3m.dartagnan.expression.utils.IntegerHelper;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.analysis.ReachingDefinitionsAnalysis;
@@ -987,6 +989,36 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
                 }
                 default -> null;
             };
+        }
+
+        @Override
+        public Result visitPointerAddExpression(PointerAddExpr x) {
+            final Result left = x.getBase().accept(this);
+            final Result right = x.getOffset().accept(this);
+            if (left != null && left.isConstant() && right != null && right.isConstant()) {
+                // TODO: Make sure that the type of normalization does not break this code.
+                //  Maybe always do signed normalization?
+
+                final BigInteger result = IntegerHelper.add(left.offset, right.offset, 64);
+                return new Result(null, null, result, List.of());
+            }
+
+            if (left == null || right == null || left.address != null && right.address != null) {
+                return null;
+            }
+            final MemoryObject base = left.address != null ? left.address : right.address;
+            final BigInteger offset = IntegerHelper.add(left.offset, right.offset, 64);
+            if (base != null) {
+                final List<Integer> leftAlignment = compose(left.alignment, left.register);
+                final List<Integer> rightAlignment = compose(right.alignment, right.register);
+                return new Result(base, null, offset, compose(leftAlignment, rightAlignment));
+            }
+            if (left.register != null && right.register != null) {
+                return null;
+            }
+            final Register register = left.register != null ? left.register : right.register;
+            final List<Integer> alignment = compose(left.alignment, right.alignment);
+            return new Result(null, register, offset, alignment);
         }
 
         @Override

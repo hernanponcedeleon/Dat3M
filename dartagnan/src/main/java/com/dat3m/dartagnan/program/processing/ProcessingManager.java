@@ -50,7 +50,7 @@ public class ProcessingManager implements ProgramProcessor {
     @Option(name = PRINT_PROGRAM_BEFORE_PROCESSING,
             description = "Prints the program before any processing.",
             secure = true)
-    private boolean printBeforeProcessing = true;
+    private boolean printBeforeProcessing = false;
 
     @Option(name = PRINT_PROGRAM_AFTER_SIMPLIFICATION,
             description = "Prints the program after simplification.",
@@ -70,7 +70,7 @@ public class ProcessingManager implements ProgramProcessor {
     @Option(name = PRINT_PROGRAM_AFTER_PROCESSING,
             description = "Prints the program after all processing.",
             secure = true)
-    private boolean printAfterProcessing = true;
+    private boolean printAfterProcessing = false;
 
 // ======================================================================
     private ProcessingManager(Configuration config) throws InvalidConfigurationException {
@@ -79,7 +79,7 @@ public class ProcessingManager implements ProgramProcessor {
         final FunctionProcessor sccp = constantPropagation ? SparseConditionalConstantPropagation.fromConfig(config) : null;
         final FunctionProcessor dce = performDce ? DeadAssignmentElimination.fromConfig(config) : null;
         final FunctionProcessor removeDeadJumps = RemoveDeadCondJumps.fromConfig(config);
-        final FunctionProcessor mem2Reg = null; //MemToReg.fromConfig(config);
+        final FunctionProcessor mem2Reg = MemToReg.fromConfig(config);
         programProcessors.addAll(Arrays.asList(
                 printBeforeProcessing ? DebugPrint.withHeader("Before processing", Printer.Mode.ALL) : null,
                 intrinsics.markIntrinsicsPass(),

@@ -656,7 +656,11 @@ public class ExpressionEncoder {
             final TypedFormula<PointerType, ?> left = encodePointerExpr(expr.getLeft());
             final TypedFormula<PointerType, ?> right = encodePointerExpr(expr.getRight());
 
-            return new TypedFormula<>(types.getBooleanType(), fmgr.equal(left.formula(), right.formula()));
+            final BooleanFormula result = switch (expr.getKind()) {
+                case EQ -> fmgr.equal(left.formula(), right.formula());
+                case NEQ -> bmgr.not(fmgr.equal(left.formula(), right.formula()));
+            };
+            return new TypedFormula<>(types.getBooleanType(), result);
         }
 
         @Override
