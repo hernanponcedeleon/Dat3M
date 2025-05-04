@@ -1,4 +1,4 @@
-package com.dat3m.dartagnan.encoding.formulas;
+package com.dat3m.dartagnan.smt;
 
 import com.google.common.collect.ImmutableList;
 import org.sosy_lab.java_smt.api.Formula;

@@ -1,11 +1,6 @@
-package com.dat3m.dartagnan.verification;
+package com.dat3m.dartagnan.encoding;
 
 import com.dat3m.dartagnan.configuration.Property;
-import com.dat3m.dartagnan.encoding.EncodingContext;
-import com.dat3m.dartagnan.encoding.ExpressionEncoder;
-import com.dat3m.dartagnan.encoding.formulas.ModelExt;
-import com.dat3m.dartagnan.encoding.formulas.TypedFormula;
-import com.dat3m.dartagnan.encoding.formulas.TypedValue;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.Type;
 import com.dat3m.dartagnan.expression.type.BooleanType;
@@ -17,6 +12,7 @@ import com.dat3m.dartagnan.program.event.core.Assert;
 import com.dat3m.dartagnan.program.event.core.CondJump;
 import com.dat3m.dartagnan.program.event.core.MemoryCoreEvent;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
+import com.dat3m.dartagnan.smt.ModelExt;
 import com.dat3m.dartagnan.wmm.Relation;
 import com.dat3m.dartagnan.wmm.axiom.Axiom;
 import com.google.common.base.Preconditions;

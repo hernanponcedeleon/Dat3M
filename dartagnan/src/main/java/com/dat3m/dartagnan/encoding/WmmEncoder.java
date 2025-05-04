@@ -1,7 +1,6 @@
 package com.dat3m.dartagnan.encoding;
 
 import com.dat3m.dartagnan.configuration.Arch;
-import com.dat3m.dartagnan.encoding.formulas.ModelExt;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.integers.IntLiteral;
 import com.dat3m.dartagnan.program.Program;
@@ -11,9 +10,9 @@ import com.dat3m.dartagnan.program.event.core.Load;
 import com.dat3m.dartagnan.program.event.core.MemoryCoreEvent;
 import com.dat3m.dartagnan.program.event.core.NamedBarrier;
 import com.dat3m.dartagnan.program.event.core.RMWStoreExclusive;
+import com.dat3m.dartagnan.smt.ModelExt;
 import com.dat3m.dartagnan.utils.Utils;
 import com.dat3m.dartagnan.utils.dependable.DependencyGraph;
-import com.dat3m.dartagnan.verification.IREvaluator;
 import com.dat3m.dartagnan.wmm.Constraint;
 import com.dat3m.dartagnan.wmm.Definition;
 import com.dat3m.dartagnan.wmm.Relation;

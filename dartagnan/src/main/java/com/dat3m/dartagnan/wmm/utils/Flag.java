@@ -1,6 +1,6 @@
 package com.dat3m.dartagnan.wmm.utils;
 
-import com.dat3m.dartagnan.encoding.formulas.FormulaManagerExt;
+import com.dat3m.dartagnan.smt.FormulaManagerExt;
 import com.google.common.collect.ImmutableSet;
 import org.sosy_lab.java_smt.api.BooleanFormula;
 

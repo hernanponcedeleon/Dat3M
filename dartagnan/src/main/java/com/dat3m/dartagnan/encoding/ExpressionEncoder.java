@@ -1,8 +1,5 @@
 package com.dat3m.dartagnan.encoding;
 
-import com.dat3m.dartagnan.encoding.formulas.FormulaManagerExt;
-import com.dat3m.dartagnan.encoding.formulas.TupleFormula;
-import com.dat3m.dartagnan.encoding.formulas.TypedFormula;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionVisitor;
 import com.dat3m.dartagnan.expression.LeafExpression;
@@ -24,6 +21,8 @@ import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.memory.FinalMemoryValue;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.dat3m.dartagnan.program.misc.NonDetValue;
+import com.dat3m.dartagnan.smt.FormulaManagerExt;
+import com.dat3m.dartagnan.smt.TupleFormula;
 import com.google.common.base.Preconditions;
 import org.sosy_lab.java_smt.api.*;
 import org.sosy_lab.java_smt.api.NumeralFormula.IntegerFormula;

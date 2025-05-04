@@ -1,4 +1,4 @@
-package com.dat3m.dartagnan.encoding.formulas;
+package com.dat3m.dartagnan.encoding;
 
 import com.dat3m.dartagnan.expression.Type;
 import com.google.common.base.Preconditions;

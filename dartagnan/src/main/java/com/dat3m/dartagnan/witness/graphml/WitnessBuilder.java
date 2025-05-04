@@ -1,7 +1,7 @@
 package com.dat3m.dartagnan.witness.graphml;
 
 import com.dat3m.dartagnan.encoding.EncodingContext;
-import com.dat3m.dartagnan.encoding.formulas.ModelExt;
+import com.dat3m.dartagnan.encoding.IREvaluator;
 import com.dat3m.dartagnan.expression.booleans.BoolLiteral;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Thread;
@@ -13,8 +13,8 @@ import com.dat3m.dartagnan.program.event.core.Store;
 import com.dat3m.dartagnan.program.event.lang.svcomp.EndAtomic;
 import com.dat3m.dartagnan.program.event.metadata.SourceLocation;
 import com.dat3m.dartagnan.program.event.metadata.UnrollingBound;
+import com.dat3m.dartagnan.smt.ModelExt;
 import com.dat3m.dartagnan.utils.Result;
-import com.dat3m.dartagnan.verification.IREvaluator;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.common.configuration.Option;
 import org.sosy_lab.common.configuration.Options;
