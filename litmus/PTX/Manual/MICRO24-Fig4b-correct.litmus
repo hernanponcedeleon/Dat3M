@@ -3,7 +3,7 @@ PTX MICRO24-Fig4b-correct
 Expected synchronization without the optimization proposed in Fig4.b from Over-synchronization in GPU Programs
 
 > ./scripts/dartagnan -cat ptx-v6.0 litmus/PTX/Manual/MICRO24-Fig4b-correct.litmus
-UNKNOWN // <-- means "No, but loops where not fully unrolled"
+UNKNOWN // <-- means "No, but loops were not fully unrolled"
 "
 {
 sum=0;
