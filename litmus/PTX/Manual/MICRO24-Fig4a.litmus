@@ -1,6 +1,6 @@
 PTX MICRO24-Fig4a
 "
-Unsound optimization proposed in Fig4.a from Over-synchronization in GPU Programs
+Unsound optimization (wrt MICRO24-Fig4a-correct) proposed in Fig4.a from Over-synchronization in GPU Programs
 - Volatile operations are equivalent to relaxed.sys
 - membar is a synonym for fence.sc
 

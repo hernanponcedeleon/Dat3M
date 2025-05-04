@@ -1,6 +1,6 @@
 PTX MICRO24-Fig4b
 "
-Unsound optimization proposed in Fig4.b from Over-synchronization in GPU Programs
+Unsound optimization (wrt MICRO24-Fig4b-correct) proposed in Fig4.b from Over-synchronization in GPU Programs
 
 > ./scripts/dartagnan -cat ptx-v6.0 litmus/PTX/Manual/MICRO24-Fig4b.litmus
 Condition exists (1:r1 == bv64(1)) && (1:r2 != bv64(1))
