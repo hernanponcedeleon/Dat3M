@@ -138,11 +138,17 @@ public class ExpressionEncoder {
     // ====================================================================================
     // Utility
 
+    public enum ConversionMode {
+        NO,
+        LEFT_TO_RIGHT,
+        RIGHT_TO_LEFT,
+    }
+
     public BooleanFormula equal(Expression left, Expression right, ConversionMode cMode) {
-        if (cMode == ConversionMode.LEFT_TO_RIGHT) {
-            return equal(right, left, ConversionMode.RIGHT_TO_LEFT);
-        } else if (cMode == ConversionMode.RIGHT_TO_LEFT) {
-            right = convert(encodeFinal(right), left.getType());
+        switch (cMode) {
+            case NO -> {}
+            case LEFT_TO_RIGHT -> left = convert(encodeFinal(left), right.getType());
+            case RIGHT_TO_LEFT -> right = convert(encodeFinal(right), left.getType());
         }
 
         return encodeBooleanFinal(context.getExpressionFactory().makeEQ(left, right)).formula();
@@ -163,91 +169,16 @@ public class ExpressionEncoder {
     // ====================================================================================
     // (Dynamic) Conversation operations
 
-    // TODO 1: The conversion operation should be an IR expression, then these explicit methods beecome unnecessary.
-    // TODO 2: We might want to have an universal intermediate type T with the following properties:
+    // TODO: We might want to have an universal intermediate type T with the following properties:
     //  (1) every other type has a lossless conversion to T
     //  (2) T can be converted to every other type (possibly with loss)
     //  (3) A round-trip through T is always lossless.
     //  See comments on TypedFormula class for more details.
     public TypedFormula<?, ?> convert(TypedFormula<?, ?> form, Type targetType) {
-        if (form.type() == targetType) {
+        if (form.type().equals(targetType)) {
             return form;
-        } else if (targetType instanceof BooleanType) {
-            return convertToBool(form);
-        } else if (targetType instanceof IntegerType intType) {
-            return convertToInteger(form, intType);
-        } else {
-            final String error = String.format("Cannot convert typed formula %s to type %s", form, targetType);
-            throw new UnsupportedOperationException(error);
         }
-    }
-
-    @SuppressWarnings("unchecked")
-    public TypedFormula<BooleanType, BooleanFormula> convertToBool(TypedFormula<?, ?> form) {
-        if (form.type() instanceof BooleanType) {
-            return (TypedFormula<BooleanType, BooleanFormula>) form;
-        } else if (form.type() instanceof IntegerType) {
-            if (context.useIntegers) {
-                final IntegerFormulaManager imgr = integerFormulaManager();
-                final IntegerFormula intForm = (IntegerFormula) form.formula();
-                final IntegerFormula zero = imgr.makeNumber(0);
-                return new TypedFormula<>(types.getBooleanType(), imgr.greaterThan(intForm, zero));
-            } else {
-                final BitvectorFormulaManager bvmgr = bitvectorFormulaManager();
-                final BitvectorFormula bvForm = (BitvectorFormula) form.formula();
-                final BitvectorFormula zero = bvmgr.makeBitvector(bvmgr.getLength(bvForm), 0);
-                return new TypedFormula<>(types.getBooleanType(), bvmgr.greaterThan(bvForm, zero, false));
-            }
-        } else {
-            final String error = String.format("Cannot convert typed formula %s to type %s", form, types.getBooleanType());
-            throw new UnsupportedOperationException(error);
-        }
-    }
-
-    @SuppressWarnings("unchecked")
-    public TypedFormula<IntegerType, ?> convertToInteger(TypedFormula<?, ?> form, IntegerType targetType) {
-        if (form.type() == targetType) {
-            return (TypedFormula<IntegerType, ?>) form;
-        } else if (form.type() instanceof BooleanType) {
-            final BooleanFormula boolForm = (BooleanFormula) form.formula();
-            final Formula zero;
-            final Formula one;
-            if (context.useIntegers) {
-                final IntegerFormulaManager imgr = integerFormulaManager();
-                zero = imgr.makeNumber(0);
-                one = imgr.makeNumber(1);
-            } else {
-                final BitvectorFormulaManager bvmgr = bitvectorFormulaManager();
-                zero = bvmgr.makeBitvector(targetType.getBitWidth(), 0);
-                one = bvmgr.makeBitvector(targetType.getBitWidth(), 1);
-            }
-            return new TypedFormula<>(targetType, fmgr.ifThenElse(boolForm, one, zero));
-        } else if (form.type() instanceof IntegerType sourceType) {
-            if (context.useIntegers) {
-                // TODO: Add truncation
-                return new TypedFormula<IntegerType, Formula>(targetType, form.formula());
-            } else {
-                final BitvectorFormulaManager bvmgr = bitvectorFormulaManager();
-                final BitvectorFormula bvForm = (BitvectorFormula) form.formula();
-                final int sourceWidth = sourceType.getBitWidth();
-                final int targetWidth = targetType.getBitWidth();
-
-                // NOTE: The conversion is unsigned here
-                final BitvectorFormula result = sourceWidth >= targetWidth ?
-                        bvmgr.extract(bvForm, targetWidth - 1, 0) :
-                        bvmgr.extend(bvForm, targetWidth - sourceWidth, false);
-                return new TypedFormula<IntegerType, Formula>(targetType, result);
-            }
-        } else {
-            final String error = String.format("Cannot convert typed formula %s to type %s", form, targetType);
-            throw new UnsupportedOperationException(error);
-        }
-    }
-
-    public enum ConversionMode {
-        NO,
-        LEFT_TO_RIGHT,
-        RIGHT_TO_LEFT,
+        return context.getExpressionFactory().makeCast(form, targetType).accept(visitor);
     }
 
     // ====================================================================================
@@ -293,7 +224,7 @@ public class ExpressionEncoder {
 
         @Override
         public TypedFormula<?, ?> visitLeafExpression(LeafExpression expr) {
-            if (expr instanceof TypedFormula<?,?> typedFormula) {
+            if (expr instanceof TypedFormula<?, ?> typedFormula) {
                 return typedFormula;
             }
             return visitExpression(expr);
@@ -609,7 +540,7 @@ public class ExpressionEncoder {
 
         @Override
         public TypedFormula<?, ?> visitMemoryObject(MemoryObject memObj) {
-            return context.address(memObj);
+            return makeVariable(String.format("addrof(%s)", memObj), memObj.getType());
         }
 
         @Override

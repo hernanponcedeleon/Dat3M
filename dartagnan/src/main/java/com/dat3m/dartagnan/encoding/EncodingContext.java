@@ -6,6 +6,8 @@ import com.dat3m.dartagnan.encoding.formulas.TypedValue;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.Type;
+import com.dat3m.dartagnan.expression.type.IntegerType;
+import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.analysis.BranchEquivalence;
 import com.dat3m.dartagnan.program.analysis.ExecutionAnalysis;
@@ -80,7 +82,7 @@ public final class EncodingContext {
     // TODO: Once we have a PointerType, this needs to get updated.
     private final Map<Event, TypedFormula<?, ?>> addresses = new HashMap<>();
     private final Map<MemoryObject, TypedFormula<?, ?>> objAddress = new HashMap<>();
-    private final Map<MemoryObject, TypedFormula<?, ?>> objSize = new HashMap<>();
+    private final Map<MemoryObject, TypedFormula<IntegerType, ?>> objSize = new HashMap<>();
 
     private EncodingContext(VerificationTask t, Context a, FormulaManager m) {
         verificationTask = checkNotNull(t);
@@ -228,7 +230,7 @@ public final class EncodingContext {
 
     public TypedFormula<?, ?> address(MemoryObject memoryObject) { return objAddress.get(memoryObject); }
 
-    public TypedFormula<?, ?> size(MemoryObject memoryObject) {
+    public TypedFormula<IntegerType, ?> size(MemoryObject memoryObject) {
         return objSize.get(memoryObject);
     }
 
@@ -318,8 +320,10 @@ public final class EncodingContext {
 
         // ------- Memory object variables -------
         for (MemoryObject memoryObject : verificationTask.getProgram().getMemory().getObjects()) {
-            objAddress.put(memoryObject, exprEncoder.makeVariable(String.format("addrof(%s)", memoryObject), memoryObject.getType()));
-            objSize.put(memoryObject, exprEncoder.makeVariable(String.format("sizeof(%s)", memoryObject), memoryObject.getType()));
+            objAddress.put(memoryObject, exprEncoder.encodeFinal(memoryObject));
+            objSize.put(memoryObject, exprEncoder.makeVariable(String.format("sizeof(%s)", memoryObject),
+                    TypeFactory.getInstance().getArchType())
+            );
         }
 
         // ------- Event variables  -------
@@ -334,8 +338,7 @@ public final class EncodingContext {
             if (e instanceof RegWriter rw) {
                 Register register = rw.getResultRegister();
                 String name = register.getName() + "(" + e.getGlobalId() + "_result)";
-                Type type = register.getType();
-                r = exprEncoder.makeVariable(name, type);
+                r = exprEncoder.makeVariable(name, register.getType());
             } else {
                 r = null;
             }
