@@ -3,6 +3,7 @@ package com.dat3m.dartagnan.verification.solving;
 import com.dat3m.dartagnan.configuration.Baseline;
 import com.dat3m.dartagnan.configuration.Property;
 import com.dat3m.dartagnan.encoding.*;
+import com.dat3m.dartagnan.encoding.formulas.ModelExt;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.analysis.BranchEquivalence;
@@ -50,7 +51,10 @@ import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.common.configuration.Option;
 import org.sosy_lab.common.configuration.Options;
-import org.sosy_lab.java_smt.api.*;
+import org.sosy_lab.java_smt.api.BooleanFormula;
+import org.sosy_lab.java_smt.api.BooleanFormulaManager;
+import org.sosy_lab.java_smt.api.SolverContext;
+import org.sosy_lab.java_smt.api.SolverException;
 
 import java.text.DecimalFormat;
 import java.util.*;
@@ -399,7 +403,8 @@ public class RefinementSolver extends ModelChecker {
 
             // ------------------------- Debugging/Logging -------------------------
             if (generateGraphvizDebugFiles) {
-                final ExecutionModelNext model = new ExecutionModelManager().buildExecutionModel(contextWithFullWmm, prover.getModel());
+                final ExecutionModelNext model = new ExecutionModelManager().buildExecutionModel(contextWithFullWmm,
+                        new ModelExt(prover.getModel()));
                 generateGraphvizFiles(task, model, trace.size(), iteration.inconsistencyReasons);
             }
             if (logger.isDebugEnabled()) {
@@ -468,7 +473,7 @@ public class RefinementSolver extends ModelChecker {
             // ------------ CAAT solving ------------
             lastTime = System.currentTimeMillis();
             final WMMSolver.Result solverResult;
-            try (Model model = prover.getModel()) {
+            try (ModelExt model = new ModelExt(prover.getModel())) {
                 solverResult = solver.check(model);
             } catch (SolverException e) {
                 logger.error(e);

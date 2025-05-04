@@ -1,6 +1,7 @@
 package com.dat3m.dartagnan.verification.model;
 
 import com.dat3m.dartagnan.encoding.EncodingContext;
+import com.dat3m.dartagnan.encoding.formulas.ModelExt;
 import com.dat3m.dartagnan.encoding.formulas.TypedFormula;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.Thread;
@@ -27,7 +28,6 @@ import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
 import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.Formula;
-import org.sosy_lab.java_smt.api.Model;
 
 import java.math.BigInteger;
 import java.util.*;
@@ -43,7 +43,7 @@ public class ExecutionModelManager {
 
     private ExecutionModelNext executionModel;
     private EncodingContext context;
-    private Model model;
+    private ModelExt model;
     private Wmm wmm;
     private EventDomainNext domain;
 
@@ -55,7 +55,7 @@ public class ExecutionModelManager {
         edgeModelCache = new HashMap<>();
     }
 
-    public ExecutionModelNext buildExecutionModel(EncodingContext context, Model model) {
+    public ExecutionModelNext buildExecutionModel(EncodingContext context, ModelExt model) {
         executionModel = new ExecutionModelNext();
 
         this.context = context;
@@ -270,11 +270,11 @@ public class ExecutionModelManager {
     }
 
     private Object evaluateByModel(Formula formula) {
-        return context.evaluate(formula, model);
+        return model.evaluate(formula);
     }
 
     private Object evaluateByModel(TypedFormula<?, ?> formula) {
-        return context.evaluate(formula.formula(), model);
+        return evaluateByModel(formula.formula());
     }
 
 

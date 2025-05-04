@@ -1,6 +1,7 @@
 package com.dat3m.dartagnan.encoding;
 
 import com.dat3m.dartagnan.encoding.formulas.FormulaManagerExt;
+import com.dat3m.dartagnan.encoding.formulas.ModelExt;
 import com.dat3m.dartagnan.encoding.formulas.TypedFormula;
 import com.dat3m.dartagnan.encoding.formulas.TypedValue;
 import com.dat3m.dartagnan.expression.Expression;
@@ -28,7 +29,9 @@ import org.apache.logging.log4j.Logger;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.common.configuration.Option;
 import org.sosy_lab.common.configuration.Options;
-import org.sosy_lab.java_smt.api.*;
+import org.sosy_lab.java_smt.api.BooleanFormula;
+import org.sosy_lab.java_smt.api.BooleanFormulaManager;
+import org.sosy_lab.java_smt.api.FormulaManager;
 import org.sosy_lab.java_smt.api.NumeralFormula.IntegerFormula;
 
 import java.util.HashMap;
@@ -141,15 +144,11 @@ public final class EncodingContext {
 
     // TODO: Unclear if these convenience functions are necessary.
 
-    public Object evaluate(Formula formula, Model model) {
-        return formulaManager.evaluate(formula, model);
-    }
-
-    public <TType extends Type> TypedValue<TType, ?> evaluate(TypedFormula<TType, ?> formula, Model model) {
+    public <TType extends Type> TypedValue<TType, ?> evaluate(TypedFormula<TType, ?> formula, ModelExt model) {
         return exprEncoder.evaluate(formula, model);
     }
 
-    public TypedValue<?, ?> evaluateAt(Expression expr, Event at, Model model) {
+    public TypedValue<?, ?> evaluateAt(Expression expr, Event at, ModelExt model) {
         return exprEncoder.evaluateAt(expr, at, model);
     }
 

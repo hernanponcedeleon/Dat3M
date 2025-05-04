@@ -92,18 +92,4 @@ public class FormulaManagerExt {
         return getBooleanFormulaManager().ifThenElse(guard, thenF, elseF);
     }
 
-    // =====================================================================================
-    // Model
-
-    public Object evaluate(Formula f, Model model) {
-        if (f instanceof TupleFormula tf) {
-            return evaluate(tf, model);
-        }
-        return model.evaluate(f);
-    }
-
-    public TupleValue evaluate(TupleFormula tupleFormula, Model model) {
-        return new TupleValue(tupleFormula.elements.stream().map(v -> evaluate(v, model)).toList());
-    }
-
 }

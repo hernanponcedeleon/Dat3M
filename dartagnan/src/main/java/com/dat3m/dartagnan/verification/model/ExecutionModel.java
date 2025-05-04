@@ -2,6 +2,7 @@ package com.dat3m.dartagnan.verification.model;
 
 import com.dat3m.dartagnan.encoding.EncodingContext;
 import com.dat3m.dartagnan.encoding.ExpressionEncoder;
+import com.dat3m.dartagnan.encoding.formulas.ModelExt;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.Thread;
@@ -26,7 +27,6 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.java_smt.api.BooleanFormula;
-import org.sosy_lab.java_smt.api.Model;
 
 import java.math.BigInteger;
 import java.util.*;
@@ -49,7 +49,7 @@ public class ExecutionModel {
     private final EncodingContext ctx;
 
     // ============= Model specific  =============
-    private Model model;
+    private ModelExt model;
     private Filter eventFilter;
     private boolean extractCoherences;
 
@@ -154,7 +154,7 @@ public class ExecutionModel {
     }
 
     // Model specific data
-    public Model getModel() {
+    public ModelExt getModel() {
         return model;
     }
     public EncodingContext getContext() {
@@ -216,15 +216,15 @@ public class ExecutionModel {
     //========================== Initialization =========================
 
 
-    public void initialize(Model model) {
+    public void initialize(ModelExt model) {
         initialize(model, true);
     }
 
-    public void initialize(Model model, boolean extractCoherences) {
+    public void initialize(ModelExt model, boolean extractCoherences) {
         initialize(model, Filter.byTag(Tag.VISIBLE), extractCoherences);
     }
 
-    public void initialize(Model model, Filter eventFilter, boolean extractCoherences) {
+    public void initialize(ModelExt model, Filter eventFilter, boolean extractCoherences) {
         // We populate here, instead of on construction,
         // to reuse allocated data structures (since these data structures already adapted
         // their capacity in previous iterations, and thus we should have less overhead in future populations)

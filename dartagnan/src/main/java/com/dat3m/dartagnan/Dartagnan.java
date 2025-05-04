@@ -5,6 +5,7 @@ import com.dat3m.dartagnan.configuration.ProgressModel;
 import com.dat3m.dartagnan.configuration.Property;
 import com.dat3m.dartagnan.encoding.EncodingContext;
 import com.dat3m.dartagnan.encoding.ProverWithTracker;
+import com.dat3m.dartagnan.encoding.formulas.ModelExt;
 import com.dat3m.dartagnan.expression.ExpressionPrinter;
 import com.dat3m.dartagnan.parsers.cat.ParserCat;
 import com.dat3m.dartagnan.parsers.program.ProgramParser;
@@ -54,7 +55,6 @@ import org.sosy_lab.common.configuration.Options;
 import org.sosy_lab.common.log.BasicLogManager;
 import org.sosy_lab.java_smt.SolverContextFactory;
 import org.sosy_lab.java_smt.SolverContextFactory.Solvers;
-import org.sosy_lab.java_smt.api.Model;
 import org.sosy_lab.java_smt.api.ProverEnvironment;
 import org.sosy_lab.java_smt.api.SolverContext;
 import org.sosy_lab.java_smt.api.SolverContext.ProverOptions;
@@ -262,7 +262,7 @@ public class Dartagnan extends BaseOptions {
         final EncodingContext encodingContext = modelChecker instanceof RefinementSolver refinementSolver ?
             refinementSolver.getContextWithFullWmm() : modelChecker.getEncodingContext();
         final ExecutionModelNext model = new ExecutionModelManager().buildExecutionModel(
-            encodingContext, prover.getModel()
+            encodingContext, new ModelExt(prover.getModel())
         );
         final SyntacticContextAnalysis synContext = newInstance(task.getProgram());
         final String progName = task.getProgram().getName();
@@ -304,7 +304,7 @@ public class Dartagnan extends BaseOptions {
         final EnumSet<Property> props = task.getProperty();
         final Result result = modelChecker.getResult();
         final EncodingContext encCtx = modelChecker.getEncodingContext();
-        final Model model = modelChecker.hasModel() ? prover.getModel() : null;
+        final ModelExt model = modelChecker.hasModel() ? new ModelExt(prover.getModel()) : null;
         final boolean hasViolations = result == FAIL && (model != null);
         final boolean hasPositiveWitnesses = result == PASS && (model != null);
 
@@ -511,7 +511,7 @@ public class Dartagnan extends BaseOptions {
         }
     }
 
-    private static void printWarningIfThreadStartFailed(Program p, EncodingContext ctx, Model model) {
+    private static void printWarningIfThreadStartFailed(Program p, EncodingContext ctx, ModelExt model) {
         for (Load e : p.getThreadEvents(Load.class)) {
             if (e.hasTag(Tag.STARTLOAD) && BigInteger.ZERO.equals(ctx.evaluate(ctx.value(e), model).value())) {
                 // This msg should be displayed even if the logging is off
