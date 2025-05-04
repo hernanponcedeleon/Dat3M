@@ -161,9 +161,10 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
         scope = currentThread = ctx.threadId().id;
         threadIds.add(currentThread);
         if (isOpenCL && ctx.threadScope() != null) {
+            int sgID = 0; // Use subgroup ID 0 as default for OpenCL Litmus
             int wgID = ctx.threadScope().scopeID(0).id;
             int devID = ctx.threadScope().scopeID(1).id;
-            programBuilder.newScopedThread(Arch.OPENCL, currentThread, devID, wgID);
+            programBuilder.newScopedThread(Arch.OPENCL, currentThread, devID, wgID, sgID);
         } else {
             programBuilder.newThread(currentThread);
         }
