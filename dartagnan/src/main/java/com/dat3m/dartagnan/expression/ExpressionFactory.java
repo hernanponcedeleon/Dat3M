@@ -344,6 +344,10 @@ public final class ExpressionFactory {
     }
 
     public Expression makeCast(Expression expression, Type type, boolean signed) {
+        if (expression.getType().equals(type)) {
+            return expression;
+        }
+
         if (type instanceof BooleanType) {
             return makeBooleanCast(expression);
         } else if (type instanceof IntegerType integerType) {

@@ -38,6 +38,26 @@ public class IREvaluator {
 
     public ModelExt getSMTModel() { return smtModel; }
 
+    // ====================================================================================
+    // General
+
+    public <TType extends Type, TFormula extends Formula> TypedValue<TType, ?> evaluate(TypedFormula<TType, TFormula> typedFormula) {
+        return new TypedValue<>(typedFormula.getType(), smtModel.evaluate(typedFormula.formula()));
+    }
+
+    @SuppressWarnings("unchecked")
+    public TypedValue<BooleanType, Boolean> evaluateBooleanAt(Expression expression, Event at) {
+        Preconditions.checkArgument(expression.getType() instanceof BooleanType);
+        return (TypedValue<BooleanType, Boolean>) evaluateAt(expression, at);
+    }
+
+    public TypedValue<?, ?> evaluateAt(Expression expression, Event at) {
+        return evaluate(exprEnc.encodeAt(expression, at));
+    }
+
+    // ====================================================================================
+    // Program
+
     public boolean isExecuted(Event e) {
         return TRUE.equals(smtModel.evaluate(ctx.execution(e)));
     }
@@ -48,6 +68,10 @@ public class IREvaluator {
 
     public boolean isBlocked(BlockingEvent barrier) {
         return TRUE.equals(smtModel.evaluate(ctx.blocked(barrier)));
+    }
+
+    public boolean isAllocated(MemoryObject memObj) {
+        return memObj.isStaticallyAllocated() || isExecuted(memObj.getAllocationSite());
     }
 
     public TypedValue<?, ?> value(MemoryCoreEvent e) {
@@ -71,20 +95,8 @@ public class IREvaluator {
         return (TypedValue<IntegerType, BigInteger>) evaluate(ctx.size(memoryObject));
     }
 
-    public <TType extends Type, TFormula extends Formula> TypedValue<TType, ?> evaluate(TypedFormula<TType, TFormula> typedFormula) {
-        return new TypedValue<>(typedFormula.type(), smtModel.evaluate(typedFormula.formula()));
-    }
-
-    public TypedValue<?, ?> evaluateAt(Expression expression, Event at) {
-        return evaluate(exprEnc.encodeAt(expression, at));
-    }
-
-    @SuppressWarnings("unchecked")
-    public TypedValue<BooleanType, Boolean> evaluateBooleanAt(Expression expression, Event at) {
-        Preconditions.checkArgument(expression.getType() instanceof BooleanType);
-        return (TypedValue<BooleanType, Boolean>) evaluateAt(expression, at);
-    }
-
+    // ====================================================================================
+    // Memory Model
 
     public boolean hasEdge(Relation rel, Event a, Event b) {
         return TRUE.equals(smtModel.evaluate(ctx.edge(rel, a, b)));
@@ -97,6 +109,9 @@ public class IREvaluator {
     public BigInteger memoryOrderClock(Event write) {
         return smtModel.evaluate(ctx.memoryOrderClock(write));
     }
+
+    // ====================================================================================
+    // Properties
 
     public boolean propertyViolated(Property property) {
         return FALSE.equals(smtModel.evaluate(property.getSMTVariable(ctx)));
@@ -115,7 +130,4 @@ public class IREvaluator {
         return isExecuted(event) && FALSE.equals(evaluateBooleanAt(event.getExpression(), event).value());
     }
 
-    public boolean isAllocated(MemoryObject memObj) {
-        return memObj.isStaticallyAllocated() || isExecuted(memObj.getAllocationSite());
-    }
 }

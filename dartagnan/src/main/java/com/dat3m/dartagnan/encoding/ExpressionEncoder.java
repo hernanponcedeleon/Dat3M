@@ -1,9 +1,6 @@
 package com.dat3m.dartagnan.encoding;
 
-import com.dat3m.dartagnan.expression.Expression;
-import com.dat3m.dartagnan.expression.ExpressionVisitor;
-import com.dat3m.dartagnan.expression.LeafExpression;
-import com.dat3m.dartagnan.expression.Type;
+import com.dat3m.dartagnan.expression.*;
 import com.dat3m.dartagnan.expression.aggregates.AggregateCmpExpr;
 import com.dat3m.dartagnan.expression.aggregates.ConstructExpr;
 import com.dat3m.dartagnan.expression.aggregates.ExtractExpr;
@@ -123,6 +120,11 @@ public class ExpressionEncoder {
     // ====================================================================================
     // Utility
 
+    // TODO: For conversion operations, we might want to have an universal intermediate type T with the following properties:
+    //  (1) every other type has a lossless conversion to T
+    //  (2) T can be converted to every other type (possibly with loss)
+    //  (3) A round-trip through T is always lossless.
+    //  See comments on TypedFormula class for more details.
     public enum ConversionMode {
         NO,
         LEFT_TO_RIGHT,
@@ -130,13 +132,14 @@ public class ExpressionEncoder {
     }
 
     public BooleanFormula equal(Expression left, Expression right, ConversionMode cMode) {
+        final ExpressionFactory exprs = context.getExpressionFactory();
         switch (cMode) {
             case NO -> {}
-            case LEFT_TO_RIGHT -> left = convert(encodeFinal(left), right.getType());
-            case RIGHT_TO_LEFT -> right = convert(encodeFinal(right), left.getType());
+            case LEFT_TO_RIGHT -> left = exprs.makeCast(left, right.getType());
+            case RIGHT_TO_LEFT -> right = exprs.makeCast(right, left.getType());
         }
 
-        return encodeBooleanFinal(context.getExpressionFactory().makeEQ(left, right)).formula();
+        return encodeBooleanFinal(exprs.makeEQ(left, right)).formula();
     }
 
     public BooleanFormula equal(Expression left, Expression right) {
@@ -152,23 +155,10 @@ public class ExpressionEncoder {
     }
 
     // ====================================================================================
-    // (Dynamic) Conversation operations
-
-    // TODO: We might want to have an universal intermediate type T with the following properties:
-    //  (1) every other type has a lossless conversion to T
-    //  (2) T can be converted to every other type (possibly with loss)
-    //  (3) A round-trip through T is always lossless.
-    //  See comments on TypedFormula class for more details.
-    public TypedFormula<?, ?> convert(TypedFormula<?, ?> form, Type targetType) {
-        if (form.type().equals(targetType)) {
-            return form;
-        }
-        return context.getExpressionFactory().makeCast(form, targetType).accept(visitor);
-    }
-
-    // ====================================================================================
     // Private implementation
 
+    // TODO: We can probably just return plain formulas and let the outer class
+    //  wrap them correctly.
     private class Visitor implements ExpressionVisitor<TypedFormula<?, ?>> {
 
         private Event event;
@@ -184,7 +174,7 @@ public class ExpressionEncoder {
         public TypedFormula<IntegerType, ?> encodeIntegerExpr(Expression expression) {
             Preconditions.checkArgument(expression.getType() instanceof IntegerType);
             final TypedFormula<?, ?> typedFormula = encode(expression);
-            assert typedFormula.type() == expression.getType();
+            assert typedFormula.getType() == expression.getType();
             assert typedFormula.formula() instanceof IntegerFormula || typedFormula.formula() instanceof BitvectorFormula;
             return (TypedFormula<IntegerType, ?>) typedFormula;
         }
@@ -193,7 +183,7 @@ public class ExpressionEncoder {
         public TypedFormula<BooleanType, BooleanFormula> encodeBooleanExpr(Expression expression) {
             Preconditions.checkArgument(expression.getType() instanceof BooleanType);
             final TypedFormula<?, ?> typedFormula = encode(expression);
-            assert typedFormula.type() == expression.getType();
+            assert typedFormula.getType() == expression.getType();
             assert typedFormula.formula() instanceof BooleanFormula;
             return (TypedFormula<BooleanType, BooleanFormula>) typedFormula;
         }
@@ -202,7 +192,7 @@ public class ExpressionEncoder {
         public TypedFormula<?, TupleFormula> encodeAggregateExpr(Expression expression) {
             Preconditions.checkArgument(ExpressionHelper.isAggregateLike(expression));
             final TypedFormula<?, ?> typedFormula = encode(expression);
-            assert typedFormula.type() == expression.getType();
+            assert typedFormula.getType() == expression.getType();
             assert typedFormula.formula() instanceof TupleFormula;
             return (TypedFormula<?, TupleFormula>) typedFormula;
         }
