@@ -125,7 +125,7 @@ public final class ExpressionPrinter implements ExpressionVisitor<String> {
     }
 
     @Override
-    public String visitPtrToIntCastExperssion(PtrToIntCast expr) {
+    public String visitPtrToIntCastExpression(PtrToIntCast expr) {
         return String.format("%s to %s", visit(expr.getOperand()), expr.getTargetType());
     }
 

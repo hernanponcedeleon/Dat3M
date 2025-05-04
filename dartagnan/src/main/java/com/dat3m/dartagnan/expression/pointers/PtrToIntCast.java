@@ -16,6 +16,6 @@ public final class PtrToIntCast extends CastExpressionBase<IntegerType, PointerT
 
     @Override
     public <T> T accept(ExpressionVisitor<T> visitor) {
-        return visitor.visitPtrToIntCastExperssion(this);
+        return visitor.visitPtrToIntCastExpression(this);
     }
 }

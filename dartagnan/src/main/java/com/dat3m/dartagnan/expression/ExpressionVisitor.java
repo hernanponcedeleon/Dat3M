@@ -58,7 +58,7 @@ public interface ExpressionVisitor<TRet> {
     default TRet visitGEPExpression(GEPExpr expr) { return visitExpression(expr); }
     default TRet visitPointerAddExpression(PointerAddExpr expr) { return visitExpression(expr); }
     default TRet visitIntToPtrCastExpression(IntToPtrCast expr) { return visitCastExpression(expr); }
-    default TRet visitPtrToIntCastExperssion(PtrToIntCast expr) { return visitCastExpression(expr); }
+    default TRet visitPtrToIntCastExpression(PtrToIntCast expr) { return visitCastExpression(expr); }
     default TRet visitPtrCmpExpression(PtrCmpExpr expr) { return visitBinaryExpression(expr); }
     default TRet visitNullLiteral(NullLiteral lit) { return visitLeafExpression(lit); }
 
