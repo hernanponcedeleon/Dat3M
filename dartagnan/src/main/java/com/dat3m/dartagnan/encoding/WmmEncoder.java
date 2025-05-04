@@ -1,6 +1,7 @@
 package com.dat3m.dartagnan.encoding;
 
 import com.dat3m.dartagnan.configuration.Arch;
+import com.dat3m.dartagnan.encoding.formulas.ModelExt;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.integers.IntLiteral;
 import com.dat3m.dartagnan.program.Program;
@@ -12,6 +13,7 @@ import com.dat3m.dartagnan.program.event.core.NamedBarrier;
 import com.dat3m.dartagnan.program.event.core.RMWStoreExclusive;
 import com.dat3m.dartagnan.utils.Utils;
 import com.dat3m.dartagnan.utils.dependable.DependencyGraph;
+import com.dat3m.dartagnan.verification.IREvaluator;
 import com.dat3m.dartagnan.wmm.Constraint;
 import com.dat3m.dartagnan.wmm.Definition;
 import com.dat3m.dartagnan.wmm.Relation;
@@ -31,7 +33,10 @@ import org.apache.logging.log4j.Logger;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.common.configuration.Option;
 import org.sosy_lab.common.configuration.Options;
-import org.sosy_lab.java_smt.api.*;
+import org.sosy_lab.java_smt.api.BooleanFormula;
+import org.sosy_lab.java_smt.api.BooleanFormulaManager;
+import org.sosy_lab.java_smt.api.IntegerFormulaManager;
+import org.sosy_lab.java_smt.api.NumeralFormula;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -41,7 +46,6 @@ import static com.dat3m.dartagnan.encoding.ExpressionEncoder.ConversionMode.LEFT
 import static com.dat3m.dartagnan.program.event.Tag.*;
 import static com.dat3m.dartagnan.wmm.RelationNameRepository.RF;
 import static com.google.common.base.Verify.verify;
-import static java.lang.Boolean.TRUE;
 
 @Options
 public class WmmEncoder implements Encoder {
@@ -146,12 +150,13 @@ public class WmmEncoder implements Encoder {
         return bmgr.and(enc);
     }
 
-    public EventGraph getEventGraph(Relation relation, Model model) {
+    public EventGraph getEventGraph(Relation relation, ModelExt model) {
+        IREvaluator irModel = new IREvaluator(context, model);
         EncodingContext.EdgeEncoder edge = context.edge(relation);
         EventGraph encodeSet = encodeSets.getOrDefault(relation, new MapEventGraph())
-                .filter((e1, e2) -> TRUE.equals(model.evaluate(edge.encode(e1, e2))));
+                .filter((e1, e2) -> irModel.hasEdge(edge, e1, e2));
         EventGraph mustEncodeSet = MapEventGraph.from(context.getAnalysisContext().get(RelationAnalysis.class).getKnowledge(relation).getMustSet())
-                .filter((e1, e2) -> TRUE.equals(model.evaluate(context.execution(e1, e2))));
+                .filter((e1, e2) -> irModel.isExecuted(e1) && irModel.isExecuted(e2));
         return EventGraph.union(encodeSet, mustEncodeSet);
     }
 

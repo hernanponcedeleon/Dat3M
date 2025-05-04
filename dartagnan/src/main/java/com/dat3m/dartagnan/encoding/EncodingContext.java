@@ -1,12 +1,8 @@
 package com.dat3m.dartagnan.encoding;
 
 import com.dat3m.dartagnan.encoding.formulas.FormulaManagerExt;
-import com.dat3m.dartagnan.encoding.formulas.ModelExt;
 import com.dat3m.dartagnan.encoding.formulas.TypedFormula;
-import com.dat3m.dartagnan.encoding.formulas.TypedValue;
-import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
-import com.dat3m.dartagnan.expression.Type;
 import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.program.Register;
@@ -138,19 +134,6 @@ public final class EncodingContext {
     public ExpressionEncoder getExpressionEncoder() { return exprEncoder; }
 
     public ExpressionFactory getExpressionFactory() { return exprs; }
-
-    // ====================================================================================
-    // Utility
-
-    // TODO: Unclear if these convenience functions are necessary.
-
-    public <TType extends Type> TypedValue<TType, ?> evaluate(TypedFormula<TType, ?> formula, ModelExt model) {
-        return exprEncoder.evaluate(formula, model);
-    }
-
-    public TypedValue<?, ?> evaluateAt(Expression expr, Event at, ModelExt model) {
-        return exprEncoder.evaluateAt(expr, at, model);
-    }
 
     // ====================================================================================
     // Control flow

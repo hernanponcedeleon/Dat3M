@@ -1,6 +1,8 @@
 package com.dat3m.dartagnan.encoding;
 
-import com.dat3m.dartagnan.encoding.formulas.*;
+import com.dat3m.dartagnan.encoding.formulas.FormulaManagerExt;
+import com.dat3m.dartagnan.encoding.formulas.TupleFormula;
+import com.dat3m.dartagnan.encoding.formulas.TypedFormula;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionVisitor;
 import com.dat3m.dartagnan.expression.LeafExpression;
@@ -84,19 +86,6 @@ public class ExpressionEncoder {
     public TypedFormula<BooleanType, BooleanFormula> encodeBooleanFinal(Expression expression) {
         Preconditions.checkArgument(expression.getType() instanceof BooleanType);
         return (TypedFormula<BooleanType, BooleanFormula>) encodeFinal(expression);
-    }
-
-    public <TType extends Type, TFormula extends Formula> TypedValue<TType, ?> evaluate(TypedFormula<TType, TFormula> typedFormula, ModelExt model) {
-        return new TypedValue<>(typedFormula.type(), model.evaluate(typedFormula.formula()));
-    }
-
-    public TypedValue<?, ?> evaluateAt(Expression expression, Event at, ModelExt model) {
-        return evaluate(encodeAt(expression, at), model);
-    }
-
-    @SuppressWarnings("Unchecked")
-    public TypedValue<BooleanType, Boolean> evaluateBooleanAt(Expression expression, Event at, ModelExt model) {
-        return (TypedValue<BooleanType, Boolean>) evaluate(encodeBooleanAt(expression, at), model);
     }
 
     public <TType extends Type> TypedFormula<TType, ?> makeVariable(String name, TType type) {

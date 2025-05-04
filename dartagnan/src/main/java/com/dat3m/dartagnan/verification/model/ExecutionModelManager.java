@@ -2,7 +2,6 @@ package com.dat3m.dartagnan.verification.model;
 
 import com.dat3m.dartagnan.encoding.EncodingContext;
 import com.dat3m.dartagnan.encoding.formulas.ModelExt;
-import com.dat3m.dartagnan.encoding.formulas.TypedFormula;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.Event;
@@ -17,6 +16,7 @@ import com.dat3m.dartagnan.solver.caat.predicates.relationGraphs.base.SimpleGrap
 import com.dat3m.dartagnan.solver.caat.predicates.relationGraphs.derived.*;
 import com.dat3m.dartagnan.solver.caat4wmm.EventDomainNext;
 import com.dat3m.dartagnan.utils.dependable.DependencyGraph;
+import com.dat3m.dartagnan.verification.IREvaluator;
 import com.dat3m.dartagnan.verification.model.RelationModel.EdgeModel;
 import com.dat3m.dartagnan.verification.model.event.*;
 import com.dat3m.dartagnan.wmm.Constraint.Visitor;
@@ -26,8 +26,6 @@ import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
 import com.dat3m.dartagnan.wmm.definition.*;
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
-import org.sosy_lab.java_smt.api.BooleanFormula;
-import org.sosy_lab.java_smt.api.Formula;
 
 import java.math.BigInteger;
 import java.util.*;
@@ -43,7 +41,7 @@ public class ExecutionModelManager {
 
     private ExecutionModelNext executionModel;
     private EncodingContext context;
-    private ModelExt model;
+    private IREvaluator model;
     private Wmm wmm;
     private EventDomainNext domain;
 
@@ -59,7 +57,7 @@ public class ExecutionModelManager {
         executionModel = new ExecutionModelNext();
 
         this.context = context;
-        this.model = model;
+        this.model = new IREvaluator(context, model);
         this.wmm = context.getTask().getMemoryModel();
         this.domain = new EventDomainNext(executionModel);
 
@@ -89,7 +87,7 @@ public class ExecutionModelManager {
             Event e = t.getEntry();
 
             do {
-                if (!isTrue(context.execution(e))) {
+                if (!model.isExecuted(e)) {
                     e = e.getSuccessor();
                     continue;
                 }
@@ -99,8 +97,7 @@ public class ExecutionModelManager {
                     eventNum++;
                 }
 
-                if (e instanceof CondJump jump
-                    && isTrue(context.jumpTaken(jump))) {
+                if (e instanceof CondJump jump && model.jumpTaken(jump)) {
                     e = jump.getLabel();
                 } else {
                     e = e.getSuccessor();
@@ -115,8 +112,8 @@ public class ExecutionModelManager {
     private void extractEvent(Event e, ThreadModel tm, int id) {
         EventModel em;
         if (e instanceof MemoryCoreEvent memEvent) {
-            ValueModel address = new ValueModel(evaluateByModel(context.address(memEvent)));
-            ValueModel value = new ValueModel(evaluateByModel(context.value(memEvent)));
+            ValueModel address = new ValueModel(model.address(memEvent).value());
+            ValueModel value = new ValueModel(model.value(memEvent).value());
 
             if (memEvent instanceof Load load) {
                 em = new LoadModel(load, tm, id, address, value);
@@ -134,11 +131,9 @@ public class ExecutionModelManager {
         } else if (e instanceof GenericVisibleEvent visible) {
             em = new GenericVisibleEventModel(visible, tm, id);
         } else if (e instanceof Assert assrt) {
-            em = new AssertModel(
-                assrt, tm, id, isTrue(context.getExpressionEncoder().encodeBooleanAt(assrt.getExpression(), assrt).formula())
-            );
+            em = new AssertModel(assrt, tm, id, !model.assertionViolated(assrt));
         } else if (e instanceof Local local) {
-            ValueModel value = new ValueModel(evaluateByModel(context.result(local)));
+            ValueModel value = new ValueModel(model.result(local).value());
             em = new LocalModel(local, tm, id, value);
         } else if (e instanceof CondJump cj) {
             em = new CondJumpModel(cj, tm, id);
@@ -162,12 +157,11 @@ public class ExecutionModelManager {
 
     private void extractMemoryLayout() {
         for (MemoryObject obj : context.getTask().getProgram().getMemory().getObjects()) {
-            boolean isAllocated = obj.isStaticallyAllocated()
-                                  || isTrue(context.execution(obj.getAllocationSite()));
+            boolean isAllocated = model.isAllocated(obj);
             if (isAllocated) {
                 // Currently, addresses of memory objects are guaranteed to be integer and assigned.
-                ValueModel address = new ValueModel(evaluateByModel(context.address(obj)));
-                BigInteger size = (BigInteger) evaluateByModel(context.size(obj));
+                ValueModel address = new ValueModel(model.address(obj).value());
+                BigInteger size = model.size(obj).value();
                 executionModel.addMemoryObject(obj, new MemoryObjectModel(obj, address, size));
             }
         }
@@ -265,19 +259,6 @@ public class ExecutionModelManager {
         return em;
     }
 
-    private boolean isTrue(BooleanFormula formula) {
-        return Boolean.TRUE.equals(model.evaluate(formula));
-    }
-
-    private Object evaluateByModel(Formula formula) {
-        return model.evaluate(formula);
-    }
-
-    private Object evaluateByModel(TypedFormula<?, ?> formula) {
-        return evaluateByModel(formula.formula());
-    }
-
-
     // Usage: Populate graph of the base relations with instances of the Edge class
     // based on the information from ExecutionModelNext.
     private final class RelationGraphPopulator implements Visitor<Void> {
@@ -313,7 +294,7 @@ public class ExecutionModelManager {
                 if (!executionModel.getAddressWritesMap().containsKey(address)) { continue; }
                 for (LoadModel read : reads.getValue()) {
                     for (StoreModel write : executionModel.getAddressWritesMap().get(address)) {
-                        if (isTrue(rf.encode(write.getEvent(), read.getEvent()))) {
+                        if (model.hasEdge(rf, write.getEvent(), read.getEvent())) {
                             rg.add(new Edge(write.getId(), read.getId()));
                         }
                     }
@@ -331,7 +312,7 @@ public class ExecutionModelManager {
             for (Set<StoreModel> writes : executionModel.getAddressWritesMap().values()) {
                 for (StoreModel w1 : writes) {
                     for (StoreModel w2 : writes) {
-                        if (isTrue(co.encode(w1.getEvent(), w2.getEvent()))) {
+                        if (model.hasEdge(co, w1.getEvent(), w2.getEvent())) {
                             rg.add(new Edge(w1.getId(), w2.getId()));
                         }
                     }
@@ -351,7 +332,7 @@ public class ExecutionModelManager {
                 if (!executionModel.getAddressWritesMap().containsKey(address)) { continue; }
                 for (LoadModel read : reads.getValue()) {
                     for (StoreModel write : executionModel.getAddressWritesMap().get(address)) {
-                        if (isTrue(edge.encode(read.getEvent(), write.getEvent()))) {
+                        if (model.hasEdge(edge, read.getEvent(), write.getEvent())) {
                             rg.add(new Edge(read.getId(), write.getId()));
                         }
                     }
@@ -525,7 +506,7 @@ public class ExecutionModelManager {
                     EventModel em1 = executionModel.getEventModelByEvent(e1);
                     EventModel em2 = executionModel.getEventModelByEvent(e2);
                     if (em1 != null && em2 != null) {
-                        if (isTrue(edge.encode(e1, e2))) {
+                        if (model.hasEdge(edge, e1, e2)) {
                             rg.add(new Edge(em1.getId(), em2.getId()));
                         }
                     }
@@ -533,7 +514,7 @@ public class ExecutionModelManager {
             } else {
                 for (EventModel em1 : executionModel.getEventModels()) {
                     for (EventModel em2 : executionModel.getEventModels()) {
-                        if (isTrue(edge.encode(em1.getEvent(), em2.getEvent()))) {
+                        if (model.hasEdge(edge, em1.getEvent(), em2.getEvent())) {
                             rg.add(new Edge(em1.getId(), em2.getId()));
                         }
                     }
