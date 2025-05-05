@@ -559,6 +559,47 @@ public class VisitorOpsCompositeTest {
     }
 
     @Test
+    public void testCompositeConstructStruct() {
+        // given
+        String input = "%result = OpCompositeConstruct %composite %member1 %member2";
+        builder.mockBoolType("%bool");
+        builder.mockIntType("%uint", 32);
+        builder.mockAggregateType("%composite", "%bool", "%uint");
+        builder.mockConstant("%member1", "%bool", true);
+        builder.mockConstant("%member2", "%uint", 2);
+        builder.mockConstant("%true", "%bool", true);
+        builder.mockConstant("%bv32(2)", "%uint", 2);
+
+        // when
+        visit(input);
+
+        // then
+        ConstructExpr composite = (ConstructExpr) builder.getExpression("%result");
+        assertEquals(builder.getExpression("%true"), composite.getOperands().get(0));
+        assertEquals(builder.getExpression("%bv32(2)"), composite.getOperands().get(1));
+    }
+
+    @Test
+    public void testCompositeConstructArray() {
+        // given
+        String input = "%result = OpCompositeConstruct %composite %member1 %member2";
+        builder.mockIntType("%uint", 32);
+        builder.mockVectorType("%composite", "%uint", 2);
+        builder.mockConstant("%member1", "%uint", 1);
+        builder.mockConstant("%member2", "%uint", 2);
+        builder.mockConstant("%bv32(1)", "%uint", 1);
+        builder.mockConstant("%bv32(2)", "%uint", 2);
+
+        // when
+        visit(input);
+
+        // then
+        ConstructExpr composite = (ConstructExpr) builder.getExpression("%result");
+        assertEquals(builder.getExpression("%bv32(1)"), composite.getOperands().get(0));
+        assertEquals(builder.getExpression("%bv32(2)"), composite.getOperands().get(1));
+    }
+
+    @Test
     public void testCompositeConstructMismatchingTypeStruct() {
         // given
         String input = "%result = OpCompositeConstruct %composite %member1 %member2";
