@@ -48,7 +48,7 @@ public class VisitorOpsConversion extends SpirvBaseVisitor<Void> {
 
         Expression convertedExpr = expressions.makeCast(operandExpr, resultType);
         Register reg = builder.addRegister(id, typeId);
-        builder.addEvent(new Local(reg, convertedExpr));
+        builder.addEvent(EventFactory.newLocal(reg, convertedExpr));
         return null;
     }
 
@@ -62,7 +62,7 @@ public class VisitorOpsConversion extends SpirvBaseVisitor<Void> {
         Expression pointerExpr = builder.getExpression(ctx.pointer().getText());
         Expression convertedPointer = expressions.makeCast(pointerExpr, builder.getType(typeId), false);
         Register reg = builder.addRegister(id, typeId);
-        builder.addEvent(new Local(reg, convertedPointer));
+        builder.addEvent(EventFactory.newLocal(reg, convertedPointer));
         return null;
     }
 
@@ -76,7 +76,7 @@ public class VisitorOpsConversion extends SpirvBaseVisitor<Void> {
         Expression integerExpr = builder.getExpression(ctx.integerValue().getText());
         Expression convertedInteger = expressions.makeCast(integerExpr, builder.getType(typeId), false);
         Register reg = builder.addRegister(id, typeId);
-        builder.addEvent(new Local(reg, convertedInteger));
+        builder.addEvent(EventFactory.newLocal(reg, convertedInteger));
         return null;
     }
 
@@ -136,7 +136,7 @@ public class VisitorOpsConversion extends SpirvBaseVisitor<Void> {
         }
         Expression convertedExpr = expressions.makeCast(operandExpr, targetType, isSigned);
         Register reg = builder.addRegister(id, typeId);
-        builder.addEvent(new Local(reg, convertedExpr));
+        builder.addEvent(EventFactory.newLocal(reg, convertedExpr));
     }
 
     public Set<String> getSupportedOps() {
