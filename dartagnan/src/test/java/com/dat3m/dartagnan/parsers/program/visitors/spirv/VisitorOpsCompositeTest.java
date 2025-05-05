@@ -558,6 +558,7 @@ public class VisitorOpsCompositeTest {
         assertEquals(builder.getExpression("%bv32(6)"), shuffle.getOperands().get(3));
     }
 
+    @Test
     public void testCompositeConstructMismatchingTypeStruct() {
         // given
         String input = "%result = OpCompositeConstruct %composite %member1 %member2";
