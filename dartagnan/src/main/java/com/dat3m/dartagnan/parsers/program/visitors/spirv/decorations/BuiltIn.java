@@ -79,7 +79,7 @@ public class BuiltIn implements Decoration {
             case "LocalInvocationId" -> makeArray(id, type, tid % grid.wgSize(), 0, 0);
             case "LocalInvocationIndex" -> makeScalar(id, type, tid % grid.wgSize()); // scalar of LocalInvocationId
             case "GlobalInvocationId" -> makeArray(id, type, tid % grid.dvSize(), 0, 0);
-            case "DeviceIndex" -> makeScalar(id, type, 0);
+            case "DeviceIndex" -> makeScalar(id, type, grid.dvId(tid));
             case "SubgroupId" -> makeScalar(id, type, grid.sgId(tid));
             case "WorkgroupId" -> makeArray(id, type, grid.wgId(tid), 0, 0);
             case "SubgroupSize" -> makeScalar(id, type, grid.sgSize());

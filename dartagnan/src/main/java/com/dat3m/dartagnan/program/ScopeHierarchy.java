@@ -33,11 +33,12 @@ public class ScopeHierarchy {
         return scopeHierarchy;
     }
 
-    public static ScopeHierarchy ScopeHierarchyForOpenCL(int dev, int wg) {
+    public static ScopeHierarchy ScopeHierarchyForOpenCL(int dev, int wg, int sg) {
         ScopeHierarchy scopeHierarchy = new ScopeHierarchy();
         scopeHierarchy.scopeIds.put(Tag.OpenCL.ALL, 0);
         scopeHierarchy.scopeIds.put(Tag.OpenCL.DEVICE, dev);
         scopeHierarchy.scopeIds.put(Tag.OpenCL.WORK_GROUP, wg);
+        scopeHierarchy.scopeIds.put(Tag.OpenCL.SUB_GROUP, sg);
         return scopeHierarchy;
     }
 
