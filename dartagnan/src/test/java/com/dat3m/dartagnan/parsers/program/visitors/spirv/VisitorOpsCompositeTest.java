@@ -559,28 +559,6 @@ public class VisitorOpsCompositeTest {
     }
 
     @Test
-    public void testCompositeConstructNestedVectorCorrectType() {
-        // given
-        String input = "%result = OpCompositeConstruct %composite %member1 %member2";
-        builder.mockIntType("%uint", 32);
-        builder.mockVectorType("%composite", "%uint", 2);
-        builder.mockConstant("%member1", "%uint", 1);
-        builder.mockConstant("%member2", "%composite", List.of(2, 3));
-        builder.mockConstant("%bv32(1)", "%uint", 1);
-        builder.mockConstant("%bv32(2)", "%uint", 2);
-        builder.mockConstant("%bv32(3)", "%uint", 3);
-
-        // when
-        visit(input);
-
-        // then
-        ConstructExpr shuffle = (ConstructExpr) builder.getExpression("%result");
-        assertEquals(builder.getExpression("%bv32(1)"), shuffle.getOperands().get(0));
-        assertEquals(builder.getExpression("%bv32(2)"), shuffle.getOperands().get(1));
-        assertEquals(builder.getExpression("%bv32(3)"), shuffle.getOperands().get(2));
-    }
-
-    @Test
     public void testCompositeConstructMismatchingTypeStruct() {
         // given
         String input = "%result = OpCompositeConstruct %composite %member1 %member2";
@@ -612,7 +590,7 @@ public class VisitorOpsCompositeTest {
             visit(input);
             fail("Should throw exception");
         } catch (Exception e) {
-            assertEquals("All elements in an array must have the same type. Offending id: '%result'", e.getMessage());
+            assertEquals("Top-level elements must have the same type as the types of the operands (\"flattening\" vectors is not yet supported). Offending id: '%result'", e.getMessage());
         }
     }
 
@@ -633,6 +611,27 @@ public class VisitorOpsCompositeTest {
     }
 
     @Test
+    public void testCompositeConstructNestedVectorCorrectType() {
+        // given
+        String input = "%result = OpCompositeConstruct %composite %member1 %member2";
+        builder.mockIntType("%uint", 32);
+        builder.mockVectorType("%composite", "%uint", 2);
+        builder.mockConstant("%member1", "%uint", 1);
+        builder.mockConstant("%member2", "%composite", List.of(2, 3));
+        builder.mockConstant("%bv32(1)", "%uint", 1);
+        builder.mockConstant("%bv32(2)", "%uint", 2);
+        builder.mockConstant("%bv32(3)", "%uint", 3);
+
+        // TODO: this test should pass once we add support for flattening vectors
+        try {
+            visit(input);
+            fail("Should throw exception");
+        } catch (Exception e) {
+            assertEquals("Top-level elements must have the same type as the types of the operands (\"flattening\" vectors is not yet supported). Offending id: '%result'", e.getMessage());
+        }
+    }
+
+    @Test
     public void testCompositeConstructNestedVectorWrongType() {
         // given
         String input = "%result = OpCompositeConstruct %composite %member1 %member2";
@@ -649,7 +648,7 @@ public class VisitorOpsCompositeTest {
             visit(input);
             fail("Should throw exception");
         } catch (Exception e) {
-            assertEquals("All elements in an array must have the same type. Offending id: '%result'", e.getMessage());
+            assertEquals("Top-level elements must have the same type as the types of the operands (\"flattening\" vectors is not yet supported). Offending id: '%result'", e.getMessage());
         }
     }
 
