@@ -1,11 +1,6 @@
 package com.dat3m.dartagnan.encoding;
 
 import com.dat3m.dartagnan.expression.*;
-import com.dat3m.dartagnan.encoding.formulas.FormulaManagerExt;
-import com.dat3m.dartagnan.encoding.formulas.TupleFormula;
-import com.dat3m.dartagnan.encoding.formulas.TypedFormula;
-import com.dat3m.dartagnan.encoding.formulas.TypedValue;
-import com.dat3m.dartagnan.expression.*;
 import com.dat3m.dartagnan.expression.aggregates.AggregateCmpExpr;
 import com.dat3m.dartagnan.expression.aggregates.ConstructExpr;
 import com.dat3m.dartagnan.expression.aggregates.ExtractExpr;
@@ -574,7 +569,7 @@ public class ExpressionEncoder {
         }
 
         @Override
-        public TypedFormula<IntegerType, ?> visitPtrToIntCastExperssion(PtrToIntCast expr) {
+        public TypedFormula<IntegerType, ?> visitPtrToIntCastExpression(PtrToIntCast expr) {
             final TypedFormula<PointerType, ?> ptr = encodePointerExpr(expr.getOperand());
             return switch (context.provenance) {
                 case NO -> new TypedFormula<>(expr.getType(), ptr.formula());

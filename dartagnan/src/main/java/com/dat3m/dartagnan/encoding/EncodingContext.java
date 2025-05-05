@@ -1,7 +1,6 @@
 package com.dat3m.dartagnan.encoding;
 
 import com.dat3m.dartagnan.expression.ExpressionFactory;
-import com.dat3m.dartagnan.expression.Type;
 import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.program.Register;
@@ -60,7 +59,7 @@ public final class EncodingContext {
         SIMPLE
     }
 
-    ProvenanceModel provenance = ProvenanceModel.SIMPLE;
+    ProvenanceModel provenance = ProvenanceModel.NO;
 
     @Option(
             name=IDL_TO_SAT,

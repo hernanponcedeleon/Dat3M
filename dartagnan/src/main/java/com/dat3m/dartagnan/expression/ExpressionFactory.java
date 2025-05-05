@@ -195,8 +195,8 @@ public final class ExpressionFactory {
             return sourceType.equals(targetType) ? operand : new IntSizeCast(targetType, operand, signed);
         } else if (sourceType instanceof FloatType) {
             return new FloatToIntCast(targetType, operand, signed);
-        } else if (sourceType instanceof PointerType && targetType.equals(types.getArchType())) {
-           return makePtrToIntCast(operand);
+        } else if (sourceType instanceof PointerType) {
+           return makeIntegerCast(makePtrToIntCast(operand), targetType, false);
         }
 
         throw new UnsupportedOperationException(String.format("Cannot cast %s to %s.", sourceType, targetType));
