@@ -1,4 +1,4 @@
-package com.dat3m.dartagnan.encoding.formulas;
+package com.dat3m.dartagnan.smt;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
@@ -90,20 +90,6 @@ public class FormulaManagerExt {
         }
 
         return getBooleanFormulaManager().ifThenElse(guard, thenF, elseF);
-    }
-
-    // =====================================================================================
-    // Model
-
-    public Object evaluate(Formula f, Model model) {
-        if (f instanceof TupleFormula tf) {
-            return evaluate(tf, model);
-        }
-        return model.evaluate(f);
-    }
-
-    public TupleValue evaluate(TupleFormula tupleFormula, Model model) {
-        return new TupleValue(tupleFormula.elements.stream().map(v -> evaluate(v, model)).toList());
     }
 
 }

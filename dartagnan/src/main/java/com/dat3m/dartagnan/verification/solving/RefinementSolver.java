@@ -16,6 +16,7 @@ import com.dat3m.dartagnan.program.event.core.MemoryCoreEvent;
 import com.dat3m.dartagnan.program.event.metadata.OriginalId;
 import com.dat3m.dartagnan.program.event.metadata.SourceLocation;
 import com.dat3m.dartagnan.program.filter.Filter;
+import com.dat3m.dartagnan.smt.ModelExt;
 import com.dat3m.dartagnan.solver.caat.CAATSolver;
 import com.dat3m.dartagnan.solver.caat4wmm.RefinementModel;
 import com.dat3m.dartagnan.solver.caat4wmm.Refiner;
@@ -50,7 +51,10 @@ import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.common.configuration.Option;
 import org.sosy_lab.common.configuration.Options;
-import org.sosy_lab.java_smt.api.*;
+import org.sosy_lab.java_smt.api.BooleanFormula;
+import org.sosy_lab.java_smt.api.BooleanFormulaManager;
+import org.sosy_lab.java_smt.api.SolverContext;
+import org.sosy_lab.java_smt.api.SolverException;
 
 import java.text.DecimalFormat;
 import java.util.*;
@@ -399,7 +403,8 @@ public class RefinementSolver extends ModelChecker {
 
             // ------------------------- Debugging/Logging -------------------------
             if (generateGraphvizDebugFiles) {
-                final ExecutionModelNext model = new ExecutionModelManager().buildExecutionModel(contextWithFullWmm, prover.getModel());
+                final ExecutionModelNext model = new ExecutionModelManager().buildExecutionModel(contextWithFullWmm,
+                        new ModelExt(prover.getModel()));
                 generateGraphvizFiles(task, model, trace.size(), iteration.inconsistencyReasons);
             }
             if (logger.isDebugEnabled()) {
@@ -468,7 +473,7 @@ public class RefinementSolver extends ModelChecker {
             // ------------ CAAT solving ------------
             lastTime = System.currentTimeMillis();
             final WMMSolver.Result solverResult;
-            try (Model model = prover.getModel()) {
+            try (ModelExt model = new ModelExt(prover.getModel())) {
                 solverResult = solver.check(model);
             } catch (SolverException e) {
                 logger.error(e);

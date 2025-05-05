@@ -1,9 +1,5 @@
 package com.dat3m.dartagnan.encoding;
 
-import com.dat3m.dartagnan.encoding.formulas.FormulaManagerExt;
-import com.dat3m.dartagnan.encoding.formulas.TypedFormula;
-import com.dat3m.dartagnan.encoding.formulas.TypedValue;
-import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.Type;
 import com.dat3m.dartagnan.expression.type.IntegerType;
@@ -17,6 +13,7 @@ import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.RegWriter;
 import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
+import com.dat3m.dartagnan.smt.FormulaManagerExt;
 import com.dat3m.dartagnan.verification.Context;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.wmm.Relation;
@@ -28,7 +25,9 @@ import org.apache.logging.log4j.Logger;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.common.configuration.Option;
 import org.sosy_lab.common.configuration.Options;
-import org.sosy_lab.java_smt.api.*;
+import org.sosy_lab.java_smt.api.BooleanFormula;
+import org.sosy_lab.java_smt.api.BooleanFormulaManager;
+import org.sosy_lab.java_smt.api.FormulaManager;
 import org.sosy_lab.java_smt.api.NumeralFormula.IntegerFormula;
 
 import java.util.HashMap;
@@ -142,23 +141,6 @@ public final class EncodingContext {
     public ExpressionEncoder getExpressionEncoder() { return exprEncoder; }
 
     public ExpressionFactory getExpressionFactory() { return exprs; }
-
-    // ====================================================================================
-    // Utility
-
-    // TODO: Unclear if these convenience functions are necessary.
-
-    public Object evaluate(Formula formula, Model model) {
-        return formulaManager.evaluate(formula, model);
-    }
-
-    public <TType extends Type> TypedValue<TType, ?> evaluate(TypedFormula<TType, ?> formula, Model model) {
-        return exprEncoder.evaluate(formula, model);
-    }
-
-    public TypedValue<?, ?> evaluateAt(Expression expr, Event at, Model model) {
-        return exprEncoder.evaluateAt(expr, at, model);
-    }
 
     // ====================================================================================
     // Control flow
@@ -329,7 +311,9 @@ public final class EncodingContext {
         // ------- Memory object variables -------
         for (MemoryObject memoryObject : verificationTask.getProgram().getMemory().getObjects()) {
             objAddress.put(memoryObject, exprEncoder.encodeFinal(memoryObject));
-            objSize.put(memoryObject, exprEncoder.makeVariable(String.format("sizeof(%s)", memoryObject), types.getArchType()));
+            objSize.put(memoryObject, exprEncoder.makeVariable(String.format("sizeof(%s)", memoryObject),
+                    TypeFactory.getInstance().getArchType())
+            );
         }
 
         // ------- Event variables  -------
@@ -344,8 +328,7 @@ public final class EncodingContext {
             if (e instanceof RegWriter rw) {
                 Register register = rw.getResultRegister();
                 String name = register.getName() + "(" + e.getGlobalId() + "_result)";
-                Type type = register.getType();
-                r = exprEncoder.makeVariable(name, type);
+                r = exprEncoder.makeVariable(name, register.getType());
             } else {
                 r = null;
             }

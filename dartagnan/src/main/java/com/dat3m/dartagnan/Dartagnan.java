@@ -4,6 +4,7 @@ import com.dat3m.dartagnan.configuration.OptionNames;
 import com.dat3m.dartagnan.configuration.ProgressModel;
 import com.dat3m.dartagnan.configuration.Property;
 import com.dat3m.dartagnan.encoding.EncodingContext;
+import com.dat3m.dartagnan.encoding.IREvaluator;
 import com.dat3m.dartagnan.encoding.ProverWithTracker;
 import com.dat3m.dartagnan.expression.ExpressionPrinter;
 import com.dat3m.dartagnan.parsers.cat.ParserCat;
@@ -19,6 +20,7 @@ import com.dat3m.dartagnan.program.event.core.Assert;
 import com.dat3m.dartagnan.program.event.core.CondJump;
 import com.dat3m.dartagnan.program.event.core.Load;
 import com.dat3m.dartagnan.program.processing.LoopUnrolling;
+import com.dat3m.dartagnan.smt.ModelExt;
 import com.dat3m.dartagnan.utils.ExitCode;
 import com.dat3m.dartagnan.utils.Result;
 import com.dat3m.dartagnan.utils.Utils;
@@ -54,7 +56,6 @@ import org.sosy_lab.common.configuration.Options;
 import org.sosy_lab.common.log.BasicLogManager;
 import org.sosy_lab.java_smt.SolverContextFactory;
 import org.sosy_lab.java_smt.SolverContextFactory.Solvers;
-import org.sosy_lab.java_smt.api.Model;
 import org.sosy_lab.java_smt.api.ProverEnvironment;
 import org.sosy_lab.java_smt.api.SolverContext;
 import org.sosy_lab.java_smt.api.SolverContext.ProverOptions;
@@ -78,8 +79,6 @@ import static com.dat3m.dartagnan.utils.GitInfo.*;
 import static com.dat3m.dartagnan.utils.Result.*;
 import static com.dat3m.dartagnan.witness.WitnessType.GRAPHML;
 import static com.dat3m.dartagnan.witness.graphviz.ExecutionGraphVisualizer.generateGraphvizFile;
-import static java.lang.Boolean.FALSE;
-import static java.lang.Boolean.TRUE;
 import static java.lang.String.valueOf;
 
 @Options
@@ -262,7 +261,7 @@ public class Dartagnan extends BaseOptions {
         final EncodingContext encodingContext = modelChecker instanceof RefinementSolver refinementSolver ?
             refinementSolver.getContextWithFullWmm() : modelChecker.getEncodingContext();
         final ExecutionModelNext model = new ExecutionModelManager().buildExecutionModel(
-            encodingContext, prover.getModel()
+            encodingContext, new ModelExt(prover.getModel())
         );
         final SyntacticContextAnalysis synContext = newInstance(task.getProgram());
         final String progName = task.getProgram().getName();
@@ -304,7 +303,10 @@ public class Dartagnan extends BaseOptions {
         final EnumSet<Property> props = task.getProperty();
         final Result result = modelChecker.getResult();
         final EncodingContext encCtx = modelChecker.getEncodingContext();
-        final Model model = modelChecker.hasModel() ? prover.getModel() : null;
+        //final ModelExt model = modelChecker.hasModel() ? new ModelExt(prover.getModel()) : null;
+        final IREvaluator model = modelChecker.hasModel()
+                ? new IREvaluator(encCtx, new ModelExt(prover.getModel()))
+                : null;
         final boolean hasViolations = result == FAIL && (model != null);
         final boolean hasPositiveWitnesses = result == PASS && (model != null);
 
@@ -313,12 +315,11 @@ public class Dartagnan extends BaseOptions {
         if (p.getFormat() != SourceLanguage.LITMUS) {
             final SyntacticContextAnalysis synContext = newInstance(p);
             if (hasViolations) {
-                printWarningIfThreadStartFailed(p, encCtx, model);
-                if (props.contains(PROGRAM_SPEC) && FALSE.equals(model.evaluate(PROGRAM_SPEC.getSMTVariable(encCtx)))) {
+                printWarningIfThreadStartFailed(p, model);
+                if (props.contains(PROGRAM_SPEC) && model.propertyViolated(PROGRAM_SPEC)) {
                     summary.append("===== Program specification violation found =====\n");
                     for (Assert ass : p.getThreadEvents(Assert.class)) {
-                        final boolean isViolated = TRUE.equals(model.evaluate(encCtx.execution(ass)))
-                                && FALSE.equals(encCtx.evaluateAt(ass.getExpression(), ass, model).value());
+                        final boolean isViolated = model.assertionViolated(ass);
                         if (isViolated) {
                             final String callStack = makeContextString(
                                     synContext.getContextInfo(ass).getContextOfType(CallContext.class), " -> ");
@@ -337,14 +338,14 @@ public class Dartagnan extends BaseOptions {
                     ExitCode code = task.getWitness().isEmpty() ? PROGRAM_SPEC_VIOLATION : NORMAL_TERMINATION;
                     return new ResultSummary(summary.toString(), code);
                 }
-                if (props.contains(TERMINATION) && FALSE.equals(model.evaluate(TERMINATION.getSMTVariable(encCtx)))) {
+                if (props.contains(TERMINATION) && model.propertyViolated(TERMINATION)) {
                     summary.append("============ Termination violation found ============\n");
                     for (Event e : p.getThreadEvents()) {
                         final boolean isStuckLoop = e instanceof CondJump jump
                                 && e.hasTag(Tag.NONTERMINATION) && !e.hasTag(Tag.BOUND)
-                                && TRUE.equals(model.evaluate(encCtx.jumpTaken(jump)));
+                                && model.jumpTaken(jump);
                         final boolean isStuckBarrier = e instanceof BlockingEvent barrier
-                                && TRUE.equals(model.evaluate(encCtx.blocked(barrier)));
+                                && model.isBlocked(barrier);
 
                         if (isStuckLoop || isStuckBarrier) {
                             final String callStack = makeContextString(
@@ -363,7 +364,7 @@ public class Dartagnan extends BaseOptions {
                     ExitCode code = task.getWitness().isEmpty() ? TERMINATION_VIOLATION : NORMAL_TERMINATION;
                     return new ResultSummary(summary.toString(), code);
                 }
-                if (props.contains(DATARACEFREEDOM) && FALSE.equals(model.evaluate(DATARACEFREEDOM.getSMTVariable(encCtx)))) {
+                if (props.contains(DATARACEFREEDOM) && model.propertyViolated(DATARACEFREEDOM)) {
                     summary.append("============= SVCOMP data race found ============\n");
                     summary.append("=================================================\n");
                     summary.append(result).append("\n");
@@ -371,10 +372,10 @@ public class Dartagnan extends BaseOptions {
                     ExitCode code = task.getWitness().isEmpty() ? DATA_RACE_FREEDOM_VIOLATION : NORMAL_TERMINATION;
                     return new ResultSummary(summary.toString(), code);
                 }
-                final List<Axiom> violatedCATSpecs = task.getMemoryModel().getAxioms().stream()
+                final List<Axiom> violatedCATSpecs = !props.contains(CAT_SPEC) ? List.of()
+                        : task.getMemoryModel().getAxioms().stream()
                         .filter(Axiom::isFlagged)
-                        .filter(ax -> props.contains(CAT_SPEC)
-                                && FALSE.equals(model.evaluate(CAT_SPEC.getSMTVariable(ax, encCtx))))
+                        .filter(model::isFlaggedAxiomViolated)
                         .toList();
                 if (!violatedCATSpecs.isEmpty()) {
                     summary.append("======= CAT specification violation found =======\n");
@@ -387,19 +388,16 @@ public class Dartagnan extends BaseOptions {
                     return new ResultSummary(summary.toString(), code);
                 }
             } else if (hasPositiveWitnesses) {
-                if (props.contains(PROGRAM_SPEC) && TRUE.equals(model.evaluate(PROGRAM_SPEC.getSMTVariable(encCtx)))) {
+                if (props.contains(PROGRAM_SPEC) && model.propertySatisfied(PROGRAM_SPEC)) {
                     // The check above is just a sanity check: the program spec has to be true
                     // because it is the only property that got encoded.
                     summary.append("Program specification witness found.").append("\n");
                 }
             } else if (result == UNKNOWN && modelChecker.hasModel()) {
                 // We reached unrolling bounds.
-                final List<Event> reachedBounds = new ArrayList<>();
-                for (Event ev : p.getThreadEventsWithAllTags(Tag.BOUND)) {
-                    if (TRUE.equals(model.evaluate(encCtx.execution(ev)))) {
-                        reachedBounds.add(ev);
-                    }
-                }
+                final List<Event> reachedBounds = p.getThreadEventsWithAllTags(Tag.BOUND)
+                        .stream().filter(model::isExecuted)
+                        .toList();
                 summary.append("=========== Not fully unrolled loops ============\n");
                 for (Event bound : reachedBounds) {
                     summary
@@ -437,15 +435,15 @@ public class Dartagnan extends BaseOptions {
                 printSpecification(summary, p);
                 summary.append("Ok").append("\n");
             } else if (hasViolations) {
-                if (props.contains(PROGRAM_SPEC) && FALSE.equals(model.evaluate(PROGRAM_SPEC.getSMTVariable(encCtx)))) {
+                if (props.contains(PROGRAM_SPEC) && model.propertyViolated(PROGRAM_SPEC)) {
                     // Program spec violated
                     printSpecification(summary, p);
                     summary.append("No").append("\n");
                 } else {
-                    final List<Axiom> violatedCATSpecs = task.getMemoryModel().getAxioms().stream()
+                    final List<Axiom> violatedCATSpecs = !props.contains(CAT_SPEC) ? List.of()
+                            : task.getMemoryModel().getAxioms().stream()
                             .filter(Axiom::isFlagged)
-                            .filter(ax -> props.contains(CAT_SPEC)
-                                    && FALSE.equals(model.evaluate(CAT_SPEC.getSMTVariable(ax, encCtx))))
+                            .filter(model::isFlaggedAxiomViolated)
                             .toList();
                     for (Axiom violatedAx : violatedCATSpecs) {
                         summary.append("Flag ")
@@ -511,9 +509,10 @@ public class Dartagnan extends BaseOptions {
         }
     }
 
-    private static void printWarningIfThreadStartFailed(Program p, EncodingContext ctx, Model model) {
+    private static void printWarningIfThreadStartFailed(Program p, IREvaluator model) {
+        // TODO: This code is outdated: startload does not signal pthread_failure
         for (Load e : p.getThreadEvents(Load.class)) {
-            if (e.hasTag(Tag.STARTLOAD) && BigInteger.ZERO.equals(ctx.evaluate(ctx.value(e), model).value())) {
+            if (e.hasTag(Tag.STARTLOAD) && BigInteger.ZERO.equals(model.value(e).value())) {
                 // This msg should be displayed even if the logging is off
                 System.out.printf(
                         "[WARNING] The call to pthread_create of thread %s failed. To force thread creation to succeed use --%s=true%n",

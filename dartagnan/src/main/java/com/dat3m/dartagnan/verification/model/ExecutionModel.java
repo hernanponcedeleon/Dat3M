@@ -2,6 +2,7 @@ package com.dat3m.dartagnan.verification.model;
 
 import com.dat3m.dartagnan.encoding.EncodingContext;
 import com.dat3m.dartagnan.encoding.ExpressionEncoder;
+import com.dat3m.dartagnan.encoding.IREvaluator;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.Thread;
@@ -15,6 +16,7 @@ import com.dat3m.dartagnan.program.event.lang.svcomp.BeginAtomic;
 import com.dat3m.dartagnan.program.event.lang.svcomp.EndAtomic;
 import com.dat3m.dartagnan.program.filter.Filter;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
+import com.dat3m.dartagnan.smt.ModelExt;
 import com.dat3m.dartagnan.utils.dependable.DependencyGraph;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.wmm.Wmm;
@@ -25,8 +27,6 @@ import com.google.common.collect.Sets;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
-import org.sosy_lab.java_smt.api.BooleanFormula;
-import org.sosy_lab.java_smt.api.Model;
 
 import java.math.BigInteger;
 import java.util.*;
@@ -49,7 +49,8 @@ public class ExecutionModel {
     private final EncodingContext ctx;
 
     // ============= Model specific  =============
-    private Model model;
+    private ModelExt model;
+    private IREvaluator irModel;
     private Filter eventFilter;
     private boolean extractCoherences;
 
@@ -154,7 +155,7 @@ public class ExecutionModel {
     }
 
     // Model specific data
-    public Model getModel() {
+    public ModelExt getModel() {
         return model;
     }
     public EncodingContext getContext() {
@@ -216,20 +217,21 @@ public class ExecutionModel {
     //========================== Initialization =========================
 
 
-    public void initialize(Model model) {
+    public void initialize(ModelExt model) {
         initialize(model, true);
     }
 
-    public void initialize(Model model, boolean extractCoherences) {
+    public void initialize(ModelExt model, boolean extractCoherences) {
         initialize(model, Filter.byTag(Tag.VISIBLE), extractCoherences);
     }
 
-    public void initialize(Model model, Filter eventFilter, boolean extractCoherences) {
+    public void initialize(ModelExt model, Filter eventFilter, boolean extractCoherences) {
         // We populate here, instead of on construction,
         // to reuse allocated data structures (since these data structures already adapted
         // their capacity in previous iterations, and thus we should have less overhead in future populations)
         // However, for all intents and purposes, this serves as a constructor.
         this.model = model;
+        this.irModel = new IREvaluator(ctx, model);
         this.eventFilter = eventFilter;
         this.extractCoherences = extractCoherences;
         extractEventsFromModel();
@@ -272,7 +274,7 @@ public class ExecutionModel {
             int atomicBegin = -1;
             int localId = 0;
             do {
-                if (!isTrue(ctx.execution(e))) {
+                if (!irModel.isExecuted(e)) {
                     e = e.getSuccessor();
                     continue;
                 }
@@ -291,7 +293,7 @@ public class ExecutionModel {
                 }
                 // =========================
 
-                if (e instanceof CondJump jump && isTrue(ctx.jumpTaken(jump))) {
+                if (e instanceof CondJump jump && irModel.jumpTaken(jump)) {
                     e = jump.getLabel();
                 } else {
                     e = e.getSuccessor();
@@ -334,7 +336,7 @@ public class ExecutionModel {
         data.setWasExecuted(true);
         if (data.isMemoryEvent()) {
             // ===== Memory Events =====
-            Object address = checkNotNull(ctx.evaluate(ctx.address((MemoryCoreEvent) e), model).value());
+            Object address = checkNotNull(irModel.address((MemoryCoreEvent) e).value());
             data.setAccessedAddress(address);
             if (!addressReadsMap.containsKey(address)) {
                 addressReadsMap.put(address, new HashSet<>());
@@ -342,7 +344,7 @@ public class ExecutionModel {
             }
 
             if (data.isRead() || data.isWrite()) {
-                data.setValue(ctx.evaluate(ctx.value((MemoryCoreEvent) e), model).value());
+                data.setValue(irModel.value((MemoryCoreEvent) e).value());
             }
 
             if (data.isRead()) {
@@ -367,7 +369,7 @@ public class ExecutionModel {
         } else if (data.isJump()) {
             // ===== Jumps =====
             // We override the meaning of execution here. A jump is executed IFF its condition was true.
-            data.setWasExecuted(isTrue(ctx.jumpTaken((CondJump) e)));
+            data.setWasExecuted(irModel.jumpTaken((CondJump) e));
         } else {
             //TODO: Maybe add some other events (e.g. assertions)
             // But for now all non-visible events are simply registered without
@@ -487,11 +489,11 @@ public class ExecutionModel {
         final ExpressionEncoder exprEnc = ctx.getExpressionEncoder();
         memoryLayoutMap.clear();
         for (MemoryObject obj : getProgram().getMemory().getObjects()) {
-            final boolean isAllocated = obj.isStaticallyAllocated() || isTrue(ctx.execution(obj.getAllocationSite()));
+            final boolean isAllocated = irModel.isAllocated(obj);
             if (isAllocated) {
                 // TODO: Get rid of ValueModel: replace by TypedValue
-                final ValueModel address = new ValueModel(exprEnc.evaluate(ctx.address(obj), model).value());
-                final BigInteger size = (BigInteger) exprEnc.evaluate(ctx.size(obj), model).value();
+                final ValueModel address = new ValueModel(irModel.address(obj).value());
+                final BigInteger size = irModel.size(obj).value();
                 memoryLayoutMap.put(obj, new MemoryObjectModel(obj, address, size));
             }
         }
@@ -505,8 +507,7 @@ public class ExecutionModel {
             Object address = addressedReads.getKey();
             for (EventData read : addressedReads.getValue()) {
                 for (EventData write : addressWritesMap.get(address)) {
-                    BooleanFormula rfExpr = rf.encode(write.getEvent(), read.getEvent());
-                    if (isTrue(rfExpr)) {
+                    if (irModel.hasEdge(rf, write.getEvent(), read.getEvent())) {
                         readWriteMap.put(read, write);
                         read.setReadFrom(write);
                         writeReadsMap.get(write).add(read);
@@ -531,7 +532,7 @@ public class ExecutionModel {
                 for (EventData w1 : writes) {
                     coEdges.put(w1, new ArrayList<>());
                     for (EventData w2 : writes) {
-                        if (isTrue(co.encode(w1.getEvent(), w2.getEvent()))) {
+                        if (irModel.hasEdge(co, w1.getEvent(), w2.getEvent())) {
                             coEdges.get(w1).add(w2);
                         }
                     }
@@ -542,7 +543,7 @@ public class ExecutionModel {
                 // --- Extracting co from IDL-based encoding using clock variables ---
                 Map<EventData, BigInteger> writeClockMap = new HashMap<>(writes.size() * 4 / 3, 0.75f);
                 for (EventData w : writes) {
-                    writeClockMap.put(w, model.evaluate(ctx.memoryOrderClock(w.getEvent())));
+                    writeClockMap.put(w, irModel.memoryOrderClock(w.getEvent()));
                 }
                 coSortedWrites = writes.stream().sorted(Comparator.comparing(writeClockMap::get)).collect(Collectors.toList());
             }
@@ -555,9 +556,5 @@ public class ExecutionModel {
             coherenceMap.put(addr, Collections.unmodifiableList(coSortedWrites));
         }
 
-    }
-
-    private boolean isTrue(BooleanFormula formula) {
-        return Boolean.TRUE.equals(model.evaluate(formula));
     }
 }
