@@ -41,14 +41,6 @@ public class VisitorOpsComposite extends SpirvBaseVisitor<Void> {
         throw new ParsingException(String.format("Type mismatch in composite extraction for '%s'", id));
     }
 
-    private Expression getElement(Expression base, List<Integer> indexes, String id) {
-        try {
-            return expressions.makeExtract(base, indexes);
-        } catch (Exception e) {
-            throw new ParsingException(String.format("%s Offending id: '%s'", e.getMessage(), id));
-        }
-    }
-
     @Override
     public Void visitOpCompositeInsert(SpirvParser.OpCompositeInsertContext ctx) {
         String id = ctx.idResult().getText();
@@ -108,14 +100,6 @@ public class VisitorOpsComposite extends SpirvBaseVisitor<Void> {
         return null;
     }
 
-    private Expression getInsertion(Expression compositeExpr, Expression objectExpr, List<Integer> indexes, String id) {
-        try {
-            return expressions.makeInsert(compositeExpr, objectExpr, indexes);
-        } catch (Exception e) {
-            throw new ParsingException(String.format("%s Offending id: '%s'", e.getMessage(), id));
-        }
-    }
-
     @Override
     public Void visitOpCompositeConstruct(SpirvParser.OpCompositeConstructContext ctx) {
         String id = ctx.idResult().getText();
@@ -147,6 +131,31 @@ public class VisitorOpsComposite extends SpirvBaseVisitor<Void> {
         return null;
     }
 
+    public Set<String> getSupportedOps() {
+        return Set.of(
+                "OpCompositeExtract",
+                "OpCompositeInsert",
+                "OpVectorShuffle",
+                "OpCompositeConstruct"
+        );
+    }
+
+    private Expression getElement(Expression base, List<Integer> indexes, String id) {
+        try {
+            return expressions.makeExtract(base, indexes);
+        } catch (Exception e) {
+            throw new ParsingException(String.format("%s Offending id: '%s'", e.getMessage(), id));
+        }
+    }
+
+    private Expression getInsertion(Expression compositeExpr, Expression objectExpr, List<Integer> indexes, String id) {
+        try {
+            return expressions.makeInsert(compositeExpr, objectExpr, indexes);
+        } catch (Exception e) {
+            throw new ParsingException(String.format("%s Offending id: '%s'", e.getMessage(), id));
+        }
+    }
+
     private Expression getConstruct(Type type, List<Expression> elements, String id) {
         try {
             return expressions.makeConstruct(type, elements);
@@ -163,12 +172,4 @@ public class VisitorOpsComposite extends SpirvBaseVisitor<Void> {
         }
     }
 
-    public Set<String> getSupportedOps() {
-        return Set.of(
-                "OpCompositeExtract",
-                "OpCompositeInsert",
-                "OpVectorShuffle",
-                "OpCompositeConstruct"
-        );
-    }
 }
