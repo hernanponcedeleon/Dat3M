@@ -8,6 +8,7 @@ import com.dat3m.dartagnan.expression.integers.IntBinaryOp;
 import com.dat3m.dartagnan.expression.integers.IntLiteral;
 import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
+import com.dat3m.dartagnan.expression.type.VoidType;
 import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.IRHelper;
 import com.dat3m.dartagnan.program.Program;
@@ -20,7 +21,6 @@ import com.dat3m.dartagnan.program.event.core.ExecutionStatus;
 import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.event.core.Local;
 import com.dat3m.dartagnan.program.event.functions.FunctionCall;
-import com.dat3m.dartagnan.program.event.functions.ValueFunctionCall;
 import com.dat3m.dartagnan.program.event.lang.svcomp.BeginAtomic;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.google.common.collect.ImmutableList;
@@ -354,14 +354,10 @@ public class Intrinsics {
     }
 
     private List<Event> inlineAsZero(FunctionCall call) {
-        if (call instanceof ValueFunctionCall valueCall) {
-            final Register reg = valueCall.getResultRegister();
-            final Expression zero = expressions.makeGeneralZero(reg.getType());
-            logger.debug("Replaced (unsupported) call to \"{}\" by zero.", call.getCalledFunction().getName());
-            return List.of(EventFactory.newLocal(reg, zero));
-        } else {
-            return List.of();
-        }
+        final Register reg = call.getResultRegister();
+        final Expression zero = expressions.makeGeneralZero(reg.getType());
+        logger.debug("Replaced (unsupported) call to \"{}\" by zero.", call.getCalledFunction().getName());
+        return List.of(EventFactory.newLocal(reg, zero));
     }
 
     private List<Event> inlineExit(FunctionCall ignored) {
@@ -953,7 +949,7 @@ public class Intrinsics {
 
     private List<Event> inlineUnknownFunction(FunctionCall call) {
         final List<Event> replacement = new ArrayList<>();
-        if (call instanceof ValueFunctionCall) {
+        if (call instanceof FunctionCall) {
             replacement.addAll(inlineCallAsNonDet(call));
         }
         replacement.addAll(inlineAssert(call, AssertionType.UNKNOWN_FUNCTION,
@@ -966,8 +962,8 @@ public class Intrinsics {
     // LLVM intrinsics
 
     private List<Event> handleLLVMIntrinsic(FunctionCall call) {
-        assert call instanceof ValueFunctionCall && call.isDirectCall();
-        final ValueFunctionCall valueCall = (ValueFunctionCall) call;
+        assert call instanceof FunctionCall && call.isDirectCall();
+        final FunctionCall valueCall = (FunctionCall) call;
         final String name = call.getCalledFunction().getName();
 
         if (name.startsWith("llvm.ctlz")) {
@@ -997,8 +993,8 @@ public class Intrinsics {
     }
 
     private List<Event> inlineLLVMExpect(FunctionCall call) {
-        assert call instanceof ValueFunctionCall;
-        final Register retReg = ((ValueFunctionCall) call).getResultRegister();
+        assert call instanceof FunctionCall;
+        final Register retReg = ((FunctionCall) call).getResultRegister();
         final Expression value = call.getArguments().get(0);
         return List.of(EventFactory.newLocal(retReg, value));
     }
@@ -1008,7 +1004,7 @@ public class Intrinsics {
         return List.of(EventFactory.newAssume(call.getArguments().get(0)));
     }
 
-    private List<Event> inlineLLVMCtlz(ValueFunctionCall call) {
+    private List<Event> inlineLLVMCtlz(FunctionCall call) {
         //see https://llvm.org/docs/LangRef.html#llvm-ctlz-intrinsic
         checkArgument(call.getArguments().size() == 2,
                 "Expected 2 parameters for \"llvm.ctlz\", got %s.", call.getArguments().size());
@@ -1025,7 +1021,7 @@ public class Intrinsics {
         return List.of(assignment);
     }
 
-    private List<Event> inlineLLVMCttz(ValueFunctionCall call) {
+    private List<Event> inlineLLVMCttz(FunctionCall call) {
         //see https://llvm.org/docs/LangRef.html#llvm-cttz-intrinsic
         checkArgument(call.getArguments().size() == 2,
                 "Expected 2 parameters for \"llvm.cttz\", got %s.", call.getArguments().size());
@@ -1042,7 +1038,7 @@ public class Intrinsics {
         return List.of(assignment);
     }
 
-    private List<Event> inlineLLVMCtpop(ValueFunctionCall call) {
+    private List<Event> inlineLLVMCtpop(FunctionCall call) {
         //see https://llvm.org/docs/LangRef.html#llvm-ctpop-intrinsic
         final Expression input = call.getArguments().get(0);
         // TODO: Handle the second parameter as well
@@ -1068,7 +1064,7 @@ public class Intrinsics {
         return replacement;
     }
 
-    private List<Event> inlineLLVMMinMax(ValueFunctionCall call) {
+    private List<Event> inlineLLVMMinMax(FunctionCall call) {
         //see https://llvm.org/docs/LangRef.html#standard-c-c-library-intrinsics
         final List<Expression> arguments = call.getArguments();
         final Expression left = arguments.get(0);
@@ -1081,7 +1077,7 @@ public class Intrinsics {
         return List.of(EventFactory.newLocal(call.getResultRegister(), result));
     }
 
-    private List<Event> inlineLLVMSaturatedSub(ValueFunctionCall call) {
+    private List<Event> inlineLLVMSaturatedSub(FunctionCall call) {
         //see https://llvm.org/docs/LangRef.html#saturation-arithmetic-intrinsics
         /*
             signedSatSub(x, y):
@@ -1126,7 +1122,7 @@ public class Intrinsics {
         }
     }
 
-    private List<Event> inlineLLVMSaturatedAdd(ValueFunctionCall call) {
+    private List<Event> inlineLLVMSaturatedAdd(FunctionCall call) {
         //see https://llvm.org/docs/LangRef.html#saturation-arithmetic-intrinsics
         /*
             (un)signedSatAdd(x, y):
@@ -1162,19 +1158,19 @@ public class Intrinsics {
         );
     }
 
-    private List<Event> inlineLLVMSAddWithOverflow(ValueFunctionCall call) {
+    private List<Event> inlineLLVMSAddWithOverflow(FunctionCall call) {
         return inlineLLVMSOpWithOverflow(call, IntBinaryOp.ADD);
     }
 
-    private List<Event> inlineLLVMSSubWithOverflow(ValueFunctionCall call) {
+    private List<Event> inlineLLVMSSubWithOverflow(FunctionCall call) {
         return inlineLLVMSOpWithOverflow(call, IntBinaryOp.SUB);
     }
 
-    private List<Event> inlineLLVMSMulWithOverflow(ValueFunctionCall call) {
+    private List<Event> inlineLLVMSMulWithOverflow(FunctionCall call) {
         return inlineLLVMSOpWithOverflow(call, IntBinaryOp.MUL);
     }
 
-    private List<Event> inlineLLVMSOpWithOverflow(ValueFunctionCall call, IntBinaryOp op) {
+    private List<Event> inlineLLVMSOpWithOverflow(FunctionCall call, IntBinaryOp op) {
         final Register resultReg = call.getResultRegister();
         final List<Expression> arguments = call.getArguments();
         final Expression x = arguments.get(0);
@@ -1224,7 +1220,7 @@ public class Intrinsics {
     // LKMM intrinsics
 
     private List<Event> handleLKMMIntrinsic(FunctionCall call) {
-        final Register reg = (call instanceof ValueFunctionCall valueCall) ? valueCall.getResultRegister() : null;
+        final Register reg = call.getResultRegister();
         final List<Expression> args = call.getArguments();
 
         final Expression p0 = args.get(0);
@@ -1324,7 +1320,7 @@ public class Intrinsics {
     }
 
     private List<Event> inlineNonDet(FunctionCall call) {
-        assert call.isDirectCall() && call instanceof ValueFunctionCall;
+        assert call.isDirectCall() && call instanceof FunctionCall;
         final Register result = getResultRegister(call);
         final String name = call.getCalledFunction().getName();
         final String separator = "nondet_";
@@ -1393,18 +1389,19 @@ public class Intrinsics {
                     EventFactory.newStore(destAddr, reg)
             ));
         }
-        if (call instanceof ValueFunctionCall valueCall) {
-            // std.memcpy returns the destination address, llvm.memcpy has no return value
-            replacement.add(EventFactory.newLocal(valueCall.getResultRegister(), dest));
-        }
 
+        // std.memcpy returns the destination address, llvm.memcpy has no return value
+        final Expression returnVal = call.getResultRegister().getType() instanceof VoidType
+                ? expressions.makeUnit()
+                : dest;
+        replacement.add(EventFactory.newLocal(call.getResultRegister(), returnVal));
         return replacement;
     }
 
     // https://en.cppreference.com/w/c/string/byte/memcpy
     private List<Event> inlineMemCpyS(FunctionCall call) {
         // Cast guaranteed to success by the return type of memcpy_s
-        final Register resultRegister = ((ValueFunctionCall)call).getResultRegister();
+        final Register resultRegister = ((FunctionCall)call).getResultRegister();
         final Function caller = call.getFunction();
         final Expression dest = call.getArguments().get(0);
         final Expression destszExpr = call.getArguments().get(1);
@@ -1516,7 +1513,7 @@ public class Intrinsics {
         final Expression src1 = call.getArguments().get(0);
         final Expression src2 = call.getArguments().get(1);
         final Expression numExpr = call.getArguments().get(2);
-        final Register returnReg = ((ValueFunctionCall)call).getResultRegister();
+        final Register returnReg = ((FunctionCall)call).getResultRegister();
 
         if (!(numExpr instanceof IntLiteral numValue)) {
             final String error = "Cannot handle memcmp with dynamic num argument: " + call;
@@ -1584,10 +1581,12 @@ public class Intrinsics {
 
             replacement.add(EventFactory.newStore(destAddr, zero));
         }
-        if (call instanceof ValueFunctionCall valueCall) {
-            // std.memset returns the destination address, llvm.memset has no return value
-            replacement.add(EventFactory.newLocal(valueCall.getResultRegister(), dest));
-        }
+
+        // std.memset returns the destination address, llvm.memset has no return value
+        final Expression returnValue = call.getResultRegister().getType() instanceof VoidType
+                ? expressions.makeUnit()
+                : dest;
+        replacement.add(EventFactory.newLocal(call.getResultRegister(), returnValue));
 
         return replacement;
     }
@@ -1619,7 +1618,7 @@ public class Intrinsics {
     }
 
     private Register getResultRegister(FunctionCall call) {
-        checkArgument(call instanceof ValueFunctionCall, "Unexpected value discard at intrinsic \"%s\"", call);
-        return ((ValueFunctionCall) call).getResultRegister();
+        checkArgument(call instanceof FunctionCall, "Unexpected value discard at intrinsic \"%s\"", call);
+        return ((FunctionCall) call).getResultRegister();
     }
 }

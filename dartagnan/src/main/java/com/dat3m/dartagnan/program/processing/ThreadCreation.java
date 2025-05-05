@@ -19,7 +19,6 @@ import com.dat3m.dartagnan.program.event.core.threading.ThreadStart;
 import com.dat3m.dartagnan.program.event.functions.AbortIf;
 import com.dat3m.dartagnan.program.event.functions.FunctionCall;
 import com.dat3m.dartagnan.program.event.functions.Return;
-import com.dat3m.dartagnan.program.event.functions.ValueFunctionCall;
 import com.dat3m.dartagnan.program.memory.Memory;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.dat3m.dartagnan.program.processing.compilation.Compilation;
@@ -303,8 +302,7 @@ public class ThreadCreation implements ProgramProcessor {
         thread.append(threadEnd);
 
         // ------------------- Replace AbortIf, Return, and pthread_exit -------------------
-        final Register returnRegister = function.hasReturnValue() ?
-                thread.newRegister("__retval", function.getFunctionType().getReturnType()) : null;
+        final Register returnRegister = thread.newRegister("__retval", function.getFunctionType().getReturnType());
         for (Event e : thread.getEvents()) {
             if (e instanceof AbortIf abort) {
                 final Event jumpToEnd = EventFactory.newJump(abort.getCondition(), threadEnd);
@@ -312,10 +310,10 @@ public class ThreadCreation implements ProgramProcessor {
                 IRHelper.replaceWithMetadata(abort, jumpToEnd);
             } else if (e instanceof Return || (e instanceof FunctionCall call
                     && call.isDirectCall() && call.getCalledFunction().getName().equals("pthread_exit"))) {
-                final Expression retVal = (e instanceof Return ret) ? ret.getValue().orElse(null)
+                final Expression retVal = (e instanceof Return ret) ? ret.getValue()
                         : ((FunctionCall)e).getArguments().get(0);
                 final List<Event> replacement = eventSequence(
-                        returnRegister != null ? EventFactory.newLocal(returnRegister, retVal) : null,
+                        EventFactory.newLocal(returnRegister, retVal),
                         EventFactory.newGoto(threadReturnLabel)
                 );
                 IRHelper.replaceWithMetadata(e, replacement);
@@ -368,8 +366,7 @@ public class ThreadCreation implements ProgramProcessor {
     }
 
     private Register getResultRegister(FunctionCall call) {
-        assert call instanceof ValueFunctionCall;
-        return ((ValueFunctionCall) call).getResultRegister();
+        return call.getResultRegister();
     }
 
     private List<Event> newReleaseStore(Expression address, Expression storeValue) {

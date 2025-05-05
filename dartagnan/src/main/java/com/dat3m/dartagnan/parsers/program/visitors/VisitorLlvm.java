@@ -1,16 +1,13 @@
 package com.dat3m.dartagnan.parsers.program.visitors;
 
 import com.dat3m.dartagnan.exception.ParsingException;
+import com.dat3m.dartagnan.exception.ProgramProcessingException;
 import com.dat3m.dartagnan.expression.*;
 import com.dat3m.dartagnan.expression.integers.IntBinaryOp;
 import com.dat3m.dartagnan.expression.type.*;
 import com.dat3m.dartagnan.parsers.LLVMIRBaseVisitor;
 import com.dat3m.dartagnan.parsers.LLVMIRParser.*;
-import com.dat3m.dartagnan.parsers.program.ParserAsm;
-import com.dat3m.dartagnan.parsers.program.ParserAsmPPC;
-import com.dat3m.dartagnan.parsers.program.ParserAsmRISCV;
-import com.dat3m.dartagnan.parsers.program.ParserAsmX86;
-import com.dat3m.dartagnan.parsers.program.ParserAsmArm;
+import com.dat3m.dartagnan.parsers.program.*;
 import com.dat3m.dartagnan.parsers.program.utils.ProgramBuilder;
 import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.Program;
@@ -27,7 +24,6 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
-
 import org.antlr.v4.runtime.CharStream;
 import org.antlr.v4.runtime.CharStreams;
 import org.antlr.v4.runtime.ParserRuleContext;
@@ -39,9 +35,7 @@ import java.math.BigInteger;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import com.dat3m.dartagnan.exception.ProgramProcessingException;
 import static com.dat3m.dartagnan.expression.utils.ExpressionHelper.isAggregateLike;
-
 import static com.dat3m.dartagnan.program.event.EventFactory.*;
 import static com.dat3m.dartagnan.program.event.EventFactory.Llvm.newCompareExchange;
 import static com.google.common.base.Preconditions.checkState;
@@ -379,6 +373,8 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
             arguments.add(checkExpression(argumentType, argument.value()));
         }
 
+        // TODO: Can we define this as the unit-register in the NULL case or will the inline assembly code
+        //  fail?
         final Register resultRegister = currentRegisterName == null ? null :
                 getOrNewRegister(currentRegisterName, returnType);
 
@@ -433,8 +429,8 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
                 types.getFunctionType(returnType, Lists.transform(arguments, Expression::getType));
 
         final Event call = currentRegisterName == null ?
-                newVoidFunctionCall(funcType, callTarget, arguments) :
-                newValueFunctionCall(resultRegister, funcType, callTarget, arguments);
+                newFunctionCall(function.getOrNewRegister("_", types.getVoidType()), funcType, callTarget, arguments) :
+                newFunctionCall(resultRegister, funcType, callTarget, arguments);
         block.events.add(call);
         return resultRegister;
     }
@@ -445,9 +441,9 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
         final Expression value;
         if (ctx.concreteType() != null) {
             final Type type = parseType(ctx.concreteType());
-            value = type instanceof VoidType ? null : checkExpression(type, ctx.value());
+            value = type instanceof VoidType ? expressions.makeUnit() : checkExpression(type, ctx.value());
         } else {
-            value = null;
+            value = expressions.makeUnit();
         }
         block.events.add(newFunctionReturn(value));
         return null;

@@ -6,7 +6,7 @@ import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.EventFactory;
-import com.dat3m.dartagnan.program.event.functions.ValueFunctionCall;
+import com.dat3m.dartagnan.program.event.functions.FunctionCall;
 import org.sosy_lab.common.configuration.Configuration;
 
 import java.math.BigInteger;
@@ -38,12 +38,12 @@ public class ResolveLLVMObjectSizeCalls implements FunctionProcessor {
 
     @Override
     public void run(Function function) {
-        function.getEvents(ValueFunctionCall.class)
+        function.getEvents(FunctionCall.class)
                 .stream().filter(call -> call.isDirectCall() && call.getCalledFunction().getIntrinsicInfo() == Intrinsics.Info.LLVM_OBJECTSIZE)
                 .forEach(this::resolveObjectSizeCall);
     }
 
-    private void resolveObjectSizeCall(ValueFunctionCall call) {
+    private void resolveObjectSizeCall(FunctionCall call) {
         //final Expression ptr = call.getArguments().get(0);
         final IntLiteral zeroIfUnknown = (IntLiteral)call.getArguments().get(1); // else -1 if unknown
         //final IntLiteral nullIsUnknown = (IntLiteral)call.getArguments().get(2);

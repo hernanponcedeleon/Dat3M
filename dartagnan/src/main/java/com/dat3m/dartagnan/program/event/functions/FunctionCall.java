@@ -9,6 +9,7 @@ import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.Register.UsageType;
 import com.dat3m.dartagnan.program.event.AbstractEvent;
 import com.dat3m.dartagnan.program.event.RegReader;
+import com.dat3m.dartagnan.program.event.RegWriter;
 import com.google.common.base.Preconditions;
 
 import java.util.ArrayList;
@@ -17,35 +18,49 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-public abstract class FunctionCall extends AbstractEvent implements RegReader {
+public class FunctionCall extends AbstractEvent implements RegReader, RegWriter {
 
     protected FunctionType funcType;
     protected Expression callTarget;
     protected List<Expression> arguments;
+    protected Register resultRegister;
 
-    protected FunctionCall(FunctionType funcType, Expression funcPtr, List<Expression> arguments) {
+    public FunctionCall(Register resultRegister, FunctionType funcType, Expression funcPtr, List<Expression> arguments) {
         final List<Type> paramTypes = funcType.getParameterTypes();
         Preconditions.checkArgument(
                 (!funcType.isVarArgs() && arguments.size() == paramTypes.size())
                         || (funcType.isVarArgs() && arguments.size() >= paramTypes.size())
         );
+        Preconditions.checkArgument(resultRegister.getType().equals(funcType.getReturnType()));
         for (int i = 0; i < paramTypes.size(); i++) {
             Preconditions.checkArgument(arguments.get(i).getType().equals(paramTypes.get(i)));
         }
+        this.resultRegister = resultRegister;
         this.funcType = funcType;
         this.callTarget = funcPtr;
         this.arguments = new ArrayList<>(arguments);
     }
 
-    protected FunctionCall(Function func, List<Expression> arguments) {
-        this(func.getFunctionType(), func, arguments);
+    protected FunctionCall(Register resultRegister, Function func, List<Expression> arguments) {
+        this(resultRegister, func.getFunctionType(), func, arguments);
     }
 
     protected FunctionCall(FunctionCall other) {
         super(other);
+        this.resultRegister = other.resultRegister;
         this.funcType = other.funcType;
         this.callTarget = other.callTarget;
         this.arguments = new ArrayList<>(other.arguments);
+    }
+
+    @Override
+    public Register getResultRegister() {
+        return resultRegister;
+    }
+
+    @Override
+    public void setResultRegister(Register reg) {
+        this.resultRegister = reg;
     }
 
     public boolean isDirectCall() { return callTarget instanceof Function; }
@@ -67,7 +82,9 @@ public abstract class FunctionCall extends AbstractEvent implements RegReader {
     }
 
     @Override
-    public abstract FunctionCall getCopy();
+    public FunctionCall getCopy() {
+        return new FunctionCall(this);
+    }
 
     @Override
     public Set<Register.Read> getRegisterReads() {
@@ -76,8 +93,11 @@ public abstract class FunctionCall extends AbstractEvent implements RegReader {
         return regReads;
     }
 
-    protected String argumentsToString() {
-        return arguments.stream().map(Expression::toString).collect(Collectors.joining(", "));
+    @Override
+    protected String defaultString() {
+        final Object target = isDirectCall() ? ((Function)callTarget).getName() : callTarget;
+        return String.format("%s <- call %s(%s)", resultRegister, target,
+                arguments.stream().map(Expression::toString).collect(Collectors.joining(", ")));
     }
 
     @Override

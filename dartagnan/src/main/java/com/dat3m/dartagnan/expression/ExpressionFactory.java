@@ -6,6 +6,7 @@ import com.dat3m.dartagnan.expression.floats.*;
 import com.dat3m.dartagnan.expression.integers.*;
 import com.dat3m.dartagnan.expression.misc.GEPExpr;
 import com.dat3m.dartagnan.expression.misc.ITEExpr;
+import com.dat3m.dartagnan.expression.misc.UnitExpr;
 import com.dat3m.dartagnan.expression.type.*;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.dat3m.dartagnan.program.memory.ScopedPointer;
@@ -27,6 +28,7 @@ public final class ExpressionFactory {
     private final BooleanType booleanType = types.getBooleanType();
     private final BoolLiteral falseConstant = new BoolLiteral(booleanType, false);
     private final BoolLiteral trueConstant = new BoolLiteral(booleanType, true);
+    private final UnitExpr unit = new UnitExpr(types.getVoidType());
 
     private ExpressionFactory() {}
 
@@ -317,6 +319,8 @@ public final class ExpressionFactory {
     // -----------------------------------------------------------------------------------------------------------------
     // Misc
 
+    public Expression makeUnit() { return unit; }
+
     public Expression makeGeneralZero(Type type) {
         if (type instanceof ArrayType arrayType) {
             Expression zero = makeGeneralZero(arrayType.getElementType());
@@ -337,6 +341,8 @@ public final class ExpressionFactory {
             return makeFalse();
         } else if (type instanceof FloatType floatType) {
             return makeZero(floatType);
+        } else if (type instanceof VoidType) {
+            return makeUnit();
         } else {
             throw new UnsupportedOperationException("Cannot create zero of type " + type);
         }

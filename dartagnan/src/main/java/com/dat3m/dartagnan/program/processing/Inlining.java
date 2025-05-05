@@ -11,7 +11,6 @@ import com.dat3m.dartagnan.program.event.core.ControlBarrier;
 import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.event.functions.FunctionCall;
 import com.dat3m.dartagnan.program.event.functions.Return;
-import com.dat3m.dartagnan.program.event.functions.ValueFunctionCall;
 import com.dat3m.dartagnan.program.event.lang.svcomp.BeginAtomic;
 import com.dat3m.dartagnan.program.event.lang.svcomp.EndAtomic;
 import org.sosy_lab.common.configuration.Configuration;
@@ -153,12 +152,12 @@ public class Inlining implements ProgramProcessor {
 
         // --------- Post process inlined body ---------
         // Replace Return events by (assignment + jump)
-        final Register resultReg = call instanceof ValueFunctionCall c ? c.getResultRegister() : null;
+        final Register resultReg = call.getResultRegister();
         inlinedBody.stream().filter(Return.class::isInstance).map(Return.class::cast).forEach(returnEvent -> {
-            final Expression expression = returnEvent.getValue().orElse(null);
+            final Expression expression = returnEvent.getValue();
             checkReturnType(resultReg, expression);
             final List<Event> replacement = eventSequence(
-                    expression != null ? newLocal(resultReg, expression) : null,
+                    newLocal(resultReg, expression),
                     newGoto(returnLabel)
             );
             IRHelper.replaceWithMetadata(returnEvent, replacement);
@@ -170,17 +169,10 @@ public class Inlining implements ProgramProcessor {
     }
 
     private static void checkReturnType(Register result, Expression expression) {
-        if (result == null && expression != null) {
+        if (!result.getType().equals(expression.getType())) {
             throw new MalformedProgramException(
-                    String.format("Return %s in function returning void.", expression));
-        }
-        if (result != null && expression == null) {
-            throw new MalformedProgramException(
-                    String.format("Missing return expression in function returning %s", result.getType()));
-        }
-        if (result != null && !result.getType().equals(expression.getType())) {
-            throw new MalformedProgramException(
-                    String.format("Return expression %s of type %s in function returning %s", expression, expression.getType(), result.getType()));
+                    String.format("Return expression %s of type %s in function %s with return type %s",
+                            expression, expression.getType(), result.getFunction().getName(), result.getType()));
         }
     }
 }
