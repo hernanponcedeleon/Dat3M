@@ -417,6 +417,30 @@ public class VisitorOpsCompositeTest {
     }
 
     @Test
+    public void testVectorShuffle() {
+        // given
+        String input = "%shuffle = OpVectorShuffle %v4uint %v1 %v2 0 1 4 5";
+        builder.mockIntType("%uint", 32);
+        builder.mockVectorType("%v4uint", "%uint", 4);
+        builder.mockConstant("%v1", "%v4uint", List.of(1, 2, 3, 4));
+        builder.mockConstant("%v2", "%v4uint", List.of(5, 6, 7, 8));
+        builder.mockConstant("%bv32(1)", "%uint", 1);
+        builder.mockConstant("%bv32(2)", "%uint", 2);
+        builder.mockConstant("%bv32(5)", "%uint", 5);
+        builder.mockConstant("%bv32(6)", "%uint", 6);
+
+        // when
+        visit(input);
+
+        // then
+        ConstructExpr shuffle = (ConstructExpr) builder.getExpression("%shuffle");
+        assertEquals(builder.getExpression("%bv32(1)"), shuffle.getOperands().get(0));
+        assertEquals(builder.getExpression("%bv32(2)"), shuffle.getOperands().get(1));
+        assertEquals(builder.getExpression("%bv32(5)"), shuffle.getOperands().get(2));
+        assertEquals(builder.getExpression("%bv32(6)"), shuffle.getOperands().get(3));
+    }
+
+    @Test
     public void testVectorShuffleReturnType() {
         // given
         String input = "%shuffle = OpVectorShuffle %uint %v1 %v2 0 0 0 0";
@@ -535,27 +559,25 @@ public class VisitorOpsCompositeTest {
     }
 
     @Test
-    public void testVectorShuffle() {
+    public void testCompositeConstructNestedVectorCorrectType() {
         // given
-        String input = "%shuffle = OpVectorShuffle %v4uint %v1 %v2 0 1 4 5";
+        String input = "%result = OpCompositeConstruct %composite %member1 %member2";
         builder.mockIntType("%uint", 32);
-        builder.mockVectorType("%v4uint", "%uint", 4);
-        builder.mockConstant("%v1", "%v4uint", List.of(1, 2, 3, 4));
-        builder.mockConstant("%v2", "%v4uint", List.of(5, 6, 7, 8));
+        builder.mockVectorType("%composite", "%uint", 2);
+        builder.mockConstant("%member1", "%uint", 1);
+        builder.mockConstant("%member2", "%composite", List.of(2, 3));
         builder.mockConstant("%bv32(1)", "%uint", 1);
         builder.mockConstant("%bv32(2)", "%uint", 2);
-        builder.mockConstant("%bv32(5)", "%uint", 5);
-        builder.mockConstant("%bv32(6)", "%uint", 6);
+        builder.mockConstant("%bv32(3)", "%uint", 3);
 
         // when
         visit(input);
 
         // then
-        ConstructExpr shuffle = (ConstructExpr) builder.getExpression("%shuffle");
+        ConstructExpr shuffle = (ConstructExpr) builder.getExpression("%result");
         assertEquals(builder.getExpression("%bv32(1)"), shuffle.getOperands().get(0));
         assertEquals(builder.getExpression("%bv32(2)"), shuffle.getOperands().get(1));
-        assertEquals(builder.getExpression("%bv32(5)"), shuffle.getOperands().get(2));
-        assertEquals(builder.getExpression("%bv32(6)"), shuffle.getOperands().get(3));
+        assertEquals(builder.getExpression("%bv32(3)"), shuffle.getOperands().get(2));
     }
 
     @Test
@@ -629,28 +651,6 @@ public class VisitorOpsCompositeTest {
         } catch (Exception e) {
             assertEquals("All elements in an array must have the same type. Offending id: '%result'", e.getMessage());
         }
-    }
-
-    @Test
-    public void testCompositeConstructNestedVectorCorrectType() {
-        // given
-        String input = "%result = OpCompositeConstruct %composite %member1 %member2";
-        builder.mockIntType("%uint", 32);
-        builder.mockVectorType("%composite", "%uint", 2);
-        builder.mockConstant("%member1", "%uint", 1);
-        builder.mockConstant("%member2", "%composite", List.of(2, 3));
-        builder.mockConstant("%bv32(1)", "%uint", 1);
-        builder.mockConstant("%bv32(2)", "%uint", 2);
-        builder.mockConstant("%bv32(3)", "%uint", 3);
-
-        // when
-        visit(input);
-
-        // then
-        ConstructExpr shuffle = (ConstructExpr) builder.getExpression("%result");
-        assertEquals(builder.getExpression("%bv32(1)"), shuffle.getOperands().get(0));
-        assertEquals(builder.getExpression("%bv32(2)"), shuffle.getOperands().get(1));
-        assertEquals(builder.getExpression("%bv32(3)"), shuffle.getOperands().get(2));
     }
 
     private void visit(String input) {
