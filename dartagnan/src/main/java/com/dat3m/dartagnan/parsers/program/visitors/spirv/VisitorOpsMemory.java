@@ -50,11 +50,10 @@ public class VisitorOpsMemory extends SpirvBaseVisitor<Event> {
         String valueId = ctx.object().getText();
         Expression value = builder.getExpression(valueId);
         Type type = value.getType();
-        List<Event> events = visitMemoryAccess(valueId, type, pointer, (i, exp) -> {
-            return i == -1 ?
-                EventFactory.newStore(exp, value) :
-                EventFactory.newStore(exp, expressions.makeExtract(value, i));
-            });
+        List events = visitMemoryAccess(valueId, type, pointer, (i, exp) ->
+            i == -1 ?
+            EventFactory.newStore(exp, value) :
+            EventFactory.newStore(exp, expressions.makeExtract(value, i)));
         Set<String> tags = parseMemoryAccessTags(ctx.memoryAccess());
         checkAndPropagateTags(events, tags, Tag.Spirv.MEM_VISIBLE, ctx.pointer().getText(), "OpStore");
         return null;
