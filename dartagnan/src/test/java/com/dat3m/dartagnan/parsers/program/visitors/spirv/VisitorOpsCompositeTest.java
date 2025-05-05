@@ -618,6 +618,24 @@ public class VisitorOpsCompositeTest {
     }
 
     @Test
+    public void testCompositeConstructMissingOperandStruct() {
+        // given
+        String input = "%result = OpCompositeConstruct %composite %member1 %member2";
+        builder.mockBoolType("%bool");
+        builder.mockIntType("%uint", 32);
+        builder.mockAggregateType("%composite", "%bool", "%uint", "%uint");
+        builder.mockConstant("%member1", "%bool", true);
+        builder.mockConstant("%member2", "%uint", 2);
+
+        try {
+            visit(input);
+            fail("Should throw exception");
+        } catch (Exception e) {
+            assertEquals("Arguments do not match the constructor signature. Offending id: '%result'", e.getMessage());
+        }
+    }
+
+    @Test
     public void testCompositeConstructMismatchingTypeArray() {
         // given
         String input = "%result = OpCompositeConstruct %composite %member1 %member2";
@@ -631,7 +649,25 @@ public class VisitorOpsCompositeTest {
             visit(input);
             fail("Should throw exception");
         } catch (Exception e) {
-            assertEquals("Top-level elements must have the same type as the types of the operands (\"flattening\" vectors is not yet supported). Offending id: '%result'", e.getMessage());
+            assertEquals("Top-level elements must have the same type as the types of the operands (\"flattening\" vectors is not yet supported) for '%result'", e.getMessage());
+        }
+    }
+
+    @Test
+    public void testCompositeConstructMissingOperandArray() {
+        // given
+        String input = "%result = OpCompositeConstruct %composite %member1 %member2";
+        builder.mockBoolType("%bool");
+        builder.mockIntType("%uint", 32);
+        builder.mockVectorType("%composite", "%uint", 3);
+        builder.mockConstant("%member1", "%uint", 1);
+        builder.mockConstant("%member2", "%uint", 2);
+
+        try {
+            visit(input);
+            fail("Should throw exception");
+        } catch (Exception e) {
+            assertEquals("There must be exactly one constituent for each top-level element of the result for '%result'", e.getMessage());
         }
     }
 
@@ -668,7 +704,7 @@ public class VisitorOpsCompositeTest {
             visit(input);
             fail("Should throw exception");
         } catch (Exception e) {
-            assertEquals("Top-level elements must have the same type as the types of the operands (\"flattening\" vectors is not yet supported). Offending id: '%result'", e.getMessage());
+            assertEquals("Top-level elements must have the same type as the types of the operands (\"flattening\" vectors is not yet supported) for '%result'", e.getMessage());
         }
     }
 
@@ -689,7 +725,7 @@ public class VisitorOpsCompositeTest {
             visit(input);
             fail("Should throw exception");
         } catch (Exception e) {
-            assertEquals("Top-level elements must have the same type as the types of the operands (\"flattening\" vectors is not yet supported). Offending id: '%result'", e.getMessage());
+            assertEquals("Top-level elements must have the same type as the types of the operands (\"flattening\" vectors is not yet supported) for '%result'", e.getMessage());
         }
     }
 

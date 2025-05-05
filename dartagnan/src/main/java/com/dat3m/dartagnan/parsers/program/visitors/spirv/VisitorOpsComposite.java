@@ -122,9 +122,12 @@ public class VisitorOpsComposite extends SpirvBaseVisitor<Void> {
                 Expression elem = builder.getExpression(idCtx);
                 if (!elem.getType().equals(arrayType.getElementType())) {
                     throw new ParsingException(String.format("Top-level elements must have the same type as the types of the operands " +
-                        "(\"flattening\" vectors is not yet supported). Offending id: '%s'", id));
+                        "(\"flattening\" vectors is not yet supported) for '%s'", id));
                 }
                 elements.add(elem);
+            }
+            if (arrayType.getNumElements() != elements.size()) {
+                throw new ParsingException(String.format("There must be exactly one constituent for each top-level element of the result for '%s'", id));
             }
             builder.addExpression(id, getArray(arrayType.getElementType(), elements, id));
         }
