@@ -15,11 +15,41 @@
                OpSource OpenCL_C 200000
                OpName %bar "bar"
                OpName %baz "baz"
+               OpName %entry "entry"
+               OpName %if_then "if.then"
+               OpName %if_end "if.end"
+               OpName %if_then8 "if.then8"
+               OpName %if_end9 "if.end9"
+               OpName %if_then11 "if.then11"
+               OpName %if_end12 "if.end12"
+               OpName %if_then14 "if.then14"
+               OpName %if_end15 "if.end15"
+               OpName %if_then16 "if.then16"
+               OpName %if_end17 "if.end17"
+               OpName %if_then19 "if.then19"
+               OpName %if_end20 "if.end20"
+               OpName %y "y"
+               OpName %x "x"
+               OpName %call "call"
+               OpName %frombool "frombool"
+               OpName %call1 "call1"
+               OpName %tobool "tobool"
+               OpName %lnot "lnot"
+               OpName %lnot_ext "lnot.ext"
+               OpName %tobool2 "tobool2"
+               OpName %lnot3 "lnot3"
+               OpName %frombool5 "frombool5"
+               OpName %tobool6 "tobool6"
+               OpName %tobool7 "tobool7"
+               OpName %tobool10 "tobool10"
+               OpName %tobool13 "tobool13"
+               OpName %cmp "cmp"
+               OpName %cmp18 "cmp18"
                OpDecorate %bar FuncParamAttr Zext
                OpDecorate %bar LinkageAttributes "bar" Import
                OpDecorate %baz LinkageAttributes "baz" Import
-               OpDecorate %26 Alignment 1
-               OpDecorate %28 Alignment 4
+               OpDecorate %y Alignment 1
+               OpDecorate %x Alignment 4
        %uint = OpTypeInt 32 0
       %uchar = OpTypeInt 8 0
     %uchar_0 = OpConstant %uchar 0
@@ -39,64 +69,64 @@
         %baz = OpFunction %uint None %6
                OpFunctionEnd
          %10 = OpFunction %void DontInline %9
-         %11 = OpLabel
-         %26 = OpVariable %_ptr_Function_uchar Function
-         %28 = OpVariable %_ptr_Function_uint Function
-         %29 = OpFunctionCall %bool %bar
-         %32 = OpSelect %uchar %29 %uchar_1 %uchar_0
-               OpStore %26 %32 Aligned 1
-         %33 = OpFunctionCall %uint %baz
-               OpStore %28 %33 Aligned 4
-         %34 = OpLoad %uint %28 Aligned 4
-         %36 = OpINotEqual %bool %34 %uint_0
-         %38 = OpLogicalNotEqual %bool %36 %true
-         %40 = OpSelect %uint %38 %uint_1 %uint_0
-               OpStore %28 %40 Aligned 4
-         %41 = OpLoad %uchar %26 Aligned 1
+      %entry = OpLabel
+          %y = OpVariable %_ptr_Function_uchar Function
+          %x = OpVariable %_ptr_Function_uint Function
+       %call = OpFunctionCall %bool %bar
+   %frombool = OpSelect %uchar %call %uchar_1 %uchar_0
+               OpStore %y %frombool Aligned 1
+      %call1 = OpFunctionCall %uint %baz
+               OpStore %x %call1 Aligned 4
+         %34 = OpLoad %uint %x Aligned 4
+     %tobool = OpINotEqual %bool %34 %uint_0
+       %lnot = OpLogicalNotEqual %bool %tobool %true
+   %lnot_ext = OpSelect %uint %lnot %uint_1 %uint_0
+               OpStore %x %lnot_ext Aligned 4
+         %41 = OpLoad %uchar %y Aligned 1
          %42 = OpBitwiseAnd %uchar %41 %uchar_1
-         %43 = OpINotEqual %bool %42 %uchar_0
-         %44 = OpLogicalNotEqual %bool %43 %true
-         %45 = OpSelect %uchar %44 %uchar_1 %uchar_0
-               OpStore %26 %45 Aligned 1
-         %46 = OpLoad %uint %28 Aligned 4
-         %47 = OpINotEqual %bool %46 %uint_0
-               OpBranchConditional %47 %12 %13
-         %12 = OpLabel
-               OpBranch %13
-         %13 = OpLabel
-         %48 = OpLoad %uint %28 Aligned 4
-         %49 = OpINotEqual %bool %48 %uint_0
-               OpBranchConditional %49 %15 %14
-         %14 = OpLabel
-               OpBranch %15
-         %15 = OpLabel
-         %50 = OpLoad %uchar %26 Aligned 1
+    %tobool2 = OpINotEqual %bool %42 %uchar_0
+      %lnot3 = OpLogicalNotEqual %bool %tobool2 %true
+  %frombool5 = OpSelect %uchar %lnot3 %uchar_1 %uchar_0
+               OpStore %y %frombool5 Aligned 1
+         %46 = OpLoad %uint %x Aligned 4
+    %tobool6 = OpINotEqual %bool %46 %uint_0
+               OpBranchConditional %tobool6 %if_then %if_end
+    %if_then = OpLabel
+               OpBranch %if_end
+     %if_end = OpLabel
+         %48 = OpLoad %uint %x Aligned 4
+    %tobool7 = OpINotEqual %bool %48 %uint_0
+               OpBranchConditional %tobool7 %if_end9 %if_then8
+   %if_then8 = OpLabel
+               OpBranch %if_end9
+    %if_end9 = OpLabel
+         %50 = OpLoad %uchar %y Aligned 1
          %51 = OpBitwiseAnd %uchar %50 %uchar_1
-         %52 = OpINotEqual %bool %51 %uchar_0
-               OpBranchConditional %52 %16 %17
-         %16 = OpLabel
-               OpBranch %17
-         %17 = OpLabel
-         %53 = OpLoad %uchar %26 Aligned 1
+   %tobool10 = OpINotEqual %bool %51 %uchar_0
+               OpBranchConditional %tobool10 %if_then11 %if_end12
+  %if_then11 = OpLabel
+               OpBranch %if_end12
+   %if_end12 = OpLabel
+         %53 = OpLoad %uchar %y Aligned 1
          %54 = OpBitwiseAnd %uchar %53 %uchar_1
-         %55 = OpINotEqual %bool %54 %uchar_0
-               OpBranchConditional %55 %19 %18
-         %18 = OpLabel
-               OpBranch %19
-         %19 = OpLabel
-         %56 = OpLoad %uint %28 Aligned 4
-         %57 = OpLoad %uint %28 Aligned 4
-         %58 = OpSLessThan %bool %56 %57
-               OpBranchConditional %58 %20 %21
-         %20 = OpLabel
-               OpBranch %21
-         %21 = OpLabel
-         %59 = OpLoad %uint %28 Aligned 4
-         %60 = OpLoad %uint %28 Aligned 4
-         %61 = OpSLessThan %bool %59 %60
-               OpBranchConditional %61 %23 %22
-         %22 = OpLabel
-               OpBranch %23
-         %23 = OpLabel
+   %tobool13 = OpINotEqual %bool %54 %uchar_0
+               OpBranchConditional %tobool13 %if_end15 %if_then14
+  %if_then14 = OpLabel
+               OpBranch %if_end15
+   %if_end15 = OpLabel
+         %56 = OpLoad %uint %x Aligned 4
+         %57 = OpLoad %uint %x Aligned 4
+        %cmp = OpSLessThan %bool %56 %57
+               OpBranchConditional %cmp %if_then16 %if_end17
+  %if_then16 = OpLabel
+               OpBranch %if_end17
+   %if_end17 = OpLabel
+         %59 = OpLoad %uint %x Aligned 4
+         %60 = OpLoad %uint %x Aligned 4
+      %cmp18 = OpSLessThan %bool %59 %60
+               OpBranchConditional %cmp18 %if_end20 %if_then19
+  %if_then19 = OpLabel
+               OpBranch %if_end20
+   %if_end20 = OpLabel
                OpReturn
                OpFunctionEnd

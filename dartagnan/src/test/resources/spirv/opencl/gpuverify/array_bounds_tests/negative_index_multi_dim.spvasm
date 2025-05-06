@@ -15,6 +15,13 @@
                OpName %__spirv_BuiltInGlobalSize "__spirv_BuiltInGlobalSize"
                OpName %__spirv_BuiltInLocalInvocationId "__spirv_BuiltInLocalInvocationId"
                OpName %__spirv_BuiltInGlobalInvocationId "__spirv_BuiltInGlobalInvocationId"
+               OpName %entry "entry"
+               OpName %call "call"
+               OpName %call1 "call1"
+               OpName %mul "mul"
+               OpName %arrayidx "arrayidx"
+               OpName %call2 "call2"
+               OpName %arrayidx3 "arrayidx3"
                OpDecorate %__spirv_BuiltInLocalInvocationId BuiltIn LocalInvocationId
                OpDecorate %__spirv_BuiltInGlobalInvocationId BuiltIn GlobalInvocationId
                OpDecorate %__spirv_BuiltInGlobalSize BuiltIn GlobalSize
@@ -43,16 +50,16 @@
 %__spirv_BuiltInLocalInvocationId = OpVariable %_ptr_Input_v3uint Input
 %__spirv_BuiltInGlobalInvocationId = OpVariable %_ptr_Input_v3uint Input
          %15 = OpFunction %void DontInline %14
-         %16 = OpLabel
+      %entry = OpLabel
          %17 = OpLoad %v3uint %__spirv_BuiltInGlobalSize Aligned 16
-         %18 = OpCompositeExtract %uint %17 0
+       %call = OpCompositeExtract %uint %17 0
          %19 = OpLoad %v3uint %__spirv_BuiltInLocalInvocationId Aligned 16
-         %20 = OpCompositeExtract %uint %19 0
-         %22 = OpIMul %uint %uint_4294967295 %20
-         %25 = OpInBoundsPtrAccessChain %_ptr_Workgroup__arr_uint_uint_10 %foo_L %uint_0 %22
+      %call1 = OpCompositeExtract %uint %19 0
+        %mul = OpIMul %uint %uint_4294967295 %call1
+   %arrayidx = OpInBoundsPtrAccessChain %_ptr_Workgroup__arr_uint_uint_10 %foo_L %uint_0 %mul
          %26 = OpLoad %v3uint %__spirv_BuiltInGlobalInvocationId Aligned 16
-         %27 = OpCompositeExtract %uint %26 1
-         %29 = OpInBoundsPtrAccessChain %_ptr_Workgroup_uint %25 %uint_0 %27
-               OpStore %29 %18 Aligned 4
+      %call2 = OpCompositeExtract %uint %26 1
+  %arrayidx3 = OpInBoundsPtrAccessChain %_ptr_Workgroup_uint %arrayidx %uint_0 %call2
+               OpStore %arrayidx3 %call Aligned 4
                OpReturn
                OpFunctionEnd

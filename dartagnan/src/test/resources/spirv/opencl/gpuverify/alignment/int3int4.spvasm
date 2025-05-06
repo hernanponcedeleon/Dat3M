@@ -12,10 +12,20 @@
                OpEntryPoint Kernel %9 "foo" %__spirv_BuiltInGlobalInvocationId
                OpSource OpenCL_C 200000
                OpName %__spirv_BuiltInGlobalInvocationId "__spirv_BuiltInGlobalInvocationId"
+               OpName %n "n"
+               OpName %entry "entry"
+               OpName %n_addr "n.addr"
+               OpName %call "call"
+               OpName %splat_splatinsert "splat.splatinsert"
+               OpName %splat_splat "splat.splat"
+               OpName %call1 "call1"
+               OpName %arrayidx "arrayidx"
+               OpName %extractVec "extractVec"
+               OpName %storetmp "storetmp"
                OpDecorate %__spirv_BuiltInGlobalInvocationId BuiltIn GlobalInvocationId
                OpDecorate %__spirv_BuiltInGlobalInvocationId Constant
                OpDecorate %__spirv_BuiltInGlobalInvocationId LinkageAttributes "__spirv_BuiltInGlobalInvocationId" Import
-               OpDecorate %13 Alignment 4
+               OpDecorate %n_addr Alignment 4
        %uint = OpTypeInt 32 0
      %v3uint = OpTypeVector %uint 3
 %_ptr_Input_v3uint = OpTypePointer Input %v3uint
@@ -28,20 +38,20 @@
 %__spirv_BuiltInGlobalInvocationId = OpVariable %_ptr_Input_v3uint Input
          %16 = OpUndef %v3uint
           %9 = OpFunction %void DontInline %8
-         %10 = OpFunctionParameter %_ptr_CrossWorkgroup_v3uint
-         %11 = OpLabel
-         %13 = OpVariable %_ptr_Function__ptr_CrossWorkgroup_v3uint Function
-               OpStore %13 %10 Aligned 4
+          %n = OpFunctionParameter %_ptr_CrossWorkgroup_v3uint
+      %entry = OpLabel
+     %n_addr = OpVariable %_ptr_Function__ptr_CrossWorkgroup_v3uint Function
+               OpStore %n_addr %n Aligned 4
          %14 = OpLoad %v3uint %__spirv_BuiltInGlobalInvocationId Aligned 16
-         %15 = OpCompositeExtract %uint %14 0
-         %17 = OpCompositeInsert %v3uint %15 %16 0
-         %18 = OpVectorShuffle %v3uint %17 %16 0 0 0
-         %19 = OpLoad %_ptr_CrossWorkgroup_v3uint %13 Aligned 4
+       %call = OpCompositeExtract %uint %14 0
+%splat_splatinsert = OpCompositeInsert %v3uint %call %16 0
+%splat_splat = OpVectorShuffle %v3uint %splat_splatinsert %16 0 0 0
+         %19 = OpLoad %_ptr_CrossWorkgroup_v3uint %n_addr Aligned 4
          %20 = OpLoad %v3uint %__spirv_BuiltInGlobalInvocationId Aligned 16
-         %21 = OpCompositeExtract %uint %20 0
-         %22 = OpInBoundsPtrAccessChain %_ptr_CrossWorkgroup_v3uint %19 %21
-         %24 = OpVectorShuffle %v4uint %18 %16 0 1 2 4294967295
-         %26 = OpBitcast %_ptr_CrossWorkgroup_v4uint %22
-               OpStore %26 %24 Aligned 16
+      %call1 = OpCompositeExtract %uint %20 0
+   %arrayidx = OpInBoundsPtrAccessChain %_ptr_CrossWorkgroup_v3uint %19 %call1
+ %extractVec = OpVectorShuffle %v4uint %splat_splat %16 0 1 2 4294967295
+   %storetmp = OpBitcast %_ptr_CrossWorkgroup_v4uint %arrayidx
+               OpStore %storetmp %extractVec Aligned 16
                OpReturn
                OpFunctionEnd

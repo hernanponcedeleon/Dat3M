@@ -12,10 +12,17 @@
                OpEntryPoint Kernel %8 "foo" %__spirv_BuiltInLocalInvocationId
                OpSource OpenCL_C 200000
                OpName %__spirv_BuiltInLocalInvocationId "__spirv_BuiltInLocalInvocationId"
+               OpName %x "x"
+               OpName %entry "entry"
+               OpName %if_then "if.then"
+               OpName %if_end "if.end"
+               OpName %x_addr "x.addr"
+               OpName %call "call"
+               OpName %cmp "cmp"
                OpDecorate %__spirv_BuiltInLocalInvocationId BuiltIn LocalInvocationId
                OpDecorate %__spirv_BuiltInLocalInvocationId Constant
                OpDecorate %__spirv_BuiltInLocalInvocationId LinkageAttributes "__spirv_BuiltInLocalInvocationId" Import
-               OpDecorate %14 Alignment 4
+               OpDecorate %x_addr Alignment 4
        %uint = OpTypeInt 32 0
     %uint_25 = OpConstant %uint 25
      %v3uint = OpTypeVector %uint 3
@@ -26,16 +33,16 @@
        %bool = OpTypeBool
 %__spirv_BuiltInLocalInvocationId = OpVariable %_ptr_Input_v3uint Input
           %8 = OpFunction %void DontInline %7
-          %9 = OpFunctionParameter %uint
-         %10 = OpLabel
-         %14 = OpVariable %_ptr_Function_uint Function
-               OpStore %14 %9 Aligned 4
+          %x = OpFunctionParameter %uint
+      %entry = OpLabel
+     %x_addr = OpVariable %_ptr_Function_uint Function
+               OpStore %x_addr %x Aligned 4
          %15 = OpLoad %v3uint %__spirv_BuiltInLocalInvocationId Aligned 16
-         %16 = OpCompositeExtract %uint %15 0
-         %19 = OpULessThan %bool %16 %uint_25
-               OpBranchConditional %19 %11 %12
-         %11 = OpLabel
-               OpBranch %12
-         %12 = OpLabel
+       %call = OpCompositeExtract %uint %15 0
+        %cmp = OpULessThan %bool %call %uint_25
+               OpBranchConditional %cmp %if_then %if_end
+    %if_then = OpLabel
+               OpBranch %if_end
+     %if_end = OpLabel
                OpReturn
                OpFunctionEnd

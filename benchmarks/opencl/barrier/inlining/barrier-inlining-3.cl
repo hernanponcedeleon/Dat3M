@@ -2,7 +2,7 @@
 // llvm-spirv a.bc -o a.spv
 // spirv-dis a.spv > barrier-inlining-3.spv.dis
 
-void synchronized_increment(__global uint* shared_value, uint local_id) {
+static void synchronized_increment(__global uint* shared_value, uint local_id) {
     barrier(CLK_GLOBAL_MEM_FENCE);
     if (local_id == 0) {
         (*shared_value)++;
@@ -10,11 +10,11 @@ void synchronized_increment(__global uint* shared_value, uint local_id) {
     barrier(CLK_GLOBAL_MEM_FENCE);
 }
 
-void agent_function1(__global uint* shared_value, uint local_id) {
+static void agent_function1(__global uint* shared_value, uint local_id) {
     synchronized_increment(shared_value, local_id);
 }
 
-void agent_function2(__global uint* shared_value, uint local_id) {
+static void agent_function2(__global uint* shared_value, uint local_id) {
     agent_function1(shared_value, local_id);
 }
 

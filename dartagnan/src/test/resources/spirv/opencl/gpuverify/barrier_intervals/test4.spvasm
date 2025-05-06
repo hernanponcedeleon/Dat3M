@@ -13,15 +13,63 @@
                OpSource OpenCL_C 200000
                OpName %__spirv_BuiltInLocalInvocationId "__spirv_BuiltInLocalInvocationId"
                OpName %barrier_wrapper "barrier_wrapper"
+               OpName %entry "entry"
+               OpName %p "p"
+               OpName %entry_0 "entry"
+               OpName %for_cond "for.cond"
+               OpName %for_body "for.body"
+               OpName %for_inc "for.inc"
+               OpName %for_end "for.end"
+               OpName %if_then "if.then"
+               OpName %for_cond5 "for.cond5"
+               OpName %for_body7 "for.body7"
+               OpName %for_inc11 "for.inc11"
+               OpName %for_end13 "for.end13"
+               OpName %for_cond15 "for.cond15"
+               OpName %for_body17 "for.body17"
+               OpName %for_inc21 "for.inc21"
+               OpName %for_end23 "for.end23"
+               OpName %for_cond25 "for.cond25"
+               OpName %for_body27 "for.body27"
+               OpName %for_inc31 "for.inc31"
+               OpName %for_end33 "for.end33"
+               OpName %if_end "if.end"
+               OpName %p_addr "p.addr"
+               OpName %i "i"
+               OpName %i4 "i4"
+               OpName %i14 "i14"
+               OpName %i24 "i24"
+               OpName %cmp "cmp"
+               OpName %call "call"
+               OpName %call1 "call1"
+               OpName %arrayidx "arrayidx"
+               OpName %inc "inc"
+               OpName %arrayidx2 "arrayidx2"
+               OpName %cmp3 "cmp3"
+               OpName %cmp6 "cmp6"
+               OpName %call8 "call8"
+               OpName %call9 "call9"
+               OpName %arrayidx10 "arrayidx10"
+               OpName %inc12 "inc12"
+               OpName %cmp16 "cmp16"
+               OpName %call18 "call18"
+               OpName %call19 "call19"
+               OpName %arrayidx20 "arrayidx20"
+               OpName %inc22 "inc22"
+               OpName %cmp26 "cmp26"
+               OpName %call28 "call28"
+               OpName %call29 "call29"
+               OpName %arrayidx30 "arrayidx30"
+               OpName %inc32 "inc32"
                OpDecorate %__spirv_BuiltInLocalInvocationId BuiltIn LocalInvocationId
                OpDecorate %__spirv_BuiltInLocalInvocationId Constant
                OpDecorate %barrier_wrapper LinkageAttributes "barrier_wrapper" Export
                OpDecorate %__spirv_BuiltInLocalInvocationId LinkageAttributes "__spirv_BuiltInLocalInvocationId" Import
-               OpDecorate %36 Alignment 4
-               OpDecorate %38 Alignment 4
-               OpDecorate %39 Alignment 4
-               OpDecorate %40 Alignment 4
-               OpDecorate %41 Alignment 4
+               OpDecorate %p_addr Alignment 4
+               OpDecorate %i Alignment 4
+               OpDecorate %i4 Alignment 4
+               OpDecorate %i14 Alignment 4
+               OpDecorate %i24 Alignment 4
        %uint = OpTypeInt 32 0
      %uint_2 = OpConstant %uint 2
    %uint_784 = OpConstant %uint 784
@@ -40,115 +88,115 @@
        %bool = OpTypeBool
 %__spirv_BuiltInLocalInvocationId = OpVariable %_ptr_Input_v3uint Input
 %barrier_wrapper = OpFunction %void DontInline %7
-          %9 = OpLabel
+      %entry = OpLabel
                OpControlBarrier %uint_2 %uint_2 %uint_784
                OpReturn
                OpFunctionEnd
          %14 = OpFunction %void DontInline %13
-         %15 = OpFunctionParameter %_ptr_Workgroup_uint
-         %16 = OpLabel
-         %36 = OpVariable %_ptr_Function__ptr_Workgroup_uint Function
-         %38 = OpVariable %_ptr_Function_uint Function
-         %39 = OpVariable %_ptr_Function_uint Function
-         %40 = OpVariable %_ptr_Function_uint Function
-         %41 = OpVariable %_ptr_Function_uint Function
-               OpStore %36 %15 Aligned 4
-               OpStore %38 %uint_0 Aligned 4
-               OpBranch %17
-         %17 = OpLabel
-         %43 = OpLoad %uint %38 Aligned 4
-         %46 = OpSLessThan %bool %43 %uint_100
-               OpBranchConditional %46 %18 %20
-         %18 = OpLabel
+          %p = OpFunctionParameter %_ptr_Workgroup_uint
+    %entry_0 = OpLabel
+     %p_addr = OpVariable %_ptr_Function__ptr_Workgroup_uint Function
+          %i = OpVariable %_ptr_Function_uint Function
+         %i4 = OpVariable %_ptr_Function_uint Function
+        %i14 = OpVariable %_ptr_Function_uint Function
+        %i24 = OpVariable %_ptr_Function_uint Function
+               OpStore %p_addr %p Aligned 4
+               OpStore %i %uint_0 Aligned 4
+               OpBranch %for_cond
+   %for_cond = OpLabel
+         %43 = OpLoad %uint %i Aligned 4
+        %cmp = OpSLessThan %bool %43 %uint_100
+               OpBranchConditional %cmp %for_body %for_end
+   %for_body = OpLabel
          %47 = OpLoad %v3uint %__spirv_BuiltInLocalInvocationId Aligned 16
-         %48 = OpCompositeExtract %uint %47 0
-         %49 = OpLoad %_ptr_Workgroup_uint %36 Aligned 4
+       %call = OpCompositeExtract %uint %47 0
+         %49 = OpLoad %_ptr_Workgroup_uint %p_addr Aligned 4
          %50 = OpLoad %v3uint %__spirv_BuiltInLocalInvocationId Aligned 16
-         %51 = OpCompositeExtract %uint %50 0
-         %52 = OpInBoundsPtrAccessChain %_ptr_Workgroup_uint %49 %51
-               OpStore %52 %48 Aligned 4
+      %call1 = OpCompositeExtract %uint %50 0
+   %arrayidx = OpInBoundsPtrAccessChain %_ptr_Workgroup_uint %49 %call1
+               OpStore %arrayidx %call Aligned 4
          %53 = OpFunctionCall %void %barrier_wrapper
-               OpBranch %19
-         %19 = OpLabel
-         %54 = OpLoad %uint %38 Aligned 4
-         %56 = OpIAdd %uint %54 %uint_1
-               OpStore %38 %56 Aligned 4
-               OpBranch %17
-         %20 = OpLabel
-         %57 = OpLoad %_ptr_Workgroup_uint %36 Aligned 4
-         %58 = OpInBoundsPtrAccessChain %_ptr_Workgroup_uint %57 %uint_0
-         %59 = OpLoad %uint %58 Aligned 4
-         %61 = OpIEqual %bool %59 %uint_22
-               OpBranchConditional %61 %21 %34
-         %21 = OpLabel
+               OpBranch %for_inc
+    %for_inc = OpLabel
+         %54 = OpLoad %uint %i Aligned 4
+        %inc = OpIAdd %uint %54 %uint_1
+               OpStore %i %inc Aligned 4
+               OpBranch %for_cond
+    %for_end = OpLabel
+         %57 = OpLoad %_ptr_Workgroup_uint %p_addr Aligned 4
+  %arrayidx2 = OpInBoundsPtrAccessChain %_ptr_Workgroup_uint %57 %uint_0
+         %59 = OpLoad %uint %arrayidx2 Aligned 4
+       %cmp3 = OpIEqual %bool %59 %uint_22
+               OpBranchConditional %cmp3 %if_then %if_end
+    %if_then = OpLabel
          %62 = OpFunctionCall %void %barrier_wrapper
-               OpStore %39 %uint_0 Aligned 4
-               OpBranch %22
-         %22 = OpLabel
-         %63 = OpLoad %uint %39 Aligned 4
-         %64 = OpSLessThan %bool %63 %uint_100
-               OpBranchConditional %64 %23 %25
-         %23 = OpLabel
+               OpStore %i4 %uint_0 Aligned 4
+               OpBranch %for_cond5
+  %for_cond5 = OpLabel
+         %63 = OpLoad %uint %i4 Aligned 4
+       %cmp6 = OpSLessThan %bool %63 %uint_100
+               OpBranchConditional %cmp6 %for_body7 %for_end13
+  %for_body7 = OpLabel
          %65 = OpLoad %v3uint %__spirv_BuiltInLocalInvocationId Aligned 16
-         %66 = OpCompositeExtract %uint %65 0
-         %67 = OpLoad %_ptr_Workgroup_uint %36 Aligned 4
+      %call8 = OpCompositeExtract %uint %65 0
+         %67 = OpLoad %_ptr_Workgroup_uint %p_addr Aligned 4
          %68 = OpLoad %v3uint %__spirv_BuiltInLocalInvocationId Aligned 16
-         %69 = OpCompositeExtract %uint %68 0
-         %70 = OpInBoundsPtrAccessChain %_ptr_Workgroup_uint %67 %69
-               OpStore %70 %66 Aligned 4
+      %call9 = OpCompositeExtract %uint %68 0
+ %arrayidx10 = OpInBoundsPtrAccessChain %_ptr_Workgroup_uint %67 %call9
+               OpStore %arrayidx10 %call8 Aligned 4
          %71 = OpFunctionCall %void %barrier_wrapper
-               OpBranch %24
-         %24 = OpLabel
-         %72 = OpLoad %uint %39 Aligned 4
-         %73 = OpIAdd %uint %72 %uint_1
-               OpStore %39 %73 Aligned 4
-               OpBranch %22
-         %25 = OpLabel
-               OpStore %40 %uint_0 Aligned 4
-               OpBranch %26
-         %26 = OpLabel
-         %74 = OpLoad %uint %40 Aligned 4
-         %75 = OpSLessThan %bool %74 %uint_100
-               OpBranchConditional %75 %27 %29
-         %27 = OpLabel
+               OpBranch %for_inc11
+  %for_inc11 = OpLabel
+         %72 = OpLoad %uint %i4 Aligned 4
+      %inc12 = OpIAdd %uint %72 %uint_1
+               OpStore %i4 %inc12 Aligned 4
+               OpBranch %for_cond5
+  %for_end13 = OpLabel
+               OpStore %i14 %uint_0 Aligned 4
+               OpBranch %for_cond15
+ %for_cond15 = OpLabel
+         %74 = OpLoad %uint %i14 Aligned 4
+      %cmp16 = OpSLessThan %bool %74 %uint_100
+               OpBranchConditional %cmp16 %for_body17 %for_end23
+ %for_body17 = OpLabel
          %76 = OpLoad %v3uint %__spirv_BuiltInLocalInvocationId Aligned 16
-         %77 = OpCompositeExtract %uint %76 0
-         %78 = OpLoad %_ptr_Workgroup_uint %36 Aligned 4
+     %call18 = OpCompositeExtract %uint %76 0
+         %78 = OpLoad %_ptr_Workgroup_uint %p_addr Aligned 4
          %79 = OpLoad %v3uint %__spirv_BuiltInLocalInvocationId Aligned 16
-         %80 = OpCompositeExtract %uint %79 0
-         %81 = OpInBoundsPtrAccessChain %_ptr_Workgroup_uint %78 %80
-               OpStore %81 %77 Aligned 4
+     %call19 = OpCompositeExtract %uint %79 0
+ %arrayidx20 = OpInBoundsPtrAccessChain %_ptr_Workgroup_uint %78 %call19
+               OpStore %arrayidx20 %call18 Aligned 4
          %82 = OpFunctionCall %void %barrier_wrapper
-               OpBranch %28
-         %28 = OpLabel
-         %83 = OpLoad %uint %40 Aligned 4
-         %84 = OpIAdd %uint %83 %uint_1
-               OpStore %40 %84 Aligned 4
-               OpBranch %26
-         %29 = OpLabel
-               OpStore %41 %uint_0 Aligned 4
-               OpBranch %30
-         %30 = OpLabel
-         %85 = OpLoad %uint %41 Aligned 4
-         %86 = OpSLessThan %bool %85 %uint_100
-               OpBranchConditional %86 %31 %33
-         %31 = OpLabel
+               OpBranch %for_inc21
+  %for_inc21 = OpLabel
+         %83 = OpLoad %uint %i14 Aligned 4
+      %inc22 = OpIAdd %uint %83 %uint_1
+               OpStore %i14 %inc22 Aligned 4
+               OpBranch %for_cond15
+  %for_end23 = OpLabel
+               OpStore %i24 %uint_0 Aligned 4
+               OpBranch %for_cond25
+ %for_cond25 = OpLabel
+         %85 = OpLoad %uint %i24 Aligned 4
+      %cmp26 = OpSLessThan %bool %85 %uint_100
+               OpBranchConditional %cmp26 %for_body27 %for_end33
+ %for_body27 = OpLabel
          %87 = OpLoad %v3uint %__spirv_BuiltInLocalInvocationId Aligned 16
-         %88 = OpCompositeExtract %uint %87 0
-         %89 = OpLoad %_ptr_Workgroup_uint %36 Aligned 4
+     %call28 = OpCompositeExtract %uint %87 0
+         %89 = OpLoad %_ptr_Workgroup_uint %p_addr Aligned 4
          %90 = OpLoad %v3uint %__spirv_BuiltInLocalInvocationId Aligned 16
-         %91 = OpCompositeExtract %uint %90 0
-         %92 = OpInBoundsPtrAccessChain %_ptr_Workgroup_uint %89 %91
-               OpStore %92 %88 Aligned 4
+     %call29 = OpCompositeExtract %uint %90 0
+ %arrayidx30 = OpInBoundsPtrAccessChain %_ptr_Workgroup_uint %89 %call29
+               OpStore %arrayidx30 %call28 Aligned 4
          %93 = OpFunctionCall %void %barrier_wrapper
-               OpBranch %32
-         %32 = OpLabel
-         %94 = OpLoad %uint %41 Aligned 4
-         %95 = OpIAdd %uint %94 %uint_1
-               OpStore %41 %95 Aligned 4
-               OpBranch %30
-         %33 = OpLabel
-               OpBranch %34
-         %34 = OpLabel
+               OpBranch %for_inc31
+  %for_inc31 = OpLabel
+         %94 = OpLoad %uint %i24 Aligned 4
+      %inc32 = OpIAdd %uint %94 %uint_1
+               OpStore %i24 %inc32 Aligned 4
+               OpBranch %for_cond25
+  %for_end33 = OpLabel
+               OpBranch %if_end
+     %if_end = OpLabel
                OpReturn
                OpFunctionEnd

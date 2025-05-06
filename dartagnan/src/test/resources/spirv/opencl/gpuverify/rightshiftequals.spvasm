@@ -10,8 +10,15 @@
                OpMemoryModel Physical32 OpenCL
                OpEntryPoint Kernel %4 "foo"
                OpSource OpenCL_C 200000
-               OpDecorate %8 Alignment 4
-               OpDecorate %9 Alignment 4
+               OpName %entry "entry"
+               OpName %x "x"
+               OpName %y "y"
+               OpName %shr_mask "shr.mask"
+               OpName %shr "shr"
+               OpName %shr_mask1 "shr.mask1"
+               OpName %shr2 "shr2"
+               OpDecorate %x Alignment 4
+               OpDecorate %y Alignment 4
        %uint = OpTypeInt 32 0
      %uint_1 = OpConstant %uint 1
      %uint_2 = OpConstant %uint 2
@@ -20,20 +27,20 @@
           %3 = OpTypeFunction %void
 %_ptr_Function_uint = OpTypePointer Function %uint
           %4 = OpFunction %void DontInline %3
-          %5 = OpLabel
-          %8 = OpVariable %_ptr_Function_uint Function
-          %9 = OpVariable %_ptr_Function_uint Function
-               OpStore %8 %uint_1 Aligned 4
-               OpStore %9 %uint_2 Aligned 4
-         %12 = OpLoad %uint %8 Aligned 4
-         %13 = OpLoad %uint %8 Aligned 4
-         %15 = OpBitwiseAnd %uint %12 %uint_31
-         %16 = OpShiftRightLogical %uint %13 %15
-               OpStore %8 %16 Aligned 4
-         %17 = OpLoad %uint %8 Aligned 4
-         %18 = OpLoad %uint %9 Aligned 4
-         %19 = OpBitwiseAnd %uint %17 %uint_31
-         %20 = OpShiftRightArithmetic %uint %18 %19
-               OpStore %9 %20 Aligned 4
+      %entry = OpLabel
+          %x = OpVariable %_ptr_Function_uint Function
+          %y = OpVariable %_ptr_Function_uint Function
+               OpStore %x %uint_1 Aligned 4
+               OpStore %y %uint_2 Aligned 4
+         %12 = OpLoad %uint %x Aligned 4
+         %13 = OpLoad %uint %x Aligned 4
+   %shr_mask = OpBitwiseAnd %uint %12 %uint_31
+        %shr = OpShiftRightLogical %uint %13 %shr_mask
+               OpStore %x %shr Aligned 4
+         %17 = OpLoad %uint %x Aligned 4
+         %18 = OpLoad %uint %y Aligned 4
+  %shr_mask1 = OpBitwiseAnd %uint %17 %uint_31
+       %shr2 = OpShiftRightArithmetic %uint %18 %shr_mask1
+               OpStore %y %shr2 Aligned 4
                OpReturn
                OpFunctionEnd

@@ -13,9 +13,15 @@
                OpEntryPoint Kernel %13 "foo"
                OpSource OpenCL_C 200000
                OpName %bar "bar"
+               OpName %p "p"
+               OpName %entry "entry"
+               OpName %p_addr "p.addr"
+               OpName %entry_0 "entry"
+               OpName %v "v"
+               OpName %v_ascast "v.ascast"
                OpDecorate %bar LinkageAttributes "bar" Export
-               OpDecorate %11 Alignment 4
-               OpDecorate %16 Alignment 16
+               OpDecorate %p_addr Alignment 4
+               OpDecorate %v Alignment 16
        %uint = OpTypeInt 32 0
        %void = OpTypeVoid
      %v4uint = OpTypeVector %uint 4
@@ -25,16 +31,16 @@
          %12 = OpTypeFunction %void
 %_ptr_Function_v4uint = OpTypePointer Function %v4uint
         %bar = OpFunction %void DontInline %6
-          %8 = OpFunctionParameter %_ptr_Generic_v4uint
-          %9 = OpLabel
-         %11 = OpVariable %_ptr_Function__ptr_Generic_v4uint Function
-               OpStore %11 %8 Aligned 4
+          %p = OpFunctionParameter %_ptr_Generic_v4uint
+      %entry = OpLabel
+     %p_addr = OpVariable %_ptr_Function__ptr_Generic_v4uint Function
+               OpStore %p_addr %p Aligned 4
                OpReturn
                OpFunctionEnd
          %13 = OpFunction %void DontInline %12
-         %14 = OpLabel
-         %16 = OpVariable %_ptr_Function_v4uint Function
-         %17 = OpPtrCastToGeneric %_ptr_Generic_v4uint %16
-         %18 = OpFunctionCall %void %bar %17
+    %entry_0 = OpLabel
+          %v = OpVariable %_ptr_Function_v4uint Function
+   %v_ascast = OpPtrCastToGeneric %_ptr_Generic_v4uint %v
+         %18 = OpFunctionCall %void %bar %v_ascast
                OpReturn
                OpFunctionEnd

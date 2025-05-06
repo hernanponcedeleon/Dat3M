@@ -10,7 +10,13 @@
                OpMemoryModel Physical32 OpenCL
                OpEntryPoint Kernel %5 "foo"
                OpSource OpenCL_C 200000
-               OpDecorate %11 Alignment 4
+               OpName %x "x"
+               OpName %entry "entry"
+               OpName %if_then "if.then"
+               OpName %if_end "if.end"
+               OpName %x_addr "x.addr"
+               OpName %cmp "cmp"
+               OpDecorate %x_addr Alignment 4
        %uint = OpTypeInt 32 0
     %uint_10 = OpConstant %uint 10
      %uint_2 = OpConstant %uint 2
@@ -20,16 +26,16 @@
 %_ptr_Function_uint = OpTypePointer Function %uint
        %bool = OpTypeBool
           %5 = OpFunction %void DontInline %4
-          %6 = OpFunctionParameter %uint
-          %7 = OpLabel
-         %11 = OpVariable %_ptr_Function_uint Function
-               OpStore %11 %6 Aligned 4
-         %12 = OpLoad %uint %11 Aligned 4
-         %15 = OpIEqual %bool %12 %uint_10
-               OpBranchConditional %15 %8 %9
-          %8 = OpLabel
+          %x = OpFunctionParameter %uint
+      %entry = OpLabel
+     %x_addr = OpVariable %_ptr_Function_uint Function
+               OpStore %x_addr %x Aligned 4
+         %12 = OpLoad %uint %x_addr Aligned 4
+        %cmp = OpIEqual %bool %12 %uint_10
+               OpBranchConditional %cmp %if_then %if_end
+    %if_then = OpLabel
                OpControlBarrier %uint_2 %uint_2 %uint_272
-               OpBranch %9
-          %9 = OpLabel
+               OpBranch %if_end
+     %if_end = OpLabel
                OpReturn
                OpFunctionEnd
