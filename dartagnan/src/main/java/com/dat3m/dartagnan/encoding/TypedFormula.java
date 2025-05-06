@@ -9,14 +9,14 @@ import org.sosy_lab.java_smt.api.Formula;
     A TypedFormula carries a Formula describing a value of a given Type.
     This serves two purposes
         (1) It enriches the type system of the backend SMT solver with our IR Types.
-        (2) It decouples representation (backend formula type) from represented type (IR Type)
+        (2) It decouples representation (SMT formula type) from represented type (IR Type)
 
     To understand the benefit, consider the following examples:
 
     (1)
     Suppose we have a PointerType PT.
     There are two natural representations for values of PT: as single "bv64 address" or as a tuple "(bv64 base, bv64 offset)".
-    Both representation use a different SMT type (BV vs Tuple) but still represent the same IR Type (PT).
+    Both representations use a different SMT type (BV vs Tuple) but still represent the same IR Type (PT).
 
     (2)
     Now consider the AggregateType AG = { bv64, bv64 } whose natural value representation is a tuple (bv64 a, bv64 b).

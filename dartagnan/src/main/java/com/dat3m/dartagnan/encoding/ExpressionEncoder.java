@@ -113,10 +113,6 @@ public class ExpressionEncoder {
         return new TypedFormula<>(types.getBooleanType(), formula);
     }
 
-    public <TType extends Type, TFormula extends Formula> TypedFormula<TType, TFormula> wrap(TType type, TFormula formula) {
-        return new TypedFormula<>(type, formula);
-    }
-
     // ====================================================================================
     // Utility
 
@@ -335,7 +331,7 @@ public class ExpressionEncoder {
             if (expr.isNoop()) {
                 return inner;
             } else if (context.useIntegers) {
-                //TODO If narrowing, constrain the value.
+                //TODO If narrowing, constrain the value (mod 2^bitWidth).
                 return new TypedFormula<>(expr.getType(), inner.formula());
             } else {
                 assert inner.formula() instanceof BitvectorFormula;

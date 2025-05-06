@@ -5,6 +5,7 @@ import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.Type;
 import com.dat3m.dartagnan.expression.type.BooleanType;
 import com.dat3m.dartagnan.expression.type.IntegerType;
+import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.BlockingEvent;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.RegWriter;
@@ -57,6 +58,10 @@ public class IREvaluator {
 
     // ====================================================================================
     // Program
+
+    public boolean threadHasStarted(Thread thread) {
+        return isExecuted(thread.getEntry());
+    }
 
     public boolean isExecuted(Event e) {
         return TRUE.equals(smtModel.evaluate(ctx.execution(e)));

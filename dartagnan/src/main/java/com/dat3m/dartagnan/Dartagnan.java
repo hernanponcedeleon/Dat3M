@@ -18,7 +18,6 @@ import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.Assert;
 import com.dat3m.dartagnan.program.event.core.CondJump;
-import com.dat3m.dartagnan.program.event.core.Load;
 import com.dat3m.dartagnan.program.processing.LoopUnrolling;
 import com.dat3m.dartagnan.smt.ModelExt;
 import com.dat3m.dartagnan.utils.ExitCode;
@@ -65,7 +64,6 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.math.BigInteger;
 import java.nio.file.Path;
 import java.util.*;
 
@@ -510,16 +508,14 @@ public class Dartagnan extends BaseOptions {
     }
 
     private static void printWarningIfThreadStartFailed(Program p, IREvaluator model) {
-        // TODO: This code is outdated: startload does not signal pthread_failure
-        for (Load e : p.getThreadEvents(Load.class)) {
-            if (e.hasTag(Tag.STARTLOAD) && BigInteger.ZERO.equals(model.value(e).value())) {
-                // This msg should be displayed even if the logging is off
-                System.out.printf(
-                        "[WARNING] The call to pthread_create of thread %s failed. To force thread creation to succeed use --%s=true%n",
-                        e.getThread(), OptionNames.THREAD_CREATE_ALWAYS_SUCCEEDS);
-                break;
-            }
-        }
+        p.getThreads().stream().filter(t ->
+                t.getEntry().isSpawned()
+                && model.isExecuted(t.getEntry().getCreator())
+                && !model.threadHasStarted(t)
+        ).forEach(t -> System.out.printf(
+                "[WARNING] The call to pthread_create of thread %s failed. To force thread creation to succeed use --%s=true%n",
+                t, OptionNames.THREAD_CREATE_ALWAYS_SUCCEEDS
+        ));
     }
 
     private static void printSpecification(StringBuilder sb, Program program) {
