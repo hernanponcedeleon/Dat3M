@@ -13,6 +13,8 @@
                OpSource OpenCL_C 200000
                OpName %foo_a "foo.a"
                OpName %__spirv_BuiltInLocalInvocationId "__spirv_BuiltInLocalInvocationId"
+               OpName %entry "entry"
+               OpName %call "call"
                OpDecorate %__spirv_BuiltInLocalInvocationId BuiltIn LocalInvocationId
                OpDecorate %__spirv_BuiltInLocalInvocationId Constant
                OpDecorate %__spirv_BuiltInLocalInvocationId LinkageAttributes "__spirv_BuiltInLocalInvocationId" Import
@@ -26,9 +28,9 @@
       %foo_a = OpVariable %_ptr_Workgroup_uint Workgroup
 %__spirv_BuiltInLocalInvocationId = OpVariable %_ptr_Input_v3uint Input
          %10 = OpFunction %void DontInline %9
-         %11 = OpLabel
+      %entry = OpLabel
          %12 = OpLoad %v3uint %__spirv_BuiltInLocalInvocationId Aligned 16
-         %13 = OpCompositeExtract %uint %12 0
-               OpStore %foo_a %13 Aligned 4
+       %call = OpCompositeExtract %uint %12 0
+               OpStore %foo_a %call Aligned 4
                OpReturn
                OpFunctionEnd

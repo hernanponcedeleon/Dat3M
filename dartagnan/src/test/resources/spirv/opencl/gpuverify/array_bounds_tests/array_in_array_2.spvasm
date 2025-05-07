@@ -14,13 +14,23 @@
                OpSource OpenCL_C 200000
                OpName %__const_foo_L "__const.foo.L"
                OpName %__spirv_BuiltInGlobalInvocationId "__spirv_BuiltInGlobalInvocationId"
+               OpName %entry "entry"
+               OpName %L "L"
+               OpName %K "K"
+               OpName %call "call"
+               OpName %rem "rem"
+               OpName %arrayidx "arrayidx"
+               OpName %call1 "call1"
+               OpName %call2 "call2"
+               OpName %mul "mul"
+               OpName %arrayidx3 "arrayidx3"
                OpDecorate %__spirv_BuiltInGlobalInvocationId BuiltIn GlobalInvocationId
                OpDecorate %__const_foo_L Constant
                OpDecorate %__spirv_BuiltInGlobalInvocationId Constant
                OpDecorate %__spirv_BuiltInGlobalInvocationId LinkageAttributes "__spirv_BuiltInGlobalInvocationId" Import
                OpDecorate %__const_foo_L Alignment 4
-               OpDecorate %21 Alignment 4
-               OpDecorate %24 Alignment 4
+               OpDecorate %L Alignment 4
+               OpDecorate %K Alignment 4
        %uint = OpTypeInt 32 0
       %uchar = OpTypeInt 8 0
     %uint_10 = OpConstant %uint 10
@@ -46,23 +56,23 @@
 %__const_foo_L = OpVariable %_ptr_UniformConstant__arr_uint_uint_5 UniformConstant %10
 %__spirv_BuiltInGlobalInvocationId = OpVariable %_ptr_Input_v3uint Input
          %18 = OpFunction %void DontInline %17
-         %19 = OpLabel
-         %21 = OpVariable %_ptr_Function__arr_uint_uint_5 Function
-         %24 = OpVariable %_ptr_Function__arr_uint_uint_40 Function
-         %27 = OpBitcast %_ptr_Function_uchar %21
+      %entry = OpLabel
+          %L = OpVariable %_ptr_Function__arr_uint_uint_5 Function
+          %K = OpVariable %_ptr_Function__arr_uint_uint_40 Function
+         %27 = OpBitcast %_ptr_Function_uchar %L
          %29 = OpBitcast %_ptr_UniformConstant_uchar %__const_foo_L
                OpCopyMemorySized %27 %29 %uint_20 Aligned 4
          %30 = OpLoad %v3uint %__spirv_BuiltInGlobalInvocationId Aligned 16
-         %31 = OpCompositeExtract %uint %30 1
-         %32 = OpUMod %uint %31 %uint_5
-         %35 = OpInBoundsPtrAccessChain %_ptr_Function_uint %21 %uint_0 %32
-         %36 = OpLoad %uint %35 Aligned 4
+       %call = OpCompositeExtract %uint %30 1
+        %rem = OpUMod %uint %call %uint_5
+   %arrayidx = OpInBoundsPtrAccessChain %_ptr_Function_uint %L %uint_0 %rem
+         %36 = OpLoad %uint %arrayidx Aligned 4
          %37 = OpLoad %v3uint %__spirv_BuiltInGlobalInvocationId Aligned 16
-         %38 = OpCompositeExtract %uint %37 1
+      %call1 = OpCompositeExtract %uint %37 1
          %39 = OpLoad %v3uint %__spirv_BuiltInGlobalInvocationId Aligned 16
-         %40 = OpCompositeExtract %uint %39 0
-         %41 = OpIMul %uint %38 %40
-         %42 = OpInBoundsPtrAccessChain %_ptr_Function_uint %24 %uint_0 %41
-               OpStore %42 %36 Aligned 4
+      %call2 = OpCompositeExtract %uint %39 0
+        %mul = OpIMul %uint %call1 %call2
+  %arrayidx3 = OpInBoundsPtrAccessChain %_ptr_Function_uint %K %uint_0 %mul
+               OpStore %arrayidx3 %36 Aligned 4
                OpReturn
                OpFunctionEnd

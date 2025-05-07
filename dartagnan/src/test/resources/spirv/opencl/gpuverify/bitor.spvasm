@@ -10,9 +10,14 @@
                OpMemoryModel Physical32 OpenCL
                OpEntryPoint Kernel %4 "foo"
                OpSource OpenCL_C 200000
-               OpDecorate %8 Alignment 4
-               OpDecorate %9 Alignment 4
-               OpDecorate %10 Alignment 4
+               OpName %entry "entry"
+               OpName %x "x"
+               OpName %y "y"
+               OpName %z "z"
+               OpName %or "or"
+               OpDecorate %x Alignment 4
+               OpDecorate %y Alignment 4
+               OpDecorate %z Alignment 4
        %uint = OpTypeInt 32 0
      %uint_0 = OpConstant %uint 0
      %uint_1 = OpConstant %uint 1
@@ -20,15 +25,15 @@
           %3 = OpTypeFunction %void
 %_ptr_Function_uint = OpTypePointer Function %uint
           %4 = OpFunction %void DontInline %3
-          %5 = OpLabel
-          %8 = OpVariable %_ptr_Function_uint Function
-          %9 = OpVariable %_ptr_Function_uint Function
-         %10 = OpVariable %_ptr_Function_uint Function
-               OpStore %8 %uint_0 Aligned 4
-               OpStore %9 %uint_1 Aligned 4
-         %13 = OpLoad %uint %8 Aligned 4
-         %14 = OpLoad %uint %9 Aligned 4
-         %15 = OpBitwiseOr %uint %13 %14
-               OpStore %10 %15 Aligned 4
+      %entry = OpLabel
+          %x = OpVariable %_ptr_Function_uint Function
+          %y = OpVariable %_ptr_Function_uint Function
+          %z = OpVariable %_ptr_Function_uint Function
+               OpStore %x %uint_0 Aligned 4
+               OpStore %y %uint_1 Aligned 4
+         %13 = OpLoad %uint %x Aligned 4
+         %14 = OpLoad %uint %y Aligned 4
+         %or = OpBitwiseOr %uint %13 %14
+               OpStore %z %or Aligned 4
                OpReturn
                OpFunctionEnd

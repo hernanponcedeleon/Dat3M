@@ -12,13 +12,24 @@
                OpEntryPoint Kernel %9 "atomic" %__spirv_BuiltInLocalInvocationId
                OpSource OpenCL_C 200000
                OpName %__spirv_BuiltInLocalInvocationId "__spirv_BuiltInLocalInvocationId"
+               OpName %A "A"
+               OpName %B "B"
+               OpName %entry "entry"
+               OpName %A_addr "A.addr"
+               OpName %B_addr "B.addr"
+               OpName %tid "tid"
+               OpName %t "t"
+               OpName %call "call"
+               OpName %arrayidx "arrayidx"
+               OpName %add_ptr "add.ptr"
+               OpName %call1 "call1"
                OpDecorate %__spirv_BuiltInLocalInvocationId BuiltIn LocalInvocationId
                OpDecorate %__spirv_BuiltInLocalInvocationId Constant
                OpDecorate %__spirv_BuiltInLocalInvocationId LinkageAttributes "__spirv_BuiltInLocalInvocationId" Import
-               OpDecorate %14 Alignment 4
-               OpDecorate %15 Alignment 4
-               OpDecorate %17 Alignment 4
-               OpDecorate %18 Alignment 4
+               OpDecorate %A_addr Alignment 4
+               OpDecorate %B_addr Alignment 4
+               OpDecorate %tid Alignment 4
+               OpDecorate %t Alignment 4
        %uint = OpTypeInt 32 0
      %uint_2 = OpConstant %uint 2
      %uint_0 = OpConstant %uint 0
@@ -31,26 +42,26 @@
 %_ptr_Function_uint = OpTypePointer Function %uint
 %__spirv_BuiltInLocalInvocationId = OpVariable %_ptr_Input_v3uint Input
           %9 = OpFunction %void DontInline %8
-         %10 = OpFunctionParameter %_ptr_Workgroup_uint
-         %11 = OpFunctionParameter %_ptr_Workgroup_uint
-         %12 = OpLabel
-         %14 = OpVariable %_ptr_Function__ptr_Workgroup_uint Function
-         %15 = OpVariable %_ptr_Function__ptr_Workgroup_uint Function
-         %17 = OpVariable %_ptr_Function_uint Function
-         %18 = OpVariable %_ptr_Function_uint Function
-               OpStore %14 %10 Aligned 4
-               OpStore %15 %11 Aligned 4
+          %A = OpFunctionParameter %_ptr_Workgroup_uint
+          %B = OpFunctionParameter %_ptr_Workgroup_uint
+      %entry = OpLabel
+     %A_addr = OpVariable %_ptr_Function__ptr_Workgroup_uint Function
+     %B_addr = OpVariable %_ptr_Function__ptr_Workgroup_uint Function
+        %tid = OpVariable %_ptr_Function_uint Function
+          %t = OpVariable %_ptr_Function_uint Function
+               OpStore %A_addr %A Aligned 4
+               OpStore %B_addr %B Aligned 4
          %19 = OpLoad %v3uint %__spirv_BuiltInLocalInvocationId Aligned 16
-         %20 = OpCompositeExtract %uint %19 0
-               OpStore %17 %20 Aligned 4
-         %21 = OpLoad %_ptr_Workgroup_uint %14 Aligned 4
-         %22 = OpLoad %uint %17 Aligned 4
-         %23 = OpInBoundsPtrAccessChain %_ptr_Workgroup_uint %21 %22
-         %24 = OpLoad %uint %23 Aligned 4
-               OpStore %18 %24 Aligned 4
-         %25 = OpLoad %_ptr_Workgroup_uint %15 Aligned 4
-         %26 = OpLoad %uint %18 Aligned 4
-         %27 = OpInBoundsPtrAccessChain %_ptr_Workgroup_uint %25 %26
-         %30 = OpAtomicIIncrement %uint %27 %uint_2 %uint_0
+       %call = OpCompositeExtract %uint %19 0
+               OpStore %tid %call Aligned 4
+         %21 = OpLoad %_ptr_Workgroup_uint %A_addr Aligned 4
+         %22 = OpLoad %uint %tid Aligned 4
+   %arrayidx = OpInBoundsPtrAccessChain %_ptr_Workgroup_uint %21 %22
+         %24 = OpLoad %uint %arrayidx Aligned 4
+               OpStore %t %24 Aligned 4
+         %25 = OpLoad %_ptr_Workgroup_uint %B_addr Aligned 4
+         %26 = OpLoad %uint %t Aligned 4
+    %add_ptr = OpInBoundsPtrAccessChain %_ptr_Workgroup_uint %25 %26
+      %call1 = OpAtomicIIncrement %uint %add_ptr %uint_2 %uint_0
                OpReturn
                OpFunctionEnd

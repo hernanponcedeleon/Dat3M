@@ -11,7 +11,12 @@
                OpMemoryModel Physical32 OpenCL
                OpEntryPoint Kernel %6 "foo"
                OpSource OpenCL_C 200000
-               OpDecorate %10 Alignment 4
+               OpName %p "p"
+               OpName %entry "entry"
+               OpName %p_addr "p.addr"
+               OpName %arrayidx "arrayidx"
+               OpName %inc "inc"
+               OpDecorate %p_addr Alignment 4
      %ushort = OpTypeInt 16 0
        %uint = OpTypeInt 32 0
      %uint_0 = OpConstant %uint 0
@@ -21,14 +26,14 @@
           %5 = OpTypeFunction %void %_ptr_Workgroup_ushort
 %_ptr_Function__ptr_Workgroup_ushort = OpTypePointer Function %_ptr_Workgroup_ushort
           %6 = OpFunction %void DontInline %5
-          %7 = OpFunctionParameter %_ptr_Workgroup_ushort
-          %8 = OpLabel
-         %10 = OpVariable %_ptr_Function__ptr_Workgroup_ushort Function
-               OpStore %10 %7 Aligned 4
-         %11 = OpLoad %_ptr_Workgroup_ushort %10 Aligned 4
-         %14 = OpInBoundsPtrAccessChain %_ptr_Workgroup_ushort %11 %uint_0
-         %15 = OpLoad %ushort %14 Aligned 2
-         %17 = OpIAdd %ushort %15 %ushort_1
-               OpStore %14 %17 Aligned 2
+          %p = OpFunctionParameter %_ptr_Workgroup_ushort
+      %entry = OpLabel
+     %p_addr = OpVariable %_ptr_Function__ptr_Workgroup_ushort Function
+               OpStore %p_addr %p Aligned 4
+         %11 = OpLoad %_ptr_Workgroup_ushort %p_addr Aligned 4
+   %arrayidx = OpInBoundsPtrAccessChain %_ptr_Workgroup_ushort %11 %uint_0
+         %15 = OpLoad %ushort %arrayidx Aligned 2
+        %inc = OpIAdd %ushort %15 %ushort_1
+               OpStore %arrayidx %inc Aligned 2
                OpReturn
                OpFunctionEnd

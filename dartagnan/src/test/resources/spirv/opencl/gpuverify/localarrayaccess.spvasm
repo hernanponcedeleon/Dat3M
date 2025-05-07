@@ -13,11 +13,18 @@
                OpSource OpenCL_C 200000
                OpName %foo_A "foo.A"
                OpName %__spirv_BuiltInLocalInvocationId "__spirv_BuiltInLocalInvocationId"
+               OpName %entry "entry"
+               OpName %x "x"
+               OpName %call "call"
+               OpName %arrayidx "arrayidx"
+               OpName %call1 "call1"
+               OpName %add "add"
+               OpName %arrayidx2 "arrayidx2"
                OpDecorate %__spirv_BuiltInLocalInvocationId BuiltIn LocalInvocationId
                OpDecorate %__spirv_BuiltInLocalInvocationId Constant
                OpDecorate %__spirv_BuiltInLocalInvocationId LinkageAttributes "__spirv_BuiltInLocalInvocationId" Import
                OpDecorate %foo_A Alignment 4
-               OpDecorate %15 Alignment 4
+               OpDecorate %x Alignment 4
        %uint = OpTypeInt 32 0
     %uint_65 = OpConstant %uint 65
      %uint_0 = OpConstant %uint 0
@@ -35,18 +42,18 @@
       %foo_A = OpVariable %_ptr_Workgroup__arr_uint_uint_65 Workgroup
 %__spirv_BuiltInLocalInvocationId = OpVariable %_ptr_Input_v3uint Input
          %12 = OpFunction %void DontInline %11
-         %13 = OpLabel
-         %15 = OpVariable %_ptr_Function_uint Function
+      %entry = OpLabel
+          %x = OpVariable %_ptr_Function_uint Function
          %16 = OpLoad %v3uint %__spirv_BuiltInLocalInvocationId Aligned 16
-         %17 = OpCompositeExtract %uint %16 0
-         %20 = OpInBoundsPtrAccessChain %_ptr_Workgroup_uint %foo_A %uint_0 %17
-               OpStore %20 %uint_2 Aligned 4
+       %call = OpCompositeExtract %uint %16 0
+   %arrayidx = OpInBoundsPtrAccessChain %_ptr_Workgroup_uint %foo_A %uint_0 %call
+               OpStore %arrayidx %uint_2 Aligned 4
                OpControlBarrier %uint_2 %uint_2 %uint_272
          %23 = OpLoad %v3uint %__spirv_BuiltInLocalInvocationId Aligned 16
-         %24 = OpCompositeExtract %uint %23 0
-         %26 = OpIAdd %uint %24 %uint_1
-         %27 = OpInBoundsPtrAccessChain %_ptr_Workgroup_uint %foo_A %uint_0 %26
-         %28 = OpLoad %uint %27 Aligned 4
-               OpStore %15 %28 Aligned 4
+      %call1 = OpCompositeExtract %uint %23 0
+        %add = OpIAdd %uint %call1 %uint_1
+  %arrayidx2 = OpInBoundsPtrAccessChain %_ptr_Workgroup_uint %foo_A %uint_0 %add
+         %28 = OpLoad %uint %arrayidx2 Aligned 4
+               OpStore %x %28 Aligned 4
                OpReturn
                OpFunctionEnd

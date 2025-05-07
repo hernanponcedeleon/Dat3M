@@ -10,8 +10,20 @@
                OpMemoryModel Physical32 OpenCL
                OpEntryPoint Kernel %5 "foo"
                OpSource OpenCL_C 200000
-               OpDecorate %15 Alignment 4
-               OpDecorate %16 Alignment 4
+               OpName %x "x"
+               OpName %y "y"
+               OpName %entry "entry"
+               OpName %if_then "if.then"
+               OpName %if_else "if.else"
+               OpName %if_then1 "if.then1"
+               OpName %if_end "if.end"
+               OpName %if_end2 "if.end2"
+               OpName %x_addr "x.addr"
+               OpName %y_addr "y.addr"
+               OpName %tobool "tobool"
+               OpName %cmp "cmp"
+               OpDecorate %x_addr Alignment 4
+               OpDecorate %y_addr Alignment 4
        %uint = OpTypeInt 32 0
      %uint_0 = OpConstant %uint 0
        %void = OpTypeVoid
@@ -19,27 +31,27 @@
 %_ptr_Function_uint = OpTypePointer Function %uint
        %bool = OpTypeBool
           %5 = OpFunction %void DontInline %4
-          %6 = OpFunctionParameter %uint
-          %7 = OpFunctionParameter %uint
-          %8 = OpLabel
-         %15 = OpVariable %_ptr_Function_uint Function
-         %16 = OpVariable %_ptr_Function_uint Function
-               OpStore %15 %6 Aligned 4
-               OpStore %16 %7 Aligned 4
-         %17 = OpLoad %uint %15 Aligned 4
-         %20 = OpINotEqual %bool %17 %uint_0
-               OpBranchConditional %20 %9 %10
-          %9 = OpLabel
-               OpBranch %13
-         %10 = OpLabel
-         %21 = OpLoad %uint %15 Aligned 4
-         %22 = OpLoad %uint %16 Aligned 4
-         %23 = OpIEqual %bool %21 %22
-               OpBranchConditional %23 %11 %12
-         %11 = OpLabel
-               OpBranch %12
-         %12 = OpLabel
-               OpBranch %13
-         %13 = OpLabel
+          %x = OpFunctionParameter %uint
+          %y = OpFunctionParameter %uint
+      %entry = OpLabel
+     %x_addr = OpVariable %_ptr_Function_uint Function
+     %y_addr = OpVariable %_ptr_Function_uint Function
+               OpStore %x_addr %x Aligned 4
+               OpStore %y_addr %y Aligned 4
+         %17 = OpLoad %uint %x_addr Aligned 4
+     %tobool = OpINotEqual %bool %17 %uint_0
+               OpBranchConditional %tobool %if_then %if_else
+    %if_then = OpLabel
+               OpBranch %if_end2
+    %if_else = OpLabel
+         %21 = OpLoad %uint %x_addr Aligned 4
+         %22 = OpLoad %uint %y_addr Aligned 4
+        %cmp = OpIEqual %bool %21 %22
+               OpBranchConditional %cmp %if_then1 %if_end
+   %if_then1 = OpLabel
+               OpBranch %if_end
+     %if_end = OpLabel
+               OpBranch %if_end2
+    %if_end2 = OpLabel
                OpReturn
                OpFunctionEnd

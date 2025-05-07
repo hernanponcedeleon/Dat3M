@@ -12,15 +12,17 @@
                OpEntryPoint Kernel %6 "foo"
                OpSource OpenCL_C 200000
                OpName %bar "bar"
+               OpName %entry "entry"
+               OpName %entry_0 "entry"
                OpDecorate %bar LinkageAttributes "bar" Export
        %void = OpTypeVoid
           %3 = OpTypeFunction %void
         %bar = OpFunction %void DontInline %3
-          %5 = OpLabel
+      %entry = OpLabel
                OpReturn
                OpFunctionEnd
           %6 = OpFunction %void DontInline %3
-          %7 = OpLabel
+    %entry_0 = OpLabel
           %8 = OpFunctionCall %void %bar
                OpReturn
                OpFunctionEnd

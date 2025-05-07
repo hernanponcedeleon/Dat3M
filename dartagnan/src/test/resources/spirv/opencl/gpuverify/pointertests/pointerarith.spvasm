@@ -10,9 +10,18 @@
                OpMemoryModel Physical32 OpenCL
                OpEntryPoint Kernel %6 "foo"
                OpSource OpenCL_C 200000
-               OpDecorate %11 Alignment 4
-               OpDecorate %13 Alignment 4
-               OpDecorate %14 Alignment 4
+               OpName %A "A"
+               OpName %me "me"
+               OpName %entry "entry"
+               OpName %A_addr "A.addr"
+               OpName %me_addr "me.addr"
+               OpName %q "q"
+               OpName %shr "shr"
+               OpName %add "add"
+               OpName %add_ptr "add.ptr"
+               OpDecorate %A_addr Alignment 4
+               OpDecorate %me_addr Alignment 4
+               OpDecorate %q Alignment 4
        %uint = OpTypeInt 32 0
      %uint_5 = OpConstant %uint 5
        %void = OpTypeVoid
@@ -21,20 +30,20 @@
 %_ptr_Function__ptr_CrossWorkgroup_uint = OpTypePointer Function %_ptr_CrossWorkgroup_uint
 %_ptr_Function_uint = OpTypePointer Function %uint
           %6 = OpFunction %void DontInline %5
-          %7 = OpFunctionParameter %_ptr_CrossWorkgroup_uint
-          %8 = OpFunctionParameter %uint
-          %9 = OpLabel
-         %11 = OpVariable %_ptr_Function__ptr_CrossWorkgroup_uint Function
-         %13 = OpVariable %_ptr_Function_uint Function
-         %14 = OpVariable %_ptr_Function__ptr_CrossWorkgroup_uint Function
-               OpStore %11 %7 Aligned 4
-               OpStore %13 %8 Aligned 4
-         %15 = OpLoad %_ptr_CrossWorkgroup_uint %11 Aligned 4
-         %16 = OpLoad %uint %13 Aligned 4
-         %17 = OpLoad %uint %13 Aligned 4
-         %19 = OpShiftRightLogical %uint %17 %uint_5
-         %20 = OpIAdd %uint %16 %19
-         %21 = OpInBoundsPtrAccessChain %_ptr_CrossWorkgroup_uint %15 %20
-               OpStore %14 %21 Aligned 4
+          %A = OpFunctionParameter %_ptr_CrossWorkgroup_uint
+         %me = OpFunctionParameter %uint
+      %entry = OpLabel
+     %A_addr = OpVariable %_ptr_Function__ptr_CrossWorkgroup_uint Function
+    %me_addr = OpVariable %_ptr_Function_uint Function
+          %q = OpVariable %_ptr_Function__ptr_CrossWorkgroup_uint Function
+               OpStore %A_addr %A Aligned 4
+               OpStore %me_addr %me Aligned 4
+         %15 = OpLoad %_ptr_CrossWorkgroup_uint %A_addr Aligned 4
+         %16 = OpLoad %uint %me_addr Aligned 4
+         %17 = OpLoad %uint %me_addr Aligned 4
+        %shr = OpShiftRightLogical %uint %17 %uint_5
+        %add = OpIAdd %uint %16 %shr
+    %add_ptr = OpInBoundsPtrAccessChain %_ptr_CrossWorkgroup_uint %15 %add
+               OpStore %q %add_ptr Aligned 4
                OpReturn
                OpFunctionEnd
