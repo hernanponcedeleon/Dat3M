@@ -42,8 +42,8 @@ public class VisitorOpsCompositeTest {
         // given
         String input = "%extract = OpCompositeExtract %uint %base 2";
         builder.mockIntType("%uint", 32);
-        builder.mockVectorType("%array", "%uint", -1);
-        builder.mockConstant("%base", "%array", List.of(1, 2, 3, 4));
+        builder.mockVectorType("%runtime_array", "%uint", -1);
+        builder.mockConstant("%base", "%runtime_array", List.of(1, 2, 3, 4));
 
         // when
         visit(input);
@@ -79,11 +79,11 @@ public class VisitorOpsCompositeTest {
         // given
         String input = "%extract = OpCompositeExtract %uint %base 1 2";
         builder.mockIntType("%uint", 32);
-        builder.mockVectorType("%array", "%uint", -1);
-        builder.mockVectorType("%array2", "%array", -1);
-        builder.mockConstant("%member_0", "%array", List.of(1, 2, 3, 4));
-        builder.mockConstant("%member_1", "%array", List.of(5, 6, 7, 8));
-        builder.mockConstant("%base", "%array2", List.of("%member_0", "%member_1"));
+        builder.mockVectorType("%runtime_array1", "%uint", -1);
+        builder.mockVectorType("%runtime_array2", "%runtime_array1", -1);
+        builder.mockConstant("%member_0", "%runtime_array1", List.of(1, 2, 3, 4));
+        builder.mockConstant("%member_1", "%runtime_array1", List.of(5, 6, 7, 8));
+        builder.mockConstant("%base", "%runtime_array2", List.of("%member_0", "%member_1"));
 
         // when
         visit(input);
@@ -218,10 +218,10 @@ public class VisitorOpsCompositeTest {
     @Test
     public void testCompositeInsertRuntimeArray() {
         // given
-        String input = "%insert = OpCompositeInsert %array %value %base 2";
+        String input = "%insert = OpCompositeInsert %runtime_array %value %base 2";
         builder.mockIntType("%uint", 32);
-        builder.mockVectorType("%array", "%uint", -1);
-        builder.mockConstant("%base", "%array", List.of(1, 2, 3, 4));
+        builder.mockVectorType("%runtime_array", "%uint", -1);
+        builder.mockConstant("%base", "%runtime_array", List.of(1, 2, 3, 4));
         builder.mockConstant("%value", "%uint", 99);
 
         // when
@@ -230,7 +230,7 @@ public class VisitorOpsCompositeTest {
         // then
         InsertExpr insert = (InsertExpr) builder.getExpression("%insert");
         assertEquals(List.of(2), insert.getIndices());
-        assertEquals(builder.getType("%array"), insert.getType());
+        assertEquals(builder.getType("%runtime_array"), insert.getType());
         assertEquals(builder.getExpression("%value"), insert.getInsertedValue());
         assertEquals(builder.getExpression("%base"), insert.getAggregate());
     }
@@ -261,13 +261,13 @@ public class VisitorOpsCompositeTest {
     @Test
     public void testCompositeInsertNestedRuntimeArray() {
         // given
-        String input = "%insert = OpCompositeInsert %array2 %value %base 1 2";
+        String input = "%insert = OpCompositeInsert %runtime_array2 %value %base 1 2";
         builder.mockIntType("%uint", 32);
-        builder.mockVectorType("%array", "%uint", -1);
-        builder.mockVectorType("%array2", "%array", -1);
-        builder.mockConstant("%member_0", "%array", List.of(1, 2, 3, 4));
-        builder.mockConstant("%member_1", "%array", List.of(5, 6, 7, 8));
-        builder.mockConstant("%base", "%array2", List.of("%member_0", "%member_1"));
+        builder.mockVectorType("%runtime_array", "%uint", -1);
+        builder.mockVectorType("%runtime_array2", "%runtime_array", -1);
+        builder.mockConstant("%member_0", "%runtime_array", List.of(1, 2, 3, 4));
+        builder.mockConstant("%member_1", "%runtime_array", List.of(5, 6, 7, 8));
+        builder.mockConstant("%base", "%runtime_array2", List.of("%member_0", "%member_1"));
         builder.mockConstant("%value", "%uint", 99);
 
         // when
@@ -276,7 +276,7 @@ public class VisitorOpsCompositeTest {
         // then
         InsertExpr insert = (InsertExpr) builder.getExpression("%insert");
         assertEquals(List.of(1, 2), insert.getIndices());
-        assertEquals(builder.getType("%array2"), insert.getType());
+        assertEquals(builder.getType("%runtime_array2"), insert.getType());
         assertEquals(builder.getExpression("%value"), insert.getInsertedValue());
         assertEquals(builder.getExpression("%base"), insert.getAggregate());
     }
@@ -800,10 +800,29 @@ public class VisitorOpsCompositeTest {
     @Test
     public void testCompositeConstructMismatchingTypeArray() {
         // given
-        String input = "%result = OpCompositeConstruct %composite %member1 %member2";
+        String input = "%result = OpCompositeConstruct %array %member1 %member2";
         builder.mockBoolType("%bool");
         builder.mockIntType("%uint", 32);
-        builder.mockVectorType("%composite", "%uint", 2);
+        builder.mockVectorType("%array", "%uint", 2);
+        builder.mockConstant("%member1", "%uint", 1);
+        builder.mockConstant("%member2", "%bool", true);
+
+        try {
+            visit(input);
+            fail("Should throw exception");
+        } catch (Exception e) {
+            assertEquals("There must be exactly one constituent for each top-level element of the result " +
+                        "(\"flattening\" vectors is not yet supported) and their types should match for '%result'", e.getMessage());
+        }
+    }
+
+    @Test
+    public void testCompositeConstructMismatchingTypeRuntimeArray() {
+        // given
+        String input = "%result = OpCompositeConstruct %runtime_array %member1 %member2";
+        builder.mockBoolType("%bool");
+        builder.mockIntType("%uint", 32);
+        builder.mockVectorType("%runtime_array", "%uint", -1);
         builder.mockConstant("%member1", "%uint", 1);
         builder.mockConstant("%member2", "%bool", true);
 
@@ -819,10 +838,10 @@ public class VisitorOpsCompositeTest {
     @Test
     public void testCompositeConstructMissingOperandArray() {
         // given
-        String input = "%result = OpCompositeConstruct %composite %member1 %member2";
+        String input = "%result = OpCompositeConstruct %array %member1 %member2";
         builder.mockBoolType("%bool");
         builder.mockIntType("%uint", 32);
-        builder.mockVectorType("%composite", "%uint", 3);
+        builder.mockVectorType("%array", "%uint", 3);
         builder.mockConstant("%member1", "%uint", 1);
         builder.mockConstant("%member2", "%uint", 2);
 
@@ -852,13 +871,13 @@ public class VisitorOpsCompositeTest {
     }
 
     @Test
-    public void testCompositeConstructNestedVectorCorrectType() {
+    public void testCompositeConstructNestedArrayCorrectType() {
         // given
-        String input = "%result = OpCompositeConstruct %composite %member1 %member2";
+        String input = "%result = OpCompositeConstruct %array %member1 %member2";
         builder.mockIntType("%uint", 32);
-        builder.mockVectorType("%composite", "%uint", 2);
+        builder.mockVectorType("%array", "%uint", 2);
         builder.mockConstant("%member1", "%uint", 1);
-        builder.mockConstant("%member2", "%composite", List.of(2, 3));
+        builder.mockConstant("%member2", "%array", List.of(2, 3));
         builder.mockConstant("%bv32(1)", "%uint", 1);
         builder.mockConstant("%bv32(2)", "%uint", 2);
         builder.mockConstant("%bv32(3)", "%uint", 3);
@@ -874,16 +893,16 @@ public class VisitorOpsCompositeTest {
     }
 
     @Test
-    public void testCompositeConstructNestedVectorWrongType() {
+    public void testCompositeConstructNestedArrayWrongType() {
         // given
-        String input = "%result = OpCompositeConstruct %composite %member1 %member2";
+        String input = "%result = OpCompositeConstruct %array1 %member1 %member2";
         builder.mockIntType("%uint", 32);
-        builder.mockVectorType("%composite", "%uint", 2);
-        builder.mockVectorType("%composite-composite", "%composite", 2);
+        builder.mockVectorType("%array1", "%uint", 2);
+        builder.mockVectorType("%array2", "%array1", 2);
         builder.mockConstant("%member1", "%uint", 1);
-        builder.mockConstant("%v1", "%composite", List.of(2, 3));
-        builder.mockConstant("%v2", "%composite", List.of(4, 5));
-        builder.mockConstant("%member2", "%composite-composite",
+        builder.mockConstant("%v1", "%array1", List.of(2, 3));
+        builder.mockConstant("%v2", "%array1", List.of(4, 5));
+        builder.mockConstant("%member2", "%array2",
             List.of(builder.getExpression("%v1"), builder.getExpression("%v2")));
 
         try {
