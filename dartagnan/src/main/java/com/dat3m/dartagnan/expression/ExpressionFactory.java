@@ -266,7 +266,7 @@ public final class ExpressionFactory {
         final ArrayType type = fixedSize ? types.getArrayType(elementType, items.size()) :
                 types.getArrayType(elementType);
         if (items.size() > 0) {
-            Preconditions.checkArgument(items.stream().allMatch(e -> e.getType().equals(items.get(0).getType())),
+            Preconditions.checkArgument(items.stream().allMatch(e -> TypeFactory.isStaticTypeOf(e.getType(), items.get(0).getType())),
                 "All elements in an array must have the same type.");
         }
         return new ConstructExpr(type, items);

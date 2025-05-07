@@ -116,20 +116,22 @@ public class VisitorOpsComposite extends SpirvBaseVisitor<Void> {
             builder.addExpression(id, getConstruct(type, elements, id));
         }
         if (type instanceof ArrayType arrayType) {
-            final List<Expression> elements = new ArrayList<>(arrayType.getNumElements());
+            final List<Expression> elements = new ArrayList<>();
             for (SpirvParser.ConstituentsContext vCtx : ctx.constituents()) {
                 String idCtx = vCtx.idRef().getText();
                 Expression elem = builder.getExpression(idCtx);
-                if (!elem.getType().equals(arrayType.getElementType())) {
-                    throw new ParsingException(String.format("Top-level elements must have the same type as the types of the operands " +
-                        "(\"flattening\" vectors is not yet supported) for '%s'", id));
+                if (!TypeFactory.isStaticTypeOf(elem.getType(), arrayType.getElementType())) {
+                    throw new ParsingException(String.format("There must be exactly one constituent for each top-level element of the result " +
+                        "(\"flattening\" vectors is not yet supported) and their types should match for '%s'", id));
                 }
                 elements.add(elem);
             }
-            if (arrayType.getNumElements() != elements.size()) {
-                throw new ParsingException(String.format("There must be exactly one constituent for each top-level element of the result for '%s'", id));
+            Expression array = getArray(arrayType.getElementType(), elements, id);
+            if (!TypeFactory.isStaticTypeOf(array.getType(), type)) {
+                throw new ParsingException(String.format("There must be exactly one constituent for each top-level element of the result " +
+                        "(\"flattening\" vectors is not yet supported) and their types should match for '%s'", id));
             }
-            builder.addExpression(id, getArray(arrayType.getElementType(), elements, id));
+            builder.addExpression(id, array);
         }
         return null;
     }

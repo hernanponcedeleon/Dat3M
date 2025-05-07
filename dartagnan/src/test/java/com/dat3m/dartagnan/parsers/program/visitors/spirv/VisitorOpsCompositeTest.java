@@ -221,7 +221,6 @@ public class VisitorOpsCompositeTest {
         String input = "%insert = OpCompositeInsert %array %value %base 2";
         builder.mockIntType("%uint", 32);
         builder.mockVectorType("%array", "%uint", -1);
-        builder.mockVectorType("%array2", "%uint", 4);
         builder.mockConstant("%base", "%array", List.of(1, 2, 3, 4));
         builder.mockConstant("%value", "%uint", 99);
 
@@ -231,7 +230,7 @@ public class VisitorOpsCompositeTest {
         // then
         InsertExpr insert = (InsertExpr) builder.getExpression("%insert");
         assertEquals(List.of(2), insert.getIndices());
-        assertEquals(builder.getType("%array2"), insert.getType());
+        assertEquals(builder.getType("%array"), insert.getType());
         assertEquals(builder.getExpression("%value"), insert.getInsertedValue());
         assertEquals(builder.getExpression("%base"), insert.getAggregate());
     }
@@ -266,7 +265,6 @@ public class VisitorOpsCompositeTest {
         builder.mockIntType("%uint", 32);
         builder.mockVectorType("%array", "%uint", -1);
         builder.mockVectorType("%array2", "%array", -1);
-        builder.mockVectorType("%array3", "%array", 2);
         builder.mockConstant("%member_0", "%array", List.of(1, 2, 3, 4));
         builder.mockConstant("%member_1", "%array", List.of(5, 6, 7, 8));
         builder.mockConstant("%base", "%array2", List.of("%member_0", "%member_1"));
@@ -278,7 +276,7 @@ public class VisitorOpsCompositeTest {
         // then
         InsertExpr insert = (InsertExpr) builder.getExpression("%insert");
         assertEquals(List.of(1, 2), insert.getIndices());
-        assertEquals(builder.getType("%array3"), insert.getType());
+        assertEquals(builder.getType("%array2"), insert.getType());
         assertEquals(builder.getExpression("%value"), insert.getInsertedValue());
         assertEquals(builder.getExpression("%base"), insert.getAggregate());
     }
@@ -600,6 +598,86 @@ public class VisitorOpsCompositeTest {
     }
 
     @Test
+    public void testCompositeConstructArrayArray() {
+        // given
+        String input = "%result = OpCompositeConstruct %arrayOuter %inner1 %inner2";
+        builder.mockIntType("%uint", 32);
+        builder.mockVectorType("%arrayInner", "%uint", 0);
+        builder.mockVectorType("%arrayOuter", "%arrayInner", 0);
+        builder.mockConstant("%inner1", "%arrayInner", List.of(1, 2));
+        builder.mockConstant("%inner2", "%arrayInner", List.of(3, 4));
+
+        // when
+        visit(input);
+
+        // then
+        ConstructExpr composite = (ConstructExpr) builder.getExpression("%result");
+        // check there is no flattening
+        assertEquals(builder.getExpression("%inner1"), composite.getOperands().get(0));
+        assertEquals(builder.getExpression("%inner2"), composite.getOperands().get(1));
+    }
+
+    @Test
+    public void testCompositeConstructArrayVector() {
+        // given
+        String input = "%result = OpCompositeConstruct %array %inner1 %inner2";
+        builder.mockIntType("%uint", 32);
+        builder.mockVectorType("%vector", "%uint", 0);
+        builder.mockVectorType("%array", "%vector", 2);
+        builder.mockConstant("%inner1", "%vector", List.of(1, 2));
+        builder.mockConstant("%inner2", "%vector", List.of(3, 4));
+
+        // when
+        visit(input);
+
+        // then
+        ConstructExpr composite = (ConstructExpr) builder.getExpression("%result");
+        // check there is no flattening
+        assertEquals(builder.getExpression("%inner1"), composite.getOperands().get(0));
+        assertEquals(builder.getExpression("%inner2"), composite.getOperands().get(1));
+    }
+
+    @Test
+    public void testCompositeConstructVectorArray1() {
+        // given
+        String input = "%result = OpCompositeConstruct %vector %inner1 %inner2";
+        builder.mockIntType("%uint", 32);
+        builder.mockVectorType("%array", "%uint", 0);
+        builder.mockVectorType("%vector", "%array", 2);
+        builder.mockConstant("%inner1", "%array", List.of(1, 2));
+        builder.mockConstant("%inner2", "%array", List.of(3, 4));
+
+        // when
+        visit(input);
+
+        // then
+        ConstructExpr composite = (ConstructExpr) builder.getExpression("%result");
+        // check there is no flattening
+        assertEquals(builder.getExpression("%inner1"), composite.getOperands().get(0));
+        assertEquals(builder.getExpression("%inner2"), composite.getOperands().get(1));
+    }
+
+    @Test
+    public void testCompositeConstructVectorArray2() {
+        // given
+        String input = "%result = OpCompositeConstruct %vector %inner1 %inner2";
+        builder.mockIntType("%uint", 32);
+        builder.mockVectorType("%array", "%uint", 0);
+        builder.mockVectorType("%vector", "%array", 2);
+        builder.mockConstant("%inner1", "%array", List.of(1, 2));
+        builder.mockConstant("%inner2", "%array", List.of(3));
+
+        // when
+        visit(input);
+
+        // then
+        ConstructExpr composite = (ConstructExpr) builder.getExpression("%result");
+        // check there is no flattening
+        assertEquals(builder.getExpression("%inner1"), composite.getOperands().get(0));
+        assertEquals(builder.getExpression("%inner2"), composite.getOperands().get(1));
+    }
+
+    @Test
     public void testCompositeConstructMismatchingTypeStruct() {
         // given
         String input = "%result = OpCompositeConstruct %composite %member1 %member2";
@@ -649,7 +727,8 @@ public class VisitorOpsCompositeTest {
             visit(input);
             fail("Should throw exception");
         } catch (Exception e) {
-            assertEquals("Top-level elements must have the same type as the types of the operands (\"flattening\" vectors is not yet supported) for '%result'", e.getMessage());
+            assertEquals("There must be exactly one constituent for each top-level element of the result " +
+                        "(\"flattening\" vectors is not yet supported) and their types should match for '%result'", e.getMessage());
         }
     }
 
@@ -667,7 +746,8 @@ public class VisitorOpsCompositeTest {
             visit(input);
             fail("Should throw exception");
         } catch (Exception e) {
-            assertEquals("There must be exactly one constituent for each top-level element of the result for '%result'", e.getMessage());
+            assertEquals("There must be exactly one constituent for each top-level element of the result " +
+                        "(\"flattening\" vectors is not yet supported) and their types should match for '%result'", e.getMessage());
         }
     }
 
@@ -704,7 +784,8 @@ public class VisitorOpsCompositeTest {
             visit(input);
             fail("Should throw exception");
         } catch (Exception e) {
-            assertEquals("Top-level elements must have the same type as the types of the operands (\"flattening\" vectors is not yet supported) for '%result'", e.getMessage());
+            assertEquals("There must be exactly one constituent for each top-level element of the result " +
+                        "(\"flattening\" vectors is not yet supported) and their types should match for '%result'", e.getMessage());
         }
     }
 
@@ -725,7 +806,8 @@ public class VisitorOpsCompositeTest {
             visit(input);
             fail("Should throw exception");
         } catch (Exception e) {
-            assertEquals("Top-level elements must have the same type as the types of the operands (\"flattening\" vectors is not yet supported) for '%result'", e.getMessage());
+            assertEquals("There must be exactly one constituent for each top-level element of the result " +
+                        "(\"flattening\" vectors is not yet supported) and their types should match for '%result'", e.getMessage());
         }
     }
 
