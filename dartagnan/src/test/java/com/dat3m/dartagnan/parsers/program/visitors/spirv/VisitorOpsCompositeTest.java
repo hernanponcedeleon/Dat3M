@@ -580,9 +580,9 @@ public class VisitorOpsCompositeTest {
     @Test
     public void testCompositeConstructArray() {
         // given
-        String input = "%result = OpCompositeConstruct %composite %member1 %member2";
+        String input = "%result = OpCompositeConstruct %array %member1 %member2";
         builder.mockIntType("%uint", 32);
-        builder.mockVectorType("%composite", "%uint", 2);
+        builder.mockVectorType("%array", "%uint", 2);
         builder.mockConstant("%member1", "%uint", 1);
         builder.mockConstant("%member2", "%uint", 2);
         builder.mockConstant("%bv32(1)", "%uint", 1);
@@ -600,12 +600,12 @@ public class VisitorOpsCompositeTest {
     @Test
     public void testCompositeConstructArrayArray() {
         // given
-        String input = "%result = OpCompositeConstruct %arrayOuter %inner1 %inner2";
+        String input = "%result = OpCompositeConstruct %array2 %inner1 %inner2";
         builder.mockIntType("%uint", 32);
-        builder.mockVectorType("%arrayInner", "%uint", 0);
-        builder.mockVectorType("%arrayOuter", "%arrayInner", 0);
-        builder.mockConstant("%inner1", "%arrayInner", List.of(1, 2));
-        builder.mockConstant("%inner2", "%arrayInner", List.of(3, 4));
+        builder.mockVectorType("%array1", "%uint", 2);
+        builder.mockVectorType("%array2", "%array1", 2);
+        builder.mockConstant("%inner1", "%array1", List.of(1, 2));
+        builder.mockConstant("%inner2", "%array1", List.of(3, 4));
 
         // when
         visit(input);
@@ -618,14 +618,14 @@ public class VisitorOpsCompositeTest {
     }
 
     @Test
-    public void testCompositeConstructArrayVector() {
+    public void testCompositeConstructArrayRuntimeArray1() {
         // given
         String input = "%result = OpCompositeConstruct %array %inner1 %inner2";
         builder.mockIntType("%uint", 32);
-        builder.mockVectorType("%vector", "%uint", 0);
-        builder.mockVectorType("%array", "%vector", 2);
-        builder.mockConstant("%inner1", "%vector", List.of(1, 2));
-        builder.mockConstant("%inner2", "%vector", List.of(3, 4));
+        builder.mockVectorType("%runtime_array", "%uint", -1);
+        builder.mockVectorType("%array", "%runtime_array", 2);
+        builder.mockConstant("%inner1", "%runtime_array", List.of(1, 2));
+        builder.mockConstant("%inner2", "%runtime_array", List.of(3, 4));
 
         // when
         visit(input);
@@ -638,12 +638,32 @@ public class VisitorOpsCompositeTest {
     }
 
     @Test
-    public void testCompositeConstructVectorArray1() {
+    public void testCompositeConstructArrayRuntimeArray2() {
         // given
-        String input = "%result = OpCompositeConstruct %vector %inner1 %inner2";
+        String input = "%result = OpCompositeConstruct %array %inner1 %inner2";
         builder.mockIntType("%uint", 32);
-        builder.mockVectorType("%array", "%uint", 0);
-        builder.mockVectorType("%vector", "%array", 2);
+        builder.mockVectorType("%runtime_array", "%uint", -1);
+        builder.mockVectorType("%array", "%runtime_array", 2);
+        builder.mockConstant("%inner1", "%runtime_array", List.of(1, 2));
+        builder.mockConstant("%inner2", "%runtime_array", List.of(3));
+
+        // when
+        visit(input);
+
+        // then
+        ConstructExpr composite = (ConstructExpr) builder.getExpression("%result");
+        // check there is no flattening
+        assertEquals(builder.getExpression("%inner1"), composite.getOperands().get(0));
+        assertEquals(builder.getExpression("%inner2"), composite.getOperands().get(1));
+    }
+
+    @Test
+    public void testCompositeConstructRuntimeArrayArray1() {
+        // given
+        String input = "%result = OpCompositeConstruct %runtime_array %inner1 %inner2";
+        builder.mockIntType("%uint", 32);
+        builder.mockVectorType("%array", "%uint", 2);
+        builder.mockVectorType("%runtime_array", "%array", -1);
         builder.mockConstant("%inner1", "%array", List.of(1, 2));
         builder.mockConstant("%inner2", "%array", List.of(3, 4));
 
@@ -658,14 +678,15 @@ public class VisitorOpsCompositeTest {
     }
 
     @Test
-    public void testCompositeConstructVectorArray2() {
+    public void testCompositeConstructRuntimeArrayArray2() {
         // given
-        String input = "%result = OpCompositeConstruct %vector %inner1 %inner2";
+        String input = "%result = OpCompositeConstruct %runtime_array %inner1 %inner2 %inner3";
         builder.mockIntType("%uint", 32);
-        builder.mockVectorType("%array", "%uint", 0);
-        builder.mockVectorType("%vector", "%array", 2);
+        builder.mockVectorType("%array", "%uint", 2);
+        builder.mockVectorType("%runtime_array", "%array", -1);
         builder.mockConstant("%inner1", "%array", List.of(1, 2));
-        builder.mockConstant("%inner2", "%array", List.of(3));
+        builder.mockConstant("%inner2", "%array", List.of(3, 4));
+        builder.mockConstant("%inner3", "%array", List.of(5, 6));
 
         // when
         visit(input);
@@ -675,6 +696,69 @@ public class VisitorOpsCompositeTest {
         // check there is no flattening
         assertEquals(builder.getExpression("%inner1"), composite.getOperands().get(0));
         assertEquals(builder.getExpression("%inner2"), composite.getOperands().get(1));
+        assertEquals(builder.getExpression("%inner3"), composite.getOperands().get(2));
+    }
+
+    @Test
+    public void testCompositeConstructRuntimeArrayRuntimeArray1() {
+        // given
+        String input = "%result = OpCompositeConstruct %runtime_array2 %inner1 %inner2";
+        builder.mockIntType("%uint", 32);
+        builder.mockVectorType("%runtime_array1", "%uint", -1);
+        builder.mockVectorType("%runtime_array2", "%runtime_array1", -1);
+        builder.mockConstant("%inner1", "%runtime_array1", List.of(1, 2));
+        builder.mockConstant("%inner2", "%runtime_array1", List.of(3, 4));
+
+        // when
+        visit(input);
+
+        // then
+        ConstructExpr composite = (ConstructExpr) builder.getExpression("%result");
+        // check there is no flattening
+        assertEquals(builder.getExpression("%inner1"), composite.getOperands().get(0));
+        assertEquals(builder.getExpression("%inner2"), composite.getOperands().get(1));
+    }
+
+    @Test
+    public void testCompositeConstructRuntimeArrayRuntimeArray2() {
+        // given
+        String input = "%result = OpCompositeConstruct %runtime_array2 %inner1 %inner2";
+        builder.mockIntType("%uint", 32);
+        builder.mockVectorType("%runtime_array1", "%uint", -1);
+        builder.mockVectorType("%runtime_array2", "%runtime_array1", -1);
+        builder.mockConstant("%inner1", "%runtime_array1", List.of(1, 2));
+        builder.mockConstant("%inner2", "%runtime_array1", List.of(3));
+
+        // when
+        visit(input);
+
+        // then
+        ConstructExpr composite = (ConstructExpr) builder.getExpression("%result");
+        // check there is no flattening
+        assertEquals(builder.getExpression("%inner1"), composite.getOperands().get(0));
+        assertEquals(builder.getExpression("%inner2"), composite.getOperands().get(1));
+    }
+
+    @Test
+    public void testCompositeConstructRuntimeArrayRuntimeArray3() {
+        // given
+        String input = "%result = OpCompositeConstruct %runtime_array2 %inner1 %inner2 %inner3";
+        builder.mockIntType("%uint", 32);
+        builder.mockVectorType("%runtime_array1", "%uint", -1);
+        builder.mockVectorType("%runtime_array2", "%runtime_array1", -1);
+        builder.mockConstant("%inner1", "%runtime_array1", List.of(1, 2));
+        builder.mockConstant("%inner2", "%runtime_array1", List.of(3, 4));
+        builder.mockConstant("%inner3", "%runtime_array1", List.of(5, 6));
+
+        // when
+        visit(input);
+
+        // then
+        ConstructExpr composite = (ConstructExpr) builder.getExpression("%result");
+        // check there is no flattening
+        assertEquals(builder.getExpression("%inner1"), composite.getOperands().get(0));
+        assertEquals(builder.getExpression("%inner2"), composite.getOperands().get(1));
+        assertEquals(builder.getExpression("%inner3"), composite.getOperands().get(2));
     }
 
     @Test
