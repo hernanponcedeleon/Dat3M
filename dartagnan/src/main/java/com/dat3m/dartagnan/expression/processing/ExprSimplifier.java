@@ -320,6 +320,9 @@ public class ExprSimplifier extends ExprTransformer {
         }
 
         final ImmutableList<Integer> newIndices = indices.subList(indexCursor, indices.size());
+        if (newIndices.isEmpty()) {
+            return inner;
+        }
         if (inner instanceof ExtractExpr extract) {
             // Merge multiple extracts
             return expressions.makeExtract(inner, Iterables.concat(extract.getIndices(), newIndices));
