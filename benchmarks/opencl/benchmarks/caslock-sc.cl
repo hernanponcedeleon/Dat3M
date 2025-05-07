@@ -1,5 +1,5 @@
 // clspv caslock-cs.cl --cl-std=CL1.0 --inline-entry-points --spv-version=1.6
-// spirv-dis a.spv
+// spirv-dis a.spv > caslock-cs.spvasm
 
 void lock(global uint* l) {
     while (atom_cmpxchg(l, 0, 1) == 1) {}

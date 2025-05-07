@@ -1,5 +1,5 @@
 // clspv caslock.cl --cl-std=CL2.0 --inline-entry-points --spv-version=1.6
-// spirv-dis a.spv
+// spirv-dis a.spv > caslock.spvasm
 
 #ifdef ACQ2RX
 #define mo_lock memory_order_relaxed

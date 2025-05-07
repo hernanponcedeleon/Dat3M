@@ -1,6 +1,6 @@
-// clang -x cl -cl-std=CL2.0 -target spir-unknown-unknown -cl-opt-disable -emit-llvm -c barrier-no-inlining-1.cl -o a.bc
+// clang -x cl -cl-std=CL2.0 -target spir-unknown-unknown -fno-discard-value-names -cl-opt-disable -emit-llvm -c barrier-no-inlining-1.cl -o a.bc
 // llvm-spirv a.bc -o a.spv
-// spirv-dis a.spv > barrier-no-inlining-1.spv.dis
+// spirv-dis a.spv > barrier-no-inlining-1.spvasm
 
 __kernel void test(global uint* x) {
     uint tid = get_group_id(0);

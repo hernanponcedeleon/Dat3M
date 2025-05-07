@@ -10,8 +10,14 @@
                OpMemoryModel Physical32 OpenCL
                OpEntryPoint Kernel %6 "foo"
                OpSource OpenCL_C 200000
-               OpDecorate %10 Alignment 4
-               OpDecorate %12 Alignment 4
+               OpName %A "A"
+               OpName %entry "entry"
+               OpName %A_addr "A.addr"
+               OpName %x "x"
+               OpName %arrayidx "arrayidx"
+               OpName %arrayidx1 "arrayidx1"
+               OpDecorate %A_addr Alignment 4
+               OpDecorate %x Alignment 4
        %uint = OpTypeInt 32 0
      %uint_0 = OpConstant %uint 0
        %void = OpTypeVoid
@@ -20,17 +26,17 @@
 %_ptr_Function__ptr_CrossWorkgroup_uint = OpTypePointer Function %_ptr_CrossWorkgroup_uint
 %_ptr_Function_uint = OpTypePointer Function %uint
           %6 = OpFunction %void DontInline %5
-          %7 = OpFunctionParameter %_ptr_CrossWorkgroup_uint
-          %8 = OpLabel
-         %10 = OpVariable %_ptr_Function__ptr_CrossWorkgroup_uint Function
-         %12 = OpVariable %_ptr_Function_uint Function
-               OpStore %10 %7 Aligned 4
-         %13 = OpLoad %_ptr_CrossWorkgroup_uint %10 Aligned 4
-         %15 = OpInBoundsPtrAccessChain %_ptr_CrossWorkgroup_uint %13 %uint_0
-               OpStore %15 %uint_0 Aligned 4
-         %16 = OpLoad %_ptr_CrossWorkgroup_uint %10 Aligned 4
-         %17 = OpInBoundsPtrAccessChain %_ptr_CrossWorkgroup_uint %16 %uint_0
-         %18 = OpLoad %uint %17 Aligned 4
-               OpStore %12 %18 Aligned 4
+          %A = OpFunctionParameter %_ptr_CrossWorkgroup_uint
+      %entry = OpLabel
+     %A_addr = OpVariable %_ptr_Function__ptr_CrossWorkgroup_uint Function
+          %x = OpVariable %_ptr_Function_uint Function
+               OpStore %A_addr %A Aligned 4
+         %13 = OpLoad %_ptr_CrossWorkgroup_uint %A_addr Aligned 4
+   %arrayidx = OpInBoundsPtrAccessChain %_ptr_CrossWorkgroup_uint %13 %uint_0
+               OpStore %arrayidx %uint_0 Aligned 4
+         %16 = OpLoad %_ptr_CrossWorkgroup_uint %A_addr Aligned 4
+  %arrayidx1 = OpInBoundsPtrAccessChain %_ptr_CrossWorkgroup_uint %16 %uint_0
+         %18 = OpLoad %uint %arrayidx1 Aligned 4
+               OpStore %x %18 Aligned 4
                OpReturn
                OpFunctionEnd

@@ -1,5 +1,5 @@
 // clspv barrier-no-loop-4.cl --cl-std=CL2.0 --inline-entry-points --spv-version=1.6
-// spirv-dis a.spv > barrier-no-loop-4.spv.dis
+// spirv-dis a.spv > barrier-no-loop-4.spvasm
 
 __kernel void test(global atomic_uint* x, global uint* r0) {
     uint tid = get_global_id(0);

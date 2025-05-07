@@ -13,6 +13,11 @@
                OpSource OpenCL_C 200000
                OpName %foo_A "foo.A"
                OpName %__spirv_BuiltInLocalInvocationId "__spirv_BuiltInLocalInvocationId"
+               OpName %entry "entry"
+               OpName %call "call"
+               OpName %arrayidx "arrayidx"
+               OpName %call1 "call1"
+               OpName %arrayidx2 "arrayidx2"
                OpDecorate %__spirv_BuiltInLocalInvocationId BuiltIn LocalInvocationId
                OpDecorate %__spirv_BuiltInLocalInvocationId Constant
                OpDecorate %__spirv_BuiltInLocalInvocationId LinkageAttributes "__spirv_BuiltInLocalInvocationId" Import
@@ -33,13 +38,13 @@
       %foo_A = OpVariable %_ptr_Workgroup__arr__arr_uint_uint_32_uint_32 Workgroup
 %__spirv_BuiltInLocalInvocationId = OpVariable %_ptr_Input_v3uint Input
          %13 = OpFunction %void DontInline %12
-         %14 = OpLabel
+      %entry = OpLabel
          %15 = OpLoad %v3uint %__spirv_BuiltInLocalInvocationId Aligned 16
-         %16 = OpCompositeExtract %uint %15 1
-         %19 = OpInBoundsPtrAccessChain %_ptr_Workgroup__arr_uint_uint_32 %foo_A %uint_0 %16
+       %call = OpCompositeExtract %uint %15 1
+   %arrayidx = OpInBoundsPtrAccessChain %_ptr_Workgroup__arr_uint_uint_32 %foo_A %uint_0 %call
          %20 = OpLoad %v3uint %__spirv_BuiltInLocalInvocationId Aligned 16
-         %21 = OpCompositeExtract %uint %20 0
-         %23 = OpInBoundsPtrAccessChain %_ptr_Workgroup_uint %19 %uint_0 %21
-               OpStore %23 %uint_2 Aligned 4
+      %call1 = OpCompositeExtract %uint %20 0
+  %arrayidx2 = OpInBoundsPtrAccessChain %_ptr_Workgroup_uint %arrayidx %uint_0 %call1
+               OpStore %arrayidx2 %uint_2 Aligned 4
                OpReturn
                OpFunctionEnd

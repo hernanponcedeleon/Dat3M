@@ -10,10 +10,21 @@
                OpMemoryModel Physical32 OpenCL
                OpEntryPoint Kernel %6 "foo"
                OpSource OpenCL_C 200000
-               OpDecorate %13 Alignment 4
-               OpDecorate %14 Alignment 4
-               OpDecorate %16 Alignment 4
-               OpDecorate %17 Alignment 4
+               OpName %A "A"
+               OpName %B "B"
+               OpName %i "i"
+               OpName %j "j"
+               OpName %entry "entry"
+               OpName %A_addr "A.addr"
+               OpName %B_addr "B.addr"
+               OpName %i_addr "i.addr"
+               OpName %j_addr "j.addr"
+               OpName %arrayidx "arrayidx"
+               OpName %arrayidx1 "arrayidx1"
+               OpDecorate %A_addr Alignment 4
+               OpDecorate %B_addr Alignment 4
+               OpDecorate %i_addr Alignment 4
+               OpDecorate %j_addr Alignment 4
        %uint = OpTypeInt 32 0
        %void = OpTypeVoid
 %_ptr_Workgroup_uint = OpTypePointer Workgroup %uint
@@ -21,26 +32,26 @@
 %_ptr_Function__ptr_Workgroup_uint = OpTypePointer Function %_ptr_Workgroup_uint
 %_ptr_Function_uint = OpTypePointer Function %uint
           %6 = OpFunction %void DontInline %5
-          %7 = OpFunctionParameter %_ptr_Workgroup_uint
-          %8 = OpFunctionParameter %_ptr_Workgroup_uint
-          %9 = OpFunctionParameter %uint
-         %10 = OpFunctionParameter %uint
-         %11 = OpLabel
-         %13 = OpVariable %_ptr_Function__ptr_Workgroup_uint Function
-         %14 = OpVariable %_ptr_Function__ptr_Workgroup_uint Function
-         %16 = OpVariable %_ptr_Function_uint Function
-         %17 = OpVariable %_ptr_Function_uint Function
-               OpStore %13 %7 Aligned 4
-               OpStore %14 %8 Aligned 4
-               OpStore %16 %9 Aligned 4
-               OpStore %17 %10 Aligned 4
-         %18 = OpLoad %_ptr_Workgroup_uint %14 Aligned 4
-         %19 = OpLoad %uint %17 Aligned 4
-         %20 = OpInBoundsPtrAccessChain %_ptr_Workgroup_uint %18 %19
-         %21 = OpLoad %uint %20 Aligned 4
-         %22 = OpLoad %_ptr_Workgroup_uint %13 Aligned 4
-         %23 = OpLoad %uint %16 Aligned 4
-         %24 = OpInBoundsPtrAccessChain %_ptr_Workgroup_uint %22 %23
-               OpStore %24 %21 Aligned 4
+          %A = OpFunctionParameter %_ptr_Workgroup_uint
+          %B = OpFunctionParameter %_ptr_Workgroup_uint
+          %i = OpFunctionParameter %uint
+          %j = OpFunctionParameter %uint
+      %entry = OpLabel
+     %A_addr = OpVariable %_ptr_Function__ptr_Workgroup_uint Function
+     %B_addr = OpVariable %_ptr_Function__ptr_Workgroup_uint Function
+     %i_addr = OpVariable %_ptr_Function_uint Function
+     %j_addr = OpVariable %_ptr_Function_uint Function
+               OpStore %A_addr %A Aligned 4
+               OpStore %B_addr %B Aligned 4
+               OpStore %i_addr %i Aligned 4
+               OpStore %j_addr %j Aligned 4
+         %18 = OpLoad %_ptr_Workgroup_uint %B_addr Aligned 4
+         %19 = OpLoad %uint %j_addr Aligned 4
+   %arrayidx = OpInBoundsPtrAccessChain %_ptr_Workgroup_uint %18 %19
+         %21 = OpLoad %uint %arrayidx Aligned 4
+         %22 = OpLoad %_ptr_Workgroup_uint %A_addr Aligned 4
+         %23 = OpLoad %uint %i_addr Aligned 4
+  %arrayidx1 = OpInBoundsPtrAccessChain %_ptr_Workgroup_uint %22 %23
+               OpStore %arrayidx1 %21 Aligned 4
                OpReturn
                OpFunctionEnd

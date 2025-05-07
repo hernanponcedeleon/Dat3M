@@ -11,8 +11,14 @@
                OpMemoryModel Physical32 OpenCL
                OpEntryPoint Kernel %5 "foo"
                OpSource OpenCL_C 200000
-               OpDecorate %9 Alignment 4
-               OpDecorate %10 Alignment 4
+               OpName %j "j"
+               OpName %entry "entry"
+               OpName %j_addr "j.addr"
+               OpName %x "x"
+               OpName %tobool "tobool"
+               OpName %cond "cond"
+               OpDecorate %j_addr Alignment 4
+               OpDecorate %x Alignment 4
        %uint = OpTypeInt 32 0
       %ulong = OpTypeInt 64 0
      %uint_0 = OpConstant %uint 0
@@ -24,15 +30,15 @@
 %_ptr_Function_uint = OpTypePointer Function %uint
        %bool = OpTypeBool
           %5 = OpFunction %void DontInline %4
-          %6 = OpFunctionParameter %uint
-          %7 = OpLabel
-          %9 = OpVariable %_ptr_Function_uint Function
-         %10 = OpVariable %_ptr_Function_uint Function
-               OpStore %9 %6 Aligned 4
-         %11 = OpLoad %uint %9 Aligned 4
-         %14 = OpINotEqual %bool %11 %uint_0
-         %18 = OpSelect %ulong %14 %ulong_1 %ulong_0
-         %20 = OpSelect %uint %14 %uint_1 %uint_0
-               OpStore %10 %20 Aligned 4
+          %j = OpFunctionParameter %uint
+      %entry = OpLabel
+     %j_addr = OpVariable %_ptr_Function_uint Function
+          %x = OpVariable %_ptr_Function_uint Function
+               OpStore %j_addr %j Aligned 4
+         %11 = OpLoad %uint %j_addr Aligned 4
+     %tobool = OpINotEqual %bool %11 %uint_0
+         %18 = OpSelect %ulong %tobool %ulong_1 %ulong_0
+       %cond = OpSelect %uint %tobool %uint_1 %uint_0
+               OpStore %x %cond Aligned 4
                OpReturn
                OpFunctionEnd

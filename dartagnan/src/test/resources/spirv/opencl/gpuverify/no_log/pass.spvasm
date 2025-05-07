@@ -12,10 +12,15 @@
                OpEntryPoint Kernel %9 "foo" %__spirv_BuiltInLocalInvocationId
                OpSource OpenCL_C 200000
                OpName %__spirv_BuiltInLocalInvocationId "__spirv_BuiltInLocalInvocationId"
+               OpName %A "A"
+               OpName %entry "entry"
+               OpName %A_addr "A.addr"
+               OpName %call "call"
+               OpName %arrayidx "arrayidx"
                OpDecorate %__spirv_BuiltInLocalInvocationId BuiltIn LocalInvocationId
                OpDecorate %__spirv_BuiltInLocalInvocationId Constant
                OpDecorate %__spirv_BuiltInLocalInvocationId LinkageAttributes "__spirv_BuiltInLocalInvocationId" Import
-               OpDecorate %13 Alignment 4
+               OpDecorate %A_addr Alignment 4
        %uint = OpTypeInt 32 0
      %uint_0 = OpConstant %uint 0
      %v3uint = OpTypeVector %uint 3
@@ -26,14 +31,14 @@
 %_ptr_Function__ptr_Workgroup_uint = OpTypePointer Function %_ptr_Workgroup_uint
 %__spirv_BuiltInLocalInvocationId = OpVariable %_ptr_Input_v3uint Input
           %9 = OpFunction %void DontInline %8
-         %10 = OpFunctionParameter %_ptr_Workgroup_uint
-         %11 = OpLabel
-         %13 = OpVariable %_ptr_Function__ptr_Workgroup_uint Function
-               OpStore %13 %10 Aligned 4
+          %A = OpFunctionParameter %_ptr_Workgroup_uint
+      %entry = OpLabel
+     %A_addr = OpVariable %_ptr_Function__ptr_Workgroup_uint Function
+               OpStore %A_addr %A Aligned 4
          %14 = OpLoad %v3uint %__spirv_BuiltInLocalInvocationId Aligned 16
-         %15 = OpCompositeExtract %uint %14 0
-         %16 = OpLoad %_ptr_Workgroup_uint %13 Aligned 4
-         %18 = OpInBoundsPtrAccessChain %_ptr_Workgroup_uint %16 %uint_0
-               OpStore %18 %15 Aligned 4
+       %call = OpCompositeExtract %uint %14 0
+         %16 = OpLoad %_ptr_Workgroup_uint %A_addr Aligned 4
+   %arrayidx = OpInBoundsPtrAccessChain %_ptr_Workgroup_uint %16 %uint_0
+               OpStore %arrayidx %call Aligned 4
                OpReturn
                OpFunctionEnd

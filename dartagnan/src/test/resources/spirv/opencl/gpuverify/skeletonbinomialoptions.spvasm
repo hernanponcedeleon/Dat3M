@@ -10,11 +10,37 @@
                OpMemoryModel Physical32 OpenCL
                OpEntryPoint Kernel %4 "binomial_options_kernel"
                OpSource OpenCL_C 200000
-               OpDecorate %20 Alignment 4
-               OpDecorate %21 Alignment 4
-               OpDecorate %22 Alignment 4
-               OpDecorate %23 Alignment 4
-               OpDecorate %24 Alignment 4
+               OpName %entry "entry"
+               OpName %for_cond "for.cond"
+               OpName %for_body "for.body"
+               OpName %for_cond1 "for.cond1"
+               OpName %for_body3 "for.body3"
+               OpName %for_cond5 "for.cond5"
+               OpName %for_body7 "for.body7"
+               OpName %for_inc "for.inc"
+               OpName %for_end "for.end"
+               OpName %for_inc8 "for.inc8"
+               OpName %for_end9 "for.end9"
+               OpName %for_inc10 "for.inc10"
+               OpName %for_end12 "for.end12"
+               OpName %i "i"
+               OpName %c_base "c_base"
+               OpName %c_start "c_start"
+               OpName %c_end "c_end"
+               OpName %k "k"
+               OpName %cmp "cmp"
+               OpName %cmp2 "cmp2"
+               OpName %sub "sub"
+               OpName %sub4 "sub4"
+               OpName %cmp6 "cmp6"
+               OpName %dec "dec"
+               OpName %add "add"
+               OpName %sub11 "sub11"
+               OpDecorate %i Alignment 4
+               OpDecorate %c_base Alignment 4
+               OpDecorate %c_start Alignment 4
+               OpDecorate %c_end Alignment 4
+               OpDecorate %k Alignment 4
        %uint = OpTypeInt 32 0
   %uint_1024 = OpConstant %uint 1024
      %uint_0 = OpConstant %uint 0
@@ -30,64 +56,64 @@
 %_ptr_Function_uint = OpTypePointer Function %uint
        %bool = OpTypeBool
           %4 = OpFunction %void DontInline %3
-          %5 = OpLabel
-         %20 = OpVariable %_ptr_Function_uint Function
-         %21 = OpVariable %_ptr_Function_uint Function
-         %22 = OpVariable %_ptr_Function_uint Function
-         %23 = OpVariable %_ptr_Function_uint Function
-         %24 = OpVariable %_ptr_Function_uint Function
-               OpStore %20 %uint_1024 Aligned 4
-               OpBranch %6
-          %6 = OpLabel
-         %26 = OpLoad %uint %20 Aligned 4
-         %29 = OpSGreaterThan %bool %26 %uint_0
-               OpBranchConditional %29 %7 %17
-          %7 = OpLabel
-               OpStore %21 %uint_0 Aligned 4
-               OpBranch %8
-          %8 = OpLabel
-         %30 = OpLoad %uint %21 Aligned 4
-         %31 = OpLoad %uint %20 Aligned 4
-         %32 = OpSLessThan %bool %30 %31
-               OpBranchConditional %32 %9 %15
-          %9 = OpLabel
-               OpStore %22 %uint_255 Aligned 4
-         %34 = OpLoad %uint %22 Aligned 4
-         %36 = OpISub %uint %34 %uint_16
-               OpStore %23 %36 Aligned 4
+      %entry = OpLabel
+          %i = OpVariable %_ptr_Function_uint Function
+     %c_base = OpVariable %_ptr_Function_uint Function
+    %c_start = OpVariable %_ptr_Function_uint Function
+      %c_end = OpVariable %_ptr_Function_uint Function
+          %k = OpVariable %_ptr_Function_uint Function
+               OpStore %i %uint_1024 Aligned 4
+               OpBranch %for_cond
+   %for_cond = OpLabel
+         %26 = OpLoad %uint %i Aligned 4
+        %cmp = OpSGreaterThan %bool %26 %uint_0
+               OpBranchConditional %cmp %for_body %for_end12
+   %for_body = OpLabel
+               OpStore %c_base %uint_0 Aligned 4
+               OpBranch %for_cond1
+  %for_cond1 = OpLabel
+         %30 = OpLoad %uint %c_base Aligned 4
+         %31 = OpLoad %uint %i Aligned 4
+       %cmp2 = OpSLessThan %bool %30 %31
+               OpBranchConditional %cmp2 %for_body3 %for_end9
+  %for_body3 = OpLabel
+               OpStore %c_start %uint_255 Aligned 4
+         %34 = OpLoad %uint %c_start Aligned 4
+        %sub = OpISub %uint %34 %uint_16
+               OpStore %c_end %sub Aligned 4
                OpControlBarrier %uint_2 %uint_2 %uint_272
-         %39 = OpLoad %uint %22 Aligned 4
-         %41 = OpISub %uint %39 %uint_1
-               OpStore %24 %41 Aligned 4
-               OpBranch %10
-         %10 = OpLabel
-         %42 = OpLoad %uint %24 Aligned 4
-         %43 = OpLoad %uint %23 Aligned 4
-         %44 = OpSGreaterThanEqual %bool %42 %43
-               OpBranchConditional %44 %11 %13
-         %11 = OpLabel
+         %39 = OpLoad %uint %c_start Aligned 4
+       %sub4 = OpISub %uint %39 %uint_1
+               OpStore %k %sub4 Aligned 4
+               OpBranch %for_cond5
+  %for_cond5 = OpLabel
+         %42 = OpLoad %uint %k Aligned 4
+         %43 = OpLoad %uint %c_end Aligned 4
+       %cmp6 = OpSGreaterThanEqual %bool %42 %43
+               OpBranchConditional %cmp6 %for_body7 %for_end
+  %for_body7 = OpLabel
                OpControlBarrier %uint_2 %uint_2 %uint_272
-               OpBranch %12
-         %12 = OpLabel
-         %45 = OpLoad %uint %24 Aligned 4
-         %47 = OpIAdd %uint %45 %uint_4294967295
-               OpStore %24 %47 Aligned 4
-               OpBranch %10
-         %13 = OpLabel
+               OpBranch %for_inc
+    %for_inc = OpLabel
+         %45 = OpLoad %uint %k Aligned 4
+        %dec = OpIAdd %uint %45 %uint_4294967295
+               OpStore %k %dec Aligned 4
+               OpBranch %for_cond5
+    %for_end = OpLabel
                OpControlBarrier %uint_2 %uint_2 %uint_272
-               OpBranch %14
-         %14 = OpLabel
-         %48 = OpLoad %uint %21 Aligned 4
-         %50 = OpIAdd %uint %48 %uint_240
-               OpStore %21 %50 Aligned 4
-               OpBranch %8
-         %15 = OpLabel
-               OpBranch %16
-         %16 = OpLabel
-         %51 = OpLoad %uint %20 Aligned 4
-         %52 = OpISub %uint %51 %uint_16
-               OpStore %20 %52 Aligned 4
-               OpBranch %6
-         %17 = OpLabel
+               OpBranch %for_inc8
+   %for_inc8 = OpLabel
+         %48 = OpLoad %uint %c_base Aligned 4
+        %add = OpIAdd %uint %48 %uint_240
+               OpStore %c_base %add Aligned 4
+               OpBranch %for_cond1
+   %for_end9 = OpLabel
+               OpBranch %for_inc10
+  %for_inc10 = OpLabel
+         %51 = OpLoad %uint %i Aligned 4
+      %sub11 = OpISub %uint %51 %uint_16
+               OpStore %i %sub11 Aligned 4
+               OpBranch %for_cond
+  %for_end12 = OpLabel
                OpReturn
                OpFunctionEnd

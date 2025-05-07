@@ -1,5 +1,5 @@
 // clspv xf-barrier.cl --cl-std=CL2.0 --inline-entry-points --spv-version=1.6
-// spirv-dis a.spv
+// spirv-dis a.spv > xf-barrier.spvasm
 
 #ifdef FAIL1
 #define mo1 memory_order_relaxed

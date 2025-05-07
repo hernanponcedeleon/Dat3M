@@ -10,16 +10,19 @@
                OpMemoryModel Physical32 OpenCL
                OpEntryPoint Kernel %6 "foo"
                OpSource OpenCL_C 200000
-               OpDecorate %10 Alignment 4
+               OpName %A "A"
+               OpName %entry "entry"
+               OpName %A_addr "A.addr"
+               OpDecorate %A_addr Alignment 4
        %uint = OpTypeInt 32 0
        %void = OpTypeVoid
 %_ptr_CrossWorkgroup_uint = OpTypePointer CrossWorkgroup %uint
           %5 = OpTypeFunction %void %_ptr_CrossWorkgroup_uint
 %_ptr_Function__ptr_CrossWorkgroup_uint = OpTypePointer Function %_ptr_CrossWorkgroup_uint
           %6 = OpFunction %void DontInline %5
-          %7 = OpFunctionParameter %_ptr_CrossWorkgroup_uint
-          %8 = OpLabel
-         %10 = OpVariable %_ptr_Function__ptr_CrossWorkgroup_uint Function
-               OpStore %10 %7 Aligned 4
+          %A = OpFunctionParameter %_ptr_CrossWorkgroup_uint
+      %entry = OpLabel
+     %A_addr = OpVariable %_ptr_Function__ptr_CrossWorkgroup_uint Function
+               OpStore %A_addr %A Aligned 4
                OpReturn
                OpFunctionEnd

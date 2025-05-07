@@ -10,8 +10,12 @@
                OpMemoryModel Physical32 OpenCL
                OpEntryPoint Kernel %4 "foo"
                OpSource OpenCL_C 200000
-               OpDecorate %8 Alignment 4
-               OpDecorate %9 Alignment 4
+               OpName %entry "entry"
+               OpName %x "x"
+               OpName %y "y"
+               OpName %neg "neg"
+               OpDecorate %x Alignment 4
+               OpDecorate %y Alignment 4
        %uint = OpTypeInt 32 0
      %uint_2 = OpConstant %uint 2
 %uint_4294967295 = OpConstant %uint 4294967295
@@ -19,12 +23,12 @@
           %3 = OpTypeFunction %void
 %_ptr_Function_uint = OpTypePointer Function %uint
           %4 = OpFunction %void DontInline %3
-          %5 = OpLabel
-          %8 = OpVariable %_ptr_Function_uint Function
-          %9 = OpVariable %_ptr_Function_uint Function
-               OpStore %8 %uint_2 Aligned 4
-         %11 = OpLoad %uint %8 Aligned 4
-         %13 = OpBitwiseXor %uint %11 %uint_4294967295
-               OpStore %9 %13 Aligned 4
+      %entry = OpLabel
+          %x = OpVariable %_ptr_Function_uint Function
+          %y = OpVariable %_ptr_Function_uint Function
+               OpStore %x %uint_2 Aligned 4
+         %11 = OpLoad %uint %x Aligned 4
+        %neg = OpBitwiseXor %uint %11 %uint_4294967295
+               OpStore %y %neg Aligned 4
                OpReturn
                OpFunctionEnd

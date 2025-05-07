@@ -12,11 +12,19 @@
                OpEntryPoint Kernel %9 "foo" %__spirv_BuiltInLocalInvocationId
                OpSource OpenCL_C 200000
                OpName %__spirv_BuiltInLocalInvocationId "__spirv_BuiltInLocalInvocationId"
+               OpName %A "A"
+               OpName %i "i"
+               OpName %entry "entry"
+               OpName %A_addr "A.addr"
+               OpName %i_addr "i.addr"
+               OpName %call "call"
+               OpName %div "div"
+               OpName %arrayidx "arrayidx"
                OpDecorate %__spirv_BuiltInLocalInvocationId BuiltIn LocalInvocationId
                OpDecorate %__spirv_BuiltInLocalInvocationId Constant
                OpDecorate %__spirv_BuiltInLocalInvocationId LinkageAttributes "__spirv_BuiltInLocalInvocationId" Import
-               OpDecorate %14 Alignment 4
-               OpDecorate %16 Alignment 4
+               OpDecorate %A_addr Alignment 4
+               OpDecorate %i_addr Alignment 4
        %uint = OpTypeInt 32 0
     %uint_64 = OpConstant %uint 64
      %v3uint = OpTypeVector %uint 3
@@ -28,19 +36,19 @@
 %_ptr_Function_uint = OpTypePointer Function %uint
 %__spirv_BuiltInLocalInvocationId = OpVariable %_ptr_Input_v3uint Input
           %9 = OpFunction %void DontInline %8
-         %10 = OpFunctionParameter %_ptr_Workgroup_uint
-         %11 = OpFunctionParameter %uint
-         %12 = OpLabel
-         %14 = OpVariable %_ptr_Function__ptr_Workgroup_uint Function
-         %16 = OpVariable %_ptr_Function_uint Function
-               OpStore %14 %10 Aligned 4
-               OpStore %16 %11 Aligned 4
+          %A = OpFunctionParameter %_ptr_Workgroup_uint
+          %i = OpFunctionParameter %uint
+      %entry = OpLabel
+     %A_addr = OpVariable %_ptr_Function__ptr_Workgroup_uint Function
+     %i_addr = OpVariable %_ptr_Function_uint Function
+               OpStore %A_addr %A Aligned 4
+               OpStore %i_addr %i Aligned 4
          %17 = OpLoad %v3uint %__spirv_BuiltInLocalInvocationId Aligned 16
-         %18 = OpCompositeExtract %uint %17 0
-         %20 = OpUDiv %uint %18 %uint_64
-         %21 = OpLoad %_ptr_Workgroup_uint %14 Aligned 4
-         %22 = OpLoad %uint %16 Aligned 4
-         %23 = OpInBoundsPtrAccessChain %_ptr_Workgroup_uint %21 %22
-               OpStore %23 %20 Aligned 4
+       %call = OpCompositeExtract %uint %17 0
+        %div = OpUDiv %uint %call %uint_64
+         %21 = OpLoad %_ptr_Workgroup_uint %A_addr Aligned 4
+         %22 = OpLoad %uint %i_addr Aligned 4
+   %arrayidx = OpInBoundsPtrAccessChain %_ptr_Workgroup_uint %21 %22
+               OpStore %arrayidx %div Aligned 4
                OpReturn
                OpFunctionEnd

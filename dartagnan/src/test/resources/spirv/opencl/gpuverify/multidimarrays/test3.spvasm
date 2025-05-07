@@ -11,8 +11,10 @@
                OpEntryPoint Kernel %13 "foo"
                OpSource OpenCL_C 200000
                OpName %foo_A "foo.A"
+               OpName %entry "entry"
+               OpName %x "x"
                OpDecorate %foo_A Alignment 4
-               OpDecorate %16 Alignment 4
+               OpDecorate %x Alignment 4
        %uint = OpTypeInt 32 0
    %uint_100 = OpConstant %uint 100
     %uint_99 = OpConstant %uint 99
@@ -31,10 +33,10 @@
 %_ptr_Workgroup_uint = OpTypePointer Workgroup %uint
       %foo_A = OpVariable %_ptr_Workgroup__arr__arr__arr_uint_uint_98_uint_99_uint_100 Workgroup
          %13 = OpFunction %void DontInline %12
-         %14 = OpLabel
-         %16 = OpVariable %_ptr_Function_uint Function
+      %entry = OpLabel
+          %x = OpVariable %_ptr_Function_uint Function
          %22 = OpInBoundsPtrAccessChain %_ptr_Workgroup_uint %foo_A %uint_0 %uint_5 %uint_4 %uint_3
          %23 = OpLoad %uint %22 Aligned 4
-               OpStore %16 %23 Aligned 4
+               OpStore %x %23 Aligned 4
                OpReturn
                OpFunctionEnd
