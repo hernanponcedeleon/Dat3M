@@ -10,9 +10,14 @@
                OpMemoryModel Physical32 OpenCL
                OpEntryPoint Kernel %4 "foo"
                OpSource OpenCL_C 200000
-               OpDecorate %8 Alignment 4
-               OpDecorate %9 Alignment 4
-               OpDecorate %10 Alignment 4
+               OpName %entry "entry"
+               OpName %a "a"
+               OpName %b "b"
+               OpName %c "c"
+               OpName %add "add"
+               OpDecorate %a Alignment 4
+               OpDecorate %b Alignment 4
+               OpDecorate %c Alignment 4
        %uint = OpTypeInt 32 0
      %uint_2 = OpConstant %uint 2
      %uint_3 = OpConstant %uint 3
@@ -21,16 +26,16 @@
           %3 = OpTypeFunction %void
 %_ptr_Function_uint = OpTypePointer Function %uint
           %4 = OpFunction %void DontInline %3
-          %5 = OpLabel
-          %8 = OpVariable %_ptr_Function_uint Function
-          %9 = OpVariable %_ptr_Function_uint Function
-         %10 = OpVariable %_ptr_Function_uint Function
-               OpStore %8 %uint_2 Aligned 4
-               OpStore %9 %uint_3 Aligned 4
-         %13 = OpLoad %uint %8 Aligned 4
-         %14 = OpLoad %uint %9 Aligned 4
-         %15 = OpIAdd %uint %13 %14
-               OpStore %10 %15 Aligned 4
+      %entry = OpLabel
+          %a = OpVariable %_ptr_Function_uint Function
+          %b = OpVariable %_ptr_Function_uint Function
+          %c = OpVariable %_ptr_Function_uint Function
+               OpStore %a %uint_2 Aligned 4
+               OpStore %b %uint_3 Aligned 4
+         %13 = OpLoad %uint %a Aligned 4
+         %14 = OpLoad %uint %b Aligned 4
+        %add = OpIAdd %uint %13 %14
+               OpStore %c %add Aligned 4
                OpControlBarrier %uint_2 %uint_2 %uint_272
                OpReturn
                OpFunctionEnd

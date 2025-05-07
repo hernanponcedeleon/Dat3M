@@ -1,8 +1,8 @@
-// clang -x cl -cl-std=CL2.0 -target spir-unknown-unknown -cl-opt-disable -emit-llvm -c barrier-inlining-4.cl -o a.bc
+// clang -x cl -cl-std=CL2.0 -target spir-unknown-unknown -fno-discard-value-names -cl-opt-disable -emit-llvm -c barrier-inlining-4.cl -o a.bc
 // llvm-spirv a.bc -o a.spv
-// spirv-dis a.spv > barrier-inlining-4.spv.dis
+// spirv-dis a.spv > barrier-inlining-4.spvasm
 
-void synchronized_increment(__global uint* shared_value, uint local_id) {
+static void synchronized_increment(__global uint* shared_value, uint local_id) {
     for (int i = 0; i < 2; i++) {
         barrier(CLK_GLOBAL_MEM_FENCE);
         if (local_id == 0) {

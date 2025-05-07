@@ -14,9 +14,17 @@
                OpExecutionMode %7 ContractionOff
                OpSource OpenCL_C 200000
                OpName %bar "bar"
+               OpName %entry "entry"
+               OpName %x "x"
+               OpName %call "call"
+               OpName %conv "conv"
+               OpName %conv1 "conv1"
+               OpName %add "add"
+               OpName %conv2 "conv2"
+               OpName %inc "inc"
                OpDecorate %bar FuncParamAttr Sext
                OpDecorate %bar LinkageAttributes "bar" Import
-               OpDecorate %10 Alignment 1
+               OpDecorate %x Alignment 1
       %uchar = OpTypeInt 8 0
        %uint = OpTypeInt 32 0
     %uchar_1 = OpConstant %uchar 1
@@ -27,19 +35,19 @@
         %bar = OpFunction %uchar None %3
                OpFunctionEnd
           %7 = OpFunction %void DontInline %6
-          %8 = OpLabel
-         %10 = OpVariable %_ptr_Function_uchar Function
-         %11 = OpFunctionCall %uchar %bar
-               OpStore %10 %11 Aligned 1
-         %12 = OpLoad %uchar %10 Aligned 1
-         %14 = OpSConvert %uint %12
-         %15 = OpLoad %uchar %10 Aligned 1
-         %16 = OpSConvert %uint %15
-         %17 = OpIAdd %uint %14 %16
-         %18 = OpUConvert %uchar %17
-               OpStore %10 %18 Aligned 1
-         %19 = OpLoad %uchar %10 Aligned 1
-         %21 = OpIAdd %uchar %19 %uchar_1
-               OpStore %10 %21 Aligned 1
+      %entry = OpLabel
+          %x = OpVariable %_ptr_Function_uchar Function
+       %call = OpFunctionCall %uchar %bar
+               OpStore %x %call Aligned 1
+         %12 = OpLoad %uchar %x Aligned 1
+       %conv = OpSConvert %uint %12
+         %15 = OpLoad %uchar %x Aligned 1
+      %conv1 = OpSConvert %uint %15
+        %add = OpIAdd %uint %conv %conv1
+      %conv2 = OpUConvert %uchar %add
+               OpStore %x %conv2 Aligned 1
+         %19 = OpLoad %uchar %x Aligned 1
+        %inc = OpIAdd %uchar %19 %uchar_1
+               OpStore %x %inc Aligned 1
                OpReturn
                OpFunctionEnd

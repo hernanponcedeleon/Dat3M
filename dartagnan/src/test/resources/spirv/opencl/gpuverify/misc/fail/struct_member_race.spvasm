@@ -13,10 +13,16 @@
                OpSource OpenCL_C 200000
                OpName %__spirv_BuiltInGlobalInvocationId "__spirv_BuiltInGlobalInvocationId"
                OpName %struct_S "struct.S"
+               OpName %G "G"
+               OpName %entry "entry"
+               OpName %G_addr "G.addr"
+               OpName %call "call"
+               OpName %arrayidx "arrayidx"
+               OpName %y "y"
                OpDecorate %__spirv_BuiltInGlobalInvocationId BuiltIn GlobalInvocationId
                OpDecorate %__spirv_BuiltInGlobalInvocationId Constant
                OpDecorate %__spirv_BuiltInGlobalInvocationId LinkageAttributes "__spirv_BuiltInGlobalInvocationId" Import
-               OpDecorate %14 Alignment 4
+               OpDecorate %G_addr Alignment 4
        %uint = OpTypeInt 32 0
      %uint_3 = OpConstant %uint 3
      %uint_0 = OpConstant %uint 0
@@ -31,15 +37,15 @@
 %_ptr_CrossWorkgroup_uint = OpTypePointer CrossWorkgroup %uint
 %__spirv_BuiltInGlobalInvocationId = OpVariable %_ptr_Input_v3uint Input
          %10 = OpFunction %void DontInline %9
-         %11 = OpFunctionParameter %_ptr_CrossWorkgroup_struct_S
-         %12 = OpLabel
-         %14 = OpVariable %_ptr_Function__ptr_CrossWorkgroup_struct_S Function
-               OpStore %14 %11 Aligned 4
+          %G = OpFunctionParameter %_ptr_CrossWorkgroup_struct_S
+      %entry = OpLabel
+     %G_addr = OpVariable %_ptr_Function__ptr_CrossWorkgroup_struct_S Function
+               OpStore %G_addr %G Aligned 4
          %15 = OpLoad %v3uint %__spirv_BuiltInGlobalInvocationId Aligned 16
-         %16 = OpCompositeExtract %uint %15 0
-         %17 = OpLoad %_ptr_CrossWorkgroup_struct_S %14 Aligned 4
-         %19 = OpInBoundsPtrAccessChain %_ptr_CrossWorkgroup_struct_S %17 %uint_3
-         %23 = OpInBoundsPtrAccessChain %_ptr_CrossWorkgroup_uint %19 %uint_0 %uint_1
-               OpStore %23 %16 Aligned 4
+       %call = OpCompositeExtract %uint %15 0
+         %17 = OpLoad %_ptr_CrossWorkgroup_struct_S %G_addr Aligned 4
+   %arrayidx = OpInBoundsPtrAccessChain %_ptr_CrossWorkgroup_struct_S %17 %uint_3
+          %y = OpInBoundsPtrAccessChain %_ptr_CrossWorkgroup_uint %arrayidx %uint_0 %uint_1
+               OpStore %y %call Aligned 4
                OpReturn
                OpFunctionEnd

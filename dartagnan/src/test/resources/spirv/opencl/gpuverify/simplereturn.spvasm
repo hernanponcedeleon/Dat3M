@@ -12,9 +12,16 @@
                OpEntryPoint Kernel %14 "foo"
                OpSource OpenCL_C 200000
                OpName %f "f"
+               OpName %x "x"
+               OpName %entry "entry"
+               OpName %x_addr "x.addr"
+               OpName %add "add"
+               OpName %entry_0 "entry"
+               OpName %y "y"
+               OpName %call "call"
                OpDecorate %f LinkageAttributes "f" Export
-               OpDecorate %8 Alignment 4
-               OpDecorate %16 Alignment 4
+               OpDecorate %x_addr Alignment 4
+               OpDecorate %y Alignment 4
        %uint = OpTypeInt 32 0
      %uint_1 = OpConstant %uint 1
      %uint_2 = OpConstant %uint 2
@@ -23,18 +30,18 @@
        %void = OpTypeVoid
          %13 = OpTypeFunction %void
           %f = OpFunction %uint DontInline %3
-          %5 = OpFunctionParameter %uint
-          %6 = OpLabel
-          %8 = OpVariable %_ptr_Function_uint Function
-               OpStore %8 %5 Aligned 4
-          %9 = OpLoad %uint %8 Aligned 4
-         %11 = OpIAdd %uint %9 %uint_1
-               OpReturnValue %11
+          %x = OpFunctionParameter %uint
+      %entry = OpLabel
+     %x_addr = OpVariable %_ptr_Function_uint Function
+               OpStore %x_addr %x Aligned 4
+          %9 = OpLoad %uint %x_addr Aligned 4
+        %add = OpIAdd %uint %9 %uint_1
+               OpReturnValue %add
                OpFunctionEnd
          %14 = OpFunction %void DontInline %13
-         %15 = OpLabel
-         %16 = OpVariable %_ptr_Function_uint Function
-         %18 = OpFunctionCall %uint %f %uint_2
-               OpStore %16 %18 Aligned 4
+    %entry_0 = OpLabel
+          %y = OpVariable %_ptr_Function_uint Function
+       %call = OpFunctionCall %uint %f %uint_2
+               OpStore %y %call Aligned 4
                OpReturn
                OpFunctionEnd

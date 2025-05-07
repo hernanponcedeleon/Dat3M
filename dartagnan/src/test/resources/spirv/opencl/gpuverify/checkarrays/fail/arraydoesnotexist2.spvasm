@@ -10,20 +10,25 @@
                OpMemoryModel Physical32 OpenCL
                OpEntryPoint Kernel %6 "foo"
                OpSource OpenCL_C 200000
-               OpDecorate %11 Alignment 4
-               OpDecorate %12 Alignment 4
+               OpName %A "A"
+               OpName %B "B"
+               OpName %entry "entry"
+               OpName %A_addr "A.addr"
+               OpName %B_addr "B.addr"
+               OpDecorate %A_addr Alignment 4
+               OpDecorate %B_addr Alignment 4
        %uint = OpTypeInt 32 0
        %void = OpTypeVoid
 %_ptr_CrossWorkgroup_uint = OpTypePointer CrossWorkgroup %uint
           %5 = OpTypeFunction %void %_ptr_CrossWorkgroup_uint %_ptr_CrossWorkgroup_uint
 %_ptr_Function__ptr_CrossWorkgroup_uint = OpTypePointer Function %_ptr_CrossWorkgroup_uint
           %6 = OpFunction %void DontInline %5
-          %7 = OpFunctionParameter %_ptr_CrossWorkgroup_uint
-          %8 = OpFunctionParameter %_ptr_CrossWorkgroup_uint
-          %9 = OpLabel
-         %11 = OpVariable %_ptr_Function__ptr_CrossWorkgroup_uint Function
-         %12 = OpVariable %_ptr_Function__ptr_CrossWorkgroup_uint Function
-               OpStore %11 %7 Aligned 4
-               OpStore %12 %8 Aligned 4
+          %A = OpFunctionParameter %_ptr_CrossWorkgroup_uint
+          %B = OpFunctionParameter %_ptr_CrossWorkgroup_uint
+      %entry = OpLabel
+     %A_addr = OpVariable %_ptr_Function__ptr_CrossWorkgroup_uint Function
+     %B_addr = OpVariable %_ptr_Function__ptr_CrossWorkgroup_uint Function
+               OpStore %A_addr %A Aligned 4
+               OpStore %B_addr %B Aligned 4
                OpReturn
                OpFunctionEnd

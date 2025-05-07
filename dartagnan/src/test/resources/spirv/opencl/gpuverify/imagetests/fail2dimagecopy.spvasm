@@ -14,15 +14,30 @@
                OpEntryPoint Kernel %10 "k" %__spirv_BuiltInGlobalInvocationId
                OpSource OpenCL_C 200000
                OpName %__spirv_BuiltInGlobalInvocationId "__spirv_BuiltInGlobalInvocationId"
+               OpName %dest "dest"
+               OpName %src "src"
+               OpName %entry "entry"
+               OpName %dest_addr "dest.addr"
+               OpName %src_addr "src.addr"
+               OpName %sampler "sampler"
+               OpName %_compoundliteral ".compoundliteral"
+               OpName %_compoundliteral1 ".compoundliteral1"
+               OpName %call "call"
+               OpName %vecinit "vecinit"
+               OpName %call2 "call2"
+               OpName %vecinit3 "vecinit3"
+               OpName %call4 "call4"
+               OpName %vecinit5 "vecinit5"
                OpName %TempSampledImage "TempSampledImage"
+               OpName %call6 "call6"
                OpDecorate %__spirv_BuiltInGlobalInvocationId BuiltIn GlobalInvocationId
                OpDecorate %__spirv_BuiltInGlobalInvocationId Constant
                OpDecorate %__spirv_BuiltInGlobalInvocationId LinkageAttributes "__spirv_BuiltInGlobalInvocationId" Import
-               OpDecorate %15 Alignment 4
-               OpDecorate %17 Alignment 4
-               OpDecorate %20 Alignment 4
-               OpDecorate %23 Alignment 8
-               OpDecorate %24 Alignment 8
+               OpDecorate %dest_addr Alignment 4
+               OpDecorate %src_addr Alignment 4
+               OpDecorate %sampler Alignment 4
+               OpDecorate %_compoundliteral Alignment 8
+               OpDecorate %_compoundliteral1 Alignment 8
        %uint = OpTypeInt 32 0
      %uint_0 = OpConstant %uint 0
          %30 = OpUndef %uint
@@ -47,35 +62,35 @@
          %38 = OpUndef %v2uint
     %float_0 = OpConstant %float 0
          %10 = OpFunction %void DontInline %9
-         %11 = OpFunctionParameter %7
-         %12 = OpFunctionParameter %8
-         %13 = OpLabel
-         %15 = OpVariable %_ptr_Function_7 Function
-         %17 = OpVariable %_ptr_Function_8 Function
-         %20 = OpVariable %_ptr_Function_18 Function
-         %23 = OpVariable %_ptr_Function_v2uint Function
-         %24 = OpVariable %_ptr_Function_v2uint Function
-               OpStore %15 %11 Aligned 4
-               OpStore %17 %12 Aligned 4
-               OpStore %20 %25 Aligned 4
-         %26 = OpLoad %7 %15 Aligned 4
+       %dest = OpFunctionParameter %7
+        %src = OpFunctionParameter %8
+      %entry = OpLabel
+  %dest_addr = OpVariable %_ptr_Function_7 Function
+   %src_addr = OpVariable %_ptr_Function_8 Function
+    %sampler = OpVariable %_ptr_Function_18 Function
+%_compoundliteral = OpVariable %_ptr_Function_v2uint Function
+%_compoundliteral1 = OpVariable %_ptr_Function_v2uint Function
+               OpStore %dest_addr %dest Aligned 4
+               OpStore %src_addr %src Aligned 4
+               OpStore %sampler %25 Aligned 4
+         %26 = OpLoad %7 %dest_addr Aligned 4
          %27 = OpLoad %v3uint %__spirv_BuiltInGlobalInvocationId Aligned 16
-         %28 = OpCompositeExtract %uint %27 1
-         %32 = OpCompositeInsert %v2uint %28 %31 1
-               OpStore %23 %32 Aligned 8
-         %33 = OpLoad %v2uint %23 Aligned 8
-         %34 = OpLoad %8 %17 Aligned 4
-         %35 = OpLoad %18 %20 Aligned 4
+       %call = OpCompositeExtract %uint %27 1
+    %vecinit = OpCompositeInsert %v2uint %call %31 1
+               OpStore %_compoundliteral %vecinit Aligned 8
+         %33 = OpLoad %v2uint %_compoundliteral Aligned 8
+         %34 = OpLoad %8 %src_addr Aligned 4
+         %35 = OpLoad %18 %sampler Aligned 4
          %36 = OpLoad %v3uint %__spirv_BuiltInGlobalInvocationId Aligned 16
-         %37 = OpCompositeExtract %uint %36 0
-         %39 = OpCompositeInsert %v2uint %37 %38 0
+      %call2 = OpCompositeExtract %uint %36 0
+   %vecinit3 = OpCompositeInsert %v2uint %call2 %38 0
          %40 = OpLoad %v3uint %__spirv_BuiltInGlobalInvocationId Aligned 16
-         %41 = OpCompositeExtract %uint %40 1
-         %42 = OpCompositeInsert %v2uint %41 %39 1
-               OpStore %24 %42 Aligned 8
-         %43 = OpLoad %v2uint %24 Aligned 8
+      %call4 = OpCompositeExtract %uint %40 1
+   %vecinit5 = OpCompositeInsert %v2uint %call4 %vecinit3 1
+               OpStore %_compoundliteral1 %vecinit5 Aligned 8
+         %43 = OpLoad %v2uint %_compoundliteral1 Aligned 8
 %TempSampledImage = OpSampledImage %44 %34 %35
-         %49 = OpImageSampleExplicitLod %v4float %TempSampledImage %43 Lod %float_0
-               OpImageWrite %26 %33 %49
+      %call6 = OpImageSampleExplicitLod %v4float %TempSampledImage %43 Lod %float_0
+               OpImageWrite %26 %33 %call6
                OpReturn
                OpFunctionEnd

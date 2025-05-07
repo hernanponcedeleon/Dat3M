@@ -14,9 +14,16 @@
                OpExecutionMode %7 ContractionOff
                OpSource OpenCL_C 200000
                OpName %bar "bar"
+               OpName %entry "entry"
+               OpName %x "x"
+               OpName %call "call"
+               OpName %frombool "frombool"
+               OpName %tobool "tobool"
+               OpName %lnot "lnot"
+               OpName %frombool1 "frombool1"
                OpDecorate %bar FuncParamAttr Zext
                OpDecorate %bar LinkageAttributes "bar" Import
-               OpDecorate %11 Alignment 1
+               OpDecorate %x Alignment 1
       %uchar = OpTypeInt 8 0
     %uchar_0 = OpConstant %uchar 0
     %uchar_1 = OpConstant %uchar 1
@@ -29,16 +36,16 @@
         %bar = OpFunction %bool None %3
                OpFunctionEnd
           %7 = OpFunction %void DontInline %6
-          %8 = OpLabel
-         %11 = OpVariable %_ptr_Function_uchar Function
-         %12 = OpFunctionCall %bool %bar
-         %15 = OpSelect %uchar %12 %uchar_1 %uchar_0
-               OpStore %11 %15 Aligned 1
-         %16 = OpLoad %uchar %11 Aligned 1
+      %entry = OpLabel
+          %x = OpVariable %_ptr_Function_uchar Function
+       %call = OpFunctionCall %bool %bar
+   %frombool = OpSelect %uchar %call %uchar_1 %uchar_0
+               OpStore %x %frombool Aligned 1
+         %16 = OpLoad %uchar %x Aligned 1
          %17 = OpBitwiseAnd %uchar %16 %uchar_1
-         %18 = OpINotEqual %bool %17 %uchar_0
-         %20 = OpLogicalNotEqual %bool %18 %true
-         %21 = OpSelect %uchar %20 %uchar_1 %uchar_0
-               OpStore %11 %21 Aligned 1
+     %tobool = OpINotEqual %bool %17 %uchar_0
+       %lnot = OpLogicalNotEqual %bool %tobool %true
+  %frombool1 = OpSelect %uchar %lnot %uchar_1 %uchar_0
+               OpStore %x %frombool1 Aligned 1
                OpReturn
                OpFunctionEnd

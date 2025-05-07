@@ -12,10 +12,19 @@
                OpEntryPoint Kernel %8 "foo" %__spirv_BuiltInWorkgroupId
                OpSource OpenCL_C 200000
                OpName %__spirv_BuiltInWorkgroupId "__spirv_BuiltInWorkgroupId"
+               OpName %entry "entry"
+               OpName %for_cond "for.cond"
+               OpName %for_body "for.body"
+               OpName %for_inc "for.inc"
+               OpName %for_end "for.end"
+               OpName %i "i"
+               OpName %call "call"
+               OpName %cmp "cmp"
+               OpName %inc "inc"
                OpDecorate %__spirv_BuiltInWorkgroupId BuiltIn WorkgroupId
                OpDecorate %__spirv_BuiltInWorkgroupId Constant
                OpDecorate %__spirv_BuiltInWorkgroupId LinkageAttributes "__spirv_BuiltInWorkgroupId" Import
-               OpDecorate %15 Alignment 4
+               OpDecorate %i Alignment 4
        %uint = OpTypeInt 32 0
      %uint_0 = OpConstant %uint 0
      %uint_2 = OpConstant %uint 2
@@ -29,24 +38,24 @@
        %bool = OpTypeBool
 %__spirv_BuiltInWorkgroupId = OpVariable %_ptr_Input_v3uint Input
           %8 = OpFunction %void DontInline %7
-          %9 = OpLabel
-         %15 = OpVariable %_ptr_Function_uint Function
-               OpStore %15 %uint_0 Aligned 4
-               OpBranch %10
-         %10 = OpLabel
-         %17 = OpLoad %uint %15 Aligned 4
+      %entry = OpLabel
+          %i = OpVariable %_ptr_Function_uint Function
+               OpStore %i %uint_0 Aligned 4
+               OpBranch %for_cond
+   %for_cond = OpLabel
+         %17 = OpLoad %uint %i Aligned 4
          %18 = OpLoad %v3uint %__spirv_BuiltInWorkgroupId Aligned 16
-         %19 = OpCompositeExtract %uint %18 0
-         %21 = OpULessThan %bool %17 %19
-               OpBranchConditional %21 %11 %13
-         %11 = OpLabel
+       %call = OpCompositeExtract %uint %18 0
+        %cmp = OpULessThan %bool %17 %call
+               OpBranchConditional %cmp %for_body %for_end
+   %for_body = OpLabel
                OpControlBarrier %uint_2 %uint_2 %uint_272
-               OpBranch %12
-         %12 = OpLabel
-         %24 = OpLoad %uint %15 Aligned 4
-         %26 = OpIAdd %uint %24 %uint_1
-               OpStore %15 %26 Aligned 4
-               OpBranch %10
-         %13 = OpLabel
+               OpBranch %for_inc
+    %for_inc = OpLabel
+         %24 = OpLoad %uint %i Aligned 4
+        %inc = OpIAdd %uint %24 %uint_1
+               OpStore %i %inc Aligned 4
+               OpBranch %for_cond
+    %for_end = OpLabel
                OpReturn
                OpFunctionEnd
