@@ -69,9 +69,10 @@ public class ExecutionModelNext {
     }
 
     public List<EventModel> getVisibleEventModels() {
-        return eventList.stream()
-                        .filter(e -> e instanceof MemoryEventModel || e instanceof GenericVisibleEventModel)
-                        .toList();
+        return eventList.stream().filter(e -> e instanceof MemoryEventModel ||
+                                              e instanceof GenericVisibleEventModel ||
+                                              e instanceof AllocModel ||
+                                              e instanceof MemFreeModel).toList();
     }
 
     public List<EventModel> getEventModelsByFilter(Filter filter) {
