@@ -16,11 +16,7 @@ void *thread1(void *arg)
 
 int main()
 {
-    pthread_t t1, t2;
-
+    pthread_t t1;
     pthread_create(&t1, NULL, thread1, NULL);
-
-    pthread_join(t1, NULL);
-    pthread_join(t2, NULL); // Invalid: t2 is not initialized
     return 0;
 }
