@@ -8,6 +8,7 @@ import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.*;
 import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.event.core.threading.ThreadArgument;
+import com.dat3m.dartagnan.program.event.core.threading.ThreadJoin;
 import com.dat3m.dartagnan.program.event.lang.svcomp.BeginAtomic;
 import com.dat3m.dartagnan.program.event.lang.svcomp.EndAtomic;
 import com.dat3m.dartagnan.program.filter.Filter;
@@ -474,7 +475,7 @@ public class ExecutionModel {
                 }
                 lastRegWrites.put(regWriter.getResultRegister(), dataDeps);
             } else {
-                assert e instanceof ThreadArgument;
+                assert e instanceof ThreadArgument || e instanceof ThreadJoin;
                 // We have a RegWriter that doesn't read registers, so there are no dependencies.
                 lastRegWrites.put(regWriter.getResultRegister(), new HashSet<>());
             }
