@@ -37,7 +37,7 @@ public class ThreadJoin extends AbstractEvent implements RegWriter, BlockingEven
     }
 
     @Override
-    public ThreadCreate getCopy() {
+    public ThreadJoin getCopy() {
         throw new UnsupportedOperationException("Cannot copy ThreadJoin events.");
     }
 
