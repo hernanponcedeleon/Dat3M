@@ -18,11 +18,6 @@ public class ThreadJoin extends AbstractEvent implements RegWriter, BlockingEven
         this.joinThread = joinThread;
     }
 
-    protected ThreadJoin(ThreadJoin other) {
-        super(other);
-        throw new UnsupportedOperationException("Cannot copy ThreadJoin events.");
-    }
-
     @Override
     public Register getResultRegister() {
         return this.resultRegister;
@@ -42,8 +37,8 @@ public class ThreadJoin extends AbstractEvent implements RegWriter, BlockingEven
     }
 
     @Override
-    public ThreadJoin getCopy() {
-        return new ThreadJoin(this);
+    public ThreadCreate getCopy() {
+        throw new UnsupportedOperationException("Cannot copy ThreadJoin events.");
     }
 
 }
