@@ -172,9 +172,9 @@ public class ThreadCreation implements ProgramProcessor {
             final IntegerType statusType = (IntegerType) ((AggregateType)joinRegister.getType()).getFields().get(0).type();
             final Type retValType = ((AggregateType)joinRegister.getType()).getFields().get(1).type();
 
-            final Expression successValue = expressions.makeValue(SUCCESS.ordinal(), statusType);
-            final Expression invalidTidValue = expressions.makeValue(INVALID_TID.ordinal(), statusType);
-            final Expression invalidRetType = expressions.makeValue(INVALID_RETURN_TYPE.ordinal(), statusType);
+            final Expression successValue = expressions.makeValue(SUCCESS.getErrorCode(), statusType);
+            final Expression invalidTidValue = expressions.makeValue(INVALID_TID.getErrorCode(), statusType);
+            final Expression invalidRetType = expressions.makeValue(INVALID_RETURN_TYPE.getErrorCode(), statusType);
 
             final Register statusRegister = caller.newRegister("__joinStatus#" + joinCounter, statusType);
             final Register retValRegister = caller.newRegister("__joinRetVal#" + joinCounter, retValType);

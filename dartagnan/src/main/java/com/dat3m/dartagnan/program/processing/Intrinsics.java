@@ -445,8 +445,8 @@ public class Intrinsics {
         final Expression status = expressions.makeExtract(joinReg, 0);
         final Expression retVal = expressions.makeExtract(joinReg, 1);
 
-        final Expression statusSuccess = expressions.makeValue(SUCCESS.ordinal(), (IntegerType) status.getType());
-        final Expression statusInvalidTId = expressions.makeValue(INVALID_TID.ordinal(), (IntegerType) status.getType());
+        final Expression statusSuccess = expressions.makeValue(SUCCESS.getErrorCode(), (IntegerType) status.getType());
+        final Expression statusInvalidTId = expressions.makeValue(INVALID_TID.getErrorCode(), (IntegerType) status.getType());
 
         final Label joinEnd;
         final Store storeRetVal;

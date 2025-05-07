@@ -44,16 +44,20 @@ public abstract class CallBase extends AbstractEvent implements CallEvent {
         this.arguments = new ArrayList<>(other.arguments);
     }
 
-    public boolean isDirectCall() { return callTarget instanceof Function; }
     public Function getCalledFunction() { return (Function) callTarget; }
+    @Override
     public FunctionType getCallType() { return funcType; }
+    @Override
     public Expression getCallTarget() { return callTarget; }
+    @Override
     public List<Expression> getArguments() { return arguments; }
 
+    @Override
     public void setArgument(int index, Expression argument) {
         arguments.set(index, argument);
     }
 
+    @Override
     public void setCallTarget(Expression callTarget) {
         if (callTarget instanceof Function func) {
             Preconditions.checkArgument(func.getFunctionType() == funcType,
