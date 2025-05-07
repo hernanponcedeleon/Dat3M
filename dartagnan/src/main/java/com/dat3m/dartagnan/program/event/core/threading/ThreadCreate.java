@@ -24,8 +24,7 @@ public class ThreadCreate extends AbstractEvent implements RegReader {
 
     protected ThreadCreate(ThreadCreate other) {
         super(other);
-        this.arguments = new ArrayList<>(other.arguments);
-        this.spawnedThread = null;
+        throw new UnsupportedOperationException("Cannot copy ThreadCreate events.");
     }
 
     public List<Expression> getArguments() { return arguments; }

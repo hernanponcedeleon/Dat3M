@@ -20,8 +20,7 @@ public class ThreadJoin extends AbstractEvent implements RegWriter, BlockingEven
 
     protected ThreadJoin(ThreadJoin other) {
         super(other);
-        this.resultRegister = other.resultRegister;
-        this.joinThread = null;
+        throw new UnsupportedOperationException("Cannot copy ThreadJoin events.");
     }
 
     @Override
