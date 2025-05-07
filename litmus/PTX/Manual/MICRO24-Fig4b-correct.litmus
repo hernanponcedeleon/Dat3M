@@ -1,0 +1,21 @@
+PTX MICRO24-Fig4b-correct
+"
+Expected synchronization without the optimization proposed in Fig4.b from Over-synchronization in GPU Programs
+
+> ./scripts/dartagnan -cat ptx-v6.0 litmus/PTX/Manual/MICRO24-Fig4b-correct.litmus
+UNKNOWN // <-- means "No, but loops were not fully unrolled"
+"
+{
+sum=0;
+flag=0;
+P1:r1=0;
+P1:r2=0;
+}
+ P0@cta 0,gpu 0                    | P1@cta 1,gpu 0                      ;
+ atom.relaxed.gpu.add r1, sum, 1   | LC00:                               ;
+ fence.sc.gpu                      | atom.relaxed.gpu.cas r1, flag, 1, 0 ;
+ atom.relaxed.gpu.exch r2, flag, 1 | bne r1, 1, LC00                     ;
+                                   | fence.sc.gpu                        ;
+                                   | atom.relaxed.gpu.add r2, sum, 0     ;
+exists
+(P1:r1 == 1 /\ P1:r2 != 1)

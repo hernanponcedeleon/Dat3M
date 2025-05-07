@@ -1,0 +1,24 @@
+PTX MICRO24-Fig4a-correct
+"
+Expected synchronization without the optimization proposed in Fig4.a from Over-synchronization in GPU Programs
+- Volatile operations are equivalent to relaxed.sys
+- membar is a synonym for fence.sc
+
+> ./scripts/dartagnan -cat ptx-v6.0 litmus/PTX/Manual/MICRO24-Fig4a-correct.litmus
+Condition exists (1:r1 == bv64(1)) && (1:r2 != bv64(1))
+No
+"
+{
+sum=0;
+flag=0;
+P1:r1=0;
+P1:r2=0;
+}
+ P0@cta 0,gpu 0         | P1@cta 1,gpu 0          ;
+ st.relaxed.sys sum, 1  | LC00:                   ;
+ fence.sc.gpu           | ld.relaxed.sys r1, flag ;
+ st.relaxed.sys flag, 1 | beq r1, 0, LC00         ;
+                        | fence.sc.gpu            ;
+                        | ld.relaxed.sys r2, sum  ;
+exists
+(P1:r1 == 1 /\ P1:r2 != 1)
