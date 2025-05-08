@@ -15,6 +15,11 @@
                OpName %foo_L "foo.L"
                OpName %__spirv_BuiltInGlobalSize "__spirv_BuiltInGlobalSize"
                OpName %__spirv_BuiltInGlobalInvocationId "__spirv_BuiltInGlobalInvocationId"
+               OpName %entry "entry"
+               OpName %call "call"
+               OpName %conv "conv"
+               OpName %call1 "call1"
+               OpName %arrayidx "arrayidx"
                OpDecorate %__spirv_BuiltInGlobalInvocationId BuiltIn GlobalInvocationId
                OpDecorate %__spirv_BuiltInGlobalSize BuiltIn GlobalSize
                OpDecorate %__spirv_BuiltInGlobalSize Constant
@@ -36,14 +41,14 @@
 %__spirv_BuiltInGlobalSize = OpVariable %_ptr_Input_v3uint Input
 %__spirv_BuiltInGlobalInvocationId = OpVariable %_ptr_Input_v3uint Input
          %13 = OpFunction %void DontInline %12
-         %14 = OpLabel
+      %entry = OpLabel
          %15 = OpLoad %v3uint %__spirv_BuiltInGlobalSize Aligned 16
-         %16 = OpCompositeExtract %uint %15 0
-         %18 = OpUConvert %uchar %16
+       %call = OpCompositeExtract %uint %15 0
+       %conv = OpUConvert %uchar %call
          %19 = OpLoad %v3uint %__spirv_BuiltInGlobalInvocationId Aligned 16
-         %20 = OpCompositeExtract %uint %19 0
+      %call1 = OpCompositeExtract %uint %19 0
          %22 = OpBitcast %_ptr_Workgroup_uchar %foo_L
-         %23 = OpInBoundsPtrAccessChain %_ptr_Workgroup_uchar %22 %20
-               OpStore %23 %18 Aligned 1
+   %arrayidx = OpInBoundsPtrAccessChain %_ptr_Workgroup_uchar %22 %call1
+               OpStore %arrayidx %conv Aligned 1
                OpReturn
                OpFunctionEnd

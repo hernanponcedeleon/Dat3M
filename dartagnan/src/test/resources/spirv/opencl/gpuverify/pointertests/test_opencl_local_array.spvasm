@@ -11,6 +11,7 @@
                OpEntryPoint Kernel %9 "foo"
                OpSource OpenCL_C 200000
                OpName %foo_A "foo.A"
+               OpName %entry "entry"
                OpDecorate %foo_A Alignment 4
        %uint = OpTypeInt 32 0
     %uint_10 = OpConstant %uint 10
@@ -20,6 +21,6 @@
           %8 = OpTypeFunction %void
       %foo_A = OpVariable %_ptr_Workgroup__arr_uint_uint_10 Workgroup
           %9 = OpFunction %void DontInline %8
-         %10 = OpLabel
+      %entry = OpLabel
                OpReturn
                OpFunctionEnd

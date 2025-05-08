@@ -13,11 +13,16 @@
                OpSource OpenCL_C 200000
                OpName %example_L "example.L"
                OpName %__spirv_BuiltInGlobalInvocationId "__spirv_BuiltInGlobalInvocationId"
+               OpName %G "G"
+               OpName %entry "entry"
+               OpName %G_addr "G.addr"
+               OpName %call "call"
+               OpName %arrayidx "arrayidx"
                OpDecorate %__spirv_BuiltInGlobalInvocationId BuiltIn GlobalInvocationId
                OpDecorate %__spirv_BuiltInGlobalInvocationId Constant
                OpDecorate %__spirv_BuiltInGlobalInvocationId LinkageAttributes "__spirv_BuiltInGlobalInvocationId" Import
                OpDecorate %example_L Alignment 4
-               OpDecorate %23 Alignment 4
+               OpDecorate %G_addr Alignment 4
        %uint = OpTypeInt 32 0
      %uint_2 = OpConstant %uint 2
      %uint_3 = OpConstant %uint 3
@@ -40,15 +45,15 @@
   %example_L = OpVariable %_ptr_Workgroup__arr__arr__arr__arr_uint_uint_5_uint_4_uint_3_uint_2 Workgroup
 %__spirv_BuiltInGlobalInvocationId = OpVariable %_ptr_Input_v3uint Input
          %19 = OpFunction %void DontInline %18
-         %20 = OpFunctionParameter %_ptr_CrossWorkgroup_uint
-         %21 = OpLabel
-         %23 = OpVariable %_ptr_Function__ptr_CrossWorkgroup_uint Function
-               OpStore %23 %20 Aligned 4
-         %24 = OpLoad %_ptr_CrossWorkgroup_uint %23 Aligned 4
+          %G = OpFunctionParameter %_ptr_CrossWorkgroup_uint
+      %entry = OpLabel
+     %G_addr = OpVariable %_ptr_Function__ptr_CrossWorkgroup_uint Function
+               OpStore %G_addr %G Aligned 4
+         %24 = OpLoad %_ptr_CrossWorkgroup_uint %G_addr Aligned 4
          %25 = OpLoad %v3uint %__spirv_BuiltInGlobalInvocationId Aligned 16
-         %26 = OpCompositeExtract %uint %25 0
-         %27 = OpInBoundsPtrAccessChain %_ptr_CrossWorkgroup_uint %24 %26
-         %28 = OpLoad %uint %27 Aligned 4
+       %call = OpCompositeExtract %uint %25 0
+   %arrayidx = OpInBoundsPtrAccessChain %_ptr_CrossWorkgroup_uint %24 %call
+         %28 = OpLoad %uint %arrayidx Aligned 4
          %32 = OpInBoundsPtrAccessChain %_ptr_Workgroup_uint %example_L %uint_0 %uint_1 %uint_2 %uint_3 %uint_3
                OpStore %32 %28 Aligned 4
                OpReturn

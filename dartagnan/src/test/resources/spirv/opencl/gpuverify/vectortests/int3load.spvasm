@@ -13,10 +13,32 @@
                OpExecutionMode %8 ContractionOff
                OpSource OpenCL_C 200000
                OpName %bar "bar"
+               OpName %entry "entry"
+               OpName %x "x"
+               OpName %y "y"
+               OpName %_compoundliteral ".compoundliteral"
+               OpName %call "call"
+               OpName %extractVec "extractVec"
+               OpName %storetmp "storetmp"
+               OpName %storetmp1 "storetmp1"
+               OpName %castToVec4 "castToVec4"
+               OpName %loadVec4 "loadVec4"
+               OpName %extractVec2 "extractVec2"
+               OpName %extractVec3 "extractVec3"
+               OpName %storetmp4 "storetmp4"
+               OpName %castToVec45 "castToVec45"
+               OpName %loadVec46 "loadVec46"
+               OpName %extractVec7 "extractVec7"
+               OpName %castToVec48 "castToVec48"
+               OpName %loadVec49 "loadVec49"
+               OpName %extractVec10 "extractVec10"
+               OpName %add "add"
+               OpName %extractVec11 "extractVec11"
+               OpName %storetmp12 "storetmp12"
                OpDecorate %bar LinkageAttributes "bar" Import
-               OpDecorate %11 Alignment 16
-               OpDecorate %12 Alignment 16
-               OpDecorate %13 Alignment 16
+               OpDecorate %x Alignment 16
+               OpDecorate %y Alignment 16
+               OpDecorate %_compoundliteral Alignment 16
        %uint = OpTypeInt 32 0
      %uint_0 = OpConstant %uint 0
          %22 = OpUndef %uint
@@ -33,31 +55,31 @@
         %bar = OpFunction %v3uint None %4
                OpFunctionEnd
           %8 = OpFunction %void DontInline %7
-          %9 = OpLabel
-         %11 = OpVariable %_ptr_Function_v3uint Function
-         %12 = OpVariable %_ptr_Function_v3uint Function
-         %13 = OpVariable %_ptr_Function_v3uint Function
-         %14 = OpFunctionCall %v3uint %bar
-         %17 = OpVectorShuffle %v4uint %14 %15 0 1 2 4294967295
-         %19 = OpBitcast %_ptr_Function_v4uint %11
-               OpStore %19 %17 Aligned 16
-         %20 = OpBitcast %_ptr_Function_v4uint %13
-               OpStore %20 %23 Aligned 16
-         %24 = OpBitcast %_ptr_Function_v4uint %13
-         %25 = OpLoad %v4uint %24 Aligned 16
-         %27 = OpVectorShuffle %v3uint %25 %26 0 1 2
-         %28 = OpVectorShuffle %v4uint %27 %15 0 1 2 4294967295
-         %29 = OpBitcast %_ptr_Function_v4uint %12
-               OpStore %29 %28 Aligned 16
-         %30 = OpBitcast %_ptr_Function_v4uint %11
-         %31 = OpLoad %v4uint %30 Aligned 16
-         %32 = OpVectorShuffle %v3uint %31 %26 0 1 2
-         %33 = OpBitcast %_ptr_Function_v4uint %12
-         %34 = OpLoad %v4uint %33 Aligned 16
-         %35 = OpVectorShuffle %v3uint %34 %26 0 1 2
-         %36 = OpIAdd %v3uint %35 %32
-         %37 = OpVectorShuffle %v4uint %36 %15 0 1 2 4294967295
-         %38 = OpBitcast %_ptr_Function_v4uint %12
-               OpStore %38 %37 Aligned 16
+      %entry = OpLabel
+          %x = OpVariable %_ptr_Function_v3uint Function
+          %y = OpVariable %_ptr_Function_v3uint Function
+%_compoundliteral = OpVariable %_ptr_Function_v3uint Function
+       %call = OpFunctionCall %v3uint %bar
+ %extractVec = OpVectorShuffle %v4uint %call %15 0 1 2 4294967295
+   %storetmp = OpBitcast %_ptr_Function_v4uint %x
+               OpStore %storetmp %extractVec Aligned 16
+  %storetmp1 = OpBitcast %_ptr_Function_v4uint %_compoundliteral
+               OpStore %storetmp1 %23 Aligned 16
+ %castToVec4 = OpBitcast %_ptr_Function_v4uint %_compoundliteral
+   %loadVec4 = OpLoad %v4uint %castToVec4 Aligned 16
+%extractVec2 = OpVectorShuffle %v3uint %loadVec4 %26 0 1 2
+%extractVec3 = OpVectorShuffle %v4uint %extractVec2 %15 0 1 2 4294967295
+  %storetmp4 = OpBitcast %_ptr_Function_v4uint %y
+               OpStore %storetmp4 %extractVec3 Aligned 16
+%castToVec45 = OpBitcast %_ptr_Function_v4uint %x
+  %loadVec46 = OpLoad %v4uint %castToVec45 Aligned 16
+%extractVec7 = OpVectorShuffle %v3uint %loadVec46 %26 0 1 2
+%castToVec48 = OpBitcast %_ptr_Function_v4uint %y
+  %loadVec49 = OpLoad %v4uint %castToVec48 Aligned 16
+%extractVec10 = OpVectorShuffle %v3uint %loadVec49 %26 0 1 2
+        %add = OpIAdd %v3uint %extractVec10 %extractVec7
+%extractVec11 = OpVectorShuffle %v4uint %add %15 0 1 2 4294967295
+ %storetmp12 = OpBitcast %_ptr_Function_v4uint %y
+               OpStore %storetmp12 %extractVec11 Aligned 16
                OpReturn
                OpFunctionEnd

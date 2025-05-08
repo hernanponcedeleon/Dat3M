@@ -12,8 +12,16 @@
                OpMemoryModel Physical32 OpenCL
                OpEntryPoint Kernel %4 "testKernel"
                OpSource OpenCL_C 200000
-               OpDecorate %11 Alignment 4
-               OpDecorate %12 Alignment 4
+               OpName %entry "entry"
+               OpName %if_then "if.then"
+               OpName %if_end "if.end"
+               OpName %bufptr "bufptr"
+               OpName %next "next"
+               OpName %add_ptr "add.ptr"
+               OpName %cmp "cmp"
+               OpName %arrayidx "arrayidx"
+               OpDecorate %bufptr Alignment 4
+               OpDecorate %next Alignment 4
       %uchar = OpTypeInt 8 0
        %uint = OpTypeInt 32 0
      %uint_5 = OpConstant %uint 5
@@ -25,26 +33,26 @@
        %bool = OpTypeBool
          %13 = OpConstantNull %_ptr_Generic_uchar
           %4 = OpFunction %void DontInline %3
-          %5 = OpLabel
-         %11 = OpVariable %_ptr_Function__ptr_Generic_uchar Function
-         %12 = OpVariable %_ptr_Function__ptr_Generic_uchar Function
-               OpStore %12 %13 Aligned 4
-         %14 = OpLoad %_ptr_Generic_uchar %12 Aligned 4
-         %17 = OpInBoundsPtrAccessChain %_ptr_Generic_uchar %14 %uint_5
-               OpStore %11 %17 Aligned 4
-         %18 = OpLoad %_ptr_Generic_uchar %11 Aligned 4
+      %entry = OpLabel
+     %bufptr = OpVariable %_ptr_Function__ptr_Generic_uchar Function
+       %next = OpVariable %_ptr_Function__ptr_Generic_uchar Function
+               OpStore %next %13 Aligned 4
+         %14 = OpLoad %_ptr_Generic_uchar %next Aligned 4
+    %add_ptr = OpInBoundsPtrAccessChain %_ptr_Generic_uchar %14 %uint_5
+               OpStore %bufptr %add_ptr Aligned 4
+         %18 = OpLoad %_ptr_Generic_uchar %bufptr Aligned 4
          %19 = OpConvertPtrToU %uint %18
          %20 = OpConvertPtrToU %uint %13
-         %22 = OpUGreaterThanEqual %bool %19 %20
-               OpBranchConditional %22 %6 %7
-          %6 = OpLabel
-               OpStore %11 %13 Aligned 4
-               OpBranch %7
-          %7 = OpLabel
-         %23 = OpLoad %_ptr_Generic_uchar %11 Aligned 4
-               OpStore %11 %23 Aligned 4
-         %24 = OpLoad %_ptr_Generic_uchar %11 Aligned 4
-         %25 = OpInBoundsPtrAccessChain %_ptr_Generic_uchar %24 %uint_5
-               OpStore %25 %uchar_97 Aligned 1
+        %cmp = OpUGreaterThanEqual %bool %19 %20
+               OpBranchConditional %cmp %if_then %if_end
+    %if_then = OpLabel
+               OpStore %bufptr %13 Aligned 4
+               OpBranch %if_end
+     %if_end = OpLabel
+         %23 = OpLoad %_ptr_Generic_uchar %bufptr Aligned 4
+               OpStore %bufptr %23 Aligned 4
+         %24 = OpLoad %_ptr_Generic_uchar %bufptr Aligned 4
+   %arrayidx = OpInBoundsPtrAccessChain %_ptr_Generic_uchar %24 %uint_5
+               OpStore %arrayidx %uchar_97 Aligned 1
                OpReturn
                OpFunctionEnd

@@ -11,8 +11,11 @@
                OpMemoryModel Physical32 OpenCL
                OpEntryPoint Kernel %4 "k"
                OpSource OpenCL_C 200000
-               OpDecorate %11 Alignment 8
-               OpDecorate %9 Alignment 16
+               OpName %entry "entry"
+               OpName %v "v"
+               OpName %s "s"
+               OpDecorate %s Alignment 8
+               OpDecorate %v Alignment 16
        %void = OpTypeVoid
           %3 = OpTypeFunction %void
      %double = OpTypeFloat 64
@@ -21,20 +24,20 @@
 %_ptr_Function_double = OpTypePointer Function %double
   %double_42 = OpConstant %double 42
           %4 = OpFunction %void DontInline %3
-          %5 = OpLabel
-          %9 = OpVariable %_ptr_Function_v2double Function
-         %11 = OpVariable %_ptr_Function_double Function
-         %12 = OpLoad %v2double %9 Aligned 16
+      %entry = OpLabel
+          %v = OpVariable %_ptr_Function_v2double Function
+          %s = OpVariable %_ptr_Function_double Function
+         %12 = OpLoad %v2double %v Aligned 16
          %14 = OpCompositeInsert %v2double %double_42 %12 0
-               OpStore %9 %14 Aligned 16
-         %15 = OpLoad %v2double %9 Aligned 16
+               OpStore %v %14 Aligned 16
+         %15 = OpLoad %v2double %v Aligned 16
          %16 = OpCompositeInsert %v2double %double_42 %15 1
-               OpStore %9 %16 Aligned 16
-         %17 = OpLoad %v2double %9 Aligned 16
+               OpStore %v %16 Aligned 16
+         %17 = OpLoad %v2double %v Aligned 16
          %18 = OpCompositeExtract %double %17 0
-               OpStore %11 %18 Aligned 8
-         %19 = OpLoad %v2double %9 Aligned 16
+               OpStore %s %18 Aligned 8
+         %19 = OpLoad %v2double %v Aligned 16
          %20 = OpCompositeExtract %double %19 1
-               OpStore %11 %20 Aligned 8
+               OpStore %s %20 Aligned 8
                OpReturn
                OpFunctionEnd

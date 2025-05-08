@@ -12,6 +12,9 @@ import com.dat3m.dartagnan.program.analysis.BranchEquivalence;
 import com.dat3m.dartagnan.program.analysis.ExecutionAnalysis;
 import com.dat3m.dartagnan.program.analysis.ReachingDefinitionsAnalysis;
 import com.dat3m.dartagnan.program.event.*;
+import com.dat3m.dartagnan.program.event.core.*;
+import com.dat3m.dartagnan.program.event.core.threading.ThreadJoin;
+import com.dat3m.dartagnan.program.event.core.threading.ThreadReturn;
 import com.dat3m.dartagnan.program.event.core.CondJump;
 import com.dat3m.dartagnan.program.event.core.ControlBarrier;
 import com.dat3m.dartagnan.program.event.core.Label;
@@ -21,6 +24,7 @@ import com.dat3m.dartagnan.program.memory.Memory;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.dat3m.dartagnan.program.misc.NonDetValue;
 import com.google.common.base.Preconditions;
+import com.google.common.base.Verify;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import org.apache.logging.log4j.LogManager;
@@ -86,6 +90,7 @@ public class ProgramEncoder implements Encoder {
         return context.getBooleanFormulaManager().and(
                 encodeControlBarriers(),
                 encodeNamedControlBarriers(),
+                encodeThreadJoining(),
                 encodeConstants(),
                 encodeMemory(),
                 encodeControlFlow(),
@@ -146,6 +151,15 @@ public class ProgramEncoder implements Encoder {
                 context.execution(thread.getExit()), // Also guarantees that we are not stuck in a barrier
                 bmgr.not(threadIsStuckInLoop(thread))
         );
+    }
+
+    private BooleanFormula threadHasTerminatedNormally(Thread thread) {
+        final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
+        final BooleanFormula exception = thread.getEvents(CondJump.class).stream()
+                .filter(jump -> jump.hasTag(Tag.EXCEPTIONAL_TERMINATION))
+                .map(context::jumpTaken)
+                .reduce(bmgr.makeFalse(), bmgr::or);
+        return bmgr.and(threadHasTerminated(thread), bmgr.not(exception));
     }
 
     // NOTE: Stuckness also considers bound events, i.e., insufficiently unrolled loops.
@@ -236,6 +250,46 @@ public class ProgramEncoder implements Encoder {
             // TODO: Maybe add "exec => cf" implications automatically.
             //  We probably never want events that can execute without being in the control-flow.
         }
+        return bmgr.and(enc);
+    }
+
+    private BooleanFormula encodeThreadJoining() {
+        final Program program = context.getTask().getProgram();
+        final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
+
+        List<BooleanFormula> enc = new ArrayList<>();
+        for (ThreadJoin join : program.getThreadEvents(ThreadJoin.class)) {
+            final BooleanFormula joinCf = context.controlFlow(join);
+            final BooleanFormula joinExec = context.execution(join);
+            final BooleanFormula terminated = threadHasTerminatedNormally(join.getJoinThread());
+
+            enc.add(bmgr.implication(joinExec, terminated));
+            enc.add(bmgr.implication(bmgr.and(terminated, joinCf), joinExec));
+
+            final List<ThreadReturn> returns = join.getJoinThread().getEvents(ThreadReturn.class);
+            Verify.verify(returns.size() <= 1, "Unexpected number of ThreadReturn events.");
+            // NOTE: No ThreadReturn is currently allowed, if the ThreadReturn event is unreachable and thus is deletable.
+            // In this case, the thread never terminates properly, so we do not encode anything.
+            // TODO: We might want to make ThreadReturn non-deletable, at least the one we generate in ThreadCreation?
+            if (returns.size() == 1) {
+                final ThreadReturn ret = returns.get(0);
+                // FIXME: here we assume that proper thread termination implies that ThreadReturn was executed.
+                //  While this should be true, we currently do not explicitly checks for this, so the code
+                //  is a little dangerous.
+                //  It would probably good to give each thread a single ThreadReturn event that is executed
+                //   IFF the thread terminates properly.
+                if (ret.hasValue()) {
+                    enc.add(bmgr.implication(
+                            joinExec,
+                            context.equal(
+                                    context.result(join),
+                                    context.encodeExpressionAt(ret.getValue().get(), ret)
+                            )
+                    ));
+                }
+            }
+        }
+
         return bmgr.and(enc);
     }
 

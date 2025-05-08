@@ -13,11 +13,16 @@
                OpSource OpenCL_C 200000
                OpName %foo_L "foo.L"
                OpName %__spirv_BuiltInGlobalInvocationId "__spirv_BuiltInGlobalInvocationId"
+               OpName %entry "entry"
+               OpName %x "x"
+               OpName %call "call"
+               OpName %mul "mul"
+               OpName %arrayidx "arrayidx"
                OpDecorate %__spirv_BuiltInGlobalInvocationId BuiltIn GlobalInvocationId
                OpDecorate %__spirv_BuiltInGlobalInvocationId Constant
                OpDecorate %__spirv_BuiltInGlobalInvocationId LinkageAttributes "__spirv_BuiltInGlobalInvocationId" Import
                OpDecorate %foo_L Alignment 4
-               OpDecorate %15 Alignment 4
+               OpDecorate %x Alignment 4
        %uint = OpTypeInt 32 0
     %uint_20 = OpConstant %uint 20
      %uint_0 = OpConstant %uint 0
@@ -32,16 +37,16 @@
       %foo_L = OpVariable %_ptr_Workgroup__arr_uint_uint_20 Workgroup
 %__spirv_BuiltInGlobalInvocationId = OpVariable %_ptr_Input_v3uint Input
          %12 = OpFunction %void DontInline %11
-         %13 = OpLabel
-         %15 = OpVariable %_ptr_Function_uint Function
+      %entry = OpLabel
+          %x = OpVariable %_ptr_Function_uint Function
          %16 = OpLoad %v3uint %__spirv_BuiltInGlobalInvocationId Aligned 16
-         %17 = OpCompositeExtract %uint %16 0
-               OpStore %15 %17 Aligned 4
-         %18 = OpLoad %uint %15 Aligned 4
-         %19 = OpLoad %uint %15 Aligned 4
-         %20 = OpIMul %uint %18 %19
-         %21 = OpLoad %uint %15 Aligned 4
-         %24 = OpInBoundsPtrAccessChain %_ptr_Workgroup_uint %foo_L %uint_0 %21
-               OpStore %24 %20 Aligned 4
+       %call = OpCompositeExtract %uint %16 0
+               OpStore %x %call Aligned 4
+         %18 = OpLoad %uint %x Aligned 4
+         %19 = OpLoad %uint %x Aligned 4
+        %mul = OpIMul %uint %18 %19
+         %21 = OpLoad %uint %x Aligned 4
+   %arrayidx = OpInBoundsPtrAccessChain %_ptr_Workgroup_uint %foo_L %uint_0 %21
+               OpStore %arrayidx %mul Aligned 4
                OpReturn
                OpFunctionEnd

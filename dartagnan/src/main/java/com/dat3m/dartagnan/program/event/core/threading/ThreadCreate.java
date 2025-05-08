@@ -5,7 +5,6 @@ import com.dat3m.dartagnan.expression.ExpressionVisitor;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.AbstractEvent;
-import com.dat3m.dartagnan.program.event.EventVisitor;
 import com.dat3m.dartagnan.program.event.RegReader;
 
 import java.util.ArrayList;
@@ -23,12 +22,6 @@ public class ThreadCreate extends AbstractEvent implements RegReader {
         this.arguments = new ArrayList<>(arguments);
     }
 
-    protected ThreadCreate(ThreadCreate other) {
-        super(other);
-        this.arguments = new ArrayList<>(other.arguments);
-        this.spawnedThread = null;
-    }
-
     public List<Expression> getArguments() { return arguments; }
     public Thread getSpawnedThread() { return spawnedThread; }
     public void setSpawnedThread(Thread spawnedThread) { this.spawnedThread = spawnedThread; }
@@ -41,13 +34,7 @@ public class ThreadCreate extends AbstractEvent implements RegReader {
 
     @Override
     public ThreadCreate getCopy() {
-        return new ThreadCreate(this);
-    }
-
-    @Override
-    public <T> T accept(EventVisitor<T> visitor) {
-        // TODO
-        return visitor.visitEvent(this);
+        throw new UnsupportedOperationException("Cannot copy ThreadCreate events.");
     }
 
     @Override

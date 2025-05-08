@@ -10,11 +10,13 @@
                OpMemoryModel Physical32 OpenCL
                OpEntryPoint Kernel %4 "foo"
                OpSource OpenCL_C 200000
+               OpName %entry "entry"
+               OpName %while_body "while.body"
        %void = OpTypeVoid
           %3 = OpTypeFunction %void
           %4 = OpFunction %void DontInline %3
-          %5 = OpLabel
-               OpBranch %6
-          %6 = OpLabel
-               OpBranch %6
+      %entry = OpLabel
+               OpBranch %while_body
+ %while_body = OpLabel
+               OpBranch %while_body
                OpFunctionEnd
