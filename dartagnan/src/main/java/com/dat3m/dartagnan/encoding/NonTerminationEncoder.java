@@ -696,15 +696,17 @@ public class NonTerminationEncoder {
 
         // (5) If a control barrier is in the suffix, then all its syncing control barriers must also be in the suffix
         final Relation syncBar = memoryModel.getRelation(RelationNameRepository.SYNCBAR);
-        final EventGraph syncBarMay = ra.getKnowledge(syncBar).getMaySet();
-        syncBarMay.apply((x, y) -> {
-            if (isPossiblySuffix(x)) {
-                enc.add(bmgr.implication(
-                        bmgr.and(isInSuffix(x), context.edge(syncBar, x, y)),
-                        isInSuffix(y)
-                ));
-            }
-        });
+        if (syncBar != null) {
+            final EventGraph syncBarMay = ra.getKnowledge(syncBar).getMaySet();
+            syncBarMay.apply((x, y) -> {
+                if (isPossiblySuffix(x)) {
+                    enc.add(bmgr.implication(
+                            bmgr.and(isInSuffix(x), context.edge(syncBar, x, y)),
+                            isInSuffix(y)
+                    ));
+                }
+            });
+        }
 
         return bmgr.and(enc);
     }
