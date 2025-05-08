@@ -12,13 +12,12 @@ import com.dat3m.dartagnan.program.analysis.BranchEquivalence;
 import com.dat3m.dartagnan.program.analysis.ExecutionAnalysis;
 import com.dat3m.dartagnan.program.analysis.ReachingDefinitionsAnalysis;
 import com.dat3m.dartagnan.program.event.*;
-import com.dat3m.dartagnan.program.event.core.*;
-import com.dat3m.dartagnan.program.event.core.threading.ThreadJoin;
-import com.dat3m.dartagnan.program.event.core.threading.ThreadReturn;
 import com.dat3m.dartagnan.program.event.core.CondJump;
 import com.dat3m.dartagnan.program.event.core.ControlBarrier;
 import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.event.core.NamedBarrier;
+import com.dat3m.dartagnan.program.event.core.threading.ThreadJoin;
+import com.dat3m.dartagnan.program.event.core.threading.ThreadReturn;
 import com.dat3m.dartagnan.program.event.core.threading.ThreadStart;
 import com.dat3m.dartagnan.program.memory.Memory;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
@@ -256,6 +255,7 @@ public class ProgramEncoder implements Encoder {
     private BooleanFormula encodeThreadJoining() {
         final Program program = context.getTask().getProgram();
         final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
+        final ExpressionEncoder exprEnc = context.getExpressionEncoder();
 
         List<BooleanFormula> enc = new ArrayList<>();
         for (ThreadJoin join : program.getThreadEvents(ThreadJoin.class)) {
@@ -271,22 +271,17 @@ public class ProgramEncoder implements Encoder {
             // NOTE: No ThreadReturn is currently allowed, if the ThreadReturn event is unreachable and thus is deletable.
             // In this case, the thread never terminates properly, so we do not encode anything.
             // TODO: We might want to make ThreadReturn non-deletable, at least the one we generate in ThreadCreation?
-            if (returns.size() == 1) {
+            if (returns.size() == 1 && returns.get(0).hasValue()) {
                 final ThreadReturn ret = returns.get(0);
+                enc.add(bmgr.implication(
+                        joinExec,
+                        exprEnc.equalAt(context.result(join), join, ret.getValue().get(), ret))
+                );
                 // FIXME: here we assume that proper thread termination implies that ThreadReturn was executed.
                 //  While this should be true, we currently do not explicitly checks for this, so the code
                 //  is a little dangerous.
                 //  It would probably good to give each thread a single ThreadReturn event that is executed
                 //   IFF the thread terminates properly.
-                if (ret.hasValue()) {
-                    enc.add(bmgr.implication(
-                            joinExec,
-                            context.equal(
-                                    context.result(join),
-                                    context.encodeExpressionAt(ret.getValue().get(), ret)
-                            )
-                    ));
-                }
             }
         }
 
