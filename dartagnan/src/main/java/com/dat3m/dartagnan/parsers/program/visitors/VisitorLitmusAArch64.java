@@ -151,9 +151,10 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object> {
 
     @Override
     public Object visitCmp(CmpContext ctx) {
-        Register register = parseRegister64(ctx.r32, ctx.r64);
-        Expression expr = parseExpression(ctx.expr32(), ctx.expr64());
-        lastCmpInstructionPerThread.put(mainThread, new CmpInstruction(register, expr));
+        final Register register = parseRegister64(ctx.r32, ctx.r64);
+        final Expression right = parseExpression(ctx.expr32(), ctx.expr64());
+        final Expression left = expressions.makeCast(register, right.getType());
+        lastCmpInstructionPerThread.put(mainThread, new CmpInstruction(left, right));
         return null;
     }
 

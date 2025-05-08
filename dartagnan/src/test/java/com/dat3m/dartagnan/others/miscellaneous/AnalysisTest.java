@@ -743,9 +743,7 @@ public class AnalysisTest {
                 final MemoryObject x = b.getOrNewMemoryObject(String.format("x%d:%d", i, offset), OBJECT_SIZE);
                 final Expression address = expressions.makeAdd(x, expressions.makeValue(offset, pointerType));
                 b.addChild(0, newLoad(r, x));
-                //b.addChild(0, newStore(x, r));
                 b.addChild(0, newLoad(s, address));
-                //b.addChild(0, newStore(address, s));
                 if (0 < offset && offset < rBytes) {
                     exp.append(offset);
                 }
