@@ -142,7 +142,7 @@ public class ThreadCreation implements ProgramProcessor {
 
         // We collect metadata about each spawned thread. This is later used to resolve thread joining.
         final List<ThreadData> allThreads = new ArrayList<>();
-        final ThreadData entryPoint = createLLVMThreadFromFunction(main.get(), nextTid++, null);
+        final ThreadData entryPoint = createLLVMThreadFromFunction(main.get(), nextTid++, null, Thread.Type.STANDARD);
         allThreads.add(entryPoint);
 
         final Queue<ThreadData> workingQueue = new ArrayDeque<>(allThreads);
@@ -275,12 +275,13 @@ public class ThreadCreation implements ProgramProcessor {
         }
     }
 
-    private ThreadData createLLVMThreadFromFunction(Function function, int tid, ThreadCreate creator) {
+    private ThreadData createLLVMThreadFromFunction(Function function, int tid, ThreadCreate creator, Thread.Type threadType) {
         // ------------------- Create new thread -------------------
         final ThreadStart start = EventFactory.newThreadStart(creator);
         start.setMayFailSpuriously(!forceStart);
         final Thread thread = new Thread(function.getName(), function.getFunctionType(),
-                Lists.transform(function.getParameterRegisters(), Register::getName), tid, start);
+                Lists.transform(function.getParameterRegisters(), Register::getName), tid, start, threadType
+        );
         thread.copyUniqueIdsFrom(function);
         function.getProgram().addThread(thread);
 
