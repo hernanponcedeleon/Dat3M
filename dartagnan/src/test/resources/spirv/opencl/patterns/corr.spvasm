@@ -1,9 +1,9 @@
-; @Input: %10 = {0}
-; @Input: %11 = {0}
-; @Input: %12 = {0}
-; @Input: %13 = {0}
-; @Input: %14 = {0}
-; @Output: not exists (%11[0] == 2 and %12[0] == 1 and %13[0] == 1 and %14[0] == 2)
+; @Input: %x = {0}
+; @Input: %r0 = {0}
+; @Input: %r1 = {0}
+; @Input: %r2 = {0}
+; @Input: %r3 = {0}
+; @Output: not exists (%r0[0] == 2 and %r1[0] == 1 and %r2[0] == 1 and %r3[0] == 2)
 ; @Config: 1, 1, 4
 ; SPIR-V
 ; Version: 1.0
@@ -19,14 +19,45 @@
                OpEntryPoint Kernel %9 "test" %__spirv_BuiltInWorkgroupId
                OpSource OpenCL_C 200000
                OpName %__spirv_BuiltInWorkgroupId "__spirv_BuiltInWorkgroupId"
+               OpName %x "x"
+               OpName %r0 "r0"
+               OpName %r1 "r1"
+               OpName %r2 "r2"
+               OpName %r3 "r3"
+               OpName %entry "entry"
+               OpName %if_then "if.then"
+               OpName %if_end "if.end"
+               OpName %if_then5 "if.then5"
+               OpName %if_end8 "if.end8"
+               OpName %if_then11 "if.then11"
+               OpName %if_end12 "if.end12"
+               OpName %if_then15 "if.then15"
+               OpName %if_end16 "if.end16"
+               OpName %x_addr "x.addr"
+               OpName %r0_addr "r0.addr"
+               OpName %r1_addr "r1.addr"
+               OpName %r2_addr "r2.addr"
+               OpName %r3_addr "r3.addr"
+               OpName %call "call"
+               OpName %cmp "cmp"
+               OpName %call1 "call1"
+               OpName %call2 "call2"
+               OpName %call3 "call3"
+               OpName %cmp4 "cmp4"
+               OpName %call6 "call6"
+               OpName %call7 "call7"
+               OpName %call9 "call9"
+               OpName %cmp10 "cmp10"
+               OpName %call13 "call13"
+               OpName %cmp14 "cmp14"
                OpDecorate %__spirv_BuiltInWorkgroupId BuiltIn WorkgroupId
                OpDecorate %__spirv_BuiltInWorkgroupId Constant
                OpDecorate %__spirv_BuiltInWorkgroupId LinkageAttributes "__spirv_BuiltInWorkgroupId" Import
-               OpDecorate %25 Alignment 4
-               OpDecorate %26 Alignment 4
-               OpDecorate %27 Alignment 4
-               OpDecorate %28 Alignment 4
-               OpDecorate %29 Alignment 4
+               OpDecorate %x_addr Alignment 4
+               OpDecorate %r0_addr Alignment 4
+               OpDecorate %r1_addr Alignment 4
+               OpDecorate %r2_addr Alignment 4
+               OpDecorate %r3_addr Alignment 4
        %uint = OpTypeInt 32 0
      %uint_0 = OpConstant %uint 0
      %uint_1 = OpConstant %uint 1
@@ -42,75 +73,75 @@
 %_ptr_Generic_uint = OpTypePointer Generic %uint
 %__spirv_BuiltInWorkgroupId = OpVariable %_ptr_Input_v3uint Input
           %9 = OpFunction %void DontInline %8
-         %10 = OpFunctionParameter %_ptr_CrossWorkgroup_uint
-         %11 = OpFunctionParameter %_ptr_CrossWorkgroup_uint
-         %12 = OpFunctionParameter %_ptr_CrossWorkgroup_uint
-         %13 = OpFunctionParameter %_ptr_CrossWorkgroup_uint
-         %14 = OpFunctionParameter %_ptr_CrossWorkgroup_uint
-         %15 = OpLabel
-         %25 = OpVariable %_ptr_Function__ptr_CrossWorkgroup_uint Function
-         %26 = OpVariable %_ptr_Function__ptr_CrossWorkgroup_uint Function
-         %27 = OpVariable %_ptr_Function__ptr_CrossWorkgroup_uint Function
-         %28 = OpVariable %_ptr_Function__ptr_CrossWorkgroup_uint Function
-         %29 = OpVariable %_ptr_Function__ptr_CrossWorkgroup_uint Function
-               OpStore %25 %10 Aligned 4
-               OpStore %26 %11 Aligned 4
-               OpStore %27 %12 Aligned 4
-               OpStore %28 %13 Aligned 4
-               OpStore %29 %14 Aligned 4
+          %x = OpFunctionParameter %_ptr_CrossWorkgroup_uint
+         %r0 = OpFunctionParameter %_ptr_CrossWorkgroup_uint
+         %r1 = OpFunctionParameter %_ptr_CrossWorkgroup_uint
+         %r2 = OpFunctionParameter %_ptr_CrossWorkgroup_uint
+         %r3 = OpFunctionParameter %_ptr_CrossWorkgroup_uint
+      %entry = OpLabel
+     %x_addr = OpVariable %_ptr_Function__ptr_CrossWorkgroup_uint Function
+    %r0_addr = OpVariable %_ptr_Function__ptr_CrossWorkgroup_uint Function
+    %r1_addr = OpVariable %_ptr_Function__ptr_CrossWorkgroup_uint Function
+    %r2_addr = OpVariable %_ptr_Function__ptr_CrossWorkgroup_uint Function
+    %r3_addr = OpVariable %_ptr_Function__ptr_CrossWorkgroup_uint Function
+               OpStore %x_addr %x Aligned 4
+               OpStore %r0_addr %r0 Aligned 4
+               OpStore %r1_addr %r1 Aligned 4
+               OpStore %r2_addr %r2 Aligned 4
+               OpStore %r3_addr %r3 Aligned 4
          %30 = OpLoad %v3uint %__spirv_BuiltInWorkgroupId Aligned 16
-         %31 = OpCompositeExtract %uint %30 0
-         %34 = OpIEqual %bool %31 %uint_0
-               OpBranchConditional %34 %16 %17
-         %16 = OpLabel
-         %35 = OpLoad %_ptr_CrossWorkgroup_uint %25 Aligned 4
+       %call = OpCompositeExtract %uint %30 0
+        %cmp = OpIEqual %bool %call %uint_0
+               OpBranchConditional %cmp %if_then %if_end
+    %if_then = OpLabel
+         %35 = OpLoad %_ptr_CrossWorkgroup_uint %x_addr Aligned 4
          %37 = OpPtrCastToGeneric %_ptr_Generic_uint %35
-         %39 = OpAtomicLoad %uint %37 %uint_1 %uint_0
-         %40 = OpLoad %_ptr_CrossWorkgroup_uint %26 Aligned 4
-               OpStore %40 %39 Aligned 4
-         %41 = OpLoad %_ptr_CrossWorkgroup_uint %25 Aligned 4
+      %call1 = OpAtomicLoad %uint %37 %uint_1 %uint_0
+         %40 = OpLoad %_ptr_CrossWorkgroup_uint %r0_addr Aligned 4
+               OpStore %40 %call1 Aligned 4
+         %41 = OpLoad %_ptr_CrossWorkgroup_uint %x_addr Aligned 4
          %42 = OpPtrCastToGeneric %_ptr_Generic_uint %41
-         %43 = OpAtomicLoad %uint %42 %uint_1 %uint_0
-         %44 = OpLoad %_ptr_CrossWorkgroup_uint %27 Aligned 4
-               OpStore %44 %43 Aligned 4
-               OpBranch %17
-         %17 = OpLabel
+      %call2 = OpAtomicLoad %uint %42 %uint_1 %uint_0
+         %44 = OpLoad %_ptr_CrossWorkgroup_uint %r1_addr Aligned 4
+               OpStore %44 %call2 Aligned 4
+               OpBranch %if_end
+     %if_end = OpLabel
          %45 = OpLoad %v3uint %__spirv_BuiltInWorkgroupId Aligned 16
-         %46 = OpCompositeExtract %uint %45 0
-         %47 = OpIEqual %bool %46 %uint_1
-               OpBranchConditional %47 %18 %19
-         %18 = OpLabel
-         %48 = OpLoad %_ptr_CrossWorkgroup_uint %25 Aligned 4
+      %call3 = OpCompositeExtract %uint %45 0
+       %cmp4 = OpIEqual %bool %call3 %uint_1
+               OpBranchConditional %cmp4 %if_then5 %if_end8
+   %if_then5 = OpLabel
+         %48 = OpLoad %_ptr_CrossWorkgroup_uint %x_addr Aligned 4
          %49 = OpPtrCastToGeneric %_ptr_Generic_uint %48
-         %50 = OpAtomicLoad %uint %49 %uint_1 %uint_0
-         %51 = OpLoad %_ptr_CrossWorkgroup_uint %28 Aligned 4
-               OpStore %51 %50 Aligned 4
-         %52 = OpLoad %_ptr_CrossWorkgroup_uint %25 Aligned 4
+      %call6 = OpAtomicLoad %uint %49 %uint_1 %uint_0
+         %51 = OpLoad %_ptr_CrossWorkgroup_uint %r2_addr Aligned 4
+               OpStore %51 %call6 Aligned 4
+         %52 = OpLoad %_ptr_CrossWorkgroup_uint %x_addr Aligned 4
          %53 = OpPtrCastToGeneric %_ptr_Generic_uint %52
-         %54 = OpAtomicLoad %uint %53 %uint_1 %uint_0
-         %55 = OpLoad %_ptr_CrossWorkgroup_uint %29 Aligned 4
-               OpStore %55 %54 Aligned 4
-               OpBranch %19
-         %19 = OpLabel
+      %call7 = OpAtomicLoad %uint %53 %uint_1 %uint_0
+         %55 = OpLoad %_ptr_CrossWorkgroup_uint %r3_addr Aligned 4
+               OpStore %55 %call7 Aligned 4
+               OpBranch %if_end8
+    %if_end8 = OpLabel
          %56 = OpLoad %v3uint %__spirv_BuiltInWorkgroupId Aligned 16
-         %57 = OpCompositeExtract %uint %56 0
-         %59 = OpIEqual %bool %57 %uint_2
-               OpBranchConditional %59 %20 %21
-         %20 = OpLabel
-         %60 = OpLoad %_ptr_CrossWorkgroup_uint %25 Aligned 4
+      %call9 = OpCompositeExtract %uint %56 0
+      %cmp10 = OpIEqual %bool %call9 %uint_2
+               OpBranchConditional %cmp10 %if_then11 %if_end12
+  %if_then11 = OpLabel
+         %60 = OpLoad %_ptr_CrossWorkgroup_uint %x_addr Aligned 4
          %61 = OpPtrCastToGeneric %_ptr_Generic_uint %60
                OpAtomicStore %61 %uint_1 %uint_0 %uint_2
-               OpBranch %21
-         %21 = OpLabel
+               OpBranch %if_end12
+   %if_end12 = OpLabel
          %62 = OpLoad %v3uint %__spirv_BuiltInWorkgroupId Aligned 16
-         %63 = OpCompositeExtract %uint %62 0
-         %65 = OpIEqual %bool %63 %uint_3
-               OpBranchConditional %65 %22 %23
-         %22 = OpLabel
-         %66 = OpLoad %_ptr_CrossWorkgroup_uint %25 Aligned 4
+     %call13 = OpCompositeExtract %uint %62 0
+      %cmp14 = OpIEqual %bool %call13 %uint_3
+               OpBranchConditional %cmp14 %if_then15 %if_end16
+  %if_then15 = OpLabel
+         %66 = OpLoad %_ptr_CrossWorkgroup_uint %x_addr Aligned 4
          %67 = OpPtrCastToGeneric %_ptr_Generic_uint %66
                OpAtomicStore %67 %uint_1 %uint_0 %uint_1
-               OpBranch %23
-         %23 = OpLabel
+               OpBranch %if_end16
+   %if_end16 = OpLabel
                OpReturn
                OpFunctionEnd

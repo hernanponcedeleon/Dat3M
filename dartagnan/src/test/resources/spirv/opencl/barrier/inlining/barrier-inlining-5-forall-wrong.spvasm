@@ -1,5 +1,5 @@
-; @Input: %32 = {0, 0}
-; @Output: forall (%32[0]==0 and %32[1]==0)
+; @Input: %x = {0, 0}
+; @Output: forall (%x[0]==0 and %x[1]==0)
 ; @Config: 2, 1, 2
 ; SPIR-V
 ; Version: 1.0
@@ -11,90 +11,112 @@
                OpCapability Kernel
           %1 = OpExtInstImport "OpenCL.std"
                OpMemoryModel Physical32 OpenCL
-               OpEntryPoint Kernel %31 "test" %__spirv_BuiltInWorkgroupId %__spirv_BuiltInLocalInvocationId
+               OpEntryPoint Kernel %10 "test" %__spirv_BuiltInWorkgroupId %__spirv_BuiltInLocalInvocationId
                OpSource OpenCL_C 200000
                OpName %__spirv_BuiltInWorkgroupId "__spirv_BuiltInWorkgroupId"
                OpName %__spirv_BuiltInLocalInvocationId "__spirv_BuiltInLocalInvocationId"
+               OpName %x "x"
+               OpName %entry "entry"
+               OpName %for_cond "for.cond"
+               OpName %for_body "for.body"
+               OpName %for_inc "for.inc"
+               OpName %for_end "for.end"
+               OpName %x_addr "x.addr"
+               OpName %tid "tid"
+               OpName %i "i"
+               OpName %call "call"
+               OpName %cmp "cmp"
+               OpName %arrayidx "arrayidx"
+               OpName %call1 "call1"
                OpName %synchronized_increment "synchronized_increment"
+               OpName %shared_value "shared_value"
+               OpName %local_id "local_id"
+               OpName %inc "inc"
+               OpName %entry_0 "entry"
+               OpName %if_then "if.then"
+               OpName %if_end "if.end"
+               OpName %shared_value_addr "shared_value.addr"
+               OpName %local_id_addr "local_id.addr"
+               OpName %cmp_0 "cmp"
+               OpName %inc_0 "inc"
                OpDecorate %__spirv_BuiltInWorkgroupId BuiltIn WorkgroupId
                OpDecorate %__spirv_BuiltInLocalInvocationId BuiltIn LocalInvocationId
                OpDecorate %__spirv_BuiltInWorkgroupId Constant
                OpDecorate %__spirv_BuiltInLocalInvocationId Constant
-               OpDecorate %synchronized_increment LinkageAttributes "synchronized_increment" Export
                OpDecorate %__spirv_BuiltInWorkgroupId LinkageAttributes "__spirv_BuiltInWorkgroupId" Import
                OpDecorate %__spirv_BuiltInLocalInvocationId LinkageAttributes "__spirv_BuiltInLocalInvocationId" Import
-               OpDecorate %17 Alignment 4
-               OpDecorate %19 Alignment 4
-               OpDecorate %38 Alignment 4
-               OpDecorate %39 Alignment 4
-               OpDecorate %40 Alignment 4
+               OpDecorate %x_addr Alignment 4
+               OpDecorate %tid Alignment 4
+               OpDecorate %i Alignment 4
+               OpDecorate %shared_value_addr Alignment 4
+               OpDecorate %local_id_addr Alignment 4
        %uint = OpTypeInt 32 0
-     %uint_2 = OpConstant %uint 2
-   %uint_528 = OpConstant %uint 528
      %uint_0 = OpConstant %uint 0
+     %uint_2 = OpConstant %uint 2
      %uint_1 = OpConstant %uint 1
+   %uint_528 = OpConstant %uint 528
      %v3uint = OpTypeVector %uint 3
 %_ptr_Input_v3uint = OpTypePointer Input %v3uint
        %void = OpTypeVoid
 %_ptr_CrossWorkgroup_uint = OpTypePointer CrossWorkgroup %uint
-          %9 = OpTypeFunction %void %_ptr_CrossWorkgroup_uint %uint
+          %9 = OpTypeFunction %void %_ptr_CrossWorkgroup_uint
 %_ptr_Function__ptr_CrossWorkgroup_uint = OpTypePointer Function %_ptr_CrossWorkgroup_uint
 %_ptr_Function_uint = OpTypePointer Function %uint
        %bool = OpTypeBool
-         %30 = OpTypeFunction %void %_ptr_CrossWorkgroup_uint
+         %34 = OpTypeFunction %void %_ptr_CrossWorkgroup_uint %uint
 %__spirv_BuiltInWorkgroupId = OpVariable %_ptr_Input_v3uint Input
 %__spirv_BuiltInLocalInvocationId = OpVariable %_ptr_Input_v3uint Input
-%synchronized_increment = OpFunction %void DontInline %9
-         %11 = OpFunctionParameter %_ptr_CrossWorkgroup_uint
-         %12 = OpFunctionParameter %uint
-         %13 = OpLabel
-         %17 = OpVariable %_ptr_Function__ptr_CrossWorkgroup_uint Function
-         %19 = OpVariable %_ptr_Function_uint Function
-               OpStore %17 %11 Aligned 4
-               OpStore %19 %12 Aligned 4
-               OpControlBarrier %uint_2 %uint_2 %uint_528
-         %22 = OpLoad %uint %19 Aligned 4
-         %25 = OpIEqual %bool %22 %uint_0
-               OpBranchConditional %25 %14 %15
-         %14 = OpLabel
-         %26 = OpLoad %_ptr_CrossWorkgroup_uint %17 Aligned 4
-         %27 = OpLoad %uint %26 Aligned 4
-         %29 = OpIAdd %uint %27 %uint_1
-               OpStore %26 %29 Aligned 4
-               OpBranch %15
-         %15 = OpLabel
-               OpControlBarrier %uint_2 %uint_2 %uint_528
+         %10 = OpFunction %void DontInline %9
+          %x = OpFunctionParameter %_ptr_CrossWorkgroup_uint
+      %entry = OpLabel
+     %x_addr = OpVariable %_ptr_Function__ptr_CrossWorkgroup_uint Function
+        %tid = OpVariable %_ptr_Function_uint Function
+          %i = OpVariable %_ptr_Function_uint Function
+               OpStore %x_addr %x Aligned 4
+         %22 = OpLoad %v3uint %__spirv_BuiltInWorkgroupId Aligned 16
+       %call = OpCompositeExtract %uint %22 0
+               OpStore %tid %call Aligned 4
+               OpStore %i %uint_0 Aligned 4
+               OpBranch %for_cond
+   %for_cond = OpLabel
+         %25 = OpLoad %uint %i Aligned 4
+        %cmp = OpSLessThan %bool %25 %uint_2
+               OpBranchConditional %cmp %for_body %for_end
+   %for_body = OpLabel
+         %29 = OpLoad %_ptr_CrossWorkgroup_uint %x_addr Aligned 4
+         %30 = OpLoad %uint %tid Aligned 4
+   %arrayidx = OpInBoundsPtrAccessChain %_ptr_CrossWorkgroup_uint %29 %30
+         %32 = OpLoad %v3uint %__spirv_BuiltInLocalInvocationId Aligned 16
+      %call1 = OpCompositeExtract %uint %32 0
+         %38 = OpFunctionCall %void %synchronized_increment %arrayidx %call1
+               OpBranch %for_inc
+    %for_inc = OpLabel
+         %39 = OpLoad %uint %i Aligned 4
+        %inc = OpIAdd %uint %39 %uint_1
+               OpStore %i %inc Aligned 4
+               OpBranch %for_cond
+    %for_end = OpLabel
                OpReturn
                OpFunctionEnd
-         %31 = OpFunction %void DontInline %30
-         %32 = OpFunctionParameter %_ptr_CrossWorkgroup_uint
-         %33 = OpLabel
-         %38 = OpVariable %_ptr_Function__ptr_CrossWorkgroup_uint Function
-         %39 = OpVariable %_ptr_Function_uint Function
-         %40 = OpVariable %_ptr_Function_uint Function
-               OpStore %38 %32 Aligned 4
-         %41 = OpLoad %v3uint %__spirv_BuiltInWorkgroupId Aligned 16
-         %42 = OpCompositeExtract %uint %41 0
-               OpStore %39 %42 Aligned 4
-               OpStore %40 %uint_0 Aligned 4
-               OpBranch %34
-         %34 = OpLabel
-         %43 = OpLoad %uint %40 Aligned 4
-         %44 = OpSLessThan %bool %43 %uint_2
-               OpBranchConditional %44 %35 %37
-         %35 = OpLabel
-         %45 = OpLoad %_ptr_CrossWorkgroup_uint %38 Aligned 4
-         %46 = OpLoad %uint %39 Aligned 4
-         %47 = OpInBoundsPtrAccessChain %_ptr_CrossWorkgroup_uint %45 %46
-         %48 = OpLoad %v3uint %__spirv_BuiltInLocalInvocationId Aligned 16
-         %49 = OpCompositeExtract %uint %48 0
-         %50 = OpFunctionCall %void %synchronized_increment %47 %49
-               OpBranch %36
-         %36 = OpLabel
-         %51 = OpLoad %uint %40 Aligned 4
-         %52 = OpIAdd %uint %51 %uint_1
-               OpStore %40 %52 Aligned 4
-               OpBranch %34
-         %37 = OpLabel
+%synchronized_increment = OpFunction %void DontInline %34
+%shared_value = OpFunctionParameter %_ptr_CrossWorkgroup_uint
+   %local_id = OpFunctionParameter %uint
+    %entry_0 = OpLabel
+%shared_value_addr = OpVariable %_ptr_Function__ptr_CrossWorkgroup_uint Function
+%local_id_addr = OpVariable %_ptr_Function_uint Function
+               OpStore %shared_value_addr %shared_value Aligned 4
+               OpStore %local_id_addr %local_id Aligned 4
+               OpControlBarrier %uint_2 %uint_2 %uint_528
+         %48 = OpLoad %uint %local_id_addr Aligned 4
+      %cmp_0 = OpIEqual %bool %48 %uint_0
+               OpBranchConditional %cmp_0 %if_then %if_end
+    %if_then = OpLabel
+         %50 = OpLoad %_ptr_CrossWorkgroup_uint %shared_value_addr Aligned 4
+         %51 = OpLoad %uint %50 Aligned 4
+      %inc_0 = OpIAdd %uint %51 %uint_1
+               OpStore %50 %inc_0 Aligned 4
+               OpBranch %if_end
+     %if_end = OpLabel
+               OpControlBarrier %uint_2 %uint_2 %uint_528
                OpReturn
                OpFunctionEnd

@@ -13,14 +13,27 @@
                OpSource OpenCL_C 200000
                OpName %k_sum "k.sum"
                OpName %__spirv_BuiltInLocalInvocationId "__spirv_BuiltInLocalInvocationId"
+               OpName %input "input"
+               OpName %output "output"
+               OpName %entry "entry"
+               OpName %if_then "if.then"
+               OpName %if_end "if.end"
+               OpName %input_addr "input.addr"
+               OpName %output_addr "output.addr"
+               OpName %temp "temp"
+               OpName %offset "offset"
+               OpName %call "call"
+               OpName %cmp "cmp"
+               OpName %call1 "call1"
+               OpName %arrayidx "arrayidx"
                OpDecorate %__spirv_BuiltInLocalInvocationId BuiltIn LocalInvocationId
                OpDecorate %__spirv_BuiltInLocalInvocationId Constant
                OpDecorate %__spirv_BuiltInLocalInvocationId LinkageAttributes "__spirv_BuiltInLocalInvocationId" Import
                OpDecorate %k_sum Alignment 4
-               OpDecorate %20 Alignment 4
-               OpDecorate %21 Alignment 4
-               OpDecorate %23 Alignment 4
-               OpDecorate %24 Alignment 4
+               OpDecorate %input_addr Alignment 4
+               OpDecorate %output_addr Alignment 4
+               OpDecorate %temp Alignment 4
+               OpDecorate %offset Alignment 4
        %uint = OpTypeInt 32 0
   %uint_1024 = OpConstant %uint 1024
      %uint_1 = OpConstant %uint 1
@@ -39,28 +52,28 @@
       %k_sum = OpVariable %_ptr_Workgroup__arr_uint_uint_1024 Workgroup
 %__spirv_BuiltInLocalInvocationId = OpVariable %_ptr_Input_v3uint Input
          %13 = OpFunction %void DontInline %12
-         %14 = OpFunctionParameter %_ptr_CrossWorkgroup_uint
-         %15 = OpFunctionParameter %_ptr_CrossWorkgroup_uint
-         %16 = OpLabel
-         %20 = OpVariable %_ptr_Function__ptr_CrossWorkgroup_uint Function
-         %21 = OpVariable %_ptr_Function__ptr_CrossWorkgroup_uint Function
-         %23 = OpVariable %_ptr_Function_uint Function
-         %24 = OpVariable %_ptr_Function_uint Function
-               OpStore %20 %14 Aligned 4
-               OpStore %21 %15 Aligned 4
-               OpStore %24 %uint_1 Aligned 4
+      %input = OpFunctionParameter %_ptr_CrossWorkgroup_uint
+     %output = OpFunctionParameter %_ptr_CrossWorkgroup_uint
+      %entry = OpLabel
+ %input_addr = OpVariable %_ptr_Function__ptr_CrossWorkgroup_uint Function
+%output_addr = OpVariable %_ptr_Function__ptr_CrossWorkgroup_uint Function
+       %temp = OpVariable %_ptr_Function_uint Function
+     %offset = OpVariable %_ptr_Function_uint Function
+               OpStore %input_addr %input Aligned 4
+               OpStore %output_addr %output Aligned 4
+               OpStore %offset %uint_1 Aligned 4
          %26 = OpLoad %v3uint %__spirv_BuiltInLocalInvocationId Aligned 16
-         %27 = OpCompositeExtract %uint %26 0
-         %28 = OpLoad %uint %24 Aligned 4
-         %30 = OpUGreaterThanEqual %bool %27 %28
-               OpBranchConditional %30 %17 %18
-         %17 = OpLabel
-         %31 = OpLoad %uint %23 Aligned 4
+       %call = OpCompositeExtract %uint %26 0
+         %28 = OpLoad %uint %offset Aligned 4
+        %cmp = OpUGreaterThanEqual %bool %call %28
+               OpBranchConditional %cmp %if_then %if_end
+    %if_then = OpLabel
+         %31 = OpLoad %uint %temp Aligned 4
          %32 = OpLoad %v3uint %__spirv_BuiltInLocalInvocationId Aligned 16
-         %33 = OpCompositeExtract %uint %32 0
-         %36 = OpInBoundsPtrAccessChain %_ptr_Workgroup_uint %k_sum %uint_0 %33
-               OpStore %36 %31 Aligned 4
-               OpBranch %18
-         %18 = OpLabel
+      %call1 = OpCompositeExtract %uint %32 0
+   %arrayidx = OpInBoundsPtrAccessChain %_ptr_Workgroup_uint %k_sum %uint_0 %call1
+               OpStore %arrayidx %31 Aligned 4
+               OpBranch %if_end
+     %if_end = OpLabel
                OpReturn
                OpFunctionEnd

@@ -10,6 +10,7 @@
                OpMemoryModel Physical32 OpenCL
                OpEntryPoint Kernel %4 "foo"
                OpSource OpenCL_C 200000
+               OpName %entry "entry"
        %uint = OpTypeInt 32 0
      %uint_2 = OpConstant %uint 2
      %uint_8 = OpConstant %uint 8
@@ -17,7 +18,7 @@
        %void = OpTypeVoid
           %3 = OpTypeFunction %void
           %4 = OpFunction %void DontInline %3
-          %5 = OpLabel
+      %entry = OpLabel
                OpMemoryBarrier %uint_2 %uint_8
                OpMemoryBarrier %uint_2 %uint_2
                OpMemoryBarrier %uint_2 %uint_4

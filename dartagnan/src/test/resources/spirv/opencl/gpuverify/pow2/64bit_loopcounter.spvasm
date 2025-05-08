@@ -14,12 +14,27 @@
                OpEntryPoint Kernel %10 "foo" %__spirv_BuiltInGlobalInvocationId
                OpSource OpenCL_C 200000
                OpName %__spirv_BuiltInGlobalInvocationId "__spirv_BuiltInGlobalInvocationId"
+               OpName %A "A"
+               OpName %n "n"
+               OpName %entry "entry"
+               OpName %for_cond "for.cond"
+               OpName %for_body "for.body"
+               OpName %for_inc "for.inc"
+               OpName %for_end "for.end"
+               OpName %A_addr "A.addr"
+               OpName %n_addr "n.addr"
+               OpName %i "i"
+               OpName %conv "conv"
+               OpName %cmp "cmp"
+               OpName %call "call"
+               OpName %arrayidx "arrayidx"
+               OpName %shr "shr"
                OpDecorate %__spirv_BuiltInGlobalInvocationId BuiltIn GlobalInvocationId
                OpDecorate %__spirv_BuiltInGlobalInvocationId Constant
                OpDecorate %__spirv_BuiltInGlobalInvocationId LinkageAttributes "__spirv_BuiltInGlobalInvocationId" Import
-               OpDecorate %19 Alignment 4
-               OpDecorate %21 Alignment 4
-               OpDecorate %24 Alignment 8
+               OpDecorate %A_addr Alignment 4
+               OpDecorate %n_addr Alignment 4
+               OpDecorate %i Alignment 8
        %uint = OpTypeInt 32 0
       %ulong = OpTypeInt 64 0
     %ulong_0 = OpConstant %ulong 0
@@ -37,34 +52,34 @@
 %__spirv_BuiltInGlobalInvocationId = OpVariable %_ptr_Input_v3uint Input
    %double_0 = OpConstant %double 0
          %10 = OpFunction %void DontInline %9
-         %11 = OpFunctionParameter %_ptr_CrossWorkgroup_double
-         %12 = OpFunctionParameter %uint
-         %13 = OpLabel
-         %19 = OpVariable %_ptr_Function__ptr_CrossWorkgroup_double Function
-         %21 = OpVariable %_ptr_Function_uint Function
-         %24 = OpVariable %_ptr_Function_ulong Function
-               OpStore %19 %11 Aligned 4
-               OpStore %21 %12 Aligned 4
-         %25 = OpLoad %uint %21 Aligned 4
-         %26 = OpSConvert %ulong %25
-               OpStore %24 %26 Aligned 8
-               OpBranch %14
-         %14 = OpLabel
-         %27 = OpLoad %ulong %24 Aligned 8
-         %30 = OpSGreaterThan %bool %27 %ulong_0
-               OpBranchConditional %30 %15 %17
-         %15 = OpLabel
-         %31 = OpLoad %_ptr_CrossWorkgroup_double %19 Aligned 4
+          %A = OpFunctionParameter %_ptr_CrossWorkgroup_double
+          %n = OpFunctionParameter %uint
+      %entry = OpLabel
+     %A_addr = OpVariable %_ptr_Function__ptr_CrossWorkgroup_double Function
+     %n_addr = OpVariable %_ptr_Function_uint Function
+          %i = OpVariable %_ptr_Function_ulong Function
+               OpStore %A_addr %A Aligned 4
+               OpStore %n_addr %n Aligned 4
+         %25 = OpLoad %uint %n_addr Aligned 4
+       %conv = OpSConvert %ulong %25
+               OpStore %i %conv Aligned 8
+               OpBranch %for_cond
+   %for_cond = OpLabel
+         %27 = OpLoad %ulong %i Aligned 8
+        %cmp = OpSGreaterThan %bool %27 %ulong_0
+               OpBranchConditional %cmp %for_body %for_end
+   %for_body = OpLabel
+         %31 = OpLoad %_ptr_CrossWorkgroup_double %A_addr Aligned 4
          %32 = OpLoad %v3uint %__spirv_BuiltInGlobalInvocationId Aligned 16
-         %33 = OpCompositeExtract %uint %32 0
-         %34 = OpInBoundsPtrAccessChain %_ptr_CrossWorkgroup_double %31 %33
-               OpStore %34 %double_0 Aligned 8
-               OpBranch %16
-         %16 = OpLabel
-         %36 = OpLoad %ulong %24 Aligned 8
-         %38 = OpShiftRightArithmetic %ulong %36 %ulong_1
-               OpStore %24 %38 Aligned 8
-               OpBranch %14
-         %17 = OpLabel
+       %call = OpCompositeExtract %uint %32 0
+   %arrayidx = OpInBoundsPtrAccessChain %_ptr_CrossWorkgroup_double %31 %call
+               OpStore %arrayidx %double_0 Aligned 8
+               OpBranch %for_inc
+    %for_inc = OpLabel
+         %36 = OpLoad %ulong %i Aligned 8
+        %shr = OpShiftRightArithmetic %ulong %36 %ulong_1
+               OpStore %i %shr Aligned 8
+               OpBranch %for_cond
+    %for_end = OpLabel
                OpReturn
                OpFunctionEnd

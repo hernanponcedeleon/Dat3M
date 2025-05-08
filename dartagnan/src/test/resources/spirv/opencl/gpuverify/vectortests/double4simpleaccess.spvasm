@@ -11,8 +11,11 @@
                OpMemoryModel Physical32 OpenCL
                OpEntryPoint Kernel %4 "k"
                OpSource OpenCL_C 200000
-               OpDecorate %11 Alignment 8
-               OpDecorate %9 Alignment 32
+               OpName %entry "entry"
+               OpName %v "v"
+               OpName %s "s"
+               OpDecorate %s Alignment 8
+               OpDecorate %v Alignment 32
        %void = OpTypeVoid
           %3 = OpTypeFunction %void
      %double = OpTypeFloat 64
@@ -21,32 +24,32 @@
 %_ptr_Function_double = OpTypePointer Function %double
   %double_42 = OpConstant %double 42
           %4 = OpFunction %void DontInline %3
-          %5 = OpLabel
-          %9 = OpVariable %_ptr_Function_v4double Function
-         %11 = OpVariable %_ptr_Function_double Function
-         %12 = OpLoad %v4double %9 Aligned 32
+      %entry = OpLabel
+          %v = OpVariable %_ptr_Function_v4double Function
+          %s = OpVariable %_ptr_Function_double Function
+         %12 = OpLoad %v4double %v Aligned 32
          %14 = OpCompositeInsert %v4double %double_42 %12 0
-               OpStore %9 %14 Aligned 32
-         %15 = OpLoad %v4double %9 Aligned 32
+               OpStore %v %14 Aligned 32
+         %15 = OpLoad %v4double %v Aligned 32
          %16 = OpCompositeInsert %v4double %double_42 %15 1
-               OpStore %9 %16 Aligned 32
-         %17 = OpLoad %v4double %9 Aligned 32
+               OpStore %v %16 Aligned 32
+         %17 = OpLoad %v4double %v Aligned 32
          %18 = OpCompositeInsert %v4double %double_42 %17 2
-               OpStore %9 %18 Aligned 32
-         %19 = OpLoad %v4double %9 Aligned 32
+               OpStore %v %18 Aligned 32
+         %19 = OpLoad %v4double %v Aligned 32
          %20 = OpCompositeInsert %v4double %double_42 %19 3
-               OpStore %9 %20 Aligned 32
-         %21 = OpLoad %v4double %9 Aligned 32
+               OpStore %v %20 Aligned 32
+         %21 = OpLoad %v4double %v Aligned 32
          %22 = OpCompositeExtract %double %21 0
-               OpStore %11 %22 Aligned 8
-         %23 = OpLoad %v4double %9 Aligned 32
+               OpStore %s %22 Aligned 8
+         %23 = OpLoad %v4double %v Aligned 32
          %24 = OpCompositeExtract %double %23 1
-               OpStore %11 %24 Aligned 8
-         %25 = OpLoad %v4double %9 Aligned 32
+               OpStore %s %24 Aligned 8
+         %25 = OpLoad %v4double %v Aligned 32
          %26 = OpCompositeExtract %double %25 2
-               OpStore %11 %26 Aligned 8
-         %27 = OpLoad %v4double %9 Aligned 32
+               OpStore %s %26 Aligned 8
+         %27 = OpLoad %v4double %v Aligned 32
          %28 = OpCompositeExtract %double %27 3
-               OpStore %11 %28 Aligned 8
+               OpStore %s %28 Aligned 8
                OpReturn
                OpFunctionEnd

@@ -13,11 +13,21 @@
                OpSource OpenCL_C 200000
                OpName %counter_count "counter.count"
                OpName %__spirv_BuiltInLocalInvocationId "__spirv_BuiltInLocalInvocationId"
+               OpName %A "A"
+               OpName %entry "entry"
+               OpName %if_then "if.then"
+               OpName %if_end "if.end"
+               OpName %A_addr "A.addr"
+               OpName %call "call"
+               OpName %cmp "cmp"
+               OpName %call1 "call1"
+               OpName %call2 "call2"
+               OpName %arrayidx "arrayidx"
                OpDecorate %__spirv_BuiltInLocalInvocationId BuiltIn LocalInvocationId
                OpDecorate %__spirv_BuiltInLocalInvocationId Constant
                OpDecorate %__spirv_BuiltInLocalInvocationId LinkageAttributes "__spirv_BuiltInLocalInvocationId" Import
                OpDecorate %counter_count Alignment 4
-               OpDecorate %16 Alignment 4
+               OpDecorate %A_addr Alignment 4
        %uint = OpTypeInt 32 0
      %uint_0 = OpConstant %uint 0
      %uint_2 = OpConstant %uint 2
@@ -32,24 +42,24 @@
 %counter_count = OpVariable %_ptr_Workgroup_uint Workgroup
 %__spirv_BuiltInLocalInvocationId = OpVariable %_ptr_Input_v3uint Input
          %10 = OpFunction %void DontInline %9
-         %11 = OpFunctionParameter %_ptr_Workgroup_uint
-         %12 = OpLabel
-         %16 = OpVariable %_ptr_Function__ptr_Workgroup_uint Function
-               OpStore %16 %11 Aligned 4
+          %A = OpFunctionParameter %_ptr_Workgroup_uint
+      %entry = OpLabel
+     %A_addr = OpVariable %_ptr_Function__ptr_Workgroup_uint Function
+               OpStore %A_addr %A Aligned 4
          %17 = OpLoad %v3uint %__spirv_BuiltInLocalInvocationId Aligned 16
-         %18 = OpCompositeExtract %uint %17 0
-         %21 = OpIEqual %bool %18 %uint_0
-               OpBranchConditional %21 %13 %14
-         %13 = OpLabel
+       %call = OpCompositeExtract %uint %17 0
+        %cmp = OpIEqual %bool %call %uint_0
+               OpBranchConditional %cmp %if_then %if_end
+    %if_then = OpLabel
                OpStore %counter_count %uint_0 Aligned 4
-               OpBranch %14
-         %14 = OpLabel
+               OpBranch %if_end
+     %if_end = OpLabel
                OpControlBarrier %uint_2 %uint_2 %uint_272
          %24 = OpLoad %v3uint %__spirv_BuiltInLocalInvocationId Aligned 16
-         %25 = OpCompositeExtract %uint %24 0
-         %26 = OpLoad %_ptr_Workgroup_uint %16 Aligned 4
-         %27 = OpAtomicIIncrement %uint %counter_count %uint_2 %uint_0
-         %28 = OpInBoundsPtrAccessChain %_ptr_Workgroup_uint %26 %27
-               OpStore %28 %25 Aligned 4
+      %call1 = OpCompositeExtract %uint %24 0
+         %26 = OpLoad %_ptr_Workgroup_uint %A_addr Aligned 4
+      %call2 = OpAtomicIIncrement %uint %counter_count %uint_2 %uint_0
+   %arrayidx = OpInBoundsPtrAccessChain %_ptr_Workgroup_uint %26 %call2
+               OpStore %arrayidx %call1 Aligned 4
                OpReturn
                OpFunctionEnd

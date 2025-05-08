@@ -1,18 +1,17 @@
 package com.dat3m.dartagnan.program.processing;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Objects;
-
+import com.dat3m.dartagnan.program.Program;
+import com.dat3m.dartagnan.program.processing.compilation.Compilation;
+import com.dat3m.dartagnan.utils.printer.Printer;
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.common.configuration.Option;
 import org.sosy_lab.common.configuration.Options;
 
-import com.dat3m.dartagnan.program.Program;
-import com.dat3m.dartagnan.program.processing.compilation.Compilation;
-import com.dat3m.dartagnan.utils.printer.Printer;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Objects;
 
 import static com.dat3m.dartagnan.configuration.OptionNames.*;
 
@@ -91,12 +90,12 @@ public class ProcessingManager implements ProgramProcessor {
         programProcessors.addAll(Arrays.asList(
                 printBeforeProcessing ? DebugPrint.withHeader("Before processing", Printer.Mode.ALL) : null,
                 intrinsics.markIntrinsicsPass(),
+                ProgramProcessor.fromFunctionProcessor(intrinsics.earlyInliningPass(), Target.ALL, true),
                 GEPToAddition.newInstance(),
                 NaiveDevirtualisation.newInstance(),
                 Inlining.fromConfig(config),
                 ProgramProcessor.fromFunctionProcessor(
                         FunctionProcessor.chain(
-                                intrinsics.earlyInliningPass(),
                                 UnreachableCodeElimination.fromConfig(config),
                                 ComplexBlockSplitting.newInstance(),
                                 BranchReordering.fromConfig(config),

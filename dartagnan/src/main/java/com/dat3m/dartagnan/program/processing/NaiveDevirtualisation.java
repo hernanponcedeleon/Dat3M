@@ -3,7 +3,6 @@ package com.dat3m.dartagnan.program.processing;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.ExpressionVisitor;
-import com.dat3m.dartagnan.expression.Type;
 import com.dat3m.dartagnan.expression.integers.IntLiteral;
 import com.dat3m.dartagnan.expression.processing.ExprTransformer;
 import com.dat3m.dartagnan.expression.processing.ExpressionInspector;
@@ -12,15 +11,15 @@ import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.IRHelper;
 import com.dat3m.dartagnan.program.Program;
+import com.dat3m.dartagnan.program.event.CallEvent;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.RegReader;
 import com.dat3m.dartagnan.program.event.core.CondJump;
 import com.dat3m.dartagnan.program.event.core.Label;
-import com.dat3m.dartagnan.program.event.functions.FunctionCall;
 import com.dat3m.dartagnan.program.memory.Memory;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
-import com.google.common.base.Verify;
+import com.google.common.base.Preconditions;
 import com.google.common.collect.Iterables;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -29,18 +28,13 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 /*
-    This pass performs "devirtualisation" (replacing indirect/dynamic function calls by direct/static calls).
+    This pass performs "devirtualisation" (replacing indirect/dynamic calls by direct/static calls).
     It does so in the following way:
         - Every non-standard use (i.e., no direct call) of a function expression is registered.
         - All registered functions get an address value assigned.
         - All non-standard uses are replaced by their address values.
         - Every indirect call is replaced by a switch statement over all registered functions that have a matching type.
           Each case of the switch statement contains a direct call to the corresponding function.
-
-     TODO: We also need to devirtualize intrinsic functions that expect function pointers.
-      For now, we only devirtualize pthread_create based on its third parameter.
-      More generally, we could extend IntrinsicInfo to tell for each intrinsic which parameters are function pointers and
-      need devirtualization.
  */
 public class NaiveDevirtualisation implements ProgramProcessor {
 
@@ -116,16 +110,10 @@ public class NaiveDevirtualisation implements ProgramProcessor {
     }
 
     private void applyTransformerToEvent(Event e, ExpressionVisitor<Expression> transformer) {
-        if (e instanceof FunctionCall call) {
-            if (call.isDirectCall() && call.getCalledFunction().getIntrinsicInfo() == Intrinsics.Info.P_THREAD_CREATE) {
-                // We avoid transforming functions passed as call target to pthread_create
-                // However, we still collect the last argument of the call, because it
-                // is the argument passed to the created thread (which might be a pointer to a function).
-                final Expression transformed = call.getArguments().get(call.getArguments().size() - 1).accept(transformer);
-                call.getArguments().set(call.getArguments().size() - 1, transformed);
-            } else {
-                call.getArguments().replaceAll(arg -> arg.accept(transformer));
-            }
+        if (e instanceof CallEvent call) {
+            // IMPORTANT: For call events we do not want to replace the call target here.
+            // This is why we do not treat them the same as RegReaders
+            call.getArguments().replaceAll(arg -> arg.accept(transformer));
         } else if (e instanceof RegReader reader) {
             reader.transformExpressions(transformer);
         }
@@ -135,7 +123,7 @@ public class NaiveDevirtualisation implements ProgramProcessor {
         final ExpressionFactory expressions = ExpressionFactory.getInstance();
 
         int devirtCounter = 0;
-        for (FunctionCall call : function.getEvents(FunctionCall.class)) {
+        for (CallEvent call : function.getEvents(CallEvent.class)) {
             if (!needsDevirtualization(call)) {
                 continue;
             }
@@ -152,11 +140,11 @@ public class NaiveDevirtualisation implements ProgramProcessor {
                 logger.warn("Cannot resolve dynamic call \"{}\", no matching functions found.", call);
             }
 
-            logger.trace("Devirtualizing call \"{}\" with possible targets: {}", call, possibleTargets);
+            logger.trace("Devirtualising call \"{}\" with possible targets: {}", call, possibleTargets);
 
             final List<Label> caseLabels = new ArrayList<>(possibleTargets.size());
             final List<CondJump> caseJumps = new ArrayList<>(possibleTargets.size());
-            final Expression funcPtr = getFunctionPointer(call);
+            final Expression funcPtr = call.getCallTarget();
             // Construct call table
             for (Function possibleTarget : possibleTargets) {
                 final IntLiteral targetAddress = func2AddressMap.get(possibleTarget);
@@ -186,62 +174,26 @@ public class NaiveDevirtualisation implements ProgramProcessor {
         }
     }
 
-    private boolean needsDevirtualization(FunctionCall call) {
-        return !call.isDirectCall() ||
-                (call.getCalledFunction().getIntrinsicInfo() == Intrinsics.Info.P_THREAD_CREATE
-                && !(call.getArguments().get(2) instanceof Function));
+    private boolean needsDevirtualization(CallEvent call) {
+        return !call.isDirectCall();
     }
 
-    private List<Function> getPossibleTargets(FunctionCall call, Map<Function, IntLiteral> func2AddressMap) {
-        final List<Function> possibleTargets;
-        if (!call.isDirectCall()) {
-            possibleTargets = func2AddressMap.keySet().stream()
-                    .filter(f -> f.getFunctionType() == call.getCallType()).collect(Collectors.toList());
-        } else if (call.getCalledFunction().getIntrinsicInfo() == Intrinsics.Info.P_THREAD_CREATE) {
-            final TypeFactory types = TypeFactory.getInstance();
-            final Type ptrType = types.getPointerType();
-            final Type threadType = types.getFunctionType(ptrType, List.of(ptrType));
-            possibleTargets = func2AddressMap.keySet().stream()
-                    .filter(f -> f.getFunctionType() == threadType).collect(Collectors.toList());
-        } else {
-            possibleTargets = List.of();
-            throwInternalError(call);
-        }
-
-        return possibleTargets;
+    private List<Function> getPossibleTargets(CallEvent call, Map<Function, IntLiteral> func2AddressMap) {
+        Preconditions.checkArgument(needsDevirtualization(call));
+        return func2AddressMap.keySet().stream()
+                .filter(f -> f.getFunctionType() == call.getCallType())
+                .collect(Collectors.toCollection(ArrayList::new));
     }
 
-    private FunctionCall devirtualiseCall(FunctionCall virtCall, Function devirtCallTarget) {
-        final FunctionCall devirtCall = virtCall.getCopy();
-        setFunctionPointer(devirtCall, devirtCallTarget);
+    private CallEvent devirtualiseCall(CallEvent virtCall, Function devirtCallTarget) {
+        Preconditions.checkArgument(needsDevirtualization(virtCall));
+        final CallEvent devirtCall = virtCall.getCopy();
+        devirtCall.setCallTarget(devirtCallTarget);
         return devirtCall;
     }
 
-    private Expression getFunctionPointer(FunctionCall call) {
-        if (!call.isDirectCall()) {
-            return call.getCallTarget();
-        } else if (call.getCalledFunction().getIntrinsicInfo() == Intrinsics.Info.P_THREAD_CREATE) {
-            return call.getArguments().get(2);
-        }
-        throwInternalError(call);
-        return null;
-    }
-
-    private void setFunctionPointer(FunctionCall call, Expression functionPtr) {
-        if (!call.isDirectCall()) {
-            call.setCallTarget(functionPtr);
-        } else if (call.getCalledFunction().getIntrinsicInfo() == Intrinsics.Info.P_THREAD_CREATE) {
-            call.setArgument(2, functionPtr);
-        } else {
-            throwInternalError(call);
-        }
-    }
-
-    @SuppressWarnings("all")
-    private void throwInternalError(FunctionCall virtCall) {
-        Verify.verify(false, "Encountered unexpected virtual function call: " + virtCall);
-    }
-
+    // ================================================================================
+    // Helper classes
 
     private static class FunctionCollector implements ExpressionInspector {
 

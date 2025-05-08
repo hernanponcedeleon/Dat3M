@@ -6,9 +6,7 @@ import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.event.core.annotations.CodeAnnotation;
 import com.dat3m.dartagnan.program.event.core.special.StateSnapshot;
-import com.dat3m.dartagnan.program.event.core.threading.ThreadArgument;
-import com.dat3m.dartagnan.program.event.core.threading.ThreadCreate;
-import com.dat3m.dartagnan.program.event.core.threading.ThreadStart;
+import com.dat3m.dartagnan.program.event.core.threading.*;
 import com.dat3m.dartagnan.program.event.lang.svcomp.BeginAtomic;
 import com.dat3m.dartagnan.program.event.lang.svcomp.EndAtomic;
 import org.sosy_lab.common.configuration.Configuration;
@@ -37,7 +35,7 @@ public class CoreCodeVerification implements FunctionProcessor {
             CondJump.class, IfAsJump.class, ExecutionStatus.class, Label.class, Local.class,
             Skip.class, RMWStore.class, RMWStoreExclusive.class, Alloc.class,
             Assume.class, Assert.class, InstructionBoundary.class,
-            ThreadCreate.class, ThreadArgument.class, ThreadStart.class,
+            ThreadCreate.class, ThreadJoin.class, ThreadArgument.class, ThreadStart.class, ThreadReturn.class,
             ControlBarrier.class, NamedBarrier.class,
             BeginAtomic.class, EndAtomic.class,
             StateSnapshot.class

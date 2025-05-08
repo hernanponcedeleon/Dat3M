@@ -13,8 +13,13 @@
                OpExecutionMode %8 ContractionOff
                OpSource OpenCL_C 200000
                OpName %bar "bar"
+               OpName %entry "entry"
+               OpName %x "x"
+               OpName %call "call"
+               OpName %extractVec "extractVec"
+               OpName %storetmp "storetmp"
                OpDecorate %bar LinkageAttributes "bar" Import
-               OpDecorate %11 Alignment 16
+               OpDecorate %x Alignment 16
        %uint = OpTypeInt 32 0
      %v3uint = OpTypeVector %uint 3
           %4 = OpTypeFunction %v3uint
@@ -27,11 +32,11 @@
         %bar = OpFunction %v3uint None %4
                OpFunctionEnd
           %8 = OpFunction %void DontInline %7
-          %9 = OpLabel
-         %11 = OpVariable %_ptr_Function_v3uint Function
-         %12 = OpFunctionCall %v3uint %bar
-         %15 = OpVectorShuffle %v4uint %12 %13 0 1 2 4294967295
-         %17 = OpBitcast %_ptr_Function_v4uint %11
-               OpStore %17 %15 Aligned 16
+      %entry = OpLabel
+          %x = OpVariable %_ptr_Function_v3uint Function
+       %call = OpFunctionCall %v3uint %bar
+ %extractVec = OpVectorShuffle %v4uint %call %13 0 1 2 4294967295
+   %storetmp = OpBitcast %_ptr_Function_v4uint %x
+               OpStore %storetmp %extractVec Aligned 16
                OpReturn
                OpFunctionEnd
