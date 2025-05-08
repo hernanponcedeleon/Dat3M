@@ -8,6 +8,7 @@ import com.dat3m.dartagnan.expression.type.*;
 import com.dat3m.dartagnan.parsers.SpirvBaseVisitor;
 import com.dat3m.dartagnan.parsers.SpirvParser;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.builders.ProgramBuilder;
+import com.dat3m.dartagnan.expression.aggregates.ConstructExpr;
 
 import java.util.List;
 import java.util.Set;
@@ -89,9 +90,9 @@ public class VisitorOpsComposite extends SpirvBaseVisitor<Void> {
         List<Expression> concat = new ArrayList<>();
         for (Integer index : components) {
             if (index >= 0 && index < s1) {
-                concat.add(v1.getOperands().get(index));
+                concat.add(v1 instanceof ConstructExpr ? v1.getOperands().get(index) : expressions.makeExtract(v1, index));
             } else if (index >= s1 && index < s1 + s2) {
-                concat.add(v2.getOperands().get(index - s1));
+                concat.add(v2 instanceof ConstructExpr ? v2.getOperands().get(index - s1) : expressions.makeExtract(v2, index - s1));
             } else {
                 throw new ParsingException("Index %s out of bounds in OpVectorShuffle '%s'", index, id);
             }
