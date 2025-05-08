@@ -1,5 +1,5 @@
 // clspv ttaslock.cl --cl-std=CL2.0 --inline-entry-points --spv-version=1.6
-// spirv-dis a.spv
+// spirv-dis a.spv > ttaslock.spvasm
 
 #ifdef ACQ2RX
 #define mo_lock memory_order_relaxed

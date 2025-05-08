@@ -142,7 +142,7 @@ public class ThreadCreation implements ProgramProcessor {
 
         // We collect metadata about each spawned thread. This is later used to resolve thread joining.
         final List<ThreadData> allThreads = new ArrayList<>();
-        final ThreadData entryPoint = createLLVMThreadFromFunction(main.get(), nextTid++, null, Thread.Type.STANDARD);
+        final ThreadData entryPoint = createLLVMThreadFromFunction(main.get(), nextTid++, null);
         allThreads.add(entryPoint);
 
         final Queue<ThreadData> workingQueue = new ArrayDeque<>(allThreads);
@@ -188,9 +188,9 @@ public class ThreadCreation implements ProgramProcessor {
             final IntegerType statusType = (IntegerType) ((AggregateType)joinRegister.getType()).getFields().get(0).type();
             final Type retValType = ((AggregateType)joinRegister.getType()).getFields().get(1).type();
 
-            final Expression successValue = expressions.makeValue(SUCCESS.ordinal(), statusType);
-            final Expression invalidTidValue = expressions.makeValue(INVALID_TID.ordinal(), statusType);
-            final Expression invalidRetType = expressions.makeValue(INVALID_RETURN_TYPE.ordinal(), statusType);
+            final Expression successValue = expressions.makeValue(SUCCESS.getErrorCode(), statusType);
+            final Expression invalidTidValue = expressions.makeValue(INVALID_TID.getErrorCode(), statusType);
+            final Expression invalidRetType = expressions.makeValue(INVALID_RETURN_TYPE.getErrorCode(), statusType);
 
             final Register statusRegister = caller.newRegister("__joinStatus#" + joinCounter, statusType);
             final Register retValRegister = caller.newRegister("__joinRetVal#" + joinCounter, retValType);
@@ -275,12 +275,12 @@ public class ThreadCreation implements ProgramProcessor {
         }
     }
 
-    private ThreadData createLLVMThreadFromFunction(Function function, int tid, ThreadCreate creator, Thread.Type type) {
+    private ThreadData createLLVMThreadFromFunction(Function function, int tid, ThreadCreate creator) {
         // ------------------- Create new thread -------------------
         final ThreadStart start = EventFactory.newThreadStart(creator);
         start.setMayFailSpuriously(!forceStart);
         final Thread thread = new Thread(function.getName(), function.getFunctionType(),
-                Lists.transform(function.getParameterRegisters(), Register::getName), tid, start, type);
+                Lists.transform(function.getParameterRegisters(), Register::getName), tid, start);
         thread.copyUniqueIdsFrom(function);
         function.getProgram().addThread(thread);
 
@@ -445,7 +445,15 @@ public class ThreadCreation implements ProgramProcessor {
         FunctionType type = function.getFunctionType();
         List<String> args = Lists.transform(function.getParameterRegisters(), Register::getName);
         ThreadStart start = EventFactory.newThreadStart(null);
-        ScopeHierarchy scope = grid.getScoreHierarchy(tid);
+        Arch arch = function.getProgram().getArch();
+        ScopeHierarchy scope;
+        if (arch == Arch.VULKAN) {
+            scope = ScopeHierarchy.ScopeHierarchyForVulkan(grid.qfId(tid), grid.wgId(tid), grid.sgId(tid));
+        } else if (arch == Arch.OPENCL) {
+            scope = ScopeHierarchy.ScopeHierarchyForOpenCL(grid.dvId(tid), grid.wgId(tid), grid.sgId(tid));
+        } else {
+            throw new MalformedProgramException("Unsupported architecture for thread creation: " + arch);
+        }
         Thread thread = new Thread(name, type, args, tid, start, scope, Set.of());
         thread.copyUniqueIdsFrom(function);
         Label returnLabel = EventFactory.newLabel("RETURN_OF_T" + thread.getId());

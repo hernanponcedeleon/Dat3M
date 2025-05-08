@@ -253,3 +253,6 @@ litmus/PTX/Manual/counter-atomic-store-rmw.litmus,1
 litmus/PTX/Manual/counter-plain-store-rmw.litmus,1
 litmus/PTX/Manual/counter-plain-store-atomic-load.litmus,1
 litmus/PTX/Manual/counter-plain-store-plain-load.litmus,1
+litmus/PTX/Manual/MICRO24-Fig4a.litmus,1
+litmus/PTX/Manual/MICRO24-Fig4a-correct.litmus,0
+litmus/PTX/Manual/MICRO24-Fig4b.litmus,1

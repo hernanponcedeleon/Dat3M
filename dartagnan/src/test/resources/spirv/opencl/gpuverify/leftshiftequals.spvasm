@@ -1,0 +1,46 @@
+; @Config: 3, 1, 3
+; SPIR-V
+; Version: 1.0
+; Generator: Khronos LLVM/SPIR-V Translator; 14
+; Bound: 21
+; Schema: 0
+               OpCapability Addresses
+               OpCapability Kernel
+          %1 = OpExtInstImport "OpenCL.std"
+               OpMemoryModel Physical32 OpenCL
+               OpEntryPoint Kernel %4 "foo"
+               OpSource OpenCL_C 200000
+               OpName %entry "entry"
+               OpName %x "x"
+               OpName %y "y"
+               OpName %shl_mask "shl.mask"
+               OpName %shl "shl"
+               OpName %shl_mask1 "shl.mask1"
+               OpName %shl2 "shl2"
+               OpDecorate %x Alignment 4
+               OpDecorate %y Alignment 4
+       %uint = OpTypeInt 32 0
+     %uint_1 = OpConstant %uint 1
+     %uint_2 = OpConstant %uint 2
+    %uint_31 = OpConstant %uint 31
+       %void = OpTypeVoid
+          %3 = OpTypeFunction %void
+%_ptr_Function_uint = OpTypePointer Function %uint
+          %4 = OpFunction %void DontInline %3
+      %entry = OpLabel
+          %x = OpVariable %_ptr_Function_uint Function
+          %y = OpVariable %_ptr_Function_uint Function
+               OpStore %x %uint_1 Aligned 4
+               OpStore %y %uint_2 Aligned 4
+         %12 = OpLoad %uint %x Aligned 4
+         %13 = OpLoad %uint %x Aligned 4
+   %shl_mask = OpBitwiseAnd %uint %12 %uint_31
+        %shl = OpShiftLeftLogical %uint %13 %shl_mask
+               OpStore %x %shl Aligned 4
+         %17 = OpLoad %uint %x Aligned 4
+         %18 = OpLoad %uint %y Aligned 4
+  %shl_mask1 = OpBitwiseAnd %uint %17 %uint_31
+       %shl2 = OpShiftLeftLogical %uint %18 %shl_mask1
+               OpStore %y %shl2 Aligned 4
+               OpReturn
+               OpFunctionEnd

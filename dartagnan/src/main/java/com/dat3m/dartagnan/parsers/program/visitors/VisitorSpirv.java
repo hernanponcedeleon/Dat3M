@@ -61,7 +61,7 @@ public class VisitorSpirv extends SpirvBaseVisitor<Program> {
     }
 
     private ProgramBuilder createBuilder(SpirvParser.SpvContext ctx) {
-        ThreadGrid grid = new ThreadGrid(1, 1, 1, 1);
+        ThreadGrid grid = new ThreadGrid(1, 1, 1, 1, 1);
         boolean hasConfig = false;
         for (SpirvParser.SpvHeaderContext header : ctx.spvHeaders().spvHeader()) {
             SpirvParser.ConfigHeaderContext cfgCtx = header.configHeader();
@@ -71,10 +71,10 @@ public class VisitorSpirv extends SpirvBaseVisitor<Program> {
                 }
                 hasConfig = true;
                 List<SpirvParser.LiteranHeaderUnsignedIntegerContext> literals = cfgCtx.literanHeaderUnsignedInteger();
-                int sg = Integer.parseInt(literals.get(0).getText());
-                int wg = Integer.parseInt(literals.get(1).getText());
-                int qf = Integer.parseInt(literals.get(2).getText());
-                grid = new ThreadGrid(sg, wg, qf, 1);
+                int threadCount = Integer.parseInt(literals.get(0).getText());
+                int subgroupCount = Integer.parseInt(literals.get(1).getText());
+                int workgroupCount = Integer.parseInt(literals.get(2).getText());
+                grid = new ThreadGrid(threadCount, subgroupCount, workgroupCount, 1, 1);
             }
         }
         return new ProgramBuilder(grid);

@@ -15,6 +15,7 @@ import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.core.Local;
+import com.dat3m.dartagnan.parsers.program.visitors.spirv.helpers.HelperTypes;
 
 import java.util.Set;
 import java.util.function.Function;
@@ -93,17 +94,23 @@ public class VisitorOpsArithmetic extends SpirvBaseVisitor<Event> {
             IntBinaryOp op
     ) {
         String id = idCtx.getText();
-        return forType(id, typeCtx.getText(), iType -> {
-            Expression op1 = builder.getExpression(op1Ctx.getText());
-            Expression op2 = builder.getExpression(op2Ctx.getText());
-            if (iType.equals(op1.getType()) && op1.getType().equals(op2.getType())) {
-                return expressions.makeBinary(op1, op, op2);
+        String typeId = typeCtx.getText();
+        Type type = builder.getType(typeId);
+        Expression op1 = builder.getExpression(op1Ctx.getText());
+        Expression op2 = builder.getExpression(op2Ctx.getText());
+        if (type.equals(op1.getType()) && op1.getType().equals(op2.getType())) {
+            if (!(type instanceof ArrayType aType) || aType.hasKnownNumElements()) {
+                Expression expression = HelperTypes.createResultExpression(id, type, op1, op2, op);
+                Register register = builder.addRegister(id, typeId);
+                Local event = EventFactory.newLocal(register, expression);
+                return builder.addEvent(event);
             }
-            throw new ParsingException("Illegal definition for '%s', " +
+            throw new ParsingException("Illegal definition for '%s', vector expressions must have fixed size", id);
+        }
+        throw new ParsingException("Illegal definition for '%s', " +
                     "types do not match: '%s' is '%s', '%s' is '%s' and '%s' is '%s'",
                     id, op1Ctx.getText(), op1.getType(), op2Ctx.getText(), op2.getType(),
-                    typeCtx.getText(), iType);
-        });
+                    typeCtx.getText(), type);
     }
 
     private Event forType(String id, String typeId, Function<IntegerType, Expression> f) {

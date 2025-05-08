@@ -1,0 +1,85 @@
+; @Config: 3, 1, 1
+; SPIR-V
+; Version: 1.0
+; Generator: Khronos LLVM/SPIR-V Translator; 14
+; Bound: 42
+; Schema: 0
+               OpCapability Addresses
+               OpCapability Linkage
+               OpCapability Kernel
+               OpCapability GenericPointer
+          %1 = OpExtInstImport "OpenCL.std"
+               OpMemoryModel Physical32 OpenCL
+               OpEntryPoint Kernel %13 "foo" %__spirv_BuiltInGlobalInvocationId
+               OpSource OpenCL_C 200000
+               OpName %foo_mydata "foo.mydata"
+               OpName %__spirv_BuiltInGlobalInvocationId "__spirv_BuiltInGlobalInvocationId"
+               OpName %p "p"
+               OpName %q "q"
+               OpName %entry "entry"
+               OpName %p_addr "p.addr"
+               OpName %q_addr "q.addr"
+               OpName %handle "handle"
+               OpName %call "call"
+               OpName %call1 "call1"
+               OpName %arrayidx "arrayidx"
+               OpName %call2 "call2"
+               OpName %arrayidx3 "arrayidx3"
+               OpName %handle_ascast "handle.ascast"
+               OpDecorate %__spirv_BuiltInGlobalInvocationId BuiltIn GlobalInvocationId
+               OpDecorate %__spirv_BuiltInGlobalInvocationId Constant
+               OpDecorate %p FuncParamAttr NoAlias
+               OpDecorate %q FuncParamAttr NoAlias
+               OpDecorate %__spirv_BuiltInGlobalInvocationId LinkageAttributes "__spirv_BuiltInGlobalInvocationId" Import
+               OpDecorate %foo_mydata Alignment 4
+               OpDecorate %p_addr Alignment 4
+               OpDecorate %q_addr Alignment 4
+               OpDecorate %handle Alignment 4
+       %uint = OpTypeInt 32 0
+  %uint_1024 = OpConstant %uint 1024
+     %uint_0 = OpConstant %uint 0
+     %uint_2 = OpConstant %uint 2
+     %uint_1 = OpConstant %uint 1
+   %uint_784 = OpConstant %uint 784
+%_arr_uint_uint_1024 = OpTypeArray %uint %uint_1024
+%_ptr_Workgroup__arr_uint_uint_1024 = OpTypePointer Workgroup %_arr_uint_uint_1024
+     %v3uint = OpTypeVector %uint 3
+%_ptr_Input_v3uint = OpTypePointer Input %v3uint
+       %void = OpTypeVoid
+%_ptr_CrossWorkgroup_uint = OpTypePointer CrossWorkgroup %uint
+         %12 = OpTypeFunction %void %_ptr_CrossWorkgroup_uint %_ptr_CrossWorkgroup_uint
+%_ptr_Function__ptr_CrossWorkgroup_uint = OpTypePointer Function %_ptr_CrossWorkgroup_uint
+      %Event = OpTypeEvent
+%_ptr_Function_Event = OpTypePointer Function %Event
+%_ptr_Workgroup_uint = OpTypePointer Workgroup %uint
+%_ptr_Generic_Event = OpTypePointer Generic %Event
+ %foo_mydata = OpVariable %_ptr_Workgroup__arr_uint_uint_1024 Workgroup
+%__spirv_BuiltInGlobalInvocationId = OpVariable %_ptr_Input_v3uint Input
+         %29 = OpConstantNull %Event
+         %13 = OpFunction %void DontInline %12
+          %p = OpFunctionParameter %_ptr_CrossWorkgroup_uint
+          %q = OpFunctionParameter %_ptr_CrossWorkgroup_uint
+      %entry = OpLabel
+     %p_addr = OpVariable %_ptr_Function__ptr_CrossWorkgroup_uint Function
+     %q_addr = OpVariable %_ptr_Function__ptr_CrossWorkgroup_uint Function
+     %handle = OpVariable %_ptr_Function_Event Function
+               OpStore %p_addr %p Aligned 4
+               OpStore %q_addr %q Aligned 4
+         %23 = OpLoad %_ptr_CrossWorkgroup_uint %p_addr Aligned 4
+         %26 = OpInBoundsPtrAccessChain %_ptr_Workgroup_uint %foo_mydata %uint_0 %uint_0
+       %call = OpGroupAsyncCopy %Event %uint_2 %26 %23 %uint_1024 %uint_1 %29
+               OpStore %handle %call Aligned 4
+               OpControlBarrier %uint_2 %uint_2 %uint_784
+         %32 = OpLoad %v3uint %__spirv_BuiltInGlobalInvocationId Aligned 16
+      %call1 = OpCompositeExtract %uint %32 0
+   %arrayidx = OpInBoundsPtrAccessChain %_ptr_Workgroup_uint %foo_mydata %uint_0 %call1
+         %35 = OpLoad %uint %arrayidx Aligned 4
+         %36 = OpLoad %_ptr_CrossWorkgroup_uint %q_addr Aligned 4
+         %37 = OpLoad %v3uint %__spirv_BuiltInGlobalInvocationId Aligned 16
+      %call2 = OpCompositeExtract %uint %37 0
+  %arrayidx3 = OpInBoundsPtrAccessChain %_ptr_CrossWorkgroup_uint %36 %call2
+               OpStore %arrayidx3 %35 Aligned 4
+%handle_ascast = OpPtrCastToGeneric %_ptr_Generic_Event %handle
+               OpGroupWaitEvents %uint_2 %uint_1 %handle_ascast
+               OpReturn
+               OpFunctionEnd

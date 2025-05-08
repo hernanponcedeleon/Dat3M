@@ -1,0 +1,57 @@
+; @Config: 3, 1, 3
+; SPIR-V
+; Version: 1.0
+; Generator: Khronos LLVM/SPIR-V Translator; 14
+; Bound: 24
+; Schema: 0
+               OpCapability Addresses
+               OpCapability Kernel
+          %1 = OpExtInstImport "OpenCL.std"
+               OpMemoryModel Physical32 OpenCL
+               OpEntryPoint Kernel %5 "foo"
+               OpSource OpenCL_C 200000
+               OpName %x "x"
+               OpName %y "y"
+               OpName %entry "entry"
+               OpName %if_then "if.then"
+               OpName %if_else "if.else"
+               OpName %if_then1 "if.then1"
+               OpName %if_end "if.end"
+               OpName %if_end2 "if.end2"
+               OpName %x_addr "x.addr"
+               OpName %y_addr "y.addr"
+               OpName %tobool "tobool"
+               OpName %cmp "cmp"
+               OpDecorate %x_addr Alignment 4
+               OpDecorate %y_addr Alignment 4
+       %uint = OpTypeInt 32 0
+     %uint_0 = OpConstant %uint 0
+       %void = OpTypeVoid
+          %4 = OpTypeFunction %void %uint %uint
+%_ptr_Function_uint = OpTypePointer Function %uint
+       %bool = OpTypeBool
+          %5 = OpFunction %void DontInline %4
+          %x = OpFunctionParameter %uint
+          %y = OpFunctionParameter %uint
+      %entry = OpLabel
+     %x_addr = OpVariable %_ptr_Function_uint Function
+     %y_addr = OpVariable %_ptr_Function_uint Function
+               OpStore %x_addr %x Aligned 4
+               OpStore %y_addr %y Aligned 4
+         %17 = OpLoad %uint %x_addr Aligned 4
+     %tobool = OpINotEqual %bool %17 %uint_0
+               OpBranchConditional %tobool %if_then %if_else
+    %if_then = OpLabel
+               OpBranch %if_end2
+    %if_else = OpLabel
+         %21 = OpLoad %uint %x_addr Aligned 4
+         %22 = OpLoad %uint %y_addr Aligned 4
+        %cmp = OpIEqual %bool %21 %22
+               OpBranchConditional %cmp %if_then1 %if_end
+   %if_then1 = OpLabel
+               OpBranch %if_end
+     %if_end = OpLabel
+               OpBranch %if_end2
+    %if_end2 = OpLabel
+               OpReturn
+               OpFunctionEnd

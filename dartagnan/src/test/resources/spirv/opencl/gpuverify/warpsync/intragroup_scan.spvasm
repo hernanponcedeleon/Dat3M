@@ -1,0 +1,432 @@
+; @Config: 3, 1, 1
+; SPIR-V
+; Version: 1.0
+; Generator: Khronos LLVM/SPIR-V Translator; 14
+; Bound: 245
+; Schema: 0
+               OpCapability Addresses
+               OpCapability Linkage
+               OpCapability Kernel
+          %1 = OpExtInstImport "OpenCL.std"
+               OpMemoryModel Physical32 OpenCL
+               OpEntryPoint Kernel %13 "scan" %__spirv_BuiltInLocalInvocationId
+               OpSource OpenCL_C 200000
+               OpName %scan_temp "scan.temp"
+               OpName %__spirv_BuiltInLocalInvocationId "__spirv_BuiltInLocalInvocationId"
+               OpName %A "A"
+               OpName %entry "entry"
+               OpName %if_then_i20 "if.then.i20"
+               OpName %if_end_i22 "if.end.i22"
+               OpName %if_then4_i28 "if.then4.i28"
+               OpName %if_end10_i30 "if.end10.i30"
+               OpName %if_then12_i36 "if.then12.i36"
+               OpName %if_end18_i38 "if.end18.i38"
+               OpName %if_then20_i44 "if.then20.i44"
+               OpName %if_end26_i46 "if.end26.i46"
+               OpName %if_then28_i52 "if.then28.i52"
+               OpName %scan_warp_exit53 "scan_warp.exit53"
+               OpName %if_then "if.then"
+               OpName %if_end "if.end"
+               OpName %if_then4 "if.then4"
+               OpName %if_then_i "if.then.i"
+               OpName %if_end_i "if.end.i"
+               OpName %if_then4_i "if.then4.i"
+               OpName %if_end10_i "if.end10.i"
+               OpName %if_then12_i "if.then12.i"
+               OpName %if_end18_i "if.end18.i"
+               OpName %if_then20_i "if.then20.i"
+               OpName %if_end26_i "if.end26.i"
+               OpName %if_then28_i "if.then28.i"
+               OpName %scan_warp_exit "scan_warp.exit"
+               OpName %if_end5 "if.end5"
+               OpName %A_addr_i9 "A.addr.i9"
+               OpName %tid_i10 "tid.i10"
+               OpName %lane_i11 "lane.i11"
+               OpName %A_addr_i "A.addr.i"
+               OpName %tid_i "tid.i"
+               OpName %lane_i "lane.i"
+               OpName %A_addr "A.addr"
+               OpName %tid "tid"
+               OpName %lane "lane"
+               OpName %call "call"
+               OpName %rem "rem"
+               OpName %call_i12 "call.i12"
+               OpName %rem_i13 "rem.i13"
+               OpName %cmp_i14 "cmp.i14"
+               OpName %sub_i15 "sub.i15"
+               OpName %arrayidx_i16 "arrayidx.i16"
+               OpName %arrayidx1_i17 "arrayidx1.i17"
+               OpName %add_i18 "add.i18"
+               OpName %arrayidx2_i19 "arrayidx2.i19"
+               OpName %cmp3_i21 "cmp3.i21"
+               OpName %sub5_i23 "sub5.i23"
+               OpName %arrayidx6_i24 "arrayidx6.i24"
+               OpName %arrayidx7_i25 "arrayidx7.i25"
+               OpName %add8_i26 "add8.i26"
+               OpName %arrayidx9_i27 "arrayidx9.i27"
+               OpName %cmp11_i29 "cmp11.i29"
+               OpName %sub13_i31 "sub13.i31"
+               OpName %arrayidx14_i32 "arrayidx14.i32"
+               OpName %arrayidx15_i33 "arrayidx15.i33"
+               OpName %add16_i34 "add16.i34"
+               OpName %arrayidx17_i35 "arrayidx17.i35"
+               OpName %cmp19_i37 "cmp19.i37"
+               OpName %sub21_i39 "sub21.i39"
+               OpName %arrayidx22_i40 "arrayidx22.i40"
+               OpName %arrayidx23_i41 "arrayidx23.i41"
+               OpName %add24_i42 "add24.i42"
+               OpName %arrayidx25_i43 "arrayidx25.i43"
+               OpName %cmp27_i45 "cmp27.i45"
+               OpName %sub29_i47 "sub29.i47"
+               OpName %arrayidx30_i48 "arrayidx30.i48"
+               OpName %arrayidx31_i49 "arrayidx31.i49"
+               OpName %add32_i50 "add32.i50"
+               OpName %arrayidx33_i51 "arrayidx33.i51"
+               OpName %cmp "cmp"
+               OpName %arrayidx "arrayidx"
+               OpName %div "div"
+               OpName %arrayidx1 "arrayidx1"
+               OpName %div2 "div2"
+               OpName %cmp3 "cmp3"
+               OpName %call_i "call.i"
+               OpName %rem_i "rem.i"
+               OpName %cmp_i "cmp.i"
+               OpName %sub_i "sub.i"
+               OpName %arrayidx_i "arrayidx.i"
+               OpName %arrayidx1_i "arrayidx1.i"
+               OpName %add_i "add.i"
+               OpName %arrayidx2_i "arrayidx2.i"
+               OpName %cmp3_i "cmp3.i"
+               OpName %sub5_i "sub5.i"
+               OpName %arrayidx6_i "arrayidx6.i"
+               OpName %arrayidx7_i "arrayidx7.i"
+               OpName %add8_i "add8.i"
+               OpName %arrayidx9_i "arrayidx9.i"
+               OpName %cmp11_i "cmp11.i"
+               OpName %sub13_i "sub13.i"
+               OpName %arrayidx14_i "arrayidx14.i"
+               OpName %arrayidx15_i "arrayidx15.i"
+               OpName %add16_i "add16.i"
+               OpName %arrayidx17_i "arrayidx17.i"
+               OpName %cmp19_i "cmp19.i"
+               OpName %sub21_i "sub21.i"
+               OpName %arrayidx22_i "arrayidx22.i"
+               OpName %arrayidx23_i "arrayidx23.i"
+               OpName %add24_i "add24.i"
+               OpName %arrayidx25_i "arrayidx25.i"
+               OpName %cmp27_i "cmp27.i"
+               OpName %sub29_i "sub29.i"
+               OpName %arrayidx30_i "arrayidx30.i"
+               OpName %arrayidx31_i "arrayidx31.i"
+               OpName %add32_i "add32.i"
+               OpName %arrayidx33_i "arrayidx33.i"
+               OpName %div6 "div6"
+               OpName %arrayidx7 "arrayidx7"
+               OpName %arrayidx8 "arrayidx8"
+               OpName %add "add"
+               OpDecorate %__spirv_BuiltInLocalInvocationId BuiltIn LocalInvocationId
+               OpDecorate %__spirv_BuiltInLocalInvocationId Constant
+               OpDecorate %__spirv_BuiltInLocalInvocationId LinkageAttributes "__spirv_BuiltInLocalInvocationId" Import
+               OpDecorate %scan_temp Alignment 4
+               OpDecorate %A_addr_i9 Alignment 4
+               OpDecorate %tid_i10 Alignment 4
+               OpDecorate %lane_i11 Alignment 4
+               OpDecorate %A_addr_i Alignment 4
+               OpDecorate %tid_i Alignment 4
+               OpDecorate %lane_i Alignment 4
+               OpDecorate %A_addr Alignment 4
+               OpDecorate %tid Alignment 4
+               OpDecorate %lane Alignment 4
+       %uint = OpTypeInt 32 0
+    %uint_32 = OpConstant %uint 32
+     %uint_1 = OpConstant %uint 1
+     %uint_0 = OpConstant %uint 0
+     %uint_2 = OpConstant %uint 2
+     %uint_4 = OpConstant %uint 4
+     %uint_8 = OpConstant %uint 8
+    %uint_16 = OpConstant %uint 16
+   %uint_272 = OpConstant %uint 272
+    %uint_31 = OpConstant %uint 31
+%_arr_uint_uint_32 = OpTypeArray %uint %uint_32
+%_ptr_Workgroup__arr_uint_uint_32 = OpTypePointer Workgroup %_arr_uint_uint_32
+     %v3uint = OpTypeVector %uint 3
+%_ptr_Input_v3uint = OpTypePointer Input %v3uint
+       %void = OpTypeVoid
+%_ptr_Workgroup_uint = OpTypePointer Workgroup %uint
+         %12 = OpTypeFunction %void %_ptr_Workgroup_uint
+%_ptr_Function__ptr_Workgroup_uint = OpTypePointer Function %_ptr_Workgroup_uint
+%_ptr_Function_uint = OpTypePointer Function %uint
+       %bool = OpTypeBool
+  %scan_temp = OpVariable %_ptr_Workgroup__arr_uint_uint_32 Workgroup
+%__spirv_BuiltInLocalInvocationId = OpVariable %_ptr_Input_v3uint Input
+         %13 = OpFunction %void DontInline %12
+          %A = OpFunctionParameter %_ptr_Workgroup_uint
+      %entry = OpLabel
+  %A_addr_i9 = OpVariable %_ptr_Function__ptr_Workgroup_uint Function
+    %tid_i10 = OpVariable %_ptr_Function_uint Function
+   %lane_i11 = OpVariable %_ptr_Function_uint Function
+   %A_addr_i = OpVariable %_ptr_Function__ptr_Workgroup_uint Function
+      %tid_i = OpVariable %_ptr_Function_uint Function
+     %lane_i = OpVariable %_ptr_Function_uint Function
+     %A_addr = OpVariable %_ptr_Function__ptr_Workgroup_uint Function
+        %tid = OpVariable %_ptr_Function_uint Function
+       %lane = OpVariable %_ptr_Function_uint Function
+               OpStore %A_addr %A Aligned 4
+         %51 = OpLoad %v3uint %__spirv_BuiltInLocalInvocationId Aligned 16
+       %call = OpCompositeExtract %uint %51 0
+               OpStore %tid %call Aligned 4
+         %53 = OpLoad %uint %tid Aligned 4
+        %rem = OpUMod %uint %53 %uint_32
+               OpStore %lane %rem Aligned 4
+         %55 = OpLoad %_ptr_Workgroup_uint %A_addr Aligned 4
+               OpStore %A_addr_i9 %55 Aligned 4
+         %56 = OpLoad %v3uint %__spirv_BuiltInLocalInvocationId Aligned 16
+   %call_i12 = OpCompositeExtract %uint %56 0
+               OpStore %tid_i10 %call_i12 Aligned 4
+         %58 = OpLoad %uint %tid_i10 Aligned 4
+    %rem_i13 = OpUMod %uint %58 %uint_32
+               OpStore %lane_i11 %rem_i13 Aligned 4
+         %60 = OpLoad %uint %lane_i11 Aligned 4
+    %cmp_i14 = OpUGreaterThanEqual %bool %60 %uint_1
+         %65 = OpInBoundsPtrAccessChain %_ptr_Workgroup_uint %scan_temp %uint_0 %uint_0
+               OpBranchConditional %cmp_i14 %if_then_i20 %if_end_i22
+%if_then_i20 = OpLabel
+         %66 = OpLoad %_ptr_Workgroup_uint %A_addr_i9 Aligned 4
+         %67 = OpLoad %uint %tid_i10 Aligned 4
+    %sub_i15 = OpISub %uint %67 %uint_1
+%arrayidx_i16 = OpInBoundsPtrAccessChain %_ptr_Workgroup_uint %66 %sub_i15
+         %70 = OpLoad %uint %arrayidx_i16 Aligned 4
+         %71 = OpLoad %_ptr_Workgroup_uint %A_addr_i9 Aligned 4
+         %72 = OpLoad %uint %tid_i10 Aligned 4
+%arrayidx1_i17 = OpInBoundsPtrAccessChain %_ptr_Workgroup_uint %71 %72
+         %74 = OpLoad %uint %arrayidx1_i17 Aligned 4
+    %add_i18 = OpIAdd %uint %70 %74
+         %76 = OpLoad %_ptr_Workgroup_uint %A_addr_i9 Aligned 4
+         %77 = OpLoad %uint %tid_i10 Aligned 4
+%arrayidx2_i19 = OpInBoundsPtrAccessChain %_ptr_Workgroup_uint %76 %77
+               OpStore %arrayidx2_i19 %add_i18 Aligned 4
+               OpBranch %if_end_i22
+ %if_end_i22 = OpLabel
+         %79 = OpLoad %uint %lane_i11 Aligned 4
+   %cmp3_i21 = OpUGreaterThanEqual %bool %79 %uint_2
+               OpBranchConditional %cmp3_i21 %if_then4_i28 %if_end10_i30
+%if_then4_i28 = OpLabel
+         %82 = OpLoad %_ptr_Workgroup_uint %A_addr_i9 Aligned 4
+         %83 = OpLoad %uint %tid_i10 Aligned 4
+   %sub5_i23 = OpISub %uint %83 %uint_2
+%arrayidx6_i24 = OpInBoundsPtrAccessChain %_ptr_Workgroup_uint %82 %sub5_i23
+         %86 = OpLoad %uint %arrayidx6_i24 Aligned 4
+         %87 = OpLoad %_ptr_Workgroup_uint %A_addr_i9 Aligned 4
+         %88 = OpLoad %uint %tid_i10 Aligned 4
+%arrayidx7_i25 = OpInBoundsPtrAccessChain %_ptr_Workgroup_uint %87 %88
+         %90 = OpLoad %uint %arrayidx7_i25 Aligned 4
+   %add8_i26 = OpIAdd %uint %86 %90
+         %92 = OpLoad %_ptr_Workgroup_uint %A_addr_i9 Aligned 4
+         %93 = OpLoad %uint %tid_i10 Aligned 4
+%arrayidx9_i27 = OpInBoundsPtrAccessChain %_ptr_Workgroup_uint %92 %93
+               OpStore %arrayidx9_i27 %add8_i26 Aligned 4
+               OpBranch %if_end10_i30
+%if_end10_i30 = OpLabel
+         %95 = OpLoad %uint %lane_i11 Aligned 4
+  %cmp11_i29 = OpUGreaterThanEqual %bool %95 %uint_4
+               OpBranchConditional %cmp11_i29 %if_then12_i36 %if_end18_i38
+%if_then12_i36 = OpLabel
+         %98 = OpLoad %_ptr_Workgroup_uint %A_addr_i9 Aligned 4
+         %99 = OpLoad %uint %tid_i10 Aligned 4
+  %sub13_i31 = OpISub %uint %99 %uint_4
+%arrayidx14_i32 = OpInBoundsPtrAccessChain %_ptr_Workgroup_uint %98 %sub13_i31
+        %102 = OpLoad %uint %arrayidx14_i32 Aligned 4
+        %103 = OpLoad %_ptr_Workgroup_uint %A_addr_i9 Aligned 4
+        %104 = OpLoad %uint %tid_i10 Aligned 4
+%arrayidx15_i33 = OpInBoundsPtrAccessChain %_ptr_Workgroup_uint %103 %104
+        %106 = OpLoad %uint %arrayidx15_i33 Aligned 4
+  %add16_i34 = OpIAdd %uint %102 %106
+        %108 = OpLoad %_ptr_Workgroup_uint %A_addr_i9 Aligned 4
+        %109 = OpLoad %uint %tid_i10 Aligned 4
+%arrayidx17_i35 = OpInBoundsPtrAccessChain %_ptr_Workgroup_uint %108 %109
+               OpStore %arrayidx17_i35 %add16_i34 Aligned 4
+               OpBranch %if_end18_i38
+%if_end18_i38 = OpLabel
+        %111 = OpLoad %uint %lane_i11 Aligned 4
+  %cmp19_i37 = OpUGreaterThanEqual %bool %111 %uint_8
+               OpBranchConditional %cmp19_i37 %if_then20_i44 %if_end26_i46
+%if_then20_i44 = OpLabel
+        %114 = OpLoad %_ptr_Workgroup_uint %A_addr_i9 Aligned 4
+        %115 = OpLoad %uint %tid_i10 Aligned 4
+  %sub21_i39 = OpISub %uint %115 %uint_8
+%arrayidx22_i40 = OpInBoundsPtrAccessChain %_ptr_Workgroup_uint %114 %sub21_i39
+        %118 = OpLoad %uint %arrayidx22_i40 Aligned 4
+        %119 = OpLoad %_ptr_Workgroup_uint %A_addr_i9 Aligned 4
+        %120 = OpLoad %uint %tid_i10 Aligned 4
+%arrayidx23_i41 = OpInBoundsPtrAccessChain %_ptr_Workgroup_uint %119 %120
+        %122 = OpLoad %uint %arrayidx23_i41 Aligned 4
+  %add24_i42 = OpIAdd %uint %118 %122
+        %124 = OpLoad %_ptr_Workgroup_uint %A_addr_i9 Aligned 4
+        %125 = OpLoad %uint %tid_i10 Aligned 4
+%arrayidx25_i43 = OpInBoundsPtrAccessChain %_ptr_Workgroup_uint %124 %125
+               OpStore %arrayidx25_i43 %add24_i42 Aligned 4
+               OpBranch %if_end26_i46
+%if_end26_i46 = OpLabel
+        %127 = OpLoad %uint %lane_i11 Aligned 4
+  %cmp27_i45 = OpUGreaterThanEqual %bool %127 %uint_16
+               OpBranchConditional %cmp27_i45 %if_then28_i52 %scan_warp_exit53
+%if_then28_i52 = OpLabel
+        %130 = OpLoad %_ptr_Workgroup_uint %A_addr_i9 Aligned 4
+        %131 = OpLoad %uint %tid_i10 Aligned 4
+  %sub29_i47 = OpISub %uint %131 %uint_16
+%arrayidx30_i48 = OpInBoundsPtrAccessChain %_ptr_Workgroup_uint %130 %sub29_i47
+        %134 = OpLoad %uint %arrayidx30_i48 Aligned 4
+        %135 = OpLoad %_ptr_Workgroup_uint %A_addr_i9 Aligned 4
+        %136 = OpLoad %uint %tid_i10 Aligned 4
+%arrayidx31_i49 = OpInBoundsPtrAccessChain %_ptr_Workgroup_uint %135 %136
+        %138 = OpLoad %uint %arrayidx31_i49 Aligned 4
+  %add32_i50 = OpIAdd %uint %134 %138
+        %140 = OpLoad %_ptr_Workgroup_uint %A_addr_i9 Aligned 4
+        %141 = OpLoad %uint %tid_i10 Aligned 4
+%arrayidx33_i51 = OpInBoundsPtrAccessChain %_ptr_Workgroup_uint %140 %141
+               OpStore %arrayidx33_i51 %add32_i50 Aligned 4
+               OpBranch %scan_warp_exit53
+%scan_warp_exit53 = OpLabel
+               OpControlBarrier %uint_2 %uint_2 %uint_272
+        %144 = OpLoad %uint %lane Aligned 4
+        %cmp = OpIEqual %bool %144 %uint_31
+               OpBranchConditional %cmp %if_then %if_end
+    %if_then = OpLabel
+        %147 = OpLoad %_ptr_Workgroup_uint %A_addr Aligned 4
+        %148 = OpLoad %uint %tid Aligned 4
+   %arrayidx = OpInBoundsPtrAccessChain %_ptr_Workgroup_uint %147 %148
+        %150 = OpLoad %uint %arrayidx Aligned 4
+        %151 = OpLoad %uint %tid Aligned 4
+        %div = OpUDiv %uint %151 %uint_32
+  %arrayidx1 = OpInBoundsPtrAccessChain %_ptr_Workgroup_uint %scan_temp %uint_0 %div
+               OpStore %arrayidx1 %150 Aligned 4
+               OpBranch %if_end
+     %if_end = OpLabel
+               OpControlBarrier %uint_2 %uint_2 %uint_272
+        %154 = OpLoad %uint %tid Aligned 4
+       %div2 = OpUDiv %uint %154 %uint_32
+       %cmp3 = OpIEqual %bool %div2 %uint_0
+               OpBranchConditional %cmp3 %if_then4 %if_end5
+   %if_then4 = OpLabel
+               OpStore %A_addr_i %65 Aligned 4
+        %157 = OpLoad %v3uint %__spirv_BuiltInLocalInvocationId Aligned 16
+     %call_i = OpCompositeExtract %uint %157 0
+               OpStore %tid_i %call_i Aligned 4
+        %159 = OpLoad %uint %tid_i Aligned 4
+      %rem_i = OpUMod %uint %159 %uint_32
+               OpStore %lane_i %rem_i Aligned 4
+        %161 = OpLoad %uint %lane_i Aligned 4
+      %cmp_i = OpUGreaterThanEqual %bool %161 %uint_1
+               OpBranchConditional %cmp_i %if_then_i %if_end_i
+  %if_then_i = OpLabel
+        %163 = OpLoad %_ptr_Workgroup_uint %A_addr_i Aligned 4
+        %164 = OpLoad %uint %tid_i Aligned 4
+      %sub_i = OpISub %uint %164 %uint_1
+ %arrayidx_i = OpInBoundsPtrAccessChain %_ptr_Workgroup_uint %163 %sub_i
+        %167 = OpLoad %uint %arrayidx_i Aligned 4
+        %168 = OpLoad %_ptr_Workgroup_uint %A_addr_i Aligned 4
+        %169 = OpLoad %uint %tid_i Aligned 4
+%arrayidx1_i = OpInBoundsPtrAccessChain %_ptr_Workgroup_uint %168 %169
+        %171 = OpLoad %uint %arrayidx1_i Aligned 4
+      %add_i = OpIAdd %uint %167 %171
+        %173 = OpLoad %_ptr_Workgroup_uint %A_addr_i Aligned 4
+        %174 = OpLoad %uint %tid_i Aligned 4
+%arrayidx2_i = OpInBoundsPtrAccessChain %_ptr_Workgroup_uint %173 %174
+               OpStore %arrayidx2_i %add_i Aligned 4
+               OpBranch %if_end_i
+   %if_end_i = OpLabel
+        %176 = OpLoad %uint %lane_i Aligned 4
+     %cmp3_i = OpUGreaterThanEqual %bool %176 %uint_2
+               OpBranchConditional %cmp3_i %if_then4_i %if_end10_i
+ %if_then4_i = OpLabel
+        %178 = OpLoad %_ptr_Workgroup_uint %A_addr_i Aligned 4
+        %179 = OpLoad %uint %tid_i Aligned 4
+     %sub5_i = OpISub %uint %179 %uint_2
+%arrayidx6_i = OpInBoundsPtrAccessChain %_ptr_Workgroup_uint %178 %sub5_i
+        %182 = OpLoad %uint %arrayidx6_i Aligned 4
+        %183 = OpLoad %_ptr_Workgroup_uint %A_addr_i Aligned 4
+        %184 = OpLoad %uint %tid_i Aligned 4
+%arrayidx7_i = OpInBoundsPtrAccessChain %_ptr_Workgroup_uint %183 %184
+        %186 = OpLoad %uint %arrayidx7_i Aligned 4
+     %add8_i = OpIAdd %uint %182 %186
+        %188 = OpLoad %_ptr_Workgroup_uint %A_addr_i Aligned 4
+        %189 = OpLoad %uint %tid_i Aligned 4
+%arrayidx9_i = OpInBoundsPtrAccessChain %_ptr_Workgroup_uint %188 %189
+               OpStore %arrayidx9_i %add8_i Aligned 4
+               OpBranch %if_end10_i
+ %if_end10_i = OpLabel
+        %191 = OpLoad %uint %lane_i Aligned 4
+    %cmp11_i = OpUGreaterThanEqual %bool %191 %uint_4
+               OpBranchConditional %cmp11_i %if_then12_i %if_end18_i
+%if_then12_i = OpLabel
+        %193 = OpLoad %_ptr_Workgroup_uint %A_addr_i Aligned 4
+        %194 = OpLoad %uint %tid_i Aligned 4
+    %sub13_i = OpISub %uint %194 %uint_4
+%arrayidx14_i = OpInBoundsPtrAccessChain %_ptr_Workgroup_uint %193 %sub13_i
+        %197 = OpLoad %uint %arrayidx14_i Aligned 4
+        %198 = OpLoad %_ptr_Workgroup_uint %A_addr_i Aligned 4
+        %199 = OpLoad %uint %tid_i Aligned 4
+%arrayidx15_i = OpInBoundsPtrAccessChain %_ptr_Workgroup_uint %198 %199
+        %201 = OpLoad %uint %arrayidx15_i Aligned 4
+    %add16_i = OpIAdd %uint %197 %201
+        %203 = OpLoad %_ptr_Workgroup_uint %A_addr_i Aligned 4
+        %204 = OpLoad %uint %tid_i Aligned 4
+%arrayidx17_i = OpInBoundsPtrAccessChain %_ptr_Workgroup_uint %203 %204
+               OpStore %arrayidx17_i %add16_i Aligned 4
+               OpBranch %if_end18_i
+ %if_end18_i = OpLabel
+        %206 = OpLoad %uint %lane_i Aligned 4
+    %cmp19_i = OpUGreaterThanEqual %bool %206 %uint_8
+               OpBranchConditional %cmp19_i %if_then20_i %if_end26_i
+%if_then20_i = OpLabel
+        %208 = OpLoad %_ptr_Workgroup_uint %A_addr_i Aligned 4
+        %209 = OpLoad %uint %tid_i Aligned 4
+    %sub21_i = OpISub %uint %209 %uint_8
+%arrayidx22_i = OpInBoundsPtrAccessChain %_ptr_Workgroup_uint %208 %sub21_i
+        %212 = OpLoad %uint %arrayidx22_i Aligned 4
+        %213 = OpLoad %_ptr_Workgroup_uint %A_addr_i Aligned 4
+        %214 = OpLoad %uint %tid_i Aligned 4
+%arrayidx23_i = OpInBoundsPtrAccessChain %_ptr_Workgroup_uint %213 %214
+        %216 = OpLoad %uint %arrayidx23_i Aligned 4
+    %add24_i = OpIAdd %uint %212 %216
+        %218 = OpLoad %_ptr_Workgroup_uint %A_addr_i Aligned 4
+        %219 = OpLoad %uint %tid_i Aligned 4
+%arrayidx25_i = OpInBoundsPtrAccessChain %_ptr_Workgroup_uint %218 %219
+               OpStore %arrayidx25_i %add24_i Aligned 4
+               OpBranch %if_end26_i
+ %if_end26_i = OpLabel
+        %221 = OpLoad %uint %lane_i Aligned 4
+    %cmp27_i = OpUGreaterThanEqual %bool %221 %uint_16
+               OpBranchConditional %cmp27_i %if_then28_i %scan_warp_exit
+%if_then28_i = OpLabel
+        %223 = OpLoad %_ptr_Workgroup_uint %A_addr_i Aligned 4
+        %224 = OpLoad %uint %tid_i Aligned 4
+    %sub29_i = OpISub %uint %224 %uint_16
+%arrayidx30_i = OpInBoundsPtrAccessChain %_ptr_Workgroup_uint %223 %sub29_i
+        %227 = OpLoad %uint %arrayidx30_i Aligned 4
+        %228 = OpLoad %_ptr_Workgroup_uint %A_addr_i Aligned 4
+        %229 = OpLoad %uint %tid_i Aligned 4
+%arrayidx31_i = OpInBoundsPtrAccessChain %_ptr_Workgroup_uint %228 %229
+        %231 = OpLoad %uint %arrayidx31_i Aligned 4
+    %add32_i = OpIAdd %uint %227 %231
+        %233 = OpLoad %_ptr_Workgroup_uint %A_addr_i Aligned 4
+        %234 = OpLoad %uint %tid_i Aligned 4
+%arrayidx33_i = OpInBoundsPtrAccessChain %_ptr_Workgroup_uint %233 %234
+               OpStore %arrayidx33_i %add32_i Aligned 4
+               OpBranch %scan_warp_exit
+%scan_warp_exit = OpLabel
+               OpBranch %if_end5
+    %if_end5 = OpLabel
+               OpControlBarrier %uint_2 %uint_2 %uint_272
+        %236 = OpLoad %uint %tid Aligned 4
+       %div6 = OpUDiv %uint %236 %uint_32
+  %arrayidx7 = OpInBoundsPtrAccessChain %_ptr_Workgroup_uint %scan_temp %uint_0 %div6
+        %239 = OpLoad %uint %arrayidx7 Aligned 4
+        %240 = OpLoad %_ptr_Workgroup_uint %A_addr Aligned 4
+        %241 = OpLoad %uint %tid Aligned 4
+  %arrayidx8 = OpInBoundsPtrAccessChain %_ptr_Workgroup_uint %240 %241
+        %243 = OpLoad %uint %arrayidx8 Aligned 4
+        %add = OpIAdd %uint %243 %239
+               OpStore %arrayidx8 %add Aligned 4
+               OpReturn
+               OpFunctionEnd

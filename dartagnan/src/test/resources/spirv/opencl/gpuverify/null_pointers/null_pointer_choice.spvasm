@@ -1,0 +1,58 @@
+; @Config: 3, 1, 3
+; SPIR-V
+; Version: 1.0
+; Generator: Khronos LLVM/SPIR-V Translator; 14
+; Bound: 27
+; Schema: 0
+               OpCapability Addresses
+               OpCapability Kernel
+               OpCapability GenericPointer
+               OpCapability Int8
+          %1 = OpExtInstImport "OpenCL.std"
+               OpMemoryModel Physical32 OpenCL
+               OpEntryPoint Kernel %4 "testKernel"
+               OpSource OpenCL_C 200000
+               OpName %entry "entry"
+               OpName %if_then "if.then"
+               OpName %if_end "if.end"
+               OpName %bufptr "bufptr"
+               OpName %next "next"
+               OpName %add_ptr "add.ptr"
+               OpName %cmp "cmp"
+               OpName %arrayidx "arrayidx"
+               OpDecorate %bufptr Alignment 4
+               OpDecorate %next Alignment 4
+      %uchar = OpTypeInt 8 0
+       %uint = OpTypeInt 32 0
+     %uint_5 = OpConstant %uint 5
+   %uchar_97 = OpConstant %uchar 97
+       %void = OpTypeVoid
+          %3 = OpTypeFunction %void
+%_ptr_Generic_uchar = OpTypePointer Generic %uchar
+%_ptr_Function__ptr_Generic_uchar = OpTypePointer Function %_ptr_Generic_uchar
+       %bool = OpTypeBool
+         %13 = OpConstantNull %_ptr_Generic_uchar
+          %4 = OpFunction %void DontInline %3
+      %entry = OpLabel
+     %bufptr = OpVariable %_ptr_Function__ptr_Generic_uchar Function
+       %next = OpVariable %_ptr_Function__ptr_Generic_uchar Function
+               OpStore %next %13 Aligned 4
+         %14 = OpLoad %_ptr_Generic_uchar %next Aligned 4
+    %add_ptr = OpInBoundsPtrAccessChain %_ptr_Generic_uchar %14 %uint_5
+               OpStore %bufptr %add_ptr Aligned 4
+         %18 = OpLoad %_ptr_Generic_uchar %bufptr Aligned 4
+         %19 = OpConvertPtrToU %uint %18
+         %20 = OpConvertPtrToU %uint %13
+        %cmp = OpUGreaterThanEqual %bool %19 %20
+               OpBranchConditional %cmp %if_then %if_end
+    %if_then = OpLabel
+               OpStore %bufptr %13 Aligned 4
+               OpBranch %if_end
+     %if_end = OpLabel
+         %23 = OpLoad %_ptr_Generic_uchar %bufptr Aligned 4
+               OpStore %bufptr %23 Aligned 4
+         %24 = OpLoad %_ptr_Generic_uchar %bufptr Aligned 4
+   %arrayidx = OpInBoundsPtrAccessChain %_ptr_Generic_uchar %24 %uint_5
+               OpStore %arrayidx %uchar_97 Aligned 1
+               OpReturn
+               OpFunctionEnd

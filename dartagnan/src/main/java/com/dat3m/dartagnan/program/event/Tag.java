@@ -382,6 +382,7 @@ public final class Tag {
     public static final class OpenCL {
         // Scopes
         public static final String WORK_ITEM = "WI";
+        public static final String SUB_GROUP = "SG";
         public static final String WORK_GROUP = "WG";
         public static final String DEVICE = "DV";
         public static final String ALL = "ALL";
@@ -395,7 +396,7 @@ public final class Tag {
         public static final String DEFAULT_WEAK_SCOPE = WORK_ITEM;
 
         public static List<String> getScopeTags() {
-            return List.of(WORK_GROUP, DEVICE, ALL);
+            return List.of(SUB_GROUP, WORK_GROUP, DEVICE, ALL);
         }
 
         public static List<String> getSpaceTags() {
@@ -536,13 +537,13 @@ public final class Tag {
                 case SEQ_CST -> C11.MO_SC;
 
                 // Scope
-                // TODO: OpenCL Kernel supports sub_group, but it's not mentioned in the model
+                // subgroup is supported in OpenCL Kernel, but it is not mentioned in the model
                 case INVOCATION -> OpenCL.WORK_ITEM;
-                case SUBGROUP,
-                     WORKGROUP -> OpenCL.WORK_GROUP;
+                case WORKGROUP -> OpenCL.WORK_GROUP;
                 case DEVICE -> OpenCL.DEVICE;
                 case CROSS_DEVICE -> OpenCL.ALL;
-                case QUEUE_FAMILY,
+                case SUBGROUP,
+                     QUEUE_FAMILY,
                      SHADER_CALL -> throw new UnsupportedOperationException(
                              getErrorMsg(model, "scope", tag));
 

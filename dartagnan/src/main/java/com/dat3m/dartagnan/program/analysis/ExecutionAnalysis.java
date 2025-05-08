@@ -1,6 +1,7 @@
 package com.dat3m.dartagnan.program.analysis;
 
 import com.dat3m.dartagnan.configuration.ProgressModel;
+import com.dat3m.dartagnan.program.IRHelper;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.Event;
@@ -89,6 +90,9 @@ class DefaultExecutionAnalysis implements ExecutionAnalysis {
             case FAIR -> weakestImplication; // TRUE
             case HSA -> implied.getThread() == lowestIdThread;
             case OBE -> isSameThread(start, implied);
+            case HSA_OBE -> (implied.getThread() == lowestIdThread || isSameThread(start, implied));
+            case LOBE -> start.getThread().getId() >= implied.getThread().getId()
+                    && !IRHelper.isInitThread(start.getThread());
             case UNFAIR -> strongestImplication; // FALSE
         };
         return implication;

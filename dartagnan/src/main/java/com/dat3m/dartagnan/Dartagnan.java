@@ -20,6 +20,7 @@ import com.dat3m.dartagnan.program.event.core.CondJump;
 import com.dat3m.dartagnan.program.event.core.Load;
 import com.dat3m.dartagnan.program.processing.LoopUnrolling;
 import com.dat3m.dartagnan.utils.Result;
+import com.dat3m.dartagnan.utils.ExitCode;
 import com.dat3m.dartagnan.utils.Utils;
 import com.dat3m.dartagnan.utils.options.BaseOptions;
 import com.dat3m.dartagnan.verification.VerificationTask;
@@ -74,6 +75,7 @@ import static com.dat3m.dartagnan.configuration.Property.*;
 import static com.dat3m.dartagnan.program.analysis.SyntacticContextAnalysis.*;
 import static com.dat3m.dartagnan.utils.GitInfo.*;
 import static com.dat3m.dartagnan.utils.Result.*;
+import static com.dat3m.dartagnan.utils.ExitCode.*;
 import static com.dat3m.dartagnan.witness.WitnessType.GRAPHML;
 import static com.dat3m.dartagnan.witness.graphviz.ExecutionGraphVisualizer.generateGraphvizFile;
 import static java.lang.Boolean.FALSE;
@@ -231,23 +233,24 @@ public class Dartagnan extends BaseOptions {
                 }
 
                 long endTime = System.currentTimeMillis();
-                String summary = generateResultSummary(task, prover, modelChecker);
-                System.out.print(summary);
+                ResultSummary summary = generateResultSummary(task, prover, modelChecker);
+                System.out.print(summary.text());
                 System.out.println("Total verification time: " + Utils.toTimeString(endTime - startTime));
 
                 // We only generate witnesses if we are not validating one.
                 if (o.getWitnessType().equals(GRAPHML) && !o.runValidator()) {
-                    generateWitnessIfAble(task, prover, modelChecker, summary);
+                    generateWitnessIfAble(task, prover, modelChecker, summary.toString());
                 }
+                System.exit(summary.code().asInt());
             }
         } catch (InterruptedException e) {
             logger.warn("Timeout elapsed. The SMT solver was stopped");
             System.out.println("TIMEOUT");
-            System.exit(0);
+            System.exit(TIMEOUT_ELAPSED.asInt());
         } catch (Exception e) {
             logger.error(e.getMessage(), e);
             System.out.println("ERROR");
-            System.exit(1);
+            System.exit(UNKNOWN_ERROR.asInt());
         }
     }
 
@@ -294,7 +297,7 @@ public class Dartagnan extends BaseOptions {
         }
     }
 
-    public static String generateResultSummary(VerificationTask task, ProverEnvironment prover,
+    public static ResultSummary generateResultSummary(VerificationTask task, ProverEnvironment prover,
             ModelChecker modelChecker) throws SolverException {
         // ----------------- Generate output of verification result -----------------
         final Program p = task.getProgram();
@@ -330,6 +333,10 @@ public class Dartagnan extends BaseOptions {
                         }
                     }
                     summary.append("=================================================\n");
+                    summary.append(result).append("\n");
+                    // In validation mode, we expect to find the violation, thus NORMAL_TERMINATION
+                    ExitCode code = task.getWitness().isEmpty() ? PROGRAM_SPEC_VIOLATION : NORMAL_TERMINATION;
+                    return new ResultSummary(summary.toString(), code);
                 }
                 if (props.contains(TERMINATION) && FALSE.equals(model.evaluate(TERMINATION.getSMTVariable(encCtx)))) {
                     summary.append("============ Termination violation found ============\n");
@@ -352,10 +359,18 @@ public class Dartagnan extends BaseOptions {
                         }
                     }
                     summary.append("=================================================\n");
+                    summary.append(result).append("\n");
+                    // In validation mode, we expect to find the violation, thus NORMAL_TERMINATION
+                    ExitCode code = task.getWitness().isEmpty() ? TERMINATION_VIOLATION : NORMAL_TERMINATION;
+                    return new ResultSummary(summary.toString(), code);
                 }
                 if (props.contains(DATARACEFREEDOM) && FALSE.equals(model.evaluate(DATARACEFREEDOM.getSMTVariable(encCtx)))) {
                     summary.append("============= SVCOMP data race found ============\n");
                     summary.append("=================================================\n");
+                    summary.append(result).append("\n");
+                    // In validation mode, we expect to find the violation, thus NORMAL_TERMINATION
+                    ExitCode code = task.getWitness().isEmpty() ? DATA_RACE_FREEDOM_VIOLATION : NORMAL_TERMINATION;
+                    return new ResultSummary(summary.toString(), code);
                 }
                 final List<Axiom> violatedCATSpecs = task.getMemoryModel().getAxioms().stream()
                         .filter(Axiom::isFlagged)
@@ -367,6 +382,10 @@ public class Dartagnan extends BaseOptions {
                     // Computed by the model checker since it needs access to the WmmEncoder
                     summary.append(modelChecker.getFlaggedPairsOutput());
                     summary.append("=================================================\n");
+                    summary.append(result).append("\n");
+                    // In validation mode, we expect to find the violation, thus NORMAL_TERMINATION
+                    ExitCode code = task.getWitness().isEmpty() ? CAT_SPEC_VIOLATION : NORMAL_TERMINATION;
+                    return new ResultSummary(summary.toString(), code);
                 }
             } else if (hasPositiveWitnesses) {
                 if (props.contains(PROGRAM_SPEC) && TRUE.equals(model.evaluate(PROGRAM_SPEC.getSMTVariable(encCtx)))) {
@@ -390,12 +409,13 @@ public class Dartagnan extends BaseOptions {
                             .append("\n");
                 }
                 summary.append("=================================================\n");
-
                 try {
                     increaseBoundAndDump(reachedBounds, task.getConfig());
                 } catch (IOException e) {
                     logger.warn("Failed to save bounds file: {}", e.getLocalizedMessage());
                 }
+                summary.append(result).append("\n");
+                return new ResultSummary(summary.toString(), BOUNDED_RESULT);
             }
             summary.append(result).append("\n");
         } else {
@@ -447,7 +467,11 @@ public class Dartagnan extends BaseOptions {
                 }
             }
         }
-        return summary.toString();
+        // We consider those cases without an explicit return to yield normal termination.
+        // This includes verification of litmus code, independent of the verification result.
+        // In validation mode, we expect to find the violation, thus the WITNESS_NOT_VALIDATED error
+        ExitCode code = task.getWitness().isEmpty() ? NORMAL_TERMINATION : WITNESS_NOT_VALIDATED;
+        return new ResultSummary(summary.toString(), code);
     }
 
     private static void increaseBoundAndDump(List<Event> boundEvents, Configuration config) throws IOException {
@@ -514,4 +538,12 @@ public class Dartagnan extends BaseOptions {
         }
         sb.append("\n");
     }
+
+    public static record ResultSummary (String text, ExitCode code) {
+        @Override
+        public String toString() {
+            return String.format("%s%s(exit-code: %s)", text, text.endsWith("\n") ? "" : " ", code.asInt());
+        }
+    }
+
 }

@@ -1,0 +1,121 @@
+; @Config: 3, 1, 3
+; SPIR-V
+; Version: 1.0
+; Generator: Khronos LLVM/SPIR-V Translator; 14
+; Bound: 56
+; Schema: 0
+               OpCapability Addresses
+               OpCapability Linkage
+               OpCapability Kernel
+          %1 = OpExtInstImport "OpenCL.std"
+               OpMemoryModel Physical32 OpenCL
+               OpEntryPoint Kernel %10 "foo" %__spirv_BuiltInWorkgroupSize %__spirv_BuiltInLocalInvocationId
+               OpSource OpenCL_C 200000
+               OpName %__spirv_BuiltInWorkgroupSize "__spirv_BuiltInWorkgroupSize"
+               OpName %__spirv_BuiltInLocalInvocationId "__spirv_BuiltInLocalInvocationId"
+               OpName %data "data"
+               OpName %entry "entry"
+               OpName %for_cond "for.cond"
+               OpName %for_body "for.body"
+               OpName %for_cond1 "for.cond1"
+               OpName %for_body5 "for.body5"
+               OpName %for_inc "for.inc"
+               OpName %for_end "for.end"
+               OpName %for_inc10 "for.inc10"
+               OpName %for_end13 "for.end13"
+               OpName %data_addr "data.addr"
+               OpName %i "i"
+               OpName %j "j"
+               OpName %call "call"
+               OpName %mul "mul"
+               OpName %cmp "cmp"
+               OpName %call2 "call2"
+               OpName %mul3 "mul3"
+               OpName %cmp4 "cmp4"
+               OpName %call6 "call6"
+               OpName %call7 "call7"
+               OpName %add "add"
+               OpName %arrayidx "arrayidx"
+               OpName %call8 "call8"
+               OpName %add9 "add9"
+               OpName %call11 "call11"
+               OpName %add12 "add12"
+               OpDecorate %__spirv_BuiltInWorkgroupSize BuiltIn WorkgroupSize
+               OpDecorate %__spirv_BuiltInLocalInvocationId BuiltIn LocalInvocationId
+               OpDecorate %__spirv_BuiltInWorkgroupSize Constant
+               OpDecorate %__spirv_BuiltInLocalInvocationId Constant
+               OpDecorate %__spirv_BuiltInWorkgroupSize LinkageAttributes "__spirv_BuiltInWorkgroupSize" Import
+               OpDecorate %__spirv_BuiltInLocalInvocationId LinkageAttributes "__spirv_BuiltInLocalInvocationId" Import
+               OpDecorate %data_addr Alignment 4
+               OpDecorate %i Alignment 4
+               OpDecorate %j Alignment 4
+       %uint = OpTypeInt 32 0
+     %uint_0 = OpConstant %uint 0
+    %uint_10 = OpConstant %uint 10
+     %v3uint = OpTypeVector %uint 3
+%_ptr_Input_v3uint = OpTypePointer Input %v3uint
+       %void = OpTypeVoid
+%_ptr_Workgroup_uint = OpTypePointer Workgroup %uint
+          %9 = OpTypeFunction %void %_ptr_Workgroup_uint
+%_ptr_Function__ptr_Workgroup_uint = OpTypePointer Function %_ptr_Workgroup_uint
+%_ptr_Function_uint = OpTypePointer Function %uint
+       %bool = OpTypeBool
+%__spirv_BuiltInWorkgroupSize = OpVariable %_ptr_Input_v3uint Input
+%__spirv_BuiltInLocalInvocationId = OpVariable %_ptr_Input_v3uint Input
+         %10 = OpFunction %void DontInline %9
+       %data = OpFunctionParameter %_ptr_Workgroup_uint
+      %entry = OpLabel
+  %data_addr = OpVariable %_ptr_Function__ptr_Workgroup_uint Function
+          %i = OpVariable %_ptr_Function_uint Function
+          %j = OpVariable %_ptr_Function_uint Function
+               OpStore %data_addr %data Aligned 4
+               OpStore %i %uint_0 Aligned 4
+               OpBranch %for_cond
+   %for_cond = OpLabel
+         %27 = OpLoad %uint %i Aligned 4
+         %28 = OpLoad %v3uint %__spirv_BuiltInWorkgroupSize Aligned 16
+       %call = OpCompositeExtract %uint %28 0
+        %mul = OpIMul %uint %call %uint_10
+        %cmp = OpULessThan %bool %27 %mul
+               OpBranchConditional %cmp %for_body %for_end13
+   %for_body = OpLabel
+         %34 = OpLoad %uint %i Aligned 4
+               OpStore %j %34 Aligned 4
+               OpBranch %for_cond1
+  %for_cond1 = OpLabel
+         %35 = OpLoad %uint %j Aligned 4
+         %36 = OpLoad %v3uint %__spirv_BuiltInWorkgroupSize Aligned 16
+      %call2 = OpCompositeExtract %uint %36 0
+       %mul3 = OpIMul %uint %call2 %uint_10
+       %cmp4 = OpULessThan %bool %35 %mul3
+               OpBranchConditional %cmp4 %for_body5 %for_end
+  %for_body5 = OpLabel
+         %40 = OpLoad %v3uint %__spirv_BuiltInLocalInvocationId Aligned 16
+      %call6 = OpCompositeExtract %uint %40 0
+         %42 = OpLoad %_ptr_Workgroup_uint %data_addr Aligned 4
+         %43 = OpLoad %uint %j Aligned 4
+         %44 = OpLoad %v3uint %__spirv_BuiltInLocalInvocationId Aligned 16
+      %call7 = OpCompositeExtract %uint %44 0
+        %add = OpIAdd %uint %43 %call7
+   %arrayidx = OpInBoundsPtrAccessChain %_ptr_Workgroup_uint %42 %add
+               OpStore %arrayidx %call6 Aligned 4
+               OpBranch %for_inc
+    %for_inc = OpLabel
+         %48 = OpLoad %v3uint %__spirv_BuiltInWorkgroupSize Aligned 16
+      %call8 = OpCompositeExtract %uint %48 0
+         %50 = OpLoad %uint %j Aligned 4
+       %add9 = OpIAdd %uint %50 %call8
+               OpStore %j %add9 Aligned 4
+               OpBranch %for_cond1
+    %for_end = OpLabel
+               OpBranch %for_inc10
+  %for_inc10 = OpLabel
+         %52 = OpLoad %v3uint %__spirv_BuiltInWorkgroupSize Aligned 16
+     %call11 = OpCompositeExtract %uint %52 0
+         %54 = OpLoad %uint %i Aligned 4
+      %add12 = OpIAdd %uint %54 %call11
+               OpStore %i %add12 Aligned 4
+               OpBranch %for_cond
+  %for_end13 = OpLabel
+               OpReturn
+               OpFunctionEnd

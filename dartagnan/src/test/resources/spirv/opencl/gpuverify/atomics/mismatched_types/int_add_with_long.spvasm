@@ -1,0 +1,64 @@
+; @Config: 3, 1, 3
+; SPIR-V
+; Version: 1.0
+; Generator: Khronos LLVM/SPIR-V Translator; 14
+; Bound: 32
+; Schema: 0
+               OpCapability Addresses
+               OpCapability Linkage
+               OpCapability Kernel
+               OpCapability Int64
+          %1 = OpExtInstImport "OpenCL.std"
+               OpMemoryModel Physical32 OpenCL
+               OpEntryPoint Kernel %10 "atomicTest" %__spirv_BuiltInLocalInvocationId
+               OpSource OpenCL_C 200000
+               OpName %__spirv_BuiltInLocalInvocationId "__spirv_BuiltInLocalInvocationId"
+               OpName %A "A"
+               OpName %B "B"
+               OpName %entry "entry"
+               OpName %A_addr "A.addr"
+               OpName %B_addr "B.addr"
+               OpName %call "call"
+               OpName %add "add"
+               OpName %arrayidx "arrayidx"
+               OpName %call1 "call1"
+               OpDecorate %__spirv_BuiltInLocalInvocationId BuiltIn LocalInvocationId
+               OpDecorate %__spirv_BuiltInLocalInvocationId Constant
+               OpDecorate %__spirv_BuiltInLocalInvocationId LinkageAttributes "__spirv_BuiltInLocalInvocationId" Import
+               OpDecorate %A_addr Alignment 4
+               OpDecorate %B_addr Alignment 4
+       %uint = OpTypeInt 32 0
+      %ulong = OpTypeInt 64 0
+     %uint_1 = OpConstant %uint 1
+   %ulong_42 = OpConstant %ulong 42
+     %uint_2 = OpConstant %uint 2
+     %uint_0 = OpConstant %uint 0
+     %v3uint = OpTypeVector %uint 3
+%_ptr_Input_v3uint = OpTypePointer Input %v3uint
+       %void = OpTypeVoid
+%_ptr_Workgroup_ulong = OpTypePointer Workgroup %ulong
+          %9 = OpTypeFunction %void %_ptr_Workgroup_ulong %uint
+%_ptr_Function__ptr_Workgroup_ulong = OpTypePointer Function %_ptr_Workgroup_ulong
+%_ptr_Function_uint = OpTypePointer Function %uint
+%_ptr_Workgroup_uint = OpTypePointer Workgroup %uint
+%__spirv_BuiltInLocalInvocationId = OpVariable %_ptr_Input_v3uint Input
+         %10 = OpFunction %void DontInline %9
+          %A = OpFunctionParameter %_ptr_Workgroup_ulong
+          %B = OpFunctionParameter %uint
+      %entry = OpLabel
+     %A_addr = OpVariable %_ptr_Function__ptr_Workgroup_ulong Function
+     %B_addr = OpVariable %_ptr_Function_uint Function
+               OpStore %A_addr %A Aligned 4
+               OpStore %B_addr %B Aligned 4
+         %18 = OpLoad %_ptr_Workgroup_ulong %A_addr Aligned 4
+         %19 = OpLoad %v3uint %__spirv_BuiltInLocalInvocationId Aligned 16
+       %call = OpCompositeExtract %uint %19 0
+        %add = OpIAdd %uint %call %uint_1
+   %arrayidx = OpInBoundsPtrAccessChain %_ptr_Workgroup_ulong %18 %add
+               OpStore %arrayidx %ulong_42 Aligned 8
+         %25 = OpLoad %_ptr_Workgroup_ulong %A_addr Aligned 4
+         %27 = OpBitcast %_ptr_Workgroup_uint %25
+         %28 = OpLoad %uint %B_addr Aligned 4
+      %call1 = OpAtomicIAdd %uint %27 %uint_2 %uint_0 %28
+               OpReturn
+               OpFunctionEnd

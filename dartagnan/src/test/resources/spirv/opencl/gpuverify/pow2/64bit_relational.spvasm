@@ -1,0 +1,94 @@
+; @Config: 3, 1, 3
+; SPIR-V
+; Version: 1.0
+; Generator: Khronos LLVM/SPIR-V Translator; 14
+; Bound: 43
+; Schema: 0
+               OpCapability Addresses
+               OpCapability Linkage
+               OpCapability Kernel
+               OpCapability Float64
+               OpCapability Int64
+          %1 = OpExtInstImport "OpenCL.std"
+               OpMemoryModel Physical32 OpenCL
+               OpEntryPoint Kernel %10 "foo" %__spirv_BuiltInGlobalInvocationId
+               OpSource OpenCL_C 200000
+               OpName %__spirv_BuiltInGlobalInvocationId "__spirv_BuiltInGlobalInvocationId"
+               OpName %A "A"
+               OpName %n "n"
+               OpName %entry "entry"
+               OpName %for_cond "for.cond"
+               OpName %for_body "for.body"
+               OpName %for_inc "for.inc"
+               OpName %for_end "for.end"
+               OpName %A_addr "A.addr"
+               OpName %n_addr "n.addr"
+               OpName %j "j"
+               OpName %i "i"
+               OpName %conv "conv"
+               OpName %cmp "cmp"
+               OpName %call "call"
+               OpName %arrayidx "arrayidx"
+               OpName %mul "mul"
+               OpName %shr "shr"
+               OpDecorate %__spirv_BuiltInGlobalInvocationId BuiltIn GlobalInvocationId
+               OpDecorate %__spirv_BuiltInGlobalInvocationId Constant
+               OpDecorate %__spirv_BuiltInGlobalInvocationId LinkageAttributes "__spirv_BuiltInGlobalInvocationId" Import
+               OpDecorate %A_addr Alignment 4
+               OpDecorate %n_addr Alignment 4
+               OpDecorate %j Alignment 8
+               OpDecorate %i Alignment 8
+       %uint = OpTypeInt 32 0
+      %ulong = OpTypeInt 64 0
+    %ulong_1 = OpConstant %ulong 1
+    %ulong_0 = OpConstant %ulong 0
+    %ulong_2 = OpConstant %ulong 2
+     %v3uint = OpTypeVector %uint 3
+%_ptr_Input_v3uint = OpTypePointer Input %v3uint
+       %void = OpTypeVoid
+     %double = OpTypeFloat 64
+%_ptr_CrossWorkgroup_double = OpTypePointer CrossWorkgroup %double
+          %9 = OpTypeFunction %void %_ptr_CrossWorkgroup_double %uint
+%_ptr_Function__ptr_CrossWorkgroup_double = OpTypePointer Function %_ptr_CrossWorkgroup_double
+%_ptr_Function_uint = OpTypePointer Function %uint
+%_ptr_Function_ulong = OpTypePointer Function %ulong
+       %bool = OpTypeBool
+%__spirv_BuiltInGlobalInvocationId = OpVariable %_ptr_Input_v3uint Input
+   %double_0 = OpConstant %double 0
+         %10 = OpFunction %void DontInline %9
+          %A = OpFunctionParameter %_ptr_CrossWorkgroup_double
+          %n = OpFunctionParameter %uint
+      %entry = OpLabel
+     %A_addr = OpVariable %_ptr_Function__ptr_CrossWorkgroup_double Function
+     %n_addr = OpVariable %_ptr_Function_uint Function
+          %j = OpVariable %_ptr_Function_ulong Function
+          %i = OpVariable %_ptr_Function_ulong Function
+               OpStore %A_addr %A Aligned 4
+               OpStore %n_addr %n Aligned 4
+               OpStore %j %ulong_1 Aligned 8
+         %27 = OpLoad %uint %n_addr Aligned 4
+       %conv = OpSConvert %ulong %27
+               OpStore %i %conv Aligned 8
+               OpBranch %for_cond
+   %for_cond = OpLabel
+         %29 = OpLoad %ulong %i Aligned 8
+        %cmp = OpSGreaterThan %bool %29 %ulong_0
+               OpBranchConditional %cmp %for_body %for_end
+   %for_body = OpLabel
+         %33 = OpLoad %_ptr_CrossWorkgroup_double %A_addr Aligned 4
+         %34 = OpLoad %v3uint %__spirv_BuiltInGlobalInvocationId Aligned 16
+       %call = OpCompositeExtract %uint %34 0
+   %arrayidx = OpInBoundsPtrAccessChain %_ptr_CrossWorkgroup_double %33 %call
+               OpStore %arrayidx %double_0 Aligned 8
+         %38 = OpLoad %ulong %j Aligned 8
+        %mul = OpIMul %ulong %38 %ulong_2
+               OpStore %j %mul Aligned 8
+               OpBranch %for_inc
+    %for_inc = OpLabel
+         %41 = OpLoad %ulong %i Aligned 8
+        %shr = OpShiftRightArithmetic %ulong %41 %ulong_1
+               OpStore %i %shr Aligned 8
+               OpBranch %for_cond
+    %for_end = OpLabel
+               OpReturn
+               OpFunctionEnd

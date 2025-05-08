@@ -1,0 +1,119 @@
+; @Config: 3, 1, 3
+; SPIR-V
+; Version: 1.0
+; Generator: Khronos LLVM/SPIR-V Translator; 14
+; Bound: 53
+; Schema: 0
+               OpCapability Addresses
+               OpCapability Kernel
+          %1 = OpExtInstImport "OpenCL.std"
+               OpMemoryModel Physical32 OpenCL
+               OpEntryPoint Kernel %4 "binomial_options_kernel"
+               OpSource OpenCL_C 200000
+               OpName %entry "entry"
+               OpName %for_cond "for.cond"
+               OpName %for_body "for.body"
+               OpName %for_cond1 "for.cond1"
+               OpName %for_body3 "for.body3"
+               OpName %for_cond5 "for.cond5"
+               OpName %for_body7 "for.body7"
+               OpName %for_inc "for.inc"
+               OpName %for_end "for.end"
+               OpName %for_inc8 "for.inc8"
+               OpName %for_end9 "for.end9"
+               OpName %for_inc10 "for.inc10"
+               OpName %for_end12 "for.end12"
+               OpName %i "i"
+               OpName %c_base "c_base"
+               OpName %c_start "c_start"
+               OpName %c_end "c_end"
+               OpName %k "k"
+               OpName %cmp "cmp"
+               OpName %cmp2 "cmp2"
+               OpName %sub "sub"
+               OpName %sub4 "sub4"
+               OpName %cmp6 "cmp6"
+               OpName %dec "dec"
+               OpName %add "add"
+               OpName %sub11 "sub11"
+               OpDecorate %i Alignment 4
+               OpDecorate %c_base Alignment 4
+               OpDecorate %c_start Alignment 4
+               OpDecorate %c_end Alignment 4
+               OpDecorate %k Alignment 4
+       %uint = OpTypeInt 32 0
+  %uint_1024 = OpConstant %uint 1024
+     %uint_0 = OpConstant %uint 0
+   %uint_255 = OpConstant %uint 255
+    %uint_16 = OpConstant %uint 16
+     %uint_2 = OpConstant %uint 2
+   %uint_272 = OpConstant %uint 272
+     %uint_1 = OpConstant %uint 1
+%uint_4294967295 = OpConstant %uint 4294967295
+   %uint_240 = OpConstant %uint 240
+       %void = OpTypeVoid
+          %3 = OpTypeFunction %void
+%_ptr_Function_uint = OpTypePointer Function %uint
+       %bool = OpTypeBool
+          %4 = OpFunction %void DontInline %3
+      %entry = OpLabel
+          %i = OpVariable %_ptr_Function_uint Function
+     %c_base = OpVariable %_ptr_Function_uint Function
+    %c_start = OpVariable %_ptr_Function_uint Function
+      %c_end = OpVariable %_ptr_Function_uint Function
+          %k = OpVariable %_ptr_Function_uint Function
+               OpStore %i %uint_1024 Aligned 4
+               OpBranch %for_cond
+   %for_cond = OpLabel
+         %26 = OpLoad %uint %i Aligned 4
+        %cmp = OpSGreaterThan %bool %26 %uint_0
+               OpBranchConditional %cmp %for_body %for_end12
+   %for_body = OpLabel
+               OpStore %c_base %uint_0 Aligned 4
+               OpBranch %for_cond1
+  %for_cond1 = OpLabel
+         %30 = OpLoad %uint %c_base Aligned 4
+         %31 = OpLoad %uint %i Aligned 4
+       %cmp2 = OpSLessThan %bool %30 %31
+               OpBranchConditional %cmp2 %for_body3 %for_end9
+  %for_body3 = OpLabel
+               OpStore %c_start %uint_255 Aligned 4
+         %34 = OpLoad %uint %c_start Aligned 4
+        %sub = OpISub %uint %34 %uint_16
+               OpStore %c_end %sub Aligned 4
+               OpControlBarrier %uint_2 %uint_2 %uint_272
+         %39 = OpLoad %uint %c_start Aligned 4
+       %sub4 = OpISub %uint %39 %uint_1
+               OpStore %k %sub4 Aligned 4
+               OpBranch %for_cond5
+  %for_cond5 = OpLabel
+         %42 = OpLoad %uint %k Aligned 4
+         %43 = OpLoad %uint %c_end Aligned 4
+       %cmp6 = OpSGreaterThanEqual %bool %42 %43
+               OpBranchConditional %cmp6 %for_body7 %for_end
+  %for_body7 = OpLabel
+               OpControlBarrier %uint_2 %uint_2 %uint_272
+               OpBranch %for_inc
+    %for_inc = OpLabel
+         %45 = OpLoad %uint %k Aligned 4
+        %dec = OpIAdd %uint %45 %uint_4294967295
+               OpStore %k %dec Aligned 4
+               OpBranch %for_cond5
+    %for_end = OpLabel
+               OpControlBarrier %uint_2 %uint_2 %uint_272
+               OpBranch %for_inc8
+   %for_inc8 = OpLabel
+         %48 = OpLoad %uint %c_base Aligned 4
+        %add = OpIAdd %uint %48 %uint_240
+               OpStore %c_base %add Aligned 4
+               OpBranch %for_cond1
+   %for_end9 = OpLabel
+               OpBranch %for_inc10
+  %for_inc10 = OpLabel
+         %51 = OpLoad %uint %i Aligned 4
+      %sub11 = OpISub %uint %51 %uint_16
+               OpStore %i %sub11 Aligned 4
+               OpBranch %for_cond
+  %for_end12 = OpLabel
+               OpReturn
+               OpFunctionEnd

@@ -1,0 +1,95 @@
+; @Input: %flag = {0}
+; @Input: %data = {0}
+; @Input: %r0 = {0}
+; @Input: %r1 = {0}
+; @Output: forall (%r0[0] != 1 or %r1[0] == 1)
+; @Filter: %r0[0] == 1
+; @Config: 2, 1, 1
+; SPIR-V
+; Version: 1.0
+; Generator: Khronos LLVM/SPIR-V Translator; 14
+; Bound: 41
+; Schema: 0
+               OpCapability Addresses
+               OpCapability Linkage
+               OpCapability Kernel
+               OpCapability GenericPointer
+          %1 = OpExtInstImport "OpenCL.std"
+               OpMemoryModel Physical32 OpenCL
+               OpEntryPoint Kernel %9 "test" %__spirv_BuiltInGlobalInvocationId
+               OpSource OpenCL_C 200000
+               OpName %__spirv_BuiltInGlobalInvocationId "__spirv_BuiltInGlobalInvocationId"
+               OpName %flag "flag"
+               OpName %data "data"
+               OpName %r0 "r0"
+               OpName %r1 "r1"
+               OpName %entry "entry"
+               OpName %if_then "if.then"
+               OpName %if_else "if.else"
+               OpName %if_end "if.end"
+               OpName %flag_addr "flag.addr"
+               OpName %data_addr "data.addr"
+               OpName %r0_addr "r0.addr"
+               OpName %r1_addr "r1.addr"
+               OpName %call "call"
+               OpName %cmp "cmp"
+               OpName %call1 "call1"
+               OpDecorate %__spirv_BuiltInGlobalInvocationId BuiltIn GlobalInvocationId
+               OpDecorate %__spirv_BuiltInGlobalInvocationId Constant
+               OpDecorate %__spirv_BuiltInGlobalInvocationId LinkageAttributes "__spirv_BuiltInGlobalInvocationId" Import
+               OpDecorate %flag_addr Alignment 4
+               OpDecorate %data_addr Alignment 4
+               OpDecorate %r0_addr Alignment 4
+               OpDecorate %r1_addr Alignment 4
+       %uint = OpTypeInt 32 0
+     %uint_0 = OpConstant %uint 0
+     %uint_1 = OpConstant %uint 1
+     %uint_4 = OpConstant %uint 4
+     %v3uint = OpTypeVector %uint 3
+%_ptr_Input_v3uint = OpTypePointer Input %v3uint
+       %void = OpTypeVoid
+%_ptr_CrossWorkgroup_uint = OpTypePointer CrossWorkgroup %uint
+          %8 = OpTypeFunction %void %_ptr_CrossWorkgroup_uint %_ptr_CrossWorkgroup_uint %_ptr_CrossWorkgroup_uint %_ptr_CrossWorkgroup_uint
+%_ptr_Function__ptr_CrossWorkgroup_uint = OpTypePointer Function %_ptr_CrossWorkgroup_uint
+       %bool = OpTypeBool
+%_ptr_Generic_uint = OpTypePointer Generic %uint
+%__spirv_BuiltInGlobalInvocationId = OpVariable %_ptr_Input_v3uint Input
+          %9 = OpFunction %void DontInline %8
+       %flag = OpFunctionParameter %_ptr_CrossWorkgroup_uint
+       %data = OpFunctionParameter %_ptr_CrossWorkgroup_uint
+         %r0 = OpFunctionParameter %_ptr_CrossWorkgroup_uint
+         %r1 = OpFunctionParameter %_ptr_CrossWorkgroup_uint
+      %entry = OpLabel
+  %flag_addr = OpVariable %_ptr_Function__ptr_CrossWorkgroup_uint Function
+  %data_addr = OpVariable %_ptr_Function__ptr_CrossWorkgroup_uint Function
+    %r0_addr = OpVariable %_ptr_Function__ptr_CrossWorkgroup_uint Function
+    %r1_addr = OpVariable %_ptr_Function__ptr_CrossWorkgroup_uint Function
+               OpStore %flag_addr %flag Aligned 4
+               OpStore %data_addr %data Aligned 4
+               OpStore %r0_addr %r0 Aligned 4
+               OpStore %r1_addr %r1 Aligned 4
+         %23 = OpLoad %v3uint %__spirv_BuiltInGlobalInvocationId Aligned 16
+       %call = OpCompositeExtract %uint %23 0
+        %cmp = OpIEqual %bool %call %uint_0
+               OpBranchConditional %cmp %if_then %if_else
+    %if_then = OpLabel
+         %28 = OpLoad %_ptr_CrossWorkgroup_uint %data_addr Aligned 4
+               OpStore %28 %uint_1 Aligned 4
+         %30 = OpLoad %_ptr_CrossWorkgroup_uint %flag_addr Aligned 4
+         %32 = OpPtrCastToGeneric %_ptr_Generic_uint %30
+               OpAtomicStore %32 %uint_1 %uint_4 %uint_1
+               OpBranch %if_end
+    %if_else = OpLabel
+         %34 = OpLoad %_ptr_CrossWorkgroup_uint %flag_addr Aligned 4
+         %35 = OpPtrCastToGeneric %_ptr_Generic_uint %34
+      %call1 = OpAtomicLoad %uint %35 %uint_1 %uint_0
+         %37 = OpLoad %_ptr_CrossWorkgroup_uint %r0_addr Aligned 4
+               OpStore %37 %call1 Aligned 4
+         %38 = OpLoad %_ptr_CrossWorkgroup_uint %data_addr Aligned 4
+         %39 = OpLoad %uint %38 Aligned 4
+         %40 = OpLoad %_ptr_CrossWorkgroup_uint %r1_addr Aligned 4
+               OpStore %40 %39 Aligned 4
+               OpBranch %if_end
+     %if_end = OpLabel
+               OpReturn
+               OpFunctionEnd

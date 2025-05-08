@@ -1,0 +1,84 @@
+; @Config: 3, 1, 1
+; SPIR-V
+; Version: 1.0
+; Generator: Khronos LLVM/SPIR-V Translator; 14
+; Bound: 41
+; Schema: 0
+               OpCapability Addresses
+               OpCapability Linkage
+               OpCapability Kernel
+               OpCapability Vector16
+          %1 = OpExtInstImport "OpenCL.std"
+               OpMemoryModel Physical32 OpenCL
+               OpEntryPoint Kernel %12 "test" %__spirv_BuiltInGlobalInvocationId
+               OpSource OpenCL_C 200000
+               OpName %__spirv_BuiltInGlobalInvocationId "__spirv_BuiltInGlobalInvocationId"
+               OpName %A "A"
+               OpName %B "B"
+               OpName %C "C"
+               OpName %mask "mask"
+               OpName %entry "entry"
+               OpName %A_addr "A.addr"
+               OpName %B_addr "B.addr"
+               OpName %C_addr "C.addr"
+               OpName %mask_addr "mask.addr"
+               OpName %call "call"
+               OpName %arrayidx "arrayidx"
+               OpName %call1 "call1"
+               OpName %arrayidx2 "arrayidx2"
+               OpName %call3 "call3"
+               OpName %call4 "call4"
+               OpName %arrayidx5 "arrayidx5"
+               OpDecorate %__spirv_BuiltInGlobalInvocationId BuiltIn GlobalInvocationId
+               OpDecorate %__spirv_BuiltInGlobalInvocationId Constant
+               OpDecorate %__spirv_BuiltInGlobalInvocationId LinkageAttributes "__spirv_BuiltInGlobalInvocationId" Import
+               OpDecorate %A_addr Alignment 4
+               OpDecorate %B_addr Alignment 4
+               OpDecorate %C_addr Alignment 4
+               OpDecorate %mask_addr Alignment 32
+       %uint = OpTypeInt 32 0
+     %v3uint = OpTypeVector %uint 3
+%_ptr_Input_v3uint = OpTypePointer Input %v3uint
+       %void = OpTypeVoid
+     %v4uint = OpTypeVector %uint 4
+%_ptr_CrossWorkgroup_v4uint = OpTypePointer CrossWorkgroup %v4uint
+     %v8uint = OpTypeVector %uint 8
+%_ptr_CrossWorkgroup_v8uint = OpTypePointer CrossWorkgroup %v8uint
+         %11 = OpTypeFunction %void %_ptr_CrossWorkgroup_v4uint %_ptr_CrossWorkgroup_v4uint %_ptr_CrossWorkgroup_v8uint %v8uint
+%_ptr_Function__ptr_CrossWorkgroup_v4uint = OpTypePointer Function %_ptr_CrossWorkgroup_v4uint
+%_ptr_Function__ptr_CrossWorkgroup_v8uint = OpTypePointer Function %_ptr_CrossWorkgroup_v8uint
+%_ptr_Function_v8uint = OpTypePointer Function %v8uint
+%__spirv_BuiltInGlobalInvocationId = OpVariable %_ptr_Input_v3uint Input
+         %12 = OpFunction %void DontInline %11
+          %A = OpFunctionParameter %_ptr_CrossWorkgroup_v4uint
+          %B = OpFunctionParameter %_ptr_CrossWorkgroup_v4uint
+          %C = OpFunctionParameter %_ptr_CrossWorkgroup_v8uint
+       %mask = OpFunctionParameter %v8uint
+      %entry = OpLabel
+     %A_addr = OpVariable %_ptr_Function__ptr_CrossWorkgroup_v4uint Function
+     %B_addr = OpVariable %_ptr_Function__ptr_CrossWorkgroup_v4uint Function
+     %C_addr = OpVariable %_ptr_Function__ptr_CrossWorkgroup_v8uint Function
+  %mask_addr = OpVariable %_ptr_Function_v8uint Function
+               OpStore %A_addr %A Aligned 4
+               OpStore %B_addr %B Aligned 4
+               OpStore %C_addr %C Aligned 4
+               OpStore %mask_addr %mask Aligned 32
+         %25 = OpLoad %_ptr_CrossWorkgroup_v4uint %A_addr Aligned 4
+         %26 = OpLoad %v3uint %__spirv_BuiltInGlobalInvocationId Aligned 16
+       %call = OpCompositeExtract %uint %26 0
+   %arrayidx = OpInBoundsPtrAccessChain %_ptr_CrossWorkgroup_v4uint %25 %call
+         %29 = OpLoad %v4uint %arrayidx Aligned 16
+         %30 = OpLoad %_ptr_CrossWorkgroup_v4uint %B_addr Aligned 4
+         %31 = OpLoad %v3uint %__spirv_BuiltInGlobalInvocationId Aligned 16
+      %call1 = OpCompositeExtract %uint %31 0
+  %arrayidx2 = OpInBoundsPtrAccessChain %_ptr_CrossWorkgroup_v4uint %30 %call1
+         %34 = OpLoad %v4uint %arrayidx2 Aligned 16
+         %35 = OpLoad %v8uint %mask_addr Aligned 32
+      %call3 = OpExtInst %v8uint %1 shuffle2 %29 %34 %35
+         %37 = OpLoad %_ptr_CrossWorkgroup_v8uint %C_addr Aligned 4
+         %38 = OpLoad %v3uint %__spirv_BuiltInGlobalInvocationId Aligned 16
+      %call4 = OpCompositeExtract %uint %38 0
+  %arrayidx5 = OpInBoundsPtrAccessChain %_ptr_CrossWorkgroup_v8uint %37 %call4
+               OpStore %arrayidx5 %call3 Aligned 32
+               OpReturn
+               OpFunctionEnd

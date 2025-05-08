@@ -1,0 +1,123 @@
+; @Config: 3, 1, 3
+; SPIR-V
+; Version: 1.0
+; Generator: Khronos LLVM/SPIR-V Translator; 14
+; Bound: 59
+; Schema: 0
+               OpCapability Addresses
+               OpCapability Linkage
+               OpCapability Kernel
+               OpCapability Int8
+          %1 = OpExtInstImport "OpenCL.std"
+               OpMemoryModel Physical32 OpenCL
+               OpEntryPoint Kernel %10 "foo"
+               OpExecutionMode %10 ContractionOff
+               OpSource OpenCL_C 200000
+               OpName %bar "bar"
+               OpName %baz "baz"
+               OpName %entry "entry"
+               OpName %h "h"
+               OpName %v "v"
+               OpName %call "call"
+               OpName %conv "conv"
+               OpName %shl "shl"
+               OpName %conv1 "conv1"
+               OpName %conv2 "conv2"
+               OpName %conv3 "conv3"
+               OpName %shl_mask "shl.mask"
+               OpName %shl4 "shl4"
+               OpName %conv5 "conv5"
+               OpName %call6 "call6"
+               OpName %extractVec "extractVec"
+               OpName %storetmp "storetmp"
+               OpName %castToVec4 "castToVec4"
+               OpName %loadVec4 "loadVec4"
+               OpName %extractVec7 "extractVec7"
+               OpName %castToVec48 "castToVec48"
+               OpName %loadVec49 "loadVec49"
+               OpName %extractVec10 "extractVec10"
+               OpName %shl_mask11 "shl.mask11"
+               OpName %shl12 "shl12"
+               OpName %extractVec13 "extractVec13"
+               OpName %storetmp14 "storetmp14"
+               OpName %castToVec415 "castToVec415"
+               OpName %loadVec416 "loadVec416"
+               OpName %extractVec17 "extractVec17"
+               OpName %castToVec418 "castToVec418"
+               OpName %loadVec419 "loadVec419"
+               OpName %extractVec20 "extractVec20"
+               OpName %xor "xor"
+               OpName %extractVec21 "extractVec21"
+               OpName %storetmp22 "storetmp22"
+               OpDecorate %bar FuncParamAttr Sext
+               OpDecorate %bar LinkageAttributes "bar" Import
+               OpDecorate %baz LinkageAttributes "baz" Import
+               OpDecorate %h Alignment 1
+               OpDecorate %v Alignment 4
+      %uchar = OpTypeInt 8 0
+       %uint = OpTypeInt 32 0
+     %uint_1 = OpConstant %uint 1
+    %uint_31 = OpConstant %uint 31
+    %uchar_7 = OpConstant %uchar 7
+          %3 = OpTypeFunction %uchar
+    %v3uchar = OpTypeVector %uchar 3
+          %6 = OpTypeFunction %v3uchar
+       %void = OpTypeVoid
+          %9 = OpTypeFunction %void
+%_ptr_Function_uchar = OpTypePointer Function %uchar
+%_ptr_Function_v3uchar = OpTypePointer Function %v3uchar
+    %v4uchar = OpTypeVector %uchar 4
+%_ptr_Function_v4uchar = OpTypePointer Function %v4uchar
+         %32 = OpUndef %v3uchar
+         %39 = OpUndef %v4uchar
+         %45 = OpConstantComposite %v3uchar %uchar_7 %uchar_7 %uchar_7
+        %bar = OpFunction %uchar None %3
+               OpFunctionEnd
+        %baz = OpFunction %v3uchar None %6
+               OpFunctionEnd
+         %10 = OpFunction %void DontInline %9
+      %entry = OpLabel
+          %h = OpVariable %_ptr_Function_uchar Function
+          %v = OpVariable %_ptr_Function_v3uchar Function
+       %call = OpFunctionCall %uchar %bar
+               OpStore %h %call Aligned 1
+         %17 = OpLoad %uchar %h Aligned 1
+       %conv = OpSConvert %uint %17
+        %shl = OpShiftLeftLogical %uint %conv %uint_1
+      %conv1 = OpUConvert %uchar %shl
+               OpStore %h %conv1 Aligned 1
+         %23 = OpLoad %uchar %h Aligned 1
+      %conv2 = OpSConvert %uint %23
+         %25 = OpLoad %uchar %h Aligned 1
+      %conv3 = OpSConvert %uint %25
+   %shl_mask = OpBitwiseAnd %uint %conv2 %uint_31
+       %shl4 = OpShiftLeftLogical %uint %conv3 %shl_mask
+      %conv5 = OpUConvert %uchar %shl4
+               OpStore %h %conv5 Aligned 1
+      %call6 = OpFunctionCall %v3uchar %baz
+ %extractVec = OpVectorShuffle %v4uchar %call6 %32 0 1 2 4294967295
+   %storetmp = OpBitcast %_ptr_Function_v4uchar %v
+               OpStore %storetmp %extractVec Aligned 4
+ %castToVec4 = OpBitcast %_ptr_Function_v4uchar %v
+   %loadVec4 = OpLoad %v4uchar %castToVec4 Aligned 4
+%extractVec7 = OpVectorShuffle %v3uchar %loadVec4 %39 0 1 2
+%castToVec48 = OpBitcast %_ptr_Function_v4uchar %v
+  %loadVec49 = OpLoad %v4uchar %castToVec48 Aligned 4
+%extractVec10 = OpVectorShuffle %v3uchar %loadVec49 %39 0 1 2
+ %shl_mask11 = OpBitwiseAnd %v3uchar %extractVec7 %45
+      %shl12 = OpShiftLeftLogical %v3uchar %extractVec10 %shl_mask11
+%extractVec13 = OpVectorShuffle %v4uchar %shl12 %32 0 1 2 4294967295
+ %storetmp14 = OpBitcast %_ptr_Function_v4uchar %v
+               OpStore %storetmp14 %extractVec13 Aligned 4
+%castToVec415 = OpBitcast %_ptr_Function_v4uchar %v
+ %loadVec416 = OpLoad %v4uchar %castToVec415 Aligned 4
+%extractVec17 = OpVectorShuffle %v3uchar %loadVec416 %39 0 1 2
+%castToVec418 = OpBitcast %_ptr_Function_v4uchar %v
+ %loadVec419 = OpLoad %v4uchar %castToVec418 Aligned 4
+%extractVec20 = OpVectorShuffle %v3uchar %loadVec419 %39 0 1 2
+        %xor = OpBitwiseXor %v3uchar %extractVec17 %extractVec20
+%extractVec21 = OpVectorShuffle %v4uchar %xor %32 0 1 2 4294967295
+ %storetmp22 = OpBitcast %_ptr_Function_v4uchar %v
+               OpStore %storetmp22 %extractVec21 Aligned 4
+               OpReturn
+               OpFunctionEnd

@@ -1,0 +1,69 @@
+; @Config: 3, 1, 3
+; SPIR-V
+; Version: 1.0
+; Generator: Khronos LLVM/SPIR-V Translator; 14
+; Bound: 33
+; Schema: 0
+               OpCapability Addresses
+               OpCapability Linkage
+               OpCapability Kernel
+          %1 = OpExtInstImport "OpenCL.std"
+               OpMemoryModel Physical32 OpenCL
+               OpEntryPoint Kernel %16 "foo" %__spirv_BuiltInWorkgroupId %__spirv_BuiltInGlobalInvocationId %__spirv_BuiltInLocalInvocationId
+               OpSource OpenCL_C 200000
+               OpName %foo_L "foo.L"
+               OpName %__spirv_BuiltInWorkgroupId "__spirv_BuiltInWorkgroupId"
+               OpName %__spirv_BuiltInGlobalInvocationId "__spirv_BuiltInGlobalInvocationId"
+               OpName %__spirv_BuiltInLocalInvocationId "__spirv_BuiltInLocalInvocationId"
+               OpName %entry "entry"
+               OpName %call "call"
+               OpName %call1 "call1"
+               OpName %arrayidx "arrayidx"
+               OpName %call2 "call2"
+               OpName %arrayidx3 "arrayidx3"
+               OpName %call4 "call4"
+               OpName %arrayidx5 "arrayidx5"
+               OpDecorate %__spirv_BuiltInWorkgroupId BuiltIn WorkgroupId
+               OpDecorate %__spirv_BuiltInLocalInvocationId BuiltIn LocalInvocationId
+               OpDecorate %__spirv_BuiltInGlobalInvocationId BuiltIn GlobalInvocationId
+               OpDecorate %__spirv_BuiltInWorkgroupId Constant
+               OpDecorate %__spirv_BuiltInGlobalInvocationId Constant
+               OpDecorate %__spirv_BuiltInLocalInvocationId Constant
+               OpDecorate %__spirv_BuiltInWorkgroupId LinkageAttributes "__spirv_BuiltInWorkgroupId" Import
+               OpDecorate %__spirv_BuiltInGlobalInvocationId LinkageAttributes "__spirv_BuiltInGlobalInvocationId" Import
+               OpDecorate %__spirv_BuiltInLocalInvocationId LinkageAttributes "__spirv_BuiltInLocalInvocationId" Import
+               OpDecorate %foo_L Alignment 4
+       %uint = OpTypeInt 32 0
+    %uint_10 = OpConstant %uint 10
+     %uint_0 = OpConstant %uint 0
+%_arr_uint_uint_10 = OpTypeArray %uint %uint_10
+%_arr__arr_uint_uint_10_uint_10 = OpTypeArray %_arr_uint_uint_10 %uint_10
+%_arr__arr__arr_uint_uint_10_uint_10_uint_10 = OpTypeArray %_arr__arr_uint_uint_10_uint_10 %uint_10
+%_ptr_Workgroup__arr__arr__arr_uint_uint_10_uint_10_uint_10 = OpTypePointer Workgroup %_arr__arr__arr_uint_uint_10_uint_10_uint_10
+     %v3uint = OpTypeVector %uint 3
+%_ptr_Input_v3uint = OpTypePointer Input %v3uint
+       %void = OpTypeVoid
+         %15 = OpTypeFunction %void
+%_ptr_Workgroup__arr__arr_uint_uint_10_uint_10 = OpTypePointer Workgroup %_arr__arr_uint_uint_10_uint_10
+%_ptr_Workgroup__arr_uint_uint_10 = OpTypePointer Workgroup %_arr_uint_uint_10
+%_ptr_Workgroup_uint = OpTypePointer Workgroup %uint
+      %foo_L = OpVariable %_ptr_Workgroup__arr__arr__arr_uint_uint_10_uint_10_uint_10 Workgroup
+%__spirv_BuiltInWorkgroupId = OpVariable %_ptr_Input_v3uint Input
+%__spirv_BuiltInGlobalInvocationId = OpVariable %_ptr_Input_v3uint Input
+%__spirv_BuiltInLocalInvocationId = OpVariable %_ptr_Input_v3uint Input
+         %16 = OpFunction %void DontInline %15
+      %entry = OpLabel
+         %18 = OpLoad %v3uint %__spirv_BuiltInWorkgroupId Aligned 16
+       %call = OpCompositeExtract %uint %18 0
+         %20 = OpLoad %v3uint %__spirv_BuiltInGlobalInvocationId Aligned 16
+      %call1 = OpCompositeExtract %uint %20 0
+   %arrayidx = OpInBoundsPtrAccessChain %_ptr_Workgroup__arr__arr_uint_uint_10_uint_10 %foo_L %uint_0 %call1
+         %25 = OpLoad %v3uint %__spirv_BuiltInLocalInvocationId Aligned 16
+      %call2 = OpCompositeExtract %uint %25 1
+  %arrayidx3 = OpInBoundsPtrAccessChain %_ptr_Workgroup__arr_uint_uint_10 %arrayidx %uint_0 %call2
+         %29 = OpLoad %v3uint %__spirv_BuiltInLocalInvocationId Aligned 16
+      %call4 = OpCompositeExtract %uint %29 2
+  %arrayidx5 = OpInBoundsPtrAccessChain %_ptr_Workgroup_uint %arrayidx3 %uint_0 %call4
+               OpStore %arrayidx5 %call Aligned 4
+               OpReturn
+               OpFunctionEnd

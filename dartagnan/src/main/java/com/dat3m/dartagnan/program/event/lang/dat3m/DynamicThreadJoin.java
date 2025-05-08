@@ -20,19 +20,23 @@ import java.util.Set;
 /*
     This event joins with given thread, i.e., it blocks until the target thread terminates properly.
     - The target thread is specified by a thread id, typically the one returned by DynamicThreadCreate.
-    - The type of the return register must be { bv? status, TRet retValue } where TRet may be void if no value is returned.
+    - The type of the return register must be { bvX status, TRet retValue } where TRet may be void if no value is returned.
       The status may indicate success (status == 0) or an error (status != 0).
-      The status register shall be large enough to accommodate all error values (1 byte should be sufficient).
+      The status register shall be large enough to accommodate all error values (bv8 should be sufficient).
     - The return value retValue is only well-defined in the case of success (status == 0).
     - It is possible to join with the same thread multiple times.
  */
 public class DynamicThreadJoin extends AbstractEvent implements RegWriter, RegReader, BlockingEvent {
 
     public enum Status {
-        SUCCESS,                // The join was successful
-        INVALID_TID,            // The provided tid does not match with a joinable thread
-        INVALID_RETURN_TYPE     // The provided tid is valid, but the return type of that thread does not match
-                                // with the expected return type.
+        SUCCESS(0),                // The join was successful
+        INVALID_TID(1),            // The provided tid does not match with a joinable thread
+        INVALID_RETURN_TYPE(2);    // The provided tid is valid, but the return type of that thread does not match
+                                             // with the expected return type.
+
+        final int errorCode;
+        public int getErrorCode() { return errorCode; }
+        Status(int errorCode) { this.errorCode = errorCode; }
     }
 
     protected Register resultRegister;

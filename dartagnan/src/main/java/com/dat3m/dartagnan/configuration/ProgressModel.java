@@ -19,6 +19,8 @@ public enum ProgressModel {
     FAIR,       // All threads are fairly scheduled.
     HSA,        // Lowest id thread gets fairly scheduled.
     OBE,        // Threads that made at least one step get fairly scheduled.
+    HSA_OBE,    // basically HSA + OBE
+    LOBE,       // Threads that made at least one step, along with any thread with an id lower than a thread that has taken a step get fairly scheduled
     UNFAIR;     // No fair scheduling.
 
     public static ProgressModel getDefault() {
@@ -27,7 +29,7 @@ public enum ProgressModel {
 
     // Used to decide the order shown by the selector in the UI
     public static ProgressModel[] orderedValues() {
-        ProgressModel[] order = { FAIR, HSA, OBE, UNFAIR };
+        ProgressModel[] order = { FAIR, HSA, OBE, HSA_OBE, LOBE, UNFAIR };
         // Be sure no element is missing
         assert (Arrays.asList(order).containsAll(Arrays.asList(values())));
         return order;
@@ -113,8 +115,9 @@ public enum ProgressModel {
                             .withKeyValueSeparator("=")
                             .split(value);
                     final Map<String, ProgressModel> parsed = Maps.transformValues(split, ProgressModel::valueOf);
-                    final ProgressModel defaultProg = parsed.getOrDefault("default", ProgressModel.getDefault());
-                    final Map<String, ProgressModel> result = ImmutableMap.copyOf(Maps.filterKeys(parsed, k -> !k.equals("default")));
+                    final String defaultOpt = "DEFAULT";
+                    final ProgressModel defaultProg = parsed.getOrDefault(defaultOpt, ProgressModel.getDefault());
+                    final Map<String, ProgressModel> result = ImmutableMap.copyOf(Maps.filterKeys(parsed, k -> !k.equals(defaultOpt)));
                     return scoped(defaultProg, result);
                 } catch (Exception ex) {
                     throw new InvalidConfigurationException(ex.getMessage());

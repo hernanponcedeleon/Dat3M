@@ -1,0 +1,79 @@
+; @Config: 3, 1, 3
+; SPIR-V
+; Version: 1.0
+; Generator: Khronos LLVM/SPIR-V Translator; 14
+; Bound: 34
+; Schema: 0
+               OpCapability Addresses
+               OpCapability Kernel
+          %1 = OpExtInstImport "OpenCL.std"
+               OpMemoryModel Physical32 OpenCL
+               OpEntryPoint Kernel %4 "foo"
+               OpSource OpenCL_C 200000
+               OpName %entry "entry"
+               OpName %for_cond "for.cond"
+               OpName %for_body "for.body"
+               OpName %for_inc "for.inc"
+               OpName %for_end "for.end"
+               OpName %for_cond3 "for.cond3"
+               OpName %for_body5 "for.body5"
+               OpName %for_inc7 "for.inc7"
+               OpName %for_end9 "for.end9"
+               OpName %i "i"
+               OpName %i2 "i2"
+               OpName %cmp "cmp"
+               OpName %inc "inc"
+               OpName %inc1 "inc1"
+               OpName %cmp4 "cmp4"
+               OpName %inc6 "inc6"
+               OpName %inc8 "inc8"
+               OpDecorate %i Alignment 4
+               OpDecorate %i2 Alignment 4
+       %uint = OpTypeInt 32 0
+     %uint_0 = OpConstant %uint 0
+     %uint_2 = OpConstant %uint 2
+     %uint_1 = OpConstant %uint 1
+       %void = OpTypeVoid
+          %3 = OpTypeFunction %void
+%_ptr_Function_uint = OpTypePointer Function %uint
+       %bool = OpTypeBool
+          %4 = OpFunction %void DontInline %3
+      %entry = OpLabel
+          %i = OpVariable %_ptr_Function_uint Function
+         %i2 = OpVariable %_ptr_Function_uint Function
+               OpStore %i %uint_0 Aligned 4
+               OpBranch %for_cond
+   %for_cond = OpLabel
+         %19 = OpLoad %uint %i Aligned 4
+        %cmp = OpSLessThan %bool %19 %uint_2
+               OpBranchConditional %cmp %for_body %for_end
+   %for_body = OpLabel
+         %23 = OpLoad %uint %i Aligned 4
+        %inc = OpIAdd %uint %23 %uint_1
+               OpStore %i %inc Aligned 4
+               OpBranch %for_inc
+    %for_inc = OpLabel
+         %26 = OpLoad %uint %i Aligned 4
+       %inc1 = OpIAdd %uint %26 %uint_1
+               OpStore %i %inc1 Aligned 4
+               OpBranch %for_cond
+    %for_end = OpLabel
+               OpStore %i2 %uint_0 Aligned 4
+               OpBranch %for_cond3
+  %for_cond3 = OpLabel
+         %28 = OpLoad %uint %i2 Aligned 4
+       %cmp4 = OpSLessThan %bool %28 %uint_2
+               OpBranchConditional %cmp4 %for_body5 %for_end9
+  %for_body5 = OpLabel
+         %30 = OpLoad %uint %i2 Aligned 4
+       %inc6 = OpIAdd %uint %30 %uint_1
+               OpStore %i2 %inc6 Aligned 4
+               OpBranch %for_inc7
+   %for_inc7 = OpLabel
+         %32 = OpLoad %uint %i2 Aligned 4
+       %inc8 = OpIAdd %uint %32 %uint_1
+               OpStore %i2 %inc8 Aligned 4
+               OpBranch %for_cond3
+   %for_end9 = OpLabel
+               OpReturn
+               OpFunctionEnd

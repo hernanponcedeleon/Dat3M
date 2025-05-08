@@ -1,0 +1,41 @@
+; @Config: 3, 1, 3
+; SPIR-V
+; Version: 1.0
+; Generator: Khronos LLVM/SPIR-V Translator; 14
+; Bound: 17
+; Schema: 0
+               OpCapability Addresses
+               OpCapability Kernel
+          %1 = OpExtInstImport "OpenCL.std"
+               OpMemoryModel Physical32 OpenCL
+               OpEntryPoint Kernel %4 "foo"
+               OpSource OpenCL_C 200000
+               OpName %entry "entry"
+               OpName %a "a"
+               OpName %b "b"
+               OpName %c "c"
+               OpName %add "add"
+               OpDecorate %a Alignment 4
+               OpDecorate %b Alignment 4
+               OpDecorate %c Alignment 4
+       %uint = OpTypeInt 32 0
+     %uint_2 = OpConstant %uint 2
+     %uint_3 = OpConstant %uint 3
+   %uint_272 = OpConstant %uint 272
+       %void = OpTypeVoid
+          %3 = OpTypeFunction %void
+%_ptr_Function_uint = OpTypePointer Function %uint
+          %4 = OpFunction %void DontInline %3
+      %entry = OpLabel
+          %a = OpVariable %_ptr_Function_uint Function
+          %b = OpVariable %_ptr_Function_uint Function
+          %c = OpVariable %_ptr_Function_uint Function
+               OpStore %a %uint_2 Aligned 4
+               OpStore %b %uint_3 Aligned 4
+         %13 = OpLoad %uint %a Aligned 4
+         %14 = OpLoad %uint %b Aligned 4
+        %add = OpIAdd %uint %13 %14
+               OpStore %c %add Aligned 4
+               OpControlBarrier %uint_2 %uint_2 %uint_272
+               OpReturn
+               OpFunctionEnd
