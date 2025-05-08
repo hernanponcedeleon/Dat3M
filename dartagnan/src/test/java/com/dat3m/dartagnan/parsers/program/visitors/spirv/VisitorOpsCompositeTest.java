@@ -417,25 +417,27 @@ public class VisitorOpsCompositeTest {
     @Test
     public void testVectorShuffle() {
         // given
-        String input = "%shuffle = OpVectorShuffle %v4uint %v1 %v2 0 1 4 5";
+        String input = """
+              %shuffle = OpVectorShuffle %v4uint %v1 %v2 0 1 4 5
+            %shuffle_0 = OpCompositeExtract %uint %v1 0
+            %shuffle_1 = OpCompositeExtract %uint %v1 1
+            %shuffle_2 = OpCompositeExtract %uint %v2 0
+            %shuffle_3 = OpCompositeExtract %uint %v2 1
+            """;
         builder.mockIntType("%uint", 32);
         builder.mockVectorType("%v4uint", "%uint", 4);
         builder.mockConstant("%v1", "%v4uint", List.of(1, 2, 3, 4));
         builder.mockConstant("%v2", "%v4uint", List.of(5, 6, 7, 8));
-        builder.mockConstant("%bv32(1)", "%uint", 1);
-        builder.mockConstant("%bv32(2)", "%uint", 2);
-        builder.mockConstant("%bv32(5)", "%uint", 5);
-        builder.mockConstant("%bv32(6)", "%uint", 6);
 
         // when
         visit(input);
 
         // then
         ConstructExpr shuffle = (ConstructExpr) builder.getExpression("%shuffle");
-        assertEquals(builder.getExpression("%bv32(1)"), shuffle.getOperands().get(0));
-        assertEquals(builder.getExpression("%bv32(2)"), shuffle.getOperands().get(1));
-        assertEquals(builder.getExpression("%bv32(5)"), shuffle.getOperands().get(2));
-        assertEquals(builder.getExpression("%bv32(6)"), shuffle.getOperands().get(3));
+        assertEquals(builder.getExpression("%shuffle_0"), shuffle.getOperands().get(0));
+        assertEquals(builder.getExpression("%shuffle_1"), shuffle.getOperands().get(1));
+        assertEquals(builder.getExpression("%shuffle_2"), shuffle.getOperands().get(2));
+        assertEquals(builder.getExpression("%shuffle_3"), shuffle.getOperands().get(3));
     }
 
     @Test
