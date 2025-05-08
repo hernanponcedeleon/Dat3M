@@ -26,7 +26,6 @@ import org.sosy_lab.java_smt.api.NumeralFormula.IntegerFormula;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkState;
@@ -85,27 +84,30 @@ public class ExpressionEncoder {
     }
 
     public <TType extends Type> TypedFormula<TType, ?> makeVariable(String name, TType type) {
-        Formula variable = null;
+        final Formula variable;
         if (type instanceof BooleanType) {
             variable = bmgr.makeVariable(name);
         } else if (type instanceof IntegerType integerType) {
             variable = context.useIntegers
                     ? integerFormulaManager().makeVariable(name)
                     : bitvectorFormulaManager().makeVariable(integerType.getBitWidth(), name);
-        } else if (type instanceof AggregateType || type instanceof ArrayType) {
-            final Map<Integer, Type> primitives = types.decomposeIntoPrimitives(type);
-            if (primitives != null) {
-                final List<Formula> elements = new ArrayList<>();
-                for (Map.Entry<Integer, Type> entry : primitives.entrySet()) {
-                    elements.add(makeVariable(name + "@" + entry.getKey(), entry.getValue()).formula());
-                }
-                variable = fmgr.getTupleFormulaManager().makeTuple(elements);
+        } else if (type instanceof AggregateType aggType) {
+            final List<Formula> fields = new ArrayList<>(aggType.getFields().size());
+            for (TypeOffset field : aggType.getFields()) {
+                fields.add(makeVariable(name + "@" + field.offset(), field.type()).formula());
             }
-        }
-
-        if (variable == null) {
+            variable = fmgr.getTupleFormulaManager().makeTuple(fields);
+        } else if (type instanceof ArrayType arrType) {
+            Preconditions.checkArgument(arrType.hasKnownNumElements(), "Cannot encode array of unknown size.");
+            final List<Formula> elements = new ArrayList<>(arrType.getNumElements());
+            for (int i = 0; i < arrType.getNumElements(); i++) {
+                elements.add(makeVariable(name + "[" + i + "]", arrType.getElementType()).formula());
+            }
+            variable = fmgr.getTupleFormulaManager().makeTuple(elements);
+        } else {
             throw new UnsupportedOperationException(String.format("Cannot make variable of type %s.", type));
         }
+
         return new TypedFormula<>(type, variable);
     }
 
