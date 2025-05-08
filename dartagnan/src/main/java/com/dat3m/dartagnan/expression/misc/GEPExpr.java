@@ -14,6 +14,8 @@ import com.google.common.collect.ImmutableList;
 
 import java.util.List;
 
+import static com.dat3m.dartagnan.expression.utils.ExpressionHelper.isAggregateLike;
+
 public final class GEPExpr extends NaryExpressionBase<Type, ExpressionKind.Other> {
 
     private final Type indexingType;
@@ -22,8 +24,7 @@ public final class GEPExpr extends NaryExpressionBase<Type, ExpressionKind.Other
         super(base.getType(), ExpressionKind.Other.GEP, concat(base, offsets));
         ExpressionHelper.checkExpectedType(base, IntegerType.class);
         if (offsets.size() > 1) {
-            Preconditions.checkArgument(indexType instanceof AggregateType || indexType instanceof ArrayType,
-                    "Indexing with multiple indices into non-aggregate type.");
+            Preconditions.checkArgument(isAggregateLike(indexType), "Indexing with multiple indices into non-aggregate type.");
         }
         this.indexingType = indexType;
     }
