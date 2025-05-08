@@ -160,16 +160,17 @@ public class DynamicSpinLoopDetection implements ProgramProcessor {
         final Expression hasSideEffect = expressions.makeOr(localSideEffectReg, globalSideEffectReg);
 
         final Event assignLocalSideEffectReg = EventFactory.newLocal(localSideEffectReg, expressions.makeNEQ(entryLiveStateRegister, liveRegistersVector));
-        final Event assumeSideEffect = newSpinTerminator(expressions.makeNot(hasSideEffect), loop);
+        final Event assumeSideEffect = newSpinTerminator(expressions.makeTrue(), loop);
         final Label sideEffectLabel = EventFactory.newLabel("__hasSideEffect");
         final Event checkSideEffect = EventFactory.newJump(hasSideEffect, sideEffectLabel);
         // TODO: Don't exploit FenceOpt: use proper marker event.
         final Event marker = EventFactory.newFenceOpt("NONTERM", "SPINLOOP");
+        marker.removeTags(Tag.FENCE);
         loop.getEnd().insertBefore(List.of(
                 assignLocalSideEffectReg,
                 checkSideEffect,
                 marker,
-                assumeSideEffect,   // TODO: Remove condition: it is already checked
+                assumeSideEffect,
                 sideEffectLabel
         ));
 
