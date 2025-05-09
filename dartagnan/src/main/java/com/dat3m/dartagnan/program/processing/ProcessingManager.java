@@ -87,7 +87,7 @@ public class ProcessingManager implements ProgramProcessor {
         final FunctionProcessor sccp = constantPropagation ? SparseConditionalConstantPropagation.fromConfig(config) : null;
         final FunctionProcessor dce = performDce ? DeadAssignmentElimination.fromConfig(config) : null;
         final FunctionProcessor removeDeadJumps = RemoveDeadCondJumps.fromConfig(config);
-        final ProgramProcessor repeatableAfterTearing = ProgramProcessor.fromFunctionProcessor(
+        final ProgramProcessor simplifyBoundedProgram = ProgramProcessor.fromFunctionProcessor(
                 FunctionProcessor.chain(
                         performAssignmentInlining ? AssignmentInlining.newInstance() : null,
                         sccp,
@@ -140,11 +140,11 @@ public class ProcessingManager implements ProgramProcessor {
                                 MemToReg.fromConfig(config)
                         ), Target.THREADS, true
                 ),
-                repeatableAfterTearing,
+                simplifyBoundedProgram,
                 RemoveUnusedMemory.newInstance(),
                 MemoryAllocation.fromConfig(config),
                 detectMixedSizeAccesses ? Tearing.fromConfig(config) : null,
-                detectMixedSizeAccesses ? repeatableAfterTearing : null,
+                detectMixedSizeAccesses ? simplifyBoundedProgram : null,
                 NonterminationDetection.fromConfig(config),
                 // --- Statistics + verification ---
                 IdReassignment.newInstance(), // Normalize used Ids (remove any gaps)
