@@ -253,7 +253,7 @@ public class Dartagnan extends BaseOptions {
 
     public static File generateExecutionGraphFile(VerificationTask task, ProverEnvironment prover, ModelChecker modelChecker,
                                                   WitnessType witnessType)
-            throws InvalidConfigurationException, SolverException, IOException {
+            throws SolverException, IOException {
         Preconditions.checkArgument(modelChecker.hasModel(), "No execution graph to generate.");
 
         final EncodingContext encodingContext = modelChecker instanceof RefinementSolver refinementSolver ?
@@ -301,7 +301,6 @@ public class Dartagnan extends BaseOptions {
         final EnumSet<Property> props = task.getProperty();
         final Result result = modelChecker.getResult();
         final EncodingContext encCtx = modelChecker.getEncodingContext();
-        //final ModelExt model = modelChecker.hasModel() ? new ModelExt(prover.getModel()) : null;
         final IREvaluator model = modelChecker.hasModel()
                 ? new IREvaluator(encCtx, new ModelExt(prover.getModel()))
                 : null;

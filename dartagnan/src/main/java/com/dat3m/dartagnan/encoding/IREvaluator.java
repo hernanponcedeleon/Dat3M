@@ -115,6 +115,10 @@ public class IREvaluator {
         return smtModel.evaluate(ctx.memoryOrderClock(write));
     }
 
+    public BigInteger clock(String name, Event e) {
+        return smtModel.evaluate(ctx.clockVariable(name, e));
+    }
+
     // ====================================================================================
     // Properties
 

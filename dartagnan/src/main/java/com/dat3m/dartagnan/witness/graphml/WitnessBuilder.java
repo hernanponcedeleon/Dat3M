@@ -202,7 +202,7 @@ public class WitnessBuilder {
             if (e instanceof Store store && store.getMemValue() instanceof BoolLiteral bVal && !bVal.getValue()) {
                 continue;
             }
-            BigInteger var = model.getSMTModel().evaluate(context.clockVariable("hb", e));
+            BigInteger var = model.clock("hb", e);
             if (var != null) {
                 map.computeIfAbsent(var.intValue(), x -> new ArrayList<>()).add(e);
             }

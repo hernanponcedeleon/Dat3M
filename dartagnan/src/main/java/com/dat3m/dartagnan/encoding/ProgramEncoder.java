@@ -374,30 +374,34 @@ public class ProgramEncoder implements Encoder {
         final ExpressionFactory exprs = ExpressionFactory.getInstance();
         final IntegerType numType = (IntegerType) e1.getQuorum().getType();
 
-        Expression cfSum = exprs.makeZero(numType);
-        Expression syncSum = exprs.makeZero(numType);
+        Expression numCfMembers = exprs.makeZero(numType);
+        Expression numSyncMembers = exprs.makeZero(numType);
         for (NamedBarrier e2 : events) {
-            BooleanFormula sameId = exprEncoder.equalAt(e1.getResourceId(), e1, e2.getResourceId(), e2);
-            Expression iCf = exprs.makeCast(exprEncoder.wrap(bmgr.and(sameId, context.controlFlow(e2))), numType);
-            Expression iSync = exprs.makeCast(exprEncoder.wrap(bmgr.and(sameId, context.sync(e2))), numType);
-            cfSum = exprs.makeAdd(cfSum, iCf);
-            syncSum = exprs.makeAdd(syncSum, iSync);
+            final BooleanFormula sameId = exprEncoder.equalAt(e1.getResourceId(), e1, e2.getResourceId(), e2);
+            final Expression iCf = exprs.makeCast(exprEncoder.wrap(bmgr.and(sameId, context.controlFlow(e2))), numType);
+            final Expression iSync = exprs.makeCast(exprEncoder.wrap(bmgr.and(sameId, context.sync(e2))), numType);
+
+            numCfMembers = exprs.makeAdd(numCfMembers, iCf);
+            numSyncMembers = exprs.makeAdd(numSyncMembers, iSync);
         }
 
         final Expression cfCount = exprEncoder.makeVariable("cf_count(" + e1.getGlobalId() + ")", numType);
         final Expression syncCount = exprEncoder.makeVariable("sync_count(" + e1.getGlobalId() + ")", numType);
         final Expression quorum = exprEncoder.encodeAt(e1.getQuorum(), e1);
         final BooleanFormula hasQuorum = bmgr.makeVariable("quorum(" + e1.getGlobalId() + ")");
-        final BooleanFormula syncGTEQuorum = exprEncoder.encodeBooleanFinal(exprs.makeGTE(syncCount, quorum, false)).formula();
+        final BooleanFormula syncCountGTEQuorum = exprEncoder.encodeBooleanFinal(exprs.makeGTE(syncCount, quorum, false)).formula();
         final BooleanFormula cfCountGTEQuorum = exprEncoder.encodeBooleanFinal(exprs.makeGTE(cfCount, quorum, false)).formula();
 
-        BooleanFormula enc = bmgr.equivalence(hasQuorum, syncGTEQuorum);
-        enc = bmgr.and(enc, bmgr.equivalence(context.execution(e1), bmgr.and(context.controlFlow(e1), hasQuorum)));
-        enc = bmgr.and(enc, bmgr.implication(cfCountGTEQuorum, hasQuorum));
-        enc = bmgr.and(enc, exprEncoder.equal(cfCount, cfSum));
-        enc = bmgr.and(enc, exprEncoder.equal(syncCount, syncSum));
+        final BooleanFormula enc = bmgr.and(
+                bmgr.implication(cfCountGTEQuorum, hasQuorum),
+                bmgr.equivalence(hasQuorum, syncCountGTEQuorum),
+                bmgr.equivalence(context.execution(e1), bmgr.and(context.controlFlow(e1), hasQuorum)),
+                bmgr.implication(context.sync(e1), context.execution(e1)),
+                exprEncoder.equal(cfCount, numCfMembers),
+                exprEncoder.equal(syncCount, numSyncMembers)
+        );
 
-        return bmgr.and(enc, bmgr.implication(context.sync(e1), context.execution(e1)));
+        return enc;
     }
 
     // ====================================== Memory layout ======================================
