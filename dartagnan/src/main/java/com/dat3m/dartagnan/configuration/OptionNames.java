@@ -50,6 +50,7 @@ public class OptionNames {
     public static final String PROPAGATE_COPY_ASSIGNMENTS = "program.processing.propagateCopyAssignments";
     public static final String REMOVE_ASSERTION_OF_TYPE = "program.processing.skipAssertionsOfType";
     public static final String NONTERMINATION_INSTRUMENTATION = "program.processing.nonTermination";
+    public static final String MIXED_SIZE = "program.processing.mixedSize";
 
     // Program Property Options
     public static final String REACHING_DEFINITIONS_METHOD = "program.analysis.reachingDefinitions";

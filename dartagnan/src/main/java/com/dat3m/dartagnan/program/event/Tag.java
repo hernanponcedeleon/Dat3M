@@ -37,6 +37,7 @@ public final class Tag {
     // Some events should not be optimized (e.g. fake dependencies) or deleted (e.g. bounds)
     public static final String NOOPT            = "__NOOPT";
     public static final String STARTLOAD        = "__STARTLOAD";
+    public static final String NO_INSTRUCTION    = "__NO_INSTRUCTION";
 
     // =============================================================================================
     // =========================================== ARMv8 ===========================================
@@ -46,18 +47,17 @@ public final class Tag {
         private ARMv8() {
         }
 
-        public static final String MO_RX        = "RX";
         public static final String MO_REL       = "L";
         public static final String MO_ACQ       = "A";
         public static final String MO_ACQ_PC    = "Q";
 
         public static String extractStoreMoFromCMo(String cMo) {
-            return cMo.equals(C11.MO_SC) || cMo.equals(C11.MO_RELEASE) || cMo.equals(C11.MO_ACQUIRE_RELEASE) ? MO_REL : MO_RX;
+            return cMo.equals(C11.MO_SC) || cMo.equals(C11.MO_RELEASE) || cMo.equals(C11.MO_ACQUIRE_RELEASE) ? MO_REL : "";
         }
 
         public static String extractLoadMoFromCMo(String cMo) {
             //TODO: What about MO_CONSUME loads?
-            return cMo.equals(C11.MO_SC) || cMo.equals(C11.MO_ACQUIRE) || cMo.equals(C11.MO_ACQUIRE_RELEASE) ? MO_ACQ : MO_RX;
+            return cMo.equals(C11.MO_SC) || cMo.equals(C11.MO_ACQUIRE) || cMo.equals(C11.MO_ACQUIRE_RELEASE) ? MO_ACQ : "";
         }
 
         public static String extractStoreMoFromLKMo(String lkMo) {

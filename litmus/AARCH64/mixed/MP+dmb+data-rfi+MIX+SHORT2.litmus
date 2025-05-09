@@ -1,0 +1,16 @@
+AArch64 MP+dmb+data-rfi+MIX+SHORT2
+"Read to Read dep With a short inside: Data h2 Rfi"
+Prefetch=0:x=F,0:y=W,1:y=F,1:x=T
+Com=Rf Fr
+{
+uint64_t y; uint64_t x; uint64_t 1:X5; uint64_t 1:X0;
+
+0:X0=0x202020202020202; 0:X1=x; 0:X2=0x101010101010101; 0:X3=y;
+1:X1=y; 1:X4=x;
+}
+ P0          | P1             ;
+ STR X0,[X1] | LDR X0,[X1]    ;
+ DMB SY      | STRH W0,[X4,#2];
+ STR X2,[X3] | LDR X5,[X4]    ;
+exists
+(x=0x202020201010202 /\ 1:X0=0x101010101010101 /\ 1:X5=0x1010000)

@@ -30,6 +30,8 @@ public interface ExpressionVisitor<TRet> {
     default TRet visitIntBinaryExpression(IntBinaryExpr expr) { return visitBinaryExpression(expr); }
     default TRet visitIntCmpExpression(IntCmpExpr expr) { return visitBinaryExpression(expr); }
     default TRet visitIntUnaryExpression(IntUnaryExpr expr) { return visitUnaryExpression(expr); }
+    default TRet visitIntConcat(IntConcat expr) { return visitExpression(expr); }
+    default TRet visitIntExtract(IntExtract expr) { return visitUnaryExpression(expr); }
     default TRet visitIntSizeCastExpression(IntSizeCast expr) { return visitCastExpression(expr); }
     default TRet visitFloatToIntCastExpression(FloatToIntCast expr) { return visitCastExpression(expr); }
     default TRet visitIntLiteral(IntLiteral lit) { return visitLeafExpression(lit); }

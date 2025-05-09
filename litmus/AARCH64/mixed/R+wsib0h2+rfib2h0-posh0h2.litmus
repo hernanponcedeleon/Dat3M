@@ -1,0 +1,21 @@
+AArch64 R+wsib0h2+rfib2h0-posh0h2
+"Wsib0h2 Wseh2b2 Rfib2h0 PosRRh0h2 Freh2b0"
+Cycle=Wsib0h2 Wseh2b2 Rfib2h0 PosRRh0h2 Freh2b0
+Relax=Rfib2h0
+Safe=Wsib0h2 PosRRh0h2 Freh2b0 Wseh2b2
+Generator=diy7 (version 7.52+9(dev))
+Prefetch=
+Com=Ws Fr
+Orig=Wsib0h2 Wseh2b2 Rfib2h0 PosRRh0h2 Freh2b0
+{
+uint32_t x; uint32_t 1:X3; uint32_t 1:X2;
+
+0:X1=x;
+1:X1=x;
+}
+ P0              | P1              ;
+ MOV W0,#1       | MOV W0,#3       ;
+ STRB W0,[X1]    | STRB W0,[X1,#2] ;
+ MOV W2,#514     | LDRH W2,[X1]    ;
+ STRH W2,[X1,#2] | LDRH W3,[X1,#2] ;
+exists (1:X2=0x0 /\ 1:X3=0x3 /\ x=0x2030001) \/ (1:X2=0x1 /\ 1:X3=0x3 /\ x=0x2030001)

@@ -1,6 +1,7 @@
 package com.dat3m.dartagnan.parsers.program.visitors;
 
 import com.dat3m.dartagnan.exception.ParsingException;
+import com.dat3m.dartagnan.exception.ProgramProcessingException;
 import com.dat3m.dartagnan.expression.*;
 import com.dat3m.dartagnan.expression.integers.IntBinaryOp;
 import com.dat3m.dartagnan.expression.type.*;
@@ -21,7 +22,6 @@ import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.event.metadata.Metadata;
 import com.dat3m.dartagnan.program.event.metadata.SourceLocation;
-import com.dat3m.dartagnan.program.memory.Memory;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
@@ -39,9 +39,7 @@ import java.math.BigInteger;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import com.dat3m.dartagnan.exception.ProgramProcessingException;
 import static com.dat3m.dartagnan.expression.utils.ExpressionHelper.isAggregateLike;
-
 import static com.dat3m.dartagnan.program.event.EventFactory.*;
 import static com.dat3m.dartagnan.program.event.EventFactory.Llvm.newCompareExchange;
 import static com.google.common.base.Preconditions.checkState;
@@ -53,7 +51,7 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
     private static final String DEFAULT_ENTRY_FUNCTION = "main";
 
     // Global context
-    private final Program program = new Program(new Memory(), Program.SourceLanguage.LLVM, null);
+    private final Program program;
     private final TypeFactory types = TypeFactory.getInstance();
     private final ExpressionFactory expressions = ExpressionFactory.getInstance();
     private final Type pointerType = types.getPointerType();
@@ -76,7 +74,9 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
     // Nonnull, if a type has been parsed.
     private Type parsedType;
 
-    public VisitorLlvm() {}
+    public VisitorLlvm(Program p) {
+        program = p;
+    }
 
     public Program buildProgram() {
         ProgramBuilder.processAfterParsing(program);
@@ -1515,7 +1515,7 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
             return Optional.empty();
         }
     }
-    
+
     // ----------------------------------------------------------------------------------------------------------------
     // Helper to parse inline asm code
     private Optional<List<Event>> tryParse(ParserAsm parser, CharStream asmCode) throws ProgramProcessingException{

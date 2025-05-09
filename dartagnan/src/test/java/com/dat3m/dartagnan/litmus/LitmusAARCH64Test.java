@@ -5,8 +5,11 @@ import com.dat3m.dartagnan.utils.Result;
 import com.dat3m.dartagnan.utils.rules.Provider;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
+import org.sosy_lab.common.configuration.Configuration;
 
 import java.io.IOException;
+
+import static com.dat3m.dartagnan.configuration.OptionNames.*;
 
 @RunWith(Parameterized.class)
 public class LitmusAARCH64Test extends AbstractLitmusTest {
@@ -25,4 +28,17 @@ public class LitmusAARCH64Test extends AbstractLitmusTest {
         super(path, expected);
     }
 
+    @Override
+    protected long getTimeout() {
+        return 60_000;
+    }
+
+    @Override
+    protected Provider<Configuration> getConfigurationProvider() {
+        return Provider.fromSupplier(() -> Configuration.builder()
+                .setOption(INITIALIZE_REGISTERS, "true")
+                .setOption(USE_INTEGERS, "false")
+                .setOption(MIXED_SIZE, "true")
+                .build());
+    }
 }
