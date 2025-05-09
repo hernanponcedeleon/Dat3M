@@ -507,7 +507,8 @@ public class RefinementSolver extends ModelChecker {
                 || def instanceof CASDependency // IMM
                 // GPUs
                 || def instanceof SameScope || def instanceof SyncWith
-                || def instanceof SyncFence || def instanceof SyncBar || def instanceof SameVirtualLocation;
+                || def instanceof SyncFence || def instanceof SyncBar || def instanceof SameVirtualLocation
+                || def instanceof Free;
     }
 
     private static RefinementModel generateRefinementModel(Wmm original) {

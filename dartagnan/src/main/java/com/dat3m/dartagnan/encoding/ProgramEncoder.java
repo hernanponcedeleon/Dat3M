@@ -9,6 +9,7 @@ import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.*;
 import com.dat3m.dartagnan.program.analysis.BranchEquivalence;
 import com.dat3m.dartagnan.program.analysis.ExecutionAnalysis;
+import com.dat3m.dartagnan.program.analysis.InterruptAnalysis;
 import com.dat3m.dartagnan.program.analysis.ReachingDefinitionsAnalysis;
 import com.dat3m.dartagnan.program.event.*;
 import com.dat3m.dartagnan.program.event.core.*;
@@ -18,6 +19,9 @@ import com.dat3m.dartagnan.program.event.core.CondJump;
 import com.dat3m.dartagnan.program.event.core.ControlBarrier;
 import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.event.core.NamedBarrier;
+import com.dat3m.dartagnan.program.event.core.threading.ThreadCreate;
+import com.dat3m.dartagnan.program.event.core.threading.ThreadJoin;
+import com.dat3m.dartagnan.program.event.core.threading.ThreadReturn;
 import com.dat3m.dartagnan.program.event.core.threading.ThreadStart;
 import com.dat3m.dartagnan.program.memory.Memory;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
@@ -119,6 +123,24 @@ public class ProgramEncoder implements Encoder {
 
     // ====================================== Control flow ======================================
 
+    private BooleanFormula isInterruptible(Event cur, InterruptAnalysis.Info info) {
+        final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
+        final List<Event> irqBarriers = info.getImmediateIRQBarriersBefore(cur, exec);
+        BooleanFormula isInterruptable = bmgr.makeTrue();
+        for (int i = 0; i < irqBarriers.size(); i++) {
+            final Event disable = irqBarriers.get(i);
+            if (disable.hasTag(Tag.DISABLE_INTERRUPT)) {
+                final BooleanFormula wasNotReenabled = irqBarriers.subList(i + 1, irqBarriers.size()).stream()
+                        .filter(b -> b.hasTag(Tag.ENABLE_INTERRUPT))
+                        .map(b -> bmgr.not(context.execution(b)))
+                        .reduce(bmgr.makeTrue(), bmgr::and);
+                final BooleanFormula isDisabled = bmgr.and(context.execution(disable), wasNotReenabled);
+                isInterruptable = bmgr.and(isInterruptable, bmgr.not(isDisabled));
+            }
+        }
+        return isInterruptable;
+    }
+
     /*
         A thread is enabled if it has no creator or the corresponding ThreadCreate
         event was executed (and didn't fail spuriously).
@@ -128,14 +150,38 @@ public class ProgramEncoder implements Encoder {
     private BooleanFormula threadIsEnabled(Thread thread) {
         final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
         final ThreadStart start = thread.getEntry();
+        final BooleanFormula creatorExecuted;
         if (!start.isSpawned()) {
-            return bmgr.makeTrue();
+            creatorExecuted = bmgr.makeTrue();
         } else if (!start.mayFailSpuriously()) {
-            return context.execution(start.getCreator());
+            creatorExecuted = context.execution(start.getCreator());
         } else {
             final String spawnSuccessVarName = "__spawnSuccess#" + thread.getId();
-            return bmgr.and(context.execution(start.getCreator()), bmgr.makeVariable(spawnSuccessVarName));
+            creatorExecuted = bmgr.and(context.execution(start.getCreator()), bmgr.makeVariable(spawnSuccessVarName));
         }
+
+        if (thread.getThreadType() == Thread.Type.INTERRUPT_HANDLER) {
+            assert start.isSpawned();
+            final ThreadCreate ihCreate = thread.getEntry().getCreator();
+            final Thread it = ihCreate.getThread();
+            final InterruptAnalysis.Info itInfo = InterruptAnalysis.computeInterruptInfo(it);
+            final BooleanFormula otherInterruptsDidTerminate = itInfo.interrupts().stream()
+                    .filter(ih -> ih != thread)
+                    .map(ih -> bmgr.or(threadHasTerminatedNormally(ih), bmgr.not(threadHasStarted(ih))))
+                    .reduce(bmgr.makeTrue(), bmgr::and);
+            final BooleanFormula isDisabledAtSpawn = bmgr.not(isInterruptible(ihCreate, itInfo));
+            final BooleanFormula isReenabled = itInfo.irqBarriers().stream()
+                    .filter(e -> e.getLocalId() > ihCreate.getLocalId() && e.hasTag(Tag.ENABLE_INTERRUPT))
+                    .map(context::execution).reduce(bmgr.makeFalse(), bmgr::or);
+            final BooleanFormula ihCanRun = bmgr.and(
+                    creatorExecuted,
+                    bmgr.or(bmgr.not(isDisabledAtSpawn), isReenabled),
+                    otherInterruptsDidTerminate
+            );
+            return ihCanRun;
+        }
+
+        return creatorExecuted;
     }
 
     private BooleanFormula threadHasStarted(Thread thread) {
@@ -582,24 +628,41 @@ public class ProgramEncoder implements Encoder {
             final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
             final List<BooleanFormula> enc = new ArrayList<>();
 
-            // An enabled thread eventually gets started/scheduled
+            // ---------------------------------------------------------------------
+            final InterruptAnalysis.Info itInfo = InterruptAnalysis.computeInterruptInfo(thread);
+            final BooleanFormula interruptsDidTerminate = itInfo.interrupts().stream()
+                    .map(ih -> bmgr.or(threadHasTerminatedNormally(ih), bmgr.not(threadHasStarted(ih))))
+                    .reduce(bmgr.makeTrue(), bmgr::and);
+
+            // ----------------------------------------------------------------------
+
+            // TODO: Maybe relax for interrupt handlers (do they need to run?).
+            //  Problem: Some benchmarks join on IH, meaning IT waits for IH and if IH does never run
+            //  the program does not terminate.
             enc.add(bmgr.implication(threadIsEnabled(thread), threadHasStarted(thread)));
 
             // For every event in the cf a successor will be in the cf (unless a barrier is blocking).
+            // ... or some interrupt handler failed to terminate
             for (Event cur : thread.getEvents()) {
                 if (cur == thread.getExit()) {
                     break;
                 }
                 final List<Event> succs = new ArrayList<>();
-                final BooleanFormula curCf = context.controlFlow(cur);
-                final BooleanFormula isNotBlocked = cur instanceof BlockingEvent cb ? context.unblocked(cb) : bmgr.makeTrue();
-
                 succs.add(cur.getSuccessor());
                 if (cur instanceof CondJump jump) {
                     succs.add(jump.getLabel());
                 }
-                enc.add(bmgr.implication(bmgr.and(curCf, isNotBlocked), bmgr.or(Lists.transform(succs, context::controlFlow))));
+
+                final BooleanFormula curCf = context.controlFlow(cur);
+                final BooleanFormula isNotBlocked = cur instanceof BlockingEvent cb ? context.unblocked(cb) : bmgr.makeTrue();
+                // TODO: IHs might not interact well with unfair scheduling
+                final BooleanFormula isNotInterruptable = bmgr.not(isInterruptible(cur, itInfo));
+                enc.add(bmgr.implication(
+                        bmgr.and(curCf, isNotBlocked, bmgr.or(isNotInterruptable, interruptsDidTerminate)),
+                        bmgr.or(Lists.transform(succs, context::controlFlow))
+                ));
             }
+
             return bmgr.and(enc);
         }
 

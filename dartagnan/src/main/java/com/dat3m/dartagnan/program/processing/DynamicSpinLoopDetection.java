@@ -10,6 +10,7 @@ import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.analysis.LiveRegistersAnalysis;
 import com.dat3m.dartagnan.program.analysis.LoopAnalysis;
 import com.dat3m.dartagnan.program.event.*;
+import com.dat3m.dartagnan.program.event.core.Label;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
@@ -159,10 +160,18 @@ public class DynamicSpinLoopDetection implements ProgramProcessor {
         final Expression hasSideEffect = expressions.makeOr(localSideEffectReg, globalSideEffectReg);
 
         final Event assignLocalSideEffectReg = EventFactory.newLocal(localSideEffectReg, expressions.makeNEQ(entryLiveStateRegister, liveRegistersVector));
-        final Event assumeSideEffect = newSpinTerminator(expressions.makeNot(hasSideEffect), loop);
+        final Event assumeSideEffect = newSpinTerminator(expressions.makeTrue(), loop);
+        final Label sideEffectLabel = EventFactory.newLabel("__hasSideEffect");
+        final Event checkSideEffect = EventFactory.newJump(hasSideEffect, sideEffectLabel);
+        // TODO: Don't exploit FenceOpt: use proper marker event.
+        final Event marker = EventFactory.newFenceOpt("NONTERM", "SPINLOOP");
+        marker.removeTags(Tag.FENCE);
         loop.getEnd().insertBefore(List.of(
                 assignLocalSideEffectReg,
-                assumeSideEffect
+                checkSideEffect,
+                marker,
+                assumeSideEffect,
+                sideEffectLabel
         ));
 
         // Special snapshot event for non-termination detection
