@@ -3,6 +3,8 @@
 #include <pthread.h>
 #include <assert.h>
 
+// Expected: ??? (untested)
+
 atomic_int x, y, z;
 
 pthread_t h;

@@ -4,7 +4,7 @@
 #include <assert.h>
 #include <dat3m.h>
 
-// ISSUE: Multiple IHs for the same thread: IHs agree on the compiler reordering
+// Test case: Multiple IHs for the same thread: IHs should agree on the compiler reordering
 // Expected: PASS
 
 volatile int x, y, z;

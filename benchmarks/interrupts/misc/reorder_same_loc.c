@@ -4,7 +4,7 @@
 #include <assert.h>
 #include <dat3m.h>
 
-// ISSUE: Compiler barrier should include same-loc writes.
+// Test case: Compiler barrier should include same-loc writes.
 // Expected: PASS
 
 volatile int x;

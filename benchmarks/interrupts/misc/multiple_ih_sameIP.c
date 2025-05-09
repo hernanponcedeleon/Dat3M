@@ -4,7 +4,7 @@
 #include <assert.h>
 #include <dat3m.h>
 
-// ISSUE: Multiple IHs for the same thread, interrupting at the same point.
+// Test case: Multiple IHs for the same thread, all can interrupt at the same point.
 // Expected: FAIL
 
 atomic_int x, y;

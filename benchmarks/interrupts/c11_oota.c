@@ -4,6 +4,8 @@
 #include <assert.h>
 #include <dat3m.h>
 
+// Expected: PASS
+
 atomic_int x, y, z;
 
 pthread_t h;

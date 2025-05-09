@@ -5,6 +5,8 @@
 #include <assert.h>
 #include <dat3m.h>
 
+// Expected: ???
+
 atomic_int x, y, a1, a2, b1, b2;
 int r1, r2, t1, u1, t2, u2;
 

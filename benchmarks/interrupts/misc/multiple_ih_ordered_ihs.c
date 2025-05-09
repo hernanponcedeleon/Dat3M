@@ -4,7 +4,7 @@
 #include <assert.h>
 #include <dat3m.h>
 
-// ISSUE: Multiple IHs for the same thread: IHs are ordered
+// Test case: Multiple IHs for the same thread: IHs are ordered
 // Expected: PASS
 
 volatile int x;

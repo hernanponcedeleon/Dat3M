@@ -4,6 +4,8 @@
 #include <dat3m.h>
 #include <lkmm.h>
 
+// Expected: FAIL
+
 int x, y, a, b;
 
 pthread_t h;

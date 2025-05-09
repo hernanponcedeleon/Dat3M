@@ -4,8 +4,9 @@
 #include <assert.h>
 #include <dat3m.h>
 
-// ISSUE: Non-termination of IH should prohibit execution of events after it.
-//  However, IH's non-termination indirectly depends on the later events, giving a notion of OOTA non-termination.
+// Test case: Non-termination of IH should prohibit execution of events after it.
+// However, IH's non-termination indirectly depends on the later events, giving a notion of OOTA non-termination.
+// Expected: PASS
 
 volatile int x, y, z;
 

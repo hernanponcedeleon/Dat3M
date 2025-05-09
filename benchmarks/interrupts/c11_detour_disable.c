@@ -4,6 +4,8 @@
 #include <assert.h>
 #include <dat3m.h>
 
+// Expected: FAIL
+
 atomic_int x, y;
 int a, b;
 

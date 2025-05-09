@@ -6,6 +6,7 @@
 
 /*
     This test shows how interrupt handlers are spawned
+    Expected: FAIL
 */
 
 struct A { volatile int a; volatile int b; }; // Without "volatile" the compiler removes our assertions.

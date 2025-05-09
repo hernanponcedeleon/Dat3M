@@ -4,7 +4,7 @@
 #include <assert.h>
 #include <dat3m.h>
 
-// ISSUE: IH is disabled forever. IH should never run.
+// Test case: IH is disabled forever. IH should never run.
 // Expected: PASS.
 
 void *handler(void *arg)

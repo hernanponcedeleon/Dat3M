@@ -4,7 +4,7 @@
 #include <assert.h>
 #include <dat3m.h>
 
-// ISSUE: Multiple IHs for the same thread: one is stuck and should stop the other.
+// Test case: Multiple IHs for the same thread: one is stuck and should stop the other.
 // Expected: FAIL
 
 atomic_int x;
