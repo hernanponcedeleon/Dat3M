@@ -1,14 +1,11 @@
-package com.dat3m.dartagnan.encoding.formulas;
+package com.dat3m.dartagnan.smt;
 
-import com.dat3m.dartagnan.encoding.EncodingContext;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import org.sosy_lab.java_smt.api.BooleanFormula;
-import org.sosy_lab.java_smt.api.BooleanFormulaManager;
 import org.sosy_lab.java_smt.api.Formula;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.IntStream;
 
@@ -20,21 +17,14 @@ import java.util.stream.IntStream;
  */
 public final class TupleFormulaManager {
 
-    private final EncodingContext context;
+    private final FormulaManagerExt fmgr;
 
-    public TupleFormulaManager(EncodingContext context) {
-        this.context = context;
-
+    TupleFormulaManager(FormulaManagerExt fmgr) {
+        this.fmgr = fmgr;
     }
 
     public BooleanFormula equal(TupleFormula x, TupleFormula y) {
-        Preconditions.checkArgument(x.elements.size() == y.elements.size());
-        final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
-        final List<BooleanFormula> enc = new ArrayList<>();
-        for (int i = 0; i < x.elements.size(); i++) {
-            enc.add(context.equal(x.elements.get(i), y.elements.get(i)));;
-        }
-        return bmgr.and(enc);
+        return fmgr.equal(x, y);
     }
 
     public Formula extract(TupleFormula f, int index) {

@@ -4,7 +4,6 @@ import com.dat3m.dartagnan.solver.caat.misc.EdgeDirection;
 import com.dat3m.dartagnan.solver.caat.predicates.relationGraphs.Edge;
 import com.dat3m.dartagnan.verification.model.EventData;
 
-import java.math.BigInteger;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Stream;
@@ -12,7 +11,7 @@ import java.util.stream.Stream;
 // NOTE: Unlike RelLoc, this graph is reflexive!
 public class LocationGraph extends StaticWMMGraph {
 
-    private Map<BigInteger, Set<EventData>> addrEventsMap;
+    private Map<Object, Set<EventData>> addrEventsMap;
 
     @Override
     public boolean containsById(int id1, int id2) {
@@ -30,7 +29,7 @@ public class LocationGraph extends StaticWMMGraph {
     @Override
     public void repopulate() {
         addrEventsMap = new HashMap<>(model.getAddressReadsMap().size());
-        for (BigInteger addr : model.getAddressReadsMap().keySet()) {
+        for (Object addr : model.getAddressReadsMap().keySet()) {
             // TODO: This can be improved via a disjoint union class
             Set<EventData> events = new HashSet<>(model.getAddressReadsMap().get(addr));
             events.addAll(model.getAddressWritesMap().get(addr));

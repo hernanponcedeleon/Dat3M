@@ -2,11 +2,13 @@ package com.dat3m.dartagnan.program.event.core;
 
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionVisitor;
+import com.dat3m.dartagnan.expression.type.BooleanType;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.AbstractEvent;
 import com.dat3m.dartagnan.program.event.EventVisitor;
 import com.dat3m.dartagnan.program.event.RegReader;
 import com.google.common.base.Preconditions;
+import com.google.common.base.Verify;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -17,7 +19,7 @@ public class Assert extends AbstractEvent implements RegReader {
     protected String errorMessage;
 
     public Assert(Expression expr, String errorMessage) {
-        super();
+        Preconditions.checkArgument(expr.getType() instanceof BooleanType);
         this.expr = Preconditions.checkNotNull(expr);
         this.errorMessage = Preconditions.checkNotNull(errorMessage);
     }
@@ -46,6 +48,7 @@ public class Assert extends AbstractEvent implements RegReader {
     @Override
     public void transformExpressions(ExpressionVisitor<? extends Expression> exprTransformer) {
         this.expr = expr.accept(exprTransformer);
+        Verify.verify(expr.getType() instanceof BooleanType);
     }
 
     @Override

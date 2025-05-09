@@ -1,4 +1,4 @@
-package com.dat3m.dartagnan.encoding.formulas;
+package com.dat3m.dartagnan.smt;
 
 import com.google.common.collect.ImmutableList;
 import org.sosy_lab.java_smt.api.Formula;
@@ -17,11 +17,6 @@ public class TupleFormula implements Formula {
 
     TupleFormula(List<Formula> elements) {
         this.elements = ImmutableList.copyOf(elements);
-    }
-
-    // WARNING: Avoid using this method if possible.
-    public List<Formula> getElements() {
-        return elements;
     }
 
     @Override

@@ -1,11 +1,15 @@
 package com.dat3m.dartagnan.verification.model;
 
 import com.dat3m.dartagnan.encoding.EncodingContext;
-import com.dat3m.dartagnan.encoding.EncodingHelper;
+import com.dat3m.dartagnan.encoding.ExpressionEncoder;
+import com.dat3m.dartagnan.encoding.IREvaluator;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.Thread;
-import com.dat3m.dartagnan.program.event.*;
+import com.dat3m.dartagnan.program.event.Event;
+import com.dat3m.dartagnan.program.event.RegReader;
+import com.dat3m.dartagnan.program.event.RegWriter;
+import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.event.core.threading.ThreadArgument;
 import com.dat3m.dartagnan.program.event.core.threading.ThreadJoin;
@@ -13,6 +17,7 @@ import com.dat3m.dartagnan.program.event.lang.svcomp.BeginAtomic;
 import com.dat3m.dartagnan.program.event.lang.svcomp.EndAtomic;
 import com.dat3m.dartagnan.program.filter.Filter;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
+import com.dat3m.dartagnan.smt.ModelExt;
 import com.dat3m.dartagnan.utils.dependable.DependencyGraph;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.wmm.Wmm;
@@ -23,9 +28,6 @@ import com.google.common.collect.Sets;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
-import org.sosy_lab.java_smt.api.BooleanFormula;
-import org.sosy_lab.java_smt.api.Formula;
-import org.sosy_lab.java_smt.api.Model;
 
 import java.math.BigInteger;
 import java.util.*;
@@ -45,10 +47,11 @@ public class ExecutionModel {
 
     private static final Logger logger = LogManager.getLogger(ExecutionModel.class);
 
-    private final EncodingContext encodingContext;
+    private final EncodingContext ctx;
 
     // ============= Model specific  =============
-    private Model model;
+    private ModelExt model;
+    private IREvaluator irModel;
     private Filter eventFilter;
     private boolean extractCoherences;
 
@@ -62,16 +65,16 @@ public class ExecutionModel {
     private final Map<EventData, EventData> readWriteMap;
     private final Map<EventData, Set<EventData>> writeReadsMap;
     private final Map<String, Set<EventData>> fenceMap;
-    private final Map<BigInteger, Set<EventData>> addressReadsMap;
-    private final Map<BigInteger, Set<EventData>> addressWritesMap; // This ALSO contains the init writes
-    private final Map<BigInteger, EventData> addressInitMap;
+    private final Map<Object, Set<EventData>> addressReadsMap;
+    private final Map<Object, Set<EventData>> addressWritesMap; // This ALSO contains the init writes
+    private final Map<Object, EventData> addressInitMap;
     //Note, we could merge the three above maps into a single one that holds writes, reads and init writes.
 
     private final Map<EventData, Set<EventData>> dataDepMap;
     private final Map<EventData, Set<EventData>> addrDepMap;
     private final Map<EventData, Set<EventData>> ctrlDepMap;
 
-    private final Map<BigInteger, List<EventData>> coherenceMap;
+    private final Map<Object, List<EventData>> coherenceMap;
 
     // The following are a read-only views which get passed to the outside
     private List<EventData> eventListView;
@@ -82,18 +85,18 @@ public class ExecutionModel {
     private Map<EventData, EventData> readWriteMapView;
     private Map<EventData, Set<EventData>> writeReadsMapView;
     private Map<String, Set<EventData>> fenceMapView;
-    private Map<BigInteger, Set<EventData>> addressReadsMapView;
-    private Map<BigInteger, Set<EventData>> addressWritesMapView;
-    private Map<BigInteger, EventData> addressInitMapView;
+    private Map<Object, Set<EventData>> addressReadsMapView;
+    private Map<Object, Set<EventData>> addressWritesMapView;
+    private Map<Object, EventData> addressInitMapView;
 
     private Map<EventData, Set<EventData>> dataDepMapView;
     private Map<EventData, Set<EventData>> addrDepMapView;
     private Map<EventData, Set<EventData>> ctrlDepMapView;
 
-    private Map<BigInteger, List<EventData>> coherenceMapView;
+    private Map<Object, List<EventData>> coherenceMapView;
 
     private ExecutionModel(EncodingContext c) {
-        this.encodingContext = checkNotNull(c);
+        this.ctx = checkNotNull(c);
 
         eventList = new ArrayList<>(100);
         threadList = new ArrayList<>(getProgram().getThreads().size());
@@ -141,23 +144,23 @@ public class ExecutionModel {
 
     // General data
     public VerificationTask getTask() {
-        return encodingContext.getTask();
+        return ctx.getTask();
     }
     
     public Wmm getMemoryModel() {
-        return encodingContext.getTask().getMemoryModel();
+        return ctx.getTask().getMemoryModel();
     }
 
     public Program getProgram() {
-        return encodingContext.getTask().getProgram();
+        return ctx.getTask().getProgram();
     }
 
     // Model specific data
-    public Model getModel() {
+    public ModelExt getModel() {
         return model;
     }
     public EncodingContext getContext() {
-        return encodingContext;
+        return ctx;
     }
     public Filter getEventFilter() {
         return eventFilter;
@@ -188,19 +191,19 @@ public class ExecutionModel {
     public Map<String, Set<EventData>> getFenceMap() {
         return fenceMapView;
     }
-    public Map<BigInteger, Set<EventData>> getAddressReadsMap() {
+    public Map<Object, Set<EventData>> getAddressReadsMap() {
         return addressReadsMapView;
     }
-    public Map<BigInteger, Set<EventData>> getAddressWritesMap() {
+    public Map<Object, Set<EventData>> getAddressWritesMap() {
         return addressWritesMapView;
     }
-    public Map<BigInteger, EventData> getAddressInitMap() {
+    public Map<Object, EventData> getAddressInitMap() {
         return addressInitMapView;
     }
     public Map<EventData, Set<EventData>> getAddrDepMap() { return addrDepMapView; }
     public Map<EventData, Set<EventData>> getDataDepMap() { return dataDepMapView; }
     public Map<EventData, Set<EventData>> getCtrlDepMap() { return ctrlDepMapView; }
-    public Map<BigInteger, List<EventData>> getCoherenceMap() { return coherenceMapView; }
+    public Map<Object, List<EventData>> getCoherenceMap() { return coherenceMapView; }
 
 
 
@@ -215,20 +218,21 @@ public class ExecutionModel {
     //========================== Initialization =========================
 
 
-    public void initialize(Model model) {
+    public void initialize(ModelExt model) {
         initialize(model, true);
     }
 
-    public void initialize(Model model, boolean extractCoherences) {
+    public void initialize(ModelExt model, boolean extractCoherences) {
         initialize(model, Filter.byTag(Tag.VISIBLE), extractCoherences);
     }
 
-    public void initialize(Model model, Filter eventFilter, boolean extractCoherences) {
+    public void initialize(ModelExt model, Filter eventFilter, boolean extractCoherences) {
         // We populate here, instead of on construction,
         // to reuse allocated data structures (since these data structures already adapted
         // their capacity in previous iterations, and thus we should have less overhead in future populations)
         // However, for all intents and purposes, this serves as a constructor.
         this.model = model;
+        this.irModel = new IREvaluator(ctx, model);
         this.eventFilter = eventFilter;
         this.extractCoherences = extractCoherences;
         extractEventsFromModel();
@@ -271,7 +275,7 @@ public class ExecutionModel {
             int atomicBegin = -1;
             int localId = 0;
             do {
-                if (!isTrue(encodingContext.execution(e))) {
+                if (!irModel.isExecuted(e)) {
                     e = e.getSuccessor();
                     continue;
                 }
@@ -290,7 +294,7 @@ public class ExecutionModel {
                 }
                 // =========================
 
-                if (e instanceof CondJump jump && isTrue(encodingContext.jumpTaken(jump))) {
+                if (e instanceof CondJump jump && irModel.jumpTaken(jump)) {
                     e = jump.getLabel();
                 } else {
                     e = e.getSuccessor();
@@ -333,8 +337,7 @@ public class ExecutionModel {
         data.setWasExecuted(true);
         if (data.isMemoryEvent()) {
             // ===== Memory Events =====
-            Object addressObject = checkNotNull(model.evaluate(encodingContext.address((MemoryEvent) e)));
-            BigInteger address = new BigInteger(addressObject.toString());
+            Object address = checkNotNull(irModel.address((MemoryCoreEvent) e).value());
             data.setAccessedAddress(address);
             if (!addressReadsMap.containsKey(address)) {
                 addressReadsMap.put(address, new HashSet<>());
@@ -342,8 +345,7 @@ public class ExecutionModel {
             }
 
             if (data.isRead() || data.isWrite()) {
-                Formula valueFormula = encodingContext.value((MemoryCoreEvent)e);
-                data.setValue(EncodingHelper.evaluate(valueFormula, model));
+                data.setValue(irModel.value((MemoryCoreEvent) e).value());
             }
 
             if (data.isRead()) {
@@ -368,7 +370,7 @@ public class ExecutionModel {
         } else if (data.isJump()) {
             // ===== Jumps =====
             // We override the meaning of execution here. A jump is executed IFF its condition was true.
-            data.setWasExecuted(isTrue(encodingContext.jumpTaken((CondJump) e)));
+            data.setWasExecuted(irModel.jumpTaken((CondJump) e));
         } else {
             //TODO: Maybe add some other events (e.g. assertions)
             // But for now all non-visible events are simply registered without
@@ -485,27 +487,28 @@ public class ExecutionModel {
     // ===================================================
 
     private void extractMemoryLayout() {
+        final ExpressionEncoder exprEnc = ctx.getExpressionEncoder();
         memoryLayoutMap.clear();
         for (MemoryObject obj : getProgram().getMemory().getObjects()) {
-            final boolean isAllocated = obj.isStaticallyAllocated() || isTrue(encodingContext.execution(obj.getAllocationSite()));
+            final boolean isAllocated = irModel.isAllocated(obj);
             if (isAllocated) {
-                final ValueModel address = new ValueModel(model.evaluate(encodingContext.address(obj)));
-                final BigInteger size = (BigInteger) model.evaluate(encodingContext.size(obj));
+                // TODO: Get rid of ValueModel: replace by TypedValue
+                final ValueModel address = new ValueModel(irModel.address(obj).value());
+                final BigInteger size = irModel.size(obj).value();
                 memoryLayoutMap.put(obj, new MemoryObjectModel(obj, address, size));
             }
         }
     }
 
     private void extractReadsFrom() {
-        final EncodingContext.EdgeEncoder rf = encodingContext.edge(encodingContext.getTask().getMemoryModel().getRelation(RF));
+        final EncodingContext.EdgeEncoder rf = ctx.edge(ctx.getTask().getMemoryModel().getRelation(RF));
         readWriteMap.clear();
 
-        for (Map.Entry<BigInteger, Set<EventData>> addressedReads : addressReadsMap.entrySet()) {
-            BigInteger address = addressedReads.getKey();
+        for (Map.Entry<Object, Set<EventData>> addressedReads : addressReadsMap.entrySet()) {
+            Object address = addressedReads.getKey();
             for (EventData read : addressedReads.getValue()) {
                 for (EventData write : addressWritesMap.get(address)) {
-                    BooleanFormula rfExpr = rf.encode(write.getEvent(), read.getEvent());
-                    if (isTrue(rfExpr)) {
+                    if (irModel.hasEdge(rf, write.getEvent(), read.getEvent())) {
                         readWriteMap.put(read, write);
                         read.setReadFrom(write);
                         writeReadsMap.get(write).add(read);
@@ -517,20 +520,20 @@ public class ExecutionModel {
     }
 
     private void extractCoherences() {
-        final EncodingContext.EdgeEncoder co = encodingContext.edge(encodingContext.getTask().getMemoryModel().getRelation(CO));
+        final EncodingContext.EdgeEncoder co = ctx.edge(ctx.getTask().getMemoryModel().getRelation(CO));
 
-        for (Map.Entry<BigInteger, Set<EventData>> addrWrites : addressWritesMap.entrySet()) {
-            final BigInteger addr = addrWrites.getKey();
+        for (Map.Entry<Object, Set<EventData>> addrWrites : addressWritesMap.entrySet()) {
+            final Object addr = addrWrites.getKey();
             final Set<EventData> writes = addrWrites.getValue();
 
             List<EventData> coSortedWrites;
-            if (encodingContext.usesSATEncoding()) {
+            if (ctx.usesSATEncoding()) {
                 // --- Extracting co from SAT-based encoding ---
                 Map<EventData, List<EventData>> coEdges = new HashMap<>();
                 for (EventData w1 : writes) {
                     coEdges.put(w1, new ArrayList<>());
                     for (EventData w2 : writes) {
-                        if (isTrue(co.encode(w1.getEvent(), w2.getEvent()))) {
+                        if (irModel.hasEdge(co, w1.getEvent(), w2.getEvent())) {
                             coEdges.get(w1).add(w2);
                         }
                     }
@@ -541,7 +544,7 @@ public class ExecutionModel {
                 // --- Extracting co from IDL-based encoding using clock variables ---
                 Map<EventData, BigInteger> writeClockMap = new HashMap<>(writes.size() * 4 / 3, 0.75f);
                 for (EventData w : writes) {
-                    writeClockMap.put(w, model.evaluate(encodingContext.memoryOrderClock(w.getEvent())));
+                    writeClockMap.put(w, irModel.memoryOrderClock(w.getEvent()));
                 }
                 coSortedWrites = writes.stream().sorted(Comparator.comparing(writeClockMap::get)).collect(Collectors.toList());
             }
@@ -554,9 +557,5 @@ public class ExecutionModel {
             coherenceMap.put(addr, Collections.unmodifiableList(coSortedWrites));
         }
 
-    }
-
-    private boolean isTrue(BooleanFormula formula) {
-        return Boolean.TRUE.equals(model.evaluate(formula));
     }
 }
