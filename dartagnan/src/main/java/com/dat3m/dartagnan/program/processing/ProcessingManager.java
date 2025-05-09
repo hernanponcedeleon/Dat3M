@@ -87,6 +87,14 @@ public class ProcessingManager implements ProgramProcessor {
         final FunctionProcessor sccp = constantPropagation ? SparseConditionalConstantPropagation.fromConfig(config) : null;
         final FunctionProcessor dce = performDce ? DeadAssignmentElimination.fromConfig(config) : null;
         final FunctionProcessor removeDeadJumps = RemoveDeadCondJumps.fromConfig(config);
+        final ProgramProcessor repeatableAfterTearing = ProgramProcessor.fromFunctionProcessor(
+                FunctionProcessor.chain(
+                        performAssignmentInlining ? AssignmentInlining.newInstance() : null,
+                        sccp,
+                        dce,
+                        removeDeadJumps
+                ), Target.THREADS, true
+        );
         programProcessors.addAll(Arrays.asList(
                 printBeforeProcessing ? DebugPrint.withHeader("Before processing", Printer.Mode.ALL) : null,
                 intrinsics.markIntrinsicsPass(),
@@ -132,25 +140,11 @@ public class ProcessingManager implements ProgramProcessor {
                                 MemToReg.fromConfig(config)
                         ), Target.THREADS, true
                 ),
-                ProgramProcessor.fromFunctionProcessor(
-                        FunctionProcessor.chain(
-                                performAssignmentInlining ? AssignmentInlining.newInstance() : null,
-                                sccp,
-                                dce,
-                                removeDeadJumps
-                        ), Target.THREADS, true
-                ),
+                repeatableAfterTearing,
                 RemoveUnusedMemory.newInstance(),
                 MemoryAllocation.fromConfig(config),
                 detectMixedSizeAccesses ? Tearing.fromConfig(config) : null,
-                detectMixedSizeAccesses ? ProgramProcessor.fromFunctionProcessor(
-                        FunctionProcessor.chain(
-                                performAssignmentInlining ? AssignmentInlining.newInstance() : null,
-                                sccp,
-                                dce,
-                                removeDeadJumps
-                        ), Target.THREADS, true
-                ) : null,
+                detectMixedSizeAccesses ? repeatableAfterTearing : null,
                 NonterminationDetection.fromConfig(config),
                 // --- Statistics + verification ---
                 IdReassignment.newInstance(), // Normalize used Ids (remove any gaps)

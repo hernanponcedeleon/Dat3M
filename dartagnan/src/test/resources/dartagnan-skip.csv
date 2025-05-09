@@ -6,10 +6,10 @@ litmus/C11/auto/linearisation.litmus
 litmus/OPENCL/portedFromC11/auto/linearisation.litmus
 
 // The following contain dynamic addressing into a large array on which we may run out of space
-litmus/AARCH64-MIXED/MP+dmbsy+misaligned2+511.litmus
-litmus/AARCH64-MIXED/MP+dmbsy+misaligned2+511x.litmus
-litmus/AARCH64-MIXED/MP+misaligned2+511+addr.litmus
-litmus/AARCH64-MIXED/MP+misaligned2+511x+addr.litmus
+litmus/AARCH64/mixed/MP+dmbsy+misaligned2+511.litmus
+litmus/AARCH64/mixed/MP+dmbsy+misaligned2+511x.litmus
+litmus/AARCH64/mixed/MP+misaligned2+511+addr.litmus
+litmus/AARCH64/mixed/MP+misaligned2+511x+addr.litmus
 
 // The following contains AMO instructions which we currently do not support
 litmus/RISCV/2+2Swap+Acqs.litmus

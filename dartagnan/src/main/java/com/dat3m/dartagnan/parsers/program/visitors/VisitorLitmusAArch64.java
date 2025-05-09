@@ -144,16 +144,18 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object> {
 
     @Override
     public Object visitMov(MovContext ctx) {
-        Register register = parseRegister64(ctx.r32, ctx.r64);
-        Expression expr = parseExpression(ctx.expr32(), ctx.expr64());
-        return add(EventFactory.newLocal(register, expressions.makeCast(expr, register.getType())));
+        final Register r64 = parseRegister64(ctx.r32, ctx.r64);
+        final Expression expr = parseExpression(ctx.expr32(), ctx.expr64());
+        return add(EventFactory.newLocal(r64, expressions.makeIntegerCast(expr, i64, false)));
     }
 
     @Override
     public Object visitCmp(CmpContext ctx) {
-        final Register register = parseRegister64(ctx.r32, ctx.r64);
-        final Expression right = parseExpression(ctx.expr32(), ctx.expr64());
-        final Expression left = expressions.makeCast(register, right.getType());
+        final Register r64 = parseRegister64(ctx.r32, ctx.r64);
+        final Expression comparator = parseExpression(ctx.expr32(), ctx.expr64());
+        final IntegerType type = ctx.r64 != null ? i64 : i32;
+        final Expression left = expressions.makeIntegerCast(r64, type, false);
+        final Expression right = expressions.makeIntegerCast(comparator, type, true);
         lastCmpInstructionPerThread.put(mainThread, new CmpInstruction(left, right));
         return null;
     }
@@ -161,13 +163,13 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object> {
     @Override
     public Object visitArithmetic(ArithmeticContext ctx) {
         final Register r64 = parseRegister64(ctx.rD32, ctx.rD64);
-        final Register register = shrinkRegister(r64, ctx.rD32, false, false);
         final Register operand = parseRegister64(ctx.rV32, ctx.rV64);
         final Expression expr = parseExpression(ctx.expr32(), ctx.expr64());
-        final Expression fittedOperand = expressions.makeCast(operand, expr.getType());
-        final Expression result = expressions.makeIntBinary(fittedOperand, ctx.arithmeticInstruction().op, expr);
-        add(EventFactory.newLocal(register, expressions.makeCast(result, register.getType())));
-        addRegister64Update(r64, register);
+        final IntegerType type = ctx.rD64 != null ? i64 : i32;
+        final Expression left = expressions.makeIntegerCast(operand, type, false);
+        final Expression right = expressions.makeIntegerCast(expr, type, false);
+        final Expression result = expressions.makeIntBinary(left, ctx.arithmeticInstruction().op, right);
+        add(EventFactory.newLocal(r64, expressions.makeIntegerCast(result, i64, false)));
         return null;
     }
 
@@ -215,8 +217,8 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object> {
     public Object visitStore(StoreContext ctx) {
         final Register r64 = parseRegister64(ctx.rV32, ctx.rV64);
         final StoreInstructionContext inst = ctx.storeInstruction();
-        final IntegerType type = inst.byteSize ? i8 : inst.halfWordSize ? i16 : i32;
-        final Expression value = ctx.rV64 != null ? r64 : expressions.makeIntegerCast(r64, type, false);
+        final IntegerType type = inst.byteSize ? i8 : inst.halfWordSize ? i16 : ctx.rV64 == null ? i32 : i64;
+        final Expression value = expressions.makeIntegerCast(r64, type, false);
         final Expression address = parseAddress(ctx.address());
         final String mo = ctx.storeInstruction().release ? MO_REL : "";
         return add(EventFactory.newStoreWithMo(address, value, mo));
@@ -227,8 +229,9 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object> {
         final boolean extended = ctx.r064 != null;
         final Register r64 = parseRegister64(ctx.r032, ctx.r064);
         final Register s64 = parseRegister64(ctx.r132, ctx.r164);
-        final Expression value0 = extended ? r64 : expressions.makeIntegerCast(r64, i32, false);
-        final Expression value1 = extended ? s64 : expressions.makeIntegerCast(s64, i32, false);
+        final IntegerType type = extended ? i64 : i32;
+        final Expression value0 = expressions.makeIntegerCast(r64, type, false);
+        final Expression value1 = expressions.makeIntegerCast(s64, type, false);
         final Expression address0 = parseAddress(ctx.address());
         final Expression address1 = expressions.makeAdd(address0, expressions.makeValue(extended ? 8 : 4, i64));
         add(EventFactory.newStore(address0, value0));
@@ -239,8 +242,8 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object> {
     public Object visitStoreExclusive(StoreExclusiveContext ctx) {
         final Register r64 = parseRegister64(ctx.rV32, ctx.rV64);
         final StoreExclusiveInstructionContext inst = ctx.storeExclusiveInstruction();
-        final IntegerType type = inst.byteSize ? i8 : inst.halfWordSize ? i16 : i32;
-        final Expression value = ctx.rV64 != null ? r64 : expressions.makeIntegerCast(r64, type, false);
+        final IntegerType type = inst.byteSize ? i8 : inst.halfWordSize ? i16 : ctx.rV64 == null ? i32 : i64;
+        final Expression value = expressions.makeIntegerCast(r64, type, false);
         final Register status = parseRegister64(ctx.rS32);
         final Expression address = parseAddress(ctx.address());
         final String mo = ctx.storeExclusiveInstruction().release ? MO_REL : "";
