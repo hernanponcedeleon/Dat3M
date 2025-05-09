@@ -13,6 +13,7 @@ import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.event.core.special.StateSnapshot;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.wmm.Relation;
+import com.dat3m.dartagnan.wmm.RelationNameRepository;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
 import com.dat3m.dartagnan.wmm.utils.graph.EventGraph;
@@ -685,6 +686,20 @@ public class NonTerminationEncoder {
             if (isPossiblySuffix(exclStore)) {
                 enc.add(bmgr.implication(isCfInSuffix(exclStore), context.execution(exclStore)));
             }
+        }
+
+        // (5) If a control barrier is in the suffix, then all its syncing control barriers must also be in the suffix
+        final Relation syncBar = memoryModel.getRelation(RelationNameRepository.SYNCBAR);
+        if (syncBar != null) {
+            final EventGraph syncBarMay = ra.getKnowledge(syncBar).getMaySet();
+            syncBarMay.apply((x, y) -> {
+                if (isPossiblySuffix(x)) {
+                    enc.add(bmgr.implication(
+                            bmgr.and(isInSuffix(x), context.edge(syncBar, x, y)),
+                            isInSuffix(y)
+                    ));
+                }
+            });
         }
 
         return bmgr.and(enc);
