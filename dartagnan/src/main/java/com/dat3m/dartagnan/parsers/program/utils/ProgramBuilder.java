@@ -51,7 +51,7 @@ public class ProgramBuilder {
     // ----------------------------------------------------------------------------------------------------------------
     // Construction
     private ProgramBuilder(SourceLanguage format) {
-        this.program = new Program(new Memory(), format, null);
+        this.program = new Program(new Memory(), format);
     }
 
     public static ProgramBuilder forArch(SourceLanguage format, Arch arch) {
@@ -76,6 +76,7 @@ public class ProgramBuilder {
             thread.append(endOfThread);
         }
         processAfterParsing(program);
+        program.setEntrypoint(new Entrypoint.Resolved());
         return program;
     }
 
