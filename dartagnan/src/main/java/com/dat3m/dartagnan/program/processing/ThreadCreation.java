@@ -396,17 +396,14 @@ public class ThreadCreation implements ProgramProcessor {
     // =============================================================================================
     // ========================================== SPIR-V ===========================================
     // =============================================================================================
-    private List<ThreadData> createSPVThreads(Program program, Entrypoint.Grid entrypoint) {
+    private void createSPVThreads(Program program, Entrypoint.Grid entrypoint) {
         final ThreadGrid grid = entrypoint.getThreadGrid();
         final List<MemoryTransformer> transformers = entrypoint.getMemoryTransformers();
         final Function entryFunction = entrypoint.getEntryFunction();
 
-        final List<ThreadData> spawnedThreads = new ArrayList<>();
-
         for (int tid = 0; tid < grid.dvSize(); tid++) {
             final Thread thread = createSPVThreadFromFunction(entryFunction, tid, grid, transformers);
             program.addThread(thread);
-            spawnedThreads.add(new ThreadData(thread, null));
         }
         // Remove unused memory objects of the entry function
         for (MemoryTransformer transformer : transformers) {
@@ -415,8 +412,6 @@ public class ThreadCreation implements ProgramProcessor {
                 memory.deleteMemoryObject(memoryObject);
             }
         }
-
-        return spawnedThreads;
     }
 
     private Thread createSPVThreadFromFunction(Function function, int tid, ThreadGrid grid, List<MemoryTransformer> transformers) {
