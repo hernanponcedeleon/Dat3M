@@ -52,9 +52,9 @@ public class ProgramBuilder {
     public Program build() {
         validateBeforeBuild();
         controlFlowBuilder.build();
-        Function entryFunction = program.getFunctionByName(entryPointId).get();
+        Function entryFunction = getEntryPointFunction();
         BuiltIn builtIn = (BuiltIn) decorationsBuilder.getDecoration(BUILT_IN);
-        MemoryTransformer transformer = new MemoryTransformer(grid, getEntryPointFunction(), builtIn, getVariables());
+        MemoryTransformer transformer = new MemoryTransformer(grid, entryFunction, builtIn, getVariables());
         program.setEntrypoint(new Entrypoint.Grid(entryFunction, grid, List.of(transformer)));
         return program;
     }
