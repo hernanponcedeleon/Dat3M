@@ -1,6 +1,7 @@
 package com.dat3m.dartagnan.spirv.header;
 
 import com.dat3m.dartagnan.exception.ParsingException;
+import com.dat3m.dartagnan.program.Entrypoint;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.ScopeHierarchy;
 import com.dat3m.dartagnan.program.ThreadGrid;
@@ -28,7 +29,7 @@ public class ConfigTest extends AbstractTest {
 
         // then
         int size = scopes.stream().reduce(1, (a, b) -> a * b);
-        ThreadGrid grid = program.getGrid();
+        ThreadGrid grid = ((Entrypoint.Grid) program.getEntrypoint()).getThreadGrid();
         assertEquals(size, grid.dvSize());
 
         int sg_size = scopes.get(0);

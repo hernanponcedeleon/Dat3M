@@ -93,32 +93,28 @@ public class ThreadCreation implements ProgramProcessor {
 
     @Override
     public void run(Program program) {
-        if (program.getFormat().equals(Program.SourceLanguage.LLVM)) {
-            createLLVMThreads(program);
-        } else if (program.getFormat().equals(Program.SourceLanguage.SPV)) {
-            createSPVThreads(program);
+        if (program.getEntrypoint() == null) {
+            throw new MalformedProgramException("Program has no entry point.");
         }
+
+        if (program.getEntrypoint() instanceof Entrypoint.Simple ep) {
+            final List<ThreadData> spawnedThreads = createThreads(ep);
+            resolvePthreadSelf(program);
+            resolveDynamicThreadJoin(program, spawnedThreads);
+            IdReassignment.newInstance().run(program);
+            resolveTidExpressions(program);
+        } else if (program.getEntrypoint() instanceof Entrypoint.Grid ep) {
+            createSPVThreads(program, ep);
+        }
+
+        logger.info("Number of threads (including main): {}", program.getThreads().size());
     }
 
     // =============================================================================================
     // =========================================== LLVM ============================================
     // =============================================================================================
 
-    private void createLLVMThreads(Program program) {
-        final List<ThreadData> threadData = createThreads(program);
-        resolvePthreadSelf(program);
-        resolveDynamicThreadJoin(program, threadData);
-        IdReassignment.newInstance().run(program);
-        resolveTidExpressions(program);
-
-        logger.info("Number of threads (including main): {}", program.getThreads().size());
-    }
-
-    private List<ThreadData> createThreads(Program program) {
-        final Optional<Function> main = program.getFunctionByName(program.getEntryPoint());
-        if (main.isEmpty()) {
-            throw new MalformedProgramException("Program contains no entry point function. Missing main method?");
-        }
+    private List<ThreadData> createThreads(Entrypoint.Simple entrypoint) {
 
         // NOTE: We start from id = 0 which overlaps with existing function ids.
         // However, we reassign ids after thread creation so that functions get higher ids.
@@ -126,7 +122,7 @@ public class ThreadCreation implements ProgramProcessor {
 
         // We collect metadata about each spawned thread. This is later used to resolve thread joining.
         final List<ThreadData> allThreads = new ArrayList<>();
-        final ThreadData entryPoint = createLLVMThreadFromFunction(main.get(), nextTid++, null);
+        final ThreadData entryPoint = createLLVMThreadFromFunction(entrypoint.getEntryFunction(), nextTid++, null);
         allThreads.add(entryPoint);
 
         final Queue<ThreadData> workingQueue = new ArrayDeque<>(allThreads);
@@ -400,27 +396,30 @@ public class ThreadCreation implements ProgramProcessor {
     // =============================================================================================
     // ========================================== SPIR-V ===========================================
     // =============================================================================================
-    private void createSPVThreads(Program program) {
-        ThreadGrid grid = program.getGrid();
-        List<ExprTransformer> transformers = program.getTransformers();
-        program.getFunctionByName(program.getEntryPoint()).ifPresent(entryFunction -> {
-            for (int tid = 0; tid < grid.dvSize(); tid++) {
-                final Thread thread = createSPVThreadFromFunction(entryFunction, tid, grid, transformers);
-                program.addThread(thread);
+    private List<ThreadData> createSPVThreads(Program program, Entrypoint.Grid entrypoint) {
+        final ThreadGrid grid = entrypoint.getThreadGrid();
+        final List<MemoryTransformer> transformers = entrypoint.getMemoryTransformers();
+        final Function entryFunction = entrypoint.getEntryFunction();
+
+        final List<ThreadData> spawnedThreads = new ArrayList<>();
+
+        for (int tid = 0; tid < grid.dvSize(); tid++) {
+            final Thread thread = createSPVThreadFromFunction(entryFunction, tid, grid, transformers);
+            program.addThread(thread);
+            spawnedThreads.add(new ThreadData(thread, null));
+        }
+        // Remove unused memory objects of the entry function
+        for (MemoryTransformer transformer : transformers) {
+            Memory memory = entryFunction.getProgram().getMemory();
+            for (MemoryObject memoryObject : transformer.getThreadLocalMemoryObjects()) {
+                memory.deleteMemoryObject(memoryObject);
             }
-            // Remove unused memory objects of the entry function
-            for (ExprTransformer transformer : transformers) {
-                if (transformer instanceof MemoryTransformer memoryTransformer) {
-                    Memory memory = entryFunction.getProgram().getMemory();
-                    for (MemoryObject memoryObject : memoryTransformer.getThreadLocalMemoryObjects()) {
-                        memory.deleteMemoryObject(memoryObject);
-                    }
-                }
-            }
-        });
+        }
+
+        return spawnedThreads;
     }
 
-    private Thread createSPVThreadFromFunction(Function function, int tid, ThreadGrid grid, List<ExprTransformer> transformers) {
+    private Thread createSPVThreadFromFunction(Function function, int tid, ThreadGrid grid, List<MemoryTransformer> transformers) {
         String name = function.getName();
         FunctionType type = function.getFunctionType();
         List<String> args = Lists.transform(function.getParameterRegisters(), Register::getName);
@@ -447,30 +446,28 @@ public class ThreadCreation implements ProgramProcessor {
         return thread;
     }
 
-    private void copyThreadEvents(Function function, Thread thread, List<ExprTransformer> transformers, Label threadEnd) {
+    private void copyThreadEvents(Function function, Thread thread, List<MemoryTransformer> transformers, Label threadEnd) {
         List<Event> body = new ArrayList<>();
         Map<Event, Event> eventCopyMap = new HashMap<>();
         function.getEvents().forEach(e -> body.add(eventCopyMap.computeIfAbsent(e, Event::getCopy)));
-        for (ExprTransformer transformer : transformers) {
-            if (transformer instanceof MemoryTransformer memoryTransformer) {
-                memoryTransformer.setThread(thread);
-                for (int i = 0; i < body.size(); i++) {
-                    Event copy = body.get(i);
-                    if (copy instanceof EventUser user) {
-                        user.updateReferences(eventCopyMap);
-                    }
-                    if (copy instanceof RegReader reader) {
-                        reader.transformExpressions(transformer);
-                    }
-                    if (copy instanceof RegWriter regWriter) {
-                        regWriter.setResultRegister(memoryTransformer.getRegisterMapping(regWriter.getResultRegister()));
-                    }
-                    if (copy instanceof AbortIf abort) {
-                        final Event jumpToEnd = EventFactory.newJump(abort.getCondition(), threadEnd);
-                        jumpToEnd.addTags(abort.getTags());
-                        jumpToEnd.copyAllMetadataFrom(abort);
-                        body.set(i, jumpToEnd);
-                    }
+        for (MemoryTransformer transformer : transformers) {
+            transformer.setThread(thread);
+            for (int i = 0; i < body.size(); i++) {
+                Event copy = body.get(i);
+                if (copy instanceof EventUser user) {
+                    user.updateReferences(eventCopyMap);
+                }
+                if (copy instanceof RegReader reader) {
+                    reader.transformExpressions(transformer);
+                }
+                if (copy instanceof RegWriter regWriter) {
+                    regWriter.setResultRegister(transformer.getRegisterMapping(regWriter.getResultRegister()));
+                }
+                if (copy instanceof AbortIf abort) {
+                    final Event jumpToEnd = EventFactory.newJump(abort.getCondition(), threadEnd);
+                    jumpToEnd.addTags(abort.getTags());
+                    jumpToEnd.copyAllMetadataFrom(abort);
+                    body.set(i, jumpToEnd);
                 }
             }
         }
