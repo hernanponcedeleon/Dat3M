@@ -26,7 +26,6 @@ public class Program {
     private SpecificationType specificationType = SpecificationType.ASSERT;
     private Expression spec;
     private Expression filterSpec; // Acts like "assume" statements, filtering out executions
-    private final List<Thread> threads;
     private final List<Function> functions;
     private final List<NonDetValue> constants = new ArrayList<>();
     private final Memory memory;
@@ -38,6 +37,8 @@ public class Program {
     private String entryPoint;
     private final List<ExprTransformer> transformers = new ArrayList<>();
 
+    private final ThreadHierarchy threadHierarchy = new ThreadHierarchy(this);
+
     private int nextConstantId = 0;
 
     public Program(Memory memory, SourceLanguage format, ThreadGrid grid) {
@@ -47,7 +48,6 @@ public class Program {
     public Program(String name, Memory memory, SourceLanguage format, ThreadGrid grid) {
         this.name = name;
         this.memory = memory;
-        this.threads = new ArrayList<>();
         this.functions = new ArrayList<>();
         this.format = format;
         this.grid = grid;
@@ -114,8 +114,11 @@ public class Program {
         this.filterSpec = spec;
     }
 
+    public ThreadHierarchy getThreadHierarchy() {
+        return threadHierarchy;
+    }
+
     public void addThread(Thread t) {
-        threads.add(t);
         t.setProgram(this);
     }
 
@@ -130,7 +133,8 @@ public class Program {
     }
 
     public List<Thread> getThreads() {
-        return threads;
+        //return threads;
+        return threadHierarchy.getThreads();
     }
 
     public List<Function> getFunctions() { return functions; }
@@ -187,11 +191,10 @@ public class Program {
     }
 
     public List<Event> getThreadEvents() {
+        final List<Thread> threads = getThreads();
         Preconditions.checkState(!threads.isEmpty(), "The program has no threads yet.");
         List<Event> events = new ArrayList<>();
-        for (Function func : threads) {
-            events.addAll(func.getEvents());
-        }
+        threads.forEach(t -> events.addAll(t.getEvents()));
         return events;
     }
 

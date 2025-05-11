@@ -9,6 +9,7 @@ import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Thread;
+import com.dat3m.dartagnan.program.ThreadHierarchy;
 import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.Alloc;
@@ -96,7 +97,7 @@ public class MemoryAllocation implements ProgramProcessor {
                 }
                 thread.append(init);
                 thread.append(EventFactory.newLabel("END_OF_T" + thread.getId()));
-                program.addThread(thread);
+                program.getThreadHierarchy().addThread(thread, ThreadHierarchy.Position.INIT);
                 nextThreadId++;
             }
         }

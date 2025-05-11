@@ -94,7 +94,7 @@ public class Printer {
         result.append(func instanceof Thread ? " thread " : " function ");
         result.append(functionSignatureToString(func));
         if (func instanceof Thread t && t.hasScope()) {
-           result.append(" ").append(t.getScopeHierarchy());
+           result.append(" ").append(t.getPosition().getParent().getPositionString());
         }
         result.append("\n");
         for (Event e : func.getEvents()) {

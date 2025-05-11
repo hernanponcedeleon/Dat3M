@@ -307,7 +307,7 @@ public class ExecutionGraphVisualizer {
         final Thread thread = e.getThreadModel().getThread();
         final String callStack = makeContextString(
             synContext.getContextInfo(e.getEvent()).getContextOfType(CallContext.class), " -> \\n");
-        final String scope = thread.hasScope() ? "@" + thread.getScopeHierarchy() : "";
+        final String scope = thread.hasScope() ? "@" + thread.getPosition().getParent().getPositionString() : "";
         final String nodeString = String.format("%s:T%s%s\\nE%s %s%s\n%s",
                 e.getThreadModel().getName(),
                 e.getThreadModel().getId(),

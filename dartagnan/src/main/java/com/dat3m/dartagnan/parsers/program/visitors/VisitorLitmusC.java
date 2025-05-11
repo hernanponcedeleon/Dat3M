@@ -15,8 +15,13 @@ import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.Tag;
-import com.dat3m.dartagnan.program.event.core.*;
-import com.dat3m.dartagnan.program.event.lang.catomic.*;
+import com.dat3m.dartagnan.program.event.core.CondJump;
+import com.dat3m.dartagnan.program.event.core.IfAsJump;
+import com.dat3m.dartagnan.program.event.core.Label;
+import com.dat3m.dartagnan.program.event.core.Load;
+import com.dat3m.dartagnan.program.event.lang.catomic.AtomicLoad;
+import com.dat3m.dartagnan.program.event.lang.catomic.AtomicStore;
+import com.dat3m.dartagnan.program.event.lang.catomic.AtomicThreadFence;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 
 import java.util.ArrayList;
@@ -164,7 +169,8 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
             int sgID = 0; // Use subgroup ID 0 as default for OpenCL Litmus
             int wgID = ctx.threadScope().scopeID(0).id;
             int devID = ctx.threadScope().scopeID(1).id;
-            programBuilder.newScopedThread(Arch.OPENCL, currentThread, devID, wgID, sgID);
+            int allID = 0;
+            programBuilder.newScopedThread(Arch.OPENCL, currentThread, allID, devID, wgID, sgID);
         } else {
             programBuilder.newThread(currentThread);
         }

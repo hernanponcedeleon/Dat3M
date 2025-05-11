@@ -11,13 +11,12 @@ import com.dat3m.dartagnan.program.analysis.BranchEquivalence;
 import com.dat3m.dartagnan.program.analysis.ExecutionAnalysis;
 import com.dat3m.dartagnan.program.analysis.ReachingDefinitionsAnalysis;
 import com.dat3m.dartagnan.program.event.*;
-import com.dat3m.dartagnan.program.event.core.*;
-import com.dat3m.dartagnan.program.event.core.threading.ThreadJoin;
-import com.dat3m.dartagnan.program.event.core.threading.ThreadReturn;
 import com.dat3m.dartagnan.program.event.core.CondJump;
 import com.dat3m.dartagnan.program.event.core.ControlBarrier;
 import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.event.core.NamedBarrier;
+import com.dat3m.dartagnan.program.event.core.threading.ThreadJoin;
+import com.dat3m.dartagnan.program.event.core.threading.ThreadReturn;
 import com.dat3m.dartagnan.program.event.core.threading.ThreadStart;
 import com.dat3m.dartagnan.program.memory.Memory;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
@@ -177,13 +176,12 @@ public class ProgramEncoder implements Encoder {
     }
 
     private int getWorkgroupId(Thread thread) {
-        ScopeHierarchy hierarchy = thread.getScopeHierarchy();
-        if (hierarchy != null) {
-            int id = hierarchy.getScopeId(Tag.Vulkan.WORK_GROUP);
-            if (id < 0) {
-                id = hierarchy.getScopeId(Tag.PTX.CTA);
+        ThreadHierarchy.Group group = thread.getPosition().getParent();
+        while (group != null) {
+            if (group.getScope().equals(Tag.Vulkan.WORK_GROUP) || group.getScope().equals(Tag.PTX.CTA)) {
+                return group.getLocalId();
             }
-            return id;
+            group = group.getParent();
         }
         throw new IllegalArgumentException("Attempt to compute workgroup ID " +
                 "for a non-hierarchical thread");
@@ -562,16 +560,16 @@ public class ProgramEncoder implements Encoder {
 
     private class ForwardProgressEncoder {
 
-        private BooleanFormula hasForwardProgress(ThreadHierarchy threadHierarchy) {
-            return context.getBooleanFormulaManager().makeVariable("hasProgress " + threadHierarchy.toString());
+        private BooleanFormula hasForwardProgress(ThreadHierarchy.Node node) {
+            return context.getBooleanFormulaManager().makeVariable("hasProgress " + node.getPositionString());
         }
 
-        private BooleanFormula isSchedulable(ThreadHierarchy threadHierarchy) {
-            return context.getBooleanFormulaManager().makeVariable("schedulable " + threadHierarchy.toString());
+        private BooleanFormula isSchedulable(ThreadHierarchy.Node node) {
+            return context.getBooleanFormulaManager().makeVariable("schedulable " + node.getPositionString());
         }
 
-        private BooleanFormula wasScheduledOnce(ThreadHierarchy threadHierarchy) {
-            return context.getBooleanFormulaManager().makeVariable("wasScheduledOnce " + threadHierarchy.toString());
+        private BooleanFormula wasScheduledOnce(ThreadHierarchy.Node node) {
+            return context.getBooleanFormulaManager().makeVariable("wasScheduledOnce " + node.getPositionString());
         }
 
         /*
@@ -608,8 +606,11 @@ public class ProgramEncoder implements Encoder {
             List<BooleanFormula> enc = new ArrayList<>();
 
             // Step (1): Find hierarchy (this does not contain init threads)
-            final ThreadHierarchy root = ThreadHierarchy.from(program);
-            final List<ThreadHierarchy> allGroups = root.getFlattened();
+            //final ThreadHierarchy root = ThreadHierarchy.from(program);
+            //final List<ThreadHierarchy> allGroups = root.getFlattened();
+
+            final ThreadHierarchy.Node root = program.getThreadHierarchy().getRoot();
+            final List<ThreadHierarchy.Node> allGroups = root.flatten(n -> !n.getScope().equals("INIT"));
 
             // Step (2): Encode basic properties
 
@@ -617,7 +618,7 @@ public class ProgramEncoder implements Encoder {
             enc.add(hasForwardProgress(root));
 
             // (2.1 Consistent Progress): Progress/Schedulability in group implies progress/schedulability in parent
-            for (ThreadHierarchy group : allGroups) {
+            for (ThreadHierarchy.Node group : allGroups) {
                 if (!group.isRoot()) {
                     enc.add(bmgr.implication(hasForwardProgress(group), hasForwardProgress(group.getParent())));
                     enc.add(bmgr.implication(isSchedulable(group), isSchedulable(group.getParent())));
@@ -626,8 +627,8 @@ public class ProgramEncoder implements Encoder {
             }
 
             // (2.2 Minimal Progress Forwarding): Progress in schedulable group implies progress in some schedulable child
-            for (ThreadHierarchy group : allGroups) {
-                if (group.isLeaf()) {
+            for (ThreadHierarchy.Node node : allGroups) {
+                if (!(node instanceof ThreadHierarchy.Group group)) {
                     continue;
                 }
                 enc.add(bmgr.implication(bmgr.and(hasForwardProgress(group), isSchedulable(group)),
@@ -642,7 +643,7 @@ public class ProgramEncoder implements Encoder {
                     .filter(ThreadHierarchy.Leaf.class::isInstance)
                     .map(ThreadHierarchy.Leaf.class::cast)
                     .forEach(leaf -> {
-                        final Thread t = leaf.thread();
+                        final Thread t = leaf.getThread();
 
                         // Schedulability
                         final BooleanFormula schedulable = bmgr.and(
@@ -666,7 +667,7 @@ public class ProgramEncoder implements Encoder {
             return bmgr.and(enc);
         }
 
-        private BooleanFormula encodeProgressForwarding(ThreadHierarchy group, ProgressModel progressModel) {
+        private BooleanFormula encodeProgressForwarding(ThreadHierarchy.Node group, ProgressModel progressModel) {
             final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
             final List<BooleanFormula> enc = new ArrayList<>();
 
@@ -677,11 +678,11 @@ public class ProgramEncoder implements Encoder {
                             .forEach(enc::add);
                 }
                 case HSA -> {
-                    final List<ThreadHierarchy> sortedChildren = group.getChildren().stream()
-                            .sorted(Comparator.comparingInt(ThreadHierarchy::getId))
+                    final List<ThreadHierarchy.Node> sortedChildren = group.getChildren().stream()
+                            .sorted(Comparator.comparingInt(ThreadHierarchy.Node::getLocalId))
                             .toList();
                     for (int i = 0; i < sortedChildren.size(); i++) {
-                        final ThreadHierarchy child = sortedChildren.get(i);
+                        final ThreadHierarchy.Node child = sortedChildren.get(i);
                         final BooleanFormula noLowerIdSchedulable =
                                 bmgr.not(sortedChildren.subList(0, i).stream()
                                         .map(this::isSchedulable)
@@ -700,11 +701,11 @@ public class ProgramEncoder implements Encoder {
                     enc.add(encodeProgressForwarding(group, ProgressModel.HSA));
                 }
                 case LOBE -> {
-                    final List<ThreadHierarchy> sortedChildren = group.getChildren().stream()
-                            .sorted(Comparator.comparingInt(ThreadHierarchy::getId))
+                    final List<ThreadHierarchy.Node> sortedChildren = group.getChildren().stream()
+                            .sorted(Comparator.comparingInt(ThreadHierarchy.Node::getLocalId))
                             .toList();
                     for (int i = 0; i < sortedChildren.size(); i++) {
-                        final ThreadHierarchy child = sortedChildren.get(i);
+                        final ThreadHierarchy.Node child = sortedChildren.get(i);
                         final BooleanFormula sameOrHigherIDThreadWasScheduledOnce =
                                 sortedChildren.subList(i , sortedChildren.size()).stream()
                                         .map(this::wasScheduledOnce)

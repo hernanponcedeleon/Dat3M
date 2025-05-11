@@ -141,7 +141,7 @@ public class ProgramBuilder {
         }
         final Thread thread = new Thread(name, DEFAULT_THREAD_TYPE, List.of(), tid, EventFactory.newThreadStart(null));
         id2FunctionsMap.put(tid, thread);
-        program.addThread(thread);
+        program.getThreadHierarchy().addThread(thread, ThreadHierarchy.Position.EMPTY);
         return thread;
     }
 
@@ -297,22 +297,17 @@ public class ProgramBuilder {
 
     // ----------------------------------------------------------------------------------------------------------------
     // GPU
-    public void newScopedThread(Arch arch, String name, int id, int ...scopeIds) {
-        ScopeHierarchy scopeHierarchy = switch (arch) {
-            case PTX -> ScopeHierarchy.ScopeHierarchyForPTX(scopeIds[0], scopeIds[1]);
-            case VULKAN -> ScopeHierarchy.ScopeHierarchyForVulkan(scopeIds[0], scopeIds[1], scopeIds[2]);
-            case OPENCL -> ScopeHierarchy.ScopeHierarchyForOpenCL(scopeIds[0], scopeIds[1], scopeIds[2]);
-            default -> throw new UnsupportedOperationException("Unsupported architecture: " + arch);
-        };
-
+    public void newScopedThread(Arch arch, String name, int id, int... scopeIds) {
         if(id2FunctionsMap.containsKey(id)) {
             throw new MalformedProgramException("Function or thread with id " + id + " already exists.");
         }
         // Litmus threads run unconditionally (have no creator) and have no parameters/return types.
         ThreadStart threadEntry = EventFactory.newThreadStart(null);
-        Thread scopedThread = new Thread(name, DEFAULT_THREAD_TYPE, List.of(), id, threadEntry, scopeHierarchy, new HashSet<>());
+        Thread scopedThread = new Thread(name, DEFAULT_THREAD_TYPE, List.of(), id, threadEntry, new HashSet<>());
         id2FunctionsMap.put(id, scopedThread);
-        program.addThread(scopedThread);
+
+        final var pos = ThreadHierarchy.Position.fromArchitecture(arch, scopeIds);
+        program.getThreadHierarchy().addThread(scopedThread, pos);
     }
 
     public void newScopedThread(Arch arch, int id, int ...ids) {
