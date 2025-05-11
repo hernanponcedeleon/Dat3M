@@ -605,19 +605,20 @@ public class ProgramEncoder implements Encoder {
 
             // Step (1): Find hierarchy
             final ThreadHierarchy.Node root = program.getThreadHierarchy().getRoot();
-            final ThreadHierarchy.Group initGroup = (ThreadHierarchy.Group) root.getChildren().stream()
-                    .filter(ThreadHierarchy.Node::isInit)
-                    .findFirst().get();
             final List<ThreadHierarchy.Node> allGroups = root.flatten(n -> !n.isInit());
 
             // Step (2): Encode basic properties
 
             // (2.0 Global Progress & Init)
             enc.add(hasForwardProgress(root));
-            enc.add(hasForwardProgress(initGroup));
-            initGroup.getChildren().forEach(n ->
-                    enc.add(encodeFairForwardProgress(((ThreadHierarchy.Leaf) n).getThread()))
-            );
+            root.getChildren().stream()
+                    .filter(ThreadHierarchy.Node::isInit)
+                    .findFirst().ifPresent(initGroup -> {
+                        enc.add(hasForwardProgress(initGroup));
+                        initGroup.getChildren().forEach(n ->
+                                enc.add(encodeFairForwardProgress(((ThreadHierarchy.Leaf) n).getThread()))
+                        );
+                    });
 
             // (2.1 Consistent Progress): Progress/Schedulability in group implies progress/schedulability in parent
             for (ThreadHierarchy.Node group : allGroups) {
