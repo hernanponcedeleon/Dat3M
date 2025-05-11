@@ -103,6 +103,11 @@ public class ThreadHierarchy {
 
         default boolean isLeaf() { return this instanceof Leaf; }
 
+        default boolean isInit() {
+            return this instanceof Group group && group.getScope().equals("INIT")
+                    || this instanceof Leaf leaf && leaf.getParent().isInit();
+        }
+
         default List<Node> flatten(Predicate<Node> filter) {
             final List<Node> nodes = new ArrayList<>();
             collect(this, nodes::add, filter);

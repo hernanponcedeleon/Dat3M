@@ -5,8 +5,10 @@ import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.integers.IntCmpOp;
 import com.dat3m.dartagnan.expression.integers.IntLiteral;
 import com.dat3m.dartagnan.expression.type.IntegerType;
+import com.dat3m.dartagnan.program.Program;
+import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.Thread;
-import com.dat3m.dartagnan.program.*;
+import com.dat3m.dartagnan.program.ThreadHierarchy;
 import com.dat3m.dartagnan.program.analysis.BranchEquivalence;
 import com.dat3m.dartagnan.program.analysis.ExecutionAnalysis;
 import com.dat3m.dartagnan.program.analysis.ReachingDefinitionsAnalysis;
@@ -196,10 +198,6 @@ public class ProgramEncoder implements Encoder {
         List<BooleanFormula> enc = new ArrayList<>();
         for(Thread t : program.getThreads()){
             enc.add(encodeConsistentThreadCF(t));
-            if (IRHelper.isInitThread(t)) {
-                // Init threads are always progressing
-                enc.add(progressEncoder.encodeFairForwardProgress(t));
-            }
         }
 
         // Actual forward progress
@@ -605,17 +603,21 @@ public class ProgramEncoder implements Encoder {
             final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
             List<BooleanFormula> enc = new ArrayList<>();
 
-            // Step (1): Find hierarchy (this does not contain init threads)
-            //final ThreadHierarchy root = ThreadHierarchy.from(program);
-            //final List<ThreadHierarchy> allGroups = root.getFlattened();
-
+            // Step (1): Find hierarchy
             final ThreadHierarchy.Node root = program.getThreadHierarchy().getRoot();
-            final List<ThreadHierarchy.Node> allGroups = root.flatten(n -> !n.getScope().equals("INIT"));
+            final ThreadHierarchy.Group initGroup = (ThreadHierarchy.Group) root.getChildren().stream()
+                    .filter(ThreadHierarchy.Node::isInit)
+                    .findFirst().get();
+            final List<ThreadHierarchy.Node> allGroups = root.flatten(n -> !n.isInit());
 
             // Step (2): Encode basic properties
 
-            // (2.0 Global Progress)
+            // (2.0 Global Progress & Init)
             enc.add(hasForwardProgress(root));
+            enc.add(hasForwardProgress(initGroup));
+            initGroup.getChildren().forEach(n ->
+                    enc.add(encodeFairForwardProgress(((ThreadHierarchy.Leaf) n).getThread()))
+            );
 
             // (2.1 Consistent Progress): Progress/Schedulability in group implies progress/schedulability in parent
             for (ThreadHierarchy.Node group : allGroups) {
@@ -632,7 +634,7 @@ public class ProgramEncoder implements Encoder {
                     continue;
                 }
                 enc.add(bmgr.implication(bmgr.and(hasForwardProgress(group), isSchedulable(group)),
-                        group.getChildren().stream()
+                        group.getChildren().stream().filter(n -> !n.isInit())
                                 .map(c -> bmgr.and(hasForwardProgress(c), isSchedulable(c)))
                                 .reduce(bmgr.makeFalse(), bmgr::or)
                         ));
@@ -670,21 +672,22 @@ public class ProgramEncoder implements Encoder {
         private BooleanFormula encodeProgressForwarding(ThreadHierarchy.Node group, ProgressModel progressModel) {
             final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
             final List<BooleanFormula> enc = new ArrayList<>();
+            final List<ThreadHierarchy.Node> children = group.getChildren().stream()
+                    .filter(g -> !g.isInit())
+                    .sorted(Comparator.comparingInt(ThreadHierarchy.Node::getLocalId))
+                    .toList();
 
             switch (progressModel) {
                 case FAIR -> {
-                    group.getChildren().stream()
+                    children.stream()
                             .map(this::hasForwardProgress)
                             .forEach(enc::add);
                 }
                 case HSA -> {
-                    final List<ThreadHierarchy.Node> sortedChildren = group.getChildren().stream()
-                            .sorted(Comparator.comparingInt(ThreadHierarchy.Node::getLocalId))
-                            .toList();
-                    for (int i = 0; i < sortedChildren.size(); i++) {
-                        final ThreadHierarchy.Node child = sortedChildren.get(i);
+                    for (int i = 0; i < children.size(); i++) {
+                        final ThreadHierarchy.Node child = children.get(i);
                         final BooleanFormula noLowerIdSchedulable =
-                                bmgr.not(sortedChildren.subList(0, i).stream()
+                                bmgr.not(children.subList(0, i).stream()
                                         .map(this::isSchedulable)
                                         .reduce(bmgr.makeFalse(), bmgr::or));
 
@@ -692,7 +695,7 @@ public class ProgramEncoder implements Encoder {
                     }
                 }
                 case OBE -> {
-                    group.getChildren().stream()
+                    children.stream()
                             .map(c -> bmgr.implication(wasScheduledOnce(c), hasForwardProgress(c)))
                             .forEach(enc::add);
                 }
@@ -701,13 +704,10 @@ public class ProgramEncoder implements Encoder {
                     enc.add(encodeProgressForwarding(group, ProgressModel.HSA));
                 }
                 case LOBE -> {
-                    final List<ThreadHierarchy.Node> sortedChildren = group.getChildren().stream()
-                            .sorted(Comparator.comparingInt(ThreadHierarchy.Node::getLocalId))
-                            .toList();
-                    for (int i = 0; i < sortedChildren.size(); i++) {
-                        final ThreadHierarchy.Node child = sortedChildren.get(i);
+                    for (int i = 0; i < children.size(); i++) {
+                        final ThreadHierarchy.Node child = children.get(i);
                         final BooleanFormula sameOrHigherIDThreadWasScheduledOnce =
-                                sortedChildren.subList(i , sortedChildren.size()).stream()
+                                children.subList(i , children.size()).stream()
                                         .map(this::wasScheduledOnce)
                                         .reduce(bmgr.makeFalse(), bmgr::or);
 
