@@ -710,17 +710,10 @@ public class WmmEncoder implements Encoder {
                 for (Event z : allFenceSC.subList(i + 1, allFenceSC.size())) {
                     String scope1 = Tag.getScopeTag(x, program.getArch());
                     String scope2 = Tag.getScopeTag(z, program.getArch());
-                    /*if (scope1.isEmpty() || scope2.isEmpty()) {
-                        continue;
-                    }*/
                     if (!hierarchy.haveCommonScopeGroups(x.getThread(), z.getThread(), ImmutableSet.of(scope1, scope2))) {
                         continue;
                     }
 
-                    /*if (!x.getThread().getScopeHierarchy().canSyncAtScope((z.getThread().getScopeHierarchy()), scope1) ||
-                            !z.getThread().getScopeHierarchy().canSyncAtScope((x.getThread().getScopeHierarchy()), scope2)) {
-                        continue;
-                    }*/
                     boolean forwardPossible = maySet.contains(x, z);
                     boolean backwardPossible = maySet.contains(z, x);
                     if (!forwardPossible && !backwardPossible) {

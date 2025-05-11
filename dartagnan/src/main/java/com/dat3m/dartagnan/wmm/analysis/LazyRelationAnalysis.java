@@ -348,23 +348,13 @@ public class LazyRelationAnalysis extends NativeRelationAnalysis {
                     .flatMap(t -> t.getEventsWithAllTags(VISIBLE).stream())
                     .toList();
             events.forEach(e1 -> {
-                // ScopeHierarchy e1Scope = e1.getThread().getScopeHierarchy();
                 ImmutableSet<Event> range = events.stream()
                         .filter(e2 -> !exec.areMutuallyExclusive(e1, e2))
                         .filter(e2 -> {
-                            // ScopeHierarchy e2Scope = e2.getThread().getScopeHierarchy();
-                            if (scope != null) {
-                                return hierarchy.haveCommonScopeGroups(e1.getThread(), e2.getThread(), Set.of(scope));
-                                //return e1Scope.canSyncAtScope(e2Scope, scope);
-                            }
-                            String scope1 = Tag.getScopeTag(e1, arch);
-                            String scope2 = Tag.getScopeTag(e2, arch);
-
-                            return hierarchy.haveCommonScopeGroups(e1.getThread(), e2.getThread(), Set.of(scope1, scope2));
-
-                            /*return !scope1.isEmpty() && !scope2.isEmpty()
-                                    && e1Scope.canSyncAtScope(e2Scope, scope1)
-                                    && e2Scope.canSyncAtScope(e1Scope, scope2);*/
+                            final Set<String> scopes = scope != null
+                                    ? ImmutableSet.of(scope)
+                                    : ImmutableSet.of(Tag.getScopeTag(e1, arch), Tag.getScopeTag(e2, arch));
+                            return hierarchy.haveCommonScopeGroups(e1.getThread(), e2.getThread(), scopes);
                         }).collect(ImmutableSet.toImmutableSet());
                 if (!range.isEmpty()) {
                     data.put(e1, range);

@@ -959,29 +959,11 @@ public class NativeRelationAnalysis implements RelationAnalysis {
                         continue;
                     }
 
-                    Thread thread1 = e1.getThread();
-                    Thread thread2 = e2.getThread();
-                    if (specificScope != null) {
-                        if (hierarchy.haveCommonScopeGroups(thread1, thread2, ImmutableSet.of(specificScope))) {
-                            must.add(e1, e2);
-                        }
-
-                        /*if (thread1.getScopeHierarchy().canSyncAtScope(thread2.getScopeHierarchy(), specificScope)) {
-                            must.add(e1, e2);
-                        }*/
-                    } else {
-                        String scope1 = Tag.getScopeTag(e1, program.getArch());
-                        String scope2 = Tag.getScopeTag(e2, program.getArch());
-
-                        if (hierarchy.haveCommonScopeGroups(thread1, thread2, ImmutableSet.of(scope1, scope2))) {
-                            must.add(e1, e2);
-                        }
-
-                        /*if (!scope1.isEmpty() && !scope2.isEmpty()
-                                && thread1.getScopeHierarchy().canSyncAtScope(thread2.getScopeHierarchy(), scope1)
-                                && thread2.getScopeHierarchy().canSyncAtScope(thread1.getScopeHierarchy(), scope2)) {
-                            must.add(e1, e2);
-                        }*/
+                    final Set<String> scopes = specificScope != null
+                            ? ImmutableSet.of(specificScope)
+                            : ImmutableSet.of(Tag.getScopeTag(e1, program.getArch()), Tag.getScopeTag(e2, program.getArch()));
+                    if (hierarchy.haveCommonScopeGroups(e1.getThread(), e2.getThread(), scopes)) {
+                        must.add(e1, e2);
                     }
                 }
             }

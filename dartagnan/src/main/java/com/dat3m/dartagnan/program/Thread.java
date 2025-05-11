@@ -14,7 +14,7 @@ import java.util.Set;
 
 public class Thread extends Function {
 
-    // Threads that are system-synchronized-with this thread
+    // Threads that are system-synchronized-after this thread
     private final Optional<Set<Thread>> syncSet;
 
     private ThreadHierarchy.Node position;
