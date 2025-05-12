@@ -115,6 +115,8 @@ instruction: // Instructions producing values.
 	// Instructions not producing values.
 	| storeInst
 	| fenceInst
+	// Debug Records, which are not actually instructions, but appear interleaved.
+	| debugRecord
 	)
 	(',' metadataAttachment)*;
 terminator:
@@ -669,6 +671,8 @@ arg: concreteType paramAttribute* value | metadataType metadata;
 
 exceptionArg: concreteType value | metadataType metadata;
 exceptionPad: noneConst | LocalIdent;
+
+debugRecord: DebugRecord '(' (metadata ',')* mdNode ')';
 
 externalLinkage: 'extern_weak' | 'external';
 internalLinkage:
@@ -1361,6 +1365,7 @@ GlobalIdent: GlobalName | GlobalId;
 LocalIdent: LocalName | LocalId;
 LabelIdent: (Letter | DecimalDigit)+ ':' | QuotedString ':';
 AttrGroupId: '#' Id;
+DebugRecord: '#dbg_' Name;
 ComdatName: '$' (Name | QuotedString);
 MetadataName: '!' EscapeName;
 MetadataId: '!' Id;
