@@ -38,6 +38,9 @@ public class MemToReg implements FunctionProcessor {
 
     private static final Logger logger = LogManager.getLogger(MemToReg.class);
 
+    private static final TypeFactory types = TypeFactory.getInstance();
+    private static final ExpressionFactory expressions = ExpressionFactory.getInstance();
+
     private MemToReg() {
     }
 
@@ -56,11 +59,9 @@ public class MemToReg implements FunctionProcessor {
         final var matcher = new Matcher();
         // Initially, all locally-allocated addresses are potentially promotable.
         for (final Alloc allocation : function.getEvents(Alloc.class)) {
-            final Map<Integer, Type> fields = getPrimitiveReplacementTypes(allocation);
             // Allocations will usually not have users.  Otherwise, their object is not promotable.
-            if (fields == null || allocation.getUsers().isEmpty()) {
+            if (allocation.getUsers().isEmpty()) {
                 matcher.reachabilityGraph.put(allocation, new HashSet<>());
-                matcher.fields.put(allocation, fields);
             }
         }
         // This loop should terminate, since back jumps occur, only if changes were made.
@@ -73,61 +74,139 @@ public class MemToReg implements FunctionProcessor {
     }
 
     private void promoteAll(Function function, Matcher matcher) {
-        final ExpressionFactory expressions = ExpressionFactory.getInstance();
         // Replace every unmarked address.
-        final HashMap<RegWriter, Map<Integer, Register>> replacingRegisters = new HashMap<>();
-        for (final Alloc allocation : function.getEvents(Alloc.class)) {
-            if (matcher.reachabilityGraph.containsKey(allocation)) {
-                final Map<Integer, Type> registerTypes = getPrimitiveReplacementTypes(allocation);
-                if (registerTypes != null) {
-                    replacingRegisters.put(allocation, new HashMap<>(Maps.transformValues(registerTypes, function::newRegister)));
-                    boolean deleted = allocation.tryDelete();
-                    assert deleted : "Allocation cannot be removed, probably because it has remaining users.";
-                }
-            }
-        }
-
-        int loadCount = 0, storeCount = 0;
-        // Replace all loads and stores to replaceable storage.
-        for (final Map.Entry<MemoryEvent, AddressOffset> entry : matcher.accesses.entrySet()) {
-            final MemoryEvent event = entry.getKey();
-            final AddressOffset access = entry.getValue();
-            final Map<Integer, Register> registers = access == null ? null : replacingRegisters.get(access.base);
-            if (registers == null || !registers.containsKey((int)access.offset)) {
-                continue;
-            }
-
-            final Register memreg = registers.get((int)access.offset);
-            if (event instanceof Load load) {
-                final Register reg = load.getResultRegister();
-                assert load.getUsers().isEmpty();
-                load.replaceBy(EventFactory.newLocal(reg, expressions.makeCast(memreg, reg.getType())));
-                loadCount++;
-            } else if (event instanceof Store store) {
-                assert store.getUsers().isEmpty();
-                store.replaceBy(EventFactory.newLocal(memreg, expressions.makeCast(store.getMemValue(), memreg.getType())));
-                storeCount++;
-            }
-        }
-        // Remove involved local assignments.
+        final Map<RegWriter, Promotable> promotableObjects = collectPromotableObjects(function, matcher);
+        final Map<Event, List<Event>> updates = new HashMap<>(Maps.toMap(promotableObjects.keySet(), k -> List.of()));
+        // Mark all loads and stores to replaceable storage.
+        updates.putAll(Maps.transformEntries(matcher.accesses, (k, v) -> promoteAccess(k, v, promotableObjects)));
+        // Mark involved local GEP assignments.
         for (final Map.Entry<Local, AddressOffset> entry : matcher.assignments.entrySet()) {
-            if (replacingRegisters.containsKey(entry.getValue().base)) {
-                assert entry.getKey().getUsers().isEmpty();
-                entry.getKey().tryDelete();
+            if (promotableObjects.containsKey(entry.getValue().base)) {
+                updates.put(entry.getKey(), List.of());
             }
         }
-        if (loadCount + storeCount > 0) {
+        updates.values().removeIf(Objects::isNull);
+        // If some events cannot be removed, give up.
+        //TODO Build a dependency graph and replace the events that can be removed.
+        if (updates.keySet().stream().anyMatch(e -> !e.getUsers().isEmpty())) {
+            logger.warn("Could not remove events, because some are still used.");
+            return;
+        }
+        // Replace events.
+        for (Map.Entry<Event, List<Event>> update : updates.entrySet()) {
+            update.getKey().replaceBy(update.getValue());
+        }
+        // Evaluate the process.
+        if (!updates.isEmpty()) {
+            final long loadCount = updates.keySet().stream().filter(Load.class::isInstance).count();
+            final long storeCount = updates.keySet().stream().filter(Store.class::isInstance).count();
             logger.debug("Removed {} loads and {} stores in function \"{}\".", loadCount, storeCount, function.getName());
         }
     }
 
-    private Map<Integer, Type> getPrimitiveReplacementTypes(Alloc allocation) {
-        if (!(allocation.getArraySize() instanceof IntLiteral sizeExpression)) {
+    private Map<RegWriter, Promotable> collectPromotableObjects(Function function, Matcher matcher) {
+        final Map<RegWriter, Promotable> promotableObjects = new HashMap<>();
+        for (final Alloc allocation : function.getEvents(Alloc.class)) {
+            if (!matcher.reachabilityGraph.containsKey(allocation)) {
+                continue;
+            }
+            final Set<Field> registerTypes = new HashSet<>();
+            for (Map.Entry<MemoryCoreEvent, AddressOffset> entry : matcher.accesses.entrySet()) {
+                if (!entry.getValue().base.equals(allocation)) {
+                    continue;
+                }
+                final Type accessType = entry.getKey().getAccessType();
+                final int accessSize = types.getMemorySizeInBytes(accessType);
+                registerTypes.add(new Field((int) entry.getValue().offset, accessSize, accessType));
+            }
+            promotableObjects.put(allocation, new Promotable(Maps.asMap(registerTypes, f -> newFieldRegister(allocation, f))));
+        }
+        return promotableObjects;
+    }
+
+    private static Register newFieldRegister(Alloc allocation, Field field) {
+        final String name = String.format("m2r_%d_%d_%s", allocation.getGlobalId(), field.offset, field.type);
+        return allocation.getFunction().newRegister(name, field.type);
+    }
+
+    private List<Event> promoteAccess(MemoryCoreEvent event, AddressOffset access, Map<RegWriter, Promotable> promotableObjects) {
+        final Promotable object = access == null ? null : promotableObjects.get(access.base);
+        final Type accessType = event.getAccessType();
+        final int accessSize = types.getMemorySizeInBytes(accessType);
+        final Field field = object == null ? null : new Field((int) access.offset, accessSize, accessType);
+        final Register memreg = field == null ? null : object.replacingRegisters.get(field);
+        if (memreg == null) {
             return null;
         }
-        final TypeFactory typeFactory = TypeFactory.getInstance();
-        final int size = sizeExpression.getValueAsInt();
-        return typeFactory.decomposeIntoPrimitives(typeFactory.getArrayType(allocation.getAllocationType(), size));
+        final List<Event> replacement = new ArrayList<>();
+        if (event instanceof Load load) {
+            final Register reg = load.getResultRegister();
+            assert load.getUsers().isEmpty();
+            replacement.add(EventFactory.newLocal(reg, expressions.makeCast(memreg, reg.getType())));
+        } else if (event instanceof Store store) {
+            assert store.getUsers().isEmpty();
+            replacement.add(EventFactory.newLocal(memreg, expressions.makeCast(store.getMemValue(), accessType)));
+            updateMixedRegisters(memreg, field, object, replacement);
+        }
+        return replacement;
+    }
+
+    private void updateMixedRegisters(Register memreg, Field field, Promotable object, List<Event> replacement) {
+        // Update all registers representing overlapping byte ranges.
+        if (!object.hasMixedAccesses) {
+            return;
+        }
+        final boolean bigEndian = memreg.getFunction().getProgram().getMemory().isBigEndian();
+        assert memreg.getType().equals(field.type);
+        final Type integerType = types.getIntegerType(types.getMemorySizeInBits(field.type));
+        final Expression storedValue = expressions.makeCast(memreg, integerType);
+        final int end = field.offset + field.size;
+        for (Map.Entry<Field, Register> otherEntry : object.replacingRegisters.entrySet()) {
+            final Field other = otherEntry.getKey();
+            if (other.equals(field) || !other.overlaps(field)) {
+                continue;
+            }
+            final Register otherRegister = otherEntry.getValue();
+            final int overlapBegin = Integer.max(field.offset, other.offset);
+            final int overlapEnd = Integer.min(end, other.offset + other.size);
+            final int firstByte = bigEndian ? end - overlapEnd : overlapBegin - field.offset;
+            final Expression truncated = extractBytes(storedValue, firstByte, overlapEnd - overlapBegin);
+            final Type otherType = otherRegister.getType();
+            final int otherBytes = types.getMemorySizeInBytes(otherType);
+            final Type otherIntegerType = types.getIntegerType(8 * otherBytes);
+            final Expression formerValue = expressions.makeCast(otherRegister, otherIntegerType);
+            final int frontBytes = overlapBegin - other.offset;
+            final int backBytes = other.offset + other.size - overlapEnd;
+            final int lowBytes = bigEndian ? backBytes : frontBytes;
+            final int highBytes = bigEndian ? frontBytes : backBytes;
+            final Expression lowBits = extractBytes(formerValue, 0, lowBytes);
+            final Expression highBits = extractBytes(formerValue, otherBytes - highBytes, highBytes);
+            final List<Expression> operands = Arrays.asList(lowBits, truncated, highBits);
+            final List<Expression> filteredOperands = operands.stream().filter(Objects::nonNull).toList();
+            final Expression extended = expressions.makeIntConcat(filteredOperands);
+            replacement.add(EventFactory.newLocal(otherRegister, expressions.makeCast(extended, otherType)));
+        }
+    }
+
+    private Expression extractBytes(Expression operand, int offset, int size) {
+        return size <= 0 ? null : expressions.makeIntExtract(operand, 8 * offset, 8 * (offset + size) - 1);
+    }
+
+    private static final class Promotable {
+        private final Map<Field, Register> replacingRegisters;
+        // Redundant flag for the likely case, that a promoted object
+        private final boolean hasMixedAccesses;
+
+        private Promotable(Map<Field, Register> fields) {
+            replacingRegisters = new HashMap<>(fields);
+            hasMixedAccesses = hasMixedAccesses(replacingRegisters.keySet());
+        }
+    }
+
+    private record Field(int offset, int size, Type type) {
+        private boolean overlaps(Field other) {
+            return Long.max(offset, other.offset) < Long.min(offset + size, other.offset + other.size);
+        }
     }
 
     // Invariant: base != null
@@ -140,13 +219,23 @@ public class MemToReg implements FunctionProcessor {
     // Invariant: register != null
     private record RegisterOffset(Register register, long offset) {}
 
+    // Checks if mixed-size accesses to a promotable object were collected.
+    private static boolean hasMixedAccesses(Set<Field> registerTypes) {
+        final List<Field> registerTypeList = List.copyOf(registerTypes);
+        for (int i = 0; i < registerTypeList.size(); i++) {
+            for (int j = 0; j < i; j++) {
+                if (registerTypeList.get(i).overlaps(registerTypeList.get(j))) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
     // Processes events in program order.
     // Returns a label, if it is program-ordered before the current event and its symbolic state was updated.
     private static final class Matcher implements EventVisitor<Label> {
 
-        // Allowed accesses into a heap-allocated object.
-        //TODO allow MSAs
-        private final Map<Alloc, Map<Integer, Type>> fields = new HashMap<>();
         // Current local symbolic state.  Missing values mean irreplaceable contents.
         private final Map<Object, AddressOffset> state = new HashMap<>();
         // Maps labels and jumps to symbolic state information.
@@ -154,7 +243,7 @@ public class MemToReg implements FunctionProcessor {
         // Join over all memory information.  Initialized to all empty.  Missing entries mean not promotable.
         private final Map<RegWriter, Set<RegWriter>> reachabilityGraph = new HashMap<>();
         // Collects candidates to be replaced.
-        private final Map<MemoryEvent, AddressOffset> accesses = new HashMap<>();
+        private final Map<MemoryCoreEvent, AddressOffset> accesses = new HashMap<>();
         // Keeps track of pointer operations.  Maps assignments to the address value they must return.
         private final Map<Local, AddressOffset> assignments = new HashMap<>();
         private boolean dead;
@@ -206,7 +295,7 @@ public class MemToReg implements FunctionProcessor {
             // Each path must update state and accesses.
             final Register register = load.getResultRegister();
             final RegisterOffset addressExpression = matchGEP(load.getAddress());
-            final AddressOffset address = toAddressOffset(load, addressExpression);
+            final AddressOffset address = toAddressOffset(addressExpression);
             final boolean isDeletable = load.getUsers().isEmpty();
             // If too complex, treat like global address.
             if (address == null || !isDeletable) {
@@ -225,7 +314,7 @@ public class MemToReg implements FunctionProcessor {
             }
             // Each path must update state and accesses.
             final RegisterOffset addressExpression = matchGEP(store.getAddress());
-            final AddressOffset address = toAddressOffset(store, addressExpression);
+            final AddressOffset address = toAddressOffset(addressExpression);
             final RegisterOffset valueExpression = matchGEP(store.getMemValue());
             assert valueExpression == null || valueExpression.register != null;
             final AddressOffset value = valueExpression == null ? null : state.get(valueExpression.register);
@@ -314,13 +403,10 @@ public class MemToReg implements FunctionProcessor {
             }
         }
 
-        private AddressOffset toAddressOffset(MemoryCoreEvent event, RegisterOffset gep) {
+        private AddressOffset toAddressOffset(RegisterOffset gep) {
             assert gep == null || gep.register != null;
             final AddressOffset base = gep == null ? null : state.get(gep.register);
-            final AddressOffset unfiltered = base == null ? null : base.increase(gep.offset);
-            final Map<Integer, Type> accessedFields = unfiltered == null ? null : fields.get(unfiltered.base);
-            final Type fieldType = accessedFields == null ? null : accessedFields.get((int) unfiltered.offset);
-            return !event.getAccessType().equals(fieldType) ? null : unfiltered;
+            return base == null ? null : base.increase(gep.offset);
         }
 
         private static RegisterOffset matchGEP(Expression expression) {
