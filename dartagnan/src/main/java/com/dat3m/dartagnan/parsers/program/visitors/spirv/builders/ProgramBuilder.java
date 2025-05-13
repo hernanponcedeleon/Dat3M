@@ -20,7 +20,6 @@ import com.dat3m.dartagnan.program.memory.ScopedPointerVariable;
 import com.dat3m.dartagnan.program.processing.transformers.MemoryTransformer;
 
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -55,7 +54,7 @@ public class ProgramBuilder {
         Function entryFunction = getEntryPointFunction();
         BuiltIn builtIn = (BuiltIn) decorationsBuilder.getDecoration(BUILT_IN);
         MemoryTransformer transformer = new MemoryTransformer(grid, entryFunction, builtIn, getVariables());
-        program.setEntrypoint(new Entrypoint.Grid(entryFunction, grid, List.of(transformer)));
+        program.setEntrypoint(new Entrypoint.Grid(entryFunction, grid, transformer));
         return program;
     }
 

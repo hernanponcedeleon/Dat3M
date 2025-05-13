@@ -2,8 +2,6 @@ package com.dat3m.dartagnan.program;
 
 import com.dat3m.dartagnan.program.processing.transformers.MemoryTransformer;
 
-import java.util.List;
-
 public sealed interface Entrypoint {
 
     Function getEntryFunction();
@@ -40,12 +38,12 @@ public sealed interface Entrypoint {
     final class Grid implements Entrypoint {
         private final Function function;
         private final ThreadGrid threadGrid;
-        private final List<MemoryTransformer> memoryTransformers;
+        private final MemoryTransformer memoryTransformer;
 
-        public Grid(Function function, ThreadGrid grid, List<MemoryTransformer> transformers) {
+        public Grid(Function function, ThreadGrid grid, MemoryTransformer transformer) {
             this.function = function;
             this.threadGrid = grid;
-            this.memoryTransformers = transformers;
+            this.memoryTransformer = transformer;
         }
 
         @Override
@@ -56,7 +54,7 @@ public sealed interface Entrypoint {
         @Override
         public Function getEntryFunction() { return function; }
         public ThreadGrid getThreadGrid() { return threadGrid; }
-        public List<MemoryTransformer> getMemoryTransformers() { return memoryTransformers; }
+        public MemoryTransformer getMemoryTransformer() { return memoryTransformer; }
     }
 
 

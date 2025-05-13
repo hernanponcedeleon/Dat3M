@@ -398,23 +398,21 @@ public class ThreadCreation implements ProgramProcessor {
     // =============================================================================================
     private void createSPVThreads(Program program, Entrypoint.Grid entrypoint) {
         final ThreadGrid grid = entrypoint.getThreadGrid();
-        final List<MemoryTransformer> transformers = entrypoint.getMemoryTransformers();
+        final MemoryTransformer transformer = entrypoint.getMemoryTransformer();
         final Function entryFunction = entrypoint.getEntryFunction();
 
         for (int tid = 0; tid < grid.dvSize(); tid++) {
-            final Thread thread = createSPVThreadFromFunction(entryFunction, tid, grid, transformers);
+            final Thread thread = createSPVThreadFromFunction(entryFunction, tid, grid, transformer);
             program.addThread(thread);
         }
         // Remove unused memory objects of the entry function
-        for (MemoryTransformer transformer : transformers) {
-            Memory memory = entryFunction.getProgram().getMemory();
-            for (MemoryObject memoryObject : transformer.getThreadLocalMemoryObjects()) {
-                memory.deleteMemoryObject(memoryObject);
-            }
+        Memory memory = entryFunction.getProgram().getMemory();
+        for (MemoryObject memoryObject : transformer.getThreadLocalMemoryObjects()) {
+            memory.deleteMemoryObject(memoryObject);
         }
     }
 
-    private Thread createSPVThreadFromFunction(Function function, int tid, ThreadGrid grid, List<MemoryTransformer> transformers) {
+    private Thread createSPVThreadFromFunction(Function function, int tid, ThreadGrid grid, MemoryTransformer transformer) {
         String name = function.getName();
         FunctionType type = function.getFunctionType();
         List<String> args = Lists.transform(function.getParameterRegisters(), Register::getName);
@@ -432,7 +430,7 @@ public class ThreadCreation implements ProgramProcessor {
         thread.copyUniqueIdsFrom(function);
         Label returnLabel = EventFactory.newLabel("RETURN_OF_T" + thread.getId());
         Label endLabel = EventFactory.newLabel("END_OF_T" + thread.getId());
-        copyThreadEvents(function, thread, transformers, endLabel);
+        copyThreadEvents(function, thread, transformer, endLabel);
         for (Return event : thread.getEvents(Return.class)) {
             event.replaceBy(EventFactory.newGoto(returnLabel));
         }
@@ -441,29 +439,28 @@ public class ThreadCreation implements ProgramProcessor {
         return thread;
     }
 
-    private void copyThreadEvents(Function function, Thread thread, List<MemoryTransformer> transformers, Label threadEnd) {
+    private void copyThreadEvents(Function function, Thread thread, MemoryTransformer transformer, Label threadEnd) {
         List<Event> body = new ArrayList<>();
         Map<Event, Event> eventCopyMap = new HashMap<>();
         function.getEvents().forEach(e -> body.add(eventCopyMap.computeIfAbsent(e, Event::getCopy)));
-        for (MemoryTransformer transformer : transformers) {
-            transformer.setThread(thread);
-            for (int i = 0; i < body.size(); i++) {
-                Event copy = body.get(i);
-                if (copy instanceof EventUser user) {
-                    user.updateReferences(eventCopyMap);
-                }
-                if (copy instanceof RegReader reader) {
-                    reader.transformExpressions(transformer);
-                }
-                if (copy instanceof RegWriter regWriter) {
-                    regWriter.setResultRegister(transformer.getRegisterMapping(regWriter.getResultRegister()));
-                }
-                if (copy instanceof AbortIf abort) {
-                    final Event jumpToEnd = EventFactory.newJump(abort.getCondition(), threadEnd);
-                    jumpToEnd.addTags(abort.getTags());
-                    jumpToEnd.copyAllMetadataFrom(abort);
-                    body.set(i, jumpToEnd);
-                }
+
+        transformer.setThread(thread);
+        for (int i = 0; i < body.size(); i++) {
+            Event copy = body.get(i);
+            if (copy instanceof EventUser user) {
+                user.updateReferences(eventCopyMap);
+            }
+            if (copy instanceof RegReader reader) {
+                reader.transformExpressions(transformer);
+            }
+            if (copy instanceof RegWriter regWriter) {
+                regWriter.setResultRegister(transformer.getRegisterMapping(regWriter.getResultRegister()));
+            }
+            if (copy instanceof AbortIf abort) {
+                final Event jumpToEnd = EventFactory.newJump(abort.getCondition(), threadEnd);
+                jumpToEnd.addTags(abort.getTags());
+                jumpToEnd.copyAllMetadataFrom(abort);
+                body.set(i, jumpToEnd);
             }
         }
         thread.getEntry().insertAfter(body);
