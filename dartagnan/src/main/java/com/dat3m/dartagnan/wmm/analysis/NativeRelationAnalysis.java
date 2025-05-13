@@ -5,6 +5,7 @@ import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.Register.UsageType;
 import com.dat3m.dartagnan.program.Thread;
+import com.dat3m.dartagnan.program.ThreadHierarchy;
 import com.dat3m.dartagnan.program.analysis.BranchEquivalence;
 import com.dat3m.dartagnan.program.analysis.ExecutionAnalysis;
 import com.dat3m.dartagnan.program.analysis.ReachingDefinitionsAnalysis;
@@ -31,6 +32,7 @@ import com.dat3m.dartagnan.wmm.utils.Tuple;
 import com.dat3m.dartagnan.wmm.utils.graph.EventGraph;
 import com.dat3m.dartagnan.wmm.utils.graph.mutable.MapEventGraph;
 import com.dat3m.dartagnan.wmm.utils.graph.mutable.MutableEventGraph;
+import com.google.common.collect.ImmutableSet;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.sosy_lab.common.configuration.Configuration;
@@ -950,24 +952,18 @@ public class NativeRelationAnalysis implements RelationAnalysis {
             List<Event> events = program.getThreadEvents().stream()
                     .filter(e -> e.hasTag(VISIBLE) && e.getThread().hasScope())
                     .toList();
+            final ThreadHierarchy hierarchy = program.getThreadHierarchy();
             for (Event e1 : events) {
                 for (Event e2 : events) {
                     if (exec.areMutuallyExclusive(e1, e2)) {
                         continue;
                     }
-                    Thread thread1 = e1.getThread();
-                    Thread thread2 = e2.getThread();
-                    if (specificScope != null) {
-                        if (thread1.getScopeHierarchy().canSyncAtScope(thread2.getScopeHierarchy(), specificScope)) {
-                            must.add(e1, e2);
-                        }
-                    } else {
-                        String scope1 = Tag.getScopeTag(e1, program.getArch());
-                        String scope2 = Tag.getScopeTag(e2, program.getArch());
-                        if (!scope1.isEmpty() && !scope2.isEmpty() && thread1.getScopeHierarchy().canSyncAtScope(thread2.getScopeHierarchy(), scope1)
-                                && thread2.getScopeHierarchy().canSyncAtScope(thread1.getScopeHierarchy(), scope2)) {
-                            must.add(e1, e2);
-                        }
+
+                    final Set<String> scopes = specificScope != null
+                            ? ImmutableSet.of(specificScope)
+                            : ImmutableSet.of(Tag.getScopeTag(e1, program.getArch()), Tag.getScopeTag(e2, program.getArch()));
+                    if (hierarchy.haveCommonScopeGroups(e1.getThread(), e2.getThread(), scopes)) {
+                        must.add(e1, e2);
                     }
                 }
             }

@@ -266,7 +266,7 @@ public class ThreadCreation implements ProgramProcessor {
         final Thread thread = new Thread(function.getName(), function.getFunctionType(),
                 Lists.transform(function.getParameterRegisters(), Register::getName), tid, start);
         thread.copyUniqueIdsFrom(function);
-        function.getProgram().addThread(thread);
+        function.getProgram().getThreadHierarchy().addThread(thread, ThreadHierarchy.Position.EMPTY);
 
         // ------------------- Copy function into thread -------------------
         final Map<Register, Register> registerReplacement = IRHelper.copyOverRegisters(function.getRegisters(), thread,
@@ -403,10 +403,12 @@ public class ThreadCreation implements ProgramProcessor {
     private void createSPVThreads(Program program) {
         ThreadGrid grid = program.getGrid();
         List<ExprTransformer> transformers = program.getTransformers();
+
         program.getFunctionByName(program.getEntryPoint()).ifPresent(entryFunction -> {
             for (int tid = 0; tid < grid.dvSize(); tid++) {
-                final Thread thread = createSPVThreadFromFunction(entryFunction, tid, grid, transformers);
-                program.addThread(thread);
+                final Thread thread = createSPVThreadFromFunction(entryFunction, tid, transformers);
+                final var group = getThreadGroup(program.getThreadHierarchy(), tid, grid, program.getArch());
+                group.addThread(thread, ThreadHierarchy.Position.EMPTY);
             }
             // Remove unused memory objects of the entry function
             for (ExprTransformer transformer : transformers) {
@@ -420,21 +422,17 @@ public class ThreadCreation implements ProgramProcessor {
         });
     }
 
-    private Thread createSPVThreadFromFunction(Function function, int tid, ThreadGrid grid, List<ExprTransformer> transformers) {
+    private ThreadHierarchy.Group getThreadGroup(ThreadHierarchy hierarchy, int tid, ThreadGrid grid, Arch arch) {
+        return hierarchy.getRoot().findGroup(ThreadHierarchy.Position.fromGrid(arch, grid, tid), true);
+    }
+
+    private Thread createSPVThreadFromFunction(Function function, int tid, List<ExprTransformer> transformers) {
         String name = function.getName();
         FunctionType type = function.getFunctionType();
         List<String> args = Lists.transform(function.getParameterRegisters(), Register::getName);
         ThreadStart start = EventFactory.newThreadStart(null);
-        Arch arch = function.getProgram().getArch();
-        ScopeHierarchy scope;
-        if (arch == Arch.VULKAN) {
-            scope = ScopeHierarchy.ScopeHierarchyForVulkan(grid.qfId(tid), grid.wgId(tid), grid.sgId(tid));
-        } else if (arch == Arch.OPENCL) {
-            scope = ScopeHierarchy.ScopeHierarchyForOpenCL(grid.dvId(tid), grid.wgId(tid), grid.sgId(tid));
-        } else {
-            throw new MalformedProgramException("Unsupported architecture for thread creation: " + arch);
-        }
-        Thread thread = new Thread(name, type, args, tid, start, scope, Set.of());
+
+        Thread thread = new Thread(name, type, args, tid, start, Set.of());
         thread.copyUniqueIdsFrom(function);
         Label returnLabel = EventFactory.newLabel("RETURN_OF_T" + thread.getId());
         Label endLabel = EventFactory.newLabel("END_OF_T" + thread.getId());

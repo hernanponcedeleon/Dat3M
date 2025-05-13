@@ -14,42 +14,35 @@ import java.util.Set;
 
 public class Thread extends Function {
 
-    // Scope hierarchy of the thread
-    private final Optional<ScopeHierarchy> scopeHierarchy;
-
-    // Threads that are system-synchronized-with this thread
+    // Threads that are system-synchronized-after this thread
     private final Optional<Set<Thread>> syncSet;
+
+    private ThreadHierarchy.Node position;
+    public void setPosition(ThreadHierarchy.Node position) { this.position = position; }
+    public ThreadHierarchy.Node getPosition() { return position; }
 
     public Thread(String name, FunctionType funcType, List<String> parameterNames, int id, ThreadStart entry) {
         super(name, funcType, parameterNames, id, entry);
         Preconditions.checkArgument(id >= 0, "Invalid thread ID");
         Preconditions.checkNotNull(entry, "Thread entry event must be not null");
-        this.scopeHierarchy = Optional.empty();
         this.syncSet = Optional.empty();
     }
 
-    public Thread(String name, FunctionType funcType, List<String> parameterNames, int id, ThreadStart entry,
-                  ScopeHierarchy scopeHierarchy, Set<Thread> syncSet) {
+    public Thread(String name, FunctionType funcType, List<String> parameterNames, int id, ThreadStart entry, Set<Thread> syncSet) {
         super(name, funcType, parameterNames, id, entry);
         Preconditions.checkArgument(id >= 0, "Invalid thread ID");
         Preconditions.checkNotNull(entry, "Thread entry event must be not null");
-        Preconditions.checkNotNull(scopeHierarchy, "Thread scopeHierarchy must be not null");
         Preconditions.checkNotNull(syncSet, "Thread syncSet must be not null");
-        this.scopeHierarchy = Optional.of(scopeHierarchy);
         this.syncSet = Optional.of(syncSet);
     }
 
     public boolean hasScope() {
-        return scopeHierarchy.isPresent();
+        return true;
+        // return scopeHierarchy.isPresent();
     }
 
     public boolean hasSyncSet() {
         return syncSet.isPresent();
-    }
-
-    // Invoke optional fields getters only if they are present
-    public ScopeHierarchy getScopeHierarchy() {
-        return scopeHierarchy.get();
     }
 
     public Set<Thread> getSyncSet() {

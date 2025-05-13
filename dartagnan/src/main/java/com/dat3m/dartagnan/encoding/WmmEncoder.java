@@ -3,6 +3,7 @@ package com.dat3m.dartagnan.encoding;
 import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.expression.integers.IntLiteral;
 import com.dat3m.dartagnan.program.Program;
+import com.dat3m.dartagnan.program.ThreadHierarchy;
 import com.dat3m.dartagnan.program.analysis.ReachingDefinitionsAnalysis;
 import com.dat3m.dartagnan.program.event.*;
 import com.dat3m.dartagnan.program.event.core.Load;
@@ -24,6 +25,7 @@ import com.dat3m.dartagnan.wmm.utils.Flag;
 import com.dat3m.dartagnan.wmm.utils.graph.EventGraph;
 import com.dat3m.dartagnan.wmm.utils.graph.mutable.MapEventGraph;
 import com.dat3m.dartagnan.wmm.utils.graph.mutable.MutableEventGraph;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -701,19 +703,17 @@ public class WmmEncoder implements Encoder {
             EventGraph maySet = ra.getKnowledge(syncFence).getMaySet();
             EventGraph mustSet = ra.getKnowledge(syncFence).getMustSet();
             IntegerFormulaManager imgr = idl ? context.getFormulaManager().getIntegerFormulaManager() : null;
+            final ThreadHierarchy hierarchy = program.getThreadHierarchy();
             // ---- Encode syncFence ----
             for (int i = 0; i < allFenceSC.size() - 1; i++) {
                 Event x = allFenceSC.get(i);
                 for (Event z : allFenceSC.subList(i + 1, allFenceSC.size())) {
                     String scope1 = Tag.getScopeTag(x, program.getArch());
                     String scope2 = Tag.getScopeTag(z, program.getArch());
-                    if (scope1.isEmpty() || scope2.isEmpty()) {
+                    if (!hierarchy.haveCommonScopeGroups(x.getThread(), z.getThread(), ImmutableSet.of(scope1, scope2))) {
                         continue;
                     }
-                    if (!x.getThread().getScopeHierarchy().canSyncAtScope((z.getThread().getScopeHierarchy()), scope1) ||
-                            !z.getThread().getScopeHierarchy().canSyncAtScope((x.getThread().getScopeHierarchy()), scope2)) {
-                        continue;
-                    }
+
                     boolean forwardPossible = maySet.contains(x, z);
                     boolean backwardPossible = maySet.contains(z, x);
                     if (!forwardPossible && !backwardPossible) {

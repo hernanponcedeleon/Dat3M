@@ -24,6 +24,8 @@ public class ThreadGrid {
         this.dvCount = dvCount;
     }
 
+    public List<Integer> gridCounts() { return List.of(this.dvCount, this.qfCount, this.wgCount, this.sgCount, this.thCount); }
+
     public int sgSize() {
         return thCount;
     }

@@ -39,13 +39,7 @@ public class VisitorLitmusVulkan extends LitmusVulkanBaseVisitor<Object> {
         visitVariableDeclaratorList(ctx.variableDeclaratorList());
         visitSswDeclaratorList(ctx.sswDeclaratorList());
         visitInstructionList(ctx.program().instructionList());
-        if (ctx.sswDeclaratorList() != null) {
-            for (LitmusVulkanParser.SswDeclaratorContext sswDeclaratorContext : ctx.sswDeclaratorList().sswDeclarator()) {
-                int threadId0 = sswDeclaratorContext.threadId(0).id;
-                int threadId1 = sswDeclaratorContext.threadId(1).id;
-                programBuilder.addSwwPairThreads(threadId0, threadId1);
-            }
-        }
+        visitSswDeclaratorList(ctx.sswDeclaratorList());
         VisitorLitmusAssertions.parseAssertions(programBuilder, ctx.assertionList(), ctx.assertionFilter());
         return programBuilder.build();
     }
@@ -108,9 +102,10 @@ public class VisitorLitmusVulkan extends LitmusVulkanBaseVisitor<Object> {
             int subgroupID = threadScopeContext.subgroupScope().scopeID().id;
             int workgroupID = threadScopeContext.workgroupScope().scopeID().id;
             int queuefamilyID = threadScopeContext.queuefamilyScope().scopeID().id;
+            int device = 0;
             // NB: the order of scopeIDs is important
             programBuilder.newScopedThread(Arch.VULKAN, threadScopeContext.threadId().id,
-                    queuefamilyID, workgroupID, subgroupID);
+                    device, queuefamilyID, workgroupID, subgroupID);
             threadCount++;
         }
         return null;

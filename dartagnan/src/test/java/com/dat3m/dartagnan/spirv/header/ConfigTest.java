@@ -1,10 +1,10 @@
 package com.dat3m.dartagnan.spirv.header;
 
+import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.program.Program;
-import com.dat3m.dartagnan.program.ScopeHierarchy;
 import com.dat3m.dartagnan.program.ThreadGrid;
-import com.dat3m.dartagnan.program.event.Tag;
+import com.dat3m.dartagnan.program.ThreadHierarchy;
 import org.junit.Test;
 
 import java.util.List;
@@ -35,11 +35,17 @@ public class ConfigTest extends AbstractTest {
         int wg_size = scopes.get(1) * sg_size;
         int qf_size = scopes.get(2) * wg_size;
         for (int i = 0; i < size; i++) {
-            ScopeHierarchy hierarchy = ScopeHierarchy.ScopeHierarchyForVulkan(grid.qfId(i), grid.wgId(i), grid.sgId(i));
+            /*ScopeHierarchy hierarchy = ScopeHierarchy.ScopeHierarchyForVulkan(grid.qfId(i), grid.wgId(i), grid.sgId(i));
             assertEquals(((i % qf_size) % wg_size) / sg_size, hierarchy.getScopeId(Tag.Vulkan.SUB_GROUP));
             assertEquals((i % qf_size) / wg_size, hierarchy.getScopeId(Tag.Vulkan.WORK_GROUP));
             assertEquals(i / qf_size, hierarchy.getScopeId(Tag.Vulkan.QUEUE_FAMILY));
-            assertEquals(0, hierarchy.getScopeId(Tag.Vulkan.DEVICE));
+            assertEquals(0, hierarchy.getScopeId(Tag.Vulkan.DEVICE));*/
+
+            ThreadHierarchy.Position pos = ThreadHierarchy.Position.fromArchitecture(Arch.VULKAN, grid.dvId(i), grid.qfId(i), grid.wgId(i), grid.sgId(i));
+            assertEquals(((i % qf_size) % wg_size) / sg_size, pos.ids().get(3).intValue());
+            assertEquals((i % qf_size) / wg_size, pos.ids().get(2).intValue());
+            assertEquals(i / qf_size, pos.ids().get(1).intValue());
+            assertEquals(0, pos.ids().get(0).intValue());
         }
     }
 
