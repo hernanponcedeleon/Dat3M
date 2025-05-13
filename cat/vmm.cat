@@ -103,7 +103,7 @@ let dep = ctrl | addr | data
 let bob = [Acq];po | po;[Rel] | [SC];po;[SC] | po;[SC & F];po | [R];po;[Acq & F];po | po;[Rel & F];po;[W & Marked]
 (* Preserved Program-Order: these are never visibly reordered by compiler and hardware. 
    Includes both barrier ordering, and dependency ordering + same-address ordering *)
-let ppo = bob | [Marked];(dep | coi | fri);[W & Marked] | [ALLOC];(addr | data) | addr;[FREE] | (memfree & po)
+let ppo = bob | [Marked];(dep | coi | fri);[W & Marked] | (memfree & po) | (allocmem & po)
 
 (* Important: these relations satisfy
     ppo ; [~Marked] ; po <= ppo
