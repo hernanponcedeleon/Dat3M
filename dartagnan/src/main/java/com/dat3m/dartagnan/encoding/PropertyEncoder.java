@@ -148,14 +148,7 @@ public class PropertyEncoder implements Encoder {
         final BooleanFormula atLeastOneViolation = bmgr.or(Lists.transform(trackableViolationEncodings,
                 vio -> vio.trackingLiteral));
 
-        NonTerminationEncoder encoder = new NonTerminationEncoder(context.getTask(), context);
-        BooleanFormula spinloops = bmgr.and(
-                encoder.encodeInfixSuffixDecomposition(),
-                encoder.encodeInfixSuffixEquivalence(),
-                encoder.encodeStrongSuffixExtension()
-        );
-        // return bmgr.and(atLeastOneViolation, trackedViolationEnc);
-        return bmgr.and(spinloops, atLeastOneViolation, trackedViolationEnc);
+        return bmgr.and(atLeastOneViolation, trackedViolationEnc);
 
     }
 
