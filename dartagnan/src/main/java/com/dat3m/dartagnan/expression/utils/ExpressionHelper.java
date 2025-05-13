@@ -2,8 +2,7 @@ package com.dat3m.dartagnan.expression.utils;
 
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.Type;
-import com.dat3m.dartagnan.expression.type.AggregateType;
-import com.dat3m.dartagnan.expression.type.ArrayType;
+import com.dat3m.dartagnan.expression.type.*;
 import com.google.common.base.Preconditions;
 
 import static com.google.common.base.Preconditions.checkArgument;
@@ -46,6 +45,10 @@ public class ExpressionHelper {
                     "Index %s out of bounds for type %s.",
                     index, arrayType);
         }
+    }
+
+    public static boolean isScalar(Type type) {
+        return type instanceof BooleanType || type instanceof IntegerType || type instanceof FloatType;
     }
 
     public static boolean isAggregateLike(Type type) {
