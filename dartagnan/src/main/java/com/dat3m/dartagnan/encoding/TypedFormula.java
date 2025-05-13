@@ -81,7 +81,7 @@ public record TypedFormula<TType extends Type, TFormula extends Formula>(TType t
 
     @Override
     public ExpressionKind getKind() {
-        return () -> "FORMULA";
+        return ExpressionKind.Other.FORMULA;
     }
 
     @Override
