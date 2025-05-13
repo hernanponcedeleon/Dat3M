@@ -440,56 +440,6 @@ public class ExecutionModelManager {
         }
 
         @Override
-        public Void visitAddressDependency(DirectAddressDependency addrDirect) {
-            SimpleGraph rg = (SimpleGraph) relGraphCache.get(addrDirect.getDefinedRelation());
-            for (ThreadModel tm : executionModel.getThreadModels()) {
-                Set<RegWriterModel> writes = new HashSet<>();
-                for (EventModel em : tm.getEventModels()) {
-                    if (em instanceof RegWriterModel rwm) {
-                        writes.add(rwm);
-                        continue;
-                    }
-                    if (em instanceof RegReaderModel rrm) {
-                        for (RegWriterModel write : writes) {
-                            for (Register.Read read : rrm.getRegisterReads()) {
-                                if (read.register() == write.getResultRegister()
-                                    && read.usageType() == Register.UsageType.ADDR) {
-                                    rg.add(new Edge(write.getId(), rrm.getId()));
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-            return null;
-        }
-
-        @Override
-        public Void visitInternalDataDependency(DirectDataDependency idd) {
-            SimpleGraph rg = (SimpleGraph) relGraphCache.get(idd.getDefinedRelation());
-            for (ThreadModel tm : executionModel.getThreadModels()) {
-                Set<RegWriterModel> writes = new HashSet<>();
-                for (EventModel em : tm.getEventModels()) {
-                    if (em instanceof RegWriterModel rwm) {
-                        writes.add(rwm);
-                        continue;
-                    }
-                    if (em instanceof RegReaderModel rrm) {
-                        for (RegWriterModel write : writes) {
-                            for (Register.Read read : rrm.getRegisterReads()) {
-                                if (read.register() == write.getResultRegister()
-                                    && read.usageType() == Register.UsageType.DATA) {
-                                    rg.add(new Edge(write.getId(), rrm.getId()));
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-            return null;
-        }
-
-        @Override
         public Void visitEmpty(Empty empty) {
             return null;
         }

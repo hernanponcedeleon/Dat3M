@@ -37,6 +37,7 @@ import static com.dat3m.dartagnan.program.event.Tag.INIT;
 import static com.dat3m.dartagnan.program.event.Tag.WRITE;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
+import static com.dat3m.dartagnan.expression.utils.ExpressionHelper.isAggregateLike;
 
 @Options
 public final class EncodingContext {

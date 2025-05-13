@@ -9,10 +9,7 @@ import com.dat3m.dartagnan.expression.type.FunctionType;
 import com.dat3m.dartagnan.expression.type.ScopedPointerType;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.decorations.BuiltIn;
-import com.dat3m.dartagnan.program.Function;
-import com.dat3m.dartagnan.program.Program;
-import com.dat3m.dartagnan.program.Register;
-import com.dat3m.dartagnan.program.ThreadGrid;
+import com.dat3m.dartagnan.program.*;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.RegWriter;
 import com.dat3m.dartagnan.program.event.Tag;
@@ -47,7 +44,7 @@ public class ProgramBuilder {
 
     public ProgramBuilder(ThreadGrid grid) {
         this.grid = grid;
-        this.program = new Program(new Memory(), Program.SourceLanguage.SPV, grid);
+        this.program = new Program(new Memory(), Program.SourceLanguage.SPV);
         this.controlFlowBuilder = new ControlFlowBuilder(expressions);
         this.decorationsBuilder = new DecorationsBuilder(grid);
     }
@@ -55,9 +52,10 @@ public class ProgramBuilder {
     public Program build() {
         validateBeforeBuild();
         controlFlowBuilder.build();
+        Function entryFunction = getEntryPointFunction();
         BuiltIn builtIn = (BuiltIn) decorationsBuilder.getDecoration(BUILT_IN);
-        MemoryTransformer transformer = new MemoryTransformer(grid, getEntryPointFunction(), builtIn, getVariables());
-        program.addTransformer(transformer);
+        MemoryTransformer transformer = new MemoryTransformer(grid, entryFunction, builtIn, getVariables());
+        program.setEntrypoint(new Entrypoint.Grid(entryFunction, grid, transformer));
         return program;
     }
 
@@ -97,7 +95,6 @@ public class ProgramBuilder {
             throw new ParsingException("Multiple entry points are not supported");
         }
         entryPointId = id;
-        program.setEntryPoint(id);
     }
 
     public void setArch(Arch arch) {
