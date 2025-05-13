@@ -92,7 +92,7 @@ public class MockProgramBuilder extends ProgramBuilder {
         } else if (type instanceof ArrayType aType) {
             Type elementType = aType.getElementType();
             List<Expression> elements = mockConstantArrayElements(elementType, value);
-            Expression construction = exprFactory.makeArray(elementType, elements, true);
+            Expression construction = exprFactory.makeArray(elementType, elements, aType.hasKnownNumElements());
             return addExpression(id, construction);
         } else if (type instanceof AggregateType) {
             List<Expression> members = ((List<?>) value).stream().map(s -> getExpression((String) s)).toList();

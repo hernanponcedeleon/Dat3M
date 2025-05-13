@@ -13,6 +13,8 @@ import java.util.List;
 import java.util.Set;
 import java.util.ArrayList;
 
+import static com.dat3m.dartagnan.expression.utils.ExpressionHelper.isAggregateLike;
+
 public class VisitorOpsComposite extends SpirvBaseVisitor<Void> {
 
     private final ProgramBuilder builder;
@@ -36,15 +38,7 @@ public class VisitorOpsComposite extends SpirvBaseVisitor<Void> {
             builder.addExpression(id, element);
             return null;
         }
-        throw new ParsingException(String.format("Type mismatch in composite extraction for: %s", id));
-    }
-
-    private Expression getElement(Expression base, List<Integer> indexes, String id) {
-        try {
-            return expressions.makeExtract(base, indexes);
-        } catch (Exception e) {
-            throw new ParsingException(String.format("Index out of bounds in OpCompositeExtract for '%s'", id));
-        }
+        throw new ParsingException(String.format("Type mismatch in composite extraction for '%s'", id));
     }
 
     @Override
@@ -95,9 +89,9 @@ public class VisitorOpsComposite extends SpirvBaseVisitor<Void> {
         List<Expression> concat = new ArrayList<>();
         for (Integer index : components) {
             if (index >= 0 && index < s1) {
-                concat.add(v1.getOperands().get(index));
+                concat.add(expressions.makeExtract(v1, index));
             } else if (index >= s1 && index < s1 + s2) {
-                concat.add(v2.getOperands().get(index - s1));
+                concat.add(expressions.makeExtract(v2, index - s1));
             } else {
                 throw new ParsingException("Index %s out of bounds in OpVectorShuffle '%s'", index, id);
             }
@@ -106,19 +100,81 @@ public class VisitorOpsComposite extends SpirvBaseVisitor<Void> {
         return null;
     }
 
-    private Expression getInsertion(Expression compositeExpr, Expression objectExpr, List<Integer> indexes, String id) {
-        try {
-            return expressions.makeInsert(compositeExpr, objectExpr, indexes);
-        } catch (Exception e) {
-            throw new ParsingException("Element type mismatch or index out of bounds in OpCompositeInsert for '%s'", id);
+    @Override
+    public Void visitOpCompositeConstruct(SpirvParser.OpCompositeConstructContext ctx) {
+        String id = ctx.idResult().getText();
+        Type type = builder.getType(ctx.idResultType().getText());
+        if (!isAggregateLike(type)) {
+            throw new ParsingException(String.format("Result type of CompositeConstruct must be a composite for '%s'", id));
         }
+        if (type instanceof AggregateType aggregateType) {
+            final List<Expression> elements = new ArrayList<>(aggregateType.getFields().size());
+            for (SpirvParser.ConstituentsContext vCtx : ctx.constituents()) {
+                String idCtx = vCtx.idRef().getText();
+                elements.add(builder.getExpression(idCtx));
+            }
+            builder.addExpression(id, getConstruct(type, elements, id));
+        }
+        if (type instanceof ArrayType arrayType) {
+            final List<Expression> elements = new ArrayList<>();
+            for (SpirvParser.ConstituentsContext vCtx : ctx.constituents()) {
+                String idCtx = vCtx.idRef().getText();
+                Expression elem = builder.getExpression(idCtx);
+                if (!TypeFactory.isStaticTypeOf(elem.getType(), arrayType.getElementType())) {
+                    throw new ParsingException(String.format("There must be exactly one constituent for each top-level element of the result " +
+                        "(\"flattening\" vectors is not yet supported) and their types should match for '%s'", id));
+                }
+                elements.add(elem);
+            }
+            Expression array = getArray(arrayType.getElementType(), elements, id);
+            if (!TypeFactory.isStaticTypeOf(array.getType(), type)) {
+                throw new ParsingException(String.format("There must be exactly one constituent for each top-level element of the result " +
+                        "(\"flattening\" vectors is not yet supported) and their types should match for '%s'", id));
+            }
+            builder.addExpression(id, array);
+        }
+        return null;
     }
 
     public Set<String> getSupportedOps() {
         return Set.of(
                 "OpCompositeExtract",
                 "OpCompositeInsert",
-                "OpVectorShuffle"
+                "OpVectorShuffle",
+                "OpCompositeConstruct"
         );
     }
+
+    private Expression getElement(Expression base, List<Integer> indexes, String id) {
+        try {
+            return expressions.makeExtract(base, indexes);
+        } catch (Exception e) {
+            throw new ParsingException(String.format("%s Offending id: '%s'", e.getMessage(), id));
+        }
+    }
+
+    private Expression getInsertion(Expression compositeExpr, Expression objectExpr, List<Integer> indexes, String id) {
+        try {
+            return expressions.makeInsert(compositeExpr, objectExpr, indexes);
+        } catch (Exception e) {
+            throw new ParsingException(String.format("%s Offending id: '%s'", e.getMessage(), id));
+        }
+    }
+
+    private Expression getConstruct(Type type, List<Expression> elements, String id) {
+        try {
+            return expressions.makeConstruct(type, elements);
+        } catch (Exception e) {
+            throw new ParsingException(String.format("%s Offending id: '%s'", e.getMessage(), id));
+        }
+    }
+
+    private Expression getArray(Type eType, List<Expression> elements, String id) {
+        try {
+            return expressions.makeArray(eType, elements, true);
+        } catch (Exception e) {
+            throw new ParsingException(String.format("%s Offending id: '%s'", e.getMessage(), id));
+        }
+    }
+
 }
