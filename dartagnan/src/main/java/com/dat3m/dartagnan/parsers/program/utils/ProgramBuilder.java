@@ -71,9 +71,7 @@ public class ProgramBuilder {
             // The terminator should not get inserted somewhere beforehand.
             Verify.verify(endOfThread.getFunction() == null);
             // Every event in litmus tests is non-optimisable
-            if (program.getFormat() == LITMUS) {
-                endOfThread.addTags(NOOPT);
-            }
+            endOfThread.addTags(NOOPT);
             thread.append(endOfThread);
         }
         processAfterParsing(program);
