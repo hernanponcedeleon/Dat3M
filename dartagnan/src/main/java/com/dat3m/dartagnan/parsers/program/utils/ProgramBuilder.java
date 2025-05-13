@@ -51,6 +51,7 @@ public class ProgramBuilder {
     // ----------------------------------------------------------------------------------------------------------------
     // Construction
     private ProgramBuilder(SourceLanguage format) {
+        Preconditions.checkArgument(format == SourceLanguage.LITMUS);
         this.program = new Program(new Memory(), format);
     }
 
