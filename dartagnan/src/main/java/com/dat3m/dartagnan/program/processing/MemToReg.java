@@ -119,14 +119,9 @@ public class MemToReg implements FunctionProcessor {
                 final int accessSize = types.getMemorySizeInBytes(accessType);
                 registerTypes.add(new Field((int) entry.getValue().offset, accessSize, accessType));
             }
-            promotableObjects.put(allocation, new Promotable(Maps.asMap(registerTypes, f -> newFieldRegister(allocation, f))));
+            promotableObjects.put(allocation, new Promotable(Maps.asMap(registerTypes, f -> function.newRegister(f.type))));
         }
         return promotableObjects;
-    }
-
-    private static Register newFieldRegister(Alloc allocation, Field field) {
-        final String name = String.format("m2r_%d_%d_%s", allocation.getGlobalId(), field.offset, field.type);
-        return allocation.getFunction().newRegister(name, field.type);
     }
 
     private List<Event> promoteAccess(MemoryCoreEvent event, AddressOffset access, Map<RegWriter, Promotable> promotableObjects) {
