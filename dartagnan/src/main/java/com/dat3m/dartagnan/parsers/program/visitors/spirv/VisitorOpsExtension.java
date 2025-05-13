@@ -14,11 +14,13 @@ import org.antlr.v4.runtime.tree.TerminalNode;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
+import java.util.List;
 
 public class VisitorOpsExtension extends SpirvBaseVisitor<Void> {
 
     private final Map<String, VisitorExtension<?>> availableVisitors = new HashMap<>();
     private final Map<String, String> visitorIds = new HashMap<>();
+    private final List<String> baseExtentions = List.of("SPV_KHR_vulkan_memory_model", "SPV_KHR_storage_buffer_storage_class");
 
     public VisitorOpsExtension(ProgramBuilder builder) {
         VisitorExtensionClspvReflection clspv = new VisitorExtensionClspvReflection(builder);
@@ -32,9 +34,9 @@ public class VisitorOpsExtension extends SpirvBaseVisitor<Void> {
 
     @Override
     public Void visitOpExtension(SpirvParser.OpExtensionContext ctx) {
-        String name = ctx.nameLiteralString().getText();
-        name = name.substring(1, name.length() - 1);
-        if (!"SPV_KHR_vulkan_memory_model".equals(name)) {
+        String rawName = ctx.nameLiteralString().getText();
+        String name = rawName.substring(1, rawName.length() - 1);
+        if (baseExtentions.stream().noneMatch(e -> e.equals(name))) {
             throw new ParsingException("Unsupported extension '%s'", name);
         }
         return null;
