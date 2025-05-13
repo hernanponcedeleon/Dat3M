@@ -22,7 +22,7 @@ class ParserLlvm implements ParserInterface {
         parser.addErrorListener(new AbortErrorListener());
         CompilationUnitContext parserEntryPoint = parser.compilationUnit();
         DataLayout dataLayout = parseDataLayout(parserEntryPoint);
-        Program program = new Program(new Memory(dataLayout.bigEndian), Program.SourceLanguage.LLVM, null);
+        Program program = new Program(new Memory(dataLayout.bigEndian), Program.SourceLanguage.LLVM);
         VisitorLlvm visitor = new VisitorLlvm(program);
 
         visitor.visitCompilationUnit(parserEntryPoint);
