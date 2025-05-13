@@ -38,7 +38,7 @@ public class LitmusAARCH64Test extends AbstractLitmusTest {
         return Provider.fromSupplier(() -> Configuration.builder()
                 .setOption(INITIALIZE_REGISTERS, "true")
                 .setOption(USE_INTEGERS, "false")
-                .setOption(MIXED_SIZE, "true")
+                .setOption(MIXED_SIZE, String.valueOf(filePathProvider.get().contains("litmus/AARCH64/mixed/")))
                 .build());
     }
 }
