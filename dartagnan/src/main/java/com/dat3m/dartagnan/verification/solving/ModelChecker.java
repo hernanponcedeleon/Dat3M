@@ -2,6 +2,7 @@ package com.dat3m.dartagnan.verification.solving;
 
 import com.dat3m.dartagnan.configuration.Property;
 import com.dat3m.dartagnan.encoding.EncodingContext;
+import com.dat3m.dartagnan.encoding.IREvaluator;
 import com.dat3m.dartagnan.encoding.WmmEncoder;
 import com.dat3m.dartagnan.exception.UnsatisfiedRequirementException;
 import com.dat3m.dartagnan.program.Program;
@@ -10,6 +11,7 @@ import com.dat3m.dartagnan.program.analysis.*;
 import com.dat3m.dartagnan.program.analysis.alias.AliasAnalysis;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.processing.ProcessingManager;
+import com.dat3m.dartagnan.smt.ModelExt;
 import com.dat3m.dartagnan.utils.Result;
 import com.dat3m.dartagnan.verification.Context;
 import com.dat3m.dartagnan.verification.VerificationTask;
@@ -20,7 +22,6 @@ import com.dat3m.dartagnan.wmm.axiom.Axiom;
 import com.dat3m.dartagnan.wmm.processing.WmmProcessingManager;
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
-import org.sosy_lab.java_smt.api.Model;
 import org.sosy_lab.java_smt.api.ProverEnvironment;
 import org.sosy_lab.java_smt.api.SolverException;
 
@@ -29,7 +30,6 @@ import java.util.Optional;
 import static com.dat3m.dartagnan.configuration.Property.CAT_SPEC;
 import static com.dat3m.dartagnan.program.analysis.SyntacticContextAnalysis.*;
 import static com.dat3m.dartagnan.utils.Result.*;
-import static java.lang.Boolean.FALSE;
 
 public abstract class ModelChecker {
 
@@ -113,30 +113,32 @@ public abstract class ModelChecker {
         if (!ctx.getTask().getProperty().contains(CAT_SPEC)) {
             return;
         }
-        final Model model = prover.getModel();
-        final SyntacticContextAnalysis synContext = newInstance(program);
-        for(Axiom ax : wmm.getAxioms()) {
-            if(ax.isFlagged() && FALSE.equals(model.evaluate(CAT_SPEC.getSMTVariable(ax, ctx)))) {
-                StringBuilder violatingPairs = new StringBuilder("Flag " + Optional.ofNullable(ax.getName()).orElse(ax.getRelation().getNameOrTerm())).append("\n");
-                encoder.getEventGraph(ax.getRelation(), model).apply((e1, e2) -> {
-                    final String callSeparator = " -> ";
-                    final String callStackFirst = makeContextString(
-                            synContext.getContextInfo(e1).getContextOfType(CallContext.class),
-                            callSeparator);
-                    final String callStackSecond = makeContextString(
-                            synContext.getContextInfo(e2).getContextOfType(CallContext.class),
-                            callSeparator);
+        try (ModelExt model = new ModelExt(prover.getModel())) {
+            final IREvaluator irModel = new IREvaluator(ctx, model);
+            final SyntacticContextAnalysis synContext = newInstance(program);
+            for (Axiom ax : wmm.getAxioms()) {
+                if (ax.isFlagged() && irModel.isFlaggedAxiomViolated(ax)) {
+                    StringBuilder violatingPairs = new StringBuilder("Flag " + Optional.ofNullable(ax.getName()).orElse(ax.getRelation().getNameOrTerm())).append("\n");
+                    encoder.getEventGraph(ax.getRelation(), model).apply((e1, e2) -> {
+                        final String callSeparator = " -> ";
+                        final String callStackFirst = makeContextString(
+                                synContext.getContextInfo(e1).getContextOfType(CallContext.class),
+                                callSeparator);
+                        final String callStackSecond = makeContextString(
+                                synContext.getContextInfo(e2).getContextOfType(CallContext.class),
+                                callSeparator);
 
-                    violatingPairs
-                            .append("\tE").append(e1.getGlobalId())
-                            .append(" / E").append(e2.getGlobalId())
-                            .append("\t").append(callStackFirst).append(callStackFirst.isEmpty() ? "" : callSeparator)
-                            .append(getSourceLocationString(e1))
-                            .append(" / ").append(callStackSecond).append(callStackSecond.isEmpty() ? "" : callSeparator)
-                            .append(getSourceLocationString(e2))
-                            .append("\n");
-                });
-                flaggedPairsOutput += violatingPairs.toString();
+                        violatingPairs
+                                .append("\tE").append(e1.getGlobalId())
+                                .append(" / E").append(e2.getGlobalId())
+                                .append("\t").append(callStackFirst).append(callStackFirst.isEmpty() ? "" : callSeparator)
+                                .append(getSourceLocationString(e1))
+                                .append(" / ").append(callStackSecond).append(callStackSecond.isEmpty() ? "" : callSeparator)
+                                .append(getSourceLocationString(e2))
+                                .append("\n");
+                    });
+                    flaggedPairsOutput += violatingPairs.toString();
+                }
             }
         }
     }
