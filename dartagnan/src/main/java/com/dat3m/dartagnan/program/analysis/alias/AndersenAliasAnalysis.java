@@ -23,6 +23,7 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import static com.dat3m.dartagnan.expression.integers.IntBinaryOp.ADD;
+import static com.dat3m.dartagnan.configuration.Alias.*;
 
 /**
  * Inclusion-based pointer analysis by Andersen.
@@ -53,6 +54,10 @@ public class AndersenAliasAnalysis implements AliasAnalysis {
         Preconditions.checkArgument(program.isCompiled(), "The program must be compiled first.");
         ImmutableSet.Builder<Location> builder = new ImmutableSet.Builder<>();
         for (MemoryObject a : program.getMemory().getObjects()) {
+            if (!a.hasKnownSize()) {
+                throw new UnsupportedOperationException(String.format("%s alias analysis does not support memory objects of unknown size. " +
+                    "You can try the %s alias analysis", FIELD_INSENSITIVE, FULL));
+            }
             for (int i = 0; i < a.getKnownSize(); i++) {
                 builder.add(new Location(a, i));
             }
