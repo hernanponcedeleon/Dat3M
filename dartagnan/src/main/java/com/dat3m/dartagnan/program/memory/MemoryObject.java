@@ -65,7 +65,7 @@ public class MemoryObject extends LeafExpressionBase<Type> {
     public Expression size() { return size; }
     public boolean hasKnownSize() { return size instanceof IntLiteral; }
     public int getKnownSize() {
-        Preconditions.checkState(hasKnownSize(), String.format("Cannot call method getKnownSize() for object %s with unknown size", this));
+        Preconditions.checkState(hasKnownSize(), "Cannot call method getKnownSize() for object %s with unknown size", this);
         return ((IntLiteral)size).getValueAsInt();
     }
 
