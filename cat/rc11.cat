@@ -48,11 +48,7 @@ flag ~empty (((ALLOC * FREE) & allocptr) \ hb) as alloc-race
 flag ~empty (((FREE * FREE) \ id) & allocptr) as double-free
 flag ~empty ([FREE] \ [range(allocptr & (ALLOC * FREE))]) as free-without-alloc
 flag ~empty (allocmem \ hb) as use-before-alloc
-// flag ~empty ((allocmem^-1 ; (allocptr & (ALLOC * FREE))) \ hb) as use-after-free
-let memfree = allocmem^-1 ; (allocptr & (ALLOC * FREE))
-let uaf = memfree \ hb
-// flag ~empty (memfree \ hb) as use-after-free
-flag ~empty uaf as use-after-free
+flag ~empty ((allocmem^-1 ; (allocptr & (ALLOC * FREE))) \ hb) as use-after-free
 
 // TODO: Non-monotonic! (see ThreadCreation class)
 flag ~empty ([ALLOC] \ [domain(allocptr)]) as alloc-without-free
