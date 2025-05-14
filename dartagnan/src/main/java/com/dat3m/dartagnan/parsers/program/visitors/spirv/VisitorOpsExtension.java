@@ -14,7 +14,6 @@ import org.antlr.v4.runtime.tree.TerminalNode;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
-import java.util.List;
 
 public class VisitorOpsExtension extends SpirvBaseVisitor<Void> {
 
