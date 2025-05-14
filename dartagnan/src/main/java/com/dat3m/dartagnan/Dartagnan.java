@@ -46,8 +46,6 @@ import org.apache.commons.csv.CSVPrinter;
 import org.apache.commons.csv.CSVRecord;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.apache.logging.log4j.core.config.Configurator;
-import org.apache.logging.log4j.Level;
 import org.apache.maven.model.io.xpp3.MavenXpp3Reader;
 import org.sosy_lab.common.ShutdownManager;
 import org.sosy_lab.common.ShutdownNotifier;
@@ -130,9 +128,6 @@ public class Dartagnan extends BaseOptions {
 
     public static void main(String[] args) throws Exception {
 
-        final Level logLevel = Level.getLevel(System.getProperty("logLevel", "off"));
-        Configurator.setRootLevel(logLevel);
-        Configurator.setLevel(RefinementSolver.class.getName(), logLevel);
         initGitInfo();
 
         if (Arrays.asList(args).contains("--help")) {
