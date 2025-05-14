@@ -2,12 +2,10 @@ package com.dat3m.dartagnan.verification.model;
 
 import com.dat3m.dartagnan.encoding.EncodingContext;
 import com.dat3m.dartagnan.encoding.IREvaluator;
-import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.MemoryEvent;
 import com.dat3m.dartagnan.program.event.core.*;
-import com.dat3m.dartagnan.program.event.core.InstructionBoundary;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.dat3m.dartagnan.smt.ModelExt;
 import com.dat3m.dartagnan.solver.caat.predicates.CAATPredicate;
@@ -356,14 +354,14 @@ public class ExecutionModelManager {
 
         private Void visitReadModifyWrites(Relation relation) {
             SimpleGraph rg = (SimpleGraph) relGraphCache.get(relation);
-            EncodingContext.EdgeEncoder edge = context.edge(relation);
+            EncodingContext.EdgeEncoder rel = context.edge(relation);
 
             for (Map.Entry<ValueModel, Set<LoadModel>> reads : executionModel.getAddressReadsMap().entrySet()) {
                 final Set<StoreModel> writes = executionModel.getAddressWritesMap().get(reads.getKey());
                 if (writes == null) { continue; }
                 for (LoadModel read : reads.getValue()) {
                     for (StoreModel write : writes) {
-                        if (isTrue(edge.encode(read.getEvent(), write.getEvent()))) {
+                        if (model.hasEdge(rel, read.getEvent(), write.getEvent())) {
                             rg.add(new Edge(read.getId(), write.getId()));
                         }
                     }

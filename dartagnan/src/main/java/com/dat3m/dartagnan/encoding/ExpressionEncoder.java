@@ -403,76 +403,34 @@ public class ExpressionEncoder {
             }
         }
 
-    @Override
-    public Formula visitIntConcat(IntConcat expr) {
-        final BitvectorFormulaManager bvmgr = bitvectorFormulaManager();
-        final List<Expression> operands = expr.getOperands();
-        if (operands.isEmpty()) {
-            return visitExpression(expr);
-        }
-        BitvectorFormula enc = (BitvectorFormula) operands.get(0).accept(this);
-        for (Expression op : operands.subList(1, operands.size())) {
-            enc = bvmgr.concat((BitvectorFormula) op.accept(this), enc);
-        }
-        return enc;
-    }
-
-    @Override
-    public Formula visitIntExtract(IntExtract expr) {
-        Formula inner = encode(expr.getOperand());
-        if (inner instanceof IntegerFormula) {
-            //FIXME Constrain the value. Maybe modulo computation?
-            return inner;
-        }
-        final BitvectorFormulaManager bvmgr = bitvectorFormulaManager();
-        BitvectorFormula operandEnc = (BitvectorFormula) expr.getOperand().accept(this);
-        return bvmgr.extract(operandEnc, expr.getHighBit(), expr.getLowBit());
-    }
-
-    @Override
-    public Formula visitITEExpression(ITEExpr iteExpr) {
-        BooleanFormula guard = encodeAsBoolean(iteExpr.getCondition());
-        Formula tBranch = encode(iteExpr.getTrueCase());
-        Formula fBranch = encode(iteExpr.getFalseCase());
-        return booleanFormulaManager.ifThenElse(guard, tBranch, fBranch);
-    }
         @Override
-        public TypedFormula<BooleanType, BooleanFormula> visitIntCmpExpression(IntCmpExpr cmp) {
-            final TypedFormula<?, ?> lhs = encode(cmp.getLeft());
-            final TypedFormula<?, ?> rhs = encode(cmp.getRight());
-            final IntCmpOp op = cmp.getKind();
+        public TypedFormula<IntegerType, ?> visitIntConcat(IntConcat expr) {
+            Preconditions.checkArgument(!expr.getOperands().isEmpty());
 
             if (context.useIntegers) {
-                final IntegerFormulaManager imgr = fmgr.getIntegerFormulaManager();
-                final IntegerFormula l = (IntegerFormula) lhs.formula();
-                final IntegerFormula r = (IntegerFormula) rhs.formula();
-
-                final BooleanFormula result = switch (op) {
-                    case EQ -> imgr.equal(l, r);
-                    case NEQ -> fmgr.getBooleanFormulaManager().not(imgr.equal(l, r));
-                    case LT, ULT -> imgr.lessThan(l, r);
-                    case LTE, ULTE -> imgr.lessOrEquals(l, r);
-                    case GT, UGT -> imgr.greaterThan(l, r);
-                    case GTE, UGTE -> imgr.greaterOrEquals(l, r);
-                };
-
-                return new TypedFormula<>(types.getBooleanType(), result);
+                throw new UnsupportedOperationException("Cannot encode bitwise concatenation on mathematical integers.");
             } else {
-                final BitvectorFormulaManager bvmgr = fmgr.getBitvectorFormulaManager();
-                final BitvectorFormula l = (BitvectorFormula) lhs.formula();
-                final BitvectorFormula r = (BitvectorFormula) rhs.formula();
-                final boolean isSigned = op.isSigned();
+                final BitvectorFormulaManager bvmgr = bitvectorFormulaManager();
+                final List<Expression> operands = expr.getOperands();
 
-                final BooleanFormula result = switch (op) {
-                    case EQ -> bvmgr.equal(l, r);
-                    case NEQ -> fmgr.getBooleanFormulaManager().not(bvmgr.equal(l, r));
-                    case LT, ULT -> bvmgr.lessThan(l, r, isSigned);
-                    case LTE, ULTE -> bvmgr.lessOrEquals(l, r, isSigned);
-                    case GT, UGT -> bvmgr.greaterThan(l, r, isSigned);
-                    case GTE, UGTE -> bvmgr.greaterOrEquals(l, r, isSigned);
-                };
+                BitvectorFormula enc = (BitvectorFormula) encodeIntegerExpr(operands.get(0)).formula();
+                for (Expression op : operands.subList(1, operands.size())) {
+                    enc = bvmgr.concat((BitvectorFormula) encodeIntegerExpr(op).formula(), enc);
+                }
+                return new TypedFormula<>(expr.getType(), enc);
+            }
+        }
 
-                return new TypedFormula<>(types.getBooleanType(), result);
+        @Override
+        public TypedFormula<IntegerType, ?> visitIntExtract(IntExtract expr) {
+            if (context.useIntegers) {
+                // TODO: We could support this with modulo operations
+                throw new UnsupportedOperationException("Cannot extract bits from mathematical integers.");
+            } else {
+                final BitvectorFormulaManager bvmgr = bitvectorFormulaManager();
+                final BitvectorFormula operandEnc = (BitvectorFormula) encodeIntegerExpr(expr.getOperand()).formula();
+                final BitvectorFormula extract = bvmgr.extract(operandEnc, expr.getHighBit(), expr.getLowBit());
+                return new TypedFormula<IntegerType, Formula>(expr.getType(), extract);
             }
         }
 
