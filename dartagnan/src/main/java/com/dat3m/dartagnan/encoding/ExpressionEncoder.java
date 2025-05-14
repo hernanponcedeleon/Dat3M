@@ -404,6 +404,46 @@ public class ExpressionEncoder {
         }
 
         @Override
+        public TypedFormula<BooleanType, BooleanFormula> visitIntCmpExpression(IntCmpExpr cmp) {
+            final TypedFormula<?, ?> lhs = encode(cmp.getLeft());
+            final TypedFormula<?, ?> rhs = encode(cmp.getRight());
+            final IntCmpOp op = cmp.getKind();
+
+            if (context.useIntegers) {
+                final IntegerFormulaManager imgr = fmgr.getIntegerFormulaManager();
+                final IntegerFormula l = (IntegerFormula) lhs.formula();
+                final IntegerFormula r = (IntegerFormula) rhs.formula();
+
+                final BooleanFormula result = switch (op) {
+                    case EQ -> imgr.equal(l, r);
+                    case NEQ -> fmgr.getBooleanFormulaManager().not(imgr.equal(l, r));
+                    case LT, ULT -> imgr.lessThan(l, r);
+                    case LTE, ULTE -> imgr.lessOrEquals(l, r);
+                    case GT, UGT -> imgr.greaterThan(l, r);
+                    case GTE, UGTE -> imgr.greaterOrEquals(l, r);
+                };
+
+                return new TypedFormula<>(types.getBooleanType(), result);
+            } else {
+                final BitvectorFormulaManager bvmgr = fmgr.getBitvectorFormulaManager();
+                final BitvectorFormula l = (BitvectorFormula) lhs.formula();
+                final BitvectorFormula r = (BitvectorFormula) rhs.formula();
+                final boolean isSigned = op.isSigned();
+
+                final BooleanFormula result = switch (op) {
+                    case EQ -> bvmgr.equal(l, r);
+                    case NEQ -> fmgr.getBooleanFormulaManager().not(bvmgr.equal(l, r));
+                    case LT, ULT -> bvmgr.lessThan(l, r, isSigned);
+                    case LTE, ULTE -> bvmgr.lessOrEquals(l, r, isSigned);
+                    case GT, UGT -> bvmgr.greaterThan(l, r, isSigned);
+                    case GTE, UGTE -> bvmgr.greaterOrEquals(l, r, isSigned);
+                };
+
+                return new TypedFormula<>(types.getBooleanType(), result);
+            }
+        }
+
+        @Override
         public TypedFormula<IntegerType, ?> visitIntConcat(IntConcat expr) {
             Preconditions.checkArgument(!expr.getOperands().isEmpty());
 
