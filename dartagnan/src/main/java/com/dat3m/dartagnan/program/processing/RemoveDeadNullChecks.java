@@ -13,7 +13,7 @@ import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.EventVisitor;
 import com.dat3m.dartagnan.program.event.RegReader;
 import com.dat3m.dartagnan.program.event.RegWriter;
-import com.dat3m.dartagnan.program.event.core.Alloc;
+import com.dat3m.dartagnan.program.event.core.MemAlloc;
 import com.dat3m.dartagnan.program.event.core.Local;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import org.apache.logging.log4j.LogManager;
@@ -120,7 +120,7 @@ public class RemoveDeadNullChecks implements FunctionProcessor {
         }
 
         @Override
-        public Void visitAlloc(Alloc e) {
+        public Void visitAlloc(MemAlloc e) {
             final Sign sign = Sign.POS;
             signMap.compute(e.getResultRegister(), (key, s) -> s == null ? sign : Sign.meet(s, sign));
             return null;

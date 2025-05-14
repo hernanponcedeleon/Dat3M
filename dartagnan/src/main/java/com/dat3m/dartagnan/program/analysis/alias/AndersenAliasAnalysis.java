@@ -107,7 +107,7 @@ public class AndersenAliasAnalysis implements AliasAnalysis {
     private void run(Program program) {
         List<MemoryCoreEvent> memEvents = program.getThreadEvents(MemoryCoreEvent.class);
         List<Local> locals = program.getThreadEvents(Local.class);
-        for (Alloc a : program.getThreadEvents(Alloc.class)) {
+        for (MemAlloc a : program.getThreadEvents(MemAlloc.class)) {
             processAllocs(a);
         }
         for (MemoryCoreEvent e : memEvents) {
@@ -129,7 +129,7 @@ public class AndersenAliasAnalysis implements AliasAnalysis {
         }
     }
 
-    private void processAllocs(Alloc a) {
+    private void processAllocs(MemAlloc a) {
         Register r = a.getResultRegister();
         Location base = new Location(a.getAllocatedObject(), 0);
         eventAddressSpaceMap.put(a, ImmutableSet.of(base));

@@ -114,13 +114,13 @@ public class PropertyEncoder implements Encoder {
 
         BooleanFormula encoding = (specType == Property.Type.SAFETY) ?
                 encodePropertyViolations(properties) : encodePropertyWitnesses(properties);
-        // if (!program.getFormat().equals(LLVM) || properties.contains(TERMINATION)) {
+        if (!program.getFormat().equals(LLVM) || properties.contains(TERMINATION)) {
             // Both litmus assertions and termination need to identify
             // the final stores to addresses.
             // TODO Optimization: This encoding can be restricted to only those addresses
             //  that are relevant for the specification (e.g., only variables that are used in loops).
-        encoding = context.getBooleanFormulaManager().and(encoding, encodeLastCoConstraints());
-        // }
+            encoding = context.getBooleanFormulaManager().and(encoding, encodeLastCoConstraints());
+        }
         return encoding;
     }
 

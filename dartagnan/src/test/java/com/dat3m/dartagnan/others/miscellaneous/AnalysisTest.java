@@ -642,7 +642,7 @@ public class AnalysisTest {
 
         b.newThread(0);
         Register r0 = b.getOrNewRegister(0, "r0");
-        Alloc a = newHeapAlloc(r0, 2);                  // r0 = malloc(2)
+        MemAlloc a = newHeapAlloc(r0, 2);                  // r0 = malloc(2)
         b.addChild(0, a);
         Store e0 = newStore(r0, value(2));              // *r0 = 2
         b.addChild(0, e0);
@@ -656,7 +656,7 @@ public class AnalysisTest {
 
         Program program = b.build();
         AliasAnalysis aa = analyze(program, method);
-        Alloc al = (Alloc) findMatchingEventAfterProcessing(program, a);
+        MemAlloc al = (MemAlloc) findMatchingEventAfterProcessing(program, a);
         MemoryCoreEvent me0 = (MemoryCoreEvent) findMatchingEventAfterProcessing(program, e0);
         MemoryCoreEvent me1 = (MemoryCoreEvent) findMatchingEventAfterProcessing(program, e1);
         MemoryCoreEvent me2 = (MemoryCoreEvent) findMatchingEventAfterProcessing(program, e2);
@@ -688,10 +688,10 @@ public class AnalysisTest {
 
         b.newThread(0);
         Register r0 = b.getOrNewRegister(0, "r0");
-        Alloc a0 = newHeapAlloc(r0, 3);                    // r0 = malloc(3)
+        MemAlloc a0 = newHeapAlloc(r0, 3);                    // r0 = malloc(3)
         b.addChild(0, a0);
         Register r1 = b.getOrNewRegister(0, "r1");
-        Alloc a1 = newHeapAlloc(r1, 4);                    // r1 = malloc(4)
+        MemAlloc a1 = newHeapAlloc(r1, 4);                    // r1 = malloc(4)
         b.addChild(0, a1);
         Store e0 = newStore(r0, r1);                       // *r0 = r1
         b.addChild(0, e0);
@@ -717,8 +717,8 @@ public class AnalysisTest {
 
         Program program = b.build();
         AliasAnalysis aa = analyze(program, method);
-        Alloc al0 = (Alloc) findMatchingEventAfterProcessing(program, a0);
-        Alloc al1 = (Alloc) findMatchingEventAfterProcessing(program, a1);
+        MemAlloc al0 = (MemAlloc) findMatchingEventAfterProcessing(program, a0);
+        MemAlloc al1 = (MemAlloc) findMatchingEventAfterProcessing(program, a1);
         MemoryCoreEvent me0 = (MemoryCoreEvent) findMatchingEventAfterProcessing(program, e0);
         MemoryCoreEvent me1 = (MemoryCoreEvent) findMatchingEventAfterProcessing(program, e1);
         MemoryCoreEvent me2 = (MemoryCoreEvent) findMatchingEventAfterProcessing(program, e2);
@@ -766,7 +766,7 @@ public class AnalysisTest {
 
         b.newThread(0);
         Register r0 = b.getOrNewRegister(0, "r0");
-        Alloc a0 = newHeapAlloc(r0, 4);                    // r0 = malloc(4)
+        MemAlloc a0 = newHeapAlloc(r0, 4);                    // r0 = malloc(4)
         b.addChild(0, a0);
         Store e0 = newStore(r0, value(1));                 // *r0 = 1
         b.addChild(0, e0);
@@ -793,7 +793,7 @@ public class AnalysisTest {
 
         Program program = b.build();
         AliasAnalysis aa = analyze(program, method);
-        Alloc al0 = (Alloc) findMatchingEventAfterProcessing(program, a0);
+        MemAlloc al0 = (MemAlloc) findMatchingEventAfterProcessing(program, a0);
         MemoryCoreEvent me0 = (MemoryCoreEvent) findMatchingEventAfterProcessing(program, e0);
         MemoryCoreEvent me1 = (MemoryCoreEvent) findMatchingEventAfterProcessing(program, e1);
         MemoryCoreEvent me2 = (MemoryCoreEvent) findMatchingEventAfterProcessing(program, e2);
@@ -864,10 +864,10 @@ public class AnalysisTest {
 
         b.newThread(0);
         Register r0 = b.getOrNewRegister(0, "r0");
-        Alloc a0 = newHeapAlloc(r0, 2);                    // r0 = malloc(2)
+        MemAlloc a0 = newHeapAlloc(r0, 2);                    // r0 = malloc(2)
         b.addChild(0, a0);
         Register r1 = b.getOrNewRegister(0, "r1");
-        Alloc a1 = newHeapAlloc(r1, 3);                    // r1 = malloc(3)
+        MemAlloc a1 = newHeapAlloc(r1, 3);                    // r1 = malloc(3)
         b.addChild(0, a1);
         Register r2 = b.getOrNewRegister(0, "r2");
         b.addChild(0, newLocal(r2, r0));                   // r2 = r0
@@ -900,8 +900,8 @@ public class AnalysisTest {
 
         Program program = b.build();
         AliasAnalysis aa = analyze(program, method);
-        Alloc al0 = (Alloc) findMatchingEventAfterProcessing(program, a0);
-        Alloc al1 = (Alloc) findMatchingEventAfterProcessing(program, a1);
+        MemAlloc al0 = (MemAlloc) findMatchingEventAfterProcessing(program, a0);
+        MemAlloc al1 = (MemAlloc) findMatchingEventAfterProcessing(program, a1);
         MemFree fr0 = (MemFree) findMatchingEventAfterProcessing(program, f0);
         MemFree fr1 = (MemFree) findMatchingEventAfterProcessing(program, f1);
         MemFree fr2 = (MemFree) findMatchingEventAfterProcessing(program, f2);
@@ -989,7 +989,7 @@ public class AnalysisTest {
         return EventFactory.newStore(address, value);
     }
 
-    private Alloc newHeapAlloc(Register resultReg, int size) {
+    private MemAlloc newHeapAlloc(Register resultReg, int size) {
         return EventFactory.newAlloc(resultReg, types.getByteType(), value(size), true, true);
     }
 

@@ -226,7 +226,7 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
             totalVariables++;
             objectVariables.put(object, new Variable(object, object.toString()));
         }
-        for (final Alloc alloc : program.getThreadEvents(Alloc.class)) {
+        for (final MemAlloc alloc : program.getThreadEvents(MemAlloc.class)) {
             addressVariables.put(alloc, derive(objectVariables.get(alloc.getAllocatedObject())));
         }
         // Each expression gets a "res" variable representing its result value set.
@@ -269,7 +269,7 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
         logger.trace("{}", event);
         final Expression expr = event instanceof Local local ? local.getExpr() :
                         event instanceof ThreadArgument arg ? arg.getCreator().getArguments().get(arg.getIndex()) :
-                        event instanceof Alloc alloc ? alloc.getAllocatedObject() : null;
+                        event instanceof MemAlloc alloc ? alloc.getAllocatedObject() : null;
         final DerivedVariable value;
         if (expr != null) {
             final RegReader reader = event instanceof ThreadArgument arg ? arg.getCreator() : (RegReader) event;

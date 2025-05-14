@@ -108,7 +108,7 @@ public class FieldSensitiveAndersen implements AliasAnalysis {
 
     private void run(Program program) {
         checkArgument(program.isCompiled(), "The program must be compiled first.");
-        for (Alloc a : program.getThreadEvents(Alloc.class)) {
+        for (MemAlloc a : program.getThreadEvents(MemAlloc.class)) {
             eventAddressSpaceMap.put(a, ImmutableSet.of(new Location(a.getAllocatedObject(), 0)));
         }
         List<MemoryCoreEvent> memEvents = program.getThreadEvents(MemoryCoreEvent.class);
@@ -158,7 +158,7 @@ public class FieldSensitiveAndersen implements AliasAnalysis {
 
 
     protected void processRegs(Event e) {
-        if (!(e instanceof Local || e instanceof ThreadArgument || e instanceof Alloc)) {
+        if (!(e instanceof Local || e instanceof ThreadArgument || e instanceof MemAlloc)) {
             return;
         }
         assert e instanceof RegWriter;
@@ -166,7 +166,7 @@ public class FieldSensitiveAndersen implements AliasAnalysis {
         final Expression expr;
         if (e instanceof Local local) {
             expr = local.getExpr();
-        } else if (e instanceof Alloc alloc) {
+        } else if (e instanceof MemAlloc alloc) {
             expr = alloc.getAllocatedObject();
         } else {
             final ThreadArgument arg = (ThreadArgument) e;

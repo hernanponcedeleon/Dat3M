@@ -111,17 +111,17 @@ public class EventFactory {
 
     // ------------------------------------------ Memory events ------------------------------------------
 
-    public static Alloc newAlloc(Register register, Type allocType, Expression arraySize,
+    public static MemAlloc newAlloc(Register register, Type allocType, Expression arraySize,
                                  boolean isHeapAlloc, boolean doesZeroOutMemory) {
         final Expression defaultAlignment = expressions.makeValue(8, types.getArchType());
         return newAlignedAlloc(register, allocType, arraySize, defaultAlignment, isHeapAlloc, doesZeroOutMemory);
     }
 
-    public static Alloc newAlignedAlloc(Register register, Type allocType, Expression arraySize, Expression alignment,
+    public static MemAlloc newAlignedAlloc(Register register, Type allocType, Expression arraySize, Expression alignment,
                                  boolean isHeapAlloc, boolean doesZeroOutMemory) {
         arraySize = expressions.makeCast(arraySize, types.getArchType(), false);
         alignment = expressions.makeCast(alignment, types.getArchType(), false);
-        return new Alloc(register, allocType, arraySize, alignment, isHeapAlloc, doesZeroOutMemory);
+        return new MemAlloc(register, allocType, arraySize, alignment, isHeapAlloc, doesZeroOutMemory);
     }
 
     public static MemFree newFree(Expression address) {

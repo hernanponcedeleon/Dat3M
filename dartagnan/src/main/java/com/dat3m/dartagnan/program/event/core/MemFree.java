@@ -11,8 +11,6 @@ import com.dat3m.dartagnan.program.event.Tag;
 import java.util.HashSet;
 import java.util.Set;
 
-// TODO: Consistent naming. Should we rename relation 'Free' into FreeRel?
-//  Or event Alloc into 'MemAlloc'?
 public class MemFree extends AbstractEvent implements RegReader {
 
     private Expression addr;

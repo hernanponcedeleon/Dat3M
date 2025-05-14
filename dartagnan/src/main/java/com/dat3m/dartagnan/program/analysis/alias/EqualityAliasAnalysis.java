@@ -87,7 +87,7 @@ public class EqualityAliasAnalysis implements AliasAnalysis {
             return me.getAddress();
         } else if (e instanceof MemFree f) {
             return f.getAddress();
-        } else if (e instanceof Alloc a) {
+        } else if (e instanceof MemAlloc a) {
             return a.getAllocatedObject();
         } else {
             throw new UnsupportedOperationException("Event type has no address: " + e.getClass().getSimpleName());

@@ -55,7 +55,7 @@ public class MemToReg implements FunctionProcessor {
     private Matcher analyze(Function function) {
         final var matcher = new Matcher();
         // Initially, all locally-allocated addresses are potentially promotable.
-        for (final Alloc allocation : function.getEvents(Alloc.class)) {
+        for (final MemAlloc allocation : function.getEvents(MemAlloc.class)) {
             final Map<Integer, Type> fields = getPrimitiveReplacementTypes(allocation);
             // Allocations will usually not have users.  Otherwise, their object is not promotable.
             if (fields == null || allocation.getUsers().isEmpty()) {
@@ -76,7 +76,7 @@ public class MemToReg implements FunctionProcessor {
         final ExpressionFactory expressions = ExpressionFactory.getInstance();
         // Replace every unmarked address.
         final HashMap<RegWriter, Map<Integer, Register>> replacingRegisters = new HashMap<>();
-        for (final Alloc allocation : function.getEvents(Alloc.class)) {
+        for (final MemAlloc allocation : function.getEvents(MemAlloc.class)) {
             if (matcher.reachabilityGraph.containsKey(allocation)) {
                 final Map<Integer, Type> registerTypes = getPrimitiveReplacementTypes(allocation);
                 if (registerTypes != null) {
@@ -121,7 +121,7 @@ public class MemToReg implements FunctionProcessor {
         }
     }
 
-    private Map<Integer, Type> getPrimitiveReplacementTypes(Alloc allocation) {
+    private Map<Integer, Type> getPrimitiveReplacementTypes(MemAlloc allocation) {
         if (!(allocation.getArraySize() instanceof IntLiteral sizeExpression)) {
             return null;
         }
@@ -146,7 +146,7 @@ public class MemToReg implements FunctionProcessor {
 
         // Allowed accesses into a heap-allocated object.
         //TODO allow MSAs
-        private final Map<Alloc, Map<Integer, Type>> fields = new HashMap<>();
+        private final Map<MemAlloc, Map<Integer, Type>> fields = new HashMap<>();
         // Current local symbolic state.  Missing values mean irreplaceable contents.
         private final Map<Object, AddressOffset> state = new HashMap<>();
         // Maps labels and jumps to symbolic state information.

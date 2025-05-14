@@ -430,7 +430,7 @@ public class ProgramEncoder implements Encoder {
                 enc.add(helper.equals(size, context.encodeFinalExpression(cur.size())));
                 alignment = context.encodeFinalExpression(cur.alignment());
             } else {
-                // Non-allocated objects, i.e. objects whose Alloc event was not executed, get size 0
+                // Non-allocated objects, i.e. objects whose MemAlloc event was not executed, get size 0
                 enc.add(helper.equals(size,
                                 bmgr.ifThenElse(context.execution(cur.getAllocationSite()),
                                         context.encodeExpressionAt(cur.size(), cur.getAllocationSite()),

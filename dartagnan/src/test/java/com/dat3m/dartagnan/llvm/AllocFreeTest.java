@@ -1,4 +1,4 @@
-package com.dat3m.dartagnan.c;
+package com.dat3m.dartagnan.llvm;
 
 import com.dat3m.dartagnan.configuration.Alias;
 import com.dat3m.dartagnan.configuration.Arch;
@@ -69,21 +69,25 @@ public class AllocFreeTest {
 
     @Test
     public void testAssume() throws Exception {
-        for (Alias aliasMethod :  List.of(FIELD_INSENSITIVE , FIELD_SENSITIVE, FULL)) {
-            Configuration cfg = mkConfiguration(aliasMethod);
-            SolverContext ctx = mkCtx(cfg);
-            AssumeSolver s = AssumeSolver.run(ctx, mkProver(ctx), mkTask(cfg));
-            assertEquals(expected, s.getResult());
+        for (String mmPath : List.of("cat/rc11.cat", "cat/c11.cat", "cat/vmm.cat")) {
+            for (Alias aliasMethod :  List.of(FIELD_INSENSITIVE , FIELD_SENSITIVE, FULL)) {
+                Configuration cfg = mkConfiguration(aliasMethod);
+                SolverContext ctx = mkCtx(cfg);
+                AssumeSolver s = AssumeSolver.run(ctx, mkProver(ctx), mkTask(cfg, mmPath));
+                assertEquals(expected, s.getResult());
+            }
         }
     }
 
     @Test
     public void testRefinement() throws Exception {
-        for (Alias aliasMethod :  List.of(FIELD_INSENSITIVE , FIELD_SENSITIVE, FULL)) {
-            Configuration cfg = mkConfiguration(aliasMethod);
-            SolverContext ctx = mkCtx(cfg);
-            RefinementSolver s = RefinementSolver.run(ctx, mkProver(ctx), mkTask(cfg));
-            assertEquals(expected, s.getResult());
+        for (String mmPath : List.of("cat/rc11.cat", "cat/c11.cat", "cat/vmm.cat")) {
+            for (Alias aliasMethod :  List.of(FIELD_INSENSITIVE , FIELD_SENSITIVE, FULL)) {
+                Configuration cfg = mkConfiguration(aliasMethod);
+                SolverContext ctx = mkCtx(cfg);
+                RefinementSolver s = RefinementSolver.run(ctx, mkProver(ctx), mkTask(cfg, mmPath));
+                assertEquals(expected, s.getResult());
+            }
         }
     }
 
@@ -99,12 +103,12 @@ public class AllocFreeTest {
         return new ProverWithTracker(ctx, "", SolverContext.ProverOptions.GENERATE_MODELS);
     }
 
-    private VerificationTask mkTask(Configuration configuration) throws Exception {
+    private VerificationTask mkTask(Configuration configuration, String mmPath) throws Exception {
         VerificationTask.VerificationTaskBuilder builder = VerificationTask.builder()
                 .withConfig(configuration)
                 .withTarget(target);
         Program program = new ProgramParser().parse(new File(getTestResourcePath("alloc/" + name + ".ll")));
-        Wmm mcm = new ParserCat().parse(new File(getRootPath("cat/vmm.cat")));
+        Wmm mcm = new ParserCat().parse(new File(getRootPath(mmPath)));
         return builder.build(program, mcm, EnumSet.of(CAT_SPEC));
     }
 

@@ -163,8 +163,8 @@ public interface AliasAnalysis {
     }
 
     private void populateObjectGraph(Map<String, Set<String>> may, Map<String, Set<String>> must,
-            List<Alloc> allocs, List<MemoryCoreEvent> events, Config configuration) {
-        for (final Alloc alloc : allocs) {
+            List<MemAlloc> allocs, List<MemoryCoreEvent> events, Config configuration) {
+        for (final MemAlloc alloc : allocs) {
             final String node1 = repr(alloc, configuration);
             final Set<String> maySet = may.computeIfAbsent(node1, k -> new HashSet<>());
             final Set<String> mustSet = must.computeIfAbsent(node1, k -> new HashSet<>());
@@ -190,7 +190,7 @@ public interface AliasAnalysis {
         final Map<String, Set<String>> mayObjectGraph = new HashMap<>();
 
         final List<MemoryCoreEvent> events = program.getThreadEvents(MemoryCoreEvent.class);
-        final List<Alloc> allocs = program.getThreadEvents(Alloc.class);
+        final List<MemAlloc> allocs = program.getThreadEvents(MemAlloc.class);
         final List<MemFree> frees = program.getThreadEvents(MemFree.class);
 
         populateAddressGraph(mayAddressGraph, mustAddressGraph, events, events, configuration);
@@ -208,7 +208,7 @@ public interface AliasAnalysis {
             graphviz.setEdgeAttributes("weight=100", "style=invis");
             final List<Event> grouped = new ArrayList<>();
             for (final Event event : thread.getEvents()) {
-                if (event instanceof MemoryCoreEvent || event instanceof Alloc || event instanceof MemFree) {
+                if (event instanceof MemoryCoreEvent || event instanceof MemAlloc || event instanceof MemFree) {
                     if (!configuration.graphvizShowAll && event instanceof Init) {
                         continue;
                     }
@@ -267,7 +267,7 @@ public interface AliasAnalysis {
         }
         final String type = event instanceof Load ? ": R"
                 : event instanceof Store ? ": W"
-                : event instanceof Alloc ? ": A"
+                : event instanceof MemAlloc ? ": A"
                 : event instanceof MemFree ? ": F"
                 : "";
         final SourceLocation location = event.getMetadata(SourceLocation.class);

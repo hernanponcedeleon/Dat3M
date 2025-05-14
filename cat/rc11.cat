@@ -49,6 +49,4 @@ flag ~empty (((FREE * FREE) \ id) & allocptr) as double-free
 flag ~empty ([FREE] \ [range(allocptr & (ALLOC * FREE))]) as free-without-alloc
 flag ~empty (allocmem \ hb) as use-before-alloc
 flag ~empty ((allocmem^-1 ; (allocptr & (ALLOC * FREE))) \ hb) as use-after-free
-
-// TODO: Non-monotonic! (see ThreadCreation class)
 flag ~empty ([ALLOC] \ [domain(allocptr)]) as alloc-without-free

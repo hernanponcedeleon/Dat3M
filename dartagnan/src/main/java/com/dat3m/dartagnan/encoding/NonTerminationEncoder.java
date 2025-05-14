@@ -422,7 +422,7 @@ public class NonTerminationEncoder {
         - Side-effectful non-termination requires at least one infix iteration
         - Side-effect-free non-termination causes exactly one suffix iteration.
      */
-    public BooleanFormula encodeInfixSuffixDecomposition() {
+    private BooleanFormula encodeInfixSuffixDecomposition() {
         final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
         final List<BooleanFormula> totalEnc = new ArrayList<>();
 
@@ -492,7 +492,7 @@ public class NonTerminationEncoder {
     //  (2) co/rf-edges within the infix have equivalent co/rf-edges in the suffix
     // NOTE: We rely on a matching relation between iterations of infix and suffix to implement (1) and (2)
 
-    public BooleanFormula encodeInfixSuffixEquivalence() {
+    private BooleanFormula encodeInfixSuffixEquivalence() {
         final List<BooleanFormula> totalEnc = new ArrayList<>();
         // Encode matching relation
         for (Loop loop : allLoops) {
@@ -650,7 +650,7 @@ public class NonTerminationEncoder {
         return bmgr.or(bmgr.not(isInPrefix(store)), context.lastCoVar(store));
     }
 
-    public BooleanFormula encodeStrongSuffixExtension() {
+    private BooleanFormula encodeStrongSuffixExtension() {
         final Wmm memoryModel = task.getMemoryModel();
         final RelationAnalysis ra = context.getAnalysisContext().requires(RelationAnalysis.class);
         final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();

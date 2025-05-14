@@ -672,7 +672,7 @@ public class WmmEncoder implements Encoder {
             final Relation rel = def.getDefinedRelation();
             EncodingContext.EdgeEncoder edge = context.edge(rel);
             encodeSets.get(rel).apply((e1, e2) -> {
-                Formula ptr1 = (e1 instanceof Alloc alloc)
+                Formula ptr1 = (e1 instanceof MemAlloc alloc)
                         ? context.result(alloc)
                         : context.encodeExpressionAt(((MemFree)e1).getAddress(), e1);
                 Formula ptr2 = context.encodeExpressionAt(((MemFree) e2).getAddress(), e2);
@@ -689,8 +689,8 @@ public class WmmEncoder implements Encoder {
             final EncodingHelper helper = new EncodingHelper(context.getFormulaManager());
             EncodingContext.EdgeEncoder edge = context.edge(rel);
             encodeSets.get(rel).apply((e1, e2) -> {
-                Formula minAddress = context.result((Alloc)e1);
-                Formula size = context.encodeExpressionAt(((Alloc) e1).getAllocationSize(), e1);
+                Formula minAddress = context.result((MemAlloc)e1);
+                Formula size = context.encodeExpressionAt(((MemAlloc) e1).getAllocationSize(), e1);
                 Formula maxAddress = helper.add(minAddress, size);
                 Formula address = context.address((MemoryEvent) e2);
                 enc.add(bmgr.equivalence(edge.encode(e1, e2), bmgr.and(

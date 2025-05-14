@@ -142,7 +142,7 @@ public class ExecutionModelManager {
             em = new LocalModel(local, tm, id, value);
         } else if (e instanceof CondJump cj) {
             em = new CondJumpModel(cj, tm, id);
-        } else if (e instanceof Alloc alloc) {
+        } else if (e instanceof MemAlloc alloc) {
             em = new AllocModel(alloc, tm, id);
         } else if (e instanceof MemFree free) {
             em = new MemFreeModel(free, tm, id);
@@ -162,7 +162,7 @@ public class ExecutionModelManager {
                || e instanceof Local
                || e instanceof Assert
                || e instanceof CondJump
-               || (e instanceof Alloc alloc && alloc.isHeapAllocation())
+               || (e instanceof MemAlloc alloc && alloc.isHeapAllocation())
                || e instanceof MemFree;
     }
 
