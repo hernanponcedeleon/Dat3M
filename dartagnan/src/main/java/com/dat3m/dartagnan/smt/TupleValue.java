@@ -1,4 +1,4 @@
-package com.dat3m.dartagnan.encoding.formulas;
+package com.dat3m.dartagnan.smt;
 
 import java.util.List;
 import java.util.stream.Collectors;

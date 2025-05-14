@@ -4,8 +4,6 @@ import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.core.CondJump;
 
-import java.math.BigInteger;
-
 import static com.dat3m.dartagnan.program.event.Tag.*;
 
 
@@ -16,7 +14,7 @@ public class EventData implements Comparable<EventData> {
     private int id = -1;
     private int localId = -1;
     private Object value;
-    private BigInteger accessedAddress;
+    private Object accessedAddress;
     private int coIndex = Integer.MIN_VALUE;
     private boolean wasExecuted;
 
@@ -45,11 +43,11 @@ public class EventData implements Comparable<EventData> {
     	localId = newId;
     }
 
-    public BigInteger getAccessedAddress() {
+    public Object getAccessedAddress() {
     	return accessedAddress;
     }
-    void setAccessedAddress(BigInteger address) {
-    	accessedAddress = address;
+    void setAccessedAddress(Object address) {
+        accessedAddress = address;
     }
 
     public Object getValue() {

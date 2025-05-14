@@ -8,6 +8,7 @@ import com.dat3m.dartagnan.expression.type.AggregateType;
 import com.dat3m.dartagnan.expression.type.ArrayType;
 import com.dat3m.dartagnan.expression.type.FunctionType;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
+import com.dat3m.dartagnan.expression.type.BooleanType;
 import com.dat3m.dartagnan.expression.type.TypeOffset;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.EventFactory;
@@ -58,6 +59,8 @@ public class Program {
         this.threads = new ArrayList<>();
         this.functions = new ArrayList<>();
         this.format = format;
+
+        this.filterSpec = ExpressionFactory.getInstance().makeTrue();
     }
 
     public SourceLanguage getFormat() {
@@ -126,6 +129,7 @@ public class Program {
     }
 
     public void setFilterSpecification(Expression spec) {
+        Preconditions.checkArgument(spec.getType() instanceof BooleanType);
         this.filterSpec = spec;
     }
 

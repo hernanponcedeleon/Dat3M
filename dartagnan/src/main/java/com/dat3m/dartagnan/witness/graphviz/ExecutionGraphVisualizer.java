@@ -85,7 +85,7 @@ public class ExecutionGraphVisualizer {
 
     private void computeAddressMap(ExecutionModelNext model) {
         model.getMemoryLayoutMap().entrySet().stream()
-             .sorted(Comparator.comparing(entry -> (BigInteger) entry.getValue().address().getValue()))
+             .sorted(Comparator.comparing(entry -> (BigInteger) entry.getValue().address().value()))
              .forEach(entry -> sortedMemoryObjects.add(entry.getValue()));
     }
 
@@ -270,16 +270,16 @@ public class ExecutionGraphVisualizer {
     }
 
     private String getAddressString(ValueModel address) {
-        final BigInteger addrValue = (BigInteger) address.getValue();
+        final BigInteger addrValue = (BigInteger) address.value();
         final MemoryObjectModel accObj = Lists.reverse(sortedMemoryObjects).stream()
-                .filter(o -> ((BigInteger) o.address().getValue()).compareTo(addrValue) <= 0)
+                .filter(o -> ((BigInteger) o.address().value()).compareTo(addrValue) <= 0)
                 .findFirst().orElse(null);
 
         if (accObj == null) {
             return addrValue + " [OOB]";
         } else {
-            final boolean isOOB = addrValue.compareTo(((BigInteger) accObj.address().getValue()).add(accObj.size())) >= 0;
-            final BigInteger offset = addrValue.subtract((BigInteger) accObj.address().getValue());
+            final boolean isOOB = addrValue.compareTo(((BigInteger) accObj.address().value()).add(accObj.size())) >= 0;
+            final BigInteger offset = addrValue.subtract((BigInteger) accObj.address().value());
             return String.format("%s[size=%s]%s%s", accObj.object(), accObj.size(),
                     !offset.equals(BigInteger.ZERO) ? " + " + offset : "",
                     isOOB ? " [OOB]" : ""

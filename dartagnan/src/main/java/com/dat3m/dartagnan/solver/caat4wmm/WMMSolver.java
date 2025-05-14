@@ -2,6 +2,7 @@ package com.dat3m.dartagnan.solver.caat4wmm;
 
 
 import com.dat3m.dartagnan.encoding.EncodingContext;
+import com.dat3m.dartagnan.smt.ModelExt;
 import com.dat3m.dartagnan.solver.caat.CAATSolver;
 import com.dat3m.dartagnan.solver.caat4wmm.coreReasoning.CoreLiteral;
 import com.dat3m.dartagnan.solver.caat4wmm.coreReasoning.CoreReasoner;
@@ -11,7 +12,6 @@ import com.dat3m.dartagnan.verification.Context;
 import com.dat3m.dartagnan.verification.model.ExecutionModel;
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
-import org.sosy_lab.java_smt.api.Model;
 
 import java.util.Set;
 
@@ -47,7 +47,7 @@ public class WMMSolver {
         return executionGraph;
     }
 
-    public Result check(Model model) {
+    public Result check(ModelExt model) {
         // ============ Extract ExecutionModel ==============
         long curTime = System.currentTimeMillis();
         executionModel.initialize(model);

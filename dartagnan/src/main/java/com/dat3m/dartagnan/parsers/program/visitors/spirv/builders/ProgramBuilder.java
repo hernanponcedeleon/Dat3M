@@ -39,6 +39,7 @@ public class ProgramBuilder {
     protected Function currentFunction;
     protected String entryPointId;
     protected Arch arch;
+    protected Expression filterSpec;
     protected Set<String> nextOps;
 
     public ProgramBuilder(ThreadGrid grid) {
@@ -111,10 +112,11 @@ public class ProgramBuilder {
     }
 
     public void setFilterSpecification(Expression condition) {
-        if (program.getFilterSpecification() != null) {
+        if (this.filterSpec != null) {
             throw new ParsingException("Attempt to override program filter specification");
         }
-        program.setFilterSpecification(condition);
+        this.filterSpec = condition;
+        program.setFilterSpecification(this.filterSpec);
     }
 
     public boolean hasInput(String id) {
