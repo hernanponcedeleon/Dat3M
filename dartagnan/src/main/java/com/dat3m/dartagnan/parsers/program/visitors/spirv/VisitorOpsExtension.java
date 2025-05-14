@@ -32,11 +32,9 @@ public class VisitorOpsExtension extends SpirvBaseVisitor<Void> {
 
     @Override
     public Void visitOpExtension(SpirvParser.OpExtensionContext ctx) {
-        String name = ctx.nameLiteralString().getText();
-        name = name.substring(1, name.length() - 1);
-        if (!"SPV_KHR_vulkan_memory_model".equals(name)) {
-            throw new ParsingException("Unsupported extension '%s'", name);
-        }
+        // Addition features provided by an extension.
+        // If a feature is not supported, an error will be thrown
+        // when processing the corresponding instruction.
         return null;
     }
 
