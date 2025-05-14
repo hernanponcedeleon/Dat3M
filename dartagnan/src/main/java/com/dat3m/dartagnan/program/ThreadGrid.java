@@ -24,6 +24,13 @@ public class ThreadGrid {
         this.dvCount = dvCount;
     }
 
+    @Override
+    public String toString() {
+        return String.format("Grid(th=%d,sg=%d,wg=%d,qf=%d,dv=%d)",
+                thCount, sgCount, wgCount, qfCount, dvCount
+        );
+    }
+
     public int sgSize() {
         return thCount;
     }

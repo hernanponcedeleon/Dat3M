@@ -399,7 +399,7 @@ public class Intrinsics {
 
     private List<Event> inlineAssume(FunctionCall call) {
         final Expression assumption = call.getArguments().get(0);
-        return List.of(EventFactory.newAssume(assumption));
+        return List.of(EventFactory.newAssume(expressions.makeBooleanCast(assumption)));
     }
 
     private List<Event> inlineAtomicBegin(FunctionCall ignored) {
@@ -1019,7 +1019,7 @@ public class Intrinsics {
         }
         assert call.getArguments().size() == 1;
         final Expression condition = call.getArguments().get(0);
-        final Event assertion = EventFactory.newAssert(condition, errorMsg);
+        final Event assertion = EventFactory.newAssert(expressions.makeBooleanCast(condition), errorMsg);
         return List.of(assertion);
     }
 
@@ -1129,7 +1129,7 @@ public class Intrinsics {
 
     private List<Event> inlineLLVMAssume(FunctionCall call) {
         //see https://llvm.org/docs/LangRef.html#llvm-assume-intrinsic
-        return List.of(EventFactory.newAssume(call.getArguments().get(0)));
+        return List.of(EventFactory.newAssume(expressions.makeBooleanCast(call.getArguments().get(0))));
     }
 
     private List<Event> inlineLLVMCtlz(ValueFunctionCall call) {

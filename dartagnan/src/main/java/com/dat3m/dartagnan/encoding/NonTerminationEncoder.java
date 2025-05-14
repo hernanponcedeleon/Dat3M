@@ -13,16 +13,18 @@ import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.event.core.special.StateSnapshot;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.wmm.Relation;
+import com.dat3m.dartagnan.wmm.RelationNameRepository;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
 import com.dat3m.dartagnan.wmm.utils.graph.EventGraph;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
-import org.sosy_lab.java_smt.api.BooleanFormula;
-import org.sosy_lab.java_smt.api.BooleanFormulaManager;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.sosy_lab.java_smt.api.BooleanFormula;
+import org.sosy_lab.java_smt.api.BooleanFormulaManager;
+
 import java.util.*;
 
 import static com.dat3m.dartagnan.wmm.RelationNameRepository.CO;
@@ -369,10 +371,7 @@ public class NonTerminationEncoder {
         BooleanFormula equality = bmgr.equivalence(context.execution(x), context.execution(y));
         if (x instanceof RegWriter e && y instanceof RegWriter f) {
             // TODO: This should be covered by StateSnapshot, i.e., we do not need to consider dead variables.
-            equality = bmgr.and(
-                    equality,
-                    context.equal(context.result(e), context.result(f))
-            );
+            equality = bmgr.and(equality, context.sameResult(e, f));
         }
         if (x instanceof StateSnapshot e && y instanceof StateSnapshot f) {
             if (e.getExpressions().size() != f.getExpressions().size()) {
@@ -381,17 +380,14 @@ public class NonTerminationEncoder {
                 for (int i = 0; i < e.getExpressions().size(); i++) {
                     final Expression exprE = e.getExpressions().get(i);
                     final Expression exprF = f.getExpressions().get(i);
-                    equality = bmgr.and(
-                            equality,
-                            context.equal(context.encodeExpressionAt(exprE, e), context.encodeExpressionAt(exprF, f))
-                    );
+                    equality = bmgr.and(equality, context.getExpressionEncoder().equalAt(exprE, e, exprF, f));
                 }
             }
         }
         if (x instanceof MemoryCoreEvent e && y instanceof MemoryCoreEvent f) {
-            equality = bmgr.and(equality, context.equal(context.address(e), context.address(f)));
+            equality = bmgr.and(equality, context.sameAddress(e, f));
             if (x instanceof Store || x instanceof Load) {
-                equality = bmgr.and(equality, context.equal(context.value(e), context.value(f)));
+                equality = bmgr.and(equality, context.sameValue(e, f));
             }
 
         }
@@ -690,6 +686,20 @@ public class NonTerminationEncoder {
             if (isPossiblySuffix(exclStore)) {
                 enc.add(bmgr.implication(isCfInSuffix(exclStore), context.execution(exclStore)));
             }
+        }
+
+        // (5) If a control barrier is in the suffix, then all its syncing control barriers must also be in the suffix
+        final Relation syncBar = memoryModel.getRelation(RelationNameRepository.SYNCBAR);
+        if (syncBar != null) {
+            final EventGraph syncBarMay = ra.getKnowledge(syncBar).getMaySet();
+            syncBarMay.apply((x, y) -> {
+                if (isPossiblySuffix(x)) {
+                    enc.add(bmgr.implication(
+                            bmgr.and(isInSuffix(x), context.edge(syncBar, x, y)),
+                            isInSuffix(y)
+                    ));
+                }
+            });
         }
 
         return bmgr.and(enc);

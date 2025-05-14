@@ -22,7 +22,8 @@ public interface ExpressionKind {
         CONSTRUCT,
         ITE,
         EXTRACT,
-        INSERT;
+        INSERT,
+        FORMULA;
 
         @Override
         public String getSymbol() {

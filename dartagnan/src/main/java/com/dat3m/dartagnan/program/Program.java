@@ -4,9 +4,9 @@ import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.Type;
-import com.dat3m.dartagnan.expression.processing.ExprTransformer;
 import com.dat3m.dartagnan.expression.type.AggregateType;
 import com.dat3m.dartagnan.expression.type.ArrayType;
+import com.dat3m.dartagnan.expression.type.BooleanType;
 import com.dat3m.dartagnan.expression.type.TypeOffset;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.memory.Memory;
@@ -30,27 +30,28 @@ public class Program {
     private final List<Function> functions;
     private final List<NonDetValue> constants = new ArrayList<>();
     private final Memory memory;
+    private Entrypoint entrypoint;
     private Arch arch;
     private int unrollingBound = 0;
     private boolean isCompiled;
     private final SourceLanguage format;
-    private final ThreadGrid grid;
-    private String entryPoint;
-    private final List<ExprTransformer> transformers = new ArrayList<>();
 
     private int nextConstantId = 0;
 
-    public Program(Memory memory, SourceLanguage format, ThreadGrid grid) {
-        this("", memory, format, grid);
+    // ------------------------
+
+    public Program(Memory memory, SourceLanguage format) {
+        this("", memory, format);
     }
 
-    public Program(String name, Memory memory, SourceLanguage format, ThreadGrid grid) {
+    public Program(String name, Memory memory, SourceLanguage format) {
         this.name = name;
         this.memory = memory;
         this.threads = new ArrayList<>();
         this.functions = new ArrayList<>();
         this.format = format;
-        this.grid = grid;
+
+        this.filterSpec = ExpressionFactory.getInstance().makeTrue();
     }
 
     public SourceLanguage getFormat() {
@@ -89,6 +90,14 @@ public class Program {
         return this.memory;
     }
 
+    public void setEntrypoint(Entrypoint entrypoint) {
+        this.entrypoint = entrypoint;
+    }
+
+    public Entrypoint getEntrypoint() {
+        return entrypoint;
+    }
+
     public SpecificationType getSpecificationType() {
         return specificationType;
     }
@@ -111,6 +120,7 @@ public class Program {
     }
 
     public void setFilterSpecification(Expression spec) {
+        Preconditions.checkArgument(spec.getType() instanceof BooleanType);
         this.filterSpec = spec;
     }
 
@@ -138,26 +148,6 @@ public class Program {
     // Looks up a declared function by name.
     public Optional<Function> getFunctionByName(String name) {
         return functions.stream().filter(f -> f.getName().equals(name)).findFirst();
-    }
-
-    public void setEntryPoint(String entryPoint) {
-        this.entryPoint = entryPoint;
-    }
-
-    public String getEntryPoint() {
-        return entryPoint;
-    }
-
-    public ThreadGrid getGrid() {
-        return grid;
-    }
-
-    public void addTransformer(ExprTransformer transformer) {
-        transformers.add(transformer);
-    }
-
-    public List<ExprTransformer> getTransformers() {
-        return transformers;
     }
 
     public Expression newConstant(Type type) {

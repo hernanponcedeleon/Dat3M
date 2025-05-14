@@ -1,0 +1,131 @@
+; @Input: %__0 = {{{0}, {1}, {2}, {3}}}
+; @Input: %__1 = {{{4}, {5}, {6}, {7}}}
+; @Input: %_ = {{{0}, {0}, {0}, {0}}}
+; @Output: forall (%_[0][0][0] == 4 and %_[0][1][0] == 6 and %_[0][2][0] == 8 and %_[0][3][0] == 10)
+; @Config: 2, 1, 2
+; SPIR-V
+; Version: 1.0
+; Generator: Khronos Glslang Reference Front End; 10
+; Bound: 68
+; Schema: 0
+               OpCapability Shader
+               OpCapability VulkanMemoryModel
+               OpExtension "SPV_KHR_vulkan_memory_model"
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical Vulkan
+               OpEntryPoint GLCompute %main "main" %gl_GlobalInvocationID
+               OpExecutionMode %main LocalSize 2 1 1
+               OpSource GLSL 450
+               OpName %main "main"
+               OpName %Monoid "Monoid"
+               OpMemberName %Monoid 0 "element"
+               OpName %sum_struct_Monoid_u11_struct_Monoid_u11_ "sum(struct-Monoid-u11;struct-Monoid-u11;"
+               OpName %a "a"
+               OpName %b "b"
+               OpName %id "id"
+               OpName %gl_GlobalInvocationID "gl_GlobalInvocationID"
+               OpName %Monoid_0 "Monoid"
+               OpMemberName %Monoid_0 0 "element"
+               OpName %M3Buf "M3Buf"
+               OpMemberName %M3Buf 0 "m3buf"
+               OpName %_ ""
+               OpName %M1Buf "M1Buf"
+               OpMemberName %M1Buf 0 "m1buf"
+               OpName %__0 ""
+               OpName %M2Buf "M2Buf"
+               OpMemberName %M2Buf 0 "m2buf"
+               OpName %__1 ""
+               OpName %param "param"
+               OpName %param_0 "param"
+               OpDecorate %gl_GlobalInvocationID BuiltIn GlobalInvocationId
+               OpMemberDecorate %Monoid_0 0 Offset 0
+               OpDecorate %_runtimearr_Monoid_0 ArrayStride 4
+               OpMemberDecorate %M3Buf 0 Offset 0
+               OpDecorate %M3Buf BufferBlock
+               OpDecorate %_ DescriptorSet 0
+               OpDecorate %_ Binding 2
+               OpDecorate %_runtimearr_Monoid_0_0 ArrayStride 4
+               OpMemberDecorate %M1Buf 0 NonWritable
+               OpMemberDecorate %M1Buf 0 Offset 0
+               OpDecorate %M1Buf BufferBlock
+               OpDecorate %__0 DescriptorSet 0
+               OpDecorate %__0 Binding 0
+               OpDecorate %_runtimearr_Monoid_0_1 ArrayStride 4
+               OpMemberDecorate %M2Buf 0 NonWritable
+               OpMemberDecorate %M2Buf 0 Offset 0
+               OpDecorate %M2Buf BufferBlock
+               OpDecorate %__1 DescriptorSet 0
+               OpDecorate %__1 Binding 1
+               OpDecorate %gl_WorkGroupSize BuiltIn WorkgroupSize
+       %void = OpTypeVoid
+          %3 = OpTypeFunction %void
+       %uint = OpTypeInt 32 0
+     %Monoid = OpTypeStruct %uint
+%_ptr_Function_Monoid = OpTypePointer Function %Monoid
+          %9 = OpTypeFunction %Monoid %_ptr_Function_Monoid %_ptr_Function_Monoid
+        %int = OpTypeInt 32 1
+      %int_0 = OpConstant %int 0
+%_ptr_Function_uint = OpTypePointer Function %uint
+     %v3uint = OpTypeVector %uint 3
+%_ptr_Input_v3uint = OpTypePointer Input %v3uint
+%gl_GlobalInvocationID = OpVariable %_ptr_Input_v3uint Input
+     %uint_0 = OpConstant %uint 0
+%_ptr_Input_uint = OpTypePointer Input %uint
+   %Monoid_0 = OpTypeStruct %uint
+%_runtimearr_Monoid_0 = OpTypeRuntimeArray %Monoid_0
+      %M3Buf = OpTypeStruct %_runtimearr_Monoid_0
+%_ptr_Uniform_M3Buf = OpTypePointer Uniform %M3Buf
+          %_ = OpVariable %_ptr_Uniform_M3Buf Uniform
+%_runtimearr_Monoid_0_0 = OpTypeRuntimeArray %Monoid_0
+      %M1Buf = OpTypeStruct %_runtimearr_Monoid_0_0
+%_ptr_Uniform_M1Buf = OpTypePointer Uniform %M1Buf
+        %__0 = OpVariable %_ptr_Uniform_M1Buf Uniform
+%_runtimearr_Monoid_0_1 = OpTypeRuntimeArray %Monoid_0
+      %M2Buf = OpTypeStruct %_runtimearr_Monoid_0_1
+%_ptr_Uniform_M2Buf = OpTypePointer Uniform %M2Buf
+        %__1 = OpVariable %_ptr_Uniform_M2Buf Uniform
+%_ptr_Uniform_Monoid_0 = OpTypePointer Uniform %Monoid_0
+%_ptr_Uniform_uint = OpTypePointer Uniform %uint
+     %uint_2 = OpConstant %uint 2
+     %uint_1 = OpConstant %uint 1
+%gl_WorkGroupSize = OpConstantComposite %v3uint %uint_2 %uint_1 %uint_1
+       %main = OpFunction %void None %3
+          %5 = OpLabel
+         %id = OpVariable %_ptr_Function_uint Function
+      %param = OpVariable %_ptr_Function_Monoid Function
+    %param_0 = OpVariable %_ptr_Function_Monoid Function
+         %31 = OpAccessChain %_ptr_Input_uint %gl_GlobalInvocationID %uint_0
+         %32 = OpLoad %uint %31
+               OpStore %id %32
+         %38 = OpLoad %uint %id
+         %43 = OpLoad %uint %id
+         %48 = OpLoad %uint %id
+         %51 = OpAccessChain %_ptr_Uniform_Monoid_0 %__0 %int_0 %43
+         %52 = OpLoad %Monoid_0 %51
+         %53 = OpCompositeExtract %uint %52 0
+         %54 = OpAccessChain %_ptr_Function_uint %param %int_0
+               OpStore %54 %53
+         %56 = OpAccessChain %_ptr_Uniform_Monoid_0 %__1 %int_0 %48
+         %57 = OpLoad %Monoid_0 %56
+         %58 = OpCompositeExtract %uint %57 0
+         %59 = OpAccessChain %_ptr_Function_uint %param_0 %int_0
+               OpStore %59 %58
+         %60 = OpFunctionCall %Monoid %sum_struct_Monoid_u11_struct_Monoid_u11_ %param %param_0
+         %61 = OpAccessChain %_ptr_Uniform_Monoid_0 %_ %int_0 %38
+         %62 = OpCompositeExtract %uint %60 0
+         %64 = OpAccessChain %_ptr_Uniform_uint %61 %int_0
+               OpStore %64 %62
+               OpReturn
+               OpFunctionEnd
+%sum_struct_Monoid_u11_struct_Monoid_u11_ = OpFunction %Monoid None %9
+          %a = OpFunctionParameter %_ptr_Function_Monoid
+          %b = OpFunctionParameter %_ptr_Function_Monoid
+         %13 = OpLabel
+         %17 = OpAccessChain %_ptr_Function_uint %a %int_0
+         %18 = OpLoad %uint %17
+         %19 = OpAccessChain %_ptr_Function_uint %b %int_0
+         %20 = OpLoad %uint %19
+         %21 = OpIAdd %uint %18 %20
+         %22 = OpCompositeConstruct %Monoid %21
+               OpReturnValue %22
+               OpFunctionEnd
