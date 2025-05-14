@@ -20,7 +20,6 @@ public class VisitorOpsExtension extends SpirvBaseVisitor<Void> {
 
     private final Map<String, VisitorExtension<?>> availableVisitors = new HashMap<>();
     private final Map<String, String> visitorIds = new HashMap<>();
-    private final List<String> baseExtentions = List.of("SPV_KHR_vulkan_memory_model", "SPV_KHR_storage_buffer_storage_class");
 
     public VisitorOpsExtension(ProgramBuilder builder) {
         VisitorExtensionClspvReflection clspv = new VisitorExtensionClspvReflection(builder);
@@ -34,11 +33,9 @@ public class VisitorOpsExtension extends SpirvBaseVisitor<Void> {
 
     @Override
     public Void visitOpExtension(SpirvParser.OpExtensionContext ctx) {
-        String rawName = ctx.nameLiteralString().getText();
-        String name = rawName.substring(1, rawName.length() - 1);
-        if (baseExtentions.stream().noneMatch(e -> e.equals(name))) {
-            throw new ParsingException("Unsupported extension '%s'", name);
-        }
+        // Addition features provided by an extension.
+        // If a feature is not supported, an error will be thrown
+        // when processing the corresponding instruction.
         return null;
     }
 
