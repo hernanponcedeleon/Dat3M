@@ -18,7 +18,7 @@ java_cmd="${DAT3M_JAVA}"
 jar=${DAT3M_HOME}/dartagnan/target/dartagnan.jar
 args=""
 this="$0"
-log=${DAT3M_HOME}/dartagnan/src/main/resources/warn.xml
+log=warn
 
 if [ -z "${java_cmd}" ]; then
     java_cmd="java"
@@ -59,7 +59,7 @@ while [ "$#" != "0" ]; do
             solver="$1"
         ;;
         -v)
-            log="${DAT3M_HOME}"/dartagnan/src/main/resources/info.xml
+            log=info
         ;;
         -help)
             usage
@@ -144,7 +144,7 @@ if [ -z "${solver}" ]; then
 fi
 
 # now we construct the full command
-cmd="${java_cmd} -jar -Dlog4j2.configurationFile=file:${log} ${jar}"
+cmd="${java_cmd} -DlogLevel=${log} -jar ${jar}"
 cmd="${cmd} ${cat}"
 cmd="${cmd} --target=${target}"
 cmd="${cmd} --property=${property}"
@@ -153,7 +153,7 @@ cmd="${cmd} --solver=${solver}"
 cmd="${cmd} ${args}"
 
 # before calling the command, print it on the screen for reference
-if [ "$log" = "${DAT3M_HOME}"/dartagnan/src/main/resources/info.xml ]; then
+if [ "$log" = info ]; then
     echo "# ${cmd}"
 fi
 exec ${cmd}

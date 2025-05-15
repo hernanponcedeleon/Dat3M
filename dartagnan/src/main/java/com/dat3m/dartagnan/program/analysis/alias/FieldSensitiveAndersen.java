@@ -29,6 +29,7 @@ import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Verify.verify;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.IntStream.range;
+import static com.dat3m.dartagnan.configuration.Alias.*;
 
 /**
  * Offset- and alignment-enhanced inclusion-based pointer analysis based on Andersen's.
@@ -256,6 +257,10 @@ public class FieldSensitiveAndersen implements AliasAnalysis {
     private static List<Location> fields(Collection<Location> v, int offset, int alignment) {
         final List<Location> result = new ArrayList<>();
         for (Location l : v) {
+            if (!l.base.hasKnownSize()) {
+                throw new UnsupportedOperationException(String.format("%s alias analysis does not support memory objects of unknown size. " +
+                    "You can try the %s alias analysis", FIELD_SENSITIVE, FULL));
+            }
             for (int i = 0; i < div(l.base.getKnownSize(), alignment); i++) {
                 int mapped = l.offset + offset + i * alignment;
                 if (0 <= mapped && mapped < l.base.getKnownSize()) {
