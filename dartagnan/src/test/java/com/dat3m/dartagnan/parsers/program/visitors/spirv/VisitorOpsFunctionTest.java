@@ -554,12 +554,13 @@ public class VisitorOpsFunctionTest {
                 %param = OpFunctionParameter %int_ptr
                 """;
 
+        ArrayType inputType = builder.mockVectorType("%array", "%int", 2);
         builder.mockFunctionType("%void_func", "%void", "%int_ptr");
         builder.setEntryPointId("%func");
         Expression i1 = expressions.makeValue(1, (IntegerType) builder.getType("%int"));
         Expression i2 = expressions.makeValue(2, (IntegerType) builder.getType("%int"));
-        Expression parmInput = expressions.makeArray(builder.getType("%int"), List.of(i1, i2), true);
-        builder.addInput("%param", parmInput);
+        Expression value = expressions.makeArray(inputType, List.of(i1, i2));
+        builder.addInput("%param", value);
 
         // when
         visit(input);
@@ -573,8 +574,8 @@ public class VisitorOpsFunctionTest {
         assertEquals("%param", function.getParameterRegisters().get(0).getName());
         assertEquals(builder.getType("%int_ptr"), function.getParameterRegisters().get(0).getType());
         assertEquals(HelperInputs.castPointerId("%param"), ((VirtualMemoryObject) local.getExpr()).getName());
-        assertEquals(parmInput.getOperands().get(0), ((VirtualMemoryObject) local.getExpr()).getInitialValue(0));
-        assertEquals(parmInput.getOperands().get(1), ((VirtualMemoryObject) local.getExpr()).getInitialValue(8));
+        assertEquals(value.getOperands().get(0), ((VirtualMemoryObject) local.getExpr()).getInitialValue(0));
+        assertEquals(value.getOperands().get(1), ((VirtualMemoryObject) local.getExpr()).getInitialValue(8));
         assertEquals(builder.getExpression("%param"), local.getResultRegister());
     }
 

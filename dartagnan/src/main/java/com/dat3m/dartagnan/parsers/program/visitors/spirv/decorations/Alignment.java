@@ -1,12 +1,17 @@
 package com.dat3m.dartagnan.parsers.program.visitors.spirv.decorations;
 
 import com.dat3m.dartagnan.exception.ParsingException;
+import com.dat3m.dartagnan.expression.Type;
+import com.dat3m.dartagnan.expression.type.ArrayType;
+import com.dat3m.dartagnan.expression.type.ScopedPointerType;
+import com.dat3m.dartagnan.expression.type.TypeFactory;
 
 import java.util.HashMap;
 import java.util.Map;
 
 public class Alignment implements Decoration {
 
+    private static final TypeFactory types = TypeFactory.getInstance();
     private final Map<String, Integer> mapping = new HashMap<>();
 
     @Override
@@ -19,7 +24,20 @@ public class Alignment implements Decoration {
         mapping.put(id, alignment);
     }
 
-    public Integer getValue(String id) {
-        return mapping.get(id);
+    public Integer getValue(String id, Type type) {
+        Integer value = mapping.get(id);
+        if (value != null) {
+            if (type instanceof ScopedPointerType pType) {
+                type = pType.getPointedType();
+            }
+            if (type instanceof ArrayType aType) {
+                if (types.getMemorySizeInBytes(aType.getElementType()) % value != 0) {
+                    return value;
+                }
+            } else if (types.getMemorySizeInBytes(type) % value != 0) {
+                throw new ParsingException("Unsupported alignment for element '%s'", id);
+            }
+        }
+        return null;
     }
 }

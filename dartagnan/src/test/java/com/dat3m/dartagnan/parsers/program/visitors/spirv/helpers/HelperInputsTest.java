@@ -521,6 +521,7 @@ public class HelperInputsTest {
 
     private ConstructExpr makeArray(Expression... elements) {
         assertEquals(1, Stream.of(elements).map(Expression::getType).collect(Collectors.toSet()).size());
-        return (ConstructExpr) expressions.makeArray(elements[0].getType(), Arrays.asList(elements), true);
+        ArrayType type = types.getArrayType(elements[0].getType(), elements.length);
+        return (ConstructExpr) expressions.makeArray(type, Arrays.asList(elements));
     }
 }

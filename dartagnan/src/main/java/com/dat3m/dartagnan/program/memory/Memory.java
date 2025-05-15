@@ -16,17 +16,12 @@ public class Memory {
     private final ArrayList<MemoryObject> objects = new ArrayList<>();
     private final Type ptrType = TypeFactory.getInstance().getPointerType();
     private final IntegerType archType = TypeFactory.getInstance().getArchType();
-    private final TypeFactory types = TypeFactory.getInstance();
+    private final Expression defaultAlignment = ExpressionFactory.getInstance().makeValue(8, archType);
 
     private int nextIndex = 1;
 
     // Generates a new, statically allocated memory object.
     public MemoryObject allocate(int size) {
-        final Expression defaultAlignment = types.getDefaultAlignment();
-        return allocate(size, defaultAlignment);
-    }
-
-    public MemoryObject allocate(int size, Expression defaultAlignment) {
         Preconditions.checkArgument(size > 0, "Illegal allocation. Size must be positive");
         final Expression sizeExpr = ExpressionFactory.getInstance().makeValue(size, archType);
         final MemoryObject memoryObject = new MemoryObject(nextIndex++, sizeExpr, defaultAlignment, null, ptrType);
@@ -44,14 +39,9 @@ public class Memory {
     }
 
     public VirtualMemoryObject allocateVirtual(int size, boolean generic, VirtualMemoryObject alias) {
-        return allocateVirtual(size, generic, types.getDefaultAlignment(), alias);
-    }
-
-    public VirtualMemoryObject allocateVirtual(int size, boolean generic, Expression alignment,
-                                               VirtualMemoryObject alias) {
         Preconditions.checkArgument(size > 0, "Illegal allocation. Size must be positive");
         final Expression sizeExpr = ExpressionFactory.getInstance().makeValue(size, archType);
-        final VirtualMemoryObject address = new VirtualMemoryObject(nextIndex++, sizeExpr, alignment,
+        final VirtualMemoryObject address = new VirtualMemoryObject(nextIndex++, sizeExpr, defaultAlignment,
                 generic, alias, ptrType);
         objects.add(address);
         return address;
@@ -63,7 +53,6 @@ public class Memory {
 
     /**
      * Accesses all shared variables.
-     *
      * @return Copy of the complete collection of allocated objects.
      */
     public ImmutableSet<MemoryObject> getObjects() {

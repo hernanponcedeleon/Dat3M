@@ -11,7 +11,6 @@ import com.dat3m.dartagnan.expression.type.*;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.IntStream;
 
 import static com.dat3m.dartagnan.expression.integers.IntBinaryOp.ADD;
 import static com.dat3m.dartagnan.expression.integers.IntBinaryOp.MUL;
@@ -79,7 +78,7 @@ public class HelperTypes {
                 Expression elementOp2 = op2 instanceof ConstructExpr ? op2.getOperands().get(i) : expressions.makeExtract(op2, i);
                 elements.add(expressions.makeBinary(elementOp1, op, elementOp2));
             }
-            return expressions.makeArray(aType.getElementType(), elements, true);
+            return expressions.makeArray(aType, elements);
         }
         throw new ParsingException("Illegal result type in definition of '%s'", id);
     }
@@ -169,38 +168,5 @@ public class HelperTypes {
 
     private static String indexNonConstantForStructError(String id) {
         return String.format("Index of a struct member is non-constant for variable '%s'", id);
-    }
-
-    public static Type getAlignedType(Type type, int alignmentNum) {
-        if (type instanceof IntegerType) {
-            return types.getIntegerType(alignmentNum * 8);
-        }
-        if (type instanceof AggregateType aggregateType) {
-            List<Type> fieldTypes = new ArrayList<>();
-            for (int i = 0; i < aggregateType.getFields().size(); i++) {
-                Type fieldType = aggregateType.getFields().get(i).type();
-                if (types.getMemorySizeInBytes(fieldType) > alignmentNum) {
-                    fieldType = getAlignedType(fieldType, alignmentNum);
-                }
-                fieldTypes.add(fieldType);
-            }
-            List<Integer> alignmentList = new ArrayList<>(List.of(0));
-            IntStream.range(0, fieldTypes.size() - 1).forEach(i -> {
-                int fieldAlignment = types.getMemorySizeInBytes(fieldTypes.get(i));
-                alignmentList.add(fieldAlignment + alignmentList.get(i));
-            });
-            return types.getAggregateType(fieldTypes, alignmentList);
-        }
-        if (type instanceof ArrayType arrayType) {
-            Type elementType = arrayType.getElementType();
-            int arraySizeInBytes = types.getMemorySizeInBytes(arrayType);
-            if (arraySizeInBytes > alignmentNum) {
-                return types.getArrayType(getAlignedType(elementType, alignmentNum), arrayType.getNumElements());
-            }
-            int paddedSize = alignmentNum / types.getMemorySizeInBytes(elementType);
-            int paddingStart = arrayType.getNumElements();
-            return types.getArrayType(elementType, paddedSize, paddingStart);
-        }
-        throw new ParsingException("Invalid type '%s' for alignment '%d'", type, alignmentNum);
     }
 }

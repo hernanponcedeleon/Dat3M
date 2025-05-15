@@ -2,7 +2,6 @@ package com.dat3m.dartagnan.parsers.program.visitors.spirv;
 
 import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.expression.Expression;
-import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.Type;
 import com.dat3m.dartagnan.expression.type.FunctionType;
 import com.dat3m.dartagnan.expression.type.ScopedPointerType;
@@ -33,7 +32,6 @@ public class VisitorOpsFunction extends SpirvBaseVisitor<Void> {
 
     private static final int DEFAULT_INPUT_SIZE = 10;
     private static final TypeFactory types = TypeFactory.getInstance();
-    private static final ExpressionFactory expressions = ExpressionFactory.getInstance();
     private final Map<String, Function> forwardFunctions = new HashMap<>();
     private final Map<String, Set<FunctionCall>> forwardCalls = new HashMap<>();
     private final Map<String, Expression> parameters = new HashMap<>();
@@ -85,6 +83,8 @@ public class VisitorOpsFunction extends SpirvBaseVisitor<Void> {
                     "outside of a function definition", id);
         }
         Type type = builder.getType(ctx.idResultType().getText());
+        alignment.validateAlignment(id, type);
+        // TODO: Apply FuncParameter decorations (ByVal, Zext, Sext)
         List<Type> argTypes = currentType.getParameterTypes();
         int idx = currentArgs.size();
         if (idx >= argTypes.size() || !type.equals(argTypes.get(idx))) {
@@ -190,15 +190,11 @@ public class VisitorOpsFunction extends SpirvBaseVisitor<Void> {
     }
 
     private Expression createEntryPointParameter(String id, Type type) {
-        Integer alignmentNum = alignment.getValue(id);
-        Expression alignmentExpr = alignmentNum == null ?
-                types.getDefaultAlignment() : expressions.makeValue(alignmentNum, types.getArchType());
         Expression value = createEntryPointParameterValue(id, type);
         if (type instanceof ScopedPointerType pType) {
             String ptrId = HelperInputs.castPointerId(id);
             pType = types.getScopedPointerType(pType.getScopeId(), value.getType());
-            ScopedPointerVariable pointer = builder.allocateScopedPointerVariable(
-                    ptrId, value, alignmentExpr, pType.getScopeId(), value.getType());
+            ScopedPointerVariable pointer = builder.allocateMemory(ptrId, pType, value);
             builder.addExpression(ptrId, pointer);
             value = pointer.getAddress();
         }
@@ -208,8 +204,6 @@ public class VisitorOpsFunction extends SpirvBaseVisitor<Void> {
     private Expression createEntryPointParameterValue(String id, Type type) {
         if (builder.hasInput(id)) {
             if (type instanceof ScopedPointerType pType) {
-                // TODO: Apply decoration FuncParamAttr: ByVal (no array creation),
-                //  Sext (sign extended) and Zext (zero extended)
                 return HelperInputs.castInput(id, types.getArrayType(pType.getPointedType()), builder.getInput(id));
             }
             return HelperInputs.castInput(id, type, builder.getInput(id));

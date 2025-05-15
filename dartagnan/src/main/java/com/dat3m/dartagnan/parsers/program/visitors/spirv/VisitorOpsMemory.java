@@ -54,7 +54,7 @@ public class VisitorOpsMemory extends SpirvBaseVisitor<Event> {
         String valueId = ctx.object().getText();
         Expression value = builder.getExpression(valueId);
         Type type = value.getType();
-        List events = visitMemoryAccess(valueId, type, pointer, (i, exp) ->
+        List<Event> events = visitMemoryAccess(valueId, type, pointer, (i, exp) ->
             i == -1 ?
             EventFactory.newStore(exp, value) :
             EventFactory.newStore(exp, expressions.makeExtract(value, i)));
@@ -128,10 +128,10 @@ public class VisitorOpsMemory extends SpirvBaseVisitor<Event> {
     private Set<String> parseMemoryAccessTags(SpirvParser.MemoryAccessContext ctx) {
         if (ctx != null) {
             List<String> operands = ctx.memoryAccessTag().stream().map(RuleContext::getText).toList();
-            Integer alignment = ctx.literalInteger() != null ? Integer.parseInt(ctx.literalInteger().getText()) : null;
+            Integer alignmentTag = ctx.literalInteger() != null ? Integer.parseInt(ctx.literalInteger().getText()) : null;
             List<String> paramIds = ctx.idRef().stream().map(RuleContext::getText).toList();
             List<Expression> paramsValues = ctx.idRef().stream().map(c -> builder.getExpression(c.getText())).toList();
-            return HelperTags.parseMemoryOperandsTags(operands, alignment, paramIds, paramsValues);
+            return HelperTags.parseMemoryOperandsTags(operands, alignmentTag, paramIds, paramsValues);
         }
         return Set.of();
     }
@@ -152,34 +152,28 @@ public class VisitorOpsMemory extends SpirvBaseVisitor<Event> {
     @Override
     public Event visitOpVariable(SpirvParser.OpVariableContext ctx) {
         String id = ctx.idResult().getText();
-        String typeId = ctx.idResultType().getText();
-        if (builder.getType(typeId) instanceof ScopedPointerType pointerType) {
-            Type type = pointerType.getPointedType();
-            Integer alignmentNum = alignment.getValue(id);
-            Expression alignmentExpr = alignmentNum == null ?
-                    types.getDefaultAlignment() : expressions.makeValue(alignmentNum, types.getArchType());
-            if (alignmentNum != null) {
-                type = HelperTypes.getAlignedType(type, alignmentNum);
-            }
+        Type type = builder.getType(ctx.idResultType().getText());
+        if (type instanceof ScopedPointerType pType) {
+            type = pType.getPointedType();
             Expression value = getOpVariableInitialValue(ctx, type);
             if (value != null) {
                 if (!TypeFactory.isStaticTypeOf(value.getType(), type)) {
                     throw new ParsingException("Mismatching value type for variable '%s', " +
                             "expected '%s' but received '%s'", id, type, value.getType());
                 }
-                type = value.getType();
             } else if (!TypeFactory.isStaticType(type)) {
                 throw new ParsingException("Missing initial value for runtime variable '%s'", id);
             } else {
                 value = builder.makeUndefinedValue(type);
             }
-            ScopedPointerVariable pointer = builder.allocateScopedPointerVariable(id, value, alignmentExpr,
-                    pointerType.getScopeId(), type);
+            pType = types.getScopedPointerType(pType.getScopeId(), value.getType());
+            Integer alignmentValue = alignment.getValue(id, pType);
+            ScopedPointerVariable pointer = builder.allocateMemory(id, pType, value, alignmentValue);
             validateVariableStorageClass(pointer, ctx.storageClass().getText());
             builder.addExpression(id, pointer);
             return null;
         }
-        throw new ParsingException("Type '%s' is not a pointer type", typeId);
+        throw new ParsingException("Type '%s' is not a pointer type", ctx.idResultType().getText());
     }
 
     private Expression getOpVariableInitialValue(SpirvParser.OpVariableContext ctx, Type type) {
@@ -198,14 +192,10 @@ public class VisitorOpsMemory extends SpirvBaseVisitor<Event> {
             }
             return builtIn.getDecoration(id, type);
         }
-        if (ctx.initializer() == null) {
-            return null;
+        if (ctx.initializer() != null) {
+            return builder.getExpression(ctx.initializer().getText());
         }
-        Expression initExpr = builder.getExpression(ctx.initializer().getText());
-        if (alignment.getValue(id) != null) {
-            initExpr = builder.getAlignedValue(id, initExpr, type);
-        }
-        return initExpr;
+        return null;
     }
 
     private void validateVariableStorageClass(ScopedPointerVariable pointer, String classToken) {

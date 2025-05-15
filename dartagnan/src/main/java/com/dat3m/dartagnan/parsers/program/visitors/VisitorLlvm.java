@@ -889,7 +889,7 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
         for (TypeConstContext typeConst : ctx.typeConst()) {
             arrayValues.add(visitTypeConst(typeConst));
         }
-        return expressions.makeArray(elementType, arrayValues, true);
+        return expressions.makeArray((ArrayType) expectedType, arrayValues);
     }
 
     @Override

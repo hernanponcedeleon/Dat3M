@@ -9,16 +9,18 @@ import com.dat3m.dartagnan.expression.misc.ITEExpr;
 import com.dat3m.dartagnan.expression.type.*;
 import com.dat3m.dartagnan.expression.utils.ExpressionHelper;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
-import com.dat3m.dartagnan.program.memory.ScopedPointer;
 import com.dat3m.dartagnan.program.memory.ScopedPointerVariable;
 import com.google.common.base.Preconditions;
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
+
+import static com.dat3m.dartagnan.expression.type.TypeFactory.isStaticTypeOf;
 
 public final class ExpressionFactory {
 
@@ -263,18 +265,24 @@ public final class ExpressionFactory {
         return new ConstructExpr(type, arguments);
     }
 
-    public Expression makeArray(Type elementType, List<Expression> items, boolean fixedSize) {
-        final ArrayType type = fixedSize ? types.getArrayType(elementType, items.size()) :
-                types.getArrayType(elementType);
-        if (items.size() > 0) {
-            Preconditions.checkArgument(items.stream().allMatch(e -> TypeFactory.isStaticTypeOf(e.getType(), items.get(0).getType())),
-                "All elements in an array must have the same type.");
+    public Expression makeArray(ArrayType type, List<Expression> items) {
+        if (type.hasKnownNumElements()) {
+            Preconditions.checkArgument(type.getNumElements() == items.size(),
+                    "The number of elements must match");
+        }
+        if (!items.isEmpty()) {
+            Set<Type> elementTypes = items.stream().map(Expression::getType).collect(Collectors.toSet());
+            Preconditions.checkArgument(elementTypes.size() == 1,
+                    "All elements in an array must have the same type.");
+            Preconditions.checkArgument(isStaticTypeOf(
+                    elementTypes.stream().findAny().orElseThrow(), type.getElementType()),
+                    "Array elements must match expected type");
         }
         return new ConstructExpr(type, items);
     }
 
     public Expression makeExtract(Expression object, int index) {
-        return makeExtract(object, ImmutableList.of(index));
+        return makeExtract(object, List.of(index));
     }
 
     public Expression makeExtract(Expression object, Iterable<Integer> indices) {
@@ -285,7 +293,7 @@ public final class ExpressionFactory {
     }
 
     public Expression makeInsert(Expression aggregate, Expression value, int index) {
-        return makeInsert(aggregate, value, ImmutableList.of(index));
+        return makeInsert(aggregate, value, List.of(index));
     }
 
     public Expression makeInsert(Expression aggregate, Expression value, Iterable<Integer> indices) {
@@ -309,14 +317,8 @@ public final class ExpressionFactory {
         return new GEPExpr(indexingType, base, offsets);
     }
 
-    public ScopedPointer makeScopedPointer(String id, String scopeId, Type type, Expression address) {
-        ScopedPointerType pointerType = types.getScopedPointerType(scopeId, type);
-        return new ScopedPointer(id, pointerType, address);
-    }
-
-    public ScopedPointerVariable makeScopedPointerVariable(String id, String scopeId, Type type, MemoryObject address) {
-        ScopedPointerType pointerType = types.getScopedPointerType(scopeId, type);
-        return new ScopedPointerVariable(id, pointerType, address);
+    public ScopedPointerVariable makeScopedPointerVariable(String id, ScopedPointerType type, MemoryObject memObj) {
+        return new ScopedPointerVariable(id, type, memObj);
     }
 
     // -----------------------------------------------------------------------------------------------------------------
@@ -329,7 +331,7 @@ public final class ExpressionFactory {
             for (int i = 0; i < arrayType.getNumElements(); i++) {
                 zeroes.add(zero);
             }
-            return makeArray(arrayType.getElementType(), zeroes, true);
+            return makeArray(arrayType, zeroes);
         } else if (type instanceof AggregateType structType) {
             List<Expression> zeroes = new ArrayList<>(structType.getFields().size());
             for (TypeOffset typeOffset : structType.getFields()) {
