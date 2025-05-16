@@ -13,7 +13,7 @@ main
     ;
 
 variableDeclaratorList
-    :   LBrace (globalDeclarator Semi comment?)* RBrace (Semi)?
+    :   LBrace (globalDeclarator (Semi comment? globalDeclarator?)* Semi?)? RBrace Semi?
     ;
 
 globalDeclarator
@@ -193,6 +193,7 @@ nre locals [IntBinaryOp op, String mo, String name]
     |   C11AtomicStore            LPar address = re  Comma value = re  RPar                                                                 # nreC11Store
 
     |   Ast? varName Equals re                                                                                                              # nreAssignment
+    |   re                                                                                                                                  # reAsNre
     |   typeSpecifier varName (Equals re)?                                                                                                  # nreRegDeclaration
 
     |   SpinLock LPar address = re RPar                                                                                                     # nreSpinLock
