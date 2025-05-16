@@ -248,6 +248,8 @@ opCompare returns [IntCmpOp op]
 opArith returns [IntBinaryOp op]
     :   Plus    {$op = IntBinaryOp.ADD;}
     |   Minus   {$op = IntBinaryOp.SUB;}
+    |   Ast     {$op = IntBinaryOp.MUL;}
+    |   Slash   {$op = IntBinaryOp.DIV;}
     |   Amp     {$op = IntBinaryOp.AND;}
     |   Bar     {$op = IntBinaryOp.OR;}
     |   Circ    {$op = IntBinaryOp.XOR;}
