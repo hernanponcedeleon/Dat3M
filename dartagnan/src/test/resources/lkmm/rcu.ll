@@ -1,114 +1,114 @@
 ; ModuleID = 'benchmarks/lkmm/rcu.c'
 source_filename = "benchmarks/lkmm/rcu.c"
-target datalayout = "e-m:o-i64:64-i128:128-n32:64-S128-Fn32"
-target triple = "arm64-apple-macosx15.0.0"
+target datalayout = "e-m:e-p270:32:32-p271:32:32-p272:64:64-i64:64-i128:128-f80:128-n8:16:32:64-S128"
+target triple = "x86_64-pc-linux-gnu"
 
-@x = global i32 0, align 4, !dbg !0
-@y = global i32 0, align 4, !dbg !46
-@r_x = global i32 0, align 4, !dbg !48
-@r_y = global i32 0, align 4, !dbg !50
+@x = dso_local global i32 0, align 4, !dbg !0
+@y = dso_local global i32 0, align 4, !dbg !46
+@r_x = dso_local global i32 0, align 4, !dbg !48
+@r_y = dso_local global i32 0, align 4, !dbg !50
 @__func__.main = private unnamed_addr constant [5 x i8] c"main\00", align 1, !dbg !29
 @.str = private unnamed_addr constant [6 x i8] c"rcu.c\00", align 1, !dbg !36
 @.str.1 = private unnamed_addr constant [24 x i8] c"!(r_x == 1 && r_y == 0)\00", align 1, !dbg !41
 
-; Function Attrs: noinline nounwind ssp uwtable(sync)
-define ptr @P0(ptr noundef %0) #0 !dbg !59 {
+; Function Attrs: noinline nounwind uwtable
+define dso_local ptr @P0(ptr noundef %0) #0 !dbg !60 {
   %2 = alloca ptr, align 8
   store ptr %0, ptr %2, align 8
-    #dbg_declare(ptr %2, !63, !DIExpression(), !64)
-  call void @__LKMM_fence(i32 noundef 7), !dbg !65
-  call void @__LKMM_store(ptr noundef @x, i64 noundef 4, i64 noundef 1, i32 noundef 1), !dbg !66
-  call void @__LKMM_store(ptr noundef @y, i64 noundef 4, i64 noundef 1, i32 noundef 1), !dbg !67
-  call void @__LKMM_fence(i32 noundef 8), !dbg !68
-  ret ptr null, !dbg !69
+    #dbg_declare(ptr %2, !64, !DIExpression(), !65)
+  call void @__LKMM_fence(i32 noundef 7), !dbg !66
+  call void @__LKMM_store(ptr noundef @x, i64 noundef 4, i64 noundef 1, i32 noundef 1), !dbg !67
+  call void @__LKMM_store(ptr noundef @y, i64 noundef 4, i64 noundef 1, i32 noundef 1), !dbg !68
+  call void @__LKMM_fence(i32 noundef 8), !dbg !69
+  ret ptr null, !dbg !70
 }
 
 declare void @__LKMM_fence(i32 noundef) #1
 
 declare void @__LKMM_store(ptr noundef, i64 noundef, i64 noundef, i32 noundef) #1
 
-; Function Attrs: noinline nounwind ssp uwtable(sync)
-define ptr @P1(ptr noundef %0) #0 !dbg !70 {
+; Function Attrs: noinline nounwind uwtable
+define dso_local ptr @P1(ptr noundef %0) #0 !dbg !71 {
   %2 = alloca ptr, align 8
   store ptr %0, ptr %2, align 8
-    #dbg_declare(ptr %2, !71, !DIExpression(), !72)
-  %3 = call i64 @__LKMM_load(ptr noundef @x, i64 noundef 4, i32 noundef 1), !dbg !73
-  %4 = trunc i64 %3 to i32, !dbg !73
-  store i32 %4, ptr @r_x, align 4, !dbg !74
-  call void @__LKMM_fence(i32 noundef 9), !dbg !75
-  %5 = call i64 @__LKMM_load(ptr noundef @y, i64 noundef 4, i32 noundef 1), !dbg !76
-  %6 = trunc i64 %5 to i32, !dbg !76
-  store i32 %6, ptr @r_y, align 4, !dbg !77
-  ret ptr null, !dbg !78
+    #dbg_declare(ptr %2, !72, !DIExpression(), !73)
+  %3 = call i64 @__LKMM_load(ptr noundef @x, i64 noundef 4, i32 noundef 1), !dbg !74
+  %4 = trunc i64 %3 to i32, !dbg !74
+  store i32 %4, ptr @r_x, align 4, !dbg !75
+  call void @__LKMM_fence(i32 noundef 9), !dbg !76
+  %5 = call i64 @__LKMM_load(ptr noundef @y, i64 noundef 4, i32 noundef 1), !dbg !77
+  %6 = trunc i64 %5 to i32, !dbg !77
+  store i32 %6, ptr @r_y, align 4, !dbg !78
+  ret ptr null, !dbg !79
 }
 
 declare i64 @__LKMM_load(ptr noundef, i64 noundef, i32 noundef) #1
 
-; Function Attrs: noinline nounwind ssp uwtable(sync)
-define i32 @main() #0 !dbg !79 {
+; Function Attrs: noinline nounwind uwtable
+define dso_local i32 @main() #0 !dbg !80 {
   %1 = alloca i32, align 4
   %2 = alloca ptr, align 8
   %3 = alloca ptr, align 8
   store i32 0, ptr %1, align 4
-    #dbg_declare(ptr %2, !82, !DIExpression(), !106)
-    #dbg_declare(ptr %3, !107, !DIExpression(), !108)
-  %4 = call i32 @pthread_create(ptr noundef %2, ptr noundef null, ptr noundef @P0, ptr noundef null), !dbg !109
-  %5 = call i32 @pthread_create(ptr noundef %3, ptr noundef null, ptr noundef @P1, ptr noundef null), !dbg !110
-  %6 = load ptr, ptr %2, align 8, !dbg !111
-  %7 = call i32 @"\01_pthread_join"(ptr noundef %6, ptr noundef null), !dbg !112
-  %8 = load ptr, ptr %3, align 8, !dbg !113
-  %9 = call i32 @"\01_pthread_join"(ptr noundef %8, ptr noundef null), !dbg !114
-  %10 = load i32, ptr @r_x, align 4, !dbg !115
-  %11 = icmp eq i32 %10, 1, !dbg !115
-  br i1 %11, label %12, label %15, !dbg !115
+    #dbg_declare(ptr %2, !83, !DIExpression(), !107)
+    #dbg_declare(ptr %3, !108, !DIExpression(), !109)
+  %4 = call i32 @pthread_create(ptr noundef %2, ptr noundef null, ptr noundef @P0, ptr noundef null), !dbg !110
+  %5 = call i32 @pthread_create(ptr noundef %3, ptr noundef null, ptr noundef @P1, ptr noundef null), !dbg !111
+  %6 = load ptr, ptr %2, align 8, !dbg !112
+  %7 = call i32 @_pthread_join(ptr noundef %6, ptr noundef null), !dbg !113
+  %8 = load ptr, ptr %3, align 8, !dbg !114
+  %9 = call i32 @_pthread_join(ptr noundef %8, ptr noundef null), !dbg !115
+  %10 = load i32, ptr @r_x, align 4, !dbg !116
+  %11 = icmp eq i32 %10, 1, !dbg !116
+  br i1 %11, label %12, label %15, !dbg !116
 
 12:                                               ; preds = %0
-  %13 = load i32, ptr @r_y, align 4, !dbg !115
-  %14 = icmp eq i32 %13, 0, !dbg !115
+  %13 = load i32, ptr @r_y, align 4, !dbg !116
+  %14 = icmp eq i32 %13, 0, !dbg !116
   br label %15
 
 15:                                               ; preds = %12, %0
-  %16 = phi i1 [ false, %0 ], [ %14, %12 ], !dbg !116
-  %17 = xor i1 %16, true, !dbg !115
-  %18 = xor i1 %17, true, !dbg !115
-  %19 = zext i1 %18 to i32, !dbg !115
-  %20 = sext i32 %19 to i64, !dbg !115
-  %21 = icmp ne i64 %20, 0, !dbg !115
-  br i1 %21, label %22, label %24, !dbg !115
+  %16 = phi i1 [ false, %0 ], [ %14, %12 ], !dbg !117
+  %17 = xor i1 %16, true, !dbg !116
+  %18 = xor i1 %17, true, !dbg !116
+  %19 = zext i1 %18 to i32, !dbg !116
+  %20 = sext i32 %19 to i64, !dbg !116
+  %21 = icmp ne i64 %20, 0, !dbg !116
+  br i1 %21, label %22, label %24, !dbg !116
 
 22:                                               ; preds = %15
-  call void @__assert_rtn(ptr noundef @__func__.main, ptr noundef @.str, i32 noundef 43, ptr noundef @.str.1) #3, !dbg !115
-  unreachable, !dbg !115
+  call void @__assert_rtn(ptr noundef @__func__.main, ptr noundef @.str, i32 noundef 43, ptr noundef @.str.1) #3, !dbg !116
+  unreachable, !dbg !116
 
 23:                                               ; No predecessors!
-  br label %25, !dbg !115
+  br label %25, !dbg !116
 
 24:                                               ; preds = %15
-  br label %25, !dbg !115
+  br label %25, !dbg !116
 
 25:                                               ; preds = %24, %23
-  ret i32 0, !dbg !117
+  ret i32 0, !dbg !118
 }
 
 declare i32 @pthread_create(ptr noundef, ptr noundef, ptr noundef, ptr noundef) #1
 
-declare i32 @"\01_pthread_join"(ptr noundef, ptr noundef) #1
+declare i32 @_pthread_join(ptr noundef, ptr noundef) #1
 
 ; Function Attrs: cold noreturn
 declare void @__assert_rtn(ptr noundef, ptr noundef, i32 noundef, ptr noundef) #2
 
-attributes #0 = { noinline nounwind ssp uwtable(sync) "frame-pointer"="non-leaf" "no-trapping-math"="true" "stack-protector-buffer-size"="8" "target-cpu"="apple-m1" "target-features"="+aes,+altnzcv,+ccdp,+ccidx,+complxnum,+crc,+dit,+dotprod,+flagm,+fp-armv8,+fp16fml,+fptoint,+fullfp16,+jsconv,+lse,+neon,+pauth,+perfmon,+predres,+ras,+rcpc,+rdm,+sb,+sha2,+sha3,+specrestrict,+ssbs,+v8.1a,+v8.2a,+v8.3a,+v8.4a,+v8a,+zcm,+zcz" }
-attributes #1 = { "frame-pointer"="non-leaf" "no-trapping-math"="true" "stack-protector-buffer-size"="8" "target-cpu"="apple-m1" "target-features"="+aes,+altnzcv,+ccdp,+ccidx,+complxnum,+crc,+dit,+dotprod,+flagm,+fp-armv8,+fp16fml,+fptoint,+fullfp16,+jsconv,+lse,+neon,+pauth,+perfmon,+predres,+ras,+rcpc,+rdm,+sb,+sha2,+sha3,+specrestrict,+ssbs,+v8.1a,+v8.2a,+v8.3a,+v8.4a,+v8a,+zcm,+zcz" }
-attributes #2 = { cold noreturn "disable-tail-calls"="true" "frame-pointer"="non-leaf" "no-trapping-math"="true" "stack-protector-buffer-size"="8" "target-cpu"="apple-m1" "target-features"="+aes,+altnzcv,+ccdp,+ccidx,+complxnum,+crc,+dit,+dotprod,+flagm,+fp-armv8,+fp16fml,+fptoint,+fullfp16,+jsconv,+lse,+neon,+pauth,+perfmon,+predres,+ras,+rcpc,+rdm,+sb,+sha2,+sha3,+specrestrict,+ssbs,+v8.1a,+v8.2a,+v8.3a,+v8.4a,+v8a,+zcm,+zcz" }
+attributes #0 = { noinline nounwind uwtable "frame-pointer"="all" "min-legal-vector-width"="0" "no-trapping-math"="true" "stack-protector-buffer-size"="8" "target-cpu"="x86-64" "target-features"="+cmov,+cx8,+fxsr,+mmx,+sse,+sse2,+x87" "tune-cpu"="generic" }
+attributes #1 = { "frame-pointer"="all" "no-trapping-math"="true" "stack-protector-buffer-size"="8" "target-cpu"="x86-64" "target-features"="+cmov,+cx8,+fxsr,+mmx,+sse,+sse2,+x87" "tune-cpu"="generic" }
+attributes #2 = { cold noreturn "disable-tail-calls"="true" "frame-pointer"="all" "no-trapping-math"="true" "stack-protector-buffer-size"="8" "target-cpu"="x86-64" "target-features"="+cmov,+cx8,+fxsr,+mmx,+sse,+sse2,+x87" "tune-cpu"="generic" }
 attributes #3 = { cold noreturn }
 
 !llvm.dbg.cu = !{!2}
-!llvm.module.flags = !{!52, !53, !54, !55, !56, !57}
-!llvm.ident = !{!58}
+!llvm.module.flags = !{!52, !53, !54, !55, !56, !57, !58}
+!llvm.ident = !{!59}
 
 !0 = !DIGlobalVariableExpression(var: !1, expr: !DIExpression())
 !1 = distinct !DIGlobalVariable(name: "x", scope: !2, file: !3, line: 7, type: !27, isLocal: false, isDefinition: true)
-!2 = distinct !DICompileUnit(language: DW_LANG_C11, file: !3, producer: "Homebrew clang version 19.1.7", isOptimized: false, runtimeVersion: 0, emissionKind: FullDebug, enums: !4, retainedTypes: !23, globals: !28, splitDebugInlining: false, nameTableKind: Apple, sysroot: "/")
+!2 = distinct !DICompileUnit(language: DW_LANG_C11, file: !3, producer: "Homebrew clang version 19.1.7", isOptimized: false, runtimeVersion: 0, emissionKind: FullDebug, enums: !4, retainedTypes: !23, globals: !28, splitDebugInlining: false, nameTableKind: None)
 !3 = !DIFile(filename: "benchmarks/lkmm/rcu.c", directory: "/Users/r/git/dat3m", checksumkind: CSK_MD5, checksum: "dad53a6fc905d03af1a936e703cc6339")
 !4 = !{!5}
 !5 = !DICompositeType(tag: DW_TAG_enumeration_type, name: "__LKMM_memory_order", file: !6, line: 3, baseType: !7, size: 32, elements: !8)
@@ -162,65 +162,66 @@ attributes #3 = { cold noreturn }
 !53 = !{i32 2, !"Debug Info Version", i32 3}
 !54 = !{i32 1, !"wchar_size", i32 4}
 !55 = !{i32 8, !"PIC Level", i32 2}
-!56 = !{i32 7, !"uwtable", i32 1}
-!57 = !{i32 7, !"frame-pointer", i32 1}
-!58 = !{!"Homebrew clang version 19.1.7"}
-!59 = distinct !DISubprogram(name: "P0", scope: !3, file: !3, line: 13, type: !60, scopeLine: 14, flags: DIFlagPrototyped, spFlags: DISPFlagDefinition, unit: !2, retainedNodes: !62)
-!60 = !DISubroutineType(types: !61)
-!61 = !{!26, !26}
-!62 = !{}
-!63 = !DILocalVariable(name: "unused", arg: 1, scope: !59, file: !3, line: 13, type: !26)
-!64 = !DILocation(line: 13, column: 16, scope: !59)
-!65 = !DILocation(line: 15, column: 2, scope: !59)
-!66 = !DILocation(line: 16, column: 2, scope: !59)
-!67 = !DILocation(line: 17, column: 2, scope: !59)
-!68 = !DILocation(line: 18, column: 2, scope: !59)
-!69 = !DILocation(line: 19, column: 2, scope: !59)
-!70 = distinct !DISubprogram(name: "P1", scope: !3, file: !3, line: 22, type: !60, scopeLine: 23, flags: DIFlagPrototyped, spFlags: DISPFlagDefinition, unit: !2, retainedNodes: !62)
-!71 = !DILocalVariable(name: "unused", arg: 1, scope: !70, file: !3, line: 22, type: !26)
-!72 = !DILocation(line: 22, column: 16, scope: !70)
-!73 = !DILocation(line: 24, column: 8, scope: !70)
-!74 = !DILocation(line: 24, column: 6, scope: !70)
-!75 = !DILocation(line: 25, column: 2, scope: !70)
-!76 = !DILocation(line: 26, column: 8, scope: !70)
-!77 = !DILocation(line: 26, column: 6, scope: !70)
-!78 = !DILocation(line: 27, column: 2, scope: !70)
-!79 = distinct !DISubprogram(name: "main", scope: !3, file: !3, line: 30, type: !80, scopeLine: 31, spFlags: DISPFlagDefinition, unit: !2, retainedNodes: !62)
-!80 = !DISubroutineType(types: !81)
-!81 = !{!27}
-!82 = !DILocalVariable(name: "t1", scope: !79, file: !3, line: 35, type: !83)
-!83 = !DIDerivedType(tag: DW_TAG_typedef, name: "pthread_t", file: !84, line: 31, baseType: !85)
-!84 = !DIFile(filename: "/usr/local/include/sys/_pthread/_pthread_t.h", directory: "", checksumkind: CSK_MD5, checksum: "086fc6d7dc3c67fdb87e7376555dcfd7")
-!85 = !DIDerivedType(tag: DW_TAG_typedef, name: "__darwin_pthread_t", file: !86, line: 118, baseType: !87)
-!86 = !DIFile(filename: "/usr/local/include/sys/_pthread/_pthread_types.h", directory: "", checksumkind: CSK_MD5, checksum: "4e2ea0e1af95894da0a6030a21a8ebee")
-!87 = !DIDerivedType(tag: DW_TAG_pointer_type, baseType: !88, size: 64)
-!88 = distinct !DICompositeType(tag: DW_TAG_structure_type, name: "_opaque_pthread_t", file: !86, line: 103, size: 65536, elements: !89)
-!89 = !{!90, !92, !102}
-!90 = !DIDerivedType(tag: DW_TAG_member, name: "__sig", scope: !88, file: !86, line: 104, baseType: !91, size: 64)
-!91 = !DIBasicType(name: "long", size: 64, encoding: DW_ATE_signed)
-!92 = !DIDerivedType(tag: DW_TAG_member, name: "__cleanup_stack", scope: !88, file: !86, line: 105, baseType: !93, size: 64, offset: 64)
-!93 = !DIDerivedType(tag: DW_TAG_pointer_type, baseType: !94, size: 64)
-!94 = distinct !DICompositeType(tag: DW_TAG_structure_type, name: "__darwin_pthread_handler_rec", file: !86, line: 57, size: 192, elements: !95)
-!95 = !{!96, !100, !101}
-!96 = !DIDerivedType(tag: DW_TAG_member, name: "__routine", scope: !94, file: !86, line: 58, baseType: !97, size: 64)
-!97 = !DIDerivedType(tag: DW_TAG_pointer_type, baseType: !98, size: 64)
-!98 = !DISubroutineType(types: !99)
-!99 = !{null, !26}
-!100 = !DIDerivedType(tag: DW_TAG_member, name: "__arg", scope: !94, file: !86, line: 59, baseType: !26, size: 64, offset: 64)
-!101 = !DIDerivedType(tag: DW_TAG_member, name: "__next", scope: !94, file: !86, line: 60, baseType: !93, size: 64, offset: 128)
-!102 = !DIDerivedType(tag: DW_TAG_member, name: "__opaque", scope: !88, file: !86, line: 106, baseType: !103, size: 65408, offset: 128)
-!103 = !DICompositeType(tag: DW_TAG_array_type, baseType: !33, size: 65408, elements: !104)
-!104 = !{!105}
-!105 = !DISubrange(count: 8176)
-!106 = !DILocation(line: 35, column: 15, scope: !79)
-!107 = !DILocalVariable(name: "t2", scope: !79, file: !3, line: 35, type: !83)
-!108 = !DILocation(line: 35, column: 19, scope: !79)
-!109 = !DILocation(line: 37, column: 2, scope: !79)
-!110 = !DILocation(line: 38, column: 2, scope: !79)
-!111 = !DILocation(line: 40, column: 15, scope: !79)
-!112 = !DILocation(line: 40, column: 2, scope: !79)
-!113 = !DILocation(line: 41, column: 15, scope: !79)
-!114 = !DILocation(line: 41, column: 2, scope: !79)
-!115 = !DILocation(line: 43, column: 2, scope: !79)
-!116 = !DILocation(line: 0, scope: !79)
-!117 = !DILocation(line: 45, column: 2, scope: !79)
+!56 = !{i32 7, !"PIE Level", i32 2}
+!57 = !{i32 7, !"uwtable", i32 2}
+!58 = !{i32 7, !"frame-pointer", i32 2}
+!59 = !{!"Homebrew clang version 19.1.7"}
+!60 = distinct !DISubprogram(name: "P0", scope: !3, file: !3, line: 13, type: !61, scopeLine: 14, flags: DIFlagPrototyped, spFlags: DISPFlagDefinition, unit: !2, retainedNodes: !63)
+!61 = !DISubroutineType(types: !62)
+!62 = !{!26, !26}
+!63 = !{}
+!64 = !DILocalVariable(name: "unused", arg: 1, scope: !60, file: !3, line: 13, type: !26)
+!65 = !DILocation(line: 13, column: 16, scope: !60)
+!66 = !DILocation(line: 15, column: 2, scope: !60)
+!67 = !DILocation(line: 16, column: 2, scope: !60)
+!68 = !DILocation(line: 17, column: 2, scope: !60)
+!69 = !DILocation(line: 18, column: 2, scope: !60)
+!70 = !DILocation(line: 19, column: 2, scope: !60)
+!71 = distinct !DISubprogram(name: "P1", scope: !3, file: !3, line: 22, type: !61, scopeLine: 23, flags: DIFlagPrototyped, spFlags: DISPFlagDefinition, unit: !2, retainedNodes: !63)
+!72 = !DILocalVariable(name: "unused", arg: 1, scope: !71, file: !3, line: 22, type: !26)
+!73 = !DILocation(line: 22, column: 16, scope: !71)
+!74 = !DILocation(line: 24, column: 8, scope: !71)
+!75 = !DILocation(line: 24, column: 6, scope: !71)
+!76 = !DILocation(line: 25, column: 2, scope: !71)
+!77 = !DILocation(line: 26, column: 8, scope: !71)
+!78 = !DILocation(line: 26, column: 6, scope: !71)
+!79 = !DILocation(line: 27, column: 2, scope: !71)
+!80 = distinct !DISubprogram(name: "main", scope: !3, file: !3, line: 30, type: !81, scopeLine: 31, spFlags: DISPFlagDefinition, unit: !2, retainedNodes: !63)
+!81 = !DISubroutineType(types: !82)
+!82 = !{!27}
+!83 = !DILocalVariable(name: "t1", scope: !80, file: !3, line: 35, type: !84)
+!84 = !DIDerivedType(tag: DW_TAG_typedef, name: "pthread_t", file: !85, line: 31, baseType: !86)
+!85 = !DIFile(filename: "/usr/local/include/sys/_pthread/_pthread_t.h", directory: "", checksumkind: CSK_MD5, checksum: "086fc6d7dc3c67fdb87e7376555dcfd7")
+!86 = !DIDerivedType(tag: DW_TAG_typedef, name: "__darwin_pthread_t", file: !87, line: 118, baseType: !88)
+!87 = !DIFile(filename: "/usr/local/include/sys/_pthread/_pthread_types.h", directory: "", checksumkind: CSK_MD5, checksum: "4e2ea0e1af95894da0a6030a21a8ebee")
+!88 = !DIDerivedType(tag: DW_TAG_pointer_type, baseType: !89, size: 64)
+!89 = distinct !DICompositeType(tag: DW_TAG_structure_type, name: "_opaque_pthread_t", file: !87, line: 103, size: 65536, elements: !90)
+!90 = !{!91, !93, !103}
+!91 = !DIDerivedType(tag: DW_TAG_member, name: "__sig", scope: !89, file: !87, line: 104, baseType: !92, size: 64)
+!92 = !DIBasicType(name: "long", size: 64, encoding: DW_ATE_signed)
+!93 = !DIDerivedType(tag: DW_TAG_member, name: "__cleanup_stack", scope: !89, file: !87, line: 105, baseType: !94, size: 64, offset: 64)
+!94 = !DIDerivedType(tag: DW_TAG_pointer_type, baseType: !95, size: 64)
+!95 = distinct !DICompositeType(tag: DW_TAG_structure_type, name: "__darwin_pthread_handler_rec", file: !87, line: 57, size: 192, elements: !96)
+!96 = !{!97, !101, !102}
+!97 = !DIDerivedType(tag: DW_TAG_member, name: "__routine", scope: !95, file: !87, line: 58, baseType: !98, size: 64)
+!98 = !DIDerivedType(tag: DW_TAG_pointer_type, baseType: !99, size: 64)
+!99 = !DISubroutineType(types: !100)
+!100 = !{null, !26}
+!101 = !DIDerivedType(tag: DW_TAG_member, name: "__arg", scope: !95, file: !87, line: 59, baseType: !26, size: 64, offset: 64)
+!102 = !DIDerivedType(tag: DW_TAG_member, name: "__next", scope: !95, file: !87, line: 60, baseType: !94, size: 64, offset: 128)
+!103 = !DIDerivedType(tag: DW_TAG_member, name: "__opaque", scope: !89, file: !87, line: 106, baseType: !104, size: 65408, offset: 128)
+!104 = !DICompositeType(tag: DW_TAG_array_type, baseType: !33, size: 65408, elements: !105)
+!105 = !{!106}
+!106 = !DISubrange(count: 8176)
+!107 = !DILocation(line: 35, column: 15, scope: !80)
+!108 = !DILocalVariable(name: "t2", scope: !80, file: !3, line: 35, type: !84)
+!109 = !DILocation(line: 35, column: 19, scope: !80)
+!110 = !DILocation(line: 37, column: 2, scope: !80)
+!111 = !DILocation(line: 38, column: 2, scope: !80)
+!112 = !DILocation(line: 40, column: 15, scope: !80)
+!113 = !DILocation(line: 40, column: 2, scope: !80)
+!114 = !DILocation(line: 41, column: 15, scope: !80)
+!115 = !DILocation(line: 41, column: 2, scope: !80)
+!116 = !DILocation(line: 43, column: 2, scope: !80)
+!117 = !DILocation(line: 0, scope: !80)
+!118 = !DILocation(line: 45, column: 2, scope: !80)
