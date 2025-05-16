@@ -1,186 +1,236 @@
-; ModuleID = '/home/ponce/git/Dat3M/output/LB+fencembonceonce+ctrlonceonce.ll'
-source_filename = "/home/ponce/git/Dat3M/benchmarks/lkmm/LB+fencembonceonce+ctrlonceonce.c"
-target datalayout = "e-m:e-p270:32:32-p271:32:32-p272:64:64-i64:64-f80:128-n8:16:32:64-S128"
-target triple = "x86_64-pc-linux-gnu"
+; ModuleID = 'benchmarks/lkmm/LB+fencembonceonce+ctrlonceonce.c'
+source_filename = "benchmarks/lkmm/LB+fencembonceonce+ctrlonceonce.c"
+target datalayout = "e-m:o-i64:64-i128:128-n32:64-S128-Fn32"
+target triple = "arm64-apple-macosx15.0.0"
 
-%union.pthread_attr_t = type { i64, [48 x i8] }
+@r0 = global i32 0, align 4, !dbg !0
+@x = global i32 0, align 4, !dbg !46
+@y = global i32 0, align 4, !dbg !48
+@r1 = global i32 0, align 4, !dbg !50
+@__func__.main = private unnamed_addr constant [5 x i8] c"main\00", align 1, !dbg !29
+@.str = private unnamed_addr constant [34 x i8] c"LB+fencembonceonce+ctrlonceonce.c\00", align 1, !dbg !36
+@.str.1 = private unnamed_addr constant [44 x i8] c"!(READ_ONCE(r0) == 1 && READ_ONCE(r1) == 1)\00", align 1, !dbg !41
 
-@r0 = dso_local global i32 0, align 4, !dbg !0
-@x = dso_local global i32 0, align 4, !dbg !26
-@y = dso_local global i32 0, align 4, !dbg !30
-@r1 = dso_local global i32 0, align 4, !dbg !32
-@.str = private unnamed_addr constant [44 x i8] c"!(READ_ONCE(r0) == 1 && READ_ONCE(r1) == 1)\00", align 1
-@.str.1 = private unnamed_addr constant [72 x i8] c"/home/ponce/git/Dat3M/benchmarks/lkmm/LB+fencembonceonce+ctrlonceonce.c\00", align 1
-@__PRETTY_FUNCTION__.main = private unnamed_addr constant [11 x i8] c"int main()\00", align 1
+; Function Attrs: noinline nounwind ssp uwtable(sync)
+define ptr @thread_1(ptr noundef %0) #0 !dbg !59 {
+  %2 = alloca ptr, align 8
+  store ptr %0, ptr %2, align 8
+    #dbg_declare(ptr %2, !63, !DIExpression(), !64)
+  %3 = call i64 @__LKMM_load(ptr noundef @x, i64 noundef 4, i32 noundef 1), !dbg !65
+  %4 = trunc i64 %3 to i32, !dbg !65
+  %5 = sext i32 %4 to i64, !dbg !65
+  call void @__LKMM_store(ptr noundef @r0, i64 noundef 4, i64 noundef %5, i32 noundef 1), !dbg !65
+  %6 = call i64 @__LKMM_load(ptr noundef @r0, i64 noundef 4, i32 noundef 1), !dbg !66
+  %7 = trunc i64 %6 to i32, !dbg !66
+  %8 = icmp ne i32 %7, 0, !dbg !66
+  br i1 %8, label %9, label %10, !dbg !68
 
-; Function Attrs: noinline nounwind uwtable
-define dso_local i8* @thread_1(i8* noundef %0) #0 !dbg !42 {
-  call void @llvm.dbg.value(metadata i8* %0, metadata !46, metadata !DIExpression()), !dbg !47
-  %2 = call i32 @__LKMM_LOAD(i8* noundef bitcast (i32* @x to i8*), i32 noundef 1) #5, !dbg !48
-  call void @__LKMM_STORE(i8* noundef bitcast (i32* @r0 to i8*), i32 noundef %2, i32 noundef 1) #5, !dbg !48
-  %3 = call i32 @__LKMM_LOAD(i8* noundef bitcast (i32* @r0 to i8*), i32 noundef 1) #5, !dbg !49
-  %.not = icmp eq i32 %3, 0, !dbg !49
-  br i1 %.not, label %5, label %4, !dbg !51
+9:                                                ; preds = %1
+  call void @__LKMM_store(ptr noundef @y, i64 noundef 4, i64 noundef 1, i32 noundef 1), !dbg !69
+  br label %10, !dbg !69
 
-4:                                                ; preds = %1
-  call void @__LKMM_STORE(i8* noundef bitcast (i32* @y to i8*), i32 noundef 1, i32 noundef 1) #5, !dbg !52
-  br label %5, !dbg !52
-
-5:                                                ; preds = %4, %1
-  ret i8* null, !dbg !53
+10:                                               ; preds = %9, %1
+  ret ptr null, !dbg !70
 }
 
-; Function Attrs: nofree nosync nounwind readnone speculatable willreturn
-declare void @llvm.dbg.declare(metadata, metadata, metadata) #1
+declare void @__LKMM_store(ptr noundef, i64 noundef, i64 noundef, i32 noundef) #1
 
-declare void @__LKMM_STORE(i8* noundef, i32 noundef, i32 noundef) #2
+declare i64 @__LKMM_load(ptr noundef, i64 noundef, i32 noundef) #1
 
-declare i32 @__LKMM_LOAD(i8* noundef, i32 noundef) #2
-
-; Function Attrs: noinline nounwind uwtable
-define dso_local i8* @thread_2(i8* noundef %0) #0 !dbg !54 {
-  call void @llvm.dbg.value(metadata i8* %0, metadata !55, metadata !DIExpression()), !dbg !56
-  %2 = call i32 @__LKMM_LOAD(i8* noundef bitcast (i32* @y to i8*), i32 noundef 1) #5, !dbg !57
-  call void @__LKMM_STORE(i8* noundef bitcast (i32* @r1 to i8*), i32 noundef %2, i32 noundef 1) #5, !dbg !57
-  call void @__LKMM_FENCE(i32 noundef 4) #5, !dbg !58
-  call void @__LKMM_STORE(i8* noundef bitcast (i32* @x to i8*), i32 noundef 1, i32 noundef 1) #5, !dbg !59
-  ret i8* null, !dbg !60
+; Function Attrs: noinline nounwind ssp uwtable(sync)
+define ptr @thread_2(ptr noundef %0) #0 !dbg !71 {
+  %2 = alloca ptr, align 8
+  store ptr %0, ptr %2, align 8
+    #dbg_declare(ptr %2, !72, !DIExpression(), !73)
+  %3 = call i64 @__LKMM_load(ptr noundef @y, i64 noundef 4, i32 noundef 1), !dbg !74
+  %4 = trunc i64 %3 to i32, !dbg !74
+  %5 = sext i32 %4 to i64, !dbg !74
+  call void @__LKMM_store(ptr noundef @r1, i64 noundef 4, i64 noundef %5, i32 noundef 1), !dbg !74
+  call void @__LKMM_fence(i32 noundef 4), !dbg !75
+  call void @__LKMM_store(ptr noundef @x, i64 noundef 4, i64 noundef 1, i32 noundef 1), !dbg !76
+  ret ptr null, !dbg !77
 }
 
-declare void @__LKMM_FENCE(i32 noundef) #2
+declare void @__LKMM_fence(i32 noundef) #1
 
-; Function Attrs: noinline nounwind uwtable
-define dso_local i32 @main() #0 !dbg !61 {
-  %1 = alloca i64, align 8
-  %2 = alloca i64, align 8
-  call void @llvm.dbg.value(metadata i64* %1, metadata !64, metadata !DIExpression(DW_OP_deref)), !dbg !68
-  %3 = call i32 @pthread_create(i64* noundef nonnull %1, %union.pthread_attr_t* noundef null, i8* (i8*)* noundef nonnull @thread_1, i8* noundef null) #5, !dbg !69
-  call void @llvm.dbg.value(metadata i64* %2, metadata !70, metadata !DIExpression(DW_OP_deref)), !dbg !68
-  %4 = call i32 @pthread_create(i64* noundef nonnull %2, %union.pthread_attr_t* noundef null, i8* (i8*)* noundef nonnull @thread_2, i8* noundef null) #5, !dbg !71
-  %5 = load i64, i64* %1, align 8, !dbg !72
-  call void @llvm.dbg.value(metadata i64 %5, metadata !64, metadata !DIExpression()), !dbg !68
-  %6 = call i32 @pthread_join(i64 noundef %5, i8** noundef null) #5, !dbg !73
-  %7 = load i64, i64* %2, align 8, !dbg !74
-  call void @llvm.dbg.value(metadata i64 %7, metadata !70, metadata !DIExpression()), !dbg !68
-  %8 = call i32 @pthread_join(i64 noundef %7, i8** noundef null) #5, !dbg !75
-  %9 = call i32 @__LKMM_LOAD(i8* noundef bitcast (i32* @r0 to i8*), i32 noundef 1) #5, !dbg !76
-  %10 = icmp eq i32 %9, 1, !dbg !76
-  br i1 %10, label %11, label %15, !dbg !76
+; Function Attrs: noinline nounwind ssp uwtable(sync)
+define i32 @main() #0 !dbg !78 {
+  %1 = alloca i32, align 4
+  %2 = alloca ptr, align 8
+  %3 = alloca ptr, align 8
+  store i32 0, ptr %1, align 4
+    #dbg_declare(ptr %2, !81, !DIExpression(), !105)
+    #dbg_declare(ptr %3, !106, !DIExpression(), !107)
+  %4 = call i32 @pthread_create(ptr noundef %2, ptr noundef null, ptr noundef @thread_1, ptr noundef null), !dbg !108
+  %5 = call i32 @pthread_create(ptr noundef %3, ptr noundef null, ptr noundef @thread_2, ptr noundef null), !dbg !109
+  %6 = load ptr, ptr %2, align 8, !dbg !110
+  %7 = call i32 @"\01_pthread_join"(ptr noundef %6, ptr noundef null), !dbg !111
+  %8 = load ptr, ptr %3, align 8, !dbg !112
+  %9 = call i32 @"\01_pthread_join"(ptr noundef %8, ptr noundef null), !dbg !113
+  %10 = call i64 @__LKMM_load(ptr noundef @r0, i64 noundef 4, i32 noundef 1), !dbg !114
+  %11 = trunc i64 %10 to i32, !dbg !114
+  %12 = icmp eq i32 %11, 1, !dbg !114
+  br i1 %12, label %13, label %17, !dbg !114
 
-11:                                               ; preds = %0
-  %12 = call i32 @__LKMM_LOAD(i8* noundef bitcast (i32* @r1 to i8*), i32 noundef 1) #5, !dbg !76
-  %13 = icmp eq i32 %12, 1, !dbg !76
-  br i1 %13, label %14, label %15, !dbg !79
+13:                                               ; preds = %0
+  %14 = call i64 @__LKMM_load(ptr noundef @r1, i64 noundef 4, i32 noundef 1), !dbg !114
+  %15 = trunc i64 %14 to i32, !dbg !114
+  %16 = icmp eq i32 %15, 1, !dbg !114
+  br label %17
 
-14:                                               ; preds = %11
-  call void @__assert_fail(i8* noundef getelementptr inbounds ([44 x i8], [44 x i8]* @.str, i64 0, i64 0), i8* noundef getelementptr inbounds ([72 x i8], [72 x i8]* @.str.1, i64 0, i64 0), i32 noundef 37, i8* noundef getelementptr inbounds ([11 x i8], [11 x i8]* @__PRETTY_FUNCTION__.main, i64 0, i64 0)) #6, !dbg !76
-  unreachable, !dbg !76
+17:                                               ; preds = %13, %0
+  %18 = phi i1 [ false, %0 ], [ %16, %13 ], !dbg !115
+  %19 = xor i1 %18, true, !dbg !114
+  %20 = xor i1 %19, true, !dbg !114
+  %21 = zext i1 %20 to i32, !dbg !114
+  %22 = sext i32 %21 to i64, !dbg !114
+  %23 = icmp ne i64 %22, 0, !dbg !114
+  br i1 %23, label %24, label %26, !dbg !114
 
-15:                                               ; preds = %0, %11
-  ret i32 0, !dbg !80
+24:                                               ; preds = %17
+  call void @__assert_rtn(ptr noundef @__func__.main, ptr noundef @.str, i32 noundef 37, ptr noundef @.str.1) #3, !dbg !114
+  unreachable, !dbg !114
+
+25:                                               ; No predecessors!
+  br label %27, !dbg !114
+
+26:                                               ; preds = %17
+  br label %27, !dbg !114
+
+27:                                               ; preds = %26, %25
+  ret i32 0, !dbg !116
 }
 
-; Function Attrs: nounwind
-declare i32 @pthread_create(i64* noundef, %union.pthread_attr_t* noundef, i8* (i8*)* noundef, i8* noundef) #3
+declare i32 @pthread_create(ptr noundef, ptr noundef, ptr noundef, ptr noundef) #1
 
-declare i32 @pthread_join(i64 noundef, i8** noundef) #2
+declare i32 @"\01_pthread_join"(ptr noundef, ptr noundef) #1
 
-; Function Attrs: noreturn nounwind
-declare void @__assert_fail(i8* noundef, i8* noundef, i32 noundef, i8* noundef) #4
+; Function Attrs: cold noreturn
+declare void @__assert_rtn(ptr noundef, ptr noundef, i32 noundef, ptr noundef) #2
 
-; Function Attrs: nofree nosync nounwind readnone speculatable willreturn
-declare void @llvm.dbg.value(metadata, metadata, metadata) #1
-
-attributes #0 = { noinline nounwind uwtable "frame-pointer"="all" "min-legal-vector-width"="0" "no-trapping-math"="true" "stack-protector-buffer-size"="8" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+x87" "tune-cpu"="generic" }
-attributes #1 = { nofree nosync nounwind readnone speculatable willreturn }
-attributes #2 = { "frame-pointer"="all" "no-trapping-math"="true" "stack-protector-buffer-size"="8" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+x87" "tune-cpu"="generic" }
-attributes #3 = { nounwind "frame-pointer"="all" "no-trapping-math"="true" "stack-protector-buffer-size"="8" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+x87" "tune-cpu"="generic" }
-attributes #4 = { noreturn nounwind "frame-pointer"="all" "no-trapping-math"="true" "stack-protector-buffer-size"="8" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+x87" "tune-cpu"="generic" }
-attributes #5 = { nounwind }
-attributes #6 = { noreturn nounwind }
+attributes #0 = { noinline nounwind ssp uwtable(sync) "frame-pointer"="non-leaf" "no-trapping-math"="true" "stack-protector-buffer-size"="8" "target-cpu"="apple-m1" "target-features"="+aes,+altnzcv,+ccdp,+ccidx,+complxnum,+crc,+dit,+dotprod,+flagm,+fp-armv8,+fp16fml,+fptoint,+fullfp16,+jsconv,+lse,+neon,+pauth,+perfmon,+predres,+ras,+rcpc,+rdm,+sb,+sha2,+sha3,+specrestrict,+ssbs,+v8.1a,+v8.2a,+v8.3a,+v8.4a,+v8a,+zcm,+zcz" }
+attributes #1 = { "frame-pointer"="non-leaf" "no-trapping-math"="true" "stack-protector-buffer-size"="8" "target-cpu"="apple-m1" "target-features"="+aes,+altnzcv,+ccdp,+ccidx,+complxnum,+crc,+dit,+dotprod,+flagm,+fp-armv8,+fp16fml,+fptoint,+fullfp16,+jsconv,+lse,+neon,+pauth,+perfmon,+predres,+ras,+rcpc,+rdm,+sb,+sha2,+sha3,+specrestrict,+ssbs,+v8.1a,+v8.2a,+v8.3a,+v8.4a,+v8a,+zcm,+zcz" }
+attributes #2 = { cold noreturn "disable-tail-calls"="true" "frame-pointer"="non-leaf" "no-trapping-math"="true" "stack-protector-buffer-size"="8" "target-cpu"="apple-m1" "target-features"="+aes,+altnzcv,+ccdp,+ccidx,+complxnum,+crc,+dit,+dotprod,+flagm,+fp-armv8,+fp16fml,+fptoint,+fullfp16,+jsconv,+lse,+neon,+pauth,+perfmon,+predres,+ras,+rcpc,+rdm,+sb,+sha2,+sha3,+specrestrict,+ssbs,+v8.1a,+v8.2a,+v8.3a,+v8.4a,+v8a,+zcm,+zcz" }
+attributes #3 = { cold noreturn }
 
 !llvm.dbg.cu = !{!2}
-!llvm.module.flags = !{!34, !35, !36, !37, !38, !39, !40}
-!llvm.ident = !{!41}
+!llvm.module.flags = !{!52, !53, !54, !55, !56, !57}
+!llvm.ident = !{!58}
 
 !0 = !DIGlobalVariableExpression(var: !1, expr: !DIExpression())
-!1 = distinct !DIGlobalVariable(name: "r0", scope: !2, file: !28, line: 9, type: !29, isLocal: false, isDefinition: true)
-!2 = distinct !DICompileUnit(language: DW_LANG_C99, file: !3, producer: "Ubuntu clang version 14.0.6", isOptimized: false, runtimeVersion: 0, emissionKind: FullDebug, enums: !4, retainedTypes: !23, globals: !25, splitDebugInlining: false, nameTableKind: None)
-!3 = !DIFile(filename: "/home/ponce/git/Dat3M/benchmarks/lkmm/LB+fencembonceonce+ctrlonceonce.c", directory: "/home/ponce/git/Dat3M", checksumkind: CSK_MD5, checksum: "e04735b1ad6e052c08fd1ecbe5dcff13")
+!1 = distinct !DIGlobalVariable(name: "r0", scope: !2, file: !3, line: 9, type: !26, isLocal: false, isDefinition: true)
+!2 = distinct !DICompileUnit(language: DW_LANG_C11, file: !3, producer: "Homebrew clang version 19.1.7", isOptimized: false, runtimeVersion: 0, emissionKind: FullDebug, enums: !4, retainedTypes: !23, globals: !28, splitDebugInlining: false, nameTableKind: Apple, sysroot: "/")
+!3 = !DIFile(filename: "benchmarks/lkmm/LB+fencembonceonce+ctrlonceonce.c", directory: "/Users/r/git/dat3m", checksumkind: CSK_MD5, checksum: "e04735b1ad6e052c08fd1ecbe5dcff13")
 !4 = !{!5}
-!5 = !DICompositeType(tag: DW_TAG_enumeration_type, name: "memory_order", file: !6, line: 3, baseType: !7, size: 32, elements: !8)
-!6 = !DIFile(filename: "include/lkmm.h", directory: "/home/ponce/git/Dat3M", checksumkind: CSK_MD5, checksum: "f219e5a4f2482585588927d06bb5e5c6")
+!5 = !DICompositeType(tag: DW_TAG_enumeration_type, name: "__LKMM_memory_order", file: !6, line: 3, baseType: !7, size: 32, elements: !8)
+!6 = !DIFile(filename: "include/lkmm.h", directory: "/Users/r/git/dat3m", checksumkind: CSK_MD5, checksum: "27b8121cb2c90fe5c99c4b3e89c9755e")
 !7 = !DIBasicType(name: "unsigned int", size: 32, encoding: DW_ATE_unsigned)
 !8 = !{!9, !10, !11, !12, !13, !14, !15, !16, !17, !18, !19, !20, !21, !22}
-!9 = !DIEnumerator(name: "memory_order_relaxed", value: 0)
-!10 = !DIEnumerator(name: "memory_order_once", value: 1)
-!11 = !DIEnumerator(name: "memory_order_acquire", value: 2)
-!12 = !DIEnumerator(name: "memory_order_release", value: 3)
-!13 = !DIEnumerator(name: "mb", value: 4)
-!14 = !DIEnumerator(name: "wmb", value: 5)
-!15 = !DIEnumerator(name: "rmb", value: 6)
-!16 = !DIEnumerator(name: "rcu_lock", value: 7)
-!17 = !DIEnumerator(name: "rcu_unlock", value: 8)
-!18 = !DIEnumerator(name: "rcu_sync", value: 9)
-!19 = !DIEnumerator(name: "before_atomic", value: 10)
-!20 = !DIEnumerator(name: "after_atomic", value: 11)
-!21 = !DIEnumerator(name: "after_spinlock", value: 12)
-!22 = !DIEnumerator(name: "barrier", value: 13)
-!23 = !{!24}
-!24 = !DIDerivedType(tag: DW_TAG_pointer_type, baseType: null, size: 64)
-!25 = !{!26, !30, !0, !32}
-!26 = !DIGlobalVariableExpression(var: !27, expr: !DIExpression())
-!27 = distinct !DIGlobalVariable(name: "x", scope: !2, file: !28, line: 6, type: !29, isLocal: false, isDefinition: true)
-!28 = !DIFile(filename: "benchmarks/lkmm/LB+fencembonceonce+ctrlonceonce.c", directory: "/home/ponce/git/Dat3M", checksumkind: CSK_MD5, checksum: "e04735b1ad6e052c08fd1ecbe5dcff13")
-!29 = !DIBasicType(name: "int", size: 32, encoding: DW_ATE_signed)
-!30 = !DIGlobalVariableExpression(var: !31, expr: !DIExpression())
-!31 = distinct !DIGlobalVariable(name: "y", scope: !2, file: !28, line: 7, type: !29, isLocal: false, isDefinition: true)
-!32 = !DIGlobalVariableExpression(var: !33, expr: !DIExpression())
-!33 = distinct !DIGlobalVariable(name: "r1", scope: !2, file: !28, line: 9, type: !29, isLocal: false, isDefinition: true)
-!34 = !{i32 7, !"Dwarf Version", i32 5}
-!35 = !{i32 2, !"Debug Info Version", i32 3}
-!36 = !{i32 1, !"wchar_size", i32 4}
-!37 = !{i32 7, !"PIC Level", i32 2}
-!38 = !{i32 7, !"PIE Level", i32 2}
-!39 = !{i32 7, !"uwtable", i32 1}
-!40 = !{i32 7, !"frame-pointer", i32 2}
-!41 = !{!"Ubuntu clang version 14.0.6"}
-!42 = distinct !DISubprogram(name: "thread_1", scope: !28, file: !28, line: 11, type: !43, scopeLine: 12, flags: DIFlagPrototyped, spFlags: DISPFlagDefinition, unit: !2, retainedNodes: !45)
-!43 = !DISubroutineType(types: !44)
-!44 = !{!24, !24}
-!45 = !{}
-!46 = !DILocalVariable(name: "unused", arg: 1, scope: !42, file: !28, line: 11, type: !24)
-!47 = !DILocation(line: 0, scope: !42)
-!48 = !DILocation(line: 13, column: 2, scope: !42)
-!49 = !DILocation(line: 14, column: 6, scope: !50)
-!50 = distinct !DILexicalBlock(scope: !42, file: !28, line: 14, column: 6)
-!51 = !DILocation(line: 14, column: 6, scope: !42)
-!52 = !DILocation(line: 15, column: 3, scope: !50)
-!53 = !DILocation(line: 16, column: 2, scope: !42)
-!54 = distinct !DISubprogram(name: "thread_2", scope: !28, file: !28, line: 19, type: !43, scopeLine: 20, flags: DIFlagPrototyped, spFlags: DISPFlagDefinition, unit: !2, retainedNodes: !45)
-!55 = !DILocalVariable(name: "unused", arg: 1, scope: !54, file: !28, line: 19, type: !24)
-!56 = !DILocation(line: 0, scope: !54)
-!57 = !DILocation(line: 21, column: 2, scope: !54)
-!58 = !DILocation(line: 22, column: 2, scope: !54)
-!59 = !DILocation(line: 23, column: 2, scope: !54)
-!60 = !DILocation(line: 24, column: 2, scope: !54)
-!61 = distinct !DISubprogram(name: "main", scope: !28, file: !28, line: 27, type: !62, scopeLine: 28, spFlags: DISPFlagDefinition, unit: !2, retainedNodes: !45)
-!62 = !DISubroutineType(types: !63)
-!63 = !{!29}
-!64 = !DILocalVariable(name: "t1", scope: !61, file: !28, line: 29, type: !65)
-!65 = !DIDerivedType(tag: DW_TAG_typedef, name: "pthread_t", file: !66, line: 27, baseType: !67)
-!66 = !DIFile(filename: "/usr/include/x86_64-linux-gnu/bits/pthreadtypes.h", directory: "", checksumkind: CSK_MD5, checksum: "2d764266ce95ab26d4a4767c2ec78176")
-!67 = !DIBasicType(name: "unsigned long", size: 64, encoding: DW_ATE_unsigned)
-!68 = !DILocation(line: 0, scope: !61)
-!69 = !DILocation(line: 31, column: 2, scope: !61)
-!70 = !DILocalVariable(name: "t2", scope: !61, file: !28, line: 29, type: !65)
-!71 = !DILocation(line: 32, column: 2, scope: !61)
-!72 = !DILocation(line: 34, column: 15, scope: !61)
-!73 = !DILocation(line: 34, column: 2, scope: !61)
-!74 = !DILocation(line: 35, column: 15, scope: !61)
-!75 = !DILocation(line: 35, column: 2, scope: !61)
-!76 = !DILocation(line: 37, column: 2, scope: !77)
-!77 = distinct !DILexicalBlock(scope: !78, file: !28, line: 37, column: 2)
-!78 = distinct !DILexicalBlock(scope: !61, file: !28, line: 37, column: 2)
-!79 = !DILocation(line: 37, column: 2, scope: !78)
-!80 = !DILocation(line: 39, column: 2, scope: !61)
+!9 = !DIEnumerator(name: "__LKMM_relaxed", value: 0)
+!10 = !DIEnumerator(name: "__LKMM_once", value: 1)
+!11 = !DIEnumerator(name: "__LKMM_acquire", value: 2)
+!12 = !DIEnumerator(name: "__LKMM_release", value: 3)
+!13 = !DIEnumerator(name: "__LKMM_mb", value: 4)
+!14 = !DIEnumerator(name: "__LKMM_wmb", value: 5)
+!15 = !DIEnumerator(name: "__LKMM_rmb", value: 6)
+!16 = !DIEnumerator(name: "__LKMM_rcu_lock", value: 7)
+!17 = !DIEnumerator(name: "__LKMM_rcu_unlock", value: 8)
+!18 = !DIEnumerator(name: "__LKMM_rcu_sync", value: 9)
+!19 = !DIEnumerator(name: "__LKMM_before_atomic", value: 10)
+!20 = !DIEnumerator(name: "__LKMM_after_atomic", value: 11)
+!21 = !DIEnumerator(name: "__LKMM_after_spinlock", value: 12)
+!22 = !DIEnumerator(name: "__LKMM_barrier", value: 13)
+!23 = !{!24, !26, !27}
+!24 = !DIDerivedType(tag: DW_TAG_typedef, name: "__LKMM_int_t", file: !6, line: 28, baseType: !25)
+!25 = !DIBasicType(name: "long long", size: 64, encoding: DW_ATE_signed)
+!26 = !DIBasicType(name: "int", size: 32, encoding: DW_ATE_signed)
+!27 = !DIDerivedType(tag: DW_TAG_pointer_type, baseType: null, size: 64)
+!28 = !{!29, !36, !41, !46, !48, !0, !50}
+!29 = !DIGlobalVariableExpression(var: !30, expr: !DIExpression())
+!30 = distinct !DIGlobalVariable(scope: null, file: !3, line: 37, type: !31, isLocal: true, isDefinition: true)
+!31 = !DICompositeType(tag: DW_TAG_array_type, baseType: !32, size: 40, elements: !34)
+!32 = !DIDerivedType(tag: DW_TAG_const_type, baseType: !33)
+!33 = !DIBasicType(name: "char", size: 8, encoding: DW_ATE_signed_char)
+!34 = !{!35}
+!35 = !DISubrange(count: 5)
+!36 = !DIGlobalVariableExpression(var: !37, expr: !DIExpression())
+!37 = distinct !DIGlobalVariable(scope: null, file: !3, line: 37, type: !38, isLocal: true, isDefinition: true)
+!38 = !DICompositeType(tag: DW_TAG_array_type, baseType: !33, size: 272, elements: !39)
+!39 = !{!40}
+!40 = !DISubrange(count: 34)
+!41 = !DIGlobalVariableExpression(var: !42, expr: !DIExpression())
+!42 = distinct !DIGlobalVariable(scope: null, file: !3, line: 37, type: !43, isLocal: true, isDefinition: true)
+!43 = !DICompositeType(tag: DW_TAG_array_type, baseType: !33, size: 352, elements: !44)
+!44 = !{!45}
+!45 = !DISubrange(count: 44)
+!46 = !DIGlobalVariableExpression(var: !47, expr: !DIExpression())
+!47 = distinct !DIGlobalVariable(name: "x", scope: !2, file: !3, line: 6, type: !26, isLocal: false, isDefinition: true)
+!48 = !DIGlobalVariableExpression(var: !49, expr: !DIExpression())
+!49 = distinct !DIGlobalVariable(name: "y", scope: !2, file: !3, line: 7, type: !26, isLocal: false, isDefinition: true)
+!50 = !DIGlobalVariableExpression(var: !51, expr: !DIExpression())
+!51 = distinct !DIGlobalVariable(name: "r1", scope: !2, file: !3, line: 9, type: !26, isLocal: false, isDefinition: true)
+!52 = !{i32 7, !"Dwarf Version", i32 5}
+!53 = !{i32 2, !"Debug Info Version", i32 3}
+!54 = !{i32 1, !"wchar_size", i32 4}
+!55 = !{i32 8, !"PIC Level", i32 2}
+!56 = !{i32 7, !"uwtable", i32 1}
+!57 = !{i32 7, !"frame-pointer", i32 1}
+!58 = !{!"Homebrew clang version 19.1.7"}
+!59 = distinct !DISubprogram(name: "thread_1", scope: !3, file: !3, line: 11, type: !60, scopeLine: 12, flags: DIFlagPrototyped, spFlags: DISPFlagDefinition, unit: !2, retainedNodes: !62)
+!60 = !DISubroutineType(types: !61)
+!61 = !{!27, !27}
+!62 = !{}
+!63 = !DILocalVariable(name: "unused", arg: 1, scope: !59, file: !3, line: 11, type: !27)
+!64 = !DILocation(line: 11, column: 22, scope: !59)
+!65 = !DILocation(line: 13, column: 2, scope: !59)
+!66 = !DILocation(line: 14, column: 6, scope: !67)
+!67 = distinct !DILexicalBlock(scope: !59, file: !3, line: 14, column: 6)
+!68 = !DILocation(line: 14, column: 6, scope: !59)
+!69 = !DILocation(line: 15, column: 3, scope: !67)
+!70 = !DILocation(line: 16, column: 2, scope: !59)
+!71 = distinct !DISubprogram(name: "thread_2", scope: !3, file: !3, line: 19, type: !60, scopeLine: 20, flags: DIFlagPrototyped, spFlags: DISPFlagDefinition, unit: !2, retainedNodes: !62)
+!72 = !DILocalVariable(name: "unused", arg: 1, scope: !71, file: !3, line: 19, type: !27)
+!73 = !DILocation(line: 19, column: 22, scope: !71)
+!74 = !DILocation(line: 21, column: 2, scope: !71)
+!75 = !DILocation(line: 22, column: 2, scope: !71)
+!76 = !DILocation(line: 23, column: 2, scope: !71)
+!77 = !DILocation(line: 24, column: 2, scope: !71)
+!78 = distinct !DISubprogram(name: "main", scope: !3, file: !3, line: 27, type: !79, scopeLine: 28, spFlags: DISPFlagDefinition, unit: !2, retainedNodes: !62)
+!79 = !DISubroutineType(types: !80)
+!80 = !{!26}
+!81 = !DILocalVariable(name: "t1", scope: !78, file: !3, line: 29, type: !82)
+!82 = !DIDerivedType(tag: DW_TAG_typedef, name: "pthread_t", file: !83, line: 31, baseType: !84)
+!83 = !DIFile(filename: "/usr/local/include/sys/_pthread/_pthread_t.h", directory: "", checksumkind: CSK_MD5, checksum: "086fc6d7dc3c67fdb87e7376555dcfd7")
+!84 = !DIDerivedType(tag: DW_TAG_typedef, name: "__darwin_pthread_t", file: !85, line: 118, baseType: !86)
+!85 = !DIFile(filename: "/usr/local/include/sys/_pthread/_pthread_types.h", directory: "", checksumkind: CSK_MD5, checksum: "4e2ea0e1af95894da0a6030a21a8ebee")
+!86 = !DIDerivedType(tag: DW_TAG_pointer_type, baseType: !87, size: 64)
+!87 = distinct !DICompositeType(tag: DW_TAG_structure_type, name: "_opaque_pthread_t", file: !85, line: 103, size: 65536, elements: !88)
+!88 = !{!89, !91, !101}
+!89 = !DIDerivedType(tag: DW_TAG_member, name: "__sig", scope: !87, file: !85, line: 104, baseType: !90, size: 64)
+!90 = !DIBasicType(name: "long", size: 64, encoding: DW_ATE_signed)
+!91 = !DIDerivedType(tag: DW_TAG_member, name: "__cleanup_stack", scope: !87, file: !85, line: 105, baseType: !92, size: 64, offset: 64)
+!92 = !DIDerivedType(tag: DW_TAG_pointer_type, baseType: !93, size: 64)
+!93 = distinct !DICompositeType(tag: DW_TAG_structure_type, name: "__darwin_pthread_handler_rec", file: !85, line: 57, size: 192, elements: !94)
+!94 = !{!95, !99, !100}
+!95 = !DIDerivedType(tag: DW_TAG_member, name: "__routine", scope: !93, file: !85, line: 58, baseType: !96, size: 64)
+!96 = !DIDerivedType(tag: DW_TAG_pointer_type, baseType: !97, size: 64)
+!97 = !DISubroutineType(types: !98)
+!98 = !{null, !27}
+!99 = !DIDerivedType(tag: DW_TAG_member, name: "__arg", scope: !93, file: !85, line: 59, baseType: !27, size: 64, offset: 64)
+!100 = !DIDerivedType(tag: DW_TAG_member, name: "__next", scope: !93, file: !85, line: 60, baseType: !92, size: 64, offset: 128)
+!101 = !DIDerivedType(tag: DW_TAG_member, name: "__opaque", scope: !87, file: !85, line: 106, baseType: !102, size: 65408, offset: 128)
+!102 = !DICompositeType(tag: DW_TAG_array_type, baseType: !33, size: 65408, elements: !103)
+!103 = !{!104}
+!104 = !DISubrange(count: 8176)
+!105 = !DILocation(line: 29, column: 12, scope: !78)
+!106 = !DILocalVariable(name: "t2", scope: !78, file: !3, line: 29, type: !82)
+!107 = !DILocation(line: 29, column: 16, scope: !78)
+!108 = !DILocation(line: 31, column: 2, scope: !78)
+!109 = !DILocation(line: 32, column: 2, scope: !78)
+!110 = !DILocation(line: 34, column: 15, scope: !78)
+!111 = !DILocation(line: 34, column: 2, scope: !78)
+!112 = !DILocation(line: 35, column: 15, scope: !78)
+!113 = !DILocation(line: 35, column: 2, scope: !78)
+!114 = !DILocation(line: 37, column: 2, scope: !78)
+!115 = !DILocation(line: 0, scope: !78)
+!116 = !DILocation(line: 39, column: 2, scope: !78)
