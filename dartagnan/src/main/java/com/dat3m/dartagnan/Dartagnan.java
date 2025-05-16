@@ -417,7 +417,7 @@ public class Dartagnan extends BaseOptions {
         } else {
             // Litmus-specific output format that matches with Herd7 (as good as it can)
             Expression filterSpec = p.getFilterSpecification();
-            if (filterSpec != null && (!(filterSpec instanceof BoolLiteral bLit) || !bLit.getValue())) {
+            if (!(filterSpec instanceof BoolLiteral bLit) || !bLit.getValue()) {
                 summary.append("Filter ").append(filterSpec).append("\n");
             }
 
