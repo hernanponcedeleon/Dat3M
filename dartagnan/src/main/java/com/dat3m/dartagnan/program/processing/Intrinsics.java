@@ -1320,7 +1320,7 @@ public class Intrinsics {
                 checkArguments(3, call);
                 final Type bytes = toLKMMAccessSize(p1);
                 final String mo = toLKMMMemoryOrder(p2);
-                final Register dummy = call.getFunction().newRegister(bytes);
+                final Register dummy = call.getFunction().newUniqueRegister("__lkmm_temp", bytes);
                 result.add(EventFactory.Linux.newLKMMLoad(dummy, p0, mo));
                 result.add(EventFactory.newLocal(reg, expressions.makeCast(dummy, reg.getType())));
             }
@@ -1338,7 +1338,7 @@ public class Intrinsics {
                 checkArguments(4, call);
                 final Type bytes = toLKMMAccessSize(p1);
                 final String mo = toLKMMMemoryOrder(p3);
-                final Register dummy = call.getFunction().newRegister(bytes);
+                final Register dummy = call.getFunction().newUniqueRegister("__lkmm_temp", bytes);
                 final Expression value = expressions.makeCast(p2, bytes);
                 result.add(EventFactory.Linux.newRMWExchange(p0, dummy, value, mo));
                 result.add(EventFactory.newLocal(reg, expressions.makeCast(dummy, reg.getType())));
@@ -1347,7 +1347,7 @@ public class Intrinsics {
                 checkArguments(6, call);
                 final Type bytes = toLKMMAccessSize(p1);
                 final String mo = toLKMMMemoryOrder(p4);
-                final Register dummy = call.getFunction().newRegister(bytes);
+                final Register dummy = call.getFunction().newUniqueRegister("__lkmm_temp", bytes);
                 final Expression value = expressions.makeCast(p2, bytes);
                 final Expression expectation = expressions.makeCast(p3, bytes);
                 result.add(EventFactory.Linux.newRMWCompareExchange(p0, dummy, expectation, value, mo));
@@ -1358,7 +1358,7 @@ public class Intrinsics {
                 final Type bytes = toLKMMAccessSize(p1);
                 final String mo = toLKMMMemoryOrder(p3);
                 final IntBinaryOp op = toLKMMOperation(p4);
-                final Register dummy = call.getFunction().newRegister(bytes);
+                final Register dummy = call.getFunction().newUniqueRegister("__lkmm_temp", bytes);
                 final Expression value = expressions.makeCast(p2, bytes);
                 result.add(EventFactory.Linux.newRMWFetchOp(p0, dummy, value, op, mo));
                 result.add(EventFactory.newLocal(reg, expressions.makeCast(dummy, reg.getType())));
@@ -1368,7 +1368,7 @@ public class Intrinsics {
                 final Type bytes = toLKMMAccessSize(p1);
                 final String mo = toLKMMMemoryOrder(p3);
                 final IntBinaryOp op = toLKMMOperation(p4);
-                final Register dummy = call.getFunction().newRegister(bytes);
+                final Register dummy = call.getFunction().newUniqueRegister("__lkmm_temp", bytes);
                 final Expression value = expressions.makeCast(p2, bytes);
                 result.add(EventFactory.Linux.newRMWOpReturn(p0, dummy, value, op, mo));
                 result.add(EventFactory.newLocal(reg, expressions.makeCast(dummy, reg.getType())));
