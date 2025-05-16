@@ -1,0 +1,12 @@
+(*
+    Prefix-closedness of beforeIP
+    - This assumes that "barrier" is defined by the including WMM
+*)
+empty ([domain(barrier;beforeIP)] \ beforeIP)
+
+(*
+    Global ordering
+    - This assumes that "hb" is defined by the including WMM
+*)
+// Unclear if needed
+empty ((afterIP;hb+;rfe) & ih)

@@ -1,0 +1,5 @@
+(*
+    Prefix-closedness of beforeIPs
+    - This assumes that "barrier" is defined by the including WMM
+*)
+empty ((barrier;beforeIPs) \ beforeIPs)

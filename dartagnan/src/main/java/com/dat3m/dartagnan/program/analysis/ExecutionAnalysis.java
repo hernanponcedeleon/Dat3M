@@ -10,6 +10,8 @@ import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 
 import java.util.Comparator;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 public interface ExecutionAnalysis {
 
@@ -34,12 +36,16 @@ class DefaultExecutionAnalysis implements ExecutionAnalysis {
     private final BranchEquivalence eq;
     private final ProgressModel.Hierarchy progressModel;
     private final Thread lowestIdThread; // For HSA
+    private final Set<Thread> interruptableThreads; // To weaken progress on interruptible threads
 
     public DefaultExecutionAnalysis(Program program, BranchEquivalence eq, ProgressModel.Hierarchy progressModel) {
         this.eq = eq;
         this.progressModel = progressModel;
 
         this.lowestIdThread = program.getThreads().stream().min(Comparator.comparingInt(Thread::getId)).get();
+        this.interruptableThreads = program.getThreads().stream()
+                .filter(t -> t.getThreadType() == Thread.Type.INTERRUPT_HANDLER)
+                .map(t -> t.getEntry().getCreator().getThread()).collect(Collectors.toSet());
     }
 
     private boolean isSameThread(Event a, Event b) {
@@ -65,6 +71,17 @@ class DefaultExecutionAnalysis implements ExecutionAnalysis {
 
         if (!progressModel.isUniform()) {
             // For mixed-hierarchy models, we only rely on strongest implication.
+            return strongestImplication; // FALSE
+        }
+
+        if (interruptableThreads.contains(implied.getThread())) {
+            // Interruptible threads have possibly weak progress
+            return strongestImplication; // FALSE
+        }
+
+        if (!isSameThread(implied, start) && (start.getThread().getThreadType() == Thread.Type.INTERRUPT_HANDLER
+                || implied.getThread().getThreadType() == Thread.Type.INTERRUPT_HANDLER)) {
+            // Interrupt handlers might never start
             return strongestImplication; // FALSE
         }
 
