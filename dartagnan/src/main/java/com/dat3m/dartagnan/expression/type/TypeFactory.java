@@ -109,12 +109,17 @@ public final class TypeFactory {
     }
 
     public ArrayType getArrayType(Type element) {
-        return typeNormalizer.normalize(new ArrayType(element, -1));
+        return typeNormalizer.normalize(new ArrayType(element, -1, getMemorySizeInBytes(element)));
+    }
+
+    public ArrayType getArrayType(Type element, int size, int alignment) {
+        checkArgument(0 <= size, "Negative element count in array.");
+        return typeNormalizer.normalize(new ArrayType(element, size, alignment));
     }
 
     public ArrayType getArrayType(Type element, int size) {
         checkArgument(0 <= size, "Negative element count in array.");
-        return typeNormalizer.normalize(new ArrayType(element, size));
+        return typeNormalizer.normalize(new ArrayType(element, size, getMemorySizeInBytes(element)));
     }
 
     public IntegerType getArchType() {
@@ -142,7 +147,7 @@ public final class TypeFactory {
         if (type instanceof ArrayType arrayType) {
             if (arrayType.hasKnownNumElements()) {
                 Type elType = arrayType.getElementType();
-                return getMemorySizeInBytes(elType) * arrayType.getNumElements();
+                return paddedSize(getMemorySizeInBytes(elType) * arrayType.getNumElements(), arrayType.getAlignment());
             }
             return -1;
         }

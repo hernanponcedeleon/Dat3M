@@ -88,7 +88,7 @@ public class VisitorOpsMemory extends SpirvBaseVisitor<Event> {
             builder.addExpression(resultId, expressions.makeConstruct(type, registers));
         }
         if (type instanceof ArrayType arrayType) {
-            builder.addExpression(resultId, expressions.makeArray(arrayType.getElementType(), registers, true));
+            builder.addExpression(resultId, expressions.makeArray(arrayType, registers));
         }
         Set<String> tags = parseMemoryAccessTags(ctx.memoryAccess());
         checkAndPropagateTags(events, tags, Tag.Spirv.MEM_AVAILABLE, ctx.pointer().getText(), "OpLoad");
@@ -167,8 +167,8 @@ public class VisitorOpsMemory extends SpirvBaseVisitor<Event> {
                 value = builder.makeUndefinedValue(type);
             }
             pType = types.getScopedPointerType(pType.getScopeId(), value.getType());
-            Integer alignmentValue = alignment.getValue(id, pType);
-            ScopedPointerVariable pointer = builder.allocateMemory(id, pType, value, alignmentValue);
+            alignment.validateAlignment(id, pType);
+            ScopedPointerVariable pointer = builder.allocateMemory(id, pType, value);
             validateVariableStorageClass(pointer, ctx.storageClass().getText());
             builder.addExpression(id, pointer);
             return null;

@@ -49,6 +49,27 @@ public class SpirvAssertionsTest {
         return Arrays.asList(new Object[][]{
                 {"vector-aligned.spvasm", 1, PASS},
                 {"idx-overflow.spvasm", 1, PASS},
+
+                {"alignment1-array-global.spvasm", 9, PASS},
+                {"alignment1-array-local.spvasm", 9, PASS},
+                {"alignment1-array-pointer.spvasm", 9, PASS},
+
+                {"alignment1-struct-global.spvasm", 9, PASS},
+                {"alignment1-struct-local.spvasm", 9, PASS},
+                {"alignment1-struct-pointer.spvasm", 9, PASS},
+
+                {"alignment2-struct-global.spvasm", 17, PASS},
+                {"alignment2-struct-local.spvasm", 17, PASS},
+                {"alignment2-struct-pointer.spvasm", 17, PASS},
+
+                {"alignment3-struct-global.spvasm", 9, PASS},
+                {"alignment3-struct-local.spvasm", 9, PASS},
+                {"alignment3-struct-pointer.spvasm", 9, PASS},
+
+                {"alignment4-struct-global.spvasm", 25, PASS},
+                {"alignment4-struct-local.spvasm", 25, PASS},
+                {"alignment4-struct-pointer.spvasm", 25, PASS},
+
                 {"alignment1.spvasm", 9, PASS},
                 {"alignment2.spvasm", 1, PASS},
                 {"alignment3.spvasm", 1, PASS},

@@ -61,7 +61,12 @@ public class VisitorOpsType extends SpirvBaseVisitor<Type> {
         String elementTypeName = ctx.componentTypeIdRef().getText();
         Type elementType = builder.getType(elementTypeName);
         int size = Integer.parseInt(ctx.componentCountLiteralInteger().getText());
-        Type type = types.getArrayType(elementType, size);
+        Type type;
+        if (size == 3) {
+            type = types.getArrayType(elementType, size, types.getMemorySizeInBytes(elementType) * 4);
+        } else {
+            type = types.getArrayType(elementType, size);
+        }
         return builder.addType(id, type);
     }
 

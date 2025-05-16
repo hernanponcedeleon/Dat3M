@@ -96,7 +96,7 @@ public class BuiltIn implements Decoration {
         operands.add(expressions.makeValue(x, elementType));
         operands.add(expressions.makeValue(y, elementType));
         operands.add(expressions.makeValue(z, elementType));
-        return expressions.makeArray(elementType, operands, true);
+        return expressions.makeArray((ArrayType) type, operands);
     }
 
     private Expression makeScalar(String id, Type type, int x) {

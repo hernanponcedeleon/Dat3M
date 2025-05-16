@@ -34,6 +34,8 @@ public class VisitorExtensionOpenClStd extends VisitorExtension<Expression> {
     public Expression visitOpencl_s_add_sat(SpirvParser.Opencl_s_add_satContext ctx) {
         Expression x = getExpression(ctx.x().getText());
         Expression y = getExpression(ctx.y().getText());
+
+        // TODO: Left and right should have equal types
         if (x.getType() instanceof IntegerType && y.getType() instanceof IntegerType) {
             return expressions.makeAdd(x, y);
         } else if (x.getType() instanceof ArrayType xType && y.getType() instanceof ArrayType yType) {
@@ -47,7 +49,7 @@ public class VisitorExtensionOpenClStd extends VisitorExtension<Expression> {
                         expressions.makeExtract(y, i)
                 ));
             }
-            return expressions.makeArray(xType.getElementType(), sums, true);
+            return expressions.makeArray(xType, sums);
         }
         throw new ParsingException("Unsupported types for s_add_sat: %s and %s", x.getType(), y.getType());
     }
@@ -69,7 +71,7 @@ public class VisitorExtensionOpenClStd extends VisitorExtension<Expression> {
                         expressions.makeExtract(y, i)
                 ));
             }
-            return expressions.makeArray(xType.getElementType(), subs, true);
+            return expressions.makeArray(xType, subs);
         }
         throw new ParsingException("Unsupported types for s_sub_sat: %s and %s", x.getType(), y.getType());
     }

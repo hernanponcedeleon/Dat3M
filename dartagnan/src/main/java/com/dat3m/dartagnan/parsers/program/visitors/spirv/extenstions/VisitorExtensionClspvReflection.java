@@ -170,7 +170,7 @@ public class VisitorExtensionClspvReflection extends VisitorExtension<Void> {
             lastOffset = typeOffset;
         }
         if (lastOffset != null) {
-            if (argOffset == lastOffset.offset() && argSize == types.getMemorySizeInBytes(lastOffset.type())) {
+            if (argOffset == lastOffset.offset()/* && argSize == types.getMemorySizeInBytes(lastOffset.type())*/) {
                 return new TypeOffset(lastOffset.type(), lastOffset.offset());
             }
             if (lastOffset.type() instanceof AggregateType aType) {

@@ -96,7 +96,7 @@ public class VisitorOpsComposite extends SpirvBaseVisitor<Void> {
                 throw new ParsingException("Index %s out of bounds in OpVectorShuffle '%s'", index, id);
             }
         }
-        builder.addExpression(id, expressions.makeArray(aType1.getElementType(), concat, true));
+        builder.addExpression(id, expressions.makeArray(aType1, concat));
         return null;
     }
 
@@ -126,7 +126,7 @@ public class VisitorOpsComposite extends SpirvBaseVisitor<Void> {
                 }
                 elements.add(elem);
             }
-            Expression array = getArray(arrayType.getElementType(), elements, id);
+            Expression array = getArray(arrayType, elements, id);
             if (!TypeFactory.isStaticTypeOf(array.getType(), type)) {
                 throw new ParsingException(String.format("There must be exactly one constituent for each top-level element of the result " +
                         "(\"flattening\" vectors is not yet supported) and their types should match for '%s'", id));
@@ -169,9 +169,9 @@ public class VisitorOpsComposite extends SpirvBaseVisitor<Void> {
         }
     }
 
-    private Expression getArray(Type eType, List<Expression> elements, String id) {
+    private Expression getArray(ArrayType type, List<Expression> elements, String id) {
         try {
-            return expressions.makeArray(eType, elements, true);
+            return expressions.makeArray(type, elements);
         } catch (Exception e) {
             throw new ParsingException(String.format("%s Offending id: '%s'", e.getMessage(), id));
         }

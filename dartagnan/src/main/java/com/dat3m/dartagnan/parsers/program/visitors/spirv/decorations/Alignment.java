@@ -24,20 +24,18 @@ public class Alignment implements Decoration {
         mapping.put(id, alignment);
     }
 
-    public Integer getValue(String id, Type type) {
+    public void validateAlignment(String id, Type type) {
         Integer value = mapping.get(id);
         if (value != null) {
             if (type instanceof ScopedPointerType pType) {
                 type = pType.getPointedType();
             }
             if (type instanceof ArrayType aType) {
-                if (types.getMemorySizeInBytes(aType.getElementType()) % value != 0) {
-                    return value;
-                }
-            } else if (types.getMemorySizeInBytes(type) % value != 0) {
+                type = aType.getElementType();
+            }
+            if (types.getMemorySizeInBytes(type) % value != 0) {
                 throw new ParsingException("Unsupported alignment for element '%s'", id);
             }
         }
-        return null;
     }
 }

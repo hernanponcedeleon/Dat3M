@@ -220,6 +220,37 @@ public class VisitorOpsMemoryTest {
             assertEquals(VisitorOpsMemoryTest.types.getMemorySizeInBytes(types[i]), pointer.getAddress().getKnownSize());
         }
     }
+/*
+    @Test
+    public void testAlignedVariable() {
+        // given
+        String input = """
+            %v1 = OpVariable %int_ptr Uniform
+            %v2 = OpVariable %arr_ptr Uniform
+            """;
+
+        builder.mockIntType("%int", 128);
+        builder.mockVectorType("%arr", "%int", 3);
+        builder.mockPtrType("%int_ptr", "%int", "Uniform");
+        builder.mockPtrType("%arr_ptr", "%arr", "Uniform");
+        builder.mockPointerAlignment("%v1", 32);
+        builder.mockPointerAlignment("%v2", 64);
+
+
+        // when
+        parse(input);
+
+        // then
+        ScopedPointerVariable v1 = (ScopedPointerVariable) builder.getExpression("%v1");
+        assertNotNull(v1);
+        assertEquals(32, v1.getAddress().getKnownAlignment());
+        assertEquals(256, ((IntegerType) v1.getInnerType()).getBitWidth());
+        ScopedPointerVariable v2 = (ScopedPointerVariable) builder.getExpression("%v2");
+        assertNotNull(v2);
+        assertEquals(64, TypeFactory.getInstance().getMemorySizeInBytes(v2.getInnerType()));
+        assertEquals(4, ((ArrayType) v2.getInnerType()).getNumElements());
+        assertEquals(3, ((ArrayType) v2.getInnerType()).getPaddingStart());
+    }*/
 
     @Test
     public void testInitializedVariableConstant() {
@@ -699,8 +730,8 @@ public class VisitorOpsMemoryTest {
         builder.mockPtrType("%v3_ptr", "%v3", "Uniform");
         builder.mockPtrType("%i_ptr", "%int", "Uniform");
 
-        Expression i0 = builder.mockConstant("%0", "%i_ptr", 0);
-        Expression i1 = builder.mockConstant("%1", "%i_ptr", 1);
+        Expression i0 = builder.mockConstant("%0", "%int", 0);
+        Expression i1 = builder.mockConstant("%1", "%int", 1);
         builder.mockConstant("%a1", "%v1", List.of("%1", "%0"));
         builder.mockConstant("%a2", "%v2", List.of("%a1", "%a1"));
         builder.mockConstant("%a3", "%v3", List.of("%a2", "%a2"));

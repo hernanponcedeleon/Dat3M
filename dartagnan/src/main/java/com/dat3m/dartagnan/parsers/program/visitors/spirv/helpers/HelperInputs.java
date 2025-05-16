@@ -43,7 +43,13 @@ public class HelperInputs {
                 for (int i = 0; i < actualSize; i++) {
                     elements.add(castInput(String.format("%s[%d]", id, i), elementType, aValue.getOperands().get(i)));
                 }
-                return expressions.makeArray(elements.get(0).getType(), elements, true);
+                if (!elements.isEmpty()) {
+                    elementType = elements.get(0).getType();
+                }
+                ArrayType aType = type.getAlignment() > 0
+                        ? types.getArrayType(elementType, actualSize, type.getAlignment())
+                        : types.getArrayType(elementType, actualSize);
+                return expressions.makeArray(aType, elements);
             }
         }
         throw new ParsingException(errorMismatchingType(id, type, value.getType()));
