@@ -6,10 +6,15 @@ import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.Type;
 import com.dat3m.dartagnan.expression.type.AggregateType;
 import com.dat3m.dartagnan.expression.type.ArrayType;
+import com.dat3m.dartagnan.expression.type.FunctionType;
+import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.expression.type.BooleanType;
 import com.dat3m.dartagnan.expression.type.TypeOffset;
 import com.dat3m.dartagnan.program.event.Event;
+import com.dat3m.dartagnan.program.event.EventFactory;
+import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.memory.Memory;
+import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.dat3m.dartagnan.program.misc.NonDetValue;
 import com.google.common.base.Preconditions;
 
@@ -17,6 +22,9 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 public class Program {
+
+    private static final TypeFactory types = TypeFactory.getInstance();
+    private static final FunctionType initThreadType = types.getFunctionType(types.getVoidType(), List.of());
 
     public enum SourceLanguage { LITMUS, LLVM, SPV }
 
@@ -36,6 +44,7 @@ public class Program {
     private boolean isCompiled;
     private final SourceLanguage format;
 
+    private int nextThreadId = 0;
     private int nextConstantId = 0;
 
     // ------------------------
@@ -127,6 +136,7 @@ public class Program {
     public void addThread(Thread t) {
         threads.add(t);
         t.setProgram(this);
+        nextThreadId = Math.max(nextThreadId, t.getId()) + 1;
     }
 
     public void addFunction(Function func) {
@@ -192,6 +202,22 @@ public class Program {
     public List<Event> getThreadEventsWithAllTags(String... tags) {
         final List<String> tagList = Arrays.asList(tags);
         return getThreadEvents().stream().filter(e -> e.getTags().containsAll(tagList)).collect(Collectors.toList());
+    }
+
+    public void addInit(MemoryObject object, int offset) {
+        final boolean isC11 = arch == Arch.C11 || arch == Arch.OPENCL;
+        final List<String> paramNames = List.of();
+        // NOTE: We use different names to avoid symmetry detection treating all inits as symmetric.
+        final String threadName = "Init_" + nextThreadId;
+        final Thread thread = new Thread(threadName, initThreadType, paramNames, nextThreadId,
+                EventFactory.newThreadStart(null));
+        final Event init = EventFactory.newInit(object, offset);
+        thread.append(init);
+        if (isC11) {
+            init.addTags(Tag.C11.NONATOMIC);
+        }
+        thread.append(EventFactory.newLabel("END_OF_T" + thread.getId()));
+        addThread(thread);
     }
 
     // Unrolling

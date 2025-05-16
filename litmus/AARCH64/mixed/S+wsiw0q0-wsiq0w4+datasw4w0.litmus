@@ -1,0 +1,21 @@
+AArch64 S+wsiw0q0-wsiq0w4+datasw4w0
+"Wsiw0q0 Wsiq0w4 Rfew4w4 DpDatasWw4w0 Wsew0w0"
+Cycle=Wsew0w0 Wsiw0q0 Wsiq0w4 Rfew4w4 DpDatasWw4w0
+Relax=[w0,Wsi,q0,Wsi,w4]
+Safe=Rfe Wse DpDatasW w0 w4
+Generator=diy7 (version 7.50+1(dev))
+Prefetch=
+Com=Rf Ws
+Orig=Wsiw0q0 Wsiq0w4 Rfew4w4 DpDatasWw4w0 Wsew0w0
+{
+uint64_t x; uint64_t 1:X0;
+
+0:X0=0x1010101; 0:X1=x; 0:X2=0x202020202020202; 0:X3=0x3030303;
+1:X1=x; 1:X2=0x4040404;
+}
+ P0             | P1             ;
+ STR W0,[X1]    | LDR W0,[X1,#4] ;
+ STR X2,[X1]    | EOR X3,X0,X0   ;
+ STR W3,[X1,#4] | ADD W3,W3,W2   ;
+                | STR W3,[X1]    ;
+exists (1:X0=0x3030303 /\ x=0x303030302020202)

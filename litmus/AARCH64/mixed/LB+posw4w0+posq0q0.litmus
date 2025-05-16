@@ -1,0 +1,18 @@
+AArch64 LB+posw4w0+posq0q0
+"PosRWw4w0 Rfew0q0 PosRWq0q0 Rfeq0w4"
+Cycle=Rfew0q0 PosRWq0q0 Rfeq0w4 PosRWw4w0
+Relax=
+Safe=Rfew0P PosRWw4P Rfeq0P PosRWq0P
+Prefetch=
+Com=Rf Rf
+Orig=PosRWw4w0 Rfew0q0 PosRWq0q0 Rfeq0w4
+{
+uint64_t x; uint64_t 1:X0; uint64_t 0:X0;
+
+0:X1=x; 0:X2=0x1010101;
+1:X1=x; 1:X2=0x202020202020202;
+}
+ P0             | P1          ;
+ LDR W0,[X1,#4] | LDR X0,[X1] ;
+ STR W2,[X1]    | STR X2,[X1] ;
+locations [x;0:X0;1:X0;]

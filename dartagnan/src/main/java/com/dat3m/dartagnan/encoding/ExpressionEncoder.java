@@ -443,6 +443,37 @@ public class ExpressionEncoder {
             }
         }
 
+        @Override
+        public TypedFormula<IntegerType, ?> visitIntConcat(IntConcat expr) {
+            Preconditions.checkArgument(!expr.getOperands().isEmpty());
+
+            if (context.useIntegers) {
+                throw new UnsupportedOperationException("Cannot encode bitwise concatenation on mathematical integers.");
+            } else {
+                final BitvectorFormulaManager bvmgr = bitvectorFormulaManager();
+                final List<Expression> operands = expr.getOperands();
+
+                BitvectorFormula enc = (BitvectorFormula) encodeIntegerExpr(operands.get(0)).formula();
+                for (Expression op : operands.subList(1, operands.size())) {
+                    enc = bvmgr.concat((BitvectorFormula) encodeIntegerExpr(op).formula(), enc);
+                }
+                return new TypedFormula<>(expr.getType(), enc);
+            }
+        }
+
+        @Override
+        public TypedFormula<IntegerType, ?> visitIntExtract(IntExtract expr) {
+            if (context.useIntegers) {
+                // TODO: We could support this with modulo operations
+                throw new UnsupportedOperationException("Cannot extract bits from mathematical integers.");
+            } else {
+                final BitvectorFormulaManager bvmgr = bitvectorFormulaManager();
+                final BitvectorFormula operandEnc = (BitvectorFormula) encodeIntegerExpr(expr.getOperand()).formula();
+                final BitvectorFormula extract = bvmgr.extract(operandEnc, expr.getHighBit(), expr.getLowBit());
+                return new TypedFormula<IntegerType, Formula>(expr.getType(), extract);
+            }
+        }
+
         // ====================================================================================
         // Aggregates
 
