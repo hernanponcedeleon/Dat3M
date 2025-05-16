@@ -48,7 +48,7 @@ public class VisitorOpsConversion extends SpirvBaseVisitor<Void> {
 
         Expression convertedExpr = expressions.makeCast(operandExpr, resultType);
         Register reg = builder.addRegister(id, typeId);
-        builder.addEvent(new Local(reg, convertedExpr));
+        builder.addEvent(EventFactory.newLocal(reg, convertedExpr));
         return null;
     }
 
@@ -62,7 +62,21 @@ public class VisitorOpsConversion extends SpirvBaseVisitor<Void> {
         Expression pointerExpr = builder.getExpression(ctx.pointer().getText());
         Expression convertedPointer = expressions.makeCast(pointerExpr, builder.getType(typeId), false);
         Register reg = builder.addRegister(id, typeId);
-        builder.addEvent(new Local(reg, convertedPointer));
+        builder.addEvent(EventFactory.newLocal(reg, convertedPointer));
+        return null;
+    }
+
+    @Override
+    public Void visitOpConvertUToPtr(SpirvParser.OpConvertUToPtrContext ctx) {
+        String id = ctx.idResult().getText();
+        String typeId = ctx.idResultType().getText();
+        if (!(builder.getType(typeId) instanceof ScopedPointerType)) {
+            throw new ParsingException("Type '%s' is not a pointer type for id '%s'", typeId, id);
+        }
+        Expression integerExpr = builder.getExpression(ctx.integerValue().getText());
+        Expression convertedInteger = expressions.makeCast(integerExpr, builder.getType(typeId), false);
+        Register reg = builder.addRegister(id, typeId);
+        builder.addEvent(EventFactory.newLocal(reg, convertedInteger));
         return null;
     }
 
@@ -122,13 +136,14 @@ public class VisitorOpsConversion extends SpirvBaseVisitor<Void> {
         }
         Expression convertedExpr = expressions.makeCast(operandExpr, targetType, isSigned);
         Register reg = builder.addRegister(id, typeId);
-        builder.addEvent(new Local(reg, convertedExpr));
+        builder.addEvent(EventFactory.newLocal(reg, convertedExpr));
     }
 
     public Set<String> getSupportedOps() {
         return Set.of(
                 "OpBitcast",
                 "OpConvertPtrToU",
+                "OpConvertUToPtr",
                 "OpPtrCastToGeneric",
                 "OpUConvert",
                 "OpSConvert"
