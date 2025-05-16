@@ -13,7 +13,7 @@ main
     ;
 
 variableDeclaratorList
-    :   LBrace (globalDeclarator (Semi comment? globalDeclarator?)* Semi?)? RBrace Semi?
+    : LBrace (globalDeclarator Semi comment?)* (globalDeclarator comment?)? RBrace Semi?
     ;
 
 globalDeclarator
