@@ -36,7 +36,7 @@ int main()
 	pthread_join(t1, NULL);
 	pthread_join(t2, NULL);
 
-	assert(!(r0_0 == 1 && r1_0 == 0 && r0_1 == 1 && r1_1 == 0 && READ_ONCE(x) == 1 && READ_ONCE(y) == 1));
+	assert(!(r0_0 == 1 && r1_0 == 0 && r0_1 == 1 && r1_1 == 0 && atomic_read(&x) == 1 && atomic_read(&y) == 1));
 
 	return 0;
 }
