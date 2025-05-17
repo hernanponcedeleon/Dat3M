@@ -5,6 +5,7 @@ import com.dat3m.dartagnan.expression.integers.IntBinaryExpr;
 import com.dat3m.dartagnan.expression.integers.IntLiteral;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
+import com.dat3m.dartagnan.program.analysis.SyntacticContextAnalysis;
 import com.dat3m.dartagnan.program.event.MemoryEvent;
 import com.dat3m.dartagnan.program.event.RegWriter;
 import com.dat3m.dartagnan.program.event.core.Local;
@@ -12,6 +13,8 @@ import com.dat3m.dartagnan.program.event.core.MemoryCoreEvent;
 import com.dat3m.dartagnan.program.event.core.Store;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.google.common.base.Preconditions;
+import com.google.common.base.Supplier;
+import com.google.common.base.Suppliers;
 import com.google.common.base.Verify;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
@@ -38,6 +41,9 @@ import static com.dat3m.dartagnan.configuration.Alias.*;
  */
 public class AndersenAliasAnalysis implements AliasAnalysis {
 
+    // For providing helpful error messages, this analysis prints call-stack and loop information for events.
+    private final Supplier<SyntacticContextAnalysis> synContext;
+
     ///When a pointer set gains new content, it is added to this queue
     private final Queue<Object> variables = new ArrayDeque<>();
     ///Super set of all pointer sets in this analysis
@@ -52,6 +58,7 @@ public class AndersenAliasAnalysis implements AliasAnalysis {
 
     private AndersenAliasAnalysis(Program program) {
         Preconditions.checkArgument(program.isCompiled(), "The program must be compiled first.");
+        synContext = Suppliers.memoize(() -> SyntacticContextAnalysis.newInstance(program));
         ImmutableSet.Builder<Location> builder = new ImmutableSet.Builder<>();
         for (MemoryObject a : program.getMemory().getObjects()) {
             if (!a.hasKnownSize()) {
@@ -257,6 +264,7 @@ public class AndersenAliasAnalysis implements AliasAnalysis {
             }
         }
         if (addresses.isEmpty()) {
+            logger.warn("Empty pointer set for {}", synContext.get().getContextInfo(e));
             addresses = maxAddressSet;
         }
         eventAddressSpaceMap.put(e, ImmutableSet.copyOf(addresses));

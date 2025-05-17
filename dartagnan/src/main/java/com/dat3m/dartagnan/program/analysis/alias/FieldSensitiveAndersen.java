@@ -9,12 +9,15 @@ import com.dat3m.dartagnan.expression.integers.IntUnaryExpr;
 import com.dat3m.dartagnan.expression.misc.ITEExpr;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
+import com.dat3m.dartagnan.program.analysis.SyntacticContextAnalysis;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.MemoryEvent;
 import com.dat3m.dartagnan.program.event.RegWriter;
 import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.event.core.threading.ThreadArgument;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
+import com.google.common.base.Supplier;
+import com.google.common.base.Suppliers;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import org.sosy_lab.common.configuration.Configuration;
@@ -45,6 +48,9 @@ import static com.dat3m.dartagnan.configuration.Alias.*;
  */
 public class FieldSensitiveAndersen implements AliasAnalysis {
 
+    // For providing helpful error messages, this analysis prints call-stack and loop information for events.
+    private final Supplier<SyntacticContextAnalysis> synContext;
+
     ///When a pointer set gains new content, it is added to this queue
     private final LinkedHashSet<Object> variables = new LinkedHashSet<>();
 
@@ -61,12 +67,14 @@ public class FieldSensitiveAndersen implements AliasAnalysis {
     // ================================ Construction ================================
 
     public static FieldSensitiveAndersen fromConfig(Program program, Configuration config) throws InvalidConfigurationException {
-        var analysis = new FieldSensitiveAndersen();
+        var analysis = new FieldSensitiveAndersen(program);
         analysis.run(program);
         return analysis;
     }
 
-    private FieldSensitiveAndersen() { }
+    private FieldSensitiveAndersen(Program p) {
+        synContext = Suppliers.memoize(() -> SyntacticContextAnalysis.newInstance(p));
+    }
 
     // ================================ API ================================
 
@@ -188,6 +196,10 @@ public class FieldSensitiveAndersen implements AliasAnalysis {
         addresses.addAll(collector.address());
         for (Offset<Register> r : collector.register()) {
             addresses.addAll(fields(getAddresses(r.base), r.offset, r.alignment));
+        }
+        Set<Location> set = addresses.build();
+        if (set.isEmpty()) {
+            logger.warn("Empty pointer set for {}", synContext.get().getContextInfo(e));
         }
         eventAddressSpaceMap.put(e, addresses.build());
     }
