@@ -16,8 +16,8 @@ let ihOrder = IHStart;rf^-1;ihOrderPre;rf;IHStart
 let beforeIPs = (new() & (int;create2Ih)) | create2Ih
 // IPs cannot occur when interrupts are disabled.
 let beforeIPs = beforeIPs | ([DISABLE_INTERRUPT];po-until(ENABLE_INTERRUPT))^-1;beforeIPs
-// IPs respect ihOrder
-let beforeIPs = beforeIPs;ihOrder?
+// IPs respect dependencies and ihOrder
+let beforeIPs = (addr | ctrl | data | po-loc)?;beforeIPs;ihOrder?
 
 let afterIPs = ((int;create2Ih) \ beforeIPs)^-1
 
@@ -31,8 +31,6 @@ let po_orig = po
 
 let poReorder = beforeIPs;afterIPs
 let poExt = beforeIPExt | afterIPExt | ihOrderExt
-// TODO: With "po \ poReorder^-1", the compiler barrier should ensure that po-loc and dep are preserved.
-//  Otherwise, we get SC-per-loc violations. We can also ensure this here already?
 let po = (po \ poReorder^-1) | poReorder | poExt
 let int = int | (it2ih^-1)?;it2ih | (IW * M)
 let ext = ext \ int
