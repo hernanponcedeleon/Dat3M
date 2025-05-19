@@ -25,7 +25,7 @@ typedef enum __LKMM_operation {
 } __LKMM_operation;
 
 typedef typeof(sizeof(int)) __LKMM_size_t;
-typedef long long __LKMM_int_t;
+typedef intmax_t __LKMM_int_t;
 
 /* Intrinsics defined by the verifier */
 extern __LKMM_int_t __LKMM_load(const volatile void*, __LKMM_size_t, __LKMM_memory_order);
