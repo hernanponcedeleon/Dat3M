@@ -119,10 +119,10 @@ class VisitorCat extends CatBaseVisitor<Object> {
             boolean negate = ctx.negate != null ^ ctx.undef != null;
             boolean flag = ctx.flag != null || ctx.undef != null;
             Axiom axiom = (Axiom) constructor.newInstance(r, negate, flag);
-            if (ctx.undef != null) {
-                axiom.setName(String.format("%s*undef*", ctx.NAME() != null ? ctx.NAME().toString() + " as " : ""));
-            } else if (ctx.NAME() != null) {
-                axiom.setName(ctx.NAME().toString());
+            String name = ctx.NAME() != null ? ctx.NAME().toString() : "";
+            name += ctx.undef != null ? " (*undef*)" : "";
+            if (!name.isEmpty()) {
+                axiom.setName(name);
             }
             wmm.addConstraint(axiom);
         } catch (NoSuchMethodException | InstantiationException | IllegalAccessException |
