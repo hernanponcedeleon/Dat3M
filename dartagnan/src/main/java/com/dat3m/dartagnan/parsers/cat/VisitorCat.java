@@ -120,7 +120,7 @@ class VisitorCat extends CatBaseVisitor<Object> {
             boolean flag = ctx.flag != null || ctx.undef != null;
             Axiom axiom = (Axiom) constructor.newInstance(r, negate, flag);
             if (ctx.undef != null) {
-                axiom.setName("*undef*");
+                axiom.setName(String.format("%s*undef*", ctx.NAME() != null ? ctx.NAME().toString() + " as " : ""));
             } else if (ctx.NAME() != null) {
                 axiom.setName(ctx.NAME().toString());
             }
