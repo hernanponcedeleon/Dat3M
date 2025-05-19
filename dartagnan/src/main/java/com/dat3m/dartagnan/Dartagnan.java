@@ -7,6 +7,8 @@ import com.dat3m.dartagnan.encoding.EncodingContext;
 import com.dat3m.dartagnan.encoding.IREvaluator;
 import com.dat3m.dartagnan.encoding.ProverWithTracker;
 import com.dat3m.dartagnan.expression.ExpressionPrinter;
+import com.dat3m.dartagnan.expression.Expression;
+import com.dat3m.dartagnan.expression.booleans.BoolLiteral;
 import com.dat3m.dartagnan.parsers.cat.ParserCat;
 import com.dat3m.dartagnan.parsers.program.ProgramParser;
 import com.dat3m.dartagnan.parsers.witness.ParserWitness;
@@ -414,8 +416,9 @@ public class Dartagnan extends BaseOptions {
             summary.append(result).append("\n");
         } else {
             // Litmus-specific output format that matches with Herd7 (as good as it can)
-            if (p.getFilterSpecification() != null) {
-                summary.append("Filter ").append(p.getFilterSpecification()).append("\n");
+            Expression filterSpec = p.getFilterSpecification();
+            if (!(filterSpec instanceof BoolLiteral bLit) || !bLit.getValue()) {
+                summary.append("Filter ").append(filterSpec).append("\n");
             }
 
             // NOTE: We cannot produce an output that matches herd7 when checking for both program spec and cat properties.
