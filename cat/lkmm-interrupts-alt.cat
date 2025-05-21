@@ -30,7 +30,11 @@ let Marked = (~M) | IW | Once | Release | Acquire | (RMW & R) | (RMW & W) |
 		LKR | LKW | UL | LF | RL | RU | Srcu-lock | Srcu-unlock
 let Plain = M \ Marked
 
-(* interrupt model *)
+(** Add interrupts **)
+let CBs = Barrier | Rmb | Wmb | Mb | Sync-rcu | Sync-srcu |
+                 Before-atomic | After-atomic | Acquire | Release |
+                 Rcu-lock | Rcu-unlock | Srcu-lock | Srcu-unlock
+let cppo = po?;[CBs];po? | [Marked];po;[Marked]
 include "interrupts-defs.cat"
 
 
@@ -184,17 +188,15 @@ irreflexive rb as rcu
  * acyclic xb as executes-before
  *)
 
-let CBs = Barrier | Rmb | Wmb | Mb | Sync-rcu | Sync-srcu |
-                Before-atomic | After-atomic | Acquire | Release |
-                Rcu-lock | Rcu-unlock | Srcu-lock | Srcu-unlock |
-                  ENABLE_INTERRUPT | DISABLE_INTERRUPT
-let barrier = po_orig?;[CBs];po_orig?
-              | (po_orig ; [Release])
-              | ([Acquire] ; po_orig)
-              | (([Marked] ; po_orig)? ; [Marked])
-              | [HARMLESS_RACY]
-
-include "interrupts-axioms.cat"
+ let CBs = Barrier | Rmb | Wmb | Mb | Sync-rcu | Sync-srcu |
+                 Before-atomic | After-atomic | Acquire | Release |
+                 Rcu-lock | Rcu-unlock | Srcu-lock | Srcu-unlock |
+                   ENABLE_INTERRUPT | DISABLE_INTERRUPT
+ let barrier = po_orig?;[CBs];po_orig?
+               | (po_orig ; [Release])
+               | ([Acquire] ; po_orig)
+               | (([Marked] ; po_orig)? ; [Marked])
+               | [HARMLESS_RACY]
 
 
 (*********************************)

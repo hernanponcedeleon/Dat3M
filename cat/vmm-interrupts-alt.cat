@@ -1,9 +1,11 @@
-include "interrupts-defs.cat"
-
 let Marked = RLX | ACQ | REL | SC
 let Plain = ~Marked
 let Acq = ACQ | (SC & R)
 let Rel = REL | (SC & W)
+
+(** Add interrupts **)
+let cppo = po?; [cb | Marked | F]; po?
+include "interrupts-defs.cat"
 
 (** Atomicity **)
 empty rmw & (fre;coe)
@@ -31,11 +33,6 @@ let WRF-ppo = po;[Rel & F];po;[W & Plain] | [Marked];(ctrl | addr);[W & Plain]
 
 let hb = ppo | WRF-ppo | rfe | fre | coe
 acyclic hb
-
-(** Interrupt Axioms **)
-// TODO: Add "po-orig & loc" (only for writes?) and "dep"?
-let barrier = po_orig?; [cb | Marked | F | ENABLE_INTERRUPT | DISABLE_INTERRUPT]; po_orig? | [HARMLESS_RACY]
-include "interrupts-axioms.cat"
 
 (** Data Races **)
 

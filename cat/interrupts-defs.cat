@@ -14,10 +14,14 @@ let ihOrder = IHStart;rf^-1;ihOrderPre;rf;IHStart
 
 (* Define interrupt points *)
 let beforeIPs = (new() & (int;create2Ih)) | create2Ih
+// IPs respect compiler-preserved program order + dependencies and interrupt primitives
+let cppoExt = cppo | addr | ctrl | data | po-loc | po?;[ENABLE_INTERRUPT | DISABLE_INTERRUPT];po?
+let beforeIPs = cppoExt*;beforeIPs
+// ALTERNATIVE: empty ((cppoExt;beforeIPs) \ beforeIPs)
 // IPs cannot occur when interrupts are disabled.
 let beforeIPs = beforeIPs | ([DISABLE_INTERRUPT];po-until(ENABLE_INTERRUPT))^-1;beforeIPs
-// IPs respect dependencies and ihOrder
-let beforeIPs = (addr | ctrl | data | po-loc)?;beforeIPs;ihOrder?
+// IPs respect ihOrder
+let beforeIPs = beforeIPs;ihOrder?
 
 let afterIPs = ((int;create2Ih) \ beforeIPs)^-1
 
