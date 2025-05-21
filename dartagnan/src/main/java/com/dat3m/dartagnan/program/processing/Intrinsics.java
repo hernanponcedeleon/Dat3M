@@ -1348,8 +1348,8 @@ public class Intrinsics {
                 final Type bytes = toLKMMAccessSize(p1);
                 final String mo = toLKMMMemoryOrder(p4);
                 final Register dummy = call.getFunction().newUniqueRegister("__lkmm_temp", bytes);
-                final Expression value = expressions.makeCast(p2, bytes);
-                final Expression expectation = expressions.makeCast(p3, bytes);
+                final Expression expectation = expressions.makeCast(p2, bytes);
+                final Expression value = expressions.makeCast(p3, bytes);
                 result.add(EventFactory.Linux.newRMWCompareExchange(p0, dummy, expectation, value, mo));
                 result.add(EventFactory.newLocal(reg, expressions.makeCast(dummy, reg.getType())));
             }
