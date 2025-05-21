@@ -13,12 +13,12 @@ import com.dat3m.dartagnan.program.event.core.CondJump;
 import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.event.metadata.SourceLocation;
 import com.google.common.base.Preconditions;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.common.configuration.Option;
 import org.sosy_lab.common.configuration.Options;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 import java.util.List;
 
@@ -110,6 +110,13 @@ public class NonterminationDetection implements ProgramProcessor {
             final Event nonterm = EventFactory.newJump(guess, endOfT);
             nonterm.addTags(Tag.NONTERMINATION);
             nonterm.copyMetadataFrom(loopHeader, SourceLocation.class);
+            // TODO: Add visible nontermination marker event just like in
+            //  DynamicSpinLoopDetection.
+            //  The difficult part is ensuring that the NonTerminationEncoder
+            //  does ignore these instrumentation events correctly;
+            //  otherwise, a non-terminating iteration may be considered not-equivalent to a previous iteration
+            //  just because it executes an additional marker event. This would prevent us from detecting
+            //  repetition properly and therefore we fail to detect non-termination.
 
             iter.getIterationEnd().insertAfter(nonterm);
         }

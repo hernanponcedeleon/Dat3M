@@ -122,7 +122,7 @@ public class ProgramEncoder implements Encoder {
 
     // ====================================== Control flow ======================================
 
-    private BooleanFormula isInterruptible(Event cur, InterruptAnalysis.Info info) {
+    private BooleanFormula isInterruptibleAt(Event cur, InterruptAnalysis.Info info) {
         final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
         final List<Event> irqBarriers = info.getImmediateIRQBarriersBefore(cur, exec);
         BooleanFormula isInterruptable = bmgr.makeTrue();
@@ -160,22 +160,26 @@ public class ProgramEncoder implements Encoder {
         }
 
         if (thread.getThreadType() == Thread.Type.INTERRUPT_HANDLER) {
+            // Interrupt handlers have more strict enabledness conditions:
+            // (1) The spawn event must execute
+            // (2) Interrupts must be enabled at some time after spawning the IH
+            // (3) An IH can only start if no other interrupt (of the same thread) is currently running
             assert start.isSpawned();
             final ThreadCreate ihCreate = thread.getEntry().getCreator();
             final Thread it = ihCreate.getThread();
             final InterruptAnalysis.Info itInfo = InterruptAnalysis.computeInterruptInfo(it);
-            final BooleanFormula otherInterruptsDidTerminate = itInfo.interrupts().stream()
+            final BooleanFormula otherInterruptsAreNotRunning = itInfo.interrupts().stream()
                     .filter(ih -> ih != thread)
                     .map(ih -> bmgr.or(threadHasTerminatedNormally(ih), bmgr.not(threadHasStarted(ih))))
                     .reduce(bmgr.makeTrue(), bmgr::and);
-            final BooleanFormula isDisabledAtSpawn = bmgr.not(isInterruptible(ihCreate, itInfo));
+            final BooleanFormula isDisabledAtSpawn = bmgr.not(isInterruptibleAt(ihCreate, itInfo));
             final BooleanFormula isReenabled = itInfo.irqBarriers().stream()
                     .filter(e -> e.getLocalId() > ihCreate.getLocalId() && e.hasTag(Tag.ENABLE_INTERRUPT))
                     .map(context::execution).reduce(bmgr.makeFalse(), bmgr::or);
             final BooleanFormula ihCanRun = bmgr.and(
                     creatorExecuted,
                     bmgr.or(bmgr.not(isDisabledAtSpawn), isReenabled),
-                    otherInterruptsDidTerminate
+                    otherInterruptsAreNotRunning
             );
             return ihCanRun;
         }
@@ -640,14 +644,10 @@ public class ProgramEncoder implements Encoder {
         private BooleanFormula encodeFairForwardProgress(Thread thread) {
             final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
             final List<BooleanFormula> enc = new ArrayList<>();
-
-            // ---------------------------------------------------------------------
             final InterruptAnalysis.Info itInfo = InterruptAnalysis.computeInterruptInfo(thread);
             final BooleanFormula interruptsDidTerminate = itInfo.interrupts().stream()
                     .map(ih -> bmgr.or(threadHasTerminatedNormally(ih), bmgr.not(threadHasStarted(ih))))
                     .reduce(bmgr.makeTrue(), bmgr::and);
-
-            // ----------------------------------------------------------------------
 
             // TODO: Maybe relax for interrupt handlers (do they need to run?).
             //  Problem: Some benchmarks join on IH, meaning IT waits for IH and if IH does never run
@@ -669,9 +669,10 @@ public class ProgramEncoder implements Encoder {
                 final BooleanFormula curCf = context.controlFlow(cur);
                 final BooleanFormula isNotBlocked = cur instanceof BlockingEvent cb ? context.unblocked(cb) : bmgr.makeTrue();
                 // TODO: IHs might not interact well with unfair scheduling
-                final BooleanFormula isNotInterruptable = bmgr.not(isInterruptible(cur, itInfo));
+                //  For now, we assume that interrupts and unfair scheduling are not combined
+                final BooleanFormula isNotInterruptible = bmgr.not(isInterruptibleAt(cur, itInfo));
                 enc.add(bmgr.implication(
-                        bmgr.and(curCf, isNotBlocked, bmgr.or(isNotInterruptable, interruptsDidTerminate)),
+                        bmgr.and(curCf, isNotBlocked, bmgr.or(isNotInterruptible, interruptsDidTerminate)),
                         bmgr.or(Lists.transform(succs, context::controlFlow))
                 ));
             }

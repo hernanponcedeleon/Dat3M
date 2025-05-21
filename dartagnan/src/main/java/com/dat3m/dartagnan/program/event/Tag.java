@@ -40,6 +40,9 @@ public final class Tag {
     // Marks jumps that designate non-termination, typically spinloops and bound events
     // (and control barriers in the future)
     public static final String NONTERMINATION    = "__NONTERMINATION";
+    // Used for marker events visible in the execution graph and accessible in the CAT model.
+    // Unlike the above NONTERMINATION tag, this one has no intrinsic semantics.
+    public static final String NONTERMINATION_VISIBLE = "NONTERM";
     // Marks jumps that terminate a thread due to spinning behaviour, i.e. side-effect-free loop iterations
     public static final String SPINLOOP         = "__SPINLOOP";
     // Some events should not be optimized (e.g. fake dependencies) or deleted (e.g. bounds)

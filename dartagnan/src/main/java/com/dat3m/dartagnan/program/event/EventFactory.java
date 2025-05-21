@@ -144,6 +144,10 @@ public class EventFactory {
         return store;
     }
 
+    public static GenericVisibleEvent newVisibleMarker(String name, String... tags) {
+        return new GenericVisibleEvent(name, tags);
+    }
+
     public static GenericVisibleEvent newFence(String name) {
         return new GenericVisibleEvent(name, name, Tag.FENCE);
     }
