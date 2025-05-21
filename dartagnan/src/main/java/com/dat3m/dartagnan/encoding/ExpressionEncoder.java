@@ -24,6 +24,7 @@ import com.google.common.base.Preconditions;
 import org.sosy_lab.java_smt.api.*;
 import org.sosy_lab.java_smt.api.NumeralFormula.IntegerFormula;
 
+import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -333,8 +334,10 @@ public class ExpressionEncoder {
             if (expr.isNoop()) {
                 return inner;
             } else if (context.useIntegers) {
-                //TODO If narrowing, constrain the value (mod 2^bitWidth).
-                return new TypedFormula<>(expr.getType(), inner.formula());
+                final BigInteger highValue = BigInteger.TWO.pow(types.getMemorySizeInBits(expr.getType()));
+                final IntegerFormulaManager imgr = integerFormulaManager();
+                final IntegerFormula truncated = imgr.modulo((IntegerFormula) inner.formula(), imgr.makeNumber(highValue));
+                return new TypedFormula<>(expr.getType(), truncated);
             } else {
                 assert inner.formula() instanceof BitvectorFormula;
 
@@ -446,32 +449,41 @@ public class ExpressionEncoder {
         @Override
         public TypedFormula<IntegerType, ?> visitIntConcat(IntConcat expr) {
             Preconditions.checkArgument(!expr.getOperands().isEmpty());
-
+            final List<? extends TypedFormula<IntegerType, ?>> operands = expr.getOperands().stream()
+                    .map(this::encodeIntegerExpr)
+                    .toList();
+            Formula enc = operands.get(0).formula();
             if (context.useIntegers) {
-                throw new UnsupportedOperationException("Cannot encode bitwise concatenation on mathematical integers.");
+                final IntegerFormulaManager imgr = fmgr.getIntegerFormulaManager();
+                long offset = types.getMemorySizeInBits(operands.get(0).type());
+                for (TypedFormula<IntegerType, ?> op : operands.subList(1, operands.size())) {
+                    final IntegerFormula offsetValue = imgr.makeNumber(1L << offset);
+                    enc = imgr.add((IntegerFormula) enc, imgr.multiply((IntegerFormula) op.formula(), offsetValue));
+                    offset += types.getMemorySizeInBits(op.type());
+                }
             } else {
                 final BitvectorFormulaManager bvmgr = bitvectorFormulaManager();
-                final List<Expression> operands = expr.getOperands();
-
-                BitvectorFormula enc = (BitvectorFormula) encodeIntegerExpr(operands.get(0)).formula();
-                for (Expression op : operands.subList(1, operands.size())) {
-                    enc = bvmgr.concat((BitvectorFormula) encodeIntegerExpr(op).formula(), enc);
+                for (TypedFormula<IntegerType, ?> op : operands.subList(1, operands.size())) {
+                    enc = bvmgr.concat((BitvectorFormula) op.formula(), (BitvectorFormula) enc);
                 }
-                return new TypedFormula<>(expr.getType(), enc);
             }
+            return new TypedFormula<>(expr.getType(), enc);
         }
 
         @Override
         public TypedFormula<IntegerType, ?> visitIntExtract(IntExtract expr) {
+            final Formula operand = encodeIntegerExpr(expr.getOperand()).formula();
+            final Formula enc;
             if (context.useIntegers) {
-                // TODO: We could support this with modulo operations
-                throw new UnsupportedOperationException("Cannot extract bits from mathematical integers.");
+                final IntegerFormulaManager imgr = integerFormulaManager();
+                final IntegerFormula highBitValue = imgr.makeNumber(BigInteger.TWO.pow(expr.getHighBit() + 1));
+                final IntegerFormula lowBitValue = imgr.makeNumber(BigInteger.TWO.pow(expr.getLowBit()));
+                enc = imgr.divide(imgr.modulo((IntegerFormula) operand, highBitValue), lowBitValue);
             } else {
                 final BitvectorFormulaManager bvmgr = bitvectorFormulaManager();
-                final BitvectorFormula operandEnc = (BitvectorFormula) encodeIntegerExpr(expr.getOperand()).formula();
-                final BitvectorFormula extract = bvmgr.extract(operandEnc, expr.getHighBit(), expr.getLowBit());
-                return new TypedFormula<IntegerType, Formula>(expr.getType(), extract);
+                enc = bvmgr.extract((BitvectorFormula) operand, expr.getHighBit(), expr.getLowBit());
             }
+            return new TypedFormula<>(expr.getType(), enc);
         }
 
         // ====================================================================================
