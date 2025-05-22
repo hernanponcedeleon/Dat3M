@@ -118,7 +118,7 @@ public abstract class ModelChecker {
             final SyntacticContextAnalysis synContext = newInstance(program);
             for (Axiom ax : wmm.getAxioms()) {
                 if (ax.isFlagged() && irModel.isFlaggedAxiomViolated(ax)) {
-                    StringBuilder violatingPairs = new StringBuilder("Flag " + Optional.ofNullable(ax.getName()).orElse(ax.getRelation().getNameOrTerm())).append("\n");
+                    StringBuilder violatingPairs = new StringBuilder("\tFlag " + Optional.ofNullable(ax.getName()).orElse(ax.getRelation().getNameOrTerm())).append("\n");
                     encoder.getEventGraph(ax.getRelation(), model).apply((e1, e2) -> {
                         final String callSeparator = " -> ";
                         final String callStackFirst = makeContextString(

@@ -10,6 +10,8 @@ import com.dat3m.dartagnan.program.event.core.threading.*;
 import com.dat3m.dartagnan.program.event.lang.svcomp.BeginAtomic;
 import com.dat3m.dartagnan.program.event.lang.svcomp.EndAtomic;
 import org.sosy_lab.common.configuration.Configuration;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.util.Arrays;
 import java.util.HashSet;
@@ -21,6 +23,8 @@ import java.util.Set;
     NOTE: Subclasses of core events are not automatically considered core events themselves and may raise an error.
  */
 public class CoreCodeVerification implements FunctionProcessor {
+
+    private static final Logger logger = LogManager.getLogger(CoreCodeVerification.class);
 
     public static CoreCodeVerification fromConfig(Configuration config) {
         return new CoreCodeVerification();
@@ -48,11 +52,12 @@ public class CoreCodeVerification implements FunctionProcessor {
         final List<Event> nonCoreEvents = function.getEvents().stream().
                 filter(e -> !(e instanceof CodeAnnotation) && !CORE_CLASSES.contains(e.getClass())).toList();
         if (!nonCoreEvents.isEmpty()) {
-            System.out.println("ERROR: Found non-core events.");
+            String msg = "Found non-core events.";
             for (Event e : nonCoreEvents) {
-                System.out.printf("%2s: %-30s  %s %n", e.getGlobalId(), e, e.getClass().getSimpleName());
+                msg += String.format("%2s: %-30s  %s %n", e.getGlobalId(), e, e.getClass().getSimpleName());
             }
-            throw new MalformedProgramException("ERROR: Found non-core events.");
+            logger.warn(msg);
+            throw new MalformedProgramException("Found non-core events.");
         }
     }
 }

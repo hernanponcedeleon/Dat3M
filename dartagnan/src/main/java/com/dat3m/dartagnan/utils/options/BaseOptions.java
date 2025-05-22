@@ -122,4 +122,19 @@ public abstract class BaseOptions {
     public String getCatIncludePath() {
         return catIncludePath;
     }
+
+    @Option(
+            name = BATCH,
+            description = "The directory where programs to be run on a batch are located."
+    )
+    private String batchPath = null;
+
+    public boolean runBatch() {
+        return batchPath != null;
+    }
+
+    public String getBatchPath() {
+        return batchPath;
+    }
+
 }
