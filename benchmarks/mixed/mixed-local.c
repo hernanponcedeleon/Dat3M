@@ -8,10 +8,10 @@ int main()
     x.as_int = 0x1e240;
     x.as_short = 0;
 #ifdef __LITTLE_ENDIAN__
-    __VERIFIER_assert(x.as_int == 0x10000);
+    assert(x.as_int == 0x10000);
 #else
 #ifdef __BIG_ENDIAN__
-    __VERIFIER_assert(x.as_int == 0xe240);
+    assert(x.as_int == 0xe240);
 #else
 #error Undefined byte order
 #endif

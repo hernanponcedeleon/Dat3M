@@ -69,7 +69,7 @@ public final class Tearing implements ProgramProcessor {
         final Map<MemoryCoreEvent, List<Event>> map = new HashMap<>();
         // Generate transaction events for mixed-size accesses
         final int numTearedInits = tearInits(program, alias, bigEndian);
-        //NOTE RMWStores need to access the associated load's replacements
+        // NOTE RMWStores need to access the associated load's replacements
         final List<MemoryCoreEvent> events = program.getThreadEvents(MemoryCoreEvent.class);
         for (MemoryCoreEvent event : events) {
             final Load load = event instanceof Load l ? l : null;
@@ -86,7 +86,7 @@ public final class Tearing implements ProgramProcessor {
             }
         }
         // Replace instructions by transactions of events
-        //NOTE Some loads are used by stores, and cannot be replaced before them
+        // NOTE Some loads are used by stores, and cannot be replaced before them
         for (Map.Entry<MemoryCoreEvent, List<Event>> entry : map.entrySet()) {
             if (entry.getKey() instanceof Store store && !entry.getValue().equals(List.of(store))) {
                 Event firstStore = entry.getValue().stream().filter(Store.class::isInstance).findFirst().orElseThrow();

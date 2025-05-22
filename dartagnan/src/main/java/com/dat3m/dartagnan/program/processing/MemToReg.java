@@ -126,7 +126,7 @@ public class MemToReg implements FunctionProcessor {
     }
 
     private Register newRegister(Alloc allocation, Field field) {
-        return allocation.getFunction().newUniqueRegister("memToReg", field.type);
+        return allocation.getFunction().newUniqueRegister("__memToReg", field.type);
     }
 
     private List<Event> promoteAccess(MemoryCoreEvent event, AddressOffset access,
@@ -369,7 +369,7 @@ public class MemToReg implements FunctionProcessor {
             // Prepare the current state for continuing from the label.
             final Map<Object, AddressOffset> labelState = jumps.get(label);
             if (labelState != null) {
-                //NOTE no short-circuiting.
+                // NOTE no short-circuiting.
                 final boolean change = mergeInto(labelState, state);
                 if (looping && change) {
                     state.clear();

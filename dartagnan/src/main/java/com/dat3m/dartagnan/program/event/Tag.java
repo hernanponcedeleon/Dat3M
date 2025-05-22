@@ -31,13 +31,13 @@ public final class Tag {
     public static final String EXCEPTIONAL_TERMINATION = "__EXCEPTIONAL_TERMINATION";
     // Marks jumps that designate non-termination, typically spinloops and bound events
     // (and control barriers in the future)
-    public static final String NONTERMINATION    = "__NONTERMINATION";
+    public static final String NONTERMINATION   = "__NONTERMINATION";
     // Marks jumps that terminate a thread due to spinning behaviour, i.e. side-effect-free loop iterations
     public static final String SPINLOOP         = "__SPINLOOP";
     // Some events should not be optimized (e.g. fake dependencies) or deleted (e.g. bounds)
     public static final String NOOPT            = "__NOOPT";
     public static final String STARTLOAD        = "__STARTLOAD";
-    public static final String NO_INSTRUCTION    = "__NO_INSTRUCTION";
+    public static final String NO_INSTRUCTION   = "__NO_INSTRUCTION";
 
     // =============================================================================================
     // =========================================== ARMv8 ===========================================
