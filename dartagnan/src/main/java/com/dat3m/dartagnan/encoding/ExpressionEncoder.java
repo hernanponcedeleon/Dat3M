@@ -330,14 +330,18 @@ public class ExpressionEncoder {
         @Override
         public TypedFormula<IntegerType, ?> visitIntSizeCastExpression(IntSizeCast expr) {
             final TypedFormula<IntegerType, ?> inner = encodeIntegerExpr(expr.getOperand());
+            final Formula enc;
 
             if (expr.isNoop()) {
                 return inner;
             } else if (context.useIntegers) {
-                final BigInteger highValue = BigInteger.TWO.pow(types.getMemorySizeInBits(expr.getType()));
-                final IntegerFormulaManager imgr = integerFormulaManager();
-                final IntegerFormula truncated = imgr.modulo((IntegerFormula) inner.formula(), imgr.makeNumber(highValue));
-                return new TypedFormula<>(expr.getType(), truncated);
+                if (expr.isExtension()) {
+                    enc = inner.formula();
+                } else {
+                    final BigInteger highValue = BigInteger.TWO.pow(expr.getType().getBitWidth());
+                    final IntegerFormulaManager imgr = integerFormulaManager();
+                    enc = imgr.modulo((IntegerFormula) inner.formula(), imgr.makeNumber(highValue));
+                }
             } else {
                 assert inner.formula() instanceof BitvectorFormula;
 
@@ -347,11 +351,11 @@ public class ExpressionEncoder {
                 final int sourceBitWidth = expr.getSourceType().getBitWidth();
                 assert (sourceBitWidth == bvmgr.getLength(innerBv));
 
-                final BitvectorFormula result = expr.isExtension()
+                enc = expr.isExtension()
                         ? bvmgr.extend(innerBv, targetBitWidth - sourceBitWidth, expr.preservesSign())
                         : bvmgr.extract(innerBv, targetBitWidth - 1, 0);
-                return new TypedFormula<IntegerType, Formula>(expr.getType(), result);
             }
+            return new TypedFormula<>(expr.getType(), enc);
         }
 
         @Override
@@ -455,11 +459,11 @@ public class ExpressionEncoder {
             Formula enc = operands.get(0).formula();
             if (context.useIntegers) {
                 final IntegerFormulaManager imgr = fmgr.getIntegerFormulaManager();
-                long offset = types.getMemorySizeInBits(operands.get(0).type());
+                int offset = operands.get(0).type().getBitWidth();
                 for (TypedFormula<IntegerType, ?> op : operands.subList(1, operands.size())) {
-                    final IntegerFormula offsetValue = imgr.makeNumber(1L << offset);
+                    final IntegerFormula offsetValue = imgr.makeNumber(BigInteger.TWO.pow(offset - 1));
                     enc = imgr.add((IntegerFormula) enc, imgr.multiply((IntegerFormula) op.formula(), offsetValue));
-                    offset += types.getMemorySizeInBits(op.type());
+                    offset += op.type().getBitWidth();
                 }
             } else {
                 final BitvectorFormulaManager bvmgr = bitvectorFormulaManager();
@@ -478,7 +482,9 @@ public class ExpressionEncoder {
                 final IntegerFormulaManager imgr = integerFormulaManager();
                 final IntegerFormula highBitValue = imgr.makeNumber(BigInteger.TWO.pow(expr.getHighBit() + 1));
                 final IntegerFormula lowBitValue = imgr.makeNumber(BigInteger.TWO.pow(expr.getLowBit()));
-                enc = imgr.divide(imgr.modulo((IntegerFormula) operand, highBitValue), lowBitValue);
+                final IntegerFormula op = (IntegerFormula) operand;
+                final IntegerFormula extracted = expr.isExtractingHighBits() ? op : imgr.modulo(op, highBitValue);
+                enc = expr.isExtractingLowBits() ? extracted : imgr.divide(extracted, lowBitValue);
             } else {
                 final BitvectorFormulaManager bvmgr = bitvectorFormulaManager();
                 enc = bvmgr.extract((BitvectorFormula) operand, expr.getHighBit(), expr.getLowBit());

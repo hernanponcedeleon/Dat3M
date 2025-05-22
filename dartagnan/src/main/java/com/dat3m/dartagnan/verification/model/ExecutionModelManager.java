@@ -287,7 +287,7 @@ public class ExecutionModelManager {
             final SimpleGraph rg = (SimpleGraph) relGraphCache.get(si.getDefinedRelation());
             final Map<Event, List<Event>> instructionMap = new HashMap<>();
             for (InstructionBoundary end : context.getTask().getProgram().getThreadEvents(InstructionBoundary.class)) {
-                //NOTE begin markers return empty transaction event lists
+                // NOTE begin markers return empty transaction event lists
                 final List<Event> events = end.getInstructionEvents();
                 for (Event event : events) {
                     instructionMap.put(event, events);

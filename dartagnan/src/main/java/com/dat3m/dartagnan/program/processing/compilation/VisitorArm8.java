@@ -49,8 +49,8 @@ class VisitorArm8 extends VisitorBase {
     public List<Event> visitXchg(Xchg xchg) {
         Register resultRegister = xchg.getResultRegister();
         Expression address = xchg.getAddress();
-        String loadMo = xchg.hasTag(ARMv8.MO_ACQ) ? ARMv8.MO_ACQ : null;
-        String storeMo = xchg.hasTag(ARMv8.MO_REL) ? ARMv8.MO_REL : null;
+        String loadMo = xchg.hasTag(ARMv8.MO_ACQ) ? ARMv8.MO_ACQ : "";
+        String storeMo = xchg.hasTag(ARMv8.MO_REL) ? ARMv8.MO_REL : "";
 
         return eventSequence(
                 newRMWLoadExclusiveWithMo(resultRegister, address, loadMo),

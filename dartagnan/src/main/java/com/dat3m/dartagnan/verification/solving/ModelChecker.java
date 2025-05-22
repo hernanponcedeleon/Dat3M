@@ -10,6 +10,7 @@ import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.analysis.*;
 import com.dat3m.dartagnan.program.analysis.alias.AliasAnalysis;
 import com.dat3m.dartagnan.program.event.Event;
+import com.dat3m.dartagnan.program.event.core.MemoryCoreEvent;
 import com.dat3m.dartagnan.program.processing.ProcessingManager;
 import com.dat3m.dartagnan.smt.ModelExt;
 import com.dat3m.dartagnan.utils.Result;
@@ -20,11 +21,14 @@ import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
 import com.dat3m.dartagnan.wmm.analysis.WmmAnalysis;
 import com.dat3m.dartagnan.wmm.axiom.Axiom;
 import com.dat3m.dartagnan.wmm.processing.WmmProcessingManager;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.java_smt.api.ProverEnvironment;
 import org.sosy_lab.java_smt.api.SolverException;
 
+import java.util.List;
 import java.util.Optional;
 
 import static com.dat3m.dartagnan.configuration.Property.CAT_SPEC;
@@ -32,6 +36,8 @@ import static com.dat3m.dartagnan.program.analysis.SyntacticContextAnalysis.*;
 import static com.dat3m.dartagnan.utils.Result.*;
 
 public abstract class ModelChecker {
+
+    private static final Logger logger = LogManager.getLogger(ModelChecker.class);
 
     protected Result res = Result.UNKNOWN;
     protected EncodingContext context;
@@ -86,7 +92,15 @@ public abstract class ModelChecker {
                 analysisContext, config));
         analysisContext.register(ReachingDefinitionsAnalysis.class, ReachingDefinitionsAnalysis.fromConfig(program,
                 analysisContext, config));
-        analysisContext.register(AliasAnalysis.class, AliasAnalysis.fromConfig(program, analysisContext, config, false));
+        final AliasAnalysis alias = AliasAnalysis.fromConfig(program, analysisContext, config, false);
+        analysisContext.register(AliasAnalysis.class, alias);
+        if (logger.isWarnEnabled()) {
+            List<MemoryCoreEvent> mixedSizeAccesses = program.getThreadEvents(MemoryCoreEvent.class).stream()
+                    .filter(e -> !alias.mayMixedSizeAccesses(e).isEmpty()).toList();
+            if (!mixedSizeAccesses.isEmpty()) {
+                logger.warn("Detected potential mixed-size accesses: {}", mixedSizeAccesses);
+            }
+        }
         analysisContext.register(ThreadSymmetry.class, ThreadSymmetry.fromConfig(program, config));
         for(Thread thread : program.getThreads()) {
             for(Event e : thread.getEvents()) {
