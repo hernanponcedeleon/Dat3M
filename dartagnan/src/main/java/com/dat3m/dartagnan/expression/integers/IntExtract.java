@@ -28,6 +28,13 @@ public class IntExtract extends UnaryExpressionBase<IntegerType, ExpressionKind.
     public int getLowBit() { return lowBit; }
     public int getHighBit() { return highBit; }
 
+    public boolean isExtractingLowBits() {
+        return lowBit == 0;
+    }
+    public boolean isExtractingHighBits() {
+        return operand.getType() instanceof IntegerType t && highBit + 1 == t.getBitWidth();
+    }
+
     @Override
     public <T> T accept(ExpressionVisitor<T> visitor) {
         return visitor.visitIntExtract(this);
