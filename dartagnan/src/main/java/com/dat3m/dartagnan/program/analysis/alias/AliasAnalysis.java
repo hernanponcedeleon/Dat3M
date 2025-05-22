@@ -36,23 +36,14 @@ public interface AliasAnalysis {
     boolean mayAlias(MemoryCoreEvent a, MemoryCoreEvent b);
 
     /**
-     * Checks if two accessed byte ranges may overlap, without matching perfectly.
+     * Returns an overapproximation of the MSA points in the byte range of the specified event.
      * <p>
-     * Accesses to memory actually target a range of bytes,
-     * starting with the byte the address points to, inclusively,
-     * and ending with the byte offset from the start by the associated type's size in bytes, exclusively.
-     * This analysis calls a pair of accesses on memory mixing,
-     * if the accessed byte range overlaps, without also being equal.
-     * There are three cases how this can be achieved:
-     * <ul>
-     *     <li>The types match, but the address are offset by a too small margin.
-     *     <li>The addresses match exactly, as in {@link #mayAlias}, but the type sizes differ.
-     *     <li>A combination of the above.
-     * </ul>
-     * False positives may occur, but false negatives shall not occur,
-     * so long as the program features no undefined behavior, such as use-after-free or buffer overflows.
-     * @param event Memory access in the analyzed program.
-     * @return Sorted list of offsets, where another access' byte range may start or end.
+     * Two memory accesses are called overlapping, if their accessed byte ranges overlap/intersect.
+     * They are called partially overlapping, if they overlap but don't access the exact same byte range.
+     * In this case, at least one end point of one range is inside the other range. We call such a point an MSA point.
+     *
+     * @param event Memory event of the analyzed program.
+     * @return A subset of integers between {@code 0} and {@code event.getAccessSize()}, exclusively.
      */
     List<Integer> mayMixedSizeAccesses(MemoryCoreEvent event);
 
@@ -154,7 +145,7 @@ public interface AliasAnalysis {
             final List<Integer> set1 = a1.mayMixedSizeAccesses(a);
             final List<Integer> set2 = a2.mayMixedSizeAccesses(a);
             // compute the intersection
-            if (set1.isEmpty() | set2.isEmpty()) {
+            if (set1.isEmpty() || set2.isEmpty()) {
                 return set1.isEmpty() ? set1 : set2;
             }
             final boolean smaller = set1.size() < set2.size();
