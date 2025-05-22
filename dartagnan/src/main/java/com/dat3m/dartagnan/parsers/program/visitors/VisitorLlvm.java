@@ -880,7 +880,7 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
     @Override
     public Expression visitArrayConst(ArrayConstContext ctx) {
         assert expectedType instanceof ArrayType;
-        final Type elementType = ((ArrayType)expectedType).getElementType();
+        final ArrayType arrayType = (ArrayType) expectedType;
         if (ctx.StringLit() != null) {
             //TODO handle strings
             return expressions.makeGeneralZero(expectedType); // We make a 0 for now.
@@ -889,7 +889,7 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
         for (TypeConstContext typeConst : ctx.typeConst()) {
             arrayValues.add(visitTypeConst(typeConst));
         }
-        return expressions.makeArray(elementType, arrayValues, true);
+        return expressions.makeArray(arrayType, arrayValues);
     }
 
     @Override

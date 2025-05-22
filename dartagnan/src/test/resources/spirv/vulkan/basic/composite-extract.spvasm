@@ -29,14 +29,14 @@
       %uint_11 = OpConstant %uint 11
 
        %vector = OpTypeVector %uint 3
-      %vector2 = OpTypeVector %vector 2
+       %array1 = OpTypeArray %vector %uint_2
         %array = OpTypeArray %uint %uint_3
        %array2 = OpTypeArray %array %uint_2
   %output_type = OpTypeRuntimeArray %uint
 
     %v_vector1 = OpConstantComposite %vector %uint_0 %uint_1 %uint_2
     %v_vector2 = OpConstantComposite %vector %uint_3 %uint_4 %uint_5
-     %v_vector = OpConstantComposite %vector2 %v_vector1 %v_vector2
+     %v_vector = OpConstantComposite %array1 %v_vector1 %v_vector2
      %v_array1 = OpConstantComposite %array %uint_6 %uint_7 %uint_8
      %v_array2 = OpConstantComposite %array %uint_9 %uint_10 %uint_11
       %v_array = OpConstantComposite %array2 %v_array1 %v_array2

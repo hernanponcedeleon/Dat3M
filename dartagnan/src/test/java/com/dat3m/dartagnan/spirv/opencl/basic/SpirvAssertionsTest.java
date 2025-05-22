@@ -47,18 +47,7 @@ public class SpirvAssertionsTest {
     @Parameterized.Parameters(name = "{index}: {0}, {1}, {2}")
     public static Iterable<Object[]> data() throws IOException {
         return Arrays.asList(new Object[][]{
-                {"vector-aligned.spvasm", 1, PASS},
                 {"idx-overflow.spvasm", 1, PASS},
-                {"alignment1.spvasm", 9, PASS},
-                {"alignment2.spvasm", 1, PASS},
-                {"alignment3.spvasm", 1, PASS},
-                {"alignment4.spvasm", 1, PASS},
-                {"alignment5.spvasm", 1, PASS},
-                {"alignment6.spvasm", 1, PASS},
-                {"alignment7.spvasm", 1, PASS},
-                {"alignment8.spvasm", 1, PASS},
-                {"alignment9.spvasm", 9, PASS},
-                {"alignment10.spvasm", 9, PASS}
         });
     }
 

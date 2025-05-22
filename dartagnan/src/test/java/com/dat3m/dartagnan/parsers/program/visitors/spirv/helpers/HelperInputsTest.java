@@ -278,15 +278,15 @@ public class HelperInputsTest {
     @Test
     public void testPointer1() {
         Type[] iSubTypes = {
-                types.getScopedPointerType("test", int32),
-                types.getScopedPointerType("test", int64)
+                types.getScopedPointerType("test", int32, null),
+                types.getScopedPointerType("test", int64, null)
         };
 
         Type[] iTypes = {
                 iSubTypes[0],
                 iSubTypes[1],
-                types.getScopedPointerType("test", iSubTypes[0]),
-                types.getScopedPointerType("test", iSubTypes[1]),
+                types.getScopedPointerType("test", iSubTypes[0], null),
+                types.getScopedPointerType("test", iSubTypes[1], null),
         };
 
         Expression[] iValues = {
@@ -308,8 +308,8 @@ public class HelperInputsTest {
     @Test
     public void testPointer2() {
         Type[] iSubTypes = {
-                types.getScopedPointerType("test", int32),
-                types.getScopedPointerType("test", int64)
+                types.getScopedPointerType("test", int32, null),
+                types.getScopedPointerType("test", int64, null)
         };
 
         ArrayType[] iTypes = {
@@ -429,6 +429,97 @@ public class HelperInputsTest {
     }
 
     @Test
+    public void testInvalidTypeToArray4() {
+        ArrayType[] iTypes = {
+                types.getArrayType(types.getArrayType(int32)),
+                types.getArrayType(types.getArrayType(int32), 2),
+        };
+
+        Expression[] iValues = {
+                makeConstruct(makeConstruct(i32[0]), makeConstruct(i32[1], i32[2])),
+                makeConstruct(makeConstruct(i64[0]), makeConstruct(i64[1], i64[2])),
+                makeConstruct(makeConstruct(), makeConstruct(i32[1], i32[2])),
+                makeConstruct(makeConstruct(), makeConstruct(i64[1], i64[2]))
+        };
+
+        for (Expression input : iValues) {
+            for (ArrayType type : iTypes) {
+                doTestInvalidType(type, input, "test", type, input.getType());
+            }
+        }
+    }
+
+    @Test
+    public void testArrayWithStride() {
+        Type[] iTypes = {
+                types.getArrayType(int32, -1, 12),
+                types.getArrayType(int32, 3, 12),
+                types.getArrayType(int32, -1, 16),
+                types.getArrayType(int32, 3, 16),
+                types.getArrayType(int64, -1, 24),
+                types.getArrayType(int64, 3, 24),
+                types.getArrayType(int64, -1, 32),
+                types.getArrayType(int64, 3, 32)
+        };
+
+        Expression[] iValues = {
+                makeConstruct(i64[0], i64[1], i64[2]),
+                makeArray(i64[0], i64[1], i64[2])
+        };
+
+        Expression[] expected = {
+                makeArrayWithStride(12, i32[0], i32[1], i32[2]),
+                makeArrayWithStride(16, i32[0], i32[1], i32[2]),
+                makeArrayWithStride(24, i64[0], i64[1], i64[2]),
+                makeArrayWithStride(32, i64[0], i64[1], i64[2])
+        };
+
+        for (Expression input : iValues) {
+            for (int i = 0; i < iTypes.length; i++) {
+                assertEquals(expected[i / 2], castInput("test", iTypes[i], input));
+            }
+        }
+    }
+
+    @Test
+    public void testInvalidTypeToArrayWithStride() {
+        ArrayType[] iTypes = {
+                types.getArrayType(types.getArrayType(int32), -1, 8),
+                types.getArrayType(types.getArrayType(int32), 2, 8),
+                types.getArrayType(types.getArrayType(int32), -1, 12),
+                types.getArrayType(types.getArrayType(int32), 2, 12),
+                types.getArrayType(types.getArrayType(int64), -1, 16),
+                types.getArrayType(types.getArrayType(int64), 2, 16),
+                types.getArrayType(types.getArrayType(int64), -1, 24),
+                types.getArrayType(types.getArrayType(int64), 2, 24)
+        };
+
+        Expression[] iValues = {
+                makeConstruct(
+                        makeConstruct(i32[0], i32[1], i32[2], i32[3]),
+                        makeConstruct(i32[0], i32[1], i32[2], i32[3])),
+                makeConstruct(
+                        makeConstruct(i64[0], i64[1], i64[2], i64[3]),
+                        makeConstruct(i64[0], i64[1], i64[2], i64[3])),
+        };
+
+        for (Expression input : iValues) {
+            for (ArrayType type : iTypes) {
+                try {
+                    castInput("test", type, input);
+                    fail("Should throw exception");
+                } catch (ParsingException e) {
+                    Expression elValue = castInput("element", type.getElementType(), input.getOperands().get(0));
+                    assertEquals(String.format("Mismatching value type for variable 'test', " +
+                                            "element size %d is greater than array stride %d",
+                                    types.getMemorySizeInBytes(elValue.getType()), type.getStride()),
+                            e.getMessage());
+                }
+            }
+        }
+    }
+
+    @Test
     public void testInvalidTypeToAggregate() {
         AggregateType[] iTypes = {
                 types.getAggregateType(List.of(int32, int32)),
@@ -521,6 +612,13 @@ public class HelperInputsTest {
 
     private ConstructExpr makeArray(Expression... elements) {
         assertEquals(1, Stream.of(elements).map(Expression::getType).collect(Collectors.toSet()).size());
-        return (ConstructExpr) expressions.makeArray(elements[0].getType(), Arrays.asList(elements), true);
+        ArrayType type = types.getArrayType(elements[0].getType(), elements.length);
+        return (ConstructExpr) expressions.makeArray(type, Arrays.asList(elements));
+    }
+
+    private ConstructExpr makeArrayWithStride(Integer stride, Expression... elements) {
+        assertEquals(1, Stream.of(elements).map(Expression::getType).collect(Collectors.toSet()).size());
+        ArrayType type = types.getArrayType(elements[0].getType(), elements.length, stride);
+        return (ConstructExpr) expressions.makeArray(type, Arrays.asList(elements));
     }
 }
