@@ -287,6 +287,7 @@ public class Dartagnan extends BaseOptions {
                 .toList();
         } catch (IOException e) {
             e.printStackTrace();
+            System.exit(UNKNOWN_ERROR.asInt());
         }
         return files;
     }
