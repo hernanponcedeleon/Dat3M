@@ -31,11 +31,10 @@ let afterIPExt = (it2ih | po?)^-1;afterIPs
 let ihOrderExt = int;ihOrder;(it2ih | po?)
 
 (* Extend po/int/ext based on IPs *)
-let po_orig = po
-
-let poReorder = beforeIPs;afterIPs
-let poExt = beforeIPExt | afterIPExt | ihOrderExt
-let po = (po \ poReorder^-1) | poReorder | poExt
+let poOverIh = beforeIPs;afterIPs
+let poReordered = poOverIh^-1
+let poExt = poOverIh | beforeIPExt | afterIPExt | ihOrderExt
+let po = (po \ poReordered) | poExt
 let int = int | (it2ih^-1)?;it2ih | (IW * M)
 let ext = ext \ int
 
@@ -53,8 +52,3 @@ let fri = fr & int
 let non-exec = [range([NONTERM];afterIPExt)]
 let exec = id \ non-exec
 empty (non-exec;(rf | co);exec)
-
-// NOTE: beforeIPs must be prefix-closed under the barrier ordering of the WMM
-// Since this depends on the WMM, we do not define it here and instead rely on the WMM adding the axiom
-// empty ((barrier;beforeIPs) \ beforeIPs)
-// This can be achieved by include "interrupts-axioms.cat" inside the WMM

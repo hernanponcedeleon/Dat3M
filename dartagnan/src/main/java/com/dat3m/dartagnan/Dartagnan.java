@@ -6,14 +6,15 @@ import com.dat3m.dartagnan.configuration.Property;
 import com.dat3m.dartagnan.encoding.EncodingContext;
 import com.dat3m.dartagnan.encoding.IREvaluator;
 import com.dat3m.dartagnan.encoding.ProverWithTracker;
-import com.dat3m.dartagnan.expression.ExpressionPrinter;
 import com.dat3m.dartagnan.expression.Expression;
+import com.dat3m.dartagnan.expression.ExpressionPrinter;
 import com.dat3m.dartagnan.expression.booleans.BoolLiteral;
 import com.dat3m.dartagnan.parsers.cat.ParserCat;
 import com.dat3m.dartagnan.parsers.program.ProgramParser;
 import com.dat3m.dartagnan.parsers.witness.ParserWitness;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Program.SourceLanguage;
+import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.analysis.SyntacticContextAnalysis;
 import com.dat3m.dartagnan.program.event.BlockingEvent;
 import com.dat3m.dartagnan.program.event.Event;
@@ -511,7 +512,8 @@ public class Dartagnan extends BaseOptions {
 
     private static void printWarningIfThreadStartFailed(Program p, IREvaluator model) {
         p.getThreads().stream().filter(t ->
-                t.getEntry().isSpawned()
+                t.getThreadType() != Thread.Type.INTERRUPT_HANDLER
+                && t.getEntry().isSpawned()
                 && model.isExecuted(t.getEntry().getCreator())
                 && !model.threadHasStarted(t)
         ).forEach(t -> System.out.printf(
