@@ -123,7 +123,9 @@ public class ProgramParser {
         } else if(programText.indexOf(TYPE_LITMUS_VULKAN) == 0) {
             return new ParserLitmusVulkan();
         }
-        throw new ParsingException("Unknown input file type");
+        final int spaceIndex = programText.indexOf(" ");
+        final String litmusFormat = (spaceIndex != -1) ? " " + programText.substring(0, spaceIndex) : "";
+        throw new ParsingException("Unknown litmus format" + litmusFormat);
     }
 
     private String readFirstLine(File file) throws IOException {
