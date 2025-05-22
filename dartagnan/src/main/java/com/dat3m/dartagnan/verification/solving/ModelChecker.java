@@ -86,16 +86,16 @@ public abstract class ModelChecker {
      * @exception UnsatisfiedRequirementException Some static analysis is missing.
      */
     public static void performStaticProgramAnalyses(VerificationTask task, Context analysisContext, Configuration config) throws InvalidConfigurationException {
-        Program program = task.getProgram();
+        final Program program = task.getProgram();
         analysisContext.register(BranchEquivalence.class, BranchEquivalence.fromConfig(program, config));
         analysisContext.register(ExecutionAnalysis.class, ExecutionAnalysis.fromConfig(program, task.getProgressModel(),
                 analysisContext, config));
         analysisContext.register(ReachingDefinitionsAnalysis.class, ReachingDefinitionsAnalysis.fromConfig(program,
                 analysisContext, config));
-        final AliasAnalysis alias = AliasAnalysis.fromConfig(program, analysisContext, config, false);
+        final AliasAnalysis alias = AliasAnalysis.fromConfig(program, analysisContext, config, logger.isWarnEnabled());
         analysisContext.register(AliasAnalysis.class, alias);
         if (logger.isWarnEnabled()) {
-            List<MemoryCoreEvent> mixedSizeAccesses = program.getThreadEvents(MemoryCoreEvent.class).stream()
+            final List<MemoryCoreEvent> mixedSizeAccesses = program.getThreadEvents(MemoryCoreEvent.class).stream()
                     .filter(e -> !alias.mayMixedSizeAccesses(e).isEmpty()).toList();
             if (!mixedSizeAccesses.isEmpty()) {
                 logger.warn("Detected potential mixed-size accesses: {}", mixedSizeAccesses);
