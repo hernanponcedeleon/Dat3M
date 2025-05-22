@@ -9,11 +9,14 @@ import com.dat3m.dartagnan.expression.integers.IntUnaryExpr;
 import com.dat3m.dartagnan.expression.misc.ITEExpr;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
+import com.dat3m.dartagnan.program.analysis.SyntacticContextAnalysis;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.RegWriter;
 import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.event.core.threading.ThreadArgument;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
+import com.google.common.base.Supplier;
+import com.google.common.base.Suppliers;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 
@@ -27,6 +30,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Verify.verify;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.IntStream.range;
+import static com.dat3m.dartagnan.configuration.Alias.*;
 
 /**
  * Offset- and alignment-enhanced inclusion-based pointer analysis based on Andersen's.
@@ -44,6 +48,9 @@ public class FieldSensitiveAndersen implements AliasAnalysis {
 
     private final Config config;
 
+    // For providing helpful error messages, this analysis prints call-stack and loop information for events.
+    private final Supplier<SyntacticContextAnalysis> synContext;
+
     ///When a pointer set gains new content, it is added to this queue
     private final LinkedHashSet<Object> variables = new LinkedHashSet<>();
 
@@ -60,13 +67,14 @@ public class FieldSensitiveAndersen implements AliasAnalysis {
     // ================================ Construction ================================
 
     public static FieldSensitiveAndersen fromConfig(Program program, Config config) {
-        var analysis = new FieldSensitiveAndersen(config);
+        var analysis = new FieldSensitiveAndersen(program, config);
         analysis.run(program);
         return analysis;
     }
 
-    private FieldSensitiveAndersen(Config c) {
+    private FieldSensitiveAndersen(Program p, Config c) {
         config = checkNotNull(c);
+        synContext = Suppliers.memoize(() -> SyntacticContextAnalysis.newInstance(p));
     }
 
     // ================================ API ================================
@@ -195,6 +203,10 @@ public class FieldSensitiveAndersen implements AliasAnalysis {
         for (Offset<Register> r : collector.register()) {
             addresses.addAll(fields(getAddresses(r.base), r.offset, r.alignment));
         }
+        Set<Location> set = addresses.build();
+        if (set.isEmpty()) {
+            logger.warn("Empty pointer set for {}", synContext.get().getContextInfo(e));
+        }
         eventAddressSpaceMap.put(e, addresses.build());
     }
 
@@ -263,6 +275,10 @@ public class FieldSensitiveAndersen implements AliasAnalysis {
     private static List<Location> fields(Collection<Location> v, int offset, int alignment) {
         final List<Location> result = new ArrayList<>();
         for (Location l : v) {
+            if (!l.base.hasKnownSize()) {
+                throw new UnsupportedOperationException(String.format("%s alias analysis does not support memory objects of unknown size. " +
+                    "You can try the %s alias analysis", FIELD_SENSITIVE, FULL));
+            }
             for (int i = 0; i < div(l.base.getKnownSize(), alignment); i++) {
                 int mapped = l.offset + offset + i * alignment;
                 if (0 <= mapped && mapped < l.base.getKnownSize()) {
