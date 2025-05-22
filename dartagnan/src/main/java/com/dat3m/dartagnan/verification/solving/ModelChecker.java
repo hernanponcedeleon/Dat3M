@@ -11,6 +11,7 @@ import com.dat3m.dartagnan.program.analysis.*;
 import com.dat3m.dartagnan.program.analysis.alias.AliasAnalysis;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.core.MemoryCoreEvent;
+import com.dat3m.dartagnan.program.event.metadata.SourceLocation;
 import com.dat3m.dartagnan.program.processing.ProcessingManager;
 import com.dat3m.dartagnan.smt.ModelExt;
 import com.dat3m.dartagnan.utils.Result;
@@ -28,8 +29,13 @@ import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.java_smt.api.ProverEnvironment;
 import org.sosy_lab.java_smt.api.SolverException;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
+import java.util.TreeMap;
+import java.util.TreeSet;
 
 import static com.dat3m.dartagnan.configuration.Property.CAT_SPEC;
 import static com.dat3m.dartagnan.program.analysis.SyntacticContextAnalysis.*;
@@ -94,13 +100,7 @@ public abstract class ModelChecker {
                 analysisContext, config));
         final AliasAnalysis alias = AliasAnalysis.fromConfig(program, analysisContext, config, logger.isWarnEnabled());
         analysisContext.register(AliasAnalysis.class, alias);
-        if (logger.isWarnEnabled()) {
-            final List<MemoryCoreEvent> mixedSizeAccesses = program.getThreadEvents(MemoryCoreEvent.class).stream()
-                    .filter(e -> !alias.mayMixedSizeAccesses(e).isEmpty()).toList();
-            if (!mixedSizeAccesses.isEmpty()) {
-                logger.warn("Detected potential mixed-size accesses: {}", mixedSizeAccesses);
-            }
-        }
+        checkForMixedSizeAccesses(program, alias);
         analysisContext.register(ThreadSymmetry.class, ThreadSymmetry.fromConfig(program, config));
         for(Thread thread : program.getThreads()) {
             for(Event e : thread.getEvents()) {
@@ -159,4 +159,30 @@ public abstract class ModelChecker {
         }
     }
 
+    private static void checkForMixedSizeAccesses(Program program, AliasAnalysis alias) {
+        if (!logger.isWarnEnabled()) {
+            return;
+        }
+        final Set<String> internalEvents = new TreeSet<>();
+        final Map<String, Set<Integer>> externalEvents = new TreeMap<>();
+        for (MemoryCoreEvent event : program.getThreadEvents(MemoryCoreEvent.class)) {
+            if (alias.mayMixedSizeAccesses(event).isEmpty()) {
+                continue;
+            }
+            final SourceLocation location = event.getMetadata(SourceLocation.class);
+            if (location == null) {
+                internalEvents.add("E" + event.getGlobalId());
+            } else {
+                externalEvents.computeIfAbsent(location.getSourceCodeFileName(), k -> new TreeSet<>())
+                        .add(location.lineNumber());
+            }
+        }
+        if (!internalEvents.isEmpty() || !externalEvents.isEmpty()) {
+            final List<String> list = new ArrayList<>(internalEvents);
+            for (Map.Entry<String, Set<Integer>> entry : externalEvents.entrySet()) {
+                list.add(entry.getKey() + entry.getValue());
+            }
+            logger.warn("Some events may require tearing: {}", String.join(", ", list));
+        }
+    }
 }
