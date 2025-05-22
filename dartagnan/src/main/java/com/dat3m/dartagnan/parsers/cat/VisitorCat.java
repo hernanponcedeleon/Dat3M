@@ -116,9 +116,13 @@ class VisitorCat extends CatBaseVisitor<Object> {
         try {
             Relation r = parseAsRelation(ctx.e);
             Constructor<?> constructor = ctx.cls.getConstructor(Relation.class, boolean.class, boolean.class);
-            Axiom axiom = (Axiom) constructor.newInstance(r, ctx.negate != null, ctx.flag != null);
-            if (ctx.NAME() != null) {
-                axiom.setName(ctx.NAME().toString());
+            boolean negate = ctx.negate != null ^ ctx.undef != null;
+            boolean flag = ctx.flag != null || ctx.undef != null;
+            Axiom axiom = (Axiom) constructor.newInstance(r, negate, flag);
+            String name = ctx.NAME() != null ? ctx.NAME().toString() : "";
+            name += ctx.undef != null ? " (*undef*)" : "";
+            if (!name.isEmpty()) {
+                axiom.setName(name);
             }
             wmm.addConstraint(axiom);
         } catch (NoSuchMethodException | InstantiationException | IllegalAccessException |
