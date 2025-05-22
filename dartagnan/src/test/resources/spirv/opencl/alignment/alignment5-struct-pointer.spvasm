@@ -1,0 +1,293 @@
+; @Input: %r_aligned={0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
+; @Input: %r_unaligned={0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
+; @Output: forall (%r_aligned[0] == 0 and %r_aligned[1] == 1 and %r_aligned[2] == 2 and %r_aligned[3] == 3 and %r_aligned[4] == 4)
+; @Output: forall (%r_aligned[8] == 5 and %r_aligned[9] == 6 and %r_aligned[10] == 7 and %r_aligned[11] == 8 and %r_aligned[12] == 9)
+; @Output: forall (%r_unaligned[0] == 10 and %r_unaligned[1] == 11 and %r_unaligned[2] == 12 and %r_unaligned[3] == 13 and %r_unaligned[4] == 14)
+; @Output: forall (%r_unaligned[5] == 15 and %r_unaligned[6] == 16 and %r_unaligned[7] == 17 and %r_unaligned[8] == 18 and %r_unaligned[9] == 19)
+; SPIR-V
+; Version: 1.0
+; Generator: Khronos LLVM/SPIR-V Translator; 14
+; Bound: 159
+; Schema: 0
+               OpCapability Addresses
+               OpCapability Kernel
+               OpCapability GenericPointer
+               OpCapability Int8
+          %1 = OpExtInstImport "OpenCL.std"
+               OpMemoryModel Physical32 OpenCL
+               OpEntryPoint Kernel %15 "test"
+               OpSource OpenCL_C 200000
+               OpName %struct_aligned_t "struct.aligned_t"
+               OpName %struct_unaligned_t "struct.unaligned_t"
+               OpName %r_aligned "r_aligned"
+               OpName %r_unaligned "r_unaligned"
+               OpName %aligned "aligned"
+               OpName %unaligned "unaligned"
+               OpName %entry "entry"
+               OpName %for_cond "for.cond"
+               OpName %for_body "for.body"
+               OpName %for_inc "for.inc"
+               OpName %for_end "for.end"
+               OpName %r_aligned_addr "r_aligned.addr"
+               OpName %r_unaligned_addr "r_unaligned.addr"
+               OpName %aligned_addr "aligned.addr"
+               OpName %unaligned_addr "unaligned.addr"
+               OpName %i "i"
+               OpName %arrayidx "arrayidx"
+               OpName %a "a"
+               OpName %arrayidx1 "arrayidx1"
+               OpName %b "b"
+               OpName %arrayidx2 "arrayidx2"
+               OpName %arrayidx3 "arrayidx3"
+               OpName %b4 "b4"
+               OpName %arrayidx5 "arrayidx5"
+               OpName %arrayidx6 "arrayidx6"
+               OpName %b7 "b7"
+               OpName %arrayidx8 "arrayidx8"
+               OpName %arrayidx9 "arrayidx9"
+               OpName %b10 "b10"
+               OpName %arrayidx11 "arrayidx11"
+               OpName %arrayidx12 "arrayidx12"
+               OpName %a13 "a13"
+               OpName %arrayidx14 "arrayidx14"
+               OpName %b15 "b15"
+               OpName %arrayidx16 "arrayidx16"
+               OpName %arrayidx17 "arrayidx17"
+               OpName %b18 "b18"
+               OpName %arrayidx19 "arrayidx19"
+               OpName %arrayidx20 "arrayidx20"
+               OpName %b21 "b21"
+               OpName %arrayidx22 "arrayidx22"
+               OpName %arrayidx23 "arrayidx23"
+               OpName %b24 "b24"
+               OpName %arrayidx25 "arrayidx25"
+               OpName %arrayidx26 "arrayidx26"
+               OpName %a27 "a27"
+               OpName %arrayidx28 "arrayidx28"
+               OpName %b29 "b29"
+               OpName %arrayidx30 "arrayidx30"
+               OpName %arrayidx31 "arrayidx31"
+               OpName %b32 "b32"
+               OpName %arrayidx33 "arrayidx33"
+               OpName %arrayidx34 "arrayidx34"
+               OpName %b35 "b35"
+               OpName %arrayidx36 "arrayidx36"
+               OpName %arrayidx37 "arrayidx37"
+               OpName %b38 "b38"
+               OpName %arrayidx39 "arrayidx39"
+               OpName %arrayidx40 "arrayidx40"
+               OpName %a41 "a41"
+               OpName %arrayidx42 "arrayidx42"
+               OpName %b43 "b43"
+               OpName %arrayidx44 "arrayidx44"
+               OpName %arrayidx45 "arrayidx45"
+               OpName %b46 "b46"
+               OpName %arrayidx47 "arrayidx47"
+               OpName %arrayidx48 "arrayidx48"
+               OpName %b49 "b49"
+               OpName %arrayidx50 "arrayidx50"
+               OpName %arrayidx51 "arrayidx51"
+               OpName %b52 "b52"
+               OpName %arrayidx53 "arrayidx53"
+               OpName %cmp "cmp"
+               OpName %add_ptr "add.ptr"
+               OpName %arrayidx54 "arrayidx54"
+               OpName %add_ptr55 "add.ptr55"
+               OpName %arrayidx56 "arrayidx56"
+               OpName %inc "inc"
+               OpDecorate %r_aligned_addr Alignment 4
+               OpDecorate %r_unaligned_addr Alignment 4
+               OpDecorate %aligned_addr Alignment 4
+               OpDecorate %unaligned_addr Alignment 4
+               OpDecorate %i Alignment 4
+      %uchar = OpTypeInt 8 0
+       %uint = OpTypeInt 32 0
+     %uint_4 = OpConstant %uint 4
+     %uint_3 = OpConstant %uint 3
+     %uint_0 = OpConstant %uint 0
+    %uchar_0 = OpConstant %uchar 0
+     %uint_1 = OpConstant %uint 1
+    %uchar_1 = OpConstant %uchar 1
+    %uchar_2 = OpConstant %uchar 2
+     %uint_2 = OpConstant %uint 2
+    %uchar_3 = OpConstant %uchar 3
+    %uchar_4 = OpConstant %uchar 4
+    %uchar_5 = OpConstant %uchar 5
+    %uchar_6 = OpConstant %uchar 6
+    %uchar_7 = OpConstant %uchar 7
+    %uchar_8 = OpConstant %uchar 8
+    %uchar_9 = OpConstant %uchar 9
+   %uchar_10 = OpConstant %uchar 10
+   %uchar_11 = OpConstant %uchar 11
+   %uchar_12 = OpConstant %uchar 12
+   %uchar_13 = OpConstant %uchar 13
+   %uchar_14 = OpConstant %uchar 14
+   %uchar_15 = OpConstant %uchar 15
+   %uchar_16 = OpConstant %uchar 16
+   %uchar_17 = OpConstant %uchar 17
+   %uchar_18 = OpConstant %uchar 18
+   %uchar_19 = OpConstant %uchar 19
+    %uint_16 = OpConstant %uint 16
+       %void = OpTypeVoid
+%_ptr_CrossWorkgroup_uchar = OpTypePointer CrossWorkgroup %uchar
+%_arr_uchar_uint_4 = OpTypeArray %uchar %uint_4
+%_arr_uchar_uint_3 = OpTypeArray %uchar %uint_3
+%struct_aligned_t = OpTypeStruct %uchar %_arr_uchar_uint_4 %_arr_uchar_uint_3
+%_ptr_CrossWorkgroup_struct_aligned_t = OpTypePointer CrossWorkgroup %struct_aligned_t
+%struct_unaligned_t = OpTypeStruct %uchar %_arr_uchar_uint_4
+%_ptr_CrossWorkgroup_struct_unaligned_t = OpTypePointer CrossWorkgroup %struct_unaligned_t
+         %14 = OpTypeFunction %void %_ptr_CrossWorkgroup_uchar %_ptr_CrossWorkgroup_uchar %_ptr_CrossWorkgroup_struct_aligned_t %_ptr_CrossWorkgroup_struct_unaligned_t
+%_ptr_Function__ptr_CrossWorkgroup_uchar = OpTypePointer Function %_ptr_CrossWorkgroup_uchar
+%_ptr_Function__ptr_CrossWorkgroup_struct_aligned_t = OpTypePointer Function %_ptr_CrossWorkgroup_struct_aligned_t
+%_ptr_Function__ptr_CrossWorkgroup_struct_unaligned_t = OpTypePointer Function %_ptr_CrossWorkgroup_struct_unaligned_t
+%_ptr_Function_uint = OpTypePointer Function %uint
+%_ptr_CrossWorkgroup__arr_uchar_uint_4 = OpTypePointer CrossWorkgroup %_arr_uchar_uint_4
+       %bool = OpTypeBool
+%_ptr_Generic_uchar = OpTypePointer Generic %uchar
+         %15 = OpFunction %void DontInline %14
+  %r_aligned = OpFunctionParameter %_ptr_CrossWorkgroup_uchar
+%r_unaligned = OpFunctionParameter %_ptr_CrossWorkgroup_uchar
+    %aligned = OpFunctionParameter %_ptr_CrossWorkgroup_struct_aligned_t
+  %unaligned = OpFunctionParameter %_ptr_CrossWorkgroup_struct_unaligned_t
+      %entry = OpLabel
+%r_aligned_addr = OpVariable %_ptr_Function__ptr_CrossWorkgroup_uchar Function
+%r_unaligned_addr = OpVariable %_ptr_Function__ptr_CrossWorkgroup_uchar Function
+%aligned_addr = OpVariable %_ptr_Function__ptr_CrossWorkgroup_struct_aligned_t Function
+%unaligned_addr = OpVariable %_ptr_Function__ptr_CrossWorkgroup_struct_unaligned_t Function
+          %i = OpVariable %_ptr_Function_uint Function
+               OpStore %r_aligned_addr %r_aligned Aligned 4
+               OpStore %r_unaligned_addr %r_unaligned Aligned 4
+               OpStore %aligned_addr %aligned Aligned 4
+               OpStore %unaligned_addr %unaligned Aligned 4
+         %34 = OpLoad %_ptr_CrossWorkgroup_struct_aligned_t %aligned_addr Aligned 4
+   %arrayidx = OpInBoundsPtrAccessChain %_ptr_CrossWorkgroup_struct_aligned_t %34 %uint_0
+          %a = OpInBoundsPtrAccessChain %_ptr_CrossWorkgroup_uchar %arrayidx %uint_0 %uint_0
+               OpStore %a %uchar_0 Aligned 4
+         %39 = OpLoad %_ptr_CrossWorkgroup_struct_aligned_t %aligned_addr Aligned 4
+  %arrayidx1 = OpInBoundsPtrAccessChain %_ptr_CrossWorkgroup_struct_aligned_t %39 %uint_0
+          %b = OpInBoundsPtrAccessChain %_ptr_CrossWorkgroup__arr_uchar_uint_4 %arrayidx1 %uint_0 %uint_1
+  %arrayidx2 = OpInBoundsPtrAccessChain %_ptr_CrossWorkgroup_uchar %b %uint_0 %uint_0
+               OpStore %arrayidx2 %uchar_1 Aligned 1
+         %46 = OpLoad %_ptr_CrossWorkgroup_struct_aligned_t %aligned_addr Aligned 4
+  %arrayidx3 = OpInBoundsPtrAccessChain %_ptr_CrossWorkgroup_struct_aligned_t %46 %uint_0
+         %b4 = OpInBoundsPtrAccessChain %_ptr_CrossWorkgroup__arr_uchar_uint_4 %arrayidx3 %uint_0 %uint_1
+  %arrayidx5 = OpInBoundsPtrAccessChain %_ptr_CrossWorkgroup_uchar %b4 %uint_0 %uint_1
+               OpStore %arrayidx5 %uchar_2 Aligned 1
+         %51 = OpLoad %_ptr_CrossWorkgroup_struct_aligned_t %aligned_addr Aligned 4
+  %arrayidx6 = OpInBoundsPtrAccessChain %_ptr_CrossWorkgroup_struct_aligned_t %51 %uint_0
+         %b7 = OpInBoundsPtrAccessChain %_ptr_CrossWorkgroup__arr_uchar_uint_4 %arrayidx6 %uint_0 %uint_1
+  %arrayidx8 = OpInBoundsPtrAccessChain %_ptr_CrossWorkgroup_uchar %b7 %uint_0 %uint_2
+               OpStore %arrayidx8 %uchar_3 Aligned 1
+         %57 = OpLoad %_ptr_CrossWorkgroup_struct_aligned_t %aligned_addr Aligned 4
+  %arrayidx9 = OpInBoundsPtrAccessChain %_ptr_CrossWorkgroup_struct_aligned_t %57 %uint_0
+        %b10 = OpInBoundsPtrAccessChain %_ptr_CrossWorkgroup__arr_uchar_uint_4 %arrayidx9 %uint_0 %uint_1
+ %arrayidx11 = OpInBoundsPtrAccessChain %_ptr_CrossWorkgroup_uchar %b10 %uint_0 %uint_3
+               OpStore %arrayidx11 %uchar_4 Aligned 1
+         %62 = OpLoad %_ptr_CrossWorkgroup_struct_aligned_t %aligned_addr Aligned 4
+ %arrayidx12 = OpInBoundsPtrAccessChain %_ptr_CrossWorkgroup_struct_aligned_t %62 %uint_1
+        %a13 = OpInBoundsPtrAccessChain %_ptr_CrossWorkgroup_uchar %arrayidx12 %uint_0 %uint_0
+               OpStore %a13 %uchar_5 Aligned 4
+         %66 = OpLoad %_ptr_CrossWorkgroup_struct_aligned_t %aligned_addr Aligned 4
+ %arrayidx14 = OpInBoundsPtrAccessChain %_ptr_CrossWorkgroup_struct_aligned_t %66 %uint_1
+        %b15 = OpInBoundsPtrAccessChain %_ptr_CrossWorkgroup__arr_uchar_uint_4 %arrayidx14 %uint_0 %uint_1
+ %arrayidx16 = OpInBoundsPtrAccessChain %_ptr_CrossWorkgroup_uchar %b15 %uint_0 %uint_0
+               OpStore %arrayidx16 %uchar_6 Aligned 1
+         %71 = OpLoad %_ptr_CrossWorkgroup_struct_aligned_t %aligned_addr Aligned 4
+ %arrayidx17 = OpInBoundsPtrAccessChain %_ptr_CrossWorkgroup_struct_aligned_t %71 %uint_1
+        %b18 = OpInBoundsPtrAccessChain %_ptr_CrossWorkgroup__arr_uchar_uint_4 %arrayidx17 %uint_0 %uint_1
+ %arrayidx19 = OpInBoundsPtrAccessChain %_ptr_CrossWorkgroup_uchar %b18 %uint_0 %uint_1
+               OpStore %arrayidx19 %uchar_7 Aligned 1
+         %76 = OpLoad %_ptr_CrossWorkgroup_struct_aligned_t %aligned_addr Aligned 4
+ %arrayidx20 = OpInBoundsPtrAccessChain %_ptr_CrossWorkgroup_struct_aligned_t %76 %uint_1
+        %b21 = OpInBoundsPtrAccessChain %_ptr_CrossWorkgroup__arr_uchar_uint_4 %arrayidx20 %uint_0 %uint_1
+ %arrayidx22 = OpInBoundsPtrAccessChain %_ptr_CrossWorkgroup_uchar %b21 %uint_0 %uint_2
+               OpStore %arrayidx22 %uchar_8 Aligned 1
+         %81 = OpLoad %_ptr_CrossWorkgroup_struct_aligned_t %aligned_addr Aligned 4
+ %arrayidx23 = OpInBoundsPtrAccessChain %_ptr_CrossWorkgroup_struct_aligned_t %81 %uint_1
+        %b24 = OpInBoundsPtrAccessChain %_ptr_CrossWorkgroup__arr_uchar_uint_4 %arrayidx23 %uint_0 %uint_1
+ %arrayidx25 = OpInBoundsPtrAccessChain %_ptr_CrossWorkgroup_uchar %b24 %uint_0 %uint_3
+               OpStore %arrayidx25 %uchar_9 Aligned 1
+         %86 = OpLoad %_ptr_CrossWorkgroup_struct_unaligned_t %unaligned_addr Aligned 4
+ %arrayidx26 = OpInBoundsPtrAccessChain %_ptr_CrossWorkgroup_struct_unaligned_t %86 %uint_0
+        %a27 = OpInBoundsPtrAccessChain %_ptr_CrossWorkgroup_uchar %arrayidx26 %uint_0 %uint_0
+               OpStore %a27 %uchar_10 Aligned 1
+         %90 = OpLoad %_ptr_CrossWorkgroup_struct_unaligned_t %unaligned_addr Aligned 4
+ %arrayidx28 = OpInBoundsPtrAccessChain %_ptr_CrossWorkgroup_struct_unaligned_t %90 %uint_0
+        %b29 = OpInBoundsPtrAccessChain %_ptr_CrossWorkgroup__arr_uchar_uint_4 %arrayidx28 %uint_0 %uint_1
+ %arrayidx30 = OpInBoundsPtrAccessChain %_ptr_CrossWorkgroup_uchar %b29 %uint_0 %uint_0
+               OpStore %arrayidx30 %uchar_11 Aligned 1
+         %95 = OpLoad %_ptr_CrossWorkgroup_struct_unaligned_t %unaligned_addr Aligned 4
+ %arrayidx31 = OpInBoundsPtrAccessChain %_ptr_CrossWorkgroup_struct_unaligned_t %95 %uint_0
+        %b32 = OpInBoundsPtrAccessChain %_ptr_CrossWorkgroup__arr_uchar_uint_4 %arrayidx31 %uint_0 %uint_1
+ %arrayidx33 = OpInBoundsPtrAccessChain %_ptr_CrossWorkgroup_uchar %b32 %uint_0 %uint_1
+               OpStore %arrayidx33 %uchar_12 Aligned 1
+        %100 = OpLoad %_ptr_CrossWorkgroup_struct_unaligned_t %unaligned_addr Aligned 4
+ %arrayidx34 = OpInBoundsPtrAccessChain %_ptr_CrossWorkgroup_struct_unaligned_t %100 %uint_0
+        %b35 = OpInBoundsPtrAccessChain %_ptr_CrossWorkgroup__arr_uchar_uint_4 %arrayidx34 %uint_0 %uint_1
+ %arrayidx36 = OpInBoundsPtrAccessChain %_ptr_CrossWorkgroup_uchar %b35 %uint_0 %uint_2
+               OpStore %arrayidx36 %uchar_13 Aligned 1
+        %105 = OpLoad %_ptr_CrossWorkgroup_struct_unaligned_t %unaligned_addr Aligned 4
+ %arrayidx37 = OpInBoundsPtrAccessChain %_ptr_CrossWorkgroup_struct_unaligned_t %105 %uint_0
+        %b38 = OpInBoundsPtrAccessChain %_ptr_CrossWorkgroup__arr_uchar_uint_4 %arrayidx37 %uint_0 %uint_1
+ %arrayidx39 = OpInBoundsPtrAccessChain %_ptr_CrossWorkgroup_uchar %b38 %uint_0 %uint_3
+               OpStore %arrayidx39 %uchar_14 Aligned 1
+        %110 = OpLoad %_ptr_CrossWorkgroup_struct_unaligned_t %unaligned_addr Aligned 4
+ %arrayidx40 = OpInBoundsPtrAccessChain %_ptr_CrossWorkgroup_struct_unaligned_t %110 %uint_1
+        %a41 = OpInBoundsPtrAccessChain %_ptr_CrossWorkgroup_uchar %arrayidx40 %uint_0 %uint_0
+               OpStore %a41 %uchar_15 Aligned 1
+        %114 = OpLoad %_ptr_CrossWorkgroup_struct_unaligned_t %unaligned_addr Aligned 4
+ %arrayidx42 = OpInBoundsPtrAccessChain %_ptr_CrossWorkgroup_struct_unaligned_t %114 %uint_1
+        %b43 = OpInBoundsPtrAccessChain %_ptr_CrossWorkgroup__arr_uchar_uint_4 %arrayidx42 %uint_0 %uint_1
+ %arrayidx44 = OpInBoundsPtrAccessChain %_ptr_CrossWorkgroup_uchar %b43 %uint_0 %uint_0
+               OpStore %arrayidx44 %uchar_16 Aligned 1
+        %119 = OpLoad %_ptr_CrossWorkgroup_struct_unaligned_t %unaligned_addr Aligned 4
+ %arrayidx45 = OpInBoundsPtrAccessChain %_ptr_CrossWorkgroup_struct_unaligned_t %119 %uint_1
+        %b46 = OpInBoundsPtrAccessChain %_ptr_CrossWorkgroup__arr_uchar_uint_4 %arrayidx45 %uint_0 %uint_1
+ %arrayidx47 = OpInBoundsPtrAccessChain %_ptr_CrossWorkgroup_uchar %b46 %uint_0 %uint_1
+               OpStore %arrayidx47 %uchar_17 Aligned 1
+        %124 = OpLoad %_ptr_CrossWorkgroup_struct_unaligned_t %unaligned_addr Aligned 4
+ %arrayidx48 = OpInBoundsPtrAccessChain %_ptr_CrossWorkgroup_struct_unaligned_t %124 %uint_1
+        %b49 = OpInBoundsPtrAccessChain %_ptr_CrossWorkgroup__arr_uchar_uint_4 %arrayidx48 %uint_0 %uint_1
+ %arrayidx50 = OpInBoundsPtrAccessChain %_ptr_CrossWorkgroup_uchar %b49 %uint_0 %uint_2
+               OpStore %arrayidx50 %uchar_18 Aligned 1
+        %129 = OpLoad %_ptr_CrossWorkgroup_struct_unaligned_t %unaligned_addr Aligned 4
+ %arrayidx51 = OpInBoundsPtrAccessChain %_ptr_CrossWorkgroup_struct_unaligned_t %129 %uint_1
+        %b52 = OpInBoundsPtrAccessChain %_ptr_CrossWorkgroup__arr_uchar_uint_4 %arrayidx51 %uint_0 %uint_1
+ %arrayidx53 = OpInBoundsPtrAccessChain %_ptr_CrossWorkgroup_uchar %b52 %uint_0 %uint_3
+               OpStore %arrayidx53 %uchar_19 Aligned 1
+               OpStore %i %uint_0 Aligned 4
+               OpBranch %for_cond
+   %for_cond = OpLabel
+        %134 = OpLoad %uint %i Aligned 4
+        %cmp = OpSLessThan %bool %134 %uint_16
+               OpBranchConditional %cmp %for_body %for_end
+   %for_body = OpLabel
+        %138 = OpLoad %_ptr_CrossWorkgroup_struct_aligned_t %aligned_addr Aligned 4
+        %139 = OpBitcast %_ptr_CrossWorkgroup_uchar %138
+        %141 = OpPtrCastToGeneric %_ptr_Generic_uchar %139
+        %142 = OpLoad %uint %i Aligned 4
+    %add_ptr = OpInBoundsPtrAccessChain %_ptr_Generic_uchar %141 %142
+        %144 = OpLoad %uchar %add_ptr Aligned 1
+        %145 = OpLoad %_ptr_CrossWorkgroup_uchar %r_aligned_addr Aligned 4
+        %146 = OpLoad %uint %i Aligned 4
+ %arrayidx54 = OpInBoundsPtrAccessChain %_ptr_CrossWorkgroup_uchar %145 %146
+               OpStore %arrayidx54 %144 Aligned 1
+        %148 = OpLoad %_ptr_CrossWorkgroup_struct_unaligned_t %unaligned_addr Aligned 4
+        %149 = OpBitcast %_ptr_CrossWorkgroup_uchar %148
+        %150 = OpPtrCastToGeneric %_ptr_Generic_uchar %149
+        %151 = OpLoad %uint %i Aligned 4
+  %add_ptr55 = OpInBoundsPtrAccessChain %_ptr_Generic_uchar %150 %151
+        %153 = OpLoad %uchar %add_ptr55 Aligned 1
+        %154 = OpLoad %_ptr_CrossWorkgroup_uchar %r_unaligned_addr Aligned 4
+        %155 = OpLoad %uint %i Aligned 4
+ %arrayidx56 = OpInBoundsPtrAccessChain %_ptr_CrossWorkgroup_uchar %154 %155
+               OpStore %arrayidx56 %153 Aligned 1
+               OpBranch %for_inc
+    %for_inc = OpLabel
+        %157 = OpLoad %uint %i Aligned 4
+        %inc = OpIAdd %uint %157 %uint_1
+               OpStore %i %inc Aligned 4
+               OpBranch %for_cond
+    %for_end = OpLabel
+               OpReturn
+               OpFunctionEnd

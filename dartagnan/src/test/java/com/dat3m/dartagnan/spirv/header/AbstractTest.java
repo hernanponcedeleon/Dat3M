@@ -34,7 +34,7 @@ public abstract class AbstractTest {
                   %a3uint = OpTypeArray %uint64 %c3
                   %struct = OpTypeStruct %a2uint %v1uint
                 %struct_2 = OpTypeStruct %uint16 %uint32 %uint64
-                %v1v1uint = OpTypeVector %v1uint 1
+                %v1v1uint = OpTypeArray %v1uint %c1
               %ptr_uint16 = OpTypePointer Uniform %uint16
               %ptr_uint32 = OpTypePointer Uniform %uint32
               %ptr_uint64 = OpTypePointer Uniform %uint64
