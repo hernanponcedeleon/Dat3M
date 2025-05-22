@@ -1,11 +1,9 @@
 package com.dat3m.dartagnan.parsers.program.visitors.spirv;
 
-import com.dat3m.dartagnan.parsers.program.visitors.spirv.decorations.Alignment;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.decorations.DecorationType;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.decorations.Offset;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.mocks.MockProgramBuilder;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.mocks.MockSpirvParser;
-import com.dat3m.dartagnan.program.memory.ScopedPointerVariable;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
@@ -13,19 +11,6 @@ import static org.junit.Assert.assertEquals;
 public class VisitorOpsAnnotationTest {
 
     private final MockProgramBuilder builder = new MockProgramBuilder();
-
-    @Test
-    public void testAlignment() {
-        // given
-        String input = "OpDecorate %v_uint_aligned Alignment 16";
-
-        // when
-        visit(input);
-
-        // then
-        Alignment alignment = (Alignment) builder.getDecorationsBuilder().getDecoration(DecorationType.ALIGNMENT);
-        assertEquals(16, (long) alignment.getValue("%v_uint_aligned"));
-    }
 
     @Test
     public void testOffset() {
