@@ -52,11 +52,11 @@ public class CoreCodeVerification implements FunctionProcessor {
         final List<Event> nonCoreEvents = function.getEvents().stream().
                 filter(e -> !(e instanceof CodeAnnotation) && !CORE_CLASSES.contains(e.getClass())).toList();
         if (!nonCoreEvents.isEmpty()) {
-            String msg = "";
+            StringBuilder msg = new StringBuilder();
             for (Event e : nonCoreEvents) {
-                msg += String.format("\t%2s: %-30s  %s %n", e.getGlobalId(), e, e.getClass().getSimpleName());
+                msg.append(String.format("\t%2s: %-30s  %s %n", e.getGlobalId(), e, e.getClass().getSimpleName()));
             }
-            throw new MalformedProgramException("Found non-core events.\n" + msg);
+            throw new MalformedProgramException("Found non-core events.\n" + msg.toString());
         }
     }
 }

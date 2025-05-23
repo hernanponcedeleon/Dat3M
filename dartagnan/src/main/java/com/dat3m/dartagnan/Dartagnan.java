@@ -184,6 +184,13 @@ public class Dartagnan extends BaseOptions {
             witness = new ParserWitness().parse(new File(o.getWitnessPath()));
         }
 
+        if (properties.contains(DATARACEFREEDOM) && properties.size() > 1) {
+            System.out.println("Data race detection cannot be combined with other properties");
+                if(!o.runBatch()) {
+                    System.exit(1);
+                }
+        }
+
         for (File f : files) {
 
             ShutdownManager sdm = ShutdownManager.create();
@@ -231,12 +238,6 @@ public class Dartagnan extends BaseOptions {
                             ProverOptions.GENERATE_MODELS)) {
                     ModelChecker modelChecker;
                     if (properties.contains(DATARACEFREEDOM)) {
-                        if (properties.size() > 1) {
-                            System.out.println("Data race detection cannot be combined with other properties");
-                            if(!o.runBatch()) {
-                                System.exit(1);
-                            }
-                        }
                         modelChecker = DataRaceSolver.run(ctx, prover, task);
                     } else {
                         // Property is either PROGRAM_SPEC, TERMINATION, or CAT_SPEC
@@ -255,7 +256,7 @@ public class Dartagnan extends BaseOptions {
                     boolean nonEmptyFilter = !(p.getFilterSpecification() instanceof BoolLiteral bLit) || !bLit.getValue();
                     showFilter = !ignoreFilter && nonEmptyFilter;
                     // We only show the condition if this is the reason of the failure
-                    showSpecification = summary.reason == ResultSummary.PROGRAM_SPEC_REASON;
+                    showSpecification = summary.reason.equals(ResultSummary.PROGRAM_SPEC_REASON);
 
                     if (modelChecker.hasModel() && o.getWitnessType().generateGraphviz()) {
                         generateExecutionGraphFile(task, prover, modelChecker, o.getWitnessType());
@@ -361,7 +362,6 @@ public class Dartagnan extends BaseOptions {
                     .stream().filter(ass -> model.assertionViolated(ass))
                     .toList();
                 for (Assert ass : violations) {
-                    final boolean isViolated = model.assertionViolated(ass);
                     final String callStack = makeContextString(synContext.getContextInfo(ass).getContextOfType(CallContext.class), " -> ");
                     details
                             .append("\tE").append(ass.getGlobalId())
@@ -498,25 +498,23 @@ public class Dartagnan extends BaseOptions {
         final SourceLanguage format = program.getFormat();
         if (format == SourceLanguage.LITMUS || format == SourceLanguage.SPV) {
             sb.append(program.getSpecificationType().toString().toLowerCase()).append(" ");
-            boolean init = false;
             if (program.getSpecification() != null) {
                 sb.append(new ExpressionPrinter(true).visit(program.getSpecification()));
-                init = true;
             }
             sb.append("\n");
         }
         return sb.toString();
     }
 
-    public static record ResultSummary (
+    public record ResultSummary (
             String test, Expression filter, Result result, String condition,
             String reason, String details, long time, ExitCode code) {
 
-        private static String PROGRAM_SPEC_REASON = "Program specification violation found";
-        private static String TERMINATION_REASON = "Termination violation found";
-        private static String CAT_SPEC_REASON = "CAT specification violation found";
-        private static String SVCOMP_RACE_REASON = "SVCOMP data race found";
-        private static String BOUND_REASON = "Not fully unrolled loops";
+        final private static String PROGRAM_SPEC_REASON = "Program specification violation found";
+        final private static String TERMINATION_REASON = "Termination violation found";
+        final private static String CAT_SPEC_REASON = "CAT specification violation found";
+        final private static String SVCOMP_RACE_REASON = "SVCOMP data race found";
+        final private static String BOUND_REASON = "Not fully unrolled loops";
 
         @Override
         public String toString() {
