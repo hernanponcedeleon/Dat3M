@@ -287,7 +287,7 @@ public class Dartagnan extends BaseOptions {
                 .sorted(Comparator.comparing(File::toString))
                 .toList();
         } catch (IOException e) {
-            e.printStackTrace();
+            logger.error("There was an I/O error when accessing path " + path);
             System.exit(UNKNOWN_ERROR.asInt());
         }
         return files;
