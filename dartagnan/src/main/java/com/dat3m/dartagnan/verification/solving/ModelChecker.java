@@ -29,13 +29,7 @@ import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.java_smt.api.ProverEnvironment;
 import org.sosy_lab.java_smt.api.SolverException;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
-import java.util.TreeMap;
-import java.util.TreeSet;
+import java.util.*;
 
 import static com.dat3m.dartagnan.configuration.Property.CAT_SPEC;
 import static com.dat3m.dartagnan.program.analysis.SyntacticContextAnalysis.*;
@@ -164,7 +158,7 @@ public abstract class ModelChecker {
             return;
         }
         final Set<String> internalEvents = new TreeSet<>();
-        final Map<String, Set<Integer>> externalEvents = new TreeMap<>();
+        final Set<SourceLocation> externalEvents = new HashSet<>();
         for (MemoryCoreEvent event : program.getThreadEvents(MemoryCoreEvent.class)) {
             if (alias.mayMixedSizeAccesses(event).isEmpty()) {
                 continue;
@@ -173,15 +167,12 @@ public abstract class ModelChecker {
             if (location == null) {
                 internalEvents.add("E" + event.getGlobalId());
             } else {
-                externalEvents.computeIfAbsent(location.getSourceCodeFileName(), k -> new TreeSet<>())
-                        .add(location.lineNumber());
+                externalEvents.add(location);
             }
         }
         if (!internalEvents.isEmpty() || !externalEvents.isEmpty()) {
             final List<String> list = new ArrayList<>(internalEvents);
-            for (Map.Entry<String, Set<Integer>> entry : externalEvents.entrySet()) {
-                list.add(entry.getKey() + entry.getValue());
-            }
+            list.addAll(SourceLocation.toStringList(externalEvents));
             logger.warn("Some events may require tearing: {}", String.join(", ", list));
         }
     }
