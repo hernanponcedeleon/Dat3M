@@ -156,24 +156,28 @@ public class Dartagnan extends BaseOptions {
         logger.info("CAT file path: {}", fileModel);
         Wmm mcm = new ParserCat(Path.of(o.getCatIncludePath())).parse(fileModel);
 
-        if (o.runBatch()) {
+        final List<File> files = new ArrayList();
+        Stream.of(args)
+            .map(File::new)
+            .forEach(file -> {
+                if (file.exists()) {
+                    final String path = file.getAbsolutePath();
+                    logger.info("Program(s) path: {}", path);
+                    if (file.isDirectory()) {
+                        files.addAll(getProgramsFiles(path));
+                    } else if (file.isFile() && supportedFormats.stream().anyMatch(file.getName()::endsWith)) {
+                        files.add(file);
+                    }
+                }
+            });
+        if (files.isEmpty()) {
+            throw new IllegalArgumentException("Path to input program(s) not given or format not recognized");
+        }
+        if (files.size() > 1) {
             System.out.println("================ Configuration ==================");
             System.out.println("cat = " + fileModel);
             System.out.print(config.asPropertiesString()); // it already contains its own \n
             System.out.println("=================================================");
-        }
-
-        List<File> files;
-        if (o.runBatch()) {
-            String batchPath = o.getBatchPath();
-            files = getProgramsFiles(batchPath);
-            logger.info("Programs batch path: {}", batchPath);
-        } else {
-            File fileProgram = new File(Arrays.stream(args).filter(a -> supportedFormats.stream().anyMatch(a::endsWith))
-                .findFirst()
-                .orElseThrow(() -> new IllegalArgumentException("Input program not given or format not recognized")));
-            files = List.of(fileProgram);
-            logger.info("Program path: {}", fileProgram);
         }
 
         EnumSet<Property> properties = o.getProperty();
@@ -186,7 +190,7 @@ public class Dartagnan extends BaseOptions {
 
         if (properties.contains(DATARACEFREEDOM) && properties.size() > 1) {
             System.out.println("Data race detection cannot be combined with other properties");
-                if(!o.runBatch()) {
+                if(!(files.size() > 1)) {
                     System.exit(1);
                 }
         }
@@ -274,7 +278,7 @@ public class Dartagnan extends BaseOptions {
                 final String details = "\t" + Optional.ofNullable(e.getMessage()).orElse("Unknown error occurred");
                 summary = new ResultSummary(f.toString(), null, ERROR, "", reason, details, 0, UNKNOWN_ERROR);
             }
-            summary.printAndTerminate(o.runBatch(), showFilter, showSpecification);
+            summary.printAndTerminate(files.size() > 1, showFilter, showSpecification);
         }
     }
 

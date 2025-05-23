@@ -16,7 +16,6 @@ public class OptionNames {
     public static final String WITNESS = "witness";
     public static final String SMTLIB2 = "smtlib2";
     public static final String CAT_INCLUDE = "cat.include";
-    public static final String BATCH = "batch";
 
     // Modeling Options
     public static final String PROGRESSMODEL = "modeling.progress";
