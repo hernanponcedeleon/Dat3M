@@ -10,6 +10,8 @@ import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.analysis.*;
 import com.dat3m.dartagnan.program.analysis.alias.AliasAnalysis;
 import com.dat3m.dartagnan.program.event.Event;
+import com.dat3m.dartagnan.program.event.core.MemoryCoreEvent;
+import com.dat3m.dartagnan.program.event.metadata.SourceLocation;
 import com.dat3m.dartagnan.program.processing.ProcessingManager;
 import com.dat3m.dartagnan.smt.ModelExt;
 import com.dat3m.dartagnan.utils.Result;
@@ -20,18 +22,22 @@ import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
 import com.dat3m.dartagnan.wmm.analysis.WmmAnalysis;
 import com.dat3m.dartagnan.wmm.axiom.Axiom;
 import com.dat3m.dartagnan.wmm.processing.WmmProcessingManager;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.java_smt.api.ProverEnvironment;
 import org.sosy_lab.java_smt.api.SolverException;
 
-import java.util.Optional;
+import java.util.*;
 
 import static com.dat3m.dartagnan.configuration.Property.CAT_SPEC;
 import static com.dat3m.dartagnan.program.analysis.SyntacticContextAnalysis.*;
 import static com.dat3m.dartagnan.utils.Result.*;
 
 public abstract class ModelChecker {
+
+    private static final Logger logger = LogManager.getLogger(ModelChecker.class);
 
     protected Result res = Result.UNKNOWN;
     protected EncodingContext context;
@@ -80,11 +86,15 @@ public abstract class ModelChecker {
      * @exception UnsatisfiedRequirementException Some static analysis is missing.
      */
     public static void performStaticProgramAnalyses(VerificationTask task, Context analysisContext, Configuration config) throws InvalidConfigurationException {
-        Program program = task.getProgram();
+        final Program program = task.getProgram();
         analysisContext.register(BranchEquivalence.class, BranchEquivalence.fromConfig(program, config));
-        analysisContext.register(ExecutionAnalysis.class, ExecutionAnalysis.fromConfig(program, task.getProgressModel(), analysisContext, config));
-        analysisContext.register(ReachingDefinitionsAnalysis.class, ReachingDefinitionsAnalysis.fromConfig(program, analysisContext, config));
-        analysisContext.register(AliasAnalysis.class, AliasAnalysis.fromConfig(program, analysisContext, config));
+        analysisContext.register(ExecutionAnalysis.class, ExecutionAnalysis.fromConfig(program, task.getProgressModel(),
+                analysisContext, config));
+        analysisContext.register(ReachingDefinitionsAnalysis.class, ReachingDefinitionsAnalysis.fromConfig(program,
+                analysisContext, config));
+        final AliasAnalysis alias = AliasAnalysis.fromConfig(program, analysisContext, config, logger.isWarnEnabled());
+        analysisContext.register(AliasAnalysis.class, alias);
+        checkForMixedSizeAccesses(program, alias);
         analysisContext.register(ThreadSymmetry.class, ThreadSymmetry.fromConfig(program, config));
         for(Thread thread : program.getThreads()) {
             for(Event e : thread.getEvents()) {
@@ -143,4 +153,27 @@ public abstract class ModelChecker {
         }
     }
 
+    private static void checkForMixedSizeAccesses(Program program, AliasAnalysis alias) {
+        if (!logger.isWarnEnabled()) {
+            return;
+        }
+        final Set<String> internalEvents = new TreeSet<>();
+        final Set<SourceLocation> externalEvents = new HashSet<>();
+        for (MemoryCoreEvent event : program.getThreadEvents(MemoryCoreEvent.class)) {
+            if (alias.mayMixedSizeAccesses(event).isEmpty()) {
+                continue;
+            }
+            final SourceLocation location = event.getMetadata(SourceLocation.class);
+            if (location == null) {
+                internalEvents.add("E" + event.getGlobalId());
+            } else {
+                externalEvents.add(location);
+            }
+        }
+        if (!internalEvents.isEmpty() || !externalEvents.isEmpty()) {
+            final List<String> list = new ArrayList<>(internalEvents);
+            list.addAll(SourceLocation.toStringList(externalEvents));
+            logger.warn("Some events may require tearing: {}", String.join(", ", list));
+        }
+    }
 }

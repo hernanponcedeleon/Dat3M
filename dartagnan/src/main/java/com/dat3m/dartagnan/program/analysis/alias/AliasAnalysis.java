@@ -2,6 +2,7 @@ package com.dat3m.dartagnan.program.analysis.alias;
 
 import com.dat3m.dartagnan.configuration.Alias;
 import com.dat3m.dartagnan.configuration.Arch;
+import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.event.MemoryEvent;
 import com.dat3m.dartagnan.program.event.core.Init;
@@ -34,18 +35,31 @@ public interface AliasAnalysis {
 
     boolean mayAlias(MemoryCoreEvent a, MemoryCoreEvent b);
 
-    static AliasAnalysis fromConfig(Program program, Context analysisContext, Configuration config) throws InvalidConfigurationException {
-        Config c = new Config(config);
+    /**
+     * Returns an overapproximation of the MSA points in the byte range of the specified event.
+     * <p>
+     * Two memory accesses are called overlapping, if their accessed byte ranges overlap/intersect.
+     * They are called partially overlapping, if they overlap but don't access the exact same byte range.
+     * In this case, at least one end point of one range is inside the other range. We call such a point an MSA point.
+     *
+     * @param event Memory event of the analyzed program.
+     * @return A subset of integers between {@code 0} and {@code event.getAccessSize()}, exclusively.
+     */
+    List<Integer> mayMixedSizeAccesses(MemoryCoreEvent event);
+
+    static AliasAnalysis fromConfig(Program program, Context analysisContext, Configuration config,
+            boolean detectMixedSizeAccesses) throws InvalidConfigurationException {
+        Config c = new Config(config, detectMixedSizeAccesses);
         logger.info("Selected alias analysis: {}", c.method);
         long t0 = System.currentTimeMillis();
         AliasAnalysis a = switch (c.method) {
-            case FIELD_SENSITIVE -> FieldSensitiveAndersen.fromConfig(program, config);
-            case FIELD_INSENSITIVE -> AndersenAliasAnalysis.fromConfig(program, config);
+            case FIELD_SENSITIVE -> FieldSensitiveAndersen.fromConfig(program, c);
+            case FIELD_INSENSITIVE -> AndersenAliasAnalysis.fromConfig(program, c);
             case FULL -> InclusionBasedPointerAnalysis.fromConfig(program, analysisContext, c);
         };
-        a = new CombinedAliasAnalysis(a, EqualityAliasAnalysis.fromConfig(program, config));
+        a = new CombinedAliasAnalysis(a, EqualityAliasAnalysis.fromConfig(program, c));
         if (Arch.supportsVirtualAddressing(program.getArch())) {
-            a = VirtualAliasAnalysis.wrap(a);
+            a = VirtualAliasAnalysis.wrap(a, c);
         }
         if (c.graphviz) {
             a.generateGraph(program, c);
@@ -87,8 +101,22 @@ public interface AliasAnalysis {
                         " Defaults to 'false'.", secure = true)
         boolean graphvizInternal;
 
-        private Config(Configuration config) throws InvalidConfigurationException {
+        final boolean detectMixedSizeAccesses;
+
+        private Config(Configuration config, boolean msa) throws InvalidConfigurationException {
+            detectMixedSizeAccesses = msa;
             config.inject(this);
+        }
+
+        List<Integer> defaultMayMixedSizeAccesses(MemoryCoreEvent event) {
+            final var set = new ArrayList<Integer>();
+            if (detectMixedSizeAccesses) {
+                final int bytes = TypeFactory.getInstance().getMemorySizeInBytes(event.getAccessType());
+                for (int i = 1; i < bytes; i++) {
+                    set.add(i);
+                }
+            }
+            return set;
         }
     }
 
@@ -110,6 +138,18 @@ public interface AliasAnalysis {
         @Override
         public boolean mayAlias(MemoryCoreEvent a, MemoryCoreEvent b) {
             return a1.mayAlias(a, b) && a2.mayAlias(a, b);
+        }
+
+        @Override
+        public List<Integer> mayMixedSizeAccesses(MemoryCoreEvent a) {
+            final List<Integer> set1 = a1.mayMixedSizeAccesses(a);
+            final List<Integer> set2 = a2.mayMixedSizeAccesses(a);
+            // compute the intersection
+            if (set1.isEmpty() || set2.isEmpty()) {
+                return set1.isEmpty() ? set1 : set2;
+            }
+            final boolean smaller = set1.size() < set2.size();
+            return (smaller ? set1 : set2).stream().filter((smaller ? set2 : set1)::contains).toList();
         }
 
         @Override

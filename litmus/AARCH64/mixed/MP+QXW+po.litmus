@@ -1,0 +1,14 @@
+AArch64 MP+QXW+po
+{
+uint64_t x; uint64_t 1:X2; uint64_t 1:X0; uint64_t 0:X3; uint64_t 0:X1;
+
+0:X0=x;
+1:X1=x;
+0:X2=0x101010101010101
+}
+ P0              | P1             ;
+ LDXR X1,[X0]    | LDR W0,[X1]    ;
+ ADD X4,X1,X2    | LDR W2,[X1,#4] ;
+ STXR W3,X4,[X0] |                ;
+exists
+(0:X3=0x0 /\ 0:X1=0x0 /\ 1:X0=0x1010101 /\ 1:X2=0x0)

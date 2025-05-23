@@ -1,0 +1,17 @@
+AArch64 MP+dmb.sy+addrXW+124
+"based on: DMB.SYdWW Rfe DpAddrdR Fre"
+Generator=diyone7 (version 7.46+1)
+{
+uint8_t y[256];
+0:X1=x; 0:X3=y; 0:X5=128;
+1:X1=y; 1:X4=x; 1:X5=124;
+uint64_t 1:X0=0;
+}
+ P0             | P1                     ;
+ MOV W0,#1      | LDR X0,[X1,X5]         ;
+ STR W0,[X1]    | EOR W2,W0,W0           ;
+ DMB SY         | LDR W3,[X4,W2,SXTW]    ;
+ MOV X2,#1      |                        ;
+ STR X2,[X3,X5] |                        ;
+exists
+(1:X0=1 /\ 1:X3=0)

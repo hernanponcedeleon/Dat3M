@@ -1,0 +1,26 @@
+AArch64 MP+dmb.sy+datapw0-rfiw0q0-posq0w4-ctrlisbw4p
+"DMB.SYdWW Rfe DpDatadWPw0 Rfiw0q0 PosRRq0w4 DpCtrlIsbdRw4P Fre"
+Generator=diyone7 (version 7.51+1(dev))
+Prefetch=0:x=F,0:y=W,1:y=F,1:x=T
+Com=Rf Fr
+Orig=DMB.SYdWW Rfe DpDatadWPw0 Rfiw0q0 PosRRq0w4 DpCtrlIsbdRw4P Fre
+{
+uint64_t z; uint64_t y; uint64_t x; uint64_t 1:X7=2; uint64_t 1:X5; uint64_t 1:X0;
+uint32_t 1:X6;
+0:X1=x; 0:X3=y;
+1:X1=y; 1:X2=0x1010101; 1:X4=z; 1:X8=x;
+}
+ P0          | P1             ;
+ MOV X0,#1   | LDR X0,[X1]    ;
+ STR X0,[X1] | EOR X3,X0,X0   ;
+ DMB SY      | ADD W3,W3,W2   ;
+ MOV X2,#1   | STR W3,[X4]    ;
+ STR X2,[X3] | LDR X5,[X4]    ;
+             | LDR W6,[X4,#4] ;
+             | CBNZ X6,LC00   ;
+             | ISB            ;
+             | LDR X7,[X8]    ;
+             |LC00:           ;
+locations[1:X6;]
+exists
+(1:X0=0x1 /\ 1:X5=0x1010101 /\ 1:X7=0x0)
