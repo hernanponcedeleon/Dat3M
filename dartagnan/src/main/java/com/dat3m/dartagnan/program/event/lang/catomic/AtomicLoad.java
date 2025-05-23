@@ -16,7 +16,7 @@ public class AtomicLoad extends LoadBase {
         super(register, address, mo);
         Preconditions.checkArgument(!mo.isEmpty(), "Atomic events cannot have empty memory order");
         Preconditions.checkArgument(!mo.equals(MO_RELEASE) && !mo.equals(MO_ACQUIRE_RELEASE),
-                getClass().getName() + " can not have memory order: " + mo);
+                getClass().getSimpleName() + " cannot have memory order: " + mo);
     }
 
     private AtomicLoad(AtomicLoad other) {
