@@ -39,19 +39,6 @@
 "ARMv8 AArch64"
 
 (*
- * Include the cos.cat file shipped with herd.
- * This builds the co relation as a total order over writes to the same
- * location and then consequently defines the fr relation using co and
- * rf.
- *)
-include "cos.cat"
-
-(*
- * Include aarch64fences.cat so that barriers show up in generated diagrams.
- *)
-include "aarch64fences.cat"
-
-(*
  * As a restriction of the model, all observers are limited to the same
  * inner-shareable domain. Consequently, the ISH, OSH and SY barrier
  * options are all equivalent to each other.

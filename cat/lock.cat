@@ -1,9 +1,9 @@
-// // SPDX-License-Identifier: GPL-2.0+
-// (*
-//  * Copyright (C) 2016 Luc Maranget <luc.maranget@inria.fr> for Inria
-//  * Copyright (C) 2017 Alan Stern <stern@rowland.harvard.edu>
-//  *)
-//
+// SPDX-License-Identifier: GPL-2.0+
+(*
+ * Copyright (C) 2016 Luc Maranget <luc.maranget@inria.fr> for Inria
+ * Copyright (C) 2017 Alan Stern <stern@rowland.harvard.edu>
+ *)
+
 // (*
 //  * Generate coherence orders and handle lock operations
 //  *
@@ -143,6 +143,4 @@
 // let fre = fr & ext
 // let fri = fr & int
 //
-// show co,rf,fr
-
-include "basic.cat"
+show co,rf,fr

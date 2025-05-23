@@ -12,9 +12,6 @@ C "C++11"
 * https://multicore.doc.ic.ac.uk/overhauling/c11_partialSC.cat
 *)
 
-include "c11_cos.cat"
-include "c11_los.cat"
-
 // dynamic_tag relates events to itself that access an address whose init event is marked X
 let dynamic_tag(X) = [range([IW & X]; loc)]
 
