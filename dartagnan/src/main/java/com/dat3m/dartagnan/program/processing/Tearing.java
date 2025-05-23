@@ -158,16 +158,13 @@ public final class Tearing implements ProgramProcessor {
         //TODO currently, FinalMemoryValue only occurs in the program's final state expressions.
         final Expression specification = program.getSpecification();
         final Expression filter = program.getFilterSpecification();
-        if (specification == null && filter == null) {
-            return;
-        }
         final var substitution = new FinalValueTearSubstitution();
         for (Init init : program.getThreadEvents(Init.class)) {
             substitution.typesByObject.computeIfAbsent(init.getBase(), k -> new HashMap<>())
                     .put(init.getOffset(), init.getAccessType());
         }
         final Expression updatedSpecification = specification == null ? null : specification.accept(substitution);
-        final Expression updatedFilter = filter == null ? null : filter.accept(substitution);
+        final Expression updatedFilter = filter.accept(substitution);
         program.setSpecification(program.getSpecificationType(), updatedSpecification);
         program.setFilterSpecification(updatedFilter);
     }
@@ -179,7 +176,7 @@ public final class Tearing implements ProgramProcessor {
                 "Non-integer address in '%s'", load);
         checkIntegerType(load.getAccessType(), "Non-integer mixed-size access in '%s'", load);
         final Function function = load.getFunction();
-        final Register addressRegister = toRegister(load.getAddress(), function, replacement);
+        final Register addressRegister = toRegister(load.getAddress(), load, function, replacement);
         final List<Register> smallerRegisters = new ArrayList<>();
         for (int i = -1; i < offsets.size(); i++) {
             int start = i < 0 ? 0 : offsets.get(i);
@@ -190,6 +187,7 @@ public final class Tearing implements ProgramProcessor {
         assert bytes == smallerRegisters.stream().mapToInt(t -> types.getMemorySizeInBytes(t.getType())).sum();
         final InstructionBoundary begin = load.hasTag(Tag.NO_INSTRUCTION) ? null : EventFactory.newInstructionBegin();
         if (begin != null) {
+            begin.copyAllMetadataFrom(load);
             replacement.add(begin);
         }
         for (int i = -1; i < offsets.size(); i++) {
@@ -204,10 +202,14 @@ public final class Tearing implements ProgramProcessor {
             replacement.add(byteLoad);
         }
         if (begin != null) {
-            replacement.add(EventFactory.newInstructionEnd(begin));
+            final Event end = EventFactory.newInstructionEnd(begin);
+            end.copyAllMetadataFrom(load);
+            replacement.add(end);
         }
         final Expression combination = expressions.makeIntConcat(smallerRegisters);
-        replacement.add(EventFactory.newLocal(load.getResultRegister(), combination));
+        final Event computeResult = EventFactory.newLocal(load.getResultRegister(), combination);
+        computeResult.copyAllMetadataFrom(load);
+        replacement.add(computeResult);
         return replacement;
     }
 
@@ -218,12 +220,13 @@ public final class Tearing implements ProgramProcessor {
                 "Non-integer address in '%s'", store);
         checkIntegerType(store.getAccessType(), "Non-integer mixed-size access in '%s'", store);
         final Function function = store.getFunction();
-        final Register addressRegister = toRegister(store.getAddress(), function, replacement);
-        final Register valueRegister = toRegister(store.getMemValue(), function, replacement);
+        final Register addressRegister = toRegister(store.getAddress(), store, function, replacement);
+        final Register valueRegister = toRegister(store.getMemValue(), store, function, replacement);
         final List<Load> loads = store instanceof RMWStore st ? map.get(st.getLoadEvent()).stream()
                 .filter(Load.class::isInstance).map(Load.class::cast).toList() : null;
         final InstructionBoundary begin = store.hasTag(Tag.NO_INSTRUCTION) ? null : EventFactory.newInstructionBegin();
         if (begin != null) {
+            begin.copyAllMetadataFrom(store);
             replacement.add(begin);
         }
         for (int i = -1; i < offsets.size(); i++) {
@@ -243,25 +246,28 @@ public final class Tearing implements ProgramProcessor {
             replacement.add(byteStore);
         }
         if (begin != null) {
-            replacement.add(EventFactory.newInstructionEnd(begin));
+            final Event end = EventFactory.newInstructionEnd(begin);
+            end.copyAllMetadataFrom(store);
+            replacement.add(end);
         }
         return replacement;
     }
 
     private IntegerType checkIntegerType(Type type, String message, Event event) {
-        final IntegerType integerType = type instanceof IntegerType t ? t : null;
-        if (integerType != null) {
-            return integerType;
+        if (type instanceof IntegerType t) {
+            return t;
         }
         throw new UnsupportedOperationException(String.format(message, event));
     }
 
-    private Register toRegister(Expression expression, Function function, List<Event> replacement) {
+    private Register toRegister(Expression expression, Event origin, Function function, List<Event> replacement) {
         if (expression instanceof Register r) {
             return r;
         }
         final Register r = function.newRegister(expression.getType());
-        replacement.add(EventFactory.newLocal(r, expression));
+        final Event e = EventFactory.newLocal(r, expression);
+        e.copyAllMetadataFrom(origin);
+        replacement.add(e);
         return r;
     }
 
