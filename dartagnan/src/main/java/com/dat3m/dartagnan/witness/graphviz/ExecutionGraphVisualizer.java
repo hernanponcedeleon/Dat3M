@@ -91,24 +91,36 @@ public class ExecutionGraphVisualizer {
 
     private List<List<EventModel>> getEventModelsToShow(ThreadModel tm) {
         final List<List<EventModel>> instructions = new ArrayList<>();
+        final List<InstructionBoundary> markers = tm.getThread().getEvents(InstructionBoundary.class);
+        int b = 0;
         List<EventModel> instruction = null;
         for (EventModel e : tm.getEventModels()) {
-            final boolean insideInstruction = instruction != null;
-            if (!insideInstruction) {
+            if (!showModel(e)) {
+                continue;
+            }
+            boolean insideInstruction = instruction != null;
+            while (b < markers.size() && markers.get(b).getGlobalId() < e.getEvent().getGlobalId()) {
+                b++;
+                insideInstruction = !insideInstruction;
+                instruction = null;
+            }
+            if (instruction == null) {
                 instruction = new ArrayList<>();
-            }
-            if (e instanceof MemoryEventModel
-                    || e instanceof GenericVisibleEventModel
-                    || e instanceof LocalModel
-                    || e instanceof AssertModel) {
-                instruction.add(e);
-            }
-            if (e.getEvent() instanceof InstructionBoundary == insideInstruction) {
                 instructions.add(instruction);
+            }
+            instruction.add(e);
+            if (!insideInstruction) {
                 instruction = null;
             }
         }
         return instructions;
+    }
+
+    private boolean showModel(EventModel e) {
+        return e instanceof MemoryEventModel
+                || e instanceof GenericVisibleEventModel
+                || e instanceof LocalModel
+                || e instanceof AssertModel;
     }
 
     private void addEvents(ExecutionModelNext model) {
