@@ -181,7 +181,6 @@ public final class Tag {
         public static final String MO_RMB                   = "Rmb";
         public static final String MO_WMB                   = "Wmb";
         public static final String BARRIER                  = "Barrier";
-        public static final String MO_RELAXED               = "Relaxed";
         public static final String MO_RELEASE               = "Release";
         public static final String MO_ACQUIRE               = "Acquire";
         public static final String MO_ONCE                  = "Once";
@@ -207,28 +206,27 @@ public final class Tag {
         // NOTE: The order below needs to be in sync with /include/lkmm.h
         public static String intToMo(int i) {
             return switch (i) {
-                case 0 -> MO_RELAXED;
-                case 1 -> MO_ONCE;
-                case 2 -> MO_ACQUIRE;
-                case 3 -> MO_RELEASE;
-                case 4 -> MO_MB;
-                case 5 -> MO_WMB;
-                case 6 -> MO_RMB;
-                case 7 -> RCU_LOCK;
-                case 8 -> RCU_UNLOCK;
-                case 9 -> RCU_SYNC;
-                case 10 -> BEFORE_ATOMIC;
-                case 11 -> AFTER_ATOMIC;
-                case 12 -> AFTER_SPINLOCK;
-                case 13 -> BARRIER;
-                case 14 -> AFTER_UNLOCK_LOCK;
+                case 0 -> MO_ONCE;
+                case 1 -> MO_ACQUIRE;
+                case 2 -> MO_RELEASE;
+                case 3 -> MO_MB;
+                case 4 -> MO_WMB;
+                case 5 -> MO_RMB;
+                case 6 -> RCU_LOCK;
+                case 7 -> RCU_UNLOCK;
+                case 8 -> RCU_SYNC;
+                case 9 -> BEFORE_ATOMIC;
+                case 10 -> AFTER_ATOMIC;
+                case 11 -> AFTER_SPINLOCK;
+                case 12 -> BARRIER;
+                case 13 -> AFTER_UNLOCK_LOCK;
                 default -> throw new UnsupportedOperationException("The memory order is not recognized");
             };
         }
 
         public static String toText(String mo) {
             return switch (mo) {
-                case MO_RELAXED -> "_relaxed";
+                case MO_ONCE -> "_relaxed"; // The Linux kernel often uses "relaxed" to refer to "once"
                 case MO_ACQUIRE -> "_acquire";
                 case MO_RELEASE -> "_release";
                 case MO_MB -> "";
