@@ -52,8 +52,8 @@ public class MockProgramBuilder extends ProgramBuilder {
     }
 
     public ScopedPointerType mockPtrType(String id, String typeId, String storageClass) {
-        String storageClassTag = HelperTags.parseStorageClass(storageClass);
-        return (ScopedPointerType) addType(id, typeFactory.getScopedPointerType(storageClassTag, getType(typeId)));
+        String tag = HelperTags.parseStorageClass(storageClass);
+        return (ScopedPointerType) addType(id, typeFactory.getScopedPointerType(tag, getType(typeId), null));
     }
 
     public ArrayType mockVectorType(String id, String innerTypeId, int size) {
@@ -90,9 +90,8 @@ public class MockProgramBuilder extends ProgramBuilder {
             IntLiteral iValue = exprFactory.makeValue((int) value, iType);
             return addExpression(id, iValue);
         } else if (type instanceof ArrayType aType) {
-            Type elementType = aType.getElementType();
-            List<Expression> elements = mockConstantArrayElements(elementType, value);
-            Expression construction = exprFactory.makeArray(elementType, elements, aType.hasKnownNumElements());
+            List<Expression> elements = mockConstantArrayElements(aType.getElementType(), value);
+            Expression construction = exprFactory.makeArray(aType, elements);
             return addExpression(id, construction);
         } else if (type instanceof AggregateType) {
             List<Expression> members = ((List<?>) value).stream().map(s -> getExpression((String) s)).toList();
@@ -139,11 +138,10 @@ public class MockProgramBuilder extends ProgramBuilder {
     public ScopedPointerVariable mockVariable(String id, String typeId) {
         ScopedPointerType pointerType = (ScopedPointerType) getType(typeId);
         Type pointedType = pointerType.getPointedType();
-        String scopeId = pointerType.getScopeId();
         int bytes = typeFactory.getMemorySizeInBytes(pointedType);
         MemoryObject memoryObject = program.getMemory().allocate(bytes);
         memoryObject.setName(id);
-        ScopedPointerVariable pointer = exprFactory.makeScopedPointerVariable(id, scopeId, pointedType, memoryObject);
+        ScopedPointerVariable pointer = exprFactory.makeScopedPointerVariable(id, pointerType, memoryObject);
         return (ScopedPointerVariable) addExpression(id, pointer);
     }
 

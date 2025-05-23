@@ -1,7 +1,10 @@
 package com.dat3m.dartagnan.program.processing.transformers;
 
 import com.dat3m.dartagnan.expression.Expression;
+import com.dat3m.dartagnan.expression.Type;
 import com.dat3m.dartagnan.expression.processing.ExprTransformer;
+import com.dat3m.dartagnan.expression.type.ScopedPointerType;
+import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.decorations.BuiltIn;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.*;
@@ -22,6 +25,7 @@ public class MemoryTransformer extends ExprTransformer {
 
     // Thread / Subgroup / Workgroup / QueueFamily / Device
     private static final List<String> namePrefixes = List.of("T", "S", "W", "Q", "D");
+    private static final Type archType = TypeFactory.getInstance().getArchType();
 
     private final Program program;
     private final Function function;
@@ -62,7 +66,10 @@ public class MemoryTransformer extends ExprTransformer {
         tid = newTid;
         builtIn.setThreadId(tid);
         registerMapping = function.getRegisters().stream().collect(
-                toMap(r -> r, r -> thread.getOrNewRegister(r.getName(), r.getType())));
+                toMap(r -> r, r -> {
+                    Type type = r.getType() instanceof ScopedPointerType ? archType : r.getType();
+                    return thread.getOrNewRegister(r.getName(), type);
+                }));
         nonDetMapping = new HashMap<>();
     }
 
