@@ -35,6 +35,7 @@ let CBs = Barrier | Rmb | Wmb | Mb | Sync-rcu | Sync-srcu |
                  Before-atomic | After-atomic | Acquire | Release |
                  Rcu-lock | Rcu-unlock | Srcu-lock | Srcu-unlock
 let cppo = po?;[CBs];po? | [Marked];po;[Marked]
+let po_orig = po
 include "interrupts-defs.cat"
 
 
