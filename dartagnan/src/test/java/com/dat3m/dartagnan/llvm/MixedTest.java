@@ -60,6 +60,7 @@ public class MixedTest extends AbstractCTest {
             {"lockref-par3", ARM8, FAIL},
             {"mixed-local1", ARM8, PASS},
             {"mixed-local2", ARM8, FAIL},
+            {"store-to-load-forwarding1", ARM8, FAIL},
         });
     }
 
