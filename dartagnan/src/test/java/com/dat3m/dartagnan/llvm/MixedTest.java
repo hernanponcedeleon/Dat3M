@@ -58,7 +58,8 @@ public class MixedTest extends AbstractCTest {
             {"lockref-par1", ARM8, FAIL},
             {"lockref-par2", ARM8, PASS},
             {"lockref-par3", ARM8, FAIL},
-            {"mixed-local", ARM8, PASS},
+            {"mixed-local1", ARM8, PASS},
+            {"mixed-local2", ARM8, FAIL},
         });
     }
 
