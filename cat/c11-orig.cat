@@ -9,9 +9,6 @@ Rewritten by Luc Maranget for herd7
 
 *)
 
-include "c11_cos.cat"
-include "c11_los.cat"
-
 let asw = IW * (M \ IW)
 let sb = po
 let mo = co
