@@ -69,6 +69,8 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.util.*;
 import java.util.stream.Stream;
+import com.dat3m.dartagnan.utils.printer.OutputLogger;
+import com.dat3m.dartagnan.utils.printer.OutputLogger.ResultSummary;
 
 import static com.dat3m.dartagnan.GlobalSettings.getOrCreateOutputDirectory;
 import static com.dat3m.dartagnan.configuration.OptionInfo.collectOptions;
@@ -156,6 +158,8 @@ public class Dartagnan extends BaseOptions {
         logger.info("CAT file path: {}", fileModel);
         Wmm mcm = new ParserCat(Path.of(o.getCatIncludePath())).parse(fileModel);
 
+        final OutputLogger output = new OutputLogger(fileModel, config);
+
         final List<File> files = new ArrayList();
         Stream.of(args)
             .map(File::new)
@@ -173,12 +177,6 @@ public class Dartagnan extends BaseOptions {
         if (files.isEmpty()) {
             throw new IllegalArgumentException("Path to input program(s) not given or format not recognized");
         }
-        if (files.size() > 1) {
-            System.out.println("================ Configuration ==================");
-            System.out.println("cat = " + fileModel);
-            System.out.print(config.asPropertiesString()); // it already contains its own \n
-            System.out.println("=================================================");
-        }
 
         EnumSet<Property> properties = o.getProperty();
 
@@ -195,6 +193,7 @@ public class Dartagnan extends BaseOptions {
                 }
         }
 
+        ResultSummary summary = null;
         for (File f : files) {
 
             ShutdownManager sdm = ShutdownManager.create();
@@ -210,7 +209,6 @@ public class Dartagnan extends BaseOptions {
                 }
             });
 
-            ResultSummary summary;
             boolean showFilter = false;
             boolean showSpecification = false;
 
@@ -256,29 +254,29 @@ public class Dartagnan extends BaseOptions {
                     long endTime = System.currentTimeMillis();
 
                     summary = summaryFromResult(task, prover, modelChecker, f.toString(), (endTime - startTime));
-                    boolean ignoreFilter = task.getConfig().hasProperty(IGNORE_FILTER_SPECIFICATION) && task.getConfig().getProperty(IGNORE_FILTER_SPECIFICATION).equals("true");
-                    boolean nonEmptyFilter = !(p.getFilterSpecification() instanceof BoolLiteral bLit) || !bLit.getValue();
-                    showFilter = !ignoreFilter && nonEmptyFilter;
-                    // We only show the condition if this is the reason of the failure
-                    showSpecification = summary.reason.equals(ResultSummary.PROGRAM_SPEC_REASON);
 
                     if (modelChecker.hasModel() && o.getWitnessType().generateGraphviz()) {
                         generateExecutionGraphFile(task, prover, modelChecker, o.getWitnessType());
                     }
                     // We only generate SVCOMP witnesses if we are not validating one.
                     if (o.getWitnessType().equals(GRAPHML) && !o.runValidator()) {
-                        generateWitnessIfAble(task, prover, modelChecker, summary.details); // TODO check
+                        generateWitnessIfAble(task, prover, modelChecker, summary.details());
                     }
                 }
             } catch (InterruptedException e) {
                 final long time = 1000L * o.getTimeout();
-                summary = new ResultSummary(f.toString(), null, TIMEDOUT, "", "", "", time, TIMEOUT_ELAPSED);
+                summary = new ResultSummary(f.toString(), "", TIMEDOUT, "", "", "", time, TIMEOUT_ELAPSED);
             } catch (Exception e) {
                 final String reason = e.getClass().getSimpleName();
                 final String details = "\t" + Optional.ofNullable(e.getMessage()).orElse("Unknown error occurred");
-                summary = new ResultSummary(f.toString(), null, ERROR, "", reason, details, 0, UNKNOWN_ERROR);
+                summary = new ResultSummary(f.toString(), "", ERROR, "", reason, details, 0, UNKNOWN_ERROR);
             }
-            summary.printAndTerminate(files.size() > 1, showFilter, showSpecification);
+            output.addResult(summary);
+        }
+        output.toStdOut(files.size() > 1);
+        if (summary != null) {
+            // Running batch mode results in normal termination independent of the individual results
+            System.exit((files.size() > 1 ? NORMAL_TERMINATION : summary.code()).asInt());
         }
     }
 
@@ -356,12 +354,18 @@ public class Dartagnan extends BaseOptions {
 
         String reason = "";
         StringBuilder details = new StringBuilder();
+        // We only show the condition if this is the reason of the failure
+        String condition = "";
+        final boolean ignoreFilter = task.getConfig().hasProperty(IGNORE_FILTER_SPECIFICATION) && task.getConfig().getProperty(IGNORE_FILTER_SPECIFICATION).equals("true");
+        final boolean nonEmptyFilter = !(p.getFilterSpecification() instanceof BoolLiteral bLit) || !bLit.getValue();
+        final String filter = !ignoreFilter && nonEmptyFilter ? p.getFilterSpecification().toString() : "";
 
         final SyntacticContextAnalysis synContext = newInstance(p);
         if (hasViolations) {
             printWarningIfThreadStartFailed(p, model);
             if (props.contains(PROGRAM_SPEC) && model.propertyViolated(PROGRAM_SPEC)) {
                 reason = ResultSummary.PROGRAM_SPEC_REASON;
+                condition = getSpecificationString(p);
                 List<Assert> violations = p.getThreadEvents(Assert.class)
                     .stream().filter(ass -> model.assertionViolated(ass))
                     .toList();
@@ -377,7 +381,7 @@ public class Dartagnan extends BaseOptions {
                 }
                 // In validation mode, we expect to find the violation, thus NORMAL_TERMINATION
                 ExitCode code = task.getWitness().isEmpty() ? PROGRAM_SPEC_VIOLATION : NORMAL_TERMINATION;
-                return new ResultSummary(path, p.getFilterSpecification(), FAIL, getSpecificationString(p), reason, details.toString(), time, code);
+                return new ResultSummary(path, filter, FAIL, condition, reason, details.toString(), time, code);
             }
             if (props.contains(TERMINATION) && model.propertyViolated(TERMINATION)) {
                 reason = ResultSummary.TERMINATION_REASON;
@@ -401,13 +405,13 @@ public class Dartagnan extends BaseOptions {
                 }
                 // In validation mode, we expect to find the violation, thus NORMAL_TERMINATION
                 ExitCode code = task.getWitness().isEmpty() ? TERMINATION_VIOLATION : NORMAL_TERMINATION;
-                return new ResultSummary(path, p.getFilterSpecification(), FAIL, getSpecificationString(p), reason, details.toString(), time, code);
+                return new ResultSummary(path, filter, FAIL, condition, reason, details.toString(), time, code);
             }
             if (props.contains(DATARACEFREEDOM) && model.propertyViolated(DATARACEFREEDOM)) {
                 reason = ResultSummary.SVCOMP_RACE_REASON;
                 // In validation mode, we expect to find the violation, thus NORMAL_TERMINATION
                 ExitCode code = task.getWitness().isEmpty() ? DATA_RACE_FREEDOM_VIOLATION : NORMAL_TERMINATION;
-                return new ResultSummary(path, p.getFilterSpecification(), FAIL, getSpecificationString(p), reason, details.toString(), time, code);
+                return new ResultSummary(path, filter, FAIL, condition, reason, details.toString(), time, code);
             }
             final List<Axiom> violatedCATSpecs = !props.contains(CAT_SPEC) ? List.of()
                     : task.getMemoryModel().getAxioms().stream()
@@ -418,11 +422,12 @@ public class Dartagnan extends BaseOptions {
                 reason = ResultSummary.CAT_SPEC_REASON;
                 // In validation mode, we expect to find the violation, thus NORMAL_TERMINATION
                 ExitCode code = task.getWitness().isEmpty() ? CAT_SPEC_VIOLATION : NORMAL_TERMINATION;
-                return new ResultSummary(path, p.getFilterSpecification(), FAIL, getSpecificationString(p), reason, modelChecker.getFlaggedPairsOutput(), time, code);
+                return new ResultSummary(path, filter, FAIL, condition, reason, modelChecker.getFlaggedPairsOutput(), time, code);
             }
         } else if (hasViolationsWithoutWitness) {
             // Only for programs with exists/forall specifications
             reason = ResultSummary.PROGRAM_SPEC_REASON;
+            condition = getSpecificationString(p);
         } else if (result == UNKNOWN && modelChecker.hasModel()) {
             // We reached unrolling bounds.
             final List<Event> reachedBounds = p.getThreadEventsWithAllTags(Tag.BOUND)
@@ -445,7 +450,7 @@ public class Dartagnan extends BaseOptions {
         // This includes verification of litmus code, independent of the verification result.
         // In validation mode, we expect to find the violation, thus the WITNESS_NOT_VALIDATED error
         ExitCode code = task.getWitness().isEmpty() ? NORMAL_TERMINATION : WITNESS_NOT_VALIDATED;
-        return new ResultSummary(path, p.getFilterSpecification(), result, getSpecificationString(p), reason, details.toString(), time, code);
+        return new ResultSummary(path, filter, result, condition, reason, details.toString(), time, code);
     }
 
     private static void increaseBoundAndDump(List<Event> boundEvents, Configuration config) throws IOException {
@@ -508,40 +513,6 @@ public class Dartagnan extends BaseOptions {
             sb.append("\n");
         }
         return sb.toString();
-    }
-
-    public record ResultSummary (
-            String test, Expression filter, Result result, String condition,
-            String reason, String details, long time, ExitCode code) {
-
-        final private static String PROGRAM_SPEC_REASON = "Program specification violation found";
-        final private static String TERMINATION_REASON = "Termination violation found";
-        final private static String CAT_SPEC_REASON = "CAT specification violation found";
-        final private static String SVCOMP_RACE_REASON = "SVCOMP data race found";
-        final private static String BOUND_REASON = "Not fully unrolled loops";
-
-        @Override
-        public String toString() {
-            return String.format("%s (exit-code: %s)", result, code.asInt());
-        }
-
-        public String toUIString() {
-            return String.format("Result: %s\n%sTime: %s", result, !details.isEmpty() ? "Details:\n" + details : "", Utils.toTimeString(time));
-        }
-
-        public void printAndTerminate(boolean batchMode, boolean showFilter, boolean showSpecification) {
-            final String shownSeparator = batchMode ? "\n" : "";
-            final String shownFilter = showFilter ? String.format("Filter: %s\n", filter) : "";
-            final String shownCondition = showSpecification && !condition.isEmpty() ? String.format("Condition: %s", condition) : "";
-            final String shownReason = result != PASS && !reason.isEmpty() ? String.format("Reason: %s\n", reason) : "";
-            final String shownDetails = !details.isEmpty() ? String.format("Details:\n%s", details) : "";
-            final String shownTime = time > 0 ? String.format("Time: %s", Utils.toTimeString(time)) : "";
-            System.out.println(String.format("%sTest: %s\n%sResult: %s\n%s%s%s%s",
-                shownSeparator, test, shownFilter, result, shownReason, shownCondition, shownDetails, shownTime));
-            if(!batchMode) {
-                System.exit(code().asInt());
-            }
-        }
     }
 
 }
