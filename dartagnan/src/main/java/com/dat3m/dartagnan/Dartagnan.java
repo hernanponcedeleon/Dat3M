@@ -209,9 +209,6 @@ public class Dartagnan extends BaseOptions {
                 }
             });
 
-            boolean showFilter = false;
-            boolean showSpecification = false;
-
             try {
                 VerificationTaskBuilder builder = VerificationTask.builder()
                         .withConfig(config)
