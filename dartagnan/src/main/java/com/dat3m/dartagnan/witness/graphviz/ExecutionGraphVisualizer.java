@@ -11,7 +11,6 @@ import com.dat3m.dartagnan.verification.model.RelationModel.EdgeModel;
 import com.dat3m.dartagnan.verification.model.event.*;
 import com.dat3m.dartagnan.wmm.definition.Coherence;
 import com.dat3m.dartagnan.wmm.definition.ProgramOrder;
-import com.dat3m.dartagnan.wmm.definition.SameInstruction;
 import com.google.common.collect.Lists;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -47,7 +46,7 @@ public class ExecutionGraphVisualizer {
     @Option(name=WITNESS_SHOW,
             description="Names of relations to show in the witness graph.",
             secure=true)
-    private String relsToShowStr = String.format("%s,%s,%s,%s", PO, SI, CO, RF);
+    private String relsToShowStr = String.format("%s,%s,%s", PO, CO, RF);
 
     public ExecutionGraphVisualizer() {
         this.graphviz = new Graphviz();
@@ -195,8 +194,6 @@ public class ExecutionGraphVisualizer {
                 addProgramOrder(model, name);
             } else if (rm.getRelation().getDefinition().getClass() == Coherence.class) {
                 addCoherence(rm, model, name);
-            } else if (rm.getRelation().getDefinition().getClass() == SameInstruction.class) {
-                addSameInstruction(model, name);
             } else {
                 addRelation(rm, name);
             }
@@ -258,23 +255,6 @@ public class ExecutionGraphVisualizer {
                     EventModel w1 = coSortedWrites.get(i - 1);
                     EventModel w2 = coSortedWrites.get(i);
                     appendEdge(filter, w1, w2);
-                }
-            }
-        }
-        graphviz.end();
-    }
-
-    private void addSameInstruction(ExecutionModelNext model, String name) {
-        graphviz.beginSubgraph(name);
-        graphviz.setEdgeAttributes(String.format("color=%s, arrowhead=none", colorMap.getColor(name)));
-        final BiPredicate<EventModel, EventModel> filter = getFilter(name);
-        for (ThreadModel tm : model.getThreadModels()) {
-            final List<List<EventModel>> instructions = getEventModelsToShow(tm);
-            if (instructions.size() <= 1) { continue; }
-            for (List<EventModel> instruction : instructions) {
-                int end = instruction.size() - 1;
-                for (int i = 0; i < end; i++) {
-                    appendEdge(filter, instruction.get(i), instruction.get(i + 1));
                 }
             }
         }

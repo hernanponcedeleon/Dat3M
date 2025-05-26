@@ -182,7 +182,7 @@ public final class Tearing implements ProgramProcessor {
             int start = i < 0 ? 0 : offsets.get(i);
             int end = i + 1 < offsets.size() ? offsets.get(i + 1) : bytes;
             assert start < end;
-            smallerRegisters.add(function.newRegister(types.getIntegerType(8 * (end - start))));
+            smallerRegisters.add(newRegister(function, types.getIntegerType(8 * (end - start))));
         }
         assert bytes == smallerRegisters.stream().mapToInt(t -> types.getMemorySizeInBytes(t.getType())).sum();
         final InstructionBoundary begin = load.hasTag(Tag.NO_INSTRUCTION) ? null : EventFactory.newInstructionBegin();
@@ -264,11 +264,15 @@ public final class Tearing implements ProgramProcessor {
         if (expression instanceof Register r) {
             return r;
         }
-        final Register r = function.newRegister(expression.getType());
+        final Register r = newRegister(function, expression.getType());
         final Event e = EventFactory.newLocal(r, expression);
         e.copyAllMetadataFrom(origin);
         replacement.add(e);
         return r;
+    }
+
+    private Register newRegister(Function function, Type type) {
+        return function.newUniqueRegister("__tearing_", type);
     }
 
     private int checkBytes(MemoryCoreEvent event, List<Integer> offsets) {
