@@ -13,9 +13,9 @@ import static com.dat3m.dartagnan.utils.Result.*;
 
 public class OutputLogger {
 
-    final private List<ResultSummary> results = new ArrayList();
-    final private File modelFile;
-    final private Configuration config;
+    private final List<ResultSummary> results = new ArrayList();
+    private final File modelFile;
+    private final Configuration config;
 
     public OutputLogger(File file, Configuration config) {
         this.modelFile = file;
@@ -45,25 +45,25 @@ public class OutputLogger {
             String test, String filter, Result result, String condition,
             String reason, String details, long time, ExitCode code) {
 
-        final public static String PROGRAM_SPEC_REASON = "Program specification violation found";
-        final public static String TERMINATION_REASON = "Termination violation found";
-        final public static String CAT_SPEC_REASON = "CAT specification violation found";
-        final public static String SVCOMP_RACE_REASON = "SVCOMP data race found";
-        final public static String BOUND_REASON = "Not fully unrolled loops";
+        public static final String PROGRAM_SPEC_REASON = "Program specification violation found";
+        public static final String TERMINATION_REASON = "Termination violation found";
+        public static final String CAT_SPEC_REASON = "CAT specification violation found";
+        public static final String SVCOMP_RACE_REASON = "SVCOMP data race found";
+        public static final String BOUND_REASON = "Not fully unrolled loops";
 
         @Override
         public String toString() {
-            final String shownFilter = !filter.isEmpty() ? String.format("Filter: %s\n", filter) : "";
+            final String shownFilter = !filter.isEmpty() ? String.format("Filter: %s%n", filter) : "";
             final String shownCondition = !condition.isEmpty() ? String.format("Condition: %s", condition) : "";
-            final String shownReason = result != PASS && !reason.isEmpty() ? String.format("Reason: %s\n", reason) : "";
-            final String shownDetails = !details.isEmpty() ? String.format("Details:\n%s", details) : "";
+            final String shownReason = result != PASS && !reason.isEmpty() ? String.format("Reason: %s%n", reason) : "";
+            final String shownDetails = !details.isEmpty() ? String.format("Details:%n%s", details) : "";
             final String shownTime = time > 0 ? String.format("Time: %s", Utils.toTimeString(time)) : "";
-            return String.format("Test: %s\n%sResult: %s\n%s%s%s%s",
+            return String.format("Test: %s%n%sResult: %s%n%s%s%s%s",
                 test, shownFilter, result, shownReason, shownCondition, shownDetails, shownTime);
         }
 
         public String toUIString() {
-            return String.format("Result: %s\n%sTime: %s", result, !details.isEmpty() ? "Details:\n" + details : "", Utils.toTimeString(time));
+            return String.format("Result: %s%n%sTime: %s", result, !details.isEmpty() ? "Details:%n" + details : "", Utils.toTimeString(time));
         }
     }
 

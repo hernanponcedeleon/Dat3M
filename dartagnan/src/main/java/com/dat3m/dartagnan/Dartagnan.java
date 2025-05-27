@@ -347,7 +347,6 @@ public class Dartagnan extends BaseOptions {
                 : null;
         final boolean hasViolations = result == FAIL && (model != null);
         final boolean hasViolationsWithoutWitness = result == FAIL && (model == null);
-        final boolean hasPositiveWitnesses = result == PASS && (model != null);
 
         String reason = "";
         StringBuilder details = new StringBuilder();
