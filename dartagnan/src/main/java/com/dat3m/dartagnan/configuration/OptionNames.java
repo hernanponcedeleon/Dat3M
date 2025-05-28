@@ -16,6 +16,7 @@ public class OptionNames {
     public static final String WITNESS = "witness";
     public static final String SMTLIB2 = "smtlib2";
     public static final String CAT_INCLUDE = "cat.include";
+    public static final String MIXED_SIZE = "mixedSize";
 
     // Modeling Options
     public static final String PROGRESSMODEL = "modeling.progress";
@@ -50,7 +51,6 @@ public class OptionNames {
     public static final String PROPAGATE_COPY_ASSIGNMENTS = "program.processing.propagateCopyAssignments";
     public static final String REMOVE_ASSERTION_OF_TYPE = "program.processing.skipAssertionsOfType";
     public static final String NONTERMINATION_INSTRUMENTATION = "program.processing.nonTermination";
-    public static final String MIXED_SIZE = "program.processing.mixedSize";
 
     // Program Property Options
     public static final String REACHING_DEFINITIONS_METHOD = "program.analysis.reachingDefinitions";
