@@ -8,6 +8,7 @@ import com.dat3m.dartagnan.expression.processing.ExprTransformer;
 import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.program.Function;
+import com.dat3m.dartagnan.program.IRHelper;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.analysis.BranchEquivalence;
@@ -91,12 +92,12 @@ public final class Tearing implements ProgramProcessor {
             if (entry.getKey() instanceof Store store && !entry.getValue().equals(List.of(store))) {
                 Event firstStore = entry.getValue().stream().filter(Store.class::isInstance).findFirst().orElseThrow();
                 store.getUsers().forEach(u -> u.updateReferences(Map.of(store, firstStore)));
-                store.replaceBy(entry.getValue());
+                IRHelper.replaceWithMetadata(store, entry.getValue());
             }
         }
         for (Map.Entry<MemoryCoreEvent, List<Event>> entry : map.entrySet()) {
             if (entry.getKey() instanceof Load load && !entry.getValue().equals(List.of(load))) {
-                load.replaceBy(entry.getValue());
+                IRHelper.replaceWithMetadata(load, entry.getValue());
             }
         }
 
@@ -176,7 +177,7 @@ public final class Tearing implements ProgramProcessor {
                 "Non-integer address in '%s'", load);
         checkIntegerType(load.getAccessType(), "Non-integer mixed-size access in '%s'", load);
         final Function function = load.getFunction();
-        final Register addressRegister = toRegister(load.getAddress(), load, function, replacement);
+        final Register addressRegister = toRegister(load.getAddress(), function, replacement);
         final List<Register> smallerRegisters = new ArrayList<>();
         for (int i = -1; i < offsets.size(); i++) {
             int start = i < 0 ? 0 : offsets.get(i);
@@ -187,7 +188,6 @@ public final class Tearing implements ProgramProcessor {
         assert bytes == smallerRegisters.stream().mapToInt(t -> types.getMemorySizeInBytes(t.getType())).sum();
         final InstructionBoundary begin = load.hasTag(Tag.NO_INSTRUCTION) ? null : EventFactory.newInstructionBegin();
         if (begin != null) {
-            begin.copyAllMetadataFrom(load);
             replacement.add(begin);
         }
         for (int i = -1; i < offsets.size(); i++) {
@@ -203,12 +203,10 @@ public final class Tearing implements ProgramProcessor {
         }
         if (begin != null) {
             final Event end = EventFactory.newInstructionEnd(begin);
-            end.copyAllMetadataFrom(load);
             replacement.add(end);
         }
         final Expression combination = expressions.makeIntConcat(smallerRegisters);
         final Event computeResult = EventFactory.newLocal(load.getResultRegister(), combination);
-        computeResult.copyAllMetadataFrom(load);
         replacement.add(computeResult);
         return replacement;
     }
@@ -220,13 +218,12 @@ public final class Tearing implements ProgramProcessor {
                 "Non-integer address in '%s'", store);
         checkIntegerType(store.getAccessType(), "Non-integer mixed-size access in '%s'", store);
         final Function function = store.getFunction();
-        final Register addressRegister = toRegister(store.getAddress(), store, function, replacement);
-        final Register valueRegister = toRegister(store.getMemValue(), store, function, replacement);
+        final Register addressRegister = toRegister(store.getAddress(), function, replacement);
+        final Register valueRegister = toRegister(store.getMemValue(), function, replacement);
         final List<Load> loads = store instanceof RMWStore st ? map.get(st.getLoadEvent()).stream()
                 .filter(Load.class::isInstance).map(Load.class::cast).toList() : null;
         final InstructionBoundary begin = store.hasTag(Tag.NO_INSTRUCTION) ? null : EventFactory.newInstructionBegin();
         if (begin != null) {
-            begin.copyAllMetadataFrom(store);
             replacement.add(begin);
         }
         for (int i = -1; i < offsets.size(); i++) {
@@ -247,7 +244,6 @@ public final class Tearing implements ProgramProcessor {
         }
         if (begin != null) {
             final Event end = EventFactory.newInstructionEnd(begin);
-            end.copyAllMetadataFrom(store);
             replacement.add(end);
         }
         return replacement;
@@ -260,13 +256,12 @@ public final class Tearing implements ProgramProcessor {
         throw new UnsupportedOperationException(String.format(message, event));
     }
 
-    private Register toRegister(Expression expression, Event origin, Function function, List<Event> replacement) {
+    private Register toRegister(Expression expression, Function function, List<Event> replacement) {
         if (expression instanceof Register r) {
             return r;
         }
         final Register r = newRegister(function, expression.getType());
         final Event e = EventFactory.newLocal(r, expression);
-        e.copyAllMetadataFrom(origin);
         replacement.add(e);
         return r;
     }
