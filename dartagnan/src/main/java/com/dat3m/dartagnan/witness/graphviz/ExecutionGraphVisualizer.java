@@ -12,6 +12,7 @@ import com.dat3m.dartagnan.verification.model.event.*;
 import com.dat3m.dartagnan.wmm.definition.Coherence;
 import com.dat3m.dartagnan.wmm.definition.ProgramOrder;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.sosy_lab.common.configuration.Configuration;
@@ -66,7 +67,9 @@ public class ExecutionGraphVisualizer {
     public void generateGraphOfExecutionModel(Writer writer, String graphName, ExecutionModelNext model) throws IOException {
         computeAddressMap(model);
         graphviz.beginDigraph(graphName);
-        graphviz.append(String.format("label=\"%s\" \n", graphName));
+        graphviz.appendLine(String.format("label=\"%s\"", graphName));
+        // Enables edges between clusterInstruction, like for po.
+        graphviz.appendLine("compound=true");
         addEvents(model);
         addRelations(model);
         graphviz.end();
@@ -123,22 +126,37 @@ public class ExecutionGraphVisualizer {
     }
 
     private void addEvents(ExecutionModelNext model) {
+        final Map<ThreadModel, List<List<EventModel>>> eventModels = Maps.asMap(Set.copyOf(model.getThreadModels()),
+                this::getEventModelsToShow);
+        final long hueStep = 1000 / eventModels.values().stream().filter(t -> t.size() > 1).count();
+        long hue = 0;
         for (ThreadModel tm : model.getThreadModels()) {
-            List<List<EventModel>> instructions = getEventModelsToShow(tm);
+            final List<List<EventModel>> instructions = eventModels.get(tm);
             if (instructions.size() <= 1) {
                 // This skips init threads.
                 return;
             }
 
             graphviz.beginSubgraph("T" + tm.getId());
+            // Use dot as decimal separator.
+            final String fillColor = String.format("fillcolor=\"0.%03d 0.05 1\"", hue);
+            graphviz.setNodeAttributes("style=filled", fillColor);
 
             for (List<EventModel> instruction : instructions) {
+                if (instruction.size() > 1) {
+                    graphviz.beginSubgraph("clusterInstruction" + instruction.get(0).getId());
+                    graphviz.appendLine("label=\"\"");
+                }
                 for (EventModel event : instruction) {
-                    appendNode(event, (String[]) null);
+                    appendNode(event, nodeLabel(event));
+                }
+                if (instruction.size() > 1) {
+                    graphviz.end();
                 }
             }
 
             graphviz.end();
+            hue += hueStep;
         }
     }
 
@@ -213,18 +231,21 @@ public class ExecutionGraphVisualizer {
     private void addProgramOrder(ExecutionModelNext model, String name) {
         graphviz.beginSubgraph(name);
         graphviz.setEdgeAttributes(String.format("color=%s, weight=100, label=\"%s\"", colorMap.getColor(PO), name));
-        BiPredicate<EventModel, EventModel> filter = getFilter(PO);
+        final BiPredicate<EventModel, EventModel> filter = getFilter(PO);
         for (ThreadModel tm : model.getThreadModels()) {
-            List<List<EventModel>> instructions = getEventModelsToShow(tm);
+            final List<List<EventModel>> instructions = getEventModelsToShow(tm);
             if (instructions.size() <= 1) { continue; }
+            List<EventModel> previous = instructions.get(0);
             for (int i = 1; i < instructions.size(); i++) {
-                List<EventModel> fromList = instructions.get(i - 1);
-                List<EventModel> toList = instructions.get(i);
-                for (EventModel from : fromList) {
-                    for (EventModel to : toList) {
-                        appendEdge(filter, from, to);
-                    }
-                }
+                final List<EventModel> current = instructions.get(i);
+                // Tests just one event of each instruction, assuming that filter is equal for all.
+                final EventModel from = previous.get(0);
+                final EventModel to = current.get(0);
+                if (!filter.test(from, to)) { continue; }
+                final String tail = previous.size() <= 1 ? "" : "ltail=clusterInstruction" + from.getId();
+                final String head = current.size() <= 1 ? "" : "lhead=clusterInstruction" + to.getId();
+                appendEdge(from, to, head, tail);
+                previous = current;
             }
         }
         graphviz.end();
@@ -281,10 +302,12 @@ public class ExecutionGraphVisualizer {
 
     private String eventToNode(EventModel e) {
         if (e instanceof StoreModel sm && e.getEvent() instanceof Init) {
-            return String.format("\"I(%s, %s)\"", getAddressString(
-                sm.getAccessedAddress()), sm.getValue()
-            );
+            return String.format("\"I(%s, %s)\"", getAddressString(sm.getAccessedAddress()), sm.getValue());
         }
+        return "e" + e.getId();
+    }
+
+    private String nodeLabel(EventModel e) {
         // We have MemEvent + Fence + Local + Assert
         String tag = e.getEvent().toString();
         if (e instanceof MemoryEventModel mem) {
@@ -308,7 +331,7 @@ public class ExecutionGraphVisualizer {
         final String callStack = makeContextString(
             synContext.getContextInfo(e.getEvent()).getContextOfType(CallContext.class), " -> \\n");
         final String scope = thread.hasScope() ? "@" + thread.getScopeHierarchy() : "";
-        final String nodeString = String.format("%s:T%s%s\\nE%s %s%s\n%s",
+        final String nodeString = String.format("%s:T%s%s\\nE%s %s%s\\n%s",
                 e.getThreadModel().getName(),
                 e.getThreadModel().getId(),
                 scope,
@@ -318,13 +341,17 @@ public class ExecutionGraphVisualizer {
                 tag)
                 .replace("%", "\\%")
                 .replace("\"", "\\\""); // We need to escape quotes inside the string
-        return "\"" + nodeString + "\"";
+        return "label=\"" + nodeString + "\"";
     }
 
     private void appendEdge(BiPredicate<EventModel, EventModel> filter, EventModel a, EventModel b) {
         if (filter.test(a, b)) {
             graphviz.addEdge(eventToNode(a), eventToNode(b), (String[]) null);
         }
+    }
+
+    private void appendEdge(EventModel a, EventModel b, String... attributes) {
+        graphviz.addEdge(eventToNode(a), eventToNode(b), attributes);
     }
 
     private void appendNode(EventModel e, String... attributes) {
@@ -355,6 +382,7 @@ public class ExecutionGraphVisualizer {
             if (convert) {
                 fileVio = Graphviz.convert(fileVio);
             }
+            logger.info("Witness stored into {}.", fileVio.getAbsolutePath());
             return fileVio;
         } catch (Exception e) {
             logger.error(e);
