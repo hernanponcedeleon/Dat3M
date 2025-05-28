@@ -12,7 +12,6 @@ import com.dat3m.dartagnan.verification.model.event.*;
 import com.dat3m.dartagnan.wmm.definition.Coherence;
 import com.dat3m.dartagnan.wmm.definition.ProgramOrder;
 import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.sosy_lab.common.configuration.Configuration;
@@ -126,21 +125,14 @@ public class ExecutionGraphVisualizer {
     }
 
     private void addEvents(ExecutionModelNext model) {
-        final Map<ThreadModel, List<List<EventModel>>> eventModels = Maps.asMap(Set.copyOf(model.getThreadModels()),
-                this::getEventModelsToShow);
-        final long hueStep = 1000 / eventModels.values().stream().filter(t -> t.size() > 1).count();
-        long hue = 0;
         for (ThreadModel tm : model.getThreadModels()) {
-            final List<List<EventModel>> instructions = eventModels.get(tm);
+            final List<List<EventModel>> instructions = getEventModelsToShow(tm);
             if (instructions.size() <= 1) {
                 // This skips init threads.
                 return;
             }
 
             graphviz.beginSubgraph("T" + tm.getId());
-            // Use dot as decimal separator.
-            final String fillColor = String.format("fillcolor=\"0.%03d 0.05 1\"", hue);
-            graphviz.setNodeAttributes("style=filled", fillColor);
 
             for (List<EventModel> instruction : instructions) {
                 if (instruction.size() > 1) {
@@ -156,7 +148,6 @@ public class ExecutionGraphVisualizer {
             }
 
             graphviz.end();
-            hue += hueStep;
         }
     }
 
