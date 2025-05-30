@@ -3,7 +3,10 @@ package com.dat3m.dartagnan.parsers.program.visitors.spirv;
 import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.Type;
-import com.dat3m.dartagnan.expression.type.*;
+import com.dat3m.dartagnan.expression.type.FunctionType;
+import com.dat3m.dartagnan.expression.type.ScopedPointerType;
+import com.dat3m.dartagnan.expression.type.TypeFactory;
+import com.dat3m.dartagnan.expression.type.VoidType;
 import com.dat3m.dartagnan.parsers.SpirvBaseVisitor;
 import com.dat3m.dartagnan.parsers.SpirvParser;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.builders.ProgramBuilder;
@@ -14,7 +17,6 @@ import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.Local;
 import com.dat3m.dartagnan.program.event.functions.FunctionCall;
-import com.dat3m.dartagnan.program.memory.ScopedPointer;
 import com.dat3m.dartagnan.program.memory.ScopedPointerVariable;
 
 import java.util.*;
@@ -76,6 +78,7 @@ public class VisitorOpsFunction extends SpirvBaseVisitor<Void> {
                     "outside of a function definition", id);
         }
         Type type = builder.getType(ctx.idResultType().getText());
+        // TODO: Apply FuncParameter decorations (ByVal, Zext, Sext)
         List<Type> argTypes = currentType.getParameterTypes();
         int idx = currentArgs.size();
         if (idx >= argTypes.size() || !type.equals(argTypes.get(idx))) {
@@ -109,10 +112,7 @@ public class VisitorOpsFunction extends SpirvBaseVisitor<Void> {
         Type returnType = builder.getType(typeId);
         List<Expression> args = ctx.argument().stream()
                 .map(a -> builder.getExpression(a.getText())).toList();
-        List<Type> argTypes = args.stream()
-                .map(e -> e instanceof ScopedPointer pBase
-                        ? types.getScopedPointerType(pBase.getScopeId(), pBase.getInnerType())
-                        : e.getType()).toList();
+        List<Type> argTypes = args.stream().map(Expression::getType).toList();
         FunctionType functionType = types.getFunctionType(builder.getType(typeId), argTypes);
         Function function = getCalledFunction(functionId, functionType);
         FunctionCall event;
@@ -184,9 +184,8 @@ public class VisitorOpsFunction extends SpirvBaseVisitor<Void> {
         Expression value = createEntryPointParameterValue(id, type);
         if (type instanceof ScopedPointerType pType) {
             String ptrId = HelperInputs.castPointerId(id);
-            pType = types.getScopedPointerType(pType.getScopeId(), value.getType());
-            ScopedPointerVariable pointer = builder.allocateScopedPointerVariable(
-                    ptrId, value, pType.getScopeId(), value.getType());
+            pType = types.getScopedPointerType(pType.getScopeId(), value.getType(), pType.getStride());
+            ScopedPointerVariable pointer = builder.allocateMemory(ptrId, pType, value);
             builder.addExpression(ptrId, pointer);
             value = pointer.getAddress();
         }
@@ -196,8 +195,6 @@ public class VisitorOpsFunction extends SpirvBaseVisitor<Void> {
     private Expression createEntryPointParameterValue(String id, Type type) {
         if (builder.hasInput(id)) {
             if (type instanceof ScopedPointerType pType) {
-                // TODO: Apply decoration FuncParamAttr: ByVal (no array creation),
-                //  Sext (sign extended) and Zext (zero extended)
                 return HelperInputs.castInput(id, types.getArrayType(pType.getPointedType()), builder.getInput(id));
             }
             return HelperInputs.castInput(id, type, builder.getInput(id));

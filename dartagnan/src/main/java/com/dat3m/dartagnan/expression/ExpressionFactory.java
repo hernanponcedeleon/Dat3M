@@ -12,13 +12,14 @@ import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.dat3m.dartagnan.program.memory.ScopedPointer;
 import com.dat3m.dartagnan.program.memory.ScopedPointerVariable;
 import com.google.common.base.Preconditions;
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.List;
+
+import static com.dat3m.dartagnan.expression.type.TypeFactory.isStaticTypeOf;
 
 public final class ExpressionFactory {
 
@@ -263,18 +264,21 @@ public final class ExpressionFactory {
         return new ConstructExpr(type, arguments);
     }
 
-    public Expression makeArray(Type elementType, List<Expression> items, boolean fixedSize) {
-        final ArrayType type = fixedSize ? types.getArrayType(elementType, items.size()) :
-                types.getArrayType(elementType);
-        if (items.size() > 0) {
-            Preconditions.checkArgument(items.stream().allMatch(e -> TypeFactory.isStaticTypeOf(e.getType(), items.get(0).getType())),
-                "All elements in an array must have the same type.");
+    public Expression makeArray(ArrayType type, List<Expression> items) {
+        Preconditions.checkArgument(!type.hasKnownNumElements() || type.getNumElements() == items.size(),
+                "The number of elements must match");
+        if (!items.isEmpty()) {
+            long distinctSubtypesCount = items.stream().map(Expression::getType).distinct().count();
+            Preconditions.checkArgument(distinctSubtypesCount == 1,
+                    "All elements in an array must have the same type.");
+            Preconditions.checkArgument(isStaticTypeOf(items.get(0).getType(), type.getElementType()),
+                    "Array elements must match expected type");
         }
         return new ConstructExpr(type, items);
     }
 
     public Expression makeExtract(Expression object, int index) {
-        return makeExtract(object, ImmutableList.of(index));
+        return makeExtract(object, List.of(index));
     }
 
     public Expression makeExtract(Expression object, Iterable<Integer> indices) {
@@ -285,7 +289,7 @@ public final class ExpressionFactory {
     }
 
     public Expression makeInsert(Expression aggregate, Expression value, int index) {
-        return makeInsert(aggregate, value, ImmutableList.of(index));
+        return makeInsert(aggregate, value, List.of(index));
     }
 
     public Expression makeInsert(Expression aggregate, Expression value, Iterable<Integer> indices) {
@@ -303,20 +307,26 @@ public final class ExpressionFactory {
     // Pointers
 
     public Expression makeGetElementPointer(Type indexingType, Expression base, List<Expression> offsets) {
-        //TODO getPointerType()
+        return makeGetElementPointer(indexingType, base, offsets, null);
+    }
+
+    public Expression makeGetElementPointer(Type indexingType, Expression base, List<Expression> offsets, Integer stride) {
+        // TODO: Stride should be a property of the pointer, not of a GEPExpr.
+        //  Refactor GEPExpr to only accept a (new) PointerType and a list of offsets.
+        //  A PointerType should have the referred type and the stride in its attributes.
         Preconditions.checkArgument(base.getType().equals(types.getArchType()),
                 "Applying offsets to non-pointer expression.");
-        return new GEPExpr(indexingType, base, offsets);
+        Preconditions.checkArgument(stride == null || stride >= types.getMemorySizeInBytes(indexingType),
+        "Stride cannot be smaller than indexing type");
+        return new GEPExpr(indexingType, base, offsets, stride);
     }
 
-    public ScopedPointer makeScopedPointer(String id, String scopeId, Type type, Expression address) {
-        ScopedPointerType pointerType = types.getScopedPointerType(scopeId, type);
-        return new ScopedPointer(id, pointerType, address);
+    public ScopedPointer makeScopedPointer(String id, ScopedPointerType type, Expression value) {
+        return new ScopedPointer(id, type, value);
     }
 
-    public ScopedPointerVariable makeScopedPointerVariable(String id, String scopeId, Type type, MemoryObject address) {
-        ScopedPointerType pointerType = types.getScopedPointerType(scopeId, type);
-        return new ScopedPointerVariable(id, pointerType, address);
+    public ScopedPointerVariable makeScopedPointerVariable(String id, ScopedPointerType type, MemoryObject memObj) {
+        return new ScopedPointerVariable(id, type, memObj);
     }
 
     // -----------------------------------------------------------------------------------------------------------------
@@ -329,7 +339,7 @@ public final class ExpressionFactory {
             for (int i = 0; i < arrayType.getNumElements(); i++) {
                 zeroes.add(zero);
             }
-            return makeArray(arrayType.getElementType(), zeroes, true);
+            return makeArray(arrayType, zeroes);
         } else if (type instanceof AggregateType structType) {
             List<Expression> zeroes = new ArrayList<>(structType.getFields().size());
             for (TypeOffset typeOffset : structType.getFields()) {

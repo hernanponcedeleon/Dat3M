@@ -61,13 +61,16 @@ import org.sosy_lab.java_smt.api.ProverEnvironment;
 import org.sosy_lab.java_smt.api.SolverContext;
 import org.sosy_lab.java_smt.api.SolverContext.ProverOptions;
 import org.sosy_lab.java_smt.api.SolverException;
-
+import java.nio.file.*;
 import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.*;
+import java.util.stream.Stream;
+import com.dat3m.dartagnan.utils.printer.OutputLogger;
+import com.dat3m.dartagnan.utils.printer.OutputLogger.ResultSummary;
 
 import static com.dat3m.dartagnan.GlobalSettings.getOrCreateOutputDirectory;
 import static com.dat3m.dartagnan.configuration.OptionInfo.collectOptions;
@@ -150,18 +153,31 @@ public class Dartagnan extends BaseOptions {
         Configuration config = loadConfiguration(args);
         Dartagnan o = new Dartagnan(config);
 
-        File fileProgram = new File(Arrays.stream(args).filter(a -> supportedFormats.stream().anyMatch(a::endsWith))
-                .findFirst()
-                .orElseThrow(() -> new IllegalArgumentException("Input program not given or format not recognized")));
-        logger.info("Program path: {}", fileProgram);
-
         File fileModel = new File(Arrays.stream(args).filter(a -> a.endsWith(".cat")).findFirst()
                 .orElseThrow(() -> new IllegalArgumentException("CAT model not given or format not recognized")));
         logger.info("CAT file path: {}", fileModel);
-
-
         Wmm mcm = new ParserCat(Path.of(o.getCatIncludePath())).parse(fileModel);
-        Program p = new ProgramParser().parse(fileProgram);
+
+        final OutputLogger output = new OutputLogger(fileModel, config);
+
+        final List<File> files = new ArrayList();
+        Stream.of(args)
+            .map(File::new)
+            .forEach(file -> {
+                if (file.exists()) {
+                    final String path = file.getAbsolutePath();
+                    logger.info("Program(s) path: {}", path);
+                    if (file.isDirectory()) {
+                        files.addAll(getProgramsFiles(path));
+                    } else if (file.isFile() && supportedFormats.stream().anyMatch(file.getName()::endsWith)) {
+                        files.add(file);
+                    }
+                }
+            });
+        if (files.isEmpty()) {
+            throw new IllegalArgumentException("Path to input program(s) not given or format not recognized");
+        }
+
         EnumSet<Property> properties = o.getProperty();
 
         WitnessGraph witness = new WitnessGraph();
@@ -170,87 +186,110 @@ public class Dartagnan extends BaseOptions {
             witness = new ParserWitness().parse(new File(o.getWitnessPath()));
         }
 
-        VerificationTaskBuilder builder = VerificationTask.builder()
-                .withConfig(config)
-                .withProgressModel(o.getProgressModel())
-                .withWitness(witness);
-        // If the arch has been set during parsing (this only happens for litmus tests)
-        // and the user did not explicitly add the target option, we use the one
-        // obtained during parsing.
-        if (p.getArch() != null && !config.hasProperty(TARGET)) {
-            builder = builder.withTarget(p.getArch());
+        if (properties.contains(DATARACEFREEDOM) && properties.size() > 1) {
+            System.out.println("Data race detection cannot be combined with other properties");
+                if(!(files.size() > 1)) {
+                    System.exit(1);
+                }
         }
-        VerificationTask task = builder.build(p, mcm, properties);
 
-        ShutdownManager sdm = ShutdownManager.create();
-        Thread t = new Thread(() -> {
+        ResultSummary summary = null;
+        for (File f : files) {
+
+            ShutdownManager sdm = ShutdownManager.create();
+            Thread t = new Thread(() -> {
+                try {
+                    if (o.hasTimeout()) {
+                        // Converts timeout from secs to millisecs
+                        Thread.sleep(1000L * o.getTimeout());
+                        sdm.requestShutdown("Shutdown Request");
+                    }
+                } catch (InterruptedException e) {
+                    // Verification ended, nothing to be done.
+                }
+            });
+
             try {
-                if (o.hasTimeout()) {
-                    // Converts timeout from secs to millisecs
-                    Thread.sleep(1000L * o.getTimeout());
-                    sdm.requestShutdown("Shutdown Request");
-                    logger.warn("Shutdown Request");
+                VerificationTaskBuilder builder = VerificationTask.builder()
+                        .withConfig(config)
+                        .withProgressModel(o.getProgressModel())
+                        .withWitness(witness);
+                Program p = new ProgramParser().parse(f);
+                // If the arch has been set during parsing (this only happens for litmus tests)
+                // and the user did not explicitly add the target option, we use the one
+                // obtained during parsing.
+                if (p.getArch() != null && !config.hasProperty(TARGET)) {
+                    builder = builder.withTarget(p.getArch());
+                }
+                VerificationTask task = builder.build(p, mcm, properties);
+
+                long startTime = System.currentTimeMillis();
+                t.start();
+                Configuration solverConfig = Configuration.builder()
+                        .setOption(PHANTOM_REFERENCES, valueOf(o.usePhantomReferences()))
+                        .build();
+                try (SolverContext ctx = createSolverContext(
+                        solverConfig,
+                        sdm.getNotifier(),
+                        o.getSolver());
+                        ProverWithTracker prover = new ProverWithTracker(ctx,
+                            o.getDumpSmtLib() ? GlobalSettings.getOutputDirectory() + String.format("/%s.smt2", p.getName()) : "",
+                            ProverOptions.GENERATE_MODELS)) {
+                    ModelChecker modelChecker;
+                    if (properties.contains(DATARACEFREEDOM)) {
+                        modelChecker = DataRaceSolver.run(ctx, prover, task);
+                    } else {
+                        // Property is either PROGRAM_SPEC, TERMINATION, or CAT_SPEC
+                        modelChecker = switch (o.getMethod()) {
+                            case EAGER -> AssumeSolver.run(ctx, prover, task);
+                            case LAZY -> RefinementSolver.run(ctx, prover, task);
+                        };
+                    }
+
+                    // Verification ended, we can interrupt the timeout Thread
+                    t.interrupt();
+                    long endTime = System.currentTimeMillis();
+
+                    summary = summaryFromResult(task, prover, modelChecker, f.toString(), (endTime - startTime));
+
+                    if (modelChecker.hasModel() && o.getWitnessType().generateGraphviz()) {
+                        generateExecutionGraphFile(task, prover, modelChecker, o.getWitnessType());
+                    }
+                    // We only generate SVCOMP witnesses if we are not validating one.
+                    if (o.getWitnessType().equals(GRAPHML) && !o.runValidator()) {
+                        generateWitnessIfAble(task, prover, modelChecker, summary.details());
+                    }
                 }
             } catch (InterruptedException e) {
-                // Verification ended, nothing to be done.
+                final long time = 1000L * o.getTimeout();
+                summary = new ResultSummary(f.toString(), "", TIMEDOUT, "", "", "", time, TIMEOUT_ELAPSED);
+            } catch (Exception e) {
+                final String reason = e.getClass().getSimpleName();
+                final String details = "\t" + Optional.ofNullable(e.getMessage()).orElse("Unknown error occurred");
+                summary = new ResultSummary(f.toString(), "", ERROR, "", reason, details, 0, UNKNOWN_ERROR);
             }
-        });
+            output.addResult(summary);
+        }
+        output.toStdOut(files.size() > 1);
+        if (summary != null) {
+            // Running batch mode results in normal termination independent of the individual results
+            System.exit((files.size() > 1 ? NORMAL_TERMINATION : summary.code()).asInt());
+        }
+    }
 
-        try {
-            long startTime = System.currentTimeMillis();
-            t.start();
-            Configuration solverConfig = Configuration.builder()
-                    .setOption(PHANTOM_REFERENCES, valueOf(o.usePhantomReferences()))
-                    .build();
-            try (SolverContext ctx = createSolverContext(
-                    solverConfig,
-                    sdm.getNotifier(),
-                    o.getSolver());
-                    ProverWithTracker prover = new ProverWithTracker(ctx,
-                        o.getDumpSmtLib() ? GlobalSettings.getOutputDirectory() + String.format("/%s.smt2", p.getName()) : "",
-                        ProverOptions.GENERATE_MODELS)) {
-                ModelChecker modelChecker;
-                if (properties.contains(DATARACEFREEDOM)) {
-                    if (properties.size() > 1) {
-                        System.out.println("Data race detection cannot be combined with other properties");
-                        System.exit(1);
-                    }
-                    modelChecker = DataRaceSolver.run(ctx, prover, task);
-                } else {
-                    // Property is either PROGRAM_SPEC, TERMINATION, or CAT_SPEC
-                    modelChecker = switch (o.getMethod()) {
-                        case EAGER -> AssumeSolver.run(ctx, prover, task);
-                        case LAZY -> RefinementSolver.run(ctx, prover, task);
-                    };
-                }
-
-                // Verification ended, we can interrupt the timeout Thread
-                t.interrupt();
-
-                if (modelChecker.hasModel() && o.getWitnessType().generateGraphviz()) {
-                    generateExecutionGraphFile(task, prover, modelChecker, o.getWitnessType());
-                }
-
-                long endTime = System.currentTimeMillis();
-                ResultSummary summary = generateResultSummary(task, prover, modelChecker);
-                System.out.print(summary.text());
-                System.out.println("Total verification time: " + Utils.toTimeString(endTime - startTime));
-
-                // We only generate witnesses if we are not validating one.
-                if (o.getWitnessType().equals(GRAPHML) && !o.runValidator()) {
-                    generateWitnessIfAble(task, prover, modelChecker, summary.toString());
-                }
-                System.exit(summary.code().asInt());
-            }
-        } catch (InterruptedException e) {
-            logger.warn("Timeout elapsed. The SMT solver was stopped");
-            System.out.println("TIMEOUT");
-            System.exit(TIMEOUT_ELAPSED.asInt());
-        } catch (Exception e) {
-            logger.error(e.getMessage(), e);
-            System.out.println("ERROR");
+    public static List<File> getProgramsFiles(String path) {
+        List<File> files = new ArrayList<File>();
+        try (Stream<Path> stream = Files.walk(Paths.get(path))) {
+            files = stream.filter(Files::isRegularFile)
+                .filter(p -> supportedFormats.stream().anyMatch(p.toString()::endsWith))
+                .map(Path::toFile)
+                .sorted(Comparator.comparing(File::toString))
+                .toList();
+        } catch (IOException e) {
+            logger.error("There was an I/O error when accessing path " + path);
             System.exit(UNKNOWN_ERROR.asInt());
         }
+        return files;
     }
 
     public static File generateExecutionGraphFile(VerificationTask task, ProverEnvironment prover, ModelChecker modelChecker,
@@ -278,7 +317,7 @@ public class Dartagnan extends BaseOptions {
     }
 
     private static void generateWitnessIfAble(VerificationTask task, ProverEnvironment prover,
-            ModelChecker modelChecker, String summary) {
+            ModelChecker modelChecker, String details) {
         // ------------------ Generate Witness, if possible ------------------
         final EnumSet<Property> properties = task.getProperty();
         if (task.getProgram().getFormat().equals(SourceLanguage.LLVM) && modelChecker.hasModel()
@@ -286,7 +325,7 @@ public class Dartagnan extends BaseOptions {
                 && modelChecker.getResult() != UNKNOWN) {
             try {
                 WitnessBuilder w = WitnessBuilder.of(modelChecker.getEncodingContext(), prover,
-                        modelChecker.getResult(), summary);
+                        modelChecker.getResult(), details);
                 if (w.canBeBuilt()) {
                     w.build().write();
                 }
@@ -296,8 +335,8 @@ public class Dartagnan extends BaseOptions {
         }
     }
 
-    public static ResultSummary generateResultSummary(VerificationTask task, ProverEnvironment prover,
-            ModelChecker modelChecker) throws SolverException {
+    public static ResultSummary summaryFromResult(VerificationTask task, ProverEnvironment prover,
+            ModelChecker modelChecker, String path, long time) throws SolverException {
         // ----------------- Generate output of verification result -----------------
         final Program p = task.getProgram();
         final EnumSet<Property> props = task.getProperty();
@@ -307,168 +346,107 @@ public class Dartagnan extends BaseOptions {
                 ? new IREvaluator(encCtx, new ModelExt(prover.getModel()))
                 : null;
         final boolean hasViolations = result == FAIL && (model != null);
-        final boolean hasPositiveWitnesses = result == PASS && (model != null);
+        final boolean hasViolationsWithoutWitness = result == FAIL && (model == null);
 
-        StringBuilder summary = new StringBuilder();
+        String reason = "";
+        StringBuilder details = new StringBuilder();
+        // We only show the condition if this is the reason of the failure
+        String condition = "";
+        final boolean ignoreFilter = task.getConfig().hasProperty(IGNORE_FILTER_SPECIFICATION) && task.getConfig().getProperty(IGNORE_FILTER_SPECIFICATION).equals("true");
+        final boolean nonEmptyFilter = !(p.getFilterSpecification() instanceof BoolLiteral bLit) || !bLit.getValue();
+        final String filter = !ignoreFilter && nonEmptyFilter ? p.getFilterSpecification().toString() : "";
 
-        if (p.getFormat() != SourceLanguage.LITMUS) {
-            final SyntacticContextAnalysis synContext = newInstance(p);
-            if (hasViolations) {
-                printWarningIfThreadStartFailed(p, model);
-                if (props.contains(PROGRAM_SPEC) && model.propertyViolated(PROGRAM_SPEC)) {
-                    summary.append("===== Program specification violation found =====\n");
-                    for (Assert ass : p.getThreadEvents(Assert.class)) {
-                        final boolean isViolated = model.assertionViolated(ass);
-                        if (isViolated) {
-                            final String callStack = makeContextString(
-                                    synContext.getContextInfo(ass).getContextOfType(CallContext.class), " -> ");
-                            summary
-                                    .append("\tE").append(ass.getGlobalId())
-                                    .append(":\t")
-                                    .append(callStack.isEmpty() ? callStack : callStack + " -> ")
-                                    .append(getSourceLocationString(ass))
-                                    .append(": ").append(ass.getErrorMessage())
-                                    .append("\n");
-                        }
-                    }
-                    summary.append("=================================================\n");
-                    summary.append(result).append("\n");
-                    // In validation mode, we expect to find the violation, thus NORMAL_TERMINATION
-                    ExitCode code = task.getWitness().isEmpty() ? PROGRAM_SPEC_VIOLATION : NORMAL_TERMINATION;
-                    return new ResultSummary(summary.toString(), code);
-                }
-                if (props.contains(TERMINATION) && model.propertyViolated(TERMINATION)) {
-                    summary.append("============ Termination violation found ============\n");
-                    for (Event e : p.getThreadEvents()) {
-                        final boolean isStuckLoop = e instanceof CondJump jump
-                                && e.hasTag(Tag.NONTERMINATION) && !e.hasTag(Tag.BOUND)
-                                && model.jumpTaken(jump);
-                        final boolean isStuckBarrier = e instanceof BlockingEvent barrier
-                                && model.isBlocked(barrier);
-
-                        if (isStuckLoop || isStuckBarrier) {
-                            final String callStack = makeContextString(
-                                    synContext.getContextInfo(e).getContextOfType(CallContext.class), " -> ");
-                            summary
-                                    .append("\tE").append(e.getGlobalId())
-                                    .append(":\t")
-                                    .append(callStack.isEmpty() ? callStack : callStack + " -> ")
-                                    .append(getSourceLocationString(e))
-                                    .append("\n");
-                        }
-                    }
-                    summary.append("=================================================\n");
-                    summary.append(result).append("\n");
-                    // In validation mode, we expect to find the violation, thus NORMAL_TERMINATION
-                    ExitCode code = task.getWitness().isEmpty() ? TERMINATION_VIOLATION : NORMAL_TERMINATION;
-                    return new ResultSummary(summary.toString(), code);
-                }
-                if (props.contains(DATARACEFREEDOM) && model.propertyViolated(DATARACEFREEDOM)) {
-                    summary.append("============= SVCOMP data race found ============\n");
-                    summary.append("=================================================\n");
-                    summary.append(result).append("\n");
-                    // In validation mode, we expect to find the violation, thus NORMAL_TERMINATION
-                    ExitCode code = task.getWitness().isEmpty() ? DATA_RACE_FREEDOM_VIOLATION : NORMAL_TERMINATION;
-                    return new ResultSummary(summary.toString(), code);
-                }
-                final List<Axiom> violatedCATSpecs = !props.contains(CAT_SPEC) ? List.of()
-                        : task.getMemoryModel().getAxioms().stream()
-                        .filter(Axiom::isFlagged)
-                        .filter(model::isFlaggedAxiomViolated)
-                        .toList();
-                if (!violatedCATSpecs.isEmpty()) {
-                    summary.append("======= CAT specification violation found =======\n");
-                    // Computed by the model checker since it needs access to the WmmEncoder
-                    summary.append(modelChecker.getFlaggedPairsOutput());
-                    summary.append("=================================================\n");
-                    summary.append(result).append("\n");
-                    // In validation mode, we expect to find the violation, thus NORMAL_TERMINATION
-                    ExitCode code = task.getWitness().isEmpty() ? CAT_SPEC_VIOLATION : NORMAL_TERMINATION;
-                    return new ResultSummary(summary.toString(), code);
-                }
-            } else if (hasPositiveWitnesses) {
-                if (props.contains(PROGRAM_SPEC) && model.propertySatisfied(PROGRAM_SPEC)) {
-                    // The check above is just a sanity check: the program spec has to be true
-                    // because it is the only property that got encoded.
-                    summary.append("Program specification witness found.").append("\n");
-                }
-            } else if (result == UNKNOWN && modelChecker.hasModel()) {
-                // We reached unrolling bounds.
-                final List<Event> reachedBounds = p.getThreadEventsWithAllTags(Tag.BOUND)
-                        .stream().filter(model::isExecuted)
-                        .toList();
-                summary.append("=========== Not fully unrolled loops ============\n");
-                for (Event bound : reachedBounds) {
-                    summary
-                            .append("\t")
-                            .append(synContext.getSourceLocationWithContext(bound, true))
+        final SyntacticContextAnalysis synContext = newInstance(p);
+        if (hasViolations) {
+            printWarningIfThreadStartFailed(p, model);
+            if (props.contains(PROGRAM_SPEC) && model.propertyViolated(PROGRAM_SPEC)) {
+                reason = ResultSummary.PROGRAM_SPEC_REASON;
+                condition = getSpecificationString(p);
+                List<Assert> violations = p.getThreadEvents(Assert.class)
+                    .stream().filter(ass -> model.assertionViolated(ass))
+                    .toList();
+                for (Assert ass : violations) {
+                    final String callStack = makeContextString(synContext.getContextInfo(ass).getContextOfType(CallContext.class), " -> ");
+                    details
+                            .append("\tE").append(ass.getGlobalId())
+                            .append(":\t")
+                            .append(callStack.isEmpty() ? callStack : callStack + " -> ")
+                            .append(getSourceLocationString(ass))
+                            .append(": ").append(ass.getErrorMessage())
                             .append("\n");
                 }
-                summary.append("=================================================\n");
-                try {
-                    increaseBoundAndDump(reachedBounds, task.getConfig());
-                } catch (IOException e) {
-                    logger.warn("Failed to save bounds file: {}", e.getLocalizedMessage());
-                }
-                summary.append(result).append("\n");
-                return new ResultSummary(summary.toString(), BOUNDED_RESULT);
+                // In validation mode, we expect to find the violation, thus NORMAL_TERMINATION
+                ExitCode code = task.getWitness().isEmpty() ? PROGRAM_SPEC_VIOLATION : NORMAL_TERMINATION;
+                return new ResultSummary(path, filter, FAIL, condition, reason, details.toString(), time, code);
             }
-            summary.append(result).append("\n");
-        } else {
-            // Litmus-specific output format that matches with Herd7 (as good as it can)
-            Expression filterSpec = p.getFilterSpecification();
-            if (!(filterSpec instanceof BoolLiteral bLit) || !bLit.getValue()) {
-                summary.append("Filter ").append(filterSpec).append("\n");
-            }
+            if (props.contains(TERMINATION) && model.propertyViolated(TERMINATION)) {
+                reason = ResultSummary.TERMINATION_REASON;
+                for (Event e : p.getThreadEvents()) {
+                    final boolean isStuckLoop = e instanceof CondJump jump
+                            && e.hasTag(Tag.NONTERMINATION) && !e.hasTag(Tag.BOUND)
+                            && model.jumpTaken(jump);
+                    final boolean isStuckBarrier = e instanceof BlockingEvent barrier
+                            && model.isBlocked(barrier);
 
-            // NOTE: We cannot produce an output that matches herd7 when checking for both program spec and cat properties.
-            // This requires two SMT-queries because a single model is unlikely to witness/falsify both properties
-            // simultaneously.
-            // Instead, if we check for multiple safety properties, we find the first one and
-            // generate output based on its type (Program spec OR CAT property)
-            // TODO: Perform two separate checks
-
-            if (hasPositiveWitnesses) {
-                // We have a positive witness or no violations, then the program must be ok.
-                // NOTE: We also treat the UNKNOWN case as positive, assuming that
-                // looping litmus tests are unusual.
-                printSpecification(summary, p);
-                summary.append("Ok").append("\n");
-            } else if (hasViolations) {
-                if (props.contains(PROGRAM_SPEC) && model.propertyViolated(PROGRAM_SPEC)) {
-                    // Program spec violated
-                    printSpecification(summary, p);
-                    summary.append("No").append("\n");
-                } else {
-                    final List<Axiom> violatedCATSpecs = !props.contains(CAT_SPEC) ? List.of()
-                            : task.getMemoryModel().getAxioms().stream()
-                            .filter(Axiom::isFlagged)
-                            .filter(model::isFlaggedAxiomViolated)
-                            .toList();
-                    for (Axiom violatedAx : violatedCATSpecs) {
-                        summary.append("Flag ")
-                                .append(Optional.ofNullable(violatedAx.getName()).orElse(violatedAx.getNameOrTerm()))
+                    if (isStuckLoop || isStuckBarrier) {
+                        final String callStack = makeContextString(
+                                synContext.getContextInfo(e).getContextOfType(CallContext.class), " -> ");
+                        details
+                                .append("\tE").append(e.getGlobalId())
+                                .append(":\t")
+                                .append(callStack.isEmpty() ? callStack : callStack + " -> ")
+                                .append(getSourceLocationString(e))
                                 .append("\n");
                     }
                 }
-            } else {
-                // We have neither a witness nor a violation ...
-                if (result == UNKNOWN) {
-                    // Sanity check: UNKNOWN is not an expected result for litmus tests
-                    logger.warn("Unexpected result for litmus test: {}", result);
-                    summary.append(result).append("\n");
-                } else if (task.getProperty().contains(PROGRAM_SPEC)) {
-                    // ... which can be good or bad (no witness = bad, not violation = good)
-                    printSpecification(summary, p);
-                    summary.append(result == PASS ? "Ok" : "No").append("\n");
-                }
+                // In validation mode, we expect to find the violation, thus NORMAL_TERMINATION
+                ExitCode code = task.getWitness().isEmpty() ? TERMINATION_VIOLATION : NORMAL_TERMINATION;
+                return new ResultSummary(path, filter, FAIL, condition, reason, details.toString(), time, code);
+            }
+            if (props.contains(DATARACEFREEDOM) && model.propertyViolated(DATARACEFREEDOM)) {
+                reason = ResultSummary.SVCOMP_RACE_REASON;
+                // In validation mode, we expect to find the violation, thus NORMAL_TERMINATION
+                ExitCode code = task.getWitness().isEmpty() ? DATA_RACE_FREEDOM_VIOLATION : NORMAL_TERMINATION;
+                return new ResultSummary(path, filter, FAIL, condition, reason, details.toString(), time, code);
+            }
+            final List<Axiom> violatedCATSpecs = !props.contains(CAT_SPEC) ? List.of()
+                    : task.getMemoryModel().getAxioms().stream()
+                    .filter(Axiom::isFlagged)
+                    .filter(model::isFlaggedAxiomViolated)
+                    .toList();
+            if (!violatedCATSpecs.isEmpty()) {
+                reason = ResultSummary.CAT_SPEC_REASON;
+                // In validation mode, we expect to find the violation, thus NORMAL_TERMINATION
+                ExitCode code = task.getWitness().isEmpty() ? CAT_SPEC_VIOLATION : NORMAL_TERMINATION;
+                return new ResultSummary(path, filter, FAIL, condition, reason, modelChecker.getFlaggedPairsOutput(), time, code);
+            }
+        } else if (hasViolationsWithoutWitness) {
+            // Only for programs with exists/forall specifications
+            reason = ResultSummary.PROGRAM_SPEC_REASON;
+            condition = getSpecificationString(p);
+        } else if (result == UNKNOWN && modelChecker.hasModel()) {
+            // We reached unrolling bounds.
+            final List<Event> reachedBounds = p.getThreadEventsWithAllTags(Tag.BOUND)
+                    .stream().filter(model::isExecuted)
+                    .toList();
+            reason = ResultSummary.BOUND_REASON;
+            for (Event bound : reachedBounds) {
+                details
+                        .append("\t")
+                        .append(synContext.getSourceLocationWithContext(bound, true))
+                        .append("\n");
+            }
+            try {
+                increaseBoundAndDump(reachedBounds, task.getConfig());
+            } catch (IOException e) {
+                logger.warn("Failed to save bounds file: {}", e.getLocalizedMessage());
             }
         }
         // We consider those cases without an explicit return to yield normal termination.
         // This includes verification of litmus code, independent of the verification result.
         // In validation mode, we expect to find the violation, thus the WITNESS_NOT_VALIDATED error
         ExitCode code = task.getWitness().isEmpty() ? NORMAL_TERMINATION : WITNESS_NOT_VALIDATED;
-        return new ResultSummary(summary.toString(), code);
+        return new ResultSummary(path, filter, result, condition, reason, details.toString(), time, code);
     }
 
     private static void increaseBoundAndDump(List<Event> boundEvents, Configuration config) throws IOException {
@@ -521,25 +499,17 @@ public class Dartagnan extends BaseOptions {
         ));
     }
 
-    private static void printSpecification(StringBuilder sb, Program program) {
-        sb.append("Condition ").append(program.getSpecificationType().toString().toLowerCase()).append(" ");
-        boolean init = false;
-        if (program.getSpecification() != null) {
-            sb.append(new ExpressionPrinter(true).visit(program.getSpecification()));
-            init = true;
+    private static String getSpecificationString(Program program) {
+        final StringBuilder sb = new StringBuilder();
+        final SourceLanguage format = program.getFormat();
+        if (format == SourceLanguage.LITMUS || format == SourceLanguage.SPV) {
+            sb.append(program.getSpecificationType().toString().toLowerCase()).append(" ");
+            if (program.getSpecification() != null) {
+                sb.append(new ExpressionPrinter(true).visit(program.getSpecification()));
+            }
+            sb.append("\n");
         }
-        for (Assert assertion : program.getThreadEvents(Assert.class)) {
-            sb.append(init ? " && " : "").append(assertion.getExpression()).append("%").append(assertion.getGlobalId());
-            init = true;
-        }
-        sb.append("\n");
-    }
-
-    public static record ResultSummary (String text, ExitCode code) {
-        @Override
-        public String toString() {
-            return String.format("%s%s(exit-code: %s)", text, text.endsWith("\n") ? "" : " ", code.asInt());
-        }
+        return sb.toString();
     }
 
 }

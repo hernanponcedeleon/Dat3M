@@ -74,6 +74,8 @@ public class SpirvChecksTest {
                 {"vector-read-write.spvasm", 1, PASS},
                 {"composite-construct.spvasm", 1, PASS},
                 {"composite-extract.spvasm", 1, PASS},
+                {"composite-initial.spvasm", 1, PASS},
+                {"composite-insert.spvasm", 1, PASS},
                 {"spec-id-integer.spvasm", 1, PASS},
                 {"spec-id-boolean.spvasm", 1, PASS},
                 {"mixed-size.spvasm", 1, PASS},
@@ -118,7 +120,8 @@ public class SpirvChecksTest {
                 {"push-constants-pod.spvasm", 1, PASS},
                 {"push-constant-mixed.spvasm", 1, PASS},
                 {"bitwise-scalar.spvasm", 1, PASS},
-                {"bitwise-vector.spvasm", 1, PASS}
+                {"bitwise-vector.spvasm", 1, PASS},
+                {"idx-overflow.spvasm", 1, PASS}
         });
     }
 
