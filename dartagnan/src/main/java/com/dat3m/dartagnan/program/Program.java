@@ -158,7 +158,7 @@ public class Program {
             for (int i = 0; i < arrayType.getNumElements(); i++) {
                 entries.add(newConstant(arrayType.getElementType()));
             }
-            return expressions.makeArray(arrayType.getElementType(), entries, true);
+            return expressions.makeArray(arrayType, entries);
         }
         if (type instanceof AggregateType aggregateType) {
             final List<Expression> elements = new ArrayList<>(aggregateType.getFields().size());
