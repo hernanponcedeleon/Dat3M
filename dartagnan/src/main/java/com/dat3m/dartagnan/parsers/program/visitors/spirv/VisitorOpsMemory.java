@@ -8,18 +8,18 @@ import com.dat3m.dartagnan.expression.integers.IntLiteral;
 import com.dat3m.dartagnan.expression.type.*;
 import com.dat3m.dartagnan.parsers.SpirvBaseVisitor;
 import com.dat3m.dartagnan.parsers.SpirvParser;
+import com.dat3m.dartagnan.parsers.program.visitors.spirv.builders.ProgramBuilder;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.decorations.BuiltIn;
-import com.dat3m.dartagnan.parsers.program.visitors.spirv.helpers.HelperTypes;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.helpers.HelperInputs;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.helpers.HelperTags;
-import com.dat3m.dartagnan.parsers.program.visitors.spirv.builders.ProgramBuilder;
-import com.dat3m.dartagnan.program.memory.ScopedPointer;
-import com.dat3m.dartagnan.program.memory.ScopedPointerVariable;
+import com.dat3m.dartagnan.parsers.program.visitors.spirv.helpers.HelperTypes;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.Load;
+import com.dat3m.dartagnan.program.memory.ScopedPointer;
+import com.dat3m.dartagnan.program.memory.ScopedPointerVariable;
 import org.antlr.v4.runtime.RuleContext;
 
 import java.util.ArrayList;
@@ -50,7 +50,7 @@ public class VisitorOpsMemory extends SpirvBaseVisitor<Event> {
         String valueId = ctx.object().getText();
         Expression value = builder.getExpression(valueId);
         Type type = value.getType();
-        List events = visitMemoryAccess(valueId, type, pointer, (i, exp) ->
+        List<Event> events = visitMemoryAccess(valueId, type, pointer, (i, exp) ->
             i == -1 ?
             EventFactory.newStore(exp, value) :
             EventFactory.newStore(exp, expressions.makeExtract(value, i)));
@@ -84,7 +84,7 @@ public class VisitorOpsMemory extends SpirvBaseVisitor<Event> {
             builder.addExpression(resultId, expressions.makeConstruct(type, registers));
         }
         if (type instanceof ArrayType arrayType) {
-            builder.addExpression(resultId, expressions.makeArray(arrayType.getElementType(), registers, true));
+            builder.addExpression(resultId, expressions.makeArray(arrayType, registers));
         }
         Set<String> tags = parseMemoryAccessTags(ctx.memoryAccess());
         checkAndPropagateTags(events, tags, Tag.Spirv.MEM_AVAILABLE, ctx.pointer().getText(), "OpLoad");
@@ -101,7 +101,7 @@ public class VisitorOpsMemory extends SpirvBaseVisitor<Event> {
             }
             for (int i = 0; i < arrayType.getNumElements(); i++) {
                 List<Expression> index = List.of(expressions.makeValue(i, types.getArchType()));
-                Expression address = expressions.makeGetElementPointer(arrayType.getElementType(), pointer, index);
+                Expression address = expressions.makeGetElementPointer(arrayType.getElementType(), pointer, index, arrayType.getStride());
                 events.add(f.apply(i, address));
             }
         } else if (type instanceof AggregateType aggregateType) {
@@ -124,10 +124,10 @@ public class VisitorOpsMemory extends SpirvBaseVisitor<Event> {
     private Set<String> parseMemoryAccessTags(SpirvParser.MemoryAccessContext ctx) {
         if (ctx != null) {
             List<String> operands = ctx.memoryAccessTag().stream().map(RuleContext::getText).toList();
-            Integer alignment = ctx.literalInteger() != null ? Integer.parseInt(ctx.literalInteger().getText()) : null;
+            Integer alignmentTag = ctx.literalInteger() != null ? Integer.parseInt(ctx.literalInteger().getText()) : null;
             List<String> paramIds = ctx.idRef().stream().map(RuleContext::getText).toList();
             List<Expression> paramsValues = ctx.idRef().stream().map(c -> builder.getExpression(c.getText())).toList();
-            return HelperTags.parseMemoryOperandsTags(operands, alignment, paramIds, paramsValues);
+            return HelperTags.parseMemoryOperandsTags(operands, alignmentTag, paramIds, paramsValues);
         }
         return Set.of();
     }
@@ -148,27 +148,26 @@ public class VisitorOpsMemory extends SpirvBaseVisitor<Event> {
     @Override
     public Event visitOpVariable(SpirvParser.OpVariableContext ctx) {
         String id = ctx.idResult().getText();
-        String typeId = ctx.idResultType().getText();
-        if (builder.getType(typeId) instanceof ScopedPointerType pointerType) {
-            Type type = pointerType.getPointedType();
+        Type type = builder.getType(ctx.idResultType().getText());
+        if (type instanceof ScopedPointerType pType) {
+            type = pType.getPointedType();
             Expression value = getOpVariableInitialValue(ctx, type);
             if (value != null) {
                 if (!TypeFactory.isStaticTypeOf(value.getType(), type)) {
                     throw new ParsingException("Mismatching value type for variable '%s', " +
                             "expected '%s' but received '%s'", id, type, value.getType());
                 }
-                type = value.getType();
             } else if (!TypeFactory.isStaticType(type)) {
                 throw new ParsingException("Missing initial value for runtime variable '%s'", id);
             } else {
                 value = builder.makeUndefinedValue(type);
             }
-            ScopedPointerVariable pointer = builder.allocateScopedPointerVariable(id, value, pointerType.getScopeId(), type);
+            ScopedPointerVariable pointer = builder.allocateMemory(id, pType, value);
             validateVariableStorageClass(pointer, ctx.storageClass().getText());
             builder.addExpression(id, pointer);
             return null;
         }
-        throw new ParsingException("Type '%s' is not a pointer type", typeId);
+        throw new ParsingException("Type '%s' is not a pointer type", ctx.idResultType().getText());
     }
 
     private Expression getOpVariableInitialValue(SpirvParser.OpVariableContext ctx, Type type) {
@@ -258,7 +257,7 @@ public class VisitorOpsMemory extends SpirvBaseVisitor<Event> {
         } else {
             exprIndexes.addFirst(builder.getExpression(elCtx.getText()));
         }
-        Expression expression = expressions.makeGetElementPointer(baseType, base, exprIndexes);
+        Expression expression = expressions.makeGetElementPointer(baseType, base, exprIndexes, basePointerType.getStride());
         expression = new ScopedPointer(idCtx.getText(), resultPointerType, expression);
         builder.addExpression(idCtx.getText(), expression);
         return null;

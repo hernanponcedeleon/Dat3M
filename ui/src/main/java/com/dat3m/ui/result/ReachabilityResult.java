@@ -83,6 +83,7 @@ public class ReachabilityResult {
                     .withProgressModel(ProgressModel.uniform(options.progress()))
                     .build(program, wmm, options.properties());
 
+            long startTime = System.currentTimeMillis();
             t.start();
             final Configuration solverConfig = Configuration.builder()
                     .setOption(PHANTOM_REFERENCES, "true")
@@ -100,7 +101,8 @@ public class ReachabilityResult {
                 };
                 // Verification ended, we can interrupt the timeout Thread
                 t.interrupt();
-                verdict = Dartagnan.generateResultSummary(task, prover, modelChecker).text();
+                long endTime = System.currentTimeMillis();
+                verdict = Dartagnan.summaryFromResult(task, prover, modelChecker, "", (endTime - startTime)).toUIString();
 
                 if (modelChecker.hasModel() && modelChecker.getResult() != Result.UNKNOWN) {
                     witnessFile = Dartagnan.generateExecutionGraphFile(task, prover, modelChecker, WitnessType.PNG);

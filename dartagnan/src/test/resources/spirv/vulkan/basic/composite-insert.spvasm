@@ -29,14 +29,14 @@
       %uint_11 = OpConstant %uint 11
 
        %vector = OpTypeVector %uint 3
-      %vector2 = OpTypeVector %vector 2
+       %array1 = OpTypeArray %vector %uint_2
         %array = OpTypeArray %uint %uint_3
        %array2 = OpTypeArray %array %uint_2
   %output_type = OpTypeRuntimeArray %uint
 
     %v_vector1 = OpConstantComposite %vector %uint_0 %uint_0 %uint_0
     %v_vector2 = OpConstantComposite %vector %uint_0 %uint_0 %uint_0
-     %v_vector = OpConstantComposite %vector2 %v_vector1 %v_vector2
+     %v_vector = OpConstantComposite %array1 %v_vector1 %v_vector2
      %v_array1 = OpConstantComposite %array %uint_0 %uint_0 %uint_0
      %v_array2 = OpConstantComposite %array %uint_0 %uint_0 %uint_0
       %v_array = OpConstantComposite %array2 %v_array1 %v_array2
@@ -48,12 +48,12 @@
          %main = OpFunction %void None %func
         %label = OpLabel
 
-            %0 = OpCompositeInsert %vector2 %uint_0 %v_vector 0 0
-            %1 = OpCompositeInsert %vector2 %uint_1 %v_vector 0 1
-            %2 = OpCompositeInsert %vector2 %uint_2 %v_vector 0 2
-            %3 = OpCompositeInsert %vector2 %uint_3 %v_vector 1 0
-            %4 = OpCompositeInsert %vector2 %uint_4 %v_vector 1 1
-            %5 = OpCompositeInsert %vector2 %uint_5 %v_vector 1 2
+            %0 = OpCompositeInsert %array1 %uint_0 %v_vector 0 0
+            %1 = OpCompositeInsert %array1 %uint_1 %v_vector 0 1
+            %2 = OpCompositeInsert %array1 %uint_2 %v_vector 0 2
+            %3 = OpCompositeInsert %array1 %uint_3 %v_vector 1 0
+            %4 = OpCompositeInsert %array1 %uint_4 %v_vector 1 1
+            %5 = OpCompositeInsert %array1 %uint_5 %v_vector 1 2
             %6 = OpCompositeInsert %array2 %uint_6 %v_array 0 0
             %7 = OpCompositeInsert %array2 %uint_7 %v_array 0 1
             %8 = OpCompositeInsert %array2 %uint_8 %v_array 0 2

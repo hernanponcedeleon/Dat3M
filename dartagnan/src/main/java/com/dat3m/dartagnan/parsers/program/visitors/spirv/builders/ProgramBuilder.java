@@ -97,6 +97,10 @@ public class ProgramBuilder {
         entryPointId = id;
     }
 
+    public Arch getArch() {
+        return arch;
+    }
+
     public void setArch(Arch arch) {
         if (this.arch != null) {
             throw new ParsingException("Illegal attempt to override memory model");
@@ -180,22 +184,17 @@ public class ProgramBuilder {
                 .collect(Collectors.toSet());
     }
 
-    public MemoryObject allocateVariable(String id, int bytes) {
-        MemoryObject memObj = program.getMemory().allocateVirtual(bytes, true, null);
+    public ScopedPointerVariable allocateMemory(String id, ScopedPointerType type, Expression value) {
+        int size = TypeFactory.getInstance().getMemorySizeInBytes(value.getType());
+        MemoryObject memObj = program.getMemory().allocateVirtual(size, true, null);
+        memObj.setInitialValue(0, value);
         memObj.setName(id);
-        return memObj;
-    }
-
-    public ScopedPointerVariable allocateScopedPointerVariable(String id, Expression initValue, String storageClass, Type pointedType) {
-        MemoryObject memObj = allocateVariable(id, TypeFactory.getInstance().getMemorySizeInBytes(pointedType));
         memObj.setIsThreadLocal(false);
-        memObj.setInitialValue(0, initValue);
         if (arch == Arch.OPENCL) {
-            String openCLSpace = Tag.Spirv.toOpenCLTag(Tag.Spirv.getStorageClassTag(Set.of(storageClass)));
+            String openCLSpace = Tag.Spirv.toOpenCLTag(Tag.Spirv.getStorageClassTag(Set.of(type.getScopeId())));
             memObj.addFeatureTag(openCLSpace);
         }
-        return ExpressionFactory.getInstance().makeScopedPointerVariable(
-                id, storageClass, pointedType, memObj);
+        return ExpressionFactory.getInstance().makeScopedPointerVariable(id, type, memObj);
     }
 
     public String getPointerStorageClass(String id) {

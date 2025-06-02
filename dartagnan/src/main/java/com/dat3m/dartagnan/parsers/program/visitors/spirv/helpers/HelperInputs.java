@@ -24,13 +24,19 @@ public class HelperInputs {
     }
 
     public static Expression castInput(String id, Type type, Expression value) {
-        if (type instanceof ArrayType aType) {
-            return castArray(id, aType, value);
+        if (!(type instanceof ScopedPointerType)) {
+            if (type.equals(value.getType())) {
+                return value;
+            }
+            if (type instanceof ArrayType aType) {
+                return castArray(id, aType, value);
+            }
+            if (type instanceof AggregateType aType) {
+                return castAggregate(id, aType, value);
+            }
+            return castScalar(id, type, value);
         }
-        if (type instanceof AggregateType aType) {
-            return castAggregate(id, aType, value);
-        }
-        return castScalar(id, type, value);
+        throw new ParsingException(errorMismatchingType(id, type, value.getType()));
     }
 
     private static Expression castArray(String id, ArrayType type, Expression value) {
@@ -38,12 +44,24 @@ public class HelperInputs {
             int expectedSize = type.getNumElements();
             int actualSize = aValue.getOperands().size();
             if (expectedSize == -1 || expectedSize == actualSize) {
-                Type elementType = type.getElementType();
+                Type elType = type.getElementType();
                 List<Expression> elements = new ArrayList<>();
                 for (int i = 0; i < actualSize; i++) {
-                    elements.add(castInput(String.format("%s[%d]", id, i), elementType, aValue.getOperands().get(i)));
+                    elements.add(castInput(String.format("%s[%d]", id, i), elType, aValue.getOperands().get(i)));
                 }
-                return expressions.makeArray(elements.get(0).getType(), elements, true);
+                long distinctTypeCount = elements.stream().map(Expression::getType).distinct().count();
+                if (distinctTypeCount <= 1) {
+                    if (!elements.isEmpty()) {
+                        elType = elements.get(0).getType();
+                        if (type.getStride() != null && type.getStride() < types.getMemorySizeInBytes(elType)) {
+                            throw new ParsingException("Mismatching value type for variable '%s', " +
+                                    "element size %d is greater than array stride %d", id,
+                                    types.getMemorySizeInBytes(elType), type.getStride());
+                        }
+                    }
+                    ArrayType aType = types.getArrayType(elType, actualSize, type.getStride(), type.getAlignment());
+                    return expressions.makeArray(aType, elements);
+                }
             }
         }
         throw new ParsingException(errorMismatchingType(id, type, value.getType()));
@@ -68,7 +86,7 @@ public class HelperInputs {
     }
 
     private static Expression castScalar(String id, Type type, Expression value) {
-        if (!(type instanceof ScopedPointerType) && value instanceof IntLiteral iConst) {
+        if (value instanceof IntLiteral iConst) {
             int iValue = iConst.getValueAsInt();
             if (type instanceof BooleanType) {
                 return iValue == 0 ? expressions.makeFalse() : expressions.makeTrue();

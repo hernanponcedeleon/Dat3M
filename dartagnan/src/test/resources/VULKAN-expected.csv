@@ -19,6 +19,17 @@ litmus/VULKAN/Kronos-Group/mp3transitive3.litmus,1
 litmus/VULKAN/Kronos-Group/mp3transitive4.litmus,1
 litmus/VULKAN/Kronos-Group/mp3transitivefail.litmus,1
 litmus/VULKAN/Kronos-Group/mp3transitivefail2.litmus,1
+litmus/VULKAN/Kronos-Group/mpinscope1.litmus,0
+litmus/VULKAN/Kronos-Group/mpinscope2.litmus,1
+litmus/VULKAN/Kronos-Group/mpinscope3.litmus,1
+litmus/VULKAN/Kronos-Group/mpinscope4.litmus,0
+litmus/VULKAN/Kronos-Group/mpinscope5.litmus,1
+litmus/VULKAN/Kronos-Group/mpnotinscope1.litmus,0
+litmus/VULKAN/Kronos-Group/mpnotinscope2.litmus,1
+litmus/VULKAN/Kronos-Group/mpnotinscope3.litmus,1
+litmus/VULKAN/Kronos-Group/mpnotinscope4.litmus,0
+litmus/VULKAN/Kronos-Group/mpnotinscope5.litmus,1
+litmus/VULKAN/Kronos-Group/mpnotinscope6.litmus,1
 litmus/VULKAN/Kronos-Group/mpsc1.litmus,1
 litmus/VULKAN/Kronos-Group/noncohandatom.litmus,1
 litmus/VULKAN/Kronos-Group/noncohmp.litmus,1

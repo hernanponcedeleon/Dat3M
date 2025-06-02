@@ -31,7 +31,7 @@ public class VisitorOpsComposite extends SpirvBaseVisitor<Void> {
         Type type = builder.getType(ctx.idResultType().getText());
         List<Integer> indexes = ctx.indexesLiteralInteger().stream()
                 .map(SpirvParser.IndexesLiteralIntegerContext::getText)
-                .map(Integer::parseInt)
+                .map(Integer::parseUnsignedInt)
                 .toList();
         Expression element = getElement(compositeExpression, indexes, id);
         if (type.equals(element.getType())) {
@@ -49,7 +49,7 @@ public class VisitorOpsComposite extends SpirvBaseVisitor<Void> {
         Type type = builder.getType(ctx.idResultType().getText());
         List<Integer> indexes = ctx.indexesLiteralInteger().stream()
                 .map(SpirvParser.IndexesLiteralIntegerContext::getText)
-                .map(Integer::parseInt)
+                .map(Integer::parseUnsignedInt)
                 .toList();
         Expression insertion = getInsertion(compositeExpression, objectExpr, indexes, id);
         if (TypeFactory.isStaticTypeOf(compositeExpression.getType(), type)) {
@@ -68,7 +68,7 @@ public class VisitorOpsComposite extends SpirvBaseVisitor<Void> {
         Expression v2 = builder.getExpression(v2Id);
         List<Integer> components = ctx.components().stream()
             .map(SpirvParser.ComponentsContext::getText)
-            .map(Integer::parseInt)
+            .map(Integer::parseUnsignedInt)
             .toList();
         Type type = builder.getType(ctx.idResultType().getText());
         if (!(type instanceof ArrayType aType)) {
@@ -92,11 +92,13 @@ public class VisitorOpsComposite extends SpirvBaseVisitor<Void> {
                 concat.add(expressions.makeExtract(v1, index));
             } else if (index >= s1 && index < s1 + s2) {
                 concat.add(expressions.makeExtract(v2, index - s1));
+            } else if (index == 0xffffffff) {
+                concat.add(builder.makeUndefinedValue(eType));
             } else {
                 throw new ParsingException("Index %s out of bounds in OpVectorShuffle '%s'", index, id);
             }
         }
-        builder.addExpression(id, expressions.makeArray(aType1.getElementType(), concat, true));
+        builder.addExpression(id, expressions.makeArray(aType1, concat));
         return null;
     }
 
@@ -126,7 +128,7 @@ public class VisitorOpsComposite extends SpirvBaseVisitor<Void> {
                 }
                 elements.add(elem);
             }
-            Expression array = getArray(arrayType.getElementType(), elements, id);
+            Expression array = getArray(arrayType, elements, id);
             if (!TypeFactory.isStaticTypeOf(array.getType(), type)) {
                 throw new ParsingException(String.format("There must be exactly one constituent for each top-level element of the result " +
                         "(\"flattening\" vectors is not yet supported) and their types should match for '%s'", id));
@@ -169,9 +171,9 @@ public class VisitorOpsComposite extends SpirvBaseVisitor<Void> {
         }
     }
 
-    private Expression getArray(Type eType, List<Expression> elements, String id) {
+    private Expression getArray(ArrayType type, List<Expression> elements, String id) {
         try {
-            return expressions.makeArray(eType, elements, true);
+            return expressions.makeArray(type, elements);
         } catch (Exception e) {
             throw new ParsingException(String.format("%s Offending id: '%s'", e.getMessage(), id));
         }
