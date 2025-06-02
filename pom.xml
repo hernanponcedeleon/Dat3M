@@ -145,8 +145,12 @@
 
     <profiles>
         <profile>
-            <id>linux</id>
+            <id>linux-x86_64</id>
             <activation>
+                <os>
+                    <family>linux</family>
+                    <arch>x86_64</arch>
+                </os>
                 <activeByDefault>true</activeByDefault>
             </activation>
             <dependencies>
@@ -479,6 +483,76 @@
                                         <type>so</type>
                                         <classifier>libyices2j</classifier>
                                         <destFileName>libyices2j.so</destFileName>
+                                    </artifactItem>
+                                </artifactItems>
+                            </configuration>
+                        </plugin>
+                        <plugin>
+                            <artifactId>maven-surefire-plugin</artifactId>
+                            <configuration>
+                                <argLine>@{argLine} -Djava.library.path=${project.build.directory}/${dat3m.library.path}:{java.library.path}</argLine>
+                            </configuration>
+                        </plugin>
+                    </plugins>
+                </pluginManagement>
+            </build>
+        </profile>
+        <profile>
+            <id>linux-aarch64</id>
+            <activation>
+                <os>
+                    <family>linux</family>
+                    <arch>aarch64</arch>
+                </os>
+            </activation>
+            <dependencies>
+                <!-- Z3 dependencies -->
+                <dependency>
+                    <groupId>org.sosy-lab</groupId>
+                    <artifactId>javasmt-solver-z3</artifactId>
+                    <version>${z3.version}</version>
+                    <type>so</type>
+                    <classifier>libz3-arm64</classifier>
+                </dependency>
+                <dependency>
+                    <groupId>org.sosy-lab</groupId>
+                    <artifactId>javasmt-solver-z3</artifactId>
+                    <version>${z3.version}</version>
+                    <type>so</type>
+                    <classifier>libz3java-arm64</classifier>
+                </dependency>
+            </dependencies>
+            <build>
+                <pluginManagement>
+                    <plugins>
+                        <plugin>
+                            <artifactId>maven-dependency-plugin</artifactId>
+                            <executions>
+                                <execution>
+                                    <id>copy</id>
+                                    <phase>initialize</phase>
+                                    <goals>
+                                        <goal>copy</goal>
+                                    </goals>
+                                </execution>
+                            </executions>
+                            <configuration>
+                                <outputDirectory>${project.build.directory}/${dat3m.library.path}</outputDirectory>
+                                <artifactItems>
+                                    <!-- Z3 dependencies -->
+                                    <artifactItem>
+                                        <groupId>org.sosy-lab</groupId>
+                                        <artifactId>javasmt-solver-z3</artifactId>
+                                        <type>so</type>
+                                        <classifier>libz3java-arm64</classifier>
+                                        <destFileName>libz3java.so</destFileName>
+                                    </artifactItem>
+                                    <artifactItem>
+                                        <groupId>org.sosy-lab</groupId>
+                                        <artifactId>javasmt-solver-z3</artifactId>
+                                        <type>so</type>
+                                        <classifier>libz3-arm64</classifier>
+                                        <destFileName>libz3.so</destFileName>
                                     </artifactItem>
                                 </artifactItems>
                             </configuration>
