@@ -14,6 +14,17 @@ litmus/VULKAN/Data-Race/mp3transitive3-filter.litmus,1
 litmus/VULKAN/Data-Race/mp3transitive4-filter.litmus,1
 litmus/VULKAN/Data-Race/mp3transitivefail-filter.litmus,0
 litmus/VULKAN/Data-Race/mp3transitivefail2-filter.litmus,0
+litmus/VULKAN/Data-Race/mpinscope1-filter.litmus,1
+litmus/VULKAN/Data-Race/mpinscope2-filter.litmus,1
+litmus/VULKAN/Data-Race/mpinscope3-filter.litmus,1
+litmus/VULKAN/Data-Race/mpinscope4-filter.litmus,1
+litmus/VULKAN/Data-Race/mpinscope5-filter.litmus,1
+litmus/VULKAN/Data-Race/mpnotinscope1-filter.litmus,1
+litmus/VULKAN/Data-Race/mpnotinscope2-filter.litmus,0
+litmus/VULKAN/Data-Race/mpnotinscope3-filter.litmus,0
+litmus/VULKAN/Data-Race/mpnotinscope4-filter.litmus,1
+litmus/VULKAN/Data-Race/mpnotinscope5-filter.litmus,0
+litmus/VULKAN/Data-Race/mpnotinscope6-filter.litmus,0
 litmus/VULKAN/Data-Race/mpsc1-filter.litmus,1
 litmus/VULKAN/Data-Race/noncohandatom-filter.litmus,1
 litmus/VULKAN/Data-Race/noncohmp-filter.litmus,1
