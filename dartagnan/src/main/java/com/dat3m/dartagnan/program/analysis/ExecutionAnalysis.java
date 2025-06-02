@@ -10,6 +10,8 @@ import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 
 import java.util.Comparator;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 public interface ExecutionAnalysis {
 
@@ -34,16 +36,32 @@ class DefaultExecutionAnalysis implements ExecutionAnalysis {
     private final BranchEquivalence eq;
     private final ProgressModel.Hierarchy progressModel;
     private final Thread lowestIdThread; // For HSA
+    private final Set<Thread> interruptibleThreads; // To weaken progress on interruptible threads
 
     public DefaultExecutionAnalysis(Program program, BranchEquivalence eq, ProgressModel.Hierarchy progressModel) {
         this.eq = eq;
         this.progressModel = progressModel;
 
         this.lowestIdThread = program.getThreads().stream().min(Comparator.comparingInt(Thread::getId)).get();
+        this.interruptibleThreads = program.getThreads().stream()
+                .filter(t -> t.getThreadType() == Thread.Type.INTERRUPT_HANDLER)
+                .map(t -> t.getEntry().getCreator().getThread()).collect(Collectors.toSet());
     }
 
     private boolean isSameThread(Event a, Event b) {
         return a.getThread() == b.getThread();
+    }
+
+    private boolean mayFailToStart(Thread thread) {
+        return thread.getEntry().mayFailSpuriously()
+                || thread.getThreadType() == Thread.Type.INTERRUPT_HANDLER;
+    }
+
+    private boolean mayHaveWeakProgress(Thread thread) {
+                // Thread might fail to progress due to unfair scheduling
+        return !progressModel.isUniform()
+                // Thread might fail to progress due to interrupts.
+                || interruptibleThreads.contains(thread);
     }
 
     @Override
@@ -63,11 +81,18 @@ class DefaultExecutionAnalysis implements ExecutionAnalysis {
             return true;
         }
 
-        if (!progressModel.isUniform()) {
-            // For mixed-hierarchy models, we only rely on strongest implication.
-            return strongestImplication; // FALSE
+        if (mayHaveWeakProgress(implied.getThread())) {
+            // For threads that may experience weak progress (due to unfair scheduling or interrupts etc.)
+            // we cannot tell much.
+            return false;
         }
 
+        if (!isSameThread(implied, start) && mayFailToStart(implied.getThread())) {
+            // If a thread may fail to start, we cannot tell much either.
+            return false;
+        }
+
+        assert progressModel.isUniform();
         // weakest implication holds but not strongest & model is uniform: progress model decides
         final boolean implication = switch (progressModel.getDefaultProgress()) {
             case FAIR -> weakestImplication; // TRUE

@@ -89,7 +89,7 @@ public class MemoryAllocation implements ProgramProcessor {
                 // NOTE: We use different names to avoid symmetry detection treating all inits as symmetric.
                 final String threadName = "Init_" + nextThreadId;
                 final Thread thread = new Thread(threadName, initThreadType, paramNames, nextThreadId,
-                        EventFactory.newThreadStart(null));
+                        EventFactory.newThreadStart(null), Thread.Type.STANDARD);
                 final Init init = EventFactory.newInit(memObj, field);
                 if (program.getArch() == Arch.C11 || program.getArch() == Arch.OPENCL) {
                     init.addTags(Tag.C11.NONATOMIC);
