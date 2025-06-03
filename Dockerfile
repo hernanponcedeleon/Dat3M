@@ -19,7 +19,7 @@ RUN apt-get update && \
 # Install Dat3M
 RUN cd home && \
     git clone --branch development https://github.com/hernanponcedeleon/Dat3M.git && \
-    cd Dat3M && git checkout df28eb14de51cf38d87ddd6e06bc029f7f7197c6 && \
+    cd Dat3M && \
     mvn clean install -DskipTests
 
 # symlink for clang
