@@ -39,11 +39,6 @@ export DAT3M_HOME=<Dat3M's root>
 export DAT3M_OUTPUT=$DAT3M_HOME/output
 ```
 
-At least the following compiler flag needs to be set, further can be added (only to verify C programs)
-```
-export CFLAGS="-I$DAT3M_HOME/include"
-```
-
 If you are verifying C code, be sure `clang` is in your `PATH`.
 
 To build the tool run
@@ -126,9 +121,10 @@ Please feel free to [contact us](mailto:hernanl.leon@huawei.com) in case of ques
 
 Awards
 ======
-- Distinguished Paper @ OOPSLA 2022
-- Gold Medal @ SVCOMP 2023
+- Gold and Silver Medal @ SVCOMP 2025
 - Gold Medal (x2) @ SVCOMP 2024
+- Gold Medal @ SVCOMP 2023
+- Distinguished Paper @ OOPSLA 2022
 
 References
 ======
