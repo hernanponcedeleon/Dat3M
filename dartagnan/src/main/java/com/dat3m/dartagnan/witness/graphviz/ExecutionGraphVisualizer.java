@@ -11,6 +11,7 @@ import com.dat3m.dartagnan.verification.model.RelationModel.EdgeModel;
 import com.dat3m.dartagnan.verification.model.event.*;
 import com.dat3m.dartagnan.wmm.definition.Coherence;
 import com.dat3m.dartagnan.wmm.definition.ProgramOrder;
+import com.dat3m.dartagnan.wmm.definition.SameInstruction;
 import com.google.common.collect.Lists;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -46,7 +47,7 @@ public class ExecutionGraphVisualizer {
     @Option(name=WITNESS_SHOW,
             description="Names of relations to show in the witness graph.",
             secure=true)
-    private String relsToShowStr = String.format("%s,%s,%s", PO, CO, RF);
+    private String relsToShowStr = String.format("%s,%s,%s,%s", PO, SI, CO, RF);
 
     public ExecutionGraphVisualizer() {
         this.graphviz = new Graphviz();
@@ -67,8 +68,6 @@ public class ExecutionGraphVisualizer {
         computeAddressMap(model);
         graphviz.beginDigraph(graphName);
         graphviz.appendLine(String.format("label=\"%s\"", graphName));
-        // Enables edges between clusterInstruction, like for po.
-        graphviz.appendLine("compound=true");
         addEvents(model);
         addRelations(model);
         graphviz.end();
@@ -135,15 +134,8 @@ public class ExecutionGraphVisualizer {
             graphviz.beginSubgraph("T" + tm.getId());
 
             for (List<EventModel> instruction : instructions) {
-                if (instruction.size() > 1) {
-                    graphviz.beginSubgraph("clusterInstruction" + instruction.get(0).getId());
-                    graphviz.appendLine("label=\"\"");
-                }
                 for (EventModel event : instruction) {
                     appendNode(event, nodeLabel(event));
-                }
-                if (instruction.size() > 1) {
-                    graphviz.end();
                 }
             }
 
@@ -203,6 +195,8 @@ public class ExecutionGraphVisualizer {
                 addProgramOrder(model, name);
             } else if (rm.getRelation().getDefinition().getClass() == Coherence.class) {
                 addCoherence(rm, model, name);
+            } else if (rm.getRelation().getDefinition().getClass() == SameInstruction.class) {
+                addSameInstruction(model, name);
             } else {
                 addRelation(rm, name);
             }
@@ -226,17 +220,14 @@ public class ExecutionGraphVisualizer {
         for (ThreadModel tm : model.getThreadModels()) {
             final List<List<EventModel>> instructions = getEventModelsToShow(tm);
             if (instructions.size() <= 1) { continue; }
-            List<EventModel> previous = instructions.get(0);
             for (int i = 1; i < instructions.size(); i++) {
-                final List<EventModel> current = instructions.get(i);
-                // Tests just one event of each instruction, assuming that filter is equal for all.
-                final EventModel from = previous.get(0);
-                final EventModel to = current.get(0);
-                if (!filter.test(from, to)) { continue; }
-                final String tail = previous.size() <= 1 ? "" : "ltail=clusterInstruction" + from.getId();
-                final String head = current.size() <= 1 ? "" : "lhead=clusterInstruction" + to.getId();
-                appendEdge(from, to, head, tail);
-                previous = current;
+                final List<EventModel> fromList = instructions.get(i - 1);
+                final List<EventModel> toList = instructions.get(i);
+                for (EventModel from : fromList) {
+                    for (EventModel to : toList) {
+                        appendEdge(filter, from, to);
+                    }
+                }
             }
         }
         graphviz.end();
@@ -267,6 +258,23 @@ public class ExecutionGraphVisualizer {
                     EventModel w1 = coSortedWrites.get(i - 1);
                     EventModel w2 = coSortedWrites.get(i);
                     appendEdge(filter, w1, w2);
+                }
+            }
+        }
+        graphviz.end();
+    }
+
+    private void addSameInstruction(ExecutionModelNext model, String name) {
+        graphviz.beginSubgraph(name);
+        graphviz.setEdgeAttributes(String.format("color=%s, arrowhead=none", colorMap.getColor(name)));
+        final BiPredicate<EventModel, EventModel> filter = getFilter(name);
+        for (ThreadModel tm : model.getThreadModels()) {
+            final List<List<EventModel>> instructions = getEventModelsToShow(tm);
+            if (instructions.size() <= 1) { continue; }
+            for (List<EventModel> instruction : instructions) {
+                int end = instruction.size() - 1;
+                for (int i = 0; i < end; i++) {
+                    appendEdge(filter, instruction.get(i), instruction.get(i + 1));
                 }
             }
         }
@@ -339,10 +347,6 @@ public class ExecutionGraphVisualizer {
         if (filter.test(a, b)) {
             graphviz.addEdge(eventToNode(a), eventToNode(b), (String[]) null);
         }
-    }
-
-    private void appendEdge(EventModel a, EventModel b, String... attributes) {
-        graphviz.addEdge(eventToNode(a), eventToNode(b), attributes);
     }
 
     private void appendNode(EventModel e, String... attributes) {
