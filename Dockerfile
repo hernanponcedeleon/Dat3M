@@ -1,5 +1,5 @@
-#Download base image ubuntu 20.04
-FROM ubuntu:20.04
+#Download base ubuntu image
+FROM ubuntu:22.04
 
 ARG DEBIAN_FRONTEND=noninteractive
 
