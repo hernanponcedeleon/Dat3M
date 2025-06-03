@@ -228,6 +228,7 @@ public class Intrinsics {
         STD_IO(List.of("puts", "putchar", "printf", "fflush"), false, false, true, true, Intrinsics::inlineAsZero),
         STD_IO_NONDET(List.of("__isoc99_sscanf", "fprintf"), false, false, true, true, Intrinsics::inlineCallAsNonDet),
         STD_SLEEP("sleep", false, false, true, true, Intrinsics::inlineAsZero),
+        STD_FFS("ffs", false, false, true, true, Intrinsics::inlineFfs),
         // --------------------------- UBSAN ---------------------------
         UBSAN_OVERFLOW(List.of("__ubsan_handle_add_overflow", "__ubsan_handle_sub_overflow", 
                 "__ubsan_handle_divrem_overflow", "__ubsan_handle_mul_overflow", "__ubsan_handle_negate_overflow"),
@@ -1722,6 +1723,26 @@ public class Intrinsics {
         return List.of(
             EventFactory.newLocal(resultReg, exp)
         );
+    }
+
+    private List<Event> inlineFfs(FunctionCall call) {
+        //see https://linux.die.net/man/3/ffs
+        final String name = call.getCalledFunction().getName();
+        checkArgument(call.getArguments().size() == 1,
+                "Expected 1 parameter for \"%s\", got %s.", name, call.getArguments().size());
+        final Expression input = call.getArguments().get(0);
+        final Register resultReg = getResultRegister(call);
+        final Type type = resultReg.getType();
+        checkArgument(resultReg.getType() instanceof IntegerType,
+                "Non-integer %s type for \"%s\".", name, type);
+        final Expression cttz = expressions.makeCTTZ(input);
+        final IntegerType cttzType = (IntegerType)cttz.getType();
+        final int width = ((IntegerType)resultReg.getType()).getBitWidth();
+        final Expression widthExpr = expressions.makeValue(BigInteger.valueOf(width), cttzType);
+        final Expression count = expressions.makeAdd(cttz, expressions.makeOne(cttzType));
+        final Expression ite = expressions.makeITE(expressions.makeEQ(cttz, widthExpr), expressions.makeZero(cttzType), count);
+        final Event assignment = EventFactory.newLocal(resultReg, ite);
+        return List.of(assignment);
     }
 
     private Event assignSuccess(Register errorRegister) {
