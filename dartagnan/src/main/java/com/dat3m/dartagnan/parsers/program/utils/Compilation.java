@@ -33,27 +33,6 @@ public class Compilation {
         return new File(outputFileName);
     }
 
-    public static File applyLlvmPasses(File file) throws IOException {
-        final String outputFileName = getOutputName(file, "-opt.ll");
-        ArrayList<String> cmd = new ArrayList<>();
-        cmd.add("opt");
-        String replaceOptions = System.getenv().getOrDefault("OPTFLAGS", "");
-        if (!replaceOptions.isEmpty()) {
-            Collections.addAll(cmd, replaceOptions.split(" "));
-        }
-        cmd.add(file.getAbsolutePath());
-        cmd.add("-S");
-        cmd.add("-o");
-        cmd.add(outputFileName);
-        try {
-            runCmd(cmd);
-        } catch (Exception e) {
-            logger.warn("Failed to run opt (llvm optimizations). Continuing without optimizations.");
-            return file;
-        }
-        return new File(outputFileName);
-    }
-
     private static String getOutputName(File file, String postfix) throws IOException {
         return getOrCreateOutputDirectory() + "/" +
                 file.getName().substring(0, file.getName().lastIndexOf('.')) + postfix;
