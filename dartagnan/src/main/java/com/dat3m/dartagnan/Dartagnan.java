@@ -257,7 +257,7 @@ public class Dartagnan extends BaseOptions {
                     }
                     // We only generate SVCOMP witnesses if we are not validating one.
                     if (o.getWitnessType().equals(GRAPHML) && !o.runValidator()) {
-                        generateWitnessIfAble(task, prover, modelChecker, summary.details());
+                        generateWitnessIfAble(task, prover, modelChecker, summary.reason() + "\n" + summary.details());
                     }
                 }
             } catch (InterruptedException e) {

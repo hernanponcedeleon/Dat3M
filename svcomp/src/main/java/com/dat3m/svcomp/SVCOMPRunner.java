@@ -105,11 +105,11 @@ public class SVCOMPRunner extends BaseOptions {
 
         int bound = witness.hasAttributed(UNROLLBOUND.toString()) ? parseInt(witness.getAttributed(UNROLLBOUND.toString())) : 1;
 
-        String output = "UNKNOWN";
-        while(output.equals("UNKNOWN")) {
+        String result = "UNKNOWN";
+        while(result.contains("UNKNOWN")) {
             ArrayList<String> cmd = new ArrayList<>();
             cmd.add("java");
-            cmd.add("-Dlog4j.configurationFile=" + System.getenv().get("DAT3M_HOME") + "/dartagnan/src/main/resources/info.xml");
+            cmd.add("-DlogLevel=info");
             cmd.add("-DLOGNAME=" + Files.getNameWithoutExtension(programPath));
             cmd.addAll(Arrays.asList("-jar", System.getenv().get("DAT3M_HOME") + "/dartagnan/target/dartagnan.jar"));
             cmd.add(fileModel.toString());
@@ -129,13 +129,10 @@ public class SVCOMPRunner extends BaseOptions {
                 proc.waitFor();
                 while(read.ready()) {
                     String next = read.readLine();
-                    // This is now the last line in the console.
-                    // We avoid updating the output
-                    if(next.contains("Total verification time:")) {
-                        break;
+                    if(next.contains("Result:")) {
+                        result = next.substring(next.indexOf(' ') + 1);
                     }
-                    output = next;
-                    System.out.println(output);
+                    System.out.println(next);
                 }
             } catch(Exception e) {
                 System.out.println(e.getMessage());
