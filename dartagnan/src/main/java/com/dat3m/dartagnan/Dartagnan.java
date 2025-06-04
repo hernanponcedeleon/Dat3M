@@ -166,10 +166,11 @@ public class Dartagnan extends BaseOptions {
             .forEach(file -> {
                 if (file.exists()) {
                     final String path = file.getAbsolutePath();
-                    logger.info("Program(s) path: {}", path);
                     if (file.isDirectory()) {
+                        logger.info("Programs path: {}", path);
                         files.addAll(getProgramsFiles(path));
                     } else if (file.isFile() && supportedFormats.stream().anyMatch(file.getName()::endsWith)) {
+                        logger.info("Program path: {}", path);
                         files.add(file);
                     }
                 }

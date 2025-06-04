@@ -19,6 +19,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
+import java.util.EnumSet;
 import java.util.stream.Collectors;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -34,20 +35,22 @@ public class SVCOMPRunner extends BaseOptions {
 
     private static final Logger logger = LogManager.getLogger(SVCOMPRunner.class);
 
-    private Property property;
+    private EnumSet<Property> property;
     
     @Option(
         name= PROPERTYPATH,
         required=true,
         description="The path to the property to be checked.")
     private void property(String p) {
-        //TODO process the property file instead of assuming its contents based of its name
+        // TODO process the property file instead of assuming its contents based of its name
+        // We always enable PROGRAM_SPEC to detect calls to unknown functions.
+        // DRF and termination use --program.processing.skipAssertionsOfType=USER to avoid reporting safety problems
         if(p.contains("no-data-race")) {
-            property = Property.DATARACEFREEDOM;
+            property = EnumSet.of(Property.DATARACEFREEDOM, Property.PROGRAM_SPEC);
         } else if(p.contains("termination")) {
-            property = Property.TERMINATION;
+            property = EnumSet.of(Property.TERMINATION, Property.PROGRAM_SPEC);
         } else if(p.contains("unreach-call") || p.contains("no-overflow") || p.contains("valid-memsafety")) {
-            property = Property.PROGRAM_SPEC;
+            property = EnumSet.of(Property.PROGRAM_SPEC);
         } else {
             throw new IllegalArgumentException("Unrecognized property " + p);
         }
@@ -117,7 +120,7 @@ public class SVCOMPRunner extends BaseOptions {
             cmd.add("svcomp.properties");
             cmd.add("--bound.load=" + boundsFilePath);
             cmd.add("--bound.save=" + boundsFilePath);
-            cmd.add(String.format("--%s=%s", PROPERTY, r.property.asStringOption()));
+            cmd.add(String.format("--%s=%s", PROPERTY, r.property.stream().map(Enum::name).collect(Collectors.joining(","))));
             cmd.add(String.format("--%s=%s", BOUND, bound));
             cmd.add(String.format("--%s=%s", WITNESS_ORIGINAL_PROGRAM_PATH, programPath));
             cmd.addAll(filterOptions(config));
