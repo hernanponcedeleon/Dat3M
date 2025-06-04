@@ -996,24 +996,18 @@ public class Intrinsics {
     }
 
     private List<Event> inlineAssert(FunctionCall call, AssertionType skip, String errorMsg) {
-        if(notToInline.contains(skip)) {
-            return List.of();
-        }
         final Expression condition = expressions.makeFalse();
         final Event assertion = EventFactory.newAssert(condition, errorMsg);
         final Event abort = EventFactory.newAbortIf(expressions.makeTrue());
         abort.addTags(Tag.EXCEPTIONAL_TERMINATION);
-        return List.of(assertion, abort);
+        return notToInline.contains(skip) ? List.of(abort) : List.of(assertion, abort);
     }
 
     private List<Event> inlineVerifierAssert(FunctionCall call, AssertionType skip, String errorMsg) {
-        if(notToInline.contains(skip)) {
-            return List.of();
-        }
         assert call.getArguments().size() == 1;
         final Expression condition = call.getArguments().get(0);
         final Event assertion = EventFactory.newAssert(expressions.makeBooleanCast(condition), errorMsg);
-        return List.of(assertion);
+        return notToInline.contains(skip) ? List.of() : List.of(assertion);
     }
 
     private List<Event> inlineUserAssert(FunctionCall call) {
