@@ -228,7 +228,7 @@ public class Intrinsics {
         STD_IO(List.of("puts", "putchar", "printf", "fflush"), false, false, true, true, Intrinsics::inlineAsZero),
         STD_IO_NONDET(List.of("__isoc99_sscanf", "fprintf"), false, false, true, true, Intrinsics::inlineCallAsNonDet),
         STD_SLEEP("sleep", false, false, true, true, Intrinsics::inlineAsZero),
-        STD_FFS("ffs", false, false, true, true, Intrinsics::inlineFfs),
+        STD_FFS(List.of("ffs", "ffsl", "ffsll"), false, false, true, true, Intrinsics::inlineFfs),
         // --------------------------- UBSAN ---------------------------
         UBSAN_OVERFLOW(List.of("__ubsan_handle_add_overflow", "__ubsan_handle_sub_overflow", 
                 "__ubsan_handle_divrem_overflow", "__ubsan_handle_mul_overflow", "__ubsan_handle_negate_overflow"),
@@ -1732,15 +1732,16 @@ public class Intrinsics {
                 "Expected 1 parameter for \"%s\", got %s.", name, call.getArguments().size());
         final Expression input = call.getArguments().get(0);
         final Register resultReg = getResultRegister(call);
-        final Type type = resultReg.getType();
-        checkArgument(type instanceof IntegerType,
-                "Non-integer %s type for \"%s\".", name, type);
+        final Type outputType = resultReg.getType();
+        checkArgument(outputType instanceof IntegerType,
+                "Non-integer %s type for \"%s\".", name, outputType);
+        final IntegerType inputType  = (IntegerType)input.getType();
         final Expression cttz = expressions.makeCTTZ(input);
-        final IntegerType cttzType = (IntegerType)cttz.getType();
-        final Expression widthExpr = expressions.makeValue(BigInteger.valueOf(((IntegerType)type).getBitWidth()), cttzType);
-        final Expression count = expressions.makeAdd(cttz, expressions.makeOne(cttzType));
-        final Expression ite = expressions.makeITE(expressions.makeEQ(cttz, widthExpr), expressions.makeZero(cttzType), count);
-        final Event assignment = EventFactory.newLocal(resultReg, ite);
+        final Expression widthExpr = expressions.makeValue(BigInteger.valueOf(inputType.getBitWidth()), inputType);
+        final Expression count = expressions.makeAdd(cttz, expressions.makeOne(inputType));
+        final Expression ite = expressions.makeITE(expressions.makeEQ(cttz, widthExpr), expressions.makeZero(inputType), count);
+        final Expression cast = expressions.makeCast(ite, outputType, true);
+        final Event assignment = EventFactory.newLocal(resultReg, cast);
         return List.of(assignment);
     }
 
