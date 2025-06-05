@@ -1000,7 +1000,7 @@ public class Intrinsics {
         final Event assertion = notToInline.contains(skip) ? null : EventFactory.newAssert(condition, errorMsg);
         final Event abort = EventFactory.newAbortIf(expressions.makeTrue());
         abort.addTags(Tag.EXCEPTIONAL_TERMINATION);
-        return List.of(assertion, abort);
+        return eventSequence(assertion, abort);
     }
 
     private List<Event> inlineVerifierAssert(FunctionCall call, AssertionType skip, String errorMsg) {
