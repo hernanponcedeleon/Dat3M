@@ -187,13 +187,6 @@ public class Dartagnan extends BaseOptions {
             witness = new ParserWitness().parse(new File(o.getWitnessPath()));
         }
 
-        if (properties.contains(DATARACEFREEDOM) && properties.size() > 1) {
-            System.out.println("Data race detection cannot be combined with other properties");
-                if(!(files.size() > 1)) {
-                    System.exit(1);
-                }
-        }
-
         ResultSummary summary = null;
         for (File f : files) {
 
