@@ -1733,12 +1733,11 @@ public class Intrinsics {
         final Expression input = call.getArguments().get(0);
         final Register resultReg = getResultRegister(call);
         final Type type = resultReg.getType();
-        checkArgument(resultReg.getType() instanceof IntegerType,
+        checkArgument(type instanceof IntegerType,
                 "Non-integer %s type for \"%s\".", name, type);
         final Expression cttz = expressions.makeCTTZ(input);
         final IntegerType cttzType = (IntegerType)cttz.getType();
-        final int width = ((IntegerType)resultReg.getType()).getBitWidth();
-        final Expression widthExpr = expressions.makeValue(BigInteger.valueOf(width), cttzType);
+        final Expression widthExpr = expressions.makeValue(BigInteger.valueOf(((IntegerType)type).getBitWidth()), cttzType);
         final Expression count = expressions.makeAdd(cttz, expressions.makeOne(cttzType));
         final Expression ite = expressions.makeITE(expressions.makeEQ(cttz, widthExpr), expressions.makeZero(cttzType), count);
         final Event assignment = EventFactory.newLocal(resultReg, ite);
