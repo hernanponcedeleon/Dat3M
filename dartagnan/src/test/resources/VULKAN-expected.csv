@@ -84,7 +84,14 @@ litmus/VULKAN/Kronos-Group/test5.litmus,1
 litmus/VULKAN/Kronos-Group/test6.litmus,1
 litmus/VULKAN/Kronos-Group/test9.litmus,1
 litmus/VULKAN/Kronos-Group/waw.litmus,1
-litmus/VULKAN/Manual/asmo-plain.litmus,0
+litmus/VULKAN/Manual/asmo-atom-inscope.litmus,0
+litmus/VULKAN/Manual/asmo-atom-not-inscope.litmus,1
+litmus/VULKAN/Manual/asmo-mixed-atomicity-write.litmus,1
+litmus/VULKAN/Manual/asmo-mixed-atomicity-read.litmus,0
+litmus/VULKAN/Manual/asmo-mixed-scope-write.litmus,1
+litmus/VULKAN/Manual/asmo-mixed-scope-read.litmus,0
+litmus/VULKAN/Manual/asmo-plain-inscope.litmus,1
+litmus/VULKAN/Manual/asmo-plain-not-inscope.litmus,1
 litmus/VULKAN/Manual/ticketlock-same-wg.litmus,0
 litmus/VULKAN/Manual/ticketlock-diff-wg.litmus,1
 litmus/VULKAN/Manual/ticketlock-acq2rlx-1.litmus,0
