@@ -9,6 +9,7 @@ public class Coherence extends Definition {
 
     public Coherence(Relation r0) {
         super(r0, CO);
+        r0.checkBinaryRelation();
     }
 
     @Override

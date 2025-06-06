@@ -7,13 +7,15 @@ import java.util.List;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
-public class RangeIdentity extends Definition {
+public class Range extends Definition {
 
     private final Relation r1;
 
-    public RangeIdentity(Relation r0, Relation r1) {
-        super(r0, "[range(%s)]");
+    public Range(Relation r0, Relation r1) {
+        super(r0, "range(%s)");
         this.r1 = checkNotNull(r1);
+        r0.checkUnaryRelation();
+        r1.checkBinaryRelation();
     }
 
     public Relation getOperand() { return r1; }
@@ -25,6 +27,6 @@ public class RangeIdentity extends Definition {
 
     @Override
     public <T> T accept(Visitor<? extends T> v) {
-        return v.visitRangeIdentity(this);
+        return v.visitRange(this);
     }
 }

@@ -152,7 +152,7 @@ public class LazyEncodeSets implements Constraint.Visitor<Boolean> {
     }
 
     @Override
-    public Boolean visitDomainIdentity(DomainIdentity definition) {
+    public Boolean visitDomain(Domain definition) {
         if (doUpdateSelf(definition)) {
             long start = System.currentTimeMillis();
             MutableEventGraph operandUpdate = new MapEventGraph();
@@ -167,7 +167,7 @@ public class LazyEncodeSets implements Constraint.Visitor<Boolean> {
     }
 
     @Override
-    public Boolean visitRangeIdentity(RangeIdentity definition) {
+    public Boolean visitRange(Range definition) {
         if (doUpdateSelf(definition)) {
             long start = System.currentTimeMillis();
             MutableEventGraph operandUpdate = new MapEventGraph();
