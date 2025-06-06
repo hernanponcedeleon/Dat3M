@@ -31,7 +31,6 @@ import com.dat3m.dartagnan.verification.VerificationTask.VerificationTaskBuilder
 import com.dat3m.dartagnan.verification.model.ExecutionModelManager;
 import com.dat3m.dartagnan.verification.model.ExecutionModelNext;
 import com.dat3m.dartagnan.verification.solving.AssumeSolver;
-import com.dat3m.dartagnan.verification.solving.DataRaceSolver;
 import com.dat3m.dartagnan.verification.solving.ModelChecker;
 import com.dat3m.dartagnan.verification.solving.RefinementSolver;
 import com.dat3m.dartagnan.witness.WitnessType;
@@ -231,7 +230,7 @@ public class Dartagnan extends BaseOptions {
                             ProverOptions.GENERATE_MODELS)) {
                     ModelChecker modelChecker;
                     if (properties.contains(DATARACEFREEDOM)) {
-                        modelChecker = DataRaceSolver.run(ctx, prover, task);
+                        modelChecker = AssumeSolver.run(ctx, prover, task);
                     } else {
                         // Property is either PROGRAM_SPEC, TERMINATION, or CAT_SPEC
                         modelChecker = switch (o.getMethod()) {
