@@ -49,7 +49,7 @@ public class MiscellaneousTest extends AbstractCTest {
     protected Provider<Configuration> getConfigurationProvider() {
         return Provider.fromSupplier(() -> {
             ConfigurationBuilder builder = Configuration.builder();
-            if (!name.equals("pthread") && !name.equals("ctlz") && !name.equals("cttz")) {
+            if (!name.equals("pthread") && !name.equals("ctlz") && !name.equals("cttz") && !name.equals("ffs")) {
                 builder.setOption(OptionNames.USE_INTEGERS, "true");
             }
             if (name.equals("recursion")) {
@@ -101,6 +101,7 @@ public class MiscellaneousTest extends AbstractCTest {
                 {"nondet_aligned_alloc", IMM, PASS, 1},
                 {"alignment", IMM, PASS, 1},
                 {"unknown_function", IMM, FAIL, 1},
+                {"ffs", IMM, PASS, 1},
         });
     }
 
