@@ -3,6 +3,7 @@ package com.dat3m.dartagnan.wmm;
 import com.dat3m.dartagnan.utils.dependable.Dependent;
 import com.dat3m.dartagnan.wmm.definition.Composition;
 import com.dat3m.dartagnan.wmm.definition.Union;
+import com.google.common.base.Preconditions;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -14,12 +15,37 @@ import static com.google.common.base.Preconditions.checkState;
 public final class Relation implements Dependent<Relation> {
 
     private final Wmm wmm;
+    private final boolean unary;
     Definition definition = new Definition.Undefined(this);
     private boolean isRecursive;
     final List<String> names = new ArrayList<>();
 
-    Relation(Wmm wmm) {
+    Relation(Wmm wmm, boolean unary) {
         this.wmm = wmm;
+        this.unary = unary;
+    }
+
+    public boolean isUnaryRelation() {
+        return unary;
+    }
+
+    public boolean isBinaryRelation() {
+        return !unary;
+    }
+
+    public void checkUnaryRelation() {
+        Preconditions.checkArgument(isUnaryRelation(), "Non-unary relation %s.", this);
+    }
+
+    public void checkBinaryRelation() {
+        Preconditions.checkArgument(isBinaryRelation(), "Non-binary relation %s.", this);
+    }
+
+    public void checkEqualArityRelation(List<Relation> others) {
+        Preconditions.checkArgument(!isUnaryRelation() || others.stream().allMatch(Relation::isUnaryRelation),
+                "Non-unary relation in %s", others);
+        Preconditions.checkArgument(!isBinaryRelation() || others.stream().allMatch(Relation::isBinaryRelation),
+                "Non-binary relation in %s", others);
     }
 
     /**

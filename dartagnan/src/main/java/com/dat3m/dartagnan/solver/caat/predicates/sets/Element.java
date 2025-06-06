@@ -18,7 +18,7 @@ public class Element extends AbstractDerivable implements Comparable<Element> {
     }
 
     @Override
-    public Element with(int time, int derivationLength) { return new Element(dId, time, derivLength); }
+    public Element with(int time, int derivationLength) { return new Element(dId, time, derivationLength); }
     @Override
     public Element withTime(int time) { return with(time, derivLength); }
     @Override

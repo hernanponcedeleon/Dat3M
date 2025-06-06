@@ -378,7 +378,7 @@ public class WmmEncoder implements Encoder {
         }
 
         @Override
-        public Void visitDomainIdentity(DomainIdentity domId) {
+        public Void visitDomain(Domain domId) {
             final Relation rel = domId.getDefinedRelation();
             final Relation r1 = domId.getOperand();
             Map<Event, Set<Event>> mayOut = ra.getKnowledge(r1).getMaySet().getOutMap();
@@ -396,7 +396,7 @@ public class WmmEncoder implements Encoder {
         }
 
         @Override
-        public Void visitRangeIdentity(RangeIdentity rangeId) {
+        public Void visitRange(Range rangeId) {
             final Relation rel = rangeId.getDefinedRelation();
             final Relation r1 = rangeId.getOperand();
             Map<Event, Set<Event>> mayIn = ra.getKnowledge(r1).getMaySet().getInMap();
@@ -445,6 +445,22 @@ public class WmmEncoder implements Encoder {
         }
 
         @Override
+        public Void visitSetIdentity(SetIdentity id) {
+            final Relation rel = id.getDefinedRelation();
+            final Relation r1 = id.getDomain();
+            EventGraph mustSet = ra.getKnowledge(rel).getMustSet();
+            EncodingContext.EdgeEncoder enc0 = context.edge(rel);
+            EncodingContext.EdgeEncoder enc1 = context.edge(r1);
+            encodeSets.get(rel).apply((e1, e2) ->
+                    enc.add(bmgr.equivalence(
+                            enc0.encode(e1, e2),
+                            mustSet.contains(e1, e2) ?
+                                    execution(e1, e2) :
+                                    enc1.encode(e1, e2))));
+            return null;
+        }
+
+        @Override
         public Void visitInverse(Inverse inv) {
             final Relation rel = inv.getDefinedRelation();
             final Relation r1 = inv.getOperand();
@@ -457,6 +473,24 @@ public class WmmEncoder implements Encoder {
                             mustSet.contains(e1, e2) ?
                                     execution(e1, e2) :
                                     enc1.encode(e2, e1))));
+            return null;
+        }
+
+        @Override
+        public Void visitProduct(CartesianProduct product) {
+            final Relation rel = product.getDefinedRelation();
+            final Relation r1 = product.getDomain();
+            final Relation r2 = product.getRange();
+            EventGraph mustSet = ra.getKnowledge(rel).getMustSet();
+            EncodingContext.EdgeEncoder enc0 = context.edge(rel);
+            EncodingContext.EdgeEncoder enc1 = context.edge(r1);
+            EncodingContext.EdgeEncoder enc2 = context.edge(r2);
+            encodeSets.get(rel).apply((e1, e2) ->
+                    enc.add(bmgr.equivalence(
+                            enc0.encode(e1, e2),
+                            mustSet.contains(e1, e2) ?
+                                    execution(e1, e2) :
+                                    bmgr.and(enc1.encode(e1, e1), enc2.encode(e2, e2)))));
             return null;
         }
 

@@ -77,7 +77,6 @@ public class Wmm {
         checkArgument(RelationNameRepository.contains(name), "Undefined relation name %s.", name);
         final Relation rel = getRelation(name);
         return rel != null ? rel : makePredefinedRelation(name);
-
     }
 
     public void addAlias(String name, Relation relation) {
@@ -85,15 +84,27 @@ public class Wmm {
         relation.names.add(name);
     }
 
+    public Relation newSet() {
+        return newRelation(true);
+    }
+
     public Relation newRelation() {
-        final Relation relation = new Relation(this);
+        return newRelation(false);
+    }
+
+    public Relation newRelation(boolean unary) {
+        final Relation relation = new Relation(this, unary);
         relations.add(relation);
         return relation;
     }
 
     public Relation newRelation(String name) {
+        return newRelation(name, false);
+    }
+
+    public Relation newRelation(String name, boolean unary) {
         checkArgument(!containsRelation(name), "Already bound name %s.", name);
-        final Relation relation = new Relation(this);
+        final Relation relation = new Relation(this, unary);
         relation.names.add(name);
         relations.add(relation);
         return relation;
@@ -190,7 +201,7 @@ public class Wmm {
         final Definition def = switch (name) {
             case PO -> new ProgramOrder(r, Filter.byTag(Tag.VISIBLE));
             case LOC -> new SameLocation(r);
-            case ID -> new SetIdentity(r, Filter.byTag(Tag.VISIBLE));
+            case ID -> new SetIdentity(r, set(Tag.VISIBLE));
             case INT -> new Internal(r);
             case EXT -> new External(r);
             case CO -> new Coherence(r);
@@ -205,22 +216,16 @@ public class Wmm {
             case CTRLDIRECT -> new DirectControlDependency(r);
             case EMPTY -> new Empty(r);
             case IDDTRANS -> new TransitiveClosure(r, getOrCreatePredefinedRelation(IDD));
-            case DATA -> intersection(r,
-                    getOrCreatePredefinedRelation(IDDTRANS),
-                    addDefinition(product(newRelation(), Tag.MEMORY, Tag.MEMORY))
-            );
+            case DATA -> new Intersection(r, getOrCreatePredefinedRelation(IDDTRANS), product(Tag.MEMORY, Tag.MEMORY));
             case ADDR -> {
-                Relation addrdirect = getOrCreatePredefinedRelation(ADDRDIRECT);
-                Relation comp = addDefinition(composition(newRelation(), getOrCreatePredefinedRelation(IDDTRANS), addrdirect));
-                Relation union = addDefinition(union(newRelation(), addrdirect, comp));
-                Relation mm = addDefinition(product(newRelation(), Tag.MEMORY, Tag.MEMORY));
-                yield intersection(r, union, mm);
+                final Relation idd = getOrCreatePredefinedRelation(IDDTRANS);
+                final Relation addr = getOrCreatePredefinedRelation(ADDRDIRECT);
+                yield new Intersection(r, union(addr, composition(idd, addr)), product(Tag.MEMORY, Tag.MEMORY));
             }
             case CTRL -> {
-                Relation comp = addDefinition(composition(newRelation(), getOrCreatePredefinedRelation(IDDTRANS),
-                        getOrCreatePredefinedRelation(CTRLDIRECT)));
-                Relation mv = addDefinition(product(newRelation(), Tag.MEMORY, Tag.VISIBLE));
-                yield intersection(r, comp, mv);
+                final Relation idd = getOrCreatePredefinedRelation(IDDTRANS);
+                final Relation ctrl = getOrCreatePredefinedRelation(CTRLDIRECT);
+                yield new Intersection(r, composition(idd, ctrl), product(Tag.MEMORY, Tag.VISIBLE));
             }
             case SR -> new SameScope(r);
             case SCTA -> new SameScope(r, Tag.PTX.CTA);
@@ -238,19 +243,19 @@ public class Wmm {
         return addDefinition(def);
     }
 
-    private Definition union(Relation r0, Relation r1, Relation r2) {
-        return new Union(r0, r1, r2);
+    private Relation union(Relation r1, Relation r2) {
+        return addDefinition(new Union(newRelation(), r1, r2));
     }
 
-    private Definition intersection(Relation r0, Relation r1, Relation r2) {
-        return new Intersection(r0, r1, r2);
+    private Relation composition(Relation r1, Relation r2) {
+        return addDefinition(new Composition(newRelation(), r1, r2));
     }
 
-    private Definition composition(Relation r0, Relation r1, Relation r2) {
-        return new Composition(r0, r1, r2);
+    private Relation set(String tag) {
+        return addDefinition(new TagSet(newSet(), tag));
     }
 
-    private Definition product(Relation r0, String tag1, String tag2) {
-        return new CartesianProduct(r0, Filter.byTag(tag1), Filter.byTag(tag2));
+    private Relation product(String tag1, String tag2) {
+        return addDefinition(new CartesianProduct(newRelation(), set(tag1), set(tag2)));
     }
 }

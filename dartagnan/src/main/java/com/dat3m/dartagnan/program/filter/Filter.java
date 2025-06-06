@@ -6,20 +6,8 @@ import java.util.HashMap;
 import java.util.Map;
 
 /*
-TODO: Filters are currently used in two distinct settings:
-    (1) as general ways to extract program-events
-    (2) as unary predicates in the Wmm
-  These two use-cases have conflicting requirements:
-    Use-case (1) needs the "apply"-method but not require named filters.
-    Use-case (2) requires named filters, but cannot (in general) support an "apply"-method (dynamic unary predicates).
-
-    SOLUTION: Use-case (1) is rather rare and can be replaced by explicit checking for tags
-    (e.g. getEvents().stream().filter(e -> e.hasTag(TAG1) &&/|| e.hasTag(TAG2)).
-    With only use-case (2), Filters can be lifted to proper unary predicates
-    (no "apply"-method, but lower and upper bounds (must/may) instead).
-
+Filters are used as general ways to extract program-events.
 */
-
 public abstract class Filter {
 
     protected String name;

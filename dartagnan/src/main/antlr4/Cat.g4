@@ -48,8 +48,8 @@ expression
     |   e1 = expression BSLASH e2 = expression                          # exprMinus
     |   e1 = expression SEMI e2 = expression                            # exprComposition
     |   e1 = expression BAR e2 = expression                             # exprUnion
-    |   LBRAC DOMAIN LPAR e = expression RPAR RBRAC                     # exprDomainIdentity
-    |   LBRAC RANGE LPAR e = expression RPAR RBRAC                      # exprRangeIdentity
+    |   DOMAIN LPAR e = expression RPAR                                 # exprDomain
+    |   RANGE LPAR e = expression RPAR                                  # exprRange
     |   (TOID LPAR e = expression RPAR | LBRAC e = expression RBRAC)    # exprIdentity
     |   LPAR e = expression RPAR                                        # expr
     |   n = NAME                                                        # exprBasic
@@ -105,7 +105,7 @@ COMMA   :   ',';
 
 DOMAIN      :   'domain';
 RANGE       :   'range';
-NEW         :   'new';
+NEW         :   '[n|N]ew';
 
 FLAG       :   'flag';
 UNDEFINED  :   'undefined_unless';

@@ -9,6 +9,7 @@ public class DirectDataDependency extends Definition {
 
     public DirectDataDependency(Relation r0) {
         super(r0, RelationNameRepository.IDD);
+        r0.checkBinaryRelation();
     }
 
     @Override

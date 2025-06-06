@@ -27,10 +27,12 @@ public class Acyclicity extends Axiom {
 
     public Acyclicity(Relation rel, boolean negated, boolean flag) {
         super(rel, negated, flag);
+        rel.checkBinaryRelation();
     }
 
     public Acyclicity(Relation rel) {
         super(rel, false, false);
+        rel.checkBinaryRelation();
     }
 
     // Under-approximates the must-set of (rel+ ; rel).

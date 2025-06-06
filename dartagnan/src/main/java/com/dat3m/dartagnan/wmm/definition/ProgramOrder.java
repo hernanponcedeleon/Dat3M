@@ -11,6 +11,7 @@ public class ProgramOrder extends Definition {
     public ProgramOrder(Relation r0, Filter s1) {
         super(r0, "po(" + s1 + ")");
         filter = s1;
+        r0.checkBinaryRelation();
     }
 
     public Filter getFilter() { return filter; }

@@ -8,6 +8,7 @@ public class LinuxCriticalSections extends Definition {
 
     public LinuxCriticalSections(Relation r0) {
         super(r0, RelationNameRepository.CRIT);
+        r0.checkBinaryRelation();
     }
 
     @Override

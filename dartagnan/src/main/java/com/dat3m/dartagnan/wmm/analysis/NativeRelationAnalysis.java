@@ -507,30 +507,6 @@ public class NativeRelationAnalysis implements RelationAnalysis {
         }
 
         @Override
-        public MutableKnowledge visitProduct(CartesianProduct prod) {
-            final Filter domain = prod.getFirstFilter();
-            final Filter range = prod.getSecondFilter();
-            MutableEventGraph must = new MapEventGraph();
-            List<Event> l1 = program.getThreadEvents().stream().filter(domain::apply).toList();
-            List<Event> l2 = program.getThreadEvents().stream().filter(range::apply).toList();
-            for (Event e1 : l1) {
-                Set<Event> rangeEvents = l2.stream()
-                        .filter(e2 -> !exec.areMutuallyExclusive(e1, e2))
-                        .collect(toSet());
-                must.addRange(e1, rangeEvents);
-            }
-            return new MutableKnowledge(must, MapEventGraph.from(must));
-        }
-
-        @Override
-        public MutableKnowledge visitSetIdentity(SetIdentity id) {
-            final Filter set = id.getFilter();
-            MutableEventGraph must = new MapEventGraph();
-            program.getThreadEvents().stream().filter(set::apply).forEach(e -> must.add(e, e));
-            return new MutableKnowledge(must, MapEventGraph.from(must));
-        }
-
-        @Override
         public MutableKnowledge visitExternal(External ext) {
             MutableEventGraph must = new MapEventGraph();
             List<Thread> threads = program.getThreads();
@@ -563,6 +539,13 @@ public class NativeRelationAnalysis implements RelationAnalysis {
                     must.addRange(e1, rangeEvents);
                 }
             }
+            return new MutableKnowledge(must, MapEventGraph.from(must));
+        }
+
+        @Override
+        public MutableKnowledge visitTagSet(TagSet tagSet) {
+            final MutableEventGraph must = new MapEventGraph();
+            program.getThreadEventsWithAllTags(tagSet.getTag()).forEach(e -> must.add(e, e));
             return new MutableKnowledge(must, MapEventGraph.from(must));
         }
 
@@ -1652,7 +1635,7 @@ public class NativeRelationAnalysis implements RelationAnalysis {
         }
 
         @Override
-        public Delta visitDomainIdentity(DomainIdentity domId) {
+        public Delta visitDomain(Domain domId) {
             if (domId.getOperand().equals(source)) {
                 MutableEventGraph maySet = new MapEventGraph();
                 may.getDomain().forEach(e -> maySet.add(e, e));
@@ -1668,7 +1651,7 @@ public class NativeRelationAnalysis implements RelationAnalysis {
         }
 
         @Override
-        public Delta visitRangeIdentity(RangeIdentity rangeId) {
+        public Delta visitRange(Range rangeId) {
             if (rangeId.getOperand().equals(source)) {
                 MutableEventGraph maySet = new MapEventGraph();
                 may.getRange().forEach(e -> maySet.add(e, e));
@@ -1681,6 +1664,47 @@ public class NativeRelationAnalysis implements RelationAnalysis {
                 return new Delta(maySet, mustSet);
             }
             return Delta.EMPTY;
+        }
+
+        @Override
+        public Delta visitProduct(CartesianProduct product) {
+            final boolean isDomain = product.getDomain().equals(source);
+            final boolean isRange = product.getRange().equals(source);
+            if (!isDomain && !isRange) {
+                return Delta.EMPTY;
+            }
+            final Knowledge domain = knowledgeMap.get(product.getDomain());
+            final Knowledge range = knowledgeMap.get(product.getRange());
+            final MutableEventGraph maySet = new MapEventGraph();
+            final MutableEventGraph mustSet = new MapEventGraph();
+            if (isRange) {
+                computeCartesianProduct(maySet, domain.getMaySet(), may);
+                computeCartesianProduct(mustSet, domain.getMustSet(), must);
+            }
+            if (isDomain) {
+                computeCartesianProduct(maySet, may, range.getMaySet());
+                computeCartesianProduct(mustSet, must, range.getMustSet());
+            }
+            return new Delta(maySet, mustSet);
+        }
+
+        private void computeCartesianProduct(MutableEventGraph target, EventGraph domain, EventGraph range) {
+            for (Event e1 : domain.getDomain()) {
+                if (domain.contains(e1, e1)) {
+                    final Set<Event> newRange = new HashSet<>(range.getDomain());
+                    newRange.removeIf(e2 -> !range.contains(e2, e2));
+                    newRange.removeIf(e2 -> exec.areMutuallyExclusive(e1, e2));
+                    target.addRange(e1, newRange);
+                }
+            }
+        }
+
+        @Override
+        public Delta visitSetIdentity(SetIdentity id) {
+            if (!id.getDomain().equals(source)) {
+                return Delta.EMPTY;
+            }
+            return new Delta(MutableEventGraph.from(may), MutableEventGraph.from(must));
         }
 
         @Override

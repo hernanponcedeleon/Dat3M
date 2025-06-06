@@ -10,6 +10,7 @@ import com.dat3m.dartagnan.solver.caat.predicates.relationGraphs.RelationGraph;
 import com.dat3m.dartagnan.solver.caat.predicates.relationGraphs.base.EmptyGraph;
 import com.dat3m.dartagnan.solver.caat.predicates.relationGraphs.derived.*;
 import com.dat3m.dartagnan.solver.caat.predicates.sets.SetPredicate;
+import com.dat3m.dartagnan.solver.caat.predicates.sets.derived.*;
 import com.dat3m.dartagnan.solver.caat4wmm.basePredicates.*;
 import com.dat3m.dartagnan.utils.dependable.DependencyGraph;
 import com.dat3m.dartagnan.verification.model.ExecutionModel;
@@ -216,6 +217,7 @@ public class ExecutionGraph {
     }
 
     private RelationGraph createGraphFromRelation(Relation rel) {
+        rel.checkBinaryRelation();
         final RelationGraph graph;
         final Class<?> relClass = rel.getDefinition().getClass();
         final List<Relation> dependencies = rel.getDependencies();
@@ -230,12 +232,6 @@ public class ExecutionGraph {
             graph = new ProgramOrderGraph();
         } else if (relClass == Coherence.class) {
             graph = new CoherenceGraph();
-        } else if (relClass == RangeIdentity.class || relClass == DomainIdentity.class) {
-            RelationGraph g = getOrCreateGraphFromRelation(dependencies.get(0));
-            ProjectionIdentityGraph.Dimension dim = relClass == RangeIdentity.class ?
-                    ProjectionIdentityGraph.Dimension.RANGE :
-                    ProjectionIdentityGraph.Dimension.DOMAIN;
-            graph = new ProjectionIdentityGraph(g, dim);
         } else if (relClass == Inverse.class || relClass == TransitiveClosure.class) {
             RelationGraph g = getOrCreateGraphFromRelation(dependencies.get(0));
             graph = relClass == Inverse.class ? new InverseGraph(g) : new TransitiveGraph(g);
@@ -244,24 +240,22 @@ public class ExecutionGraph {
             for (int i = 0; i < graphs.length; i++) {
                 graphs[i] = getOrCreateGraphFromRelation(dependencies.get(i));
             }
-            graph = relClass == Union.class ? new UnionGraph(graphs) :
-                    new IntersectionGraph(graphs);
+            graph = relClass == Union.class ? new UnionGraph(graphs) : new IntersectionGraph(graphs);
         } else if (relClass == Composition.class || relClass == Difference.class) {
             RelationGraph g1 = getOrCreateGraphFromRelation(dependencies.get(0));
             RelationGraph g2 = getOrCreateGraphFromRelation(dependencies.get(1));
-            graph = relClass == Composition.class ? new CompositionGraph(g1, g2) :
-                    new DifferenceGraph(g1, g2);
+            graph = relClass == Composition.class ? new CompositionGraph(g1, g2) : new DifferenceGraph(g1, g2);
         } else if (relClass == CartesianProduct.class) {
             CartesianProduct cartRel = (CartesianProduct)rel.getDefinition();
-            SetPredicate lhs = getOrCreateSetFromFilter(cartRel.getFirstFilter());
-            SetPredicate rhs = getOrCreateSetFromFilter(cartRel.getSecondFilter());
+            SetPredicate lhs = getOrCreateSetFromRelation(cartRel.getDomain());
+            SetPredicate rhs = getOrCreateSetFromRelation(cartRel.getRange());
             graph = new CartesianGraph(lhs, rhs);
         } else if (relClass == External.class) {
             graph = new ExternalGraph();
         } else if (relClass == Internal.class) {
             graph = new InternalGraph();
         } else if (relClass == SetIdentity.class) {
-            SetPredicate set = getOrCreateSetFromFilter(((SetIdentity) rel.getDefinition()).getFilter());
+            SetPredicate set = getOrCreateSetFromRelation(((SetIdentity) rel.getDefinition()).getDomain());
             graph = new SetIdentityGraph(set);
         } else if (relClass == Empty.class) {
             graph = new EmptyGraph();
@@ -275,16 +269,36 @@ public class ExecutionGraph {
         return graph;
     }
 
-    private SetPredicate getOrCreateSetFromFilter(Filter filter) {
-        if (filterSetMap.containsKey(filter)) {
-            return filterSetMap.get(filter);
+    private SetPredicate getOrCreateSetFromRelation(Relation relation) {
+        relation.checkUnaryRelation();
+        final Class<?> relClass = relation.getDefinition().getClass();
+        final List<Relation> dependencies = relation.getDependencies();
+        final SetPredicate set;
+        if (cutRelations.contains(relation)) {
+            set = new DynamicDefaultWMMSet(refinementModel.translateToBase(relation));
+        } else if (relClass == TagSet.class) {
+            set = new StaticWMMSet(Filter.byTag(((TagSet) relation.getDefinition()).getTag()));
+        } else if (relClass == Range.class || relClass == Domain.class) {
+            RelationGraph g = getOrCreateGraphFromRelation(dependencies.get(0));
+            ProjectionSet.Dimension dim = relClass == Range.class ?
+                    ProjectionSet.Dimension.RANGE :
+                    ProjectionSet.Dimension.DOMAIN;
+            set = new ProjectionSet(g, dim);
+        } else if (relClass == Union.class || relClass == Intersection.class) {
+            SetPredicate[] graphs = new SetPredicate[dependencies.size()];
+            for (int i = 0; i < graphs.length; i++) {
+                graphs[i] = getOrCreateSetFromRelation(dependencies.get(i));
+            }
+            set = relClass == Union.class ? new UnionSet(graphs) : new IntersectionSet(graphs);
+        } else if (relClass == Difference.class) {
+            SetPredicate s1 = getOrCreateSetFromRelation(dependencies.get(0));
+            SetPredicate s2 = getOrCreateSetFromRelation(dependencies.get(1));
+            set = new DifferenceSet(s1, s2);
+        } else {
+            throw new UnsupportedOperationException(String.format("Cannot handle set %s with definition of type %s", relation, relClass.getSimpleName()));
         }
-
-        SetPredicate set = new StaticWMMSet(filter);
-        set.setName(filter.toString());
-        filterSetMap.put(filter, set);
+        set.setName(relation.getNameOrTerm());
         return set;
-
     }
 
     // =======================================================

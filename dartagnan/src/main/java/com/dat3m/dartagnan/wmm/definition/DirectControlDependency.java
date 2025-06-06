@@ -11,6 +11,7 @@ public class DirectControlDependency extends Definition {
 
     public DirectControlDependency(Relation r0) {
         super(r0, CTRLDIRECT);
+        r0.checkBinaryRelation();
     }
 
     @Override

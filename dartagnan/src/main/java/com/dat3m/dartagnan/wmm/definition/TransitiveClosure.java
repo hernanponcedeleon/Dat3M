@@ -14,6 +14,8 @@ public class TransitiveClosure extends Definition {
     public TransitiveClosure(Relation r0, Relation r1) {
         super(r0, "%s^+");
         this.r1 = checkNotNull(r1);
+        r0.checkBinaryRelation();
+        r1.checkBinaryRelation();
     }
 
     public Relation getOperand() { return r1; }
