@@ -147,6 +147,11 @@ public final class ConstraintCopier implements Constraint.Visitor<Constraint> {
     }
 
     @Override
+    public SameInstruction visitSameInstruction(SameInstruction def) {
+        return new SameInstruction(translate(def.getDefinedRelation()));
+    }
+
+    @Override
     public DirectDataDependency visitInternalDataDependency(DirectDataDependency idd) {
         return new DirectDataDependency(translate(idd.getDefinedRelation()));
     }
@@ -162,8 +167,13 @@ public final class ConstraintCopier implements Constraint.Visitor<Constraint> {
     }
 
     @Override
-    public ReadModifyWrites visitReadModifyWrites(ReadModifyWrites rmw) {
-        return new ReadModifyWrites(translate(rmw.getDefinedRelation()));
+    public AMOPairs visitAMOPairs(AMOPairs amo) {
+        return new AMOPairs(translate(amo.getDefinedRelation()));
+    }
+
+    @Override
+    public LXSXPairs visitLXSXPairs(LXSXPairs lxsx) {
+        return new LXSXPairs(translate(lxsx.getDefinedRelation()));
     }
 
     @Override

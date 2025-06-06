@@ -7,11 +7,11 @@ import com.dat3m.dartagnan.expression.integers.IntLiteral;
 import com.dat3m.dartagnan.expression.integers.IntSizeCast;
 import com.dat3m.dartagnan.expression.integers.IntUnaryExpr;
 import com.dat3m.dartagnan.expression.misc.ITEExpr;
+import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.analysis.SyntacticContextAnalysis;
 import com.dat3m.dartagnan.program.event.Event;
-import com.dat3m.dartagnan.program.event.MemoryEvent;
 import com.dat3m.dartagnan.program.event.RegWriter;
 import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.event.core.threading.ThreadArgument;
@@ -20,15 +20,15 @@ import com.google.common.base.Supplier;
 import com.google.common.base.Suppliers;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
-import org.sosy_lab.common.configuration.Configuration;
-import org.sosy_lab.common.configuration.InvalidConfigurationException;
 
 import java.math.BigInteger;
 import java.util.*;
+import java.util.stream.IntStream;
 
 import static com.dat3m.dartagnan.expression.integers.IntBinaryOp.*;
 import static com.dat3m.dartagnan.expression.integers.IntUnaryOp.MINUS;
 import static com.google.common.base.Preconditions.checkArgument;
+import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Verify.verify;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.IntStream.range;
@@ -48,6 +48,10 @@ import static com.dat3m.dartagnan.configuration.Alias.*;
  */
 public class FieldSensitiveAndersen implements AliasAnalysis {
 
+    private final Config config;
+
+    private static final TypeFactory types = TypeFactory.getInstance();
+
     // For providing helpful error messages, this analysis prints call-stack and loop information for events.
     private final Supplier<SyntacticContextAnalysis> synContext;
 
@@ -64,15 +68,20 @@ public class FieldSensitiveAndersen implements AliasAnalysis {
     ///Result sets
     private final Map<MemoryCoreEvent, ImmutableSet<Location>> eventAddressSpaceMap = new HashMap<>();
 
+    // Maps memory events to additional offsets inside their byte range, which may match other accesses' bounds.
+    private final Map<MemoryCoreEvent, List<Integer>> mixedAccesses = new HashMap<>();
+
     // ================================ Construction ================================
 
-    public static FieldSensitiveAndersen fromConfig(Program program, Configuration config) throws InvalidConfigurationException {
-        var analysis = new FieldSensitiveAndersen(program);
+    public static FieldSensitiveAndersen fromConfig(Program program, Config config) {
+        var analysis = new FieldSensitiveAndersen(program, config);
         analysis.run(program);
+        analysis.detectMixedSizeAccesses();
         return analysis;
     }
 
-    private FieldSensitiveAndersen(Program p) {
+    private FieldSensitiveAndersen(Program p, Config c) {
+        config = checkNotNull(c);
         synContext = Suppliers.memoize(() -> SyntacticContextAnalysis.newInstance(p));
     }
 
@@ -89,7 +98,57 @@ public class FieldSensitiveAndersen implements AliasAnalysis {
         return a.size() == 1 && a.containsAll(getMaxAddressSet(y));
     }
 
-    private ImmutableSet<Location> getMaxAddressSet(MemoryEvent e) {
+    @Override
+    public List<Integer> mayMixedSizeAccesses(MemoryCoreEvent event) {
+        final List<Integer> result = mixedAccesses.get(event);
+        if (result != null) {
+            return Collections.unmodifiableList(result);
+        }
+        final int bytes = types.getMemorySizeInBytes(event.getAccessType());
+        return IntStream.range(1, bytes).boxed().toList();
+    }
+
+    // ================================ Mixed Size Access Detection ================================
+
+    private void detectMixedSizeAccesses() {
+        if (!config.detectMixedSizeAccesses) {
+            return;
+        }
+        final List<MemoryCoreEvent> events = List.copyOf(eventAddressSpaceMap.keySet());
+        final List<Set<Integer>> offsets = new ArrayList<>();
+        for (int i = 0; i < events.size(); i++) {
+            final var set0 = new HashSet<Integer>();
+            final MemoryCoreEvent event0 = events.get(i);
+            final Set<Location> addresses0 = eventAddressSpaceMap.get(event0);
+            final int bytes0 = types.getMemorySizeInBytes(event0.getAccessType());
+            for (int j = 0; j < i; j++) {
+                final MemoryCoreEvent eventY = events.get(j);
+                final Set<Location> addresses1 = eventAddressSpaceMap.get(eventY);
+                final int bytes1 = types.getMemorySizeInBytes(eventY.getAccessType());
+                fetchMixedOffsets(set0, addresses0, bytes0, addresses1, bytes1);
+                fetchMixedOffsets(offsets.get(j), addresses1, bytes1, addresses0, bytes0);
+            }
+            offsets.add(set0);
+        }
+        for (int i = 0; i < events.size(); i++) {
+            mixedAccesses.put(events.get(i), offsets.get(i).stream().sorted().toList());
+        }
+    }
+
+    private void fetchMixedOffsets(Set<Integer> setX, Set<Location> addressesX, int bytesX, Set<Location> addressesY, int bytesY) {
+        for (int i = 1; i < bytesX; i++) {
+            //Tests if addressesX + i may alias addressesY or addressesY + bytesY
+            for (Location location1 : addressesY) {
+                if (addressesX.contains(new Location(location1.base, location1.offset - i)) ||
+                        addressesX.contains(new Location(location1.base, location1.offset - i + bytesY))) {
+                    setX.add(i);
+                    break;
+                }
+            }
+        }
+    }
+
+    private ImmutableSet<Location> getMaxAddressSet(MemoryCoreEvent e) {
         return eventAddressSpaceMap.get(e);
     }
 
@@ -204,67 +263,9 @@ public class FieldSensitiveAndersen implements AliasAnalysis {
         eventAddressSpaceMap.put(e, addresses.build());
     }
 
-    private static final class Offset<Base> {
+    private record Offset<Base>(Base base, int offset, int alignment) {}
 
-        final Base base;
-        final int offset;
-        final int alignment;
-
-        Offset(Base b, int o, int a) {
-            base = b;
-            offset = o;
-            alignment = a;
-        }
-
-        @Override
-        public int hashCode() {
-            return base.hashCode() + Objects.hashCode(offset) + Objects.hashCode(alignment);
-        }
-
-        @Override
-        public boolean equals(Object o) {
-            return this == o || o instanceof Offset && base.equals(((Offset<?>) o).base) &&
-                    Objects.equals(offset, ((Offset<?>) o).offset);
-        }
-
-        @Override
-        public String toString() {
-            return String.format("%s+%d+%dx", base, offset, alignment);
-        }
-    }
-
-    private static final class Location {
-
-        final MemoryObject base;
-        final int offset;
-
-        Location(MemoryObject b, int o) {
-            base = b;
-            offset = o;
-        }
-
-        @Override
-        public int hashCode() {
-            return 1201 * base.hashCode() + offset; // High factor to prevent overlapping hashcodes
-        }
-
-        @Override
-        public boolean equals(Object o) {
-            if (this == o) {
-                return true;
-            } else if (o == null || getClass() != o.getClass()) {
-                return false;
-            }
-            Location other = (Location) o;
-            // Can we check reference-equality on the MemoryObject?
-            return this.base.equals(other.base) && this.offset == other.offset;
-        }
-
-        @Override
-        public String toString() {
-            return String.format("%s[%d]", base, offset);
-        }
-    }
+    private record Location(MemoryObject base, int offset) {}
 
     private static List<Location> fields(Collection<Location> v, int offset, int alignment) {
         final List<Location> result = new ArrayList<>();

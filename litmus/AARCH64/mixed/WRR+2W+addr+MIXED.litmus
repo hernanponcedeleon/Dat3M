@@ -1,0 +1,23 @@
+AArch64 WRR+2W+addr+MIXED
+"Rfe PosRR DpCtrlIsbdR Fre DMB.SYdWR Fre"
+Generator=diyone7 (version 7.50+1(dev))
+Prefetch=1:x=F,1:y=T,2:y=F,2:x=T
+Com=Rf Fr Fr
+Orig=Rfe PosRR DpCtrlIsbdR Fre DMB.SYdWR Fre
+{
+uint64_t y; uint64_t x; uint32_t 2:X2; uint64_t 1:X0;
+
+0:X1=x;
+1:X1=x; 1:X4=y; uint32_t 1:X3=0x3;
+2:X1=y; 2:X3=x;
+}
+ P0          | P1            | P2          ;
+ MOV W0,#1   | MOV W9,#2     | MOV W0,#1   ;
+ STR W0,[X1] | STR W9,[X1,#4]| STR W0,[X1] ;
+             | LDR X0,[X1]   | DMB SY      ;
+             | LDR W2,[X1,#4]| LDR W2,[X3] ;
+             | AND W5,W2,#128|             ;
+             | LDR W3,[X4,W5,SXTW] |             ;
+
+exists
+(1:X0=0x200000001 /\ 1:X2=0x2 /\ 1:X3=0 /\ 2:X2=0)

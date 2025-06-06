@@ -62,21 +62,25 @@ public class Intrinsics {
 
     private enum AssertionType { USER, OVERFLOW, INVALIDDEREF, UNKNOWN_FUNCTION }
 
+    private final boolean detectMixedSizeAccesses;
+
     private static final TypeFactory types = TypeFactory.getInstance();
     private static final ExpressionFactory expressions = ExpressionFactory.getInstance();
 
     //FIXME This might have concurrency issues if processing multiple programs at the same time.
     private BeginAtomic currentAtomicBegin;
 
-    private Intrinsics() {
+    private Intrinsics(boolean msa) {
+        detectMixedSizeAccesses = msa;
     }
 
     public static Intrinsics newInstance() {
-        return new Intrinsics();
+        return new Intrinsics(false);
     }
     
-    public static Intrinsics fromConfig(Configuration config) throws InvalidConfigurationException {
-        Intrinsics instance = newInstance();
+    public static Intrinsics fromConfig(Configuration config, boolean detectMixedSizeAccesses)
+            throws InvalidConfigurationException {
+        Intrinsics instance = new Intrinsics(detectMixedSizeAccesses);
         config.inject(instance);
         return instance;
     }
@@ -1505,17 +1509,23 @@ public class Intrinsics {
         final int count = countValue.getValueAsInt();
 
         final List<Event> replacement = new ArrayList<>(2 * count + 1);
-        for (int i = 0; i < count; i++) {
+        //FIXME without MSA detection, each byte is treated as a 64-bit value.
+        final IntegerType type = detectMixedSizeAccesses ? types.getIntegerType(8 * count) : types.getArchType();
+        final int typeSize = detectMixedSizeAccesses ? count : 1;
+        for (int i = 0; i < count; i += typeSize) {
             final Expression offset = expressions.makeValue(i, types.getArchType());
             final Expression srcAddr = expressions.makeAdd(src, offset);
             final Expression destAddr = expressions.makeAdd(dest, offset);
-            // FIXME: We have no other choice but to load ptr-sized chunks for now
-            final Register reg = caller.getOrNewRegister("__memcpy_" + i, types.getArchType());
+            final Register reg = caller.getOrNewRegister("__memcpy_" + i, type);
 
-            replacement.addAll(List.of(
-                    EventFactory.newLoad(reg, srcAddr),
-                    newStore(destAddr, reg)
-            ));
+            final Event load = EventFactory.newLoad(reg, srcAddr);
+            final Event store = EventFactory.newStore(destAddr, reg);
+
+            // communicate to Tearing to not create same-instruction blocks
+            load.addTags(Tag.NO_INSTRUCTION);
+            store.addTags(Tag.NO_INSTRUCTION);
+
+            replacement.addAll(List.of(load, store));
         }
         if (call instanceof ValueFunctionCall valueCall) {
             // std.memcpy returns the destination address, llvm.memcpy has no return value

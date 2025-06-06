@@ -30,14 +30,19 @@ import com.dat3m.dartagnan.program.processing.ProcessingManager;
 import com.dat3m.dartagnan.program.processing.compilation.Compilation;
 import com.dat3m.dartagnan.verification.Context;
 import com.dat3m.dartagnan.verification.VerificationTask;
+import com.dat3m.dartagnan.verification.solving.ModelChecker;
 import com.dat3m.dartagnan.wmm.Relation;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
+import com.dat3m.dartagnan.wmm.axiom.Emptiness;
+import com.dat3m.dartagnan.wmm.definition.Composition;
+import com.dat3m.dartagnan.wmm.definition.Intersection;
 import org.junit.Test;
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 
 import java.io.File;
+import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.LinkedList;
 import java.util.List;
@@ -49,7 +54,7 @@ import static com.dat3m.dartagnan.program.event.EventFactory.*;
 import static com.dat3m.dartagnan.utils.ResourceHelper.getRootPath;
 import static com.dat3m.dartagnan.utils.ResourceHelper.getTestResourcePath;
 import static com.dat3m.dartagnan.verification.solving.ModelChecker.*;
-import static com.dat3m.dartagnan.wmm.RelationNameRepository.LOC;
+import static com.dat3m.dartagnan.wmm.RelationNameRepository.*;
 import static org.junit.Assert.*;
 
 public class AnalysisTest {
@@ -251,23 +256,22 @@ public class AnalysisTest {
 
     @Test
     public void full0() throws InvalidConfigurationException {
-        program0(FULL, NONE, MAY, MAY, NONE, NONE, NONE);
+        program0(FULL, NONE, MUST, NONE, NONE, NONE, NONE);
     }
 
     private void program0(Alias method, Result... expect) throws InvalidConfigurationException {
         ProgramBuilder b = ProgramBuilder.forLanguage(SourceLanguage.LITMUS);
 
-        MemoryObject x = b.newMemoryObject("x", 2);
-        MemoryObject y = b.newMemoryObject("y", 1);
+        MemoryObject x = b.newMemoryObject("x", 16);
+        MemoryObject y = b.newMemoryObject("y", 8);
 
         b.newThread(0);
         Register r0 = b.getOrNewRegister(0, "r0");
-        //this is undefined behavior in C11
-        //the expression does not match a sum, but x occurs in it
+        //In C11, this is well-defined: ((uint64_t*) ((uintptr_t) x * 1))
         b.addChild(0, newLocal(r0, mult(x, 1)));
         Store e0 = newStore(r0);
         b.addChild(0, e0);
-        Store e1 = newStore(plus(r0, 1));
+        Store e1 = newStore(plus(r0, 8));
         b.addChild(0, e1);
         Store e2 = newStore(x);
         b.addChild(0, e2);
@@ -306,18 +310,18 @@ public class AnalysisTest {
 
     private void program1(Alias method, Result... expect) throws InvalidConfigurationException {
         ProgramBuilder b = ProgramBuilder.forLanguage(SourceLanguage.LITMUS);
-        MemoryObject x = b.newMemoryObject("x", 3);
+        MemoryObject x = b.newMemoryObject("x", 24);
         x.setInitialValue(0, x);
 
         b.newThread(0);
-        Store e0 = newStore(plus(x, 1));
+        Store e0 = newStore(plus(x, 8));
         b.addChild(0, e0);
         Register r0 = b.getOrNewRegister(0, "r0");
         Load e1 = newLoad(r0, x);
         b.addChild(0, e1);
         Store e2 = newStore(r0);
         b.addChild(0, e2);
-        Store e3 = newStore(plus(r0, 1), r0);
+        Store e3 = newStore(plus(r0, 8), r0);
         b.addChild(0, e3);
 
         Program program = b.build();
@@ -353,7 +357,7 @@ public class AnalysisTest {
     private void program2(Alias method, Result... expect) throws InvalidConfigurationException {
         ProgramBuilder b = ProgramBuilder.forLanguage(SourceLanguage.LITMUS);
         IntegerType type = types.getArchType();
-        MemoryObject x = b.newMemoryObject("x", 3);
+        MemoryObject x = b.newMemoryObject("x", 24);
 
         b.newThread(0);
         Register r0 = b.getOrNewRegister(0, "r0");
@@ -364,15 +368,15 @@ public class AnalysisTest {
                 expressions.makeLT(r0, expressions.makeZero(type), true)), l0));
         Store e0 = newStore(x);
         b.addChild(0, e0);
-        Store e1 = newStore(plus(x, 1));
+        Store e1 = newStore(plus(x, 8));
         b.addChild(0, e1);
-        Store e2 = newStore(plus(x, 2));
+        Store e2 = newStore(plus(x, 16));
         b.addChild(0, e2);
         Register r1 = b.getOrNewRegister(0, "r1");
         b.addChild(0, newLocal(r1, expressions.makeZero(type)));
         Store e3 = newStore(expressions.makeAdd(
-                expressions.makeAdd(x, mult(r0, 2)),
-                mult(r1, 4)));
+                expressions.makeAdd(x, mult(r0, 16)),
+                mult(r1, 32)));
         b.addChild(0, e3);
         b.addChild(0, l0);
 
@@ -408,16 +412,16 @@ public class AnalysisTest {
 
     private void program3(Alias method, Result... expect) throws InvalidConfigurationException {
         ProgramBuilder b = ProgramBuilder.forLanguage(SourceLanguage.LITMUS);
-        MemoryObject x = b.newMemoryObject("x", 3);
+        MemoryObject x = b.newMemoryObject("x", 24);
         x.setInitialValue(0, x);
 
         b.newThread(0);
         Register r0 = b.getOrNewRegister(0, "r0");
         Load e0 = newLoad(r0, x);
         b.addChild(0, e0);
-        Store e1 = newStore(x, plus(r0, 1));
+        Store e1 = newStore(x, plus(r0, 8));
         b.addChild(0, e1);
-        Store e2 = newStore(plus(x, 2));
+        Store e2 = newStore(plus(x, 16));
         b.addChild(0, e2);
         Store e3 = newStore(r0);
         b.addChild(0, e3);
@@ -454,9 +458,9 @@ public class AnalysisTest {
 
     private void program4(Alias method, Result... expect) throws InvalidConfigurationException {
         ProgramBuilder b = ProgramBuilder.forLanguage(SourceLanguage.LITMUS);
-        MemoryObject x = b.newMemoryObject("x", 1);
-        MemoryObject y = b.newMemoryObject("y", 1);
-        MemoryObject z = b.newMemoryObject("z", 1);
+        MemoryObject x = b.newMemoryObject("x", 8);
+        MemoryObject y = b.newMemoryObject("y", 8);
+        MemoryObject z = b.newMemoryObject("z", 8);
 
         b.newThread(0);
         Register r0 = b.getOrNewRegister(0, "r0");
@@ -503,9 +507,9 @@ public class AnalysisTest {
 
     private void program5(Alias method, Result... expect) throws InvalidConfigurationException {
         ProgramBuilder b = ProgramBuilder.forLanguage(SourceLanguage.LITMUS);
-        MemoryObject x = b.newMemoryObject("x", 1);
-        MemoryObject y = b.newMemoryObject("y", 1);
-        MemoryObject z = b.newMemoryObject("z", 1);
+        MemoryObject x = b.newMemoryObject("x", 8);
+        MemoryObject y = b.newMemoryObject("y", 8);
+        MemoryObject z = b.newMemoryObject("z", 8);
 
         b.newThread(0);
         Register r0 = b.getOrNewRegister(0, "r0");
@@ -538,8 +542,8 @@ public class AnalysisTest {
     @Test
     public void fullPropagation0() throws InvalidConfigurationException {
         ProgramBuilder b = ProgramBuilder.forLanguage(SourceLanguage.LITMUS);
-        MemoryObject x = b.newMemoryObject("x", 1);
-        MemoryObject y = b.newMemoryObject("y", 1);
+        MemoryObject x = b.newMemoryObject("x", 8);
+        MemoryObject y = b.newMemoryObject("y", 8);
         x.setInitialValue(0, y);
         y.setInitialValue(0, x);
 
@@ -577,8 +581,8 @@ public class AnalysisTest {
     @Test
     public void fullPropagation1() throws InvalidConfigurationException {
         ProgramBuilder b = ProgramBuilder.forLanguage(SourceLanguage.LITMUS);
-        MemoryObject x = b.newMemoryObject("x", 1);
-        MemoryObject y = b.newMemoryObject("y", 1);
+        MemoryObject x = b.newMemoryObject("x", 8);
+        MemoryObject y = b.newMemoryObject("y", 8);
         x.setInitialValue(0, y);
         y.setInitialValue(0, x);
 
@@ -653,7 +657,7 @@ public class AnalysisTest {
         analysisContext.register(BranchEquivalence.class, BranchEquivalence.fromConfig(program, configuration));
         analysisContext.register(ExecutionAnalysis.class, ExecutionAnalysis.fromConfig(program, ProgressModel.uniform(ProgressModel.FAIR), analysisContext, configuration));
         analysisContext.register(ReachingDefinitionsAnalysis.class, ReachingDefinitionsAnalysis.fromConfig(program, analysisContext, configuration));
-        return AliasAnalysis.fromConfig(program, analysisContext, configuration);
+        return AliasAnalysis.fromConfig(program, analysisContext, configuration, false);
     }
 
     private void assertAlias(Result expect, AliasAnalysis a, MemoryCoreEvent x, MemoryCoreEvent y) {
@@ -714,5 +718,109 @@ public class AnalysisTest {
 
     private Event findMatchingEventAfterProcessing(Program p, Event orig) {
         return p.getThreadEvents().stream().filter(e -> e.hasEqualMetadata(orig, OriginalId.class)).findFirst().get();
+    }
+
+    @Test
+    public void allKindsOfMixedSizeAccesses() throws Exception {
+        TypeFactory types = TypeFactory.getInstance();
+        ExpressionFactory expressions = ExpressionFactory.getInstance();
+        IntegerType pointerType = types.getArchType();
+        ProgramBuilder b = ProgramBuilder.forLanguage(Program.SourceLanguage.LITMUS);
+        b.newThread(0);
+        Register r8 = b.getOrNewRegister(0, "r8", types.getIntegerType(8));
+        Register r16 = b.getOrNewRegister(0, "r16", types.getIntegerType(16));
+        Register r32 = b.getOrNewRegister(0, "r32", types.getIntegerType(32));
+        Register r64 = b.getOrNewRegister(0, "r64", types.getIntegerType(64));
+        final var expected = new ArrayList<String>();
+        final int OBJECT_SIZE = 16; // two times max size (in bytes)
+        for (int i = 0; i < 16; i++) { // squared number of access sizes (four)
+            final Register r = List.of(r8, r16, r32, r64).get(i % 4);
+            final Register s = List.of(r8, r16, r32, r64).get(i / 4);
+            final int rBytes = List.of(1, 2, 4, 8).get(i % 4);
+            final int sBytes = List.of(1, 2, 4, 8).get(i / 4);
+            final StringBuilder exp = new StringBuilder();
+            for (int offset = 0; offset < 9; offset++) {
+                final MemoryObject x = b.getOrNewMemoryObject(String.format("x%d:%d", i, offset), OBJECT_SIZE);
+                final Expression address = expressions.makeAdd(x, expressions.makeValue(offset, pointerType));
+                b.addChild(0, newLoad(r, x));
+                b.addChild(0, newLoad(s, address));
+                if (0 < offset && offset < rBytes) {
+                    exp.append(offset);
+                }
+                if (0 < offset + sBytes && offset + sBytes < rBytes) {
+                    exp.append(offset + sBytes);
+                }
+                exp.append(',');
+                if (offset < rBytes && rBytes < offset + sBytes) {
+                    exp.append(rBytes - offset);
+                }
+                exp.append(' ');
+            }
+            expected.add(exp.toString());
+        }
+
+        Program program = b.build();
+        Configuration config = Configuration.defaultConfiguration();
+        ProcessingManager.fromConfig(config).run(program);
+
+        // For this test, initializations are ignored.
+        assertFalse(program.getThreadEvents(Init.class).isEmpty());
+        program.getThreadEvents(Init.class).forEach(Event::tryDelete);
+
+        Context analysisContext = Context.create();
+        analysisContext.register(BranchEquivalence.class, BranchEquivalence.fromConfig(program, config));
+        analysisContext.register(ExecutionAnalysis.class, ExecutionAnalysis.fromConfig(program,
+                ProgressModel.defaultHierarchy(), analysisContext, config));
+        analysisContext.register(ReachingDefinitionsAnalysis.class,
+                ReachingDefinitionsAnalysis.fromConfig(program, analysisContext, config));
+        assertTrue(program.getThreadEvents(Init.class).isEmpty());
+        AliasAnalysis alias = AliasAnalysis.fromConfig(program, analysisContext, config, true);
+        List<MemoryCoreEvent> events = program.getThreadEvents(MemoryCoreEvent.class);
+        final var actual = new ArrayList<String>();
+        for (int i = 0; i < 16; i++) {
+            final var act = new StringBuilder();
+            for (int offset = 0; offset < 9; offset++) {
+                alias.mayMixedSizeAccesses(events.get(i * 18 + offset * 2)).forEach(act::append);
+                act.append(',');
+                alias.mayMixedSizeAccesses(events.get(i * 18 + offset * 2 + 1)).forEach(act::append);
+                act.append(' ');
+            }
+            actual.add(act.toString());
+        }
+        assertArrayEquals(expected.toArray(), actual.toArray());
+    }
+
+    @Test
+    public void mixedSizeReadModifyWrite() throws Exception {
+        TypeFactory types = TypeFactory.getInstance();
+        ExpressionFactory expressions = ExpressionFactory.getInstance();
+        ProgramBuilder b = ProgramBuilder.forLanguage(Program.SourceLanguage.LITMUS);
+        MemoryObject x = b.getOrNewMemoryObject("x", 16);
+        b.newThread(0);
+        b.newThread(1);
+        IntegerType u32 = types.getIntegerType(32);
+        IntegerType u64 = types.getIntegerType(64);
+        Register r64 = b.getOrNewRegister(0, "r64", u64);
+        b.addChild(0, newRMWLoadExclusive(r64, x));
+        b.addChild(0, newRMWStoreExclusive(x, expressions.makeValue(0, u64), true));
+        b.addChild(1, newStore(x, expressions.makeValue(0, u32)));
+
+        Program program = b.build();
+        Wmm wmm = new Wmm();
+        Relation rmw = wmm.getOrCreatePredefinedRelation(LXSX);
+        Relation rf = wmm.getOrCreatePredefinedRelation(RF);
+        Relation co = wmm.getOrCreatePredefinedRelation(CO);
+        Relation rfRmw = wmm.addDefinition(new Composition(wmm.newRelation(), rf, rmw));
+        Relation coCo = wmm.addDefinition(new Composition(wmm.newRelation(), co, co));
+        wmm.addConstraint(new Emptiness(wmm.addDefinition(new Intersection(wmm.newRelation(), rfRmw, coCo))));
+        Configuration config = Configuration.builder().setOption(MIXED_SIZE, "true").build();
+        VerificationTask task = VerificationTask.builder().build(program, wmm, EnumSet.of(PROGRAM_SPEC));
+        Context analysisContext = Context.create();
+        ModelChecker.preprocessProgram(task, config);
+        ModelChecker.performStaticProgramAnalyses(task, analysisContext, config);
+        ModelChecker.performStaticWmmAnalyses(task, analysisContext, config);
+
+        RelationAnalysis.Knowledge rmwKnowledge = analysisContext.get(RelationAnalysis.class).getKnowledge(rmw);
+        assertEquals(4, rmwKnowledge.getMaySet().size());
     }
 }

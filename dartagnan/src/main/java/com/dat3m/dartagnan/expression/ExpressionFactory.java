@@ -172,6 +172,14 @@ public final class ExpressionFactory {
         return makeIntBinary(leftOperand, signed ? IntBinaryOp.ARSHIFT : IntBinaryOp.RSHIFT, rightOperand);
     }
 
+    public Expression makeIntConcat(List<? extends Expression> operands) {
+        return new IntConcat(operands);
+    }
+
+    public Expression makeIntExtract(Expression operand, int lowBit, int highBit) {
+        return new IntExtract(operand, lowBit, highBit);
+    }
+
     public Expression makeIntUnary(IntUnaryOp operator, Expression operand) {
         return new IntUnaryExpr(operator, operand);
     }
