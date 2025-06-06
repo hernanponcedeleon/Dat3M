@@ -1740,7 +1740,7 @@ public class Intrinsics {
         final Expression widthExpr = expressions.makeValue(BigInteger.valueOf(inputType.getBitWidth()), inputType);
         final Expression count = expressions.makeAdd(cttz, expressions.makeOne(inputType));
         final Expression ite = expressions.makeITE(expressions.makeEQ(cttz, widthExpr), expressions.makeZero(inputType), count);
-        final Expression cast = expressions.makeCast(ite, outputType, true);
+        final Expression cast = expressions.makeCast(ite, outputType, false);
         final Event assignment = EventFactory.newLocal(resultReg, cast);
         return List.of(assignment);
     }
