@@ -16,7 +16,7 @@
     </Appenders>
 
     <Loggers>
-        <Root level="${sys:logLevel:-WARN}">
+        <Root level="info">
             <AppenderRef ref="Console"/>
             <AppenderRef ref="File"/>
         </Root>

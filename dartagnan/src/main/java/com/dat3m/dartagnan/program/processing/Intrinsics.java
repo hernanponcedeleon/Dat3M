@@ -215,7 +215,7 @@ public class Intrinsics {
         LKMM_FENCE("__LKMM_fence", false, false, false, true, Intrinsics::handleLKMMIntrinsic),
         // --------------------------- Misc ---------------------------
         STD_MEMCPY("memcpy", true, true, true, false, Intrinsics::inlineMemCpy),
-        STD_MEMCPYS("memcpy_s", true, true, true, false, Intrinsics::inlineMemCpyS),
+        STD_MEMCPYS("memcpy_s", true, true, true, true, Intrinsics::inlineMemCpySNew),
         STD_MEMSET(List.of("memset", "__memset_chk"), true, false, true, false, Intrinsics::inlineMemSet),
         STD_MEMCMP("memcmp", false, true, true, false, Intrinsics::inlineMemCmp),
         STD_MALLOC("malloc", false, false, true, true, Intrinsics::inlineMalloc),
@@ -1630,6 +1630,121 @@ public class Intrinsics {
         replacement.addAll(List.of(
             retSuccess,
             end
+        ));
+
+        return replacement;
+    }
+
+    private List<Event> inlineMemCpySNew(FunctionCall call) {
+        // Cast guaranteed to success by the return type of memcpy_s
+        final Register resultRegister = ((ValueFunctionCall)call).getResultRegister();
+        final Function caller = call.getFunction();
+        final Expression dest = call.getArguments().get(0);
+        final Expression destszExpr = call.getArguments().get(1);
+        final Expression src = call.getArguments().get(2);
+        final Expression countExpr = call.getArguments().get(3);
+
+        // TODO remove these two checks once we support dynamically-sized memcpy
+        /*if (!(countExpr instanceof IntLiteral countValue)) {
+            final String error = "Cannot handle memcpy_s with dynamic count argument: " + call;
+            throw new UnsupportedOperationException(error);
+        }
+        final int count = countValue.getValueAsInt();
+        if (!(destszExpr instanceof IntLiteral destszValue)) {
+            final String error = "Cannot handle memcpy_s with dynamic destsz argument: " + call;
+            throw new UnsupportedOperationException(error);
+        }
+        final int destsz = destszValue.getValueAsInt();*/
+
+        // Runtime checks
+        final Expression nullExpr = expressions.makeZero(types.getArchType());
+        final Expression destIsNull = expressions.makeEQ(dest, nullExpr);
+        final Expression srcIsNull = expressions.makeEQ(src, nullExpr);
+
+        // We assume RSIZE_MAX = 2^64-1
+        final Expression rsize_max = expressions.makeValue(BigInteger.ONE.shiftLeft(64).subtract(BigInteger.ONE), types.getArchType());
+        // These parameters have type rsize_t/size_t which we model as types.getArchType(), thus the cast
+        final Expression castDestszExpr = expressions.makeCast(destszExpr, types.getArchType());
+        final Expression castCountExpr = expressions.makeCast(countExpr, types.getArchType());
+
+        final Expression invalidDestsz = expressions.makeGT(castDestszExpr, rsize_max, false);
+        final Expression countGtMax = expressions.makeGT(castCountExpr, rsize_max, false);
+        final Expression countGtdestszExpr = expressions.makeGT(castCountExpr, castDestszExpr, false);
+        final Expression invalidCount = expressions.makeOr(countGtMax, countGtdestszExpr);
+        final Expression overlap = expressions.makeAnd(
+                expressions.makeGT(expressions.makeAdd(src, castCountExpr), dest, false),
+                expressions.makeGT(expressions.makeAdd(dest, castCountExpr), src, false));
+
+        final List<Event> replacement = new ArrayList<>();
+
+        Label check1 = EventFactory.newLabel("__memcpy_s_check_1");
+        Label check2 = EventFactory.newLabel("__memcpy_s_check_2");
+        Label success = EventFactory.newLabel("__memcpy_s_success");
+        Label end = EventFactory.newLabel("__memcpy_s_end");
+
+        Expression errorCodeFail = expressions.makeOne((IntegerType)resultRegister.getType());
+        Expression errorCodeSuccess = expressions.makeZero((IntegerType)resultRegister.getType());
+
+        // Condition 1: dest == NULL or destsz > RSIZE_MAX ----> return error > 0
+        final Expression cond1 = expressions.makeOr(destIsNull, invalidDestsz);
+        CondJump skipE1 = EventFactory.newJump(expressions.makeNot(cond1), check2);
+        CondJump skipRest1 = EventFactory.newGoto(end);
+        Local retError1 = EventFactory.newLocal(resultRegister, errorCodeFail);
+        replacement.addAll(List.of(
+                check1,
+                skipE1,
+                retError1,
+                skipRest1
+        ));
+
+        // Condition 2: dest != NULL && destsz <= RSIZE_MAX && (src == NULL || count > destsz || overlap(src, dest))
+        // ----> return error > 0 and zero out [dest, dest+destsz)
+        // The first two are guaranteed by not matching cond1
+        final Expression cond2 = expressions.makeOr(expressions.makeOr(srcIsNull, invalidCount), overlap);
+        CondJump skipE2 = EventFactory.newJump(expressions.makeNot(cond2), success);
+        CondJump skipRest2 = EventFactory.newGoto(end);
+        Local retError2 = EventFactory.newLocal(resultRegister, errorCodeFail);
+        replacement.addAll(List.of(
+                check2,
+                skipE2
+        ));
+
+
+        final Register loopCounter = call.getCalledFunction().newUniqueRegister("__memcpy_ctr", types.getArchType());
+        final Expression one = expressions.makeOne((IntegerType) loopCounter.getType());
+        final Expression zero = expressions.makeZero(types.getArchType());
+
+        final Label memcpyDestStart = EventFactory.newLabel("__memcpy_s_dest_loop_start");
+        final Label memcpyDestEnd = EventFactory.newLabel("__memcpy_s_dest_loop_end");
+        replacement.addAll(List.of(
+                EventFactory.newLocal(loopCounter, expressions.makeGeneralZero(loopCounter.getType())),
+                memcpyDestStart,
+                newJumpUnless(expressions.makeLT(loopCounter, destszExpr, true), memcpyDestEnd),
+                newStore(expressions.makeAdd(dest, loopCounter), zero),
+                newLocal(loopCounter, expressions.makeAdd(loopCounter, one)),
+                newGoto(memcpyDestStart),
+                memcpyDestEnd,
+                retError2,
+                skipRest2
+        ));
+
+        // Else ----> return error = 0 and do the actual copy
+        final Label memcpyStart = EventFactory.newLabel("__memcpy_s_loop_start");
+        final Label memcpyEnd = EventFactory.newLabel("__memcpy_s_loop_end");
+        // FIXME: We have no other choice but to load ptr-sized chunks for now
+        final Register reg = caller.getOrNewRegister("__memcpy_load", types.getArchType());
+        replacement.addAll(List.of(
+                EventFactory.newLocal(loopCounter, expressions.makeGeneralZero(loopCounter.getType())),
+                memcpyStart,
+                newJumpUnless(expressions.makeLT(loopCounter, countExpr, true), memcpyEnd),
+                EventFactory.newLoad(reg, expressions.makeAdd(src, loopCounter)),
+                newStore(expressions.makeAdd(dest, loopCounter), reg),
+                newLocal(loopCounter, expressions.makeAdd(loopCounter, one)),
+                newGoto(memcpyStart),
+                memcpyEnd,
+                success,
+                EventFactory.newLocal(resultRegister, errorCodeSuccess),
+                end
         ));
 
         return replacement;
