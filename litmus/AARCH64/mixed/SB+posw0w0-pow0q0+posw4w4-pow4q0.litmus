@@ -1,0 +1,20 @@
+AArch64 SB+posw0w0-pow0q0+posw4w4-pow4q0
+"PosWWw0w0 PodWRw0q0 Freq0w4 PosWWw4w4 PodWRw4q0 Freq0w0"
+Cycle=PosWWw0w0 PodWRw0q0 Freq0w4 PosWWw4w4 PodWRw4q0 Freq0w0
+Relax=[PosWWw0w0,PodWRw0q0] [PosWWw4w4,PodWRw4q0]
+Safe=Freq0w0 Freq0w4
+Prefetch=0:x=F,0:y=T,1:y=F,1:x=T
+Com=Fr Fr
+Orig=PosWWw0w0 PodWRw0q0 Freq0w4 PosWWw4w4 PodWRw4q0 Freq0w0
+{
+uint64_t y; uint64_t x; uint64_t 1:X3; uint64_t 0:X3;
+
+0:X0=0x1010101; 0:X1=x; 0:X2=0x2020202; 0:X4=y;
+1:X0=0x1010101; 1:X1=y; 1:X2=0x2020202; 1:X4=x;
+}
+ P0          | P1             ;
+ STR W0,[X1] | STR W0,[X1,#4] ;
+ STR W2,[X1] | STR W2,[X1,#4] ;
+ LDR X3,[X4] | LDR X3,[X4]    ;
+exists
+(x=0x2020202 /\ y=0x202020200000000 /\ 0:X3=0x0 /\ 1:X3=0x0)

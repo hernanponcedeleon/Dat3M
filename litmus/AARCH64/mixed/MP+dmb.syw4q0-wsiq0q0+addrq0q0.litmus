@@ -1,0 +1,21 @@
+AArch64 MP+dmb.syw4q0-wsiq0q0+addrq0q0
+"DMB.SYdWWw4q0 Wsiq0q0 Rfeq0q0 DpAddrdRq0q0 Freq0w4"
+Cycle=DMB.SYdWWw4q0 Wsiq0q0 Rfeq0q0 DpAddrdRq0q0 Freq0w4
+Relax=
+Safe=Rfe Fre Wsi DMB.SYdWW DpAddrdR w4 q0
+Generator=diy7 (version 7.52)
+Prefetch=0:x=F,0:y=W,1:y=F,1:x=T
+Com=Rf Fr
+Orig=DMB.SYdWWw4q0 Wsiq0q0 Rfeq0q0 DpAddrdRq0q0 Freq0w4
+{
+uint64_t y; uint64_t x; uint64_t 1:X3; uint64_t 1:X0;
+
+0:X0=0x1010101; 0:X1=x; 0:X2=0x101010101010101; 0:X3=y; 0:X4=0x202020202020202;
+1:X1=y; 1:X4=x;
+}
+ P0             | P1             ;
+ STR W0,[X1,#4] | LDR X0,[X1]    ;
+ DMB SY         | EOR X2,X0,X0   ;
+ STR X2,[X3]    | LDR X3,[X4,X2] ;
+ STR X4,[X3]    |                ;
+exists (1:X0=0x202020202020202 /\ 1:X3=0x0 /\ y=0x202020202020202)

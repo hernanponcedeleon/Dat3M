@@ -1,0 +1,18 @@
+AArch64 MP+dmb+data-rfi+MIX+BIS
+"Modified DMB.SYdWWw4q0 Rfeq0q0 DpDatadWq0w0 Rfiw4q0 Freq0w4"
+Generator=diyone7 (version 7.51+1(dev))
+Prefetch=0:x=F,0:y=W,1:y=F,1:x=T
+Com=Rf Fr
+Orig=DMB.SYdWWw0q0 Rfeq0q0 DpDatadWq0w4 Rfiw4q0 Freq0w0
+{
+uint64_t y; uint64_t x; uint64_t 1:X5; uint64_t 1:X0;
+
+0:X0=0x2020202; 0:X1=x; 0:X2=0x101010101010101; 0:X3=y;
+1:X1=y; 1:X4=x;
+}
+ P0             | P1          ;
+ STR W0,[X1,#4] | LDR X0,[X1] ;
+ DMB SY         | STR W0,[X4] ;
+ STR X2,[X3]    | LDR X5,[X4] ;
+
+exists x=0x202020201010101 /\ 1:X0=0x101010101010101 /\ 1:X5=0x1010101

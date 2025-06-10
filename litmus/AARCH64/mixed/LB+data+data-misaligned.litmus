@@ -1,0 +1,17 @@
+AArch64 LB+data+data-misaligned
+"based on DpDatadW Rfe DpDatadW PosWW Rfe"
+Prefetch=0:x=F,0:y=W,1:y=F,1:x=W
+Com=Rf Rf
+{
+0:X1=x; 0:X3=y;
+1:X1=y; 1:X3=x; 1:X5=0x1101; 1:X4=0x2112;
+}
+ P0              | P1            ;
+ LDRB W0,[X1,#2] | LDR  W0,[X1]  ;
+ EOR  W2,W0,W0   | EOR  W2,W0,W0 ;
+ ADD  W2,W2,#1   | ADD  W2,W2,W5 ;
+ STR  W2,[X3]    | STRH W2,[X3]  ;
+                 | ADD  X6,X3,#1 ;
+                 | STRH W4,[X6]  ;
+exists
+(x=0x211201 /\ 0:X0=0x21 /\ 1:X0=1)

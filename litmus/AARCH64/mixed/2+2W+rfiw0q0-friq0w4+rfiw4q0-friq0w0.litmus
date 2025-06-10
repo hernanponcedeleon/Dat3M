@@ -1,0 +1,19 @@
+AArch64 2+2W+rfiw0q0-friq0w4+rfiw4q0-friq0w0
+"Rfiw0q0 Friq0w4 Wsew4w4 Rfiw4q0 Friq0w0 Wsew0w0"
+Generator=diyone7 (version 7.50+1(dev))
+Prefetch=
+Com=Ws Ws
+Orig=Rfiw0q0 Friq0w4 Wsew4w4 Rfiw4q0 Friq0w0 Wsew0w0
+{
+uint64_t x; uint64_t 1:X2; uint64_t 0:X2;
+
+0:X0=0x1010101; 0:X1=x; 0:X3=0x2020202;
+1:X0=0x3030303; 1:X1=x; 1:X3=0x4040404;
+}
+ P0             | P1             ;
+ STR W0,[X1]    | STR W0,[X1,#4] ;
+ LDR X2,[X1]    | LDR X2,[X1]    ;
+ STR W3,[X1,#4] | STR W3,[X1]    ;
+ LDR W4,[X1,#4] | LDR W4,[X1]    ;
+locations [x;]
+exists 0:X4=0x3030303 /\ 1:X4=0x1010101

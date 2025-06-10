@@ -1,0 +1,15 @@
+AArch64 SCA-01
+"Rfib0b0 Freb0b1 Rfib1b1 Freb1b0"
+Generator=diyone7 (version 7.52+9(dev))
+Prefetch=
+Com=Fr Fr
+Orig=Rfib0b0 Freb0b1 Rfib1b1 Freb1b0
+{
+0:X1=x;
+1:X1=x;
+}
+ P0           | P1              ;
+ MOV W0,#1    | MOV W0,#2       ;
+ STRB W0,[X1] | STRB W0,[X1,#1] ;
+ LDRH W2,[X1] | LDRH W2,[X1]    ;
+exists (0:X2=0x1 /\ 1:X2=0x200 /\ x=0x201)

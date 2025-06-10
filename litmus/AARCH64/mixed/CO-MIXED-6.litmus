@@ -1,0 +1,16 @@
+AArch64 CO-MIXED-6
+"Coherence test, mixed-size accesses"
+
+{
+uint64_t x = 0;
+0:X5 = x; 1:X5 = x;
+uint32_t 0:X3 = 0x00000003;
+uint32_t 0:X1 = 0x00000001;
+uint64_t 1:X1 = 0x0000000200000002;
+}
+
+P0             | P1          ;
+STR W3,[X5]    | STR X1,[X5] ;
+STR W1,[X5,#4] |             ;
+
+exists (x = 0x0000000200000003)

@@ -1,0 +1,24 @@
+AArch64 MP+poq0l.w0+addrw0w0-wsiw0w4-rfiw4w0-dataw0w0-rfiw0q0
+"PodWWq0L.w0 RfeL.w0w0 DpAddrdWw0w0 Wsiw0w4 Rfiw4w0 DpDatadWw0w0 Rfiw0q0 Freq0q0"
+Cycle=DpAddrdWw0w0 Wsiw0w4 Rfiw4w0 DpDatadWw0w0 Rfiw0q0 Freq0q0 PodWWq0L.w0 RfeL.w0w0
+Generator=diycross7 (version 7.52+5(dev))
+Prefetch=0:x=F,0:y=W,1:y=F,1:x=T
+Com=Rf Fr
+Orig=PodWWq0L.w0 RfeL.w0w0 DpAddrdWw0w0 Wsiw0w4 Rfiw4w0 DpDatadWw0w0 Rfiw0q0 Freq0q0
+{
+uint64_t z; uint64_t y; uint64_t x; uint64_t 1:X9; uint64_t 1:X6; uint64_t 1:X0;
+
+0:X0=144680345676153346; 0:X1=x; 0:X2=16843009; 0:X3=y;
+1:X1=y; 1:X3=16843009; 1:X4=z; 1:X5=33686018; 1:X8=x;
+}
+ P0           | P1             ;
+ STR X0,[X1]  | LDR W0,[X1]    ;
+ STLR W2,[X3] | EOR X2,X0,X0   ;
+              | STR W3,[X4,X2] ;
+              | STR W5,[X4,#4] ;
+              | LDR W6,[X4]    ;
+              | EOR X7,X6,X6   ;
+              | ADD W7,W7,W3   ;
+              | STR W7,[X8]    ;
+              | LDR X9,[X8]    ;
+exists (1:X0=0x0 /\ 1:X6=0x1010101 /\ 1:X9=0x1010101 /\ x=0x202020201010101 /\ z=0x202020201010101) \/ (1:X0=0x1010101 /\ 1:X6=0x1010101 /\ 1:X9=0x1010101 /\ x=0x202020201010101 /\ z=0x202020201010101)

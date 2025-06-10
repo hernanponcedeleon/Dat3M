@@ -1,0 +1,21 @@
+AArch64 R+dmb.sy+rfipw-poswp-ctrlisb+TER
+"based on DMB.SYdWW Wse Rfi PosRR DpCtrlIsbdR Fre"
+Prefetch=0:x=F,0:y=W,1:y=F,1:x=T
+Com=Ws Fr
+{
+0:X1=x; 0:X3=y;
+1:X1=y; 1:X5=x;
+}
+ P0            | P1              ;
+ MOV  W0,#1    | MOV  W0,#33     ;
+ STR  W0,[X1]  | STRB W0,[X1,#1] ;
+ DMB  SY       | LDRH W2,[X1]    ;
+ MOV  W2,#01   | LDRB W3,[X1,#1] ;
+ STRB W2,[X3]  | CBNZ W3,LC00    ;
+               | B END           ;
+               | LC00:           ;
+               | ISB             ;
+               | LDR  W4,[X5]    ;
+               | END:            ;
+exists
+(y=0x2101 /\ 1:X2=0x2101 /\ 1:X3=0x21 /\ 1:X4=0)

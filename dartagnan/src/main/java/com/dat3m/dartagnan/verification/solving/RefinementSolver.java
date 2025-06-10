@@ -508,6 +508,7 @@ public class RefinementSolver extends ModelChecker {
         // TODO: We should probably automatically cut all "unknown relation",
         //  i.e., use a white-list of known relations instead of a blacklist of unknown one's.
         return def instanceof LinuxCriticalSections // LKMM
+                || def instanceof AMOPairs || def instanceof SameInstruction
                 || def instanceof CASDependency // IMM
                 // GPUs
                 || def instanceof SameScope || def instanceof SyncWith
@@ -554,7 +555,6 @@ public class RefinementSolver extends ModelChecker {
         final Relation loc = wmm.getOrCreatePredefinedRelation(LOC);
         final Relation po = wmm.getOrCreatePredefinedRelation(PO);
         final Relation ext = wmm.getOrCreatePredefinedRelation(EXT);
-        final Relation rmw = wmm.getOrCreatePredefinedRelation(RMW);
 
         // rf^-1;co
         final Relation rfinv = wmm.addDefinition(new Inverse(wmm.newRelation(), rf));
@@ -591,10 +591,13 @@ public class RefinementSolver extends ModelChecker {
         }
         if (biases.contains(Baseline.ATOMIC_RMW)) {
             // ---- empty (rmw & fre;coe) ----
-            Relation coe = wmm.addDefinition(new Intersection(wmm.newRelation(), co, ext));
-            Relation fre = wmm.addDefinition(new Intersection(wmm.newRelation(), fr, ext));
-            Relation frecoe = wmm.addDefinition(new Composition(wmm.newRelation(), fre, coe));
-            Relation rmwANDfrecoe = wmm.addDefinition(new Intersection(wmm.newRelation(), rmw, frecoe));
+            final Relation amo = wmm.getOrCreatePredefinedRelation(AMO);
+            final Relation lxsx = wmm.getOrCreatePredefinedRelation(LXSX);
+            final Relation rmw = wmm.addDefinition(new Union(amo, lxsx));
+            final Relation coe = wmm.addDefinition(new Intersection(wmm.newRelation(), co, ext));
+            final Relation fre = wmm.addDefinition(new Intersection(wmm.newRelation(), fr, ext));
+            final Relation frecoe = wmm.addDefinition(new Composition(wmm.newRelation(), fre, coe));
+            final Relation rmwANDfrecoe = wmm.addDefinition(new Intersection(wmm.newRelation(), rmw, frecoe));
             wmm.addConstraint(new Emptiness(rmwANDfrecoe));
         }
     }
