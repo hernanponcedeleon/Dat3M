@@ -1,6 +1,6 @@
-SPIRV
-(* Vulkan + SPIR-V Memory Model *)
-(* For when availability/visibility chains are supported *)
+VULKAN
+(* Vulkan Memory Model *)
+(* With availability-visibility chains unsupported *)
 
 // Base relations:
 // vloc: events accessing the same virtual location, aka "same reference (sref)" in the Vulkan spec
@@ -56,7 +56,7 @@ let avvisinc = avvisSem | avvisSet | avvisSet^-1
 let posctosem = ((SC0 * SEMSC0) | (SC1 * SEMSC1)) & po
 let posemtosc = ((SEMSC0 * SC0) | (SEMSC1 * SC1)) & po
 
-let asmo = co & ((ATOM | IW) * ATOM)
+let asmo = co & ((ATOM | IW) * ATOM) & mutordatom
 
 let imm(r) = r \ (r; r+)
 let rs = [REL & ATOM]; (imm(asmo); [RMW])*
@@ -91,9 +91,9 @@ let ithbsemsc01 = ( ssw |
 // happens-before
 let hb = ithbsemsc0 | ithbsemsc1 | ithbsemsc01 | po
 
-// chains will produce the availability/visibility chains with this pattern:
+// chains will turn off nontrivial availability/visibility with this pattern:
 let E = (M | F | CBAR | AVDEVICE | VISDEVICE) \ IW
-let chains = E * E
+let chains = [E]
 
 let avsg = [AVSG]
 let avwg = (chains & (avsg; (hb & ssg & avvisinc))?); [AVWG]
@@ -136,9 +136,6 @@ let fre = fr & ext
 (***********************)
 (* Memory Model Axioms *)
 (***********************)
-
-// Atom instructions' scoped modification order must relate all mutually ordered atomics writes at the same location
-empty ([ATOM & W]; mutordatom; [ATOM & W]) \ (asmo | asmo^-1) as coherence
 
 // locord, rf, fr, asmo must not form cycles
 acyclic (locord | rf | fr | asmo) as consistency-cycle

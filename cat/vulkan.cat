@@ -1,6 +1,6 @@
-SPIRV
-(* Vulkan + SPIR-V Memory Model *)
-(* This file is not intended for verification purposes, but rather to perform several sanity checks *)
+VULKAN
+(* Vulkan Memory Model *)
+(* With availability-visibility chains supported *)
 
 // Base relations:
 // vloc: events accessing the same virtual location, aka "same reference (sref)" in the Vulkan spec
@@ -56,7 +56,7 @@ let avvisinc = avvisSem | avvisSet | avvisSet^-1
 let posctosem = ((SC0 * SEMSC0) | (SC1 * SEMSC1)) & po
 let posemtosc = ((SEMSC0 * SC0) | (SEMSC1 * SC1)) & po
 
-let asmo = co & ((ATOM | IW) * ATOM)
+let asmo = co & ((ATOM | IW) * ATOM) & mutordatom
 
 let imm(r) = r \ (r; r+)
 let rs = [REL & ATOM]; (imm(asmo); [RMW])*
@@ -133,107 +133,26 @@ let locord = loc &
 let fr = ((rf & locord)^-1 ; (W * W) & locord) | (rf^-1; asmo) | (([IW]; rf)^-1; ((loc;[W]) \ id))
 let fre = fr & ext
 
-let w-locord = [W]; locord
+(***********************)
+(* Memory Model Axioms *)
+(***********************)
 
-// visible to = location ordered W->R with no intervening write (W->W->R)
-let visto = imm(w-locord); [R]
+// locord, rf, fr, asmo must not form cycles
+acyclic (locord | rf | fr | asmo) as consistency-cycle
 
-(**************************)
-(* Sanity checks for tags *)
-(**************************)
+// non-atomic cannot read-from a value that is shadowed by another write
+empty (rf; ([R \ ATOM])) & (([W]; locord); ([W]; locord)+) as consistency-rf
 
-// RMW atomics in A
-let rmwIsAtomic = ([RMW] \ [ATOM])
-flag ~empty rmwIsAtomic as checkRmwIsAtomic
+// rmw events are atomic
+empty rmw & (fre; (asmo & ext)) as atomic
 
-// Atomics are reads and writes, not fences
-let atomicIsRW = ([ATOM] \ [R | W])
-flag ~empty atomicIsRW as checkAtomicIsRW
+let non-rmw-reads = (R \ RMW) * (R \ RMW)
+empty ((((locord | locord^-1) | mutordatom) \ non-rmw-reads) \ (loc \ id \ non-rmw-reads)) as locord-complete
 
-// acquire can be used on atomic reads or fences
-let acqIsRF = ([ACQ] \ [(R & ATOM) | F])
-flag ~empty acqIsRF as checkAcqIsRF
+(***************)
+(* Data Races *)
+(***************)
 
-// releases can be used on atomic writes or fences
-let relIsWF = ([REL] \ [(W & ATOM) | F])
-flag ~empty relIsWF as checkRelIsWF
-
-// Fences must release or acquire
-let fIsRelAcq = ([F] \ [REL | ACQ])
-flag ~empty fIsRelAcq as checkFIsRelAcq
-
-// Only writes/reads can have explicit availability/visibility ops, respectively
-let avIsRW = ([AV] \ [W])
-flag ~empty avIsRW as checkAvIsRW
-let visIsRW = ([VIS] \ [R])
-flag ~empty visIsRW as checkVisIsRW
-
-// nonpriv is only meaningful for memory accesses
-let nonprivIsRW = ([NONPRIV] \ [R | W])
-flag ~empty nonprivIsRW as checkNonprivIsRW
-
-// Atomic operations are always considered non-private
-let atomicIsNonpriv = ([ATOM] \ [NONPRIV])
-flag ~empty atomicIsNonpriv as checkAtomicIsNonpriv
-
-// Private operations are not scoped
-let privIsScoped = ([PRIV] & [DV | QF | WG | SG])
-flag ~empty privIsScoped as checkPrivIsScoped
-
-// Atomic operations implicitly have availability/visibility operations
-let atomicIsAv = ([W & ATOM] \ [AV])
-flag ~empty atomicIsAv as checkAtomicIsAv
-let atomicIsVis = ([R & ATOM] \ [VIS])
-flag ~empty atomicIsVis as checkAtomicIsVis
-
-// availability/visibility semantics in REL/ACQ only, respectively
-let semavIsRel = ([SEMAV] \ [REL])
-flag ~empty semavIsRel as checkSemAvIsRel
-let semvisIsAcq = ([SEMVIS] \ [ACQ])
-flag ~empty semvisIsAcq as checkSemVisIsAcq
-
-// acquire/release ops have one or more semantics storage classes
-let acqIsSem = ([ACQ] \ [SEMSC0 | SEMSC1])
-flag ~empty acqIsSem as checkAcqIsSem
-let relIsSem = ([REL] \ [SEMSC0 | SEMSC1])
-flag ~empty relIsSem as checkRelIsSem
-let semcs0IsAcqRel = ([SEMSC0] \ [ACQ | REL])
-flag ~empty semcs0IsAcqRel as checkSemcs0IsAcqRel
-let semcs1IsAcqRel = ([SEMSC1] \ [ACQ | REL])
-flag ~empty semcs1IsAcqRel as checkSemcs1IsAcqRel
-
-// no pair of the same control barrier instance can be in the same thread
-let scbarinstIsPo = (syncbar & (po | po^-1))
-flag ~empty scbarinstIsPo as checkScbarinstIsPo
-
-// can't have two cbars where one comes first in po in one thread and second in po in another thread
-let scbarinstIsPo2 = (po; syncbar; po) & syncbar
-flag ~empty scbarinstIsPo2 as checkScbarinstIsPo2
-
-// the same instance of a control barrier must have same scope, acq/rel, semantics
-let scbarinstIsDV = (syncbar & (DV * (_ \ DV)))
-flag ~empty scbarinstIsDV as checkScbarinstIsDV
-let scbarinstIsQF = (syncbar & (QF * (_ \ QF)))
-flag ~empty scbarinstIsQF as checkScbarinstIsQF
-let scbarinstIsWG = (syncbar & (WG * (_ \ WG)))
-flag ~empty scbarinstIsWG as checkScbarinstIsWG
-let scbarinstIsSG = (syncbar & (SG * (_ \ SG)))
-flag ~empty scbarinstIsSG as checkScbarinstIsSG
-let scbarinstIsAcq = (syncbar & (ACQ * (_ \ ACQ)))
-flag ~empty scbarinstIsAcq as checkScbarinstIsAcq
-let scbarinstIsRel = (syncbar & (REL * (_ \ REL)))
-flag ~empty scbarinstIsRel as checkScbarinstIsRel
-let scbarinstIsSemsc0 = (syncbar & (SEMSC0 * (_ \ SEMSC0)))
-flag ~empty scbarinstIsSemsc0 as checkScbarinstIsSemsc0
-let scbarinstIsSemsc1 = (syncbar & (SEMSC1 * (_ \ SEMSC1)))
-flag ~empty scbarinstIsSemsc1 as checkScbarinstIsSemsc1
-
-(*******************************)
-(* Sanity checks for relations *)
-(*******************************)
-
-// assert AssertLocordSameLoc { all X : Exec | X.locord in X.sloc }
-flag ~empty (locord \ loc) as AssertLocordSameLoc
-
-// no (W->W->R) in visto
-flag ~empty (visto & ([W]; locord; [W]; locord; [R])) as AssertVisTo
+let pair_with_write = ((W * W) | (W * R) | (R * W)) \ ((IW * _) | (_ * IW)) // ignore IW
+let dr = loc & (pair_with_write \ mutordatom \ id \ (locord | locord^-1))
+flag ~empty dr as racy
