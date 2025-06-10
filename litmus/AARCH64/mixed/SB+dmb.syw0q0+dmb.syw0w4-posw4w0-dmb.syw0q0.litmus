@@ -1,0 +1,23 @@
+AArch64 SB+dmb.syw0q0+dmb.syw0w4-posw4w0-dmb.syw0q0
+"DMB.SYdWRw0q0 Freq0w0 DMB.SYdWWw0w4 PosWWw4w0 DMB.SYdWRw0q0 Freq0w0"
+Cycle=DMB.SYdWWw0w4 PosWWw4w0 DMB.SYdWRw0q0 Freq0w0 DMB.SYdWRw0q0 Freq0w0
+Relax=PosWWw4w0
+Safe=DMB.SYdWWw0w4 DMB.SYdWRw0q0 Freq0w0
+Prefetch=0:x=F,0:y=T,1:y=F,1:x=T
+Com=Fr Fr
+Orig=DMB.SYdWRw0q0 Freq0w0 DMB.SYdWWw0w4 PosWWw4w0 DMB.SYdWRw0q0 Freq0w0
+{
+uint64_t z; uint64_t y; uint64_t x; uint64_t 1:X5; uint64_t 0:X2;
+
+0:X0=0x1010101; 0:X1=x; 0:X3=y;
+1:X0=0x1010101; 1:X1=y; 1:X2=0x1010101; 1:X3=z; 1:X4=0x2020202; 1:X6=x;
+}
+ P0          | P1             ;
+ STR W0,[X1] | STR W0,[X1]    ;
+ DMB SY      | DMB SY         ;
+ LDR X2,[X3] | STR W2,[X3,#4] ;
+             | STR W4,[X3]    ;
+             | DMB SY         ;
+             | LDR X5,[X6]    ;
+exists
+(x=0x1010101 /\ y=0x1010101 /\ z=0x101010102020202 /\ 0:X2=0x0 /\ 1:X5=0x0)

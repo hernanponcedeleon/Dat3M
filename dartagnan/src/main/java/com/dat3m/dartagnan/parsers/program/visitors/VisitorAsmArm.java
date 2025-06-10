@@ -249,7 +249,7 @@ public class VisitorAsmArm extends AsmArmBaseVisitor<Object> {
         Register freshResultRegister = (Register) ctx.register(0).accept(this);
         Register value = (Register) ctx.register(1).accept(this);
         Register address = (Register) ctx.register(2).accept(this);
-        asmInstructions.add(EventFactory.Common.newExclusiveStore(freshResultRegister, address, value, Tag.ARMv8.MO_RX));
+        asmInstructions.add(EventFactory.Common.newExclusiveStore(freshResultRegister, address, value, ""));
         return null;
     }
 

@@ -4,6 +4,8 @@ package com.dat3m.dartagnan.witness.graphviz;
 import java.io.File;
 import java.io.IOException;
 import java.io.Writer;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
@@ -19,34 +21,34 @@ public class Graphviz {
     public Graphviz() { }
 
     public Graphviz beginDigraph(String graphName) {
-        text.append(String.format("digraph \"%s\" { \n", graphName));
+        text.append(String.format("digraph \"%s\" {%n", graphName));
         directed = true;
         return this;
     }
 
     public Graphviz beginGraph(String graphName) {
-        text.append(String.format("graph \"%s\" { \n", graphName));
+        text.append(String.format("graph \"%s\" {%n", graphName));
         directed = false;
         return this;
     }
 
     public Graphviz beginSubgraph(String subGraphName) {
-        text.append(String.format("subgraph \"%s\" { \n", subGraphName));
+        text.append(String.format("subgraph \"%s\" {%n", subGraphName));
         return this;
     }
 
     public Graphviz end() {
-        text.append("\n").append("}");
+        text.append("}").append(System.lineSeparator());
         return this;
     }
 
     public Graphviz setNodeAttributes(String... attributes) {
-        text.append(String.format("node [%s] \n", String.join(", ", attributes)));
+        text.append(String.format("node [%s]%n", String.join(", ", attributes)));
         return this;
     }
 
     public Graphviz setEdgeAttributes(String... attributes) {
-        text.append(String.format("edge [%s] \n", String.join(", ", attributes)));
+        text.append(String.format("edge [%s]%n", String.join(", ", attributes)));
         return this;
     }
 
@@ -56,25 +58,26 @@ public class Graphviz {
     }
 
     public Graphviz appendLine(String text) {
-        this.text.append(text).append("\n");
+        this.text.append(text).append(System.lineSeparator());
         return this;
     }
 
     public Graphviz addNode(String name, String... attributes) {
         if (attributes == null) {
-            text.append(String.format("%s\n", name));
+            text.append(String.format("%s%n", name));
         } else {
-            text.append(String.format("%s [%s]\n", name, String.join(", ", attributes)));
+            text.append(String.format("%s [%s]%n", name, String.join(", ", attributes)));
         }
         return this;
     }
 
     public Graphviz addEdge(String node1, String node2, String... options) {
-        String edge = directed ? "->" : "--";
-        if (options == null) {
-            text.append(String.format("%s %s %s\n", node1, edge, node2));
+        final String edge = directed ? "->" : "--";
+        final List<String> optionList = options == null ? null : Arrays.stream(options).filter(s -> !s.isEmpty()).toList();
+        if (optionList == null || optionList.isEmpty()) {
+            text.append(String.format("%s %s %s%n", node1, edge, node2));
         } else {
-            text.append(String.format("%s %s %s [%s]\n", node1, edge, node2, String.join(", ", options)));
+            text.append(String.format("%s %s %s [%s]%n", node1, edge, node2, String.join(", ", optionList)));
         }
         return this;
     }

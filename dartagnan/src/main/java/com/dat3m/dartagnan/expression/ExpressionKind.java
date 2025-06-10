@@ -23,6 +23,8 @@ public interface ExpressionKind {
         ITE,
         EXTRACT,
         INSERT,
+        BV_EXTRACT,
+        BV_CONCAT,
         FORMULA;
 
         @Override

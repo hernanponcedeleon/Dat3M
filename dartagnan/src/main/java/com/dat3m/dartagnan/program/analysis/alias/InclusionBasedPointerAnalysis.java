@@ -2,8 +2,12 @@ package com.dat3m.dartagnan.program.analysis.alias;
 
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionVisitor;
+import com.dat3m.dartagnan.expression.aggregates.ConstructExpr;
+import com.dat3m.dartagnan.expression.aggregates.ExtractExpr;
 import com.dat3m.dartagnan.expression.integers.*;
 import com.dat3m.dartagnan.expression.misc.ITEExpr;
+import com.dat3m.dartagnan.expression.processing.ExpressionInspector;
+import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.analysis.ReachingDefinitionsAnalysis;
@@ -23,6 +27,7 @@ import org.apache.logging.log4j.Logger;
 
 import java.math.BigInteger;
 import java.util.*;
+import java.util.stream.IntStream;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Verify.verify;
@@ -70,6 +75,8 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
 
     private static final Logger logger = LogManager.getLogger(InclusionBasedPointerAnalysis.class);
 
+    private static final TypeFactory types = TypeFactory.getInstance();
+
     // This analysis depends on another, that maps used registers to a list of possible direct writers.
     private final ReachingDefinitionsAnalysis dependency;
 
@@ -90,6 +97,9 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
     // Maps a set of same-register writers to a variable representing their combined result sets (~phi node).
     // Non-trivial modifiers may only appear for singleton Locals.
     private final Map<List<RegWriter>, DerivedVariable> registerVariables = new HashMap<>();
+
+    // Maps memory events to additional offsets inside their byte range, which may match other accesses' bounds.
+    private final Map<MemoryCoreEvent, List<Integer>> mixedAccesses = new HashMap<>();
 
     // If enabled, the algorithm describes its internal graph to be written into a file.
     private Graphviz graphviz;
@@ -119,6 +129,9 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
         final ReachingDefinitionsAnalysis def = analysisContext.requires(ReachingDefinitionsAnalysis.class);
         final var analysis = new InclusionBasedPointerAnalysis(program, def);
         analysis.run(program, config);
+        if (config.detectMixedSizeAccesses) {
+            analysis.detectMixedSizeAccesses();
+        }
         logger.debug("variable count: {}",
                 analysis.totalVariables);
         logger.debug("replacement count: {}",
@@ -155,14 +168,16 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
         if (vx.base == vy.base && isConstant(vx.modifier) && isConstant(vy.modifier)) {
             return vx.modifier.offset == vy.modifier.offset;
         }
-        final List<IncludeEdge> ox = new ArrayList<>(vx.base.includes);
-        ox.add(new IncludeEdge(vx.base, TRIVIAL_MODIFIER));
-        final List<IncludeEdge> oy = new ArrayList<>(vy.base.includes);
-        oy.add(new IncludeEdge(vy.base, TRIVIAL_MODIFIER));
+        final List<IncludeEdge> ox = toIncludeSet(vx.base);
+        final List<IncludeEdge> oy = toIncludeSet(vy.base);
         for (final IncludeEdge ax : ox) {
             for (final IncludeEdge ay : oy) {
-                if (ax.source == ay.source && overlaps(compose(ax.modifier, vx.modifier), compose(ay.modifier, vy.modifier))) {
-                    return true;
+                if (ax.source == ay.source) {
+                    final Modifier l = compose(ax.modifier, vx.modifier);
+                    final Modifier r = compose(ay.modifier, vy.modifier);
+                    if (overlaps(l, r)) {
+                        return true;
+                    }
                 }
             }
         }
@@ -178,6 +193,79 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
     }
 
     @Override
+    public List<Integer> mayMixedSizeAccesses(MemoryCoreEvent event) {
+        final List<Integer> result = mixedAccesses.get(event);
+        if (result != null) {
+            return Collections.unmodifiableList(result);
+        }
+        final int bytes = types.getMemorySizeInBytes(event.getAccessType());
+        return IntStream.range(1, bytes).boxed().toList();
+    }
+
+    // ================================ Mixed Size Access Detection ================================
+
+    private void detectMixedSizeAccesses() {
+        final List<MemoryCoreEvent> events = List.copyOf(addressVariables.keySet());
+        final List<Set<Integer>> offsets = new ArrayList<>();
+        for (int i = 0; i < events.size(); i++) {
+            final MemoryCoreEvent event0 = events.get(i);
+            final var set0 = new HashSet<Integer>();
+            for (int j = 0; j < i; j++) {
+                detectMixedSizeAccessPair(event0, set0, events.get(j), offsets.get(j));
+            }
+            offsets.add(set0);
+        }
+        for (int i = 0; i < events.size(); i++) {
+            mixedAccesses.put(events.get(i), offsets.get(i).stream().sorted().toList());
+        }
+    }
+
+    private void detectMixedSizeAccessPair(MemoryCoreEvent x, Set<Integer> xSet, MemoryCoreEvent y, Set<Integer> ySet) {
+        final DerivedVariable vx = addressVariables.get(x);
+        final DerivedVariable vy = addressVariables.get(y);
+        assert vx != null & vy != null;
+        final int bytesX = types.getMemorySizeInBytes(x.getAccessType());
+        final int bytesY = types.getMemorySizeInBytes(y.getAccessType());
+        if (vx.base == vy.base) {
+            fetchAllMixedOffsets(xSet, vx.modifier, bytesX, ySet, vy.modifier, bytesY);
+            return;
+        }
+        final List<IncludeEdge> oy = toIncludeSet(vy.base);
+        for (final IncludeEdge ax : toIncludeSet(vx.base)) {
+            for (final IncludeEdge ay : oy) {
+                if (ax.source == ay.source) {
+                    final Modifier modifierX = compose(ax.modifier, vx.modifier);
+                    final Modifier modifierY = compose(ay.modifier, vy.modifier);
+                    fetchAllMixedOffsets(xSet, modifierX, bytesX, ySet, modifierY, bytesY);
+                }
+            }
+        }
+    }
+
+
+    private List<IncludeEdge> toIncludeSet(Variable address) {
+        final List<IncludeEdge> set = new ArrayList<>(address.includes);
+        set.add(new IncludeEdge(address, TRIVIAL_MODIFIER));
+        return set;
+    }
+
+    private void fetchAllMixedOffsets(Set<Integer> xSet, Modifier xModifier, int xBytes,
+            Set<Integer> ySet, Modifier yModifier, int yBytes) {
+        fetchMixedOffsets(xSet, xModifier, xBytes, yModifier, yBytes);
+        fetchMixedOffsets(ySet, yModifier, yBytes, xModifier, xBytes);
+    }
+
+    private void fetchMixedOffsets(Set<Integer> out, Modifier modifier0, int bytes0, Modifier modifier1, int bytes1) {
+        final Modifier next = compose(modifier1, modifier(bytes1, List.of()));
+        for (int i = 1; i < bytes0; i++) {
+            final Modifier offset = compose(modifier0, modifier(i, List.of()));
+            if (overlaps(offset, modifier1) || overlaps(offset, next)) {
+                out.add(i);
+            }
+        }
+    }
+
+    @Override
     public Graphviz getGraphVisualization() {
         return graphviz;
     }
@@ -190,7 +278,7 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
         // Each memory object gets a variable representing its base address value.
         for (final MemoryObject object : program.getMemory().getObjects()) {
             totalVariables++;
-            objectVariables.put(object, new Variable(object, object.toString()));
+            objectVariables.put(object, new Variable(object, null, object.toString()));
         }
         // Each expression gets a "res" variable representing its result value set.
         // Each register writer gets an "out" variable ("ld" for loads) representing its return value set.
@@ -396,12 +484,14 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
         final Modifier modifier = compose(includeEdge.modifier, address.modifier);
         assert includeEdge.source.object != null;
         // If the only included address refers to the last element, treat it as a direct static offset instead.
-        if (!includeEdge.source.object.hasKnownSize()) {
+        // This only works on concrete objects, where size is reliable.
+        if (!includeEdge.source.object.getClass().equals(MemoryObject.class) || !includeEdge.source.object.hasKnownSize()) {
             return;
         }
-        final int remainingSize = includeEdge.source.object.getKnownSize() - modifier.offset;
+        final int accessSize = types.getMemorySizeInBytes(entry.getKey().getAccessType());
+        final int remainingSize = includeEdge.source.object.getKnownSize() - modifier.offset - (accessSize - 1);
         for (final Integer a : modifier.alignment) {
-            if (a < remainingSize) {
+            if (Math.abs(a) < remainingSize || a < 0 && modifier.offset + a >= 0) {
                 return;
             }
         }
@@ -424,10 +514,13 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
         private final Set<Variable> seeAlso = new LinkedHashSet<>();
         // If nonnull, this variable represents that object's base address.
         private final MemoryObject object;
+        // If nonnull, this variable represents an aggregate of field variables.
+        private final DerivedVariable[] aggregate;
         // For visualization.
         private final String name;
-        private Variable(MemoryObject o, String n) {
+        private Variable(MemoryObject o, DerivedVariable[] a, String n) {
             object = o;
+            aggregate = a;
             name = n;
         }
         @Override public String toString() { return name; }
@@ -476,7 +569,7 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
 
     private Variable newVariable(String name) {
         totalVariables++;
-        return new Variable(null, name);
+        return new Variable(null, null, name);
     }
 
     // Inserts a single inclusion relationship into the graph.
@@ -825,12 +918,6 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
         return right == 0 ? left : compose(left, List.of(right));
     }
 
-    // Adds an optional register to a set of dynamic offsets.
-    // If the register is present, it may contain any value.
-    private static List<Integer> compose(List<Integer> left, Register right) {
-        return right == null ? left : TOP;
-    }
-
     // Applies another offset to an existing labeled edge.
     private static DerivedVariable compose(DerivedVariable other, Modifier modifier) {
         return isTrivial(modifier) ? other : new DerivedVariable(other.base, compose(other.modifier, modifier));
@@ -848,62 +935,14 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
         return isTrivial(modifier) ? other : new StoreEdge(other.value, compose(other.addressModifier, modifier));
     }
 
-    // Multiplies all dynamic offsets with another factor.
-    private static List<Integer> mul(List<Integer> a, int factor) {
-        return factor == 0 ? List.of() : a.stream().map(i -> i * factor).toList();
-    }
-
-    // Describes (constant address or register or zero) + offset + alignment * (variable)
-    private record Result(MemoryObject address, Register register, BigInteger offset, List<Integer> alignment) {
-        private boolean isConstant() {
-            return address == null && register == null && alignment.isEmpty();
-        }
-        @Override
-        public String toString() {
-            return String.format("%s+%s+%sx", address != null ? address : register, offset, alignment);
-        }
-    }
-
     // Interprets an expression.
     // The result refers to an existing variable,
     // if the expression has a static base, or if the expression has a dynamic base with exactly one writer.
     // Otherwise, it refers to a new variable with proper incoming edges.
     private DerivedVariable getResultVariable(Expression expression, RegReader reader) {
-        final var collector = new Collector();
-        final Result result = expression.accept(collector);
-        final DerivedVariable main;
-        if (result != null && (result.address != null || result.register != null)) {
-            final DerivedVariable base = result.address != null ? derive(objectVariables.get(result.address)) :
-                    getPhiNodeVariable(result.register, reader);
-            sort(result.alignment);
-            main = compose(base, modifier(result.offset.intValue(), result.alignment));
-        } else {
-            main = null;
-        }
-        if (main != null &&
-                collector.address.stream().allMatch(a -> a == result.address) &&
-                collector.register.stream().allMatch(r -> r == result.register)) {
-            return main;
-        }
-        if (main == null && collector.address.isEmpty() && collector.register.isEmpty()) {
-            return null;
-        }
-        final Variable variable = newVariable("res" + reader.getGlobalId() + "(" + expression + ")");
-        if (main != null) {
-            addInclude(variable, includeEdge(main));
-        }
-        for (final MemoryObject object : collector.address) {
-            if (result == null || object != result.address) {
-                addInclude(variable, new IncludeEdge(objectVariables.get(object), RELAXED_MODIFIER));
-            }
-        }
-        for (final Register register : collector.register) {
-            if (result == null || register != result.register) {
-                final DerivedVariable registerVariable = getPhiNodeVariable(register, reader);
-                addInclude(variable, new IncludeEdge(registerVariable.base, RELAXED_MODIFIER));
-            }
-        }
-        return derive(variable);
+        final var collector = new Collector(reader);
+        final List<IncludeEdge> result = expression.accept(collector);
+        return getOrNewVariable(result, String.format("res%d(%s)", reader.getGlobalId(), expression));
     }
 
     // Fetches the node for address values that can be read from a register at a specific program point.
@@ -926,114 +965,171 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
         return registerVariables.compute(writers, (k, v) -> derive(result));
     }
 
-    private static final class Collector implements ExpressionVisitor<Result> {
-
-        final Set<MemoryObject> address = new LinkedHashSet<>();
-        final Set<Register> register = new LinkedHashSet<>();
-
-        @Override
-        public Result visitExpression(Expression expr) {
-            register.addAll(expr.getRegs());
+    private DerivedVariable getOrNewVariable(List<IncludeEdge> edges, String name) {
+        if (edges.isEmpty()) {
             return null;
         }
+        if (edges.size() == 1) {
+            return new DerivedVariable(edges.get(0).source, edges.get(0).modifier);
+        }
+        final Variable base = newVariable(name);
+        for (IncludeEdge edge : edges) {
+            addInclude(base, edge);
+        }
+        return derive(base);
+    }
 
-        @Override
-        public Result visitIntBinaryExpression(IntBinaryExpr x) {
-            final Result left = x.getLeft().accept(this);
-            final Result right = x.getRight().accept(this);
-            final IntBinaryOp kind = x.getKind();
-            if (left != null && left.isConstant() && right != null && right.isConstant()) {
-                // TODO: Make sure that the type of normalization does not break this code.
-                //  Maybe always do signed normalization?
-                final BigInteger result = kind.apply(left.offset, right.offset, x.getType().getBitWidth());
-                return new Result(null, null, result, List.of());
-            }
-            return switch (kind) {
-                case MUL -> {
-                    if (left == null && right == null ||
-                            left != null && left.address != null ||
-                            right != null && right.address != null) {
-                        yield null;
-                    }
-                    if (left == null || right == null) {
-                        final Result factor = left == null ? right : left;
-                        if (factor.register != null) {
-                            yield null;
-                        }
-                        final List<Integer> alignment = compose(factor.alignment, factor.offset.intValue());
-                        yield new Result(null, null, BigInteger.ZERO, alignment);
-                    }
-                    final List<Integer> leftAlignment = mul(compose(left.alignment, left.register), right.offset.intValue());
-                    final List<Integer> rightAlignment = mul(compose(right.alignment, right.register), left.offset.intValue());
-                    yield new Result(null, null, left.offset.multiply(right.offset), compose(leftAlignment, rightAlignment));
-                }
-                case ADD, SUB -> {
-                    if (left == null || right == null || left.address != null && right.address != null) {
-                        yield null;
-                    }
-                    final MemoryObject base = left.address != null ? left.address : right.address;
-                    final BigInteger offset = kind.apply(left.offset, right.offset, x.getType().getBitWidth());
-                    if (base != null) {
-                        final List<Integer> leftAlignment = compose(left.alignment, left.register);
-                        final List<Integer> rightAlignment = compose(right.alignment, right.register);
-                        yield new Result(base, null, offset, compose(leftAlignment, rightAlignment));
-                    }
-                    if (left.register != null && right.register != null) {
-                        yield null;
-                    }
-                    final Register register = left.register != null ? left.register : right.register;
-                    final List<Integer> alignment = compose(left.alignment, right.alignment);
-                    yield new Result(null, register, offset, alignment);
-                }
-                default -> null;
-            };
+    private final class Collector implements ExpressionVisitor<List<IncludeEdge>> {
+
+        private final RegReader reader;
+
+        private Collector(RegReader reader) {
+            this.reader = reader;
         }
 
         @Override
-        public Result visitIntUnaryExpression(IntUnaryExpr x) {
-            if (x.getKind() != IntUnaryOp.MINUS) {
-                return null;
+        public List<IncludeEdge> visitExpression(Expression expr) {
+            final List<IncludeEdge> edges = new ArrayList<>();
+            expr.accept(new ExpressionInspector() {
+                @Override
+                public Expression visitRegister(Register register) {
+                    edges.add(new IncludeEdge(getPhiNodeVariable(register, reader).base, RELAXED_MODIFIER));
+                    return register;
+                }
+                @Override
+                public Expression visitMemoryObject(MemoryObject object) {
+                    edges.add(new IncludeEdge(objectVariables.get(object), RELAXED_MODIFIER));
+                    return object;
+                }
+            });
+            return edges;
+        }
+
+        record ExprFlip(Expression x, int factor) {}
+
+        @Override
+        public List<IncludeEdge> visitIntBinaryExpression(IntBinaryExpr x) {
+            BigInteger offset = BigInteger.ZERO;
+            final List<ExprFlip> operands = new ArrayList<>();
+            final Stack<ExprFlip> stack = new Stack<>();
+            if (!matchLinearExpression(new ExprFlip(x, 1), stack)) {
+                return visitExpression(x);
             }
-            final Result result = x.getOperand().accept(this);
-            if (result.address != null || result.register != null) {
-                return null;
+            while (!stack.isEmpty()) {
+                final ExprFlip operand = stack.pop();
+                if (matchLinearExpression(operand, stack)) {
+                    continue;
+                }
+                if (operand.x instanceof IntLiteral literal) {
+                    offset = offset.add(literal.getValue().multiply(BigInteger.valueOf(operand.factor)));
+                } else {
+                    operands.add(operand);
+                }
             }
-            final var alignment = new ArrayList<Integer>();
-            for (final Integer a : result.alignment) {
-                alignment.add(-Math.abs(a));
+            final List<IncludeEdge> result = new ArrayList<>();
+            final int o = offset.intValue();
+            for (int i = 0; i < operands.size(); i++) {
+                final ExprFlip operand = operands.get(i);
+                if (operand.factor != 1) {
+                    result.addAll(visitExpression(operand.x));
+                    continue;
+                }
+                List<Integer> alignment = List.of();
+                for (int j = 0; j < operands.size(); j++) {
+                    alignment = j == i ? alignment : compose(alignment, operands.get(j).factor);
+                }
+                for (IncludeEdge subResult : operand.x.accept(this)) {
+                    addInto(result, compose(subResult, modifier(o, alignment)), false);
+                }
             }
-            return new Result(null, null, result.offset.negate(), alignment);
+            return result;
+        }
+
+        private boolean matchLinearExpression(ExprFlip operand, Stack<ExprFlip> stack) {
+            final Expression left = operand.x instanceof IntBinaryExpr x ? x.getLeft() : null;
+            final Expression right = operand.x instanceof IntBinaryExpr x ? x.getRight() : null;
+            final boolean add = operand.x.getKind().equals(IntBinaryOp.ADD);
+            final boolean sub = operand.x.getKind().equals(IntBinaryOp.SUB);
+            final boolean mul = operand.x.getKind().equals(IntBinaryOp.MUL);
+            if (add || sub) {
+                stack.push(new ExprFlip(right, operand.factor * (add ? 1 : -1)));
+                stack.push(new ExprFlip(left, operand.factor));
+                return true;
+            } else if (mul) {
+                final IntLiteral leftLiteral = left instanceof IntLiteral l ? l : null;
+                final IntLiteral rightLiteral = right instanceof IntLiteral l ? l : null;
+                if (leftLiteral != null || rightLiteral != null) {
+                    final int factor = (leftLiteral != null ? leftLiteral : rightLiteral).getValueAsInt();
+                    stack.push(new ExprFlip(leftLiteral != null ? right : left, operand.factor * factor));
+                    return true;
+                }
+            }
+            return false;
         }
 
         @Override
-        public Result visitIntSizeCastExpression(IntSizeCast expr) {
+        public List<IncludeEdge> visitIntSizeCastExpression(IntSizeCast expr) {
             // We assume type casts do not affect the value of pointers.
-            final Result result = expr.getOperand().accept(this);
-            return expr.isExtension() && !expr.preservesSign() ? result : null;
+            return expr.isExtension() && !expr.preservesSign() ? expr.getOperand().accept(this) : visitExpression(expr);
         }
 
         @Override
-        public Result visitITEExpression(ITEExpr x) {
-            x.getTrueCase().accept(this);
-            x.getFalseCase().accept(this);
-            return null;
+        public List<IncludeEdge> visitITEExpression(ITEExpr x) {
+            final List<IncludeEdge> result = new ArrayList<>(x.getTrueCase().accept(this));
+            for (IncludeEdge edge : x.getFalseCase().accept(this)) {
+                addInto(result, edge, false);
+            }
+            return result;
         }
 
         @Override
-        public Result visitMemoryObject(MemoryObject a) {
-            address.add(a);
-            return new Result(a, null, BigInteger.ZERO, List.of());
+        public List<IncludeEdge> visitMemoryObject(MemoryObject a) {
+            return List.of(new IncludeEdge(objectVariables.get(a), TRIVIAL_MODIFIER));
         }
 
         @Override
-        public Result visitRegister(Register r) {
-            register.add(r);
-            return new Result(null, r, BigInteger.ZERO, List.of());
+        public List<IncludeEdge> visitRegister(Register r) {
+            DerivedVariable phiVariable = getPhiNodeVariable(r, reader);
+            return List.of(includeEdge(phiVariable));
         }
 
         @Override
-        public Result visitIntLiteral(IntLiteral v) {
-            return new Result(null, null, v.getValue(), List.of());
+        public List<IncludeEdge> visitExtractExpression(ExtractExpr extract) {
+            final List<IncludeEdge> result = new ArrayList<>();
+            for (IncludeEdge operand : extract.getOperand().accept(this)) {
+                DerivedVariable field = new DerivedVariable(operand.source, operand.modifier);
+                for (int index : extract.getIndices()) {
+                    final DerivedVariable[] aggregate = operand.source.aggregate;
+                    final DerivedVariable f = aggregate == null || aggregate.length <= index ? null : aggregate[index];
+                    if (f == null) {
+                        field = compose(field, RELAXED_MODIFIER);
+                        break;
+                    }
+                    field = compose(f, field.modifier);
+                }
+                result.add(includeEdge(field));
+            }
+            return result;
+        }
+
+        @Override
+        public List<IncludeEdge> visitConstructExpression(ConstructExpr construct) {
+            final List<IncludeEdge> result = new ArrayList<>();
+            final var operands = new DerivedVariable[construct.getOperands().size()];
+            final String name = construct.toString();
+            for (int i = 0; i < construct.getOperands().size(); i++) {
+                final String fieldName = String.format("%s[%d]", name, i);
+                operands[i] = getOrNewVariable(construct.getOperands().get(i).accept(this), fieldName);
+            }
+            final Variable proxy = new Variable(null, operands, name);
+            totalVariables++;
+            for (DerivedVariable operand : operands) {
+                if (operand != null) {
+                    addInclude(proxy, includeEdge(operand));
+                }
+            }
+            result.add(new IncludeEdge(proxy, TRIVIAL_MODIFIER));
+            return result;
         }
     }
 

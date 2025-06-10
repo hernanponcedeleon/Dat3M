@@ -1,0 +1,18 @@
+AArch64 MP+dmbsy+ldp-addr+BIS3
+
+{
+  uint64_t x=0;
+  0:X5=x; 1:X5=x;
+  uint64_t y=0;
+  0:X6=y; 1:X6=y;
+  uint32_t 0:X1 = 1;
+  uint64_t 0:X2 = 0x0000000200000001;
+}
+
+P0                                         | P1                                         ;
+STR W1,[X6] (* W y=1 *)                    | LDP W1,W2,[X5]  (* R x  /4 = 0x00000000 |
+                                                                  x+4/4 = 0x00000002 *) ;
+DMB SY                                     | EOR W3,W1,W1 (* W1 addr *)                 ;
+STR X2,[X5] (* W x/8=0x0000000200000001 *) | LDR W4,[X6,W3,SXTW] (* R y=0 *)            ;
+
+exists (1:X1=0x00000000 /\ 1:X2=0x00000002 /\ 1:X4=0)

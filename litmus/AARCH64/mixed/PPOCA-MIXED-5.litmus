@@ -1,0 +1,23 @@
+AArch64 PPOCA-MIXED-5
+"DMB.SYdWWh0h0 Rfeh0h0 DpCtrldWh0b0 Rfib0h0 DpAddrdRh0h0 Freh0h0"
+Generator=diyone7 (version 7.54+02(dev))
+Prefetch=0:x=F,0:y=W,1:y=F,1:x=T
+Com=Rf Fr
+Orig=DMB.SYdWWh0h0 Rfeh0h0 DpCtrldWh0b0 Rfib0h0 DpAddrdRh0h0 Freh0h0
+{
+uint16_t z; uint16_t y; uint16_t x; uint16_t 1:X6; uint16_t 1:X4; uint16_t 1:X0;
+
+0:X1=x; 0:X3=y;
+1:X1=y; 1:X3=z; 1:X7=x;
+}
+ P0           | P1              ;
+ MOV W0,#257  | LDRH W0,[X1]    ;
+ STRH W0,[X1] | CBNZ W0,LC00    ;
+ DMB SY       | LC00:           ;
+ MOV W2,#257  | MOV W2,#1       ;
+ STRH W2,[X3] | STRB W2,[X3]    ;
+              | LDRH W4,[X3]    ;
+              | EOR W5,W4,W4    ;
+              | LDRH W6,[X7,X5] ;
+exists
+(1:X0=0x101 /\ 1:X4=0x1 /\ 1:X6=0x0)

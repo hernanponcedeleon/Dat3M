@@ -78,10 +78,12 @@ public interface Constraint {
         default T visitProgramOrder(ProgramOrder po) { return visitDefinition(po); }
         default T visitExternal(External ext) { return visitDefinition(ext); }
         default T visitInternal(Internal internal) { return visitDefinition(internal); }
+        default T visitSameInstruction(SameInstruction si) { return visitDefinition(si); }
         default T visitInternalDataDependency(DirectDataDependency idd) { return visitDefinition(idd); }
         default T visitControlDependency(DirectControlDependency ctrlDirect) { return visitDefinition(ctrlDirect); }
         default T visitAddressDependency(DirectAddressDependency addrDirect) { return visitDefinition(addrDirect); }
-        default T visitReadModifyWrites(ReadModifyWrites rmw) { return visitDefinition(rmw); }
+        default T visitAMOPairs(AMOPairs amo) { return visitDefinition(amo); }
+        default T visitLXSXPairs(LXSXPairs lxsx) { return visitDefinition(lxsx); }
         default T visitCoherence(Coherence co) { return visitDefinition(co); }
         default T visitSameLocation(SameLocation loc) { return visitDefinition(loc); }
         default T visitReadFrom(ReadFrom rf) { return visitDefinition(rf); }

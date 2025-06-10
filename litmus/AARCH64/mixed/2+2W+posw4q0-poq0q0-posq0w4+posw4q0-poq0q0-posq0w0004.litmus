@@ -1,0 +1,22 @@
+AArch64 2+2W+posw4q0-poq0q0-posq0w4+posw4q0-poq0q0-posq0w0004
+"PosWWw4q0 PodWRq0q0 PosRWq0w4 Wsew4w4 PosWRw4q0 PodRRq0q0 PosRWq0w0 Wsew0w4"
+Cycle=Wsew0w4 PosWWw4q0 PodWRq0q0 PosRWq0w4 Wsew4w4 PosWRw4q0 PodRRq0q0 PosRWq0w0
+Relax=[PosWWw4q0,PodWRq0q0,PosRWq0w4] [PosWRw4q0,PodRRq0q0,PosRWq0w0]
+Safe=Wsew0w4 Wsew4w4
+Prefetch=0:x=F,0:y=W,1:y=F,1:x=W
+Com=Ws Ws
+Orig=PosWWw4q0 PodWRq0q0 PosRWq0w4 Wsew4w4 PosWRw4q0 PodRRq0q0 PosRWq0w0 Wsew0w4
+{
+uint64_t y; uint64_t x; uint64_t 1:X6; uint64_t 1:X3; uint64_t 1:X2; uint64_t 0:X6; uint64_t 0:X3;
+
+0:X0=0x2020202; 0:X1=x; 0:X2=0x303030303030303; 0:X4=y; 0:X5=0x1010101;
+1:X0=0x2020202; 1:X1=y; 1:X4=x; 1:X5=0x1010101;
+}
+ P0             | P1             ;
+ STR W0,[X1,#4] | STR W0,[X1,#4] ;
+ STR X2,[X1]    | LDR X2,[X1]    ;
+ LDR X3,[X4]    | LDR X3,[X4]    ;
+ STR W5,[X4,#4] | STR W5,[X4]    ;
+ LDR X6,[X4]    | LDR X6,[X4]    ;
+exists
+(x=0x303030303030303 /\ y=0x202020200000000 /\ 0:X6=0x2020202 /\ 0:X3=0x0 /\ 1:X6=0x2020202 /\ 1:X2=0x202020200000000 /\ 1:X3=0x0)

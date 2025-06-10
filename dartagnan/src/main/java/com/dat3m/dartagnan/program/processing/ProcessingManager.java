@@ -46,6 +46,14 @@ public class ProcessingManager implements ProgramProcessor {
             secure = true)
     private boolean dynamicSpinLoopDetection = true;
 
+    @Option(name = MIXED_SIZE,
+            description = "If 'true', checks for mixed-size and misaligned memory accesses." +
+                    " This also enables a subsequent program transformation to handle these events." +
+                    " Otherwise, assumes that no such accesses happen in any execution." +
+                    " Defaults to 'false'.",
+            secure = true)
+    private boolean detectMixedSizeAccesses = false;
+
     // =================== Debugging options ===================
     @Option(name = PRINT_PROGRAM_BEFORE_PROCESSING,
             description = "Prints the program before any processing.",
@@ -75,10 +83,18 @@ public class ProcessingManager implements ProgramProcessor {
 // ======================================================================
     private ProcessingManager(Configuration config) throws InvalidConfigurationException {
         config.inject(this);
-        final Intrinsics intrinsics = Intrinsics.fromConfig(config);
+        final Intrinsics intrinsics = Intrinsics.fromConfig(config, detectMixedSizeAccesses);
         final FunctionProcessor sccp = constantPropagation ? SparseConditionalConstantPropagation.fromConfig(config) : null;
         final FunctionProcessor dce = performDce ? DeadAssignmentElimination.fromConfig(config) : null;
         final FunctionProcessor removeDeadJumps = RemoveDeadCondJumps.fromConfig(config);
+        final ProgramProcessor simplifyBoundedProgram = ProgramProcessor.fromFunctionProcessor(
+                FunctionProcessor.chain(
+                        performAssignmentInlining ? AssignmentInlining.newInstance() : null,
+                        sccp,
+                        dce,
+                        removeDeadJumps
+                ), Target.THREADS, true
+        );
         programProcessors.addAll(Arrays.asList(
                 printBeforeProcessing ? DebugPrint.withHeader("Before processing", Printer.Mode.ALL) : null,
                 intrinsics.markIntrinsicsPass(),
@@ -124,16 +140,11 @@ public class ProcessingManager implements ProgramProcessor {
                                 MemToReg.fromConfig(config)
                         ), Target.THREADS, true
                 ),
-                ProgramProcessor.fromFunctionProcessor(
-                        FunctionProcessor.chain(
-                                performAssignmentInlining ? AssignmentInlining.newInstance() : null,
-                                sccp,
-                                dce,
-                                removeDeadJumps
-                        ), Target.THREADS, true
-                ),
+                simplifyBoundedProgram,
                 RemoveUnusedMemory.newInstance(),
                 MemoryAllocation.fromConfig(config),
+                detectMixedSizeAccesses ? Tearing.fromConfig(config) : null,
+                detectMixedSizeAccesses ? simplifyBoundedProgram : null,
                 NonterminationDetection.fromConfig(config),
                 // --- Statistics + verification ---
                 IdReassignment.newInstance(), // Normalize used Ids (remove any gaps)
