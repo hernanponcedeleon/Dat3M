@@ -1,4 +1,4 @@
-VULKAN asmo
+VULKAN asmo-plain-inscope
 "Test if P2 and P3 can read updates to x in conflicting order"
 "https://github.com/KhronosGroup/Vulkan-MemoryModel/blob/master/alloy/tests/asmo.test"
 {
