@@ -232,6 +232,7 @@ public class Intrinsics {
         STD_IO(List.of("puts", "putchar", "printf", "fflush"), false, false, true, true, Intrinsics::inlineAsZero),
         STD_IO_NONDET(List.of("__isoc99_sscanf", "fprintf"), false, false, true, true, Intrinsics::inlineCallAsNonDet),
         STD_SLEEP("sleep", false, false, true, true, Intrinsics::inlineAsZero),
+        STD_FFS(List.of("ffs", "ffsl", "ffsll"), false, false, true, true, Intrinsics::inlineFfs),
         // --------------------------- UBSAN ---------------------------
         UBSAN_OVERFLOW(List.of("__ubsan_handle_add_overflow", "__ubsan_handle_sub_overflow", 
                 "__ubsan_handle_divrem_overflow", "__ubsan_handle_mul_overflow", "__ubsan_handle_negate_overflow"),
@@ -1000,14 +1001,11 @@ public class Intrinsics {
     }
 
     private List<Event> inlineAssert(FunctionCall call, AssertionType skip, String errorMsg) {
-        if(notToInline.contains(skip)) {
-            return List.of();
-        }
         final Expression condition = expressions.makeFalse();
-        final Event assertion = EventFactory.newAssert(condition, errorMsg);
+        final Event assertion = notToInline.contains(skip) ? null : EventFactory.newAssert(condition, errorMsg);
         final Event abort = EventFactory.newAbortIf(expressions.makeTrue());
         abort.addTags(Tag.EXCEPTIONAL_TERMINATION);
-        return List.of(assertion, abort);
+        return eventSequence(assertion, abort);
     }
 
     private List<Event> inlineVerifierAssert(FunctionCall call, AssertionType skip, String errorMsg) {
@@ -1735,6 +1733,26 @@ public class Intrinsics {
         return List.of(
             EventFactory.newLocal(resultReg, exp)
         );
+    }
+
+    private List<Event> inlineFfs(FunctionCall call) {
+        //see https://linux.die.net/man/3/ffs
+        final String name = call.getCalledFunction().getName();
+        checkArgument(call.getArguments().size() == 1,
+                "Expected 1 parameter for \"%s\", got %s.", name, call.getArguments().size());
+        final Expression input = call.getArguments().get(0);
+        final Register resultReg = getResultRegister(call);
+        final Type outputType = resultReg.getType();
+        checkArgument(outputType instanceof IntegerType,
+                "Non-integer %s type for \"%s\".", name, outputType);
+        final IntegerType inputType  = (IntegerType)input.getType();
+        final Expression cttz = expressions.makeCTTZ(input);
+        final Expression widthExpr = expressions.makeValue(BigInteger.valueOf(inputType.getBitWidth()), inputType);
+        final Expression count = expressions.makeAdd(cttz, expressions.makeOne(inputType));
+        final Expression ite = expressions.makeITE(expressions.makeEQ(cttz, widthExpr), expressions.makeZero(inputType), count);
+        final Expression cast = expressions.makeCast(ite, outputType, false);
+        final Event assignment = EventFactory.newLocal(resultReg, cast);
+        return List.of(assignment);
     }
 
     private Event assignSuccess(Register errorRegister) {
