@@ -7,12 +7,12 @@
 int main()
 {
     int a[2];
-    int *i;
+    int *i, *j;
     if (__VERIFIER_nondet_int())
-        i = &a[0];
+        i = &a[0], j = &a[0];
     else
-        i = &a[1];
+        i = &a[1], j = &a[1];
     *i = 1;
-    assert(*i == 1);
+    assert(*j == 1);
     return 0;
 }
