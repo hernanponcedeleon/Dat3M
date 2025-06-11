@@ -3,6 +3,8 @@ package com.dat3m.dartagnan.encoding;
 import com.dat3m.dartagnan.configuration.Property;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.Type;
+import com.dat3m.dartagnan.expression.type.AggregateType;
+import com.dat3m.dartagnan.expression.type.ArrayType;
 import com.dat3m.dartagnan.expression.type.BooleanType;
 import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.program.Thread;
@@ -14,12 +16,15 @@ import com.dat3m.dartagnan.program.event.core.CondJump;
 import com.dat3m.dartagnan.program.event.core.MemoryCoreEvent;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.dat3m.dartagnan.smt.ModelExt;
+import com.dat3m.dartagnan.smt.TupleValue;
 import com.dat3m.dartagnan.wmm.Relation;
 import com.dat3m.dartagnan.wmm.axiom.Axiom;
 import com.google.common.base.Preconditions;
 import org.sosy_lab.java_smt.api.Formula;
 
 import java.math.BigInteger;
+import java.util.List;
+import java.util.stream.IntStream;
 
 import static com.dat3m.dartagnan.configuration.Property.CAT_SPEC;
 import static java.lang.Boolean.FALSE;
@@ -43,7 +48,11 @@ public class IREvaluator {
     // General
 
     public <TType extends Type, TFormula extends Formula> TypedValue<TType, ?> evaluate(TypedFormula<TType, TFormula> typedFormula) {
-        return new TypedValue<>(typedFormula.getType(), smtModel.evaluate(typedFormula.formula()));
+        Object smtValue = smtModel.evaluate(typedFormula.formula());
+        if (smtValue == null) {
+            smtValue = getDummyModelOfType(typedFormula.getType());
+        }
+        return new TypedValue<>(typedFormula.getType(), smtValue);
     }
 
     @SuppressWarnings("unchecked")
@@ -139,4 +148,28 @@ public class IREvaluator {
         return isExecuted(event) && FALSE.equals(evaluateBooleanAt(event.getExpression(), event).value());
     }
 
+
+    // ====================================================================================
+    // Internal
+
+    public Object getDummyModelOfType(Type type) {
+        if (type instanceof BooleanType) {
+            return Boolean.FALSE;
+        } else if (type instanceof IntegerType) {
+            return BigInteger.ZERO;
+        } else if (type instanceof ArrayType arrayType) {
+            Preconditions.checkArgument(arrayType.hasKnownNumElements());
+            final Object innerDummy = getDummyModelOfType(arrayType.getElementType());
+            final List<Object> dummies = IntStream.range(0, arrayType.getNumElements()).mapToObj(i -> innerDummy).toList();
+            return new TupleValue(dummies);
+        } else if (type instanceof AggregateType aggType) {
+            return new TupleValue(
+                    aggType.getFields().stream()
+                    .map(field -> getDummyModelOfType(field.type()))
+                    .toList()
+            );
+        } else {
+            throw new UnsupportedOperationException("Dummy model for type " + type + " is not implemented");
+        }
+    }
 }

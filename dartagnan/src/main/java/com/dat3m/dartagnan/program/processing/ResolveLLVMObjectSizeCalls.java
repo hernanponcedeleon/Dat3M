@@ -4,6 +4,7 @@ import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.integers.IntLiteral;
 import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.program.Function;
+import com.dat3m.dartagnan.program.IRHelper;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.functions.ValueFunctionCall;
@@ -55,7 +56,8 @@ public class ResolveLLVMObjectSizeCalls implements FunctionProcessor {
         final Event constAssignment = EventFactory.newLocal(
                 call.getResultRegister(), exprs.makeValue(value, (IntegerType) call.getResultRegister().getType())
         );
-        constAssignment.copyAllMetadataFrom(call);
-        call.replaceBy(constAssignment);
+        constAssignment.setLocalId(call.getLocalId());
+        constAssignment.setGlobalId(call.getGlobalId());
+        IRHelper.replaceWithMetadata(call, constAssignment);
     }
 }
