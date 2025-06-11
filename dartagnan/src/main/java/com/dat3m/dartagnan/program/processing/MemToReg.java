@@ -307,7 +307,7 @@ public class MemToReg implements FunctionProcessor {
             if (address == null || !isDeletable) {
                 publishRegisters(load.getAddress().getRegs());
             }
-            final AddressOffset value = address == null ? null : stateIfUnique(address);
+            final AddressOffsets value = address == null ? null : state.get(address);
             update(accesses, load, address);
             update(state, register, value);
             return null;
@@ -323,7 +323,8 @@ public class MemToReg implements FunctionProcessor {
             final AddressOffset address = toAddressOffset(addressExpression);
             final RegisterOffset valueExpression = matchGEP(store.getMemValue());
             assert valueExpression == null || valueExpression.register != null;
-            final AddressOffset value = valueExpression == null ? null : stateIfUnique(valueExpression.register);
+            final AddressOffset valueBase = valueExpression == null ? null : stateIfUnique(valueExpression.register);
+            final AddressOffset value = valueBase == null ? null : valueBase.increase(valueExpression.offset);
             final boolean isDeletable = store.getUsers().isEmpty();
             // On complex address expression, give up on any address that could contribute here.
             if (address == null || !isDeletable) {
