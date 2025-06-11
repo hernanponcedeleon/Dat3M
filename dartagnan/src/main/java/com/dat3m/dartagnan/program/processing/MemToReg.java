@@ -222,9 +222,6 @@ public class MemToReg implements FunctionProcessor {
     // Invariant: hint != null && !hint.isEmpty()
     private record AddressOffsetSet(Set<RegWriter> hint) implements AddressOffsets {}
 
-    // Invariant: register != null
-    private record RegisterOffset(Register register, long offset) {}
-
     // Checks if mixed-size accesses to a promotable object were collected.
     private static boolean hasMixedAccesses(Set<Field> registerTypes) {
         final List<Field> registerTypeList = List.copyOf(registerTypes);
@@ -280,10 +277,7 @@ public class MemToReg implements FunctionProcessor {
                 return null;
             }
             final Register register = assignment.getResultRegister();
-            final RegisterOffset expression = matchGEP(assignment.getExpr());
-            assert expression == null || expression.register != null;
-            final AddressOffset valueBase = expression == null ? null : stateIfUnique(expression.register);
-            final AddressOffset value = valueBase == null ? null : valueBase.increase(expression.offset);
+            final AddressOffset value = computeAddressOffsetFromState(assignment.getExpr());
             // If too complex, treat like a global address.
             if (value == null) {
                 publishRegisters(assignment.getExpr().getRegs());
@@ -300,8 +294,7 @@ public class MemToReg implements FunctionProcessor {
             }
             // Each path must update state and accesses.
             final Register register = load.getResultRegister();
-            final RegisterOffset addressExpression = matchGEP(load.getAddress());
-            final AddressOffset address = toAddressOffset(addressExpression);
+            final AddressOffset address = computeAddressOffsetFromState(load.getAddress());
             final boolean isDeletable = load.getUsers().isEmpty();
             // If too complex, treat like global address.
             if (address == null || !isDeletable) {
@@ -319,19 +312,15 @@ public class MemToReg implements FunctionProcessor {
                 return null;
             }
             // Each path must update state and accesses.
-            final RegisterOffset addressExpression = matchGEP(store.getAddress());
-            final AddressOffset address = toAddressOffset(addressExpression);
-            final RegisterOffset valueExpression = matchGEP(store.getMemValue());
-            assert valueExpression == null || valueExpression.register != null;
-            final AddressOffset valueBase = valueExpression == null ? null : stateIfUnique(valueExpression.register);
-            final AddressOffset value = valueBase == null ? null : valueBase.increase(valueExpression.offset);
+            final AddressOffset address = computeAddressOffsetFromState(store.getAddress());
+            final AddressOffset value = computeAddressOffsetFromState(store.getMemValue());
             final boolean isDeletable = store.getUsers().isEmpty();
             // On complex address expression, give up on any address that could contribute here.
             if (address == null || !isDeletable) {
                 publishRegisters(store.getAddress().getRegs());
             }
             // On ambiguous address, give up on any address that could be stored here.
-            if (address == null || valueExpression == null || !isDeletable) {
+            if (address == null || value == null || !isDeletable) {
                 publishRegisters(store.getMemValue().getRegs());
             }
             update(accesses, store, address);
@@ -393,10 +382,6 @@ public class MemToReg implements FunctionProcessor {
             return null;
         }
 
-        private AddressOffset stateIfUnique(Object key) {
-            return state.get(key) instanceof AddressOffset o ? o : null;
-        }
-
         private void publishRegisters(Set<Register> registers) {
             final var queue = new ArrayDeque<RegWriter>();
             for (final Register register : registers) {
@@ -417,7 +402,10 @@ public class MemToReg implements FunctionProcessor {
             }
         }
 
-        private AddressOffset toAddressOffset(RegisterOffset gep) {
+        private record RegisterOffset(Register register, long offset) {}
+
+        private AddressOffset computeAddressOffsetFromState(Expression expression) {
+            final RegisterOffset gep = matchGEP(expression);
             assert gep == null || gep.register != null;
             final AddressOffsets element = gep == null ? null : state.get(gep.register);
             return element instanceof AddressOffset base ? base.increase(gep.offset) : null;
