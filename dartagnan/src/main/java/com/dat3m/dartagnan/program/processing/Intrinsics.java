@@ -19,7 +19,6 @@ import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.event.functions.FunctionCall;
 import com.dat3m.dartagnan.program.event.functions.ValueFunctionCall;
-import com.dat3m.dartagnan.program.event.lang.dat3m.DynamicThreadCreate;
 import com.dat3m.dartagnan.program.event.lang.svcomp.BeginAtomic;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.google.common.collect.ImmutableList;
@@ -417,18 +416,29 @@ public class Intrinsics {
         final List<Expression> arguments = call.getArguments();
         assert arguments.size() == 4;
         final Expression pidResultAddress = arguments.get(0);
-        //final Expression attributes = arguments.get(1);
+        final Expression attributes = arguments.get(1);
         final Expression targetFunction = arguments.get(2);
         final Expression argument = arguments.get(3);
 
+        final Register attributesRegister = call.getFunction().newUniqueRegister("__pthread_create_attr", getPthreadAttrType());
         final Register resultRegister = getResultRegister(call);
         assert resultRegister.getType() instanceof IntegerType;
 
         final Register tidReg = call.getFunction().newUniqueRegister("__tid", types.getArchType());
-        final DynamicThreadCreate createEvent = newDynamicThreadCreate(tidReg, PTHREAD_THREAD_TYPE, targetFunction, List.of(argument));
+        final Event createEvent = newDynamicThreadCreate(tidReg, PTHREAD_THREAD_TYPE, targetFunction, List.of(argument));
+        final Label skipAttrLabel = newLabel("__pthread_create_skip_attr");
+        final Label skipDetachLabel = newLabel("__pthread_create_skip_detach");
 
         return eventSequence(
                 createEvent,
+                newJump(expressions.makeEQ(attributes, expressions.makeGeneralZero(attributes.getType())), skipAttrLabel),
+                newLoad(attributesRegister, attributes),
+                // if detach
+                newJumpUnless(testPthreadCreateDetached(attributesRegister), skipDetachLabel),
+                newDynamicThreadDetach(resultRegister, tidReg), // detach should always succeed
+                skipDetachLabel,
+                // returning
+                skipAttrLabel,
                 newStore(pidResultAddress, tidReg),
                 // TODO: Allow to return failure value (!= 0)
                 newLocal(resultRegister, expressions.makeZero((IntegerType) resultRegister.getType()))
@@ -525,23 +535,80 @@ public class Intrinsics {
         };
         final Register errorRegister = getResultRegisterAndCheckArguments(expectedArguments, call);
         final Expression attrAddress = call.getArguments().get(0);
+        final Expression value = expectedArguments < 2 ? null : call.getArguments().get(1);
         final boolean initial = suffix.equals("init");
         if (initial || suffix.equals("destroy")) {
-            final Expression flag = expressions.makeValue(initial);
+            final Expression flag = expressions.makeValue(initial ? 1 : 0, getPthreadAttrType());
             return List.of(
                     newStore(attrAddress, flag),
                     assignSuccess(errorRegister)
             );
         }
         final boolean getter = suffix.startsWith("get");
-        checkArgument(getter || suffix.startsWith("set"), "Unrecognized intrinsics \"%s\"", call);
-        checkArgument(P_THREAD_ATTR.contains(suffix.substring(3)));
-        //final Register oldValue = call.getFunction().newRegister(types.getBooleanType());
-        //final Expression value = call.getArguments().get(1);
-        return List.of(
-                //EventFactory.newLoad(oldValue, attrAddress),
-                assignSuccess(errorRegister)
+        checkArgument((getter || suffix.startsWith("set")) && P_THREAD_ATTR.contains(suffix.substring(3)),
+                "Unrecognized intrinsics \"%s\"", call);
+        final Register oldValue = call.getFunction().newRegister(getPthreadAttrType());
+        final Label end = EventFactory.newLabel("__pthread_return");
+        final Label returnEINVAL = EventFactory.newLabel("__pthread_return_EINVAL");
+        final PthreadAttrImplementation impl = switch (suffix.substring(3)) {
+            case "detachstate" -> inlinePthreadAttrDetachState(oldValue, getter ? null : value, returnEINVAL, end);
+            default -> null;
+        };
+        final Expression EINVAL = expressions.makeValue(22, (IntegerType) errorRegister.getType());//TODO this may vary
+        final Expression zero = expressions.makeZero(types.getIntegerType(1));
+        final Expression extractInitialized = expressions.makeIntExtract(oldValue, 0, 0);
+        return eventSequence(
+                EventFactory.newLoad(oldValue, attrAddress),
+                EventFactory.newJump(expressions.makeEQ(extractInitialized, zero), returnEINVAL),
+                impl == null ? null : impl.errorChecks,
+                impl == null ? null : EventFactory.newStore(getter ? value : attrAddress, impl.out),
+                assignSuccess(errorRegister),
+                newGoto(end),
+                returnEINVAL,
+                EventFactory.newLocal(errorRegister, EINVAL),
+                end
         );
+    }
+
+    private IntegerType getPthreadAttrType() {
+        return types.getIntegerType(2);
+    }
+
+    private record PthreadAttrImplementation(Expression out, List<Event> errorChecks) {}
+
+    private PthreadAttrImplementation inlinePthreadAttrDetachState(Expression oldValue, Expression detachstate, Label returnEINVAL, Label end) {
+        final int flagIndex = 1;
+        final IntegerType attrType = (IntegerType) oldValue.getType();
+        final IntegerType valueType = types.getIntegerType(32);
+        final Expression createDetached = expressions.makeValue(2, valueType);//TODO may vary by platform
+        final Expression createJoinable = expressions.makeValue(1, valueType);//TODO may vary by platform
+        final List<Event> errorChecks = new ArrayList<>();
+        final Expression newValue;
+        if (detachstate == null) {
+            final Expression zero = expressions.makeZero(types.getIntegerType(1));
+            final Expression extractValue = expressions.makeIntExtract(oldValue, flagIndex, flagIndex);
+            final Expression testValue = expressions.makeNEQ(extractValue, zero);
+            newValue = expressions.makeITE(testValue, createDetached, createJoinable);
+        } else {
+            final long invertedMaskValue = (1L << attrType.getBitWidth()) - (1 << flagIndex) - 1;
+            final Expression mask = expressions.makeValue(1 << flagIndex, attrType);
+            final Expression invertedMask = expressions.makeValue(invertedMaskValue, attrType);
+            final Expression setFlag = expressions.makeIntOr(oldValue, mask);
+            final Expression resetFlag = expressions.makeIntAnd(oldValue, invertedMask);
+            final Expression doDetach = expressions.makeEQ(detachstate, createDetached);
+            final Expression doNotDetach = expressions.makeEQ(detachstate, createJoinable);
+            final Expression validValue = expressions.makeOr(doDetach, doNotDetach);
+            errorChecks.add(EventFactory.newJumpUnless(validValue, returnEINVAL));
+            newValue = expressions.makeITE(doDetach, setFlag, resetFlag);
+        }
+        return new PthreadAttrImplementation(newValue, errorChecks);
+    }
+
+    private Expression testPthreadCreateDetached(Expression attr) {
+        final int flagIndex = 1;
+        final Expression zero = expressions.makeZero(types.getIntegerType(1));
+        final Expression extractDetach = expressions.makeIntExtract(attr, flagIndex, flagIndex);
+        return expressions.makeNEQ(extractDetach, zero);
     }
 
     private List<Event> inlinePthreadCondInit(FunctionCall call) {
