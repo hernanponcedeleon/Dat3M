@@ -134,3 +134,9 @@ litmus/C11/manual/imm-R2-alt.litmus,1
 litmus/C11/manual/mp_relaxed.litmus,1
 litmus/C11/manual/IRIW-sc-sc-acq-sc-acq-sc.litmus,0
 litmus/C11/manual/imm-E3.7.litmus,0
+litmus/C11/manual/asmo-atom-inscope.litmus,0
+litmus/C11/manual/asmo-mixed-atomicity-read.litmus,0
+litmus/C11/manual/asmo-mixed-atomicity-read2.litmus,0
+litmus/C11/manual/asmo-mixed-atomicity-read3.litmus,0
+litmus/C11/manual/asmo-mixed-atomicity-write.litmus,0
+litmus/C11/manual/asmo-plain1.litmus,0

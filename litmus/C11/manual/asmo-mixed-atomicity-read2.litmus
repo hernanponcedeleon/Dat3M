@@ -1,0 +1,24 @@
+C ASMO
+{
+[x] = 0;
+}
+
+P0 (atomic_int* x) {
+  atomic_store_explicit(x, 1, memory_order_relaxed);
+}
+
+P1 (atomic_int* x) {
+  atomic_store_explicit(x, 2, memory_order_relaxed);
+}
+
+P2 (atomic_int* x) {
+  int r0 = *x;
+  int r1 = atomic_load_explicit(x, memory_order_relaxed);
+}
+
+P3 (atomic_int* x) {
+  int r2 = atomic_load_explicit(x, memory_order_relaxed);
+  int r3 = atomic_load_explicit(x, memory_order_relaxed);
+}
+
+exists (2:r0=1 /\ 2:r1=2 /\ 3:r2=2 /\ 3:r3=1)

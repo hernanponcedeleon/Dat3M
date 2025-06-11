@@ -1,0 +1,24 @@
+OPENCL ASMO
+{
+[x] = 0;
+}
+
+P0@wg 0, dev 0 (global atomic_int* x) {
+  *x = 1;
+}
+
+P1@wg 0, dev 0 (global atomic_int* x) {
+  *x = 2;
+}
+
+P2@wg 0, dev 0 (global atomic_int* x) {
+  int r0 = *x;
+  int r1 = *x;
+}
+
+P3@wg 0, dev 0 (global atomic_int* x) {
+  int r2 = *x;
+  int r3 = *x;
+}
+
+exists (2:r0=1 /\ 2:r1=2 /\ 3:r2=2 /\ 3:r3=1)
