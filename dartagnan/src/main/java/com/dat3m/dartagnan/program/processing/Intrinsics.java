@@ -118,6 +118,7 @@ public class Intrinsics {
         P_THREAD_CREATE("pthread_create", true, false, true, true, Intrinsics::inlinePthreadCreate),
         P_THREAD_EXIT("pthread_exit", false, false, true, true, Intrinsics::inlinePthreadExit),
         P_THREAD_JOIN(List.of("pthread_join", "_pthread_join", "__pthread_join"), true, true, false, true, Intrinsics::inlinePthreadJoin),
+        P_THREAD_DETACH("pthread_detach", true, true, true, true, Intrinsics::inlinePthreadDetach),
         P_THREAD_BARRIER_WAIT("pthread_barrier_wait", false, false, true, true, Intrinsics::inlineAsZero),
         P_THREAD_SELF(List.of("pthread_self", "__VERIFIER_tid"), false, false, true, false, null),
         P_THREAD_EQUAL("pthread_equal", false, false, true, false, Intrinsics::inlinePthreadEqual),
@@ -441,8 +442,8 @@ public class Intrinsics {
         final Expression returnAddr = arguments.get(1);
         final boolean hasReturnAddr = !(returnAddr instanceof IntLiteral lit && lit.isZero());
 
-        final Register resultRegister = getResultRegister(call);
-        assert resultRegister.getType() instanceof IntegerType;
+        final Register statusRegister = getResultRegister(call);
+        final IntegerType statusType = (IntegerType) statusRegister.getType();
 
         final Type joinType = types.getAggregateType(List.of(types.getIntegerType(8), PTHREAD_THREAD_TYPE.getReturnType()));
         final Register joinReg = call.getFunction().newUniqueRegister("__joinReg", joinType);
@@ -453,28 +454,35 @@ public class Intrinsics {
         final Expression statusSuccess = expressions.makeValue(SUCCESS.getErrorCode(), (IntegerType) status.getType());
         final Expression statusInvalidTId = expressions.makeValue(INVALID_TID.getErrorCode(), (IntegerType) status.getType());
 
-        final Label joinEnd;
-        final Store storeRetVal;
-        final CondJump jump;
-        if (hasReturnAddr) {
-            joinEnd = newLabel("__pthread_join_end");
-            storeRetVal = newStore(returnAddr, retVal);
-            jump = newJump(expressions.makeNEQ(status, statusSuccess), joinEnd);
-        } else {
-            joinEnd = null;
-            storeRetVal = null;
-            jump = null;
-        }
+        final Label joinEnd = hasReturnAddr ? newLabel("__pthread_join_end") : null;
+        final Store storeRetVal = hasReturnAddr ? newStore(returnAddr, retVal) : null;
+        final CondJump jump = hasReturnAddr ? newJump(expressions.makeNEQ(status, statusSuccess), joinEnd) : null;
 
         return eventSequence(
                 newDynamicThreadJoin(joinReg, tidExpr),
                 // TODO: We use our internal error codes which do not match with pthread's error codes,
                 //  except for the success case (error code == 0).
-                newLocal(resultRegister, expressions.makeCast(status, resultRegister.getType())),
+                newLocal(statusRegister, expressions.makeCast(status, statusType)),
                 jump,
                 storeRetVal,
                 joinEnd,
                 newAssert(expressions.makeNEQ(status, statusInvalidTId), "Invalid thread id in pthread_join.")
+        );
+    }
+
+    private List<Event> inlinePthreadDetach(FunctionCall call) {
+        final List<Expression> arguments = call.getArguments();
+        assert arguments.size() == 1;
+        final Expression tidExpr = arguments.get(0);
+
+        final Register statusRegister = getResultRegister(call);
+        final IntegerType statusType = (IntegerType) statusRegister.getType();
+
+        final Expression statusInvalidTId = expressions.makeValue(INVALID_TID.getErrorCode(), statusType);
+
+        return eventSequence(
+                newDynamicThreadDetach(statusRegister, tidExpr),
+                newAssert(expressions.makeNEQ(statusRegister, statusInvalidTId), "Invalid thread id in pthread_detach.")
         );
     }
 
