@@ -1,0 +1,13 @@
+PTX
+{
+P2:r0=0;
+P2:r1=0;
+P3:r2=0;
+P3:r3=0;
+x=0;
+}
+ P0@cta 0,gpu 0      | P1@cta 1,gpu 0      | P2@cta 2,gpu 0       | P3@cta 3,gpu 0       ;
+ st.relaxed.gpu x, 1 | st.relaxed.gpu x, 2 | ld.relaxed.gpu r0, x | ld.relaxed.gpu r2, x ;
+                     |                     | ld.relaxed.cta r1, x | ld.relaxed.cta r3, x ;
+exists
+(P2:r0 == 1 /\ P2:r1 == 2 /\ P3:r2 == 2 /\ P3:r3 == 1)
