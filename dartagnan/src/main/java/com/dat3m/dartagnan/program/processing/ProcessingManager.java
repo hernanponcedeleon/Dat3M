@@ -86,14 +86,16 @@ public class ProcessingManager implements ProgramProcessor {
         final Intrinsics intrinsics = Intrinsics.fromConfig(config, detectMixedSizeAccesses);
         final FunctionProcessor sccp = constantPropagation ? SparseConditionalConstantPropagation.fromConfig(config) : null;
         final FunctionProcessor dce = performDce ? DeadAssignmentElimination.fromConfig(config) : null;
+        final FunctionProcessor assignmentInlining = performAssignmentInlining ? AssignmentInlining.newInstance() : null;
         final FunctionProcessor removeDeadJumps = RemoveDeadCondJumps.fromConfig(config);
+        final FunctionProcessor simplifyFunction = FunctionProcessor.chain(
+                assignmentInlining,
+                sccp,
+                dce,
+                removeDeadJumps
+        );
         final ProgramProcessor simplifyBoundedProgram = ProgramProcessor.fromFunctionProcessor(
-                FunctionProcessor.chain(
-                        performAssignmentInlining ? AssignmentInlining.newInstance() : null,
-                        sccp,
-                        dce,
-                        removeDeadJumps
-                ), Target.THREADS, true
+                simplifyFunction, Target.THREADS, true
         );
         programProcessors.addAll(Arrays.asList(
                 printBeforeProcessing ? DebugPrint.withHeader("Before processing", Printer.Mode.ALL) : null,
@@ -125,9 +127,7 @@ public class ProcessingManager implements ProgramProcessor {
                 ProgramProcessor.fromFunctionProcessor(
                         FunctionProcessor.chain(
                                 ResolveLLVMObjectSizeCalls.fromConfig(config),
-                                sccp,
-                                dce,
-                                removeDeadJumps
+                                simplifyFunction
                         ), Target.FUNCTIONS, true
                 ),
                 ThreadCreation.fromConfig(config),
