@@ -210,15 +210,17 @@ public class MemToReg implements FunctionProcessor {
         }
     }
 
+    private sealed interface AddressOffsets {}
+
     // Invariant: base != null
-    private record AddressOffset(RegWriter base, long offset) {
+    private record AddressOffset(RegWriter base, long offset) implements AddressOffsets {
         private AddressOffset increase(long o) {
             return o == 0 ? this : new AddressOffset(base, offset + o);
         }
     }
 
-    // Invariant: register != null
-    private record RegisterOffset(Register register, long offset) {}
+    // Invariant: hint != null && !hint.isEmpty()
+    private record AddressOffsetSet(Set<RegWriter> hint) implements AddressOffsets {}
 
     // Checks if mixed-size accesses to a promotable object were collected.
     private static boolean hasMixedAccesses(Set<Field> registerTypes) {
@@ -238,9 +240,9 @@ public class MemToReg implements FunctionProcessor {
     private static final class Matcher implements EventVisitor<Label> {
 
         // Current local symbolic state.  Missing values mean irreplaceable contents.
-        private final Map<Object, AddressOffset> state = new HashMap<>();
+        private final Map<Object, AddressOffsets> state = new HashMap<>();
         // Maps labels and jumps to symbolic state information.
-        private final Map<Label, Map<Object, AddressOffset>> jumps = new HashMap<>();
+        private final Map<Label, Map<Object, AddressOffsets>> jumps = new HashMap<>();
         // Join over all memory information.  Initialized to all empty.  Missing entries mean not promotable.
         private final Map<RegWriter, Set<RegWriter>> reachabilityGraph = new HashMap<>();
         // Collects candidates to be replaced.
@@ -275,10 +277,7 @@ public class MemToReg implements FunctionProcessor {
                 return null;
             }
             final Register register = assignment.getResultRegister();
-            final RegisterOffset expression = matchGEP(assignment.getExpr());
-            assert expression == null || expression.register != null;
-            final AddressOffset valueBase = expression == null ? null : state.get(expression.register);
-            final AddressOffset value = valueBase == null ? null : valueBase.increase(expression.offset);
+            final AddressOffset value = computeAddressOffsetFromState(assignment.getExpr());
             // If too complex, treat like a global address.
             if (value == null) {
                 publishRegisters(assignment.getExpr().getRegs());
@@ -295,14 +294,13 @@ public class MemToReg implements FunctionProcessor {
             }
             // Each path must update state and accesses.
             final Register register = load.getResultRegister();
-            final RegisterOffset addressExpression = matchGEP(load.getAddress());
-            final AddressOffset address = toAddressOffset(addressExpression);
+            final AddressOffset address = computeAddressOffsetFromState(load.getAddress());
             final boolean isDeletable = load.getUsers().isEmpty();
             // If too complex, treat like global address.
             if (address == null || !isDeletable) {
                 publishRegisters(load.getAddress().getRegs());
             }
-            final AddressOffset value = address == null ? null : state.get(address);
+            final AddressOffsets value = address == null ? null : state.get(address);
             update(accesses, load, address);
             update(state, register, value);
             return null;
@@ -314,18 +312,15 @@ public class MemToReg implements FunctionProcessor {
                 return null;
             }
             // Each path must update state and accesses.
-            final RegisterOffset addressExpression = matchGEP(store.getAddress());
-            final AddressOffset address = toAddressOffset(addressExpression);
-            final RegisterOffset valueExpression = matchGEP(store.getMemValue());
-            assert valueExpression == null || valueExpression.register != null;
-            final AddressOffset value = valueExpression == null ? null : state.get(valueExpression.register);
+            final AddressOffset address = computeAddressOffsetFromState(store.getAddress());
+            final AddressOffset value = computeAddressOffsetFromState(store.getMemValue());
             final boolean isDeletable = store.getUsers().isEmpty();
             // On complex address expression, give up on any address that could contribute here.
             if (address == null || !isDeletable) {
                 publishRegisters(store.getAddress().getRegs());
             }
             // On ambiguous address, give up on any address that could be stored here.
-            if (address == null || valueExpression == null || !isDeletable) {
+            if (address == null || value == null || !isDeletable) {
                 publishRegisters(store.getMemValue().getRegs());
             }
             update(accesses, store, address);
@@ -341,7 +336,7 @@ public class MemToReg implements FunctionProcessor {
         public Label visitLabel(Label label) {
             final int localId = label.getLocalId();
             final boolean looping = label.getJumpSet().stream().anyMatch(jump -> localId < jump.getLocalId());
-            final Map<Object, AddressOffset> restoredState = looping ? jumps.get(label) : jumps.remove(label);
+            final Map<Object, AddressOffsets> restoredState = looping ? jumps.get(label) : jumps.remove(label);
             if (restoredState != null && dead) {
                 assert state.isEmpty();
                 state.putAll(restoredState);
@@ -367,7 +362,7 @@ public class MemToReg implements FunctionProcessor {
             final boolean isGoto = jump.isGoto();
             assert !looping || jumps.containsKey(label);
             // Prepare the current state for continuing from the label.
-            final Map<Object, AddressOffset> labelState = jumps.get(label);
+            final Map<Object, AddressOffsets> labelState = jumps.get(label);
             if (labelState != null) {
                 // NOTE no short-circuiting.
                 final boolean change = mergeInto(labelState, state);
@@ -390,9 +385,12 @@ public class MemToReg implements FunctionProcessor {
         private void publishRegisters(Set<Register> registers) {
             final var queue = new ArrayDeque<RegWriter>();
             for (final Register register : registers) {
-                final AddressOffset value = state.remove(register);
-                if (value != null) {
+                final AddressOffsets element = state.remove(register);
+                if (element instanceof AddressOffset value) {
                     queue.add(value.base);
+                }
+                if (element instanceof AddressOffsetSet hint) {
+                    queue.addAll(hint.hint);
                 }
             }
             while (!queue.isEmpty()) {
@@ -404,10 +402,13 @@ public class MemToReg implements FunctionProcessor {
             }
         }
 
-        private AddressOffset toAddressOffset(RegisterOffset gep) {
+        private record RegisterOffset(Register register, long offset) {}
+
+        private AddressOffset computeAddressOffsetFromState(Expression expression) {
+            final RegisterOffset gep = matchGEP(expression);
             assert gep == null || gep.register != null;
-            final AddressOffset base = gep == null ? null : state.get(gep.register);
-            return base == null ? null : base.increase(gep.offset);
+            final AddressOffsets element = gep == null ? null : state.get(gep.register);
+            return element instanceof AddressOffset base ? base.increase(gep.offset) : null;
         }
 
         private static RegisterOffset matchGEP(Expression expression) {
@@ -424,8 +425,42 @@ public class MemToReg implements FunctionProcessor {
             return new RegisterOffset(register, sum);
         }
 
-        private static <K, V> boolean mergeInto(Map<K, V> target, Map<K, V> other) {
-            return target.entrySet().removeIf(entry -> !entry.getValue().equals(other.get(entry.getKey())));
+        private static boolean mergeInto(Map<Object, AddressOffsets> target, Map<Object, AddressOffsets> other) {
+            boolean changed = false;
+            // Keep links between registers and objects to properly propagate publishing.
+            for (Map.Entry<Object, AddressOffsets> entry : target.entrySet()) {
+                final AddressOffsets otherElement = other.get(entry.getKey());
+                final AddressOffset otherAddress = otherElement instanceof AddressOffset a ? a : null;
+                final AddressOffsetSet otherHint = otherElement instanceof AddressOffsetSet h ? h : null;
+                final AddressOffset targetAddress = entry.getValue() instanceof AddressOffset a ? a : null;
+                final AddressOffsetSet targetHint = entry.getValue() instanceof AddressOffsetSet h ? h : null;
+                assert targetAddress != null || targetHint != null;
+                if (otherElement == null ||
+                        targetAddress != null && targetAddress.equals(otherAddress) ||
+                        targetHint != null && otherAddress != null && targetHint.hint.contains(otherAddress.base) ||
+                        targetHint != null && otherHint != null && targetHint.hint.containsAll(otherHint.hint)) {
+                    continue;
+                }
+                final Set<RegWriter> hint = new HashSet<>();
+                if (targetAddress != null) {
+                    hint.add(targetAddress.base);
+                }
+                if (otherAddress != null) {
+                    hint.add(otherAddress.base);
+                }
+                if (targetHint != null) {
+                    hint.addAll(targetHint.hint);
+                }
+                if (otherHint != null) {
+                    hint.addAll(otherHint.hint);
+                }
+                entry.setValue(new AddressOffsetSet(hint));
+                changed = true;
+            }
+            for (Map.Entry<Object, AddressOffsets> entry : other.entrySet()) {
+                changed |= target.putIfAbsent(entry.getKey(), entry.getValue()) == null;
+            }
+            return changed;
         }
 
         private static <K, V> void update(Map<K, V> target, K key, V value) {
