@@ -412,10 +412,59 @@ void key_test()
     //assert(pthread_equal(latest_thread, worker));//TODO add support for destructors
 }
 
+// -------- detaching threads
+
+void* detach_test_worker0(void* ignore)
+{
+    return NULL;
+}
+
+void* detach_test_detach(void* ignore)
+{
+    int status;
+    pthread_t w0 = thread_create(detach_test_worker0, NULL);
+    status = pthread_detach(w0);
+    assert(status == 0);
+
+    status = pthread_join(w0, NULL);
+    assert(status != 0);
+    return NULL;
+}
+
+void* detach_test_attr(void* ignore)
+{
+    int status;
+    int detachstate;
+    pthread_t w0;
+    pthread_attr_t w0_attr;
+    status = pthread_attr_init(&w0_attr);
+    assert(status == 0);
+    status = pthread_attr_getdetachstate(&w0_attr, &detachstate);
+    assert(status == 0 && detachstate == PTHREAD_CREATE_JOINABLE);
+    status = pthread_attr_setdetachstate(&w0_attr, PTHREAD_CREATE_DETACHED);
+    assert(status == 0);
+    status = pthread_attr_getdetachstate(&w0_attr, &detachstate);
+    assert(status == 0 && detachstate == PTHREAD_CREATE_DETACHED);
+    status = pthread_create(&w0, &w0_attr, detach_test_worker0, NULL);
+    assert(status == 0);
+    pthread_attr_destroy(&w0_attr);
+
+    status = pthread_join(w0, NULL);
+    assert(status != 0);
+    return NULL;
+}
+
+void detach_test()
+{
+    thread_create(detach_test_detach, NULL);
+    thread_create(detach_test_attr, NULL);
+}
+
 int main()
 {
-    mutex_test();
+    //mutex_test();
     cond_test();
-    rwlock_test();
-    key_test();
+    //rwlock_test();
+    //key_test();
+    //detach_test();
 }

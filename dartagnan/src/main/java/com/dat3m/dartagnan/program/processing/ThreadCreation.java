@@ -23,6 +23,7 @@ import com.dat3m.dartagnan.program.event.functions.FunctionCall;
 import com.dat3m.dartagnan.program.event.functions.Return;
 import com.dat3m.dartagnan.program.event.functions.ValueFunctionCall;
 import com.dat3m.dartagnan.program.event.lang.dat3m.DynamicThreadCreate;
+import com.dat3m.dartagnan.program.event.lang.dat3m.DynamicThreadDetach;
 import com.dat3m.dartagnan.program.event.lang.dat3m.DynamicThreadJoin;
 import com.dat3m.dartagnan.program.memory.Memory;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
@@ -101,6 +102,7 @@ public class ThreadCreation implements ProgramProcessor {
             final List<ThreadData> spawnedThreads = createThreads(ep);
             resolvePthreadSelf(program);
             resolveDynamicThreadJoin(program, spawnedThreads);
+            resolveDynamicThreadDetach(program, spawnedThreads);
             IdReassignment.newInstance().run(program);
             resolveTidExpressions(program);
         } else if (program.getEntrypoint() instanceof Entrypoint.Grid ep) {
@@ -171,9 +173,11 @@ public class ThreadCreation implements ProgramProcessor {
             final Expression successValue = expressions.makeValue(SUCCESS.getErrorCode(), statusType);
             final Expression invalidTidValue = expressions.makeValue(INVALID_TID.getErrorCode(), statusType);
             final Expression invalidRetType = expressions.makeValue(INVALID_RETURN_TYPE.getErrorCode(), statusType);
+            final Expression detachedThread = expressions.makeValue(DETACHED_THREAD.getErrorCode(), statusType);
 
             final Register statusRegister = caller.newRegister("__joinStatus#" + joinCounter, statusType);
             final Register retValRegister = caller.newRegister("__joinRetVal#" + joinCounter, retValType);
+            final Register detachedRegister = caller.newRegister("__joinDetached#" + joinCounter, types.getBooleanType());
             final Register syncRegister = caller.newRegister("__joinSync#" + joinCounter, types.getBooleanType());
 
             // ----- Construct a switch case for each possible tid -----
@@ -203,9 +207,13 @@ public class ThreadCreation implements ProgramProcessor {
                             EventFactory.newGoto(joinEnd)
                     );
                 } else {
+                    final Expression detachedOffset = expressions.makeOne((IntegerType) data.comAddress.getType());
                     // Successful join
                     caseBody = eventSequence(
                             joinCase,
+                            newLoad(detachedRegister, expressions.makeAdd(data.comAddress, detachedOffset)),
+                            newLocal(statusRegister, detachedThread),
+                            newJump(detachedRegister, joinEnd),
                             newThreadJoin(retValRegister, data.thread()),
                             newAcquireLoad(syncRegister, data.comAddress),
                             newAssume(expressions.makeNot(syncRegister)),
@@ -235,6 +243,73 @@ public class ThreadCreation implements ProgramProcessor {
                     newLocal(joinRegister, expressions.makeConstruct(joinRegister.getType(), List.of(statusRegister, retValRegister)))
             );
             IRHelper.replaceWithMetadata(join, replacement);
+            joinCounter++;
+        }
+    }
+
+    private void resolveDynamicThreadDetach(Program program, List<ThreadData> threadData) {
+        int joinCounter = 0;
+        for (DynamicThreadDetach detach : program.getThreadEvents(DynamicThreadDetach.class)) {
+            final Thread caller = detach.getThread();
+            final Expression tidExpr = detach.getTid();
+
+            final Register statusRegister = detach.getResultRegister();
+            final IntegerType statusType = (IntegerType) statusRegister.getType();
+
+            final Expression successValue = expressions.makeValue(SUCCESS.getErrorCode(), statusType);
+            final Expression invalidTidValue = expressions.makeValue(INVALID_TID.getErrorCode(), statusType);
+            final Expression detachedThread = expressions.makeValue(DETACHED_THREAD.getErrorCode(), statusType);
+
+            final Register detachedRegister = caller.newRegister("__detachDetached#" + joinCounter, types.getBooleanType());
+
+            // ----- Construct a switch case for each possible tid -----
+            final Label joinEnd = EventFactory.newLabel("__detachEnd#" + joinCounter);
+            final Map<Expression, List<Event>> tid2joinCases = new LinkedHashMap<>();
+            for (ThreadData data : threadData) {
+                if (!data.isJoinable() || data.thread() == caller) {
+                    // NOTE: We treat self-joins as an invalid tid id error (~ in alignment with pthread_join semantics)
+                    // We could alternatively make this a non-termination case
+                    continue;
+                }
+
+                final int tid = data.thread().getId();
+                if (tidExpr instanceof IntLiteral iConst && iConst.getValueAsInt() != tid) {
+                    // Little optimization if we join with a constant address
+                    continue;
+                }
+
+                final Label detachCase = EventFactory.newLabel("__detachT" + tid + "#" + joinCounter);
+                final Expression detachedOffset = expressions.makeOne((IntegerType) data.comAddress.getType());
+                final List<Event> caseBody = eventSequence(
+                        detachCase,
+                        newLoad(detachedRegister, expressions.makeAdd(data.comAddress, detachedOffset)),
+                        newLocal(statusRegister, detachedThread),
+                        newJump(detachedRegister, joinEnd),
+                        newStore(expressions.makeAdd(data.comAddress, detachedOffset), expressions.makeTrue()),
+                        newLocal(statusRegister, successValue),
+                        EventFactory.newGoto(joinEnd)
+                );
+                tid2joinCases.put(new TIdExpr((IntegerType) tidExpr.getType(), data.thread()), caseBody);
+            }
+
+            // ----- Construct the actual switch (a simple jump table) -----
+            final List<Event> switchJumpTable = new ArrayList<>();
+            for (Expression tid : tid2joinCases.keySet()) {
+                switchJumpTable.add(EventFactory.newJump(
+                        expressions.makeEQ(tidExpr, tid), (Label)tid2joinCases.get(tid).get(0))
+                );
+            }
+            // In the case where no tid matches, we return an error status.
+            switchJumpTable.add(EventFactory.newLocal(statusRegister, invalidTidValue));
+            switchJumpTable.add(EventFactory.newGoto(joinEnd));
+
+            // ----- Generate actual replacement for the DynamicJoinEvent -----
+            final List<Event> replacement = eventSequence(
+                    switchJumpTable,
+                    tid2joinCases.values(),
+                    joinEnd
+            );
+            IRHelper.replaceWithMetadata(detach, replacement);
             joinCounter++;
         }
     }
@@ -313,7 +388,7 @@ public class ThreadCreation implements ProgramProcessor {
             }
 
             // We use accesses to a common memory object to synchronize creator and thread.
-            final MemoryObject comAddress = function.getProgram().getMemory().allocate(1);
+            final MemoryObject comAddress = function.getProgram().getMemory().allocate(2);
             comAddress.setName("__com_" + function.getName() + "#" + tid);
             comAddress.setInitialValue(0, expressions.makeFalse());
 
