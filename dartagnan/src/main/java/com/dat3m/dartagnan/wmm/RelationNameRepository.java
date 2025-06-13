@@ -29,6 +29,7 @@ public class RelationNameRepository {
     public static final String SQF = "sqf";
     public static final String SDV = "sdv";
     public static final String SSW = "ssw";
+    public static final String TANGLE = "tangle";
     public static final String SYNC_FENCE = "sync_fence";
     public static final String SYNCBAR = "syncbar";
     public static final String VLOC = "vloc";

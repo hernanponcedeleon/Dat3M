@@ -4,6 +4,7 @@ import com.dat3m.dartagnan.expression.integers.IntLiteral;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.Register.UsageType;
+import com.dat3m.dartagnan.program.ScopeHierarchy;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.analysis.BranchEquivalence;
 import com.dat3m.dartagnan.program.analysis.ExecutionAnalysis;
@@ -1103,20 +1104,41 @@ public class NativeRelationAnalysis implements RelationAnalysis {
         }
 
         @Override
+        public MutableKnowledge visitTangle(Tangle tangle) {
+            MutableEventGraph must = new MapEventGraph();
+            Map<String, Set<GroupOp>> groups = new HashMap<>();
+            program.getThreadEvents(GroupOp.class).forEach(e ->
+                    groups.computeIfAbsent(e.getName(), x -> new HashSet<>()).add(e));
+            for (Set<GroupOp> group : groups.values()) {
+                for (GroupOp e1 : group) {
+                    ScopeHierarchy h1 = e1.getThread().getScopeHierarchy();
+                    String scope = e1.getScope();
+                    for (GroupOp e2 : group) {
+                        if (h1.canSyncAtScope(e2.getThread().getScopeHierarchy(), scope)) {
+                            must.add(e1, e2);
+                        }
+                    }
+                }
+            }
+            return new MutableKnowledge(must, MapEventGraph.from(must));
+        }
+
+        @Override
         public MutableKnowledge visitSameVirtualLocation(SameVirtualLocation vloc) {
             MutableEventGraph must = new MapEventGraph();
             MutableEventGraph may = new MapEventGraph();
             Map<MemoryCoreEvent, VirtualMemoryObject> map = computeViltualAddressMap();
-            map.forEach((e1, a1) -> map.forEach((e2, a2) -> {
-                if (a1.equals(a2) && !exec.areMutuallyExclusive(e1, e2)) {
-                    if (alias.mustAlias(e1, e2)) {
-                        must.add(e1, e2);
-                    }
-                    if (alias.mayAlias(e1, e2)) {
-                        may.add(e1, e2);
-                    }
-                }
-            }));
+            program.getThreadEvents(MemoryCoreEvent.class)
+                    .forEach(e1 -> program.getThreadEvents(MemoryCoreEvent.class).forEach(e2 -> {
+                        if (map.containsKey(e1) && map.containsKey(e2)) {
+                            if (map.get(e1).equals(map.get(e2))) {
+                                may.add(e1, e2);
+                                must.add(e1, e2);
+                            }
+                        } else {
+                            may.add(e1, e2);
+                        }
+                    }));
             return new MutableKnowledge(may, must);
         }
 

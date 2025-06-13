@@ -149,6 +149,15 @@ empty rmw & (fre; (asmo & ext)) as atomic
 let non-rmw-reads = (R \ RMW) * (R \ RMW)
 empty ((((locord | locord^-1) | mutordatom) \ non-rmw-reads) \ (loc \ id \ non-rmw-reads)) as locord-complete
 
+// TODO: This is an example definition, just to demonstrate the idea
+// Constraints for tangle instructions
+// Dependencies
+let dep = data | addr | ctrl
+// Preserved event sequence after tangle (probably way too strong)
+let ts = dep | locord | rf | fr | asmo
+// Constraint
+acyclic po ; tangle ; ts+
+
 (***************)
 (* Data Races *)
 (***************)

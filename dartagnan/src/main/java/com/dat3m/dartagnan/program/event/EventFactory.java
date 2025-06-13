@@ -3,6 +3,7 @@ package com.dat3m.dartagnan.program.event;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.Type;
+import com.dat3m.dartagnan.expression.booleans.BoolBinaryOp;
 import com.dat3m.dartagnan.expression.booleans.BoolLiteral;
 import com.dat3m.dartagnan.expression.integers.IntBinaryOp;
 import com.dat3m.dartagnan.expression.integers.IntCmpOp;
@@ -162,6 +163,10 @@ public class EventFactory {
 
     public static NamedBarrier newNamedBarrier(String name, String instanceId, Expression id, Expression quorum) {
         return new NamedBarrier(name, instanceId, id, quorum);
+    }
+
+    public static GroupOp newGroupOp(String id, BoolBinaryOp op, String scope, Register register, Expression value) {
+        return new GroupOp(id, op, scope, register, value);
     }
 
     public static Init newInit(MemoryObject base, int offset) {

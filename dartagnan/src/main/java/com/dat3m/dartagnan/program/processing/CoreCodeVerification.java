@@ -36,7 +36,7 @@ public class CoreCodeVerification implements FunctionProcessor {
             Skip.class, RMWStore.class, RMWStoreExclusive.class, Alloc.class,
             Assume.class, Assert.class, InstructionBoundary.class,
             ThreadCreate.class, ThreadJoin.class, ThreadArgument.class, ThreadStart.class, ThreadReturn.class,
-            ControlBarrier.class, NamedBarrier.class,
+            ControlBarrier.class, NamedBarrier.class, GroupOp.class,
             BeginAtomic.class, EndAtomic.class,
             StateSnapshot.class
             // We add SVCOMP atomic blocks here as well, despite them not being part of the core package.

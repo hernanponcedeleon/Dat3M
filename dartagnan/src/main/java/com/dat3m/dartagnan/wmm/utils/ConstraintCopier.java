@@ -222,6 +222,11 @@ public final class ConstraintCopier implements Constraint.Visitor<Constraint> {
     }
 
     @Override
+    public Tangle visitTangle(Tangle tangle) {
+        return new Tangle(translate(tangle.getDefinedRelation()));
+    }
+
+    @Override
     public SyncWith visitSyncWith(SyncWith syncWith) {
         return new SyncWith(translate(syncWith.getDefinedRelation()));
     }

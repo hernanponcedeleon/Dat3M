@@ -1,0 +1,10 @@
+VULKAN
+{}
+ P0@sg 0,wg 0, qf 0    | P1@sg 0,wg 0, qf 0    ;
+ st.atom.dv.sc0 x, 1   | ld.atom.dv.sc0 r0, x  ;
+ ld.atom.dv.sc0 r0, x  | bne r0, 1, LC10       ;
+ bne r0, 1, LC00       | group.all.sg 1, r1, 1 ;
+ group.all.sg 1, r1, 1 | LC10:                 ;
+ LC00:                 |                       ;
+
+exists (P0:r0 == 1 /\ P0:r1 == 1 /\ P1:r0 == 1 /\ P1:r1 == 1)

@@ -1,0 +1,12 @@
+VULKAN
+// Issue 182
+{
+  x=0;
+  y=0;
+}
+ P0@sg 0,wg 0, qf 0    | P1@sg 0,wg 0, qf 0    ;
+ ld.atom.dv.sc0 r0, x  | ld.atom.dv.sc0 r0, y  ;
+ group.any.sg 1, r1, 1 | group.any.sg 1, r1, 1 ;
+ st.atom.dv.sc0 y, r1  | st.atom.dv.sc0 x, r1  ;
+
+forall (P0:r0 == 0 /\ P1:r0 == 0)

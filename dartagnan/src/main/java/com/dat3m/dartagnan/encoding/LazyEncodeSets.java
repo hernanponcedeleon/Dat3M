@@ -142,6 +142,11 @@ public class LazyEncodeSets implements Constraint.Visitor<Boolean> {
     }
 
     @Override
+    public Boolean visitTangle(Tangle definition) {
+        return doUpdateSelf(definition);
+    }
+
+    @Override
     public Boolean visitSameVirtualLocation(SameVirtualLocation definition) {
         return doUpdateSelf(definition);
     }

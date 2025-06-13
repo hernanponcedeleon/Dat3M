@@ -4,6 +4,7 @@ import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
+import com.dat3m.dartagnan.expression.booleans.BoolBinaryOp;
 import com.dat3m.dartagnan.expression.integers.IntLiteral;
 import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
@@ -129,6 +130,11 @@ public class VisitorLitmusVulkan extends LitmusVulkanBaseVisitor<Object> {
     }
 
     @Override
+    public Object visitLocation(LitmusVulkanParser.LocationContext ctx) {
+        return programBuilder.getOrNewMemoryObject(ctx.getText());
+    }
+
+    @Override
     public Object visitInstructionRow(LitmusVulkanParser.InstructionRowContext ctx) {
         for (int i = 0; i < threadCount; i++) {
             mainThread = i;
@@ -139,9 +145,9 @@ public class VisitorLitmusVulkan extends LitmusVulkanBaseVisitor<Object> {
 
     @Override
     public Object visitStoreInstruction(LitmusVulkanParser.StoreInstructionContext ctx) {
-        MemoryObject object = programBuilder.getOrNewMemoryObject(ctx.location().getText());
+        Expression address = (Expression) ctx.address().accept(this);
         Expression value = (Expression) ctx.value().accept(this);
-        Store store = EventFactory.newStore(object, value);
+        Store store = EventFactory.newStore(address, value);
         store.addTags(ctx.sc().content);
         if (ctx.nonpriv() != null) {
             store.addTags(Tag.Vulkan.NON_PRIVATE);
@@ -157,8 +163,8 @@ public class VisitorLitmusVulkan extends LitmusVulkanBaseVisitor<Object> {
     @Override
     public Object visitLoadInstruction(LitmusVulkanParser.LoadInstructionContext ctx) {
         Register register = (Register) ctx.register().accept(this);
-        MemoryObject location = programBuilder.getOrNewMemoryObject(ctx.location().getText());
-        Load load = EventFactory.newLoad(register, location);
+        Expression address = (Expression) ctx.address().accept(this);
+        Load load = EventFactory.newLoad(register, address);
         load.addTags(ctx.sc().content);
         if (ctx.nonpriv() != null) {
             load.addTags(Tag.Vulkan.NON_PRIVATE);
@@ -173,10 +179,10 @@ public class VisitorLitmusVulkan extends LitmusVulkanBaseVisitor<Object> {
 
     @Override
     public Object visitAtomicStoreInstruction(LitmusVulkanParser.AtomicStoreInstructionContext ctx) {
-        MemoryObject object = programBuilder.getOrNewMemoryObject(ctx.location().getText());
+        Expression address = (Expression) ctx.address().accept(this);
         Expression value = (Expression) ctx.value().accept(this);
         String mo = ctx.moRel() != null ? Tag.Vulkan.RELEASE : Tag.Vulkan.ATOM;
-        Store store = EventFactory.newStoreWithMo(object, value, mo);
+        Store store = EventFactory.newStoreWithMo(address, value, mo);
         store.addTags(
                 Tag.Vulkan.ATOM,
                 Tag.Vulkan.NON_PRIVATE,
@@ -194,9 +200,9 @@ public class VisitorLitmusVulkan extends LitmusVulkanBaseVisitor<Object> {
     @Override
     public Object visitAtomicLoadInstruction(LitmusVulkanParser.AtomicLoadInstructionContext ctx) {
         Register register = (Register) ctx.register().accept(this);
-        MemoryObject location = programBuilder.getOrNewMemoryObject(ctx.location().getText());
+        Expression address = (Expression) ctx.address().accept(this);
         String mo = ctx.moAcq() != null ? Tag.Vulkan.ACQUIRE : Tag.Vulkan.ATOM;
-        Load load = EventFactory.newLoadWithMo(register, location, mo);
+        Load load = EventFactory.newLoadWithMo(register, address, mo);
         load.addTags(
                 Tag.Vulkan.ATOM,
                 Tag.Vulkan.NON_PRIVATE,
@@ -287,10 +293,21 @@ public class VisitorLitmusVulkan extends LitmusVulkanBaseVisitor<Object> {
     }
 
     @Override
+    public Object visitGroupInstruction(LitmusVulkanParser.GroupInstructionContext ctx) {
+        String id = ctx.constant().getText();
+        BoolBinaryOp op = ctx.booleanOperation().op;
+        String scope = ctx.scope().content;
+        Expression value = expressions.makeCast((Expression) ctx.value().accept(this), types.getBooleanType());
+        Register register = programBuilder.getOrNewRegister(mainThread, ctx.register().getText(), value.getType());
+        Event event = EventFactory.newGroupOp(id, op, scope, register, value);
+        return programBuilder.addChild(mainThread, event);
+    }
+
+    @Override
     public Object visitLocalInstruction(LitmusVulkanParser.LocalInstructionContext ctx) {
         Register rd = (Register) ctx.register().accept(this);
-        Expression lhs = (Expression) ctx.value(0).accept(this);
-        Expression rhs = (Expression) ctx.value(1).accept(this);
+        Expression lhs = expressions.makeCast((Expression) ctx.value(0).accept(this), rd.getType());
+        Expression rhs = expressions.makeCast((Expression) ctx.value(1).accept(this), rd.getType());
         Expression exp = expressions.makeIntBinary(lhs, ctx.operation().op, rhs);
         return programBuilder.addChild(mainThread, EventFactory.newLocal(rd, exp));
     }

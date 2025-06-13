@@ -20,6 +20,7 @@ public final class Tag {
     public static final String WRITE            = "W";
     public static final String MEMORY           = "M";
     public static final String FENCE            = "F";
+    public static final String TANGLE           = "T";
     public static final String STRONG           = "STRONG"; // TODO: Maybe move to C11 or IMM?
     public static final String RMW              = "RMW";
 

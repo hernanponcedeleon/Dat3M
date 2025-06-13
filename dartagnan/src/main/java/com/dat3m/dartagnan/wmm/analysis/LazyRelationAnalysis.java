@@ -423,6 +423,16 @@ public class LazyRelationAnalysis extends NativeRelationAnalysis {
         }
 
         @Override
+        public RelationAnalysis.Knowledge visitTangle(Tangle definition) {
+            long start = System.currentTimeMillis();
+            RelationAnalysis.Knowledge base = nativeInitializer.visitTangle(definition);
+            EventGraph may = ImmutableMapEventGraph.from(base.getMaySet());
+            EventGraph must = ImmutableMapEventGraph.from(base.getMustSet());
+            time(definition, start, System.currentTimeMillis());
+            return new RelationAnalysis.Knowledge(may, must);
+        }
+
+        @Override
         public RelationAnalysis.Knowledge visitSameVirtualLocation(SameVirtualLocation definition) {
             long start = System.currentTimeMillis();
             RelationAnalysis.Knowledge base = nativeInitializer.visitSameVirtualLocation(definition);

@@ -207,19 +207,19 @@ public class Wmm {
             case IDDTRANS -> new TransitiveClosure(r, getOrCreatePredefinedRelation(IDD));
             case DATA -> intersection(r,
                     getOrCreatePredefinedRelation(IDDTRANS),
-                    addDefinition(product(newRelation(), Tag.MEMORY, Tag.MEMORY))
+                    addDefinition(product(newRelation(), Tag.VISIBLE, Tag.VISIBLE))
             );
             case ADDR -> {
                 Relation addrdirect = getOrCreatePredefinedRelation(ADDRDIRECT);
                 Relation comp = addDefinition(composition(newRelation(), getOrCreatePredefinedRelation(IDDTRANS), addrdirect));
                 Relation union = addDefinition(union(newRelation(), addrdirect, comp));
-                Relation mm = addDefinition(product(newRelation(), Tag.MEMORY, Tag.MEMORY));
+                Relation mm = addDefinition(product(newRelation(), Tag.VISIBLE, Tag.VISIBLE));
                 yield intersection(r, union, mm);
             }
             case CTRL -> {
                 Relation comp = addDefinition(composition(newRelation(), getOrCreatePredefinedRelation(IDDTRANS),
                         getOrCreatePredefinedRelation(CTRLDIRECT)));
-                Relation mv = addDefinition(product(newRelation(), Tag.MEMORY, Tag.VISIBLE));
+                Relation mv = addDefinition(product(newRelation(), Tag.VISIBLE, Tag.VISIBLE));
                 yield intersection(r, comp, mv);
             }
             case SR -> new SameScope(r);
@@ -232,6 +232,7 @@ public class Wmm {
             case SYNCBAR -> new SyncBar(r);
             case SYNC_FENCE -> new SyncFence(r);
             case VLOC -> new SameVirtualLocation(r);
+            case TANGLE -> new Tangle(r);
             default ->
                     throw new RuntimeException(name + " is part of RelationNameRepository but it has no associated relation.");
         };
