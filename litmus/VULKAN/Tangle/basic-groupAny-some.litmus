@@ -1,0 +1,6 @@
+VULKAN
+{}
+ P0@sg 0,wg 0, qf 0    | P1@sg 0,wg 0, qf 0    | P2@sg 0,wg 0, qf 0    ;
+ group.any.sg 1, r0, 1 | group.any.sg 1, r0, 1 | group.any.sg 1, r0, 0 ;
+
+forall (P0:r0 == 1 /\ P1:r0 == 1 /\ P2:r0 == 1)

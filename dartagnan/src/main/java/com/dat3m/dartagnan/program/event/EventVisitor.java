@@ -51,6 +51,8 @@ public interface EventVisitor<T> {
     // RMW core events
     default T visitRMWStore(RMWStore e) { return visitStore(e); }
     default T visitRMWStoreExclusive(RMWStoreExclusive e) { return visitStore(e); }
+    // Group events
+    default T visitGroupOp(GroupOp e) { return visitEvent(e); }
     // Annotations
     default T visitCodeAnnotation(CodeAnnotation e) { return visitEvent(e); }
 

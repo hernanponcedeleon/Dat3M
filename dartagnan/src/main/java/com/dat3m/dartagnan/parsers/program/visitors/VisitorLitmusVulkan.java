@@ -4,6 +4,7 @@ import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
+import com.dat3m.dartagnan.expression.booleans.BoolBinaryOp;
 import com.dat3m.dartagnan.expression.integers.IntLiteral;
 import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
@@ -284,6 +285,17 @@ public class VisitorLitmusVulkan extends LitmusVulkanBaseVisitor<Object> {
             barrier.addTags(ctx.semSc().stream().map(c -> c.content).toList());
         }
         return programBuilder.addChild(mainThread, barrier);
+    }
+
+    @Override
+    public Object visitGroupInstruction(LitmusVulkanParser.GroupInstructionContext ctx) {
+        String id = ctx.constant().getText();
+        BoolBinaryOp op = ctx.booleanOperation().op;
+        String scope = ctx.scope().content;
+        Expression value = "0".equals(ctx.value().getText()) ? expressions.makeFalse() : expressions.makeTrue();
+        Register register = programBuilder.getOrNewRegister(mainThread, ctx.register().getText(), value.getType());
+        Event event = EventFactory.newGroupOp(id, op, scope, register, value);
+        return programBuilder.addChild(mainThread, event);
     }
 
     @Override

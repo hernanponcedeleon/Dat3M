@@ -3,6 +3,7 @@ grammar LitmusVulkan;
 import LitmusAssertions;
 
 @header{
+import com.dat3m.dartagnan.expression.booleans.*;
 import com.dat3m.dartagnan.expression.integers.*;
 }
 
@@ -104,6 +105,7 @@ instruction
     |   atomicRmwInstruction
     |   memoryBarrierInstruction
     |   controlBarrierInstruction
+    |   groupInstruction
     |   localInstruction
     |   labelInstruction
     |   jumpInstruction
@@ -137,6 +139,10 @@ memoryBarrierInstruction
 
 controlBarrierInstruction
     :   ControlBarrier (scope | moAcq scope semSc+ semVis? | moRel scope semSc+ semAv? | moAcqRel scope semSc+ semAv? semVis?) constant (Comma barrierId (Comma barrierQuorum)?)?
+    ;
+
+groupInstruction
+    :   Group Period booleanOperation scope constant Comma register Comma value
     ;
 
 localInstruction
@@ -236,6 +242,11 @@ semSc returns [String content]
     |   Period Semsc1 {$content = "SEMSC1";}
     ;
 
+booleanOperation returns [BoolBinaryOp op]
+    :   All {$op = BoolBinaryOp.AND;}
+    |   Any {$op = BoolBinaryOp.OR;}
+    ;
+
 operation locals [IntBinaryOp op]
     :   Add {$op = IntBinaryOp.ADD;}
     |   Sub {$op = IntBinaryOp.SUB;}
@@ -280,6 +291,10 @@ RMW             :   'rmw';
 
 MemoryBarrier   :   'membar';
 ControlBarrier  :   'cbar';
+
+Group           :   'group';
+All             :   'all';
+Any             :   'any';
 
 Subgroup        :   'sg';
 Workgroup       :   'wg';
