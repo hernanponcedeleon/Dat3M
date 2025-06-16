@@ -1,5 +1,21 @@
 #include <pthread.h>
 #include <stdatomic.h>
+#ifdef USE_GENMC
+#include <genmc.h>
+#ifdef ANNOTATE_LOOPS
+#define await_while(cond)                                                  \
+        for (__VERIFIER_loop_begin();                                      \
+             (__VERIFIER_spin_start(),                                     \
+              (cond) ? 1 : (__VERIFIER_spin_end(1), 0));                   \
+             __VERIFIER_spin_end(0))
+#else
+#define await_while while
+#endif
+#define __VERIFIER_loop_bound(x)
+#else
+#include <dat3m.h>
+#define await_while while
+#endif
 
 /*
     Test case: Xchg-based (side-effectful) spinning on taken lock
@@ -10,7 +26,7 @@ atomic_int lock;
 
 void *thread(void *unused)
 {
-    while (atomic_exchange(&lock, 1) != 0);
+    await_while (atomic_exchange(&lock, 1) != 0);
     return 0;
 }
 

@@ -1,5 +1,21 @@
 #include <pthread.h>
 #include <stdatomic.h>
+#ifdef USE_GENMC
+#include <genmc.h>
+#ifdef ANNOTATE_LOOPS
+#define await_while(cond)                                                  \
+        for (__VERIFIER_loop_begin();                                      \
+             (__VERIFIER_spin_start(),                                     \
+              (cond) ? 1 : (__VERIFIER_spin_end(1), 0));                   \
+             __VERIFIER_spin_end(0))
+#else
+#define await_while while
+#endif
+#define __VERIFIER_loop_bound(x)
+#else
+#include <dat3m.h>
+#define await_while while
+#endif
 
 /*
     Test case: Repeated message-passing until success
@@ -13,7 +29,7 @@ atomic_int sendAgain = 0;
 
 void *thread(void *unused)
 {
-    while(1) {
+    await_while(1) {
         x = 1;
         atomic_store_explicit(&signal, 1, memory_order_relaxed);
         // Wait for acknowledgement
@@ -29,7 +45,7 @@ void *thread(void *unused)
 }
 
 void *thread2(void *unused) {
-    while (atomic_load_explicit(&signal, memory_order_relaxed) == 1 && x == 0) {
+    await_while (atomic_load_explicit(&signal, memory_order_relaxed) == 1 && x == 0) {
         // Message was wrong, ask for a new message
         signal = 0;
         sendAgain = 1;

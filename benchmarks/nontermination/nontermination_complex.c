@@ -1,5 +1,21 @@
 #include <pthread.h>
 #include <stdatomic.h>
+#ifdef USE_GENMC
+#include <genmc.h>
+#ifdef ANNOTATE_LOOPS
+#define await_while(cond)                                                  \
+        for (__VERIFIER_loop_begin();                                      \
+             (__VERIFIER_spin_start(),                                     \
+              (cond) ? 1 : (__VERIFIER_spin_end(1), 0));                   \
+             __VERIFIER_spin_end(0))
+#else
+#define await_while while
+#endif
+#define __VERIFIER_loop_bound(x)
+#else
+#include <dat3m.h>
+#define await_while while
+#endif
 
 /*
     Test case: Three loops that interfere with each other..
@@ -13,7 +29,7 @@ atomic_int z = 0;
 
 void *thread(void *unused)
 {
-    while(y != 1) {
+    await_while(y != 1) {
         x = 1;
         x = 0;
         y = 1;
@@ -22,7 +38,7 @@ void *thread(void *unused)
 }
 
 void *thread2(void *unused) {
-    while (x == 1 && y != 0 && z != 3) {
+    await_while (x == 1 && y != 0 && z != 3) {
         for (int i = 0; i < 4; i++) {
             z = i;
         }
@@ -31,7 +47,7 @@ void *thread2(void *unused) {
 }
 
 void *thread3(void *unused) {
-    while (z == 1) {
+    await_while (z == 1) {
         y = 0;
         z = 0;
     }

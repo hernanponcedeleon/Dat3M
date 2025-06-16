@@ -1,6 +1,22 @@
 #include <pthread.h>
 #include <stdatomic.h>
 #include <assert.h>
+#ifdef USE_GENMC
+#include <genmc.h>
+#ifdef ANNOTATE_LOOPS
+#define await_while(cond)                                                  \
+        for (__VERIFIER_loop_begin();                                      \
+             (__VERIFIER_spin_start(),                                     \
+              (cond) ? 1 : (__VERIFIER_spin_end(1), 0));                   \
+             __VERIFIER_spin_end(0))
+#else
+#define await_while while
+#endif
+#define __VERIFIER_loop_bound(x)
+#else
+#include <dat3m.h>
+#define await_while while
+#endif
 
 atomic_int x, y;
 
@@ -10,7 +26,7 @@ void* thread0(void* arg) {
 }
 
 void* thread1(void* arg) {
-    while (atomic_load_explicit(&x, memory_order_acquire) == 0);
+    await_while (atomic_load_explicit(&x, memory_order_acquire) == 0);
     atomic_store_explicit(&y, 2, memory_order_release);
     return NULL;
 }
