@@ -1926,8 +1926,12 @@ define dso_local void @detach_test() #0 !dbg !818 {
 
 ; Function Attrs: noinline nounwind uwtable
 define dso_local i32 @main() #0 !dbg !822 {
-  call void @cond_test(), !dbg !825
-  ret i32 0, !dbg !826
+  call void @mutex_test(), !dbg !825
+  call void @cond_test(), !dbg !826
+  call void @rwlock_test(), !dbg !827
+  call void @key_test(), !dbg !828
+  call void @detach_test(), !dbg !829
+  ret i32 0, !dbg !830
 }
 
 attributes #0 = { noinline nounwind uwtable "frame-pointer"="all" "min-legal-vector-width"="0" "no-trapping-math"="true" "stack-protector-buffer-size"="8" "target-cpu"="x86-64" "target-features"="+cmov,+cx8,+fxsr,+mmx,+sse,+sse2,+x87" "tune-cpu"="generic" }
@@ -1941,7 +1945,7 @@ attributes #3 = { cold noreturn }
 
 !0 = !DIGlobalVariableExpression(var: !1, expr: !DIExpression())
 !1 = distinct !DIGlobalVariable(scope: null, file: !2, line: 18, type: !3, isLocal: true, isDefinition: true)
-!2 = !DIFile(filename: "benchmarks/miscellaneous/pthread.c", directory: "/Users/r/git/dat3m", checksumkind: CSK_MD5, checksum: "f7a918880249e02fff975aa6da4b52c0")
+!2 = !DIFile(filename: "benchmarks/miscellaneous/pthread.c", directory: "/Users/r/git/dat3m", checksumkind: CSK_MD5, checksum: "8958a967cefe9f6512011dfd7798a4f3")
 !3 = !DICompositeType(tag: DW_TAG_array_type, baseType: !4, size: 112, elements: !6)
 !4 = !DIDerivedType(tag: DW_TAG_const_type, baseType: !5)
 !5 = !DIBasicType(name: "char", size: 8, encoding: DW_ATE_signed_char)
@@ -2764,5 +2768,9 @@ attributes #3 = { cold noreturn }
 !822 = distinct !DISubprogram(name: "main", scope: !2, file: !2, line: 463, type: !823, scopeLine: 464, spFlags: DISPFlagDefinition, unit: !61)
 !823 = !DISubroutineType(types: !824)
 !824 = !{!169}
-!825 = !DILocation(line: 466, column: 5, scope: !822)
-!826 = !DILocation(line: 470, column: 1, scope: !822)
+!825 = !DILocation(line: 465, column: 5, scope: !822)
+!826 = !DILocation(line: 466, column: 5, scope: !822)
+!827 = !DILocation(line: 467, column: 5, scope: !822)
+!828 = !DILocation(line: 468, column: 5, scope: !822)
+!829 = !DILocation(line: 469, column: 5, scope: !822)
+!830 = !DILocation(line: 470, column: 1, scope: !822)
