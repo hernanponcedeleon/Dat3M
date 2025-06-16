@@ -462,9 +462,9 @@ void detach_test()
 
 int main()
 {
-    //mutex_test();
+    mutex_test();
     cond_test();
-    //rwlock_test();
-    //key_test();
-    //detach_test();
+    rwlock_test();
+    key_test();
+    detach_test();
 }
