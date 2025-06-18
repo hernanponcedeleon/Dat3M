@@ -22,7 +22,7 @@ _Atomic(Node *) Head;
 void init() {
 	Node* node = malloc(sizeof (Node));
 	atomic_init(&node->next, NULL);
-	atomic_init(&Head, node); 
+	atomic_init(&Head, node);
 	atomic_init(&Tail, node);
 }
 
@@ -47,7 +47,7 @@ void enqueue(int value) {
             } else {
 				CAS(&Tail, &tail, next);
             }
-			
+
         }
 	}
 }
@@ -67,13 +67,14 @@ int dequeue() {
 				break;
 
 			} else {
-                result = next->val; //make atomic?
+                result = next->val;
                 if (CAS(&Head, &head, next)) {
                     tail = atomic_load_explicit(&Tail, __ATOMIC_ACQUIRE);
                     assert(tail != NULL);
                     if (head == tail) {
                         CAS(&Tail, &tail, next);
                     }
+                    free(head);
                     break;
                 }
 			}
