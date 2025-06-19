@@ -1,21 +1,5 @@
 #include <pthread.h>
 #include <stdatomic.h>
-#ifdef USE_GENMC
-#include <genmc.h>
-#ifdef ANNOTATE_LOOPS
-#define await_while(cond)                                                  \
-        for (__VERIFIER_loop_begin();                                      \
-             (__VERIFIER_spin_start(),                                     \
-              (cond) ? 1 : (__VERIFIER_spin_end(1), 0));                   \
-             __VERIFIER_spin_end(0))
-#else
-#define await_while while
-#endif
-#define __VERIFIER_loop_bound(x)
-#else
-#include <dat3m.h>
-#define await_while while
-#endif
 
 /*
     Test case: Special case to ensure that Dartagnan's internal optimization pipeline does not hide side-effects:
@@ -28,7 +12,7 @@
 int main()
 {
     int i = 0;
-    await_while(!(i > 10)) {
+    while(!(i > 10)) {
         i++;
     }
 
