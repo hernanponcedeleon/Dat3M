@@ -1,5 +1,5 @@
 #include <pthread.h>
-#include "tas.h"
+#include "ttas.h"
 #include <assert.h>
 
 #ifndef NTHREADS
@@ -7,19 +7,19 @@
 #endif
 
 int shared;
-taslock_t lock;
+ttaslock_t lock;
 int sum = 0;
 
 void *thread_n(void *arg)
 {
     intptr_t index = ((intptr_t) arg);
 
-    taslock_acquire(&lock);
+    ttaslock_acquire(&lock);
     shared = index;
     int r = shared;
     assert(r == index);
     sum++;
-    taslock_release(&lock);
+    ttaslock_release(&lock);
     return NULL;
 }
 
@@ -27,7 +27,7 @@ int main()
 {
     pthread_t t[NTHREADS];
 
-    taslock_init(&lock);
+    ttaslock_init(&lock);
 
     for (int i = 0; i < NTHREADS; i++)
         pthread_create(&t[i], 0, thread_n, (void *)(size_t)i);
