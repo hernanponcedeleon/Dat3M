@@ -1,0 +1,93 @@
+diff --git a/test/include/test/boilerplate/lock.h b/test/include/test/boilerplate/lock.h
+index 5df032e..f110b7c 100644
+--- a/test/include/test/boilerplate/lock.h
++++ b/test/include/test/boilerplate/lock.h
+@@ -141,10 +141,19 @@ run(void *arg)
+     return NULL;
+ }
+ 
++static void *
++fail_to_release(void *arg)
++{
++    vuint32_t tid = (vuintptr_t)arg;
++
++    acquire(tid);
++    return NULL;
++}
++
+ int
+ main(void)
+ {
+-    pthread_t t[NTHREADS];
++    pthread_t t[NTHREADS+1];
+ #ifdef DEBUG
+     printf("TEST %s\n", __FILE__);
+     printf("NTHREADS: %u\n", NTHREADS);
+@@ -156,12 +165,14 @@ main(void)
+     for (vuintptr_t i = 0; i < NTHREADS; i++) {
+         (void)pthread_create(&t[i], 0, run, (void *)i);
+     }
++    (void)pthread_create(&t[NTHREADS], 0, fail_to_release, (void *)NTHREADS);
+ 
+     post();
+ 
+     for (vuintptr_t i = 0; i < NTHREADS; i++) {
+         (void)pthread_join(t[i], NULL);
+     }
++    pthread_join(t[NTHREADS], NULL);
+ 
+ #ifdef DEBUG
+     printf("FINAL: g_cs_x = %d  g_cs_y = %d  (expected %d)\n", g_cs_x, g_cs_y,
+diff --git a/test/include/test/boilerplate/reader_writer.h b/test/include/test/boilerplate/reader_writer.h
+index d1eca23..ce67aab 100644
+--- a/test/include/test/boilerplate/reader_writer.h
++++ b/test/include/test/boilerplate/reader_writer.h
+@@ -158,10 +158,19 @@ reader(void *arg)
+     return NULL;
+ }
+ 
++static void *
++reader_fails_to_release(void *arg)
++{
++    vuint32_t tid = (vuintptr_t)arg;
++
++    reader_acquire(tid);(tid);
++    return NULL;
++}
++
+ int
+ main(void)
+ {
+-    pthread_t t[NTHREADS];
++    pthread_t t[NTHREADS+1];
+ #ifdef DEBUG
+     printf("TEST %s\n", __FILE__);
+     printf("NWRITERS: %u\n", NWRITERS);
+@@ -177,12 +186,14 @@ main(void)
+     for (vuintptr_t i = NWRITERS; i < NTHREADS; i++) {
+         (void)pthread_create(&t[i], 0, reader, (void *)i);
+     }
++    (void)pthread_create(&t[NTHREADS], 0, reader, (void *)NTHREADS);
+ 
+     post();
+ 
+     for (vuintptr_t i = 0; i < NTHREADS; i++) {
+         (void)pthread_join(t[i], NULL);
+     }
++    (void)pthread_join(t[NTHREADS], NULL);
+ 
+ #ifdef DEBUG
+     printf("FINAL: g_cs_x = %d  g_cs_y = %d  (expected %d)\n", g_cs_x, g_cs_y,
+diff --git a/vatomic/include/vsync/common/verify.h b/vatomic/include/vsync/common/verify.h
+index c9ab03d..5d495ce 100644
+--- a/vatomic/include/vsync/common/verify.h
++++ b/vatomic/include/vsync/common/verify.h
+@@ -87,7 +87,7 @@
+     #define VSYNC_VERIFICATION_GENMC
+ #elif defined(VSYNC_VERIFICATION_GENERIC)
+ #elif defined(VSYNC_VERIFICATION_DAT3M)
+-#elif defined(VSYNC_VERIFICATION) /* && VSYNC_VERIFICATION_GENMC */
++#elif defined(VSYNC_VERIFICATION) && VSYNC_VERIFICATION_GENMC
+     #include <genmc.h>
+     #define VSYNC_USE_VERIFIER_ASSUME
+     #define VSYNC_USE_VERIFIER_NONDET

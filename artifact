@@ -1,0 +1,52 @@
+FROM genmc/genmc
+
+ARG DEBIAN_FRONTEND=noninteractive
+
+# ============== TODO Remove ==============
+
+ENV HTTP_PROXY=${http_proxy}
+ENV http_proxy=${http_proxy}
+ENV HTTPS_PROXY=${https_proxy}
+ENV https_proxy=${https_proxy}
+ENV MAVEN_OPTS="-Dhttps.proxyPort=3128 -Dhttps.proxyHost=127.0.0.1"
+
+ARG PROFILE_PROXY_PATH=/etc/profile.d/42-hproxy.sh
+RUN echo "export HTTP_PROXY=${http_proxy}" | tee -a ${PROFILE_PROXY_PATH}
+RUN echo "export HTTPS_PROXY=${http_proxy}" | tee -a ${PROFILE_PROXY_PATH}
+RUN echo "export http_proxy=${http_proxy}" | tee -a ${PROFILE_PROXY_PATH}
+RUN echo "export https_proxy=${http_proxy}" | tee -a ${PROFILE_PROXY_PATH}
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY --chown=root:root certificates/ /tmp/certificates
+RUN for f in $(ls /tmp/certificates/) ; do mv $(readlink -e /tmp/certificates/$f) /usr/local/share/ca-certificates/ ; done \
+    && rmdir /tmp/certificates
+RUN chmod -f 444 /usr/local/share/ca-certificates/*.crt || true
+RUN update-ca-certificates
+
+# ========================================
+
+RUN apt-get update && apt-get install -y \
+        git \
+        build-essential \
+        maven \
+        sudo \
+        wget
+
+RUN cd /home && \
+    git clone --branch artifact https://github.com/hernanponcedeleon/Dat3M.git && \
+    cd Dat3M && \
+    mvn clean install -DskipTests
+
+ENV DAT3M_HOME=/home/Dat3M
+ENV DAT3M_OUTPUT=$DAT3M_HOME/output
+
+RUN cd /home && \
+    git clone --depth 1 --branch "v4.2.1" https://github.com/open-s4c/libvsync.git
+
+ENV LIBVSYNC_HOME=/home/libvsync
+
+RUN cd /home/libvsync && \
+    git apply $DAT3M_HOME/libvsync.patch
