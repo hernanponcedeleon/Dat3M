@@ -140,7 +140,8 @@ public class LazyRelationAnalysis extends NativeRelationAnalysis {
             final EventGraph mustRange = range.getMustSet();
             long start = System.currentTimeMillis();
             final EventGraph may = new LazyEventGraph(mayDomain.getDomain(), mayRange.getDomain(),
-                    (e1, e2) -> mayDomain.contains(e1, e1) && mayRange.contains(e2, e2));
+                    (e1, e2) -> mayDomain.contains(e1, e1) && mayRange.contains(e2, e2) &&
+                            !exec.areMutuallyExclusive(e1, e2));
             final EventGraph must = new LazyEventGraph(mustDomain.getDomain(), mustRange.getDomain(),
                     (e1, e2) -> mustDomain.contains(e1, e1) && mustRange.contains(e2, e2) &&
                             !exec.areMutuallyExclusive(e1, e2));
