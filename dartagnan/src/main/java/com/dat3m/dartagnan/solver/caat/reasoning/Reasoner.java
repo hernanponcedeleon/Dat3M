@@ -221,27 +221,6 @@ public class Reasoner {
         }
 
         @Override
-        public Conjunction<CAATLiteral> visitProjection(SetPredicate set, Edge edge, Void unused) {
-            assert edge.isLoop();
-
-            RelationGraph inner = (RelationGraph) set.getDependencies().get(0);
-            ProjectionSet.Dimension dim = ((ProjectionSet)set).getProjectionDimension();
-            Iterable<Edge> edges = switch (dim) {
-                case RANGE -> inner.inEdges(edge.getSecond());
-                case DOMAIN -> inner.outEdges(edge.getFirst());
-            };
-            for (Edge e : edges) {
-                // We use the first edge we find
-                if (e.getDerivationLength() < edge.getDerivationLength()) {
-                    Conjunction<CAATLiteral> reason = computeReason(inner, e);
-                    assert !reason.isFalse();
-                    return reason;
-                }
-            }
-            throw new IllegalStateException("ProjectionIdentityGraph: No matching edge is found");
-        }
-
-        @Override
         public Conjunction<CAATLiteral> visitReflexiveClosure(RelationGraph graph, Edge edge, Void unused) {
             if (edge.isLoop()) {
                 return Conjunction.TRUE();
@@ -331,6 +310,25 @@ public class Reasoner {
         @Override
         public Conjunction<CAATLiteral> visitBaseSet(SetPredicate set, Element ele, Void unused) {
             return new ElementLiteral(set, ele, true).toSingletonReason();
+        }
+
+        @Override
+        public Conjunction<CAATLiteral> visitProjection(SetPredicate set, Element ele, Void unused) {
+            RelationGraph inner = (RelationGraph) set.getDependencies().get(0);
+            ProjectionSet.Dimension dim = ((ProjectionSet)set).getProjectionDimension();
+            Iterable<Edge> edges = switch (dim) {
+                case RANGE -> inner.inEdges(ele.getId());
+                case DOMAIN -> inner.outEdges(ele.getId());
+            };
+            for (Edge e : edges) {
+                // We use the first edge we find
+                if (e.getDerivationLength() < ele.getDerivationLength()) {
+                    Conjunction<CAATLiteral> reason = computeReason(inner, e);
+                    assert !reason.isFalse();
+                    return reason;
+                }
+            }
+            throw new IllegalStateException("ProjectionIdentityGraph: No matching edge is found");
         }
     }
 }
