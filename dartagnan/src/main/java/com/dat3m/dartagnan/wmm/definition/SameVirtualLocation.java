@@ -8,6 +8,7 @@ public class SameVirtualLocation extends Definition {
 
     public SameVirtualLocation(Relation r0) {
         super(r0, RelationNameRepository.VLOC);
+        r0.checkBinaryRelation();
     }
 
     @Override

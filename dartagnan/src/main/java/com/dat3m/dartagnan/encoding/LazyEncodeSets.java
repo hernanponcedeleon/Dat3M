@@ -47,16 +47,6 @@ public class LazyEncodeSets implements Constraint.Visitor<Boolean> {
     }
 
     @Override
-    public Boolean visitProduct(CartesianProduct definition) {
-        return doUpdateSelf(definition);
-    }
-
-    @Override
-    public Boolean visitSetIdentity(SetIdentity definition) {
-        return doUpdateSelf(definition);
-    }
-
-    @Override
     public Boolean visitExternal(External definition) {
         return doUpdateSelf(definition);
     }
@@ -152,7 +142,39 @@ public class LazyEncodeSets implements Constraint.Visitor<Boolean> {
     }
 
     @Override
-    public Boolean visitDomainIdentity(DomainIdentity definition) {
+    public Boolean visitProduct(CartesianProduct definition) {
+        if (doUpdateSelf(definition)) {
+            long start = System.currentTimeMillis();
+            MutableEventGraph domainUpdate = new MapEventGraph();
+            MutableEventGraph rangeUpdate = new MapEventGraph();
+            update.getDomain().forEach(e1 -> domainUpdate.add(e1, e1));
+            update.getRange().forEach(e2 -> rangeUpdate.add(e2, e2));
+            operandTime(definition, start, System.currentTimeMillis());
+            setUpdate(domainUpdate);
+            definition.getDomain().getDefinition().accept(this);
+            setUpdate(rangeUpdate);
+            definition.getRange().getDefinition().accept(this);
+            return true;
+        }
+        return false;
+    }
+
+    @Override
+    public Boolean visitSetIdentity(SetIdentity definition) {
+        if (doUpdateSelf(definition)) {
+            long start = System.currentTimeMillis();
+            MutableEventGraph domainUpdate = new MapEventGraph();
+            update.apply((e1, e2) -> domainUpdate.add(e1, e1));
+            operandTime(definition, start, System.currentTimeMillis());
+            setUpdate(domainUpdate);
+            definition.getDomain().getDefinition().accept(this);
+            return true;
+        }
+        return false;
+    }
+
+    @Override
+    public Boolean visitDomain(Domain definition) {
         if (doUpdateSelf(definition)) {
             long start = System.currentTimeMillis();
             MutableEventGraph operandUpdate = new MapEventGraph();
@@ -167,7 +189,7 @@ public class LazyEncodeSets implements Constraint.Visitor<Boolean> {
     }
 
     @Override
-    public Boolean visitRangeIdentity(RangeIdentity definition) {
+    public Boolean visitRange(Range definition) {
         if (doUpdateSelf(definition)) {
             long start = System.currentTimeMillis();
             MutableEventGraph operandUpdate = new MapEventGraph();
