@@ -10,7 +10,7 @@ fi
 DIR="$1"
 RESULTS="$2"
 
-TIMEOUT=120
+TIMEOUT=600
 
 # Check if the directory exists
 if [ ! -d "$DIR" ]; then
@@ -35,7 +35,7 @@ for file in "$DIR"*.c; do
     
     # Run genmc (without loop annotation)
     tool="\genmc"
-    out=$(timeout $TIMEOUT genmc -check-liveness -disable-estimation -- -DVSYNC_VERIFICATION -DVSYNC_DISABLE_SPIN_ANNOTATION -DUSE_GENMC -I $LIBVSYNC_HOME/test/include -I $DAT3M_HOME/benchmarks/locks "$file" 2> /dev/null)
+    out=$(timeout $TIMEOUT genmc -imm -check-liveness -disable-estimation -- -DVSYNC_VERIFICATION -DVSYNC_DISABLE_SPIN_ANNOTATION -DUSE_GENMC -I $LIBVSYNC_HOME/test/include -I $DAT3M_HOME/benchmarks/locks "$file" 2> /dev/null)
 
     # Capture the exit code
     exit_code=$?
@@ -68,7 +68,7 @@ for file in "$DIR"*.c; do
 
     # Run genmc (with loop annotation)
     tool="\genmc"
-    out=$(timeout $TIMEOUT genmc -check-liveness -disable-estimation -disable-spin-assume -- -DVSYNC_VERIFICATION -DUSE_GENMC -I $LIBVSYNC_HOME/test/include -I $DAT3M_HOME/benchmarks/locks "$file" 2> /dev/null)
+    out=$(timeout $TIMEOUT genmc -imm -check-liveness -disable-estimation -disable-spin-assume -- -DVSYNC_VERIFICATION -DUSE_GENMC -I $LIBVSYNC_HOME/test/include -I $DAT3M_HOME/benchmarks/locks "$file" 2> /dev/null)
 
     # Capture the exit code
     exit_code=$?
@@ -101,7 +101,7 @@ for file in "$DIR"*.c; do
 
     # Run dartagnan
     tool="\dartagnan"
-    out=$(CFLAGS="-DVSYNC_VERIFICATION -DVSYNC_VERIFICATION_DAT3M -DVSYNC_DISABLE_SPIN_ANNOTATION -I $LIBVSYNC_HOME/test/include -I $DAT3M_HOME/benchmarks/locks" timeout $TIMEOUT java -jar ${DAT3M_HOME}/dartagnan/target/dartagnan.jar --property=termination $DAT3M_HOME/cat/imm.cat --bound=4 "$file" 2> /dev/null)
+    out=$(CFLAGS="-DVSYNC_VERIFICATION -DVSYNC_VERIFICATION_DAT3M -DVSYNC_DISABLE_SPIN_ANNOTATION -DTWA_A=128 -I $LIBVSYNC_HOME/test/include -I $DAT3M_HOME/benchmarks/locks" timeout $TIMEOUT java -jar ${DAT3M_HOME}/dartagnan/target/dartagnan.jar --property=termination $DAT3M_HOME/cat/imm.cat --bound=4 "$file" 2> /dev/null)
     
     # Capture the exit code
     exit_code=$?

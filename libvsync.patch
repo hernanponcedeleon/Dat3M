@@ -39,7 +39,7 @@ index 5df032e..f110b7c 100644
  #ifdef DEBUG
      printf("FINAL: g_cs_x = %d  g_cs_y = %d  (expected %d)\n", g_cs_x, g_cs_y,
 diff --git a/test/include/test/boilerplate/reader_writer.h b/test/include/test/boilerplate/reader_writer.h
-index d1eca23..ce67aab 100644
+index d1eca23..89b9300 100644
 --- a/test/include/test/boilerplate/reader_writer.h
 +++ b/test/include/test/boilerplate/reader_writer.h
 @@ -158,10 +158,19 @@ reader(void *arg)
@@ -51,7 +51,7 @@ index d1eca23..ce67aab 100644
 +{
 +    vuint32_t tid = (vuintptr_t)arg;
 +
-+    reader_acquire(tid);(tid);
++    reader_acquire(tid);
 +    return NULL;
 +}
 +
@@ -67,7 +67,7 @@ index d1eca23..ce67aab 100644
      for (vuintptr_t i = NWRITERS; i < NTHREADS; i++) {
          (void)pthread_create(&t[i], 0, reader, (void *)i);
      }
-+    (void)pthread_create(&t[NTHREADS], 0, reader, (void *)NTHREADS);
++    (void)pthread_create(&t[NTHREADS], 0, reader_fails_to_release, (void *)NTHREADS);
  
      post();
  
