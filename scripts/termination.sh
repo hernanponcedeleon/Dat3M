@@ -1,16 +1,16 @@
 #!/bin/bash
 
 # Check if a directory is passed as an argument
-if [ "$#" -ne 2 ]; then
-  echo "Usage: $0 <directory> <output>"
+if [ "$#" -ne 4 ]; then
+  echo "Usage: $0 <directory> <output> <run_await_while> <timeout>"
   exit 1
 fi
 
-# Directory to process (from the first argument)
+# Process inputs
 DIR="$1"
 RESULTS="$2"
-
-TIMEOUT=600
+MANUAL="$3"
+TIMEOUT="$4"
 
 # Check if the directory exists
 if [ ! -d "$DIR" ]; then
@@ -22,7 +22,11 @@ fi
 if [ -f "$RESULTS" ]; then
     rm "$RESULTS"
 fi
-echo "benchmark, tool, spinloop detection, spinloop annotation, result, time"  >> "$RESULTS"
+if [ "$MANUAL" == "true" ]; then
+    echo "benchmark, tool, spinloop detection, spinloop annotation, result, time"  >> "$RESULTS"
+else
+    echo "benchmark, tool, result, time"  >> "$RESULTS"
+fi
 
 # Iterate through all files in the directory
 for file in "$DIR"*.c; do
@@ -31,7 +35,47 @@ for file in "$DIR"*.c; do
     echo "Running model checker on file: $file"
 
     # Get base file name
-    benchmark=$(basename "$file")
+    base=$(basename "$file")
+    benchmark="${base%.c}"
+
+    if [ "$MANUAL" == "true" ]; then
+        # Run genmc (with loop annotation)
+        tool="\genmc"
+        out=$(timeout $TIMEOUT genmc -imm -check-liveness -disable-estimation -disable-spin-assume -- -DVSYNC_VERIFICATION -DUSE_GENMC -I $LIBVSYNC_HOME/test/include -I $DAT3M_HOME/benchmarks/locks "$file" 2> /dev/null)
+
+        # Capture the exit code
+        exit_code=$?
+
+        # Extract time
+        time=$(echo "$out" | tail -1 | sed -n 's/.*Total wall-clock time: *\([0-9.]*\)s$/\1 secs/p')
+        if [ -z "$time" ]; then
+            time="?"
+        fi
+
+        # Default results
+        res="?"
+
+        # Adapt output
+        if [[ "$exit_code" == 124 ]]; then
+            time="\clock"
+            res="N/A"
+        fi
+        if [[ "$exit_code" == 1 ]]; then
+            time="N/A"
+            res="N/A"
+        fi
+        if [[ "$out" =~ "No errors were detected" ]]; then
+            res="\cmark"
+        fi
+        if [[ "$out" =~ "Liveness violation" ]]; then
+            res="\xmark"
+        fi
+        if [ "$MANUAL" == "true" ]; then
+            echo "$benchmark, $tool, \xmark, \cmark, $res, $time" >> "$RESULTS"
+        else
+            echo "$benchmark, $tool, $res, $time" >> "$RESULTS"
+        fi
+    fi
     
     # Run genmc (without loop annotation)
     tool="\genmc"
@@ -64,40 +108,11 @@ for file in "$DIR"*.c; do
     if [[ "$out" =~ "Liveness violation" ]]; then
         res="\xmark"
     fi
-    echo "$benchmark, $tool, \cmark, \xmark, $res, $time" >> "$RESULTS"
-
-    # Run genmc (with loop annotation)
-    tool="\genmc"
-    out=$(timeout $TIMEOUT genmc -imm -check-liveness -disable-estimation -disable-spin-assume -- -DVSYNC_VERIFICATION -DUSE_GENMC -I $LIBVSYNC_HOME/test/include -I $DAT3M_HOME/benchmarks/locks "$file" 2> /dev/null)
-
-    # Capture the exit code
-    exit_code=$?
-
-    # Extract time
-    time=$(echo "$out" | tail -1 | sed -n 's/.*Total wall-clock time: *\([0-9.]*\)s$/\1 secs/p')
-    if [ -z "$time" ]; then
-        time="?"
+    if [ "$MANUAL" == "true" ]; then
+        echo "$benchmark, $tool, \cmark, \xmark, $res, $time" >> "$RESULTS"
+    else
+        echo "$benchmark, $tool, $res, $time" >> "$RESULTS"
     fi
-    
-    # Default results
-    res="?"
-
-    # Adapt output
-    if [[ "$exit_code" == 124 ]]; then
-        time="\clock"
-        res="N/A"
-    fi
-    if [[ "$exit_code" == 1 ]]; then
-        time="N/A"
-        res="N/A"
-    fi
-    if [[ "$out" =~ "No errors were detected" ]]; then
-        res="\cmark"
-    fi
-    if [[ "$out" =~ "Liveness violation" ]]; then
-        res="\xmark"
-    fi
-    echo "$benchmark, $tool, \xmark, \cmark, $res, $time" >> "$RESULTS"
 
     # Run dartagnan
     tool="\dartagnan"
@@ -130,7 +145,11 @@ for file in "$DIR"*.c; do
     if [[ "$out" =~ "Termination violation found" ]]; then
         res="\xmark"
     fi
-    echo "$benchmark, $tool, \cmark, \xmark, $res, $time" >> "$RESULTS"
+    if [ "$MANUAL" == "true" ]; then
+        echo "$benchmark, $tool, \cmark, \xmark, $res, $time" >> "$RESULTS"
+    else
+        echo "$benchmark, $tool, $res, $time" >> "$RESULTS"
+    fi
 
     echo
   fi
