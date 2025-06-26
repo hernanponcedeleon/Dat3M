@@ -1,8 +1,5 @@
 ARM
 
-(* Model for ARM, ie with po-loc omitted from ppo *)
-include "cos.cat"
-
 (* Uniproc *)
 acyclic po-loc | rf | fr | co as uniproc
 

@@ -4,23 +4,19 @@ import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.Type;
-import com.dat3m.dartagnan.expression.integers.IntLiteral;
+import com.dat3m.dartagnan.expression.aggregates.ConstructExpr;
 import com.dat3m.dartagnan.expression.integers.IntBinaryOp;
 import com.dat3m.dartagnan.expression.type.*;
-import com.dat3m.dartagnan.expression.aggregates.ConstructExpr;
 
 import java.util.ArrayList;
 import java.util.List;
 
-import static com.dat3m.dartagnan.expression.integers.IntBinaryOp.ADD;
-import static com.dat3m.dartagnan.expression.integers.IntBinaryOp.MUL;
 import static com.dat3m.dartagnan.expression.utils.ExpressionHelper.isScalar;
 
 public class HelperTypes {
 
     private static final TypeFactory types = TypeFactory.getInstance();
     private static final ExpressionFactory expressions = ExpressionFactory.getInstance();
-    private static final IntegerType archType = types.getArchType();
 
     private HelperTypes() {
     }
@@ -53,29 +49,6 @@ public class HelperTypes {
         return offset;
     }
 
-    public static Expression getMemberAddress(String id, Expression base, Type type, List<Expression> indexes) {
-        if (!indexes.isEmpty()) {
-            id += "[" + indexes.get(0) + "]";
-            if (type instanceof ArrayType aType) {
-                return getArrayMemberAddress(id, base, aType, indexes);
-            }
-            if (type instanceof AggregateType aType) {
-                return getStructMemberAddress(id, base, aType, indexes);
-            }
-            throw new ParsingException(indexTooDeepError(id));
-        }
-        return base;
-    }
-
-    public static Expression getPointerOffset(Expression base, Type type, Expression offset) {
-        int size = types.getMemorySizeInBytes(type);
-        IntLiteral sizeExpr = expressions.makeValue(size, archType);
-        Expression formattedOffset = expressions.makeIntegerCast(offset, archType, false);
-        Expression offsetExpr = expressions.makeBinary(sizeExpr, MUL, formattedOffset);
-        Expression formattedBase = expressions.makeIntegerCast(base, archType, false);
-        return expressions.makeBinary(formattedBase, ADD, offsetExpr);
-    }
-
     public static Expression createResultExpression(String id, Type type, Expression op1, Expression op2, IntBinaryOp op) {
         if (isScalar(type)) {
             return expressions.makeBinary(op1, op, op2);
@@ -87,7 +60,7 @@ public class HelperTypes {
                 Expression elementOp2 = op2 instanceof ConstructExpr ? op2.getOperands().get(i) : expressions.makeExtract(op2, i);
                 elements.add(expressions.makeBinary(elementOp1, op, elementOp2));
             }
-            return expressions.makeArray(aType.getElementType(), elements, true);
+            return expressions.makeArray(aType, elements);
         }
         throw new ParsingException("Illegal result type in definition of '%s'", id);
     }
@@ -116,7 +89,11 @@ public class HelperTypes {
         if (index >= 0) {
             if (type.getNumElements() < 0 || index < type.getNumElements()) {
                 Type elType = type.getElementType();
-                offset += types.getOffsetInBytes(type, index);
+                if (type.getStride() != null) {
+                    offset += index * type.getStride();
+                } else {
+                    offset += types.getOffsetInBytes(type, index);
+                }
                 return getMemberOffset(id, offset, elType, indexes.subList(1, indexes.size()));
             }
             throw new ParsingException(indexOutOfBoundsError(id));
@@ -135,32 +112,6 @@ public class HelperTypes {
             throw new ParsingException(indexOutOfBoundsError(id));
         }
         throw new ParsingException(indexNonConstantError(id));
-    }
-
-    private static Expression getArrayMemberAddress(String id, Expression base, ArrayType type, List<Expression> indexes) {
-        Type elementType = type.getElementType();
-        int size = types.getMemorySizeInBytes(elementType);
-        IntLiteral sizeExpr = expressions.makeValue(size, archType);
-        Expression indexExpr = expressions.makeIntegerCast(indexes.get(0), archType, false);
-        Expression offsetExpr = expressions.makeBinary(sizeExpr, MUL, indexExpr);
-        Expression expression = expressions.makeBinary(base, ADD, offsetExpr);
-        return getMemberAddress(id, expression, elementType, indexes.subList(1, indexes.size()));
-    }
-
-    private static Expression getStructMemberAddress(String id, Expression base, AggregateType type, List<Expression> indexes) {
-        Expression indexExpr = indexes.get(0);
-        if (indexExpr instanceof IntLiteral intLiteral) {
-            int index = intLiteral.getValueAsInt();
-            if (index < type.getFields().size()) {
-                Type subType = type.getFields().get(index).type();
-                int offset = type.getFields().get(index).offset();
-                IntLiteral offsetExpr = expressions.makeValue(offset, archType);
-                Expression expression = expressions.makeBinary(base, ADD, offsetExpr);
-                return getMemberAddress(id, expression, subType, indexes.subList(1, indexes.size()));
-            }
-            throw new ParsingException(indexOutOfBoundsError(id));
-        }
-        throw new ParsingException(indexNonConstantForStructError(id));
     }
 
     private static String indexTooDeepError(String id) {

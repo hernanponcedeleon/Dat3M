@@ -11,7 +11,11 @@ public record TypeOffset(Type type, int offset) {
             return new TypeOffset(type, 0);
         }
         if (type instanceof ArrayType arrayType) {
+            Integer stride = arrayType.getStride();
             Type elType = arrayType.getElementType();
+            if (stride != null) {
+                return new TypeOffset(elType, stride * index);
+            }
             return new TypeOffset(elType, types.getMemorySizeInBytes(elType) * index);
         }
         if (type instanceof AggregateType aggregateType) {

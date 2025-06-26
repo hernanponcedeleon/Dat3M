@@ -1,45 +1,58 @@
 #include <stdint.h>
 
-typedef enum memory_order {
-  memory_order_relaxed,
-  memory_order_once,
-  memory_order_acquire,
-  memory_order_release,
-  mb,
-  wmb,
-  rmb,
-  rcu_lock,
-  rcu_unlock,
-  rcu_sync,
-  before_atomic,
-  after_atomic,
-  after_spinlock,
-  barrier,
-} memory_order;
+typedef enum __LKMM_memory_order {
+  __LKMM_once,
+  __LKMM_acquire,
+  __LKMM_release,
+  __LKMM_mb,
+  __LKMM_wmb,
+  __LKMM_rmb,
+  __LKMM_rcu_lock,
+  __LKMM_rcu_unlock,
+  __LKMM_rcu_sync,
+  __LKMM_before_atomic,
+  __LKMM_after_atomic,
+  __LKMM_after_spinlock,
+  __LKMM_barrier,
+} __LKMM_memory_order;
 
-typedef enum operation {
-  op_add,
-  op_sub,
-  op_and,
-  op_or,
-} operation;
+typedef enum __LKMM_operation {
+  __LKMM_op_add,
+  __LKMM_op_sub,
+  __LKMM_op_and,
+  __LKMM_op_or,
+} __LKMM_operation;
 
-extern int __LKMM_LOAD(void*, memory_order);
-extern void __LKMM_STORE(void*, int, memory_order);
-extern void __LKMM_FENCE(int);
-extern int __LKMM_XCHG(int*, int, memory_order);
-extern int __LKMM_CMPXCHG(int*, int, int, memory_order, memory_order);
-extern void __LKMM_ATOMIC_OP(int*, int, operation);
-extern int __LKMM_ATOMIC_FETCH_OP(int*, int, memory_order, operation);
-extern int __LKMM_ATOMIC_OP_RETURN(int*, int, memory_order, operation);
+typedef typeof(sizeof(int)) __LKMM_size_t;
+typedef intmax_t __LKMM_int_t;
+
+/* Intrinsics defined by the verifier */
+extern __LKMM_int_t __LKMM_load(const volatile void*, __LKMM_size_t, __LKMM_memory_order);
+extern void __LKMM_store(volatile void*, __LKMM_size_t, __LKMM_int_t, __LKMM_memory_order);
+extern __LKMM_int_t __LKMM_xchg(volatile void*, __LKMM_size_t, __LKMM_int_t, __LKMM_memory_order);
+extern __LKMM_int_t __LKMM_cmpxchg(volatile void*, __LKMM_size_t, __LKMM_int_t, __LKMM_int_t, __LKMM_memory_order, __LKMM_memory_order);
+extern void __LKMM_atomic_op(volatile void*, __LKMM_size_t, __LKMM_int_t, __LKMM_operation);
+extern __LKMM_int_t __LKMM_atomic_op_return(volatile void*, __LKMM_size_t, __LKMM_int_t, __LKMM_memory_order, __LKMM_operation);
+extern __LKMM_int_t __LKMM_atomic_fetch_op(volatile void*, __LKMM_size_t, __LKMM_int_t, __LKMM_memory_order, __LKMM_operation);
+extern void __LKMM_fence(__LKMM_memory_order);
+
+/* Converting macros being used below */
+#define __LKMM_LOAD(p, mo) (typeof(*p))__LKMM_load(p, sizeof(*(p)), __LKMM_##mo)
+#define __LKMM_STORE(p, v, mo) __LKMM_store(p, sizeof(*(p)), (__LKMM_int_t)(v), __LKMM_##mo)
+#define __LKMM_XCHG(p, v, mo) (typeof(*p)) __LKMM_xchg(p, sizeof(*(p)), (__LKMM_int_t)(v), __LKMM_##mo)
+#define __LKMM_CMPXCHG(p, c, v, mo0, mo1) (typeof(*p)) __LKMM_cmpxchg(p, sizeof(*(p)), (__LKMM_int_t)(c), (__LKMM_int_t)(v), __LKMM_##mo0, __LKMM_##mo1)
+#define __LKMM_ATOMIC_OP(p, v, op) __LKMM_atomic_op(p, sizeof(*(p)), (__LKMM_int_t)(v), __LKMM_##op)
+#define __LKMM_ATOMIC_OP_RETURN(p, v, mo, op) (typeof(*p)) __LKMM_atomic_op_return(p, sizeof(*(p)), (__LKMM_int_t)(v), __LKMM_##mo, __LKMM_##op)
+#define __LKMM_ATOMIC_FETCH_OP(p, v, mo, op) (typeof(*p)) __LKMM_atomic_fetch_op(p, sizeof(*(p)), (__LKMM_int_t)(v), __LKMM_##mo, __LKMM_##op)
+#define __LKMM_FENCE(mo) __LKMM_fence(__LKMM_##mo)
 
 /*******************************************************************************
  **                         ONCE, FENCES AND FRIENDS
  ******************************************************************************/
 
 /* ONCE */
-#define READ_ONCE(x)     __LKMM_LOAD(&x, memory_order_once)
-#define WRITE_ONCE(x, v) __LKMM_STORE(&x, v, memory_order_once)
+#define READ_ONCE(x)     __LKMM_LOAD(&x, once)
+#define WRITE_ONCE(x, v) __LKMM_STORE(&x, v, once)
 
 /* Fences */
 
@@ -54,8 +67,8 @@ extern int __LKMM_ATOMIC_OP_RETURN(int*, int, memory_order, operation);
 #define smp_mb__after_unlock_lock() __LKMM_FENCE(after_unlock_lock)
 
 /* Acquire/Release and friends */
-#define smp_load_acquire(p)      __LKMM_LOAD(p, memory_order_acquire)
-#define smp_store_release(p, v)  __LKMM_STORE(p, v, memory_order_release)
+#define smp_load_acquire(p)      __LKMM_LOAD(p, acquire)
+#define smp_store_release(p, v)  __LKMM_STORE(p, v, release)
 #define rcu_dereference(p)       READ_ONCE(p)
 #define rcu_assign_pointer(p, v) smp_store_release(&(p), v)
 #define smp_store_mb(x, v)                    \
@@ -66,24 +79,24 @@ do {                                \
 
 /* Exchange */
 #define xchg(p, v)                      __LKMM_XCHG(p, v, mb);
-#define xchg_relaxed(p, v)              __LKMM_XCHG(p, v, memory_order_relaxed)
-#define xchg_release(p, v)              __LKMM_XCHG(p, v, memory_order_release)
-#define xchg_acquire(p, v)              __LKMM_XCHG(p, v, memory_order_acquire)
+#define xchg_relaxed(p, v)              __LKMM_XCHG(p, v, once)
+#define xchg_release(p, v)              __LKMM_XCHG(p, v, release)
+#define xchg_acquire(p, v)              __LKMM_XCHG(p, v, acquire)
 
 #define xchg_long(p, v)                 __LKMM_XCHG(p, v, mb);
-#define xchg_long_relaxed(p, v)         __LKMM_XCHG(p, v, memory_order_relaxed)
-#define xchg_long_release(p, v)         __LKMM_XCHG(p, v, memory_order_release)
-#define xchg_long_acquire(p, v)         __LKMM_XCHG(p, v, memory_order_acquire)
+#define xchg_long_relaxed(p, v)         __LKMM_XCHG(p, v, once)
+#define xchg_long_release(p, v)         __LKMM_XCHG(p, v, release)
+#define xchg_long_acquire(p, v)         __LKMM_XCHG(p, v, acquire)
 
 #define cmpxchg(p, o, n)                __LKMM_CMPXCHG(p, o, n, mb, mb)
-#define cmpxchg_relaxed(p, o, n)        __LKMM_CMPXCHG(p, o, n, memory_order_relaxed, memory_order_relaxed)
-#define cmpxchg_acquire(p, o, n)        __LKMM_CMPXCHG(p, o, n, memory_order_acquire, memory_order_acquire)
-#define cmpxchg_release(p, o, n)        __LKMM_CMPXCHG(p, o, n, memory_order_release, memory_order_release)
+#define cmpxchg_relaxed(p, o, n)        __LKMM_CMPXCHG(p, o, n, once, once)
+#define cmpxchg_acquire(p, o, n)        __LKMM_CMPXCHG(p, o, n, acquire, acquire)
+#define cmpxchg_release(p, o, n)        __LKMM_CMPXCHG(p, o, n, release, release)
 
 #define cmpxchg_long(p, o, n)           __LKMM_CMPXCHG(p, o, n, mb, mb)
-#define cmpxchg_long_relaxed(p, o, n)   __LKMM_CMPXCHG(p, o, n, memory_order_relaxed, memory_order_relaxed)
-#define cmpxchg_long_acquire(p, o, n)   __LKMM_CMPXCHG(p, o, n, memory_order_acquire, memory_order_acquire)
-#define cmpxchg_long_release(p, o, n)   __LKMM_CMPXCHG(p, o, n, memory_order_release, memory_order_release)
+#define cmpxchg_long_relaxed(p, o, n)   __LKMM_CMPXCHG(p, o, n, once, once)
+#define cmpxchg_long_acquire(p, o, n)   __LKMM_CMPXCHG(p, o, n, acquire, acquire)
+#define cmpxchg_long_release(p, o, n)   __LKMM_CMPXCHG(p, o, n, release, release)
 
 /*******************************************************************************
  **                            ATOMIC OPERATIONS
@@ -133,14 +146,14 @@ typedef atomic64_t  atomic_long_t;
 /* Value-returning atomics */
 
 #define atomic_fetch_add(i, v)                __LKMM_ATOMIC_FETCH_OP(&(v)->counter, i, mb, op_add)
-#define atomic_fetch_add_relaxed(i, v)        __LKMM_ATOMIC_FETCH_OP(&(v)->counter, i, memory_order_relaxed, op_add)
-#define atomic_fetch_add_acquire(i, v)        __LKMM_ATOMIC_FETCH_OP(&(v)->counter, i, memory_order_acquire, op_add)
-#define atomic_fetch_add_release(i, v)        __LKMM_ATOMIC_FETCH_OP(&(v)->counter, i, memory_order_release, op_add)
+#define atomic_fetch_add_relaxed(i, v)        __LKMM_ATOMIC_FETCH_OP(&(v)->counter, i, once, op_add)
+#define atomic_fetch_add_acquire(i, v)        __LKMM_ATOMIC_FETCH_OP(&(v)->counter, i, acquire, op_add)
+#define atomic_fetch_add_release(i, v)        __LKMM_ATOMIC_FETCH_OP(&(v)->counter, i, release, op_add)
 
 #define atomic_long_fetch_add(i, v)           __LKMM_ATOMIC_FETCH_OP(&(v)->counter, i, mb, op_add)
-#define atomic_long_fetch_add_relaxed(i, v)   __LKMM_ATOMIC_FETCH_OP(&(v)->counter, i, memory_order_relaxed, op_add)
-#define atomic_long_fetch_add_acquire(i, v)   __LKMM_ATOMIC_FETCH_OP(&(v)->counter, i, memory_order_acquire, op_add)
-#define atomic_long_fetch_add_release(i, v)   __LKMM_ATOMIC_FETCH_OP(&(v)->counter, i, memory_order_release, op_add)
+#define atomic_long_fetch_add_relaxed(i, v)   __LKMM_ATOMIC_FETCH_OP(&(v)->counter, i, once, op_add)
+#define atomic_long_fetch_add_acquire(i, v)   __LKMM_ATOMIC_FETCH_OP(&(v)->counter, i, acquire, op_add)
+#define atomic_long_fetch_add_release(i, v)   __LKMM_ATOMIC_FETCH_OP(&(v)->counter, i, release, op_add)
 
 #define atomic_fetch_inc(v)                   atomic_fetch_add(1, v)
 #define atomic_fetch_inc_relaxed(v)           atomic_fetch_add_relaxed(1, v)
@@ -153,14 +166,14 @@ typedef atomic64_t  atomic_long_t;
 #define atomic_long_fetch_inc_release(v)      atomic_long_fetch_add_release(1, v)
 
 #define atomic_fetch_sub(i, v)                __LKMM_ATOMIC_FETCH_OP(&(v)->counter, i, mb, op_sub)
-#define atomic_fetch_sub_relaxed(i, v)        __LKMM_ATOMIC_FETCH_OP(&(v)->counter, i, memory_order_relaxed, op_sub)
-#define atomic_fetch_sub_acquire(i, v)        __LKMM_ATOMIC_FETCH_OP(&(v)->counter, i, memory_order_acquire, op_sub)
-#define atomic_fetch_sub_release(i, v)        __LKMM_ATOMIC_FETCH_OP(&(v)->counter, i, memory_order_release, op_sub)
+#define atomic_fetch_sub_relaxed(i, v)        __LKMM_ATOMIC_FETCH_OP(&(v)->counter, i, once, op_sub)
+#define atomic_fetch_sub_acquire(i, v)        __LKMM_ATOMIC_FETCH_OP(&(v)->counter, i, acquire, op_sub)
+#define atomic_fetch_sub_release(i, v)        __LKMM_ATOMIC_FETCH_OP(&(v)->counter, i, release, op_sub)
 
 #define atomic_long_fetch_sub(i, v)           __LKMM_ATOMIC_FETCH_OP(&(v)->counter, i, mb, op_sub)
-#define atomic_long_fetch_sub_relaxed(i, v)   __LKMM_ATOMIC_FETCH_OP(&(v)->counter, i, memory_order_relaxed, op_sub)
-#define atomic_long_fetch_sub_acquire(i, v)   __LKMM_ATOMIC_FETCH_OP(&(v)->counter, i, memory_order_acquire, op_sub)
-#define atomic_long_fetch_sub_release(i, v)   __LKMM_ATOMIC_FETCH_OP(&(v)->counter, i, memory_order_release, op_sub)
+#define atomic_long_fetch_sub_relaxed(i, v)   __LKMM_ATOMIC_FETCH_OP(&(v)->counter, i, once, op_sub)
+#define atomic_long_fetch_sub_acquire(i, v)   __LKMM_ATOMIC_FETCH_OP(&(v)->counter, i, acquire, op_sub)
+#define atomic_long_fetch_sub_release(i, v)   __LKMM_ATOMIC_FETCH_OP(&(v)->counter, i, release, op_sub)
 
 #define atomic_fetch_dec(v)                   atomic_fetch_sub(1, v)
 #define atomic_fetch_dec_relaxed(v)           atomic_fetch_sub_relaxed(1, v)
@@ -173,14 +186,14 @@ typedef atomic64_t  atomic_long_t;
 #define atomic_long_fetch_dec_release(v)      atomic_long_fetch_sub_release(1, v)
 
 #define atomic_fetch_and(i, v)                __LKMM_ATOMIC_FETCH_OP(&(v)->counter, i, mb, op_and)
-#define atomic_fetch_and_relaxed(i, v)        __LKMM_ATOMIC_FETCH_OP(&(v)->counter, i, memory_order_relaxed, op_and)
-#define atomic_fetch_and_acquire(i, v)        __LKMM_ATOMIC_FETCH_OP(&(v)->counter, i, memory_order_acquire, op_and)
-#define atomic_fetch_and_release(i, v)        __LKMM_ATOMIC_FETCH_OP(&(v)->counter, i, memory_order_release, op_and)
+#define atomic_fetch_and_relaxed(i, v)        __LKMM_ATOMIC_FETCH_OP(&(v)->counter, i, once, op_and)
+#define atomic_fetch_and_acquire(i, v)        __LKMM_ATOMIC_FETCH_OP(&(v)->counter, i, acquire, op_and)
+#define atomic_fetch_and_release(i, v)        __LKMM_ATOMIC_FETCH_OP(&(v)->counter, i, release, op_and)
 
 #define atomic_long_fetch_and(i, v)           __LKMM_ATOMIC_FETCH_OP(&(v)->counter, i, mb, op_and)
-#define atomic_long_fetch_and_relaxed(i, v)   __LKMM_ATOMIC_FETCH_OP(&(v)->counter, i, memory_order_relaxed, op_and)
-#define atomic_long_fetch_and_acquire(i, v)   __LKMM_ATOMIC_FETCH_OP(&(v)->counter, i, memory_order_acquire, op_and)
-#define atomic_long_fetch_and_release(i, v)   __LKMM_ATOMIC_FETCH_OP(&(v)->counter, i, memory_order_release, op_and)
+#define atomic_long_fetch_and_relaxed(i, v)   __LKMM_ATOMIC_FETCH_OP(&(v)->counter, i, once, op_and)
+#define atomic_long_fetch_and_acquire(i, v)   __LKMM_ATOMIC_FETCH_OP(&(v)->counter, i, acquire, op_and)
+#define atomic_long_fetch_and_release(i, v)   __LKMM_ATOMIC_FETCH_OP(&(v)->counter, i, release, op_and)
 
 #define atomic_fetch_andnot(i, v)             atomic_fetch_and(~(i), v)
 #define atomic_fetch_andnot_relaxed(i, v)     atomic_fetch_and_relaxed(~(i), v)
@@ -193,19 +206,19 @@ typedef atomic64_t  atomic_long_t;
 #define atomic_long_fetch_andnot_release(i, v)  atomic_long_fetch_and_release(~(i), v)
 
 #define atomic_fetch_or(i, v)                 __LKMM_ATOMIC_FETCH_OP(&(v)->counter, i, mb, op_or)
-#define atomic_fetch_or_relaxed(i, v)         __LKMM_ATOMIC_FETCH_OP(&(v)->counter, i, memory_order_relaxed, op_or)
-#define atomic_fetch_or_acquire(i, v)         __LKMM_ATOMIC_FETCH_OP(&(v)->counter, i, memory_order_acquire, op_or)
-#define atomic_fetch_or_release(i, v)         __LKMM_ATOMIC_FETCH_OP(&(v)->counter, i, memory_order_release, op_or)
+#define atomic_fetch_or_relaxed(i, v)         __LKMM_ATOMIC_FETCH_OP(&(v)->counter, i, once, op_or)
+#define atomic_fetch_or_acquire(i, v)         __LKMM_ATOMIC_FETCH_OP(&(v)->counter, i, acquire, op_or)
+#define atomic_fetch_or_release(i, v)         __LKMM_ATOMIC_FETCH_OP(&(v)->counter, i, release, op_or)
 
 #define atomic_long_fetch_or(i, v)            __LKMM_ATOMIC_FETCH_OP(&(v)->counter, i, mb, op_or)
-#define atomic_long_fetch_or_relaxed(i, v)    __LKMM_ATOMIC_FETCH_OP(&(v)->counter, i, memory_order_relaxed, op_or)
-#define atomic_long_fetch_or_acquire(i, v)    __LKMM_ATOMIC_FETCH_OP(&(v)->counter, i, memory_order_acquire, op_or)
-#define atomic_long_fetch_or_release(i, v)    __LKMM_ATOMIC_FETCH_OP(&(v)->counter, i, memory_order_release, op_or)
+#define atomic_long_fetch_or_relaxed(i, v)    __LKMM_ATOMIC_FETCH_OP(&(v)->counter, i, once, op_or)
+#define atomic_long_fetch_or_acquire(i, v)    __LKMM_ATOMIC_FETCH_OP(&(v)->counter, i, acquire, op_or)
+#define atomic_long_fetch_or_release(i, v)    __LKMM_ATOMIC_FETCH_OP(&(v)->counter, i, release, op_or)
 
 #define atomic_add_return(i, v)               __LKMM_ATOMIC_OP_RETURN(&(v)->counter, i, mb, op_add)
-#define atomic_add_return_relaxed(i, v)       __LKMM_ATOMIC_OP_RETURN(&(v)->counter, i, memory_order_relaxed, op_add)
-#define atomic_add_return_acquire(i, v)       __LKMM_ATOMIC_OP_RETURN(&(v)->counter, i, memory_order_acquire, op_add)
-#define atomic_add_return_release(i, v)       __LKMM_ATOMIC_OP_RETURN(&(v)->counter, i, memory_order_release, op_add)
+#define atomic_add_return_relaxed(i, v)       __LKMM_ATOMIC_OP_RETURN(&(v)->counter, i, once, op_add)
+#define atomic_add_return_acquire(i, v)       __LKMM_ATOMIC_OP_RETURN(&(v)->counter, i, acquire, op_add)
+#define atomic_add_return_release(i, v)       __LKMM_ATOMIC_OP_RETURN(&(v)->counter, i, release, op_add)
 
 #define atomic_inc_return(v)                  atomic_add_return(1, v)
 #define atomic_inc_return_relaxed(v)          atomic_add_return_relaxed(1, v)
@@ -218,14 +231,14 @@ typedef atomic64_t  atomic_long_t;
 #define atomic_long_inc_return_release(v)     atomic_long_add_return_release(1, v)
 
 #define atomic_sub_return(i, v)               __LKMM_ATOMIC_OP_RETURN(&(v)->counter, i, mb, op_sub)
-#define atomic_sub_return_relaxed(i, v)       __LKMM_ATOMIC_OP_RETURN(&(v)->counter, i, memory_order_relaxed, op_sub)
-#define atomic_sub_return_acquire(i, v)       __LKMM_ATOMIC_OP_RETURN(&(v)->counter, i, memory_order_acquire, op_sub)
-#define atomic_sub_return_release(i, v)       __LKMM_ATOMIC_OP_RETURN(&(v)->counter, i, memory_order_release, op_sub)
+#define atomic_sub_return_relaxed(i, v)       __LKMM_ATOMIC_OP_RETURN(&(v)->counter, i, once, op_sub)
+#define atomic_sub_return_acquire(i, v)       __LKMM_ATOMIC_OP_RETURN(&(v)->counter, i, acquire, op_sub)
+#define atomic_sub_return_release(i, v)       __LKMM_ATOMIC_OP_RETURN(&(v)->counter, i, release, op_sub)
 
 #define atomic_long_sub_return(i, v)          __LKMM_ATOMIC_OP_RETURN(&(v)->counter, i, mb, op_sub)
-#define atomic_long_sub_return_relaxed(i, v)  __LKMM_ATOMIC_OP_RETURN(&(v)->counter, i, memory_order_relaxed, op_sub)
-#define atomic_long_sub_return_acquire(i, v)  __LKMM_ATOMIC_OP_RETURN(&(v)->counter, i, memory_order_acquire, op_sub)
-#define atomic_long_sub_return_release(i, v)  __LKMM_ATOMIC_OP_RETURN(&(v)->counter, i, memory_order_release, op_sub)
+#define atomic_long_sub_return_relaxed(i, v)  __LKMM_ATOMIC_OP_RETURN(&(v)->counter, i, once, op_sub)
+#define atomic_long_sub_return_acquire(i, v)  __LKMM_ATOMIC_OP_RETURN(&(v)->counter, i, acquire, op_sub)
+#define atomic_long_sub_return_release(i, v)  __LKMM_ATOMIC_OP_RETURN(&(v)->counter, i, release, op_sub)
 
 #define atomic_dec_return(v)                  atomic_sub_return(1, v)
 #define atomic_dec_return_relaxed(v)          atomic_sub_return_relaxed(1, v)

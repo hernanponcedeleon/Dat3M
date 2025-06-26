@@ -2,7 +2,6 @@ package com.dat3m.dartagnan.program.processing;
 
 import com.dat3m.dartagnan.exception.MalformedProgramException;
 import com.dat3m.dartagnan.expression.Expression;
-import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.Type;
 import com.dat3m.dartagnan.expression.integers.IntLiteral;
 import com.dat3m.dartagnan.expression.misc.GEPExpr;
@@ -10,7 +9,6 @@ import com.dat3m.dartagnan.expression.processing.ExprTransformer;
 import com.dat3m.dartagnan.expression.type.AggregateType;
 import com.dat3m.dartagnan.expression.type.ArrayType;
 import com.dat3m.dartagnan.expression.type.IntegerType;
-import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.event.RegReader;
@@ -66,32 +64,28 @@ public class GEPToAddition implements ProgramProcessor {
 
     private static final class GEPToAdditionTransformer extends ExprTransformer {
 
-        private final TypeFactory types = TypeFactory.getInstance();
-        private final ExpressionFactory expressions = ExpressionFactory.getInstance();
-
         @Override
         public Expression visitGEPExpression(GEPExpr gep) {
             final List<Expression> indices = gep.getOffsets();
             final IntegerType offsetType = (IntegerType) indices.get(0).getType();
-
+            final Integer baseStride = gep.getStride();
             Type indexingType = gep.getIndexingType();
-            Expression totalOffset = expressions.makeMul(
-                    expressions.makeValue(types.getMemorySizeInBytes(indexingType), offsetType),
-                    indices.get(0)
-            );
+
+            final int baseSize = baseStride != null ? baseStride : types.getMemorySizeInBytes(indexingType);
+            Expression totalOffset = expressions.makeMul(expressions.makeValue(baseSize, offsetType), indices.get(0));
+
             for (Expression index : indices.subList(1, indices.size())) {
                 Expression offset;
                 if (indexingType instanceof AggregateType aggType && index instanceof IntLiteral lit) {
                     final int intIndex = lit.getValueAsInt();
                     final int intOffset = types.getOffsetInBytes(aggType, intIndex);
-
                     offset = expressions.makeValue(intOffset, offsetType);
                     indexingType = aggType.getFields().get(intIndex).type();
                 } else if (indexingType instanceof ArrayType arrayType) {
-                    final int elementSize = types.getMemorySizeInBytes(arrayType.getElementType());
-                    final Expression scaling = expressions.makeValue(elementSize, offsetType);
+                    Integer stride = arrayType.getStride();
+                    final int elSize = stride != null ? stride : types.getMemorySizeInBytes(arrayType.getElementType());
+                    final Expression scaling = expressions.makeValue(elSize, offsetType);
                     final Expression castIndex = expressions.makeCast(index, offsetType, true);
-
                     offset = expressions.makeMul(scaling, castIndex);
                     indexingType = arrayType.getElementType();
                 } else {

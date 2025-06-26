@@ -1,0 +1,18 @@
+AArch64 MP+dmbsy+misaligned2+255
+{
+uint8_t x[320]; (* five cache lines *)
+0:X5=x; 1:X5=x;
+uint8_t  0:X1 = 0x11;
+uint8_t  0:X2 = 0x22;
+uint32_t 1:X6 = 255;
+}
+
+P0                | P1                   ;
+STRB W1,[X5,#255] | LDRB W1,[X5,#256]    ;
+DMB SY            | LDRH W2,[X5,W6,SXTW] ;
+STRB W2,[X5,#256] |                      ;
+                  |                      ;
+                  |                      ;
+
+exists
+(1:X1=0x22 /\ 1:X2=0x2200)

@@ -1,0 +1,24 @@
+AArch64 MP+dmb.syw0w4+pospw0-ctrlisbw0w4-posw4p
+"DMB.SYdWWw0w4 Rfew4P PosRRPw0 DpCtrlIsbdRw0w4 PosRRw4P FrePw0"
+Cycle=FrePw0 DMB.SYdWWw0w4 Rfew4P PosRRPw0 DpCtrlIsbdRw0w4 PosRRw4P
+Relax=PosRR
+Safe=[Fre,w0,DMB.SYdWW,w4,Rfe] DpCtrlIsbdR w0 w4
+Generator=diy7 (version 7.50+1(dev))
+Prefetch=0:x=F,0:y=W,1:y=F,1:x=T
+Com=Rf Fr
+Orig=DMB.SYdWWw0w4 Rfew4P PosRRPw0 DpCtrlIsbdRw0w4 PosRRw4P FrePw0
+{
+uint64_t y; uint64_t x; uint64_t 1:X5; uint64_t 1:X0;
+
+0:X0=0x1010101; 0:X1=x; 0:X2=0x1010101; 0:X3=y;
+1:X1=y; 1:X4=x;
+}
+ P0             | P1             ;
+ STR W0,[X1]    | LDR X0,[X1]    ;
+ DMB SY         | LDR W2,[X1]    ;
+ STR W2,[X3,#4] | CBNZ X2,LC00   ;
+                | LC00:          ;
+                | ISB            ;
+                | LDR W3,[X4,#4] ;
+                | LDR X5,[X4]    ;
+exists (1:X0=0x101010100000000 /\ 1:X5=0x0 /\ x=0x1010101 /\ y=0x101010100000000)

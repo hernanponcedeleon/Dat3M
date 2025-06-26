@@ -1,0 +1,19 @@
+AArch64 SB+posw0q0+posw4q0+SIMPLE
+"PosWRw0q0 Freq0w4 PosWRw4q0 Freq0w0"
+(* Simple version of test --- ie without local observer *)
+Generator=diyone7 (version 7.50+1(dev))
+Prefetch=
+Com=Fr Fr
+Orig=PosWRw0q0 Freq0w4 PosWRw4q0 Freq0w0
+{
+uint64_t x; uint64_t 1:X2; uint64_t 0:X2;
+
+0:X0=0x1010101; 0:X1=x;
+1:X0=0x2020202; 1:X1=x;
+}
+ P0          | P1             ;
+ STR W0,[X1] | STR W0,[X1,#4] ;
+ LDR X2,[X1] | LDR X2,[X1]    ;
+
+exists
+  0:X2=0x1010101 /\  1:X2=0x202020200000000 /\  x=0x202020201010101

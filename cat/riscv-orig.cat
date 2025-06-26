@@ -56,9 +56,6 @@ let ppo =
 | r12
 | r13
 
-(* Compute coherence relation *)
-include "cos-opt.cat"
-
 (**********)
 (* Axioms *)
 (**********)

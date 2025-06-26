@@ -371,10 +371,7 @@ public class NonTerminationEncoder {
         BooleanFormula equality = bmgr.equivalence(context.execution(x), context.execution(y));
         if (x instanceof RegWriter e && y instanceof RegWriter f) {
             // TODO: This should be covered by StateSnapshot, i.e., we do not need to consider dead variables.
-            equality = bmgr.and(
-                    equality,
-                    context.equal(context.result(e), context.result(f))
-            );
+            equality = bmgr.and(equality, context.sameResult(e, f));
         }
         if (x instanceof StateSnapshot e && y instanceof StateSnapshot f) {
             if (e.getExpressions().size() != f.getExpressions().size()) {
@@ -383,17 +380,14 @@ public class NonTerminationEncoder {
                 for (int i = 0; i < e.getExpressions().size(); i++) {
                     final Expression exprE = e.getExpressions().get(i);
                     final Expression exprF = f.getExpressions().get(i);
-                    equality = bmgr.and(
-                            equality,
-                            context.equal(context.encodeExpressionAt(exprE, e), context.encodeExpressionAt(exprF, f))
-                    );
+                    equality = bmgr.and(equality, context.getExpressionEncoder().equalAt(exprE, e, exprF, f));
                 }
             }
         }
         if (x instanceof MemoryCoreEvent e && y instanceof MemoryCoreEvent f) {
-            equality = bmgr.and(equality, context.equal(context.address(e), context.address(f)));
+            equality = bmgr.and(equality, context.sameAddress(e, f));
             if (x instanceof Store || x instanceof Load) {
-                equality = bmgr.and(equality, context.equal(context.value(e), context.value(f)));
+                equality = bmgr.and(equality, context.sameValue(e, f));
             }
 
         }

@@ -60,7 +60,7 @@ public class VisitorOpsLogical extends SpirvBaseVisitor<Event> {
                     id, type, op1.getType(), op2.getType());
         }
         if (op1.getType() instanceof IntegerType || op1.getType() instanceof BooleanType) {
-            return builder.addEvent(new Local(register, expressions.makeITE(cond, op1, op2)));
+            return builder.addEvent(EventFactory.newLocal(register, expressions.makeITE(cond, op1, op2)));
         }
         throw new ParsingException("Illegal definition for '%s', " +
                 "operands must be integers or arrays of booleans", id);

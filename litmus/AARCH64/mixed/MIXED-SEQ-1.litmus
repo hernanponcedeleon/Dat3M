@@ -1,0 +1,16 @@
+AArch64 MIXED-SEQ-1
+
+{
+uint64_t x = 0;
+0:X6 = x;
+uint32_t 0:X1 = 0x00010203;
+uint32_t 0:X2 = 0x11 ;
+uint64_t 0:X5;
+}
+
+P0                                         ;
+STR  W1,[X6]    (* W x  /4 = 0x00010203 *) ;
+STRB W2,[X6,#2] (* W x+2/1 = 0x..11.... *) ;
+LDR  W5,[X6]    (* R x  /4 = 0x00110203 *) ;
+
+forall (0:X5=0x00110203)

@@ -1,0 +1,21 @@
+AArch64 CoRR+frib0b0-rfib0h0+h0
+"Rfeh0b0 Frib0b0 Rfib0h0 Freh0h0"
+Cycle=Frib0b0 Rfib0h0 Freh0h0 Rfeh0b0
+Relax=Frib0b0 Rfeh0b0 Freh0h0
+Safe=Rfib0h0
+Generator=diy7 (version 7.52+9(dev))
+Prefetch=
+Com=Rf Fr
+Orig=Rfeh0b0 Frib0b0 Rfib0h0 Freh0h0
+{
+uint32_t x; uint32_t 1:X3; uint32_t 1:X0;
+
+0:X1=x;
+1:X1=x;
+}
+ P0           | P1           ;
+ MOV W0,#257  | LDRB W0,[X1] ;
+ STRH W0,[X1] | MOV W2,#2    ;
+              | STRB W2,[X1] ;
+              | LDRH W3,[X1] ;
+exists (1:X0=0x0 /\ 1:X3=0x2 /\ x=0x102) \/ (1:X0=0x1 /\ 1:X3=0x2 /\ x=0x102)

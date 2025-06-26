@@ -136,7 +136,7 @@ public final class MemAlloc extends AbstractEvent implements RegReader, RegWrite
     public BooleanFormula encodeExec(EncodingContext ctx) {
         return ctx.getBooleanFormulaManager().and(
                 super.encodeExec(ctx),
-                ctx.equal(ctx.result(this), ctx.encodeExpressionAt(getAllocatedObject(), this))
+                ctx.getExpressionEncoder().equalAt(ctx.result(this), this, getAllocatedObject(), this)
         );
     }
 }

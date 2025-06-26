@@ -13,19 +13,9 @@
         <File name="File" fileName="${logDir}/surefire-logs/${logFile}.log">
             <PatternLayout pattern="%d{[dd.MM.yyyy] HH:mm:ss} %highlight{[%level]} %C{1}.%M - %msg%n"/>
         </File>
-        <Console name="Refinement_Console" target="SYSTEM_OUT">
-            <PatternLayout pattern="%d{[dd.MM.yyyy] HH:mm:ss} %highlight{[%level]} %C{1}.%M - %msg%n"/>
-        </Console>
-        <File name="Refinement_File" fileName="${logDir}/surefire-logs/refinement.log">
-            <PatternLayout pattern="%d{[dd.MM.yyyy] HH:mm:ss} %highlight{[%level]} %C{1}.%M - %msg%n"/>
-        </File>
     </Appenders>
 
     <Loggers>
-        <Logger name="com.dat3m.dartagnan.verification.solving.RefinementSolver" level="off" additivity="false">
-            <AppenderRef ref="Refinement_Console"/>
-            <AppenderRef ref="Refinement_File"/>
-        </Logger>
         <Root level="off">
             <AppenderRef ref="Console"/>
             <AppenderRef ref="File"/>

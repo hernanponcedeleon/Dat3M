@@ -49,10 +49,15 @@ public final class TypeFactory {
         return typeNormalizer.normalize(new IntegerType(bitWidth));
     }
 
-    public ScopedPointerType getScopedPointerType(String scopeId, Type pointedType) {
+    public ScopedPointerType getScopedPointerType(String scopeId, Type pointedType, Integer stride) {
         checkNotNull(scopeId);
         checkNotNull(pointedType);
-        return typeNormalizer.normalize(new ScopedPointerType(scopeId, pointedType));
+        if (stride != null) {
+            checkArgument(stride > 0, "Stride must be positive");
+            checkArgument(stride >= getMemorySizeInBytes(pointedType),
+                    "Stride cannot be smaller than element size");
+        }
+        return typeNormalizer.normalize(new ScopedPointerType(scopeId, pointedType, stride));
     }
 
     public FloatType getFloatType(int mantissaBits, int exponentBits) {
@@ -109,12 +114,30 @@ public final class TypeFactory {
     }
 
     public ArrayType getArrayType(Type element) {
-        return typeNormalizer.normalize(new ArrayType(element, -1));
+        return getArrayType(element, -1, null, null);
     }
 
     public ArrayType getArrayType(Type element, int size) {
         checkArgument(0 <= size, "Negative element count in array.");
-        return typeNormalizer.normalize(new ArrayType(element, size));
+        return getArrayType(element, size, null, null);
+    }
+
+    public ArrayType getArrayType(Type element, int size, Integer stride) {
+        return getArrayType(element, size, stride, null);
+    }
+
+    public ArrayType getArrayType(Type element, int size, Integer stride, Integer alignment) {
+        checkArgument(stride == null || alignment == null,
+                "Stride and alignment cannot be used simultaneously");
+        if (stride != null) {
+            checkArgument(stride > 0, "Stride must be positive");
+            checkArgument(stride >= getMemorySizeInBytes(element),
+                    "Stride cannot be smaller than element size");
+        }
+        if (alignment != null) {
+            checkArgument(alignment > 0, "Alignment must be positive");
+        }
+        return typeNormalizer.normalize(new ArrayType(element, size, stride, alignment));
     }
 
     public IntegerType getArchType() {
@@ -129,7 +152,7 @@ public final class TypeFactory {
         return getMemorySizeInBytes(type, true);
     }
 
-    public int getMemorySizeInBytes(Type type, boolean padded) {
+    private int getMemorySizeInBytes(Type type, boolean padded) {
         if (type instanceof BooleanType) {
             return 1;
         }
@@ -141,8 +164,18 @@ public final class TypeFactory {
         }
         if (type instanceof ArrayType arrayType) {
             if (arrayType.hasKnownNumElements()) {
-                Type elType = arrayType.getElementType();
-                return getMemorySizeInBytes(elType) * arrayType.getNumElements();
+                Integer stride = arrayType.getStride();
+                if (stride != null) {
+                    return stride * arrayType.getNumElements();
+                }
+                int elSize = getMemorySizeInBytes(arrayType.getElementType());
+                if (elSize >= 0) {
+                    int size = elSize * arrayType.getNumElements();
+                    if (arrayType.getAlignment() != null) {
+                        return paddedSize(size, arrayType.getAlignment());
+                    }
+                    return size;
+                }
             }
             return -1;
         }
@@ -164,11 +197,15 @@ public final class TypeFactory {
         throw new UnsupportedOperationException("Cannot compute memory layout of type " + type);
     }
 
-    public int getAlignment(Type type) {
+    private int getAlignment(Type type) {
         if (type instanceof BooleanType || type instanceof IntegerType || type instanceof FloatType) {
             return getMemorySizeInBytes(type);
         }
         if (type instanceof ArrayType arrayType) {
+            Integer alignment = arrayType.getAlignment();
+            if (alignment != null) {
+                return alignment;
+            }
             return getAlignment(arrayType.getElementType());
         }
         if (type instanceof AggregateType aType) {
@@ -202,12 +239,11 @@ public final class TypeFactory {
             if (!arrayType.hasKnownNumElements() || innerDecomposition == null) {
                 return null;
             }
-
-            final int size = getMemorySizeInBytes(arrayType.getElementType());
+            Integer stride = arrayType.getStride();
+            final int size = stride != null ? stride : getMemorySizeInBytes(arrayType.getElementType());
             for (int i = 0; i < arrayType.getNumElements(); i++) {
-                final int offset = i * size;
                 for (Map.Entry<Integer, Type> entry : innerDecomposition.entrySet()) {
-                    decomposition.put(entry.getKey() + offset, entry.getValue());
+                    decomposition.put(entry.getKey() + i * size, entry.getValue());
                 }
             }
         } else if (type instanceof AggregateType aggregateType) {

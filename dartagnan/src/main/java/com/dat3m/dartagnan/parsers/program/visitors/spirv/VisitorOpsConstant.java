@@ -128,7 +128,7 @@ public class VisitorOpsConstant extends SpirvBaseVisitor<Expression> {
             }
             Expression exp = getConstantNullExpression(typeId, arrayType.getElementType());
             List<Expression> elements = Collections.nCopies(arrayType.getNumElements(), exp);
-            return expressions.makeArray(arrayType.getElementType(), elements, true);
+            return expressions.makeArray(arrayType, elements);
         }
         if (type instanceof AggregateType aggregateType) {
             List<Expression> elements = new ArrayList<>();
@@ -216,7 +216,7 @@ public class VisitorOpsConstant extends SpirvBaseVisitor<Expression> {
             }
             elements.add(expression);
         }
-        return expressions.makeArray(elementType, elements, true);
+        return expressions.makeArray(type, elements);
     }
 
     private Integer getInputValue(String id) {

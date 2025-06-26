@@ -10,7 +10,7 @@ int r0,r1;
 
 void *thread_1(void *arg)
 {
-	WRITE_ONCE(x, 1);
+	atomic_set(&x, 1);
 	r0 = atomic_xchg_release(&y, 5);
 	return NULL;
 }
@@ -19,7 +19,7 @@ void *thread_2(void *arg)
 {
 	atomic_inc(&y);
 	smp_mb();
-	r1 = READ_ONCE(x);
+	r1 = atomic_read(&x);
 	return NULL;
 }
 

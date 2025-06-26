@@ -4,10 +4,8 @@ import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.Type;
-import com.dat3m.dartagnan.expression.aggregates.ConstructExpr;
 import com.dat3m.dartagnan.expression.type.ArrayType;
 import com.dat3m.dartagnan.expression.type.IntegerType;
-import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.program.ThreadGrid;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 
@@ -18,7 +16,6 @@ import java.util.Map;
 
 public class BuiltIn implements Decoration {
 
-    private static final TypeFactory types = TypeFactory.getInstance();
     private static final ExpressionFactory expressions = ExpressionFactory.getInstance();
     private final ThreadGrid grid;
     private final Map<String, String> mapping;
@@ -48,16 +45,7 @@ public class BuiltIn implements Decoration {
 
     public void decorate(String id, MemoryObject memObj, Type type) {
         if (mapping.containsKey(id)) {
-            Expression expression = getDecoration(id, type);
-            if (expression instanceof ConstructExpr cExpr) {
-                Type elementType = getArrayElementType(id, type);
-                int size = types.getMemorySizeInBytes(elementType);
-                memObj.setInitialValue(0, cExpr.getOperands().get(0));
-                memObj.setInitialValue(size, cExpr.getOperands().get(1));
-                memObj.setInitialValue(size * 2, cExpr.getOperands().get(2));
-            } else {
-                memObj.setInitialValue(0, expression);
-            }
+            memObj.setInitialValue(0, getDecorationExpressions(id, type));
         }
     }
 
@@ -96,7 +84,7 @@ public class BuiltIn implements Decoration {
         operands.add(expressions.makeValue(x, elementType));
         operands.add(expressions.makeValue(y, elementType));
         operands.add(expressions.makeValue(z, elementType));
-        return expressions.makeArray(elementType, operands, true);
+        return expressions.makeArray((ArrayType) type, operands);
     }
 
     private Expression makeScalar(String id, Type type, int x) {

@@ -1,8 +1,6 @@
 "X86 TSO"
 
-include "cos.cat"
 include "x86fences.cat"
-include "filters.cat"
 
 (* All communication relations *)
 let com = (co | fr | rf)

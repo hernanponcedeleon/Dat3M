@@ -14,27 +14,27 @@ int r4_1;
 
 void *thread_1(void *unused)
 {
-	r1_0 = READ_ONCE(x);
+	r1_0 = atomic_read(&x);
 	r3_0 = (r1_0 != 0);
 	if (r3_0) {
-		WRITE_ONCE(y, 1);
+		atomic_set(&y, 1);
 	}
     return NULL;
 }
 
 void *thread_2(void *unused)
 {
-	r2_1 = READ_ONCE(y);
+	r2_1 = atomic_read(&y);
 	r4_1 = (r2_1 != 0);
 	if (r4_1) {
-		WRITE_ONCE(x, 1);
+		atomic_set(&x, 1);
 	}
     return NULL;
 }
 
 void *thread_3(void *unused)
 {
-	WRITE_ONCE(x, 2);
+	atomic_set(&x, 2);
     return NULL;
 }
 
@@ -50,7 +50,7 @@ int main()
 	pthread_join(t2, NULL);
 	pthread_join(t3, NULL);
 
-	assert(!(r1_0 == 2 && r2_1 == 1 && READ_ONCE(x) == 2));
+	assert(!(r1_0 == 2 && r2_1 == 1 && atomic_read(&x) == 2));
 
 	return 0;
 }

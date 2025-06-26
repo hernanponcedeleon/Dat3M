@@ -26,6 +26,10 @@ else
         export CFLAGS="-fgnu89-inline -fsanitize=signed-integer-overflow"
     elif [[ $propertypath == *"valid-memsafety.prp"* ]]; then
         export CFLAGS="-fgnu89-inline -fsanitize=null"
+    elif [[ $propertypath == *"termination.prp"* ]]; then
+        export CFLAGS="-fgnu89-inline"
+    elif [[ $propertypath == *"no-data-race.prp"* ]]; then
+        export CFLAGS="-fgnu89-inline"
     else
         export CFLAGS="-fgnu89-inline"
         skip_assertions_of_type=""

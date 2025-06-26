@@ -39,6 +39,7 @@ varName
 
 constant
     :   Minus? DigitSequence
+    |   hex=HexDigitSequence
     ;
 
 assertionListExpectationList
@@ -134,6 +135,10 @@ DigitSequence
 fragment
 Digit
     :   [0-9]
+    ;
+
+HexDigitSequence
+    :   '0x' [0-9a-fA-F]+
     ;
 
 fragment

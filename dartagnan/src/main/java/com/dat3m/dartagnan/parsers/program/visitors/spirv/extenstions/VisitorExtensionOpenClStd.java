@@ -47,7 +47,7 @@ public class VisitorExtensionOpenClStd extends VisitorExtension<Expression> {
                         expressions.makeExtract(y, i)
                 ));
             }
-            return expressions.makeArray(xType.getElementType(), sums, true);
+            return expressions.makeArray(xType, sums);
         }
         throw new ParsingException("Unsupported types for s_add_sat: %s and %s", x.getType(), y.getType());
     }
@@ -69,7 +69,7 @@ public class VisitorExtensionOpenClStd extends VisitorExtension<Expression> {
                         expressions.makeExtract(y, i)
                 ));
             }
-            return expressions.makeArray(xType.getElementType(), subs, true);
+            return expressions.makeArray(xType, subs);
         }
         throw new ParsingException("Unsupported types for s_sub_sat: %s and %s", x.getType(), y.getType());
     }

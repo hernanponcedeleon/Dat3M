@@ -9,7 +9,6 @@ import org.apache.logging.log4j.Logger;
 import java.io.*;
 import java.util.List;
 
-import static com.dat3m.dartagnan.parsers.program.utils.Compilation.applyLlvmPasses;
 import static com.dat3m.dartagnan.parsers.program.utils.Compilation.compileWithClang;
 
 public class ProgramParser {
@@ -37,7 +36,6 @@ public class ProgramParser {
     public Program parse(File file) throws Exception {
         if (needsClang(file)) {
             file = compileWithClang(file, "");
-            file = applyLlvmPasses(file);
             return new ProgramParser().parse(file);
         }
 
@@ -67,7 +65,6 @@ public class ProgramParser {
                     writer.write(raw);
                 }
                 file = compileWithClang(file, cflags);
-                file = applyLlvmPasses(file);
                 Program p = new ProgramParser().parse(file);
                 file.delete();
                 return p;
@@ -123,7 +120,9 @@ public class ProgramParser {
         } else if(programText.indexOf(TYPE_LITMUS_VULKAN) == 0) {
             return new ParserLitmusVulkan();
         }
-        throw new ParsingException("Unknown input file type");
+        final int spaceIndex = programText.indexOf(" ");
+        final String litmusFormat = (spaceIndex != -1) ? " " + programText.substring(0, spaceIndex) : "";
+        throw new ParsingException("Unknown litmus format" + litmusFormat);
     }
 
     private String readFirstLine(File file) throws IOException {

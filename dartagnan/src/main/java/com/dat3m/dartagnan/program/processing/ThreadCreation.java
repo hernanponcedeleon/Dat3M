@@ -271,7 +271,7 @@ public class ThreadCreation implements ProgramProcessor {
         thread.getEntry().insertAfter(body);
 
         // ------------------- Create thread-local variables -------------------
-        replaceGlobalsByThreadLocals(function.getProgram().getMemory(), thread);
+        replaceThreadLocalsWithStackalloc(function.getProgram().getMemory(), thread);
 
         // ------------------- Add end & return label -------------------
         final Register returnRegister = function.hasReturnValue() ?
@@ -334,25 +334,60 @@ public class ThreadCreation implements ProgramProcessor {
         return new ThreadData(thread, null);
     }
 
-    private void replaceGlobalsByThreadLocals(Memory memory, Thread thread) {
+
+    private void replaceThreadLocalsWithStackalloc(Memory memory, Thread thread) {
+        final TypeFactory types = TypeFactory.getInstance();
+        final ExpressionFactory exprs = ExpressionFactory.getInstance();
+
+        // Translate thread-local memory object to local stack allocation
+        Map<MemoryObject, Register> toLocalRegister = new HashMap<>();
+        for (MemoryObject memoryObject : memory.getObjects()) {
+            if (!memoryObject.isThreadLocal()) {
+                continue;
+            }
+            Preconditions.checkState(memoryObject.hasKnownSize());
+
+            // Compute type of memory object based on initial values
+            final List<Type> contentTypes = new ArrayList<>();
+            final List<Integer> offsets = new ArrayList<>();
+            for (Integer initOffset : memoryObject.getInitializedFields()) {
+                contentTypes.add(memoryObject.getInitialValue(initOffset).getType());
+                offsets.add(initOffset);
+            }
+            final Type memoryType = types.getAggregateType(contentTypes, offsets);
+
+            // Allocate single object of memory type
+            final Register reg = thread.newUniqueRegister("__threadLocal_" + memoryObject, types.getPointerType());
+            final Event localAlloc = EventFactory.newAlloc(
+                    reg, memoryType, expressions.makeOne(types.getArchType()),
+                    false, true
+            );
+
+            // Initialize allocated object with regular stores.
+            final List<Event> initialization = new ArrayList<>();
+            for (Integer initOffset : memoryObject.getInitializedFields()) {
+                initialization.add(EventFactory.newStore(
+                        exprs.makeAdd(reg, exprs.makeValue(initOffset, types.getArchType())),
+                        memoryObject.getInitialValue(initOffset)
+                ));
+            }
+
+            // Insert new code & update
+            thread.getEntry().insertAfter(eventSequence(localAlloc, initialization));
+            toLocalRegister.put(memoryObject, reg);
+        }
+
+        // Replace all usages of thread-local memory object by register containing the address to the local allocation.
         final ExprTransformer transformer = new ExprTransformer() {
-            final Map<Expression, Expression> global2ThreadLocal = new HashMap<>();
             @Override
             public Expression visitMemoryObject(MemoryObject memObj) {
-                if (memObj.isThreadLocal() && !global2ThreadLocal.containsKey(memObj)) {
-                    Preconditions.checkState(memObj.hasKnownSize());
-                    final MemoryObject threadLocalCopy = memory.allocate(memObj.getKnownSize());
-                    assert memObj.hasName();
-                    final String varName = String.format("%s@T%s", memObj.getName(), thread.getId());
-                    threadLocalCopy.setName(varName);
-                    for (int field : memObj.getInitializedFields()) {
-                        threadLocalCopy.setInitialValue(field, memObj.getInitialValue(field));
-                    }
-                    global2ThreadLocal.put(memObj, threadLocalCopy);
+                if (toLocalRegister.containsKey(memObj)) {
+                    return toLocalRegister.get(memObj);
                 }
-                return global2ThreadLocal.getOrDefault(memObj, memObj);
+                return memObj;
             }
         };
+
         thread.getEvents(RegReader.class).forEach(reader -> reader.transformExpressions(transformer));
         // TODO: After creating all thread-local copies, we might want to delete the original variable?
     }

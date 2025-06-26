@@ -62,21 +62,25 @@ public class Intrinsics {
 
     private enum AssertionType { USER, OVERFLOW, INVALIDDEREF, UNKNOWN_FUNCTION }
 
+    private final boolean detectMixedSizeAccesses;
+
     private static final TypeFactory types = TypeFactory.getInstance();
     private static final ExpressionFactory expressions = ExpressionFactory.getInstance();
 
     //FIXME This might have concurrency issues if processing multiple programs at the same time.
     private BeginAtomic currentAtomicBegin;
 
-    private Intrinsics() {
+    private Intrinsics(boolean msa) {
+        detectMixedSizeAccesses = msa;
     }
 
     public static Intrinsics newInstance() {
-        return new Intrinsics();
+        return new Intrinsics(false);
     }
     
-    public static Intrinsics fromConfig(Configuration config) throws InvalidConfigurationException {
-        Intrinsics instance = newInstance();
+    public static Intrinsics fromConfig(Configuration config, boolean detectMixedSizeAccesses)
+            throws InvalidConfigurationException {
+        Intrinsics instance = new Intrinsics(detectMixedSizeAccesses);
         config.inject(instance);
         return instance;
     }
@@ -203,16 +207,16 @@ public class Intrinsics {
         LLVM_MEMSET("llvm.memset", true, false, true, false, Intrinsics::inlineMemSet),
         LLVM_THREADLOCAL("llvm.threadlocal.address.p0", false, false, true, true, Intrinsics::inlineLLVMThreadLocal),
         // --------------------------- LKMM ---------------------------
-        LKMM_LOAD("__LKMM_LOAD", false, true, true, true, Intrinsics::handleLKMMIntrinsic),
-        LKMM_STORE("__LKMM_STORE", true, false, true, true, Intrinsics::handleLKMMIntrinsic),
-        LKMM_XCHG("__LKMM_XCHG", true, true, true, true, Intrinsics::handleLKMMIntrinsic),
-        LKMM_CMPXCHG("__LKMM_CMPXCHG", true, true, true, true, Intrinsics::handleLKMMIntrinsic),
-        LKMM_ATOMIC_FETCH_OP("__LKMM_ATOMIC_FETCH_OP", true, true, true, true, Intrinsics::handleLKMMIntrinsic),
-        LKMM_ATOMIC_OP("__LKMM_ATOMIC_OP", true, true, true, true, Intrinsics::handleLKMMIntrinsic),
-        LKMM_ATOMIC_OP_RETURN("__LKMM_ATOMIC_OP_RETURN", true, true, true, true, Intrinsics::handleLKMMIntrinsic),
+        LKMM_LOAD("__LKMM_load", false, true, true, true, Intrinsics::handleLKMMIntrinsic),
+        LKMM_STORE("__LKMM_store", true, false, true, true, Intrinsics::handleLKMMIntrinsic),
+        LKMM_XCHG("__LKMM_xchg", true, true, true, true, Intrinsics::handleLKMMIntrinsic),
+        LKMM_CMPXCHG("__LKMM_cmpxchg", true, true, true, true, Intrinsics::handleLKMMIntrinsic),
+        LKMM_ATOMIC_FETCH_OP("__LKMM_atomic_fetch_op", true, true, true, true, Intrinsics::handleLKMMIntrinsic),
+        LKMM_ATOMIC_OP("__LKMM_atomic_op", true, true, true, true, Intrinsics::handleLKMMIntrinsic),
+        LKMM_ATOMIC_OP_RETURN("__LKMM_atomic_op_return", true, true, true, true, Intrinsics::handleLKMMIntrinsic),
         LKMM_SPIN_LOCK("__LKMM_SPIN_LOCK", true, true, false, true, Intrinsics::handleLKMMIntrinsic),
         LKMM_SPIN_UNLOCK("__LKMM_SPIN_UNLOCK", true, false, true, true, Intrinsics::handleLKMMIntrinsic),
-        LKMM_FENCE("__LKMM_FENCE", false, false, false, true, Intrinsics::handleLKMMIntrinsic),
+        LKMM_FENCE("__LKMM_fence", false, false, false, true, Intrinsics::handleLKMMIntrinsic),
         // --------------------------- Misc ---------------------------
         STD_MEMCPY("memcpy", true, true, true, false, Intrinsics::inlineMemCpy),
         STD_MEMCPYS("memcpy_s", true, true, true, false, Intrinsics::inlineMemCpyS),
@@ -228,6 +232,7 @@ public class Intrinsics {
         STD_IO(List.of("puts", "putchar", "printf", "fflush"), false, false, true, true, Intrinsics::inlineAsZero),
         STD_IO_NONDET(List.of("__isoc99_sscanf", "fprintf"), false, false, true, true, Intrinsics::inlineCallAsNonDet),
         STD_SLEEP("sleep", false, false, true, true, Intrinsics::inlineAsZero),
+        STD_FFS(List.of("ffs", "ffsl", "ffsll"), false, false, true, true, Intrinsics::inlineFfs),
         // --------------------------- UBSAN ---------------------------
         UBSAN_OVERFLOW(List.of("__ubsan_handle_add_overflow", "__ubsan_handle_sub_overflow", 
                 "__ubsan_handle_divrem_overflow", "__ubsan_handle_mul_overflow", "__ubsan_handle_negate_overflow"),
@@ -392,7 +397,7 @@ public class Intrinsics {
 
     private List<Event> inlineAssume(FunctionCall call) {
         final Expression assumption = call.getArguments().get(0);
-        return List.of(EventFactory.newAssume(assumption));
+        return List.of(EventFactory.newAssume(expressions.makeBooleanCast(assumption)));
     }
 
     private List<Event> inlineAtomicBegin(FunctionCall ignored) {
@@ -1002,14 +1007,11 @@ public class Intrinsics {
     }
 
     private List<Event> inlineAssert(FunctionCall call, AssertionType skip, String errorMsg) {
-        if(notToInline.contains(skip)) {
-            return List.of();
-        }
         final Expression condition = expressions.makeFalse();
-        final Event assertion = EventFactory.newAssert(condition, errorMsg);
+        final Event assertion = notToInline.contains(skip) ? null : EventFactory.newAssert(condition, errorMsg);
         final Event abort = EventFactory.newAbortIf(expressions.makeTrue());
         abort.addTags(Tag.EXCEPTIONAL_TERMINATION);
-        return List.of(assertion, abort);
+        return eventSequence(assertion, abort);
     }
 
     private List<Event> inlineVerifierAssert(FunctionCall call, AssertionType skip, String errorMsg) {
@@ -1018,7 +1020,7 @@ public class Intrinsics {
         }
         assert call.getArguments().size() == 1;
         final Expression condition = call.getArguments().get(0);
-        final Event assertion = EventFactory.newAssert(condition, errorMsg);
+        final Event assertion = EventFactory.newAssert(expressions.makeBooleanCast(condition), errorMsg);
         return List.of(assertion);
     }
 
@@ -1092,7 +1094,7 @@ public class Intrinsics {
 
     private List<Event> inlineLLVMAssume(FunctionCall call) {
         //see https://llvm.org/docs/LangRef.html#llvm-assume-intrinsic
-        return List.of(EventFactory.newAssume(call.getArguments().get(0)));
+        return List.of(EventFactory.newAssume(expressions.makeBooleanCast(call.getArguments().get(0))));
     }
 
     private List<Event> inlineLLVMCtlz(ValueFunctionCall call) {
@@ -1318,61 +1320,85 @@ public class Intrinsics {
         final Expression p1 = args.size() > 1 ? args.get(1) : null;
         final Expression p2 = args.size() > 2 ? args.get(2) : null;
         final Expression p3 = args.size() > 3 ? args.get(3) : null;
+        final Expression p4 = args.size() > 4 ? args.get(4) : null;
 
-        final String mo;
-        final IntBinaryOp op;
         final List<Event> result = new ArrayList<>();
         switch (call.getCalledFunction().getName()) {
-            case "__LKMM_LOAD" -> {
-                checkArgument(p1 instanceof IntLiteral, "No support for variable memory order.");
-                mo = Tag.Linux.intToMo(((IntLiteral) p1).getValueAsInt());
-                result.add(EventFactory.Linux.newLKMMLoad(reg, p0, mo));
+            case "__LKMM_load" -> {
+                checkArguments(3, call);
+                final Type bytes = toLKMMAccessSize(p1);
+                final String mo = toLKMMMemoryOrder(p2);
+                final Register dummy = call.getFunction().newUniqueRegister("__lkmm_temp", bytes);
+                result.add(EventFactory.Linux.newLKMMLoad(dummy, p0, mo));
+                result.add(EventFactory.newLocal(reg, expressions.makeCast(dummy, reg.getType())));
             }
-            case "__LKMM_STORE" -> {
-                checkArgument(p2 instanceof IntLiteral, "No support for variable memory order.");
-                mo = Tag.Linux.intToMo(((IntLiteral) p2).getValueAsInt());
-                result.add(EventFactory.Linux.newLKMMStore(p0, p1, mo.equals(Tag.Linux.MO_MB) ? Tag.Linux.MO_ONCE : mo));
+            case "__LKMM_store" -> {
+                checkArguments(4, call);
+                final Type bytes = toLKMMAccessSize(p1);
+                final String mo = toLKMMMemoryOrder(p3);
+                final Expression value = expressions.makeCast(p2, bytes);
+                result.add(EventFactory.Linux.newLKMMStore(p0, value, mo.equals(Tag.Linux.MO_MB) ? Tag.Linux.MO_ONCE : mo));
                 if (mo.equals(Tag.Linux.MO_MB)) {
                     result.add(EventFactory.Linux.newMemoryBarrier());
                 }
             }
-            case "__LKMM_XCHG" -> {
-                checkArgument(p2 instanceof IntLiteral, "No support for variable memory order.");
-                mo = Tag.Linux.intToMo(((IntLiteral) p2).getValueAsInt());
-                result.add(EventFactory.Linux.newRMWExchange(p0, reg, p1, mo));
+            case "__LKMM_xchg" -> {
+                checkArguments(4, call);
+                final Type bytes = toLKMMAccessSize(p1);
+                final String mo = toLKMMMemoryOrder(p3);
+                final Register dummy = call.getFunction().newUniqueRegister("__lkmm_temp", bytes);
+                final Expression value = expressions.makeCast(p2, bytes);
+                result.add(EventFactory.Linux.newRMWExchange(p0, dummy, value, mo));
+                result.add(EventFactory.newLocal(reg, expressions.makeCast(dummy, reg.getType())));
             }
-            case "__LKMM_CMPXCHG" -> {
-                checkArgument(p3 instanceof IntLiteral, "No support for variable memory order.");
-                mo = Tag.Linux.intToMo(((IntLiteral) p3).getValueAsInt());
-                result.add(EventFactory.Linux.newRMWCompareExchange(p0, reg, p1, p2, mo));
+            case "__LKMM_cmpxchg" -> {
+                checkArguments(6, call);
+                final Type bytes = toLKMMAccessSize(p1);
+                final String mo = toLKMMMemoryOrder(p4);
+                final Register dummy = call.getFunction().newUniqueRegister("__lkmm_temp", bytes);
+                final Expression expectation = expressions.makeCast(p2, bytes);
+                final Expression value = expressions.makeCast(p3, bytes);
+                result.add(EventFactory.Linux.newRMWCompareExchange(p0, dummy, expectation, value, mo));
+                result.add(EventFactory.newLocal(reg, expressions.makeCast(dummy, reg.getType())));
             }
-            case "__LKMM_ATOMIC_FETCH_OP" -> {
-                checkArgument(p2 instanceof IntLiteral, "No support for variable memory order.");
-                mo = Tag.Linux.intToMo(((IntLiteral) p2).getValueAsInt());
-                checkArgument(p3 instanceof IntLiteral, "No support for variable operator.");
-                op = IntBinaryOp.intToOp(((IntLiteral) p3).getValueAsInt());
-                result.add(EventFactory.Linux.newRMWFetchOp(p0, reg, p1, op, mo));
+            case "__LKMM_atomic_fetch_op" -> {
+                checkArguments(5, call);
+                final Type bytes = toLKMMAccessSize(p1);
+                final String mo = toLKMMMemoryOrder(p3);
+                final IntBinaryOp op = toLKMMOperation(p4);
+                final Register dummy = call.getFunction().newUniqueRegister("__lkmm_temp", bytes);
+                final Expression value = expressions.makeCast(p2, bytes);
+                result.add(EventFactory.Linux.newRMWFetchOp(p0, dummy, value, op, mo));
+                result.add(EventFactory.newLocal(reg, expressions.makeCast(dummy, reg.getType())));
             }
-            case "__LKMM_ATOMIC_OP_RETURN" -> {
-                checkArgument(p2 instanceof IntLiteral, "No support for variable memory order.");
-                mo = Tag.Linux.intToMo(((IntLiteral) p2).getValueAsInt());
-                checkArgument(p3 instanceof IntLiteral, "No support for variable operator.");
-                op = IntBinaryOp.intToOp(((IntLiteral) p3).getValueAsInt());
-                result.add(EventFactory.Linux.newRMWOpReturn(p0, reg, p1, op, mo));
+            case "__LKMM_atomic_op_return" -> {
+                checkArguments(5, call);
+                final Type bytes = toLKMMAccessSize(p1);
+                final String mo = toLKMMMemoryOrder(p3);
+                final IntBinaryOp op = toLKMMOperation(p4);
+                final Register dummy = call.getFunction().newUniqueRegister("__lkmm_temp", bytes);
+                final Expression value = expressions.makeCast(p2, bytes);
+                result.add(EventFactory.Linux.newRMWOpReturn(p0, dummy, value, op, mo));
+                result.add(EventFactory.newLocal(reg, expressions.makeCast(dummy, reg.getType())));
             }
-            case "__LKMM_ATOMIC_OP" -> {
-                checkArgument(p2 instanceof IntLiteral, "No support for variable operator.");
-                op = IntBinaryOp.intToOp(((IntLiteral) p2).getValueAsInt());
-                result.add(EventFactory.Linux.newRMWOp(p0, p1, op));
+            case "__LKMM_atomic_op" -> {
+                checkArguments(4, call);
+                final Type bytes = toLKMMAccessSize(p1);
+                final IntBinaryOp op = toLKMMOperation(p3);
+                final Expression value = expressions.makeCast(p2, bytes);
+                result.add(EventFactory.Linux.newRMWOp(p0, value, op));
             }
-            case "__LKMM_FENCE" -> {
-                String fence = Tag.Linux.intToMo(((IntLiteral) p0).getValueAsInt());
-                result.add(EventFactory.Linux.newLKMMFence(fence));
+            case "__LKMM_fence" -> {
+                checkArguments(1, call);
+                final String mo = toLKMMMemoryOrder(p0);
+                result.add(EventFactory.Linux.newLKMMFence(mo));
             }
             case "__LKMM_SPIN_LOCK" -> {
+                checkArguments(1, call);
                 result.add(EventFactory.Linux.newLock(p0));
             }
             case "__LKMM_SPIN_UNLOCK" -> {
+                checkArguments(1, call);
                 result.add(EventFactory.Linux.newUnlock(p0));
             }
             default -> {
@@ -1380,6 +1406,27 @@ public class Intrinsics {
             }
         }
         return result;
+    }
+
+    private Type toLKMMAccessSize(Expression argument) {
+        if (!(argument instanceof IntLiteral literal)) {
+            throw new UnsupportedOperationException("Variable LKMM access size \"" + argument + "\"");
+        }
+        return types.getIntegerType(8 * literal.getValueAsInt());
+    }
+
+    private String toLKMMMemoryOrder(Expression argument) {
+        if (!(argument instanceof IntLiteral literal)) {
+            throw new UnsupportedOperationException("Variable LKMM memory order \"" + argument + "\"");
+        }
+        return Tag.Linux.intToMo(literal.getValueAsInt());
+    }
+
+    private IntBinaryOp toLKMMOperation(Expression argument) {
+        if (!(argument instanceof IntLiteral literal)) {
+            throw new UnsupportedOperationException("Variable LKMM operation \"" + argument + "\"");
+        }
+        return IntBinaryOp.intToOp(literal.getValueAsInt());
     }
 
     // --------------------------------------------------------------------------------------------------------
@@ -1468,17 +1515,23 @@ public class Intrinsics {
         final int count = countValue.getValueAsInt();
 
         final List<Event> replacement = new ArrayList<>(2 * count + 1);
-        for (int i = 0; i < count; i++) {
+        //FIXME without MSA detection, each byte is treated as a 64-bit value.
+        final IntegerType type = detectMixedSizeAccesses ? types.getIntegerType(8 * count) : types.getArchType();
+        final int typeSize = detectMixedSizeAccesses ? count : 1;
+        for (int i = 0; i < count; i += typeSize) {
             final Expression offset = expressions.makeValue(i, types.getArchType());
             final Expression srcAddr = expressions.makeAdd(src, offset);
             final Expression destAddr = expressions.makeAdd(dest, offset);
-            // FIXME: We have no other choice but to load ptr-sized chunks for now
-            final Register reg = caller.getOrNewRegister("__memcpy_" + i, types.getArchType());
+            final Register reg = caller.getOrNewRegister("__memcpy_" + i, type);
 
-            replacement.addAll(List.of(
-                    EventFactory.newLoad(reg, srcAddr),
-                    newStore(destAddr, reg)
-            ));
+            final Event load = EventFactory.newLoad(reg, srcAddr);
+            final Event store = EventFactory.newStore(destAddr, reg);
+
+            // communicate to Tearing to not create same-instruction blocks
+            load.addTags(Tag.NO_INSTRUCTION);
+            store.addTags(Tag.NO_INSTRUCTION);
+
+            replacement.addAll(List.of(load, store));
         }
         if (call instanceof ValueFunctionCall valueCall) {
             // std.memcpy returns the destination address, llvm.memcpy has no return value
@@ -1686,6 +1739,26 @@ public class Intrinsics {
         return List.of(
             EventFactory.newLocal(resultReg, exp)
         );
+    }
+
+    private List<Event> inlineFfs(FunctionCall call) {
+        //see https://linux.die.net/man/3/ffs
+        final String name = call.getCalledFunction().getName();
+        checkArgument(call.getArguments().size() == 1,
+                "Expected 1 parameter for \"%s\", got %s.", name, call.getArguments().size());
+        final Expression input = call.getArguments().get(0);
+        final Register resultReg = getResultRegister(call);
+        final Type outputType = resultReg.getType();
+        checkArgument(outputType instanceof IntegerType,
+                "Non-integer %s type for \"%s\".", name, outputType);
+        final IntegerType inputType  = (IntegerType)input.getType();
+        final Expression cttz = expressions.makeCTTZ(input);
+        final Expression widthExpr = expressions.makeValue(BigInteger.valueOf(inputType.getBitWidth()), inputType);
+        final Expression count = expressions.makeAdd(cttz, expressions.makeOne(inputType));
+        final Expression ite = expressions.makeITE(expressions.makeEQ(cttz, widthExpr), expressions.makeZero(inputType), count);
+        final Expression cast = expressions.makeCast(ite, outputType, false);
+        final Event assignment = EventFactory.newLocal(resultReg, cast);
+        return List.of(assignment);
     }
 
     private Event assignSuccess(Register errorRegister) {

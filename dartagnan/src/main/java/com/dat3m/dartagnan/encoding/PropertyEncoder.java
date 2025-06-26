@@ -2,6 +2,7 @@ package com.dat3m.dartagnan.encoding;
 
 import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.configuration.Property;
+import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Thread;
@@ -12,6 +13,7 @@ import com.dat3m.dartagnan.program.event.MemoryEvent;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.event.metadata.MemoryOrder;
+import com.dat3m.dartagnan.program.memory.FinalMemoryValue;
 import com.dat3m.dartagnan.wmm.Relation;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
@@ -24,7 +26,6 @@ import org.apache.logging.log4j.Logger;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.BooleanFormulaManager;
-import org.sosy_lab.java_smt.api.Formula;
 import org.sosy_lab.java_smt.api.IntegerFormulaManager;
 
 import java.util.*;
@@ -33,10 +34,10 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import static com.dat3m.dartagnan.configuration.Property.*;
+import static com.dat3m.dartagnan.encoding.ExpressionEncoder.ConversionMode.RIGHT_TO_LEFT;
 import static com.dat3m.dartagnan.program.Program.SourceLanguage.LLVM;
 import static com.dat3m.dartagnan.program.Program.SpecificationType.ASSERT;
 import static com.dat3m.dartagnan.wmm.RelationNameRepository.CO;
-import static com.dat3m.dartagnan.encoding.EncodingContext.ConversionMode.LEFT_TO_RIGHT;
 
 public class PropertyEncoder implements Encoder {
 
@@ -204,14 +205,17 @@ public class PropertyEncoder implements Encoder {
             enc.add(bmgr.equivalence(lastCoExpr, isLast));
             if (doEncodeFinalAddressValues && Arch.coIsTotal(program.getArch())) {
                 // ---- Encode final values of addresses ----
+                final ExpressionEncoder exprEncoder = context.getExpressionEncoder();
                 for (Init init : initEvents) {
                     if (!alias.mayAlias(w1, init)) {
                         continue;
                     }
                     BooleanFormula sameAddress = context.sameAddress(init, w1);
-                    int size = types.getMemorySizeInBits(init.getValue().getType());
-                    Formula v2 = context.lastValue(init.getBase(), init.getOffset(), size);
-                    BooleanFormula sameValue = context.equal(context.value(w1), v2, LEFT_TO_RIGHT);
+                    final BooleanFormula sameValue = exprEncoder.equal(
+                            new FinalMemoryValue(null, init.getValue().getType(), init.getBase(), init.getOffset()),
+                            context.value(w1),
+                            RIGHT_TO_LEFT
+                    );
                     enc.add(bmgr.implication(bmgr.and(lastCoExpr, sameAddress), sameValue));
                 }
             }
@@ -221,23 +225,23 @@ public class PropertyEncoder implements Encoder {
             // but the final value of a location should always match that of some coLast event.
             // lastCo(w) => (lastVal(w.address) = w.val)
             //           \/ (exists w2 : lastCo(w2) /\ lastVal(w.address) = w2.val))
+            final ExpressionEncoder exprEncoder = context.getExpressionEncoder();
             for (Init init : program.getThreadEvents(Init.class)) {
-                BooleanFormula lastValueEnc = bmgr.makeFalse();
+                BooleanFormula readLastStore = bmgr.makeFalse();
                 BooleanFormula lastStoreExistsEnc = bmgr.makeFalse();
-                int size = types.getMemorySizeInBits(init.getValue().getType());
-                Formula v2 = context.lastValue(init.getBase(), init.getOffset(), size);
-                BooleanFormula readFromInit = context.equal(context.value(init), v2);
+                Expression finalValue = new FinalMemoryValue(null, init.getValue().getType(), init.getBase(), init.getOffset());
                 for (Store w : program.getThreadEvents(Store.class)) {
                     if (!alias.mayAlias(w, init)) {
                         continue;
                     }
                     BooleanFormula isLast = context.lastCoVar(w);
                     BooleanFormula sameAddr = context.sameAddress(init, w);
-                    BooleanFormula sameValue = context.equal(context.value(w), v2);
-                    lastValueEnc = bmgr.or(lastValueEnc, bmgr.and(isLast, sameAddr, sameValue));
+                    BooleanFormula sameValue = exprEncoder.equal(finalValue, context.value(w), RIGHT_TO_LEFT);
+                    readLastStore = bmgr.or(readLastStore, bmgr.and(isLast, sameAddr, sameValue));
                     lastStoreExistsEnc = bmgr.or(lastStoreExistsEnc, bmgr.and(isLast, sameAddr));
                 }
-                enc.add(bmgr.ifThenElse(lastStoreExistsEnc, lastValueEnc, readFromInit));
+                BooleanFormula readInitValue = exprEncoder.equal(finalValue, context.value(init), RIGHT_TO_LEFT);
+                enc.add(bmgr.ifThenElse(lastStoreExistsEnc, readLastStore, readInitValue));
             }
         }
         return bmgr.and(enc);
@@ -251,18 +255,20 @@ public class PropertyEncoder implements Encoder {
 
     private TrackableFormula encodeProgramSpecification() {
         logger.info("Encoding program specification");
+        final ExpressionEncoder exprEnc = context.getExpressionEncoder();
         final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
         // We can only perform existential queries to the SMT-engine, so for
         // safety specs we need to query for a violation (= negation of the spec)
         BooleanFormula encoding = switch (program.getSpecificationType()) {
-            case EXISTS, NOT_EXISTS -> context.encodeFinalExpressionAsBoolean(program.getSpecification());
-            case FORALL -> bmgr.not(context.encodeFinalExpressionAsBoolean(program.getSpecification()));
+            case EXISTS, NOT_EXISTS -> exprEnc.encodeBooleanFinal(program.getSpecification()).formula();
+            case FORALL -> bmgr.not(exprEnc.encodeBooleanFinal(program.getSpecification()).formula());
             case ASSERT -> {
                 // User-placed assertions inside C code.
                 List<BooleanFormula> assertionsHold = new ArrayList<>();
                 for (Assert assertion : program.getThreadEvents(Assert.class)) {
                     assertionsHold.add(bmgr.implication(context.execution(assertion),
-                            context.encodeExpressionAsBooleanAt(assertion.getExpression(), assertion)));
+                            exprEnc.encodeBooleanAt(assertion.getExpression(), assertion).formula()
+                    ));
                 }
                 yield bmgr.not(bmgr.and(assertionsHold));
             }

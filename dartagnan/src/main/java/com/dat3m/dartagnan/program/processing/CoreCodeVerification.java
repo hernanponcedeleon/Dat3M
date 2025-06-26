@@ -34,7 +34,7 @@ public class CoreCodeVerification implements FunctionProcessor {
             Load.class, Store.class, Init.class, GenericMemoryEvent.class, GenericVisibleEvent.class,
             CondJump.class, IfAsJump.class, ExecutionStatus.class, Label.class, Local.class,
             Skip.class, RMWStore.class, RMWStoreExclusive.class, MemAlloc.class, MemFree.class,
-            Assume.class, Assert.class,
+            Assume.class, Assert.class, InstructionBoundary.class,
             ThreadCreate.class, ThreadJoin.class, ThreadArgument.class, ThreadStart.class, ThreadReturn.class,
             ControlBarrier.class, NamedBarrier.class,
             BeginAtomic.class, EndAtomic.class,
@@ -48,11 +48,11 @@ public class CoreCodeVerification implements FunctionProcessor {
         final List<Event> nonCoreEvents = function.getEvents().stream().
                 filter(e -> !(e instanceof CodeAnnotation) && !CORE_CLASSES.contains(e.getClass())).toList();
         if (!nonCoreEvents.isEmpty()) {
-            System.out.println("ERROR: Found non-core events.");
+            StringBuilder msg = new StringBuilder();
             for (Event e : nonCoreEvents) {
-                System.out.printf("%2s: %-30s  %s %n", e.getGlobalId(), e, e.getClass().getSimpleName());
+                msg.append(String.format("\t%2s: %-30s  %s %n", e.getGlobalId(), e, e.getClass().getSimpleName()));
             }
-            throw new MalformedProgramException("ERROR: Found non-core events.");
+            throw new MalformedProgramException("Found non-core events.\n" + msg);
         }
     }
 }

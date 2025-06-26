@@ -256,9 +256,10 @@ public class VisitorOpsMemoryTest {
         Expression i1 = expressions.makeValue(1, archType);
         Expression i2 = expressions.makeValue(7890, archType);
         List<Expression> iValues = Stream.of(1, 2, 3).map(i -> (Expression) expressions.makeValue(i, archType)).toList();
-        Expression i3 = expressions.makeArray(archType, iValues, true);
-        AggregateType aType = types.getAggregateType(List.of(i1.getType(), i2.getType(), i3.getType()));
-        Expression i4 = expressions.makeConstruct(aType, List.of(i1, i2, i3));
+        ArrayType arType = types.getArrayType(archType, 3);
+        Expression i3 = expressions.makeArray(arType, iValues);
+        AggregateType agType = types.getAggregateType(List.of(i1.getType(), i2.getType(), i3.getType()));
+        Expression i4 = expressions.makeConstruct(agType, List.of(i1, i2, i3));
 
         builder = new MockProgramBuilder();
         builder.addInput("%v1", i1);
@@ -289,9 +290,10 @@ public class VisitorOpsMemoryTest {
         Expression o1 = expressions.makeTrue();
         Expression o2 = expressions.makeValue(7890, iType);
         List<Expression> oValues = Stream.of(1, 2, 3).map(i -> (Expression) expressions.makeValue(i, iType)).toList();
-        Expression o3 = expressions.makeArray(iType, oValues, true);
-        AggregateType aType = types.getAggregateType(List.of(o1.getType(), o2.getType(), o3.getType()));
-        Expression o4 = expressions.makeConstruct(aType, List.of(o1, o2, o3));
+        ArrayType arType = types.getArrayType(iType, 3);
+        Expression o3 = expressions.makeArray(arType, oValues);
+        AggregateType agType = types.getAggregateType(List.of(o1.getType(), o2.getType(), o3.getType()));
+        Expression o4 = expressions.makeConstruct(agType, List.of(o1, o2, o3));
 
         ScopedPointerVariable v1 = (ScopedPointerVariable) builder.getExpression("%v1");
         assertNotNull(v1);
@@ -332,8 +334,9 @@ public class VisitorOpsMemoryTest {
                 """;
 
         IntegerType archType = types.getArchType();
-        Type arrType = types.getArrayType(archType, 2);
-        AggregateType aggType = types.getAggregateType(List.of(archType, arrType));
+        ArrayType arr1Type = types.getArrayType(archType, 2);
+        ArrayType arr2Type = types.getArrayType(arr1Type, 3);
+        AggregateType aggType = types.getAggregateType(List.of(archType, arr1Type));
 
         Expression i1 = expressions.makeValue(1, archType);
         Expression i2 = expressions.makeValue(2, archType);
@@ -342,11 +345,11 @@ public class VisitorOpsMemoryTest {
         Expression i5 = expressions.makeValue(5, archType);
         Expression i6 = expressions.makeValue(6, archType);
 
-        Expression a1 = expressions.makeArray(archType, List.of(i1, i2), true);
-        Expression a2 = expressions.makeArray(archType, List.of(i3, i4), true);
-        Expression a3 = expressions.makeArray(archType, List.of(i5, i6), true);
+        Expression a1 = expressions.makeArray(arr1Type, List.of(i1, i2));
+        Expression a2 = expressions.makeArray(arr1Type, List.of(i3, i4));
+        Expression a3 = expressions.makeArray(arr1Type, List.of(i5, i6));
 
-        Expression a3a = expressions.makeArray(arrType, List.of(a1, a2, a3), true);
+        Expression a3a = expressions.makeArray(arr2Type, List.of(a1, a2, a3));
         Expression s = expressions.makeConstruct(aggType, List.of(i1, a1));
 
         builder = new MockProgramBuilder();
@@ -431,12 +434,14 @@ public class VisitorOpsMemoryTest {
                 """;
 
         IntegerType archType = types.getArchType();
+        ArrayType arr1Type = types.getArrayType(archType, 2);
+        ArrayType arr2Type = types.getArrayType(archType, 3);
         Expression i1 = expressions.makeValue(1, archType);
         Expression i2 = expressions.makeValue(2, archType);
         Expression i3 = expressions.makeValue(3, archType);
 
-        Expression a1 = expressions.makeArray(archType, List.of(i1, i2), true);
-        Expression a2 = expressions.makeArray(archType, List.of(i1, i2, i3), true);
+        Expression a1 = expressions.makeArray(arr1Type, List.of(i1, i2));
+        Expression a2 = expressions.makeArray(arr2Type, List.of(i1, i2, i3));
 
         builder = new MockProgramBuilder();
         builder.addInput("%v1", a1);
@@ -563,9 +568,10 @@ public class VisitorOpsMemoryTest {
         String input = "%v = OpVariable %i_ptr Uniform";
 
         IntegerType archType = types.getArchType();
+        ArrayType arrayType = types.getArrayType(archType, 2);
         Expression i1 = expressions.makeValue(1, archType);
         Expression i2 = expressions.makeValue(2, archType);
-        Expression a = expressions.makeArray(archType, List.of(i1, i2), true);
+        Expression a = expressions.makeArray(arrayType, List.of(i1, i2));
 
         builder = new MockProgramBuilder();
         builder.addInput("%v", a);
@@ -590,9 +596,9 @@ public class VisitorOpsMemoryTest {
         // given
         String input = "%v = OpVariable %arr2int_ptr Uniform %const";
 
-        Type bType = builder.mockBoolType("%bool");
-        Type a1Type = builder.mockVectorType("%arr1bool", "%bool", 2);
-        builder.mockVectorType("%arr2bool", "%arr1bool", 2);
+        builder.mockBoolType("%bool");
+        ArrayType a1Type = builder.mockVectorType("%arr1bool", "%bool", 2);
+        ArrayType a2Type = builder.mockVectorType("%arr2bool", "%arr1bool", 2);
 
         builder.mockIntType("%int", 32);
         builder.mockVectorType("%arr1int", "%int", 2);
@@ -601,8 +607,8 @@ public class VisitorOpsMemoryTest {
         builder.mockPtrType("%arr2int_ptr", "%arr2int", "Uniform");
 
         Expression bool = expressions.makeTrue();
-        Expression arr1 = expressions.makeArray(bType, List.of(bool, bool), true);
-        Expression arr2 = expressions.makeArray(a1Type, List.of(arr1, arr1), true);
+        Expression arr1 = expressions.makeArray(a1Type, List.of(bool, bool));
+        Expression arr2 = expressions.makeArray(a2Type, List.of(arr1, arr1));
 
         builder.addExpression("%const", arr2);
 
@@ -693,8 +699,8 @@ public class VisitorOpsMemoryTest {
         builder.mockPtrType("%v3_ptr", "%v3", "Uniform");
         builder.mockPtrType("%i_ptr", "%int", "Uniform");
 
-        Expression i0 = builder.mockConstant("%0", "%i_ptr", 0);
-        Expression i1 = builder.mockConstant("%1", "%i_ptr", 1);
+        Expression i0 = builder.mockConstant("%0", "%int", 0);
+        Expression i1 = builder.mockConstant("%1", "%int", 1);
         builder.mockConstant("%a1", "%v1", List.of("%1", "%0"));
         builder.mockConstant("%a2", "%v2", List.of("%a1", "%a1"));
         builder.mockConstant("%a3", "%v3", List.of("%a2", "%a2"));

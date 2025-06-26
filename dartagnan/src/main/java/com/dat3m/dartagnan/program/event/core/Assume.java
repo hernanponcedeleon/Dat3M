@@ -3,10 +3,12 @@ package com.dat3m.dartagnan.program.event.core;
 import com.dat3m.dartagnan.encoding.EncodingContext;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionVisitor;
+import com.dat3m.dartagnan.expression.type.BooleanType;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.AbstractEvent;
 import com.dat3m.dartagnan.program.event.EventVisitor;
 import com.dat3m.dartagnan.program.event.RegReader;
+import com.google.common.base.Preconditions;
 import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.BooleanFormulaManager;
 
@@ -18,7 +20,7 @@ public class Assume extends AbstractEvent implements RegReader {
     protected Expression expr;
 
     public Assume(Expression expr) {
-        super();
+        Preconditions.checkArgument(expr.getType() instanceof BooleanType);
         this.expr = expr;
     }
 
@@ -48,7 +50,7 @@ public class Assume extends AbstractEvent implements RegReader {
         BooleanFormulaManager bmgr = ctx.getBooleanFormulaManager();
         return bmgr.and(
                 super.encodeExec(ctx),
-                bmgr.implication(ctx.execution(this), ctx.encodeExpressionAsBooleanAt(expr, this)));
+                bmgr.implication(ctx.execution(this), ctx.getExpressionEncoder().encodeBooleanAt(expr, this).formula()));
     }
 
     @Override

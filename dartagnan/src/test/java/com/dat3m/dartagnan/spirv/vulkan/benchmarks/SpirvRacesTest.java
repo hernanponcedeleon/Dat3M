@@ -34,7 +34,7 @@ import static org.junit.Assert.assertEquals;
 @RunWith(Parameterized.class)
 public class SpirvRacesTest {
 
-    private final String modelPath = getRootPath("cat/spirv.cat");
+    private final String modelPath = getRootPath("cat/vulkan.cat");
     private final String programPath;
     private final int bound;
     private final Result expected;

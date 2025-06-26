@@ -17,8 +17,25 @@ public class Memory {
     private final Type ptrType = TypeFactory.getInstance().getPointerType();
     private final IntegerType archType = TypeFactory.getInstance().getArchType();
     private final Expression defaultAlignment = ExpressionFactory.getInstance().makeValue(8, archType);
+    private final boolean bigEndian;
 
     private int nextIndex = 1;
+
+    public Memory() {
+        this(false);
+    }
+
+    public Memory(boolean bigEndian) {
+        this.bigEndian = bigEndian;
+    }
+
+    public boolean isBigEndian() {
+        return bigEndian;
+    }
+
+    public boolean isLittleEndian() {
+        return !bigEndian;
+    }
 
     // Generates a new, statically allocated memory object.
     public MemoryObject allocate(int size) {
@@ -53,8 +70,7 @@ public class Memory {
 
     /**
      * Accesses all shared variables.
-     * @return
-     * Copy of the complete collection of allocated objects.
+     * @return Copy of the complete collection of allocated objects.
      */
     public ImmutableSet<MemoryObject> getObjects() {
         return ImmutableSet.copyOf(objects);

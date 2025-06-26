@@ -3,10 +3,7 @@ package com.dat3m.dartagnan.parsers.program.visitors.spirv;
 import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
-import com.dat3m.dartagnan.expression.type.AggregateType;
-import com.dat3m.dartagnan.expression.type.BooleanType;
-import com.dat3m.dartagnan.expression.type.IntegerType;
-import com.dat3m.dartagnan.expression.type.TypeFactory;
+import com.dat3m.dartagnan.expression.type.*;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.mocks.MockProgramBuilder;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.mocks.MockSpirvParser;
 import org.junit.Test;
@@ -119,8 +116,8 @@ public class VisitorOpsConstantTest {
 
     private void doTestOpConstantBoolean(String input) {
         // given
-        BooleanType bType = builder.mockBoolType("%bool");
-        builder.mockVectorType("%bool3v", "%bool", 3);
+        builder.mockBoolType("%bool");
+        ArrayType type = builder.mockVectorType("%bool3v", "%bool", 3);
 
         // when
         Map<String, Expression> data = parseConstants(input);
@@ -130,7 +127,7 @@ public class VisitorOpsConstantTest {
 
         Expression bTrue = expressions.makeTrue();
         Expression bFalse = expressions.makeFalse();
-        Expression b3v = expressions.makeArray(bType, List.of(bTrue, bFalse, bTrue), true);
+        Expression b3v = expressions.makeArray(type, List.of(bTrue, bFalse, bTrue));
 
         assertEquals(bTrue, data.get("%b1"));
         assertEquals(bFalse, data.get("%b2"));
@@ -163,7 +160,7 @@ public class VisitorOpsConstantTest {
     private void doTestOpConstantInteger(String input) {
         // given
         IntegerType iType = builder.mockIntType("%int", 64);
-        builder.mockVectorType("%int4v", "%int", 4);
+        ArrayType type = builder.mockVectorType("%int4v", "%int", 4);
 
         // when
         Map<String, Expression> data = parseConstants(input);
@@ -175,7 +172,7 @@ public class VisitorOpsConstantTest {
         Expression i2 = expressions.makeValue(0, iType);
         Expression i3 = expressions.makeValue(17, iType);
         Expression i4 = expressions.makeValue(-123, iType);
-        Expression i4v = expressions.makeArray(iType, List.of(i1, i2, i3, i4), true);
+        Expression i4v = expressions.makeArray(type, List.of(i1, i2, i3, i4));
 
         assertEquals(i1, data.get("%i1"));
         assertEquals(i2, data.get("%i2"));
@@ -296,7 +293,7 @@ public class VisitorOpsConstantTest {
         builder.mockBoolType("%bool");
         IntegerType iType = builder.mockIntType("%int", 64);
         AggregateType innerType = builder.mockAggregateType("%inner", "%bool", "%int");
-        builder.mockVectorType("%v2inner", "%inner", 2);
+        ArrayType aType = builder.mockVectorType("%v2inner", "%inner", 2);
         AggregateType outerType = builder.mockAggregateType("%outer", "%inner", "%v2inner");
 
         // when
@@ -317,7 +314,7 @@ public class VisitorOpsConstantTest {
         Expression s1 = expressions.makeConstruct(innerType, List.of(b1, i1));
         Expression s2 = expressions.makeConstruct(innerType, List.of(b2, i2));
 
-        Expression a0 = expressions.makeArray(innerType, List.of(s1, s2), true);
+        Expression a0 = expressions.makeArray(aType, List.of(s1, s2));
         Expression s = expressions.makeConstruct(outerType, List.of(s0, a0));
 
         assertEquals(b0, data.get("%b0"));
@@ -554,7 +551,7 @@ public class VisitorOpsConstantTest {
         builder.addInput("%i3", three);
 
         IntegerType iType = builder.mockIntType("%int", 64);
-        builder.mockVectorType("%int3v", "%int", 3);
+        ArrayType type = builder.mockVectorType("%int3v", "%int", 3);
 
         // when
         Map<String, Expression> data = parseConstants(input);
@@ -568,7 +565,7 @@ public class VisitorOpsConstantTest {
         assertEquals(i2, data.get("%i2"));
         assertEquals(i3, data.get("%i3"));
 
-        assertEquals(expressions.makeArray(iType, List.of(i1, i2, i3), true), data.get("%i3v"));
+        assertEquals(expressions.makeArray(type, List.of(i1, i2, i3)), data.get("%i3v"));
     }
 
     @Test

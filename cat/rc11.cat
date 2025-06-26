@@ -7,9 +7,6 @@ RC11
  * Cat coding by Sicon Colin.
  *)
 
-(* Define co (and fr) *)
-include "cos.cat"
-
 // This is needed for herd which can create a single event for rmw instructions
 let myrmw = [RMW] | rmw
 

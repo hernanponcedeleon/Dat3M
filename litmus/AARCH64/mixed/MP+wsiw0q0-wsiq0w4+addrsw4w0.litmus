@@ -1,0 +1,21 @@
+AArch64 MP+wsiw0q0-wsiq0w4+addrsw4w0
+"Wsiw0q0 Wsiq0w4 Rfew4w4 DpAddrsRw4w0 Frew0w0"
+Cycle=Frew0w0 Wsiw0q0 Wsiq0w4 Rfew4w4 DpAddrsRw4w0
+Relax=[w0,Wsi,q0,Wsi,w4]
+Safe=Rfe Fre DpAddrsR w0 w4
+Generator=diy7 (version 7.50+1(dev))
+Prefetch=
+Com=Rf Fr
+Orig=Wsiw0q0 Wsiq0w4 Rfew4w4 DpAddrsRw4w0 Frew0w0
+{
+uint64_t x; uint64_t 1:X3; uint64_t 1:X0;
+
+0:X0=0x1010101; 0:X1=x; 0:X2=0x202020202020202; 0:X3=0x3030303;
+1:X1=x;
+}
+ P0             | P1             ;
+ STR W0,[X1]    | LDR W0,[X1,#4] ;
+ STR X2,[X1]    | EOR X2,X0,X0   ;
+ STR W3,[X1,#4] | ADD X2,X2,#0   ;
+                | LDR W3,[X1,X2] ;
+exists (1:X0=0x3030303 /\ 1:X3=0x0 /\ x=0x303030302020202) \/ (1:X0=0x3030303 /\ 1:X3=0x1010101 /\ x=0x303030302020202)

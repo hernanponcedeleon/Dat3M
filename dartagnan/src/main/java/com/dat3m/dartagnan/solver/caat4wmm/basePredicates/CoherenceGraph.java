@@ -6,7 +6,6 @@ import com.dat3m.dartagnan.solver.caat.predicates.relationGraphs.Edge;
 import com.dat3m.dartagnan.verification.model.EventData;
 import com.google.common.collect.Iterators;
 
-import java.math.BigInteger;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Stream;
@@ -16,7 +15,7 @@ import static java.util.Spliterator.*;
 
 public class CoherenceGraph extends StaticWMMGraph {
 
-    private Map<BigInteger, List<EventData>> coMap;
+    private Map<Object, List<EventData>> coMap;
 
     @Override
     public int size(int id, EdgeDirection dir) {

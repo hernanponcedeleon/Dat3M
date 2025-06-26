@@ -3,25 +3,28 @@ package com.dat3m.dartagnan.program.analysis.alias;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.integers.IntBinaryExpr;
 import com.dat3m.dartagnan.expression.integers.IntLiteral;
+import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
+import com.dat3m.dartagnan.program.analysis.SyntacticContextAnalysis;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.MemoryEvent;
 import com.dat3m.dartagnan.program.event.RegWriter;
 import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.google.common.base.Preconditions;
+import com.google.common.base.Supplier;
+import com.google.common.base.Suppliers;
 import com.google.common.base.Verify;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
-import org.sosy_lab.common.configuration.Configuration;
-import org.sosy_lab.common.configuration.InvalidConfigurationException;
 
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import static com.dat3m.dartagnan.expression.integers.IntBinaryOp.ADD;
+import static com.dat3m.dartagnan.configuration.Alias.*;
 
 /**
  * Inclusion-based pointer analysis by Andersen.
@@ -37,6 +40,13 @@ import static com.dat3m.dartagnan.expression.integers.IntBinaryOp.ADD;
  */
 public class AndersenAliasAnalysis implements AliasAnalysis {
 
+    private final AliasAnalysis.Config config;
+
+    private static final TypeFactory types = TypeFactory.getInstance();
+
+    // For providing helpful error messages, this analysis prints call-stack and loop information for events.
+    private final Supplier<SyntacticContextAnalysis> synContext;
+
     ///When a pointer set gains new content, it is added to this queue
     private final Queue<Object> variables = new ArrayDeque<>();
     ///Super set of all pointer sets in this analysis
@@ -46,23 +56,33 @@ public class AndersenAliasAnalysis implements AliasAnalysis {
     private final Map<Register, Set<MemoryEvent>> events = new HashMap<>();
     private final Map<Register, Set<Location>> targets = new HashMap<>();
     private final Map<Event, ImmutableSet<Location>> eventAddressSpaceMap = new HashMap<>();
+    private final Map<MemoryCoreEvent, ImmutableSet<Location>> eventAddressSpaceMap = new HashMap<>();
+    // Maps memory events to additional offsets inside their byte range, which may match other accesses' bounds.
+    private final Map<MemoryCoreEvent, List<Integer>> mixedAccesses = new HashMap<>();
 
     // ================================ Construction ================================
 
-    private AndersenAliasAnalysis(Program program) {
+    private AndersenAliasAnalysis(Program program, Config c) {
         Preconditions.checkArgument(program.isCompiled(), "The program must be compiled first.");
+        config = c;
+        synContext = Suppliers.memoize(() -> SyntacticContextAnalysis.newInstance(program));
         ImmutableSet.Builder<Location> builder = new ImmutableSet.Builder<>();
         for (MemoryObject a : program.getMemory().getObjects()) {
+            if (!a.hasKnownSize()) {
+                throw new UnsupportedOperationException(String.format("%s alias analysis does not support memory objects of unknown size. " +
+                    "You can try the %s alias analysis", FIELD_INSENSITIVE, FULL));
+            }
             for (int i = 0; i < a.getKnownSize(); i++) {
                 builder.add(new Location(a, i));
             }
         }
         maxAddressSet = builder.build();
         run(program);
+        detectMixedSizeAccesses();
     }
 
-    public static AndersenAliasAnalysis fromConfig(Program program, Configuration config) throws InvalidConfigurationException {
-        return new AndersenAliasAnalysis(program);
+    public static AndersenAliasAnalysis fromConfig(Program program, Config config) {
+        return new AndersenAliasAnalysis(program, config);
     }
 
     // ================================ API ================================
@@ -89,6 +109,26 @@ public class AndersenAliasAnalysis implements AliasAnalysis {
         return objsA.size() == 1 && objsA.equals(getAccessibleObjects(b));
     }
 
+    @Override
+    public List<Integer> mayMixedSizeAccesses(MemoryCoreEvent event) {
+        final List<Integer> result = mixedAccesses.get(event);
+        if (result != null) {
+            return Collections.unmodifiableList(result);
+        }
+        final int bytes = types.getMemorySizeInBytes(event.getAccessType());
+        return IntStream.range(1, bytes).boxed().toList();
+    }
+
+    @Override
+    public List<Integer> mayMixedSizeAccesses(MemoryCoreEvent event) {
+        final List<Integer> result = mixedAccesses.get(event);
+        if (result != null) {
+            return Collections.unmodifiableList(result);
+        }
+        final int bytes = types.getMemorySizeInBytes(event.getAccessType());
+        return IntStream.range(1, bytes).boxed().toList();
+    }
+
     private ImmutableSet<Location> getMaxAddressSet(Event e) {
         return eventAddressSpaceMap.get(e);
     }
@@ -100,6 +140,45 @@ public class AndersenAliasAnalysis implements AliasAnalysis {
             locs.stream().forEach(l -> objs.add(l.base));
         }
         return objs;
+    }
+
+    // ================================ Mixed Size Access Detection ================================
+
+    private void detectMixedSizeAccesses() {
+        if (!config.detectMixedSizeAccesses) {
+            return;
+        }
+        final List<MemoryCoreEvent> events = List.copyOf(eventAddressSpaceMap.keySet());
+        final List<Set<Integer>> offsets = new ArrayList<>();
+        for (int i = 0; i < events.size(); i++) {
+            final var set0 = new HashSet<Integer>();
+            final MemoryCoreEvent event0 = events.get(i);
+            final Set<Location> addresses0 = eventAddressSpaceMap.get(event0);
+            final int bytes0 = types.getMemorySizeInBytes(event0.getAccessType());
+            for (int j = 0; j < i; j++) {
+                final MemoryCoreEvent event1 = events.get(j);
+                final Set<Location> addresses1 = eventAddressSpaceMap.get(event1);
+                final int bytes1 = types.getMemorySizeInBytes(event1.getAccessType());
+                fetchMixedOffsets(set0, addresses0, bytes0, addresses1, bytes1);
+                fetchMixedOffsets(offsets.get(j), addresses1, bytes1, addresses0, bytes0);
+            }
+            offsets.add(set0);
+        }
+        for (int i = 0; i < events.size(); i++) {
+            mixedAccesses.put(events.get(i), offsets.get(i).stream().sorted().toList());
+        }
+    }
+
+    private void fetchMixedOffsets(Set<Integer> setX, Set<Location> addressesX, int bytesX, Set<Location> addressesY, int bytesY) {
+        for (int i = 1; i < bytesX; i++) {
+            for (Location location1 : addressesY) {
+                if (addressesX.contains(new Location(location1.base, location1.offset - i)) ||
+                        addressesX.contains(new Location(location1.base, location1.offset - i + bytesY))) {
+                    setX.add(i);
+                    break;
+                }
+            }
+        }
     }
 
     // ================================ Processing ================================
@@ -196,8 +275,9 @@ public class AndersenAliasAnalysis implements AliasAnalysis {
             // r = &a
             addAddress(register, new Location(mem, 0));
             variables.add(register);
+        } else {
+            addAllAddresses(register, maxAddressSet);
         }
-        //FIXME if the expression is too complicated, the register should receive maxAddressSet
     }
 
     private void algorithm() {
@@ -250,7 +330,7 @@ public class AndersenAliasAnalysis implements AliasAnalysis {
             if (rhs instanceof IntLiteral ic) {
                 addTarget(reg, new Location(mem, ic.getValueAsInt()));
             } else {
-                addTargetArray(reg, (MemoryObject) base);
+                addTargetArray(reg, mem);
             }
             return;
         }
@@ -259,7 +339,7 @@ public class AndersenAliasAnalysis implements AliasAnalysis {
         }
         //accept register2 = register1 + constant
         for (Location target : targets.getOrDefault(base, Set.of())) {
-            Expression rhs = ((IntBinaryExpr) exp).getRight();
+            Expression rhs = iBin.getRight();
             if (rhs instanceof IntLiteral ic) {
                 int o = target.offset + ic.getValueAsInt();
                 if (o < target.base.getKnownSize()) {
@@ -286,6 +366,7 @@ public class AndersenAliasAnalysis implements AliasAnalysis {
             }
         }
         if (addresses.isEmpty()) {
+            logger.warn("Empty pointer set for {}", synContext.get().getContextInfo(e));
             addresses = maxAddressSet;
         }
         return addresses;
@@ -330,32 +411,7 @@ public class AndersenAliasAnalysis implements AliasAnalysis {
         }
     }
 
-    private static final class Location {
-
-        final MemoryObject base;
-        final int offset;
-
-        Location(MemoryObject b, int o) {
-            Preconditions.checkArgument(b.isInRange(o), "Array out of bounds");
-            base = b;
-            offset = o;
-        }
-
-        @Override
-        public int hashCode() {
-            return base.hashCode() + offset;
-        }
-
-        @Override
-        public boolean equals(Object o) {
-            return this == o || o instanceof Location loc && base.equals(loc.base) && offset == loc.offset;
-        }
-
-        @Override
-        public String toString() {
-            return String.format("%s[%d]", base, offset);
-        }
-    }
+    private record Location(MemoryObject base, int offset) {}
 
     private boolean addEdge(Object v1, Object v2) {
         return edges.computeIfAbsent(v1, key -> new HashSet<>()).add(v2);

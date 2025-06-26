@@ -15,6 +15,7 @@ import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.CondJump;
 import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.event.core.Local;
+import com.dat3m.dartagnan.program.event.core.threading.ThreadArgument;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.google.common.base.Preconditions;
 import org.apache.logging.log4j.LogManager;
@@ -133,6 +134,11 @@ public class SparseConditionalConstantPropagation implements FunctionProcessor {
                 final Expression expr = local.getExpr();
                 final Expression valueToPropagate = checkDoPropagate.test(expr) ? expr : null;
                 propagationMap.compute(local.getResultRegister(), (k, v) -> valueToPropagate);
+            } else if (cur instanceof ThreadArgument arg) {
+                // Propagate constant arguments passed across threads
+                final Expression expr = arg.getCreator().getArguments().get(arg.getIndex());
+                final Expression valueToPropagate = expr.getRegs().isEmpty() ? expr : null;
+                propagationMap.compute(arg.getResultRegister(), (k, v) -> valueToPropagate);
             }
 
             if (cur instanceof CondJump jump) {

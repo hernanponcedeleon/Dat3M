@@ -1,8 +1,5 @@
 SVCOMP
 
-(* Define co (and fr) *)
-include "cos.cat"
-
 (* All communication relations *)
 let com = (rf | fr | co)
 

@@ -5,7 +5,7 @@ import com.dat3m.dartagnan.wmm.axiom.*;
 }
 
 mcm
-    :   (NAME)? (QUOTED_STRING)? (definition | include | show)+ EOF
+    :   (NAME)* (QUOTED_STRING)? (definition | include | show)+ EOF
     ;
 
 definition
@@ -16,9 +16,9 @@ definition
     ;
 
 axiomDefinition locals [Class<?> cls]
-    :   (flag = FLAG)? (negate = NOT)? ACYCLIC { $cls = Acyclicity.class; } e = expression (AS NAME)?
-    |   (flag = FLAG)? (negate = NOT)? IRREFLEXIVE { $cls = Irreflexivity.class; } e = expression (AS NAME)?
-    |   (flag = FLAG)? (negate = NOT)? EMPTY { $cls = Emptiness.class; } e = expression (AS NAME)?
+    :   (flag = FLAG | undef = UNDEFINED)? (negate = NOT)? ACYCLIC { $cls = Acyclicity.class; } e = expression (AS NAME)?
+    |   (flag = FLAG | undef = UNDEFINED)? (negate = NOT)? IRREFLEXIVE { $cls = Irreflexivity.class; } e = expression (AS NAME)?
+    |   (flag = FLAG | undef = UNDEFINED)? (negate = NOT)? EMPTY { $cls = Emptiness.class; } e = expression (AS NAME)?
     ;
 
 letFuncDefinition
@@ -62,7 +62,7 @@ include
     ;
 
 show
-    :   SHOW expression (AS NAME)?
+    :   SHOW expression (AS NAME)? (COMMA expression (AS NAME)?)*
     ;
 
 parameterList
@@ -108,6 +108,7 @@ RANGE       :   'range';
 NEW         :   'new';
 
 FLAG       :   'flag';
+UNDEFINED  :   'undefined_unless';
 
 QUOTED_STRING : '"' .*? '"';
 

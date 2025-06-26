@@ -22,7 +22,10 @@ public interface ExpressionKind {
         CONSTRUCT,
         ITE,
         EXTRACT,
-        INSERT;
+        INSERT,
+        BV_EXTRACT,
+        BV_CONCAT,
+        FORMULA;
 
         @Override
         public String getSymbol() {

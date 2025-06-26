@@ -341,7 +341,7 @@ public class VisitorOpsCompositeTest {
         builder.mockAggregateType("%struct1", "%array", "%array1");
 
         builder.mockConstant("%test", "%array", List.of(1, 2, 3, 4));
-        builder.mockConstant("%test1", "%array", List.of(1, 2));
+        builder.mockConstant("%test1", "%array1", List.of(1, 2));
         builder.mockConstant("%base", "%struct", List.of("%test1", "%test"));
         builder.mockConstant("%value", "%uint32", 99);
 
@@ -850,8 +850,7 @@ public class VisitorOpsCompositeTest {
             visit(input);
             fail("Should throw exception");
         } catch (Exception e) {
-            assertEquals("There must be exactly one constituent for each top-level element of the result " +
-                        "(\"flattening\" vectors is not yet supported) and their types should match for '%result'", e.getMessage());
+            assertEquals("The number of elements must match Offending id: '%result'", e.getMessage());
         }
     }
 

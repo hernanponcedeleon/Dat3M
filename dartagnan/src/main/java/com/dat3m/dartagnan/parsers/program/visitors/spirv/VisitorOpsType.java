@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan.parsers.program.visitors.spirv;
 
+import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.Type;
@@ -7,6 +8,7 @@ import com.dat3m.dartagnan.expression.integers.IntLiteral;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.parsers.SpirvBaseVisitor;
 import com.dat3m.dartagnan.parsers.SpirvParser;
+import com.dat3m.dartagnan.parsers.program.visitors.spirv.decorations.ArrayStride;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.decorations.DecorationType;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.decorations.Offset;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.helpers.HelperTags;
@@ -15,16 +17,20 @@ import com.dat3m.dartagnan.parsers.program.visitors.spirv.builders.ProgramBuilde
 import java.util.*;
 import java.util.stream.IntStream;
 
+import static com.dat3m.dartagnan.expression.utils.ExpressionHelper.isScalar;
+
 public class VisitorOpsType extends SpirvBaseVisitor<Type> {
 
     private static final TypeFactory types = TypeFactory.getInstance();
 
     private final ProgramBuilder builder;
     private final Offset offset;
+    private final ArrayStride arrayStride;
 
     public VisitorOpsType(ProgramBuilder builder) {
         this.builder = builder;
         this.offset = (Offset) builder.getDecorationsBuilder().getDecoration(DecorationType.OFFSET);
+        this.arrayStride = (ArrayStride) builder.getDecorationsBuilder().getDecoration(DecorationType.ARRAY_STRIDE);
     }
 
     @Override
@@ -60,8 +66,17 @@ public class VisitorOpsType extends SpirvBaseVisitor<Type> {
         String id = ctx.idResult().getText();
         String elementTypeName = ctx.componentTypeIdRef().getText();
         Type elementType = builder.getType(elementTypeName);
+        if (!isScalar(elementType)) {
+            throw new ParsingException("Attempt to use a non-scalar element in vector type '%s'", id);
+        }
         int size = Integer.parseInt(ctx.componentCountLiteralInteger().getText());
-        Type type = types.getArrayType(elementType, size);
+        Integer alignment = null;
+        if (builder.getArch() == Arch.OPENCL && size == 3) {
+            // In OpenCL, vectors with 3 elements should be aligned to 4 elements
+            // https://registry.khronos.org/OpenCL/sdk/3.0/docs/man/html/alignmentOfDataTypes.html
+            alignment = 4 * types.getMemorySizeInBytes(elementType);
+        }
+        Type type = types.getArrayType(elementType, size, null, alignment);
         return builder.addType(id, type);
     }
 
@@ -74,7 +89,8 @@ public class VisitorOpsType extends SpirvBaseVisitor<Type> {
         Expression lengthExpr = builder.getExpression(lengthValueName);
         if (lengthExpr != null) {
             if (lengthExpr instanceof IntLiteral iValue) {
-                Type type = types.getArrayType(elementType, iValue.getValue().intValue());
+                validateArrayStride(id, elementType);
+                Type type = types.getArrayType(elementType, iValue.getValue().intValue(), arrayStride.getValue(id));
                 return builder.addType(id, type);
             }
             throw new ParsingException("Attempt to use a non-integer value as array size '%s'", lengthValueName);
@@ -87,7 +103,8 @@ public class VisitorOpsType extends SpirvBaseVisitor<Type> {
         String id = ctx.idResult().getText();
         String elementTypeName = ctx.elementType().getText();
         Type elementType = builder.getType(elementTypeName);
-        Type type = types.getArrayType(elementType);
+        validateArrayStride(id, elementType);
+        Type type = types.getArrayType(elementType, -1, arrayStride.getValue(id));
         return builder.addType(id, type);
     }
 
@@ -119,7 +136,9 @@ public class VisitorOpsType extends SpirvBaseVisitor<Type> {
         String id = ctx.idResult().getText();
         String inner = ctx.type().getText();
         String storageClass = HelperTags.parseStorageClass(ctx.storageClass().getText());
-        Type type = types.getScopedPointerType(storageClass, builder.getType(inner));
+        Type elementType = builder.getType(inner);
+        validateArrayStride(id, elementType);
+        Type type = types.getScopedPointerType(storageClass, elementType, arrayStride.getValue(id));
         return builder.addType(id, type);
     }
 
@@ -132,6 +151,17 @@ public class VisitorOpsType extends SpirvBaseVisitor<Type> {
                 .map(argCtx -> builder.getType(argCtx.getText())).toList();
         Type type = types.getFunctionType(returnType, argTypes);
         return builder.addType(id, type);
+    }
+
+    private void validateArrayStride(String id, Type elType) {
+        Integer stride = arrayStride.getValue(id);
+        if (stride != null) {
+            int elSize = types.getMemorySizeInBytes(elType);
+            if (elSize > 0 && elSize > stride) {
+                throw new ParsingException("Illegal array definition of type '%s', " +
+                        "element size %d exceeds the ArrayStride value %d", id, elSize, stride);
+            }
+        }
     }
 
     public Set<String> getSupportedOps() {

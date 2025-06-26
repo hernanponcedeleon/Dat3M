@@ -1,0 +1,20 @@
+AArch64 Fig22
+(* Fig 22 from OOPLSA 2018, "Towards understanding ..." by Ou & Demsky *)
+Com=Rf Rf
+{
+uint16_t z; uint16_t y; uint16_t x; uint16_t 1:X0; uint16_t 0:X0;
+
+0:X1=x; 0:X4=y;
+1:X1=x; 1:X4=z; 1:X7=y;
+}
+ P0             | P1                   ;
+ LDRH W0,[X4]   | LDRH W0,[X1]         ;
+ STRH W0,[X1]   | MOV W3,#1            ;
+                | STRB W3,[X4,W0,SXTW] ;
+                | LDRB W5,[X4]         ;
+                | CBNZ W5,LC00         ;
+                | MOV W6,#1            ;
+                | STRH W6,[X7]         ;
+                | LC00:                ;
+exists
+(0:X0=1 /\ 1:X0=1)

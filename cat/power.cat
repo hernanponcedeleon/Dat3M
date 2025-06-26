@@ -1,6 +1,5 @@
 Power
 
-include "cos.cat"
 include "ppcfences.cat"
 
 (* Uniproc *)

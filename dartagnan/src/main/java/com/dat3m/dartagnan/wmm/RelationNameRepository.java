@@ -13,7 +13,8 @@ public class RelationNameRepository {
     public static final String EXT = "ext";
     public static final String CO = "co";
     public static final String RF = "rf";
-    public static final String RMW = "rmw";
+    public static final String AMO = "amo";
+    public static final String LXSX = "lxsx";
     public static final String CRIT = "rcu-rscs";
     public static final String EMPTY = "0";
     public static final String DATA = "data";
@@ -22,6 +23,7 @@ public class RelationNameRepository {
     public static final String CASDEP = "casdep";
     public static final String ALLOCPTR = "allocptr";
     public static final String ALLOCMEM = "allocmem";
+    public static final String SI = "si";
     public static final String SR = "sr";
     public static final String SCTA = "scta"; // same-cta, the same as same_block_r in alloy
     public static final String SSG = "ssg";
