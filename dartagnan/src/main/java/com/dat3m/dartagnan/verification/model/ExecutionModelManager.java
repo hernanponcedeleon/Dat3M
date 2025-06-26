@@ -221,7 +221,6 @@ public class ExecutionModelManager {
                 // Populate graph of relations unsupported by the visitor using default relation analysis.
                 graphPopulator.populateDynamicDefaultGraph(r);
             }
-            // graphPopulator.populateDynamicDefaultGraph(r);
         }
 
         // Do the computation.
@@ -237,7 +236,6 @@ public class ExecutionModelManager {
         }
 
         for (Relation r : relsToExtract) {
-            System.out.println(r + " : " + relModelCache.get(r).getEdgeModels().size());
             executionModel.addRelation(r, relModelCache.get(r));
         }
     }
