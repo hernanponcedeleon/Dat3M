@@ -438,7 +438,7 @@ public class VisitorSpirvVulkanTest {
 
     private void doTestSpirvControlBarrier(Set<String> spvTags, Set<String> expected) {
         // given
-        ControlBarrier e = EventFactory.newControlBarrier("test", "test");
+        ControlBarrier e = EventFactory.newControlBarrier("test", "test", Tag.Spirv.WORKGROUP);
         e.setFunction(mock(Function.class));
         e.addTags(Tag.Spirv.CONTROL);
         if (!spvTags.isEmpty()) {
@@ -455,5 +455,25 @@ public class VisitorSpirvVulkanTest {
         ControlBarrier barrier = (ControlBarrier) seq.get(0);
         Set<String> baseTags = Set.of(Tag.VISIBLE, Tag.Vulkan.CBAR);
         assertEquals(Sets.union(baseTags, expected), barrier.getTags());
+    }
+
+    @Test
+    public void testSpirvControlBarrierExecScope() {
+        toTestSpirvControlBarrierExecScope(Tag.Spirv.WORKGROUP, Tag.Vulkan.WORK_GROUP);
+        toTestSpirvControlBarrierExecScope(Tag.Spirv.SUBGROUP, Tag.Vulkan.SUB_GROUP);
+    }
+
+    public void toTestSpirvControlBarrierExecScope(String spvScope, String expected) {
+        // given
+        ControlBarrier e = EventFactory.newControlBarrier("test-wg", "test-wg", spvScope);
+        e.setFunction(mock(Function.class));
+
+        // when
+        List<Event> seq = visitor.visitControlBarrier(e);
+
+        // then
+        assertEquals(1, seq.size());
+        ControlBarrier barrier = (ControlBarrier) seq.get(0);
+        assertEquals(expected, barrier.getExecScope());
     }
 }

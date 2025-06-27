@@ -59,7 +59,8 @@ public class VisitorSpirvVulkan extends VisitorVulkan {
 
     @Override
     public List<Event> visitControlBarrier(ControlBarrier e) {
-        ControlBarrier barrier = EventFactory.newControlBarrier(e.getName(), e.getInstanceId());
+        String execScope = Tag.Spirv.toVulkanTag(e.getExecScope());
+        ControlBarrier barrier = EventFactory.newControlBarrier(e.getName(), e.getInstanceId(), execScope);
         addVulkanTags(e, barrier);
         if (!e.hasTag(Tag.FENCE)) {
             barrier.removeTags(Tag.FENCE);
