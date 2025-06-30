@@ -31,8 +31,8 @@
          %c1 = OpConstant %uint 1
          %c2 = OpConstant %uint 2
          %c4 = OpConstant %uint 4
-        %c66 = OpConstant %uint 66
-        %c72 = OpConstant %uint 72
+       %c322 = OpConstant %uint 322
+       %c328 = OpConstant %uint 328
 
      %var_th = OpVariable %ptr_uint_th Private %c0
      %var_wg = OpVariable %ptr_uint_wg Workgroup %c0
@@ -48,15 +48,15 @@
      %id_ptr = OpAccessChain %ptr_in %ids %c0
          %id = OpLoad %uint %id_ptr
 
-%var_th_orig = OpAtomicIIncrement %uint %var_th %c4 %c72
-%var_wg_orig = OpAtomicIIncrement %uint %var_wg %c2 %c72
-%var_dv_orig = OpAtomicIIncrement %uint %var_dv %c1 %c72
+%var_th_orig = OpAtomicIIncrement %uint %var_th %c4 %c328
+%var_wg_orig = OpAtomicIIncrement %uint %var_wg %c2 %c328
+%var_dv_orig = OpAtomicIIncrement %uint %var_dv %c1 %c328
 
-               OpControlBarrier %c2 %c1 %c72
+               OpControlBarrier %c2 %c1 %c328
 
-         %th = OpAtomicLoad %uint %var_th %c4 %c66
-         %wg = OpAtomicLoad %uint %var_wg %c2 %c66
-         %dv = OpAtomicLoad %uint %var_dv %c1 %c66
+         %th = OpAtomicLoad %uint %var_th %c4 %c322
+         %wg = OpAtomicLoad %uint %var_wg %c2 %c322
+         %dv = OpAtomicLoad %uint %var_dv %c1 %c322
 
  %out_th_ptr = OpAccessChain %ptr_out %out_th %id
  %out_wg_ptr = OpAccessChain %ptr_out %out_wg %id
