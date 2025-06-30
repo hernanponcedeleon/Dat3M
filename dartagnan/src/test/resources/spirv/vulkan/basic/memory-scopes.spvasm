@@ -1,6 +1,6 @@
 ; @Output: forall (%out_th[0]==1 and %out_th[1]==1 and %out_th[2]==1 and %out_th[3]==1)
 ; @Output: forall (%out_wg[0]==2 and %out_wg[1]==2 and %out_wg[2]==2 and %out_wg[3]==2)
-; @Output: forall (%out_dv[0]==4 and %out_dv[1]==4 and %out_dv[2]==4 and %out_dv[3]==4)
+; @Output: forall (%var_dv==4)
 ; @Config: 2, 1, 2
 ; SPIR-V
 ; Version: 1.0
@@ -39,7 +39,6 @@
      %var_dv = OpVariable %ptr_uint_dv Uniform %c0
      %out_th = OpVariable %ptr_v4_out Output
      %out_wg = OpVariable %ptr_v4_out Output
-     %out_dv = OpVariable %ptr_v4_out Output
         %ids = OpVariable %ptr_v3_in Input
 
        %main = OpFunction %void None %func
@@ -60,11 +59,9 @@
 
  %out_th_ptr = OpAccessChain %ptr_out %out_th %id
  %out_wg_ptr = OpAccessChain %ptr_out %out_wg %id
- %out_dv_ptr = OpAccessChain %ptr_out %out_dv %id
 
                OpStore %out_th_ptr %th
                OpStore %out_wg_ptr %wg
-               OpStore %out_dv_ptr %dv
 
                OpReturn
                OpFunctionEnd

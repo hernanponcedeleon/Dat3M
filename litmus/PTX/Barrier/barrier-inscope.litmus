@@ -1,0 +1,9 @@
+PTX barrier-inscope
+{
+x=0;
+}
+ P0@cta 0,gpu 0 | P1@cta 0,gpu 0 ;
+ st.weak x, 1   | bar.cta.sync 1 ;
+ bar.cta.sync 1 | ld.weak r0, x  ;
+
+forall (P1:r0 == 1)

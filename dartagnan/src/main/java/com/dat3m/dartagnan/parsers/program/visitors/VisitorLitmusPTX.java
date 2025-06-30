@@ -302,14 +302,14 @@ public class VisitorLitmusPTX extends LitmusPTXBaseVisitor<Object> {
         String instanceId = ctx.constant().getText();
         Event barrier;
         if (ctx.barrierId() == null) {
-            barrier = EventFactory.newControlBarrier(name, instanceId);
+            barrier = EventFactory.newControlBarrier(name, instanceId, Tag.PTX.CTA);
         } else {
             Expression id = (Expression) ctx.barrierId().accept(this);
             Expression quorum = null;
             if (ctx.barrierQuorum() != null) {
                 quorum = (Expression) ctx.barrierQuorum().accept(this);
             }
-            barrier = EventFactory.newNamedBarrier(name, instanceId, id, quorum);
+            barrier = EventFactory.newNamedBarrier(name, instanceId, Tag.PTX.CTA, id, quorum);
         }
         if(ctx.barrierMode().Arrive() != null) {
             barrier.addTags(Tag.PTX.ARRIVE);

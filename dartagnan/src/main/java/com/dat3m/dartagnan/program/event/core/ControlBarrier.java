@@ -15,15 +15,18 @@ public class ControlBarrier extends GenericVisibleEvent implements BlockingEvent
     // a barrier instruction. In litmus tests, barrier instanceId should be
     // specified explicitly.
     private String instanceId;
+    private final String execScope;
 
-    public ControlBarrier(String name, String instanceId) {
+    public ControlBarrier(String name, String instanceId, String execScope) {
         super(name, Tag.FENCE);
         this.instanceId = instanceId;
+        this.execScope = execScope;
     }
 
     protected ControlBarrier(ControlBarrier other) {
         super(other);
         this.instanceId = other.instanceId;
+        this.execScope = other.execScope;
     }
 
     public void setInstanceId(String instanceId) {
@@ -34,9 +37,13 @@ public class ControlBarrier extends GenericVisibleEvent implements BlockingEvent
         return instanceId;
     }
 
+    public String getExecScope() {
+        return execScope;
+    }
+
     @Override
     public String defaultString() {
-        return String.format("%s := barrier(%s)", name, instanceId);
+        return String.format("%s := barrier(%s, %s)", name, instanceId, execScope);
     }
 
     @Override
