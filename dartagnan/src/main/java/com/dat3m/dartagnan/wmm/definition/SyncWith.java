@@ -12,6 +12,7 @@ public class SyncWith extends Definition {
 
     public SyncWith(Relation r) {
         super(r, RelationNameRepository.SSW);
+        r.checkBinaryRelation();
     }
     @Override
     public <T> T accept(Visitor<? extends T> v) {

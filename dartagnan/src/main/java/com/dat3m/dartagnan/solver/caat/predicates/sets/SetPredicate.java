@@ -7,7 +7,6 @@ import com.dat3m.dartagnan.utils.collections.OneTimeIterable;
 
 import java.util.Collection;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Set;
 import java.util.stream.Stream;
 
@@ -15,10 +14,6 @@ public interface SetPredicate extends CAATPredicate {
 
     @Override
     Collection<Element> forwardPropagate(CAATPredicate changedSource, Collection<? extends Derivable> added);
-
-    @Override
-    List<SetPredicate> getDependencies(); // SetPredicates only depend on other SetPredicates
-    // In case we add something like projections, we would also have sets dependent on graphs
 
     Element get(Element e); // Gets the metadata associated with <e>
 
