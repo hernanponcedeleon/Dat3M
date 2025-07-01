@@ -260,14 +260,14 @@ public class VisitorLitmusVulkan extends LitmusVulkanBaseVisitor<Object> {
         String instanceId = ctx.constant().getText();
         Event barrier;
         if (ctx.barrierId() == null) {
-            barrier = EventFactory.newControlBarrier(name, instanceId);
+            barrier = EventFactory.newControlBarrier(name, instanceId, Tag.Vulkan.WORK_GROUP);
         } else {
             Expression id = (Expression) ctx.barrierId().accept(this);
             Expression quorum = null;
             if (ctx.barrierQuorum() != null) {
                 quorum = (Expression) ctx.barrierQuorum().accept(this);
             }
-            barrier = EventFactory.newNamedBarrier(name, instanceId, id, quorum);
+            barrier = EventFactory.newNamedBarrier(name, instanceId, Tag.Vulkan.WORK_GROUP, id, quorum);
         }
         barrier.addTags(Tag.Vulkan.CBAR, ctx.scope().content);
         String mo = getMemoryOrderOrDefault(ctx, null);
