@@ -62,15 +62,17 @@ let imm(r) = r \ (r; r+)
 let rs = [REL & ATOM]; (imm(asmo); [RMW])*
 let hypors = [W & ATOM]; (imm(asmo); [RMW])*
 
-// synchronizes-with is similar to C++, with an additional case for fence->cbar->cbar->fence
-let sw = inscope & (
-    ([REL & ATOM]; rs; (rf & mutordatom); [ACQ & ATOM]) |                                               // atomic->atomic
-    ([REL & F]; posemtosc; [ATOM & W]; hypors; (rf & mutordatom); [ACQ & ATOM]) |                       // fence->atomic
-    ([REL & ATOM]; rs; (rf & mutordatom); [ATOM & R]; posctosem; [ACQ & F]) |                           // atomic->fence
-    ([REL & F]; posemtosc; [ATOM & W]; hypors; (rf & mutordatom); [ATOM & R]; posctosem; [ACQ & F]) |   // fence->fence
-    // (stor[CBAR]) terms are redundant because scbarinst is an equivalence relation on scbarinst, but they make the sequence of instructions more clear.
-    ([REL & F]; po?; [CBAR]; ((syncbar & inscope) \ id); [CBAR]; po?; [ACQ & F])                        // fence->cbar->cbar->fence,
-)
+let imm(r) = r \ (r; r+)
+// TODO 1: Can it be replaced by:
+// let rs = ([REL] ; posemtosc? ; [W & ATOM]); (imm(asmo); [RMW])*
+// TODO 2: What if rmw is not inscope with the other accesses in the chain?
+let rels = ([REL & ATOM] | ([REL & F]; posemtosc; [W & ATOM])); (imm(asmo); [RMW])*
+let acqs = [ACQ & ATOM] | ([ATOM & R]; posctosem; [ACQ & F])
+
+let swra = rels; (rf & mutordatom); acqs
+// TODO: Does it mean that this also synchronises: Fsemsc0 -> Bsemsc1 -> Bsemsc1 -> Fsemsc0 ?
+let swbar = [REL & F]; po?; ((syncbar & inscope) \ id); po?; [ACQ & F]
+let sw = inscope & (swra | swbar)
 
 let ithbsemsc0 = ( ssw |
                    ([SEMSC0]; sw; [SEMSC0]) |
@@ -140,6 +142,7 @@ let fre = fr & ext
 // locord, rf, fr, asmo must not form cycles
 acyclic (locord | rf | fr | asmo) as consistency-cycle
 
+// TODO: Why only non-atomic read?
 // non-atomic cannot read-from a value that is shadowed by another write
 empty (rf; ([R \ ATOM])) & (([W]; locord); ([W]; locord)+) as consistency-rf
 
