@@ -101,30 +101,32 @@ let avsg = [AVSG]
 let avwg = (chains & (avsg; (hb & ssg & avvisinc))?); [AVWG]
 let avqf = (chains & ((avsg; (hb & ssg & avvisinc))? ; (avwg; (hb & swg & avvisinc))?)); [AVQF]
 let avsh = (chains & ((avsg; (hb & ssg & avvisinc))? ; (avwg; (hb & swg & avvisinc))?; (avqf; (hb & sqf & avvisinc))?)); [AVSHADER]
-let avdv = [AVDEVICE]
 
 let vissg = [VISSG]
 let viswg = [VISWG]; (chains & (((hb & ssg & avvisinc); vissg)?))
 let visqf = [VISQF]; (chains & (((hb & swg & avvisinc) ; viswg)?; ((hb & ssg & avvisinc); vissg)?))
 let vissh = [VISSHADER]; (chains & (((hb & sqf & avvisinc) ; visqf)?; ((hb & swg & avvisinc); viswg)?; ((hb & ssg & avvisinc); vissg)?))
-let visdv = [VISDEVICE]
 
-// loc order, relates memory accesses to the same location
-let locord = loc &
-             (  (hb & int & vloc) |
-                ([R \ PRIV]; hb; [(R | W) \ PRIV]) | // RaR, WaR (non-private)
-                ([R]; ssw+; [R | W]) | // RaR, WaR (any)
-                (vloc & ([W \ PRIV]; (po? & avvisinc); avsg; (hb & ssg);                          [W \ PRIV])) |   // WaW (via subgroup instance domain)
-                (vloc & ([W \ PRIV]; (po? & avvisinc); avsg; (hb & ssg); vissg; (po? & avvisinc); [R \ PRIV])) |   // RaW (via subgroup instance domain)
-                (vloc & ([W \ PRIV]; (po? & avvisinc); avwg; (hb & swg);                          [W \ PRIV])) |   // WaW (via subgroup instance domain)
-                (vloc & ([W \ PRIV]; (po? & avvisinc); avwg; (hb & swg); viswg; (po? & avvisinc); [R \ PRIV])) |   // RaW (via workgroup instance domain)
-                (vloc & ([W \ PRIV]; (po? & avvisinc); avqf; (hb & sqf);                          [W \ PRIV])) |   // WaW (via queue family instance domain)
-                (vloc & ([W \ PRIV]; (po? & avvisinc); avqf; (hb & sqf); visqf; (po? & avvisinc); [R \ PRIV])) |   // RaW (via queue family instance domain)
-                (vloc & ([W \ PRIV]; (po? & avvisinc); avsh; (hb);                                [W \ PRIV])) |   // WaW (via shader domain)
-                (vloc & ([W \ PRIV]; (po? & avvisinc); avsh; (hb);       vissh; (po? & avvisinc); [R \ PRIV])) |   // RaW (via shader domain)
-                (       ([W];        (hb & avvisinc);  avdv; (hb);                                [W]))        |   // WaW (via device domain)
-                (       ([W];        (hb & avvisinc);  avdv; (hb);       visdv; (hb & avvisinc);  [R]))            // RaW (via device domain)
-             )
+// loc order for events accessing the same memory location
+let blocord = loc & (
+    ([R & NONPRIV]; hb; [NONPRIV]) | // TODO: Isn't it too much guarantee without vloc?
+    ([R]; ssw+; [R | W]) |
+    ([W]; hb; [AVDEVICE]; hb; [W]) |
+    ([W]; hb; [AVDEVICE]; hb; [VISDEVICE]; hb; [R]))
+
+// loc order for events accessing the same virtual memory location
+let vlocord = loc & vloc & (
+    (hb & int) |
+    ([W \ PRIV]; (po? & avvisinc); avsg; (hb & ssg);                          [W \ PRIV]) |   // WaW (via subgroup instance domain)
+    ([W \ PRIV]; (po? & avvisinc); avsg; (hb & ssg); vissg; (po? & avvisinc); [R \ PRIV]) |   // RaW (via subgroup instance domain)
+    ([W \ PRIV]; (po? & avvisinc); avwg; (hb & swg);                          [W \ PRIV]) |   // WaW (via subgroup instance domain)
+    ([W \ PRIV]; (po? & avvisinc); avwg; (hb & swg); viswg; (po? & avvisinc); [R \ PRIV]) |   // RaW (via workgroup instance domain)
+    ([W \ PRIV]; (po? & avvisinc); avqf; (hb & sqf);                          [W \ PRIV]) |   // WaW (via queue family instance domain)
+    ([W \ PRIV]; (po? & avvisinc); avqf; (hb & sqf); visqf; (po? & avvisinc); [R \ PRIV]) |   // RaW (via queue family instance domain)
+    ([W \ PRIV]; (po? & avvisinc); avsh; (hb);                                [W \ PRIV]) |   // WaW (via shader domain)
+    ([W \ PRIV]; (po? & avvisinc); avsh; (hb);       vissh; (po? & avvisinc); [R \ PRIV]))    // RaW (via shader domain)
+
+let locord = blocord | vlocord
 
 // From-read is defined based on scoped modification order
 // instead of coherence. For reads that read-from init, they
