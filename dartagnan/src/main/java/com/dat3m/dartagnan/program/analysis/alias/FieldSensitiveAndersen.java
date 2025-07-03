@@ -23,6 +23,7 @@ import com.google.common.collect.Sets;
 
 import java.math.BigInteger;
 import java.util.*;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import static com.dat3m.dartagnan.expression.integers.IntBinaryOp.*;
@@ -125,7 +126,9 @@ public class FieldSensitiveAndersen implements AliasAnalysis {
         if (!config.detectMixedSizeAccesses) {
             return;
         }
-        final List<MemoryCoreEvent> events = List.copyOf(eventAddressSpaceMap.keySet());
+        final List<MemoryCoreEvent> events = eventAddressSpaceMap.keySet().stream()
+                .filter(e -> e instanceof MemoryCoreEvent)
+                .map(e -> (MemoryCoreEvent) e).collect(Collectors.toList());
         final List<Set<Integer>> offsets = new ArrayList<>();
         for (int i = 0; i < events.size(); i++) {
             final var set0 = new HashSet<Integer>();
@@ -191,10 +194,10 @@ public class FieldSensitiveAndersen implements AliasAnalysis {
             algorithm(variable);
         }
         for (MemoryCoreEvent e : memEvents) {
-            eventAddressSpaceMap.put(e, getAddressSpace(e.getAddress()));
+            eventAddressSpaceMap.put(e, getAddressSpace(e));
         }
         for (MemFree f : program.getThreadEvents(MemFree.class)) {
-            eventAddressSpaceMap.put(f, getAddressSpace(f.getAddress()));
+            eventAddressSpaceMap.put(f, getAddressSpace(f));
         }
     }
 
@@ -275,14 +278,21 @@ public class FieldSensitiveAndersen implements AliasAnalysis {
         }
     }
 
-    protected ImmutableSet<Location> getAddressSpace(Expression addrExpr) {
+    protected ImmutableSet<Location> getAddressSpace(Event e) {
+        Expression addrExpr;
+        if (e instanceof MemoryCoreEvent mce) {
+            addrExpr = mce.getAddress();
+        } else {
+            assert e instanceof MemFree;
+            addrExpr = ((MemFree) e).getAddress();
+        }
         ImmutableSet.Builder<Location> builder = new ImmutableSet.Builder<>();
         Collector collector = new Collector(addrExpr);
         builder.addAll(collector.address());
         for (Offset<Register> r : collector.register()) {
             builder.addAll(fields(getAddresses(r.base), r.offset, r.alignment));
         }
-        Set<Location> set = addresses.build();
+        Set<Location> set = builder.build();
         if (set.isEmpty()) {
             logger.warn("Empty pointer set for {}", synContext.get().getContextInfo(e));
         }

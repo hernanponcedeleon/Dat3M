@@ -29,6 +29,7 @@ import org.apache.logging.log4j.Logger;
 
 import java.math.BigInteger;
 import java.util.*;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import static com.google.common.base.Preconditions.checkArgument;
@@ -231,7 +232,9 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
     // ================================ Mixed Size Access Detection ================================
 
     private void detectMixedSizeAccesses() {
-        final List<MemoryCoreEvent> events = List.copyOf(addressVariables.keySet());
+        final List<MemoryCoreEvent> events = addressVariables.keySet().stream()
+                .filter(e -> e instanceof MemoryCoreEvent)
+                .map(e -> (MemoryCoreEvent) e).collect(Collectors.toList());
         final List<Set<Integer>> offsets = new ArrayList<>();
         for (int i = 0; i < events.size(); i++) {
             final MemoryCoreEvent event0 = events.get(i);
@@ -515,6 +518,7 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
     // This simplifies alias queries and releases memory resources.
     private void postProcess(Map.Entry<Event, DerivedVariable> entry) {
         logger.trace("{}", entry);
+        final Event e = entry.getKey();
         final DerivedVariable address = entry.getValue();
         if (address == null) {
             // should have already warned about this event
@@ -528,7 +532,7 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
         // In a well-structured program, all address expressions refer to at least one memory object.
         if (logger.isWarnEnabled() && address.base.object == null &&
                 address.base.includes.stream().allMatch(i -> i.source.object == null)) {
-            logger.warn("empty pointer set for {}", synContext.get().getContextInfo(entry.getKey()));
+            logger.warn("empty pointer set for {}", synContext.get().getContextInfo(e));
         }
         if (address.base.includes.size() != 1) {
             return;
@@ -541,11 +545,21 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
         if (!includeEdge.source.object.getClass().equals(MemoryObject.class) || !includeEdge.source.object.hasKnownSize()) {
             return;
         }
-        final int accessSize = types.getMemorySizeInBytes(entry.getKey().getAccessType());
-        final int remainingSize = includeEdge.source.object.getKnownSize() - modifier.offset - (accessSize - 1);
-        for (final Integer a : modifier.alignment) {
-            if (Math.abs(a) < remainingSize || a < 0 && modifier.offset + a >= 0) {
-                return;
+        if (e instanceof MemoryCoreEvent mce) {
+            final int accessSize = types.getMemorySizeInBytes(mce.getAccessType());
+            final int remainingSize = includeEdge.source.object.getKnownSize() - modifier.offset - (accessSize - 1);
+            for (final Integer a : modifier.alignment) {
+                if (Math.abs(a) < remainingSize || a < 0 && modifier.offset + a >= 0) {
+                    return;
+                }
+            }
+        } else {
+            assert e instanceof MemFree;
+            final int remainingSize = includeEdge.source.object.getKnownSize() - modifier.offset;
+            for (final Integer a : modifier.alignment) {
+                if (a < remainingSize) {
+                    return;
+                }
             }
         }
         entry.setValue(derive(includeEdge.source, modifier.offset, List.of()));

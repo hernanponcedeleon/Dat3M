@@ -36,7 +36,6 @@ import static com.dat3m.dartagnan.configuration.Alias.*;
  *
  * @author flo
  * @author xeren
- * @author Tianrui Zheng
  */
 public class AndersenAliasAnalysis implements AliasAnalysis {
 
@@ -56,7 +55,6 @@ public class AndersenAliasAnalysis implements AliasAnalysis {
     private final Map<Register, Set<MemoryEvent>> events = new HashMap<>();
     private final Map<Register, Set<Location>> targets = new HashMap<>();
     private final Map<Event, ImmutableSet<Location>> eventAddressSpaceMap = new HashMap<>();
-    private final Map<MemoryCoreEvent, ImmutableSet<Location>> eventAddressSpaceMap = new HashMap<>();
     // Maps memory events to additional offsets inside their byte range, which may match other accesses' bounds.
     private final Map<MemoryCoreEvent, List<Integer>> mixedAccesses = new HashMap<>();
 
@@ -119,16 +117,6 @@ public class AndersenAliasAnalysis implements AliasAnalysis {
         return IntStream.range(1, bytes).boxed().toList();
     }
 
-    @Override
-    public List<Integer> mayMixedSizeAccesses(MemoryCoreEvent event) {
-        final List<Integer> result = mixedAccesses.get(event);
-        if (result != null) {
-            return Collections.unmodifiableList(result);
-        }
-        final int bytes = types.getMemorySizeInBytes(event.getAccessType());
-        return IntStream.range(1, bytes).boxed().toList();
-    }
-
     private ImmutableSet<Location> getMaxAddressSet(Event e) {
         return eventAddressSpaceMap.get(e);
     }
@@ -148,7 +136,9 @@ public class AndersenAliasAnalysis implements AliasAnalysis {
         if (!config.detectMixedSizeAccesses) {
             return;
         }
-        final List<MemoryCoreEvent> events = List.copyOf(eventAddressSpaceMap.keySet());
+        final List<MemoryCoreEvent> events = eventAddressSpaceMap.keySet().stream()
+                .filter(e -> e instanceof MemoryCoreEvent)
+                .map(e -> (MemoryCoreEvent) e).collect(Collectors.toList());
         final List<Set<Integer>> offsets = new ArrayList<>();
         for (int i = 0; i < events.size(); i++) {
             final var set0 = new HashSet<Integer>();
@@ -201,10 +191,10 @@ public class AndersenAliasAnalysis implements AliasAnalysis {
             processResults(e);
         }
         for (MemoryCoreEvent e : memEvents) {
-            eventAddressSpaceMap.put(e, ImmutableSet.copyOf(getAddressSpace(e.getAddress())));
+            eventAddressSpaceMap.put(e, ImmutableSet.copyOf(getAddressSpace(e)));
         }
         for (MemFree f : program.getThreadEvents(MemFree.class)) {
-            eventAddressSpaceMap.put(f, ImmutableSet.copyOf(getAddressSpace(f.getAddress())));
+            eventAddressSpaceMap.put(f, ImmutableSet.copyOf(getAddressSpace(f)));
         }
     }
 
@@ -351,7 +341,14 @@ public class AndersenAliasAnalysis implements AliasAnalysis {
         }
     }
 
-    private Set<Location> getAddressSpace(Expression addrExpr) {
+    private Set<Location> getAddressSpace(Event e) {
+        Expression addrExpr;
+        if (e instanceof MemoryCoreEvent mce) {
+            addrExpr = mce.getAddress();
+        } else {
+            assert e instanceof MemFree;
+            addrExpr = ((MemFree) e).getAddress();
+        }
         Set<Location> addresses;
         if (addrExpr instanceof Register) {
             Set<Location> target = targets.get(addrExpr);
