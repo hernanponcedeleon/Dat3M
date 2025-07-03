@@ -19,31 +19,6 @@ configurations=(
 )
 
 echo "==================================================="
-echo "                       UCSC                        "
-echo "==================================================="
-
-# Loop over each configuration
-for config in "${configurations[@]}"; do
-    
-    # Print configuration
-    echo $config
-    progress=$(echo "$config" | grep -oP 'QF=\K[^,]+')
-
-    # Run the command with the current configuration as a parameter
-    java -DlogLevel=off -jar dartagnan/target/dartagnan.jar cat/vulkan.cat --target=vulkan benchmarks/artifact/prefix-scan.spvasm --method=eager --solver=yices2 --bound=2 --wmm.analysis.relationAnalysis=lazy --modeling.progress=[$config] --property=termination > "$tmp_file"
-
-    # Compute and print result and time
-    out=$(cat "$tmp_file")
-    echo $out
-    echo
-    res=$(echo "$out" | grep '^Result:' | cut -d' ' -f2)
-    time=$(echo "$out" | grep '^Time:' | cut -d' ' -f2-)
-
-    # Save result in CSV
-    echo "{\it UCSC (ticket)}, \opencl, \textsc{$progress}, \textsc{$res}, $time" >> "$RESULTS"
-done
-
-echo "==================================================="
 echo "              Schrödinger’s CAT (v1)               "
 echo "==================================================="
 
@@ -62,10 +37,17 @@ for config in "${configurations[@]}"; do
     echo $out
     echo
     res=$(echo "$out" | grep '^Result:' | cut -d' ' -f2)
+    if [ "$res" = "PASS" ]; then
+        res="\cmark"
+    elif [ "$res" = "FAIL" ]; then
+        res="\xmark"
+    else
+        res="?"
+    fi
     time=$(echo "$out" | grep '^Time:' | cut -d' ' -f2-)
 
     # Save result in CSV
-    echo "{\it Schrödinger’s CAT (workgroup's ids)}, \slang, \textsc{$progress}, \textsc{$res}, $time" >> "$RESULTS"
+    echo "{\it Schrödinger’s CAT (ids)}, \slang, \textsc{$progress}, $res, $time" >> "$RESULTS"
 done
 
 echo "==================================================="
@@ -87,10 +69,49 @@ for config in "${configurations[@]}"; do
     echo $out
     echo
     res=$(echo "$out" | grep '^Result:' | cut -d' ' -f2)
+    if [ "$res" = "PASS" ]; then
+        res="\cmark"
+    elif [ "$res" = "FAIL" ]; then
+        res="\xmark"
+    else
+        res="?"
+    fi
     time=$(echo "$out" | grep '^Time:' | cut -d' ' -f2-)
 
     # Save result in CSV
-    echo "{\it Schrödinger’s CAT (ticket)}, \slang, \textsc{$progress}, \textsc{$res}, $time" >> "$RESULTS"
+    echo "{\it Schrödinger’s CAT (ticket)}, \slang, \textsc{$progress}, $res, $time" >> "$RESULTS"
+done
+
+echo "==================================================="
+echo "                       UCSC                        "
+echo "==================================================="
+
+# Loop over each configuration
+for config in "${configurations[@]}"; do
+    
+    # Print configuration
+    echo $config
+    progress=$(echo "$config" | grep -oP 'QF=\K[^,]+')
+
+    # Run the command with the current configuration as a parameter
+    java -DlogLevel=off -jar dartagnan/target/dartagnan.jar cat/vulkan.cat --target=vulkan benchmarks/artifact/prefix-scan.spvasm --method=eager --solver=yices2 --bound=2 --wmm.analysis.relationAnalysis=lazy --modeling.progress=[$config] --property=termination > "$tmp_file"
+
+    # Compute and print result and time
+    out=$(cat "$tmp_file")
+    echo $out
+    echo
+    res=$(echo "$out" | grep '^Result:' | cut -d' ' -f2)
+    if [ "$res" = "PASS" ]; then
+        res="\cmark"
+    elif [ "$res" = "FAIL" ]; then
+        res="\xmark"
+    else
+        res="?"
+    fi
+    time=$(echo "$out" | grep '^Time:' | cut -d' ' -f2-)
+
+    # Save result in CSV
+    echo "{\it UCSC (ticket)}, \opencl, \textsc{$progress}, $res, $time" >> "$RESULTS"
 done
 
 echo "==================================================="
@@ -112,10 +133,17 @@ for config in "${configurations[@]}"; do
     echo $out
     echo
     res=$(echo "$out" | grep '^Result:' | cut -d' ' -f2)
+    if [ "$res" = "PASS" ]; then
+        res="\cmark"
+    elif [ "$res" = "FAIL" ]; then
+        res="\xmark"
+    else
+        res="?"
+    fi
     time=$(echo "$out" | grep '^Time:' | cut -d' ' -f2-)
 
     # Save result in CSV
-    echo "{\it Vello (work-stealing)}, \hlsl, \textsc{$progress}, \textsc{$res}, $time" >> "$RESULTS"
+    echo "{\it Vello (work-stealing)}, \hlsl, \textsc{$progress}, $res, $time" >> "$RESULTS"
 done
 
 rm "$tmp_file"
