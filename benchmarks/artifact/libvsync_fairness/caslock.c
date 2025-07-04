@@ -6,18 +6,15 @@
 #define REACQUIRE 1
 
 #include <vsync/spinlock/caslock.h>
-#include <test/boilerplate/lock.h>
+#include "fairness_lock.h"
 
 caslock_t lock = CASLOCK_INIT();
 
 void
 acquire(vuint32_t tid)
 {
-    if (tid == NTHREADS - 1) {
-        await_while (!caslock_tryacquire(&lock)) {}
-    } else {
-        caslock_acquire(&lock);
-    }
+    V_UNUSED(tid);
+    caslock_acquire(&lock);
 }
 
 void

@@ -6,7 +6,7 @@
 #define REACQUIRE 1
 
 #include <vsync/spinlock/mcslock.h>
-#include <test/boilerplate/lock.h>
+#include "fairness_lock.h"
 
 mcslock_t lock = MCSLOCK_INIT();
 struct mcs_node_s nodes[NTHREADS+1];
@@ -14,11 +14,7 @@ struct mcs_node_s nodes[NTHREADS+1];
 void
 acquire(vuint32_t tid)
 {
-    if (tid == NTHREADS - 1) {
-        await_while (!mcslock_tryacquire(&lock, &nodes[tid])) {}
-    } else {
-        mcslock_acquire(&lock, &nodes[tid]);
-    }
+    mcslock_acquire(&lock, &nodes[tid]);
 }
 
 void

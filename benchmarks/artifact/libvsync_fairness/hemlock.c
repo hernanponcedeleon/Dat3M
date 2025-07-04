@@ -12,7 +12,7 @@
 #endif
 
 #include <vsync/spinlock/hemlock.h>
-#include <test/boilerplate/lock.h>
+#include "fairness_lock.h"
 
 hemlock_t lock = HEMLOCK_INIT();
 struct hem_node_s nodes[NTHREADS+1];
@@ -20,11 +20,7 @@ struct hem_node_s nodes[NTHREADS+1];
 void
 acquire(vuint32_t tid)
 {
-    if (tid == NTHREADS - 1) {
-        await_while (!hemlock_tryacquire(&lock, &nodes[tid])) {}
-    } else {
-        hemlock_acquire(&lock, &nodes[tid]);
-    }
+    hemlock_acquire(&lock, &nodes[tid]);
 }
 
 void
