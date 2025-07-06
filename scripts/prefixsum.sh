@@ -6,7 +6,7 @@ RESULTS="prefixsum.csv"
 if [ -f "$RESULTS" ]; then
     rm "$RESULTS"
 fi
-echo "benchmark, PL, progress, result, time"  >> "$RESULTS"
+echo "prefixsum, PL, progress, result, time"  >> "$RESULTS"
 
 # List of configurations
 configurations=(
@@ -19,7 +19,7 @@ configurations=(
 )
 
 echo "==================================================="
-echo "              Schrödinger’s CAT (v1)               "
+echo "                    Ours (v1)                      "
 echo "==================================================="
 
 # Loop over each configuration
@@ -47,11 +47,11 @@ for config in "${configurations[@]}"; do
     time=$(echo "$out" | grep '^Time:' | cut -d' ' -f2-)
 
     # Save result in CSV
-    echo "{\it Schrödinger’s CAT (ids)}, \slang, \textsc{$progress}, $res, $time" >> "$RESULTS"
+    echo "{\it Ours (ids)}, \slang, \textsc{$progress}, $res, $time" >> "$RESULTS"
 done
 
 echo "==================================================="
-echo "              Schrödinger’s CAT (v2)               "
+echo "                    Ours (v2)                      "
 echo "==================================================="
 
 # Loop over each configuration
@@ -79,7 +79,7 @@ for config in "${configurations[@]}"; do
     time=$(echo "$out" | grep '^Time:' | cut -d' ' -f2-)
 
     # Save result in CSV
-    echo "{\it Schrödinger’s CAT (ticket)}, \slang, \textsc{$progress}, $res, $time" >> "$RESULTS"
+    echo "{\it Ours (ticket)}, \slang, \textsc{$progress}, $res, $time" >> "$RESULTS"
 done
 
 echo "==================================================="
