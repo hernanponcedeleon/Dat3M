@@ -1,4 +1,5 @@
 #include <stdatomic.h>
+#include <vsync/common/await_while.h>
 
 #ifdef ACQ2RX
 #define mo_lock memory_order_relaxed
@@ -23,7 +24,11 @@ static inline void taslock_init(struct taslock_s *l)
 
 static inline void taslock_acquire(struct taslock_s *l)
 {
+#if defined(USE_GENMC) && !defined(VSYNC_DISABLE_SPIN_ANNOTATION)
+    await_while (atomic_exchange_explicit(&l->state, 1, mo_lock));
+#else
     while (atomic_exchange_explicit(&l->state, 1, mo_lock));
+#endif
 }
 
 static inline void taslock_release(struct taslock_s *l)
