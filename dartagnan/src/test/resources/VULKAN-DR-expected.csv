@@ -1,6 +1,10 @@
 litmus/VULKAN/Data-Race/atomicsc-filter.litmus,1
 litmus/VULKAN/Data-Race/atomwrongsc-filter.litmus,1
 litmus/VULKAN/Data-Race/cbarinst-filter.litmus,1
+litmus/VULKAN/Data-Race/chains1-filter.litmus,1
+litmus/VULKAN/Data-Race/chains2-filter.litmus,0
+litmus/VULKAN/Data-Race/chains3-filter.litmus,0
+litmus/VULKAN/Data-Race/chains4-filter.litmus,1
 litmus/VULKAN/Data-Race/fencefence-filter.litmus,1
 litmus/VULKAN/Data-Race/fencefence2-filter.litmus,1
 litmus/VULKAN/Data-Race/fencefence3-filter.litmus,1

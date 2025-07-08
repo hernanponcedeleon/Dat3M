@@ -2,6 +2,10 @@ litmus/VULKAN/Kronos-Group/asmo.litmus,1
 litmus/VULKAN/Kronos-Group/atomicsc.litmus,1
 litmus/VULKAN/Kronos-Group/atomwrongsc.litmus,1
 litmus/VULKAN/Kronos-Group/cbarinst.litmus,1
+litmus/VULKAN/Kronos-Group/chains1.litmus,1
+litmus/VULKAN/Kronos-Group/chains2.litmus,1
+litmus/VULKAN/Kronos-Group/chains3.litmus,1
+litmus/VULKAN/Kronos-Group/chains4.litmus,0
 litmus/VULKAN/Kronos-Group/corr.litmus,1
 litmus/VULKAN/Kronos-Group/corw.litmus,1
 litmus/VULKAN/Kronos-Group/cowr.litmus,1
