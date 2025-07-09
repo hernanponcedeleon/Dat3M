@@ -1,9 +1,11 @@
 package com.dat3m.dartagnan.program.processing.compilation;
 
+import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.lang.catomic.*;
 import com.dat3m.dartagnan.program.event.arch.StoreExclusive;
 import com.dat3m.dartagnan.program.event.core.*;
+import com.dat3m.dartagnan.program.event.lang.linux.LKMMFetchOp;
 
 import java.util.List;
 
@@ -42,4 +44,25 @@ class VisitorArm7 extends VisitorBase {
         );
     }
 
+    @Override
+    public List<Event> visitAtomicFetchOp(AtomicFetchOp e) {
+        final Expression value = expressions.makeIntBinary(e.getResultRegister(), e.getOperator(), e.getOperand());
+        final Load load = newRMWLoad(e.getResultRegister(), e.getAddress());
+        return eventSequence(
+                load,
+                AArch64.DMB.newISHBarrier(),
+                newRMWStore(load, e.getAddress(), value)
+        );
+    }
+
+    @Override
+    public List<Event> visitLKMMFetchOp(LKMMFetchOp e) {
+        final Expression value = expressions.makeIntBinary(e.getResultRegister(), e.getOperator(), e.getOperand());
+        final Load load = newRMWLoad(e.getResultRegister(), e.getAddress());
+        return eventSequence(
+                load,
+                AArch64.DMB.newISHBarrier(),
+                newRMWStore(load, e.getAddress(), value)
+        );
+    }
 }
