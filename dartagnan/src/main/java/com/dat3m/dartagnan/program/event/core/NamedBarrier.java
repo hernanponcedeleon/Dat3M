@@ -21,12 +21,12 @@ public class NamedBarrier extends ControlBarrier implements RegReader {
     // before any of these threads can proceed.
     private Expression quorum;
 
-    public NamedBarrier(String name, String instanceId, Expression resourceId) {
-        this(name, instanceId, resourceId, null);
+    public NamedBarrier(String name, String instanceId, String execScope, Expression resourceId) {
+        this(name, instanceId, execScope, resourceId, null);
     }
 
-    public NamedBarrier(String name, String instanceId, Expression resourceId, Expression quorum) {
-        super(name, instanceId);
+    public NamedBarrier(String name, String instanceId, String execScope, Expression resourceId, Expression quorum) {
+        super(name, instanceId, execScope);
         this.resourceId = resourceId;
         this.quorum = quorum;
     }
@@ -48,9 +48,9 @@ public class NamedBarrier extends ControlBarrier implements RegReader {
     @Override
     public String defaultString() {
         if (quorum == null) {
-            return String.format("%s := barrier(%s, %s)", name, getInstanceId(), resourceId);
+            return String.format("%s := barrier(%s, %s, %s)", name, getExecScope(), getInstanceId(), resourceId);
         }
-        return String.format("%s := barrier(%s, %s, %s)", name, getInstanceId(), resourceId, quorum);
+        return String.format("%s := barrier(%s, %s, %s, %s)", name, getExecScope(), getInstanceId(), resourceId, quorum);
     }
 
     @Override

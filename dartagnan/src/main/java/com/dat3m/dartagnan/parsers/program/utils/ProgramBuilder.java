@@ -29,6 +29,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.function.BiFunction;
 
 import static com.dat3m.dartagnan.program.Program.SourceLanguage.LITMUS;
 import static com.dat3m.dartagnan.program.event.Tag.NOOPT;
@@ -196,17 +197,7 @@ public class ProgramBuilder {
     }
 
     public MemoryObject getOrNewMemoryObject(String name, int size) {
-        MemoryObject mem = locations.get(name);
-        if (mem == null) {
-            mem = program.getMemory().allocate(size);
-            mem.setName(name);
-            if (program.getFormat() == LITMUS) {
-                // Litmus code always initializes memory
-                mem.setInitialValue(0, expressions.makeZero(types.getIntegerType(8 * size)));
-            }
-            locations.put(name, mem);
-        }
-        return mem;
+        return getOrNewMemoryObject(name, size, Memory::allocate);
     }
 
     public MemoryObject getOrNewMemoryObject(String name) {
@@ -217,6 +208,20 @@ public class ProgramBuilder {
         checkState(!locations.containsKey(name),
                 "Illegal allocation. Memory object %s is already defined", name);
         return getOrNewMemoryObject(name, size);
+    }
+
+    private MemoryObject getOrNewMemoryObject(String name, int size, BiFunction<Memory, Integer, MemoryObject> f) {
+        MemoryObject mem = locations.get(name);
+        if (mem == null) {
+            mem = f.apply(program.getMemory(), size);
+            mem.setName(name);
+            if (program.getFormat() == LITMUS) {
+                // Litmus code always initializes memory
+                mem.setInitialValue(0, expressions.makeZero(types.getIntegerType(8 * size)));
+            }
+            locations.put(name, mem);
+        }
+        return mem;
     }
 
     public Expression newConstant(Type type) {
@@ -319,10 +324,7 @@ public class ProgramBuilder {
     // ----------------------------------------------------------------------------------------------------------------
     // PTX
     public void initVirLocEqCon(String leftName, IntLiteral iValue){
-        MemoryObject object = locations.computeIfAbsent(
-                leftName, k->program.getMemory().allocateVirtual(ARCH_SIZE, true, null));
-        object.setName(leftName);
-        object.setInitialValue(0, iValue);
+        getOrNewVirtualMemoryObject(leftName, true, null).setInitialValue(0, iValue);
     }
 
     public void initVirLocEqLoc(String leftName, String rightName){
@@ -330,10 +332,7 @@ public class ProgramBuilder {
         if (rightLocation == null) {
             throw new MalformedProgramException("Alias to non-exist location: " + rightName);
         }
-        MemoryObject object = locations.computeIfAbsent(leftName,
-                k->program.getMemory().allocateVirtual(ARCH_SIZE, true, null));
-        object.setName(leftName);
-        object.setInitialValue(0,rightLocation.getInitialValue(0));
+        getOrNewVirtualMemoryObject(leftName, true, null).setInitialValue(0, rightLocation.getInitialValue(0));
     }
 
     public void initVirLocEqLocAliasGen(String leftName, String rightName){
@@ -341,10 +340,7 @@ public class ProgramBuilder {
         if (rightLocation == null) {
             throw new MalformedProgramException("Alias to non-exist location: " + rightName);
         }
-        MemoryObject object = locations.computeIfAbsent(leftName,
-                k->program.getMemory().allocateVirtual(ARCH_SIZE, true, rightLocation));
-        object.setName(leftName);
-        object.setInitialValue(0,rightLocation.getInitialValue(0));
+        getOrNewVirtualMemoryObject(leftName, true, rightLocation).setInitialValue(0, rightLocation.getInitialValue(0));
     }
 
     public void initVirLocEqLocAliasProxy(String leftName, String rightName){
@@ -352,10 +348,15 @@ public class ProgramBuilder {
         if (rightLocation == null) {
             throw new MalformedProgramException("Alias to non-exist location: " + rightName);
         }
-        MemoryObject object = locations.computeIfAbsent(
-                leftName, k->program.getMemory().allocateVirtual(ARCH_SIZE, false, rightLocation));
-        object.setName(leftName);
-        object.setInitialValue(0, rightLocation.getInitialValue(0));
+        getOrNewVirtualMemoryObject(leftName, false, rightLocation).setInitialValue(0, rightLocation.getInitialValue(0));
+    }
+
+    public MemoryObject getOrNewVirtualMemoryObject(String name) {
+        return getOrNewMemoryObject(name, ARCH_SIZE, (m, s) -> m.allocateVirtual(s, true, null));
+    }
+
+    private MemoryObject getOrNewVirtualMemoryObject(String name, boolean generic, VirtualMemoryObject alias) {
+        return getOrNewMemoryObject(name, ARCH_SIZE, (m, s) -> m.allocateVirtual(s, generic, alias));
     }
 
     // ----------------------------------------------------------------------------------------------------------------

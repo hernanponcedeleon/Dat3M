@@ -23,10 +23,10 @@ public class VisitorOpsBarrier extends SpirvBaseVisitor<Event> {
     @Override
     public Event visitOpControlBarrier(SpirvParser.OpControlBarrierContext ctx) {
         String execScope = getScopeTag(ctx.execution().getText());
-        if (!Tag.Spirv.WORKGROUP.equals(execScope)) {
-            throw new ParsingException("Control barrier with execution scope other than workgroup is not supported");
+        if (!Tag.Spirv.WORKGROUP.equals(execScope) && !Tag.Spirv.SUBGROUP.equals(execScope)) {
+            throw new ParsingException("Unsupported execution scope '%s'", execScope);
         }
-        Event barrier = EventFactory.newControlBarrier("cbar", Integer.toString(nextBarrierId++));
+        Event barrier = EventFactory.newControlBarrier("cbar", Integer.toString(nextBarrierId++), execScope);
         barrier.addTags(Tag.Spirv.CONTROL);
         barrier.addTags(getScopeTag(ctx.memory().getText()));
         Set<String> tags = getMemorySemanticsTags(ctx.semantics().getText());

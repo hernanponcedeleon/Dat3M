@@ -139,7 +139,7 @@ public class VisitorLitmusVulkan extends LitmusVulkanBaseVisitor<Object> {
 
     @Override
     public Object visitStoreInstruction(LitmusVulkanParser.StoreInstructionContext ctx) {
-        MemoryObject object = programBuilder.getOrNewMemoryObject(ctx.location().getText());
+        MemoryObject object = programBuilder.getOrNewVirtualMemoryObject(ctx.location().getText());
         Expression value = (Expression) ctx.value().accept(this);
         Store store = EventFactory.newStore(object, value);
         store.addTags(ctx.sc().content);
@@ -157,7 +157,7 @@ public class VisitorLitmusVulkan extends LitmusVulkanBaseVisitor<Object> {
     @Override
     public Object visitLoadInstruction(LitmusVulkanParser.LoadInstructionContext ctx) {
         Register register = (Register) ctx.register().accept(this);
-        MemoryObject location = programBuilder.getOrNewMemoryObject(ctx.location().getText());
+        MemoryObject location = programBuilder.getOrNewVirtualMemoryObject(ctx.location().getText());
         Load load = EventFactory.newLoad(register, location);
         load.addTags(ctx.sc().content);
         if (ctx.nonpriv() != null) {
@@ -173,7 +173,7 @@ public class VisitorLitmusVulkan extends LitmusVulkanBaseVisitor<Object> {
 
     @Override
     public Object visitAtomicStoreInstruction(LitmusVulkanParser.AtomicStoreInstructionContext ctx) {
-        MemoryObject object = programBuilder.getOrNewMemoryObject(ctx.location().getText());
+        MemoryObject object = programBuilder.getOrNewVirtualMemoryObject(ctx.location().getText());
         Expression value = (Expression) ctx.value().accept(this);
         String mo = ctx.moRel() != null ? Tag.Vulkan.RELEASE : Tag.Vulkan.ATOM;
         Store store = EventFactory.newStoreWithMo(object, value, mo);
@@ -194,7 +194,7 @@ public class VisitorLitmusVulkan extends LitmusVulkanBaseVisitor<Object> {
     @Override
     public Object visitAtomicLoadInstruction(LitmusVulkanParser.AtomicLoadInstructionContext ctx) {
         Register register = (Register) ctx.register().accept(this);
-        MemoryObject location = programBuilder.getOrNewMemoryObject(ctx.location().getText());
+        MemoryObject location = programBuilder.getOrNewVirtualMemoryObject(ctx.location().getText());
         String mo = ctx.moAcq() != null ? Tag.Vulkan.ACQUIRE : Tag.Vulkan.ATOM;
         Load load = EventFactory.newLoadWithMo(register, location, mo);
         load.addTags(
@@ -214,7 +214,7 @@ public class VisitorLitmusVulkan extends LitmusVulkanBaseVisitor<Object> {
     @Override
     public Object visitAtomicRmwInstruction(LitmusVulkanParser.AtomicRmwInstructionContext ctx) {
         Register register = (Register) ctx.register().accept(this);
-        MemoryObject location = programBuilder.getOrNewMemoryObject(ctx.location().getText());
+        MemoryObject location = programBuilder.getOrNewVirtualMemoryObject(ctx.location().getText());
         Expression value = (Expression) ctx.value().accept(this);
         String mo = getMemoryOrderOrDefault(ctx, Tag.Vulkan.ATOM);
         SingleAccessMemoryEvent rmw = ctx.operation() != null
@@ -260,14 +260,14 @@ public class VisitorLitmusVulkan extends LitmusVulkanBaseVisitor<Object> {
         String instanceId = ctx.constant().getText();
         Event barrier;
         if (ctx.barrierId() == null) {
-            barrier = EventFactory.newControlBarrier(name, instanceId);
+            barrier = EventFactory.newControlBarrier(name, instanceId, Tag.Vulkan.WORK_GROUP);
         } else {
             Expression id = (Expression) ctx.barrierId().accept(this);
             Expression quorum = null;
             if (ctx.barrierQuorum() != null) {
                 quorum = (Expression) ctx.barrierQuorum().accept(this);
             }
-            barrier = EventFactory.newNamedBarrier(name, instanceId, id, quorum);
+            barrier = EventFactory.newNamedBarrier(name, instanceId, Tag.Vulkan.WORK_GROUP, id, quorum);
         }
         barrier.addTags(Tag.Vulkan.CBAR, ctx.scope().content);
         String mo = getMemoryOrderOrDefault(ctx, null);
