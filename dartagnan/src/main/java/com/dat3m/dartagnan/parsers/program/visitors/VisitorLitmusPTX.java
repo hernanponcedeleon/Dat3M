@@ -129,7 +129,7 @@ public class VisitorLitmusPTX extends LitmusPTXBaseVisitor<Object> {
 
     @Override
     public Object visitStoreInstruction(LitmusPTXParser.StoreInstructionContext ctx) {
-        MemoryObject object = programBuilder.getOrNewMemoryObject(ctx.location().getText());
+        MemoryObject object = programBuilder.getOrNewVirtualMemoryObject(ctx.location().getText());
         Expression constant = (Expression) ctx.value().accept(this);
         String mo = ctx.mo().content;
         Store store = EventFactory.newStoreWithMo(object, constant, mo);
@@ -192,7 +192,7 @@ public class VisitorLitmusPTX extends LitmusPTXBaseVisitor<Object> {
     @Override
     public Object visitLoadLocation(LitmusPTXParser.LoadLocationContext ctx) {
         Register register = (Register) ctx.register().accept(this);
-        MemoryObject location = programBuilder.getOrNewMemoryObject(ctx.location().getText());
+        MemoryObject location = programBuilder.getOrNewVirtualMemoryObject(ctx.location().getText());
         String mo = ctx.mo().content;
         Load load = EventFactory.newLoadWithMo(register, location, mo);
         switch (mo) {
@@ -211,7 +211,7 @@ public class VisitorLitmusPTX extends LitmusPTXBaseVisitor<Object> {
     @Override
     public Object visitAtomOp(LitmusPTXParser.AtomOpContext ctx) {
         Register register_destination = (Register) ctx.register().accept(this);
-        MemoryObject object = programBuilder.getOrNewMemoryObject(ctx.location().getText());
+        MemoryObject object = programBuilder.getOrNewVirtualMemoryObject(ctx.location().getText());
         Expression value = (Expression) ctx.value().accept(this);
         IntBinaryOp op = ctx.operation().op;
         String mo = ctx.mo().content;
@@ -227,7 +227,7 @@ public class VisitorLitmusPTX extends LitmusPTXBaseVisitor<Object> {
     @Override
     public Object visitAtomCAS(LitmusPTXParser.AtomCASContext ctx) {
         Register register_destination = programBuilder.getOrNewRegister(mainThread, ctx.register().getText(), archType);
-        MemoryObject object = programBuilder.getOrNewMemoryObject(ctx.location().getText());
+        MemoryObject object = programBuilder.getOrNewVirtualMemoryObject(ctx.location().getText());
         Expression expected = (Expression) ctx.value(0).accept(this);
         Expression value = (Expression) ctx.value(1).accept(this);
         String mo = ctx.mo().content;
@@ -243,7 +243,7 @@ public class VisitorLitmusPTX extends LitmusPTXBaseVisitor<Object> {
     @Override 
     public Object visitAtomExchange(LitmusPTXParser.AtomExchangeContext ctx) {
         Register register_destination = programBuilder.getOrNewRegister(mainThread, ctx.register().getText(), archType);
-        MemoryObject object = programBuilder.getOrNewMemoryObject(ctx.location().getText());
+        MemoryObject object = programBuilder.getOrNewVirtualMemoryObject(ctx.location().getText());
         Expression value = (Expression) ctx.value().accept(this);
         String mo = ctx.mo().content;
         String scope = ctx.scope().content;
@@ -257,7 +257,7 @@ public class VisitorLitmusPTX extends LitmusPTXBaseVisitor<Object> {
 
     @Override
     public Object visitRedInstruction(LitmusPTXParser.RedInstructionContext ctx) {
-        MemoryObject object = programBuilder.getOrNewMemoryObject(ctx.location().getText());
+        MemoryObject object = programBuilder.getOrNewVirtualMemoryObject(ctx.location().getText());
         Expression value = (Expression) ctx.value().accept(this);
         IntBinaryOp op = ctx.operation().op;
         String mo = ctx.mo().content;
@@ -302,14 +302,14 @@ public class VisitorLitmusPTX extends LitmusPTXBaseVisitor<Object> {
         String instanceId = ctx.constant().getText();
         Event barrier;
         if (ctx.barrierId() == null) {
-            barrier = EventFactory.newControlBarrier(name, instanceId);
+            barrier = EventFactory.newControlBarrier(name, instanceId, Tag.PTX.CTA);
         } else {
             Expression id = (Expression) ctx.barrierId().accept(this);
             Expression quorum = null;
             if (ctx.barrierQuorum() != null) {
                 quorum = (Expression) ctx.barrierQuorum().accept(this);
             }
-            barrier = EventFactory.newNamedBarrier(name, instanceId, id, quorum);
+            barrier = EventFactory.newNamedBarrier(name, instanceId, Tag.PTX.CTA, id, quorum);
         }
         if(ctx.barrierMode().Arrive() != null) {
             barrier.addTags(Tag.PTX.ARRIVE);
