@@ -8,6 +8,7 @@ public class ReadFrom extends Definition {
 
     public ReadFrom(Relation r0) {
         super(r0, RelationNameRepository.RF);
+        r0.checkBinaryRelation();
     }
 
     @Override

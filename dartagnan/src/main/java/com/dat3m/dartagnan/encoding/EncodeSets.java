@@ -84,7 +84,7 @@ final class EncodeSets implements Visitor<Map<Relation, EventGraph>> {
     }
 
     @Override
-    public Map<Relation, EventGraph> visitDomainIdentity(DomainIdentity domId) {
+    public Map<Relation, EventGraph> visitDomain(Domain domId) {
         final RelationAnalysis.Knowledge k1 = ra.getKnowledge(domId.getOperand());
         Map<Event, Set<Event>> out = k1.getMaySet().getOutMap();
         MutableEventGraph result = new MapEventGraph();
@@ -99,7 +99,7 @@ final class EncodeSets implements Visitor<Map<Relation, EventGraph>> {
     }
 
     @Override
-    public Map<Relation, EventGraph> visitRangeIdentity(RangeIdentity rangeId) {
+    public Map<Relation, EventGraph> visitRange(Range rangeId) {
         final RelationAnalysis.Knowledge k1 = ra.getKnowledge(rangeId.getOperand());
         Map<Event, Set<Event>> in = k1.getMaySet().getInMap();
         MutableEventGraph result = new MapEventGraph();
@@ -114,10 +114,36 @@ final class EncodeSets implements Visitor<Map<Relation, EventGraph>> {
     }
 
     @Override
+    public Map<Relation, EventGraph> visitSetIdentity(SetIdentity id) {
+        final RelationAnalysis.Knowledge k1 = ra.getKnowledge(id.getDomain());
+        return Map.of(id.getDomain(),
+                news.filter((e1, e2) -> k1.getMaySet().contains(e1, e2) && !k1.getMustSet().contains(e1, e2)));
+    }
+
+    @Override
     public Map<Relation, EventGraph> visitInverse(Inverse inv) {
         final RelationAnalysis.Knowledge k1 = ra.getKnowledge(inv.getOperand());
         return Map.of(inv.getOperand(),
                 news.inverse().filter((e1, e2) -> k1.getMaySet().contains(e1, e2) && !k1.getMustSet().contains(e1, e2)));
+    }
+
+    @Override
+    public Map<Relation, EventGraph> visitProduct(CartesianProduct product) {
+        final RelationAnalysis.Knowledge k1 = ra.getKnowledge(product.getDomain());
+        final RelationAnalysis.Knowledge k2 = ra.getKnowledge(product.getRange());
+        final MutableEventGraph set1 = new MapEventGraph();
+        final MutableEventGraph set2 = new MapEventGraph();
+        for (Event e1 : news.getDomain()) {
+            if (k1.getMaySet().contains(e1, e1) && !k1.getMustSet().contains(e1, e1)) {
+                set1.add(e1, e1);
+            }
+            for (Event e2 : news.getRange(e1)) {
+                if (k2.getMaySet().contains(e2, e2) && !k2.getMustSet().contains(e2, e2)) {
+                    set2.add(e2, e2);
+                }
+            }
+        }
+        return Map.of(product.getDomain(), set1, product.getRange(), set2);
     }
 
     @Override

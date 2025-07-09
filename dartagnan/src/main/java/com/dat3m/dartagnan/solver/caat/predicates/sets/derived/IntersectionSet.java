@@ -9,45 +9,37 @@ import com.dat3m.dartagnan.solver.caat.predicates.sets.MaterializedSet;
 import com.dat3m.dartagnan.solver.caat.predicates.sets.SetPredicate;
 
 import java.util.*;
+import java.util.stream.Stream;
 
 public class IntersectionSet extends MaterializedSet {
 
-    private final SetPredicate first;
-    private final SetPredicate second;
+    private final SetPredicate[] operands;
 
     @Override
     public List<SetPredicate> getDependencies() {
-        return Arrays.asList(first, second);
+        return Arrays.asList(operands);
     }
 
-    public SetPredicate getFirst() { return first; }
-    public SetPredicate getSecond() { return second; }
-
-    public IntersectionSet(SetPredicate first, SetPredicate second) {
-        this.first = first;
-        this.second = second;
+    public IntersectionSet(SetPredicate... o) {
+        operands = o;
     }
 
-    private Element derive(Element a, Element b) {
-        return a.with(Math.max(a.getTime(), b.getTime()),
-                Math.max(a.getDerivationLength(), b.getDerivationLength()) + 1);
+    private Element derive(Element... elements) {
+        final int time = Stream.of(elements).mapToInt(Element::getTime).max().orElseThrow();
+        final int length = Stream.of(elements).mapToInt(Element::getDerivationLength).max().orElseThrow();
+        return elements[0].with(time, length + 1);
     }
 
     @Override
     public void repopulate() {
-        if (first.getEstimatedSize() < second.getEstimatedSize()) {
-            for (Element e1 : first.elements()) {
-                Element e2 = second.get(e1);
-                if (e2 != null) {
-                    simpleSet.add(derive(e1, e2));
-                }
+        final SetPredicate smallest = Stream.of(operands).min(Comparator.comparingInt(CAATPredicate::getEstimatedSize)).orElseThrow();
+        for (Element e1 : smallest.elements()) {
+            final Element[] elements = new Element[operands.length];
+            for (int i = 0; i < operands.length; i++) {
+                elements[i] = operands[i] == smallest ? e1 : operands[i].get(e1);
             }
-        } else {
-            for (Element e2 : second.elements()) {
-                Element e1 = first.get(e2);
-                if (e1 != null) {
-                    simpleSet.add(derive(e1, e2));
-                }
+            if (Stream.of(elements).allMatch(Objects::nonNull)) {
+                simpleSet.add(derive(elements));
             }
         }
     }
@@ -55,14 +47,16 @@ public class IntersectionSet extends MaterializedSet {
     @Override
     @SuppressWarnings("unchecked")
     public Collection<Element> forwardPropagate(CAATPredicate changedSource, Collection<? extends Derivable> added) {
-        if (changedSource == first || changedSource == second) {
-            SetPredicate other = (changedSource == first) ? second : first;
+        if (Stream.of(operands).anyMatch(o -> changedSource == o)) {
             Collection<Element> addedElems = (Collection<Element>)added;
             List<Element> newlyAdded = new ArrayList<>();
             for (Element e1 : addedElems) {
-                Element e2 = other.get(e1);
-                if (e2 != null) {
-                    Element e = derive(e1, e2);
+                final Element[] elements = new Element[operands.length];
+                for (int i = 0; i < operands.length; i++) {
+                    elements[i] = operands[i] == changedSource ? e1 : operands[i].get(e1);
+                }
+                if (Stream.of(elements).allMatch(Objects::nonNull)) {
+                    final Element e = derive(elements);
                     simpleSet.add(e);
                     newlyAdded.add(e);
                 }
