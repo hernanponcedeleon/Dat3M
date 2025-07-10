@@ -4,6 +4,7 @@ import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.exception.MalformedProgramException;
 import com.dat3m.dartagnan.expression.*;
 import com.dat3m.dartagnan.expression.base.LeafExpressionBase;
+import com.dat3m.dartagnan.expression.integers.IntBinaryOp;
 import com.dat3m.dartagnan.expression.integers.IntLiteral;
 import com.dat3m.dartagnan.expression.processing.ExprTransformer;
 import com.dat3m.dartagnan.expression.type.AggregateType;
@@ -23,6 +24,7 @@ import com.dat3m.dartagnan.program.event.functions.FunctionCall;
 import com.dat3m.dartagnan.program.event.functions.Return;
 import com.dat3m.dartagnan.program.event.functions.ValueFunctionCall;
 import com.dat3m.dartagnan.program.event.lang.dat3m.DynamicThreadCreate;
+import com.dat3m.dartagnan.program.event.lang.dat3m.DynamicThreadDetach;
 import com.dat3m.dartagnan.program.event.lang.dat3m.DynamicThreadJoin;
 import com.dat3m.dartagnan.program.memory.Memory;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
@@ -48,7 +50,7 @@ import static com.dat3m.dartagnan.program.event.lang.dat3m.DynamicThreadJoin.Sta
  * LLVM:
  * This pass handles (reachable) pthread-related function calls.
  * - each pthread_create call spawns a new Thread object.
- * - pthread_join calls are lowered to appropriate synchronization primitives.
+ * - pthread_join and pthread_detach calls are lowered to appropriate synchronization primitives.
  * - get_my_tid calls are replaced by constant tid values.
  * Initially, a single thread from the "main" function is spawned.
  * Then the pass works iteratively by picking a (newly created) thread and handling all its pthread calls.
@@ -81,6 +83,12 @@ public class ThreadCreation implements ProgramProcessor {
     private final TypeFactory types = TypeFactory.getInstance();
     private final ExpressionFactory expressions = ExpressionFactory.getInstance();
     private final IntegerType archType = types.getArchType();
+    // The thread state consists of two flags: ALIVE and JOINABLE.
+    private final IntegerType threadStateType = types.getIntegerType(2);
+    private final Expression threadStateStopped = expressions.makeValue(0, threadStateType);
+    private final Expression threadStateRunning = expressions.makeValue(3, threadStateType);
+    private final Expression threadStateNotAlive = expressions.makeValue(2, threadStateType);
+    private final Expression threadStateNotJoinable = expressions.makeValue(1, threadStateType);
 
     private ThreadCreation(Configuration config) throws InvalidConfigurationException {
         config.inject(this);
@@ -101,6 +109,7 @@ public class ThreadCreation implements ProgramProcessor {
             final List<ThreadData> spawnedThreads = createThreads(ep);
             resolvePthreadSelf(program);
             resolveDynamicThreadJoin(program, spawnedThreads);
+            resolveDynamicThreadDetach(program, spawnedThreads);
             IdReassignment.newInstance().run(program);
             resolveTidExpressions(program);
         } else if (program.getEntrypoint() instanceof Entrypoint.Grid ep) {
@@ -141,7 +150,7 @@ public class ThreadCreation implements ProgramProcessor {
                 allThreads.add(spawnedThread);
 
                 final List<Event> replacement = eventSequence(
-                        newReleaseStore(spawnedThread.comAddress(), expressions.makeTrue()),
+                        newReleaseStore(spawnedThread.comAddress(), threadStateRunning),
                         createEvent,
                         newLocal(tidRegister, new TIdExpr(archType, spawnedThread.thread()))
                 );
@@ -171,10 +180,11 @@ public class ThreadCreation implements ProgramProcessor {
             final Expression successValue = expressions.makeValue(SUCCESS.getErrorCode(), statusType);
             final Expression invalidTidValue = expressions.makeValue(INVALID_TID.getErrorCode(), statusType);
             final Expression invalidRetType = expressions.makeValue(INVALID_RETURN_TYPE.getErrorCode(), statusType);
+            final Expression detachedThread = expressions.makeValue(DETACHED_THREAD.getErrorCode(), statusType);
 
             final Register statusRegister = caller.newRegister("__joinStatus#" + joinCounter, statusType);
             final Register retValRegister = caller.newRegister("__joinRetVal#" + joinCounter, retValType);
-            final Register syncRegister = caller.newRegister("__joinSync#" + joinCounter, types.getBooleanType());
+            final Register threadStateRegister = caller.newRegister("__joinThreadState#" + joinCounter, threadStateType);
 
             // ----- Construct a switch case for each possible tid -----
             final Label joinEnd = EventFactory.newLabel("__joinEnd#" + joinCounter);
@@ -203,12 +213,17 @@ public class ThreadCreation implements ProgramProcessor {
                             EventFactory.newGoto(joinEnd)
                     );
                 } else {
+                    final Expression isAlive = expressions.makeIntExtract(threadStateRegister, 0, 0);
+                    final Expression isJoinable = expressions.makeIntExtract(threadStateRegister, 1, 1);
                     // Successful join
                     caseBody = eventSequence(
                             joinCase,
+                            newLocal(statusRegister, detachedThread),
+                            newLocal(retValRegister, expressions.makeGeneralZero(retValType)),
+                            newAcquireAnd(threadStateRegister, data.comAddress, threadStateNotJoinable),
+                            newJumpUnless(expressions.makeBooleanCast(isJoinable), joinEnd),
                             newThreadJoin(retValRegister, data.thread()),
-                            newAcquireLoad(syncRegister, data.comAddress),
-                            newAssume(expressions.makeNot(syncRegister)),
+                            newAssume(expressions.makeNot(expressions.makeBooleanCast(isAlive))),
                             newLocal(statusRegister, successValue),
                             EventFactory.newGoto(joinEnd)
                     );
@@ -236,6 +251,69 @@ public class ThreadCreation implements ProgramProcessor {
             );
             IRHelper.replaceWithMetadata(join, replacement);
             joinCounter++;
+        }
+    }
+
+    private void resolveDynamicThreadDetach(Program program, List<ThreadData> threadData) {
+        int detachCounter = 0;
+        for (DynamicThreadDetach detach : program.getThreadEvents(DynamicThreadDetach.class)) {
+            final Thread caller = detach.getThread();
+            final Expression tidExpr = detach.getTid();
+
+            final Register statusRegister = detach.getResultRegister();
+            final IntegerType statusType = (IntegerType) statusRegister.getType();
+
+            final Expression successValue = expressions.makeValue(SUCCESS.getErrorCode(), statusType);
+            final Expression invalidTidValue = expressions.makeValue(INVALID_TID.getErrorCode(), statusType);
+            final Expression detachedThread = expressions.makeValue(DETACHED_THREAD.getErrorCode(), statusType);
+
+            final Register threadState = caller.newRegister("__detachThreadState#" + detachCounter, threadStateType);
+
+            // ----- Construct a switch case for each possible tid -----
+            final Label detachEnd = EventFactory.newLabel("__detachEnd#" + detachCounter);
+            final Map<Expression, List<Event>> tid2detachCases = new LinkedHashMap<>();
+            for (ThreadData data : threadData) {
+                if (!data.isDetachable()) {
+                    continue;
+                }
+
+                final int tid = data.thread().getId();
+                if (tidExpr instanceof IntLiteral iConst && iConst.getValueAsInt() != tid) {
+                    // Little optimization if we detach a constant address
+                    continue;
+                }
+
+                final Label detachCase = EventFactory.newLabel("__detachT" + tid + "#" + detachCounter);
+                final Expression isJoinable = expressions.makeIntExtract(threadState, 1, 1);
+                final Expression isJoinableBoolean = expressions.makeBooleanCast(isJoinable);
+                final List<Event> caseBody = eventSequence(
+                        detachCase,
+                        newRelaxedAnd(threadState, data.comAddress, threadStateNotJoinable),
+                        newLocal(statusRegister, expressions.makeITE(isJoinableBoolean, successValue, detachedThread)),
+                        EventFactory.newGoto(detachEnd)
+                );
+                tid2detachCases.put(new TIdExpr((IntegerType) tidExpr.getType(), data.thread()), caseBody);
+            }
+
+            // ----- Construct the actual switch (a simple jump table) -----
+            final List<Event> switchJumpTable = new ArrayList<>();
+            for (Expression tid : tid2detachCases.keySet()) {
+                final Expression eqTid = expressions.makeEQ(tidExpr, tid);
+                final var label = (Label) tid2detachCases.get(tid).get(0);
+                switchJumpTable.add(EventFactory.newJump(eqTid, label));
+            }
+            // In the case where no tid matches, we return an error status.
+            switchJumpTable.add(EventFactory.newLocal(statusRegister, invalidTidValue));
+            switchJumpTable.add(EventFactory.newGoto(detachEnd));
+
+            // ----- Generate actual replacement for the DynamicDetachEvent -----
+            final List<Event> replacement = eventSequence(
+                    switchJumpTable,
+                    tid2detachCases.values(),
+                    detachEnd
+            );
+            IRHelper.replaceWithMetadata(detach, replacement);
+            detachCounter++;
         }
     }
 
@@ -315,17 +393,19 @@ public class ThreadCreation implements ProgramProcessor {
             // We use accesses to a common memory object to synchronize creator and thread.
             final MemoryObject comAddress = function.getProgram().getMemory().allocate(1);
             comAddress.setName("__com_" + function.getName() + "#" + tid);
-            comAddress.setInitialValue(0, expressions.makeFalse());
+            comAddress.setInitialValue(0, threadStateStopped);
 
             // Sync
-            final Register startSignal = thread.newRegister("__startT" + tid, types.getBooleanType());
+            final Register threadState = thread.newRegister("__threadStateT" + tid, threadStateType);
+            final Expression isAlive = expressions.makeIntExtract(threadState, 0, 0);
             thread.getEntry().insertAfter(eventSequence(
-                    newAcquireLoad(startSignal, comAddress),
-                    newAssume(startSignal)
+                    newAcquireLoad(threadState, comAddress),
+                    newAssume(expressions.makeBooleanCast(isAlive))
             ));
 
             // End
-            threadReturnLabel.insertAfter(newReleaseStore(comAddress, expressions.makeFalse()));
+            // Reset the ALIVE flag.
+            threadReturnLabel.insertAfter(newReleaseAnd(threadState, comAddress, threadStateNotAlive));
 
             creator.setSpawnedThread(thread);
             return new ThreadData(thread, comAddress);
@@ -427,6 +507,30 @@ public class ThreadCreation implements ProgramProcessor {
         return compiler.getCompilationResult(acquireLoad);
     }
 
+    private List<Event> newRelaxedAnd(Register register, Expression address, Expression value) {
+        final Event relaxedAnd = compiler.getTarget() == Arch.LKMM ?
+                EventFactory.Linux.newRMWFetchOp(address, register, value, IntBinaryOp.AND, Tag.Linux.MO_ONCE) :
+                EventFactory.Atomic.newFetchOp(register, address, value, IntBinaryOp.AND, Tag.C11.MO_RELAXED);
+        relaxedAnd.setFunction(register.getFunction());
+        return compiler.getCompilationResult(relaxedAnd);
+    }
+
+    private List<Event> newReleaseAnd(Register register, Expression address, Expression value) {
+        final Event releaseAnd = compiler.getTarget() == Arch.LKMM ?
+                EventFactory.Linux.newRMWFetchOp(address, register, value, IntBinaryOp.AND, Tag.Linux.MO_RELEASE) :
+                EventFactory.Atomic.newFetchOp(register, address, value, IntBinaryOp.AND, Tag.C11.MO_RELEASE);
+        releaseAnd.setFunction(register.getFunction());
+        return compiler.getCompilationResult(releaseAnd);
+    }
+
+    private List<Event> newAcquireAnd(Register register, Expression address, Expression value) {
+        final Event acquireAnd = compiler.getTarget() == Arch.LKMM ?
+                EventFactory.Linux.newRMWFetchOp(address, register, value, IntBinaryOp.AND, Tag.Linux.MO_ACQUIRE) :
+                EventFactory.Atomic.newFetchOp(register, address, value, IntBinaryOp.AND, Tag.C11.MO_ACQUIRE);
+        acquireAnd.setFunction(register.getFunction());
+        return compiler.getCompilationResult(acquireAnd);
+    }
+
 
     // =============================================================================================
     // ========================================== SPIR-V ===========================================
@@ -509,6 +613,7 @@ public class ThreadCreation implements ProgramProcessor {
         // We assume all dynamically created threads are joinable.
         // This is not true for pthread_join in general.
         public boolean isJoinable() { return isDynamic(); }
+        public boolean isDetachable() { return isDynamic(); }
     }
 
     // We use this class to refer to thread ids before we have (re)assigned proper ids for all threads.
