@@ -222,8 +222,8 @@ public class ThreadCreation implements ProgramProcessor {
                             newLocal(retValRegister, expressions.makeGeneralZero(retValType)),
                             newAcquireAnd(threadStateRegister, data.comAddress, threadStateNotJoinable),
                             newJumpUnless(expressions.makeBooleanCast(isJoinable), joinEnd),
-                            newAssume(expressions.makeNot(expressions.makeBooleanCast(isAlive))),
                             newThreadJoin(retValRegister, data.thread()),
+                            newAssume(expressions.makeNot(expressions.makeBooleanCast(isAlive))),
                             newLocal(statusRegister, successValue),
                             EventFactory.newGoto(joinEnd)
                     );
