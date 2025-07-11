@@ -268,14 +268,34 @@ public class ExecutionModel {
         List<Integer> threadEndIndexList = new ArrayList<>(threadList.size());
         Map<Thread, List<List<Integer>>> atomicBlockRangesMap = new HashMap<>();
 
+        int allocCount = 0;
+        int freeCount = 0;
+
         for (Thread thread : threadList) {
+            for (final Event e : thread.getEvents()) {
+                if (e instanceof MemAlloc) {
+                    allocCount++;
+                } else if (e instanceof MemFree) {
+                    freeCount++;
+                }
+            }
             initDepTracking();
             List<List<Integer>> atomicBlockRanges = atomicBlockRangesMap.computeIfAbsent(thread, key -> new ArrayList<>());
             Event e = thread.getEntry();
             int atomicBegin = -1;
             int localId = 0;
             do {
+                // if (e instanceof MemAlloc) {
+                //     allocCount++;
+                // } else if (e instanceof MemFree) {
+                //     freeCount++;
+                // }
                 if (!irModel.isExecuted(e)) {
+                    if (e instanceof MemAlloc) {
+                        System.out.println("Alloc was not executed");
+                    } else if (e instanceof MemFree f) {
+                        System.out.println("Free " + f.getThread().getId() + ":" + f.getGlobalId() + " was not executed");
+                    }
                     e = e.getSuccessor();
                     continue;
                 }
@@ -325,6 +345,9 @@ public class ExecutionModel {
             }
             start = end;
         }
+
+        System.out.println("Alloc count: " + allocCount);
+        System.out.println("Free  count: " + freeCount);
     }
 
 

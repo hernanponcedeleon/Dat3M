@@ -47,6 +47,7 @@ int pop() {
         } else {
             z = atomic_load_explicit(&y->next, __ATOMIC_ACQUIRE);
             if (CAS(&TOP.node, &y, z)) {
+                free(y);
                 // retire(y)
                 break;
             }

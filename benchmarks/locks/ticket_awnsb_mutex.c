@@ -37,5 +37,7 @@ int main()
 
     assert(sum == NTHREADS);
 
+    ticket_awnsb_mutex_destroy(&lock);
+
     return 0;
 }

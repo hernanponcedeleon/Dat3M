@@ -18,6 +18,19 @@ typedef struct Node {
 _Atomic(Node *) Tail;
 _Atomic(Node *) Head;
 
+#define RETIRE_THRESHOLD 1000
+Node* retired[RETIRE_THRESHOLD];
+int retired_count = 0;
+
+void retire(Node* node) {
+    retired[retired_count++] = node;
+    // if (retired_count >= RETIRE_THRESHOLD) {
+    //     for (int i = 0; i < retired_count; ++i) {
+    //         free(retired[i]);
+    //     }
+    //     retired_count = 0;
+    // }
+}
 
 void init() {
 	Node* node = malloc(sizeof (Node));
@@ -72,7 +85,7 @@ int dequeue() {
 				} else {
 					result = next->val;
 					if (CAS(&Head, &head, next)) {
-                        //retire(head);
+                        retire(head);
                         break;
                     }
 				}
@@ -81,4 +94,20 @@ int dequeue() {
 	}
 
 	return result;
+}
+
+void free_all_retired() {
+    for (int i = 0; i < retired_count; ++i) {
+        free(retired[i]);
+    }
+    retired_count = 0;
+}
+
+void free_all_nodes() {
+    Node* node = atomic_load(&Head);
+    while (node != NULL) {
+        Node* next = atomic_load(&node->next);
+        free(node);
+        node = next;
+    }
 }

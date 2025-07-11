@@ -37,5 +37,7 @@ int main()
 
     assert(sum == NTHREADS);
 
+    clh_mutex_destroy(&lock);
+
     return 0;
 }
