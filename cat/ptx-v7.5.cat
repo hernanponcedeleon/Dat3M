@@ -57,9 +57,6 @@ let ms2 = same-proxy
 let ms3 = ((M * M) & vloc) | ((_ * _) \ (M * M))
 let morally-strong = (ms1 & ms2 & ms3) \ id
 
-// The ASPLOS'19 paper uses the definition below
-// let rec observation = (morally-strong & rf) | (observation; rmw; observation)
-// but the ISCA'22 paper claims we can use the one below if we use observation+ in sync
 let observation = (morally-strong & rf) | rmw
 
 let release-pattern = ([W & REL]; po-vloc?; [strong-write]) | ([F & ACQ_REL]; po; [strong-write])

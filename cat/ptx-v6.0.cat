@@ -37,16 +37,13 @@ let ms1 = (po | po^-1) | ([strong-operation]; sr; [strong-operation])
 let ms2 = ((M * M) & loc) | ((_ * _) \ (M * M))
 let morally-strong = (ms1 & ms2) \ id
 
-// The ASPLOS'19 paper uses the definition below
-// let rec observation = (morally-strong & rf) | (observation; rmw; observation)
-// but the ISCA'22 paper claims we can use the one below if we use observation+ in sync
-let observation = (morally-strong & rf) | rmw
+let rec observation = (morally-strong & rf) | (observation; rmw; observation)
 
 let release-pattern = ([W & REL]; po-loc?; [strong-write]) | ([F & ACQ_REL]; po; [strong-write])
 
 let acquire-pattern = ([strong-read]; po-loc?; [R & ACQ]) | ([strong-read]; po; [F & ACQ_REL])
 
-let sync = morally-strong & (release-pattern; observation+; acquire-pattern)
+let sync = morally-strong & (release-pattern; observation; acquire-pattern)
 let cause-base = po?; ((sync | sync_fence | sync_barrier); po?)+
 let cause = cause-base | (observation; (cause-base | po-loc))
 
