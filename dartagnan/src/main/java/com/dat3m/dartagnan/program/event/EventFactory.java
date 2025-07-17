@@ -56,6 +56,7 @@ public class EventFactory {
 
     private static final ExpressionFactory expressions = ExpressionFactory.getInstance();
     private static final TypeFactory types = TypeFactory.getInstance();
+    private static final Termination terminationEvent = new Termination();
 
     // Static class
     private EventFactory() {
@@ -176,6 +177,10 @@ public class EventFactory {
         final Init init = new Init(base, offset, address);
         init.addTags(base.getFeatureTags());
         return init;
+    }
+
+    public static Termination newTerminationEvent() {
+        return terminationEvent;
     }
 
     public static ValueFunctionCall newValueFunctionCall(Register resultRegister, Function function, List<Expression> arguments) {

@@ -9,6 +9,7 @@ import com.dat3m.dartagnan.program.event.RegReader;
 import com.dat3m.dartagnan.program.event.RegWriter;
 import com.dat3m.dartagnan.program.event.core.CondJump;
 import com.dat3m.dartagnan.program.event.core.Init;
+import com.dat3m.dartagnan.program.event.core.Termination;
 import com.dat3m.dartagnan.program.event.functions.AbortIf;
 import com.dat3m.dartagnan.program.event.functions.Return;
 import com.dat3m.dartagnan.program.event.lang.llvm.LlvmCmpXchg;
@@ -22,8 +23,9 @@ public class IRHelper {
 
     private IRHelper() {}
 
-    public static boolean isInitThread(Thread thread) {
-        return thread.getEntry().getSuccessor() instanceof Init;
+    public static boolean isAuxiliaryThread(Thread thread) {
+        final Event successor = thread.getEntry().getSuccessor();
+        return (successor instanceof Init) || (successor instanceof Termination);
     }
 
     public static boolean isBackJump(CondJump jump) {

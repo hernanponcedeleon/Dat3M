@@ -199,7 +199,7 @@ public class ProgramEncoder implements Encoder {
         List<BooleanFormula> enc = new ArrayList<>();
         for(Thread t : program.getThreads()){
             enc.add(encodeConsistentThreadCF(t));
-            if (IRHelper.isInitThread(t)) {
+            if (IRHelper.isAuxiliaryThread(t)) {
                 // Init threads are always progressing
                 enc.add(progressEncoder.encodeFairForwardProgress(t));
             }

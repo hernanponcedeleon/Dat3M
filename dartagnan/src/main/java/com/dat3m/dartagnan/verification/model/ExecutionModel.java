@@ -285,20 +285,6 @@ public class ExecutionModel {
             int atomicBegin = -1;
             int localId = 0;
             do {
-                // if (e instanceof MemAlloc) {
-                //     allocCount++;
-                // } else if (e instanceof MemFree) {
-                //     freeCount++;
-                // }
-                if (!irModel.isExecuted(e)) {
-                    if (e instanceof MemAlloc) {
-                        System.out.println("Alloc was not executed");
-                    } else if (e instanceof MemFree f) {
-                        System.out.println("Free " + f.getThread().getId() + ":" + f.getGlobalId() + " was not executed");
-                    }
-                    e = e.getSuccessor();
-                    continue;
-                }
                 if (eventFilter.apply(e)) {
                     addEvent(e, id++, localId++);
                 }
@@ -345,9 +331,6 @@ public class ExecutionModel {
             }
             start = end;
         }
-
-        System.out.println("Alloc count: " + allocCount);
-        System.out.println("Free  count: " + freeCount);
     }
 
 

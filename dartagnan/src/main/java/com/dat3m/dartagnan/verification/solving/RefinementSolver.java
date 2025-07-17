@@ -267,19 +267,6 @@ public class RefinementSolver extends ModelChecker {
         prover.addConstraint(propertyEncoder.encodeProperties(task.getProperty()));
 
         final RefinementTrace propertyTrace = runRefinement(task, prover, solver, refiner);
-        // int allocCount = 0;
-        // int freeCount = 0;
-        // for (final Thread t : program.getThreads()) {
-        //     for (final Event e : t.getEvents()) {
-        //         if (e instanceof MemAlloc) {
-        //             allocCount++;
-        //         } else if (e instanceof MemFree) {
-        //             freeCount++;
-        //         }
-        //     }
-        // }
-        // System.out.println("Alloc count: " + allocCount);
-        // System.out.println("Free  count: " + freeCount);
         SMTStatus smtStatus = propertyTrace.getFinalResult();
 
         if (smtStatus == SMTStatus.UNKNOWN) {
