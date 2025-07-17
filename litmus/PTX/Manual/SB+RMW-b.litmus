@@ -1,4 +1,4 @@
-PTX SB+RMW-2b
+PTX SB+RMW-b
 {
 P0:r0=0;
 P1:r1=0;
