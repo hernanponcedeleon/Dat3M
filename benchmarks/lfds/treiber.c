@@ -34,5 +34,7 @@ int main()
     int r = pop();
     assert(r == EMPTY);
 
+    free_all_retired();
+
     return 0;
 }

@@ -37,6 +37,8 @@ int main()
     assert(r == EMPTY);
     free(Head);
 
+    free_all_retired();
+
     for (int i = 0; i < NTHREADS; i++)
         assert(data[i] == 1);
 

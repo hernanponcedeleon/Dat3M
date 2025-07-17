@@ -18,6 +18,11 @@ struct {
     _Atomic(Node*) node;
 } TOP;
 
+#define RETIRE_THRESHOLD 10
+Node* retired[RETIRE_THRESHOLD];
+_Atomic int retired_count = 0;
+
+
 void init() {
     atomic_init(&TOP.node, NULL);
 }
@@ -47,11 +52,19 @@ int pop() {
         } else {
             z = atomic_load_explicit(&y->next, __ATOMIC_ACQUIRE);
             if (CAS(&TOP.node, &y, z)) {
-                free(y);
+                // free(y);
                 // retire(y)
+                retired[atomic_fetch_add(&retired_count, 1)] = y;
                 break;
             }
         }
     }
     return y->val;
+}
+
+void free_all_retired() {
+    for (int i = 0; i < retired_count; ++i) {
+        free(retired[i]);
+    }
+    retired_count = 0;
 }

@@ -1,5 +1,5 @@
-; ModuleID = '/home/ponce/git/Dat3M/output/treiber.ll'
-source_filename = "/home/ponce/git/Dat3M/benchmarks/lfds/treiber.c"
+; ModuleID = 'benchmarks/lfds/treiber.c'
+source_filename = "benchmarks/lfds/treiber.c"
 target datalayout = "e-m:e-p270:32:32-p271:32:32-p272:64:64-i64:64-f80:128-n8:16:32:64-S128"
 target triple = "x86_64-pc-linux-gnu"
 
@@ -7,306 +7,344 @@ target triple = "x86_64-pc-linux-gnu"
 %struct.Node = type { i32, %struct.Node* }
 %union.pthread_attr_t = type { i64, [48 x i8] }
 
-@TOP = dso_local global %struct.anon zeroinitializer, align 8, !dbg !0
+@retired_count = dso_local global i32 0, align 4
+@TOP = dso_local global %struct.anon zeroinitializer, align 8
+@retired = dso_local global [10 x %struct.Node*] zeroinitializer, align 16
 @.str = private unnamed_addr constant [11 x i8] c"r != EMPTY\00", align 1
-@.str.1 = private unnamed_addr constant [48 x i8] c"/home/ponce/git/Dat3M/benchmarks/lfds/treiber.c\00", align 1
+@.str.1 = private unnamed_addr constant [26 x i8] c"benchmarks/lfds/treiber.c\00", align 1
 @__PRETTY_FUNCTION__.worker = private unnamed_addr constant [21 x i8] c"void *worker(void *)\00", align 1
 @.str.2 = private unnamed_addr constant [11 x i8] c"r == EMPTY\00", align 1
 @__PRETTY_FUNCTION__.main = private unnamed_addr constant [11 x i8] c"int main()\00", align 1
 
-; Function Attrs: noinline nounwind uwtable
-define dso_local void @init() #0 !dbg !35 {
-  store %struct.Node* null, %struct.Node** getelementptr inbounds (%struct.anon, %struct.anon* @TOP, i32 0, i32 0), align 8, !dbg !39
-  ret void, !dbg !40
+; Function Attrs: noinline nounwind optnone uwtable
+define dso_local void @init() #0 {
+  store %struct.Node* null, %struct.Node** getelementptr inbounds (%struct.anon, %struct.anon* @TOP, i32 0, i32 0), align 8
+  ret void
 }
 
-; Function Attrs: noinline nounwind uwtable
-define dso_local void @push(i32 noundef %0) #0 !dbg !41 {
-  call void @llvm.dbg.value(metadata i32 %0, metadata !44, metadata !DIExpression()), !dbg !45
-  %2 = call noalias i8* @malloc(i64 noundef 16) #5, !dbg !46
-  %3 = bitcast i8* %2 to %struct.Node*, !dbg !46
-  call void @llvm.dbg.value(metadata %struct.Node* %3, metadata !47, metadata !DIExpression()), !dbg !45
-  %4 = getelementptr inbounds %struct.Node, %struct.Node* %3, i32 0, i32 0, !dbg !48
-  store i32 %0, i32* %4, align 8, !dbg !49
-  br label %5, !dbg !50
+; Function Attrs: noinline nounwind optnone uwtable
+define dso_local void @push(i32 noundef %0) #0 {
+  %2 = alloca i32, align 4
+  %3 = alloca %struct.Node*, align 8
+  %4 = alloca %struct.Node*, align 8
+  %5 = alloca %struct.Node*, align 8
+  %6 = alloca %struct.Node*, align 8
+  %7 = alloca %struct.Node*, align 8
+  %8 = alloca i8, align 1
+  store i32 %0, i32* %2, align 4
+  %9 = call noalias i8* @malloc(i64 noundef 16) #4
+  %10 = bitcast i8* %9 to %struct.Node*
+  store %struct.Node* %10, %struct.Node** %3, align 8
+  %11 = load i32, i32* %2, align 4
+  %12 = load %struct.Node*, %struct.Node** %3, align 8
+  %13 = getelementptr inbounds %struct.Node, %struct.Node* %12, i32 0, i32 0
+  store i32 %11, i32* %13, align 8
+  br label %14
 
-5:                                                ; preds = %5, %1
-  %6 = load atomic i64, i64* bitcast (%struct.anon* @TOP to i64*) acquire, align 8, !dbg !51
-  %7 = inttoptr i64 %6 to %struct.Node*, !dbg !51
-  call void @llvm.dbg.value(metadata %struct.Node* %7, metadata !53, metadata !DIExpression()), !dbg !45
-  %8 = getelementptr inbounds %struct.Node, %struct.Node* %3, i32 0, i32 1, !dbg !54
-  %9 = bitcast %struct.Node** %8 to i64*, !dbg !55
-  store atomic i64 %6, i64* %9 monotonic, align 8, !dbg !55
-  %10 = ptrtoint %struct.Node* %3 to i64, !dbg !56
-  %11 = cmpxchg i64* bitcast (%struct.anon* @TOP to i64*), i64 %6, i64 %10 acq_rel monotonic, align 8, !dbg !56
-  %12 = extractvalue { i64, i1 } %11, 0, !dbg !56
-  %13 = extractvalue { i64, i1 } %11, 1, !dbg !56
-  %14 = zext i1 %13 to i8, !dbg !56
-  br i1 %13, label %15, label %5, !dbg !58, !llvm.loop !59
+14:                                               ; preds = %1, %39
+  %15 = bitcast %struct.Node** %5 to i64*
+  %16 = load atomic i64, i64* bitcast (%struct.anon* @TOP to i64*) acquire, align 8
+  store i64 %16, i64* %15, align 8
+  %17 = bitcast i64* %15 to %struct.Node**
+  %18 = load %struct.Node*, %struct.Node** %17, align 8
+  store %struct.Node* %18, %struct.Node** %4, align 8
+  %19 = load %struct.Node*, %struct.Node** %3, align 8
+  %20 = getelementptr inbounds %struct.Node, %struct.Node* %19, i32 0, i32 1
+  %21 = load %struct.Node*, %struct.Node** %4, align 8
+  store %struct.Node* %21, %struct.Node** %6, align 8
+  %22 = bitcast %struct.Node** %20 to i64*
+  %23 = bitcast %struct.Node** %6 to i64*
+  %24 = load i64, i64* %23, align 8
+  store atomic i64 %24, i64* %22 monotonic, align 8
+  %25 = load %struct.Node*, %struct.Node** %3, align 8
+  store %struct.Node* %25, %struct.Node** %7, align 8
+  %26 = bitcast %struct.Node** %4 to i64*
+  %27 = bitcast %struct.Node** %7 to i64*
+  %28 = load i64, i64* %26, align 8
+  %29 = load i64, i64* %27, align 8
+  %30 = cmpxchg i64* bitcast (%struct.anon* @TOP to i64*), i64 %28, i64 %29 acq_rel monotonic, align 8
+  %31 = extractvalue { i64, i1 } %30, 0
+  %32 = extractvalue { i64, i1 } %30, 1
+  br i1 %32, label %34, label %33
 
-15:                                               ; preds = %5
-  ret void, !dbg !61
+33:                                               ; preds = %14
+  store i64 %31, i64* %26, align 8
+  br label %34
+
+34:                                               ; preds = %33, %14
+  %35 = zext i1 %32 to i8
+  store i8 %35, i8* %8, align 1
+  %36 = load i8, i8* %8, align 1
+  %37 = trunc i8 %36 to i1
+  br i1 %37, label %38, label %39
+
+38:                                               ; preds = %34
+  br label %40
+
+39:                                               ; preds = %34
+  br label %14
+
+40:                                               ; preds = %38
+  ret void
 }
-
-; Function Attrs: nofree nosync nounwind readnone speculatable willreturn
-declare void @llvm.dbg.declare(metadata, metadata, metadata) #1
 
 ; Function Attrs: nounwind
-declare noalias i8* @malloc(i64 noundef) #2
+declare noalias i8* @malloc(i64 noundef) #1
 
-; Function Attrs: noinline nounwind uwtable
-define dso_local i32 @pop() #0 !dbg !62 {
-  br label %1, !dbg !65
+; Function Attrs: noinline nounwind optnone uwtable
+define dso_local i32 @pop() #0 {
+  %1 = alloca i32, align 4
+  %2 = alloca %struct.Node*, align 8
+  %3 = alloca %struct.Node*, align 8
+  %4 = alloca %struct.Node*, align 8
+  %5 = alloca %struct.Node*, align 8
+  %6 = alloca %struct.Node*, align 8
+  %7 = alloca i8, align 1
+  %8 = alloca i32, align 4
+  %9 = alloca i32, align 4
+  br label %10
 
-1:                                                ; preds = %5, %0
-  %2 = load atomic i64, i64* bitcast (%struct.anon* @TOP to i64*) acquire, align 8, !dbg !66
-  %3 = inttoptr i64 %2 to %struct.Node*, !dbg !66
-  call void @llvm.dbg.value(metadata %struct.Node* %3, metadata !68, metadata !DIExpression()), !dbg !69
-  %4 = icmp eq %struct.Node* %3, null, !dbg !70
-  br i1 %4, label %18, label %5, !dbg !72
+10:                                               ; preds = %0, %47
+  %11 = bitcast %struct.Node** %4 to i64*
+  %12 = load atomic i64, i64* bitcast (%struct.anon* @TOP to i64*) acquire, align 8
+  store i64 %12, i64* %11, align 8
+  %13 = bitcast i64* %11 to %struct.Node**
+  %14 = load %struct.Node*, %struct.Node** %13, align 8
+  store %struct.Node* %14, %struct.Node** %2, align 8
+  %15 = load %struct.Node*, %struct.Node** %2, align 8
+  %16 = icmp eq %struct.Node* %15, null
+  br i1 %16, label %17, label %18
 
-5:                                                ; preds = %1
-  %6 = getelementptr inbounds %struct.Node, %struct.Node* %3, i32 0, i32 1, !dbg !73
-  %7 = bitcast %struct.Node** %6 to i64*, !dbg !75
-  %8 = load atomic i64, i64* %7 acquire, align 8, !dbg !75
-  %9 = inttoptr i64 %8 to %struct.Node*, !dbg !75
-  call void @llvm.dbg.value(metadata %struct.Node* %9, metadata !76, metadata !DIExpression()), !dbg !69
-  %10 = cmpxchg i64* bitcast (%struct.anon* @TOP to i64*), i64 %2, i64 %8 acq_rel monotonic, align 8, !dbg !77
-  %11 = extractvalue { i64, i1 } %10, 0, !dbg !77
-  %12 = extractvalue { i64, i1 } %10, 1, !dbg !77
-  %13 = inttoptr i64 %11 to %struct.Node*, !dbg !77
-  %.06 = select i1 %12, %struct.Node* %3, %struct.Node* %13, !dbg !77
-  call void @llvm.dbg.value(metadata %struct.Node* %.06, metadata !68, metadata !DIExpression()), !dbg !69
-  %14 = zext i1 %12 to i8, !dbg !77
-  br i1 %12, label %15, label %1, !dbg !79, !llvm.loop !80
+17:                                               ; preds = %10
+  store i32 -1, i32* %1, align 4
+  br label %52
 
-15:                                               ; preds = %5
-  %16 = getelementptr inbounds %struct.Node, %struct.Node* %.06, i32 0, i32 0, !dbg !82
-  %17 = load i32, i32* %16, align 8, !dbg !82
-  br label %18, !dbg !83
+18:                                               ; preds = %10
+  %19 = load %struct.Node*, %struct.Node** %2, align 8
+  %20 = getelementptr inbounds %struct.Node, %struct.Node* %19, i32 0, i32 1
+  %21 = bitcast %struct.Node** %20 to i64*
+  %22 = bitcast %struct.Node** %5 to i64*
+  %23 = load atomic i64, i64* %21 acquire, align 8
+  store i64 %23, i64* %22, align 8
+  %24 = bitcast i64* %22 to %struct.Node**
+  %25 = load %struct.Node*, %struct.Node** %24, align 8
+  store %struct.Node* %25, %struct.Node** %3, align 8
+  %26 = load %struct.Node*, %struct.Node** %3, align 8
+  store %struct.Node* %26, %struct.Node** %6, align 8
+  %27 = bitcast %struct.Node** %2 to i64*
+  %28 = bitcast %struct.Node** %6 to i64*
+  %29 = load i64, i64* %27, align 8
+  %30 = load i64, i64* %28, align 8
+  %31 = cmpxchg i64* bitcast (%struct.anon* @TOP to i64*), i64 %29, i64 %30 acq_rel monotonic, align 8
+  %32 = extractvalue { i64, i1 } %31, 0
+  %33 = extractvalue { i64, i1 } %31, 1
+  br i1 %33, label %35, label %34
 
-18:                                               ; preds = %1, %15
-  %.0 = phi i32 [ %17, %15 ], [ -1, %1 ], !dbg !69
-  ret i32 %.0, !dbg !84
+34:                                               ; preds = %18
+  store i64 %32, i64* %27, align 8
+  br label %35
+
+35:                                               ; preds = %34, %18
+  %36 = zext i1 %33 to i8
+  store i8 %36, i8* %7, align 1
+  %37 = load i8, i8* %7, align 1
+  %38 = trunc i8 %37 to i1
+  br i1 %38, label %39, label %46
+
+39:                                               ; preds = %35
+  %40 = load %struct.Node*, %struct.Node** %2, align 8
+  store i32 1, i32* %8, align 4
+  %41 = load i32, i32* %8, align 4
+  %42 = atomicrmw add i32* @retired_count, i32 %41 seq_cst, align 4
+  store i32 %42, i32* %9, align 4
+  %43 = load i32, i32* %9, align 4
+  %44 = sext i32 %43 to i64
+  %45 = getelementptr inbounds [10 x %struct.Node*], [10 x %struct.Node*]* @retired, i64 0, i64 %44
+  store %struct.Node* %40, %struct.Node** %45, align 8
+  br label %48
+
+46:                                               ; preds = %35
+  br label %47
+
+47:                                               ; preds = %46
+  br label %10
+
+48:                                               ; preds = %39
+  %49 = load %struct.Node*, %struct.Node** %2, align 8
+  %50 = getelementptr inbounds %struct.Node, %struct.Node* %49, i32 0, i32 0
+  %51 = load i32, i32* %50, align 8
+  store i32 %51, i32* %1, align 4
+  br label %52
+
+52:                                               ; preds = %48, %17
+  %53 = load i32, i32* %1, align 4
+  ret i32 %53
 }
 
-; Function Attrs: noinline nounwind uwtable
-define dso_local i8* @worker(i8* noundef %0) #0 !dbg !85 {
-  call void @llvm.dbg.value(metadata i8* %0, metadata !89, metadata !DIExpression()), !dbg !90
-  %2 = ptrtoint i8* %0 to i64, !dbg !91
-  call void @llvm.dbg.value(metadata i64 %2, metadata !92, metadata !DIExpression()), !dbg !90
-  %3 = trunc i64 %2 to i32, !dbg !93
-  call void @push(i32 noundef %3), !dbg !94
-  %4 = call i32 @pop(), !dbg !95
-  call void @llvm.dbg.value(metadata i32 %4, metadata !96, metadata !DIExpression()), !dbg !90
-  %5 = icmp ne i32 %4, -1, !dbg !97
-  br i1 %5, label %7, label %6, !dbg !100
+; Function Attrs: noinline nounwind optnone uwtable
+define dso_local void @free_all_retired() #0 {
+  %1 = alloca i32, align 4
+  store i32 0, i32* %1, align 4
+  br label %2
 
-6:                                                ; preds = %1
-  call void @__assert_fail(i8* noundef getelementptr inbounds ([11 x i8], [11 x i8]* @.str, i64 0, i64 0), i8* noundef getelementptr inbounds ([48 x i8], [48 x i8]* @.str.1, i64 0, i64 0), i32 noundef 17, i8* noundef getelementptr inbounds ([21 x i8], [21 x i8]* @__PRETTY_FUNCTION__.worker, i64 0, i64 0)) #6, !dbg !97
-  unreachable, !dbg !97
+2:                                                ; preds = %12, %0
+  %3 = load i32, i32* %1, align 4
+  %4 = load atomic i32, i32* @retired_count seq_cst, align 4
+  %5 = icmp slt i32 %3, %4
+  br i1 %5, label %6, label %15
 
-7:                                                ; preds = %1
-  ret i8* null, !dbg !101
+6:                                                ; preds = %2
+  %7 = load i32, i32* %1, align 4
+  %8 = sext i32 %7 to i64
+  %9 = getelementptr inbounds [10 x %struct.Node*], [10 x %struct.Node*]* @retired, i64 0, i64 %8
+  %10 = load %struct.Node*, %struct.Node** %9, align 8
+  %11 = bitcast %struct.Node* %10 to i8*
+  call void @free(i8* noundef %11) #4
+  br label %12
+
+12:                                               ; preds = %6
+  %13 = load i32, i32* %1, align 4
+  %14 = add nsw i32 %13, 1
+  store i32 %14, i32* %1, align 4
+  br label %2, !llvm.loop !6
+
+15:                                               ; preds = %2
+  store atomic i32 0, i32* @retired_count seq_cst, align 4
+  ret void
+}
+
+; Function Attrs: nounwind
+declare void @free(i8* noundef) #1
+
+; Function Attrs: noinline nounwind optnone uwtable
+define dso_local i8* @worker(i8* noundef %0) #0 {
+  %2 = alloca i8*, align 8
+  %3 = alloca i64, align 8
+  %4 = alloca i32, align 4
+  store i8* %0, i8** %2, align 8
+  %5 = load i8*, i8** %2, align 8
+  %6 = ptrtoint i8* %5 to i64
+  store i64 %6, i64* %3, align 8
+  %7 = load i64, i64* %3, align 8
+  %8 = trunc i64 %7 to i32
+  call void @push(i32 noundef %8)
+  %9 = call i32 @pop()
+  store i32 %9, i32* %4, align 4
+  %10 = load i32, i32* %4, align 4
+  %11 = icmp ne i32 %10, -1
+  br i1 %11, label %12, label %13
+
+12:                                               ; preds = %1
+  br label %14
+
+13:                                               ; preds = %1
+  call void @__assert_fail(i8* noundef getelementptr inbounds ([11 x i8], [11 x i8]* @.str, i64 0, i64 0), i8* noundef getelementptr inbounds ([26 x i8], [26 x i8]* @.str.1, i64 0, i64 0), i32 noundef 17, i8* noundef getelementptr inbounds ([21 x i8], [21 x i8]* @__PRETTY_FUNCTION__.worker, i64 0, i64 0)) #5
+  unreachable
+
+14:                                               ; preds = %12
+  ret i8* null
 }
 
 ; Function Attrs: noreturn nounwind
-declare void @__assert_fail(i8* noundef, i8* noundef, i32 noundef, i8* noundef) #3
+declare void @__assert_fail(i8* noundef, i8* noundef, i32 noundef, i8* noundef) #2
 
-; Function Attrs: noinline nounwind uwtable
-define dso_local i32 @main() #0 !dbg !102 {
-  %1 = alloca [3 x i64], align 16
-  call void @llvm.dbg.declare(metadata [3 x i64]* %1, metadata !103, metadata !DIExpression()), !dbg !109
-  call void @init(), !dbg !110
-  call void @llvm.dbg.value(metadata i32 0, metadata !111, metadata !DIExpression()), !dbg !113
-  call void @llvm.dbg.value(metadata i64 0, metadata !111, metadata !DIExpression()), !dbg !113
-  %2 = getelementptr inbounds [3 x i64], [3 x i64]* %1, i64 0, i64 0, !dbg !114
-  %3 = call i32 @pthread_create(i64* noundef %2, %union.pthread_attr_t* noundef null, i8* (i8*)* noundef @worker, i8* noundef null) #5, !dbg !116
-  call void @llvm.dbg.value(metadata i64 1, metadata !111, metadata !DIExpression()), !dbg !113
-  call void @llvm.dbg.value(metadata i64 1, metadata !111, metadata !DIExpression()), !dbg !113
-  %4 = getelementptr inbounds [3 x i64], [3 x i64]* %1, i64 0, i64 1, !dbg !114
-  %5 = call i32 @pthread_create(i64* noundef %4, %union.pthread_attr_t* noundef null, i8* (i8*)* noundef @worker, i8* noundef inttoptr (i64 1 to i8*)) #5, !dbg !116
-  call void @llvm.dbg.value(metadata i64 2, metadata !111, metadata !DIExpression()), !dbg !113
-  call void @llvm.dbg.value(metadata i64 2, metadata !111, metadata !DIExpression()), !dbg !113
-  %6 = getelementptr inbounds [3 x i64], [3 x i64]* %1, i64 0, i64 2, !dbg !114
-  %7 = call i32 @pthread_create(i64* noundef %6, %union.pthread_attr_t* noundef null, i8* (i8*)* noundef @worker, i8* noundef inttoptr (i64 2 to i8*)) #5, !dbg !116
-  call void @llvm.dbg.value(metadata i64 3, metadata !111, metadata !DIExpression()), !dbg !113
-  call void @llvm.dbg.value(metadata i64 3, metadata !111, metadata !DIExpression()), !dbg !113
-  call void @llvm.dbg.value(metadata i32 0, metadata !117, metadata !DIExpression()), !dbg !119
-  call void @llvm.dbg.value(metadata i64 0, metadata !117, metadata !DIExpression()), !dbg !119
-  %8 = load i64, i64* %2, align 8, !dbg !120
-  %9 = call i32 @pthread_join(i64 noundef %8, i8** noundef null), !dbg !122
-  call void @llvm.dbg.value(metadata i64 1, metadata !117, metadata !DIExpression()), !dbg !119
-  call void @llvm.dbg.value(metadata i64 1, metadata !117, metadata !DIExpression()), !dbg !119
-  %10 = load i64, i64* %4, align 8, !dbg !120
-  %11 = call i32 @pthread_join(i64 noundef %10, i8** noundef null), !dbg !122
-  call void @llvm.dbg.value(metadata i64 2, metadata !117, metadata !DIExpression()), !dbg !119
-  call void @llvm.dbg.value(metadata i64 2, metadata !117, metadata !DIExpression()), !dbg !119
-  %12 = load i64, i64* %6, align 8, !dbg !120
-  %13 = call i32 @pthread_join(i64 noundef %12, i8** noundef null), !dbg !122
-  call void @llvm.dbg.value(metadata i64 3, metadata !117, metadata !DIExpression()), !dbg !119
-  call void @llvm.dbg.value(metadata i64 3, metadata !117, metadata !DIExpression()), !dbg !119
-  %14 = call i32 @pop(), !dbg !123
-  call void @llvm.dbg.value(metadata i32 %14, metadata !124, metadata !DIExpression()), !dbg !125
-  %15 = icmp eq i32 %14, -1, !dbg !126
-  br i1 %15, label %17, label %16, !dbg !129
+; Function Attrs: noinline nounwind optnone uwtable
+define dso_local i32 @main() #0 {
+  %1 = alloca i32, align 4
+  %2 = alloca [3 x i64], align 16
+  %3 = alloca i32, align 4
+  %4 = alloca i32, align 4
+  %5 = alloca i32, align 4
+  store i32 0, i32* %1, align 4
+  call void @init()
+  store i32 0, i32* %3, align 4
+  br label %6
 
-16:                                               ; preds = %0
-  call void @__assert_fail(i8* noundef getelementptr inbounds ([11 x i8], [11 x i8]* @.str.2, i64 0, i64 0), i8* noundef getelementptr inbounds ([48 x i8], [48 x i8]* @.str.1, i64 0, i64 0), i32 noundef 35, i8* noundef getelementptr inbounds ([11 x i8], [11 x i8]* @__PRETTY_FUNCTION__.main, i64 0, i64 0)) #6, !dbg !126
-  unreachable, !dbg !126
+6:                                                ; preds = %17, %0
+  %7 = load i32, i32* %3, align 4
+  %8 = icmp slt i32 %7, 3
+  br i1 %8, label %9, label %20
 
-17:                                               ; preds = %0
-  ret i32 0, !dbg !130
+9:                                                ; preds = %6
+  %10 = load i32, i32* %3, align 4
+  %11 = sext i32 %10 to i64
+  %12 = getelementptr inbounds [3 x i64], [3 x i64]* %2, i64 0, i64 %11
+  %13 = load i32, i32* %3, align 4
+  %14 = sext i32 %13 to i64
+  %15 = inttoptr i64 %14 to i8*
+  %16 = call i32 @pthread_create(i64* noundef %12, %union.pthread_attr_t* noundef null, i8* (i8*)* noundef @worker, i8* noundef %15) #4
+  br label %17
+
+17:                                               ; preds = %9
+  %18 = load i32, i32* %3, align 4
+  %19 = add nsw i32 %18, 1
+  store i32 %19, i32* %3, align 4
+  br label %6, !llvm.loop !8
+
+20:                                               ; preds = %6
+  store i32 0, i32* %4, align 4
+  br label %21
+
+21:                                               ; preds = %30, %20
+  %22 = load i32, i32* %4, align 4
+  %23 = icmp slt i32 %22, 3
+  br i1 %23, label %24, label %33
+
+24:                                               ; preds = %21
+  %25 = load i32, i32* %4, align 4
+  %26 = sext i32 %25 to i64
+  %27 = getelementptr inbounds [3 x i64], [3 x i64]* %2, i64 0, i64 %26
+  %28 = load i64, i64* %27, align 8
+  %29 = call i32 @pthread_join(i64 noundef %28, i8** noundef null)
+  br label %30
+
+30:                                               ; preds = %24
+  %31 = load i32, i32* %4, align 4
+  %32 = add nsw i32 %31, 1
+  store i32 %32, i32* %4, align 4
+  br label %21, !llvm.loop !9
+
+33:                                               ; preds = %21
+  %34 = call i32 @pop()
+  store i32 %34, i32* %5, align 4
+  %35 = load i32, i32* %5, align 4
+  %36 = icmp eq i32 %35, -1
+  br i1 %36, label %37, label %38
+
+37:                                               ; preds = %33
+  br label %39
+
+38:                                               ; preds = %33
+  call void @__assert_fail(i8* noundef getelementptr inbounds ([11 x i8], [11 x i8]* @.str.2, i64 0, i64 0), i8* noundef getelementptr inbounds ([26 x i8], [26 x i8]* @.str.1, i64 0, i64 0), i32 noundef 35, i8* noundef getelementptr inbounds ([11 x i8], [11 x i8]* @__PRETTY_FUNCTION__.main, i64 0, i64 0)) #5
+  unreachable
+
+39:                                               ; preds = %37
+  call void @free_all_retired()
+  ret i32 0
 }
 
 ; Function Attrs: nounwind
-declare i32 @pthread_create(i64* noundef, %union.pthread_attr_t* noundef, i8* (i8*)* noundef, i8* noundef) #2
+declare i32 @pthread_create(i64* noundef, %union.pthread_attr_t* noundef, i8* (i8*)* noundef, i8* noundef) #1
 
-declare i32 @pthread_join(i64 noundef, i8** noundef) #4
+declare i32 @pthread_join(i64 noundef, i8** noundef) #3
 
-; Function Attrs: nofree nosync nounwind readnone speculatable willreturn
-declare void @llvm.dbg.value(metadata, metadata, metadata) #1
+attributes #0 = { noinline nounwind optnone uwtable "frame-pointer"="all" "min-legal-vector-width"="0" "no-trapping-math"="true" "stack-protector-buffer-size"="8" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+x87" "tune-cpu"="generic" }
+attributes #1 = { nounwind "frame-pointer"="all" "no-trapping-math"="true" "stack-protector-buffer-size"="8" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+x87" "tune-cpu"="generic" }
+attributes #2 = { noreturn nounwind "frame-pointer"="all" "no-trapping-math"="true" "stack-protector-buffer-size"="8" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+x87" "tune-cpu"="generic" }
+attributes #3 = { "frame-pointer"="all" "no-trapping-math"="true" "stack-protector-buffer-size"="8" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+x87" "tune-cpu"="generic" }
+attributes #4 = { nounwind }
+attributes #5 = { noreturn nounwind }
 
-attributes #0 = { noinline nounwind uwtable "frame-pointer"="all" "min-legal-vector-width"="0" "no-trapping-math"="true" "stack-protector-buffer-size"="8" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+x87" "tune-cpu"="generic" }
-attributes #1 = { nofree nosync nounwind readnone speculatable willreturn }
-attributes #2 = { nounwind "frame-pointer"="all" "no-trapping-math"="true" "stack-protector-buffer-size"="8" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+x87" "tune-cpu"="generic" }
-attributes #3 = { noreturn nounwind "frame-pointer"="all" "no-trapping-math"="true" "stack-protector-buffer-size"="8" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+x87" "tune-cpu"="generic" }
-attributes #4 = { "frame-pointer"="all" "no-trapping-math"="true" "stack-protector-buffer-size"="8" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+x87" "tune-cpu"="generic" }
-attributes #5 = { nounwind }
-attributes #6 = { noreturn nounwind }
+!llvm.module.flags = !{!0, !1, !2, !3, !4}
+!llvm.ident = !{!5}
 
-!llvm.dbg.cu = !{!2}
-!llvm.module.flags = !{!27, !28, !29, !30, !31, !32, !33}
-!llvm.ident = !{!34}
-
-!0 = !DIGlobalVariableExpression(var: !1, expr: !DIExpression())
-!1 = distinct !DIGlobalVariable(name: "TOP", scope: !2, file: !13, line: 19, type: !14, isLocal: false, isDefinition: true)
-!2 = distinct !DICompileUnit(language: DW_LANG_C99, file: !3, producer: "Ubuntu clang version 14.0.6", isOptimized: false, runtimeVersion: 0, emissionKind: FullDebug, retainedTypes: !4, globals: !12, splitDebugInlining: false, nameTableKind: None)
-!3 = !DIFile(filename: "/home/ponce/git/Dat3M/benchmarks/lfds/treiber.c", directory: "/home/ponce/git/Dat3M", checksumkind: CSK_MD5, checksum: "6374e26f9e48e84c9da108eff1ccfc9b")
-!4 = !{!5, !6, !9}
-!5 = !DIDerivedType(tag: DW_TAG_pointer_type, baseType: null, size: 64)
-!6 = !DIDerivedType(tag: DW_TAG_typedef, name: "intptr_t", file: !7, line: 87, baseType: !8)
-!7 = !DIFile(filename: "/usr/include/stdint.h", directory: "", checksumkind: CSK_MD5, checksum: "24103e292ae21916e87130b926c8d2f8")
-!8 = !DIBasicType(name: "long", size: 64, encoding: DW_ATE_signed)
-!9 = !DIDerivedType(tag: DW_TAG_typedef, name: "size_t", file: !10, line: 46, baseType: !11)
-!10 = !DIFile(filename: "/usr/lib/llvm-14/lib/clang/14.0.6/include/stddef.h", directory: "", checksumkind: CSK_MD5, checksum: "2499dd2361b915724b073282bea3a7bc")
-!11 = !DIBasicType(name: "unsigned long", size: 64, encoding: DW_ATE_unsigned)
-!12 = !{!0}
-!13 = !DIFile(filename: "benchmarks/lfds/treiber.h", directory: "/home/ponce/git/Dat3M", checksumkind: CSK_MD5, checksum: "a4031056245a21941de5af4b4e486aa2")
-!14 = distinct !DICompositeType(tag: DW_TAG_structure_type, file: !13, line: 17, size: 64, elements: !15)
-!15 = !{!16}
-!16 = !DIDerivedType(tag: DW_TAG_member, name: "node", scope: !14, file: !13, line: 18, baseType: !17, size: 64)
-!17 = !DIDerivedType(tag: DW_TAG_atomic_type, baseType: !18)
-!18 = !DIDerivedType(tag: DW_TAG_pointer_type, baseType: !19, size: 64)
-!19 = !DIDerivedType(tag: DW_TAG_typedef, name: "Node", file: !13, line: 15, baseType: !20)
-!20 = distinct !DICompositeType(tag: DW_TAG_structure_type, name: "Node", file: !13, line: 12, size: 128, elements: !21)
-!21 = !{!22, !24}
-!22 = !DIDerivedType(tag: DW_TAG_member, name: "val", scope: !20, file: !13, line: 13, baseType: !23, size: 32)
-!23 = !DIBasicType(name: "int", size: 32, encoding: DW_ATE_signed)
-!24 = !DIDerivedType(tag: DW_TAG_member, name: "next", scope: !20, file: !13, line: 14, baseType: !25, size: 64, offset: 64)
-!25 = !DIDerivedType(tag: DW_TAG_atomic_type, baseType: !26)
-!26 = !DIDerivedType(tag: DW_TAG_pointer_type, baseType: !20, size: 64)
-!27 = !{i32 7, !"Dwarf Version", i32 5}
-!28 = !{i32 2, !"Debug Info Version", i32 3}
-!29 = !{i32 1, !"wchar_size", i32 4}
-!30 = !{i32 7, !"PIC Level", i32 2}
-!31 = !{i32 7, !"PIE Level", i32 2}
-!32 = !{i32 7, !"uwtable", i32 1}
-!33 = !{i32 7, !"frame-pointer", i32 2}
-!34 = !{!"Ubuntu clang version 14.0.6"}
-!35 = distinct !DISubprogram(name: "init", scope: !13, file: !13, line: 21, type: !36, scopeLine: 21, spFlags: DISPFlagDefinition, unit: !2, retainedNodes: !38)
-!36 = !DISubroutineType(types: !37)
-!37 = !{null}
-!38 = !{}
-!39 = !DILocation(line: 22, column: 5, scope: !35)
-!40 = !DILocation(line: 23, column: 1, scope: !35)
-!41 = distinct !DISubprogram(name: "push", scope: !13, file: !13, line: 25, type: !42, scopeLine: 25, flags: DIFlagPrototyped, spFlags: DISPFlagDefinition, unit: !2, retainedNodes: !38)
-!42 = !DISubroutineType(types: !43)
-!43 = !{null, !23}
-!44 = !DILocalVariable(name: "e", arg: 1, scope: !41, file: !13, line: 25, type: !23)
-!45 = !DILocation(line: 0, scope: !41)
-!46 = !DILocation(line: 27, column: 9, scope: !41)
-!47 = !DILocalVariable(name: "y", scope: !41, file: !13, line: 26, type: !18)
-!48 = !DILocation(line: 28, column: 8, scope: !41)
-!49 = !DILocation(line: 28, column: 12, scope: !41)
-!50 = !DILocation(line: 30, column: 5, scope: !41)
-!51 = !DILocation(line: 31, column: 13, scope: !52)
-!52 = distinct !DILexicalBlock(scope: !41, file: !13, line: 30, column: 14)
-!53 = !DILocalVariable(name: "n", scope: !41, file: !13, line: 26, type: !18)
-!54 = !DILocation(line: 32, column: 35, scope: !52)
-!55 = !DILocation(line: 32, column: 9, scope: !52)
-!56 = !DILocation(line: 34, column: 13, scope: !57)
-!57 = distinct !DILexicalBlock(scope: !52, file: !13, line: 34, column: 13)
-!58 = !DILocation(line: 34, column: 13, scope: !52)
-!59 = distinct !{!59, !50, !60}
-!60 = !DILocation(line: 37, column: 5, scope: !41)
-!61 = !DILocation(line: 38, column: 1, scope: !41)
-!62 = distinct !DISubprogram(name: "pop", scope: !13, file: !13, line: 40, type: !63, scopeLine: 40, spFlags: DISPFlagDefinition, unit: !2, retainedNodes: !38)
-!63 = !DISubroutineType(types: !64)
-!64 = !{!23}
-!65 = !DILocation(line: 43, column: 5, scope: !62)
-!66 = !DILocation(line: 44, column: 13, scope: !67)
-!67 = distinct !DILexicalBlock(scope: !62, file: !13, line: 43, column: 15)
-!68 = !DILocalVariable(name: "y", scope: !62, file: !13, line: 41, type: !18)
-!69 = !DILocation(line: 0, scope: !62)
-!70 = !DILocation(line: 45, column: 15, scope: !71)
-!71 = distinct !DILexicalBlock(scope: !67, file: !13, line: 45, column: 13)
-!72 = !DILocation(line: 45, column: 13, scope: !67)
-!73 = !DILocation(line: 48, column: 42, scope: !74)
-!74 = distinct !DILexicalBlock(scope: !71, file: !13, line: 47, column: 16)
-!75 = !DILocation(line: 48, column: 17, scope: !74)
-!76 = !DILocalVariable(name: "z", scope: !62, file: !13, line: 41, type: !18)
-!77 = !DILocation(line: 49, column: 17, scope: !78)
-!78 = distinct !DILexicalBlock(scope: !74, file: !13, line: 49, column: 17)
-!79 = !DILocation(line: 49, column: 17, scope: !74)
-!80 = distinct !{!80, !65, !81}
-!81 = !DILocation(line: 54, column: 5, scope: !62)
-!82 = !DILocation(line: 55, column: 15, scope: !62)
-!83 = !DILocation(line: 55, column: 5, scope: !62)
-!84 = !DILocation(line: 56, column: 1, scope: !62)
-!85 = distinct !DISubprogram(name: "worker", scope: !86, file: !86, line: 9, type: !87, scopeLine: 10, flags: DIFlagPrototyped, spFlags: DISPFlagDefinition, unit: !2, retainedNodes: !38)
-!86 = !DIFile(filename: "benchmarks/lfds/treiber.c", directory: "/home/ponce/git/Dat3M", checksumkind: CSK_MD5, checksum: "6374e26f9e48e84c9da108eff1ccfc9b")
-!87 = !DISubroutineType(types: !88)
-!88 = !{!5, !5}
-!89 = !DILocalVariable(name: "arg", arg: 1, scope: !85, file: !86, line: 9, type: !5)
-!90 = !DILocation(line: 0, scope: !85)
-!91 = !DILocation(line: 12, column: 23, scope: !85)
-!92 = !DILocalVariable(name: "index", scope: !85, file: !86, line: 12, type: !6)
-!93 = !DILocation(line: 14, column: 7, scope: !85)
-!94 = !DILocation(line: 14, column: 2, scope: !85)
-!95 = !DILocation(line: 15, column: 13, scope: !85)
-!96 = !DILocalVariable(name: "r", scope: !85, file: !86, line: 15, type: !23)
-!97 = !DILocation(line: 17, column: 2, scope: !98)
-!98 = distinct !DILexicalBlock(scope: !99, file: !86, line: 17, column: 2)
-!99 = distinct !DILexicalBlock(scope: !85, file: !86, line: 17, column: 2)
-!100 = !DILocation(line: 17, column: 2, scope: !99)
-!101 = !DILocation(line: 19, column: 2, scope: !85)
-!102 = distinct !DISubprogram(name: "main", scope: !86, file: !86, line: 22, type: !63, scopeLine: 23, spFlags: DISPFlagDefinition, unit: !2, retainedNodes: !38)
-!103 = !DILocalVariable(name: "t", scope: !102, file: !86, line: 24, type: !104)
-!104 = !DICompositeType(tag: DW_TAG_array_type, baseType: !105, size: 192, elements: !107)
-!105 = !DIDerivedType(tag: DW_TAG_typedef, name: "pthread_t", file: !106, line: 27, baseType: !11)
-!106 = !DIFile(filename: "/usr/include/x86_64-linux-gnu/bits/pthreadtypes.h", directory: "", checksumkind: CSK_MD5, checksum: "2d764266ce95ab26d4a4767c2ec78176")
-!107 = !{!108}
-!108 = !DISubrange(count: 3)
-!109 = !DILocation(line: 24, column: 15, scope: !102)
-!110 = !DILocation(line: 26, column: 5, scope: !102)
-!111 = !DILocalVariable(name: "i", scope: !112, file: !86, line: 28, type: !23)
-!112 = distinct !DILexicalBlock(scope: !102, file: !86, line: 28, column: 5)
-!113 = !DILocation(line: 0, scope: !112)
-!114 = !DILocation(line: 29, column: 25, scope: !115)
-!115 = distinct !DILexicalBlock(scope: !112, file: !86, line: 28, column: 5)
-!116 = !DILocation(line: 29, column: 9, scope: !115)
-!117 = !DILocalVariable(name: "i", scope: !118, file: !86, line: 31, type: !23)
-!118 = distinct !DILexicalBlock(scope: !102, file: !86, line: 31, column: 5)
-!119 = !DILocation(line: 0, scope: !118)
-!120 = !DILocation(line: 32, column: 22, scope: !121)
-!121 = distinct !DILexicalBlock(scope: !118, file: !86, line: 31, column: 5)
-!122 = !DILocation(line: 32, column: 9, scope: !121)
-!123 = !DILocation(line: 34, column: 13, scope: !102)
-!124 = !DILocalVariable(name: "r", scope: !102, file: !86, line: 34, type: !23)
-!125 = !DILocation(line: 0, scope: !102)
-!126 = !DILocation(line: 35, column: 5, scope: !127)
-!127 = distinct !DILexicalBlock(scope: !128, file: !86, line: 35, column: 5)
-!128 = distinct !DILexicalBlock(scope: !102, file: !86, line: 35, column: 5)
-!129 = !DILocation(line: 35, column: 5, scope: !128)
-!130 = !DILocation(line: 37, column: 5, scope: !102)
+!0 = !{i32 1, !"wchar_size", i32 4}
+!1 = !{i32 7, !"PIC Level", i32 2}
+!2 = !{i32 7, !"PIE Level", i32 2}
+!3 = !{i32 7, !"uwtable", i32 1}
+!4 = !{i32 7, !"frame-pointer", i32 2}
+!5 = !{!"Ubuntu clang version 14.0.0-1ubuntu1.1"}
+!6 = distinct !{!6, !7}
+!7 = !{!"llvm.loop.mustprogress"}
+!8 = distinct !{!8, !7}
+!9 = distinct !{!9, !7}

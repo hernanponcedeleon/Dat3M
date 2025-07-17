@@ -268,23 +268,18 @@ public class ExecutionModel {
         List<Integer> threadEndIndexList = new ArrayList<>(threadList.size());
         Map<Thread, List<List<Integer>>> atomicBlockRangesMap = new HashMap<>();
 
-        int allocCount = 0;
-        int freeCount = 0;
 
         for (Thread thread : threadList) {
-            for (final Event e : thread.getEvents()) {
-                if (e instanceof MemAlloc) {
-                    allocCount++;
-                } else if (e instanceof MemFree) {
-                    freeCount++;
-                }
-            }
             initDepTracking();
             List<List<Integer>> atomicBlockRanges = atomicBlockRangesMap.computeIfAbsent(thread, key -> new ArrayList<>());
             Event e = thread.getEntry();
             int atomicBegin = -1;
             int localId = 0;
             do {
+                if (!irModel.isExecuted(e)) {
+                    e = e.getSuccessor();
+                    continue;
+                }
                 if (eventFilter.apply(e)) {
                     addEvent(e, id++, localId++);
                 }
