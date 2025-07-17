@@ -535,6 +535,13 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
     }
 
     @Override
+    public Object visitNreC11AtomicOp(LitmusCParser.NreC11AtomicOpContext ctx){
+        Expression value = returnExpressionOrOne(ctx.value);
+        Event event = EventFactory.Atomic.newRMWOp(getAddress(ctx.address), value, ctx.op, ctx.c11Mo().mo);
+        return programBuilder.addChild(currentThread, event);
+    }
+
+    @Override
     public Object visitNreStore(LitmusCParser.NreStoreContext ctx){
         Expression value = (Expression)ctx.value.accept(this);
         if(ctx.mo.equals(Tag.Linux.MO_MB)){

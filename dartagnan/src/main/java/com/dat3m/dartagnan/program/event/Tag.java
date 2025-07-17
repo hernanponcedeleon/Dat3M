@@ -128,7 +128,9 @@ public final class Tag {
         public static final String MO_ACQUIRE_RELEASE   = "ACQ_REL";
         public static final String MO_SC                = "SC";
 
-        public static final String DEFAULT_MO = MO_SC;
+        public static final String DEFAULT_MO           = MO_SC;
+
+        public static final String NORETURN             = "Noreturn";
 
         public static String intToMo(int i) {
             switch (i) {
