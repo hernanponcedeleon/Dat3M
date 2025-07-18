@@ -155,7 +155,7 @@ void ticket_awnsb_mutex_init(ticket_awnsb_mutex_t * self, int maxArrayWaiters)
     atomic_init(&self->ingress, 0);
     atomic_init(&self->egress, 0);
     self->maxArrayWaiters = maxArrayWaiters;
-    self->waitersArray = (_Atomic(awnsb_node_t *)*)malloc(self->maxArrayWaiters*sizeof(awnsb_node_t *));
+    self->waitersArray = (_Atomic(awnsb_node_t *)*)malloc(maxArrayWaiters*sizeof(awnsb_node_t *));
     __VERIFIER_loop_bound(DEFAULT_MAX_WAITERS+1);
     for (int i = 0; i < self->maxArrayWaiters; i++) atomic_init(&self->waitersArray[i], NULL);
 }

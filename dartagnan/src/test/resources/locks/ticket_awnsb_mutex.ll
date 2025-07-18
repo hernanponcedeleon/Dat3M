@@ -34,45 +34,43 @@ define dso_local void @ticket_awnsb_mutex_init(%struct.ticket_awnsb_mutex_t* nou
   %11 = load %struct.ticket_awnsb_mutex_t*, %struct.ticket_awnsb_mutex_t** %3, align 8
   %12 = getelementptr inbounds %struct.ticket_awnsb_mutex_t, %struct.ticket_awnsb_mutex_t* %11, i32 0, i32 4
   store i32 %10, i32* %12, align 8
-  %13 = load %struct.ticket_awnsb_mutex_t*, %struct.ticket_awnsb_mutex_t** %3, align 8
-  %14 = getelementptr inbounds %struct.ticket_awnsb_mutex_t, %struct.ticket_awnsb_mutex_t* %13, i32 0, i32 4
-  %15 = load i32, i32* %14, align 8
-  %16 = sext i32 %15 to i64
-  %17 = mul i64 %16, 8
-  %18 = call noalias i8* @malloc(i64 noundef %17) #4
-  %19 = bitcast i8* %18 to %struct.awnsb_node_t**
-  %20 = load %struct.ticket_awnsb_mutex_t*, %struct.ticket_awnsb_mutex_t** %3, align 8
-  %21 = getelementptr inbounds %struct.ticket_awnsb_mutex_t, %struct.ticket_awnsb_mutex_t* %20, i32 0, i32 5
-  store %struct.awnsb_node_t** %19, %struct.awnsb_node_t*** %21, align 8
+  %13 = load i32, i32* %4, align 4
+  %14 = sext i32 %13 to i64
+  %15 = mul i64 %14, 8
+  %16 = call noalias i8* @malloc(i64 noundef %15) #4
+  %17 = bitcast i8* %16 to %struct.awnsb_node_t**
+  %18 = load %struct.ticket_awnsb_mutex_t*, %struct.ticket_awnsb_mutex_t** %3, align 8
+  %19 = getelementptr inbounds %struct.ticket_awnsb_mutex_t, %struct.ticket_awnsb_mutex_t* %18, i32 0, i32 5
+  store %struct.awnsb_node_t** %17, %struct.awnsb_node_t*** %19, align 8
   call void @__VERIFIER_loop_bound(i32 noundef 4)
   store i32 0, i32* %5, align 4
-  br label %22
+  br label %20
 
-22:                                               ; preds = %35, %2
-  %23 = load i32, i32* %5, align 4
-  %24 = load %struct.ticket_awnsb_mutex_t*, %struct.ticket_awnsb_mutex_t** %3, align 8
-  %25 = getelementptr inbounds %struct.ticket_awnsb_mutex_t, %struct.ticket_awnsb_mutex_t* %24, i32 0, i32 4
-  %26 = load i32, i32* %25, align 8
-  %27 = icmp slt i32 %23, %26
-  br i1 %27, label %28, label %38
+20:                                               ; preds = %33, %2
+  %21 = load i32, i32* %5, align 4
+  %22 = load %struct.ticket_awnsb_mutex_t*, %struct.ticket_awnsb_mutex_t** %3, align 8
+  %23 = getelementptr inbounds %struct.ticket_awnsb_mutex_t, %struct.ticket_awnsb_mutex_t* %22, i32 0, i32 4
+  %24 = load i32, i32* %23, align 8
+  %25 = icmp slt i32 %21, %24
+  br i1 %25, label %26, label %36
 
-28:                                               ; preds = %22
-  %29 = load %struct.ticket_awnsb_mutex_t*, %struct.ticket_awnsb_mutex_t** %3, align 8
-  %30 = getelementptr inbounds %struct.ticket_awnsb_mutex_t, %struct.ticket_awnsb_mutex_t* %29, i32 0, i32 5
-  %31 = load %struct.awnsb_node_t**, %struct.awnsb_node_t*** %30, align 8
-  %32 = load i32, i32* %5, align 4
-  %33 = sext i32 %32 to i64
-  %34 = getelementptr inbounds %struct.awnsb_node_t*, %struct.awnsb_node_t** %31, i64 %33
-  store %struct.awnsb_node_t* null, %struct.awnsb_node_t** %34, align 8
-  br label %35
+26:                                               ; preds = %20
+  %27 = load %struct.ticket_awnsb_mutex_t*, %struct.ticket_awnsb_mutex_t** %3, align 8
+  %28 = getelementptr inbounds %struct.ticket_awnsb_mutex_t, %struct.ticket_awnsb_mutex_t* %27, i32 0, i32 5
+  %29 = load %struct.awnsb_node_t**, %struct.awnsb_node_t*** %28, align 8
+  %30 = load i32, i32* %5, align 4
+  %31 = sext i32 %30 to i64
+  %32 = getelementptr inbounds %struct.awnsb_node_t*, %struct.awnsb_node_t** %29, i64 %31
+  store %struct.awnsb_node_t* null, %struct.awnsb_node_t** %32, align 8
+  br label %33
 
-35:                                               ; preds = %28
-  %36 = load i32, i32* %5, align 4
-  %37 = add nsw i32 %36, 1
-  store i32 %37, i32* %5, align 4
-  br label %22, !llvm.loop !6
+33:                                               ; preds = %26
+  %34 = load i32, i32* %5, align 4
+  %35 = add nsw i32 %34, 1
+  store i32 %35, i32* %5, align 4
+  br label %20, !llvm.loop !6
 
-38:                                               ; preds = %22
+36:                                               ; preds = %20
   ret void
 }
 
