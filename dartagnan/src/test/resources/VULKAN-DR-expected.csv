@@ -69,7 +69,7 @@ litmus/VULKAN/Data-Race/test11-filter.litmus,1
 litmus/VULKAN/Data-Race/test12-filter.litmus,1
 litmus/VULKAN/Data-Race/test13-filter.litmus,1
 litmus/VULKAN/Data-Race/test14-filter.litmus,1
-litmus/VULKAN/Data-Race/test16-filter.litmus,0
+litmus/VULKAN/Data-Race/test16-filter.litmus,1
 litmus/VULKAN/Data-Race/test17-filter.litmus,1
 litmus/VULKAN/Data-Race/test18-filter.litmus,1
 litmus/VULKAN/Data-Race/test19-filter.litmus,1
@@ -132,3 +132,8 @@ litmus/VULKAN/Barrier/quorum3-pass.litmus,0
 litmus/VULKAN/Barrier/quorum3-fail.litmus,0
 litmus/VULKAN/Barrier/quorum4-pass.litmus,0
 litmus/VULKAN/Barrier/quorum4-fail.litmus,0
+litmus/VULKAN/Manual/test1.litmus,1
+litmus/VULKAN/Manual/test2.litmus,1
+litmus/VULKAN/Manual/test3.litmus,1
+litmus/VULKAN/Manual/test4.litmus,1
+litmus/VULKAN/Manual/test5.litmus,0

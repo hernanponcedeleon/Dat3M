@@ -57,6 +57,7 @@ let posctosem = ((SC0 * SEMSC0) | (SC1 * SEMSC1)) & po
 let posemtosc = ((SEMSC0 * SC0) | (SEMSC1 * SC1)) & po
 
 let asmo = co & ((ATOM | IW) * ATOM) & mutordatom
+let observation = rf & mutordatom
 
 let imm(r) = r \ (r; r+)
 let rs = [REL & ATOM]; (imm(asmo); [RMW])*
@@ -91,7 +92,7 @@ let ithbsemsc01 = ( ssw |
                  )+
 
 // happens-before
-let hb = ithbsemsc0 | ithbsemsc1 | ithbsemsc01 | po
+let hb = (observation? ; (ithbsemsc0 | ithbsemsc1 | ithbsemsc01)) | observation | po
 
 // chains will produce the availability/visibility chains with this pattern:
 let E = (M | F | CBAR | AVDEVICE | VISDEVICE) \ IW

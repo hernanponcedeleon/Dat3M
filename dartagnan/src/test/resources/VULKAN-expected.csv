@@ -143,3 +143,8 @@ litmus/VULKAN/Barrier/quorum3-pass.litmus,1
 litmus/VULKAN/Barrier/quorum3-fail.litmus,0
 litmus/VULKAN/Barrier/quorum4-pass.litmus,1
 litmus/VULKAN/Barrier/quorum4-fail.litmus,0
+litmus/VULKAN/Manual/test1.litmus,1
+litmus/VULKAN/Manual/test2.litmus,1
+litmus/VULKAN/Manual/test3.litmus,1
+litmus/VULKAN/Manual/test4.litmus,1
+litmus/VULKAN/Manual/test5.litmus,1
