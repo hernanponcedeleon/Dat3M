@@ -1,6 +1,7 @@
 let fr = rf^-1;co | ([R] \ [range(rf)]);loc;[W]
 
 let po-loc = po & loc
+let rmw = amo | lxsx
 
 let rfe = rf & ext
 let coe = co & ext

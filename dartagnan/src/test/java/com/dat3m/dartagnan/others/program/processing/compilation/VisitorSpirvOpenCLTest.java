@@ -465,7 +465,7 @@ public class VisitorSpirvOpenCLTest {
 
     private void doTestSpirvControlBarrier(Set<String> spvTags, Set<String> expectedTags) {
         // given
-        ControlBarrier e = EventFactory.newControlBarrier("cbar", "test");
+        ControlBarrier e = EventFactory.newControlBarrier("cbar", "test", Tag.Spirv.SC_WORKGROUP);
         e.addTags(Tag.Spirv.CONTROL);
         if (!spvTags.isEmpty()) {
             e.addTags(spvTags);
@@ -481,5 +481,20 @@ public class VisitorSpirvOpenCLTest {
         ControlBarrier controlBarrier = (ControlBarrier) seq.get(0);
         Set<String> baseTags = Set.of(Tag.VISIBLE);
         assertEquals(Sets.union(baseTags, expectedTags), controlBarrier.getTags());
+    }
+
+    @Test
+    public void testSpirvControlBarrierExecScope() {
+        // given
+        ControlBarrier e = EventFactory.newControlBarrier("test-wg", "test-wg", Tag.Spirv.WORKGROUP);
+        e.setFunction(mock(Function.class));
+
+        // when
+        List<Event> seq = visitor.visitControlBarrier(e);
+
+        // then
+        assertEquals(1, seq.size());
+        ControlBarrier barrier = (ControlBarrier) seq.get(0);
+        assertEquals(Tag.OpenCL.WORK_GROUP, barrier.getExecScope());
     }
 }

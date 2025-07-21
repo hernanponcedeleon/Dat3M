@@ -31,7 +31,6 @@ import com.dat3m.dartagnan.verification.VerificationTask.VerificationTaskBuilder
 import com.dat3m.dartagnan.verification.model.ExecutionModelManager;
 import com.dat3m.dartagnan.verification.model.ExecutionModelNext;
 import com.dat3m.dartagnan.verification.solving.AssumeSolver;
-import com.dat3m.dartagnan.verification.solving.DataRaceSolver;
 import com.dat3m.dartagnan.verification.solving.ModelChecker;
 import com.dat3m.dartagnan.verification.solving.RefinementSolver;
 import com.dat3m.dartagnan.witness.WitnessType;
@@ -166,10 +165,11 @@ public class Dartagnan extends BaseOptions {
             .forEach(file -> {
                 if (file.exists()) {
                     final String path = file.getAbsolutePath();
-                    logger.info("Program(s) path: {}", path);
                     if (file.isDirectory()) {
+                        logger.info("Programs path: {}", path);
                         files.addAll(getProgramsFiles(path));
                     } else if (file.isFile() && supportedFormats.stream().anyMatch(file.getName()::endsWith)) {
+                        logger.info("Program path: {}", path);
                         files.add(file);
                     }
                 }
@@ -184,13 +184,6 @@ public class Dartagnan extends BaseOptions {
         if (o.runValidator()) {
             logger.info("Witness path: {}", o.getWitnessPath());
             witness = new ParserWitness().parse(new File(o.getWitnessPath()));
-        }
-
-        if (properties.contains(DATARACEFREEDOM) && properties.size() > 1) {
-            System.out.println("Data race detection cannot be combined with other properties");
-                if(!(files.size() > 1)) {
-                    System.exit(1);
-                }
         }
 
         ResultSummary summary = null;
@@ -237,7 +230,7 @@ public class Dartagnan extends BaseOptions {
                             ProverOptions.GENERATE_MODELS)) {
                     ModelChecker modelChecker;
                     if (properties.contains(DATARACEFREEDOM)) {
-                        modelChecker = DataRaceSolver.run(ctx, prover, task);
+                        modelChecker = AssumeSolver.run(ctx, prover, task);
                     } else {
                         // Property is either PROGRAM_SPEC, TERMINATION, or CAT_SPEC
                         modelChecker = switch (o.getMethod()) {
@@ -257,7 +250,7 @@ public class Dartagnan extends BaseOptions {
                     }
                     // We only generate SVCOMP witnesses if we are not validating one.
                     if (o.getWitnessType().equals(GRAPHML) && !o.runValidator()) {
-                        generateWitnessIfAble(task, prover, modelChecker, summary.details());
+                        generateWitnessIfAble(task, prover, modelChecker, summary.reason() + "\n" + summary.details());
                     }
                 }
             } catch (InterruptedException e) {

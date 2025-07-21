@@ -7,13 +7,11 @@ import com.dat3m.dartagnan.expression.booleans.BoolBinaryOp;
 import com.dat3m.dartagnan.expression.booleans.BoolUnaryOp;
 import com.dat3m.dartagnan.expression.floats.FloatSizeCast;
 import com.dat3m.dartagnan.expression.floats.IntToFloatCast;
-import com.dat3m.dartagnan.expression.integers.FloatToIntCast;
-import com.dat3m.dartagnan.expression.integers.IntBinaryOp;
-import com.dat3m.dartagnan.expression.integers.IntSizeCast;
-import com.dat3m.dartagnan.expression.integers.IntUnaryOp;
+import com.dat3m.dartagnan.expression.integers.*;
 import com.dat3m.dartagnan.expression.misc.GEPExpr;
 import com.dat3m.dartagnan.expression.misc.ITEExpr;
 import com.dat3m.dartagnan.program.Register;
+import com.google.common.collect.Lists;
 
 import java.util.Objects;
 import java.util.Set;
@@ -67,6 +65,16 @@ public final class ExpressionPrinter implements ExpressionVisitor<String> {
     @Override
     public String visitUnaryExpression(UnaryExpression expr) {
         return expr.getKind() + visit(expr.getOperand());
+    }
+
+    @Override
+    public String visitIntConcat(IntConcat expr) {
+        return Lists.reverse(expr.getOperands()).stream().map(this::visit).collect(Collectors.joining("::"));
+    }
+
+    @Override
+    public String visitIntExtract(IntExtract expr) {
+        return String.format("%s[%d..%d]", expr.getOperand().accept(this), expr.getLowBit(), expr.getHighBit());
     }
 
     @Override

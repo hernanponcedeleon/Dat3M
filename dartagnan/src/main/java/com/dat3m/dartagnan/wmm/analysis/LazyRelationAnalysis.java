@@ -196,6 +196,24 @@ public class LazyRelationAnalysis extends NativeRelationAnalysis {
         }
 
         @Override
+        public RelationAnalysis.Knowledge visitSameInstruction(SameInstruction definition) {
+            long start = System.currentTimeMillis();
+            final Map<Event, Set<Event>> siClasses = new HashMap<>();
+            for (InstructionBoundary end : program.getThreadEvents(InstructionBoundary.class)) {
+                final Set<Event> siClass = end.getInstructionEvents().stream()
+                        .filter(e -> e.hasTag(VISIBLE))
+                        .collect(ImmutableSet.toImmutableSet());
+                siClass.forEach(e -> siClasses.put(e, siClass));
+            }
+            for (Event e : program.getThreadEventsWithAllTags(VISIBLE)) {
+                siClasses.putIfAbsent(e, ImmutableSet.of(e));
+            }
+            final EventGraph must = new ImmutableMapEventGraph(siClasses);
+            time(definition, start, System.currentTimeMillis());
+            return new RelationAnalysis.Knowledge(must, must);
+        }
+
+        @Override
         public RelationAnalysis.Knowledge visitControlDependency(DirectControlDependency definition) {
             long start = System.currentTimeMillis();
             Map<Event, Set<Event>> data = new HashMap<>();
@@ -280,9 +298,19 @@ public class LazyRelationAnalysis extends NativeRelationAnalysis {
         }
 
         @Override
-        public RelationAnalysis.Knowledge visitReadModifyWrites(ReadModifyWrites definition) {
+        public RelationAnalysis.Knowledge visitAMOPairs(AMOPairs definition) {
             long start = System.currentTimeMillis();
-            RelationAnalysis.Knowledge base = nativeInitializer.visitReadModifyWrites(definition);
+            RelationAnalysis.Knowledge base = nativeInitializer.visitAMOPairs(definition);
+            EventGraph may = ImmutableMapEventGraph.from(base.getMaySet());
+            EventGraph must = ImmutableMapEventGraph.from(base.getMustSet());
+            time(definition, start, System.currentTimeMillis());
+            return new RelationAnalysis.Knowledge(may, must);
+        }
+
+        @Override
+        public RelationAnalysis.Knowledge visitLXSXPairs(LXSXPairs definition) {
+            long start = System.currentTimeMillis();
+            RelationAnalysis.Knowledge base = nativeInitializer.visitLXSXPairs(definition);
             EventGraph may = ImmutableMapEventGraph.from(base.getMaySet());
             EventGraph must = ImmutableMapEventGraph.from(base.getMustSet());
             time(definition, start, System.currentTimeMillis());

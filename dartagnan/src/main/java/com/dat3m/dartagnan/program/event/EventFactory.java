@@ -13,6 +13,7 @@ import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.arch.StoreExclusive;
+import com.dat3m.dartagnan.program.event.arch.Xchg;
 import com.dat3m.dartagnan.program.event.arch.opencl.OpenCLRMWExtremum;
 import com.dat3m.dartagnan.program.event.arch.ptx.PTXAtomCAS;
 import com.dat3m.dartagnan.program.event.arch.ptx.PTXAtomExch;
@@ -27,6 +28,7 @@ import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.event.core.annotations.FunCallMarker;
 import com.dat3m.dartagnan.program.event.core.annotations.FunReturnMarker;
 import com.dat3m.dartagnan.program.event.core.annotations.StringAnnotation;
+import com.dat3m.dartagnan.program.event.core.InstructionBoundary;
 import com.dat3m.dartagnan.program.event.core.special.StateSnapshot;
 import com.dat3m.dartagnan.program.event.core.threading.*;
 import com.dat3m.dartagnan.program.event.functions.AbortIf;
@@ -158,12 +160,12 @@ public class EventFactory {
         return fence;
     }
 
-    public static ControlBarrier newControlBarrier(String name, String instanceId) {
-        return new ControlBarrier(name, instanceId);
+    public static ControlBarrier newControlBarrier(String name, String instanceId, String execScope) {
+        return new ControlBarrier(name, instanceId, execScope);
     }
 
-    public static NamedBarrier newNamedBarrier(String name, String instanceId, Expression id, Expression quorum) {
-        return new NamedBarrier(name, instanceId, id, quorum);
+    public static NamedBarrier newNamedBarrier(String name, String instanceId, String execScope, Expression id, Expression quorum) {
+        return new NamedBarrier(name, instanceId, execScope, id, quorum);
     }
 
     public static Init newInit(MemoryObject base, int offset) {
@@ -216,6 +218,14 @@ public class EventFactory {
 
     public static StringAnnotation newStringAnnotation(String annotation) {
         return new StringAnnotation(annotation);
+    }
+
+    public static InstructionBoundary newInstructionBegin() {
+        return new InstructionBoundary(null, null);
+    }
+
+    public static InstructionBoundary newInstructionEnd(InstructionBoundary begin) {
+        return new InstructionBoundary(null, begin);
     }
 
     public static Local newLocal(Register register, Expression expr) {
@@ -370,6 +380,10 @@ public class EventFactory {
 
         public static StoreExclusive newExclusiveStore(Register register, Expression address, Expression value, String mo) {
             return new StoreExclusive(register, address, value, mo);
+        }
+
+        public static Xchg newXchg(Register register, Expression address, Expression storeValue) {
+            return new Xchg(register, address, storeValue);
         }
     }
 

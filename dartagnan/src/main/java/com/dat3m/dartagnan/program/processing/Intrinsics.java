@@ -62,21 +62,25 @@ public class Intrinsics {
 
     private enum AssertionType { USER, OVERFLOW, INVALIDDEREF, UNKNOWN_FUNCTION }
 
+    private final boolean detectMixedSizeAccesses;
+
     private static final TypeFactory types = TypeFactory.getInstance();
     private static final ExpressionFactory expressions = ExpressionFactory.getInstance();
 
     //FIXME This might have concurrency issues if processing multiple programs at the same time.
     private BeginAtomic currentAtomicBegin;
 
-    private Intrinsics() {
+    private Intrinsics(boolean msa) {
+        detectMixedSizeAccesses = msa;
     }
 
     public static Intrinsics newInstance() {
-        return new Intrinsics();
+        return new Intrinsics(false);
     }
-
-    public static Intrinsics fromConfig(Configuration config) throws InvalidConfigurationException {
-        Intrinsics instance = newInstance();
+    
+    public static Intrinsics fromConfig(Configuration config, boolean detectMixedSizeAccesses)
+            throws InvalidConfigurationException {
+        Intrinsics instance = new Intrinsics(detectMixedSizeAccesses);
         config.inject(instance);
         return instance;
     }
@@ -235,6 +239,7 @@ public class Intrinsics {
         STD_IO(List.of("puts", "putchar", "printf", "fflush"), false, false, true, true, Intrinsics::inlineAsZero),
         STD_IO_NONDET(List.of("__isoc99_sscanf", "fprintf"), false, false, true, true, Intrinsics::inlineCallAsNonDet),
         STD_SLEEP("sleep", false, false, true, true, Intrinsics::inlineAsZero),
+        STD_FFS(List.of("ffs", "ffsl", "ffsll"), false, false, true, true, Intrinsics::inlineFfs),
         // --------------------------- UBSAN ---------------------------
         UBSAN_OVERFLOW(List.of("__ubsan_handle_add_overflow", "__ubsan_handle_sub_overflow",
                 "__ubsan_handle_divrem_overflow", "__ubsan_handle_mul_overflow", "__ubsan_handle_negate_overflow"),
@@ -1003,14 +1008,11 @@ public class Intrinsics {
     }
 
     private List<Event> inlineAssert(FunctionCall call, AssertionType skip, String errorMsg) {
-        if(notToInline.contains(skip)) {
-            return List.of();
-        }
         final Expression condition = expressions.makeFalse();
-        final Event assertion = EventFactory.newAssert(condition, errorMsg);
+        final Event assertion = notToInline.contains(skip) ? null : EventFactory.newAssert(condition, errorMsg);
         final Event abort = EventFactory.newAbortIf(expressions.makeTrue());
         abort.addTags(Tag.EXCEPTIONAL_TERMINATION);
-        return List.of(assertion, abort);
+        return eventSequence(assertion, abort);
     }
 
     private List<Event> inlineVerifierAssert(FunctionCall call, AssertionType skip, String errorMsg) {
@@ -1550,17 +1552,23 @@ public class Intrinsics {
         final int count = countValue.getValueAsInt();
 
         final List<Event> replacement = new ArrayList<>(2 * count + 1);
-        for (int i = 0; i < count; i++) {
+        //FIXME without MSA detection, each byte is treated as a 64-bit value.
+        final IntegerType type = detectMixedSizeAccesses ? types.getIntegerType(8 * count) : types.getArchType();
+        final int typeSize = detectMixedSizeAccesses ? count : 1;
+        for (int i = 0; i < count; i += typeSize) {
             final Expression offset = expressions.makeValue(i, types.getArchType());
             final Expression srcAddr = expressions.makeAdd(src, offset);
             final Expression destAddr = expressions.makeAdd(dest, offset);
-            // FIXME: We have no other choice but to load ptr-sized chunks for now
-            final Register reg = caller.getOrNewRegister("__memcpy_" + i, types.getArchType());
+            final Register reg = caller.getOrNewRegister("__memcpy_" + i, type);
 
-            replacement.addAll(List.of(
-                    EventFactory.newLoad(reg, srcAddr),
-                    newStore(destAddr, reg)
-            ));
+            final Event load = EventFactory.newLoad(reg, srcAddr);
+            final Event store = EventFactory.newStore(destAddr, reg);
+
+            // communicate to Tearing to not create same-instruction blocks
+            load.addTags(Tag.NO_INSTRUCTION);
+            store.addTags(Tag.NO_INSTRUCTION);
+
+            replacement.addAll(List.of(load, store));
         }
         if (call instanceof ValueFunctionCall valueCall) {
             // std.memcpy returns the destination address, llvm.memcpy has no return value
@@ -1768,6 +1776,26 @@ public class Intrinsics {
         return List.of(
             EventFactory.newLocal(resultReg, exp)
         );
+    }
+
+    private List<Event> inlineFfs(FunctionCall call) {
+        //see https://linux.die.net/man/3/ffs
+        final String name = call.getCalledFunction().getName();
+        checkArgument(call.getArguments().size() == 1,
+                "Expected 1 parameter for \"%s\", got %s.", name, call.getArguments().size());
+        final Expression input = call.getArguments().get(0);
+        final Register resultReg = getResultRegister(call);
+        final Type outputType = resultReg.getType();
+        checkArgument(outputType instanceof IntegerType,
+                "Non-integer %s type for \"%s\".", name, outputType);
+        final IntegerType inputType  = (IntegerType)input.getType();
+        final Expression cttz = expressions.makeCTTZ(input);
+        final Expression widthExpr = expressions.makeValue(BigInteger.valueOf(inputType.getBitWidth()), inputType);
+        final Expression count = expressions.makeAdd(cttz, expressions.makeOne(inputType));
+        final Expression ite = expressions.makeITE(expressions.makeEQ(cttz, widthExpr), expressions.makeZero(inputType), count);
+        final Expression cast = expressions.makeCast(ite, outputType, false);
+        final Event assignment = EventFactory.newLocal(resultReg, cast);
+        return List.of(assignment);
     }
 
     private Event assignSuccess(Register errorRegister) {

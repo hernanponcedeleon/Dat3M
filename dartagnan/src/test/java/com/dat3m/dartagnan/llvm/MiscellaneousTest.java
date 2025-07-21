@@ -49,7 +49,7 @@ public class MiscellaneousTest extends AbstractCTest {
     protected Provider<Configuration> getConfigurationProvider() {
         return Provider.fromSupplier(() -> {
             ConfigurationBuilder builder = Configuration.builder();
-            if (!name.equals("pthread") && !name.equals("ctlz") && !name.equals("cttz")) {
+            if (!name.equals("pthread") && !name.equals("ctlz") && !name.equals("cttz") && !name.equals("ffs")) {
                 builder.setOption(OptionNames.USE_INTEGERS, "true");
             }
             if (name.equals("recursion")) {
@@ -72,6 +72,7 @@ public class MiscellaneousTest extends AbstractCTest {
                 {"SB-asm-syncs", POWER, PASS, 1},
                 {"MP_atomic_bool", IMM, PASS, 1},
                 {"MP_atomic_bool_weak", IMM, FAIL, 1},
+                {"memtoreg_merging_pointers", IMM, PASS, 1},
                 {"nondet_loop", IMM, FAIL, 1},
                 {"pthread", IMM, PASS, 1},
                 {"recursion", IMM, UNKNOWN, 1},
@@ -101,6 +102,7 @@ public class MiscellaneousTest extends AbstractCTest {
                 {"nondet_aligned_alloc", IMM, PASS, 1},
                 {"alignment", IMM, PASS, 1},
                 {"unknown_function", IMM, FAIL, 1},
+                {"ffs", IMM, PASS, 1},
         });
     }
 

@@ -4,7 +4,6 @@ import LitmusAssertions;
 
 @header{
 import com.dat3m.dartagnan.expression.integers.*;
-import static com.dat3m.dartagnan.program.event.Tag.ARMv8.*;
 }
 
 main
@@ -16,26 +15,17 @@ variableDeclaratorList
     ;
 
 variableDeclarator
-    :   variableDeclaratorLocation
-    |   variableDeclaratorRegister
-    |   variableDeclaratorRegisterLocation
-    |   variableDeclaratorLocationLocation
+    :   type location (Equals constant)? #typedVariableDeclarator
+    |   type location LBracket constant RBracket #typedArrayDeclarator
+    |   location Equals constant #variableDeclaratorLocation
+    |   location Equals Amp? location #variableDeclaratorLocationLocation
+    |   type threadId Colon register64 (Equals constant)? #typedRegisterDeclarator
+    |   threadId Colon register64 Equals constant #variableDeclaratorRegister
+    |   threadId Colon register64 Equals Amp? location #variableDeclaratorRegisterLocation
     ;
 
-variableDeclaratorLocation
-    :   location Equals constant
-    ;
-
-variableDeclaratorRegister
-    :   threadId Colon register64 Equals constant
-    ;
-
-variableDeclaratorRegisterLocation
-    :   threadId Colon register64 Equals Amp? location
-    ;
-
-variableDeclaratorLocationLocation
-    :   location Equals Amp? location
+type
+    :   Identifier
     ;
 
 variableList
@@ -68,9 +58,12 @@ instruction
     |   mov
     |   arithmetic
     |   load
+    |   loadPair
     |   loadExclusive
     |   store
+    |   storePair
     |   storeExclusive
+    |   swap
     |   cmp
     |   branch
     |   branchRegister
@@ -80,39 +73,54 @@ instruction
     |   nop
     ;
 
-mov locals [String rD, int size]
-    :   MovInstruction r32 = register32 Comma expr32 {$rD = $r32.id; $size = 32;}
-    |   MovInstruction r64 = register64 Comma expr64 {$rD = $r64.id; $size = 64;}
+mov
+    :   MovInstruction r32 = register32 Comma expr32
+    |   MovInstruction r64 = register64 Comma expr64
     ;
 
-cmp locals [String rD, int size]
-    :   CmpInstruction r32 = register32 Comma expr32 {$rD = $r32.id; $size = 32;}
-    |   CmpInstruction r64 = register64 Comma expr64 {$rD = $r64.id; $size = 64;}
+cmp
+    :   CmpInstruction r32 = register32 Comma expr32
+    |   CmpInstruction r64 = register64 Comma expr64
     ;
 
-arithmetic locals [String rD, String rV, int size]
-    :   arithmeticInstruction rD32 = register32 Comma rV32 = register32 Comma expr32 {$rD = $rD32.id; $rV = $rV32.id; $size = 32;}
-    |   arithmeticInstruction rD64 = register64 Comma rV64 = register64 Comma expr64 {$rD = $rD64.id; $rV = $rV64.id; $size = 64;}
+arithmetic
+    :   arithmeticInstruction rD32 = register32 Comma rV32 = register32 Comma expr32
+    |   arithmeticInstruction rD64 = register64 Comma rV64 = register64 Comma expr64
     ;
 
-load  locals [String rD, int size]
-    :   loadInstruction rD32 = register32 Comma LBracket address (Comma offset)? RBracket {$rD = $rD32.id; $size = 32;}
-    |   loadInstruction rD64 = register64 Comma LBracket address (Comma offset)? RBracket {$rD = $rD64.id; $size = 64;}
+load
+    :   loadInstruction rD32 = register32 Comma LBracket address RBracket
+    |   loadInstruction rD64 = register64 Comma LBracket address RBracket
     ;
 
-loadExclusive  locals [String rD, int size]
-    :   loadExclusiveInstruction rD32 = register32 Comma LBracket address (Comma offset)? RBracket {$rD = $rD32.id; $size = 32;}
-    |   loadExclusiveInstruction rD64 = register64 Comma LBracket address (Comma offset)? RBracket {$rD = $rD64.id; $size = 64;}
+loadPair
+    :   LDP rD032 = register32 Comma rD132 = register32 Comma LBracket address RBracket
+    |   LDP rD064 = register64 Comma rD164 = register64 Comma LBracket address RBracket
     ;
 
-store  locals [String rV, int size]
-    :   storeInstruction rV32 = register32 Comma LBracket address (Comma offset)? RBracket {$rV = $rV32.id; $size = 32;}
-    |   storeInstruction rV64 = register64 Comma LBracket address (Comma offset)? RBracket {$rV = $rV64.id; $size = 64;}
+loadExclusive
+    :   loadExclusiveInstruction rD32 = register32 Comma LBracket address RBracket
+    |   loadExclusiveInstruction rD64 = register64 Comma LBracket address RBracket
     ;
 
-storeExclusive  locals [String rS, String rV, int size]
-    :   storeExclusiveInstruction rS32 = register32 Comma rV32 = register32 Comma LBracket address (Comma offset)? RBracket {$rS = $rS32.id; $rV = $rV32.id; $size = 32;}
-    |   storeExclusiveInstruction rS32 = register32 Comma rV64 = register64 Comma LBracket address (Comma offset)? RBracket {$rS = $rS32.id; $rV = $rV64.id; $size = 64;}
+store
+    :   storeInstruction rV32 = register32 Comma LBracket address RBracket
+    |   storeInstruction rV64 = register64 Comma LBracket address RBracket
+    ;
+
+storePair
+    :   STP r032 = register32 Comma r132 = register32 Comma LBracket address RBracket
+    |   STP r064 = register64 Comma r164 = register64 Comma LBracket address RBracket
+    ;
+
+storeExclusive
+    :   storeExclusiveInstruction rS32 = register32 Comma rV32 = register32 Comma LBracket address RBracket
+    |   storeExclusiveInstruction rS32 = register32 Comma rV64 = register64 Comma LBracket address RBracket
+    ;
+
+swap
+    :   swapInstruction rS32 = register32 Comma rD32 = register32 Comma LBracket address RBracket
+    |   swapInstruction rS64 = register64 Comma rD64 = register64 Comma LBracket address RBracket
     ;
 
 fence locals [String opt]
@@ -141,24 +149,55 @@ nop
     :   Nop
     ;
 
-loadInstruction locals [String mo]
-    :   LDR     {$mo = MO_RX;}
-    |   LDAR    {$mo = MO_ACQ;}
+loadInstruction locals [boolean acquire, boolean byteSize, boolean halfWordSize]
+    :   LDR
+    |   LDRB    {$byteSize = true;}
+    |   LDRH    {$halfWordSize = true;}
+    |   LDAR    {$acquire = true;}
+    |   LDARB   {$acquire = true; $byteSize = true;}
+    |   LDARH   {$acquire = true; $halfWordSize = true;}
     ;
 
-loadExclusiveInstruction locals [String mo]
-    :   LDXR    {$mo = MO_RX;}
-    |   LDAXR   {$mo = MO_ACQ;}
+loadExclusiveInstruction locals [boolean acquire, boolean byteSize, boolean halfWordSize]
+    :   LDXR
+    |   LDXRB    {$byteSize = true;}
+    |   LDXRH    {$halfWordSize = true;}
+    |   LDAXR    {$acquire = true;}
+    |   LDAXRB   {$acquire = true; $byteSize = true;}
+    |   LDAXRH   {$acquire = true; $halfWordSize = true;}
     ;
 
-storeInstruction locals [String mo]
-    :   STR     {$mo = MO_RX;}
-    |   STLR    {$mo = MO_REL;}
+storeInstruction locals [boolean release, boolean byteSize, boolean halfWordSize]
+    :   STR
+    |   STRB    {$byteSize = true;}
+    |   STRH    {$halfWordSize = true;}
+    |   STLR    {$release = true;}
+    |   STLRB   {$release = true; $byteSize = true;}
+    |   STLRH   {$release = true; $halfWordSize = true;}
     ;
 
-storeExclusiveInstruction locals [String mo]
-    :   STXR    {$mo = MO_RX;}
-    |   STLXR   {$mo = MO_REL;}
+storeExclusiveInstruction locals [boolean release, boolean byteSize, boolean halfWordSize]
+    :   STXR
+    |   STXRB    {$byteSize = true;}
+    |   STXRH    {$halfWordSize = true;}
+    |   STLXR    {$release = true;}
+    |   STLXRB   {$release = true; $byteSize = true;}
+    |   STLXRH   {$release = true; $halfWordSize = true;}
+    ;
+
+swapInstruction locals [boolean acquire, boolean release, boolean byteSize, boolean halfWordSize]
+    : SWP
+    | SWPB {$byteSize = true;}
+    | SWPH {$halfWordSize = true;}
+    | SWPA {$acquire = true;}
+    | SWPAB {$acquire = true; $byteSize = true;}
+    | SWPAH {$acquire = true; $halfWordSize = true;}
+    | SWPL {$release = true;}
+    | SWPLB {$release = true; $byteSize = true;}
+    | SWPLH {$release = true; $halfWordSize = true;}
+    | SWPAL {$acquire = true; $release = true;}
+    | SWPALB {$acquire = true; $release = true; $byteSize = true;}
+    | SWPALH {$acquire = true; $release = true; $halfWordSize = true;}
     ;
 
 arithmeticInstruction locals [IntBinaryOp op]
@@ -220,8 +259,13 @@ expr32
     |   expressionImmediate
     ;
 
+address
+    :   register64 (Comma offset)?
+    ;
+
 offset
     :   immediate
+    |   register64
     |   expressionConversion
     ;
 
@@ -241,12 +285,9 @@ expressionImmediate
     :   immediate shift?
     ;
 
-expressionConversion
-    :   register32 Comma BitfieldOperator
-    ;
-
-address returns[String id]
-    :   r = register64 {$id = $r.id;}
+expressionConversion returns[boolean signed]
+    :   register32 Comma UXTW {$signed = false;}
+    |   register32 Comma SXTW {$signed = true;}
     ;
 
 register64 returns[String id]
@@ -311,16 +352,49 @@ EON     :   'EON'   ;   // Invert and XOR
 // Load instructions
 
 LDR    :   'LDR'    ;
+LDRB   :   'LDRB'   ;
+LDRH   :   'LDRH'   ;
 LDAR   :   'LDAR'   ;
+LDARB  :   'LDARB'  ;
+LDARH  :   'LDARH'  ;
+LDP    :   'LDP'    ;
 LDXR   :   'LDXR'   ;
+LDXRB  :   'LDXRB'  ;
+LDXRH  :   'LDXRH'  ;
 LDAXR  :   'LDAXR'  ;
+LDAXRB :   'LDAXRB' ;
+LDAXRH :   'LDAXRH' ;
 
 // Store instructions
 
 STR    :   'STR'    ;
+STRB   :   'STRB'   ;
+STRH   :   'STRH'   ;
 STLR   :   'STLR'   ;
+STLRB  :   'STLRB'  ;
+STLRH  :   'STLRH'  ;
+STP    :   'STP'    ;
 STXR   :   'STXR'   ;
-STLXR  :   'STLXR'   ;
+STXRB  :   'STXRB'  ;
+STXRH  :   'STXRH'  ;
+STLXR  :   'STLXR'  ;
+STLXRB :   'STLXRB' ;
+STLXRH :   'STLXRH' ;
+
+// Swap word instructions (~ Exchange)
+
+SWP    :   'SWP'    ;
+SWPB   :   'SWPB'   ;
+SWPH   :   'SWPH'   ;
+SWPA   :   'SWPA'   ;
+SWPAB  :   'SWPAB'  ;
+SWPAH  :   'SWPAH'  ;
+SWPL   :   'SWPL'   ;
+SWPLB  :   'SWPLB'  ;
+SWPLH  :   'SWPLH'  ;
+SWPAL  :   'SWPAL'  ;
+SWPALB :   'SWPALB' ;
+SWPALH :   'SWPALH' ;
 
 MovInstruction
     :   'MOV'
@@ -386,10 +460,8 @@ LSL :   'LSL';   // Logical shift left
 LSR :   'LSR';   // Logical shift right
 ASR :   'ASR';   // Arithmetic shift right (preserves sign bit)
 
-BitfieldOperator
-    :   'UXTW' // Zero extends a 32-bit word (unsigned)
-    |   'SXTW' // Zero extends a 32-bit word (signed)
-    ;
+UXTW :  'UXTW' ; // Zero extends a 32-bit word (unsigned)
+SXTW :  'SXTW' ; // Zero extends a 32-bit word (signed)
 
 Register64
     :   'X' DigitSequence

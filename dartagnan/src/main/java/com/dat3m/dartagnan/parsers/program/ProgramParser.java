@@ -9,7 +9,6 @@ import org.apache.logging.log4j.Logger;
 import java.io.*;
 import java.util.List;
 
-import static com.dat3m.dartagnan.parsers.program.utils.Compilation.applyLlvmPasses;
 import static com.dat3m.dartagnan.parsers.program.utils.Compilation.compileWithClang;
 
 public class ProgramParser {
@@ -37,7 +36,6 @@ public class ProgramParser {
     public Program parse(File file) throws Exception {
         if (needsClang(file)) {
             file = compileWithClang(file, "");
-            file = applyLlvmPasses(file);
             return new ProgramParser().parse(file);
         }
 
@@ -67,7 +65,6 @@ public class ProgramParser {
                     writer.write(raw);
                 }
                 file = compileWithClang(file, cflags);
-                file = applyLlvmPasses(file);
                 Program p = new ProgramParser().parse(file);
                 file.delete();
                 return p;

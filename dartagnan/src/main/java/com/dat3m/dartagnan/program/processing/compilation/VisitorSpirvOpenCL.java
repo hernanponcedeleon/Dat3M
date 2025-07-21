@@ -133,7 +133,8 @@ public class VisitorSpirvOpenCL extends VisitorC11 {
 
     @Override
     public List<Event> visitControlBarrier(ControlBarrier e) {
-        ControlBarrier barrier = new ControlBarrier(e.getName(), e.getInstanceId());
+        String execScope = Tag.Spirv.toOpenCLTag(e.getExecScope());
+        ControlBarrier barrier = new ControlBarrier(e.getName(), e.getInstanceId(), execScope);
         barrier.addTags(toOpenCLTags(e.getTags()));
         return super.visitControlBarrier(barrier);
     }

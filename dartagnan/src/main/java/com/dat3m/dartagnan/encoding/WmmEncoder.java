@@ -10,6 +10,7 @@ import com.dat3m.dartagnan.program.event.core.Load;
 import com.dat3m.dartagnan.program.event.core.MemoryCoreEvent;
 import com.dat3m.dartagnan.program.event.core.NamedBarrier;
 import com.dat3m.dartagnan.program.event.core.RMWStoreExclusive;
+import com.dat3m.dartagnan.program.event.core.InstructionBoundary;
 import com.dat3m.dartagnan.smt.ModelExt;
 import com.dat3m.dartagnan.utils.Utils;
 import com.dat3m.dartagnan.utils.dependable.DependencyGraph;
@@ -486,17 +487,32 @@ public class WmmEncoder implements Encoder {
         }
 
         @Override
-        public Void visitReadModifyWrites(ReadModifyWrites rmwDef) {
-            final Relation rmw = rmwDef.getDefinedRelation();
+        public Void visitLXSXPairs(LXSXPairs lxsxDef) {
+            final Relation rmw = lxsxDef.getDefinedRelation();
             BooleanFormula unpredictable = bmgr.makeFalse();
             final RelationAnalysis.Knowledge k = ra.getKnowledge(rmw);
             final Map<Event, Set<Event>> mayIn = k.getMaySet().getInMap();
             final Map<Event, Set<Event>> mayOut = k.getMaySet().getOutMap();
+            final Map<Event, Event> siMap = new HashMap<>();
+            for (InstructionBoundary end : program.getThreadEvents(InstructionBoundary.class)) {
+                final List<Event> events = end.getInstructionEvents().stream().filter(e -> e.hasTag(EXCL)).toList();
+                for (Event event : events) {
+                    siMap.put(event, events.get(0));
+                }
+            }
 
             // ----------  Encode matching for LL/SC-type RMWs ----------
             for (RMWStoreExclusive store : program.getThreadEvents(RMWStoreExclusive.class)) {
-                BooleanFormula storeExec = bmgr.makeFalse();
+                final Event firstStore = siMap.getOrDefault(store, store);
+                if (!store.equals(firstStore)) {
+                    enc.add(bmgr.equivalence(context.execution(store), context.execution(firstStore)));
+                    continue;
+                }
+                final List<BooleanFormula> storeExec = new ArrayList<>();
                 for (Event e : mayIn.getOrDefault(store, Set.of())) {
+                    if (!e.equals(siMap.getOrDefault(e, e))) {
+                        continue;
+                    }
                     MemoryCoreEvent load = (MemoryCoreEvent) e;
                     BooleanFormula sameAddress = context.sameAddress(load, store);
                     // Encode if load and store form an exclusive pair
@@ -505,12 +521,14 @@ public class WmmEncoder implements Encoder {
                     pairingCond.add(context.execution(load));
                     pairingCond.add(context.controlFlow(store));
                     for (Event otherLoad : mayIn.getOrDefault(store, Set.of())) {
-                        if (otherLoad.getGlobalId() > load.getGlobalId()) {
+                        if (otherLoad.getGlobalId() > load.getGlobalId() &&
+                                otherLoad.equals(siMap.getOrDefault(otherLoad, otherLoad))) {
                             pairingCond.add(bmgr.not(context.execution(otherLoad)));
                         }
                     }
                     for (Event otherStore : mayOut.getOrDefault(load, Set.of())) {
-                        if (otherStore.getGlobalId() < store.getGlobalId()) {
+                        if (otherStore.getGlobalId() < store.getGlobalId() &&
+                                otherStore.equals(siMap.getOrDefault(otherStore, otherStore))) {
                             pairingCond.add(bmgr.not(context.controlFlow(otherStore)));
                         }
                     }
@@ -524,9 +542,9 @@ public class WmmEncoder implements Encoder {
                         unpredictable = bmgr.or(unpredictable, bmgr.and(context.execution(store), isPair, bmgr.not(sameAddress)));
                     }
                     enc.add(bmgr.equivalence(isPair, bmgr.and(pairingCond)));
-                    storeExec = bmgr.or(storeExec, isPair);
+                    storeExec.add(isPair);
                 }
-                enc.add(bmgr.implication(context.execution(store), storeExec));
+                enc.add(bmgr.implication(context.execution(store), bmgr.or(storeExec)));
             }
 
             // ---------- Encode actual RMW relation ----------
@@ -546,7 +564,7 @@ public class WmmEncoder implements Encoder {
                             edge.encode(load, store),
                             k.getMustSet().contains(load, store) ? execution(load, store) :
                                     // Relation between exclusive load and store
-                                    bmgr.and(context.execution(store), exclPair(load, store), sameAddress)));
+                                    bmgr.and(context.execution(store), exclPair(siMap.getOrDefault(load, load), siMap.getOrDefault(store, store)), sameAddress)));
                 }
             });
             enc.add(bmgr.equivalence(Flag.ARM_UNPREDICTABLE_BEHAVIOUR.repr(context.getFormulaManager()), unpredictable));

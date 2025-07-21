@@ -3,15 +3,19 @@ package com.dat3m.dartagnan.program.analysis.alias;
 import com.dat3m.dartagnan.program.event.core.MemoryCoreEvent;
 import com.dat3m.dartagnan.program.memory.VirtualMemoryObject;
 
+import java.util.List;
+
 public class VirtualAliasAnalysis implements AliasAnalysis {
     private final AliasAnalysis wrappedAnalysis;
+    private final Config config;
 
-    private VirtualAliasAnalysis(AliasAnalysis analysis) {
+    private VirtualAliasAnalysis(AliasAnalysis analysis, Config config) {
         this.wrappedAnalysis = analysis;
+        this.config = config;
     }
 
-    public static AliasAnalysis wrap(AliasAnalysis analysis) {
-        return new VirtualAliasAnalysis(analysis);
+    public static AliasAnalysis wrap(AliasAnalysis analysis, Config config) {
+        return new VirtualAliasAnalysis(analysis, config);
     }
 
     @Override
@@ -21,6 +25,11 @@ public class VirtualAliasAnalysis implements AliasAnalysis {
     @Override
     public boolean mustAlias(MemoryCoreEvent e1, MemoryCoreEvent e2) {
         return samePhysicalAddress(e1, e2) || wrappedAnalysis.mustAlias(e1, e2);
+    }
+
+    @Override
+    public List<Integer> mayMixedSizeAccesses(MemoryCoreEvent event) {
+        return config.defaultMayMixedSizeAccesses(event);
     }
 
     // GPU memory models make use of virtual addresses.

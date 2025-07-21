@@ -20,18 +20,22 @@ import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
 import com.dat3m.dartagnan.wmm.analysis.WmmAnalysis;
 import com.dat3m.dartagnan.wmm.axiom.Axiom;
 import com.dat3m.dartagnan.wmm.processing.WmmProcessingManager;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.java_smt.api.ProverEnvironment;
 import org.sosy_lab.java_smt.api.SolverException;
 
-import java.util.Optional;
+import java.util.*;
 
 import static com.dat3m.dartagnan.configuration.Property.CAT_SPEC;
 import static com.dat3m.dartagnan.program.analysis.SyntacticContextAnalysis.*;
 import static com.dat3m.dartagnan.utils.Result.*;
 
 public abstract class ModelChecker {
+
+    private static final Logger logger = LogManager.getLogger(ModelChecker.class);
 
     protected Result res = Result.UNKNOWN;
     protected EncodingContext context;
@@ -80,11 +84,14 @@ public abstract class ModelChecker {
      * @exception UnsatisfiedRequirementException Some static analysis is missing.
      */
     public static void performStaticProgramAnalyses(VerificationTask task, Context analysisContext, Configuration config) throws InvalidConfigurationException {
-        Program program = task.getProgram();
+        final Program program = task.getProgram();
         analysisContext.register(BranchEquivalence.class, BranchEquivalence.fromConfig(program, config));
-        analysisContext.register(ExecutionAnalysis.class, ExecutionAnalysis.fromConfig(program, task.getProgressModel(), analysisContext, config));
-        analysisContext.register(ReachingDefinitionsAnalysis.class, ReachingDefinitionsAnalysis.fromConfig(program, analysisContext, config));
-        analysisContext.register(AliasAnalysis.class, AliasAnalysis.fromConfig(program, analysisContext, config));
+        analysisContext.register(ExecutionAnalysis.class, ExecutionAnalysis.fromConfig(program, task.getProgressModel(),
+                analysisContext, config));
+        analysisContext.register(ReachingDefinitionsAnalysis.class, ReachingDefinitionsAnalysis.fromConfig(program,
+                analysisContext, config));
+        final AliasAnalysis alias = AliasAnalysis.fromConfig(program, analysisContext, config, logger.isWarnEnabled());
+        analysisContext.register(AliasAnalysis.class, alias);
         analysisContext.register(ThreadSymmetry.class, ThreadSymmetry.fromConfig(program, config));
         for(Thread thread : program.getThreads()) {
             for(Event e : thread.getEvents()) {
@@ -142,5 +149,4 @@ public abstract class ModelChecker {
             }
         }
     }
-
 }

@@ -1,0 +1,14 @@
+AArch64 R+h0-b0+b1-b1+EXT
+{
+uint16_t x; uint16_t 2:X3; uint16_t 2:X2;
+
+0:X0=0x1111; 0:X1=x;
+1:X1=x; 1:X2=0x22;
+2:X0=0x33; 2:X1=x;
+}
+ P0           |P1             | P2              ;
+ STRH W0,[X1] | STRB W2,[X1]  | STRB W0,[X1,#1] ;
+              |               | LDRB W2,[X1,#1] ;
+              |               | LDRH W3,[X1]    ;
+exists
+(x=0x1122 /\ 2:X2=0x33 /\ 2:X3=0x3322)

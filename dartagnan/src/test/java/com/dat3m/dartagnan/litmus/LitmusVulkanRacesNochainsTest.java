@@ -36,6 +36,6 @@ public class LitmusVulkanRacesNochainsTest extends AbstractLitmusTest {
 
     @Override
     protected Provider<Wmm> getWmmProvider() {
-        return Providers.createWmmFromName(() -> "spirv-nochains");
+        return Providers.createWmmFromName(() -> "vulkan-nochains");
     }
 }

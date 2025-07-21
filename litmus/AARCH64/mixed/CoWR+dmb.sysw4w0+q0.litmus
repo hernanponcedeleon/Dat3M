@@ -1,0 +1,18 @@
+AArch64 CoWR+dmb.sysw4w0+q0
+"Wseq0w4 DMB.SYsWRw4w0 Frew0q0"
+Cycle=Frew0q0 Wseq0w4 DMB.SYsWRw4w0
+Generator=diycross7 (version 7.52+7(dev))
+Prefetch=
+Com=Ws Fr
+Orig=Wseq0w4 DMB.SYsWRw4w0 Frew0q0
+{
+uint64_t x; uint64_t 1:X2;
+
+0:X0=0x101010101010101; 0:X1=x;
+1:X0=0x2020202; 1:X1=x;
+}
+ P0          | P1             ;
+ STR X0,[X1] | STR W0,[X1,#4] ;
+             | DMB SY         ;
+             | LDR W2,[X1]    ;
+exists (1:X2=0x0 /\ x=0x202020201010101)

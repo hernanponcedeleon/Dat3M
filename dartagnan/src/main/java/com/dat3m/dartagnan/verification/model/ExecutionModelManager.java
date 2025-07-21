@@ -2,7 +2,6 @@ package com.dat3m.dartagnan.verification.model;
 
 import com.dat3m.dartagnan.encoding.EncodingContext;
 import com.dat3m.dartagnan.encoding.IREvaluator;
-import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.MemoryEvent;
@@ -284,6 +283,28 @@ public class ExecutionModelManager {
         }
 
         @Override
+        public Void visitSameInstruction(SameInstruction si) {
+            final SimpleGraph rg = (SimpleGraph) relGraphCache.get(si.getDefinedRelation());
+            final Map<Event, List<Event>> instructionMap = new HashMap<>();
+            for (InstructionBoundary end : context.getTask().getProgram().getThreadEvents(InstructionBoundary.class)) {
+                // NOTE begin markers return empty transaction event lists
+                final List<Event> events = end.getInstructionEvents();
+                for (Event event : events) {
+                    instructionMap.put(event, events);
+                }
+            }
+            for (EventModel e1 : executionModel.getEventModels()) {
+                for (Event e2 : instructionMap.getOrDefault(e1.getEvent(), List.of(e1.getEvent()))) {
+                    final EventModel e3 = executionModel.getEventModelByEvent(e2);
+                    if (e3 != null) {
+                        rg.add(new Edge(e1.getId(), e3.getId()));
+                    }
+                }
+            }
+            return null;
+        }
+
+        @Override
         public Void visitReadFrom(ReadFrom readFrom) {
             Relation relation = readFrom.getDefinedRelation();
             SimpleGraph rg = (SimpleGraph) relGraphCache.get(relation);
@@ -322,17 +343,25 @@ public class ExecutionModelManager {
         }
 
         @Override
-        public Void visitReadModifyWrites(ReadModifyWrites rmw) {
-            Relation relation = rmw.getDefinedRelation();
+        public Void visitAMOPairs(AMOPairs rmw) {
+            return visitReadModifyWrites(rmw.getDefinedRelation());
+        }
+
+        @Override
+        public Void visitLXSXPairs(LXSXPairs lxsx) {
+            return visitReadModifyWrites(lxsx.getDefinedRelation());
+        }
+
+        private Void visitReadModifyWrites(Relation relation) {
             SimpleGraph rg = (SimpleGraph) relGraphCache.get(relation);
-            EncodingContext.EdgeEncoder edge = context.edge(relation);
+            EncodingContext.EdgeEncoder rel = context.edge(relation);
 
             for (Map.Entry<ValueModel, Set<LoadModel>> reads : executionModel.getAddressReadsMap().entrySet()) {
-                ValueModel address = reads.getKey();
-                if (!executionModel.getAddressWritesMap().containsKey(address)) { continue; }
+                final Set<StoreModel> writes = executionModel.getAddressWritesMap().get(reads.getKey());
+                if (writes == null) { continue; }
                 for (LoadModel read : reads.getValue()) {
-                    for (StoreModel write : executionModel.getAddressWritesMap().get(address)) {
-                        if (model.hasEdge(edge, read.getEvent(), write.getEvent())) {
+                    for (StoreModel write : writes) {
+                        if (model.hasEdge(rel, read.getEvent(), write.getEvent())) {
                             rg.add(new Edge(read.getId(), write.getId()));
                         }
                     }

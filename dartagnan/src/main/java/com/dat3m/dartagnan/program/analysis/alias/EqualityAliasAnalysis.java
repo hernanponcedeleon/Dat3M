@@ -7,10 +7,11 @@ import com.dat3m.dartagnan.program.event.RegWriter;
 import com.dat3m.dartagnan.program.event.core.MemoryCoreEvent;
 import com.dat3m.dartagnan.wmm.utils.graph.mutable.MapEventGraph;
 import com.dat3m.dartagnan.wmm.utils.graph.mutable.MutableEventGraph;
-import org.sosy_lab.common.configuration.Configuration;
-import org.sosy_lab.common.configuration.InvalidConfigurationException;
 
+import java.util.List;
 import java.util.Set;
+
+import static com.google.common.base.Preconditions.checkNotNull;
 
 /**
  * A simple alias analysis that establishes must-aliases of
@@ -21,11 +22,17 @@ import java.util.Set;
  */
 public class EqualityAliasAnalysis implements AliasAnalysis {
 
+    private final Config config;
+
     private final MutableEventGraph trueSet = new MapEventGraph();
     private final MutableEventGraph falseSet = new MapEventGraph();
 
-    public static EqualityAliasAnalysis fromConfig(Program program, Configuration config) throws InvalidConfigurationException {
-        return new EqualityAliasAnalysis();
+    public static EqualityAliasAnalysis fromConfig(Program program, Config config) {
+        return new EqualityAliasAnalysis(config);
+    }
+
+    private EqualityAliasAnalysis(Config c) {
+        config = checkNotNull(c);
     }
 
     @Override
@@ -69,5 +76,10 @@ public class EqualityAliasAnalysis implements AliasAnalysis {
     @Override
     public boolean mayAlias(MemoryCoreEvent a, MemoryCoreEvent b) {
         return true;
+    }
+
+    @Override
+    public List<Integer> mayMixedSizeAccesses(MemoryCoreEvent event) {
+        return config.defaultMayMixedSizeAccesses(event);
     }
 }
