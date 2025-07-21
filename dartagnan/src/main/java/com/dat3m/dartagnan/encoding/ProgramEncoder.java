@@ -6,8 +6,8 @@ import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.integers.IntLiteral;
 import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
-import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.*;
+import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.analysis.BranchEquivalence;
 import com.dat3m.dartagnan.program.analysis.ExecutionAnalysis;
 import com.dat3m.dartagnan.program.analysis.InterruptAnalysis;
@@ -178,7 +178,7 @@ public class ProgramEncoder implements Encoder {
                     .map(context::execution).reduce(bmgr.makeFalse(), bmgr::or);
             final BooleanFormula ihCanRun = bmgr.and(
                     creatorExecuted,
-                    bmgr.or(bmgr.not(isDisabledAtSpawn), isReenabled),
+                    bmgr.implication(isDisabledAtSpawn, isReenabled),
                     otherInterruptsAreNotRunning
             );
             return ihCanRun;
@@ -621,7 +621,9 @@ public class ProgramEncoder implements Encoder {
         return bmgr.and(enc);
     }
 
+    // ==========================================================================================================
     // ============================================ Forward progress ============================================
+    // ==========================================================================================================
 
     private class ForwardProgressEncoder {
 
