@@ -4,12 +4,7 @@ import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.Type;
-import com.dat3m.dartagnan.expression.type.AggregateType;
-import com.dat3m.dartagnan.expression.type.ArrayType;
-import com.dat3m.dartagnan.expression.type.FunctionType;
-import com.dat3m.dartagnan.expression.type.TypeFactory;
-import com.dat3m.dartagnan.expression.type.BooleanType;
-import com.dat3m.dartagnan.expression.type.TypeOffset;
+import com.dat3m.dartagnan.expression.type.*;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.Tag;
@@ -210,7 +205,7 @@ public class Program {
         // NOTE: We use different names to avoid symmetry detection treating all inits as symmetric.
         final String threadName = "Init_" + nextThreadId;
         final Thread thread = new Thread(threadName, initThreadType, paramNames, nextThreadId,
-                EventFactory.newThreadStart(null));
+                EventFactory.newThreadStart(null), Thread.Type.STANDARD);
         final Event init = EventFactory.newInit(object, offset);
         thread.append(init);
         if (isC11) {
