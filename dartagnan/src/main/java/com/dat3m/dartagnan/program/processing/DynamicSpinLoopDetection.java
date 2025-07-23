@@ -134,8 +134,8 @@ public class DynamicSpinLoopDetection implements ProgramProcessor {
 
         // ---------------- Instrumentation ----------------
         // Init tracking registers
-        for (Register liveWritter : loop.writtenLiveRegisters) {
-            loop.getStart().getFunction().getEntry().insertAfter(EventFactory.Svcomp.newNonDetChoice(liveWritter));
+        for (Register liveWriter : loop.writtenLiveRegisters) {
+            loop.getStart().getFunction().getEntry().insertAfter(EventFactory.Svcomp.newNonDetChoice(liveWriter));
         }
         loop.getStart().insertAfter(List.of(
                 EventFactory.newLocal(entryLiveStateRegister, liveRegistersVector),
