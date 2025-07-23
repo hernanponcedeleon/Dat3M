@@ -1051,8 +1051,6 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
 
     @Override
     public Expression visitUndefConst(UndefConstContext ctx) {
-        logger.warn("Encountered undef constant of type {}. " +
-                "Constant was replaced by zero.", expectedType);
         return expressions.makeGeneralZero(expectedType);
     }
 
