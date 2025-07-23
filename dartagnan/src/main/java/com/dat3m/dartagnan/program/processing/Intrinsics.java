@@ -193,6 +193,13 @@ public class Intrinsics {
                 "__VERIFIER_nondet_longlong", "__VERIFIER_nondet_ulonglong",
                 "__VERIFIER_nondet_char", "__VERIFIER_nondet_uchar"),
                 false, false, true, true, Intrinsics::inlineNonDet),
+        // --------------------------- Interrupts ---------------------------
+        VERIFIER_MAKE_INTERRUPT_HANDLER("__VERIFIER_make_interrupt_handler", true, false, true, true, Intrinsics::inlineInterruptMarker),
+        VERIFIER_DISABLE_IRQ("__VERIFIER_disable_irq", false, false, true, true, Intrinsics::inlineDisableInterrupts),
+        VERIFIER_ENABLE_IRQ("__VERIFIER_enable_irq", false, false, true, true, Intrinsics::inlineEnableInterrupts),
+        VERIFIER_MAKE_CB("__VERIFIER_make_cb", false, false, true, true, Intrinsics::inlineCompilerBarrier),
+        VERIFIER_HARMLESS_RACY_READ("__VERIFIER_racy_read", true, false, true, true, Intrinsics::inlineHarmelessRacyRead),
+        VERIFIER_HARMLESS_RACY_WRITE("__VERIFIER_racy_write", true, false, true, true, Intrinsics::inlineHarmelessRacyWrite),
         // --------------------------- LLVM ---------------------------
         LLVM(List.of("llvm.smax", "llvm.umax", "llvm.smin", "llvm.umin",
                 "llvm.ssub.sat", "llvm.usub.sat", "llvm.sadd.sat", "llvm.uadd.sat", // TODO: saturated shifts
@@ -234,10 +241,10 @@ public class Intrinsics {
         STD_SLEEP("sleep", false, false, true, true, Intrinsics::inlineAsZero),
         STD_FFS(List.of("ffs", "ffsl", "ffsll"), false, false, true, true, Intrinsics::inlineFfs),
         // --------------------------- UBSAN ---------------------------
-        UBSAN_OVERFLOW(List.of("__ubsan_handle_add_overflow", "__ubsan_handle_sub_overflow", 
+        UBSAN_OVERFLOW(List.of("__ubsan_handle_add_overflow", "__ubsan_handle_sub_overflow",
                 "__ubsan_handle_divrem_overflow", "__ubsan_handle_mul_overflow", "__ubsan_handle_negate_overflow"),
                 false, false, false, true, Intrinsics::inlineIntegerOverflow),
-        UBSAN_TYPE_MISSMATCH(List.of("__ubsan_handle_type_mismatch_v1"), 
+        UBSAN_TYPE_MISSMATCH(List.of("__ubsan_handle_type_mismatch_v1"),
                 false, false, false, true, Intrinsics::inlineInvalidDereference),
         // ------------------------- Unknown function ---------------------------
         MISSING(List.of(), false, false, false, true, Intrinsics::inlineUnknownFunction),
@@ -1040,8 +1047,44 @@ public class Intrinsics {
             replacement.addAll(inlineCallAsNonDet(call));
         }
         replacement.addAll(inlineAssert(call, AssertionType.UNKNOWN_FUNCTION,
-            "Calling unknown function " + call.getCalledFunction().getName()));
+                "Calling unknown function " + call.getCalledFunction().getName()));
         return replacement;
+    }
+
+    // --------------------------------------------------------------------------------------------------------
+    // Interrupts
+
+    private List<Event> inlineInterruptMarker(FunctionCall ignored) {
+        return List.of(EventFactory.Interrupts.newInterruptMarker());
+    }
+
+    private List<Event> inlineCompilerBarrier(FunctionCall ignored) {
+        return List.of(EventFactory.Interrupts.newCompilerBarrier());
+    }
+
+    private List<Event> inlineDisableInterrupts(FunctionCall ignored) {
+        return List.of(EventFactory.Interrupts.newDisableInterrupts());
+    }
+
+    private List<Event> inlineEnableInterrupts(FunctionCall ignored) {
+        return List.of(EventFactory.Interrupts.newEnableInterrupts());
+    }
+
+    private List<Event> inlineHarmelessRacyRead(FunctionCall call) {
+        checkArgument(call.getArguments().size() == 1,
+        "Expected 2 parameters for \"__VERIFIER_racy_read\", got %s.", call.getArguments().size());
+        assert call instanceof ValueFunctionCall && call.isDirectCall();
+        final Register resultReg = ((ValueFunctionCall) call).getResultRegister();
+        final Expression address = call.getArguments().get(0);
+        return List.of(EventFactory.newLoadWithMo(resultReg, address, Tag.HARMLESS_RACY));
+    }
+
+    private List<Event> inlineHarmelessRacyWrite(FunctionCall call) {
+        checkArgument(call.getArguments().size() == 2,
+        "Expected 2 parameters for \"__VERIFIER_racy_read\", got %s.", call.getArguments().size());
+        final Expression address = call.getArguments().get(0);
+        final Expression value = call.getArguments().get(1);
+        return List.of(EventFactory.newStoreWithMo(address, value, Tag.HARMLESS_RACY));
     }
 
 
@@ -1264,9 +1307,9 @@ public class Intrinsics {
         final Expression y = arguments.get(1);
         assert x.getType() == y.getType();
 
-        // The flag expression defined below has the form A & B. 
-        // A is only relevant for integer encoding, B is only relevant for BV encoding.  
-        // Here we do not yet know yet which encoding will be used and thus use both A & B.   
+        // The flag expression defined below has the form A & B.
+        // A is only relevant for integer encoding, B is only relevant for BV encoding.
+        // Here we do not yet know yet which encoding will be used and thus use both A & B.
         // This probably has no noticeable impact on performance.
 
         // Check for integer encoding
@@ -1276,8 +1319,8 @@ public class Intrinsics {
 
         // Check for BV encoding. From LLVM's language manual:
         // "An operation overflows if, for any values of its operands A and B and for any N larger than
-        // the operands’ width, ext(A op B) to iN is not equal to (ext(A) to iN) op (ext(B) to iN) where 
-        // ext is sext for signed overflow and zext for unsigned overflow, and op is the 
+        // the operands’ width, ext(A op B) to iN is not equal to (ext(A) to iN) op (ext(B) to iN) where
+        // ext is sext for signed overflow and zext for unsigned overflow, and op is the
         // underlying arithmetic operation.""
         final int width = iType.getBitWidth();
         final Expression xExt = expressions.makeCast(x, types.getIntegerType(width + 1), true);
@@ -1577,7 +1620,7 @@ public class Intrinsics {
                 expressions.makeGT(expressions.makeAdd(dest, castCountExpr), src, false));
 
         final List<Event> replacement = new ArrayList<>();
-        
+
         Label check1 = EventFactory.newLabel("__memcpy_s_check_1");
         Label check2 = EventFactory.newLabel("__memcpy_s_check_2");
         Label success = EventFactory.newLabel("__memcpy_s_success");
@@ -1598,7 +1641,7 @@ public class Intrinsics {
             skipRest1
         ));
 
-        // Condition 2: dest != NULL && destsz <= RSIZE_MAX && (src == NULL || count > destsz || overlap(src, dest)) 
+        // Condition 2: dest != NULL && destsz <= RSIZE_MAX && (src == NULL || count > destsz || overlap(src, dest))
         // ----> return error > 0 and zero out [dest, dest+destsz)
         // The first two are guaranteed by not matching cond1
         final Expression cond2 = expressions.makeOr(expressions.makeOr(srcIsNull, invalidCount), overlap);
@@ -1624,7 +1667,7 @@ public class Intrinsics {
 
         // Else ----> return error = 0 and do the actual copy
         Local retSuccess = EventFactory.newLocal(resultRegister, errorCodeSuccess);
-        replacement.add(success);        
+        replacement.add(success);
         for (int i = 0; i < count; i++) {
             final Expression offset = expressions.makeValue(i, types.getArchType());
             final Expression srcAddr = expressions.makeAdd(src, offset);

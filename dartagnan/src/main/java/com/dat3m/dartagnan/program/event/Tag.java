@@ -23,6 +23,14 @@ public final class Tag {
     public static final String STRONG           = "STRONG"; // TODO: Maybe move to C11 or IMM?
     public static final String RMW              = "RMW";
 
+    public static final String INTERRUPT_HANDLER = "INTERRUPT_HANDLER";
+    public static final String DISABLE_INTERRUPT = "DISABLE_INTERRUPT";
+    public static final String ENABLE_INTERRUPT = "ENABLE_INTERRUPT";
+    public static final String COMPILER_BARRIER = "cb";
+    public static final String HARMLESS_RACY = "HARMLESS_RACY";
+    public static final String THREAD_CREATE = "THREAD_CREATE"; // A store that spawns a thread
+    public static final String THREAD_START = "THREAD_START"; // A load that starts the thread
+
     // ---------- Internally used tags (not referenced in CAT) ----------
     public static final String EXCL             = "__EXCL";
     // Marks the event that is reachable IFF a loop has not been fully unrolled.
@@ -31,12 +39,14 @@ public final class Tag {
     public static final String EXCEPTIONAL_TERMINATION = "__EXCEPTIONAL_TERMINATION";
     // Marks jumps that designate non-termination, typically spinloops and bound events
     // (and control barriers in the future)
-    public static final String NONTERMINATION   = "__NONTERMINATION";
+    public static final String NONTERMINATION    = "__NONTERMINATION";
+    // Used for marker events visible in the execution graph and accessible in the CAT model.
+    // Unlike the above NONTERMINATION tag, this one has no intrinsic semantics.
+    public static final String NONTERMINATION_VISIBLE = "NONTERM";
     // Marks jumps that terminate a thread due to spinning behaviour, i.e. side-effect-free loop iterations
     public static final String SPINLOOP         = "__SPINLOOP";
     // Some events should not be optimized (e.g. fake dependencies) or deleted (e.g. bounds)
     public static final String NOOPT            = "__NOOPT";
-    public static final String STARTLOAD        = "__STARTLOAD";
     public static final String NO_INSTRUCTION   = "__NO_INSTRUCTION";
 
     // =============================================================================================

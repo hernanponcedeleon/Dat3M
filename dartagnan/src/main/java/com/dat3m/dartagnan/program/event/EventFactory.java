@@ -146,6 +146,10 @@ public class EventFactory {
         return store;
     }
 
+    public static GenericVisibleEvent newVisibleMarker(String name, String... tags) {
+        return new GenericVisibleEvent(name, tags);
+    }
+
     public static GenericVisibleEvent newFence(String name) {
         return new GenericVisibleEvent(name, name, Tag.FENCE);
     }
@@ -536,6 +540,31 @@ public class EventFactory {
         }
     }
 
+    // =============================================================================================
+    // ======================================== Interrupts =========================================
+    // =============================================================================================
+
+    public static class Interrupts {
+        private Interrupts() {
+        }
+    
+        public static GenericVisibleEvent newInterruptMarker() {
+           return newFence(Tag.INTERRUPT_HANDLER);
+        }
+
+        public static GenericVisibleEvent newCompilerBarrier() {
+            return newFence(Tag.COMPILER_BARRIER);
+        }
+
+        public static GenericVisibleEvent newDisableInterrupts() {
+            return newFence(Tag.DISABLE_INTERRUPT);
+        }
+
+        public static GenericVisibleEvent newEnableInterrupts() {
+            return newFence(Tag.ENABLE_INTERRUPT);
+        }
+    }
+    
     // =============================================================================================
     // ============================================ ARM ============================================
     // =============================================================================================

@@ -13,8 +13,7 @@ import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.*;
 import com.dat3m.dartagnan.program.event.*;
-import com.dat3m.dartagnan.program.event.core.Label;
-import com.dat3m.dartagnan.program.event.core.Local;
+import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.event.core.threading.ThreadCreate;
 import com.dat3m.dartagnan.program.event.core.threading.ThreadReturn;
 import com.dat3m.dartagnan.program.event.core.threading.ThreadStart;
@@ -98,6 +97,7 @@ public class ThreadCreation implements ProgramProcessor {
         }
 
         if (program.getEntrypoint() instanceof Entrypoint.Simple ep) {
+            markInterruptCreations(program);
             final List<ThreadData> spawnedThreads = createThreads(ep);
             resolvePthreadSelf(program);
             resolveDynamicThreadJoin(program, spawnedThreads);
@@ -114,6 +114,22 @@ public class ThreadCreation implements ProgramProcessor {
     // =========================================== LLVM ============================================
     // =============================================================================================
 
+    private void markInterruptCreations(Program program) {
+        for (Function func : program.getFunctions()) {
+            boolean nextIsInterrupt = false;
+            for (Event e : func.getEvents()) {
+                if (e instanceof GenericVisibleEvent vis && vis.hasTag(Tag.INTERRUPT_HANDLER)) {
+                    nextIsInterrupt = true;
+                }
+
+                if (e instanceof DynamicThreadCreate create && nextIsInterrupt) {
+                    create.setThreadType(Thread.Type.INTERRUPT_HANDLER);
+                    nextIsInterrupt = false;
+                }
+            }
+        }
+    }
+
     private List<ThreadData> createThreads(Entrypoint.Simple entrypoint) {
 
         // NOTE: We start from id = 0 which overlaps with existing function ids.
@@ -122,7 +138,7 @@ public class ThreadCreation implements ProgramProcessor {
 
         // We collect metadata about each spawned thread. This is later used to resolve thread joining.
         final List<ThreadData> allThreads = new ArrayList<>();
-        final ThreadData entryPoint = createLLVMThreadFromFunction(entrypoint.getEntryFunction(), nextTid++, null);
+        final ThreadData entryPoint = createLLVMThreadFromFunction(entrypoint.getEntryFunction(), nextTid++, null, Thread.Type.STANDARD);
         allThreads.add(entryPoint);
 
         final Queue<ThreadData> workingQueue = new ArrayDeque<>(allThreads);
@@ -135,7 +151,7 @@ public class ThreadCreation implements ProgramProcessor {
                 final List<Expression> arguments = create.getArguments();
 
                 final ThreadCreate createEvent = newThreadCreate(arguments);
-                final ThreadData spawnedThread = createLLVMThreadFromFunction(targetFunction, nextTid, createEvent);
+                final ThreadData spawnedThread = createLLVMThreadFromFunction(targetFunction, nextTid, createEvent, create.getThreadType());
                 assert spawnedThread.isDynamic();
                 workingQueue.add(spawnedThread);
                 allThreads.add(spawnedThread);
@@ -255,12 +271,13 @@ public class ThreadCreation implements ProgramProcessor {
         }
     }
 
-    private ThreadData createLLVMThreadFromFunction(Function function, int tid, ThreadCreate creator) {
+    private ThreadData createLLVMThreadFromFunction(Function function, int tid, ThreadCreate creator, Thread.Type threadType) {
         // ------------------- Create new thread -------------------
         final ThreadStart start = EventFactory.newThreadStart(creator);
         start.setMayFailSpuriously(!forceStart);
         final Thread thread = new Thread(function.getName(), function.getFunctionType(),
-                Lists.transform(function.getParameterRegisters(), Register::getName), tid, start);
+                Lists.transform(function.getParameterRegisters(), Register::getName), tid, start, threadType
+        );
         thread.copyUniqueIdsFrom(function);
         function.getProgram().addThread(thread);
 
@@ -417,14 +434,18 @@ public class ThreadCreation implements ProgramProcessor {
         final Event releaseStore = compiler.getTarget() == Arch.LKMM ?
                 EventFactory.Linux.newLKMMStore(address, storeValue, Tag.Linux.MO_RELEASE) :
                 EventFactory.Atomic.newStore(address, storeValue, Tag.C11.MO_RELEASE);
-        return compiler.getCompilationResult(releaseStore);
+        List<Event> compilation = compiler.getCompilationResult(releaseStore);
+        compilation.stream().filter(e -> e instanceof Store).forEach(e -> e.addTags(Tag.THREAD_CREATE));
+        return compilation;
     }
 
     private List<Event> newAcquireLoad(Register resultRegister, Expression address) {
         final Event acquireLoad = compiler.getTarget() == Arch.LKMM ?
                 EventFactory.Linux.newLKMMLoad(resultRegister, address, Tag.Linux.MO_ACQUIRE) :
                 EventFactory.Atomic.newLoad(resultRegister, address, Tag.C11.MO_ACQUIRE);
-        return compiler.getCompilationResult(acquireLoad);
+        List<Event> compilation = compiler.getCompilationResult(acquireLoad);
+        compilation.stream().filter(e -> e instanceof Load).forEach(e -> e.addTags(Tag.THREAD_START));
+        return compilation;
     }
 
 

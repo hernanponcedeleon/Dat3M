@@ -1,0 +1,70 @@
+(* How to extend a memory model with interrupts support:
+ *   (1) Define the compiler-preserved-program-order (cppo)
+ *   (2) Include this file
+ *   (3) Now comes the original memory model
+ *
+ *   CAREFUL: This file redefines po, int, and ext to make IHs appear as if inserted into the code.
+ *            Therefore, this file should be included as early as possible, i.e., before the main definitions of the
+ *            original memory model.
+ *
+ *   NOTES:  - cppo is always extended to include dependencies, po-loc, and irq-enable/disable boundaries.
+ *           - ctrl is post-closed with the updated po definition, meaning the resulting ctrl relation is hardware-like
+ *             and goes beyond merge points.
+ *)
+
+
+
+let po-until(set) = po \ (po;[set];po)
+
+(* Basic interrupt relations *)
+let IHCreate = [range([INTERRUPT_HANDLER];po-until(THREAD_CREATE))]
+let create2Ih = IHCreate;rf
+let IHStart = [range(create2Ih)]
+let it2ih = int;(create2Ih;int)+  // (...)+ to handle nested IHs
+
+(* Guess a total execution order on the IHs for each thread (in case there are multiple) *)
+let ihOrderPre = (new() & (IHCreate;int;IHCreate)) \ id
+empty (IHCreate;int;IHCreate) \ (ihOrderPre | ihOrderPre^-1 | id)
+acyclic ihOrderPre
+let ihOrder = IHStart;rf^-1;ihOrderPre;rf;IHStart
+
+(* Define interrupt points *)
+let beforeIPs = (new() & (int;create2Ih)) | create2Ih
+// IPs respect compiler-preserved program order + dependencies and interrupt primitives
+let cppoExt = cppo | addr | ctrl | data | po-loc | po?;[ENABLE_INTERRUPT | DISABLE_INTERRUPT];po?
+let beforeIPs = cppoExt*;beforeIPs
+// ALTERNATIVE: empty ((cppoExt;beforeIPs) \ beforeIPs)
+// IPs cannot occur when interrupts are disabled.
+let beforeIPs = beforeIPs | ([DISABLE_INTERRUPT];po-until(ENABLE_INTERRUPT))^-1;beforeIPs
+// IPs respect ihOrder
+let beforeIPs = beforeIPs;ihOrder?
+
+let afterIPs = ((int;create2Ih) \ beforeIPs)^-1
+
+// Extend beforeIPs/afterIPs to include all events of IH and even nested IHs
+let beforeIPExt = beforeIPs;(it2ih | po?)
+let afterIPExt = (it2ih | po?)^-1;afterIPs
+let ihOrderExt = int;ihOrder;(it2ih | po?)
+
+(* Extend po/int/ext based on IPs *)
+let poOverIh = beforeIPs;afterIPs
+let poReordered = poOverIh^-1
+let poExt = poOverIh | beforeIPExt | afterIPExt | ihOrderExt
+let po = (po \ poReordered) | poExt
+let int = int | (it2ih^-1)?;it2ih | (IW * M)
+let ext = ext \ int
+
+let ctrl = ctrl ; po*
+
+let po-loc = po & loc
+let rfe = rf & ext
+let coe = co & ext
+let fre = fr & ext
+let rfi = rf & int
+let coi = co & int
+let fri = fr & int
+
+(* Events after non-terminating IH are never really executed: restrict their communication *)
+let non-exec = [range([NONTERM];afterIPExt)]
+let exec = id \ non-exec
+empty (non-exec;(rf | co);exec)
