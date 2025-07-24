@@ -336,7 +336,21 @@ public class RefinementSolver extends ModelChecker {
         // For Safety specs, we have SAT=FAIL, but for reachability specs, we have
         // SAT=PASS
         res = propertyType == Property.Type.SAFETY ? res : res.invert();
+
+        if (hasModel()) {
+            validateModel(solver.getExecution());
+        }
         logger.info("Verification finished with result {}", res);
+    }
+
+    private void validateModel(ExecutionModel model) {
+        // Check if there are accesses to uninitialized registers
+        for (ExecutionModel.UninitRegRead uninitRegRead : model.getUninitRegReads()) {
+            logger.warn("Encountered uninitialized register {} read by {}: {}.",
+                    uninitRegRead.register(), uninitRegRead.at().getGlobalId(), uninitRegRead.at());
+        }
+
+        // TODO: Check if there is OOB or any aliasing violation
     }
 
     private void analyzeInconclusiveness(VerificationTask task, Context analysisContext, ExecutionModel model) {
