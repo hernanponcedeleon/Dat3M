@@ -80,7 +80,7 @@ public class MemToReg implements FunctionProcessor {
 
         // Compute replacement of allocation sites:
         for (final Map.Entry<RegWriter, Promotable> entry : promotableObjects.entrySet()) {
-            final Alloc alloc = (Alloc) entry.getKey();
+            final MemAlloc alloc = (MemAlloc) entry.getKey();
             final List<Event> replacement = alloc.doesZeroOutMemory() ?
                     entry.getValue().replacingRegisters.values().stream()
                             .map(reg -> (Event) EventFactory.newLocal(reg, expressions.makeGeneralZero(reg.getType())))
