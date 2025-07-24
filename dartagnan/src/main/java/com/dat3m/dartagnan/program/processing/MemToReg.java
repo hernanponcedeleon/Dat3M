@@ -76,7 +76,20 @@ public class MemToReg implements FunctionProcessor {
     private void promoteAll(Function function, Matcher matcher) {
         // Replace every unmarked address.
         final Map<RegWriter, Promotable> promotableObjects = collectPromotableObjects(function, matcher);
-        final Map<Event, List<Event>> updates = new HashMap<>(Maps.toMap(promotableObjects.keySet(), k -> List.of()));
+        final Map<Event, List<Event>> updates = new HashMap<>();
+
+        // Compute replacement of allocation sites:
+        for (final Map.Entry<RegWriter, Promotable> entry : promotableObjects.entrySet()) {
+            final Alloc alloc = (Alloc) entry.getKey();
+            final List<Event> replacement = alloc.doesZeroOutMemory() ?
+                    entry.getValue().replacingRegisters.values().stream()
+                            .map(reg -> (Event) EventFactory.newLocal(reg, expressions.makeGeneralZero(reg.getType())))
+                            .toList()
+                    : List.of();
+            replacement.forEach(e -> e.copyAllMetadataFrom(alloc));
+            updates.put(alloc, replacement);
+        }
+
         // Mark all loads and stores to replaceable storage.
         updates.putAll(Maps.transformEntries(matcher.accesses, (k, v) -> promoteAccess(k, v, promotableObjects)));
         // Mark involved local GEP assignments.

@@ -434,6 +434,8 @@ public class Dartagnan extends BaseOptions {
             } catch (IOException e) {
                 logger.warn("Failed to save bounds file: {}", e.getLocalizedMessage());
             }
+            ExitCode code = BOUNDED_RESULT;
+            return new ResultSummary(path, filter, result, condition, reason, details.toString(), time, code);
         }
         // We consider those cases without an explicit return to yield normal termination.
         // This includes verification of litmus code, independent of the verification result.

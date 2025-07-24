@@ -57,16 +57,13 @@ let ms2 = same-proxy
 let ms3 = ((M * M) & vloc) | ((_ * _) \ (M * M))
 let morally-strong = (ms1 & ms2 & ms3) \ id
 
-// This is probably equivalent to 
-// let rec observation = (morally-strong & rf) | (observation; rmw; observation)
-// We opt to avoid the recursion
 let observation = (morally-strong & rf) | rmw
 
 let release-pattern = ([W & REL]; po-vloc?; [strong-write]) | ([F & ACQ_REL]; po; [strong-write])
 
 let acquire-pattern = ([strong-read]; po-vloc?; [R & ACQ]) | ([strong-read]; po; [F & ACQ_REL])
 
-let sync = morally-strong & (release-pattern; observation; acquire-pattern)
+let sync = morally-strong & (release-pattern; observation+; acquire-pattern)
 let cause-base = (po?; ((sync | sync_fence | sync_barrier); po?)+) | po
 
 (*******************)

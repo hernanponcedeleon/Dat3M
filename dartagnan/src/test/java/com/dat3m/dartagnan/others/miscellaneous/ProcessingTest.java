@@ -167,7 +167,7 @@ public class ProcessingTest {
     }
 
     private Event newAlloc(Register address, Type type, int count) {
-        return EventFactory.newAlloc(address, type, expressions.makeValue(count, types.getArchType()), false, true);
+        return EventFactory.newAlloc(address, type, expressions.makeValue(count, types.getArchType()), false, false);
     }
 
     private void assertLocal(Event event) {
