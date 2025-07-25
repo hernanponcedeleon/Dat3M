@@ -534,6 +534,7 @@ public class Intrinsics {
             default -> 2;
         };
         final Register errorRegister = getResultRegisterAndCheckArguments(expectedArguments, call);
+        final IntegerType errorType = (IntegerType) errorRegister.getType();
         final Expression attrAddress = call.getArguments().get(0);
         final Expression value = expectedArguments < 2 ? null : call.getArguments().get(1);
         final boolean initial = suffix.equals("init");
@@ -554,7 +555,6 @@ public class Intrinsics {
             case "detachstate" -> inlinePthreadAttrDetachState(oldValue, getter ? null : value, returnEINVAL, end);
             default -> null;
         };
-        final Expression EINVAL = expressions.makeValue(22, (IntegerType) errorRegister.getType());//TODO this may vary
         final Expression zero = expressions.makeZero(types.getIntegerType(1));
         final Expression extractInitialized = expressions.makeIntExtract(oldValue, 0, 0);
         return eventSequence(
@@ -565,7 +565,7 @@ public class Intrinsics {
                 assignSuccess(errorRegister),
                 newGoto(end),
                 returnEINVAL,
-                EventFactory.newLocal(errorRegister, EINVAL),
+                newLocal(errorRegister, expressions.makeValue(PosixErrorCode.EINVAL.getValue(), errorType)),
                 end
         );
     }
@@ -678,9 +678,7 @@ public class Intrinsics {
                 // This thread would sleep here.  Explicit or spurious signals may wake it.
                 // Re-lock.
                 EventFactory.Pthread.newLock(lockAddress.toString(), lockAddress),
-                //TODO proper error code: ETIMEDOUT
-                EventFactory.Svcomp.newNonDetChoice(errorRegister),
-                EventFactory.newAssume(expressions.makeGTE(errorRegister, expressions.makeZero(errorType), true))
+                newLocal(errorRegister, expressions.makeValue(PosixErrorCode.ETIMEDOUT.getValue(), errorType))
         );
     }
 
