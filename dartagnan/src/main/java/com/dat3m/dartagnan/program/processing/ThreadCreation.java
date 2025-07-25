@@ -11,8 +11,8 @@ import com.dat3m.dartagnan.expression.type.AggregateType;
 import com.dat3m.dartagnan.expression.type.FunctionType;
 import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
-import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.*;
+import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.*;
 import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.event.core.Local;
@@ -101,15 +101,15 @@ public class ThreadCreation implements ProgramProcessor {
 
     @Override
     public void run(Program program) {
-        if (program.getEntrypoint() == null) {
+        if (program.getEntrypoint() instanceof Entrypoint.None) {
             throw new MalformedProgramException("Program has no entry point.");
         }
 
         if (program.getEntrypoint() instanceof Entrypoint.Simple ep) {
-            final List<ThreadData> spawnedThreads = createThreads(ep);
+            final List<ThreadData> threads = createThreads(ep);
             resolvePthreadSelf(program);
-            resolveDynamicThreadJoin(program, spawnedThreads);
-            resolveDynamicThreadDetach(program, spawnedThreads);
+            resolveDynamicThreadJoin(program, threads);
+            resolveDynamicThreadDetach(program, threads);
             IdReassignment.newInstance().run(program);
             resolveTidExpressions(program);
         } else if (program.getEntrypoint() instanceof Entrypoint.Grid ep) {
@@ -131,7 +131,7 @@ public class ThreadCreation implements ProgramProcessor {
 
         // We collect metadata about each spawned thread. This is later used to resolve thread joining.
         final List<ThreadData> allThreads = new ArrayList<>();
-        final ThreadData entryPoint = createLLVMThreadFromFunction(entrypoint.getEntryFunction(), nextTid++, null);
+        final ThreadData entryPoint = createLLVMThreadFromFunction(entrypoint.function(), nextTid++, null);
         allThreads.add(entryPoint);
 
         final Queue<ThreadData> workingQueue = new ArrayDeque<>(allThreads);
@@ -169,6 +169,8 @@ public class ThreadCreation implements ProgramProcessor {
     private void resolveDynamicThreadJoin(Program program, List<ThreadData> threadData) {
         int joinCounter = 0;
 
+        final List<ThreadData> joinableThreads = threadData.stream().filter(ThreadData::isJoinable).toList();
+
         for (DynamicThreadJoin join : program.getThreadEvents(DynamicThreadJoin.class)) {
             final Thread caller = join.getThread();
             final Expression tidExpr = join.getTid();
@@ -189,8 +191,8 @@ public class ThreadCreation implements ProgramProcessor {
             // ----- Construct a switch case for each possible tid -----
             final Label joinEnd = EventFactory.newLabel("__joinEnd#" + joinCounter);
             final Map<Expression, List<Event>> tid2joinCases = new LinkedHashMap<>();
-            for (ThreadData data : threadData) {
-                if (!data.isJoinable() || data.thread() == caller) {
+            for (ThreadData data : joinableThreads) {
+                if (data.thread() == caller) {
                     // NOTE: We treat self-joins as an invalid tid id error (~ in alignment with pthread_join semantics)
                     // We could alternatively make this a non-termination case
                     continue;
@@ -536,9 +538,9 @@ public class ThreadCreation implements ProgramProcessor {
     // ========================================== SPIR-V ===========================================
     // =============================================================================================
     private void createSPVThreads(Program program, Entrypoint.Grid entrypoint) {
-        final ThreadGrid grid = entrypoint.getThreadGrid();
-        final MemoryTransformer transformer = entrypoint.getMemoryTransformer();
-        final Function entryFunction = entrypoint.getEntryFunction();
+        final ThreadGrid grid = entrypoint.threadGrid();
+        final MemoryTransformer transformer = entrypoint.memoryTransformer();
+        final Function entryFunction = entrypoint.function();
 
         for (int tid = 0; tid < grid.dvSize(); tid++) {
             final Thread thread = createSPVThreadFromFunction(entryFunction, tid, grid, transformer);
