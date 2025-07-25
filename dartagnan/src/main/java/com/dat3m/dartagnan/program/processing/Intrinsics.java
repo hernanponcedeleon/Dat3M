@@ -433,15 +433,17 @@ public class Intrinsics {
                 createEvent,
                 newJump(expressions.makeEQ(attributes, expressions.makeGeneralZero(attributes.getType())), skipAttrLabel),
                 newLoad(attributesRegister, attributes),
-                // if detach
+                // If 'detach' attribute, detach the spawned thread immediately.
+                // No need to check the status here, as detaching should always succeed.
+                // resultRegister is reused here and will be overwritten later.
                 newJumpUnless(testPthreadCreateDetached(attributesRegister), skipDetachLabel),
-                newDynamicThreadDetach(resultRegister, tidReg), // detach should always succeed
+                newDynamicThreadDetach(resultRegister, tidReg),
                 skipDetachLabel,
-                // returning
+                // Finally, return the thread ID and the status.
                 skipAttrLabel,
                 newStore(pidResultAddress, tidReg),
                 // TODO: Allow to return failure value (!= 0)
-                newLocal(resultRegister, expressions.makeZero((IntegerType) resultRegister.getType()))
+                newLocal(resultRegister, expressions.makeGeneralZero(resultRegister.getType()))
         );
     }
 
@@ -576,12 +578,16 @@ public class Intrinsics {
 
     private record PthreadAttrImplementation(Expression out, List<Event> errorChecks) {}
 
+    //TODO may vary by platform
+    private static final long PTHREAD_DETACHSTATE_DETACHED = 2;
+    private static final long PTHREAD_DETACHSTATE_JOINABLE = 1;
+
     private PthreadAttrImplementation inlinePthreadAttrDetachState(Expression oldValue, Expression detachstate, Label returnEINVAL, Label end) {
         final int flagIndex = 1;
         final IntegerType attrType = (IntegerType) oldValue.getType();
-        final IntegerType valueType = types.getIntegerType(32);
-        final Expression createDetached = expressions.makeValue(2, valueType);//TODO may vary by platform
-        final Expression createJoinable = expressions.makeValue(1, valueType);//TODO may vary by platform
+        final IntegerType valueType = types.getIntegerType(32); // int
+        final Expression createDetached = expressions.makeValue(PTHREAD_DETACHSTATE_DETACHED, valueType);
+        final Expression createJoinable = expressions.makeValue(PTHREAD_DETACHSTATE_JOINABLE, valueType);
         final List<Event> errorChecks = new ArrayList<>();
         final Expression newValue;
         if (detachstate == null) {

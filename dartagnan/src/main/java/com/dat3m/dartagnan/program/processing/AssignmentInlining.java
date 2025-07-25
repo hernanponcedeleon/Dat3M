@@ -78,7 +78,6 @@ public class AssignmentInlining implements FunctionProcessor {
                         // A usage counter may be missing for assignments of the form "r = f(r)"
                         // which do not allow for substituting r for f(r) in later usages.
                         usageCounter.containsKey(lastAssignment)
-                        && preDominatorTree.contains(curEvent)
                         && preDominatorTree.isDominatedBy(curEvent, lastAssignment)
                         && !curEvent.hasTag(Tag.NOOPT)
                         // Inline if the expression is only used once or if it leads to simplifications.

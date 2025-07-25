@@ -85,10 +85,6 @@ public class ThreadCreation implements ProgramProcessor {
     private final IntegerType archType = types.getArchType();
     // The thread state consists of two flags: ALIVE and JOINABLE.
     private final IntegerType threadStateType = types.getIntegerType(2);
-    private final Expression threadStateStopped = expressions.makeValue(0, threadStateType);
-    private final Expression threadStateRunning = expressions.makeValue(3, threadStateType);
-    private final Expression threadStateNotAlive = expressions.makeValue(2, threadStateType);
-    private final Expression threadStateNotJoinable = expressions.makeValue(1, threadStateType);
 
     private ThreadCreation(Configuration config) throws InvalidConfigurationException {
         config.inject(this);
@@ -117,6 +113,23 @@ public class ThreadCreation implements ProgramProcessor {
         }
 
         logger.info("Number of threads (including main): {}", program.getThreads().size());
+    }
+
+    private static final int ALIVE = 1;
+    private static final int JOINABLE = 2;
+
+    private Expression threadStateFlag(Expression state, int flag) {
+        Preconditions.checkArgument(state.getType().equals(threadStateType), "State type mismatch");
+        final int bit = switch (flag) {
+            case ALIVE -> 0;
+            case JOINABLE -> 1;
+            default -> throw new IllegalArgumentException("Wrong thread state flag");
+        };
+        return expressions.makeIntExtract(state, bit, bit);
+    }
+
+    private Expression threadState(int flags) {
+        return expressions.makeValue(flags, threadStateType);
     }
 
     // =============================================================================================
@@ -150,7 +163,7 @@ public class ThreadCreation implements ProgramProcessor {
                 allThreads.add(spawnedThread);
 
                 final List<Event> replacement = eventSequence(
-                        newReleaseStore(spawnedThread.comAddress(), threadStateRunning),
+                        newReleaseStore(spawnedThread.comAddress(), threadState(ALIVE | JOINABLE)),
                         createEvent,
                         newLocal(tidRegister, new TIdExpr(archType, spawnedThread.thread()))
                 );
@@ -215,14 +228,14 @@ public class ThreadCreation implements ProgramProcessor {
                             EventFactory.newGoto(joinEnd)
                     );
                 } else {
-                    final Expression isAlive = expressions.makeIntExtract(threadStateRegister, 0, 0);
-                    final Expression isJoinable = expressions.makeIntExtract(threadStateRegister, 1, 1);
+                    final Expression isAlive = threadStateFlag(threadStateRegister, ALIVE);
+                    final Expression isJoinable = threadStateFlag(threadStateRegister, JOINABLE);
                     // Successful join
                     caseBody = eventSequence(
                             joinCase,
                             newLocal(statusRegister, detachedThread),
                             newLocal(retValRegister, expressions.makeGeneralZero(retValType)),
-                            newAcquireAnd(threadStateRegister, data.comAddress, threadStateNotJoinable),
+                            newAcquireAnd(threadStateRegister, data.comAddress, threadState(ALIVE)),
                             newJumpUnless(expressions.makeBooleanCast(isJoinable), joinEnd),
                             newThreadJoin(retValRegister, data.thread()),
                             newAssume(expressions.makeNot(expressions.makeBooleanCast(isAlive))),
@@ -290,7 +303,7 @@ public class ThreadCreation implements ProgramProcessor {
                 final Expression isJoinableBoolean = expressions.makeBooleanCast(isJoinable);
                 final List<Event> caseBody = eventSequence(
                         detachCase,
-                        newRelaxedAnd(threadState, data.comAddress, threadStateNotJoinable),
+                        newRelaxedAnd(threadState, data.comAddress, threadState(ALIVE)),
                         newLocal(statusRegister, expressions.makeITE(isJoinableBoolean, successValue, detachedThread)),
                         EventFactory.newGoto(detachEnd)
                 );
@@ -395,7 +408,7 @@ public class ThreadCreation implements ProgramProcessor {
             // We use accesses to a common memory object to synchronize creator and thread.
             final MemoryObject comAddress = function.getProgram().getMemory().allocate(1);
             comAddress.setName("__com_" + function.getName() + "#" + tid);
-            comAddress.setInitialValue(0, threadStateStopped);
+            comAddress.setInitialValue(0, threadState(0));
 
             // Sync
             final Register threadState = thread.newRegister("__threadStateT" + tid, threadStateType);
@@ -407,7 +420,7 @@ public class ThreadCreation implements ProgramProcessor {
 
             // End
             // Reset the ALIVE flag.
-            threadReturnLabel.insertAfter(newReleaseAnd(threadState, comAddress, threadStateNotAlive));
+            threadReturnLabel.insertAfter(newReleaseAnd(threadState, comAddress, threadState(JOINABLE)));
 
             creator.setSpawnedThread(thread);
             return new ThreadData(thread, comAddress);

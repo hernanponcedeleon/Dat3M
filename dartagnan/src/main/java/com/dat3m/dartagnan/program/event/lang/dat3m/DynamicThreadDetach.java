@@ -33,7 +33,7 @@ public final class DynamicThreadDetach extends AbstractEvent implements RegWrite
 
     @Override
     protected String defaultString() {
-        return String.format("DynamicThreadDetach(%s)", tid);
+        return String.format("%s <- DynamicThreadDetach(%s)", status, tid);
     }
 
     @Override
