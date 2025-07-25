@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan.wmm;
 
+import com.dat3m.dartagnan.program.event.Tag;
 import com.google.common.collect.ImmutableSet;
 
 import java.util.Arrays;
@@ -37,6 +38,9 @@ public class RelationNameRepository {
     public static final String ADDRDIRECT = "__addrDirect";
     public static final String CTRLDIRECT = "__ctrlDirect";
     public static final String IDDTRANS = "__iddTrans";
+
+    public static final String VISIBLE = Tag.VISIBLE;
+    public static final String MEMORY = Tag.MEMORY;
 
     public static final ImmutableSet<String> RELATION_NAMES;
 

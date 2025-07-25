@@ -115,16 +115,12 @@ final class EncodeSets implements Visitor<Map<Relation, EventGraph>> {
 
     @Override
     public Map<Relation, EventGraph> visitSetIdentity(SetIdentity id) {
-        final RelationAnalysis.Knowledge k1 = ra.getKnowledge(id.getDomain());
-        return Map.of(id.getDomain(),
-                news.filter((e1, e2) -> k1.getMaySet().contains(e1, e2) && !k1.getMustSet().contains(e1, e2)));
+        return Map.of(id.getDomain(), filterUnknowns(news, id.getDomain()));
     }
 
     @Override
     public Map<Relation, EventGraph> visitInverse(Inverse inv) {
-        final RelationAnalysis.Knowledge k1 = ra.getKnowledge(inv.getOperand());
-        return Map.of(inv.getOperand(),
-                news.inverse().filter((e1, e2) -> k1.getMaySet().contains(e1, e2) && !k1.getMustSet().contains(e1, e2)));
+        return Map.of(inv.getOperand(), filterUnknowns(news.inverse(), inv.getOperand()));
     }
 
     @Override

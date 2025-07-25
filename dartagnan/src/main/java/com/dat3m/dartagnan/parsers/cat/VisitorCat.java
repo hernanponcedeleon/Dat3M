@@ -132,7 +132,7 @@ class VisitorCat extends CatBaseVisitor<Object> {
     }
 
     private String createUniqueName(String name) {
-        if ((namespace.containsKey(name) || wmm.getRelation(name) != null) && !nameOccurrenceCounter.containsKey(name)) {
+        if (namespace.containsKey(name) && !nameOccurrenceCounter.containsKey(name)) {
             // If we have already seen the name, but not counted it yet, we do so now.
             nameOccurrenceCounter.put(name, 1);
         }
@@ -207,7 +207,7 @@ class VisitorCat extends CatBaseVisitor<Object> {
     @Override
     public Object visitExprNew(ExprNewContext ctx) {
         final boolean unary = ctx.call.getText().equals("New");
-        return addDefinition(new Free(wmm.newRelation(unary)));
+        return addDefinition(new Free(wmm.newRelation(unary ? Relation.Arity.UNARY : Relation.Arity.BINARY)));
     }
 
     @Override
@@ -217,19 +217,11 @@ class VisitorCat extends CatBaseVisitor<Object> {
         if (boundObject != null) {
             return boundObject;
         }
-        if (RelationNameRepository.contains(name)) {
-            return wmm.getOrCreatePredefinedRelation(name);
-        }
-        final Relation namedRelation = wmm.getRelation(name);
-        final Relation existingSet = namedRelation != null && namedRelation.getDefinition() instanceof TagSet s && s.getTag().equals(name) ?
-                namedRelation : wmm.getRelations().stream()
-                .filter(r -> r.getDefinition() instanceof TagSet s && s.getTag().equals(name))
-                .findAny().orElse(null);
-        if (existingSet != null) {
-            return existingSet;
-        }
-        final Relation newRelation = namedRelation != null ? wmm.newRelation(true) : wmm.newRelation(name, true);
-        return addDefinition(new TagSet(newRelation, name));
+        final boolean predefinedName = RelationNameRepository.contains(name);
+        final Relation predefined = predefinedName ? wmm.getOrCreatePredefinedRelation(name) : null;
+        final Relation newRelation = predefinedName ? predefined : addDefinition(new TagSet(wmm.newSet(name), name));
+        namespace.put(name, newRelation);
+        return newRelation;
     }
 
     @Override
@@ -265,7 +257,7 @@ class VisitorCat extends CatBaseVisitor<Object> {
         final Optional<Relation> defRel = getAndResetRelationToBeDefined();
         final Relation r1 = parseAsRelation(c.e1);
         final Relation r2 = parseAsRelation(c.e2);
-        final Relation r0 = defRel.orElseGet(() -> wmm.newRelation(r1.isUnaryRelation()));
+        final Relation r0 = defRel.orElseGet(() -> wmm.newRelation(r1.getArity()));
         return addDefinition(new Intersection(r0, r1, r2));
     }
 
@@ -274,7 +266,7 @@ class VisitorCat extends CatBaseVisitor<Object> {
         checkNoRecursion(c);
         final Relation r1 = parseAsRelation(c.e1);
         final Relation r2 = parseAsRelation(c.e2);
-        final Relation r0 = wmm.newRelation(r1.isUnaryRelation());
+        final Relation r0 = wmm.newRelation(r1.getArity());
         return addDefinition(new Difference(r0, r1, r2));
     }
 
@@ -283,7 +275,7 @@ class VisitorCat extends CatBaseVisitor<Object> {
         final Optional<Relation> defRel = getAndResetRelationToBeDefined();
         final Relation r1 = parseAsRelation(c.e1);
         final Relation r2 = parseAsRelation(c.e2);
-        final Relation r0 = defRel.orElseGet(() -> wmm.newRelation(r1.isUnaryRelation()));
+        final Relation r0 = defRel.orElseGet(() -> wmm.newRelation(r1.getArity()));
         return addDefinition(new Union(r0, r1, r2));
     }
 
@@ -293,7 +285,7 @@ class VisitorCat extends CatBaseVisitor<Object> {
         final Relation r1 = parseAsRelation(c.e);
         final Relation visible = wmm.newSet();
         wmm.addDefinition(new TagSet(visible, VISIBLE));
-        final Relation r0 = wmm.newRelation(r1.isUnaryRelation());
+        final Relation r0 = wmm.newRelation(r1.getArity());
         final Relation all = r1.isUnaryRelation() ? visible : wmm.newRelation();
         if (!r1.isUnaryRelation()) {
             wmm.addDefinition(new CartesianProduct(all, visible, visible));

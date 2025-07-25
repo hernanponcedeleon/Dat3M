@@ -85,26 +85,30 @@ public class Wmm {
     }
 
     public Relation newSet() {
-        return newRelation(true);
+        return newRelation(Relation.Arity.UNARY);
+    }
+
+    public Relation newSet(String name) {
+        return newRelation(name, Relation.Arity.UNARY);
     }
 
     public Relation newRelation() {
-        return newRelation(false);
+        return newRelation(Relation.Arity.BINARY);
     }
 
-    public Relation newRelation(boolean unary) {
-        final Relation relation = new Relation(this, unary);
+    public Relation newRelation(Relation.Arity arity) {
+        final Relation relation = new Relation(this, arity);
         relations.add(relation);
         return relation;
     }
 
     public Relation newRelation(String name) {
-        return newRelation(name, false);
+        return newRelation(name, Relation.Arity.BINARY);
     }
 
-    public Relation newRelation(String name, boolean unary) {
+    public Relation newRelation(String name, Relation.Arity arity) {
         checkArgument(!containsRelation(name), "Already bound name %s.", name);
-        final Relation relation = new Relation(this, unary);
+        final Relation relation = new Relation(this, arity);
         relation.names.add(name);
         relations.add(relation);
         return relation;
@@ -197,11 +201,15 @@ public class Wmm {
                will get constructed even if they already exist in the model.
              TODO: Clarify what the intended behaviour should be.
          */
-        final Relation r = newRelation(name);
+        final Relation.Arity arity = switch (name) {
+            case VISIBLE, MEMORY -> Relation.Arity.UNARY;
+            default -> Relation.Arity.BINARY;
+        };
+        final Relation r = newRelation(name, arity);
         final Definition def = switch (name) {
             case PO -> new ProgramOrder(r, Filter.byTag(Tag.VISIBLE));
             case LOC -> new SameLocation(r);
-            case ID -> new SetIdentity(r, set(Tag.VISIBLE));
+            case ID -> new SetIdentity(r, getOrCreatePredefinedRelation(VISIBLE));
             case INT -> new Internal(r);
             case EXT -> new External(r);
             case CO -> new Coherence(r);
@@ -216,16 +224,22 @@ public class Wmm {
             case CTRLDIRECT -> new DirectControlDependency(r);
             case EMPTY -> new Empty(r);
             case IDDTRANS -> new TransitiveClosure(r, getOrCreatePredefinedRelation(IDD));
-            case DATA -> new Intersection(r, getOrCreatePredefinedRelation(IDDTRANS), product(Tag.MEMORY, Tag.MEMORY));
+            case DATA -> {
+                final Relation memory = getOrCreatePredefinedRelation(MEMORY);
+                yield new Intersection(r, getOrCreatePredefinedRelation(IDDTRANS), product(memory, memory));
+            }
             case ADDR -> {
+                final Relation memory = getOrCreatePredefinedRelation(MEMORY);
                 final Relation idd = getOrCreatePredefinedRelation(IDDTRANS);
                 final Relation addr = getOrCreatePredefinedRelation(ADDRDIRECT);
-                yield new Intersection(r, union(addr, composition(idd, addr)), product(Tag.MEMORY, Tag.MEMORY));
+                yield new Intersection(r, union(addr, composition(idd, addr)), product(memory, memory));
             }
             case CTRL -> {
+                final Relation memory = getOrCreatePredefinedRelation(MEMORY);
+                final Relation visible = getOrCreatePredefinedRelation(VISIBLE);
                 final Relation idd = getOrCreatePredefinedRelation(IDDTRANS);
                 final Relation ctrl = getOrCreatePredefinedRelation(CTRLDIRECT);
-                yield new Intersection(r, composition(idd, ctrl), product(Tag.MEMORY, Tag.VISIBLE));
+                yield new Intersection(r, composition(idd, ctrl), product(memory, visible));
             }
             case SR -> new SameScope(r);
             case SCTA -> new SameScope(r, Tag.PTX.CTA);
@@ -237,6 +251,8 @@ public class Wmm {
             case SYNCBAR -> new SyncBar(r);
             case SYNC_FENCE -> new SyncFence(r);
             case VLOC -> new SameVirtualLocation(r);
+            case VISIBLE -> new TagSet(r, Tag.VISIBLE);
+            case MEMORY -> new TagSet(r, Tag.MEMORY);
             default ->
                     throw new RuntimeException(name + " is part of RelationNameRepository but it has no associated relation.");
         };
@@ -251,11 +267,7 @@ public class Wmm {
         return addDefinition(new Composition(newRelation(), r1, r2));
     }
 
-    private Relation set(String tag) {
-        return addDefinition(new TagSet(newSet(), tag));
-    }
-
-    private Relation product(String tag1, String tag2) {
-        return addDefinition(new CartesianProduct(newRelation(), set(tag1), set(tag2)));
+    private Relation product(Relation domain, Relation range) {
+        return addDefinition(new CartesianProduct(newRelation(), domain, range));
     }
 }

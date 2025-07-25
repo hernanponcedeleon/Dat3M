@@ -28,9 +28,4 @@ public class TagSet extends Definition {
     public <T> T accept(Visitor<? extends T> visitor) {
         return visitor.visitTagSet(this);
     }
-
-    @Override
-    public String getTerm() {
-        return super.getTerm();
-    }
 }

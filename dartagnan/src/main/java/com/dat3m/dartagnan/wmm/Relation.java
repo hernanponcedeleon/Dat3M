@@ -15,22 +15,28 @@ import static com.google.common.base.Preconditions.checkState;
 public final class Relation implements Dependent<Relation> {
 
     private final Wmm wmm;
-    private final boolean unary;
+    private final Arity arity;
     Definition definition = new Definition.Undefined(this);
     private boolean isRecursive;
     final List<String> names = new ArrayList<>();
 
-    Relation(Wmm wmm, boolean unary) {
+    public enum Arity { UNARY, BINARY }
+
+    Relation(Wmm wmm, Arity arity) {
         this.wmm = wmm;
-        this.unary = unary;
+        this.arity = arity;
+    }
+
+    public Arity getArity() {
+        return arity;
     }
 
     public boolean isUnaryRelation() {
-        return unary;
+        return arity == Arity.UNARY;
     }
 
     public boolean isBinaryRelation() {
-        return !unary;
+        return arity == Arity.BINARY;
     }
 
     public void checkUnaryRelation() {
