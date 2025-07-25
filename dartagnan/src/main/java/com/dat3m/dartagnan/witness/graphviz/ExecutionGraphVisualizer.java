@@ -208,7 +208,7 @@ public class ExecutionGraphVisualizer {
         graphviz.setEdgeAttributes(String.format("color=%s, label=\"%s\"", colorMap.getColor(name), name));
         final BiPredicate<EventModel, EventModel> filter = getFilter(name);
         for (EdgeModel edge : rm.getEdgeModels()) {
-            appendEdge(filter, edge.getFrom(), edge.getTo());
+            appendEdge(filter, edge.from(), edge.to());
         }
         graphviz.end();
     }

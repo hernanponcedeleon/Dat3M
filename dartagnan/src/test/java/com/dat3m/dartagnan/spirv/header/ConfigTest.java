@@ -29,7 +29,7 @@ public class ConfigTest extends AbstractTest {
 
         // then
         int size = scopes.stream().reduce(1, (a, b) -> a * b);
-        ThreadGrid grid = ((Entrypoint.Grid) program.getEntrypoint()).getThreadGrid();
+        ThreadGrid grid = ((Entrypoint.Grid) program.getEntrypoint()).threadGrid();
         assertEquals(size, grid.dvSize());
 
         int sg_size = scopes.get(0);

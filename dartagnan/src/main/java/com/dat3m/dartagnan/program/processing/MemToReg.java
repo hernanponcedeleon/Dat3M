@@ -8,6 +8,7 @@ import com.dat3m.dartagnan.expression.integers.IntBinaryOp;
 import com.dat3m.dartagnan.expression.integers.IntLiteral;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.program.Function;
+import com.dat3m.dartagnan.program.IRHelper;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.*;
 import com.dat3m.dartagnan.program.event.core.*;
@@ -76,7 +77,20 @@ public class MemToReg implements FunctionProcessor {
     private void promoteAll(Function function, Matcher matcher) {
         // Replace every unmarked address.
         final Map<RegWriter, Promotable> promotableObjects = collectPromotableObjects(function, matcher);
-        final Map<Event, List<Event>> updates = new HashMap<>(Maps.toMap(promotableObjects.keySet(), k -> List.of()));
+        final Map<Event, List<Event>> updates = new HashMap<>();
+
+        // Compute replacement of allocation sites:
+        for (final Map.Entry<RegWriter, Promotable> entry : promotableObjects.entrySet()) {
+            final Alloc alloc = (Alloc) entry.getKey();
+            final List<Event> replacement = alloc.doesZeroOutMemory() ?
+                    entry.getValue().replacingRegisters.values().stream()
+                            .map(reg -> (Event) EventFactory.newLocal(reg, expressions.makeGeneralZero(reg.getType())))
+                            .toList()
+                    : List.of();
+            replacement.forEach(e -> e.copyAllMetadataFrom(alloc));
+            updates.put(alloc, replacement);
+        }
+
         // Mark all loads and stores to replaceable storage.
         updates.putAll(Maps.transformEntries(matcher.accesses, (k, v) -> promoteAccess(k, v, promotableObjects)));
         // Mark involved local GEP assignments.
@@ -88,7 +102,7 @@ public class MemToReg implements FunctionProcessor {
         updates.values().removeIf(Objects::isNull);
         // If some events cannot be removed, give up.
         //TODO Build a dependency graph and replace the events that can be removed.
-        if (updates.keySet().stream().anyMatch(e -> !e.getUsers().isEmpty())) {
+        if (!IRHelper.canBulkDelete(updates.keySet())) {
             logger.warn("Could not remove events, because some are still used.");
             return;
         }

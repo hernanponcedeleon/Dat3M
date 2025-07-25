@@ -7,7 +7,6 @@ import com.dat3m.dartagnan.encoding.EncodingContext;
 import com.dat3m.dartagnan.encoding.IREvaluator;
 import com.dat3m.dartagnan.encoding.ProverWithTracker;
 import com.dat3m.dartagnan.expression.ExpressionPrinter;
-import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.booleans.BoolLiteral;
 import com.dat3m.dartagnan.parsers.cat.ParserCat;
 import com.dat3m.dartagnan.parsers.program.ProgramParser;
@@ -24,8 +23,9 @@ import com.dat3m.dartagnan.program.processing.LoopUnrolling;
 import com.dat3m.dartagnan.smt.ModelExt;
 import com.dat3m.dartagnan.utils.ExitCode;
 import com.dat3m.dartagnan.utils.Result;
-import com.dat3m.dartagnan.utils.Utils;
 import com.dat3m.dartagnan.utils.options.BaseOptions;
+import com.dat3m.dartagnan.utils.printer.OutputLogger;
+import com.dat3m.dartagnan.utils.printer.OutputLogger.ResultSummary;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.verification.VerificationTask.VerificationTaskBuilder;
 import com.dat3m.dartagnan.verification.model.ExecutionModelManager;
@@ -60,16 +60,16 @@ import org.sosy_lab.java_smt.api.ProverEnvironment;
 import org.sosy_lab.java_smt.api.SolverContext;
 import org.sosy_lab.java_smt.api.SolverContext.ProverOptions;
 import org.sosy_lab.java_smt.api.SolverException;
-import java.nio.file.*;
+
 import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.*;
 import java.util.stream.Stream;
-import com.dat3m.dartagnan.utils.printer.OutputLogger;
-import com.dat3m.dartagnan.utils.printer.OutputLogger.ResultSummary;
 
 import static com.dat3m.dartagnan.GlobalSettings.getOrCreateOutputDirectory;
 import static com.dat3m.dartagnan.configuration.OptionInfo.collectOptions;
@@ -159,7 +159,7 @@ public class Dartagnan extends BaseOptions {
 
         final OutputLogger output = new OutputLogger(fileModel, config);
 
-        final List<File> files = new ArrayList();
+        final List<File> files = new ArrayList<>();
         Stream.of(args)
             .map(File::new)
             .forEach(file -> {
@@ -188,7 +188,6 @@ public class Dartagnan extends BaseOptions {
 
         ResultSummary summary = null;
         for (File f : files) {
-
             ShutdownManager sdm = ShutdownManager.create();
             Thread t = new Thread(() -> {
                 try {
@@ -264,10 +263,8 @@ public class Dartagnan extends BaseOptions {
             output.addResult(summary);
         }
         output.toStdOut(files.size() > 1);
-        if (summary != null) {
-            // Running batch mode results in normal termination independent of the individual results
-            System.exit((files.size() > 1 ? NORMAL_TERMINATION : summary.code()).asInt());
-        }
+        // Running batch mode results in normal termination independent of the individual results
+        System.exit((files.size() > 1 ? NORMAL_TERMINATION : summary.code()).asInt());
     }
 
     public static List<File> getProgramsFiles(String path) {
@@ -279,7 +276,7 @@ public class Dartagnan extends BaseOptions {
                 .sorted(Comparator.comparing(File::toString))
                 .toList();
         } catch (IOException e) {
-            logger.error("There was an I/O error when accessing path " + path);
+            logger.error("There was an I/O error when accessing path {}", path);
             System.exit(UNKNOWN_ERROR.asInt());
         }
         return files;
@@ -356,7 +353,7 @@ public class Dartagnan extends BaseOptions {
                 reason = ResultSummary.PROGRAM_SPEC_REASON;
                 condition = getSpecificationString(p);
                 List<Assert> violations = p.getThreadEvents(Assert.class)
-                    .stream().filter(ass -> model.assertionViolated(ass))
+                    .stream().filter(model::assertionViolated)
                     .toList();
                 for (Assert ass : violations) {
                     final String callStack = makeContextString(synContext.getContextInfo(ass).getContextOfType(CallContext.class), " -> ");
@@ -434,6 +431,8 @@ public class Dartagnan extends BaseOptions {
             } catch (IOException e) {
                 logger.warn("Failed to save bounds file: {}", e.getLocalizedMessage());
             }
+            ExitCode code = BOUNDED_RESULT;
+            return new ResultSummary(path, filter, result, condition, reason, details.toString(), time, code);
         }
         // We consider those cases without an explicit return to yield normal termination.
         // This includes verification of litmus code, independent of the verification result.

@@ -315,24 +315,18 @@ public final class EncodingContext {
             if (!e.cfImpliesExec()) {
                 executionVariables.put(e, booleanFormulaManager.makeVariable("exec " + e.getGlobalId()));
             }
-            TypedFormula<?, ?> r;
             if (e instanceof RegWriter rw) {
-                Register register = rw.getResultRegister();
-                String name = register.getName() + "(" + e.getGlobalId() + "_result)";
-                r = exprEncoder.makeVariable(name, register.getType());
-            } else {
-                r = null;
+                final Register register = rw.getResultRegister();
+                final String name = register.getName() + "(" + e.getGlobalId() + "_result)";
+                results.put(e, exprEncoder.makeVariable(name, register.getType()));
             }
             if (e instanceof MemoryCoreEvent memEvent) {
                 addresses.put(e, exprEncoder.encodeAt(memEvent.getAddress(), memEvent));
                 if (e instanceof Load) {
-                    values.put(e, r);
+                    values.put(e, results.get(e));
                 } else if (e instanceof Store store) {
                     values.put(e, exprEncoder.encodeAt(store.getMemValue(), e));
                 }
-            }
-            if (r != null) {
-                results.put(e, r);
             }
         }
     }

@@ -1,19 +1,19 @@
 package com.dat3m.dartagnan.utils.printer;
 
-import com.dat3m.dartagnan.expression.Expression;
-import com.dat3m.dartagnan.utils.Result;
 import com.dat3m.dartagnan.utils.ExitCode;
+import com.dat3m.dartagnan.utils.Result;
 import com.dat3m.dartagnan.utils.Utils;
+import org.sosy_lab.common.configuration.Configuration;
+
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
-import org.sosy_lab.common.configuration.Configuration;
 
-import static com.dat3m.dartagnan.utils.Result.*;
+import static com.dat3m.dartagnan.utils.Result.PASS;
 
 public class OutputLogger {
 
-    private final List<ResultSummary> results = new ArrayList();
+    private final List<ResultSummary> results = new ArrayList<>();
     private final File modelFile;
     private final Configuration config;
 

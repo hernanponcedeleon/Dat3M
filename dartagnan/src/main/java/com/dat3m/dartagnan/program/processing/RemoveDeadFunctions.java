@@ -55,9 +55,7 @@ public class RemoveDeadFunctions implements ProgramProcessor {
         final Set<Function> reachableFunctions = new HashSet<>();
         reachableFunctions.addAll(functionCollector.collectedFunctions);
         reachableFunctions.addAll(program.getThreads()); // threads are reachable
-        if (program.getEntrypoint().getEntryFunction() != null) {
-            reachableFunctions.add(program.getEntrypoint().getEntryFunction()); // entry point is reachable
-        }
+        reachableFunctions.addAll(program.getEntrypoint().getEntryFunctions()); // entry points are reachable
         program.getFunctions().stream().filter(Function::isIntrinsic).forEach(reachableFunctions::add); // intrinsics
 
         // (3) For all reachable functions, find which other functions it can reach.

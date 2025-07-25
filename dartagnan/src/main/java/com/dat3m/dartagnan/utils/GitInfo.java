@@ -1,13 +1,12 @@
 package com.dat3m.dartagnan.utils;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.util.Properties;
-
+import com.dat3m.dartagnan.Dartagnan;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import com.dat3m.dartagnan.Dartagnan;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.Properties;
 
 public class GitInfo {
 
@@ -27,8 +26,8 @@ public class GitInfo {
     }
 
     public static void logGitInfo() {
-        logger.info("Git branch: " + properties.getProperty("git.branch", "unknown"));
-        logger.info("Git commit ID: " + properties.getProperty("git.commit.id", "unknown"));
+        logger.info("Git branch: {}", properties.getProperty("git.branch", "unknown"));
+        logger.info("Git commit ID: {}", properties.getProperty("git.commit.id", "unknown"));
     }
 
     public static String getGitId() {

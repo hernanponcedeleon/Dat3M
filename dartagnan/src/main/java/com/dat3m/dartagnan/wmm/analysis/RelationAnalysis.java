@@ -20,7 +20,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import static com.dat3m.dartagnan.configuration.OptionNames.*;
+import static com.dat3m.dartagnan.configuration.OptionNames.ENABLE_EXTENDED_RELATION_ANALYSIS;
+import static com.dat3m.dartagnan.configuration.OptionNames.RELATION_ANALYSIS;
 import static com.dat3m.dartagnan.wmm.RelationNameRepository.CO;
 import static com.dat3m.dartagnan.wmm.RelationNameRepository.RF;
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -51,17 +52,19 @@ public interface RelationAnalysis {
             case LAZY -> LazyRelationAnalysis.fromConfig(task, context, config);
         };
 
+        if (c.enableExtended && (c.method == RelationAnalysisMethod.NONE || c.method == RelationAnalysisMethod.LAZY)) {
+            logger.info("{}=true can only be combined with {}={}. Setting {}=false.",
+                    ENABLE_EXTENDED_RELATION_ANALYSIS, RELATION_ANALYSIS, RelationAnalysisMethod.NATIVE,
+                    ENABLE_EXTENDED_RELATION_ANALYSIS);
+            c.enableExtended = false;
+        }
+
         if (logger.isInfoEnabled()) {
             logger.info("Selected relation analysis: {}", c.method);
             final StringBuilder configSummary = new StringBuilder().append("\n");
             configSummary.append("\t").append(RELATION_ANALYSIS).append(": ").append(c.method).append("\n");
             configSummary.append("\t").append(ENABLE_EXTENDED_RELATION_ANALYSIS).append(": ").append(c.enableExtended);
             logger.info(configSummary);
-        }
-
-        if (c.enableExtended && (c.method == RelationAnalysisMethod.NONE || c.method == RelationAnalysisMethod.LAZY)) {
-            logger.warn("{} implies {}", ENABLE_EXTENDED_RELATION_ANALYSIS, RELATION_ANALYSIS);
-            c.enableExtended = false;
         }
 
         long t0 = System.currentTimeMillis();

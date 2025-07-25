@@ -1,0 +1,11 @@
+PTX MP+RMW
+{
+P1:r0=0;
+P2:r1=0; P2:r2=0;
+x=0; y=0;
+}
+ P0@cta 0, gpu 0       | P1@cta 0, gpu 0                | P2@cta 0, gpu 0      ;
+ st.relaxed.gpu x, 1   | atom.relaxed.gpu.add r0, y, 1  | ld.acquire.gpu r1, y ;
+ st.release.gpu y, 1   |                                | ld.relaxed.gpu r2, x ;
+
+exists (1:r0 = 1 /\ 2:r1 = 2 /\ 2:r2 = 0)

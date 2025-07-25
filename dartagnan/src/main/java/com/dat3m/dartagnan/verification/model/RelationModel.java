@@ -1,11 +1,11 @@
 package com.dat3m.dartagnan.verification.model;
 
-import com.dat3m.dartagnan.wmm.Relation;
 import com.dat3m.dartagnan.verification.model.event.EventModel;
+import com.dat3m.dartagnan.wmm.Relation;
 
 import java.util.Collections;
-import java.util.Set;
 import java.util.HashSet;
+import java.util.Set;
 
 
 public class RelationModel {
@@ -30,39 +30,10 @@ public class RelationModel {
     }
 
 
-    public static class EdgeModel {
-        private final EventModel from;
-        private final EventModel to;
-
-        public EdgeModel(EventModel from, EventModel to) {
-            this.from = from;
-            this.to = to;
-        }
-
-        public EventModel getFrom() {
-            return from;
-        }
-
-        public EventModel getTo() {
-            return to;
-        }
-
+    public record EdgeModel(EventModel from, EventModel to) {
         @Override
-        public String toString() { return from.getId() + " -> " + to.getId(); }
-
-        @Override
-        public boolean equals(Object other) {
-            if (this == other) {
-                return true;
-            }
-            return from.getId() == ((EdgeModel) other).getFrom().getId()
-                   && to.getId() == ((EdgeModel) other).getTo().getId();
-        }
-
-        @Override
-        public int hashCode() {
-            int a = from.getId();
-            return  a ^ (31 * to.getId() + 0x9e3779b9 + (a << 6) + (a >> 2));
+        public String toString() {
+            return from.getId() + " -> " + to.getId();
         }
     }
 }

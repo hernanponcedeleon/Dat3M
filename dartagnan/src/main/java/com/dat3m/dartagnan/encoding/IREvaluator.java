@@ -162,7 +162,7 @@ public class IREvaluator {
     // ====================================================================================
     // Internal
 
-    public Object getDummyModelOfType(Type type) {
+    private Object getDummyModelOfType(Type type) {
         if (type instanceof BooleanType) {
             return Boolean.FALSE;
         } else if (type instanceof IntegerType) {

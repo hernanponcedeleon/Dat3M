@@ -88,15 +88,15 @@ public class AssumeSolver extends ModelChecker {
         }
 
         if (logger.isDebugEnabled()) {
-            String smtStatistics = "\n ===== SMT Statistics ===== \n";
+            StringBuilder smtStatistics = new StringBuilder("\n ===== SMT Statistics ===== \n");
             for (String key : prover.getStatistics().keySet()) {
-                smtStatistics += String.format("\t%s -> %s\n", key, prover.getStatistics().get(key));
+                smtStatistics.append(String.format("\t%s -> %s\n", key, prover.getStatistics().get(key)));
             }
-            logger.debug(smtStatistics);
+            logger.debug(smtStatistics.toString());
         }
 
         // For Safety specs, we have SAT=FAIL, but for reachability specs, we have SAT=PASS
         res = Property.getCombinedType(task.getProperty(), task) == Property.Type.SAFETY ? res : res.invert();
-        logger.info("Verification finished with result " + res);
+        logger.info("Verification finished with result {}", res);
     }
 }

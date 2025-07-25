@@ -3,7 +3,6 @@ package com.dat3m.dartagnan.encoding;
 import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.configuration.Property;
 import com.dat3m.dartagnan.expression.Expression;
-import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.analysis.ExecutionAnalysis;
@@ -42,7 +41,6 @@ import static com.dat3m.dartagnan.wmm.RelationNameRepository.CO;
 public class PropertyEncoder implements Encoder {
 
     private static final Logger logger = LogManager.getLogger(PropertyEncoder.class);
-    private static final TypeFactory types = TypeFactory.getInstance();
 
     private final EncodingContext context;
     private final Program program;

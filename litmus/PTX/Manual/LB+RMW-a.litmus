@@ -1,0 +1,12 @@
+PTX LB+RMW-a
+{
+P0:r0=0;
+P1:r1=0;
+P2:r2=0;
+x=0; y=0;
+}
+ P0@cta 0, gpu 0       | P1@cta 0, gpu 0                | P2@cta 0, gpu 0      ;
+ ld.acquire.gpu r0, y  | atom.relaxed.gpu.add r1, x, 1  | ld.relaxed.gpu r2, x ;
+ st.weak x, 1          |                                | st.release.gpu y, 1  ;
+
+exists (0:r0 = 1 /\ 1:r1 = 1 /\ 2:r2 = 2)

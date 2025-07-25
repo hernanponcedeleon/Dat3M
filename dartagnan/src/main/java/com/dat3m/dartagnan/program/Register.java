@@ -16,7 +16,6 @@ import static com.google.common.base.Preconditions.checkNotNull;
 public class Register extends LeafExpressionBase<Type> {
 
     private final String name;
-    private String cVar;
     private final Function function;
 
     Register(String name, Function function, Type type) {
@@ -27,14 +26,6 @@ public class Register extends LeafExpressionBase<Type> {
 
     public String getName() {
         return name;
-    }
-
-    public String getCVar() {
-        return cVar;
-    }
-
-    public void setCVar(String name) {
-        this.cVar = name;
     }
 
     public Thread getThread() {

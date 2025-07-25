@@ -18,7 +18,6 @@ import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Verify.verify;
 import static java.util.stream.Collectors.toList;
@@ -115,27 +114,11 @@ public final class Dependency implements ReachingDefinitionsAnalysis {
             if (!registers.isEmpty()) {
                 Map<Register, State> result = new HashMap<>();
                 for (Register register : registers) {
-                    State writers;
-                    if (register.getFunction() != event.getThread()) {
-                        writers = finalWriters.get(register);
-                        checkArgument(writers != null,
-                                "Helper thread %s should be listed after their creator thread %s.",
-                                thread,
-                                register.getFunction());
-                        if (writers.may.size() != 1) {
-                            logger.warn("Writers {} for inter-thread register {} read by event {} of thread {}",
-                                    writers.may,
-                                    register,
-                                    event,
-                                    thread.getId());
-                        }
-                    } else {
-                        writers = process(event, state, register, exec);
-                        if (!writers.initialized) {
-                            logger.warn("Uninitialized register {} read by event {}\n {}",
-                                    register, event,
-                                    synCtx.get().getSourceLocationWithContext(event, true));
-                        }
+                    State writers = process(event, state, register, exec);
+                    if (!writers.initialized) {
+                        logger.warn("Uninitialized register {} read by event {}\n {}",
+                                register, event,
+                                synCtx.get().getSourceLocationWithContext(event, true));
                     }
                     result.put(register, writers);
                 }
