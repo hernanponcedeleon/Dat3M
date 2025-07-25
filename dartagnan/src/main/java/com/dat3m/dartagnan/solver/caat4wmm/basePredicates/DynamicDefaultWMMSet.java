@@ -26,17 +26,17 @@ public class DynamicDefaultWMMSet extends MaterializedWMMSet {
         final EncodingContext.EdgeEncoder edge = ctx.edge(relation);
         final RelationAnalysis.Knowledge k = ctx.getAnalysisContext().get(RelationAnalysis.class).getKnowledge(relation);
 
-        if (k.getMaySet().size() < domain.size() * domain.size()) {
+        if (k.getMaySet().size() < domain.size()) {
             k.getMaySet().apply((e1, e2) -> {
                 final EventData d1 = !e1.equals(e2) ? null : model.getData(e1).orElse(null);
-                final Element e = d1 == null ? null : getEdgeFromEventData(edge, d1, m);
+                final Element e = d1 == null ? null : getElementFromEventData(edge, d1, m);
                 if (e != null) {
                     simpleSet.add(e);
                 }
             });
         } else {
             for (EventData e1 : model.getEventList()) {
-                final Element e = getEdgeFromEventData(edge, e1, m);
+                final Element e = getElementFromEventData(edge, e1, m);
                 if (e != null) {
                     simpleSet.add(e);
                 }
@@ -44,7 +44,7 @@ public class DynamicDefaultWMMSet extends MaterializedWMMSet {
         }
     }
 
-    private Element getEdgeFromEventData(EncodingContext.EdgeEncoder edge, EventData e1, IREvaluator m) {
+    private Element getElementFromEventData(EncodingContext.EdgeEncoder edge, EventData e1, IREvaluator m) {
         return m.hasElement(edge, e1.getEvent()) ? new Element(e1.getId()) : null;
     }
 }

@@ -446,17 +446,17 @@ public class WmmEncoder implements Encoder {
 
         @Override
         public Void visitSetIdentity(SetIdentity id) {
-            final Relation rel = id.getDefinedRelation();
-            final Relation r1 = id.getDomain();
-            EventGraph mustSet = ra.getKnowledge(rel).getMustSet();
-            EncodingContext.EdgeEncoder enc0 = context.edge(rel);
-            EncodingContext.EdgeEncoder enc1 = context.edge(r1);
-            encodeSets.get(rel).apply((e1, e2) ->
+            final Relation setId = id.getDefinedRelation();
+            final Relation domain = id.getDomain();
+            EventGraph mustSet = ra.getKnowledge(setId).getMustSet();
+            EncodingContext.EdgeEncoder encSetId = context.edge(setId);
+            EncodingContext.EdgeEncoder encDomain = context.edge(domain);
+            encodeSets.get(setId).apply((e1, e2) ->
                     enc.add(bmgr.equivalence(
-                            enc0.encode(e1, e2),
+                            encSetId.encode(e1, e2),
                             mustSet.contains(e1, e2) ?
                                     execution(e1, e2) :
-                                    enc1.encode(e1, e2))));
+                                    encDomain.encode(e1, e2))));
             return null;
         }
 
@@ -477,20 +477,20 @@ public class WmmEncoder implements Encoder {
         }
 
         @Override
-        public Void visitProduct(CartesianProduct product) {
-            final Relation rel = product.getDefinedRelation();
-            final Relation r1 = product.getDomain();
-            final Relation r2 = product.getRange();
-            EventGraph mustSet = ra.getKnowledge(rel).getMustSet();
-            EncodingContext.EdgeEncoder enc0 = context.edge(rel);
-            EncodingContext.EdgeEncoder enc1 = context.edge(r1);
-            EncodingContext.EdgeEncoder enc2 = context.edge(r2);
-            encodeSets.get(rel).apply((e1, e2) ->
+        public Void visitProduct(CartesianProduct cartesianProduct) {
+            final Relation product = cartesianProduct.getDefinedRelation();
+            final Relation domain = cartesianProduct.getDomain();
+            final Relation range = cartesianProduct.getRange();
+            EventGraph mustSet = ra.getKnowledge(product).getMustSet();
+            EncodingContext.EdgeEncoder encProduct = context.edge(product);
+            EncodingContext.EdgeEncoder encDomain = context.edge(domain);
+            EncodingContext.EdgeEncoder encRange = context.edge(range);
+            encodeSets.get(product).apply((e1, e2) ->
                     enc.add(bmgr.equivalence(
-                            enc0.encode(e1, e2),
+                            encProduct.encode(e1, e2),
                             mustSet.contains(e1, e2) ?
                                     execution(e1, e2) :
-                                    bmgr.and(enc1.encode(e1, e1), enc2.encode(e2, e2)))));
+                                    bmgr.and(encDomain.encode(e1, e1), encRange.encode(e2, e2)))));
             return null;
         }
 

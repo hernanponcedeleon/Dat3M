@@ -328,7 +328,7 @@ public class Reasoner {
                     return reason;
                 }
             }
-            throw new IllegalStateException("ProjectionIdentityGraph: No matching edge is found");
+            throw new IllegalStateException("ProjectionSet: No matching element found.");
         }
     }
 }

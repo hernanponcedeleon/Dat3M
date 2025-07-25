@@ -568,15 +568,17 @@ public class RefinementSolver extends ModelChecker {
         final Relation rfinv = wmm.addDefinition(new Inverse(wmm.newRelation(), rf));
         final Relation frStandard = wmm.addDefinition(new Composition(wmm.newRelation(), rfinv, co));
 
-        // ((R \ range(rf)) * W) & loc
+        // [R \ range(rf)];loc;[W]
         final Relation reads = wmm.addDefinition(new TagSet(wmm.newSet(), Tag.READ));
         final Relation rfRange = wmm.addDefinition(new Range(wmm.newSet(), rf));
         final Relation writes = wmm.addDefinition(new TagSet(wmm.newSet(), Tag.WRITE));
+        final Relation writesSet = wmm.addDefinition(new SetIdentity(wmm.newRelation(), writes));
         final Relation ur = wmm.addDefinition(new Difference(wmm.newSet(), reads, rfRange));
-        final Relation urw = wmm.addDefinition(new CartesianProduct(wmm.newRelation(), ur, writes));
-        final Relation urlocwrites = wmm.addDefinition(new Intersection(wmm.newRelation(), urw, loc));
+        final Relation urSet = wmm.addDefinition(new SetIdentity(wmm.newRelation(), ur));
+        final Relation urloc = wmm.addDefinition(new Composition(wmm.newRelation(), urSet, loc));
+        final Relation urlocwrites = wmm.addDefinition(new Composition(wmm.newRelation(), urloc, writesSet));
 
-        // let fr = rf^-1;co | (((R \ range(rf)) * W) & loc)
+        // let fr = rf^-1;co | [R \ range(rf)];loc;[W]
         final Relation fr = wmm.addDefinition(new Union(wmm.newRelation(), frStandard, urlocwrites));
 
         if (biases.contains(Baseline.UNIPROC)) {
