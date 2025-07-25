@@ -4,12 +4,7 @@ import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.Type;
-import com.dat3m.dartagnan.expression.type.AggregateType;
-import com.dat3m.dartagnan.expression.type.ArrayType;
-import com.dat3m.dartagnan.expression.type.FunctionType;
-import com.dat3m.dartagnan.expression.type.TypeFactory;
-import com.dat3m.dartagnan.expression.type.BooleanType;
-import com.dat3m.dartagnan.expression.type.TypeOffset;
+import com.dat3m.dartagnan.expression.type.*;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.Tag;
@@ -38,7 +33,7 @@ public class Program {
     private final List<Function> functions;
     private final List<NonDetValue> constants = new ArrayList<>();
     private final Memory memory;
-    private Entrypoint entrypoint;
+    private Entrypoint entrypoint = new Entrypoint.None();
     private Arch arch;
     private int unrollingBound = 0;
     private boolean isCompiled;
@@ -100,7 +95,7 @@ public class Program {
     }
 
     public void setEntrypoint(Entrypoint entrypoint) {
-        this.entrypoint = entrypoint;
+        this.entrypoint = Preconditions.checkNotNull(entrypoint);
     }
 
     public Entrypoint getEntrypoint() {

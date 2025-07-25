@@ -77,7 +77,7 @@ import static com.dat3m.dartagnan.wmm.RelationNameRepository.*;
     and iteratively refines it to perform a verification task.
     It can be understood as a lazy offline-SMT solver.
     More concretely, it iteratively
-        - finds some assertion-violating execution w.r.t. to some (very weak) baseline memory model
+        - finds some assertion-violating execution w.r.t. some (very weak) baseline memory model
         - checks the consistency of this execution using a custom theory solver (CAAT-Solver)
         - refines the used memory model if the found execution was inconsistent, using the explanations
           provided by the theory solver.
@@ -86,11 +86,6 @@ import static com.dat3m.dartagnan.wmm.RelationNameRepository.*;
 public class RefinementSolver extends ModelChecker {
 
     private static final Logger logger = LogManager.getLogger(RefinementSolver.class);
-
-    private static final String FR = "fr";
-    private static final String COE = "coe";
-    private static final String FRE = "fre";
-    private static final String POLOC = "po-loc";
 
     private EncodingContext contextWithFullWmm;
 
@@ -341,7 +336,21 @@ public class RefinementSolver extends ModelChecker {
         // For Safety specs, we have SAT=FAIL, but for reachability specs, we have
         // SAT=PASS
         res = propertyType == Property.Type.SAFETY ? res : res.invert();
-        logger.info("Verification finished with result " + res);
+
+        if (hasModel()) {
+            validateModel(solver.getExecution());
+        }
+        logger.info("Verification finished with result {}", res);
+    }
+
+    private void validateModel(ExecutionModel model) {
+        // Check if there are accesses to uninitialized registers
+        for (ExecutionModel.UninitRegRead uninitRegRead : model.getUninitRegReads()) {
+            logger.warn("Encountered uninitialized register {} read by {}: {}.",
+                    uninitRegRead.register(), uninitRegRead.at().getGlobalId(), uninitRegRead.at());
+        }
+
+        // TODO: Check if there is OOB or any aliasing violation
     }
 
     private void analyzeInconclusiveness(VerificationTask task, Context analysisContext, ExecutionModel model) {

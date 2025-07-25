@@ -2,15 +2,30 @@ package com.dat3m.dartagnan.program;
 
 import com.dat3m.dartagnan.program.processing.transformers.MemoryTransformer;
 
+import java.util.List;
+
 public sealed interface Entrypoint {
 
-    Function getEntryFunction();
+    List<Function> getEntryFunctions();
+
+    // Default value: usually designates an error
+    final class None implements Entrypoint {
+        @Override
+        public List<Function> getEntryFunctions() {
+            return List.of();
+        }
+
+        @Override
+        public String toString() {
+            return "No Entrypoint";
+        }
+    }
 
     // In case the parser already spawns the threads, e.g., like we do in Litmus code.
     final class Resolved implements Entrypoint {
         @Override
-        public Function getEntryFunction() {
-            return null;
+        public List<Function> getEntryFunctions() {
+            return List.of();
         }
 
         @Override
@@ -20,13 +35,11 @@ public sealed interface Entrypoint {
     }
 
     // Standard entry point
-    final class Simple implements Entrypoint {
-        private final Function function;
-        public Simple(Function function) {
-            this.function = function;
+    record Simple(Function function) implements Entrypoint {
+    @Override
+        public List<Function> getEntryFunctions() {
+            return List.of(function);
         }
-        @Override
-        public Function getEntryFunction() { return function; }
 
         @Override
         public String toString() {
@@ -34,17 +47,8 @@ public sealed interface Entrypoint {
         }
     }
 
-    // GPU entry point
-    final class Grid implements Entrypoint {
-        private final Function function;
-        private final ThreadGrid threadGrid;
-        private final MemoryTransformer memoryTransformer;
-
-        public Grid(Function function, ThreadGrid grid, MemoryTransformer transformer) {
-            this.function = function;
-            this.threadGrid = grid;
-            this.memoryTransformer = transformer;
-        }
+    record Grid(Function function, ThreadGrid threadGrid, MemoryTransformer memoryTransformer)
+            implements Entrypoint {
 
         @Override
         public String toString() {
@@ -52,9 +56,9 @@ public sealed interface Entrypoint {
         }
 
         @Override
-        public Function getEntryFunction() { return function; }
-        public ThreadGrid getThreadGrid() { return threadGrid; }
-        public MemoryTransformer getMemoryTransformer() { return memoryTransformer; }
+        public List<Function> getEntryFunctions() {
+            return List.of(function);
+        }
     }
 
 
