@@ -83,47 +83,50 @@ fi
 
 # if target is not given, we try to guess the target from the cat file
 if [ -z "${target}" ]; then
-	case "$cat" in
-		*aarch64*)
-        		target=arm8
+    case "$cat" in
+        *arm*)
+                target=arm7
                 ;;
-		*c11*)
-        		target=c11
+        *aarch64*)
+                target=arm8
                 ;;
-		*imm*)
-        		target=imm
+        *c11*)
+                target=c11
                 ;;
-		*linux-kernel*)
-        		target=lkmm
+        *imm*)
+                target=imm
                 ;;
-		*opencl*)
-        		target=opencl
+        *linux-kernel*)
+                target=lkmm
                 ;;
-		*power*)
-        		target=power
+        *opencl*)
+                target=opencl
                 ;;
-		*ptx*)
-        		target=ptx
+        *power*)
+                target=power
                 ;;
-		*rc11*)
-        		target=c11
+        *ptx*)
+                target=ptx
                 ;;
-		*riscv*)
-        		target=riscv
+        *rc11*)
+                target=c11
                 ;;
-		*sc*)
-        		target=c11
+        *riscv*)
+                target=riscv
                 ;;
-		*spirv*)
-        		target=vulkan
+        *sc*)
+                target=c11
                 ;;
-		*tso*)
-        		target=tso
+        *vulkan*)
+                target=vulkan
                 ;;
-		*vmm*)
-        		target=c11
+        *tso*)
+                target=tso
                 ;;
-	esac
+        *vmm*)
+                target=c11
+                ;;
+    esac
 fi
 
 if [ -z "${target}" ]; then
