@@ -6,12 +6,17 @@ import com.dat3m.dartagnan.wmm.definition.Union;
 import com.google.common.base.Preconditions;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
 import static com.dat3m.dartagnan.wmm.RelationNameRepository.*;
 import static com.google.common.base.Preconditions.checkState;
 
+/**
+ * Given an execution, describes a set of events or a binary relation between events,
+ * constrained by the associated {@link Definition}.
+ */
 public final class Relation implements Dependent<Relation> {
 
     private final Wmm wmm;
@@ -27,27 +32,47 @@ public final class Relation implements Dependent<Relation> {
         this.arity = arity;
     }
 
+    /**
+     * @return {@link Arity#UNARY UNARY} if this instance describes an event set in executions.
+     * {@link Arity#BINARY BINARY} if this instance describes an event relation in executions.
+     */
     public Arity getArity() {
         return arity;
     }
 
+    /**
+     * @return {@code true} if this instance describes an event set in executions.  Otherwise {@code false}.
+     */
     public boolean isUnaryRelation() {
         return arity == Arity.UNARY;
     }
 
+    /**
+     * @return {@code true} if this instance describes an event relation in executions.  Otherwise {@code false}.
+     */
     public boolean isBinaryRelation() {
         return arity == Arity.BINARY;
     }
 
+    /**
+     * @throws IllegalArgumentException This instance does not describe an event set in executions.
+     */
     public void checkUnaryRelation() {
         Preconditions.checkArgument(isUnaryRelation(), "Non-unary relation %s.", this);
     }
 
+    /**
+     * @throws IllegalArgumentException This instance does not describe an event relation in executions.
+     */
     public void checkBinaryRelation() {
         Preconditions.checkArgument(isBinaryRelation(), "Non-binary relation %s.", this);
     }
 
-    public void checkEqualArityRelation(List<Relation> others) {
+    /**
+     * @param others Instances of this class.
+     * @throws IllegalArgumentException At least one instance in {@code others} has a different arity than this.
+     */
+    public void checkEqualArityRelation(Collection<Relation> others) {
         Preconditions.checkArgument(!isUnaryRelation() || others.stream().allMatch(Relation::isUnaryRelation),
                 "Non-unary relation in %s", others);
         Preconditions.checkArgument(!isBinaryRelation() || others.stream().allMatch(Relation::isBinaryRelation),
