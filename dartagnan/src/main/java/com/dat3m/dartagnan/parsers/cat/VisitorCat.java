@@ -132,9 +132,9 @@ class VisitorCat extends CatBaseVisitor<Object> {
     }
 
     private String createUniqueName(String name) {
-        if (namespace.containsKey(name) && !nameOccurrenceCounter.containsKey(name)) {
+        if (wmm.containsRelation(name)) {
             // If we have already seen the name, but not counted it yet, we do so now.
-            nameOccurrenceCounter.put(name, 1);
+            nameOccurrenceCounter.putIfAbsent(name, 1);
         }
 
         final int occurrenceNumber =  nameOccurrenceCounter.compute(name, (k, v) -> v == null ? 1 : v + 1);
