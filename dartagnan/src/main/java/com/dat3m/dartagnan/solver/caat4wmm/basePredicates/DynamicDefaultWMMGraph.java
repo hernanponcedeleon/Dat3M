@@ -12,7 +12,7 @@ public class DynamicDefaultWMMGraph extends MaterializedWMMGraph {
     private final Relation relation;
 
     public DynamicDefaultWMMGraph(Relation rel) {
-        rel.checkBinaryRelation();
+        rel.checkRelation();
         this.relation = rel;
     }
 

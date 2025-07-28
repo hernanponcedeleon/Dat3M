@@ -16,8 +16,8 @@ public class Inverse extends Definition {
     public Inverse(Relation r0, Relation r1) {
         super(r0, "%s^-1");
         this.r1 = checkNotNull(r1);
-        r0.checkBinaryRelation();
-        r1.checkBinaryRelation();
+        r0.checkRelation();
+        r1.checkRelation();
     }
 
     public Relation getOperand() { return r1; }

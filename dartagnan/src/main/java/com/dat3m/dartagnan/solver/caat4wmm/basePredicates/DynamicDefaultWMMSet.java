@@ -13,7 +13,7 @@ public class DynamicDefaultWMMSet extends MaterializedWMMSet {
     private final Relation relation;
 
     public DynamicDefaultWMMSet(Relation rel) {
-        rel.checkUnaryRelation();
+        rel.checkSet();
         this.relation = rel;
     }
 

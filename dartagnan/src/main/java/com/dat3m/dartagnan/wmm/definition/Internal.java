@@ -9,7 +9,7 @@ public class Internal extends Definition {
 
     public Internal(Relation r0) {
         super(r0, INT);
-        r0.checkBinaryRelation();
+        r0.checkRelation();
     }
 
     @Override

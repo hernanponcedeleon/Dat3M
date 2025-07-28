@@ -113,7 +113,7 @@ public class IREvaluator {
     // Memory Model
 
     public boolean hasElement(Relation rel, Event a) {
-        Preconditions.checkArgument(rel.isUnaryRelation(), "Non-unary relation %s", rel);
+        Preconditions.checkArgument(rel.isSet(), "Non-unary relation %s", rel);
         return TRUE.equals(smtModel.evaluate(ctx.edge(rel, a, a)));
     }
 
@@ -122,7 +122,7 @@ public class IREvaluator {
     }
 
     public boolean hasEdge(Relation rel, Event a, Event b) {
-        Preconditions.checkArgument(rel.isBinaryRelation(), "Non-binary relation %s", rel);
+        Preconditions.checkArgument(rel.isRelation(), "Non-binary relation %s", rel);
         return TRUE.equals(smtModel.evaluate(ctx.edge(rel, a, b)));
     }
 

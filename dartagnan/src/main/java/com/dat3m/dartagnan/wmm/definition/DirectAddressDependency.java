@@ -9,7 +9,7 @@ public class DirectAddressDependency extends Definition {
 
     public DirectAddressDependency(Relation r0) {
         super(r0, RelationNameRepository.ADDRDIRECT);
-        r0.checkBinaryRelation();
+        r0.checkRelation();
     }
 
     @Override

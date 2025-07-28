@@ -8,7 +8,7 @@ public class SyncFence extends Definition {
 
     public SyncFence(Relation r) {
         super(r, RelationNameRepository.SYNC_FENCE);
-        r.checkBinaryRelation();
+        r.checkRelation();
     }
     @Override
     public <T> T accept(Visitor<? extends T> v) {

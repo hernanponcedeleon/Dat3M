@@ -14,8 +14,8 @@ public class Range extends Definition {
     public Range(Relation r0, Relation r1) {
         super(r0, "range(%s)");
         this.r1 = checkNotNull(r1);
-        r0.checkUnaryRelation();
-        r1.checkBinaryRelation();
+        r0.checkSet();
+        r1.checkRelation();
     }
 
     public Relation getOperand() { return r1; }

@@ -8,7 +8,7 @@ public class SameLocation extends Definition {
 
     public SameLocation(Relation r0) {
         super(r0, RelationNameRepository.LOC);
-        r0.checkBinaryRelation();
+        r0.checkRelation();
     }
 
     @Override

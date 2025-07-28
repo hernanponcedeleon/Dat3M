@@ -206,7 +206,7 @@ public class ExecutionGraph {
     }
 
     private RelationGraph getOrCreateGraphFromRelation(Relation rel) {
-        rel.checkBinaryRelation();
+        rel.checkRelation();
         if (predicateToRelationMap.containsKey(rel)) {
             return (RelationGraph) predicateToRelationMap.get(rel);
         }
@@ -216,7 +216,7 @@ public class ExecutionGraph {
     }
 
     private RelationGraph createGraphFromRelation(Relation rel) {
-        rel.checkBinaryRelation();
+        rel.checkRelation();
         final RelationGraph graph;
         final Class<?> relClass = rel.getDefinition().getClass();
         final List<Relation> dependencies = rel.getDependencies();
@@ -269,7 +269,7 @@ public class ExecutionGraph {
     }
 
     private SetPredicate getOrCreateSetFromRelation(Relation relation) {
-        relation.checkUnaryRelation();
+        relation.checkSet();
         final CAATPredicate existing = predicateToRelationMap.get(relation);
         if (existing != null) {
             return (SetPredicate) existing;
