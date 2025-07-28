@@ -211,15 +211,14 @@ class VisitorCat extends CatBaseVisitor<Object> {
     @Override
     public Object visitExprBasic(ExprBasicContext ctx) {
         final String name = ctx.n.getText();
-        final Object boundObject = namespace.get(name);
+        final Object localObject = namespace.get(name);
+        final Object boundObject = localObject != null ? localObject : wmm.getRelation(name);
         if (boundObject != null) {
             return boundObject;
         }
         final boolean predefinedName = RelationNameRepository.contains(name);
         final Relation predefined = predefinedName ? wmm.getOrCreatePredefinedRelation(name) : null;
-        final Relation newRelation = predefinedName ? predefined : addDefinition(new TagSet(wmm.newSet(name), name));
-        namespace.put(name, newRelation);
-        return newRelation;
+        return predefinedName ? predefined : addDefinition(new TagSet(wmm.newSet(name), name));
     }
 
     @Override
