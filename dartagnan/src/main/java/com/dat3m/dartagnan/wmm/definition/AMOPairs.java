@@ -8,7 +8,7 @@ public class AMOPairs extends Definition {
 
     public AMOPairs(Relation r0) {
         super(r0, RelationNameRepository.AMO);
-        r0.checkBinaryRelation();
+        r0.checkRelation();
     }
 
     @Override

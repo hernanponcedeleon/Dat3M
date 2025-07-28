@@ -16,12 +16,12 @@ public class Irreflexivity extends Axiom {
 
     public Irreflexivity(Relation rel, boolean negated, boolean flag) {
         super(rel, negated, flag);
-        rel.checkBinaryRelation();
+        rel.checkRelation();
     }
 
     public Irreflexivity(Relation rel) {
         super(rel, false, false);
-        rel.checkBinaryRelation();
+        rel.checkRelation();
     }
 
     @Override

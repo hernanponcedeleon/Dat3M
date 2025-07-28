@@ -242,11 +242,11 @@ public class ExecutionModelManager {
     }
 
     private CAATPredicate createPredicate(Relation r) {
-        return r.isUnaryRelation() ? createSet(r) : createGraph(r);
+        return r.isSet() ? createSet(r) : createGraph(r);
     }
 
     private SetPredicate createSet(Relation r) {
-        r.checkUnaryRelation();
+        r.checkSet();
         SetPredicate set = r.getDependencies().isEmpty() ? new SimpleSet() : r.getDefinition().accept(setBuilder);
         set.setName(r.getNameOrTerm());
         if (!r.isRecursive()) {
@@ -256,7 +256,7 @@ public class ExecutionModelManager {
     }
 
     private RelationGraph createGraph(Relation r) {
-        r.checkBinaryRelation();
+        r.checkRelation();
         RelationGraph rg = r.getDependencies().isEmpty() ? new SimpleGraph() : r.getDefinition().accept(graphBuilder);
         rg.setName(r.getNameOrTerm());
         if (!r.isRecursive()) {
@@ -266,12 +266,12 @@ public class ExecutionModelManager {
     }
 
     private SetPredicate getOrCreateSet(Relation r) {
-        r.checkUnaryRelation();
+        r.checkSet();
         return (SetPredicate) getOrCreatePredicate(r);
     }
 
     private RelationGraph getOrCreateGraph(Relation r) {
-        r.checkBinaryRelation();
+        r.checkRelation();
         return (RelationGraph) getOrCreatePredicate(r);
     }
 

@@ -11,13 +11,13 @@ public class TagSet extends Definition {
     public TagSet(Relation r, String tag) {
         super(r, tag);
         this.tag = tag;
-        r.checkUnaryRelation();
+        r.checkSet();
     }
 
     protected TagSet(Relation r, String tag, String termPattern) {
         super(r, termPattern);
         this.tag = tag;
-        r.checkUnaryRelation();
+        r.checkSet();
     }
 
     public String getTag() {

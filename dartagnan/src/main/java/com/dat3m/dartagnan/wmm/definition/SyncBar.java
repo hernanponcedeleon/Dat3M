@@ -8,7 +8,7 @@ public class SyncBar extends Definition {
 
     public SyncBar(Relation r) {
         super(r, RelationNameRepository.SYNCBAR);
-        r.checkBinaryRelation();
+        r.checkRelation();
     }
     @Override
     public <T> T accept(Visitor<? extends T> v) {

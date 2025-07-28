@@ -9,7 +9,7 @@ public class External extends Definition {
 
     public External(Relation r0) {
         super(r0, EXT);
-        r0.checkBinaryRelation();
+        r0.checkRelation();
     }
 
     @Override

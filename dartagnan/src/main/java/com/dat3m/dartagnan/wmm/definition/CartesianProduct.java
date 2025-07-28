@@ -14,9 +14,9 @@ public class CartesianProduct extends Definition {
         super(r0, "%s*%s");
         domain = r1;
         range = r2;
-        r0.checkBinaryRelation();
-        r1.checkUnaryRelation();
-        r2.checkUnaryRelation();
+        r0.checkRelation();
+        r1.checkSet();
+        r2.checkSet();
     }
 
     public Relation getDomain() { return domain; }

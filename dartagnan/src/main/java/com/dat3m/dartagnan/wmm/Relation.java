@@ -43,29 +43,29 @@ public final class Relation implements Dependent<Relation> {
     /**
      * @return {@code true} if this instance describes an event set in executions.  Otherwise {@code false}.
      */
-    public boolean isUnaryRelation() {
+    public boolean isSet() {
         return arity == Arity.UNARY;
     }
 
     /**
      * @return {@code true} if this instance describes an event relation in executions.  Otherwise {@code false}.
      */
-    public boolean isBinaryRelation() {
+    public boolean isRelation() {
         return arity == Arity.BINARY;
     }
 
     /**
      * @throws IllegalArgumentException This instance does not describe an event set in executions.
      */
-    public void checkUnaryRelation() {
-        Preconditions.checkArgument(isUnaryRelation(), "Non-unary relation %s.", this);
+    public void checkSet() {
+        Preconditions.checkArgument(isSet(), "Non-unary relation %s.", this);
     }
 
     /**
      * @throws IllegalArgumentException This instance does not describe an event relation in executions.
      */
-    public void checkBinaryRelation() {
-        Preconditions.checkArgument(isBinaryRelation(), "Non-binary relation %s.", this);
+    public void checkRelation() {
+        Preconditions.checkArgument(isRelation(), "Non-binary relation %s.", this);
     }
 
     /**
@@ -73,9 +73,9 @@ public final class Relation implements Dependent<Relation> {
      * @throws IllegalArgumentException At least one instance in {@code others} has a different arity than this.
      */
     public void checkEqualArityRelation(Collection<Relation> others) {
-        Preconditions.checkArgument(!isUnaryRelation() || others.stream().allMatch(Relation::isUnaryRelation),
+        Preconditions.checkArgument(!isSet() || others.stream().allMatch(Relation::isSet),
                 "Non-unary relation in %s", others);
-        Preconditions.checkArgument(!isBinaryRelation() || others.stream().allMatch(Relation::isBinaryRelation),
+        Preconditions.checkArgument(!isRelation() || others.stream().allMatch(Relation::isRelation),
                 "Non-binary relation in %s", others);
     }
 

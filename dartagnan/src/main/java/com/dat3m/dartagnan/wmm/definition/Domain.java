@@ -14,8 +14,8 @@ public class Domain extends Definition {
     public Domain(Relation r0, Relation r1) {
         super(r0, "domain(%s)");
         this.r1 = checkNotNull(r1);
-        r0.checkUnaryRelation();
-        r1.checkBinaryRelation();
+        r0.checkSet();
+        r1.checkRelation();
     }
 
     public Relation getOperand() { return r1; }

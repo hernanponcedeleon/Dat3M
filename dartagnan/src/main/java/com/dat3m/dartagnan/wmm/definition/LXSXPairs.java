@@ -8,7 +8,7 @@ public class LXSXPairs extends Definition {
 
     public LXSXPairs(Relation r0) {
         super(r0, RelationNameRepository.LXSX);
-        r0.checkBinaryRelation();
+        r0.checkRelation();
     }
 
     @Override

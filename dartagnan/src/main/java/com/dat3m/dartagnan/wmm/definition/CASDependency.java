@@ -9,7 +9,7 @@ public class CASDependency extends Definition {
 
     public CASDependency(Relation r0) {
         super(r0, CASDEP);
-        r0.checkBinaryRelation();
+        r0.checkRelation();
     }
 
     @Override

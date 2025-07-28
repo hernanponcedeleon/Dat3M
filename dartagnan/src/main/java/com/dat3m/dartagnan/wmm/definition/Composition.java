@@ -16,9 +16,9 @@ public class Composition extends Definition {
         super(r0, "%s ; %s");
         left = checkNotNull(r1);
         right = checkNotNull(r2);
-        r0.checkBinaryRelation();
-        r1.checkBinaryRelation();
-        r2.checkBinaryRelation();
+        r0.checkRelation();
+        r1.checkRelation();
+        r2.checkRelation();
     }
 
     public Relation getLeftOperand() { return left; }

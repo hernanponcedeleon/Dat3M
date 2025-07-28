@@ -8,7 +8,7 @@ public class SameScope extends Definition {
 
     public SameScope(Relation r) {
         this(r, null);
-        r.checkBinaryRelation();
+        r.checkRelation();
     }
 
     public SameScope(Relation r, String specificScope) {

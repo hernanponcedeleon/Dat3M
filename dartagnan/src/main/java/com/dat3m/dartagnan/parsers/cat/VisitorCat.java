@@ -283,8 +283,8 @@ class VisitorCat extends CatBaseVisitor<Object> {
         final Relation visible = wmm.newSet();
         wmm.addDefinition(new TagSet(visible, VISIBLE));
         final Relation r0 = wmm.newRelation(r1.getArity());
-        final Relation all = r1.isUnaryRelation() ? visible : wmm.newRelation();
-        if (!r1.isUnaryRelation()) {
+        final Relation all = r1.isSet() ? visible : wmm.newRelation();
+        if (!r1.isSet()) {
             wmm.addDefinition(new CartesianProduct(all, visible, visible));
         }
         return addDefinition(new Difference(r0, all, r1));
