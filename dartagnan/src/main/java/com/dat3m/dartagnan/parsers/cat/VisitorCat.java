@@ -144,12 +144,10 @@ class VisitorCat extends CatBaseVisitor<Object> {
 
     @Override
     public Void visitLetDefinition(LetDefinitionContext ctx) {
-        String name = ctx.n.getText();
-        Object definedPredicate = ctx.e.accept(this);
-        if (definedPredicate instanceof Relation rel) {
-            String alias = createUniqueName(name);
-            wmm.addAlias(alias, rel);
-        }
+        final String name = ctx.n.getText();
+        final Relation definedPredicate = (Relation) ctx.e.accept(this);
+        final String alias = createUniqueName(name);
+        wmm.addAlias(alias, definedPredicate);
         namespace.put(name, definedPredicate);
         return null;
     }
