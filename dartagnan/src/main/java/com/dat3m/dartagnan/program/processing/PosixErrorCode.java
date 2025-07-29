@@ -1,8 +1,10 @@
 package com.dat3m.dartagnan.program.processing;
 
-// This excerpt of the
+/**
+ * Integer-valued error code as used in the GNU/Linux operating system and the C standard library.
+ */
 enum PosixErrorCode {
-    E0,
+    SUCCESS, // 0
     EPERM, // 1 Operation not permitted
     ENOENT, // 2 No such file or directory
     ESRCH, // 3 No such process

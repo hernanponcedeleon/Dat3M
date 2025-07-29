@@ -299,7 +299,7 @@ public class ThreadCreation implements ProgramProcessor {
                 }
 
                 final Label detachCase = EventFactory.newLabel("__detachT" + tid + "#" + detachCounter);
-                final Expression isJoinable = expressions.makeIntExtract(threadState, 1, 1);
+                final Expression isJoinable = threadStateFlag(threadState, JOINABLE);
                 final Expression isJoinableBoolean = expressions.makeBooleanCast(isJoinable);
                 final List<Event> caseBody = eventSequence(
                         detachCase,
@@ -412,7 +412,7 @@ public class ThreadCreation implements ProgramProcessor {
 
             // Sync
             final Register threadState = thread.newRegister("__threadStateT" + tid, threadStateType);
-            final Expression isAlive = expressions.makeIntExtract(threadState, 0, 0);
+            final Expression isAlive = threadStateFlag(threadState, ALIVE);
             thread.getEntry().insertAfter(eventSequence(
                     newAcquireLoad(threadState, comAddress),
                     newAssume(expressions.makeBooleanCast(isAlive))

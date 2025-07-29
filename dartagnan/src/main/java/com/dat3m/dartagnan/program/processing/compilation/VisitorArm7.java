@@ -2,6 +2,7 @@ package com.dat3m.dartagnan.program.processing.compilation;
 
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.program.event.Event;
+import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.lang.catomic.*;
 import com.dat3m.dartagnan.program.event.arch.StoreExclusive;
 import com.dat3m.dartagnan.program.event.core.*;
@@ -32,14 +33,14 @@ class VisitorArm7 extends VisitorBase {
     public List<Event> visitAtomicLoad(AtomicLoad e) {
         return eventSequence(
                 newLoad(e.getResultRegister(), e.getAddress()),
-                AArch64.DMB.newISHBarrier()
+                isAtomicAcquire(e.getMo()) ? AArch64.DMB.newISHBarrier() : null
         );
     }
 
     @Override
     public List<Event> visitAtomicStore(AtomicStore e) {
         return eventSequence(
-                AArch64.DMB.newISHBarrier(),
+                isAtomicRelease(e.getMo()) ? AArch64.DMB.newISHBarrier() : null,
                 newStore(e.getAddress(), e.getMemValue())
         );
     }
@@ -50,7 +51,7 @@ class VisitorArm7 extends VisitorBase {
         final Load load = newRMWLoad(e.getResultRegister(), e.getAddress());
         return eventSequence(
                 load,
-                AArch64.DMB.newISHBarrier(),
+                isAtomicAcquire(e.getMo()) || isAtomicRelease(e.getMo()) ? AArch64.DMB.newISHBarrier() : null,
                 newRMWStore(load, e.getAddress(), value)
         );
     }
@@ -61,8 +62,24 @@ class VisitorArm7 extends VisitorBase {
         final Load load = newRMWLoad(e.getResultRegister(), e.getAddress());
         return eventSequence(
                 load,
-                AArch64.DMB.newISHBarrier(),
+                isAtomicAcquire(e.getMo()) || isAtomicRelease(e.getMo()) ? AArch64.DMB.newISHBarrier() : null,
                 newRMWStore(load, e.getAddress(), value)
         );
+    }
+
+    private boolean isAtomicAcquire(String mo) {
+        return switch (mo) {
+            case Tag.C11.MO_ACQUIRE -> true;
+            case Tag.C11.MO_RELEASE, Tag.C11.MO_RELAXED -> false;
+            default -> throw new UnsupportedOperationException("Unsupported memory order");
+        };
+    }
+
+    private boolean isAtomicRelease(String mo) {
+        return switch (mo) {
+            case Tag.C11.MO_RELEASE -> true;
+            case Tag.C11.MO_ACQUIRE, Tag.C11.MO_RELAXED -> false;
+            default -> throw new UnsupportedOperationException("Unsupported memory order");
+        };
     }
 }
