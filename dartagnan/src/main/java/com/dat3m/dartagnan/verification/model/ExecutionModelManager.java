@@ -246,7 +246,7 @@ public class ExecutionModelManager {
     }
 
     private SetPredicate createSet(Relation r) {
-        r.checkSet();
+        Relation.checkIsSet(r);
         SetPredicate set = r.getDependencies().isEmpty() ? new SimpleSet() : r.getDefinition().accept(setBuilder);
         set.setName(r.getNameOrTerm());
         if (!r.isRecursive()) {
@@ -256,7 +256,7 @@ public class ExecutionModelManager {
     }
 
     private RelationGraph createGraph(Relation r) {
-        r.checkRelation();
+        Relation.checkIsRelation(r);
         RelationGraph rg = r.getDependencies().isEmpty() ? new SimpleGraph() : r.getDefinition().accept(graphBuilder);
         rg.setName(r.getNameOrTerm());
         if (!r.isRecursive()) {
@@ -266,13 +266,11 @@ public class ExecutionModelManager {
     }
 
     private SetPredicate getOrCreateSet(Relation r) {
-        r.checkSet();
-        return (SetPredicate) getOrCreatePredicate(r);
+        return (SetPredicate) getOrCreatePredicate(Relation.checkIsSet(r));
     }
 
     private RelationGraph getOrCreateGraph(Relation r) {
-        r.checkRelation();
-        return (RelationGraph) getOrCreatePredicate(r);
+        return (RelationGraph) getOrCreatePredicate(Relation.checkIsRelation(r));
     }
 
     private CAATPredicate getOrCreatePredicate(Relation r) {

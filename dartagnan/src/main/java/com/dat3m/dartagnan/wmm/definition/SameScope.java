@@ -7,8 +7,7 @@ public class SameScope extends Definition {
     private final String specificScope;
 
     public SameScope(Relation r) {
-        this(r, null);
-        r.checkRelation();
+        this(Relation.checkIsRelation(r), null);
     }
 
     public SameScope(Relation r, String specificScope) {

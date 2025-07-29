@@ -10,8 +10,7 @@ import static com.dat3m.dartagnan.wmm.RelationNameRepository.CTRLDIRECT;
 public class DirectControlDependency extends Definition {
 
     public DirectControlDependency(Relation r0) {
-        super(r0, CTRLDIRECT);
-        r0.checkRelation();
+        super(Relation.checkIsRelation(r0), CTRLDIRECT);
     }
 
     @Override

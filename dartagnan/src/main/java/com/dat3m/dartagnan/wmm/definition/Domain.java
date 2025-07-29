@@ -5,17 +5,13 @@ import com.dat3m.dartagnan.wmm.Relation;
 
 import java.util.List;
 
-import static com.google.common.base.Preconditions.checkNotNull;
-
 public class Domain extends Definition {
 
     private final Relation r1;
 
     public Domain(Relation r0, Relation r1) {
-        super(r0, "domain(%s)");
-        this.r1 = checkNotNull(r1);
-        r0.checkSet();
-        r1.checkRelation();
+        super(Relation.checkIsSet(r0), "domain(%s)");
+        this.r1 = Relation.checkIsRelation(r1);
     }
 
     public Relation getOperand() { return r1; }

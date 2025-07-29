@@ -12,9 +12,8 @@ public class DynamicDefaultWMMSet extends MaterializedWMMSet {
 
     private final Relation relation;
 
-    public DynamicDefaultWMMSet(Relation rel) {
-        rel.checkSet();
-        this.relation = rel;
+    public DynamicDefaultWMMSet(Relation predicate) {
+        this.relation = Relation.checkIsSet(predicate);
     }
 
     @Override

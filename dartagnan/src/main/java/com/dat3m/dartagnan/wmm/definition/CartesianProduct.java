@@ -11,12 +11,9 @@ public class CartesianProduct extends Definition {
     private final Relation range;
 
     public CartesianProduct(Relation r0, Relation r1, Relation r2) {
-        super(r0, "%s*%s");
-        domain = r1;
-        range = r2;
-        r0.checkRelation();
-        r1.checkSet();
-        r2.checkSet();
+        super(Relation.checkIsRelation(r0), "%s*%s");
+        domain = Relation.checkIsSet(r1);
+        range = Relation.checkIsSet(r2);
     }
 
     public Relation getDomain() { return domain; }

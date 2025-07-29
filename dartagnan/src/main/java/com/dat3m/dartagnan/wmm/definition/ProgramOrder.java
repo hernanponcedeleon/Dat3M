@@ -9,9 +9,8 @@ public class ProgramOrder extends Definition {
     private final Filter filter; //TODO: Do we ever need a po on other events than all visible one's?
 
     public ProgramOrder(Relation r0, Filter s1) {
-        super(r0, "po(" + s1 + ")");
+        super(Relation.checkIsRelation(r0), "po(" + s1 + ")");
         filter = s1;
-        r0.checkRelation();
     }
 
     public Filter getFilter() { return filter; }

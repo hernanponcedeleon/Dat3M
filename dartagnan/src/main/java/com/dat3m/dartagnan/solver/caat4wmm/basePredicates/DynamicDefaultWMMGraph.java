@@ -12,8 +12,7 @@ public class DynamicDefaultWMMGraph extends MaterializedWMMGraph {
     private final Relation relation;
 
     public DynamicDefaultWMMGraph(Relation rel) {
-        rel.checkRelation();
-        this.relation = rel;
+        this.relation = Relation.checkIsRelation(rel);
     }
 
     @Override

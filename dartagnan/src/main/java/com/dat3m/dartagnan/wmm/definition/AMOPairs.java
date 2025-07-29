@@ -7,8 +7,7 @@ import com.dat3m.dartagnan.wmm.RelationNameRepository;
 public class AMOPairs extends Definition {
 
     public AMOPairs(Relation r0) {
-        super(r0, RelationNameRepository.AMO);
-        r0.checkRelation();
+        super(Relation.checkIsRelation(r0), RelationNameRepository.AMO);
     }
 
     @Override

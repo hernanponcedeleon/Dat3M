@@ -8,8 +8,7 @@ import static com.dat3m.dartagnan.wmm.RelationNameRepository.INT;
 public class Internal extends Definition {
 
     public Internal(Relation r0) {
-        super(r0, INT);
-        r0.checkRelation();
+        super(Relation.checkIsRelation(r0), INT);
     }
 
     @Override
