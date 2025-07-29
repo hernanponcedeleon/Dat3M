@@ -10,10 +10,8 @@ public class SetIdentity extends Definition {
     private final Relation domain;
 
     public SetIdentity(Relation r0, Relation r1) {
-        super(r0, "[%s]");
-        domain = r1;
-        r0.checkRelation();
-        r1.checkSet();
+        super(Relation.checkIsRelation(r0), "[%s]");
+        domain = Relation.checkIsSet(r1);
     }
 
     public Relation getDomain() { return domain; }

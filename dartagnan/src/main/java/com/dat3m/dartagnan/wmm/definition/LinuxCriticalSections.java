@@ -7,8 +7,7 @@ import com.dat3m.dartagnan.wmm.RelationNameRepository;
 public class LinuxCriticalSections extends Definition {
 
     public LinuxCriticalSections(Relation r0) {
-        super(r0, RelationNameRepository.CRIT);
-        r0.checkRelation();
+        super(Relation.checkIsRelation(r0), RelationNameRepository.CRIT);
     }
 
     @Override

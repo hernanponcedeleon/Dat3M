@@ -11,8 +11,7 @@ import com.dat3m.dartagnan.wmm.RelationNameRepository;
 public class SyncWith extends Definition {
 
     public SyncWith(Relation r) {
-        super(r, RelationNameRepository.SSW);
-        r.checkRelation();
+        super(Relation.checkIsRelation(r), RelationNameRepository.SSW);
     }
     @Override
     public <T> T accept(Visitor<? extends T> v) {

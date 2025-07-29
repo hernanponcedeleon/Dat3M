@@ -32,46 +32,28 @@ public final class Relation implements Dependent<Relation> {
         this.arity = arity;
     }
 
-    /**
-     * @return {@link Arity#UNARY UNARY} if this instance describes an event set in executions.
-     * {@link Arity#BINARY BINARY} if this instance describes an event relation in executions.
-     */
     public Arity getArity() {
         return arity;
     }
 
-    /**
-     * @return {@code true} if this instance describes an event set in executions.  Otherwise {@code false}.
-     */
     public boolean isSet() {
         return arity == Arity.UNARY;
     }
 
-    /**
-     * @return {@code true} if this instance describes an event relation in executions.  Otherwise {@code false}.
-     */
     public boolean isRelation() {
         return arity == Arity.BINARY;
     }
 
-    /**
-     * @throws IllegalArgumentException This instance does not describe an event set in executions.
-     */
-    public void checkSet() {
-        Preconditions.checkArgument(isSet(), "Non-unary relation %s.", this);
+    public static Relation checkIsSet(Relation relation) {
+        Preconditions.checkArgument(relation.isSet(), "Non-unary relation %s.", relation);
+        return relation;
     }
 
-    /**
-     * @throws IllegalArgumentException This instance does not describe an event relation in executions.
-     */
-    public void checkRelation() {
-        Preconditions.checkArgument(isRelation(), "Non-binary relation %s.", this);
+    public static Relation checkIsRelation(Relation relation) {
+        Preconditions.checkArgument(relation.isRelation(), "Non-binary relation %s.", relation);
+        return relation;
     }
 
-    /**
-     * @param others Instances of this class.
-     * @throws IllegalArgumentException At least one instance in {@code others} has a different arity than this.
-     */
     public void checkEqualArityRelation(Collection<Relation> others) {
         Preconditions.checkArgument(!isSet() || others.stream().allMatch(Relation::isSet),
                 "Non-unary relation in %s", others);

@@ -5,20 +5,15 @@ import com.dat3m.dartagnan.wmm.Relation;
 
 import java.util.List;
 
-import static com.google.common.base.Preconditions.checkNotNull;
-
 public class Composition extends Definition {
 
     private final Relation left;
     private final Relation right;
 
     public Composition(Relation r0, Relation r1, Relation r2) {
-        super(r0, "%s ; %s");
-        left = checkNotNull(r1);
-        right = checkNotNull(r2);
-        r0.checkRelation();
-        r1.checkRelation();
-        r2.checkRelation();
+        super(Relation.checkIsRelation(r0), "%s ; %s");
+        left = Relation.checkIsRelation(r1);
+        right = Relation.checkIsRelation(r2);
     }
 
     public Relation getLeftOperand() { return left; }

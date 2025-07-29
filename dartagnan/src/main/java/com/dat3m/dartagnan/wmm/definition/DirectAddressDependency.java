@@ -8,8 +8,7 @@ import com.dat3m.dartagnan.wmm.RelationNameRepository;
 public class DirectAddressDependency extends Definition {
 
     public DirectAddressDependency(Relation r0) {
-        super(r0, RelationNameRepository.ADDRDIRECT);
-        r0.checkRelation();
+        super(Relation.checkIsRelation(r0), RelationNameRepository.ADDRDIRECT);
     }
 
     @Override

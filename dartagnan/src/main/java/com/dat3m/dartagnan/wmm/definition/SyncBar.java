@@ -7,8 +7,7 @@ import com.dat3m.dartagnan.wmm.RelationNameRepository;
 public class SyncBar extends Definition {
 
     public SyncBar(Relation r) {
-        super(r, RelationNameRepository.SYNCBAR);
-        r.checkRelation();
+        super(Relation.checkIsRelation(r), RelationNameRepository.SYNCBAR);
     }
     @Override
     public <T> T accept(Visitor<? extends T> v) {

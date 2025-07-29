@@ -8,8 +8,7 @@ import static com.dat3m.dartagnan.wmm.RelationNameRepository.CO;
 public class Coherence extends Definition {
 
     public Coherence(Relation r0) {
-        super(r0, CO);
-        r0.checkRelation();
+        super(Relation.checkIsRelation(r0), CO);
     }
 
     @Override

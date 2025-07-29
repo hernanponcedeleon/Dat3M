@@ -9,15 +9,12 @@ public class TagSet extends Definition {
     private final String tag;
 
     public TagSet(Relation r, String tag) {
-        super(r, tag);
-        this.tag = tag;
-        r.checkSet();
+        this(Relation.checkIsSet(r), tag, tag);
     }
 
     protected TagSet(Relation r, String tag, String termPattern) {
         super(r, termPattern);
         this.tag = tag;
-        r.checkSet();
     }
 
     public String getTag() {
