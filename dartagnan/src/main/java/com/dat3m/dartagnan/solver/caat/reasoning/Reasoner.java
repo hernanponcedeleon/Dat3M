@@ -8,7 +8,7 @@ import com.dat3m.dartagnan.solver.caat.predicates.Derivable;
 import com.dat3m.dartagnan.solver.caat.predicates.misc.PredicateVisitor;
 import com.dat3m.dartagnan.solver.caat.predicates.relationGraphs.Edge;
 import com.dat3m.dartagnan.solver.caat.predicates.relationGraphs.RelationGraph;
-import com.dat3m.dartagnan.solver.caat.predicates.relationGraphs.derived.ProjectionIdentityGraph;
+import com.dat3m.dartagnan.solver.caat.predicates.sets.derived.ProjectionSet;
 import com.dat3m.dartagnan.solver.caat.predicates.sets.Element;
 import com.dat3m.dartagnan.solver.caat.predicates.sets.SetPredicate;
 import com.dat3m.dartagnan.utils.logic.Conjunction;
@@ -221,27 +221,6 @@ public class Reasoner {
         }
 
         @Override
-        public Conjunction<CAATLiteral> visitProjectionIdentity(RelationGraph graph, Edge edge, Void unused) {
-            assert edge.isLoop();
-
-            RelationGraph inner = (RelationGraph) graph.getDependencies().get(0);
-            ProjectionIdentityGraph.Dimension dim = ((ProjectionIdentityGraph)graph).getProjectionDimension();
-            Iterable<Edge> edges = switch (dim) {
-                case RANGE -> inner.inEdges(edge.getSecond());
-                case DOMAIN -> inner.outEdges(edge.getFirst());
-            };
-            for (Edge e : edges) {
-                // We use the first edge we find
-                if (e.getDerivationLength() < edge.getDerivationLength()) {
-                    Conjunction<CAATLiteral> reason = computeReason(inner, e);
-                    assert !reason.isFalse();
-                    return reason;
-                }
-            }
-            throw new IllegalStateException("ProjectionIdentityGraph: No matching edge is found");
-        }
-
-        @Override
         public Conjunction<CAATLiteral> visitReflexiveClosure(RelationGraph graph, Edge edge, Void unused) {
             if (edge.isLoop()) {
                 return Conjunction.TRUE();
@@ -286,10 +265,10 @@ public class Reasoner {
             // We try to compute a shortest reason based on the distance to the base graphs
             Element min = ele;
             SetPredicate next = set;
-            for (SetPredicate s : set.getDependencies()) {
-                Element e = s.get(ele);
+            for (CAATPredicate s : set.getDependencies()) {
+                Element e = ((SetPredicate) s).get(ele);
                 if (e != null && e.getDerivationLength() < min.getDerivationLength()) {
-                    next = s;
+                    next = (SetPredicate) s;
                     min = e;
                 }
             }
@@ -304,7 +283,7 @@ public class Reasoner {
         @Override
         public Conjunction<CAATLiteral> visitSetIntersection(SetPredicate set, Element ele, Void unused) {
             Conjunction<CAATLiteral> reason = Conjunction.TRUE();
-            for (SetPredicate s : set.getDependencies()) {
+            for (CAATPredicate s : set.getDependencies()) {
                 Element e = set.get(ele);
                 reason = reason.and(computeReason(s, e));
             }
@@ -314,8 +293,8 @@ public class Reasoner {
 
         @Override
         public Conjunction<CAATLiteral> visitSetDifference(SetPredicate set, Element ele, Void unused) {
-            SetPredicate lhs = set.getDependencies().get(0);
-            SetPredicate rhs = set.getDependencies().get(1);
+            SetPredicate lhs = (SetPredicate) set.getDependencies().get(0);
+            SetPredicate rhs = (SetPredicate) set.getDependencies().get(1);
 
             if (!rhs.getDependencies().isEmpty()) {
                 throw new IllegalStateException(String.format("Cannot compute reason of element %s in " +
@@ -331,6 +310,25 @@ public class Reasoner {
         @Override
         public Conjunction<CAATLiteral> visitBaseSet(SetPredicate set, Element ele, Void unused) {
             return new ElementLiteral(set, ele, true).toSingletonReason();
+        }
+
+        @Override
+        public Conjunction<CAATLiteral> visitProjection(SetPredicate set, Element ele, Void unused) {
+            RelationGraph inner = (RelationGraph) set.getDependencies().get(0);
+            ProjectionSet.Dimension dim = ((ProjectionSet)set).getProjectionDimension();
+            Iterable<Edge> edges = switch (dim) {
+                case RANGE -> inner.inEdges(ele.getId());
+                case DOMAIN -> inner.outEdges(ele.getId());
+            };
+            for (Edge e : edges) {
+                // We use the first edge we find
+                if (e.getDerivationLength() < ele.getDerivationLength()) {
+                    Conjunction<CAATLiteral> reason = computeReason(inner, e);
+                    assert !reason.isFalse();
+                    return reason;
+                }
+            }
+            throw new IllegalStateException("ProjectionSet: No matching element found.");
         }
     }
 }

@@ -7,7 +7,7 @@ import com.dat3m.dartagnan.wmm.RelationNameRepository;
 public class ReadFrom extends Definition {
 
     public ReadFrom(Relation r0) {
-        super(r0, RelationNameRepository.RF);
+        super(Relation.checkIsRelation(r0), RelationNameRepository.RF);
     }
 
     @Override

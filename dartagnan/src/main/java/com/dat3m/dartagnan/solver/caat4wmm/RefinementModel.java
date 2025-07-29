@@ -112,7 +112,7 @@ public class RefinementModel {
                 // Skip the anarchic relations we already copied above
                 continue;
             }
-            final Relation copy = base.newRelation();
+            final Relation copy = base.newRelation(rel.getArity());
             rel.getNames().forEach(n -> base.addAlias(n, copy));
             orig2BaseRelations.put(rel, copy);
         }

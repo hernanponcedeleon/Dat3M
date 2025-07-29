@@ -7,7 +7,7 @@ import com.dat3m.dartagnan.wmm.RelationNameRepository;
 public class SyncFence extends Definition {
 
     public SyncFence(Relation r) {
-        super(r, RelationNameRepository.SYNC_FENCE);
+        super(Relation.checkIsRelation(r), RelationNameRepository.SYNC_FENCE);
     }
     @Override
     public <T> T accept(Visitor<? extends T> v) {

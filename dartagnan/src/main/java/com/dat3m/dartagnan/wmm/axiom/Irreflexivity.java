@@ -15,11 +15,11 @@ import java.util.List;
 public class Irreflexivity extends Axiom {
 
     public Irreflexivity(Relation rel, boolean negated, boolean flag) {
-        super(rel, negated, flag);
+        super(Relation.checkIsRelation(rel), negated, flag);
     }
 
     public Irreflexivity(Relation rel) {
-        super(rel, false, false);
+        this(rel, false, false);
     }
 
     @Override
