@@ -6,7 +6,6 @@ target triple = "x86_64-pc-linux-gnu"
 %struct.Node = type { i32, %struct.Node* }
 %union.pthread_attr_t = type { i64, [48 x i8] }
 
-@retired_count = dso_local global i32 0, align 4
 @Head = dso_local global %struct.Node* null, align 8
 @Tail = dso_local global %struct.Node* null, align 8
 @.str = private unnamed_addr constant [13 x i8] c"tail != NULL\00", align 1
@@ -14,7 +13,6 @@ target triple = "x86_64-pc-linux-gnu"
 @__PRETTY_FUNCTION__.enqueue = private unnamed_addr constant [18 x i8] c"void enqueue(int)\00", align 1
 @.str.2 = private unnamed_addr constant [13 x i8] c"head != NULL\00", align 1
 @__PRETTY_FUNCTION__.dequeue = private unnamed_addr constant [14 x i8] c"int dequeue()\00", align 1
-@retired = dso_local global [10 x %struct.Node*] zeroinitializer, align 16
 @.str.3 = private unnamed_addr constant [11 x i8] c"r != EMPTY\00", align 1
 @.str.4 = private unnamed_addr constant [23 x i8] c"benchmarks/lfds/dglm.c\00", align 1
 @__PRETTY_FUNCTION__.worker = private unnamed_addr constant [21 x i8] c"void *worker(void *)\00", align 1
@@ -85,7 +83,7 @@ define dso_local void @enqueue(i32 noundef %0) #0 {
   br label %31
 
 30:                                               ; preds = %22
-  call void @__assert_fail(i8* noundef getelementptr inbounds ([13 x i8], [13 x i8]* @.str, i64 0, i64 0), i8* noundef getelementptr inbounds ([23 x i8], [23 x i8]* @.str.1, i64 0, i64 0), i32 noundef 42, i8* noundef getelementptr inbounds ([18 x i8], [18 x i8]* @__PRETTY_FUNCTION__.enqueue, i64 0, i64 0)) #5
+  call void @__assert_fail(i8* noundef getelementptr inbounds ([13 x i8], [13 x i8]* @.str, i64 0, i64 0), i8* noundef getelementptr inbounds ([23 x i8], [23 x i8]* @.str.1, i64 0, i64 0), i32 noundef 38, i8* noundef getelementptr inbounds ([18 x i8], [18 x i8]* @__PRETTY_FUNCTION__.enqueue, i64 0, i64 0)) #5
   unreachable
 
 31:                                               ; preds = %29
@@ -214,186 +212,146 @@ define dso_local i32 @dequeue() #0 {
   %10 = alloca %struct.Node*, align 8
   %11 = alloca %struct.Node*, align 8
   %12 = alloca i8, align 1
-  %13 = alloca i32, align 4
-  %14 = alloca i32, align 4
-  br label %15
+  br label %13
 
-15:                                               ; preds = %0, %95
-  %16 = bitcast %struct.Node** %5 to i64*
-  %17 = load atomic i64, i64* bitcast (%struct.Node** @Head to i64*) acquire, align 8
-  store i64 %17, i64* %16, align 8
-  %18 = bitcast i64* %16 to %struct.Node**
-  %19 = load %struct.Node*, %struct.Node** %18, align 8
-  store %struct.Node* %19, %struct.Node** %1, align 8
-  %20 = load %struct.Node*, %struct.Node** %1, align 8
-  %21 = icmp ne %struct.Node* %20, null
-  br i1 %21, label %22, label %23
+13:                                               ; preds = %0, %89
+  %14 = bitcast %struct.Node** %5 to i64*
+  %15 = load atomic i64, i64* bitcast (%struct.Node** @Head to i64*) acquire, align 8
+  store i64 %15, i64* %14, align 8
+  %16 = bitcast i64* %14 to %struct.Node**
+  %17 = load %struct.Node*, %struct.Node** %16, align 8
+  store %struct.Node* %17, %struct.Node** %1, align 8
+  %18 = load %struct.Node*, %struct.Node** %1, align 8
+  %19 = icmp ne %struct.Node* %18, null
+  br i1 %19, label %20, label %21
 
-22:                                               ; preds = %15
-  br label %24
+20:                                               ; preds = %13
+  br label %22
 
-23:                                               ; preds = %15
-  call void @__assert_fail(i8* noundef getelementptr inbounds ([13 x i8], [13 x i8]* @.str.2, i64 0, i64 0), i8* noundef getelementptr inbounds ([23 x i8], [23 x i8]* @.str.1, i64 0, i64 0), i32 noundef 65, i8* noundef getelementptr inbounds ([14 x i8], [14 x i8]* @__PRETTY_FUNCTION__.dequeue, i64 0, i64 0)) #5
+21:                                               ; preds = %13
+  call void @__assert_fail(i8* noundef getelementptr inbounds ([13 x i8], [13 x i8]* @.str.2, i64 0, i64 0), i8* noundef getelementptr inbounds ([23 x i8], [23 x i8]* @.str.1, i64 0, i64 0), i32 noundef 61, i8* noundef getelementptr inbounds ([14 x i8], [14 x i8]* @__PRETTY_FUNCTION__.dequeue, i64 0, i64 0)) #5
   unreachable
 
-24:                                               ; preds = %22
-  %25 = load %struct.Node*, %struct.Node** %1, align 8
-  %26 = getelementptr inbounds %struct.Node, %struct.Node* %25, i32 0, i32 1
-  %27 = bitcast %struct.Node** %26 to i64*
-  %28 = bitcast %struct.Node** %6 to i64*
-  %29 = load atomic i64, i64* %27 acquire, align 8
-  store i64 %29, i64* %28, align 8
-  %30 = bitcast i64* %28 to %struct.Node**
-  %31 = load %struct.Node*, %struct.Node** %30, align 8
-  store %struct.Node* %31, %struct.Node** %2, align 8
-  %32 = load %struct.Node*, %struct.Node** %1, align 8
-  %33 = bitcast %struct.Node** %7 to i64*
-  %34 = load atomic i64, i64* bitcast (%struct.Node** @Head to i64*) acquire, align 8
-  store i64 %34, i64* %33, align 8
-  %35 = bitcast i64* %33 to %struct.Node**
-  %36 = load %struct.Node*, %struct.Node** %35, align 8
-  %37 = icmp eq %struct.Node* %32, %36
-  br i1 %37, label %38, label %95
+22:                                               ; preds = %20
+  %23 = load %struct.Node*, %struct.Node** %1, align 8
+  %24 = getelementptr inbounds %struct.Node, %struct.Node* %23, i32 0, i32 1
+  %25 = bitcast %struct.Node** %24 to i64*
+  %26 = bitcast %struct.Node** %6 to i64*
+  %27 = load atomic i64, i64* %25 acquire, align 8
+  store i64 %27, i64* %26, align 8
+  %28 = bitcast i64* %26 to %struct.Node**
+  %29 = load %struct.Node*, %struct.Node** %28, align 8
+  store %struct.Node* %29, %struct.Node** %2, align 8
+  %30 = load %struct.Node*, %struct.Node** %1, align 8
+  %31 = bitcast %struct.Node** %7 to i64*
+  %32 = load atomic i64, i64* bitcast (%struct.Node** @Head to i64*) acquire, align 8
+  store i64 %32, i64* %31, align 8
+  %33 = bitcast i64* %31 to %struct.Node**
+  %34 = load %struct.Node*, %struct.Node** %33, align 8
+  %35 = icmp eq %struct.Node* %30, %34
+  br i1 %35, label %36, label %89
 
-38:                                               ; preds = %24
-  %39 = load %struct.Node*, %struct.Node** %2, align 8
-  %40 = icmp eq %struct.Node* %39, null
-  br i1 %40, label %41, label %42
+36:                                               ; preds = %22
+  %37 = load %struct.Node*, %struct.Node** %2, align 8
+  %38 = icmp eq %struct.Node* %37, null
+  br i1 %38, label %39, label %40
 
-41:                                               ; preds = %38
+39:                                               ; preds = %36
   store i32 -1, i32* %4, align 4
-  br label %96
+  br label %90
 
-42:                                               ; preds = %38
-  %43 = load %struct.Node*, %struct.Node** %2, align 8
-  %44 = getelementptr inbounds %struct.Node, %struct.Node* %43, i32 0, i32 0
-  %45 = load i32, i32* %44, align 8
-  store i32 %45, i32* %4, align 4
-  %46 = load %struct.Node*, %struct.Node** %2, align 8
-  store %struct.Node* %46, %struct.Node** %8, align 8
-  %47 = bitcast %struct.Node** %1 to i64*
-  %48 = bitcast %struct.Node** %8 to i64*
-  %49 = load i64, i64* %47, align 8
-  %50 = load i64, i64* %48, align 8
-  %51 = cmpxchg i64* bitcast (%struct.Node** @Head to i64*), i64 %49, i64 %50 acq_rel monotonic, align 8
-  %52 = extractvalue { i64, i1 } %51, 0
-  %53 = extractvalue { i64, i1 } %51, 1
-  br i1 %53, label %55, label %54
+40:                                               ; preds = %36
+  %41 = load %struct.Node*, %struct.Node** %2, align 8
+  %42 = getelementptr inbounds %struct.Node, %struct.Node* %41, i32 0, i32 0
+  %43 = load i32, i32* %42, align 8
+  store i32 %43, i32* %4, align 4
+  %44 = load %struct.Node*, %struct.Node** %2, align 8
+  store %struct.Node* %44, %struct.Node** %8, align 8
+  %45 = bitcast %struct.Node** %1 to i64*
+  %46 = bitcast %struct.Node** %8 to i64*
+  %47 = load i64, i64* %45, align 8
+  %48 = load i64, i64* %46, align 8
+  %49 = cmpxchg i64* bitcast (%struct.Node** @Head to i64*), i64 %47, i64 %48 acq_rel monotonic, align 8
+  %50 = extractvalue { i64, i1 } %49, 0
+  %51 = extractvalue { i64, i1 } %49, 1
+  br i1 %51, label %53, label %52
 
-54:                                               ; preds = %42
-  store i64 %52, i64* %47, align 8
-  br label %55
+52:                                               ; preds = %40
+  store i64 %50, i64* %45, align 8
+  br label %53
 
-55:                                               ; preds = %54, %42
-  %56 = zext i1 %53 to i8
-  store i8 %56, i8* %9, align 1
-  %57 = load i8, i8* %9, align 1
-  %58 = trunc i8 %57 to i1
-  br i1 %58, label %59, label %93
+53:                                               ; preds = %52, %40
+  %54 = zext i1 %51 to i8
+  store i8 %54, i8* %9, align 1
+  %55 = load i8, i8* %9, align 1
+  %56 = trunc i8 %55 to i1
+  br i1 %56, label %57, label %87
 
-59:                                               ; preds = %55
-  %60 = bitcast %struct.Node** %10 to i64*
-  %61 = load atomic i64, i64* bitcast (%struct.Node** @Tail to i64*) acquire, align 8
-  store i64 %61, i64* %60, align 8
-  %62 = bitcast i64* %60 to %struct.Node**
-  %63 = load %struct.Node*, %struct.Node** %62, align 8
-  store %struct.Node* %63, %struct.Node** %3, align 8
-  %64 = load %struct.Node*, %struct.Node** %3, align 8
-  %65 = icmp ne %struct.Node* %64, null
-  br i1 %65, label %66, label %67
+57:                                               ; preds = %53
+  %58 = bitcast %struct.Node** %10 to i64*
+  %59 = load atomic i64, i64* bitcast (%struct.Node** @Tail to i64*) acquire, align 8
+  store i64 %59, i64* %58, align 8
+  %60 = bitcast i64* %58 to %struct.Node**
+  %61 = load %struct.Node*, %struct.Node** %60, align 8
+  store %struct.Node* %61, %struct.Node** %3, align 8
+  %62 = load %struct.Node*, %struct.Node** %3, align 8
+  %63 = icmp ne %struct.Node* %62, null
+  br i1 %63, label %64, label %65
 
-66:                                               ; preds = %59
-  br label %68
+64:                                               ; preds = %57
+  br label %66
 
-67:                                               ; preds = %59
-  call void @__assert_fail(i8* noundef getelementptr inbounds ([13 x i8], [13 x i8]* @.str, i64 0, i64 0), i8* noundef getelementptr inbounds ([23 x i8], [23 x i8]* @.str.1, i64 0, i64 0), i32 noundef 77, i8* noundef getelementptr inbounds ([14 x i8], [14 x i8]* @__PRETTY_FUNCTION__.dequeue, i64 0, i64 0)) #5
+65:                                               ; preds = %57
+  call void @__assert_fail(i8* noundef getelementptr inbounds ([13 x i8], [13 x i8]* @.str, i64 0, i64 0), i8* noundef getelementptr inbounds ([23 x i8], [23 x i8]* @.str.1, i64 0, i64 0), i32 noundef 73, i8* noundef getelementptr inbounds ([14 x i8], [14 x i8]* @__PRETTY_FUNCTION__.dequeue, i64 0, i64 0)) #5
   unreachable
 
-68:                                               ; preds = %66
-  %69 = load %struct.Node*, %struct.Node** %1, align 8
-  %70 = load %struct.Node*, %struct.Node** %3, align 8
-  %71 = icmp eq %struct.Node* %69, %70
-  br i1 %71, label %72, label %86
+66:                                               ; preds = %64
+  %67 = load %struct.Node*, %struct.Node** %1, align 8
+  %68 = load %struct.Node*, %struct.Node** %3, align 8
+  %69 = icmp eq %struct.Node* %67, %68
+  br i1 %69, label %70, label %84
 
-72:                                               ; preds = %68
-  %73 = load %struct.Node*, %struct.Node** %2, align 8
-  store %struct.Node* %73, %struct.Node** %11, align 8
-  %74 = bitcast %struct.Node** %3 to i64*
-  %75 = bitcast %struct.Node** %11 to i64*
-  %76 = load i64, i64* %74, align 8
-  %77 = load i64, i64* %75, align 8
-  %78 = cmpxchg i64* bitcast (%struct.Node** @Tail to i64*), i64 %76, i64 %77 acq_rel monotonic, align 8
-  %79 = extractvalue { i64, i1 } %78, 0
-  %80 = extractvalue { i64, i1 } %78, 1
-  br i1 %80, label %82, label %81
+70:                                               ; preds = %66
+  %71 = load %struct.Node*, %struct.Node** %2, align 8
+  store %struct.Node* %71, %struct.Node** %11, align 8
+  %72 = bitcast %struct.Node** %3 to i64*
+  %73 = bitcast %struct.Node** %11 to i64*
+  %74 = load i64, i64* %72, align 8
+  %75 = load i64, i64* %73, align 8
+  %76 = cmpxchg i64* bitcast (%struct.Node** @Tail to i64*), i64 %74, i64 %75 acq_rel monotonic, align 8
+  %77 = extractvalue { i64, i1 } %76, 0
+  %78 = extractvalue { i64, i1 } %76, 1
+  br i1 %78, label %80, label %79
 
-81:                                               ; preds = %72
-  store i64 %79, i64* %74, align 8
-  br label %82
+79:                                               ; preds = %70
+  store i64 %77, i64* %72, align 8
+  br label %80
 
-82:                                               ; preds = %81, %72
-  %83 = zext i1 %80 to i8
-  store i8 %83, i8* %12, align 1
-  %84 = load i8, i8* %12, align 1
-  %85 = trunc i8 %84 to i1
-  br label %86
+80:                                               ; preds = %79, %70
+  %81 = zext i1 %78 to i8
+  store i8 %81, i8* %12, align 1
+  %82 = load i8, i8* %12, align 1
+  %83 = trunc i8 %82 to i1
+  br label %84
 
-86:                                               ; preds = %82, %68
-  %87 = load %struct.Node*, %struct.Node** %1, align 8
-  store i32 1, i32* %13, align 4
-  %88 = load i32, i32* %13, align 4
-  %89 = atomicrmw add i32* @retired_count, i32 %88 seq_cst, align 4
-  store i32 %89, i32* %14, align 4
-  %90 = load i32, i32* %14, align 4
-  %91 = sext i32 %90 to i64
-  %92 = getelementptr inbounds [10 x %struct.Node*], [10 x %struct.Node*]* @retired, i64 0, i64 %91
-  store %struct.Node* %87, %struct.Node** %92, align 8
-  br label %96
+84:                                               ; preds = %80, %66
+  %85 = load %struct.Node*, %struct.Node** %1, align 8
+  %86 = bitcast %struct.Node* %85 to i8*
+  call void @free(i8* noundef %86) #4
+  br label %90
 
-93:                                               ; preds = %55
-  br label %94
+87:                                               ; preds = %53
+  br label %88
 
-94:                                               ; preds = %93
-  br label %95
+88:                                               ; preds = %87
+  br label %89
 
-95:                                               ; preds = %94, %24
-  br label %15
+89:                                               ; preds = %88, %22
+  br label %13
 
-96:                                               ; preds = %86, %41
-  %97 = load i32, i32* %4, align 4
-  ret i32 %97
-}
-
-; Function Attrs: noinline nounwind optnone uwtable
-define dso_local void @free_all_retired() #0 {
-  %1 = alloca i32, align 4
-  store i32 0, i32* %1, align 4
-  br label %2
-
-2:                                                ; preds = %12, %0
-  %3 = load i32, i32* %1, align 4
-  %4 = load atomic i32, i32* @retired_count seq_cst, align 4
-  %5 = icmp slt i32 %3, %4
-  br i1 %5, label %6, label %15
-
-6:                                                ; preds = %2
-  %7 = load i32, i32* %1, align 4
-  %8 = sext i32 %7 to i64
-  %9 = getelementptr inbounds [10 x %struct.Node*], [10 x %struct.Node*]* @retired, i64 0, i64 %8
-  %10 = load %struct.Node*, %struct.Node** %9, align 8
-  %11 = bitcast %struct.Node* %10 to i8*
-  call void @free(i8* noundef %11) #4
-  br label %12
-
-12:                                               ; preds = %6
-  %13 = load i32, i32* %1, align 4
-  %14 = add nsw i32 %13, 1
-  store i32 %14, i32* %1, align 4
-  br label %2, !llvm.loop !6
-
-15:                                               ; preds = %2
-  store atomic i32 0, i32* @retired_count seq_cst, align 4
-  ret void
+90:                                               ; preds = %84, %39
+  %91 = load i32, i32* %4, align 4
+  ret i32 %91
 }
 
 ; Function Attrs: nounwind
@@ -464,7 +422,7 @@ define dso_local i32 @main() #0 {
   %19 = load i32, i32* %3, align 4
   %20 = add nsw i32 %19, 1
   store i32 %20, i32* %3, align 4
-  br label %7, !llvm.loop !8
+  br label %7, !llvm.loop !6
 
 21:                                               ; preds = %7
   store i32 0, i32* %4, align 4
@@ -487,7 +445,7 @@ define dso_local i32 @main() #0 {
   %32 = load i32, i32* %4, align 4
   %33 = add nsw i32 %32, 1
   store i32 %33, i32* %4, align 4
-  br label %22, !llvm.loop !9
+  br label %22, !llvm.loop !8
 
 34:                                               ; preds = %22
   %35 = call i32 @dequeue()
@@ -508,7 +466,6 @@ define dso_local i32 @main() #0 {
   %42 = inttoptr i64 %41 to %struct.Node*
   %43 = bitcast %struct.Node* %42 to i8*
   call void @free(i8* noundef %43) #4
-  call void @free_all_retired()
   store i32 0, i32* %6, align 4
   br label %44
 
@@ -529,7 +486,7 @@ define dso_local i32 @main() #0 {
   br label %55
 
 54:                                               ; preds = %47
-  call void @__assert_fail(i8* noundef getelementptr inbounds ([13 x i8], [13 x i8]* @.str.6, i64 0, i64 0), i8* noundef getelementptr inbounds ([23 x i8], [23 x i8]* @.str.4, i64 0, i64 0), i32 noundef 43, i8* noundef getelementptr inbounds ([11 x i8], [11 x i8]* @__PRETTY_FUNCTION__.main, i64 0, i64 0)) #5
+  call void @__assert_fail(i8* noundef getelementptr inbounds ([13 x i8], [13 x i8]* @.str.6, i64 0, i64 0), i8* noundef getelementptr inbounds ([23 x i8], [23 x i8]* @.str.4, i64 0, i64 0), i32 noundef 41, i8* noundef getelementptr inbounds ([11 x i8], [11 x i8]* @__PRETTY_FUNCTION__.main, i64 0, i64 0)) #5
   unreachable
 
 55:                                               ; preds = %53
@@ -539,7 +496,7 @@ define dso_local i32 @main() #0 {
   %57 = load i32, i32* %6, align 4
   %58 = add nsw i32 %57, 1
   store i32 %58, i32* %6, align 4
-  br label %44, !llvm.loop !10
+  br label %44, !llvm.loop !9
 
 59:                                               ; preds = %44
   ret i32 0
@@ -570,4 +527,3 @@ attributes #5 = { noreturn nounwind }
 !7 = !{!"llvm.loop.mustprogress"}
 !8 = distinct !{!8, !7}
 !9 = distinct !{!9, !7}
-!10 = distinct !{!10, !7}

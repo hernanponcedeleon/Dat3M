@@ -9,7 +9,7 @@ void *thread_1(void *arg)
     arr[0] = 0;
     arr[1] = 1;
 
-	return NULL;
+    return NULL;
 }
 
 int main()
@@ -23,5 +23,5 @@ int main()
 
     free(arr);
 
-	return 0;
+    return 0;
 }

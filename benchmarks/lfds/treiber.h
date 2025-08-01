@@ -10,17 +10,13 @@
 #define EMPTY -1
 
 typedef struct Node {
-	int val;
-	_Atomic(struct Node*) next;
+    int val;
+    _Atomic(struct Node*) next;
 } Node;
 
 struct {
     _Atomic(Node*) node;
 } TOP;
-
-#define RETIRE_THRESHOLD 10
-Node* retired[RETIRE_THRESHOLD];
-_Atomic int retired_count = 0;
 
 
 void init() {
@@ -52,19 +48,11 @@ int pop() {
         } else {
             z = atomic_load_explicit(&y->next, __ATOMIC_ACQUIRE);
             if (CAS(&TOP.node, &y, z)) {
-                // free(y);
-                // retire(y)
-                retired[atomic_fetch_add(&retired_count, 1)] = y;
+                // retire(y);
+                free(y);
                 break;
             }
         }
     }
     return y->val;
-}
-
-void free_all_retired() {
-    for (int i = 0; i < retired_count; ++i) {
-        free(retired[i]);
-    }
-    retired_count = 0;
 }

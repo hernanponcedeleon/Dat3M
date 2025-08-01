@@ -53,17 +53,17 @@ public class AllocFreeTest {
     @Parameterized.Parameters(name = "{index}: {0}, target={1}")
     public static Iterable<Object[]> data() throws IOException {
         return Arrays.asList(new Object[][]{
-                {"test1_ok_1", C11, PASS},
-                {"test1_ok_2", C11, PASS},
-                {"test1_err_address", C11, FAIL},
-                {"test1_err_race", C11, FAIL},
-                {"test1_err_double_free_1", C11, FAIL},
-                {"test1_err_double_free_2", C11, FAIL},
-                {"test1_err_no_free", C11, FAIL},
-                {"test1_err_no_alloc_1", C11, FAIL},
-                {"test1_err_no_alloc_2", C11, FAIL},
-                {"test1_err_use_before_alloc", C11, FAIL},
-                {"test1_err_use_after_free", C11, FAIL},
+                {"test_ok_1", C11, PASS},
+                {"test_ok_2", C11, PASS},
+                {"test_err_address", C11, FAIL},
+                {"test_err_race", C11, FAIL},
+                {"test_err_double_free_1", C11, FAIL},
+                {"test_err_double_free_2", C11, FAIL},
+                {"test_err_no_free", C11, FAIL},
+                {"test_err_no_alloc_1", C11, FAIL},
+                {"test_err_no_alloc_2", C11, FAIL},
+                {"test_err_use_before_alloc", C11, FAIL},
+                {"test_err_use_after_free", C11, FAIL},
         });
     }
 

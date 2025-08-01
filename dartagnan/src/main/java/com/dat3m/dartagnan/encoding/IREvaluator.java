@@ -13,6 +13,7 @@ import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.RegWriter;
 import com.dat3m.dartagnan.program.event.core.Assert;
 import com.dat3m.dartagnan.program.event.core.CondJump;
+import com.dat3m.dartagnan.program.event.core.MemFree;
 import com.dat3m.dartagnan.program.event.core.MemoryCoreEvent;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.dat3m.dartagnan.smt.ModelExt;
@@ -93,6 +94,10 @@ public class IREvaluator {
     }
 
     public TypedValue<?, ?> address(MemoryCoreEvent e) {
+        return evaluateAt(ctx.address(e), e);
+    }
+
+    public TypedValue<?, ?> address(MemFree e) {
         return evaluateAt(ctx.address(e), e);
     }
 

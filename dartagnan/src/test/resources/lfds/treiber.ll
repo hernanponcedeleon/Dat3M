@@ -7,9 +7,7 @@ target triple = "x86_64-pc-linux-gnu"
 %struct.Node = type { i32, %struct.Node* }
 %union.pthread_attr_t = type { i64, [48 x i8] }
 
-@retired_count = dso_local global i32 0, align 4
 @TOP = dso_local global %struct.anon zeroinitializer, align 8
-@retired = dso_local global [10 x %struct.Node*] zeroinitializer, align 16
 @.str = private unnamed_addr constant [11 x i8] c"r != EMPTY\00", align 1
 @.str.1 = private unnamed_addr constant [26 x i8] c"benchmarks/lfds/treiber.c\00", align 1
 @__PRETTY_FUNCTION__.worker = private unnamed_addr constant [21 x i8] c"void *worker(void *)\00", align 1
@@ -100,117 +98,77 @@ define dso_local i32 @pop() #0 {
   %5 = alloca %struct.Node*, align 8
   %6 = alloca %struct.Node*, align 8
   %7 = alloca i8, align 1
-  %8 = alloca i32, align 4
-  %9 = alloca i32, align 4
-  br label %10
+  br label %8
 
-10:                                               ; preds = %0, %47
-  %11 = bitcast %struct.Node** %4 to i64*
-  %12 = load atomic i64, i64* bitcast (%struct.anon* @TOP to i64*) acquire, align 8
-  store i64 %12, i64* %11, align 8
-  %13 = bitcast i64* %11 to %struct.Node**
-  %14 = load %struct.Node*, %struct.Node** %13, align 8
-  store %struct.Node* %14, %struct.Node** %2, align 8
-  %15 = load %struct.Node*, %struct.Node** %2, align 8
-  %16 = icmp eq %struct.Node* %15, null
-  br i1 %16, label %17, label %18
+8:                                                ; preds = %0, %41
+  %9 = bitcast %struct.Node** %4 to i64*
+  %10 = load atomic i64, i64* bitcast (%struct.anon* @TOP to i64*) acquire, align 8
+  store i64 %10, i64* %9, align 8
+  %11 = bitcast i64* %9 to %struct.Node**
+  %12 = load %struct.Node*, %struct.Node** %11, align 8
+  store %struct.Node* %12, %struct.Node** %2, align 8
+  %13 = load %struct.Node*, %struct.Node** %2, align 8
+  %14 = icmp eq %struct.Node* %13, null
+  br i1 %14, label %15, label %16
 
-17:                                               ; preds = %10
+15:                                               ; preds = %8
   store i32 -1, i32* %1, align 4
-  br label %52
+  br label %46
 
-18:                                               ; preds = %10
-  %19 = load %struct.Node*, %struct.Node** %2, align 8
-  %20 = getelementptr inbounds %struct.Node, %struct.Node* %19, i32 0, i32 1
-  %21 = bitcast %struct.Node** %20 to i64*
-  %22 = bitcast %struct.Node** %5 to i64*
-  %23 = load atomic i64, i64* %21 acquire, align 8
-  store i64 %23, i64* %22, align 8
-  %24 = bitcast i64* %22 to %struct.Node**
-  %25 = load %struct.Node*, %struct.Node** %24, align 8
-  store %struct.Node* %25, %struct.Node** %3, align 8
-  %26 = load %struct.Node*, %struct.Node** %3, align 8
-  store %struct.Node* %26, %struct.Node** %6, align 8
-  %27 = bitcast %struct.Node** %2 to i64*
-  %28 = bitcast %struct.Node** %6 to i64*
-  %29 = load i64, i64* %27, align 8
-  %30 = load i64, i64* %28, align 8
-  %31 = cmpxchg i64* bitcast (%struct.anon* @TOP to i64*), i64 %29, i64 %30 acq_rel monotonic, align 8
-  %32 = extractvalue { i64, i1 } %31, 0
-  %33 = extractvalue { i64, i1 } %31, 1
-  br i1 %33, label %35, label %34
+16:                                               ; preds = %8
+  %17 = load %struct.Node*, %struct.Node** %2, align 8
+  %18 = getelementptr inbounds %struct.Node, %struct.Node* %17, i32 0, i32 1
+  %19 = bitcast %struct.Node** %18 to i64*
+  %20 = bitcast %struct.Node** %5 to i64*
+  %21 = load atomic i64, i64* %19 acquire, align 8
+  store i64 %21, i64* %20, align 8
+  %22 = bitcast i64* %20 to %struct.Node**
+  %23 = load %struct.Node*, %struct.Node** %22, align 8
+  store %struct.Node* %23, %struct.Node** %3, align 8
+  %24 = load %struct.Node*, %struct.Node** %3, align 8
+  store %struct.Node* %24, %struct.Node** %6, align 8
+  %25 = bitcast %struct.Node** %2 to i64*
+  %26 = bitcast %struct.Node** %6 to i64*
+  %27 = load i64, i64* %25, align 8
+  %28 = load i64, i64* %26, align 8
+  %29 = cmpxchg i64* bitcast (%struct.anon* @TOP to i64*), i64 %27, i64 %28 acq_rel monotonic, align 8
+  %30 = extractvalue { i64, i1 } %29, 0
+  %31 = extractvalue { i64, i1 } %29, 1
+  br i1 %31, label %33, label %32
 
-34:                                               ; preds = %18
-  store i64 %32, i64* %27, align 8
-  br label %35
+32:                                               ; preds = %16
+  store i64 %30, i64* %25, align 8
+  br label %33
 
-35:                                               ; preds = %34, %18
-  %36 = zext i1 %33 to i8
-  store i8 %36, i8* %7, align 1
-  %37 = load i8, i8* %7, align 1
-  %38 = trunc i8 %37 to i1
-  br i1 %38, label %39, label %46
+33:                                               ; preds = %32, %16
+  %34 = zext i1 %31 to i8
+  store i8 %34, i8* %7, align 1
+  %35 = load i8, i8* %7, align 1
+  %36 = trunc i8 %35 to i1
+  br i1 %36, label %37, label %40
 
-39:                                               ; preds = %35
-  %40 = load %struct.Node*, %struct.Node** %2, align 8
-  store i32 1, i32* %8, align 4
-  %41 = load i32, i32* %8, align 4
-  %42 = atomicrmw add i32* @retired_count, i32 %41 seq_cst, align 4
-  store i32 %42, i32* %9, align 4
-  %43 = load i32, i32* %9, align 4
-  %44 = sext i32 %43 to i64
-  %45 = getelementptr inbounds [10 x %struct.Node*], [10 x %struct.Node*]* @retired, i64 0, i64 %44
-  store %struct.Node* %40, %struct.Node** %45, align 8
-  br label %48
+37:                                               ; preds = %33
+  %38 = load %struct.Node*, %struct.Node** %2, align 8
+  %39 = bitcast %struct.Node* %38 to i8*
+  call void @free(i8* noundef %39) #4
+  br label %42
 
-46:                                               ; preds = %35
-  br label %47
+40:                                               ; preds = %33
+  br label %41
 
-47:                                               ; preds = %46
-  br label %10
+41:                                               ; preds = %40
+  br label %8
 
-48:                                               ; preds = %39
-  %49 = load %struct.Node*, %struct.Node** %2, align 8
-  %50 = getelementptr inbounds %struct.Node, %struct.Node* %49, i32 0, i32 0
-  %51 = load i32, i32* %50, align 8
-  store i32 %51, i32* %1, align 4
-  br label %52
+42:                                               ; preds = %37
+  %43 = load %struct.Node*, %struct.Node** %2, align 8
+  %44 = getelementptr inbounds %struct.Node, %struct.Node* %43, i32 0, i32 0
+  %45 = load i32, i32* %44, align 8
+  store i32 %45, i32* %1, align 4
+  br label %46
 
-52:                                               ; preds = %48, %17
-  %53 = load i32, i32* %1, align 4
-  ret i32 %53
-}
-
-; Function Attrs: noinline nounwind optnone uwtable
-define dso_local void @free_all_retired() #0 {
-  %1 = alloca i32, align 4
-  store i32 0, i32* %1, align 4
-  br label %2
-
-2:                                                ; preds = %12, %0
-  %3 = load i32, i32* %1, align 4
-  %4 = load atomic i32, i32* @retired_count seq_cst, align 4
-  %5 = icmp slt i32 %3, %4
-  br i1 %5, label %6, label %15
-
-6:                                                ; preds = %2
-  %7 = load i32, i32* %1, align 4
-  %8 = sext i32 %7 to i64
-  %9 = getelementptr inbounds [10 x %struct.Node*], [10 x %struct.Node*]* @retired, i64 0, i64 %8
-  %10 = load %struct.Node*, %struct.Node** %9, align 8
-  %11 = bitcast %struct.Node* %10 to i8*
-  call void @free(i8* noundef %11) #4
-  br label %12
-
-12:                                               ; preds = %6
-  %13 = load i32, i32* %1, align 4
-  %14 = add nsw i32 %13, 1
-  store i32 %14, i32* %1, align 4
-  br label %2, !llvm.loop !6
-
-15:                                               ; preds = %2
-  store atomic i32 0, i32* @retired_count seq_cst, align 4
-  ret void
+46:                                               ; preds = %42, %15
+  %47 = load i32, i32* %1, align 4
+  ret i32 %47
 }
 
 ; Function Attrs: nounwind
@@ -279,7 +237,7 @@ define dso_local i32 @main() #0 {
   %18 = load i32, i32* %3, align 4
   %19 = add nsw i32 %18, 1
   store i32 %19, i32* %3, align 4
-  br label %6, !llvm.loop !8
+  br label %6, !llvm.loop !6
 
 20:                                               ; preds = %6
   store i32 0, i32* %4, align 4
@@ -302,7 +260,7 @@ define dso_local i32 @main() #0 {
   %31 = load i32, i32* %4, align 4
   %32 = add nsw i32 %31, 1
   store i32 %32, i32* %4, align 4
-  br label %21, !llvm.loop !9
+  br label %21, !llvm.loop !8
 
 33:                                               ; preds = %21
   %34 = call i32 @pop()
@@ -319,7 +277,6 @@ define dso_local i32 @main() #0 {
   unreachable
 
 39:                                               ; preds = %37
-  call void @free_all_retired()
   ret i32 0
 }
 
@@ -347,4 +304,3 @@ attributes #5 = { noreturn nounwind }
 !6 = distinct !{!6, !7}
 !7 = !{!"llvm.loop.mustprogress"}
 !8 = distinct !{!8, !7}
-!9 = distinct !{!9, !7}

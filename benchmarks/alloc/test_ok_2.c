@@ -9,7 +9,9 @@ void *thread_1(void *arg)
     arr[0] = 0;
     arr[1] = 1;
 
-	return NULL;
+    free(arr);
+
+    return NULL;
 }
 
 int main()
@@ -20,5 +22,5 @@ int main()
     pthread_create(&t1, NULL, thread_1, (void*)&arr);
     pthread_join(t1, NULL);
 
-	return 0;
+    return 0;
 }

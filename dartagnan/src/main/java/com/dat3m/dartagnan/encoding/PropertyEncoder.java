@@ -277,8 +277,8 @@ public class PropertyEncoder implements Encoder {
         };
         if (!ASSERT.equals(program.getSpecificationType())) {
             Event termination = program.getThreadEvents(Termination.class).stream().findFirst()
-                   .orElseThrow(() -> new IllegalArgumentException("Malformed program: missing the termination event"));
-           encoding = bmgr.and(encoding, context.execution(termination));
+                    .orElseThrow(() -> new IllegalArgumentException("Malformed program: missing the termination event"));
+            encoding = bmgr.and(encoding, context.execution(termination));
         }
         return new TrackableFormula(trackingLiteral, encoding);
     }

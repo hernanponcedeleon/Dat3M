@@ -210,6 +210,10 @@ public final class EncodingContext {
         return addresses.get(event);
     }
 
+    public TypedFormula<?, ?> address(MemFree free) {
+        return addresses.get(free);
+    }
+
     public TypedFormula<?, ?> address(MemoryObject memoryObject) { return objAddress.get(memoryObject); }
 
     public TypedFormula<IntegerType, ?> size(MemoryObject memoryObject) {
@@ -331,6 +335,9 @@ public final class EncodingContext {
                 } else if (e instanceof Store store) {
                     values.put(e, exprEncoder.encodeAt(store.getMemValue(), e));
                 }
+            }
+            if (e instanceof MemFree free) {
+                addresses.put(e, exprEncoder.encodeAt(free.getAddress(), free));
             }
             if (r != null) {
                 results.put(e, r);

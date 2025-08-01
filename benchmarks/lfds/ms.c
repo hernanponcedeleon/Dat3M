@@ -10,12 +10,12 @@ void *worker(void *arg)
 
     intptr_t index = ((intptr_t) arg);
 
-	enqueue(index);
+    enqueue(index);
     int r = dequeue();
 
-	assert(r != EMPTY);
+    assert(r != EMPTY);
 
-	return NULL;
+    return NULL;
 }
 
 int main()
@@ -32,8 +32,6 @@ int main()
 
     int r = dequeue();
     assert(r == EMPTY);
-
-    free_all_retired();
 
     return 0;
 }

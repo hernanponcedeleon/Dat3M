@@ -69,6 +69,8 @@ public class ExecutionModel {
     private final Map<Object, Set<EventData>> addressWritesMap; // This ALSO contains the init writes
     private final Map<Object, EventData> addressInitMap;
     //Note, we could merge the three above maps into a single one that holds writes, reads and init writes.
+    private final Map<Object, Set<EventData>> addressAllocsMap;
+    private final Map<Object, Set<EventData>> addressFreesMap;
 
     private final Map<EventData, Set<EventData>> dataDepMap;
     private final Map<EventData, Set<EventData>> addrDepMap;
@@ -88,6 +90,8 @@ public class ExecutionModel {
     private Map<Object, Set<EventData>> addressReadsMapView;
     private Map<Object, Set<EventData>> addressWritesMapView;
     private Map<Object, EventData> addressInitMapView;
+    private Map<Object, Set<EventData>> addressAllocsMapView;
+    private Map<Object, Set<EventData>> addressFreesMapView;
 
     private Map<EventData, Set<EventData>> dataDepMapView;
     private Map<EventData, Set<EventData>> addrDepMapView;
@@ -109,6 +113,8 @@ public class ExecutionModel {
         addressReadsMap = new HashMap<>();
         addressWritesMap = new HashMap<>();
         addressInitMap = new HashMap<>();
+        addressAllocsMap = new HashMap<>();
+        addressFreesMap = new HashMap<>();
         eventMap = new EventMap();
         dataDepMap = new HashMap<>();
         addrDepMap = new HashMap<>();
@@ -134,6 +140,8 @@ public class ExecutionModel {
         addressReadsMapView = Collections.unmodifiableMap(addressReadsMap);
         addressWritesMapView = Collections.unmodifiableMap(addressWritesMap);
         addressInitMapView = Collections.unmodifiableMap(addressInitMap);
+        addressAllocsMapView = Collections.unmodifiableMap(addressAllocsMap);
+        addressFreesMapView = Collections.unmodifiableMap(addressFreesMap);
         dataDepMapView = Collections.unmodifiableMap(dataDepMap);
         addrDepMapView = Collections.unmodifiableMap(addrDepMap);
         ctrlDepMapView = Collections.unmodifiableMap(ctrlDepMap);
@@ -197,6 +205,12 @@ public class ExecutionModel {
     public Map<Object, Set<EventData>> getAddressWritesMap() {
         return addressWritesMapView;
     }
+    public Map<Object, Set<EventData>> getAddressAllocsMap() {
+        return addressAllocsMapView;
+    }
+    public Map<Object, Set<EventData>> getAddressFreesMap() {
+        return addressFreesMapView;
+    }
     public Map<Object, EventData> getAddressInitMap() {
         return addressInitMapView;
     }
@@ -257,6 +271,8 @@ public class ExecutionModel {
         addressInitMap.clear(); // This one can probably be constant and need not be rebuilt!
         addressWritesMap.clear();
         addressReadsMap.clear();
+        addressAllocsMap.clear();
+        addressFreesMap.clear();
         writeReadsMap.clear();
         fenceMap.clear();
         eventMap.clear();
@@ -372,6 +388,12 @@ public class ExecutionModel {
             // ===== Jumps =====
             // We override the meaning of execution here. A jump is executed IFF its condition was true.
             data.setWasExecuted(irModel.jumpTaken((CondJump) e));
+        } else if (data.isAlloc()) {
+            Object address = checkNotNull(irModel.address(((MemAlloc) e).getAllocatedObject()).value());
+            addressAllocsMap.computeIfAbsent(address, k -> new HashSet<>()).add(data);
+        } else if (data.isFree()) {
+            Object address = checkNotNull(irModel.address((MemFree) e).value());
+            addressFreesMap.computeIfAbsent(address, k -> new HashSet<>()).add(data);
         } else {
             //TODO: Maybe add some other events (e.g. assertions)
             // But for now all non-visible events are simply registered without

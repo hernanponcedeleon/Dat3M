@@ -9,7 +9,7 @@ void *thread_1(void *arg)
     arr[0] = 0;
     arr[1] = 1;
 
-	return NULL;
+    return NULL;
 }
 
 int main()
@@ -18,9 +18,8 @@ int main()
     int *arr = malloc(2 * sizeof(int));
 
     pthread_create(&t1, NULL, thread_1, (void*)&arr);
+    free(arr);
     pthread_join(t1, NULL);
 
-    free(arr + sizeof(int));
-
-	return 0;
+    return 0;
 }

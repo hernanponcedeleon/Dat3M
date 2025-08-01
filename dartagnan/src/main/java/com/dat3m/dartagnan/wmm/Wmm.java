@@ -205,22 +205,15 @@ public class Wmm {
             case CTRLDIRECT -> new DirectControlDependency(r);
             case EMPTY -> new Empty(r);
             case IDDTRANS -> new TransitiveClosure(r, getOrCreatePredefinedRelation(IDD));
-            // case DATA -> intersection(r,
-            //         getOrCreatePredefinedRelation(IDDTRANS),
-            //         addDefinition(product(newRelation(), Tag.MEMORY, Tag.MEMORY))
-            // );
-            case DATA -> {
-                Relation mm = addDefinition(product(newRelation(), Tag.MEMORY, Tag.MEMORY));
-                Relation am = addDefinition(product(newRelation(), Tag.ALLOC, Tag.MEMORY));
-                Relation productUnion = addDefinition(union(newRelation(), am, mm));
-                yield intersection(r, getOrCreatePredefinedRelation(IDDTRANS), productUnion);
-            }
+            case DATA -> intersection(r, getOrCreatePredefinedRelation(IDDTRANS),
+                    addDefinition(new CartesianProduct(newRelation(),
+                    Filter.union(Filter.byTag(Tag.MEMORY), Filter.byTag(Tag.ALLOC)),
+                    Filter.byTag(Tag.MEMORY))));
             case ADDR -> {
                 Relation addrdirect = getOrCreatePredefinedRelation(ADDRDIRECT);
                 Relation comp = addDefinition(composition(newRelation(), getOrCreatePredefinedRelation(IDDTRANS), addrdirect));
                 Relation union = addDefinition(union(newRelation(), addrdirect, comp));
                 Relation mm = addDefinition(product(newRelation(), Tag.MEMORY, Tag.MEMORY));
-                Relation am = addDefinition(product(newRelation(), Tag.ALLOC, Tag.MEMORY));
                 Relation mf = addDefinition(product(newRelation(), Tag.MEMORY, Tag.FREE));
                 Relation af = addDefinition(product(newRelation(), Tag.ALLOC, Tag.FREE));
                 Relation productUnion = addDefinition(union(newRelation(), mm, mf, af));

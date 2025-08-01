@@ -278,7 +278,7 @@ public class FieldSensitiveAndersen implements AliasAnalysis {
         }
     }
 
-    protected ImmutableSet<Location> getAddressSpace(Event e) {
+    private ImmutableSet<Location> getAddressSpace(Event e) {
         Expression addrExpr;
         if (e instanceof MemoryCoreEvent mce) {
             addrExpr = mce.getAddress();

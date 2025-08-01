@@ -265,6 +265,10 @@ public class ExecutionGraph {
             graph = new SetIdentityGraph(set);
         } else if (relClass == Empty.class) {
             graph = new EmptyGraph();
+        } else if (relClass == AllocPtr.class) {
+            graph = new AllocPtrGraph();
+        } else if (relClass == AllocMem.class) {
+            graph = new AllocMemGraph();
         } else {
             final String error = String.format("Cannot handle relation %s with definition of type %s.",
                     rel, relClass.getSimpleName());
