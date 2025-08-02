@@ -38,9 +38,7 @@ void* thread_join(pthread_t id)
 //define PTHREAD_PRIO_NONE 0
 //define PTHREAD_PRIO_INHERIT 1
 //define PTHREAD_PRIO_PROTECT 2
-//define PTHREAD_MUTEX_POLICY_FAIRSHARE_NP 1
-//define PTHREAD_MUTEX_POLICY_FIRSTFIT_NP 3
-void mutex_init(pthread_mutex_t* lock, int type, int protocol, int policy, int prioceiling)
+void mutex_init(pthread_mutex_t* lock, int type, int protocol, int prioceiling)
 {
     int status;
     int value;
@@ -57,11 +55,6 @@ void mutex_init(pthread_mutex_t* lock, int type, int protocol, int policy, int p
     assert(status == 0);
     status = pthread_mutexattr_getprotocol(&attributes, &value);
     assert(status == 0);// && value == protocol);
-
-    status = pthread_mutexattr_setpolicy_np(&attributes, policy);
-    assert(status == 0);
-    status = pthread_mutexattr_getpolicy_np(&attributes, &value);
-    assert(status == 0);// && value == policy);
 
     status = pthread_mutexattr_setprioceiling(&attributes, prioceiling);
     assert(status == 0);
@@ -104,8 +97,8 @@ void mutex_test()
     pthread_mutex_t mutex0;
     pthread_mutex_t mutex1;
     //TODO Add different behavior based on attributes.
-    mutex_init(&mutex0, PTHREAD_MUTEX_ERRORCHECK, PTHREAD_PRIO_INHERIT, PTHREAD_MUTEX_POLICY_FAIRSHARE_NP, 1);
-    mutex_init(&mutex1, PTHREAD_MUTEX_RECURSIVE, PTHREAD_PRIO_PROTECT, PTHREAD_MUTEX_POLICY_FIRSTFIT_NP, 2);
+    mutex_init(&mutex0, PTHREAD_MUTEX_ERRORCHECK, PTHREAD_PRIO_INHERIT, 1);
+    mutex_init(&mutex1, PTHREAD_MUTEX_RECURSIVE, PTHREAD_PRIO_PROTECT, 2);
 
     {
         mutex_lock(&mutex0);
@@ -229,7 +222,7 @@ void* cond_worker(void* message)
 void cond_test()
 {
     void* message = (void*) 42;
-    mutex_init(&cond_mutex, PTHREAD_MUTEX_NORMAL, PTHREAD_PRIO_NONE, PTHREAD_MUTEX_POLICY_FIRSTFIT_NP, 0);
+    mutex_init(&cond_mutex, PTHREAD_MUTEX_NORMAL, PTHREAD_PRIO_NONE, 0);
     cond_init(&cond);
 
     pthread_t worker = thread_create(cond_worker, message);

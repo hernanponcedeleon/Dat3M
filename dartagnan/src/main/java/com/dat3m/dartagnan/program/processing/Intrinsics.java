@@ -552,22 +552,19 @@ public class Intrinsics {
                 "Unrecognized intrinsics \"%s\"", call);
         final Register oldValue = call.getFunction().newRegister(getPthreadAttrType());
         final Label end = EventFactory.newLabel("__pthread_return");
-        final Label returnEINVAL = EventFactory.newLabel("__pthread_return_EINVAL");
         final PthreadAttrImplementation impl = switch (suffix.substring(3)) {
-            case "detachstate" -> inlinePthreadAttrDetachState(oldValue, getter ? null : value, returnEINVAL, end);
+            case "detachstate" -> inlinePthreadAttrDetachState(oldValue, getter ? null : value, end);
             default -> null;
         };
         final Expression zero = expressions.makeZero(types.getIntegerType(1));
         final Expression extractInitialized = expressions.makeIntExtract(oldValue, 0, 0);
         return eventSequence(
-                EventFactory.newLoad(oldValue, attrAddress),
-                EventFactory.newJump(expressions.makeEQ(extractInitialized, zero), returnEINVAL),
-                impl == null ? null : impl.errorChecks,
-                impl == null ? null : EventFactory.newStore(getter ? value : attrAddress, impl.out),
-                assignSuccess(errorRegister),
-                newGoto(end),
-                returnEINVAL,
                 newLocal(errorRegister, expressions.makeValue(PosixErrorCode.EINVAL.getValue(), errorType)),
+                newLoad(oldValue, attrAddress),
+                newJump(expressions.makeEQ(extractInitialized, zero), end),
+                impl == null ? null : impl.errorChecks,
+                impl == null ? null : newStore(getter ? value : attrAddress, impl.out),
+                assignSuccess(errorRegister),
                 end
         );
     }
@@ -578,16 +575,18 @@ public class Intrinsics {
 
     private record PthreadAttrImplementation(Expression out, List<Event> errorChecks) {}
 
-    //TODO may vary by platform
-    private static final long PTHREAD_DETACHSTATE_DETACHED = 2;
-    private static final long PTHREAD_DETACHSTATE_JOINABLE = 1;
-
-    private PthreadAttrImplementation inlinePthreadAttrDetachState(Expression oldValue, Expression detachstate, Label returnEINVAL, Label end) {
+    private PthreadAttrImplementation inlinePthreadAttrDetachState(Expression oldValue, Expression detachstate,
+            Label returnEINVAL) {
+        // POSIX defines these two named constants of type int.
+        // see https://pubs.opengroup.org/onlinepubs/9799919799/basedefs/pthread.h.html
+        //TODO values may vary by platform
+        final long PTHREAD_CREATE_DETACHED = 1;
+        final long PTHREAD_CREATE_JOINABLE = 0;
         final int flagIndex = 1;
         final IntegerType attrType = (IntegerType) oldValue.getType();
-        final IntegerType valueType = types.getIntegerType(32); // int
-        final Expression createDetached = expressions.makeValue(PTHREAD_DETACHSTATE_DETACHED, valueType);
-        final Expression createJoinable = expressions.makeValue(PTHREAD_DETACHSTATE_JOINABLE, valueType);
+        final IntegerType valueType = getNativeIntType();
+        final Expression createDetached = expressions.makeValue(PTHREAD_CREATE_DETACHED, valueType);
+        final Expression createJoinable = expressions.makeValue(PTHREAD_CREATE_JOINABLE, valueType);
         final List<Event> errorChecks = new ArrayList<>();
         final Expression newValue;
         if (detachstate == null) {
@@ -1832,6 +1831,10 @@ public class Intrinsics {
         final Expression cast = expressions.makeCast(ite, outputType, false);
         final Event assignment = EventFactory.newLocal(resultReg, cast);
         return List.of(assignment);
+    }
+
+    private IntegerType getNativeIntType() {
+        return types.getIntegerType(32);
     }
 
     private Event assignSuccess(Register errorRegister) {
