@@ -29,10 +29,11 @@ import java.util.Set;
 public class DynamicThreadJoin extends AbstractEvent implements RegWriter, RegReader, BlockingEvent {
 
     public enum Status {
-        SUCCESS(0),                // The join was successful
-        INVALID_TID(1),            // The provided tid does not match with a joinable thread
-        INVALID_RETURN_TYPE(2);    // The provided tid is valid, but the return type of that thread does not match
+        SUCCESS(0),                // The join was successful.
+        INVALID_TID(1),            // The provided tid does not match with any of the spawned threads.
+        INVALID_RETURN_TYPE(2),    // The provided tid is valid, but the return type of that thread does not match
                                              // with the expected return type.
+        DETACHED_THREAD(3);        // The provided tid belongs to a non-joinable thread.
 
         final int errorCode;
         public int getErrorCode() { return errorCode; }

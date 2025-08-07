@@ -1,7 +1,6 @@
 package com.dat3m.dartagnan.verification.model;
 
 import com.dat3m.dartagnan.encoding.EncodingContext;
-import com.dat3m.dartagnan.encoding.ExpressionEncoder;
 import com.dat3m.dartagnan.encoding.IREvaluator;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
@@ -10,12 +9,10 @@ import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.RegReader;
 import com.dat3m.dartagnan.program.event.RegWriter;
 import com.dat3m.dartagnan.program.event.Tag;
-import com.dat3m.dartagnan.program.event.core.*;
-import com.dat3m.dartagnan.program.event.core.threading.ThreadArgument;
-import com.dat3m.dartagnan.program.event.core.threading.ThreadJoin;
+import com.dat3m.dartagnan.program.event.core.CondJump;
+import com.dat3m.dartagnan.program.event.core.MemoryCoreEvent;
 import com.dat3m.dartagnan.program.event.lang.svcomp.BeginAtomic;
 import com.dat3m.dartagnan.program.event.lang.svcomp.EndAtomic;
-import com.dat3m.dartagnan.program.filter.Filter;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.dat3m.dartagnan.smt.ModelExt;
 import com.dat3m.dartagnan.utils.dependable.DependencyGraph;
@@ -24,9 +21,6 @@ import com.dat3m.dartagnan.wmm.Wmm;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
-import com.google.common.collect.Sets;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 
 import java.math.BigInteger;
@@ -45,15 +39,11 @@ The ExecutionModel wraps a Model and extracts data from it in a more workable ma
 // i.e. those that init some address which no read nor write accesses.
 public class ExecutionModel {
 
-    private static final Logger logger = LogManager.getLogger(ExecutionModel.class);
-
     private final EncodingContext ctx;
 
     // ============= Model specific  =============
     private ModelExt model;
     private IREvaluator irModel;
-    private Filter eventFilter;
-    private boolean extractCoherences;
 
     private final EventMap eventMap;
     // The event list is sorted lexicographically by (threadID, cID)
@@ -64,17 +54,12 @@ public class ExecutionModel {
     private final Map<Thread, List<List<EventData>>> atomicBlocksMap;
     private final Map<EventData, EventData> readWriteMap;
     private final Map<EventData, Set<EventData>> writeReadsMap;
-    private final Map<String, Set<EventData>> fenceMap;
     private final Map<Object, Set<EventData>> addressReadsMap;
     private final Map<Object, Set<EventData>> addressWritesMap; // This ALSO contains the init writes
     private final Map<Object, EventData> addressInitMap;
     //Note, we could merge the three above maps into a single one that holds writes, reads and init writes.
     private final Map<Object, Set<EventData>> addressAllocsMap;
     private final Map<Object, Set<EventData>> addressFreesMap;
-
-    private final Map<EventData, Set<EventData>> dataDepMap;
-    private final Map<EventData, Set<EventData>> addrDepMap;
-    private final Map<EventData, Set<EventData>> ctrlDepMap;
 
     private final Map<Object, List<EventData>> coherenceMap;
 
@@ -86,16 +71,11 @@ public class ExecutionModel {
     private Map<Thread, List<List<EventData>>> atomicBlocksMapView;
     private Map<EventData, EventData> readWriteMapView;
     private Map<EventData, Set<EventData>> writeReadsMapView;
-    private Map<String, Set<EventData>> fenceMapView;
     private Map<Object, Set<EventData>> addressReadsMapView;
     private Map<Object, Set<EventData>> addressWritesMapView;
     private Map<Object, EventData> addressInitMapView;
     private Map<Object, Set<EventData>> addressAllocsMapView;
     private Map<Object, Set<EventData>> addressFreesMapView;
-
-    private Map<EventData, Set<EventData>> dataDepMapView;
-    private Map<EventData, Set<EventData>> addrDepMapView;
-    private Map<EventData, Set<EventData>> ctrlDepMapView;
 
     private Map<Object, List<EventData>> coherenceMapView;
 
@@ -109,16 +89,12 @@ public class ExecutionModel {
         atomicBlocksMap = new HashMap<>();
         readWriteMap = new HashMap<>();
         writeReadsMap = new HashMap<>();
-        fenceMap = new HashMap<>();
         addressReadsMap = new HashMap<>();
         addressWritesMap = new HashMap<>();
         addressInitMap = new HashMap<>();
         addressAllocsMap = new HashMap<>();
         addressFreesMap = new HashMap<>();
         eventMap = new EventMap();
-        dataDepMap = new HashMap<>();
-        addrDepMap = new HashMap<>();
-        ctrlDepMap = new HashMap<>();
         coherenceMap = new HashMap<>();
 
         createViews();
@@ -136,15 +112,11 @@ public class ExecutionModel {
         atomicBlocksMapView = Collections.unmodifiableMap(atomicBlocksMap);
         readWriteMapView = Collections.unmodifiableMap(readWriteMap);
         writeReadsMapView = Collections.unmodifiableMap(writeReadsMap);
-        fenceMapView = Collections.unmodifiableMap(fenceMap);
         addressReadsMapView = Collections.unmodifiableMap(addressReadsMap);
         addressWritesMapView = Collections.unmodifiableMap(addressWritesMap);
         addressInitMapView = Collections.unmodifiableMap(addressInitMap);
         addressAllocsMapView = Collections.unmodifiableMap(addressAllocsMap);
         addressFreesMapView = Collections.unmodifiableMap(addressFreesMap);
-        dataDepMapView = Collections.unmodifiableMap(dataDepMap);
-        addrDepMapView = Collections.unmodifiableMap(addrDepMap);
-        ctrlDepMapView = Collections.unmodifiableMap(ctrlDepMap);
         coherenceMapView = Collections.unmodifiableMap(coherenceMap);
     }
 
@@ -170,12 +142,6 @@ public class ExecutionModel {
     public EncodingContext getContext() {
         return ctx;
     }
-    public Filter getEventFilter() {
-        return eventFilter;
-    }
-    public boolean hasCoherences() {
-        return extractCoherences;
-    }
 
     public List<EventData> getEventList() {
         return eventListView;
@@ -185,7 +151,9 @@ public class ExecutionModel {
         return threadListView;
     }
 
-    public Map<MemoryObject, MemoryObjectModel> getMemoryLayoutMap() { return memoryLayoutMapView; }
+    public Map<MemoryObject, MemoryObjectModel> getMemoryLayoutMap() {
+        return memoryLayoutMapView;
+    }
     public Map<Thread, List<EventData>> getThreadEventsMap() {
         return threadEventsMapView;
     }
@@ -195,9 +163,6 @@ public class ExecutionModel {
     }
     public Map<EventData, Set<EventData>> getWriteReadsMap() {
         return writeReadsMapView;
-    }
-    public Map<String, Set<EventData>> getFenceMap() {
-        return fenceMapView;
     }
     public Map<Object, Set<EventData>> getAddressReadsMap() {
         return addressReadsMapView;
@@ -214,16 +179,7 @@ public class ExecutionModel {
     public Map<Object, EventData> getAddressInitMap() {
         return addressInitMapView;
     }
-    public Map<EventData, Set<EventData>> getAddrDepMap() { return addrDepMapView; }
-    public Map<EventData, Set<EventData>> getDataDepMap() { return dataDepMapView; }
-    public Map<EventData, Set<EventData>> getCtrlDepMap() { return ctrlDepMapView; }
     public Map<Object, List<EventData>> getCoherenceMap() { return coherenceMapView; }
-
-
-
-    public boolean eventExists(Event e) {
-        return eventMap.contains(e);
-    }
 
     public Optional<EventData> getData(Event e) {
         return Optional.ofNullable(eventMap.get(e));
@@ -231,31 +187,17 @@ public class ExecutionModel {
 
     //========================== Initialization =========================
 
-
     public void initialize(ModelExt model) {
-        initialize(model, true);
-    }
-
-    public void initialize(ModelExt model, boolean extractCoherences) {
-        initialize(model, Filter.byTag(Tag.VISIBLE), extractCoherences);
-    }
-
-    public void initialize(ModelExt model, Filter eventFilter, boolean extractCoherences) {
         // We populate here, instead of on construction,
         // to reuse allocated data structures (since these data structures already adapted
         // their capacity in previous iterations, and thus we should have less overhead in future populations)
         // However, for all intents and purposes, this serves as a constructor.
         this.model = model;
         this.irModel = new IREvaluator(ctx, model);
-        this.eventFilter = eventFilter;
-        this.extractCoherences = extractCoherences;
         extractEventsFromModel();
         extractMemoryLayout();
         extractReadsFrom();
-        coherenceMap.clear();
-        if (extractCoherences) {
-            extractCoherences();
-        }
+        extractCoherences();
     }
 
     //========================== Internal methods  =========================
@@ -274,11 +216,9 @@ public class ExecutionModel {
         addressAllocsMap.clear();
         addressFreesMap.clear();
         writeReadsMap.clear();
-        fenceMap.clear();
         eventMap.clear();
-        addrDepMap.clear();
-        dataDepMap.clear();
-        ctrlDepMap.clear();
+        uninitRegReads.clear();
+        initializedRegisters.clear();
 
         List<Thread> threadList = new ArrayList<>(getProgram().getThreads());
         List<Integer> threadEndIndexList = new ArrayList<>(threadList.size());
@@ -286,7 +226,6 @@ public class ExecutionModel {
 
 
         for (Thread thread : threadList) {
-            initDepTracking();
             List<List<Integer>> atomicBlockRanges = atomicBlockRangesMap.computeIfAbsent(thread, key -> new ArrayList<>());
             Event e = thread.getEntry();
             int atomicBegin = -1;
@@ -296,10 +235,10 @@ public class ExecutionModel {
                     e = e.getSuccessor();
                     continue;
                 }
-                if (eventFilter.apply(e)) {
+                trackRegisterAccesses(e);
+                if (e.hasTag(Tag.VISIBLE)) {
                     addEvent(e, id++, localId++);
                 }
-                trackDependencies(e);
 
                 // ===== Atomic blocks =====
                 if (e instanceof BeginAtomic) {
@@ -377,13 +316,6 @@ public class ExecutionModel {
                 //FIXME: Handle other kinds of memory events such as SRCU_SYNC.
                 throw new UnsupportedOperationException("Unexpected memory event " + data.getEvent());
             }
-
-        } else if (data.isFence()) {
-            // ===== Fences =====
-            // FIXME this assumes not only that the event has a fence tag but also that it
-            // is a GenericVisibleEvent. This is dangerous and should be fixed.
-            String name = ((GenericVisibleEvent)data.getEvent()).getName();
-            fenceMap.computeIfAbsent(name, key -> new HashSet<>()).add(data);
         } else if (data.isJump()) {
             // ===== Jumps =====
             // We override the meaning of execution here. A jump is executed IFF its condition was true.
@@ -401,117 +333,35 @@ public class ExecutionModel {
         }
     }
 
-    // =============== Dependency tracking ===============
-    //TODO: The following code is refinement specific and assumes that only visible events get extracted!
+    // =============== Register tracking ===============
+    //NOTE: The following code is only used to check for reads from uninitialized registers
+    public record UninitRegRead(Register register, Event at) {}
 
-    // Due to intra thread communication using registers, we do not
-    // reset this map for every thread, but keep it global
-    private Map<Register, Set<EventData>> lastRegWrites = new HashMap<>();
-    private Set<EventData> curCtrlDeps;
-    // The following is used for Linux
-    private Stack<Set<EventData>> ifCtrlDeps;
-    private Stack<Label> endIfs;
+    private final List<UninitRegRead> uninitRegReads = new ArrayList<>();
+    private final Set<Register> initializedRegisters = new HashSet<>();
+
+    public List<UninitRegRead> getUninitRegReads() { return uninitRegReads; }
+
     //------------------------
-    private void initDepTracking() {
-        curCtrlDeps = new HashSet<>();
-        ifCtrlDeps = new Stack<>();
-        endIfs = new Stack<>();
-    }
-
-    private void trackDependencies(Event e) {
-
-        while (!endIfs.isEmpty() && e.getGlobalId() >= endIfs.peek().getGlobalId()) {
-            // We exited an If-then-else block and remove the dependencies associated with it.
-            // We do this inside a loop just in case multiple Ifs are left simultaneously
-            endIfs.pop();
-            curCtrlDeps.removeAll(ifCtrlDeps.pop());
-        }
-
-        if (e.hasTag(Tag.VISIBLE)) {
-            // ---- Track ctrl dependency ----
-            // TODO: This may be done more efficiently, as many events share the same set of ctrldeps.
-            ctrlDepMap.put(eventMap.get(e), new HashSet<>(curCtrlDeps));
-        }
-
+    private void trackRegisterAccesses(Event e) {
         if (e instanceof RegReader regReader) {
-            final Set<EventData> dataDeps = new HashSet<>();
-            final Set<EventData> addrDeps = new HashSet<>();
-            final Set<EventData> ctrlDeps = new HashSet<>();
             for (Register.Read regRead : regReader.getRegisterReads()) {
                 final Register reg = regRead.register();
-                final Set<EventData> visibleRootDependencies = lastRegWrites.get(reg);
-                if (visibleRootDependencies == null) {
-                    // FIXME: This should never happen, but our parser is buggy and produces ill-formed code.
-                    logger.warn("Encountered uninitialized register {} read by {} in an execution.", reg, e);
-                    continue;
-                }
-                switch (regRead.usageType()) {
-                    case DATA -> dataDeps.addAll(visibleRootDependencies);
-                    case ADDR -> addrDeps.addAll(visibleRootDependencies);
-                    case CTRL -> ctrlDeps.addAll(visibleRootDependencies);
+                if (!initializedRegisters.contains(reg)) {
+                    uninitRegReads.add(new UninitRegRead(reg, e));
                 }
             }
-
-            final EventData eData = eventMap.get(e);
-            if (e.hasTag(Tag.VISIBLE)) {
-                // For visible events we store the dependencies.
-                dataDepMap.put(eData, dataDeps);
-                addrDepMap.put(eData, addrDeps);
-            }
-            if (e instanceof IfAsJump ifJmp) {
-                // Remember what dependencies were added when entering the If so we can remove them when exiting
-                HashSet<EventData> addedDeps = new HashSet<>(Sets.difference(ctrlDeps, curCtrlDeps));
-                ifCtrlDeps.push(addedDeps);
-                endIfs.push(ifJmp.getEndIf());
-            }
-            curCtrlDeps.addAll(ctrlDeps);
         }
-
-        if (e instanceof RegWriter regWriter) {
-            if (regWriter instanceof Load load) {
-                final EventData eData = eventMap.get(e);
-                lastRegWrites.put(load.getResultRegister(), new HashSet<>(Set.of(eData)));
-            } else if (regWriter instanceof ExecutionStatus status) {
-                // ---- Track data dependency due to execution tracking ----
-                final Event tracked = status.getStatusEvent();
-                HashSet<EventData> deps = new HashSet<>();
-                if (eventExists(tracked) && status.doesTrackDep()) {
-                    deps.add(eventMap.get(tracked));
-                    //TODO: If the tracked event is a RMWStoreExclusive, don't we need to
-                    // put a dependency to the paired exclusive load if the store failed to execute?
-                }
-                lastRegWrites.put(status.getResultRegister(), deps);
-            } else if (regWriter instanceof RegReader regReader) {
-                // Note: This code might work for more cases than we check for here,
-                // but we want to throw an exception if an unexpected event appears.
-                assert regWriter instanceof Local || regWriter instanceof MemAlloc;
-                // ---- internal data dependency ----
-                final Set<EventData> dataDeps = new HashSet<>();
-                for (Register.Read regRead : regReader.getRegisterReads()) {
-                    final Register reg = regRead.register();
-                    final Set<EventData> visibleRootDependencies = lastRegWrites.get(reg);
-                    if (visibleRootDependencies == null) {
-                        // FIXME: This should never happen, but our parser is buggy and produces ill-formed code.
-                        logger.warn("Encountered uninitialized register {} read by {} in an execution.", reg, e);
-                        continue;
-                    }
-                    assert regRead.usageType() == Register.UsageType.DATA;
-                    dataDeps.addAll(visibleRootDependencies);
-                }
-                lastRegWrites.put(regWriter.getResultRegister(), dataDeps);
-            } else {
-                assert e instanceof ThreadArgument || e instanceof ThreadJoin;
-                // We have a RegWriter that doesn't read registers, so there are no dependencies.
-                lastRegWrites.put(regWriter.getResultRegister(), new HashSet<>());
-            }
+        if (e instanceof RegWriter writer) {
+            initializedRegisters.add(writer.getResultRegister());
         }
     }
 
     // ===================================================
 
     private void extractMemoryLayout() {
-        final ExpressionEncoder exprEnc = ctx.getExpressionEncoder();
         memoryLayoutMap.clear();
+
         for (MemoryObject obj : getProgram().getMemory().getObjects()) {
             final boolean isAllocated = irModel.isAllocated(obj);
             if (isAllocated) {
@@ -524,8 +374,8 @@ public class ExecutionModel {
     }
 
     private void extractReadsFrom() {
-        final EncodingContext.EdgeEncoder rf = ctx.edge(ctx.getTask().getMemoryModel().getRelation(RF));
         readWriteMap.clear();
+        final EncodingContext.EdgeEncoder rf = ctx.edge(ctx.getTask().getMemoryModel().getRelation(RF));
 
         for (Map.Entry<Object, Set<EventData>> addressedReads : addressReadsMap.entrySet()) {
             Object address = addressedReads.getKey();
@@ -543,6 +393,7 @@ public class ExecutionModel {
     }
 
     private void extractCoherences() {
+        coherenceMap.clear();
         final EncodingContext.EdgeEncoder co = ctx.edge(ctx.getTask().getMemoryModel().getRelation(CO));
 
         for (Map.Entry<Object, Set<EventData>> addrWrites : addressWritesMap.entrySet()) {

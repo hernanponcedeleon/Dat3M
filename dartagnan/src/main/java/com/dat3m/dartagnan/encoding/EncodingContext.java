@@ -37,7 +37,6 @@ import static com.dat3m.dartagnan.program.event.Tag.INIT;
 import static com.dat3m.dartagnan.program.event.Tag.WRITE;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
-import static com.dat3m.dartagnan.expression.utils.ExpressionHelper.isAggregateLike;
 
 @Options
 public final class EncodingContext {
@@ -320,27 +319,21 @@ public final class EncodingContext {
             if (!e.cfImpliesExec()) {
                 executionVariables.put(e, booleanFormulaManager.makeVariable("exec " + e.getGlobalId()));
             }
-            TypedFormula<?, ?> r;
             if (e instanceof RegWriter rw) {
-                Register register = rw.getResultRegister();
-                String name = register.getName() + "(" + e.getGlobalId() + "_result)";
-                r = exprEncoder.makeVariable(name, register.getType());
-            } else {
-                r = null;
+                final Register register = rw.getResultRegister();
+                final String name = register.getName() + "(" + e.getGlobalId() + "_result)";
+                results.put(e, exprEncoder.makeVariable(name, register.getType()));
             }
             if (e instanceof MemoryCoreEvent memEvent) {
                 addresses.put(e, exprEncoder.encodeAt(memEvent.getAddress(), memEvent));
                 if (e instanceof Load) {
-                    values.put(e, r);
+                    values.put(e, results.get(e));
                 } else if (e instanceof Store store) {
                     values.put(e, exprEncoder.encodeAt(store.getMemValue(), e));
                 }
             }
             if (e instanceof MemFree free) {
                 addresses.put(e, exprEncoder.encodeAt(free.getAddress(), free));
-            }
-            if (r != null) {
-                results.put(e, r);
             }
         }
     }
