@@ -73,13 +73,6 @@ let Plain = ~Marked
 let Acq = (ACQ | SC) & (R | F)
 let Rel = (REL | SC) & (W | F)
 
-(*
- * Base relations for heap memory safety:
- * allocptr - relates (ALLOC | FREE) -> (FREE) when both events use the same pointer
- * allocmem - relates (ALLOC) -> (M) when the second event accesses the memory allocated by the first event
-*)
-let memfree = allocmem^-1 ; (allocptr & (ALLOC * FREE))
-
 (** Ordering **)
 (* In our model, dependencies only order stores:
   r1 = x_rlx;
@@ -103,7 +96,7 @@ let dep = ctrl | addr | data
 let bob = [Acq];po | po;[Rel] | [SC];po;[SC] | po;[SC & F];po | [R];po;[Acq & F];po | po;[Rel & F];po;[W & Marked]
 (* Preserved Program-Order: these are never visibly reordered by compiler and hardware. 
    Includes both barrier ordering, and dependency ordering + same-address ordering *)
-let ppo = bob | [Marked];(dep | coi | fri);[W & Marked] | (memfree & po) | (allocmem & po)
+let ppo = bob | [Marked];(dep | coi | fri);[W & Marked]
 
 (* Important: these relations satisfy
     ppo ; [~Marked] ; po <= ppo
@@ -155,11 +148,3 @@ let r-racy = [domain(r-race)] | [range(r-race)]
  *)
 let obs-dep = ctrl | addr | data;rfe
 flag ~empty [domain(obs-dep)] & r-racy as r-data-race
-
-(** Axioms for heap memory safety **)
-flag ~empty (((ALLOC * FREE) & allocptr) \ hb+) as alloc-race
-flag ~empty (((FREE * FREE) \ id) & allocptr) as double-free
-flag ~empty ([FREE] \ [range(allocptr & (ALLOC * FREE))]) as free-without-alloc
-flag ~empty (allocmem \ hb+) as use-before-alloc
-flag ~empty (memfree \ hb+) as use-after-free
-flag ~empty [domain(ALLOC * TERMINATION)] \ [domain(allocptr)] as alloc-without-free
