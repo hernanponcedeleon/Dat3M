@@ -10,6 +10,8 @@ import com.dat3m.dartagnan.program.event.RegReader;
 import com.dat3m.dartagnan.program.event.RegWriter;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.CondJump;
+import com.dat3m.dartagnan.program.event.core.MemAlloc;
+import com.dat3m.dartagnan.program.event.core.MemFree;
 import com.dat3m.dartagnan.program.event.core.MemoryCoreEvent;
 import com.dat3m.dartagnan.program.event.lang.svcomp.BeginAtomic;
 import com.dat3m.dartagnan.program.event.lang.svcomp.EndAtomic;
