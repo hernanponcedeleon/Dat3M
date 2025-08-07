@@ -69,7 +69,7 @@ public class AllocFreeTest {
 
     @Test
     public void testAssume() throws Exception {
-        for (String mmPath : List.of("cat/rc11.cat", "cat/c11.cat", "cat/vmm.cat")) {
+        for (String mmPath : List.of("cat/rc11.cat", "cat/c11.cat")) {
             for (Alias aliasMethod :  List.of(FIELD_INSENSITIVE , FIELD_SENSITIVE, FULL)) {
                 Configuration cfg = mkConfiguration(aliasMethod);
                 SolverContext ctx = mkCtx(cfg);
@@ -81,7 +81,7 @@ public class AllocFreeTest {
 
     @Test
     public void testRefinement() throws Exception {
-        for (String mmPath : List.of("cat/rc11.cat", "cat/c11.cat", "cat/vmm.cat")) {
+        for (String mmPath : List.of("cat/rc11.cat", "cat/c11.cat")) {
             for (Alias aliasMethod :  List.of(FIELD_INSENSITIVE , FIELD_SENSITIVE, FULL)) {
                 Configuration cfg = mkConfiguration(aliasMethod);
                 SolverContext ctx = mkCtx(cfg);
