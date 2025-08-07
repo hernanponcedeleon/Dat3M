@@ -48,6 +48,10 @@ public final class DominatorTree<TNode> {
         return root;
     }
 
+    public boolean contains(TNode node) {
+        return immDominator.containsKey(node);
+    }
+
     public boolean isDominatedBy(TNode node, TNode dominator) {
         return getNearestCommonDominator(node, dominator) == dominator;
     }
