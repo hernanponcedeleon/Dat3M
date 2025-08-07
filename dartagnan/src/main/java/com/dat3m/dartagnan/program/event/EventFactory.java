@@ -37,6 +37,7 @@ import com.dat3m.dartagnan.program.event.functions.ValueFunctionCall;
 import com.dat3m.dartagnan.program.event.functions.VoidFunctionCall;
 import com.dat3m.dartagnan.program.event.lang.catomic.*;
 import com.dat3m.dartagnan.program.event.lang.dat3m.DynamicThreadCreate;
+import com.dat3m.dartagnan.program.event.lang.dat3m.DynamicThreadDetach;
 import com.dat3m.dartagnan.program.event.lang.dat3m.DynamicThreadJoin;
 import com.dat3m.dartagnan.program.event.lang.linux.*;
 import com.dat3m.dartagnan.program.event.lang.llvm.*;
@@ -331,6 +332,10 @@ public class EventFactory {
 
     public static DynamicThreadJoin newDynamicThreadJoin(Register resultRegister, Expression tidExpr) {
         return new DynamicThreadJoin(resultRegister, tidExpr);
+    }
+
+    public static DynamicThreadDetach newDynamicThreadDetach(Register statusReg, Expression tidExpr) {
+        return new DynamicThreadDetach(statusReg, tidExpr);
     }
 
     public static ThreadCreate newThreadCreate(List<Expression> arguments) {

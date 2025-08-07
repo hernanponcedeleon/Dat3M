@@ -38,9 +38,7 @@ void* thread_join(pthread_t id)
 //define PTHREAD_PRIO_NONE 0
 //define PTHREAD_PRIO_INHERIT 1
 //define PTHREAD_PRIO_PROTECT 2
-//define PTHREAD_MUTEX_POLICY_FAIRSHARE_NP 1
-//define PTHREAD_MUTEX_POLICY_FIRSTFIT_NP 3
-void mutex_init(pthread_mutex_t* lock, int type, int protocol, int policy, int prioceiling)
+void mutex_init(pthread_mutex_t* lock, int type, int protocol, int prioceiling)
 {
     int status;
     int value;
@@ -57,11 +55,6 @@ void mutex_init(pthread_mutex_t* lock, int type, int protocol, int policy, int p
     assert(status == 0);
     status = pthread_mutexattr_getprotocol(&attributes, &value);
     assert(status == 0);// && value == protocol);
-
-    status = pthread_mutexattr_setpolicy_np(&attributes, policy);
-    assert(status == 0);
-    status = pthread_mutexattr_getpolicy_np(&attributes, &value);
-    assert(status == 0);// && value == policy);
 
     status = pthread_mutexattr_setprioceiling(&attributes, prioceiling);
     assert(status == 0);
@@ -104,8 +97,8 @@ void mutex_test()
     pthread_mutex_t mutex0;
     pthread_mutex_t mutex1;
     //TODO Add different behavior based on attributes.
-    mutex_init(&mutex0, PTHREAD_MUTEX_ERRORCHECK, PTHREAD_PRIO_INHERIT, PTHREAD_MUTEX_POLICY_FAIRSHARE_NP, 1);
-    mutex_init(&mutex1, PTHREAD_MUTEX_RECURSIVE, PTHREAD_PRIO_PROTECT, PTHREAD_MUTEX_POLICY_FIRSTFIT_NP, 2);
+    mutex_init(&mutex0, PTHREAD_MUTEX_ERRORCHECK, PTHREAD_PRIO_INHERIT, 1);
+    mutex_init(&mutex1, PTHREAD_MUTEX_RECURSIVE, PTHREAD_PRIO_PROTECT, 2);
 
     {
         mutex_lock(&mutex0);
@@ -229,7 +222,7 @@ void* cond_worker(void* message)
 void cond_test()
 {
     void* message = (void*) 42;
-    mutex_init(&cond_mutex, PTHREAD_MUTEX_NORMAL, PTHREAD_PRIO_NONE, PTHREAD_MUTEX_POLICY_FIRSTFIT_NP, 0);
+    mutex_init(&cond_mutex, PTHREAD_MUTEX_NORMAL, PTHREAD_PRIO_NONE, 0);
     cond_init(&cond);
 
     pthread_t worker = thread_create(cond_worker, message);
@@ -412,10 +405,59 @@ void key_test()
     //assert(pthread_equal(latest_thread, worker));//TODO add support for destructors
 }
 
+// -------- detaching threads
+
+void* detach_test_worker0(void* ignore)
+{
+    return NULL;
+}
+
+void* detach_test_detach(void* ignore)
+{
+    int status;
+    pthread_t w0 = thread_create(detach_test_worker0, NULL);
+    status = pthread_detach(w0);
+    assert(status == 0);
+
+    status = pthread_join(w0, NULL);
+    assert(status != 0);
+    return NULL;
+}
+
+void* detach_test_attr(void* ignore)
+{
+    int status;
+    int detachstate;
+    pthread_t w0;
+    pthread_attr_t w0_attr;
+    status = pthread_attr_init(&w0_attr);
+    assert(status == 0);
+    status = pthread_attr_getdetachstate(&w0_attr, &detachstate);
+    assert(status == 0 && detachstate == PTHREAD_CREATE_JOINABLE);
+    status = pthread_attr_setdetachstate(&w0_attr, PTHREAD_CREATE_DETACHED);
+    assert(status == 0);
+    status = pthread_attr_getdetachstate(&w0_attr, &detachstate);
+    assert(status == 0 && detachstate == PTHREAD_CREATE_DETACHED);
+    status = pthread_create(&w0, &w0_attr, detach_test_worker0, NULL);
+    assert(status == 0);
+    pthread_attr_destroy(&w0_attr);
+
+    status = pthread_join(w0, NULL);
+    assert(status != 0);
+    return NULL;
+}
+
+void detach_test()
+{
+    thread_create(detach_test_detach, NULL);
+    thread_create(detach_test_attr, NULL);
+}
+
 int main()
 {
     mutex_test();
     cond_test();
     rwlock_test();
     key_test();
+    detach_test();
 }
