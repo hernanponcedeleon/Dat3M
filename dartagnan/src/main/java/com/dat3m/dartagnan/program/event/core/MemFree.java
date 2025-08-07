@@ -33,6 +33,7 @@ public class MemFree extends AbstractEvent implements RegReader {
     public Event getCopy() {
         MemFree other = new MemFree(addr);
         other.setFunction(this.getFunction());
+        other.copyAllMetadataFrom(this);
         return other;
     }
 
