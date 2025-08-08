@@ -60,8 +60,8 @@ public class ExecutionModelManager {
         this.wmm = context.getTask().getMemoryModel();
         this.domain = new EventDomainNext(executionModel);
 
-        extractEvents();
         extractMemoryLayout();
+        extractEvents();
 
         relModelCache.clear();
         relGraphCache.clear();
@@ -137,9 +137,10 @@ public class ExecutionModelManager {
         } else if (e instanceof CondJump cj) {
             em = new CondJumpModel(cj, tm, id);
         } else if (e instanceof MemAlloc alloc) {
-            em = new AllocModel(alloc, tm, id);
+            final MemoryObjectModel mo = executionModel.getMemoryObjectModel(alloc.getAllocatedObject());
+            em = new MemAllocModel(alloc, tm, id, mo);
         } else if (e instanceof MemFree free) {
-            em = new MemFreeModel(free, tm, id);
+            em = new MemFreeModel(free, tm, id, new ValueModel(model.address(free).value()));
         } else {
             // Should never happen.
             throw new IllegalArgumentException(String.format("Event %s should not be extracted", e));

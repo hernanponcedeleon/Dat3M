@@ -40,7 +40,7 @@ public class ThreadModel {
     public List<EventModel> getVisibleEventModels() {
         return eventList.stream().filter(e -> e instanceof MemoryEventModel ||
                                               e instanceof GenericVisibleEventModel ||
-                                              e instanceof AllocModel ||
+                                              e instanceof MemAllocModel ||
                                               e instanceof MemFreeModel).toList();
     }
 }
