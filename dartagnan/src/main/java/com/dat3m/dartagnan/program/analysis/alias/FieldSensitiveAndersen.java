@@ -23,7 +23,6 @@ import com.google.common.collect.Sets;
 
 import java.math.BigInteger;
 import java.util.*;
-import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import static com.dat3m.dartagnan.expression.integers.IntBinaryOp.*;
@@ -128,7 +127,7 @@ public class FieldSensitiveAndersen implements AliasAnalysis {
         }
         final List<MemoryCoreEvent> events = eventAddressSpaceMap.keySet().stream()
                 .filter(e -> e instanceof MemoryCoreEvent)
-                .map(e -> (MemoryCoreEvent) e).collect(Collectors.toList());
+                .map(e -> (MemoryCoreEvent) e).collect(toList());
         final List<Set<Integer>> offsets = new ArrayList<>();
         for (int i = 0; i < events.size(); i++) {
             final var set0 = new HashSet<Integer>();
