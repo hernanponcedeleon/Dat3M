@@ -12,9 +12,6 @@ import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.event.lang.catomic.*;
 import com.dat3m.dartagnan.program.event.lang.linux.*;
 import com.dat3m.dartagnan.program.event.lang.llvm.*;
-import com.dat3m.dartagnan.program.event.lang.pthread.InitLock;
-import com.dat3m.dartagnan.program.event.lang.pthread.Lock;
-import com.dat3m.dartagnan.program.event.lang.pthread.Unlock;
 
 import java.util.List;
 
@@ -44,45 +41,6 @@ class VisitorRISCV extends VisitorBase {
         return eventSequence(
                 store,
                 newExecutionStatusWithDependencyTracking(e.getResultRegister(), store)
-        );
-    }
-
-    // =============================================================================================
-    // ========================================= PTHREAD ===========================================
-    // =============================================================================================
-
-    @Override
-    public List<Event> visitInitLock(InitLock e) {
-        return eventSequence(
-                RISCV.newRWWFence(),
-                newStore(e.getAddress(), e.getMemValue())
-        );
-    }
-
-    @Override
-    public List<Event> visitLock(Lock e) {
-        IntegerType type = (IntegerType)e.getAccessType();
-        Register dummy = e.getFunction().newRegister(type);
-        Expression zero = expressions.makeZero(type);
-        Expression one = expressions.makeOne(type);
-        // We implement locks as spinlocks which are guaranteed to succeed, i.e. we can use
-        // assumes. With this we miss a ctrl dependency, but this does not matter
-        // because of the fence.
-        // TODO: Lock events are only used for implementing condvar intrinsic.
-        // If we have an alternative implementation for that, we can get rid of these events.
-        return eventSequence(
-                newRMWLoadExclusive(dummy, e.getAddress()),
-                newAssume(expressions.makeEQ(dummy, zero)),
-                newRMWStoreExclusive(e.getAddress(), one, true),
-                RISCV.newRRWFence()
-        );
-    }
-
-    @Override
-    public List<Event> visitUnlock(Unlock e) {
-        return eventSequence(
-                RISCV.newRWWFence(),
-                newStore(e.getAddress(), expressions.makeZero((IntegerType)e.getAccessType()))
         );
     }
 
