@@ -41,9 +41,6 @@ import com.dat3m.dartagnan.program.event.lang.dat3m.DynamicThreadDetach;
 import com.dat3m.dartagnan.program.event.lang.dat3m.DynamicThreadJoin;
 import com.dat3m.dartagnan.program.event.lang.linux.*;
 import com.dat3m.dartagnan.program.event.lang.llvm.*;
-import com.dat3m.dartagnan.program.event.lang.pthread.InitLock;
-import com.dat3m.dartagnan.program.event.lang.pthread.Lock;
-import com.dat3m.dartagnan.program.event.lang.pthread.Unlock;
 import com.dat3m.dartagnan.program.event.lang.spirv.*;
 import com.dat3m.dartagnan.program.event.lang.svcomp.*;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
@@ -385,28 +382,6 @@ public class EventFactory {
 
         public static Xchg newXchg(Register register, Expression address, Expression storeValue) {
             return new Xchg(register, address, storeValue);
-        }
-    }
-
-    // =============================================================================================
-    // ========================================== Pthread ==========================================
-    // =============================================================================================
-
-    public static class Pthread {
-        private Pthread() {
-        }
-
-        public static InitLock newInitLock(String name, Expression address, Expression ignoreAttributes) {
-            //TODO store attributes inside mutex object
-            return new InitLock(name, address, expressions.makeZero(types.getArchType()));
-        }
-
-        public static Lock newLock(String name, Expression address) {
-            return new Lock(name, address);
-        }
-
-        public static Unlock newUnlock(String name, Expression address) {
-            return new Unlock(name, address);
         }
     }
 

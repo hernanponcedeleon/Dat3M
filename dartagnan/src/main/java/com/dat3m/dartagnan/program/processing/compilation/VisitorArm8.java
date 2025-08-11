@@ -15,9 +15,6 @@ import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.event.lang.catomic.*;
 import com.dat3m.dartagnan.program.event.lang.linux.*;
 import com.dat3m.dartagnan.program.event.lang.llvm.*;
-import com.dat3m.dartagnan.program.event.lang.pthread.InitLock;
-import com.dat3m.dartagnan.program.event.lang.pthread.Lock;
-import com.dat3m.dartagnan.program.event.lang.pthread.Unlock;
 
 import java.util.List;
 
@@ -55,42 +52,6 @@ class VisitorArm8 extends VisitorBase {
         return eventSequence(
                 newRMWLoadExclusiveWithMo(resultRegister, address, loadMo),
                 newRMWStoreExclusiveWithMo(address, xchg.getValue(), true, storeMo)
-        );
-    }
-
-    // =============================================================================================
-    // ========================================= PTHREAD ===========================================
-    // =============================================================================================
-
-    @Override
-    public List<Event> visitInitLock(InitLock e) {
-        return eventSequence(
-                newStoreWithMo(e.getAddress(), e.getMemValue(), ARMv8.MO_REL)
-        );
-    }
-
-    @Override
-    public List<Event> visitLock(Lock e) {
-        IntegerType type = (IntegerType)e.getAccessType();
-        Expression zero = expressions.makeZero(type);
-        Expression one = expressions.makeOne(type);
-        Register dummy = e.getFunction().newRegister(type);
-        // We implement locks as spinlocks which are guaranteed to succeed, i.e. we can use
-        // assumes. With this we miss a ctrl dependency, but this does not matter
-        // because the load is an acquire one.
-        // TODO: Lock events are only used for implementing condvar intrinsic.
-        // If we have an alternative implementation for that, we can get rid of these events.
-        return eventSequence(
-                newRMWLoadExclusiveWithMo(dummy, e.getAddress(), ARMv8.MO_ACQ),
-                newAssume(expressions.makeEQ(dummy, zero)),
-                newRMWStoreExclusive(e.getAddress(), one, true)
-        );
-    }
-
-    @Override
-    public List<Event> visitUnlock(Unlock e) {
-        return eventSequence(
-                newStoreWithMo(e.getAddress(), expressions.makeZero((IntegerType)e.getAccessType()), ARMv8.MO_REL)
         );
     }
 
