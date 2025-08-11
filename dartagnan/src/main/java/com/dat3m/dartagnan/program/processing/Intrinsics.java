@@ -659,13 +659,15 @@ public class Intrinsics {
         final Register errorRegister = getResultRegisterAndCheckArguments(2, call);
         //final Expression condAddress = call.getArguments().get(0);
         final Expression lockAddress = call.getArguments().get(1);
-        // TODO: implement this without lock/unlock events and get rid of them
-        return List.of(
+        final IntegerType type = getPthreadMutexType();
+        final Register oldValueRegister = call.getFunction().newUniqueRegister("__pthread_cond_wait", type);
+        final Register successRegister = call.getFunction().newUniqueRegister("__pthread_cond_wait", types.getBooleanType());
+        return eventSequence(
                 // Allow other threads to access the condition variable.
-                EventFactory.Pthread.newUnlock(lockAddress.toString(), lockAddress),
+                newPthreadUnlock(oldValueRegister, lockAddress),
                 // This thread would sleep here.  Explicit or spurious signals may wake it.
                 // Re-lock.
-                EventFactory.Pthread.newLock(lockAddress.toString(), lockAddress),
+                newPthreadLock(oldValueRegister, successRegister, lockAddress),
                 assignSuccess(errorRegister)
         );
     }
@@ -677,12 +679,15 @@ public class Intrinsics {
         //final Expression condAddress = call.getArguments().get(0);
         final Expression lockAddress = call.getArguments().get(1);
         //final Expression timespec = call.getArguments().get(2);
-        return List.of(
+        final IntegerType type = getPthreadMutexType();
+        final Register oldValueRegister = call.getFunction().newUniqueRegister("__pthread_cond_timedwait", type);
+        final Register successRegister = call.getFunction().newUniqueRegister("__pthread_cond_timedwait", types.getBooleanType());
+        return eventSequence(
                 // Allow other threads to access the condition variable.
-                EventFactory.Pthread.newUnlock(lockAddress.toString(), lockAddress),
+                newPthreadUnlock(oldValueRegister, lockAddress),
                 // This thread would sleep here.  Explicit or spurious signals may wake it.
                 // Re-lock.
-                EventFactory.Pthread.newLock(lockAddress.toString(), lockAddress),
+                newPthreadLock(oldValueRegister, successRegister, lockAddress),
                 newLocal(errorRegister, expressions.makeValue(PosixErrorCode.ETIMEDOUT.getValue(), errorType))
         );
     }
@@ -758,8 +763,7 @@ public class Intrinsics {
     private static final List<String> P_THREAD_MUTEXATTR = List.of(
             "prioceiling",
             "protocol",
-            "type",
-            "policy_np"
+            "type"
     );
 
     private List<Event> inlinePthreadMutexInit(FunctionCall call) {
@@ -767,8 +771,7 @@ public class Intrinsics {
         //TODO use attributes
         final Register errorRegister = getResultRegisterAndCheckArguments(2, call);
         final Expression lockAddress = call.getArguments().get(0);
-        // FIXME: We currently use bv32 in InitLock, Lock and Unlock.
-        final IntegerType type = types.getIntegerType(32);
+        final IntegerType type = getPthreadMutexType();
         final Expression unlocked = expressions.makeZero(type);
         return List.of(
                 EventFactory.Llvm.newStore(lockAddress, unlocked, Tag.C11.MO_RELEASE),
@@ -789,24 +792,13 @@ public class Intrinsics {
         //see https://linux.die.net/man/3/pthread_mutex_lock
         final Register errorRegister = getResultRegisterAndCheckArguments(1, call);
         checkArgument(errorRegister.getType() instanceof IntegerType, "Wrong return type for \"%s\"", call);
-        // FIXME: We currently use bv32 in InitLock, Lock and Unlock.
-        final IntegerType type = types.getIntegerType(32);
-        final Register oldValueRegister = call.getFunction().newRegister(type);
-        final Register successRegister = call.getFunction().newRegister(types.getBooleanType());
+        final IntegerType type = getPthreadMutexType();
+        final Register oldValueRegister = call.getFunction().newUniqueRegister("__pthread_mutex_lock", type);
+        final Register successRegister = call.getFunction().newUniqueRegister("__pthread_mutex_lock", types.getBooleanType());
         final Expression lockAddress = call.getArguments().get(0);
-        final Expression locked = expressions.makeOne(type);
-        final Expression unlocked = expressions.makeZero(type);
-        final Expression fail = expressions.makeNot(successRegister);
-        final Label spinLoopHead = EventFactory.newLabel("__spinloop_head");
-        final Label spinLoopEnd = EventFactory.newLabel("__spinloop_end");
-        // We implement this as a caslocks
-        return List.of(
-                spinLoopHead,
-                EventFactory.Llvm.newCompareExchange(oldValueRegister, successRegister, lockAddress, unlocked, locked, Tag.C11.MO_ACQUIRE, true),
-                EventFactory.newJump(successRegister, spinLoopEnd),
-                EventFactory.newGoto(spinLoopHead),
-                spinLoopEnd,
-                EventFactory.newLocal(errorRegister, expressions.makeCast(fail, errorRegister.getType()))
+        return eventSequence(
+                newPthreadLock(oldValueRegister, successRegister, lockAddress),
+                assignSuccess(errorRegister)
         );
     }
 
@@ -814,16 +806,13 @@ public class Intrinsics {
         //see https://linux.die.net/man/3/pthread_mutex_trylock
         final Register errorRegister = getResultRegisterAndCheckArguments(1, call);
         checkArgument(errorRegister.getType() instanceof IntegerType, "Wrong return type for \"%s\"", call);
-        // FIXME: We currently use bv32 in InitLock, Lock and Unlock.
-        final IntegerType type = types.getIntegerType(32);
-        final Register oldValueRegister = call.getFunction().newRegister(type);
-        final Register successRegister = call.getFunction().newRegister(types.getBooleanType());
+        final IntegerType type = getPthreadMutexType();
+        final Register oldValueRegister = call.getFunction().newUniqueRegister("__pthread_mutex_try_lock", type);
+        final Register successRegister = call.getFunction().newUniqueRegister("__pthread_mutex_try_lock", types.getBooleanType());
         final Expression lockAddress = call.getArguments().get(0);
-        final Expression locked = expressions.makeOne(type);
-        final Expression unlocked = expressions.makeZero(type);
         final Expression fail = expressions.makeNot(successRegister);
         return List.of(
-                EventFactory.Llvm.newCompareExchange(oldValueRegister, successRegister, lockAddress, unlocked, locked, Tag.C11.MO_ACQUIRE),
+                newPthreadTryLock(oldValueRegister, successRegister, lockAddress, false),
                 EventFactory.newLocal(errorRegister, expressions.makeCast(fail, errorRegister.getType()))
         );
     }
@@ -831,16 +820,11 @@ public class Intrinsics {
     private List<Event> inlinePthreadMutexUnlock(FunctionCall call) {
         //see https://linux.die.net/man/3/pthread_mutex_unlock
         final Register errorRegister = getResultRegisterAndCheckArguments(1, call);
-        // FIXME: We currently use bv32 in InitLock, Lock and Unlock.
-        final IntegerType type = types.getIntegerType(32);
-        final Register oldValueRegister = call.getFunction().newRegister(type);
+        final IntegerType type = getPthreadMutexType();
+        final Register oldValueRegister = call.getFunction().newUniqueRegister("__pthread_mutex_unlock", type);
         final Expression lockAddress = call.getArguments().get(0);
-        final Expression locked = expressions.makeOne(type);
-        final Expression unlocked = expressions.makeZero(type);
         return eventSequence(
-                EventFactory.Llvm.newLoad(oldValueRegister, lockAddress, Tag.C11.MO_RELAXED),
-                notToInline.contains(AssertionType.USER) ? null : EventFactory.newAssert(expressions.makeEQ(oldValueRegister, locked), "Unlocking an already unlocked mutex"),
-                EventFactory.Llvm.newStore(lockAddress, unlocked, Tag.C11.MO_RELEASE),
+                newPthreadUnlock(oldValueRegister, lockAddress),
                 assignSuccess(errorRegister)
         );
     }
@@ -867,6 +851,39 @@ public class Intrinsics {
         return List.of(
                 assignSuccess(errorRegister)
         );
+    }
+
+    private List<Event> newPthreadUnlock(Register oldValueRegister, Expression address) {
+        final Expression unlocked = expressions.makeGeneralZero(oldValueRegister.getType());
+        final boolean skipCheck = notToInline.contains(AssertionType.USER);
+        final Event load = skipCheck ? null : EventFactory.Llvm.newLoad(oldValueRegister, address, Tag.C11.MO_RELAXED);
+        final Expression isLocked = skipCheck ? null : expressions.makeNEQ(oldValueRegister, unlocked);
+        final Event check = skipCheck ? null : EventFactory.newAssert(isLocked, "Unlocking an already unlocked mutex");
+        final Event store = EventFactory.Llvm.newStore(address, unlocked, Tag.C11.MO_RELEASE);
+        return Arrays.asList(load, check, store);
+    }
+
+    private Event newPthreadTryLock(Register oldValueRegister, Register successRegister, Expression address, boolean strong) {
+        final Expression unlocked = expressions.makeGeneralZero(oldValueRegister.getType());
+        final Expression locked = expressions.makeOne((IntegerType) oldValueRegister.getType());
+        return EventFactory.Llvm.newCompareExchange(oldValueRegister, successRegister, address, unlocked, locked, Tag.C11.MO_ACQUIRE, strong);
+    }
+
+    private List<Event> newPthreadLock(Register oldValueRegister, Register successRegister, Expression address) {
+        // We implement this as a CAS-spinlock
+        final Label spinLoopHead = EventFactory.newLabel("__spinloop_head");
+        final Label spinLoopEnd = EventFactory.newLabel("__spinloop_end");
+        return List.of(
+                spinLoopHead,
+                newPthreadTryLock(oldValueRegister, successRegister, address, true),
+                EventFactory.newJump(successRegister, spinLoopEnd),
+                EventFactory.newGoto(spinLoopHead),
+                spinLoopEnd
+        );
+    }
+
+    private IntegerType getPthreadMutexType() {
+        return types.getIntegerType(1);
     }
 
     private static final List<String> P_THREAD_RWLOCK_ATTR = List.of(

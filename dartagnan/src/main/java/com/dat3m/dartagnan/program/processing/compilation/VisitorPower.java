@@ -13,9 +13,6 @@ import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.event.lang.catomic.*;
 import com.dat3m.dartagnan.program.event.lang.linux.*;
 import com.dat3m.dartagnan.program.event.lang.llvm.*;
-import com.dat3m.dartagnan.program.event.lang.pthread.InitLock;
-import com.dat3m.dartagnan.program.event.lang.pthread.Lock;
-import com.dat3m.dartagnan.program.event.lang.pthread.Unlock;
 
 import java.util.List;
 
@@ -53,43 +50,6 @@ public class VisitorPower extends VisitorBase {
                 store,
                 newExecutionStatus(e.getResultRegister(), store)
         );
-    }
-
-    // =============================================================================================
-    // ========================================= PTHREAD ===========================================
-    // =============================================================================================
-
-    @Override
-    public List<Event> visitInitLock(InitLock e) {
-        return eventSequence(
-                Power.newLwSyncBarrier(),
-                newStore(e.getAddress(), e.getMemValue()));
-    }
-
-    @Override
-    public List<Event> visitLock(Lock e) {
-        IntegerType type = (IntegerType) e.getAccessType();
-        Register dummy = e.getFunction().newRegister(type);
-        Label label = newLabel("FakeDep");
-        // We implement locks as spinlocks which are guaranteed to succeed, i.e. we can
-        // use assumes. The fake control dependency + isync guarantee acquire semantics.
-        // TODO: Lock events are only used for implementing condvar intrinsic.
-        // If we have an alternative implementation for that, we can get rid of these events.
-        return eventSequence(
-                newRMWLoadExclusive(dummy, e.getAddress()),
-                newAssume(expressions.makeNot(expressions.makeBooleanCast(dummy))),
-                Power.newRMWStoreConditional(e.getAddress(), expressions.makeOne(type), true),
-                // Fake dependency to guarantee acquire semantics
-                newFakeCtrlDep(dummy, label),
-                label,
-                Power.newISyncBarrier());
-    }
-
-    @Override
-    public List<Event> visitUnlock(Unlock e) {
-        return eventSequence(
-                Power.newLwSyncBarrier(),
-                newStore(e.getAddress(), expressions.makeZero((IntegerType)e.getAccessType())));
     }
 
     // =============================================================================================
