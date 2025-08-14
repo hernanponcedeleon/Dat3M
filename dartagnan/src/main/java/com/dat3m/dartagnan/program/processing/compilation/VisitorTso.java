@@ -3,7 +3,6 @@ package com.dat3m.dartagnan.program.processing.compilation;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.Type;
 import com.dat3m.dartagnan.expression.type.BooleanType;
-import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.MemoryEvent;
@@ -12,9 +11,6 @@ import com.dat3m.dartagnan.program.event.arch.tso.TSOXchg;
 import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.event.lang.catomic.*;
 import com.dat3m.dartagnan.program.event.lang.llvm.*;
-import com.dat3m.dartagnan.program.event.lang.pthread.InitLock;
-import com.dat3m.dartagnan.program.event.lang.pthread.Lock;
-import com.dat3m.dartagnan.program.event.lang.pthread.Unlock;
 
 import java.util.List;
 
@@ -36,41 +32,6 @@ class VisitorTso extends VisitorBase {
                 newRMWStore(load, address, resultRegister),
                 newLocal(resultRegister, dummyReg)
         ));
-    }
-
-    // =============================================================================================
-    // ========================================= PTHREAD ===========================================
-    // =============================================================================================
-
-    public List<Event> visitInitLock(InitLock e) {
-        return eventSequence(
-                newStore(e.getAddress(), e.getMemValue()),
-                X86.newMemoryFence()
-        );
-    }
-
-    @Override
-    public List<Event> visitLock(Lock e) {
-        IntegerType type = (IntegerType)e.getAccessType();
-        Register dummy = e.getFunction().newRegister(type);
-        // We implement locks as spinlocks which are guaranteed to succeed, i.e. we can
-        // use assumes. Nothing else is needed to guarantee acquire semantics in TSO.
-        // TODO: Lock events are only used for implementing condvar intrinsic.
-        // If we have an alternative implementation for that, we can get rid of these events.
-        Load load = newRMWLoad(dummy, e.getAddress());
-        return eventSequence(
-                load,
-                newAssume(expressions.makeEQ(dummy, expressions.makeZero(type))),
-                newRMWStore(load, e.getAddress(), expressions.makeOne(type))
-        );
-    }
-
-    @Override
-    public List<Event> visitUnlock(Unlock e) {
-        return eventSequence(
-                newStore(e.getAddress(), expressions.makeZero((IntegerType)e.getAccessType())),
-                X86.newMemoryFence()
-        );
     }
 
     // =============================================================================================
