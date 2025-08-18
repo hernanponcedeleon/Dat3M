@@ -77,6 +77,8 @@ public class IREvaluator implements AutoCloseable {
         return isExecuted(thread.getEntry());
     }
 
+    public boolean isInControlFlow(Event e) { return TRUE.equals(smtModel.evaluate(ctx.controlFlow(e))); }
+
     public boolean isExecuted(Event e) {
         return TRUE.equals(smtModel.evaluate(ctx.execution(e)));
     }

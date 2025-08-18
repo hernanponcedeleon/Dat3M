@@ -53,4 +53,9 @@ public final class TagSet extends AbstractSet<String> {
         copy.sortedTags.addAll(this.sortedTags);
         return copy;
     }
+
+    @Override
+    public String toString() {
+        return String.format("TagSet { %s }", String.join(", ", sortedTags));
+    }
 }
