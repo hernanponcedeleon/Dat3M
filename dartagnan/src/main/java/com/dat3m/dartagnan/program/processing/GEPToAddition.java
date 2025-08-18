@@ -72,9 +72,10 @@ public class GEPToAddition implements ProgramProcessor {
             Type indexingType = gep.getIndexingType();
 
             final int baseSize = baseStride != null ? baseStride : types.getMemorySizeInBytes(indexingType);
-            Expression totalOffset = expressions.makeMul(expressions.makeValue(baseSize, offsetType), indices.get(0));
+            Expression totalOffset = expressions.makeMul(expressions.makeValue(baseSize, offsetType), indices.get(0).accept(this));
 
             for (Expression index : indices.subList(1, indices.size())) {
+                index = index.accept(this);    
                 Expression offset;
                 if (indexingType instanceof AggregateType aggType && index instanceof IntLiteral lit) {
                     final int intIndex = lit.getValueAsInt();
