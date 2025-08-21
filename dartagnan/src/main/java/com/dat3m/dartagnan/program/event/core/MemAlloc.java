@@ -61,6 +61,7 @@ public final class MemAlloc extends GenericMemoryEvent implements RegWriter {
         this.alignment = other.alignment;
         this.isHeapAllocation = other.isHeapAllocation;
         this.doesZeroOutMemory = other.doesZeroOutMemory;
+        removeTags(Tag.MEMORY);
         if (isHeapAllocation) {
             addTags(Tag.VISIBLE, Tag.ALLOC);
         }
