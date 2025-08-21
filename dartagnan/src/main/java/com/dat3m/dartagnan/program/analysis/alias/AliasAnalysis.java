@@ -5,7 +5,6 @@ import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Thread;
-import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.event.metadata.SourceLocation;
 import com.dat3m.dartagnan.utils.Utils;
@@ -23,6 +22,7 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static com.dat3m.dartagnan.GlobalSettings.getOrCreateOutputDirectory;
 import static com.dat3m.dartagnan.configuration.OptionNames.*;
@@ -31,13 +31,13 @@ public interface AliasAnalysis {
 
     Logger logger = LogManager.getLogger(AliasAnalysis.class);
 
-    boolean mustAlias(Event a, Event b);
+    boolean mustAlias(MemoryCoreEvent a, MemoryCoreEvent b);
 
-    boolean mayAlias(Event a, Event b);
+    boolean mayAlias(MemoryCoreEvent a, MemoryCoreEvent b);
 
-    boolean mustObjectAlias(Event a, Event b);
+    boolean mustObjectAlias(MemoryCoreEvent a, MemoryCoreEvent b);
 
-    boolean mayObjectAlias(Event a, Event b);
+    boolean mayObjectAlias(MemoryCoreEvent a, MemoryCoreEvent b);
 
     /**
      * Returns an overapproximation of the MSA points in the byte range of the specified event.
@@ -135,22 +135,22 @@ public interface AliasAnalysis {
         }
 
         @Override
-        public boolean mustAlias(Event a, Event b) {
+        public boolean mustAlias(MemoryCoreEvent a, MemoryCoreEvent b) {
             return a1.mustAlias(a, b) || a2.mustAlias(a, b);
         }
 
         @Override
-        public boolean mayAlias(Event a, Event b) {
+        public boolean mayAlias(MemoryCoreEvent a, MemoryCoreEvent b) {
             return a1.mayAlias(a, b) && a2.mayAlias(a, b);
         }
 
         @Override
-        public boolean mustObjectAlias(Event a, Event b) {
+        public boolean mustObjectAlias(MemoryCoreEvent a, MemoryCoreEvent b) {
             return a1.mustObjectAlias(a, b) || a2.mustObjectAlias(a, b);
         }
 
         @Override
-        public boolean mayObjectAlias(Event a, Event b) {
+        public boolean mayObjectAlias(MemoryCoreEvent a, MemoryCoreEvent b) {
             return a1.mayObjectAlias(a, b) && a2.mayObjectAlias(a, b);
         }
 
@@ -178,17 +178,18 @@ public interface AliasAnalysis {
     }
 
     private void populateAddressGraph(Map<String, Set<String>> may, Map<String, Set<String>> must,
-            List<? extends Event> list1, List<? extends Event> list2, Config configuration) {
-        for (final Event event1 : list1) {
+            List<? extends MemoryCoreEvent> list1, List<? extends MemoryCoreEvent> list2,
+            Config configuration) {
+        for (final MemoryCoreEvent event1 : list1) {
             final String node1 = repr(event1, configuration);
             if (node1 == null) {
                 continue;
             }
             final Set<String> maySet = may.computeIfAbsent(node1, k -> new HashSet<>());
             final Set<String> mustSet = must.computeIfAbsent(node1, k -> new HashSet<>());
-            for (final Event event2 : list2) {
+            for (final MemoryCoreEvent event2 : list2) {
                 final String node2 = repr(event2, configuration);
-                if ((event1 instanceof MemoryCoreEvent && event2 instanceof MemoryCoreEvent)
+                if ((!(event1 instanceof MemFree) && !(event2 instanceof MemFree))
                         || (event1 instanceof MemFree && event2 instanceof MemFree)) {
                     if (event1.getGlobalId() - event2.getGlobalId() >= 0) {
                         continue;
@@ -229,7 +230,9 @@ public interface AliasAnalysis {
         // A dashed orange line marks the existence of events that may object-alias.
         final Map<String, Set<String>> mayObjectGraph = new HashMap<>();
 
-        final List<MemoryCoreEvent> events = program.getThreadEvents(MemoryCoreEvent.class);
+        final List<MemoryCoreEvent> events = program.getThreadEvents(MemoryCoreEvent.class)
+                .stream().filter(e -> !(e instanceof MemFree) && !(e instanceof MemAlloc))
+                .collect(Collectors.toList());
         final List<MemAlloc> allocs = program.getThreadEvents(MemAlloc.class);
         final List<MemFree> frees = program.getThreadEvents(MemFree.class);
 
@@ -242,22 +245,16 @@ public interface AliasAnalysis {
         // Generates the graphs
         final var graphviz = new Graphviz();
         graphviz.beginGraph("alias");
-        // Group events
         for (final Thread thread : program.getThreads()) {
             graphviz.beginSubgraph("Thread" + thread.getId());
             graphviz.setEdgeAttributes("weight=100", "style=invis");
-            final List<Event> grouped = new ArrayList<>();
-            for (final Event event : thread.getEvents()) {
-                if (event instanceof MemoryCoreEvent || event instanceof MemAlloc || event instanceof MemFree) {
-                    if (!configuration.graphvizShowAll && event instanceof Init) {
-                        continue;
-                    }
-                    grouped.add(event);
+            final List<MemoryCoreEvent> memEvents = thread.getEvents(MemoryCoreEvent.class);
+            for (int i = 1; i < memEvents.size(); i++) {
+                final String node1 = repr(memEvents.get(i - 1), configuration);
+                final String node2 = repr(memEvents.get(i), configuration);
+                if (node1 == null || node2 == null) {
+                    continue;
                 }
-            }
-            for (int i = 1; i < grouped.size(); i++) {
-                final String node1 = repr(grouped.get(i - 1), configuration);
-                final String node2 = repr(grouped.get(i), configuration);
                 graphviz.addEdge(node1, node2);
             }
             graphviz.end();
@@ -301,7 +298,7 @@ public interface AliasAnalysis {
         }
     }
 
-    private static String repr(Event event, Config configuration) {
+    private static String repr(MemoryCoreEvent event, Config configuration) {
         if (!configuration.graphvizShowAll && event instanceof Init) {
             return null;
         }

@@ -5,7 +5,7 @@ import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.RegWriter;
-import com.dat3m.dartagnan.program.event.core.*;
+import com.dat3m.dartagnan.program.event.core.MemoryCoreEvent;
 import com.dat3m.dartagnan.wmm.utils.graph.mutable.MapEventGraph;
 import com.dat3m.dartagnan.wmm.utils.graph.mutable.MutableEventGraph;
 
@@ -37,14 +37,14 @@ public class EqualityAliasAnalysis implements AliasAnalysis {
     }
 
     @Override
-    public boolean mayAlias(Event a, Event b) {
+    public boolean mayAlias(MemoryCoreEvent a, MemoryCoreEvent b) {
         return true;
     }
 
     @Override
-    public boolean mustAlias(Event a, Event b) {
-        Expression addrA = getAddress(a);
-        Expression addrB = getAddress(b);
+    public boolean mustAlias(MemoryCoreEvent a, MemoryCoreEvent b) {
+        Expression addrA = a.getAddress();
+        Expression addrB = b.getAddress();
         if (a.getFunction() != b.getFunction() || !addrA.equals(addrB)) {
             return false;
         } else if (a == b) {
@@ -52,7 +52,7 @@ public class EqualityAliasAnalysis implements AliasAnalysis {
         }
         // Normalize direction
         if (a.getGlobalId() > b.getGlobalId()) {
-            Event temp = a;
+            MemoryCoreEvent temp = a;
             a = b;
             b = temp;
         }
@@ -80,26 +80,26 @@ public class EqualityAliasAnalysis implements AliasAnalysis {
     }
 
     @Override
-    public boolean mayObjectAlias(Event a, Event b) {
+    public boolean mayObjectAlias(MemoryCoreEvent a, MemoryCoreEvent b) {
         return true;
     }
 
     @Override
-    public boolean mustObjectAlias(Event a, Event b) {
+    public boolean mustObjectAlias(MemoryCoreEvent a, MemoryCoreEvent b) {
         return false;
     }
 
-    private Expression getAddress(Event e) {
-        if (e instanceof MemoryCoreEvent me) {
-            return me.getAddress();
-        } else if (e instanceof MemFree f) {
-            return f.getAddress();
-        } else if (e instanceof MemAlloc a) {
-            return a.getAllocatedObject();
-        } else {
-            throw new UnsupportedOperationException("Event type has no address: " + e.getClass().getSimpleName());
-        }
-    }
+    // private Expression getAddress(Event e) {
+    //     if (e instanceof MemoryCoreEvent me) {
+    //         return me.getAddress();
+    //     } else if (e instanceof MemFree f) {
+    //         return f.getAddress();
+    //     } else if (e instanceof MemAlloc a) {
+    //         return a.getAllocatedObject();
+    //     } else {
+    //         throw new UnsupportedOperationException("Event type has no address: " + e.getClass().getSimpleName());
+    //     }
+    // }
 
     @Override
     public List<Integer> mayMixedSizeAccesses(MemoryCoreEvent event) {

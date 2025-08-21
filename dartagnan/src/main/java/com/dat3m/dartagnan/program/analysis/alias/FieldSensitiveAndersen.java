@@ -66,7 +66,7 @@ public class FieldSensitiveAndersen implements AliasAnalysis {
     ///Maps registers to matched value expressions of stores that use the register in their address
     private final Map<Object, List<Offset<Collector>>> stores = new HashMap<>();
     ///Result sets
-    private final Map<Event, ImmutableSet<Location>> eventAddressSpaceMap = new HashMap<>();
+    private final Map<MemoryCoreEvent, ImmutableSet<Location>> eventAddressSpaceMap = new HashMap<>();
 
     // Maps memory events to additional offsets inside their byte range, which may match other accesses' bounds.
     private final Map<MemoryCoreEvent, List<Integer>> mixedAccesses = new HashMap<>();
@@ -88,23 +88,23 @@ public class FieldSensitiveAndersen implements AliasAnalysis {
     // ================================ API ================================
 
     @Override
-    public boolean mayAlias(Event x, Event y) {
+    public boolean mayAlias(MemoryCoreEvent x, MemoryCoreEvent y) {
         return !Sets.intersection(getMaxAddressSet(x), getMaxAddressSet(y)).isEmpty();
     }
 
     @Override
-    public boolean mustAlias(Event x, Event y) {
+    public boolean mustAlias(MemoryCoreEvent x, MemoryCoreEvent y) {
         Set<Location> a = getMaxAddressSet(x);
         return a.size() == 1 && a.equals(getMaxAddressSet(y));
     }
 
     @Override
-    public boolean mayObjectAlias(Event a, Event b) {
+    public boolean mayObjectAlias(MemoryCoreEvent a, MemoryCoreEvent b) {
         return !Sets.intersection(getAccessibleObjects(a), getAccessibleObjects(b)).isEmpty();
     }
 
     @Override
-    public boolean mustObjectAlias(Event a, Event b) {
+    public boolean mustObjectAlias(MemoryCoreEvent a, MemoryCoreEvent b) {
         Set<MemoryObject> objsA = getAccessibleObjects(a);
         return objsA.size() == 1 && objsA.equals(getAccessibleObjects(b));
     }
@@ -126,8 +126,8 @@ public class FieldSensitiveAndersen implements AliasAnalysis {
             return;
         }
         final List<MemoryCoreEvent> events = eventAddressSpaceMap.keySet().stream()
-                .filter(e -> e instanceof MemoryCoreEvent)
-                .map(e -> (MemoryCoreEvent) e).collect(toList());
+                .filter(e -> !(e instanceof MemAlloc) && !(e instanceof MemFree))
+                .collect(toList());
         final List<Set<Integer>> offsets = new ArrayList<>();
         for (int i = 0; i < events.size(); i++) {
             final var set0 = new HashSet<Integer>();
@@ -161,11 +161,11 @@ public class FieldSensitiveAndersen implements AliasAnalysis {
         }
     }
 
-    private ImmutableSet<Location> getMaxAddressSet(Event e) {
+    private ImmutableSet<Location> getMaxAddressSet(MemoryCoreEvent e) {
         return eventAddressSpaceMap.get(e);
     }
 
-    private Set<MemoryObject> getAccessibleObjects(Event e) {
+    private Set<MemoryObject> getAccessibleObjects(MemoryCoreEvent e) {
         Set<MemoryObject> objs = new HashSet<>();
         Set<Location> locs = getMaxAddressSet(e);
         if (locs != null) {
@@ -178,9 +178,6 @@ public class FieldSensitiveAndersen implements AliasAnalysis {
 
     private void run(Program program) {
         checkArgument(program.isCompiled(), "The program must be compiled first.");
-        for (MemAlloc a : program.getThreadEvents(MemAlloc.class)) {
-            eventAddressSpaceMap.put(a, ImmutableSet.of(new Location(a.getAllocatedObject(), 0)));
-        }
         List<MemoryCoreEvent> memEvents = program.getThreadEvents(MemoryCoreEvent.class);
         for (MemoryCoreEvent e : memEvents) {
             processLocs(e);
@@ -193,10 +190,7 @@ public class FieldSensitiveAndersen implements AliasAnalysis {
             algorithm(variable);
         }
         for (MemoryCoreEvent e : memEvents) {
-            eventAddressSpaceMap.put(e, getAddressSpace(e));
-        }
-        for (MemFree f : program.getThreadEvents(MemFree.class)) {
-            eventAddressSpaceMap.put(f, getAddressSpace(f));
+            processResults(e);
         }
     }
 
@@ -221,6 +215,8 @@ public class FieldSensitiveAndersen implements AliasAnalysis {
                 }
                 addAllAddresses(l, value.address());
             }
+        } else if (e instanceof MemAlloc a) {
+            eventAddressSpaceMap.put(a, ImmutableSet.of(new Location(a.getAllocatedObject(), 0)));
         } else {
             // Special MemoryEvents that produce no values (e.g. SRCU) will just get skipped
         }
@@ -277,25 +273,21 @@ public class FieldSensitiveAndersen implements AliasAnalysis {
         }
     }
 
-    private ImmutableSet<Location> getAddressSpace(Event e) {
-        Expression addrExpr;
-        if (e instanceof MemoryCoreEvent mce) {
-            addrExpr = mce.getAddress();
-        } else {
-            assert e instanceof MemFree;
-            addrExpr = ((MemFree) e).getAddress();
+    protected void processResults(MemoryCoreEvent e) {
+        if (e instanceof MemAlloc) {
+            return;
         }
-        ImmutableSet.Builder<Location> builder = new ImmutableSet.Builder<>();
-        Collector collector = new Collector(addrExpr);
-        builder.addAll(collector.address());
+        ImmutableSet.Builder<Location> addresses = ImmutableSet.builder();
+        Collector collector = new Collector(e.getAddress());
+        addresses.addAll(collector.address());
         for (Offset<Register> r : collector.register()) {
-            builder.addAll(fields(getAddresses(r.base), r.offset, r.alignment));
+            addresses.addAll(fields(getAddresses(r.base), r.offset, r.alignment));
         }
-        Set<Location> set = builder.build();
+        Set<Location> set = addresses.build();
         if (set.isEmpty()) {
             logger.warn("Empty pointer set for {}", synContext.get().getContextInfo(e));
         }
-        return builder.build();
+        eventAddressSpaceMap.put(e, addresses.build());
     }
 
     private record Offset<Base>(Base base, int offset, int alignment) {}

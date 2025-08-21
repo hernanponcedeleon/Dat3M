@@ -12,7 +12,6 @@ import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.analysis.ReachingDefinitionsAnalysis;
 import com.dat3m.dartagnan.program.analysis.SyntacticContextAnalysis;
-import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.RegReader;
 import com.dat3m.dartagnan.program.event.RegWriter;
 import com.dat3m.dartagnan.program.event.core.*;
@@ -90,8 +89,8 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
     // For lazy cycle detection, it is grouped by the absolute value of IncludeEdge.modifier.offset.
     private final TreeMap<Integer, LinkedHashMap<Variable, List<IncludeEdge>>> queue = new TreeMap<>();
 
-    // Maps memory events, allocs, and frees to variables representing their pointer set.
-    private final Map<Event, DerivedVariable> addressVariables = new HashMap<>();
+    // Maps memory events to variables representing their pointer set.
+    private final Map<MemoryCoreEvent, DerivedVariable> addressVariables = new HashMap<>();
 
     // Maps pointer sets to their accessible memory objects.
     private final Map<DerivedVariable, Set<MemoryObject>> accessibleObjects = new HashMap<>();
@@ -165,7 +164,7 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
     // ================================ API ================================
 
     @Override
-    public boolean mayAlias(Event x, Event y) {
+    public boolean mayAlias(MemoryCoreEvent x, MemoryCoreEvent y) {
         final DerivedVariable vx = addressVariables.get(x);
         final DerivedVariable vy = addressVariables.get(y);
         if (vx == null || vy == null) {
@@ -191,7 +190,7 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
     }
 
     @Override
-    public boolean mustAlias(Event x, Event y) {
+    public boolean mustAlias(MemoryCoreEvent x, MemoryCoreEvent y) {
         final DerivedVariable vx = addressVariables.get(x);
         final DerivedVariable vy = addressVariables.get(y);
         return vx != null && vy != null && vx.base == vy.base && vx.modifier.offset == vy.modifier.offset &&
@@ -199,14 +198,14 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
     }
 
     @Override
-    public boolean mayObjectAlias(Event a, Event b) {
+    public boolean mayObjectAlias(MemoryCoreEvent a, MemoryCoreEvent b) {
         final DerivedVariable va = addressVariables.get(a);
         final DerivedVariable vb = addressVariables.get(b);
         return va == null || vb == null || !Sets.intersection(accessibleObjects.get(va), accessibleObjects.get(vb)).isEmpty();
     }
 
     @Override
-    public boolean mustObjectAlias(Event a, Event b) {
+    public boolean mustObjectAlias(MemoryCoreEvent a, MemoryCoreEvent b) {
         final DerivedVariable va = addressVariables.get(a);
         final DerivedVariable vb = addressVariables.get(b);
         if (va == null || vb == null) {
@@ -233,8 +232,8 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
 
     private void detectMixedSizeAccesses() {
         final List<MemoryCoreEvent> events = addressVariables.keySet().stream()
-                .filter(e -> e instanceof MemoryCoreEvent)
-                .map(e -> (MemoryCoreEvent) e).collect(Collectors.toList());
+                .filter(e -> !(e instanceof MemAlloc) && !(e instanceof MemFree))
+                .collect(Collectors.toList());
         final List<Set<Integer>> offsets = new ArrayList<>();
         for (int i = 0; i < events.size(); i++) {
             final MemoryCoreEvent event0 = events.get(i);
@@ -317,9 +316,6 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
             totalVariables++;
             objectVariables.put(object, new Variable(object, null, object.toString()));
         }
-        for (final MemAlloc alloc : program.getThreadEvents(MemAlloc.class)) {
-            addressVariables.put(alloc, derive(objectVariables.get(alloc.getAllocatedObject())));
-        }
         // Each expression gets a "res" variable representing its result value set.
         // Each register writer gets an "out" variable ("ld" for loads) representing its return value set.
         // If needed, a register gets a "phi" variable representing its phi-node's value set.
@@ -329,9 +325,6 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
         }
         for (final MemoryCoreEvent memoryEvent : program.getThreadEvents(MemoryCoreEvent.class)) {
             processMemoryEvent(memoryEvent);
-        }
-        for (final MemFree free : program.getThreadEvents(MemFree.class)) {
-            processFree(free);
         }
         // Fixed-point computation:
         while (!queue.isEmpty()) {
@@ -344,7 +337,7 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
         if (configuration.graphvizInternal) {
             generateGraph();
         }
-        for (final Map.Entry<Event, DerivedVariable> entry : addressVariables.entrySet()) {
+        for (final Map.Entry<MemoryCoreEvent, DerivedVariable> entry : addressVariables.entrySet()) {
             postProcess(entry);
         }
         for (final DerivedVariable v : addressVariables.values()) {
@@ -394,6 +387,10 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
     // Also propagates communications to loads, if both directly access the same variable.
     private void processMemoryEvent(MemoryCoreEvent event) {
         logger.trace("{}", event);
+        if (event instanceof MemAlloc alloc) {
+            addressVariables.put(alloc, derive(objectVariables.get(alloc.getAllocatedObject())));
+            return;
+        }
         if (event instanceof Load) {
             // event was already processed in processWriter(RegWriter)
             return;
@@ -426,16 +423,6 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
                 processCommunication(List.of(edge), loads);
             }
         }
-    }
-
-    private void processFree(MemFree free) {
-        logger.trace("{}", free);
-        final DerivedVariable address = getResultVariable(free.getAddress(), free);
-        if (address == null) {
-            logger.warn("null pointer address for {}", synContext.get().getContextInfo(free));
-            return;
-        }
-        addressVariables.put(free, address);
     }
 
     // Propagates the pointer sets and tests for new communications.
@@ -516,9 +503,9 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
 
     // Removes information from the internal graph, which are no longer needed after the algorithm has finished.
     // This simplifies alias queries and releases memory resources.
-    private void postProcess(Map.Entry<Event, DerivedVariable> entry) {
+    private void postProcess(Map.Entry<MemoryCoreEvent, DerivedVariable> entry) {
         logger.trace("{}", entry);
-        final Event e = entry.getKey();
+        final MemoryCoreEvent e = entry.getKey();
         final DerivedVariable address = entry.getValue();
         if (address == null) {
             // should have already warned about this event
@@ -545,19 +532,19 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
         if (!includeEdge.source.object.getClass().equals(MemoryObject.class) || !includeEdge.source.object.hasKnownSize()) {
             return;
         }
-        if (e instanceof MemoryCoreEvent mce) {
-            final int accessSize = types.getMemorySizeInBytes(mce.getAccessType());
-            final int remainingSize = includeEdge.source.object.getKnownSize() - modifier.offset - (accessSize - 1);
+        if (e instanceof MemFree) {
+            final int remainingSize = includeEdge.source.object.getKnownSize() - modifier.offset;
             for (final Integer a : modifier.alignment) {
-                if (Math.abs(a) < remainingSize || a < 0 && modifier.offset + a >= 0) {
+                if (a < remainingSize) {
                     return;
                 }
             }
         } else {
-            assert e instanceof MemFree;
-            final int remainingSize = includeEdge.source.object.getKnownSize() - modifier.offset;
+            assert !(e instanceof MemAlloc);
+            final int accessSize = types.getMemorySizeInBytes(e.getAccessType());
+            final int remainingSize = includeEdge.source.object.getKnownSize() - modifier.offset - (accessSize - 1);
             for (final Integer a : modifier.alignment) {
-                if (a < remainingSize) {
+                if (Math.abs(a) < remainingSize || a < 0 && modifier.offset + a >= 0) {
                     return;
                 }
             }

@@ -1021,7 +1021,7 @@ public class AnalysisTest {
         return AliasAnalysis.fromConfig(program, analysisContext, configuration, false);
     }
 
-    private void assertAlias(Result expect, AliasAnalysis a, Event x, Event y) {
+    private void assertAlias(Result expect, AliasAnalysis a, MemoryCoreEvent x, MemoryCoreEvent y) {
         switch (expect) {
             case NONE:
                 assertFalse(a.mayAlias(x, y));
@@ -1038,7 +1038,7 @@ public class AnalysisTest {
         }
     }
 
-    private void assertObjectAlias(Result expect, AliasAnalysis a, Event x, Event y) {
+    private void assertObjectAlias(Result expect, AliasAnalysis a, MemoryCoreEvent x, MemoryCoreEvent y) {
         switch (expect) {
             case NONE:
                 assertFalse(a.mayObjectAlias(x, y));
