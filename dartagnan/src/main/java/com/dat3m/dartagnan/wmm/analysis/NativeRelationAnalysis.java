@@ -860,11 +860,11 @@ public class NativeRelationAnalysis implements RelationAnalysis {
         public MutableKnowledge visitAllocPtr(AllocPtr allocPtr) {
             MutableEventGraph may = new MapEventGraph();
             MutableEventGraph must = new MapEventGraph();
-            List<MemAlloc> allocs = program.getThreadEventsWithAllTags(ALLOC).stream()
-                    .map(e -> (MemAlloc) e).collect(Collectors.toList());
+            List<HeapAlloc> allocs = program.getThreadEventsWithAllTags(ALLOC).stream()
+                    .map(e -> (HeapAlloc) e).collect(Collectors.toList());
             List<MemFree> frees = program.getThreadEvents(MemFree.class);
-            List<? extends GenericMemoryEvent> allocAndFrees = Stream.concat(allocs.stream(), frees.stream()).toList();
-            for (GenericMemoryEvent e1 : allocAndFrees) {
+            List<? extends MemoryCoreEvent> allocAndFrees = Stream.concat(allocs.stream(), frees.stream()).toList();
+            for (MemoryCoreEvent e1 : allocAndFrees) {
                 for (MemFree e2 : frees) {
                     if (alias.mayAlias(e1, e2)) {
                         may.add(e1, e2);
@@ -882,11 +882,11 @@ public class NativeRelationAnalysis implements RelationAnalysis {
             MutableEventGraph may = new MapEventGraph();
             MutableEventGraph must = new MapEventGraph();
             List<MemoryCoreEvent> memEvents = program.getThreadEvents(MemoryCoreEvent.class).stream()
-                    .filter(e -> !(e instanceof MemAlloc) && !(e instanceof MemFree))
+                    .filter(e -> !(e instanceof HeapAlloc) && !(e instanceof MemFree))
                     .collect(Collectors.toList());
-            List<MemAlloc> allocs = program.getThreadEventsWithAllTags(ALLOC).stream()
-                    .map(e -> (MemAlloc) e).collect(Collectors.toList());
-            for (MemAlloc e1 : allocs) {
+            List<HeapAlloc> allocs = program.getThreadEventsWithAllTags(ALLOC).stream()
+                    .map(e -> (HeapAlloc) e).collect(Collectors.toList());
+            for (HeapAlloc e1 : allocs) {
                 for (MemoryCoreEvent e2 : memEvents) {
                     if (e2 instanceof Init) { continue; }
                     if (alias.mayObjectAlias(e1, e2)) {

@@ -204,8 +204,8 @@ public interface AliasAnalysis {
     }
 
     private void populateObjectGraph(Map<String, Set<String>> may, Map<String, Set<String>> must,
-            List<MemAlloc> allocs, List<MemoryCoreEvent> events, Config configuration) {
-        for (final MemAlloc alloc : allocs) {
+            List<HeapAlloc> allocs, List<MemoryCoreEvent> events, Config configuration) {
+        for (final HeapAlloc alloc : allocs) {
             final String node1 = repr(alloc, configuration);
             final Set<String> maySet = may.computeIfAbsent(node1, k -> new HashSet<>());
             final Set<String> mustSet = must.computeIfAbsent(node1, k -> new HashSet<>());
@@ -231,9 +231,9 @@ public interface AliasAnalysis {
         final Map<String, Set<String>> mayObjectGraph = new HashMap<>();
 
         final List<MemoryCoreEvent> events = program.getThreadEvents(MemoryCoreEvent.class)
-                .stream().filter(e -> !(e instanceof MemFree) && !(e instanceof MemAlloc))
+                .stream().filter(e -> !(e instanceof MemFree) && !(e instanceof HeapAlloc))
                 .collect(Collectors.toList());
-        final List<MemAlloc> allocs = program.getThreadEvents(MemAlloc.class);
+        final List<HeapAlloc> allocs = program.getThreadEvents(HeapAlloc.class);
         final List<MemFree> frees = program.getThreadEvents(MemFree.class);
 
         populateAddressGraph(mayAddressGraph, mustAddressGraph, events, events, configuration);
@@ -304,7 +304,7 @@ public interface AliasAnalysis {
         }
         final String type = event instanceof Load ? ": R"
                 : event instanceof Store ? ": W"
-                : event instanceof MemAlloc ? ": A"
+                : event instanceof HeapAlloc ? ": A"
                 : event instanceof MemFree ? ": F"
                 : "";
         final SourceLocation location = event.getMetadata(SourceLocation.class);

@@ -22,7 +22,7 @@ import java.util.Set;
     MemAlloc represents any dynamic allocation performed in the program, i.e., both heap and stack allocations.
     Each allocation has a type and an array size (equals 1 for simple allocations).
  */
-public final class MemAlloc extends GenericMemoryEvent implements RegWriter {
+public final class MemAlloc extends AbstractEvent implements RegReader, RegWriter {
     private Register resultRegister;
     private Type allocationType;
     private Expression arraySize;
@@ -35,7 +35,6 @@ public final class MemAlloc extends GenericMemoryEvent implements RegWriter {
 
     public MemAlloc(Register resultRegister, Type allocType, Expression arraySize, Expression alignment,
             boolean isHeapAllocation, boolean doesZeroOutMemory) {
-        super(resultRegister, "alloc");
         Preconditions.checkArgument(resultRegister.getType() == TypeFactory.getInstance().getPointerType());
         Preconditions.checkArgument(arraySize.getType() instanceof IntegerType);
         Preconditions.checkArgument(alignment.getType() instanceof IntegerType);
@@ -45,10 +44,6 @@ public final class MemAlloc extends GenericMemoryEvent implements RegWriter {
         this.allocationType = allocType;
         this.isHeapAllocation = isHeapAllocation;
         this.doesZeroOutMemory = doesZeroOutMemory;
-        removeTags(Tag.MEMORY);
-        if (isHeapAllocation) {
-            addTags(Tag.VISIBLE, Tag.ALLOC);
-        }
     }
 
     private MemAlloc(MemAlloc other) {
@@ -61,10 +56,6 @@ public final class MemAlloc extends GenericMemoryEvent implements RegWriter {
         this.alignment = other.alignment;
         this.isHeapAllocation = other.isHeapAllocation;
         this.doesZeroOutMemory = other.doesZeroOutMemory;
-        removeTags(Tag.MEMORY);
-        if (isHeapAllocation) {
-            addTags(Tag.VISIBLE, Tag.ALLOC);
-        }
     }
 
     @Override
@@ -81,10 +72,7 @@ public final class MemAlloc extends GenericMemoryEvent implements RegWriter {
     public boolean isSimpleAllocation() { return (arraySize instanceof IntLiteral size && size.isOne()); }
     public boolean isArrayAllocation() { return !isSimpleAllocation(); }
 
-    public void setAllocatedObject(MemoryObject obj) {
-        this.allocatedObject = obj;
-        this.address = obj;
-    }
+    public void setAllocatedObject(MemoryObject obj) { this.allocatedObject = obj; }
     // WARNING: This should only be accessed after program processing.
     public MemoryObject getAllocatedObject() {
         Preconditions.checkState(allocatedObject != null,
@@ -135,7 +123,7 @@ public final class MemAlloc extends GenericMemoryEvent implements RegWriter {
 
     @Override
     public <T> T accept(EventVisitor<T> visitor) {
-        return visitor.visitAlloc(this);
+        return visitor.visitMemAlloc(this);
     }
 
     @Override

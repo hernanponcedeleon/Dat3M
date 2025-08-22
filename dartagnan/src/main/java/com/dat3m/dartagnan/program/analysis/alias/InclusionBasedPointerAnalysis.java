@@ -232,7 +232,7 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
 
     private void detectMixedSizeAccesses() {
         final List<MemoryCoreEvent> events = addressVariables.keySet().stream()
-                .filter(e -> !(e instanceof MemAlloc) && !(e instanceof MemFree))
+                .filter(e -> !(e instanceof HeapAlloc) && !(e instanceof MemFree))
                 .collect(Collectors.toList());
         final List<Set<Integer>> offsets = new ArrayList<>();
         for (int i = 0; i < events.size(); i++) {
@@ -353,7 +353,7 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
         logger.trace("{}", event);
         final Expression expr = event instanceof Local local ? local.getExpr() :
                         event instanceof ThreadArgument arg ? arg.getCreator().getArguments().get(arg.getIndex()) :
-                        event instanceof MemAlloc alloc ? alloc.getAllocatedObject() : null;
+                        event instanceof HeapAlloc alloc ? alloc.getAddress() : null;
         final DerivedVariable value;
         if (expr != null) {
             final RegReader reader = event instanceof ThreadArgument arg ? arg.getCreator() : (RegReader) event;
@@ -387,8 +387,8 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
     // Also propagates communications to loads, if both directly access the same variable.
     private void processMemoryEvent(MemoryCoreEvent event) {
         logger.trace("{}", event);
-        if (event instanceof MemAlloc alloc) {
-            addressVariables.put(alloc, derive(objectVariables.get(alloc.getAllocatedObject())));
+        if (event instanceof HeapAlloc alloc) {
+            addressVariables.put(alloc, derive(objectVariables.get(alloc.getAddress())));
             return;
         }
         if (event instanceof Load) {
@@ -540,7 +540,6 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
                 }
             }
         } else {
-            assert !(e instanceof MemAlloc);
             final int accessSize = types.getMemorySizeInBytes(e.getAccessType());
             final int remainingSize = includeEdge.source.object.getKnownSize() - modifier.offset - (accessSize - 1);
             for (final Integer a : modifier.alignment) {

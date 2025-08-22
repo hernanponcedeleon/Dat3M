@@ -696,9 +696,9 @@ public class WmmEncoder implements Encoder {
             EncodingContext.EdgeEncoder edge = context.edge(rel);
             final ExpressionEncoder exprEncoder = context.getExpressionEncoder();
             encodeSets.get(rel).apply((e1, e2) -> {
-                TypedFormula ptr1 = (e1 instanceof MemAlloc alloc)
+                TypedFormula ptr1 = (e1 instanceof HeapAlloc alloc)
                         ? context.result(alloc)
-                        : exprEncoder.encodeAt(((MemFree)e1).getAddress(), e1);
+                        : exprEncoder.encodeAt(((MemFree) e1).getAddress(), e1);
                 TypedFormula ptr2 = exprEncoder.encodeAt(((MemFree) e2).getAddress(), e2);
                 enc.add(bmgr.equivalence(edge.encode(e1, e2), bmgr.and(
                         execution(e1, e2),
@@ -714,8 +714,8 @@ public class WmmEncoder implements Encoder {
             final ExpressionEncoder exprEncoder = context.getExpressionEncoder();
             final ExpressionFactory exprs = context.getExpressionFactory();
             encodeSets.get(rel).apply((e1, e2) -> {
-                TypedFormula minAddress = context.result((MemAlloc)e1);
-                TypedFormula size = exprEncoder.encodeAt(((MemAlloc) e1).getAllocationSize(), e1);
+                TypedFormula minAddress = context.result((HeapAlloc) e1);
+                TypedFormula size = exprEncoder.encodeAt(((HeapAlloc) e1).getAllocationEvent().getAllocationSize(), e1);
                 TypedFormula maxAddress = exprEncoder.encodeFinal(exprs.makeAdd(minAddress, size));
                 TypedFormula address = context.address((MemoryCoreEvent) e2);
                 enc.add(bmgr.equivalence(edge.encode(e1, e2), bmgr.and(

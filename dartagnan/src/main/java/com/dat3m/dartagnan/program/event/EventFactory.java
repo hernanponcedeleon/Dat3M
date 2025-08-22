@@ -125,6 +125,10 @@ public class EventFactory {
         return new MemAlloc(register, allocType, arraySize, alignment, isHeapAlloc, doesZeroOutMemory);
     }
 
+    public static HeapAlloc newHeapAlloc(MemAlloc alloc, MemoryObject address, Register resultRegister) {
+        return new HeapAlloc(alloc, address, resultRegister);
+    }
+
     public static MemFree newFree(Expression address) {
         return new MemFree(address);
     }

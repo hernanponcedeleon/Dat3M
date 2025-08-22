@@ -13,6 +13,8 @@ import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.common.configuration.Option;
 import org.sosy_lab.common.configuration.Options;
 
+import static com.dat3m.dartagnan.program.event.EventFactory.newHeapAlloc;
+
 /*
     This pass
         (1) collects all MemAlloc events in the program and generates a corresponding MemoryObject
@@ -63,6 +65,10 @@ public class MemoryAllocation implements ProgramProcessor {
                 for (int i = 0; i < allocatedObject.getKnownSize(); i++) {
                     allocatedObject.setInitialValue(i, zero);
                 }
+            }
+
+            if (alloc.isHeapAllocation()) {
+                alloc.insertAfter(newHeapAlloc(alloc, allocatedObject, alloc.getResultRegister()));
             }
         }
     }
