@@ -10,7 +10,8 @@ public final class MemoryObjectModel {
     private final String name;
     private final TypedValue<?, ?> address;
     private final TypedValue<?, ?> size;
-    private AllocModel allocationSite;
+
+    private transient AllocModel allocationSite;
 
     public MemoryObjectModel(String name, TypedValue<?, ?> address, TypedValue<?, ?> size) {
         this.name = name;

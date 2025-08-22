@@ -31,7 +31,7 @@ public final class ThreadModel {
     }
 
     // --------------------------------------------------------------------------------------------------------------
-    // Intern
+    // Internal
 
     void append(EventModel event) {
         Preconditions.checkNotNull(event);

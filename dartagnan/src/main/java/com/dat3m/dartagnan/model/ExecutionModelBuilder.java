@@ -35,12 +35,6 @@ public class ExecutionModelBuilder {
     private final IREvaluator evaluator;
     private final EventExtractor extractor = new EventExtractor();
 
-    private ExecutionModel executionModel = null;
-
-    public ExecutionModel getExecutionModel() {
-        return executionModel;
-    }
-
     public ExecutionModelBuilder(VerificationTask task, IREvaluator evaluator) {
         this.task = task;
         this.evaluator = evaluator;
@@ -148,13 +142,13 @@ public class ExecutionModelBuilder {
                             .setAllocationSite((AllocModel) event2Model.get(alloc));
                 }
 
-                if (cur instanceof CondJump jump && evaluator.jumpTaken(jump)) {
-                    cur = jump.getLabel();
-                } else if (cur instanceof BlockingEvent barrier && evaluator.isBlocked(barrier)) {
-                    cur = null;
-                } else {
-                    cur = cur.getSuccessor();
+                if (cur instanceof BlockingEvent barrier && evaluator.isBlocked(barrier)) {
+                    break;
                 }
+
+                cur = (cur instanceof CondJump jump && evaluator.jumpTaken(jump))
+                        ? jump.getLabel()
+                        : cur.getSuccessor();
             }
         }
     }
