@@ -56,7 +56,7 @@ public class Local extends AbstractEvent implements RegWriter, RegReader {
 
     @Override
     public String defaultString() {
-        return String.format("%s <- %s", register, expr);
+        return String.format("%s = %s", register, expr);
     }
 
     @Override

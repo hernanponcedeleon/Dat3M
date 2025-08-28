@@ -24,7 +24,7 @@ public class LKMMLock extends SingleAccessMemoryEvent {
 
     @Override
     public String defaultString() {
-        return String.format("spin_lock(*%s)", address);
+        return String.format("spin_lock(%s)", address);
     }
 
     @Override

@@ -57,7 +57,7 @@ public class LlvmCmpXchg extends RMWCmpXchgBase {
     @Override
     public String defaultString() {
         final String strongSuffix = isStrong ? "strong" : "weak";
-        return String.format("(%s, %s) := llvm_cmpxchg_%s(*%s, %s, %s, %s)\t### LLVM",
+        return String.format("(%s, %s) = llvm_cmpxchg_%s(%s, %s, %s, %s)\t### LLVM",
                 resultRegister, cmpRegister, strongSuffix, address, expectedValue, storeValue, mo);
     }
 

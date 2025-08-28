@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan.utils.printer;
 
+import com.dat3m.dartagnan.program.Entrypoint;
 import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Thread;
@@ -7,8 +8,10 @@ import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.core.Init;
 import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.event.core.Skip;
+import com.dat3m.dartagnan.program.memory.MemoryObject;
 
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class Printer {
 
@@ -35,7 +38,19 @@ public class Printer {
         if(name == null){
             name = "program";
         }
-        result.append(name).append("\n");
+        result.append(name);
+        if (!(program.getEntrypoint() instanceof Entrypoint.Resolved)) {
+            result.append(" ").append(program.getEntrypoint());
+        }
+        result.append("\n");
+
+        for (MemoryObject obj : program.getMemory().getObjects()) {
+            if (obj.isStaticallyAllocated()) {
+                appendMemoryObject(obj);
+            }
+        }
+
+        result.append("\n");
 
         if (mode == Mode.THREADS || mode == Mode.ALL) {
             for (Thread thread : program.getThreads()) {
@@ -63,6 +78,17 @@ public class Printer {
         }
 
         return result.toString();
+    }
+
+    private void appendMemoryObject(MemoryObject obj) {
+        result.append("\nstatic ").append(obj.getName())
+                .append(String.format(" [size=%s, align=%s] ", obj.getKnownSize(), obj.getKnownAlignment()));
+
+        final int displayLimit = 10;
+        var fieldStrings = obj.getInitializedFields().stream().sorted().limit(displayLimit)
+                        .map(field -> String.format("%s: %s", field, obj.getInitialValue(field)));
+        fieldStrings = obj.getInitializedFields().size() > displayLimit ? Stream.concat(fieldStrings, Stream.of("...")) : fieldStrings;
+        result.append(fieldStrings.collect(Collectors.joining(", ", "{ ", " }")));
     }
 
     public Printer setShowAuxiliaryEvents(boolean flag) {
@@ -95,6 +121,9 @@ public class Printer {
         result.append(functionSignatureToString(func));
         if (func instanceof Thread t && t.hasScope()) {
            result.append(" ").append(t.getScopeHierarchy());
+        }
+        if (func.getProgram().getEntrypoint().getEntryFunctions().contains(func)) {
+            result.append(" #Entrypoint");
         }
         result.append("\n");
         for (Event e : func.getEvents()) {

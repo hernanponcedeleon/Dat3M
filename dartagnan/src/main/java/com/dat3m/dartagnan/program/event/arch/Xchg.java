@@ -17,7 +17,7 @@ public class Xchg extends RMWXchgBase {
 
     @Override
     public String defaultString() {
-        return String.format("%s <- xchg(*%s, %s)", resultRegister, address, storeValue);
+        return String.format("%s = xchg(%s, %s)", resultRegister, address, storeValue);
     }
 
     @Override

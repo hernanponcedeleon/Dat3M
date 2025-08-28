@@ -35,7 +35,7 @@ public class LKMMLoad extends LoadBase {
     @Override
     public String defaultString() {
         if (mo.equals(Tag.Linux.MO_ONCE)) {
-            return resultRegister + " := READ_ONCE(" + address + ")\t### LKMM";
+            return resultRegister + " = READ_ONCE(" + address + ")\t### LKMM";
         }
         return super.defaultString();
     }

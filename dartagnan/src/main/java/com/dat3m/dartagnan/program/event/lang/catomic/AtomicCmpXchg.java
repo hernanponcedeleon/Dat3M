@@ -83,7 +83,7 @@ public class AtomicCmpXchg extends SingleAccessMemoryEvent implements RegWriter 
     @Override
     public String defaultString() {
         final String strongSuffix = isStrong ? "strong" : "weak";
-        return String.format("%s := atomic_compare_exchange_%s(*%s, %s, %s, %s)\t### C11",
+        return String.format("%s = atomic_compare_exchange_%s(%s, %s, %s, %s)\t### C11",
                 resultRegister, strongSuffix, address, expectedAddr, storeValue, mo);
     }
 

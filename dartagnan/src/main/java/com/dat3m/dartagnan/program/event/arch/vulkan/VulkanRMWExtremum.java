@@ -20,7 +20,7 @@ public class VulkanRMWExtremum extends RMWExtremumBase {
 
     @Override
     public String defaultString() {
-        return String.format("%s := rmw_ext[%s](%s, %s, %s)", resultRegister, mo, storeValue, address, operator.getName());
+        return String.format("%s = rmw_ext[%s](%s, %s, %s)", resultRegister, mo, storeValue, address, operator.getName());
     }
 
     @Override

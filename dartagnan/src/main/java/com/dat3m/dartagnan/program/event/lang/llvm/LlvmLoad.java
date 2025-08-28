@@ -25,7 +25,7 @@ public class LlvmLoad extends LoadBase {
 
     @Override
     public String defaultString() {
-        return resultRegister + " = llvm_load(*" + address + ", " + mo + ")\t### LLVM";
+        return resultRegister + " = llvm_load(" + address + ", " + mo + ")\t### LLVM";
     }
 
     @Override

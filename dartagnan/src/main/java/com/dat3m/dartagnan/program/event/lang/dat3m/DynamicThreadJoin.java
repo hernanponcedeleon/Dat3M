@@ -74,7 +74,7 @@ public class DynamicThreadJoin extends AbstractEvent implements RegWriter, RegRe
 
     @Override
     protected String defaultString() {
-        return String.format("%s <- DynamicThreadJoin(%s)", resultRegister, tid);
+        return String.format("%s = DynamicThreadJoin(%s)", resultRegister, tid);
     }
 
     @Override

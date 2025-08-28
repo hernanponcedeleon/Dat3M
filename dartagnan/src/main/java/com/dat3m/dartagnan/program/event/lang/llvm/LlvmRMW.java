@@ -20,7 +20,7 @@ public class LlvmRMW extends RMWOpResultBase {
 
     @Override
     public String defaultString() {
-        return String.format("%s := llvm_rmw_%s(*%s, %s, %s)\t### LLVM",
+        return String.format("%s = llvm_rmw_%s(%s, %s, %s)\t### LLVM",
                 resultRegister, operator.getName(), address, operand, mo);
     }
 

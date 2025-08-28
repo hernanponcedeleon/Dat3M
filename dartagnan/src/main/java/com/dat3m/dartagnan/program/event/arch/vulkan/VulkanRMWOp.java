@@ -20,7 +20,7 @@ public class VulkanRMWOp extends RMWOpResultBase {
 
     @Override
     public String defaultString() {
-        return String.format("%s := rmw_%s[%s](%s, %s)", resultRegister, operator.getName(), mo, operand, address);
+        return String.format("%s = rmw_%s[%s](%s, %s)", resultRegister, operator.getName(), mo, operand, address);
     }
 
     @Override

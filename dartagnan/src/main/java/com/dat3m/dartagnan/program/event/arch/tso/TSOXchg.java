@@ -21,7 +21,7 @@ public class TSOXchg extends RMWXchgBase {
 
     @Override
     public String defaultString() {
-        return String.format("xchg(*%s, %s)", address, resultRegister);
+        return String.format("xchg(%s, %s)", address, resultRegister);
     }
 
     @Override

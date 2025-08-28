@@ -26,7 +26,7 @@ public class NonDetChoice extends AbstractEvent implements RegWriter {
 
     @Override
     protected String defaultString() {
-        return String.format("%s <- *", register);
+        return String.format("%s = *", register);
     }
 
     @Override

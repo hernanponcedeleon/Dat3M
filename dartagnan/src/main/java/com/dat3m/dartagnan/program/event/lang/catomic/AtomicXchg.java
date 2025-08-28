@@ -19,7 +19,7 @@ public class AtomicXchg extends RMWXchgBase {
 
     @Override
     public String defaultString() {
-        return String.format("%s := atomic_exchange(*%s, %s, %s)\t###C11", resultRegister, address, storeValue, mo);
+        return String.format("%s = atomic_exchange(%s, %s, %s)\t###C11", resultRegister, address, storeValue, mo);
     }
 
     @Override
