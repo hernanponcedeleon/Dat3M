@@ -45,6 +45,7 @@ public class EqualityAliasAnalysis implements AliasAnalysis {
                     final MemoryCoreEvent b = events.get(j);
                     if (a.getAddress().equals(b.getAddress()) && regNotModified(a, b)) {
                         tSet.add(a, b);
+                        tSet.add(b, a);
                     }
                 }
             }
