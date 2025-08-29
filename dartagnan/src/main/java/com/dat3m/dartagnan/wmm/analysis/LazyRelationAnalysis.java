@@ -34,8 +34,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 import static com.dat3m.dartagnan.program.Register.UsageType.*;
-import static com.dat3m.dartagnan.program.event.Tag.FENCE;
-import static com.dat3m.dartagnan.program.event.Tag.VISIBLE;
+import static com.dat3m.dartagnan.program.event.Tag.*;
 import static java.util.stream.Collectors.toSet;
 
 public class LazyRelationAnalysis extends NativeRelationAnalysis {
@@ -100,6 +99,7 @@ public class LazyRelationAnalysis extends NativeRelationAnalysis {
         private final AliasAnalysis alias;
         private final ReachingDefinitionsAnalysis definitions;
         private final Set<Event> visibleEvents;
+        private final Set<Event> memoryEvents;
 
         public LazyInitializer(VerificationTask task, Context context) {
             this.program = task.getProgram();
@@ -107,6 +107,7 @@ public class LazyRelationAnalysis extends NativeRelationAnalysis {
             this.alias = context.requires(AliasAnalysis.class);
             this.definitions = context.requires(ReachingDefinitionsAnalysis.class);
             this.visibleEvents = new HashSet<>(program.getThreadEventsWithAllTags(VISIBLE));
+            this.memoryEvents = new HashSet<>(program.getThreadEventsWithAllTags(MEMORY));
         }
 
         public RelationAnalysis.Knowledge getKnowledge(Relation relation) {
@@ -298,14 +299,13 @@ public class LazyRelationAnalysis extends NativeRelationAnalysis {
         }
 
         @Override
-        // TODO: May and must sets of AllocMem can become very large for some programs.
-        //  Consider using a more efficient representation. A LazyEventGraph can be a good option
-        //  if alias analysis for alloc will be thread-safe.
         public RelationAnalysis.Knowledge visitAllocMem(AllocMem definition) {
             long start = System.currentTimeMillis();
-            RelationAnalysis.Knowledge base = nativeInitializer.visitAllocMem(definition);
-            EventGraph may = ImmutableMapEventGraph.from(base.getMaySet());
-            EventGraph must = ImmutableMapEventGraph.from(base.getMustSet());
+            Set<Event> allocs = new HashSet<>(program.getThreadEventsWithAllTags(ALLOC));
+            EventGraph may = new LazyEventGraph(allocs, memoryEvents, (e1, e2) ->
+                    alias.mayObjectAlias((MemoryCoreEvent) e1, (MemoryCoreEvent) e2));
+            EventGraph must = new LazyEventGraph(allocs, memoryEvents, (e1, e2) ->
+                    alias.mustObjectAlias((MemoryCoreEvent) e1, (MemoryCoreEvent) e2));
             time(definition, start, System.currentTimeMillis());
             return new RelationAnalysis.Knowledge(may, must);
         }
@@ -363,26 +363,12 @@ public class LazyRelationAnalysis extends NativeRelationAnalysis {
         @Override
         public RelationAnalysis.Knowledge visitSameLocation(SameLocation definition) {
             long start = System.currentTimeMillis();
-            List<MemoryCoreEvent> memoryEvents = program.getThreadEvents(MemoryCoreEvent.class);
-            Map<Event, Set<Event>> mayData = new HashMap<>();
-            Map<Event, Set<Event>> mustData = new HashMap<>();
-            for (int i = 0; i < memoryEvents.size(); i++) {
-                MemoryCoreEvent e1 = memoryEvents.get(i);
-                for (int j = i; j < memoryEvents.size(); j++) {
-                    MemoryCoreEvent e2 = memoryEvents.get(j);
-                    if (!exec.areMutuallyExclusive(e1, e2) && alias.mayAlias(e1, e2)) {
-                        mayData.computeIfAbsent(e1, x -> new HashSet<>()).add(e2);
-                        mayData.computeIfAbsent(e2, x -> new HashSet<>()).add(e1);
-                        if (alias.mustAlias(e1, e2)) {
-                            mustData.computeIfAbsent(e1, x -> new HashSet<>()).add(e2);
-                            mustData.computeIfAbsent(e2, x -> new HashSet<>()).add(e1);
-                        }
-                    }
-                }
-            }
-            // Cannot be a LazyEventGraph because AliasAnalysis is not thread safe
-            EventGraph may = new ImmutableMapEventGraph(mayData);
-            EventGraph must = new ImmutableMapEventGraph(mustData);
+            EventGraph may = new LazyEventGraph(memoryEvents, memoryEvents, (e1, e2) ->
+                    !exec.areMutuallyExclusive(e1, e2) &&
+                    alias.mayAlias((MemoryCoreEvent) e1, (MemoryCoreEvent) e2));
+            EventGraph must = new LazyEventGraph(memoryEvents, memoryEvents, (e1, e2) ->
+                    !exec.areMutuallyExclusive(e1, e2) &&
+                    alias.mustAlias((MemoryCoreEvent) e1, (MemoryCoreEvent) e2));
             time(definition, start, System.currentTimeMillis());
             return new RelationAnalysis.Knowledge(may, must);
         }

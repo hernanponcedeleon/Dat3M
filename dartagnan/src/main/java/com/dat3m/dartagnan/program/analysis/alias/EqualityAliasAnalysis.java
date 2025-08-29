@@ -1,11 +1,13 @@
 package com.dat3m.dartagnan.program.analysis.alias;
 
 import com.dat3m.dartagnan.expression.Expression;
+import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.RegWriter;
 import com.dat3m.dartagnan.program.event.core.MemoryCoreEvent;
+import com.dat3m.dartagnan.wmm.utils.graph.immutable.ImmutableEventGraph;
 import com.dat3m.dartagnan.wmm.utils.graph.mutable.MapEventGraph;
 import com.dat3m.dartagnan.wmm.utils.graph.mutable.MutableEventGraph;
 
@@ -25,15 +27,29 @@ public class EqualityAliasAnalysis implements AliasAnalysis {
 
     private final Config config;
 
-    private final MutableEventGraph trueSet = new MapEventGraph();
-    private final MutableEventGraph falseSet = new MapEventGraph();
+    private final ImmutableEventGraph trueSet;
 
     public static EqualityAliasAnalysis fromConfig(Program program, Config config) {
-        return new EqualityAliasAnalysis(config);
+        return new EqualityAliasAnalysis(program, config);
     }
 
-    private EqualityAliasAnalysis(Config c) {
+    private EqualityAliasAnalysis(Program program, Config c) {
         config = checkNotNull(c);
+        // Precompute
+        final MutableEventGraph tSet = new MapEventGraph();
+        for (final Function f : program.getFunctions()) {
+            final List<MemoryCoreEvent> events = f.getEvents(MemoryCoreEvent.class);
+            for (int i = 0; i < events.size(); ++i) {
+                final MemoryCoreEvent a = events.get(i);
+                for (int j = i + 1; j < events.size(); ++j) {
+                    final MemoryCoreEvent b = events.get(j);
+                    if (a.getAddress().equals(b.getAddress()) && regNotModified(a, b)) {
+                        tSet.add(a, b);
+                    }
+                }
+            }
+        }
+        trueSet = ImmutableEventGraph.from(tSet);
     }
 
     @Override
@@ -43,40 +59,7 @@ public class EqualityAliasAnalysis implements AliasAnalysis {
 
     @Override
     public boolean mustAlias(MemoryCoreEvent a, MemoryCoreEvent b) {
-        Expression addrA = a.getAddress();
-        Expression addrB = b.getAddress();
-        if (a.getFunction() != b.getFunction() || !addrA.equals(addrB)) {
-            return false;
-        } else if (a == b) {
-            return true;
-        }
-        // Normalize direction
-        if (a.getGlobalId() > b.getGlobalId()) {
-            MemoryCoreEvent temp = a;
-            a = b;
-            b = temp;
-        }
-
-        // Check cache
-        if (trueSet.contains(a, b)) {
-            return true;
-        }
-        if (falseSet.contains(a, b)) {
-            return false;
-        }
-
-        // Establish that address expression evaluates to same value at both events.
-        Set<Register> addrRegs = addrA.getRegs();
-        Event e = a.getSuccessor();
-        while (e != b) {
-            if (e instanceof RegWriter rw && addrRegs.contains(rw.getResultRegister())) {
-                falseSet.add(a, b);
-                return false;
-            }
-            e = e.getSuccessor();
-        }
-        trueSet.add(a, b);
-        return true;
+        return (a == b) || trueSet.contains(a, b);
     }
 
     @Override
@@ -89,20 +72,23 @@ public class EqualityAliasAnalysis implements AliasAnalysis {
         return false;
     }
 
-    // private Expression getAddress(Event e) {
-    //     if (e instanceof MemoryCoreEvent me) {
-    //         return me.getAddress();
-    //     } else if (e instanceof MemFree f) {
-    //         return f.getAddress();
-    //     } else if (e instanceof MemAlloc a) {
-    //         return a.getAllocatedObject();
-    //     } else {
-    //         throw new UnsupportedOperationException("Event type has no address: " + e.getClass().getSimpleName());
-    //     }
-    // }
-
     @Override
     public List<Integer> mayMixedSizeAccesses(MemoryCoreEvent event) {
         return config.defaultMayMixedSizeAccesses(event);
+    }
+
+    private boolean regNotModified(MemoryCoreEvent a, MemoryCoreEvent b) {
+        final Expression addrA = a.getAddress();
+        assert (addrA.equals(b.getAddress()) && a.getFunction() == b.getFunction());
+        // Establish that address expression evaluates to same value at both events.
+        Set<Register> addrRegs = addrA.getRegs();
+        Event e = a.getSuccessor();
+        while (e != b) {
+            if (e instanceof RegWriter rw && addrRegs.contains(rw.getResultRegister())) {
+                return false;
+            }
+            e = e.getSuccessor();
+        }
+        return true;
     }
 }
