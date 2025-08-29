@@ -136,7 +136,7 @@ public class AndersenAliasAnalysis implements AliasAnalysis {
             return;
         }
         final List<MemoryCoreEvent> events = eventAddressSpaceMap.keySet().stream()
-                .filter(e -> !(e instanceof HeapAlloc) && !(e instanceof MemFree))
+                .filter(e -> !(e instanceof MemAlloc) && !(e instanceof MemFree))
                 .collect(Collectors.toList());
         final List<Set<Integer>> offsets = new ArrayList<>();
         for (int i = 0; i < events.size(); i++) {
@@ -176,11 +176,11 @@ public class AndersenAliasAnalysis implements AliasAnalysis {
         List<MemoryCoreEvent> memEvents = program.getThreadEvents(MemoryCoreEvent.class);
         List<Local> locals = program.getThreadEvents(Local.class);
         for (MemoryCoreEvent e : memEvents) {
-            processMemoryEvents(e);
+            processLocs(e);
         }
         //FIXME: Add handling for thread parameters and allocations (or get rid of this class)
         for (Local e : locals) {
-            processLocals(e);
+            processRegs(e);
         }
         algorithm();
         for (Local e : locals) {
@@ -191,10 +191,13 @@ public class AndersenAliasAnalysis implements AliasAnalysis {
         }
     }
 
-    private void processMemoryEvents(MemoryCoreEvent e) {
-        if (e instanceof HeapAlloc a) {
+    private void processLocs(MemoryCoreEvent e) {
+        if (e instanceof MemFree) {
+            return;
+        }
+        if (e instanceof MemAlloc a) {
             Register r = a.getResultRegister();
-            Location base = new Location(a.getAddress(), 0);
+            Location base = new Location(a.getAllocatedObject(), 0);
             eventAddressSpaceMap.put(a, ImmutableSet.of(base));
             addAddress(r, base);
             variables.add(r);
@@ -228,9 +231,6 @@ public class AndersenAliasAnalysis implements AliasAnalysis {
             addEdge(location, rw.getResultRegister());
             return;
         }
-        if (e instanceof MemFree) {
-            return;
-        }
         //event is a store operation
         Verify.verify(e instanceof Store,
                 "Encountered memory event that is neither store nor load: {}", e);
@@ -248,7 +248,7 @@ public class AndersenAliasAnalysis implements AliasAnalysis {
         variables.add(location);
     }
 
-    private void processLocals(Local e) {
+    private void processRegs(Local e) {
         Register register = e.getResultRegister();
         Expression expr = e.getExpr();
         if (expr instanceof Register) {
@@ -338,7 +338,7 @@ public class AndersenAliasAnalysis implements AliasAnalysis {
     }
 
     private void processResults(MemoryCoreEvent e) {
-        if (e instanceof HeapAlloc) {
+        if (e instanceof MemAlloc) {
             return;
         }
         Expression address = e.getAddress();

@@ -10,7 +10,7 @@ import com.dat3m.dartagnan.program.event.RegReader;
 import com.dat3m.dartagnan.program.event.RegWriter;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.CondJump;
-import com.dat3m.dartagnan.program.event.core.HeapAlloc;
+import com.dat3m.dartagnan.program.event.core.MemAlloc;
 import com.dat3m.dartagnan.program.event.core.MemFree;
 import com.dat3m.dartagnan.program.event.core.MemoryCoreEvent;
 import com.dat3m.dartagnan.program.event.lang.svcomp.BeginAtomic;
@@ -323,7 +323,7 @@ public class ExecutionModel {
             // We override the meaning of execution here. A jump is executed IFF its condition was true.
             data.setWasExecuted(irModel.jumpTaken((CondJump) e));
         } else if (data.isAlloc()) {
-            Object address = checkNotNull(irModel.address(((HeapAlloc) e).getAddress()).value());
+            Object address = checkNotNull(irModel.address(((MemAlloc) e).getAllocatedObject()).value());
             addressAllocsMap.computeIfAbsent(address, k -> new HashSet<>()).add(data);
         } else if (data.isFree()) {
             Object address = checkNotNull(irModel.address((MemFree) e).value());

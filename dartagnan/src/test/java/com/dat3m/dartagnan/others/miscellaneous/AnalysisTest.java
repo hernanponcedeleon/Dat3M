@@ -660,8 +660,7 @@ public class AnalysisTest {
 
         Program program = b.build();
         AliasAnalysis aa = analyze(program, method);
-        // MemAlloc al = (MemAlloc) findMatchingEventAfterProcessing(program, a);
-        HeapAlloc al = (HeapAlloc) findMatchingEventAfterProcessing(program, a).getSuccessor();
+        MemAlloc al = (MemAlloc) findMatchingEventAfterProcessing(program, a);
         MemoryCoreEvent me0 = (MemoryCoreEvent) findMatchingEventAfterProcessing(program, e0);
         MemoryCoreEvent me1 = (MemoryCoreEvent) findMatchingEventAfterProcessing(program, e1);
         MemoryCoreEvent me2 = (MemoryCoreEvent) findMatchingEventAfterProcessing(program, e2);
@@ -722,10 +721,8 @@ public class AnalysisTest {
 
         Program program = b.build();
         AliasAnalysis aa = analyze(program, method);
-        // MemAlloc al0 = (MemAlloc) findMatchingEventAfterProcessing(program, a0);
-        HeapAlloc al0 = (HeapAlloc) findMatchingEventAfterProcessing(program, a0).getSuccessor();
-        // MemAlloc al1 = (MemAlloc) findMatchingEventAfterProcessing(program, a1);
-        HeapAlloc al1 = (HeapAlloc) findMatchingEventAfterProcessing(program, a1).getSuccessor();
+        MemAlloc al0 = (MemAlloc) findMatchingEventAfterProcessing(program, a0);
+        MemAlloc al1 = (MemAlloc) findMatchingEventAfterProcessing(program, a1);
         MemoryCoreEvent me0 = (MemoryCoreEvent) findMatchingEventAfterProcessing(program, e0);
         MemoryCoreEvent me1 = (MemoryCoreEvent) findMatchingEventAfterProcessing(program, e1);
         MemoryCoreEvent me2 = (MemoryCoreEvent) findMatchingEventAfterProcessing(program, e2);
@@ -800,8 +797,7 @@ public class AnalysisTest {
 
         Program program = b.build();
         AliasAnalysis aa = analyze(program, method);
-        // MemAlloc al0 = (MemAlloc) findMatchingEventAfterProcessing(program, a0);
-        HeapAlloc al0 = (HeapAlloc) findMatchingEventAfterProcessing(program, a0).getSuccessor();
+        MemAlloc al0 = (MemAlloc) findMatchingEventAfterProcessing(program, a0);
         MemoryCoreEvent me0 = (MemoryCoreEvent) findMatchingEventAfterProcessing(program, e0);
         MemoryCoreEvent me1 = (MemoryCoreEvent) findMatchingEventAfterProcessing(program, e1);
         MemoryCoreEvent me2 = (MemoryCoreEvent) findMatchingEventAfterProcessing(program, e2);
@@ -908,10 +904,8 @@ public class AnalysisTest {
 
         Program program = b.build();
         AliasAnalysis aa = analyze(program, method);
-        // MemAlloc al0 = (MemAlloc) findMatchingEventAfterProcessing(program, a0);
-        HeapAlloc al0 = (HeapAlloc) findMatchingEventAfterProcessing(program, a0).getSuccessor();
-        // MemAlloc al1 = (MemAlloc) findMatchingEventAfterProcessing(program, a1);
-        HeapAlloc al1 = (HeapAlloc) findMatchingEventAfterProcessing(program, a1).getSuccessor();
+        MemAlloc al0 = (MemAlloc) findMatchingEventAfterProcessing(program, a0);
+        MemAlloc al1 = (MemAlloc) findMatchingEventAfterProcessing(program, a1);
         MemFree fr0 = (MemFree) findMatchingEventAfterProcessing(program, f0);
         MemFree fr1 = (MemFree) findMatchingEventAfterProcessing(program, f1);
         MemFree fr2 = (MemFree) findMatchingEventAfterProcessing(program, f2);

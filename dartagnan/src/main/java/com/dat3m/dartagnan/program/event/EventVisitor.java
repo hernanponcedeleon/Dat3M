@@ -44,9 +44,7 @@ public interface EventVisitor<T> {
     default T visitLoad(Load e) { return visitMemCoreEvent(e); }
     default T visitStore(Store e) { return visitMemCoreEvent(e); }
     default T visitInit(Init e) { return visitStore(e); }
-    default T visitMemAlloc(MemAlloc e) { return visitEvent(e); }
-    default T visitMemFree(MemFree e) { return visitMemCoreEvent(e); }
-    default T visitHeapAlloc(HeapAlloc e) { return visitMemCoreEvent(e); }
+    default T visitAlloc(MemAlloc e) { return visitEvent(e); }
     // RMW core events
     default T visitRMWStore(RMWStore e) { return visitStore(e); }
     default T visitRMWStoreExclusive(RMWStoreExclusive e) { return visitStore(e); }

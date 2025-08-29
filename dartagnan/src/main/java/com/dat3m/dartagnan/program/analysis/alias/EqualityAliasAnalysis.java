@@ -89,6 +89,18 @@ public class EqualityAliasAnalysis implements AliasAnalysis {
         return false;
     }
 
+    // private Expression getAddress(Event e) {
+    //     if (e instanceof MemoryCoreEvent me) {
+    //         return me.getAddress();
+    //     } else if (e instanceof MemFree f) {
+    //         return f.getAddress();
+    //     } else if (e instanceof MemAlloc a) {
+    //         return a.getAllocatedObject();
+    //     } else {
+    //         throw new UnsupportedOperationException("Event type has no address: " + e.getClass().getSimpleName());
+    //     }
+    // }
+
     @Override
     public List<Integer> mayMixedSizeAccesses(MemoryCoreEvent event) {
         return config.defaultMayMixedSizeAccesses(event);

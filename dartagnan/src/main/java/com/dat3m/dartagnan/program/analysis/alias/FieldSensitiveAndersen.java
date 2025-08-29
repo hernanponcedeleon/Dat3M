@@ -126,7 +126,7 @@ public class FieldSensitiveAndersen implements AliasAnalysis {
             return;
         }
         final List<MemoryCoreEvent> events = eventAddressSpaceMap.keySet().stream()
-                .filter(e -> !(e instanceof HeapAlloc) && !(e instanceof MemFree))
+                .filter(e -> !(e instanceof MemAlloc) && !(e instanceof MemFree))
                 .collect(toList());
         final List<Set<Integer>> offsets = new ArrayList<>();
         for (int i = 0; i < events.size(); i++) {
@@ -215,8 +215,8 @@ public class FieldSensitiveAndersen implements AliasAnalysis {
                 }
                 addAllAddresses(l, value.address());
             }
-        } else if (e instanceof HeapAlloc a) {
-            eventAddressSpaceMap.put(a, ImmutableSet.of(new Location(a.getAddress(), 0)));
+        } else if (e instanceof MemAlloc a) {
+            eventAddressSpaceMap.put(a, ImmutableSet.of(new Location(a.getAllocatedObject(), 0)));
         } else {
             // Special MemoryEvents that produce no values (e.g. SRCU) will just get skipped
         }
@@ -224,7 +224,7 @@ public class FieldSensitiveAndersen implements AliasAnalysis {
 
 
     protected void processRegs(Event e) {
-        if (!(e instanceof Local || e instanceof ThreadArgument || e instanceof HeapAlloc)) {
+        if (!(e instanceof Local || e instanceof ThreadArgument || e instanceof MemAlloc)) {
             return;
         }
         assert e instanceof RegWriter;
@@ -232,8 +232,8 @@ public class FieldSensitiveAndersen implements AliasAnalysis {
         final Expression expr;
         if (e instanceof Local local) {
             expr = local.getExpr();
-        } else if (e instanceof HeapAlloc alloc) {
-            expr = alloc.getAddress();
+        } else if (e instanceof MemAlloc alloc) {
+            expr = alloc.getAllocatedObject();
         } else {
             final ThreadArgument arg = (ThreadArgument) e;
             expr = arg.getCreator().getArguments().get(arg.getIndex());
@@ -274,7 +274,7 @@ public class FieldSensitiveAndersen implements AliasAnalysis {
     }
 
     protected void processResults(MemoryCoreEvent e) {
-        if (e instanceof HeapAlloc) {
+        if (e instanceof MemAlloc) {
             return;
         }
         ImmutableSet.Builder<Location> addresses = ImmutableSet.builder();

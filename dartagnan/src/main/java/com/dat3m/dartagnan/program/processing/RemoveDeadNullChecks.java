@@ -120,7 +120,7 @@ public class RemoveDeadNullChecks implements FunctionProcessor {
         }
 
         @Override
-        public Void visitMemAlloc(MemAlloc e) {
+        public Void visitAlloc(MemAlloc e) {
             final Sign sign = Sign.POS;
             signMap.compute(e.getResultRegister(), (key, s) -> s == null ? sign : Sign.meet(s, sign));
             return null;
