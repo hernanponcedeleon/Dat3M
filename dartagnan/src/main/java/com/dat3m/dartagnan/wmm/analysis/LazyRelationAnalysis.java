@@ -99,7 +99,6 @@ public class LazyRelationAnalysis extends NativeRelationAnalysis {
         private final AliasAnalysis alias;
         private final ReachingDefinitionsAnalysis definitions;
         private final Set<Event> visibleEvents;
-        private final Set<Event> memoryEvents;
 
         public LazyInitializer(VerificationTask task, Context context) {
             this.program = task.getProgram();
@@ -107,7 +106,6 @@ public class LazyRelationAnalysis extends NativeRelationAnalysis {
             this.alias = context.requires(AliasAnalysis.class);
             this.definitions = context.requires(ReachingDefinitionsAnalysis.class);
             this.visibleEvents = new HashSet<>(program.getThreadEventsWithAllTags(VISIBLE));
-            this.memoryEvents = new HashSet<>(program.getThreadEventsWithAllTags(MEMORY));
         }
 
         public RelationAnalysis.Knowledge getKnowledge(Relation relation) {
@@ -302,6 +300,7 @@ public class LazyRelationAnalysis extends NativeRelationAnalysis {
         public RelationAnalysis.Knowledge visitAllocMem(AllocMem definition) {
             long start = System.currentTimeMillis();
             Set<Event> allocs = new HashSet<>(program.getThreadEventsWithAllTags(ALLOC));
+            Set<Event> memoryEvents = new HashSet<>(program.getThreadEventsWithAllTags(MEMORY));
             EventGraph may = new LazyEventGraph(allocs, memoryEvents, (e1, e2) ->
                     alias.mayObjectAlias((MemoryCoreEvent) e1, (MemoryCoreEvent) e2));
             EventGraph must = new LazyEventGraph(allocs, memoryEvents, (e1, e2) ->
@@ -363,6 +362,7 @@ public class LazyRelationAnalysis extends NativeRelationAnalysis {
         @Override
         public RelationAnalysis.Knowledge visitSameLocation(SameLocation definition) {
             long start = System.currentTimeMillis();
+            Set<Event> memoryEvents = new HashSet<>(program.getThreadEvents(MemoryCoreEvent.class));
             EventGraph may = new LazyEventGraph(memoryEvents, memoryEvents, (e1, e2) ->
                     !exec.areMutuallyExclusive(e1, e2) &&
                     alias.mayAlias((MemoryCoreEvent) e1, (MemoryCoreEvent) e2));
