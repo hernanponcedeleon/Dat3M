@@ -110,7 +110,12 @@ public class ExecutionModelManager {
 
     private void extractEvent(Event e, ThreadModel tm, int id) {
         EventModel em;
-        if (e instanceof MemoryCoreEvent memEvent) {
+        if (e instanceof MemAlloc alloc) {
+            final MemoryObjectModel mo = executionModel.getMemoryObjectModel(alloc.getAllocatedObject());
+            em = new MemAllocModel(alloc, tm, id, mo);
+        } else if (e instanceof MemFree free) {
+            em = new MemFreeModel(free, tm, id, new ValueModel(model.address(free).value()));
+        } else if (e instanceof MemoryCoreEvent memEvent) {
             ValueModel address = new ValueModel(model.address(memEvent).value());
             ValueModel value = new ValueModel(model.value(memEvent).value());
 
@@ -136,11 +141,6 @@ public class ExecutionModelManager {
             em = new LocalModel(local, tm, id, value);
         } else if (e instanceof CondJump cj) {
             em = new CondJumpModel(cj, tm, id);
-        } else if (e instanceof MemAlloc alloc) {
-            final MemoryObjectModel mo = executionModel.getMemoryObjectModel(alloc.getAllocatedObject());
-            em = new MemAllocModel(alloc, tm, id, mo);
-        } else if (e instanceof MemFree free) {
-            em = new MemFreeModel(free, tm, id, new ValueModel(model.address(free).value()));
         } else {
             // Should never happen.
             throw new IllegalArgumentException(String.format("Event %s should not be extracted", e));

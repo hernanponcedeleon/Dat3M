@@ -16,13 +16,14 @@ import org.sosy_lab.java_smt.api.BooleanFormula;
 
 import java.math.BigInteger;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 /*
     MemAlloc represents any dynamic allocation performed in the program, i.e., both heap and stack allocations.
     Each allocation has a type and an array size (equals 1 for simple allocations).
  */
-public final class MemAlloc extends GenericMemoryEvent implements RegWriter {
+public final class MemAlloc extends AbstractMemoryCoreEvent implements RegWriter {
     private Register resultRegister;
     private Type allocationType;
     private Expression arraySize;
@@ -35,7 +36,7 @@ public final class MemAlloc extends GenericMemoryEvent implements RegWriter {
 
     public MemAlloc(Register resultRegister, Type allocType, Expression arraySize, Expression alignment,
             boolean isHeapAllocation, boolean doesZeroOutMemory) {
-        super(resultRegister, "alloc");
+        super(resultRegister, TypeFactory.getInstance().getArchType());
         Preconditions.checkArgument(resultRegister.getType() == TypeFactory.getInstance().getPointerType());
         Preconditions.checkArgument(arraySize.getType() instanceof IntegerType);
         Preconditions.checkArgument(alignment.getType() instanceof IntegerType);
@@ -144,5 +145,10 @@ public final class MemAlloc extends GenericMemoryEvent implements RegWriter {
                 super.encodeExec(ctx),
                 ctx.getExpressionEncoder().equalAt(ctx.result(this), this, getAllocatedObject(), this)
         );
+    }
+
+    @Override
+    public List<MemoryAccess> getMemoryAccesses() {
+        return List.of(new MemoryAccess(address, accessType, MemoryAccess.Mode.OTHER));
     }
 }

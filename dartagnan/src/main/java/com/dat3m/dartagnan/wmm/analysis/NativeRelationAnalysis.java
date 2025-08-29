@@ -863,8 +863,8 @@ public class NativeRelationAnalysis implements RelationAnalysis {
             List<MemAlloc> allocs = program.getThreadEventsWithAllTags(ALLOC).stream()
                     .map(e -> (MemAlloc) e).collect(Collectors.toList());
             List<MemFree> frees = program.getThreadEvents(MemFree.class);
-            List<? extends GenericMemoryEvent> allocAndFrees = Stream.concat(allocs.stream(), frees.stream()).toList();
-            for (GenericMemoryEvent e1 : allocAndFrees) {
+            List<? extends MemoryCoreEvent> allocAndFrees = Stream.concat(allocs.stream(), frees.stream()).toList();
+            for (MemoryCoreEvent e1 : allocAndFrees) {
                 for (MemFree e2 : frees) {
                     if (alias.mayAlias(e1, e2)) {
                         may.add(e1, e2);
