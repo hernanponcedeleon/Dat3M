@@ -306,9 +306,6 @@ public class LazyRelationAnalysis extends NativeRelationAnalysis {
                     alias.mayObjectAlias((MemoryCoreEvent) e1, (MemoryCoreEvent) e2));
             EventGraph must = new LazyEventGraph(allocs, memoryEvents, (e1, e2) ->
                     alias.mustObjectAlias((MemoryCoreEvent) e1, (MemoryCoreEvent) e2));
-            RelationAnalysis.Knowledge base = nativeInitializer.visitLinuxCriticalSections(definition);
-            // EventGraph may = ImmutableMapEventGraph.from(base.getMaySet());
-            // EventGraph must = ImmutableMapEventGraph.from(base.getMustSet());
             time(definition, start, System.currentTimeMillis());
             return new RelationAnalysis.Knowledge(may, must);
         }
