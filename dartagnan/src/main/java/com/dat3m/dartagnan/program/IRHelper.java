@@ -40,6 +40,15 @@ public class IRHelper {
                 || e instanceof CondJump jump && jump.isGoto();
     }
 
+    public static boolean canBulkDelete(Set<Event> toBeDeleted) {
+        for (Event e : toBeDeleted) {
+            if (!toBeDeleted.containsAll(e.getUsers())) {
+                return false;
+            }
+        }
+        return true;
+    }
+
     public static Set<Event> bulkDelete(Set<Event> toBeDeleted) {
         final Set<Event> nonDeleted = new HashSet<>();
         for (Event e : toBeDeleted) {

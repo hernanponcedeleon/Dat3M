@@ -962,7 +962,7 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
                     k -> derive(newVariable("out" + writer.getGlobalId())));
             addInclude(result, includeEdge(writerVariable));
         }
-        return registerVariables.compute(writers, (k, v) -> derive(result));
+        return writers.isEmpty() ? derive(result) : registerVariables.compute(writers, (k, v) -> derive(result));
     }
 
     private DerivedVariable getOrNewVariable(List<IncludeEdge> edges, String name) {

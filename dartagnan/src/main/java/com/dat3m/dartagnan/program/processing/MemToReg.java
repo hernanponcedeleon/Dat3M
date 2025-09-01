@@ -8,6 +8,7 @@ import com.dat3m.dartagnan.expression.integers.IntBinaryOp;
 import com.dat3m.dartagnan.expression.integers.IntLiteral;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.program.Function;
+import com.dat3m.dartagnan.program.IRHelper;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.*;
 import com.dat3m.dartagnan.program.event.core.*;
@@ -76,7 +77,20 @@ public class MemToReg implements FunctionProcessor {
     private void promoteAll(Function function, Matcher matcher) {
         // Replace every unmarked address.
         final Map<RegWriter, Promotable> promotableObjects = collectPromotableObjects(function, matcher);
-        final Map<Event, List<Event>> updates = new HashMap<>(Maps.toMap(promotableObjects.keySet(), k -> List.of()));
+        final Map<Event, List<Event>> updates = new HashMap<>();
+
+        // Compute replacement of allocation sites:
+        for (final Map.Entry<RegWriter, Promotable> entry : promotableObjects.entrySet()) {
+            final Alloc alloc = (Alloc) entry.getKey();
+            final List<Event> replacement = alloc.doesZeroOutMemory() ?
+                    entry.getValue().replacingRegisters.values().stream()
+                            .map(reg -> (Event) EventFactory.newLocal(reg, expressions.makeGeneralZero(reg.getType())))
+                            .toList()
+                    : List.of();
+            replacement.forEach(e -> e.copyAllMetadataFrom(alloc));
+            updates.put(alloc, replacement);
+        }
+
         // Mark all loads and stores to replaceable storage.
         updates.putAll(Maps.transformEntries(matcher.accesses, (k, v) -> promoteAccess(k, v, promotableObjects)));
         // Mark involved local GEP assignments.
@@ -88,7 +102,7 @@ public class MemToReg implements FunctionProcessor {
         updates.values().removeIf(Objects::isNull);
         // If some events cannot be removed, give up.
         //TODO Build a dependency graph and replace the events that can be removed.
-        if (updates.keySet().stream().anyMatch(e -> !e.getUsers().isEmpty())) {
+        if (!IRHelper.canBulkDelete(updates.keySet())) {
             logger.warn("Could not remove events, because some are still used.");
             return;
         }
@@ -222,9 +236,6 @@ public class MemToReg implements FunctionProcessor {
     // Invariant: hint != null && !hint.isEmpty()
     private record AddressOffsetSet(Set<RegWriter> hint) implements AddressOffsets {}
 
-    // Invariant: register != null
-    private record RegisterOffset(Register register, long offset) {}
-
     // Checks if mixed-size accesses to a promotable object were collected.
     private static boolean hasMixedAccesses(Set<Field> registerTypes) {
         final List<Field> registerTypeList = List.copyOf(registerTypes);
@@ -280,10 +291,7 @@ public class MemToReg implements FunctionProcessor {
                 return null;
             }
             final Register register = assignment.getResultRegister();
-            final RegisterOffset expression = matchGEP(assignment.getExpr());
-            assert expression == null || expression.register != null;
-            final AddressOffset valueBase = expression == null ? null : stateIfUnique(expression.register);
-            final AddressOffset value = valueBase == null ? null : valueBase.increase(expression.offset);
+            final AddressOffset value = computeAddressOffsetFromState(assignment.getExpr());
             // If too complex, treat like a global address.
             if (value == null) {
                 publishRegisters(assignment.getExpr().getRegs());
@@ -300,14 +308,13 @@ public class MemToReg implements FunctionProcessor {
             }
             // Each path must update state and accesses.
             final Register register = load.getResultRegister();
-            final RegisterOffset addressExpression = matchGEP(load.getAddress());
-            final AddressOffset address = toAddressOffset(addressExpression);
+            final AddressOffset address = computeAddressOffsetFromState(load.getAddress());
             final boolean isDeletable = load.getUsers().isEmpty();
             // If too complex, treat like global address.
             if (address == null || !isDeletable) {
                 publishRegisters(load.getAddress().getRegs());
             }
-            final AddressOffset value = address == null ? null : stateIfUnique(address);
+            final AddressOffsets value = address == null ? null : state.get(address);
             update(accesses, load, address);
             update(state, register, value);
             return null;
@@ -319,18 +326,15 @@ public class MemToReg implements FunctionProcessor {
                 return null;
             }
             // Each path must update state and accesses.
-            final RegisterOffset addressExpression = matchGEP(store.getAddress());
-            final AddressOffset address = toAddressOffset(addressExpression);
-            final RegisterOffset valueExpression = matchGEP(store.getMemValue());
-            assert valueExpression == null || valueExpression.register != null;
-            final AddressOffset value = valueExpression == null ? null : stateIfUnique(valueExpression.register);
+            final AddressOffset address = computeAddressOffsetFromState(store.getAddress());
+            final AddressOffset value = computeAddressOffsetFromState(store.getMemValue());
             final boolean isDeletable = store.getUsers().isEmpty();
             // On complex address expression, give up on any address that could contribute here.
             if (address == null || !isDeletable) {
                 publishRegisters(store.getAddress().getRegs());
             }
             // On ambiguous address, give up on any address that could be stored here.
-            if (address == null || valueExpression == null || !isDeletable) {
+            if (address == null || value == null || !isDeletable) {
                 publishRegisters(store.getMemValue().getRegs());
             }
             update(accesses, store, address);
@@ -392,10 +396,6 @@ public class MemToReg implements FunctionProcessor {
             return null;
         }
 
-        private AddressOffset stateIfUnique(Object key) {
-            return state.get(key) instanceof AddressOffset o ? o : null;
-        }
-
         private void publishRegisters(Set<Register> registers) {
             final var queue = new ArrayDeque<RegWriter>();
             for (final Register register : registers) {
@@ -416,7 +416,10 @@ public class MemToReg implements FunctionProcessor {
             }
         }
 
-        private AddressOffset toAddressOffset(RegisterOffset gep) {
+        private record RegisterOffset(Register register, long offset) {}
+
+        private AddressOffset computeAddressOffsetFromState(Expression expression) {
+            final RegisterOffset gep = matchGEP(expression);
             assert gep == null || gep.register != null;
             final AddressOffsets element = gep == null ? null : state.get(gep.register);
             return element instanceof AddressOffset base ? base.increase(gep.offset) : null;

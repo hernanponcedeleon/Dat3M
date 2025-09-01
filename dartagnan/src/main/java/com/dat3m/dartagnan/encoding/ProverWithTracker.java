@@ -1,5 +1,9 @@
 package com.dat3m.dartagnan.encoding;
 
+import com.google.common.collect.ImmutableMap;
+import org.sosy_lab.java_smt.api.*;
+import org.sosy_lab.java_smt.api.SolverContext.ProverOptions;
+
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -8,16 +12,7 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
-
-import org.sosy_lab.java_smt.api.*;
-import org.sosy_lab.java_smt.api.SolverContext.ProverOptions;
-
-import com.google.common.collect.ImmutableMap;
+import java.util.*;
 
 public class ProverWithTracker implements ProverEnvironment {
 
@@ -174,7 +169,6 @@ public class ProverWithTracker implements ProverEnvironment {
             try (FileWriter writer = new FileWriter(file, true);
                     PrintWriter printer = new PrintWriter(writer)) {
                 printer.append(removeDuplicatedDeclarations(content));
-                printer.close();
             } catch (IOException e) {
                 e.printStackTrace();
             }
@@ -193,7 +187,7 @@ public class ProverWithTracker implements ProverEnvironment {
             if(line.contains("declare-fun") && !declarations.add(line)) {
                 continue;
             }
-            builder.append(line + "\n");
+            builder.append(line).append("\n");
         }
         return builder;
     }
