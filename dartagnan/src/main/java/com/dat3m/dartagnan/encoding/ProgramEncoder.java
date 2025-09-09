@@ -6,8 +6,8 @@ import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.integers.IntLiteral;
 import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
-import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.*;
+import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.analysis.BranchEquivalence;
 import com.dat3m.dartagnan.program.analysis.ExecutionAnalysis;
 import com.dat3m.dartagnan.program.analysis.ReachingDefinitionsAnalysis;
@@ -440,7 +440,10 @@ public class ProgramEncoder implements Encoder {
                 final Expression zero = exprs.makeValue(BigInteger.ZERO, archType);
                 final Expression one = exprs.makeValue(BigInteger.ONE, archType);
 
-                size = exprs.makeITE(exec, cur.size(), zero);
+                // NOTE: If we know the size/alignment of the allocation, we can pre-reserve memory space.
+                // This improves performance.
+                // We could also do this if the size is unknown but has a known upper bound.
+                size = cur.hasKnownSize() ? cur.size() : exprs.makeITE(exec, cur.size(), zero);
                 alignment = cur.hasKnownAlignment() ? cur.alignment() : exprs.makeITE(exec, cur.alignment(), one);
             }
 
