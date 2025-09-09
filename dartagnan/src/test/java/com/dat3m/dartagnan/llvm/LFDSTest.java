@@ -77,8 +77,8 @@ public class LFDSTest extends AbstractCTest {
                 // These are simplified from the actual C-code in benchmarks/lfds
                 // and contain fewer calls to push to improve verification time
                 // We only have two instances to make the CI faster
-                //{"safe_stack", TSO, FAIL},
-                //{"safe_stack", ARM8, FAIL},
+                {"safe_stack", TSO, FAIL},
+                {"safe_stack", ARM8, FAIL},
                 {"hash_table", TSO, PASS},
                 {"hash_table", ARM8, PASS},
                 {"hash_table", POWER, PASS},
