@@ -11,6 +11,7 @@ import com.dat3m.dartagnan.expression.booleans.BoolUnaryExpr;
 import com.dat3m.dartagnan.expression.booleans.BoolUnaryOp;
 import com.dat3m.dartagnan.expression.integers.*;
 import com.dat3m.dartagnan.expression.misc.ITEExpr;
+import com.dat3m.dartagnan.expression.pointer.*;
 import com.dat3m.dartagnan.expression.type.*;
 import com.dat3m.dartagnan.expression.utils.ExpressionHelper;
 import com.dat3m.dartagnan.program.Register;
@@ -176,6 +177,15 @@ public class ExpressionEncoder {
             assert typedFormula.getType() == expression.getType();
             assert typedFormula.formula() instanceof IntegerFormula || typedFormula.formula() instanceof BitvectorFormula;
             return (TypedFormula<IntegerType, ?>) typedFormula;
+        }
+
+        @SuppressWarnings("unchecked")
+        public TypedFormula<PointerType, ?> encodePointerExpr(Expression expression) {
+            checkArgument(expression.getType() instanceof PointerType);
+            final TypedFormula<?, ?> typedFormula = encode(expression);
+            assert typedFormula.type() == expression.getType();
+            assert typedFormula.formula() instanceof IntegerFormula || typedFormula.formula() instanceof BitvectorFormula;
+            return (TypedFormula<PointerType, ?>) typedFormula;
         }
 
         @SuppressWarnings("unchecked")
@@ -492,6 +502,87 @@ public class ExpressionEncoder {
             return new TypedFormula<>(expr.getType(), enc);
         }
 
+
+        // ====================================================================================
+        // Pointers
+
+        @Override
+        public TypedFormula<PointerType, ?> visitPointerAddExpression(PointerAddExpr expr) {
+            final TypedFormula<PointerType, ?> base = encodePointerExpr(expr.getBase());
+            final TypedFormula<IntegerType, ?> offset = encodeIntegerExpr(expr.getOffset());
+
+            if (context.useIntegers) {
+                final IntegerFormula baseForm = (IntegerFormula) base.formula();
+                final IntegerFormula offsetForm = (IntegerFormula) offset.formula();
+
+                return new TypedFormula<>(base.getType(), integerFormulaManager().add(baseForm, offsetForm));
+            } else {
+                final BitvectorFormula baseForm = (BitvectorFormula) base.formula();
+                final BitvectorFormula offsetForm = (BitvectorFormula) offset.formula();
+
+                return new TypedFormula<>(base.getType(), bitvectorFormulaManager().add(baseForm, offsetForm));
+            }
+
+        }
+
+        @Override
+        public TypedFormula<IntegerType, ?> visitPtrToIntCastExpression(PtrToIntCast expr) {
+            final TypedFormula<PointerType, ?> ptr = encodePointerExpr(expr.getOperand());
+            return new TypedFormula<>(expr.getType(), ptr.formula());
+
+        }
+
+        @Override
+        public TypedFormula<PointerType, ?> visitIntToPtrCastExpression(IntToPtrCast expr) {
+            final TypedFormula<IntegerType, ?> address = encodeIntegerExpr(expr.getOperand());
+            return new TypedFormula<>(expr.getType(), address.formula());
+        }
+
+        @Override
+        public TypedFormula<BooleanType, BooleanFormula> visitPtrCmpExpression(PtrCmpExpr expr) {
+            if (context.useIntegers) {
+                final var left = (TypedFormula<PointerType, IntegerFormula>) encodePointerExpr(expr.getLeft());
+                final var right = (TypedFormula<PointerType, IntegerFormula>) encodePointerExpr(expr.getRight());
+
+                final IntegerFormulaManager imgr = integerFormulaManager();
+                final BooleanFormula result = switch (expr.getKind()) {
+                    case EQ -> imgr.equal(left.formula(), right.formula());
+                    case NEQ -> bmgr.not(fmgr.equal(left.formula(), right.formula()));
+                    case LT -> imgr.lessThan(left.formula(), right.formula());
+                    case LTE -> imgr.lessOrEquals(left.formula(), right.formula());
+                    case GT -> imgr.greaterThan(left.formula(), right.formula());
+                    case GTE -> imgr.greaterOrEquals(left.formula(), right.formula());
+                };
+                return new TypedFormula<>(types.getBooleanType(), result);
+            }else{
+                final var left = (TypedFormula<PointerType, BitvectorFormula>) encodePointerExpr(expr.getLeft());
+                final var right = (TypedFormula<PointerType, BitvectorFormula>) encodePointerExpr(expr.getRight());
+                final BitvectorFormulaManager bvgr = bitvectorFormulaManager();
+                final BooleanFormula result = switch (expr.getKind()) {
+                    case EQ -> bvgr.equal(left.formula(), right.formula());
+                    case NEQ -> bmgr.not(fmgr.equal(left.formula(), right.formula()));
+                    case LT -> bvgr.lessThan(left.formula(), right.formula(),false);
+                    case LTE -> bvgr.lessOrEquals(left.formula(), right.formula(),false);
+                    case GT -> bvgr.greaterThan(left.formula(), right.formula(),false);
+                    case GTE -> bvgr.greaterOrEquals(left.formula(), right.formula(),false);
+                };
+                return new TypedFormula<>(types.getBooleanType(), result);
+        }
+            }
+
+        @Override
+        public TypedFormula<PointerType, ?> visitNullLiteral(NullLiteral lit) {
+            final Formula zero = context.useIntegers
+                    ? integerFormulaManager().makeNumber(0)
+                    : bitvectorFormulaManager().makeBitvector(types.getArchType().getBitWidth(), 0);
+
+            return new TypedFormula<>(lit.getType(), zero);
+        }
+
+
+
+
+
         // ====================================================================================
         // Aggregates
 
@@ -562,7 +653,8 @@ public class ExpressionEncoder {
 
         @Override
         public TypedFormula<?, ?> visitMemoryObject(MemoryObject memObj) {
-            return makeVariable(String.format("addrof(%s)", memObj), memObj.getType());
+            Formula result = makeVariable(String.format("addrof(%s)", memObj), memObj.getType()).formula();
+            return new TypedFormula<>(memObj.getType(), result);
         }
 
         @Override
