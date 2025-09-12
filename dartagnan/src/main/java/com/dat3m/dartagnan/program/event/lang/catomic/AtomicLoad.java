@@ -25,7 +25,7 @@ public class AtomicLoad extends LoadBase {
 
     @Override
     public String defaultString() {
-        return String.format("%s = atomic_load(%s, %s)\t### C11", resultRegister, address, mo);
+        return String.format("%s = atomic_load(%s, %s)", resultRegister, address, mo);
     }
 
     @Override

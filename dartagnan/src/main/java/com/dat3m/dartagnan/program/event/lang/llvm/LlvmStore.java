@@ -23,7 +23,7 @@ public class LlvmStore extends StoreBase {
 
     @Override
     public String defaultString() {
-        return "llvm_store(" + address + ", " + value + ", " + mo + ")\t### LLVM";
+        return String.format("llvm_store(%s, %s, %s)", address, value, mo);
     }
 
     @Override

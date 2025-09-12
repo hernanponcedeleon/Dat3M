@@ -18,7 +18,7 @@ public class LKMMXchg extends RMWXchgBase {
 
     @Override
     public String defaultString() {
-        return String.format("%s = atomic_xchg%s(%s, %s)\t### LKMM",
+        return String.format("%s = atomic_xchg%s(%s, %s)",
                 resultRegister, Tag.Linux.toText(mo), address, storeValue);
     }
 

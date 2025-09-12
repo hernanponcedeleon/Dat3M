@@ -23,7 +23,7 @@ public class AtomicStore extends StoreBase {
 
     @Override
     public String defaultString() {
-        return String.format("atomic_store(%s, %s, %s)\t### C11", address, value, mo);
+        return String.format("atomic_store(%s, %s, %s)", address, value, mo);
     }
 
     @Override

@@ -18,7 +18,7 @@ public class LKMMStore extends StoreBase {
     @Override
     public String defaultString() {
         if (mo.equals(Tag.Linux.MO_ONCE)) {
-            return "STORE_ONCE(" + address + ", " + value + ")\t### LKMM";
+            return "STORE_ONCE(" + address + ", " + value + ")";
         }
         return super.defaultString();
     }
