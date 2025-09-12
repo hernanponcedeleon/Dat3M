@@ -1,5 +1,8 @@
 package com.dat3m.dartagnan.utils.printer;
 
+import com.dat3m.dartagnan.configuration.OptionNames;
+import com.dat3m.dartagnan.expression.ExpressionPrinter;
+import com.dat3m.dartagnan.expression.booleans.BoolLiteral;
 import com.dat3m.dartagnan.program.*;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.Event;
@@ -8,43 +11,72 @@ import com.dat3m.dartagnan.program.event.core.annotations.CodeAnnotation;
 import com.dat3m.dartagnan.program.memory.Memory;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.dat3m.dartagnan.program.misc.NonDetValue;
+import org.sosy_lab.common.configuration.Configuration;
+import org.sosy_lab.common.configuration.InvalidConfigurationException;
+import org.sosy_lab.common.configuration.Option;
+import org.sosy_lab.common.configuration.Options;
 
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+@Options
 public class Printer {
 
     // =========================== Configurables ===========================
-    // TODO: Maybe use Configuration with proper @Option tags
-
     public enum Mode {
         THREADS,
         FUNCTIONS,
         ALL;
 
-        private boolean includesThreads() {
-            return this == THREADS || this == ALL;
-        }
-
-        private boolean includesFunctions() {
-            return this == FUNCTIONS || this == ALL;
-        }
+        private boolean includesThreads() { return this == THREADS || this == ALL; }
+        private boolean includesFunctions() { return this == FUNCTIONS || this == ALL; }
     }
 
     private Mode mode = Mode.ALL;
-    private boolean showInitThreads = false;
-    private boolean showAnnotationEvents = true;
-    private boolean showDynamicMemoryAllocations = true;
-    private boolean showProgramConstants = false;
-
-    public Printer setShowInitThreads(boolean flag) {
-        this.showInitThreads = flag;
-        return this;
-    }
-
     public Printer setMode(Mode mode) {
         this.mode = mode;
         return this;
+    }
+
+    @Option(name = OptionNames.PRINTER_SHOW_INIT_THREADS,
+            description = "Print init threads (default: false)",
+            secure = true)
+    private boolean showInitThreads = false;
+
+    @Option(name = OptionNames.PRINTER_SHOW_ANNOTATIONS,
+            description = "Print annotation events (default: true)",
+            secure = true)
+    private boolean showAnnotationEvents = true;
+
+    @Option(name = OptionNames.PRINTER_SHOW_DYNAMIC_ALLOCATIONS,
+            description = "Print dynamic allocations (default: true)",
+            secure = true)
+    private boolean showDynamicAllocations = true;
+
+    @Option(name = OptionNames.PRINTER_SHOW_PROGRAM_CONSTANTS,
+            description = "Print non-deterministic program constants (default: false)",
+            secure = true)
+    private boolean showProgramConstants = false;
+
+    @Option(name = OptionNames.PRINTER_SHOW_SPECIFICATION,
+            description = "Print program specification and filter (default: false)",
+            secure = true)
+    private boolean showSpecification = false;
+
+    // =================================================================================
+
+    private Printer() { }
+
+    private Printer(Configuration configuration) throws InvalidConfigurationException {
+        configuration.inject(this);
+    }
+
+    public static Printer newInstance() {
+        return new Printer();
+    }
+
+    public static Printer fromConfig(Configuration config) throws InvalidConfigurationException {
+        return new Printer(config);
     }
 
     // =================================================================================
@@ -69,6 +101,11 @@ public class Printer {
         // ----- Program body -----
         appendMainBody(program, result);
 
+        // ----- Specification -----
+        if (showSpecification) {
+            appendSpecification(program, result);
+        }
+
         return result.toString();
     }
 
@@ -84,13 +121,12 @@ public class Printer {
     // Program constants
 
     private void appendProgramConstants(Program program, StringBuilder result) {
-        result.append("Constants:");
+        result.append("Non-deterministic constants:");
 
         for (NonDetValue constant : program.getConstants()) {
             result.append("\n").append(constant);
         }
     }
-
 
     // -------------------------------------------------------------------------------------------
     // Memory
@@ -134,7 +170,7 @@ public class Printer {
 
 
     private boolean showMemoryObject(MemoryObject obj){
-        return showDynamicMemoryAllocations || obj.isStaticallyAllocated();
+        return showDynamicAllocations || obj.isStaticallyAllocated();
     }
 
     // -------------------------------------------------------------------------------------------
@@ -149,11 +185,7 @@ public class Printer {
             }
 
             if (!showInitThreads && !program.getThreads().isEmpty()) {
-                result.append("\nSkipping init threads...");
-                result.append("\n...");
-                result.append("\n...");
-                result.append("\n...");
-                result.append("\n");
+                result.append("\n... omitted init threads ...\n");
             }
         }
 
@@ -206,6 +238,25 @@ public class Printer {
 
     private boolean showEvent(Event event) {
         return (showAnnotationEvents || !(event instanceof CodeAnnotation));
+    }
+
+    // -------------------------------------------------------------------------------------------
+    // Specification
+
+    private static void appendSpecification(Program program, StringBuilder result) {
+        final ExpressionPrinter expressionPrinter = new ExpressionPrinter(true);
+
+        if (program.getSpecification() != null) {
+            result.append("\nSpecification:\n")
+                    .append(program.getSpecificationType()).append(" ")
+                    .append(program.getSpecification().accept(expressionPrinter))
+                    .append("\n");
+        }
+
+        if (!(program.getFilterSpecification() instanceof BoolLiteral c && c.getValue())) {
+            result.append("\nFilter specification:\n")
+                    .append(program.getFilterSpecification().accept(expressionPrinter));
+        }
     }
 
     // ------------------------------------------------------------------------
