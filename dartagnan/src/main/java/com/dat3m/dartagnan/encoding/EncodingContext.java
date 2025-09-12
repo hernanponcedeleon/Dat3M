@@ -201,6 +201,8 @@ public final class EncodingContext {
 
     public TypedFormula<?, ?> address(MemoryObject memoryObject) { return objAddress.get(memoryObject); }
 
+    // NOTE: This formula represents the size of successfully allocated memory objects.
+    // For non-allocated memory objects, the size may be any non-negative value.
     public TypedFormula<IntegerType, ?> size(MemoryObject memoryObject) {
         return objSize.get(memoryObject);
     }

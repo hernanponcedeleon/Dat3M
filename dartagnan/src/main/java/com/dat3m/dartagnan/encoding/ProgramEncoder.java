@@ -431,7 +431,7 @@ public class ProgramEncoder implements Encoder {
 
             final Expression size;
             final Expression alignment;
-            // Encode size & compute alignment
+            // Compute size & alignment expressions
             if (cur.isStaticallyAllocated()) {
                 size = cur.size();
                 alignment = cur.alignment();
@@ -440,8 +440,8 @@ public class ProgramEncoder implements Encoder {
                 final Expression zero = exprs.makeValue(BigInteger.ZERO, archType);
                 final Expression one = exprs.makeValue(BigInteger.ONE, archType);
 
-                // NOTE: If we know the size/alignment of the allocation, we can pre-reserve memory space.
-                // This improves performance.
+                // NOTE: If we know the size/alignment of the allocation, we can pre-reserve memory space,
+                // even if the allocation does not get executed. This improves performance.
                 // We could also do this if the size is unknown but has a known upper bound.
                 size = cur.hasKnownSize() ? cur.size() : exprs.makeITE(exec, cur.size(), zero);
                 alignment = cur.hasKnownAlignment() ? cur.alignment() : exprs.makeITE(exec, cur.alignment(), one);
@@ -454,6 +454,7 @@ public class ProgramEncoder implements Encoder {
                         : exprEnc.equalAt(a, alloc, b, alloc);
             };
 
+            // Encode size
             enc.add(equate.apply(sizeVar, size));
 
             // Encode address (we even give non-allocated objects a proper, well-aligned address)
@@ -467,6 +468,7 @@ public class ProgramEncoder implements Encoder {
                         exprs.makeSub(alignment, exprs.makeRem(nextAvailableAddr, alignment,  true))
                 );
 
+                // ... other objects are placed at the next well-aligned address that is available.
                 enc.add(equate.apply(addrVar, nextAlignedAddr));
             }
         }
