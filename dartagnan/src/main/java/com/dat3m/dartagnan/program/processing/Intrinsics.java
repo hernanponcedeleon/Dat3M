@@ -1609,8 +1609,8 @@ public class Intrinsics {
         final int typeSize = detectMixedSizeAccesses ? count : 1;
         for (int i = 0; i < count; i += typeSize) {
             final Expression offset = expressions.makeValue(i, types.getArchType());
-            final Expression srcAddr = expressions.makeAdd(src, offset);
-            final Expression destAddr = expressions.makeAdd(dest, offset);
+            final Expression srcAddr = expressions.makePtrAdd(src, offset);
+            final Expression destAddr = expressions.makePtrAdd(dest, offset);
             final Register reg = caller.getOrNewRegister("__memcpy_" + i, type);
 
             final Event load = EventFactory.newLoad(reg, srcAddr);
