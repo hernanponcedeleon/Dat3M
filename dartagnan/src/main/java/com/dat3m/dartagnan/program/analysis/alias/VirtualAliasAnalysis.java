@@ -22,9 +22,20 @@ public class VirtualAliasAnalysis implements AliasAnalysis {
     public boolean mayAlias(MemoryCoreEvent e1, MemoryCoreEvent e2) {
         return samePhysicalAddress(e1, e2) || wrappedAnalysis.mayAlias(e1, e2);
     }
+
     @Override
     public boolean mustAlias(MemoryCoreEvent e1, MemoryCoreEvent e2) {
         return samePhysicalAddress(e1, e2) || wrappedAnalysis.mustAlias(e1, e2);
+    }
+
+    @Override
+    public boolean mayObjectAlias(MemoryCoreEvent a, MemoryCoreEvent b) {
+        return true;
+    }
+
+    @Override
+    public boolean mustObjectAlias(MemoryCoreEvent a, MemoryCoreEvent b) {
+        return false;
     }
 
     @Override

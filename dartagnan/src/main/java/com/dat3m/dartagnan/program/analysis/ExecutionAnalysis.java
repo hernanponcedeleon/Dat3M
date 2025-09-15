@@ -75,7 +75,7 @@ class DefaultExecutionAnalysis implements ExecutionAnalysis {
             case OBE -> isSameThread(start, implied);
             case HSA_OBE -> (implied.getThread() == lowestIdThread || isSameThread(start, implied));
             case LOBE -> start.getThread().getId() >= implied.getThread().getId()
-                    && !IRHelper.isInitThread(start.getThread());
+                    && !IRHelper.isAuxiliaryThread(start.getThread());
             case UNFAIR -> strongestImplication; // FALSE
         };
         return implication;

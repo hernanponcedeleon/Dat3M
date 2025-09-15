@@ -8,7 +8,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import static com.dat3m.dartagnan.program.IRHelper.isInitThread;
+import static com.dat3m.dartagnan.program.IRHelper.isAuxiliaryThread;
 
 public interface ThreadHierarchy {
     String getScope();
@@ -47,7 +47,7 @@ public interface ThreadHierarchy {
     }
 
     static ThreadHierarchy from(Program program) {
-        final List<Thread> threads = program.getThreads().stream().filter(t -> !isInitThread(t)).toList();
+        final List<Thread> threads = program.getThreads().stream().filter(t -> !isAuxiliaryThread(t)).toList();
 
         final Group root = new Group("__root", 0, null, new ArrayList<>());
         final List<String> scopes;

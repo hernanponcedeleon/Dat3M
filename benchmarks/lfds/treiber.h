@@ -10,13 +10,14 @@
 #define EMPTY -1
 
 typedef struct Node {
-	int val;
-	_Atomic(struct Node*) next;
+    int val;
+    _Atomic(struct Node*) next;
 } Node;
 
 struct {
     _Atomic(Node*) node;
 } TOP;
+
 
 void init() {
     atomic_init(&TOP.node, NULL);
@@ -47,7 +48,8 @@ int pop() {
         } else {
             z = atomic_load_explicit(&y->next, __ATOMIC_ACQUIRE);
             if (CAS(&TOP.node, &y, z)) {
-                // retire(y)
+                // retire(y);
+                free(y);
                 break;
             }
         }

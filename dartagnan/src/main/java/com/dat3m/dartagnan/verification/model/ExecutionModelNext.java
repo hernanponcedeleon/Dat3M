@@ -69,9 +69,10 @@ public class ExecutionModelNext {
     }
 
     public List<EventModel> getVisibleEventModels() {
-        return eventList.stream()
-                        .filter(e -> e instanceof MemoryEventModel || e instanceof GenericVisibleEventModel)
-                        .toList();
+        return eventList.stream().filter(e -> e instanceof MemoryEventModel ||
+                                              e instanceof GenericVisibleEventModel ||
+                                              e instanceof MemAllocModel ||
+                                              e instanceof MemFreeModel).toList();
     }
 
     public List<EventModel> getEventModelsByFilter(Filter filter) {
@@ -84,6 +85,10 @@ public class ExecutionModelNext {
 
     public EventModel getEventModelByEvent(Event event) {
         return eventMap.get(event);
+    }
+
+    public MemoryObjectModel getMemoryObjectModel(MemoryObject mo) {
+        return memoryLayoutMap.get(mo);
     }
 
     public Set<RelationModel> getRelationModels() {

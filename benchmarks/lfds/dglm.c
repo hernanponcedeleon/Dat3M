@@ -12,13 +12,13 @@ void *worker(void *arg)
 
     intptr_t index = ((intptr_t) arg);
 
-	enqueue(index);
+    enqueue(index);
     int r = dequeue();
 
-	assert(r != EMPTY);
-	data[r] = 1;
+    assert(r != EMPTY);
+    data[r] = 1;
 
-	return NULL;
+    return NULL;
 }
 
 int main()

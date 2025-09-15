@@ -9,9 +9,7 @@ import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.analysis.SyntacticContextAnalysis;
 import com.dat3m.dartagnan.program.event.MemoryEvent;
 import com.dat3m.dartagnan.program.event.RegWriter;
-import com.dat3m.dartagnan.program.event.core.Local;
-import com.dat3m.dartagnan.program.event.core.MemoryCoreEvent;
-import com.dat3m.dartagnan.program.event.core.Store;
+import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Supplier;
@@ -93,7 +91,19 @@ public class AndersenAliasAnalysis implements AliasAnalysis {
 
     @Override
     public boolean mustAlias(MemoryCoreEvent x, MemoryCoreEvent y) {
-        return getMaxAddressSet(x).size() == 1 && getMaxAddressSet(x).containsAll(getMaxAddressSet(y));
+        Set<Location> lx = getMaxAddressSet(x);
+        return lx.size() == 1 && lx.equals(getMaxAddressSet(y));
+    }
+
+    @Override
+    public boolean mayObjectAlias(MemoryCoreEvent a, MemoryCoreEvent b) {
+        return !Sets.intersection(getAccessibleObjects(a), getAccessibleObjects(b)).isEmpty();
+    }
+
+    @Override
+    public boolean mustObjectAlias(MemoryCoreEvent a, MemoryCoreEvent b) {
+        Set<MemoryObject> objsA = getAccessibleObjects(a);
+        return objsA.size() == 1 && objsA.equals(getAccessibleObjects(b));
     }
 
     @Override
@@ -106,8 +116,17 @@ public class AndersenAliasAnalysis implements AliasAnalysis {
         return IntStream.range(1, bytes).boxed().toList();
     }
 
-    private ImmutableSet<Location> getMaxAddressSet(MemoryEvent e) {
+    private ImmutableSet<Location> getMaxAddressSet(MemoryCoreEvent e) {
         return eventAddressSpaceMap.get(e);
+    }
+
+    private Set<MemoryObject> getAccessibleObjects(MemoryCoreEvent e) {
+        Set<MemoryObject> objs = new HashSet<>();
+        Set<Location> locs = getMaxAddressSet(e);
+        if (locs != null) {
+            locs.stream().forEach(l -> objs.add(l.base));
+        }
+        return objs;
     }
 
     // ================================ Mixed Size Access Detection ================================
@@ -116,7 +135,9 @@ public class AndersenAliasAnalysis implements AliasAnalysis {
         if (!config.detectMixedSizeAccesses) {
             return;
         }
-        final List<MemoryCoreEvent> events = List.copyOf(eventAddressSpaceMap.keySet());
+        final List<MemoryCoreEvent> events = eventAddressSpaceMap.keySet().stream()
+                .filter(e -> !(e instanceof MemAlloc) && !(e instanceof MemFree))
+                .collect(Collectors.toList());
         final List<Set<Integer>> offsets = new ArrayList<>();
         for (int i = 0; i < events.size(); i++) {
             final var set0 = new HashSet<Integer>();
@@ -171,6 +192,17 @@ public class AndersenAliasAnalysis implements AliasAnalysis {
     }
 
     private void processLocs(MemoryCoreEvent e) {
+        if (e instanceof MemFree) {
+            return;
+        }
+        if (e instanceof MemAlloc a) {
+            Register r = a.getResultRegister();
+            Location base = new Location(a.getAllocatedObject(), 0);
+            eventAddressSpaceMap.put(a, ImmutableSet.of(base));
+            addAddress(r, base);
+            variables.add(r);
+            return;
+        }
         Expression address = e.getAddress();
         // Collect for each v events of form: p = *v, *v = q
         if (address instanceof Register register) {
@@ -306,6 +338,9 @@ public class AndersenAliasAnalysis implements AliasAnalysis {
     }
 
     private void processResults(MemoryCoreEvent e) {
+        if (e instanceof MemAlloc) {
+            return;
+        }
         Expression address = e.getAddress();
         Set<Location> addresses;
         if (address instanceof Register) {

@@ -1,9 +1,7 @@
 package com.dat3m.dartagnan.verification.model;
 
 import com.dat3m.dartagnan.program.Thread;
-import com.dat3m.dartagnan.verification.model.event.EventModel;
-import com.dat3m.dartagnan.verification.model.event.GenericVisibleEventModel;
-import com.dat3m.dartagnan.verification.model.event.MemoryEventModel;
+import com.dat3m.dartagnan.verification.model.event.*;
 
 import java.util.Collections;
 import java.util.List;
@@ -40,8 +38,9 @@ public class ThreadModel {
     }
 
     public List<EventModel> getVisibleEventModels() {
-        return eventList.stream()
-                        .filter(e -> e instanceof MemoryEventModel || e instanceof GenericVisibleEventModel)
-                        .toList();
+        return eventList.stream().filter(e -> e instanceof MemoryEventModel ||
+                                              e instanceof GenericVisibleEventModel ||
+                                              e instanceof MemAllocModel ||
+                                              e instanceof MemFreeModel).toList();
     }
 }

@@ -33,4 +33,17 @@ acyclic (po | rf) as no-thin-air
 let conflict = ext & ((((W * _) | (_ * W)) & loc) \ ((IW * _) | (_ * IW)))
 let race = conflict \ (A * A) \ hb \ (hb^-1) 
 
-flag ~empty race as racy 
+flag ~empty race as racy
+
+(*
+ * Heap memory safety.
+ * Base relations:
+ * allocptr - relates (ALLOC | FREE) -> (FREE) when both events use the same pointer
+ * allocmem - relates (ALLOC) -> (M) when the second event accesses the memory allocated by the first event
+ *)
+flag ~empty (((ALLOC * FREE) & allocptr) \ hb) as alloc-race
+flag ~empty (((FREE * FREE) \ id) & allocptr) as double-free
+flag ~empty ([FREE] \ [range(allocptr & (ALLOC * FREE))]) as free-without-alloc
+flag ~empty (allocmem \ hb) as use-before-alloc
+flag ~empty ((allocmem^-1 ; (allocptr & (ALLOC * FREE))) \ hb) as use-after-free
+flag ~empty [domain(ALLOC * TERMINATION)] \ [domain(allocptr)] as alloc-without-free

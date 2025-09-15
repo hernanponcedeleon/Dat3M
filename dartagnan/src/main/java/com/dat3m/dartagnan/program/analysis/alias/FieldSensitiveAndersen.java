@@ -95,7 +95,18 @@ public class FieldSensitiveAndersen implements AliasAnalysis {
     @Override
     public boolean mustAlias(MemoryCoreEvent x, MemoryCoreEvent y) {
         Set<Location> a = getMaxAddressSet(x);
-        return a.size() == 1 && a.containsAll(getMaxAddressSet(y));
+        return a.size() == 1 && a.equals(getMaxAddressSet(y));
+    }
+
+    @Override
+    public boolean mayObjectAlias(MemoryCoreEvent a, MemoryCoreEvent b) {
+        return !Sets.intersection(getAccessibleObjects(a), getAccessibleObjects(b)).isEmpty();
+    }
+
+    @Override
+    public boolean mustObjectAlias(MemoryCoreEvent a, MemoryCoreEvent b) {
+        Set<MemoryObject> objsA = getAccessibleObjects(a);
+        return objsA.size() == 1 && objsA.equals(getAccessibleObjects(b));
     }
 
     @Override
@@ -114,7 +125,9 @@ public class FieldSensitiveAndersen implements AliasAnalysis {
         if (!config.detectMixedSizeAccesses) {
             return;
         }
-        final List<MemoryCoreEvent> events = List.copyOf(eventAddressSpaceMap.keySet());
+        final List<MemoryCoreEvent> events = eventAddressSpaceMap.keySet().stream()
+                .filter(e -> !(e instanceof MemAlloc) && !(e instanceof MemFree))
+                .collect(toList());
         final List<Set<Integer>> offsets = new ArrayList<>();
         for (int i = 0; i < events.size(); i++) {
             final var set0 = new HashSet<Integer>();
@@ -150,6 +163,15 @@ public class FieldSensitiveAndersen implements AliasAnalysis {
 
     private ImmutableSet<Location> getMaxAddressSet(MemoryCoreEvent e) {
         return eventAddressSpaceMap.get(e);
+    }
+
+    private Set<MemoryObject> getAccessibleObjects(MemoryCoreEvent e) {
+        Set<MemoryObject> objs = new HashSet<>();
+        Set<Location> locs = getMaxAddressSet(e);
+        if (locs != null) {
+            locs.stream().forEach(l -> objs.add(l.base));
+        }
+        return objs;
     }
 
     // ================================ Processing ================================
@@ -193,6 +215,8 @@ public class FieldSensitiveAndersen implements AliasAnalysis {
                 }
                 addAllAddresses(l, value.address());
             }
+        } else if (e instanceof MemAlloc a) {
+            eventAddressSpaceMap.put(a, ImmutableSet.of(new Location(a.getAllocatedObject(), 0)));
         } else {
             // Special MemoryEvents that produce no values (e.g. SRCU) will just get skipped
         }
@@ -200,7 +224,7 @@ public class FieldSensitiveAndersen implements AliasAnalysis {
 
 
     protected void processRegs(Event e) {
-        if (!(e instanceof Local || e instanceof ThreadArgument || e instanceof Alloc)) {
+        if (!(e instanceof Local || e instanceof ThreadArgument || e instanceof MemAlloc)) {
             return;
         }
         assert e instanceof RegWriter;
@@ -208,7 +232,7 @@ public class FieldSensitiveAndersen implements AliasAnalysis {
         final Expression expr;
         if (e instanceof Local local) {
             expr = local.getExpr();
-        } else if (e instanceof Alloc alloc) {
+        } else if (e instanceof MemAlloc alloc) {
             expr = alloc.getAllocatedObject();
         } else {
             final ThreadArgument arg = (ThreadArgument) e;
@@ -250,6 +274,9 @@ public class FieldSensitiveAndersen implements AliasAnalysis {
     }
 
     protected void processResults(MemoryCoreEvent e) {
+        if (e instanceof MemAlloc) {
+            return;
+        }
         ImmutableSet.Builder<Location> addresses = ImmutableSet.builder();
         Collector collector = new Collector(e.getAddress());
         addresses.addAll(collector.address());

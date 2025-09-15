@@ -5,7 +5,7 @@ import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.Type;
 import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
-import com.dat3m.dartagnan.program.event.core.Alloc;
+import com.dat3m.dartagnan.program.event.core.MemAlloc;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
 
@@ -47,7 +47,7 @@ public class Memory {
     }
 
     // Generates a new, dynamically allocated memory object.
-    public MemoryObject allocate(Alloc allocationSite) {
+    public MemoryObject allocate(MemAlloc allocationSite) {
         Preconditions.checkNotNull(allocationSite);
         final MemoryObject memoryObject = new MemoryObject(nextIndex++, allocationSite.getAllocationSize(),
                 allocationSite.getAlignment(), allocationSite, ptrType);

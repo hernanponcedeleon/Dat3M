@@ -4,9 +4,8 @@ import com.dat3m.dartagnan.configuration.Alias;
 import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.program.Program;
-import com.dat3m.dartagnan.program.event.MemoryEvent;
-import com.dat3m.dartagnan.program.event.core.Init;
-import com.dat3m.dartagnan.program.event.core.MemoryCoreEvent;
+import com.dat3m.dartagnan.program.Thread;
+import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.event.metadata.SourceLocation;
 import com.dat3m.dartagnan.utils.Utils;
 import com.dat3m.dartagnan.verification.Context;
@@ -23,6 +22,7 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static com.dat3m.dartagnan.GlobalSettings.getOrCreateOutputDirectory;
 import static com.dat3m.dartagnan.configuration.OptionNames.*;
@@ -34,6 +34,10 @@ public interface AliasAnalysis {
     boolean mustAlias(MemoryCoreEvent a, MemoryCoreEvent b);
 
     boolean mayAlias(MemoryCoreEvent a, MemoryCoreEvent b);
+
+    boolean mustObjectAlias(MemoryCoreEvent a, MemoryCoreEvent b);
+
+    boolean mayObjectAlias(MemoryCoreEvent a, MemoryCoreEvent b);
 
     /**
      * Returns an overapproximation of the MSA points in the byte range of the specified event.
@@ -141,6 +145,16 @@ public interface AliasAnalysis {
         }
 
         @Override
+        public boolean mustObjectAlias(MemoryCoreEvent a, MemoryCoreEvent b) {
+            return a1.mustObjectAlias(a, b) || a2.mustObjectAlias(a, b);
+        }
+
+        @Override
+        public boolean mayObjectAlias(MemoryCoreEvent a, MemoryCoreEvent b) {
+            return a1.mayObjectAlias(a, b) && a2.mayObjectAlias(a, b);
+        }
+
+        @Override
         public List<Integer> mayMixedSizeAccesses(MemoryCoreEvent a) {
             final List<Integer> set1 = a1.mayMixedSizeAccesses(a);
             final List<Integer> set2 = a2.mayMixedSizeAccesses(a);
@@ -163,39 +177,103 @@ public interface AliasAnalysis {
         return null;
     }
 
-    private Graphviz defaultGraph(Program program, Config configuration) {
-        // Nodes represent sets of events.
-        // A solid line marks the existence of events that must alias.
-        // A dashed line marks the existence of events that may alias.
-        final Map<String, Set<String>> mayGraph = new HashMap<>();
-        final Map<String, Set<String>> mustGraph = new HashMap<>();
-        final List<MemoryCoreEvent> events = program.getThreadEvents(MemoryCoreEvent.class);
-        for (final MemoryCoreEvent event1 : events) {
+    private void populateAddressGraph(Map<String, Set<String>> may, Map<String, Set<String>> must,
+            List<? extends MemoryCoreEvent> list1, List<? extends MemoryCoreEvent> list2,
+            Config configuration) {
+        for (final MemoryCoreEvent event1 : list1) {
             final String node1 = repr(event1, configuration);
             if (node1 == null) {
                 continue;
             }
-            final Set<String> maySet = mayGraph.computeIfAbsent(node1, k -> new HashSet<>());
-            final Set<String> mustSet = mustGraph.computeIfAbsent(node1, k -> new HashSet<>());
-            for (final MemoryCoreEvent event2 : events) {
+            final Set<String> maySet = may.computeIfAbsent(node1, k -> new HashSet<>());
+            final Set<String> mustSet = must.computeIfAbsent(node1, k -> new HashSet<>());
+            for (final MemoryCoreEvent event2 : list2) {
                 final String node2 = repr(event2, configuration);
-                if (node2 != null && node1.compareTo(node2) < 0 && mayAlias(event1, event2)) {
+                if ((!(event1 instanceof MemFree) && !(event2 instanceof MemFree))
+                        || (event1 instanceof MemFree && event2 instanceof MemFree)) {
+                    if (event1.getGlobalId() - event2.getGlobalId() >= 0) {
+                        continue;
+                    }
+                }
+                if (node2 != null && mayAlias(event1, event2)) {
                     (mustAlias(event1, event2) ? mustSet : maySet).add(node2);
                 }
             }
             maySet.removeAll(mustSet);
         }
+    }
+
+    private void populateObjectGraph(Map<String, Set<String>> may, Map<String, Set<String>> must,
+            List<MemAlloc> allocs, List<MemoryCoreEvent> events, Config configuration) {
+        for (final MemAlloc alloc : allocs) {
+            final String node1 = repr(alloc, configuration);
+            final Set<String> maySet = may.computeIfAbsent(node1, k -> new HashSet<>());
+            final Set<String> mustSet = must.computeIfAbsent(node1, k -> new HashSet<>());
+            for (final MemoryCoreEvent event : events) {
+                final String node2 = repr(event, configuration);
+                if (node2 != null && mayObjectAlias(alloc, event)) {
+                    (mustObjectAlias(alloc, event) ? mustSet : maySet).add(node2);
+                }
+            }
+            maySet.removeAll(mustSet);
+        }
+    }
+
+    private Graphviz defaultGraph(Program program, Config configuration) {
+        // Nodes represent sets of events.
+        // A solid blue line marks the existence of events that must address-alias.
+        final Map<String, Set<String>> mustAddressGraph = new HashMap<>();
+        // A dashed blue line marks the existence of events that may address-alias.
+        final Map<String, Set<String>> mayAddressGraph = new HashMap<>();
+        // A solid orange line marks the existence of events that must object-alias.
+        final Map<String, Set<String>> mustObjectGraph = new HashMap<>();
+        // A dashed orange line marks the existence of events that may object-alias.
+        final Map<String, Set<String>> mayObjectGraph = new HashMap<>();
+
+        final List<MemoryCoreEvent> events = program.getThreadEvents(MemoryCoreEvent.class)
+                .stream().filter(e -> !(e instanceof MemFree) && !(e instanceof MemAlloc))
+                .collect(Collectors.toList());
+        final List<MemAlloc> allocs = program.getThreadEvents(MemAlloc.class);
+        final List<MemFree> frees = program.getThreadEvents(MemFree.class);
+
+        populateAddressGraph(mayAddressGraph, mustAddressGraph, events, events, configuration);
+        populateAddressGraph(mayAddressGraph, mustAddressGraph, frees, frees, configuration);
+        populateAddressGraph(mayAddressGraph, mustAddressGraph, allocs, frees, configuration);
+
+        populateObjectGraph(mayObjectGraph, mustObjectGraph, allocs, events, configuration);
 
         // Generates the graphs
         final var graphviz = new Graphviz();
         graphviz.beginGraph("alias");
-        graphviz.beginSubgraph("may alias");
+        for (final Thread thread : program.getThreads()) {
+            graphviz.beginSubgraph("Thread" + thread.getId());
+            graphviz.setEdgeAttributes("weight=100", "style=invis");
+            final List<MemoryCoreEvent> memEvents = thread.getEvents(MemoryCoreEvent.class);
+            for (int i = 1; i < memEvents.size(); i++) {
+                final String node1 = repr(memEvents.get(i - 1), configuration);
+                final String node2 = repr(memEvents.get(i), configuration);
+                if (node1 == null || node2 == null) {
+                    continue;
+                }
+                graphviz.addEdge(node1, node2);
+            }
+            graphviz.end();
+        }
+        graphviz.beginSubgraph("may address alias");
         graphviz.setEdgeAttributes("color=mediumslateblue", "style=dashed");
-        graphviz.addEdges(mayGraph);
+        graphviz.addEdges(mayAddressGraph);
         graphviz.end();
-        graphviz.beginSubgraph("must alias");
+        graphviz.beginSubgraph("must address alias");
         graphviz.setEdgeAttributes("color=mediumslateblue");
-        graphviz.addEdges(mustGraph);
+        graphviz.addEdges(mustAddressGraph);
+        graphviz.end();
+        graphviz.beginSubgraph("may object alias");
+        graphviz.setEdgeAttributes("color=orangered", "style=dashed");
+        graphviz.addEdges(mayObjectGraph);
+        graphviz.end();
+        graphviz.beginSubgraph("must object alias");
+        graphviz.setEdgeAttributes("color=orangered");
+        graphviz.addEdges(mustObjectGraph);
         graphviz.end();
         graphviz.end();
         return graphviz;
@@ -220,16 +298,21 @@ public interface AliasAnalysis {
         }
     }
 
-    private static String repr(MemoryEvent event, Config configuration) {
+    private static String repr(MemoryCoreEvent event, Config configuration) {
         if (!configuration.graphvizShowAll && event instanceof Init) {
             return null;
         }
+        final String type = event instanceof Load ? ": R"
+                : event instanceof Store ? ": W"
+                : event instanceof MemAlloc ? ": A"
+                : event instanceof MemFree ? ": F"
+                : "";
         final SourceLocation location = event.getMetadata(SourceLocation.class);
         if (configuration.graphvizSplitByThread) {
-            return location != null ? "\"T" + event.getThread().getId() + esc(location) + "\"" :
-                    "\"T" + event.getThread().getId() + "E" + event.getGlobalId() + "\"";
+            return location != null ? "\"T" + event.getThread().getId() + esc(location) + type + "\"" :
+                    "\"T" + event.getThread().getId() + "E" + event.getGlobalId() + type + "\"";
         }
-        return location != null ? "\"" + esc(location) + "\"" : "\"E" + event.getGlobalId() + "\"";
+        return location != null ? "\"" + esc(location) + type + "\"" : "\"E" + event.getGlobalId() + type + "\"";
     }
 
     private static String esc(Object object) {

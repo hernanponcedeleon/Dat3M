@@ -11,12 +11,12 @@ void *worker(void *arg)
 
     intptr_t index = ((intptr_t) arg);
 
-	push(index);
+    push(index);
     int r = pop();
 
-	assert(r != EMPTY);
+    assert(r != EMPTY);
 
-	return NULL;
+    return NULL;
 }
 
 int main()

@@ -276,21 +276,11 @@ public class PropertyEncoder implements Encoder {
             case EXISTS -> PROGRAM_SPEC.getSMTVariable(context);
         };
         if (!ASSERT.equals(program.getSpecificationType())) {
-            encoding = bmgr.and(encoding, encodeProgramTermination());
+            Event termination = program.getThreadEvents(Termination.class).stream().findFirst()
+                    .orElseThrow(() -> new IllegalArgumentException("Malformed program: missing the termination event"));
+            encoding = bmgr.and(encoding, context.execution(termination));
         }
         return new TrackableFormula(trackingLiteral, encoding);
-    }
-
-    private BooleanFormula encodeProgramTermination() {
-        final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
-        final BooleanFormula exitReached = bmgr.and(program.getThreads().stream()
-                .map(t -> bmgr.equivalence(context.execution(t.getEntry()), context.execution(t.getExit())))
-                .toList());
-        final BooleanFormula terminated = program.getThreadEventsWithAllTags(Tag.NONTERMINATION).stream()
-                .map(CondJump.class::cast)
-                .map(jump -> bmgr.not(context.jumpTaken(jump)))
-                .reduce(bmgr.makeTrue(), bmgr::and);
-        return bmgr.and(exitReached, terminated);
     }
 
     // ======================================================================

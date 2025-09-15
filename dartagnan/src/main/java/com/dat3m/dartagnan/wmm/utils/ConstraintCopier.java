@@ -197,6 +197,16 @@ public final class ConstraintCopier implements Constraint.Visitor<Constraint> {
     }
 
     @Override
+    public AllocPtr visitAllocPtr(AllocPtr aPtr) {
+        return new AllocPtr(translate(aPtr.getDefinedRelation()));
+    }
+
+    @Override
+    public AllocMem visitAllocMem(AllocMem aMem) {
+        return new AllocMem(translate(aMem.getDefinedRelation()));
+    }
+
+    @Override
     public LinuxCriticalSections visitLinuxCriticalSections(LinuxCriticalSections rscs) {
         return new LinuxCriticalSections(translate(rscs.getDefinedRelation()));
     }

@@ -8,7 +8,7 @@ import com.dat3m.dartagnan.expression.aggregates.ConstructExpr;
 import com.dat3m.dartagnan.expression.base.LeafExpressionBase;
 import com.dat3m.dartagnan.expression.integers.IntLiteral;
 import com.dat3m.dartagnan.expression.type.*;
-import com.dat3m.dartagnan.program.event.core.Alloc;
+import com.dat3m.dartagnan.program.event.core.MemAlloc;
 import com.google.common.base.Preconditions;
 
 import java.util.*;
@@ -26,7 +26,7 @@ public class MemoryObject extends LeafExpressionBase<Type> {
     private final int id;
     private final Expression size;
     private final Expression alignment;
-    private final Alloc allocationSite;
+    private final MemAlloc allocationSite;
 
     private String name = null;
     private boolean isThreadLocal = false;
@@ -34,7 +34,7 @@ public class MemoryObject extends LeafExpressionBase<Type> {
 
     private final Map<Integer, Expression> initialValues = new TreeMap<>();
 
-    MemoryObject(int id, Expression size, Expression alignment, Alloc allocationSite, Type ptrType) {
+    MemoryObject(int id, Expression size, Expression alignment, MemAlloc allocationSite, Type ptrType) {
         super(ptrType);
         final TypeFactory types = TypeFactory.getInstance();
         Preconditions.checkArgument(size.getType() instanceof IntegerType, "Size %s must be of integer type.", size);
@@ -54,7 +54,7 @@ public class MemoryObject extends LeafExpressionBase<Type> {
 
     public boolean isStaticallyAllocated() { return allocationSite == null; }
     public boolean isDynamicallyAllocated() { return !isStaticallyAllocated(); }
-    public Alloc getAllocationSite() { return allocationSite; }
+    public MemAlloc getAllocationSite() { return allocationSite; }
 
     public boolean isThreadLocal() { return this.isThreadLocal; }
     public void setIsThreadLocal(boolean value) { this.isThreadLocal = value;}

@@ -90,6 +90,8 @@ public class EventData implements Comparable<EventData> {
     public boolean isRMW() {
     	return event.hasTag(RMW);
     }
+    public boolean isAlloc() { return event.hasTag(ALLOC); }
+    public boolean isFree() { return event.hasTag(FREE); }
 
     public boolean hasTag(String tag) {
     	return event.hasTag(tag);

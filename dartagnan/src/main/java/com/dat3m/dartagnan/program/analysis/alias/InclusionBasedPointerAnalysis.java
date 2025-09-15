@@ -21,12 +21,14 @@ import com.dat3m.dartagnan.verification.Context;
 import com.dat3m.dartagnan.witness.graphviz.Graphviz;
 import com.google.common.base.Supplier;
 import com.google.common.base.Suppliers;
+import com.google.common.collect.Sets;
 import com.google.common.math.IntMath;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.math.BigInteger;
 import java.util.*;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import static com.google.common.base.Preconditions.checkArgument;
@@ -89,6 +91,9 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
 
     // Maps memory events to variables representing their pointer set.
     private final Map<MemoryCoreEvent, DerivedVariable> addressVariables = new HashMap<>();
+
+    // Maps pointer sets to their accessible memory objects.
+    private final Map<DerivedVariable, Set<MemoryObject>> accessibleObjects = new HashMap<>();
 
     // Maps memory objects to variables representing their base address.
     // These Variables should always have empty includes-sets.
@@ -193,6 +198,27 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
     }
 
     @Override
+    public boolean mayObjectAlias(MemoryCoreEvent a, MemoryCoreEvent b) {
+        final DerivedVariable va = addressVariables.get(a);
+        final DerivedVariable vb = addressVariables.get(b);
+        return va == null || vb == null || !Sets.intersection(accessibleObjects.get(va), accessibleObjects.get(vb)).isEmpty();
+    }
+
+    @Override
+    public boolean mustObjectAlias(MemoryCoreEvent a, MemoryCoreEvent b) {
+        final DerivedVariable va = addressVariables.get(a);
+        final DerivedVariable vb = addressVariables.get(b);
+        if (va == null || vb == null) {
+            return false;
+        }
+        if (va.base == vb.base) {
+            return true;
+        }
+        final Set<MemoryObject> objsA = accessibleObjects.get(va);
+        return objsA.size() == 1 && objsA.equals(accessibleObjects.get(vb));
+    }
+
+    @Override
     public List<Integer> mayMixedSizeAccesses(MemoryCoreEvent event) {
         final List<Integer> result = mixedAccesses.get(event);
         if (result != null) {
@@ -205,7 +231,9 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
     // ================================ Mixed Size Access Detection ================================
 
     private void detectMixedSizeAccesses() {
-        final List<MemoryCoreEvent> events = List.copyOf(addressVariables.keySet());
+        final List<MemoryCoreEvent> events = addressVariables.keySet().stream()
+                .filter(e -> !(e instanceof MemAlloc) && !(e instanceof MemFree))
+                .collect(Collectors.toList());
         final List<Set<Integer>> offsets = new ArrayList<>();
         for (int i = 0; i < events.size(); i++) {
             final MemoryCoreEvent event0 = events.get(i);
@@ -270,6 +298,14 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
         return graphviz;
     }
 
+    private Set<MemoryObject> getAccessibleObjects(DerivedVariable address) {
+        final Set<MemoryObject> objs = new HashSet<>();
+        objs.add(address.base.object);
+        address.base.includes.forEach(i -> objs.add(i.source.object));
+        objs.remove(null);
+        return objs;
+    }
+
     // ================================ Processing ================================
 
     private void run(Program program, AliasAnalysis.Config configuration) {
@@ -304,6 +340,9 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
         for (final Map.Entry<MemoryCoreEvent, DerivedVariable> entry : addressVariables.entrySet()) {
             postProcess(entry);
         }
+        for (final DerivedVariable v : addressVariables.values()) {
+            accessibleObjects.computeIfAbsent(v, k -> getAccessibleObjects(v));
+        }
         objectVariables.clear();
         registerVariables.clear();
     }
@@ -314,7 +353,7 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
         logger.trace("{}", event);
         final Expression expr = event instanceof Local local ? local.getExpr() :
                         event instanceof ThreadArgument arg ? arg.getCreator().getArguments().get(arg.getIndex()) :
-                        event instanceof Alloc alloc ? alloc.getAllocatedObject() : null;
+                        event instanceof MemAlloc alloc ? alloc.getAllocatedObject() : null;
         final DerivedVariable value;
         if (expr != null) {
             final RegReader reader = event instanceof ThreadArgument arg ? arg.getCreator() : (RegReader) event;
@@ -348,6 +387,10 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
     // Also propagates communications to loads, if both directly access the same variable.
     private void processMemoryEvent(MemoryCoreEvent event) {
         logger.trace("{}", event);
+        if (event instanceof MemAlloc alloc) {
+            addressVariables.put(alloc, derive(objectVariables.get(alloc.getAllocatedObject())));
+            return;
+        }
         if (event instanceof Load) {
             // event was already processed in processWriter(RegWriter)
             return;
@@ -462,6 +505,7 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
     // This simplifies alias queries and releases memory resources.
     private void postProcess(Map.Entry<MemoryCoreEvent, DerivedVariable> entry) {
         logger.trace("{}", entry);
+        final MemoryCoreEvent e = entry.getKey();
         final DerivedVariable address = entry.getValue();
         if (address == null) {
             // should have already warned about this event
@@ -475,7 +519,7 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
         // In a well-structured program, all address expressions refer to at least one memory object.
         if (logger.isWarnEnabled() && address.base.object == null &&
                 address.base.includes.stream().allMatch(i -> i.source.object == null)) {
-            logger.warn("empty pointer set for {}", synContext.get().getContextInfo(entry.getKey()));
+            logger.warn("empty pointer set for {}", synContext.get().getContextInfo(e));
         }
         if (address.base.includes.size() != 1) {
             return;
@@ -488,11 +532,21 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
         if (!includeEdge.source.object.getClass().equals(MemoryObject.class) || !includeEdge.source.object.hasKnownSize()) {
             return;
         }
-        final int accessSize = types.getMemorySizeInBytes(entry.getKey().getAccessType());
-        final int remainingSize = includeEdge.source.object.getKnownSize() - modifier.offset - (accessSize - 1);
-        for (final Integer a : modifier.alignment) {
-            if (Math.abs(a) < remainingSize || a < 0 && modifier.offset + a >= 0) {
-                return;
+        if (e instanceof MemFree) {
+            final int remainingSize = includeEdge.source.object.getKnownSize() - modifier.offset;
+            for (final Integer a : modifier.alignment) {
+                if (a < remainingSize) {
+                    return;
+                }
+            }
+        } else {
+            assert !(e instanceof MemAlloc);
+            final int accessSize = types.getMemorySizeInBytes(e.getAccessType());
+            final int remainingSize = includeEdge.source.object.getKnownSize() - modifier.offset - (accessSize - 1);
+            for (final Integer a : modifier.alignment) {
+                if (Math.abs(a) < remainingSize || a < 0 && modifier.offset + a >= 0) {
+                    return;
+                }
             }
         }
         entry.setValue(derive(includeEdge.source, modifier.offset, List.of()));

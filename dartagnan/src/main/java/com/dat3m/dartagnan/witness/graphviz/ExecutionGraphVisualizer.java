@@ -120,7 +120,9 @@ public class ExecutionGraphVisualizer {
         return e instanceof MemoryEventModel
                 || e instanceof GenericVisibleEventModel
                 || e instanceof LocalModel
-                || e instanceof AssertModel;
+                || e instanceof AssertModel
+                || e instanceof MemAllocModel
+                || e instanceof MemFreeModel;
     }
 
     private void addEvents(ExecutionModelNext model) {
@@ -307,7 +309,7 @@ public class ExecutionGraphVisualizer {
     }
 
     private String nodeLabel(EventModel e) {
-        // We have MemEvent + Fence + Local + Assert
+        // We have MemoryEvent + Alloc + Free + Fence + Termination + Local + Assert
         String tag = e.getEvent().toString();
         if (e instanceof MemoryEventModel mem) {
             String address = getAddressString(mem.getAccessedAddress());
@@ -317,12 +319,15 @@ public class ExecutionGraphVisualizer {
             tag = mem instanceof StoreModel ?
                     String.format("W(%s, %s%s)", address, value, moString) :
                     String.format("%s = R(%s%s)", value, address, moString);
+        } else if (e instanceof MemAllocModel am) {
+            tag = String.format("%s <- HeapAlloc", getAddressString(am.getMemoryObject().address()));
+        } else if (e instanceof MemFreeModel fm) {
+            tag = String.format("Free(%s)", getAddressString(fm.getAddress()));
         } else if (e instanceof LocalModel lm) {
             tag = String.format("%s(%s) <- %s",
-                lm.getEvent().getResultRegister(),
-                lm.getValue(),
-                lm.getEvent().getExpr()
-            );
+                    lm.getEvent().getResultRegister(),
+                    lm.getValue(),
+                    lm.getEvent().getExpr());
         } else if (e instanceof AssertModel am) {
             tag = String.format("Assertion(%s)", am.getResult());
         }

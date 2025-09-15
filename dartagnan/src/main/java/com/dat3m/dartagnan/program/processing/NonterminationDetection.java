@@ -83,6 +83,7 @@ public class NonterminationDetection implements ProgramProcessor {
                     .forEach(this::instrumentLoop);
         }
 
+        program.addTerminationThread();
         IdReassignment.newInstance().run(program);
 
     }

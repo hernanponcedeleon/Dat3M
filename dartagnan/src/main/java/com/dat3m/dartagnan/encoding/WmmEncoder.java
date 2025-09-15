@@ -2,15 +2,12 @@ package com.dat3m.dartagnan.encoding;
 
 import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.expression.Expression;
+import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.integers.IntLiteral;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.analysis.ReachingDefinitionsAnalysis;
 import com.dat3m.dartagnan.program.event.*;
-import com.dat3m.dartagnan.program.event.core.Load;
-import com.dat3m.dartagnan.program.event.core.MemoryCoreEvent;
-import com.dat3m.dartagnan.program.event.core.NamedBarrier;
-import com.dat3m.dartagnan.program.event.core.RMWStoreExclusive;
-import com.dat3m.dartagnan.program.event.core.InstructionBoundary;
+import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.smt.ModelExt;
 import com.dat3m.dartagnan.utils.Utils;
 import com.dat3m.dartagnan.utils.dependable.DependencyGraph;
@@ -33,10 +30,7 @@ import org.apache.logging.log4j.Logger;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.common.configuration.Option;
 import org.sosy_lab.common.configuration.Options;
-import org.sosy_lab.java_smt.api.BooleanFormula;
-import org.sosy_lab.java_smt.api.BooleanFormulaManager;
-import org.sosy_lab.java_smt.api.IntegerFormulaManager;
-import org.sosy_lab.java_smt.api.NumeralFormula;
+import org.sosy_lab.java_smt.api.*;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -693,6 +687,43 @@ public class WmmEncoder implements Encoder {
                     }
                 }
             }
+            return null;
+        }
+
+        @Override
+        public Void visitAllocPtr(AllocPtr def) {
+            final Relation rel = def.getDefinedRelation();
+            EncodingContext.EdgeEncoder edge = context.edge(rel);
+            final ExpressionEncoder exprEncoder = context.getExpressionEncoder();
+            encodeSets.get(rel).apply((e1, e2) -> {
+                TypedFormula ptr1 = (e1 instanceof MemAlloc alloc)
+                        ? context.result(alloc)
+                        : exprEncoder.encodeAt(((MemFree)e1).getAddress(), e1);
+                TypedFormula ptr2 = exprEncoder.encodeAt(((MemFree) e2).getAddress(), e2);
+                enc.add(bmgr.equivalence(edge.encode(e1, e2), bmgr.and(
+                        execution(e1, e2),
+                        exprEncoder.equal(ptr1, ptr2))));
+            });
+            return null;
+        }
+
+        @Override
+        public Void visitAllocMem(AllocMem def) {
+            final Relation rel = def.getDefinedRelation();
+            EncodingContext.EdgeEncoder edge = context.edge(rel);
+            final ExpressionEncoder exprEncoder = context.getExpressionEncoder();
+            final ExpressionFactory exprs = context.getExpressionFactory();
+            encodeSets.get(rel).apply((e1, e2) -> {
+                TypedFormula minAddress = context.result((MemAlloc)e1);
+                TypedFormula size = exprEncoder.encodeAt(((MemAlloc) e1).getAllocationSize(), e1);
+                TypedFormula maxAddress = exprEncoder.encodeFinal(exprs.makeAdd(minAddress, size));
+                TypedFormula address = context.address((MemoryCoreEvent) e2);
+                enc.add(bmgr.equivalence(edge.encode(e1, e2), bmgr.and(
+                        execution(e1, e2),
+                        (BooleanFormula) exprEncoder.encodeFinal(exprs.makeGTE(address, minAddress, false)).formula(),
+                        (BooleanFormula) exprEncoder.encodeFinal(exprs.makeGT(maxAddress, address, false)).formula()
+                )));
+            });
             return null;
         }
 

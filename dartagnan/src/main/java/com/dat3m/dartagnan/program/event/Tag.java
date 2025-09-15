@@ -22,6 +22,9 @@ public final class Tag {
     public static final String FENCE            = "F";
     public static final String STRONG           = "STRONG"; // TODO: Maybe move to C11 or IMM?
     public static final String RMW              = "RMW";
+    public static final String ALLOC            = "ALLOC";
+    public static final String FREE             = "FREE";
+    public static final String TERMINATION      = "TERMINATION";
 
     // ---------- Internally used tags (not referenced in CAT) ----------
     public static final String EXCL             = "__EXCL";

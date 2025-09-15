@@ -60,8 +60,8 @@ public class ExecutionModelManager {
         this.wmm = context.getTask().getMemoryModel();
         this.domain = new EventDomainNext(executionModel);
 
-        extractEvents();
         extractMemoryLayout();
+        extractEvents();
 
         relModelCache.clear();
         relGraphCache.clear();
@@ -110,7 +110,12 @@ public class ExecutionModelManager {
 
     private void extractEvent(Event e, ThreadModel tm, int id) {
         EventModel em;
-        if (e instanceof MemoryCoreEvent memEvent) {
+        if (e instanceof MemAlloc alloc) {
+            final MemoryObjectModel mo = executionModel.getMemoryObjectModel(alloc.getAllocatedObject());
+            em = new MemAllocModel(alloc, tm, id, mo);
+        } else if (e instanceof MemFree free) {
+            em = new MemFreeModel(free, tm, id, new ValueModel(model.address(free).value()));
+        } else if (e instanceof MemoryCoreEvent memEvent) {
             ValueModel address = new ValueModel(model.address(memEvent).value());
             ValueModel value = new ValueModel(model.value(memEvent).value());
 
@@ -151,7 +156,9 @@ public class ExecutionModelManager {
                || e instanceof GenericVisibleEvent
                || e instanceof Local
                || e instanceof Assert
-               || e instanceof CondJump;
+               || e instanceof CondJump
+               || (e instanceof MemAlloc alloc && alloc.isHeapAllocation())
+               || e instanceof MemFree;
     }
 
     private void extractMemoryLayout() {
