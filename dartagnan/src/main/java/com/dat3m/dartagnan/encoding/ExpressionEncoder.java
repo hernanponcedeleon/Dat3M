@@ -345,7 +345,6 @@ public class ExpressionEncoder {
         public TypedFormula<IntegerType, ?> visitIntSizeCastExpression(IntSizeCast expr) {
             final TypedFormula<IntegerType, ?> inner = encodeIntegerExpr(expr.getOperand());
             final Formula enc;
-
             if (expr.isNoop()) {
                 return inner;
             } else if (context.useIntegers) {
@@ -358,7 +357,6 @@ public class ExpressionEncoder {
                 }
             } else {
                 assert inner.formula() instanceof BitvectorFormula;
-
                 final BitvectorFormulaManager bvmgr = bitvectorFormulaManager();
                 final BitvectorFormula innerBv = (BitvectorFormula) inner.formula();
                 final int targetBitWidth = expr.getTargetType().getBitWidth();
@@ -531,13 +529,29 @@ public class ExpressionEncoder {
 
         @Override
         public TypedFormula<IntegerType, ?> visitPtrToIntCastExpression(PtrToIntCast expr) {
-            final TypedFormula<PointerType, ?> ptr = encodePointerExpr(expr.getOperand());
-            return new TypedFormula<>(expr.getType(), ptr.formula());
+            // Todo: add support for extension
+            final TypedFormula<PointerType, ?> inner = encodePointerExpr(expr.getOperand());
+            final Formula enc;
+            if (context.useIntegers) {
+                final BigInteger highValue = BigInteger.TWO.pow(expr.getType().getBitWidth());
+                final IntegerFormulaManager imgr = integerFormulaManager();
+                enc = imgr.modulo((IntegerFormula) inner.formula(), imgr.makeNumber(highValue));
+            } else {
+                assert inner.formula() instanceof BitvectorFormula;
+                final BitvectorFormulaManager bvmgr = bitvectorFormulaManager();
+                final BitvectorFormula innerBv = (BitvectorFormula) inner.formula();
+                final int targetBitWidth = expr.getTargetType().getBitWidth();
+                final int sourceBitWidth = types.getArchType().getBitWidth();
+                assert (sourceBitWidth == bvmgr.getLength(innerBv));
+                enc = bvmgr.extract(innerBv, targetBitWidth - 1, 0);
+            }
+            return new TypedFormula<>(expr.getType(), enc);
 
         }
 
         @Override
         public TypedFormula<PointerType, ?> visitIntToPtrCastExpression(IntToPtrCast expr) {
+
             final TypedFormula<IntegerType, ?> address = encodeIntegerExpr(expr.getOperand());
             return new TypedFormula<>(expr.getType(), address.formula());
         }
