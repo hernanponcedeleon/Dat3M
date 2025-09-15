@@ -93,6 +93,10 @@ public class ExpressionEncoder {
             variable = context.useIntegers
                     ? integerFormulaManager().makeVariable(name)
                     : bitvectorFormulaManager().makeVariable(integerType.getBitWidth(), name);
+        }else if (type instanceof PointerType) {
+            variable = context.useIntegers
+                    ? integerFormulaManager().makeVariable(name)
+                    : bitvectorFormulaManager().makeVariable(types.getArchType().getBitWidth(), name);
         } else if (type instanceof AggregateType aggType) {
             final List<Formula> fields = new ArrayList<>(aggType.getFields().size());
             for (TypeOffset field : aggType.getFields()) {

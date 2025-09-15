@@ -826,10 +826,11 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
     private Register conversionInstruction(TypeValueContext operand, TypeContext target, boolean signed) {
         final Expression operandExpression = visitTypeValue(operand);
         final Type targetType = parseType(target);
-        checkSupport(targetType instanceof IntegerType, "Non-integer in %s.", target);
-        final Expression result = expressions.makeIntegerCast(operandExpression, (IntegerType) targetType, signed);
+        // checkSupport(targetType instanceof IntegerType, "Non-integer in %s.", target);
+        final Expression result = expressions.makeCast(operandExpression, targetType, signed);
         return assignToRegister(result);
     }
+
 
     // =================================================================================================================
     // Expressions
@@ -846,7 +847,8 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
 
     @Override
     public Expression visitNullConst(NullConstContext ctx) {
-        return expressions.makeZero((IntegerType) pointerType);
+        // return expressions.makeZero((IntegerType) pointerType);
+        return expressions.makeNullLiteral();
     }
 
     @Override
@@ -1068,8 +1070,8 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
     private Expression castExpression(TypeConstContext operand, TypeContext target, boolean signed) {
         final Expression operandExpression = visitTypeConst(operand);
         final Type targetType = parseType(target);
-        checkSupport(targetType instanceof IntegerType, "Non-integer type %s.", target);
-        return expressions.makeIntegerCast(operandExpression, (IntegerType) targetType, signed);
+        // checkSupport(targetType instanceof IntegerType, "Non-integer type %s.", target);
+        return expressions.makeCast(operandExpression, targetType, signed);
     }
 
     // ----------------------------------------------------------------------------------------------------------------

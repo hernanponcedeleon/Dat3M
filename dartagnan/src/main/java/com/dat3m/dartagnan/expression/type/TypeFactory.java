@@ -20,12 +20,13 @@ public final class TypeFactory {
 
     private final VoidType voidType = new VoidType();
     private final BooleanType booleanType = new BooleanType();
-    private final IntegerType pointerDifferenceType;
+    private final IntegerType archType;
+    private final PointerType pointerType = new PointerType();
 
     private final Normalizer typeNormalizer = new Normalizer();
 
     private TypeFactory() {
-        pointerDifferenceType = getIntegerType(64);//TODO insert proper pointer and difference types
+        archType = getIntegerType(64);//TODO insert proper pointer and difference types
     }
 
 
@@ -40,9 +41,10 @@ public final class TypeFactory {
 
     public VoidType getVoidType() { return voidType; }
 
-    public Type getPointerType() {
-        return pointerDifferenceType;
+    public PointerType getPointerType() {
+        return pointerType;
     }
+
 
     public IntegerType getIntegerType(int bitWidth) {
         checkArgument(bitWidth > 0, "Non-positive bit width %s.", bitWidth);
@@ -141,7 +143,7 @@ public final class TypeFactory {
     }
 
     public IntegerType getArchType() {
-        return pointerDifferenceType;
+        return archType;
     }
 
     public IntegerType getByteType() {
@@ -158,6 +160,9 @@ public final class TypeFactory {
         }
         if (type instanceof IntegerType integerType) {
             return IntMath.divide(integerType.getBitWidth(), 8, RoundingMode.CEILING);
+        }
+        if (type instanceof PointerType) {
+            return getMemorySizeInBytes(getArchType());
         }
         if (type instanceof FloatType floatType) {
             return IntMath.divide(floatType.getBitWidth(), 8, RoundingMode.CEILING);
@@ -198,7 +203,7 @@ public final class TypeFactory {
     }
 
     private int getAlignment(Type type) {
-        if (type instanceof BooleanType || type instanceof IntegerType || type instanceof FloatType) {
+        if (type instanceof BooleanType || type instanceof IntegerType || type instanceof FloatType || type instanceof PointerType) {
             return getMemorySizeInBytes(type);
         }
         if (type instanceof ArrayType arrayType) {

@@ -6,6 +6,7 @@ import com.dat3m.dartagnan.expression.floats.*;
 import com.dat3m.dartagnan.expression.integers.*;
 import com.dat3m.dartagnan.expression.misc.GEPExpr;
 import com.dat3m.dartagnan.expression.misc.ITEExpr;
+import com.dat3m.dartagnan.expression.pointer.*;
 import com.dat3m.dartagnan.expression.type.*;
 import com.dat3m.dartagnan.expression.utils.ExpressionHelper;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
@@ -201,6 +202,8 @@ public final class ExpressionFactory {
             return sourceType.equals(targetType) ? operand : new IntSizeCast(targetType, operand, signed);
         } else if (sourceType instanceof FloatType) {
             return new FloatToIntCast(targetType, operand, signed);
+        }else if (sourceType instanceof PointerType) {
+            return new PtrToIntCast(targetType, operand);
         }
 
         throw new UnsupportedOperationException(String.format("Cannot cast %s to %s.", sourceType, targetType));
@@ -315,19 +318,22 @@ public final class ExpressionFactory {
     // Pointers
 
     public Expression makeGetElementPointer(Type indexingType, Expression base, List<Expression> offsets) {
-        return makeGetElementPointer(indexingType, base, offsets, null);
+        Preconditions.checkArgument(base.getType().equals(types.getPointerType()),
+                "Applying offsets to non-pointer expression.");
+        return new GEPExpr(indexingType, base, offsets,null);
     }
 
     public Expression makeGetElementPointer(Type indexingType, Expression base, List<Expression> offsets, Integer stride) {
         // TODO: Stride should be a property of the pointer, not of a GEPExpr.
         //  Refactor GEPExpr to only accept a (new) PointerType and a list of offsets.
         //  A PointerType should have the referred type and the stride in its attributes.
-        Preconditions.checkArgument(base.getType().equals(types.getArchType()),
+        Preconditions.checkArgument(base.getType().equals(types.getPointerType()),
                 "Applying offsets to non-pointer expression.");
         Preconditions.checkArgument(stride == null || stride >= types.getMemorySizeInBytes(indexingType),
         "Stride cannot be smaller than indexing type");
         return new GEPExpr(indexingType, base, offsets, stride);
     }
+
 
     public ScopedPointer makeScopedPointer(String id, ScopedPointerType type, Expression value) {
         return new ScopedPointer(id, type, value);
@@ -335,6 +341,35 @@ public final class ExpressionFactory {
 
     public ScopedPointerVariable makeScopedPointerVariable(String id, ScopedPointerType type, MemoryObject memObj) {
         return new ScopedPointerVariable(id, type, memObj);
+    }
+
+    public Expression makePtrAdd(Expression base, Expression offset) {
+        return new PointerAddExpr(base, offset);
+    }
+
+
+    public Expression makePtrToIntCast(Expression pointer) {
+        return new PtrToIntCast(types.getArchType(), pointer);
+    }
+
+    public Expression makeIntToPtrCast(Expression operand, PointerType pointerType) {
+        return new IntToPtrCast(pointerType, operand);
+    }
+
+    public Expression makeIntToPtrCast(Expression operand) {
+        return new IntToPtrCast(types.getPointerType(), operand);
+    }
+
+    public Expression makeNullLiteral(PointerType pointerType) {
+        return new NullLiteral(pointerType);
+    }
+
+    public Expression makeNullLiteral() {
+        return makeNullLiteral(types.getPointerType());
+    }
+
+    public Expression makePtrCmp(Expression left, PointerCmpOp op, Expression right) {
+        return new PtrCmpExpr(types.getBooleanType(), left, op, right);
     }
 
     // -----------------------------------------------------------------------------------------------------------------
@@ -360,7 +395,9 @@ public final class ExpressionFactory {
             return makeFalse();
         } else if (type instanceof FloatType floatType) {
             return makeZero(floatType);
-        } else {
+        } else if (type instanceof PointerType pointerType) {
+            return makeNullLiteral(pointerType);
+        }else{
             throw new UnsupportedOperationException("Cannot create zero of type " + type);
         }
     }
@@ -376,6 +413,8 @@ public final class ExpressionFactory {
             return makeIntegerCast(expression, integerType, signed);
         } else if (type instanceof FloatType floatType) {
             return makeFloatCast(expression, floatType, signed);
+        }else if (type instanceof PointerType) {
+            return makeIntToPtrCast(makeCast(expression, types.getArchType()));
         }
         throw new UnsupportedOperationException(String.format("Cast %s into %s unsupported.", expression, type));
     }
@@ -394,7 +433,9 @@ public final class ExpressionFactory {
             return makeBoolBinary(leftOperand, BoolBinaryOp.IFF, rightOperand);
         } else if (type instanceof IntegerType) {
             return makeIntCmp(leftOperand, IntCmpOp.EQ, rightOperand);
-        } else if (type instanceof FloatType) {
+        } if (type instanceof PointerType) {
+            return makePtrCmp(leftOperand, PointerCmpOp.EQ, rightOperand);
+        }else if (type instanceof FloatType) {
             // TODO: Decide on a default semantics for float equality?
             return makeFloatCmp(leftOperand, FloatCmpOp.OEQ, rightOperand);
         } else if (ExpressionHelper.isAggregateLike(type)) {
@@ -409,7 +450,9 @@ public final class ExpressionFactory {
             return makeNot(makeBoolBinary(leftOperand, BoolBinaryOp.IFF, rightOperand));
         } else if (type instanceof IntegerType) {
             return makeIntCmp(leftOperand, IntCmpOp.NEQ, rightOperand);
-        } else if (type instanceof FloatType) {
+        } if (type instanceof PointerType) {
+            return makePtrCmp(leftOperand, PointerCmpOp.NEQ, rightOperand);
+        }else if (type instanceof FloatType) {
             // TODO: Decide on a default semantics for float equality?
             return makeFloatCmp(leftOperand, FloatCmpOp.ONEQ, rightOperand);
         } else if (type instanceof AggregateType) {
@@ -438,6 +481,8 @@ public final class ExpressionFactory {
             return makeFloatBinary(x, floatOp, y);
         } else if (op instanceof IntCmpOp cmpOp) {
             return makeCompare(x, cmpOp, y);
+        }else if (op instanceof PointerCmpOp cmpOp) {
+            return makeCompare(x, cmpOp, y);
         }
         throw new UnsupportedOperationException(String.format("Expression kind %s is no binary operator.", op));
     }
@@ -449,6 +494,8 @@ public final class ExpressionFactory {
             return makeFloatCmp(x, floatOp, y);
         } else if (cmpOp instanceof AggregateCmpOp aggrCmpOp) {
             return makeAggregateCmp(x, aggrCmpOp, y);
+        }else if (cmpOp instanceof PointerCmpOp ptrCmpOp) {
+            return makePtrCmp(x, ptrCmpOp, y);
         }
         throw new UnsupportedOperationException(String.format("Expression kind %s is no comparison operator.", cmpOp));
     }

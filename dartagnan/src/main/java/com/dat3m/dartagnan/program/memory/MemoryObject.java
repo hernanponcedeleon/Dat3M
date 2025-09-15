@@ -19,7 +19,7 @@ import static com.google.common.base.Preconditions.checkState;
 /**
  * Associated with an array of memory locations.
  */
-public class MemoryObject extends LeafExpressionBase<Type> {
+public class MemoryObject extends LeafExpressionBase<PointerType> {
 
     // TODO: (TH) I think <id> is mostly useless.
     //  Its only benefit is that we can have different memory objects with the same name (but why would we?)
@@ -34,7 +34,7 @@ public class MemoryObject extends LeafExpressionBase<Type> {
 
     private final Map<Integer, Expression> initialValues = new TreeMap<>();
 
-    MemoryObject(int id, Expression size, Expression alignment, Alloc allocationSite, Type ptrType) {
+    MemoryObject(int id, Expression size, Expression alignment, Alloc allocationSite, PointerType ptrType) {
         super(ptrType);
         final TypeFactory types = TypeFactory.getInstance();
         Preconditions.checkArgument(size.getType() instanceof IntegerType, "Size %s must be of integer type.", size);
@@ -123,7 +123,8 @@ public class MemoryObject extends LeafExpressionBase<Type> {
                 setInitialValue(offset + innerOffset, structElements.get(i));
             }
         } else if (value.getType() instanceof IntegerType
-                || value.getType() instanceof BooleanType) {
+                || value.getType() instanceof BooleanType
+                || value.getType() instanceof PointerType) {
             checkArgument(isInRange(offset), "array index out of bounds");
             initialValues.put(offset, value);
         } else {
