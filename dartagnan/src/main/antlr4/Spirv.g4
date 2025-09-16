@@ -12,12 +12,14 @@ spvHeader
     |   outputHeader
     |   filterHeader
     |   configHeader
+    |   unknownHeader
     ;
 
 inputHeader : ModeHeader_Input ModeHeader_Colon initList;
 outputHeader : ModeHeader_Output ModeHeader_Colon assertionList;
 filterHeader : ModeHeader_Filter ModeHeader_Colon assertion;
-configHeader : ModeHeader_Config ModeHeader_Colon literanHeaderUnsignedInteger ModeHeader_Comma literanHeaderUnsignedInteger ModeHeader_Comma literanHeaderUnsignedInteger;
+configHeader : ModeHeader_Config ModeHeader_Colon literalHeaderUnsignedInteger ModeHeader_Comma literalHeaderUnsignedInteger ModeHeader_Comma literalHeaderUnsignedInteger;
+unknownHeader : ModeHeader_UnknownType ModeHeader_Colon unknownValue+;
 initList : init (ModeHeader_Comma init)*;
 init : varName ModeHeader_Equal initValue;
 initValue
@@ -50,12 +52,16 @@ assertionCompare
     |   ModeHeader_Greater
     ;
 
+unknownValue
+    :   literalHeaderUnsignedInteger (ModeHeader_Comma literalHeaderUnsignedInteger)*
+    ;
+
 assertionValue
     :   varName indexValue*
     |   initBaseValue
     ;
 
-indexValue : ModeHeader_LBracket ModeHeader_PositiveInteger ModeHeader_RBracket;
+indexValue : ModeHeader_LBracket literalHeaderUnsignedInteger ModeHeader_RBracket;
 varName : idResult;
 
 // Operations
@@ -3984,7 +3990,7 @@ pairIdRefIdRef : idRef idRef;
 pairIdRefLiteralInteger : idRef literalInteger;
 pairLiteralIntegerIdRef : literalInteger idRef;
 literalContextDependentNumber : LiteralInteger | LiteralFloat;
-literanHeaderUnsignedInteger : ModeHeader_PositiveInteger;
+literalHeaderUnsignedInteger : ModeHeader_PositiveInteger;
 initBaseValue : ModeHeader_NegativeInteger | ModeHeader_PositiveInteger;
 literalFloat : LiteralFloat;
 literalInteger : LiteralInteger;

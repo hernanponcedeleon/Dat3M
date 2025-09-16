@@ -9,6 +9,8 @@ import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.ThreadGrid;
 import org.antlr.v4.runtime.tree.ParseTree;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
@@ -20,6 +22,7 @@ import java.util.Set;
 
 public class VisitorSpirv extends SpirvBaseVisitor<Program> {
 
+    private static final Logger logger = LogManager.getLogger(VisitorSpirv.class);
     private final Map<String, SpirvBaseVisitor<?>> visitors = new HashMap<>();
     private VisitorOpsConstant specConstantVisitor;
     private ProgramBuilder builder;
@@ -70,11 +73,15 @@ public class VisitorSpirv extends SpirvBaseVisitor<Program> {
                     throw new ParsingException("Multiple config headers are not allowed");
                 }
                 hasConfig = true;
-                List<SpirvParser.LiteranHeaderUnsignedIntegerContext> literals = cfgCtx.literanHeaderUnsignedInteger();
+                List<SpirvParser.LiteralHeaderUnsignedIntegerContext> literals = cfgCtx.literalHeaderUnsignedInteger();
                 int threadCount = Integer.parseInt(literals.get(0).getText());
                 int subgroupCount = Integer.parseInt(literals.get(1).getText());
                 int workgroupCount = Integer.parseInt(literals.get(2).getText());
                 grid = new ThreadGrid(threadCount, subgroupCount, workgroupCount, 1, 1);
+            }
+            SpirvParser.UnknownHeaderContext unknownCtx = header.unknownHeader();
+            if (unknownCtx != null) {
+                logger.warn("Unknown header {}", unknownCtx.ModeHeader_UnknownType());
             }
         }
         return new ProgramBuilder(grid);
