@@ -1789,6 +1789,7 @@ ModeHeader_Colon : ':';
 ModeHeader_Comma : ',';
 ModeHeader_PositiveInteger : [0-9]+;
 ModeHeader_NegativeInteger : '-' [0-9]+;
+ModeHeader_UnknownType : [A-Z][A-Za-z0-9_]+;
 ModeHeader_Whitespace : [ \t\r]+ -> skip;
 ModeHeader_NewLine : [\n]+ -> popMode, skip;
 
