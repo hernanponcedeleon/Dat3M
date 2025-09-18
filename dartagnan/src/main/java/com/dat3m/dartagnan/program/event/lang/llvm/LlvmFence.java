@@ -17,7 +17,7 @@ public class LlvmFence extends FenceBase {
 
     @Override
     public String defaultString() {
-        return name + "(" + mo + ")\t### LLVM";
+        return String.format("%s(%s)", name, mo);
     }
 
     @Override

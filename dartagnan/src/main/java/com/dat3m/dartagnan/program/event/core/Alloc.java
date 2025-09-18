@@ -117,7 +117,7 @@ public final class Alloc extends AbstractEvent implements RegReader, RegWriter {
 
     @Override
     protected String defaultString() {
-        return String.format("%s <- %salloc(type=%s, size=%s, align=%s)",
+        return String.format("%s = %salloc(type=%s, size=%s, align=%s)",
                 resultRegister, isHeapAllocation ? "heap" : "stack", allocationType, arraySize, alignment);
     }
 

@@ -56,7 +56,7 @@ public class ExecutionStatus extends AbstractEvent implements RegWriter, EventUs
 
     @Override
     public String defaultString() {
-        return register + " <- not_exec(" + event + ")";
+        return register + " = not_exec(" + event + ")";
     }
 
     @Override

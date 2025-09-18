@@ -20,7 +20,7 @@ public class VulkanCmpXchg extends RMWCmpXchgBase {
 
     @Override
     public String defaultString() {
-        return String.format("%s := cmp_xchg[%s](%s, %s, %s)", resultRegister, mo, storeValue, expectedValue, address);
+        return String.format("%s = cmp_xchg[%s](%s, %s, %s)", resultRegister, mo, storeValue, expectedValue, address);
     }
 
     @Override

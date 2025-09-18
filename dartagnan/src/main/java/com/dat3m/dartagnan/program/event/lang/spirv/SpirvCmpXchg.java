@@ -42,7 +42,7 @@ public class SpirvCmpXchg extends RMWCmpXchgBase {
 
     @Override
     public String defaultString() {
-        return String.format("%s := spirv_cmpxchg[%s, %s, %s](%s, %s, %s)",
+        return String.format("%s = spirv_cmpxchg[%s, %s, %s](%s, %s, %s)",
                 resultRegister, eqMo, mo, scope, address, expectedValue, storeValue);
     }
 

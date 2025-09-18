@@ -38,7 +38,7 @@ public class Load extends AbstractMemoryCoreEvent implements RegWriter {
     @Override
     public String defaultString() {
         final MemoryOrder mo = getMetadata(MemoryOrder.class);
-        return String.format("%s = load(*%s%s)", resultRegister, address, mo != null ? ", " + mo.value() : "");
+        return String.format("%s = load(%s%s)", resultRegister, address, mo != null ? ", " + mo.value() : "");
     }
 
     @Override

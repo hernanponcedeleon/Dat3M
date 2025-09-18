@@ -33,7 +33,7 @@ public class ThreadJoin extends AbstractEvent implements RegWriter, BlockingEven
 
     @Override
     protected String defaultString() {
-        return String.format("%s <- ThreadJoin(%s)", resultRegister, joinThread);
+        return String.format("%s = ThreadJoin(%s)", resultRegister, joinThread);
     }
 
     @Override

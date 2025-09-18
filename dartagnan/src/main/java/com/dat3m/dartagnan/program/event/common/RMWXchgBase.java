@@ -50,7 +50,7 @@ public abstract class RMWXchgBase extends SingleAccessMemoryEvent implements Reg
 
     @Override
     protected String defaultString() {
-        return String.format("%s := rmw exchange(%s, %s)", resultRegister, address, storeValue);
+        return String.format("%s = rmw exchange(%s, %s)", resultRegister, address, storeValue);
     }
 
     @Override

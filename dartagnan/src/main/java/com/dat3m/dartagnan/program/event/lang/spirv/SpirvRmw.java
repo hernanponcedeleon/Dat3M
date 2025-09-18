@@ -28,7 +28,7 @@ public class SpirvRmw extends RMWOpResultBase {
 
     @Override
     public String defaultString() {
-        return String.format("%s := spirv_rmw_%s[%s, %s](%s, %s)",
+        return String.format("%s = spirv_rmw_%s[%s, %s](%s, %s)",
                 resultRegister, operator.getName(), mo, scope, address, operand);
     }
 

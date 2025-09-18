@@ -32,7 +32,7 @@ public class RMWStore extends Store implements EventUser {
 
     @Override
     public String defaultString() {
-        return "rmw " + super.defaultString();
+        return String.format("rmw %s \t #Linked to E%s", super.defaultString(), loadEvent.getGlobalId());
     }
 
     @Override

@@ -67,7 +67,7 @@ public abstract class RMWCmpXchgBase extends SingleAccessMemoryEvent implements 
     @Override
     protected String defaultString() {
         final String strongSuffix = isStrong ?  "strong" : "weak";
-        return String.format("%s := rmw compare_exchange_%s(%s, %s, %s)",
+        return String.format("%s = rmw compare_exchange_%s(%s, %s, %s)",
                 resultRegister, strongSuffix, address, expectedValue, storeValue);
     }
 

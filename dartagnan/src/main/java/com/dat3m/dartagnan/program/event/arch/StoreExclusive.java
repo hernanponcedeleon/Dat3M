@@ -36,7 +36,7 @@ public class StoreExclusive extends StoreBase implements RegWriter {
 
     @Override
     public String defaultString() {
-        return register + " <- store(*" + address + ", " + value + (!mo.isEmpty() ? ", " + mo : "") + ")";
+        return String.format("%s = store excl(%s, %s%s)", register, address, value, mo.isEmpty() ? "" : ", " + mo);
     }
 
     @Override
