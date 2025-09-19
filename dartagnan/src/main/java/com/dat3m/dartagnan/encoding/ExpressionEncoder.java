@@ -507,6 +507,13 @@ public class ExpressionEncoder {
 
         // ====================================================================================
         // Pointers
+        @Override
+        public TypedFormula<PointerType, ?> visitPtrLiteral(PointerLiteral literal) {
+            final Formula result = context.useIntegers
+                    ? integerFormulaManager().makeNumber(literal.getValue())
+                    : bitvectorFormulaManager().makeBitvector(types.getArchType().getBitWidth(), literal.getValue());
+            return new TypedFormula<>(literal.getType(), result);
+        }
 
         @Override
         public TypedFormula<PointerType, ?> visitPointerAddExpression(PointerAddExpr expr) {

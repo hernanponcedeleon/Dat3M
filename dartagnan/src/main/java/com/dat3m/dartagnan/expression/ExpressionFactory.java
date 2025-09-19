@@ -317,6 +317,10 @@ public final class ExpressionFactory {
     // -----------------------------------------------------------------------------------------------------------------
     // Pointers
 
+    public PointerLiteral makeValue(BigInteger value, PointerType type) {
+        return new PointerLiteral(type, value);
+    }
+
     public Expression makeGetElementPointer(Type indexingType, Expression base, List<Expression> offsets) {
         Preconditions.checkArgument(base.getType().equals(types.getPointerType()),
                 "Applying offsets to non-pointer expression.");
@@ -359,6 +363,7 @@ public final class ExpressionFactory {
     public Expression makeIntToPtrCast(Expression operand) {
         return new IntToPtrCast(types.getPointerType(), operand);
     }
+
 
     public Expression makeNullLiteral(PointerType pointerType) {
         return new NullLiteral(pointerType);

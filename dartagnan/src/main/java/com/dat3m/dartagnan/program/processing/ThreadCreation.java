@@ -7,10 +7,7 @@ import com.dat3m.dartagnan.expression.base.LeafExpressionBase;
 import com.dat3m.dartagnan.expression.integers.IntBinaryOp;
 import com.dat3m.dartagnan.expression.integers.IntLiteral;
 import com.dat3m.dartagnan.expression.processing.ExprTransformer;
-import com.dat3m.dartagnan.expression.type.AggregateType;
-import com.dat3m.dartagnan.expression.type.FunctionType;
-import com.dat3m.dartagnan.expression.type.IntegerType;
-import com.dat3m.dartagnan.expression.type.TypeFactory;
+import com.dat3m.dartagnan.expression.type.*;
 import com.dat3m.dartagnan.program.*;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.*;
@@ -85,6 +82,7 @@ public class ThreadCreation implements ProgramProcessor {
     private final IntegerType archType = types.getArchType();
     // The thread state consists of two flags: ALIVE and JOINABLE.
     private final IntegerType threadStateType = types.getIntegerType(2);
+    private final PointerType pointerType = types.getPointerType();
 
     private ThreadCreation(Configuration config) throws InvalidConfigurationException {
         config.inject(this);
@@ -186,7 +184,12 @@ public class ThreadCreation implements ProgramProcessor {
 
         for (DynamicThreadJoin join : program.getThreadEvents(DynamicThreadJoin.class)) {
             final Thread caller = join.getThread();
-            final Expression tidExpr = join.getTid();
+            final Expression tidExpr_ = join.getTid();
+            final Expression tidExpr = tidExpr_.getType() instanceof PointerType ? expressions.makePtrToIntCast(tidExpr_) : tidExpr_;
+
+
+
+
 
             final Register joinRegister = join.getResultRegister();
             final IntegerType statusType = (IntegerType) ((AggregateType)joinRegister.getType()).getFields().get(0).type();
@@ -462,7 +465,7 @@ public class ThreadCreation implements ProgramProcessor {
             final List<Event> initialization = new ArrayList<>();
             for (Integer initOffset : memoryObject.getInitializedFields()) {
                 initialization.add(EventFactory.newStore(
-                        exprs.makeAdd(reg, exprs.makeValue(initOffset, types.getArchType())),
+                        exprs.makePtrAdd(reg, exprs.makeValue(initOffset, types.getArchType())),
                         memoryObject.getInitialValue(initOffset)
                 ));
             }
