@@ -1,0 +1,15 @@
+name: Enforce PR base branch
+
+on:
+  pull_request:
+    types: [opened, edited, synchronize, reopened]
+
+jobs:
+  enforce-dev:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Fail if PR does not target development
+        if: github.event.pull_request.base.ref != 'development'
+        run: |
+          echo "❌ PRs must target 'development', not '${{ github.event.pull_request.base.ref }}'"
+          exit 1
