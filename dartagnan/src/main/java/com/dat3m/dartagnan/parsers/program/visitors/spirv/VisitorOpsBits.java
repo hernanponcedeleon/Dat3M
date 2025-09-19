@@ -84,7 +84,7 @@ public class VisitorOpsBits extends SpirvBaseVisitor<Event> {
         Type type = builder.getType(typeId);
         Expression op1 = builder.getExpression(op1Id);
         Expression op2 = builder.getExpression(op2Id);
-        if (!type.equals(op1.getType()) && type.equals(op2.getType())) {
+        if (!(type.equals(op1.getType()) && type.equals(op2.getType()))) {
             throw new ParsingException("Illegal definition for '%s', result type doesn't match operand types", id);
         }
         if (type instanceof ArrayType aType && !aType.hasKnownNumElements()) {
