@@ -68,32 +68,32 @@ public class VisitorOpsBits extends SpirvBaseVisitor<Event> {
         String typeId = ctx.idResultType().getText();
         Type type = builder.getType(typeId);
         Expression op = builder.getExpression(ctx.operand().getText());
-        if (type.equals(op.getType())) {
-            if (!(type instanceof ArrayType aType) || aType.hasKnownNumElements()) {
-                Expression expression = HelperTypes.createResultExpression(id, type, op, IntUnaryOp.NOT);
-                Register register = builder.addRegister(id, typeId);
-                Local event = EventFactory.newLocal(register, expression);
-                return builder.addEvent(event);
-            }
+        if (!type.equals(op.getType())) {
+            throw new ParsingException("Illegal definition for '%s', result type doesn't match operand types", id);
+        }
+        if (type instanceof ArrayType aType && !aType.hasKnownNumElements()) {
             throw new ParsingException("Illegal definition for '%s', vector expressions must have fixed size", id);
         }
-        throw new ParsingException("Illegal definition for '%s', result type doesn't match operand types", id);
+        Expression expression = HelperTypes.createResultExpression(id, type, op, IntUnaryOp.NOT);
+        Register register = builder.addRegister(id, typeId);
+        Local event = EventFactory.newLocal(register, expression);
+        return builder.addEvent(event);
     }
 
     private Event visitExpression(String id, String typeId, String op1Id, String op2Id, IntBinaryOp op) {
         Type type = builder.getType(typeId);
         Expression op1 = builder.getExpression(op1Id);
         Expression op2 = builder.getExpression(op2Id);
-        if (type.equals(op1.getType()) && type.equals(op2.getType())) {
-            if (!(type instanceof ArrayType aType) || aType.hasKnownNumElements()) {
-                Expression expression = HelperTypes.createResultExpression(id, type, op1, op2, op);
-                Register register = builder.addRegister(id, typeId);
-                Local event = EventFactory.newLocal(register, expression);
-                return builder.addEvent(event);
-            }
+        if (!type.equals(op1.getType()) && type.equals(op2.getType())) {
+            throw new ParsingException("Illegal definition for '%s', result type doesn't match operand types", id);
+        }
+        if (type instanceof ArrayType aType && !aType.hasKnownNumElements()) {
             throw new ParsingException("Illegal definition for '%s', vector expressions must have fixed size", id);
         }
-        throw new ParsingException("Illegal definition for '%s', result type doesn't match operand types", id);
+        Expression expression = HelperTypes.createResultExpression(id, type, op1, op2, op);
+        Register register = builder.addRegister(id, typeId);
+        Local event = EventFactory.newLocal(register, expression);
+        return builder.addEvent(event);
     }
 
     public Set<String> getSupportedOps() {
