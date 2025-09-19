@@ -7,6 +7,7 @@ import com.dat3m.dartagnan.expression.aggregates.ConstructExpr;
 import com.dat3m.dartagnan.expression.integers.IntBinaryExpr;
 import com.dat3m.dartagnan.expression.integers.IntUnaryExpr;
 import com.dat3m.dartagnan.expression.integers.IntBinaryOp;
+import com.dat3m.dartagnan.expression.processing.ExprSimplifier;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.mocks.MockProgramBuilder;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.mocks.MockSpirvParser;
 import com.dat3m.dartagnan.program.event.core.Local;
@@ -61,6 +62,7 @@ public class VisitorOpsBitsTest {
     }
 
     private void doTestVectorOperations(String name, IntBinaryOp op) {
+        ExprSimplifier simplifier = new ExprSimplifier(true);
         // given
         MockProgramBuilder builder = new MockProgramBuilder();
         builder.mockIntType("%int", 64);
@@ -76,8 +78,8 @@ public class VisitorOpsBitsTest {
         ConstructExpr result = (ConstructExpr) local.getExpr();
         for (int i = 0; i < 3; i++) {
             BinaryExpression element = (BinaryExpression) result.getOperands().get(i);
-            assertEquals(op1.getOperands().get(i), element.getLeft());
-            assertEquals(op2.getOperands().get(i), element.getRight());
+            assertEquals(op1.getOperands().get(i), element.getLeft().accept(simplifier));
+            assertEquals(op2.getOperands().get(i), element.getRight().accept(simplifier));
             assertEquals(op, element.getKind());
         }
         assertEquals(builder.getExpression("%res"), local.getResultRegister());
@@ -139,7 +141,7 @@ public class VisitorOpsBitsTest {
         ConstructExpr result = (ConstructExpr) local.getExpr();
         for (int i = 0; i < 3; i++) {
             UnaryExpression element = (UnaryExpression) result.getOperands().get(i);
-            assertEquals(op.getOperands().get(i), element.getOperand());
+            assertEquals(op.getOperands().get(i), element.getOperand().accept(new ExprSimplifier(true)));
             assertEquals(NOT, element.getKind());
         }
         assertEquals(builder.getExpression("%res"), local.getResultRegister());
