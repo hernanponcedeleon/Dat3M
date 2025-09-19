@@ -22,11 +22,10 @@ public final class TypeFactory {
     private final BooleanType booleanType = new BooleanType();
     private final IntegerType archType;
     private final PointerType pointerType = new PointerType();
-
     private final Normalizer typeNormalizer = new Normalizer();
 
     private TypeFactory() {
-        archType = getIntegerType(64);//TODO insert proper pointer and difference types
+        archType = getIntegerType(64);
     }
 
 

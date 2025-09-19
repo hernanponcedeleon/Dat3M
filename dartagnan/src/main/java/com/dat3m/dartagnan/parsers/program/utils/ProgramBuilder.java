@@ -242,9 +242,9 @@ public class ProgramBuilder {
         getOrNewMemoryObject(locName).setInitialValue(0, iValue);
     }
 
-    public void initRegEqLocPtr(int regThread, String regName, String locName, Type type) {
+    public void initRegEqLocPtr(int regThread, String regName, String locName) {
         MemoryObject object = getOrNewMemoryObject(locName);
-        Register reg = getOrNewRegister(regThread, regName, type);
+        Register reg = getOrNewRegister(regThread, regName, types.getPointerType());
         addChild(regThread, EventFactory.newLocal(reg, object));
     }
 
