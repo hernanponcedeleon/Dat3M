@@ -5,6 +5,7 @@ import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.Type;
 import com.dat3m.dartagnan.expression.integers.IntBinaryOp;
+import com.dat3m.dartagnan.expression.integers.IntUnaryOp;
 import com.dat3m.dartagnan.expression.type.ArrayType;
 import com.dat3m.dartagnan.parsers.SpirvBaseVisitor;
 import com.dat3m.dartagnan.parsers.SpirvParser;
@@ -61,6 +62,24 @@ public class VisitorOpsBits extends SpirvBaseVisitor<Event> {
                 ctx.operand1().getText(), ctx.operand2().getText(), IntBinaryOp.XOR);
     }
 
+    @Override
+    public Event visitOpNot(SpirvParser.OpNotContext ctx) {
+        String id = ctx.idResult().getText();
+        String typeId = ctx.idResultType().getText();
+        Type type = builder.getType(typeId);
+        Expression op = builder.getExpression(ctx.operand().getText());
+        if (type.equals(op.getType())) {
+            if (!(type instanceof ArrayType aType) || aType.hasKnownNumElements()) {
+                Expression expression = HelperTypes.createResultExpression(id, type, op, IntUnaryOp.NOT);
+                Register register = builder.addRegister(id, typeId);
+                Local event = EventFactory.newLocal(register, expression);
+                return builder.addEvent(event);
+            }
+            throw new ParsingException("Illegal definition for '%s', vector expressions must have fixed size", id);
+        }
+        throw new ParsingException("Illegal definition for '%s', result type doesn't match operand types", id);
+    }
+
     private Event visitExpression(String id, String typeId, String op1Id, String op2Id, IntBinaryOp op) {
         Type type = builder.getType(typeId);
         Expression op1 = builder.getExpression(op1Id);
@@ -84,7 +103,8 @@ public class VisitorOpsBits extends SpirvBaseVisitor<Event> {
                 "opShiftRightArithmetic",
                 "OpBitwiseAnd",
                 "OpBitwiseOr",
-                "OpBitwiseXor"
+                "OpBitwiseXor",
+                "OpNot"
         );
     }
 }

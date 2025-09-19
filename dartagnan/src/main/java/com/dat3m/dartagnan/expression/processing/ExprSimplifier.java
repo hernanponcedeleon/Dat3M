@@ -204,6 +204,7 @@ public class ExprSimplifier extends ExprTransformer {
             final int bitWidth = expr.getType().getBitWidth();
             final BigInteger newValue = switch (expr.getKind()) {
                 case MINUS -> IntegerHelper.neg(lit.getValue(), bitWidth);
+                case NOT -> IntegerHelper.not(lit.getValue(), bitWidth);
                 case CTLZ -> IntegerHelper.ctlz(lit.getValue(), bitWidth);
                 case CTTZ -> IntegerHelper.cttz(lit.getValue(), bitWidth);
             };
