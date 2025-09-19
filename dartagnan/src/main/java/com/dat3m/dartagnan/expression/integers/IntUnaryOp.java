@@ -15,7 +15,7 @@ public enum IntUnaryOp implements ExpressionKind {
         return switch (this) {
             case CTLZ -> "ctlz ";
             case CTTZ -> "cttz ";
-            case NOT -> "~ ";
+            case NOT -> "~";
             case MINUS -> "-";
         };
     }
