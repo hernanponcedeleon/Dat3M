@@ -57,8 +57,8 @@ public class HelperTypes {
         if (type instanceof ArrayType aType && aType.getElementType() instanceof IntegerType) {
             List<Expression> elements = new ArrayList<>();
             for (int i = 0; i < aType.getNumElements(); i++) {
-                Expression elementOp1 = op1 instanceof ConstructExpr ? op1.getOperands().get(i) : expressions.makeExtract(op1, i);
-                Expression elementOp2 = op2 instanceof ConstructExpr ? op2.getOperands().get(i) : expressions.makeExtract(op2, i);
+                Expression elementOp1 = expressions.makeExtract(op1, i);
+                Expression elementOp2 = expressions.makeExtract(op2, i);
                 elements.add(expressions.makeBinary(elementOp1, op, elementOp2));
             }
             return expressions.makeArray(aType, elements);
@@ -73,7 +73,7 @@ public class HelperTypes {
         if (type instanceof ArrayType aType && aType.getElementType() instanceof IntegerType) {
             List<Expression> elements = new ArrayList<>();
             for (int i = 0; i < aType.getNumElements(); i++) {
-                Expression elementOp = operand instanceof ConstructExpr ? operand.getOperands().get(i) : expressions.makeExtract(operand, i);
+                Expression elementOp = expressions.makeExtract(operand, i);
                 elements.add(expressions.makeIntUnary(op, elementOp));
             }
             return expressions.makeArray(aType, elements);
