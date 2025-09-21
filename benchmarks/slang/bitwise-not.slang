@@ -12,17 +12,17 @@ RWStructuredBuffer<uint8_t> output1;
 RWStructuredBuffer<uint32_t> output2;
 RWStructuredBuffer<uint32_t> output3;
 
-[numthreads(2, 1, 1)]
+[numthreads(3, 1, 1)]
 void Main(uint3 threadID : SV_GroupThreadID, uint3 groupID : SV_GroupID)
 {
     uint tid = threadID.x;
 
     uint8_t in = input[tid];
-    uint8_t comp = ~in;
-    output1[tid] = comp;
+    uint8_t not = ~in;
+    output1[tid] = not;
 
     int2 vin = int2(input[tid], input[(tid+1) % 3]);
-    int2 vcomp = ~vin;
-    output2[tid] = vcomp.x;
-    output3[tid] = vcomp.y;
+    int2 vnot = ~vin;
+    output2[tid] = vnot.x;
+    output3[tid] = vnot.y;
 }

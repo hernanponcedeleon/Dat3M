@@ -113,7 +113,7 @@ public class VisitorOpsBitsTest {
         MockProgramBuilder builder = new MockProgramBuilder();
         builder.mockIntType("%int", 64);
         builder.mockConstant("%value", "%int", 4);
-        String input = String.format("%%res = OpNot %%int %%value");
+        String input = "%res = OpNot %int %value";
 
         // when
         Local local = visit(builder, input);
@@ -132,7 +132,7 @@ public class VisitorOpsBitsTest {
         builder.mockIntType("%int", 64);
         builder.mockVectorType("%array", "%int", 3);
         ConstructExpr op = (ConstructExpr) builder.mockConstant("%value", "%array", List.of(0, 1, 2));
-        String input = String.format("%%res = OpNot %%array %%value");
+        String input = "%res = OpNot %array %value";
 
         // when
         Local local = visit(builder, input);

@@ -18,16 +18,16 @@
                OpExtension "SPV_KHR_vulkan_memory_model"
                OpMemoryModel Logical Vulkan
                OpEntryPoint GLCompute %Main "main" %input %output1 %output2 %output3 %gl_LocalInvocationID
-               OpExecutionMode %Main LocalSize 2 1 1
+               OpExecutionMode %Main LocalSize 3 1 1
                OpSource Slang 1
                OpName %tid "tid"
                OpName %RWStructuredBuffer "RWStructuredBuffer"
                OpName %input "input"
                OpName %in "in"
-               OpName %comp "comp"
+               OpName %not "not"
                OpName %output1 "output1"
                OpName %vin "vin"
-               OpName %vcomp "vcomp"
+               OpName %vnot "vnot"
                OpName %RWStructuredBuffer_0 "RWStructuredBuffer"
                OpName %output2 "output2"
                OpName %output3 "output3"
@@ -77,9 +77,9 @@
         %tid = OpCompositeExtract %uint %7 0
          %15 = OpAccessChain %_ptr_StorageBuffer_uchar %input %int_0 %tid
          %in = OpLoad %uchar %15
-       %comp = OpNot %uchar %in
+        %not = OpNot %uchar %in
          %22 = OpAccessChain %_ptr_StorageBuffer_uchar %output1 %int_0 %tid
-               OpStore %22 %comp
+               OpStore %22 %not
          %25 = OpAccessChain %_ptr_StorageBuffer_uchar %input %int_0 %tid
          %26 = OpLoad %uchar %25
          %27 = OpSConvert %int %26
@@ -89,13 +89,13 @@
          %33 = OpLoad %uchar %32
          %34 = OpSConvert %int %33
         %vin = OpCompositeConstruct %v2int %27 %34
-      %vcomp = OpNot %v2int %vin
+       %vnot = OpNot %v2int %vin
          %39 = OpAccessChain %_ptr_StorageBuffer_uint %output2 %int_0 %tid
-         %44 = OpCompositeExtract %int %vcomp 0
+         %44 = OpCompositeExtract %int %vnot 0
          %45 = OpBitcast %uint %44
                OpStore %39 %45
          %47 = OpAccessChain %_ptr_StorageBuffer_uint %output3 %int_0 %tid
-         %49 = OpCompositeExtract %int %vcomp 1
+         %49 = OpCompositeExtract %int %vnot 1
          %50 = OpBitcast %uint %49
                OpStore %47 %50
                OpReturn

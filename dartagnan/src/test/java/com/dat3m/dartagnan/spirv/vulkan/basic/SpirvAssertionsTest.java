@@ -121,8 +121,8 @@ public class SpirvAssertionsTest {
                 {"push-constant-mixed.spvasm", 1, PASS},
                 {"bitwise-scalar.spvasm", 1, PASS},
                 {"bitwise-vector.spvasm", 1, PASS},
-                {"idx-overflow.spvasm", 1, PASS},
-                {"complement.spvasm", 1, PASS}
+                {"bitwise-not.spvasm", 1, PASS},
+                {"idx-overflow.spvasm", 1, PASS}
         });
     }
 
