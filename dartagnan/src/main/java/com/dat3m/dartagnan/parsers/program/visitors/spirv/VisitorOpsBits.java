@@ -18,6 +18,8 @@ import com.dat3m.dartagnan.parsers.program.visitors.spirv.helpers.HelperTypes;
 
 import java.util.Set;
 
+import static com.dat3m.dartagnan.expression.utils.ExpressionHelper.isScalar;
+
 public class VisitorOpsBits extends SpirvBaseVisitor<Event> {
 
     private final ProgramBuilder builder;
@@ -71,6 +73,9 @@ public class VisitorOpsBits extends SpirvBaseVisitor<Event> {
         if (!type.equals(op.getType())) {
             throw new ParsingException("Illegal definition for '%s', result type doesn't match operand types", id);
         }
+        if (!isScalar(type) && !(type instanceof ArrayType aType && isScalar(aType.getElementType()))) {
+            throw new ParsingException("Illegal definition for '%s', type should be scalar or vector of scalar", id);
+        }
         if (type instanceof ArrayType aType && !aType.hasKnownNumElements()) {
             throw new ParsingException("Illegal definition for '%s', vector expressions must have fixed size", id);
         }
@@ -86,6 +91,9 @@ public class VisitorOpsBits extends SpirvBaseVisitor<Event> {
         Expression op2 = builder.getExpression(op2Id);
         if (!(type.equals(op1.getType()) && type.equals(op2.getType()))) {
             throw new ParsingException("Illegal definition for '%s', result type doesn't match operand types", id);
+        }
+        if (!isScalar(type) && !(type instanceof ArrayType aType && isScalar(aType.getElementType()))) {
+            throw new ParsingException("Illegal definition for '%s', type should be scalar or vector of scalar", id);
         }
         if (type instanceof ArrayType aType && !aType.hasKnownNumElements()) {
             throw new ParsingException("Illegal definition for '%s', vector expressions must have fixed size", id);

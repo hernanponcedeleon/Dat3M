@@ -106,6 +106,29 @@ public class VisitorOpsBitsTest {
     }
 
     @Test
+    public void testWrongType() {
+        // given
+        MockProgramBuilder builder = new MockProgramBuilder();
+        builder.mockIntType("%int", 64);
+        builder.mockAggregateType("%struct", "%int", "%int");
+        builder.mockConstant("%a", "%int", 1);
+        builder.mockConstant("%b", "%int", 2);
+        builder.mockConstant("%value", "%struct", List.of("%a", "%b"));
+        String input = "%reg = OpBitwiseAnd %struct %value %value";
+
+        try {
+            // when
+            visit(builder, input);
+            fail("Should throw exception");
+        } catch (ParsingException e) {
+            // then
+            assertEquals("Illegal definition for '%reg', " +
+                            "type should be scalar or vector of scalar",
+                    e.getMessage());
+        }
+    }
+
+    @Test
     public void testScalarNot() {
         // given
         MockProgramBuilder builder = new MockProgramBuilder();
@@ -166,6 +189,49 @@ public class VisitorOpsBitsTest {
         }
     }
 
+    @Test
+    public void testNotFixedSizeArrayNot() {
+        // given
+        MockProgramBuilder builder = new MockProgramBuilder();
+        builder.mockIntType("%int", 64);
+        builder.mockVectorType("%runtime_array", "%int", -1);
+        builder.mockConstant("%value", "%runtime_array", List.of(0, 1, 2));
+        String input = "%reg = OpNot %runtime_array %value";
+
+        try {
+            // when
+            visit(builder, input);
+            fail("Should throw exception");
+        } catch (ParsingException e) {
+            // then
+            assertEquals("Illegal definition for '%reg', " +
+                            "vector expressions must have fixed size",
+                    e.getMessage());
+        }
+    }
+
+    @Test
+    public void testWrongTypeNot() {
+        // given
+        MockProgramBuilder builder = new MockProgramBuilder();
+        builder.mockIntType("%int", 64);
+        builder.mockAggregateType("%struct", "%int", "%int");
+        builder.mockConstant("%a", "%int", 1);
+        builder.mockConstant("%b", "%int", 2);
+        builder.mockConstant("%value", "%struct", List.of("%a", "%b"));
+        String input = "%reg = OpNot %struct %value";
+
+        try {
+            // when
+            visit(builder, input);
+            fail("Should throw exception");
+        } catch (ParsingException e) {
+            // then
+            assertEquals("Illegal definition for '%reg', " +
+                            "type should be scalar or vector of scalar",
+                    e.getMessage());
+        }
+    }
 
     private Local visit(MockProgramBuilder builder, String input) {
         builder.mockFunctionStart(true);
