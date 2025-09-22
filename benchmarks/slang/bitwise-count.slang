@@ -18,8 +18,8 @@ void Main(uint3 threadID : SV_GroupThreadID)
     uint tid = threadID.x;
 
     uint32_t in = input[tid];
-    uint32_t comp = countbits(in);
-    output1[tid] = comp;
+    uint32_t count = countbits(in);
+    output1[tid] = count;
 
     uint2 vin = uint2(input[tid], input[(tid+1) % 3]);
     uint2 vcount = countbits(vin);
