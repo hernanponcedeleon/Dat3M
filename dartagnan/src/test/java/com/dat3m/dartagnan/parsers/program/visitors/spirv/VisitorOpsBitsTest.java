@@ -2,8 +2,10 @@ package com.dat3m.dartagnan.parsers.program.visitors.spirv;
 
 import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.expression.BinaryExpression;
+import com.dat3m.dartagnan.expression.UnaryExpression;
 import com.dat3m.dartagnan.expression.aggregates.ConstructExpr;
 import com.dat3m.dartagnan.expression.integers.IntBinaryExpr;
+import com.dat3m.dartagnan.expression.integers.IntUnaryExpr;
 import com.dat3m.dartagnan.expression.integers.IntBinaryOp;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.mocks.MockProgramBuilder;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.mocks.MockSpirvParser;
@@ -13,6 +15,7 @@ import org.junit.Test;
 import java.util.List;
 
 import static com.dat3m.dartagnan.expression.integers.IntBinaryOp.*;
+import static com.dat3m.dartagnan.expression.integers.IntUnaryOp.*;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
@@ -102,8 +105,137 @@ public class VisitorOpsBitsTest {
         }
     }
 
+    @Test
+    public void testWrongType() {
+        // given
+        MockProgramBuilder builder = new MockProgramBuilder();
+        builder.mockIntType("%int", 64);
+        builder.mockAggregateType("%struct", "%int", "%int");
+        builder.mockConstant("%a", "%int", 1);
+        builder.mockConstant("%b", "%int", 2);
+        builder.mockConstant("%value", "%struct", List.of("%a", "%b"));
+        String input = "%reg = OpBitwiseAnd %struct %value %value";
+
+        try {
+            // when
+            visit(builder, input);
+            fail("Should throw exception");
+        } catch (ParsingException e) {
+            // then
+            assertEquals("Illegal definition for '%reg', " +
+                            "type should be scalar or vector of scalar",
+                    e.getMessage());
+        }
+    }
+
+    @Test
+    public void testScalarNot() {
+        // given
+        MockProgramBuilder builder = new MockProgramBuilder();
+        builder.mockIntType("%int", 64);
+        builder.mockConstant("%value", "%int", 4);
+        String input = "%res = OpNot %int %value";
+
+        // when
+        Local local = visit(builder, input);
+
+        // then
+        IntUnaryExpr result = (IntUnaryExpr) local.getExpr();
+        assertEquals(builder.getExpression("%value"), result.getOperand());
+        assertEquals(NOT, result.getKind());
+        assertEquals(builder.getExpression("%res"), local.getResultRegister());
+    }
+
+    @Test
+    public void testVectorNot() {
+        // given
+        MockProgramBuilder builder = new MockProgramBuilder();
+        builder.mockIntType("%int", 64);
+        builder.mockVectorType("%array", "%int", 3);
+        ConstructExpr op = (ConstructExpr) builder.mockConstant("%value", "%array", List.of(0, 1, 2));
+        String input = "%res = OpNot %array %value";
+
+        // when
+        Local local = visit(builder, input);
+
+        // then
+        ConstructExpr result = (ConstructExpr) local.getExpr();
+        for (int i = 0; i < 3; i++) {
+            UnaryExpression element = (UnaryExpression) result.getOperands().get(i);
+            assertEquals(op.getOperands().get(i), element.getOperand());
+            assertEquals(NOT, element.getKind());
+        }
+        assertEquals(builder.getExpression("%res"), local.getResultRegister());
+    }
+
+    @Test
+    public void testMismatchingTypesNot() {
+        // given
+        MockProgramBuilder builder = new MockProgramBuilder();
+        builder.mockIntType("%int", 64);
+        builder.mockVectorType("%vector", "%int", 3);
+        builder.mockConstant("%value", "%int", 1);
+        String input = "%reg = OpNot %vector %value";
+
+        try {
+            // when
+            visit(builder, input);
+            fail("Should throw exception");
+        } catch (ParsingException e) {
+            // then
+            assertEquals("Illegal definition for '%reg', " +
+                            "result type doesn't match operand types",
+                    e.getMessage());
+        }
+    }
+
+    @Test
+    public void testNotFixedSizeArrayNot() {
+        // given
+        MockProgramBuilder builder = new MockProgramBuilder();
+        builder.mockIntType("%int", 64);
+        builder.mockVectorType("%runtime_array", "%int", -1);
+        builder.mockConstant("%value", "%runtime_array", List.of(0, 1, 2));
+        String input = "%reg = OpNot %runtime_array %value";
+
+        try {
+            // when
+            visit(builder, input);
+            fail("Should throw exception");
+        } catch (ParsingException e) {
+            // then
+            assertEquals("Illegal definition for '%reg', " +
+                            "vector expressions must have fixed size",
+                    e.getMessage());
+        }
+    }
+
+    @Test
+    public void testWrongTypeNot() {
+        // given
+        MockProgramBuilder builder = new MockProgramBuilder();
+        builder.mockIntType("%int", 64);
+        builder.mockAggregateType("%struct", "%int", "%int");
+        builder.mockConstant("%a", "%int", 1);
+        builder.mockConstant("%b", "%int", 2);
+        builder.mockConstant("%value", "%struct", List.of("%a", "%b"));
+        String input = "%reg = OpNot %struct %value";
+
+        try {
+            // when
+            visit(builder, input);
+            fail("Should throw exception");
+        } catch (ParsingException e) {
+            // then
+            assertEquals("Illegal definition for '%reg', " +
+                            "type should be scalar or vector of scalar",
+                    e.getMessage());
+        }
+    }
+
     private Local visit(MockProgramBuilder builder, String input) {
         builder.mockFunctionStart(true);
         return (Local) new MockSpirvParser(input).op().accept(new VisitorOpsBits(builder));
     }
+
 }
