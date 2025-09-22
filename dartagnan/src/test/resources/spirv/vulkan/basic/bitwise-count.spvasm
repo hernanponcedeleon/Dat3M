@@ -1,0 +1,86 @@
+; @Input: %input = {{0, 1, 3}}
+; @Input: %output1 = {{0, 0, 0}}
+; @Input: %output2 = {{0, 0, 0}}
+; @Input: %output3 = {{0, 0, 0}}
+; @Output: forall (%output1[0][0] == 0 and %output1[0][1] == 1 and %output1[0][2] == 2)
+; @Output: forall (%output2[0][0] == 0 and %output2[0][1] == 1 and %output2[0][2] == 2)
+; @Output: forall (%output3[0][0] == 1 and %output3[0][1] == 2 and %output3[0][2] == 0)
+; @Config: 3, 1, 1
+; SPIR-V
+; Version: 1.5
+; Generator: Khronos; 40
+; Bound: 42
+; Schema: 0
+               OpCapability Shader
+               OpCapability VulkanMemoryModel
+               OpExtension "SPV_KHR_storage_buffer_storage_class"
+               OpExtension "SPV_KHR_vulkan_memory_model"
+               OpMemoryModel Logical Vulkan
+               OpEntryPoint GLCompute %Main "main" %input %output1 %output2 %output3 %gl_LocalInvocationID
+               OpExecutionMode %Main LocalSize 3 1 1
+               OpSource Slang 1
+               OpName %tid "tid"
+               OpName %RWStructuredBuffer "RWStructuredBuffer"
+               OpName %input "input"
+               OpName %in "in"
+               OpName %output1 "output1"
+               OpName %vin "vin"
+               OpName %output2 "output2"
+               OpName %output3 "output3"
+               OpName %Main "Main"
+               OpDecorate %gl_LocalInvocationID BuiltIn LocalInvocationId
+               OpDecorate %_runtimearr_uint ArrayStride 4
+               OpDecorate %RWStructuredBuffer Block
+               OpMemberDecorate %RWStructuredBuffer 0 Offset 0
+               OpDecorate %input Binding 0
+               OpDecorate %input DescriptorSet 0
+               OpDecorate %output1 Binding 1
+               OpDecorate %output1 DescriptorSet 0
+               OpDecorate %output2 Binding 2
+               OpDecorate %output2 DescriptorSet 0
+               OpDecorate %output3 Binding 3
+               OpDecorate %output3 DescriptorSet 0
+       %void = OpTypeVoid
+          %3 = OpTypeFunction %void
+       %uint = OpTypeInt 32 0
+     %v3uint = OpTypeVector %uint 3
+%_ptr_Input_v3uint = OpTypePointer Input %v3uint
+        %int = OpTypeInt 32 1
+      %int_0 = OpConstant %int 0
+%_ptr_StorageBuffer_uint = OpTypePointer StorageBuffer %uint
+%_runtimearr_uint = OpTypeRuntimeArray %uint
+%RWStructuredBuffer = OpTypeStruct %_runtimearr_uint
+%_ptr_StorageBuffer_RWStructuredBuffer = OpTypePointer StorageBuffer %RWStructuredBuffer
+     %uint_1 = OpConstant %uint 1
+     %uint_3 = OpConstant %uint 3
+     %v2uint = OpTypeVector %uint 2
+%gl_LocalInvocationID = OpVariable %_ptr_Input_v3uint Input
+      %input = OpVariable %_ptr_StorageBuffer_RWStructuredBuffer StorageBuffer
+    %output1 = OpVariable %_ptr_StorageBuffer_RWStructuredBuffer StorageBuffer
+    %output2 = OpVariable %_ptr_StorageBuffer_RWStructuredBuffer StorageBuffer
+    %output3 = OpVariable %_ptr_StorageBuffer_RWStructuredBuffer StorageBuffer
+       %Main = OpFunction %void None %3
+          %4 = OpLabel
+          %7 = OpLoad %v3uint %gl_LocalInvocationID
+        %tid = OpCompositeExtract %uint %7 0
+         %14 = OpAccessChain %_ptr_StorageBuffer_uint %input %int_0 %tid
+         %in = OpLoad %uint %14
+         %20 = OpBitCount %uint %in
+         %21 = OpAccessChain %_ptr_StorageBuffer_uint %output1 %int_0 %tid
+               OpStore %21 %20
+         %24 = OpAccessChain %_ptr_StorageBuffer_uint %input %int_0 %tid
+         %25 = OpLoad %uint %24
+         %26 = OpIAdd %uint %tid %uint_1
+         %28 = OpUMod %uint %26 %uint_3
+         %30 = OpAccessChain %_ptr_StorageBuffer_uint %input %int_0 %28
+         %31 = OpLoad %uint %30
+        %vin = OpCompositeConstruct %v2uint %25 %31
+         %34 = OpBitCount %v2uint %vin
+         %35 = OpAccessChain %_ptr_StorageBuffer_uint %output2 %int_0 %tid
+         %37 = OpCompositeExtract %uint %34 0
+               OpStore %35 %37
+         %39 = OpAccessChain %_ptr_StorageBuffer_uint %output3 %int_0 %tid
+         %41 = OpCompositeExtract %uint %34 1
+               OpStore %39 %41
+               OpReturn
+               OpFunctionEnd

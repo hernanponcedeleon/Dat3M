@@ -13,7 +13,7 @@ RWStructuredBuffer<uint32_t> output2;
 RWStructuredBuffer<uint32_t> output3;
 
 [numthreads(3, 1, 1)]
-void Main(uint3 threadID : SV_GroupThreadID, uint3 groupID : SV_GroupID)
+void Main(uint3 threadID : SV_GroupThreadID)
 {
     uint tid = threadID.x;
 
