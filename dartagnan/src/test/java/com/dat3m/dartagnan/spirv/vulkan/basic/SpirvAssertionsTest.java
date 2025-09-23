@@ -123,6 +123,7 @@ public class SpirvAssertionsTest {
                 {"bitwise-vector.spvasm", 1, PASS},
                 {"bitwise-not.spvasm", 1, PASS},
                 {"bitwise-count.spvasm", 1, PASS},
+                {"bitwise-firstbitlow.spvasm", 1, PASS},
                 {"idx-overflow.spvasm", 1, PASS}
         });
     }
