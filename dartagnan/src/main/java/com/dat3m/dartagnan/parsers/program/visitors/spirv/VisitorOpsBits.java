@@ -64,25 +64,16 @@ public class VisitorOpsBits extends SpirvBaseVisitor<Event> {
                 ctx.operand1().getText(), ctx.operand2().getText(), IntBinaryOp.XOR);
     }
 
+     @Override
+     public Event visitOpNot(SpirvParser.OpNotContext ctx) {
+        return visitExpression(ctx.idResult().getText(), ctx.idResultType().getText(),
+                ctx.operand().getText(), IntUnaryOp.NOT);
+    }
+
     @Override
-    public Event visitOpNot(SpirvParser.OpNotContext ctx) {
-        String id = ctx.idResult().getText();
-        String typeId = ctx.idResultType().getText();
-        Type type = builder.getType(typeId);
-        Expression op = builder.getExpression(ctx.operand().getText());
-        if (!type.equals(op.getType())) {
-            throw new ParsingException("Illegal definition for '%s', result type doesn't match operand types", id);
-        }
-        if (!isScalar(type) && !(type instanceof ArrayType aType && isScalar(aType.getElementType()))) {
-            throw new ParsingException("Illegal definition for '%s', type should be scalar or vector of scalar", id);
-        }
-        if (type instanceof ArrayType aType && !aType.hasKnownNumElements()) {
-            throw new ParsingException("Illegal definition for '%s', vector expressions must have fixed size", id);
-        }
-        Expression expression = HelperTypes.createResultExpression(id, type, op, IntUnaryOp.NOT);
-        Register register = builder.addRegister(id, typeId);
-        Local event = EventFactory.newLocal(register, expression);
-        return builder.addEvent(event);
+    public Event visitOpBitCount(SpirvParser.OpBitCountContext ctx) {
+        return visitExpression(ctx.idResult().getText(), ctx.idResultType().getText(),
+                ctx.base().getText(), IntUnaryOp.CTPOP);
     }
 
     private Event visitExpression(String id, String typeId, String op1Id, String op2Id, IntBinaryOp op) {
@@ -104,6 +95,24 @@ public class VisitorOpsBits extends SpirvBaseVisitor<Event> {
         return builder.addEvent(event);
     }
 
+    private Event visitExpression(String id, String typeId, String opId, IntUnaryOp op) {
+        Type type = builder.getType(typeId);
+        Expression operand = builder.getExpression(opId);
+        if (!type.equals(operand.getType())) {
+            throw new ParsingException("Illegal definition for '%s', result type doesn't match operand types", id);
+        }
+        if (!isScalar(type) && !(type instanceof ArrayType aType && isScalar(aType.getElementType()))) {
+            throw new ParsingException("Illegal definition for '%s', type should be scalar or vector of scalar", id);
+        }
+        if (type instanceof ArrayType aType && !aType.hasKnownNumElements()) {
+            throw new ParsingException("Illegal definition for '%s', vector expressions must have fixed size", id);
+        }
+        Expression expression = HelperTypes.createResultExpression(id, type, operand, op);
+        Register register = builder.addRegister(id, typeId);
+        Local event = EventFactory.newLocal(register, expression);
+        return builder.addEvent(event);
+    }
+
     public Set<String> getSupportedOps() {
         return Set.of(
                 "OpShiftLeftLogical",
@@ -112,7 +121,8 @@ public class VisitorOpsBits extends SpirvBaseVisitor<Event> {
                 "OpBitwiseAnd",
                 "OpBitwiseOr",
                 "OpBitwiseXor",
-                "OpNot"
+                "OpNot",
+                "OpBitCount"
         );
     }
 }

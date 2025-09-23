@@ -7,6 +7,7 @@ import com.dat3m.dartagnan.expression.aggregates.ConstructExpr;
 import com.dat3m.dartagnan.expression.integers.IntBinaryExpr;
 import com.dat3m.dartagnan.expression.integers.IntUnaryExpr;
 import com.dat3m.dartagnan.expression.integers.IntBinaryOp;
+import com.dat3m.dartagnan.expression.integers.IntUnaryOp;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.mocks.MockProgramBuilder;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.mocks.MockSpirvParser;
 import com.dat3m.dartagnan.program.event.core.Local;
@@ -29,6 +30,20 @@ public class VisitorOpsBitsTest {
         doTestScalarOps("OpShiftLeftLogical", LSHIFT);
         doTestScalarOps("OpShiftRightLogical", RSHIFT);
         doTestScalarOps("OpShiftRightArithmetic", ARSHIFT);
+        doTestScalarOps("OpNot", NOT);
+        doTestScalarOps("OpBitCount", CTPOP);
+    }
+
+    @Test
+    public void testVectorOperations() {
+        doTestVectorOperations("OpBitwiseAnd", AND);
+        doTestVectorOperations("OpBitwiseOr", OR);
+        doTestVectorOperations("OpBitwiseXor", XOR);
+        doTestVectorOperations("OpShiftLeftLogical", LSHIFT);
+        doTestVectorOperations("OpShiftRightLogical", RSHIFT);
+        doTestVectorOperations("OpShiftRightArithmetic", ARSHIFT);
+        doTestVectorOperations("OpNot", NOT);
+        doTestVectorOperations("OpBitCount", CTPOP);
     }
 
     private void doTestScalarOps(String name, IntBinaryOp op) {
@@ -50,14 +65,21 @@ public class VisitorOpsBitsTest {
         assertEquals(builder.getExpression("%res"), local.getResultRegister());
     }
 
-    @Test
-    public void testVectorOperations() {
-        doTestVectorOperations("OpBitwiseAnd", AND);
-        doTestVectorOperations("OpBitwiseOr", OR);
-        doTestVectorOperations("OpBitwiseXor", XOR);
-        doTestVectorOperations("OpShiftLeftLogical", LSHIFT);
-        doTestVectorOperations("OpShiftRightLogical", RSHIFT);
-        doTestVectorOperations("OpShiftRightArithmetic", ARSHIFT);
+    private void doTestScalarOps(String name, IntUnaryOp op) {
+        // given
+        MockProgramBuilder builder = new MockProgramBuilder();
+        builder.mockIntType("%int", 64);
+        builder.mockConstant("%value", "%int", 4);
+        String input = String.format("%%res = %s %%int %%value", name);
+
+        // when
+        Local local = visit(builder, input);
+
+        // then
+        IntUnaryExpr result = (IntUnaryExpr) local.getExpr();
+        assertEquals(builder.getExpression("%value"), result.getOperand());
+        assertEquals(op, result.getKind());
+        assertEquals(builder.getExpression("%res"), local.getResultRegister());
     }
 
     private void doTestVectorOperations(String name, IntBinaryOp op) {
@@ -83,8 +105,29 @@ public class VisitorOpsBitsTest {
         assertEquals(builder.getExpression("%res"), local.getResultRegister());
     }
 
+    private void doTestVectorOperations(String name, IntUnaryOp op) {
+        // given
+        MockProgramBuilder builder = new MockProgramBuilder();
+        builder.mockIntType("%int", 64);
+        builder.mockVectorType("%array", "%int", 3);
+        ConstructExpr operand = (ConstructExpr) builder.mockConstant("%value", "%array", List.of(0, 1, 2));
+        String input = String.format("%%res = %s %%array %%value %%value", name);
+
+        // when
+        Local local = visit(builder, input);
+
+        // then
+        ConstructExpr result = (ConstructExpr) local.getExpr();
+        for (int i = 0; i < 3; i++) {
+            UnaryExpression element = (UnaryExpression) result.getOperands().get(i);
+            assertEquals(operand.getOperands().get(i), element.getOperand());
+            assertEquals(op, element.getKind());
+        }
+        assertEquals(builder.getExpression("%res"), local.getResultRegister());
+    }
+
     @Test
-    public void testMismatchingTypes() {
+    public void testMismatchingTypesBinary() {
         // given
         MockProgramBuilder builder = new MockProgramBuilder();
         builder.mockIntType("%int", 64);
@@ -106,7 +149,7 @@ public class VisitorOpsBitsTest {
     }
 
     @Test
-    public void testWrongType() {
+    public void testWrongTypeBinary() {
         // given
         MockProgramBuilder builder = new MockProgramBuilder();
         builder.mockIntType("%int", 64);
@@ -129,47 +172,28 @@ public class VisitorOpsBitsTest {
     }
 
     @Test
-    public void testScalarNot() {
+    public void testNotFixedSizeArrayBinary() {
         // given
         MockProgramBuilder builder = new MockProgramBuilder();
         builder.mockIntType("%int", 64);
-        builder.mockConstant("%value", "%int", 4);
-        String input = "%res = OpNot %int %value";
+        builder.mockVectorType("%runtime_array", "%int", -1);
+        builder.mockConstant("%value", "%runtime_array", List.of(0, 1, 2));
+        String input = "%reg = OpBitwiseOr %runtime_array %value %value";
 
-        // when
-        Local local = visit(builder, input);
-
-        // then
-        IntUnaryExpr result = (IntUnaryExpr) local.getExpr();
-        assertEquals(builder.getExpression("%value"), result.getOperand());
-        assertEquals(NOT, result.getKind());
-        assertEquals(builder.getExpression("%res"), local.getResultRegister());
-    }
-
-    @Test
-    public void testVectorNot() {
-        // given
-        MockProgramBuilder builder = new MockProgramBuilder();
-        builder.mockIntType("%int", 64);
-        builder.mockVectorType("%array", "%int", 3);
-        ConstructExpr op = (ConstructExpr) builder.mockConstant("%value", "%array", List.of(0, 1, 2));
-        String input = "%res = OpNot %array %value";
-
-        // when
-        Local local = visit(builder, input);
-
-        // then
-        ConstructExpr result = (ConstructExpr) local.getExpr();
-        for (int i = 0; i < 3; i++) {
-            UnaryExpression element = (UnaryExpression) result.getOperands().get(i);
-            assertEquals(op.getOperands().get(i), element.getOperand());
-            assertEquals(NOT, element.getKind());
+        try {
+            // when
+            visit(builder, input);
+            fail("Should throw exception");
+        } catch (ParsingException e) {
+            // then
+            assertEquals("Illegal definition for '%reg', " +
+                            "vector expressions must have fixed size",
+                    e.getMessage());
         }
-        assertEquals(builder.getExpression("%res"), local.getResultRegister());
     }
 
     @Test
-    public void testMismatchingTypesNot() {
+    public void testMismatchingTypesUnary() {
         // given
         MockProgramBuilder builder = new MockProgramBuilder();
         builder.mockIntType("%int", 64);
@@ -190,13 +214,13 @@ public class VisitorOpsBitsTest {
     }
 
     @Test
-    public void testNotFixedSizeArrayNot() {
+    public void testNotFixedSizeArrayUnary() {
         // given
         MockProgramBuilder builder = new MockProgramBuilder();
         builder.mockIntType("%int", 64);
         builder.mockVectorType("%runtime_array", "%int", -1);
         builder.mockConstant("%value", "%runtime_array", List.of(0, 1, 2));
-        String input = "%reg = OpNot %runtime_array %value";
+        String input = "%reg = OpBitCount %runtime_array %value";
 
         try {
             // when
@@ -211,7 +235,7 @@ public class VisitorOpsBitsTest {
     }
 
     @Test
-    public void testWrongTypeNot() {
+    public void testWrongTypeUnary() {
         // given
         MockProgramBuilder builder = new MockProgramBuilder();
         builder.mockIntType("%int", 64);

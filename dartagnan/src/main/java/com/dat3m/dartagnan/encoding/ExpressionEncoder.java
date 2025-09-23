@@ -379,6 +379,15 @@ public class ExpressionEncoder {
                 final BitvectorFormula result = switch (iUn.getKind()) {
                     case MINUS -> bvmgr.negate(bv);
                     case NOT -> bvmgr.not(bv);
+                    case CTPOP -> {
+                        final int bvLength = bvmgr.getLength(bv);
+                        BitvectorFormula count = bvmgr.extend(bvmgr.extract(bv, 0, 0), bvLength - 1, false);
+                        for (int i = 1; i < bvLength; i++) {
+                            BitvectorFormula bvbit = bvmgr.extend(bvmgr.extract(bv, i, i), bvLength - 1, false);
+                            count = bvmgr.add(bvbit, count);
+                        }
+                        yield count;
+                    }
                     case CTLZ -> {
                         final int bvLength = bvmgr.getLength(bv);
                         final BitvectorFormula bv1 = bvmgr.makeBitvector(1, 1);
