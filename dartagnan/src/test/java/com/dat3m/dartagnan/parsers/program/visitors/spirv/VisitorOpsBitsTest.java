@@ -31,7 +31,7 @@ public class VisitorOpsBitsTest {
         doTestScalarOps("OpShiftRightLogical", RSHIFT);
         doTestScalarOps("OpShiftRightArithmetic", ARSHIFT);
         doTestScalarOps("OpNot", NOT);
-        doTestScalarOps("OpBitCount", COUNT);
+        doTestScalarOps("OpBitCount", CTPOP);
     }
 
     @Test
@@ -43,7 +43,7 @@ public class VisitorOpsBitsTest {
         doTestVectorOperations("OpShiftRightLogical", RSHIFT);
         doTestVectorOperations("OpShiftRightArithmetic", ARSHIFT);
         doTestVectorOperations("OpNot", NOT);
-        doTestVectorOperations("OpBitCount", COUNT);
+        doTestVectorOperations("OpBitCount", CTPOP);
     }
 
     private void doTestScalarOps(String name, IntBinaryOp op) {

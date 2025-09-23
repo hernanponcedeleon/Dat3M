@@ -379,7 +379,7 @@ public class ExpressionEncoder {
                 final BitvectorFormula result = switch (iUn.getKind()) {
                     case MINUS -> bvmgr.negate(bv);
                     case NOT -> bvmgr.not(bv);
-                    case COUNT -> {
+                    case CTPOP -> {
                         final int bvLength = bvmgr.getLength(bv);
                         BitvectorFormula count = bvmgr.extend(bvmgr.extract(bv, 0, 0), bvLength - 1, false);
                         for (int i = 1; i < bvLength; i++) {

@@ -73,7 +73,7 @@ public class VisitorOpsBits extends SpirvBaseVisitor<Event> {
     @Override
     public Event visitOpBitCount(SpirvParser.OpBitCountContext ctx) {
         return visitExpression(ctx.idResult().getText(), ctx.idResultType().getText(),
-                ctx.base().getText(), IntUnaryOp.COUNT);
+                ctx.base().getText(), IntUnaryOp.CTPOP);
     }
 
     private Event visitExpression(String id, String typeId, String op1Id, String op2Id, IntBinaryOp op) {
