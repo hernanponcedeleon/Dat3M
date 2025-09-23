@@ -10,7 +10,9 @@ import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.Type;
 import com.dat3m.dartagnan.expression.integers.IntCmpOp;
+import com.dat3m.dartagnan.expression.pointer.PointerCmpOp;
 import com.dat3m.dartagnan.expression.type.IntegerType;
+import com.dat3m.dartagnan.expression.type.PointerType;
 import com.dat3m.dartagnan.parsers.AsmArmBaseVisitor;
 import com.dat3m.dartagnan.parsers.AsmArmParser;
 import com.dat3m.dartagnan.parsers.program.utils.AsmUtils;
@@ -300,7 +302,7 @@ public class VisitorAsmArm extends AsmArmBaseVisitor<Object> {
     @Override
     public Object visitBranchNotEqual(AsmArmParser.BranchNotEqualContext ctx) {
         Label label = AsmUtils.getOrNewLabel(labelsDefined, ctx.Numbers().getText());
-        Expression expr = expressions.makeIntCmp(comparator.left(), IntCmpOp.NEQ, comparator.right());
+        Expression expr = expressions.makePtrCmp(comparator.left(), PointerCmpOp.NEQ, comparator.right());
         asmInstructions.add(EventFactory.newJump(expr, label));
         return null;
     }
@@ -388,10 +390,10 @@ public class VisitorAsmArm extends AsmArmBaseVisitor<Object> {
 
     @Override
     public Object visitValue(AsmArmParser.ValueContext ctx) {
-        checkState(expectedType instanceof IntegerType, "Expected type is not an integer type");
+        checkState(expectedType instanceof IntegerType || expectedType instanceof PointerType, "Expected type is not an integer type");
         String valueString = ctx.Numbers().getText();
         BigInteger value = new BigInteger(valueString);
-        return expressions.makeValue(value, (IntegerType) expectedType);
+        return expectedType instanceof IntegerType ? expressions.makeValue(value, (IntegerType) expectedType):expressions.makeValue(value, (PointerType) expectedType);
     }
 
     @Override

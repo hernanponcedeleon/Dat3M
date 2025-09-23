@@ -193,7 +193,7 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object> {
         final Register value0 = extended ? r064 : shrinkRegister(r064, ctx.rD032, false, false);
         final Register value1 = extended ? r164 : shrinkRegister(r164, ctx.rD132, false, false);
         final Expression address0 = parseAddress(ctx.address());
-        final Expression address1 = expressions.makeAdd(address0, expressions.makeValue(extended ? 8 : 4, i64));
+        final Expression address1 = expressions.makePtrAdd(address0, expressions.makeValue(extended ? 8 : 4, i64));
         add(EventFactory.newLoad(value0, address0));
         add(EventFactory.newLoad(value1, address1));
         addRegister64Update(r064, value0);
@@ -233,7 +233,7 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object> {
         final Expression value0 = expressions.makeIntegerCast(r64, type, false);
         final Expression value1 = expressions.makeIntegerCast(s64, type, false);
         final Expression address0 = parseAddress(ctx.address());
-        final Expression address1 = expressions.makeAdd(address0, expressions.makeValue(extended ? 8 : 4, i64));
+        final Expression address1 = expressions.makePtrAdd(address0, expressions.makeValue(extended ? 8 : 4, i64));
         add(EventFactory.newStore(address0, value0));
         return add(EventFactory.newStore(address1, value1));
     }
@@ -394,7 +394,7 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object> {
         final Register64Context register64 = ctx.offset().register64();
         final ImmediateContext imm = ctx.offset().immediate();
         final Expression offset = imm == null ? parseRegister64(register32, register64) : parseValue(imm.constant(), i64);
-        return expressions.makeAdd(base, offset);
+        return expressions.makePtrAdd(base, offset);
     }
 
     private Register parseRegister64(Register32Context w) {
