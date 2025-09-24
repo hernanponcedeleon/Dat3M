@@ -34,7 +34,8 @@ public class VisitorExtensionGlslStd extends VisitorExtension<Expression> {
 
     @Override
     public Expression visitGlsl_findILsb(SpirvParser.Glsl_findILsbContext ctx) {
-        Expression value = builder.getExpression(ctx.valueIdRef().getText());
+        String valueId = ctx.valueIdRef().getText();
+        Expression value = builder.getExpression(valueId);
         Type type = value.getType();
         if (type instanceof IntegerType iType) {
             Expression zero = expressions.makeValue(0, iType);
@@ -55,7 +56,7 @@ public class VisitorExtensionGlslStd extends VisitorExtension<Expression> {
             }
             return expressions.makeArray(aType, elements);
         }
-        throw new ParsingException("Value type %s of FindILsb is not integer scalar or integer vector", type);
+        throw new ParsingException("Value type %s in %s of FindILsb is not integer scalar or integer vector", type, valueId);
     }
 
     @Override

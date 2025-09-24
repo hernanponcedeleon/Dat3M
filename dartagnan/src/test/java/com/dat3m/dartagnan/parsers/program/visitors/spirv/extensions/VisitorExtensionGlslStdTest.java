@@ -34,7 +34,7 @@ public class VisitorExtensionGlslStdTest {
             fail("Should throw exception");
         } catch (ParsingException e) {
             // then
-            assertEquals("Value type { 0: bv64, 8: bv64 } of FindILsb is not integer scalar or integer vector",
+            assertEquals("Value type { 0: bv64, 8: bv64 } in %value of FindILsb is not integer scalar or integer vector",
                     e.getMessage());
         }
     }
