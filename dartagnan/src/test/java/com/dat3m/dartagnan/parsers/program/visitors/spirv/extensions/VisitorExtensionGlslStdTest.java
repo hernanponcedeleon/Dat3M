@@ -1,7 +1,6 @@
 package com.dat3m.dartagnan.parsers.program.visitors.spirv.extensions;
 
 import com.dat3m.dartagnan.exception.ParsingException;
-import com.dat3m.dartagnan.program.event.core.Local;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.mocks.MockProgramBuilder;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.mocks.MockSpirvParser;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.extenstions.VisitorExtensionGlslStd;
