@@ -117,7 +117,7 @@ public class VisitorOpsBits extends SpirvBaseVisitor<Event> {
         return Set.of(
                 "OpShiftLeftLogical",
                 "OpShiftRightLogical",
-                "opShiftRightArithmetic",
+                "OpShiftRightArithmetic",
                 "OpBitwiseAnd",
                 "OpBitwiseOr",
                 "OpBitwiseXor",
