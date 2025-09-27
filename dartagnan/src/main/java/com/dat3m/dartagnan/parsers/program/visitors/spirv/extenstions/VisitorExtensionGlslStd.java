@@ -77,7 +77,7 @@ public class VisitorExtensionGlslStd extends VisitorExtension<Expression> {
     private Expression minMaxExpression(Expression x, Expression y, BiFunction<Expression, Expression, Expression> comp) {
         Type xType = x.getType();
         Type yType = y.getType();
-        if (xType == yType) {
+        if (xType.equals(yType)) {
             if (xType instanceof IntegerType) {
                 return expressions.makeITE(comp.apply(x, y), x, y);
             }
@@ -91,7 +91,7 @@ public class VisitorExtensionGlslStd extends VisitorExtension<Expression> {
                 return expressions.makeArray(aType, elements);
             }
             throw new ParsingException("Illegal definition for SMax, " +
-                    "type %s are not scalar or vector of scalar", xType);
+                    "type %s is not scalar or vector of scalar", xType);
         }
         throw new ParsingException("Illegal definition for SMax, " +
                     "types do not match: '%s' is '%s' and '%s' is '%s'", x, xType, y, yType);
