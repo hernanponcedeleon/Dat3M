@@ -1,0 +1,128 @@
+; @Input: %input = {{0, 1, 3}}
+; @Input: %smax1 = {{0, 0, 0}}
+; @Input: %smax2 = {{0, 0, 0}}
+; @Input: %smax3 = {{0, 0, 0}}
+; @Input: %smin1 = {{0, 0, 0}}
+; @Input: %smin2 = {{0, 0, 0}}
+; @Input: %smin3 = {{0, 0, 0}}
+; @Output: forall (%smax1[0][0] == 1 and %smax1[0][1] == 3 and %smax1[0][2] == 3)
+; @Output: forall (%smax2[0][0] == 1 and %smax2[0][1] == 3 and %smax2[0][2] == 3)
+; @Output: forall (%smax3[0][0] == 3 and %smax3[0][1] == 3 and %smax3[0][2] == 1)
+; @Output: forall (%smin1[0][0] == 0 and %smin1[0][1] == 1 and %smin1[0][2] == 0)
+; @Output: forall (%smin2[0][0] == 0 and %smin2[0][1] == 1 and %smin2[0][2] == 0)
+; @Output: forall (%smin3[0][0] == 1 and %smin3[0][1] == 0 and %smin3[0][2] == 0)
+; @Config: 3, 1, 1
+; SPIR-V
+; Version: 1.5
+; Generator: Khronos; 40
+; Bound: 67
+; Schema: 0
+               OpCapability Shader
+               OpCapability VulkanMemoryModel
+               OpExtension "SPV_KHR_storage_buffer_storage_class"
+               OpExtension "SPV_KHR_vulkan_memory_model"
+         %44 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical Vulkan
+               OpEntryPoint GLCompute %Main "main" %input %smax1 %smax2 %smax3 %smin1 %smin2 %smin3 %gl_LocalInvocationID
+               OpExecutionMode %Main LocalSize 3 1 1
+               OpSource Slang 1
+               OpName %tid "tid"
+               OpName %RWStructuredBuffer "RWStructuredBuffer"
+               OpName %input "input"
+               OpName %in1 "in1"
+               OpName %in2 "in2"
+               OpName %vin1 "vin1"
+               OpName %vin2 "vin2"
+               OpName %smax1 "smax1"
+               OpName %smax2 "smax2"
+               OpName %smax3 "smax3"
+               OpName %smin1 "smin1"
+               OpName %smin2 "smin2"
+               OpName %smin3 "smin3"
+               OpName %Main "Main"
+               OpDecorate %gl_LocalInvocationID BuiltIn LocalInvocationId
+               OpDecorate %_runtimearr_int ArrayStride 4
+               OpDecorate %RWStructuredBuffer Block
+               OpMemberDecorate %RWStructuredBuffer 0 Offset 0
+               OpDecorate %input Binding 0
+               OpDecorate %input DescriptorSet 0
+               OpDecorate %smax1 Binding 1
+               OpDecorate %smax1 DescriptorSet 0
+               OpDecorate %smax2 Binding 2
+               OpDecorate %smax2 DescriptorSet 0
+               OpDecorate %smax3 Binding 3
+               OpDecorate %smax3 DescriptorSet 0
+               OpDecorate %smin1 Binding 4
+               OpDecorate %smin1 DescriptorSet 0
+               OpDecorate %smin2 Binding 5
+               OpDecorate %smin2 DescriptorSet 0
+               OpDecorate %smin3 Binding 6
+               OpDecorate %smin3 DescriptorSet 0
+       %void = OpTypeVoid
+          %3 = OpTypeFunction %void
+       %uint = OpTypeInt 32 0
+     %v3uint = OpTypeVector %uint 3
+%_ptr_Input_v3uint = OpTypePointer Input %v3uint
+        %int = OpTypeInt 32 1
+      %int_0 = OpConstant %int 0
+%_ptr_StorageBuffer_int = OpTypePointer StorageBuffer %int
+%_runtimearr_int = OpTypeRuntimeArray %int
+%RWStructuredBuffer = OpTypeStruct %_runtimearr_int
+%_ptr_StorageBuffer_RWStructuredBuffer = OpTypePointer StorageBuffer %RWStructuredBuffer
+      %int_1 = OpConstant %int 1
+      %int_3 = OpConstant %int 3
+      %v2int = OpTypeVector %int 2
+      %int_2 = OpConstant %int 2
+%gl_LocalInvocationID = OpVariable %_ptr_Input_v3uint Input
+      %input = OpVariable %_ptr_StorageBuffer_RWStructuredBuffer StorageBuffer
+      %smax1 = OpVariable %_ptr_StorageBuffer_RWStructuredBuffer StorageBuffer
+      %smax2 = OpVariable %_ptr_StorageBuffer_RWStructuredBuffer StorageBuffer
+      %smax3 = OpVariable %_ptr_StorageBuffer_RWStructuredBuffer StorageBuffer
+      %smin1 = OpVariable %_ptr_StorageBuffer_RWStructuredBuffer StorageBuffer
+      %smin2 = OpVariable %_ptr_StorageBuffer_RWStructuredBuffer StorageBuffer
+      %smin3 = OpVariable %_ptr_StorageBuffer_RWStructuredBuffer StorageBuffer
+       %Main = OpFunction %void None %3
+          %4 = OpLabel
+          %7 = OpLoad %v3uint %gl_LocalInvocationID
+         %10 = OpCompositeExtract %uint %7 0
+        %tid = OpBitcast %int %10
+         %15 = OpAccessChain %_ptr_StorageBuffer_int %input %int_0 %tid
+        %in1 = OpLoad %int %15
+         %21 = OpIAdd %int %tid %int_1
+         %23 = OpSRem %int %21 %int_3
+         %25 = OpAccessChain %_ptr_StorageBuffer_int %input %int_0 %23
+        %in2 = OpLoad %int %25
+         %27 = OpAccessChain %_ptr_StorageBuffer_int %input %int_0 %tid
+         %28 = OpLoad %int %27
+         %29 = OpAccessChain %_ptr_StorageBuffer_int %input %int_0 %23
+         %30 = OpLoad %int %29
+       %vin1 = OpCompositeConstruct %v2int %28 %30
+         %33 = OpAccessChain %_ptr_StorageBuffer_int %input %int_0 %23
+         %34 = OpLoad %int %33
+         %35 = OpIAdd %int %tid %int_2
+         %37 = OpSRem %int %35 %int_3
+         %38 = OpAccessChain %_ptr_StorageBuffer_int %input %int_0 %37
+         %39 = OpLoad %int %38
+       %vin2 = OpCompositeConstruct %v2int %34 %39
+         %41 = OpAccessChain %_ptr_StorageBuffer_int %smax1 %int_0 %tid
+         %43 = OpExtInst %int %44 SMax %in1 %in2
+               OpStore %41 %43
+         %46 = OpAccessChain %_ptr_StorageBuffer_int %smax2 %int_0 %tid
+         %48 = OpExtInst %v2int %44 SMax %vin1 %vin2
+         %49 = OpCompositeExtract %int %48 0
+               OpStore %46 %49
+         %51 = OpAccessChain %_ptr_StorageBuffer_int %smax3 %int_0 %tid
+         %53 = OpCompositeExtract %int %48 1
+               OpStore %51 %53
+         %55 = OpAccessChain %_ptr_StorageBuffer_int %smin1 %int_0 %tid
+         %57 = OpExtInst %int %44 SMin %in1 %in2
+               OpStore %55 %57
+         %59 = OpAccessChain %_ptr_StorageBuffer_int %smin2 %int_0 %tid
+         %61 = OpExtInst %v2int %44 SMin %vin1 %vin2
+         %62 = OpCompositeExtract %int %61 0
+               OpStore %59 %62
+         %64 = OpAccessChain %_ptr_StorageBuffer_int %smin3 %int_0 %tid
+         %66 = OpCompositeExtract %int %61 1
+               OpStore %64 %66
+               OpReturn
+               OpFunctionEnd

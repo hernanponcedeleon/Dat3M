@@ -13,6 +13,7 @@ import com.dat3m.dartagnan.parsers.program.visitors.spirv.builders.ProgramBuilde
 import java.util.Set;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.BiFunction;
 
 public class VisitorExtensionGlslStd extends VisitorExtension<Expression> {
 
@@ -60,9 +61,49 @@ public class VisitorExtensionGlslStd extends VisitorExtension<Expression> {
     }
 
     @Override
+    public Expression visitGlsl_sMax(SpirvParser.Glsl_sMaxContext ctx) {
+        Expression x = builder.getExpression(ctx.x().getText());
+        Expression y = builder.getExpression(ctx.y().getText());
+        return minMaxExpression(x, y, (a, b) -> expressions.makeGTE(a, b, true));
+    }
+
+    @Override
+    public Expression visitGlsl_sMin(SpirvParser.Glsl_sMinContext ctx) {
+        Expression x = builder.getExpression(ctx.x().getText());
+        Expression y = builder.getExpression(ctx.y().getText());
+        return minMaxExpression(x, y, (a, b) -> expressions.makeLTE(a, b, true));
+    }
+
+    private Expression minMaxExpression(Expression x, Expression y, BiFunction<Expression, Expression, Expression> comp) {
+        Type xType = x.getType();
+        Type yType = y.getType();
+        if (xType == yType) {
+            if (xType instanceof IntegerType) {
+                return expressions.makeITE(comp.apply(x, y), x, y);
+            }
+            if (xType instanceof ArrayType aType && aType.getElementType() instanceof IntegerType) {
+                List<Expression> elements = new ArrayList<>();
+                for (int i = 0; i < aType.getNumElements(); i++) {
+                    Expression elementOp1 = x instanceof ConstructExpr ? x.getOperands().get(i) : expressions.makeExtract(x, i);
+                    Expression elementOp2 = y instanceof ConstructExpr ? y.getOperands().get(i) : expressions.makeExtract(y, i);
+                    elements.add(expressions.makeITE(comp.apply(elementOp1, elementOp2), elementOp1, elementOp2));
+                }
+                return expressions.makeArray(aType, elements);
+            }
+            throw new ParsingException("Illegal definition for SMax, " +
+                    "type %s are not scalar or vector of scalar", xType);
+        }
+        throw new ParsingException("Illegal definition for SMax, " +
+                    "types do not match: '%s' is '%s' and '%s' is '%s'", x, xType, y, yType);
+
+    }
+
+    @Override
     public Set<String> getSupportedInstructions() {
         return Set.of(
-            "FindILsb"
+            "FindILsb",
+            "SMax",
+            "SMin"
         );
     }
 }
