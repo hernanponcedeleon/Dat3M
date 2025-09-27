@@ -19,20 +19,15 @@ public class VirtualMemoryObject extends MemoryObject {
     VirtualMemoryObject(int index, Expression size, Expression alignment, boolean generic, VirtualMemoryObject alias, Type ptrType) {
         super(index, size, alignment, null, ptrType);
         checkArgument(generic || alias != null,
-                "Non-generic virtualMemoryObject must have generic address it alias target");
+                "Non-generic VirtualMemoryObject must have alias target.");
         if (alias == null) {
-            // not alias to other virtual address, so physical address is itself
+            // not alias another virtual address, so the physical address is itself
             this.physicalAddress = this;
             this.genericAddress = this;
         } else {
             this.physicalAddress = alias.getPhysicalAddress();
-            if (generic) {
-                // this is a generic virtual address, so generic address is itself
-                this.genericAddress = this;
-            } else {
-                // this is a non-generic virtual address, so generic address is alias target
-                this.genericAddress = alias;
-            }
+            // If generic, the generic address is itself, otherwise it is the alias target.
+            this.genericAddress = generic ? this : alias;
         }
     }
 
@@ -50,28 +45,5 @@ public class VirtualMemoryObject extends MemoryObject {
         return Objects.hash(parentHash,
                 this == physicalAddress ? parentHash : physicalAddress,
                 this == genericAddress ? parentHash : genericAddress);
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (!(o instanceof VirtualMemoryObject that)) return false;
-        if (!super.equals(o)) return false;
-        if (!equalsPhysical(that)) return false;
-        return equalsGeneric(that);
-    }
-
-    private boolean equalsGeneric(VirtualMemoryObject that) {
-        if (this == this.genericAddress) {
-            return super.equals(that.genericAddress);
-        }
-        return this.genericAddress.equals(that.genericAddress);
-    }
-
-    private boolean equalsPhysical(VirtualMemoryObject that) {
-        if (this == this.physicalAddress) {
-            return super.equals(that.physicalAddress);
-        }
-        return this.physicalAddress.equals(that.physicalAddress);
     }
 }

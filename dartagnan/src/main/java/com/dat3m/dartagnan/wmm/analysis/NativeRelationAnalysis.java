@@ -15,7 +15,6 @@ import com.dat3m.dartagnan.program.event.MemoryEvent;
 import com.dat3m.dartagnan.program.event.RegReader;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.*;
-import com.dat3m.dartagnan.program.event.core.InstructionBoundary;
 import com.dat3m.dartagnan.program.event.lang.svcomp.EndAtomic;
 import com.dat3m.dartagnan.program.filter.Filter;
 import com.dat3m.dartagnan.program.memory.VirtualMemoryObject;
@@ -1119,7 +1118,7 @@ public class NativeRelationAnalysis implements RelationAnalysis {
         public MutableKnowledge visitSameVirtualLocation(SameVirtualLocation vloc) {
             MutableEventGraph must = new MapEventGraph();
             MutableEventGraph may = new MapEventGraph();
-            Map<MemoryCoreEvent, VirtualMemoryObject> map = computeViltualAddressMap();
+            Map<MemoryCoreEvent, VirtualMemoryObject> map = computeVirtualAddressMap();
             map.forEach((e1, a1) -> map.forEach((e2, a2) -> {
                 if (a1.equals(a2) && !exec.areMutuallyExclusive(e1, e2)) {
                     if (alias.mustAlias(e1, e2)) {
@@ -1133,7 +1132,7 @@ public class NativeRelationAnalysis implements RelationAnalysis {
             return new MutableKnowledge(may, must);
         }
 
-        private Map<MemoryCoreEvent, VirtualMemoryObject> computeViltualAddressMap() {
+        private Map<MemoryCoreEvent, VirtualMemoryObject> computeVirtualAddressMap() {
             Map<MemoryCoreEvent, VirtualMemoryObject> map = new HashMap<>();
             program.getThreadEvents(MemoryCoreEvent.class).forEach(e -> {
                 Set<VirtualMemoryObject> s = e.getAddress().getMemoryObjects().stream()
