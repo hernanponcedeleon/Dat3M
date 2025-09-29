@@ -234,6 +234,7 @@ public class WmmEncoder implements Encoder {
                 SameScope.class,
                 SyncWith.class,
                 SameVirtualLocation.class, // FIXME?!
+                Empty.class,
                 // Static because the underlying sets are static:
                 SetIdentity.class,
                 CartesianProduct.class
