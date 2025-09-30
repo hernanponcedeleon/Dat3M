@@ -123,4 +123,14 @@ public abstract class BaseOptions {
         return catIncludePath;
     }
 
+    @Option(
+            name = ENTRY,
+            description = "Name of the entry point function."
+    )
+    private String entry_function = "main";
+
+    public String getEntryFunction() {
+        return entry_function;
+    }
+
 }
