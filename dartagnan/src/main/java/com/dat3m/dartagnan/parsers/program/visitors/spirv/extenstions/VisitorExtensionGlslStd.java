@@ -68,10 +68,24 @@ public class VisitorExtensionGlslStd extends VisitorExtension<Expression> {
     }
 
     @Override
+    public Expression visitGlsl_uMax(SpirvParser.Glsl_uMaxContext ctx) {
+        Expression x = builder.getExpression(ctx.x().getText());
+        Expression y = builder.getExpression(ctx.y().getText());
+        return minMaxExpression(x, y, (a, b) -> expressions.makeGTE(a, b, false));
+    }
+
+    @Override
     public Expression visitGlsl_sMin(SpirvParser.Glsl_sMinContext ctx) {
         Expression x = builder.getExpression(ctx.x().getText());
         Expression y = builder.getExpression(ctx.y().getText());
         return minMaxExpression(x, y, (a, b) -> expressions.makeLTE(a, b, true));
+    }
+
+    @Override
+    public Expression visitGlsl_uMin(SpirvParser.Glsl_uMinContext ctx) {
+        Expression x = builder.getExpression(ctx.x().getText());
+        Expression y = builder.getExpression(ctx.y().getText());
+        return minMaxExpression(x, y, (a, b) -> expressions.makeLTE(a, b, false));
     }
 
     private Expression minMaxExpression(Expression x, Expression y, BiFunction<Expression, Expression, Expression> comp) {
@@ -103,7 +117,9 @@ public class VisitorExtensionGlslStd extends VisitorExtension<Expression> {
         return Set.of(
             "FindILsb",
             "SMax",
-            "SMin"
+            "UMax",
+            "SMin",
+            "UMin"
         );
     }
 }

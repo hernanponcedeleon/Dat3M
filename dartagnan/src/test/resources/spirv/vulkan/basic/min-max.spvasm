@@ -1,21 +1,34 @@
-; @Input: %input = {{0, 1, 3}}
+; @Input: %sinput = {{0, -1, 3}}
 ; @Input: %smax1 = {{0, 0, 0}}
 ; @Input: %smax2 = {{0, 0, 0}}
 ; @Input: %smax3 = {{0, 0, 0}}
 ; @Input: %smin1 = {{0, 0, 0}}
 ; @Input: %smin2 = {{0, 0, 0}}
 ; @Input: %smin3 = {{0, 0, 0}}
-; @Output: forall (%smax1[0][0] == 1 and %smax1[0][1] == 3 and %smax1[0][2] == 3)
-; @Output: forall (%smax2[0][0] == 1 and %smax2[0][1] == 3 and %smax2[0][2] == 3)
-; @Output: forall (%smax3[0][0] == 3 and %smax3[0][1] == 3 and %smax3[0][2] == 1)
-; @Output: forall (%smin1[0][0] == 0 and %smin1[0][1] == 1 and %smin1[0][2] == 0)
-; @Output: forall (%smin2[0][0] == 0 and %smin2[0][1] == 1 and %smin2[0][2] == 0)
-; @Output: forall (%smin3[0][0] == 1 and %smin3[0][1] == 0 and %smin3[0][2] == 0)
+; @Input: %uinput = {{0, -1, 3}}
+; @Input: %umax1 = {{0, 0, 0}}
+; @Input: %umax2 = {{0, 0, 0}}
+; @Input: %umax3 = {{0, 0, 0}}
+; @Input: %umin1 = {{0, 0, 0}}
+; @Input: %umin2 = {{0, 0, 0}}
+; @Input: %umin3 = {{0, 0, 0}}
+; @Output: forall (%smax1[0][0] == 0 and %smax1[0][1] == 3 and %smax1[0][2] == 3)
+; @Output: forall (%smax2[0][0] == 0 and %smax2[0][1] == 3 and %smax2[0][2] == 3)
+; @Output: forall (%smax3[0][0] == 3 and %smax3[0][1] == 3 and %smax3[0][2] == 0)
+; @Output: forall (%smin1[0][0] == -1 and %smin1[0][1] == -1 and %smin1[0][2] == 0)
+; @Output: forall (%smin2[0][0] == -1 and %smin2[0][1] == -1 and %smin2[0][2] == 0)
+; @Output: forall (%smin3[0][0] == -1 and %smin3[0][1] == 0 and %smin3[0][2] == -1)
+; @Output: forall (%umax1[0][0] == 4294967295 and %umax1[0][1] == 4294967295 and %umax1[0][2] == 3)
+; @Output: forall (%umax2[0][0] == 4294967295 and %umax2[0][1] == 4294967295 and %umax2[0][2] == 3)
+; @Output: forall (%umax3[0][0] == 4294967295 and %umax3[0][1] == 3 and %umax3[0][2] == 4294967295)
+; @Output: forall (%umin1[0][0] == 0 and %umin1[0][1] == 3 and %umin1[0][2] == 0)
+; @Output: forall (%umin2[0][0] == 0 and %umin2[0][1] == 3 and %umin2[0][2] == 0)
+; @Output: forall (%umin3[0][0] == 3 and %umin3[0][1] == 0 and %umin3[0][2] == 0)
 ; @Config: 3, 1, 1
 ; SPIR-V
 ; Version: 1.5
 ; Generator: Khronos; 40
-; Bound: 67
+; Bound: 119
 ; Schema: 0
                OpCapability Shader
                OpCapability VulkanMemoryModel
@@ -23,12 +36,12 @@
                OpExtension "SPV_KHR_vulkan_memory_model"
          %44 = OpExtInstImport "GLSL.std.450"
                OpMemoryModel Logical Vulkan
-               OpEntryPoint GLCompute %Main "main" %input %smax1 %smax2 %smax3 %smin1 %smin2 %smin3 %gl_LocalInvocationID
+               OpEntryPoint GLCompute %Main "main" %sinput %smax1 %smax2 %smax3 %smin1 %smin2 %smin3 %uinput %umax1 %umax2 %umax3 %umin1 %umin2 %umin3 %gl_LocalInvocationID
                OpExecutionMode %Main LocalSize 3 1 1
                OpSource Slang 1
                OpName %tid "tid"
                OpName %RWStructuredBuffer "RWStructuredBuffer"
-               OpName %input "input"
+               OpName %sinput "sinput"
                OpName %in1 "in1"
                OpName %in2 "in2"
                OpName %vin1 "vin1"
@@ -39,13 +52,25 @@
                OpName %smin1 "smin1"
                OpName %smin2 "smin2"
                OpName %smin3 "smin3"
+               OpName %uinput "uinput"
+               OpName %uin1 "uin1"
+               OpName %uin2 "uin2"
+               OpName %vuin1 "vuin1"
+               OpName %vuin2 "vuin2"
+               OpName %RWStructuredBuffer_0 "RWStructuredBuffer"
+               OpName %umax1 "umax1"
+               OpName %umax2 "umax2"
+               OpName %umax3 "umax3"
+               OpName %umin1 "umin1"
+               OpName %umin2 "umin2"
+               OpName %umin3 "umin3"
                OpName %Main "Main"
                OpDecorate %gl_LocalInvocationID BuiltIn LocalInvocationId
                OpDecorate %_runtimearr_int ArrayStride 4
                OpDecorate %RWStructuredBuffer Block
                OpMemberDecorate %RWStructuredBuffer 0 Offset 0
-               OpDecorate %input Binding 0
-               OpDecorate %input DescriptorSet 0
+               OpDecorate %sinput Binding 0
+               OpDecorate %sinput DescriptorSet 0
                OpDecorate %smax1 Binding 1
                OpDecorate %smax1 DescriptorSet 0
                OpDecorate %smax2 Binding 2
@@ -58,6 +83,23 @@
                OpDecorate %smin2 DescriptorSet 0
                OpDecorate %smin3 Binding 6
                OpDecorate %smin3 DescriptorSet 0
+               OpDecorate %uinput Binding 7
+               OpDecorate %uinput DescriptorSet 0
+               OpDecorate %_runtimearr_uint ArrayStride 4
+               OpDecorate %RWStructuredBuffer_0 Block
+               OpMemberDecorate %RWStructuredBuffer_0 0 Offset 0
+               OpDecorate %umax1 Binding 8
+               OpDecorate %umax1 DescriptorSet 0
+               OpDecorate %umax2 Binding 9
+               OpDecorate %umax2 DescriptorSet 0
+               OpDecorate %umax3 Binding 10
+               OpDecorate %umax3 DescriptorSet 0
+               OpDecorate %umin1 Binding 11
+               OpDecorate %umin1 DescriptorSet 0
+               OpDecorate %umin2 Binding 12
+               OpDecorate %umin2 DescriptorSet 0
+               OpDecorate %umin3 Binding 13
+               OpDecorate %umin3 DescriptorSet 0
        %void = OpTypeVoid
           %3 = OpTypeFunction %void
        %uint = OpTypeInt 32 0
@@ -73,35 +115,47 @@
       %int_3 = OpConstant %int 3
       %v2int = OpTypeVector %int 2
       %int_2 = OpConstant %int 2
+     %v2uint = OpTypeVector %uint 2
+%_ptr_StorageBuffer_uint = OpTypePointer StorageBuffer %uint
+%_runtimearr_uint = OpTypeRuntimeArray %uint
+%RWStructuredBuffer_0 = OpTypeStruct %_runtimearr_uint
+%_ptr_StorageBuffer_RWStructuredBuffer_0 = OpTypePointer StorageBuffer %RWStructuredBuffer_0
 %gl_LocalInvocationID = OpVariable %_ptr_Input_v3uint Input
-      %input = OpVariable %_ptr_StorageBuffer_RWStructuredBuffer StorageBuffer
+     %sinput = OpVariable %_ptr_StorageBuffer_RWStructuredBuffer StorageBuffer
       %smax1 = OpVariable %_ptr_StorageBuffer_RWStructuredBuffer StorageBuffer
       %smax2 = OpVariable %_ptr_StorageBuffer_RWStructuredBuffer StorageBuffer
       %smax3 = OpVariable %_ptr_StorageBuffer_RWStructuredBuffer StorageBuffer
       %smin1 = OpVariable %_ptr_StorageBuffer_RWStructuredBuffer StorageBuffer
       %smin2 = OpVariable %_ptr_StorageBuffer_RWStructuredBuffer StorageBuffer
       %smin3 = OpVariable %_ptr_StorageBuffer_RWStructuredBuffer StorageBuffer
+     %uinput = OpVariable %_ptr_StorageBuffer_RWStructuredBuffer StorageBuffer
+      %umax1 = OpVariable %_ptr_StorageBuffer_RWStructuredBuffer_0 StorageBuffer
+      %umax2 = OpVariable %_ptr_StorageBuffer_RWStructuredBuffer_0 StorageBuffer
+      %umax3 = OpVariable %_ptr_StorageBuffer_RWStructuredBuffer_0 StorageBuffer
+      %umin1 = OpVariable %_ptr_StorageBuffer_RWStructuredBuffer_0 StorageBuffer
+      %umin2 = OpVariable %_ptr_StorageBuffer_RWStructuredBuffer_0 StorageBuffer
+      %umin3 = OpVariable %_ptr_StorageBuffer_RWStructuredBuffer_0 StorageBuffer
        %Main = OpFunction %void None %3
           %4 = OpLabel
           %7 = OpLoad %v3uint %gl_LocalInvocationID
          %10 = OpCompositeExtract %uint %7 0
         %tid = OpBitcast %int %10
-         %15 = OpAccessChain %_ptr_StorageBuffer_int %input %int_0 %tid
+         %15 = OpAccessChain %_ptr_StorageBuffer_int %sinput %int_0 %tid
         %in1 = OpLoad %int %15
          %21 = OpIAdd %int %tid %int_1
          %23 = OpSRem %int %21 %int_3
-         %25 = OpAccessChain %_ptr_StorageBuffer_int %input %int_0 %23
+         %25 = OpAccessChain %_ptr_StorageBuffer_int %sinput %int_0 %23
         %in2 = OpLoad %int %25
-         %27 = OpAccessChain %_ptr_StorageBuffer_int %input %int_0 %tid
+         %27 = OpAccessChain %_ptr_StorageBuffer_int %sinput %int_0 %tid
          %28 = OpLoad %int %27
-         %29 = OpAccessChain %_ptr_StorageBuffer_int %input %int_0 %23
+         %29 = OpAccessChain %_ptr_StorageBuffer_int %sinput %int_0 %23
          %30 = OpLoad %int %29
        %vin1 = OpCompositeConstruct %v2int %28 %30
-         %33 = OpAccessChain %_ptr_StorageBuffer_int %input %int_0 %23
+         %33 = OpAccessChain %_ptr_StorageBuffer_int %sinput %int_0 %23
          %34 = OpLoad %int %33
          %35 = OpIAdd %int %tid %int_2
          %37 = OpSRem %int %35 %int_3
-         %38 = OpAccessChain %_ptr_StorageBuffer_int %input %int_0 %37
+         %38 = OpAccessChain %_ptr_StorageBuffer_int %sinput %int_0 %37
          %39 = OpLoad %int %38
        %vin2 = OpCompositeConstruct %v2int %34 %39
          %41 = OpAccessChain %_ptr_StorageBuffer_int %smax1 %int_0 %tid
@@ -124,5 +178,45 @@
          %64 = OpAccessChain %_ptr_StorageBuffer_int %smin3 %int_0 %tid
          %66 = OpCompositeExtract %int %61 1
                OpStore %64 %66
+         %68 = OpAccessChain %_ptr_StorageBuffer_int %uinput %int_0 %tid
+         %70 = OpLoad %int %68
+       %uin1 = OpBitcast %uint %70
+         %72 = OpAccessChain %_ptr_StorageBuffer_int %uinput %int_0 %23
+         %73 = OpLoad %int %72
+       %uin2 = OpBitcast %uint %73
+         %75 = OpAccessChain %_ptr_StorageBuffer_int %uinput %int_0 %tid
+         %76 = OpLoad %int %75
+         %77 = OpBitcast %uint %76
+         %78 = OpAccessChain %_ptr_StorageBuffer_int %uinput %int_0 %23
+         %79 = OpLoad %int %78
+         %80 = OpBitcast %uint %79
+      %vuin1 = OpCompositeConstruct %v2uint %77 %80
+         %83 = OpAccessChain %_ptr_StorageBuffer_int %uinput %int_0 %23
+         %84 = OpLoad %int %83
+         %85 = OpBitcast %uint %84
+         %86 = OpAccessChain %_ptr_StorageBuffer_int %uinput %int_0 %37
+         %87 = OpLoad %int %86
+         %88 = OpBitcast %uint %87
+      %vuin2 = OpCompositeConstruct %v2uint %85 %88
+         %91 = OpAccessChain %_ptr_StorageBuffer_uint %umax1 %int_0 %tid
+         %96 = OpExtInst %uint %44 UMax %uin1 %uin2
+               OpStore %91 %96
+         %98 = OpAccessChain %_ptr_StorageBuffer_uint %umax2 %int_0 %tid
+        %100 = OpExtInst %v2uint %44 UMax %vuin1 %vuin2
+        %101 = OpCompositeExtract %uint %100 0
+               OpStore %98 %101
+        %103 = OpAccessChain %_ptr_StorageBuffer_uint %umax3 %int_0 %tid
+        %105 = OpCompositeExtract %uint %100 1
+               OpStore %103 %105
+        %107 = OpAccessChain %_ptr_StorageBuffer_uint %umin1 %int_0 %tid
+        %109 = OpExtInst %uint %44 UMin %uin1 %uin2
+               OpStore %107 %109
+        %111 = OpAccessChain %_ptr_StorageBuffer_uint %umin2 %int_0 %tid
+        %113 = OpExtInst %v2uint %44 UMin %vuin1 %vuin2
+        %114 = OpCompositeExtract %uint %113 0
+               OpStore %111 %114
+        %116 = OpAccessChain %_ptr_StorageBuffer_uint %umin3 %int_0 %tid
+        %118 = OpCompositeExtract %uint %113 1
+               OpStore %116 %118
                OpReturn
                OpFunctionEnd
