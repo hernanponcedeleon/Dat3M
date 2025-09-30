@@ -351,7 +351,9 @@ public class NativeRelationAnalysis implements RelationAnalysis {
         @Override
         public Map<Relation, ExtendedDelta> visitEmptiness(Emptiness axiom) {
             Relation rel = axiom.getRelation();
-            return Map.of(rel, new ExtendedDelta(knowledgeMap.get(rel).getMaySet(), new MapEventGraph()));
+            return axiom.isNegated() ?
+                Map.of() :
+                Map.of(rel, new ExtendedDelta(knowledgeMap.get(rel).getMaySet(), new MapEventGraph()));
         }
 
         @Override
@@ -359,7 +361,9 @@ public class NativeRelationAnalysis implements RelationAnalysis {
             Relation rel = axiom.getRelation();
             MutableKnowledge k = knowledgeMap.get(rel);
             MutableEventGraph d = k.getMaySet().filter(Tuple::isLoop);
-            return Map.of(rel, new ExtendedDelta(d, new MapEventGraph()));
+            return axiom.isNegated() ?
+                Map.of() :
+                Map.of(rel, new ExtendedDelta(d, new MapEventGraph()));
         }
 
         @Override
@@ -389,7 +393,9 @@ public class NativeRelationAnalysis implements RelationAnalysis {
             } while (!current.isEmpty());
             newDisabled.retainAll(knowledge.getMaySet());
             logger.debug("disabled {} edges in {}ms", newDisabled.size(), System.currentTimeMillis() - t0);
-            return Map.of(rel, new ExtendedDelta(newDisabled, new MapEventGraph()));
+            return axiom.isNegated() ?
+                Map.of() :
+                Map.of(rel, new ExtendedDelta(newDisabled, new MapEventGraph()));
         }
 
         @Override
