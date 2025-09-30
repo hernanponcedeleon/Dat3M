@@ -77,7 +77,7 @@ public class Acyclicity extends Axiom {
 
     @Override
     public String toString() {
-        return (negated ? "~" : "") + "acyclic " + rel.getNameOrTerm();
+        return (flag ? "flag " : "") + (negated ? "~" : "") + "acyclic " + rel.getNameOrTerm();
     }
 
     @Override
