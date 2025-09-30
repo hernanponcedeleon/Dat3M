@@ -35,7 +35,7 @@ RWStructuredBuffer<int32_t> smin1;
 RWStructuredBuffer<int32_t> smin2;
 RWStructuredBuffer<int32_t> smin3;
 // Unsigned variants
-RWStructuredBuffer<int32_t> uinput;
+RWStructuredBuffer<uint32_t> uinput;
 RWStructuredBuffer<uint32_t> umax1;
 RWStructuredBuffer<uint32_t> umax2;
 RWStructuredBuffer<uint32_t> umax3;

@@ -28,7 +28,7 @@
 ; SPIR-V
 ; Version: 1.5
 ; Generator: Khronos; 40
-; Bound: 119
+; Bound: 113
 ; Schema: 0
                OpCapability Shader
                OpCapability VulkanMemoryModel
@@ -52,12 +52,12 @@
                OpName %smin1 "smin1"
                OpName %smin2 "smin2"
                OpName %smin3 "smin3"
+               OpName %RWStructuredBuffer_0 "RWStructuredBuffer"
                OpName %uinput "uinput"
                OpName %uin1 "uin1"
                OpName %uin2 "uin2"
                OpName %vuin1 "vuin1"
                OpName %vuin2 "vuin2"
-               OpName %RWStructuredBuffer_0 "RWStructuredBuffer"
                OpName %umax1 "umax1"
                OpName %umax2 "umax2"
                OpName %umax3 "umax3"
@@ -83,11 +83,11 @@
                OpDecorate %smin2 DescriptorSet 0
                OpDecorate %smin3 Binding 6
                OpDecorate %smin3 DescriptorSet 0
-               OpDecorate %uinput Binding 7
-               OpDecorate %uinput DescriptorSet 0
                OpDecorate %_runtimearr_uint ArrayStride 4
                OpDecorate %RWStructuredBuffer_0 Block
                OpMemberDecorate %RWStructuredBuffer_0 0 Offset 0
+               OpDecorate %uinput Binding 7
+               OpDecorate %uinput DescriptorSet 0
                OpDecorate %umax1 Binding 8
                OpDecorate %umax1 DescriptorSet 0
                OpDecorate %umax2 Binding 9
@@ -115,11 +115,11 @@
       %int_3 = OpConstant %int 3
       %v2int = OpTypeVector %int 2
       %int_2 = OpConstant %int 2
-     %v2uint = OpTypeVector %uint 2
 %_ptr_StorageBuffer_uint = OpTypePointer StorageBuffer %uint
 %_runtimearr_uint = OpTypeRuntimeArray %uint
 %RWStructuredBuffer_0 = OpTypeStruct %_runtimearr_uint
 %_ptr_StorageBuffer_RWStructuredBuffer_0 = OpTypePointer StorageBuffer %RWStructuredBuffer_0
+     %v2uint = OpTypeVector %uint 2
 %gl_LocalInvocationID = OpVariable %_ptr_Input_v3uint Input
      %sinput = OpVariable %_ptr_StorageBuffer_RWStructuredBuffer StorageBuffer
       %smax1 = OpVariable %_ptr_StorageBuffer_RWStructuredBuffer StorageBuffer
@@ -128,7 +128,7 @@
       %smin1 = OpVariable %_ptr_StorageBuffer_RWStructuredBuffer StorageBuffer
       %smin2 = OpVariable %_ptr_StorageBuffer_RWStructuredBuffer StorageBuffer
       %smin3 = OpVariable %_ptr_StorageBuffer_RWStructuredBuffer StorageBuffer
-     %uinput = OpVariable %_ptr_StorageBuffer_RWStructuredBuffer StorageBuffer
+     %uinput = OpVariable %_ptr_StorageBuffer_RWStructuredBuffer_0 StorageBuffer
       %umax1 = OpVariable %_ptr_StorageBuffer_RWStructuredBuffer_0 StorageBuffer
       %umax2 = OpVariable %_ptr_StorageBuffer_RWStructuredBuffer_0 StorageBuffer
       %umax3 = OpVariable %_ptr_StorageBuffer_RWStructuredBuffer_0 StorageBuffer
@@ -178,45 +178,39 @@
          %64 = OpAccessChain %_ptr_StorageBuffer_int %smin3 %int_0 %tid
          %66 = OpCompositeExtract %int %61 1
                OpStore %64 %66
-         %68 = OpAccessChain %_ptr_StorageBuffer_int %uinput %int_0 %tid
-         %70 = OpLoad %int %68
-       %uin1 = OpBitcast %uint %70
-         %72 = OpAccessChain %_ptr_StorageBuffer_int %uinput %int_0 %23
-         %73 = OpLoad %int %72
-       %uin2 = OpBitcast %uint %73
-         %75 = OpAccessChain %_ptr_StorageBuffer_int %uinput %int_0 %tid
-         %76 = OpLoad %int %75
-         %77 = OpBitcast %uint %76
-         %78 = OpAccessChain %_ptr_StorageBuffer_int %uinput %int_0 %23
-         %79 = OpLoad %int %78
-         %80 = OpBitcast %uint %79
-      %vuin1 = OpCompositeConstruct %v2uint %77 %80
-         %83 = OpAccessChain %_ptr_StorageBuffer_int %uinput %int_0 %23
-         %84 = OpLoad %int %83
-         %85 = OpBitcast %uint %84
-         %86 = OpAccessChain %_ptr_StorageBuffer_int %uinput %int_0 %37
-         %87 = OpLoad %int %86
-         %88 = OpBitcast %uint %87
-      %vuin2 = OpCompositeConstruct %v2uint %85 %88
-         %91 = OpAccessChain %_ptr_StorageBuffer_uint %umax1 %int_0 %tid
-         %96 = OpExtInst %uint %44 UMax %uin1 %uin2
-               OpStore %91 %96
-         %98 = OpAccessChain %_ptr_StorageBuffer_uint %umax2 %int_0 %tid
-        %100 = OpExtInst %v2uint %44 UMax %vuin1 %vuin2
-        %101 = OpCompositeExtract %uint %100 0
-               OpStore %98 %101
-        %103 = OpAccessChain %_ptr_StorageBuffer_uint %umax3 %int_0 %tid
-        %105 = OpCompositeExtract %uint %100 1
-               OpStore %103 %105
-        %107 = OpAccessChain %_ptr_StorageBuffer_uint %umin1 %int_0 %tid
-        %109 = OpExtInst %uint %44 UMin %uin1 %uin2
-               OpStore %107 %109
-        %111 = OpAccessChain %_ptr_StorageBuffer_uint %umin2 %int_0 %tid
-        %113 = OpExtInst %v2uint %44 UMin %vuin1 %vuin2
-        %114 = OpCompositeExtract %uint %113 0
-               OpStore %111 %114
-        %116 = OpAccessChain %_ptr_StorageBuffer_uint %umin3 %int_0 %tid
-        %118 = OpCompositeExtract %uint %113 1
-               OpStore %116 %118
+         %69 = OpAccessChain %_ptr_StorageBuffer_uint %uinput %int_0 %tid
+       %uin1 = OpLoad %uint %69
+         %75 = OpAccessChain %_ptr_StorageBuffer_uint %uinput %int_0 %23
+       %uin2 = OpLoad %uint %75
+         %77 = OpAccessChain %_ptr_StorageBuffer_uint %uinput %int_0 %tid
+         %78 = OpLoad %uint %77
+         %79 = OpAccessChain %_ptr_StorageBuffer_uint %uinput %int_0 %23
+         %80 = OpLoad %uint %79
+      %vuin1 = OpCompositeConstruct %v2uint %78 %80
+         %83 = OpAccessChain %_ptr_StorageBuffer_uint %uinput %int_0 %23
+         %84 = OpLoad %uint %83
+         %85 = OpAccessChain %_ptr_StorageBuffer_uint %uinput %int_0 %37
+         %86 = OpLoad %uint %85
+      %vuin2 = OpCompositeConstruct %v2uint %84 %86
+         %88 = OpAccessChain %_ptr_StorageBuffer_uint %umax1 %int_0 %tid
+         %90 = OpExtInst %uint %44 UMax %uin1 %uin2
+               OpStore %88 %90
+         %92 = OpAccessChain %_ptr_StorageBuffer_uint %umax2 %int_0 %tid
+         %94 = OpExtInst %v2uint %44 UMax %vuin1 %vuin2
+         %95 = OpCompositeExtract %uint %94 0
+               OpStore %92 %95
+         %97 = OpAccessChain %_ptr_StorageBuffer_uint %umax3 %int_0 %tid
+         %99 = OpCompositeExtract %uint %94 1
+               OpStore %97 %99
+        %101 = OpAccessChain %_ptr_StorageBuffer_uint %umin1 %int_0 %tid
+        %103 = OpExtInst %uint %44 UMin %uin1 %uin2
+               OpStore %101 %103
+        %105 = OpAccessChain %_ptr_StorageBuffer_uint %umin2 %int_0 %tid
+        %107 = OpExtInst %v2uint %44 UMin %vuin1 %vuin2
+        %108 = OpCompositeExtract %uint %107 0
+               OpStore %105 %108
+        %110 = OpAccessChain %_ptr_StorageBuffer_uint %umin3 %int_0 %tid
+        %112 = OpCompositeExtract %uint %107 1
+               OpStore %110 %112
                OpReturn
                OpFunctionEnd
