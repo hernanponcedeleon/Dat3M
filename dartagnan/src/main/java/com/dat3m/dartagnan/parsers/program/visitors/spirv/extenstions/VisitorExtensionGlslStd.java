@@ -91,25 +91,24 @@ public class VisitorExtensionGlslStd extends VisitorExtension<Expression> {
     private Expression minMaxExpression(Expression x, Expression y, BiFunction<Expression, Expression, Expression> comp) {
         Type xType = x.getType();
         Type yType = y.getType();
-        if (xType.equals(yType)) {
-            if (xType instanceof IntegerType) {
-                return expressions.makeITE(comp.apply(x, y), x, y);
-            }
-            if (xType instanceof ArrayType aType && aType.getElementType() instanceof IntegerType) {
-                List<Expression> elements = new ArrayList<>();
-                for (int i = 0; i < aType.getNumElements(); i++) {
-                    Expression elementOp1 = x instanceof ConstructExpr ? x.getOperands().get(i) : expressions.makeExtract(x, i);
-                    Expression elementOp2 = y instanceof ConstructExpr ? y.getOperands().get(i) : expressions.makeExtract(y, i);
-                    elements.add(expressions.makeITE(comp.apply(elementOp1, elementOp2), elementOp1, elementOp2));
-                }
-                return expressions.makeArray(aType, elements);
-            }
+        if (!xType.equals(yType)) {
             throw new ParsingException("Illegal definition for SMax, " +
-                    "type %s is not scalar or vector of scalar", xType);
+                    "types do not match: '%s' is '%s' and '%s' is '%s'", x, xType, y, yType);
+        }
+        if (xType instanceof IntegerType) {
+            return expressions.makeITE(comp.apply(x, y), x, y);
+        }
+        if (xType instanceof ArrayType aType && aType.getElementType() instanceof IntegerType) {
+            List<Expression> elements = new ArrayList<>();
+            for (int i = 0; i < aType.getNumElements(); i++) {
+                Expression elementOp1 = x instanceof ConstructExpr ? x.getOperands().get(i) : expressions.makeExtract(x, i);
+                Expression elementOp2 = y instanceof ConstructExpr ? y.getOperands().get(i) : expressions.makeExtract(y, i);
+                elements.add(expressions.makeITE(comp.apply(elementOp1, elementOp2), elementOp1, elementOp2));
+            }
+            return expressions.makeArray(aType, elements);
         }
         throw new ParsingException("Illegal definition for SMax, " +
-                    "types do not match: '%s' is '%s' and '%s' is '%s'", x, xType, y, yType);
-
+                "type %s is not scalar or vector of scalar", xType);
     }
 
     @Override
