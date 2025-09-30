@@ -245,8 +245,8 @@ public class WmmEncoder implements Encoder {
         final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
         final List<BooleanFormula> enc = new ArrayList<>();
 
-        // ASSUMPTION: The encode-set of a static relation only contains
-        //             possible edges. If not, this encodes wrong semantics.
+        // ASSUMPTION: The encode-set of the static relation is a subset of the most precise may-set.
+        //             This holds true as long as our RA computes the most precise may-set for static relations.
         private void visitStatic(Definition def) {
             final Relation rel = def.getDefinedRelation();
             final EncodingContext.EdgeEncoder edge = context.edge(rel);

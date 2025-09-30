@@ -3,8 +3,6 @@ package com.dat3m.dartagnan.program.memory;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.Type;
 
-import java.util.Objects;
-
 import static com.google.common.base.Preconditions.checkArgument;
 
 /**
@@ -37,13 +35,5 @@ public class VirtualMemoryObject extends MemoryObject {
 
     public VirtualMemoryObject getPhysicalAddress() {
         return physicalAddress;
-    }
-
-    @Override
-    public int hashCode() {
-        int parentHash = super.hashCode();
-        return Objects.hash(parentHash,
-                this == physicalAddress ? parentHash : physicalAddress,
-                this == genericAddress ? parentHash : genericAddress);
     }
 }

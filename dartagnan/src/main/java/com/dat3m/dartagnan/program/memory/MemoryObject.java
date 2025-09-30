@@ -84,12 +84,6 @@ public class MemoryObject extends LeafExpressionBase<Type> {
         return initialValues.keySet();
     }
 
-    /**
-     * Initial value at a certain field of this array.
-     *
-     * @param offset Non-negative number of fields before the target.
-     * @return Readable value at the start of each execution.
-     */
     public Expression getInitialValue(int offset) {
         checkState(hasKnownSize());
         checkArgument(isInRange(offset), "array index out of bounds");
@@ -97,12 +91,6 @@ public class MemoryObject extends LeafExpressionBase<Type> {
         return initialValues.get(offset);
     }
 
-    /**
-     * Defines the initial value at a certain field of this array.
-     *
-     * @param offset Non-negative number of fields before the target.
-     * @param value  New value to be read at the start of each execution.
-     */
     public void setInitialValue(int offset, Expression value) {
         checkState(hasKnownSize());
         final TypeFactory types = TypeFactory.getInstance();
@@ -149,6 +137,5 @@ public class MemoryObject extends LeafExpressionBase<Type> {
     public <T> T accept(ExpressionVisitor<T> visitor) {
         return visitor.visitMemoryObject(this);
     }
-
 
 }
