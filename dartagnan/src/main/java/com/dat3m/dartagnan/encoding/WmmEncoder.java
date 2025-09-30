@@ -6,11 +6,7 @@ import com.dat3m.dartagnan.expression.integers.IntLiteral;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.analysis.ReachingDefinitionsAnalysis;
 import com.dat3m.dartagnan.program.event.*;
-import com.dat3m.dartagnan.program.event.core.Load;
-import com.dat3m.dartagnan.program.event.core.MemoryCoreEvent;
-import com.dat3m.dartagnan.program.event.core.NamedBarrier;
-import com.dat3m.dartagnan.program.event.core.RMWStoreExclusive;
-import com.dat3m.dartagnan.program.event.core.InstructionBoundary;
+import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.smt.ModelExt;
 import com.dat3m.dartagnan.utils.Utils;
 import com.dat3m.dartagnan.utils.dependable.DependencyGraph;
@@ -227,17 +223,49 @@ public class WmmEncoder implements Encoder {
     }
 
     private final class RelationEncoder implements Constraint.Visitor<Void> {
+        private static final Set<Class<? extends Definition>> STATIC_RELATIONS = new HashSet<>(Arrays.asList(
+                ProgramOrder.class,
+                External.class,
+                Internal.class,
+                AMOPairs.class,
+                DirectControlDependency.class,
+                CASDependency.class,
+                SameInstruction.class,
+                SameScope.class,
+                SyncWith.class,
+                SameVirtualLocation.class, // FIXME?!
+                Empty.class,
+                // Static because the underlying sets are static:
+                SetIdentity.class,
+                CartesianProduct.class
+        ));
+
         final Program program = context.getTask().getProgram();
         final RelationAnalysis ra = context.getAnalysisContext().requires(RelationAnalysis.class);
         final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
         final List<BooleanFormula> enc = new ArrayList<>();
 
+        // ASSUMPTION: The encode-set of the static relation is a subset of the most precise may-set.
+        //             This holds true as long as our RA computes the most precise may-set for static relations.
+        private void visitStatic(Definition def) {
+            final Relation rel = def.getDefinedRelation();
+            final EncodingContext.EdgeEncoder edge = context.edge(rel);
+            final EventGraph mustSet = ra.getKnowledge(rel).getMustSet();
+            encodeSets.get(rel).apply((e1, e2) -> {
+                if (!mustSet.contains(e1, e2)) {
+                    enc.add(bmgr.equivalence(edge.encode(e1, e2), execution(e1, e2)));
+                }
+            });
+        }
+
         @Override
         public Void visitDefinition(Definition def) {
-            final Relation rel = def.getDefinedRelation();
-            EncodingContext.EdgeEncoder edge = context.edge(rel);
-            encodeSets.get(rel).apply((e1, e2) -> enc.add(bmgr.equivalence(edge.encode(e1, e2), execution(e1, e2))));
-            return null;
+            if (STATIC_RELATIONS.contains(def.getClass())) {
+                visitStatic(def);
+                return null;
+            }
+            final String errorMsg = String.format("Encoding of '%s' is not supported", def);
+            throw new UnsupportedOperationException(errorMsg);
         }
 
         @Override
