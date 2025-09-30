@@ -44,6 +44,7 @@ import static com.google.common.base.Verify.verify;
 public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
 
     private static final Logger logger = LogManager.getLogger(VisitorLlvm.class);
+    private static final String DEFAULT_ENTRY_FUNCTION = "main";
 
     // Global context
     private final Program program;
@@ -159,6 +160,9 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
         program.addFunction(declaredFunction);
         constantMap.put(name, declaredFunction);
 
+        if (name.equals(DEFAULT_ENTRY_FUNCTION)) {
+            program.setEntrypoint(new Entrypoint.Simple(declaredFunction));
+        }
         return null;
     }
 
