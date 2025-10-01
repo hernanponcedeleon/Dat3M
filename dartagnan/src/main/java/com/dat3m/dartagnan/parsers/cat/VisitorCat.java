@@ -203,9 +203,13 @@ class VisitorCat extends CatBaseVisitor<Object> {
     }
 
     @Override
-    public Object visitExprNew(ExprNewContext ctx) {
-        final boolean unary = ctx.call.getText().equals("New");
-        return addDefinition(new Free(wmm.newRelation(unary ? Relation.Arity.UNARY : Relation.Arity.BINARY)));
+    public Object visitExprNewSet(ExprNewSetContext ctx) {
+        return addDefinition(new Free(wmm.newRelation(Relation.Arity.UNARY)));
+    }
+
+    @Override
+    public Object visitExprNewRelation(ExprNewRelationContext ctx) {
+        return addDefinition(new Free(wmm.newRelation(Relation.Arity.BINARY)));
     }
 
     @Override

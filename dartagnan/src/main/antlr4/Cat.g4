@@ -53,7 +53,8 @@ expression
     |   (TOID LPAR e = expression RPAR | LBRAC e = expression RBRAC)    # exprIdentity
     |   LPAR e = expression RPAR                                        # expr
     |   n = NAME                                                        # exprBasic
-    |   call = NEW LPAR RPAR                                            # exprNew
+    |   NEW_SET LPAR RPAR                                               # exprNewSet
+    |   NEW_RELATION LPAR RPAR                                          # exprNewRelation
     |   call = NAME LPAR args = argumentList RPAR                       # exprCall
     ;
 
@@ -103,9 +104,10 @@ LBRAC   :   '[';
 RBRAC   :   ']';
 COMMA   :   ',';
 
-DOMAIN      :   'domain';
-RANGE       :   'range';
-NEW         :   '[n|N]ew';
+DOMAIN       :   'domain';
+RANGE        :   'range';
+NEW_SET      :   'newSet';
+NEW_RELATION :   'newRelation';
 
 FLAG       :   'flag';
 UNDEFINED  :   'undefined_unless';
