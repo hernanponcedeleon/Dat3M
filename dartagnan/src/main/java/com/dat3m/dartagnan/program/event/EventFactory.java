@@ -196,6 +196,10 @@ public class EventFactory {
         return new AbortIf(condition);
     }
 
+    public static GenericVisibleEvent newUnreachable() {
+        return new GenericVisibleEvent("Unreachable", Tag.UB);
+    }
+
     // ------------------------------------------ Local events ------------------------------------------
 
     public static Skip newSkip() {
@@ -822,10 +826,6 @@ public class EventFactory {
 
         public static GenericVisibleEvent newVisDevice() {
             return new GenericVisibleEvent("visdevice", Tag.Vulkan.VISDEVICE);
-        }
-
-        public static GenericVisibleEvent newUnreachable() {
-            return new GenericVisibleEvent("OpUnreachable", Tag.UB);
         }
     }
 

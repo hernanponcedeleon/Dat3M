@@ -206,7 +206,7 @@ public class VisitorOpsControlFlow extends SpirvBaseVisitor<Event> {
 
     @Override
     public Event visitOpUnreachable(SpirvParser.OpUnreachableContext ctx) {
-        Event event = EventFactory.Vulkan.newUnreachable();
+        Event event = EventFactory.newUnreachable();
         builder.addEvent(event);
         return cfBuilder.endBlock(event);
     }
