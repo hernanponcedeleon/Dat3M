@@ -22,6 +22,7 @@ public class VisitorOpsExtensionTest {
                 %2 = OpExtInst %void %1 PushConstantNumWorkgroups %uint_0 %uint_12
                 """;
 
+        builder.mockVoidType("%void");
         builder.mockIntType("%uint", 32);
         builder.mockVectorType("%v3uint", "%uint", 3);
         builder.mockAggregateType("%1x_v3uint", "%v3uint");

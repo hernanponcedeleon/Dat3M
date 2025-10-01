@@ -1,6 +1,9 @@
 package com.dat3m.dartagnan.parsers.program.visitors.spirv;
 
 import com.dat3m.dartagnan.exception.ParsingException;
+import com.dat3m.dartagnan.expression.Expression;
+import com.dat3m.dartagnan.expression.Type;
+import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.parsers.SpirvBaseVisitor;
 import com.dat3m.dartagnan.parsers.SpirvParser;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.extenstions.VisitorExtension;
@@ -15,15 +18,18 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
-public class VisitorOpsExtension extends SpirvBaseVisitor<Void> {
+public class VisitorOpsExtension extends SpirvBaseVisitor<Expression> {
 
-    private final Map<String, VisitorExtension<?>> availableVisitors = new HashMap<>();
+    private static final TypeFactory types = TypeFactory.getInstance();
+    private final Map<String, VisitorExtension<Expression>> availableVisitors = new HashMap<>();
     private final Map<String, String> visitorIds = new HashMap<>();
+    private final ProgramBuilder builder;
 
     public VisitorOpsExtension(ProgramBuilder builder) {
         VisitorExtensionClspvReflection clspv = new VisitorExtensionClspvReflection(builder);
         VisitorExtensionGlslStd glsl = new VisitorExtensionGlslStd(builder);
         VisitorExtensionOpenClStd opencl = new VisitorExtensionOpenClStd(builder);
+        this.builder = builder;
         this.availableVisitors.put("NonSemantic.ClspvReflection.5", clspv);
         this.availableVisitors.put("NonSemantic.ClspvReflection.6", clspv);
         this.availableVisitors.put("GLSL.std.450", glsl);
@@ -31,7 +37,7 @@ public class VisitorOpsExtension extends SpirvBaseVisitor<Void> {
     }
 
     @Override
-    public Void visitOpExtension(SpirvParser.OpExtensionContext ctx) {
+    public Expression visitOpExtension(SpirvParser.OpExtensionContext ctx) {
         // Addition features provided by an extension.
         // If a feature is not supported, an error will be thrown
         // when processing the corresponding instruction.
@@ -39,7 +45,7 @@ public class VisitorOpsExtension extends SpirvBaseVisitor<Void> {
     }
 
     @Override
-    public Void visitOpExtInstImport(SpirvParser.OpExtInstImportContext ctx) {
+    public Expression visitOpExtInstImport(SpirvParser.OpExtInstImportContext ctx) {
         String name = ctx.nameLiteralString().getText();
         name = name.substring(1, name.length() - 1);
         SpirvBaseVisitor<?> visitor = availableVisitors.get(name);
@@ -52,19 +58,29 @@ public class VisitorOpsExtension extends SpirvBaseVisitor<Void> {
     }
 
     @Override
-    public Void visitOpExtInst(SpirvParser.OpExtInstContext ctx) {
-        String id = ctx.set().getText();
-        String name = visitorIds.get(id);
-        if (name != null) {
-            VisitorExtension<?> visitor = availableVisitors.get(name);
+    public Expression visitOpExtInst(SpirvParser.OpExtInstContext ctx) {
+        String extId = ctx.set().getText();
+        String extName = visitorIds.get(extId);
+        if (extName != null) {
+            VisitorExtension<Expression> visitor = availableVisitors.get(extName);
+            String resultId = ctx.idResult().getText();
             String instruction = getFirstTokenText(ctx.instruction());
             if (visitor.getSupportedInstructions().contains(instruction)) {
-                ctx.accept(visitor);
+                Expression result = ctx.accept(visitor);
+                Type type = builder.getType(ctx.idResultType().getText());
+                if (result != null) {
+                    if (!(type.equals(result.getType()))) {
+                        throw new ParsingException("Mismatching result type in OpExtInst '%s'", resultId);
+                    }
+                    return builder.addExpression(resultId, result);
+                } else if (!(type.equals(types.getVoidType()))) {
+                    throw new ParsingException("Mismatching result type in OpExtInst '%s'", resultId);
+                }
                 return null;
             }
-            throw new ParsingException("External instruction '%s' is not implemented for '%s'", instruction, name);
+            throw new ParsingException("External instruction '%s' is not implemented for '%s'", instruction, extName);
         }
-        throw new ParsingException("Unexpected extension id '%s'", id);
+        throw new ParsingException("Unexpected extension id '%s'", extId);
     }
 
     private String getFirstTokenText(ParseTree ctx) {
