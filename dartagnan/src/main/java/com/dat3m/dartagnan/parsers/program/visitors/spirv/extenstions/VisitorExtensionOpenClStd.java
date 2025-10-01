@@ -23,14 +23,6 @@ public class VisitorExtensionOpenClStd extends VisitorExtension<Expression> {
     }
 
     @Override
-    public Expression visitOpExtInst(SpirvParser.OpExtInstContext ctx) {
-        String result = ctx.idResult().getText();
-        Expression expr = this.visit(ctx.instruction());
-        builder.addExpression(result, expr);
-        return null;
-    }
-
-    @Override
     public Expression visitOpencl_s_add_sat(SpirvParser.Opencl_s_add_satContext ctx) {
         Expression x = getExpression(ctx.x().getText());
         Expression y = getExpression(ctx.y().getText());

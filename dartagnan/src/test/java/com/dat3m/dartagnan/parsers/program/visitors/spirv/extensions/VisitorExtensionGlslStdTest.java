@@ -1,9 +1,9 @@
 package com.dat3m.dartagnan.parsers.program.visitors.spirv.extensions;
 
 import com.dat3m.dartagnan.exception.ParsingException;
+import com.dat3m.dartagnan.parsers.program.visitors.spirv.VisitorOpsExtension;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.mocks.MockProgramBuilder;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.mocks.MockSpirvParser;
-import com.dat3m.dartagnan.parsers.program.visitors.spirv.extenstions.VisitorExtensionGlslStd;
 import org.junit.Test;
 
 import java.util.List;
@@ -38,8 +38,29 @@ public class VisitorExtensionGlslStdTest {
         }
     }
 
-    private void visit(MockProgramBuilder builder, String input) {
-        new MockSpirvParser(input).spv().accept(new VisitorExtensionGlslStd(builder));
+    @Test
+    public void testWrongReturnTypeFindILsb() {
+        // given
+        MockProgramBuilder builder = new MockProgramBuilder();
+        builder.mockIntType("%int64", 64);
+        builder.mockIntType("%int32", 32);
+        builder.mockConstant("%value", "%int64", 1);
+        String input = """
+                %ext = OpExtInstImport "GLSL.std.450"
+                %reg = OpExtInst %int32 %ext FindILsb %value
+                """;
+
+        try {
+            // when
+            visit(builder, input);
+            fail("Should throw exception");
+        } catch (ParsingException e) {
+            // then
+            assertEquals("Mismatching result type in OpExtInst '%reg'", e.getMessage());
+        }
     }
 
+    private void visit(MockProgramBuilder builder, String input) {
+        new MockSpirvParser(input).spv().accept(new VisitorOpsExtension(builder));
+    }
 }
