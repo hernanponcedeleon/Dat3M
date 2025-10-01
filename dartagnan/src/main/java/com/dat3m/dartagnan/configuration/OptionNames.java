@@ -17,6 +17,7 @@ public class OptionNames {
     public static final String SMTLIB2 = "smtlib2";
     public static final String CAT_INCLUDE = "cat.include";
     public static final String MIXED_SIZE = "mixedSize";
+    public static final String ENTRY = "entry";
 
     // Modeling Options
     public static final String PROGRESSMODEL = "modeling.progress";
