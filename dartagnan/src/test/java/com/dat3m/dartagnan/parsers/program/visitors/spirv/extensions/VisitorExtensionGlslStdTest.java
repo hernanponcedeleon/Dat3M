@@ -60,7 +60,7 @@ public class VisitorExtensionGlslStdTest {
         }
     }
 
-@Test
+    @Test
     public void testWrongTypeMinMax() {
         // given
         MockProgramBuilder builder = new MockProgramBuilder();
@@ -85,7 +85,30 @@ public class VisitorExtensionGlslStdTest {
     }
 
     @Test
-    public void testMissmatchTypeMinMax() {
+    public void testWrongReturnTypeMinMax() {
+        // given
+        MockProgramBuilder builder = new MockProgramBuilder();
+        builder.mockIntType("%int64", 64);
+        builder.mockIntType("%int32", 32);
+        builder.mockConstant("%value1", "%int64", 1);
+        builder.mockConstant("%value2", "%int64", 2);
+        String input = """
+                %ext = OpExtInstImport "GLSL.std.450"
+                %reg = OpExtInst %int32 %ext SMax %value1 %value2
+                """;
+
+        try {
+            // when
+            visit(builder, input);
+            fail("Should throw exception");
+        } catch (ParsingException e) {
+            // then
+            assertEquals("Mismatching result type in OpExtInst '%reg'", e.getMessage());
+        }
+    }
+
+    @Test
+    public void testMismatchTypeMinMax() {
         // given
         MockProgramBuilder builder = new MockProgramBuilder();
         builder.mockIntType("%int64", 64);
