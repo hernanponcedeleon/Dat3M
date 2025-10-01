@@ -204,6 +204,13 @@ public class VisitorOpsControlFlow extends SpirvBaseVisitor<Event> {
         return visitConditionalJump(guard, trueLabelId, falseLabelId);
     }
 
+    @Override
+    public Event visitOpUnreachable(SpirvParser.OpUnreachableContext ctx) {
+        Event event = EventFactory.newUnreachable();
+        builder.addEvent(event);
+        return cfBuilder.endBlock(event);
+    }
+
     public Set<String> getSupportedOps() {
         return Set.of(
                 "OpPhi",
@@ -213,7 +220,8 @@ public class VisitorOpsControlFlow extends SpirvBaseVisitor<Event> {
                 "OpLoopMerge",
                 "OpSelectionMerge",
                 "OpReturn",
-                "OpReturnValue"
+                "OpReturnValue",
+                "OpUnreachable"
         );
     }
 }
