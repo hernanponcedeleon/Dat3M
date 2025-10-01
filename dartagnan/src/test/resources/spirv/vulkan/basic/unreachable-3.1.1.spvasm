@@ -1,0 +1,54 @@
+; @Input: %out = {{0, 0, 0}}
+; @Config: 3, 1, 1
+; SPIR-V
+; Version: 1.5
+; Generator: Khronos; 40
+; Bound: 26
+; Schema: 0
+               OpCapability Shader
+               OpCapability VulkanMemoryModel
+               OpExtension "SPV_KHR_storage_buffer_storage_class"
+               OpExtension "SPV_KHR_vulkan_memory_model"
+               OpMemoryModel Logical Vulkan
+               OpEntryPoint GLCompute %Main "main" %out %gl_LocalInvocationID
+               OpExecutionMode %Main LocalSize 3 1 1
+               OpSource Slang 1
+               OpName %RWStructuredBuffer "RWStructuredBuffer"
+               OpName %out "out"
+               OpName %Main "Main"
+               OpDecorate %gl_LocalInvocationID BuiltIn LocalInvocationId
+               OpDecorate %_runtimearr_uint ArrayStride 4
+               OpDecorate %RWStructuredBuffer Block
+               OpMemberDecorate %RWStructuredBuffer 0 Offset 0
+               OpDecorate %out Binding 0
+               OpDecorate %out DescriptorSet 0
+       %void = OpTypeVoid
+          %3 = OpTypeFunction %void
+       %uint = OpTypeInt 32 0
+     %v3uint = OpTypeVector %uint 3
+%_ptr_Input_v3uint = OpTypePointer Input %v3uint
+       %bool = OpTypeBool
+     %uint_2 = OpConstant %uint 2
+        %int = OpTypeInt 32 1
+      %int_0 = OpConstant %int 0
+%_ptr_StorageBuffer_uint = OpTypePointer StorageBuffer %uint
+%_runtimearr_uint = OpTypeRuntimeArray %uint
+%RWStructuredBuffer = OpTypeStruct %_runtimearr_uint
+%_ptr_StorageBuffer_RWStructuredBuffer = OpTypePointer StorageBuffer %RWStructuredBuffer
+     %uint_1 = OpConstant %uint 1
+%gl_LocalInvocationID = OpVariable %_ptr_Input_v3uint Input
+        %out = OpVariable %_ptr_StorageBuffer_RWStructuredBuffer StorageBuffer
+       %Main = OpFunction %void None %3
+          %4 = OpLabel
+          %9 = OpLoad %v3uint %gl_LocalInvocationID
+         %12 = OpCompositeExtract %uint %9 0
+         %14 = OpIEqual %bool %12 %uint_2
+               OpSelectionMerge %6 None
+               OpBranchConditional %14 %5 %6
+          %5 = OpLabel
+         %20 = OpAccessChain %_ptr_StorageBuffer_uint %out %int_0 %12
+               OpStore %20 %uint_1
+               OpUnreachable
+          %6 = OpLabel
+               OpReturn
+               OpFunctionEnd

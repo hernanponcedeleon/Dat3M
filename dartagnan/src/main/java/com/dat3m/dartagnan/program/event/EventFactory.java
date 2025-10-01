@@ -823,6 +823,10 @@ public class EventFactory {
         public static GenericVisibleEvent newVisDevice() {
             return new GenericVisibleEvent("visdevice", Tag.Vulkan.VISDEVICE);
         }
+
+        public static GenericVisibleEvent newUnreachable() {
+            return new GenericVisibleEvent("OpUnreachable", Tag.UB);
+        }
     }
 
     // =============================================================================================
