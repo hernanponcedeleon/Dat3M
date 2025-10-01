@@ -209,8 +209,10 @@ public class Dartagnan extends BaseOptions {
                         .withProgressModel(o.getProgressModel())
                         .withWitness(witness);
                 Program p = new ProgramParser().parse(f);
-                p.setEntrypoint(new Entrypoint.Simple(p.getFunctionByName(o.getEntryFunction()).orElseThrow(
-                    () -> new MalformedProgramException(String.format("Program has no function named %s. Select a different entry point.", o.getEntryFunction())))));
+                if (o.overrideEntryFunction()) {
+                    p.setEntrypoint(new Entrypoint.Simple(p.getFunctionByName(o.getEntryFunction()).orElseThrow(
+                        () -> new MalformedProgramException(String.format("Program has no function named %s. Select a different entry point.", o.getEntryFunction())))));
+                }
                 // If the arch has been set during parsing (this only happens for litmus tests)
                 // and the user did not explicitly add the target option, we use the one
                 // obtained during parsing.

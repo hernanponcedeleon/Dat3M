@@ -127,10 +127,14 @@ public abstract class BaseOptions {
             name = ENTRY,
             description = "Name of the entry point function."
     )
-    private String entry_function = "main";
+    private String entry_function = "";
 
     public String getEntryFunction() {
         return entry_function;
+    }
+
+    public boolean overrideEntryFunction() {
+        return !entry_function.isEmpty();
     }
 
 }
