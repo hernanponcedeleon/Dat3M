@@ -111,7 +111,7 @@ public class ExecutionGraph {
         }
 
         for (Axiom axiom : memoryModel.getAxioms()) {
-            if (axiom instanceof ForceEncodeAxiom || axiom.isFlagged()) {
+            if (axiom instanceof ForceEncodeAxiom || axiom.isFlagged() || axiom.isNegated()) {
                 continue;
             }
             Constraint constraint = getOrCreateConstraintFromAxiom(axiom);
