@@ -22,6 +22,7 @@ public final class Tag {
     public static final String FENCE            = "F";
     public static final String STRONG           = "STRONG"; // TODO: Maybe move to C11 or IMM?
     public static final String RMW              = "RMW";
+    public static final String UB               = "UB"; // Used in stdlib.cat to detect undefined behavior.
 
     // ---------- Internally used tags (not referenced in CAT) ----------
     public static final String EXCL             = "__EXCL";

@@ -350,12 +350,18 @@ public class NativeRelationAnalysis implements RelationAnalysis {
 
         @Override
         public Map<Relation, ExtendedDelta> visitEmptiness(Emptiness axiom) {
+            if (axiom.isNegated() || axiom.isFlagged()) {
+                return Map.of();
+            }
             Relation rel = axiom.getRelation();
             return Map.of(rel, new ExtendedDelta(knowledgeMap.get(rel).getMaySet(), new MapEventGraph()));
         }
 
         @Override
         public Map<Relation, ExtendedDelta> visitIrreflexivity(Irreflexivity axiom) {
+            if (axiom.isNegated() || axiom.isFlagged()) {
+                return Map.of();
+            }
             Relation rel = axiom.getRelation();
             MutableKnowledge k = knowledgeMap.get(rel);
             MutableEventGraph d = k.getMaySet().filter(Tuple::isLoop);
@@ -364,6 +370,9 @@ public class NativeRelationAnalysis implements RelationAnalysis {
 
         @Override
         public Map<Relation, ExtendedDelta> visitAcyclicity(Acyclicity axiom) {
+            if (axiom.isNegated() || axiom.isFlagged()) {
+                return Map.of();
+            }
             long t0 = System.currentTimeMillis();
             Relation rel = axiom.getRelation();
             ExecutionAnalysis exec = analysisContext.get(ExecutionAnalysis.class);

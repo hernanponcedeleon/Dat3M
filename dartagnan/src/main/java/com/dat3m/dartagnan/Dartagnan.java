@@ -20,6 +20,7 @@ import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.Assert;
 import com.dat3m.dartagnan.program.event.core.CondJump;
 import com.dat3m.dartagnan.program.processing.LoopUnrolling;
+import com.dat3m.dartagnan.program.Entrypoint;
 import com.dat3m.dartagnan.smt.ModelExt;
 import com.dat3m.dartagnan.utils.ExitCode;
 import com.dat3m.dartagnan.utils.Result;
@@ -38,6 +39,7 @@ import com.dat3m.dartagnan.witness.graphml.WitnessBuilder;
 import com.dat3m.dartagnan.witness.graphml.WitnessGraph;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.axiom.Axiom;
+import com.dat3m.dartagnan.exception.MalformedProgramException;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.io.CharSource;
@@ -207,6 +209,10 @@ public class Dartagnan extends BaseOptions {
                         .withProgressModel(o.getProgressModel())
                         .withWitness(witness);
                 Program p = new ProgramParser().parse(f);
+                if (o.overrideEntryFunction()) {
+                    p.setEntrypoint(new Entrypoint.Simple(p.getFunctionByName(o.getEntryFunction()).orElseThrow(
+                        () -> new MalformedProgramException(String.format("Program has no function named %s. Select a different entry point.", o.getEntryFunction())))));
+                }
                 // If the arch has been set during parsing (this only happens for litmus tests)
                 // and the user did not explicitly add the target option, we use the one
                 // obtained during parsing.

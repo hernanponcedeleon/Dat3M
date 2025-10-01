@@ -2,9 +2,9 @@ package com.dat3m.dartagnan.parsers.program.visitors.spirv.extensions;
 
 import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.expression.integers.IntLiteral;
+import com.dat3m.dartagnan.parsers.program.visitors.spirv.VisitorOpsExtension;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.mocks.MockProgramBuilder;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.mocks.MockSpirvParser;
-import com.dat3m.dartagnan.parsers.program.visitors.spirv.extenstions.VisitorExtensionClspvReflection;
 import com.dat3m.dartagnan.program.ThreadGrid;
 import com.dat3m.dartagnan.program.memory.ScopedPointerVariable;
 import org.junit.Before;
@@ -21,6 +21,7 @@ public class VisitorExtensionClspvReflectionTest {
 
     @Before
     public void before() {
+        builder.mockVoidType("%void");
         builder.mockIntType("%uint", 32);
         builder.mockVectorType("%v1uint", "%uint", 1);
         builder.mockVectorType("%v2uint", "%uint", 2);
@@ -60,7 +61,7 @@ public class VisitorExtensionClspvReflectionTest {
         ScopedPointerVariable pointer = builder.mockVariable("%var", "%ptr_6x_v3uint");
 
         // when
-        new MockSpirvParser(input).spv().accept(new VisitorExtensionClspvReflection(builder));
+        visit(input);
 
         // then
         verifyPushConstant(pointer, 0, List.of(0, 0, 0));
@@ -90,7 +91,7 @@ public class VisitorExtensionClspvReflectionTest {
         ScopedPointerVariable pointer = builder.mockVariable("%var", "%ptr_6x_v3uint");
 
         // when
-        new MockSpirvParser(input).spv().accept(new VisitorExtensionClspvReflection(builder));
+        visit(input);
 
         // then
         verifyPushConstant(pointer, 0, List.of(0, 0, 0));
@@ -231,7 +232,7 @@ public class VisitorExtensionClspvReflectionTest {
         ScopedPointerVariable pointer = builder.mockVariable("%var", "%ptr_v1uint_v2uint");
 
         // when
-        new MockSpirvParser(input).spv().accept(new VisitorExtensionClspvReflection(builder));
+        visit(input);
 
         // then
         assertEquals(12, pointer.getAddress().getKnownSize());
@@ -251,7 +252,7 @@ public class VisitorExtensionClspvReflectionTest {
         ScopedPointerVariable pointer = builder.mockVariable("%var", "%ptr_v3uint_v1uint");
 
         // when
-        new MockSpirvParser(input).spv().accept(new VisitorExtensionClspvReflection(builder));
+        visit(input);
 
         // then
         assertEquals(16, pointer.getAddress().getKnownSize());
@@ -408,7 +409,7 @@ public class VisitorExtensionClspvReflectionTest {
     }
 
     private void visit(String input) {
-        new MockSpirvParser(input).spv().accept(new VisitorExtensionClspvReflection(builder));
+        new MockSpirvParser(input).spv().accept(new VisitorOpsExtension(builder));
     }
 
     private void verifyPushConstant(ScopedPointerVariable pointer, int offset, List<Integer> expected) {

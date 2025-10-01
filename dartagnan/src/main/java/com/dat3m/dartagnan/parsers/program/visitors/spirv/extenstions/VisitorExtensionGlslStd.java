@@ -26,14 +26,6 @@ public class VisitorExtensionGlslStd extends VisitorExtension<Expression> {
     }
 
     @Override
-    public Expression visitOpExtInst(SpirvParser.OpExtInstContext ctx) {
-        String result = ctx.idResult().getText();
-        Expression expr = this.visit(ctx.instruction());
-        builder.addExpression(result, expr);
-        return null;
-    }
-
-    @Override
     public Expression visitGlsl_findILsb(SpirvParser.Glsl_findILsbContext ctx) {
         String valueId = ctx.valueIdRef().getText();
         Expression value = builder.getExpression(valueId);
