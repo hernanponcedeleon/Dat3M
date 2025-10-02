@@ -19,6 +19,7 @@ import com.dat3m.dartagnan.wmm.analysis.NativeRelationAnalysis;
 import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
 import com.dat3m.dartagnan.wmm.axiom.Axiom;
 import com.dat3m.dartagnan.wmm.definition.*;
+import com.dat3m.dartagnan.wmm.definition.TagSet;
 import com.dat3m.dartagnan.wmm.utils.Flag;
 import com.dat3m.dartagnan.wmm.utils.graph.EventGraph;
 import com.dat3m.dartagnan.wmm.utils.graph.mutable.MapEventGraph;
@@ -235,6 +236,7 @@ public class WmmEncoder implements Encoder {
                 SyncWith.class,
                 SameVirtualLocation.class, // FIXME?!
                 Empty.class,
+                TagSet.class,
                 // Static because the underlying sets are static:
                 SetIdentity.class,
                 CartesianProduct.class
