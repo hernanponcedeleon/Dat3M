@@ -1,7 +1,7 @@
 package com.dat3m.dartagnan.utils.symmetry;
 
 import com.dat3m.dartagnan.encoding.EncodingContext;
-import com.dat3m.dartagnan.encoding.SymmetryEncoder;
+import com.dat3m.dartagnan.encoding.EncodingUtils;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.analysis.ThreadSymmetry;
 import com.dat3m.dartagnan.program.analysis.alias.AliasAnalysis;
@@ -223,6 +223,7 @@ public class CoSymmetryBreaking {
             r1.add(edge.encode(t.first(), t.second()));
         }
         // Construct symmetric rows
+        final EncodingUtils utils = new EncodingUtils(context);
         List<BooleanFormula> enc = new ArrayList<>();
         Thread rep = symmClass.getRepresentative();
         for (int i = 1; i < symmThreads.size(); i++) {
@@ -237,9 +238,8 @@ public class CoSymmetryBreaking {
                 r2.add(edge.encode(t.first(), t.second()));
             }
 
-            final String id = "_" + rep.getId() + "_" + i;
-            // NOTE: We want to have r1 >= r2 but lexLeader encodes r1 <= r2, so we swap r1 and r2.
-            enc.add(SymmetryEncoder.encodeLexLeader(id, r2, r1, context));
+            final String id = String.format("T%d_T%d", rep.getId(), i);
+            enc.add(utils.encodeLexLeader(r2, r1, id)); // r1 >= r2
 
             t1 = t2;
             r1Tuples = r2Tuples;

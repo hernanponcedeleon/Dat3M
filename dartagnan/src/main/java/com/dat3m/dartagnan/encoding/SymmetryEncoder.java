@@ -9,9 +9,9 @@ import com.dat3m.dartagnan.utils.equivalence.EquivalenceClass;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
 import com.dat3m.dartagnan.wmm.axiom.Axiom;
+import com.dat3m.dartagnan.wmm.utils.Tuple;
 import com.dat3m.dartagnan.wmm.utils.graph.EventGraph;
 import com.dat3m.dartagnan.wmm.utils.graph.mutable.MapEventGraph;
-import com.dat3m.dartagnan.wmm.utils.Tuple;
 import com.dat3m.dartagnan.wmm.utils.graph.mutable.MutableEventGraph;
 import com.google.common.base.Preconditions;
 import org.apache.logging.log4j.LogManager;
@@ -128,6 +128,7 @@ public class SymmetryEncoder implements Encoder {
 
         // Construct symmetric rows
         List<BooleanFormula> enc = new ArrayList<>();
+        final EncodingUtils utils = new EncodingUtils(context);
         for (int i = 1; i < symmThreads.size(); i++) {
             Thread t2 = symmThreads.get(i);
             Function<Event, Event> p = symm.createEventTransposition(t1, t2);
@@ -135,8 +136,8 @@ public class SymmetryEncoder implements Encoder {
 
             List<BooleanFormula> r1 = t1Tuples.stream().map(t -> edge.encode(t.first(), t.second())).toList();
             List<BooleanFormula> r2 = t2Tuples.stream().map(t -> edge.encode(t.first(), t.second())).toList();
-            final String id = "_" + rep.getId() + "_" + i;
-            enc.add(encodeLexLeader(id, r2, r1, context)); // r1 >= r2
+            final String id = String.format("T%d_T%d", rep.getId(), i);
+            enc.add(utils.encodeLexLeader(r2, r1, id)); // r1 >= r2
             t1 = t2;
             t1Tuples = t2Tuples;
         }
@@ -192,58 +193,6 @@ public class SymmetryEncoder implements Encoder {
 
         // Sort by sync degrees
         row.sort(Comparator.<Tuple>comparingInt(t -> combinedInDegree.get(t.first()) * combinedOutDegree.get(t.second())).reversed());
-    }
-
-    // ========================= Static utility ===========================
-
-    /*
-        Encodes that any assignment obeys "r1 <= r2" where the order is
-        the lexicographic order based on "false < true".
-        In other words, for all assignments to the variables of r1/r2,
-        the first time r1(i) and r2(i) get different truth values,
-        we will have r1(i) = FALSE and r2(i) = TRUE.
-
-        NOTE: Creates extra variables named "yi_<uniqueIdent>" which can cause conflicts if
-              <uniqueIdent> is not uniquely used.
-    */
-    public static BooleanFormula encodeLexLeader(String uniqueIdent, List<BooleanFormula> r1, List<BooleanFormula> r2, EncodingContext context) {
-        Preconditions.checkArgument(r1.size() == r2.size());
-        final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
-        // Return TRUE if there is nothing to encode
-        if(r1.isEmpty()) {
-            return bmgr.makeTrue();
-        }
-        final int size = r1.size();
-        final String suffix = "_" + uniqueIdent;
-
-        // We interpret the variables of <ri> as x1(ri), ..., xn(ri).
-        // We create helper variables y0_suffix, ..., y(n-1)_suffix (note the index shift compared to xi)
-        // xi gets related to y(i-1) and yi
-
-        BooleanFormula ylast = bmgr.makeVariable("y0" + suffix); // y(i-1)
-        List<BooleanFormula> enc = new ArrayList<>();
-        enc.add(ylast);
-        // From x1 to x(n-1)
-        for (int i = 1; i < size; i++) {
-            BooleanFormula y = bmgr.makeVariable("y" + i + suffix); // yi
-            BooleanFormula a = r1.get(i-1); // xi(r1)
-            BooleanFormula b = r2.get(i-1); // xi(r2)
-            enc.add(bmgr.or(y, bmgr.not(ylast), bmgr.not(a))); // (see below)
-            enc.add(bmgr.or(y, bmgr.not(ylast), b));           // "y(i-1) implies ((xi(r1) >= xi(r2))  =>  yi)"
-            enc.add(bmgr.or(bmgr.not(ylast), bmgr.not(a), b)); // "y(i-1) implies (xi(r1) <= xi(r2))"
-                    // NOTE: yi = TRUE means the prefixes (x1, x2, ..., xi) of the rows r1/r2 are equal
-                    //       yi = FALSE means that no conditions are imposed on xi
-                    // The first point, where y(i-1) is TRUE but yi is FALSE, is the breaking point
-                    // where xi(r1) < xi(r2) holds (afterwards all yj (j >= i+1) are unconstrained and can be set to
-                    // FALSE by the solver)
-            ylast = y;
-        }
-        // Final iteration for xn is handled differently as there is no variable yn anymore.
-        BooleanFormula a = r1.get(size-1);
-        BooleanFormula b = r2.get(size-1);
-        enc.add(bmgr.or(bmgr.not(ylast), bmgr.not(a), b));
-
-        return bmgr.and(enc);
     }
 
     private EventGraph cfSet() {
