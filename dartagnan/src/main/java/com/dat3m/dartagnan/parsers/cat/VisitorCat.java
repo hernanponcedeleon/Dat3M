@@ -171,7 +171,8 @@ class VisitorCat extends CatBaseVisitor<Object> {
         }
         // Create the recursive relations.
         for (int i = 0; i < recSize; i++) {
-            final Relation.Arity arity = rhsContexts[i].accept(new ArityInspector());
+            final Relation.Arity probedArity = rhsContexts[i].accept(new ArityInspector());
+            final Relation.Arity arity = probedArity != null ? probedArity : Relation.Arity.BINARY;
             recursiveGroup[i] = wmm.newRelation(createUniqueName(lhsNames[i]), arity);
             recursiveGroup[i].setRecursive();
             namespace.put(lhsNames[i], recursiveGroup[i]);
@@ -413,6 +414,11 @@ class VisitorCat extends CatBaseVisitor<Object> {
     private final class ArityInspector extends CatBaseVisitor<Relation.Arity> {
 
         private ArityInspector() {}
+
+        @Override
+        public Relation.Arity visitExpr(ExprContext c) {
+            return c.e.accept(this);
+        }
 
         @Override
         public Relation.Arity visitExprBasic(ExprBasicContext c) {
