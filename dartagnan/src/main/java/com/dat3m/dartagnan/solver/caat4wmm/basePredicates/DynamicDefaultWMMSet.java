@@ -7,7 +7,7 @@ import com.dat3m.dartagnan.verification.model.EventData;
 import com.dat3m.dartagnan.wmm.Relation;
 import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
 
-// A default implementation for any encoded relation, e.g. base relations or non-base but cut relations.
+// A default implementation for any encoded set, e.g. base sets or non-base but cut sets.
 public class DynamicDefaultWMMSet extends MaterializedWMMSet {
 
     private final Relation relation;

@@ -157,8 +157,8 @@ class VisitorCat extends CatBaseVisitor<Object> {
         final int recSize = ctx.letRecAndDefinition().size() + 1;
         final Relation[] recursiveGroup = new Relation[recSize];
         final String[] lhsNames = new String[recSize];
-
-        // Create the recursive relations
+        final ExpressionContext[] rhsContexts = new ExpressionContext[recSize];
+        // Recompose the syntax.
         for (int i = 0; i < recSize; i++) {
             // First relation needs special treatment due to syntactic difference
             final String relName = i == 0 ? ctx.n.getText() : ctx.letRecAndDefinition(i - 1).n.getText();
@@ -167,14 +167,18 @@ class VisitorCat extends CatBaseVisitor<Object> {
                 throw new MalformedMemoryModelException(errorMsg);
             }
             lhsNames[i] = relName;
-            recursiveGroup[i] = wmm.newRelation(createUniqueName(relName));
-            recursiveGroup[i].setRecursive();
-            namespace.put(relName, recursiveGroup[i]);
+            rhsContexts[i] = i == 0 ? ctx.e : ctx.letRecAndDefinition(i - 1).e;
         }
-
-        // Parse recursive definitions
+        // Create the recursive relations.
         for (int i = 0; i < recSize; i++) {
-            final ExpressionContext rhs = i == 0 ? ctx.e : ctx.letRecAndDefinition(i - 1).e;
+            final Relation.Arity arity = rhsContexts[i].accept(new ArityInspector());
+            recursiveGroup[i] = wmm.newRelation(createUniqueName(lhsNames[i]), arity);
+            recursiveGroup[i].setRecursive();
+            namespace.put(lhsNames[i], recursiveGroup[i]);
+        }
+        // Parse recursive definitions.
+        for (int i = 0; i < recSize; i++) {
+            final ExpressionContext rhs = rhsContexts[i];
             final Relation lhs = recursiveGroup[i];
             setRelationToBeDefined(lhs);
             final Relation parsedRhs = parseAsRelation(rhs);
@@ -326,7 +330,6 @@ class VisitorCat extends CatBaseVisitor<Object> {
 
     @Override
     public Relation visitExprDomain(ExprDomainContext c) {
-        checkNoRecursion(c);
         Relation r0 = wmm.newSet();
         Relation r1 = parseAsRelation(c.e);
         return addDefinition(new Domain(r0, r1));
@@ -334,7 +337,6 @@ class VisitorCat extends CatBaseVisitor<Object> {
 
     @Override
     public Relation visitExprRange(ExprRangeContext c) {
-        checkNoRecursion(c);
         Relation r0 = wmm.newSet();
         Relation r1 = parseAsRelation(c.e);
         return addDefinition(new Range(r0, r1));
@@ -406,6 +408,70 @@ class VisitorCat extends CatBaseVisitor<Object> {
         parser.addErrorListener(new AbortErrorListener());
         parser.addErrorListener(new DiagnosticErrorListener(true));
         return parser;
+    }
+
+    private final class ArityInspector extends CatBaseVisitor<Relation.Arity> {
+
+        private ArityInspector() {}
+
+        @Override
+        public Relation.Arity visitExprBasic(ExprBasicContext c) {
+            final Object object = namespace.get(c.n.getText());
+            return object instanceof Relation r ? r.getArity() : null;
+        }
+
+        @Override
+        public Relation.Arity visitExprDomain(ExprDomainContext c) {
+            return Relation.Arity.UNARY;
+        }
+
+        @Override
+        public Relation.Arity visitExprRange(ExprRangeContext c) {
+            return Relation.Arity.UNARY;
+        }
+
+        @Override
+        public Relation.Arity visitExprCartesian(ExprCartesianContext c) {
+            return Relation.Arity.BINARY;
+        }
+
+        @Override
+        public Relation.Arity visitExprComposition(ExprCompositionContext c) {
+            return Relation.Arity.BINARY;
+        }
+
+        @Override
+        public Relation.Arity visitExprIdentity(ExprIdentityContext c) {
+            return Relation.Arity.BINARY;
+        }
+
+        @Override
+        public Relation.Arity visitExprUnion(ExprUnionContext c) {
+            return join(c.e1, c.e2);
+        }
+
+        @Override
+        public Relation.Arity visitExprIntersection(ExprIntersectionContext c) {
+            return join(c.e1, c.e2);
+        }
+
+        @Override
+        public Relation.Arity visitExprMinus(ExprMinusContext c) {
+            return join(c.e1, c.e2);
+        }
+
+        private Relation.Arity join(ExpressionContext e1, ExpressionContext e2) {
+            final Relation.Arity k1 = e1.accept(this);
+            final Relation.Arity k2 = e2.accept(this);
+            checkCompatible(k1, k2);
+            return k1 == null ? k2 : k1;
+        }
+
+        private static void checkCompatible(Relation.Arity k1, Relation.Arity k2) {
+            if (k1 != null && k2 != null && !k1.equals(k2)) {
+                throw new ParsingException("Incompatible kinds %s and %s".formatted(k1, k2));
+            }
+        }
     }
 }
 
