@@ -236,10 +236,7 @@ public class WmmEncoder implements Encoder {
                 SyncWith.class,
                 SameVirtualLocation.class, // FIXME?!
                 Empty.class,
-                TagSet.class,
-                // Static because the underlying sets are static:
-                SetIdentity.class,
-                CartesianProduct.class
+                TagSet.class
         ));
 
         final Program program = context.getTask().getProgram();
