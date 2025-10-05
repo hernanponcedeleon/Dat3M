@@ -537,7 +537,7 @@ public class ExpressionEncoder {
             final int exponentBits = fType.getExponentBits();
             final int mantissaBits = fType.getMantissaBits();
             final FloatingPointType targetType = FormulaType.getFloatingPointType(exponentBits, mantissaBits);
-            return new TypedFormula<>(fType, floatingPointFormulaManager().castFrom(operand, true, targetType));
+            return new TypedFormula<>(fType, floatingPointFormulaManager().castFrom(operand, true, targetType, context.roundingModeFloats));
         }
 
         // ====================================================================================
@@ -555,7 +555,7 @@ public class ExpressionEncoder {
             } else if (floatLiteral.isInf()) { // TODO sign
                 result = floatingPointFormulaManager().makePlusInfinity(fFType);
             } else {
-                result = floatingPointFormulaManager().makeNumber(floatLiteral.getValue(), fFType);
+                result = floatingPointFormulaManager().makeNumber(floatLiteral.getValue(), fFType, context.roundingModeFloats);
             }
             return new TypedFormula<>(floatLiteral.getType(), result);
         }
@@ -570,10 +570,10 @@ public class ExpressionEncoder {
             final int bitWidth = type.getBitWidth();
             final FloatingPointFormulaManager fpmgr = floatingPointFormulaManager();
             final FloatingPointFormula result = switch (fBin.getKind()) {
-                case FADD -> fpmgr.add(fp1, fp2);
-                case FSUB -> fpmgr.subtract(fp1, fp2);
-                case FMUL -> fpmgr.multiply(fp1, fp2);
-                case FDIV -> fpmgr.divide(fp1, fp2);
+                case FADD -> fpmgr.add(fp1, fp2, context.roundingModeFloats);
+                case FSUB -> fpmgr.subtract(fp1, fp2, context.roundingModeFloats);
+                case FMUL -> fpmgr.multiply(fp1, fp2, context.roundingModeFloats);
+                case FDIV -> fpmgr.divide(fp1, fp2, context.roundingModeFloats);
                 case FREM -> fpmgr.remainder(fp1, fp2);
                 case FMAX -> fpmgr.max(fp1, fp2);
                 case FMIN -> fpmgr.min(fp1, fp2);
@@ -639,7 +639,7 @@ public class ExpressionEncoder {
                 final FloatingPointFormulaManager fpmgr = floatingPointFormulaManager();
                 final int exponentBits = expr.getTargetType().getExponentBits();
                 final int mantissaBits = expr.getTargetType().getMantissaBits();
-                enc = fpmgr.castFrom((FloatingPointFormula) inner.formula(), false, FormulaType.getFloatingPointType(exponentBits, mantissaBits));
+                enc = fpmgr.castFrom((FloatingPointFormula) inner.formula(), false, FormulaType.getFloatingPointType(exponentBits, mantissaBits), context.roundingModeFloats);
             }
             return new TypedFormula<>(expr.getType(), enc);
         }
@@ -648,7 +648,7 @@ public class ExpressionEncoder {
             final FormulaType targetFormulaType = context.useIntegers ?
                 FormulaType.IntegerType :
                 FormulaType.getBitvectorTypeWithSize(expr.getTargetType().getBitWidth());
-            return new TypedFormula<>(expr.getTargetType(), fmgr.getFloatingPointFormulaManager().castTo((FloatingPointFormula) encodeFloatExpr(expr.getOperand()).formula(), true, targetFormulaType));
+            return new TypedFormula<>(expr.getTargetType(), fmgr.getFloatingPointFormulaManager().castTo((FloatingPointFormula) encodeFloatExpr(expr.getOperand()).formula(), true, targetFormulaType, context.roundingModeFloats));
         }
 
         // ====================================================================================

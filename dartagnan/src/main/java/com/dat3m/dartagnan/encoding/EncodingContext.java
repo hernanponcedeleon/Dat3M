@@ -27,6 +27,7 @@ import org.sosy_lab.common.configuration.Option;
 import org.sosy_lab.common.configuration.Options;
 import org.sosy_lab.java_smt.api.*;
 import org.sosy_lab.java_smt.api.NumeralFormula.IntegerFormula;
+import org.sosy_lab.java_smt.api.FloatingPointRoundingMode;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -36,6 +37,7 @@ import static com.dat3m.dartagnan.program.event.Tag.INIT;
 import static com.dat3m.dartagnan.program.event.Tag.WRITE;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
+import static org.sosy_lab.java_smt.api.FloatingPointRoundingMode.*;
 
 @Options
 public final class EncodingContext {
@@ -69,6 +71,11 @@ public final class EncodingContext {
             secure = true)
     boolean useIntegers = false;
 
+    @Option(name = ROUNDING_MODE_FLOATS,
+            description = "Rounding mode for floating point operations.",
+            secure = true)
+    FloatingPointRoundingMode roundingModeFloats = NEAREST_TIES_TO_EVEN;
+
     private final Map<Event, BooleanFormula> controlFlowVariables = new HashMap<>();
     private final Map<Event, BooleanFormula> executionVariables = new HashMap<>();
     private final Map<NamedBarrier, BooleanFormula> syncVariables = new HashMap<>();
@@ -98,6 +105,7 @@ public final class EncodingContext {
         task.getConfig().inject(context);
         logger.info("{}: {}", IDL_TO_SAT, context.useSATEncoding);
         logger.info("{}: {}", MERGE_CF_VARS, context.shouldMergeCFVars);
+        logger.info("{}: {}", ROUNDING_MODE_FLOATS, context.roundingModeFloats);
         context.initialize();
         if (logger.isInfoEnabled()) {
             logger.info("Number of encoded edges for acyclicity: {}",
