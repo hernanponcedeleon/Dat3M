@@ -213,8 +213,56 @@ public final class ExpressionFactory {
         return makeValue(BigDecimal.ZERO, type);
     }
 
+    public FloatLiteral makeInf(FloatType type) {
+        return new FloatLiteral(type, null, false, true);
+    }
+
+    public FloatLiteral makeNan(FloatType type) {
+        return new FloatLiteral(type, null, true, false);
+    }
+
     public FloatLiteral makeValue(BigDecimal value, FloatType type) {
         return new FloatLiteral(type, value, false, false);
+    }
+
+    public Expression makeOLT(Expression leftOperand, Expression rightOperand) {
+        return makeFloatCmp(leftOperand, FloatCmpOp.OLT, rightOperand);
+    }
+
+    public Expression makeOGT(Expression leftOperand, Expression rightOperand) {
+        return makeFloatCmp(leftOperand, FloatCmpOp.OGT, rightOperand);
+    }
+
+    public Expression makeOLTE(Expression leftOperand, Expression rightOperand) {
+        return makeFloatCmp(leftOperand, FloatCmpOp.OLTE, rightOperand);
+    }
+
+    public Expression makeOGTE(Expression leftOperand, Expression rightOperand) {
+        return makeFloatCmp(leftOperand, FloatCmpOp.OGTE, rightOperand);
+    }
+
+    public Expression makeORD(Expression leftOperand, Expression rightOperand) {
+        return makeFloatCmp(leftOperand, FloatCmpOp.ORD, rightOperand);
+    }
+
+    public Expression makeULT(Expression leftOperand, Expression rightOperand) {
+        return makeFloatCmp(leftOperand, FloatCmpOp.ULT, rightOperand);
+    }
+
+    public Expression makeUGT(Expression leftOperand, Expression rightOperand) {
+        return makeFloatCmp(leftOperand, FloatCmpOp.UGT, rightOperand);
+    }
+
+    public Expression makeULTE(Expression leftOperand, Expression rightOperand) {
+        return makeFloatCmp(leftOperand, FloatCmpOp.ULTE, rightOperand);
+    }
+
+    public Expression makeUGTE(Expression leftOperand, Expression rightOperand) {
+        return makeFloatCmp(leftOperand, FloatCmpOp.UGTE, rightOperand);
+    }
+
+    public Expression makeUNO(Expression leftOperand, Expression rightOperand) {
+        return makeFloatCmp(leftOperand, FloatCmpOp.UNO, rightOperand);
     }
 
     public Expression makeFAdd(Expression x, Expression y) {
