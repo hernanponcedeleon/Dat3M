@@ -604,15 +604,15 @@ public class ExpressionEncoder {
             final FloatingPointFormula r = (FloatingPointFormula) rhs.formula();
 
             final BooleanFormula result = switch (op) {
-                case OEQ -> fromUnordToOrd(l, r, fpmgr.assignment(l, r));
-                case ONEQ -> fromUnordToOrd(l, r, bmgr.not(fpmgr.assignment(l, r)));
+                case OEQ -> fromUnordToOrd(l, r, fpmgr.equalWithFPSemantics(l, r));
+                case ONEQ -> fromUnordToOrd(l, r, bmgr.not(fpmgr.equalWithFPSemantics(l, r)));
                 case OLT -> fromUnordToOrd(l, r, fpmgr.lessThan(l, r));
                 case OLTE -> fromUnordToOrd(l, r, fpmgr.lessOrEquals(l, r));
                 case OGT -> fromUnordToOrd(l, r, fpmgr.greaterThan(l, r));
                 case OGTE -> fromUnordToOrd(l, r, fpmgr.greaterOrEquals(l, r));
                 case ORD -> bmgr.not(bmgr.or(fpmgr.isNaN(l), fpmgr.isNaN(r)));
-                case UEQ -> fpmgr.assignment(l, r);
-                case UNEQ -> bmgr.not(fpmgr.assignment(l, r));
+                case UEQ -> fpmgr.equalWithFPSemantics(l, r);
+                case UNEQ -> bmgr.not(fpmgr.equalWithFPSemantics(l, r));
                 case ULT -> fpmgr.lessThan(l, r);
                 case ULTE -> fpmgr.lessOrEquals(l, r);
                 case UGT -> fpmgr.greaterThan(l, r);
