@@ -29,6 +29,14 @@ public final class FloatLiteral extends LiteralExpressionBase<FloatType> {
         return value;
     }
 
+    public boolean isNaN() {
+        return isNaN;
+    }
+
+    public boolean isInf() {
+        return isInf;
+    }
+
     public double getValueAsDouble() {
         return value.doubleValue();
     }
