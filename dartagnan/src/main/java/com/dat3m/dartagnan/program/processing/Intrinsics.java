@@ -196,10 +196,11 @@ public class Intrinsics {
                 "__VERIFIER_nondet_float", "__VERIFIER_nondet_double"),
                 false, false, true, true, Intrinsics::inlineNonDet),
         // --------------------------- LLVM ---------------------------
-        LLVM(List.of("llvm.smax", "llvm.umax", "llvm.smin", "llvm.umin",
+        LLVM(List.of("llvm.smax", "llvm.umax", "llvm.smin", "llvm.umin", "llvm.fmin", "llvm.fmin",
                 "llvm.ssub.sat", "llvm.usub.sat", "llvm.sadd.sat", "llvm.uadd.sat", // TODO: saturated shifts
                 "llvm.sadd.with.overflow", "llvm.ssub.with.overflow", "llvm.smul.with.overflow",
-                "llvm.ctlz", "llvm.cttz", "llvm.ctpop"),
+                "llvm.ctlz", "llvm.cttz", "llvm.ctpop",
+                "llvm.fabs"),
                 false, false, true, true, Intrinsics::handleLLVMIntrinsic),
         LLVM_ASSUME("llvm.assume", false, false, true, true, Intrinsics::inlineLLVMAssume),
         LLVM_META(List.of("llvm.stacksave", "llvm.stackrestore", "llvm.lifetime"), false, false, true, true, Intrinsics::inlineAsZero),
@@ -1168,8 +1169,11 @@ public class Intrinsics {
         } else if (name.contains("sub.sat")) {
             return inlineLLVMSaturatedSub(valueCall);
         } else if (name.startsWith("llvm.smax") || name.startsWith("llvm.smin")
-                || name.startsWith("llvm.umax") || name.startsWith("llvm.umin")) {
+                || name.startsWith("llvm.umax") || name.startsWith("llvm.umin")
+                || name.startsWith("llvm.fmax") || name.startsWith("llvm.fmin")) {
             return inlineLLVMMinMax(valueCall);
+        } else if (name.contains("llvm.fabs")) {
+            return inlineLLVMFAbs(valueCall);
         } else {
             final String error = String.format(
                     "Call %s to LLVM intrinsic %s cannot be handled.", call, call.getCalledFunction());
@@ -1257,9 +1261,22 @@ public class Intrinsics {
         final String name = call.getCalledFunction().getName();
         final boolean signed = name.startsWith("llvm.smax.") || name.startsWith("llvm.smin.");
         final boolean isMax = name.startsWith("llvm.smax.") || name.startsWith("llvm.umax.");
+        final boolean isFloat = name.startsWith("llvm.fmax.") || name.startsWith("llvm.fmin.");
+        if (isFloat) {
+            final Expression result = isMax ? expressions.makeFMax(left, right) : expressions.makeFMin(left, right);
+            return List.of(EventFactory.newLocal(call.getResultRegister(), result));
+        }
         final Expression isLess = expressions.makeLT(left, right, signed);
         final Expression result = expressions.makeITE(isLess, isMax ? right : left, isMax ? left : right);
         return List.of(EventFactory.newLocal(call.getResultRegister(), result));
+    }
+
+    private List<Event> inlineLLVMFAbs(ValueFunctionCall call) {
+        //see https://llvm.org/docs/LangRef.html#standard-c-c-library-intrinsics
+        final List<Expression> arguments = call.getArguments();
+        final Expression operand = arguments.get(0);
+        final String name = call.getCalledFunction().getName();
+        return List.of(EventFactory.newLocal(call.getResultRegister(), expressions.makeFAbs(operand)));
     }
 
     private List<Event> inlineLLVMSaturatedSub(ValueFunctionCall call) {

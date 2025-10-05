@@ -285,8 +285,20 @@ public final class ExpressionFactory {
         return new FloatBinaryExpr(x, FloatBinaryOp.FREM, y);
     }
 
+    public Expression makeFMin(Expression x, Expression y) {
+        return new FloatBinaryExpr(x, FloatBinaryOp.FMIN, y);
+    }
+
+    public Expression makeFMax(Expression x, Expression y) {
+        return new FloatBinaryExpr(x, FloatBinaryOp.FMAX, y);
+    }
+
     public Expression makeFNeg(Expression expr) {
         return new FloatUnaryExpr(FloatUnaryOp.NEG, expr);
+    }
+
+    public Expression makeFAbs(Expression expr) {
+        return new FloatUnaryExpr(FloatUnaryOp.FABS, expr);
     }
 
     public Expression makeFloatUnary(FloatUnaryOp op, Expression expr) {
@@ -444,11 +456,15 @@ public final class ExpressionFactory {
             return makeIntCmp(leftOperand, IntCmpOp.EQ, rightOperand);
         } else if (type instanceof FloatType) {
             // TODO: Decide on a default semantics for float equality?
-            return makeFloatCmp(leftOperand, FloatCmpOp.OEQ, rightOperand);
+            return makeFloatCmp(leftOperand, FloatCmpOp.UEQ, rightOperand);
         } else if (ExpressionHelper.isAggregateLike(type)) {
             return makeAggregateCmp(leftOperand, AggregateCmpOp.EQ, rightOperand);
         }
         throw new UnsupportedOperationException("Equality not supported on type: " + type);
+    }
+
+    public Expression makeFEQ(Expression leftOperand, Expression rightOperand, boolean ordered) {
+        return makeFloatCmp(leftOperand, ordered ? FloatCmpOp.OEQ : FloatCmpOp.UEQ, rightOperand);
     }
 
     public Expression makeNEQ(Expression leftOperand, Expression rightOperand) {
@@ -459,11 +475,15 @@ public final class ExpressionFactory {
             return makeIntCmp(leftOperand, IntCmpOp.NEQ, rightOperand);
         } else if (type instanceof FloatType) {
             // TODO: Decide on a default semantics for float equality?
-            return makeFloatCmp(leftOperand, FloatCmpOp.ONEQ, rightOperand);
+            return makeFloatCmp(leftOperand, FloatCmpOp.UNEQ, rightOperand);
         } else if (type instanceof AggregateType) {
             return makeAggregateCmp(leftOperand, AggregateCmpOp.NEQ, rightOperand);
         }
         throw new UnsupportedOperationException("Disequality not supported on type: " + type);
+    }
+
+    public Expression makeFNEQ(Expression leftOperand, Expression rightOperand, boolean ordered) {
+        return makeFloatCmp(leftOperand, ordered ? FloatCmpOp.ONEQ : FloatCmpOp.UNEQ, rightOperand);
     }
 
     public Expression makeUnary(ExpressionKind op, Expression expr) {

@@ -548,7 +548,15 @@ public class ExpressionEncoder {
             final FloatType fType = (FloatType) floatLiteral.getType();
             final int exponentBits = fType.getExponentBits();
             final int mantissaBits = fType.getMantissaBits();
-            final Formula result = floatingPointFormulaManager().makeNumber(floatLiteral.getValue(), FormulaType.getFloatingPointType(exponentBits, mantissaBits));
+            final FloatingPointType fFType = FormulaType.getFloatingPointType(exponentBits, mantissaBits);
+            final Formula result;
+            if (floatLiteral.isNaN()) {
+                result = floatingPointFormulaManager().makeNaN(fFType);
+            } else if (floatLiteral.isInf()) { // TODO sign
+                result = floatingPointFormulaManager().makePlusInfinity(fFType);
+            } else {
+                result = floatingPointFormulaManager().makeNumber(floatLiteral.getValue(), fFType);
+            }
             return new TypedFormula<>(floatLiteral.getType(), result);
         }
 
@@ -567,8 +575,22 @@ public class ExpressionEncoder {
                 case FMUL -> fpmgr.multiply(fp1, fp2);
                 case FDIV -> fpmgr.divide(fp1, fp2);
                 case FREM -> fpmgr.remainder(fp1, fp2);
+                case FMAX -> fpmgr.max(fp1, fp2);
+                case FMIN -> fpmgr.min(fp1, fp2);
             };
             return new TypedFormula<>(type, result);
+        }
+
+        @Override
+        public TypedFormula<FloatType, ?> visitFloatUnaryExpression(FloatUnaryExpr fUn) {
+            final TypedFormula<FloatType, ?> inner = encodeFloatExpr(fUn.getOperand());
+            final FloatingPointFormulaManager fpmgr = floatingPointFormulaManager();
+            final FloatingPointFormula innerForm = (FloatingPointFormula) inner.formula();
+            final FloatingPointFormula result = switch (fUn.getKind()) {
+                case NEG -> fpmgr.negate(innerForm);
+                case FABS -> fpmgr.abs(innerForm);
+            };
+            return new TypedFormula<FloatType, Formula>(fUn.getType(), result);
         }
 
         @Override
