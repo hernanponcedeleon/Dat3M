@@ -626,6 +626,12 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
     }
 
     @Override
+    public Expression visitFNegInst(FNegInstContext ctx) {
+        final Expression operand = visitTypeValue(ctx.typeValue());
+        return assignToRegister(expressions.makeFNeg(operand));
+    }
+
+    @Override
     public Expression visitAddInst(AddInstContext ctx) {
         final Expression left = visitTypeValue(ctx.typeValue());
         final Expression right = checkExpression(left.getType(), ctx.value());

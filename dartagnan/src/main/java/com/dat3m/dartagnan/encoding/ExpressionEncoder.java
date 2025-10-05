@@ -639,7 +639,7 @@ public class ExpressionEncoder {
                 final FloatingPointFormulaManager fpmgr = floatingPointFormulaManager();
                 final int exponentBits = expr.getTargetType().getExponentBits();
                 final int mantissaBits = expr.getTargetType().getMantissaBits();
-                enc = fpmgr.castFrom((FloatingPointFormula) inner.formula(), false, FormulaType.getFloatingPointType(exponentBits, mantissaBits), context.roundingModeFloats);
+                enc = fpmgr.castFrom((FloatingPointFormula) inner.formula(), true, FormulaType.getFloatingPointType(exponentBits, mantissaBits), context.roundingModeFloats);
             }
             return new TypedFormula<>(expr.getType(), enc);
         }
