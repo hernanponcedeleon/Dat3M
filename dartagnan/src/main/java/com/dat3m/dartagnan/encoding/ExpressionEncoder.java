@@ -10,6 +10,7 @@ import com.dat3m.dartagnan.expression.booleans.BoolLiteral;
 import com.dat3m.dartagnan.expression.booleans.BoolUnaryExpr;
 import com.dat3m.dartagnan.expression.booleans.BoolUnaryOp;
 import com.dat3m.dartagnan.expression.integers.*;
+import com.dat3m.dartagnan.expression.floats.*;
 import com.dat3m.dartagnan.expression.misc.ITEExpr;
 import com.dat3m.dartagnan.expression.type.*;
 import com.dat3m.dartagnan.expression.utils.ExpressionHelper;
@@ -23,6 +24,7 @@ import com.dat3m.dartagnan.smt.TupleFormula;
 import com.google.common.base.Preconditions;
 import org.sosy_lab.java_smt.api.*;
 import org.sosy_lab.java_smt.api.NumeralFormula.IntegerFormula;
+import org.sosy_lab.java_smt.api.FormulaType.*;
 
 import java.math.BigInteger;
 import java.util.ArrayList;
@@ -56,6 +58,10 @@ public class ExpressionEncoder {
 
     private BitvectorFormulaManager bitvectorFormulaManager() {
         return fmgr.getBitvectorFormulaManager();
+    }
+
+    private FloatingPointFormulaManager floatingPointFormulaManager() {
+        return fmgr.getFloatingPointFormulaManager();
     }
 
     // ====================================================================================
@@ -92,6 +98,10 @@ public class ExpressionEncoder {
             variable = context.useIntegers
                     ? integerFormulaManager().makeVariable(name)
                     : bitvectorFormulaManager().makeVariable(integerType.getBitWidth(), name);
+        } else if (type instanceof FloatType floatType) {
+            final int exponentBits = floatType.getExponentBits();
+            final int mantissaBits = floatType.getMantissaBits();
+            variable = floatingPointFormulaManager().makeVariable(name, FormulaType.getFloatingPointType(exponentBits, mantissaBits));
         } else if (type instanceof AggregateType aggType) {
             final List<Formula> fields = new ArrayList<>(aggType.getFields().size());
             for (TypeOffset field : aggType.getFields()) {
@@ -176,6 +186,15 @@ public class ExpressionEncoder {
             assert typedFormula.getType() == expression.getType();
             assert typedFormula.formula() instanceof IntegerFormula || typedFormula.formula() instanceof BitvectorFormula;
             return (TypedFormula<IntegerType, ?>) typedFormula;
+        }
+
+        @SuppressWarnings("unchecked")
+        public TypedFormula<FloatType, ?> encodeFloatExpr(Expression expression) {
+            Preconditions.checkArgument(expression.getType() instanceof FloatType);
+            final TypedFormula<?, ?> typedFormula = encode(expression);
+            assert typedFormula.getType() == expression.getType();
+            assert typedFormula.formula() instanceof FloatingPointFormula;
+            return (TypedFormula<FloatType, ?>) typedFormula;
         }
 
         @SuppressWarnings("unchecked")
@@ -510,6 +529,104 @@ public class ExpressionEncoder {
                 enc = bvmgr.extract((BitvectorFormula) operand, expr.getHighBit(), expr.getLowBit());
             }
             return new TypedFormula<>(expr.getType(), enc);
+        }
+
+        public TypedFormula<FloatType, ?> visitIntToFloatCastExpression(IntToFloatCast expr) {
+            final Formula operand = encodeIntegerExpr(expr.getOperand()).formula();
+            final FloatType fType = (FloatType) expr.getTargetType();
+            final int exponentBits = fType.getExponentBits();
+            final int mantissaBits = fType.getMantissaBits();
+            final FloatingPointType targetType = FormulaType.getFloatingPointType(exponentBits, mantissaBits);
+            return new TypedFormula<>(fType, floatingPointFormulaManager().castFrom(operand, true, targetType));
+        }
+
+        // ====================================================================================
+        // Floats
+
+        @Override
+        public TypedFormula<FloatType, ?> visitFloatLiteral(FloatLiteral floatLiteral) {
+            final FloatType fType = (FloatType) floatLiteral.getType();
+            final int exponentBits = fType.getExponentBits();
+            final int mantissaBits = fType.getMantissaBits();
+            final Formula result = floatingPointFormulaManager().makeNumber(floatLiteral.getValue(), FormulaType.getFloatingPointType(exponentBits, mantissaBits));
+            return new TypedFormula<>(floatLiteral.getType(), result);
+        }
+
+        @Override
+        public TypedFormula<FloatType, ?> visitFloatBinaryExpression(FloatBinaryExpr fBin) {
+            final TypedFormula<FloatType, ?> lhs = encodeFloatExpr(fBin.getLeft());
+            final TypedFormula<FloatType, ?> rhs = encodeFloatExpr(fBin.getRight());
+            final FloatingPointFormula fp1 = (FloatingPointFormula) lhs.formula();
+            final FloatingPointFormula fp2 = (FloatingPointFormula) rhs.formula();
+            final FloatType type = fBin.getType();
+            final int bitWidth = type.getBitWidth();
+            final FloatingPointFormulaManager fpmgr = floatingPointFormulaManager();
+            final FloatingPointFormula result = switch (fBin.getKind()) {
+                case FADD -> fpmgr.add(fp1, fp2);
+                case FSUB -> fpmgr.subtract(fp1, fp2);
+                case FMUL -> fpmgr.multiply(fp1, fp2);
+                case FDIV -> fpmgr.divide(fp1, fp2);
+                case FREM -> fpmgr.remainder(fp1, fp2);
+            };
+            return new TypedFormula<>(type, result);
+        }
+
+        @Override
+        public TypedFormula<BooleanType, BooleanFormula> visitFloatCmpExpression(FloatCmpExpr cmp) {
+            final TypedFormula<?, ?> lhs = encode(cmp.getLeft());
+            final TypedFormula<?, ?> rhs = encode(cmp.getRight());
+            final FloatCmpOp op = cmp.getKind();
+            final FloatingPointFormulaManager fpmgr = fmgr.getFloatingPointFormulaManager();
+            final BooleanFormulaManager bmgr = fmgr.getBooleanFormulaManager();
+            final FloatingPointFormula l = (FloatingPointFormula) lhs.formula();
+            final FloatingPointFormula r = (FloatingPointFormula) rhs.formula();
+
+            final BooleanFormula result = switch (op) {
+                case OEQ -> fromUnordToOrd(l, r, fpmgr.assignment(l, r));
+                case ONEQ -> fromUnordToOrd(l, r, bmgr.not(fpmgr.assignment(l, r)));
+                case OLT -> fromUnordToOrd(l, r, fpmgr.lessThan(l, r));
+                case OLTE -> fromUnordToOrd(l, r, fpmgr.lessOrEquals(l, r));
+                case OGT -> fromUnordToOrd(l, r, fpmgr.greaterThan(l, r));
+                case OGTE -> fromUnordToOrd(l, r, fpmgr.greaterOrEquals(l, r));
+                case ORD -> bmgr.not(bmgr.or(fpmgr.isNaN(l), fpmgr.isNaN(r)));
+                case UEQ -> fpmgr.assignment(l, r);
+                case UNEQ -> bmgr.not(fpmgr.assignment(l, r));
+                case ULT -> fpmgr.lessThan(l, r);
+                case ULTE -> fpmgr.lessOrEquals(l, r);
+                case UGT -> fpmgr.greaterThan(l, r);
+                case UGTE -> fpmgr.greaterOrEquals(l, r);
+                case UNO -> bmgr.or(fpmgr.isNaN(l), fpmgr.isNaN(r));
+            };
+            return new TypedFormula<>(types.getBooleanType(), result);
+        }
+
+        private BooleanFormula fromUnordToOrd(FloatingPointFormula l, FloatingPointFormula r, BooleanFormula cmp) {
+            final BooleanFormulaManager bmgr = fmgr.getBooleanFormulaManager();
+            final FloatingPointFormulaManager fpmgr = fmgr.getFloatingPointFormulaManager();
+            return fmgr.ifThenElse(bmgr.or(fpmgr.isNaN(l), fpmgr.isNaN(r)), bmgr.makeFalse(), cmp);
+        }
+
+        @Override
+        public TypedFormula<FloatType, ?> visitFloatSizeCastExpression(FloatSizeCast expr) {
+            final TypedFormula<FloatType, ?> inner = encodeFloatExpr(expr.getOperand());
+            final Formula enc;
+
+            if (expr.isNoop()) {
+                return inner;
+            } else {
+                final FloatingPointFormulaManager fpmgr = floatingPointFormulaManager();
+                final int exponentBits = expr.getTargetType().getExponentBits();
+                final int mantissaBits = expr.getTargetType().getMantissaBits();
+                enc = fpmgr.castFrom((FloatingPointFormula) inner.formula(), false, FormulaType.getFloatingPointType(exponentBits, mantissaBits));
+            }
+            return new TypedFormula<>(expr.getType(), enc);
+        }
+
+        public TypedFormula<?, ?> visitFloatToIntCastExpression(FloatToIntCast expr) {
+            final FormulaType targetFormulaType = context.useIntegers ?
+                FormulaType.IntegerType :
+                FormulaType.getBitvectorTypeWithSize(expr.getTargetType().getBitWidth());
+            return new TypedFormula<>(expr.getTargetType(), fmgr.getFloatingPointFormulaManager().castTo((FloatingPointFormula) encodeFloatExpr(expr.getOperand()).formula(), true, targetFormulaType));
         }
 
         // ====================================================================================

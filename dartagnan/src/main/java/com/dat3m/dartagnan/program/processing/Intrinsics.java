@@ -192,7 +192,8 @@ public class Intrinsics {
                 "__VERIFIER_nondet_short", "__VERIFIER_nondet_ushort", "__VERIFIER_nondet_unsigned_short",
                 "__VERIFIER_nondet_long", "__VERIFIER_nondet_ulong",
                 "__VERIFIER_nondet_longlong", "__VERIFIER_nondet_ulonglong",
-                "__VERIFIER_nondet_char", "__VERIFIER_nondet_uchar"),
+                "__VERIFIER_nondet_char", "__VERIFIER_nondet_uchar",
+                "__VERIFIER_nondet_float", "__VERIFIER_nondet_double"),
                 false, false, true, true, Intrinsics::inlineNonDet),
         // --------------------------- LLVM ---------------------------
         LLVM(List.of("llvm.smax", "llvm.umax", "llvm.smin", "llvm.umin",
@@ -1563,6 +1564,14 @@ public class Intrinsics {
             // Nondeterministic booleans
             signed = false;
             nonDetType = types.getBooleanType();
+        } else if (suffix.equals("float")) {
+            // Nondeterministic floats (32 bits)
+            signed = false;
+            nonDetType = types.getFloatType(23, 8);
+        } else if (suffix.equals("double")) {
+            // Nondeterministic floats (64 bits)
+            signed = false;
+            nonDetType = types.getFloatType(52, 11);
         } else {
             // Nondeterministic integers
             final int bits = switch (suffix) {
