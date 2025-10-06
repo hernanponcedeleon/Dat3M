@@ -648,7 +648,10 @@ public class ExpressionEncoder {
             final FormulaType targetFormulaType = context.useIntegers ?
                 FormulaType.IntegerType :
                 FormulaType.getBitvectorTypeWithSize(expr.getTargetType().getBitWidth());
-            return new TypedFormula<>(expr.getTargetType(), fmgr.getFloatingPointFormulaManager().castTo((FloatingPointFormula) encodeFloatExpr(expr.getOperand()).formula(), true, targetFormulaType, context.roundingModeFloats));
+            // Instructions fptoui and fptosi convert their floating-point operand into the nearest (rounding towards zero) integer value
+            // https://llvm.org/docs/LangRef.html#fptoui-to-instruction
+            // https://llvm.org/docs/LangRef.html#fptosi-to-instruction
+            return new TypedFormula<>(expr.getTargetType(), fmgr.getFloatingPointFormulaManager().castTo((FloatingPointFormula) encodeFloatExpr(expr.getOperand()).formula(), expr.isSigned(), targetFormulaType, FloatingPointRoundingMode .TOWARD_ZERO));
         }
 
         // ====================================================================================
