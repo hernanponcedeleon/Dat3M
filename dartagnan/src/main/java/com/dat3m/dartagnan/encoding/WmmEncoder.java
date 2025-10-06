@@ -7,6 +7,7 @@ import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.analysis.ReachingDefinitionsAnalysis;
 import com.dat3m.dartagnan.program.event.*;
 import com.dat3m.dartagnan.program.event.core.*;
+import com.dat3m.dartagnan.smt.EncodingUtils;
 import com.dat3m.dartagnan.smt.ModelExt;
 import com.dat3m.dartagnan.utils.Utils;
 import com.dat3m.dartagnan.utils.dependable.DependencyGraph;
@@ -619,7 +620,7 @@ public class WmmEncoder implements Encoder {
             final ExpressionEncoder exprEncoder = context.getExpressionEncoder();
             final Relation rf = rfDef.getDefinedRelation();
             final EncodingContext.EdgeEncoder edge = context.edge(rf);
-            final EncodingUtils utils = new EncodingUtils(context);
+            final EncodingUtils utils = context.getFormulaManager().getEncodingUtils();
 
             final Map<MemoryEvent, List<BooleanFormula>> read2RfEdges = new HashMap<>();
             // Encode the semantics of rf-edges

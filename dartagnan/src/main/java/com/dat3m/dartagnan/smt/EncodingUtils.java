@@ -1,6 +1,5 @@
-package com.dat3m.dartagnan.encoding;
+package com.dat3m.dartagnan.smt;
 
-import com.dat3m.dartagnan.smt.FormulaManagerExt;
 import com.google.common.base.Preconditions;
 import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.BooleanFormulaManager;
@@ -13,12 +12,8 @@ public class EncodingUtils {
 
     private final FormulaManagerExt fmgr;
 
-    public EncodingUtils(FormulaManagerExt fmgr) {
+    EncodingUtils(FormulaManagerExt fmgr) {
         this.fmgr = fmgr;
-    }
-
-    public EncodingUtils(EncodingContext context) {
-        this(context.getFormulaManager());
     }
 
     // -----------------------------------------------------------------------------------------------
@@ -78,7 +73,7 @@ public class EncodingUtils {
         Preconditions.checkArgument(r1.size() == r2.size());
         final BooleanFormulaManager bmgr = fmgr.getBooleanFormulaManager();
         // Return TRUE if there is nothing to encode
-        if(r1.isEmpty()) {
+        if (r1.isEmpty()) {
             return bmgr.makeTrue();
         }
         final int size = r1.size();
@@ -93,9 +88,9 @@ public class EncodingUtils {
         enc.add(ylast);
         // From x1 to x(n-1)
         for (int i = 1; i < size; i++) {
-            BooleanFormula y = bmgr.makeVariable(helperVarName + i); // yi
-            BooleanFormula a = r1.get(i-1); // xi(r1)
-            BooleanFormula b = r2.get(i-1); // xi(r2)
+            final BooleanFormula y = bmgr.makeVariable(helperVarName + i); // yi
+            final BooleanFormula a = r1.get(i - 1); // xi(r1)
+            final BooleanFormula b = r2.get(i - 1); // xi(r2)
             enc.add(bmgr.or(y, bmgr.not(ylast), bmgr.not(a))); // (see below)
             enc.add(bmgr.or(y, bmgr.not(ylast), b));           // "y(i-1) implies ((xi(r1) >= xi(r2))  =>  yi)"
             enc.add(bmgr.or(bmgr.not(ylast), bmgr.not(a), b)); // "y(i-1) implies (xi(r1) <= xi(r2))"
@@ -107,8 +102,8 @@ public class EncodingUtils {
             ylast = y;
         }
         // Final iteration for xn is handled differently as there is no variable yn anymore.
-        BooleanFormula a = r1.get(size-1);
-        BooleanFormula b = r2.get(size-1);
+        final BooleanFormula a = r1.get(size - 1);
+        final BooleanFormula b = r2.get(size - 1);
         enc.add(bmgr.or(bmgr.not(ylast), bmgr.not(a), b));
 
         return bmgr.and(enc);

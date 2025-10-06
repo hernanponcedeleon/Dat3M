@@ -5,6 +5,7 @@ import com.dat3m.dartagnan.program.analysis.BranchEquivalence;
 import com.dat3m.dartagnan.program.analysis.ThreadSymmetry;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.core.MemoryCoreEvent;
+import com.dat3m.dartagnan.smt.EncodingUtils;
 import com.dat3m.dartagnan.utils.equivalence.EquivalenceClass;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
@@ -72,12 +73,12 @@ public class SymmetryEncoder implements Encoder {
             c.getAnalysisContext().requires(BranchEquivalence.class);
             this.breakBySyncDegree = false; // We cannot break by sync degree here
         } else {
-            logger.info("Breaking symmetry on relation: " + symmBreakTarget);
+            logger.info("Breaking symmetry on relation: {}", symmBreakTarget);
             if (breakBySyncDegree && acycAxioms.isEmpty()) {
                 breakBySyncDegree = false;
                 logger.info("Disabled breaking by sync degree: Memory model has no acyclicity axioms.");
             }
-            logger.info("Breaking by sync degree: " + breakBySyncDegree);
+            logger.info("Breaking by sync degree: {}", breakBySyncDegree);
         }
     }
 
@@ -128,16 +129,17 @@ public class SymmetryEncoder implements Encoder {
 
         // Construct symmetric rows
         List<BooleanFormula> enc = new ArrayList<>();
-        final EncodingUtils utils = new EncodingUtils(context);
+        final EncodingUtils utils = context.getFormulaManager().getEncodingUtils();
         for (int i = 1; i < symmThreads.size(); i++) {
-            Thread t2 = symmThreads.get(i);
-            Function<Event, Event> p = symm.createEventTransposition(t1, t2);
-            List<Tuple> t2Tuples = t1Tuples.stream().map(t -> new Tuple(p.apply(t.first()), p.apply(t.second()))).toList();
+            final Thread t2 = symmThreads.get(i);
+            final Function<Event, Event> p = symm.createEventTransposition(t1, t2);
+            final List<Tuple> t2Tuples = t1Tuples.stream().map(t -> new Tuple(p.apply(t.first()), p.apply(t.second()))).toList();
 
-            List<BooleanFormula> r1 = t1Tuples.stream().map(t -> edge.encode(t.first(), t.second())).toList();
-            List<BooleanFormula> r2 = t2Tuples.stream().map(t -> edge.encode(t.first(), t.second())).toList();
-            final String id = String.format("T%d_T%d", rep.getId(), i);
+            final List<BooleanFormula> r1 = t1Tuples.stream().map(t -> edge.encode(t.first(), t.second())).toList();
+            final List<BooleanFormula> r2 = t2Tuples.stream().map(t -> edge.encode(t.first(), t.second())).toList();
+            final String id = String.format("T%d_%d", rep.getId(), i);
             enc.add(utils.encodeLexLeader(r2, r1, id)); // r1 >= r2
+
             t1 = t2;
             t1Tuples = t2Tuples;
         }

@@ -1,12 +1,12 @@
 package com.dat3m.dartagnan.utils.symmetry;
 
 import com.dat3m.dartagnan.encoding.EncodingContext;
-import com.dat3m.dartagnan.encoding.EncodingUtils;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.analysis.ThreadSymmetry;
 import com.dat3m.dartagnan.program.analysis.alias.AliasAnalysis;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.core.Store;
+import com.dat3m.dartagnan.smt.EncodingUtils;
 import com.dat3m.dartagnan.utils.equivalence.EquivalenceClass;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.wmm.Relation;
@@ -223,7 +223,7 @@ public class CoSymmetryBreaking {
             r1.add(edge.encode(t.first(), t.second()));
         }
         // Construct symmetric rows
-        final EncodingUtils utils = new EncodingUtils(context);
+        final EncodingUtils utils = context.getFormulaManager().getEncodingUtils();
         List<BooleanFormula> enc = new ArrayList<>();
         Thread rep = symmClass.getRepresentative();
         for (int i = 1; i < symmThreads.size(); i++) {
@@ -238,7 +238,7 @@ public class CoSymmetryBreaking {
                 r2.add(edge.encode(t.first(), t.second()));
             }
 
-            final String id = String.format("T%d_T%d", rep.getId(), i);
+            final String id = String.format("T%d_%d", rep.getId(), i);
             enc.add(utils.encodeLexLeader(r2, r1, id)); // r1 >= r2
 
             t1 = t2;
