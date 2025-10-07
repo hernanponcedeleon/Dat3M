@@ -49,6 +49,8 @@ for file in "$DIR"*.c; do
 
         # Extract time
         time=$(echo "$out" | tail -1 | sed -n 's/.*Total wall-clock time: *\([0-9.]*\)s$/\1 secs/p')
+        time=$(echo "$time" | grep -Eo '[0-9]+\.[0-9]+')
+        time=$(printf "%.1f" "$time")
         if [ -z "$time" ]; then
             time="?"
         fi
@@ -88,6 +90,8 @@ for file in "$DIR"*.c; do
 
         # Extract time
         time=$(echo "$out" | tail -1 | sed -n 's/.*Total wall-clock time: *\([0-9.]*\)s$/\1 secs/p')
+        time=$(echo "$time" | grep -Eo '[0-9]+\.[0-9]+')
+        time=$(printf "%.1f" "$time")
         if [ -z "$time" ]; then
             time="?"
         fi
@@ -139,6 +143,8 @@ for file in "$DIR"*.c; do
 
     # Extract time
     time=$(echo "$out" | tail -1 | sed -n 's/.*Time: *//p')
+    time=$(echo "$time" | grep -Eo '[0-9]+\.[0-9]+')
+    time=$(printf "%.1f" "$time")
     if [ -z "$time" ]; then
         time="?"
     fi
