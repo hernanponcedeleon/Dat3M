@@ -12,6 +12,7 @@ import com.dat3m.dartagnan.expression.booleans.*;
 import com.dat3m.dartagnan.expression.integers.*;
 import com.dat3m.dartagnan.expression.misc.ITEExpr;
 import com.dat3m.dartagnan.expression.utils.IntegerHelper;
+import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.google.common.base.VerifyException;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
@@ -163,6 +164,24 @@ public class ExprSimplifier extends ExprTransformer {
                     throw new VerifyException(String.format("Unexpected comparison operator '%s'. Missing normalization?", op));
             };
             return expressions.makeValue(cmpResult);
+        }
+
+        // ------- Operations on memory objects -------
+        if (left instanceof MemoryObject lMem && right instanceof MemoryObject rMem) {
+            final boolean sameObj = lMem.equals(rMem);
+
+            final Boolean cmpResult = switch (op) {
+                case EQ -> sameObj;
+                case NEQ -> !sameObj;
+                case LT, ULT -> sameObj ? false : null;
+                case LTE, ULTE -> sameObj ? true : null;
+                default ->
+                    throw new VerifyException(String.format("Unexpected comparison operator '%s'. Missing normalization?", op));
+            };
+
+            if (cmpResult != null) {
+                return expressions.makeValue(cmpResult);
+            }
         }
 
         return expressions.makeIntCmp(left, op, right);
