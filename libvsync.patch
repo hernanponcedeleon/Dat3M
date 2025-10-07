@@ -1,93 +1,74 @@
-diff --git a/test/include/test/boilerplate/lock.h b/test/include/test/boilerplate/lock.h
-index 5df032e..f110b7c 100644
---- a/test/include/test/boilerplate/lock.h
-+++ b/test/include/test/boilerplate/lock.h
-@@ -141,10 +141,19 @@ run(void *arg)
-     return NULL;
+diff --git a/include/vsync/spinlock/cnalock.h b/include/vsync/spinlock/cnalock.h
+index 75b3e3a..7f749ba 100644
+--- a/include/vsync/spinlock/cnalock.h
++++ b/include/vsync/spinlock/cnalock.h
+@@ -185,7 +185,7 @@ cnalock_release(cnalock_t *lock, cna_node_t *me, vuint32_t numa_node)
+             cna_node_t *sec_head = vatomicptr_xchg_rlx(&sec_tail->next, NULL);
+ 
+             // Access to tail
+-            if (vatomicptr_cmpxchg_rel(&lock->tail, me, sec_tail) == me) {
++            if (vatomicptr_cmpxchg_rlx(&lock->tail, me, sec_tail) == me) {
+                 // Access to another thread queue element -- spin
+                 vatomicptr_write_rel(&sec_head->spin, (void *)1);
+                 return;
+diff --git a/include/vsync/spinlock/hclhlock.h b/include/vsync/spinlock/hclhlock.h
+index 1df3536..3fca130 100644
+--- a/include/vsync/spinlock/hclhlock.h
++++ b/include/vsync/spinlock/hclhlock.h
+@@ -181,7 +181,7 @@ hclhlock_acquire(hclh_lock_t *lock, hclh_tnode_t *tnode)
+     // splice my qnode into my cluster's local queue
+     do {
+         exp_tail = pred;
+-        pred     = vatomicptr_cmpxchg(local_queue, exp_tail, tnode->qnode);
++        pred     = vatomicptr_cmpxchg_rlx(local_queue, exp_tail, tnode->qnode);
+     } while (pred != exp_tail);
+ 
+     // if I have a predecessor I will wait till its done or I am the cluster
+diff --git a/include/vsync/spinlock/hmcslock.h b/include/vsync/spinlock/hmcslock.h
+index e22b0eb..c57d64e 100644
+--- a/include/vsync/spinlock/hmcslock.h
++++ b/include/vsync/spinlock/hmcslock.h
+@@ -296,7 +296,7 @@ _hmcslock_acquire_real(hmcslock_t *lock, hmcs_node_t *qnode, vsize_t depth)
+     // Prepare the node for use
+     vatomic64_write_rlx(&qnode->status, HMCLOCK_WAIT);
+     vatomicptr_write_rlx(&qnode->next, NULL);
+-    pred = (hmcs_node_t *)vatomicptr_xchg(&lock->lock, qnode);
++    pred = (hmcs_node_t *)vatomicptr_xchg_rlx(&lock->lock, qnode);
+     if (pred) {
+         vatomicptr_write_rel(&pred->next, qnode);
+         // spin as long as the status is wait
+diff --git a/include/vsync/spinlock/mcslock.h b/include/vsync/spinlock/mcslock.h
+index 571af8f..75d3a36 100644
+--- a/include/vsync/spinlock/mcslock.h
++++ b/include/vsync/spinlock/mcslock.h
+@@ -74,7 +74,7 @@ mcslock_tryacquire(mcslock_t *l, mcs_node_t *node)
+     vatomicptr_write_rlx(&node->next, NULL);
+     vatomic32_write_rlx(&node->locked, 1);
+ 
+-    pred = (mcs_node_t *)vatomicptr_cmpxchg(&l->tail, NULL, node);
++    pred = (mcs_node_t *)vatomicptr_cmpxchg_acq(&l->tail, NULL, node);
+ 
+     return pred == NULL;
  }
+@@ -93,7 +93,7 @@ mcslock_acquire(mcslock_t *l, mcs_node_t *node)
+     vatomicptr_write_rlx(&node->next, NULL);
+     vatomic32_write_rlx(&node->locked, 1);
  
-+static void *
-+fail_to_release(void *arg)
-+{
-+    vuint32_t tid = (vuintptr_t)arg;
-+
-+    acquire(tid);
-+    return NULL;
-+}
-+
- int
- main(void)
+-    pred = (mcs_node_t *)vatomicptr_xchg(&l->tail, node);
++    pred = (mcs_node_t *)vatomicptr_xchg_acq(&l->tail, node);
+     if (pred) {
+         vatomicptr_write_rel(&pred->next, node);
+         vatomic32_await_eq_acq(&node->locked, 0);
+diff --git a/include/vsync/spinlock/twalock.h b/include/vsync/spinlock/twalock.h
+index 087c470..e645308 100644
+--- a/include/vsync/spinlock/twalock.h
++++ b/include/vsync/spinlock/twalock.h
+@@ -129,7 +129,7 @@ static inline void
+ _twalock_acquire_slowpath(twalock_t *l, vuint32_t t)
  {
--    pthread_t t[NTHREADS];
-+    pthread_t t[NTHREADS+1];
- #ifdef DEBUG
-     printf("TEST %s\n", __FILE__);
-     printf("NTHREADS: %u\n", NTHREADS);
-@@ -156,12 +165,14 @@ main(void)
-     for (vuintptr_t i = 0; i < NTHREADS; i++) {
-         (void)pthread_create(&t[i], 0, run, (void *)i);
-     }
-+    (void)pthread_create(&t[NTHREADS], 0, fail_to_release, (void *)NTHREADS);
+     vuint32_t at = TWA_HASH(t);
+-    vuint32_t u  = vatomic32_read_acq(TWA_ARRAY(at));
++    vuint32_t u  = vatomic32_read_rlx(TWA_ARRAY(at));
+     vuint32_t k  = vatomic32_read_rlx(&l->grant);
+     vuint32_t dx = TWA_DIFF(t, k);
  
-     post();
- 
-     for (vuintptr_t i = 0; i < NTHREADS; i++) {
-         (void)pthread_join(t[i], NULL);
-     }
-+    pthread_join(t[NTHREADS], NULL);
- 
- #ifdef DEBUG
-     printf("FINAL: g_cs_x = %d  g_cs_y = %d  (expected %d)\n", g_cs_x, g_cs_y,
-diff --git a/test/include/test/boilerplate/reader_writer.h b/test/include/test/boilerplate/reader_writer.h
-index d1eca23..89b9300 100644
---- a/test/include/test/boilerplate/reader_writer.h
-+++ b/test/include/test/boilerplate/reader_writer.h
-@@ -158,10 +158,19 @@ reader(void *arg)
-     return NULL;
- }
- 
-+static void *
-+reader_fails_to_release(void *arg)
-+{
-+    vuint32_t tid = (vuintptr_t)arg;
-+
-+    reader_acquire(tid);
-+    return NULL;
-+}
-+
- int
- main(void)
- {
--    pthread_t t[NTHREADS];
-+    pthread_t t[NTHREADS+1];
- #ifdef DEBUG
-     printf("TEST %s\n", __FILE__);
-     printf("NWRITERS: %u\n", NWRITERS);
-@@ -177,12 +186,14 @@ main(void)
-     for (vuintptr_t i = NWRITERS; i < NTHREADS; i++) {
-         (void)pthread_create(&t[i], 0, reader, (void *)i);
-     }
-+    (void)pthread_create(&t[NTHREADS], 0, reader_fails_to_release, (void *)NTHREADS);
- 
-     post();
- 
-     for (vuintptr_t i = 0; i < NTHREADS; i++) {
-         (void)pthread_join(t[i], NULL);
-     }
-+    (void)pthread_join(t[NTHREADS], NULL);
- 
- #ifdef DEBUG
-     printf("FINAL: g_cs_x = %d  g_cs_y = %d  (expected %d)\n", g_cs_x, g_cs_y,
-diff --git a/vatomic/include/vsync/common/verify.h b/vatomic/include/vsync/common/verify.h
-index c9ab03d..5d495ce 100644
---- a/vatomic/include/vsync/common/verify.h
-+++ b/vatomic/include/vsync/common/verify.h
-@@ -87,7 +87,7 @@
-     #define VSYNC_VERIFICATION_GENMC
- #elif defined(VSYNC_VERIFICATION_GENERIC)
- #elif defined(VSYNC_VERIFICATION_DAT3M)
--#elif defined(VSYNC_VERIFICATION) /* && VSYNC_VERIFICATION_GENMC */
-+#elif defined(VSYNC_VERIFICATION) && VSYNC_VERIFICATION_GENMC
-     #include <genmc.h>
-     #define VSYNC_USE_VERIFIER_ASSUME
-     #define VSYNC_USE_VERIFIER_NONDET
