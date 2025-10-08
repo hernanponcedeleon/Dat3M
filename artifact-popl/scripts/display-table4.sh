@@ -6,8 +6,8 @@ awk -F, '
 BEGIN {
   check="✅"
   cross="❌"
-  printf "\n%-30s | %-10s | %-12s | %-12s\n", "Prefixsum", "Scheduler", "Terminates", "Time"
-  print "-------------------------------------------------------------------"
+  printf "\n%-16s | %-10s | %-12s | %-12s\n", "Prefixsum", "Scheduler", "Terminates", "Time"
+  print "-------------------------------------------------------------"
 }
 NR > 1 {
   prefix=$1
@@ -41,8 +41,11 @@ NR > 1 {
   time = time " (B=" bound ")"
 
   # --- Print row ---
-  printf "%-30s | %-10s | %-11s | %-12s\n", prefix, progress, result, time
-}
-END {
-  print "-------------------------------------------------------------------\n"
+  printf "%-16s | %-10s | %-11s | %-12s\n", prefix, progress, result, time
+
+  # --- Add separator every 6 rows (excluding header) ---
+  count++
+  if (count % 6 == 0) {
+    print "-------------------------------------------------------------"
+  }
 }' "$input"
