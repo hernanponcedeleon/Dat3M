@@ -9,7 +9,7 @@ BEGIN {
   cross=red "❌" reset;
 
   # Header
-  printf "%-15s | %-8s | %-10s\n", "benchmark", "result", "time";
+  printf "%-13s | %-8s | %-10s\n", "benchmark", "result", "time";
   print "------------------------------------------";
 }
 NR>1 {
@@ -20,5 +20,5 @@ NR>1 {
   gsub(/^ +| +$/, "", result);
   gsub(/^ +| +$/, "", time);
 
-  printf "%-15s | %-18s | %-10s\n", benchmark, result, time;
+  printf "%-13s | %-18s | %-10s\n", benchmark, result, time;
 }' "$input"

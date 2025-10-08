@@ -5,7 +5,7 @@ input="table3.csv"
 awk -F, '
 BEGIN {
   check="✅"; cross="❌"; clock="🕒";
-  printf "%-14s | %-16s | %-16s | %-20s\n", "benchmark", "genmc (M)", "genmc (A)", "dartagnan (A)";
+  printf "%-14s | %-12s | %-12s | %-20s\n", "benchmark", "genmc (M)", "genmc (A)", "dartagnan (A)";
   print "--------------------------------------------------------------------------";
 }
 NR>1 {
@@ -18,5 +18,5 @@ NR>1 {
     gsub(/\\$/, "", $i);
     gsub(/^ +| +$/, "", $i);
   }
-  printf "%-14s | %-15s | %-15s | %-20s\n", $1, $2, $3, $4;
+  printf "%-14s | %-11s | %-11s | %-20s\n", $1, $2, $3, $4;
 }' "$input"
