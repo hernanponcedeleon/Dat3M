@@ -1,0 +1,554 @@
+; @Input: %_ = {0, {{0, 0, 0}, {0, 0, 0}, {0, 0, 0}}}
+; @Input: %__0 = {{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12}}
+; @Input: %__1 = {{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}}
+; @Output: forall (%__1[0][0] == 1 and %__1[0][1] == 3 and %__1[0][2] == 6 and %__1[0][3] == 10 and %__1[0][4] == 15 and %__1[0][5] == 21 and %__1[0][6] == 28 and %__1[0][7] == 36 and %__1[0][8] == 45 and %__1[0][9] == 55 and %__1[0][10] == 66 and %__1[0][11] == 78)
+; @Config: 2, 1, 3
+; SPIR-V
+; Version: 1.0
+; Generator: Khronos Glslang Reference Front End; 10
+; Bound: 324
+; Schema: 0
+               OpCapability Shader
+               OpCapability VulkanMemoryModel
+               OpExtension "SPV_KHR_vulkan_memory_model"
+;;          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical Vulkan
+               OpEntryPoint GLCompute %main "main" %gl_LocalInvocationID
+               OpExecutionMode %main LocalSize 2 1 1
+               OpSource GLSL 450
+               OpSourceExtension "GL_KHR_memory_scope_semantics"
+               OpName %main "main"
+               OpName %gl_LocalInvocationID "gl_LocalInvocationID"
+               OpName %sh_part_ix "sh_part_ix"
+               OpName %State "State"
+               OpMemberName %State 0 "flag"
+               OpMemberName %State 1 "aggregate"
+               OpMemberName %State 2 "prefix"
+               OpName %StateBuf "StateBuf"
+               OpMemberName %StateBuf 0 "part_counter"
+               OpMemberName %StateBuf 1 "state"
+               OpName %_ ""
+               OpName %part_ix "part_ix"
+               OpName %ix "ix"
+               OpName %local "local"
+               OpName %InBuf "InBuf"
+               OpMemberName %InBuf 0 "inbuf"
+               OpName %__0 ""
+               OpName %i "i"
+               OpName %agg "agg"
+               OpName %sh_scratch "sh_scratch"
+               OpName %i_0 "i"
+               OpName %other "other"
+               OpName %flag "flag"
+               OpName %exclusive "exclusive"
+               OpName %look_back_ix "look_back_ix"
+               OpName %their_ix "their_ix"
+               OpName %sh_flag "sh_flag"
+               OpName %flag_0 "flag"
+               OpName %their_prefix "their_prefix"
+               OpName %their_agg "their_agg"
+               OpName %m "m"
+               OpName %inclusive_prefix "inclusive_prefix"
+               OpName %sh_prefix "sh_prefix"
+               OpName %row "row"
+               OpName %other_0 "other"
+               OpName %i_1 "i"
+               OpName %m_0 "m"
+               OpName %OutBuf "OutBuf"
+               OpMemberName %OutBuf 0 "outbuf"
+               OpName %__1 ""
+               OpDecorate %gl_LocalInvocationID BuiltIn LocalInvocationId
+               OpMemberDecorate %State 0 Offset 0
+               OpMemberDecorate %State 1 Offset 4
+               OpMemberDecorate %State 2 Offset 8
+               OpDecorate %_runtimearr_State ArrayStride 12
+               OpMemberDecorate %StateBuf 0 Offset 0
+               OpMemberDecorate %StateBuf 1 Offset 4
+               OpDecorate %StateBuf BufferBlock
+               OpDecorate %_ DescriptorSet 0
+               OpDecorate %_ Binding 2
+               OpDecorate %_runtimearr_uint ArrayStride 4
+;;               OpMemberDecorate %InBuf 0 NonWritable
+               OpMemberDecorate %InBuf 0 Offset 0
+               OpDecorate %InBuf BufferBlock
+               OpDecorate %__0 DescriptorSet 0
+               OpDecorate %__0 Binding 0
+               OpDecorate %_runtimearr_uint_0 ArrayStride 4
+               OpMemberDecorate %OutBuf 0 Offset 0
+               OpDecorate %OutBuf BufferBlock
+               OpDecorate %__1 DescriptorSet 0
+               OpDecorate %__1 Binding 1
+               OpDecorate %gl_WorkGroupSize BuiltIn WorkgroupSize
+       %void = OpTypeVoid
+          %3 = OpTypeFunction %void
+       %uint = OpTypeInt 32 0
+     %v3uint = OpTypeVector %uint 3
+%_ptr_Input_v3uint = OpTypePointer Input %v3uint
+%gl_LocalInvocationID = OpVariable %_ptr_Input_v3uint Input
+     %uint_0 = OpConstant %uint 0
+%_ptr_Input_uint = OpTypePointer Input %uint
+       %bool = OpTypeBool
+%_ptr_Workgroup_uint = OpTypePointer Workgroup %uint
+ %sh_part_ix = OpVariable %_ptr_Workgroup_uint Workgroup
+      %State = OpTypeStruct %uint %uint %uint
+%_runtimearr_State = OpTypeRuntimeArray %State
+   %StateBuf = OpTypeStruct %uint %_runtimearr_State
+%_ptr_Uniform_StateBuf = OpTypePointer Uniform %StateBuf
+          %_ = OpVariable %_ptr_Uniform_StateBuf Uniform
+        %int = OpTypeInt 32 1
+      %int_0 = OpConstant %int 0
+%_ptr_Uniform_uint = OpTypePointer Uniform %uint
+     %uint_1 = OpConstant %uint 1
+     %uint_2 = OpConstant %uint 2
+   %uint_264 = OpConstant %uint 264
+%_ptr_Function_uint = OpTypePointer Function %uint
+     %uint_4 = OpConstant %uint 4
+%_arr_uint_uint_2 = OpTypeArray %uint %uint_2
+%_ptr_Function__arr_uint_uint_2 = OpTypePointer Function %_arr_uint_uint_2
+%_runtimearr_uint = OpTypeRuntimeArray %uint
+      %InBuf = OpTypeStruct %_runtimearr_uint
+%_ptr_Uniform_InBuf = OpTypePointer Uniform %InBuf
+        %__0 = OpVariable %_ptr_Uniform_InBuf Uniform
+      %int_1 = OpConstant %int 1
+%_ptr_Workgroup__arr_uint_uint_2 = OpTypePointer Workgroup %_arr_uint_uint_2
+ %sh_scratch = OpVariable %_ptr_Workgroup__arr_uint_uint_2 Workgroup
+      %int_2 = OpConstant %int 2
+    %uint_72 = OpConstant %uint 72
+       %true = OpConstantTrue %bool
+    %sh_flag = OpVariable %_ptr_Workgroup_uint Workgroup
+  %sh_prefix = OpVariable %_ptr_Workgroup_uint Workgroup
+%_runtimearr_uint_0 = OpTypeRuntimeArray %uint
+     %OutBuf = OpTypeStruct %_runtimearr_uint_0
+%_ptr_Uniform_OutBuf = OpTypePointer Uniform %OutBuf
+        %__1 = OpVariable %_ptr_Uniform_OutBuf Uniform
+%gl_WorkGroupSize = OpConstantComposite %v3uint %uint_2 %uint_1 %uint_1
+     %uint_5 = OpConstant %uint 5
+ %uint_32768 = OpConstant %uint 32768
+       %main = OpFunction %void None %3
+          %5 = OpLabel
+    %part_ix = OpVariable %_ptr_Function_uint Function
+         %ix = OpVariable %_ptr_Function_uint Function
+      %local = OpVariable %_ptr_Function__arr_uint_uint_2 Function
+          %i = OpVariable %_ptr_Function_uint Function
+        %agg = OpVariable %_ptr_Function_uint Function
+        %i_0 = OpVariable %_ptr_Function_uint Function
+      %other = OpVariable %_ptr_Function_uint Function
+       %flag = OpVariable %_ptr_Function_uint Function
+  %exclusive = OpVariable %_ptr_Function_uint Function
+%look_back_ix = OpVariable %_ptr_Function_uint Function
+   %their_ix = OpVariable %_ptr_Function_uint Function
+     %flag_0 = OpVariable %_ptr_Function_uint Function
+%their_prefix = OpVariable %_ptr_Function_uint Function
+  %their_agg = OpVariable %_ptr_Function_uint Function
+          %m = OpVariable %_ptr_Function_uint Function
+%inclusive_prefix = OpVariable %_ptr_Function_uint Function
+        %row = OpVariable %_ptr_Function_uint Function
+    %other_0 = OpVariable %_ptr_Function_uint Function
+        %i_1 = OpVariable %_ptr_Function_uint Function
+        %m_0 = OpVariable %_ptr_Function_uint Function
+         %12 = OpAccessChain %_ptr_Input_uint %gl_LocalInvocationID %uint_0
+         %13 = OpLoad %uint %12
+         %15 = OpIEqual %bool %13 %uint_0
+               OpSelectionMerge %17 None
+               OpBranchConditional %15 %16 %17
+         %16 = OpLabel
+         %28 = OpAccessChain %_ptr_Uniform_uint %_ %int_0
+         %30 = OpAtomicIAdd %uint %28 %uint_5 %uint_32768 %uint_1
+               OpStore %sh_part_ix %30 MakePointerAvailable|NonPrivatePointer %uint_2
+               OpBranch %17
+         %17 = OpLabel
+               OpControlBarrier %uint_2 %uint_2 %uint_264
+         %35 = OpLoad %uint %sh_part_ix MakePointerVisible|NonPrivatePointer %uint_2
+               OpStore %part_ix %35
+         %37 = OpLoad %uint %part_ix
+         %39 = OpIMul %uint %37 %uint_4
+         %40 = OpAccessChain %_ptr_Input_uint %gl_LocalInvocationID %uint_0
+         %41 = OpLoad %uint %40
+         %42 = OpIMul %uint %41 %uint_2
+         %43 = OpIAdd %uint %39 %42
+               OpStore %ix %43
+         %51 = OpLoad %uint %ix
+         %52 = OpAccessChain %_ptr_Uniform_uint %__0 %int_0 %51
+         %53 = OpLoad %uint %52
+         %54 = OpAccessChain %_ptr_Function_uint %local %int_0
+               OpStore %54 %53
+               OpStore %i %uint_1
+               OpBranch %56
+         %56 = OpLabel
+               OpLoopMerge %58 %59 None
+               OpBranch %60
+         %60 = OpLabel
+         %61 = OpLoad %uint %i
+         %62 = OpULessThan %bool %61 %uint_2
+               OpBranchConditional %62 %57 %58
+         %57 = OpLabel
+         %63 = OpLoad %uint %i
+         %64 = OpLoad %uint %i
+         %65 = OpISub %uint %64 %uint_1
+         %66 = OpAccessChain %_ptr_Function_uint %local %65
+         %67 = OpLoad %uint %66
+         %68 = OpLoad %uint %ix
+         %69 = OpLoad %uint %i
+         %70 = OpIAdd %uint %68 %69
+         %71 = OpAccessChain %_ptr_Uniform_uint %__0 %int_0 %70
+         %72 = OpLoad %uint %71
+         %73 = OpIAdd %uint %67 %72
+         %74 = OpAccessChain %_ptr_Function_uint %local %63
+               OpStore %74 %73
+               OpBranch %59
+         %59 = OpLabel
+         %75 = OpLoad %uint %i
+         %77 = OpIAdd %uint %75 %int_1
+               OpStore %i %77
+               OpBranch %56
+         %58 = OpLabel
+         %79 = OpAccessChain %_ptr_Function_uint %local %int_1
+         %80 = OpLoad %uint %79
+               OpStore %agg %80
+         %83 = OpAccessChain %_ptr_Input_uint %gl_LocalInvocationID %uint_0
+         %84 = OpLoad %uint %83
+         %85 = OpLoad %uint %agg
+         %86 = OpAccessChain %_ptr_Workgroup_uint %sh_scratch %84
+               OpStore %86 %85 MakePointerAvailable|NonPrivatePointer %uint_2
+               OpStore %i_0 %uint_0
+               OpBranch %88
+         %88 = OpLabel
+               OpLoopMerge %90 %91 None
+               OpBranch %92
+         %92 = OpLabel
+         %93 = OpLoad %uint %i_0
+         %94 = OpULessThan %bool %93 %uint_1
+               OpBranchConditional %94 %89 %90
+         %89 = OpLabel
+               OpControlBarrier %uint_2 %uint_2 %uint_264
+         %95 = OpAccessChain %_ptr_Input_uint %gl_LocalInvocationID %uint_0
+         %96 = OpLoad %uint %95
+         %97 = OpLoad %uint %i_0
+         %98 = OpShiftLeftLogical %uint %uint_1 %97
+         %99 = OpUGreaterThanEqual %bool %96 %98
+               OpSelectionMerge %101 None
+               OpBranchConditional %99 %100 %101
+        %100 = OpLabel
+        %103 = OpAccessChain %_ptr_Input_uint %gl_LocalInvocationID %uint_0
+        %104 = OpLoad %uint %103
+        %105 = OpLoad %uint %i_0
+        %106 = OpShiftLeftLogical %uint %uint_1 %105
+        %107 = OpISub %uint %104 %106
+        %108 = OpAccessChain %_ptr_Workgroup_uint %sh_scratch %107
+        %109 = OpLoad %uint %108 MakePointerVisible|NonPrivatePointer %uint_2
+               OpStore %other %109
+        %110 = OpLoad %uint %other
+        %111 = OpLoad %uint %agg
+        %112 = OpIAdd %uint %110 %111
+               OpStore %agg %112
+               OpBranch %101
+        %101 = OpLabel
+               OpControlBarrier %uint_2 %uint_2 %uint_264
+        %113 = OpAccessChain %_ptr_Input_uint %gl_LocalInvocationID %uint_0
+        %114 = OpLoad %uint %113
+        %115 = OpLoad %uint %agg
+        %116 = OpAccessChain %_ptr_Workgroup_uint %sh_scratch %114
+               OpStore %116 %115 MakePointerAvailable|NonPrivatePointer %uint_2
+               OpBranch %91
+         %91 = OpLabel
+        %117 = OpLoad %uint %i_0
+        %118 = OpIAdd %uint %117 %int_1
+               OpStore %i_0 %118
+               OpBranch %88
+         %90 = OpLabel
+        %119 = OpAccessChain %_ptr_Input_uint %gl_LocalInvocationID %uint_0
+        %120 = OpLoad %uint %119
+        %121 = OpIEqual %bool %120 %uint_1
+               OpSelectionMerge %123 None
+               OpBranchConditional %121 %122 %123
+        %122 = OpLabel
+        %124 = OpLoad %uint %part_ix
+        %125 = OpLoad %uint %agg
+        %126 = OpAccessChain %_ptr_Uniform_uint %_ %int_1 %124 %int_1
+               OpStore %126 %125 Volatile|MakePointerAvailable|NonPrivatePointer %uint_5
+        %127 = OpLoad %uint %part_ix
+        %128 = OpIEqual %bool %127 %uint_0
+               OpSelectionMerge %130 None
+               OpBranchConditional %128 %129 %130
+        %129 = OpLabel
+        %132 = OpLoad %uint %agg
+        %133 = OpAccessChain %_ptr_Uniform_uint %_ %int_1 %int_0 %int_2
+               OpStore %133 %132 Volatile|MakePointerAvailable|NonPrivatePointer %uint_5
+               OpBranch %130
+        %130 = OpLabel
+               OpBranch %123
+        %123 = OpLabel
+               OpMemoryBarrier %uint_5 %uint_72
+        %135 = OpAccessChain %_ptr_Input_uint %gl_LocalInvocationID %uint_0
+        %136 = OpLoad %uint %135
+        %137 = OpIEqual %bool %136 %uint_1
+               OpSelectionMerge %139 None
+               OpBranchConditional %137 %138 %139
+        %138 = OpLabel
+               OpStore %flag %uint_1
+        %141 = OpLoad %uint %part_ix
+        %142 = OpIEqual %bool %141 %uint_0
+               OpSelectionMerge %144 None
+               OpBranchConditional %142 %143 %144
+        %143 = OpLabel
+               OpStore %flag %uint_2
+               OpBranch %144
+        %144 = OpLabel
+        %145 = OpLoad %uint %part_ix
+        %146 = OpAccessChain %_ptr_Uniform_uint %_ %int_1 %145 %int_0
+        %147 = OpLoad %uint %flag
+               OpAtomicStore %146 %uint_5 %uint_32768 %147
+               OpBranch %139
+        %139 = OpLabel
+               OpStore %exclusive %uint_0
+        %149 = OpLoad %uint %part_ix
+        %150 = OpINotEqual %bool %149 %uint_0
+               OpSelectionMerge %152 None
+               OpBranchConditional %150 %151 %152
+        %151 = OpLabel
+        %154 = OpLoad %uint %part_ix
+        %155 = OpISub %uint %154 %uint_1
+               OpStore %look_back_ix %155
+               OpStore %their_ix %uint_0
+               OpBranch %157
+        %157 = OpLabel
+               OpLoopMerge %159 %160 None
+               OpBranch %161
+        %161 = OpLabel
+               OpBranchConditional %true %158 %159
+        %158 = OpLabel
+        %163 = OpAccessChain %_ptr_Input_uint %gl_LocalInvocationID %uint_0
+        %164 = OpLoad %uint %163
+        %165 = OpIEqual %bool %164 %uint_1
+               OpSelectionMerge %167 None
+               OpBranchConditional %165 %166 %167
+        %166 = OpLabel
+        %169 = OpLoad %uint %look_back_ix
+        %170 = OpAccessChain %_ptr_Uniform_uint %_ %int_1 %169 %int_0
+        %171 = OpAtomicLoad %uint %170 %uint_5 %uint_32768
+               OpStore %sh_flag %171 MakePointerAvailable|NonPrivatePointer %uint_2
+               OpBranch %167
+        %167 = OpLabel
+               OpControlBarrier %uint_2 %uint_2 %uint_264
+               OpMemoryBarrier %uint_5 %uint_72
+        %173 = OpLoad %uint %sh_flag MakePointerVisible|NonPrivatePointer %uint_2
+               OpStore %flag_0 %173
+               OpControlBarrier %uint_2 %uint_2 %uint_264
+        %174 = OpLoad %uint %flag_0
+        %175 = OpIEqual %bool %174 %uint_2
+               OpSelectionMerge %177 None
+               OpBranchConditional %175 %176 %191
+        %176 = OpLabel
+        %178 = OpAccessChain %_ptr_Input_uint %gl_LocalInvocationID %uint_0
+        %179 = OpLoad %uint %178
+        %180 = OpIEqual %bool %179 %uint_1
+               OpSelectionMerge %182 None
+               OpBranchConditional %180 %181 %182
+        %181 = OpLabel
+        %184 = OpLoad %uint %look_back_ix
+        %185 = OpAccessChain %_ptr_Uniform_uint %_ %int_1 %184 %int_2
+        %186 = OpLoad %uint %185 Volatile|MakePointerVisible|NonPrivatePointer %uint_5
+               OpStore %their_prefix %186
+        %187 = OpLoad %uint %their_prefix
+        %188 = OpLoad %uint %exclusive
+        %189 = OpIAdd %uint %187 %188
+               OpStore %exclusive %189
+               OpBranch %182
+        %182 = OpLabel
+               OpBranch %159
+        %191 = OpLabel
+        %192 = OpLoad %uint %flag_0
+        %193 = OpIEqual %bool %192 %uint_1
+               OpSelectionMerge %195 None
+               OpBranchConditional %193 %194 %195
+        %194 = OpLabel
+        %196 = OpAccessChain %_ptr_Input_uint %gl_LocalInvocationID %uint_0
+        %197 = OpLoad %uint %196
+        %198 = OpIEqual %bool %197 %uint_1
+               OpSelectionMerge %200 None
+               OpBranchConditional %198 %199 %200
+        %199 = OpLabel
+        %202 = OpLoad %uint %look_back_ix
+        %203 = OpAccessChain %_ptr_Uniform_uint %_ %int_1 %202 %int_1
+        %204 = OpLoad %uint %203 Volatile|MakePointerVisible|NonPrivatePointer %uint_5
+               OpStore %their_agg %204
+        %205 = OpLoad %uint %their_agg
+        %206 = OpLoad %uint %exclusive
+        %207 = OpIAdd %uint %205 %206
+               OpStore %exclusive %207
+               OpBranch %200
+        %200 = OpLabel
+        %208 = OpLoad %uint %look_back_ix
+        %209 = OpISub %uint %208 %int_1
+               OpStore %look_back_ix %209
+               OpStore %their_ix %uint_0
+               OpBranch %160
+        %195 = OpLabel
+               OpBranch %177
+        %177 = OpLabel
+        %211 = OpAccessChain %_ptr_Input_uint %gl_LocalInvocationID %uint_0
+        %212 = OpLoad %uint %211
+        %213 = OpIEqual %bool %212 %uint_1
+               OpSelectionMerge %215 None
+               OpBranchConditional %213 %214 %215
+        %214 = OpLabel
+        %217 = OpLoad %uint %look_back_ix
+        %218 = OpIMul %uint %217 %uint_4
+        %219 = OpLoad %uint %their_ix
+        %220 = OpIAdd %uint %218 %219
+        %221 = OpAccessChain %_ptr_Uniform_uint %__0 %int_0 %220
+        %222 = OpLoad %uint %221
+               OpStore %m %222
+        %223 = OpLoad %uint %their_ix
+        %224 = OpIEqual %bool %223 %uint_0
+               OpSelectionMerge %226 None
+               OpBranchConditional %224 %225 %228
+        %225 = OpLabel
+        %227 = OpLoad %uint %m
+               OpStore %their_agg %227
+               OpBranch %226
+        %228 = OpLabel
+        %229 = OpLoad %uint %their_agg
+        %230 = OpLoad %uint %m
+        %231 = OpIAdd %uint %229 %230
+               OpStore %their_agg %231
+               OpBranch %226
+        %226 = OpLabel
+        %232 = OpLoad %uint %their_ix
+        %233 = OpIAdd %uint %232 %int_1
+               OpStore %their_ix %233
+        %234 = OpLoad %uint %their_ix
+        %235 = OpIEqual %bool %234 %uint_4
+               OpSelectionMerge %237 None
+               OpBranchConditional %235 %236 %237
+        %236 = OpLabel
+        %238 = OpLoad %uint %their_agg
+        %239 = OpLoad %uint %exclusive
+        %240 = OpIAdd %uint %238 %239
+               OpStore %exclusive %240
+        %241 = OpLoad %uint %look_back_ix
+        %242 = OpIEqual %bool %241 %uint_0
+               OpSelectionMerge %244 None
+               OpBranchConditional %242 %243 %245
+        %243 = OpLabel
+               OpStore %sh_flag %uint_2 MakePointerAvailable|NonPrivatePointer %uint_2
+               OpBranch %244
+        %245 = OpLabel
+        %246 = OpLoad %uint %look_back_ix
+        %247 = OpISub %uint %246 %int_1
+               OpStore %look_back_ix %247
+               OpStore %their_ix %uint_0
+               OpBranch %244
+        %244 = OpLabel
+               OpBranch %237
+        %237 = OpLabel
+               OpBranch %215
+        %215 = OpLabel
+               OpControlBarrier %uint_2 %uint_2 %uint_264
+        %248 = OpLoad %uint %sh_flag MakePointerVisible|NonPrivatePointer %uint_2
+               OpStore %flag_0 %248
+               OpControlBarrier %uint_2 %uint_2 %uint_264
+        %249 = OpLoad %uint %flag_0
+        %250 = OpIEqual %bool %249 %uint_2
+               OpSelectionMerge %252 None
+               OpBranchConditional %250 %251 %252
+        %251 = OpLabel
+               OpBranch %159
+        %252 = OpLabel
+               OpBranch %160
+        %160 = OpLabel
+               OpBranch %157
+        %159 = OpLabel
+        %254 = OpAccessChain %_ptr_Input_uint %gl_LocalInvocationID %uint_0
+        %255 = OpLoad %uint %254
+        %256 = OpIEqual %bool %255 %uint_1
+               OpSelectionMerge %258 None
+               OpBranchConditional %256 %257 %258
+        %257 = OpLabel
+        %260 = OpLoad %uint %exclusive
+        %261 = OpLoad %uint %agg
+        %262 = OpIAdd %uint %260 %261
+               OpStore %inclusive_prefix %262
+        %264 = OpLoad %uint %exclusive
+               OpStore %sh_prefix %264 MakePointerAvailable|NonPrivatePointer %uint_2
+        %265 = OpLoad %uint %part_ix
+        %266 = OpLoad %uint %inclusive_prefix
+        %267 = OpAccessChain %_ptr_Uniform_uint %_ %int_1 %265 %int_2
+               OpStore %267 %266 Volatile|MakePointerAvailable|NonPrivatePointer %uint_5
+               OpBranch %258
+        %258 = OpLabel
+               OpMemoryBarrier %uint_5 %uint_72
+        %268 = OpAccessChain %_ptr_Input_uint %gl_LocalInvocationID %uint_0
+        %269 = OpLoad %uint %268
+        %270 = OpIEqual %bool %269 %uint_1
+               OpSelectionMerge %272 None
+               OpBranchConditional %270 %271 %272
+        %271 = OpLabel
+        %273 = OpLoad %uint %part_ix
+        %274 = OpAccessChain %_ptr_Uniform_uint %_ %int_1 %273 %int_0
+               OpAtomicStore %274 %uint_5 %uint_32768 %uint_2
+               OpBranch %272
+        %272 = OpLabel
+               OpBranch %152
+        %152 = OpLabel
+               OpControlBarrier %uint_2 %uint_2 %uint_264
+        %275 = OpLoad %uint %part_ix
+        %276 = OpINotEqual %bool %275 %uint_0
+               OpSelectionMerge %278 None
+               OpBranchConditional %276 %277 %278
+        %277 = OpLabel
+        %279 = OpLoad %uint %sh_prefix MakePointerVisible|NonPrivatePointer %uint_2
+               OpStore %exclusive %279
+               OpBranch %278
+        %278 = OpLabel
+        %281 = OpLoad %uint %exclusive
+               OpStore %row %281
+        %282 = OpAccessChain %_ptr_Input_uint %gl_LocalInvocationID %uint_0
+        %283 = OpLoad %uint %282
+        %284 = OpUGreaterThan %bool %283 %uint_0
+               OpSelectionMerge %286 None
+               OpBranchConditional %284 %285 %286
+        %285 = OpLabel
+        %288 = OpAccessChain %_ptr_Input_uint %gl_LocalInvocationID %uint_0
+        %289 = OpLoad %uint %288
+        %290 = OpISub %uint %289 %uint_1
+        %291 = OpAccessChain %_ptr_Workgroup_uint %sh_scratch %290
+        %292 = OpLoad %uint %291 MakePointerVisible|NonPrivatePointer %uint_2
+               OpStore %other_0 %292
+        %293 = OpLoad %uint %row
+        %294 = OpLoad %uint %other_0
+        %295 = OpIAdd %uint %293 %294
+               OpStore %row %295
+               OpBranch %286
+        %286 = OpLabel
+               OpStore %i_1 %uint_0
+               OpBranch %297
+        %297 = OpLabel
+               OpLoopMerge %299 %300 None
+               OpBranch %301
+        %301 = OpLabel
+        %302 = OpLoad %uint %i_1
+        %303 = OpULessThan %bool %302 %uint_2
+               OpBranchConditional %303 %298 %299
+        %298 = OpLabel
+        %305 = OpLoad %uint %row
+        %306 = OpLoad %uint %i_1
+        %307 = OpAccessChain %_ptr_Function_uint %local %306
+        %308 = OpLoad %uint %307
+        %309 = OpIAdd %uint %305 %308
+               OpStore %m_0 %309
+        %314 = OpLoad %uint %ix
+        %315 = OpLoad %uint %i_1
+        %316 = OpIAdd %uint %314 %315
+        %317 = OpLoad %uint %m_0
+        %318 = OpAccessChain %_ptr_Uniform_uint %__1 %int_0 %316
+               OpStore %318 %317
+               OpBranch %300
+        %300 = OpLabel
+        %319 = OpLoad %uint %i_1
+        %320 = OpIAdd %uint %319 %int_1
+               OpStore %i_1 %320
+               OpBranch %297
+        %299 = OpLabel
+               OpReturn
+               OpFunctionEnd

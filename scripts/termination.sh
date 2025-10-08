@@ -1,8 +1,8 @@
 #!/bin/bash
 
 # Check if a directory is passed as an argument
-if [ "$#" -ne 5 ]; then
-  echo "Usage: $0 <directory> <output> <run_genmc> <run_await_while> <timeout>"
+if [ "$#" -ne 4 ]; then
+  echo "Usage: $0 <directory> <output> <run_genmc> <timeout>"
   exit 1
 fi
 
@@ -10,8 +10,7 @@ fi
 DIR="$1"
 RESULTS="$2"
 RUNGENMC="$3"
-MANUAL="$4"
-TIMEOUT="$5"
+TIMEOUT="$4"
 
 # Check if the directory exists
 if [ ! -d "$DIR" ]; then
@@ -23,26 +22,27 @@ fi
 if [ -f "$RESULTS" ]; then
     rm "$RESULTS"
 fi
-if [ "$MANUAL" == "true" ]; then
-    echo "benchmark, tool, spinloop detection, bound, result, time"  >> "$RESULTS"
+if [ "$RUNGENMC" == "true" ]; then
+    echo "benchmark, genmc (M), genmc (A), dartagnan (A)"  >> "$RESULTS"
 else
-    echo "benchmark, tool, result, time"  >> "$RESULTS"
+    echo "benchmark, result, time"  >> "$RESULTS"
 fi
 
 # Iterate through all files in the directory
 for file in "$DIR"*.c; do
   # Check if it's a regular file (not a directory)
-  if [ -f "$file" ]; then
+  if [ -f ${file} ]; then
     echo "Running model checker on file: $file"
 
     # Get base file name
-    base=$(basename "$file")
+    base=$(basename ${file})
     benchmark="${base%.c}"
+    line=$benchmark
 
-    if [ "$RUNGENMC" == "true" ] && [ "$MANUAL" == "true" ]; then
+    if [ "$RUNGENMC" == "true" ]; then
         # Run genmc (with loop annotation)
         tool="\genmc"
-        out=$(timeout $TIMEOUT genmc -imm -check-liveness -disable-estimation -disable-spin-assume -- -DVSYNC_VERIFICATION -DUSE_GENMC -I $LIBVSYNC_HOME/test/include -I $LIBVSYNC_HOME/include/ -I $LIBVSYNC_HOME/vatomic/include "$file" 2> /dev/null)
+        out=$(timeout ${TIMEOUT} genmc -imm -check-liveness -disable-estimation -disable-spin-assume -- -DVSYNC_VERIFICATION -DVSYNC_VERIFICATION_QUICK -I ${LIBVSYNC_HOME}/test/include -I ${LIBVSYNC_HOME}/include/ -I ${LIBVSYNC_HOME}/vatomic/include ${file} 2> /dev/null)
 
         # Capture the exit code
         exit_code=$?
@@ -50,7 +50,7 @@ for file in "$DIR"*.c; do
         # Extract time
         time=$(echo "$out" | tail -1 | sed -n 's/.*Total wall-clock time: *\([0-9.]*\)s$/\1 secs/p')
         time=$(echo "$time" | grep -Eo '[0-9]+\.[0-9]+')
-        time=$(printf "%.1f" "$time")
+        time=$(printf "%.1fs" "$time")
         if [ -z "$time" ]; then
             time="?"
         fi
@@ -73,17 +73,12 @@ for file in "$DIR"*.c; do
         if [[ "$out" =~ "Liveness violation" ]]; then
             res="\xmark"
         fi
-        if [ "$MANUAL" == "true" ]; then
-            echo "$benchmark, $tool, Manual, -, $res, $time" >> "$RESULTS"
-        else
-            echo "$benchmark, $tool, $res, $time" >> "$RESULTS"
-        fi
-    fi
-    
-    if [ "$RUNGENMC" == "true" ]; then
+
+        line="$line, $res\ ($time)"
+
         # Run genmc (without loop annotation)
         tool="\genmc"
-        out=$(timeout $TIMEOUT genmc -imm -check-liveness -disable-estimation -- -DVSYNC_VERIFICATION -DVSYNC_DISABLE_SPIN_ANNOTATION -DUSE_GENMC -I $LIBVSYNC_HOME/test/include -I $LIBVSYNC_HOME/include/ -I $LIBVSYNC_HOME/vatomic/include "$file" 2> /dev/null)
+        out=$(timeout ${TIMEOUT} genmc -imm -check-liveness -disable-estimation -- -DVSYNC_VERIFICATION -DVSYNC_VERIFICATION_QUICK -DVSYNC_DISABLE_SPIN_ANNOTATION -I ${LIBVSYNC_HOME}/test/include -I ${LIBVSYNC_HOME}/include/ -I ${LIBVSYNC_HOME}/vatomic/include ${file} 2> /dev/null)
 
         # Capture the exit code
         exit_code=$?
@@ -91,7 +86,7 @@ for file in "$DIR"*.c; do
         # Extract time
         time=$(echo "$out" | tail -1 | sed -n 's/.*Total wall-clock time: *\([0-9.]*\)s$/\1 secs/p')
         time=$(echo "$time" | grep -Eo '[0-9]+\.[0-9]+')
-        time=$(printf "%.1f" "$time")
+        time=$(printf "%.1fs" "$time")
         if [ -z "$time" ]; then
             time="?"
         fi
@@ -114,11 +109,8 @@ for file in "$DIR"*.c; do
         if [[ "$out" =~ "Liveness violation" ]]; then
             res="\xmark"
         fi
-        if [ "$MANUAL" == "true" ]; then
-            echo "$benchmark, $tool, Automatic, -, $res, $time" >> "$RESULTS"
-        else
-            echo "$benchmark, $tool, $res, $time" >> "$RESULTS"
-        fi
+
+        line="$line, $res\ ($time)"
     fi
 
     # Run dartagnan
@@ -136,7 +128,7 @@ for file in "$DIR"*.c; do
     fi
 
 
-    out=$(CFLAGS="-DVSYNC_VERIFICATION -DVSYNC_VERIFICATION_DAT3M -DVSYNC_DISABLE_SPIN_ANNOTATION -DTWA_A=128 -I $LIBVSYNC_HOME/test/include -I $LIBVSYNC_HOME/include/ -I $LIBVSYNC_HOME/vatomic/include" timeout $TIMEOUT java -jar ${DAT3M_HOME}/dartagnan/target/dartagnan.jar --property=termination $DAT3M_HOME/cat/imm.cat --bound=$bound --modeling.recursionBound=$bound "$file" 2> /dev/null)
+    out=$(CFLAGS="-DVSYNC_VERIFICATION -DVSYNC_VERIFICATION_QUICK -DVSYNC_VERIFICATION_DAT3M -DVSYNC_DISABLE_SPIN_ANNOTATION -DTWA_A=128 -I ${LIBVSYNC_HOME}/test/include -I ${LIBVSYNC_HOME}/include/ -I ${LIBVSYNC_HOME}/vatomic/include" timeout ${TIMEOUT} java -jar ${DAT3M_HOME}/dartagnan/target/dartagnan.jar --property=termination ${DAT3M_HOME}/cat/imm.cat --bound=${bound} --modeling.recursionBound=${bound} ${file} 2> /dev/null)
     
     # Capture the exit code
     exit_code=$?
@@ -144,7 +136,7 @@ for file in "$DIR"*.c; do
     # Extract time
     time=$(echo "$out" | tail -1 | sed -n 's/.*Time: *//p')
     time=$(echo "$time" | grep -Eo '[0-9]+\.[0-9]+')
-    time=$(printf "%.1f" "$time")
+    time=$(printf "%.1fs" "$time")
     if [ -z "$time" ]; then
         time="?"
     fi
@@ -167,10 +159,12 @@ for file in "$DIR"*.c; do
     if [[ "$out" =~ "Termination violation found" ]]; then
         res="\xmark"
     fi
-    if [ "$MANUAL" == "true" ]; then
-        echo "$benchmark, $tool, Automatic, $bound, $res, $time" >> "$RESULTS"
+
+    if [ "$RUNGENMC" == "true" ]; then
+        line="$line, $res\ ($time / B=${bound})"
+        echo $line >> "$RESULTS"
     else
-        echo "$benchmark, $tool, $res, $time" >> "$RESULTS"
+        echo "$benchmark, $res, $time" >> "$RESULTS"
     fi
 
     echo
