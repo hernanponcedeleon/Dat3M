@@ -97,10 +97,10 @@ public class NaiveDevirtualisation implements ProgramProcessor {
             return false;
         }
 
-        logger.debug("Assigned address to function \"{}\"", func);
         final MemoryObject funcAddr = func.getProgram().getMemory().allocate(1);
         funcAddr.setName(String.format("__funcAddr_%s", func.getName()));
         func2AddressMap.put(func, funcAddr);
+        logger.debug("Assigned address to function \"{}\"", func);
         return true;
     }
 
