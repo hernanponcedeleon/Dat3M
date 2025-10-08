@@ -19,7 +19,6 @@ format_dat3m_time() {
     local min="${input%%:*}"
     local sec_part="${input#*:}"
     local sec="${sec_part%% *}"
-    # Remove leading zeros
     min=$((10#$min))
     sec=$((10#$sec))
     local rounded=$(printf "%dm %ds\n" "$min" "$sec")
@@ -38,20 +37,21 @@ format_dat3m_time() {
 
 format_genmc_time() {
   local input="$1"
-  # Extract numeric part
-  local secs="${input%%s}"
 
-  if (( $(echo "$secs >= 60" | bc -l) )); then
-    # Convert to minutes and remaining seconds
-    local minutes=$(echo "$secs/60" | bc)
-    local remaining=$(echo "$secs - ($minutes*60)" | bc)
-    # Round remaining seconds to nearest integer
-    local rounded=$(printf "%.0f" "$remaining")
-    echo "${minutes}m ${rounded}s"
+  local secs=$(echo "$input" | sed -E 's/[^0-9.]+//g')
+
+  if [[ ! "$secs" =~ ^[0-9]+(\.[0-9]+)?$ ]]; then
+    echo "Invalid input: $input" >&2
+    return 1
+  fi
+
+  if (( $(echo "$secs < 60" | bc -l) )); then
+    printf "%.1fs\n" "$secs"
   else
-    # Keep as-is with one decimal
-    local rounded=$(printf "%.1f" "$secs")
-    echo "${rounded}s"
+    local minutes=$(echo "$secs / 60" | bc)
+    local remaining=$(echo "$secs - ($minutes * 60)" | bc -l)
+    local rounded_remaining=$(printf "%.0f" "$remaining")
+    echo "${minutes}m ${rounded_remaining}s"
   fi
 }
 
