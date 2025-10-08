@@ -1,10 +1,6 @@
 #include <pthread.h>
 #include <stdatomic.h>
-#ifdef USE_GENMC
-#define __VERIFIER_loop_bound(x)
-#else
 #include <dat3m.h>
-#endif
 
 /*
     Test case: Asymmetric non-termination where loop 1 runs twice as often as loop 2

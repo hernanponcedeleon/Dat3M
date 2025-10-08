@@ -1,10 +1,6 @@
 #include <pthread.h>
 #include <stdatomic.h>
-#ifdef USE_GENMC
-#define __VERIFIER_loop_bound(x)
-#else
 #include <dat3m.h>
-#endif
 
 /*
     Test case: Repeated message-passing until success

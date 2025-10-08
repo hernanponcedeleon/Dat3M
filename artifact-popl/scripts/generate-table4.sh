@@ -26,7 +26,7 @@ echo "==================================================="
 
 # Loop over each configuration
 for config in "${configurations[@]}"; do
-    
+
     # Print configuration
     echo $config
     progress=$(echo "$config" | grep -oP 'QF=\K[^,]+')
@@ -59,7 +59,7 @@ echo "==================================================="
 
 # Loop over each configuration
 for config in "${configurations[@]}"; do
-    
+
     # Print configuration
     echo $config
     progress=$(echo "$config" | grep -oP 'QF=\K[^,]+')
@@ -92,7 +92,7 @@ echo "==================================================="
 
 # Loop over each configuration
 for config in "${configurations[@]}"; do
-    
+
     # Print configuration
     echo $config
     progress=$(echo "$config" | grep -oP 'QF=\K[^,]+')
@@ -125,7 +125,7 @@ echo "==================================================="
 
 # Loop over each configuration
 for config in "${configurations[@]}"; do
-    
+
     # Print configuration
     echo $config
     progress=$(echo "$config" | grep -oP 'QF=\K[^,]+')
