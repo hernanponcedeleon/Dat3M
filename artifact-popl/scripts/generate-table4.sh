@@ -8,7 +8,7 @@ RESULTS="table4.csv"
 if [ -f "$RESULTS" ]; then
     rm "$RESULTS"
 fi
-echo "prefixsum, progress, result, time, bound"  >> "$RESULTS"
+echo "prefixsum, bound, progress, result, time"  >> "$RESULTS"
 
 # List of configurations
 configurations=(
@@ -19,6 +19,27 @@ configurations=(
     "QF=lobe"
     "QF=unfair"
 )
+
+format_time() {
+  local input="$1"
+
+  if [[ "$input" == *"mins"* ]]; then
+    local min="${input%%:*}"
+    local sec_part="${input#*:}"
+    local sec="${sec_part%% *}"
+    local rounded=$(printf "%dm %ds\n" "$min" "$sec")
+    echo "${rounded}"
+
+  elif [[ "$input" == *"secs"* ]]; then
+    local secs="${input%% *}"
+    local rounded=$(printf "%.1f" "$secs")
+    echo "${rounded}s"
+
+  else
+    echo "Invalid format: $input" >&2
+    return 1
+  fi
+}
 
 echo "==================================================="
 echo "                    Ours (Id)                      "
@@ -48,9 +69,10 @@ for config in "${configurations[@]}"; do
         res="?"
     fi
     time=$(echo "$out" | grep '^Time:' | cut -d' ' -f2-)
+    time=$(format_time "$time")
 
     # Save result in CSV
-    echo "{\it Ours (ids)}, \textsc{$progress}, $res, $time, $bound" >> "$RESULTS"
+    echo "{\it Ours (ids)}, $bound, \textsc{$progress}, $res, $time" >> "$RESULTS"
 done
 
 echo "==================================================="
@@ -81,9 +103,10 @@ for config in "${configurations[@]}"; do
         res="?"
     fi
     time=$(echo "$out" | grep '^Time:' | cut -d' ' -f2-)
+    time=$(format_time "$time")
 
     # Save result in CSV
-    echo "{\it Ours (ticket)}, \textsc{$progress}, $res, $time, $bound" >> "$RESULTS"
+    echo "{\it Ours (ticket)}, $bound, \textsc{$progress}, $res, $time" >> "$RESULTS"
 done
 
 echo "==================================================="
@@ -114,9 +137,10 @@ for config in "${configurations[@]}"; do
         res="?"
     fi
     time=$(echo "$out" | grep '^Time:' | cut -d' ' -f2-)
+    time=$(format_time "$time")
 
     # Save result in CSV
-    echo "{\it UCSC (ticket)}, \textsc{$progress}, $res, $time, $bound" >> "$RESULTS"
+    echo "{\it UCSC (ticket)}, $bound, \textsc{$progress}, $res, $time" >> "$RESULTS"
 done
 
 echo "==================================================="
@@ -147,9 +171,10 @@ for config in "${configurations[@]}"; do
         res="?"
     fi
     time=$(echo "$out" | grep '^Time:' | cut -d' ' -f2-)
+    time=$(format_time "$time")
 
     # Save result in CSV
-    echo "{\it Vello (ticker)}, \textsc{$progress}, $res, $time, $bound" >> "$RESULTS"
+    echo "{\it Vello (ticket)}, $bound, \textsc{$progress}, $res, $time" >> "$RESULTS"
 done
 
 rm "$tmp_file"
