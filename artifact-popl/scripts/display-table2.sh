@@ -1,12 +1,22 @@
 #!/bin/bash
 
-printf "%6s | %6s | %8s | %7s\n" "PASS" "FAIL" "UNKNOWN" "ERROR"
-echo "--------------------------------------"
+input="table2.csv"
 
-for f in table2-r*.txt; do
-  pass=$(grep -c PASS "$f")
-  fail=$(grep -c FAIL "$f")
-  unk=$(grep -c UNKNOWN "$f")
-  err=$(grep -c ERROR "$f")
-  printf "%6d | %6d | %8d | %7d\n" "$pass" "$fail" "$unk" "$err"
-done
+awk -F, '
+BEGIN {
+  check="✅"; cross="❌"; clock="🕒";
+  printf "%-14s | %-12s | %-12s | %-20s\n", "Benchmark", "Genmc (M)", "Genmc (A)", "Dartagnan (A)";
+  print "--------------------------------------------------------------------------";
+}
+NR>1 {
+  for (i=1; i<=NF; i++) {
+    gsub(/\\cmark\\/, check, $i);
+    gsub(/\\xmark\\/, cross, $i);
+    gsub(/\\clock/, clock, $i);
+    gsub(/\\[[:space:]]/, " ", $i);
+    gsub(/\\\(/, "(", $i);
+    gsub(/\\$/, "", $i);
+    gsub(/^ +| +$/, "", $i);
+  }
+  printf "%-14s | %-11s | %-11s | %-20s\n", $1, $2, $3, $4;
+}' "$input"

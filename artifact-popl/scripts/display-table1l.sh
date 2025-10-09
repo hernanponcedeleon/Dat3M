@@ -1,6 +1,6 @@
 #!/bin/bash
 
-input="table1.csv"
+input="table1l.csv"
 
 awk -F, '
 BEGIN {
@@ -9,7 +9,7 @@ BEGIN {
   cross=red "❌" reset;
 
   # Header
-  printf "%-13s | %-8s | %-10s\n", "benchmark", "result", "time";
+  printf "%-13s | %-8s | %-10s\n", "Benchmark", "Result", "Time";
   print "------------------------------------------";
 }
 NR>1 {

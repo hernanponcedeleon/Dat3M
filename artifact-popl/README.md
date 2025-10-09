@@ -2,7 +2,7 @@
 
 ## List of claims
 
-This artifact allows reproducing Tables 1-4 from the Evaluation section.
+This artifact allows reproducing Tables 1-3 from the Evaluation section.
 
 ## Download, installation, and sanity-testing
 
@@ -18,32 +18,91 @@ and start the docker container
 docker run -it --rm dat3m-popl26-artifact
 ```
 
-As sanity-testing, you can run dartagnan on a small example
+As sanity-testing, you can run Dartagnan
 ```
 java -DlogLevel=off -jar $DAT3M_HOME/dartagnan/target/dartagnan.jar $DAT3M_HOME/cat/imm.cat $DAT3M_HOME/benchmarks/locks/ttas.c --bound=3
 ```
 and expect to observe
 ```
-Test: $DAT3M_HOME/benchmarks/locks/ttas.c
+Test: /home/Dat3M/benchmarks/locks/ttas.c
 Result: PASS
-Time: X secs
+Time: 1.418 secs
+```
+and GenMC
+```
+GenMC -imm -check-liveness -disable-estimation $DAT3M_HOME/benchmarks/locks/ttas.c
+```
+and expect to observe
+```
+...
+
+*** Verification complete.
+No errors were detected.
+Number of complete executions explored: 36
+Number of blocked executions seen: 60
+Total wall-clock time: 0.05s
 ```
 
 ## Evaluation instructions
 
-To generate the data to reproduce Table 1, run
+To generate the data to reproduce Table 1 (left), run
 ```
-bash $DAT3M_HOME/artifact-popl/scripts/generate-table1.sh
+bash $DAT3M_HOME/artifact-popl/scripts/generate-table1l.sh
 ```
-The script runs dartagnan on all synthetic benchmarks using imm as the memory model with a 60s timeout for each verification run.
+The script runs Dartagnan on all synthetic benchmarks using imm as the memory model with a 10s timeout for each verification run.
 
 **Expected running time:** 1m.
 
-Upon completion, the results can be found in `table1.csv`. Running
+Upon completion, the results can be found in `table1l.csv`. Running
 ```
-bash $DAT3M_HOME/artifact-popl/scripts/display-table1.sh
+bash $DAT3M_HOME/artifact-popl/scripts/display-table1l.sh
 ```
 will display the results in the console.
+
+**Expected output (modulo time differences):**
+```
+Benchmark     | Result   | Time      
+------------------------------------------
+asymmetric    | ❌       | 0.7s      
+complex       | ❌       | 1.0s      
+oscillating   | ❌       | 0.5s      
+weak          | ❌       | 0.8s      
+xchg          | ❌       | 0.6s      
+zero_effect   | ❌       | 6.9s  
+```
+
+**Supported claims:**
+Dartagnan can prove non-termination for all the proposed synthetic benchmarks.
+
+#
+
+To generate the data to reproduce Table 1 (right), run
+```
+bash $DAT3M_HOME/artifact-popl/scripts/generate-table1r.sh
+```
+The script runs Dartagnan on all forward progress litmus tests, for each of the forward progress models (i.e., schedulers), and using vulkan as the memory model. 
+
+**Expected running time:** 10m.
+
+Upon completion, each of the `table1r-rX` files contains one row from the table. Running
+```
+bash $DAT3M_HOME/artifact-popl/scripts/display-table1r.sh
+```
+will display the results in the console.
+
+**Expected output:**
+```
+  PASS |   FAIL |  UNKNOWN |   ERROR
+--------------------------------------
+   104 |    156 |      217 |       6
+     8 |    453 |       16 |       6
+    42 |    388 |       47 |       6
+    46 |    367 |       64 |       6
+     0 |    477 |        0 |       6
+```
+
+**Supported claims:**
+Dartagnan can prove non-termination in the presence of side-effects and different forward progress models (i.e., schedulers).
 
 #
 
@@ -51,15 +110,43 @@ To generate the data to reproduce Table 2, run
 ```
 bash $DAT3M_HOME/artifact-popl/scripts/generate-table2.sh
 ```
-The script runs dartagnan on all forward progress litmus tests, for each of the forward progress models (i.e., schedulers), and using vulkan as the memory model. 
+The script runs both GenMC (once using manual annotations and once using automatic spin loop detection) and Dartagnan (using automatic spin loop detection) on all spinlock benchmarks of the libvsync library. Both tools use imm as the memory model. For Dartagnan, each benchmark uses a specific unrolling bound (shown in the table).
 
-**Expected running time:** 10m.
+**Expected running time:** 4h.
 
-Upon completion, each of the `table2-rX` files contains one row from the table. Running
+Upon completion, the results can be found in `table2.csv`. Running
 ```
 bash $DAT3M_HOME/artifact-popl/scripts/display-table2.sh
 ```
 will display the results in the console.
+
+**Expected output (modulo time differences):**
+```
+Benchmark      | GenMC (M)    | GenMC (A)    | Dartagnan (A)       
+--------------------------------------------------------------------------
+arraylock      | ✅ (0.1s)    | ✅ (0.1s)    | ✅ (3.8s / B=4)      
+caslock        | ✅ (0.2s)    | N/A (🕒)     | ✅ (2.2s / B=4)      
+clhlock        | ✅ (0.1s)    | N/A (🕒)     | ✅ (2.0s / B=4)      
+cnalock        | ❌ (0.2s)    | ❌ (0.2s)    | ❌ (30.1s / B=2)     
+hclhlock       | ❌ (0.5s)    | ❌ (0.5s)    | ❌ (4m 25s / B=2)    
+hemlock        | ✅ (0.2s)    | N/A (🕒)     | ✅ (3.9s / B=4)      
+hmcslock       | ❌ (0.3s)    | ❌ (0.3s)    | ❌ (36.4s / B=8)     
+mcslock        | ❌ (0.1s)    | N/A (🕒)     | ❌ (1.8s / B=2)      
+rec_mcslock    | ❌ (0.1s)    | N/A (🕒)     | ❌ (2.2s / B=4)      
+rec_seqlock    | ✅ (1.3s)    | ✅ (0.6s)    | ✅ (13.5s / B=4)     
+rec_spinlock   | ✅ (0.4s)    | N/A (🕒)     | ✅ (4.0s / B=4)      
+rec_ticketlock | ✅ (0.1s)    | N/A (🕒)     | ✅ (4.2s / B=4)      
+rwlock         | ✅ (0.5s)    | N/A (🕒)     | ✅ (1m 3s / B=4)     
+semaphore      | ✅ (0.1s)    | ✅ (0.1s)    | ✅ (1m 9s / B=4)     
+seqcount       | ✅ (0.1s)    | ✅ (0.1s)    | ✅ (0.7s / B=4)      
+seqlock        | ✅ (0.3s)    | ✅ (0.2s)    | N/A (🕒 / B=4)       
+ticketlock     | ✅ (0.1s)    | N/A (🕒)     | ✅ (1.7s / B=4)      
+ttaslock       | ✅ (0.1s)    | N/A (🕒)     | ✅ (2.9s / B=4)      
+twalock        | ❌ (0.3s)    | N/A (🕒)     | ❌ (3.4s / B=2)        
+```
+
+**Supported claims:**
+GenMC fails to detect many non-termination examples when the program is not manually annotated. GenMC (using manual annotations) and Dartagnan (using automatic spin loop detection) can find all non-termination instances. When both tools find a violation, GenMC is usually much faster.
 
 #
 
@@ -67,9 +154,9 @@ To generate the data to reproduce Table 3, run
 ```
 bash $DAT3M_HOME/artifact-popl/scripts/generate-table3.sh
 ```
-The script runs both genmc (once using manual annotations and once using automatic spin loop detection) and dartagnan (using automatic spin loop detection) on all spinlock benchmarks of the libvsync library. Both tools use imm as the memory model. For dartagnan, each benchmark uses a specific unrolling bound (shown in the table).
+The script runs Dartagnan on all prefixsum implementations, for each of the forward progress models (i.e., schedulers), and using vulkan as the memory model. 
 
-**Expected running time:** 4h.
+**Expected running time:** 1h.
 
 Upon completion, the results can be found in `table3.csv`. Running
 ```
@@ -77,18 +164,39 @@ bash $DAT3M_HOME/artifact-popl/scripts/display-table3.sh
 ```
 will display the results in the console.
 
-#
+**Expected output (modulo time differences):**
+```
+Prefixsum        | Scheduler  | Terminates | Time        
+-----------------------------------------------------------
+Ours (ids)       | fair       | ✅         | 22.2s (B=3) 
+Ours (ids)       | obe        | ❌         | 1m 18s (B=3)
+Ours (ids)       | hsa        | ✅         | 22.8s (B=3) 
+Ours (ids)       | hsa_obe    | ✅         | 22.9s (B=3) 
+Ours (ids)       | lobe       | ✅         | 24.4s (B=3) 
+Ours (ids)       | unfair     | ❌         | 1m 26s (B=3)
+-----------------------------------------------------------
+Ours (ticket)    | fair       | ✅         | 19.4s (B=3) 
+Ours (ticket)    | obe        | ✅         | 22.9s (B=3) 
+Ours (ticket)    | hsa        | ❌         | 55.4s (B=3) 
+Ours (ticket)    | hsa_obe    | ✅         | 21.3s (B=3) 
+Ours (ticket)    | lobe       | ✅         | 23.2s (B=3) 
+Ours (ticket)    | unfair     | ❌         | 51.1s (B=3) 
+-----------------------------------------------------------
+UCSC (ticket)    | fair       | ✅         | 6.4s (B=2)  
+UCSC (ticket)    | obe        | ✅         | 7.8s (B=2)  
+UCSC (ticket)    | hsa        | ❌         | 10.2s (B=2) 
+UCSC (ticket)    | hsa_obe    | ✅         | 7.4s (B=2)  
+UCSC (ticket)    | lobe       | ✅         | 7.5s (B=2)  
+UCSC (ticket)    | unfair     | ❌         | 18.8s (B=2) 
+-----------------------------------------------------------
+Vello (ticket)   | fair       | ✅         | 13m 50s (B=8)
+Vello (ticket)   | obe        | ✅         | 21m 51s (B=8)
+Vello (ticket)   | hsa        | ✅         | 18m 39s (B=8)
+Vello (ticket)   | hsa_obe    | ✅         | 18m 37s (B=8)
+Vello (ticket)   | lobe       | ✅         | 15m 20s (B=8)
+Vello (ticket)   | unfair     | ✅         | 24m 49s (B=8)
+-----------------------------------------------------------
+```
 
-To generate the data to reproduce Table 4, run
-```
-bash $DAT3M_HOME/artifact-popl/scripts/generate-table4.sh
-```
-The script runs dartagnan on all prefixsum implementations, for each of the forward progress models (i.e., schedulers), and using vulkan as the memory model. 
-
-**Expected running time:** 1h.
-
-Upon completion, the results can be found in `table4.csv`. Running
-```
-bash $DAT3M_HOME/artifact-popl/scripts/display-table4.sh
-```
-will display the results in the console.
+**Supported claims:**
+Dartagnan can verify different implementations of the Prefixsum algorithm. For the variant using the workgroup id to decide its predecessor, it shows that OBE and unfair schedulers lead to non-termination. For the variants using a ticket (and not implementing scalar fallback), HSA and unfair schedulers lead to non-termination. For Vello (which implements scalar fallback) the program terminates independently of the scheduler.
