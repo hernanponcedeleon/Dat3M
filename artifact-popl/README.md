@@ -200,3 +200,29 @@ Vello (ticket)   | unfair     | ✅         | 24m 49s (B=8)
 
 **Supported claims:**
 Dartagnan can verify different implementations of the Prefixsum algorithm. For the variant using the workgroup id to decide its predecessor, it shows that OBE and unfair schedulers lead to non-termination. For the variants using a ticket (and not implementing scalar fallback), HSA and unfair schedulers lead to non-termination. For Vello (which implements scalar fallback) the program terminates independently of the scheduler.
+
+## Artifact organization
+
+**Benchmarks:**
+- Synthetic benchmarks are located in `$DAT3M_HOME/artifact-popl/benchmarks/synthetic/`.
+- Forward progress litmus tests are located in `$DAT3M_HOME/litmus/VULKAN/CADP/`.
+- Libvsync benchmarks are located in `$LIBVSYNC_HOME/test/spinlock/` with the core logic of the algorithms located in `$LIBVSYNC_HOME/include/vsync/spinlock`.
+- Prefixsum benchmarks are located in `$DAT3M_HOME/artifact-popl/benchmarks/prefixsum`.
+
+**Implementation:**
+The encoding of the non-termination witness is implemented in `$DAT3M_HOME/dartagnan/src/main/java/com/dat3m/dartagnan/encoding/NonTerminationEncoder.java`.
+
+## Running your own examples
+
+For testing your own C examples, run
+```
+CFLAGS="<if-needed>" java -jar $DAT3M_HOME/dartagnan/target/dartagnan.jar --property=termination $DAT3M_HOME/cat/imm.cat --bound=X <your-benchmark.c>
+```
+
+Dartagnan reads GPU computing kernels in SPIR-V (OpenCL, slang, hlsl, gls can all be compiled to SPIR-V). The SPIR-V code should be annotated with a configuration of the form `; @Config: X, Y, Z` specifying the number of threads per subgroup, the number of subgroups per workgroup, and the number of workgroups in the device. The initial value of buffers needs to be specified with the annotation `; @Input: ...`. See the Prefixsum benchmarks for more details.
+
+For testing your own SPIR-V examples, run
+```
+java -jar $DAT3M_HOME/dartagnan/target/dartagnan.jar --property=termination $DAT3M_HOME/cat/vulkan.cat --target=vulkan --bound=X <your-benchmark.spvasm>
+```
+If you want to test different schedulers, you can add option `--modeling.progress=[X=Y]` where `X in {SG, WG, QF}` and `Y in {fair, obe, hsa, hsa_obe, lobe, unfair}`.
