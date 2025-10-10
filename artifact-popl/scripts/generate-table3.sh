@@ -54,7 +54,7 @@ for config in "${configurations[@]}"; do
     bound=3
 
     # Run the command with the current configuration as a parameter
-    java -DlogLevel=off -jar $DAT3M_HOME/dartagnan/target/dartagnan.jar $DAT3M_HOME/cat/vulkan.cat --target=vulkan $DAT3M_HOME/artifact-popl/benchmarks/prefixsum/Ours-Id.spvasm --method=eager --bound=$bound --wmm.analysis.relationAnalysis=lazy --modeling.progress=[$config] --property=termination > "$tmp_file"
+    java -DlogLevel=off -jar $DAT3M_HOME/dartagnan/target/dartagnan.jar $DAT3M_HOME/cat/vulkan.cat --target=vulkan $DAT3M_HOME/artifact-popl/benchmarks/prefixsum/Ours-Id.spvasm --method=eager --bound=$bound --solver=$SMTSOLVER --wmm.analysis.relationAnalysis=lazy --modeling.progress=[$config] --property=termination > "$tmp_file"
 
     # Compute and print result and time
     out=$(cat "$tmp_file")
@@ -88,7 +88,7 @@ for config in "${configurations[@]}"; do
     bound=3
 
     # Run the command with the current configuration as a parameter
-    java -DlogLevel=off -jar $DAT3M_HOME/dartagnan/target/dartagnan.jar $DAT3M_HOME/cat/vulkan.cat --target=vulkan $DAT3M_HOME/artifact-popl/benchmarks/prefixsum/Ours-Ticket.spvasm --method=eager --bound=$bound --wmm.analysis.relationAnalysis=lazy --modeling.progress=[$config] --property=termination > "$tmp_file"
+    java -DlogLevel=off -jar $DAT3M_HOME/dartagnan/target/dartagnan.jar $DAT3M_HOME/cat/vulkan.cat --target=vulkan $DAT3M_HOME/artifact-popl/benchmarks/prefixsum/Ours-Ticket.spvasm --method=eager --bound=$bound --solver=$SMTSOLVER --wmm.analysis.relationAnalysis=lazy --modeling.progress=[$config] --property=termination > "$tmp_file"
 
     # Compute and print result and time
     out=$(cat "$tmp_file")
@@ -122,7 +122,7 @@ for config in "${configurations[@]}"; do
     bound=2
 
     # Run the command with the current configuration as a parameter
-    java -DlogLevel=off -jar $DAT3M_HOME/dartagnan/target/dartagnan.jar $DAT3M_HOME/cat/vulkan.cat --target=vulkan $DAT3M_HOME/artifact-popl/benchmarks/prefixsum/UCSC.spvasm --method=eager --bound=$bound --wmm.analysis.relationAnalysis=lazy --modeling.progress=[$config] --property=termination > "$tmp_file"
+    java -DlogLevel=off -jar $DAT3M_HOME/dartagnan/target/dartagnan.jar $DAT3M_HOME/cat/vulkan.cat --target=vulkan $DAT3M_HOME/artifact-popl/benchmarks/prefixsum/UCSC.spvasm --method=eager --bound=$bound --solver=$SMTSOLVER --wmm.analysis.relationAnalysis=lazy --modeling.progress=[$config] --property=termination > "$tmp_file"
 
     # Compute and print result and time
     out=$(cat "$tmp_file")
@@ -156,7 +156,7 @@ for config in "${configurations[@]}"; do
     bound=8
 
     # Run the command with the current configuration as a parameter
-    java -DlogLevel=off -jar $DAT3M_HOME/dartagnan/target/dartagnan.jar $DAT3M_HOME/cat/vulkan.cat --target=vulkan $DAT3M_HOME/artifact-popl/benchmarks/prefixsum/Vello.spvasm --method=eager --bound=$bound --wmm.analysis.relationAnalysis=lazy --modeling.progress=[$config] --property=termination > "$tmp_file"
+    java -DlogLevel=off -jar $DAT3M_HOME/dartagnan/target/dartagnan.jar $DAT3M_HOME/cat/vulkan.cat --target=vulkan $DAT3M_HOME/artifact-popl/benchmarks/prefixsum/Vello.spvasm --method=eager --bound=$bound --solver=$SMTSOLVER --wmm.analysis.relationAnalysis=lazy --modeling.progress=[$config] --property=termination > "$tmp_file"
 
     # Compute and print result and time
     out=$(cat "$tmp_file")

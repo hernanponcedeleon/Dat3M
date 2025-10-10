@@ -43,6 +43,8 @@ Number of blocked executions seen: 60
 Total wall-clock time: 0.05s
 ```
 
+By default in this artifact, Dartagnan uses the `yices2` SMT solver. Unfortunately the solver is not available in all platforms. You can change to the `z3` solver (which works in all platforms, but has worse performance in these benchmarks) via `export SMTSOLVER=z3`.
+
 ## Evaluation instructions
 
 To generate the data to reproduce Table 1 (left), run
@@ -120,7 +122,13 @@ bash $DAT3M_HOME/artifact-popl/scripts/display-table2.sh
 ```
 will display the results in the console.
 
-**Expected output (modulo time differences):**
+**Expected output with the yices2 SMT solver (modulo time differences):**
+```
+Benchmark      | GenMC (M)    | GenMC (A)    | Dartagnan (A)
+--------------------------------------------------------------------------
+```
+
+**Expected output with the z3 SMT solver (modulo time differences):**
 ```
 Benchmark      | GenMC (M)    | GenMC (A)    | Dartagnan (A)       
 --------------------------------------------------------------------------
@@ -164,7 +172,41 @@ bash $DAT3M_HOME/artifact-popl/scripts/display-table3.sh
 ```
 will display the results in the console.
 
-**Expected output (modulo time differences):**
+**Expected output with the yices2 SMT solver (modulo time differences):**
+```
+Prefixsum        | Scheduler  | Terminates | Time
+-----------------------------------------------------------
+Ours (ids)       | fair       | ✅         | 14.3s (B=3)
+Ours (ids)       | obe        | ❌         | 15.7s (B=3)
+Ours (ids)       | hsa        | ✅         | 15.1s (B=3)
+Ours (ids)       | hsa_obe    | ✅         | 15.0s (B=3)
+Ours (ids)       | lobe       | ✅         | 15.2s (B=3)
+Ours (ids)       | unfair     | ❌         | 15.1s (B=3)
+-----------------------------------------------------------
+Ours (ticket)    | fair       | ✅         | 12.6s (B=3)
+Ours (ticket)    | obe        | ✅         | 13.0s (B=3)
+Ours (ticket)    | hsa        | ❌         | 13.6s (B=3)
+Ours (ticket)    | hsa_obe    | ✅         | 13.0s (B=3)
+Ours (ticket)    | lobe       | ✅         | 13.5s (B=3)
+Ours (ticket)    | unfair     | ❌         | 13.3s (B=3)
+-----------------------------------------------------------
+UCSC (ticket)    | fair       | ✅         | 4.0s (B=2)
+UCSC (ticket)    | obe        | ✅         | 4.5s (B=2)
+UCSC (ticket)    | hsa        | ❌         | 4.0s (B=2)
+UCSC (ticket)    | hsa_obe    | ✅         | 4.1s (B=2)
+UCSC (ticket)    | lobe       | ✅         | 4.2s (B=2)
+UCSC (ticket)    | unfair     | ❌         | 4.0s (B=2)
+-----------------------------------------------------------
+Vello (ticket)   | fair       | ✅         | 7m 27s (B=8)
+Vello (ticket)   | obe        | ✅         | 8m 5s (B=8)
+Vello (ticket)   | hsa        | ✅         | 7m 48s (B=8)
+Vello (ticket)   | hsa_obe    | ✅         | 8m 21s (B=8)
+Vello (ticket)   | lobe       | ✅         | 7m 13s (B=8)
+Vello (ticket)   | unfair     | ✅         | 8m 17s (B=8)
+-----------------------------------------------------------
+```
+
+**Expected output with the z3 SMT solver (modulo time differences):**
 ```
 Prefixsum        | Scheduler  | Terminates | Time        
 -----------------------------------------------------------

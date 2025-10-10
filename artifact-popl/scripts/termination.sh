@@ -117,7 +117,11 @@ for file in "$DIR"*.c; do
             res="\xmark"
         fi
 
-        line="$line, $res\ ($time)"
+        if [ "$time" == "\clock" ]; then
+            line="$line, $time"
+        else
+            line="$line, $res\ ($time)"
+        fi
 
         # Run genmc (without loop annotation)
         tool="\genmc"
@@ -153,7 +157,11 @@ for file in "$DIR"*.c; do
             res="\xmark"
         fi
 
-        line="$line, $res\ ($time)"
+        if [ "$time" == "\clock" ]; then
+            line="$line, $time"
+        else
+            line="$line, $res\ ($time)"
+        fi
     fi
 
     # Run dartagnan
@@ -170,7 +178,7 @@ for file in "$DIR"*.c; do
         bound=4
     fi
 
-    out=$(CFLAGS="-DVSYNC_VERIFICATION -DVSYNC_VERIFICATION_QUICK -DVSYNC_VERIFICATION_DAT3M -DVSYNC_DISABLE_SPIN_ANNOTATION -DTWA_A=128 -I ${LIBVSYNC_HOME}/test/include -I ${LIBVSYNC_HOME}/include/ -I ${LIBVSYNC_HOME}/vatomic/include" timeout ${TIMEOUT} java -jar ${DAT3M_HOME}/dartagnan/target/dartagnan.jar --property=termination ${DAT3M_HOME}/cat/imm.cat --bound=${bound} --modeling.recursionBound=${bound} ${file} 2> /dev/null)
+    out=$(CFLAGS="-DVSYNC_VERIFICATION -DVSYNC_VERIFICATION_QUICK -DVSYNC_VERIFICATION_DAT3M -DVSYNC_DISABLE_SPIN_ANNOTATION -DTWA_A=128 -I ${LIBVSYNC_HOME}/test/include -I ${LIBVSYNC_HOME}/include/ -I ${LIBVSYNC_HOME}/vatomic/include" timeout ${TIMEOUT} java -jar ${DAT3M_HOME}/dartagnan/target/dartagnan.jar --solver=${SMTSOLVER} --property=termination ${DAT3M_HOME}/cat/imm.cat --bound=${bound} --modeling.recursionBound=${bound} ${file} 2> /dev/null)
 
     # Capture the exit code
     exit_code=$?
@@ -203,7 +211,11 @@ for file in "$DIR"*.c; do
     fi
 
     if [ "$RUNGENMC" == "true" ]; then
-        line="$line, $res\ ($time / B=${bound})"
+        if [ "$time" == "\clock" ]; then
+            line="$line, $time / B=${bound}"
+        else
+            line="$line, $res\ ($time / B=${bound})"
+        fi
         echo $line >> "$RESULTS"
     else
         echo "$benchmark, $res, $time" >> "$RESULTS"
