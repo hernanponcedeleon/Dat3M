@@ -156,7 +156,7 @@ bash $DAT3M_HOME/artifact-popl/scripts/generate-table3.sh
 ```
 The script runs Dartagnan on all prefixsum implementations, for each of the forward progress models (i.e., schedulers), and using vulkan as the memory model. 
 
-**Expected running time:** 1h.
+**Expected running time:** 2.5h.
 
 Upon completion, the results can be found in `table3.csv`. Running
 ```
