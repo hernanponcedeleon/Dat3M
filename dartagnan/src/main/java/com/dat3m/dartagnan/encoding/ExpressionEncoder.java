@@ -604,6 +604,8 @@ public class ExpressionEncoder {
             final FloatingPointFormula r = (FloatingPointFormula) rhs.formula();
 
             final BooleanFormula result = switch (op) {
+                case EQ -> fpmgr.assignment(l, r);
+                case NEQ -> bmgr.not(fpmgr.assignment(l, r));
                 case OEQ -> fromUnordToOrd(l, r, fpmgr.equalWithFPSemantics(l, r));
                 case ONEQ -> fromUnordToOrd(l, r, bmgr.not(fpmgr.equalWithFPSemantics(l, r)));
                 case OLT -> fromUnordToOrd(l, r, fpmgr.lessThan(l, r));

@@ -455,8 +455,7 @@ public final class ExpressionFactory {
         } else if (type instanceof IntegerType) {
             return makeIntCmp(leftOperand, IntCmpOp.EQ, rightOperand);
         } else if (type instanceof FloatType) {
-            // TODO: Decide on a default semantics for float equality?
-            return makeFloatCmp(leftOperand, FloatCmpOp.UEQ, rightOperand);
+            return makeFloatCmp(leftOperand, FloatCmpOp.EQ, rightOperand);
         } else if (ExpressionHelper.isAggregateLike(type)) {
             return makeAggregateCmp(leftOperand, AggregateCmpOp.EQ, rightOperand);
         }
@@ -474,8 +473,7 @@ public final class ExpressionFactory {
         } else if (type instanceof IntegerType) {
             return makeIntCmp(leftOperand, IntCmpOp.NEQ, rightOperand);
         } else if (type instanceof FloatType) {
-            // TODO: Decide on a default semantics for float equality?
-            return makeFloatCmp(leftOperand, FloatCmpOp.UNEQ, rightOperand);
+            return makeFloatCmp(leftOperand, FloatCmpOp.NEQ, rightOperand);
         } else if (type instanceof AggregateType) {
             return makeAggregateCmp(leftOperand, AggregateCmpOp.NEQ, rightOperand);
         }
