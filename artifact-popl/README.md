@@ -124,8 +124,27 @@ will display the results in the console.
 
 **Expected output with the yices2 SMT solver (modulo time differences):**
 ```
-Benchmark      | GenMC (M)    | GenMC (A)    | Dartagnan (A)
+Benchmark      | Genmc (M)    | Genmc (A)    | Dartagnan (A)
 --------------------------------------------------------------------------
+arraylock      | ✅ (0.1s)    | ✅ (0.1s)    | ✅ (1.7s / B=4)
+caslock        | ✅ (0.2s)    | 🕒           | ✅ (2.0s / B=4)
+clhlock        | ✅ (0.1s)    | 🕒           | ✅ (1.5s / B=4)
+cnalock        | ❌ (0.2s)    | ❌ (0.2s)    | ❌ (11.9s / B=2)
+hclhlock       | ❌ (0.5s)    | ❌ (0.5s)    | ❌ (1m 58s / B=2)
+hemlock        | ✅ (0.2s)    | 🕒           | ✅ (2.3s / B=4)
+hmcslock       | ❌ (0.3s)    | ❌ (0.3s)    | ❌ (44.3s / B=8)
+mcslock        | ❌ (0.1s)    | 🕒           | ❌ (1.2s / B=2)
+rec_mcslock    | ❌ (0.1s)    | 🕒           | ❌ (2.3s / B=4)
+rec_seqlock    | ✅ (1.3s)    | ✅ (0.6s)    | ✅ (6.7s / B=4)
+rec_spinlock   | ✅ (0.4s)    | 🕒           | ✅ (2.9s / B=4)
+rec_ticketlock | ✅ (0.1s)    | 🕒           | ✅ (2.7s / B=4)
+rwlock         | ✅ (0.5s)    | 🕒           | ✅ (20.8s / B=4)
+semaphore      | ✅ (0.1s)    | ✅ (0.1s)    | ✅ (21.6s / B=4)
+seqcount       | ✅ (0.1s)    | ✅ (0.1s)    | ✅ (0.6s / B=4)
+seqlock        | ✅ (0.3s)    | ✅ (0.2s)    | ✅ (1.9s / B=4)
+ticketlock     | ✅ (0.1s)    | 🕒           | ✅ (1.3s / B=4)
+ttaslock       | ✅ (0.1s)    | 🕒           | ✅ (2.1s / B=4)
+twalock        | ❌ (0.3s)    | 🕒           | ❌ (1.7s / B=2)
 ```
 
 **Expected output with the z3 SMT solver (modulo time differences):**
