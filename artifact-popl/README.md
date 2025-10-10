@@ -30,7 +30,7 @@ Time: 1.418 secs
 ```
 and GenMC
 ```
-GenMC -imm -check-liveness -disable-estimation $DAT3M_HOME/benchmarks/locks/ttas.c
+genmc -imm -check-liveness -disable-estimation $DAT3M_HOME/benchmarks/locks/ttas.c
 ```
 and expect to observe
 ```

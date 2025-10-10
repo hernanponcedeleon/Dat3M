@@ -25,5 +25,4 @@ ENV LIBVSYNC_HOME=/home/libvsync
 RUN cd /home/libvsync && \
     git apply $DAT3M_HOME/libvsync.patch
 
-ENV LANG=en_US.UTF-8
-ENV LC_ALL=en_US.UTF-8
+ENV PATH="/root/genmc/RelWithDebInfo:${PATH}"
