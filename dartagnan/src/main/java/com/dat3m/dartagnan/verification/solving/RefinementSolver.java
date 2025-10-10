@@ -570,7 +570,7 @@ public class RefinementSolver extends ModelChecker {
 
         // [R \ range(rf)];loc;[W]
         final Relation reads = wmm.addDefinition(new TagSet(wmm.newSet(), Tag.READ));
-        final Relation rfRange = wmm.addDefinition(new Range(wmm.newSet(), rf));
+        final Relation rfRange = wmm.addDefinition(new Projection(wmm.newSet(), rf, Projection.Dimension.RANGE));
         final Relation writes = wmm.addDefinition(new TagSet(wmm.newSet(), Tag.WRITE));
         final Relation writesSet = wmm.addDefinition(new SetIdentity(wmm.newRelation(), writes));
         final Relation ur = wmm.addDefinition(new Difference(wmm.newSet(), reads, rfRange));

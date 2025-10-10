@@ -1635,30 +1635,16 @@ public class NativeRelationAnalysis implements RelationAnalysis {
         }
 
         @Override
-        public Delta visitDomain(Domain domId) {
-            if (domId.getOperand().equals(source)) {
-                MutableEventGraph maySet = new MapEventGraph();
-                may.getDomain().forEach(e -> maySet.add(e, e));
-                MutableEventGraph mustSet = new MapEventGraph();
+        public Delta visitProjection(Projection projection) {
+            if (projection.getOperand().equals(source)) {
+                final boolean dom = projection.getDimension() == Projection.Dimension.DOMAIN;
+                final MutableEventGraph maySet = new MapEventGraph();
+                (dom ? may.getDomain() : may.getRange()).forEach(e -> maySet.add(e, e));
+                final MutableEventGraph mustSet = new MapEventGraph();
                 must.apply((e1, e2) -> {
-                    if (exec.isImplied(e1, e2)) {
-                        mustSet.add(e1, e1);
-                    }
-                });
-                return new Delta(maySet, mustSet);
-            }
-            return Delta.EMPTY;
-        }
-
-        @Override
-        public Delta visitRange(Range rangeId) {
-            if (rangeId.getOperand().equals(source)) {
-                MutableEventGraph maySet = new MapEventGraph();
-                may.getRange().forEach(e -> maySet.add(e, e));
-                MutableEventGraph mustSet = new MapEventGraph();
-                must.apply((e1, e2) -> {
-                    if (exec.isImplied(e2, e1)) {
-                        mustSet.add(e2, e2);
+                    final Event e = dom ? e1 : e2;
+                    if (exec.isImplied(e, dom ? e2 : e1)) {
+                        mustSet.add(e, e);
                     }
                 });
                 return new Delta(maySet, mustSet);

@@ -92,13 +92,8 @@ public final class ConstraintCopier implements Constraint.Visitor<Constraint> {
     }
 
     @Override
-    public Domain visitDomain(Domain def) {
-        return new Domain(translate(def.getDefinedRelation()), translate(def.getOperand()));
-    }
-
-    @Override
-    public Range visitRange(Range def) {
-        return new Range(translate(def.getDefinedRelation()), translate(def.getOperand()));
+    public Projection visitProjection(Projection def) {
+        return new Projection(translate(def.getDefinedRelation()), translate(def.getOperand()), def.getDimension());
     }
 
     @Override

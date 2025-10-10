@@ -377,37 +377,21 @@ public class WmmEncoder implements Encoder {
         }
 
         @Override
-        public Void visitDomain(Domain domId) {
-            final Relation rel = domId.getDefinedRelation();
-            final Relation r1 = domId.getOperand();
-            Map<Event, Set<Event>> mayOut = ra.getKnowledge(r1).getMaySet().getOutMap();
-            EncodingContext.EdgeEncoder enc0 = context.edge(rel);
-            EncodingContext.EdgeEncoder enc1 = context.edge(r1);
+        public Void visitProjection(Projection projection) {
+            final Relation rel = projection.getDefinedRelation();
+            final Relation r1 = projection.getOperand();
+            final EncodingContext.EdgeEncoder enc0 = context.edge(rel);
+            final EncodingContext.EdgeEncoder enc1 = context.edge(r1);
+            final boolean dom = projection.getDimension() == Projection.Dimension.DOMAIN;
+            final EventGraph may1 = ra.getKnowledge(r1).getMaySet();
+            final Map<Event, Set<Event>> altMap = dom ? may1.getOutMap() : may1.getInMap();
             encodeSets.get(rel).apply((e1, e2) -> {
-                BooleanFormula opt = bmgr.makeFalse();
-                //TODO: Optimize using minSets (but no CAT uses this anyway)
-                for (Event e2Alt : mayOut.getOrDefault(e1, Set.of())) {
-                    opt = bmgr.or(opt, enc1.encode(e1, e2Alt));
+                assert e1.equals(e2);
+                final var opt = new ArrayList<BooleanFormula>();
+                for (Event alt : altMap.getOrDefault(e1, Set.of())) {
+                    opt.add(enc1.encode(dom ? e1 : alt, dom ? alt : e1));
                 }
-                enc.add(bmgr.equivalence(enc0.encode(e1, e2), opt));
-            });
-            return null;
-        }
-
-        @Override
-        public Void visitRange(Range rangeId) {
-            final Relation rel = rangeId.getDefinedRelation();
-            final Relation r1 = rangeId.getOperand();
-            Map<Event, Set<Event>> mayIn = ra.getKnowledge(r1).getMaySet().getInMap();
-            EncodingContext.EdgeEncoder enc0 = context.edge(rel);
-            EncodingContext.EdgeEncoder enc1 = context.edge(r1);
-            //TODO: Optimize using minSets (but no CAT uses this anyway)
-            encodeSets.get(rel).apply((e1, e2) -> {
-                BooleanFormula opt = bmgr.makeFalse();
-                for (Event e1Alt : mayIn.getOrDefault(e1, Set.of())) {
-                    opt = bmgr.or(opt, enc1.encode(e1Alt, e2));
-                }
-                enc.add(bmgr.equivalence(enc0.encode(e1, e2), opt));
+                enc.add(bmgr.equivalence(enc0.encode(e1, e1), bmgr.or(opt)));
             });
             return null;
         }

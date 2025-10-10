@@ -63,8 +63,7 @@ public interface Constraint {
         default T visitIntersection(Intersection def) { return visitDefinition(def); }
         default T visitDifference(Difference def) { return visitDefinition(def); }
         default T visitComposition(Composition def) { return visitDefinition(def); }
-        default T visitDomain(Domain def) { return visitDefinition(def); }
-        default T visitRange(Range def) { return visitDefinition(def); }
+        default T visitProjection(Projection def) { return visitDefinition(def); }
         default T visitInverse(Inverse def) { return visitDefinition(def); }
         default T visitTransitiveClosure(TransitiveClosure def) { return visitDefinition(def); }
         // These three are semi-derived (they are derived from sets/filters and not from relations).

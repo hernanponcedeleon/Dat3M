@@ -281,11 +281,10 @@ public class ExecutionGraph {
             set = new DynamicDefaultWMMSet(refinementModel.translateToBase(relation));
         } else if (relClass == TagSet.class) {
             set = new StaticWMMSet(((TagSet) relation.getDefinition()).getTag());
-        } else if (relClass == Range.class || relClass == Domain.class) {
-            RelationGraph g = getOrCreateGraphFromRelation(dependencies.get(0));
-            ProjectionSet.Dimension dim = relClass == Range.class ?
-                    ProjectionSet.Dimension.RANGE :
-                    ProjectionSet.Dimension.DOMAIN;
+        } else if (relClass == Projection.class) {
+            final RelationGraph g = getOrCreateGraphFromRelation(dependencies.get(0));
+            final boolean dom = ((Projection) relation.getDefinition()).getDimension() == Projection.Dimension.DOMAIN;
+            final ProjectionSet.Dimension dim = dom ? ProjectionSet.Dimension.DOMAIN : ProjectionSet.Dimension.RANGE;
             set = new ProjectionSet(g, dim);
         } else if (relClass == Union.class || relClass == Intersection.class) {
             SetPredicate[] graphs = new SetPredicate[dependencies.size()];

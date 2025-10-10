@@ -174,27 +174,18 @@ public class LazyEncodeSets implements Constraint.Visitor<Boolean> {
     }
 
     @Override
-    public Boolean visitDomain(Domain definition) {
+    public Boolean visitProjection(Projection definition) {
         if (doUpdateSelf(definition)) {
-            long start = System.currentTimeMillis();
-            MutableEventGraph operandUpdate = new MapEventGraph();
-            Map<Event, Set<Event>> outMap = ra.getKnowledge(definition.getOperand()).getMaySet().getOutMap();
-            update.getDomain().forEach(e1 -> operandUpdate.addRange(e1, outMap.get(e1)));
-            setUpdate(operandUpdate);
-            operandTime(definition, start, System.currentTimeMillis());
-            definition.getOperand().getDefinition().accept(this);
-            return true;
-        }
-        return false;
-    }
-
-    @Override
-    public Boolean visitRange(Range definition) {
-        if (doUpdateSelf(definition)) {
-            long start = System.currentTimeMillis();
-            MutableEventGraph operandUpdate = new MapEventGraph();
-            Map<Event, Set<Event>> inMap = ra.getKnowledge(definition.getOperand()).getMaySet().getInMap();
-            update.getDomain().forEach(e2 -> inMap.get(e2).forEach(e1 -> operandUpdate.add(e1, e2)));
+            final long start = System.currentTimeMillis();
+            final MutableEventGraph operandUpdate = new MapEventGraph();
+            final boolean dom = definition.getDimension() == Projection.Dimension.DOMAIN;
+            final EventGraph maySet = ra.getKnowledge(definition.getOperand()).getMaySet();
+            final Map<Event, Set<Event>> altMap = dom ? maySet.getOutMap() : maySet.getInMap();
+            if (dom) {
+                update.getDomain().forEach(e1 -> operandUpdate.addRange(e1, altMap.get(e1)));
+            } else {
+                update.getDomain().forEach(e2 -> altMap.get(e2).forEach(e1 -> operandUpdate.add(e1, e2)));
+            }
             setUpdate(operandUpdate);
             operandTime(definition, start, System.currentTimeMillis());
             definition.getOperand().getDefinition().accept(this);

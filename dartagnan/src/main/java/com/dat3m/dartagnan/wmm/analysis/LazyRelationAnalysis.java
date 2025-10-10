@@ -23,6 +23,7 @@ import com.dat3m.dartagnan.wmm.utils.graph.immutable.ImmutableMapEventGraph;
 import com.dat3m.dartagnan.wmm.utils.graph.immutable.LazyEventGraph;
 import com.dat3m.dartagnan.wmm.utils.graph.mutable.MutableEventGraph;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -470,31 +471,21 @@ public class LazyRelationAnalysis extends NativeRelationAnalysis {
         }
 
         @Override
-        public RelationAnalysis.Knowledge visitDomain(Domain definition) {
-            RelationAnalysis.Knowledge knowledge = getKnowledge(definition.getOperand());
-            long start = System.currentTimeMillis();
-            Map<Event, Set<Event>> mayMap = knowledge.getMaySet().getDomain().stream()
-                    .collect(Collectors.toMap(e -> e, ImmutableSet::of));
-            EventGraph may = new ImmutableMapEventGraph(mayMap);
-            Map<Event, Set<Event>> mustMap = knowledge.getMustSet()
-                    .filter(exec::isImplied).getDomain().stream()
-                    .collect(Collectors.toMap(e -> e, ImmutableSet::of));
-            EventGraph must = new ImmutableMapEventGraph(mustMap);
-            time(definition, start, System.currentTimeMillis());
-            return new RelationAnalysis.Knowledge(may, must);
-        }
-
-        @Override
-        public RelationAnalysis.Knowledge visitRange(Range definition) {
-            RelationAnalysis.Knowledge knowledge = getKnowledge(definition.getOperand());
-            long start = System.currentTimeMillis();
-            Map<Event, Set<Event>> mayMap = knowledge.getMaySet().getRange().stream()
-                    .collect(Collectors.toMap(e -> e, ImmutableSet::of));
-            EventGraph may = new ImmutableMapEventGraph(mayMap);
-            Map<Event, Set<Event>> mustMap = knowledge.getMustSet()
-                    .filter((e1, e2) -> exec.isImplied(e2, e1)).getRange().stream()
-                    .collect(Collectors.toMap(e -> e, ImmutableSet::of));
-            EventGraph must = new ImmutableMapEventGraph(mustMap);
+        public RelationAnalysis.Knowledge visitProjection(Projection definition) {
+            final RelationAnalysis.Knowledge knowledge = getKnowledge(definition.getOperand());
+            final EventGraph mayGraph = knowledge.getMaySet();
+            final EventGraph mustGraph = knowledge.getMustSet();
+            final boolean dom = definition.getDimension() == Projection.Dimension.DOMAIN;
+            final long start = System.currentTimeMillis();
+            final Set<Event> maySet = dom ? mayGraph.getDomain() : mayGraph.getRange();
+            final Set<Event> mustSet = new HashSet<>();
+            mustGraph.apply((e1, e2) -> {
+                if (exec.isImplied(dom ? e1 : e2, dom ? e2 : e1)) {
+                    mustSet.add(dom ? e1 : e2);
+                }
+            });
+            final EventGraph may = new ImmutableMapEventGraph(Maps.asMap(maySet, Set::of));
+            final EventGraph must = new ImmutableMapEventGraph(Maps.asMap(mustSet, Set::of));
             time(definition, start, System.currentTimeMillis());
             return new RelationAnalysis.Knowledge(may, must);
         }

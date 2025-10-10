@@ -550,19 +550,11 @@ public class ExecutionModelManager {
         }
 
         @Override
-        public SetPredicate visitRange(Range range) {
-            return new ProjectionSet(
-                    getOrCreateGraph(range.getOperand()),
-                    ProjectionSet.Dimension.RANGE
-            );
-        }
-
-        @Override
-        public SetPredicate visitDomain(Domain domain) {
-            return new ProjectionSet(
-                    getOrCreateGraph(domain.getOperand()),
-                    ProjectionSet.Dimension.DOMAIN
-            );
+        public SetPredicate visitProjection(Projection projection) {
+            final RelationGraph graph = getOrCreateGraph(projection.getOperand());
+            final boolean dom = projection.getDimension() == Projection.Dimension.DOMAIN;
+            final ProjectionSet.Dimension dim = dom ? ProjectionSet.Dimension.DOMAIN : ProjectionSet.Dimension.RANGE;
+            return new ProjectionSet(graph, dim);
         }
     }
 

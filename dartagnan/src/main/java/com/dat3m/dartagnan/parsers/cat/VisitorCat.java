@@ -333,14 +333,14 @@ class VisitorCat extends CatBaseVisitor<Object> {
     public Relation visitExprDomain(ExprDomainContext c) {
         Relation r0 = wmm.newSet();
         Relation r1 = parseAsRelation(c.e);
-        return addDefinition(new Domain(r0, r1));
+        return addDefinition(new Projection(r0, r1, Projection.Dimension.DOMAIN));
     }
 
     @Override
     public Relation visitExprRange(ExprRangeContext c) {
         Relation r0 = wmm.newSet();
         Relation r1 = parseAsRelation(c.e);
-        return addDefinition(new Range(r0, r1));
+        return addDefinition(new Projection(r0, r1, Projection.Dimension.RANGE));
     }
 
     @Override

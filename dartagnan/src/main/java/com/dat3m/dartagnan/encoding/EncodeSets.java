@@ -84,33 +84,22 @@ final class EncodeSets implements Visitor<Map<Relation, EventGraph>> {
     }
 
     @Override
-    public Map<Relation, EventGraph> visitDomain(Domain domId) {
-        final RelationAnalysis.Knowledge k1 = ra.getKnowledge(domId.getOperand());
-        Map<Event, Set<Event>> out = k1.getMaySet().getOutMap();
-        MutableEventGraph result = new MapEventGraph();
-        news.apply((e1, e2) ->
-            out.getOrDefault(e1, Set.of()).forEach(e -> {
-                if (!k1.getMustSet().contains(e1, e)) {
-                    result.add(e1, e);
+    public Map<Relation, EventGraph> visitProjection(Projection projection) {
+        final MutableEventGraph result = new MapEventGraph();
+        final RelationAnalysis.Knowledge k1 = ra.getKnowledge(projection.getOperand());
+        final EventGraph mayGraph = k1.getMaySet();
+        final EventGraph mustGraph = k1.getMustSet();
+        final boolean dom = projection.getDimension() == Projection.Dimension.DOMAIN;
+        final Map<Event, Set<Event>> altMap = dom ? mayGraph.getOutMap() : mayGraph.getInMap();
+        news.apply((e1, e2) -> {
+            assert e1.equals(e2);
+            for (Event alt : altMap.getOrDefault(e1, Set.of())) {
+                if (!mustGraph.contains(dom ? e1 : alt, dom ? alt : e1)) {
+                    result.add(dom ? e1 : alt, dom ? alt : e1);
                 }
-            })
-        );
-        return Map.of(domId.getOperand(), result);
-    }
-
-    @Override
-    public Map<Relation, EventGraph> visitRange(Range rangeId) {
-        final RelationAnalysis.Knowledge k1 = ra.getKnowledge(rangeId.getOperand());
-        Map<Event, Set<Event>> in = k1.getMaySet().getInMap();
-        MutableEventGraph result = new MapEventGraph();
-        news.apply((e1, e2) ->
-            in.getOrDefault(e2, Set.of()).forEach(e -> {
-                if (!k1.getMustSet().contains(e, e2)) {
-                    result.add(e, e2);
-                }
-            })
-        );
-        return Map.of(rangeId.getOperand(), result);
+            }
+        });
+        return Map.of(projection.getOperand(), result);
     }
 
     @Override
