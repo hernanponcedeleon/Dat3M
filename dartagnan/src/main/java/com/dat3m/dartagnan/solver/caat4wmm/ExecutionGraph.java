@@ -92,6 +92,9 @@ public class ExecutionGraph {
                 for (DependencyGraph<Relation>.Node node : component) {
                     Relation relation = node.getContent();
                     if (relation.isRecursive()) {
+                        if (relation.isSet()) {
+                            throw new UnsupportedOperationException("No support for recursive sets");
+                        }
                         RecursiveGraph graph = new RecursiveGraph();
                         graph.setName(relation.getNameOrTerm() + "_rec");
                         graphs.add(graph);
