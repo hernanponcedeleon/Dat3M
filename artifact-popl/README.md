@@ -20,7 +20,7 @@ docker run -it --rm dat3m-popl26-artifact
 
 As sanity-testing, you can run Dartagnan
 ```
-java -DlogLevel=off -jar $DAT3M_HOME/dartagnan/target/dartagnan.jar $DAT3M_HOME/cat/imm.cat $DAT3M_HOME/benchmarks/locks/ttas.c --bound=3
+java -DlogLevel=off -jar $DAT3M_HOME/dartagnan/target/dartagnan.jar $DAT3M_HOME/cat/imm.cat $DAT3M_HOME/benchmarks/locks/ttas.c --bound=3 --solver=$SMTSOLVER
 ```
 and expect to observe
 ```
@@ -43,7 +43,7 @@ Number of blocked executions seen: 60
 Total wall-clock time: 0.05s
 ```
 
-By default in this artifact, Dartagnan uses the `yices2` SMT solver. Unfortunately the solver is not available in all platforms. You can change to the `z3` solver (which works in all platforms, but has worse performance in these benchmarks) via `export SMTSOLVER=z3`.
+By default in this artifact, Dartagnan uses the `yices2` SMT solver. If you experience problems with the SMT solver, you can change to the `z3` solver via `export SMTSOLVER=z3`. Notice that `z3` is much slower than `yices2` in the benchmarks of this artifact.
 
 ## Evaluation instructions
 
