@@ -112,7 +112,17 @@ public class IREvaluator {
     // ====================================================================================
     // Memory Model
 
+    public boolean hasElement(Relation rel, Event a) {
+        Preconditions.checkArgument(rel.isSet(), "Non-unary relation %s", rel);
+        return TRUE.equals(smtModel.evaluate(ctx.edge(rel, a, a)));
+    }
+
+    public boolean hasElement(EncodingContext.EdgeEncoder edgeEncoder, Event a) {
+        return TRUE.equals(smtModel.evaluate(edgeEncoder.encode(a, a)));
+    }
+
     public boolean hasEdge(Relation rel, Event a, Event b) {
+        Preconditions.checkArgument(rel.isRelation(), "Non-binary relation %s", rel);
         return TRUE.equals(smtModel.evaluate(ctx.edge(rel, a, b)));
     }
 

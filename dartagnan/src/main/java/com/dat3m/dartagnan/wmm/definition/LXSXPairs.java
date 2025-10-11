@@ -7,7 +7,7 @@ import com.dat3m.dartagnan.wmm.RelationNameRepository;
 public class LXSXPairs extends Definition {
 
     public LXSXPairs(Relation r0) {
-        super(r0, RelationNameRepository.LXSX);
+        super(Relation.checkIsRelation(r0), RelationNameRepository.LXSX);
     }
 
     @Override

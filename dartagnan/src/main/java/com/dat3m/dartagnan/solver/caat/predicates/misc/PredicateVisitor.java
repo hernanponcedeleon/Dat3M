@@ -17,7 +17,6 @@ public interface PredicateVisitor<TRet, TData, TContext> {
     default TRet visitCartesian(RelationGraph graph, TData data, TContext context) { return visitGraph(graph, data, context); }
     default TRet visitInverse(RelationGraph graph, TData data, TContext context) { return visitGraph(graph, data, context); }
     default TRet visitSetIdentity(RelationGraph graph, TData data, TContext context) { return visitGraph(graph, data, context); }
-    default TRet visitProjectionIdentity(RelationGraph graph, TData data, TContext context) { return visitGraph(graph, data, context); }
     default TRet visitReflexiveClosure(RelationGraph graph, TData data, TContext context) { return visitGraph(graph, data, context); }
     default TRet visitTransitiveClosure(RelationGraph graph, TData data, TContext context) { return visitGraph(graph, data, context); }
     default TRet visitRecursiveGraph(RelationGraph graph, TData data, TContext context) { return visitGraph(graph, data, context); }
@@ -26,6 +25,7 @@ public interface PredicateVisitor<TRet, TData, TContext> {
     // ============================================== SetPredicates ==============================================
 
     default TRet visitSet(SetPredicate set, TData data, TContext context) { return visit(set, data, context); }
+    default TRet visitProjection(SetPredicate set, TData data, TContext context) { return visitSet(set, data, context); }
     default TRet visitSetUnion(SetPredicate set, TData data, TContext context) { return visitSet(set, data, context); }
     default TRet visitSetIntersection(SetPredicate set, TData data, TContext context) { return visitSet(set, data, context); }
     default TRet visitSetDifference(SetPredicate set, TData data, TContext context) { return visitSet(set, data, context); }

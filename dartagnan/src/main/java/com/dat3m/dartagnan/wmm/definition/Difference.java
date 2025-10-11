@@ -16,6 +16,7 @@ public class Difference extends Definition {
         super(r0, "%s \\ %s");
         minuend = checkNotNull(r1);
         subtrahend = checkNotNull(r2);
+        r0.checkEqualArityRelation(List.of(r1, r2));
     }
 
     public Relation getMinuend() { return minuend; }

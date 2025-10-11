@@ -3,23 +3,62 @@ package com.dat3m.dartagnan.wmm;
 import com.dat3m.dartagnan.utils.dependable.Dependent;
 import com.dat3m.dartagnan.wmm.definition.Composition;
 import com.dat3m.dartagnan.wmm.definition.Union;
+import com.google.common.base.Preconditions;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
 import static com.dat3m.dartagnan.wmm.RelationNameRepository.*;
 import static com.google.common.base.Preconditions.checkState;
 
+/**
+ * Given an execution, describes a set of events or a binary relation between events,
+ * constrained by the associated {@link Definition}.
+ */
 public final class Relation implements Dependent<Relation> {
 
     private final Wmm wmm;
+    private final Arity arity;
     Definition definition = new Definition.Undefined(this);
     private boolean isRecursive;
     final List<String> names = new ArrayList<>();
 
-    Relation(Wmm wmm) {
+    public enum Arity { UNARY, BINARY }
+
+    Relation(Wmm wmm, Arity arity) {
         this.wmm = wmm;
+        this.arity = arity;
+    }
+
+    public Arity getArity() {
+        return arity;
+    }
+
+    public boolean isSet() {
+        return arity == Arity.UNARY;
+    }
+
+    public boolean isRelation() {
+        return arity == Arity.BINARY;
+    }
+
+    public static Relation checkIsSet(Relation relation) {
+        Preconditions.checkArgument(relation.isSet(), "Non-unary relation %s.", relation);
+        return relation;
+    }
+
+    public static Relation checkIsRelation(Relation relation) {
+        Preconditions.checkArgument(relation.isRelation(), "Non-binary relation %s.", relation);
+        return relation;
+    }
+
+    public void checkEqualArityRelation(Collection<Relation> others) {
+        Preconditions.checkArgument(!isSet() || others.stream().allMatch(Relation::isSet),
+                "Non-unary relation in %s", others);
+        Preconditions.checkArgument(!isRelation() || others.stream().allMatch(Relation::isRelation),
+                "Non-binary relation in %s", others);
     }
 
     /**

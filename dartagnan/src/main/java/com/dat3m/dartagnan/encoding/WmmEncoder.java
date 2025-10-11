@@ -19,6 +19,7 @@ import com.dat3m.dartagnan.wmm.analysis.NativeRelationAnalysis;
 import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
 import com.dat3m.dartagnan.wmm.axiom.Axiom;
 import com.dat3m.dartagnan.wmm.definition.*;
+import com.dat3m.dartagnan.wmm.definition.TagSet;
 import com.dat3m.dartagnan.wmm.utils.Flag;
 import com.dat3m.dartagnan.wmm.utils.graph.EventGraph;
 import com.dat3m.dartagnan.wmm.utils.graph.mutable.MapEventGraph;
@@ -235,9 +236,7 @@ public class WmmEncoder implements Encoder {
                 SyncWith.class,
                 SameVirtualLocation.class, // FIXME?!
                 Empty.class,
-                // Static because the underlying sets are static:
-                SetIdentity.class,
-                CartesianProduct.class
+                TagSet.class
         ));
 
         final Program program = context.getTask().getProgram();
@@ -378,37 +377,21 @@ public class WmmEncoder implements Encoder {
         }
 
         @Override
-        public Void visitDomainIdentity(DomainIdentity domId) {
-            final Relation rel = domId.getDefinedRelation();
-            final Relation r1 = domId.getOperand();
-            Map<Event, Set<Event>> mayOut = ra.getKnowledge(r1).getMaySet().getOutMap();
-            EncodingContext.EdgeEncoder enc0 = context.edge(rel);
-            EncodingContext.EdgeEncoder enc1 = context.edge(r1);
+        public Void visitProjection(Projection projection) {
+            final Relation rel = projection.getDefinedRelation();
+            final Relation r1 = projection.getOperand();
+            final EncodingContext.EdgeEncoder enc0 = context.edge(rel);
+            final EncodingContext.EdgeEncoder enc1 = context.edge(r1);
+            final boolean dom = projection.getDimension() == Projection.Dimension.DOMAIN;
+            final EventGraph may1 = ra.getKnowledge(r1).getMaySet();
+            final Map<Event, Set<Event>> altMap = dom ? may1.getOutMap() : may1.getInMap();
             encodeSets.get(rel).apply((e1, e2) -> {
-                BooleanFormula opt = bmgr.makeFalse();
-                //TODO: Optimize using minSets (but no CAT uses this anyway)
-                for (Event e2Alt : mayOut.getOrDefault(e1, Set.of())) {
-                    opt = bmgr.or(opt, enc1.encode(e1, e2Alt));
+                assert e1.equals(e2);
+                final var opt = new ArrayList<BooleanFormula>();
+                for (Event alt : altMap.getOrDefault(e1, Set.of())) {
+                    opt.add(enc1.encode(dom ? e1 : alt, dom ? alt : e1));
                 }
-                enc.add(bmgr.equivalence(enc0.encode(e1, e2), opt));
-            });
-            return null;
-        }
-
-        @Override
-        public Void visitRangeIdentity(RangeIdentity rangeId) {
-            final Relation rel = rangeId.getDefinedRelation();
-            final Relation r1 = rangeId.getOperand();
-            Map<Event, Set<Event>> mayIn = ra.getKnowledge(r1).getMaySet().getInMap();
-            EncodingContext.EdgeEncoder enc0 = context.edge(rel);
-            EncodingContext.EdgeEncoder enc1 = context.edge(r1);
-            //TODO: Optimize using minSets (but no CAT uses this anyway)
-            encodeSets.get(rel).apply((e1, e2) -> {
-                BooleanFormula opt = bmgr.makeFalse();
-                for (Event e1Alt : mayIn.getOrDefault(e1, Set.of())) {
-                    opt = bmgr.or(opt, enc1.encode(e1Alt, e2));
-                }
-                enc.add(bmgr.equivalence(enc0.encode(e1, e2), opt));
+                enc.add(bmgr.equivalence(enc0.encode(e1, e1), bmgr.or(opt)));
             });
             return null;
         }
@@ -445,6 +428,22 @@ public class WmmEncoder implements Encoder {
         }
 
         @Override
+        public Void visitSetIdentity(SetIdentity id) {
+            final Relation setId = id.getDefinedRelation();
+            final Relation domain = id.getDomain();
+            EventGraph mustSet = ra.getKnowledge(setId).getMustSet();
+            EncodingContext.EdgeEncoder encSetId = context.edge(setId);
+            EncodingContext.EdgeEncoder encDomain = context.edge(domain);
+            encodeSets.get(setId).apply((e1, e2) ->
+                    enc.add(bmgr.equivalence(
+                            encSetId.encode(e1, e2),
+                            mustSet.contains(e1, e2) ?
+                                    execution(e1, e2) :
+                                    encDomain.encode(e1, e2))));
+            return null;
+        }
+
+        @Override
         public Void visitInverse(Inverse inv) {
             final Relation rel = inv.getDefinedRelation();
             final Relation r1 = inv.getOperand();
@@ -457,6 +456,24 @@ public class WmmEncoder implements Encoder {
                             mustSet.contains(e1, e2) ?
                                     execution(e1, e2) :
                                     enc1.encode(e2, e1))));
+            return null;
+        }
+
+        @Override
+        public Void visitProduct(CartesianProduct cartesianProduct) {
+            final Relation product = cartesianProduct.getDefinedRelation();
+            final Relation domain = cartesianProduct.getDomain();
+            final Relation range = cartesianProduct.getRange();
+            EventGraph mustSet = ra.getKnowledge(product).getMustSet();
+            EncodingContext.EdgeEncoder encProduct = context.edge(product);
+            EncodingContext.EdgeEncoder encDomain = context.edge(domain);
+            EncodingContext.EdgeEncoder encRange = context.edge(range);
+            encodeSets.get(product).apply((e1, e2) ->
+                    enc.add(bmgr.equivalence(
+                            encProduct.encode(e1, e2),
+                            mustSet.contains(e1, e2) ?
+                                    execution(e1, e2) :
+                                    bmgr.and(encDomain.encode(e1, e1), encRange.encode(e2, e2)))));
             return null;
         }
 
