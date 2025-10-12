@@ -5,16 +5,23 @@ import com.dat3m.dartagnan.wmm.Relation;
 
 import java.util.List;
 
-public class TransitiveClosure extends Definition {
+public class Projection extends Definition {
 
     private final Relation r1;
 
-    public TransitiveClosure(Relation r0, Relation r1) {
-        super(Relation.checkIsRelation(r0), "%s^+");
+    private final Dimension dimension;
+
+    public enum Dimension { DOMAIN, RANGE }
+
+    public Projection(Relation r0, Relation r1, Dimension dimension) {
+        super(Relation.checkIsSet(r0), switch (dimension) { case DOMAIN -> "domain(%s)"; case RANGE -> "range(%s)"; });
         this.r1 = Relation.checkIsRelation(r1);
+        this.dimension = dimension;
     }
 
     public Relation getOperand() { return r1; }
+
+    public Dimension getDimension() { return dimension; }
 
     @Override
     public List<Relation> getConstrainedRelations() {
@@ -23,7 +30,6 @@ public class TransitiveClosure extends Definition {
 
     @Override
     public <T> T accept(Visitor<? extends T> v) {
-        return v.visitTransitiveClosure(this);
+        return v.visitProjection(this);
     }
-
 }

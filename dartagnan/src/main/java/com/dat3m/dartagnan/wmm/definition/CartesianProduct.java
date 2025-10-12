@@ -1,25 +1,28 @@
 package com.dat3m.dartagnan.wmm.definition;
 
-import com.dat3m.dartagnan.program.filter.Filter;
 import com.dat3m.dartagnan.wmm.Definition;
 import com.dat3m.dartagnan.wmm.Relation;
 
+import java.util.List;
+
 public class CartesianProduct extends Definition {
-    private final Filter filter1;
-    private final Filter filter2;
 
-    public Filter getFirstFilter() {
-    	return filter1;
-    }
-    
-    public Filter getSecondFilter() {
-    	return filter2;
+    private final Relation domain;
+    private final Relation range;
+
+    public CartesianProduct(Relation r0, Relation r1, Relation r2) {
+        super(Relation.checkIsRelation(r0), "%s*%s");
+        domain = Relation.checkIsSet(r1);
+        range = Relation.checkIsSet(r2);
     }
 
-    public CartesianProduct(Relation r0, Filter s1, Filter s2) {
-        super(r0, s1 + "*" + s2);
-        filter1 = s1;
-        filter2 = s2;
+    public Relation getDomain() { return domain; }
+
+    public Relation getRange() { return range; }
+
+    @Override
+    public List<Relation> getConstrainedRelations() {
+        return List.of(definedRelation, domain, range);
     }
 
     @Override

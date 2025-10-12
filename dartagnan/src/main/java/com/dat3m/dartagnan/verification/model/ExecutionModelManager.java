@@ -6,14 +6,23 @@ import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.MemoryEvent;
 import com.dat3m.dartagnan.program.event.core.*;
+import com.dat3m.dartagnan.program.filter.Filter;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.dat3m.dartagnan.smt.ModelExt;
 import com.dat3m.dartagnan.solver.caat.predicates.CAATPredicate;
+import com.dat3m.dartagnan.solver.caat.predicates.Derivable;
 import com.dat3m.dartagnan.solver.caat.predicates.PredicateHierarchy;
 import com.dat3m.dartagnan.solver.caat.predicates.relationGraphs.Edge;
 import com.dat3m.dartagnan.solver.caat.predicates.relationGraphs.RelationGraph;
 import com.dat3m.dartagnan.solver.caat.predicates.relationGraphs.base.SimpleGraph;
 import com.dat3m.dartagnan.solver.caat.predicates.relationGraphs.derived.*;
+import com.dat3m.dartagnan.solver.caat.predicates.sets.Element;
+import com.dat3m.dartagnan.solver.caat.predicates.sets.SetPredicate;
+import com.dat3m.dartagnan.solver.caat.predicates.sets.base.SimpleSet;
+import com.dat3m.dartagnan.solver.caat.predicates.sets.derived.DifferenceSet;
+import com.dat3m.dartagnan.solver.caat.predicates.sets.derived.IntersectionSet;
+import com.dat3m.dartagnan.solver.caat.predicates.sets.derived.ProjectionSet;
+import com.dat3m.dartagnan.solver.caat.predicates.sets.derived.UnionSet;
 import com.dat3m.dartagnan.solver.caat4wmm.EventDomainNext;
 import com.dat3m.dartagnan.utils.dependable.DependencyGraph;
 import com.dat3m.dartagnan.verification.model.RelationModel.EdgeModel;
@@ -31,11 +40,12 @@ import java.util.*;
 
 
 public class ExecutionModelManager {
+    private final SetPredicateBuilder setBuilder;
     private final RelationGraphBuilder graphBuilder;
     private final RelationGraphPopulator graphPopulator;
 
     private final Map<Relation, RelationModel> relModelCache;
-    private final BiMap<Relation, RelationGraph> relGraphCache;
+    private final BiMap<Relation, CAATPredicate> predicateCache;
     private final Map<Edge, EdgeModel> edgeModelCache;
 
     private ExecutionModelNext executionModel;
@@ -44,11 +54,12 @@ public class ExecutionModelManager {
     private Wmm wmm;
     private EventDomainNext domain;
 
-    public ExecutionModelManager(){
+    public ExecutionModelManager() {
+        setBuilder = new SetPredicateBuilder();
         graphBuilder = new RelationGraphBuilder();
         graphPopulator = new RelationGraphPopulator();
         relModelCache = new HashMap<>();
-        relGraphCache = HashBiMap.create();
+        predicateCache = HashBiMap.create();
         edgeModelCache = new HashMap<>();
     }
 
@@ -64,7 +75,7 @@ public class ExecutionModelManager {
         extractMemoryLayout();
 
         relModelCache.clear();
-        relGraphCache.clear();
+        predicateCache.clear();
         edgeModelCache.clear();
         extractRelations();
 
@@ -170,7 +181,7 @@ public class ExecutionModelManager {
         Set<Relation> relsToExtract = new HashSet<>(wmm.getRelations());
         for (Relation r : relsToExtract) { createModel(r); }
 
-        Set<RelationGraph> relGraphs = new HashSet<>();
+        Set<CAATPredicate> predicates = new HashSet<>();
         DependencyGraph<Relation> dependencyGraph = DependencyGraph.from(relsToExtract);
 
         for (Set<DependencyGraph<Relation>.Node> component : dependencyGraph.getSCCs()) {
@@ -179,29 +190,28 @@ public class ExecutionModelManager {
                 if (r.isRecursive()) {
                     RecursiveGraph recGraph = new RecursiveGraph();
                     recGraph.setName(r.getNameOrTerm() + "_rec");
-                    relGraphs.add(recGraph);
-                    relGraphCache.put(r, recGraph);
+                    predicates.add(recGraph);
+                    predicateCache.put(r, recGraph);
                 }
             }
             for (DependencyGraph<Relation>.Node node : component) {
                 Relation r = node.getContent();
-                RelationGraph rg = createGraph(r);
+                CAATPredicate predicate = createPredicate(r);
                 if (r.isRecursive()) {
-                    RecursiveGraph recGraph = (RecursiveGraph) relGraphCache.get(r);
-                    recGraph.setConcreteGraph(rg);
+                    RecursiveGraph recGraph = (RecursiveGraph) predicateCache.get(r);
+                    recGraph.setConcreteGraph((RelationGraph) predicate);
                 } else {
-                    relGraphs.add(rg);
+                    predicates.add(predicate);
                 }
             }
         }
 
-        Set<CAATPredicate> predicates = new HashSet<>(relGraphs);
         PredicateHierarchy hierarchy = new PredicateHierarchy(predicates);
         hierarchy.initializeToDomain(domain);
 
         // Populate graphs of base relations.
         for (CAATPredicate basePred : hierarchy.getBasePredicates()) {
-            Relation r = relGraphCache.inverse().get((RelationGraph) basePred);
+            Relation r = predicateCache.inverse().get(basePred);
             try {
                 r.getDefinition().accept(graphPopulator);
             } catch (UnsupportedOperationException e) {
@@ -213,12 +223,11 @@ public class ExecutionModelManager {
         // Do the computation.
         hierarchy.populate();
 
-        for (CAATPredicate pred : hierarchy.getPredicateList()) {
-            Relation r = relGraphCache.inverse().get((RelationGraph) pred);
+        for (CAATPredicate predicate : hierarchy.getPredicateList()) {
+            Relation r = predicateCache.inverse().get(predicate);
             if (relModelCache.containsKey(r)) {
                 RelationModel rm = relModelCache.get(r);
-                ((RelationGraph) pred).edgeStream()
-                                      .forEach(e -> rm.addEdgeModel(getOrCreateEdgeModel(e)));
+                predicate.valueStream().forEach(e -> rm.addEdgeModel(getOrCreateEdgeModel(e)));
            }
         }
 
@@ -232,23 +241,46 @@ public class ExecutionModelManager {
         relModelCache.put(r, new RelationModel(r));
     }
 
+    private CAATPredicate createPredicate(Relation r) {
+        return r.isSet() ? createSet(r) : createGraph(r);
+    }
+
+    private SetPredicate createSet(Relation r) {
+        Relation.checkIsSet(r);
+        SetPredicate set = r.getDependencies().isEmpty() ? new SimpleSet() : r.getDefinition().accept(setBuilder);
+        set.setName(r.getNameOrTerm());
+        if (!r.isRecursive()) {
+            predicateCache.put(r, set);
+        }
+        return set;
+    }
+
     private RelationGraph createGraph(Relation r) {
+        Relation.checkIsRelation(r);
         RelationGraph rg = r.getDependencies().isEmpty() ? new SimpleGraph() : r.getDefinition().accept(graphBuilder);
         rg.setName(r.getNameOrTerm());
         if (!r.isRecursive()) {
-            relGraphCache.put(r, rg);
+            predicateCache.put(r, rg);
         }
         return rg;
     }
 
-    private RelationGraph getOrCreateGraph(Relation r) {
-        if (relGraphCache.containsKey(r)) {
-            return relGraphCache.get(r);
-        }
-        return createGraph(r);
+    private SetPredicate getOrCreateSet(Relation r) {
+        return (SetPredicate) getOrCreatePredicate(Relation.checkIsSet(r));
     }
 
-    private EdgeModel getOrCreateEdgeModel(Edge e) {
+    private RelationGraph getOrCreateGraph(Relation r) {
+        return (RelationGraph) getOrCreatePredicate(Relation.checkIsRelation(r));
+    }
+
+    private CAATPredicate getOrCreatePredicate(Relation r) {
+        final CAATPredicate cached = predicateCache.get(r);
+        return cached != null ? cached : createPredicate(r);
+    }
+
+    private EdgeModel getOrCreateEdgeModel(Derivable derivable) {
+        final int id = derivable instanceof Element x ? x.getId() : -1;
+        final Edge e = derivable instanceof Edge x ? x : new Edge(id, id);
         if (edgeModelCache.containsKey(e)) {
             return edgeModelCache.get(e);
         }
@@ -263,8 +295,16 @@ public class ExecutionModelManager {
     private final class RelationGraphPopulator implements Visitor<Void> {
 
         @Override
+        public Void visitTagSet(TagSet tagSet) {
+            SimpleSet rg = (SimpleSet) predicateCache.get(tagSet.getDefinedRelation());
+            executionModel.getEventModelsByFilter(Filter.byTag(tagSet.getTag()))
+                    .forEach(e -> rg.add(new Element(e.getId())));
+            return null;
+        }
+
+        @Override
         public Void visitProgramOrder(ProgramOrder po) {
-            SimpleGraph rg = (SimpleGraph) relGraphCache.get(po.getDefinedRelation());
+            SimpleGraph rg = (SimpleGraph) predicateCache.get(po.getDefinedRelation());
             for (ThreadModel tm : executionModel.getThreadModels()) {
                 List<EventModel> eventList = tm.getVisibleEventModels();
                 if (eventList.size() <= 1) {
@@ -284,7 +324,7 @@ public class ExecutionModelManager {
 
         @Override
         public Void visitSameInstruction(SameInstruction si) {
-            final SimpleGraph rg = (SimpleGraph) relGraphCache.get(si.getDefinedRelation());
+            final SimpleGraph rg = (SimpleGraph) predicateCache.get(si.getDefinedRelation());
             final Map<Event, List<Event>> instructionMap = new HashMap<>();
             for (InstructionBoundary end : context.getTask().getProgram().getThreadEvents(InstructionBoundary.class)) {
                 // NOTE begin markers return empty transaction event lists
@@ -307,7 +347,7 @@ public class ExecutionModelManager {
         @Override
         public Void visitReadFrom(ReadFrom readFrom) {
             Relation relation = readFrom.getDefinedRelation();
-            SimpleGraph rg = (SimpleGraph) relGraphCache.get(relation);
+            SimpleGraph rg = (SimpleGraph) predicateCache.get(relation);
             EncodingContext.EdgeEncoder rf = context.edge(relation);
 
             for (Map.Entry<ValueModel, Set<LoadModel>> reads : executionModel.getAddressReadsMap().entrySet()) {
@@ -327,7 +367,7 @@ public class ExecutionModelManager {
         @Override
         public Void visitCoherence(Coherence coherence) {
             Relation relation = coherence.getDefinedRelation();
-            SimpleGraph rg = (SimpleGraph) relGraphCache.get(relation);
+            SimpleGraph rg = (SimpleGraph) predicateCache.get(relation);
             EncodingContext.EdgeEncoder co = context.edge(relation);
 
             for (Set<StoreModel> writes : executionModel.getAddressWritesMap().values()) {
@@ -353,7 +393,7 @@ public class ExecutionModelManager {
         }
 
         private Void visitReadModifyWrites(Relation relation) {
-            SimpleGraph rg = (SimpleGraph) relGraphCache.get(relation);
+            SimpleGraph rg = (SimpleGraph) predicateCache.get(relation);
             EncodingContext.EdgeEncoder rel = context.edge(relation);
 
             for (Map.Entry<ValueModel, Set<LoadModel>> reads : executionModel.getAddressReadsMap().entrySet()) {
@@ -372,7 +412,7 @@ public class ExecutionModelManager {
 
         @Override
         public Void visitSameLocation(SameLocation loc) {
-            SimpleGraph rg = (SimpleGraph) relGraphCache.get(loc.getDefinedRelation());
+            SimpleGraph rg = (SimpleGraph) predicateCache.get(loc.getDefinedRelation());
             final Map<ValueModel, Set<MemoryEventModel>> addressAccesses = new HashMap<>();
 
             for (Map.Entry<ValueModel, Set<LoadModel>> reads : executionModel.getAddressReadsMap().entrySet()) {
@@ -403,7 +443,7 @@ public class ExecutionModelManager {
 
         @Override
         public Void visitInternal(Internal in) {
-            SimpleGraph rg = (SimpleGraph) relGraphCache.get(in.getDefinedRelation());
+            SimpleGraph rg = (SimpleGraph) predicateCache.get(in.getDefinedRelation());
             for (ThreadModel tm : executionModel.getThreadModels()) {
                 List<EventModel> eventList = tm.getVisibleEventModels();
                 for (EventModel e1 : eventList) {
@@ -417,7 +457,7 @@ public class ExecutionModelManager {
 
         @Override
         public Void visitExternal(External ext) {
-            SimpleGraph rg = (SimpleGraph) relGraphCache.get(ext.getDefinedRelation());
+            SimpleGraph rg = (SimpleGraph) predicateCache.get(ext.getDefinedRelation());
             List<ThreadModel> threadList = executionModel.getThreadModels();
             for (int i = 0; i < threadList.size(); i ++) {
                 for (int j = i + 1; j < threadList.size(); j ++) {
@@ -433,29 +473,8 @@ public class ExecutionModelManager {
         }
 
         @Override
-        public Void visitSetIdentity(SetIdentity si) {
-            SimpleGraph rg = (SimpleGraph) relGraphCache.get(si.getDefinedRelation());
-            executionModel.getEventModelsByFilter(si.getFilter())
-                          .stream().forEach(e -> rg.add(new Edge(e.getId(), e.getId())));
-            return null;
-        }
-
-        @Override
-        public Void visitProduct(CartesianProduct cp) {
-            SimpleGraph rg = (SimpleGraph) relGraphCache.get(cp.getDefinedRelation());
-            List<EventModel> first = executionModel.getEventModelsByFilter(cp.getFirstFilter());
-            List<EventModel> second = executionModel.getEventModelsByFilter(cp.getSecondFilter());
-            for (EventModel e1 : first) {
-                for (EventModel e2 : second) {
-                    rg.add(new Edge(e1.getId(), e2.getId()));
-                }
-            }
-            return null;
-        }
-
-        @Override
         public Void visitControlDependency(DirectControlDependency ctrlDirect) {
-            SimpleGraph rg = (SimpleGraph) relGraphCache.get(ctrlDirect.getDefinedRelation());
+            SimpleGraph rg = (SimpleGraph) predicateCache.get(ctrlDirect.getDefinedRelation());
             for (ThreadModel tm : executionModel.getThreadModels()) {
                 for (EventModel em : tm.getEventModels()) {
                     if (em instanceof CondJumpModel cjm) {
@@ -474,7 +493,7 @@ public class ExecutionModelManager {
         }
 
         public void populateDynamicDefaultGraph(Relation r) {
-            SimpleGraph rg = (SimpleGraph) relGraphCache.get(r);
+            SimpleGraph rg = (SimpleGraph) predicateCache.get(r);
             EncodingContext.EdgeEncoder edge = context.edge(r);
             RelationAnalysis.Knowledge k = context.getAnalysisContext()
                                                   .get(RelationAnalysis.class)
@@ -503,6 +522,41 @@ public class ExecutionModelManager {
 
     }
 
+    private final class SetPredicateBuilder implements Visitor<SetPredicate> {
+
+        @Override
+        public SetPredicate visitDifference(Difference diff) {
+            return new DifferenceSet(getOrCreateSet(diff.getMinuend()), getOrCreateSet(diff.getSubtrahend()));
+        }
+
+        @Override
+        public SetPredicate visitUnion(Union un) {
+            List<Relation> ops = un.getOperands();
+            SetPredicate[] rgs = new SetPredicate[ops.size()];
+            for (int i = 0; i < rgs.length; i++) {
+                rgs[i] = getOrCreateSet(ops.get(i));
+            }
+            return new UnionSet(rgs);
+        }
+
+        @Override
+        public SetPredicate visitIntersection(Intersection inter) {
+            List<Relation> ops = inter.getOperands();
+            SetPredicate[] rgs = new SetPredicate[ops.size()];
+            for (int i = 0; i < rgs.length; i++) {
+                rgs[i] = getOrCreateSet(ops.get(i));
+            }
+            return new IntersectionSet(rgs);
+        }
+
+        @Override
+        public SetPredicate visitProjection(Projection projection) {
+            final RelationGraph graph = getOrCreateGraph(projection.getOperand());
+            final boolean dom = projection.getDimension() == Projection.Dimension.DOMAIN;
+            final ProjectionSet.Dimension dim = dom ? ProjectionSet.Dimension.DOMAIN : ProjectionSet.Dimension.RANGE;
+            return new ProjectionSet(graph, dim);
+        }
+    }
 
     // Create a the specific graph for derived relations, so that edges of them
     // can be computed automatically by PredicateHierarchy.
@@ -551,20 +605,13 @@ public class ExecutionModelManager {
         }
 
         @Override
-        public RelationGraph visitRangeIdentity(RangeIdentity ri) {
-            return new ProjectionIdentityGraph(
-                getOrCreateGraph(ri.getOperand()),
-                ProjectionIdentityGraph.Dimension.RANGE
-            );
+        public RelationGraph visitProduct(CartesianProduct product) {
+            return new CartesianGraph(getOrCreateSet(product.getDomain()), getOrCreateSet(product.getRange()));
         }
 
         @Override
-        public RelationGraph visitDomainIdentity(DomainIdentity di) {
-            return new ProjectionIdentityGraph(
-                getOrCreateGraph(di.getOperand()),
-                ProjectionIdentityGraph.Dimension.DOMAIN
-            );
+        public RelationGraph visitSetIdentity(SetIdentity id) {
+            return new SetIdentityGraph(getOrCreateSet(id.getDomain()));
         }
-
     }
 }

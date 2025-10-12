@@ -17,6 +17,7 @@ public class Intersection extends Definition {
     public Intersection(Relation r0, Relation... o) {
         super(r0, Stream.of(o).map(r -> "%s").collect(Collectors.joining(" & ")));
         operands = Stream.of(o).map(Preconditions::checkNotNull).toArray(Relation[]::new);
+        r0.checkEqualArityRelation(List.of(o));
     }
 
     public List<Relation> getOperands() { return Arrays.asList(operands); }

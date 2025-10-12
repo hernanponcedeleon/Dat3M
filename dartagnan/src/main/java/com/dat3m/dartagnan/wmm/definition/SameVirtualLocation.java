@@ -7,7 +7,7 @@ import com.dat3m.dartagnan.wmm.RelationNameRepository;
 public class SameVirtualLocation extends Definition {
 
     public SameVirtualLocation(Relation r0) {
-        super(r0, RelationNameRepository.VLOC);
+        super(Relation.checkIsRelation(r0), RelationNameRepository.VLOC);
     }
 
     @Override

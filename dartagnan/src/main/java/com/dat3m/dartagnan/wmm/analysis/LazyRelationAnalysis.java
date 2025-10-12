@@ -12,7 +12,6 @@ import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.RegReader;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.*;
-import com.dat3m.dartagnan.program.filter.Filter;
 import com.dat3m.dartagnan.verification.Context;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.wmm.Definition;
@@ -24,6 +23,7 @@ import com.dat3m.dartagnan.wmm.utils.graph.immutable.ImmutableMapEventGraph;
 import com.dat3m.dartagnan.wmm.utils.graph.immutable.LazyEventGraph;
 import com.dat3m.dartagnan.wmm.utils.graph.mutable.MutableEventGraph;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -133,25 +133,41 @@ public class LazyRelationAnalysis extends NativeRelationAnalysis {
 
         @Override
         public RelationAnalysis.Knowledge visitProduct(CartesianProduct definition) {
-            Filter domainFilter = definition.getFirstFilter();
-            Filter rangeFilter = definition.getSecondFilter();
+            final RelationAnalysis.Knowledge domain = getKnowledge(definition.getDomain());
+            final RelationAnalysis.Knowledge range = getKnowledge(definition.getRange());
+            final EventGraph mayDomain = domain.getMaySet();
+            final EventGraph mustDomain = domain.getMustSet();
+            final EventGraph mayRange = range.getMaySet();
+            final EventGraph mustRange = range.getMustSet();
             long start = System.currentTimeMillis();
-            Set<Event> domain = program.getThreadEvents().stream().filter(domainFilter::apply).collect(toSet());
-            Set<Event> range = program.getThreadEvents().stream().filter(rangeFilter::apply).collect(toSet());
-            EventGraph must = new LazyEventGraph(domain, range, (e1, e2) -> !exec.areMutuallyExclusive(e1, e2));
+            final EventGraph may = new LazyEventGraph(mayDomain.getDomain(), mayRange.getDomain(),
+                    (e1, e2) -> mayDomain.contains(e1, e1) && mayRange.contains(e2, e2) &&
+                            !exec.areMutuallyExclusive(e1, e2));
+            final EventGraph must = new LazyEventGraph(mustDomain.getDomain(), mustRange.getDomain(),
+                    (e1, e2) -> mustDomain.contains(e1, e1) && mustRange.contains(e2, e2) &&
+                            !exec.areMutuallyExclusive(e1, e2));
             time(definition, start, System.currentTimeMillis());
-            return new RelationAnalysis.Knowledge(must, must);
+            return new RelationAnalysis.Knowledge(may, must);
         }
 
         @Override
         public RelationAnalysis.Knowledge visitSetIdentity(SetIdentity definition) {
-            Filter filter = definition.getFilter();
+            final RelationAnalysis.Knowledge domain = getKnowledge(definition.getDomain());
+            final EventGraph mayDomain = domain.getMaySet();
+            final EventGraph mustDomain = domain.getMustSet();
             long start = System.currentTimeMillis();
-            Map<Event, Set<Event>> data = program.getThreadEvents().stream()
-                    .filter(filter::apply)
-                    .collect(Collectors.toMap(e -> e, ImmutableSet::of));
-            EventGraph must = new ImmutableMapEventGraph(data);
+            final EventGraph may = new LazyEventGraph(mayDomain.getDomain(), mayDomain.getDomain(),
+                    (e1, e2) -> e1.equals(e2) && mayDomain.contains(e1, e2));
+            final EventGraph must = new LazyEventGraph(mustDomain.getDomain(), mustDomain.getDomain(),
+                    (e1, e2) -> e1.equals(e2) && mustDomain.contains(e1, e2));
             time(definition, start, System.currentTimeMillis());
+            return new RelationAnalysis.Knowledge(may, must);
+        }
+
+        @Override
+        public RelationAnalysis.Knowledge visitTagSet(TagSet definition) {
+            final Set<Event> domain = Set.copyOf(program.getThreadEventsWithAllTags(definition.getTag()));
+            final EventGraph must = new LazyEventGraph(domain, domain, Object::equals);
             return new RelationAnalysis.Knowledge(must, must);
         }
 
@@ -455,31 +471,21 @@ public class LazyRelationAnalysis extends NativeRelationAnalysis {
         }
 
         @Override
-        public RelationAnalysis.Knowledge visitDomainIdentity(DomainIdentity definition) {
-            RelationAnalysis.Knowledge knowledge = getKnowledge(definition.getOperand());
-            long start = System.currentTimeMillis();
-            Map<Event, Set<Event>> mayMap = knowledge.getMaySet().getDomain().stream()
-                    .collect(Collectors.toMap(e -> e, ImmutableSet::of));
-            EventGraph may = new ImmutableMapEventGraph(mayMap);
-            Map<Event, Set<Event>> mustMap = knowledge.getMustSet()
-                    .filter(exec::isImplied).getDomain().stream()
-                    .collect(Collectors.toMap(e -> e, ImmutableSet::of));
-            EventGraph must = new ImmutableMapEventGraph(mustMap);
-            time(definition, start, System.currentTimeMillis());
-            return new RelationAnalysis.Knowledge(may, must);
-        }
-
-        @Override
-        public RelationAnalysis.Knowledge visitRangeIdentity(RangeIdentity definition) {
-            RelationAnalysis.Knowledge knowledge = getKnowledge(definition.getOperand());
-            long start = System.currentTimeMillis();
-            Map<Event, Set<Event>> mayMap = knowledge.getMaySet().getRange().stream()
-                    .collect(Collectors.toMap(e -> e, ImmutableSet::of));
-            EventGraph may = new ImmutableMapEventGraph(mayMap);
-            Map<Event, Set<Event>> mustMap = knowledge.getMustSet()
-                    .filter((e1, e2) -> exec.isImplied(e2, e1)).getRange().stream()
-                    .collect(Collectors.toMap(e -> e, ImmutableSet::of));
-            EventGraph must = new ImmutableMapEventGraph(mustMap);
+        public RelationAnalysis.Knowledge visitProjection(Projection definition) {
+            final RelationAnalysis.Knowledge knowledge = getKnowledge(definition.getOperand());
+            final EventGraph mayGraph = knowledge.getMaySet();
+            final EventGraph mustGraph = knowledge.getMustSet();
+            final boolean dom = definition.getDimension() == Projection.Dimension.DOMAIN;
+            final long start = System.currentTimeMillis();
+            final Set<Event> maySet = dom ? mayGraph.getDomain() : mayGraph.getRange();
+            final Set<Event> mustSet = new HashSet<>();
+            mustGraph.apply((e1, e2) -> {
+                if (exec.isImplied(dom ? e1 : e2, dom ? e2 : e1)) {
+                    mustSet.add(dom ? e1 : e2);
+                }
+            });
+            final EventGraph may = new ImmutableMapEventGraph(Maps.asMap(maySet, Set::of));
+            final EventGraph must = new ImmutableMapEventGraph(Maps.asMap(mustSet, Set::of));
             time(definition, start, System.currentTimeMillis());
             return new RelationAnalysis.Knowledge(may, must);
         }

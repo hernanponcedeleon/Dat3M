@@ -8,7 +8,7 @@ import com.dat3m.dartagnan.wmm.RelationNameRepository;
 public class DirectDataDependency extends Definition {
 
     public DirectDataDependency(Relation r0) {
-        super(r0, RelationNameRepository.IDD);
+        super(Relation.checkIsRelation(r0), RelationNameRepository.IDD);
     }
 
     @Override
