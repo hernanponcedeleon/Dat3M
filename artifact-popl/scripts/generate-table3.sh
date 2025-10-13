@@ -23,7 +23,13 @@ configurations=(
 format_time() {
   local input="$1"
 
-  if [[ "$input" == *"mins"* ]]; then
+  if [[ "$input" == *"hours"* ]]; then
+    local hms_part="${input%% *}"
+    IFS=':' read -r hrs mins secs <<< "$hms_part"
+    local rounded=$(printf "%dh %dm %ds\n" "$hrs" "$mins" "$secs")
+    echo "${rounded}"
+
+  elif [[ "$input" == *"mins"* ]]; then
     local min="${input%%:*}"
     local sec_part="${input#*:}"
     local sec="${sec_part%% *}"
