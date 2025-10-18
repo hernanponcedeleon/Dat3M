@@ -20,6 +20,16 @@
 
 include "lock.cat"
 
+(*
+ * Filter out syntactic annotations that do not provide the corresponding
+ * semantic ordering, such as Acquire on a store or Mb on a failed RMW.
+ *)
+let FailedRMW = RMW \ (domain(rmw) | range(rmw))
+let Acquire = ACQUIRE \ W \ FailedRMW
+let Release = RELEASE \ R \ FailedRMW
+let Mb = MB \ FailedRMW
+let Noreturn = NORETURN \ W
+
 (* Compute matching pairs of nested Srcu-lock and Srcu-unlock *)
 let carry-srcu-data = (data ; [~ Srcu-unlock] ; rf)*
 let pass-cookie = carry-srcu-data ; data
