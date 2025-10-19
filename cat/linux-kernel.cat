@@ -36,7 +36,7 @@ let pass-cookie = carry-srcu-data ; data
 let srcu-rscs = ([Srcu-lock] ; pass-cookie ; [Srcu-unlock]) & loc
 
 (* Compute marked and plain memory accesses *)
-let Marked = (~M) | IW | Once | Release | Acquire | (RMW & R) | (RMW & W) |
+let Marked = (~M) | IW | ONCE | RELEASE | ACQUIRE | MB | RMW |
 		LKR | LKW | UL | LF | RL | RU | Srcu-lock | Srcu-unlock
 let Plain = M \ Marked
 

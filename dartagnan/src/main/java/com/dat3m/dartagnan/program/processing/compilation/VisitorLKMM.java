@@ -37,13 +37,13 @@ public class VisitorLKMM extends VisitorBase {
         return eventSequence(
                 EventFactory.Svcomp.newNonDetChoice(havocRegister),
                 newJump(havocRegister, success),
-                newCoreLoad(dummy, address, Tag.Linux.MO_MB),
+                newCoreLoad(dummy, address, Tag.Linux.MO_ONCE),
                 newAssume(expressions.makeEQ(dummy, cmp)),
                 newGoto(end),
                 success, // RMW success branch
                 rmwLoad = newRMWLoadWithMo(dummy, address, Tag.Linux.MO_MB),
                 newAssume(unexpected),
-                newRMWStoreWithMo(rmwLoad, address, expressions.makeAdd(dummy, operand), Tag.Linux.MO_ONCE),
+                newRMWStoreWithMo(rmwLoad, address, expressions.makeAdd(dummy, operand), Tag.Linux.MO_MB),
                 end,
                 newLocal(resultRegister, expressions.makeCast(unexpected, resultRegister.getType()))
         );
@@ -72,9 +72,9 @@ public class VisitorLKMM extends VisitorBase {
                 newGoto(end),
                 success,
                 // CAS success branch
-                loadSuccess = newRMWLoadWithMo(dummy, address, Tag.Linux.loadMO(mo)),
+                loadSuccess = newRMWLoadWithMo(dummy, address, mo),
                 newAssume(expressions.makeEQ(dummy, cmp)),
-                newRMWStoreWithMo(loadSuccess, address, e.getStoreValue(), Tag.Linux.storeMO(mo)),
+                newRMWStoreWithMo(loadSuccess, address, e.getStoreValue(), mo),
                 end,
                 newLocal(resultRegister, dummy)
         );
@@ -87,12 +87,12 @@ public class VisitorLKMM extends VisitorBase {
         Expression address = e.getAddress();
 
         Register dummy = e.getFunction().newRegister(resultRegister.getType());
-        Load load = newRMWLoadWithMo(dummy, address, Tag.Linux.loadMO(mo));
+        Load load = newRMWLoadWithMo(dummy, address, mo);
         Expression storeValue = expressions.makeIntBinary(dummy, e.getOperator(), e.getOperand());
 
         return eventSequence(
                 load,
-                newRMWStoreWithMo(load, address, storeValue, Tag.Linux.storeMO(mo)),
+                newRMWStoreWithMo(load, address, storeValue, mo),
                 newLocal(resultRegister, dummy)
         );
     }
@@ -136,12 +136,12 @@ public class VisitorLKMM extends VisitorBase {
         String mo = e.getMo();
 
         Register dummy = e.getFunction().newRegister(resultRegister.getType());
-        Load load = newRMWLoadWithMo(dummy, address, Tag.Linux.loadMO(mo));
+        Load load = newRMWLoadWithMo(dummy, address, mo);
 
         return eventSequence(
                 load,
                 newLocal(dummy, expressions.makeIntBinary(dummy, e.getOperator(), e.getOperand())),
-                newRMWStoreWithMo(load, address, dummy, Tag.Linux.storeMO(mo)),
+                newRMWStoreWithMo(load, address, dummy, mo),
                 newLocal(resultRegister, dummy)
         );
     }
@@ -174,11 +174,11 @@ public class VisitorLKMM extends VisitorBase {
         Expression address = e.getAddress();
 
         Register dummy = e.getFunction().newRegister(resultRegister.getType());
-        Load load = newRMWLoadWithMo(dummy, address, Tag.Linux.loadMO(mo));
+        Load load = newRMWLoadWithMo(dummy, address, mo);
 
         return eventSequence(
                 load,
-                newRMWStoreWithMo(load, address, e.getValue(), Tag.Linux.storeMO(mo)),
+                newRMWStoreWithMo(load, address, e.getValue(), mo),
                 newLocal(resultRegister, dummy)
         );
     }
