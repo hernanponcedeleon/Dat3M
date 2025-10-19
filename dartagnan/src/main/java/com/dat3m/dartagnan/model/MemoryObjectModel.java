@@ -65,7 +65,7 @@ public final class MemoryObjectModel {
 
     @Override
     public String toString() {
-        return String.format("%s{address=%s, size=%s}", name, address, size);
+        return String.format("%s {address=%s, size=%s}", name, address, size);
     }
 
 

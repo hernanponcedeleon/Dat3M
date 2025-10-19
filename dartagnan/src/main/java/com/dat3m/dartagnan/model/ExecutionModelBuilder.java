@@ -5,7 +5,11 @@ import com.dat3m.dartagnan.encoding.TypedValue;
 import com.dat3m.dartagnan.model.events.*;
 import com.dat3m.dartagnan.model.events.special.StateSnapshotModel;
 import com.dat3m.dartagnan.model.events.threading.*;
+import com.dat3m.dartagnan.model.wmm.PredicateModel;
+import com.dat3m.dartagnan.model.wmm.RelationModel;
+import com.dat3m.dartagnan.model.wmm.SetModel;
 import com.dat3m.dartagnan.program.Program;
+import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.BlockingEvent;
 import com.dat3m.dartagnan.program.event.Event;
@@ -20,6 +24,7 @@ import com.dat3m.dartagnan.wmm.Relation;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
+import com.google.common.collect.ImmutableSet;
 
 import java.math.BigInteger;
 import java.util.*;
@@ -29,7 +34,8 @@ public class ExecutionModelBuilder {
     private final BiMap<Event, EventModel> event2Model = HashBiMap.create();
     private final BiMap<Thread, ThreadModel> thread2Model = HashBiMap.create();
     private final BiMap<MemoryObject, MemoryObjectModel> memoryObject2Model = HashBiMap.create();
-    private final BiMap<Relation, RelationModel> relation2Model = HashBiMap.create();
+    private final BiMap<Relation, PredicateModel> predicate2Model = HashBiMap.create();
+    private final BiMap<Register, RegisterModel> register2Model = HashBiMap.create();
 
     private final VerificationTask task;
     private final IREvaluator evaluator;
@@ -49,9 +55,10 @@ public class ExecutionModelBuilder {
         extractRelationModels(relations, event2Model.values(), evaluator);
     }
 
-    public void addRelationModel(Relation relation, RelationModel relationModel) {
+    public void addRelationModel(Relation relation, PredicateModel relationModel) {
         Preconditions.checkState(!event2Model.isEmpty(), "The program execution has not been extracted yet");
-        relation2Model.put(relation, relationModel);
+        Preconditions.checkArgument((relation.getArity() == Relation.Arity.BINARY) == relationModel instanceof RelationModel, "The relation %s has already been added", relation);
+        predicate2Model.put(relation, relationModel);
     }
 
     public EventModel getEventModel(Event event) {
@@ -68,7 +75,7 @@ public class ExecutionModelBuilder {
                         .sorted(Comparator.comparingInt(ThreadModel::getThreadId)).toList(),
                 memoryObject2Model.values().stream()
                         .sorted(Comparator.comparing(obj -> (BigInteger) obj.address().value())).toList(),
-                relation2Model.values().stream().toList()
+                predicate2Model.values().stream().toList()
         );
         return executionModel;
     }
@@ -76,7 +83,7 @@ public class ExecutionModelBuilder {
     public MappedExecutionModel buildMapped() {
         return new MappedExecutionModel(
                 build(),
-                new ModelMapping(event2Model, thread2Model, memoryObject2Model, relation2Model)
+                new ModelMapping(event2Model, thread2Model, memoryObject2Model, predicate2Model)
         );
     }
 
@@ -89,17 +96,26 @@ public class ExecutionModelBuilder {
         final BiMap<EventModel, Event> model2Event = event2Model.inverse();
 
         for (Relation relation : relations) {
-            final Map<EventModel, Set<EventModel>> edges = new HashMap<>();
-            for (EventModel x : domain) {
-                for (EventModel y : domain) {
-                    if (evaluator.hasEdge(relation, model2Event.get(x), model2Event.get(y))) {
-                        edges.computeIfAbsent(x, e -> new HashSet<>()).add(y);
+            if (relation.getArity() == Relation.Arity.BINARY) {
+                final Map<EventModel, Set<EventModel>> edges = new HashMap<>();
+                for (EventModel x : domain) {
+                    for (EventModel y : domain) {
+                        if (evaluator.hasEdge(relation, model2Event.get(x), model2Event.get(y))) {
+                            edges.computeIfAbsent(x, e -> new HashSet<>()).add(y);
+                        }
                     }
                 }
-            }
 
-            final RelationModel relationModel = new RelationModel(relation.getNameOrTerm(), edges);
-            relation2Model.put(relation, relationModel);
+                final RelationModel relationModel = new RelationModel(relation.getNameOrTerm(), edges);
+                predicate2Model.put(relation, relationModel);
+            } else if (relation.getArity() == Relation.Arity.UNARY) {
+                final Set<EventModel> elements = domain.stream()
+                        .filter(x -> evaluator.hasElement(relation, model2Event.get(x)))
+                        .collect(ImmutableSet.toImmutableSet());
+
+                final SetModel setModel = new SetModel(relation.getNameOrTerm(), elements);
+                predicate2Model.put(relation, setModel);
+            }
         }
     }
 
@@ -108,12 +124,16 @@ public class ExecutionModelBuilder {
             if (evaluator.threadHasStarted(thread)) {
                 final ThreadModel threadModel = new ThreadModel(thread.getName(), thread.getId());
                 thread2Model.put(thread, threadModel);
+
+                for (Register reg :  thread.getRegisters()) {
+                    register2Model.put(reg, new RegisterModel(reg.getType(), reg.getName(), threadModel));
+                }
             }
         }
 
         for (MemoryObject memoryObject : program.getMemory().getObjects()) {
             if (evaluator.isAllocated(memoryObject)) {
-                final MemoryObjectModel memoryObjectModel = new MemoryObjectModel(memoryObject.toString(),
+                final MemoryObjectModel memoryObjectModel = new MemoryObjectModel(memoryObject.getName(),
                         evaluator.address(memoryObject), evaluator.size(memoryObject));
                 memoryObject2Model.put(memoryObject, memoryObjectModel);
             }
@@ -176,7 +196,7 @@ public class ExecutionModelBuilder {
 
             if (e instanceof ThreadArgument arg) {
                 return new ThreadArgumentModel(
-                        arg.getResultRegister(),
+                        register2Model.get(arg.getResultRegister()),
                         arg.getIndex(),
                         (ThreadCreateModel) extract(arg.getCreator())
                 );
@@ -193,7 +213,7 @@ public class ExecutionModelBuilder {
             } else if (e instanceof ThreadJoin join) {
                 final boolean isBlocked = evaluator.isBlocked(join);
                 return new ThreadJoinModel(
-                        join.getResultRegister(),
+                        register2Model.get(join.getResultRegister()),
                         isBlocked ? null : evaluator.result(join),
                         thread2Model.get(join.getJoinThread()),
                         isBlocked
@@ -245,7 +265,7 @@ public class ExecutionModelBuilder {
         public EventModel visitExecutionStatus(ExecutionStatus e) {
             final EventModel trackedEvent = evaluator.isExecuted(e.getStatusEvent()) ?
                     extract(e.getStatusEvent()) : null;
-            return new ExecutionStatusModel(e.getResultRegister(), evaluator.result(e), trackedEvent);
+            return new ExecutionStatusModel(register2Model.get(e.getResultRegister()), evaluator.result(e), trackedEvent);
         }
 
         @Override
@@ -260,7 +280,7 @@ public class ExecutionModelBuilder {
 
         @Override
         public LocalModel visitLocal(Local e) {
-            return new LocalModel(e.getResultRegister(), evaluator.result(e));
+            return new LocalModel(register2Model.get(e.getResultRegister()), evaluator.result(e));
         }
 
         @Override
@@ -270,7 +290,7 @@ public class ExecutionModelBuilder {
 
         @Override
         public LoadModel visitLoad(Load e) {
-            return new LoadModel(e.getResultRegister(), evaluator.address(e), evaluator.value(e));
+            return new LoadModel(register2Model.get(e.getResultRegister()), evaluator.address(e), evaluator.value(e));
         }
 
         @Override
@@ -286,7 +306,7 @@ public class ExecutionModelBuilder {
         @Override
         public AllocModel visitAlloc(Alloc e) {
             return new AllocModel(
-                    e.getResultRegister(),
+                    register2Model.get(e.getResultRegister()),
                     e.getAllocationType(),
                     evaluator.result(e),
                     evaluator.evaluateAt(e.getArraySize(), e),

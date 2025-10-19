@@ -2,16 +2,16 @@ package com.dat3m.dartagnan.model.events.threading;
 
 import com.dat3m.dartagnan.encoding.TypedValue;
 import com.dat3m.dartagnan.model.AbstractEventModel;
+import com.dat3m.dartagnan.model.RegisterModel;
 import com.dat3m.dartagnan.model.events.RegWriterModel;
-import com.dat3m.dartagnan.program.Register;
 
 public final class ThreadArgumentModel extends AbstractEventModel implements RegWriterModel {
 
-    private final Register register;
+    private final RegisterModel register;
     private final int argumentIndex;
     private final ThreadCreateModel threadCreate;
 
-    public ThreadArgumentModel(Register register, int argumentIndex, ThreadCreateModel threadCreate) {
+    public ThreadArgumentModel(RegisterModel register, int argumentIndex, ThreadCreateModel threadCreate) {
         this.register = register;
         this.argumentIndex = argumentIndex;
         this.threadCreate = threadCreate;
@@ -21,7 +21,7 @@ public final class ThreadArgumentModel extends AbstractEventModel implements Reg
     public ThreadCreateModel getThreadCreate() { return threadCreate; }
 
     @Override
-    public Register getResultRegister() {
+    public RegisterModel getResultRegister() {
         return register;
     }
 

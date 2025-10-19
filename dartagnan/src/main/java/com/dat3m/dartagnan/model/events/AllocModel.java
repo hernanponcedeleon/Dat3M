@@ -3,18 +3,18 @@ package com.dat3m.dartagnan.model.events;
 import com.dat3m.dartagnan.encoding.TypedValue;
 import com.dat3m.dartagnan.expression.Type;
 import com.dat3m.dartagnan.model.AbstractEventModel;
-import com.dat3m.dartagnan.program.Register;
+import com.dat3m.dartagnan.model.RegisterModel;
 
 public final class AllocModel extends AbstractEventModel implements RegWriterModel {
 
-    private final Register register;
+    private final RegisterModel register;
     private final Type type;
     private final TypedValue<?, ?> address;
     private final TypedValue<?, ?> arraySize;
     private final TypedValue<?, ?> alignment;
     private final boolean isHeapAllocation;
 
-    public AllocModel(Register register, Type type, TypedValue<?, ?> address, TypedValue<?, ?> arraySize, TypedValue<?, ?> alignment, boolean isHeapAllocation) {
+    public AllocModel(RegisterModel register, Type type, TypedValue<?, ?> address, TypedValue<?, ?> arraySize, TypedValue<?, ?> alignment, boolean isHeapAllocation) {
         this.register = register;
         this.type = type;
         this.address = address;
@@ -36,7 +36,7 @@ public final class AllocModel extends AbstractEventModel implements RegWriterMod
     }
 
     @Override
-    public Register getResultRegister() {
+    public RegisterModel getResultRegister() {
         return register;
     }
 

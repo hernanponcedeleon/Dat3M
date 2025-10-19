@@ -1,21 +1,21 @@
 package com.dat3m.dartagnan.model.events;
 
 import com.dat3m.dartagnan.encoding.TypedValue;
-import com.dat3m.dartagnan.program.Register;
+import com.dat3m.dartagnan.model.RegisterModel;
 
 public final class LoadModel extends AbstractMemoryCoreEventModel implements RegWriterModel{
 
-    private final Register register;
+    private final RegisterModel register;
     private final TypedValue<?, ?> value;
 
-    public LoadModel(Register register, TypedValue<?, ?> address, TypedValue<?, ?> value) {
+    public LoadModel(RegisterModel register, TypedValue<?, ?> address, TypedValue<?, ?> value) {
         super(value.type(), address);
         this.register = register;
         this.value = value;
     }
 
     @Override
-    public Register getResultRegister() {
+    public RegisterModel getResultRegister() {
         return register;
     }
 

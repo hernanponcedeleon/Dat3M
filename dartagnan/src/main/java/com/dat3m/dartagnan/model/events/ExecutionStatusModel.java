@@ -3,22 +3,22 @@ package com.dat3m.dartagnan.model.events;
 import com.dat3m.dartagnan.encoding.TypedValue;
 import com.dat3m.dartagnan.model.AbstractEventModel;
 import com.dat3m.dartagnan.model.EventModel;
-import com.dat3m.dartagnan.program.Register;
+import com.dat3m.dartagnan.model.RegisterModel;
 
 public final class ExecutionStatusModel extends AbstractEventModel implements RegWriterModel {
 
-    private final Register register;
+    private final RegisterModel register;
     private final TypedValue<?, ?> value;
     private final EventModel trackedEvent; // NULL, if tracked event was not executed
 
-    public ExecutionStatusModel(Register register, TypedValue<?, ?> value, EventModel trackedEvent) {
+    public ExecutionStatusModel(RegisterModel register, TypedValue<?, ?> value, EventModel trackedEvent) {
         this.register = register;
         this.value = value;
         this.trackedEvent = trackedEvent;
     }
 
     @Override
-    public Register getResultRegister() {
+    public RegisterModel getResultRegister() {
         return register;
     }
 
