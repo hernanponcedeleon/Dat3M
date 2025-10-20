@@ -121,20 +121,20 @@ public final class ExpressionFactory {
         return makeIntCmp(leftOperand, signed ? IntCmpOp.GTE : IntCmpOp.UGTE, rightOperand);
 
     }
-    public Expression makeLTCompatibility(Expression leftOperand, Expression rightOperand, boolean signed) {
-        return makeIntCmpCompatibility(leftOperand, signed ? IntCmpOp.LT : IntCmpOp.ULT, rightOperand);
+    public Expression makeLTforced(Expression leftOperand, Expression rightOperand, boolean signed) {
+        return makeIntCmpForced(leftOperand, signed ? IntCmpOp.LT : IntCmpOp.ULT, rightOperand);
     }
 
-    public Expression makeGTCompatibility(Expression leftOperand, Expression rightOperand, boolean signed) {
-        return makeIntCmpCompatibility(leftOperand, signed ? IntCmpOp.GT : IntCmpOp.UGT, rightOperand);
+    public Expression makeGTforced(Expression leftOperand, Expression rightOperand, boolean signed) {
+        return makeIntCmpForced(leftOperand, signed ? IntCmpOp.GT : IntCmpOp.UGT, rightOperand);
     }
 
-    public Expression makeLTECompatibility(Expression leftOperand, Expression rightOperand, boolean signed) {
-        return makeIntCmpCompatibility(leftOperand, signed ? IntCmpOp.LTE : IntCmpOp.ULTE, rightOperand);
+    public Expression makeLTEforced(Expression leftOperand, Expression rightOperand, boolean signed) {
+        return makeIntCmpForced(leftOperand, signed ? IntCmpOp.LTE : IntCmpOp.ULTE, rightOperand);
     }
 
-    public Expression makeGTECompatibility(Expression leftOperand, Expression rightOperand, boolean signed) {
-        return makeIntCmpCompatibility(leftOperand, signed ? IntCmpOp.GTE : IntCmpOp.UGTE, rightOperand);
+    public Expression makeGTEforced(Expression leftOperand, Expression rightOperand, boolean signed) {
+        return makeIntCmpForced(leftOperand, signed ? IntCmpOp.GTE : IntCmpOp.UGTE, rightOperand);
     }
 
     public Expression makeNeg(Expression operand) {
@@ -205,12 +205,12 @@ public final class ExpressionFactory {
         return new IntCmpExpr(types.getBooleanType(), leftOperand, operator, rightOperand);
     }
 
-    public Expression makeIntCmpCompatibility(Expression leftOperand, IntCmpOp operator, Expression rightOperand) {
+    public Expression makeIntCmpForced(Expression leftOperand, IntCmpOp operator, Expression rightOperand) {
         if (leftOperand.getType() instanceof PointerType){
-            return makeIntCmpCompatibility(makePtrToIntCast(leftOperand), operator, rightOperand);
+            return makeIntCmpForced(makePtrToIntCast(leftOperand), operator, rightOperand);
         }
         if (rightOperand.getType() instanceof PointerType){
-            return makeIntCmpCompatibility(leftOperand, operator, makePtrToIntCast(rightOperand));
+            return makeIntCmpForced(leftOperand, operator, makePtrToIntCast(rightOperand));
         }
         return new IntCmpExpr(types.getBooleanType(), leftOperand, operator, rightOperand);
     }
@@ -219,12 +219,12 @@ public final class ExpressionFactory {
         return new IntBinaryExpr(leftOperand, operator, rightOperand);
     }
 
-    public Expression makeIntBinaryCompatibility(Expression leftOperand, IntBinaryOp operator, Expression rightOperand) {
+    public Expression makeIntBinaryForced(Expression leftOperand, IntBinaryOp operator, Expression rightOperand) {
         if (leftOperand.getType() instanceof PointerType){
-            return makeIntBinaryCompatibility(makePtrToIntCast(leftOperand), operator, rightOperand);
+            return makeIntBinaryForced(makePtrToIntCast(leftOperand), operator, rightOperand);
         }
         if (rightOperand.getType() instanceof PointerType){
-            return makeIntBinaryCompatibility(leftOperand, operator, makePtrToIntCast(rightOperand));
+            return makeIntBinaryForced(leftOperand, operator, makePtrToIntCast(rightOperand));
         }
         return new IntBinaryExpr(leftOperand, operator, rightOperand);
     }

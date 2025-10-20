@@ -587,10 +587,10 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
         final Expression compared = switch (operator) {
             case "eq" -> expressions.makeEQ(left, right);
             case "ne" -> expressions.makeNEQ(left, right);
-            case "slt", "ult" -> expressions.makeLTCompatibility(left, right, operator.startsWith("s"));
-            case "sle", "ule" -> expressions.makeLTECompatibility(left, right, operator.startsWith("s"));
-            case "sgt", "ugt" -> expressions.makeGTCompatibility(left, right, operator.startsWith("s"));
-            case "sge", "uge" -> expressions.makeGTECompatibility(left, right, operator.startsWith("s"));
+            case "slt", "ult" -> expressions.makeLTforced(left, right, operator.startsWith("s"));
+            case "sle", "ule" -> expressions.makeLTEforced(left, right, operator.startsWith("s"));
+            case "sgt", "ugt" -> expressions.makeGTforced(left, right, operator.startsWith("s"));
+            case "sge", "uge" -> expressions.makeGTEforced(left, right, operator.startsWith("s"));
             default -> throw new ParsingException(String.format("Unknown predicate in %s.", ctx.getText()));
         };
         // LLVM does not support a distinct boolean type.
