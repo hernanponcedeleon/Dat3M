@@ -1654,7 +1654,7 @@ public class Intrinsics {
         final int destsz = destszValue.getValueAsInt();
 
         // Runtime checks
-        final Expression nullExpr = expressions.makeZero(types.getArchType());
+        final Expression nullExpr = expressions.makeNullLiteral();
         final Expression destIsNull = expressions.makeEQ(dest, nullExpr);
         final Expression srcIsNull = expressions.makeEQ(src, nullExpr);
 
@@ -1669,8 +1669,8 @@ public class Intrinsics {
         final Expression countGtdestszExpr = expressions.makeGT(castCountExpr, castDestszExpr, false);
         final Expression invalidCount = expressions.makeOr(countGtMax, countGtdestszExpr);
         final Expression overlap = expressions.makeAnd(
-                expressions.makeGT(expressions.makeAdd(src, castCountExpr), dest, false),
-                expressions.makeGT(expressions.makeAdd(dest, castCountExpr), src, false));
+                expressions.makeGT(expressions.makePtrToIntCast(expressions.makePtrAdd(src, castCountExpr)), expressions.makePtrToIntCast(dest), false),
+                expressions.makeGT(expressions.makePtrToIntCast(expressions.makePtrAdd(dest, castCountExpr)), expressions.makePtrToIntCast(src), false));
 
         final List<Event> replacement = new ArrayList<>();
         
@@ -1707,7 +1707,7 @@ public class Intrinsics {
         ));
         for (int i = 0; i < destsz; i++) {
             final Expression offset = expressions.makeValue(i, types.getArchType());
-            final Expression destAddr = expressions.makeAdd(dest, offset);
+            final Expression destAddr = expressions.makePtrAdd(dest, offset);
             final Expression zero = expressions.makeZero(types.getArchType());
             replacement.add(
                 newStore(destAddr, zero)
@@ -1723,8 +1723,8 @@ public class Intrinsics {
         replacement.add(success);        
         for (int i = 0; i < count; i++) {
             final Expression offset = expressions.makeValue(i, types.getArchType());
-            final Expression srcAddr = expressions.makeAdd(src, offset);
-            final Expression destAddr = expressions.makeAdd(dest, offset);
+            final Expression srcAddr = expressions.makePtrAdd(src, offset);
+            final Expression destAddr = expressions.makePtrAdd(dest, offset);
             // FIXME: We have no other choice but to load ptr-sized chunks for now
             final Register reg = caller.getOrNewRegister("__memcpy_" + i, types.getArchType());
 

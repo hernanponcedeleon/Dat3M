@@ -106,18 +106,30 @@ public final class ExpressionFactory {
     }
 
     public Expression makeLT(Expression leftOperand, Expression rightOperand, boolean signed) {
+        if (leftOperand.getType() instanceof PointerType){
+            return makeIntCmp(makePtrToIntCast(leftOperand), signed ? IntCmpOp.LT : IntCmpOp.ULT, makePtrToIntCast(rightOperand));
+        }
         return makeIntCmp(leftOperand, signed ? IntCmpOp.LT : IntCmpOp.ULT, rightOperand);
     }
 
     public Expression makeGT(Expression leftOperand, Expression rightOperand, boolean signed) {
+        if (leftOperand.getType() instanceof PointerType){
+            return makeIntCmp(makePtrToIntCast(leftOperand), signed ? IntCmpOp.GT : IntCmpOp.UGT, makePtrToIntCast(rightOperand));
+        }
         return makeIntCmp(leftOperand, signed ? IntCmpOp.GT : IntCmpOp.UGT, rightOperand);
     }
 
     public Expression makeLTE(Expression leftOperand, Expression rightOperand, boolean signed) {
+        if (leftOperand.getType() instanceof PointerType){
+            return makeIntCmp(makePtrToIntCast(leftOperand), signed ? IntCmpOp.LTE : IntCmpOp.ULTE, makePtrToIntCast(rightOperand));
+        }
         return makeIntCmp(leftOperand, signed ? IntCmpOp.LTE : IntCmpOp.ULTE, rightOperand);
     }
 
     public Expression makeGTE(Expression leftOperand, Expression rightOperand, boolean signed) {
+        if (leftOperand.getType() instanceof PointerType){
+            return makeIntCmp(makePtrToIntCast(leftOperand), signed ? IntCmpOp.GTE : IntCmpOp.UGTE, makePtrToIntCast(rightOperand));
+        }
         return makeIntCmp(leftOperand, signed ? IntCmpOp.GTE : IntCmpOp.UGTE, rightOperand);
     }
 
@@ -316,10 +328,6 @@ public final class ExpressionFactory {
 
     // -----------------------------------------------------------------------------------------------------------------
     // Pointers
-
-    public PointerLiteral makeValue(BigInteger value, PointerType type) {
-        return new PointerLiteral(type, value);
-    }
 
     public Expression makeGetElementPointer(Type indexingType, Expression base, List<Expression> offsets) {
         Preconditions.checkArgument(base.getType().equals(types.getPointerType()),
