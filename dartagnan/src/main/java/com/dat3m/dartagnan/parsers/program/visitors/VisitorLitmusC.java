@@ -467,7 +467,7 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
         Register register = getReturnRegister(false);
         Expression v1 = (Expression)ctx.re(0).accept(this);
         Expression v2 = (Expression)ctx.re(1).accept(this);
-        Expression result = expressions.makeIntBinary(v1, ctx.opArith().op, v2);
+        Expression result = expressions.makeIntBinaryCompatibility(v1, ctx.opArith().op, v2);
         return assignToReturnRegister(register, result);
     }
 
@@ -691,7 +691,7 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
     private Expression getAddress(LitmusCParser.ReContext ctx){
         Expression address = (Expression)ctx.accept(this);
         if(address.getType() instanceof IntegerType){
-           return address; //todo: remove
+           return expressions.makeIntToPtrCast(address);
         }
         if(address.getType() instanceof PointerType){
             return address;

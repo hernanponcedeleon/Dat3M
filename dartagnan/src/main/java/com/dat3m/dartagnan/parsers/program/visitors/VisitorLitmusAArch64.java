@@ -6,6 +6,7 @@ import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.integers.IntLiteral;
 import com.dat3m.dartagnan.expression.type.IntegerType;
+import com.dat3m.dartagnan.expression.type.PointerType;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.parsers.LitmusAArch64BaseVisitor;
 import com.dat3m.dartagnan.parsers.LitmusAArch64Parser.*;
@@ -36,6 +37,7 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object> {
     private final IntegerType i16 = types.getIntegerType(16);
     private final IntegerType i32 = types.getIntegerType(32);
     private final IntegerType i64 = types.getIntegerType(64);
+    private final PointerType pointerType = types.getPointerType();
     private final ExpressionFactory expressions = programBuilder.getExpressionFactory();
     private int mainThread;
     private int threadCount = 0;
@@ -427,6 +429,7 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object> {
         }
         return expressions.parseValue(ctx.getText(), type);
     }
+
 
     private Register shrinkRegister(Register other, Register32Context ctx, boolean halfWordSize, boolean byteSize) {
         checkArgument(other.getType().equals(i64), "Non-64-bit %s", other);

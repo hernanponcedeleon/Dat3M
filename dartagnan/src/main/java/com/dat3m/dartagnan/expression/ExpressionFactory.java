@@ -106,31 +106,35 @@ public final class ExpressionFactory {
     }
 
     public Expression makeLT(Expression leftOperand, Expression rightOperand, boolean signed) {
-        if (leftOperand.getType() instanceof PointerType){
-            return makeIntCmp(makePtrToIntCast(leftOperand), signed ? IntCmpOp.LT : IntCmpOp.ULT, makePtrToIntCast(rightOperand));
-        }
         return makeIntCmp(leftOperand, signed ? IntCmpOp.LT : IntCmpOp.ULT, rightOperand);
     }
 
     public Expression makeGT(Expression leftOperand, Expression rightOperand, boolean signed) {
-        if (leftOperand.getType() instanceof PointerType){
-            return makeIntCmp(makePtrToIntCast(leftOperand), signed ? IntCmpOp.GT : IntCmpOp.UGT, makePtrToIntCast(rightOperand));
-        }
         return makeIntCmp(leftOperand, signed ? IntCmpOp.GT : IntCmpOp.UGT, rightOperand);
     }
 
     public Expression makeLTE(Expression leftOperand, Expression rightOperand, boolean signed) {
-        if (leftOperand.getType() instanceof PointerType){
-            return makeIntCmp(makePtrToIntCast(leftOperand), signed ? IntCmpOp.LTE : IntCmpOp.ULTE, makePtrToIntCast(rightOperand));
-        }
         return makeIntCmp(leftOperand, signed ? IntCmpOp.LTE : IntCmpOp.ULTE, rightOperand);
     }
 
     public Expression makeGTE(Expression leftOperand, Expression rightOperand, boolean signed) {
-        if (leftOperand.getType() instanceof PointerType){
-            return makeIntCmp(makePtrToIntCast(leftOperand), signed ? IntCmpOp.GTE : IntCmpOp.UGTE, makePtrToIntCast(rightOperand));
-        }
         return makeIntCmp(leftOperand, signed ? IntCmpOp.GTE : IntCmpOp.UGTE, rightOperand);
+
+    }
+    public Expression makeLTCompatibility(Expression leftOperand, Expression rightOperand, boolean signed) {
+        return makeIntCmpCompatibility(leftOperand, signed ? IntCmpOp.LT : IntCmpOp.ULT, rightOperand);
+    }
+
+    public Expression makeGTCompatibility(Expression leftOperand, Expression rightOperand, boolean signed) {
+        return makeIntCmpCompatibility(leftOperand, signed ? IntCmpOp.GT : IntCmpOp.UGT, rightOperand);
+    }
+
+    public Expression makeLTECompatibility(Expression leftOperand, Expression rightOperand, boolean signed) {
+        return makeIntCmpCompatibility(leftOperand, signed ? IntCmpOp.LTE : IntCmpOp.ULTE, rightOperand);
+    }
+
+    public Expression makeGTECompatibility(Expression leftOperand, Expression rightOperand, boolean signed) {
+        return makeIntCmpCompatibility(leftOperand, signed ? IntCmpOp.GTE : IntCmpOp.UGTE, rightOperand);
     }
 
     public Expression makeNeg(Expression operand) {
@@ -201,7 +205,27 @@ public final class ExpressionFactory {
         return new IntCmpExpr(types.getBooleanType(), leftOperand, operator, rightOperand);
     }
 
+    public Expression makeIntCmpCompatibility(Expression leftOperand, IntCmpOp operator, Expression rightOperand) {
+        if (leftOperand.getType() instanceof PointerType){
+            return makeIntCmpCompatibility(makePtrToIntCast(leftOperand), operator, rightOperand);
+        }
+        if (rightOperand.getType() instanceof PointerType){
+            return makeIntCmpCompatibility(leftOperand, operator, makePtrToIntCast(rightOperand));
+        }
+        return new IntCmpExpr(types.getBooleanType(), leftOperand, operator, rightOperand);
+    }
+
     public Expression makeIntBinary(Expression leftOperand, IntBinaryOp operator, Expression rightOperand) {
+        return new IntBinaryExpr(leftOperand, operator, rightOperand);
+    }
+
+    public Expression makeIntBinaryCompatibility(Expression leftOperand, IntBinaryOp operator, Expression rightOperand) {
+        if (leftOperand.getType() instanceof PointerType){
+            return makeIntBinaryCompatibility(makePtrToIntCast(leftOperand), operator, rightOperand);
+        }
+        if (rightOperand.getType() instanceof PointerType){
+            return makeIntBinaryCompatibility(leftOperand, operator, makePtrToIntCast(rightOperand));
+        }
         return new IntBinaryExpr(leftOperand, operator, rightOperand);
     }
 
