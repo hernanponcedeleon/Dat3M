@@ -390,10 +390,10 @@ public class VisitorAsmArm extends AsmArmBaseVisitor<Object> {
 
     @Override
     public Object visitValue(AsmArmParser.ValueContext ctx) {
-        checkState(expectedType instanceof IntegerType || expectedType instanceof PointerType, "Expected type is not an integer type");
+        checkState(expectedType instanceof IntegerType, "Expected type is not an integer type");
         String valueString = ctx.Numbers().getText();
         BigInteger value = new BigInteger(valueString);
-        return expectedType instanceof IntegerType ? expressions.makeValue(value, (IntegerType) expectedType):expressions.makeValue(value, (PointerType) expectedType);
+        return expressions.makeValue(value, (IntegerType) expectedType);
     }
 
     @Override

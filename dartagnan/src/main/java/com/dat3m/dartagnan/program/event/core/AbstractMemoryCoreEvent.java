@@ -3,6 +3,7 @@ package com.dat3m.dartagnan.program.event.core;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionVisitor;
 import com.dat3m.dartagnan.expression.Type;
+import com.dat3m.dartagnan.expression.type.PointerType;
 import com.dat3m.dartagnan.program.event.AbstractEvent;
 import static com.dat3m.dartagnan.program.event.Tag.MEMORY;
 import static com.dat3m.dartagnan.program.event.Tag.VISIBLE;
@@ -19,6 +20,7 @@ public abstract class AbstractMemoryCoreEvent extends AbstractEvent implements M
     protected Type accessType;
 
     public AbstractMemoryCoreEvent(Expression address, Type accessType) {
+        Preconditions.checkArgument(address.getType() instanceof PointerType);
         this.address = Preconditions.checkNotNull(address);
         this.accessType = accessType;
         addTags(VISIBLE, MEMORY);

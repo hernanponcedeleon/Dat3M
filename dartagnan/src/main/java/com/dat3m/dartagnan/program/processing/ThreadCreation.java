@@ -187,10 +187,6 @@ public class ThreadCreation implements ProgramProcessor {
             final Expression tidExpr_ = join.getTid();
             final Expression tidExpr = tidExpr_.getType() instanceof PointerType ? expressions.makePtrToIntCast(tidExpr_) : tidExpr_;
 
-
-
-
-
             final Register joinRegister = join.getResultRegister();
             final IntegerType statusType = (IntegerType) ((AggregateType)joinRegister.getType()).getFields().get(0).type();
             final Type retValType = ((AggregateType)joinRegister.getType()).getFields().get(1).type();
@@ -342,11 +338,18 @@ public class ThreadCreation implements ProgramProcessor {
             }
             if (call.getCalledFunction().getIntrinsicInfo() == Intrinsics.Info.P_THREAD_SELF) {
                 final Register resultRegister = getResultRegister(call);
-                assert resultRegister.getType() instanceof IntegerType;
+                Type regType = resultRegister.getType();
+                assert regType instanceof PointerType || regType instanceof IntegerType;
                 assert call.getArguments().isEmpty();
-                final Expression tidExpr = new TIdExpr((IntegerType) resultRegister.getType(), call.getThread());
-                final Local tidAssignment = newLocal(resultRegister, tidExpr);
-                IRHelper.replaceWithMetadata(call, tidAssignment);
+                if (regType instanceof PointerType) {
+                    final Expression tidExpr = new TIdExpr(archType, call.getThread());
+                    final Local tidAssignment = newLocal(resultRegister, expressions.makeIntToPtrCast(tidExpr));
+                    IRHelper.replaceWithMetadata(call, tidAssignment);
+                }else {
+                    final Expression tidExpr = new TIdExpr((IntegerType) regType, call.getThread());
+                    final Local tidAssignment = newLocal(resultRegister, tidExpr);
+                    IRHelper.replaceWithMetadata(call, tidAssignment);
+                }
             }
         }
     }
@@ -659,6 +662,5 @@ public class ThreadCreation implements ProgramProcessor {
             return visitor.visitLeafExpression(this);
         }
     }
-
 
 }

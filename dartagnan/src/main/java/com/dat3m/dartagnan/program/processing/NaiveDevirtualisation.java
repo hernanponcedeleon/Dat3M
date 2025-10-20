@@ -4,11 +4,9 @@ import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.ExpressionVisitor;
 import com.dat3m.dartagnan.expression.integers.IntLiteral;
-import com.dat3m.dartagnan.expression.pointer.PointerLiteral;
 import com.dat3m.dartagnan.expression.processing.ExprTransformer;
 import com.dat3m.dartagnan.expression.processing.ExpressionInspector;
 import com.dat3m.dartagnan.expression.type.IntegerType;
-import com.dat3m.dartagnan.expression.type.PointerType;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.IRHelper;
@@ -100,12 +98,12 @@ public class NaiveDevirtualisation implements ProgramProcessor {
         }
     }
 
-    private boolean assignAddressToFunction(Function func, Map<Function, PointerLiteral> func2AddressMap) {
-        final PointerType ptrType = TypeFactory.getInstance().getPointerType();
+    private boolean assignAddressToFunction(Function func, Map<Function, IntLiteral> func2AddressMap) {
+        final IntegerType ptrType = TypeFactory.getInstance().getArchType();
         final ExpressionFactory expressions = ExpressionFactory.getInstance();
         if (!func2AddressMap.containsKey(func)) {
             logger.debug("Assigned address \"{}\" to function \"{}\"", nextAvailableFuncAddress, func);
-            func2AddressMap.put(func, expressions.makeValue(BigInteger.valueOf(nextAvailableFuncAddress), ptrType));
+            func2AddressMap.put(func, expressions.makeValue(BigInteger.valueOf(nextAvailableFuncAddress),ptrType));
             nextAvailableFuncAddress += 8;
             return true;
         }
@@ -122,7 +120,7 @@ public class NaiveDevirtualisation implements ProgramProcessor {
         }
     }
 
-    private void devirtualise(Function function, Map<Function, PointerLiteral> func2AddressMap) {
+    private void devirtualise(Function function, Map<Function, IntLiteral> func2AddressMap) {
         final ExpressionFactory expressions = ExpressionFactory.getInstance();
 
         int devirtCounter = 0;
@@ -150,9 +148,9 @@ public class NaiveDevirtualisation implements ProgramProcessor {
             final Expression funcPtr = call.getCallTarget();
             // Construct call table
             for (Function possibleTarget : possibleTargets) {
-                final PointerLiteral targetAddress = func2AddressMap.get(possibleTarget);
+                final IntLiteral targetAddress = func2AddressMap.get(possibleTarget);
                 final Label caseLabel = EventFactory.newLabel(String.format("__Ldevirt_%s#%s", targetAddress.getValue(), devirtCounter));
-                final CondJump caseJump = EventFactory.newJump(expressions.makeEQ(funcPtr, targetAddress), caseLabel);
+                final CondJump caseJump = EventFactory.newJump(expressions.makeEQ(expressions.makePtrToIntCast(funcPtr), targetAddress), caseLabel);
                 caseLabels.add(caseLabel);
                 caseJumps.add(caseJump);
             }
@@ -181,7 +179,7 @@ public class NaiveDevirtualisation implements ProgramProcessor {
         return !call.isDirectCall();
     }
 
-    private List<Function> getPossibleTargets(CallEvent call, Map<Function, PointerLiteral> func2AddressMap) {
+    private List<Function> getPossibleTargets(CallEvent call, Map<Function, IntLiteral> func2AddressMap) {
         Preconditions.checkArgument(needsDevirtualization(call));
         return func2AddressMap.keySet().stream()
                 .filter(f -> f.getFunctionType() == call.getCallType())
@@ -213,7 +211,7 @@ public class NaiveDevirtualisation implements ProgramProcessor {
 
     private static class FunctionToAddressTransformer extends ExprTransformer {
 
-        private final Map<Function, PointerLiteral> func2AddressMap = new HashMap<>();
+        private final Map<Function, IntLiteral> func2AddressMap = new HashMap<>();
 
         @Override
         public Expression visitFunction(Function function) {
