@@ -216,21 +216,21 @@ public class Wmm {
             case EMPTY -> new Empty(r);
             case IDDTRANS -> new TransitiveClosure(r, getOrCreatePredefinedRelation(IDD));
             case DATA -> {
-                final Relation memory = getOrCreatePredefinedRelation(MEMORY);
-                yield new Intersection(r, getOrCreatePredefinedRelation(IDDTRANS), product(memory, memory));
+                final Relation visible = getOrCreatePredefinedRelation(VISIBLE);
+                yield new Intersection(r, getOrCreatePredefinedRelation(IDDTRANS), product(visible, visible));
             }
             case ADDR -> {
+                final Relation visible = getOrCreatePredefinedRelation(VISIBLE);
                 final Relation memory = getOrCreatePredefinedRelation(MEMORY);
                 final Relation idd = getOrCreatePredefinedRelation(IDDTRANS);
                 final Relation addr = getOrCreatePredefinedRelation(ADDRDIRECT);
-                yield new Intersection(r, union(addr, composition(idd, addr)), product(memory, memory));
+                yield new Intersection(r, union(addr, composition(idd, addr)), product(visible, memory));
             }
             case CTRL -> {
-                final Relation memory = getOrCreatePredefinedRelation(MEMORY);
                 final Relation visible = getOrCreatePredefinedRelation(VISIBLE);
                 final Relation idd = getOrCreatePredefinedRelation(IDDTRANS);
                 final Relation ctrl = getOrCreatePredefinedRelation(CTRLDIRECT);
-                yield new Intersection(r, composition(idd, ctrl), product(memory, visible));
+                yield new Intersection(r, composition(idd, ctrl), product(visible, visible));
             }
             case SR -> new SameScope(r);
             case SCTA -> new SameScope(r, Tag.PTX.CTA);

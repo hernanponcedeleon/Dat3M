@@ -12,6 +12,7 @@ import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.CondJump;
 import com.dat3m.dartagnan.program.event.core.ControlBarrier;
+import com.dat3m.dartagnan.program.event.core.tangles.NonUniformOpBase;
 import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.event.lang.svcomp.LoopBound;
 import com.dat3m.dartagnan.program.event.metadata.UnrollingBound;
@@ -198,6 +199,9 @@ public class LoopUnrolling implements ProgramProcessor {
             } else {
                 final Consumer<Event> copyUpdater = copy -> {
                     if (copy instanceof ControlBarrier copyBar) {
+                        copyBar.setInstanceId(String.format("%s.%s", copyBar.getInstanceId(), loopId));
+                    }
+                    if (copy instanceof NonUniformOpBase copyBar) {
                         copyBar.setInstanceId(String.format("%s.%s", copyBar.getInstanceId(), loopId));
                     }
                 };

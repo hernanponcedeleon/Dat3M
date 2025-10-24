@@ -18,6 +18,8 @@ import com.dat3m.dartagnan.program.event.MemoryEvent;
 import com.dat3m.dartagnan.program.event.RegReader;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.*;
+import com.dat3m.dartagnan.program.event.core.tangles.*;
+import com.dat3m.dartagnan.program.event.core.InstructionBoundary;
 import com.dat3m.dartagnan.program.event.lang.svcomp.EndAtomic;
 import com.dat3m.dartagnan.program.filter.Filter;
 import com.dat3m.dartagnan.program.memory.VirtualMemoryObject;
@@ -35,8 +37,6 @@ import com.dat3m.dartagnan.wmm.utils.Tuple;
 import com.dat3m.dartagnan.wmm.utils.graph.EventGraph;
 import com.dat3m.dartagnan.wmm.utils.graph.mutable.MapEventGraph;
 import com.dat3m.dartagnan.wmm.utils.graph.mutable.MutableEventGraph;
-
-
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 
@@ -1069,6 +1069,21 @@ public class NativeRelationAnalysis implements RelationAnalysis {
                         .filter(e2 -> !exec.areMutuallyExclusive(e1, e2))
                         .filter(e2 -> !e2.hasTag(PTX.ARRIVE))
                         .forEach(e2 -> must.add(e1, e2));
+            }
+
+            Map<String, Set<NonUniformOpBase>> groups = new HashMap<>();
+            program.getThreadEvents(NonUniformOpBase.class).forEach(e ->
+                    groups.computeIfAbsent(e.getName(), x -> new HashSet<>()).add(e));
+            for (Set<NonUniformOpBase> group : groups.values()) {
+                for (NonUniformOpBase e1 : group) {
+                    ScopeHierarchy h1 = e1.getThread().getScopeHierarchy();
+                    String scope = e1.getExecScope();
+                    for (NonUniformOpBase e2 : group) {
+                        if (h1.canSyncAtScope(e2.getThread().getScopeHierarchy(), scope) && e1.getInstanceId().equals(e2.getInstanceId())) {
+                            must.add(e1, e2);
+                        }
+                    }
+                }
             }
 
             MutableEventGraph may = MapEventGraph.from(must);

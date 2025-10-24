@@ -13,6 +13,8 @@ import com.dat3m.dartagnan.program.event.core.GenericVisibleEvent;
 import com.dat3m.dartagnan.program.event.core.Load;
 import com.dat3m.dartagnan.program.event.core.Store;
 import com.dat3m.dartagnan.program.event.lang.spirv.*;
+import com.dat3m.dartagnan.program.event.core.tangles.*;
+import com.dat3m.dartagnan.expression.tangles.TangleType;
 
 import java.util.Collections;
 import java.util.HashSet;
@@ -20,6 +22,7 @@ import java.util.List;
 import java.util.Set;
 
 import static com.dat3m.dartagnan.program.event.EventFactory.*;
+import static com.dat3m.dartagnan.expression.tangles.TangleType.*;
 
 public class VisitorSpirvVulkan extends VisitorVulkan {
 
@@ -67,6 +70,70 @@ public class VisitorSpirvVulkan extends VisitorVulkan {
             barrier.removeTags(Tag.FENCE);
         }
         return super.visitControlBarrier(barrier);
+    }
+
+    @Override
+    public List<Event> visitNonUniformOpBool(NonUniformOpBool e) {
+        String execScope = Tag.Spirv.toVulkanTag(e.getExecScope());
+        NonUniformOpBool nonUniform;
+        switch (e.getTangleType()) {
+            case ALL:
+                nonUniform = EventFactory.newNonUniformOpAll(e.getInstanceId(), execScope, e.getResultRegister(), e.getExpression());
+                break;
+            case ANY:
+                nonUniform = EventFactory.newNonUniformOpAny(e.getInstanceId(), execScope, e.getResultRegister(), e.getExpression());
+                break;
+            default:
+                throw new UnsupportedOperationException("Unsupported operation " + e.getTangleType());
+        };
+        return eventSequence(addVulkanTags(e, nonUniform));
+    }
+
+    @Override
+    public List<Event> visitNonUniformOpArithmetic(NonUniformOpArithmetic e) {
+        String execScope = Tag.Spirv.toVulkanTag(e.getExecScope());
+        NonUniformOpArithmetic nonUniform;
+        switch (e.getTangleType()) {
+            case IADD:
+                nonUniform = EventFactory.newNonUniformOpIAdd(e.getInstanceId(), execScope, e.getResultRegister(), e.getExpression(), e.getGroupOperation());
+                break;
+            case IMUL:
+                nonUniform = EventFactory.newNonUniformOpIMul(e.getInstanceId(), execScope, e.getResultRegister(), e.getExpression(), e.getGroupOperation());
+                break;
+            case IAND:
+                nonUniform = EventFactory.newNonUniformOpIAnd(e.getInstanceId(), execScope, e.getResultRegister(), e.getExpression(), e.getGroupOperation());
+                break;
+            case IOR:
+                nonUniform = EventFactory.newNonUniformOpIOr(e.getInstanceId(), execScope, e.getResultRegister(), e.getExpression(), e.getGroupOperation());
+                break;
+            case IXOR:
+                nonUniform = EventFactory.newNonUniformOpIXor(e.getInstanceId(), execScope, e.getResultRegister(), e.getExpression(), e.getGroupOperation());
+                break;
+            default:
+                throw new UnsupportedOperationException("Unsupported operation " + e.getTangleType());
+        };
+        return eventSequence(addVulkanTags(e, nonUniform));
+    }
+
+    @Override
+    public List<Event> visitNonUniformOpBroadcast(NonUniformOpBroadcast e) {
+        String execScope = Tag.Spirv.toVulkanTag(e.getExecScope());
+        NonUniformOpBroadcast nonUniform = EventFactory.newNonUniformOpBroadcast(e.getInstanceId(), execScope, e.getResultRegister(), e.getExpression(), e.getId());
+        return eventSequence(addVulkanTags(e, nonUniform));
+    }
+
+    @Override
+    public List<Event> visitNonUniformOpShuffle(NonUniformOpShuffle e) {
+        String execScope = Tag.Spirv.toVulkanTag(e.getExecScope());
+        NonUniformOpShuffle nonUniform = EventFactory.newNonUniformOpShuffle(e.getInstanceId(), execScope, e.getResultRegister(), e.getExpression(), e.getId());
+        return eventSequence(addVulkanTags(e, nonUniform));
+    }
+
+    @Override
+    public List<Event> visitNonUniformOpBallot(NonUniformOpBallot e) {
+        String execScope = Tag.Spirv.toVulkanTag(e.getExecScope());
+        NonUniformOpBallot nonUniform = EventFactory.newNonUniformOpBallot(e.getInstanceId(), execScope, e.getResultRegister(), e.getExpression());
+        return eventSequence(addVulkanTags(e, nonUniform));
     }
 
     @Override

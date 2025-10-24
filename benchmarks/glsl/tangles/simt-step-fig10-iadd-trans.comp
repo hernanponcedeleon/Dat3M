@@ -1,0 +1,39 @@
+//; @Input: %_ = {{0}}
+//; @Input: %__0 = {{0, 0}}
+//; @Output: forall (%__0[0][0] == 2)
+//; @Config: 2, 1, 1
+
+#version 460
+#extension GL_KHR_shader_subgroup_ballot : enable
+#extension GL_KHR_shader_subgroup_vote : enable
+#extension GL_KHR_shader_subgroup_basic : enable
+#extension GL_KHR_shader_subgroup_arithmetic : enable
+#extension GL_KHR_memory_scope_semantics : enable
+
+#define scope_subgroup 3
+#define storage_sem_wg 256 // Might even need SubgroupMemory (128) for subgroup barriers/operations
+#define sem_release 4
+#define sem_acquire 2
+
+layout(set = 0, binding = 0) buffer Buf { uint buf[]; };
+layout(set = 0, binding = 2) buffer Checker { uint checker[]; };
+
+void main() {
+	uint subgroup_id = gl_SubgroupID;
+	uint subgroup_size = gl_SubgroupSize;
+    uint subgroup_local_id = gl_SubgroupInvocationID;
+    uint num_workgroup = gl_NumWorkGroups.x;
+    uint workgroup_size = gl_WorkGroupSize.x;
+    uint workgroup_id = gl_WorkGroupID.x;
+    uint workgroup_base = workgroup_size * workgroup_id;
+    uint subgroup_base = subgroup_id * subgroup_size;
+    uint virtual_gid = workgroup_base + subgroup_base + subgroup_local_id;
+    uint next_virtual_gid = workgroup_base + subgroup_base + ((subgroup_local_id + 1) % subgroup_size);
+
+    uint a = atomicLoad(buf[0], scope_subgroup, storage_sem_wg, sem_acquire);
+    if (a == 0) {
+        a = subgroupAdd(a + 1); // the value of a in all threads has to be completed before the group operation in any thread, and the write can't happen until the result of that operation. If expected is PASS we need to extend data dependencies to be across threads
+        atomicStore(buf[0], uint(a), scope_subgroup, storage_sem_wg, sem_release);
+        atomicStore(checker[virtual_gid], a, scope_subgroup, storage_sem_wg, sem_release);
+    }
+}

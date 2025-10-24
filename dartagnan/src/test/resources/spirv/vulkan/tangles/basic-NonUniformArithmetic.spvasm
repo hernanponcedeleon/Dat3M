@@ -1,0 +1,393 @@
+; @Input: %_ = {{1, 2, 3, 4, 5, 6}}
+; @Input: %__0 = {{0, 0, 0, 0, 0, 0}}
+; @Input: %__1 = {{0, 0, 0, 0, 0, 0}}
+; @Input: %__2 = {{0, 0, 0, 0, 0, 0}}
+; @Input: %__3 = {{0, 0, 0, 0, 0, 0}}
+; @Input: %__4 = {{0, 0, 0, 0, 0, 0}}
+; @Input: %__5 = {{0, 0, 0, 0, 0, 0}}
+; @Input: %__6 = {{0, 0, 0, 0, 0, 0}}
+; @Output: forall (%__0[0][0] == 6 and %__0[0][1] == 6 and %__0[0][2] == 6 and %__0[0][3] == 15 and %__0[0][4] == 15 and %__0[0][5] == 15)
+; @Output: forall (%__1[0][0] == 6 and %__1[0][1] == 6 and %__1[0][2] == 6 and %__1[0][3] == 120 and %__1[0][4] == 120 and %__1[0][5] == 120)
+; @Output: forall (%__2[0][0] == 0 and %__2[0][1] == 0 and %__2[0][2] == 0 and %__2[0][3] == 4 and %__2[0][4] == 4 and %__2[0][5] == 4)
+; @Output: forall (%__3[0][0] == 3 and %__3[0][1] == 3 and %__3[0][2] == 3 and %__3[0][3] == 7 and %__3[0][4] == 7 and %__3[0][5] == 7)
+; @Output: forall (%__4[0][0] == 0 and %__4[0][1] == 0 and %__4[0][2] == 0 and %__4[0][3] == 7 and %__4[0][4] == 7 and %__4[0][5] == 7)
+; @Output: forall (%__5[0][0] == 0 and %__5[0][1] == 1 and %__5[0][2] == 3 and %__5[0][3] == 0 and %__5[0][4] == 4 and %__5[0][5] == 9)
+; @Output: forall (%__6[0][0] == 1 and %__6[0][1] == 3 and %__6[0][2] == 6 and %__6[0][3] == 4 and %__6[0][4] == 9 and %__6[0][5] == 15)
+; @Config: 3, 2, 1
+; SPIR-V
+; Version: 1.6
+; Generator: Khronos Glslang Reference Front End; 10
+; Bound: 143
+; Schema: 0
+               OpCapability Shader
+               OpCapability GroupNonUniform
+               OpCapability GroupNonUniformArithmetic
+               OpCapability VulkanMemoryModel
+               OpExtension "SPV_KHR_vulkan_memory_model"
+          %2 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical Vulkan
+               OpEntryPoint GLCompute %main "main" %gl_SubgroupID %gl_SubgroupSize %gl_SubgroupInvocationID %gl_NumWorkGroups %gl_WorkGroupID %_ %__0 %__1 %__2 %__3 %__4 %__5 %__6
+               OpExecutionModeId %main LocalSizeId %uint_1 %uint_1 %uint_1
+          %1 = OpString "benchmarks/glsl/NonUniformArithmetic.comp"
+               OpSource GLSL 460 %1 "//; @Input: %_ = {{1, 2, 3, 4, 5, 6}}
+//; @Input: %__0 = {{0, 0, 0, 0, 0, 0}}
+//; @Input: %__1 = {{0, 0, 0, 0, 0, 0}}
+//; @Input: %__2 = {{0, 0, 0, 0, 0, 0}}
+//; @Input: %__3 = {{0, 0, 0, 0, 0, 0}}
+//; @Input: %__4 = {{0, 0, 0, 0, 0, 0}}
+//; @Input: %__5 = {{0, 0, 0, 0, 0, 0}}
+//; @Input: %__6 = {{0, 0, 0, 0, 0, 0}}
+//; @Output: forall (%__0[0][0] == 6 and %__0[0][1] == 6 and %__0[0][2] == 6 and %__0[0][3] == 15 and %__0[0][4] == 15 and %__0[0][5] == 15)
+//; @Output: forall (%__1[0][0] == 6 and %__1[0][1] == 6 and %__1[0][2] == 6 and %__1[0][3] == 120 and %__1[0][4] == 120 and %__1[0][5] == 120)
+//; @Output: forall (%__2[0][0] == 0 and %__2[0][1] == 0 and %__2[0][2] == 0 and %__2[0][3] == 4 and %__2[0][4] == 4 and %__2[0][5] == 4)
+//; @Output: forall (%__3[0][0] == 3 and %__3[0][1] == 3 and %__3[0][2] == 3 and %__3[0][3] == 7 and %__3[0][4] == 7 and %__3[0][5] == 7)
+//; @Output: forall (%__4[0][0] == 0 and %__4[0][1] == 0 and %__4[0][2] == 0 and %__4[0][3] == 7 and %__4[0][4] == 7 and %__4[0][5] == 7)
+//; @Output: forall (%__5[0][0] == 0 and %__5[0][1] == 1 and %__5[0][2] == 3 and %__5[0][3] == 0 and %__5[0][4] == 4 and %__5[0][5] == 9)
+//; @Output: forall (%__6[0][0] == 1 and %__6[0][1] == 3 and %__6[0][2] == 6 and %__6[0][3] == 4 and %__6[0][4] == 9 and %__6[0][5] == 15)
+//; @Config: 3, 2, 1
+
+#version 460
+#extension GL_KHR_shader_subgroup_basic : enable
+#extension GL_KHR_shader_subgroup_arithmetic : enable
+#extension GL_KHR_memory_scope_semantics : enable
+
+#define scope_subgroup 3
+#define storage_sem_buffer 64 // Might need SubgroupMemory (128) for subgroup barriers/operations
+#define sem_release 4
+#define sem_acquire 2
+
+layout(set = 0, binding = 0) buffer Buf { uint buf[]; };
+layout(set = 0, binding = 2) buffer IAdd { uint iadd[]; };
+layout(set = 0, binding = 2) buffer IMul { uint imul[]; };
+layout(set = 0, binding = 2) buffer IAnd { uint iand[]; };
+layout(set = 0, binding = 2) buffer IOr { uint ior[]; };
+layout(set = 0, binding = 2) buffer IXor { uint ixor[]; };
+layout(set = 0, binding = 2) buffer IExScan { uint exscan[]; };
+layout(set = 0, binding = 2) buffer IInScan { uint inscan[]; };
+
+void main() {
+    uint subgroup_id = gl_SubgroupID;
+    uint subgroup_size = gl_SubgroupSize;
+    uint subgroup_local_id = gl_SubgroupInvocationID;
+    uint num_workgroup = gl_NumWorkGroups.x;
+    uint workgroup_size = gl_WorkGroupSize.x;
+    uint workgroup_id = gl_WorkGroupID.x;
+    uint workgroup_base = workgroup_size * workgroup_id;
+    uint subgroup_base = subgroup_id * subgroup_size;
+    uint virtual_gid = workgroup_base + subgroup_base + subgroup_local_id;
+    uint next_virtual_gid = workgroup_base + subgroup_base + ((subgroup_local_id + 1) % subgroup_size);
+
+    uint read = atomicLoad(buf[virtual_gid], scope_subgroup, storage_sem_buffer, sem_acquire);
+    
+    uint a = subgroupAdd(read);
+    uint b = subgroupMul(read);
+    uint c = subgroupAnd(read);
+    uint d = subgroupOr(read);
+    uint e = subgroupXor(read);
+    uint f = subgroupExclusiveAdd(read);
+    uint g = subgroupInclusiveAdd(read);
+
+    atomicStore(iadd[virtual_gid], a, scope_subgroup, storage_sem_buffer, sem_release);
+    atomicStore(imul[virtual_gid], b, scope_subgroup, storage_sem_buffer, sem_release);
+    atomicStore(iand[virtual_gid], c, scope_subgroup, storage_sem_buffer, sem_release);
+    atomicStore(ior[virtual_gid], d, scope_subgroup, storage_sem_buffer, sem_release);
+    atomicStore(ixor[virtual_gid], e, scope_subgroup, storage_sem_buffer, sem_release);
+    atomicStore(exscan[virtual_gid], f, scope_subgroup, storage_sem_buffer, sem_release);
+    atomicStore(inscan[virtual_gid], g, scope_subgroup, storage_sem_buffer, sem_release);
+}"
+               OpSourceExtension "GL_KHR_memory_scope_semantics"
+               OpSourceExtension "GL_KHR_shader_subgroup_arithmetic"
+               OpSourceExtension "GL_KHR_shader_subgroup_basic"
+               OpName %main "main"
+               OpName %subgroup_id "subgroup_id"
+               OpName %gl_SubgroupID "gl_SubgroupID"
+               OpName %subgroup_size "subgroup_size"
+               OpName %gl_SubgroupSize "gl_SubgroupSize"
+               OpName %subgroup_local_id "subgroup_local_id"
+               OpName %gl_SubgroupInvocationID "gl_SubgroupInvocationID"
+               OpName %num_workgroup "num_workgroup"
+               OpName %gl_NumWorkGroups "gl_NumWorkGroups"
+               OpName %workgroup_size "workgroup_size"
+               OpName %workgroup_id "workgroup_id"
+               OpName %gl_WorkGroupID "gl_WorkGroupID"
+               OpName %workgroup_base "workgroup_base"
+               OpName %subgroup_base "subgroup_base"
+               OpName %virtual_gid "virtual_gid"
+               OpName %next_virtual_gid "next_virtual_gid"
+               OpName %read "read"
+               OpName %Buf "Buf"
+               OpMemberName %Buf 0 "buf"
+               OpName %_ ""
+               OpName %a "a"
+               OpName %b "b"
+               OpName %c "c"
+               OpName %d "d"
+               OpName %e "e"
+               OpName %f "f"
+               OpName %g "g"
+               OpName %IAdd "IAdd"
+               OpMemberName %IAdd 0 "iadd"
+               OpName %__0 ""
+               OpName %IMul "IMul"
+               OpMemberName %IMul 0 "imul"
+               OpName %__1 ""
+               OpName %IAnd "IAnd"
+               OpMemberName %IAnd 0 "iand"
+               OpName %__2 ""
+               OpName %IOr "IOr"
+               OpMemberName %IOr 0 "ior"
+               OpName %__3 ""
+               OpName %IXor "IXor"
+               OpMemberName %IXor 0 "ixor"
+               OpName %__4 ""
+               OpName %IExScan "IExScan"
+               OpMemberName %IExScan 0 "exscan"
+               OpName %__5 ""
+               OpName %IInScan "IInScan"
+               OpMemberName %IInScan 0 "inscan"
+               OpName %__6 ""
+               OpModuleProcessed "client vulkan100"
+               OpModuleProcessed "target-env spirv1.6"
+               OpModuleProcessed "target-env vulkan1.3"
+               OpModuleProcessed "entry-point main"
+               OpDecorate %gl_SubgroupID BuiltIn SubgroupId
+               OpDecorate %gl_SubgroupSize RelaxedPrecision
+               OpDecorate %gl_SubgroupSize BuiltIn SubgroupSize
+               OpDecorate %16 RelaxedPrecision
+               OpDecorate %gl_SubgroupInvocationID RelaxedPrecision
+               OpDecorate %gl_SubgroupInvocationID BuiltIn SubgroupLocalInvocationId
+               OpDecorate %19 RelaxedPrecision
+               OpDecorate %gl_NumWorkGroups BuiltIn NumWorkgroups
+               OpDecorate %gl_WorkGroupID BuiltIn WorkgroupId
+               OpDecorate %_runtimearr_uint ArrayStride 4
+               OpMemberDecorate %Buf 0 Offset 0
+               OpDecorate %Buf Block
+               OpDecorate %_ DescriptorSet 0
+               OpDecorate %_ Binding 0
+               OpDecorate %_runtimearr_uint_0 ArrayStride 4
+               OpMemberDecorate %IAdd 0 Offset 0
+               OpDecorate %IAdd Block
+               OpDecorate %__0 DescriptorSet 0
+               OpDecorate %__0 Binding 2
+               OpDecorate %_runtimearr_uint_1 ArrayStride 4
+               OpMemberDecorate %IMul 0 Offset 0
+               OpDecorate %IMul Block
+               OpDecorate %__1 DescriptorSet 0
+               OpDecorate %__1 Binding 2
+               OpDecorate %_runtimearr_uint_2 ArrayStride 4
+               OpMemberDecorate %IAnd 0 Offset 0
+               OpDecorate %IAnd Block
+               OpDecorate %__2 DescriptorSet 0
+               OpDecorate %__2 Binding 2
+               OpDecorate %_runtimearr_uint_3 ArrayStride 4
+               OpMemberDecorate %IOr 0 Offset 0
+               OpDecorate %IOr Block
+               OpDecorate %__3 DescriptorSet 0
+               OpDecorate %__3 Binding 2
+               OpDecorate %_runtimearr_uint_4 ArrayStride 4
+               OpMemberDecorate %IXor 0 Offset 0
+               OpDecorate %IXor Block
+               OpDecorate %__4 DescriptorSet 0
+               OpDecorate %__4 Binding 2
+               OpDecorate %_runtimearr_uint_5 ArrayStride 4
+               OpMemberDecorate %IExScan 0 Offset 0
+               OpDecorate %IExScan Block
+               OpDecorate %__5 DescriptorSet 0
+               OpDecorate %__5 Binding 2
+               OpDecorate %_runtimearr_uint_6 ArrayStride 4
+               OpMemberDecorate %IInScan 0 Offset 0
+               OpDecorate %IInScan Block
+               OpDecorate %__6 DescriptorSet 0
+               OpDecorate %__6 Binding 2
+       %void = OpTypeVoid
+          %4 = OpTypeFunction %void
+       %uint = OpTypeInt 32 0
+     %uint_1 = OpConstant %uint 1
+%_ptr_Function_uint = OpTypePointer Function %uint
+%_ptr_Input_uint = OpTypePointer Input %uint
+%gl_SubgroupID = OpVariable %_ptr_Input_uint Input
+%gl_SubgroupSize = OpVariable %_ptr_Input_uint Input
+%gl_SubgroupInvocationID = OpVariable %_ptr_Input_uint Input
+     %v3uint = OpTypeVector %uint 3
+%_ptr_Input_v3uint = OpTypePointer Input %v3uint
+%gl_NumWorkGroups = OpVariable %_ptr_Input_v3uint Input
+     %uint_0 = OpConstant %uint 0
+%gl_WorkGroupID = OpVariable %_ptr_Input_v3uint Input
+%_runtimearr_uint = OpTypeRuntimeArray %uint
+        %Buf = OpTypeStruct %_runtimearr_uint
+%_ptr_StorageBuffer_Buf = OpTypePointer StorageBuffer %Buf
+          %_ = OpVariable %_ptr_StorageBuffer_Buf StorageBuffer
+        %int = OpTypeInt 32 1
+      %int_0 = OpConstant %int 0
+%_ptr_StorageBuffer_uint = OpTypePointer StorageBuffer %uint
+      %int_3 = OpConstant %int 3
+     %int_64 = OpConstant %int 64
+      %int_2 = OpConstant %int 2
+    %uint_66 = OpConstant %uint 66
+     %uint_3 = OpConstant %uint 3
+%_runtimearr_uint_0 = OpTypeRuntimeArray %uint
+       %IAdd = OpTypeStruct %_runtimearr_uint_0
+%_ptr_StorageBuffer_IAdd = OpTypePointer StorageBuffer %IAdd
+        %__0 = OpVariable %_ptr_StorageBuffer_IAdd StorageBuffer
+      %int_4 = OpConstant %int 4
+    %uint_68 = OpConstant %uint 68
+%_runtimearr_uint_1 = OpTypeRuntimeArray %uint
+       %IMul = OpTypeStruct %_runtimearr_uint_1
+%_ptr_StorageBuffer_IMul = OpTypePointer StorageBuffer %IMul
+        %__1 = OpVariable %_ptr_StorageBuffer_IMul StorageBuffer
+%_runtimearr_uint_2 = OpTypeRuntimeArray %uint
+       %IAnd = OpTypeStruct %_runtimearr_uint_2
+%_ptr_StorageBuffer_IAnd = OpTypePointer StorageBuffer %IAnd
+        %__2 = OpVariable %_ptr_StorageBuffer_IAnd StorageBuffer
+%_runtimearr_uint_3 = OpTypeRuntimeArray %uint
+        %IOr = OpTypeStruct %_runtimearr_uint_3
+%_ptr_StorageBuffer_IOr = OpTypePointer StorageBuffer %IOr
+        %__3 = OpVariable %_ptr_StorageBuffer_IOr StorageBuffer
+%_runtimearr_uint_4 = OpTypeRuntimeArray %uint
+       %IXor = OpTypeStruct %_runtimearr_uint_4
+%_ptr_StorageBuffer_IXor = OpTypePointer StorageBuffer %IXor
+        %__4 = OpVariable %_ptr_StorageBuffer_IXor StorageBuffer
+%_runtimearr_uint_5 = OpTypeRuntimeArray %uint
+    %IExScan = OpTypeStruct %_runtimearr_uint_5
+%_ptr_StorageBuffer_IExScan = OpTypePointer StorageBuffer %IExScan
+        %__5 = OpVariable %_ptr_StorageBuffer_IExScan StorageBuffer
+%_runtimearr_uint_6 = OpTypeRuntimeArray %uint
+    %IInScan = OpTypeStruct %_runtimearr_uint_6
+%_ptr_StorageBuffer_IInScan = OpTypePointer StorageBuffer %IInScan
+        %__6 = OpVariable %_ptr_StorageBuffer_IInScan StorageBuffer
+       %main = OpFunction %void None %4
+          %6 = OpLabel
+%subgroup_id = OpVariable %_ptr_Function_uint Function
+%subgroup_size = OpVariable %_ptr_Function_uint Function
+%subgroup_local_id = OpVariable %_ptr_Function_uint Function
+%num_workgroup = OpVariable %_ptr_Function_uint Function
+%workgroup_size = OpVariable %_ptr_Function_uint Function
+%workgroup_id = OpVariable %_ptr_Function_uint Function
+%workgroup_base = OpVariable %_ptr_Function_uint Function
+%subgroup_base = OpVariable %_ptr_Function_uint Function
+%virtual_gid = OpVariable %_ptr_Function_uint Function
+%next_virtual_gid = OpVariable %_ptr_Function_uint Function
+       %read = OpVariable %_ptr_Function_uint Function
+          %a = OpVariable %_ptr_Function_uint Function
+          %b = OpVariable %_ptr_Function_uint Function
+          %c = OpVariable %_ptr_Function_uint Function
+          %d = OpVariable %_ptr_Function_uint Function
+          %e = OpVariable %_ptr_Function_uint Function
+          %f = OpVariable %_ptr_Function_uint Function
+          %g = OpVariable %_ptr_Function_uint Function
+               OpLine %1 38 0
+         %13 = OpLoad %uint %gl_SubgroupID
+               OpStore %subgroup_id %13
+               OpLine %1 39 0
+         %16 = OpLoad %uint %gl_SubgroupSize
+               OpStore %subgroup_size %16
+               OpLine %1 40 0
+         %19 = OpLoad %uint %gl_SubgroupInvocationID
+               OpStore %subgroup_local_id %19
+               OpLine %1 41 0
+         %25 = OpAccessChain %_ptr_Input_uint %gl_NumWorkGroups %uint_0
+         %26 = OpLoad %uint %25
+               OpStore %num_workgroup %26
+               OpLine %1 42 0
+               OpStore %workgroup_size %uint_1
+               OpLine %1 43 0
+         %30 = OpAccessChain %_ptr_Input_uint %gl_WorkGroupID %uint_0
+         %31 = OpLoad %uint %30
+               OpStore %workgroup_id %31
+               OpLine %1 44 0
+         %33 = OpLoad %uint %workgroup_size
+         %34 = OpLoad %uint %workgroup_id
+         %35 = OpIMul %uint %33 %34
+               OpStore %workgroup_base %35
+               OpLine %1 45 0
+         %37 = OpLoad %uint %subgroup_id
+         %38 = OpLoad %uint %subgroup_size
+         %39 = OpIMul %uint %37 %38
+               OpStore %subgroup_base %39
+               OpLine %1 46 0
+         %41 = OpLoad %uint %workgroup_base
+         %42 = OpLoad %uint %subgroup_base
+         %43 = OpIAdd %uint %41 %42
+         %44 = OpLoad %uint %subgroup_local_id
+         %45 = OpIAdd %uint %43 %44
+               OpStore %virtual_gid %45
+               OpLine %1 47 0
+         %47 = OpLoad %uint %workgroup_base
+         %48 = OpLoad %uint %subgroup_base
+         %49 = OpIAdd %uint %47 %48
+         %50 = OpLoad %uint %subgroup_local_id
+         %51 = OpIAdd %uint %50 %uint_1
+         %52 = OpLoad %uint %subgroup_size
+         %53 = OpUMod %uint %51 %52
+         %54 = OpIAdd %uint %49 %53
+               OpStore %next_virtual_gid %54
+               OpLine %1 49 0
+         %62 = OpLoad %uint %virtual_gid
+         %64 = OpAccessChain %_ptr_StorageBuffer_uint %_ %int_0 %62
+         %69 = OpAtomicLoad %uint %64 %int_3 %uint_66
+               OpStore %read %69
+               OpLine %1 51 0
+         %71 = OpLoad %uint %read
+         %73 = OpGroupNonUniformIAdd %uint %uint_3 Reduce %71
+               OpStore %a %73
+               OpLine %1 52 0
+         %75 = OpLoad %uint %read
+         %76 = OpGroupNonUniformIMul %uint %uint_3 Reduce %75
+               OpStore %b %76
+               OpLine %1 53 0
+         %78 = OpLoad %uint %read
+         %79 = OpGroupNonUniformBitwiseAnd %uint %uint_3 Reduce %78
+               OpStore %c %79
+               OpLine %1 54 0
+         %81 = OpLoad %uint %read
+         %82 = OpGroupNonUniformBitwiseOr %uint %uint_3 Reduce %81
+               OpStore %d %82
+               OpLine %1 55 0
+         %84 = OpLoad %uint %read
+         %85 = OpGroupNonUniformBitwiseXor %uint %uint_3 Reduce %84
+               OpStore %e %85
+               OpLine %1 56 0
+         %87 = OpLoad %uint %read
+         %88 = OpGroupNonUniformIAdd %uint %uint_3 ExclusiveScan %87
+               OpStore %f %88
+               OpLine %1 57 0
+         %90 = OpLoad %uint %read
+         %91 = OpGroupNonUniformIAdd %uint %uint_3 InclusiveScan %90
+               OpStore %g %91
+               OpLine %1 59 0
+         %96 = OpLoad %uint %virtual_gid
+         %97 = OpAccessChain %_ptr_StorageBuffer_uint %__0 %int_0 %96
+         %98 = OpLoad %uint %a
+               OpAtomicStore %97 %int_3 %uint_68 %98
+               OpLine %1 60 0
+        %105 = OpLoad %uint %virtual_gid
+        %106 = OpAccessChain %_ptr_StorageBuffer_uint %__1 %int_0 %105
+        %107 = OpLoad %uint %b
+               OpAtomicStore %106 %int_3 %uint_68 %107
+               OpLine %1 61 0
+        %112 = OpLoad %uint %virtual_gid
+        %113 = OpAccessChain %_ptr_StorageBuffer_uint %__2 %int_0 %112
+        %114 = OpLoad %uint %c
+               OpAtomicStore %113 %int_3 %uint_68 %114
+               OpLine %1 62 0
+        %119 = OpLoad %uint %virtual_gid
+        %120 = OpAccessChain %_ptr_StorageBuffer_uint %__3 %int_0 %119
+        %121 = OpLoad %uint %d
+               OpAtomicStore %120 %int_3 %uint_68 %121
+               OpLine %1 63 0
+        %126 = OpLoad %uint %virtual_gid
+        %127 = OpAccessChain %_ptr_StorageBuffer_uint %__4 %int_0 %126
+        %128 = OpLoad %uint %e
+               OpAtomicStore %127 %int_3 %uint_68 %128
+               OpLine %1 64 0
+        %133 = OpLoad %uint %virtual_gid
+        %134 = OpAccessChain %_ptr_StorageBuffer_uint %__5 %int_0 %133
+        %135 = OpLoad %uint %f
+               OpAtomicStore %134 %int_3 %uint_68 %135
+               OpLine %1 65 0
+        %140 = OpLoad %uint %virtual_gid
+        %141 = OpAccessChain %_ptr_StorageBuffer_uint %__6 %int_0 %140
+        %142 = OpLoad %uint %g
+               OpAtomicStore %141 %int_3 %uint_68 %142
+               OpReturn
+               OpFunctionEnd

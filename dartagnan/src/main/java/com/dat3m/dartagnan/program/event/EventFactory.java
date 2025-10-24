@@ -3,6 +3,9 @@ package com.dat3m.dartagnan.program.event;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.Type;
+import com.dat3m.dartagnan.expression.tangles.TangleType;
+import com.dat3m.dartagnan.expression.tangles.GroupOp;
+import com.dat3m.dartagnan.expression.booleans.BoolBinaryOp;
 import com.dat3m.dartagnan.expression.booleans.BoolLiteral;
 import com.dat3m.dartagnan.expression.integers.IntBinaryOp;
 import com.dat3m.dartagnan.expression.integers.IntCmpOp;
@@ -25,6 +28,7 @@ import com.dat3m.dartagnan.program.event.arch.vulkan.VulkanRMW;
 import com.dat3m.dartagnan.program.event.arch.vulkan.VulkanRMWExtremum;
 import com.dat3m.dartagnan.program.event.arch.vulkan.VulkanRMWOp;
 import com.dat3m.dartagnan.program.event.core.*;
+import com.dat3m.dartagnan.program.event.core.tangles.*;
 import com.dat3m.dartagnan.program.event.core.annotations.FunCallMarker;
 import com.dat3m.dartagnan.program.event.core.annotations.FunReturnMarker;
 import com.dat3m.dartagnan.program.event.core.annotations.StringAnnotation;
@@ -47,6 +51,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import static com.dat3m.dartagnan.program.event.FenceNameRepository.*;
+import static com.dat3m.dartagnan.expression.tangles.TangleType.*;
 
 public class EventFactory {
 
@@ -163,6 +168,46 @@ public class EventFactory {
 
     public static NamedBarrier newNamedBarrier(String name, String instanceId, String execScope, Expression id, Expression quorum) {
         return new NamedBarrier(name, instanceId, execScope, id, quorum);
+    }
+
+    public static NonUniformOpBool newNonUniformOpAll(String instanceId, String execScope, Register register, Expression value) {
+        return new NonUniformOpBool(instanceId, execScope, TangleType.ALL, register, value);
+    }
+
+    public static NonUniformOpBool newNonUniformOpAny(String instanceId, String execScope, Register register, Expression value) {
+        return new NonUniformOpBool(instanceId, execScope, TangleType.ANY, register, value);
+    }
+
+    public static NonUniformOpArithmetic newNonUniformOpIAdd(String instanceId, String execScope, Register register, Expression value, GroupOp operation) {
+        return new NonUniformOpArithmetic(instanceId, execScope, TangleType.IADD, register, value, operation);
+    }
+
+    public static NonUniformOpArithmetic newNonUniformOpIMul(String instanceId, String execScope, Register register, Expression value, GroupOp operation) {
+        return new NonUniformOpArithmetic(instanceId, execScope, TangleType.IMUL, register, value, operation);
+    }
+
+    public static NonUniformOpArithmetic newNonUniformOpIAnd(String instanceId, String execScope, Register register, Expression value, GroupOp operation) {
+        return new NonUniformOpArithmetic(instanceId, execScope, TangleType.IAND, register, value, operation);
+    }
+
+    public static NonUniformOpArithmetic newNonUniformOpIOr(String instanceId, String execScope, Register register, Expression value, GroupOp operation) {
+        return new NonUniformOpArithmetic(instanceId, execScope, TangleType.IOR, register, value, operation);
+    }
+
+    public static NonUniformOpArithmetic newNonUniformOpIXor(String instanceId, String execScope, Register register, Expression value, GroupOp operation) {
+        return new NonUniformOpArithmetic(instanceId, execScope, TangleType.IXOR, register, value, operation);
+    }
+
+    public static NonUniformOpBroadcast newNonUniformOpBroadcast(String instanceId, String execScope, Register register, Expression value, Expression id) {
+        return new NonUniformOpBroadcast(instanceId, execScope, register, value, id);
+    }
+
+    public static NonUniformOpShuffle newNonUniformOpShuffle(String instanceId, String execScope, Register register, Expression value, Expression id) {
+        return new NonUniformOpShuffle(instanceId, execScope, register, value, id);
+    }
+
+    public static NonUniformOpBallot newNonUniformOpBallot(String instanceId, String execScope, Register register, Expression value) {
+        return new NonUniformOpBallot(instanceId, execScope, register, value);
     }
 
     public static Init newInit(MemoryObject base, int offset) {

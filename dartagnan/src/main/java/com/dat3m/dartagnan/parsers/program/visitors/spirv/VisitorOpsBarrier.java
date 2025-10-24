@@ -5,10 +5,11 @@ import com.dat3m.dartagnan.parsers.SpirvBaseVisitor;
 import com.dat3m.dartagnan.parsers.SpirvParser;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.helpers.HelperTags;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.builders.ProgramBuilder;
+import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.Tag;
-
+import com.dat3m.dartagnan.program.Register;
 import java.util.Set;
 
 public class VisitorOpsBarrier extends SpirvBaseVisitor<Event> {

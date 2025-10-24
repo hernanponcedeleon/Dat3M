@@ -1,0 +1,193 @@
+; @Input: %_ = {{0, 0, 0}}
+; @Output: forall (%_[0][0] == 1 and %_[0][1] == 1 and %_[0][2] == 1)
+; @Config: 3, 1, 1
+; SPIR-V
+; Version: 1.6
+; Generator: Khronos Glslang Reference Front End; 10
+; Bound: 78
+; Schema: 0
+               OpCapability Shader
+               OpCapability GroupNonUniform
+               OpCapability GroupNonUniformVote
+               OpCapability VulkanMemoryModel
+               OpExtension "SPV_KHR_vulkan_memory_model"
+          %2 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical Vulkan
+               OpEntryPoint GLCompute %main "main" %gl_SubgroupID %gl_SubgroupSize %gl_SubgroupInvocationID %gl_NumWorkGroups %gl_WorkGroupID %_
+               OpExecutionModeId %main LocalSizeId %uint_1 %uint_1 %uint_1
+          %1 = OpString "benchmarks/glsl/tangles/basic-groupAny-some.comp"
+               OpSource GLSL 460 %1 "//; @Input: %_ = {{0, 0, 0}}
+//; @Output: forall (%_[0][0] == 1 and %_[0][1] == 1 and %_[0][2] == 1)
+//; @Config: 3, 1, 1
+
+#version 460
+#extension GL_KHR_shader_subgroup_basic : enable
+#extension GL_KHR_shader_subgroup_vote : enable
+#extension GL_KHR_memory_scope_semantics : enable
+
+#define scope_subgroup 3
+#define storage_sem_buffer 64
+#define storage_sem_wg 256 // Might even need SubgroupMemory (128) for subgroup barriers/operations
+#define sem_release 4
+#define sem_acquire 2
+
+layout(set = 0, binding = 0) buffer Buf { uint buf[]; };
+
+void main() {
+    uint subgroup_id = gl_SubgroupID;
+    uint subgroup_size = gl_SubgroupSize;
+    uint subgroup_local_id = gl_SubgroupInvocationID;
+    uint num_workgroup = gl_NumWorkGroups.x;
+    uint workgroup_size = gl_WorkGroupSize.x;
+    uint workgroup_id = gl_WorkGroupID.x;
+    uint workgroup_base = workgroup_size * workgroup_id;
+    uint subgroup_base = subgroup_id * subgroup_size;
+    uint virtual_gid = workgroup_base + subgroup_base + subgroup_local_id;
+    uint next_virtual_gid = workgroup_base + subgroup_base + ((subgroup_local_id + 1) % subgroup_size);
+
+    bool r0 = subgroupAny(next_virtual_gid != 2);
+
+    atomicStore(buf[virtual_gid], uint(r0), scope_subgroup, storage_sem_wg, sem_release);
+}"
+               OpSourceExtension "GL_KHR_memory_scope_semantics"
+               OpSourceExtension "GL_KHR_shader_subgroup_basic"
+               OpSourceExtension "GL_KHR_shader_subgroup_vote"
+               OpName %main "main"
+               OpName %subgroup_id "subgroup_id"
+               OpName %gl_SubgroupID "gl_SubgroupID"
+               OpName %subgroup_size "subgroup_size"
+               OpName %gl_SubgroupSize "gl_SubgroupSize"
+               OpName %subgroup_local_id "subgroup_local_id"
+               OpName %gl_SubgroupInvocationID "gl_SubgroupInvocationID"
+               OpName %num_workgroup "num_workgroup"
+               OpName %gl_NumWorkGroups "gl_NumWorkGroups"
+               OpName %workgroup_size "workgroup_size"
+               OpName %workgroup_id "workgroup_id"
+               OpName %gl_WorkGroupID "gl_WorkGroupID"
+               OpName %workgroup_base "workgroup_base"
+               OpName %subgroup_base "subgroup_base"
+               OpName %virtual_gid "virtual_gid"
+               OpName %next_virtual_gid "next_virtual_gid"
+               OpName %r0 "r0"
+               OpName %Buf "Buf"
+               OpMemberName %Buf 0 "buf"
+               OpName %_ ""
+               OpModuleProcessed "client vulkan100"
+               OpModuleProcessed "target-env spirv1.6"
+               OpModuleProcessed "target-env vulkan1.3"
+               OpModuleProcessed "entry-point main"
+               OpDecorate %gl_SubgroupID BuiltIn SubgroupId
+               OpDecorate %gl_SubgroupSize RelaxedPrecision
+               OpDecorate %gl_SubgroupSize BuiltIn SubgroupSize
+               OpDecorate %16 RelaxedPrecision
+               OpDecorate %gl_SubgroupInvocationID RelaxedPrecision
+               OpDecorate %gl_SubgroupInvocationID BuiltIn SubgroupLocalInvocationId
+               OpDecorate %19 RelaxedPrecision
+               OpDecorate %gl_NumWorkGroups BuiltIn NumWorkgroups
+               OpDecorate %gl_WorkGroupID BuiltIn WorkgroupId
+               OpDecorate %_runtimearr_uint ArrayStride 4
+               OpMemberDecorate %Buf 0 Offset 0
+               OpDecorate %Buf Block
+               OpDecorate %_ DescriptorSet 0
+               OpDecorate %_ Binding 0
+       %void = OpTypeVoid
+          %4 = OpTypeFunction %void
+       %uint = OpTypeInt 32 0
+     %uint_1 = OpConstant %uint 1
+%_ptr_Function_uint = OpTypePointer Function %uint
+%_ptr_Input_uint = OpTypePointer Input %uint
+%gl_SubgroupID = OpVariable %_ptr_Input_uint Input
+%gl_SubgroupSize = OpVariable %_ptr_Input_uint Input
+%gl_SubgroupInvocationID = OpVariable %_ptr_Input_uint Input
+     %v3uint = OpTypeVector %uint 3
+%_ptr_Input_v3uint = OpTypePointer Input %v3uint
+%gl_NumWorkGroups = OpVariable %_ptr_Input_v3uint Input
+     %uint_0 = OpConstant %uint 0
+%gl_WorkGroupID = OpVariable %_ptr_Input_v3uint Input
+       %bool = OpTypeBool
+%_ptr_Function_bool = OpTypePointer Function %bool
+     %uint_2 = OpConstant %uint 2
+     %uint_3 = OpConstant %uint 3
+%_runtimearr_uint = OpTypeRuntimeArray %uint
+        %Buf = OpTypeStruct %_runtimearr_uint
+%_ptr_StorageBuffer_Buf = OpTypePointer StorageBuffer %Buf
+          %_ = OpVariable %_ptr_StorageBuffer_Buf StorageBuffer
+        %int = OpTypeInt 32 1
+      %int_0 = OpConstant %int 0
+%_ptr_StorageBuffer_uint = OpTypePointer StorageBuffer %uint
+      %int_3 = OpConstant %int 3
+    %int_256 = OpConstant %int 256
+      %int_4 = OpConstant %int 4
+   %uint_260 = OpConstant %uint 260
+       %main = OpFunction %void None %4
+          %6 = OpLabel
+%subgroup_id = OpVariable %_ptr_Function_uint Function
+%subgroup_size = OpVariable %_ptr_Function_uint Function
+%subgroup_local_id = OpVariable %_ptr_Function_uint Function
+%num_workgroup = OpVariable %_ptr_Function_uint Function
+%workgroup_size = OpVariable %_ptr_Function_uint Function
+%workgroup_id = OpVariable %_ptr_Function_uint Function
+%workgroup_base = OpVariable %_ptr_Function_uint Function
+%subgroup_base = OpVariable %_ptr_Function_uint Function
+%virtual_gid = OpVariable %_ptr_Function_uint Function
+%next_virtual_gid = OpVariable %_ptr_Function_uint Function
+         %r0 = OpVariable %_ptr_Function_bool Function
+               OpLine %1 19 0
+         %13 = OpLoad %uint %gl_SubgroupID
+               OpStore %subgroup_id %13
+               OpLine %1 20 0
+         %16 = OpLoad %uint %gl_SubgroupSize
+               OpStore %subgroup_size %16
+               OpLine %1 21 0
+         %19 = OpLoad %uint %gl_SubgroupInvocationID
+               OpStore %subgroup_local_id %19
+               OpLine %1 22 0
+         %25 = OpAccessChain %_ptr_Input_uint %gl_NumWorkGroups %uint_0
+         %26 = OpLoad %uint %25
+               OpStore %num_workgroup %26
+               OpLine %1 23 0
+               OpStore %workgroup_size %uint_1
+               OpLine %1 24 0
+         %30 = OpAccessChain %_ptr_Input_uint %gl_WorkGroupID %uint_0
+         %31 = OpLoad %uint %30
+               OpStore %workgroup_id %31
+               OpLine %1 25 0
+         %33 = OpLoad %uint %workgroup_size
+         %34 = OpLoad %uint %workgroup_id
+         %35 = OpIMul %uint %33 %34
+               OpStore %workgroup_base %35
+               OpLine %1 26 0
+         %37 = OpLoad %uint %subgroup_id
+         %38 = OpLoad %uint %subgroup_size
+         %39 = OpIMul %uint %37 %38
+               OpStore %subgroup_base %39
+               OpLine %1 27 0
+         %41 = OpLoad %uint %workgroup_base
+         %42 = OpLoad %uint %subgroup_base
+         %43 = OpIAdd %uint %41 %42
+         %44 = OpLoad %uint %subgroup_local_id
+         %45 = OpIAdd %uint %43 %44
+               OpStore %virtual_gid %45
+               OpLine %1 28 0
+         %47 = OpLoad %uint %workgroup_base
+         %48 = OpLoad %uint %subgroup_base
+         %49 = OpIAdd %uint %47 %48
+         %50 = OpLoad %uint %subgroup_local_id
+         %51 = OpIAdd %uint %50 %uint_1
+         %52 = OpLoad %uint %subgroup_size
+         %53 = OpUMod %uint %51 %52
+         %54 = OpIAdd %uint %49 %53
+               OpStore %next_virtual_gid %54
+               OpLine %1 30 0
+         %58 = OpLoad %uint %next_virtual_gid
+         %60 = OpINotEqual %bool %58 %uint_2
+         %62 = OpGroupNonUniformAny %bool %uint_3 %60
+               OpStore %r0 %62
+               OpLine %1 32 0
+         %69 = OpLoad %uint %virtual_gid
+         %71 = OpAccessChain %_ptr_StorageBuffer_uint %_ %int_0 %69
+         %72 = OpLoad %bool %r0
+         %73 = OpSelect %uint %72 %uint_1 %uint_0
+               OpAtomicStore %71 %int_3 %uint_260 %73
+               OpReturn
+               OpFunctionEnd

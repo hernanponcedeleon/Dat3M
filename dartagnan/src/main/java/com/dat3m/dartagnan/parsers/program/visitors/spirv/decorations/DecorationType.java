@@ -16,6 +16,7 @@ public enum DecorationType {
     NO_PERSPECTIVE,
     NON_WRITABLE,
     OFFSET,
+    RELAXED_PRECISION,
     SPEC_ID;
 
     public static DecorationType fromString(String type) {
@@ -35,6 +36,7 @@ public enum DecorationType {
             case "NoPerspective" -> NO_PERSPECTIVE;
             case "NonWritable" -> NON_WRITABLE;
             case "Offset" -> OFFSET;
+            case "RelaxedPrecision" -> RELAXED_PRECISION;
             case "SpecId" -> SPEC_ID;
             default -> throw new IllegalArgumentException("Unsupported decoration type " + type);
         };
