@@ -11,8 +11,8 @@ VULKAN
 // ssw: system-synchronizes-with
 
 // Tags:
-// SC0, SC1: storage class 0, 1
-// SEMSC0, SEMSC1: storage class semantics 0. 1
+// SC0, SC1, SC2, SC3: storage class 0, 1, 2, 3
+// SEMSC0, SEMSC1, SEMSC2, SEMSC3: storage class semantics 0, 1, 2, 3
 // SG, WG, QF, DV: subgroup, workgroup, queuefamily, device domains
 // AV, VIS: availability, visibility
 // AVDEVICE, VISDEVICE: availability, visibility op to the device domain
@@ -24,7 +24,27 @@ VULKAN
 (* Tags *)
 let PRIV = (R | W) \ NONPRIV // PRIV is the complement of NONPRIV
 
+let SC01 = SC0 | SC1
+let SC02 = SC0 | SC2
+let SC03 = SC0 | SC2
+let SC12 = SC1 | SC2
+let SC13 = SC1 | SC3
+let SC23 = SC2 | SC3
+let SC012 = SC0 | SC1 | SC2
+let SC013 = SC0 | SC1 | SC3
+let SC123 = SC1 | SC2 | SC3
+let SC0123 = SC0 | SC1 | SC2 | SC3
+
 let SEMSC01 = SEMSC0 & SEMSC1
+let SEMSC02 = SEMSC0 & SEMSC2
+let SEMSC03 = SEMSC0 & SEMSC3
+let SEMSC12 = SEMSC1 & SEMSC2
+let SEMSC13 = SEMSC1 & SEMSC3
+let SEMSC23 = SEMSC2 & SEMSC3
+let SEMSC012 = SEMSC0 & SEMSC1 & SEMSC2
+let SEMSC013 = SEMSC0 & SEMSC1 & SEMSC3
+let SEMSC123 = SEMSC1 & SEMSC2 & SEMSC3
+let SEMSC0123 = SEMSC0 & SEMSC1 & SEMSC2 & SEMSC3
 
 let AVSHADER = (AV | SEMAV) & DV
 let VISSHADER = (VIS | SEMVIS) & DV
@@ -47,14 +67,14 @@ let inscope = (DV * DV) |
 // mutually ordered atomics
 let mutordatom = (loc & vloc & inscope & (ATOM * ATOM)) \ id
 
-let avvisSem = ((SC0 | SC1) * AVDEVICE) | (VISDEVICE * (SC0 | SC1)) |
-               (SC0 * (SEMSC0 & SEMAV)) | (SC1 * (SEMSC1 & SEMAV)) |
-               ((SEMSC0 & SEMVIS) * SC0) | ((SEMSC1 & SEMVIS) * SC1)
+let avvisSem = ((SC0 | SC1 | SC2 | SC3) * AVDEVICE) | (VISDEVICE * (SC0 | SC1 | SC2 | SC3)) |
+               (SC0 * (SEMSC0 & SEMAV)) | (SC1 * (SEMSC1 & SEMAV)) | (SC2 * (SEMSC2 & SEMAV)) | (SC3 * (SEMSC3 & SEMAV)) |
+               ((SEMSC0 & SEMVIS) * SC0) | ((SEMSC1 & SEMVIS) * SC1) | ((SEMSC2 & SEMVIS) * SC2) | ((SEMSC3 & SEMVIS) * SC3)
 let avvisSet = [AV | VIS]; (vloc & loc)
 let avvisinc = avvisSem | avvisSet | avvisSet^-1
 
-let posctosem = ((SC0 * SEMSC0) | (SC1 * SEMSC1)) & po
-let posemtosc = ((SEMSC0 * SC0) | (SEMSC1 * SC1)) & po
+let posctosem = ((SC0 * SEMSC0) | (SC1 * SEMSC1) | (SC2 * SEMSC2) | (SC3 * SEMSC3)) & po
+let posemtosc = ((SEMSC0 * SC0) | (SEMSC1 * SC1) | (SEMSC2 * SC2) | (SEMSC3 * SC3)) & po
 
 let asmo = co & ((ATOM | IW) * ATOM) & mutordatom
 
@@ -72,24 +92,20 @@ let sw = inscope & (
     ([REL & F]; po?; [CBAR]; ((syncbar & inscope) \ id); [CBAR]; po?; [ACQ & F])                        // fence->cbar->cbar->fence,
 )
 
-let ithbsemsc0 = ( ssw |
-                   ([SEMSC0]; sw; [SEMSC0]) |
-                   ([SC0 | SEMSC0]; po; [REL & SEMSC0]) |
-                   ([ACQ & SEMSC0]; po; [SC0 | SEMSC0])
-                 )+
-let ithbsemsc1 = ( ssw |
-                   ([SEMSC1]; sw; [SEMSC1]) |
-                   ([SC1 | SEMSC1]; po; [REL & SEMSC1]) |
-                   ([ACQ & SEMSC1]; po; [SC1 | SEMSC1])
-                 )+
-let ithbsemsc01 = ( ssw |
-                   ([SEMSC01]; sw; [SEMSC01]) |
-                   ([SC0 | SC1 | SEMSC01]; po; [REL & SEMSC01]) |
-                   ([ACQ & SEMSC01]; po; [SC0 | SC1 | SEMSC01])
-                 )+
+let ithbsemsc(SC, SEMSC) = (ssw |
+        ([SEMSC]; sw; [SEMSC]) |
+        ([SC | SEMSC]; po; [REL & SEMSC]) |
+        ([ACQ & SEMSC]; po; [SC | SEMSC])
+    )+
 
 // happens-before
-let hb = ithbsemsc0 | ithbsemsc1 | ithbsemsc01 | po
+let hb = (po |
+        ithbsemsc(SC0, SEMSC0) | ithbsemsc(SC1, SEMSC1) | ithbsemsc(SC2, SEMSC2) | ithbsemsc(SC3, SEMSC3) |
+        ithbsemsc(SC01, SEMSC01) | ithbsemsc(SC02, SEMSC02) | ithbsemsc(SC03, SEMSC03) |
+        ithbsemsc(SC12, SEMSC12) | ithbsemsc(SC13, SEMSC13) | ithbsemsc(SC23, SEMSC23) |
+        ithbsemsc(SC012, SEMSC012) | ithbsemsc(SC013, SEMSC013) | ithbsemsc(SC123, SEMSC123) |
+        ithbsemsc(SC0123, SEMSC0123)
+)
 
 // chains will turn off nontrivial availability/visibility with this pattern:
 let E = (M | F | CBAR | AVDEVICE | VISDEVICE) \ IW
