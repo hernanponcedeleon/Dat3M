@@ -1,0 +1,56 @@
+//; @Input: %_ = {{0, 0}}
+//; @Input: %__0 = {{0, 0, 0}}
+//; @Input: %__1 = {{0, 0, 0}}
+//; @Input: %__2 = {{0, 0, 0}}
+//; @Output: exists (%__0[0][0] == 1 and %__2[0][1] == 0)
+//; @Config: 3, 1, 1
+
+#version 460
+#extension GL_KHR_shader_subgroup_basic : enable
+#extension GL_KHR_shader_subgroup_vote : enable
+#extension GL_KHR_memory_scope_semantics : enable
+
+#define scope_subgroup 3
+#define storage_sem_buffer 64
+#define storage_sem_wg 256 // Might even need SubgroupMemory (128) for subgroup barriers/operations
+#define sem_release 4
+#define sem_acquire 2
+
+layout(set = 0, binding = 0) buffer X { uint x[]; };
+layout(set = 0, binding = 1) buffer Buf0 { uint buf0[]; };
+layout(set = 0, binding = 2) buffer Buf1 { uint buf1[]; };
+layout(set = 0, binding = 3) buffer Buf2 { uint buf2[]; };
+
+void main() {
+    uint subgroup_id = gl_SubgroupID;
+    uint subgroup_size = gl_SubgroupSize;
+    uint subgroup_local_id = gl_SubgroupInvocationID;
+    uint num_workgroup = gl_NumWorkGroups.x;
+    uint workgroup_size = gl_WorkGroupSize.x;
+    uint workgroup_id = gl_WorkGroupID.x;
+    uint workgroup_base = workgroup_size * workgroup_id;
+    uint subgroup_base = subgroup_id * subgroup_size;
+    uint virtual_gid = workgroup_base + subgroup_base + subgroup_local_id;
+    uint next_virtual_gid = workgroup_base + subgroup_base + ((subgroup_local_id + 1) % subgroup_size);
+
+    uint r0 = 0;
+    bool r1 = false;
+    uint r2 = 0;
+
+    if(virtual_gid == 0) {
+        r0 = atomicLoad(x[0], scope_subgroup, storage_sem_wg, sem_acquire);
+    }
+    if(virtual_gid == 0 || virtual_gid == 1) {
+        r1 = subgroupAny(false);
+    }
+    if(virtual_gid == 1) {
+        r2 = atomicLoad(x[uint(r1)], scope_subgroup, storage_sem_wg, sem_acquire); // There is an address dependency on the subgroupAny. Should this prevent reordering?
+    }
+    if(virtual_gid == 2) {
+        atomicStore(x[0], uint(1), scope_subgroup, storage_sem_wg, sem_release);
+    }
+
+    atomicStore(buf0[virtual_gid], uint(r0), scope_subgroup, storage_sem_wg, sem_release);
+    atomicStore(buf1[virtual_gid], uint(r1), scope_subgroup, storage_sem_wg, sem_release);
+    atomicStore(buf2[virtual_gid], uint(r2), scope_subgroup, storage_sem_wg, sem_release);
+}

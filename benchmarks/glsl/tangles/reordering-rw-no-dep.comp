@@ -1,0 +1,36 @@
+//; @Input: %_ = {{0, 0}}
+//; @Input: %__0 = {{0, 0}}
+//; @Output: exists (%__0[0][0] != 0 or %__0[0][1] != 0)
+//; @Config: 2, 1, 1
+
+#version 460
+#extension GL_KHR_shader_subgroup_basic : enable
+#extension GL_KHR_shader_subgroup_vote : enable
+#extension GL_KHR_memory_scope_semantics : enable
+
+#define scope_subgroup 3
+#define storage_sem_buffer 64
+#define storage_sem_wg 256 // Might even need SubgroupMemory (128) for subgroup barriers/operations
+#define sem_release 4
+#define sem_acquire 2
+
+layout(set = 0, binding = 0) buffer Buf { uint buf[]; };
+layout(set = 0, binding = 1) buffer Buf0 { uint buf0[]; };
+
+void main() {
+    uint subgroup_id = gl_SubgroupID;
+    uint subgroup_size = gl_SubgroupSize;
+    uint subgroup_local_id = gl_SubgroupInvocationID;
+    uint num_workgroup = gl_NumWorkGroups.x;
+    uint workgroup_size = gl_WorkGroupSize.x;
+    uint workgroup_id = gl_WorkGroupID.x;
+    uint workgroup_base = workgroup_size * workgroup_id;
+    uint subgroup_base = subgroup_id * subgroup_size;
+    uint virtual_gid = workgroup_base + subgroup_base + subgroup_local_id;
+    uint next_virtual_gid = workgroup_base + subgroup_base + ((subgroup_local_id + 1) % subgroup_size);
+
+    uint r0 = atomicLoad(buf[virtual_gid], scope_subgroup, storage_sem_wg, sem_acquire);
+    bool r1 = subgroupAny(true);
+    atomicStore(buf[next_virtual_gid], uint(1), scope_subgroup, storage_sem_wg, sem_release); // Nothing prevents this to be moved before the subgroupAny
+    atomicStore(buf0[virtual_gid], uint(r0), scope_subgroup, storage_sem_wg, sem_release);
+}

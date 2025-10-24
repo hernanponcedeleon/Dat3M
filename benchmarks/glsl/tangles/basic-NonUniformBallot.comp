@@ -1,0 +1,59 @@
+//; @Input: %_ = {{1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0}}
+//; @Input: %__0 = {{0, 0, 0, 0, 0, 0, 0, 0, 0, 0,0, 0, 0, 0, 0, 0, 0, 0, 0, 0,0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}}
+//; @Input: %__1 = {{0, 0, 0, 0, 0, 0, 0, 0, 0, 0,0, 0, 0, 0, 0, 0, 0, 0, 0, 0,0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}}
+//; @Input: %__2 = {{0, 0, 0, 0, 0, 0, 0, 0, 0, 0,0, 0, 0, 0, 0, 0, 0, 0, 0, 0,0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}}
+//; @Input: %__3 = {{0, 0, 0, 0, 0, 0, 0, 0, 0, 0,0, 0, 0, 0, 0, 0, 0, 0, 0, 0,0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}}
+//; @Output: forall (%__0[0][0] == 4294967292 and %__0[0][31] == 4294967292)
+//; @Output: forall (%__1[0][1] == 4 and %__1[0][2] == 4)
+//; @Config: 35, 1, 1
+
+// In the first subgroup, bits 0 and 1 are not set (0 because it fails the expression, 1 because the ballot is not executed)
+// In the second subgroup, bits 0 and 1 are not set (0 because the ballot is not executed, 1 because it fails the expression)
+// All other bits are set
+
+#version 460
+#extension GL_KHR_shader_subgroup_basic : enable
+#extension GL_KHR_shader_subgroup_ballot : require
+#extension GL_KHR_shader_subgroup_vote : enable
+#extension GL_KHR_memory_scope_semantics : enable
+
+#define scope_subgroup 3
+#define storage_sem_wg 256 // Might even need SubgroupMemory (128) for subgroup barriers/operations
+#define sem_release 4
+#define sem_acquire 2
+
+layout(set = 0, binding = 0)  buffer Buf { uint buf[]; };
+layout(set = 0, binding = 1) buffer Checker1 { uint checker1[]; };
+layout(set = 0, binding = 2) buffer Checker2 { uint checker2[]; };
+layout(set = 0, binding = 3) buffer Checker3 { uint checker3[]; };
+layout(set = 0, binding = 4) buffer Checker4 { uint checker4[]; };
+
+void main() {
+    uint subgroup_id = gl_SubgroupID;
+    uint subgroup_size = gl_SubgroupSize;
+    uint subgroup_local_id = gl_SubgroupInvocationID;
+    uint num_workgroup = gl_NumWorkGroups.x;
+    uint workgroup_size = gl_WorkGroupSize.x;
+    uint workgroup_id = gl_WorkGroupID.x;
+    uint workgroup_base = workgroup_size * workgroup_id;
+    uint subgroup_base = subgroup_id * subgroup_size;
+    uint virtual_gid = workgroup_base + subgroup_base + subgroup_local_id;
+    uint next_virtual_gid = workgroup_base + subgroup_base + ((subgroup_local_id + 1) % subgroup_size);
+
+    uint x = atomicLoad(buf[virtual_gid], scope_subgroup, storage_sem_wg, sem_acquire);
+    if(virtual_gid != 1 && virtual_gid != 32) {
+        uvec4 y = subgroupBallot(x == 0);
+        if (virtual_gid < 32) {
+            atomicStore(checker1[virtual_gid % 32], uint(y.x), scope_subgroup, storage_sem_wg, sem_release);
+        }
+        if (virtual_gid >= 32 && virtual_gid < 64) {
+            atomicStore(checker2[virtual_gid % 32], uint(y.y), scope_subgroup, storage_sem_wg, sem_release);
+        }
+        if (virtual_gid >= 64 && virtual_gid < 96) {
+            atomicStore(checker3[virtual_gid % 32], uint(y.z), scope_subgroup, storage_sem_wg, sem_release);
+        } 
+        if (virtual_gid >= 96 && virtual_gid < 128) {
+            atomicStore(checker4[virtual_gid % 32], uint(y.w), scope_subgroup, storage_sem_wg, sem_release);
+        }
+    }
+}

@@ -36,7 +36,7 @@ public class VisitorOpsAnnotation extends SpirvBaseVisitor<Void> {
                 String value = ctx.decoration().builtIn().getText();
                 builtIn.addDecoration(id, value);
             }
-            case ALIGNMENT, BINDING, DESCRIPTOR_SET, SPEC_ID, NON_WRITABLE -> {
+            case ALIGNMENT, BINDING, DESCRIPTOR_SET, SPEC_ID, NON_WRITABLE, RELAXED_PRECISION -> {
                 // Skip
                 // ALIGNMENT - Can have a visible effect only for out-of-bounds accesses
                 // BINDING - The order of arguments to the entry point

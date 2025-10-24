@@ -13,6 +13,7 @@ import com.dat3m.dartagnan.program.event.arch.vulkan.VulkanRMW;
 import com.dat3m.dartagnan.program.event.arch.vulkan.VulkanRMWExtremum;
 import com.dat3m.dartagnan.program.event.arch.vulkan.VulkanRMWOp;
 import com.dat3m.dartagnan.program.event.core.*;
+import com.dat3m.dartagnan.program.event.core.tangles.*;
 import com.dat3m.dartagnan.program.event.core.annotations.CodeAnnotation;
 import com.dat3m.dartagnan.program.event.lang.catomic.*;
 import com.dat3m.dartagnan.program.event.lang.linux.*;
@@ -48,6 +49,13 @@ public interface EventVisitor<T> {
     // RMW core events
     default T visitRMWStore(RMWStore e) { return visitStore(e); }
     default T visitRMWStoreExclusive(RMWStoreExclusive e) { return visitStore(e); }
+    // NonUniform events
+    default T visitNonUniformOpBase(NonUniformOpBase e) { return visitGenericVisibleEvent(e); }
+    default T visitNonUniformOpBool(NonUniformOpBool e) { return visitNonUniformOpBase(e); }
+    default T visitNonUniformOpArithmetic(NonUniformOpArithmetic e) { return visitNonUniformOpBase(e); }
+    default T visitNonUniformOpBroadcast(NonUniformOpBroadcast e) { return visitNonUniformOpBase(e); }
+    default T visitNonUniformOpShuffle(NonUniformOpShuffle e) { return visitNonUniformOpBase(e); }
+    default T visitNonUniformOpBallot(NonUniformOpBallot e) { return visitNonUniformOpBase(e); }
     // Annotations
     default T visitCodeAnnotation(CodeAnnotation e) { return visitEvent(e); }
 

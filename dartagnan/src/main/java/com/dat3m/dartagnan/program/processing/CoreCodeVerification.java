@@ -4,6 +4,7 @@ import com.dat3m.dartagnan.exception.MalformedProgramException;
 import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.core.*;
+import com.dat3m.dartagnan.program.event.core.tangles.*;
 import com.dat3m.dartagnan.program.event.core.annotations.CodeAnnotation;
 import com.dat3m.dartagnan.program.event.core.special.StateSnapshot;
 import com.dat3m.dartagnan.program.event.core.threading.*;
@@ -37,6 +38,7 @@ public class CoreCodeVerification implements FunctionProcessor {
             Assume.class, Assert.class, InstructionBoundary.class,
             ThreadCreate.class, ThreadJoin.class, ThreadArgument.class, ThreadStart.class, ThreadReturn.class,
             ControlBarrier.class, NamedBarrier.class,
+            NonUniformOpBool.class, NonUniformOpArithmetic.class, NonUniformOpBroadcast.class, NonUniformOpShuffle.class, NonUniformOpBallot.class,
             BeginAtomic.class, EndAtomic.class,
             StateSnapshot.class
             // We add SVCOMP atomic blocks here as well, despite them not being part of the core package.
