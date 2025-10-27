@@ -4,12 +4,12 @@ import com.dat3m.dartagnan.expression.Type;
 
 public class PointerType implements Type {
 
-    public int bitWidth = 64;
+    public int bitWidth;
 
-    // todo change the encoding to recognise bitwidth
+    // todo change the encoding to recognise bit width
 
-    PointerType(int bitwidth) {
-        this.bitWidth = bitwidth;
+    PointerType(int bitWidth) {
+        this.bitWidth = bitWidth;
     }
 
 
