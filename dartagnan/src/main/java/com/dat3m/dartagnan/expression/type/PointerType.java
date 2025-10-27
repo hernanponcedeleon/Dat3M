@@ -4,23 +4,24 @@ import com.dat3m.dartagnan.expression.Type;
 
 public class PointerType implements Type {
 
-    public int size = 64;
+    public int bitWidth = 64;
 
-    PointerType() {}
+    // todo change the encoding to recognise bitwidth
 
-    PointerType(int size) {
-        this.size = size;
+    PointerType(int bitwidth) {
+        this.bitWidth = bitwidth;
     }
 
 
     @Override
     public String toString() {
-        return "ptr_"+ size;
+        return "ptr_"+ bitWidth;
     }
 
     @Override
     public boolean equals(Object obj) {
-        return obj != null && obj.getClass() == this.getClass();
+        return obj instanceof PointerType other
+                && other.bitWidth == this.bitWidth;
     }
 
 }

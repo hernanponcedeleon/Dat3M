@@ -4,7 +4,7 @@ import com.dat3m.dartagnan.expression.Type;
 
 import java.util.Objects;
 
-public class ScopedPointerType extends IntegerType {
+public class ScopedPointerType extends PointerType {
 
     private static final int ARCH_SIZE = TypeFactory.getInstance().getArchType().getBitWidth();
 

@@ -354,7 +354,7 @@ public final class ExpressionFactory {
     // Pointers
 
     public Expression makeGetElementPointer(Type indexingType, Expression base, List<Expression> offsets) {
-        Preconditions.checkArgument(base.getType().equals(types.getPointerType()),
+        Preconditions.checkArgument(base.getType() instanceof  PointerType,
                 "Applying offsets to non-pointer expression.");
         return new GEPExpr(indexingType, base, offsets,null);
     }
@@ -363,7 +363,7 @@ public final class ExpressionFactory {
         // TODO: Stride should be a property of the pointer, not of a GEPExpr.
         //  Refactor GEPExpr to only accept a (new) PointerType and a list of offsets.
         //  A PointerType should have the referred type and the stride in its attributes.
-        Preconditions.checkArgument(base.getType().equals(types.getPointerType()),
+        Preconditions.checkArgument(base.getType() instanceof  PointerType,
                 "Applying offsets to non-pointer expression.");
         Preconditions.checkArgument(stride == null || stride >= types.getMemorySizeInBytes(indexingType),
         "Stride cannot be smaller than indexing type");

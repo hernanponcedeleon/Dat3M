@@ -7,6 +7,7 @@ import com.dat3m.dartagnan.expression.Type;
 import com.dat3m.dartagnan.expression.integers.IntBinaryOp;
 import com.dat3m.dartagnan.expression.integers.IntCmpOp;
 import com.dat3m.dartagnan.expression.type.IntegerType;
+import com.dat3m.dartagnan.expression.type.PointerType;
 import com.dat3m.dartagnan.parsers.SpirvBaseVisitor;
 import com.dat3m.dartagnan.parsers.SpirvParser;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.helpers.HelperTags;
@@ -143,8 +144,8 @@ public class VisitorOpsAtomic extends SpirvBaseVisitor<Event> {
         String scope = getScopeTag(scopeCtx.getText());
         Set<String> tags = getMemorySemanticsTags(tagsCtx.getText());
         tags.add(builder.getPointerStorageClass(ptrCtx.getText()));
-        if (!(ptr.getType() instanceof IntegerType) || !(value.getType() instanceof IntegerType)) {
-            throw new ParsingException("Unexpected type at '%s' or '%s', expected integer but received '%s' and '%s'",
+        if (!(ptr.getType() instanceof PointerType) || !(value.getType() instanceof IntegerType)) {
+            throw new ParsingException("Unexpected type at '%s' or '%s', expected pointer and integer but received '%s' and '%s'",
                     ptrCtx.getText(), valCtx.getText(), ptr.getType(), value.getType());
         }
         SpirvRmwExtremum event = newSpirvRmwExtremum(register, ptr, kind, value, scope, tags);
