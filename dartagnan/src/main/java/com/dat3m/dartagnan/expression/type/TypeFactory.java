@@ -275,7 +275,7 @@ public final class TypeFactory {
     }
 
     public static boolean isStaticType(Type type) {
-        if (type instanceof BooleanType || type instanceof IntegerType || type instanceof FloatType) {
+        if (type instanceof BooleanType || type instanceof IntegerType || type instanceof PointerType || type instanceof FloatType) {
             return true;
         }
         if (type instanceof ArrayType aType) {
