@@ -383,6 +383,16 @@ public final class ExpressionFactory {
         return new PointerAddExpr(base, offset);
     }
 
+    public Expression makePtrCast(Expression base,PointerType type){
+        if (base.getType() instanceof PointerType ) {
+            return base;
+        }
+        if (base.getType() instanceof IntegerType) {
+            return makeIntToPtrCast(makeCast(base, types.getArchType()));
+        }
+        throw new UnsupportedOperationException(String.format("Cast %s into pointer unsupported.",base));
+    }
+
 
     public Expression makePtrToIntCast(Expression pointer) {
         return new PtrToIntCast(types.getArchType(), pointer);
@@ -395,6 +405,7 @@ public final class ExpressionFactory {
     public Expression makeIntToPtrCast(Expression operand) {
         return new IntToPtrCast(types.getPointerType(), operand);
     }
+
 
 
     public Expression makeNullLiteral(PointerType pointerType) {

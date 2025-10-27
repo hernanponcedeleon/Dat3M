@@ -182,7 +182,7 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object> {
         final Register register = shrinkRegister(r64, ctx.rD32, inst.halfWordSize, inst.byteSize);
         final Expression address = parseAddress(ctx.address());
         final String mo = inst.acquire ? MO_ACQ : "";
-        add(EventFactory.newLoadWithMo(register, address, mo));
+        add(EventFactory.newLoadWithMo(register, expressions.makePtrCast(address,pointerType), mo));
         addRegister64Update(r64, register);
         return null;
     }
@@ -389,7 +389,7 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object> {
     private Expression parseAddress(AddressContext ctx) {
         final Register base = programBuilder.getOrErrorRegister(mainThread, ctx.register64().id);
         if (ctx.offset() == null) {
-            return base;
+            return expressions.makePtrCast(base,pointerType);
         }
         final ExpressionConversionContext conversion = ctx.offset().expressionConversion();
         final Register32Context register32 = conversion == null ? null : conversion.register32();

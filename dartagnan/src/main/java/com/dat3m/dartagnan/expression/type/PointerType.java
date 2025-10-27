@@ -4,11 +4,18 @@ import com.dat3m.dartagnan.expression.Type;
 
 public class PointerType implements Type {
 
+    public int size = 64;
+
     PointerType() {}
+
+    PointerType(int size) {
+        this.size = size;
+    }
+
 
     @Override
     public String toString() {
-        return "ptr";
+        return "ptr_"+ size;
     }
 
     @Override

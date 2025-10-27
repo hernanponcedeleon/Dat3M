@@ -587,7 +587,7 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
 
         Expression value = (Expression)ctx.re().accept(this);
         if(variable instanceof MemoryObject || variable instanceof Register){
-            Event event = EventFactory.newStoreWithMo(variable, value, C11.NONATOMIC);
+            Event event = EventFactory.newStoreWithMo(variable, expressions.makePtrCast(value,pointerType), C11.NONATOMIC);
             if (isOpenCL) {
                 event.addTags(Tag.OpenCL.DEFAULT_WEAK_SCOPE);
             }

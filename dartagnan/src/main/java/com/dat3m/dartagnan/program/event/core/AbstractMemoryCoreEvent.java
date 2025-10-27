@@ -21,7 +21,7 @@ public abstract class AbstractMemoryCoreEvent extends AbstractEvent implements M
     protected Type accessType;
 
     public AbstractMemoryCoreEvent(Expression address, Type accessType) {
-        // Preconditions.checkArgument(address.getType() instanceof PointerType); // address can be a register
+        Preconditions.checkArgument(address.getType() instanceof PointerType);
         this.address = Preconditions.checkNotNull(address);
         this.accessType = accessType;
         addTags(VISIBLE, MEMORY);

@@ -21,11 +21,12 @@ public final class TypeFactory {
     private final VoidType voidType = new VoidType();
     private final BooleanType booleanType = new BooleanType();
     private final IntegerType archType;
-    private final PointerType pointerType = new PointerType();
+    private final PointerType pointerType;
     private final Normalizer typeNormalizer = new Normalizer();
 
     private TypeFactory() {
         archType = getIntegerType(64);
+        pointerType = getPointerType(64);
     }
 
 
@@ -42,6 +43,11 @@ public final class TypeFactory {
 
     public PointerType getPointerType() {
         return pointerType;
+    }
+    public PointerType getPointerType(int bitWidth) {
+        // to be used in tearing
+        checkArgument(bitWidth > 0, "Non-positive bit width %s.", bitWidth);
+        return typeNormalizer.normalize(new PointerType(bitWidth));
     }
 
 
