@@ -1,0 +1,14 @@
+Vulkan storage-class-1
+{
+  x = 0;
+  a = 0;
+  b = 0;
+  c = 0;
+}
+P0@sg 0, wg 0, qf 0                    | P1@sg 1, wg 0, qf 0                    | P2@sg 2, wg 0, qf 0                    | P3@sg 3, wg 0, qf 0                    ;
+ st.av.wg.sc0 x, 1                     | ld.atom.acq.wg.sc1.semsc0.semsc1 r0, a | ld.atom.acq.wg.sc2.semsc0.semsc2 r0, b | ld.atom.acq.wg.sc3.semsc0.semsc3 r0, c ; 
+ st.atom.rel.wg.sc1.semsc0.semsc1 a, 1 | ld.vis.wg.sc0 r1, x                    | ld.vis.wg.sc0 r1, x                    | ld.vis.wg.sc0 r1, x                    ;
+ st.atom.rel.wg.sc2.semsc0.semsc2 b, 1 |                                        |                                        |                                        ;
+ st.atom.rel.wg.sc3.semsc0.semsc3 c, 1 |                                        |                                        |                                        ;
+
+forall ((P1:r0 == 0 \/ P1:r1 == 1) /\ (P2:r0 == 0 \/ P2:r1 == 1) /\ (P3:r0 == 0 \/ P3:r1 == 1))

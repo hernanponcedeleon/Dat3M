@@ -345,9 +345,13 @@ public final class Tag {
         // StorageClass
         public static final String SC0 = "SC0";
         public static final String SC1 = "SC1";
+        public static final String SC2 = "SC2";
+        public static final String SC3 = "SC3";
         // StorageClass Semantics
         public static final String SEMSC0 = "SEMSC0";
         public static final String SEMSC1 = "SEMSC1";
+        public static final String SEMSC2 = "SEMSC2";
+        public static final String SEMSC3 = "SEMSC3";
 
         public static List<String> getScopeTags() {
             return List.of(SUB_GROUP, WORK_GROUP, QUEUE_FAMILY, DEVICE);
@@ -454,6 +458,8 @@ public final class Tag {
         public static final String SC_FUNCTION = "SPV_SC_FUNCTION";
         public static final String SC_GENERIC = "SPV_SC_GENERIC";
         public static final String SC_PUSH_CONSTANT = "SPV_SC_PUSH_CONSTANT";
+        public static final String SC_ATOMIC_COUNTER = "SPV_SC_ATOMIC_COUNTER";
+        public static final String SC_IMAGE = "SPV_SC_IMAGE";
         public static final String SC_STORAGE_BUFFER = "SPV_CS_STORAGE_BUFFER";
         public static final String SC_PHYS_STORAGE_BUFFER = "SPV_CS_PHYS_STORAGE_BUFFER";
 
@@ -469,6 +475,8 @@ public final class Tag {
                 SC_GENERIC,
                 SC_PUSH_CONSTANT,
                 SC_STORAGE_BUFFER,
+                SC_ATOMIC_COUNTER,
+                SC_IMAGE,
                 SC_PHYS_STORAGE_BUFFER
         );
         public static final Set<String> scopeTags = Set.of(
@@ -591,29 +599,34 @@ public final class Tag {
                         -> null; // read-only
                 case SC_INPUT, SC_PRIVATE, SC_FUNCTION
                         -> null; // private
-                case SC_UNIFORM, SC_OUTPUT, SC_STORAGE_BUFFER, SC_PHYS_STORAGE_BUFFER
+                case SC_UNIFORM, SC_STORAGE_BUFFER, SC_PHYS_STORAGE_BUFFER
                         -> Vulkan.SC0;
                 case SC_WORKGROUP
                         -> Vulkan.SC1;
-                case SC_CROSS_WORKGROUP, SC_GENERIC
+                case SC_IMAGE
+                        -> Vulkan.SC2;
+                case SC_OUTPUT
+                        -> Vulkan.SC3;
+                case SC_CROSS_WORKGROUP, SC_GENERIC, SC_ATOMIC_COUNTER
                         -> throw new UnsupportedOperationException(
                         getErrorMsg(model, "storage class", tag));
 
                 // Scope
+                case INVOCATION -> null;
                 case SUBGROUP -> Vulkan.SUB_GROUP;
                 case WORKGROUP -> Vulkan.WORK_GROUP;
                 case QUEUE_FAMILY -> Vulkan.QUEUE_FAMILY;
-                // TODO: The model does not distinguish between these scopes
-                case INVOCATION, SHADER_CALL, DEVICE, CROSS_DEVICE -> Vulkan.DEVICE;
+                case DEVICE -> Vulkan.DEVICE;
+                // The model does not support these scopes
+                case SHADER_CALL, CROSS_DEVICE
+                        -> throw new UnsupportedOperationException(
+                        getErrorMsg(model, "scope", tag));
 
                 // Memory operands (non-atomic)
                 case MEM_VOLATILE, MEM_NONTEMPORAL -> null;
                 case MEM_NON_PRIVATE -> Vulkan.NON_PRIVATE;
                 case MEM_AVAILABLE -> Vulkan.AVAILABLE;
                 case MEM_VISIBLE -> Vulkan.VISIBLE;
-
-                // Memory semantics (misc)
-                case SEM_VOLATILE -> null;
 
                 // Memory semantics (memory order)
                 case RELAXED -> null;
@@ -624,15 +637,19 @@ public final class Tag {
                         getErrorMsg(model, "memory order", tag));
 
                 // Memory semantics (storage class)
-                case SEM_UNIFORM, SEM_OUTPUT -> Vulkan.SEMSC0;
+                case SEM_UNIFORM -> Vulkan.SEMSC0;
                 case SEM_WORKGROUP -> Vulkan.SEMSC1;
-                case SEM_SUBGROUP, SEM_CROSS_WORKGROUP, SEM_ATOMIC_COUNTER, SEM_IMAGE
-                        -> throw new UnsupportedOperationException(
-                                getErrorMsg(model, "memory semantics", tag));
+                case SEM_IMAGE -> Vulkan.SEMSC2;
+                case SEM_OUTPUT -> Vulkan.SEMSC3;
+                // Ignored by Vulkan but don't trigger a validation error for backward compatibility
+                case SEM_SUBGROUP, SEM_CROSS_WORKGROUP, SEM_ATOMIC_COUNTER -> null;
 
                 // Memory semantics (av-vis)
                 case SEM_AVAILABLE -> Vulkan.SEM_AVAILABLE;
                 case SEM_VISIBLE -> Vulkan.SEM_VISIBLE;
+
+                // Memory semantics (volatile)
+                case SEM_VOLATILE -> null;
 
                 default -> throw new IllegalArgumentException(String.format("Unexpected non Spir-V tag '%s'", tag));
             };
