@@ -617,6 +617,7 @@ public final class Tag {
                 case WORKGROUP -> Vulkan.WORK_GROUP;
                 case QUEUE_FAMILY -> Vulkan.QUEUE_FAMILY;
                 case DEVICE -> Vulkan.DEVICE;
+                // The model does not support these scopes
                 case SHADER_CALL, CROSS_DEVICE
                         -> throw new UnsupportedOperationException(
                         getErrorMsg(model, "scope", tag));
@@ -640,9 +641,8 @@ public final class Tag {
                 case SEM_WORKGROUP -> Vulkan.SEMSC1;
                 case SEM_IMAGE -> Vulkan.SEMSC2;
                 case SEM_OUTPUT -> Vulkan.SEMSC3;
-                case SEM_SUBGROUP, SEM_CROSS_WORKGROUP, SEM_ATOMIC_COUNTER
-                        -> throw new UnsupportedOperationException(
-                                getErrorMsg(model, "storage class semantics", tag));
+                // Ignored by Vulkan but don't trigger a validation error for backward compatibility
+                case SEM_SUBGROUP, SEM_CROSS_WORKGROUP, SEM_ATOMIC_COUNTER -> null;
 
                 // Memory semantics (av-vis)
                 case SEM_AVAILABLE -> Vulkan.SEM_AVAILABLE;
