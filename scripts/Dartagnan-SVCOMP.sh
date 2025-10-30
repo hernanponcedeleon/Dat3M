@@ -23,7 +23,7 @@ else
 
     skip_assertions_of_type="--program.processing.skipAssertionsOfType=USER"
     if [[ $propertypath == *"no-overflow.prp"* ]]; then
-        export CFLAGS="-fgnu89-inline -fsanitize=signed-integer-overflow"
+        export CFLAGS="-fgnu89-inline -fsanitize=signed-integer-overflow,shift"
     elif [[ $propertypath == *"valid-memsafety.prp"* ]]; then
         export CFLAGS="-fgnu89-inline -fsanitize=null"
     elif [[ $propertypath == *"termination.prp"* ]]; then
