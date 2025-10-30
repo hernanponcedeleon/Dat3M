@@ -30,7 +30,6 @@ else
         export CFLAGS="-fgnu89-inline"
     elif [[ $propertypath == *"no-data-race.prp"* ]]; then
         export CFLAGS="-fgnu89-inline"
-        skip_assertions_of_type="--program.processing.skipAssertionsOfType=UNKNOWN_FUNCTION"
     else
         export CFLAGS="-fgnu89-inline"
         skip_assertions_of_type=""
