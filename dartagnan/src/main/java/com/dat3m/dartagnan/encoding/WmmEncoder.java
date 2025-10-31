@@ -7,6 +7,7 @@ import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.analysis.ReachingDefinitionsAnalysis;
 import com.dat3m.dartagnan.program.event.*;
 import com.dat3m.dartagnan.program.event.core.*;
+import com.dat3m.dartagnan.smt.EncodingUtils;
 import com.dat3m.dartagnan.smt.ModelExt;
 import com.dat3m.dartagnan.utils.Utils;
 import com.dat3m.dartagnan.utils.dependable.DependencyGraph;
@@ -25,6 +26,7 @@ import com.dat3m.dartagnan.wmm.utils.graph.EventGraph;
 import com.dat3m.dartagnan.wmm.utils.graph.mutable.MapEventGraph;
 import com.dat3m.dartagnan.wmm.utils.graph.mutable.MutableEventGraph;
 import com.google.common.collect.Iterables;
+import com.google.common.collect.Lists;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
@@ -41,7 +43,6 @@ import java.util.stream.Collectors;
 import static com.dat3m.dartagnan.configuration.OptionNames.*;
 import static com.dat3m.dartagnan.encoding.ExpressionEncoder.ConversionMode.LEFT_TO_RIGHT;
 import static com.dat3m.dartagnan.program.event.Tag.*;
-import static com.dat3m.dartagnan.wmm.RelationNameRepository.RF;
 import static com.google.common.base.Verify.verify;
 
 @Options
@@ -635,18 +636,24 @@ public class WmmEncoder implements Encoder {
         public Void visitReadFrom(ReadFrom rfDef) {
             final ExpressionEncoder exprEncoder = context.getExpressionEncoder();
             final Relation rf = rfDef.getDefinedRelation();
-            Map<MemoryEvent, List<BooleanFormula>> edgeMap = new HashMap<>();
             final EncodingContext.EdgeEncoder edge = context.edge(rf);
+            final EncodingUtils utils = context.getFormulaManager().getEncodingUtils();
+
+            final Map<MemoryEvent, List<BooleanFormula>> read2RfEdges = new HashMap<>();
+            // Encode the semantics of rf-edges
             ra.getKnowledge(rf).getMaySet().apply((e1, e2) -> {
                 final MemoryCoreEvent w = (MemoryCoreEvent) e1;
                 final MemoryCoreEvent r = (MemoryCoreEvent) e2;
 
-                BooleanFormula e = edge.encode(w, r);
-                BooleanFormula sameAddress = context.sameAddress(w, r);
-                BooleanFormula sameValue = context.sameValue(w, r, LEFT_TO_RIGHT);
-                edgeMap.computeIfAbsent(r, key -> new ArrayList<>()).add(e);
-                enc.add(bmgr.implication(e, bmgr.and(execution(w, r), sameAddress, sameValue)));
+                final BooleanFormula rfEdge = edge.encode(w, r);
+                final BooleanFormula sameAddress = context.sameAddress(w, r);
+                final BooleanFormula sameValue = context.sameValue(w, r, LEFT_TO_RIGHT);
+                enc.add(bmgr.implication(rfEdge, bmgr.and(execution(w, r), sameAddress, sameValue)));
+
+                read2RfEdges.computeIfAbsent(r, key -> new ArrayList<>()).add(rfEdge);
             });
+
+            // Encode the existence of rf-edges (+ semantics of uninit reads)
             for (Load r : program.getThreadEvents(Load.class)) {
                 final BooleanFormula uninit = getUninitReadVar(r);
                 if (memoryIsZeroed) {
@@ -654,21 +661,13 @@ public class WmmEncoder implements Encoder {
                     enc.add(bmgr.implication(uninit, exprEncoder.equal(context.value(r), zero)));
                 }
 
-                final List<BooleanFormula> rfEdges = edgeMap.getOrDefault(r, List.of());
-                if (allowMultiReads) {
-                    enc.add(bmgr.implication(context.execution(r), bmgr.or(bmgr.or(rfEdges), uninit)));
-                    continue;
-                }
-
-                String rPrefix = "s(" + RF + ",E" + r.getGlobalId() + ",";
-                BooleanFormula lastSeqVar = uninit;
-                for (int i = 0; i < rfEdges.size(); i++) {
-                    BooleanFormula newSeqVar = bmgr.makeVariable(rPrefix + i + ")");
-                    enc.add(bmgr.equivalence(newSeqVar, bmgr.or(lastSeqVar, rfEdges.get(i))));
-                    enc.add(bmgr.not(bmgr.and(rfEdges.get(i), lastSeqVar)));
-                    lastSeqVar = newSeqVar;
-                }
-                enc.add(bmgr.implication(context.execution(r), lastSeqVar));
+                final List<BooleanFormula> rfChoices = Lists.newArrayList(Iterables.concat(
+                        List.of(uninit), read2RfEdges.getOrDefault(r, List.of())
+                ));
+                final BooleanFormula rfExistenceConstraint = allowMultiReads
+                        ? utils.atLeastOne(rfChoices)
+                        : utils.exactlyOneSequence(rfChoices, "rf_E" + r.getGlobalId());
+                enc.add(bmgr.implication(context.execution(r), rfExistenceConstraint));
             }
             return null;
         }

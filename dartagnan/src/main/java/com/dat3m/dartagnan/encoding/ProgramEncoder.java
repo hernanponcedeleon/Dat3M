@@ -532,10 +532,9 @@ public class ProgramEncoder implements Encoder {
 
     public BooleanFormula encodeFilter() {
         final Expression filterSpec = context.getTask().getProgram().getFilterSpecification();
-        if (!ignoreFilterSpec && filterSpec != null) {
-            return context.getExpressionEncoder().encodeBooleanFinal(filterSpec).formula();
-        }
-        return context.getBooleanFormulaManager().makeTrue();
+        return ignoreFilterSpec
+                ? context.getBooleanFormulaManager().makeTrue()
+                : context.getExpressionEncoder().encodeBooleanFinal(filterSpec).formula();
     }
 
     public BooleanFormula encodeFinalRegisterValues() {
