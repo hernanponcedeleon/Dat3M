@@ -1,0 +1,168 @@
+; @Input: %input = {{0, -1, -3}}
+; @Input: %arshift1 = {{0, 0, 0}}
+; @Input: %arshift2 = {{0, 0, 0}}
+; @Input: %arshift3 = {{0, 0, 0}}
+; @Input: %rshift1 = {{0, 0, 0}}
+; @Input: %rshift2 = {{0, 0, 0}}
+; @Input: %rshift3 = {{0, 0, 0}}
+; @Input: %lshift1 = {{0, 0, 0}}
+; @Input: %lshift2 = {{0, 0, 0}}
+; @Input: %lshift3 = {{0, 0, 0}}
+; @Output: forall (%arshift1[0][0] == 0 and %arshift1[0][1] == -1 and %arshift1[0][2] == -2)
+; @Output: forall (%arshift2[0][0] == 0 and %arshift2[0][1] == -1 and %arshift2[0][2] == -2)
+; @Output: forall (%arshift3[0][0] == -1 and %arshift3[0][1] == -2 and %arshift3[0][2] == 0)
+; @Output: forall (%rshift1[0][0] == 0 and %rshift1[0][1] == 2147483647 and %rshift1[0][2] == 2147483646)
+; @Output: forall (%rshift2[0][0] == 0 and %rshift2[0][1] == 2147483647 and %rshift2[0][2] == 2147483646)
+; @Output: forall (%rshift3[0][0] == 2147483647 and %rshift3[0][1] == 2147483646 and %rshift3[0][2] == 0)
+; @Output: forall (%lshift1[0][0] == 0 and %lshift1[0][1] == -2 and %lshift1[0][2] == -6)
+; @Output: forall (%lshift2[0][0] == 0 and %lshift2[0][1] == -2 and %lshift2[0][2] == -6)
+; @Output: forall (%lshift3[0][0] == -2 and %lshift3[0][1] == -6 and %lshift3[0][2] == 0)
+; @Config: 3, 1, 1
+; SPIR-V
+; Version: 1.5
+; Generator: Khronos; 40
+; Bound: 91
+; Schema: 0
+               OpCapability Shader
+               OpCapability VulkanMemoryModel
+               OpExtension "SPV_KHR_storage_buffer_storage_class"
+               OpExtension "SPV_KHR_vulkan_memory_model"
+               OpMemoryModel Logical Vulkan
+               OpEntryPoint GLCompute %Main "main" %input %arshift1 %arshift2 %arshift3 %rshift1 %rshift2 %rshift3 %lshift1 %lshift2 %lshift3 %gl_LocalInvocationID
+               OpExecutionMode %Main LocalSize 3 1 1
+               OpSource Slang 1
+               OpName %tid "tid"
+               OpName %RWStructuredBuffer "RWStructuredBuffer"
+               OpName %input "input"
+               OpName %in "in"
+               OpName %vin "vin"
+               OpName %uin "uin"
+               OpName %vuin "vuin"
+               OpName %arshift "arshift"
+               OpName %arshift1 "arshift1"
+               OpName %varshift "varshift"
+               OpName %arshift2 "arshift2"
+               OpName %arshift3 "arshift3"
+               OpName %rshift "rshift"
+               OpName %rshift1 "rshift1"
+               OpName %vrshift "vrshift"
+               OpName %rshift2 "rshift2"
+               OpName %rshift3 "rshift3"
+               OpName %lshift "lshift"
+               OpName %lshift1 "lshift1"
+               OpName %vlshift "vlshift"
+               OpName %lshift2 "lshift2"
+               OpName %lshift3 "lshift3"
+               OpName %Main "Main"
+               OpDecorate %gl_LocalInvocationID BuiltIn LocalInvocationId
+               OpDecorate %_runtimearr_int ArrayStride 4
+               OpDecorate %RWStructuredBuffer Block
+               OpMemberDecorate %RWStructuredBuffer 0 Offset 0
+               OpDecorate %input Binding 0
+               OpDecorate %input DescriptorSet 0
+               OpDecorate %arshift1 Binding 1
+               OpDecorate %arshift1 DescriptorSet 0
+               OpDecorate %arshift2 Binding 2
+               OpDecorate %arshift2 DescriptorSet 0
+               OpDecorate %arshift3 Binding 3
+               OpDecorate %arshift3 DescriptorSet 0
+               OpDecorate %rshift1 Binding 4
+               OpDecorate %rshift1 DescriptorSet 0
+               OpDecorate %rshift2 Binding 5
+               OpDecorate %rshift2 DescriptorSet 0
+               OpDecorate %rshift3 Binding 6
+               OpDecorate %rshift3 DescriptorSet 0
+               OpDecorate %lshift1 Binding 7
+               OpDecorate %lshift1 DescriptorSet 0
+               OpDecorate %lshift2 Binding 8
+               OpDecorate %lshift2 DescriptorSet 0
+               OpDecorate %lshift3 Binding 9
+               OpDecorate %lshift3 DescriptorSet 0
+       %void = OpTypeVoid
+          %3 = OpTypeFunction %void
+       %uint = OpTypeInt 32 0
+     %v3uint = OpTypeVector %uint 3
+%_ptr_Input_v3uint = OpTypePointer Input %v3uint
+        %int = OpTypeInt 32 1
+      %int_0 = OpConstant %int 0
+%_ptr_StorageBuffer_int = OpTypePointer StorageBuffer %int
+%_runtimearr_int = OpTypeRuntimeArray %int
+%RWStructuredBuffer = OpTypeStruct %_runtimearr_int
+%_ptr_StorageBuffer_RWStructuredBuffer = OpTypePointer StorageBuffer %RWStructuredBuffer
+     %uint_1 = OpConstant %uint 1
+     %uint_3 = OpConstant %uint 3
+      %v2int = OpTypeVector %int 2
+     %v2uint = OpTypeVector %uint 2
+      %int_1 = OpConstant %int 1
+%gl_LocalInvocationID = OpVariable %_ptr_Input_v3uint Input
+      %input = OpVariable %_ptr_StorageBuffer_RWStructuredBuffer StorageBuffer
+   %arshift1 = OpVariable %_ptr_StorageBuffer_RWStructuredBuffer StorageBuffer
+   %arshift2 = OpVariable %_ptr_StorageBuffer_RWStructuredBuffer StorageBuffer
+   %arshift3 = OpVariable %_ptr_StorageBuffer_RWStructuredBuffer StorageBuffer
+    %rshift1 = OpVariable %_ptr_StorageBuffer_RWStructuredBuffer StorageBuffer
+    %rshift2 = OpVariable %_ptr_StorageBuffer_RWStructuredBuffer StorageBuffer
+    %rshift3 = OpVariable %_ptr_StorageBuffer_RWStructuredBuffer StorageBuffer
+    %lshift1 = OpVariable %_ptr_StorageBuffer_RWStructuredBuffer StorageBuffer
+    %lshift2 = OpVariable %_ptr_StorageBuffer_RWStructuredBuffer StorageBuffer
+    %lshift3 = OpVariable %_ptr_StorageBuffer_RWStructuredBuffer StorageBuffer
+         %90 = OpConstantComposite %v2int %int_1 %int_1
+       %Main = OpFunction %void None %3
+          %4 = OpLabel
+          %7 = OpLoad %v3uint %gl_LocalInvocationID
+        %tid = OpCompositeExtract %uint %7 0
+         %14 = OpAccessChain %_ptr_StorageBuffer_int %input %int_0 %tid
+         %in = OpLoad %int %14
+         %20 = OpAccessChain %_ptr_StorageBuffer_int %input %int_0 %tid
+         %21 = OpLoad %int %20
+         %22 = OpIAdd %uint %tid %uint_1
+         %24 = OpUMod %uint %22 %uint_3
+         %26 = OpAccessChain %_ptr_StorageBuffer_int %input %int_0 %24
+         %27 = OpLoad %int %26
+        %vin = OpCompositeConstruct %v2int %21 %27
+         %30 = OpAccessChain %_ptr_StorageBuffer_int %input %int_0 %tid
+         %31 = OpLoad %int %30
+        %uin = OpBitcast %uint %31
+         %33 = OpAccessChain %_ptr_StorageBuffer_int %input %int_0 %tid
+         %34 = OpLoad %int %33
+         %35 = OpBitcast %uint %34
+         %36 = OpAccessChain %_ptr_StorageBuffer_int %input %int_0 %24
+         %37 = OpLoad %int %36
+         %38 = OpBitcast %uint %37
+       %vuin = OpCompositeConstruct %v2uint %35 %38
+    %arshift = OpShiftRightArithmetic %int %in %int_1
+         %43 = OpAccessChain %_ptr_StorageBuffer_int %arshift1 %int_0 %tid
+               OpStore %43 %arshift
+   %varshift = OpShiftRightArithmetic %v2int %vin %90
+         %48 = OpAccessChain %_ptr_StorageBuffer_int %arshift2 %int_0 %tid
+         %50 = OpCompositeExtract %int %varshift 0
+               OpStore %48 %50
+         %52 = OpAccessChain %_ptr_StorageBuffer_int %arshift3 %int_0 %tid
+         %54 = OpCompositeExtract %int %varshift 1
+               OpStore %52 %54
+     %rshift = OpShiftRightLogical %uint %uin %int_1
+         %57 = OpAccessChain %_ptr_StorageBuffer_int %rshift1 %int_0 %tid
+         %59 = OpBitcast %int %rshift
+               OpStore %57 %59
+    %vrshift = OpShiftRightLogical %v2uint %vuin %90
+         %63 = OpAccessChain %_ptr_StorageBuffer_int %rshift2 %int_0 %tid
+         %65 = OpCompositeExtract %uint %vrshift 0
+         %66 = OpBitcast %int %65
+               OpStore %63 %66
+         %68 = OpAccessChain %_ptr_StorageBuffer_int %rshift3 %int_0 %tid
+         %70 = OpCompositeExtract %uint %vrshift 1
+         %71 = OpBitcast %int %70
+               OpStore %68 %71
+         %73 = OpShiftLeftLogical %int %in %int_1
+     %lshift = OpBitcast %uint %73
+         %75 = OpAccessChain %_ptr_StorageBuffer_int %lshift1 %int_0 %tid
+         %77 = OpBitcast %int %lshift
+               OpStore %75 %77
+    %vlshift = OpShiftLeftLogical %v2int %vin %90
+         %81 = OpAccessChain %_ptr_StorageBuffer_int %lshift2 %int_0 %tid
+         %83 = OpCompositeExtract %int %vlshift 0
+               OpStore %81 %83
+         %85 = OpAccessChain %_ptr_StorageBuffer_int %lshift3 %int_0 %tid
+         %87 = OpCompositeExtract %int %vlshift 1
+               OpStore %85 %87
+               OpReturn
+               OpFunctionEnd

@@ -229,11 +229,15 @@ scope returns [String content]
 sc returns [String content]
     :   Period Sc0 {$content = "SC0";}
     |   Period Sc1 {$content = "SC1";}
+    |   Period Sc2 {$content = "SC2";}
+    |   Period Sc3 {$content = "SC3";}
     ;
 
 semSc returns [String content]
     :   Period Semsc0 {$content = "SEMSC0";}
     |   Period Semsc1 {$content = "SEMSC1";}
+    |   Period Semsc2 {$content = "SEMSC2";}
+    |   Period Semsc3 {$content = "SEMSC3";}
     ;
 
 operation locals [IntBinaryOp op]
@@ -301,9 +305,13 @@ SemAv           :   'semav';
 
 Sc0             :   'sc0';
 Sc1             :   'sc1';
+Sc2             :   'sc2';
+Sc3             :   'sc3';
 
 Semsc0          :   'semsc0';
 Semsc1          :   'semsc1';
+Semsc2          :   'semsc2';
+Semsc3          :   'semsc3';
 
 Beq             :   'beq';
 Bne             :   'bne';

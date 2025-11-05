@@ -8,7 +8,7 @@ import static com.dat3m.dartagnan.wmm.RelationNameRepository.CASDEP;
 public class CASDependency extends Definition {
 
     public CASDependency(Relation r0) {
-        super(r0, CASDEP);
+        super(Relation.checkIsRelation(r0), CASDEP);
     }
 
     @Override

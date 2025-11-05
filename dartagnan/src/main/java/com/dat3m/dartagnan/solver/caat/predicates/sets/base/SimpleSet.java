@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan.solver.caat.predicates.sets.base;
 
+import com.dat3m.dartagnan.solver.caat.domain.Domain;
 import com.dat3m.dartagnan.solver.caat.predicates.CAATPredicate;
 import com.dat3m.dartagnan.solver.caat.predicates.Derivable;
 import com.dat3m.dartagnan.solver.caat.predicates.sets.Element;
@@ -51,6 +52,12 @@ public class SimpleSet extends AbstractBaseSet {
     @Override
     public Set<Element> setView() {
         return keySet;
+    }
+
+    @Override
+    public void initializeToDomain(Domain<?> domain) {
+        super.initializeToDomain(domain);
+        elements.clear();
     }
 
     @Override

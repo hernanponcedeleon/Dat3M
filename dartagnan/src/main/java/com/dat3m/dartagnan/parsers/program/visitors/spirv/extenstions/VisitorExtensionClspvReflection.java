@@ -15,7 +15,7 @@ import com.dat3m.dartagnan.program.memory.ScopedPointerVariable;
 import java.util.List;
 import java.util.Set;
 
-public class VisitorExtensionClspvReflection extends VisitorExtension<Void> {
+public class VisitorExtensionClspvReflection extends VisitorExtension<Expression> {
 
     private static final TypeFactory types = TypeFactory.getInstance();
     private static final ExpressionFactory expressions = ExpressionFactory.getInstance();
@@ -29,67 +29,67 @@ public class VisitorExtensionClspvReflection extends VisitorExtension<Void> {
     }
 
     @Override
-    public Void visitClspvReflection_kernel(SpirvParser.ClspvReflection_kernelContext ctx) {
+    public Expression visitClspvReflection_kernel(SpirvParser.ClspvReflection_kernelContext ctx) {
         // Do nothing, kernel name and the number of arguments
         return null;
     }
 
     @Override
-    public Void visitClspvReflection_argumentInfo(SpirvParser.ClspvReflection_argumentInfoContext ctx) {
+    public Expression visitClspvReflection_argumentInfo(SpirvParser.ClspvReflection_argumentInfoContext ctx) {
         // Do nothing, variable name in OpenCL
         return null;
     }
 
     @Override
-    public Void visitClspvReflection_argumentStorageBuffer(SpirvParser.ClspvReflection_argumentStorageBufferContext ctx) {
+    public Expression visitClspvReflection_argumentStorageBuffer(SpirvParser.ClspvReflection_argumentStorageBufferContext ctx) {
         // Do nothing, variable index in OpenCL and Spir-V and descriptor set
         return null;
     }
 
     @Override
-    public Void visitClspvReflection_argumentWorkgroup(SpirvParser.ClspvReflection_argumentWorkgroupContext ctx) {
+    public Expression visitClspvReflection_argumentWorkgroup(SpirvParser.ClspvReflection_argumentWorkgroupContext ctx) {
         // Do nothing, default size of workgroup buffer defined in spec constant
         return null;
     }
 
     @Override
-    public Void visitClspvReflection_specConstantWorkgroupSize(SpirvParser.ClspvReflection_specConstantWorkgroupSizeContext ctx) {
+    public Expression visitClspvReflection_specConstantWorkgroupSize(SpirvParser.ClspvReflection_specConstantWorkgroupSizeContext ctx) {
         // Do nothing, will be overwritten by BuiltIn WorkgroupSize
         return null;
     }
 
     @Override
-    public Void visitClspvReflection_pushConstantGlobalOffset(SpirvParser.ClspvReflection_pushConstantGlobalOffsetContext ctx) {
+    public Expression visitClspvReflection_pushConstantGlobalOffset(SpirvParser.ClspvReflection_pushConstantGlobalOffsetContext ctx) {
         return setPushConstantValue("PushConstantGlobalOffset", ctx.offsetIdRef().getText(), ctx.sizeIdRef().getText());
     }
 
     @Override
-    public Void visitClspvReflection_pushConstantGlobalSize(SpirvParser.ClspvReflection_pushConstantGlobalSizeContext ctx) {
+    public Expression visitClspvReflection_pushConstantGlobalSize(SpirvParser.ClspvReflection_pushConstantGlobalSizeContext ctx) {
         return setPushConstantValue("PushConstantGlobalSize", ctx.offsetIdRef().getText(), ctx.sizeIdRef().getText());
     }
 
     @Override
-    public Void visitClspvReflection_pushConstantEnqueuedLocalSize(SpirvParser.ClspvReflection_pushConstantEnqueuedLocalSizeContext ctx) {
+    public Expression visitClspvReflection_pushConstantEnqueuedLocalSize(SpirvParser.ClspvReflection_pushConstantEnqueuedLocalSizeContext ctx) {
         return setPushConstantValue("PushConstantEnqueuedLocalSize", ctx.offsetIdRef().getText(), ctx.sizeIdRef().getText());
     }
 
     @Override
-    public Void visitClspvReflection_pushConstantNumWorkgroups(SpirvParser.ClspvReflection_pushConstantNumWorkgroupsContext ctx) {
+    public Expression visitClspvReflection_pushConstantNumWorkgroups(SpirvParser.ClspvReflection_pushConstantNumWorkgroupsContext ctx) {
         return setPushConstantValue("PushConstantNumWorkgroups", ctx.offsetIdRef().getText(), ctx.sizeIdRef().getText());
     }
 
     @Override
-    public Void visitClspvReflection_pushConstantRegionOffset(SpirvParser.ClspvReflection_pushConstantRegionOffsetContext ctx) {
+    public Expression visitClspvReflection_pushConstantRegionOffset(SpirvParser.ClspvReflection_pushConstantRegionOffsetContext ctx) {
         return setPushConstantValue("PushConstantRegionOffset", ctx.offsetIdRef().getText(), ctx.sizeIdRef().getText());
     }
 
     @Override
-    public Void visitClspvReflection_pushConstantRegionGroupOffset(SpirvParser.ClspvReflection_pushConstantRegionGroupOffsetContext ctx) {
+    public Expression visitClspvReflection_pushConstantRegionGroupOffset(SpirvParser.ClspvReflection_pushConstantRegionGroupOffsetContext ctx) {
         return setPushConstantValue("PushConstantRegionGroupOffset", ctx.offsetIdRef().getText(), ctx.sizeIdRef().getText());
     }
 
     @Override
-    public Void visitClspvReflection_argumentPodPushConstant(SpirvParser.ClspvReflection_argumentPodPushConstantContext ctx) {
+    public Expression visitClspvReflection_argumentPodPushConstant(SpirvParser.ClspvReflection_argumentPodPushConstantContext ctx) {
         initPushConstant();
         int argOffset = getExpressionAsConstInteger(ctx.offsetIdRef().getText());
         int argSize = getExpressionAsConstInteger(ctx.sizeIdRef().getText());
@@ -97,7 +97,7 @@ public class VisitorExtensionClspvReflection extends VisitorExtension<Void> {
         return null;
     }
 
-    private Void setPushConstantValue(String argument, String offsetId, String sizeId) {
+    private Expression setPushConstantValue(String argument, String offsetId, String sizeId) {
         initPushConstant();
         int argOffset = getExpressionAsConstInteger(offsetId);
         int argSize = getExpressionAsConstInteger(sizeId);

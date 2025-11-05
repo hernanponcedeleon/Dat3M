@@ -15,6 +15,7 @@ import com.dat3m.dartagnan.utils.logic.DNF;
 import com.dat3m.dartagnan.verification.Context;
 import com.dat3m.dartagnan.wmm.Relation;
 import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
+import com.dat3m.dartagnan.wmm.definition.TagSet;
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
 import org.sosy_lab.common.configuration.Option;
@@ -150,17 +151,19 @@ public class CoreReasoner {
     private List<CoreLiteral> toUnreducedCoreReason(Conjunction<CAATLiteral> baseReason, EventDomain domain) {
         final List<CoreLiteral> coreReason = new ArrayList<>(baseReason.getSize());
         for (CAATLiteral lit : baseReason.getLiterals()) {
+            final Relation rel = executionGraph.getRelation(lit.getPredicate());
             if (lit instanceof ElementLiteral eleLit) {
-                // FIXME: This step is not really faithful because we forget the unary predicate
-                //  from which we derived the exec literals.
-                //  This should be fine for now because all unary sets are static so they behave similarly.
-                //  If we ever support dynamic unary predicates, this code needs to get updated.
                 final Event e = domain.getObjectById(eleLit.getData().getId()).getEvent();
-                coreReason.add(new ExecLiteral(e, lit.isPositive()));
+                final CoreLiteral coreLiteral;
+                if (rel.getDefinition() instanceof TagSet) {
+                    coreLiteral = new ExecLiteral(e, true);
+                } else {
+                    coreLiteral = new RelLiteral(rel, e, e, eleLit.isPositive());
+                }
+                coreReason.add(coreLiteral);
             } else if (lit instanceof EdgeLiteral edgeLit) {
                 final Event e1 = domain.getObjectById(edgeLit.getData().getFirst()).getEvent();
                 final Event e2 = domain.getObjectById(edgeLit.getData().getSecond()).getEvent();
-                final Relation rel = executionGraph.getRelationGraphMap().inverse().get(edgeLit.getPredicate());
                 coreReason.add(new RelLiteral(rel, e1, e2, edgeLit.isPositive()));
             }
         }

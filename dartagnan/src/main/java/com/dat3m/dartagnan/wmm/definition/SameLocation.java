@@ -7,7 +7,7 @@ import com.dat3m.dartagnan.wmm.RelationNameRepository;
 public class SameLocation extends Definition {
 
     public SameLocation(Relation r0) {
-        super(r0, RelationNameRepository.LOC);
+        super(Relation.checkIsRelation(r0), RelationNameRepository.LOC);
     }
 
     @Override

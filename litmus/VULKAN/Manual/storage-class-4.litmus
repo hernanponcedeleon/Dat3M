@@ -1,0 +1,11 @@
+Vulkan storage-class-4
+{
+  x = 0;
+  y = 0;
+}
+P0@sg 0, wg 0, qf 0              | P1@sg 1, wg 0, qf 0             ;
+ st.av.wg.sc0 x, 1               | ld.atom.wg.sc2 r0, y            ;
+ membar.acq_rel.wg.semsc0.semsc2 | membar.acq_rel.wg.semsc0.semsc2 ;
+ st.atom.wg.sc2 y, 1             | ld.vis.wg.sc0 r1, x             ;
+
+forall (P1:r0 == 0 \/ P1:r1 == 1)

@@ -22,9 +22,10 @@ public class VisitorVulkan extends VisitorBase {
             Tag.Vulkan.SUB_GROUP, Tag.Vulkan.WORK_GROUP,
             Tag.Vulkan.QUEUE_FAMILY, Tag.Vulkan.DEVICE,
             Tag.Vulkan.NON_PRIVATE, Tag.Vulkan.ATOM,
-            Tag.Vulkan.SC0, Tag.Vulkan.SC1);
+            Tag.Vulkan.SC0, Tag.Vulkan.SC1, Tag.Vulkan.SC2, Tag.Vulkan.SC3);
 
-    private static final Set<String> semScTags = Set.of(Tag.Vulkan.SEMSC0, Tag.Vulkan.SEMSC1);
+    private static final Set<String> semScTags = Set.of(
+            Tag.Vulkan.SEMSC0, Tag.Vulkan.SEMSC1, Tag.Vulkan.SEMSC2, Tag.Vulkan.SEMSC3);
 
     private static final Set<String> loadTags = Set.of(
             Tag.Vulkan.ACQUIRE, Tag.Vulkan.VISIBLE, Tag.Vulkan.SEM_VISIBLE);

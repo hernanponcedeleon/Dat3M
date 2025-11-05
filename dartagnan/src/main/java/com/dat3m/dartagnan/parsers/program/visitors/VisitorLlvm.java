@@ -411,10 +411,12 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
                 }
             }
             if(!unsupportedEncountered && events.isEmpty()){
-                logger.warn("None of the parsers succeeded for inline assembly. Setting non deterministic value");
+                String msg = "Ignoring call.";
                 if(resultRegister != null){
                     block.events.add(EventFactory.Svcomp.newNonDetChoice(resultRegister));
+                    msg = "Setting non deterministic value.";
                 }
+                logger.warn("None of the parsers succeeded for inline assembly." + msg);
             }
             return resultRegister;
         }

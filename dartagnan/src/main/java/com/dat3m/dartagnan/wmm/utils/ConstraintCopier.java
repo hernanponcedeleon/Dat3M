@@ -92,13 +92,8 @@ public final class ConstraintCopier implements Constraint.Visitor<Constraint> {
     }
 
     @Override
-    public DomainIdentity visitDomainIdentity(DomainIdentity def) {
-        return new DomainIdentity(translate(def.getDefinedRelation()), translate(def.getOperand()));
-    }
-
-    @Override
-    public RangeIdentity visitRangeIdentity(RangeIdentity def) {
-        return new RangeIdentity(translate(def.getDefinedRelation()), translate(def.getOperand()));
+    public Projection visitProjection(Projection def) {
+        return new Projection(translate(def.getDefinedRelation()), translate(def.getOperand()), def.getDimension());
     }
 
     @Override
@@ -113,12 +108,12 @@ public final class ConstraintCopier implements Constraint.Visitor<Constraint> {
 
     @Override
     public SetIdentity visitSetIdentity(SetIdentity def) {
-        return new SetIdentity(translate(def.getDefinedRelation()), def.getFilter());
+        return new SetIdentity(translate(def.getDefinedRelation()), translate(def.getDomain()));
     }
 
     @Override
     public CartesianProduct visitProduct(CartesianProduct def) {
-        return new CartesianProduct(translate(def.getDefinedRelation()), def.getFirstFilter(), def.getSecondFilter());
+        return new CartesianProduct(translate(def.getDefinedRelation()), translate(def.getDomain()), translate(def.getRange()));
     }
 
     @Override
@@ -129,6 +124,11 @@ public final class ConstraintCopier implements Constraint.Visitor<Constraint> {
     @Override
     public Empty visitEmpty(Empty def) {
         return new Empty(translate(def.getDefinedRelation()));
+    }
+
+    @Override
+    public TagSet visitTagSet(TagSet def) {
+        return new TagSet(translate(def.getDefinedRelation()), def.getTag());
     }
 
     @Override

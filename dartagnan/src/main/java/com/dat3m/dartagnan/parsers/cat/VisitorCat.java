@@ -8,7 +8,6 @@ import com.dat3m.dartagnan.parsers.CatBaseVisitor;
 import com.dat3m.dartagnan.parsers.CatLexer;
 import com.dat3m.dartagnan.parsers.CatParser;
 import com.dat3m.dartagnan.parsers.CatParser.*;
-import com.dat3m.dartagnan.program.filter.Filter;
 import com.dat3m.dartagnan.wmm.Definition;
 import com.dat3m.dartagnan.wmm.Relation;
 import com.dat3m.dartagnan.wmm.RelationNameRepository;
@@ -133,9 +132,9 @@ class VisitorCat extends CatBaseVisitor<Object> {
     }
 
     private String createUniqueName(String name) {
-        if (namespace.containsKey(name) && !nameOccurrenceCounter.containsKey(name)) {
+        if (wmm.containsRelation(name)) {
             // If we have already seen the name, but not counted it yet, we do so now.
-            nameOccurrenceCounter.put(name, 1);
+            nameOccurrenceCounter.putIfAbsent(name, 1);
         }
 
         final int occurrenceNumber =  nameOccurrenceCounter.compute(name, (k, v) -> v == null ? 1 : v + 1);
@@ -145,19 +144,10 @@ class VisitorCat extends CatBaseVisitor<Object> {
 
     @Override
     public Void visitLetDefinition(LetDefinitionContext ctx) {
-        String name = ctx.n.getText();
-        Object definedPredicate = ctx.e.accept(this);
-        if (definedPredicate instanceof Relation rel) {
-            String alias = createUniqueName(name);
-            wmm.addAlias(alias, rel);
-        } else if (definedPredicate instanceof Filter filter) {
-            String alias = createUniqueName(name);
-            // NOTE: The support for re-defined filters is limited:
-            // The Wmm will recognize all aliases, but the filter itself has a single name,
-            // which we set to the most recent alias we used.
-            filter.setName(alias);
-            wmm.addFilter(filter);
-        }
+        final String name = ctx.n.getText();
+        final Relation definedPredicate = (Relation) ctx.e.accept(this);
+        final String alias = createUniqueName(name);
+        wmm.addAlias(alias, definedPredicate);
         namespace.put(name, definedPredicate);
         return null;
     }
@@ -167,8 +157,8 @@ class VisitorCat extends CatBaseVisitor<Object> {
         final int recSize = ctx.letRecAndDefinition().size() + 1;
         final Relation[] recursiveGroup = new Relation[recSize];
         final String[] lhsNames = new String[recSize];
-
-        // Create the recursive relations
+        final ExpressionContext[] rhsContexts = new ExpressionContext[recSize];
+        // Recompose the syntax.
         for (int i = 0; i < recSize; i++) {
             // First relation needs special treatment due to syntactic difference
             final String relName = i == 0 ? ctx.n.getText() : ctx.letRecAndDefinition(i - 1).n.getText();
@@ -177,14 +167,19 @@ class VisitorCat extends CatBaseVisitor<Object> {
                 throw new MalformedMemoryModelException(errorMsg);
             }
             lhsNames[i] = relName;
-            recursiveGroup[i] = wmm.newRelation(createUniqueName(relName));
-            recursiveGroup[i].setRecursive();
-            namespace.put(relName, recursiveGroup[i]);
+            rhsContexts[i] = i == 0 ? ctx.e : ctx.letRecAndDefinition(i - 1).e;
         }
-
-        // Parse recursive definitions
+        // Create the recursive relations.
         for (int i = 0; i < recSize; i++) {
-            final ExpressionContext rhs = i == 0 ? ctx.e : ctx.letRecAndDefinition(i - 1).e;
+            final Relation.Arity probedArity = rhsContexts[i].accept(new ArityInspector());
+            final Relation.Arity arity = probedArity != null ? probedArity : Relation.Arity.BINARY;
+            recursiveGroup[i] = wmm.newRelation(createUniqueName(lhsNames[i]), arity);
+            recursiveGroup[i].setRecursive();
+            namespace.put(lhsNames[i], recursiveGroup[i]);
+        }
+        // Parse recursive definitions.
+        for (int i = 0; i < recSize; i++) {
+            final ExpressionContext rhs = rhsContexts[i];
             final Relation lhs = recursiveGroup[i];
             setRelationToBeDefined(lhs);
             final Relation parsedRhs = parseAsRelation(rhs);
@@ -213,16 +208,26 @@ class VisitorCat extends CatBaseVisitor<Object> {
     }
 
     @Override
-    public Object visitExprNew(ExprNewContext ctx) {
-        return addDefinition(new Free(wmm.newRelation()));
+    public Object visitExprNewSet(ExprNewSetContext ctx) {
+        return addDefinition(new Free(wmm.newRelation(Relation.Arity.UNARY)));
+    }
+
+    @Override
+    public Object visitExprNewRelation(ExprNewRelationContext ctx) {
+        return addDefinition(new Free(wmm.newRelation(Relation.Arity.BINARY)));
     }
 
     @Override
     public Object visitExprBasic(ExprBasicContext ctx) {
-        String name = ctx.n.getText();
-        Object predicate = namespace.computeIfAbsent(name,
-                k -> RelationNameRepository.contains(name) ? wmm.getOrCreatePredefinedRelation(k) : Filter.byTag(k));
-        return predicate;
+        final String name = ctx.n.getText();
+        final Object localObject = namespace.get(name);
+        final Object boundObject = localObject != null ? localObject : wmm.getRelation(name);
+        if (boundObject != null) {
+            return boundObject;
+        }
+        final boolean predefinedName = RelationNameRepository.contains(name);
+        final Relation predefined = predefinedName ? wmm.getOrCreatePredefinedRelation(name) : null;
+        return predefinedName ? predefined : addDefinition(new TagSet(wmm.newSet(name), name));
     }
 
     @Override
@@ -255,52 +260,43 @@ class VisitorCat extends CatBaseVisitor<Object> {
 
     @Override
     public Object visitExprIntersection(ExprIntersectionContext c) {
-        Optional<Relation> defRel = getAndResetRelationToBeDefined();
-        Object o1 = c.e1.accept(this);
-        Object o2 = c.e2.accept(this);
-        if (o1 instanceof Relation) {
-            Relation r0 = defRel.orElseGet(wmm::newRelation);
-            return addDefinition(new Intersection(r0, (Relation) o1, parseAsRelation(o2, c)));
-        }
-        return Filter.intersection(parseAsFilter(o1, c), parseAsFilter(o2, c));
+        final Optional<Relation> defRel = getAndResetRelationToBeDefined();
+        final Relation r1 = parseAsRelation(c.e1);
+        final Relation r2 = parseAsRelation(c.e2);
+        final Relation r0 = defRel.orElseGet(() -> wmm.newRelation(r1.getArity()));
+        return addDefinition(new Intersection(r0, r1, r2));
     }
 
     @Override
     public Object visitExprMinus(ExprMinusContext c) {
         checkNoRecursion(c);
-        Object o1 = c.e1.accept(this);
-        Object o2 = c.e2.accept(this);
-        if (o1 instanceof Relation) {
-            Relation r0 = wmm.newRelation();
-            return addDefinition(new Difference(r0, (Relation) o1, parseAsRelation(o2, c)));
-        }
-        return Filter.difference(parseAsFilter(o1, c), parseAsFilter(o2, c));
+        final Relation r1 = parseAsRelation(c.e1);
+        final Relation r2 = parseAsRelation(c.e2);
+        final Relation r0 = wmm.newRelation(r1.getArity());
+        return addDefinition(new Difference(r0, r1, r2));
     }
 
     @Override
     public Object visitExprUnion(ExprUnionContext c) {
-        Optional<Relation> defRel = getAndResetRelationToBeDefined();
-        Object o1 = c.e1.accept(this);
-        Object o2 = c.e2.accept(this);
-        if (o1 instanceof Relation) {
-            Relation r0 = defRel.orElseGet(wmm::newRelation);
-            return addDefinition(new Union(r0, (Relation) o1, parseAsRelation(o2, c)));
-        }
-        return Filter.union(parseAsFilter(o1, c), parseAsFilter(o2, c));
+        final Optional<Relation> defRel = getAndResetRelationToBeDefined();
+        final Relation r1 = parseAsRelation(c.e1);
+        final Relation r2 = parseAsRelation(c.e2);
+        final Relation r0 = defRel.orElseGet(() -> wmm.newRelation(r1.getArity()));
+        return addDefinition(new Union(r0, r1, r2));
     }
 
     @Override
     public Object visitExprComplement(ExprComplementContext c) {
         checkNoRecursion(c);
-        Object o1 = c.e.accept(this);
-        Filter visible = Filter.byTag(VISIBLE);
-        if (o1 instanceof Relation) {
-            Relation r0 = wmm.newRelation();
-            Relation all = wmm.newRelation();
-            Relation r1 = wmm.addDefinition(new CartesianProduct(all, visible, visible));
-            return addDefinition(new Difference(r0, r1, (Relation) o1));
+        final Relation r1 = parseAsRelation(c.e);
+        final Relation visible = wmm.newSet();
+        wmm.addDefinition(new TagSet(visible, VISIBLE));
+        final Relation r0 = wmm.newRelation(r1.getArity());
+        final Relation all = r1.isSet() ? visible : wmm.newRelation();
+        if (!r1.isSet()) {
+            wmm.addDefinition(new CartesianProduct(all, visible, visible));
         }
-        return Filter.difference(visible, parseAsFilter(o1, c));
+        return addDefinition(new Difference(r0, all, r1));
     }
 
     @Override
@@ -334,17 +330,17 @@ class VisitorCat extends CatBaseVisitor<Object> {
     }
 
     @Override
-    public Relation visitExprDomainIdentity(ExprDomainIdentityContext c) {
-        Relation r0 = getAndResetRelationToBeDefined().orElseGet(wmm::newRelation);
+    public Relation visitExprDomain(ExprDomainContext c) {
+        Relation r0 = wmm.newSet();
         Relation r1 = parseAsRelation(c.e);
-        return addDefinition(new DomainIdentity(r0, r1));
+        return addDefinition(new Projection(r0, r1, Projection.Dimension.DOMAIN));
     }
 
     @Override
-    public Relation visitExprRangeIdentity(ExprRangeIdentityContext c) {
-        Relation r0 = getAndResetRelationToBeDefined().orElseGet(wmm::newRelation);
+    public Relation visitExprRange(ExprRangeContext c) {
+        Relation r0 = wmm.newSet();
         Relation r1 = parseAsRelation(c.e);
-        return addDefinition(new RangeIdentity(r0, r1));
+        return addDefinition(new Projection(r0, r1, Projection.Dimension.RANGE));
     }
 
     @Override
@@ -357,17 +353,17 @@ class VisitorCat extends CatBaseVisitor<Object> {
     @Override
     public Relation visitExprIdentity(ExprIdentityContext c) {
         Relation r0 = getAndResetRelationToBeDefined().orElseGet(wmm::newRelation);
-        Filter s1 = parseAsFilter(c.e);
-        return addDefinition(new SetIdentity(r0, s1));
+        final Relation r1 = parseAsRelation(c.e);
+        return addDefinition(new SetIdentity(r0, r1));
     }
 
     @Override
     public Relation visitExprCartesian(ExprCartesianContext c) {
         checkNoRecursion(c);
         Relation r0 = wmm.newRelation();
-        Filter s1 = parseAsFilter(c.e1);
-        Filter s2 = parseAsFilter(c.e2);
-        return addDefinition(new CartesianProduct(r0, s1, s2));
+        Relation r1 = parseAsRelation(c.e1);
+        Relation r2 = parseAsRelation(c.e2);
+        return addDefinition(new CartesianProduct(r0, r1, r2));
     }
 
     // ============================ Utility ============================
@@ -403,17 +399,6 @@ class VisitorCat extends CatBaseVisitor<Object> {
         throw new ParsingException("Expected relation, got " + o.getClass().getSimpleName() + " " + o + " from expression " + t.getText());
     }
 
-    private Filter parseAsFilter(ExpressionContext t) {
-        return parseAsFilter(t.accept(this), t);
-    }
-
-    private static Filter parseAsFilter(Object o, ExpressionContext t) {
-        if (o instanceof Filter filter) {
-            return filter;
-        }
-        throw new ParsingException("Expected set, got " + o.getClass().getSimpleName() + " " + o + " from expression " + t.getText());
-    }
-
     private static CatParser getParser(CharStream input) {
         final Lexer lexer = new CatLexer(input);
         lexer.addErrorListener(new AbortErrorListener());
@@ -424,6 +409,75 @@ class VisitorCat extends CatBaseVisitor<Object> {
         parser.addErrorListener(new AbortErrorListener());
         parser.addErrorListener(new DiagnosticErrorListener(true));
         return parser;
+    }
+
+    private final class ArityInspector extends CatBaseVisitor<Relation.Arity> {
+
+        private ArityInspector() {}
+
+        @Override
+        public Relation.Arity visitExpr(ExprContext c) {
+            return c.e.accept(this);
+        }
+
+        @Override
+        public Relation.Arity visitExprBasic(ExprBasicContext c) {
+            final Object object = namespace.get(c.n.getText());
+            return object instanceof Relation r ? r.getArity() : null;
+        }
+
+        @Override
+        public Relation.Arity visitExprDomain(ExprDomainContext c) {
+            return Relation.Arity.UNARY;
+        }
+
+        @Override
+        public Relation.Arity visitExprRange(ExprRangeContext c) {
+            return Relation.Arity.UNARY;
+        }
+
+        @Override
+        public Relation.Arity visitExprCartesian(ExprCartesianContext c) {
+            return Relation.Arity.BINARY;
+        }
+
+        @Override
+        public Relation.Arity visitExprComposition(ExprCompositionContext c) {
+            return Relation.Arity.BINARY;
+        }
+
+        @Override
+        public Relation.Arity visitExprIdentity(ExprIdentityContext c) {
+            return Relation.Arity.BINARY;
+        }
+
+        @Override
+        public Relation.Arity visitExprUnion(ExprUnionContext c) {
+            return join(c.e1, c.e2);
+        }
+
+        @Override
+        public Relation.Arity visitExprIntersection(ExprIntersectionContext c) {
+            return join(c.e1, c.e2);
+        }
+
+        @Override
+        public Relation.Arity visitExprMinus(ExprMinusContext c) {
+            return join(c.e1, c.e2);
+        }
+
+        private Relation.Arity join(ExpressionContext e1, ExpressionContext e2) {
+            final Relation.Arity k1 = e1.accept(this);
+            final Relation.Arity k2 = e2.accept(this);
+            checkCompatible(k1, k2);
+            return k1 == null ? k2 : k1;
+        }
+
+        private static void checkCompatible(Relation.Arity k1, Relation.Arity k2) {
+            if (k1 != null && k2 != null && !k1.equals(k2)) {
+                throw new ParsingException("Incompatible kinds %s and %s".formatted(k1, k2));
+            }
+        }
     }
 }
 

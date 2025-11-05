@@ -15,7 +15,6 @@ import com.dat3m.dartagnan.program.event.MemoryEvent;
 import com.dat3m.dartagnan.program.event.RegReader;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.*;
-import com.dat3m.dartagnan.program.event.core.InstructionBoundary;
 import com.dat3m.dartagnan.program.event.lang.svcomp.EndAtomic;
 import com.dat3m.dartagnan.program.filter.Filter;
 import com.dat3m.dartagnan.program.memory.VirtualMemoryObject;
@@ -351,12 +350,18 @@ public class NativeRelationAnalysis implements RelationAnalysis {
 
         @Override
         public Map<Relation, ExtendedDelta> visitEmptiness(Emptiness axiom) {
+            if (axiom.isNegated() || axiom.isFlagged()) {
+                return Map.of();
+            }
             Relation rel = axiom.getRelation();
             return Map.of(rel, new ExtendedDelta(knowledgeMap.get(rel).getMaySet(), new MapEventGraph()));
         }
 
         @Override
         public Map<Relation, ExtendedDelta> visitIrreflexivity(Irreflexivity axiom) {
+            if (axiom.isNegated() || axiom.isFlagged()) {
+                return Map.of();
+            }
             Relation rel = axiom.getRelation();
             MutableKnowledge k = knowledgeMap.get(rel);
             MutableEventGraph d = k.getMaySet().filter(Tuple::isLoop);
@@ -365,6 +370,9 @@ public class NativeRelationAnalysis implements RelationAnalysis {
 
         @Override
         public Map<Relation, ExtendedDelta> visitAcyclicity(Acyclicity axiom) {
+            if (axiom.isNegated() || axiom.isFlagged()) {
+                return Map.of();
+            }
             long t0 = System.currentTimeMillis();
             Relation rel = axiom.getRelation();
             ExecutionAnalysis exec = analysisContext.get(ExecutionAnalysis.class);
@@ -499,30 +507,6 @@ public class NativeRelationAnalysis implements RelationAnalysis {
         }
 
         @Override
-        public MutableKnowledge visitProduct(CartesianProduct prod) {
-            final Filter domain = prod.getFirstFilter();
-            final Filter range = prod.getSecondFilter();
-            MutableEventGraph must = new MapEventGraph();
-            List<Event> l1 = program.getThreadEvents().stream().filter(domain::apply).toList();
-            List<Event> l2 = program.getThreadEvents().stream().filter(range::apply).toList();
-            for (Event e1 : l1) {
-                Set<Event> rangeEvents = l2.stream()
-                        .filter(e2 -> !exec.areMutuallyExclusive(e1, e2))
-                        .collect(toSet());
-                must.addRange(e1, rangeEvents);
-            }
-            return new MutableKnowledge(must, MapEventGraph.from(must));
-        }
-
-        @Override
-        public MutableKnowledge visitSetIdentity(SetIdentity id) {
-            final Filter set = id.getFilter();
-            MutableEventGraph must = new MapEventGraph();
-            program.getThreadEvents().stream().filter(set::apply).forEach(e -> must.add(e, e));
-            return new MutableKnowledge(must, MapEventGraph.from(must));
-        }
-
-        @Override
         public MutableKnowledge visitExternal(External ext) {
             MutableEventGraph must = new MapEventGraph();
             List<Thread> threads = program.getThreads();
@@ -555,6 +539,13 @@ public class NativeRelationAnalysis implements RelationAnalysis {
                     must.addRange(e1, rangeEvents);
                 }
             }
+            return new MutableKnowledge(must, MapEventGraph.from(must));
+        }
+
+        @Override
+        public MutableKnowledge visitTagSet(TagSet tagSet) {
+            final MutableEventGraph must = new MapEventGraph();
+            program.getThreadEventsWithAllTags(tagSet.getTag()).forEach(e -> must.add(e, e));
             return new MutableKnowledge(must, MapEventGraph.from(must));
         }
 
@@ -1119,7 +1110,7 @@ public class NativeRelationAnalysis implements RelationAnalysis {
         public MutableKnowledge visitSameVirtualLocation(SameVirtualLocation vloc) {
             MutableEventGraph must = new MapEventGraph();
             MutableEventGraph may = new MapEventGraph();
-            Map<MemoryCoreEvent, VirtualMemoryObject> map = computeViltualAddressMap();
+            Map<MemoryCoreEvent, VirtualMemoryObject> map = computeVirtualAddressMap();
             map.forEach((e1, a1) -> map.forEach((e2, a2) -> {
                 if (a1.equals(a2) && !exec.areMutuallyExclusive(e1, e2)) {
                     if (alias.mustAlias(e1, e2)) {
@@ -1133,7 +1124,7 @@ public class NativeRelationAnalysis implements RelationAnalysis {
             return new MutableKnowledge(may, must);
         }
 
-        private Map<MemoryCoreEvent, VirtualMemoryObject> computeViltualAddressMap() {
+        private Map<MemoryCoreEvent, VirtualMemoryObject> computeVirtualAddressMap() {
             Map<MemoryCoreEvent, VirtualMemoryObject> map = new HashMap<>();
             program.getThreadEvents(MemoryCoreEvent.class).forEach(e -> {
                 Set<VirtualMemoryObject> s = e.getAddress().getMemoryObjects().stream()
@@ -1644,14 +1635,16 @@ public class NativeRelationAnalysis implements RelationAnalysis {
         }
 
         @Override
-        public Delta visitDomainIdentity(DomainIdentity domId) {
-            if (domId.getOperand().equals(source)) {
-                MutableEventGraph maySet = new MapEventGraph();
-                may.getDomain().forEach(e -> maySet.add(e, e));
-                MutableEventGraph mustSet = new MapEventGraph();
+        public Delta visitProjection(Projection projection) {
+            if (projection.getOperand().equals(source)) {
+                final boolean dom = projection.getDimension() == Projection.Dimension.DOMAIN;
+                final MutableEventGraph maySet = new MapEventGraph();
+                (dom ? may.getDomain() : may.getRange()).forEach(e -> maySet.add(e, e));
+                final MutableEventGraph mustSet = new MapEventGraph();
                 must.apply((e1, e2) -> {
-                    if (exec.isImplied(e1, e2)) {
-                        mustSet.add(e1, e1);
+                    final Event e = dom ? e1 : e2;
+                    if (exec.isImplied(e, dom ? e2 : e1)) {
+                        mustSet.add(e, e);
                     }
                 });
                 return new Delta(maySet, mustSet);
@@ -1660,19 +1653,44 @@ public class NativeRelationAnalysis implements RelationAnalysis {
         }
 
         @Override
-        public Delta visitRangeIdentity(RangeIdentity rangeId) {
-            if (rangeId.getOperand().equals(source)) {
-                MutableEventGraph maySet = new MapEventGraph();
-                may.getRange().forEach(e -> maySet.add(e, e));
-                MutableEventGraph mustSet = new MapEventGraph();
-                must.apply((e1, e2) -> {
-                    if (exec.isImplied(e2, e1)) {
-                        mustSet.add(e2, e2);
-                    }
-                });
-                return new Delta(maySet, mustSet);
+        public Delta visitProduct(CartesianProduct product) {
+            final boolean isDomain = product.getDomain().equals(source);
+            final boolean isRange = product.getRange().equals(source);
+            if (!isDomain && !isRange) {
+                return Delta.EMPTY;
             }
-            return Delta.EMPTY;
+            final Knowledge domain = knowledgeMap.get(product.getDomain());
+            final Knowledge range = knowledgeMap.get(product.getRange());
+            final MutableEventGraph maySet = new MapEventGraph();
+            final MutableEventGraph mustSet = new MapEventGraph();
+            if (isRange) {
+                computeCartesianProduct(maySet, domain.getMaySet(), may);
+                computeCartesianProduct(mustSet, domain.getMustSet(), must);
+            }
+            if (isDomain) {
+                computeCartesianProduct(maySet, may, range.getMaySet());
+                computeCartesianProduct(mustSet, must, range.getMustSet());
+            }
+            return new Delta(maySet, mustSet);
+        }
+
+        private void computeCartesianProduct(MutableEventGraph target, EventGraph domain, EventGraph range) {
+            for (Event e1 : domain.getDomain()) {
+                if (domain.contains(e1, e1)) {
+                    final Set<Event> newRange = new HashSet<>(range.getDomain());
+                    newRange.removeIf(e2 -> !range.contains(e2, e2));
+                    newRange.removeIf(e2 -> exec.areMutuallyExclusive(e1, e2));
+                    target.addRange(e1, newRange);
+                }
+            }
+        }
+
+        @Override
+        public Delta visitSetIdentity(SetIdentity id) {
+            if (!id.getDomain().equals(source)) {
+                return Delta.EMPTY;
+            }
+            return new Delta(MutableEventGraph.from(may), MutableEventGraph.from(must));
         }
 
         @Override

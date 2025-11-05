@@ -8,7 +8,7 @@ import static com.dat3m.dartagnan.wmm.RelationNameRepository.EXT;
 public class External extends Definition {
 
     public External(Relation r0) {
-        super(r0, EXT);
+        super(Relation.checkIsRelation(r0), EXT);
     }
 
     @Override

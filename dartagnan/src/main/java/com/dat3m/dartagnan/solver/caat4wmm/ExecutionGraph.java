@@ -1,15 +1,16 @@
 package com.dat3m.dartagnan.solver.caat4wmm;
 
-import com.dat3m.dartagnan.program.filter.Filter;
 import com.dat3m.dartagnan.solver.caat.CAATModel;
 import com.dat3m.dartagnan.solver.caat.constraints.AcyclicityConstraint;
 import com.dat3m.dartagnan.solver.caat.constraints.Constraint;
 import com.dat3m.dartagnan.solver.caat.constraints.EmptinessConstraint;
 import com.dat3m.dartagnan.solver.caat.constraints.IrreflexivityConstraint;
+import com.dat3m.dartagnan.solver.caat.predicates.CAATPredicate;
 import com.dat3m.dartagnan.solver.caat.predicates.relationGraphs.RelationGraph;
 import com.dat3m.dartagnan.solver.caat.predicates.relationGraphs.base.EmptyGraph;
 import com.dat3m.dartagnan.solver.caat.predicates.relationGraphs.derived.*;
 import com.dat3m.dartagnan.solver.caat.predicates.sets.SetPredicate;
+import com.dat3m.dartagnan.solver.caat.predicates.sets.derived.*;
 import com.dat3m.dartagnan.solver.caat4wmm.basePredicates.*;
 import com.dat3m.dartagnan.utils.dependable.DependencyGraph;
 import com.dat3m.dartagnan.verification.model.ExecutionModel;
@@ -41,8 +42,7 @@ public class ExecutionGraph {
     // assigned during construction.
 
     private final RefinementModel refinementModel;
-    private final BiMap<Relation, RelationGraph> relationGraphMap;
-    private final BiMap<Filter, SetPredicate> filterSetMap;
+    private final BiMap<Relation, CAATPredicate> predicateToRelationMap;
     private final BiMap<Axiom, Constraint> constraintMap;
     private final Set<Relation> cutRelations;
 
@@ -55,8 +55,7 @@ public class ExecutionGraph {
 
     public ExecutionGraph(RefinementModel refinementModel) {
         this.refinementModel = refinementModel;
-        relationGraphMap = HashBiMap.create();
-        filterSetMap = HashBiMap.create();
+        predicateToRelationMap = HashBiMap.create();
         constraintMap = HashBiMap.create();
         cutRelations = refinementModel.computeBoundaryRelations().stream()
                 .filter(r -> r.getName().map(n -> !(n.equals(CO) || n.equals(RF))).orElse(true))
@@ -93,17 +92,20 @@ public class ExecutionGraph {
                 for (DependencyGraph<Relation>.Node node : component) {
                     Relation relation = node.getContent();
                     if (relation.isRecursive()) {
+                        if (relation.isSet()) {
+                            throw new UnsupportedOperationException("No support for recursive sets");
+                        }
                         RecursiveGraph graph = new RecursiveGraph();
                         graph.setName(relation.getNameOrTerm() + "_rec");
                         graphs.add(graph);
-                        relationGraphMap.put(relation, graph);
+                        predicateToRelationMap.put(relation, graph);
                     }
                 }
                 for (DependencyGraph<Relation>.Node node : component) {
                     Relation relation = node.getContent();
                     if (relation.isRecursive()) {
                         // side effect leads to calculation of children
-                        RecursiveGraph graph = (RecursiveGraph) relationGraphMap.get(relation);
+                        RecursiveGraph graph = (RecursiveGraph) predicateToRelationMap.get(relation);
                         graph.setConcreteGraph(createGraphFromRelation(relation));
                     }
                 }
@@ -111,7 +113,7 @@ public class ExecutionGraph {
         }
 
         for (Axiom axiom : memoryModel.getAxioms()) {
-            if (axiom instanceof ForceEncodeAxiom || axiom.isFlagged()) {
+            if (axiom instanceof ForceEncodeAxiom || axiom.isFlagged() || axiom.isNegated()) {
                 continue;
             }
             Constraint constraint = getOrCreateConstraintFromAxiom(axiom);
@@ -129,8 +131,8 @@ public class ExecutionGraph {
 
     public EventDomain getDomain() { return domain; }
 
-    public BiMap<Relation, RelationGraph> getRelationGraphMap() {
-        return Maps.unmodifiableBiMap(relationGraphMap);
+    public Relation getRelation(CAATPredicate predicate) {
+        return predicateToRelationMap.inverse().get(predicate);
     }
 
     public BiMap<Axiom, Constraint> getAxiomConstraintMap() {
@@ -139,12 +141,12 @@ public class ExecutionGraph {
 
     public Set<Relation> getCutRelations() { return cutRelations; }
 
-    public RelationGraph getRelationGraph(Relation rel) {
-        return relationGraphMap.get(rel);
+    public CAATPredicate getPredicate(Relation rel) {
+        return predicateToRelationMap.get(rel);
     }
 
-    public RelationGraph getRelationGraphByName(String name) {
-        return getRelationGraph(refinementModel.getOriginalModel().getRelation(name));
+    public CAATPredicate getPredicateByName(String name) {
+        return getPredicate(refinementModel.getOriginalModel().getRelation(name));
     }
 
     public Constraint getConstraint(Axiom axiom) {
@@ -207,15 +209,17 @@ public class ExecutionGraph {
     }
 
     private RelationGraph getOrCreateGraphFromRelation(Relation rel) {
-        if (relationGraphMap.containsKey(rel)) {
-            return relationGraphMap.get(rel);
+        Relation.checkIsRelation(rel);
+        if (predicateToRelationMap.containsKey(rel)) {
+            return (RelationGraph) predicateToRelationMap.get(rel);
         }
         RelationGraph graph = createGraphFromRelation(rel);
-        relationGraphMap.put(rel, graph);
+        predicateToRelationMap.put(rel, graph);
         return graph;
     }
 
     private RelationGraph createGraphFromRelation(Relation rel) {
+        Relation.checkIsRelation(rel);
         final RelationGraph graph;
         final Class<?> relClass = rel.getDefinition().getClass();
         final List<Relation> dependencies = rel.getDependencies();
@@ -230,12 +234,6 @@ public class ExecutionGraph {
             graph = new ProgramOrderGraph();
         } else if (relClass == Coherence.class) {
             graph = new CoherenceGraph();
-        } else if (relClass == RangeIdentity.class || relClass == DomainIdentity.class) {
-            RelationGraph g = getOrCreateGraphFromRelation(dependencies.get(0));
-            ProjectionIdentityGraph.Dimension dim = relClass == RangeIdentity.class ?
-                    ProjectionIdentityGraph.Dimension.RANGE :
-                    ProjectionIdentityGraph.Dimension.DOMAIN;
-            graph = new ProjectionIdentityGraph(g, dim);
         } else if (relClass == Inverse.class || relClass == TransitiveClosure.class) {
             RelationGraph g = getOrCreateGraphFromRelation(dependencies.get(0));
             graph = relClass == Inverse.class ? new InverseGraph(g) : new TransitiveGraph(g);
@@ -244,24 +242,22 @@ public class ExecutionGraph {
             for (int i = 0; i < graphs.length; i++) {
                 graphs[i] = getOrCreateGraphFromRelation(dependencies.get(i));
             }
-            graph = relClass == Union.class ? new UnionGraph(graphs) :
-                    new IntersectionGraph(graphs);
+            graph = relClass == Union.class ? new UnionGraph(graphs) : new IntersectionGraph(graphs);
         } else if (relClass == Composition.class || relClass == Difference.class) {
             RelationGraph g1 = getOrCreateGraphFromRelation(dependencies.get(0));
             RelationGraph g2 = getOrCreateGraphFromRelation(dependencies.get(1));
-            graph = relClass == Composition.class ? new CompositionGraph(g1, g2) :
-                    new DifferenceGraph(g1, g2);
+            graph = relClass == Composition.class ? new CompositionGraph(g1, g2) : new DifferenceGraph(g1, g2);
         } else if (relClass == CartesianProduct.class) {
             CartesianProduct cartRel = (CartesianProduct)rel.getDefinition();
-            SetPredicate lhs = getOrCreateSetFromFilter(cartRel.getFirstFilter());
-            SetPredicate rhs = getOrCreateSetFromFilter(cartRel.getSecondFilter());
+            SetPredicate lhs = getOrCreateSetFromRelation(cartRel.getDomain());
+            SetPredicate rhs = getOrCreateSetFromRelation(cartRel.getRange());
             graph = new CartesianGraph(lhs, rhs);
         } else if (relClass == External.class) {
             graph = new ExternalGraph();
         } else if (relClass == Internal.class) {
             graph = new InternalGraph();
         } else if (relClass == SetIdentity.class) {
-            SetPredicate set = getOrCreateSetFromFilter(((SetIdentity) rel.getDefinition()).getFilter());
+            SetPredicate set = getOrCreateSetFromRelation(((SetIdentity) rel.getDefinition()).getDomain());
             graph = new SetIdentityGraph(set);
         } else if (relClass == Empty.class) {
             graph = new EmptyGraph();
@@ -275,16 +271,40 @@ public class ExecutionGraph {
         return graph;
     }
 
-    private SetPredicate getOrCreateSetFromFilter(Filter filter) {
-        if (filterSetMap.containsKey(filter)) {
-            return filterSetMap.get(filter);
+    private SetPredicate getOrCreateSetFromRelation(Relation relation) {
+        Relation.checkIsSet(relation);
+        final CAATPredicate existing = predicateToRelationMap.get(relation);
+        if (existing != null) {
+            return (SetPredicate) existing;
         }
-
-        SetPredicate set = new StaticWMMSet(filter);
-        set.setName(filter.toString());
-        filterSetMap.put(filter, set);
+        final Class<?> relClass = relation.getDefinition().getClass();
+        final List<Relation> dependencies = relation.getDependencies();
+        final SetPredicate set;
+        if (cutRelations.contains(relation)) {
+            set = new DynamicDefaultWMMSet(refinementModel.translateToBase(relation));
+        } else if (relClass == TagSet.class) {
+            set = new StaticWMMSet(((TagSet) relation.getDefinition()).getTag());
+        } else if (relClass == Projection.class) {
+            final RelationGraph g = getOrCreateGraphFromRelation(dependencies.get(0));
+            final boolean dom = ((Projection) relation.getDefinition()).getDimension() == Projection.Dimension.DOMAIN;
+            final ProjectionSet.Dimension dim = dom ? ProjectionSet.Dimension.DOMAIN : ProjectionSet.Dimension.RANGE;
+            set = new ProjectionSet(g, dim);
+        } else if (relClass == Union.class || relClass == Intersection.class) {
+            SetPredicate[] graphs = new SetPredicate[dependencies.size()];
+            for (int i = 0; i < graphs.length; i++) {
+                graphs[i] = getOrCreateSetFromRelation(dependencies.get(i));
+            }
+            set = relClass == Union.class ? new UnionSet(graphs) : new IntersectionSet(graphs);
+        } else if (relClass == Difference.class) {
+            SetPredicate s1 = getOrCreateSetFromRelation(dependencies.get(0));
+            SetPredicate s2 = getOrCreateSetFromRelation(dependencies.get(1));
+            set = new DifferenceSet(s1, s2);
+        } else {
+            throw new UnsupportedOperationException(String.format("Cannot handle set %s with definition of type %s", relation, relClass.getSimpleName()));
+        }
+        predicateToRelationMap.put(relation, set);
+        set.setName(relation.getNameOrTerm());
         return set;
-
     }
 
     // =======================================================

@@ -255,6 +255,7 @@ public final class EncodingContext {
         EventGraph must = k.getMustSet();
         EdgeEncoder variable = relation.getDefinition().getEdgeVariableEncoder(this);
         return (e1, e2) -> {
+            checkArgument(!relation.isSet() || e1.equals(e2), "Cannot encode pairs of events in an event set");
             if (!may.contains(e1, e2)) {
                 return booleanFormulaManager.makeFalse();
             }

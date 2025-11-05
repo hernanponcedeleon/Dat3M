@@ -47,16 +47,6 @@ public class LazyEncodeSets implements Constraint.Visitor<Boolean> {
     }
 
     @Override
-    public Boolean visitProduct(CartesianProduct definition) {
-        return doUpdateSelf(definition);
-    }
-
-    @Override
-    public Boolean visitSetIdentity(SetIdentity definition) {
-        return doUpdateSelf(definition);
-    }
-
-    @Override
     public Boolean visitExternal(External definition) {
         return doUpdateSelf(definition);
     }
@@ -152,27 +142,50 @@ public class LazyEncodeSets implements Constraint.Visitor<Boolean> {
     }
 
     @Override
-    public Boolean visitDomainIdentity(DomainIdentity definition) {
+    public Boolean visitProduct(CartesianProduct definition) {
         if (doUpdateSelf(definition)) {
             long start = System.currentTimeMillis();
-            MutableEventGraph operandUpdate = new MapEventGraph();
-            Map<Event, Set<Event>> outMap = ra.getKnowledge(definition.getOperand()).getMaySet().getOutMap();
-            update.getDomain().forEach(e1 -> operandUpdate.addRange(e1, outMap.get(e1)));
-            setUpdate(operandUpdate);
+            MutableEventGraph domainUpdate = new MapEventGraph();
+            MutableEventGraph rangeUpdate = new MapEventGraph();
+            update.getDomain().forEach(e1 -> domainUpdate.add(e1, e1));
+            update.getRange().forEach(e2 -> rangeUpdate.add(e2, e2));
             operandTime(definition, start, System.currentTimeMillis());
-            definition.getOperand().getDefinition().accept(this);
+            setUpdate(domainUpdate);
+            definition.getDomain().getDefinition().accept(this);
+            setUpdate(rangeUpdate);
+            definition.getRange().getDefinition().accept(this);
             return true;
         }
         return false;
     }
 
     @Override
-    public Boolean visitRangeIdentity(RangeIdentity definition) {
+    public Boolean visitSetIdentity(SetIdentity definition) {
         if (doUpdateSelf(definition)) {
             long start = System.currentTimeMillis();
-            MutableEventGraph operandUpdate = new MapEventGraph();
-            Map<Event, Set<Event>> inMap = ra.getKnowledge(definition.getOperand()).getMaySet().getInMap();
-            update.getDomain().forEach(e2 -> inMap.get(e2).forEach(e1 -> operandUpdate.add(e1, e2)));
+            MutableEventGraph domainUpdate = new MapEventGraph();
+            update.apply((e1, e2) -> domainUpdate.add(e1, e1));
+            operandTime(definition, start, System.currentTimeMillis());
+            setUpdate(domainUpdate);
+            definition.getDomain().getDefinition().accept(this);
+            return true;
+        }
+        return false;
+    }
+
+    @Override
+    public Boolean visitProjection(Projection definition) {
+        if (doUpdateSelf(definition)) {
+            final long start = System.currentTimeMillis();
+            final MutableEventGraph operandUpdate = new MapEventGraph();
+            final boolean dom = definition.getDimension() == Projection.Dimension.DOMAIN;
+            final EventGraph maySet = ra.getKnowledge(definition.getOperand()).getMaySet();
+            final Map<Event, Set<Event>> altMap = dom ? maySet.getOutMap() : maySet.getInMap();
+            if (dom) {
+                update.getDomain().forEach(e1 -> operandUpdate.addRange(e1, altMap.get(e1)));
+            } else {
+                update.getDomain().forEach(e2 -> altMap.get(e2).forEach(e1 -> operandUpdate.add(e1, e2)));
+            }
             setUpdate(operandUpdate);
             operandTime(definition, start, System.currentTimeMillis());
             definition.getOperand().getDefinition().accept(this);

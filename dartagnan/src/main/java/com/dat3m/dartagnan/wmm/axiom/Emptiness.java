@@ -43,6 +43,6 @@ public class Emptiness extends Axiom {
 
     @Override
     public String toString() {
-        return (negated ? "~" : "") + "empty " + rel.getNameOrTerm();
+        return (flag ? "flag " : "") + (negated ? "~" : "") + "empty " + rel.getNameOrTerm();
     }
 }

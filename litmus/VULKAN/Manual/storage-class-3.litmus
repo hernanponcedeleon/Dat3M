@@ -1,0 +1,15 @@
+Vulkan storage-class-3
+{
+  a = 0;
+  b = 0;
+  c = 0;
+  d = 0;
+}
+P0@sg 0, wg 0, qf 0                            | P1@sg 1, wg 0, qf 0                           ;
+ st.av.wg.sc0 a, 1                             | cbar.acq_rel.wg.semsc0.semsc1.semsc2.semsc3 1 ;
+ st.av.wg.sc1 b, 2                             | ld.vis.wg.sc0 r0, a                           ;
+ st.av.wg.sc2 c, 3                             | ld.vis.wg.sc1 r1, b                           ;
+ st.av.wg.sc3 d, 4                             | ld.vis.wg.sc2 r2, c                           ;
+ cbar.acq_rel.wg.semsc0.semsc1.semsc2.semsc3 1 | ld.vis.wg.sc3 r3, d                           ;
+
+forall (P1:r0 == 1 /\ P1:r1 == 2 /\ P1:r2 == 3 /\ P1:r3 == 4)

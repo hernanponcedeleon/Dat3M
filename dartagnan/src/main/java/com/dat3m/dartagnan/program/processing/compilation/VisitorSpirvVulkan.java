@@ -14,6 +14,7 @@ import com.dat3m.dartagnan.program.event.core.Load;
 import com.dat3m.dartagnan.program.event.core.Store;
 import com.dat3m.dartagnan.program.event.lang.spirv.*;
 
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -139,8 +140,10 @@ public class VisitorSpirvVulkan extends VisitorVulkan {
     }
 
     private void validateSemanticsTags(Set<String> tags) {
-        boolean hasMoTags = tags.contains(Tag.Vulkan.ACQUIRE) || tags.contains(Tag.Vulkan.RELEASE) || tags.contains(Tag.Vulkan.ACQ_REL);
-        boolean hasSemScTags = tags.contains(Tag.Vulkan.SEMSC0) || tags.contains(Tag.Vulkan.SEMSC1);
+        boolean hasMoTags = !Collections.disjoint(tags,
+                Set.of(Tag.Vulkan.ACQUIRE, Tag.Vulkan.RELEASE, Tag.Vulkan.ACQ_REL));
+        boolean hasSemScTags = !Collections.disjoint(tags,
+                Set.of(Tag.Vulkan.SEMSC0, Tag.Vulkan.SEMSC1, Tag.Vulkan.SEMSC2, Tag.Vulkan.SEMSC3));
         if (hasMoTags && !hasSemScTags) {
             throw new ParsingException("Non-relaxed semantics must have storage class semantics tags");
         }

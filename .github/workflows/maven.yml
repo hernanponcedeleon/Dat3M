@@ -19,14 +19,14 @@ on:
 
 jobs:
 
-  enforce-not-main-target:
+  enforce-not-master-target:
     name: Check target branch
     runs-on: ubuntu-latest
     steps:
-      - name: Fail if PR targets main
-        if: github.event.pull_request.base.ref == 'main'
+      - name: Fail if PR targets master
+        if: github.event.pull_request.base.ref == 'master'
         run: |
-          echo "❌ PRs must not target 'main', please use 'development' or some other branch"
+          echo "❌ PRs must not target 'master', please use 'development' or some other branch"
           exit 1
   
   asm-tests:

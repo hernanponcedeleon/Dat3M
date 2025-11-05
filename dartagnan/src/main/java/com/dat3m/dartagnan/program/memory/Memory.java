@@ -69,10 +69,6 @@ public class Memory {
         return objects.remove(obj);
     }
 
-    /**
-     * Accesses all shared variables.
-     * @return Copy of the complete collection of allocated objects.
-     */
     public ImmutableSet<MemoryObject> getObjects() {
         return ImmutableSet.copyOf(objects);
     }

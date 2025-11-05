@@ -9,25 +9,21 @@ import com.dat3m.dartagnan.solver.caat.predicates.sets.MaterializedSet;
 import com.dat3m.dartagnan.solver.caat.predicates.sets.SetPredicate;
 
 import java.util.*;
+import java.util.stream.Stream;
 
 // A materialized Union Graph.
 // This seems to be more efficient than the virtualized UnionGraph we used before.
 public class UnionSet extends MaterializedSet {
 
-    private final SetPredicate first;
-    private final SetPredicate second;
+    private final SetPredicate[] operands;
 
     @Override
     public List<SetPredicate> getDependencies() {
-        return Arrays.asList(first, second);
+        return Arrays.asList(operands);
     }
 
-    public SetPredicate getFirst() { return first; }
-    public SetPredicate getSecond() { return second; }
-
-    public UnionSet(SetPredicate first, SetPredicate second) {
-        this.first = first;
-        this.second = second;
+    public UnionSet(SetPredicate... o) {
+        operands = o;
     }
 
     private Element derive(Element e) {
@@ -37,18 +33,17 @@ public class UnionSet extends MaterializedSet {
     @Override
     public void repopulate() {
         //TODO: Maybe try to minimize the derivation length initially
-        for (Element e : first.elements()) {
-            simpleSet.add(derive(e));
-        }
-        for (Element e : second.elements()) {
-            simpleSet.add(derive(e));
+        for (SetPredicate o : operands) {
+            for (Element e : o.elements()) {
+                simpleSet.add(derive(e));
+            }
         }
     }
 
     @Override
     @SuppressWarnings("unchecked")
     public Collection<Element> forwardPropagate(CAATPredicate changedSource, Collection<? extends Derivable> added) {
-        if (changedSource == first || changedSource == second) {
+        if (Stream.of(operands).anyMatch(o -> changedSource == o)) {
             ArrayList<Element> newlyAdded = new ArrayList<>();
             Collection<Element> addedElems = (Collection<Element>)added;
             for (Element e : addedElems) {

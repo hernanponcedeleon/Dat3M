@@ -68,6 +68,11 @@ public class VisitorOpsArithmetic extends SpirvBaseVisitor<Event> {
         return visitIntegerBinExpression(ctx.idResult(), ctx.idResultType(), ctx.operand1(), ctx.operand2(), UREM);
     }
 
+    @Override
+    public Event visitOpSRem(SpirvParser.OpSRemContext ctx) {
+        return visitIntegerBinExpression(ctx.idResult(), ctx.idResultType(), ctx.operand1(), ctx.operand2(), SREM);
+    }
+
     private Event visitIntegerUnExpression(
             SpirvParser.IdResultContext idCtx,
             SpirvParser.IdResultTypeContext typeCtx,
@@ -135,7 +140,8 @@ public class VisitorOpsArithmetic extends SpirvBaseVisitor<Event> {
                 "OpIMul",
                 "OpUDiv",
                 "OpSDiv",
-                "OpUMod"
+                "OpUMod",
+                "OpSRem"
         );
     }
 }

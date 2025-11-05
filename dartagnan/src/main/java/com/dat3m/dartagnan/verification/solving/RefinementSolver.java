@@ -15,7 +15,6 @@ import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.MemoryCoreEvent;
 import com.dat3m.dartagnan.program.event.metadata.OriginalId;
 import com.dat3m.dartagnan.program.event.metadata.SourceLocation;
-import com.dat3m.dartagnan.program.filter.Filter;
 import com.dat3m.dartagnan.smt.ModelExt;
 import com.dat3m.dartagnan.solver.caat.CAATSolver;
 import com.dat3m.dartagnan.solver.caat4wmm.RefinementModel;
@@ -569,15 +568,17 @@ public class RefinementSolver extends ModelChecker {
         final Relation rfinv = wmm.addDefinition(new Inverse(wmm.newRelation(), rf));
         final Relation frStandard = wmm.addDefinition(new Composition(wmm.newRelation(), rfinv, co));
 
-        // ([R] \ [range(rf)]);loc;[W]
-        final Relation reads = wmm.addDefinition(new SetIdentity(wmm.newRelation(), wmm.getFilter(Tag.READ)));
-        final Relation rfRange = wmm.addDefinition(new RangeIdentity(wmm.newRelation(), rf));
-        final Relation writes = wmm.addDefinition(new SetIdentity(wmm.newRelation(), Filter.byTag(Tag.WRITE)));
-        final Relation ur = wmm.addDefinition(new Difference(wmm.newRelation(), reads, rfRange));
-        final Relation urloc = wmm.addDefinition(new Composition(wmm.newRelation(), ur, loc));
-        final Relation urlocwrites = wmm.addDefinition(new Composition(wmm.newRelation(), urloc, writes));
+        // [R \ range(rf)];loc;[W]
+        final Relation reads = wmm.addDefinition(new TagSet(wmm.newSet(), Tag.READ));
+        final Relation rfRange = wmm.addDefinition(new Projection(wmm.newSet(), rf, Projection.Dimension.RANGE));
+        final Relation writes = wmm.addDefinition(new TagSet(wmm.newSet(), Tag.WRITE));
+        final Relation writesSet = wmm.addDefinition(new SetIdentity(wmm.newRelation(), writes));
+        final Relation ur = wmm.addDefinition(new Difference(wmm.newSet(), reads, rfRange));
+        final Relation urSet = wmm.addDefinition(new SetIdentity(wmm.newRelation(), ur));
+        final Relation urloc = wmm.addDefinition(new Composition(wmm.newRelation(), urSet, loc));
+        final Relation urlocwrites = wmm.addDefinition(new Composition(wmm.newRelation(), urloc, writesSet));
 
-        // let fr = rf^-1;co | ([R] \ [range(rf)]);loc;[W]
+        // let fr = rf^-1;co | [R \ range(rf)];loc;[W]
         final Relation fr = wmm.addDefinition(new Union(wmm.newRelation(), frStandard, urlocwrites));
 
         if (biases.contains(Baseline.UNIPROC)) {

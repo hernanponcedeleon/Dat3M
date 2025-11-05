@@ -26,11 +26,11 @@ public class Acyclicity extends Axiom {
     private static final Logger logger = LogManager.getLogger(Acyclicity.class);
 
     public Acyclicity(Relation rel, boolean negated, boolean flag) {
-        super(rel, negated, flag);
+        super(Relation.checkIsRelation(rel), negated, flag);
     }
 
     public Acyclicity(Relation rel) {
-        super(rel, false, false);
+        this(rel, false, false);
     }
 
     // Under-approximates the must-set of (rel+ ; rel).
@@ -77,7 +77,7 @@ public class Acyclicity extends Axiom {
 
     @Override
     public String toString() {
-        return (negated ? "~" : "") + "acyclic " + rel.getNameOrTerm();
+        return (flag ? "flag " : "") + (negated ? "~" : "") + "acyclic " + rel.getNameOrTerm();
     }
 
     @Override

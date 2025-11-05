@@ -16,10 +16,12 @@ public class FormulaManagerExt {
 
     private final FormulaManager fmgr;
     private final TupleFormulaManager tmgr;
+    private final EncodingUtils encUtils;
 
     public FormulaManagerExt(FormulaManager fmgr) {
         this.fmgr = fmgr;
         this.tmgr = new TupleFormulaManager(this);
+        this.encUtils = new EncodingUtils(this);
     }
 
     public FormulaManager getUnderlyingFormulaManager() { return fmgr; }
@@ -37,6 +39,8 @@ public class FormulaManagerExt {
 
     // ====================================================================================================
     // Utility
+
+    public EncodingUtils getEncodingUtils() { return encUtils; }
 
     public boolean hasSameType(Formula left, Formula right) {
         if (left instanceof NumeralFormula.IntegerFormula && right instanceof NumeralFormula.IntegerFormula) {
