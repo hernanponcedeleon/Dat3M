@@ -302,7 +302,8 @@ public class VisitorAsmArm extends AsmArmBaseVisitor<Object> {
     @Override
     public Object visitBranchNotEqual(AsmArmParser.BranchNotEqualContext ctx) {
         Label label = AsmUtils.getOrNewLabel(labelsDefined, ctx.Numbers().getText());
-        Expression expr = expressions.makePtrCmp(comparator.left(), PointerCmpOp.NEQ, comparator.right());
+        // todo remove forced ptr to int
+        Expression expr = expressions.makeIntCmpForced(comparator.left(), IntCmpOp.NEQ, comparator.right());
         asmInstructions.add(EventFactory.newJump(expr, label));
         return null;
     }
@@ -390,10 +391,16 @@ public class VisitorAsmArm extends AsmArmBaseVisitor<Object> {
 
     @Override
     public Object visitValue(AsmArmParser.ValueContext ctx) {
-        checkState(expectedType instanceof IntegerType, "Expected type is not an integer type");
-        String valueString = ctx.Numbers().getText();
-        BigInteger value = new BigInteger(valueString);
-        return expressions.makeValue(value, (IntegerType) expectedType);
+        if (expectedType instanceof IntegerType) {
+            String valueString = ctx.Numbers().getText();
+            BigInteger value = new BigInteger(valueString);
+            return expressions.makeValue(value, (IntegerType) expectedType);
+        }else if (expectedType instanceof PointerType){
+            String valueString = ctx.Numbers().getText();
+            BigInteger value = new BigInteger(valueString);
+            return expressions.makeIntToPtrCast(expressions.makeValue(value));
+        }
+        throw new RuntimeException("Unexpected type " + expectedType + " visited");
     }
 
     @Override

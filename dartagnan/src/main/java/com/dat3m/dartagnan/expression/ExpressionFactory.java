@@ -78,6 +78,8 @@ public final class ExpressionFactory {
             return operand;
         } else if (sourceType instanceof IntegerType intType) {
             return makeNEQ(operand, makeZero(intType));
+        }else if (sourceType instanceof PointerType) {
+            return makeBooleanCast(makePtrToIntCast(operand));
         }
         throw new UnsupportedOperationException(String.format("Cannot cast %s to %s.", sourceType, booleanType));
     }
@@ -95,6 +97,10 @@ public final class ExpressionFactory {
 
     public IntLiteral parseValue(String text, IntegerType type) {
         return makeValue(new BigInteger(text), type);
+    }
+
+    public IntLiteral makeValue(BigInteger value) {
+        return new IntLiteral(types.getArchType(), value);
     }
 
     public IntLiteral makeValue(long value, IntegerType type) {

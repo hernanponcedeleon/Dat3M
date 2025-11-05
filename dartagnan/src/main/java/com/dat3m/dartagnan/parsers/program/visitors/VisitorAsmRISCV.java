@@ -12,6 +12,7 @@ import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.Type;
 import com.dat3m.dartagnan.expression.integers.IntCmpOp;
 import com.dat3m.dartagnan.expression.type.IntegerType;
+import com.dat3m.dartagnan.expression.type.PointerType;
 import com.dat3m.dartagnan.parsers.AsmRISCVBaseVisitor;
 import com.dat3m.dartagnan.parsers.AsmRISCVParser;
 import com.dat3m.dartagnan.parsers.program.utils.AsmUtils;
@@ -87,7 +88,7 @@ public class VisitorAsmRISCV extends AsmRISCVBaseVisitor<Object> {
         Register address = (Register) ctx.register(1).accept(this);
         expectedType = address.getType();
         Expression offset = (Expression) ctx.value().accept(this);
-        Expression newAddress = expressions.makeAdd(address,offset);
+        Expression newAddress = expressions.makePtrAdd(address,offset);
         asmInstructions.add(EventFactory.newLoad(register, newAddress));
         return null;
     }
@@ -143,7 +144,7 @@ public class VisitorAsmRISCV extends AsmRISCVBaseVisitor<Object> {
         Register address = (Register) ctx.register(1).accept(this);
         expectedType = address.getType();
         Expression offset = (Expression) ctx.value().accept(this);
-        Expression newAddress = expressions.makeAdd(address,offset);
+        Expression newAddress = expressions.makePtrAdd(address,offset);
         asmInstructions.add(EventFactory.newStore(newAddress, value));
         return null;
     }
@@ -324,10 +325,16 @@ public class VisitorAsmRISCV extends AsmRISCVBaseVisitor<Object> {
 
     @Override
     public Object visitValue(AsmRISCVParser.ValueContext ctx) {
-        checkState(expectedType instanceof IntegerType, "Expected type is not an integer type");
+    if (expectedType instanceof IntegerType) {
         String valueString = ctx.Numbers().getText();
         BigInteger value = new BigInteger(valueString);
         return expressions.makeValue(value, (IntegerType) expectedType);
+    }else if (expectedType instanceof PointerType){
+        String valueString = ctx.Numbers().getText();
+        BigInteger value = new BigInteger(valueString);
+        return expressions.makeIntToPtrCast(expressions.makeValue(value));
     }
+        throw new RuntimeException("Unexpected type " + expectedType + " visited");
+}
 
 }

@@ -4,6 +4,7 @@ import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionKind;
 import com.dat3m.dartagnan.expression.ExpressionVisitor;
 import com.dat3m.dartagnan.expression.base.ExpressionBase;
+import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.expression.type.PointerType;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.google.common.base.Preconditions;
@@ -16,7 +17,7 @@ public class PointerAddExpr extends ExpressionBase<PointerType> {
 
     public PointerAddExpr(Expression base, Expression offset) {
         super((PointerType) base.getType());
-        Preconditions.checkArgument(offset.getType().equals(TypeFactory.getInstance().getArchType()));
+        Preconditions.checkArgument(offset.getType() instanceof IntegerType);
         this.base = base;
         this.offset = offset;
     }

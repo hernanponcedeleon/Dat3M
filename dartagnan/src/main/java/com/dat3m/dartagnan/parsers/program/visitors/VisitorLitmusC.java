@@ -111,7 +111,8 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
             if(object != null){
                 programBuilder.initRegEqConst(ctx.threadId().id, ctx.varName(0).getText(), object);
             } else {
-                programBuilder.initRegEqLocVal(ctx.threadId().id, ctx.varName(0).getText(), ctx.varName(1).getText(), archType);
+                programBuilder.initRegEqLocVal(ctx.threadId().id, ctx.varName(0).getText(), ctx.varName(1).getText(), pointerType);
+                // todo verify pointerType or intType
             }
         }
         return null;
@@ -600,7 +601,7 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
     public Object visitNreRegDeclaration(LitmusCParser.NreRegDeclarationContext ctx){
         Register register = programBuilder.getRegister(scope, ctx.varName().getText());
         if(register == null){
-            register = programBuilder.getOrNewRegister(scope, ctx.varName().getText(), archType);
+            register = programBuilder.getOrNewRegister(scope, ctx.varName().getText(), pointerType); //care
             if(ctx.re() != null){
                 returnRegister = register;
                 ctx.re().accept(this);
@@ -676,14 +677,14 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
             }
             MemoryObject object = programBuilder.getMemoryObject(ctx.getText());
             if(object != null){
-                register = programBuilder.getOrNewRegister(scope, null, archType);
+                register = programBuilder.getOrNewRegister(scope, null, pointerType);
                 programBuilder.addChild(currentThread, EventFactory.newLoadWithMo(register, object, C11.NONATOMIC));
                 return register;
             }
-            return programBuilder.getOrNewRegister(scope, ctx.getText(), archType);
+            return programBuilder.getOrNewRegister(scope, ctx.getText(), pointerType);
         }
         MemoryObject object = programBuilder.newMemoryObject(ctx.getText(), archSize);
-        Register register = programBuilder.getOrNewRegister(scope, null, archType);
+        Register register = programBuilder.getOrNewRegister(scope, null, pointerType);
         programBuilder.addChild(currentThread, EventFactory.newLoadWithMo(register, object, C11.NONATOMIC));
         return register;
     }
@@ -706,7 +707,7 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
     private Register getReturnRegister(boolean createOnNull){
         Register register = returnRegister;
         if(register == null && createOnNull){
-            return programBuilder.getOrNewRegister(scope, null, archType);
+            return programBuilder.getOrNewRegister(scope, null, pointerType);
         }
         returnRegister = null;
         return register;
