@@ -20,7 +20,7 @@ public class AtomicFetchOp extends RMWOpResultBase {
 
     @Override
     public String defaultString() {
-        return String.format("%s := atomic_fetch_%s(*%s, %s, %s)\t### C11",
+        return String.format("%s = atomic_fetch_%s(%s, %s, %s)",
                 resultRegister, operator.getName(), address, operand, mo);
     }
 

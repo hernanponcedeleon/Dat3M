@@ -27,7 +27,7 @@ public class SpirvXchg extends RMWXchgBase {
 
     @Override
     public String defaultString() {
-        return String.format("%s := spirv_xchg[%s, %s](%s, %s)",
+        return String.format("%s = spirv_xchg[%s, %s](%s, %s)",
                 resultRegister, mo, scope, address, storeValue);
     }
 

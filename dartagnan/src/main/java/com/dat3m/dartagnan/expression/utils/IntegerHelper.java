@@ -193,6 +193,14 @@ public class IntegerHelper {
         return normalizeSigned(x, bitWidth).equals(normalizeSigned(y, bitWidth));
     }
 
+    public static BigInteger not(BigInteger x, int bitWidth) {
+        return x.not();
+    }
+
+    public static BigInteger bitCount(BigInteger x, int bitWidth) {
+        return BigInteger.valueOf(x.bitCount());
+    }
+
     public static BigInteger ctlz(BigInteger x, int bitWidth) {
         int leadingZeroes = 0;
         for (int i = bitWidth - 1; i >= 0; i--) {

@@ -18,6 +18,16 @@ on:
   workflow_dispatch:
 
 jobs:
+
+  enforce-not-main-target:
+    name: Check target branch
+    runs-on: ubuntu-latest
+    steps:
+      - name: Fail if PR targets main
+        if: github.event.pull_request.base.ref == 'main'
+        run: |
+          echo "❌ PRs must not target 'main', please use 'development' or some other branch"
+          exit 1
   
   asm-tests:
     name: Asm tests

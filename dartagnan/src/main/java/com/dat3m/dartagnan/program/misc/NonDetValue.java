@@ -46,6 +46,6 @@ public class NonDetValue extends LeafExpressionBase<Type> {
 
     @Override
     public String toString() {
-        return String.format("nondet_%s#%d", type, id);
+        return String.format("%s nondet#%d", type, id);
     }
 }

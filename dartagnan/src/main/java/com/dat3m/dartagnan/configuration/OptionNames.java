@@ -70,7 +70,7 @@ public class OptionNames {
 
     // Refinement Options
     public static final String BASELINE = "refinement.baseline";
-    public static final String GRAPHVIZ_DEBUG_FILES = "refinement.generageGraphvizDebugFiles";
+    public static final String GRAPHVIZ_DEBUG_FILES = "refinement.generateGraphvizDebugFiles";
     public static final String SYMMETRIC_LEARNING = "refinement.symmetricLearning";
 
     // SMT solver Options
@@ -89,4 +89,10 @@ public class OptionNames {
     public static final String PRINT_PROGRAM_AFTER_UNROLLING = "printer.afterUnrolling";
     public static final String PRINT_PROGRAM_AFTER_COMPILATION = "printer.afterCompilation";
     public static final String PRINT_PROGRAM_AFTER_PROCESSING = "printer.afterProcessing";
+
+    public static final String PRINTER_SHOW_INIT_THREADS = "printer.showInitThreads";
+    public static final String PRINTER_SHOW_ANNOTATIONS = "printer.showAnnotations";
+    public static final String PRINTER_SHOW_DYNAMIC_ALLOCATIONS = "printer.showDynamicAllocations";
+    public static final String PRINTER_SHOW_PROGRAM_CONSTANTS = "printer.showProgramConstants";
+    public static final String PRINTER_SHOW_SPECIFICATION = "printer.showSpecification";
 }

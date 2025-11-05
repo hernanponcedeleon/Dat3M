@@ -98,7 +98,7 @@ public class ProcessingManager implements ProgramProcessor {
                 simplifyFunction, Target.THREADS, true
         );
         programProcessors.addAll(Arrays.asList(
-                printBeforeProcessing ? DebugPrint.withHeader("Before processing", Printer.Mode.ALL) : null,
+                printBeforeProcessing ? DebugPrint.withHeader("Before processing", Printer.Mode.ALL, config) : null,
                 intrinsics.markIntrinsicsPass(),
                 ProgramProcessor.fromFunctionProcessor(intrinsics.earlyInliningPass(), Target.ALL, true),
                 GEPToAddition.newInstance(),
@@ -114,16 +114,16 @@ public class ProcessingManager implements ProgramProcessor {
                 ),
                 ProgramProcessor.fromFunctionProcessor(NormalizeLoops.newInstance(), Target.ALL, true),
                 RemoveDeadFunctions.newInstance(),
-                printAfterSimplification ? DebugPrint.withHeader("After simplification", Printer.Mode.ALL) : null,
+                printAfterSimplification ? DebugPrint.withHeader("After simplification", Printer.Mode.ALL, config) : null,
                 Compilation.fromConfig(config), // We keep compilation global for now
                 LoopFormVerification.fromConfig(config),
-                printAfterCompilation ? DebugPrint.withHeader("After compilation", Printer.Mode.ALL) : null,
+                printAfterCompilation ? DebugPrint.withHeader("After compilation", Printer.Mode.ALL, config) : null,
                 ProgramProcessor.fromFunctionProcessor(MemToReg.fromConfig(config), Target.FUNCTIONS, true),
                 ProgramProcessor.fromFunctionProcessor(sccp, Target.FUNCTIONS, false),
                 dynamicSpinLoopDetection ? DynamicSpinLoopDetection.fromConfig(config) : null,
                 ProgramProcessor.fromFunctionProcessor(NaiveLoopBoundAnnotation.fromConfig(config), Target.FUNCTIONS, true),
                 LoopUnrolling.fromConfig(config), // We keep unrolling global for now
-                printAfterUnrolling ? DebugPrint.withHeader("After loop unrolling", Printer.Mode.ALL) : null,
+                printAfterUnrolling ? DebugPrint.withHeader("After loop unrolling", Printer.Mode.ALL, config) : null,
                 ProgramProcessor.fromFunctionProcessor(
                         FunctionProcessor.chain(
                                 ResolveLLVMObjectSizeCalls.fromConfig(config),
@@ -148,7 +148,7 @@ public class ProcessingManager implements ProgramProcessor {
                 NonterminationDetection.fromConfig(config),
                 // --- Statistics + verification ---
                 IdReassignment.newInstance(), // Normalize used Ids (remove any gaps)
-                printAfterProcessing ? DebugPrint.withHeader("After processing", Printer.Mode.THREADS) : null,
+                printAfterProcessing ? DebugPrint.withHeader("After processing", Printer.Mode.THREADS, config) : null,
                 ProgramProcessor.fromFunctionProcessor(
                         CoreCodeVerification.fromConfig(config),
                         Target.THREADS, false

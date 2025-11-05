@@ -46,7 +46,7 @@ public class Store extends AbstractMemoryCoreEvent {
 
     public String defaultString() {
         final MemoryOrder mo = getMetadata(MemoryOrder.class);
-        return String.format("store(*%s, %s%s)", address, value, mo != null ? ", " + mo.value() : "");
+        return String.format("store(%s, %s%s)", address, value, mo != null ? ", " + mo.value() : "");
     }
 
     @Override

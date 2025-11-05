@@ -129,7 +129,7 @@ public class VisitorSpirvOutput extends SpirvBaseVisitor<Expression> {
         }
         if (expression instanceof ScopedPointerVariable base) {
             List<Integer> indexes = ctx.indexValue().stream()
-                    .map(c -> Integer.parseInt(c.ModeHeader_PositiveInteger().getText()))
+                    .map(c -> Integer.parseInt(c.literalHeaderUnsignedInteger().getText()))
                     .toList();
             return createFinalMemoryValue(base, indexes);
         } else {

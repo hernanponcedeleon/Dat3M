@@ -25,7 +25,7 @@ public class RMWExtremumBase extends RMWXchgBase {
 
     @Override
     public String defaultString() {
-        return String.format("%s := rmw ext_%s(%s, %s, %s)", resultRegister, mo, storeValue, address, operator.getName());
+        return String.format("%s = rmw ext_%s(%s, %s, %s)", resultRegister, mo, storeValue, address, operator.getName());
     }
 
     @Override

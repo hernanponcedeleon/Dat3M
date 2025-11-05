@@ -44,7 +44,7 @@ public class DynamicThreadCreate extends CallBase implements RegWriter {
     @Override
     protected String defaultString() {
         final String func = isDirectCall() ? getDirectCallTarget().getName() : getCallTarget().toString();
-        return String.format("%s <- DynamicThreadCreate(func=%s, args={ %s })", getResultRegister(), func, argumentsToString());
+        return String.format("%s = DynamicThreadCreate(func=%s, args={ %s })", getResultRegister(), func, argumentsToString());
     }
 
     @Override

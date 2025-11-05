@@ -17,7 +17,7 @@ public class PTXAtomExch extends RMWXchgBase {
 
     @Override
     public String defaultString() {
-        return String.format("%s := atom_exch_%s(%s, %s)", resultRegister, mo, storeValue, address);
+        return String.format("%s = atom_exch_%s(%s, %s)", resultRegister, mo, storeValue, address);
     }
 
     @Override

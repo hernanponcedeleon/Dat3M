@@ -36,7 +36,7 @@ public class LKMMAddUnless extends SingleAccessMemoryEvent implements RegWriter 
 
     @Override
     public String defaultString() {
-        return String.format("%s := atomic_add_unless(%s, %s, %s)\t### LKMM",
+        return String.format("%s = atomic_add_unless(%s, %s, %s)",
                 resultRegister, address, operand, cmp);
     }
 

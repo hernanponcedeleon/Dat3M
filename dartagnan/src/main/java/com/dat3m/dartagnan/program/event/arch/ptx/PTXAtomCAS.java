@@ -17,7 +17,7 @@ public class PTXAtomCAS extends RMWCmpXchgBase {
 
     @Override
     public String defaultString() {
-        return String.format("%s := atom_cas_%s(%s, %s, %s)", resultRegister, mo, address, expectedValue, storeValue);
+        return String.format("%s = atom_cas_%s(%s, %s, %s)", resultRegister, mo, address, expectedValue, storeValue);
     }
 
     @Override

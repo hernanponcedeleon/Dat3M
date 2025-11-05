@@ -17,7 +17,7 @@ public class AtomicThreadFence extends FenceBase {
 
     @Override
     public String defaultString() {
-        return String.format("%s(%s)\t### C11", name, mo);
+        return String.format("%s(%s)", name, mo);
     }
 
     @Override

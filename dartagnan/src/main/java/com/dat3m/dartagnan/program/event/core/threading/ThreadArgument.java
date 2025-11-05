@@ -52,7 +52,7 @@ public class ThreadArgument extends AbstractEvent implements RegWriter, EventUse
 
     @Override
     public String defaultString() {
-        return String.format("%s := Argument(%s) from %s", register, argIndex, creator);
+        return String.format("%s = Argument(%s) from %s", register, argIndex, creator);
     }
 
     @Override

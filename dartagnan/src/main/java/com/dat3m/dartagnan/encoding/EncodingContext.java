@@ -161,16 +161,6 @@ public final class EncodingContext {
         return (event.cfImpliesExec() ? controlFlowVariables : executionVariables).get(event);
     }
 
-    /**
-     * Simple formula proposing the execution of two events.
-     * Does not test for mutual exclusion.
-     * @param first
-     * Some event of a program to be encoded.
-     * @param second
-     * Another event of the same program.
-     * @return
-     * Proposition that both {@code first} and {@code second} are included in the modelled execution.
-     */
     public BooleanFormula execution(Event first, Event second) {
         boolean b = first.getGlobalId() < second.getGlobalId();
         Event x = b ? first : second;
@@ -211,6 +201,8 @@ public final class EncodingContext {
 
     public TypedFormula<?, ?> address(MemoryObject memoryObject) { return objAddress.get(memoryObject); }
 
+    // NOTE: This formula represents the size of successfully allocated memory objects.
+    // For non-allocated memory objects, the size may be any non-negative value.
     public TypedFormula<IntegerType, ?> size(MemoryObject memoryObject) {
         return objSize.get(memoryObject);
     }

@@ -35,7 +35,7 @@ public class SpirvRmwExtremum extends RMWXchgBase {
 
     @Override
     public String defaultString() {
-        return String.format("%s := spirv_rmw_ext%s[%s, %s](%s, %s, %s)",
+        return String.format("%s = spirv_rmw_ext%s[%s, %s](%s, %s, %s)",
                 resultRegister, operator.getName(), mo, scope, address, storeValue, operator.getName());
     }
 
