@@ -369,15 +369,10 @@ public class ThreadCreation implements ProgramProcessor {
         final Register returnRegister = function.hasReturnValue() ?
                 thread.newRegister("__retval", function.getFunctionType().getReturnType()) : null;
         final Label threadReturnLabel = EventFactory.newLabel("RETURN_OF_T" + tid);
-        final Label threadEnd = EventFactory.newLabel("END_OF_T" + tid);
 
-        // ------------------- Replace AbortIf, (Thread)Return, and pthread_exit -------------------
+        // ------------------- Replace (Thread)Return -------------------
         for (Event e : thread.getEvents()) {
-            if (e instanceof AbortIf abort) {
-                final Event jumpToEnd = EventFactory.newJump(abort.getCondition(), threadEnd);
-                jumpToEnd.addTags(abort.getTags());
-                IRHelper.replaceWithMetadata(abort, jumpToEnd);
-            } else if (e instanceof Return || e instanceof ThreadReturn) {
+            if (e instanceof Return || e instanceof ThreadReturn) {
                 // NOTE: We also replace ThreadReturn but generate a single new one (normalization) afterward.
                 final Expression retVal = (e instanceof Return ret) ? ret.getValue().orElse(null)
                         : ((ThreadReturn)e).getValue().orElse(null);
@@ -392,8 +387,7 @@ public class ThreadCreation implements ProgramProcessor {
         final Event threadReturn = EventFactory.newThreadReturn(returnRegister);
         thread.append(List.of(
                 threadReturnLabel,
-                threadReturn,
-                threadEnd
+                threadReturn
         ));
 
         // ------------------- Add Sync, End, and Argument events if this thread was spawned -------------------
@@ -500,7 +494,7 @@ public class ThreadCreation implements ProgramProcessor {
     }
 
     private void resolveDynamicThreadLocals(Program program) {
-        record Storage(MemoryObject data, MemoryObject destructor) {}
+        record Storage(int id, MemoryObject data, MemoryObject destructor) {}
         interface StorageField { MemoryObject get(Storage s); }
         interface Match { Expression compute(StorageField f, Expression k); }
         final List<Storage> storage = new ArrayList<>();
@@ -508,21 +502,24 @@ public class ThreadCreation implements ProgramProcessor {
         final int size = types.getMemorySizeInBytes(type);
         final Expression nil = expressions.makeGeneralZero(type);
         for (DynamicThreadLocalCreate create : program.getThreadEvents(DynamicThreadLocalCreate.class)) {
+            final int id = storage.size() + 1;
             final MemoryObject data = program.getMemory().allocate(size);
             final MemoryObject destructor = program.getMemory().allocate(size);
+            final var t = (IntegerType) create.getResultRegister().getType();
             data.setIsThreadLocal(true);
-            storage.add(new Storage(data, destructor));
+            storage.add(new Storage(id, data, destructor));
             create.replaceBy(List.of(
                     newFunctionCallMarker("__dat3m_dynamic_thread_create"),
                     newStore(destructor, create.getDestructor()),
-                    newLocal(create.getResultRegister(), destructor),
+                    newLocal(create.getResultRegister(), expressions.makeValue(id, t)),
                     newFunctionReturnMarker("__dat3m_dynamic_thread_create")
             ));
         }
         final Match match = (field, key) -> {
             Expression data = nil;
             for (Storage s : storage) {
-                data = expressions.makeITE(expressions.makeEQ(key, s.destructor), field.get(s), data);
+                final Expression id = expressions.makeValue(s.id, (IntegerType) key.getType());
+                data = expressions.makeITE(expressions.makeEQ(key, id), field.get(s), data);
             }
             return data;
         };

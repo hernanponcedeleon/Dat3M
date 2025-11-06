@@ -138,6 +138,7 @@ public class ProcessingManager implements ProgramProcessor {
                 Inlining.fromConfig(config),
                 ProgramProcessor.fromFunctionProcessor(
                         FunctionProcessor.chain(
+                                ResolveAborts.newInstance(),
                                 RemoveDeadNullChecks.newInstance(),
                                 MemToReg.fromConfig(config)
                         ), Target.THREADS, true
