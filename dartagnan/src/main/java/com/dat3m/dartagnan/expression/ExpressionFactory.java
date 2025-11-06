@@ -9,6 +9,7 @@ import com.dat3m.dartagnan.expression.misc.ITEExpr;
 import com.dat3m.dartagnan.expression.pointer.*;
 import com.dat3m.dartagnan.expression.type.*;
 import com.dat3m.dartagnan.expression.utils.ExpressionHelper;
+import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.dat3m.dartagnan.program.memory.ScopedPointer;
 import com.dat3m.dartagnan.program.memory.ScopedPointerVariable;
@@ -498,6 +499,17 @@ public final class ExpressionFactory {
         throw new UnsupportedOperationException("Equality not supported on type: " + type);
     }
 
+    public Expression makeEQforced(Expression leftOperand, Expression rightOperand) {
+
+        if (leftOperand.getType() instanceof PointerType){
+            return makeEQforced(makePtrToIntCast(leftOperand), rightOperand);
+        }
+        if (rightOperand.getType() instanceof PointerType){
+            return makeEQforced(leftOperand, makePtrToIntCast(rightOperand));
+        }
+        return makeEQ(leftOperand, rightOperand);
+    }
+
     public Expression makeNEQ(Expression leftOperand, Expression rightOperand) {
         final Type type = leftOperand.getType();
         if (type instanceof BooleanType) {
@@ -514,6 +526,18 @@ public final class ExpressionFactory {
         }
         throw new UnsupportedOperationException("Disequality not supported on type: " + type);
     }
+
+    public Expression makeNEQforced(Expression leftOperand, Expression rightOperand) {
+
+        if (leftOperand.getType() instanceof PointerType){
+            return makeNEQforced(makePtrToIntCast(leftOperand), rightOperand);
+        }
+        if (rightOperand.getType() instanceof PointerType){
+            return makeNEQforced(leftOperand, makePtrToIntCast(rightOperand));
+        }
+        return makeNEQ(leftOperand, rightOperand);
+    }
+
 
     public Expression makeUnary(ExpressionKind op, Expression expr) {
         if (op instanceof BoolUnaryOp boolOp) {
@@ -553,4 +577,6 @@ public final class ExpressionFactory {
         }
         throw new UnsupportedOperationException(String.format("Expression kind %s is no comparison operator.", cmpOp));
     }
+
+
 }

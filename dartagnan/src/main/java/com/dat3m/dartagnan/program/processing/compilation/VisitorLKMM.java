@@ -2,6 +2,7 @@ package com.dat3m.dartagnan.program.processing.compilation;
 
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
+import com.dat3m.dartagnan.expression.Type;
 import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Event;
@@ -70,13 +71,13 @@ public class VisitorLKMM extends VisitorBase {
                 newJump(havocRegister, success),
                 // Cas failure branch
                 loadFail,
-                newAssume(expressions.makeNEQ(dummy, cmp)),
+                newAssume(expressions.makeNEQforced(dummy, cmp)),
                 newGoto(end),
                 success,
                 // CAS success branch
                 mo.equals(Tag.Linux.MO_MB) ? newCoreMemoryBarrier() : null,
                 loadSuccess = newRMWLoadWithMo(dummy, address, Tag.Linux.loadMO(mo)),
-                newAssume(expressions.makeEQ(dummy, cmp)),
+                newAssume(expressions.makeEQforced(dummy, cmp)),
                 newRMWStoreWithMo(loadSuccess, address, e.getStoreValue(), Tag.Linux.storeMO(mo)),
                 mo.equals(Tag.Linux.MO_MB) ? newCoreMemoryBarrier() : null,
                 end,
@@ -94,12 +95,12 @@ public class VisitorLKMM extends VisitorBase {
         Event optionalMbBefore = mo.equals(Tag.Linux.MO_MB) ? newCoreMemoryBarrier() : null;
         Load load = newRMWLoadWithMo(dummy, address, Tag.Linux.loadMO(mo));
         Event optionalMbAfter = mo.equals(Tag.Linux.MO_MB) ? newCoreMemoryBarrier() : null;
-        Expression storeValue = expressions.makeIntBinary(dummy, e.getOperator(), e.getOperand());
+        Expression storeValue = expressions.makeIntBinaryForced(dummy,e.getOperator(), e.getOperand());
 
         return eventSequence(
                 optionalMbBefore,
                 load,
-                newRMWStoreWithMo(load, address, storeValue, Tag.Linux.storeMO(mo)),
+                newRMWStoreWithMo(load, address, dummy.getType() instanceof IntegerType ? storeValue: expressions.makeIntToPtrCast(storeValue), Tag.Linux.storeMO(mo)),
                 newLocal(resultRegister, dummy),
                 optionalMbAfter
         );
@@ -128,11 +129,11 @@ public class VisitorLKMM extends VisitorBase {
         Register dummy = e.getFunction().newRegister(operand.getType());
         Load load = newRMWLoadWithMo(dummy, address, Tag.Linux.MO_ONCE);
         Expression testResult = expressions.makeNot(expressions.makeBooleanCast(dummy));
-
+        Expression temp = expressions.makeIntBinaryForced(dummy, e.getOperator(), operand);
         return eventSequence(
                 newCoreMemoryBarrier(),
                 load,
-                newLocal(dummy, expressions.makeIntBinary(dummy, e.getOperator(), operand)),
+                newLocal(dummy, dummy.getType() instanceof IntegerType ? temp : expressions.makeIntToPtrCast(temp)),
                 newRMWStoreWithMo(load, address, dummy, Tag.Linux.MO_ONCE),
                 newLocal(resultRegister, expressions.makeCast(testResult, resultRegister.getType())),
                 newCoreMemoryBarrier()
@@ -149,11 +150,11 @@ public class VisitorLKMM extends VisitorBase {
         Load load = newRMWLoadWithMo(dummy, address, Tag.Linux.loadMO(mo));
         Event optionalMbBefore = mo.equals(Tag.Linux.MO_MB) ? newCoreMemoryBarrier() : null;
         Event optionalMbAfter = mo.equals(Tag.Linux.MO_MB) ? newCoreMemoryBarrier() : null;
-
+        Expression temp = expressions.makeIntBinaryForced(dummy,e.getOperator(), e.getOperand());
         return eventSequence(
                 optionalMbBefore,
                 load,
-                newLocal(dummy, expressions.makeIntBinary(dummy, e.getOperator(), e.getOperand())),
+                newLocal(dummy, resultRegister.getType() instanceof IntegerType ? temp: expressions.makeIntToPtrCast(temp) ),
                 newRMWStoreWithMo(load, address, dummy, Tag.Linux.storeMO(mo)),
                 newLocal(resultRegister, dummy),
                 optionalMbAfter
