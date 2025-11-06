@@ -63,6 +63,8 @@ public interface ExpressionVisitor<TRet> {
     default TRet visitPtrToIntCastExpression(PtrToIntCast expr) { return visitCastExpression(expr); }
     default TRet visitPtrCmpExpression(PtrCmpExpr expr) { return visitBinaryExpression(expr); }
     default TRet visitNullLiteral(NullLiteral lit) { return visitLeafExpression(lit); }
+    default TRet visitPtrConcat(PtrConcat expr){ return visitExpression(expr); };
+    default TRet visitPtrExtract(PtrExtract expr){ return visitUnaryExpression(expr); };
 
     // =================================== Generic ===================================
     default TRet visitITEExpression(ITEExpr expr) { return visitExpression(expr); }
@@ -80,4 +82,5 @@ public interface ExpressionVisitor<TRet> {
                 expr.getClass().getSimpleName(), clazz.getSimpleName());
         return new UnsupportedOperationException(error);
     }
+
 }
