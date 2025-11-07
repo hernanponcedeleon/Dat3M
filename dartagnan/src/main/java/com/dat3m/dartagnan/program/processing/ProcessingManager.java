@@ -58,27 +58,27 @@ public class ProcessingManager implements ProgramProcessor {
     @Option(name = PRINT_PROGRAM_BEFORE_PROCESSING,
             description = "Prints the program before any processing.",
             secure = true)
-    private boolean printBeforeProcessing = false;
+    private boolean printBeforeProcessing = true;
 
     @Option(name = PRINT_PROGRAM_AFTER_SIMPLIFICATION,
             description = "Prints the program after simplification.",
             secure = true)
-    private boolean printAfterSimplification = false;
+    private boolean printAfterSimplification = true;
 
     @Option(name = PRINT_PROGRAM_AFTER_COMPILATION,
             description = "Prints the program after compilation.",
             secure = true)
-    private boolean printAfterCompilation = false;
+    private boolean printAfterCompilation = true;
 
     @Option(name = PRINT_PROGRAM_AFTER_UNROLLING,
             description = "Prints the program after unrolling.",
             secure = true)
-    private boolean printAfterUnrolling = false;
+    private boolean printAfterUnrolling = true;
 
     @Option(name = PRINT_PROGRAM_AFTER_PROCESSING,
             description = "Prints the program after all processing.",
             secure = true)
-    private boolean printAfterProcessing = false;
+    private boolean printAfterProcessing = true;
 
 // ======================================================================
     private ProcessingManager(Configuration config) throws InvalidConfigurationException {
@@ -145,6 +145,7 @@ public class ProcessingManager implements ProgramProcessor {
                 ),
                 simplifyBoundedProgram,
                 RemoveUnusedMemory.newInstance(),
+                FunctionAllocation.newInstance(),
                 MemoryAllocation.fromConfig(config),
                 detectMixedSizeAccesses ? Tearing.fromConfig(config) : null,
                 detectMixedSizeAccesses ? simplifyBoundedProgram : null,
