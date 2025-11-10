@@ -41,7 +41,7 @@ public class Printer {
     @Option(name = OptionNames.PRINTER_SHOW_INIT_THREADS,
             description = "Print init threads (default: false)",
             secure = true)
-    private boolean showInitThreads = false;
+    private boolean showInitThreads = true;
 
     @Option(name = OptionNames.PRINTER_SHOW_ANNOTATIONS,
             description = "Print annotation events (default: true)",
@@ -56,12 +56,12 @@ public class Printer {
     @Option(name = OptionNames.PRINTER_SHOW_PROGRAM_CONSTANTS,
             description = "Print non-deterministic program constants (default: false)",
             secure = true)
-    private boolean showProgramConstants = false;
+    private boolean showProgramConstants = true;
 
     @Option(name = OptionNames.PRINTER_SHOW_SPECIFICATION,
             description = "Print program specification and filter (default: false)",
             secure = true)
-    private boolean showSpecification = false;
+    private boolean showSpecification = true;
 
     // =================================================================================
 

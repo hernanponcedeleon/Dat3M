@@ -130,7 +130,9 @@ public class ProcessingManager implements ProgramProcessor {
                                 simplifyFunction
                         ), Target.FUNCTIONS, true
                 ),
+
                 ThreadCreation.fromConfig(config),
+                DebugPrint.withHeader("--------Debug--------", Printer.Mode.ALL, config),
                 ResolveNonDetChoices.newInstance(),
                 reduceSymmetry ? SymmetryReduction.fromConfig(config) : null,
                 intrinsics.lateInliningPass(),
