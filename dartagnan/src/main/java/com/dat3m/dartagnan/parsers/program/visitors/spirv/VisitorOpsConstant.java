@@ -143,6 +143,9 @@ public class VisitorOpsConstant extends SpirvBaseVisitor<Expression> {
         if (type instanceof IntegerType iType) {
             return expressions.makeZero(iType);
         }
+        if (type instanceof PointerType pType) {
+            return expressions.makeNullLiteral(pType);
+        }
         throw new ParsingException("Unsupported NULL constant type '%s'", typeId);
     }
 
