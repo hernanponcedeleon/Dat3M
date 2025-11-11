@@ -163,7 +163,7 @@ public class ThreadCreation implements ProgramProcessor {
                 final List<Event> replacement = eventSequence(
                         newReleaseStore(spawnedThread.comAddress(), threadState(ALIVE | JOINABLE)),
                         createEvent,
-                        newLocal(tidRegister, new TIdExpr(archType, spawnedThread.thread()))
+                        newLocal(tidRegister, new TIdExpr((IntegerType) tidRegister.getType(), spawnedThread.thread()))
                 );
                 IRHelper.replaceWithMetadata(create, replacement);
 
@@ -345,7 +345,7 @@ public class ThreadCreation implements ProgramProcessor {
                     final Expression tidExpr = new TIdExpr(archType, call.getThread());
                     final Local tidAssignment = newLocal(resultRegister, expressions.makeIntToPtrCast(tidExpr));
                     IRHelper.replaceWithMetadata(call, tidAssignment);
-                }else {
+                }else{
                     final Expression tidExpr = new TIdExpr((IntegerType) regType, call.getThread());
                     final Local tidAssignment = newLocal(resultRegister, tidExpr);
                     IRHelper.replaceWithMetadata(call, tidAssignment);
@@ -435,7 +435,6 @@ public class ThreadCreation implements ProgramProcessor {
         return new ThreadData(thread, null);
     }
 
-
     private void replaceThreadLocalsWithStackalloc(Memory memory, Thread thread) {
         final TypeFactory types = TypeFactory.getInstance();
         final ExpressionFactory exprs = ExpressionFactory.getInstance();
@@ -443,11 +442,8 @@ public class ThreadCreation implements ProgramProcessor {
         // Translate thread-local memory object to local stack allocation
         Map<MemoryObject, Register> toLocalRegister = new HashMap<>();
         for (MemoryObject memoryObject : memory.getObjects()) {
-            if (!memoryObject.isThreadLocal()) {
-                continue;
-            }
+            if (!memoryObject.isThreadLocal()) {continue;}
             Preconditions.checkState(memoryObject.hasKnownSize());
-
             // Compute type of memory object based on initial values
             final List<Type> contentTypes = new ArrayList<>();
             final List<Integer> offsets = new ArrayList<>();
@@ -460,7 +456,7 @@ public class ThreadCreation implements ProgramProcessor {
             // Allocate single object of memory type
             final Register reg = thread.newUniqueRegister("__threadLocal_" + memoryObject, types.getPointerType());
             final Event localAlloc = EventFactory.newAlloc(
-                    reg, memoryType, expressions.makeOne(types.getArchType()),
+                    reg, memoryType, expressions.makeOne(archType),
                     false, true
             );
 
@@ -468,7 +464,7 @@ public class ThreadCreation implements ProgramProcessor {
             final List<Event> initialization = new ArrayList<>();
             for (Integer initOffset : memoryObject.getInitializedFields()) {
                 initialization.add(EventFactory.newStore(
-                        exprs.makePtrAdd(reg, exprs.makeValue(initOffset, types.getArchType())),
+                        exprs.makePtrAdd(reg, exprs.makeValue(initOffset, archType)),
                         memoryObject.getInitialValue(initOffset)
                 ));
             }

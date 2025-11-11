@@ -12,7 +12,6 @@ public class PointerType implements Type {
         this.bitWidth = bitWidth;
     }
 
-
     @Override
     public String toString() {
         return "ptr_"+ bitWidth;
@@ -24,4 +23,7 @@ public class PointerType implements Type {
                 && other.bitWidth == this.bitWidth;
     }
 
+    public int getBitWidth() {
+        return bitWidth;
+    }
 }

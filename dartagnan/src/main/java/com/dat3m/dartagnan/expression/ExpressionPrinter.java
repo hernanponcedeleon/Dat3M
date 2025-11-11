@@ -140,6 +140,16 @@ public final class ExpressionPrinter implements ExpressionVisitor<String> {
         return String.format("%s + %s", visit(expr.getBase()), visit(expr.getOffset()));
     }
 
+    @Override
+    public String visitPtrConcat(PtrConcat expr) {
+        return Lists.reverse(expr.getOperands()).stream().map(this::visit).collect(Collectors.joining("::"));
+    }
+
+    @Override
+    public String visitPtrExtract(PtrExtract expr) {
+        return String.format("%s[%d..%d]", expr.getOperand().accept(this), expr.getLowBit(), expr.getHighBit());
+    }
+
 
     @Override
     public String visitITEExpression(ITEExpr expr) {

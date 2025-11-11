@@ -414,7 +414,6 @@ public final class ExpressionFactory {
     }
 
 
-
     public Expression makeNullLiteral(PointerType pointerType) {
         return new NullLiteral(pointerType);
     }
@@ -425,6 +424,14 @@ public final class ExpressionFactory {
 
     public Expression makePtrCmp(Expression left, PointerCmpOp op, Expression right) {
         return new PtrCmpExpr(types.getBooleanType(), left, op, right);
+    }
+
+    public Expression makePtrExtract(Expression operand, int lowBit, int highBit) {
+        return new PtrExtract(operand, lowBit, highBit);
+    }
+
+    public Expression makePtrConcat(List<? extends Expression> operands) {
+        return new PtrConcat(operands);
     }
 
     // -----------------------------------------------------------------------------------------------------------------

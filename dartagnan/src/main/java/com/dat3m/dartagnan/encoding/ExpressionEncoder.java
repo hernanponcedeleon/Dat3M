@@ -551,7 +551,7 @@ public class ExpressionEncoder {
                 final BitvectorFormulaManager bvmgr = bitvectorFormulaManager();
                 final BitvectorFormula innerBv = (BitvectorFormula) inner.formula();
                 final int targetBitWidth = expr.getTargetType().getBitWidth();
-                final int sourceBitWidth = types.getArchType().getBitWidth();
+                final int sourceBitWidth = expr.getSourceType().getBitWidth();
                 assert (sourceBitWidth == bvmgr.getLength(innerBv));
                 enc = bvmgr.extract(innerBv, targetBitWidth - 1, 0);
             }
@@ -583,16 +583,16 @@ public class ExpressionEncoder {
                 };
                 return new TypedFormula<>(types.getBooleanType(), result);
             }else{
-                final var left = (TypedFormula<PointerType, BitvectorFormula>) encodePointerExpr(expr.getLeft());
-                final var right = (TypedFormula<PointerType, BitvectorFormula>) encodePointerExpr(expr.getRight());
+                final BitvectorFormula left =  (BitvectorFormula) encodePointerExpr(expr.getLeft()).formula();
+                final BitvectorFormula right =  (BitvectorFormula) encodePointerExpr(expr.getRight()).formula();
                 final BitvectorFormulaManager bvgr = bitvectorFormulaManager();
                 final BooleanFormula result = switch (expr.getKind()) {
-                    case EQ -> bvgr.equal(left.formula(), right.formula());
-                    case NEQ -> bmgr.not(fmgr.equal(left.formula(), right.formula()));
-                    case LT -> bvgr.lessThan(left.formula(), right.formula(),false);
-                    case LTE -> bvgr.lessOrEquals(left.formula(), right.formula(),false);
-                    case GT -> bvgr.greaterThan(left.formula(), right.formula(),false);
-                    case GTE -> bvgr.greaterOrEquals(left.formula(), right.formula(),false);
+                    case EQ -> bvgr.equal(left, right);
+                    case NEQ -> bmgr.not(fmgr.equal(left, right));
+                    case LT -> bvgr.lessThan(left, right,false);
+                    case LTE -> bvgr.lessOrEquals(left, right,false);
+                    case GT -> bvgr.greaterThan(left, right,false);
+                    case GTE -> bvgr.greaterOrEquals(left, right,false);
                 };
                 return new TypedFormula<>(types.getBooleanType(), result);
         }
@@ -607,9 +607,47 @@ public class ExpressionEncoder {
             return new TypedFormula<>(lit.getType(), zero);
         }
 
+        @Override
+        public TypedFormula<PointerType, ?> visitPtrExtract(PtrExtract expr) {
+            final Formula operand = encodePointerExpr(expr.getOperand()).formula();
+            final Formula enc;
+            if (context.useIntegers) {
+                final IntegerFormulaManager imgr = integerFormulaManager();
+                final IntegerFormula highBitValue = imgr.makeNumber(BigInteger.TWO.pow(expr.getHighBit() + 1));
+                final IntegerFormula lowBitValue = imgr.makeNumber(BigInteger.TWO.pow(expr.getLowBit()));
+                final IntegerFormula op = (IntegerFormula) operand;
+                final IntegerFormula extracted = expr.isExtractingHighBits() ? op : imgr.modulo(op, highBitValue);
+                enc = expr.isExtractingLowBits() ? extracted : imgr.divide(extracted, lowBitValue);
+            } else {
+                final BitvectorFormulaManager bvmgr = bitvectorFormulaManager();
+                enc = bvmgr.extract((BitvectorFormula) operand, expr.getHighBit(), expr.getLowBit());
+            }
+            return new TypedFormula<>(expr.getType(), enc);
+        }
 
-
-
+        @Override
+        public TypedFormula<PointerType, ?> visitPtrConcat(PtrConcat expr) {
+            Preconditions.checkArgument(!expr.getOperands().isEmpty());
+            final List<? extends TypedFormula<PointerType, ?>> operands = expr.getOperands().stream()
+                    .map(this::encodePointerExpr)
+                    .toList();
+            Formula enc = operands.get(0).formula();
+            if (context.useIntegers) {
+                final IntegerFormulaManager imgr = fmgr.getIntegerFormulaManager();
+                int offset = operands.get(0).type().getBitWidth();
+                for (TypedFormula<PointerType, ?> op : operands.subList(1, operands.size())) {
+                    final IntegerFormula offsetValue = imgr.makeNumber(BigInteger.TWO.pow(offset - 1));
+                    enc = imgr.add((IntegerFormula) enc, imgr.multiply((IntegerFormula) op.formula(), offsetValue));
+                    offset += op.type().getBitWidth();
+                }
+            } else {
+                final BitvectorFormulaManager bvmgr = bitvectorFormulaManager();
+                for (TypedFormula<PointerType, ?> op : operands.subList(1, operands.size())) {
+                    enc = bvmgr.concat((BitvectorFormula) op.formula(), (BitvectorFormula) enc);
+                }
+            }
+            return new TypedFormula<>(expr.getType(), enc);
+        }
 
         // ====================================================================================
         // Aggregates
