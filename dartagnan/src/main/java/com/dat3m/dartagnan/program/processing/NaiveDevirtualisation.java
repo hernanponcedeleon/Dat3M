@@ -2,6 +2,7 @@ package com.dat3m.dartagnan.program.processing;
 
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
+import com.dat3m.dartagnan.expression.ExpressionVisitor;
 import com.dat3m.dartagnan.expression.processing.ExpressionInspector;
 import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.IRHelper;
@@ -47,11 +48,21 @@ public class NaiveDevirtualisation implements ProgramProcessor {
         }
         for (Function func : Iterables.concat(program.getThreads(), program.getFunctions())) {
             for (RegReader reader : func.getEvents(RegReader.class)) {
-                reader.transformExpressions(functionCollector);
+                applyTransformerToEvent(reader, functionCollector);
             }
         }
         for (Function func : Iterables.concat(program.getThreads(), program.getFunctions())) {
             devirtualise(func, functionCollector.collectedFunctions);
+        }
+    }
+
+    private void applyTransformerToEvent(Event e, ExpressionVisitor<Expression> transformer) {
+        if (e instanceof CallEvent call) {
+            // IMPORTANT: For call events we do not want to replace the call target here.
+            // This is why we do not treat them the same as RegReaders
+            call.getArguments().replaceAll(arg -> arg.accept(transformer));
+        } else if (e instanceof RegReader reader) {
+            reader.transformExpressions(transformer);
         }
     }
 
