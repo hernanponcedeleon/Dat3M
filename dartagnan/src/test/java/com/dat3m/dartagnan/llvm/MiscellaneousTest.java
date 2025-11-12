@@ -42,7 +42,7 @@ public class MiscellaneousTest extends AbstractCTest {
 
     @Override
     protected long getTimeout() {
-        return 1000000;
+        return 10000;
     }
 
     @Override
