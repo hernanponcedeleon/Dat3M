@@ -7,6 +7,7 @@ import com.dat3m.dartagnan.expression.aggregates.ExtractExpr;
 import com.dat3m.dartagnan.expression.integers.*;
 import com.dat3m.dartagnan.expression.misc.ITEExpr;
 import com.dat3m.dartagnan.expression.processing.ExpressionInspector;
+import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
@@ -27,6 +28,7 @@ import org.apache.logging.log4j.Logger;
 
 import java.math.BigInteger;
 import java.util.*;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import static com.google.common.base.Preconditions.checkArgument;
@@ -193,6 +195,19 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
     }
 
     @Override
+    public Collection<MemoryObject> addressableObjects(MemoryCoreEvent e) {
+        final DerivedVariable v = addressVariables.get(e);
+        return v == null ? objectVariables.keySet() : v.base.object != null ? Set.of(v.base.object)
+                : v.base.includes.stream().map(i -> i.source.object).collect(Collectors.toSet());
+    }
+
+    @Override
+    public Collection<MemoryObject> communicableObjects(MemoryCoreEvent e) {
+        final int size = e.getAccessType() instanceof IntegerType t ? t.getBitWidth() : 0;
+        return size < 64 ? Set.of() : objectVariables.keySet();
+    }
+
+    @Override
     public List<Integer> mayMixedSizeAccesses(MemoryCoreEvent event) {
         final List<Integer> result = mixedAccesses.get(event);
         if (result != null) {
@@ -304,7 +319,6 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
         for (final Map.Entry<MemoryCoreEvent, DerivedVariable> entry : addressVariables.entrySet()) {
             postProcess(entry);
         }
-        objectVariables.clear();
         registerVariables.clear();
     }
 

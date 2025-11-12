@@ -1,13 +1,16 @@
 package com.dat3m.dartagnan.program.analysis.alias;
 
+import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.RegWriter;
 import com.dat3m.dartagnan.program.event.core.MemoryCoreEvent;
+import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.dat3m.dartagnan.wmm.utils.graph.mutable.MapEventGraph;
 import com.dat3m.dartagnan.wmm.utils.graph.mutable.MutableEventGraph;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Set;
 
@@ -23,16 +26,18 @@ import static com.google.common.base.Preconditions.checkNotNull;
 public class EqualityAliasAnalysis implements AliasAnalysis {
 
     private final Config config;
+    private final Set<MemoryObject> allObjects;
 
     private final MutableEventGraph trueSet = new MapEventGraph();
     private final MutableEventGraph falseSet = new MapEventGraph();
 
     public static EqualityAliasAnalysis fromConfig(Program program, Config config) {
-        return new EqualityAliasAnalysis(config);
+        return new EqualityAliasAnalysis(program, config);
     }
 
-    private EqualityAliasAnalysis(Config c) {
+    private EqualityAliasAnalysis(Program p, Config c) {
         config = checkNotNull(c);
+        allObjects = p.getMemory().getObjects();
     }
 
     @Override
@@ -76,6 +81,17 @@ public class EqualityAliasAnalysis implements AliasAnalysis {
     @Override
     public boolean mayAlias(MemoryCoreEvent a, MemoryCoreEvent b) {
         return true;
+    }
+
+    @Override
+    public Collection<MemoryObject> addressableObjects(MemoryCoreEvent a) {
+        return allObjects;
+    }
+
+    @Override
+    public Collection<MemoryObject> communicableObjects(MemoryCoreEvent a) {
+        final int size = a.getAccessType() instanceof IntegerType t ? t.getBitWidth() : 0;
+        return size < 64 ? Set.of() : allObjects;
     }
 
     @Override

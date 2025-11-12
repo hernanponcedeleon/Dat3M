@@ -3,6 +3,7 @@ package com.dat3m.dartagnan.encoding;
 import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.configuration.Property;
 import com.dat3m.dartagnan.expression.Expression;
+import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.analysis.ExecutionAnalysis;
@@ -13,6 +14,8 @@ import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.event.metadata.MemoryOrder;
 import com.dat3m.dartagnan.program.memory.FinalMemoryValue;
+import com.dat3m.dartagnan.program.memory.MemoryObject;
+import com.dat3m.dartagnan.smt.FormulaManagerExt;
 import com.dat3m.dartagnan.wmm.Relation;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
@@ -23,8 +26,11 @@ import com.google.common.collect.Lists;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
+import org.sosy_lab.java_smt.api.BitvectorFormula;
+import org.sosy_lab.java_smt.api.BitvectorFormulaManager;
 import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.BooleanFormulaManager;
+import org.sosy_lab.java_smt.api.Formula;
 import org.sosy_lab.java_smt.api.IntegerFormulaManager;
 
 import java.util.*;
@@ -42,6 +48,7 @@ public class PropertyEncoder implements Encoder {
 
     private static final Logger logger = LogManager.getLogger(PropertyEncoder.class);
 
+    private final TypeFactory types = TypeFactory.getInstance();
     private final EncodingContext context;
     private final Program program;
     private final Wmm memoryModel;
@@ -127,6 +134,9 @@ public class PropertyEncoder implements Encoder {
         final List<TrackableFormula> trackableViolationEncodings = new ArrayList<>();
         if (properties.contains(TERMINATION)) {
             trackableViolationEncodings.add(encodeNontermination());
+        }
+        if (properties.contains(TRACKABILITY)) {
+            trackableViolationEncodings.add(encodeTrackability());
         }
         if (properties.contains(DATARACEFREEDOM)) {
             trackableViolationEncodings.add(encodeDataRaces());
@@ -396,6 +406,70 @@ public class PropertyEncoder implements Encoder {
             }
         }
         return new TrackableFormula(bmgr.not(DATARACEFREEDOM.getSMTVariable(ctx)), hasRace);
+    }
+
+    // ======================================================================
+    // ======================================================================
+    // ============================= Liveness ===============================
+    // ======================================================================
+    // ======================================================================
+
+    private TrackableFormula encodeTrackability() {
+        final var enc = new ArrayList<BooleanFormula>();
+        final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
+        final FormulaManagerExt fmgr = context.getFormulaManager();
+        final Map<MemoryObject, BooleanFormula> leakVariables = program.getMemory().getObjects().stream()
+                .filter(MemoryObject::isHeapAllocated)
+                .collect(Collectors.toMap(o -> o, o -> bmgr.makeVariable(fmgr.escape("leak_%s".formatted(o.getName())))));
+        for (Store store : program.getThreadEvents(Store.class)) {
+            if (!mayBeFinal(store)) { continue; }
+            final Set<MemoryObject> communicableObjects = alias.communicableObjects(store).stream()
+                    .filter(leakVariables::containsKey)
+                    .collect(Collectors.toSet());
+            if (communicableObjects.isEmpty()) { continue; }
+            final BooleanFormula notFinal = bmgr.not(context.lastCoVar(store));
+            for (MemoryObject addressableObject : alias.addressableObjects(store)) {
+                final BooleanFormula addressLeak = leakVariables.get(addressableObject);
+                if (addressLeak == null && !addressableObject.isStaticallyAllocated()) { continue; }
+                final BooleanFormula addressLeaked = addressLeak != null ? addressLeak : bmgr.makeFalse();
+                final BooleanFormula notAddressed = bmgr.not(referencesObject(store, false, addressableObject));
+                for (MemoryObject communicableObject : communicableObjects) {
+                    final BooleanFormula valueNotLeaked = bmgr.not(leakVariables.get(communicableObject));
+                    final BooleanFormula notCommunicated = bmgr.not(referencesObject(store, true, communicableObject));
+                    enc.add(bmgr.or(notFinal, notAddressed, addressLeaked, notCommunicated, valueNotLeaked));
+                }
+            }
+        }
+        enc.add(bmgr.or(leakVariables.values()));
+        return new TrackableFormula(TRACKABILITY.getSMTVariable(context), bmgr.and(enc));
+    }
+
+    private boolean mayBeFinal(Store store) {
+        //TODO exec.isAnyImplied(store, ...)
+        for (Event other : ra.getKnowledge(memoryModel.getRelation(CO)).getMustSet().getRange(store)) {
+            if (exec.isImplied(store, other)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private BooleanFormula referencesObject(Store store, boolean isValue, MemoryObject object) {
+        //TODO enhance with provenance
+        final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
+        final TypedFormula<?, ?> address = isValue ? context.value(store) : context.address(store);
+        final Formula base = context.address(object).formula();
+        final Formula size = context.size(object).formula();
+        final int addressSize = types.getMemorySizeInBytes(address.type());
+        if (address.formula() instanceof BitvectorFormula a && base instanceof BitvectorFormula b && size instanceof BitvectorFormula s) {
+            final BitvectorFormulaManager bvmgr = context.getFormulaManager().getBitvectorFormulaManager();
+            final BitvectorFormula end = bvmgr.add(b, s);
+            final BitvectorFormula c = bvmgr.subtract(end, bvmgr.makeBitvector(bvmgr.getLength(end), addressSize));
+            final BooleanFormula lowerBound = bvmgr.lessOrEquals(b, a, false);
+            final BooleanFormula upperBound = bvmgr.lessOrEquals(a, c, false);
+            return bmgr.and(lowerBound, upperBound);
+        }
+        throw new UnsupportedOperationException("inArrayBounds(%s, %s, %s)".formatted(address.formula(), base, size));
     }
 
     // ======================================================================

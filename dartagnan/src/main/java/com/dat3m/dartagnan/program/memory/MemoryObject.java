@@ -54,6 +54,7 @@ public class MemoryObject extends LeafExpressionBase<Type> {
 
     public boolean isStaticallyAllocated() { return allocationSite == null; }
     public boolean isDynamicallyAllocated() { return !isStaticallyAllocated(); }
+    public boolean isHeapAllocated() { return allocationSite != null && allocationSite.isHeapAllocation(); }
     public Alloc getAllocationSite() { return allocationSite; }
 
     public boolean isThreadLocal() { return this.isThreadLocal; }

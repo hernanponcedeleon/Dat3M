@@ -7,6 +7,7 @@ import com.dat3m.dartagnan.expression.integers.IntLiteral;
 import com.dat3m.dartagnan.expression.integers.IntSizeCast;
 import com.dat3m.dartagnan.expression.integers.IntUnaryExpr;
 import com.dat3m.dartagnan.expression.misc.ITEExpr;
+import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
@@ -23,6 +24,7 @@ import com.google.common.collect.Sets;
 
 import java.math.BigInteger;
 import java.util.*;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import static com.dat3m.dartagnan.expression.integers.IntBinaryOp.*;
@@ -49,6 +51,7 @@ import static com.dat3m.dartagnan.configuration.Alias.*;
 public class FieldSensitiveAndersen implements AliasAnalysis {
 
     private final Config config;
+    private final Set<MemoryObject> allObjects;
 
     private static final TypeFactory types = TypeFactory.getInstance();
 
@@ -82,6 +85,7 @@ public class FieldSensitiveAndersen implements AliasAnalysis {
 
     private FieldSensitiveAndersen(Program p, Config c) {
         config = checkNotNull(c);
+        allObjects = p.getMemory().getObjects();
         synContext = Suppliers.memoize(() -> SyntacticContextAnalysis.newInstance(p));
     }
 
@@ -96,6 +100,17 @@ public class FieldSensitiveAndersen implements AliasAnalysis {
     public boolean mustAlias(MemoryCoreEvent x, MemoryCoreEvent y) {
         Set<Location> a = getMaxAddressSet(x);
         return a.size() == 1 && a.containsAll(getMaxAddressSet(y));
+    }
+
+    @Override
+    public Collection<MemoryObject> addressableObjects(MemoryCoreEvent e) {
+        return getMaxAddressSet(e).stream().map(l -> l.base).collect(Collectors.toSet());
+    }
+
+    @Override
+    public Collection<MemoryObject> communicableObjects(MemoryCoreEvent e) {
+        final int size = e.getAccessType() instanceof IntegerType t ? t.getBitWidth() : 0;
+        return size < 64 ? Set.of() : allObjects;
     }
 
     @Override
