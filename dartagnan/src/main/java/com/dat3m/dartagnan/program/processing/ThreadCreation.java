@@ -49,7 +49,7 @@ import static com.dat3m.dartagnan.program.event.lang.dat3m.DynamicThreadJoin.Sta
  * This pass handles (reachable) pthread-related function calls.
  * - each pthread_create call spawns a new Thread object.
  * - pthread_join and pthread_detach calls are lowered to appropriate synchronization primitives.
- * - get_my_tid calls are replaced by constant tid values.
+ * - pthread_self calls are replaced by a supposedly-read-only register.
  * Initially, a single thread from the "main" function is spawned.
  * Then the pass works iteratively by picking a (newly created) thread and handling all its pthread calls.
  *
@@ -88,6 +88,8 @@ public class ThreadCreation implements ProgramProcessor {
         config.inject(this);
         compiler = Compilation.fromConfig(config);
     }
+
+    public static final String THREAD_SELF_REGISTER_NAME = "__dat3m_thread_self";
 
     public static ThreadCreation fromConfig(Configuration config) throws InvalidConfigurationException {
         return new ThreadCreation(config);
@@ -361,6 +363,10 @@ public class ThreadCreation implements ProgramProcessor {
                 Register::getName, false);
         final List<Event> body = IRHelper.copyEvents(function.getEvents(), IRHelper.makeRegisterReplacer(registerReplacement), new HashMap<>());
         thread.getEntry().insertAfter(body);
+
+        // ------------------- Define runtime thread id -------------------
+        final var tidExpr = new TIdExpr(types.getArchType(), thread);
+        thread.getEntry().insertAfter(newLocal(thread.getOrNewRegister(THREAD_SELF_REGISTER_NAME, tidExpr.getType()), tidExpr));
 
         // ------------------- Create thread-local variables -------------------
         replaceThreadLocalsWithStackalloc(function.getProgram().getMemory(), thread);

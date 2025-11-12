@@ -119,7 +119,7 @@ public class Intrinsics {
         P_THREAD_JOIN(List.of("pthread_join", "_pthread_join", "__pthread_join"), true, true, false, true, Intrinsics::inlinePthreadJoin),
         P_THREAD_DETACH("pthread_detach", true, true, true, true, Intrinsics::inlinePthreadDetach),
         P_THREAD_BARRIER_WAIT("pthread_barrier_wait", false, false, true, true, Intrinsics::inlineAsZero),
-        P_THREAD_SELF(List.of("pthread_self", "__VERIFIER_tid"), false, false, true, false, null),
+        P_THREAD_SELF(List.of("pthread_self", "__VERIFIER_tid"), false, false, true, false, Intrinsics::inlinePthreadSelf),
         P_THREAD_EQUAL("pthread_equal", false, false, true, false, Intrinsics::inlinePthreadEqual),
         P_THREAD_ATTR_INIT("pthread_attr_init", true, true, true, true, Intrinsics::inlinePthreadAttr),
         P_THREAD_ATTR_DESTROY("pthread_attr_destroy", true, true, true, true, Intrinsics::inlinePthreadAttr),
@@ -505,6 +505,14 @@ public class Intrinsics {
         return List.of(newThreadReturn(arguments.get(0)));
     }
 
+    private List<Event> inlinePthreadSelf(FunctionCall call) {
+        // This intrinsics is mainly defined by ThreadCreation.
+        assert call.getArguments().isEmpty();
+        final Register resultRegister = getResultRegister(call);
+        final Expression tidExpr = call.getThread().getRegister(ThreadCreation.THREAD_SELF_REGISTER_NAME);
+        assert tidExpr != null : "Non-POSIX thread %s".formatted(call.getThread());
+        return List.of(newLocal(resultRegister, expressions.makeCast(tidExpr, resultRegister.getType())));
+    }
 
     private List<Event> inlinePthreadEqual(FunctionCall call) {
         final Register resultRegister = getResultRegisterAndCheckArguments(2, call);

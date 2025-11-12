@@ -133,9 +133,9 @@ public class ProcessingManager implements ProgramProcessor {
                 ThreadCreation.fromConfig(config),
                 ResolveNonDetChoices.newInstance(),
                 reduceSymmetry ? SymmetryReduction.fromConfig(config) : null,
-                intrinsics.lateInliningPass(),
                 NaiveDevirtualisation.newInstance(),
                 Inlining.fromConfig(config),
+                intrinsics.lateInliningPass(),
                 ProgramProcessor.fromFunctionProcessor(
                         FunctionProcessor.chain(
                                 ResolveAborts.newInstance(),
