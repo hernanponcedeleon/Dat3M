@@ -104,7 +104,7 @@ public class ThreadCreation implements ProgramProcessor {
         if (program.getEntrypoint() instanceof Entrypoint.Simple ep) {
             final List<ThreadData> threads = createThreads(ep);
             resolvePthreadSelf(program);
-            resolveDynamicThreadLocals(program);
+            resolveDynamicThreadLocals(program, threads);
             resolveDynamicThreadJoin(program, threads);
             resolveDynamicThreadDetach(program, threads);
             IdReassignment.newInstance().run(program);
@@ -422,10 +422,10 @@ public class ThreadCreation implements ProgramProcessor {
             threadReturnLabel.insertAfter(newReleaseAnd(threadState, comAddress, threadState(JOINABLE)));
 
             creator.setSpawnedThread(thread);
-            return new ThreadData(thread, comAddress);
+            return new ThreadData(thread, comAddress, threadReturnLabel);
         }
 
-        return new ThreadData(thread, null);
+        return new ThreadData(thread, null, threadReturnLabel);
     }
 
 
@@ -499,7 +499,7 @@ public class ThreadCreation implements ProgramProcessor {
         }
     }
 
-    private void resolveDynamicThreadLocals(Program program) {
+    private void resolveDynamicThreadLocals(Program program, List<ThreadData> threads) {
         record Storage(int id, MemoryObject data, MemoryObject destructor) {}
         interface StorageField { MemoryObject get(Storage s); }
         interface Match { Expression compute(StorageField f, Expression k); }
@@ -569,11 +569,11 @@ public class ThreadCreation implements ProgramProcessor {
         }
         // Call destructors at the end of the thread.
         final FunctionType destructorType = types.getFunctionType(types.getVoidType(), List.of(type));
-        for (ThreadReturn ret : program.getThreadEvents(ThreadReturn.class)) {
+        for (ThreadData thread : threads) {
             //TODO order the destructors non-deterministically
             final List<Event> exit = new ArrayList<>();
-            final Register destructor = ret.getThread().newUniqueRegister("__thread_exit_destructor", type);
-            final Register value = ret.getThread().newUniqueRegister("__thread_exit_value", type);
+            final Register destructor = thread.thread.newUniqueRegister("__thread_exit_destructor", type);
+            final Register value = thread.thread.newUniqueRegister("__thread_exit_value", type);
             int index = 0;
             for (Storage s : storage) {
                 final Label end = newLabel("__thread_exit_destructor_%d".formatted(++index));
@@ -585,7 +585,7 @@ public class ThreadCreation implements ProgramProcessor {
                         end
                 ));
             }
-            ret.insertBefore(exit);
+            thread.returnLabel.insertAfter(exit);
         }
         for (Thread thread : program.getThreads()) {
             replaceThreadLocalsWithStackalloc(program.getMemory(), thread);
@@ -712,7 +712,7 @@ public class ThreadCreation implements ProgramProcessor {
     // ==============================================================================================================
     // Helper classes
 
-    private record ThreadData(Thread thread, MemoryObject comAddress) {
+    private record ThreadData(Thread thread, MemoryObject comAddress, Label returnLabel) {
         public boolean isDynamic() { return comAddress != null; }
         // We assume all dynamically created threads are joinable.
         // This is not true for pthread_join in general.
