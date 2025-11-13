@@ -188,7 +188,11 @@ public final class EncodingContext {
     }
 
     public BooleanFormula sameValue(MemoryCoreEvent first, MemoryCoreEvent second, ExpressionEncoder.ConversionMode cmode) {
-        return exprEncoder.equal(value(first), value(second), cmode);
+        final TypedFormula<?, ?> firstValue = value(first);
+        final TypedFormula<?, ?> secondValue = value(second);
+        return firstValue == null || secondValue == null
+                ? booleanFormulaManager.makeTrue()
+                : exprEncoder.equal(firstValue, secondValue, cmode);
     }
 
     public BooleanFormula sameValue(MemoryCoreEvent first, MemoryCoreEvent second) {
@@ -317,7 +321,7 @@ public final class EncodingContext {
                 addresses.put(e, exprEncoder.encodeAt(memEvent.getAddress(), memEvent));
                 if (e instanceof Load) {
                     values.put(e, results.get(e));
-                } else if (e instanceof Store store) {
+                } else if (e instanceof Store store && !(e instanceof Dealloc)) {
                     values.put(e, exprEncoder.encodeAt(store.getMemValue(), e));
                 }
             }

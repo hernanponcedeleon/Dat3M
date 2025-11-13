@@ -643,7 +643,8 @@ public class WmmEncoder implements Encoder {
 
                 BooleanFormula e = edge.encode(w, r);
                 BooleanFormula sameAddress = context.sameAddress(w, r);
-                BooleanFormula sameValue = context.sameValue(w, r, LEFT_TO_RIGHT);
+                BooleanFormula sameValue = w instanceof Dealloc ? bmgr.makeTrue()
+                        : context.sameValue(w, r, LEFT_TO_RIGHT);
                 edgeMap.computeIfAbsent(r, key -> new ArrayList<>()).add(e);
                 enc.add(bmgr.implication(e, bmgr.and(execution(w, r), sameAddress, sameValue)));
             });

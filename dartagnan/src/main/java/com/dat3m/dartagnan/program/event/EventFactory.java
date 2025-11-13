@@ -124,6 +124,10 @@ public class EventFactory {
         return new Alloc(register, allocType, arraySize, alignment, isHeapAlloc, doesZeroOutMemory);
     }
 
+    public static Dealloc newDealloc(Expression address) {
+        return new Dealloc(address, expressions.makeConstruct(types.getAggregateType(List.of()), List.of()));
+    }
+
     public static Load newLoad(Register register, Expression address) {
         return new Load(register, address);
     }

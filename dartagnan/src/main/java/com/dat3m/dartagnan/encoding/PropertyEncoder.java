@@ -418,29 +418,53 @@ public class PropertyEncoder implements Encoder {
         final var enc = new ArrayList<BooleanFormula>();
         final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
         final FormulaManagerExt fmgr = context.getFormulaManager();
-        final Map<MemoryObject, BooleanFormula> leakVariables = program.getMemory().getObjects().stream()
+        record Var(BooleanFormula leak, BooleanFormula track) {}
+        final Map<MemoryObject, Var> variables = program.getMemory().getObjects().stream()
                 .filter(MemoryObject::isHeapAllocated)
-                .collect(Collectors.toMap(o -> o, o -> bmgr.makeVariable(fmgr.escape("leak_%s".formatted(o.getName())))));
+                .collect(Collectors.toMap(o -> o, o -> new Var(bmgr.makeVariable(fmgr.escape("leak_%s".formatted(o))), bmgr.makeVariable(fmgr.escape("track_%s".formatted(o))))));
+        // Do not leak unallocated objects.
+        for (Map.Entry<MemoryObject, Var> entry : variables.entrySet()) {
+            enc.add(bmgr.or(context.execution(entry.getKey().getAllocationSite()), bmgr.not(entry.getValue().leak)));
+        }
+        // Do not leak deallocated objects.
+        final ExpressionEncoder exprEncoder = context.getExpressionEncoder();
+        for (Dealloc dealloc : program.getThreadEvents(Dealloc.class)) {
+            final BooleanFormula deallocated = context.execution(dealloc);
+            final TypedFormula<?, ?> address = context.address(dealloc);
+            for (MemoryObject addressableObject : alias.addressableObjects(dealloc)) {
+                final Var addressVariable = variables.get(addressableObject);
+                final BooleanFormula addressed = exprEncoder.equal(address, context.address(addressableObject));
+                enc.add(bmgr.not(bmgr.and(deallocated, addressed, addressVariable.leak)));
+            }
+        }
+        // Object A is reachable from another object B, if a co-maximal store writes an address pointing to A into B.
         for (Store store : program.getThreadEvents(Store.class)) {
             if (!mayBeFinal(store)) { continue; }
             final Set<MemoryObject> communicableObjects = alias.communicableObjects(store).stream()
-                    .filter(leakVariables::containsKey)
+                    .filter(variables::containsKey)
                     .collect(Collectors.toSet());
             if (communicableObjects.isEmpty()) { continue; }
-            final BooleanFormula notFinal = bmgr.not(context.lastCoVar(store));
+            final BooleanFormula isFinal = context.lastCoVar(store);
             for (MemoryObject addressableObject : alias.addressableObjects(store)) {
-                final BooleanFormula addressLeak = leakVariables.get(addressableObject);
-                if (addressLeak == null && !addressableObject.isStaticallyAllocated()) { continue; }
-                final BooleanFormula addressLeaked = addressLeak != null ? addressLeak : bmgr.makeFalse();
-                final BooleanFormula notAddressed = bmgr.not(referencesObject(store, false, addressableObject));
+                final Var addressVariable = variables.get(addressableObject);
+                if (addressVariable == null && !addressableObject.isStaticallyAllocated()) { continue; }
+                final BooleanFormula addressed = referencesObject(store, false, addressableObject);
+                final BooleanFormula addressTrack = addressVariable != null ? addressVariable.track : bmgr.makeTrue();
                 for (MemoryObject communicableObject : communicableObjects) {
-                    final BooleanFormula valueNotLeaked = bmgr.not(leakVariables.get(communicableObject));
-                    final BooleanFormula notCommunicated = bmgr.not(referencesObject(store, true, communicableObject));
-                    enc.add(bmgr.or(notFinal, notAddressed, addressLeaked, notCommunicated, valueNotLeaked));
+                    final Var valueVariable = variables.get(communicableObject);
+                    if (valueVariable == null) { continue; }
+                    final BooleanFormula valueTrack = valueVariable.track;
+                    final BooleanFormula communicated = bmgr.not(referencesObject(store, true, communicableObject));
+                    enc.add(bmgr.not(bmgr.and(isFinal, addressed, addressTrack, communicated, bmgr.not(valueTrack))));
                 }
             }
         }
-        enc.add(bmgr.or(leakVariables.values()));
+        // Do not leak trackable objects.
+        for (Var variable : variables.values()) {
+            enc.add(bmgr.implication(variable.track, bmgr.not(variable.leak)));
+        }
+        // Property is violated, if any object is leaked and not trackable.
+        enc.add(variables.values().stream().map(v -> v.leak).collect(bmgr.toDisjunction()));
         return new TrackableFormula(TRACKABILITY.getSMTVariable(context), bmgr.and(enc));
     }
 
