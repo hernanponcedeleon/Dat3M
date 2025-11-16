@@ -21,5 +21,15 @@ public enum PointerCmpOp implements ExpressionKind {
             case LT -> "<";
         };
     }
+    public PointerCmpOp inverted() {
+        return switch (this) {
+            case EQ -> NEQ;
+            case NEQ -> EQ;
+            case GTE -> LT;
+            case LTE -> GT;
+            case GT -> LTE;
+            case LT -> GTE;
+        };
+    }
 }
 

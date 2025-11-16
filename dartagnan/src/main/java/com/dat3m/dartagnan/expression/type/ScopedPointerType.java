@@ -6,7 +6,7 @@ import java.util.Objects;
 
 public class ScopedPointerType extends PointerType {
 
-    private static final int ARCH_SIZE = TypeFactory.getInstance().getArchType().getBitWidth();
+    private static final int ARCH_SIZE = TypeFactory.getInstance().getPointerType().getBitWidth();
 
     private final String scopeId;
     private final Type pointedType;

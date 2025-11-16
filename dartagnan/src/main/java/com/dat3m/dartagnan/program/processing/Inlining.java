@@ -33,8 +33,6 @@ import static com.dat3m.dartagnan.configuration.OptionNames.RECURSION_BOUND;
 import static com.dat3m.dartagnan.program.event.EventFactory.*;
 import static com.google.common.base.Verify.verify;
 
-
-
 @Options
 public class Inlining implements ProgramProcessor {
 
@@ -44,8 +42,6 @@ public class Inlining implements ProgramProcessor {
     private int bound = 1;
 
     private static final ExpressionFactory expressions = ExpressionFactory.getInstance();
-
-
     private Inlining() {}
 
     public static Inlining fromConfig(Configuration config) throws InvalidConfigurationException {

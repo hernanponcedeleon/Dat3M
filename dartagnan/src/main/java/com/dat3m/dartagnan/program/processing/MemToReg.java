@@ -42,7 +42,8 @@ public class MemToReg implements FunctionProcessor {
     private static final TypeFactory types = TypeFactory.getInstance();
     private static final ExpressionFactory expressions = ExpressionFactory.getInstance();
 
-    private MemToReg() {}
+    private MemToReg() {
+    }
 
     public static MemToReg fromConfig(Configuration config) throws InvalidConfigurationException {
         return new MemToReg();

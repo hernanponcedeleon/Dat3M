@@ -2,6 +2,7 @@ package com.dat3m.dartagnan.program.processing.compilation;
 
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.Type;
+import com.dat3m.dartagnan.expression.integers.IntBinaryOp;
 import com.dat3m.dartagnan.expression.type.BooleanType;
 import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.program.Register;
@@ -177,7 +178,7 @@ public class VisitorPower extends VisitorBase {
         String mo = e.getMo();
 
         Register dummyReg = e.getFunction().newRegister(resultRegister.getType());
-        Local localOp = newLocal(dummyReg, expressions.makeIntBinary(resultRegister, e.getOperator(), e.getOperand()));
+        Local localOp = newLocal(dummyReg, expressions.makeCast(expressions.makeIntBinary(resultRegister, e.getOperator(), e.getOperand()),dummyReg.getType()));
 
         // Power does not have mo tags, thus we use null
         Load load = newRMWLoadExclusive(resultRegister, address);
@@ -367,7 +368,7 @@ public class VisitorPower extends VisitorBase {
         String mo = e.getMo();
 
         Register dummyReg = e.getFunction().newRegister(resultRegister.getType());
-        Local localOp = newLocal(dummyReg, expressions.makeIntBinary(resultRegister, e.getOperator(), e.getOperand()));
+        Local localOp = newLocal(dummyReg, expressions.makeCast(expressions.makeIntBinaryForced(resultRegister,e.getOperator() ,e.getOperand()),dummyReg.getType()));
 
         Load load = newRMWLoadExclusive(resultRegister, address);
         Store store = Power.newRMWStoreConditional(address, dummyReg, true);
@@ -658,7 +659,7 @@ public class VisitorPower extends VisitorBase {
 
         Register dummy = e.getFunction().newRegister(e.getResultRegister().getType());
         Label casEnd = newLabel("CAS_end");
-        CondJump branchOnCasCmpResult = newJump(expressions.makeNEQ(dummy, e.getExpectedValue()), casEnd);
+        CondJump branchOnCasCmpResult = newJump(expressions.makeNEQforced(dummy, e.getExpectedValue()), casEnd);
 
         Load load = newRMWLoadExclusive(dummy, address);
         Store store = Power.newRMWStoreConditional(address, e.getStoreValue(), true);
@@ -717,7 +718,7 @@ public class VisitorPower extends VisitorBase {
         String mo = e.getMo();
 
         Register dummy = e.getFunction().newRegister(e.getAccessType());
-        Expression storeValue = expressions.makeIntBinary(dummy, e.getOperator(), e.getOperand());
+        Expression storeValue = expressions.makeCast(expressions.makeIntBinary(dummy, e.getOperator(), e.getOperand()), dummy.getType());
         // Power does not have mo tags, thus we use the empty string
         Load load = newRMWLoadExclusive(dummy, address);
         Store store = Power.newRMWStoreConditional(address, storeValue, true);
@@ -763,7 +764,7 @@ public class VisitorPower extends VisitorBase {
         return eventSequence(
                 optionalMemoryBarrierBefore,
                 load,
-                newLocal(dummy, expressions.makeIntBinary(dummy, e.getOperator(), e.getOperand())),
+                newLocal(dummy, expressions.makeCast(expressions.makeIntBinaryForced(dummy, e.getOperator(), e.getOperand()),dummy.getType())),
                 store,
                 newLocal(resultRegister, dummy),
                 fakeCtrlDep,
@@ -782,7 +783,7 @@ public class VisitorPower extends VisitorBase {
 
         Register dummy = e.getFunction().newRegister(resultRegister.getType());
         Load load = newRMWLoadExclusive(dummy, address);
-        Store store = Power.newRMWStoreConditional(address, expressions.makeIntBinary(dummy, e.getOperator(), e.getOperand()), true);
+        Store store = Power.newRMWStoreConditional(address, expressions.makeCast(expressions.makeIntBinaryForced(dummy, e.getOperator(), e.getOperand()), dummy.getType()), true);
         Label label = newLabel("FakeDep");
         Event fakeCtrlDep = newFakeCtrlDep(dummy, label);
 
@@ -817,7 +818,7 @@ public class VisitorPower extends VisitorBase {
         Register regValue = e.getFunction().newRegister(type);
         // Power does not have mo tags, thus we use the empty string
         Load load = newRMWLoadExclusive(regValue, address);
-        Store store = Power.newRMWStoreConditional(address, expressions.makeAdd(regValue, e.getOperand()), true);
+        Store store = Power.newRMWStoreConditional(address, expressions.makePtrAdd(regValue, e.getOperand()), true);
         Label label = newLabel("FakeDep");
         Event fakeCtrlDep = newFakeCtrlDep(regValue, label);
 
@@ -834,7 +835,7 @@ public class VisitorPower extends VisitorBase {
         return eventSequence(
                 optionalMemoryBarrierBefore,
                 load,
-                newLocal(dummy, expressions.makeNEQ(regValue, unless)),
+                newLocal(dummy, expressions.makeNEQforced(regValue, unless)),
                 branchOnCauCmpResult,
                 store,
                 fakeCtrlDep,
@@ -860,7 +861,7 @@ public class VisitorPower extends VisitorBase {
         Expression testResult = expressions.makeNot(expressions.makeBooleanCast(dummy));
 
         Load load = newRMWLoadExclusive(dummy, address);
-        Local localOp = newLocal(dummy, expressions.makeIntBinary(dummy, e.getOperator(), e.getOperand()));
+        Local localOp = newLocal(dummy, expressions.makeCast(expressions.makeIntBinaryForced(dummy, e.getOperator(), e.getOperand()), dummy.getType()));
         Store store = Power.newRMWStoreConditional(address, dummy, true);
         Local testOp = newLocal(resultRegister, expressions.makeCast(testResult, resultRegister.getType()));
         Label label = newLabel("FakeDep");

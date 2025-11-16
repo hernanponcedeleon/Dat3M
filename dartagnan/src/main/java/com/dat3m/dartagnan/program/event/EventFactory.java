@@ -165,7 +165,6 @@ public class EventFactory {
     public static Init newInit(MemoryObject base, int offset) {
         //TODO: We simplify here because virtual aliasing currently fails when pointer arithmetic is involved
         // meaning that <addr> and <addr + 0> are treated differently.
-        //
         final Expression address = expressions.makePtrAdd(base, expressions.makeValue(offset, types.getArchType()));
         final Init init = new Init(base, offset, address);
         init.addTags(base.getFeatureTags());

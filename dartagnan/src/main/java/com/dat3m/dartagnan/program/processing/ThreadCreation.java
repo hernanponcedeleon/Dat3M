@@ -454,7 +454,7 @@ public class ThreadCreation implements ProgramProcessor {
             final Type memoryType = types.getAggregateType(contentTypes, offsets);
 
             // Allocate single object of memory type
-            final Register reg = thread.newUniqueRegister("__threadLocal_" + memoryObject, types.getPointerType());
+            final Register reg = thread.newUniqueRegister("__threadLocal_" + memoryObject, pointerType);
             final Event localAlloc = EventFactory.newAlloc(
                     reg, memoryType, expressions.makeOne(archType),
                     false, true

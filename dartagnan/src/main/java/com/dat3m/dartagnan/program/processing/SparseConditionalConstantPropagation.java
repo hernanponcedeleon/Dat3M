@@ -3,7 +3,9 @@ package com.dat3m.dartagnan.program.processing;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.booleans.BoolLiteral;
 import com.dat3m.dartagnan.expression.integers.IntLiteral;
+import com.dat3m.dartagnan.expression.pointer.NullLiteral;
 import com.dat3m.dartagnan.expression.processing.ExprSimplifier;
+import com.dat3m.dartagnan.expression.type.PointerType;
 import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.IRHelper;
 import com.dat3m.dartagnan.program.Register;
@@ -70,8 +72,8 @@ public class SparseConditionalConstantPropagation implements FunctionProcessor {
             return;
         }
         final Predicate<Expression> checkDoPropagate = propagateCopyAssignments
-                ? (expr -> expr instanceof MemoryObject || expr instanceof IntLiteral || expr instanceof BoolLiteral || expr instanceof Register)
-                : (expr -> expr instanceof MemoryObject || expr instanceof IntLiteral || expr instanceof BoolLiteral);
+                ? (expr -> expr instanceof MemoryObject || expr instanceof NullLiteral || expr instanceof IntLiteral || expr instanceof BoolLiteral || expr instanceof Register)
+                : (expr -> expr instanceof MemoryObject || expr instanceof NullLiteral || expr instanceof IntLiteral || expr instanceof BoolLiteral); // todo check nullLiteral
 
         Set<Event> reachableEvents = new HashSet<>();
         Map<Label, Map<Register, Expression>> inflowMap = new HashMap<>();

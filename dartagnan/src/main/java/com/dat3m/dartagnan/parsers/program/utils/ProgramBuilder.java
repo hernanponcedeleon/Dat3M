@@ -270,7 +270,7 @@ public class ProgramBuilder {
     }
 
     public Register getOrNewRegister(int fid, String name) {
-        return getOrNewRegister(fid, name, types.getArchType());
+        return getOrNewRegister(fid, name, types.getPointerType());
     }
 
     public Register getOrNewRegister(int fid, String name, Type type) {

@@ -185,7 +185,9 @@ public final class Tearing implements ProgramProcessor {
             int start = i < 0 ? 0 : offsets.get(i);
             int end = i + 1 < offsets.size() ? offsets.get(i + 1) : bytes;
             assert start < end;
-            smallerRegisters.add(newRegister(function, resultRegister.getType() instanceof PointerType ?types.getPointerType(8 * (end - start)) :types.getIntegerType(8 * (end - start))));
+            smallerRegisters.add(newRegister(function, resultRegister.getType() instanceof PointerType
+                    ?types.getPointerType(8 * (end - start))
+                    :types.getIntegerType(8 * (end - start))));
         }
         assert bytes == smallerRegisters.stream().mapToInt(t -> types.getMemorySizeInBytes(t.getType())).sum();
         final InstructionBoundary begin = load.hasTag(Tag.NO_INSTRUCTION) ? null : EventFactory.newInstructionBegin();
@@ -207,7 +209,8 @@ public final class Tearing implements ProgramProcessor {
             final Event end = EventFactory.newInstructionEnd(begin);
             replacement.add(end);
         }
-        final Expression combination = resultRegister.getType() instanceof PointerType ? expressions.makePtrConcat(smallerRegisters): expressions.makeIntConcat(smallerRegisters);
+        final Expression combination = resultRegister.getType() instanceof PointerType
+                ? expressions.makePtrConcat(smallerRegisters): expressions.makeIntConcat(smallerRegisters);
         final Event computeResult = EventFactory.newLocal(load.getResultRegister(), combination);
         replacement.add(computeResult);
         return replacement;
@@ -234,7 +237,9 @@ public final class Tearing implements ProgramProcessor {
             final int start = bigEndian ? bytes - next : offset;
             final int end = bigEndian ? bytes - offset : next;
             final Expression address = expressions.makePtrAdd(addressRegister, expressions.makeValue(offset, types.getArchType()));
-            final Expression value = valueRegister.getType() instanceof PointerType ? expressions.makePtrExtract(valueRegister, 8 * start, 8 * end - 1):expressions.makeIntExtract(valueRegister, 8 * start, 8 * end - 1);
+            final Expression value = valueRegister.getType() instanceof PointerType
+                    ? expressions.makePtrExtract(valueRegister, 8 * start, 8 * end - 1)
+                    : expressions.makeIntExtract(valueRegister, 8 * start, 8 * end - 1);
             final Store byteStore = store.getCopy();
             byteStore.setAddress(address);
             byteStore.setMemValue(value);

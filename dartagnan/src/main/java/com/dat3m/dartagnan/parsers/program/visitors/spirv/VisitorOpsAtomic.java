@@ -145,7 +145,7 @@ public class VisitorOpsAtomic extends SpirvBaseVisitor<Event> {
         Set<String> tags = getMemorySemanticsTags(tagsCtx.getText());
         tags.add(builder.getPointerStorageClass(ptrCtx.getText()));
         if (!(ptr.getType() instanceof PointerType) || !(value.getType() instanceof IntegerType)) {
-            throw new ParsingException("Unexpected type at '%s' or '%s', expected pointer and integer but received '%s' and '%s'",
+            throw new ParsingException("Unexpected type at '%s' or '%s', expected pointer or integer but received '%s' and '%s'",
                     ptrCtx.getText(), valCtx.getText(), ptr.getType(), value.getType());
         }
         SpirvRmwExtremum event = newSpirvRmwExtremum(register, ptr, kind, value, scope, tags);

@@ -4,6 +4,9 @@ import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.integers.*;
 import com.dat3m.dartagnan.expression.misc.ITEExpr;
+import com.dat3m.dartagnan.expression.pointer.NullLiteral;
+import com.dat3m.dartagnan.expression.pointer.PointerCmpOp;
+import com.dat3m.dartagnan.expression.pointer.PtrCmpExpr;
 import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.analysis.DominatorAnalysis;
@@ -108,6 +111,7 @@ public class NaiveLoopBoundAnnotation implements FunctionProcessor {
                     continue;
                 }
                 final Expression negatedGuard = jump.getGuard();
+
                 // Now we check for the guard shape "r != 0" (i.e., we exit when r == 0 due to the inversion).
                 if (!(negatedGuard instanceof IntCmpExpr cond
                         && cond.getLeft() instanceof Register r

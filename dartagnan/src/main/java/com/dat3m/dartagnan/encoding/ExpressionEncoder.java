@@ -539,13 +539,15 @@ public class ExpressionEncoder {
 
         @Override
         public TypedFormula<IntegerType, ?> visitPtrToIntCastExpression(PtrToIntCast expr) {
-            // Todo: add support for extension
             final TypedFormula<PointerType, ?> inner = encodePointerExpr(expr.getOperand());
             final Formula enc;
             if (context.useIntegers) {
+                if (expr.isExtension()) {
+                    enc = inner.formula();
+                }else {
                 final BigInteger highValue = BigInteger.TWO.pow(expr.getType().getBitWidth());
                 final IntegerFormulaManager imgr = integerFormulaManager();
-                enc = imgr.modulo((IntegerFormula) inner.formula(), imgr.makeNumber(highValue));
+                enc = imgr.modulo((IntegerFormula) inner.formula(), imgr.makeNumber(highValue));}
             } else {
                 assert inner.formula() instanceof BitvectorFormula;
                 final BitvectorFormulaManager bvmgr = bitvectorFormulaManager();
@@ -553,15 +555,15 @@ public class ExpressionEncoder {
                 final int targetBitWidth = expr.getTargetType().getBitWidth();
                 final int sourceBitWidth = expr.getSourceType().getBitWidth();
                 assert (sourceBitWidth == bvmgr.getLength(innerBv));
-                enc = bvmgr.extract(innerBv, targetBitWidth - 1, 0);
+                enc = expr.isExtension()
+                        ? bvmgr.extend(innerBv, targetBitWidth - sourceBitWidth, false)
+                        : bvmgr.extract(innerBv, targetBitWidth - 1, 0);
             }
             return new TypedFormula<>(expr.getType(), enc);
-
         }
 
         @Override
         public TypedFormula<PointerType, ?> visitIntToPtrCastExpression(IntToPtrCast expr) {
-
             final TypedFormula<IntegerType, ?> address = encodeIntegerExpr(expr.getOperand());
             return new TypedFormula<>(expr.getType(), address.formula());
         }

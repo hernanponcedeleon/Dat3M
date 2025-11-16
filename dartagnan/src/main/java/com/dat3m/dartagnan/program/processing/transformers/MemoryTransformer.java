@@ -68,9 +68,7 @@ public class MemoryTransformer extends ExprTransformer {
         tid = newTid;
         builtIn.setThreadId(tid);
         registerMapping = function.getRegisters().stream().collect(
-                toMap(r -> r, r -> {
-                    return thread.getOrNewRegister(r.getName(),r.getType());
-                }));
+                toMap(r -> r, r -> thread.getOrNewRegister(r.getName(),r.getType())));
         nonDetMapping = new HashMap<>();
     }
 
