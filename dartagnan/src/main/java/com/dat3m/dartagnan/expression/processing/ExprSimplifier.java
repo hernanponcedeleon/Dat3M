@@ -11,6 +11,9 @@ import com.dat3m.dartagnan.expression.aggregates.ExtractExpr;
 import com.dat3m.dartagnan.expression.booleans.*;
 import com.dat3m.dartagnan.expression.integers.*;
 import com.dat3m.dartagnan.expression.misc.ITEExpr;
+import com.dat3m.dartagnan.expression.pointer.NullLiteral;
+import com.dat3m.dartagnan.expression.pointer.PointerCmpOp;
+import com.dat3m.dartagnan.expression.pointer.PtrCmpExpr;
 import com.dat3m.dartagnan.expression.utils.IntegerHelper;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.google.common.base.VerifyException;
@@ -185,6 +188,61 @@ public class ExprSimplifier extends ExprTransformer {
         }
 
         return expressions.makeIntCmp(left, op, right);
+    }
+    @Override
+    public Expression visitPtrCmpExpression(PtrCmpExpr cmp) {
+        final Expression rewrite = tryGeneralRewrite(cmp);
+        if (rewrite != null) {
+            return rewrite;
+        }
+
+        final Expression l = cmp.getLeft().accept(this);
+        final Expression r = cmp.getRight().accept(this);
+
+        // Normalize "x > y" to "y < x" (and similar).
+        final boolean swap = switch (cmp.getKind()) {
+            case GTE, GT -> true;
+            default -> false;
+        };
+        final PointerCmpOp op = swap ? cmp.getKind().reverse() : cmp.getKind();
+        final Expression left = swap ? r : l;
+        final Expression right = swap ? l : r;
+
+        // ------- Operations on same value -------
+        if (aggressive && left.equals(right)) {
+            return expressions.makeValue(!op.isStrict());
+        }
+
+        // ------- Operations with constants -------
+        if (left instanceof NullLiteral && right instanceof NullLiteral) {
+            final boolean cmpResult = switch (op) {
+                case EQ -> true;
+                case NEQ -> false;
+                default ->
+                        throw new VerifyException(String.format("Unexpected comparison operator '%s'.", op));
+            };
+            return expressions.makeValue(cmpResult);
+        }
+
+        // ------- Operations on memory objects -------
+        if (left instanceof MemoryObject lMem && right instanceof MemoryObject rMem) {
+            final boolean sameObj = lMem.equals(rMem);
+
+            final Boolean cmpResult = switch (op) {
+                case EQ -> sameObj;
+                case NEQ -> !sameObj;
+                case LT-> sameObj ? false : null;
+                case LTE -> sameObj ? true : null;
+                default ->
+                        throw new VerifyException(String.format("Unexpected comparison operator '%s'. Missing normalization?", op));
+            };
+
+            if (cmpResult != null) {
+                return expressions.makeValue(cmpResult);
+            }
+        }
+
+        return expressions.makePtrCmp(left, op, right);
     }
 
     @Override
