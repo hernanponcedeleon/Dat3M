@@ -32,7 +32,7 @@ public enum Property implements OptionInterface {
             case DATARACEFREEDOM -> "Data-race freedom (SVCOMP only)";
             case TERMINATION -> "Termination";
             case CAT_SPEC -> "CAT specification";
-            case TRACKABILITY -> "Memory Tracability";
+            case TRACKABILITY -> "Memory Trackability";
         };
     }
 

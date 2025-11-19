@@ -49,6 +49,7 @@ public class OutputLogger {
         public static final String TERMINATION_REASON = "Termination violation found";
         public static final String CAT_SPEC_REASON = "CAT specification violation found";
         public static final String SVCOMP_RACE_REASON = "SVCOMP data race found";
+        public static final String SVCOMP_UNTRACKABLE_OBJECT_REASON = "Untrackable object found";
         public static final String BOUND_REASON = "Not fully unrolled loops";
 
         @Override
