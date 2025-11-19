@@ -12,7 +12,7 @@ import com.dat3m.dartagnan.expression.booleans.*;
 import com.dat3m.dartagnan.expression.integers.*;
 import com.dat3m.dartagnan.expression.misc.ITEExpr;
 import com.dat3m.dartagnan.expression.pointer.NullLiteral;
-import com.dat3m.dartagnan.expression.pointer.PointerCmpOp;
+import com.dat3m.dartagnan.expression.pointer.PtrCmpOp;
 import com.dat3m.dartagnan.expression.pointer.PtrCmpExpr;
 import com.dat3m.dartagnan.expression.utils.IntegerHelper;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
@@ -204,7 +204,7 @@ public class ExprSimplifier extends ExprTransformer {
             case GTE, GT -> true;
             default -> false;
         };
-        final PointerCmpOp op = swap ? cmp.getKind().reverse() : cmp.getKind();
+        final PtrCmpOp op = swap ? cmp.getKind().reverse() : cmp.getKind();
         final Expression left = swap ? r : l;
         final Expression right = swap ? l : r;
 

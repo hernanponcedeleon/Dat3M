@@ -10,7 +10,7 @@ import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.Type;
 import com.dat3m.dartagnan.expression.integers.IntCmpOp;
-import com.dat3m.dartagnan.expression.pointer.PointerCmpOp;
+import com.dat3m.dartagnan.expression.pointer.PtrCmpOp;
 import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.expression.type.PointerType;
 import com.dat3m.dartagnan.parsers.AsmArmBaseVisitor;
@@ -277,9 +277,15 @@ public class VisitorAsmArm extends AsmArmBaseVisitor<Object> {
     public Object visitCompareBranchNonZero(AsmArmParser.CompareBranchNonZeroContext ctx) {
         Label label = AsmUtils.getOrNewLabel(labelsDefined, ctx.Numbers().getText());
         Register firstRegister = (Register) ctx.register().accept(this);
-        Expression zero = expressions.makeZero((IntegerType) firstRegister.getType());
-        Expression expr = expressions.makeIntCmp(firstRegister, IntCmpOp.NEQ, zero);
-        asmInstructions.add(EventFactory.newJump(expr, label));
+        if (firstRegister.getType() instanceof PointerType){
+            Expression zero = expressions.makeNullLiteral( (PointerType) firstRegister.getType());
+            Expression expr = expressions.makePtrCmp(firstRegister, PtrCmpOp.NEQ, zero);
+            asmInstructions.add(EventFactory.newJump(expr, label));
+        }else{
+            Expression zero = expressions.makeZero( (IntegerType) firstRegister.getType());
+            Expression expr = expressions.makeIntCmp(firstRegister, IntCmpOp.NEQ, zero);
+            asmInstructions.add(EventFactory.newJump(expr, label));
+        }
         return null;
     }
 

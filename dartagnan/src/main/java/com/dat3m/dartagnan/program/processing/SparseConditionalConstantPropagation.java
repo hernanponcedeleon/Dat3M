@@ -5,7 +5,6 @@ import com.dat3m.dartagnan.expression.booleans.BoolLiteral;
 import com.dat3m.dartagnan.expression.integers.IntLiteral;
 import com.dat3m.dartagnan.expression.pointer.NullLiteral;
 import com.dat3m.dartagnan.expression.processing.ExprSimplifier;
-import com.dat3m.dartagnan.expression.type.PointerType;
 import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.IRHelper;
 import com.dat3m.dartagnan.program.Register;
@@ -136,6 +135,7 @@ public class SparseConditionalConstantPropagation implements FunctionProcessor {
                 final Expression expr = local.getExpr();
                 final Expression valueToPropagate = checkDoPropagate.test(expr) ? expr : null;
                 propagationMap.compute(local.getResultRegister(), (k, v) -> valueToPropagate);
+
             } else if (cur instanceof ThreadArgument arg) {
                 // Propagate constant arguments passed across threads
                 final Expression expr = arg.getCreator().getArguments().get(arg.getIndex());

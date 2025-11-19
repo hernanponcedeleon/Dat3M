@@ -1072,7 +1072,7 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
     private Expression castExpression(TypeConstContext operand, TypeContext target, boolean signed) {
         final Expression operandExpression = visitTypeConst(operand);
         final Type targetType = parseType(target);
-        // checkSupport(targetType instanceof IntegerType, "Non-integer type %s.", target);
+        checkSupport(targetType instanceof IntegerType || targetType instanceof PointerType, "Non integer or pointer type %s.", target);
         return expressions.makeCast(operandExpression, targetType, signed);
     }
 

@@ -9,7 +9,6 @@ import com.dat3m.dartagnan.expression.misc.ITEExpr;
 import com.dat3m.dartagnan.expression.pointer.*;
 import com.dat3m.dartagnan.expression.type.*;
 import com.dat3m.dartagnan.expression.utils.ExpressionHelper;
-import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.dat3m.dartagnan.program.memory.ScopedPointer;
 import com.dat3m.dartagnan.program.memory.ScopedPointerVariable;
@@ -422,7 +421,7 @@ public final class ExpressionFactory {
         return makeNullLiteral(types.getPointerType());
     }
 
-    public Expression makePtrCmp(Expression left, PointerCmpOp op, Expression right) {
+    public Expression makePtrCmp(Expression left, PtrCmpOp op, Expression right) {
         return new PtrCmpExpr(types.getBooleanType(), left, op, right);
     }
 
@@ -496,7 +495,7 @@ public final class ExpressionFactory {
         } else if (type instanceof IntegerType) {
             return makeIntCmp(leftOperand, IntCmpOp.EQ, rightOperand);
         } if (type instanceof PointerType) {
-            return makePtrCmp(leftOperand, PointerCmpOp.EQ, rightOperand);
+            return makePtrCmp(leftOperand, PtrCmpOp.EQ, rightOperand);
         }else if (type instanceof FloatType) {
             // TODO: Decide on a default semantics for float equality?
             return makeFloatCmp(leftOperand, FloatCmpOp.OEQ, rightOperand);
@@ -524,7 +523,7 @@ public final class ExpressionFactory {
         } else if (type instanceof IntegerType) {
             return makeIntCmp(leftOperand, IntCmpOp.NEQ, rightOperand);
         } if (type instanceof PointerType) {
-            return makePtrCmp(leftOperand, PointerCmpOp.NEQ, rightOperand);
+            return makePtrCmp(leftOperand, PtrCmpOp.NEQ, rightOperand);
         }else if (type instanceof FloatType) {
             // TODO: Decide on a default semantics for float equality?
             return makeFloatCmp(leftOperand, FloatCmpOp.ONEQ, rightOperand);
@@ -566,7 +565,7 @@ public final class ExpressionFactory {
             return makeFloatBinary(x, floatOp, y);
         } else if (op instanceof IntCmpOp cmpOp) {
             return makeCompare(x, cmpOp, y);
-        }else if (op instanceof PointerCmpOp cmpOp) {
+        }else if (op instanceof PtrCmpOp cmpOp) {
             return makeCompare(x, cmpOp, y);
         }
         throw new UnsupportedOperationException(String.format("Expression kind %s is no binary operator.", op));
@@ -579,7 +578,7 @@ public final class ExpressionFactory {
             return makeFloatCmp(x, floatOp, y);
         } else if (cmpOp instanceof AggregateCmpOp aggrCmpOp) {
             return makeAggregateCmp(x, aggrCmpOp, y);
-        }else if (cmpOp instanceof PointerCmpOp ptrCmpOp) {
+        }else if (cmpOp instanceof PtrCmpOp ptrCmpOp) {
             return makePtrCmp(x, ptrCmpOp, y);
         }
         throw new UnsupportedOperationException(String.format("Expression kind %s is no comparison operator.", cmpOp));
