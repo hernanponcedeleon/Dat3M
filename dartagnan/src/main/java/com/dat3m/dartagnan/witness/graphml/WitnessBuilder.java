@@ -90,7 +90,7 @@ public class WitnessBuilder {
             return "CHECK( init(main()), LTL(G ! data-race) )";
         }
         if (summary.contains("Untrackable object found")) {
-            return "CHECK( init(main()), LTL(G ! data-race) )";
+            return "CHECK( init(main()), LTL(G valid-memtrack) )";
         }
         throw new UnsupportedOperationException("Violation found for unsupported property");
     }
