@@ -137,7 +137,7 @@ public class PropertyEncoder implements Encoder {
             trackableViolationEncodings.add(encodeNontermination());
         }
         if (properties.contains(TRACKABILITY)) {
-            trackableViolationEncodings.add(encodeTrackability());
+            trackableViolationEncodings.add(encodeTrackabilityViolations());
         }
         if (properties.contains(DATARACEFREEDOM)) {
             trackableViolationEncodings.add(encodeDataRaces());
@@ -408,7 +408,7 @@ public class PropertyEncoder implements Encoder {
     // ======================================================================
     // ======================================================================
 
-    private TrackableFormula encodeTrackability() {
+    private TrackableFormula encodeTrackabilityViolations() {
         final var enc = new ArrayList<BooleanFormula>();
         record Var(BooleanFormula leak, BooleanFormula track) {}
         final Map<MemoryObject, Var> variables = program.getMemory().getObjects().stream()
@@ -452,14 +452,14 @@ public class PropertyEncoder implements Encoder {
                     final Var valueVariable = variables.get(communicableObject);
                     if (valueVariable == null) { continue; }
                     final BooleanFormula valueTrack = valueVariable.track;
-                    final BooleanFormula communicated = bmgr.not(referencesObject(store, true, communicableObject));
+                    final BooleanFormula communicated = referencesObject(store, true, communicableObject);
                     enc.add(bmgr.not(bmgr.and(isFinal, addressed, addressTrack, communicated, bmgr.not(valueTrack))));
                 }
             }
         }
         // Property is violated, if there is an execution where any object is leaked and not trackable.
         enc.add(bmgr.or(variables.values().stream().map(v -> bmgr.and(v.leak, bmgr.not(v.track))).toList()));
-        return new TrackableFormula(TRACKABILITY.getSMTVariable(context), bmgr.and(enc));
+        return new TrackableFormula(bmgr.not(TRACKABILITY.getSMTVariable(context)), bmgr.and(enc));
     }
 
     private boolean mayBeFinal(Store store) {
@@ -481,7 +481,7 @@ public class PropertyEncoder implements Encoder {
         if (address.formula() instanceof BitvectorFormula a && base instanceof BitvectorFormula b && size instanceof BitvectorFormula s) {
             final BitvectorFormulaManager bvmgr = context.getFormulaManager().getBitvectorFormulaManager();
             final BitvectorFormula end = bvmgr.add(b, s);
-            final BitvectorFormula c = bvmgr.subtract(end, bvmgr.makeBitvector(bvmgr.getLength(end), addressSize));
+            final BitvectorFormula c = isValue ? end : bvmgr.subtract(end, bvmgr.makeBitvector(bvmgr.getLength(end), addressSize));
             final BooleanFormula lowerBound = bvmgr.lessOrEquals(b, a, false);
             final BooleanFormula upperBound = bvmgr.lessOrEquals(a, c, false);
             return bmgr.and(lowerBound, upperBound);
