@@ -213,12 +213,14 @@ public final class EncodingContext {
 
     /// Describes that {@code object} has been allocated, but has not been deallocated during the execution.
     public BooleanFormula leakVariable(MemoryObject object) {
-        return booleanFormulaManager.makeVariable(formulaManager.escape("leak_%s".formatted(object)));
+        final int allocationSiteId = object.getAllocationSite().getGlobalId();
+        return booleanFormulaManager.makeVariable(formulaManager.escape("leak%d".formatted(allocationSiteId)));
     }
 
     /// Describes that {@code object} is reachable from static memory at the end of the execution.
     public BooleanFormula trackVariable(MemoryObject object) {
-        return booleanFormulaManager.makeVariable(formulaManager.escape("track_%s".formatted(object)));
+        final int allocationSiteId = object.getAllocationSite().getGlobalId();
+        return booleanFormulaManager.makeVariable(formulaManager.escape("track%d".formatted(allocationSiteId)));
     }
 
     public TypedFormula<?, ?> value(MemoryCoreEvent event) {
