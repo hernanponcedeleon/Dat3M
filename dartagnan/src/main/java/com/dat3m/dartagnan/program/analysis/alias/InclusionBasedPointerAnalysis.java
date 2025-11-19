@@ -91,6 +91,7 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
 
     // Maps memory events to variables representing their pointer set.
     private final Map<MemoryCoreEvent, DerivedVariable> addressVariables = new HashMap<>();
+    private final Map<MemoryCoreEvent, DerivedVariable> valueVariables = new HashMap<>();
 
     // Maps memory objects to variables representing their base address.
     // These Variables should always have empty includes-sets.
@@ -204,7 +205,10 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
     @Override
     public Collection<MemoryObject> communicableObjects(MemoryCoreEvent e) {
         final int size = e.getAccessType() instanceof IntegerType t ? t.getBitWidth() : 0;
-        return size < 64 ? Set.of() : objectVariables.keySet();
+        if (size < 64) { return Set.of(); }
+        final DerivedVariable v = valueVariables.get(e);
+        return v == null ? objectVariables.keySet() : v.base.object != null ? Set.of(v.base.object)
+                : v.base.includes.stream().map(i -> i.source.object).collect(Collectors.toSet());
     }
 
     @Override
@@ -375,6 +379,7 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
         if (event instanceof Store store) {
             final DerivedVariable value = getResultVariable(store.getMemValue(), store);
             if (value != null) {
+                valueVariables.put(store, value);
                 final StoreEdge edge = new StoreEdge(value, address.modifier);
                 address.base.stores.add(edge);
                 value.base.seeAlso.add(address.base);
