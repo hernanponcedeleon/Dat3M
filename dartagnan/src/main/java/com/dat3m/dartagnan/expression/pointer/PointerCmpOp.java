@@ -1,6 +1,7 @@
 package com.dat3m.dartagnan.expression.pointer;
 
 import com.dat3m.dartagnan.expression.ExpressionKind;
+import com.dat3m.dartagnan.expression.integers.IntCmpOp;
 
 public enum PointerCmpOp implements ExpressionKind {
     EQ, NEQ, GTE, LTE, GT, LT;
@@ -29,6 +30,28 @@ public enum PointerCmpOp implements ExpressionKind {
             case LTE -> GT;
             case GT -> LTE;
             case LT -> GTE;
+        };
+    }
+    public PointerCmpOp reverse() {
+        return switch (this) {
+            case EQ, NEQ -> this;
+            case GTE -> LTE;
+            case LTE -> GTE;
+            case GT -> LT;
+            case LT -> GT;
+        };
+    }
+    public boolean isStrict() {
+        return switch (this) {
+            case NEQ, LT, GT -> true;
+            case EQ, LTE, GTE -> false;
+        };
+    }
+
+    public boolean isLessCategory() {
+        return switch (this) {
+            case LT, LTE-> true;
+            default -> false;
         };
     }
 }

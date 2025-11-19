@@ -713,14 +713,14 @@ public class Intrinsics {
         final Program program = call.getFunction().getProgram();
         final long threadCount = program.getThreads().size();
         final int pointerBytes = types.getMemorySizeInBytes(types.getPointerType());
-        final Register storageAddressRegister = call.getFunction().newRegister(types.getArchType());
+        final Register storageAddressRegister = call.getFunction().newRegister(types.getPointerType());
         final Expression size = expressions.makeValue((threadCount + 1) * pointerBytes, types.getArchType());
         final Expression destructorOffset = expressions.makeValue(threadCount * pointerBytes, types.getArchType());
         //TODO call destructor at each thread's normal exit
         return List.of(
                 EventFactory.newAlloc(storageAddressRegister, types.getArchType(), size, true, true),
                 newStore(keyAddress, storageAddressRegister),
-                newStore(expressions.makeAdd(storageAddressRegister, destructorOffset), destructor),
+                newStore(expressions.makePtrAdd(storageAddressRegister, destructorOffset), destructor),
                 assignSuccess(errorRegister)
         );
     }
@@ -741,9 +741,9 @@ public class Intrinsics {
         final Register result = getResultRegisterAndCheckArguments(1, call);
         final Expression key = call.getArguments().get(0);
         final int threadID = call.getThread().getId();
-        final Expression offset = expressions.makeValue(threadID, (IntegerType) key.getType());
+        final Expression offset = expressions.makeValue(threadID, types.getArchType());
         return List.of(
-                EventFactory.newLoad(result, expressions.makeAdd(key, offset))
+                EventFactory.newLoad(result, expressions.makePtrAdd(expressions.makePtrCast(key,types.getPointerType()), offset))
         );
     }
 
@@ -753,9 +753,9 @@ public class Intrinsics {
         final Expression key = call.getArguments().get(0);
         final Expression value = call.getArguments().get(1);
         final int threadID = call.getThread().getId();
-        final Expression offset = expressions.makeValue(threadID, (IntegerType) key.getType());
+        final Expression offset = expressions.makeValue(threadID, types.getArchType());
         return List.of(
-                newStore(expressions.makeAdd(key, offset), value),
+                newStore(expressions.makePtrAdd(expressions.makePtrCast(key,types.getPointerType()), offset), value), // this cast is not a good idea todo discuss it
                 assignSuccess(errorRegister)
         );
     }
