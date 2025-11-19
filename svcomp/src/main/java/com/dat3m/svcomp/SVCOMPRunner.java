@@ -48,8 +48,10 @@ public class SVCOMPRunner extends BaseOptions {
             property = EnumSet.of(Property.DATARACEFREEDOM, Property.PROGRAM_SPEC);
         } else if(p.contains("termination")) {
             property = EnumSet.of(Property.TERMINATION, Property.PROGRAM_SPEC);
-        } else if(p.contains("unreach-call") || p.contains("no-overflow") || p.contains("valid-memsafety")) {
-            property = EnumSet.of(Property.PROGRAM_SPEC, Property.TRACKABILITY);
+        } else if(p.contains("valid-memsafety")) {
+            property = EnumSet.of(Property.TRACKABILITY, Property.PROGRAM_SPEC);
+        } else if(p.contains("unreach-call") || p.contains("no-overflow")) {
+            property = EnumSet.of(Property.PROGRAM_SPEC);
         } else {
             throw new IllegalArgumentException("Unrecognized property " + p);
         }

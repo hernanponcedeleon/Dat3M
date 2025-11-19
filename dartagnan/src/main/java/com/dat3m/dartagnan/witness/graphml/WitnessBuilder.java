@@ -89,6 +89,9 @@ public class WitnessBuilder {
         if (summary.contains("SVCOMP data race found")) {
             return "CHECK( init(main()), LTL(G ! data-race) )";
         }
+        if (summary.contains("Untrackable object found")) {
+            return "CHECK( init(main()), LTL(G ! data-race) )";
+        }
         throw new UnsupportedOperationException("Violation found for unsupported property");
     }
 
