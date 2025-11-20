@@ -1,10 +1,18 @@
 package com.dat3m.dartagnan.program.processing;
 
 import com.dat3m.dartagnan.expression.Expression;
+import com.dat3m.dartagnan.expression.ExpressionVisitor;
 import com.dat3m.dartagnan.expression.processing.ExpressionInspector;
 import com.dat3m.dartagnan.program.Function;
+import com.dat3m.dartagnan.program.IRHelper;
 import com.dat3m.dartagnan.program.Program;
+import com.dat3m.dartagnan.program.Register;
+import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.RegReader;
+import com.dat3m.dartagnan.program.event.common.SingleAccessMemoryEvent;
+import com.dat3m.dartagnan.program.event.core.CondJump;
+import com.dat3m.dartagnan.program.event.core.Label;
+import com.dat3m.dartagnan.program.event.core.Local;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -59,20 +67,69 @@ public class RemoveDeadFunctions implements ProgramProcessor {
         program.getFunctions().stream().filter(Function::isIntrinsic).forEach(reachableFunctions::add); // intrinsics
 
         // (3) For all reachable functions, find which other functions it can reach.
-        final Queue<Function> workqueue = new ArrayDeque<>(reachableFunctions);
+        final Queue<Function> workqueue = new ArrayDeque<>(program.getThreads());
+        workqueue.addAll(reachableFunctions);
         while (!workqueue.isEmpty()) {
             final Function func = workqueue.remove();
-            if (!func.hasBody()) {
-                continue;
-            }
             functionCollector.reset();
-            for (RegReader reader : func.getEvents(RegReader.class)) {
-                reader.transformExpressions(functionCollector);
+            liveFunctions(func, functionCollector);
+            for (Function f : functionCollector.collectedFunctions) {
+                if (reachableFunctions.add(f)) {
+                    workqueue.add(f);
+                }
             }
-            functionCollector.collectedFunctions.stream().filter(reachableFunctions::add).forEach(workqueue::add);
         }
 
         return reachableFunctions;
+    }
+
+    private void liveFunctions(Function function, FunctionCollector liveFunctions) {
+        final var liveRegisters = new HashSet<Register>();
+        final var jumps = new HashMap<Event, Set<Register>>();
+        final List<Event> events = function.getEvents();
+        for (int i = events.size() - 1; i >= 0; i--) {
+            Event event = events.get(i);
+            if (IRHelper.isAlwaysBranching(event)) { liveRegisters.clear(); }
+            final Set<Register> incoming = jumps.get(event);
+            if (incoming != null) { liveRegisters.addAll(incoming); }
+            if (event instanceof Label label) {
+                for (CondJump jump : label.getJumpSet()) {
+                    if (!jump.isDead() && jumps.computeIfAbsent(jump, k -> new HashSet<>()).addAll(liveRegisters)) {
+                        // Redo, if there is a backjump.
+                        i = Integer.max(i, events.indexOf(jump) + 1);
+                    }
+                }
+            }
+            final Collection<Expression> expressions = liveFunctionExpressions(event, liveRegisters);
+            expressions.forEach(x -> x.accept(liveFunctions));
+            expressions.forEach(x -> liveRegisters.addAll(x.getRegs()));
+        }
+    }
+
+    private Collection<Expression> liveFunctionExpressions(Event event, Set<Register> liveRegisters) {
+        final var expressions = new ArrayList<Expression>();
+        final Expression exception;
+        if (!(event instanceof RegReader reader) ||
+                event instanceof Local e && !liveRegisters.contains(e.getResultRegister())) {
+            return expressions;
+        } else if (event instanceof SingleAccessMemoryEvent e) {
+            exception = e.getAddress();
+        } else if (event instanceof CondJump e) {
+            exception = e.getGuard();
+        } else {
+            exception = null;
+        }
+        final var collector = new ExpressionVisitor<Expression>() {
+            @Override
+            public Expression visitExpression(Expression x) {
+                if (!x.equals(exception)) {
+                    expressions.add(x);
+                }
+                return x;
+            }
+        };
+        reader.transformExpressions(collector);
+        return expressions;
     }
 
     private static class FunctionCollector implements ExpressionInspector {
