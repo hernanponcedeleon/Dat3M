@@ -190,7 +190,11 @@ public final class EncodingContext {
     }
 
     public BooleanFormula sameValue(MemoryCoreEvent first, MemoryCoreEvent second, ExpressionEncoder.ConversionMode cmode) {
-        return exprEncoder.equal(value(first), value(second), cmode);
+        final TypedFormula<?, ?> firstValue = value(first);
+        final TypedFormula<?, ?> secondValue = value(second);
+        return firstValue == null || secondValue == null
+                ? booleanFormulaManager.makeTrue()
+                : exprEncoder.equal(firstValue, secondValue, cmode);
     }
 
     public BooleanFormula sameValue(MemoryCoreEvent first, MemoryCoreEvent second) {
@@ -207,6 +211,18 @@ public final class EncodingContext {
     // For non-allocated memory objects, the size may be any non-negative value.
     public TypedFormula<IntegerType, ?> size(MemoryObject memoryObject) {
         return objSize.get(memoryObject);
+    }
+
+    /// Describes that {@code object} has been allocated, but has not been deallocated during the execution.
+    public BooleanFormula leakVariable(MemoryObject object) {
+        final int allocationSiteId = object.getAllocationSite().getGlobalId();
+        return booleanFormulaManager.makeVariable(formulaManager.escape("leak%d".formatted(allocationSiteId)));
+    }
+
+    /// Describes that {@code object} is reachable from static memory at the end of the execution.
+    public BooleanFormula trackVariable(MemoryObject object) {
+        final int allocationSiteId = object.getAllocationSite().getGlobalId();
+        return booleanFormulaManager.makeVariable(formulaManager.escape("track%d".formatted(allocationSiteId)));
     }
 
     public TypedFormula<?, ?> value(MemoryCoreEvent event) {
@@ -327,7 +343,7 @@ public final class EncodingContext {
                 addresses.put(e, exprEncoder.encodeAt(memEvent.getAddress(), memEvent));
                 if (e instanceof Load) {
                     values.put(e, results.get(e));
-                } else if (e instanceof Store store) {
+                } else if (e instanceof Store store && !(e instanceof Dealloc)) {
                     values.put(e, exprEncoder.encodeAt(store.getMemValue(), e));
                 }
             }

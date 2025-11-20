@@ -225,7 +225,7 @@ public class Intrinsics {
         STD_MALLOC("malloc", false, false, true, true, Intrinsics::inlineMalloc),
         STD_CALLOC("calloc", false, false, true, true, Intrinsics::inlineCalloc),
         STD_ALIGNED_ALLOC("aligned_alloc", false, false, true, true, Intrinsics::inlineAlignedAlloc),
-        STD_FREE("free", true, false, true, true, Intrinsics::inlineAsZero),//TODO support free
+        STD_FREE("free", true, false, true, true, Intrinsics::inlineFree),
         STD_ASSERT(List.of("__assert_fail", "__assert_rtn"), false, false, false, true, Intrinsics::inlineUserAssert),
         STD_EXIT("exit", false, false, false, true, Intrinsics::inlineExit),
         STD_ABORT("abort", false, false, false, true, Intrinsics::inlineExit),
@@ -1093,6 +1093,11 @@ public class Intrinsics {
         return List.of(
                 EventFactory.newAlignedAlloc(resultRegister, allocType, totalSize, alignment, true, false)
         );
+    }
+
+    private List<Event> inlineFree(FunctionCall call) {
+        final Expression address = call.getArguments().get(1);
+        return List.of(newDealloc(address));
     }
 
     private List<Event> inlineAssert(FunctionCall call, AssertionType skip, String errorMsg) {

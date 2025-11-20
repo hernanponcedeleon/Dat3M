@@ -114,6 +114,14 @@ public class IREvaluator implements AutoCloseable {
         return (TypedValue<IntegerType, BigInteger>) evaluate(ctx.size(memoryObject));
     }
 
+    public boolean isLeaked(MemoryObject object) {
+        return object.isHeapAllocated() && TRUE.equals(smtModel.evaluate(ctx.leakVariable(object)));
+    }
+
+    public boolean isTrackable(MemoryObject object) {
+        return object.isHeapAllocated() && TRUE.equals(smtModel.evaluate(ctx.trackVariable(object)));
+    }
+
     // ====================================================================================
     // Memory Model
 

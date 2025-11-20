@@ -19,6 +19,7 @@ import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.Assert;
 import com.dat3m.dartagnan.program.event.core.CondJump;
+import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.dat3m.dartagnan.program.processing.LoopUnrolling;
 import com.dat3m.dartagnan.program.Entrypoint;
 import com.dat3m.dartagnan.utils.ExitCode;
@@ -362,14 +363,7 @@ public class Dartagnan extends BaseOptions {
                     .stream().filter(model::assertionViolated)
                     .toList();
                 for (Assert ass : violations) {
-                    final String callStack = makeContextString(synContext.getContextInfo(ass).getContextOfType(CallContext.class), " -> ");
-                    details
-                            .append("\tE").append(ass.getGlobalId())
-                            .append(":\t")
-                            .append(callStack.isEmpty() ? callStack : callStack + " -> ")
-                            .append(getSourceLocationString(ass))
-                            .append(": ").append(ass.getErrorMessage())
-                            .append("\n");
+                    appendTo(details, ass, synContext);
                 }
                 // In validation mode, we expect to find the violation, thus NORMAL_TERMINATION
                 ExitCode code = task.getWitness().isEmpty() ? PROGRAM_SPEC_VIOLATION : NORMAL_TERMINATION;
@@ -385,14 +379,7 @@ public class Dartagnan extends BaseOptions {
                             && model.isBlocked(barrier);
 
                     if (isStuckLoop || isStuckBarrier) {
-                        final String callStack = makeContextString(
-                                synContext.getContextInfo(e).getContextOfType(CallContext.class), " -> ");
-                        details
-                                .append("\tE").append(e.getGlobalId())
-                                .append(":\t")
-                                .append(callStack.isEmpty() ? callStack : callStack + " -> ")
-                                .append(getSourceLocationString(e))
-                                .append("\n");
+                        appendTo(details, e, synContext);
                     }
                 }
                 // In validation mode, we expect to find the violation, thus NORMAL_TERMINATION
@@ -403,6 +390,16 @@ public class Dartagnan extends BaseOptions {
                 reason = ResultSummary.SVCOMP_RACE_REASON;
                 // In validation mode, we expect to find the violation, thus NORMAL_TERMINATION
                 ExitCode code = task.getWitness().isEmpty() ? DATA_RACE_FREEDOM_VIOLATION : NORMAL_TERMINATION;
+                return new ResultSummary(path, filter, FAIL, condition, reason, details.toString(), time, code);
+            }
+            if (props.contains(TRACKABILITY) && model.propertyViolated(TRACKABILITY)) {
+                reason = ResultSummary.SVCOMP_UNTRACKABLE_OBJECT_REASON;
+                for (MemoryObject o : p.getMemory().getObjects()) {
+                    if (model.isLeaked(o) && !model.isTrackable(o)) {
+                        appendTo(details, o.getAllocationSite(), synContext);
+                    }
+                }
+                ExitCode code = task.getWitness().isEmpty() ? MEMORY_SAFETY_VIOLATION : NORMAL_TERMINATION;
                 return new ResultSummary(path, filter, FAIL, condition, reason, details.toString(), time, code);
             }
             final List<Axiom> violatedCATSpecs = !props.contains(CAT_SPEC) ? List.of()
@@ -445,6 +442,17 @@ public class Dartagnan extends BaseOptions {
         // In validation mode, we expect to find the violation, thus the WITNESS_NOT_VALIDATED error
         ExitCode code = task.getWitness().isEmpty() ? NORMAL_TERMINATION : WITNESS_NOT_VALIDATED;
         return new ResultSummary(path, filter, result, condition, reason, details.toString(), time, code);
+    }
+
+    private static void appendTo(StringBuilder details, Event event, SyntacticContextAnalysis synContext) {
+        final String callStack = makeContextString(synContext.getContextInfo(event).getContextOfType(CallContext.class), " -> ");
+        details.append("\tE").append(event.getGlobalId())
+                .append(":\t").append(callStack.isEmpty() ? callStack : callStack + " -> ")
+                .append(getSourceLocationString(event));
+        if (event instanceof Assert ass) {
+            details.append(": ").append(ass.getErrorMessage());
+        }
+        details.append("\n");
     }
 
     private static void increaseBoundAndDump(List<Event> boundEvents, Configuration config) throws IOException {
