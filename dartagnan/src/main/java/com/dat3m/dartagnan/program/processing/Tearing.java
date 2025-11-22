@@ -219,8 +219,7 @@ public final class Tearing implements ProgramProcessor {
     private List<Event> createTransaction(Store store, List<Integer> offsets, Map<MemoryCoreEvent, List<Event>> map, boolean bigEndian) {
         final int bytes = checkBytes(store, offsets);
         final List<Event> replacement = new ArrayList<>();
-        final PointerType addressType = checkPointerType(store.getAddress().getType(),
-                "Non-Pointer address in '%s'", store);
+        checkPointerType(store.getAddress().getType(),"Non-Pointer address in '%s'", store);
         checkType(store.getAccessType(), "Non-integer or Pointer mixed-size access in '%s'", store);
         final Function function = store.getFunction();
         final Register addressRegister = toRegister(store.getAddress(), function, replacement);

@@ -135,7 +135,7 @@ public class Inlining implements ProgramProcessor {
         for (int j = 0; j < callTarget.parameters.size(); j++) {
             final Register register = registerMap.get(callTarget.parameters.get(j));
             if (register.getType() instanceof PointerType) {
-                Expression v = expressions.makePtrCast(arguments.get(j),(PointerType) register.getType());
+                Expression v = expressions.makeCast(arguments.get(j),(PointerType) register.getType());
                 parameterAssignments.add(newLocal(register, v));
             }else{
             Expression v = arguments.get(j);

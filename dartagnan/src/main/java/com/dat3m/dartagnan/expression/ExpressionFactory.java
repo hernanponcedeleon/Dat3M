@@ -392,9 +392,11 @@ public final class ExpressionFactory {
     public Expression makePtrCast(Expression base,PointerType type){
         if (base.getType() instanceof PointerType ) {
             return base;
+            // todo is ptr size cast needed for mixed arm
         }
         if (base.getType() instanceof IntegerType) {
-            return makeIntToPtrCast(makeCast(base, types.getArchType()));
+            int bw = ((IntegerType) base.getType()).getBitWidth();
+            return makeIntToPtrCast(makeCast(base, types.getIntegerType(bw)),types.getPointerType(bw));
         }
         throw new UnsupportedOperationException(String.format("Cast %s into pointer unsupported.",base));
     }
@@ -411,7 +413,6 @@ public final class ExpressionFactory {
     public Expression makeIntToPtrCast(Expression operand) {
         return new IntToPtrCast(types.getPointerType(), operand);
     }
-
 
     public Expression makeNullLiteral(PointerType pointerType) {
         return new NullLiteral(pointerType);
@@ -464,18 +465,14 @@ public final class ExpressionFactory {
     }
 
     public Expression makeCast(Expression expression, Type type, boolean signed) {
-        if (expression.getType().equals(type)) {
-            return expression;
-        }
-
-        if (type instanceof BooleanType) {
-            return makeBooleanCast(expression);
-        } else if (type instanceof IntegerType integerType) {
+        if (expression.getType().equals(type)) {return expression;}
+        if (type instanceof BooleanType) {return makeBooleanCast(expression);}
+        else if (type instanceof IntegerType integerType) {
             return makeIntegerCast(expression, integerType, signed);
         } else if (type instanceof FloatType floatType) {
             return makeFloatCast(expression, floatType, signed);
         }else if (type instanceof PointerType) {
-            return makeIntToPtrCast(makeCast(expression, types.getArchType()));
+            return makePtrCast(expression, (PointerType) type);
         }
         throw new UnsupportedOperationException(String.format("Cast %s into %s unsupported.", expression, type));
     }

@@ -743,7 +743,7 @@ public class Intrinsics {
         final int threadID = call.getThread().getId();
         final Expression offset = expressions.makeValue(threadID, types.getArchType());
         return List.of(
-                EventFactory.newLoad(result, expressions.makePtrAdd(expressions.makePtrCast(key,types.getPointerType()), offset))
+                EventFactory.newLoad(result, expressions.makePtrAdd(expressions.makeCast(key,types.getPointerType()), offset))
         );
     }
 
@@ -755,7 +755,7 @@ public class Intrinsics {
         final int threadID = call.getThread().getId();
         final Expression offset = expressions.makeValue(threadID, types.getArchType());
         return List.of(
-                newStore(expressions.makePtrAdd(expressions.makePtrCast(key,types.getPointerType()), offset), value), // this cast is not a good idea todo discuss it
+                newStore(expressions.makePtrAdd(expressions.makeCast(key,types.getPointerType()), offset), value), // this cast does not seem like a good idea todo discuss it
                 assignSuccess(errorRegister)
         );
     }
