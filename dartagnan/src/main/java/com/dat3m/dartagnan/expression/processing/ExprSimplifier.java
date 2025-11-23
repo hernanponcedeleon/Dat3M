@@ -13,7 +13,9 @@ import com.dat3m.dartagnan.expression.integers.*;
 import com.dat3m.dartagnan.expression.misc.ITEExpr;
 import com.dat3m.dartagnan.expression.pointer.NullLiteral;
 import com.dat3m.dartagnan.expression.pointer.PtrCmpOp;
+import com.dat3m.dartagnan.expression.pointer.PtrAddExpr;
 import com.dat3m.dartagnan.expression.pointer.PtrCmpExpr;
+import com.dat3m.dartagnan.expression.type.PointerType;
 import com.dat3m.dartagnan.expression.utils.IntegerHelper;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.google.common.base.VerifyException;
@@ -343,7 +345,25 @@ public class ExprSimplifier extends ExprTransformer {
         return expressions.makeIntBinary(left, op, right);
     }
 
-    // TODO: Add simplifications for IntExtract and IntConcat expressions
+    @Override
+    public Expression visitPtrAddExpression(PtrAddExpr expr) {
+
+        final Expression base = expr.getBase().accept(this);
+        final Expression offset = expr.getOffset().accept(this);
+
+        // Optimizations for "x op constant"
+        if (offset instanceof IntLiteral lit) {
+            if(lit.isZero()){return base;}
+        }
+        // fixme tearing problem
+        if (base instanceof NullLiteral) {
+            return expressions.makeIntToPtrCast(offset);
+        }
+        return expressions.makePtrAdd(base, offset);
+    }
+
+    // TODO: Add simplifications for IntExtract and IntConcat expressions.
+    // TODO: Simplify int to ptr to int and so forth.
 
     @Override
     public Expression visitITEExpression(ITEExpr expr) {

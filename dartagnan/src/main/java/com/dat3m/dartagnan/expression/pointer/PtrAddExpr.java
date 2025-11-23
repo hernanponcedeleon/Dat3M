@@ -6,16 +6,15 @@ import com.dat3m.dartagnan.expression.ExpressionVisitor;
 import com.dat3m.dartagnan.expression.base.ExpressionBase;
 import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.expression.type.PointerType;
-import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 
-public class PointerAddExpr extends ExpressionBase<PointerType> {
+public class PtrAddExpr extends ExpressionBase<PointerType> {
 
     private final Expression base;
     private final Expression offset;
 
-    public PointerAddExpr(Expression base, Expression offset) {
+    public PtrAddExpr(Expression base, Expression offset) {
         super((PointerType) base.getType());
         Preconditions.checkArgument(offset.getType() instanceof IntegerType);
         this.base = base;
@@ -37,6 +36,6 @@ public class PointerAddExpr extends ExpressionBase<PointerType> {
 
     @Override
     public <T> T accept(ExpressionVisitor<T> visitor) {
-        return visitor.visitPointerAddExpression(this);
+        return visitor.visitPtrAddExpression(this);
     }
 }

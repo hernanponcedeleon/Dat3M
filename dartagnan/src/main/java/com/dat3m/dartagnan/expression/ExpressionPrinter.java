@@ -136,7 +136,7 @@ public final class ExpressionPrinter implements ExpressionVisitor<String> {
     }
 
     @Override
-    public String visitPointerAddExpression(PointerAddExpr expr) {
+    public String visitPtrAddExpression(PtrAddExpr expr) {
         return String.format("%s + %s", visit(expr.getBase()), visit(expr.getOffset()));
     }
 

@@ -5,6 +5,7 @@ import com.dat3m.dartagnan.expression.Type;
 public class PointerType implements Type {
 
     public int bitWidth;
+    public boolean teared;
 
     // todo change the encoding to recognise bit width
 

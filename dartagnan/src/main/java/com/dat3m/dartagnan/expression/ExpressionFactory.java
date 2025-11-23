@@ -386,32 +386,35 @@ public final class ExpressionFactory {
     }
 
     public Expression makePtrAdd(Expression base, Expression offset) {
-        return new PointerAddExpr(base, offset);
+        return new PtrAddExpr(base, offset);
     }
 
-    public Expression makePtrCast(Expression base,PointerType type){
+    public Expression makePtrCast(Expression base, PointerType type, boolean tearing){
         if (base.getType() instanceof PointerType ) {
             return base;
             // todo is ptr size cast needed for mixed arm
         }
         if (base.getType() instanceof IntegerType) {
             int bw = ((IntegerType) base.getType()).getBitWidth();
-            return makeIntToPtrCast(makeCast(base, types.getIntegerType(bw)),types.getPointerType(bw));
+            // this causes problems in tearing if the pointer is not of the int size
+            return makeIntToPtrCast(makeCast(base, types.getIntegerType(bw)),tearing?types.getPointerType(bw):types.getPointerType());
         }
         throw new UnsupportedOperationException(String.format("Cast %s into pointer unsupported.",base));
     }
 
-
     public Expression makePtrToIntCast(Expression pointer) {
         return new PtrToIntCast(types.getArchType(), pointer);
     }
+//    public Expression makePtrToIntCast(Expression pointer, IntegerType type) {
+//        return new PtrToIntCast(type, pointer);
+//    }
 
     public Expression makeIntToPtrCast(Expression operand, PointerType pointerType) {
         return new IntToPtrCast(pointerType, operand);
     }
 
     public Expression makeIntToPtrCast(Expression operand) {
-        return new IntToPtrCast(types.getPointerType(), operand);
+        return makeIntToPtrCast(operand, types.getPointerType());
     }
 
     public Expression makeNullLiteral(PointerType pointerType) {
@@ -472,7 +475,7 @@ public final class ExpressionFactory {
         } else if (type instanceof FloatType floatType) {
             return makeFloatCast(expression, floatType, signed);
         }else if (type instanceof PointerType) {
-            return makePtrCast(expression, (PointerType) type);
+            return makePtrCast(expression, (PointerType) type, false); // todo fix for tearing(mixed test), maybe a teared pointer tracker.
         }
         throw new UnsupportedOperationException(String.format("Cast %s into %s unsupported.", expression, type));
     }

@@ -44,6 +44,7 @@ public final class TypeFactory {
     public PointerType getPointerType() {
         return pointerType;
     }
+
     public PointerType getPointerType(int bitWidth) {
         // to be used in tearing
         checkArgument(bitWidth > 0, "Non-positive bit width %s.", bitWidth);

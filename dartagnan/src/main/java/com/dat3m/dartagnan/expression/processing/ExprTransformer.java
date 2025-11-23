@@ -121,7 +121,7 @@ public abstract class ExprTransformer implements ExpressionVisitor<Expression> {
 
 
     @Override
-    public Expression visitPointerAddExpression(PointerAddExpr expr) {
+    public Expression visitPtrAddExpression(PtrAddExpr expr) {
         return expressions.makePtrAdd(
                 expr.getBase().accept(this),
                 expr.getOffset().accept(this)
