@@ -11,10 +11,7 @@ import com.dat3m.dartagnan.expression.aggregates.ExtractExpr;
 import com.dat3m.dartagnan.expression.booleans.*;
 import com.dat3m.dartagnan.expression.integers.*;
 import com.dat3m.dartagnan.expression.misc.ITEExpr;
-import com.dat3m.dartagnan.expression.pointer.NullLiteral;
-import com.dat3m.dartagnan.expression.pointer.PtrCmpOp;
-import com.dat3m.dartagnan.expression.pointer.PtrAddExpr;
-import com.dat3m.dartagnan.expression.pointer.PtrCmpExpr;
+import com.dat3m.dartagnan.expression.pointer.*;
 import com.dat3m.dartagnan.expression.type.PointerType;
 import com.dat3m.dartagnan.expression.utils.IntegerHelper;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
@@ -363,7 +360,46 @@ public class ExprSimplifier extends ExprTransformer {
     }
 
     // TODO: Add simplifications for IntExtract and IntConcat expressions.
-    // TODO: Simplify int to ptr to int and so forth.
+
+    // Simplifies (int(i) -> ptr(i)) -> int(i).
+    @Override
+    public Expression visitPtrToIntCastExpression(PtrToIntCast expr) {
+        final Expression sub = expr.getOperand().accept(this);
+        if (sub instanceof IntToPtrCast subT){
+            final int originalBitWidth = subT.getSourceType().getBitWidth();
+            final int inBetweenBitWidth = subT.getTargetType().getBitWidth();
+            final int finalBitWidth = expr.getType().getBitWidth();
+
+            if (originalBitWidth == inBetweenBitWidth && finalBitWidth == originalBitWidth ) {
+                return subT.getOperand();
+            }
+        }
+//        if (sub instanceof NullLiteral) {
+//            return expressions.makeZero(expr.getType());
+//        } // the problem here is that
+    return expressions.makePtrToIntCast(expr.getOperand(), expr.getType());
+    }
+
+    // Simplifies (ptr(i) -> int(i)) -> ptr(i).
+    @Override
+    public Expression visitIntToPtrCastExpression(IntToPtrCast expr) {
+        final Expression sub = expr.getOperand().accept(this);
+        if (sub instanceof PtrToIntCast subT){
+            final int originalBitWidth = subT.getSourceType().getBitWidth();
+            final int inBetweenBitWidth = subT.getTargetType().getBitWidth();
+            final int finalBitWidth = expr.getType().getBitWidth();
+
+            if (originalBitWidth == inBetweenBitWidth && finalBitWidth == originalBitWidth ) {
+                return subT.getOperand();
+            }
+        }
+        if (sub instanceof IntLiteral && ((IntLiteral) sub).isZero()) {
+            return expressions.makeNullLiteral(expr.getType());
+        }
+        return expressions.makeIntToPtrCast(expr.getOperand(), expr.getType());
+    }
+
+
 
     @Override
     public Expression visitITEExpression(ITEExpr expr) {
@@ -455,7 +491,6 @@ public class ExprSimplifier extends ExprTransformer {
     }
 
     // =================================== Helper methods ===================================
-
     // An expression is potentially eliminable if it either carries no dependencies
     // or we are in aggressive mode.
     private boolean isPotentiallyEliminable(Expression expr) {

@@ -139,7 +139,7 @@ public abstract class ExprTransformer implements ExpressionVisitor<Expression> {
 
     @Override
     public Expression visitPtrToIntCastExpression(PtrToIntCast expr) {
-        return expressions.makePtrToIntCast(expr.getOperand().accept(this));
+        return expressions.makeIntegerCast(expressions.makePtrToIntCast(expr.getOperand().accept(this)),expr.getType(),false);
     }
 
     @Override

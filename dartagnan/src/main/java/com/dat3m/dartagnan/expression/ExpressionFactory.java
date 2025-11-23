@@ -14,6 +14,7 @@ import com.dat3m.dartagnan.program.memory.ScopedPointer;
 import com.dat3m.dartagnan.program.memory.ScopedPointerVariable;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Iterables;
+import edu.stanford.CVC4.PrettySExprs;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
@@ -245,7 +246,7 @@ public final class ExpressionFactory {
         } else if (sourceType instanceof FloatType) {
             return new FloatToIntCast(targetType, operand, signed);
         }else if (sourceType instanceof PointerType) {
-            return new PtrToIntCast(targetType, operand);
+            return makePtrToIntCast(operand, targetType);
         }
 
         throw new UnsupportedOperationException(String.format("Cannot cast %s to %s.", sourceType, targetType));
@@ -397,25 +398,31 @@ public final class ExpressionFactory {
         if (base.getType() instanceof IntegerType) {
             int bw = ((IntegerType) base.getType()).getBitWidth();
             // this causes problems in tearing if the pointer is not of the int size
-            return makeIntToPtrCast(makeCast(base, types.getIntegerType(bw)),tearing?types.getPointerType(bw):types.getPointerType());
+            return makeIntToPtrCast(makeCast(base, types.getIntegerType(bw)),tearing ? types.getPointerType(bw):types.getPointerType());
         }
         throw new UnsupportedOperationException(String.format("Cast %s into pointer unsupported.",base));
     }
 
+
+
+
     public Expression makePtrToIntCast(Expression pointer) {
-        return new PtrToIntCast(types.getArchType(), pointer);
+        return makePtrToIntCast(pointer, types.getArchType());
     }
-//    public Expression makePtrToIntCast(Expression pointer, IntegerType type) {
-//        return new PtrToIntCast(type, pointer);
-//    }
+    public Expression makePtrToIntCast(Expression pointer, IntegerType type) {
+        return makeIntegerCast( new PtrToIntCast(types.getIntegerType(((PointerType)pointer.getType()).getBitWidth()), pointer), type,false);
+    }
 
     public Expression makeIntToPtrCast(Expression operand, PointerType pointerType) {
-        return new IntToPtrCast(pointerType, operand);
+        return new IntToPtrCast(pointerType, makeIntegerCast(operand,types.getArchType(),false));
     }
-
     public Expression makeIntToPtrCast(Expression operand) {
         return makeIntToPtrCast(operand, types.getPointerType());
     }
+
+
+
+
 
     public Expression makeNullLiteral(PointerType pointerType) {
         return new NullLiteral(pointerType);

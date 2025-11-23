@@ -1,5 +1,4 @@
 package com.dat3m.dartagnan.expression.pointer;
-
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionKind;
 import com.dat3m.dartagnan.expression.ExpressionVisitor;
