@@ -274,14 +274,16 @@ Dartagnan can verify different implementations of the Prefixsum algorithm. For t
 
 ## Known issues
 
-Performance can vary significantly depending on the Docker configuration.
+On macOS, performance can vary significantly depending on the virtualization configuration.
+With an M2 chip, we observed slowdowns of at least 3x when using sub-optimal settings.
+
 If you are using `Docker Desktop`, go to `Settings -> General` and scroll down to `Virtual Machine Options`.
-For the most efficient emulation, make sure you are using `Apple Virtualization Framework + Rosetta`.
-
+For the most efficient emulation on macOS, make sure you are using `Apple Virtualization Framework + Rosetta`.
 If you disable `Rosetta` or use `Docker VMM`, you may experience severe slowdowns or timeouts.
-On macOS with an M2 chip, we observed slowdowns of at least 3x when using sub-optimal settings.
 
-Improper configuration may also lead to out-of-memory issues (these appear as `N/A` in the table), especially if Docker is assigned too few resources.
+If you are using `Colima`, start a VM by running `colima start --vm-type vz --vz-rosetta`.
+
+Improper configuration may also lead to out-of-memory issues (these appear as `N/A` in the table), especially if too few resources are assigned.
 
 ## Artifact organization
 
