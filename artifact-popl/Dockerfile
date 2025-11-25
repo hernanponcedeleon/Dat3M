@@ -1,4 +1,4 @@
-FROM genmc/genmc
+FROM genmc/genmc:v0.11.0
 
 ARG DEBIAN_FRONTEND=noninteractive
 
@@ -7,6 +7,7 @@ RUN apt-get update && apt-get install -y \
         build-essential \
         maven \
         sudo \
+        bc \
         wget
 
 RUN cd /home && \

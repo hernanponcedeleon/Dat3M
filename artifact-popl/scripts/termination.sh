@@ -99,16 +99,12 @@ for file in "$DIR"*.c; do
         fi
 
         # Default results
-        res="?"
+        res="N/A"
+        time="N/A"
 
         # Adapt output
         if [[ "$exit_code" == 124 ]]; then
             time="\clock"
-            res="N/A"
-        fi
-        if [[ "$exit_code" == 1 ]]; then
-            time="N/A"
-            res="N/A"
         fi
         if [[ "$out" =~ "No errors were detected" ]]; then
             res="\cmark"

@@ -1,5 +1,15 @@
 # Recurrence Sets for Proving Fair Non-termination under Axiomatic Memory Consistency Models (Artifact)
 
+## Content
+
+This artifact contains an extension to the [dartagnan](https://github.com/hernanponcedeleon/Dat3M) tool for checking non-termination, the [GenMC](https://github.com/MPI-SWS/genmc) tool, and several benchmarks, including those from the [libvsync](https://github.com/open-s4c/libvsync) project.
+The path to the corresponding licenses of each project can be find below.
+```
+/home/Dat3M/
+/home/libvsync/
+/root/genmc/
+```
+
 ## List of claims
 
 This artifact allows reproducing Tables 1-3 from the Evaluation section.
@@ -277,7 +287,7 @@ The encoding of the non-termination witness is implemented in `$DAT3M_HOME/darta
 
 For testing your own C examples, run
 ```
-CFLAGS="<if-needed>" java -jar $DAT3M_HOME/dartagnan/target/dartagnan.jar --property=termination $DAT3M_HOME/cat/imm.cat --bound=X <your-benchmark.c>
+CFLAGS="<if-needed>" java -jar $DAT3M_HOME/dartagnan/target/dartagnan.jar --property=termination $DAT3M_HOME/cat/imm.cat --bound=<int> <your-benchmark.c>
 ```
 
 Dartagnan reads GPU computing kernels in SPIR-V (OpenCL, slang, hlsl, gls can all be compiled to SPIR-V). The SPIR-V code should be annotated with a configuration of the form `; @Config: X, Y, Z` specifying the number of threads per subgroup, the number of subgroups per workgroup, and the number of workgroups in the device. The initial value of buffers needs to be specified with the annotation `; @Input: ...`. See the Prefixsum benchmarks for more details.
