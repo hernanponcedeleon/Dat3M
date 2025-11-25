@@ -3,7 +3,7 @@
 ## Content
 
 This artifact contains an extension to the [dartagnan](https://github.com/hernanponcedeleon/Dat3M) tool for checking non-termination, the [GenMC](https://github.com/MPI-SWS/genmc) tool, and several benchmarks, including those from the [libvsync](https://github.com/open-s4c/libvsync) project.
-The path to the corresponding licenses of each project can be find below.
+The path to the corresponding licenses of each project can be found below.
 ```
 /home/Dat3M/
 /home/libvsync/
