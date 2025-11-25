@@ -272,6 +272,17 @@ Vello (ticket)   | unfair     | ✅         | 24m 49s (B=8)
 **Supported claims:**
 Dartagnan can verify different implementations of the Prefixsum algorithm. For the variant using the workgroup id to decide its predecessor, it shows that OBE and unfair schedulers lead to non-termination. For the variants using a ticket (and not implementing scalar fallback), HSA and unfair schedulers lead to non-termination. For Vello (which implements scalar fallback) the program terminates independently of the scheduler.
 
+## Known issues
+
+Performance can vary significantly depending on the Docker configuration.
+If you are using `Docker Desktop`, go to `Settings -> General` and scroll down to `Virtual Machine Options`.
+For the most efficient emulation, make sure you are using `Apple Virtualization Framework + Rosetta`.
+
+If you disable `Rosetta` or use `Docker VMM`, you may experience severe slowdowns or timeouts.
+On macOS with an M2 chip, we observed slowdowns of at least 3x when using sub-optimal settings.
+
+Improper configuration may also lead to out-of-memory issues (these appear as `N/A` in the table), especially if Docker is assigned too few resources.
+
 ## Artifact organization
 
 **Benchmarks:**
