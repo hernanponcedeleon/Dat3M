@@ -90,17 +90,16 @@ for file in "$DIR"*.c; do
         # Capture the exit code
         exit_code=$?
 
+        # Default result
+        res="N/A"
+
         # Extract time
         time=$(echo "$out" | tail -1 | sed -n 's/.*Total wall-clock time: *\([0-9.]*\)s$/\1 secs/p')
         if [ -z "$time" ]; then
-            time="?"
+            time="N/A"
         else
             time=$(format_genmc_time "$time")
         fi
-
-        # Default results
-        res="N/A"
-        time="N/A"
 
         # Adapt output
         if [[ "$exit_code" == 124 ]]; then
@@ -126,17 +125,16 @@ for file in "$DIR"*.c; do
         # Capture the exit code
         exit_code=$?
 
+        # Default results
+        res="N/A"
+
         # Extract time
         time=$(echo "$out" | tail -1 | sed -n 's/.*Total wall-clock time: *\([0-9.]*\)s$/\1 secs/p')
         if [ -z "$time" ]; then
-            time="?"
+            time="N/A"
         else
             time=$(format_genmc_time "$time")
         fi
-
-        # Default results
-        res="N/A"
-        time="N/A"
 
         # Adapt output
         if [[ "$exit_code" == 124 ]]; then
@@ -175,6 +173,9 @@ for file in "$DIR"*.c; do
     # Capture the exit code
     exit_code=$?
 
+    # Default results
+    res="N/A"
+
     # Extract time
     time=$(echo "$out" | tail -1 | sed -n 's/.*Time: *//p')
     if [ -z "$time" ]; then
@@ -182,9 +183,6 @@ for file in "$DIR"*.c; do
     else
         time=$(format_dat3m_time "$time")
     fi
-
-    # Default results
-    res="N/A"
 
     # Adapt output
     if [[ "$exit_code" == 124 ]]; then
