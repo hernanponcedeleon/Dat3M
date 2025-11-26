@@ -4,6 +4,7 @@ import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
+import com.dat3m.dartagnan.expression.Type;
 import com.dat3m.dartagnan.expression.integers.IntLiteral;
 import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.expression.type.PointerType;
@@ -348,7 +349,7 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
 
     @Override
     public Expression visitReC11SCmpXchgExplicit(LitmusCParser.ReC11SCmpXchgExplicitContext ctx) {
-        Register register = getReturnRegister(true);
+        Register register = getReturnRegister(true,TypeFactory.getInstance().getBooleanType());
         Expression value = (Expression)ctx.value.accept(this);
         Expression address = getAddress(ctx.address);
         Expression expectedAdd = getAddress(ctx.expectedAdd);
@@ -361,7 +362,7 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
 
     @Override
     public Expression visitReC11SCmpXchg(LitmusCParser.ReC11SCmpXchgContext ctx) {
-        Register register = getReturnRegister(true);
+        Register register = getReturnRegister(true,TypeFactory.getInstance().getBooleanType());
         Expression value = (Expression)ctx.value.accept(this);
         Expression address = getAddress(ctx.address);
         Expression expectedAdd = getAddress(ctx.expectedAdd);
@@ -374,7 +375,7 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
 
     @Override
     public Expression visitReC11WCmpXchgExplicit(LitmusCParser.ReC11WCmpXchgExplicitContext ctx) {
-        Register register = getReturnRegister(true);
+        Register register = getReturnRegister(true,TypeFactory.getInstance().getBooleanType());
         Expression value = (Expression)ctx.value.accept(this);
         Expression address = getAddress(ctx.address);
         Expression expectedAdd = getAddress(ctx.expectedAdd);
@@ -387,7 +388,7 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
 
     @Override
     public Expression visitReC11WCmpXchg(LitmusCParser.ReC11WCmpXchgContext ctx) {
-        Register register = getReturnRegister(true);
+        Register register = getReturnRegister(true,TypeFactory.getInstance().getBooleanType());
         Expression value = (Expression)ctx.value.accept(this);
         Expression address = getAddress(ctx.address);
         Expression expectedAdd = getAddress(ctx.expectedAdd);
@@ -400,7 +401,7 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
 
     @Override
     public Expression visitReCmpXchg(LitmusCParser.ReCmpXchgContext ctx){
-        Register register = getReturnRegister(true);
+        Register register = getReturnRegister(true,TypeFactory.getInstance().getBooleanType());
         Expression cmp = (Expression)ctx.cmp.accept(this);
         Expression value = (Expression)ctx.value.accept(this);
         Event event = EventFactory.Linux.newRMWCompareExchange(getAddress(ctx.address), register, cmp, value, ctx.mo);
@@ -600,8 +601,13 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
     @Override
     public Object visitNreRegDeclaration(LitmusCParser.NreRegDeclarationContext ctx){
         Register register = programBuilder.getRegister(scope, ctx.varName().getText());
+
         if(register == null){
-            register = programBuilder.getOrNewRegister(scope, ctx.varName().getText(), pointerType); //care
+            System.out.println(ctx.typeSpecifier().basicTypeSpecifier().getText());
+            if (ctx.typeSpecifier().basicTypeSpecifier().getText().endsWith("*")){
+                register = programBuilder.getOrNewRegister(scope, ctx.varName().getText(), pointerType);
+            }else{
+                register = programBuilder.getOrNewRegister(scope, ctx.varName().getText(), archType);} //care
             if(ctx.re() != null){
                 returnRegister = register;
                 ctx.re().accept(this);
@@ -700,6 +706,7 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
         throw new ParsingException("Invalid syntax near " + ctx.getText());
     }
 
+
     private Expression returnExpressionOrOne(LitmusCParser.ReContext ctx) {
         return ctx != null ? (Expression) ctx.accept(this) : expressions.makeOne(archType);
     }
@@ -708,6 +715,14 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
         Register register = returnRegister;
         if(register == null && createOnNull){
             return programBuilder.getOrNewRegister(scope, null, pointerType);
+        }
+        returnRegister = null;
+        return register;
+    }
+    private Register getReturnRegister(boolean createOnNull, Type t){
+        Register register = returnRegister;
+        if(register == null && createOnNull){
+            return programBuilder.getOrNewRegister(scope, null, t);
         }
         returnRegister = null;
         return register;

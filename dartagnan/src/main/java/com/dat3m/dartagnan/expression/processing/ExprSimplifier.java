@@ -352,9 +352,9 @@ public class ExprSimplifier extends ExprTransformer {
         if (offset instanceof IntLiteral lit) {
             if(lit.isZero()){return base;}
         }
-        // fixme tearing problem
+        // can cause a tearing problem
         if (base instanceof NullLiteral) {
-            return expressions.makeIntToPtrCast(offset);
+            return expressions.makeIntToPtrCast(offset,expr.getType());
         }
         return expressions.makePtrAdd(base, offset);
     }
@@ -374,9 +374,9 @@ public class ExprSimplifier extends ExprTransformer {
                 return subT.getOperand();
             }
         }
-//        if (sub instanceof NullLiteral) {
-//            return expressions.makeZero(expr.getType());
-//        } // the problem here is that
+        if (sub instanceof NullLiteral) {
+            return expressions.makeZero(expr.getType());
+        } // the problem here is that
     return expressions.makePtrToIntCast(expr.getOperand(), expr.getType());
     }
 
@@ -398,8 +398,6 @@ public class ExprSimplifier extends ExprTransformer {
         }
         return expressions.makeIntToPtrCast(expr.getOperand(), expr.getType());
     }
-
-
 
     @Override
     public Expression visitITEExpression(ITEExpr expr) {

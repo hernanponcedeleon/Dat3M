@@ -44,7 +44,7 @@ public class VisitorC11 extends VisitorBase {
         Expression address = e.getAddress();
         String mo = e.getMo();
         Expression expectedAddr = e.getAddressOfExpected();
-        Type type = resultRegister.getType();
+        Type type = resultRegister.getType(); // todo how can this be a pointer ?
         Register booleanResultRegister = type instanceof BooleanType ? resultRegister :
                 e.getFunction().newRegister(types.getBooleanType());
         Local castResult = type instanceof BooleanType ? null :

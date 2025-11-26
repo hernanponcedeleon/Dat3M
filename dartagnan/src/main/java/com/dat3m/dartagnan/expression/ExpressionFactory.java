@@ -393,12 +393,16 @@ public final class ExpressionFactory {
     public Expression makePtrCast(Expression base, PointerType type, boolean tearing){
         if (base.getType() instanceof PointerType ) {
             return base;
-            // todo is ptr size cast needed for mixed arm
+            // todo is ptr size cast needed for mixed arm (tearing)
         }
         if (base.getType() instanceof IntegerType) {
             int bw = ((IntegerType) base.getType()).getBitWidth();
             // this causes problems in tearing if the pointer is not of the int size
             return makeIntToPtrCast(makeCast(base, types.getIntegerType(bw)),tearing ? types.getPointerType(bw):types.getPointerType());
+        }
+        if (base.getType() instanceof BooleanType) {
+
+
         }
         throw new UnsupportedOperationException(String.format("Cast %s into pointer unsupported.",base));
     }
@@ -406,7 +410,7 @@ public final class ExpressionFactory {
 
 
 
-    public Expression makePtrToIntCast(Expression pointer) {
+    public Expression makePtrToIntCast(Expression pointer) { // todo fix
         return makePtrToIntCast(pointer, types.getArchType());
     }
     public Expression makePtrToIntCast(Expression pointer, IntegerType type) {
@@ -550,7 +554,6 @@ public final class ExpressionFactory {
         }
         return makeNEQ(leftOperand, rightOperand);
     }
-
 
     public Expression makeUnary(ExpressionKind op, Expression expr) {
         if (op instanceof BoolUnaryOp boolOp) {
