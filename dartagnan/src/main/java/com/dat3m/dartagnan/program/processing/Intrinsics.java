@@ -1092,7 +1092,7 @@ public class Intrinsics {
     }
 
     private List<Event> inlineFree(FunctionCall call) {
-        final Expression address = call.getArguments().get(1);
+        final Expression address = call.getArguments().get(0);
         return List.of(newDealloc(address));
     }
 
