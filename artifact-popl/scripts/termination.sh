@@ -135,16 +135,12 @@ for file in "$DIR"*.c; do
         fi
 
         # Default results
-        res="?"
+        res="N/A"
+        time="N/A"
 
         # Adapt output
         if [[ "$exit_code" == 124 ]]; then
             time="\clock"
-            res="N/A"
-        fi
-        if [[ "$exit_code" == 139 ]]; then
-            time="N/A"
-            res="N/A"
         fi
         if [[ "$out" =~ "No errors were detected" ]]; then
             res="\cmark"
@@ -182,22 +178,17 @@ for file in "$DIR"*.c; do
     # Extract time
     time=$(echo "$out" | tail -1 | sed -n 's/.*Time: *//p')
     if [ -z "$time" ]; then
-        time="?"
+        time="N/A"
     else
         time=$(format_dat3m_time "$time")
     fi
 
     # Default results
-    res="?"
+    res="N/A"
 
     # Adapt output
     if [[ "$exit_code" == 124 ]]; then
         time="\clock"
-        res="N/A"
-    fi
-    if [[ "$exit_code" == 1 ]]; then
-        time="N/A"
-        res="N/A"
     fi
     if [[ "$out" =~ "PASS" ]]; then
         res="\cmark"
@@ -207,7 +198,8 @@ for file in "$DIR"*.c; do
     fi
 
     if [ "$RUNGENMC" == "true" ]; then
-        if [ "$time" == "\clock" ]; then
+        if [[ "$time" == "\clock" || "$time" == "N/A" ]]; then
+
             line="$line, $time / B=${bound}"
         else
             line="$line, $res\ ($time / B=${bound})"
