@@ -507,7 +507,7 @@ public final class ExpressionFactory {
             return makeIntCmp(leftOperand, IntCmpOp.EQ, rightOperand);
         } if (type instanceof PointerType) {
             return makePtrCmp(leftOperand, PtrCmpOp.EQ, rightOperand);
-        }else if (type instanceof FloatType) {
+        } else if (type instanceof FloatType) {
             // TODO: Decide on a default semantics for float equality?
             return makeFloatCmp(leftOperand, FloatCmpOp.OEQ, rightOperand);
         } else if (ExpressionHelper.isAggregateLike(type)) {

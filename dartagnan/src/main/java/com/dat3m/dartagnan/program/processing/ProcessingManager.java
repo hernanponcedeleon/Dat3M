@@ -132,7 +132,6 @@ public class ProcessingManager implements ProgramProcessor {
                 ),
 
                 ThreadCreation.fromConfig(config),
-                //DebugPrint.withHeader("--------Debug--------", Printer.Mode.ALL, config),
                 ResolveNonDetChoices.newInstance(),
                 reduceSymmetry ? SymmetryReduction.fromConfig(config) : null,
                 intrinsics.lateInliningPass(),
@@ -147,9 +146,7 @@ public class ProcessingManager implements ProgramProcessor {
                 MemoryAllocation.fromConfig(config),
                 detectMixedSizeAccesses ? Tearing.fromConfig(config) : null,
                 detectMixedSizeAccesses ? simplifyBoundedProgram : null,
-                //DebugPrint.withHeader("Before non termination", Printer.Mode.ALL, config),
                 NonterminationDetection.fromConfig(config),
-                //DebugPrint.withHeader("After non termination", Printer.Mode.ALL, config),
                 // --- Statistics + verification ---
                 printAfterProcessing ? DebugPrint.withHeader("After processing", Printer.Mode.THREADS, config) : null,
                 IdReassignment.newInstance(), // Normalize used Ids (remove any gaps)

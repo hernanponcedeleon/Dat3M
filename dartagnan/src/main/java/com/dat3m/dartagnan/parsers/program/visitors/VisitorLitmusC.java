@@ -349,7 +349,7 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
 
     @Override
     public Expression visitReC11SCmpXchgExplicit(LitmusCParser.ReC11SCmpXchgExplicitContext ctx) {
-        Register register = getReturnRegister(true,TypeFactory.getInstance().getBooleanType());
+        Register register = getReturnRegister(TypeFactory.getInstance().getArchType());
         Expression value = (Expression)ctx.value.accept(this);
         Expression address = getAddress(ctx.address);
         Expression expectedAdd = getAddress(ctx.expectedAdd);
@@ -362,7 +362,7 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
 
     @Override
     public Expression visitReC11SCmpXchg(LitmusCParser.ReC11SCmpXchgContext ctx) {
-        Register register = getReturnRegister(true,TypeFactory.getInstance().getBooleanType());
+        Register register = getReturnRegister(TypeFactory.getInstance().getArchType());
         Expression value = (Expression)ctx.value.accept(this);
         Expression address = getAddress(ctx.address);
         Expression expectedAdd = getAddress(ctx.expectedAdd);
@@ -375,7 +375,7 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
 
     @Override
     public Expression visitReC11WCmpXchgExplicit(LitmusCParser.ReC11WCmpXchgExplicitContext ctx) {
-        Register register = getReturnRegister(true,TypeFactory.getInstance().getBooleanType());
+        Register register = getReturnRegister(TypeFactory.getInstance().getArchType());
         Expression value = (Expression)ctx.value.accept(this);
         Expression address = getAddress(ctx.address);
         Expression expectedAdd = getAddress(ctx.expectedAdd);
@@ -388,7 +388,7 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
 
     @Override
     public Expression visitReC11WCmpXchg(LitmusCParser.ReC11WCmpXchgContext ctx) {
-        Register register = getReturnRegister(true,TypeFactory.getInstance().getBooleanType());
+        Register register = getReturnRegister(TypeFactory.getInstance().getArchType());
         Expression value = (Expression)ctx.value.accept(this);
         Expression address = getAddress(ctx.address);
         Expression expectedAdd = getAddress(ctx.expectedAdd);
@@ -401,7 +401,7 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
 
     @Override
     public Expression visitReCmpXchg(LitmusCParser.ReCmpXchgContext ctx){
-        Register register = getReturnRegister(true,TypeFactory.getInstance().getBooleanType());
+        Register register = getReturnRegister(TypeFactory.getInstance().getArchType());
         Expression cmp = (Expression)ctx.cmp.accept(this);
         Expression value = (Expression)ctx.value.accept(this);
         Event event = EventFactory.Linux.newRMWCompareExchange(getAddress(ctx.address), register, cmp, value, ctx.mo);
@@ -719,11 +719,9 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
         returnRegister = null;
         return register;
     }
-    private Register getReturnRegister(boolean createOnNull, Type t){
+    private Register getReturnRegister(Type t){
         Register register = returnRegister;
-        if(register == null && createOnNull){
-            return programBuilder.getOrNewRegister(scope, null, t);
-        }
+        if(register == null){return programBuilder.getOrNewRegister(scope, null, t);}
         returnRegister = null;
         return register;
     }
