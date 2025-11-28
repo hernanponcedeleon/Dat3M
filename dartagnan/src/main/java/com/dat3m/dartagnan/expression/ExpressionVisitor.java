@@ -65,7 +65,6 @@ public interface ExpressionVisitor<TRet> {
     default TRet visitNullLiteral(NullLiteral lit) { return visitLeafExpression(lit); }
     default TRet visitPtrConcat(PtrConcat expr){ return visitExpression(expr); };
     default TRet visitPtrExtract(PtrExtract expr){ return visitUnaryExpression(expr); };
-    //default TRet visitPtrSizeCastExpression(PtrSizeCast expr){return visitCastExpression(expr); };
 
     // =================================== Generic ===================================
     default TRet visitITEExpression(ITEExpr expr) { return visitExpression(expr); }

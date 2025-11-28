@@ -539,41 +539,39 @@ public class ExpressionEncoder {
         @Override
         public TypedFormula<IntegerType, ?> visitPtrToIntCastExpression(PtrToIntCast expr) {
             final TypedFormula<PointerType, ?> inner = encodePointerExpr(expr.getOperand());
-            final Formula enc = inner.formula();
-
-//            final Formula enc;
-//            if (context.useIntegers) {
-//                if (expr.isExtension()) {
-//                    enc = inner.formula();
-//                }else {
-//                final BigInteger highValue = BigInteger.TWO.pow(expr.getType().getBitWidth());
-//                final IntegerFormulaManager imgr = integerFormulaManager();
-//                enc = imgr.modulo((IntegerFormula) inner.formula(), imgr.makeNumber(highValue));}
-//            } else {
-//                assert inner.formula() instanceof BitvectorFormula;
-//                final BitvectorFormulaManager bvmgr = bitvectorFormulaManager();
-//                final BitvectorFormula innerBv = (BitvectorFormula) inner.formula();
-//                final int targetBitWidth = expr.getTargetType().getBitWidth();
-//                final int sourceBitWidth = expr.getSourceType().getBitWidth();
-//                assert (sourceBitWidth == bvmgr.getLength(innerBv));
-//                enc = expr.isExtension()
-//                        ? bvmgr.extend(innerBv, targetBitWidth - sourceBitWidth, false)
-//                        : bvmgr.extract(innerBv, targetBitWidth - 1, 0);
-//            }
+            final Formula enc;
+            if (context.useIntegers) {
+                if (expr.isExtension()) {
+                    enc = inner.formula();
+                }else {
+                final BigInteger highValue = BigInteger.TWO.pow(expr.getType().getBitWidth());
+                final IntegerFormulaManager imgr = integerFormulaManager();
+                enc = imgr.modulo((IntegerFormula) inner.formula(), imgr.makeNumber(highValue));}
+            } else {
+                assert inner.formula() instanceof BitvectorFormula;
+                final BitvectorFormulaManager bvmgr = bitvectorFormulaManager();
+                final BitvectorFormula innerBv = (BitvectorFormula) inner.formula();
+                final int targetBitWidth = expr.getTargetType().getBitWidth();
+                final int sourceBitWidth = expr.getSourceType().getBitWidth();
+                assert (sourceBitWidth == bvmgr.getLength(innerBv));
+                enc = expr.isExtension()
+                        ? bvmgr.extend(innerBv, targetBitWidth - sourceBitWidth, false)
+                        : bvmgr.extract(innerBv, targetBitWidth - 1, 0);
+            }
             return new TypedFormula<>(expr.getType(), enc);
         }
 
         @Override
         public TypedFormula<PointerType, ?> visitIntToPtrCastExpression(IntToPtrCast expr) {
             final TypedFormula<IntegerType, ?> address = encodeIntegerExpr(expr.getOperand());
-            // relevant for tearing
-//            if (!context.useIntegers) {
-//                int ibw = ((IntegerType)expr.getOperand().getType()).getBitWidth();
-//                int pbw = expr.getType().getBitWidth();
-//            if (ibw<pbw){
-//                return new TypedFormula<>(expr.getType(), fmgr.getBitvectorFormulaManager()
-//                        .extend(((BitvectorFormula) address.formula()), pbw - ibw,false));
-//            }}
+            // todo add support for lossy cast like int128 to ptr(is it even possible?)
+            if (!context.useIntegers) {
+                int ibw = ((IntegerType)expr.getOperand().getType()).getBitWidth();
+                int pbw = expr.getType().getBitWidth();
+            if (ibw<pbw){
+                return new TypedFormula<>(expr.getType(), fmgr.getBitvectorFormulaManager()
+                        .extend(((BitvectorFormula) address.formula()), pbw - ibw,false));
+            }}
 
             return new TypedFormula<>(expr.getType(), address.formula());
         }

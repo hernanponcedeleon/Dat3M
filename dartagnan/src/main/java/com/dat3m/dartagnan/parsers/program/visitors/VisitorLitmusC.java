@@ -603,7 +603,8 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
         Register register = programBuilder.getRegister(scope, ctx.varName().getText());
 
         if(register == null){
-            System.out.println(ctx.typeSpecifier().basicTypeSpecifier().getText());
+            //todo remove printer
+            // System.out.println(ctx.typeSpecifier().basicTypeSpecifier().getText());
             if (ctx.typeSpecifier().basicTypeSpecifier().getText().endsWith("*")){
                 register = programBuilder.getOrNewRegister(scope, ctx.varName().getText(), pointerType);
             }else{

@@ -12,7 +12,6 @@ import com.dat3m.dartagnan.expression.booleans.*;
 import com.dat3m.dartagnan.expression.integers.*;
 import com.dat3m.dartagnan.expression.misc.ITEExpr;
 import com.dat3m.dartagnan.expression.pointer.*;
-import com.dat3m.dartagnan.expression.type.PointerType;
 import com.dat3m.dartagnan.expression.utils.IntegerHelper;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.google.common.base.VerifyException;
@@ -354,7 +353,7 @@ public class ExprSimplifier extends ExprTransformer {
         }
         // can cause a tearing problem
         if (base instanceof NullLiteral) {
-            return expressions.makeIntToPtrCast(offset,expr.getType());
+            return expressions.makeIntToPtrCast(offset);
         }
         return expressions.makePtrAdd(base, offset);
     }
@@ -396,7 +395,7 @@ public class ExprSimplifier extends ExprTransformer {
         if (sub instanceof IntLiteral && ((IntLiteral) sub).isZero()) {
             return expressions.makeNullLiteral(expr.getType());
         }
-        return expressions.makeIntToPtrCast(expr.getOperand(), expr.getType());
+        return expressions.makeIntToPtrCast(expr.getOperand());
     }
 
     @Override

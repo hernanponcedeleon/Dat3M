@@ -426,7 +426,7 @@ public class ProgramEncoder implements Encoder {
         final List<MemoryObject> memoryObjects = ImmutableList.copyOf(memory.getObjects());
         for (int i = 0; i < memoryObjects.size(); i++) {
             final MemoryObject cur = memoryObjects.get(i);
-            final Expression addrVar = exprs.makePtrToIntCast(context.address(cur));
+            final Expression addrVar = exprs.makePtrToIntCast(context.address(cur), archType);
             final Expression sizeVar = context.size(cur);
 
             final Expression size;
@@ -464,7 +464,7 @@ public class ProgramEncoder implements Encoder {
                 enc.add(equate.apply(addrVar, alignment));
             } else {
                 final Expression nextAvailableAddr = exprs.makeAdd(
-                        exprs.makePtrToIntCast(context.address(prev)),
+                        exprs.makePtrToIntCast(context.address(prev),archType),
                         context.size(prev)
                 );
                 final Expression nextAlignedAddr = exprs.makeAdd(nextAvailableAddr,

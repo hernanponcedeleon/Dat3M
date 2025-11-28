@@ -185,7 +185,8 @@ public class ThreadCreation implements ProgramProcessor {
         for (DynamicThreadJoin join : program.getThreadEvents(DynamicThreadJoin.class)) {
             final Thread caller = join.getThread();
             final Expression tidExpr_ = join.getTid();
-            final Expression tidExpr = tidExpr_.getType() instanceof PointerType ? expressions.makePtrToIntCast(tidExpr_) : tidExpr_;
+            // todo check if this makes sense as functions are now pointers
+            final Expression tidExpr = tidExpr_.getType() instanceof PointerType ? expressions.makePtrToIntCast(tidExpr_, archType) : tidExpr_;
 
             final Register joinRegister = join.getResultRegister();
             final IntegerType statusType = (IntegerType) ((AggregateType)joinRegister.getType()).getFields().get(0).type();

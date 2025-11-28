@@ -14,7 +14,6 @@ import com.dat3m.dartagnan.program.memory.ScopedPointer;
 import com.dat3m.dartagnan.program.memory.ScopedPointerVariable;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Iterables;
-import edu.stanford.CVC4.PrettySExprs;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
@@ -80,7 +79,7 @@ public final class ExpressionFactory {
         } else if (sourceType instanceof IntegerType intType) {
             return makeNEQ(operand, makeZero(intType));
         }else if (sourceType instanceof PointerType) {
-            return makeBooleanCast(makePtrToIntCast(operand));
+            return makeBooleanCast(makePtrToIntCast(operand, types.getArchType()));
         }
         throw new UnsupportedOperationException(String.format("Cannot cast %s to %s.", sourceType, booleanType));
     }
@@ -214,10 +213,10 @@ public final class ExpressionFactory {
 
     public Expression makeIntCmpForced(Expression leftOperand, IntCmpOp operator, Expression rightOperand) {
         if (leftOperand.getType() instanceof PointerType){
-            return makeIntCmpForced(makePtrToIntCast(leftOperand), operator, rightOperand);
+            return makeIntCmpForced(makePtrToIntCast(leftOperand, types.getArchType()), operator, rightOperand);
         }
         if (rightOperand.getType() instanceof PointerType){
-            return makeIntCmpForced(leftOperand, operator, makePtrToIntCast(rightOperand));
+            return makeIntCmpForced(leftOperand, operator, makePtrToIntCast(rightOperand, types.getArchType()));
         }
         return new IntCmpExpr(types.getBooleanType(), leftOperand, operator, rightOperand);
     }
@@ -228,10 +227,10 @@ public final class ExpressionFactory {
 
     public Expression makeIntBinaryForced(Expression leftOperand, IntBinaryOp operator, Expression rightOperand) {
         if (leftOperand.getType() instanceof PointerType){
-            return makeIntBinaryForced(makePtrToIntCast(leftOperand), operator, rightOperand);
+            return makeIntBinaryForced(makePtrToIntCast(leftOperand, types.getArchType()), operator, rightOperand);
         }
         if (rightOperand.getType() instanceof PointerType){
-            return makeIntBinaryForced(leftOperand, operator, makePtrToIntCast(rightOperand));
+            return makeIntBinaryForced(leftOperand, operator, makePtrToIntCast(rightOperand, types.getArchType()));
         }
         return new IntBinaryExpr(leftOperand, operator, rightOperand);
     }
@@ -390,41 +389,34 @@ public final class ExpressionFactory {
         return new PtrAddExpr(base, offset);
     }
 
-    public Expression makePtrCast(Expression base, PointerType type, boolean tearing){
+    public Expression makePtrCast(Expression base, PointerType type){
         if (base.getType() instanceof PointerType ) {
             return base;
             // todo is ptr size cast needed for mixed arm (tearing)
         }
         if (base.getType() instanceof IntegerType) {
-            int bw = ((IntegerType) base.getType()).getBitWidth();
+            //int bw = ((IntegerType) base.getType()).getBitWidth();
             // this causes problems in tearing if the pointer is not of the int size
-            return makeIntToPtrCast(makeCast(base, types.getIntegerType(bw)),tearing ? types.getPointerType(bw):types.getPointerType());
-        }
-        if (base.getType() instanceof BooleanType) {
-
-
+            // return makeIntToPtrCast(makeCast(base, types.getIntegerType(bw)),tearing ? types.getPointerType(bw):types.getPointerType());
+            return makeIntToPtrCast(base);
         }
         throw new UnsupportedOperationException(String.format("Cast %s into pointer unsupported.",base));
     }
 
 
 
-
-    public Expression makePtrToIntCast(Expression pointer) { // todo fix
-        return makePtrToIntCast(pointer, types.getArchType());
-    }
     public Expression makePtrToIntCast(Expression pointer, IntegerType type) {
-        return makeIntegerCast( new PtrToIntCast(types.getIntegerType(((PointerType)pointer.getType()).getBitWidth()), pointer), type,false);
+        return new PtrToIntCast(type, pointer);
     }
 
-    public Expression makeIntToPtrCast(Expression operand, PointerType pointerType) {
-        return new IntToPtrCast(pointerType, makeIntegerCast(operand,types.getArchType(),false));
+    // it does not make sense to cast to a pointer not of the arch size.
+
+    private Expression makeIntToPtrCast(Expression integer, PointerType pointerType) {
+        return new IntToPtrCast(pointerType, integer);
     }
     public Expression makeIntToPtrCast(Expression operand) {
         return makeIntToPtrCast(operand, types.getPointerType());
     }
-
-
 
 
 
@@ -486,7 +478,7 @@ public final class ExpressionFactory {
         } else if (type instanceof FloatType floatType) {
             return makeFloatCast(expression, floatType, signed);
         }else if (type instanceof PointerType) {
-            return makePtrCast(expression, (PointerType) type, false); // todo fix for tearing(mixed test), maybe a teared pointer tracker.
+            return makePtrCast(expression, (PointerType) type); // todo fix for tearing(mixed test), maybe a teared pointer tracker.
         }
         throw new UnsupportedOperationException(String.format("Cast %s into %s unsupported.", expression, type));
     }
@@ -519,10 +511,10 @@ public final class ExpressionFactory {
     public Expression makeEQforced(Expression leftOperand, Expression rightOperand) {
 
         if (leftOperand.getType() instanceof PointerType){
-            return makeEQforced(makePtrToIntCast(leftOperand), rightOperand);
+            return makeEQforced(makePtrToIntCast(leftOperand, types.getArchType()), rightOperand);
         }
         if (rightOperand.getType() instanceof PointerType){
-            return makeEQforced(leftOperand, makePtrToIntCast(rightOperand));
+            return makeEQforced(leftOperand, makePtrToIntCast(rightOperand, types.getArchType()));
         }
         return makeEQ(leftOperand, rightOperand);
     }
@@ -547,10 +539,10 @@ public final class ExpressionFactory {
     public Expression makeNEQforced(Expression leftOperand, Expression rightOperand) {
 
         if (leftOperand.getType() instanceof PointerType){
-            return makeNEQforced(makePtrToIntCast(leftOperand), rightOperand);
+            return makeNEQforced(makePtrToIntCast(leftOperand, types.getArchType()), rightOperand);
         }
         if (rightOperand.getType() instanceof PointerType){
-            return makeNEQforced(leftOperand, makePtrToIntCast(rightOperand));
+            return makeNEQforced(leftOperand, makePtrToIntCast(rightOperand, types.getArchType()));
         }
         return makeNEQ(leftOperand, rightOperand);
     }

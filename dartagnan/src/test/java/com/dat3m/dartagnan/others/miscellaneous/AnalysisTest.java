@@ -593,7 +593,7 @@ public class AnalysisTest {
         Load e0 = newLoad(r0, y); // reads x
         b.addChild(0, e0);
         Label l0 = newLabel("l0");
-        b.addChild(0, newJump(expressions.makeEQ(r0, expressions.makePtrToIntCast(x)), l0));
+        b.addChild(0, newJump(expressions.makeEQ(r0, expressions.makePtrToIntCast(x, types.getArchType())), l0));
         Load e1 = newLoad(r0, x); // reads y
         b.addChild(0, e1);
         b.addChild(0, l0);

@@ -7,7 +7,7 @@ public class PointerType implements Type {
     public int bitWidth;
     public boolean teared;
 
-    // todo change the encoding to recognise bit width
+
 
     PointerType(int bitWidth) {
         this.bitWidth = bitWidth;
@@ -15,7 +15,7 @@ public class PointerType implements Type {
 
     @Override
     public String toString() {
-        return "ptr_"+ bitWidth;
+        return "ptr"+ bitWidth;
     }
 
     @Override
