@@ -77,6 +77,10 @@ public class MergeEquivalentRelations implements WmmProcessor {
             return set1.getTag().equals(set2.getTag());
         }
 
+        if (def1 instanceof Projection p1 && def2 instanceof Projection p2 && p1.getDimension() != p2.getDimension()) {
+            return false;
+        }
+
         if (def1 instanceof Definition.Undefined || def1 instanceof Free) {
             // Different undefined or free relations are never equal.
             return false;

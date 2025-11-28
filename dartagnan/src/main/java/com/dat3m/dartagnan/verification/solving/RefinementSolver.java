@@ -757,14 +757,14 @@ public class RefinementSolver extends ModelChecker {
                 bPrime = replacements.get(b);
             } else {
                 final String bPrimeName = b.getName().map(n -> n + "__POS").orElse("__POS" + counter++);
-                bPrime = wmm.addDefinition(new Free(wmm.newRelation(bPrimeName)));
+                bPrime = wmm.addDefinition(new Free(wmm.newRelation(bPrimeName, b.getArity())));
                 replacements.put(b, bPrime);
             }
             // (2) Rewrite  r = a \ b  to  r = a \ b'
             wmm.removeDefinition(r);
             wmm.addDefinition(new Difference(r, a, bPrime));
             // (3) Add empty (r & b)
-            final Relation intersection = wmm.addDefinition(new Intersection(wmm.newRelation(), r, b));
+            final Relation intersection = wmm.addDefinition(new Intersection(wmm.newRelation(b.getArity()), r, b));
             wmm.addConstraint(new Emptiness(intersection));
         }
     }

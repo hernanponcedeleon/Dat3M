@@ -193,13 +193,16 @@ public class ExecutionGraph {
         }
 
         Constraint constraint;
-        RelationGraph innerGraph = getOrCreateGraphFromRelation(axiom.getRelation());
+        Relation inner = axiom.getRelation();
+        CAATPredicate innerPred = inner.isSet() ?
+            getOrCreateSetFromRelation(inner) :
+            getOrCreateGraphFromRelation(inner);
         if (axiom.isAcyclicity()) {
-            constraint = new AcyclicityConstraint(innerGraph);
+            constraint = new AcyclicityConstraint((RelationGraph) innerPred);
         } else if (axiom.isEmptiness()) {
-            constraint = new EmptinessConstraint(innerGraph);
+            constraint = new EmptinessConstraint(innerPred);
         } else if (axiom.isIrreflexivity()) {
-            constraint = new IrreflexivityConstraint(innerGraph);
+            constraint = new IrreflexivityConstraint((RelationGraph) innerPred);
         } else {
             throw new UnsupportedOperationException("The axiom " + axiom + " is not recognized.");
         }
