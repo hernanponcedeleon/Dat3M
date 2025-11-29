@@ -113,7 +113,6 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
                 programBuilder.initRegEqConst(ctx.threadId().id, ctx.varName(0).getText(), object);
             } else {
                 programBuilder.initRegEqLocVal(ctx.threadId().id, ctx.varName(0).getText(), ctx.varName(1).getText(), pointerType);
-                // todo verify pointerType or intType
             }
         }
         return null;
@@ -603,12 +602,12 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
         Register register = programBuilder.getRegister(scope, ctx.varName().getText());
 
         if(register == null){
-            //todo remove printer
-            // System.out.println(ctx.typeSpecifier().basicTypeSpecifier().getText());
-            if (ctx.typeSpecifier().basicTypeSpecifier().getText().endsWith("*")){
-                register = programBuilder.getOrNewRegister(scope, ctx.varName().getText(), pointerType);
+            if (ctx.typeSpecifier().Ast().isEmpty()){
+                System.out.println("int");
+                register = programBuilder.getOrNewRegister(scope, ctx.varName().getText(), archType);
             }else{
-                register = programBuilder.getOrNewRegister(scope, ctx.varName().getText(), archType);} //care
+                System.out.println("ptr");
+                register = programBuilder.getOrNewRegister(scope, ctx.varName().getText(), pointerType);} //care
             if(ctx.re() != null){
                 returnRegister = register;
                 ctx.re().accept(this);
@@ -715,7 +714,7 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
     private Register getReturnRegister(boolean createOnNull){
         Register register = returnRegister;
         if(register == null && createOnNull){
-            return programBuilder.getOrNewRegister(scope, null, pointerType);
+            return programBuilder.getOrNewRegister(scope, null, archType);
         }
         returnRegister = null;
         return register;

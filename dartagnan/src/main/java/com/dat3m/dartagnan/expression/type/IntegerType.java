@@ -53,6 +53,6 @@ public class IntegerType implements Type {
 
     @Override
     public String toString() {
-        return "bv" + bitWidth;
+        return "int" + bitWidth;
     }
 }

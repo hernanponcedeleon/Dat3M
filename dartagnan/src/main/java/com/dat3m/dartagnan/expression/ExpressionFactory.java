@@ -392,13 +392,13 @@ public final class ExpressionFactory {
     public Expression makePtrCast(Expression base, PointerType type){
         if (base.getType() instanceof PointerType ) {
             return base;
-            // todo is ptr size cast needed for mixed arm (tearing)
+            // pointers of different size than arch should not be cast? Possible in wmm.
         }
         if (base.getType() instanceof IntegerType) {
             //int bw = ((IntegerType) base.getType()).getBitWidth();
             // this causes problems in tearing if the pointer is not of the int size
             // return makeIntToPtrCast(makeCast(base, types.getIntegerType(bw)),tearing ? types.getPointerType(bw):types.getPointerType());
-            return makeIntToPtrCast(base);
+            return makeIntToPtrCast(base, type);
         }
         throw new UnsupportedOperationException(String.format("Cast %s into pointer unsupported.",base));
     }
