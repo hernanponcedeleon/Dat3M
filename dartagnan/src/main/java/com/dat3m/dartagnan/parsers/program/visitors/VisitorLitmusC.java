@@ -198,8 +198,9 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
         // TODO: Possibly parse attributes/type modifiers (const, ...)
         //  For now, herd7 also seems to ignore most modifiers, in particular the atomic one.
         String name = ctx.varName().getText();
+        Type type = ctx.pointerTypeSpecifier().Ast() == null ? archType : pointerType; // todo archType should never be used.
         MemoryObject object = programBuilder.getOrNewMemoryObject(name);
-        Register register = programBuilder.getOrNewRegister(scope, name, pointerType);
+        Register register = programBuilder.getOrNewRegister(scope, name, type);
         boolean atomicity = ctx.pointerTypeSpecifier().atomicTypeSpecifier() != null
                 || ctx.pointerTypeSpecifier().basicTypeSpecifier().AtomicInt() != null;
         if (!atomicity) {
@@ -674,6 +675,8 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
     // ----------------------------------------------------------------------------------------------------------------
     // Utils
 
+
+    // problem here
     @Override
     public Expression visitVarName(LitmusCParser.VarNameContext ctx){
         if(scope > -1){
@@ -683,11 +686,11 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
             }
             MemoryObject object = programBuilder.getMemoryObject(ctx.getText());
             if(object != null){
-                register = programBuilder.getOrNewRegister(scope, null, pointerType);
+                register = programBuilder.getOrNewRegister(scope, null, archType);
                 programBuilder.addChild(currentThread, EventFactory.newLoadWithMo(register, object, C11.NONATOMIC));
                 return register;
             }
-            return programBuilder.getOrNewRegister(scope, ctx.getText(), pointerType);
+            return programBuilder.getOrNewRegister(scope, ctx.getText(), archType);
         }
         MemoryObject object = programBuilder.newMemoryObject(ctx.getText(), archSize);
         Register register = programBuilder.getOrNewRegister(scope, null, pointerType);
@@ -698,7 +701,7 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
     private Expression getAddress(LitmusCParser.ReContext ctx){
         Expression address = (Expression)ctx.accept(this);
         if(address.getType() instanceof IntegerType){
-           return expressions.makeIntToPtrCast(address);
+            return expressions.makeIntToPtrCast(address);
         }
         if(address.getType() instanceof PointerType){
             return address;

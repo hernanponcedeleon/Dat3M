@@ -137,6 +137,7 @@ public class VisitorLitmusRISCV extends LitmusRISCVBaseVisitor<Object> {
 
 	@Override
 	public Object visitAdd(LitmusRISCVParser.AddContext ctx) {
+        // todo check if pointer to use ptrAdd
         Register r1 = programBuilder.getOrNewRegister(mainThread, ctx.register(0).getText(), archType);
         Register r2 = programBuilder.getOrErrorRegister(mainThread, ctx.register(1).getText());
         Register r3 = programBuilder.getOrErrorRegister(mainThread, ctx.register(2).getText());
