@@ -269,7 +269,7 @@ public class ProgramBuilder {
         return getFunctionOrError(fid).getRegister(name);
     }
 
-    public Register getOrNewRegister(int fid, String name) {
+    public Register getOrNewRegister(int fid, String name) { // use carefully
         return getOrNewRegister(fid, name, types.getPointerType());
     }
 

@@ -332,7 +332,7 @@ public class VisitorAsmRISCV extends AsmRISCVBaseVisitor<Object> {
     }else if (expectedType instanceof PointerType){
         String valueString = ctx.Numbers().getText();
         BigInteger value = new BigInteger(valueString);
-        return expressions.makeIntToPtrCast(expressions.makeValue(value));
+        return expressions.makeIntToPtrCast(expressions.makeValue(value)); // not directly !?
     }
         throw new RuntimeException("Unexpected type " + expectedType + " visited");
 }

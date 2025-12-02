@@ -7,6 +7,7 @@ import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.integers.IntLiteral;
 import com.dat3m.dartagnan.expression.type.IntegerType;
+import com.dat3m.dartagnan.expression.type.PointerType;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.parsers.LitmusRISCVBaseVisitor;
 import com.dat3m.dartagnan.parsers.LitmusRISCVParser;
@@ -26,6 +27,7 @@ public class VisitorLitmusRISCV extends LitmusRISCVBaseVisitor<Object> {
     private final TypeFactory types = programBuilder.getTypeFactory();
     private final ExpressionFactory expressions = programBuilder.getExpressionFactory();
     private final IntegerType archType = types.getArchType();
+    private final PointerType pointerType = types.getPointerType();
     private int mainThread;
     private int threadCount = 0;
 
@@ -34,7 +36,6 @@ public class VisitorLitmusRISCV extends LitmusRISCVBaseVisitor<Object> {
 
     // ----------------------------------------------------------------------------------------------------------------
     // Entry point
-
     @Override
     public Object visitMain(LitmusRISCVParser.MainContext ctx) {
         visitThreadDeclaratorList(ctx.program().threadDeclaratorList());
@@ -48,7 +49,6 @@ public class VisitorLitmusRISCV extends LitmusRISCVBaseVisitor<Object> {
 
     // ----------------------------------------------------------------------------------------------------------------
     // Variable declarator list
-
     @Override
     public Object visitVariableDeclaratorLocation(LitmusRISCVParser.VariableDeclaratorLocationContext ctx) {
         IntLiteral value = expressions.parseValue(ctx.constant().getText(), archType);
@@ -75,10 +75,8 @@ public class VisitorLitmusRISCV extends LitmusRISCVBaseVisitor<Object> {
         return null;
     }
 
-
     // ----------------------------------------------------------------------------------------------------------------
     // Thread declarator list (on top of instructions), e.g. " P0  |   P1  |   P2  ;"
-
     @Override
     public Object visitThreadDeclaratorList(LitmusRISCVParser.ThreadDeclaratorListContext ctx) {
         for(LitmusRISCVParser.ThreadIdContext threadCtx : ctx.threadId()){
@@ -88,10 +86,8 @@ public class VisitorLitmusRISCV extends LitmusRISCVBaseVisitor<Object> {
         return null;
     }
 
-
     // ----------------------------------------------------------------------------------------------------------------
     // Instruction list (the program itself)
-
     @Override
     public Object visitInstructionRow(LitmusRISCVParser.InstructionRowContext ctx) {
         for(int i = 0; i < threadCount; i++){
@@ -137,10 +133,15 @@ public class VisitorLitmusRISCV extends LitmusRISCVBaseVisitor<Object> {
 
 	@Override
 	public Object visitAdd(LitmusRISCVParser.AddContext ctx) {
-        // todo check if pointer to use ptrAdd
-        Register r1 = programBuilder.getOrNewRegister(mainThread, ctx.register(0).getText(), archType);
+        // todo problem here is an int reg being retrieved as r1. Should it be possible??
+        Register r1 = programBuilder.getOrNewRegister(mainThread, ctx.register(0).getText(), pointerType);
         Register r2 = programBuilder.getOrErrorRegister(mainThread, ctx.register(1).getText());
         Register r3 = programBuilder.getOrErrorRegister(mainThread, ctx.register(2).getText());
+        if (r2.getType() instanceof PointerType && r3.getType() instanceof IntegerType) {
+            return programBuilder.addChild(mainThread, EventFactory.newLocal(r1, expressions.makePtrAdd(r2, r3)));
+        }else if (r3.getType() instanceof PointerType && r2.getType() instanceof IntegerType) {
+            return programBuilder.addChild(mainThread, EventFactory.newLocal(r1, expressions.makePtrAdd(r3, r2)));
+        }
         return programBuilder.addChild(mainThread, EventFactory.newLocal(r1, expressions.makeAdd(r2, r3)));
 
 	}
@@ -257,7 +258,6 @@ public class VisitorLitmusRISCV extends LitmusRISCVBaseVisitor<Object> {
 	// =======================================
 	// ================ Utils ================
 	// =======================================
-
 	private String getMo(LitmusRISCVParser.MoRISCVContext mo1, LitmusRISCVParser.MoRISCVContext mo2) {
 		String moR = mo1 != null ? mo1.mo : "";
 		String moW = mo2 != null ? mo2.mo : "";

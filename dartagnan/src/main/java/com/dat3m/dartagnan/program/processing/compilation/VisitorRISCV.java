@@ -4,6 +4,7 @@ import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.Type;
 import com.dat3m.dartagnan.expression.type.BooleanType;
 import com.dat3m.dartagnan.expression.type.IntegerType;
+import com.dat3m.dartagnan.expression.type.PointerType;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.Tag;
@@ -571,7 +572,13 @@ class VisitorRISCV extends VisitorBase {
         Register regValue = e.getFunction().newRegister(type);
 
         Load load = newRMWLoadExclusive(regValue, address); // TODO: No mo on the load?
-        Store store = RISCV.newRMWStoreConditional(address, expressions.makePtrAdd(regValue, e.getOperand()), mo.equals(Tag.Linux.MO_MB) ? Tag.RISCV.MO_REL : "", true);
+        Expression expr;
+        if(regValue.getType() instanceof PointerType && e.getOperand().getType() instanceof IntegerType) {
+            expr = expressions.makePtrAdd(regValue, e.getOperand());
+        } else if( regValue.getType() instanceof IntegerType){
+            expr = expressions.makeAdd(regValue, e.getOperand());
+        }else {throw new IllegalArgumentException("Non int or ptr as lkmmAddUnless argument");}
+        Store store = RISCV.newRMWStoreConditional(address, expr, mo.equals(Tag.Linux.MO_MB) ? Tag.RISCV.MO_REL : "", true);
 
         // TODO: Why does this use a different fake dep (from the load) than the other RMW events (from the store)?
         Label label = newLabel("FakeDep");

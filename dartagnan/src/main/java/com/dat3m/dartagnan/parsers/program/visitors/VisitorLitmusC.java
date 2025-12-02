@@ -198,7 +198,7 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
         // TODO: Possibly parse attributes/type modifiers (const, ...)
         //  For now, herd7 also seems to ignore most modifiers, in particular the atomic one.
         String name = ctx.varName().getText();
-        Type type = ctx.pointerTypeSpecifier().Ast() == null ? archType : pointerType; // todo archType should never be used.
+        Type type = ctx.pointerTypeSpecifier().Ast() == null ? archType : pointerType; // as far as i understand the archtype is meaningless here.
         MemoryObject object = programBuilder.getOrNewMemoryObject(name);
         Register register = programBuilder.getOrNewRegister(scope, name, type);
         boolean atomicity = ctx.pointerTypeSpecifier().atomicTypeSpecifier() != null
@@ -586,10 +586,9 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
             }
             throw new ParsingException("Invalid syntax near " + ctx.getText());
         }
-
         Expression value = (Expression)ctx.re().accept(this);
         if(variable instanceof MemoryObject || variable instanceof Register){
-            Event event = EventFactory.newStoreWithMo(variable, expressions.makeCast(value,pointerType), C11.NONATOMIC);
+            Event event = EventFactory.newStoreWithMo(expressions.makeCast(variable, pointerType), value, C11.NONATOMIC);
             if (isOpenCL) {
                 event.addTags(Tag.OpenCL.DEFAULT_WEAK_SCOPE);
             }
@@ -604,10 +603,8 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
 
         if(register == null){
             if (ctx.typeSpecifier().Ast().isEmpty()){
-                System.out.println("int");
                 register = programBuilder.getOrNewRegister(scope, ctx.varName().getText(), archType);
             }else{
-                System.out.println("ptr");
                 register = programBuilder.getOrNewRegister(scope, ctx.varName().getText(), pointerType);} //care
             if(ctx.re() != null){
                 returnRegister = register;

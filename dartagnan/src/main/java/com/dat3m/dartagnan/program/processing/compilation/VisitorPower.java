@@ -5,6 +5,7 @@ import com.dat3m.dartagnan.expression.Type;
 import com.dat3m.dartagnan.expression.integers.IntBinaryOp;
 import com.dat3m.dartagnan.expression.type.BooleanType;
 import com.dat3m.dartagnan.expression.type.IntegerType;
+import com.dat3m.dartagnan.expression.type.PointerType;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.Tag;
@@ -818,7 +819,13 @@ public class VisitorPower extends VisitorBase {
         Register regValue = e.getFunction().newRegister(type);
         // Power does not have mo tags, thus we use the empty string
         Load load = newRMWLoadExclusive(regValue, address);
-        Store store = Power.newRMWStoreConditional(address, expressions.makePtrAdd(regValue, e.getOperand()), true);
+        Expression expr;
+        if(regValue.getType() instanceof PointerType && e.getOperand().getType() instanceof IntegerType) {
+            expr = expressions.makePtrAdd(regValue, e.getOperand());
+        } else if( regValue.getType() instanceof IntegerType){
+            expr = expressions.makeAdd(regValue, e.getOperand());
+        }else {throw new IllegalArgumentException("Non int or ptr as lkmmAddUnless operand");}
+        Store store = Power.newRMWStoreConditional(address, expr, true);
         Label label = newLabel("FakeDep");
         Event fakeCtrlDep = newFakeCtrlDep(regValue, label);
 

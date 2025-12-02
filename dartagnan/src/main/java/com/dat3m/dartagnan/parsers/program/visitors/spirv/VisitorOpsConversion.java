@@ -6,6 +6,7 @@ import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.Type;
 import com.dat3m.dartagnan.expression.type.ArrayType;
 import com.dat3m.dartagnan.expression.type.IntegerType;
+import com.dat3m.dartagnan.expression.type.PointerType;
 import com.dat3m.dartagnan.expression.type.ScopedPointerType;
 import com.dat3m.dartagnan.parsers.SpirvBaseVisitor;
 import com.dat3m.dartagnan.parsers.SpirvParser;
@@ -40,8 +41,8 @@ public class VisitorOpsConversion extends SpirvBaseVisitor<Event> {
             throw new ParsingException("Bitcast between arrays is not supported for id '%s'", id);
         }
 
-        if (resultType instanceof ScopedPointerType pointerType1 && operandType instanceof ScopedPointerType pointerType2
-                && !(pointerType1.getScopeId().equals(pointerType2.getScopeId()))) {
+        if (resultType instanceof ScopedPointerType scpPointerType1 && operandType instanceof ScopedPointerType scpPointerType2
+                && !(scpPointerType1.getScopeId().equals(scpPointerType2.getScopeId()))) {
                 throw new ParsingException("Storage class mismatch in OpBitcast between '%s' and '%s' for id '%s'", typeId, operand, id);
         }
 
@@ -55,7 +56,7 @@ public class VisitorOpsConversion extends SpirvBaseVisitor<Event> {
         String id = ctx.idResult().getText();
         Type type = builder.getType(ctx.idResultType().getText());
         Expression pointer = builder.getExpression(ctx.pointer().getText());
-        if (type instanceof ScopedPointerType || !(type instanceof IntegerType)) {
+        if (!(type instanceof IntegerType)) {
             throw new ParsingException("Illegal OpConvertPtrToU for '%s', " +
                     "attempt to convent into a non-integer type", id);
         }

@@ -51,7 +51,6 @@ public final class TypeFactory {
         return typeNormalizer.normalize(new PointerType(bitWidth));
     }
 
-
     public IntegerType getIntegerType(int bitWidth) {
         checkArgument(bitWidth > 0, "Non-positive bit width %s.", bitWidth);
         return typeNormalizer.normalize(new IntegerType(bitWidth));
