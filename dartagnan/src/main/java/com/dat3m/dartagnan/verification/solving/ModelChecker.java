@@ -3,7 +3,6 @@ package com.dat3m.dartagnan.verification.solving;
 import com.dat3m.dartagnan.configuration.Property;
 import com.dat3m.dartagnan.encoding.EncodingContext;
 import com.dat3m.dartagnan.encoding.IREvaluator;
-import com.dat3m.dartagnan.encoding.WmmEncoder;
 import com.dat3m.dartagnan.exception.UnsatisfiedRequirementException;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Thread;
@@ -11,7 +10,6 @@ import com.dat3m.dartagnan.program.analysis.*;
 import com.dat3m.dartagnan.program.analysis.alias.AliasAnalysis;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.processing.ProcessingManager;
-import com.dat3m.dartagnan.smt.ModelExt;
 import com.dat3m.dartagnan.utils.Result;
 import com.dat3m.dartagnan.verification.Context;
 import com.dat3m.dartagnan.verification.VerificationTask;
@@ -116,17 +114,16 @@ public abstract class ModelChecker {
         analysisContext.register(RelationAnalysis.class, RelationAnalysis.fromConfig(task, analysisContext, config));
     }
 
-    protected void saveFlaggedPairsOutput(Wmm wmm, WmmEncoder encoder, ProverEnvironment prover, EncodingContext ctx, Program program) throws SolverException {
+    protected void saveFlaggedPairsOutput(Wmm wmm, ProverEnvironment prover, EncodingContext ctx, Program program) throws SolverException {
         if (!ctx.getTask().getProperty().contains(CAT_SPEC)) {
             return;
         }
-        try (ModelExt model = new ModelExt(prover.getModel())) {
-            final IREvaluator irModel = new IREvaluator(ctx, model);
+        try (IREvaluator evaluator = ctx.newEvaluator(prover)) {
             final SyntacticContextAnalysis synContext = newInstance(program);
             for (Axiom ax : wmm.getAxioms()) {
-                if (ax.isFlagged() && irModel.isFlaggedAxiomViolated(ax)) {
+                if (ax.isFlagged() && evaluator.isFlaggedAxiomViolated(ax)) {
                     StringBuilder violatingPairs = new StringBuilder("\tFlag " + Optional.ofNullable(ax.getName()).orElse(ax.getRelation().getNameOrTerm())).append("\n");
-                    encoder.getEventGraph(ax.getRelation(), model).apply((e1, e2) -> {
+                    evaluator.eventGraph(ax.getRelation()).apply((e1, e2) -> {
                         final String callSeparator = " -> ";
                         final String callStackFirst = makeContextString(
                                 synContext.getContextInfo(e1).getContextOfType(CallContext.class),

@@ -8,7 +8,6 @@ import com.dat3m.dartagnan.program.analysis.ReachingDefinitionsAnalysis;
 import com.dat3m.dartagnan.program.event.*;
 import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.smt.EncodingUtils;
-import com.dat3m.dartagnan.smt.ModelExt;
 import com.dat3m.dartagnan.utils.Utils;
 import com.dat3m.dartagnan.utils.dependable.DependencyGraph;
 import com.dat3m.dartagnan.wmm.Constraint;
@@ -146,16 +145,6 @@ public class WmmEncoder implements Encoder {
         ra.getContradictions()
                 .apply((e1, e2) -> enc.add(bmgr.not(context.execution(e1, e2))));
         return bmgr.and(enc);
-    }
-
-    public EventGraph getEventGraph(Relation relation, ModelExt model) {
-        IREvaluator irModel = new IREvaluator(context, model);
-        EncodingContext.EdgeEncoder edge = context.edge(relation);
-        EventGraph encodeSet = encodeSets.getOrDefault(relation, new MapEventGraph())
-                .filter((e1, e2) -> irModel.hasEdge(edge, e1, e2));
-        EventGraph mustEncodeSet = MapEventGraph.from(context.getAnalysisContext().get(RelationAnalysis.class).getKnowledge(relation).getMustSet())
-                .filter((e1, e2) -> irModel.isExecuted(e1) && irModel.isExecuted(e2));
-        return EventGraph.union(encodeSet, mustEncodeSet);
     }
 
     private Map<Relation, EventGraph> initializeEncodeSets() {

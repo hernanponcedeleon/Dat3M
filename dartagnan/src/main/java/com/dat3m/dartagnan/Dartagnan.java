@@ -21,7 +21,6 @@ import com.dat3m.dartagnan.program.event.core.Assert;
 import com.dat3m.dartagnan.program.event.core.CondJump;
 import com.dat3m.dartagnan.program.processing.LoopUnrolling;
 import com.dat3m.dartagnan.program.Entrypoint;
-import com.dat3m.dartagnan.smt.ModelExt;
 import com.dat3m.dartagnan.utils.ExitCode;
 import com.dat3m.dartagnan.utils.Result;
 import com.dat3m.dartagnan.utils.options.BaseOptions;
@@ -295,21 +294,21 @@ public class Dartagnan extends BaseOptions {
 
         final EncodingContext encodingContext = modelChecker instanceof RefinementSolver refinementSolver ?
             refinementSolver.getContextWithFullWmm() : modelChecker.getEncodingContext();
-        final ExecutionModelNext model = new ExecutionModelManager().buildExecutionModel(
-            encodingContext, new ModelExt(prover.getModel())
-        );
         final SyntacticContextAnalysis synContext = newInstance(task.getProgram());
         final String progName = task.getProgram().getName();
         final int fileSuffixIndex = progName.lastIndexOf('.');
         final String name = progName.isEmpty() ? "unnamed_program" :
                 (fileSuffixIndex == - 1) ? progName : progName.substring(0, fileSuffixIndex);
-        // RF edges give both ordering and data flow information, thus even when the pair is in PO
-        // we get some data flow information by observing the edge
-        // CO edges only give ordering information which is known if the pair is also in PO
-        return generateGraphvizFile(model, 1, (x, y) -> true,
-                (x, y) -> !x.getThreadModel().getThread().equals(y.getThreadModel().getThread()),
-                getOrCreateOutputDirectory() + "/", name,
-                synContext, witnessType.convertToPng(), encodingContext.getTask().getConfig());
+        try (IREvaluator evaluator = encodingContext.newEvaluator(prover)) {
+            final ExecutionModelNext model = new ExecutionModelManager().buildExecutionModel(evaluator);
+            // RF edges give both ordering and data flow information, thus even when the pair is in PO
+            // we get some data flow information by observing the edge
+            // CO edges only give ordering information which is known if the pair is also in PO
+            return generateGraphvizFile(model, 1, (x, y) -> true,
+                    (x, y) -> !x.getThreadModel().getThread().equals(y.getThreadModel().getThread()),
+                    getOrCreateOutputDirectory() + "/", name,
+                    synContext, witnessType.convertToPng(), encodingContext.getTask().getConfig());
+        }
     }
 
     private static void generateWitnessIfAble(VerificationTask task, ProverEnvironment prover,
@@ -331,18 +330,19 @@ public class Dartagnan extends BaseOptions {
         }
     }
 
-    public static ResultSummary summaryFromResult(VerificationTask task, ProverEnvironment prover,
-            ModelChecker modelChecker, String path, long time) throws SolverException {
+    public static ResultSummary summaryFromResult(VerificationTask task, ProverEnvironment prover, ModelChecker modelChecker, String path, long time) throws SolverException {
+        try (IREvaluator evaluator = modelChecker.hasModel() ? modelChecker.getEncodingContext().newEvaluator(prover) : null) {
+            return summaryFromResult(task, modelChecker, evaluator, path, time);
+        }
+    }
+
+    private static ResultSummary summaryFromResult(VerificationTask task, ModelChecker modelChecker, IREvaluator model, String path, long time) {
         // ----------------- Generate output of verification result -----------------
         final Program p = task.getProgram();
         final EnumSet<Property> props = task.getProperty();
         final Result result = modelChecker.getResult();
-        final EncodingContext encCtx = modelChecker.getEncodingContext();
-        final IREvaluator model = modelChecker.hasModel()
-                ? new IREvaluator(encCtx, new ModelExt(prover.getModel()))
-                : null;
-        final boolean hasViolations = result == FAIL && (model != null);
-        final boolean hasViolationsWithoutWitness = result == FAIL && (model == null);
+        final boolean hasViolations = result == FAIL && model != null;
+        final boolean hasViolationsWithoutWitness = result == FAIL && model == null;
 
         String reason = "";
         StringBuilder details = new StringBuilder();
@@ -420,7 +420,7 @@ public class Dartagnan extends BaseOptions {
             // Only for programs with exists/forall specifications
             reason = ResultSummary.PROGRAM_SPEC_REASON;
             condition = getSpecificationString(p);
-        } else if (result == UNKNOWN && modelChecker.hasModel()) {
+        } else if (result == UNKNOWN && model != null) {
             // We reached unrolling bounds.
             final List<Event> reachedBounds = p.getThreadEventsWithAllTags(Tag.BOUND)
                     .stream().filter(model::isExecuted)
