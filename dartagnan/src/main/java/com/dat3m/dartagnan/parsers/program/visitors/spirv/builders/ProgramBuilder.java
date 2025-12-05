@@ -199,8 +199,8 @@ public class ProgramBuilder {
 
     public String getPointerStorageClass(String id) {
         Expression expression = getExpression(id);
-        if (expression.getType() instanceof ScopedPointerType pointerType) {
-            return pointerType.getScopeId();
+        if (expression.getType() instanceof ScopedPointerType scpPointerType) {
+            return scpPointerType.getScopeId();
         }
         throw new ParsingException("Reference to undefined pointer '%s'", id);
     }
