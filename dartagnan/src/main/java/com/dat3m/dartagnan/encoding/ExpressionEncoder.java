@@ -564,7 +564,7 @@ public class ExpressionEncoder {
         @Override
         public TypedFormula<PointerType, ?> visitIntToPtrCastExpression(IntToPtrCast expr) {
             final TypedFormula<IntegerType, ?> address = encodeIntegerExpr(expr.getOperand());
-            // todo add support for lossy cast like int128 to ptr(is it even possible?)
+            // todo add support for lossy casts like int64 to ptr32(is it even possible?)
             if (!context.useIntegers) {
                 int ibw = ((IntegerType)expr.getOperand().getType()).getBitWidth();
                 int pbw = expr.getType().getBitWidth();

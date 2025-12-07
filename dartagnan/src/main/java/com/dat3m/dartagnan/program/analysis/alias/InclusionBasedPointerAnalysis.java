@@ -326,6 +326,7 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
             final DerivedVariable address = getResultVariable(load.getAddress(), load);
             if (address == null) {
                 logger.warn("null pointer address for {}", synContext.get().getContextInfo(event));
+                // fixme does this make sense here?
                 return;
             }
             addressVariables.put(load, address);
