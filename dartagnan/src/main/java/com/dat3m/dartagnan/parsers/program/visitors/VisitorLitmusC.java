@@ -437,7 +437,7 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
 
     @Override
     public Expression visitReReadOnce(LitmusCParser.ReReadOnceContext ctx){
-        Register register = getReturnRegister(true);
+        Register register = getReturnRegister(pointerType);
         Event event = EventFactory.Linux.newLKMMLoad(register, getAddress(ctx.address), ctx.mo);
         programBuilder.addChild(currentThread, event);
         return register;
@@ -588,6 +588,9 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
         }
         Expression value = (Expression)ctx.re().accept(this);
         if(variable instanceof MemoryObject || variable instanceof Register){
+            if (!(variable.getType() instanceof PointerType)){
+                System.out.println("non ptr reg in nre??");
+            }
             Event event = EventFactory.newStoreWithMo(expressions.makeCast(variable, pointerType), value, C11.NONATOMIC);
             if (isOpenCL) {
                 event.addTags(Tag.OpenCL.DEFAULT_WEAK_SCOPE);
@@ -698,6 +701,7 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
     private Expression getAddress(LitmusCParser.ReContext ctx){
         Expression address = (Expression)ctx.accept(this);
         if(address.getType() instanceof IntegerType){
+            //System.out.println("int address in visitor litmus c");
             return expressions.makeIntToPtrCast(address);
         }
         if(address.getType() instanceof PointerType){

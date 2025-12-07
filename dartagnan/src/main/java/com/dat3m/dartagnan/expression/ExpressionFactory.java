@@ -103,6 +103,10 @@ public final class ExpressionFactory {
         return new IntLiteral(types.getArchType(), value);
     }
 
+    public IntLiteral makeValue(BigInteger value, int bitwidth) {
+        return new IntLiteral(types.getIntegerType(bitwidth), value);
+    }
+
     public IntLiteral makeValue(long value, IntegerType type) {
         return makeValue(BigInteger.valueOf(value), type);
     }
