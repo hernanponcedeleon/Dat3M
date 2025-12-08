@@ -16,7 +16,7 @@
     </Appenders>
 
     <Loggers>
-        <Root level="off">
+        <Root level="info">
             <AppenderRef ref="Console"/>
             <AppenderRef ref="File"/>
         </Root>

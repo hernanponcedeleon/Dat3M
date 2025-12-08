@@ -311,7 +311,7 @@ public final class EncodingContext {
             if (e instanceof RegWriter rw) {
                 final Register register = rw.getResultRegister();
                 final String name = register.getName() + "(" + e.getGlobalId() + "_result)";
-                results.put(e, exprEncoder.makeVariable(name, register.getType()));
+                results.put(e, exprEncoder.makeVariable(name, register.getType())); // !!
             }
             if (e instanceof MemoryCoreEvent memEvent) {
                 addresses.put(e, exprEncoder.encodeAt(memEvent.getAddress(), memEvent));

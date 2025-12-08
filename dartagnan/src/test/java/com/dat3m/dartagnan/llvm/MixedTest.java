@@ -44,8 +44,7 @@ public class MixedTest extends AbstractCTest {
 
     @Override
     protected Configuration getConfiguration() throws InvalidConfigurationException {
-        return Configuration.builder()
-                .setOption(MIXED_SIZE, "true")
+        return Configuration.builder().setOption(MIXED_SIZE, "true")
                 .build();
     }
 

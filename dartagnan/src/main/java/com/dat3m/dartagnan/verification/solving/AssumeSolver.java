@@ -83,6 +83,7 @@ public class AssumeSolver extends ModelChecker {
             logger.info("Starting second solver.check()");
             res = prover.isUnsat() ? PASS : Result.UNKNOWN;
         } else {
+            // prover get model
             res = FAIL;
             saveFlaggedPairsOutput(memoryModel, wmmEncoder, prover, context, task.getProgram());
         }
