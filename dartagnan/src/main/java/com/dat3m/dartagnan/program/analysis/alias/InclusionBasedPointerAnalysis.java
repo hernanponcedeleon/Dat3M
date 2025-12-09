@@ -5,6 +5,7 @@ import com.dat3m.dartagnan.expression.ExpressionVisitor;
 import com.dat3m.dartagnan.expression.aggregates.ConstructExpr;
 import com.dat3m.dartagnan.expression.aggregates.ExtractExpr;
 import com.dat3m.dartagnan.expression.integers.*;
+import com.dat3m.dartagnan.expression.pointer.*;
 import com.dat3m.dartagnan.expression.misc.ITEExpr;
 import com.dat3m.dartagnan.expression.processing.ExpressionInspector;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
@@ -326,7 +327,6 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
             final DerivedVariable address = getResultVariable(load.getAddress(), load);
             if (address == null) {
                 logger.warn("null pointer address for {}", synContext.get().getContextInfo(event));
-                // fixme does this make sense here?
                 return;
             }
             addressVariables.put(load, address);
@@ -1007,6 +1007,46 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
         }
 
         record ExprFlip(Expression x, int factor) {}
+
+
+        @Override
+        public List<IncludeEdge> visitPtrAddExpression(PtrAddExpr x) {
+            BigInteger offset = BigInteger.ZERO;
+            final List<ExprFlip> operands = new ArrayList<>();
+            final Stack<ExprFlip> stack = new Stack<>();
+            if (!matchLinearExpression(new ExprFlip(x, 1), stack)) {
+                return visitExpression(x);
+            }
+            while (!stack.isEmpty()) {
+                final ExprFlip operand = stack.pop();
+                if (matchLinearExpression(operand, stack)) {
+                    continue;
+                }
+                if (operand.x instanceof IntLiteral literal) {
+                    offset = offset.add(literal.getValue().multiply(BigInteger.valueOf(operand.factor)));
+                } else {
+                    operands.add(operand);
+                }
+            }
+            final List<IncludeEdge> result = new ArrayList<>();
+            final int o = offset.intValue();
+            for (int i = 0; i < operands.size(); i++) {
+                final ExprFlip operand = operands.get(i);
+                if (operand.factor != 1) {
+                    result.addAll(visitExpression(operand.x));
+                    continue;
+                }
+                List<Integer> alignment = List.of();
+                for (int j = 0; j < operands.size(); j++) {
+                    alignment = j == i ? alignment : compose(alignment, operands.get(j).factor);
+                }
+                for (IncludeEdge subResult : operand.x.accept(this)) {
+                    addInto(result, compose(subResult, modifier(o, alignment)), false);
+                }
+            }
+            return result;
+        }
+
 
         @Override
         public List<IncludeEdge> visitIntBinaryExpression(IntBinaryExpr x) {
