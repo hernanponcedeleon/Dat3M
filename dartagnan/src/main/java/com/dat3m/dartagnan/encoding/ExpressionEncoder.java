@@ -541,12 +541,11 @@ public class ExpressionEncoder {
             final TypedFormula<PointerType, ?> inner = encodePointerExpr(expr.getOperand());
             final Formula enc;
             if (context.useIntegers) {
-                if (expr.isExtension()) {
-                    enc = inner.formula();
-                }else {
-                final BigInteger highValue = BigInteger.TWO.pow(expr.getType().getBitWidth());
-                final IntegerFormulaManager imgr = integerFormulaManager();
-                enc = imgr.modulo((IntegerFormula) inner.formula(), imgr.makeNumber(highValue));}
+                if (!expr.isExtension()) {
+                    final BigInteger highValue = BigInteger.TWO.pow(expr.getType().getBitWidth());
+                    final IntegerFormulaManager imgr = integerFormulaManager();
+                    enc = imgr.modulo((IntegerFormula) inner.formula(), imgr.makeNumber(highValue));
+                }else{ enc = inner.formula(); }
             } else {
                 assert inner.formula() instanceof BitvectorFormula;
                 final BitvectorFormulaManager bvmgr = bitvectorFormulaManager();
@@ -554,9 +553,12 @@ public class ExpressionEncoder {
                 final int targetBitWidth = expr.getTargetType().getBitWidth();
                 final int sourceBitWidth = expr.getSourceType().getBitWidth();
                 assert (sourceBitWidth == bvmgr.getLength(innerBv));
-                enc = expr.isExtension()
-                        ? bvmgr.extend(innerBv, targetBitWidth - sourceBitWidth, false)
-                        : bvmgr.extract(innerBv, targetBitWidth - 1, 0);
+                if (expr.sameWidth()) { enc = innerBv;}
+                else{
+                    enc = expr.isExtension()
+                            ? bvmgr.extend(innerBv, targetBitWidth - sourceBitWidth, false)
+                            : bvmgr.extract(innerBv, targetBitWidth - 1, 0);
+                }
             }
             return new TypedFormula<>(expr.getType(), enc);
         }
@@ -568,11 +570,11 @@ public class ExpressionEncoder {
             if (!context.useIntegers) {
                 int ibw = ((IntegerType)expr.getOperand().getType()).getBitWidth();
                 int pbw = expr.getType().getBitWidth();
-            if (ibw<pbw){
-                return new TypedFormula<>(expr.getType(), fmgr.getBitvectorFormulaManager()
+                if (ibw<pbw){
+                    return new TypedFormula<>(expr.getType(), fmgr.getBitvectorFormulaManager()
                         .extend(((BitvectorFormula) address.formula()), pbw - ibw,false));
-            }}
-
+                }
+            }
             return new TypedFormula<>(expr.getType(), address.formula());
         }
 

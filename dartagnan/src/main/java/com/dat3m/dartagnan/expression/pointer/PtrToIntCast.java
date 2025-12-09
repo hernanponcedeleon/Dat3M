@@ -22,6 +22,9 @@ public final class PtrToIntCast extends CastExpressionBase<IntegerType, PointerT
     private static boolean isExtension(PointerType sourceType, IntegerType targetType) {
         return sourceType.getBitWidth() < targetType.getBitWidth();
     }
+    public boolean sameWidth() {
+        return getSourceType().getBitWidth() == getTargetType().getBitWidth();
+    }
 
     @Override
     public <T> T accept(ExpressionVisitor<T> visitor) {
