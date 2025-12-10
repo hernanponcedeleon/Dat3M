@@ -185,7 +185,7 @@ public class ThreadCreation implements ProgramProcessor {
         for (DynamicThreadJoin join : program.getThreadEvents(DynamicThreadJoin.class)) {
             final Thread caller = join.getThread();
             final Expression tidExpr_ = join.getTid();
-            // todo check if this makes sense as functions are now pointers
+            // todo check if this makes sense
             final Expression tidExpr = tidExpr_.getType() instanceof PointerType ? expressions.makePtrToIntCast(tidExpr_, archType) : tidExpr_;
 
             final Register joinRegister = join.getResultRegister();
@@ -465,7 +465,7 @@ public class ThreadCreation implements ProgramProcessor {
             final List<Event> initialization = new ArrayList<>();
             for (Integer initOffset : memoryObject.getInitializedFields()) {
                 initialization.add(EventFactory.newStore(
-                        exprs.makePtrAdd(reg, exprs.makeValue(initOffset, archType)),
+                        exprs.makePtrAdd(reg, exprs.makeValue(initOffset, archType)),// null pointer store here!!
                         memoryObject.getInitialValue(initOffset)
                 ));
             }
