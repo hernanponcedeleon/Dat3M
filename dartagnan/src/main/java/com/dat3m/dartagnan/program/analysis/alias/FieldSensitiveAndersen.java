@@ -7,6 +7,7 @@ import com.dat3m.dartagnan.expression.integers.IntLiteral;
 import com.dat3m.dartagnan.expression.integers.IntSizeCast;
 import com.dat3m.dartagnan.expression.integers.IntUnaryExpr;
 import com.dat3m.dartagnan.expression.misc.ITEExpr;
+import com.dat3m.dartagnan.expression.pointer.PtrAddExpr;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
@@ -375,6 +376,38 @@ public class FieldSensitiveAndersen implements AliasAnalysis {
             }
             return null;
         }
+
+//        @Override
+//        public Result visitPtrAddExpression(PtrAddExpr x) {
+//            Result l = x.getBase().accept(this);
+//            Result r = x.getOffset().accept(this);
+//            if (l == null || r == null ) {
+//                return null;
+//            }
+//            if (l.address == null && l.register == null && l.alignment == 0 && r.address == null &&
+//                    r.register == null && r.alignment == 0) {
+//                // TODO: Make sure that the type of normalization does not break this code.
+//                //  Maybe always do signed normalization?
+//                return new Result(null, null,
+//                        x.apply(l.offset, r.offset, x.getType().getBitWidth()), 0);
+//            }
+//            if (l.address != null && r.address != null) {
+//                return null;
+//            }
+//            MemoryObject base = l.address != null ? l.address : r.address;
+//            BigInteger offset = l.offset.add(r.offset);
+//            if (base != null) {
+//                return new Result(base,
+//                        null,
+//                        offset,
+//                        min(min(l.alignment, l.register), min(r.alignment, r.register)));
+//            }
+//            if (l.register != null) {
+//                return new Result(null, l.register, offset, min(l.alignment, min(r.alignment, r.register)));
+//            }
+//            return new Result(null, r.register, offset, min(l.alignment, r.alignment));
+//
+//        }
 
         @Override
         public Result visitIntUnaryExpression(IntUnaryExpr x) {
