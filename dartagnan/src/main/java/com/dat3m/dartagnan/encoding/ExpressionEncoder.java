@@ -137,6 +137,16 @@ public class ExpressionEncoder {
 
     public BooleanFormula equal(Expression left, Expression right, ConversionMode cMode) {
         final ExpressionFactory exprs = context.getExpressionFactory();
+
+        // todo: this is just for the wmm encoding. So find a better place for it. Or add ptr size cast.
+        //  But why is there an equal(ptr8, ptr64) in lockref1 and lockref2 tests?
+        //  Is tearing not working correctly??
+
+        if (left.getType() instanceof PointerType && right.getType() instanceof PointerType) {
+            left = exprs.makeCast(left, types.getArchType());
+            right = exprs.makeCast(right, types.getArchType());
+            return encodeBooleanFinal(exprs.makeEQ(left, right)).formula();
+        }
         switch (cMode) {
             case NO -> {}
             case LEFT_TO_RIGHT -> left = exprs.makeCast(left, right.getType());
