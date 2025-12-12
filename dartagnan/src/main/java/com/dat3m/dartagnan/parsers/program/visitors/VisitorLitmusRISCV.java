@@ -133,7 +133,7 @@ public class VisitorLitmusRISCV extends LitmusRISCVBaseVisitor<Object> {
 
 	@Override
 	public Object visitAdd(LitmusRISCVParser.AddContext ctx) {
-        // todo problem here is an int reg being retrieved as r1. Should it be possible??
+        // todo problem here is an int reg being retrieved as r1. Should this even be possible??
         Register r1 = programBuilder.getOrNewRegister(mainThread, ctx.register(0).getText(), pointerType);
         Register r2 = programBuilder.getOrErrorRegister(mainThread, ctx.register(1).getText());
         Register r3 = programBuilder.getOrErrorRegister(mainThread, ctx.register(2).getText());

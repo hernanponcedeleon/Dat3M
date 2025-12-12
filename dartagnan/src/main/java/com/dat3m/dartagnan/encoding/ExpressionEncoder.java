@@ -147,6 +147,9 @@ public class ExpressionEncoder {
             right = exprs.makeCast(right, types.getArchType());
             return encodeBooleanFinal(exprs.makeEQ(left, right)).formula();
         }
+
+        // --------------------------------------------------------------------------------------------
+
         switch (cMode) {
             case NO -> {}
             case LEFT_TO_RIGHT -> left = exprs.makeCast(left, right.getType());

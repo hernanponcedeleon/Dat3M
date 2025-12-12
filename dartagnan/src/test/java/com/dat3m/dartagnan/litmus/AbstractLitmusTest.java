@@ -87,7 +87,7 @@ public abstract class AbstractLitmusTest {
     protected Provider<Configuration> getConfigurationProvider() {
         return Provider.fromSupplier(() -> Configuration.builder()
                 .setOption(INITIALIZE_REGISTERS, "true")
-                .setOption(USE_INTEGERS, "false")
+                .setOption(USE_INTEGERS, "true")
                 .build());
     }
 

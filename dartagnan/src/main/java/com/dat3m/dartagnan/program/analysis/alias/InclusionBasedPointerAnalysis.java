@@ -26,10 +26,13 @@ import com.google.common.math.IntMath;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.io.File;
+import java.io.FileWriter;
 import java.math.BigInteger;
 import java.util.*;
 import java.util.stream.IntStream;
 
+import static com.dat3m.dartagnan.GlobalSettings.getOrCreateOutputDirectory;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Verify.verify;
 

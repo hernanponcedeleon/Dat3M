@@ -43,7 +43,7 @@ public abstract class AbstractCTest {
 
     protected Configuration getConfiguration() throws InvalidConfigurationException {
         return Configuration.builder()
-                .setOption(OptionNames.USE_INTEGERS, "false")
+                .setOption(OptionNames.USE_INTEGERS, "true")
                 .build();
     }
 

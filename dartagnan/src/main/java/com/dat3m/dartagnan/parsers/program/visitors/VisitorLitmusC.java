@@ -600,7 +600,7 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
         Expression value = (Expression)ctx.re().accept(this);
         if(variable instanceof MemoryObject || variable instanceof Register){
             if (!(variable.getType() instanceof PointerType)){
-                System.out.println("non ptr reg in nre??");
+                System.out.println("store to a non ptr (after cast) reg in nre??");
             }
             Event event = EventFactory.newStoreWithMo(expressions.makeCast(variable, pointerType), value, C11.NONATOMIC);
             if (isOpenCL) {
