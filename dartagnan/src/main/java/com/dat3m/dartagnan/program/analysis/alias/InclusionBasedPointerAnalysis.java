@@ -26,13 +26,10 @@ import com.google.common.math.IntMath;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.io.File;
-import java.io.FileWriter;
 import java.math.BigInteger;
 import java.util.*;
 import java.util.stream.IntStream;
 
-import static com.dat3m.dartagnan.GlobalSettings.getOrCreateOutputDirectory;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Verify.verify;
 
@@ -1017,12 +1014,12 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
             BigInteger offset = BigInteger.ZERO;
             final List<ExprFlip> operands = new ArrayList<>();
             final Stack<ExprFlip> stack = new Stack<>();
-            if (!matchPointerLinearExpression(new ExprFlip(expr, 1), stack)) {
+            if (!matchPtrAddExpression(new ExprFlip(expr, 1), stack)) {
                 return visitExpression(expr);
             }
             while (!stack.isEmpty()) {
                 final ExprFlip operand = stack.pop();
-                if (matchPointerLinearExpression(operand, stack)) {
+                if (matchPtrAddExpression(operand, stack)) {
                     continue;
                 }
                 if (operand.expr instanceof IntLiteral literal) {
@@ -1050,7 +1047,7 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
             return result;
         }
 
-        private boolean matchPointerLinearExpression(ExprFlip operand, Stack<ExprFlip> stack) {
+        private boolean matchPtrAddExpression(ExprFlip operand, Stack<ExprFlip> stack) {
             if (!(operand.expr instanceof PtrAddExpr xp)) return false;
             else {
                 final Expression left = xp.getBase();

@@ -6,8 +6,10 @@ import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.Type;
 import com.dat3m.dartagnan.expression.integers.IntBinaryOp;
 import com.dat3m.dartagnan.expression.integers.IntLiteral;
+import com.dat3m.dartagnan.expression.pointer.NullLiteral;
 import com.dat3m.dartagnan.expression.type.FunctionType;
 import com.dat3m.dartagnan.expression.type.IntegerType;
+import com.dat3m.dartagnan.expression.type.PointerType;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.IRHelper;
@@ -453,7 +455,9 @@ public class Intrinsics {
         assert arguments.size() == 2;
         final Expression tidExpr = arguments.get(0);
         final Expression returnAddr = arguments.get(1);
-        final boolean hasReturnAddr = !(returnAddr instanceof IntLiteral lit && lit.isZero());
+        // final boolean hasReturnAddr = !(returnAddr instanceof IntLiteral lit && lit.isZero());
+        assert returnAddr.getType() instanceof PointerType;
+        final boolean hasReturnAddr = !(returnAddr instanceof NullLiteral); // is this enough?
 
         final Register statusRegister = getResultRegister(call);
         final IntegerType statusType = (IntegerType) statusRegister.getType();
@@ -1594,7 +1598,7 @@ public class Intrinsics {
     private List<Event> inlineMemCpy(FunctionCall call) {
         final Function caller = call.getFunction();
         final Expression dest = call.getArguments().get(0);
-        final Expression src = call.getArguments().get(1);
+        final Expression src = call.getArguments().get(1); //  null ptr !!
         final Expression countExpr = call.getArguments().get(2);
         // final Expression isVolatile = call.getArguments.get(3) // LLVM's memcpy has an extra argument
 
@@ -1605,7 +1609,7 @@ public class Intrinsics {
         final int count = countValue.getValueAsInt();
 
         final List<Event> replacement = new ArrayList<>(2 * count + 1);
-        //FIXME without MSA detection, each byte is treated as a 64-bit value.
+        // FIXME without MSA detection, each byte is treated as a 64-bit value.
         final IntegerType type = detectMixedSizeAccesses ? types.getIntegerType(8 * count) : archType;
         final int typeSize = detectMixedSizeAccesses ? count : 1;
         for (int i = 0; i < count; i += typeSize) {

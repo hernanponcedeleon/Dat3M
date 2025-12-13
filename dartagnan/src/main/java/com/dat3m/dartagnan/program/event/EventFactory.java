@@ -119,7 +119,7 @@ public class EventFactory {
 
     public static Alloc newAlignedAlloc(Register register, Type allocType, Expression arraySize, Expression alignment,
                                  boolean isHeapAlloc, boolean doesZeroOutMemory) {
-        arraySize = expressions.makeCast(arraySize, types.getArchType(), false);
+        arraySize = expressions.makeCast(arraySize, types.getArchType(), false); // why cast?
         alignment = expressions.makeCast(alignment, types.getArchType(), false);
         return new Alloc(register, allocType, arraySize, alignment, isHeapAlloc, doesZeroOutMemory);
     }
