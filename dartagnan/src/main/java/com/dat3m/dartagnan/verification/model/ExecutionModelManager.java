@@ -8,7 +8,6 @@ import com.dat3m.dartagnan.program.event.MemoryEvent;
 import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.filter.Filter;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
-import com.dat3m.dartagnan.smt.ModelExt;
 import com.dat3m.dartagnan.solver.caat.predicates.CAATPredicate;
 import com.dat3m.dartagnan.solver.caat.predicates.Derivable;
 import com.dat3m.dartagnan.solver.caat.predicates.PredicateHierarchy;
@@ -63,12 +62,12 @@ public class ExecutionModelManager {
         edgeModelCache = new HashMap<>();
     }
 
-    public ExecutionModelNext buildExecutionModel(EncodingContext context, ModelExt model) {
+    public ExecutionModelNext buildExecutionModel(IREvaluator evaluator) {
         executionModel = new ExecutionModelNext();
 
-        this.context = context;
-        this.model = new IREvaluator(context, model);
-        this.wmm = context.getTask().getMemoryModel();
+        this.context = evaluator.getEncodingContext();
+        this.model = evaluator;
+        this.wmm = evaluator.getEncodingContext().getTask().getMemoryModel();
         this.domain = new EventDomainNext(executionModel);
 
         extractEvents();

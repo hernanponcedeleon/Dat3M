@@ -2,7 +2,7 @@ package com.dat3m.dartagnan.solver.caat4wmm;
 
 
 import com.dat3m.dartagnan.encoding.EncodingContext;
-import com.dat3m.dartagnan.smt.ModelExt;
+import com.dat3m.dartagnan.encoding.IREvaluator;
 import com.dat3m.dartagnan.solver.caat.CAATSolver;
 import com.dat3m.dartagnan.solver.caat4wmm.coreReasoning.CoreLiteral;
 import com.dat3m.dartagnan.solver.caat4wmm.coreReasoning.CoreReasoner;
@@ -47,7 +47,7 @@ public class WMMSolver {
         return executionGraph;
     }
 
-    public Result check(ModelExt model) {
+    public Result check(IREvaluator model) {
         // ============ Extract ExecutionModel ==============
         long curTime = System.currentTimeMillis();
         executionModel.initialize(model);

@@ -21,7 +21,7 @@ public class DynamicDefaultWMMSet extends MaterializedWMMSet {
         // Careful: The wrapped model <getModel> might get closed/disposed while ExecutionModel as a whole is
         // still in use. The caller should make sure that the underlying model is still alive right now.
         final EncodingContext ctx = model.getContext();
-        final IREvaluator m = new IREvaluator(ctx, model.getModel());
+        final IREvaluator m = model.getEvaluator();
         final EncodingContext.EdgeEncoder edge = ctx.edge(relation);
         final RelationAnalysis.Knowledge k = ctx.getAnalysisContext().get(RelationAnalysis.class).getKnowledge(relation);
 

@@ -18,9 +18,12 @@ import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.dat3m.dartagnan.smt.ModelExt;
 import com.dat3m.dartagnan.smt.TupleValue;
 import com.dat3m.dartagnan.wmm.Relation;
+import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
 import com.dat3m.dartagnan.wmm.axiom.Axiom;
+import com.dat3m.dartagnan.wmm.utils.graph.EventGraph;
 import com.google.common.base.Preconditions;
 import org.sosy_lab.java_smt.api.Formula;
+import org.sosy_lab.java_smt.api.Model;
 
 import java.math.BigInteger;
 import java.util.List;
@@ -30,17 +33,19 @@ import static com.dat3m.dartagnan.configuration.Property.CAT_SPEC;
 import static java.lang.Boolean.FALSE;
 import static java.lang.Boolean.TRUE;
 
-public class IREvaluator {
+public class IREvaluator implements AutoCloseable {
 
     private final EncodingContext ctx;
     private final ExpressionEncoder exprEnc;
     private final ModelExt smtModel;
 
-    public IREvaluator(EncodingContext ctx, ModelExt smtModel) {
+    IREvaluator(EncodingContext ctx, Model smtModel) {
         this.ctx = ctx;
         this.exprEnc = ctx.getExpressionEncoder();
-        this.smtModel = smtModel;
+        this.smtModel = new ModelExt(smtModel);
     }
+
+    public EncodingContext getEncodingContext() { return ctx; }
 
     public ModelExt getSMTModel() { return smtModel; }
 
@@ -138,6 +143,12 @@ public class IREvaluator {
         return smtModel.evaluate(ctx.clockVariable(name, e));
     }
 
+    public EventGraph eventGraph(Relation relation) {
+        final EventGraph may = ctx.getAnalysisContext().get(RelationAnalysis.class).getKnowledge(relation).getMaySet();
+        final EncodingContext.EdgeEncoder encoder = ctx.edge(relation);
+        return may.filter((x, y) -> hasEdge(encoder, x, y));
+    }
+
     // ====================================================================================
     // Properties
 
@@ -158,6 +169,13 @@ public class IREvaluator {
         return isExecuted(event) && FALSE.equals(evaluateBooleanAt(event.getExpression(), event).value());
     }
 
+    // ====================================================================================
+    // Overrides
+
+    @Override
+    public void close() {
+        smtModel.close();
+    }
 
     // ====================================================================================
     // Internal
