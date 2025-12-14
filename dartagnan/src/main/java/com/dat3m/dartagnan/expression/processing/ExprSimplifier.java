@@ -352,9 +352,9 @@ public class ExprSimplifier extends ExprTransformer {
             if(lit.isZero()){return base;}
         }
         // can lower the alias analysis precision.
-//        if (base instanceof NullLiteral) {
-//            return expressions.makeIntToPtrCast(offset);
-//        }
+        if (base instanceof NullLiteral) {
+            return expressions.makeIntToPtrCast(offset);
+        }
         return expressions.makePtrAdd(base, offset);
     }
 

@@ -79,7 +79,7 @@ public interface AliasAnalysis {
         @Option(name = ALIAS_GRAPHVIZ,
                 description = "If 'true', stores the results of the alias analysis as a PNG image." +
                         " Defaults to 'false'.")
-        private boolean graphviz = true;
+        private boolean graphviz;
 
         @Option(name = ALIAS_GRAPHVIZ_SPLIT_BY_THREAD,
                 description = "Controls which event sets are represented by nodes in the graph output." +
@@ -99,7 +99,7 @@ public interface AliasAnalysis {
                 description = "If 'true' and supported, the graph shows an internal representation." +
                         " Requires '" + ALIAS_GRAPHVIZ + "=true'." +
                         " Defaults to 'false'.", secure = true)
-        boolean graphvizInternal = true;
+        boolean graphvizInternal;
 
         final boolean detectMixedSizeAccesses;
 
