@@ -351,15 +351,14 @@ public class ExprSimplifier extends ExprTransformer {
         if (offset instanceof IntLiteral lit) {
             if(lit.isZero()){return base;}
         }
-        // can lower the alias analysis precision.
-        if (base instanceof NullLiteral) {
-            return expressions.makeIntToPtrCast(offset);
-        }
+        // can cause a tearing problem
+//        if (base instanceof NullLiteral) {
+//            return expressions.makeIntToPtrCast(offset);
+//        }
         return expressions.makePtrAdd(base, offset);
     }
 
     // TODO: Add simplifications for IntExtract and IntConcat expressions.
-    //
 
     // Simplifies (int(i) -> ptr(i)) -> int(i).
     @Override

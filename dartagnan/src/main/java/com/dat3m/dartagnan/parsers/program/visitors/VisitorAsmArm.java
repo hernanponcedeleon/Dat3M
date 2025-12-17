@@ -401,7 +401,8 @@ public class VisitorAsmArm extends AsmArmBaseVisitor<Object> {
             String valueString = ctx.Numbers().getText();
             BigInteger value = new BigInteger(valueString);
             return expressions.makeValue(value, (IntegerType) expectedType);
-        }else if (expectedType instanceof PointerType){
+        }
+        else if (expectedType instanceof PointerType){
             String valueString = ctx.Numbers().getText();
             BigInteger value = new BigInteger(valueString);
             return expressions.makeIntToPtrCast(expressions.makeValue(value));

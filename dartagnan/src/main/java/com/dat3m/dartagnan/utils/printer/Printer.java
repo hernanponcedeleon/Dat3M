@@ -41,7 +41,7 @@ public class Printer {
     @Option(name = OptionNames.PRINTER_SHOW_INIT_THREADS,
             description = "Print init threads (default: false)",
             secure = true)
-    private boolean showInitThreads = true;
+    private boolean showInitThreads = false;
 
     @Option(name = OptionNames.PRINTER_SHOW_ANNOTATIONS,
             description = "Print annotation events (default: true)",
