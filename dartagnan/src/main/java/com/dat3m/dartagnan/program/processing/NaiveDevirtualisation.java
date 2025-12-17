@@ -177,6 +177,7 @@ public class NaiveDevirtualisation implements ProgramProcessor {
         Preconditions.checkArgument(needsDevirtualization(call));
         return func2AddressMap.keySet().stream()
                 .filter(f -> f.getFunctionType() == call.getCallType())
+                .sorted(Comparator.comparingInt(Function::getId))
                 .collect(Collectors.toCollection(ArrayList::new));
     }
 

@@ -1421,7 +1421,9 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
 
     private interface MdNode extends Expression {
 
-        Type TYPE = new Type() { };
+        Type TYPE = new Type() {
+            @Override public int hashCode() { return -1; }
+        };
         ExpressionKind MdKind = new ExpressionKind() {
             @Override
             public String getSymbol() { return "Md"; }

@@ -10,4 +10,9 @@ public final class BooleanType implements Type {
     public String toString() {
         return "bool";
     }
+
+    @Override
+    public int hashCode() {
+        return 2;
+    }
 }
