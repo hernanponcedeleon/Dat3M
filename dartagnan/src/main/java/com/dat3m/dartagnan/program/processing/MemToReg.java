@@ -6,6 +6,7 @@ import com.dat3m.dartagnan.expression.Type;
 import com.dat3m.dartagnan.expression.integers.IntBinaryExpr;
 import com.dat3m.dartagnan.expression.integers.IntBinaryOp;
 import com.dat3m.dartagnan.expression.integers.IntLiteral;
+import com.dat3m.dartagnan.expression.pointer.PtrAddExpr;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.IRHelper;
@@ -428,9 +429,10 @@ public class MemToReg implements FunctionProcessor {
         private static RegisterOffset matchGEP(Expression expression) {
             long sum = 0;
             while (!(expression instanceof Register register)) {
-                if (!(expression instanceof IntBinaryExpr bin) ||
+                if (    (!(expression instanceof IntBinaryExpr bin) ||
                         bin.getKind() != IntBinaryOp.ADD ||
-                        !(bin.getRight() instanceof IntLiteral offset)) {
+                        !(bin.getRight() instanceof IntLiteral offset)) ||
+                        !(expression.getKind() instanceof PtrAddExpr)) {
                     return null;
                 }
                 sum += offset.getValueAsLong();

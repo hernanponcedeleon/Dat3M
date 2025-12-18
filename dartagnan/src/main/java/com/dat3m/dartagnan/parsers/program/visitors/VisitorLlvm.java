@@ -590,7 +590,7 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
             case "eq" -> expressions.makeEQ(left, right);
             case "ne" -> expressions.makeNEQ(left, right);
             // todo should pointers belong to the same object to be comparable?
-            // The two arguments must be integer or pointer or integer vector typed. They must also be identical types.
+            // The two arguments must be integer, pointer ,or integer vector typed. They must also be of identical types.
             // llvm doc: If the operands are pointer typed, the pointer values are compared as if they were integers.
             case "slt", "ult" -> expressions.makeLTforced(left, right, operator.startsWith("s"));
             case "sle", "ule" -> expressions.makeLTEforced(left, right, operator.startsWith("s"));
