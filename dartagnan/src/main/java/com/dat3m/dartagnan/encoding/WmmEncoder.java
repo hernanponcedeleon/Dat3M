@@ -639,6 +639,7 @@ public class WmmEncoder implements Encoder {
                 final BooleanFormula sameValue = w instanceof Dealloc ? bmgr.makeTrue()
                         : context.sameValue(w, r, LEFT_TO_RIGHT);
                 enc.add(bmgr.implication(rfEdge, bmgr.and(execution(w, r), sameAddress, sameValue)));
+                read2RfEdges.computeIfAbsent(r, key -> new ArrayList<>()).add(rfEdge);
             });
 
             // Encode the existence of rf-edges (+ semantics of uninit reads)
