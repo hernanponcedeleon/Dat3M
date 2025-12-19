@@ -16,12 +16,13 @@ public final class PtrToIntCast extends CastExpressionBase<IntegerType, PointerT
     }
 
     public boolean isExtension() {
-        return isExtension(getSourceType(), getTargetType());
+        return getSourceType().getBitWidth() < getTargetType().getBitWidth();
     }
 
-    private static boolean isExtension(PointerType sourceType, IntegerType targetType) {
-        return sourceType.getBitWidth() < targetType.getBitWidth();
+    public boolean isShrinking() {
+        return getSourceType().getBitWidth() > getTargetType().getBitWidth();
     }
+
     public boolean sameWidth() {
         return getSourceType().getBitWidth() == getTargetType().getBitWidth();
     }

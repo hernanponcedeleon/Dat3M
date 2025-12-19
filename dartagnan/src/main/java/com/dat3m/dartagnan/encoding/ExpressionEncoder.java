@@ -554,7 +554,7 @@ public class ExpressionEncoder {
             final TypedFormula<PointerType, ?> inner = encodePointerExpr(expr.getOperand());
             final Formula enc;
             if (context.useIntegers) {
-                if (!expr.isExtension()) {
+                if (expr.isShrinking()) {
                     final BigInteger highValue = BigInteger.TWO.pow(expr.getType().getBitWidth());
                     final IntegerFormulaManager imgr = integerFormulaManager();
                     enc = imgr.modulo((IntegerFormula) inner.formula(), imgr.makeNumber(highValue));
