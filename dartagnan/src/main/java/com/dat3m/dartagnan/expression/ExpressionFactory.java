@@ -394,14 +394,16 @@ public final class ExpressionFactory {
     }
 
     public Expression makePtrCast(Expression base, PointerType type){
-        if (base.getType() instanceof PointerType ) {
-            return base;
-            // pointers of different size than arch should not be cast? Possible in wmm.
-        }
+        if (base.getType() instanceof PointerType){
+            if (base.getType().equals(type)) {
+                return base;
+            // pointers of different size than arch should not be used (store | load). Comparison is still possible in wmm.
+            }else{
+                // we use this because spirv has some weird casts between scoped pointers.
+                // not the most elegant solution, maybe a dedicated ptr size/type  cast?
+                return makeIntToPtrCast(makePtrToIntCast(base, TypeFactory.getInstance().getIntegerType(type.bitWidth)), type);
+        }}
         if (base.getType() instanceof IntegerType) {
-            //int bw = ((IntegerType) base.getType()).getBitWidth();
-            // this causes problems in tearing if the pointer is not of the int size
-            // return makeIntToPtrCast(makeCast(base, types.getIntegerType(bw)),tearing ? types.getPointerType(bw):types.getPointerType());
             return makeIntToPtrCast(base, type);
         }
         throw new UnsupportedOperationException(String.format("Cast %s into pointer unsupported.",base));
@@ -413,7 +415,6 @@ public final class ExpressionFactory {
         return new PtrToIntCast(type, pointer);
     }
 
-    // it does not make sense to cast to a pointer not of the arch size.
 
     private Expression makeIntToPtrCast(Expression integer, PointerType pointerType) {
         return new IntToPtrCast(pointerType, integer);
