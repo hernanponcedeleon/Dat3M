@@ -4,6 +4,10 @@ import com.dat3m.dartagnan.expression.aggregates.*;
 import com.dat3m.dartagnan.expression.booleans.*;
 import com.dat3m.dartagnan.expression.floats.*;
 import com.dat3m.dartagnan.expression.integers.*;
+import com.dat3m.dartagnan.expression.memory.FromMemoryCast;
+import com.dat3m.dartagnan.expression.memory.MemoryConcat;
+import com.dat3m.dartagnan.expression.memory.MemoryExtract;
+import com.dat3m.dartagnan.expression.memory.ToMemoryCast;
 import com.dat3m.dartagnan.expression.misc.GEPExpr;
 import com.dat3m.dartagnan.expression.misc.ITEExpr;
 import com.dat3m.dartagnan.expression.type.*;
@@ -335,6 +339,25 @@ public final class ExpressionFactory {
 
     public ScopedPointerVariable makeScopedPointerVariable(String id, ScopedPointerType type, MemoryObject memObj) {
         return new ScopedPointerVariable(id, type, memObj);
+    }
+
+    // -----------------------------------------------------------------------------------------------------------------
+    // Memory
+
+    public Expression makeToMemoryCast(Expression operand) {
+        return new ToMemoryCast(types.getMemoryTypeFor(operand.getType()), operand);
+    }
+
+    public Expression makeFromMemoryCast(Expression operand, Type type) {
+        return new FromMemoryCast(type, operand);
+    }
+
+    public Expression makeMemoryConcat(List<? extends Expression> operands) {
+        return new MemoryConcat(operands);
+    }
+
+    public Expression makeMemoryExtract(Expression operand, int lowBit, int highBit) {
+        return new MemoryExtract(operand, lowBit, highBit);
     }
 
     // -----------------------------------------------------------------------------------------------------------------

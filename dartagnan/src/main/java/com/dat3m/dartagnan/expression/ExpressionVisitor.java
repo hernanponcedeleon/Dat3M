@@ -9,6 +9,10 @@ import com.dat3m.dartagnan.expression.booleans.BoolLiteral;
 import com.dat3m.dartagnan.expression.booleans.BoolUnaryExpr;
 import com.dat3m.dartagnan.expression.floats.*;
 import com.dat3m.dartagnan.expression.integers.*;
+import com.dat3m.dartagnan.expression.memory.FromMemoryCast;
+import com.dat3m.dartagnan.expression.memory.MemoryConcat;
+import com.dat3m.dartagnan.expression.memory.MemoryExtract;
+import com.dat3m.dartagnan.expression.memory.ToMemoryCast;
 import com.dat3m.dartagnan.expression.misc.GEPExpr;
 import com.dat3m.dartagnan.expression.misc.ITEExpr;
 import com.dat3m.dartagnan.program.Function;
@@ -67,6 +71,12 @@ public interface ExpressionVisitor<TRet> {
     default TRet visitMemoryObject(MemoryObject memObj) { return visitLeafExpression(memObj); }
     default TRet visitFinalMemoryValue(FinalMemoryValue val) { return visitLeafExpression(val); }
     default TRet visitNonDetValue(NonDetValue nonDet) { return visitLeafExpression(nonDet); }
+
+    // =================================== Memory ===================================
+    default TRet visitToMemoryCastExpression(ToMemoryCast expr) { return visitCastExpression(expr); }
+    default TRet visitFromMemoryCastExpression(FromMemoryCast expr) { return visitCastExpression(expr); }
+    default TRet visitMemoryConcatExpression(MemoryConcat expr) { return visitExpression(expr); }
+    default TRet visitMemoryExtractExpression(MemoryExtract expr) { return visitUnaryExpression(expr); }
 
 
     private static UnsupportedOperationException unsupported(Expression expr, Class<?> clazz) {
