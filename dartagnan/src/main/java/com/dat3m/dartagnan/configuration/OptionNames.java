@@ -61,6 +61,7 @@ public class OptionNames {
     public static final String ALIAS_GRAPHVIZ_SPLIT_BY_THREAD = "program.analysis.generateAliasGraph.splitByThread";
     public static final String ALIAS_GRAPHVIZ_SHOW_ALL = "program.analysis.generateAliasGraph.showAllEvents";
     public static final String ALIAS_GRAPHVIZ_INTERNAL = "program.analysis.generateAliasGraph.internal";
+    public static final String INTERVAL_ANALYSIS_METHOD = "program.analysis.interval";
 
     // Memory Model Options
     public static final String WMM_ATOMICITY = "wmm.analysis.assumeAtomicity";
