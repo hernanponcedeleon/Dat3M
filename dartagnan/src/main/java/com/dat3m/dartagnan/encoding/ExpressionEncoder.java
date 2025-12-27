@@ -335,12 +335,22 @@ public class ExpressionEncoder {
             if (expr.isNoop()) {
                 return inner;
             } else if (context.useIntegers) {
+                final IntegerFormulaManager imgr = integerFormulaManager();
+                final IntegerFormula innerInt = (IntegerFormula) inner.formula();
                 if (expr.isExtension()) {
-                    enc = inner.formula();
+                    if (expr.preservesSign()) {
+                        enc = innerInt;
+                    } else {
+                        // Proper zero extension will always yield a positive value
+                        enc = bmgr.ifThenElse(
+                                imgr.lessThan(innerInt, imgr.makeNumber(0)),
+                                imgr.negate(innerInt),
+                                innerInt
+                        );
+                    }
                 } else {
                     final BigInteger highValue = BigInteger.TWO.pow(expr.getType().getBitWidth());
-                    final IntegerFormulaManager imgr = integerFormulaManager();
-                    enc = imgr.modulo((IntegerFormula) inner.formula(), imgr.makeNumber(highValue));
+                    enc = imgr.modulo(innerInt, imgr.makeNumber(highValue));
                 }
             } else {
                 assert inner.formula() instanceof BitvectorFormula;
