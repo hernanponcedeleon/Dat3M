@@ -8,10 +8,7 @@ import com.dat3m.dartagnan.expression.booleans.BoolUnaryOp;
 import com.dat3m.dartagnan.expression.floats.FloatSizeCast;
 import com.dat3m.dartagnan.expression.floats.IntToFloatCast;
 import com.dat3m.dartagnan.expression.integers.*;
-import com.dat3m.dartagnan.expression.memory.FromMemoryCast;
-import com.dat3m.dartagnan.expression.memory.MemoryConcat;
-import com.dat3m.dartagnan.expression.memory.MemoryExtract;
-import com.dat3m.dartagnan.expression.memory.ToMemoryCast;
+import com.dat3m.dartagnan.expression.memory.*;
 import com.dat3m.dartagnan.expression.misc.GEPExpr;
 import com.dat3m.dartagnan.expression.misc.ITEExpr;
 import com.dat3m.dartagnan.program.Register;
@@ -130,27 +127,32 @@ public final class ExpressionPrinter implements ExpressionVisitor<String> {
 
     @Override
     public String visitToMemoryCastExpression(ToMemoryCast expr) {
-        return String.format("toMem(%s)", visit(expr.getOperand()));
+        return String.format("%s to %s", visit(expr.getOperand()), expr.getTargetType());
     }
 
     @Override
     public String visitFromMemoryCastExpression(FromMemoryCast expr) {
-        return String.format("fromMem(%s) to %s", visit(expr.getOperand()), expr.getTargetType());
+        return String.format("%s to %s", visit(expr.getOperand()), expr.getTargetType());
     }
 
     @Override
     public String visitMemoryConcatExpression(MemoryConcat expr) {
-        return ExpressionVisitor.super.visitMemoryConcatExpression(expr);
+        return Lists.reverse(expr.getOperands()).stream().map(this::visit).collect(Collectors.joining("::"));
     }
 
     @Override
     public String visitMemoryExtractExpression(MemoryExtract expr) {
-        return ExpressionVisitor.super.visitMemoryExtractExpression(expr);
+        return String.format("%s[%d..%d]", expr.getOperand().accept(this), expr.getLowBit(), expr.getHighBit());
     }
 
     @Override
     public String visitITEExpression(ITEExpr expr) {
         return visit(expr.getCondition()) + " ? " + visit(expr.getTrueCase()) + " : " + visit(expr.getFalseCase());
+    }
+
+    @Override
+    public String visitMemoryEqualExpression(MemoryEqualExpr expr) {
+        return String.format("%s == %s", expr.getLeft().accept(this), expr.getRight().accept(this));
     }
 
     @Override

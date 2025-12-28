@@ -160,6 +160,14 @@ public final class TypeFactory {
         return getIntegerType(8);
     }
 
+    public Type getCompatibleTypeOfMemorySize(Type type, int memSizeInBits) {
+        if (type instanceof IntegerType) {
+            return getIntegerType(memSizeInBits);
+        }
+
+        throw new UnsupportedOperationException(String.format("Type %s has no compatible type of size %s", type, memSizeInBits));
+    }
+
     public int getMemorySizeInBytes(Type type) {
         return getMemorySizeInBytes(type, true);
     }

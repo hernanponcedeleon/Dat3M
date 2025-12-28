@@ -11,10 +11,10 @@ import com.google.common.collect.ImmutableList;
 
 import java.util.List;
 
-public class MemoryConcat extends NaryExpressionBase<MemoryType, ExpressionKind.Other> {
+public class MemoryConcat extends NaryExpressionBase<MemoryType, ExpressionKind> {
 
     public MemoryConcat(List<? extends Expression> operands) {
-        super(getConcatType(operands), ExpressionKind.Other.BV_CONCAT, ImmutableList.copyOf(operands));
+        super(getConcatType(operands), () -> "MEM_CONCAT", ImmutableList.copyOf(operands));
     }
 
     private static MemoryType getConcatType(List<? extends Expression> operands) {

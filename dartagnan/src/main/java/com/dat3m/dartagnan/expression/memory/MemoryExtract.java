@@ -9,14 +9,14 @@ import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.expression.utils.ExpressionHelper;
 import com.google.common.base.Preconditions;
 
-public class MemoryExtract extends UnaryExpressionBase<MemoryType, ExpressionKind.Other> {
+public class MemoryExtract extends UnaryExpressionBase<MemoryType, ExpressionKind> {
 
     private final int lowBit;
     private final int highBit;
 
     public MemoryExtract(Expression operand, int lowBit, int highBit) {
         super(TypeFactory.getInstance().getMemoryType(highBit - lowBit + 1),
-                ExpressionKind.Other.BV_EXTRACT,
+                () -> "MEM_EXTRACT",
                 operand);
         ExpressionHelper.checkExpectedType(operand, MemoryType.class);
         int originalWidth = ((MemoryType) operand.getType()).getBitWidth();

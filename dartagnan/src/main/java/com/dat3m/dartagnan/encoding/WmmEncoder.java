@@ -40,7 +40,6 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import static com.dat3m.dartagnan.configuration.OptionNames.*;
-import static com.dat3m.dartagnan.encoding.ExpressionEncoder.ConversionMode.LEFT_TO_RIGHT;
 import static com.dat3m.dartagnan.program.event.Tag.*;
 import static com.google.common.base.Verify.verify;
 
@@ -636,7 +635,7 @@ public class WmmEncoder implements Encoder {
 
                 final BooleanFormula rfEdge = edge.encode(w, r);
                 final BooleanFormula sameAddress = context.sameAddress(w, r);
-                final BooleanFormula sameValue = context.sameValue(w, r, LEFT_TO_RIGHT);
+                final BooleanFormula sameValue = context.assignValue(r, w);
                 enc.add(bmgr.implication(rfEdge, bmgr.and(execution(w, r), sameAddress, sameValue)));
 
                 read2RfEdges.computeIfAbsent(r, key -> new ArrayList<>()).add(rfEdge);
@@ -647,7 +646,7 @@ public class WmmEncoder implements Encoder {
                 final BooleanFormula uninit = getUninitReadVar(r);
                 if (memoryIsZeroed) {
                     final Expression zero = context.getExpressionFactory().makeGeneralZero(r.getAccessType());
-                    enc.add(bmgr.implication(uninit, exprEncoder.equal(context.value(r), zero)));
+                    enc.add(bmgr.implication(uninit, exprEncoder.assignEqual(context.value(r), zero)));
                 }
 
                 final List<BooleanFormula> rfChoices = Lists.newArrayList(Iterables.concat(

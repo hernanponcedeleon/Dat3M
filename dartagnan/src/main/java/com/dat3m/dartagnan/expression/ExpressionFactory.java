@@ -4,10 +4,7 @@ import com.dat3m.dartagnan.expression.aggregates.*;
 import com.dat3m.dartagnan.expression.booleans.*;
 import com.dat3m.dartagnan.expression.floats.*;
 import com.dat3m.dartagnan.expression.integers.*;
-import com.dat3m.dartagnan.expression.memory.FromMemoryCast;
-import com.dat3m.dartagnan.expression.memory.MemoryConcat;
-import com.dat3m.dartagnan.expression.memory.MemoryExtract;
-import com.dat3m.dartagnan.expression.memory.ToMemoryCast;
+import com.dat3m.dartagnan.expression.memory.*;
 import com.dat3m.dartagnan.expression.misc.GEPExpr;
 import com.dat3m.dartagnan.expression.misc.ITEExpr;
 import com.dat3m.dartagnan.expression.type.*;
@@ -345,10 +342,16 @@ public final class ExpressionFactory {
     // Memory
 
     public Expression makeToMemoryCast(Expression operand) {
+        if (operand.getType() instanceof MemoryType) {
+            return operand;
+        }
         return new ToMemoryCast(types.getMemoryTypeFor(operand.getType()), operand);
     }
 
     public Expression makeFromMemoryCast(Expression operand, Type type) {
+        if (operand.getType().equals(type)) {
+            return operand;
+        }
         return new FromMemoryCast(type, operand);
     }
 
@@ -361,7 +364,39 @@ public final class ExpressionFactory {
     }
 
     // -----------------------------------------------------------------------------------------------------------------
-    // Misc
+
+    // Cast via a round-trip through memory: "fromMem(toMem(<expr>)) to <targetType>".
+    // If <strict> is false, the memory sizes of the source type and the target type may mismatch:
+    // "source type < target type": after the memory cast, a zero-extension is performed (if possible)
+    // "source type > target type": only the lowest bits of <expr> are used for the conversion.
+    public Expression makeCastOverMemory(Expression expr, Type targetType, boolean strict, boolean signed) {
+        final Type sourceType = expr.getType();
+        if (sourceType.equals(targetType)) {
+            return expr;
+        }
+
+        final int targetSize = types.getMemorySizeInBits(targetType);
+        final int sourceSize = types.getMemorySizeInBits(sourceType);
+
+        if (strict && (targetSize != sourceSize)) {
+            final String error = String.format("Strict memory cast from %s to %s not possible: " +
+                    "mismatching memory sizes.", sourceType, targetType);
+            throw new IllegalArgumentException(error);
+        }
+
+        Expression exprMem = makeToMemoryCast(expr);
+        if (targetSize < sourceSize) {
+            exprMem = makeMemoryExtract(exprMem, 0, targetSize - 1);
+            exprMem = makeFromMemoryCast(exprMem, targetType);
+        } else if (targetSize == sourceSize) {
+            exprMem = makeFromMemoryCast(exprMem, targetType);
+        } else {
+            assert (targetSize > sourceSize);
+            exprMem = makeFromMemoryCast(exprMem, types.getCompatibleTypeOfMemorySize(targetType, sourceSize));
+            exprMem = makeCast(exprMem, targetType, signed);
+        }
+        return exprMem;
+    }
 
     public Expression makeGeneralZero(Type type) {
         if (type instanceof ArrayType arrayType) {
@@ -383,6 +418,8 @@ public final class ExpressionFactory {
             return makeFalse();
         } else if (type instanceof FloatType floatType) {
             return makeZero(floatType);
+        } else if (type instanceof MemoryType memoryType) {
+            return makeToMemoryCast(makeZero(TypeFactory.getInstance().getIntegerType(memoryType.getBitWidth())));
         } else {
             throw new UnsupportedOperationException("Cannot create zero of type " + type);
         }
@@ -420,6 +457,8 @@ public final class ExpressionFactory {
         } else if (type instanceof FloatType) {
             // TODO: Decide on a default semantics for float equality?
             return makeFloatCmp(leftOperand, FloatCmpOp.OEQ, rightOperand);
+        } else if (type instanceof MemoryType) {
+            return new MemoryEqualExpr(booleanType, leftOperand, rightOperand);
         } else if (ExpressionHelper.isAggregateLike(type)) {
             return makeAggregateCmp(leftOperand, AggregateCmpOp.EQ, rightOperand);
         }
