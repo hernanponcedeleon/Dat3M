@@ -387,7 +387,8 @@ public final class ExpressionFactory {
         Expression exprMem = makeToMemoryCast(expr);
         if (targetSize < sourceSize) {
             exprMem = makeMemoryExtract(exprMem, 0, targetSize - 1);
-            exprMem = makeFromMemoryCast(exprMem, targetType);
+            exprMem = makeFromMemoryCast(exprMem, types.getCompatibleTypeOfMemorySize(targetType, targetSize));
+            exprMem = makeCast(exprMem, targetType, signed);
         } else if (targetSize == sourceSize) {
             exprMem = makeFromMemoryCast(exprMem, targetType);
         } else {
