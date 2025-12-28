@@ -594,7 +594,7 @@ public class ExpressionEncoder {
 
         @Override
         public TypedFormula<?, ?> visitFromMemoryCastExpression(FromMemoryCast expr) {
-            final TypedFormula<MemoryType, ?> inner = (TypedFormula<MemoryType, ?>) encode(expr.getOperand());
+            final TypedFormula<MemoryType, ?> inner = encodeMemoryExpr(expr.getOperand());
             final Type targetType = expr.getTargetType();
 
             // TODO: Do actual conversions
@@ -604,6 +604,9 @@ public class ExpressionEncoder {
         @Override
         public TypedFormula<?, ?> visitMemoryConcatExpression(MemoryConcat expr) {
             checkArgument(!expr.getOperands().isEmpty());
+            Preconditions.checkState(!context.useIntegers);
+
+            // TODO: We just do normal bitvector concatenation for now
             final List<? extends TypedFormula<MemoryType, ?>> operands = expr.getOperands().stream()
                     .map(this::encodeMemoryExpr)
                     .toList();
@@ -617,21 +620,12 @@ public class ExpressionEncoder {
 
         @Override
         public TypedFormula<?, ?> visitMemoryExtractExpression(MemoryExtract expr) {
-            // TODO: We just do normal int extraction for now
+            Preconditions.checkState(!context.useIntegers);
 
+            // TODO: We just do normal bitvector extraction for now
             final Formula operand = encode(expr.getOperand()).formula();
-            final Formula enc;
-            if (context.useIntegers) {
-                final IntegerFormulaManager imgr = integerFormulaManager();
-                final IntegerFormula highBitValue = imgr.makeNumber(BigInteger.TWO.pow(expr.getHighBit() + 1));
-                final IntegerFormula lowBitValue = imgr.makeNumber(BigInteger.TWO.pow(expr.getLowBit()));
-                final IntegerFormula op = (IntegerFormula) operand;
-                final IntegerFormula extracted = expr.isExtractingHighBits() ? op : imgr.modulo(op, highBitValue);
-                enc = expr.isExtractingLowBits() ? extracted : imgr.divide(extracted, lowBitValue);
-            } else {
-                final BitvectorFormulaManager bvmgr = bitvectorFormulaManager();
-                enc = bvmgr.extract((BitvectorFormula) operand, expr.getHighBit(), expr.getLowBit());
-            }
+            final BitvectorFormulaManager bvmgr = bitvectorFormulaManager();
+            final Formula enc = bvmgr.extract((BitvectorFormula) operand, expr.getHighBit(), expr.getLowBit());
             return new TypedFormula<>(expr.getType(), enc);
         }
 
