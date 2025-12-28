@@ -202,7 +202,7 @@ public class ExpressionEncoder {
             checkArgument(expression.getType() instanceof MemoryType);
             final TypedFormula<?, ?> typedFormula = encode(expression);
             assert typedFormula.getType() == expression.getType();
-            assert  typedFormula.formula() instanceof BitvectorFormula;
+            assert typedFormula.formula() instanceof IntegerFormula || typedFormula.formula() instanceof BitvectorFormula;
             return (TypedFormula<MemoryType, ?>) typedFormula;
         }
 
@@ -620,12 +620,21 @@ public class ExpressionEncoder {
 
         @Override
         public TypedFormula<?, ?> visitMemoryExtractExpression(MemoryExtract expr) {
-            Preconditions.checkState(!context.useIntegers);
-
             // TODO: We just do normal bitvector extraction for now
-            final Formula operand = encode(expr.getOperand()).formula();
-            final BitvectorFormulaManager bvmgr = bitvectorFormulaManager();
-            final Formula enc = bvmgr.extract((BitvectorFormula) operand, expr.getHighBit(), expr.getLowBit());
+            //  NOTE: We need to support mathematical integers for some unit tests, which is a bit awkward
+            final Formula operand = encodeMemoryExpr(expr.getOperand()).formula();
+            final Formula enc;
+            if (context.useIntegers) {
+                final IntegerFormulaManager imgr = integerFormulaManager();
+                final IntegerFormula highBitValue = imgr.makeNumber(BigInteger.TWO.pow(expr.getHighBit() + 1));
+                final IntegerFormula lowBitValue = imgr.makeNumber(BigInteger.TWO.pow(expr.getLowBit()));
+                final IntegerFormula op = (IntegerFormula) operand;
+                final IntegerFormula extracted = expr.isExtractingHighBits() ? op : imgr.modulo(op, highBitValue);
+                enc = expr.isExtractingLowBits() ? extracted : imgr.divide(extracted, lowBitValue);
+            } else {
+                final BitvectorFormulaManager bvmgr = bitvectorFormulaManager();
+                enc = bvmgr.extract((BitvectorFormula) operand, expr.getHighBit(), expr.getLowBit());
+            }
             return new TypedFormula<>(expr.getType(), enc);
         }
 
