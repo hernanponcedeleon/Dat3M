@@ -7,6 +7,7 @@ import com.dat3m.dartagnan.expression.integers.*;
 import com.dat3m.dartagnan.expression.memory.*;
 import com.dat3m.dartagnan.expression.misc.GEPExpr;
 import com.dat3m.dartagnan.expression.misc.ITEExpr;
+import com.dat3m.dartagnan.expression.processing.ExprSimplifier;
 import com.dat3m.dartagnan.expression.type.*;
 import com.dat3m.dartagnan.expression.utils.ExpressionHelper;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
@@ -27,6 +28,7 @@ public final class ExpressionFactory {
     private static final ExpressionFactory instance = new ExpressionFactory();
 
     private final TypeFactory types = TypeFactory.getInstance();
+    private final ExprSimplifier simplifier = new ExprSimplifier(false);
     private final BooleanType booleanType = types.getBooleanType();
     private final BoolLiteral falseConstant = new BoolLiteral(booleanType, false);
     private final BoolLiteral trueConstant = new BoolLiteral(booleanType, true);
@@ -396,7 +398,8 @@ public final class ExpressionFactory {
             exprMem = makeFromMemoryCast(exprMem, types.getCompatibleTypeOfMemorySize(targetType, sourceSize));
             exprMem = makeCast(exprMem, targetType, signed);
         }
-        return exprMem;
+
+        return exprMem.accept(simplifier);
     }
 
     public Expression makeGeneralZero(Type type) {

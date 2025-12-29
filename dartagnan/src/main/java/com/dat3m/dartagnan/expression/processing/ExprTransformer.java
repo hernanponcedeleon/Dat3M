@@ -90,11 +90,6 @@ public abstract class ExprTransformer implements ExpressionVisitor<Expression> {
     }
 
     @Override
-    public Expression visitMemoryEqualExpression(MemoryEqualExpr expr) {
-        return expressions.makeEQ(expr.getLeft().accept(this), expr.getRight().accept(this));
-    }
-
-    @Override
     public Expression visitConstructExpression(ConstructExpr construct) {
         final var arguments = new ArrayList<Expression>();
         for (final Expression argument : construct.getOperands()) {
@@ -151,6 +146,11 @@ public abstract class ExprTransformer implements ExpressionVisitor<Expression> {
     @Override
     public Expression visitMemoryExtractExpression(MemoryExtract expr) {
         return expressions.makeMemoryExtract(expr.getOperand().accept(this), expr.getLowBit(), expr.getHighBit());
+    }
+
+    @Override
+    public Expression visitMemoryEqualExpression(MemoryEqualExpr expr) {
+        return expressions.makeEQ(expr.getLeft().accept(this), expr.getRight().accept(this));
     }
 
     @Override

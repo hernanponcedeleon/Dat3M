@@ -60,16 +60,6 @@ public class ExprSimplifier extends ExprTransformer {
     }
 
     @Override
-    public Expression visitMemoryEqualExpression(MemoryEqualExpr expr) {
-        final Expression rewrite = tryGeneralRewrite(expr);
-        if (rewrite != null) {
-            return rewrite;
-        }
-
-        return super.visitMemoryEqualExpression(expr);
-    }
-
-    @Override
     public Expression visitBoolBinaryExpression(BoolBinaryExpr expr) {
         final Expression rewrite = tryGeneralRewrite(expr);
         if (rewrite != null) {
@@ -392,10 +382,20 @@ public class ExprSimplifier extends ExprTransformer {
     // =================================== Memory type ===================================
 
     @Override
+    public Expression visitMemoryEqualExpression(MemoryEqualExpr expr) {
+        final Expression rewrite = tryGeneralRewrite(expr);
+        if (rewrite != null) {
+            return rewrite;
+        }
+
+        return super.visitMemoryEqualExpression(expr);
+    }
+
+    @Override
     public Expression visitFromMemoryCastExpression(FromMemoryCast cast) {
         final Expression inner = cast.getOperand().accept(this);
         if (inner instanceof ToMemoryCast toMemoryCast && toMemoryCast.getSourceType().equals(cast.getTargetType())) {
-            return inner;
+            return toMemoryCast.getOperand();
         }
 
         return expressions.makeFromMemoryCast(inner, cast.getTargetType());
