@@ -25,10 +25,19 @@ import static com.dat3m.dartagnan.expression.type.TypeFactory.isStaticTypeOf;
 
 public final class ExpressionFactory {
 
-    private static final ExpressionFactory instance = new ExpressionFactory();
+    private static final ExpressionFactory instance;
+    private static final ExprSimplifier simplifier;
+
+    static {
+        // This is a bit awkward, but ExpressionFactory and ExprTransformer/Simplifier have
+        // cyclic dependencies, and so we need to ensure a specific initialization order.
+        // Maybe we should not use ExpressionSimplifier in this class or avoid ExpressionSimplifier
+        // caching a static instance of ExpressionFactory.
+        instance = new ExpressionFactory();
+        simplifier = new ExprSimplifier(false);
+    }
 
     private final TypeFactory types = TypeFactory.getInstance();
-    private final ExprSimplifier simplifier = new ExprSimplifier(false);
     private final BooleanType booleanType = types.getBooleanType();
     private final BoolLiteral falseConstant = new BoolLiteral(booleanType, false);
     private final BoolLiteral trueConstant = new BoolLiteral(booleanType, true);
