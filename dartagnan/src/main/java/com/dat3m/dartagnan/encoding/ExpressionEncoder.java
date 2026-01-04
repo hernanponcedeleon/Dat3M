@@ -29,7 +29,6 @@ import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.List;
 
-import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkState;
 import static java.util.Arrays.asList;
 
@@ -75,13 +74,13 @@ public class ExpressionEncoder {
 
     @SuppressWarnings("unchecked")
     public TypedFormula<BooleanType, BooleanFormula> encodeBooleanAt(Expression expression, Event at) {
-        checkArgument(expression.getType() instanceof BooleanType);
+        Preconditions.checkArgument(expression.getType() instanceof BooleanType);
         return (TypedFormula<BooleanType, BooleanFormula>) encodeAt(expression, at);
     }
 
     @SuppressWarnings("unchecked")
     public TypedFormula<BooleanType, BooleanFormula> encodeBooleanFinal(Expression expression) {
-        checkArgument(expression.getType() instanceof BooleanType);
+        Preconditions.checkArgument(expression.getType() instanceof BooleanType);
         return (TypedFormula<BooleanType, BooleanFormula>) encodeFinal(expression);
     }
 
@@ -103,7 +102,7 @@ public class ExpressionEncoder {
             }
             variable = fmgr.getTupleFormulaManager().makeTuple(fields);
         } else if (type instanceof ArrayType arrType) {
-            checkArgument(arrType.hasKnownNumElements(), "Cannot encode array of unknown size.");
+            Preconditions.checkArgument(arrType.hasKnownNumElements(), "Cannot encode array of unknown size.");
             final List<Formula> elements = new ArrayList<>(arrType.getNumElements());
             for (int i = 0; i < arrType.getNumElements(); i++) {
                 elements.add(makeVariable(name + "[" + i + "]", arrType.getElementType()).formula());
@@ -124,7 +123,7 @@ public class ExpressionEncoder {
     // Utility
 
     public BooleanFormula equal(Expression left, Expression right) {
-        checkArgument(left.getType().equals(right.getType()));
+        Preconditions.checkArgument(left.getType().equals(right.getType()));
         return encodeBooleanFinal(context.getExpressionFactory().makeEQ(left, right)).formula();
     }
 
@@ -145,7 +144,7 @@ public class ExpressionEncoder {
 
         final Expression value = switch (conversion) {
             case STRICT -> {
-                checkArgument(left.getType().equals(right.getType()));
+                Preconditions.checkArgument(left.getType().equals(right.getType()));
                 yield right;
             }
             case CAST -> {
@@ -190,7 +189,7 @@ public class ExpressionEncoder {
 
         @SuppressWarnings("unchecked")
         public TypedFormula<IntegerType, ?> encodeIntegerExpr(Expression expression) {
-            checkArgument(expression.getType() instanceof IntegerType);
+            Preconditions.checkArgument(expression.getType() instanceof IntegerType);
             final TypedFormula<?, ?> typedFormula = encode(expression);
             assert typedFormula.getType() == expression.getType();
             assert typedFormula.formula() instanceof IntegerFormula || typedFormula.formula() instanceof BitvectorFormula;
@@ -199,7 +198,7 @@ public class ExpressionEncoder {
 
         @SuppressWarnings("unchecked")
         public TypedFormula<MemoryType, ?> encodeMemoryExpr(Expression expression) {
-            checkArgument(expression.getType() instanceof MemoryType);
+            Preconditions.checkArgument(expression.getType() instanceof MemoryType);
             final TypedFormula<?, ?> typedFormula = encode(expression);
             assert typedFormula.getType() == expression.getType();
             assert typedFormula.formula() instanceof IntegerFormula || typedFormula.formula() instanceof BitvectorFormula;
@@ -208,7 +207,7 @@ public class ExpressionEncoder {
 
         @SuppressWarnings("unchecked")
         public TypedFormula<BooleanType, BooleanFormula> encodeBooleanExpr(Expression expression) {
-            checkArgument(expression.getType() instanceof BooleanType);
+            Preconditions.checkArgument(expression.getType() instanceof BooleanType);
             final TypedFormula<?, ?> typedFormula = encode(expression);
             assert typedFormula.getType() == expression.getType();
             assert typedFormula.formula() instanceof BooleanFormula;
@@ -217,7 +216,7 @@ public class ExpressionEncoder {
 
         @SuppressWarnings("unchecked")
         public TypedFormula<?, TupleFormula> encodeAggregateExpr(Expression expression) {
-            checkArgument(ExpressionHelper.isAggregateLike(expression));
+            Preconditions.checkArgument(ExpressionHelper.isAggregateLike(expression));
             final TypedFormula<?, ?> typedFormula = encode(expression);
             assert typedFormula.getType() == expression.getType();
             assert typedFormula.formula() instanceof TupleFormula;
@@ -500,7 +499,7 @@ public class ExpressionEncoder {
 
         @Override
         public TypedFormula<IntegerType, ?> visitIntConcat(IntConcat expr) {
-            checkArgument(!expr.getOperands().isEmpty());
+            Preconditions.checkArgument(!expr.getOperands().isEmpty());
             final List<? extends TypedFormula<IntegerType, ?>> operands = expr.getOperands().stream()
                     .map(this::encodeIntegerExpr)
                     .toList();
@@ -603,7 +602,7 @@ public class ExpressionEncoder {
 
         @Override
         public TypedFormula<?, ?> visitMemoryConcatExpression(MemoryConcat expr) {
-            checkArgument(!expr.getOperands().isEmpty());
+            Preconditions.checkArgument(!expr.getOperands().isEmpty());
             Preconditions.checkState(!context.useIntegers);
 
             // TODO: We just do normal bitvector concatenation for now
@@ -684,7 +683,7 @@ public class ExpressionEncoder {
             checkState(event == null, "Cannot evaluate final memory value of %s at event %s.", val, event);
             final MemoryObject base = val.getMemoryObject();
             final int offset = val.getOffset();
-            checkArgument(base.isInRange(offset), "Array index out of bounds");
+            Preconditions.checkArgument(base.isInRange(offset), "Array index out of bounds");
             final String name = String.format("last_val_at_%s_%d", base, offset);
             return makeVariable(name, val.getType());
         }

@@ -432,7 +432,7 @@ public final class ExpressionFactory {
         } else if (type instanceof FloatType floatType) {
             return makeZero(floatType);
         } else if (type instanceof MemoryType memoryType) {
-            return makeToMemoryCast(makeZero(TypeFactory.getInstance().getIntegerType(memoryType.getBitWidth())));
+            return makeToMemoryCast(makeZero(types.getIntegerType(memoryType.getBitWidth())));
         } else {
             throw new UnsupportedOperationException("Cannot create zero of type " + type);
         }
