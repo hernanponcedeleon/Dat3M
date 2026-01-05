@@ -1,5 +1,8 @@
 package com.dat3m.svcomp;
 
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import com.dat3m.dartagnan.parsers.witness.ParserWitness;
 import com.dat3m.dartagnan.utils.options.BaseOptions;
 import com.dat3m.dartagnan.witness.graphml.WitnessGraph;
@@ -20,8 +23,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.EnumSet;
 import java.util.stream.Collectors;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+
 
 import static com.dat3m.dartagnan.configuration.OptionInfo.collectOptions;
 import static com.dat3m.dartagnan.configuration.OptionNames.*;
@@ -32,7 +34,7 @@ import static com.dat3m.dartagnan.utils.ExitCode.*;
 @Options
 public class SVCOMPRunner extends BaseOptions {
 
-    private static final Logger logger = LogManager.getLogger(SVCOMPRunner.class);
+    private static final Logger logger = LoggerFactory.getLogger(SVCOMPRunner.class);
 
     private EnumSet<Property> property;
     

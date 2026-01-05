@@ -1,5 +1,8 @@
 package com.dat3m.dartagnan.encoding;
 
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import com.dat3m.dartagnan.configuration.ProgressModel;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
@@ -26,8 +29,8 @@ import com.google.common.base.Preconditions;
 import com.google.common.base.Verify;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+
+
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.common.configuration.Option;
 import org.sosy_lab.common.configuration.Options;
@@ -47,7 +50,7 @@ import static java.util.stream.Collectors.toMap;
 @Options
 public class ProgramEncoder implements Encoder {
 
-    private static final Logger logger = LogManager.getLogger(ProgramEncoder.class);
+    private static final Logger logger = LoggerFactory.getLogger(ProgramEncoder.class);
 
     // =========================== Configurables ===========================
 

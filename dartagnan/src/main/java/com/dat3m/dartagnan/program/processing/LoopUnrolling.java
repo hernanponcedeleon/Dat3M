@@ -1,5 +1,8 @@
 package com.dat3m.dartagnan.program.processing;
 
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.IRHelper;
 import com.dat3m.dartagnan.program.Program;
@@ -17,8 +20,8 @@ import com.google.common.base.Preconditions;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVPrinter;
 import org.apache.commons.csv.CSVRecord;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+
+
 import org.sosy_lab.common.configuration.*;
 
 import java.io.FileReader;
@@ -38,7 +41,7 @@ import static com.dat3m.dartagnan.configuration.OptionNames.*;
 @Options
 public class LoopUnrolling implements ProgramProcessor {
 
-    private static final Logger logger = LogManager.getLogger(LoopUnrolling.class);
+    private static final Logger logger = LoggerFactory.getLogger(LoopUnrolling.class);
 
     public static final String LOOP_LABEL_IDENTIFIER = ".loop";
     public static final String LOOP_INFO_SEPARATOR = "/";

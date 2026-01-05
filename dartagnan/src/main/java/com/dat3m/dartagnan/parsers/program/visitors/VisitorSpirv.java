@@ -1,5 +1,8 @@
 package com.dat3m.dartagnan.parsers.program.visitors;
 
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.parsers.SpirvBaseVisitor;
 import com.dat3m.dartagnan.parsers.SpirvParser;
@@ -9,8 +12,7 @@ import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.ThreadGrid;
 import org.antlr.v4.runtime.tree.ParseTree;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
@@ -22,7 +24,7 @@ import java.util.Set;
 
 public class VisitorSpirv extends SpirvBaseVisitor<Program> {
 
-    private static final Logger logger = LogManager.getLogger(VisitorSpirv.class);
+    private static final Logger logger = LoggerFactory.getLogger(VisitorSpirv.class);
     private final Map<String, SpirvBaseVisitor<?>> visitors = new HashMap<>();
     private VisitorOpsConstant specConstantVisitor;
     private ProgramBuilder builder;
