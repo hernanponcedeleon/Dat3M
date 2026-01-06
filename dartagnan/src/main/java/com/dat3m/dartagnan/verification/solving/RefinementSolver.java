@@ -203,6 +203,7 @@ public class RefinementSolver extends ModelChecker {
         final Context analysisContext = Context.create();
         performStaticProgramAnalyses(task, analysisContext, config);
         performStaticWmmAnalyses(task, analysisContext, config);
+        performIntervalAnalysis(task,analysisContext,config);
 
         //  ------- Generate refinement model -------
         final Collection<Constraint> wmmConstraintsToEncode = new HashSet<>(biases);
@@ -232,6 +233,9 @@ public class RefinementSolver extends ModelChecker {
         prover.addConstraint(baselineEncoder.encodeFullMemoryModel());
         prover.writeComment("Symmetry breaking encoding");
         prover.addConstraint(symmetryEncoder.encodeFullSymmetryBreaking());
+        // Bounds
+        prover.writeComment("Bounds over variables");
+        programEncoder.encodeBounds(prover);
 
         // ------------------------ Solving ------------------------
         logger.info("Refinement procedure started.");
