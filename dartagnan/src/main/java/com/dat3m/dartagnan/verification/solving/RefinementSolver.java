@@ -68,7 +68,7 @@ import static com.dat3m.dartagnan.utils.Utils.toTimeString;
 import static com.dat3m.dartagnan.witness.graphviz.ExecutionGraphVisualizer.generateGraphvizFile;
 import static com.dat3m.dartagnan.wmm.RelationNameRepository.*;
 
-;
+
 
 /*
     Refinement is a custom solving procedure that starts from a weak memory model (possibly the empty model)
@@ -209,6 +209,7 @@ public class RefinementSolver extends ModelChecker {
         // Copy context without WMM analyses because we want to analyse a second model later
         Context baselineContext = Context.createCopyFrom(analysisContext);
         performStaticWmmAnalyses(task, analysisContext, config);
+        performIntervalAnalysis(task,analysisContext,config);
 
         // Encoding context with the original Wmm and the analysis context for relation extraction.
         contextWithFullWmm = EncodingContext.of(task, analysisContext, ctx.getFormulaManager());
@@ -226,6 +227,7 @@ public class RefinementSolver extends ModelChecker {
                 .withProgressModel(task.getProgressModel())
                 .build(program, baselineModel, task.getProperty());
         performStaticWmmAnalyses(baselineTask, baselineContext, config);
+        performIntervalAnalysis(baselineTask,baselineContext,config);
 
         // ------------------------ Encoding ------------------------
 
@@ -249,6 +251,9 @@ public class RefinementSolver extends ModelChecker {
         prover.addConstraint(baselineEncoder.encodeFullMemoryModel());
         prover.writeComment("Symmetry breaking encoding");
         prover.addConstraint(symmetryEncoder.encodeFullSymmetryBreaking());
+        // Bounds
+        prover.writeComment("Bounds over variables");
+        programEncoder.encodeBounds(prover);
 
         // ------------------------ Solving ------------------------
         logger.info("Refinement procedure started.");
