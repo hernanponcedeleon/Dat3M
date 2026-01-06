@@ -71,16 +71,7 @@ public class Inlining implements ProgramProcessor {
     }
 
     private void inlineAllCalls(Function function, Map<Function, Snapshot> snapshots) {
-        int scope = 0;
-        // Advance scope counter.
-        for (Register r : function.getRegisters()) {
-            final int i = r.getName().indexOf(":");
-            if (i == -1) { continue; }
-            try {
-                scope = Integer.max(scope, Integer.parseInt(r.getName().substring(0, i)));
-            } catch (NumberFormatException ignore) {
-            }
-        }
+        int scope = getScopeCount(function);
         final Map<Event, List<Function>> exitToCallMap = new HashMap<>();
         // Iteratively replace the first call.
         Event event = function.getEntry();
@@ -105,6 +96,19 @@ public class Inlining implements ProgramProcessor {
                 event = inlineBody(call, snapshots.get(callTarget), ++scope);
             }
         }
+    }
+
+    private int getScopeCount(Function function) {
+        int scope = 0;
+        // Advance scope counter.
+        for (Register r : function.getRegisters()) {
+            final int i = r.getName().indexOf(":");
+            if (i == -1) { continue; }
+            try {
+                scope = Integer.max(scope, Integer.parseInt(r.getName().substring(0, i)));
+            } catch (NumberFormatException ignore) {}
+        }
+        return scope;
     }
 
     // Returns the first event of the inlined code, from where to continue from
