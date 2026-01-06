@@ -123,7 +123,8 @@ public class EventFactory {
     }
 
     public static Dealloc newDealloc(Expression address) {
-        return new Dealloc(address, expressions.makeConstruct(types.getAggregateType(List.of()), List.of()));
+        // Accesses zero bytes to avoid Tearing.
+        return new Dealloc(address, types.getUnitType());
     }
 
     public static Load newLoad(Register register, Expression address) {
@@ -663,7 +664,8 @@ public class EventFactory {
         }
 
         public static GenericMemoryEvent newSrcuSync(Expression address) {
-            GenericMemoryEvent srcuSync = new GenericMemoryEvent(address, "synchronize_srcu");
+            // Accesses zero bytes to avoid tearing.
+            GenericMemoryEvent srcuSync = new GenericMemoryEvent(address, types.getUnitType(), "synchronize_srcu");
             srcuSync.addTags(Tag.Linux.SRCU_SYNC);
             return srcuSync;
         }

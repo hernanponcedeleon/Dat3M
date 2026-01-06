@@ -10,6 +10,7 @@ import com.dat3m.dartagnan.program.event.RegReader;
 import com.dat3m.dartagnan.program.event.RegWriter;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.CondJump;
+import com.dat3m.dartagnan.program.event.core.Dealloc;
 import com.dat3m.dartagnan.program.event.core.MemoryCoreEvent;
 import com.dat3m.dartagnan.program.event.lang.svcomp.BeginAtomic;
 import com.dat3m.dartagnan.program.event.lang.svcomp.EndAtomic;
@@ -292,7 +293,7 @@ public class ExecutionModel {
                 if (data.isInit()) {
                     addressInitMap.put(address, data);
                 }
-            } else {
+            } else if (!(data.getEvent() instanceof Dealloc)) {
                 //FIXME: Handle other kinds of memory events such as SRCU_SYNC.
                 throw new UnsupportedOperationException("Unexpected memory event " + data.getEvent());
             }
