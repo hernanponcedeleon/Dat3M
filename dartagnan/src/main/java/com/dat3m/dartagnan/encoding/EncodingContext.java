@@ -10,6 +10,8 @@ import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.analysis.BranchEquivalence;
 import com.dat3m.dartagnan.program.analysis.ExecutionAnalysis;
 import com.dat3m.dartagnan.program.analysis.alias.AliasAnalysis;
+import com.dat3m.dartagnan.program.analysis.interval.IntervalAnalysis;
+import com.dat3m.dartagnan.program.analysis.interval.Interval;
 import com.dat3m.dartagnan.program.event.BlockingEvent;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.RegWriter;
@@ -82,11 +84,13 @@ public final class EncodingContext {
     private final Map<Event, TypedFormula<?, ?>> addresses = new HashMap<>();
     private final Map<MemoryObject, TypedFormula<?, ?>> objAddress = new HashMap<>();
     private final Map<MemoryObject, TypedFormula<IntegerType, ?>> objSize = new HashMap<>();
+    private final Map<TypedFormula<IntegerType,?>, Interval> varToInterval = new HashMap<>();
 
     private EncodingContext(VerificationTask t, Context a, FormulaManager m) {
         verificationTask = checkNotNull(t);
         analysisContext = checkNotNull(a);
         a.requires(BranchEquivalence.class);
+        a.requires(IntervalAnalysis.class);
         executionAnalysis = a.requires(ExecutionAnalysis.class);
         aliasAnalysis = a.requires(AliasAnalysis.class);
         relationAnalysis = a.requires(RelationAnalysis.class);
@@ -281,6 +285,16 @@ public final class EncodingContext {
 
     public BooleanFormula edge(Relation relation, Event first, Event second) {
         return edge(relation).encode(first, second);
+    }
+
+    // Saving and accessing register intervals
+    
+    public Map<TypedFormula<IntegerType,?>,Interval> getVarToInterval() {
+        return varToInterval;
+    }
+
+    public void addVarToInterval(TypedFormula<IntegerType,?> var, Interval i) {
+        varToInterval.put(var,i);
     }
 
     // ====================================================================================

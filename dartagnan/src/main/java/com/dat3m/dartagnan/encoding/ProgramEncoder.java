@@ -14,6 +14,7 @@ import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.analysis.BranchEquivalence;
 import com.dat3m.dartagnan.program.analysis.ExecutionAnalysis;
 import com.dat3m.dartagnan.program.analysis.ReachingDefinitionsAnalysis;
+import com.dat3m.dartagnan.program.analysis.interval.Interval;
 import com.dat3m.dartagnan.program.event.*;
 import com.dat3m.dartagnan.program.event.core.CondJump;
 import com.dat3m.dartagnan.program.event.core.ControlBarrier;
@@ -24,6 +25,7 @@ import com.dat3m.dartagnan.program.event.core.threading.ThreadReturn;
 import com.dat3m.dartagnan.program.event.core.threading.ThreadStart;
 import com.dat3m.dartagnan.program.memory.Memory;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
+import com.dat3m.dartagnan.smt.FormulaManagerExt;
 import com.dat3m.dartagnan.program.misc.NonDetValue;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Verify;
@@ -34,8 +36,9 @@ import com.google.common.collect.Lists;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.common.configuration.Option;
 import org.sosy_lab.common.configuration.Options;
-import org.sosy_lab.java_smt.api.BooleanFormula;
-import org.sosy_lab.java_smt.api.BooleanFormulaManager;
+import org.sosy_lab.java_smt.api.*;
+import org.sosy_lab.java_smt.api.NumeralFormula.IntegerFormula;
+
 
 import java.math.BigInteger;
 import java.util.*;
@@ -743,5 +746,44 @@ public class ProgramEncoder implements Encoder {
             return bmgr.implication(hasForwardProgress(group), bmgr.and(enc));
         }
     }
+
+    // ============= Bounds ============= 
+
+    public void encodeBounds(ProverWithTracker prover) throws InterruptedException {
+        FormulaManagerExt formulaManager = context.getFormulaManager();
+        for(var entry : context.getVarToInterval().entrySet()) {
+            Formula formula = entry.getKey().formula();
+            Interval interval = entry.getValue();
+            // Encode bounds in the SMT encoding using bitvectors or integers.
+            if (formula instanceof BitvectorFormula variable) {
+                BitvectorFormulaManager bitvectorFormulaManager = formulaManager.getBitvectorFormulaManager();
+                BigInteger upperbound = interval.getUpperbound();
+                BigInteger lowerbound = interval.getLowerbound();
+                BooleanFormula lowerboundConstraint;
+                BooleanFormula upperboundConstraint;
+                int bitWidth = bitvectorFormulaManager.getLength(variable);
+                boolean useSigned = lowerbound.signum() == -1 || upperbound.signum() == -1;
+                // TODO: Risky heuristic, possibly unsound
+                // Check for use of signed/unsigned constraint. Analysis should make sure this is unambiguous.
+                lowerboundConstraint = bitvectorFormulaManager.greaterOrEquals(variable, bitvectorFormulaManager.makeBitvector(bitWidth, lowerbound),useSigned);
+                upperboundConstraint = bitvectorFormulaManager.lessOrEquals(variable, bitvectorFormulaManager.makeBitvector(bitWidth, upperbound),useSigned);
+
+                prover.addConstraint(lowerboundConstraint);
+                prover.addConstraint(upperboundConstraint);
+
+            } else if (formula instanceof IntegerFormula variable) {
+                IntegerFormulaManager integerFormulaManager = formulaManager.getIntegerFormulaManager();
+                BigInteger lowerbound = interval.getLowerbound();
+                BigInteger upperbound = interval.getUpperbound();
+                BooleanFormula constraintGTE = integerFormulaManager.greaterOrEquals(variable, integerFormulaManager.makeNumber(lowerbound));
+                BooleanFormula constraintLTE = integerFormulaManager.lessOrEquals(variable, integerFormulaManager.makeNumber(upperbound));
+                prover.addConstraint(constraintLTE);
+                prover.addConstraint(constraintGTE);
+            }
+        }
+
+
+    }
+
 }
 

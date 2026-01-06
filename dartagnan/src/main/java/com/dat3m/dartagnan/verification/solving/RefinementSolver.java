@@ -223,6 +223,7 @@ public class RefinementSolver extends ModelChecker {
         // Copy context without WMM analyses because we want to analyse a second model later
         final Context baselineContext = Context.createCopyFrom(analysisContext);
         performStaticWmmAnalyses(task, analysisContext, config);
+        performIntervalAnalysis(task,analysisContext,config);
 
 
         //  ------- Generate refinement model -------
@@ -232,6 +233,7 @@ public class RefinementSolver extends ModelChecker {
                 .withProgressModel(task.getProgressModel())
                 .build(program, refinementModel.getBaseModel(), task.getProperty());
         performStaticWmmAnalyses(baselineTask, baselineContext, config);
+        performIntervalAnalysis(baselineTask,baselineContext,config);
 
         // ------------------------ Encoding ------------------------
         initSMTSolver(config);
@@ -259,6 +261,9 @@ public class RefinementSolver extends ModelChecker {
         prover.addConstraint(baselineEncoder.encodeFullMemoryModel());
         prover.writeComment("Symmetry breaking encoding");
         prover.addConstraint(symmetryEncoder.encodeFullSymmetryBreaking());
+        // Bounds
+        prover.writeComment("Bounds over variables");
+        programEncoder.encodeBounds(prover);
 
         // ------------------------ Solving ------------------------
         logger.info("Refinement procedure started.");
