@@ -204,8 +204,8 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
 
     @Override
     public Collection<MemoryObject> communicableObjects(MemoryCoreEvent e) {
-        final int size = e.getAccessType() instanceof IntegerType t ? t.getBitWidth() : 0;
-        if (size < 64) { return Set.of(); }
+        final boolean fitsAddress = e.getAccessType() instanceof IntegerType t && t.getBitWidth() >= 64;
+        if (!fitsAddress) { return Set.of(); }
         final DerivedVariable v = valueVariables.get(e);
         return v == null ? objectVariables.keySet() : v.base.object != null ? Set.of(v.base.object)
                 : v.base.includes.stream().map(i -> i.source.object).collect(Collectors.toSet());

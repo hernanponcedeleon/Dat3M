@@ -15,7 +15,7 @@ public enum Property implements OptionInterface {
     TERMINATION,         // All executions terminate (absence of deadlocks/livelocks)
     CAT_SPEC,            // CAT-spec defined via flagged axioms in .cat file (~bug specification)
     DATARACEFREEDOM,     // Special option for data-race detection in SVCOMP only
-    TRACKABILITY,  // All heap-allocated objects are either freed or remain reachable at the end of the execution.
+    TRACKABILITY,        // All heap-allocated objects are either freed or remain reachable at the end of the execution.
     ;
 
     public enum Type {

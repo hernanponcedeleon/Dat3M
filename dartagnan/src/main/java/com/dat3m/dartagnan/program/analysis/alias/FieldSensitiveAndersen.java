@@ -109,8 +109,8 @@ public class FieldSensitiveAndersen implements AliasAnalysis {
 
     @Override
     public Collection<MemoryObject> communicableObjects(MemoryCoreEvent e) {
-        final int size = e.getAccessType() instanceof IntegerType t ? t.getBitWidth() : 0;
-        return size < 64 ? Set.of() : allObjects;
+        final boolean fitsAddress = e.getAccessType() instanceof IntegerType t && t.getBitWidth() >= 64;
+        return fitsAddress ? allObjects : Set.of();
     }
 
     @Override

@@ -3,7 +3,7 @@ package com.dat3m.dartagnan.encoding;
 import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.configuration.Property;
 import com.dat3m.dartagnan.expression.Expression;
-import com.dat3m.dartagnan.expression.type.TypeFactory;
+import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.analysis.ExecutionAnalysis;
@@ -25,11 +25,8 @@ import com.google.common.collect.Lists;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
-import org.sosy_lab.java_smt.api.BitvectorFormula;
-import org.sosy_lab.java_smt.api.BitvectorFormulaManager;
 import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.BooleanFormulaManager;
-import org.sosy_lab.java_smt.api.Formula;
 import org.sosy_lab.java_smt.api.IntegerFormulaManager;
 
 import java.util.*;
@@ -48,7 +45,6 @@ public class PropertyEncoder implements Encoder {
 
     private static final Logger logger = LogManager.getLogger(PropertyEncoder.class);
 
-    private final TypeFactory types = TypeFactory.getInstance();
     private final EncodingContext context;
     private final BooleanFormulaManager bmgr;
     private final Program program;
@@ -422,7 +418,7 @@ public class PropertyEncoder implements Encoder {
         }
         // Do not leak unallocated objects.
         for (Map.Entry<MemoryObject, Var> entry : variables.entrySet()) {
-            enc.add(bmgr.or(context.execution(entry.getKey().getAllocationSite()), bmgr.not(entry.getValue().leak)));
+            enc.add(bmgr.implication(entry.getValue().leak, context.execution(entry.getKey().getAllocationSite())));
         }
         // Do not leak deallocated objects.
         final ExpressionEncoder exprEncoder = context.getExpressionEncoder();
@@ -474,19 +470,16 @@ public class PropertyEncoder implements Encoder {
 
     private BooleanFormula referencesObject(Store store, boolean isValue, MemoryObject object) {
         //TODO enhance with provenance
-        final TypedFormula<?, ?> address = isValue ? context.value(store) : context.address(store);
-        final Formula base = context.address(object).formula();
-        final Formula size = context.size(object).formula();
-        final int addressSize = types.getMemorySizeInBytes(address.type());
-        if (address.formula() instanceof BitvectorFormula a && base instanceof BitvectorFormula b && size instanceof BitvectorFormula s) {
-            final BitvectorFormulaManager bvmgr = context.getFormulaManager().getBitvectorFormulaManager();
-            final BitvectorFormula end = bvmgr.add(b, s);
-            final BitvectorFormula c = isValue ? end : bvmgr.subtract(end, bvmgr.makeBitvector(bvmgr.getLength(end), addressSize));
-            final BooleanFormula lowerBound = bvmgr.lessOrEquals(b, a, false);
-            final BooleanFormula upperBound = bvmgr.lessOrEquals(a, c, false);
-            return bmgr.and(lowerBound, upperBound);
+        final Expression pointer = isValue ? store.getMemValue() : store.getAddress();
+        if (object.equals(pointer)) {
+            return bmgr.makeTrue();
         }
-        throw new UnsupportedOperationException("inArrayBounds(%s, %s, %s)".formatted(address.formula(), base, size));
+        final ExpressionFactory expressions = context.getExpressionFactory();
+        final Expression objectEnd = expressions.makeAdd(object, object.size());
+        final Expression overLowerBound = expressions.makeLTE(object, pointer, false);
+        final Expression underUpperBound = expressions.makeLT(pointer, objectEnd, false);
+        final Expression withinBounds = expressions.makeAnd(overLowerBound, underUpperBound);
+        return context.getExpressionEncoder().encodeBooleanAt(withinBounds, store).formula();
     }
 
     // ======================================================================

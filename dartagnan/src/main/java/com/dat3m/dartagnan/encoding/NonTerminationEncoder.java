@@ -386,7 +386,7 @@ public class NonTerminationEncoder {
         }
         if (x instanceof MemoryCoreEvent e && y instanceof MemoryCoreEvent f) {
             equality = bmgr.and(equality, context.sameAddress(e, f));
-            if (x instanceof Store && !(x instanceof Dealloc) || x instanceof Load) {
+            if ((x instanceof Store && !(x instanceof Dealloc)) || x instanceof Load) {
                 equality = bmgr.and(equality, context.sameValue(e, f));
             }
 

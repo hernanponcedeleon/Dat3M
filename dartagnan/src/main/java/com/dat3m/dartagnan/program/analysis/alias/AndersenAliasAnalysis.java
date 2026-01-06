@@ -106,8 +106,8 @@ public class AndersenAliasAnalysis implements AliasAnalysis {
 
     @Override
     public Collection<MemoryObject> communicableObjects(MemoryCoreEvent a) {
-        final int size = a.getAccessType() instanceof IntegerType t ? t.getBitWidth() : 1;
-        return size < 64 ? Set.of() : allObjects;
+        final boolean fitsAddress = a.getAccessType() instanceof IntegerType t && t.getBitWidth() >= 64;
+        return fitsAddress ? allObjects : Set.of();
     }
 
     @Override
