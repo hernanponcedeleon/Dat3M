@@ -399,7 +399,7 @@ public class Dartagnan extends BaseOptions {
                         appendTo(details, o.getAllocationSite(), synContext);
                     }
                 }
-                ExitCode code = task.getWitness().isEmpty() ? MEMORY_SAFETY_VIOLATION : NORMAL_TERMINATION;
+                ExitCode code = task.getWitness().isEmpty() ? MEMORY_TRACKABILITY_VIOLATION : NORMAL_TERMINATION;
                 return new ResultSummary(path, filter, FAIL, condition, reason, details.toString(), time, code);
             }
             final List<Axiom> violatedCATSpecs = !props.contains(CAT_SPEC) ? List.of()

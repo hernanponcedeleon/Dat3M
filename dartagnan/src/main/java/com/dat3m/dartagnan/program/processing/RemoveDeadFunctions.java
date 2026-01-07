@@ -9,7 +9,6 @@ import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.RegReader;
-import com.dat3m.dartagnan.program.event.common.SingleAccessMemoryEvent;
 import com.dat3m.dartagnan.program.event.core.CondJump;
 import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.event.core.Local;
@@ -85,18 +84,18 @@ public class RemoveDeadFunctions implements ProgramProcessor {
 
     private void liveFunctions(Function function, FunctionCollector liveFunctions) {
         final var liveRegisters = new HashSet<Register>();
-        final var jumps = new HashMap<Event, Set<Register>>();
         final List<Event> events = function.getEvents();
+        final List<HashSet<Register>> jumps = events.stream().map(e -> new HashSet<Register>()).toList();
         for (int i = events.size() - 1; i >= 0; i--) {
             Event event = events.get(i);
             if (IRHelper.isAlwaysBranching(event)) { liveRegisters.clear(); }
-            final Set<Register> incoming = jumps.get(event);
-            if (incoming != null) { liveRegisters.addAll(incoming); }
+            liveRegisters.addAll(jumps.get(i));
             if (event instanceof Label label) {
                 for (CondJump jump : label.getJumpSet()) {
-                    if (!jump.isDead() && jumps.computeIfAbsent(jump, k -> new HashSet<>()).addAll(liveRegisters)) {
+                    final int j = events.indexOf(jump);
+                    if (!jump.isDead() && jumps.get(j).addAll(liveRegisters)) {
                         // Redo, if there is a backjump.
-                        i = Integer.max(i, events.indexOf(jump) + 1);
+                        i = Integer.max(i, j + 1);
                     }
                 }
             }
@@ -106,19 +105,14 @@ public class RemoveDeadFunctions implements ProgramProcessor {
         }
     }
 
+    // Expressions that may contain pointers to functions that should not be removed.
     private Collection<Expression> liveFunctionExpressions(Event event, Set<Register> liveRegisters) {
         final var expressions = new ArrayList<Expression>();
-        final Expression exception;
-        if (!(event instanceof RegReader reader) ||
-                event instanceof Local e && !liveRegisters.contains(e.getResultRegister())) {
+        if (!(event instanceof RegReader reader)) {
             return expressions;
-        } else if (event instanceof SingleAccessMemoryEvent e) {
-            exception = e.getAddress();
-        } else if (event instanceof CondJump e) {
-            exception = e.getGuard();
-        } else {
-            exception = null;
         }
+        final Expression exception = event instanceof CondJump j ? j.getGuard()
+                : event instanceof Local e && !liveRegisters.contains(e.getResultRegister()) ? e.getExpr() : null;
         final var collector = new ExpressionVisitor<Expression>() {
             @Override
             public Expression visitExpression(Expression x) {
