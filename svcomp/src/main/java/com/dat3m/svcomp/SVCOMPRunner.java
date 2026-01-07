@@ -114,10 +114,10 @@ public class SVCOMPRunner extends BaseOptions {
         String result = "UNKNOWN";
         while(result.contains("UNKNOWN")) {
             ArrayList<String> cmd = new ArrayList<>();
-            cmd.add("java");
-            cmd.add("-DlogLevel=info");
+            cmd.add(System.getenv().get("DAT3M_HOME") + "/dartagnan/target/dartagnan");
+            cmd.add("-Dorg.slf4j.simpleLogger.defaultLogLevel=info");
             cmd.add("-DLOGNAME=" + Files.getNameWithoutExtension(programPath));
-            cmd.addAll(Arrays.asList("-jar", System.getenv().get("DAT3M_HOME") + "/dartagnan/target/dartagnan.jar"));
+            cmd.add("-Djava.library.path=" + System.getenv().get("DAT3M_HOME") + "/dartagnan/target/libs/");
             cmd.add(fileModel.toString());
             cmd.add(programPath);
             cmd.add("svcomp.properties");
