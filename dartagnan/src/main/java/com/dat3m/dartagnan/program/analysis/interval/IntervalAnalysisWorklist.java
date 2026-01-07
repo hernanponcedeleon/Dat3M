@@ -249,7 +249,9 @@ public abstract class IntervalAnalysisWorklist implements IntervalAnalysis {
 
         @Override
         public Interval visitRegister(Register regExpr) {
-            return eventState.getOrDefault(regExpr, Interval.getTop(type));
+            Interval registerInterval = eventState.getOrDefault(regExpr, Interval.getTop(type));
+            // Check for overflow
+            return new Interval(registerInterval.getLowerbound(),registerInterval.getUpperbound(),type);
         }
 
         @Override
