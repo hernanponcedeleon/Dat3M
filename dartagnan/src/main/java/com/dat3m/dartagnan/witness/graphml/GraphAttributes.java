@@ -24,8 +24,6 @@ public enum GraphAttributes {
 			return "sourcecodelang";
 		case SPECIFICATION:
 			return "specification";
-		case UNROLLBOUND:
-			return "unroll-bound";
 		case WITNESSTYPE:
 			return "witness-type";
 		}

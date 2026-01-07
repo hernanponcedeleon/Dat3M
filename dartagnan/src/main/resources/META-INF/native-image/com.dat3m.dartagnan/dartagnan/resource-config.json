@@ -1,0 +1,9 @@
+{
+    "resources": {
+      "includes": [
+        { "pattern": "org/sosy_lab/common/configuration/.*" },
+        { "pattern": "logback.xml" },
+        { "pattern": "git.properties" }
+      ]
+    }
+  }

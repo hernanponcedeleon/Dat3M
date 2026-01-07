@@ -1,0 +1,138 @@
+[
+    {
+        "name": "com.dat3m.dartagnan.wmm.RelationNameRepository",
+        "allDeclaredFields": true,
+        "allDeclaredMethods": true
+    },
+    {
+        "name": "com.dat3m.dartagnan.configuration.OptionNames",
+        "allDeclaredFields": true
+    },
+    {
+        "name": "com.dat3m.dartagnan.wmm.axiom.Acyclicity",
+        "allDeclaredConstructors": true
+    },
+    {
+        "name": "com.dat3m.dartagnan.wmm.axiom.Emptiness",
+        "allDeclaredConstructors": true
+    },
+    {
+        "name": "com.dat3m.dartagnan.wmm.axiom.ForceEncodeAxiom",
+        "allDeclaredConstructors": true
+    },
+    {
+        "name": "com.dat3m.dartagnan.wmm.axiom.Irreflexivity",
+        "allDeclaredConstructors": true
+    },
+    {
+        "name":"com.dat3m.dartagnan.Dartagnan",
+        "allDeclaredFields":true,
+        "queryAllDeclaredMethods":true
+      },
+      {
+        "name":"com.dat3m.dartagnan.encoding.EncodingContext",
+        "allDeclaredFields":true,
+        "queryAllDeclaredMethods":true
+      },
+      {
+        "name":"com.dat3m.dartagnan.encoding.ProgramEncoder",
+        "allDeclaredFields":true,
+        "queryAllDeclaredMethods":true
+      },
+      {
+        "name":"com.dat3m.dartagnan.encoding.SymmetryEncoder",
+        "allDeclaredFields":true,
+        "queryAllDeclaredMethods":true
+      },
+      {
+        "name":"com.dat3m.dartagnan.encoding.WmmEncoder",
+        "allDeclaredFields":true,
+        "queryAllDeclaredMethods":true
+      },
+      {
+        "name":"com.dat3m.dartagnan.program.analysis.ReachingDefinitionsAnalysis$Config",
+        "allDeclaredFields":true,
+        "queryAllDeclaredMethods":true
+      },
+      {
+        "name":"com.dat3m.dartagnan.program.analysis.alias.AliasAnalysis$Config",
+        "allDeclaredFields":true,
+        "queryAllDeclaredMethods":true
+      },
+      {
+        "name":"com.dat3m.dartagnan.program.processing.BranchReordering",
+        "allDeclaredFields":true,
+        "queryAllDeclaredMethods":true
+      },
+      {
+        "name":"com.dat3m.dartagnan.program.processing.Inlining",
+        "allDeclaredFields":true,
+        "queryAllDeclaredMethods":true
+      },
+      {
+        "name":"com.dat3m.dartagnan.program.processing.Intrinsics",
+        "allDeclaredFields":true,
+        "queryAllDeclaredMethods":true
+      },
+      {
+        "name":"com.dat3m.dartagnan.program.processing.LoopUnrolling",
+        "allDeclaredFields":true,
+        "queryAllDeclaredMethods":true
+      },
+      {
+        "name":"com.dat3m.dartagnan.program.processing.MemoryAllocation",
+        "allDeclaredFields":true,
+        "queryAllDeclaredMethods":true
+      },
+      {
+        "name":"com.dat3m.dartagnan.program.processing.NonterminationDetection",
+        "allDeclaredFields":true,
+        "queryAllDeclaredMethods":true
+      },
+      {
+        "name":"com.dat3m.dartagnan.program.processing.ProcessingManager",
+        "allDeclaredFields":true,
+        "queryAllDeclaredMethods":true
+      },
+      {
+        "name":"com.dat3m.dartagnan.program.processing.SparseConditionalConstantPropagation",
+        "allDeclaredFields":true,
+        "queryAllDeclaredMethods":true
+      },
+      {
+        "name":"com.dat3m.dartagnan.program.processing.ThreadCreation",
+        "allDeclaredFields":true,
+        "queryAllDeclaredMethods":true
+      },
+      {
+        "name":"com.dat3m.dartagnan.program.processing.compilation.Compilation",
+        "allDeclaredFields":true,
+        "queryAllDeclaredMethods":true
+      },
+      {
+        "name":"com.dat3m.dartagnan.utils.options.BaseOptions",
+        "allDeclaredFields":true,
+        "queryAllDeclaredMethods":true
+      },
+      {
+        "name":"com.dat3m.dartagnan.wmm.Wmm$Config",
+        "allDeclaredFields":true,
+        "queryAllDeclaredMethods":true
+      },
+      {
+        "name":"com.dat3m.dartagnan.wmm.analysis.RelationAnalysis$Config",
+        "allDeclaredFields":true,
+        "queryAllDeclaredMethods":true
+      },
+      {
+        "name":"com.dat3m.dartagnan.wmm.analysis.WmmAnalysis",
+        "allDeclaredFields":true,
+        "queryAllDeclaredMethods":true
+      },
+      {
+        "name":"com.dat3m.dartagnan.wmm.processing.WmmProcessingManager",
+        "allDeclaredFields":true,
+        "queryAllDeclaredMethods":true
+      }
+]
+  

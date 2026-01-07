@@ -1,8 +1,5 @@
 package com.dat3m.svcomp;
 
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import com.dat3m.dartagnan.parsers.witness.ParserWitness;
 import com.dat3m.dartagnan.utils.options.BaseOptions;
 import com.dat3m.dartagnan.witness.graphml.WitnessGraph;
@@ -27,14 +24,11 @@ import java.util.stream.Collectors;
 
 import static com.dat3m.dartagnan.configuration.OptionInfo.collectOptions;
 import static com.dat3m.dartagnan.configuration.OptionNames.*;
-import static com.dat3m.dartagnan.witness.graphml.GraphAttributes.UNROLLBOUND;
 import static java.lang.Integer.parseInt;
 import static com.dat3m.dartagnan.utils.ExitCode.*;
 
 @Options
 public class SVCOMPRunner extends BaseOptions {
-
-    private static final Logger logger = LoggerFactory.getLogger(SVCOMPRunner.class);
 
     private EnumSet<Property> property;
     
@@ -95,7 +89,6 @@ public class SVCOMPRunner extends BaseOptions {
         config.recursiveInject(r);
 
         if(r.property == null) {
-            logger.warn("Unrecognized property");
             System.out.println("UNKNOWN");
             return;
         }
@@ -109,13 +102,11 @@ public class SVCOMPRunner extends BaseOptions {
             }
         }
 
-        int bound = witness.hasAttributed(UNROLLBOUND.toString()) ? parseInt(witness.getAttributed(UNROLLBOUND.toString())) : 1;
-
         String result = "UNKNOWN";
         while(result.contains("UNKNOWN")) {
             ArrayList<String> cmd = new ArrayList<>();
             cmd.add(System.getenv().get("DAT3M_HOME") + "/dartagnan/target/dartagnan");
-            cmd.add("-Dorg.slf4j.simpleLogger.defaultLogLevel=info");
+            cmd.add("-DlogLevel=INFO");
             cmd.add("-DLOGNAME=" + Files.getNameWithoutExtension(programPath));
             cmd.add("-Djava.library.path=" + System.getenv().get("DAT3M_HOME") + "/dartagnan/target/libs/");
             cmd.add(fileModel.toString());
@@ -124,7 +115,6 @@ public class SVCOMPRunner extends BaseOptions {
             cmd.add("--bound.load=" + boundsFilePath);
             cmd.add("--bound.save=" + boundsFilePath);
             cmd.add(String.format("--%s=%s", PROPERTY, r.property.stream().map(Enum::name).collect(Collectors.joining(","))));
-            cmd.add(String.format("--%s=%s", BOUND, bound));
             cmd.add(String.format("--%s=%s", WITNESS_ORIGINAL_PROGRAM_PATH, programPath));
             cmd.addAll(filterOptions(config));
 
