@@ -133,6 +133,15 @@
         "name":"com.dat3m.dartagnan.wmm.processing.WmmProcessingManager",
         "allDeclaredFields":true,
         "queryAllDeclaredMethods":true
+      },
+      {
+        "name": "java.lang.Integer",
+        "methods": [
+          {
+            "name": "valueOf",
+            "parameterTypes": ["java.lang.String"]
+          }
+        ]
       }
 ]
   
