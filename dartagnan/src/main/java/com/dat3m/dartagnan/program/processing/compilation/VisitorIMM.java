@@ -6,14 +6,11 @@ import com.dat3m.dartagnan.expression.type.BooleanType;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.Tag;
-import com.dat3m.dartagnan.program.event.Tag.C11;
-import com.dat3m.dartagnan.program.event.Tag.IMM;
 import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.event.lang.catomic.*;
 import com.dat3m.dartagnan.program.event.lang.llvm.*;
 import com.dat3m.dartagnan.program.event.metadata.MemoryOrder;
 
-import java.util.Collections;
 import java.util.List;
 
 import static com.dat3m.dartagnan.program.event.EventFactory.*;
@@ -27,9 +24,9 @@ class VisitorIMM extends VisitorBase {
     public List<Event> visitLoad(Load e) {
         // FIXME: It is weird to compile a core-level load by transforming its tagging.
         final MemoryOrder mo = e.getMetadata(MemoryOrder.class);
-        final boolean isNonAtomic = (mo == null || mo.value().equals(C11.NONATOMIC));
+        final boolean isNonAtomic = (mo == null || mo.value().equals(Tag.C11.NONATOMIC));
         return eventSequence(
-                newLoadWithMo(e.getResultRegister(), e.getAddress(), isNonAtomic ? C11.MO_RELAXED : mo.value())
+                newLoadWithMo(e.getResultRegister(), e.getAddress(), isNonAtomic ? Tag.C11.MO_RELAXED : mo.value())
         );
     }
 
@@ -37,9 +34,9 @@ class VisitorIMM extends VisitorBase {
     public List<Event> visitStore(Store e) {
         // FIXME: It is weird to compile a core-level load by transforming its tagging.
         final MemoryOrder mo = e.getMetadata(MemoryOrder.class);
-        final boolean isNonAtomic = (mo == null || mo.value().equals(C11.NONATOMIC));
+        final boolean isNonAtomic = (mo == null || mo.value().equals(Tag.C11.NONATOMIC));
         return eventSequence(
-                newStoreWithMo(e.getAddress(), e.getMemValue(), isNonAtomic ? C11.MO_RELAXED : mo.value())
+                newStoreWithMo(e.getAddress(), e.getMemValue(), isNonAtomic ? Tag.C11.MO_RELAXED : mo.value())
         );
     }
 
@@ -52,8 +49,8 @@ class VisitorIMM extends VisitorBase {
         Register resultRegister = e.getResultRegister();
         Expression address = e.getAddress();
         String mo = e.getMo();
-        Event optionalFenceLoad = mo.equals(Tag.C11.MO_SC) ? newFence(Tag.C11.MO_SC) : null;
-        Event optionalFenceStore = mo.equals(Tag.C11.MO_SC) ? newFence(Tag.C11.MO_SC) : null;
+        Event optionalFenceLoad = mo.equals(Tag.C11.MO_SC) ? C11.newThreadFenceSequentiallyConsistent() : null;
+        Event optionalFenceStore = mo.equals(Tag.C11.MO_SC) ? C11.newThreadFenceSequentiallyConsistent() : null;
         Expression expectedAddr = e.getAddressOfExpected();
         Type type = resultRegister.getType();
         Register booleanResultRegister = type instanceof BooleanType ? resultRegister :
@@ -112,7 +109,7 @@ class VisitorIMM extends VisitorBase {
     @Override
     public List<Event> visitAtomicLoad(AtomicLoad e) {
         String mo = e.getMo();
-        Event optionalFence = mo.equals(Tag.C11.MO_SC) ? newFence(Tag.C11.MO_SC) : null;
+        Event optionalFence = mo.equals(Tag.C11.MO_SC) ? C11.newThreadFenceSequentiallyConsistent() : null;
         return eventSequence(
                 optionalFence,
                 newLoadWithMo(e.getResultRegister(), e.getAddress(), extractLoadMo(mo))
@@ -122,7 +119,7 @@ class VisitorIMM extends VisitorBase {
     @Override
     public List<Event> visitAtomicStore(AtomicStore e) {
         String mo = e.getMo();
-        Event optionalFence = mo.equals(Tag.C11.MO_SC) ? newFence(Tag.C11.MO_SC) : null;
+        Event optionalFence = mo.equals(Tag.C11.MO_SC) ? C11.newThreadFenceSequentiallyConsistent() : null;
         return eventSequence(
                 optionalFence,
                 newStoreWithMo(e.getAddress(), e.getMemValue(), extractStoreMo(mo))
@@ -131,15 +128,17 @@ class VisitorIMM extends VisitorBase {
 
     @Override
     public List<Event> visitAtomicThreadFence(AtomicThreadFence e) {
-        return Collections.singletonList(newFence(e.getMo()));
+        return eventSequence(
+                C11.newThreadFence(e.getMo())
+        );
     }
 
     @Override
     public List<Event> visitAtomicXchg(AtomicXchg e) {
         Expression address = e.getAddress();
         String mo = e.getMo();
-        Event optionalFenceLoad = mo.equals(Tag.C11.MO_SC) ? newFence(Tag.C11.MO_SC) : null;
-        Event optionalFenceStore = mo.equals(Tag.C11.MO_SC) ? newFence(Tag.C11.MO_SC) : null;
+        Event optionalFenceLoad = mo.equals(Tag.C11.MO_SC) ? C11.newThreadFenceSequentiallyConsistent() : null;
+        Event optionalFenceStore = mo.equals(Tag.C11.MO_SC) ? C11.newThreadFenceSequentiallyConsistent() : null;
 
         Load load = newRMWLoadWithMo(e.getResultRegister(), address, mo);
 
@@ -158,14 +157,14 @@ class VisitorIMM extends VisitorBase {
     @Override
     public List<Event> visitLlvmLoad(LlvmLoad e) {
         return eventSequence(
-                newLoadWithMo(e.getResultRegister(), e.getAddress(), IMM.extractLoadMo(e.getMo()))
+                newLoadWithMo(e.getResultRegister(), e.getAddress(), extractLoadMo(e.getMo()))
         );
     }
 
     @Override
     public List<Event> visitLlvmStore(LlvmStore e) {
         return eventSequence(
-                newStoreWithMo(e.getAddress(), e.getMemValue(), IMM.extractStoreMo(e.getMo()))
+                newStoreWithMo(e.getAddress(), e.getMemValue(), extractStoreMo(e.getMo()))
         );
     }
 
@@ -175,8 +174,8 @@ class VisitorIMM extends VisitorBase {
         Expression address = e.getAddress();
         String mo = e.getMo();
 
-        Load load = newRMWLoadExclusiveWithMo(resultRegister, address, IMM.extractLoadMo(mo));
-        Store store = newRMWStoreExclusiveWithMo(address, e.getValue(), true, IMM.extractStoreMo(mo));
+        Load load = newRMWLoadExclusiveWithMo(resultRegister, address, extractLoadMo(mo));
+        Store store = newRMWStoreExclusiveWithMo(address, e.getValue(), true, false, extractStoreMo(mo));
         Label label = newLabel("FakeDep");
         Event fakeCtrlDep = newFakeCtrlDep(resultRegister, label);
 
@@ -197,8 +196,8 @@ class VisitorIMM extends VisitorBase {
         Register dummyReg = e.getFunction().newRegister(resultRegister.getType());
         Local localOp = newLocal(dummyReg, expressions.makeIntBinary(resultRegister, e.getOperator(), e.getOperand()));
 
-        Load load = newRMWLoadExclusiveWithMo(resultRegister, address, IMM.extractLoadMo(mo));
-        Store store = newRMWStoreExclusiveWithMo(address, dummyReg, true, IMM.extractStoreMo(mo));
+        Load load = newRMWLoadExclusiveWithMo(resultRegister, address, extractLoadMo(mo));
+        Store store = newRMWStoreExclusiveWithMo(address, dummyReg, true, false, extractStoreMo(mo));
         Label label = newLabel("FakeDep");
         Event fakeCtrlDep = newFakeCtrlDep(resultRegister, label);
 
@@ -220,8 +219,8 @@ class VisitorIMM extends VisitorBase {
         Label casEnd = newLabel("CAS_end");
         CondJump branchOnCasCmpResult = newJumpUnless(success, casEnd);
 
-        Load load = newRMWLoadExclusiveWithMo(oldValue, address, IMM.extractLoadMo(mo));
-        Store store = newRMWStoreExclusiveWithMo(address, newValue, strong, IMM.extractStoreMo(mo));
+        Load load = newRMWLoadExclusiveWithMo(oldValue, address, extractLoadMo(mo));
+        Store store = newRMWStoreExclusiveWithMo(address, newValue, strong, false, extractStoreMo(mo));
 
         return eventSequence(
                 load,
@@ -237,7 +236,7 @@ class VisitorIMM extends VisitorBase {
     @Override
     public List<Event> visitLlvmFence(LlvmFence e) {
         return eventSequence(
-                newFence(e.getMo())
+                C11.newThreadFence(e.getMo())
         );
     }
 

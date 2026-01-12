@@ -229,7 +229,7 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object> {
         final Register register = shrinkRegister(r64, ctx.rD32, inst.halfWordSize, inst.byteSize);
         final Expression address = parseAddress(ctx.address());
         final String mo = inst.acquire ? MO_ACQ : "";
-        add(EventFactory.newRMWLoadExclusiveWithMo(register, address, mo));
+        add(EventFactory.AArch64.newRMWLoadExclusive(register, address, mo));
         addRegister64Update(r64, register);
         return null;
     }
@@ -303,7 +303,7 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object> {
         }
 
         // TODO: Can lReg and sReg match? If so, we get a problem here.
-        final Xchg xchg = EventFactory.Common.newXchg(lReg, address, value);
+        final Event xchg = EventFactory.Common.newXchg(lReg, address, value);
         xchg.addTags(mo);
         xchg.setMetadata(SWP_PRINTER);
 
@@ -345,7 +345,7 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object> {
             mo.add(MO_REL);
         }
 
-        final CAS cas = EventFactory.Common.newCAS(rs, address, cmpVal, val);
+        final Event cas = EventFactory.Common.newCAS(rs, address, cmpVal, val);
         cas.addTags(mo);
         cas.setMetadata(CAS_PRINTER);
 
@@ -467,7 +467,7 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object> {
         }
 
         final Expression address = parseAddress(ctx.address());
-        final RMWFetchOp ldOp = EventFactory.Common.newRmwFetchOp(rt, address, info.op, operand);
+        final Event ldOp = EventFactory.Common.newRmwFetchOp(rt, address, info.op, operand);
         ldOp.addTags(mo);
         ldOp.setMetadata(LDOP_PRINTER);
 
@@ -509,7 +509,7 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object> {
 
     @Override
     public Object visitFence(FenceContext ctx) {
-        return add(EventFactory.newFenceOpt(ctx.Fence().getText(), ctx.opt));
+        return add(EventFactory.AArch64.newBarrier(ctx.Fence().getText(), ctx.opt));
     }
 
     @Override

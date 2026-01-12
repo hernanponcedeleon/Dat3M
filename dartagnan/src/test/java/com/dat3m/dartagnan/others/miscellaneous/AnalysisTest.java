@@ -801,7 +801,7 @@ public class AnalysisTest {
         IntegerType u64 = types.getIntegerType(64);
         Register r64 = b.getOrNewRegister(0, "r64", u64);
         b.addChild(0, newRMWLoadExclusive(r64, x));
-        b.addChild(0, newRMWStoreExclusive(x, expressions.makeValue(0, u64), true));
+        b.addChild(0, newRMWStoreExclusive(x, expressions.makeValue(0, u64), true, false));
         b.addChild(1, newStore(x, expressions.makeValue(0, u32)));
 
         Program program = b.build();

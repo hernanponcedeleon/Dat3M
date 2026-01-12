@@ -31,7 +31,7 @@ import com.dat3m.dartagnan.program.memory.MemoryObject;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static com.dat3m.dartagnan.program.event.FenceNameRepository.*;
+import static com.google.common.base.Preconditions.checkArgument;
 
 public class EventFactory {
 
@@ -134,12 +134,6 @@ public class EventFactory {
 
     public static GenericVisibleEvent newFence(String name) {
         return new GenericVisibleEvent(name, name, Tag.FENCE);
-    }
-
-    public static GenericVisibleEvent newFenceOpt(String name, String opt) {
-        GenericVisibleEvent fence = newFence(name + "." + opt);
-        fence.addTags(name);
-        return fence;
     }
 
     public static ControlBarrier newControlBarrier(String name, String instanceId, String execScope) {
@@ -309,12 +303,14 @@ public class EventFactory {
         return load;
     }
 
-    public static RMWStoreExclusive newRMWStoreExclusive(Expression address, Expression value, boolean isStrong) {
-        return new RMWStoreExclusive(address, value, isStrong, false);
+    public static RMWStoreExclusive newRMWStoreExclusive(Expression address, Expression value, boolean isStrong,
+            boolean requiresMatchingAddresses) {
+        return new RMWStoreExclusive(address, value, isStrong, requiresMatchingAddresses);
     }
 
-    public static RMWStoreExclusive newRMWStoreExclusiveWithMo(Expression address, Expression value, boolean isStrong, String mo) {
-        RMWStoreExclusive store = newRMWStoreExclusive(address, value, isStrong);
+    public static RMWStoreExclusive newRMWStoreExclusiveWithMo(Expression address, Expression value, boolean isStrong,
+            boolean requiresMatchingAddresses, String mo) {
+        final RMWStoreExclusive store = newRMWStoreExclusive(address, value, isStrong, requiresMatchingAddresses);
         store.setMemoryOrder(mo);
         return store;
     }
@@ -467,6 +463,34 @@ public class EventFactory {
             return new AtomicXchg(register, address, value, mo);
         }
     }
+
+    // =============================================================================================
+    // ======================================== C11 / IMM ==========================================
+    // =============================================================================================
+
+    public static class C11 {
+
+        public static GenericVisibleEvent newThreadFenceAcquire() {
+            return newThreadFence(Tag.C11.MO_ACQUIRE);
+        }
+
+        public static GenericVisibleEvent newThreadFenceRelease() {
+            return newThreadFence(Tag.C11.MO_RELEASE);
+        }
+
+        public static GenericVisibleEvent newThreadFenceAcquireRelease() {
+            return newThreadFence(Tag.C11.MO_ACQUIRE_RELEASE);
+        }
+
+        public static GenericVisibleEvent newThreadFenceSequentiallyConsistent() {
+            return newThreadFence(Tag.C11.MO_SC);
+        }
+
+        public static GenericVisibleEvent newThreadFence(String mo) {
+            return new GenericVisibleEvent("atomic_thread_fence(%s)".formatted(mo), mo, Tag.FENCE);
+        }
+    }
+
     // =============================================================================================
     // =========================================== LLVM ============================================
     // =============================================================================================
@@ -527,53 +551,64 @@ public class EventFactory {
         private AArch64() {
         }
 
-        public static class DMB {
-            private DMB() {
-            }
-
-            public static GenericVisibleEvent newSYBarrier() {
-                return newFence("DMB.SY");
-            }
-
-            public static GenericVisibleEvent newSTBarrier() {
-                return newFence("DMB.ST");
-            }
-
-            public static GenericVisibleEvent newISHBarrier() {
-                return newFence("DMB.ISH");
-            }
-
-            public static GenericVisibleEvent newISHLDBarrier() {
-                return newFence("DMB.ISHLD");
-            }
-
-            public static GenericVisibleEvent newISHSTBarrier() {
-                return newFence("DMB.ISHST");
-            }
+        public static Load newRMWLoadExclusive(Register register, Expression address, String mo) {
+            return newRMWLoadExclusiveWithMo(register, address, mo);
         }
 
-        public static class DSB {
-            private DSB() {
-            }
-
-            public static GenericVisibleEvent newSYBarrier() {
-                return newFence("DSB.SY");
-            }
-
-            public static GenericVisibleEvent newISHBarrier() {
-                return newFence("DSB.ISH");
-            }
-
-            public static GenericVisibleEvent newISHLDBarrier() {
-                return newFence("DSB.ISHLD");
-            }
-
-            public static GenericVisibleEvent newISHSTBarrier() {
-                return newFence("DSB.ISHST");
-            }
-
+        public static Store newRMWStoreExclusive(Expression address, Expression value, boolean strong, String mo) {
+            return newRMWStoreExclusiveWithMo(address, value, strong, false, mo);
         }
 
+        public static GenericVisibleEvent newDmbBarrier() {
+            return newBarrier("DMB", "SY");
+        }
+
+        public static GenericVisibleEvent newDmbStBarrier() {
+            return newBarrier("DMB", "ST");
+        }
+
+        public static GenericVisibleEvent newDmbIshBarrier() {
+            return newBarrier("DMB", "ISH");
+        }
+
+        public static GenericVisibleEvent newDmbIshLdBarrier() {
+            return newBarrier("DMB", "ISHLD");
+        }
+
+        public static GenericVisibleEvent newDmbIshStBarrier() {
+            return newBarrier("DMB", "ISHST");
+        }
+
+        public static GenericVisibleEvent newDsbBarrier() {
+            return newBarrier("DSB", "SY");
+        }
+
+        public static GenericVisibleEvent newDsbIshBarrier() {
+            return newBarrier("DSB", "ISH");
+        }
+
+        public static GenericVisibleEvent newDsbIshLdBarrier() {
+            return newBarrier("DSB", "ISHLD");
+        }
+
+        public static GenericVisibleEvent newDsbIshStBarrier() {
+            return newBarrier("DSB", "ISHST");
+        }
+
+        public static GenericVisibleEvent newBarrier(String type, String option) {
+            final String typeUpper = type.toUpperCase();
+            final String optionUpper = option.toUpperCase();
+            checkArgument(BARRIER_TYPE.contains(typeUpper), "Unknown barrier type %s", type);
+            checkArgument(BARRIER_OPT.contains(optionUpper), "Unknown barrier option %s");
+            final String name = "%s.%s".formatted(typeUpper, optionUpper);
+            return new GenericVisibleEvent(name, name, Tag.FENCE, typeUpper);
+        }
+
+        private static final Set<String> BARRIER_TYPE = Set.of("DMB", "DSB", "ISB");
+
+        private static final Set<String> BARRIER_OPT = Set.of(
+                "SY", "LD", "ST", "ISH", "ISHLD", "ISHST", "OSH", "OSHLD", "OSHST", "NSH", "NSHLD", "NSHST"
+        );
     }
 
     // =============================================================================================
@@ -642,6 +677,9 @@ public class EventFactory {
             return srcuSync;
         }
 
+        public static GenericVisibleEvent newFence(String fenceType) {
+            return EventFactory.newFence(fenceType);
+        }
     }
 
 
@@ -657,7 +695,15 @@ public class EventFactory {
         }
 
         public static GenericVisibleEvent newMemoryFence() {
-            return newFence(MFENCE);
+            return newFence("mfence");
+        }
+
+        public static GenericVisibleEvent newLoadFence() {
+            throw new UnsupportedOperationException();
+        }
+
+        public static GenericVisibleEvent newStoreFence() {
+            throw new UnsupportedOperationException();
         }
     }
 
@@ -669,15 +715,14 @@ public class EventFactory {
         private RISCV() {
         }
 
-        public static RMWStoreExclusive newRMWStoreConditional(Expression address, Expression value, String mo, boolean isStrong) {
-            RMWStoreExclusive store = new RMWStoreExclusive(address, value, isStrong, true);
-            store.addTags(Tag.RISCV.STCOND);
-            store.setMemoryOrder(mo);
-            return store;
+        public static Load newRMWLoadExclusive(Register register, Expression value, String mo) {
+            return EventFactory.newRMWLoadExclusiveWithMo(register, value, mo);
         }
 
-        public static RMWStoreExclusive newRMWStoreConditional(Expression address, Expression value, String mo) {
-            return RISCV.newRMWStoreConditional(address, value, mo, false);
+        public static Store newRMWStoreConditional(Expression address, Expression value, boolean strong, String mo) {
+            Store store = newRMWStoreExclusiveWithMo(address, value, strong, true, mo);
+            store.addTags(Tag.RISCV.STCOND);
+            return store;
         }
 
         public static GenericVisibleEvent newRRFence() {
@@ -732,20 +777,24 @@ public class EventFactory {
         private Power() {
         }
 
-        public static RMWStoreExclusive newRMWStoreConditional(Expression address, Expression value, boolean isStrong) {
-            return new RMWStoreExclusive(address, value, isStrong, true);
+        public static Load newRMWLoadExclusive(Register register, Expression address) {
+            return EventFactory.newRMWLoadExclusive(register, address);
+        }
+
+        public static Store newRMWStoreConditional(Expression address, Expression value, boolean isStrong) {
+            return newRMWStoreExclusive(address, value, isStrong, true);
         }
 
         public static GenericVisibleEvent newISyncBarrier() {
-            return newFence(ISYNC);
+            return newFence("isync");
         }
 
         public static GenericVisibleEvent newSyncBarrier() {
-            return newFence(SYNC);
+            return newFence("sync");
         }
 
         public static GenericVisibleEvent newLwSyncBarrier() {
-            return newFence(LWSYNC);
+            return newFence("lwsync");
         }
     }
 
@@ -755,30 +804,30 @@ public class EventFactory {
     public static class PTX {
         private PTX() {}
 
-        public static PTXAtomOp newAtomOp(Expression address, Register register, Expression value,
-                                          IntBinaryOp op, String mo, String scope) {
+        public static Event newAtomOp(Expression address, Register register, Expression value,
+                IntBinaryOp op, String mo, String scope) {
             // PTX (currently) only generates memory orders ACQ_REL and RLX for atom.
             PTXAtomOp atom = new PTXAtomOp(register, address, op, value, mo);
             atom.addTags(scope);
             return atom;
         }
 
-        public static PTXAtomCAS newAtomCAS(Expression address, Register register, Expression expected,
+        public static Event newAtomCAS(Expression address, Register register, Expression expected,
                 Expression value, String mo, String scope) {
             PTXAtomCAS atom = new PTXAtomCAS(register, address, expected, value, mo);
             atom.addTags(scope);
             return atom;
         }
 
-        public static PTXAtomExch newAtomExch(Expression address, Register register,
-                                            Expression value, String mo, String scope) {
+        public static Event newAtomExch(Expression address, Register register,
+                Expression value, String mo, String scope) {
             PTXAtomExch atom = new PTXAtomExch(register, address, value, mo);
             atom.addTags(scope);
             return atom;
         }
 
-        public static PTXRedOp newRedOp(Expression address, Expression value,
-                                        IntBinaryOp op, String mo, String scope) {
+        public static Event newRedOp(Expression address, Expression value,
+                IntBinaryOp op, String mo, String scope) {
             // PTX (currently) only generates memory orders ACQ_REL and RLX for red.
             PTXRedOp red = new PTXRedOp(address, value, op, mo);
             red.addTags(scope);
@@ -805,6 +854,27 @@ public class EventFactory {
         public static VulkanCmpXchg newVulkanCmpXchg(Expression address, Register register, Expression expected,
                                                      Expression value, String mo, String scope) {
             return new VulkanCmpXchg(register, address, expected, value, mo, scope);
+        }
+
+        public static GenericVisibleEvent newAcqBarrier(String scope, List<String> semantics, boolean visible) {
+            final GenericVisibleEvent barrier = newFence(Tag.FENCE);
+            barrier.addTags(semantics);
+            barrier.addTags(Tag.Vulkan.ACQUIRE, scope, visible ? Tag.Vulkan.SEM_VISIBLE : "");
+            return barrier;
+        }
+
+        public static GenericVisibleEvent newRelBarrier(String scope, List<String> semantics, boolean available) {
+            final GenericVisibleEvent barrier = newFence(Tag.FENCE);
+            barrier.addTags(semantics);
+            barrier.addTags(Tag.Vulkan.RELEASE, scope, available ? Tag.Vulkan.SEM_AVAILABLE : "");
+            return barrier;
+        }
+
+        public static Event newAcqRelBarrier(String scope, List<String> semantics, boolean available, boolean visible) {
+            final GenericVisibleEvent barrier = newFence(Tag.FENCE);
+            barrier.addTags(semantics);
+            barrier.addTags(Tag.Vulkan.ACQ_REL, scope, available ? Tag.Vulkan.SEM_AVAILABLE : "", visible ? Tag.Vulkan.SEM_VISIBLE : "");
+            return barrier;
         }
 
         public static GenericVisibleEvent newAvDevice() {

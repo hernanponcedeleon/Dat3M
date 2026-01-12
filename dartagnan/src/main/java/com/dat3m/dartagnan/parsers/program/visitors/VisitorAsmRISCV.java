@@ -13,7 +13,7 @@ import com.dat3m.dartagnan.expression.Type;
 import com.dat3m.dartagnan.expression.integers.IntCmpOp;
 import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.parsers.AsmRISCVBaseVisitor;
-import com.dat3m.dartagnan.parsers.AsmRISCVParser;
+import com.dat3m.dartagnan.parsers.AsmRISCVParser.*;
 import com.dat3m.dartagnan.parsers.program.utils.AsmUtils;
 import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.Register;
@@ -57,7 +57,7 @@ public class VisitorAsmRISCV extends AsmRISCVBaseVisitor<Object> {
     // The visitor will first visit the asm code (which will create the events and asm registers) and then the constraints. 
     // The latter will take care of creating input and output assignments.
     @Override
-    public List<Event> visitAsm(AsmRISCVParser.AsmContext ctx) {
+    public List<Event> visitAsm(AsmContext ctx) {
         visitChildren(ctx);
         List<Event> events = new ArrayList<>();
         events.addAll(inputAssignments);
@@ -67,22 +67,22 @@ public class VisitorAsmRISCV extends AsmRISCVBaseVisitor<Object> {
     }
 
     // Tells if a constraint is a numeric one, e.g. '3'
-    private boolean isConstraintNumeric(AsmRISCVParser.ConstraintContext constraint) {
+    private boolean isConstraintNumeric(ConstraintContext constraint) {
         return constraint.overlapInOutRegister() != null;
     }
 
     // Tells if the constraint is an output one, e.g. '=r' or '=&r'
-    private boolean isConstraintOutputConstraint(AsmRISCVParser.ConstraintContext constraint) {
+    private boolean isConstraintOutputConstraint(ConstraintContext constraint) {
         return constraint.outputOpAssign() != null;
     }
 
     // Tells us if the constraint is an input one, e.g 'r' or 'A'
-    private boolean isConstraintInputConstraint(AsmRISCVParser.ConstraintContext constraint) {
+    private boolean isConstraintInputConstraint(ConstraintContext constraint) {
         return constraint.inputOpGeneralReg() != null;
     }
 
     @Override
-    public Object visitLoad(AsmRISCVParser.LoadContext ctx) {
+    public Object visitLoad(LoadContext ctx) {
         Register register = (Register) ctx.register(0).accept(this);
         Register address = (Register) ctx.register(1).accept(this);
         expectedType = address.getType();
@@ -93,7 +93,7 @@ public class VisitorAsmRISCV extends AsmRISCVBaseVisitor<Object> {
     }
 
     @Override
-    public Object visitLoadImmediate(AsmRISCVParser.LoadImmediateContext ctx) {
+    public Object visitLoadImmediate(LoadImmediateContext ctx) {
         Register register = (Register) ctx.register().accept(this);
         expectedType = register.getType();
         Expression value = (Expression) ctx.value().accept(this);
@@ -102,23 +102,23 @@ public class VisitorAsmRISCV extends AsmRISCVBaseVisitor<Object> {
     }
 
     @Override
-    public Object visitLoadExclusive(AsmRISCVParser.LoadExclusiveContext ctx) {
+    public Object visitLoadExclusive(LoadExclusiveContext ctx) {
         Register register = (Register) ctx.register(0).accept(this);
         Register address = (Register) ctx.register(1).accept(this);
-        asmInstructions.add(EventFactory.newRMWLoadExclusive(register, address));
+        asmInstructions.add(EventFactory.RISCV.newRMWLoadExclusive(register, address, ""));
         return null;
     }
 
     @Override
-    public Object visitLoadAcquireExclusive(AsmRISCVParser.LoadAcquireExclusiveContext ctx) {
+    public Object visitLoadAcquireExclusive(LoadAcquireExclusiveContext ctx) {
         Register register = (Register) ctx.register(0).accept(this);
         Register address = (Register) ctx.register(1).accept(this);
-        asmInstructions.add(EventFactory.newRMWLoadExclusiveWithMo(register, address, Tag.RISCV.MO_ACQ));
+        asmInstructions.add(EventFactory.RISCV.newRMWLoadExclusive(register, address, Tag.RISCV.MO_ACQ));
         return null;
     }
 
     @Override
-    public Object visitAdd(AsmRISCVParser.AddContext ctx) {
+    public Object visitAdd(AddContext ctx) {
         Register resultRegister = (Register) ctx.register(0).accept(this);
         Register leftRegister = (Register) ctx.register(1).accept(this);
         Register rightRegister = (Register) ctx.register(2).accept(this);
@@ -128,7 +128,7 @@ public class VisitorAsmRISCV extends AsmRISCVBaseVisitor<Object> {
     }
 
     @Override
-    public Object visitSub(AsmRISCVParser.SubContext ctx) {
+    public Object visitSub(SubContext ctx) {
         Register resultRegister = (Register) ctx.register(0).accept(this);
         Register leftRegister = (Register) ctx.register(1).accept(this);
         Register rightRegister = (Register) ctx.register(2).accept(this);
@@ -138,7 +138,7 @@ public class VisitorAsmRISCV extends AsmRISCVBaseVisitor<Object> {
     }
 
     @Override
-    public Object visitStore(AsmRISCVParser.StoreContext ctx) {
+    public Object visitStore(StoreContext ctx) {
         Register value = (Register) ctx.register(0).accept(this);
         Register address = (Register) ctx.register(1).accept(this);
         expectedType = address.getType();
@@ -150,7 +150,7 @@ public class VisitorAsmRISCV extends AsmRISCVBaseVisitor<Object> {
 
 
     @Override
-    public Object visitStoreConditional(AsmRISCVParser.StoreConditionalContext ctx) {
+    public Object visitStoreConditional(StoreConditionalContext ctx) {
         Register freshResultRegister = (Register) ctx.register(0).accept(this);
         Register value = (Register) ctx.register(1).accept(this);
         Register address = (Register) ctx.register(2).accept(this);
@@ -159,7 +159,7 @@ public class VisitorAsmRISCV extends AsmRISCVBaseVisitor<Object> {
     }
 
     @Override
-    public Object visitStoreConditionalRelease(AsmRISCVParser.StoreConditionalReleaseContext ctx) {
+    public Object visitStoreConditionalRelease(StoreConditionalReleaseContext ctx) {
         Register freshResultRegister = (Register) ctx.register(0).accept(this);
         Register value = (Register) ctx.register(1).accept(this);
         Register address = (Register) ctx.register(2).accept(this);
@@ -168,7 +168,7 @@ public class VisitorAsmRISCV extends AsmRISCVBaseVisitor<Object> {
     }
 
     @Override
-    public Object visitMove(AsmRISCVParser.MoveContext ctx) {
+    public Object visitMove(MoveContext ctx) {
         Register toRegister = (Register) ctx.register(0).accept(this);
         Register fromRegister = (Register) ctx.register(1).accept(this);
         asmInstructions.add(EventFactory.newLocal(toRegister, fromRegister));
@@ -176,7 +176,7 @@ public class VisitorAsmRISCV extends AsmRISCVBaseVisitor<Object> {
     }
 
     @Override
-    public Object visitBranchNotEqual(AsmRISCVParser.BranchNotEqualContext ctx) {
+    public Object visitBranchNotEqual(BranchNotEqualContext ctx) {
         Label label = AsmUtils.getOrNewLabel(labelsDefined, ctx.Numbers().getText());
         Register firstRegister = (Register) ctx.register(0).accept(this);
         Register secondRegister = (Register) ctx.register(1).accept(this);
@@ -186,7 +186,7 @@ public class VisitorAsmRISCV extends AsmRISCVBaseVisitor<Object> {
     }
 
     @Override
-    public Object visitBranchNotEqualZero(AsmRISCVParser.BranchNotEqualZeroContext ctx) {
+    public Object visitBranchNotEqualZero(BranchNotEqualZeroContext ctx) {
         Label label = AsmUtils.getOrNewLabel(labelsDefined, ctx.Numbers().getText());
         Register firstRegister = (Register) ctx.register().accept(this);
         Expression zero = expressions.makeZero((IntegerType) firstRegister.getType());
@@ -196,7 +196,7 @@ public class VisitorAsmRISCV extends AsmRISCVBaseVisitor<Object> {
     }
 
     @Override
-    public Object visitLabelDefinition(AsmRISCVParser.LabelDefinitionContext ctx) {
+    public Object visitLabelDefinition(LabelDefinitionContext ctx) {
         String labelID = ctx.Numbers().getText();
         Label label = AsmUtils.getOrNewLabel(labelsDefined, labelID);
         asmInstructions.add(label);
@@ -204,7 +204,7 @@ public class VisitorAsmRISCV extends AsmRISCVBaseVisitor<Object> {
     }
 
     @Override
-    public Object visitNegate(AsmRISCVParser.NegateContext ctx){
+    public Object visitNegate(NegateContext ctx){
         // neg $0 $1 -> sub $0, #0, $1
         Register destinationRegister = (Register) ctx.register(0).accept(this);
         Register sourceRegister = (Register) ctx.register(1).accept(this);
@@ -215,17 +215,17 @@ public class VisitorAsmRISCV extends AsmRISCVBaseVisitor<Object> {
     }
 
     @Override
-    public Object visitAtomicAdd(AsmRISCVParser.AtomicAddContext ctx){
+    public Object visitAtomicAdd(AtomicAddContext ctx){
         throw new UnsupportedOperationException(ctx.AtomicAdd().getText());
     }
     
     @Override
-    public Object visitAtomicAddRelease(AsmRISCVParser.AtomicAddReleaseContext ctx){
+    public Object visitAtomicAddRelease(AtomicAddReleaseContext ctx){
         throw new UnsupportedOperationException(ctx.AtomicAddRelease().getText());
     }
 
     @Override
-    public Object visitAtomicAddAcquireRelease(AsmRISCVParser.AtomicAddAcquireReleaseContext ctx){
+    public Object visitAtomicAddAcquireRelease(AtomicAddAcquireReleaseContext ctx){
         throw new UnsupportedOperationException(ctx.AtomicAddAcquireRelease().getText());
     }
 
@@ -235,7 +235,7 @@ public class VisitorAsmRISCV extends AsmRISCVBaseVisitor<Object> {
     // if we created a register which will be mapped to the return Register, we have to add to "pendingRegisters", 
     // as we are going to need it while visiting the metadata to create the output assignment
     @Override
-    public Object visitRegister(AsmRISCVParser.RegisterContext ctx) {
+    public Object visitRegister(RegisterContext ctx) {
         String registerNumber = ctx.Numbers().getText();
         int registerID = Integer.parseInt(registerNumber);
         if (asmRegisters.containsKey(registerID)) {
@@ -260,14 +260,14 @@ public class VisitorAsmRISCV extends AsmRISCVBaseVisitor<Object> {
     // We just have to read the constraints, and based on their type, understand if they are going to be mapped
     // to the args registers or to the return register.
     @Override
-    public Object visitAsmMetadataEntries(AsmRISCVParser.AsmMetadataEntriesContext ctx) {
-        List<AsmRISCVParser.ConstraintContext> constraints = ctx.constraint();
+    public Object visitAsmMetadataEntries(AsmMetadataEntriesContext ctx) {
+        List<ConstraintContext> constraints = ctx.constraint();
         boolean isOutputRegistersInitialized = returnRegister == null;
         // We iterate until we find the first non-output constraint. Then we immediately initialize the return register
         // (the right-hand side of the assignment will be either a single register or an aggregate type depending on how many output constraints we processed). 
         // We then map args registers to asm registers (we need to shift the register ID to find the corresponding args position of the matching register).
         for (int i = 0; i < constraints.size(); i++) {
-            AsmRISCVParser.ConstraintContext constraint = constraints.get(i);
+            ConstraintContext constraint = constraints.get(i);
             if (isConstraintOutputConstraint(constraint)) {
                 continue;
             }
@@ -302,7 +302,7 @@ public class VisitorAsmRISCV extends AsmRISCVBaseVisitor<Object> {
     }
 
     @Override
-    public Object visitRiscvFence(AsmRISCVParser.RiscvFenceContext ctx) {
+    public Object visitRiscvFence(RiscvFenceContext ctx) {
         String mo = ctx.fenceOptions().mode;
         Event fence = switch(mo) {
             case "r r" -> EventFactory.RISCV.newRRFence();
@@ -323,7 +323,7 @@ public class VisitorAsmRISCV extends AsmRISCVBaseVisitor<Object> {
     }
 
     @Override
-    public Object visitValue(AsmRISCVParser.ValueContext ctx) {
+    public Object visitValue(ValueContext ctx) {
         checkState(expectedType instanceof IntegerType, "Expected type is not an integer type");
         String valueString = ctx.Numbers().getText();
         BigInteger value = new BigInteger(valueString);

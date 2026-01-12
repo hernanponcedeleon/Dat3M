@@ -4,9 +4,6 @@ import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.Tag;
-import com.dat3m.dartagnan.program.event.arch.vulkan.VulkanCmpXchg;
-import com.dat3m.dartagnan.program.event.arch.vulkan.VulkanRMW;
-import com.dat3m.dartagnan.program.event.arch.vulkan.VulkanRMWOp;
 import com.dat3m.dartagnan.program.event.core.ControlBarrier;
 import com.dat3m.dartagnan.program.event.core.GenericVisibleEvent;
 import com.dat3m.dartagnan.program.event.core.Load;
@@ -72,21 +69,21 @@ public class VisitorSpirvVulkan extends VisitorVulkan {
     public List<Event> visitSpirvXchg(SpirvXchg e) {
         String mo = moToVulkanTag(Tag.Spirv.getMoTag(e.getTags()));
         String scope = Tag.Spirv.toVulkanTag(Tag.Spirv.getScopeTag(e.getTags()));
-        VulkanRMW rmw = EventFactory.Vulkan.newRMW(e.getAddress(), e.getResultRegister(), e.getValue(), mo, scope);
+        Event rmw = EventFactory.Vulkan.newRMW(e.getAddress(), e.getResultRegister(), e.getValue(), mo, scope);
         rmw.addTags(Tag.Vulkan.NON_PRIVATE, Tag.Vulkan.AVAILABLE, Tag.Vulkan.VISIBLE);
         addVulkanTags(e, rmw);
-        return visitVulkanRMW(rmw);
+        return rmw.accept(this);
     }
 
     @Override
     public List<Event> visitSpirvRMW(SpirvRmw e) {
         String mo = moToVulkanTag(Tag.Spirv.getMoTag(e.getTags()));
         String scope = Tag.Spirv.toVulkanTag(Tag.Spirv.getScopeTag(e.getTags()));
-        VulkanRMWOp rmwOp = EventFactory.Vulkan.newRMWOp(e.getAddress(), e.getResultRegister(), e.getOperand(),
+        Event rmwOp = EventFactory.Vulkan.newRMWOp(e.getAddress(), e.getResultRegister(), e.getOperand(),
                 e.getOperator(), mo, scope);
         rmwOp.addTags(Tag.Vulkan.NON_PRIVATE, Tag.Vulkan.AVAILABLE, Tag.Vulkan.VISIBLE);
         addVulkanTags(e, rmwOp);
-        return visitVulkanRMWOp(rmwOp);
+        return rmwOp.accept(this);
     }
 
     @Override
@@ -104,11 +101,11 @@ public class VisitorSpirvVulkan extends VisitorVulkan {
                     "Spir-V CmpXchg with unequal tag sets is not supported");
         }
         String scope = Tag.Spirv.toVulkanTag(Tag.Spirv.getScopeTag(e.getTags()));
-        VulkanCmpXchg cmpXchg = EventFactory.Vulkan.newVulkanCmpXchg(e.getAddress(), e.getResultRegister(),
+        Event cmpXchg = EventFactory.Vulkan.newVulkanCmpXchg(e.getAddress(), e.getResultRegister(),
                 e.getExpectedValue(), e.getStoreValue(), moToVulkanTag(spvMoEq), scope);
         addVulkanTags(e, cmpXchg);
         cmpXchg.addTags(Tag.Vulkan.NON_PRIVATE, Tag.Vulkan.AVAILABLE, Tag.Vulkan.VISIBLE);
-        return visitVulkanCmpXchg(cmpXchg);
+        return cmpXchg.accept(this);
     }
 
     private Event addVulkanTags(Event source, Event target) {
