@@ -58,6 +58,11 @@ public class SVCOMPRunner extends BaseOptions {
         description="Run Dartagnan as a violation witness validator. Argument is the path to the witness file.")
     private String witnessPath;
 
+    @Option(
+        name=NATIVE,
+        description="Run Dartagnan in native mode rather than using the JVM.")
+    private boolean nativeExecution = false;
+
     private static final Set<String> supportedFormats = 
         ImmutableSet.copyOf(Arrays.asList(".c", ".i"));
 
@@ -105,10 +110,18 @@ public class SVCOMPRunner extends BaseOptions {
         String result = "UNKNOWN";
         while(result.contains("UNKNOWN")) {
             ArrayList<String> cmd = new ArrayList<>();
-            cmd.add(System.getenv().get("DAT3M_HOME") + "/dartagnan/target/dartagnan");
-            cmd.add("-DlogLevel=INFO");
-            cmd.add("-DLOGNAME=" + Files.getNameWithoutExtension(programPath));
-            cmd.add("-Djava.library.path=" + System.getenv().get("DAT3M_HOME") + "/dartagnan/target/libs/");
+            if (r.nativeExecution) {
+                cmd.add(System.getenv().get("DAT3M_HOME") + "/dartagnan/target/dartagnan");
+                cmd.add("-DlogLevel=INFO");
+                cmd.add("-DLOGNAME=" + Files.getNameWithoutExtension(programPath));
+                cmd.add("-Djava.library.path=" + System.getenv().get("DAT3M_HOME") + "/dartagnan/target/libs/");
+            } else {
+                cmd.add("java");
+                cmd.add("-DlogLevel=info");
+                cmd.add("-DLOGNAME=" + Files.getNameWithoutExtension(programPath));
+                cmd.add("-jar");
+                cmd.add(System.getenv().get("DAT3M_HOME") + "/dartagnan/target/dartagnan.jar");
+            }
             cmd.add(fileModel.toString());
             cmd.add(programPath);
             cmd.add("svcomp.properties");
@@ -139,7 +152,7 @@ public class SVCOMPRunner extends BaseOptions {
     
     private static List<String> filterOptions(Configuration config) {
     	
-        List<String> skip = Arrays.asList(PROPERTYPATH);
+        List<String> skip = Arrays.asList(PROPERTYPATH, NATIVE);
     	
         return Arrays.stream(config.asPropertiesString().split("\n")).
             filter(p -> skip.stream().noneMatch(s -> s.equals(p.split(" = ")[0]))).

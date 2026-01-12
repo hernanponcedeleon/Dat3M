@@ -81,12 +81,8 @@
                 </executions>
                 <configuration>
                     <noFallback>true</noFallback>
-                    <metadataRepository>
-                        <enabled>true</enabled>
-                    </metadataRepository>
                     <buildArgs>
                         <buildArg>-Dlogback.statusListenerClass=</buildArg>
-                        <buildArg>--enable-native-access=ALL-UNNAMED</buildArg>
                     </buildArgs>
                 </configuration>
             </plugin>

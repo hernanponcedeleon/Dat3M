@@ -3,9 +3,7 @@ package com.dat3m.dartagnan.witness.graphml;
 public enum GraphAttributes {
 
 	// General attributes
-	ARCHITECTURE, CREATIONTIME, PRODUCER, PROGRAMFILE, PROGRAMHASH, SOURCECODELANG, SPECIFICATION, WITNESSTYPE,
-	// Dartagnan specific attributes
-	UNROLLBOUND;
+	ARCHITECTURE, CREATIONTIME, PRODUCER, PROGRAMFILE, PROGRAMHASH, SOURCECODELANG, SPECIFICATION, WITNESSTYPE;
 
 	@Override
 	public String toString() {
