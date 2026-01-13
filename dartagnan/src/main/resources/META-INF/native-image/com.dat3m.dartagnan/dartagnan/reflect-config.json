@@ -144,6 +144,15 @@
         ]
       },
       {
+        "name": "java.lang.Boolean",
+        "methods": [
+          {
+            "name": "valueOf",
+            "parameterTypes": ["java.lang.String"]
+          }
+        ]
+      },
+      {
         "name": "ch.qos.logback.classic.spi.LoggingEvent",
         "allDeclaredConstructors": true,
         "allDeclaredMethods": true,
