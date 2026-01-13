@@ -41,9 +41,10 @@ public class Wmm {
     // necessary to specify the anarchic program semantics.
     public final static ImmutableSet<String> ANARCHIC_CORE_RELATIONS = ImmutableSet.of(CO, RF, LXSX);
 
-    private final List<Constraint> constraints = new ArrayList<>(); // NOTE: Stores only non-defining constraints
-    private final Set<Relation> relations = new HashSet<>();
-    private final Map<String, Filter> filters = new HashMap<>();
+    // Only stores non-defining constraints.
+    private final List<Constraint> constraints = new ArrayList<>();
+    // Guarantees deterministic iteration order, even though Relation is not value-based.
+    private final Set<Relation> relations = new LinkedHashSet<>();
 
     private final Config config = new Config();
 
@@ -163,22 +164,13 @@ public class Wmm {
         }
     }
 
-    public void addFilter(Filter filter) {
-        filters.put(filter.getName(), filter);
-    }
-
-    public Filter getFilter(String name) {
-        return filters.computeIfAbsent(name, Filter::byTag);
-    }
-
     @Override
     public String toString() {
         Stream<String> a = constraints.stream().map(Constraint::toString);
         Stream<String> r = relations.stream()
                 .filter(x -> !x.names.isEmpty() && !(x.definition instanceof Definition.Undefined) && !x.hasName(x.definition.getTerm()))
                 .map(x -> x.definition.toString());
-        Stream<String> s = filters.values().stream().map(Filter::toString);
-        return Stream.of(a, r, s).flatMap(Stream::sorted).collect(Collectors.joining("\n"));
+        return Stream.of(a, r).flatMap(Stream::sorted).collect(Collectors.joining("\n"));
     }
 
     // ========================================== Utility Methods ========================================
