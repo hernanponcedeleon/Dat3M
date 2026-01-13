@@ -57,7 +57,7 @@
         <!-- 3rd party plugin versions -->
         <build-helper-maven-plugin.version>3.4.0</build-helper-maven-plugin.version>
         <git-commit-id-plugin.version>4.9.10</git-commit-id-plugin.version>
-        <jacoco-maven-plugin.version>0.8.10</jacoco-maven-plugin.version>
+        <jacoco-maven-plugin.version>0.8.14</jacoco-maven-plugin.version>
     </properties>
 
     <modules>

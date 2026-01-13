@@ -5,7 +5,7 @@
     <property name="logFile" value="dartagnan"/>
 
     <appender name="File" class="ch.qos.logback.core.FileAppender">
-        <file${logDir}/surefire-logs/${logFile}.log</file>
+        <file>${logDir}/surefire-logs/${logFile}.log</file>
         <append>true</append>
         <encoder>
             <pattern>[%d{dd.MM.yyyy}] %d{HH:mm:ss} [%level] %class{1}.%method - %msg%n</pattern>
