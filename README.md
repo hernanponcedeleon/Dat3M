@@ -50,7 +50,7 @@ Usage
 Dartagnan comes with a user interface (not available from the docker container) where it is easy to import, export and modify both the program and the memory model and select the options for the verification engine (see below).
 You can start the user interface by running
 ```
-java -jar ui/target/ui.jar
+$DAT3M_HOME/ui/target/ui
 ```
 <p align="center"> 
 <img src="ui/src/main/resources/ui.jpg">
