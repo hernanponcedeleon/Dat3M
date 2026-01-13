@@ -220,7 +220,7 @@
                 <plugin>
                     <groupId>org.graalvm.buildtools</groupId>
                     <artifactId>native-maven-plugin</artifactId>
-                    <version>${native.maven.plugin.version}</version>
+                    <version>${native-maven-plugin.version}</version>
                     <executions>
                         <execution>
                         <goals>
