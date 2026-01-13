@@ -8,13 +8,13 @@
         <file>${logDir}/logs/${logFile}.log</file>
         <append>true</append>
         <encoder>
-            <pattern>[%d{dd.MM.yyyy}] %d{HH:mm:ss} [%level] %class{1}.%method - %msg%n</pattern>
+            <pattern>[%d{dd.MM.yyyy}] %d{HH:mm:ss} [%level] %class{0}.%method - %msg%n</pattern>
         </encoder>
     </appender>
 
     <appender name="Console" class="ch.qos.logback.core.ConsoleAppender">
         <encoder>
-            <pattern>[%d{dd.MM.yyyy}] %d{HH:mm:ss} [%level] %class{1}.%method - %msg%n</pattern>
+            <pattern>[%d{dd.MM.yyyy}] %d{HH:mm:ss} [%level] %class{0}.%method - %msg%n</pattern>
         </encoder>
     </appender>
 
