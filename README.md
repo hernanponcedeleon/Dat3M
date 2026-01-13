@@ -42,7 +42,7 @@ export LD_LIBRARY_PATH=$DAT3M_HOME/dartagnan/target/libs/:$LD_LIBRARY_PATH
 
 To build the tool run
 ```
-mvn clean install -DskipTests
+mvn clean -Pnative install -DskipTests
 ```
 
 Usage
