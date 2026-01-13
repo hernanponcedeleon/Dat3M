@@ -10,7 +10,7 @@
 Requirements
 ======
 * [Maven](https://maven.apache.org/) 3.8 or above
-* [Java](https://openjdk.java.net/projects/jdk/17/) 17 or above
+* [GraalVM](https://www.graalvm.org/) with `java` version 17 or above
 * [Clang](https://clang.llvm.org) (only to verify C programs)
 * [Graphviz](https://graphviz.org) (only if option `--witness=png` is used)
 
@@ -33,13 +33,12 @@ docker run -w /home/Dat3M -it dartagnan /bin/bash
 
 **From Sources**
 
-Set Dat3M's home and the folder to generate output files (the output folder can be something different)
+Set Dat3M's home, the folder to generate output files (the output folder can be something different) and the library path (use `DYLD_LIBRARY_PATH` for MacOS)
 ```
 export DAT3M_HOME=<Dat3M's root>
 export DAT3M_OUTPUT=$DAT3M_HOME/output
+export LD_LIBRARY_PATH=$DAT3M_HOME/dartagnan/target/libs/:$LD_LIBRARY_PATH
 ```
-
-If you are verifying C code, be sure `clang` is in your `PATH`.
 
 To build the tool run
 ```
@@ -57,7 +56,8 @@ java -jar ui/target/ui.jar
 <img src="ui/src/main/resources/ui.jpg">
 </p>
 
-Dartagnan supports programs written in the `.c`, `.litmus` formats.
+Dartagnan supports programs written in the `.c`, `.ll`, `.litmus` and `spvasm` formats.
+If you are verifying C code, be sure `clang` is in your `PATH`.
 
 There are three possible results for the verification:
 - `FAIL`: the property was violated.
@@ -67,7 +67,7 @@ There are three possible results for the verification:
 You can also run Dartagnan from the console:
 
 ```
-java -jar dartagnan/target/dartagnan.jar <CAT file> [--target=<arch>] <program file> [options]
+$DAT3M_HOME/dartagnan/target/dartagnan <CAT file> [--target=<arch>] <program file> [options]
 ```
 For programs written in `.c`, value `<arch>` specifies the programming language or architectures to which the program will be compiled. For programs written in `.litmus` format, if the `--target` option is not given, Dartagnan will automatically extract the `<arch>` from the litmus test header. `<arch>` must be one of the following: 
 - c11
@@ -143,3 +143,7 @@ References
 [7] Thomas Haas, Roland Meyer, Hernán Ponce de León: [**CAAT: Consistency as a Theory**](https://hernanponcedeleon.github.io/pdfs/oopsla2022.pdf). OOPSLA 2022.
 
 [8] Thomas Haas, René Maseli, Roland Meyer, Hernán Ponce de León: [**Static Analysis of Memory Models for SMT Encodings**](https://hernanponcedeleon.github.io/pdfs/oopsla2023.pdf). OOPSLA 2023.
+
+[9] Haining Tong, Natalia Gavrilenko, Hernán Ponce de León, Keijo Heljanko: [**Towards Unified Analysis of GPU Consistency**](https://hernanponcedeleon.github.io/pdfs/asplos2024.pdf). ASPLOS 2024.
+
+[10] Thomas Haas, Roland Meyer, Hernán Ponce de León, Andrés Lomelí Garduño: [**Recurrence Sets for Proving Fair Non-termination under Axiomatic Memory Consistency Models**](https://hernanponcedeleon.github.io/pdfs/popl2026.pdf). POPL 2026.
