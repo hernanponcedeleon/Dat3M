@@ -266,10 +266,6 @@
                             <className>com.dat3m.dartagnan.wmm.analysis.RelationAnalysis$Config</className>
                             <className>com.dat3m.dartagnan.wmm.analysis.WmmAnalysis</className>
                             <className>com.dat3m.dartagnan.wmm.processing.WmmProcessingManager</className>
-                            <className>ch.qos.logback.classic.LoggerContext</className>
-                            <className>ch.qos.logback.classic.spi.ThrowableProxy</className>
-                            <className>ch.qos.logback.classic.spi.LoggingEvent</className>
-                            <className>ch.qos.logback.classic.util.ContextInitializer</className>
                         </initializeAtBuildTime>
                     </configuration>
                 </plugin>
