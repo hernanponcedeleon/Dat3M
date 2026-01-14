@@ -3,7 +3,6 @@ package com.dat3m.dartagnan.program.analysis.alias;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.integers.IntBinaryExpr;
 import com.dat3m.dartagnan.expression.integers.IntLiteral;
-import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
@@ -101,13 +100,12 @@ public class AndersenAliasAnalysis implements AliasAnalysis {
 
     @Override
     public Collection<MemoryObject> addressableObjects(MemoryCoreEvent a) {
-        return allObjects;
+        return getMaxAddressSet(a).stream().map(l -> l.base).collect(Collectors.toSet());
     }
 
     @Override
     public Collection<MemoryObject> communicableObjects(MemoryCoreEvent a) {
-        final boolean fitsAddress = a.getAccessType() instanceof IntegerType t && t.getBitWidth() >= 64;
-        return fitsAddress ? allObjects : Set.of();
+        return allObjects;
     }
 
     @Override

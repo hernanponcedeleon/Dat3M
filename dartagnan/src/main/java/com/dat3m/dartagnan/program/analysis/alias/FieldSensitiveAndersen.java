@@ -7,7 +7,6 @@ import com.dat3m.dartagnan.expression.integers.IntLiteral;
 import com.dat3m.dartagnan.expression.integers.IntSizeCast;
 import com.dat3m.dartagnan.expression.integers.IntUnaryExpr;
 import com.dat3m.dartagnan.expression.misc.ITEExpr;
-import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
@@ -109,8 +108,7 @@ public class FieldSensitiveAndersen implements AliasAnalysis {
 
     @Override
     public Collection<MemoryObject> communicableObjects(MemoryCoreEvent e) {
-        final boolean fitsAddress = e.getAccessType() instanceof IntegerType t && t.getBitWidth() >= 64;
-        return fitsAddress ? allObjects : Set.of();
+        return allObjects;
     }
 
     @Override

@@ -4,6 +4,8 @@ import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.configuration.Property;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
+import com.dat3m.dartagnan.expression.type.IntegerType;
+import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.analysis.ExecutionAnalysis;
@@ -431,24 +433,35 @@ public class PropertyEncoder implements Encoder {
                 enc.add(bmgr.not(bmgr.and(deallocated, addressed, addressVariable.leak)));
             }
         }
+        // Merge teared store operations.
+        final Map<Store, List<Store>> instructions = new HashMap<>();
+        for (InstructionBoundary end : program.getThreadEvents(InstructionBoundary.class)) {
+            final List<Store> instruction = end.getInstructionEvents().stream()
+                    .filter(Store.class::isInstance).map(Store.class::cast)
+                    .toList();
+            if (!instruction.isEmpty()) {
+                instructions.put(instruction.get(0), instruction);
+            }
+        }
         // Object A is reachable from another object B, if a co-maximal store writes an address pointing to A into B.
         for (Store store : program.getThreadEvents(Store.class)) {
-            if (!mayBeFinal(store)) { continue; }
+            final List<Store> stores = instructions.getOrDefault(store, List.of(store));
+            if (!mayBeFinalAddressStore(store, stores)) { continue; }
             final Set<MemoryObject> communicableObjects = alias.communicableObjects(store).stream()
                     .filter(variables::containsKey)
                     .collect(Collectors.toSet());
             if (communicableObjects.isEmpty()) { continue; }
-            final BooleanFormula isFinal = context.lastCoVar(store);
+            final BooleanFormula isFinal = bmgr.and(stores.stream().map(context::lastCoVar).toList());
             for (MemoryObject addressableObject : alias.addressableObjects(store)) {
                 final Var addressVariable = variables.get(addressableObject);
                 if (addressVariable == null && !addressableObject.isStaticallyAllocated()) { continue; }
-                final BooleanFormula addressed = referencesObject(store, false, addressableObject);
+                final BooleanFormula addressed = referencesObject(stores, false, addressableObject);
                 final BooleanFormula addressTrack = addressVariable != null ? addressVariable.track : bmgr.makeTrue();
                 for (MemoryObject communicableObject : communicableObjects) {
                     final Var valueVariable = variables.get(communicableObject);
                     if (valueVariable == null) { continue; }
                     final BooleanFormula valueTrack = valueVariable.track;
-                    final BooleanFormula communicated = referencesObject(store, true, communicableObject);
+                    final BooleanFormula communicated = referencesObject(stores, true, communicableObject);
                     enc.add(bmgr.not(bmgr.and(isFinal, addressed, addressTrack, communicated, bmgr.not(valueTrack))));
                 }
             }
@@ -458,28 +471,37 @@ public class PropertyEncoder implements Encoder {
         return new TrackableFormula(bmgr.not(TRACKABILITY.getSMTVariable(context)), bmgr.and(enc));
     }
 
-    private boolean mayBeFinal(Store store) {
+    private boolean mayBeFinalAddressStore(Store store, List<Store> stores) {
         //TODO exec.isAnyImplied(store, ...)
-        for (Event other : ra.getKnowledge(memoryModel.getRelation(CO)).getMustSet().getRange(store)) {
-            if (exec.isImplied(store, other)) {
-                return false;
-            }
+        final Collection<Event> laterStores = ra.getKnowledge(memoryModel.getRelation(CO)).getMustSet().getRange(store);
+        if (laterStores.stream().anyMatch(o -> exec.isImplied(store, o))) {
+            return false;
         }
-        return true;
+        if (!stores.stream().allMatch(o -> o.getMemValue().getType() instanceof IntegerType)) {
+            return false;
+        }
+        final TypeFactory types = TypeFactory.getInstance();
+        final int pointerSize = types.getMemorySizeInBytes(types.getPointerType());
+        final int accessSize = stores.stream().mapToInt(st -> types.getMemorySizeInBytes(st.getAccessType())).sum();
+        //TODO Recognize pointers contained in aggregate values.
+        return pointerSize == accessSize;
     }
 
-    private BooleanFormula referencesObject(Store store, boolean isValue, MemoryObject object) {
-        //TODO enhance with provenance
-        final Expression pointer = isValue ? store.getMemValue() : store.getAddress();
+    private BooleanFormula referencesObject(List<Store> stores, boolean isValue, MemoryObject object) {
+        Preconditions.checkArgument(!stores.isEmpty(), "Empty instruction cannot reference object '%s'.", object);
+        //TODO Use provenance to omit some of these checks statically.
+        final ExpressionFactory expressions = context.getExpressionFactory();
+        final Expression pointer = isValue
+                ? expressions.makeIntConcat(stores.stream().map(Store::getMemValue).toList())
+                : stores.get(0).getAddress();
         if (object.equals(pointer)) {
             return bmgr.makeTrue();
         }
-        final ExpressionFactory expressions = context.getExpressionFactory();
         final Expression objectEnd = expressions.makeAdd(object, object.size());
         final Expression overLowerBound = expressions.makeLTE(object, pointer, false);
         final Expression underUpperBound = expressions.makeLT(pointer, objectEnd, false);
         final Expression withinBounds = expressions.makeAnd(overLowerBound, underUpperBound);
-        return context.getExpressionEncoder().encodeBooleanAt(withinBounds, store).formula();
+        return context.getExpressionEncoder().encodeBooleanAt(withinBounds, stores.get(0)).formula();
     }
 
     // ======================================================================

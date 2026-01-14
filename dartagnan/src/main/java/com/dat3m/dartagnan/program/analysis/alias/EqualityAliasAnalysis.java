@@ -1,6 +1,5 @@
 package com.dat3m.dartagnan.program.analysis.alias;
 
-import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Event;
@@ -90,8 +89,7 @@ public class EqualityAliasAnalysis implements AliasAnalysis {
 
     @Override
     public Collection<MemoryObject> communicableObjects(MemoryCoreEvent a) {
-        final int size = a.getAccessType() instanceof IntegerType t ? t.getBitWidth() : 0;
-        return size < 64 ? Set.of() : allObjects;
+        return allObjects;
     }
 
     @Override

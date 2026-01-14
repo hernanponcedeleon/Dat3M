@@ -7,7 +7,6 @@ import com.dat3m.dartagnan.expression.aggregates.ExtractExpr;
 import com.dat3m.dartagnan.expression.integers.*;
 import com.dat3m.dartagnan.expression.misc.ITEExpr;
 import com.dat3m.dartagnan.expression.processing.ExpressionInspector;
-import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
@@ -204,8 +203,6 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
 
     @Override
     public Collection<MemoryObject> communicableObjects(MemoryCoreEvent e) {
-        final boolean fitsAddress = e.getAccessType() instanceof IntegerType t && t.getBitWidth() >= 64;
-        if (!fitsAddress) { return Set.of(); }
         final DerivedVariable v = valueVariables.get(e);
         return v == null ? objectVariables.keySet() : v.base.object != null ? Set.of(v.base.object)
                 : v.base.includes.stream().map(i -> i.source.object).collect(Collectors.toSet());
