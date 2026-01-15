@@ -144,9 +144,9 @@ public class LazyEventGraph implements ImmutableEventGraph {
             for (Event e2 : range.stream().sorted().toList()) {
                 if (function.test(e1, e2)) {
                     sb.append("(")
-                            .append(e1.getGlobalId())
+                            .append(e1.getPrintId())
                             .append(",")
-                            .append(e2.getGlobalId())
+                            .append(e2.getPrintId())
                             .append(")");
                 }
             }
