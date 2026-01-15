@@ -215,9 +215,9 @@ public class MapEventGraph implements MutableEventGraph {
         for (Event e1 : data.keySet().stream().sorted().toList()) {
             for (Event e2 : data.get(e1).stream().sorted().toList()) {
                 sb.append("(")
-                        .append(e1.getGlobalId())
+                        .append(e1.getPrintId())
                         .append(",")
-                        .append(e2.getGlobalId())
+                        .append(e2.getPrintId())
                         .append(")");
             }
         }

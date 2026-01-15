@@ -26,6 +26,8 @@ public abstract class AbstractEvent implements Event {
     private transient AbstractEvent successor;
     private transient AbstractEvent predecessor;
 
+    private int printId = -1;
+
     protected AbstractEvent() {
         tags = new TagSet();
     }
@@ -39,6 +41,17 @@ public abstract class AbstractEvent implements Event {
     public int getGlobalId() { return globalId; }
     @Override
     public void setGlobalId(int id) { this.globalId = id; }
+
+    public int getPrintId() {
+        if (printId < 0) {
+            return globalId;
+        }
+        return printId;
+    }
+
+    public void setPrintId(int id) {
+        printId = id;
+    }
 
     @Override
     public int getLocalId() { return localId; }
