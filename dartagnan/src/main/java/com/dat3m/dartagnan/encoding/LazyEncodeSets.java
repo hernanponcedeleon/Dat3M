@@ -42,6 +42,11 @@ public class LazyEncodeSets implements Constraint.Visitor<Boolean> {
     }
 
     @Override
+    public Boolean visitTagSet(TagSet definition) {
+        return doUpdateSelf(definition);
+    }
+
+    @Override
     public Boolean visitFree(Free definition) {
         return doUpdateSelf(definition);
     }
