@@ -4,7 +4,9 @@ import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.RegWriter;
+import com.dat3m.dartagnan.program.event.core.Load;
 import com.dat3m.dartagnan.program.event.core.MemoryCoreEvent;
+import com.dat3m.dartagnan.program.event.core.Store;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.dat3m.dartagnan.wmm.utils.graph.mutable.MapEventGraph;
 import com.dat3m.dartagnan.wmm.utils.graph.mutable.MutableEventGraph;
@@ -89,7 +91,7 @@ public class EqualityAliasAnalysis implements AliasAnalysis {
 
     @Override
     public Collection<MemoryObject> communicableObjects(MemoryCoreEvent a) {
-        return allObjects;
+        return a instanceof Load || a instanceof Store ? allObjects : Set.of();
     }
 
     @Override

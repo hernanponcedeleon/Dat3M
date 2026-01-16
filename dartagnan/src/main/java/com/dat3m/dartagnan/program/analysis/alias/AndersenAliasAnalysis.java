@@ -9,6 +9,7 @@ import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.analysis.SyntacticContextAnalysis;
 import com.dat3m.dartagnan.program.event.MemoryEvent;
 import com.dat3m.dartagnan.program.event.RegWriter;
+import com.dat3m.dartagnan.program.event.core.Load;
 import com.dat3m.dartagnan.program.event.core.Local;
 import com.dat3m.dartagnan.program.event.core.MemoryCoreEvent;
 import com.dat3m.dartagnan.program.event.core.Store;
@@ -105,7 +106,7 @@ public class AndersenAliasAnalysis implements AliasAnalysis {
 
     @Override
     public Collection<MemoryObject> communicableObjects(MemoryCoreEvent a) {
-        return allObjects;
+        return a instanceof Load || a instanceof Store ? allObjects : Set.of();
     }
 
     @Override

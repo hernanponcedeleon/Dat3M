@@ -108,7 +108,7 @@ public class FieldSensitiveAndersen implements AliasAnalysis {
 
     @Override
     public Collection<MemoryObject> communicableObjects(MemoryCoreEvent e) {
-        return allObjects;
+        return e instanceof Load || e instanceof Store ? allObjects : Set.of();
     }
 
     @Override

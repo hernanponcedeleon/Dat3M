@@ -204,7 +204,8 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
     @Override
     public Collection<MemoryObject> communicableObjects(MemoryCoreEvent e) {
         final DerivedVariable v = valueVariables.get(e);
-        return v == null ? objectVariables.keySet() : v.base.object != null ? Set.of(v.base.object)
+        return v == null ? e instanceof Load || e instanceof Store ? objectVariables.keySet() : Set.of()
+                : v.base.object != null ? Set.of(v.base.object)
                 : v.base.includes.stream().map(i -> i.source.object).collect(Collectors.toSet());
     }
 
