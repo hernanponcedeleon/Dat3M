@@ -37,8 +37,7 @@ import java.nio.file.Path;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static com.dat3m.dartagnan.configuration.OptionNames.ENABLE_ACTIVE_SETS;
-import static com.dat3m.dartagnan.configuration.OptionNames.ENABLE_EXTENDED_RELATION_ANALYSIS;
+import static com.dat3m.dartagnan.configuration.OptionNames.*;
 import static com.dat3m.dartagnan.configuration.Property.CAT_SPEC;
 import static com.dat3m.dartagnan.configuration.Property.PROGRAM_SPEC;
 import static com.dat3m.dartagnan.utils.ResourceHelper.getRootPath;
@@ -73,7 +72,7 @@ public class PvmmTest {
             }
             try (SolverContext ctx = mkCtx()) {
                 try (ProverWithTracker prover = mkProver(ctx)) {
-                    VerificationTask task = mkTask(programPath, modelPath, PROGRAM_SPEC);
+                    VerificationTask task = mkTaskRefinement(programPath, modelPath, PROGRAM_SPEC);
                     assertEquals(entry.getValue(), RefinementSolver.run(ctx, prover, task).getResult());
                 }
             }
@@ -185,6 +184,20 @@ public class PvmmTest {
                 .withConfig(Configuration.builder()
                         .setOption(ENABLE_EXTENDED_RELATION_ANALYSIS, "false")
                         .setOption(ENABLE_ACTIVE_SETS, "false")
+                        .build()
+                )
+                .withBound(1)
+                .withTarget(Arch.VULKAN);
+        Program program = new ProgramParser().parse(new File(programPath));
+        Wmm mcm = new ParserCat().parse(new File(modelPath));
+        return builder.build(program, mcm, EnumSet.of(property));
+    }
+
+    private VerificationTask mkTaskRefinement(String programPath, String modelPath, Property property) throws Exception {
+        VerificationTask.VerificationTaskBuilder builder = VerificationTask.builder()
+                .withConfig(Configuration.builder()
+                        .setOption(ENABLE_EXTENDED_RELATION_ANALYSIS, "false")
+                        .setOption(ENABLE_ACTIVE_SETS, "true") // crashes without active set
                         .build()
                 )
                 .withBound(1)

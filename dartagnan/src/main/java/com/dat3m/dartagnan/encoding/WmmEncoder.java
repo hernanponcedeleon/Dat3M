@@ -48,8 +48,8 @@ import static com.google.common.base.Verify.verify;
 public class WmmEncoder implements Encoder {
 
     private static final Logger logger = LogManager.getLogger(WmmEncoder.class);
-    final Map<Relation, EventGraph> encodeSets;
     private final EncodingContext context;
+    Map<Relation, EventGraph> encodeSets;
 
     // =====================================================================
     @Option(name = ENABLE_ACTIVE_SETS,
@@ -75,13 +75,13 @@ public class WmmEncoder implements Encoder {
     private WmmEncoder(EncodingContext c) {
         context = c;
         c.getAnalysisContext().requires(RelationAnalysis.class);
-        encodeSets = initializeEncodeSets();
     }
 
     public static WmmEncoder withContext(EncodingContext context) throws InvalidConfigurationException {
         long t0 = System.currentTimeMillis();
         WmmEncoder encoder = new WmmEncoder(context);
         context.getTask().getConfig().inject(encoder);
+        encoder.encodeSets = encoder.initializeEncodeSets();
         if (logger.isInfoEnabled()) {
             logger.info("{}: {}", ENABLE_ACTIVE_SETS, encoder.enableActiveSets);
             logger.info("{}: {}", MEMORY_IS_ZEROED, encoder.memoryIsZeroed);
