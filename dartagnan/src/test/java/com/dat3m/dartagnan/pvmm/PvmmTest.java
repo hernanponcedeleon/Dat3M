@@ -54,7 +54,10 @@ public class PvmmTest {
     private final Map<String, Result> examples = Map.of(
             "f-graph-mp-semsc-a", FAIL,
             "f-graph-mp-semsc-b", PASS,
-            "f-graph-mp-semsc-c", FAIL
+            "f-graph-mp-semsc-c", FAIL,
+            "f-graph-problem1-a", PASS,
+            "f-graph-problem1-b", FAIL,
+            "f-graph-problem1-c", PASS
     );
 
     @Test
