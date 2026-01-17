@@ -536,11 +536,7 @@ public class RefinementSolver extends ModelChecker {
                 // (ii) Negated relations (if derived)
                 final Relation sub = diff.getSubtrahend();
                 final Definition subDef = sub.getDefinition();
-                if (!sub.getDependencies().isEmpty()
-                        // The following three definitions are "semi-derived" and need to get cut
-                        // to get a semi-positive model.
-                        || subDef instanceof SetIdentity
-                        || subDef instanceof CartesianProduct) {
+                if (!sub.getDependencies().isEmpty()) {
                     constraintsToCut.add(subDef);
                 }
             } else if (c instanceof Definition def && def.getDefinedRelation().hasName()) {
