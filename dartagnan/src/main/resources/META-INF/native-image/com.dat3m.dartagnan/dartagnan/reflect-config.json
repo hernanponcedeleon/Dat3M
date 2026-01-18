@@ -115,6 +115,11 @@
         "queryAllDeclaredMethods":true
       },
       {
+        "name":"com.dat3m.dartagnan.witness.graphml.WitnessBuilder",
+        "allDeclaredFields":true,
+        "queryAllDeclaredMethods":true
+      },
+      {
         "name":"com.dat3m.dartagnan.wmm.Wmm$Config",
         "allDeclaredFields":true,
         "queryAllDeclaredMethods":true
