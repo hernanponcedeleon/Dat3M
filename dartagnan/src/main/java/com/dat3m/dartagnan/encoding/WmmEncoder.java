@@ -638,7 +638,6 @@ public class WmmEncoder implements Encoder {
                 final BooleanFormula sameAddress = context.sameAddress(w, r);
                 final BooleanFormula sameValue = context.sameValue(w, r, LEFT_TO_RIGHT);
                 enc.add(bmgr.implication(rfEdge, bmgr.and(execution(w, r), sameAddress, sameValue)));
-
                 read2RfEdges.computeIfAbsent(r, key -> new ArrayList<>()).add(rfEdge);
             });
 

@@ -61,7 +61,9 @@ public class MemToReg implements FunctionProcessor {
         // Initially, all locally-allocated addresses are potentially promotable.
         for (final Alloc allocation : function.getEvents(Alloc.class)) {
             // Allocations will usually not have users.  Otherwise, their object is not promotable.
-            if (allocation.getUsers().isEmpty()) {
+            // Heap allocations may violate trackability, so should not be promoted.
+            //TODO Promote heap allocations only if they are properly freed or trackability is not checked.
+            if (allocation.getUsers().isEmpty() && !allocation.isHeapAllocation()) {
                 matcher.reachabilityGraph.put(allocation, new HashSet<>());
             }
         }

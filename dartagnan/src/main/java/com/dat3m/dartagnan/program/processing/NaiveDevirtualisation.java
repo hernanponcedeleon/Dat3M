@@ -3,7 +3,6 @@ package com.dat3m.dartagnan.program.processing;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.ExpressionVisitor;
-import com.dat3m.dartagnan.expression.processing.ExprTransformer;
 import com.dat3m.dartagnan.expression.processing.ExpressionInspector;
 import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.IRHelper;
@@ -14,7 +13,6 @@ import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.RegReader;
 import com.dat3m.dartagnan.program.event.core.CondJump;
 import com.dat3m.dartagnan.program.event.core.Label;
-import com.dat3m.dartagnan.program.memory.Memory;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Iterables;
@@ -27,9 +25,7 @@ import java.util.stream.Collectors;
 /*
     This pass performs "devirtualisation" (replacing indirect/dynamic calls by direct/static calls).
     It does so in the following way:
-        - Every non-standard use (i.e., no direct call) of a function expression is registered.
-        - All registered functions get an address value assigned.
-        - All non-standard uses are replaced by their address values.
+        - Every reference to a function expression is registered.
         - Every indirect call is replaced by a switch statement over all registered functions that have a matching type.
           Each case of the switch statement contains a direct call to the corresponding function.
  */
@@ -45,63 +41,19 @@ public class NaiveDevirtualisation implements ProgramProcessor {
     @Override
     public void run(Program program) {
         final FunctionCollector functionCollector = new FunctionCollector();
-        final FunctionToAddressTransformer toAddressTransformer = new FunctionToAddressTransformer();
-
-        findAndTransformAddressTakenFunctionsInMemory(program.getMemory(), functionCollector, toAddressTransformer);
+        for (MemoryObject object : program.getMemory().getObjects()) {
+            for (int field : object.getInitializedFields()) {
+                object.getInitialValue(field).accept(functionCollector);
+            }
+        }
         for (Function func : Iterables.concat(program.getThreads(), program.getFunctions())) {
-            findAndTransformAddressTakenFunctions(func, functionCollector, toAddressTransformer);
+            for (RegReader reader : func.getEvents(RegReader.class)) {
+                applyTransformerToEvent(reader, functionCollector);
+            }
         }
-
         for (Function func : Iterables.concat(program.getThreads(), program.getFunctions())) {
-            devirtualise(func, toAddressTransformer.func2AddressMap);
+            devirtualise(func, functionCollector.collectedFunctions);
         }
-    }
-
-    private void findAndTransformAddressTakenFunctionsInMemory(
-            Memory memory, FunctionCollector functionCollector, FunctionToAddressTransformer toAddressTransformer
-    ) {
-        for (MemoryObject memoryObject : memory.getObjects()) {
-            for (Integer field : memoryObject.getInitializedFields()) {
-                functionCollector.reset();
-                final Expression initValue = memoryObject.getInitialValue(field).accept(functionCollector);
-
-                for (Function func : functionCollector.collectedFunctions) {
-                    assignAddressToFunction(func, toAddressTransformer.func2AddressMap);
-                }
-
-                if (!functionCollector.collectedFunctions.isEmpty()) {
-                    memoryObject.setInitialValue(field, initValue.accept(toAddressTransformer));
-                }
-            }
-        }
-    }
-
-    private void findAndTransformAddressTakenFunctions(
-            Function function, FunctionCollector functionCollector, FunctionToAddressTransformer toAddressTransformer
-    ) {
-        for (Event e : function.getEvents()) {
-            functionCollector.reset();
-            applyTransformerToEvent(e, functionCollector);
-            for (Function func : functionCollector.collectedFunctions) {
-                assignAddressToFunction(func, toAddressTransformer.func2AddressMap);
-            }
-
-            if (!functionCollector.collectedFunctions.isEmpty()) {
-                applyTransformerToEvent(e, toAddressTransformer);
-            }
-        }
-    }
-
-    private boolean assignAddressToFunction(Function func, Map<Function, MemoryObject> func2AddressMap) {
-        if (func2AddressMap.containsKey(func)) {
-            return false;
-        }
-
-        final MemoryObject funcAddr = func.getProgram().getMemory().allocate(1);
-        funcAddr.setName(String.format("__funcAddr_%s", func.getName()));
-        func2AddressMap.put(func, funcAddr);
-        logger.debug("Assigned address to function \"{}\"", func);
-        return true;
     }
 
     private void applyTransformerToEvent(Event e, ExpressionVisitor<Expression> transformer) {
@@ -114,7 +66,7 @@ public class NaiveDevirtualisation implements ProgramProcessor {
         }
     }
 
-    private void devirtualise(Function function, Map<Function, MemoryObject> func2AddressMap) {
+    private void devirtualise(Function function, Set<Function> addressedFunctions) {
         final ExpressionFactory expressions = ExpressionFactory.getInstance();
 
         int devirtCounter = 0;
@@ -123,7 +75,7 @@ public class NaiveDevirtualisation implements ProgramProcessor {
                 continue;
             }
 
-            final List<Function> possibleTargets = getPossibleTargets(call, func2AddressMap);
+            final List<Function> possibleTargets = getPossibleTargets(call, addressedFunctions);
             // FIXME: Here we remove the calling function itself so as to avoid trivial recursion.
             //  However, indirect/mutual recursion is not prevented by this!
             if (possibleTargets.removeIf(f -> f == function)) {
@@ -142,9 +94,8 @@ public class NaiveDevirtualisation implements ProgramProcessor {
             final Expression funcPtr = call.getCallTarget();
             // Construct call table
             for (Function possibleTarget : possibleTargets) {
-                final MemoryObject targetAddress = func2AddressMap.get(possibleTarget);
                 final Label caseLabel = EventFactory.newLabel(String.format("__Ldevirt_%s#%s", possibleTarget.getName(), devirtCounter));
-                final CondJump caseJump = EventFactory.newJump(expressions.makeEQ(funcPtr, targetAddress), caseLabel);
+                final CondJump caseJump = EventFactory.newJump(expressions.makeEQ(funcPtr, possibleTarget), caseLabel);
                 caseLabels.add(caseLabel);
                 caseJumps.add(caseJump);
             }
@@ -173,9 +124,9 @@ public class NaiveDevirtualisation implements ProgramProcessor {
         return !call.isDirectCall();
     }
 
-    private List<Function> getPossibleTargets(CallEvent call, Map<Function, MemoryObject> func2AddressMap) {
+    private List<Function> getPossibleTargets(CallEvent call, Set<Function> funcs) {
         Preconditions.checkArgument(needsDevirtualization(call));
-        return func2AddressMap.keySet().stream()
+        return funcs.stream()
                 .filter(f -> f.getFunctionType() == call.getCallType())
                 .sorted(Comparator.comparingInt(Function::getId))
                 .collect(Collectors.toCollection(ArrayList::new));
@@ -195,23 +146,10 @@ public class NaiveDevirtualisation implements ProgramProcessor {
 
         private final Set<Function> collectedFunctions = new HashSet<>();
 
-        public void reset() { collectedFunctions.clear(); }
-
         @Override
         public Expression visitFunction(Function function) {
             collectedFunctions.add(function);
             return function;
         }
     }
-
-    private static class FunctionToAddressTransformer extends ExprTransformer {
-
-        private final Map<Function, MemoryObject> func2AddressMap = new HashMap<>();
-
-        @Override
-        public Expression visitFunction(Function function) {
-            return func2AddressMap.containsKey(function) ? func2AddressMap.get(function) : function;
-        }
-    }
-
 }

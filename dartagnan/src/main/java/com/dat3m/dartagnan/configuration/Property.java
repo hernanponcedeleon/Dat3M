@@ -14,8 +14,9 @@ public enum Property implements OptionInterface {
     PROGRAM_SPEC,        // Litmus queries OR assertion safety in C-code
     TERMINATION,         // All executions terminate (absence of deadlocks/livelocks)
     CAT_SPEC,            // CAT-spec defined via flagged axioms in .cat file (~bug specification)
-    DATARACEFREEDOM;     // Special option for data-race detection in SVCOMP only
-
+    DATARACEFREEDOM,     // Special option for data-race detection in SVCOMP only
+    TRACKABILITY,        // All heap-allocated objects are either freed or remain reachable at the end of the execution.
+    ;
 
     public enum Type {
         SAFETY,
@@ -31,6 +32,7 @@ public enum Property implements OptionInterface {
             case DATARACEFREEDOM -> "Data-race freedom (SVCOMP only)";
             case TERMINATION -> "Termination";
             case CAT_SPEC -> "CAT specification";
+            case TRACKABILITY -> "Memory Trackability";
         };
     }
 
@@ -66,7 +68,7 @@ public enum Property implements OptionInterface {
 
     // Used to decide the order shown by the selector in the UI
     public static Property[] orderedValues() {
-        Property[] order = {PROGRAM_SPEC, TERMINATION, CAT_SPEC, DATARACEFREEDOM};
+        Property[] order = {PROGRAM_SPEC, TERMINATION, CAT_SPEC, DATARACEFREEDOM, TRACKABILITY};
         // Be sure no element is missing
         assert (Arrays.asList(order).containsAll(Arrays.asList(values())));
         return order;
