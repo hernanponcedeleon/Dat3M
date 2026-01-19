@@ -4,5 +4,7 @@ Vulkan
  membar.rel.dv.semsc0.semsc2           | ld.atom.acq.dv.sc1.semsc1.semsc2 r0, y ;
  st.atom.dv.sc0 x, 1                   | ld.atom.dv.sc0 r1, x                   ;
  st.atom.rel.dv.sc1.semsc1.semsc2 y, 1 | membar.acq.dv.semsc0.semsc2            ;
+filter
+(P1:r0 == 1 /\ P1:r1 == 0)
 exists
 (P1:r0 == 1 /\ P1:r1 == 0)
