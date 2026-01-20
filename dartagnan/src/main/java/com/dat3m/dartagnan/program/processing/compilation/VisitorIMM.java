@@ -221,13 +221,15 @@ class VisitorIMM extends VisitorBase {
         CondJump branchOnCasCmpResult = newJumpUnless(success, casEnd);
 
         Load load = newRMWLoadExclusiveWithMo(oldValue, address, IMM.extractLoadMo(mo));
-        Store store = newRMWStoreExclusiveWithMo(address, newValue, true, IMM.extractStoreMo(mo));
+        Store store = newRMWStoreExclusiveWithMo(address, newValue, strong, IMM.extractStoreMo(mo));
 
         return eventSequence(
                 load,
                 casCmpResult,
                 branchOnCasCmpResult,
                 store,
+                strong ? null : newExecutionStatus(success, store),
+                strong ? null : newLocal(success, expressions.makeNot(success)),
                 casEnd
         );
     }

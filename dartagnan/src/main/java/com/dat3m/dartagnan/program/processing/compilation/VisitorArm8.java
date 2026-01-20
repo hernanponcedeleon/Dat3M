@@ -124,18 +124,20 @@ class VisitorArm8 extends VisitorBase {
             Expression newValue, String mo, boolean strong) {
         verify(success.getType() instanceof BooleanType, "Non-boolean success register.");
 
-        Local casCmpResult = newLocal(success, expressions.makeEQ(oldValue, expected));
-        Label casEnd = newLabel("CAS_end");
-        CondJump branchOnCasCmpResult = newJumpUnless(success, casEnd);
+        final Local casCmpResult = newLocal(success, expressions.makeEQ(oldValue, expected));
+        final Label casEnd = newLabel("CAS_end");
+        final CondJump branchOnCasCmpResult = newJumpUnless(success, casEnd);
 
-        Load load = newRMWLoadExclusiveWithMo(oldValue, address, ARMv8.extractLoadMoFromCMo(mo));
-        Store store = newRMWStoreExclusiveWithMo(address, newValue, true, ARMv8.extractStoreMoFromCMo(mo));
+        final Load load = newRMWLoadExclusiveWithMo(oldValue, address, ARMv8.extractLoadMoFromCMo(mo));
+        final Store store = newRMWStoreExclusiveWithMo(address, newValue, strong, ARMv8.extractStoreMoFromCMo(mo));
 
         return eventSequence(
                 load,
                 casCmpResult,
                 branchOnCasCmpResult,
                 store,
+                strong ? null : newExecutionStatus(success, store),
+                strong ? null : newLocal(success, expressions.makeNot(success)),
                 casEnd
         );
     }

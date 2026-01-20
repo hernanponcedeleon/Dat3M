@@ -214,13 +214,15 @@ public class VisitorC11 extends VisitorBase {
         CondJump branchOnCasCmpResult = newJumpUnless(success, casEnd);
 
         Load load = newRMWLoadExclusiveWithMo(oldValue, address, Tag.C11.loadMO(mo));
-        Store store = newRMWStoreExclusiveWithMo(address, newValue, true, Tag.C11.storeMO(mo));
+        Store store = newRMWStoreExclusiveWithMo(address, newValue, strong, Tag.C11.storeMO(mo));
 
         return tagList(eventSequence(
                 load,
                 casCmpResult,
                 branchOnCasCmpResult,
                 store,
+                strong ? null : newExecutionStatus(success, store),
+                strong ? null : newLocal(success, expressions.makeNot(success)),
                 casEnd
         ));
     }

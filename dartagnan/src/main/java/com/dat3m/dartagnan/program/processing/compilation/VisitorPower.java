@@ -235,7 +235,7 @@ public class VisitorPower extends VisitorBase {
         CondJump branchOnCasCmpResult = newJumpUnless(success, casEnd);
 
         Load load = newRMWLoadExclusive(oldValue, address);
-        Store store = Power.newRMWStoreConditional(address, newValue, true);
+        Store store = Power.newRMWStoreConditional(address, newValue, strong);
 
         Event optionalBarrierBefore = null;
         Event optionalBarrierAfter = null;
@@ -268,6 +268,8 @@ public class VisitorPower extends VisitorBase {
                 casCmpResult,
                 branchOnCasCmpResult,
                 store,
+                strong ? null : newExecutionStatus(success, store),
+                strong ? null : newLocal(success, expressions.makeNot(success)),
                 casEnd,
                 optionalBarrierAfter);
     }

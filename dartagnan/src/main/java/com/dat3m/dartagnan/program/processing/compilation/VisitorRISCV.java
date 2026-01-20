@@ -128,14 +128,15 @@ class VisitorRISCV extends VisitorBase {
         CondJump branchOnCasCmpResult = newJumpUnless(success, casEnd);
 
         Load load = newRMWLoadExclusiveWithMo(oldValue, address, Tag.RISCV.extractLoadMoFromCMo(mo));
-        Store store = newRMWStoreExclusiveWithMo(address, newValue, true, Tag.RISCV.extractStoreMoFromCMo(mo));
+        Store store = newRMWStoreExclusiveWithMo(address, newValue, strong, Tag.RISCV.extractStoreMoFromCMo(mo));
 
-        //TODO: We only do strong CAS here?
         return eventSequence(
                 load,
                 casCmpResult,
                 branchOnCasCmpResult,
                 store,
+                strong ? null : newExecutionStatus(success, store),
+                strong ? null : newLocal(success, expressions.makeNot(success)),
                 casEnd
         );
     }
