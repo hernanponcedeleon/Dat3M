@@ -119,21 +119,16 @@ class VisitorRISCV extends VisitorBase {
     }
 
     @Override
-    public List<Event> visitLlvmCmpXchg(LlvmCmpXchg e) {
-        Register oldValueRegister = e.getStructRegister(0);
-        Register resultRegister = e.getStructRegister(1);
-        verify(resultRegister.getType() instanceof BooleanType);
+    protected List<Event> newLlvmCmpXchg(Register oldValue, Register success, Expression address, Expression expected,
+            Expression newValue, String mo, boolean strong) {
+        verify(success.getType() instanceof BooleanType, "Non-boolean success register.");
 
-        Expression address = e.getAddress();
-        String mo = e.getMo();
-        Expression expectedValue = e.getExpectedValue();
-
-        Local casCmpResult = newLocal(resultRegister, expressions.makeEQ(oldValueRegister, expectedValue));
+        Local casCmpResult = newLocal(success, expressions.makeEQ(oldValue, expected));
         Label casEnd = newLabel("CAS_end");
-        CondJump branchOnCasCmpResult = newJumpUnless(resultRegister, casEnd);
+        CondJump branchOnCasCmpResult = newJumpUnless(success, casEnd);
 
-        Load load = newRMWLoadExclusiveWithMo(oldValueRegister, address, Tag.RISCV.extractLoadMoFromCMo(mo));
-        Store store = newRMWStoreExclusiveWithMo(address, e.getStoreValue(), true, Tag.RISCV.extractStoreMoFromCMo(mo));
+        Load load = newRMWLoadExclusiveWithMo(oldValue, address, Tag.RISCV.extractLoadMoFromCMo(mo));
+        Store store = newRMWStoreExclusiveWithMo(address, newValue, true, Tag.RISCV.extractStoreMoFromCMo(mo));
 
         //TODO: We only do strong CAS here?
         return eventSequence(

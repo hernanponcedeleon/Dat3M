@@ -10,7 +10,6 @@ import com.dat3m.dartagnan.program.event.RegReader;
 import com.dat3m.dartagnan.program.event.RegWriter;
 import com.dat3m.dartagnan.program.event.core.CondJump;
 import com.dat3m.dartagnan.program.event.core.Label;
-import com.dat3m.dartagnan.program.event.lang.llvm.LlvmCmpXchg;
 import com.dat3m.dartagnan.program.processing.Intrinsics;
 import com.dat3m.dartagnan.utils.UniqueIdGenerator;
 import com.google.common.base.Preconditions;
@@ -222,7 +221,7 @@ public class Function implements LeafExpression {
                         });
             }
 
-            if (ev instanceof RegWriter writer && !(writer instanceof LlvmCmpXchg) && !registers.contains(writer.getResultRegister())) {
+            if (ev instanceof RegWriter writer && !registers.contains(writer.getResultRegister())) {
                 final String error = String.format("Event %s of function %s writes to external register %s of function %s",
                         writer, this, writer.getResultRegister(), writer.getResultRegister().getFunction()
                 );
