@@ -759,17 +759,17 @@ public class ProgramEncoder implements Encoder {
                 BitvectorFormulaManager bitvectorFormulaManager = formulaManager.getBitvectorFormulaManager();
                 BigInteger upperbound = interval.getUpperbound();
                 BigInteger lowerbound = interval.getLowerbound();
+                int bitWidth = bitvectorFormulaManager.getLength(variable);
                 BooleanFormula lowerboundConstraint;
                 BooleanFormula upperboundConstraint;
-                int bitWidth = bitvectorFormulaManager.getLength(variable);
-                boolean useSigned = lowerbound.signum() == -1 || upperbound.signum() == -1;
-                // TODO: Risky heuristic, possibly unsound
-                // Check for use of signed/unsigned constraint. Analysis should make sure this is unambiguous.
-                lowerboundConstraint = bitvectorFormulaManager.greaterOrEquals(variable, bitvectorFormulaManager.makeBitvector(bitWidth, lowerbound),useSigned);
-                upperboundConstraint = bitvectorFormulaManager.lessOrEquals(variable, bitvectorFormulaManager.makeBitvector(bitWidth, upperbound),useSigned);
-
-                prover.addConstraint(lowerboundConstraint);
-                prover.addConstraint(upperboundConstraint);
+                BitvectorFormula bvLowerbound = bitvectorFormulaManager.makeBitvector(bitWidth, lowerbound);
+                BitvectorFormula bvUpperbound = bitvectorFormulaManager.makeBitvector(bitWidth, upperbound);
+                if(interval.isSignInsensitive()) {
+                    lowerboundConstraint = bitvectorFormulaManager.greaterOrEquals(variable, bvLowerbound, true);
+                    upperboundConstraint = bitvectorFormulaManager.lessOrEquals(variable, bvUpperbound, true);
+                    prover.addConstraint(lowerboundConstraint);
+                    prover.addConstraint(upperboundConstraint);
+                }
 
             } else if (formula instanceof IntegerFormula variable) {
                 IntegerFormulaManager integerFormulaManager = formulaManager.getIntegerFormulaManager();
