@@ -28,11 +28,12 @@ import java.util.function.UnaryOperator;
 // Note for r0 that the most general interval itself is ambiguous [-128,255]
 // We disallow such interval since they are tricky to encode in bitvector theory
 
-public class Interval {
+public class Interval implements Cloneable {
 
     private final BigInteger lowerbound;
     private final BigInteger upperbound;
     private final IntegerType type;
+    private SignState signState = SignState.UNKNOWN;
 
     static Set<Object> unsupportedOperators = new HashSet<>();
     @SuppressWarnings("unused")
@@ -55,6 +56,12 @@ public class Interval {
             this.upperbound = upperbound;
         }
 
+    }
+
+    public enum SignState {
+        UNKNOWN,
+        SIGNED,
+        UNSIGNED
     }
 
     public BigInteger getLowerbound() {
@@ -101,6 +108,39 @@ public class Interval {
                 yield Interval.getTop(type);
             }
         };
+    }
+
+    public boolean isSignInsensitive() {
+        boolean isUnknown = signState.equals(SignState.UNKNOWN);
+        return (isUnknown && allNegative()) || (isUnknown && allNonNegative() && !crossesSignBoundary());
+    }
+
+    public SignState getSignState() {
+        return signState;
+    }
+
+    public void setSignUnknown() {
+        signState = SignState.UNKNOWN;
+    }
+
+    public void setSignSigned() {
+        signState = SignState.SIGNED;
+    }
+
+    public void setSignUnsigned() {
+        signState = SignState.UNSIGNED;
+    }
+
+    private boolean allNegative() {
+        return upperbound.compareTo(BigInteger.ZERO) < 0;
+    }
+
+    private boolean allNonNegative() {
+        return lowerbound.compareTo(BigInteger.ZERO) >= 0;
+    }
+
+    private boolean crossesSignBoundary() {
+        return (lowerbound.signum() >= 0 && lowerbound.compareTo(type.getMaximumValue(true)) <= 0) && upperbound.compareTo(type.getMaximumValue(true)) > 0;
     }
 
     private Interval applyOperatorMethod(IntBinaryOp op, Interval interval,IntegerType type) {
@@ -183,7 +223,7 @@ public class Interval {
         BigDecimal reciprocalLowerbound = BigDecimal.ONE.divide(lowerboundI2,mc);
         BigDecimal reciprocalUpperbound = BigDecimal.ONE.divide(upperboundI2,mc);
         return multiply(lowerboundI1,upperboundI1,reciprocalLowerbound,reciprocalUpperbound);
-    }; 
+    }
 
 
 
@@ -290,7 +330,7 @@ public class Interval {
 
 
 
-    private final Interval or(Interval interval) {
+    private Interval or(Interval interval) {
         BigInteger lb1 = this.lowerbound;
         BigInteger lb2 = interval.lowerbound;
         BigInteger ub1 = this.upperbound;
@@ -330,8 +370,12 @@ public class Interval {
 
     @Override
     public String toString() {
-        return "[ " + this.lowerbound + ", " + this.upperbound + " ]";
+        return "[ " + this.lowerbound + ", " + this.upperbound + " ]" + " Sign: " + signState+"; ";
     }
 
+    @Override
+    protected Interval clone() throws CloneNotSupportedException {
+        return (Interval) super.clone();
 
+    }
 }
