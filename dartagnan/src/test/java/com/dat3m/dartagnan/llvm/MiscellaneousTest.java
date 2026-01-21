@@ -103,6 +103,7 @@ public class MiscellaneousTest extends AbstractCTest {
                 {"alignment", IMM, PASS, 1},
                 {"unknown_function", IMM, FAIL, 1},
                 {"ffs", IMM, PASS, 1},
+                {"zero-extension", IMM, PASS, 1},
         });
     }
 

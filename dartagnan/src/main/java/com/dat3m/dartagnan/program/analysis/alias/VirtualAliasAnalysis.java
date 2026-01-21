@@ -1,8 +1,10 @@
 package com.dat3m.dartagnan.program.analysis.alias;
 
 import com.dat3m.dartagnan.program.event.core.MemoryCoreEvent;
+import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.dat3m.dartagnan.program.memory.VirtualMemoryObject;
 
+import java.util.Collection;
 import java.util.List;
 
 public class VirtualAliasAnalysis implements AliasAnalysis {
@@ -25,6 +27,16 @@ public class VirtualAliasAnalysis implements AliasAnalysis {
     @Override
     public boolean mustAlias(MemoryCoreEvent e1, MemoryCoreEvent e2) {
         return samePhysicalAddress(e1, e2) || wrappedAnalysis.mustAlias(e1, e2);
+    }
+
+    @Override
+    public Collection<MemoryObject> addressableObjects(MemoryCoreEvent e) {
+        return wrappedAnalysis.addressableObjects(e);
+    }
+
+    @Override
+    public Collection<MemoryObject> communicableObjects(MemoryCoreEvent e) {
+        return wrappedAnalysis.communicableObjects(e);
     }
 
     @Override

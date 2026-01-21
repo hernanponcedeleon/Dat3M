@@ -29,7 +29,7 @@ public class MemoryObject extends LeafExpressionBase<Type> {
     private final Alloc allocationSite;
 
     private String name = null;
-    private boolean isThreadLocal = false;
+    private boolean isThreadLocal;
     private final Set<String> featureTags = new HashSet<>();
 
     private final Map<Integer, Expression> initialValues = new TreeMap<>();
@@ -48,16 +48,23 @@ public class MemoryObject extends LeafExpressionBase<Type> {
         this.allocationSite = allocationSite;
     }
 
+    public sealed interface ThreadLocalMode {}
+
+    public record ThreadLocal() implements ThreadLocalMode {}
+
+    public record PosixThreadLocal(MemoryObject destructor) implements ThreadLocalMode {}
+
     public boolean hasName() { return name != null; }
     public String getName() { return name; }
     public void setName(String name) { this.name = name; }
 
     public boolean isStaticallyAllocated() { return allocationSite == null; }
     public boolean isDynamicallyAllocated() { return !isStaticallyAllocated(); }
+    public boolean isHeapAllocated() { return allocationSite != null && allocationSite.isHeapAllocation(); }
     public Alloc getAllocationSite() { return allocationSite; }
 
     public boolean isThreadLocal() { return this.isThreadLocal; }
-    public void setIsThreadLocal(boolean value) { this.isThreadLocal = value;}
+    public void setIsThreadLocal(boolean value) { this.isThreadLocal = value; }
 
     public void addFeatureTag(String tag) { featureTags.add(tag); }
     public Set<String> getFeatureTags() { return featureTags; }

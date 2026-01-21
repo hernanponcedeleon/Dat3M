@@ -402,7 +402,7 @@ void key_test()
     status = pthread_key_delete(local_data);
     assert(status == 0);
 
-    //assert(pthread_equal(latest_thread, worker));//TODO add support for destructors
+    assert(pthread_equal(latest_thread, worker));
 }
 
 // -------- detaching threads
@@ -455,9 +455,11 @@ void detach_test()
 
 int main()
 {
-    mutex_test();
-    cond_test();
-    rwlock_test();
-    key_test();
-    detach_test();
+    switch (__VERIFIER_nondet_int()) {
+        case 1: mutex_test(); break;
+        case 2: cond_test(); break;
+        case 3: rwlock_test(); break;
+        case 4: key_test(); break;
+        case 5: detach_test(); break;
+    }
 }

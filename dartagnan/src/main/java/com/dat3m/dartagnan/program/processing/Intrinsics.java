@@ -119,7 +119,7 @@ public class Intrinsics {
         P_THREAD_JOIN(List.of("pthread_join", "_pthread_join", "__pthread_join"), true, true, false, true, Intrinsics::inlinePthreadJoin),
         P_THREAD_DETACH("pthread_detach", true, true, true, true, Intrinsics::inlinePthreadDetach),
         P_THREAD_BARRIER_WAIT("pthread_barrier_wait", false, false, true, true, Intrinsics::inlineAsZero),
-        P_THREAD_SELF(List.of("pthread_self", "__VERIFIER_tid"), false, false, true, false, null),
+        P_THREAD_SELF(List.of("pthread_self", "__VERIFIER_tid"), false, false, true, false, Intrinsics::inlinePthreadSelf),
         P_THREAD_EQUAL("pthread_equal", false, false, true, false, Intrinsics::inlinePthreadEqual),
         P_THREAD_ATTR_INIT("pthread_attr_init", true, true, true, true, Intrinsics::inlinePthreadAttr),
         P_THREAD_ATTR_DESTROY("pthread_attr_destroy", true, true, true, true, Intrinsics::inlinePthreadAttr),
@@ -140,10 +140,10 @@ public class Intrinsics {
         P_THREAD_CONDATTR_INIT("pthread_condattr_init", true, true, true, true, Intrinsics::inlinePthreadCondAttr),
         P_THREAD_CONDATTR_DESTROY("pthread_condattr_destroy", true, true, true, true, Intrinsics::inlinePthreadCondAttr),
         // --------------------------- pthread key ---------------------------
-        P_THREAD_KEY_CREATE("pthread_key_create", false, false, true, false, Intrinsics::inlinePthreadKeyCreate),
-        P_THREAD_KEY_DELETE("pthread_key_delete", false, false, true, false, Intrinsics::inlinePthreadKeyDelete),
-        P_THREAD_GET_SPECIFIC("pthread_getspecific", false, true, true, false, Intrinsics::inlinePthreadGetSpecific),
-        P_THREAD_SET_SPECIFIC("pthread_setspecific", true, false, true, false, Intrinsics::inlinePthreadSetSpecific),
+        P_THREAD_KEY_CREATE("pthread_key_create", false, false, true, true, Intrinsics::inlinePthreadKeyCreate),
+        P_THREAD_KEY_DELETE("pthread_key_delete", false, false, true, true, Intrinsics::inlinePthreadKeyDelete),
+        P_THREAD_GET_SPECIFIC("pthread_getspecific", false, true, true, true, Intrinsics::inlinePthreadGetSpecific),
+        P_THREAD_SET_SPECIFIC("pthread_setspecific", true, false, true, true, Intrinsics::inlinePthreadSetSpecific),
         // --------------------------- pthread mutex ---------------------------
         P_THREAD_MUTEX_INIT("pthread_mutex_init", true, true, true, true, Intrinsics::inlinePthreadMutexInit),
         P_THREAD_MUTEX_DESTROY("pthread_mutex_destroy", true, true, true, true, Intrinsics::inlinePthreadMutexDestroy),
@@ -225,17 +225,17 @@ public class Intrinsics {
         STD_MALLOC("malloc", false, false, true, true, Intrinsics::inlineMalloc),
         STD_CALLOC("calloc", false, false, true, true, Intrinsics::inlineCalloc),
         STD_ALIGNED_ALLOC("aligned_alloc", false, false, true, true, Intrinsics::inlineAlignedAlloc),
-        STD_FREE("free", true, false, true, true, Intrinsics::inlineAsZero),//TODO support free
+        STD_FREE("free", true, false, true, true, Intrinsics::inlineFree),
         STD_ASSERT(List.of("__assert_fail", "__assert_rtn"), false, false, false, true, Intrinsics::inlineUserAssert),
         STD_EXIT("exit", false, false, false, true, Intrinsics::inlineExit),
         STD_ABORT("abort", false, false, false, true, Intrinsics::inlineExit),
         STD_IO(List.of("puts", "putchar", "printf", "fflush"), false, false, true, true, Intrinsics::inlineAsZero),
-        STD_IO_NONDET(List.of("__isoc99_sscanf", "fprintf"), false, false, true, true, Intrinsics::inlineCallAsNonDet),
+        STD_IO_NONDET(List.of("fprintf"), false, false, true, true, Intrinsics::inlineCallAsNonDet),
         STD_SLEEP("sleep", false, false, true, true, Intrinsics::inlineAsZero),
         STD_FFS(List.of("ffs", "ffsl", "ffsll"), false, false, true, true, Intrinsics::inlineFfs),
         // --------------------------- UBSAN ---------------------------
         UBSAN_OVERFLOW(List.of("__ubsan_handle_add_overflow", "__ubsan_handle_sub_overflow", 
-                "__ubsan_handle_divrem_overflow", "__ubsan_handle_mul_overflow", "__ubsan_handle_negate_overflow"),
+                "__ubsan_handle_divrem_overflow", "__ubsan_handle_mul_overflow", "__ubsan_handle_negate_overflow", "__ubsan_handle_shift_out_of_bounds"),
                 false, false, false, true, Intrinsics::inlineIntegerOverflow),
         UBSAN_TYPE_MISSMATCH(List.of("__ubsan_handle_type_mismatch_v1"), 
                 false, false, false, true, Intrinsics::inlineInvalidDereference),
@@ -505,6 +505,14 @@ public class Intrinsics {
         return List.of(newThreadReturn(arguments.get(0)));
     }
 
+    private List<Event> inlinePthreadSelf(FunctionCall call) {
+        // This intrinsics is mainly defined by ThreadCreation.
+        assert call.getArguments().isEmpty();
+        final Register resultRegister = getResultRegister(call);
+        final Expression tidExpr = call.getThread().getRegister(ThreadCreation.THREAD_SELF_REGISTER_NAME);
+        assert tidExpr != null : "Non-POSIX thread %s".formatted(call.getThread());
+        return List.of(newLocal(resultRegister, expressions.makeCast(tidExpr, resultRegister.getType())));
+    }
 
     private List<Event> inlinePthreadEqual(FunctionCall call) {
         final Register resultRegister = getResultRegisterAndCheckArguments(2, call);
@@ -559,7 +567,7 @@ public class Intrinsics {
         final Expression zero = expressions.makeZero(types.getIntegerType(1));
         final Expression extractInitialized = expressions.makeIntExtract(oldValue, 0, 0);
         return eventSequence(
-                newLocal(errorRegister, expressions.makeValue(PosixErrorCode.EINVAL.getValue(), errorType)),
+                assignPosixError(errorRegister, PosixErrorCode.EINVAL),
                 newLoad(oldValue, attrAddress),
                 newJump(expressions.makeEQ(extractInitialized, zero), end),
                 impl == null ? null : impl.errorChecks,
@@ -688,7 +696,7 @@ public class Intrinsics {
                 // This thread would sleep here.  Explicit or spurious signals may wake it.
                 // Re-lock.
                 newPthreadLock(oldValueRegister, successRegister, lockAddress),
-                newLocal(errorRegister, expressions.makeValue(PosixErrorCode.ETIMEDOUT.getValue(), errorType))
+                assignPosixError(errorRegister, PosixErrorCode.ETIMEDOUT)
         );
     }
 
@@ -710,17 +718,10 @@ public class Intrinsics {
         final Register errorRegister = getResultRegisterAndCheckArguments(2, call);
         final Expression keyAddress = call.getArguments().get(0);
         final Expression destructor = call.getArguments().get(1);
-        final Program program = call.getFunction().getProgram();
-        final long threadCount = program.getThreads().size();
-        final int pointerBytes = types.getMemorySizeInBytes(types.getPointerType());
-        final Register storageAddressRegister = call.getFunction().newRegister(types.getArchType());
-        final Expression size = expressions.makeValue((threadCount + 1) * pointerBytes, types.getArchType());
-        final Expression destructorOffset = expressions.makeValue(threadCount * pointerBytes, types.getArchType());
-        //TODO call destructor at each thread's normal exit
+        final Register keyRegister = call.getFunction().newUniqueRegister("__pthread_key_create_key", getNativeIntType());
         return List.of(
-                EventFactory.newAlloc(storageAddressRegister, types.getArchType(), size, true, true),
-                newStore(keyAddress, storageAddressRegister),
-                newStore(expressions.makeAdd(storageAddressRegister, destructorOffset), destructor),
+                newDynamicThreadLocalCreate(keyRegister, destructor),
+                newStore(keyAddress, keyRegister),
                 assignSuccess(errorRegister)
         );
     }
@@ -728,10 +729,9 @@ public class Intrinsics {
     private List<Event> inlinePthreadKeyDelete(FunctionCall call) {
         //see https://linux.die.net/man/3/pthread_key_delete
         final Register errorRegister = getResultRegisterAndCheckArguments(1, call);
-        //final Expression key = call.getArguments().get(0);
-        //final int threadID = call.getThread().getId();
-        //TODO the destructor should no longer be called by pthread_exit
+        final Expression key = call.getArguments().get(0);
         return List.of(
+                newDynamicThreadLocalDelete(key),
                 assignSuccess(errorRegister)
         );
     }
@@ -740,10 +740,8 @@ public class Intrinsics {
         //see https://linux.die.net/man/3/pthread_getspecific
         final Register result = getResultRegisterAndCheckArguments(1, call);
         final Expression key = call.getArguments().get(0);
-        final int threadID = call.getThread().getId();
-        final Expression offset = expressions.makeValue(threadID, (IntegerType) key.getType());
         return List.of(
-                EventFactory.newLoad(result, expressions.makeAdd(key, offset))
+                newDynamicThreadLocalGet(result, key)
         );
     }
 
@@ -752,10 +750,8 @@ public class Intrinsics {
         final Register errorRegister = getResultRegisterAndCheckArguments(2, call);
         final Expression key = call.getArguments().get(0);
         final Expression value = call.getArguments().get(1);
-        final int threadID = call.getThread().getId();
-        final Expression offset = expressions.makeValue(threadID, (IntegerType) key.getType());
         return List.of(
-                newStore(expressions.makeAdd(key, offset), value),
+                newDynamicThreadLocalSet(key, value),
                 assignSuccess(errorRegister)
         );
     }
@@ -1093,6 +1089,11 @@ public class Intrinsics {
         return List.of(
                 EventFactory.newAlignedAlloc(resultRegister, allocType, totalSize, alignment, true, false)
         );
+    }
+
+    private List<Event> inlineFree(FunctionCall call) {
+        final Expression address = call.getArguments().get(0);
+        return List.of(newDealloc(address));
     }
 
     private List<Event> inlineAssert(FunctionCall call, AssertionType skip, String errorMsg) {
@@ -1852,6 +1853,11 @@ public class Intrinsics {
 
     private IntegerType getNativeIntType() {
         return types.getIntegerType(32);
+    }
+
+    private Event assignPosixError(Register errorRegister, PosixErrorCode code) {
+        final Expression value = expressions.makeValue(code.getValue(), (IntegerType) errorRegister.getType());
+        return EventFactory.newLocal(errorRegister, value);
     }
 
     private Event assignSuccess(Register errorRegister) {

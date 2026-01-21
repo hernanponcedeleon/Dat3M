@@ -23,6 +23,7 @@ import com.google.common.collect.Sets;
 
 import java.math.BigInteger;
 import java.util.*;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import static com.dat3m.dartagnan.expression.integers.IntBinaryOp.*;
@@ -49,6 +50,7 @@ import static com.dat3m.dartagnan.configuration.Alias.*;
 public class FieldSensitiveAndersen implements AliasAnalysis {
 
     private final Config config;
+    private final Set<MemoryObject> allObjects;
 
     private static final TypeFactory types = TypeFactory.getInstance();
 
@@ -82,6 +84,7 @@ public class FieldSensitiveAndersen implements AliasAnalysis {
 
     private FieldSensitiveAndersen(Program p, Config c) {
         config = checkNotNull(c);
+        allObjects = p.getMemory().getObjects();
         synContext = Suppliers.memoize(() -> SyntacticContextAnalysis.newInstance(p));
     }
 
@@ -96,6 +99,16 @@ public class FieldSensitiveAndersen implements AliasAnalysis {
     public boolean mustAlias(MemoryCoreEvent x, MemoryCoreEvent y) {
         Set<Location> a = getMaxAddressSet(x);
         return a.size() == 1 && a.containsAll(getMaxAddressSet(y));
+    }
+
+    @Override
+    public Collection<MemoryObject> addressableObjects(MemoryCoreEvent e) {
+        return getMaxAddressSet(e).stream().map(l -> l.base).collect(Collectors.toSet());
+    }
+
+    @Override
+    public Collection<MemoryObject> communicableObjects(MemoryCoreEvent e) {
+        return e instanceof Load || e instanceof Store ? allObjects : Set.of();
     }
 
     @Override

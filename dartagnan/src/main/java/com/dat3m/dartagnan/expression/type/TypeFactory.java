@@ -40,6 +40,8 @@ public final class TypeFactory {
 
     public VoidType getVoidType() { return voidType; }
 
+    public Type getUnitType() { return getAggregateType(List.of()); }
+
     public Type getPointerType() {
         return pointerDifferenceType;
     }

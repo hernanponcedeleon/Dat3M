@@ -70,8 +70,8 @@ public class SparseConditionalConstantPropagation implements FunctionProcessor {
             return;
         }
         final Predicate<Expression> checkDoPropagate = propagateCopyAssignments
-                ? (expr -> expr instanceof MemoryObject || expr instanceof IntLiteral || expr instanceof BoolLiteral || expr instanceof Register)
-                : (expr -> expr instanceof MemoryObject || expr instanceof IntLiteral || expr instanceof BoolLiteral);
+                ? (expr -> expr instanceof MemoryObject || expr instanceof Function || expr instanceof IntLiteral || expr instanceof BoolLiteral || expr instanceof Register)
+                : (expr -> expr instanceof MemoryObject || expr instanceof Function || expr instanceof IntLiteral || expr instanceof BoolLiteral);
 
         Set<Event> reachableEvents = new HashSet<>();
         Map<Label, Map<Register, Expression>> inflowMap = new HashMap<>();
