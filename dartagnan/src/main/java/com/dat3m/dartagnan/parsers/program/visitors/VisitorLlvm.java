@@ -844,7 +844,11 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
                 case "and" -> IntBinaryOp.AND;
                 case "or" -> IntBinaryOp.OR;
                 case "xor" -> IntBinaryOp.XOR;
-                //TODO nand, min, umin, max, umax, uinc_wrap, udec_wrap, fadd, fsub, fmax, fmin
+                case "max" -> IntBinaryOp.SMAX;
+                case "min" -> IntBinaryOp.SMIN;
+                case "umax" -> IntBinaryOp.UMAX;
+                case "umin" -> IntBinaryOp.UMIN;
+                //TODO nand, uinc_wrap, udec_wrap, fadd, fsub, fmax, fmin
                 default -> throw new UnsupportedOperationException(String.format("Unknown atomic operand %s.", ctx.getText()));
             };
             event = Llvm.newRMW(register, address, operand, op, mo);

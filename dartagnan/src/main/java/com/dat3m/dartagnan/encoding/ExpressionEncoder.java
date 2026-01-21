@@ -320,6 +320,8 @@ public class ExpressionEncoder {
                         );
                         yield fmgr.ifThenElse(cond, imgr.subtract(modulo, i2), modulo);
                     }
+                    case SMAX, UMAX -> fmgr.ifThenElse(imgr.greaterOrEquals(i1, i2), i1, i2);
+                    case SMIN, UMIN -> fmgr.ifThenElse(imgr.lessOrEquals(i1, i2), i1, i2);
                 };
 
                 return new TypedFormula<>(type, result);
@@ -342,6 +344,10 @@ public class ExpressionEncoder {
                     case LSHIFT -> bvmgr.shiftLeft(bv1, bv2);
                     case RSHIFT -> bvmgr.shiftRight(bv1, bv2, false);
                     case ARSHIFT -> bvmgr.shiftRight(bv1, bv2, true);
+                    case SMAX -> bmgr.ifThenElse(bvmgr.greaterOrEquals(bv1, bv2, true), bv1, bv2);
+                    case SMIN -> bmgr.ifThenElse(bvmgr.lessOrEquals(bv1, bv2, true), bv1, bv2);
+                    case UMAX -> bmgr.ifThenElse(bvmgr.greaterOrEquals(bv1, bv2, false), bv1, bv2);
+                    case UMIN -> bmgr.ifThenElse(bvmgr.lessOrEquals(bv1, bv2, false), bv1, bv2);
                 };
 
                 return new TypedFormula<>(type, result);
