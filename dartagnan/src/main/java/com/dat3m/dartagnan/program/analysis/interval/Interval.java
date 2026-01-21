@@ -291,41 +291,20 @@ public class Interval implements Cloneable {
         return new BigInteger(new String(ones));
     }
 
-    private static class BigIntPair {
-        BigInteger min,max;
-
-        BigIntPair() {}
-
-
-    }
-
     private Interval doOR(BigInteger lb1 ,BigInteger lb2 ,BigInteger ub1 ,BigInteger ub2 ,IntegerType type) {
         char signs = constructSignNumber(lb1, ub1, lb2, ub2);
-        switch (signs) {
-            case 0b1111:
-            case 0b0000:
-            case 0b0011:
-            case 0b1100:
-            return new Interval(minOR(lb1,lb2,ub1,ub2),maxOR(lb1,lb2,ub1,ub2),type);
-
-            case 0b0001:
-            return new Interval(lb1,new BigInteger("-1"),type);
-
-            case 0b0100:
-            return new Interval(lb2,new BigInteger("-1"),type);
-
-            case 0b0101: 
-            return new Interval(lb1.min(lb2),maxOR(BigInteger.ZERO,BigInteger.ZERO,ub1,ub2),type);
-
-            case 0b0111:
-            return new Interval(minOR(lb1,lb2,setAllBits(ub1.bitLength()),ub2),maxOR(BigInteger.ZERO,lb2,ub1,ub2),type);
-
-            case 0b1101:
-            return new Interval(minOR(lb1,lb2,ub1,setAllBits(ub2.bitLength())),maxOR(lb1,BigInteger.ZERO,ub1,ub2),type);
-            default: 
-            return Interval.getTop(type);
-
-        }
+        return switch (signs) {
+            case 0b1111, 0b0000, 0b0011, 0b1100 ->
+                    new Interval(minOR(lb1, lb2, ub1, ub2), maxOR(lb1, lb2, ub1, ub2), type);
+            case 0b0001 -> new Interval(lb1, new BigInteger("-1"), type);
+            case 0b0100 -> new Interval(lb2, new BigInteger("-1"), type);
+            case 0b0101 -> new Interval(lb1.min(lb2), maxOR(BigInteger.ZERO, BigInteger.ZERO, ub1, ub2), type);
+            case 0b0111 ->
+                    new Interval(minOR(lb1, lb2, setAllBits(ub1.bitLength()), ub2), maxOR(BigInteger.ZERO, lb2, ub1, ub2), type);
+            case 0b1101 ->
+                    new Interval(minOR(lb1, lb2, ub1, setAllBits(ub2.bitLength())), maxOR(lb1, BigInteger.ZERO, ub1, ub2), type);
+            default -> Interval.getTop(type);
+        };
     }
 
 
