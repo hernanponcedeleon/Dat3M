@@ -58,6 +58,10 @@ public class Interval implements Cloneable {
 
     }
 
+    public Interval(BigInteger value, IntegerType type) {
+        this(value,value,type);
+    }
+
     public enum SignState {
         UNKNOWN,
         SIGNED,
@@ -88,10 +92,6 @@ public class Interval implements Cloneable {
         return (this.upperbound.subtract(this.lowerbound)).add(BigInteger.ONE);
     }
 
-
-    public static Interval makeSingleton(BigInteger value,IntegerType type) {
-        return new Interval(value,value,type);
-    }
 
     public Interval join(Interval interval2) {
         return new Interval(this.lowerbound.min(interval2.lowerbound),this.upperbound.max(interval2.upperbound),this.getType());    }

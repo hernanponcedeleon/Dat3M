@@ -244,7 +244,7 @@ public abstract class IntervalAnalysisWorklist implements IntervalAnalysis {
 
         @Override
         public Interval visitIntLiteral(IntLiteral lit) {
-            return Interval.makeSingleton(lit.getValue(),type);
+            return new Interval(lit.getValue(),type);
         }
 
         @Override
