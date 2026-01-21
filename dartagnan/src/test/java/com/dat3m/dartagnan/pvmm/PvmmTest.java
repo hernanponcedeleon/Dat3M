@@ -56,7 +56,11 @@ public class PvmmTest {
             "f-graph-mp-semsc-c", FAIL,
             "f-graph-problem1-a", PASS,
             "f-graph-problem1-b", FAIL,
-            "f-graph-problem1-c", PASS
+            "f-graph-problem1-c", PASS,
+            "f-graph-problem2-a", FAIL,
+            "f-graph-problem2-b", PASS,
+            "f-graph-problem3-a", FAIL,
+            "f-graph-problem3-b", PASS
     );
 
     @Test
