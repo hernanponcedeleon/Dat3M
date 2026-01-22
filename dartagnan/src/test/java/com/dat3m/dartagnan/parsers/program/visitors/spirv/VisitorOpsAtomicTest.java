@@ -1,7 +1,6 @@
 package com.dat3m.dartagnan.parsers.program.visitors.spirv;
 
 import com.dat3m.dartagnan.expression.integers.IntBinaryOp;
-import com.dat3m.dartagnan.expression.integers.IntCmpOp;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.mocks.MockProgramBuilder;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.mocks.MockSpirvParser;
 import com.dat3m.dartagnan.program.event.Event;
@@ -151,13 +150,13 @@ public class VisitorOpsAtomicTest {
         String input = "%result = OpAtomicSMax %int %ptr %scope %semantic %value";
 
         // when
-        SpirvRmwExtremum event = (SpirvRmwExtremum) visit(builder, input);
+        var event = (SpirvRmw) visit(builder, input);
 
         // then
         assertEquals("%result", event.getResultRegister().getName());
         assertEquals(builder.getType("%int"), event.getResultRegister().getType());
         assertEquals(builder.getExpression("%ptr"), event.getAddress());
-        assertEquals(IntCmpOp.GT, event.getOperator());
+        assertEquals(IntBinaryOp.SMAX, event.getOperator());
     }
 
     @Test
