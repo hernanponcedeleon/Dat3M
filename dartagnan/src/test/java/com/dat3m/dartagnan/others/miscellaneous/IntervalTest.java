@@ -104,7 +104,7 @@ public class IntervalTest {
     }
     @Test
     public void test() {
-        Interval result = operand1.applyOperator(op,operand2,byteType);
+        Interval result = operand1.applyOperator(op,operand2);
         assertEquals(expected,result);
     }
 
