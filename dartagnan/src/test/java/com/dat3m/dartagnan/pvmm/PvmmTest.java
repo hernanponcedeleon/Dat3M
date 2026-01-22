@@ -161,7 +161,7 @@ public class PvmmTest {
         StringBuilder sb = new StringBuilder();
         sb.append(printer.print(program));
         for (String relation : relations) {
-            if (relation.matches("[a-z]+[0-9]*")) {
+            if (relation.matches("[a-z]+\\#?[0-9]*")) {
                 sb.append(relation).append(": ").append(data.get(relation)).append("\n");
             }
         }
