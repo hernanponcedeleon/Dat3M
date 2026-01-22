@@ -96,13 +96,13 @@ public class Interval implements Cloneable {
     public Interval join(Interval interval2) {
         return new Interval(this.lowerbound.min(interval2.lowerbound),this.upperbound.max(interval2.upperbound),this.getType());    }
 
-    public boolean isTop(IntegerType type) {
+    public boolean isTop() {
         return this.equals(Interval.getTop(type));
     }
 
-    public Interval applyOperator(IntBinaryOp op, Interval interval, IntegerType type) {
+    public Interval applyOperator(IntBinaryOp op, Interval interval) {
         return switch (op) {
-            case ADD, SUB, MUL, DIV, OR, AND -> applyOperatorMethod(op,interval,type);
+            case ADD, SUB, MUL, DIV, OR, AND -> applyOperatorMethod(op,interval);
             default -> {
                 unsupportedOperators.add(op);
                 yield Interval.getTop(type);
@@ -143,10 +143,10 @@ public class Interval implements Cloneable {
         return (lowerbound.signum() >= 0 && lowerbound.compareTo(type.getMaximumValue(true)) <= 0) && upperbound.compareTo(type.getMaximumValue(true)) > 0;
     }
 
-    private Interval applyOperatorMethod(IntBinaryOp op, Interval interval,IntegerType type) {
+    private Interval applyOperatorMethod(IntBinaryOp op, Interval interval) {
         Interval newInterval;
         UnaryOperator<Interval> opFunc = selectOperatorMethod(op);
-        if(opFunc != null && !this.isTop(type) && !interval.isTop(type)) {
+        if(opFunc != null && !this.isTop() && !interval.isTop()) {
             if (op == IntBinaryOp.DIV && 
         (interval.lowerbound.compareTo(BigInteger.ZERO) > 0 ||
             interval.upperbound.compareTo(BigInteger.ZERO) < 0)) {
@@ -291,7 +291,7 @@ public class Interval implements Cloneable {
         return new BigInteger(new String(ones));
     }
 
-    private Interval doOR(BigInteger lb1 ,BigInteger lb2 ,BigInteger ub1 ,BigInteger ub2 ,IntegerType type) {
+    private Interval doOR(BigInteger lb1 ,BigInteger lb2 ,BigInteger ub1 ,BigInteger ub2) {
         char signs = constructSignNumber(lb1, ub1, lb2, ub2);
         return switch (signs) {
             case 0b1111, 0b0000, 0b0011, 0b1100 ->
@@ -314,8 +314,7 @@ public class Interval implements Cloneable {
         BigInteger lb2 = interval.lowerbound;
         BigInteger ub1 = this.upperbound;
         BigInteger ub2 = interval.upperbound;
-        IntegerType type = this.type;
-        return doOR(lb1,lb2,ub1,ub2,type);
+        return doOR(lb1,lb2,ub1,ub2);
     }
 
 
@@ -323,9 +322,8 @@ public class Interval implements Cloneable {
         BigInteger lb1 = this.lowerbound;
         BigInteger lb2 = interval.lowerbound;
         BigInteger ub1 = this.upperbound;
-        BigInteger ub2 = interval.upperbound; 
-        IntegerType type = this.type; 
-        Interval orInterval = doOR(ub1.not(),ub2.not(),lb1.not(),lb2.not(),type);
+        BigInteger ub2 = interval.upperbound;
+        Interval orInterval = doOR(ub1.not(),ub2.not(),lb1.not(),lb2.not());
         BigInteger maxAnd = orInterval.getLowerbound().not();
         BigInteger minAnd = orInterval.getUpperbound().not();
         return new Interval(minAnd,maxAnd,type);
