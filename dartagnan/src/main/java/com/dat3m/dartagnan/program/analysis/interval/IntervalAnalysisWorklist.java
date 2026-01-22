@@ -271,7 +271,7 @@ public abstract class IntervalAnalysisWorklist implements IntervalAnalysis {
             IntBinaryOp op = binExpr.getKind();
             Interval intervalLeft = binExpr.getLeft().accept(this);
             Interval intervalRight = binExpr.getRight().accept(this);
-            return intervalLeft.applyOperator(op,intervalRight,type);
+            return intervalLeft.applyOperator(op,intervalRight);
         }
 
         @Override

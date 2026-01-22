@@ -133,9 +133,9 @@ public interface IntervalAnalysis {
                 totalRegReads += regReads.stream().filter(read -> read.register().getType() instanceof IntegerType).count();
                 for (Register.Read read : regReads) {
                     Register r = read.register();
-                    if (r.getType() instanceof IntegerType itype) {
+                    if (r.getType() instanceof IntegerType) {
                         Interval computedInterval = getIntervalAt(e, r);
-                        if (computedInterval.isTop(itype)) {
+                        if (computedInterval.isTop()) {
                             totalIntervalsTop++;
                         } else {
                             totalIntervalsReduced++;

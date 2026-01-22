@@ -161,9 +161,9 @@ public class ExpressionEncoder {
     @SuppressWarnings("unchecked")
     private void saveIntervalOfVariable(Event event, Register register, TypedFormula<?,?> variable, Type type) {
         IntervalAnalysis intervalAnalysis = context.getAnalysisContext().get(IntervalAnalysis.class);
-        if (event != null && intervalAnalysis != null && type instanceof IntegerType itype) {
+        if (event != null && intervalAnalysis != null && type instanceof IntegerType) {
             Interval interval = intervalAnalysis.getIntervalAt(event,register);
-            if(interval != null && !interval.isTop(itype)) {
+            if(interval != null && !interval.isTop()) {
                 assert variable.getType() instanceof IntegerType;
                 assert variable.formula() instanceof BitvectorFormula || variable.formula() instanceof IntegerFormula;
                 context.addVarToInterval((TypedFormula<IntegerType, ?>) variable,interval);
