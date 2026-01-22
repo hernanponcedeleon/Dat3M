@@ -48,36 +48,59 @@ import static org.junit.Assert.*;
 
 public class PvmmTest {
 
-    private final Printer printer = Printer.newInstance();
+    private static final String[] models = {
+            "vulkan_pvmm",
+            "vulkan_pvmm_semsc"
+    };
 
-    private final Map<String, Result> examples = Map.of(
-            "f-graph-mp-semsc-a", FAIL,
-            "f-graph-mp-semsc-b", PASS,
-            "f-graph-mp-semsc-c", FAIL,
-            "f-graph-problem1-a", PASS,
-            "f-graph-problem1-b", FAIL,
-            "f-graph-problem1-c", PASS,
-            "f-graph-problem2-a", FAIL,
-            "f-graph-problem2-b", PASS,
-            "f-graph-problem3-a", FAIL,
-            "f-graph-problem3-b", PASS
-    );
+    private static final Object[][] expected = {
+            // test                     orig    semsc
+            {"f-graph-mp-semsc-a",      FAIL,   FAIL},
+            {"f-graph-mp-semsc-b",      PASS,   PASS},
+            {"f-graph-mp-semsc-c",      FAIL,   FAIL},
+            {"f-graph-problem-semsc-mp-a",      PASS,   PASS},
+            {"f-graph-problem-semsc-mp-b",      FAIL,   PASS},
+            {"f-graph-problem-semsc-mp-c",      PASS,   PASS},
+            {"f-graph-problem-semsc-mp-fences-a",  PASS,   PASS},
+            {"f-graph-problem-semsc-mp-fences-b",  FAIL,   PASS},
+            {"f-graph-problem-semsc-mp-fences-c",  PASS,   PASS},
+            {"f-graph-problem-semsc-lb-a",      PASS,   PASS},
+            {"f-graph-problem-semsc-lb-b",      FAIL,   PASS},
+            {"f-graph-problem-semsc-lb-c",      FAIL,   PASS},
+            {"f-graph-problem-semsc-lb-d",      PASS,   PASS},
+            {"f-graph-problem3-a",      FAIL,   PASS},
+            {"f-graph-problem3-b",      PASS,   PASS},
+
+            {"extra-sb",                PASS,   PASS},
+            {"extra-sb-fence",          PASS,   PASS},
+            {"extra-lb",                FAIL,   FAIL},
+            {"extra-lb-fence-1",        FAIL,   FAIL},
+            {"extra-lb-fence-2",        FAIL,   FAIL},
+            {"extra-mp3",               FAIL,   FAIL},
+            {"extra-mp3-fence1",        FAIL,   FAIL},
+            {"extra-mp3-fence2",        PASS,   PASS}
+    };
+
+    private final Printer printer = Printer.newInstance();
 
     @Test
     public void checkResult() throws Exception {
-        String modelPath = getRootPath("cat/vulkan.cat");
-        for (Map.Entry<String, Result> entry : examples.entrySet()) {
-            String programPath = getRootPath("litmus/VULKAN/pvmm/" + entry.getKey() + ".litmus");
-            try (SolverContext ctx = mkCtx()) {
-                try (ProverWithTracker prover = mkProver(ctx)) {
-                    VerificationTask task = mkTask(programPath, modelPath, PROGRAM_SPEC);
-                    assertEquals(entry.getValue(), AssumeSolver.run(ctx, prover, task).getResult());
+        for (Object[] entry : expected) {
+            String program = getRootPath("litmus/VULKAN/pvmm/" + entry[0] + ".litmus");
+            for (int i = 1; i < entry.length; i++) {
+                Result result = (Result) entry[i];
+                String model = getRootPath("cat/" + models[i - 1] + ".cat");
+                try (SolverContext ctx = mkCtx()) {
+                    try (ProverWithTracker prover = mkProver(ctx)) {
+                        VerificationTask task = mkTask(program, model, PROGRAM_SPEC);
+                        assertEquals(result, AssumeSolver.run(ctx, prover, task).getResult());
+                    }
                 }
-            }
-            try (SolverContext ctx = mkCtx()) {
-                try (ProverWithTracker prover = mkProver(ctx)) {
-                    VerificationTask task = mkTaskRefinement(programPath, modelPath, PROGRAM_SPEC);
-                    assertEquals(entry.getValue(), RefinementSolver.run(ctx, prover, task).getResult());
+                try (SolverContext ctx = mkCtx()) {
+                    try (ProverWithTracker prover = mkProver(ctx)) {
+                        VerificationTask task = mkTaskRefinement(program, model, PROGRAM_SPEC);
+                        assertEquals(result, RefinementSolver.run(ctx, prover, task).getResult());
+                    }
                 }
             }
         }
@@ -85,11 +108,14 @@ public class PvmmTest {
 
     @Test
     public void logRelations() throws Exception {
-        for (Map.Entry<String, Result> entry : examples.entrySet()) {
-            String programPath = getRootPath("litmus/VULKAN/pvmm/" + entry.getKey() + ".litmus");
+        for (Object[] entry : expected) {
+            String programPath = getRootPath("litmus/VULKAN/pvmm/" + entry[0] + ".litmus");
+            Result result = (Result) entry[1];
+            //String modelPath = getRootPath("cat/vulkan_pvmm_semsc.cat");
             String modelPath = getRootPath("cat/vulkan_pvmm.cat");
             Property property = PROGRAM_SPEC;
-            if (entry.getValue() == FAIL) {
+            if (result == FAIL) {
+                //modelPath = getRootPath("cat/vulkan_pvmm_semsc_cycle.cat");
                 modelPath = getRootPath("cat/vulkan_pvmm_cycle.cat");
                 property = CAT_SPEC;
             }
