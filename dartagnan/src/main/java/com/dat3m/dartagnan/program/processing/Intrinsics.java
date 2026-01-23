@@ -809,7 +809,7 @@ public class Intrinsics {
         final Expression lockAddress = call.getArguments().get(0);
         final Expression fail = expressions.makeNot(expressions.makeExtract(oldValueSuccessRegister, 1));
         return List.of(
-                newPthreadTryLock(oldValueSuccessRegister, lockAddress, false),
+                newPthreadTryLock(oldValueSuccessRegister, lockAddress),
                 EventFactory.newLocal(errorRegister, expressions.makeCast(fail, errorRegister.getType()))
         );
     }
@@ -860,10 +860,10 @@ public class Intrinsics {
         return Arrays.asList(load, check, store);
     }
 
-    private Event newPthreadTryLock(Register oldValueSuccess, Expression address, boolean strong) {
+    private Event newPthreadTryLock(Register oldValueSuccess, Expression lockAddress) {
         final Expression unlocked = expressions.makeZero(getPthreadMutexType());
         final Expression locked = expressions.makeOne(getPthreadMutexType());
-        return Llvm.newCompareExchange(oldValueSuccess, address, unlocked, locked, Tag.C11.MO_ACQUIRE, strong);
+        return Llvm.newCompareExchange(oldValueSuccess, lockAddress, unlocked, locked, Tag.C11.MO_ACQUIRE, true);
     }
 
     private List<Event> newPthreadLock(Register oldValueSuccessRegister, Expression address) {
@@ -872,7 +872,7 @@ public class Intrinsics {
         final Label spinLoopEnd = EventFactory.newLabel("__spinloop_end");
         return List.of(
                 spinLoopHead,
-                newPthreadTryLock(oldValueSuccessRegister, address, true),
+                newPthreadTryLock(oldValueSuccessRegister, address),
                 EventFactory.newJump(expressions.makeExtract(oldValueSuccessRegister, 1), spinLoopEnd),
                 EventFactory.newGoto(spinLoopHead),
                 spinLoopEnd
@@ -943,15 +943,10 @@ public class Intrinsics {
         );
     }
 
-    private Event newRwlockTryWrlock(Register oldValueSuccessRegister, Expression lockAddress) {
-        return Llvm.newCompareExchange(
-                oldValueSuccessRegister,
-                lockAddress,
-                getRwlockUnlockedValue(),
-                getRwlockWriteLockedValue(),
-                Tag.C11.MO_ACQUIRE,
-                false
-        );
+    private Event newRwlockTryWrlock(Register oldValueSuccess, Expression lockAddress) {
+        final Expression unlocked = getRwlockUnlockedValue();
+        final Expression locked = getRwlockWriteLockedValue();
+        return Llvm.newCompareExchange(oldValueSuccess, lockAddress, unlocked, locked, Tag.C11.MO_ACQUIRE, true);
     }
 
     private List<Event> inlinePthreadRwlockRdlock(FunctionCall call) {
@@ -1003,19 +998,12 @@ public class Intrinsics {
         );
     }
 
-    private Event newRwlockTryRdlock(Register oldValueSuccessRegister, Expression lockAddress, Expression expected) {
-        return Llvm.newCompareExchange(
-                oldValueSuccessRegister,
-                lockAddress,
-                expected,
-                expressions.makeITE(
-                        expressions.makeEQ(expected, getRwlockUnlockedValue()),
-                        expressions.makeValue(BigInteger.TWO, getRwlockDatatype()),
-                        expressions.makeAdd(expected, expressions.makeOne(getRwlockDatatype()))
-                ),
-                Tag.C11.MO_ACQUIRE,
-                false
-        );
+    private Event newRwlockTryRdlock(Register oldValueSuccess, Expression lockAddress, Expression expected) {
+        final Expression wasUnlocked = expressions.makeEQ(expected, getRwlockUnlockedValue());
+        final Expression lockedOnce = expressions.makeValue(BigInteger.TWO, getRwlockDatatype());
+        final Expression lockedMore = expressions.makeAdd(expected, expressions.makeOne(getRwlockDatatype()));
+        final Expression locked = expressions.makeITE(wasUnlocked, lockedOnce, lockedMore);
+        return Llvm.newCompareExchange(oldValueSuccess, lockAddress, expected, locked, Tag.C11.MO_ACQUIRE, true);
     }
 
     private List<Event> inlinePthreadRwlockUnlock(FunctionCall call) {
