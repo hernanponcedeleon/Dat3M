@@ -66,6 +66,9 @@
     <profiles>
         <profile>
             <id>native</id>
+            <properties>
+                <cyclonedx.skip>true</cyclonedx.skip>
+            </properties>
             <build>
             <plugins>
                 <plugin>
