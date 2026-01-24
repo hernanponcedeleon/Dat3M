@@ -416,7 +416,7 @@ public final class ExpressionFactory {
     }
 
 
-    private Expression makeIntToPtrCast(Expression integer, PointerType pointerType) {
+    public Expression makeIntToPtrCast(Expression integer, PointerType pointerType) {
         return new IntToPtrCast(pointerType, integer);
     }
     public Expression makeIntToPtrCast(Expression operand) {

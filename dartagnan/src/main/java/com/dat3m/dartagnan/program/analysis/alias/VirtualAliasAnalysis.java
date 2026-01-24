@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan.program.analysis.alias;
 
+import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.pointer.PtrAddExpr;
 import com.dat3m.dartagnan.program.event.core.MemoryCoreEvent;
 import com.dat3m.dartagnan.program.memory.VirtualMemoryObject;
@@ -38,22 +39,10 @@ public class VirtualAliasAnalysis implements AliasAnalysis {
     // Checking address1 and address2 hold the same physical address
     private boolean samePhysicalAddress(MemoryCoreEvent e1, MemoryCoreEvent e2) {
         // TODO: Add support for pointers
-        // FIXME: Ugly code because somewhere a (virtual address + 0) is being generated.
-        VirtualMemoryObject v1;
-        VirtualMemoryObject v2;
-
-        if (e1.getAddress() instanceof VirtualMemoryObject addr){
-            v1 = addr;
-        }else if(e1.getAddress() instanceof PtrAddExpr addr){
-            v1 =(VirtualMemoryObject) addr.getBase();
-        }else{return false;}
-
-        if (e2.getAddress() instanceof VirtualMemoryObject addr){
-            v2 = addr;
-        }else if(e2.getAddress() instanceof PtrAddExpr addr){
-            v2 =(VirtualMemoryObject) addr.getBase();
-        }else{return false;}
-
-        return v1.getPhysicalAddress() == v2.getPhysicalAddress();
+        if (!(e1.getAddress() instanceof VirtualMemoryObject addr1)
+                || !(e2.getAddress() instanceof VirtualMemoryObject addr2)) {
+            return false;
+        }
+        return addr1.getPhysicalAddress() == addr2.getPhysicalAddress();
     }
 }
