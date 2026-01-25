@@ -131,17 +131,22 @@ public final class Tearing implements ProgramProcessor {
             final MemoryObject base = init.getBase();
             final int initOffset = init.getOffset();
             final Expression value = init.getValue();
+            final boolean isIntTearing = value.getType() instanceof IntegerType;
             // Tear initial values
             final int frontBegin = bigEndian ? bytes - offsets.get(0) : 0;
             final int frontEnd = bigEndian ? bytes : offsets.get(0);
-            final Expression frontValue = expressions.makeIntExtract(value, 8 * frontBegin, 8 * frontEnd - 1);
+            final Expression frontValue = isIntTearing?
+                    expressions.makeIntExtract(value, 8 * frontBegin, 8 * frontEnd - 1):
+                    expressions.makePtrExtract(value, 8 * frontBegin, 8 * frontEnd - 1);
             base.setInitialValue(initOffset, frontValue);
             for (int i = 0; i < offsets.size(); i++) {
                 final int offset = offsets.get(i);
                 final int next = i + 1 < offsets.size() ? offsets.get(i + 1) : bytes;
                 final int begin = bigEndian ? bytes - next : offset;
                 final int end = bigEndian ? bytes - offset : next;
-                final Expression tearedValue = expressions.makeIntExtract(value, 8 * begin, 8 * end - 1);
+                final Expression tearedValue = isIntTearing?
+                        expressions.makeIntExtract(value, 8 * begin, 8 * end - 1):
+                        expressions.makePtrExtract(value, 8 * begin, 8 * end - 1);
                 base.setInitialValue(initOffset + offset, tearedValue);
             }
             // Tear init event
