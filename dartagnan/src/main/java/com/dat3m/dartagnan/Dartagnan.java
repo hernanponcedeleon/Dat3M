@@ -120,62 +120,47 @@ public class Dartagnan extends BaseOptions {
 
         logGitInfo();
 
-        Configuration config = loadConfiguration(args);
-        Dartagnan o = new Dartagnan(config);
+        final Configuration config = loadConfiguration(args);
+        final Dartagnan o = new Dartagnan(config);
 
-        File fileModel = new File(Arrays.stream(args).filter(a -> a.endsWith(".cat")).findFirst()
+        final File fileModel = new File(Arrays.stream(args).filter(a -> a.endsWith(".cat")).findFirst()
                 .orElseThrow(() -> new IllegalArgumentException("CAT model not given or format not recognized")));
         logger.info("CAT file path: {}", fileModel);
-        Wmm mcm = new ParserCat(Path.of(o.getCatIncludePath())).parse(fileModel);
-
+        final Wmm mcm = new ParserCat(Path.of(o.getCatIncludePath())).parse(fileModel);
         final OutputLogger output = new OutputLogger(fileModel, config);
 
-        final List<File> files = new ArrayList<>();
-        Stream.of(args)
-            .map(File::new)
-            .forEach(file -> {
-                if (file.exists()) {
-                    final String path = file.getAbsolutePath();
-                    if (file.isDirectory()) {
-                        logger.info("Programs path: {}", path);
-                        files.addAll(getProgramsFiles(path));
-                    } else if (file.isFile() && supportedFormats.stream().anyMatch(file.getName()::endsWith)) {
-                        logger.info("Program path: {}", path);
-                        files.add(file);
-                    }
-                }
-            });
-        if (files.isEmpty()) {
-            throw new IllegalArgumentException("Path to input program(s) not given or format not recognized");
-        }
-
-        EnumSet<Property> properties = o.getProperty();
-
-        WitnessGraph witness = new WitnessGraph();
+        final WitnessGraph witness;
         if (o.runValidator()) {
             logger.info("Witness path: {}", o.getWitnessPath());
             witness = new ParserWitness().parse(new File(o.getWitnessPath()));
+        } else {
+            witness = new WitnessGraph();
         }
 
         ResultSummary summary = null;
+        final List<File> files = getProgramFilesFromArgs(args);
         for (File f : files) {
             long timeout = 0; // This is ugly
             try {
-                VerificationTaskBuilder builder = VerificationTask.builder()
-                        .withConfig(config)
-                        .withProgressModel(o.getProgressModel())
-                        .withWitness(witness);
-                Program p = new ProgramParser().parse(f);
+                final Program p = new ProgramParser().parse(f);
                 if (o.overrideEntryFunction()) {
                     p.setEntrypoint(new Entrypoint.Simple(p.getFunctionByName(o.getEntryFunction()).orElseThrow(
                         () -> new MalformedProgramException(String.format("Program has no function named %s. Select a different entry point.", o.getEntryFunction())))));
                 }
+                // FIXME? Should we reparse the memory model each iteration?
+                //  It will get modified by the model checker!
+
+                final VerificationTaskBuilder builder = VerificationTask.builder()
+                        .withConfig(config)
+                        .withProgressModel(o.getProgressModel())
+                        .withWitness(witness);
                 // If the arch has been set during parsing (this only happens for litmus tests)
                 // and the user did not explicitly add the target option, we use the one
                 // obtained during parsing.
                 if (p.getArch() != null && !config.hasProperty(TARGET)) {
-                    builder = builder.withTarget(p.getArch());
+                    builder.withTarget(p.getArch());
                 }
+                final EnumSet<Property> properties = o.getProperty();
                 final VerificationTask task = builder.build(p, mcm, properties);
                 final ModelChecker modelChecker = ModelChecker.create(task, o.getMethod());
 
@@ -208,16 +193,38 @@ public class Dartagnan extends BaseOptions {
         System.exit((files.size() > 1 ? NORMAL_TERMINATION : summary.code()).asInt());
     }
 
-    public static List<File> getProgramsFiles(String path) {
+    private static List<File> getProgramFilesFromArgs(String[] args) {
+        final List<File> files = new ArrayList<>();
+        Stream.of(args)
+            .map(File::new)
+            .forEach(file -> {
+                if (file.exists()) {
+                    final String path = file.getAbsolutePath();
+                    if (file.isDirectory()) {
+                        logger.info("Programs path: {}", path);
+                        files.addAll(getProgramFiles(path));
+                    } else if (file.isFile() && supportedFormats.stream().anyMatch(file.getName()::endsWith)) {
+                        logger.info("Program path: {}", path);
+                        files.add(file);
+                    }
+                }
+            });
+        if (files.isEmpty()) {
+            throw new IllegalArgumentException("Path to input program(s) not given or format not recognized");
+        }
+        return files;
+    }
+
+    private static List<File> getProgramFiles(String dirPath) {
         List<File> files = new ArrayList<File>();
-        try (Stream<Path> stream = Files.walk(Paths.get(path))) {
+        try (Stream<Path> stream = Files.walk(Paths.get(dirPath))) {
             files = stream.filter(Files::isRegularFile)
                 .filter(p -> supportedFormats.stream().anyMatch(p.toString()::endsWith))
                 .map(Path::toFile)
                 .sorted(Comparator.comparing(File::toString))
                 .toList();
         } catch (IOException e) {
-            logger.error("There was an I/O error when accessing path {}", path);
+            logger.error("There was an I/O error when accessing path {}", dirPath);
             System.exit(UNKNOWN_ERROR.asInt());
         }
         return files;

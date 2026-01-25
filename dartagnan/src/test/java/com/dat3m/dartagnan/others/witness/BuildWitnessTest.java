@@ -2,6 +2,7 @@ package com.dat3m.dartagnan.others.witness;
 
 import com.dat3m.dartagnan.configuration.Method;
 import com.dat3m.dartagnan.configuration.Property;
+import com.dat3m.dartagnan.encoding.IREvaluator;
 import com.dat3m.dartagnan.parsers.cat.ParserCat;
 import com.dat3m.dartagnan.parsers.program.ProgramParser;
 import com.dat3m.dartagnan.program.Program;
@@ -13,6 +14,8 @@ import com.dat3m.dartagnan.witness.graphml.WitnessGraph;
 import com.dat3m.dartagnan.wmm.Wmm;
 import org.junit.Test;
 import org.sosy_lab.common.configuration.Configuration;
+import org.sosy_lab.java_smt.api.BooleanFormula;
+import org.sosy_lab.java_smt.api.BooleanFormulaManager;
 
 import java.io.File;
 
@@ -38,8 +41,10 @@ public class BuildWitnessTest {
         Wmm wmm = new ParserCat().parse(new File(getRootPath("cat/svcomp.cat")));
         VerificationTask task = VerificationTask.builder().withConfig(config).build(p, wmm, Property.getDefault());
         try (ModelChecker modelChecker = ModelChecker.create(task, Method.EAGER)) {
+            modelChecker.run();
             Result res = modelChecker.getResult();
-            WitnessBuilder witnessBuilder = WitnessBuilder.of(modelChecker.getModel(), res, "user assertion");
+            IREvaluator model = modelChecker.getModel();
+            WitnessBuilder witnessBuilder = WitnessBuilder.of(model, res, "user assertion");
             config.inject(witnessBuilder);
             WitnessGraph graph = witnessBuilder.build();
             File witnessFile = new File(getOrCreateOutputDirectory() + "/witness.graphml");
@@ -52,11 +57,12 @@ public class BuildWitnessTest {
             // Delete the file
             assertTrue(witnessFile.delete());
             // Create encoding
-            /*BooleanFormula enc = graph.encode(modelChecker.getEncodingContext());
-            BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
+            // TODO: Accessing the model checkers encoding context is a bad idea
+            BooleanFormula enc = graph.encode(model.getEncodingContext());
+            BooleanFormulaManager bmgr = model.getEncodingContext().getBooleanFormulaManager();
             // Check the formula is not trivial
             assertFalse(bmgr.isFalse(enc));
-            assertFalse(bmgr.isTrue(enc));*/
+            assertFalse(bmgr.isTrue(enc));
         }
     }
 }

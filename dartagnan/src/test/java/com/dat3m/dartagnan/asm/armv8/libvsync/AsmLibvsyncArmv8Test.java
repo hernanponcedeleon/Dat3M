@@ -83,8 +83,8 @@ public class AsmLibvsyncArmv8Test {
 
     private VerificationTask mkTask() throws Exception {
         VerificationTask.VerificationTaskBuilder builder = VerificationTask.builder()
-                .withSolver(SolverContextFactory.Solvers.YICES2)
                 .withConfig(Configuration.builder().build())
+                .withSolver(SolverContextFactory.Solvers.YICES2)
                 .withBound(bound)
                 .withTarget(Arch.ARM8);
         Program program = new ProgramParser().parse(new File(programPath));
