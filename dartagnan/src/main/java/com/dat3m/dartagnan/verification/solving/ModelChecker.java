@@ -16,6 +16,8 @@ import com.dat3m.dartagnan.smt.ProverWithTracker;
 import com.dat3m.dartagnan.utils.Result;
 import com.dat3m.dartagnan.verification.Context;
 import com.dat3m.dartagnan.verification.VerificationTask;
+import com.dat3m.dartagnan.verification.model.ExecutionModelManager;
+import com.dat3m.dartagnan.verification.model.ExecutionModelNext;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
 import com.dat3m.dartagnan.wmm.analysis.WmmAnalysis;
@@ -134,6 +136,13 @@ public abstract class ModelChecker implements AutoCloseable {
     public IREvaluator getModel() throws SolverException {
         Preconditions.checkState(hasModel(), "No model available");
         return context.newEvaluator(prover);
+    }
+
+    public ExecutionModelNext getExecutionGraph() throws SolverException {
+        Preconditions.checkState(hasModel(), "No model available");
+        try (IREvaluator evaluator = getModel()) {
+            return new ExecutionModelManager().buildExecutionModel(evaluator);
+        }
     }
 
     public void run() throws SolverException, InterruptedException, InvalidConfigurationException {

@@ -42,6 +42,7 @@ import com.dat3m.dartagnan.wmm.axiom.Axiom;
 import com.dat3m.dartagnan.wmm.axiom.Emptiness;
 import com.dat3m.dartagnan.wmm.definition.*;
 import com.dat3m.dartagnan.wmm.utils.Cut;
+import com.google.common.base.Preconditions;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import org.apache.logging.log4j.LogManager;
@@ -178,13 +179,16 @@ public class RefinementSolver extends ModelChecker {
     }
 
 
-    public EncodingContext getContextWithFullWmm() {
-        return contextWithFullWmm;
+    @Override
+    public ExecutionModelNext getExecutionGraph() throws SolverException {
+        Preconditions.checkState(hasModel(), "No model found.");
+        try (IREvaluator evaluator = contextWithFullWmm.newEvaluator(prover)) {
+            return new ExecutionModelManager().buildExecutionModel(evaluator);
+        }
     }
 
     //TODO: We do not yet use Witness information. The problem is that WitnessGraph.encode() generates
     // constraints on hb, which is not encoded in Refinement.
-    //TODO (2): Add possibility for Refinement to handle CAT-properties (it ignores them for now).
 
     @Override
     protected void runInternal()

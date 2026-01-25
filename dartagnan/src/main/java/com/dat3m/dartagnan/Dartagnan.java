@@ -28,7 +28,6 @@ import com.dat3m.dartagnan.utils.printer.OutputLogger;
 import com.dat3m.dartagnan.utils.printer.OutputLogger.ResultSummary;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.verification.VerificationTask.VerificationTaskBuilder;
-import com.dat3m.dartagnan.verification.model.ExecutionModelManager;
 import com.dat3m.dartagnan.verification.model.ExecutionModelNext;
 import com.dat3m.dartagnan.verification.solving.ModelChecker;
 import com.dat3m.dartagnan.witness.WitnessType;
@@ -239,16 +238,14 @@ public class Dartagnan extends BaseOptions {
         final int fileSuffixIndex = progName.lastIndexOf('.');
         final String name = progName.isEmpty() ? "unnamed_program" :
                 (fileSuffixIndex == - 1) ? progName : progName.substring(0, fileSuffixIndex);
-        try (IREvaluator evaluator = modelChecker.getModel()) {
-            final ExecutionModelNext model = new ExecutionModelManager().buildExecutionModel(evaluator);
-            // RF edges give both ordering and data flow information, thus even when the pair is in PO
-            // we get some data flow information by observing the edge
-            // CO edges only give ordering information which is known if the pair is also in PO
-            return generateGraphvizFile(model, 1, (x, y) -> true,
-                    (x, y) -> !x.getThreadModel().getThread().equals(y.getThreadModel().getThread()),
-                    getOrCreateOutputDirectory() + "/", name,
-                    synContext, witnessType.convertToPng(), task.getConfig());
-        }
+        final ExecutionModelNext model = modelChecker.getExecutionGraph();
+        // RF edges give both ordering and data flow information, thus even when the pair is in PO
+        // we get some data flow information by observing the edge
+        // CO edges only give ordering information which is known if the pair is also in PO
+        return generateGraphvizFile(model, 1, (x, y) -> true,
+                (x, y) -> !x.getThreadModel().getThread().equals(y.getThreadModel().getThread()),
+                getOrCreateOutputDirectory() + "/", name,
+                synContext, witnessType.convertToPng(), task.getConfig());
     }
 
     private static void generateWitnessIfAble(VerificationTask task,
