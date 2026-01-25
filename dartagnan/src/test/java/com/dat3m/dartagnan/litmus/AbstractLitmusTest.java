@@ -1,6 +1,7 @@
 package com.dat3m.dartagnan.litmus;
 
 import com.dat3m.dartagnan.configuration.Arch;
+import com.dat3m.dartagnan.configuration.Method;
 import com.dat3m.dartagnan.configuration.ProgressModel;
 import com.dat3m.dartagnan.configuration.Property;
 import com.dat3m.dartagnan.encoding.ProverWithTracker;
@@ -11,8 +12,7 @@ import com.dat3m.dartagnan.utils.rules.Provider;
 import com.dat3m.dartagnan.utils.rules.Providers;
 import com.dat3m.dartagnan.utils.rules.RequestShutdownOnError;
 import com.dat3m.dartagnan.verification.VerificationTask;
-import com.dat3m.dartagnan.verification.solving.AssumeSolver;
-import com.dat3m.dartagnan.verification.solving.RefinementSolver;
+import com.dat3m.dartagnan.verification.solving.ModelChecker;
 import com.dat3m.dartagnan.wmm.Wmm;
 import org.junit.Rule;
 import org.junit.Test;
@@ -34,7 +34,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Stream;
 
-import static com.dat3m.dartagnan.configuration.OptionNames.*;
+import static com.dat3m.dartagnan.configuration.OptionNames.INITIALIZE_REGISTERS;
+import static com.dat3m.dartagnan.configuration.OptionNames.USE_INTEGERS;
 import static com.dat3m.dartagnan.utils.ResourceHelper.getRootPath;
 import static com.google.common.io.Files.getNameWithoutExtension;
 import static org.junit.Assert.assertEquals;
@@ -146,13 +147,19 @@ public abstract class AbstractLitmusTest {
 
     @Test
     public void testAssume() throws Exception {
-        AssumeSolver s = AssumeSolver.run(contextProvider.get(), proverProvider.get(), taskProvider.get());
-        assertEquals(expected, s.getResult());
+        testModelChecker(Method.EAGER);
     }
 
     //@Test
     public void testRefinement() throws Exception {
-        RefinementSolver s = RefinementSolver.run(contextProvider.get(), proverProvider.get(), taskProvider.get());
-        assertEquals(expected, s.getResult());
+        testModelChecker(Method.LAZY);
+    }
+
+    protected void testModelChecker(Method method) throws Exception {
+        try (ModelChecker checker = ModelChecker.create(taskProvider.get(), method)) {
+            checker.setShutdownManager(shutdownManagerProvider.get());
+            checker.run();
+            assertEquals(expected, checker.getResult());
+        }
     }
 }

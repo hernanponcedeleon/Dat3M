@@ -167,8 +167,15 @@ public class RefinementSolver extends ModelChecker {
     // ================================================================================================================
     // Refinement solver
 
-    private RefinementSolver() {
+    private RefinementSolver(VerificationTask task) throws InvalidConfigurationException {
+        super(task);
+        task.getConfig().inject(this);
     }
+
+    public static RefinementSolver create(VerificationTask task) throws InvalidConfigurationException  {
+        return new RefinementSolver(task);
+    }
+
 
     public EncodingContext getContextWithFullWmm() {
         return contextWithFullWmm;
@@ -177,16 +184,9 @@ public class RefinementSolver extends ModelChecker {
     //TODO: We do not yet use Witness information. The problem is that WitnessGraph.encode() generates
     // constraints on hb, which is not encoded in Refinement.
     //TODO (2): Add possibility for Refinement to handle CAT-properties (it ignores them for now).
-    public static RefinementSolver run(SolverContext ctx, ProverWithTracker prover, VerificationTask task)
-            throws InterruptedException, SolverException, InvalidConfigurationException {
-        RefinementSolver solver = new RefinementSolver();
-        task.getConfig().inject(solver);
-        logger.info("{}: {}", BASELINE, solver.baselines);
-        solver.runInternal(ctx, prover, task);
-        return solver;
-    }
 
-    private void runInternal(SolverContext ctx, ProverWithTracker prover, VerificationTask task)
+    @Override
+    protected void runInternal()
             throws InterruptedException, SolverException, InvalidConfigurationException {
         final Program program = task.getProgram();
         final Wmm memoryModel = task.getMemoryModel();
@@ -210,8 +210,6 @@ public class RefinementSolver extends ModelChecker {
         Context baselineContext = Context.createCopyFrom(analysisContext);
         performStaticWmmAnalyses(task, analysisContext, config);
 
-        // Encoding context with the original Wmm and the analysis context for relation extraction.
-        contextWithFullWmm = EncodingContext.of(task, analysisContext, ctx.getFormulaManager());
 
         //  ------- Generate refinement model -------
         final RefinementModel refinementModel = generateRefinementModel(memoryModel);
@@ -229,6 +227,9 @@ public class RefinementSolver extends ModelChecker {
 
         // ------------------------ Encoding ------------------------
 
+        final SolverContext ctx = createSolverContext(task);
+        // Encoding context with the original Wmm and the analysis context for relation extraction.
+        contextWithFullWmm = EncodingContext.of(task, analysisContext, ctx.getFormulaManager());
         context = EncodingContext.of(baselineTask, baselineContext, ctx.getFormulaManager());
         final ProgramEncoder programEncoder = ProgramEncoder.withContext(context);
         final PropertyEncoder propertyEncoder = PropertyEncoder.withContext(context);
@@ -242,6 +243,7 @@ public class RefinementSolver extends ModelChecker {
         final Refiner refiner = new Refiner(refinementModel);
         final Property.Type propertyType = Property.getCombinedType(task.getProperty(), task);
 
+        final ProverWithTracker prover = createProver();
         logger.info("Starting encoding using {}", ctx.getVersion());
         prover.writeComment("Program encoding");
         prover.addConstraint(programEncoder.encodeFullProgram());
@@ -310,7 +312,6 @@ public class RefinementSolver extends ModelChecker {
             }
         } else {
             res = FAIL;
-            saveFlaggedPairsOutput(baselineModel, prover, context, task.getProgram());
         }
 
         // -------------------------- Report statistics summary --------------------------
@@ -358,7 +359,7 @@ public class RefinementSolver extends ModelChecker {
         }
         SyntacticContextAnalysis synContext = analysisContext.get(SyntacticContextAnalysis.class);
         if (synContext == null) {
-            synContext = newInstance(task.getProgram());
+            synContext = SyntacticContextAnalysis.newInstance(task.getProgram());
         }
 
         final Map<Object, Set<EventData>> addr2Events = new HashMap<>();
@@ -839,7 +840,7 @@ public class RefinementSolver extends ModelChecker {
         // Events not executed in any violating execution
         final Set<String> messageSet = new TreeSet<>(); // TreeSet to keep strings in order
         
-        final SyntacticContextAnalysis synContext = newInstance(program);
+        final SyntacticContextAnalysis synContext = SyntacticContextAnalysis.newInstance(program);
 
         for (Event e : programEvents) {
             EquivalenceClass<Thread> clazz = symm.getEquivalenceClass(e.getThread());

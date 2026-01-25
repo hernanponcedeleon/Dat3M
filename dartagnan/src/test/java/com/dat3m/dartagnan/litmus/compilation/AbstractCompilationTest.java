@@ -1,9 +1,9 @@
 package com.dat3m.dartagnan.litmus.compilation;
 
 import com.dat3m.dartagnan.configuration.Arch;
+import com.dat3m.dartagnan.configuration.Method;
 import com.dat3m.dartagnan.configuration.ProgressModel;
 import com.dat3m.dartagnan.configuration.Property;
-import com.dat3m.dartagnan.encoding.ProverWithTracker;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.Tag;
@@ -12,7 +12,7 @@ import com.dat3m.dartagnan.utils.rules.Provider;
 import com.dat3m.dartagnan.utils.rules.Providers;
 import com.dat3m.dartagnan.utils.rules.RequestShutdownOnError;
 import com.dat3m.dartagnan.verification.VerificationTask;
-import com.dat3m.dartagnan.verification.solving.AssumeSolver;
+import com.dat3m.dartagnan.verification.solving.ModelChecker;
 import com.dat3m.dartagnan.wmm.Wmm;
 import org.junit.Rule;
 import org.junit.Test;
@@ -20,9 +20,6 @@ import org.junit.rules.RuleChain;
 import org.junit.rules.Timeout;
 import org.sosy_lab.common.ShutdownManager;
 import org.sosy_lab.common.configuration.Configuration;
-import org.sosy_lab.java_smt.SolverContextFactory.Solvers;
-import org.sosy_lab.java_smt.api.SolverContext;
-import org.sosy_lab.java_smt.api.SolverContext.ProverOptions;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -98,10 +95,6 @@ public abstract class AbstractCompilationTest {
     protected final Provider<Configuration> configProvider = getConfigurationProvider();
     protected final Provider<VerificationTask> task1Provider = Providers.createTask(program1Provider, wmm1Provider, propertyProvider, sourceProvider, ProgressModel::defaultHierarchy, () -> 1, configProvider);
     protected final Provider<VerificationTask> task2Provider = Providers.createTask(program2Provider, wmm2Provider, propertyProvider, targetProvider, ProgressModel::defaultHierarchy, () -> 1, configProvider);
-    protected final Provider<SolverContext> context1Provider = Providers.createSolverContextFromManager(shutdownManagerProvider, () -> Solvers.Z3);
-    protected final Provider<SolverContext> context2Provider = Providers.createSolverContextFromManager(shutdownManagerProvider, () -> Solvers.Z3);
-    protected final Provider<ProverWithTracker> prover1Provider = Providers.createProverWithFixedOptions(context1Provider, ProverOptions.GENERATE_MODELS);
-    protected final Provider<ProverWithTracker> prover2Provider = Providers.createProverWithFixedOptions(context2Provider, ProverOptions.GENERATE_MODELS);
     
     private final Timeout timeout = Timeout.millis(getTimeout());
     private final RequestShutdownOnError shutdownOnError = RequestShutdownOnError.create(shutdownManagerProvider);
@@ -118,26 +111,33 @@ public abstract class AbstractCompilationTest {
             .around(configProvider)
             .around(task1Provider)
             .around(task2Provider)
-            .around(timeout)
-            // Context/Prover need to be created inside test-thread spawned by <timeout>
-            .around(context1Provider)
-            .around(context2Provider)
-            .around(prover1Provider)
-            .around(prover2Provider);
+            .around(timeout);
 
     @Test
     public void testAssume() throws Exception {
-    	if(task1Provider.get().getProgram().getThreadEvents().stream().noneMatch(AbstractCompilationTest::isRcuOrSrcu)) {
-            AssumeSolver s1 = AssumeSolver.run(context1Provider.get(), prover1Provider.get(), task1Provider.get());
-            if(!s1.hasModel()) {
+        if(!isCompilableToHardware(program1Provider.get())) {
+            return;
+        }
+
+        try (ModelChecker s1 = ModelChecker.create(task1Provider.get(), Method.EAGER);
+             ModelChecker s2 = ModelChecker.create(task2Provider.get(), Method.EAGER)) {
+            s1.setShutdownManager(shutdownManagerProvider.get());
+            s2.setShutdownManager(shutdownManagerProvider.get());
+
+            s1.run();
+            if (!s1.hasModel()) {
                 // We found no model showing a specific behaviour (either positively or negatively),
                 // so the compiled code should also not exhibit that behaviour, unless we
                 // know the compilation is broken
                 boolean compilationIsBroken = getCompilationBreakers().contains(path);
-                AssumeSolver s2 = AssumeSolver.run(context2Provider.get(), prover2Provider.get(), task2Provider.get());
+                s2.run();
                 assertEquals(compilationIsBroken, s2.hasModel());
             }
         }
+    }
+
+    private static boolean isCompilableToHardware(Program program) {
+        return program.getThreadEvents().stream().noneMatch(AbstractCompilationTest::isRcuOrSrcu);
     }
 
     private static boolean isRcuOrSrcu(Event e) {

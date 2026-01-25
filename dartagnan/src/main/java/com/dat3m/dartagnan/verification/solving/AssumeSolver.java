@@ -12,7 +12,6 @@ import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.BooleanFormulaManager;
-import org.sosy_lab.java_smt.api.SolverContext;
 import org.sosy_lab.java_smt.api.SolverException;
 
 import static com.dat3m.dartagnan.utils.Result.FAIL;
@@ -23,24 +22,16 @@ public class AssumeSolver extends ModelChecker {
 
     private static final Logger logger = LogManager.getLogger(AssumeSolver.class);
 
-    private final SolverContext ctx;
-    private final ProverWithTracker prover;
-    private final VerificationTask task;
-
-    private AssumeSolver(SolverContext c, ProverWithTracker p, VerificationTask t) {
-        ctx = c;
-        prover = p;
-        task = t;
+    private AssumeSolver(VerificationTask task) throws InvalidConfigurationException {
+        super(task);
     }
 
-    public static AssumeSolver run(SolverContext ctx, ProverWithTracker prover, VerificationTask task)
-            throws InterruptedException, SolverException, InvalidConfigurationException {
-        AssumeSolver s = new AssumeSolver(ctx, prover, task);
-        s.run();
-        return s;
+    public static AssumeSolver create(VerificationTask task) throws InvalidConfigurationException {
+        return new AssumeSolver(task);
     }
 
-    private void run() throws InterruptedException, SolverException, InvalidConfigurationException {
+    @Override
+    protected void runInternal() throws InterruptedException, SolverException, InvalidConfigurationException {
         Wmm memoryModel = task.getMemoryModel();
         Context analysisContext = Context.create();
         Configuration config = task.getConfig();
@@ -51,13 +42,18 @@ public class AssumeSolver extends ModelChecker {
         performStaticProgramAnalyses(task, analysisContext, config);
         performStaticWmmAnalyses(task, analysisContext, config);
 
-        context = EncodingContext.of(task, analysisContext, ctx.getFormulaManager());
+
+        createSolverContext(task);
+
+        context = EncodingContext.of(task, analysisContext, solverContext.getFormulaManager());
         ProgramEncoder programEncoder = ProgramEncoder.withContext(context);
         PropertyEncoder propertyEncoder = PropertyEncoder.withContext(context);
         WmmEncoder wmmEncoder = WmmEncoder.withContext(context);
         SymmetryEncoder symmetryEncoder = SymmetryEncoder.withContext(context);
 
-        logger.info("Starting encoding using " + ctx.getVersion());
+        createProver();
+
+        logger.info("Starting encoding using " + solverContext.getVersion());
         prover.writeComment("Program encoding");
         prover.addConstraint(programEncoder.encodeFullProgram());
         prover.writeComment("Memory model encoding");
@@ -69,7 +65,7 @@ public class AssumeSolver extends ModelChecker {
         prover.writeComment("Symmetry breaking encoding");
         prover.addConstraint(symmetryEncoder.encodeFullSymmetryBreaking());
 
-        BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
+        BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
         BooleanFormula assumptionLiteral = bmgr.makeVariable("DAT3M_spec_assumption");
         BooleanFormula propertyEncoding = propertyEncoder.encodeProperties(task.getProperty());
         BooleanFormula assumedSpec = bmgr.implication(assumptionLiteral, propertyEncoding);
@@ -84,7 +80,6 @@ public class AssumeSolver extends ModelChecker {
             res = prover.isUnsat() ? PASS : Result.UNKNOWN;
         } else {
             res = FAIL;
-            saveFlaggedPairsOutput(memoryModel, prover, context, task.getProgram());
         }
 
         if (logger.isDebugEnabled()) {

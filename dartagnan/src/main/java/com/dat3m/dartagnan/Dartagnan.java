@@ -3,14 +3,14 @@ package com.dat3m.dartagnan;
 import com.dat3m.dartagnan.configuration.OptionNames;
 import com.dat3m.dartagnan.configuration.ProgressModel;
 import com.dat3m.dartagnan.configuration.Property;
-import com.dat3m.dartagnan.encoding.EncodingContext;
 import com.dat3m.dartagnan.encoding.IREvaluator;
-import com.dat3m.dartagnan.encoding.ProverWithTracker;
+import com.dat3m.dartagnan.exception.MalformedProgramException;
 import com.dat3m.dartagnan.expression.ExpressionPrinter;
 import com.dat3m.dartagnan.expression.booleans.BoolLiteral;
 import com.dat3m.dartagnan.parsers.cat.ParserCat;
 import com.dat3m.dartagnan.parsers.program.ProgramParser;
 import com.dat3m.dartagnan.parsers.witness.ParserWitness;
+import com.dat3m.dartagnan.program.Entrypoint;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Program.SourceLanguage;
 import com.dat3m.dartagnan.program.analysis.SyntacticContextAnalysis;
@@ -21,7 +21,6 @@ import com.dat3m.dartagnan.program.event.core.Assert;
 import com.dat3m.dartagnan.program.event.core.CondJump;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.dat3m.dartagnan.program.processing.LoopUnrolling;
-import com.dat3m.dartagnan.program.Entrypoint;
 import com.dat3m.dartagnan.utils.ExitCode;
 import com.dat3m.dartagnan.utils.Result;
 import com.dat3m.dartagnan.utils.options.BaseOptions;
@@ -31,15 +30,12 @@ import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.verification.VerificationTask.VerificationTaskBuilder;
 import com.dat3m.dartagnan.verification.model.ExecutionModelManager;
 import com.dat3m.dartagnan.verification.model.ExecutionModelNext;
-import com.dat3m.dartagnan.verification.solving.AssumeSolver;
 import com.dat3m.dartagnan.verification.solving.ModelChecker;
-import com.dat3m.dartagnan.verification.solving.RefinementSolver;
 import com.dat3m.dartagnan.witness.WitnessType;
 import com.dat3m.dartagnan.witness.graphml.WitnessBuilder;
 import com.dat3m.dartagnan.witness.graphml.WitnessGraph;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.axiom.Axiom;
-import com.dat3m.dartagnan.exception.MalformedProgramException;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.io.CharSource;
@@ -50,17 +46,9 @@ import org.apache.commons.csv.CSVRecord;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.maven.model.io.xpp3.MavenXpp3Reader;
-import org.sosy_lab.common.ShutdownManager;
-import org.sosy_lab.common.ShutdownNotifier;
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.common.configuration.Options;
-import org.sosy_lab.common.log.BasicLogManager;
-import org.sosy_lab.java_smt.SolverContextFactory;
-import org.sosy_lab.java_smt.SolverContextFactory.Solvers;
-import org.sosy_lab.java_smt.api.ProverEnvironment;
-import org.sosy_lab.java_smt.api.SolverContext;
-import org.sosy_lab.java_smt.api.SolverContext.ProverOptions;
 import org.sosy_lab.java_smt.api.SolverException;
 
 import java.io.File;
@@ -83,7 +71,6 @@ import static com.dat3m.dartagnan.utils.GitInfo.*;
 import static com.dat3m.dartagnan.utils.Result.*;
 import static com.dat3m.dartagnan.witness.WitnessType.GRAPHML;
 import static com.dat3m.dartagnan.witness.graphviz.ExecutionGraphVisualizer.generateGraphvizFile;
-import static java.lang.String.valueOf;
 
 @Options
 public class Dartagnan extends BaseOptions {
@@ -109,28 +96,10 @@ public class Dartagnan extends BaseOptions {
         final CharSource source = CharSource.concat(CharSource.wrap(preamble), CharSource.wrap(options));
         return Configuration.builder()
                 .addConverter(ProgressModel.Hierarchy.class, ProgressModel.HIERARCHY_CONVERTER)
-                .loadFromSource(source, ".", ".").build();
+                .loadFromSource(source, ".", ".")
+                .build();
     }
 
-    private static SolverContext createSolverContext(Configuration config, ShutdownNotifier notifier, Solvers solver) throws Exception {
-        // Try using NativeLibraries::loadLibrary. Fallback to System::loadLibrary
-        // if NativeLibraries failed, for example, because the operating system is
-        // not supported,
-        try {
-            return SolverContextFactory.createSolverContext(
-                config,
-                BasicLogManager.create(config),
-                notifier,
-                solver);
-        } catch (Exception e) {
-            SolverContextFactory factory = new SolverContextFactory(
-                config,
-                BasicLogManager.create(config),
-                notifier,
-                System::loadLibrary);
-            return factory.generateContext(solver);
-        }
-    }
 
     public static void main(String[] args) throws Exception {
 
@@ -190,19 +159,7 @@ public class Dartagnan extends BaseOptions {
 
         ResultSummary summary = null;
         for (File f : files) {
-            ShutdownManager sdm = ShutdownManager.create();
-            Thread t = new Thread(() -> {
-                try {
-                    if (o.hasTimeout()) {
-                        // Converts timeout from secs to millisecs
-                        Thread.sleep(1000L * o.getTimeout());
-                        sdm.requestShutdown("Shutdown Request");
-                    }
-                } catch (InterruptedException e) {
-                    // Verification ended, nothing to be done.
-                }
-            });
-
+            long timeout = 0; // This is ugly
             try {
                 VerificationTaskBuilder builder = VerificationTask.builder()
                         .withConfig(config)
@@ -219,47 +176,25 @@ public class Dartagnan extends BaseOptions {
                 if (p.getArch() != null && !config.hasProperty(TARGET)) {
                     builder = builder.withTarget(p.getArch());
                 }
-                VerificationTask task = builder.build(p, mcm, properties);
+                final VerificationTask task = builder.build(p, mcm, properties);
+                final ModelChecker modelChecker = ModelChecker.create(task, o.getMethod());
 
+                timeout = modelChecker.getTimeout();
                 long startTime = System.currentTimeMillis();
-                t.start();
-                Configuration solverConfig = Configuration.builder()
-                        .setOption(PHANTOM_REFERENCES, valueOf(o.usePhantomReferences()))
-                        .build();
-                try (SolverContext ctx = createSolverContext(
-                        solverConfig,
-                        sdm.getNotifier(),
-                        o.getSolver());
-                        ProverWithTracker prover = new ProverWithTracker(ctx,
-                            o.getDumpSmtLib() ? GlobalSettings.getOutputDirectory() + String.format("/%s.smt2", p.getName()) : "",
-                            ProverOptions.GENERATE_MODELS)) {
-                    ModelChecker modelChecker;
-                    if (properties.contains(DATARACEFREEDOM)) {
-                        modelChecker = AssumeSolver.run(ctx, prover, task);
-                    } else {
-                        // Property is either PROGRAM_SPEC, TERMINATION, or CAT_SPEC
-                        modelChecker = switch (o.getMethod()) {
-                            case EAGER -> AssumeSolver.run(ctx, prover, task);
-                            case LAZY -> RefinementSolver.run(ctx, prover, task);
-                        };
-                    }
+                modelChecker.run();
+                long endTime = System.currentTimeMillis();
 
-                    // Verification ended, we can interrupt the timeout Thread
-                    t.interrupt();
-                    long endTime = System.currentTimeMillis();
+                summary = summaryFromResult(task, modelChecker, f.toString(), (endTime - startTime));
 
-                    summary = summaryFromResult(task, prover, modelChecker, f.toString(), (endTime - startTime));
-
-                    if (modelChecker.hasModel() && o.getWitnessType().generateGraphviz()) {
-                        generateExecutionGraphFile(task, prover, modelChecker, o.getWitnessType());
-                    }
-                    // We only generate SVCOMP witnesses if we are not validating one.
-                    if (o.getWitnessType().equals(GRAPHML) && !o.runValidator()) {
-                        generateWitnessIfAble(task, prover, modelChecker, summary.reason() + "\n" + summary.details());
-                    }
+                if (modelChecker.hasModel() && o.getWitnessType().generateGraphviz()) {
+                    generateExecutionGraphFile(task, modelChecker, o.getWitnessType());
+                }
+                // We only generate SVCOMP witnesses if we are not validating one.
+                if (o.getWitnessType().equals(GRAPHML) && !o.runValidator()) {
+                    generateWitnessIfAble(task, modelChecker, summary.reason() + "\n" + summary.details());
                 }
             } catch (InterruptedException e) {
-                final long time = 1000L * o.getTimeout();
+                final long time = 1000L * timeout;
                 summary = new ResultSummary(f.toString(), "", TIMEDOUT, "", "", "", time, TIMEOUT_ELAPSED);
             } catch (Exception e) {
                 final String reason = e.getClass().getSimpleName();
@@ -288,19 +223,16 @@ public class Dartagnan extends BaseOptions {
         return files;
     }
 
-    public static File generateExecutionGraphFile(VerificationTask task, ProverEnvironment prover, ModelChecker modelChecker,
-                                                  WitnessType witnessType)
+    public static File generateExecutionGraphFile(VerificationTask task, ModelChecker modelChecker, WitnessType witnessType)
             throws SolverException, IOException {
         Preconditions.checkArgument(modelChecker.hasModel(), "No execution graph to generate.");
 
-        final EncodingContext encodingContext = modelChecker instanceof RefinementSolver refinementSolver ?
-            refinementSolver.getContextWithFullWmm() : modelChecker.getEncodingContext();
         final SyntacticContextAnalysis synContext = newInstance(task.getProgram());
         final String progName = task.getProgram().getName();
         final int fileSuffixIndex = progName.lastIndexOf('.');
         final String name = progName.isEmpty() ? "unnamed_program" :
                 (fileSuffixIndex == - 1) ? progName : progName.substring(0, fileSuffixIndex);
-        try (IREvaluator evaluator = encodingContext.newEvaluator(prover)) {
+        try (IREvaluator evaluator = modelChecker.getModel()) {
             final ExecutionModelNext model = new ExecutionModelManager().buildExecutionModel(evaluator);
             // RF edges give both ordering and data flow information, thus even when the pair is in PO
             // we get some data flow information by observing the edge
@@ -308,20 +240,19 @@ public class Dartagnan extends BaseOptions {
             return generateGraphvizFile(model, 1, (x, y) -> true,
                     (x, y) -> !x.getThreadModel().getThread().equals(y.getThreadModel().getThread()),
                     getOrCreateOutputDirectory() + "/", name,
-                    synContext, witnessType.convertToPng(), encodingContext.getTask().getConfig());
+                    synContext, witnessType.convertToPng(), task.getConfig());
         }
     }
 
-    private static void generateWitnessIfAble(VerificationTask task, ProverEnvironment prover,
-            ModelChecker modelChecker, String details) {
+    private static void generateWitnessIfAble(VerificationTask task,
+            ModelChecker modelChecker, String details) throws SolverException {
         // ------------------ Generate Witness, if possible ------------------
         final EnumSet<Property> properties = task.getProperty();
         if (task.getProgram().getFormat().equals(SourceLanguage.LLVM) && modelChecker.hasModel()
                 && (properties.contains(PROGRAM_SPEC) || properties.contains(DATARACEFREEDOM))
                 && modelChecker.getResult() != UNKNOWN) {
-            try {
-                WitnessBuilder w = WitnessBuilder.of(modelChecker.getEncodingContext(), prover,
-                        modelChecker.getResult(), details);
+            try (IREvaluator evaluator = modelChecker.getModel()) {
+                WitnessBuilder w = WitnessBuilder.of(evaluator, modelChecker.getResult(), details);
                 if (w.canBeBuilt()) {
                     w.build().write();
                 }
@@ -331,13 +262,13 @@ public class Dartagnan extends BaseOptions {
         }
     }
 
-    public static ResultSummary summaryFromResult(VerificationTask task, ProverEnvironment prover, ModelChecker modelChecker, String path, long time) throws SolverException {
-        try (IREvaluator evaluator = modelChecker.hasModel() ? modelChecker.getEncodingContext().newEvaluator(prover) : null) {
+    public static ResultSummary summaryFromResult(VerificationTask task, ModelChecker modelChecker, String path, long time) throws SolverException {
+        try (IREvaluator evaluator = modelChecker.hasModel() ? modelChecker.getModel() : null) {
             return summaryFromResult(task, modelChecker, evaluator, path, time);
         }
     }
 
-    private static ResultSummary summaryFromResult(VerificationTask task, ModelChecker modelChecker, IREvaluator model, String path, long time) {
+    private static ResultSummary summaryFromResult(VerificationTask task, ModelChecker modelChecker, IREvaluator model, String path, long time) throws SolverException {
         // ----------------- Generate output of verification result -----------------
         final Program p = task.getProgram();
         final EnumSet<Property> props = task.getProperty();
