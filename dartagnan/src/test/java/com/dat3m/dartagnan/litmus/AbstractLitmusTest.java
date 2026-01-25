@@ -4,7 +4,6 @@ import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.configuration.Method;
 import com.dat3m.dartagnan.configuration.ProgressModel;
 import com.dat3m.dartagnan.configuration.Property;
-import com.dat3m.dartagnan.encoding.ProverWithTracker;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.utils.ResourceHelper;
 import com.dat3m.dartagnan.utils.Result;
@@ -20,9 +19,6 @@ import org.junit.rules.RuleChain;
 import org.junit.rules.Timeout;
 import org.sosy_lab.common.ShutdownManager;
 import org.sosy_lab.common.configuration.Configuration;
-import org.sosy_lab.java_smt.SolverContextFactory.Solvers;
-import org.sosy_lab.java_smt.api.SolverContext;
-import org.sosy_lab.java_smt.api.SolverContext.ProverOptions;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -118,9 +114,6 @@ public abstract class AbstractLitmusTest {
     protected final Provider<Result> expectedResultProvider = Provider.fromSupplier(() -> expectedResults.get(filePathProvider.get().substring(filePathProvider.get().indexOf("/") + 1)));
     protected final Provider<Configuration> configProvider = getConfigurationProvider();
     protected final Provider<VerificationTask> taskProvider = Providers.createTask(programProvider, wmmProvider, propertyProvider, targetProvider, progressModelProvider, boundProvider, configProvider);
-    protected final Provider<SolverContext> contextProvider = Providers.createSolverContextFromManager(shutdownManagerProvider, () -> Solvers.Z3);
-    protected final Provider<ProverWithTracker> proverProvider = Providers.createProverWithFixedOptions(contextProvider, ProverOptions.GENERATE_MODELS);
-    protected final Provider<ProverWithTracker> prover2Provider = Providers.createProverWithFixedOptions(contextProvider, ProverOptions.GENERATE_MODELS);
 
     private final Timeout timeout = Timeout.millis(getTimeout());
     private final RequestShutdownOnError shutdownOnError = RequestShutdownOnError.create(shutdownManagerProvider);
@@ -138,11 +131,7 @@ public abstract class AbstractLitmusTest {
             .around(configProvider)
             .around(taskProvider)
             .around(expectedResultProvider)
-            .around(timeout)
-            // Context/Prover need to be created inside test-thread spawned by <timeout>
-            .around(contextProvider)
-            .around(proverProvider)
-            .around(prover2Provider);
+            .around(timeout);
 
 
     @Test
