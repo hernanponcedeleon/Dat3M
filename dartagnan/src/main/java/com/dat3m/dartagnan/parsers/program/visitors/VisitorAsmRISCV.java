@@ -333,8 +333,7 @@ public class VisitorAsmRISCV extends AsmRISCVBaseVisitor<Object> {
     else if (expectedType instanceof PointerType){
         String valueString = ctx.Numbers().getText();
         BigInteger value = new BigInteger(valueString);
-        // return expressions.makeIntToPtrCast(expressions.makeValue(value)); // fixme works as int when expected type is pointer ?!?
-        return expressions.makeValue(value);
+        return expressions.makeValue(value, ((PointerType) expectedType).getBitWidth());
     }
         throw new RuntimeException("Unexpected type " + expectedType + " visited");
 }
