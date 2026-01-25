@@ -3,6 +3,9 @@ package com.dat3m.dartagnan.encoding;
 import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.configuration.Property;
 import com.dat3m.dartagnan.expression.Expression;
+import com.dat3m.dartagnan.expression.ExpressionFactory;
+import com.dat3m.dartagnan.expression.type.IntegerType;
+import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.analysis.ExecutionAnalysis;
@@ -13,6 +16,7 @@ import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.event.metadata.MemoryOrder;
 import com.dat3m.dartagnan.program.memory.FinalMemoryValue;
+import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.dat3m.dartagnan.wmm.Relation;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
@@ -31,6 +35,7 @@ import java.util.*;
 import java.util.function.BiFunction;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static com.dat3m.dartagnan.configuration.Property.*;
 import static com.dat3m.dartagnan.encoding.ExpressionEncoder.ConversionMode.RIGHT_TO_LEFT;
@@ -43,6 +48,7 @@ public class PropertyEncoder implements Encoder {
     private static final Logger logger = LogManager.getLogger(PropertyEncoder.class);
 
     private final EncodingContext context;
+    private final BooleanFormulaManager bmgr;
     private final Program program;
     private final Wmm memoryModel;
     private final ExecutionAnalysis exec;
@@ -80,6 +86,7 @@ public class PropertyEncoder implements Encoder {
         Preconditions.checkArgument(c.getTask().getProgram().isCompiled(),
                 "The program must get compiled first before its properties can be encoded.");
         context = c;
+        bmgr = c.getBooleanFormulaManager();
         program = c.getTask().getProgram();
         memoryModel = c.getTask().getMemoryModel();
         exec = c.getAnalysisContext().requires(ExecutionAnalysis.class);
@@ -93,7 +100,6 @@ public class PropertyEncoder implements Encoder {
 
     public BooleanFormula encodeBoundEventExec() {
         logger.info("Encoding bound events execution");
-        final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
         return program.getThreadEvents()
                 .stream().filter(e -> e.hasTag(Tag.BOUND)).map(context::execution).reduce(bmgr.makeFalse(), bmgr::or);
     }
@@ -113,12 +119,12 @@ public class PropertyEncoder implements Encoder {
 
         BooleanFormula encoding = (specType == Property.Type.SAFETY) ?
                 encodePropertyViolations(properties) : encodePropertyWitnesses(properties);
-        if (!program.getFormat().equals(LLVM) || properties.contains(TERMINATION)) {
+        if (!program.getFormat().equals(LLVM) || properties.contains(TERMINATION) || properties.contains(TRACKABILITY)) {
             // Both litmus assertions and termination need to identify
             // the final stores to addresses.
             // TODO Optimization: This encoding can be restricted to only those addresses
             //  that are relevant for the specification (e.g., only variables that are used in loops).
-            encoding = context.getBooleanFormulaManager().and(encoding, encodeLastCoConstraints());
+            encoding = bmgr.and(encoding, encodeLastCoConstraints());
         }
         return encoding;
     }
@@ -127,6 +133,9 @@ public class PropertyEncoder implements Encoder {
         final List<TrackableFormula> trackableViolationEncodings = new ArrayList<>();
         if (properties.contains(TERMINATION)) {
             trackableViolationEncodings.add(encodeNontermination());
+        }
+        if (properties.contains(TRACKABILITY)) {
+            trackableViolationEncodings.add(encodeTrackabilityViolations());
         }
         if (properties.contains(DATARACEFREEDOM)) {
             trackableViolationEncodings.add(encodeDataRaces());
@@ -138,7 +147,6 @@ public class PropertyEncoder implements Encoder {
             trackableViolationEncodings.add(encodeProgramSpecification());
         }
 
-        final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
         // Weak tracking: "TrackingVar => TrackingEnc", strong tracking: "TrackingVar <=> TrackingEnc"
         final BiFunction<BooleanFormula, BooleanFormula, BooleanFormula> trackingConnector =
                 doWeakTracking ? bmgr::implication : bmgr::equivalence;
@@ -158,7 +166,6 @@ public class PropertyEncoder implements Encoder {
         Preconditions.checkArgument(properties.contains(PROGRAM_SPEC));
         Preconditions.checkArgument(program.hasReachabilitySpecification());
 
-        final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
         final TrackableFormula progSpec = encodeProgramSpecification();
         // NOTE: We have a single property to check, so the tracking becomes trivial.
         return bmgr.and(progSpec.trackingLiteral, progSpec.trackedFormula);
@@ -166,7 +173,6 @@ public class PropertyEncoder implements Encoder {
 
     private BooleanFormula encodeLastCoConstraints() {
         final Relation co = memoryModel.getRelation(CO);
-        final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
         final EncodingContext.EdgeEncoder coEncoder = context.edge(co);
         final RelationAnalysis.Knowledge knowledge = ra.getKnowledge(co);
         final List<Init> initEvents = program.getThreadEvents(Init.class);
@@ -254,7 +260,6 @@ public class PropertyEncoder implements Encoder {
     private TrackableFormula encodeProgramSpecification() {
         logger.info("Encoding program specification");
         final ExpressionEncoder exprEnc = context.getExpressionEncoder();
-        final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
         // We can only perform existential queries to the SMT-engine, so for
         // safety specs we need to query for a violation (= negation of the spec)
         BooleanFormula encoding = switch (program.getSpecificationType()) {
@@ -282,7 +287,6 @@ public class PropertyEncoder implements Encoder {
     }
 
     private BooleanFormula encodeProgramTermination() {
-        final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
         final BooleanFormula exitReached = bmgr.and(program.getThreads().stream()
                 .map(t -> bmgr.equivalence(context.execution(t.getEntry()), context.execution(t.getExit())))
                 .toList());
@@ -304,7 +308,6 @@ public class PropertyEncoder implements Encoder {
         CAUTION: A flagged axiom is considered a specification violation if it is satisfied!
     */
     public List<TrackableFormula> encodeCATSpecificationViolations() {
-        final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
         final EncodingContext ctx = this.context;
         final Wmm memoryModel = this.memoryModel;
         final List<Axiom> flaggedAxioms = memoryModel.getAxioms().stream()
@@ -347,7 +350,6 @@ public class PropertyEncoder implements Encoder {
                 "The provided WMM needs an 'acyclic(hb)' axiom to encode data races.");
 
         final EncodingContext ctx = this.context;
-        final BooleanFormulaManager bmgr = ctx.getBooleanFormulaManager();
         final IntegerFormulaManager imgr = ctx.getFormulaManager().getIntegerFormulaManager();
         final EncodingContext.EdgeEncoder hbEncoder = ctx.edge(hbRelation);
         final Program program = this.program;
@@ -400,13 +402,117 @@ public class PropertyEncoder implements Encoder {
 
     // ======================================================================
     // ======================================================================
+    // =========================== Trackability =============================
+    // ======================================================================
+    // ======================================================================
+
+    private TrackableFormula encodeTrackabilityViolations() {
+        final var enc = new ArrayList<BooleanFormula>();
+        record Var(BooleanFormula leak, BooleanFormula track) {}
+        final Map<MemoryObject, Var> variables = program.getMemory().getObjects().stream()
+                .filter(MemoryObject::isHeapAllocated)
+                .collect(Collectors.toMap(o -> o, o -> new Var(context.leakVariable(o), context.trackVariable(o))));
+        // Requires all threads to exit normally.
+        for (Event event : program.getThreadEvents()) {
+            if (Stream.of(Tag.BOUND, Tag.EXCEPTIONAL_TERMINATION, Tag.NONTERMINATION).anyMatch(event::hasTag)) {
+                enc.add(bmgr.not(context.execution(event)));
+            }
+        }
+        // Do not leak unallocated objects.
+        for (Map.Entry<MemoryObject, Var> entry : variables.entrySet()) {
+            enc.add(bmgr.implication(entry.getValue().leak, context.execution(entry.getKey().getAllocationSite())));
+        }
+        // Do not leak deallocated objects.
+        final ExpressionEncoder exprEncoder = context.getExpressionEncoder();
+        for (Dealloc dealloc : program.getThreadEvents(Dealloc.class)) {
+            final BooleanFormula deallocated = context.execution(dealloc);
+            final TypedFormula<?, ?> address = context.address(dealloc);
+            for (MemoryObject addressableObject : alias.addressableObjects(dealloc)) {
+                final Var addressVariable = variables.get(addressableObject);
+                final BooleanFormula addressed = exprEncoder.equal(address, context.address(addressableObject));
+                enc.add(bmgr.not(bmgr.and(deallocated, addressed, addressVariable.leak)));
+            }
+        }
+        // Merge teared store operations.
+        final Map<Store, List<Store>> instructions = new HashMap<>();
+        for (InstructionBoundary end : program.getThreadEvents(InstructionBoundary.class)) {
+            final List<Store> instruction = end.getInstructionEvents().stream()
+                    .filter(Store.class::isInstance).map(Store.class::cast)
+                    .toList();
+            if (!instruction.isEmpty()) {
+                instructions.put(instruction.get(0), instruction);
+            }
+        }
+        // Object A is reachable from another object B, if a co-maximal store writes an address pointing to A into B.
+        for (Store store : program.getThreadEvents(Store.class)) {
+            final List<Store> stores = instructions.getOrDefault(store, List.of(store));
+            if (!mayBeFinalAddressStore(store, stores)) { continue; }
+            final Set<MemoryObject> communicableObjects = alias.communicableObjects(store).stream()
+                    .filter(variables::containsKey)
+                    .collect(Collectors.toSet());
+            if (communicableObjects.isEmpty()) { continue; }
+            final BooleanFormula isFinal = bmgr.and(stores.stream().map(context::lastCoVar).toList());
+            for (MemoryObject addressableObject : alias.addressableObjects(store)) {
+                final Var addressVariable = variables.get(addressableObject);
+                if (addressVariable == null && !addressableObject.isStaticallyAllocated()) { continue; }
+                final BooleanFormula addressed = referencesObject(stores, false, addressableObject);
+                final BooleanFormula addressTrack = addressVariable != null ? addressVariable.track : bmgr.makeTrue();
+                for (MemoryObject communicableObject : communicableObjects) {
+                    final Var valueVariable = variables.get(communicableObject);
+                    if (valueVariable == null) { continue; }
+                    final BooleanFormula valueTrack = valueVariable.track;
+                    final BooleanFormula communicated = referencesObject(stores, true, communicableObject);
+                    enc.add(bmgr.not(bmgr.and(isFinal, addressed, addressTrack, communicated, bmgr.not(valueTrack))));
+                }
+            }
+        }
+        // Property is violated, if there is an execution where any object is leaked and not trackable.
+        enc.add(bmgr.or(variables.values().stream().map(v -> bmgr.and(v.leak, bmgr.not(v.track))).toList()));
+        return new TrackableFormula(bmgr.not(TRACKABILITY.getSMTVariable(context)), bmgr.and(enc));
+    }
+
+    private boolean mayBeFinalAddressStore(Store store, List<Store> stores) {
+        //TODO exec.isAnyImplied(store, ...)
+        final Collection<Event> laterStores = ra.getKnowledge(memoryModel.getRelation(CO)).getMustSet().getRange(store);
+        if (laterStores.stream().anyMatch(o -> exec.isImplied(store, o))) {
+            return false;
+        }
+        if (!stores.stream().allMatch(o -> o.getMemValue().getType() instanceof IntegerType)) {
+            return false;
+        }
+        final TypeFactory types = TypeFactory.getInstance();
+        final int pointerSize = types.getMemorySizeInBytes(types.getPointerType());
+        final int accessSize = stores.stream().mapToInt(st -> types.getMemorySizeInBytes(st.getAccessType())).sum();
+        //TODO Recognize pointers contained in aggregate values.
+        return pointerSize == accessSize;
+    }
+
+    private BooleanFormula referencesObject(List<Store> stores, boolean isValue, MemoryObject object) {
+        Preconditions.checkArgument(!stores.isEmpty(), "Empty instruction cannot reference object '%s'.", object);
+        //TODO Use provenance to omit some of these checks statically.
+        final ExpressionFactory expressions = context.getExpressionFactory();
+        final Expression pointer = isValue
+                ? expressions.makeIntConcat(stores.stream().map(Store::getMemValue).toList())
+                : stores.get(0).getAddress();
+        if (object.equals(pointer)) {
+            return bmgr.makeTrue();
+        }
+        final Expression objectEnd = expressions.makeAdd(object, object.size());
+        final Expression overLowerBound = expressions.makeLTE(object, pointer, false);
+        final Expression underUpperBound = expressions.makeLT(pointer, objectEnd, false);
+        final Expression withinBounds = expressions.makeAnd(overLowerBound, underUpperBound);
+        return context.getExpressionEncoder().encodeBooleanAt(withinBounds, stores.get(0)).formula();
+    }
+
+    // ======================================================================
+    // ======================================================================
     // ============================= Liveness ===============================
     // ======================================================================
     // ======================================================================
 
     private TrackableFormula encodeNontermination() {
         final BooleanFormula hasNontermination = new NonTerminationEncoder(context.getTask(), context).encodeNontermination();
-        return new TrackableFormula(context.getBooleanFormulaManager().not(TERMINATION.getSMTVariable(context)), hasNontermination);
+        return new TrackableFormula(bmgr.not(TERMINATION.getSMTVariable(context)), hasNontermination);
     }
 
 }

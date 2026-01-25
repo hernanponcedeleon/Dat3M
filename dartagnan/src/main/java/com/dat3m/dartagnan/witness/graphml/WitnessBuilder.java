@@ -13,7 +13,6 @@ import com.dat3m.dartagnan.program.event.core.Store;
 import com.dat3m.dartagnan.program.event.lang.svcomp.EndAtomic;
 import com.dat3m.dartagnan.program.event.metadata.SourceLocation;
 import com.dat3m.dartagnan.program.event.metadata.UnrollingBound;
-import com.dat3m.dartagnan.smt.ModelExt;
 import com.dat3m.dartagnan.utils.Result;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.common.configuration.Option;
@@ -89,6 +88,9 @@ public class WitnessBuilder {
         if (summary.contains("SVCOMP data race found")) {
             return "CHECK( init(main()), LTL(G ! data-race) )";
         }
+        if (summary.contains("Untrackable object found")) {
+            return "CHECK( init(main()), LTL(G valid-memtrack) )";
+        }
         throw new UnsupportedOperationException("Violation found for unsupported property");
     }
 
@@ -152,8 +154,8 @@ public class WitnessBuilder {
             }
         }
 
-        try (ModelExt model = new ModelExt(prover.getModel())) {
-            List<Event> execution = reOrderBasedOnAtomicity(program, getSCExecutionOrder(new IREvaluator(context, model)));
+        try (IREvaluator evaluator = context.newEvaluator(prover)) {
+            List<Event> execution = reOrderBasedOnAtomicity(program, getSCExecutionOrder(evaluator));
 
             for (int i = 0; i < execution.size(); i++) {
                 Event e = execution.get(i);

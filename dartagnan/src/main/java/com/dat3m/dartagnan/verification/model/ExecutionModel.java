@@ -10,11 +10,11 @@ import com.dat3m.dartagnan.program.event.RegReader;
 import com.dat3m.dartagnan.program.event.RegWriter;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.CondJump;
+import com.dat3m.dartagnan.program.event.core.Dealloc;
 import com.dat3m.dartagnan.program.event.core.MemoryCoreEvent;
 import com.dat3m.dartagnan.program.event.lang.svcomp.BeginAtomic;
 import com.dat3m.dartagnan.program.event.lang.svcomp.EndAtomic;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
-import com.dat3m.dartagnan.smt.ModelExt;
 import com.dat3m.dartagnan.utils.dependable.DependencyGraph;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.wmm.Wmm;
@@ -42,7 +42,6 @@ public class ExecutionModel {
     private final EncodingContext ctx;
 
     // ============= Model specific  =============
-    private ModelExt model;
     private IREvaluator irModel;
 
     private final EventMap eventMap;
@@ -128,8 +127,8 @@ public class ExecutionModel {
     }
 
     // Model specific data
-    public ModelExt getModel() {
-        return model;
+    public IREvaluator getEvaluator() {
+        return irModel;
     }
     public EncodingContext getContext() {
         return ctx;
@@ -173,13 +172,12 @@ public class ExecutionModel {
 
     //========================== Initialization =========================
 
-    public void initialize(ModelExt model) {
+    public void initialize(IREvaluator model) {
         // We populate here, instead of on construction,
         // to reuse allocated data structures (since these data structures already adapted
         // their capacity in previous iterations, and thus we should have less overhead in future populations)
         // However, for all intents and purposes, this serves as a constructor.
-        this.model = model;
-        this.irModel = new IREvaluator(ctx, model);
+        irModel = model;
         extractEventsFromModel();
         extractMemoryLayout();
         extractReadsFrom();
@@ -295,7 +293,7 @@ public class ExecutionModel {
                 if (data.isInit()) {
                     addressInitMap.put(address, data);
                 }
-            } else {
+            } else if (!(data.getEvent() instanceof Dealloc)) {
                 //FIXME: Handle other kinds of memory events such as SRCU_SYNC.
                 throw new UnsupportedOperationException("Unexpected memory event " + data.getEvent());
             }

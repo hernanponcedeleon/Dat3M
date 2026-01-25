@@ -36,9 +36,7 @@ import com.dat3m.dartagnan.program.event.functions.Return;
 import com.dat3m.dartagnan.program.event.functions.ValueFunctionCall;
 import com.dat3m.dartagnan.program.event.functions.VoidFunctionCall;
 import com.dat3m.dartagnan.program.event.lang.catomic.*;
-import com.dat3m.dartagnan.program.event.lang.dat3m.DynamicThreadCreate;
-import com.dat3m.dartagnan.program.event.lang.dat3m.DynamicThreadDetach;
-import com.dat3m.dartagnan.program.event.lang.dat3m.DynamicThreadJoin;
+import com.dat3m.dartagnan.program.event.lang.dat3m.*;
 import com.dat3m.dartagnan.program.event.lang.linux.*;
 import com.dat3m.dartagnan.program.event.lang.llvm.*;
 import com.dat3m.dartagnan.program.event.lang.spirv.*;
@@ -122,6 +120,11 @@ public class EventFactory {
         arraySize = expressions.makeCast(arraySize, types.getArchType(), false); // why cast?
         alignment = expressions.makeCast(alignment, types.getArchType(), false);
         return new Alloc(register, allocType, arraySize, alignment, isHeapAlloc, doesZeroOutMemory);
+    }
+
+    public static Dealloc newDealloc(Expression address) {
+        // Accesses zero bytes to avoid Tearing.
+        return new Dealloc(address, types.getUnitType());
     }
 
     public static Load newLoad(Register register, Expression address) {
@@ -337,6 +340,22 @@ public class EventFactory {
 
     public static DynamicThreadDetach newDynamicThreadDetach(Register statusReg, Expression tidExpr) {
         return new DynamicThreadDetach(statusReg, tidExpr);
+    }
+
+    public static DynamicThreadLocalCreate newDynamicThreadLocalCreate(Register key, Expression destructor) {
+        return new DynamicThreadLocalCreate(key, destructor);
+    }
+
+    public static DynamicThreadLocalDelete newDynamicThreadLocalDelete(Expression key) {
+        return new DynamicThreadLocalDelete(key);
+    }
+
+    public static DynamicThreadLocalGet newDynamicThreadLocalGet(Register value, Expression key) {
+        return new DynamicThreadLocalGet(value, key);
+    }
+
+    public static DynamicThreadLocalSet newDynamicThreadLocalSet(Expression key, Expression value) {
+        return new DynamicThreadLocalSet(key, value);
     }
 
     public static ThreadCreate newThreadCreate(List<Expression> arguments) {
@@ -645,7 +664,8 @@ public class EventFactory {
         }
 
         public static GenericMemoryEvent newSrcuSync(Expression address) {
-            GenericMemoryEvent srcuSync = new GenericMemoryEvent(address, "synchronize_srcu");
+            // Accesses zero bytes to avoid tearing.
+            GenericMemoryEvent srcuSync = new GenericMemoryEvent(address, types.getUnitType(), "synchronize_srcu");
             srcuSync.addTags(Tag.Linux.SRCU_SYNC);
             return srcuSync;
         }

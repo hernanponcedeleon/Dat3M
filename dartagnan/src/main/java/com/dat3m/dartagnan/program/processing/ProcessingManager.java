@@ -134,15 +134,19 @@ public class ProcessingManager implements ProgramProcessor {
                 ThreadCreation.fromConfig(config),
                 ResolveNonDetChoices.newInstance(),
                 reduceSymmetry ? SymmetryReduction.fromConfig(config) : null,
+                NaiveDevirtualisation.newInstance(),
+                Inlining.fromConfig(config),
                 intrinsics.lateInliningPass(),
                 ProgramProcessor.fromFunctionProcessor(
                         FunctionProcessor.chain(
+                                ResolveAborts.newInstance(),
                                 RemoveDeadNullChecks.newInstance(),
                                 MemToReg.fromConfig(config)
                         ), Target.THREADS, true
                 ),
                 simplifyBoundedProgram,
                 RemoveUnusedMemory.newInstance(),
+                FunctionAllocation.newInstance(),
                 MemoryAllocation.fromConfig(config),
                 detectMixedSizeAccesses ? Tearing.fromConfig(config) : null,
                 detectMixedSizeAccesses ? simplifyBoundedProgram : null,

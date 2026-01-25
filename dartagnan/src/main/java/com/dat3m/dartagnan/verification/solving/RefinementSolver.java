@@ -15,7 +15,6 @@ import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.MemoryCoreEvent;
 import com.dat3m.dartagnan.program.event.metadata.OriginalId;
 import com.dat3m.dartagnan.program.event.metadata.SourceLocation;
-import com.dat3m.dartagnan.smt.ModelExt;
 import com.dat3m.dartagnan.solver.caat.CAATSolver;
 import com.dat3m.dartagnan.solver.caat4wmm.RefinementModel;
 import com.dat3m.dartagnan.solver.caat4wmm.Refiner;
@@ -311,7 +310,7 @@ public class RefinementSolver extends ModelChecker {
             }
         } else {
             res = FAIL;
-            saveFlaggedPairsOutput(baselineModel, baselineEncoder, prover, context, task.getProgram());
+            saveFlaggedPairsOutput(baselineModel, prover, context, task.getProgram());
         }
 
         // -------------------------- Report statistics summary --------------------------
@@ -410,10 +409,11 @@ public class RefinementSolver extends ModelChecker {
             isFinalIteration = !checkProgress(trace) || iteration.isConclusive();
 
             // ------------------------- Debugging/Logging -------------------------
-            if (generateGraphvizDebugFiles) {
-                final ExecutionModelNext model = new ExecutionModelManager().buildExecutionModel(contextWithFullWmm,
-                        new ModelExt(prover.getModel()));
-                generateGraphvizFiles(task, model, trace.size(), iteration.inconsistencyReasons);
+            if (generateGraphvizDebugFiles && iteration.smtStatus == SMTStatus.SAT) {
+                try (IREvaluator evaluator = contextWithFullWmm.newEvaluator(prover)) {
+                    final ExecutionModelNext model = new ExecutionModelManager().buildExecutionModel(evaluator);
+                    generateGraphvizFiles(task, model, trace.size(), iteration.inconsistencyReasons);
+                }
             }
             if (logger.isDebugEnabled()) {
                 // ---- Internal SMT stats after the first iteration ----
@@ -481,7 +481,7 @@ public class RefinementSolver extends ModelChecker {
             // ------------ CAAT solving ------------
             lastTime = System.currentTimeMillis();
             final WMMSolver.Result solverResult;
-            try (ModelExt model = new ModelExt(prover.getModel())) {
+            try (IREvaluator model = context.newEvaluator(prover)) {
                 solverResult = solver.check(model);
             } catch (SolverException e) {
                 logger.error(e);
@@ -536,11 +536,7 @@ public class RefinementSolver extends ModelChecker {
                 // (ii) Negated relations (if derived)
                 final Relation sub = diff.getSubtrahend();
                 final Definition subDef = sub.getDefinition();
-                if (!sub.getDependencies().isEmpty()
-                        // The following three definitions are "semi-derived" and need to get cut
-                        // to get a semi-positive model.
-                        || subDef instanceof SetIdentity
-                        || subDef instanceof CartesianProduct) {
+                if (!sub.getDependencies().isEmpty()) {
                     constraintsToCut.add(subDef);
                 }
             } else if (c instanceof Definition def && def.getDefinedRelation().hasName()) {

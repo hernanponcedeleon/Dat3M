@@ -1,6 +1,7 @@
 package com.dat3m.dartagnan.llvm;
 
 import com.dat3m.dartagnan.configuration.Arch;
+import com.dat3m.dartagnan.configuration.Property;
 import com.dat3m.dartagnan.utils.Result;
 import com.dat3m.dartagnan.utils.rules.Provider;
 import com.dat3m.dartagnan.verification.solving.AssumeSolver;
@@ -13,6 +14,7 @@ import org.sosy_lab.common.configuration.InvalidConfigurationException;
 
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.EnumSet;
 
 import static com.dat3m.dartagnan.configuration.Arch.*;
 import static com.dat3m.dartagnan.configuration.OptionNames.MIXED_SIZE;
@@ -43,6 +45,11 @@ public class MixedTest extends AbstractCTest {
     }
 
     @Override
+    protected Provider<EnumSet<Property>> getPropertyProvider() {
+        return () -> EnumSet.of(name.startsWith("memtrack") ? Property.TRACKABILITY : Property.PROGRAM_SPEC);
+    }
+
+    @Override
     protected Configuration getConfiguration() throws InvalidConfigurationException {
         return Configuration.builder().setOption(MIXED_SIZE, "true")
                 .build();
@@ -57,6 +64,9 @@ public class MixedTest extends AbstractCTest {
             {"lockref-par1", ARM8, FAIL},
             {"lockref-par2", ARM8, PASS},
             {"lockref-par3", ARM8, FAIL},
+            {"memtrack1-fail", ARM8, FAIL},
+            {"memtrack2-pass", ARM8, PASS},
+            {"memtrack3-pass", ARM8, PASS},
             {"mixed-local1", ARM8, PASS},
             {"mixed-local2", ARM8, FAIL},
             {"store-to-load-forwarding1", ARM8, FAIL},

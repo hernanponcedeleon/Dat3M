@@ -328,7 +328,7 @@ public class NativeRelationAnalysis implements RelationAnalysis {
         MutableEventGraph disableSet = new MapEventGraph();
         MutableEventGraph enableSet = new MapEventGraph();
         l.stream().map(d -> d.disabled).map(MapEventGraph::from).forEach(e -> e.filter(may::remove).apply(disableSet::add));
-        l.stream().map(d -> d.enabled).map(MapEventGraph::from).forEach(e -> e.filter(must::remove).apply(enableSet::add));
+        l.stream().map(d -> d.enabled).map(MapEventGraph::from).forEach(e -> e.filter(must::add).apply(enableSet::add));
         return new ExtendedDelta(disableSet, enableSet);
     }
 

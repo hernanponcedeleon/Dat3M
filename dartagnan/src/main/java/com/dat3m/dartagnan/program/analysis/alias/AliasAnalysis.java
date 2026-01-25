@@ -8,10 +8,12 @@ import com.dat3m.dartagnan.program.event.MemoryEvent;
 import com.dat3m.dartagnan.program.event.core.Init;
 import com.dat3m.dartagnan.program.event.core.MemoryCoreEvent;
 import com.dat3m.dartagnan.program.event.metadata.SourceLocation;
+import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.dat3m.dartagnan.utils.Utils;
 import com.dat3m.dartagnan.verification.Context;
 import com.dat3m.dartagnan.witness.graphviz.Graphviz;
 
+import com.google.common.collect.Collections2;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.sosy_lab.common.configuration.Configuration;
@@ -34,6 +36,10 @@ public interface AliasAnalysis {
     boolean mustAlias(MemoryCoreEvent a, MemoryCoreEvent b);
 
     boolean mayAlias(MemoryCoreEvent a, MemoryCoreEvent b);
+
+    Collection<MemoryObject> addressableObjects(MemoryCoreEvent a);
+
+    Collection<MemoryObject> communicableObjects(MemoryCoreEvent a);
 
     /**
      * Returns an overapproximation of the MSA points in the byte range of the specified event.
@@ -138,6 +144,22 @@ public interface AliasAnalysis {
         @Override
         public boolean mayAlias(MemoryCoreEvent a, MemoryCoreEvent b) {
             return a1.mayAlias(a, b) && a2.mayAlias(a, b);
+        }
+
+        @Override
+        public Collection<MemoryObject> addressableObjects(MemoryCoreEvent e) {
+            final Collection<MemoryObject> o1 = a1.addressableObjects(e);
+            final Collection<MemoryObject> o2 = a2.addressableObjects(e);
+            final boolean less = o1.size() < o2.size();
+            return Collections2.filter(less ? o1 : o2, (less ? o2 : o1)::contains);
+        }
+
+        @Override
+        public Collection<MemoryObject> communicableObjects(MemoryCoreEvent e) {
+            final Collection<MemoryObject> o1 = a1.communicableObjects(e);
+            final Collection<MemoryObject> o2 = a2.communicableObjects(e);
+            final boolean less = o1.size() < o2.size();
+            return Collections2.filter(less ? o1 : o2, (less ? o2 : o1)::contains);
         }
 
         @Override

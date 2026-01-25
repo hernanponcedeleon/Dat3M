@@ -19,9 +19,9 @@ import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.Assert;
 import com.dat3m.dartagnan.program.event.core.CondJump;
+import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.dat3m.dartagnan.program.processing.LoopUnrolling;
 import com.dat3m.dartagnan.program.Entrypoint;
-import com.dat3m.dartagnan.smt.ModelExt;
 import com.dat3m.dartagnan.utils.ExitCode;
 import com.dat3m.dartagnan.utils.Result;
 import com.dat3m.dartagnan.utils.options.BaseOptions;
@@ -295,21 +295,21 @@ public class Dartagnan extends BaseOptions {
 
         final EncodingContext encodingContext = modelChecker instanceof RefinementSolver refinementSolver ?
             refinementSolver.getContextWithFullWmm() : modelChecker.getEncodingContext();
-        final ExecutionModelNext model = new ExecutionModelManager().buildExecutionModel(
-            encodingContext, new ModelExt(prover.getModel())
-        );
         final SyntacticContextAnalysis synContext = newInstance(task.getProgram());
         final String progName = task.getProgram().getName();
         final int fileSuffixIndex = progName.lastIndexOf('.');
         final String name = progName.isEmpty() ? "unnamed_program" :
                 (fileSuffixIndex == - 1) ? progName : progName.substring(0, fileSuffixIndex);
-        // RF edges give both ordering and data flow information, thus even when the pair is in PO
-        // we get some data flow information by observing the edge
-        // CO edges only give ordering information which is known if the pair is also in PO
-        return generateGraphvizFile(model, 1, (x, y) -> true,
-                (x, y) -> !x.getThreadModel().getThread().equals(y.getThreadModel().getThread()),
-                getOrCreateOutputDirectory() + "/", name,
-                synContext, witnessType.convertToPng(), encodingContext.getTask().getConfig());
+        try (IREvaluator evaluator = encodingContext.newEvaluator(prover)) {
+            final ExecutionModelNext model = new ExecutionModelManager().buildExecutionModel(evaluator);
+            // RF edges give both ordering and data flow information, thus even when the pair is in PO
+            // we get some data flow information by observing the edge
+            // CO edges only give ordering information which is known if the pair is also in PO
+            return generateGraphvizFile(model, 1, (x, y) -> true,
+                    (x, y) -> !x.getThreadModel().getThread().equals(y.getThreadModel().getThread()),
+                    getOrCreateOutputDirectory() + "/", name,
+                    synContext, witnessType.convertToPng(), encodingContext.getTask().getConfig());
+        }
     }
 
     private static void generateWitnessIfAble(VerificationTask task, ProverEnvironment prover,
@@ -317,7 +317,7 @@ public class Dartagnan extends BaseOptions {
         // ------------------ Generate Witness, if possible ------------------
         final EnumSet<Property> properties = task.getProperty();
         if (task.getProgram().getFormat().equals(SourceLanguage.LLVM) && modelChecker.hasModel()
-                && (properties.contains(PROGRAM_SPEC) || properties.contains(DATARACEFREEDOM)) && properties.size() == 1
+                && (properties.contains(PROGRAM_SPEC) || properties.contains(DATARACEFREEDOM))
                 && modelChecker.getResult() != UNKNOWN) {
             try {
                 WitnessBuilder w = WitnessBuilder.of(modelChecker.getEncodingContext(), prover,
@@ -331,18 +331,19 @@ public class Dartagnan extends BaseOptions {
         }
     }
 
-    public static ResultSummary summaryFromResult(VerificationTask task, ProverEnvironment prover,
-            ModelChecker modelChecker, String path, long time) throws SolverException {
+    public static ResultSummary summaryFromResult(VerificationTask task, ProverEnvironment prover, ModelChecker modelChecker, String path, long time) throws SolverException {
+        try (IREvaluator evaluator = modelChecker.hasModel() ? modelChecker.getEncodingContext().newEvaluator(prover) : null) {
+            return summaryFromResult(task, modelChecker, evaluator, path, time);
+        }
+    }
+
+    private static ResultSummary summaryFromResult(VerificationTask task, ModelChecker modelChecker, IREvaluator model, String path, long time) {
         // ----------------- Generate output of verification result -----------------
         final Program p = task.getProgram();
         final EnumSet<Property> props = task.getProperty();
         final Result result = modelChecker.getResult();
-        final EncodingContext encCtx = modelChecker.getEncodingContext();
-        final IREvaluator model = modelChecker.hasModel()
-                ? new IREvaluator(encCtx, new ModelExt(prover.getModel()))
-                : null;
-        final boolean hasViolations = result == FAIL && (model != null);
-        final boolean hasViolationsWithoutWitness = result == FAIL && (model == null);
+        final boolean hasViolations = result == FAIL && model != null;
+        final boolean hasViolationsWithoutWitness = result == FAIL && model == null;
 
         String reason = "";
         StringBuilder details = new StringBuilder();
@@ -362,14 +363,7 @@ public class Dartagnan extends BaseOptions {
                     .stream().filter(model::assertionViolated)
                     .toList();
                 for (Assert ass : violations) {
-                    final String callStack = makeContextString(synContext.getContextInfo(ass).getContextOfType(CallContext.class), " -> ");
-                    details
-                            .append("\tE").append(ass.getGlobalId())
-                            .append(":\t")
-                            .append(callStack.isEmpty() ? callStack : callStack + " -> ")
-                            .append(getSourceLocationString(ass))
-                            .append(": ").append(ass.getErrorMessage())
-                            .append("\n");
+                    appendTo(details, ass, synContext);
                 }
                 // In validation mode, we expect to find the violation, thus NORMAL_TERMINATION
                 ExitCode code = task.getWitness().isEmpty() ? PROGRAM_SPEC_VIOLATION : NORMAL_TERMINATION;
@@ -385,14 +379,7 @@ public class Dartagnan extends BaseOptions {
                             && model.isBlocked(barrier);
 
                     if (isStuckLoop || isStuckBarrier) {
-                        final String callStack = makeContextString(
-                                synContext.getContextInfo(e).getContextOfType(CallContext.class), " -> ");
-                        details
-                                .append("\tE").append(e.getGlobalId())
-                                .append(":\t")
-                                .append(callStack.isEmpty() ? callStack : callStack + " -> ")
-                                .append(getSourceLocationString(e))
-                                .append("\n");
+                        appendTo(details, e, synContext);
                     }
                 }
                 // In validation mode, we expect to find the violation, thus NORMAL_TERMINATION
@@ -403,6 +390,16 @@ public class Dartagnan extends BaseOptions {
                 reason = ResultSummary.SVCOMP_RACE_REASON;
                 // In validation mode, we expect to find the violation, thus NORMAL_TERMINATION
                 ExitCode code = task.getWitness().isEmpty() ? DATA_RACE_FREEDOM_VIOLATION : NORMAL_TERMINATION;
+                return new ResultSummary(path, filter, FAIL, condition, reason, details.toString(), time, code);
+            }
+            if (props.contains(TRACKABILITY) && model.propertyViolated(TRACKABILITY)) {
+                reason = ResultSummary.SVCOMP_UNTRACKABLE_OBJECT_REASON;
+                for (MemoryObject o : p.getMemory().getObjects()) {
+                    if (model.isLeaked(o) && !model.isTrackable(o)) {
+                        appendTo(details, o.getAllocationSite(), synContext);
+                    }
+                }
+                ExitCode code = task.getWitness().isEmpty() ? MEMORY_TRACKABILITY_VIOLATION : NORMAL_TERMINATION;
                 return new ResultSummary(path, filter, FAIL, condition, reason, details.toString(), time, code);
             }
             final List<Axiom> violatedCATSpecs = !props.contains(CAT_SPEC) ? List.of()
@@ -420,7 +417,7 @@ public class Dartagnan extends BaseOptions {
             // Only for programs with exists/forall specifications
             reason = ResultSummary.PROGRAM_SPEC_REASON;
             condition = getSpecificationString(p);
-        } else if (result == UNKNOWN && modelChecker.hasModel()) {
+        } else if (result == UNKNOWN && model != null) {
             // We reached unrolling bounds.
             final List<Event> reachedBounds = p.getThreadEventsWithAllTags(Tag.BOUND)
                     .stream().filter(model::isExecuted)
@@ -445,6 +442,17 @@ public class Dartagnan extends BaseOptions {
         // In validation mode, we expect to find the violation, thus the WITNESS_NOT_VALIDATED error
         ExitCode code = task.getWitness().isEmpty() ? NORMAL_TERMINATION : WITNESS_NOT_VALIDATED;
         return new ResultSummary(path, filter, result, condition, reason, details.toString(), time, code);
+    }
+
+    private static void appendTo(StringBuilder details, Event event, SyntacticContextAnalysis synContext) {
+        final String callStack = makeContextString(synContext.getContextInfo(event).getContextOfType(CallContext.class), " -> ");
+        details.append("\tE").append(event.getGlobalId())
+                .append(":\t").append(callStack.isEmpty() ? callStack : callStack + " -> ")
+                .append(getSourceLocationString(event));
+        if (event instanceof Assert ass) {
+            details.append(": ").append(ass.getErrorMessage());
+        }
+        details.append("\n");
     }
 
     private static void increaseBoundAndDump(List<Event> boundEvents, Configuration config) throws IOException {

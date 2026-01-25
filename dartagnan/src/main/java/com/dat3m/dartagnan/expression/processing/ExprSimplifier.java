@@ -13,6 +13,7 @@ import com.dat3m.dartagnan.expression.integers.*;
 import com.dat3m.dartagnan.expression.misc.ITEExpr;
 import com.dat3m.dartagnan.expression.pointer.*;
 import com.dat3m.dartagnan.expression.utils.IntegerHelper;
+import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.google.common.base.VerifyException;
 import com.google.common.collect.ImmutableList;
@@ -167,9 +168,10 @@ public class ExprSimplifier extends ExprTransformer {
             return expressions.makeValue(cmpResult);
         }
 
-        // ------- Operations on memory objects -------
-        if (left instanceof MemoryObject lMem && right instanceof MemoryObject rMem) {
-            final boolean sameObj = lMem.equals(rMem);
+        // ------- Operations on memory objects and functions -------
+        if (left instanceof MemoryObject && right instanceof MemoryObject
+                || left instanceof Function && right instanceof Function) {
+            final boolean sameObj = left.equals(right);
 
             final Boolean cmpResult = switch (op) {
                 case EQ -> sameObj;

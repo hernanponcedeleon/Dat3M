@@ -71,8 +71,8 @@ public class SparseConditionalConstantPropagation implements FunctionProcessor {
             return;
         }
         final Predicate<Expression> checkDoPropagate = propagateCopyAssignments
-                ? (expr -> expr instanceof MemoryObject || expr instanceof NullLiteral || expr instanceof IntLiteral || expr instanceof BoolLiteral || expr instanceof Register)
-                : (expr -> expr instanceof MemoryObject || expr instanceof NullLiteral || expr instanceof IntLiteral || expr instanceof BoolLiteral); // todo check nullLiteral
+                ? (expr -> expr instanceof MemoryObject || expr instanceof NullLiteral || expr instanceof Function || expr instanceof IntLiteral || expr instanceof BoolLiteral || expr instanceof Register)
+                : (expr -> expr instanceof MemoryObject || expr instanceof NullLiteral || expr instanceof Function || expr instanceof IntLiteral || expr instanceof BoolLiteral);
 
         Set<Event> reachableEvents = new HashSet<>();
         Map<Label, Map<Register, Expression>> inflowMap = new HashMap<>();
@@ -135,7 +135,6 @@ public class SparseConditionalConstantPropagation implements FunctionProcessor {
                 final Expression expr = local.getExpr();
                 final Expression valueToPropagate = checkDoPropagate.test(expr) ? expr : null;
                 propagationMap.compute(local.getResultRegister(), (k, v) -> valueToPropagate);
-
             } else if (cur instanceof ThreadArgument arg) {
                 // Propagate constant arguments passed across threads
                 final Expression expr = arg.getCreator().getArguments().get(arg.getIndex());
