@@ -43,35 +43,4 @@
         </plugins>
     </build>
 
-    <profiles>
-        <profile>
-            <id>native</id>
-            <properties>
-                <cyclonedx.skip>true</cyclonedx.skip>
-            </properties>
-            <build>
-            <plugins>
-                <plugin>
-                    <groupId>org.graalvm.buildtools</groupId>
-                    <artifactId>native-maven-plugin</artifactId>
-                    <version>${native-maven-plugin.version}</version>
-                    <executions>
-                        <execution>
-                        <goals>
-                            <goal>compile</goal>
-                        </goals>
-                        </execution>
-                    </executions>
-                    <configuration>
-                        <noFallback>true</noFallback>
-                        <buildArgs>
-                            <buildArg>-Dlogback.statusListenerClass=</buildArg>
-                        </buildArgs>
-                    </configuration>
-                </plugin>
-            </plugins>
-            </build>
-        </profile>
-    </profiles>
-
 </project>

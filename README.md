@@ -47,15 +47,6 @@ mvn clean -Pnative install -DskipTests
 
 Usage
 ======
-Dartagnan comes with a user interface (not available from the docker container) where it is easy to import, export and modify both the program and the memory model and select the options for the verification engine (see below).
-You can start the user interface by running
-```
-$DAT3M_HOME/ui/target/ui
-```
-<p align="center"> 
-<img src="ui/src/main/resources/ui.jpg">
-</p>
-
 Dartagnan supports programs written in the `.c`, `.ll`, `.litmus` and `spvasm` formats.
 If you are verifying C code, be sure `clang` is in your `PATH`.
 
@@ -64,7 +55,7 @@ There are three possible results for the verification:
 - `PASS`: loops have been fully unrolled and the property satisfied.
 - `UNKNOWN`: no violation was found, but loops have not been fully unrolled (you need to increase the unrolling bound).
 
-You can also run Dartagnan from the console:
+To run Dartagnan from the console:
 
 ```
 $DAT3M_HOME/dartagnan/target/dartagnan <CAT file> [--target=<arch>] <program file> [options]
@@ -99,6 +90,15 @@ while(1) {
 }
 ```
 will unroll this loop twice and use the bound passed to the `--bound` option for all other loops.
+
+Dartagnan also comes with a user interface (not available from the docker container) where it is easy to import, export and modify both the program and the memory model and select the options for the verification engine (see below).
+You can start the user interface by running
+```
+java -jar $DAT3M_HOME/ui/target/ui.jar
+```
+<p align="center">
+<img src="ui/src/main/resources/ui.jpg">
+</p>
 
 Authors and Contact
 ======
