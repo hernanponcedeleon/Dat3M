@@ -498,8 +498,10 @@ public class NativeRelationAnalysis implements RelationAnalysis {
             MutableEventGraph may = new MapEventGraph();
 
             for (Event e1 : visibleEvents) {
-                for (Event e2 : visibleEvents) {
-                    may.add(e1, e2);
+                if (def.getDefinedRelation().isSet()) {
+                    may.add(e1, e1);
+                } else {
+                    may.addRange(e1, new HashSet<>(visibleEvents));
                 }
             }
 
