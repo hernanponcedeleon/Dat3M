@@ -35,7 +35,7 @@ import org.sosy_lab.java_smt.api.Formula;
     TODO:
         The above examples showcase that IR Types should have a unifying bitwise(?) representation which becomes relevant
         when communicating over memory.
-        We can give this representation an IR Type M = AbstractBytes<size> parametric in the bitsize.
+        We can give this representation an IR Type M = AbstractBitsType<size> parametric in the bitsize.
         Then this type should satisfy the following properties:
             - Every standard IR Type T should be convertable to an appropriately-sized M
             - M should be convertable to other IR types (not necessarily all?)

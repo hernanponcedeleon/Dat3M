@@ -19,7 +19,6 @@ import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.*;
-import com.dat3m.dartagnan.program.event.core.InstructionBoundary;
 import com.dat3m.dartagnan.program.event.metadata.SourceLocation;
 import com.dat3m.dartagnan.program.memory.FinalMemoryValue;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
@@ -129,18 +128,19 @@ public final class Tearing implements ProgramProcessor {
             final int bytes = checkBytes(init, offsets);
             final MemoryObject base = init.getBase();
             final int initOffset = init.getOffset();
-            final Expression value = init.getValue();
+            final Expression value = expressions.makeToMemoryCast(init.getValue());
             // Tear initial values
             final int frontBegin = bigEndian ? bytes - offsets.get(0) : 0;
             final int frontEnd = bigEndian ? bytes : offsets.get(0);
-            final Expression frontValue = expressions.makeIntExtract(value, 8 * frontBegin, 8 * frontEnd - 1);
+
+            final Expression frontValue = expressions.makeMemoryExtract(value, 8 * frontBegin, 8 * frontEnd - 1);
             base.setInitialValue(initOffset, frontValue);
             for (int i = 0; i < offsets.size(); i++) {
                 final int offset = offsets.get(i);
                 final int next = i + 1 < offsets.size() ? offsets.get(i + 1) : bytes;
                 final int begin = bigEndian ? bytes - next : offset;
                 final int end = bigEndian ? bytes - offset : next;
-                final Expression tearedValue = expressions.makeIntExtract(value, 8 * begin, 8 * end - 1);
+                final Expression tearedValue = expressions.makeMemoryExtract(value, 8 * begin, 8 * end - 1);
                 base.setInitialValue(initOffset + offset, tearedValue);
             }
             // Tear init event
@@ -183,7 +183,8 @@ public final class Tearing implements ProgramProcessor {
             int start = i < 0 ? 0 : offsets.get(i);
             int end = i + 1 < offsets.size() ? offsets.get(i + 1) : bytes;
             assert start < end;
-            smallerRegisters.add(newRegister(function, types.getIntegerType(8 * (end - start))));
+            smallerRegisters.add(newRegister(function,
+                    types.getMemoryType(8 * (end - start))));
         }
         assert bytes == smallerRegisters.stream().mapToInt(t -> types.getMemorySizeInBytes(t.getType())).sum();
         final InstructionBoundary begin = load.hasTag(Tag.NO_INSTRUCTION) ? null : EventFactory.newInstructionBegin();
@@ -205,8 +206,8 @@ public final class Tearing implements ProgramProcessor {
             final Event end = EventFactory.newInstructionEnd(begin);
             replacement.add(end);
         }
-        final Expression combination = expressions.makeIntConcat(smallerRegisters);
-        final Event computeResult = EventFactory.newLocal(load.getResultRegister(), combination);
+        final Expression combination = expressions.makeMemoryConcat(smallerRegisters);
+        final Event computeResult = EventFactory.newLocal(load.getResultRegister(), expressions.makeFromMemoryCast(combination, load.getAccessType()));
         replacement.add(computeResult);
         return replacement;
     }
@@ -226,13 +227,15 @@ public final class Tearing implements ProgramProcessor {
         if (begin != null) {
             replacement.add(begin);
         }
+
+        final Expression memValue = expressions.makeToMemoryCast(valueRegister);
         for (int i = -1; i < offsets.size(); i++) {
             final int offset = i < 0 ? 0 : offsets.get(i);
             final int next = i + 1 < offsets.size() ? offsets.get(i + 1) : bytes;
             final int start = bigEndian ? bytes - next : offset;
             final int end = bigEndian ? bytes - offset : next;
             final Expression address = expressions.makeAdd(addressRegister, expressions.makeValue(offset, addressType));
-            final Expression value = expressions.makeIntExtract(valueRegister, 8 * start, 8 * end - 1);
+            final Expression value = expressions.makeMemoryExtract(memValue, 8 * start, 8 * end - 1);
             final Store byteStore = store.getCopy();
             byteStore.setAddress(address);
             byteStore.setMemValue(value);
@@ -306,8 +309,8 @@ public final class Tearing implements ProgramProcessor {
                 result.add(new FinalMemoryValue(value.getName(), t, value.getMemoryObject(), offset));
                 offset += types.getMemorySizeInBytes(t);
             }
-            final Expression combined = result.size() == 1 ? result.get(0) : expressions.makeIntConcat(result);
-            return expressions.makeCast(combined, value.getType());
+            final Expression combined = result.size() == 1 ? result.get(0) : expressions.makeMemoryConcat(result);
+            return expressions.makeFromMemoryCast(combined, value.getType());
         }
     }
 }
