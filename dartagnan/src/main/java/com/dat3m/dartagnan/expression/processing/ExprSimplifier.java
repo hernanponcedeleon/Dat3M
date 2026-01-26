@@ -225,8 +225,9 @@ public class ExprSimplifier extends ExprTransformer {
         }
 
         // ------- Operations on memory objects -------
-        if (left instanceof MemoryObject lMem && right instanceof MemoryObject rMem) {
-            final boolean sameObj = lMem.equals(rMem);
+        if (left instanceof MemoryObject && right instanceof MemoryObject
+                || left instanceof Function && right instanceof Function) {
+            final boolean sameObj = left.equals(right);
 
             final Boolean cmpResult = switch (op) {
                 case EQ -> sameObj;
