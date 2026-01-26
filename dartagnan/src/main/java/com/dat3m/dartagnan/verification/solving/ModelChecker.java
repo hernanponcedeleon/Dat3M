@@ -8,7 +8,10 @@ import com.dat3m.dartagnan.encoding.IREvaluator;
 import com.dat3m.dartagnan.exception.UnsatisfiedRequirementException;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Thread;
-import com.dat3m.dartagnan.program.analysis.*;
+import com.dat3m.dartagnan.program.analysis.BranchEquivalence;
+import com.dat3m.dartagnan.program.analysis.ExecutionAnalysis;
+import com.dat3m.dartagnan.program.analysis.ReachingDefinitionsAnalysis;
+import com.dat3m.dartagnan.program.analysis.ThreadSymmetry;
 import com.dat3m.dartagnan.program.analysis.alias.AliasAnalysis;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.processing.ProcessingManager;
@@ -21,27 +24,22 @@ import com.dat3m.dartagnan.verification.model.ExecutionModelNext;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
 import com.dat3m.dartagnan.wmm.analysis.WmmAnalysis;
-import com.dat3m.dartagnan.wmm.axiom.Axiom;
 import com.dat3m.dartagnan.wmm.processing.WmmProcessingManager;
 import com.google.common.base.Preconditions;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.sosy_lab.common.ShutdownManager;
-import org.sosy_lab.common.ShutdownNotifier;
 import org.sosy_lab.common.configuration.*;
-import org.sosy_lab.common.log.BasicLogManager;
 import org.sosy_lab.java_smt.SolverContextFactory;
 import org.sosy_lab.java_smt.api.SolverContext;
 import org.sosy_lab.java_smt.api.SolverException;
 
-import java.util.Optional;
-
 import static com.dat3m.dartagnan.configuration.OptionNames.*;
-import static com.dat3m.dartagnan.configuration.Property.CAT_SPEC;
 import static com.dat3m.dartagnan.configuration.Property.DATARACEFREEDOM;
-import static com.dat3m.dartagnan.program.analysis.SyntacticContextAnalysis.*;
+import static com.dat3m.dartagnan.smt.SMTHelper.createSolverContext;
 import static com.dat3m.dartagnan.utils.Result.*;
 
+// Base class for SMT-based model checkers
 @Options
 public abstract class ModelChecker implements AutoCloseable {
 
@@ -82,7 +80,6 @@ public abstract class ModelChecker implements AutoCloseable {
     }
 
     private static final Logger logger = LogManager.getLogger(ModelChecker.class);
-
 
     protected final VerificationTask task;
     protected final SMTConfig smtConfig;
@@ -145,6 +142,8 @@ public abstract class ModelChecker implements AutoCloseable {
         }
     }
 
+    protected abstract void runInternal() throws InterruptedException, SolverException, InvalidConfigurationException;
+
     public void run() throws SolverException, InterruptedException, InvalidConfigurationException {
         Preconditions.checkState(prover == null, "Model checker already ran.");
         if (!smtConfig.hasTimeout()) {
@@ -167,7 +166,18 @@ public abstract class ModelChecker implements AutoCloseable {
         t.interrupt();
     }
 
-    protected abstract void runInternal() throws InterruptedException, SolverException, InvalidConfigurationException;
+    // ====================================== Solver utility ==================================================
+
+    protected void initSMTSolver(Configuration config) throws InvalidConfigurationException {
+        Preconditions.checkState(solverContext == null, "SolverContext already initialized");
+
+        final String smtDumpPath = smtConfig.getDumpSmtLib()
+                ? GlobalSettings.getOutputDirectory() + String.format("/%s.smt2", task.getProgram().getName())
+                : "";
+
+        solverContext = createSolverContext(config, shutdownManager.getNotifier(), smtConfig.getSolver());
+        prover = new ProverWithTracker(solverContext, smtDumpPath, SolverContext.ProverOptions.GENERATE_MODELS);
+    }
 
     @Override
     public void close() {
@@ -178,91 +188,6 @@ public abstract class ModelChecker implements AutoCloseable {
         if (solverContext != null) {
             solverContext.close();
             solverContext = null;
-        }
-    }
-
-    public String getFlaggedPairsOutput() throws SolverException {
-        if (!context.getTask().getProperty().contains(CAT_SPEC)) {
-            return "";
-        }
-
-        final Wmm wmm = context.getTask().getMemoryModel();
-        final Program program = context.getTask().getProgram();
-        final StringBuilder output = new StringBuilder();
-        try (IREvaluator evaluator = getModel()) {
-            final SyntacticContextAnalysis synContext = newInstance(program);
-            for (Axiom ax : wmm.getAxioms()) {
-                if (ax.isFlagged() && evaluator.isFlaggedAxiomViolated(ax)) {
-                    StringBuilder violatingPairs = new StringBuilder("\tFlag " + Optional.ofNullable(ax.getName()).orElse(ax.getRelation().getNameOrTerm())).append("\n");
-                    evaluator.eventGraph(ax.getRelation()).apply((e1, e2) -> {
-                        final String callSeparator = " -> ";
-                        final String callStackFirst = makeContextString(
-                                synContext.getContextInfo(e1).getContextOfType(CallContext.class),
-                                callSeparator);
-                        final String callStackSecond = makeContextString(
-                                synContext.getContextInfo(e2).getContextOfType(CallContext.class),
-                                callSeparator);
-
-                        violatingPairs
-                                .append("\tE").append(e1.getGlobalId())
-                                .append(" / E").append(e2.getGlobalId())
-                                .append("\t").append(callStackFirst).append(callStackFirst.isEmpty() ? "" : callSeparator)
-                                .append(getSourceLocationString(e1))
-                                .append(" / ").append(callStackSecond).append(callStackSecond.isEmpty() ? "" : callSeparator)
-                                .append(getSourceLocationString(e2))
-                                .append("\n");
-                    });
-                    output.append(violatingPairs);
-                }
-            }
-        }
-
-        return output.toString();
-    }
-
-    // ====================================== Encoding utility ==================================================
-
-    protected SolverContext createSolverContext(VerificationTask task) throws InvalidConfigurationException {
-        if (solverContext != null) {
-            solverContext.close();
-        }
-        final ShutdownNotifier notifier = shutdownManager.getNotifier();
-        solverContext = createSolverContext(task.getConfig(), notifier, smtConfig.getSolver());
-        return solverContext;
-    }
-
-    protected ProverWithTracker createProver() {
-        Preconditions.checkState(solverContext != null, "SolverContext not initialized");
-        if (prover != null) {
-            prover.close();
-        }
-
-        final String dumpPath = smtConfig.getDumpSmtLib()
-                ? GlobalSettings.getOutputDirectory() + String.format("/%s.smt2", task.getProgram().getName())
-                : "";
-        prover = new ProverWithTracker(solverContext, dumpPath, SolverContext.ProverOptions.GENERATE_MODELS);
-        return prover;
-    }
-
-    private static SolverContext createSolverContext(Configuration config, ShutdownNotifier notifier,
-                                                     SolverContextFactory.Solvers solver)
-            throws InvalidConfigurationException {
-        // Try using NativeLibraries::loadLibrary. Fallback to System::loadLibrary
-        // if NativeLibraries failed, for example, because the operating system is
-        // not supported,
-        try {
-            return SolverContextFactory.createSolverContext(
-                    config,
-                    BasicLogManager.create(config),
-                    notifier,
-                    solver);
-        } catch (Exception e) {
-            return SolverContextFactory.createSolverContext(
-                    config,
-                    BasicLogManager.create(config),
-                    notifier,
-                    solver,
-                    System::loadLibrary);
         }
     }
 

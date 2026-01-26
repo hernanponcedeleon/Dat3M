@@ -6,7 +6,6 @@ import com.dat3m.dartagnan.smt.ProverWithTracker;
 import com.dat3m.dartagnan.utils.Result;
 import com.dat3m.dartagnan.verification.Context;
 import com.dat3m.dartagnan.verification.VerificationTask;
-import com.dat3m.dartagnan.wmm.Wmm;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.sosy_lab.common.configuration.Configuration;
@@ -32,26 +31,31 @@ public class AssumeSolver extends ModelChecker {
         return new AssumeSolver(task);
     }
 
-    @Override
-    protected void runInternal() throws InterruptedException, SolverException, InvalidConfigurationException {
-        Wmm memoryModel = task.getMemoryModel();
-        Context analysisContext = Context.create();
-        Configuration config = task.getConfig();
-
-        memoryModel.configureAll(config);
+    protected Context preprocessAndAnalyse(VerificationTask task) throws InvalidConfigurationException {
+        final Configuration config = task.getConfig();
+        task.getMemoryModel().configureAll(config);
         preprocessProgram(task, config);
         preprocessMemoryModel(task, config);
+
+        final Context analysisContext = Context.create();
         performStaticProgramAnalyses(task, analysisContext, config);
         performStaticWmmAnalyses(task, analysisContext, config);
+        return analysisContext;
+    }
 
-        final SolverContext solverContext = createSolverContext(task);
+    @Override
+    protected void runInternal() throws InterruptedException, SolverException, InvalidConfigurationException {
+        final Context analysisContext = preprocessAndAnalyse(task);
+
+        initSMTSolver(task.getConfig());
+        final SolverContext solverContext = this.solverContext;
+        final ProverWithTracker prover = this.prover;
+
         context = EncodingContext.of(task, analysisContext, solverContext.getFormulaManager());
         ProgramEncoder programEncoder = ProgramEncoder.withContext(context);
         PropertyEncoder propertyEncoder = PropertyEncoder.withContext(context);
         WmmEncoder wmmEncoder = WmmEncoder.withContext(context);
         SymmetryEncoder symmetryEncoder = SymmetryEncoder.withContext(context);
-
-        final ProverWithTracker prover = createProver();
 
         logger.info("Starting encoding using {}", solverContext.getVersion());
         prover.writeComment("Program encoding");

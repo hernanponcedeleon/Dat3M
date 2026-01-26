@@ -87,6 +87,8 @@ public class RefinementSolver extends ModelChecker {
 
     private static final Logger logger = LogManager.getLogger(RefinementSolver.class);
 
+    // FIXME: This one is an ugly hack only there so that we can pretend
+    //  that generated SMT models are wrt. to the full memory model.
     private EncodingContext contextWithFullWmm;
 
     // ================================================================================================================
@@ -178,7 +180,6 @@ public class RefinementSolver extends ModelChecker {
         return new RefinementSolver(task);
     }
 
-
     @Override
     public ExecutionModelNext getExecutionGraph() throws SolverException {
         Preconditions.checkState(hasModel(), "No model found.");
@@ -187,18 +188,9 @@ public class RefinementSolver extends ModelChecker {
         }
     }
 
-    //TODO: We do not yet use Witness information. The problem is that WitnessGraph.encode() generates
-    // constraints on hb, which is not encoded in Refinement.
-
-    @Override
-    protected void runInternal()
-            throws InterruptedException, SolverException, InvalidConfigurationException {
-        final Program program = task.getProgram();
-        final Wmm memoryModel = task.getMemoryModel();
-        final Context analysisContext = Context.create();
+    protected void preprocess(VerificationTask task) throws InvalidConfigurationException {
         final Configuration config = task.getConfig();
-
-        // ------------------------ Preprocessing / Analysis ------------------------
+        final Wmm memoryModel = task.getMemoryModel();
 
         // TODO: This is a reasonable transformation for all methods (eager/lazy), however,
         //  our current processing pipelines (WmmProcessor/ProgramProcessor) are unaware of the property
@@ -210,36 +202,47 @@ public class RefinementSolver extends ModelChecker {
         preprocessMemoryModel(task, config);
         instrumentPolaritySeparation(memoryModel);
 
+    }
+
+    //TODO: We do not yet use Witness information. The problem is that WitnessGraph.encode() generates
+    // constraints on hb, which is not encoded in Refinement.
+    @Override
+    protected void runInternal()
+            throws InterruptedException, SolverException, InvalidConfigurationException {
+        final VerificationTask task = this.task;
+        final Program program = task.getProgram();
+        final Wmm memoryModel = task.getMemoryModel();
+        final Configuration config = task.getConfig();
+
+        // ------------------------ Preprocessing / Analysis ------------------------
+        preprocess(task);
+
+        final Context analysisContext = Context.create();
         performStaticProgramAnalyses(task, analysisContext, config);
         // Copy context without WMM analyses because we want to analyse a second model later
-        Context baselineContext = Context.createCopyFrom(analysisContext);
+        final Context baselineContext = Context.createCopyFrom(analysisContext);
         performStaticWmmAnalyses(task, analysisContext, config);
 
 
         //  ------- Generate refinement model -------
-        final RefinementModel refinementModel = generateRefinementModel(memoryModel);
-        final Wmm baselineModel = refinementModel.getBaseModel();
-        addBiases(baselineModel, baselines);
-        baselineModel.configureAll(config); // Configure after cutting!
-        refinementModel.transferKnowledgeFromOriginal(analysisContext.requires(RelationAnalysis.class));
-        refinementModel.forceEncodeBoundary();
-
+        final RefinementModel refinementModel = buildRefinementModel(memoryModel, config, analysisContext);
         final VerificationTask baselineTask = VerificationTask.builder()
                 .withConfig(task.getConfig())
                 .withProgressModel(task.getProgressModel())
-                .build(program, baselineModel, task.getProperty());
+                .build(program, refinementModel.getBaseModel(), task.getProperty());
         performStaticWmmAnalyses(baselineTask, baselineContext, config);
 
         // ------------------------ Encoding ------------------------
+        initSMTSolver(config);
+        final SolverContext ctx = this.solverContext;
+        final ProverWithTracker prover = this.prover;
 
-        final SolverContext ctx = createSolverContext(task);
         // Encoding context with the original Wmm and the analysis context for relation extraction.
         contextWithFullWmm = EncodingContext.of(task, analysisContext, ctx.getFormulaManager());
+
         context = EncodingContext.of(baselineTask, baselineContext, ctx.getFormulaManager());
         final ProgramEncoder programEncoder = ProgramEncoder.withContext(context);
         final PropertyEncoder propertyEncoder = PropertyEncoder.withContext(context);
-        // We use the original memory model for symmetry breaking because we need axioms
-        // to compute the breaking order.
         final SymmetryEncoder symmetryEncoder = SymmetryEncoder.withContext(context);
         final WmmEncoder baselineEncoder = WmmEncoder.withContext(context);
 
@@ -248,7 +251,6 @@ public class RefinementSolver extends ModelChecker {
         final Refiner refiner = new Refiner(refinementModel);
         final Property.Type propertyType = Property.getCombinedType(task.getProperty(), task);
 
-        final ProverWithTracker prover = createProver();
         logger.info("Starting encoding using {}", ctx.getVersion());
         prover.writeComment("Program encoding");
         prover.addConstraint(programEncoder.encodeFullProgram());
@@ -345,6 +347,16 @@ public class RefinementSolver extends ModelChecker {
             validateModel(solver.getExecution());
         }
         logger.info("Verification finished with result {}", res);
+    }
+
+    private RefinementModel buildRefinementModel(Wmm memoryModel, Configuration config, Context analysisContext) throws InvalidConfigurationException {
+        final RefinementModel refinementModel = generateRefinementModel(memoryModel);
+        final Wmm baselineModel = refinementModel.getBaseModel();
+        addBiases(baselineModel, baselines);
+        baselineModel.configureAll(config); // Configure after cutting!
+        refinementModel.transferKnowledgeFromOriginal(analysisContext.requires(RelationAnalysis.class));
+        refinementModel.forceEncodeBoundary();
+        return refinementModel;
     }
 
     private void validateModel(ExecutionModel model) {

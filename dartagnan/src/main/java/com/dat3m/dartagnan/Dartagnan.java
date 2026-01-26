@@ -346,7 +346,7 @@ public class Dartagnan extends BaseOptions {
                 reason = ResultSummary.CAT_SPEC_REASON;
                 // In validation mode, we expect to find the violation, thus NORMAL_TERMINATION
                 ExitCode code = task.getWitness().isEmpty() ? CAT_SPEC_VIOLATION : NORMAL_TERMINATION;
-                return new ResultSummary(path, filter, FAIL, condition, reason, modelChecker.getFlaggedPairsOutput(), time, code);
+                return new ResultSummary(path, filter, FAIL, condition, reason, getFlaggedPairsOutput(task, model), time, code);
             }
         } else if (hasViolationsWithoutWitness) {
             // Only for programs with exists/forall specifications
@@ -450,6 +450,43 @@ public class Dartagnan extends BaseOptions {
             sb.append("\n");
         }
         return sb.toString();
+    }
+
+    private static String getFlaggedPairsOutput(VerificationTask task, IREvaluator model) {
+        if (!task.getProperty().contains(CAT_SPEC)) {
+            return "";
+        }
+
+        final Wmm wmm = task.getMemoryModel();
+        final Program program = task.getProgram();
+        final StringBuilder output = new StringBuilder();
+        final SyntacticContextAnalysis synContext = newInstance(program);
+        for (Axiom ax : wmm.getAxioms()) {
+            if (ax.isFlagged() && model.isFlaggedAxiomViolated(ax)) {
+                StringBuilder violatingPairs = new StringBuilder("\tFlag " + Optional.ofNullable(ax.getName()).orElse(ax.getRelation().getNameOrTerm())).append("\n");
+                model.eventGraph(ax.getRelation()).apply((e1, e2) -> {
+                    final String callSeparator = " -> ";
+                    final String callStackFirst = makeContextString(
+                            synContext.getContextInfo(e1).getContextOfType(CallContext.class),
+                            callSeparator);
+                    final String callStackSecond = makeContextString(
+                            synContext.getContextInfo(e2).getContextOfType(CallContext.class),
+                            callSeparator);
+
+                    violatingPairs
+                            .append("\tE").append(e1.getGlobalId())
+                            .append(" / E").append(e2.getGlobalId())
+                            .append("\t").append(callStackFirst).append(callStackFirst.isEmpty() ? "" : callSeparator)
+                            .append(getSourceLocationString(e1))
+                            .append(" / ").append(callStackSecond).append(callStackSecond.isEmpty() ? "" : callSeparator)
+                            .append(getSourceLocationString(e2))
+                            .append("\n");
+                });
+                output.append(violatingPairs);
+            }
+        }
+
+        return output.toString();
     }
 
 }
