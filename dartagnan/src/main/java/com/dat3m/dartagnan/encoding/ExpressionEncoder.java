@@ -575,7 +575,8 @@ public class ExpressionEncoder {
                 final BitvectorFormula innerBv = (BitvectorFormula) inner.formula();
                 final int targetBitWidth = expr.getTargetType().getBitWidth();
                 final int sourceBitWidth = expr.getSourceType().getBitWidth();
-                assert (sourceBitWidth == bvmgr.getLength(innerBv));
+                final int concreteBitwidth = bvmgr.getLength(innerBv); // only for debugging remove later
+                assert (sourceBitWidth == concreteBitwidth);
                 if (expr.sameWidth()) { enc = innerBv;}
                 else{
                     enc = expr.isExtension()
@@ -648,7 +649,7 @@ public class ExpressionEncoder {
         public TypedFormula<PointerType, ?> visitNullLiteral(NullLiteral lit) {
             final Formula zero = context.useIntegers
                     ? integerFormulaManager().makeNumber(0)
-                    : bitvectorFormulaManager().makeBitvector(types.getArchType().getBitWidth(), 0);
+                    : bitvectorFormulaManager().makeBitvector(lit.getType().bitWidth, 0);
 
             return new TypedFormula<>(lit.getType(), zero);
         }
