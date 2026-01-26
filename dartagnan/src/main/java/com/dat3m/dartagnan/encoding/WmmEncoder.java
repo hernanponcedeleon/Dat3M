@@ -4,10 +4,12 @@ import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.integers.IntLiteral;
 import com.dat3m.dartagnan.program.Program;
+import com.dat3m.dartagnan.program.analysis.ExecutionAnalysis;
 import com.dat3m.dartagnan.program.analysis.ReachingDefinitionsAnalysis;
 import com.dat3m.dartagnan.program.event.*;
 import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.smt.EncodingUtils;
+import com.dat3m.dartagnan.smt.FormulaManagerExt;
 import com.dat3m.dartagnan.utils.Utils;
 import com.dat3m.dartagnan.wmm.Constraint;
 import com.dat3m.dartagnan.wmm.Definition;
@@ -15,14 +17,17 @@ import com.dat3m.dartagnan.wmm.Relation;
 import com.dat3m.dartagnan.wmm.analysis.LazyRelationAnalysis;
 import com.dat3m.dartagnan.wmm.analysis.NativeRelationAnalysis;
 import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
+import com.dat3m.dartagnan.wmm.axiom.Acyclicity;
 import com.dat3m.dartagnan.wmm.axiom.Axiom;
+import com.dat3m.dartagnan.wmm.axiom.Emptiness;
+import com.dat3m.dartagnan.wmm.axiom.Irreflexivity;
 import com.dat3m.dartagnan.wmm.definition.*;
 import com.dat3m.dartagnan.wmm.definition.TagSet;
 import com.dat3m.dartagnan.wmm.utils.Flag;
+import com.dat3m.dartagnan.wmm.utils.Tuple;
 import com.dat3m.dartagnan.wmm.utils.graph.EventGraph;
 import com.dat3m.dartagnan.wmm.utils.graph.mutable.MapEventGraph;
 import com.dat3m.dartagnan.wmm.utils.graph.mutable.MutableEventGraph;
-
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import org.slf4j.Logger;
@@ -777,7 +782,8 @@ public class WmmEncoder implements Encoder {
         @Override
         public Void visitAxiom(Axiom axiom) {
             if (!axiom.isFlagged()) {
-                enc.addAll(axiom.consistent(context));
+                enc.add(axiom.accept(new AxiomEncoder(context)));
+                //enc.addAll(axiom.consistent(context));
             }
             return null;
         }
@@ -786,4 +792,232 @@ public class WmmEncoder implements Encoder {
             return context.execution(e1, e2);
         }
     }
+
+
+
+    // ======================================== Axiom Encoder ========================================
+
+    public static class AxiomEncoder implements Constraint.Visitor<BooleanFormula> {
+
+        private final EncodingContext context;
+
+        public AxiomEncoder (EncodingContext context) {
+            this.context = context;
+        }
+
+        private EventGraph getEncodeGraph(Axiom axiom) {
+            return axiom.getEncodeGraph(context.getTask(), context.getAnalysisContext())
+                    .get(axiom.getRelation());
+        }
+
+        @Override
+        public BooleanFormula visitConstraint(Constraint constraint) {
+            throw new UnsupportedOperationException("AxiomEncoder does not support Constraint " + constraint.getClass().getSimpleName());
+        }
+
+        @Override
+        public BooleanFormula visitEmptiness(Emptiness axiom) {
+            final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
+            final Relation relation = axiom.getRelation();
+            final EncodingContext.EdgeEncoder edge = context.edge(relation);
+
+            final List<BooleanFormula> edges = new ArrayList<>();
+            getEncodeGraph(axiom).apply((e1, e2) -> edges.add(edge.encode(e1, e2)));
+
+            return axiom.isNegated() ? bmgr.or(edges) : bmgr.and(edges.stream().map(bmgr::not).toList());
+        }
+
+        @Override
+        public BooleanFormula visitIrreflexivity(Irreflexivity axiom) {
+            final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
+            final Relation relation = axiom.getRelation();
+            final EncodingContext.EdgeEncoder edge = context.edge(relation);
+
+            final List<BooleanFormula> edges = new ArrayList<>();
+            getEncodeGraph(axiom).apply((e1, e2) -> {
+                assert e1 == e2;
+                edges.add(edge.encode(e1, e2));
+            });
+
+            return axiom.isNegated() ? bmgr.or(edges) : bmgr.and(edges.stream().map(bmgr::not).toList());
+        }
+
+        @Override
+        public BooleanFormula visitAcyclicity(Acyclicity axiom) {
+            final RelationAnalysis ra = context.getAnalysisContext().get(RelationAnalysis.class);
+            final Relation relation = axiom.getRelation();
+            MutableEventGraph toBeEncoded = (MutableEventGraph) getEncodeGraph(axiom);
+            toBeEncoded.addAll(ra.getKnowledge(axiom.getRelation()).getMustSet());
+            final List<BooleanFormula> enc = axiom.isNegated()
+                    ? cyclicSAT(relation, toBeEncoded) // There is no IDL-based encoding for inconsistency
+                    : context.usesSATEncoding()
+                    ? acyclicSAT(relation, toBeEncoded)
+                    : acyclicIDL(relation, toBeEncoded);
+            return context.getBooleanFormulaManager().and(enc);
+        }
+
+        private List<BooleanFormula> cyclicSAT(Relation rel, EventGraph toBeEncoded) {
+            final FormulaManagerExt fmgr = context.getFormulaManager();
+            final BooleanFormulaManager bmgr = fmgr.getBooleanFormulaManager();
+            List<BooleanFormula> enc = new ArrayList<>();
+            List<BooleanFormula> eventsInCycle = new ArrayList<>();
+            Map<Event, List<BooleanFormula>> inMap = new HashMap<>();
+            Map<Event, List<BooleanFormula>> outMap = new HashMap<>();
+            toBeEncoded.apply((e1, e2) -> {
+                BooleanFormula cycleVar = getSMTCycleVar(rel, e1, e2, fmgr);
+                inMap.computeIfAbsent(e2, k -> new ArrayList<>()).add(cycleVar);
+                outMap.computeIfAbsent(e1, k -> new ArrayList<>()).add(cycleVar);
+            });
+            // We use Boolean variables which guess the edges and nodes constituting the cycle.
+            final EncodingContext.EdgeEncoder edge = context.edge(rel);
+            for (Event e : toBeEncoded.getDomain()) {
+                eventsInCycle.add(cycleVar(rel, e, fmgr));
+                // We ensure that for every event in the cycle, there should be at least one incoming
+                // edge and at least one outgoing edge that are also in the cycle.
+                enc.add(bmgr.implication(cycleVar(rel, e, fmgr), bmgr.and(bmgr.or(inMap.get(e)), bmgr.or(outMap.get(e)))));
+                toBeEncoded.apply((e1, e2) ->
+                        // If an edge is guessed to be in a cycle, the edge must belong to relation,
+                        // and both events must also be guessed to be on the cycle.
+                        enc.add(bmgr.implication(getSMTCycleVar(rel, e1, e2, fmgr),
+                                bmgr.and(edge.encode(e1, e2), cycleVar(rel, e1, fmgr), cycleVar(rel, e2, fmgr)))));
+            }
+            // A cycle exists if there is an event in the cycle.
+            enc.add(bmgr.or(eventsInCycle));
+            return enc;
+        }
+
+        private List<BooleanFormula> acyclicIDL(Relation rel, EventGraph toBeEncoded) {
+            final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
+            final IntegerFormulaManager imgr = context.getFormulaManager().getIntegerFormulaManager();
+            final String clockVarName = rel.getNameOrTerm();
+            List<BooleanFormula> enc = new ArrayList<>();
+            final EncodingContext.EdgeEncoder edge = context.edge(rel);
+            toBeEncoded.apply((e1, e2) ->
+                    enc.add(bmgr.implication(edge.encode(e1, e2),
+                            imgr.lessThan(
+                                    context.clockVariable(clockVarName, e1),
+                                    context.clockVariable(clockVarName,e2))))
+            );
+            return enc;
+        }
+
+        private List<BooleanFormula> acyclicSAT(Relation rel, EventGraph toBeEncoded) {
+            // We use a vertex-elimination graph based encoding.
+            final FormulaManagerExt fmgr = context.getFormulaManager();
+            final BooleanFormulaManager bmgr = fmgr.getBooleanFormulaManager();
+            final ExecutionAnalysis exec = context.getAnalysisContext().requires(ExecutionAnalysis.class);
+            final RelationAnalysis ra = context.getAnalysisContext().requires(RelationAnalysis.class);
+
+            // Build original graph G
+            Map<Event, Set<Event>> inEdges = new HashMap<>();
+            Map<Event, Set<Event>> outEdges = new HashMap<>();
+            Set<Event> nodes = new HashSet<>();
+            Set<Event> selfloops = new HashSet<>();         // Special treatment for self-loops
+            toBeEncoded.apply((e1, e2) -> {
+                if (Tuple.isLoop(e1, e2)) {
+                    selfloops.add(e1);
+                } else {
+                    nodes.add(e1);
+                    nodes.add(e2);
+                    outEdges.computeIfAbsent(e1, key -> new HashSet<>()).add(e2);
+                    inEdges.computeIfAbsent(e2, key -> new HashSet<>()).add(e1);
+                }
+            });
+
+            // Handle corner-cases where some node has no ingoing or outgoing edges
+            for (Event node : nodes) {
+                outEdges.putIfAbsent(node, new HashSet<>());
+                inEdges.putIfAbsent(node, new HashSet<>());
+            }
+
+            // Build vertex elimination graph G*, by iteratively modifying G
+            Map<Event, Set<Event>> vertEleInEdges = new HashMap<>();
+            Map<Event, Set<Event>> vertEleOutEdges = new HashMap<>();
+            for (Event e : nodes) {
+                vertEleInEdges.put(e, new HashSet<>(inEdges.get(e)));
+                vertEleOutEdges.put(e, new HashSet<>(outEdges.get(e)));
+            }
+            List<Event[]> triangles = new ArrayList<>();
+
+            // Build variable elimination ordering
+            List<Event> varOrderings = new ArrayList<>(); // We should order this
+            while (!nodes.isEmpty()) {
+                // Find best vertex e to eliminate
+                final Comparator<Event> comparator = Comparator.comparingInt(ev -> vertEleInEdges.get(ev).size() * vertEleOutEdges.get(ev).size());
+                final Event e = nodes.stream().min(comparator).get();
+                varOrderings.add(e);
+
+                // Eliminate e
+                nodes.remove(e);
+                final Set<Event> in = inEdges.remove(e);
+                final Set<Event> out = outEdges.remove(e);
+                in.forEach(x -> outEdges.get(x).remove(e));
+                out.forEach(x -> inEdges.get(x).remove(e));
+                // Create new edges due to elimination of e
+                for (Event e1 : in) {
+                    for (Event e2 : out) {
+                        if (e2 == e1 || exec.areMutuallyExclusive(e1, e2)) {
+                            continue;
+                        }
+                        // Update next graph in the elimination sequence
+                        inEdges.get(e2).add(e1);
+                        outEdges.get(e1).add(e2);
+                        // Update vertex elimination graph
+                        vertEleOutEdges.get(e1).add(e2);
+                        vertEleInEdges.get(e2).add(e1);
+                        // Store constructed triangle
+                        triangles.add(new Event[]{e1, e, e2});
+                    }
+                }
+            }
+
+            // --- Create encoding ---
+            final EventGraph minSet = ra.getKnowledge(rel).getMustSet();
+            List<BooleanFormula> enc = new ArrayList<>();
+            final EncodingContext.EdgeEncoder edge = context.edge(rel);
+            // Basic lifting
+            toBeEncoded.apply((e1, e2) -> {
+                BooleanFormula cond = minSet.contains(e1, e2) ? context.execution(e1, e2) : edge.encode(e1, e2);
+                enc.add(bmgr.implication(cond, getSMTCycleVar(rel, e1, e2, fmgr)));
+            });
+
+            // Encode triangle rules
+            for (Event[] tri : triangles) {
+                BooleanFormula cond = minSet.contains(tri[0], tri[2]) ?
+                        context.execution(tri[0], tri[2])
+                        : bmgr.and(getSMTCycleVar(rel, tri[0], tri[1], fmgr), getSMTCycleVar(rel, tri[1], tri[2], fmgr));
+                enc.add(bmgr.implication(cond, getSMTCycleVar(rel, tri[0], tri[2], fmgr)));
+            }
+
+            //  --- Encode inconsistent assignments ---
+            // Handle self-loops
+            for (Event e : selfloops) {
+                enc.add(bmgr.not(edge.encode(e, e)));
+            }
+            // Handle remaining cycles
+            for (int i = 0; i < varOrderings.size(); i++) {
+                Event e1 = varOrderings.get(i);
+                Set<Event> out = vertEleOutEdges.get(e1);
+                for (Event e2: out) {
+                    if (varOrderings.indexOf(e2) > i && vertEleInEdges.get(e2).contains(e1)) {
+                        BooleanFormula cond = minSet.contains(e1, e2) ? bmgr.makeTrue() : getSMTCycleVar(rel, e1, e2, fmgr);
+                        enc.add(bmgr.implication(cond, bmgr.not(getSMTCycleVar(rel, e2, e1, fmgr))));
+                    }
+                }
+            }
+
+            return enc;
+        }
+
+        private BooleanFormula cycleVar(Relation rel, Event event, FormulaManagerExt m) {
+            return m.getBooleanFormulaManager()
+                    .makeVariable(String.format("cycle %s %d", m.escape(rel.getNameOrTerm()), event.getGlobalId()));
+        }
+
+        private BooleanFormula getSMTCycleVar(Relation rel, Event e1, Event e2, FormulaManagerExt m) {
+            return m.getBooleanFormulaManager()
+                    .makeVariable(String.format("cycle %s %d %d", m.escape(rel.getNameOrTerm()), e1.getGlobalId(), e2.getGlobalId()));
+        }
+    }
+
 }

@@ -1,16 +1,16 @@
 package com.dat3m.dartagnan.wmm;
 
-import com.dat3m.dartagnan.encoding.EncodingContext;
 import com.dat3m.dartagnan.verification.Context;
 import com.dat3m.dartagnan.verification.VerificationTask;
-import com.dat3m.dartagnan.wmm.axiom.*;
+import com.dat3m.dartagnan.wmm.axiom.Acyclicity;
+import com.dat3m.dartagnan.wmm.axiom.Axiom;
+import com.dat3m.dartagnan.wmm.axiom.Emptiness;
+import com.dat3m.dartagnan.wmm.axiom.Irreflexivity;
 import com.dat3m.dartagnan.wmm.definition.*;
 import com.dat3m.dartagnan.wmm.utils.graph.EventGraph;
-import org.sosy_lab.java_smt.api.BooleanFormula;
 
 import java.util.Collection;
 import java.util.Map;
-import java.util.Set;
 
 public interface Constraint {
 
@@ -20,16 +20,6 @@ public interface Constraint {
 
     default Map<Relation, EventGraph> getEncodeGraph(VerificationTask task, Context analysisContext) {
         return Map.of();
-    }
-
-    /**
-     * Encodes the relational information of this constraint.
-     *
-     * @param context Provides shared elements of the current verification problem and their encoding representations.
-     * @return Each model representing a consistent execution has to meet all of those assumptions.
-     */
-    default Collection<BooleanFormula> consistent(EncodingContext context) {
-        return Set.of();
     }
 
     interface Visitor<T> {

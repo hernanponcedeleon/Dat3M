@@ -23,7 +23,6 @@ import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
 import com.dat3m.dartagnan.wmm.axiom.Axiom;
 import com.dat3m.dartagnan.wmm.utils.graph.EventGraph;
-
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import org.slf4j.Logger;
@@ -322,9 +321,10 @@ public class PropertyEncoder implements Encoder {
             logger.info("Encoding CAT specification");
         }
 
+        final WmmEncoder.AxiomEncoder axiomEncoder = new WmmEncoder.AxiomEncoder(ctx);
         final List<TrackableFormula> specViolations = flaggedAxioms.stream()
-                .map(ax -> new TrackableFormula(bmgr.not(CAT_SPEC.getSMTVariable(ax, ctx)), bmgr.and(ax.consistent(ctx))))
-                .collect(Collectors.toList());
+                .map(ax -> new TrackableFormula(bmgr.not(CAT_SPEC.getSMTVariable(ax, ctx)), ax.accept(axiomEncoder)))
+                .toList();
         return specViolations;
     }
 
