@@ -30,7 +30,7 @@ public class C11LocksTest extends AbstractCTest {
     @Override
     protected Configuration getConfiguration() throws InvalidConfigurationException {
         return Configuration.builder()
-                .copyFrom(super.getConfiguration())
+                .setOption(OptionNames.SOLVER, getSolverProvider().get().name())
                 .setOption(OptionNames.INIT_DYNAMIC_ALLOCATIONS, "true")
                 .build();
     }
