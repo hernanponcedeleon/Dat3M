@@ -132,19 +132,19 @@ public final class ExpressionFactory {
 
     }
     public Expression makeLTfromInts(Expression leftOperand, Expression rightOperand, boolean signed) {
-        return makeIntCmpFromInts(leftOperand, signed ? IntCmpOp.LT : IntCmpOp.ULT, rightOperand);
+        return makeIntCmpfromInts(leftOperand, signed ? IntCmpOp.LT : IntCmpOp.ULT, rightOperand);
     }
 
     public Expression makeGTfromInts(Expression leftOperand, Expression rightOperand, boolean signed) {
-        return makeIntCmpFromInts(leftOperand, signed ? IntCmpOp.GT : IntCmpOp.UGT, rightOperand);
+        return makeIntCmpfromInts(leftOperand, signed ? IntCmpOp.GT : IntCmpOp.UGT, rightOperand);
     }
 
     public Expression makeLTEfromInts(Expression leftOperand, Expression rightOperand, boolean signed) {
-        return makeIntCmpFromInts(leftOperand, signed ? IntCmpOp.LTE : IntCmpOp.ULTE, rightOperand);
+        return makeIntCmpfromInts(leftOperand, signed ? IntCmpOp.LTE : IntCmpOp.ULTE, rightOperand);
     }
 
     public Expression makeGTEfromInts(Expression leftOperand, Expression rightOperand, boolean signed) {
-        return makeIntCmpFromInts(leftOperand, signed ? IntCmpOp.GTE : IntCmpOp.UGTE, rightOperand);
+        return makeIntCmpfromInts(leftOperand, signed ? IntCmpOp.GTE : IntCmpOp.UGTE, rightOperand);
     }
 
     public Expression makeNeg(Expression operand) {
@@ -215,12 +215,12 @@ public final class ExpressionFactory {
         return new IntCmpExpr(types.getBooleanType(), leftOperand, operator, rightOperand);
     }
 
-    public Expression makeIntCmpFromInts(Expression leftOperand, IntCmpOp operator, Expression rightOperand) {
+    public Expression makeIntCmpfromInts(Expression leftOperand, IntCmpOp operator, Expression rightOperand) {
         if (leftOperand.getType() instanceof PointerType){
-            return makeIntCmpFromInts(makePtrToIntCast(leftOperand, types.getArchType()), operator, rightOperand);
+            return makeIntCmpfromInts(makePtrToIntCast(leftOperand, types.getArchType()), operator, rightOperand);
         }
         if (rightOperand.getType() instanceof PointerType){
-            return makeIntCmpFromInts(leftOperand, operator, makePtrToIntCast(rightOperand, types.getArchType()));
+            return makeIntCmpfromInts(leftOperand, operator, makePtrToIntCast(rightOperand, types.getArchType()));
         }
         return new IntCmpExpr(types.getBooleanType(), leftOperand, operator, rightOperand);
     }
@@ -400,7 +400,7 @@ public final class ExpressionFactory {
             // pointers of different size than arch should not be used (store | load). Comparison is still possible in wmm.
             }else{
                 // we use this because spirv has some weird casts between scoped pointers.
-                // not the most elegant solution, maybe a dedicated ptr size/type  cast?
+                // not the most elegant solution, maybe a dedicated ptr size/type cast?
                 return makeIntToPtrCast(makePtrToIntCast(base, TypeFactory.getInstance().getIntegerType(type.bitWidth)), type);
         }}
         if (base.getType() instanceof IntegerType) {

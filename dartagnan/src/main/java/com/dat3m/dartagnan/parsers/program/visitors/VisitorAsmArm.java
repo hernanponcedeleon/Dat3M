@@ -309,7 +309,7 @@ public class VisitorAsmArm extends AsmArmBaseVisitor<Object> {
     public Object visitBranchNotEqual(AsmArmParser.BranchNotEqualContext ctx) {
         Label label = AsmUtils.getOrNewLabel(labelsDefined, ctx.Numbers().getText());
         // todo remove forced ptr to int
-        Expression expr = expressions.makeIntCmpFromInts(comparator.left(), IntCmpOp.NEQ, comparator.right());
+        Expression expr = expressions.makeIntCmpfromInts(comparator.left(), IntCmpOp.NEQ, comparator.right());
         asmInstructions.add(EventFactory.newJump(expr, label));
         return null;
     }
@@ -337,7 +337,7 @@ public class VisitorAsmArm extends AsmArmBaseVisitor<Object> {
             // Pick up the correct type and create the new Register
             Type registerType = AsmUtils.getLlvmRegisterTypeGivenAsmRegisterID(this.argsRegisters,this.returnRegister,registerID);
             String newRegisterName = AsmUtils.makeRegisterName(registerID);
-            Register newRegister = this.llvmFunction.getOrNewRegister(newRegisterName, registerType);
+            Register newRegister = this.llvmFunction.getOrNewRegister(newRegisterName, registerType);// fix this for execution state (reg is wrong state)
             if (AsmUtils.isPartOfReturnRegister(this.returnRegister, registerID) && AsmUtils.isReturnRegisterAggregate(this.returnRegister)) {
                 this.pendingRegisters.add(newRegister);
             }

@@ -12,16 +12,17 @@ import com.dat3m.dartagnan.expression.Type;
 import com.dat3m.dartagnan.expression.integers.IntCmpOp;
 import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.expression.type.PointerType;
+import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.parsers.AsmPPCBaseVisitor;
 import com.dat3m.dartagnan.parsers.AsmPPCParser;
 import com.dat3m.dartagnan.parsers.program.utils.AsmUtils;
+import com.dat3m.dartagnan.parsers.program.utils.ProgramBuilder;
 import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.event.core.Local;
-import scala.concurrent.impl.FutureConvertersImpl;
 
 import static com.google.common.base.Preconditions.checkState;
 
@@ -35,6 +36,7 @@ public class VisitorAsmPPC extends AsmPPCBaseVisitor<Object> {
     private final Function llvmFunction;
     private final Register returnRegister;
     private final ExpressionFactory expressions = ExpressionFactory.getInstance();
+    private final IntegerType archType = TypeFactory.getInstance().getArchType();
     private CmpInstruction comparator;
     // keeps track of all the labels defined in the the asm code
     private final HashMap<String, Label> labelsDefined = new HashMap<>();
@@ -44,6 +46,7 @@ public class VisitorAsmPPC extends AsmPPCBaseVisitor<Object> {
     private final List<Expression> argsRegisters;
     // expected type of RHS of a comparison.
     private Type expectedType;
+
     // map from RegisterID to the corresponding asm register
     private final HashMap<Integer, Register> asmRegisters = new HashMap<>();
 
@@ -112,8 +115,8 @@ public class VisitorAsmPPC extends AsmPPCBaseVisitor<Object> {
         expectedType = address.getType();
         Expression offset = (Expression) ctx.value().accept(this);
         Expression newAddress = expressions.makePtrAdd(address,offset);
-        Register resultRegister = llvmFunction.getOrNewRegister("CondStoreResult", value.getType());
-        this.comparator = new CmpInstruction(resultRegister,expressions.makeZero((IntegerType) value.getType()));
+        Register resultRegister = llvmFunction.getOrNewRegister("CondStoreResult", archType);
+        this.comparator = new CmpInstruction(resultRegister, expressions.makeZero(archType));
         asmInstructions.add(EventFactory.Common.newExclusiveStore(resultRegister, newAddress, value, ""));
         return null;
     }
@@ -130,7 +133,7 @@ public class VisitorAsmPPC extends AsmPPCBaseVisitor<Object> {
     @Override
     public Object visitBranchNotEqual(AsmPPCParser.BranchNotEqualContext ctx) {
         Label label = AsmUtils.getOrNewLabel(labelsDefined, ctx.Numbers().getText());
-        Expression expr = expressions.makeIntCmp(comparator.left(), IntCmpOp.NEQ, comparator.right());
+        Expression expr = expressions.makeIntCmpfromInts(comparator.left(), IntCmpOp.NEQ, comparator.right());
         asmInstructions.add(EventFactory.newJump(expr, label));
         return null;
     }

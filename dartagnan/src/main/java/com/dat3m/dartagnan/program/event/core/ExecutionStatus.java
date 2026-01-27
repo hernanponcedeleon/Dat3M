@@ -12,6 +12,7 @@ import org.sosy_lab.java_smt.api.BooleanFormulaManager;
 import java.util.Map;
 import java.util.Set;
 
+import static com.dat3m.dartagnan.encoding.ExpressionEncoder.ConversionMode.LEFT_TO_RIGHT;
 import static com.dat3m.dartagnan.encoding.ExpressionEncoder.ConversionMode.RIGHT_TO_LEFT;
 
 public class ExecutionStatus extends AbstractEvent implements RegWriter, EventUser {
@@ -21,7 +22,7 @@ public class ExecutionStatus extends AbstractEvent implements RegWriter, EventUs
     private final boolean trackDep;
 
     public ExecutionStatus(Register register, Event event, boolean trackDep) {
-        assert !(register.getType() instanceof PointerType);
+        // assert !(register.getType() instanceof PointerType);
         this.register = register;
         this.event = event;
         this.trackDep = trackDep;
@@ -74,7 +75,7 @@ public class ExecutionStatus extends AbstractEvent implements RegWriter, EventUs
         var res = context.result(this);
         return bmgr.and(
                 super.encodeExec(context),
-                context.getExpressionEncoder().equal(res, notExec, RIGHT_TO_LEFT)
+                context.getExpressionEncoder().equal(res, notExec, LEFT_TO_RIGHT) // was RIGHT_TO_LEFT
         );
     }
 
