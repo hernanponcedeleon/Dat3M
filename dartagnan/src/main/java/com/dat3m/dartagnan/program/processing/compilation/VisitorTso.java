@@ -2,7 +2,6 @@ package com.dat3m.dartagnan.program.processing.compilation;
 
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.Type;
-import com.dat3m.dartagnan.expression.integers.IntBinaryOp;
 import com.dat3m.dartagnan.expression.type.BooleanType;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Event;
@@ -171,7 +170,7 @@ class VisitorTso extends VisitorBase {
 //        ));
         return tagList(eventSequence(
                 load,
-                newLocal(dummyReg, expressions.makeCast(expressions.makeIntBinaryForced(resultRegister,e.getOperator(),e.getOperand()),dummyReg.getType())),
+                newLocal(dummyReg, expressions.makeCast(expressions.makeIntBinaryfromInts(resultRegister,e.getOperator(),e.getOperand()),dummyReg.getType())),
                 newRMWStore(load, address, dummyReg)
         ));
 

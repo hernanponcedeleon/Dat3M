@@ -16,7 +16,7 @@
     </Appenders>
 
     <Loggers>
-        <Root level="warn">  <!-- "info" --> <!-- "off" --> <!-- "warn" -->
+        <Root level="off">  <!-- "info" --> <!-- "off" --> <!-- "warn" -->
             <AppenderRef ref="Console"/>
             <AppenderRef ref="File"/>
         </Root>

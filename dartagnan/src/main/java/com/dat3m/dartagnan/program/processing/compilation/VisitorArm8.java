@@ -219,7 +219,7 @@ class VisitorArm8 extends VisitorBase {
         Register dummyReg = e.getFunction().newRegister(resultRegister.getType());
 
         Load load = newRMWLoadExclusiveWithMo(resultRegister, address, ARMv8.extractLoadMoFromCMo(mo));
-        Local localOp = newLocal(dummyReg, expressions.makeCast(expressions.makeIntBinaryForced(resultRegister, e.getOperator(), e.getOperand()), dummyReg.getType()));
+        Local localOp = newLocal(dummyReg, expressions.makeCast(expressions.makeIntBinaryfromInts(resultRegister, e.getOperator(), e.getOperand()), dummyReg.getType()));
         Store store = newRMWStoreExclusiveWithMo(address, dummyReg, true, ARMv8.extractStoreMoFromCMo(mo));
         Label label = newLabel("FakeDep");
         Event fakeCtrlDep = newFakeCtrlDep(resultRegister, label);
@@ -380,7 +380,7 @@ class VisitorArm8 extends VisitorBase {
         Label casEnd = newLabel("CAS_end");
         // The real scheme uses XOR instead of comparison, but both are semantically
         // equivalent and XOR harms performance substantially.
-        CondJump branchOnCasCmpResult = newJump(expressions.makeNEQforced(dummy, e.getExpectedValue()), casEnd);
+        CondJump branchOnCasCmpResult = newJump(expressions.makeNEQfromInts(dummy, e.getExpectedValue()), casEnd);
 
         Load load = newRMWLoadExclusiveWithMo(dummy, address, ARMv8.extractLoadMoFromLKMo(mo));
         Store store = newRMWStoreExclusiveWithMo(address, e.getStoreValue(), true, ARMv8.extractStoreMoFromLKMo(mo));
@@ -432,7 +432,7 @@ class VisitorArm8 extends VisitorBase {
         Expression address = e.getAddress();
 
         Register dummy = e.getFunction().newRegister(e.getAccessType());
-        Expression storeValue = expressions.makeCast(expressions.makeIntBinaryForced(dummy, e.getOperator(), e.getOperand()),dummy.getType());
+        Expression storeValue = expressions.makeCast(expressions.makeIntBinaryfromInts(dummy, e.getOperator(), e.getOperand()),dummy.getType());
         Load load = newRMWLoadExclusive(dummy, address);
         Store store = newRMWStoreExclusive(address, storeValue, true);
         Label label = newLabel("FakeDep");
@@ -465,7 +465,7 @@ class VisitorArm8 extends VisitorBase {
 
         return eventSequence(
                 load,
-                newLocal(dummy, expressions.makeCast(expressions.makeIntBinaryForced(dummy, e.getOperator(), e.getOperand()),dummy.getType())),
+                newLocal(dummy, expressions.makeCast(expressions.makeIntBinaryfromInts(dummy, e.getOperator(), e.getOperand()),dummy.getType())),
                 store,
                 newLocal(resultRegister, dummy),
                 fakeCtrlDep,
@@ -486,7 +486,7 @@ class VisitorArm8 extends VisitorBase {
 
         Register dummy = e.getFunction().newRegister(resultRegister.getType());
         Load load = newRMWLoadExclusiveWithMo(dummy, address, ARMv8.extractLoadMoFromLKMo(mo));
-        Store store = newRMWStoreExclusiveWithMo(address, expressions.makeCast(expressions.makeIntBinaryForced(dummy, e.getOperator(), e.getOperand()), dummy.getType()),
+        Store store = newRMWStoreExclusiveWithMo(address, expressions.makeCast(expressions.makeIntBinaryfromInts(dummy, e.getOperator(), e.getOperand()), dummy.getType()),
                 true, ARMv8.extractStoreMoFromLKMo(mo));
         Label label = newLabel("FakeDep");
         Event fakeCtrlDep = newFakeCtrlDep(dummy, label);
@@ -535,7 +535,7 @@ class VisitorArm8 extends VisitorBase {
 
         return eventSequence(
                 load,
-                newLocal(dummy, expressions.makeCast(expressions.makeNEQforced(regValue, unless), dummy.getType())),
+                newLocal(dummy, expressions.makeCast(expressions.makeNEQfromInts(regValue, unless), dummy.getType())),
                 branchOnCauCmpResult,
                 store,
                 fakeCtrlDep,
@@ -561,7 +561,7 @@ class VisitorArm8 extends VisitorBase {
         Expression testResult = expressions.makeNot(expressions.makeBooleanCast(dummy));
 
         Load load = newRMWLoadExclusiveWithMo(dummy, address, ARMv8.extractLoadMoFromLKMo(mo));
-        Local localOp = newLocal(dummy, expressions.makeCast(expressions.makeIntBinaryForced(dummy, e.getOperator(), e.getOperand()), dummy.getType()));
+        Local localOp = newLocal(dummy, expressions.makeCast(expressions.makeIntBinaryfromInts(dummy, e.getOperator(), e.getOperand()), dummy.getType()));
         Store store = newRMWStoreExclusiveWithMo(address, dummy, true, ARMv8.extractStoreMoFromLKMo(mo));
         Local testOp = newLocal(resultRegister, expressions.makeCast(testResult, resultRegister.getType()));
         Label label = newLabel("FakeDep");

@@ -10,7 +10,7 @@ import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.Type;
 import com.dat3m.dartagnan.expression.integers.IntCmpOp;
-import com.dat3m.dartagnan.expression.pointer.PtrCmpOp;
+import com.dat3m.dartagnan.expression.pointers.PtrCmpOp;
 import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.expression.type.PointerType;
 import com.dat3m.dartagnan.parsers.AsmArmBaseVisitor;
@@ -309,7 +309,7 @@ public class VisitorAsmArm extends AsmArmBaseVisitor<Object> {
     public Object visitBranchNotEqual(AsmArmParser.BranchNotEqualContext ctx) {
         Label label = AsmUtils.getOrNewLabel(labelsDefined, ctx.Numbers().getText());
         // todo remove forced ptr to int
-        Expression expr = expressions.makeIntCmpForced(comparator.left(), IntCmpOp.NEQ, comparator.right());
+        Expression expr = expressions.makeIntCmpFromInts(comparator.left(), IntCmpOp.NEQ, comparator.right());
         asmInstructions.add(EventFactory.newJump(expr, label));
         return null;
     }

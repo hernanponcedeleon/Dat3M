@@ -5,6 +5,7 @@ import com.dat3m.dartagnan.configuration.Property;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.type.IntegerType;
+import com.dat3m.dartagnan.expression.type.PointerType;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Thread;
@@ -477,7 +478,7 @@ public class PropertyEncoder implements Encoder {
         if (laterStores.stream().anyMatch(o -> exec.isImplied(store, o))) {
             return false;
         }
-        if (!stores.stream().allMatch(o -> o.getMemValue().getType() instanceof IntegerType)) {
+        if (!stores.stream().allMatch(o -> o.getMemValue().getType() instanceof IntegerType || o.getMemValue().getType() instanceof PointerType)) {
             return false;
         }
         final TypeFactory types = TypeFactory.getInstance();
@@ -491,15 +492,19 @@ public class PropertyEncoder implements Encoder {
         Preconditions.checkArgument(!stores.isEmpty(), "Empty instruction cannot reference object '%s'.", object);
         //TODO Use provenance to omit some of these checks statically.
         final ExpressionFactory expressions = context.getExpressionFactory();
-        final Expression pointer = isValue
-                ? expressions.makeIntConcat(stores.stream().map(Store::getMemValue).toList())
-                : stores.get(0).getAddress();
+        Expression pointer;
+        if (isValue) {
+            List<Expression> memVals = stores.stream().map(Store::getMemValue).toList();
+            pointer = memVals.get(0) instanceof IntegerType ?expressions.makeIntConcat(memVals): expressions.makePtrConcat(memVals);
+        }else{
+            pointer = stores.get(0).getAddress();
+        }
         if (object.equals(pointer)) {
             return bmgr.makeTrue();
         }
-        final Expression objectEnd = expressions.makeAdd(object, object.size());
-        final Expression overLowerBound = expressions.makeLTE(object, pointer, false);
-        final Expression underUpperBound = expressions.makeLT(pointer, objectEnd, false);
+        final Expression objectEnd = expressions.makePtrAdd(object, object.size());
+        final Expression overLowerBound = expressions.makeLTEfromInts(object, pointer, false);
+        final Expression underUpperBound = expressions.makeLTfromInts(pointer, objectEnd, false);
         final Expression withinBounds = expressions.makeAnd(overLowerBound, underUpperBound);
         return context.getExpressionEncoder().encodeBooleanAt(withinBounds, stores.get(0)).formula();
     }

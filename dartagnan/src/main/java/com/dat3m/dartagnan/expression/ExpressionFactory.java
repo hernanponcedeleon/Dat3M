@@ -6,7 +6,7 @@ import com.dat3m.dartagnan.expression.floats.*;
 import com.dat3m.dartagnan.expression.integers.*;
 import com.dat3m.dartagnan.expression.misc.GEPExpr;
 import com.dat3m.dartagnan.expression.misc.ITEExpr;
-import com.dat3m.dartagnan.expression.pointer.*;
+import com.dat3m.dartagnan.expression.pointers.*;
 import com.dat3m.dartagnan.expression.type.*;
 import com.dat3m.dartagnan.expression.utils.ExpressionHelper;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
@@ -131,20 +131,20 @@ public final class ExpressionFactory {
         return makeIntCmp(leftOperand, signed ? IntCmpOp.GTE : IntCmpOp.UGTE, rightOperand);
 
     }
-    public Expression makeLTforced(Expression leftOperand, Expression rightOperand, boolean signed) {
-        return makeIntCmpForced(leftOperand, signed ? IntCmpOp.LT : IntCmpOp.ULT, rightOperand);
+    public Expression makeLTfromInts(Expression leftOperand, Expression rightOperand, boolean signed) {
+        return makeIntCmpFromInts(leftOperand, signed ? IntCmpOp.LT : IntCmpOp.ULT, rightOperand);
     }
 
-    public Expression makeGTforced(Expression leftOperand, Expression rightOperand, boolean signed) {
-        return makeIntCmpForced(leftOperand, signed ? IntCmpOp.GT : IntCmpOp.UGT, rightOperand);
+    public Expression makeGTfromInts(Expression leftOperand, Expression rightOperand, boolean signed) {
+        return makeIntCmpFromInts(leftOperand, signed ? IntCmpOp.GT : IntCmpOp.UGT, rightOperand);
     }
 
-    public Expression makeLTEforced(Expression leftOperand, Expression rightOperand, boolean signed) {
-        return makeIntCmpForced(leftOperand, signed ? IntCmpOp.LTE : IntCmpOp.ULTE, rightOperand);
+    public Expression makeLTEfromInts(Expression leftOperand, Expression rightOperand, boolean signed) {
+        return makeIntCmpFromInts(leftOperand, signed ? IntCmpOp.LTE : IntCmpOp.ULTE, rightOperand);
     }
 
-    public Expression makeGTEforced(Expression leftOperand, Expression rightOperand, boolean signed) {
-        return makeIntCmpForced(leftOperand, signed ? IntCmpOp.GTE : IntCmpOp.UGTE, rightOperand);
+    public Expression makeGTEfromInts(Expression leftOperand, Expression rightOperand, boolean signed) {
+        return makeIntCmpFromInts(leftOperand, signed ? IntCmpOp.GTE : IntCmpOp.UGTE, rightOperand);
     }
 
     public Expression makeNeg(Expression operand) {
@@ -215,12 +215,12 @@ public final class ExpressionFactory {
         return new IntCmpExpr(types.getBooleanType(), leftOperand, operator, rightOperand);
     }
 
-    public Expression makeIntCmpForced(Expression leftOperand, IntCmpOp operator, Expression rightOperand) {
+    public Expression makeIntCmpFromInts(Expression leftOperand, IntCmpOp operator, Expression rightOperand) {
         if (leftOperand.getType() instanceof PointerType){
-            return makeIntCmpForced(makePtrToIntCast(leftOperand, types.getArchType()), operator, rightOperand);
+            return makeIntCmpFromInts(makePtrToIntCast(leftOperand, types.getArchType()), operator, rightOperand);
         }
         if (rightOperand.getType() instanceof PointerType){
-            return makeIntCmpForced(leftOperand, operator, makePtrToIntCast(rightOperand, types.getArchType()));
+            return makeIntCmpFromInts(leftOperand, operator, makePtrToIntCast(rightOperand, types.getArchType()));
         }
         return new IntCmpExpr(types.getBooleanType(), leftOperand, operator, rightOperand);
     }
@@ -229,12 +229,12 @@ public final class ExpressionFactory {
         return new IntBinaryExpr(leftOperand, operator, rightOperand);
     }
 
-    public Expression makeIntBinaryForced(Expression leftOperand, IntBinaryOp operator, Expression rightOperand) {
+    public Expression makeIntBinaryfromInts(Expression leftOperand, IntBinaryOp operator, Expression rightOperand) {
         if (leftOperand.getType() instanceof PointerType){
-            return makeIntBinaryForced(makePtrToIntCast(leftOperand, types.getArchType()), operator, rightOperand);
+            return makeIntBinaryfromInts(makePtrToIntCast(leftOperand, types.getArchType()), operator, rightOperand);
         }
         if (rightOperand.getType() instanceof PointerType){
-            return makeIntBinaryForced(leftOperand, operator, makePtrToIntCast(rightOperand, types.getArchType()));
+            return makeIntBinaryfromInts(leftOperand, operator, makePtrToIntCast(rightOperand, types.getArchType()));
         }
         return new IntBinaryExpr(leftOperand, operator, rightOperand);
     }
@@ -513,13 +513,13 @@ public final class ExpressionFactory {
         throw new UnsupportedOperationException("Equality not supported on type: " + type);
     }
 
-    public Expression makeEQforced(Expression leftOperand, Expression rightOperand) {
+    public Expression makeEQfromInts(Expression leftOperand, Expression rightOperand) {
 
         if (leftOperand.getType() instanceof PointerType){
-            return makeEQforced(makePtrToIntCast(leftOperand, types.getArchType()), rightOperand);
+            return makeEQfromInts(makePtrToIntCast(leftOperand, types.getArchType()), rightOperand);
         }
         if (rightOperand.getType() instanceof PointerType){
-            return makeEQforced(leftOperand, makePtrToIntCast(rightOperand, types.getArchType()));
+            return makeEQfromInts(leftOperand, makePtrToIntCast(rightOperand, types.getArchType()));
         }
         return makeEQ(leftOperand, rightOperand);
     }
@@ -541,13 +541,13 @@ public final class ExpressionFactory {
         throw new UnsupportedOperationException("Disequality not supported on type: " + type);
     }
 
-    public Expression makeNEQforced(Expression leftOperand, Expression rightOperand) {
+    public Expression makeNEQfromInts(Expression leftOperand, Expression rightOperand) {
 
         if (leftOperand.getType() instanceof PointerType){
-            return makeNEQforced(makePtrToIntCast(leftOperand, types.getArchType()), rightOperand);
+            return makeNEQfromInts(makePtrToIntCast(leftOperand, types.getArchType()), rightOperand);
         }
         if (rightOperand.getType() instanceof PointerType){
-            return makeNEQforced(leftOperand, makePtrToIntCast(rightOperand, types.getArchType()));
+            return makeNEQfromInts(leftOperand, makePtrToIntCast(rightOperand, types.getArchType()));
         }
         return makeNEQ(leftOperand, rightOperand);
     }

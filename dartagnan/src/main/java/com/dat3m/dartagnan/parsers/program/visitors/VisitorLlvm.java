@@ -589,10 +589,10 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
             // todo should pointers belong to the same object to be comparable?
             // The two arguments must be integer, pointer ,or integer vector typed. They must also be of identical types.
             // llvm doc: If the operands are pointer typed, the pointer values are compared as if they were integers.
-            case "slt", "ult" -> expressions.makeLTforced(left, right, operator.startsWith("s"));
-            case "sle", "ule" -> expressions.makeLTEforced(left, right, operator.startsWith("s"));
-            case "sgt", "ugt" -> expressions.makeGTforced(left, right, operator.startsWith("s"));
-            case "sge", "uge" -> expressions.makeGTEforced(left, right, operator.startsWith("s"));
+            case "slt", "ult" -> expressions.makeLTfromInts(left, right, operator.startsWith("s"));
+            case "sle", "ule" -> expressions.makeLTEfromInts(left, right, operator.startsWith("s"));
+            case "sgt", "ugt" -> expressions.makeGTfromInts(left, right, operator.startsWith("s"));
+            case "sge", "uge" -> expressions.makeGTEfromInts(left, right, operator.startsWith("s"));
             default -> throw new ParsingException(String.format("Unknown predicate in %s.", ctx.getText()));
         };
         // LLVM does not support a distinct boolean type.

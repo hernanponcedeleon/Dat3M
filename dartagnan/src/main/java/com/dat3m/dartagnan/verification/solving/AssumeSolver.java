@@ -75,7 +75,7 @@ public class AssumeSolver extends ModelChecker {
         BooleanFormula assumedSpec = bmgr.implication(assumptionLiteral, propertyEncoding);
         prover.writeComment("Property encoding");
         prover.addConstraint(assumedSpec);
-
+        // prover.getModel(); // only while debugging
         logger.info("Starting first solver.check()");
         if (prover.isUnsatWithAssumptions(singletonList(assumptionLiteral))) {
             prover.writeComment("Bound encoding");
@@ -83,7 +83,6 @@ public class AssumeSolver extends ModelChecker {
             logger.info("Starting second solver.check()");
             res = prover.isUnsat() ? PASS : Result.UNKNOWN;
         } else {
-            // prover get model
             res = FAIL;
             saveFlaggedPairsOutput(memoryModel, prover, context, task.getProgram());
         }

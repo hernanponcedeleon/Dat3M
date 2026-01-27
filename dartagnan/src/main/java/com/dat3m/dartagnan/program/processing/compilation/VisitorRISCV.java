@@ -103,7 +103,7 @@ class VisitorRISCV extends VisitorBase {
         String mo = e.getMo();
 
         Register dummyReg = e.getFunction().newRegister(type);
-        Local localOp = newLocal(dummyReg, expressions.makeCast(expressions.makeIntBinaryForced(resultRegister, e.getOperator(), e.getOperand()),dummyReg.getType()));
+        Local localOp = newLocal(dummyReg, expressions.makeCast(expressions.makeIntBinaryfromInts(resultRegister, e.getOperator(), e.getOperand()),dummyReg.getType()));
 
         Load load = newRMWLoadExclusiveWithMo(resultRegister, address, Tag.RISCV.extractLoadMoFromCMo(mo));
         Store store = RISCV.newRMWStoreConditional(address, dummyReg, Tag.RISCV.extractStoreMoFromCMo(mo), true);
@@ -226,7 +226,7 @@ class VisitorRISCV extends VisitorBase {
         String mo = e.getMo();
 
         Register dummyReg = e.getFunction().newRegister(type);
-        Local localOp = newLocal(dummyReg, expressions.makeCast(expressions.makeIntBinaryForced(resultRegister, e.getOperator(), e.getOperand()), dummyReg.getType()));
+        Local localOp = newLocal(dummyReg, expressions.makeCast(expressions.makeIntBinaryfromInts(resultRegister, e.getOperator(), e.getOperand()), dummyReg.getType()));
 
         Load load = newRMWLoadExclusiveWithMo(resultRegister, address, Tag.RISCV.extractLoadMoFromCMo(mo));
         Store store = RISCV.newRMWStoreConditional(address, dummyReg, Tag.RISCV.extractStoreMoFromCMo(mo), true);
@@ -396,7 +396,7 @@ class VisitorRISCV extends VisitorBase {
         Register dummy = e.getFunction().newRegister(e.getResultRegister().getType());
         Register statusReg = e.getFunction().newRegister(types.getBooleanType());
         Label casEnd = newLabel("CAS_end");
-        CondJump branchOnCasCmpResult = newJump(expressions.makeNEQforced(dummy, e.getExpectedValue()), casEnd);
+        CondJump branchOnCasCmpResult = newJump(expressions.makeNEQfromInts(dummy, e.getExpectedValue()), casEnd);
 
         Load load = newRMWLoadExclusive(dummy, address); // TODO: No mo on the load?
         Store store = RISCV.newRMWStoreConditional(address, e.getStoreValue(), mo.equals(Tag.Linux.MO_MB) ? Tag.RISCV.MO_REL : "", true);
@@ -463,7 +463,7 @@ class VisitorRISCV extends VisitorBase {
 
         Register dummy = e.getFunction().newRegister(type);
         Register statusReg = e.getFunction().newRegister(types.getBooleanType());
-        Expression storeValue = expressions.makeCast(expressions.makeIntBinaryForced(dummy, e.getOperator(), e.getOperand()), dummy.getType());
+        Expression storeValue = expressions.makeCast(expressions.makeIntBinaryfromInts(dummy, e.getOperator(), e.getOperand()), dummy.getType());
         String moLoad = mo.equals(Tag.Linux.MO_MB) || mo.equals(Tag.Linux.MO_ACQUIRE) ? Tag.RISCV.MO_ACQ : "";
         Load load = newRMWLoadExclusiveWithMo(dummy, address, moLoad);
         String moStore = mo.equals(Tag.Linux.MO_MB) || mo.equals(Tag.Linux.MO_RELEASE) ? Tag.RISCV.MO_ACQ_REL : "";
@@ -499,7 +499,7 @@ class VisitorRISCV extends VisitorBase {
         Register statusReg = e.getFunction().newRegister(types.getBooleanType());
 
         Load load = newRMWLoadExclusive(dummy, address); // TODO: No mo on the load?
-        Store store = RISCV.newRMWStoreConditional(address, expressions.makeCast(expressions.makeIntBinaryForced(dummy, e.getOperator(), e.getOperand()), dummy.getType()),
+        Store store = RISCV.newRMWStoreConditional(address, expressions.makeCast(expressions.makeIntBinaryfromInts(dummy, e.getOperator(), e.getOperand()), dummy.getType()),
                 mo.equals(Tag.Linux.MO_MB) ? Tag.RISCV.MO_REL : "", true);
         ExecutionStatus status = newExecutionStatusWithDependencyTracking(statusReg, store);
         Label label = newLabel("FakeDep");
@@ -545,7 +545,7 @@ class VisitorRISCV extends VisitorBase {
         return eventSequence(
                 optionalMemoryBarrierBefore,
                 load,
-                newLocal(dummy, expressions.makeCast(expressions.makeIntBinaryForced(dummy, e.getOperator(), e.getOperand()), dummy.getType())),
+                newLocal(dummy, expressions.makeCast(expressions.makeIntBinaryfromInts(dummy, e.getOperator(), e.getOperand()), dummy.getType())),
                 store,
                 status,
                 newLocal(resultRegister, dummy),
@@ -592,7 +592,7 @@ class VisitorRISCV extends VisitorBase {
 
         return eventSequence(
                 load,
-                newLocal(dummy, expressions.makeNEQforced(regValue, unless)),
+                newLocal(dummy, expressions.makeNEQfromInts(regValue, unless)),
                 branchOnCauCmpResult,
                 store,
                 fakeCtrlDep,
@@ -618,7 +618,7 @@ class VisitorRISCV extends VisitorBase {
         Expression testResult = expressions.makeNot(expressions.makeBooleanCast(dummy));
 
         Load load = newRMWLoadExclusive(dummy, address); // TODO: No mo on the load?
-        Local localOp = newLocal(dummy, expressions.makeCast(expressions.makeIntBinaryForced(dummy, e.getOperator(), e.getOperand()), dummy.getType()));
+        Local localOp = newLocal(dummy, expressions.makeCast(expressions.makeIntBinaryfromInts(dummy, e.getOperator(), e.getOperand()), dummy.getType()));
         Store store = newRMWStoreExclusiveWithMo(address, dummy, true, mo.equals(Tag.Linux.MO_MB) ? Tag.RISCV.MO_REL : "");
         Local testOp = newLocal(resultRegister, expressions.makeCast(testResult, resultRegister.getType()));
         Label label = newLabel("FakeDep");
