@@ -139,7 +139,6 @@ public class Dartagnan extends BaseOptions {
         ResultSummary summary = null;
         final List<File> files = getProgramFilesFromArgs(args);
         for (File f : files) {
-            long timeout = 0; // This is ugly
             try {
                 final Program p = new ProgramParser().parse(f);
                 if (o.overrideEntryFunction()) {
@@ -163,7 +162,6 @@ public class Dartagnan extends BaseOptions {
                 final VerificationTask task = builder.build(p, mcm, properties);
                 final ModelChecker modelChecker = ModelChecker.create(task, o.getMethod());
 
-                timeout = modelChecker.getTimeout();
                 long startTime = System.currentTimeMillis();
                 modelChecker.run();
                 long endTime = System.currentTimeMillis();
@@ -178,8 +176,8 @@ public class Dartagnan extends BaseOptions {
                     generateWitnessIfAble(task, modelChecker, summary.reason() + "\n" + summary.details());
                 }
             } catch (InterruptedException e) {
-                final long time = 1000L * timeout;
-                summary = new ResultSummary(f.toString(), "", TIMEDOUT, "", "", "", time, TIMEOUT_ELAPSED);
+                final String details = "\t" + Optional.ofNullable(e.getMessage()).orElse("Unknown error occurred");
+                summary = new ResultSummary(f.toString(), "", TIMEDOUT, "", "", details, 0, TIMEOUT_ELAPSED);
             } catch (Exception e) {
                 final String reason = e.getClass().getSimpleName();
                 final String details = "\t" + Optional.ofNullable(e.getMessage()).orElse("Unknown error occurred");

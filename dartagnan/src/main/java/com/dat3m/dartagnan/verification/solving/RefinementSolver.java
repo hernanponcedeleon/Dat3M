@@ -45,6 +45,7 @@ import com.dat3m.dartagnan.wmm.utils.Cut;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
+import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.sosy_lab.common.configuration.Configuration;
@@ -327,13 +328,7 @@ public class RefinementSolver extends ModelChecker {
             logger.info(generateSummary(combinedTrace, boundCheckTime));
         }
 
-        if (logger.isDebugEnabled()) {
-            StringBuilder smtStatistics = new StringBuilder("\n ===== SMT Statistics (after final iteration) ===== \n");
-            for (String key : prover.getStatistics().keySet()) {
-                smtStatistics.append(String.format("\t%s -> %s\n", key, prover.getStatistics().get(key)));
-            }
-            logger.debug(smtStatistics.toString());
-        }
+        logProverStatistics(Level.DEBUG, logger, prover);
 
         if (printCovReport) {
             System.out.println(generateCoverageReport(combinedTrace.getObservedEvents(), program, analysisContext));

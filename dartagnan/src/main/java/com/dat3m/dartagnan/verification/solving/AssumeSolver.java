@@ -6,6 +6,7 @@ import com.dat3m.dartagnan.smt.ProverWithTracker;
 import com.dat3m.dartagnan.utils.Result;
 import com.dat3m.dartagnan.verification.Context;
 import com.dat3m.dartagnan.verification.VerificationTask;
+import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.sosy_lab.common.configuration.Configuration;
@@ -86,13 +87,7 @@ public class AssumeSolver extends ModelChecker {
             res = FAIL;
         }
 
-        if (logger.isDebugEnabled()) {
-            StringBuilder smtStatistics = new StringBuilder("\n ===== SMT Statistics ===== \n");
-            for (String key : prover.getStatistics().keySet()) {
-                smtStatistics.append(String.format("\t%s -> %s\n", key, prover.getStatistics().get(key)));
-            }
-            logger.debug(smtStatistics.toString());
-        }
+        logProverStatistics(Level.DEBUG, logger, prover);
 
         // For Safety specs, we have SAT=FAIL, but for reachability specs, we have SAT=PASS
         res = Property.getCombinedType(task.getProperty(), task) == Property.Type.SAFETY ? res : res.invert();

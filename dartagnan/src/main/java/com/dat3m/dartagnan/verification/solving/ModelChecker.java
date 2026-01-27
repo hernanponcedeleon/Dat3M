@@ -17,6 +17,7 @@ import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.processing.ProcessingManager;
 import com.dat3m.dartagnan.smt.ProverWithTracker;
 import com.dat3m.dartagnan.utils.Result;
+import com.dat3m.dartagnan.utils.Utils;
 import com.dat3m.dartagnan.verification.Context;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.verification.model.ExecutionModelManager;
@@ -26,6 +27,7 @@ import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
 import com.dat3m.dartagnan.wmm.analysis.WmmAnalysis;
 import com.dat3m.dartagnan.wmm.processing.WmmProcessingManager;
 import com.google.common.base.Preconditions;
+import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.sosy_lab.common.ShutdownManager;
@@ -155,7 +157,8 @@ public abstract class ModelChecker implements AutoCloseable {
             try {
                 final long timeoutInMillis = smtConfig.getTimeout() * 1000L;
                 java.lang.Thread.sleep(timeoutInMillis);
-                shutdownManager.requestShutdown("Timeout of " + smtConfig.getTimeout() + "s exceeded.");
+                final String error = String.format("Timeout of %s exceeded.", Utils.toTimeString(timeoutInMillis));
+                shutdownManager.requestShutdown(error);
             } catch (InterruptedException e) {
                 // Verification ended, nothing to be done.
             }
@@ -164,6 +167,18 @@ public abstract class ModelChecker implements AutoCloseable {
         t.start();
         runInternal();
         t.interrupt();
+    }
+
+    // ====================================== Logging utility ================================================
+
+    protected static void logProverStatistics(Level level, Logger logger, ProverWithTracker prover) {
+        if (logger.isEnabled(level)) {
+            StringBuilder smtStatistics = new StringBuilder("\n ===== SMT Statistics ===== \n");
+            for (String key : prover.getStatistics().keySet()) {
+                smtStatistics.append(String.format("\t%s -> %s\n", key, prover.getStatistics().get(key)));
+            }
+            logger.log(level, smtStatistics.toString());
+        }
     }
 
     // ====================================== Solver utility ==================================================
