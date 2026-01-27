@@ -8,8 +8,7 @@ import com.dat3m.dartagnan.utils.rules.Provider;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
-import org.sosy_lab.common.configuration.Configuration;
-import org.sosy_lab.common.configuration.InvalidConfigurationException;
+import org.sosy_lab.common.configuration.ConfigurationBuilder;
 import org.sosy_lab.java_smt.SolverContextFactory.Solvers;
 
 import java.io.IOException;
@@ -43,10 +42,9 @@ public class EBRTest extends AbstractCTest {
     }
 
     @Override
-    protected Configuration getConfiguration() throws InvalidConfigurationException {
-        return Configuration.builder()
-                .setOption(OptionNames.SOLVER, getSolverProvider().get().name())
-                .build();
+    protected ConfigurationBuilder additionalConfig(ConfigurationBuilder builder) {
+        return builder
+                .setOption(OptionNames.USE_INTEGERS, "false");
     }
 
     @Parameterized.Parameters(name = "{index}: {0}, target={1}")

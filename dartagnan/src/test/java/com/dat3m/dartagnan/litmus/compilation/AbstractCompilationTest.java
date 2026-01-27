@@ -20,6 +20,8 @@ import org.junit.rules.RuleChain;
 import org.junit.rules.Timeout;
 import org.sosy_lab.common.ShutdownManager;
 import org.sosy_lab.common.configuration.Configuration;
+import org.sosy_lab.common.configuration.ConfigurationBuilder;
+import org.sosy_lab.common.configuration.InvalidConfigurationException;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -31,11 +33,11 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Stream;
 
-import static com.dat3m.dartagnan.configuration.OptionNames.INITIALIZE_REGISTERS;
-import static com.dat3m.dartagnan.configuration.OptionNames.USE_INTEGERS;
+import static com.dat3m.dartagnan.configuration.OptionNames.*;
 import static com.dat3m.dartagnan.utils.ResourceHelper.getRootPath;
 import static java.util.Collections.emptyList;
 import static org.junit.Assert.assertEquals;
+import static org.sosy_lab.java_smt.SolverContextFactory.Solvers.Z3;
 
 public abstract class AbstractCompilationTest {
 
@@ -75,12 +77,22 @@ public abstract class AbstractCompilationTest {
     protected long getTimeout() { return 10000; }
     // List of tests that are known to show bugs in the compilation scheme and thus the expected result should be FAIL instead of PASS
     protected List<String> getCompilationBreakers() { return emptyList(); }
-    protected Provider<Configuration> getConfigurationProvider() {
-        return Provider.fromSupplier(() -> Configuration.builder()
+
+    protected final Configuration getConfiguration() throws InvalidConfigurationException {
+        var configBase = Configuration.builder()
+                .setOption(SOLVER, Z3.name())
+                .setOption(TARGET, targetProvider.get().name())
+                .setOption(PHANTOM_REFERENCES, "true")
                 .setOption(INITIALIZE_REGISTERS, "true")
-                .setOption(USE_INTEGERS, "true")
-                .build());
+                .setOption(USE_INTEGERS, "true");
+
+        return additionalConfig(configBase).build();
     }
+
+    protected ConfigurationBuilder additionalConfig(ConfigurationBuilder builder) {
+        return builder;
+    }
+
     // ============================================================
 
     protected final Provider<ShutdownManager> shutdownManagerProvider = Provider.fromSupplier(ShutdownManager::create);
@@ -92,7 +104,7 @@ public abstract class AbstractCompilationTest {
     protected final Provider<Wmm> wmm1Provider = getSourceWmmProvider();
     protected final Provider<Wmm> wmm2Provider = getTargetWmmProvider();
     protected final Provider<EnumSet<Property>> propertyProvider = getPropertyProvider();
-    protected final Provider<Configuration> configProvider = getConfigurationProvider();
+    protected final Provider<Configuration> configProvider = Provider.fromSupplier(this::getConfiguration);
     protected final Provider<VerificationTask> task1Provider = Providers.createTask(program1Provider, wmm1Provider, propertyProvider, sourceProvider, ProgressModel::defaultHierarchy, () -> 1, configProvider);
     protected final Provider<VerificationTask> task2Provider = Providers.createTask(program2Provider, wmm2Provider, propertyProvider, targetProvider, ProgressModel::defaultHierarchy, () -> 1, configProvider);
     

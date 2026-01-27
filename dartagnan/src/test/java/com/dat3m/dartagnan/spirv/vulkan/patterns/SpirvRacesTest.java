@@ -64,6 +64,7 @@ public class SpirvRacesTest {
 
     private VerificationTask mkTask() throws Exception {
         Configuration config = Configuration.builder()
+                .copyFrom(TestHelper.getBasicConfig())
                 .setOption(IGNORE_FILTER_SPECIFICATION, Boolean.toString(!filter))
                 .build();
         VerificationTask.VerificationTaskBuilder builder = VerificationTask.builder()

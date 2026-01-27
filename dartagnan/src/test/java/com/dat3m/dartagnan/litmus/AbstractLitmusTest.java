@@ -19,6 +19,8 @@ import org.junit.rules.RuleChain;
 import org.junit.rules.Timeout;
 import org.sosy_lab.common.ShutdownManager;
 import org.sosy_lab.common.configuration.Configuration;
+import org.sosy_lab.common.configuration.ConfigurationBuilder;
+import org.sosy_lab.common.configuration.InvalidConfigurationException;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -30,11 +32,11 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Stream;
 
-import static com.dat3m.dartagnan.configuration.OptionNames.INITIALIZE_REGISTERS;
-import static com.dat3m.dartagnan.configuration.OptionNames.USE_INTEGERS;
+import static com.dat3m.dartagnan.configuration.OptionNames.*;
 import static com.dat3m.dartagnan.utils.ResourceHelper.getRootPath;
 import static com.google.common.io.Files.getNameWithoutExtension;
 import static org.junit.Assert.assertEquals;
+import static org.sosy_lab.java_smt.SolverContextFactory.Solvers.Z3;
 
 public abstract class AbstractLitmusTest {
 
@@ -71,6 +73,21 @@ public abstract class AbstractLitmusTest {
 
     // =================== Modifiable behavior ====================
 
+    protected final Configuration getConfiguration() throws InvalidConfigurationException {
+        var configBase = Configuration.builder()
+                .setOption(SOLVER, Z3.name())
+                .setOption(BOUND, boundProvider.get().toString())
+                .setOption(TARGET, targetProvider.get().name())
+                .setOption(PHANTOM_REFERENCES, "true")
+                .setOption(INITIALIZE_REGISTERS, "true");
+
+        return additionalConfig(configBase).build();
+    }
+
+    protected ConfigurationBuilder additionalConfig(ConfigurationBuilder builder) {
+        return builder.setOption(USE_INTEGERS, "true");
+    }
+
     protected abstract Provider<Arch> getTargetProvider();
 
     protected Provider<Wmm> getWmmProvider() {
@@ -81,19 +98,12 @@ public abstract class AbstractLitmusTest {
         return Provider.fromSupplier(() -> EnumSet.of(Property.PROGRAM_SPEC));
     }
 
-    protected Provider<Configuration> getConfigurationProvider() {
-        return Provider.fromSupplier(() -> Configuration.builder()
-                .setOption(INITIALIZE_REGISTERS, "true")
-                .setOption(USE_INTEGERS, "true")
-                .build());
-    }
-
     protected Provider<ProgressModel.Hierarchy> getProgressModelProvider() {
         return ProgressModel::defaultHierarchy;
     }
 
     protected Provider<Integer> getBoundProvider() {
-        return Provider.fromSupplier(() -> 1);
+        return () -> 1;
     }
 
     protected long getTimeout() {
@@ -112,8 +122,8 @@ public abstract class AbstractLitmusTest {
     protected final Provider<ProgressModel.Hierarchy> progressModelProvider = getProgressModelProvider();
     protected final Provider<EnumSet<Property>> propertyProvider = getPropertyProvider();
     protected final Provider<Result> expectedResultProvider = Provider.fromSupplier(() -> expectedResults.get(filePathProvider.get().substring(filePathProvider.get().indexOf("/") + 1)));
-    protected final Provider<Configuration> configProvider = getConfigurationProvider();
-    protected final Provider<VerificationTask> taskProvider = Providers.createTask(programProvider, wmmProvider, propertyProvider, targetProvider, progressModelProvider, boundProvider, configProvider);
+    protected final Provider<Configuration> configProvider = Provider.fromSupplier(this::getConfiguration);
+    protected final Provider<VerificationTask> taskProvider = Providers.createTask(programProvider, wmmProvider, propertyProvider, progressModelProvider, configProvider);
 
     private final Timeout timeout = Timeout.millis(getTimeout());
     private final RequestShutdownOnError shutdownOnError = RequestShutdownOnError.create(shutdownManagerProvider);

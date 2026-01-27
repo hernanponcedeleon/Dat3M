@@ -12,7 +12,6 @@ import com.dat3m.dartagnan.wmm.Wmm;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
-import org.sosy_lab.common.configuration.Configuration;
 
 import java.io.File;
 import java.io.IOException;
@@ -57,7 +56,7 @@ public class SpirvAssertionsTest {
 
     private VerificationTask mkTask() throws Exception {
         VerificationTask.VerificationTaskBuilder builder = VerificationTask.builder()
-                .withConfig(Configuration.builder().build())
+                .withConfig(TestHelper.getBasicConfig())
                 .withTarget(Arch.OPENCL);
         Program program = new ProgramParser().parse(new File(programPath));
         Wmm mcm = new ParserCat().parse(new File(modelPath));

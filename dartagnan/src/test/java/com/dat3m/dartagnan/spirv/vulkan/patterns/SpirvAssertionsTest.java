@@ -58,7 +58,10 @@ public class SpirvAssertionsTest {
 
     private VerificationTask mkTask() throws Exception {
         VerificationTask.VerificationTaskBuilder builder = VerificationTask.builder()
-                .withConfig(Configuration.builder().setOption(IGNORE_FILTER_SPECIFICATION, "true").build())
+                .withConfig(Configuration.builder()
+                        .copyFrom(TestHelper.getBasicConfig())
+                        .setOption(IGNORE_FILTER_SPECIFICATION, "true")
+                        .build())
                 .withTarget(Arch.VULKAN);
         Program program = new ProgramParser().parse(new File(programPath));
         Wmm mcm = new ParserCat().parse(new File(modelPath));

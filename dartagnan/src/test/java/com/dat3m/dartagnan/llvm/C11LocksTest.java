@@ -10,8 +10,7 @@ import com.dat3m.dartagnan.wmm.Wmm;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
-import org.sosy_lab.common.configuration.Configuration;
-import org.sosy_lab.common.configuration.InvalidConfigurationException;
+import org.sosy_lab.common.configuration.ConfigurationBuilder;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -28,11 +27,8 @@ public class C11LocksTest extends AbstractCTest {
     }
 
     @Override
-    protected Configuration getConfiguration() throws InvalidConfigurationException {
-        return Configuration.builder()
-                .setOption(OptionNames.SOLVER, getSolverProvider().get().name())
-                .setOption(OptionNames.INIT_DYNAMIC_ALLOCATIONS, "true")
-                .build();
+    protected ConfigurationBuilder additionalConfig(ConfigurationBuilder builder) {
+        return builder.setOption(OptionNames.INIT_DYNAMIC_ALLOCATIONS, "true");
     }
 
     @Override

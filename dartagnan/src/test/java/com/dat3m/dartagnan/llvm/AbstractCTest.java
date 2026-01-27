@@ -14,6 +14,7 @@ import org.junit.rules.RuleChain;
 import org.junit.rules.Timeout;
 import org.sosy_lab.common.ShutdownManager;
 import org.sosy_lab.common.configuration.Configuration;
+import org.sosy_lab.common.configuration.ConfigurationBuilder;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.java_smt.SolverContextFactory.Solvers;
 
@@ -38,11 +39,18 @@ public abstract class AbstractCTest {
 
     protected abstract long getTimeout();
 
-    protected Configuration getConfiguration() throws InvalidConfigurationException {
-        return Configuration.builder()
+    protected final Configuration getBaseConfiguration() throws InvalidConfigurationException {
+        var configBase = Configuration.builder()
                 .setOption(OptionNames.SOLVER, getSolverProvider().get().name())
-                .setOption(OptionNames.USE_INTEGERS, "true")
-                .build();
+                .setOption(OptionNames.BOUND, getBoundProvider().get().toString())
+                .setOption(OptionNames.TARGET, targetProvider.get().name())
+                .setOption(OptionNames.PHANTOM_REFERENCES, "true");
+
+        return additionalConfig(configBase).build();
+    }
+
+    protected ConfigurationBuilder additionalConfig(ConfigurationBuilder builder) {
+        return builder.setOption(OptionNames.USE_INTEGERS, "true");
     }
 
     protected Provider<String> getProgramPathProvider() {
@@ -65,10 +73,6 @@ public abstract class AbstractCTest {
         return Provider.fromSupplier(() -> EnumSet.of(Property.PROGRAM_SPEC));
     }
 
-    protected Provider<Configuration> getConfigurationProvider() {
-        return Provider.fromSupplier(this::getConfiguration);
-    }
-
     protected Provider<ProgressModel.Hierarchy> getProgressModelProvider() {
         return ProgressModel::defaultHierarchy;
     }
@@ -85,8 +89,8 @@ public abstract class AbstractCTest {
     protected final Provider<ProgressModel.Hierarchy> progressModelProvider = getProgressModelProvider();
     protected final Provider<Solvers> solverProvider = getSolverProvider();
     protected final Provider<EnumSet<Property>> propertyProvider = getPropertyProvider();
-    protected final Provider<Configuration> configurationProvider = getConfigurationProvider();
-    protected final Provider<VerificationTask> taskProvider = Providers.createTask(programProvider, wmmProvider, propertyProvider, targetProvider, progressModelProvider, boundProvider, configurationProvider);
+    protected final Provider<Configuration> configurationProvider = Provider.fromSupplier(this::getBaseConfiguration);
+    protected final Provider<VerificationTask> taskProvider = Providers.createTask(programProvider, wmmProvider, propertyProvider, progressModelProvider, configurationProvider);
 
     // Special rules
     protected final Timeout timeout = Timeout.millis(getTimeout());
@@ -96,7 +100,6 @@ public abstract class AbstractCTest {
     @Rule
     public RuleChain ruleChain = RuleChain.outerRule(shutdownManagerProvider)
             .around(shutdownOnError)
-            .around(configurationProvider)
             .around(filePathProvider)
             .around(boundProvider)
             .around(programProvider)
@@ -104,6 +107,7 @@ public abstract class AbstractCTest {
             .around(progressModelProvider)
             .around(solverProvider)
             .around(propertyProvider)
+            .around(configurationProvider)
             .around(taskProvider)
             .around(timeout);
 

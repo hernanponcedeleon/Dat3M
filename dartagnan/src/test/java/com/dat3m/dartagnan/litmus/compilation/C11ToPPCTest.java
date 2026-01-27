@@ -6,7 +6,7 @@ import com.dat3m.dartagnan.utils.rules.Providers;
 import com.dat3m.dartagnan.wmm.Wmm;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
-import org.sosy_lab.common.configuration.Configuration;
+import org.sosy_lab.common.configuration.ConfigurationBuilder;
 
 import java.io.IOException;
 import java.util.List;
@@ -14,7 +14,6 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static com.dat3m.dartagnan.configuration.OptionNames.C_TO_POWER_SCHEME;
-import static com.dat3m.dartagnan.configuration.OptionNames.INITIALIZE_REGISTERS;
 import static com.dat3m.dartagnan.program.processing.compilation.VisitorPower.PowerScheme.TRAILING_SYNC;
 import static com.dat3m.dartagnan.utils.ResourceHelper.getRootPath;
 
@@ -52,10 +51,9 @@ public class C11ToPPCTest extends AbstractCompilationTest {
                 .collect(Collectors.toList());
     }
 
-    protected Provider<Configuration> getConfigurationProvider() {
-        return Provider.fromSupplier(() -> Configuration.builder().
-                setOption(INITIALIZE_REGISTERS, String.valueOf(true)).
-                setOption(C_TO_POWER_SCHEME, String.valueOf(TRAILING_SYNC)).
-                build());
+    @Override
+    protected ConfigurationBuilder additionalConfig(ConfigurationBuilder builder) {
+        return builder.setOption(C_TO_POWER_SCHEME, String.valueOf(TRAILING_SYNC));
     }
+
 }

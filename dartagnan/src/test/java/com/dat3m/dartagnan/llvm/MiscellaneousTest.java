@@ -8,7 +8,6 @@ import com.dat3m.dartagnan.utils.rules.Provider;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
-import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.ConfigurationBuilder;
 
 import java.io.IOException;
@@ -44,18 +43,14 @@ public class MiscellaneousTest extends AbstractCTest {
     }
 
     @Override
-    protected Provider<Configuration> getConfigurationProvider() {
-        return Provider.fromSupplier(() -> {
-            ConfigurationBuilder builder = Configuration.builder();
-            builder.setOption(OptionNames.SOLVER, getSolverProvider().get().name() );
-            if (!name.equals("pthread") && !name.equals("ctlz") && !name.equals("cttz") && !name.equals("ffs")) {
-                builder.setOption(OptionNames.USE_INTEGERS, "true");
-            }
-            if (name.equals("recursion")) {
-                builder.setOption(OptionNames.RECURSION_BOUND, String.valueOf(bound));
-            }
-            return builder.build();
-        });
+    protected ConfigurationBuilder additionalConfig(ConfigurationBuilder builder) {
+        if (!name.equals("pthread") && !name.equals("ctlz") && !name.equals("cttz") && !name.equals("ffs")) {
+            builder.setOption(OptionNames.USE_INTEGERS, "true");
+        }
+        if (name.equals("recursion")) {
+            builder.setOption(OptionNames.RECURSION_BOUND, String.valueOf(bound));
+        }
+        return builder;
     }
 
     @Parameterized.Parameters(name = "{index}: {0}, target={1}")
