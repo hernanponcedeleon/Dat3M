@@ -2,6 +2,7 @@ package com.dat3m.dartagnan.llvm;
 
 import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.configuration.Method;
+import com.dat3m.dartagnan.configuration.OptionNames;
 import com.dat3m.dartagnan.configuration.Property;
 import com.dat3m.dartagnan.utils.Result;
 import com.dat3m.dartagnan.utils.rules.Provider;
@@ -32,7 +33,9 @@ public class VMMLFDSTest extends AbstractCTest {
 
     @Override
     protected Configuration getConfiguration() throws InvalidConfigurationException {
-        return Configuration.defaultConfiguration();
+        return Configuration.builder()
+                .setOption(OptionNames.SOLVER, getSolverProvider().get().name())
+                .build();
     }
 
     @Override

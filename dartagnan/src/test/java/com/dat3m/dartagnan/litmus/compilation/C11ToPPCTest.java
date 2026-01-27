@@ -30,34 +30,32 @@ public class C11ToPPCTest extends AbstractCompilationTest {
         super(path);
     }
 
-	@Override
-	protected Provider<Arch> getSourceProvider() {
-		return () -> Arch.C11;
-	}
+    @Override
+    protected Provider<Arch> getSourceProvider() {
+        return () -> Arch.C11;
+    }
 
     @Override
     protected Provider<Wmm> getSourceWmmProvider() {
         return Providers.createWmmFromName(() -> "c11");
     }
 
-	@Override
-	protected Provider<Arch> getTargetProvider() {
-		return () -> Arch.POWER;
-	}
+    @Override
+    protected Provider<Arch> getTargetProvider() {
+        return () -> Arch.POWER;
+    }
 
-	@Override
-	protected List<String> getCompilationBreakers() {
-		return Stream.of(
-				"manual/IRIW-sc-sc-acq-sc-acq-sc",
-				"manual/RWC-sc-acq-sc-sc-sc")
-				.map(p -> getRootPath("litmus/C11/" + p + ".litmus"))
-				.collect(Collectors.toList());
-	}
+    @Override
+    protected List<String> getCompilationBreakers() {
+        return Stream.of("manual/IRIW-sc-sc-acq-sc-acq-sc", "manual/RWC-sc-acq-sc-sc-sc")
+                .map(p -> getRootPath("litmus/C11/" + p + ".litmus"))
+                .collect(Collectors.toList());
+    }
 
     protected Provider<Configuration> getConfigurationProvider() {
-		return Provider.fromSupplier(() -> Configuration.builder().
-				setOption(INITIALIZE_REGISTERS, String.valueOf(true)).
-				setOption(C_TO_POWER_SCHEME, String.valueOf(TRAILING_SYNC)).
-				build());
+        return Provider.fromSupplier(() -> Configuration.builder().
+                setOption(INITIALIZE_REGISTERS, String.valueOf(true)).
+                setOption(C_TO_POWER_SCHEME, String.valueOf(TRAILING_SYNC)).
+                build());
     }
 }

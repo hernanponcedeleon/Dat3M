@@ -40,6 +40,7 @@ public abstract class AbstractCTest {
 
     protected Configuration getConfiguration() throws InvalidConfigurationException {
         return Configuration.builder()
+                .setOption(OptionNames.SOLVER, getSolverProvider().get().name())
                 .setOption(OptionNames.USE_INTEGERS, "true")
                 .build();
     }

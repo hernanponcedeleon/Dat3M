@@ -47,6 +47,7 @@ public class MiscellaneousTest extends AbstractCTest {
     protected Provider<Configuration> getConfigurationProvider() {
         return Provider.fromSupplier(() -> {
             ConfigurationBuilder builder = Configuration.builder();
+            builder.setOption(OptionNames.SOLVER, getSolverProvider().get().name() );
             if (!name.equals("pthread") && !name.equals("ctlz") && !name.equals("cttz") && !name.equals("ffs")) {
                 builder.setOption(OptionNames.USE_INTEGERS, "true");
             }

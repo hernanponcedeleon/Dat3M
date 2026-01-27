@@ -12,7 +12,6 @@ import com.dat3m.dartagnan.wmm.Wmm;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
-import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.java_smt.SolverContextFactory;
 
 import java.io.File;
@@ -55,7 +54,6 @@ public class AsmCkRISCVTest {
 
     private VerificationTask mkTask() throws Exception {
         VerificationTask.VerificationTaskBuilder builder = VerificationTask.builder()
-                .withConfig(Configuration.builder().build())
                 .withSolver(SolverContextFactory.Solvers.YICES2)
                 .withBound(bound)
                 .withTarget(Arch.RISCV);

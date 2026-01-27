@@ -2,12 +2,14 @@ package com.dat3m.dartagnan.llvm;
 
 import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.configuration.Method;
+import com.dat3m.dartagnan.configuration.OptionNames;
 import com.dat3m.dartagnan.utils.Result;
 import com.dat3m.dartagnan.utils.rules.Provider;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.sosy_lab.common.configuration.Configuration;
+import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.java_smt.SolverContextFactory.Solvers;
 
 import java.io.IOException;
@@ -41,8 +43,10 @@ public class EBRTest extends AbstractCTest {
     }
 
     @Override
-    protected Configuration getConfiguration() {
-        return Configuration.defaultConfiguration();
+    protected Configuration getConfiguration() throws InvalidConfigurationException {
+        return Configuration.builder()
+                .setOption(OptionNames.SOLVER, getSolverProvider().get().name())
+                .build();
     }
 
     @Parameterized.Parameters(name = "{index}: {0}, target={1}")

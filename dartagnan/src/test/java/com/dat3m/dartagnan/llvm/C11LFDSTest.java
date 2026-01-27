@@ -31,8 +31,9 @@ public class C11LFDSTest extends AbstractCTest {
     @Override
     protected Configuration getConfiguration() throws InvalidConfigurationException {
         return Configuration.builder()
-                            .setOption(OptionNames.INIT_DYNAMIC_ALLOCATIONS, "true")
-                            .build();
+                .copyFrom(super.getConfiguration())
+                .setOption(OptionNames.INIT_DYNAMIC_ALLOCATIONS, "true")
+                .build();
     }
 
     @Override
