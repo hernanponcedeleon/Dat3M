@@ -7,7 +7,6 @@ import com.dat3m.dartagnan.configuration.Property;
 import com.dat3m.dartagnan.witness.WitnessType;
 import org.sosy_lab.common.configuration.Option;
 import org.sosy_lab.common.configuration.Options;
-import org.sosy_lab.java_smt.SolverContextFactory.Solvers;
 
 import java.util.EnumSet;
 
@@ -63,37 +62,6 @@ public abstract class BaseOptions {
         return method;
     }
 
-    @Option(
-            name = SOLVER,
-            description = "Uses the specified SMT solver as a backend.",
-            toUppercase = true)
-    private Solvers solver = Solvers.Z3;
-
-    public Solvers getSolver() {
-        return solver;
-    }
-
-    @Option(
-            name = TIMEOUT,
-            description = "Timeout (in secs) before interrupting the SMT solver.")
-    private int timeout = 0;
-
-    public boolean hasTimeout() {
-        return timeout > 0;
-    }
-
-    public int getTimeout() {
-        return timeout;
-    }
-
-    @Option(
-            name = PHANTOM_REFERENCES,
-            description = "Decrease references on Z3 formula objects once they are no longer referenced.")
-    private boolean phantomReferences = true;
-
-    public boolean usePhantomReferences() {
-        return phantomReferences;
-    }
 
     @Option(
             name = WITNESS,
@@ -102,15 +70,6 @@ public abstract class BaseOptions {
 
     public WitnessType getWitnessType() {
         return witnessType;
-    }
-
-    @Option(
-            name = SMTLIB2,
-            description = "Dump encoding to an SMTLIB2 file.")
-    private boolean smtlib = false;
-
-    public boolean getDumpSmtLib() {
-        return smtlib;
     }
 
     @Option(

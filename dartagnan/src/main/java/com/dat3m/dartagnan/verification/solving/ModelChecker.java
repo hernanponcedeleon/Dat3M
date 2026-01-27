@@ -1,52 +1,127 @@
 package com.dat3m.dartagnan.verification.solving;
 
+import com.dat3m.dartagnan.GlobalSettings;
+import com.dat3m.dartagnan.configuration.Method;
 import com.dat3m.dartagnan.configuration.Property;
 import com.dat3m.dartagnan.encoding.EncodingContext;
 import com.dat3m.dartagnan.encoding.IREvaluator;
 import com.dat3m.dartagnan.exception.UnsatisfiedRequirementException;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Thread;
-import com.dat3m.dartagnan.program.analysis.*;
+import com.dat3m.dartagnan.program.analysis.BranchEquivalence;
+import com.dat3m.dartagnan.program.analysis.ExecutionAnalysis;
+import com.dat3m.dartagnan.program.analysis.ReachingDefinitionsAnalysis;
+import com.dat3m.dartagnan.program.analysis.ThreadSymmetry;
 import com.dat3m.dartagnan.program.analysis.alias.AliasAnalysis;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.processing.ProcessingManager;
+import com.dat3m.dartagnan.smt.ProverWithTracker;
 import com.dat3m.dartagnan.utils.Result;
+import com.dat3m.dartagnan.utils.Utils;
 import com.dat3m.dartagnan.verification.Context;
 import com.dat3m.dartagnan.verification.VerificationTask;
+import com.dat3m.dartagnan.verification.model.ExecutionModelManager;
+import com.dat3m.dartagnan.verification.model.ExecutionModelNext;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
 import com.dat3m.dartagnan.wmm.analysis.WmmAnalysis;
-import com.dat3m.dartagnan.wmm.axiom.Axiom;
 import com.dat3m.dartagnan.wmm.processing.WmmProcessingManager;
+import com.google.common.base.Preconditions;
+import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.sosy_lab.common.configuration.Configuration;
-import org.sosy_lab.common.configuration.InvalidConfigurationException;
-import org.sosy_lab.java_smt.api.ProverEnvironment;
+import org.sosy_lab.common.ShutdownManager;
+import org.sosy_lab.common.configuration.*;
+import org.sosy_lab.java_smt.SolverContextFactory;
+import org.sosy_lab.java_smt.api.SolverContext;
 import org.sosy_lab.java_smt.api.SolverException;
 
-import java.util.*;
-
-import static com.dat3m.dartagnan.configuration.Property.CAT_SPEC;
-import static com.dat3m.dartagnan.program.analysis.SyntacticContextAnalysis.*;
+import static com.dat3m.dartagnan.configuration.OptionNames.*;
+import static com.dat3m.dartagnan.configuration.Property.DATARACEFREEDOM;
+import static com.dat3m.dartagnan.smt.SMTHelper.createSolverContext;
 import static com.dat3m.dartagnan.utils.Result.*;
 
-public abstract class ModelChecker {
+// Base class for SMT-based model checkers
+@Options
+public abstract class ModelChecker implements AutoCloseable {
+
+    @Options
+    protected static class SMTConfig {
+        @Option(
+                name = SOLVER,
+                description = "Uses the specified SMT solver as a backend.",
+                toUppercase = true)
+        private SolverContextFactory.Solvers solver = SolverContextFactory.Solvers.Z3;
+
+        public SolverContextFactory.Solvers getSolver() {
+            return solver;
+        }
+
+        @Option(
+                name = SMTLIB2,
+                description = "Dump encoding to an SMTLIB2 file.")
+        private boolean smtlib = false;
+
+        public boolean getDumpSmtLib() {
+            return smtlib;
+        }
+
+        @Option(
+                name = TIMEOUT,
+                description = "Timeout (in secs) before interrupting the SMT solver.")
+        @IntegerOption(min = 0)
+        private int timeout = 0;
+
+        public boolean hasTimeout() {
+            return timeout > 0;
+        }
+
+        public int getTimeout() {
+            return timeout;
+        }
+    }
 
     private static final Logger logger = LogManager.getLogger(ModelChecker.class);
 
-    protected Result res = Result.UNKNOWN;
+    protected final VerificationTask task;
+    protected final SMTConfig smtConfig;
+    private ShutdownManager shutdownManager = ShutdownManager.create();
+
+    protected SolverContext solverContext;
     protected EncodingContext context;
-    private String flaggedPairsOutput = "";
+    protected ProverWithTracker prover;
+
+    protected Result res = Result.UNKNOWN;
+
+    protected ModelChecker(VerificationTask task) throws InvalidConfigurationException {
+        this.task = Preconditions.checkNotNull(task);
+        this.smtConfig = new SMTConfig();
+        task.getConfig().inject(smtConfig);
+    }
+
+    public static ModelChecker create(VerificationTask task, Method method) throws InvalidConfigurationException {
+        if (task.getProperty().contains(DATARACEFREEDOM)) {
+            // For DATARACEFREEDOM, we always use EAGER
+            // Shall we just throw an exception here?
+            method = Method.EAGER;
+        }
+        return switch (method) {
+            case EAGER -> AssumeSolver.create(task);
+            case LAZY -> RefinementSolver.create(task);
+        };
+    }
 
     public final Result getResult() {
+        Preconditions.checkState(prover != null, "No result: the model checker has not run yet.");
         return res;
     }
-    public EncodingContext getEncodingContext() {
-        return context;
+
+    public long getTimeout() {
+        return smtConfig.getTimeout();
     }
-    public final String getFlaggedPairsOutput() {
-        return flaggedPairsOutput;
+
+    public void setShutdownManager(ShutdownManager shutdownManager) {
+        this.shutdownManager = shutdownManager;
     }
 
     public boolean hasModel() {
@@ -56,6 +131,83 @@ public abstract class ModelChecker {
         final boolean hasReachedBounds = res == UNKNOWN && propType == Property.Type.SAFETY;
         return (hasViolationWitnesses || hasPositiveWitnesses || hasReachedBounds);
     }
+
+    public IREvaluator getModel() throws SolverException {
+        Preconditions.checkState(hasModel(), "No model available");
+        return context.newEvaluator(prover);
+    }
+
+    public ExecutionModelNext getExecutionGraph() throws SolverException {
+        Preconditions.checkState(hasModel(), "No model available");
+        try (IREvaluator evaluator = getModel()) {
+            return new ExecutionModelManager().buildExecutionModel(evaluator);
+        }
+    }
+
+    protected abstract void runInternal() throws InterruptedException, SolverException, InvalidConfigurationException;
+
+    public void run() throws SolverException, InterruptedException, InvalidConfigurationException {
+        Preconditions.checkState(prover == null, "Model checker already ran.");
+        if (!smtConfig.hasTimeout()) {
+            runInternal();
+            return;
+        }
+
+        java.lang.Thread t = new java.lang.Thread(() -> {
+            try {
+                final long timeoutInMillis = smtConfig.getTimeout() * 1000L;
+                java.lang.Thread.sleep(timeoutInMillis);
+                final String error = String.format("Timeout of %s exceeded.", Utils.toTimeString(timeoutInMillis));
+                shutdownManager.requestShutdown(error);
+            } catch (InterruptedException e) {
+                // Verification ended, nothing to be done.
+            }
+        });
+
+        t.start();
+        runInternal();
+        t.interrupt();
+    }
+
+    // ====================================== Logging utility ================================================
+
+    protected static void logProverStatistics(Level level, Logger logger, ProverWithTracker prover) {
+        if (logger.isEnabled(level)) {
+            StringBuilder smtStatistics = new StringBuilder("\n ===== SMT Statistics ===== \n");
+            for (String key : prover.getStatistics().keySet()) {
+                smtStatistics.append(String.format("\t%s -> %s\n", key, prover.getStatistics().get(key)));
+            }
+            logger.log(level, smtStatistics.toString());
+        }
+    }
+
+    // ====================================== Solver utility ==================================================
+
+    protected void initSMTSolver(Configuration config) throws InvalidConfigurationException {
+        Preconditions.checkState(solverContext == null, "SolverContext already initialized");
+
+        final String smtDumpPath = smtConfig.getDumpSmtLib()
+                ? GlobalSettings.getOutputDirectory() + String.format("/%s.smt2", task.getProgram().getName())
+                : "";
+
+        solverContext = createSolverContext(config, shutdownManager.getNotifier(), smtConfig.getSolver());
+        prover = new ProverWithTracker(solverContext, smtDumpPath, SolverContext.ProverOptions.GENERATE_MODELS);
+    }
+
+    @Override
+    public void close() {
+        if (prover != null) {
+            prover.close();
+            prover = null;
+        }
+        if (solverContext != null) {
+            solverContext.close();
+            solverContext = null;
+        }
+    }
+
+    // ====================================== Processing utility ==================================================
+
 
     /**
      * Performs all modifications to a parsed program.
@@ -112,38 +264,5 @@ public abstract class ModelChecker {
     public static void performStaticWmmAnalyses(VerificationTask task, Context analysisContext, Configuration config) throws InvalidConfigurationException {
         analysisContext.register(WmmAnalysis.class, WmmAnalysis.fromConfig(task.getMemoryModel(), task.getProgram().getArch(), config));
         analysisContext.register(RelationAnalysis.class, RelationAnalysis.fromConfig(task, analysisContext, config));
-    }
-
-    protected void saveFlaggedPairsOutput(Wmm wmm, ProverEnvironment prover, EncodingContext ctx, Program program) throws SolverException {
-        if (!ctx.getTask().getProperty().contains(CAT_SPEC)) {
-            return;
-        }
-        try (IREvaluator evaluator = ctx.newEvaluator(prover)) {
-            final SyntacticContextAnalysis synContext = newInstance(program);
-            for (Axiom ax : wmm.getAxioms()) {
-                if (ax.isFlagged() && evaluator.isFlaggedAxiomViolated(ax)) {
-                    StringBuilder violatingPairs = new StringBuilder("\tFlag " + Optional.ofNullable(ax.getName()).orElse(ax.getRelation().getNameOrTerm())).append("\n");
-                    evaluator.eventGraph(ax.getRelation()).apply((e1, e2) -> {
-                        final String callSeparator = " -> ";
-                        final String callStackFirst = makeContextString(
-                                synContext.getContextInfo(e1).getContextOfType(CallContext.class),
-                                callSeparator);
-                        final String callStackSecond = makeContextString(
-                                synContext.getContextInfo(e2).getContextOfType(CallContext.class),
-                                callSeparator);
-
-                        violatingPairs
-                                .append("\tE").append(e1.getGlobalId())
-                                .append(" / E").append(e2.getGlobalId())
-                                .append("\t").append(callStackFirst).append(callStackFirst.isEmpty() ? "" : callSeparator)
-                                .append(getSourceLocationString(e1))
-                                .append(" / ").append(callStackSecond).append(callStackSecond.isEmpty() ? "" : callSeparator)
-                                .append(getSourceLocationString(e2))
-                                .append("\n");
-                    });
-                    flaggedPairsOutput += violatingPairs.toString();
-                }
-            }
-        }
     }
 }

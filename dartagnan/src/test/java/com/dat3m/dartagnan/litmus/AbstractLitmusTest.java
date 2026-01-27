@@ -1,9 +1,9 @@
 package com.dat3m.dartagnan.litmus;
 
 import com.dat3m.dartagnan.configuration.Arch;
+import com.dat3m.dartagnan.configuration.Method;
 import com.dat3m.dartagnan.configuration.ProgressModel;
 import com.dat3m.dartagnan.configuration.Property;
-import com.dat3m.dartagnan.encoding.ProverWithTracker;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.utils.ResourceHelper;
 import com.dat3m.dartagnan.utils.Result;
@@ -11,8 +11,7 @@ import com.dat3m.dartagnan.utils.rules.Provider;
 import com.dat3m.dartagnan.utils.rules.Providers;
 import com.dat3m.dartagnan.utils.rules.RequestShutdownOnError;
 import com.dat3m.dartagnan.verification.VerificationTask;
-import com.dat3m.dartagnan.verification.solving.AssumeSolver;
-import com.dat3m.dartagnan.verification.solving.RefinementSolver;
+import com.dat3m.dartagnan.verification.solving.ModelChecker;
 import com.dat3m.dartagnan.wmm.Wmm;
 import org.junit.Rule;
 import org.junit.Test;
@@ -20,9 +19,8 @@ import org.junit.rules.RuleChain;
 import org.junit.rules.Timeout;
 import org.sosy_lab.common.ShutdownManager;
 import org.sosy_lab.common.configuration.Configuration;
-import org.sosy_lab.java_smt.SolverContextFactory.Solvers;
-import org.sosy_lab.java_smt.api.SolverContext;
-import org.sosy_lab.java_smt.api.SolverContext.ProverOptions;
+import org.sosy_lab.common.configuration.ConfigurationBuilder;
+import org.sosy_lab.common.configuration.InvalidConfigurationException;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -38,6 +36,7 @@ import static com.dat3m.dartagnan.configuration.OptionNames.*;
 import static com.dat3m.dartagnan.utils.ResourceHelper.getRootPath;
 import static com.google.common.io.Files.getNameWithoutExtension;
 import static org.junit.Assert.assertEquals;
+import static org.sosy_lab.java_smt.SolverContextFactory.Solvers.Z3;
 
 public abstract class AbstractLitmusTest {
 
@@ -74,6 +73,21 @@ public abstract class AbstractLitmusTest {
 
     // =================== Modifiable behavior ====================
 
+    protected final Configuration getConfiguration() throws InvalidConfigurationException {
+        var configBase = Configuration.builder()
+                .setOption(SOLVER, Z3.name())
+                .setOption(BOUND, boundProvider.get().toString())
+                .setOption(TARGET, targetProvider.get().name())
+                .setOption(PHANTOM_REFERENCES, "true")
+                .setOption(INITIALIZE_REGISTERS, "true");
+
+        return additionalConfig(configBase).build();
+    }
+
+    protected ConfigurationBuilder additionalConfig(ConfigurationBuilder builder) {
+        return builder.setOption(USE_INTEGERS, "true");
+    }
+
     protected abstract Provider<Arch> getTargetProvider();
 
     protected Provider<Wmm> getWmmProvider() {
@@ -84,19 +98,12 @@ public abstract class AbstractLitmusTest {
         return Provider.fromSupplier(() -> EnumSet.of(Property.PROGRAM_SPEC));
     }
 
-    protected Provider<Configuration> getConfigurationProvider() {
-        return Provider.fromSupplier(() -> Configuration.builder()
-                .setOption(INITIALIZE_REGISTERS, "true")
-                .setOption(USE_INTEGERS, "true")
-                .build());
-    }
-
     protected Provider<ProgressModel.Hierarchy> getProgressModelProvider() {
         return ProgressModel::defaultHierarchy;
     }
 
     protected Provider<Integer> getBoundProvider() {
-        return Provider.fromSupplier(() -> 1);
+        return () -> 1;
     }
 
     protected long getTimeout() {
@@ -115,11 +122,8 @@ public abstract class AbstractLitmusTest {
     protected final Provider<ProgressModel.Hierarchy> progressModelProvider = getProgressModelProvider();
     protected final Provider<EnumSet<Property>> propertyProvider = getPropertyProvider();
     protected final Provider<Result> expectedResultProvider = Provider.fromSupplier(() -> expectedResults.get(filePathProvider.get().substring(filePathProvider.get().indexOf("/") + 1)));
-    protected final Provider<Configuration> configProvider = getConfigurationProvider();
-    protected final Provider<VerificationTask> taskProvider = Providers.createTask(programProvider, wmmProvider, propertyProvider, targetProvider, progressModelProvider, boundProvider, configProvider);
-    protected final Provider<SolverContext> contextProvider = Providers.createSolverContextFromManager(shutdownManagerProvider, () -> Solvers.Z3);
-    protected final Provider<ProverWithTracker> proverProvider = Providers.createProverWithFixedOptions(contextProvider, ProverOptions.GENERATE_MODELS);
-    protected final Provider<ProverWithTracker> prover2Provider = Providers.createProverWithFixedOptions(contextProvider, ProverOptions.GENERATE_MODELS);
+    protected final Provider<Configuration> configProvider = Provider.fromSupplier(this::getConfiguration);
+    protected final Provider<VerificationTask> taskProvider = Providers.createTask(programProvider, wmmProvider, propertyProvider, progressModelProvider, configProvider);
 
     private final Timeout timeout = Timeout.millis(getTimeout());
     private final RequestShutdownOnError shutdownOnError = RequestShutdownOnError.create(shutdownManagerProvider);
@@ -137,22 +141,24 @@ public abstract class AbstractLitmusTest {
             .around(configProvider)
             .around(taskProvider)
             .around(expectedResultProvider)
-            .around(timeout)
-            // Context/Prover need to be created inside test-thread spawned by <timeout>
-            .around(contextProvider)
-            .around(proverProvider)
-            .around(prover2Provider);
+            .around(timeout);
 
 
     @Test
     public void testAssume() throws Exception {
-        AssumeSolver s = AssumeSolver.run(contextProvider.get(), proverProvider.get(), taskProvider.get());
-        assertEquals(expected, s.getResult());
+        testModelChecker(Method.EAGER);
     }
 
     //@Test
     public void testRefinement() throws Exception {
-        RefinementSolver s = RefinementSolver.run(contextProvider.get(), proverProvider.get(), taskProvider.get());
-        assertEquals(expected, s.getResult());
+        testModelChecker(Method.LAZY);
+    }
+
+    protected void testModelChecker(Method method) throws Exception {
+        try (ModelChecker checker = ModelChecker.create(taskProvider.get(), method)) {
+            checker.setShutdownManager(shutdownManagerProvider.get());
+            checker.run();
+            assertEquals(expected, checker.getResult());
+        }
     }
 }
