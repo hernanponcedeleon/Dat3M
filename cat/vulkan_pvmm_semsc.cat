@@ -69,11 +69,14 @@ let inscope = (DV * DV) |
 // mutually ordered atomics
 let mutordatom = (loc & vloc & inscope & (ATOM * ATOM)) \ id
 
-let avvisSem = (SC0123 * AVDEVICE) | (VISDEVICE * SC0123) |
-               (SC0 * (SEMSC0 & SEMAV)) | (SC1 * (SEMSC1 & SEMAV)) | (SC2 * (SEMSC2 & SEMAV)) | (SC3 * (SEMSC3 & SEMAV)) |
-               ((SEMSC0 & SEMVIS) * SC0) | ((SEMSC1 & SEMVIS) * SC1) | ((SEMSC2 & SEMVIS) * SC2) | ((SEMSC3 & SEMVIS) * SC3)
+let avvisSem = (SC0123 * (AVDEVICE | VISDEVICE))
+                | (SC0 * ((SEMAV | SEMVIS) & SEMSC0))
+                | (SC1 * ((SEMAV | SEMVIS) & SEMSC1))
+                | (SC2 * ((SEMAV | SEMVIS) & SEMSC2))
+                | (SC3 * ((SEMAV | SEMVIS) & SEMSC3))
 let avvisSet = [AV | VIS]; (vloc & loc)
-let avvisinc = avvisSem | avvisSet | avvisSet^-1
+let avvisinc = ((avvisSem | avvisSem^-1) \ id) |
+               (avvisSet | avvisSet^-1)
 
 let posctosem = ((SC0 * SEMSC0) | (SC1 * SEMSC1) | (SC2 * SEMSC2) | (SC3 * SEMSC3)) & po
 let posemtosc = ((SEMSC0 * SC0) | (SEMSC1 * SC1) | (SEMSC2 * SC2) | (SEMSC3 * SC3)) & po

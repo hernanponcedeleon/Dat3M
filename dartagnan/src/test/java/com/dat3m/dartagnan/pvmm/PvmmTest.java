@@ -50,35 +50,48 @@ public class PvmmTest {
 
     private static final String[] models = {
             "vulkan_pvmm",
-            "vulkan_pvmm_semsc"
+            "vulkan_pvmm_semsc",
+            "vulkan_current_pvmm",
+            "vulkan_current_pvmm_semsc"
     };
 
     private static final Object[][] expected = {
-            // test                     orig    semsc
-            {"f-graph-mp-semsc-a",      FAIL,   FAIL},
-            {"f-graph-mp-semsc-b",      PASS,   PASS},
-            {"f-graph-mp-semsc-c",      FAIL,   FAIL},
-            {"f-graph-problem-semsc-mp-a",      PASS,   PASS},
-            {"f-graph-problem-semsc-mp-b",      FAIL,   PASS},
-            {"f-graph-problem-semsc-mp-c",      PASS,   PASS},
-            {"f-graph-problem-semsc-mp-fences-a",  PASS,   PASS},
-            {"f-graph-problem-semsc-mp-fences-b",  FAIL,   PASS},
-            {"f-graph-problem-semsc-mp-fences-c",  PASS,   PASS},
-            {"f-graph-problem-semsc-lb-a",      PASS,   PASS},
-            {"f-graph-problem-semsc-lb-b",      FAIL,   PASS},
-            {"f-graph-problem-semsc-lb-c",      FAIL,   PASS},
-            {"f-graph-problem-semsc-lb-d",      PASS,   PASS},
-            {"f-graph-problem3-a",      FAIL,   PASS},
-            {"f-graph-problem3-b",      PASS,   PASS},
+                                                    // orig             // current
+            // test                                 base    semsc       base    semsc
 
-            {"extra-sb",                PASS,   PASS},
-            {"extra-sb-fence",          PASS,   PASS},
-            {"extra-lb",                FAIL,   FAIL},
-            {"extra-lb-fence-1",        FAIL,   FAIL},
-            {"extra-lb-fence-2",        FAIL,   FAIL},
-            {"extra-mp3",               FAIL,   FAIL},
-            {"extra-mp3-fence1",        FAIL,   FAIL},
-            {"extra-mp3-fence2",        PASS,   PASS}
+            {"f-graph-mp-semsc-a",                  FAIL,   FAIL,       FAIL,   FAIL},
+            {"f-graph-mp-semsc-b",                  PASS,   PASS,       PASS,   PASS},
+            {"f-graph-mp-semsc-c",                  FAIL,   FAIL,       FAIL,   FAIL},
+
+            {"f-graph-problem-semsc-mp-a",          PASS,   PASS,       PASS,   PASS},
+            {"f-graph-problem-semsc-mp-b",          FAIL,   PASS,       FAIL,   PASS},
+            {"f-graph-problem-semsc-mp-c",          PASS,   PASS,       PASS,   PASS},
+            {"f-graph-problem-semsc-mp-fences-a",   PASS,   PASS,       PASS,   PASS},
+            {"f-graph-problem-semsc-mp-fences-b",   FAIL,   PASS,       FAIL,   PASS},
+            {"f-graph-problem-semsc-mp-fences-c",   PASS,   PASS,       PASS,   PASS},
+            {"f-graph-problem-semsc-lb-a",          PASS,   PASS,       PASS,   PASS},
+            {"f-graph-problem-semsc-lb-b",          FAIL,   PASS,       FAIL,   PASS},
+            {"f-graph-problem-semsc-lb-c",          FAIL,   PASS,       FAIL,   PASS},
+            {"f-graph-problem-semsc-lb-c-acqrel",   FAIL,   PASS,       FAIL,   PASS},
+            {"f-graph-problem-semsc-lb-d",          PASS,   PASS,       PASS,   PASS},
+            {"f-graph-problem-semsc-lb-d-acqrel",   PASS,   PASS,       PASS,   PASS},
+
+            {"f-graph-problem3-a",                  FAIL,   PASS,       FAIL,   PASS},
+            {"f-graph-problem3-b",                  PASS,   PASS,       PASS,   PASS},
+
+            {"scopes-mp-acq-acq-a",                 PASS,   PASS,       PASS,   PASS},
+            {"scopes-mp-acq-acq-b",                 FAIL,   FAIL,       PASS,   PASS},
+
+            {"extra-sb",                            PASS,   PASS,       PASS,   PASS},
+            {"extra-sb-fence",                      PASS,   PASS,       PASS,   PASS},
+            {"extra-lb",                            FAIL,   FAIL,       FAIL,   FAIL},
+            {"extra-lb-fence-1",                    FAIL,   FAIL,       FAIL,   FAIL},
+            {"extra-lb-fence-2",                    FAIL,   FAIL,       FAIL,   FAIL},
+            {"extra-mp3",                           FAIL,   FAIL,       FAIL,   FAIL},
+            {"extra-mp3-fence1",                    FAIL,   FAIL,       FAIL,   FAIL},
+            {"extra-mp3-fence2",                    PASS,   PASS,       PASS,   PASS},
+            {"extra-mp-plus",                       PASS,   PASS,       PASS,   PASS},
+            {"extra-lb-plus",                       PASS,   PASS,       PASS,   PASS}
     };
 
     private final Printer printer = Printer.newInstance();
