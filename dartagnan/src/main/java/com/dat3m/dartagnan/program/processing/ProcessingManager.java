@@ -130,6 +130,7 @@ public class ProcessingManager implements ProgramProcessor {
                                 simplifyFunction
                         ), Target.FUNCTIONS, true
                 ),
+
                 ThreadCreation.fromConfig(config),
                 ResolveNonDetChoices.newInstance(),
                 reduceSymmetry ? SymmetryReduction.fromConfig(config) : null,
@@ -151,8 +152,8 @@ public class ProcessingManager implements ProgramProcessor {
                 detectMixedSizeAccesses ? simplifyBoundedProgram : null,
                 NonterminationDetection.fromConfig(config),
                 // --- Statistics + verification ---
-                IdReassignment.newInstance(), // Normalize used Ids (remove any gaps)
                 printAfterProcessing ? DebugPrint.withHeader("After processing", Printer.Mode.THREADS, config) : null,
+                IdReassignment.newInstance(), // Normalize used Ids (remove any gaps)
                 ProgramProcessor.fromFunctionProcessor(
                         CoreCodeVerification.fromConfig(config),
                         Target.THREADS, false

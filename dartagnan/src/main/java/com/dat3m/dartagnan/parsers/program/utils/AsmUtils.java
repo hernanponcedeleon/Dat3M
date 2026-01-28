@@ -6,10 +6,7 @@ import java.util.List;
 import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.Type;
-import com.dat3m.dartagnan.expression.type.AggregateType;
-import com.dat3m.dartagnan.expression.type.BooleanType;
-import com.dat3m.dartagnan.expression.type.IntegerType;
-import com.dat3m.dartagnan.expression.type.VoidType;
+import com.dat3m.dartagnan.expression.type.*;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.core.Label;
@@ -28,7 +25,7 @@ public class AsmUtils {
             return 0;
         }
         Type returnType = returnRegister.getType();
-        if (returnType instanceof IntegerType || returnType instanceof BooleanType) {
+        if (returnType instanceof IntegerType || returnType instanceof PointerType || returnType instanceof BooleanType) {
             return 1;
         } else if (isReturnRegisterAggregate(returnRegister)) {
             return ((AggregateType) returnType).getFields().size();

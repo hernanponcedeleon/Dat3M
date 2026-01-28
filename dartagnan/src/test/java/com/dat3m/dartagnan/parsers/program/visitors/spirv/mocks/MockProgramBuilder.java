@@ -17,6 +17,7 @@ import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.dat3m.dartagnan.program.memory.ScopedPointerVariable;
 
+import java.math.BigInteger;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -89,6 +90,9 @@ public class MockProgramBuilder extends ProgramBuilder {
         } else if (type instanceof IntegerType iType) {
             IntLiteral iValue = exprFactory.makeValue((int) value, iType);
             return addExpression(id, iValue);
+        }else if (type instanceof PointerType pType) {
+            IntLiteral pValue = exprFactory.makeValue(BigInteger.valueOf((int)value), pType.getBitWidth());
+            return addExpression(id, exprFactory.makeIntToPtrCast(pValue,pType));
         } else if (type instanceof ArrayType aType) {
             List<Expression> elements = mockConstantArrayElements(aType.getElementType(), value);
             Expression construction = exprFactory.makeArray(aType, elements);

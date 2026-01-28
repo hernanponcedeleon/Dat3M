@@ -70,7 +70,7 @@ public class VisitorLitmusPPC extends LitmusPPCBaseVisitor<Object> {
 
     @Override
     public Object visitVariableDeclaratorRegisterLocation(LitmusPPCParser.VariableDeclaratorRegisterLocationContext ctx) {
-        programBuilder.initRegEqLocPtr(ctx.threadId().id, ctx.register().getText(), ctx.location().getText(), archType);
+        programBuilder.initRegEqLocPtr(ctx.threadId().id, ctx.register().getText(), ctx.location().getText());
         return null;
     }
 
@@ -131,7 +131,7 @@ public class VisitorLitmusPPC extends LitmusPPCBaseVisitor<Object> {
         Register r1 = (Register) ctx.register(0).accept(this);
         Register ra = (Register) ctx.register(1).accept(this);
         Register rb = (Register) ctx.register(2).accept(this);
-        return programBuilder.addChild(mainThread, EventFactory.newRMWLoadExclusive(r1, expressions.makeAdd(ra, rb)));
+        return programBuilder.addChild(mainThread, EventFactory.newRMWLoadExclusive(r1, expressions.makePtrAdd(rb, ra)));
     }
 
     @Override
@@ -156,7 +156,7 @@ public class VisitorLitmusPPC extends LitmusPPCBaseVisitor<Object> {
         Register r1 = (Register) ctx.register(0).accept(this);
         Register ra = (Register) ctx.register(1).accept(this);
         Register rb = (Register) ctx.register(2).accept(this);
-        return programBuilder.addChild(mainThread, EventFactory.Common.newExclusiveStore(rs, expressions.makeAdd(ra, rb), r1, ""));
+        return programBuilder.addChild(mainThread, EventFactory.Common.newExclusiveStore(rs, expressions.makePtrAdd(rb, ra), r1, ""));
     }
 
     @Override

@@ -6,6 +6,7 @@ import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.Type;
 import com.dat3m.dartagnan.expression.processing.ExprTransformer;
 import com.dat3m.dartagnan.expression.type.IntegerType;
+import com.dat3m.dartagnan.expression.type.PointerType;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.IRHelper;
@@ -130,17 +131,22 @@ public final class Tearing implements ProgramProcessor {
             final MemoryObject base = init.getBase();
             final int initOffset = init.getOffset();
             final Expression value = init.getValue();
+            final boolean isIntTearing = value.getType() instanceof IntegerType;
             // Tear initial values
             final int frontBegin = bigEndian ? bytes - offsets.get(0) : 0;
             final int frontEnd = bigEndian ? bytes : offsets.get(0);
-            final Expression frontValue = expressions.makeIntExtract(value, 8 * frontBegin, 8 * frontEnd - 1);
+            final Expression frontValue = isIntTearing?
+                    expressions.makeIntExtract(value, 8 * frontBegin, 8 * frontEnd - 1):
+                    expressions.makePtrExtract(value, 8 * frontBegin, 8 * frontEnd - 1);
             base.setInitialValue(initOffset, frontValue);
             for (int i = 0; i < offsets.size(); i++) {
                 final int offset = offsets.get(i);
                 final int next = i + 1 < offsets.size() ? offsets.get(i + 1) : bytes;
                 final int begin = bigEndian ? bytes - next : offset;
                 final int end = bigEndian ? bytes - offset : next;
-                final Expression tearedValue = expressions.makeIntExtract(value, 8 * begin, 8 * end - 1);
+                final Expression tearedValue = isIntTearing?
+                        expressions.makeIntExtract(value, 8 * begin, 8 * end - 1):
+                        expressions.makePtrExtract(value, 8 * begin, 8 * end - 1);
                 base.setInitialValue(initOffset + offset, tearedValue);
             }
             // Tear init event
@@ -173,9 +179,10 @@ public final class Tearing implements ProgramProcessor {
     private List<Event> createTransaction(Load load, List<Integer> offsets) {
         final int bytes = checkBytes(load, offsets);
         final List<Event> replacement = new ArrayList<>();
-        final IntegerType addressType = checkIntegerType(load.getAddress().getType(),
-                "Non-integer address in '%s'", load);
-        checkIntegerType(load.getAccessType(), "Non-integer mixed-size access in '%s'", load);
+        final PointerType addressType = checkPointerType(load.getAddress().getType(),
+                "Non-Pointer address in '%s'", load);
+        checkType(load.getAccessType(), "Non-integer or Pointer mixed-size access in '%s'", load);
+        final Register resultRegister = load.getResultRegister();
         final Function function = load.getFunction();
         final Register addressRegister = toRegister(load.getAddress(), function, replacement);
         final List<Register> smallerRegisters = new ArrayList<>();
@@ -183,7 +190,9 @@ public final class Tearing implements ProgramProcessor {
             int start = i < 0 ? 0 : offsets.get(i);
             int end = i + 1 < offsets.size() ? offsets.get(i + 1) : bytes;
             assert start < end;
-            smallerRegisters.add(newRegister(function, types.getIntegerType(8 * (end - start))));
+            smallerRegisters.add(newRegister(function, resultRegister.getType() instanceof PointerType
+                    ?types.getPointerType(8 * (end - start))
+                    :types.getIntegerType(8 * (end - start))));
         }
         assert bytes == smallerRegisters.stream().mapToInt(t -> types.getMemorySizeInBytes(t.getType())).sum();
         final InstructionBoundary begin = load.hasTag(Tag.NO_INSTRUCTION) ? null : EventFactory.newInstructionBegin();
@@ -192,8 +201,8 @@ public final class Tearing implements ProgramProcessor {
         }
         for (int i = -1; i < offsets.size(); i++) {
             final int start = i < 0 ? 0 : offsets.get(i);
-            final Expression offset = expressions.makeValue(start, addressType);
-            final Expression address = expressions.makeAdd(addressRegister, offset);
+            final Expression offset = expressions.makeValue(start, types.getArchType());
+            final Expression address = expressions.makePtrAdd(addressRegister, offset);
             final Load byteLoad = load.getCopy();
             final Register result = smallerRegisters.get(i + 1);
             byteLoad.setResultRegister(result);
@@ -205,7 +214,8 @@ public final class Tearing implements ProgramProcessor {
             final Event end = EventFactory.newInstructionEnd(begin);
             replacement.add(end);
         }
-        final Expression combination = expressions.makeIntConcat(smallerRegisters);
+        final Expression combination = resultRegister.getType() instanceof PointerType
+                ? expressions.makePtrConcat(smallerRegisters): expressions.makeIntConcat(smallerRegisters);
         final Event computeResult = EventFactory.newLocal(load.getResultRegister(), combination);
         replacement.add(computeResult);
         return replacement;
@@ -214,9 +224,8 @@ public final class Tearing implements ProgramProcessor {
     private List<Event> createTransaction(Store store, List<Integer> offsets, Map<MemoryCoreEvent, List<Event>> map, boolean bigEndian) {
         final int bytes = checkBytes(store, offsets);
         final List<Event> replacement = new ArrayList<>();
-        final IntegerType addressType = checkIntegerType(store.getAddress().getType(),
-                "Non-integer address in '%s'", store);
-        checkIntegerType(store.getAccessType(), "Non-integer mixed-size access in '%s'", store);
+        checkPointerType(store.getAddress().getType(),"Non-Pointer address in '%s'", store);
+        checkType(store.getAccessType(), "Non-integer or Pointer mixed-size access in '%s'", store);
         final Function function = store.getFunction();
         final Register addressRegister = toRegister(store.getAddress(), function, replacement);
         final Register valueRegister = toRegister(store.getMemValue(), function, replacement);
@@ -231,8 +240,10 @@ public final class Tearing implements ProgramProcessor {
             final int next = i + 1 < offsets.size() ? offsets.get(i + 1) : bytes;
             final int start = bigEndian ? bytes - next : offset;
             final int end = bigEndian ? bytes - offset : next;
-            final Expression address = expressions.makeAdd(addressRegister, expressions.makeValue(offset, addressType));
-            final Expression value = expressions.makeIntExtract(valueRegister, 8 * start, 8 * end - 1);
+            final Expression address = expressions.makePtrAdd(addressRegister, expressions.makeValue(offset, types.getArchType()));
+            final Expression value = valueRegister.getType() instanceof PointerType
+                    ? expressions.makePtrExtract(valueRegister, 8 * start, 8 * end - 1)
+                    : expressions.makeIntExtract(valueRegister, 8 * start, 8 * end - 1);
             final Store byteStore = store.getCopy();
             byteStore.setAddress(address);
             byteStore.setMemValue(value);
@@ -249,8 +260,17 @@ public final class Tearing implements ProgramProcessor {
         return replacement;
     }
 
-    private IntegerType checkIntegerType(Type type, String message, Event event) {
+    private Type checkType(Type type, String message, Event event) {
         if (type instanceof IntegerType t) {
+            return t;
+        }else if (type instanceof PointerType p) {
+            return p;
+        }
+        throw new UnsupportedOperationException(String.format(message, event));
+    }
+
+    private PointerType checkPointerType(Type type, String message, Event event) {
+        if (type instanceof PointerType t) {
             return t;
         }
         throw new UnsupportedOperationException(String.format(message, event));

@@ -10,7 +10,9 @@ import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.Type;
 import com.dat3m.dartagnan.expression.integers.IntCmpOp;
+import com.dat3m.dartagnan.expression.pointers.PtrCmpOp;
 import com.dat3m.dartagnan.expression.type.IntegerType;
+import com.dat3m.dartagnan.expression.type.PointerType;
 import com.dat3m.dartagnan.parsers.AsmArmBaseVisitor;
 import com.dat3m.dartagnan.parsers.AsmArmParser;
 import com.dat3m.dartagnan.parsers.program.utils.AsmUtils;
@@ -275,9 +277,15 @@ public class VisitorAsmArm extends AsmArmBaseVisitor<Object> {
     public Object visitCompareBranchNonZero(AsmArmParser.CompareBranchNonZeroContext ctx) {
         Label label = AsmUtils.getOrNewLabel(labelsDefined, ctx.Numbers().getText());
         Register firstRegister = (Register) ctx.register().accept(this);
-        Expression zero = expressions.makeZero((IntegerType) firstRegister.getType());
-        Expression expr = expressions.makeIntCmp(firstRegister, IntCmpOp.NEQ, zero);
-        asmInstructions.add(EventFactory.newJump(expr, label));
+        if (firstRegister.getType() instanceof PointerType){
+            Expression zero = expressions.makeNullLiteral( (PointerType) firstRegister.getType());
+            Expression expr = expressions.makePtrCmp(firstRegister, PtrCmpOp.NEQ, zero);
+            asmInstructions.add(EventFactory.newJump(expr, label));
+        }else{
+            Expression zero = expressions.makeZero( (IntegerType) firstRegister.getType());
+            Expression expr = expressions.makeIntCmp(firstRegister, IntCmpOp.NEQ, zero);
+            asmInstructions.add(EventFactory.newJump(expr, label));
+        }
         return null;
     }
 
@@ -292,7 +300,7 @@ public class VisitorAsmArm extends AsmArmBaseVisitor<Object> {
     @Override
     public Object visitBranchEqual(AsmArmParser.BranchEqualContext ctx) {
         Label label = AsmUtils.getOrNewLabel(labelsDefined, ctx.Numbers().getText());
-        Expression expr = expressions.makeIntCmp(comparator.left(), IntCmpOp.EQ, comparator.right());
+        Expression expr = expressions.makeIntCmpfromInts(comparator.left(), IntCmpOp.EQ, comparator.right());
         asmInstructions.add(EventFactory.newJump(expr, label));
         return null;
     }
@@ -300,7 +308,8 @@ public class VisitorAsmArm extends AsmArmBaseVisitor<Object> {
     @Override
     public Object visitBranchNotEqual(AsmArmParser.BranchNotEqualContext ctx) {
         Label label = AsmUtils.getOrNewLabel(labelsDefined, ctx.Numbers().getText());
-        Expression expr = expressions.makeIntCmp(comparator.left(), IntCmpOp.NEQ, comparator.right());
+        // todo remove forced ptr to int
+        Expression expr = expressions.makeIntCmpfromInts(comparator.left(), IntCmpOp.NEQ, comparator.right());
         asmInstructions.add(EventFactory.newJump(expr, label));
         return null;
     }
@@ -328,7 +337,7 @@ public class VisitorAsmArm extends AsmArmBaseVisitor<Object> {
             // Pick up the correct type and create the new Register
             Type registerType = AsmUtils.getLlvmRegisterTypeGivenAsmRegisterID(this.argsRegisters,this.returnRegister,registerID);
             String newRegisterName = AsmUtils.makeRegisterName(registerID);
-            Register newRegister = this.llvmFunction.getOrNewRegister(newRegisterName, registerType);
+            Register newRegister = this.llvmFunction.getOrNewRegister(newRegisterName, registerType);// fix this for execution state (reg is wrong state)
             if (AsmUtils.isPartOfReturnRegister(this.returnRegister, registerID) && AsmUtils.isReturnRegisterAggregate(this.returnRegister)) {
                 this.pendingRegisters.add(newRegister);
             }
@@ -388,10 +397,17 @@ public class VisitorAsmArm extends AsmArmBaseVisitor<Object> {
 
     @Override
     public Object visitValue(AsmArmParser.ValueContext ctx) {
-        checkState(expectedType instanceof IntegerType, "Expected type is not an integer type");
-        String valueString = ctx.Numbers().getText();
-        BigInteger value = new BigInteger(valueString);
-        return expressions.makeValue(value, (IntegerType) expectedType);
+        if (expectedType instanceof IntegerType) {
+            String valueString = ctx.Numbers().getText();
+            BigInteger value = new BigInteger(valueString);
+            return expressions.makeValue(value, (IntegerType) expectedType);
+        }
+        else if (expectedType instanceof PointerType){
+            String valueString = ctx.Numbers().getText();
+            BigInteger value = new BigInteger(valueString);
+            return expressions.makeIntToPtrCast(expressions.makeValue(value));
+        }
+        throw new RuntimeException("Unexpected type " + expectedType + " visited");
     }
 
     @Override
