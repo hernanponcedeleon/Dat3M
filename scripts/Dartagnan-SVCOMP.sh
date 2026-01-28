@@ -35,6 +35,6 @@ else
         skip_assertions_of_type=""
     fi
     
-    cmd="svcomp/target/svcomp $skip_assertions_of_type cat/svcomp.cat --svcomp.native=true --svcomp.property="$propertypath" "$programpath" "$witness
+    cmd="svcomp/target/svcomp $skip_assertions_of_type cat/svcomp.cat --svcomp.property="$propertypath" "$programpath" "$witness
 fi
 $cmd
