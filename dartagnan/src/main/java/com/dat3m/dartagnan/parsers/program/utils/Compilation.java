@@ -1,9 +1,11 @@
 package com.dat3m.dartagnan.parsers.program.utils;
 
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import com.google.common.base.Charsets;
 import com.google.common.io.Files;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+
 
 import java.io.File;
 import java.io.IOException;
@@ -16,7 +18,7 @@ import static java.util.Arrays.asList;
 
 public class Compilation {
 
-    private static final Logger logger = LogManager.getLogger(Compilation.class);
+    private static final Logger logger = LoggerFactory.getLogger(Compilation.class);
 
     public static File compileWithClang(File file, String cflags) throws Exception {
         final String outputFileName = getOutputName(file, ".ll");

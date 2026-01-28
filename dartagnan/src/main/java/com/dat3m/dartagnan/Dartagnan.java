@@ -1,5 +1,8 @@
 package com.dat3m.dartagnan;
 
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import com.dat3m.dartagnan.configuration.OptionNames;
 import com.dat3m.dartagnan.configuration.ProgressModel;
 import com.dat3m.dartagnan.configuration.Property;
@@ -47,8 +50,8 @@ import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVParser;
 import org.apache.commons.csv.CSVPrinter;
 import org.apache.commons.csv.CSVRecord;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+
+
 import org.apache.maven.model.io.xpp3.MavenXpp3Reader;
 import org.sosy_lab.common.ShutdownManager;
 import org.sosy_lab.common.ShutdownNotifier;
@@ -88,7 +91,7 @@ import static java.lang.String.valueOf;
 @Options
 public class Dartagnan extends BaseOptions {
 
-    private static final Logger logger = LogManager.getLogger(Dartagnan.class);
+    private static final Logger logger = LoggerFactory.getLogger(Dartagnan.class);
 
     private static final Set<String> supportedFormats = ImmutableSet.copyOf(ProgramParser.SUPPORTED_EXTENSIONS);
 

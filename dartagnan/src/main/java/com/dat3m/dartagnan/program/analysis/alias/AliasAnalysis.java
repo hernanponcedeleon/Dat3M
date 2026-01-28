@@ -1,5 +1,8 @@
 package com.dat3m.dartagnan.program.analysis.alias;
 
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import com.dat3m.dartagnan.configuration.Alias;
 import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
@@ -12,10 +15,7 @@ import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.dat3m.dartagnan.utils.Utils;
 import com.dat3m.dartagnan.verification.Context;
 import com.dat3m.dartagnan.witness.graphviz.Graphviz;
-
 import com.google.common.collect.Collections2;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.common.configuration.Option;
@@ -31,7 +31,7 @@ import static com.dat3m.dartagnan.configuration.OptionNames.*;
 
 public interface AliasAnalysis {
 
-    Logger logger = LogManager.getLogger(AliasAnalysis.class);
+    Logger logger = LoggerFactory.getLogger(AliasAnalysis.class);
 
     boolean mustAlias(MemoryCoreEvent a, MemoryCoreEvent b);
 

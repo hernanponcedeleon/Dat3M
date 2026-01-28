@@ -1,5 +1,8 @@
 package com.dat3m.dartagnan.verification.solving;
 
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import com.dat3m.dartagnan.configuration.Baseline;
 import com.dat3m.dartagnan.configuration.Property;
 import com.dat3m.dartagnan.encoding.*;
@@ -43,8 +46,8 @@ import com.dat3m.dartagnan.wmm.definition.*;
 import com.dat3m.dartagnan.wmm.utils.Cut;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+
+
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.common.configuration.Option;
@@ -83,7 +86,7 @@ import static com.dat3m.dartagnan.wmm.RelationNameRepository.*;
 @Options
 public class RefinementSolver extends ModelChecker {
 
-    private static final Logger logger = LogManager.getLogger(RefinementSolver.class);
+    private static final Logger logger = LoggerFactory.getLogger(RefinementSolver.class);
 
     private EncodingContext contextWithFullWmm;
 
@@ -423,7 +426,7 @@ public class RefinementSolver extends ModelChecker {
                     for (String key : prover.getStatistics().keySet()) {
                         smtStatistics.append(String.format("\t%s -> %s\n", key, prover.getStatistics().get(key)));
                     }
-                    logger.debug(smtStatistics);
+                    logger.debug(smtStatistics.toString());
                 }
 
                 // ---- Debug iteration stats ----
@@ -435,7 +438,7 @@ public class RefinementSolver extends ModelChecker {
                 if (!isFinalIteration) {
                     debugMessage.append(iteration.caatStats);
                 }
-                logger.debug(debugMessage);
+                logger.debug(debugMessage.toString());
 
                 // ---- Trace iteration stats ----
                 if (logger.isTraceEnabled() && !isFinalIteration) {
@@ -443,7 +446,7 @@ public class RefinementSolver extends ModelChecker {
                     for (Conjunction<CoreLiteral> cube : iteration.inconsistencyReasons.getCubes()) {
                         traceMessage.append(cube).append("\n");
                     }
-                    logger.trace(traceMessage);
+                    logger.trace(traceMessage.toString());
                 }
             }
         }
@@ -484,7 +487,7 @@ public class RefinementSolver extends ModelChecker {
             try (IREvaluator model = context.newEvaluator(prover)) {
                 solverResult = solver.check(model);
             } catch (SolverException e) {
-                logger.error(e);
+                logger.error(e.getMessage());
                 throw e;
             }
             caatTime = (System.currentTimeMillis() - lastTime);
@@ -768,7 +771,7 @@ public class RefinementSolver extends ModelChecker {
     // ================================================================================================================
     // Statistics & Debugging
 
-    private static CharSequence generateSummary(RefinementTrace trace, long boundCheckTime) {
+    private static String generateSummary(RefinementTrace trace, long boundCheckTime) {
         final List<WMMSolver.Statistics> statList = trace.iterations.stream()
                 .filter(iter -> iter.caatStats != null).map(RefinementIteration::caatStats).toList();
         final long totalNativeSolvingTime = trace.getNativeSmtTime();
@@ -818,7 +821,7 @@ public class RefinementSolver extends ModelChecker {
                     .append("   -- Max model size (#events): ").append(maxModelSize).append("\n");
         }
 
-        return message;
+        return message.toString();
     }
 
     private static CharSequence generateCoverageReport(Set<Event> coveredEvents, Program program,

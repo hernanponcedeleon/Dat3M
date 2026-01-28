@@ -1,5 +1,8 @@
 package com.dat3m.dartagnan.encoding;
 
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.integers.IntLiteral;
@@ -26,8 +29,8 @@ import com.dat3m.dartagnan.wmm.utils.graph.mutable.MapEventGraph;
 import com.dat3m.dartagnan.wmm.utils.graph.mutable.MutableEventGraph;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+
+
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.common.configuration.Option;
 import org.sosy_lab.common.configuration.Options;
@@ -47,7 +50,7 @@ import static com.google.common.base.Verify.verify;
 @Options
 public class WmmEncoder implements Encoder {
 
-    private static final Logger logger = LogManager.getLogger(WmmEncoder.class);
+    private static final Logger logger = LoggerFactory.getLogger(WmmEncoder.class);
     private final EncodingContext context;
     Map<Relation, EventGraph> encodeSets;
 

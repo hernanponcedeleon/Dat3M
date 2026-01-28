@@ -1,12 +1,15 @@
 package com.dat3m.dartagnan.wmm;
 
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.filter.Filter;
 import com.dat3m.dartagnan.wmm.axiom.Axiom;
 import com.dat3m.dartagnan.wmm.definition.*;
 import com.google.common.collect.ImmutableSet;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+
+
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.common.configuration.Option;
@@ -35,7 +38,7 @@ public class Wmm {
         public boolean isReduceAcyclicityEncoding() { return reduceAcyclicityEncoding; }
     }
 
-    private static final Logger logger = LogManager.getLogger(Wmm.class);
+    private static final Logger logger = LoggerFactory.getLogger(Wmm.class);
 
     // These relations are part of every memory model (even the "empty" one) because they are
     // necessary to specify the anarchic program semantics.

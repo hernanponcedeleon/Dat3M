@@ -20,19 +20,15 @@ import java.util.List;
 import java.util.Set;
 import java.util.EnumSet;
 import java.util.stream.Collectors;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+
 
 import static com.dat3m.dartagnan.configuration.OptionInfo.collectOptions;
 import static com.dat3m.dartagnan.configuration.OptionNames.*;
-import static com.dat3m.dartagnan.witness.graphml.GraphAttributes.UNROLLBOUND;
 import static java.lang.Integer.parseInt;
 import static com.dat3m.dartagnan.utils.ExitCode.*;
 
 @Options
 public class SVCOMPRunner extends BaseOptions {
-
-    private static final Logger logger = LogManager.getLogger(SVCOMPRunner.class);
 
     private EnumSet<Property> property;
     
@@ -61,6 +57,11 @@ public class SVCOMPRunner extends BaseOptions {
         name=VALIDATE,
         description="Run Dartagnan as a violation witness validator. Argument is the path to the witness file.")
     private String witnessPath;
+
+    @Option(
+        name=NATIVE,
+        description="Run Dartagnan in native mode rather than using the JVM.")
+    private boolean nativeExecution = true;
 
     private static final Set<String> supportedFormats = 
         ImmutableSet.copyOf(Arrays.asList(".c", ".i"));
@@ -93,7 +94,6 @@ public class SVCOMPRunner extends BaseOptions {
         config.recursiveInject(r);
 
         if(r.property == null) {
-            logger.warn("Unrecognized property");
             System.out.println("UNKNOWN");
             return;
         }
@@ -107,22 +107,27 @@ public class SVCOMPRunner extends BaseOptions {
             }
         }
 
-        int bound = witness.hasAttributed(UNROLLBOUND.toString()) ? parseInt(witness.getAttributed(UNROLLBOUND.toString())) : 1;
-
         String result = "UNKNOWN";
         while(result.contains("UNKNOWN")) {
             ArrayList<String> cmd = new ArrayList<>();
-            cmd.add("java");
-            cmd.add("-DlogLevel=info");
-            cmd.add("-DLOGNAME=" + Files.getNameWithoutExtension(programPath));
-            cmd.addAll(Arrays.asList("-jar", System.getenv().get("DAT3M_HOME") + "/dartagnan/target/dartagnan.jar"));
+            if (r.nativeExecution) {
+                cmd.add(System.getenv().get("DAT3M_HOME") + "/dartagnan/target/dartagnan");
+                cmd.add("-DlogLevel=INFO");
+                cmd.add("-DLOGNAME=" + Files.getNameWithoutExtension(programPath));
+                cmd.add("-Djava.library.path=" + System.getenv().get("DAT3M_HOME") + "/dartagnan/target/libs/");
+            } else {
+                cmd.add("java");
+                cmd.add("-DlogLevel=info");
+                cmd.add("-DLOGNAME=" + Files.getNameWithoutExtension(programPath));
+                cmd.add("-jar");
+                cmd.add(System.getenv().get("DAT3M_HOME") + "/dartagnan/target/dartagnan.jar");
+            }
             cmd.add(fileModel.toString());
             cmd.add(programPath);
             cmd.add("svcomp.properties");
             cmd.add("--bound.load=" + boundsFilePath);
             cmd.add("--bound.save=" + boundsFilePath);
             cmd.add(String.format("--%s=%s", PROPERTY, r.property.stream().map(Enum::name).collect(Collectors.joining(","))));
-            cmd.add(String.format("--%s=%s", BOUND, bound));
             cmd.add(String.format("--%s=%s", WITNESS_ORIGINAL_PROGRAM_PATH, programPath));
             cmd.addAll(filterOptions(config));
 
@@ -147,7 +152,7 @@ public class SVCOMPRunner extends BaseOptions {
     
     private static List<String> filterOptions(Configuration config) {
     	
-        List<String> skip = Arrays.asList(PROPERTYPATH);
+        List<String> skip = Arrays.asList(PROPERTYPATH, NATIVE);
     	
         return Arrays.stream(config.asPropertiesString().split("\n")).
             filter(p -> skip.stream().noneMatch(s -> s.equals(p.split(" = ")[0]))).

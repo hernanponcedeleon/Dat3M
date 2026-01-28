@@ -1,13 +1,16 @@
 package com.dat3m.dartagnan.program.processing;
 
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.analysis.ThreadSymmetry;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.core.Assert;
 import com.dat3m.dartagnan.utils.equivalence.EquivalenceClass;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+
+
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 
@@ -27,7 +30,7 @@ import java.util.Set;
  */
 public class SymmetryReduction implements ProgramProcessor {
 
-    private static final Logger logger = LogManager.getLogger(SymmetryReduction.class);
+    private static final Logger logger = LoggerFactory.getLogger(SymmetryReduction.class);
 
     private SymmetryReduction() { }
 

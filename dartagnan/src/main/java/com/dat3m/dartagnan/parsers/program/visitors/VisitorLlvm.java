@@ -1,5 +1,8 @@
 package com.dat3m.dartagnan.parsers.program.visitors;
 
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.exception.ProgramProcessingException;
 import com.dat3m.dartagnan.expression.*;
@@ -28,8 +31,7 @@ import org.antlr.v4.runtime.CharStream;
 import org.antlr.v4.runtime.CharStreams;
 import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.tree.TerminalNode;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+
 
 import java.math.BigInteger;
 import java.util.*;
@@ -43,7 +45,7 @@ import static com.google.common.base.Verify.verify;
 
 public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
 
-    private static final Logger logger = LogManager.getLogger(VisitorLlvm.class);
+    private static final Logger logger = LoggerFactory.getLogger(VisitorLlvm.class);
     private static final String DEFAULT_ENTRY_FUNCTION = "main";
 
     // Global context

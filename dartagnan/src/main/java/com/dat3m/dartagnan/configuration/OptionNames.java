@@ -83,6 +83,7 @@ public class OptionNames {
 
     // SVCOMP Options
     public static final String PROPERTYPATH = "svcomp.property";
+    public static final String NATIVE = "svcomp.native";
 
     // Debugging Options
     public static final String PRINT_PROGRAM_BEFORE_PROCESSING = "printer.beforeProcessing";

@@ -1,5 +1,8 @@
 package com.dat3m.dartagnan.program.processing;
 
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.type.AggregateType;
@@ -14,8 +17,8 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+
+
 import org.sosy_lab.common.configuration.Configuration;
 
 import java.util.ArrayList;
@@ -51,7 +54,7 @@ import java.util.Set;
  */
 public class DynamicSpinLoopDetection implements ProgramProcessor {
 
-    private static final Logger logger = LogManager.getLogger(DynamicSpinLoopDetection.class);
+    private static final Logger logger = LoggerFactory.getLogger(DynamicSpinLoopDetection.class);
 
     public static DynamicSpinLoopDetection fromConfig(Configuration config) {
         return new DynamicSpinLoopDetection();
