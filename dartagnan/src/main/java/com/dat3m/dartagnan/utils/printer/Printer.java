@@ -56,7 +56,7 @@ public class Printer {
     @Option(name = OptionNames.PRINTER_SHOW_PROGRAM_CONSTANTS,
             description = "Print non-deterministic program constants (default: false)",
             secure = true)
-    private boolean showProgramConstants = true;
+    private boolean showProgramConstants = false;
 
     @Option(name = OptionNames.PRINTER_SHOW_SPECIFICATION,
             description = "Print program specification and filter (default: false)",

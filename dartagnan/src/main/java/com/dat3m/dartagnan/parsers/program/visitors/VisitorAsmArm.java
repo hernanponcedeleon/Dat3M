@@ -300,7 +300,7 @@ public class VisitorAsmArm extends AsmArmBaseVisitor<Object> {
     @Override
     public Object visitBranchEqual(AsmArmParser.BranchEqualContext ctx) {
         Label label = AsmUtils.getOrNewLabel(labelsDefined, ctx.Numbers().getText());
-        Expression expr = expressions.makeIntCmp(comparator.left(), IntCmpOp.EQ, comparator.right());
+        Expression expr = expressions.makeIntCmpfromInts(comparator.left(), IntCmpOp.EQ, comparator.right());
         asmInstructions.add(EventFactory.newJump(expr, label));
         return null;
     }

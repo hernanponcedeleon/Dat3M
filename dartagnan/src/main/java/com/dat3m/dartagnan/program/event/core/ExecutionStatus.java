@@ -74,7 +74,7 @@ public class ExecutionStatus extends AbstractEvent implements RegWriter, EventUs
         final Expression notExec = exprEncoder.wrap(bmgr.not(context.execution(event)));
         var res = context.result(this);
         if (res.getType() instanceof PointerType){
-            return bmgr.makeTrue();
+            return bmgr.makeFalse();
         }
         return bmgr.and(
                 super.encodeExec(context), // this is a boolean formula
