@@ -5,12 +5,13 @@
 
 # Dat3M: Memory Model Aware Verification
 
-**Dartagnan** is a tool to check state reachability under weak memory models.
+**Dartagnan** is a tool to check several correctness properties under weak memory models.
 
 Requirements
 ======
 * [Maven](https://maven.apache.org/) 3.8 or above
-* [GraalVM](https://www.graalvm.org/) with `java` version 17 or above
+* [Java](https://openjdk.java.net/projects/jdk/17/) 17 or above
+* [GraalVM](https://www.graalvm.org/) (only if you run in native mode; recommended!)
 * [Clang](https://clang.llvm.org) (only to verify C programs)
 * [Graphviz](https://graphviz.org) (only if option `--witness=png` is used)
 
@@ -33,16 +34,20 @@ docker run -w /home/Dat3M -it dartagnan /bin/bash
 
 **From Sources**
 
-Set Dat3M's home, the folder to generate output files (the output folder can be something different) and the library path (use `DYLD_LIBRARY_PATH` for MacOS)
+Set Dat3M's home, the folder to generate output files (the output folder can be something different) and the library path (only required for native mode; use `DYLD_LIBRARY_PATH` for MacOS)
 ```
 export DAT3M_HOME=<Dat3M's root>
 export DAT3M_OUTPUT=$DAT3M_HOME/output
 export LD_LIBRARY_PATH=$DAT3M_HOME/dartagnan/target/libs/:$LD_LIBRARY_PATH
 ```
 
-To build the tool run
+To build the tool in native mode (recommended!) run
 ```
 mvn clean -Pnative install -DskipTests
+```
+Alternatively, to build the tool in JVM mode (faster compilation, but slower execution) run
+```
+mvn clean install -DskipTests
 ```
 
 Usage
@@ -55,10 +60,13 @@ There are three possible results for the verification:
 - `PASS`: loops have been fully unrolled and the property satisfied.
 - `UNKNOWN`: no violation was found, but loops have not been fully unrolled (you need to increase the unrolling bound).
 
-To run Dartagnan from the console:
-
+To run Dartagnan from the console in native mode:
 ```
 $DAT3M_HOME/dartagnan/target/dartagnan <CAT file> [--target=<arch>] <program file> [options]
+```
+To run in JVM mode:
+```
+java -jar $DAT3M_HOME/dartagnan/target/dartagnan.jar <CAT file> [--target=<arch>] <program file> [options]
 ```
 For programs written in `.c`, value `<arch>` specifies the programming language or architectures to which the program will be compiled. For programs written in `.litmus` format, if the `--target` option is not given, Dartagnan will automatically extract the `<arch>` from the litmus test header. `<arch>` must be one of the following: 
 - c11
