@@ -2,6 +2,7 @@ package com.dat3m.dartagnan.program.analysis.interval;
 
 import com.dat3m.dartagnan.expression.integers.IntBinaryOp;
 import com.dat3m.dartagnan.expression.type.IntegerType;
+import com.dat3m.dartagnan.expression.utils.IntegerHelper;
 import com.google.common.base.Preconditions;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -9,7 +10,6 @@ import org.apache.logging.log4j.Logger;
 
 import java.math.BigInteger;
 import java.math.BigDecimal;
-import java.math.MathContext;
 import java.math.RoundingMode;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -18,22 +18,17 @@ import java.util.function.UnaryOperator;
 
 
 
-// Class to represent closed integer intervals for registers.
+//Class to represent closed integer intervals for registers.
 // A closed interval [lb,ub] means that a register may be any value from lb to ub.
 // Since registers are represented by bit vectors, the values are bounded by the minimum and maximum value.
 // E.g. a register bv8 r0 has a lower bound of -128 (signed) and 255 (unsigned)
-// At any time, we assume the signedness of the register based on the bounds. 
-// E.g. if the lower bound of a register < 0 then we assume its signed otherwise we assume unsignedness.
-// Whenever this becomes ambiguous we assume the widest possible interval. 
-// Note for r0 that the most general interval itself is ambiguous [-128,255]
-// We disallow such interval since they are tricky to encode in bitvector theory
+// We do not assume anything about the signedness of a register associated with an interval.
 
-public class Interval implements Cloneable {
+final public class Interval {
 
     private final BigInteger lowerbound;
     private final BigInteger upperbound;
     private final IntegerType type;
-    private SignState signState = SignState.UNKNOWN;
 
     static Set<Object> unsupportedOperators = new HashSet<>();
     @SuppressWarnings("unused")
@@ -60,12 +55,6 @@ public class Interval implements Cloneable {
 
     public Interval(BigInteger value, IntegerType type) {
         this(value,value,type);
-    }
-
-    public enum SignState {
-        UNKNOWN,
-        SIGNED,
-        UNSIGNED
     }
 
     public BigInteger getLowerbound() {
@@ -102,7 +91,7 @@ public class Interval implements Cloneable {
 
     public Interval applyOperator(IntBinaryOp op, Interval interval) {
         return switch (op) {
-            case ADD, SUB, MUL, DIV, OR, AND -> applyOperatorMethod(op,interval);
+            case ADD, SUB, MUL, DIV, UDIV, OR, AND -> applyOperatorMethod(op,interval);
             default -> {
                 unsupportedOperators.add(op);
                 yield Interval.getTop(type);
@@ -111,24 +100,11 @@ public class Interval implements Cloneable {
     }
 
     public boolean isSignInsensitive() {
-        boolean isUnknown = signState.equals(SignState.UNKNOWN);
-        return (isUnknown && allNegative()) || (isUnknown && allNonNegative() && !crossesSignBoundary());
+        return allNegative() || (allNonNegative() && !crossesSignBoundary());
     }
 
-    public SignState getSignState() {
-        return signState;
-    }
-
-    public void setSignUnknown() {
-        signState = SignState.UNKNOWN;
-    }
-
-    public void setSignSigned() {
-        signState = SignState.SIGNED;
-    }
-
-    public void setSignUnsigned() {
-        signState = SignState.UNSIGNED;
+    private boolean doesNotCrossZero() {
+        return lowerbound.compareTo(BigInteger.ZERO) > 0 || upperbound.compareTo(BigInteger.ZERO) < 0;
     }
 
     private boolean allNegative() {
@@ -147,16 +123,7 @@ public class Interval implements Cloneable {
         Interval newInterval;
         UnaryOperator<Interval> opFunc = selectOperatorMethod(op);
         if(opFunc != null && !this.isTop() && !interval.isTop()) {
-            if (op == IntBinaryOp.DIV && 
-        (interval.lowerbound.compareTo(BigInteger.ZERO) > 0 ||
-            interval.upperbound.compareTo(BigInteger.ZERO) < 0)) {
-                newInterval = opFunc.apply(interval);
-
-            } else if(op != IntBinaryOp.DIV) {
-                newInterval = opFunc.apply(interval);
-            } else {
-                newInterval = Interval.getTop(type);
-            }
+           newInterval = opFunc.apply(interval);
         } else {
             newInterval = Interval.getTop(type);
         }
@@ -169,7 +136,8 @@ public class Interval implements Cloneable {
             case ADD -> this::add;
             case SUB -> this::subtract;
             case MUL -> this::multiply;
-            case DIV -> this::divide;
+            case DIV -> this::sdivide;
+            case UDIV -> this::udivide;
             case OR -> this::or;
             case AND -> this::and;
             default -> {
@@ -208,21 +176,52 @@ public class Interval implements Cloneable {
         BigDecimal mul4 =  ub1.multiply(ub2);
         BigDecimal resultBoundLowerBounds = mul1.min(mul2).min(mul3).min(mul4);
         BigDecimal resultBoundUpperBounds = mul1.max(mul2).max(mul3).max(mul4);
-        BigInteger resultBoundLowerBoundsInt = resultBoundLowerBounds.setScale(0,RoundingMode.HALF_UP).toBigInteger();
-        BigInteger resultBoundUpperBoundsInt = resultBoundUpperBounds.setScale(0,RoundingMode.HALF_UP).toBigInteger();
+        BigInteger resultBoundLowerBoundsInt = resultBoundLowerBounds.setScale(0,RoundingMode.FLOOR).toBigInteger();
+        BigInteger resultBoundUpperBoundsInt = resultBoundUpperBounds.setScale(0,RoundingMode.CEILING).toBigInteger();
         return new Interval(resultBoundLowerBoundsInt,resultBoundUpperBoundsInt,this.getType());
     }
 
 
-    private Interval divide(Interval i2) {
-        MathContext mc = new MathContext(3, RoundingMode.HALF_UP);
-        BigDecimal lowerboundI1 = new BigDecimal(this.lowerbound,mc);
-        BigDecimal upperboundI1 = new BigDecimal(this.upperbound,mc);
-        BigDecimal lowerboundI2 = new BigDecimal(i2.lowerbound,mc);
-        BigDecimal upperboundI2 = new BigDecimal(i2.upperbound,mc);
-        BigDecimal reciprocalLowerbound = BigDecimal.ONE.divide(lowerboundI2,mc);
-        BigDecimal reciprocalUpperbound = BigDecimal.ONE.divide(upperboundI2,mc);
-        return multiply(lowerboundI1,upperboundI1,reciprocalLowerbound,reciprocalUpperbound);
+    private Interval sdivide(Interval i2) {
+        if(this.isSignInsensitive() && i2.isSignInsensitive()) {
+            Interval signedInterval1 = this.convertToSignedInterval();
+            Interval signedInterval2 = i2.convertToSignedInterval();
+            // Asymmetric edge case
+            if (signedInterval1.lowerbound.compareTo(type.getMinimumValue(true)) == 0 && signedInterval2.upperbound.compareTo(BigInteger.ONE.negate()) == 0 ) {
+                return Interval.getTop(type);
+            } else {
+                return divide(signedInterval1, signedInterval2);
+            }
+        } else {
+            return Interval.getTop(type);
+        }
+    }
+
+
+    private Interval udivide(Interval i2) {
+        if(this.isSignInsensitive() && i2.isSignInsensitive()) {
+            Interval unsignedInterval1 = this.convertToUnsignedInterval();
+            Interval unsignedInterval2 = i2.convertToUnsignedInterval();
+            return divide(unsignedInterval1, unsignedInterval2);
+        } else {
+            return Interval.getTop(type);
+        }
+    }
+
+    private Interval divide(Interval numeratorInterval, Interval denominatorInterval) {
+
+        if(denominatorInterval.doesNotCrossZero()) {
+            BigDecimal lowerboundI1 = new BigDecimal(numeratorInterval.lowerbound);
+            BigDecimal upperboundI1 = new BigDecimal(numeratorInterval.upperbound);
+            BigDecimal lowerboundI2 = new BigDecimal(denominatorInterval.lowerbound);
+            BigDecimal upperboundI2 = new BigDecimal(denominatorInterval.upperbound);
+            // TODO: Scale 3 is a random magic constant. I Do not have a better solution yet.
+            BigDecimal reciprocalLowerbound = BigDecimal.ONE.divide(lowerboundI2, 3, RoundingMode.FLOOR);
+            BigDecimal reciprocalUpperbound = BigDecimal.ONE.divide(upperboundI2, 3, RoundingMode.CEILING);
+            return multiply(lowerboundI1, upperboundI1, reciprocalLowerbound, reciprocalUpperbound);
+        } else {
+            return Interval.getTop(type);
+        }
     }
 
 
@@ -310,23 +309,39 @@ public class Interval implements Cloneable {
 
 
     private Interval or(Interval interval) {
-        BigInteger lb1 = this.lowerbound;
-        BigInteger lb2 = interval.lowerbound;
-        BigInteger ub1 = this.upperbound;
-        BigInteger ub2 = interval.upperbound;
-        return doOR(lb1,lb2,ub1,ub2);
+        return doOR(this.lowerbound,
+                interval.lowerbound,
+                this.upperbound,
+                interval.upperbound);
     }
 
 
     private Interval and(Interval interval) {
-        BigInteger lb1 = this.lowerbound;
-        BigInteger lb2 = interval.lowerbound;
-        BigInteger ub1 = this.upperbound;
-        BigInteger ub2 = interval.upperbound;
-        Interval orInterval = doOR(ub1.not(),ub2.not(),lb1.not(),lb2.not());
+        Interval orInterval = doOR(
+                this.upperbound.not(),
+                interval.upperbound.not(),
+                this.lowerbound.not(),
+                interval.lowerbound.not());
         BigInteger maxAnd = orInterval.getLowerbound().not();
         BigInteger minAnd = orInterval.getUpperbound().not();
         return new Interval(minAnd,maxAnd,type);
+    }
+
+
+    private Interval convertToSignedInterval() {
+        int width = this.type.getBitWidth();
+        return new Interval(
+                IntegerHelper.normalizeSigned(this.lowerbound,width),
+                IntegerHelper.normalizeSigned(this.upperbound,width),
+                type);
+    }
+
+    private Interval convertToUnsignedInterval() {
+        int width = this.type.getBitWidth();
+        return new Interval(
+                IntegerHelper.normalizeUnsigned(this.lowerbound,width),
+                IntegerHelper.normalizeUnsigned(this.upperbound,width),
+                type);
     }
 
 
@@ -347,12 +362,6 @@ public class Interval implements Cloneable {
 
     @Override
     public String toString() {
-        return "[ " + this.lowerbound + ", " + this.upperbound + " ]" + " Sign: " + signState+"; ";
-    }
-
-    @Override
-    protected Interval clone() throws CloneNotSupportedException {
-        return (Interval) super.clone();
-
+        return "[ " + this.lowerbound + ", " + this.upperbound + " ];";
     }
 }
