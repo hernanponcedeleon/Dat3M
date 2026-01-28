@@ -61,7 +61,7 @@ public class SVCOMPRunner extends BaseOptions {
     @Option(
         name=NATIVE,
         description="Run Dartagnan in native mode rather than using the JVM.")
-    private boolean nativeExecution = false;
+    private boolean nativeExecution = true;
 
     private static final Set<String> supportedFormats = 
         ImmutableSet.copyOf(Arrays.asList(".c", ".i"));
