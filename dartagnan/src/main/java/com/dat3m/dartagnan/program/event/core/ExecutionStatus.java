@@ -73,9 +73,12 @@ public class ExecutionStatus extends AbstractEvent implements RegWriter, EventUs
         // change the compilation of Store-Conditional to invert the value.
         final Expression notExec = exprEncoder.wrap(bmgr.not(context.execution(event)));
         var res = context.result(this);
+        if (res.getType() instanceof PointerType){
+            return bmgr.makeTrue();
+        }
         return bmgr.and(
-                super.encodeExec(context),
-                context.getExpressionEncoder().equal(res, notExec, LEFT_TO_RIGHT) // was RIGHT_TO_LEFT
+                super.encodeExec(context), // this is a boolean formula
+                context.getExpressionEncoder().equal(res, notExec, RIGHT_TO_LEFT)
         );
     }
 
