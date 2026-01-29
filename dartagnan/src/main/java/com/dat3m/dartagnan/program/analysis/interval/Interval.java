@@ -1,6 +1,8 @@
 package com.dat3m.dartagnan.program.analysis.interval;
 
+import com.dat3m.dartagnan.expression.ExpressionKind;
 import com.dat3m.dartagnan.expression.integers.IntBinaryOp;
+import com.dat3m.dartagnan.expression.integers.IntUnaryOp;
 import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.expression.utils.IntegerHelper;
 import com.google.common.base.Preconditions;
@@ -15,6 +17,7 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.function.UnaryOperator;
+import java.util.function.Supplier;
 
 
 
@@ -89,19 +92,28 @@ final public class Interval {
         return this.equals(Interval.getTop(type));
     }
 
-    public Interval applyOperator(IntBinaryOp op, Interval interval) {
-        return switch (op) {
-            case ADD, SUB, MUL, DIV, UDIV, OR, AND -> applyOperatorMethod(op,interval);
-            default -> {
-                unsupportedOperators.add(op);
-                yield Interval.getTop(type);
-            }
-        };
-    }
 
     public boolean isSignInsensitive() {
         return allNegative() || (allNonNegative() && !crossesSignBoundary());
     }
+
+
+    public Interval applyOperator(ExpressionKind op, Interval... intervals) {
+        Supplier<Interval> opFunc = null;
+        if(op instanceof IntUnaryOp unop && intervals.length == 0) {
+            opFunc = selectUnaryOperatorMethod(unop);
+        }
+        else if(op instanceof IntBinaryOp binop && intervals.length == 1 && !intervals[0].isTop()) {
+            opFunc = selectCurriedBinaryOperatorMethod(binop,intervals[0]);
+        } else if (intervals.length > 2) {
+            throw new IllegalArgumentException("More than 2 intervals specified");
+        }
+
+        if(opFunc != null && !this.isTop()) {
+            return opFunc.get();
+        } else return Interval.getTop(type);
+    }
+
 
     private boolean doesNotCrossZero() {
         return lowerbound.compareTo(BigInteger.ZERO) > 0 || upperbound.compareTo(BigInteger.ZERO) < 0;
@@ -119,20 +131,8 @@ final public class Interval {
         return (lowerbound.signum() >= 0 && lowerbound.compareTo(type.getMaximumValue(true)) <= 0) && upperbound.compareTo(type.getMaximumValue(true)) > 0;
     }
 
-    private Interval applyOperatorMethod(IntBinaryOp op, Interval interval) {
-        Interval newInterval;
-        UnaryOperator<Interval> opFunc = selectOperatorMethod(op);
-        if(opFunc != null && !this.isTop() && !interval.isTop()) {
-           newInterval = opFunc.apply(interval);
-        } else {
-            newInterval = Interval.getTop(type);
-        }
-        return newInterval;
-    }
-
-
-    private UnaryOperator<Interval> selectOperatorMethod(IntBinaryOp op) {
-        return switch (op) {
+    private Supplier<Interval> selectCurriedBinaryOperatorMethod(IntBinaryOp op, Interval interval) {
+        UnaryOperator<Interval> opFunc = switch (op) {
             case ADD -> this::add;
             case SUB -> this::subtract;
             case MUL -> this::multiply;
@@ -140,6 +140,19 @@ final public class Interval {
             case UDIV -> this::udivide;
             case OR -> this::or;
             case AND -> this::and;
+            default -> {
+                unsupportedOperators.add(op);
+                yield null;
+            }
+        };
+        if (opFunc != null) {
+            return () -> opFunc.apply(interval);
+        } else return null;
+    }
+
+    private Supplier<Interval> selectUnaryOperatorMethod(IntUnaryOp op) {
+        return switch (op) {
+            case MINUS -> this::negate;
             default -> {
                 unsupportedOperators.add(op);
                 yield null;
@@ -186,7 +199,7 @@ final public class Interval {
         if(this.isSignInsensitive() && i2.isSignInsensitive()) {
             Interval signedInterval1 = this.convertToSignedInterval();
             Interval signedInterval2 = i2.convertToSignedInterval();
-            // Asymmetric edge case
+                // Asymmetric edge case
             if (signedInterval1.lowerbound.compareTo(type.getMinimumValue(true)) == 0 && signedInterval2.upperbound.compareTo(BigInteger.ONE.negate()) == 0 ) {
                 return Interval.getTop(type);
             } else {
@@ -325,6 +338,14 @@ final public class Interval {
         BigInteger maxAnd = orInterval.getLowerbound().not();
         BigInteger minAnd = orInterval.getUpperbound().not();
         return new Interval(minAnd,maxAnd,type);
+    }
+
+    private Interval negate() {
+        if(upperbound.compareTo(type.getMinimumValue(true).negate()) > 0) {
+            return Interval.getTop(type);
+        } else {
+            return new Interval(upperbound.negate(),lowerbound.negate(),type);
+        }
     }
 
 
