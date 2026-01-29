@@ -176,7 +176,7 @@ let fre = fr & ext
 
 // locord, rf, fr, asmo must not form cycles
 // acyclic (locord | rf | fr | asmo) as consistency-cycle
-let cycle = (locord | rf | fr | asmo)+
+let cycle = id & ((locord | rf | fr | asmo)+)
 flag ~empty cycle
 
 // non-atomic cannot read-from a value that is shadowed by another write
