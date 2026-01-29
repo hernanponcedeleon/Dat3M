@@ -48,7 +48,7 @@ public class ExpressionHelper {
     }
 
     public static boolean isScalar(Type type) {
-        return type instanceof BooleanType || type instanceof IntegerType || type instanceof FloatType;
+        return type instanceof BooleanType || type instanceof IntegerType || type instanceof FloatType || type instanceof PointerType;
     }
 
     public static boolean isAggregateLike(Type type) {

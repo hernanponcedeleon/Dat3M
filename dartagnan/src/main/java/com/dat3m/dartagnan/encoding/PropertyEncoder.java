@@ -478,7 +478,8 @@ public class PropertyEncoder implements Encoder {
         if (laterStores.stream().anyMatch(o -> exec.isImplied(store, o))) {
             return false;
         }
-        if (!stores.stream().allMatch(o -> o.getMemValue().getType() instanceof IntegerType || o.getMemValue().getType() instanceof PointerType)) {
+        if (!stores.stream().allMatch(o -> o.getMemValue().getType() instanceof IntegerType ||
+                o.getMemValue().getType() instanceof PointerType)) {
             return false;
         }
         final TypeFactory types = TypeFactory.getInstance();
