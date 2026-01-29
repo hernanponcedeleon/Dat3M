@@ -34,10 +34,11 @@ docker run -w /home/Dat3M -it dartagnan /bin/bash
 
 **From Sources**
 
-Set Dat3M's home, the folder to generate output files (the output folder can be something different) and the library path (only required for native mode; use `DYLD_LIBRARY_PATH` for MacOS)
+Set Dat3M's home, the folder to generate output files (the output folder can be something different) and the binary and library paths (only required for native mode; use `DYLD_LIBRARY_PATH` for MacOS)
 ```
 export DAT3M_HOME=<Dat3M's root>
 export DAT3M_OUTPUT=$DAT3M_HOME/output
+export PATH=$DAT3M_HOME/dartagnan/target/:$PATH
 export LD_LIBRARY_PATH=$DAT3M_HOME/dartagnan/target/libs/:$LD_LIBRARY_PATH
 ```
 
@@ -62,7 +63,7 @@ There are three possible results for the verification:
 
 To run Dartagnan from the console in native mode:
 ```
-$DAT3M_HOME/dartagnan/target/dartagnan <CAT file> [--target=<arch>] <program file> [options]
+dartagnan <CAT file> [--target=<arch>] <program file> [options]
 ```
 To run in JVM mode:
 ```

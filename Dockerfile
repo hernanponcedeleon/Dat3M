@@ -33,8 +33,9 @@ RUN gu install native-image
 WORKDIR /home
 RUN git clone --branch development https://github.com/hernanponcedeleon/Dat3M.git && \
     cd Dat3M && \
-    mvn clean install -DskipTests
+    mvn clean -Pnative install -DskipTests
 
 ENV DAT3M_HOME=/home/Dat3M
 ENV DAT3M_OUTPUT=$DAT3M_HOME/output
+ENV PATH=$DAT3M_HOME/dartagnan/target/:$PATH
 ENV LD_LIBRARY_PATH=$DAT3M_HOME/dartagnan/target/libs/:$LD_LIBRARY_PATH
