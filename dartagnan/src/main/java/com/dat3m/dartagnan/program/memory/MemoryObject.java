@@ -7,7 +7,6 @@ import com.dat3m.dartagnan.expression.Type;
 import com.dat3m.dartagnan.expression.aggregates.ConstructExpr;
 import com.dat3m.dartagnan.expression.base.LeafExpressionBase;
 import com.dat3m.dartagnan.expression.integers.IntLiteral;
-import com.dat3m.dartagnan.expression.pointers.NullLiteral;
 import com.dat3m.dartagnan.expression.type.*;
 import com.dat3m.dartagnan.program.event.core.Alloc;
 import com.google.common.base.Preconditions;
