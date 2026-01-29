@@ -189,6 +189,7 @@ public class ExprSimplifier extends ExprTransformer {
 
         return expressions.makeIntCmp(left, op, right);
     }
+
     @Override
     public Expression visitPtrCmpExpression(PtrCmpExpr cmp) {
         final Expression rewrite = tryGeneralRewrite(cmp);

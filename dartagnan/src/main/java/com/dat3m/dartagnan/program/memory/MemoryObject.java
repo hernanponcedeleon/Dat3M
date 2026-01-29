@@ -7,6 +7,7 @@ import com.dat3m.dartagnan.expression.Type;
 import com.dat3m.dartagnan.expression.aggregates.ConstructExpr;
 import com.dat3m.dartagnan.expression.base.LeafExpressionBase;
 import com.dat3m.dartagnan.expression.integers.IntLiteral;
+import com.dat3m.dartagnan.expression.pointers.NullLiteral;
 import com.dat3m.dartagnan.expression.type.*;
 import com.dat3m.dartagnan.program.event.core.Alloc;
 import com.google.common.base.Preconditions;
@@ -70,7 +71,7 @@ public class MemoryObject extends LeafExpressionBase<PointerType> {
     public Set<String> getFeatureTags() { return featureTags; }
 
     public Expression size() { return size; }
-    public boolean hasKnownSize() { return size instanceof IntLiteral; }
+    public boolean hasKnownSize() { return size instanceof IntLiteral || size instanceof NullLiteral; }
     public int getKnownSize() {
         Preconditions.checkState(hasKnownSize(), "Cannot call method getKnownSize() for object %s with unknown size", this);
         return ((IntLiteral)size).getValueAsInt();
