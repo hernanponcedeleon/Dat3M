@@ -389,6 +389,8 @@ public class FieldSensitiveAndersen implements AliasAnalysis {
             return null;
         }
 
+        // todo: add visitPtrAddExpression.
+
         @Override
         public Result visitIntUnaryExpression(IntUnaryExpr x) {
             Result i = x.getOperand().accept(this);

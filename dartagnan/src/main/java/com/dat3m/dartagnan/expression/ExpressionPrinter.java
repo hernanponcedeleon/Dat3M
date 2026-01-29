@@ -7,6 +7,7 @@ import com.dat3m.dartagnan.expression.booleans.BoolBinaryOp;
 import com.dat3m.dartagnan.expression.booleans.BoolUnaryOp;
 import com.dat3m.dartagnan.expression.floats.FloatSizeCast;
 import com.dat3m.dartagnan.expression.floats.IntToFloatCast;
+import com.dat3m.dartagnan.expression.pointers.*;
 import com.dat3m.dartagnan.expression.integers.*;
 import com.dat3m.dartagnan.expression.misc.GEPExpr;
 import com.dat3m.dartagnan.expression.misc.ITEExpr;
@@ -123,6 +124,32 @@ public final class ExpressionPrinter implements ExpressionVisitor<String> {
     public String visitGEPExpression(GEPExpr expr) {
         return expr.getOperands().stream().map(this::visit).collect(Collectors.joining(", ", "GEP(", ")"));
     }
+
+    @Override
+    public String visitIntToPtrCastExpression(IntToPtrCast expr) {
+        return String.format("%s to %s", visit(expr.getOperand()), expr.getTargetType());
+    }
+
+    @Override
+    public String visitPtrToIntCastExpression(PtrToIntCast expr) {
+        return String.format("%s to %s", visit(expr.getOperand()), expr.getTargetType());
+    }
+
+    @Override
+    public String visitPtrAddExpression(PtrAddExpr expr) {
+        return String.format("%s + %s", visit(expr.getBase()), visit(expr.getOffset()));
+    }
+
+    @Override
+    public String visitPtrConcat(PtrConcat expr) {
+        return Lists.reverse(expr.getOperands()).stream().map(this::visit).collect(Collectors.joining("::"));
+    }
+
+    @Override
+    public String visitPtrExtract(PtrExtract expr) {
+        return String.format("%s[%d..%d]", expr.getOperand().accept(this), expr.getLowBit(), expr.getHighBit());
+    }
+
 
     @Override
     public String visitITEExpression(ITEExpr expr) {

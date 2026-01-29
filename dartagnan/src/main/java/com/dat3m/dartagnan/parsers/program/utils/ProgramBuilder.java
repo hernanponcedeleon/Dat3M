@@ -5,8 +5,11 @@ import com.dat3m.dartagnan.exception.MalformedProgramException;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.Type;
+import com.dat3m.dartagnan.expression.integers.IntCmpExpr;
+import com.dat3m.dartagnan.expression.integers.IntCmpOp;
 import com.dat3m.dartagnan.expression.integers.IntLiteral;
 import com.dat3m.dartagnan.expression.type.FunctionType;
+import com.dat3m.dartagnan.expression.type.PointerType;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.program.*;
 import com.dat3m.dartagnan.program.Thread;
@@ -131,6 +134,16 @@ public class ProgramBuilder {
         program.setFilterSpecification(ass);
     }
 
+    public Expression makeIntCmpWithIntOutput(Expression leftOperand, IntCmpOp operator, Expression rightOperand) {
+        if (leftOperand.getType() instanceof PointerType){
+            return makeIntCmpWithIntOutput(expressions.makePtrToIntCast(leftOperand, types.getArchType()), operator, rightOperand);
+        }
+        if (rightOperand.getType() instanceof PointerType){
+            return makeIntCmpWithIntOutput(leftOperand, operator, expressions.makePtrToIntCast(rightOperand, types.getArchType()));
+        }
+        return new IntCmpExpr(types.getBooleanType(), leftOperand, operator, rightOperand);
+    }
+
     // ----------------------------------------------------------------------------------------------------------------
     // Threads and Functions
 
@@ -242,9 +255,9 @@ public class ProgramBuilder {
         getOrNewMemoryObject(locName).setInitialValue(0, iValue);
     }
 
-    public void initRegEqLocPtr(int regThread, String regName, String locName, Type type) {
+    public void initRegEqLocPtr(int regThread, String regName, String locName) {
         MemoryObject object = getOrNewMemoryObject(locName);
-        Register reg = getOrNewRegister(regThread, regName, type);
+        Register reg = getOrNewRegister(regThread, regName, types.getPointerType());
         addChild(regThread, EventFactory.newLocal(reg, object));
     }
 
@@ -269,8 +282,8 @@ public class ProgramBuilder {
         return getFunctionOrError(fid).getRegister(name);
     }
 
-    public Register getOrNewRegister(int fid, String name) {
-        return getOrNewRegister(fid, name, types.getArchType());
+    public Register getOrNewRegister(int fid, String name) { // use carefully
+        return getOrNewRegister(fid, name, types.getPointerType());
     }
 
     public Register getOrNewRegister(int fid, String name, Type type) {
@@ -296,6 +309,7 @@ public class ProgramBuilder {
     public Label getEndOfThreadLabel(int tid) {
         return getOrCreateLabel(tid, "END_OF_T" + tid);
     }
+
 
     // ----------------------------------------------------------------------------------------------------------------
     // GPU

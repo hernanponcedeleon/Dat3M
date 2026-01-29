@@ -5,6 +5,7 @@ import com.dat3m.dartagnan.expression.ExpressionVisitor;
 import com.dat3m.dartagnan.expression.aggregates.ConstructExpr;
 import com.dat3m.dartagnan.expression.aggregates.ExtractExpr;
 import com.dat3m.dartagnan.expression.integers.*;
+import com.dat3m.dartagnan.expression.pointers.*;
 import com.dat3m.dartagnan.expression.misc.ITEExpr;
 import com.dat3m.dartagnan.expression.processing.ExpressionInspector;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
@@ -1022,7 +1023,57 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
             return edges;
         }
 
-        record ExprFlip(Expression x, int factor) {}
+        record ExprFlip(Expression expr, int factor) {}
+
+        // fixme is ptr value treated the same as an int value?
+        @Override
+        public List<IncludeEdge> visitPtrAddExpression(PtrAddExpr expr) {
+            BigInteger offset = BigInteger.ZERO;
+            final List<ExprFlip> operands = new ArrayList<>();
+            final Stack<ExprFlip> stack = new Stack<>();
+            if (!matchPtrAddExpression(new ExprFlip(expr, 1), stack)) {
+                return visitExpression(expr);
+            }
+            while (!stack.isEmpty()) {
+                final ExprFlip operand = stack.pop();
+                if (matchPtrAddExpression(operand, stack)) {
+                    continue;
+                }
+                if (operand.expr instanceof IntLiteral literal) {
+                    offset = offset.add(literal.getValue().multiply(BigInteger.valueOf(operand.factor)));
+                } else {
+                    operands.add(operand);
+                }
+            }
+            final List<IncludeEdge> result = new ArrayList<>();
+            final int o = offset.intValue();
+            for (int i = 0; i < operands.size(); i++) {
+                final ExprFlip operand = operands.get(i);
+                if (operand.factor != 1) {
+                    result.addAll(visitExpression(operand.expr));
+                    continue;
+                }
+                List<Integer> alignment = List.of();
+                for (int j = 0; j < operands.size(); j++) {
+                    alignment = j == i ? alignment : compose(alignment, operands.get(j).factor);
+                }
+                for (IncludeEdge subResult : operand.expr.accept(this)) {
+                    addInto(result, compose(subResult, modifier(o, alignment)), false);
+                }
+            }
+            return result;
+        }
+
+        private boolean matchPtrAddExpression(ExprFlip operand, Stack<ExprFlip> stack) {
+            if (!(operand.expr instanceof PtrAddExpr xp)) return false;
+            else {
+                final Expression left = xp.getBase();
+                final Expression right = xp.getOffset();
+                stack.push(new ExprFlip(right, operand.factor));
+                stack.push(new ExprFlip(left, operand.factor));
+                return true;
+            }
+        }
 
         @Override
         public List<IncludeEdge> visitIntBinaryExpression(IntBinaryExpr x) {
@@ -1037,7 +1088,7 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
                 if (matchLinearExpression(operand, stack)) {
                     continue;
                 }
-                if (operand.x instanceof IntLiteral literal) {
+                if (operand.expr instanceof IntLiteral literal) {
                     offset = offset.add(literal.getValue().multiply(BigInteger.valueOf(operand.factor)));
                 } else {
                     operands.add(operand);
@@ -1048,14 +1099,14 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
             for (int i = 0; i < operands.size(); i++) {
                 final ExprFlip operand = operands.get(i);
                 if (operand.factor != 1) {
-                    result.addAll(visitExpression(operand.x));
+                    result.addAll(visitExpression(operand.expr));
                     continue;
                 }
                 List<Integer> alignment = List.of();
                 for (int j = 0; j < operands.size(); j++) {
                     alignment = j == i ? alignment : compose(alignment, operands.get(j).factor);
                 }
-                for (IncludeEdge subResult : operand.x.accept(this)) {
+                for (IncludeEdge subResult : operand.expr.accept(this)) {
                     addInto(result, compose(subResult, modifier(o, alignment)), false);
                 }
             }
@@ -1063,11 +1114,11 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
         }
 
         private boolean matchLinearExpression(ExprFlip operand, Stack<ExprFlip> stack) {
-            final Expression left = operand.x instanceof IntBinaryExpr x ? x.getLeft() : null;
-            final Expression right = operand.x instanceof IntBinaryExpr x ? x.getRight() : null;
-            final boolean add = operand.x.getKind().equals(IntBinaryOp.ADD);
-            final boolean sub = operand.x.getKind().equals(IntBinaryOp.SUB);
-            final boolean mul = operand.x.getKind().equals(IntBinaryOp.MUL);
+            final Expression left = operand.expr instanceof IntBinaryExpr x ? x.getLeft() : null;
+            final Expression right = operand.expr instanceof IntBinaryExpr x ? x.getRight() : null;
+            final boolean add = operand.expr.getKind().equals(IntBinaryOp.ADD);
+            final boolean sub = operand.expr.getKind().equals(IntBinaryOp.SUB);
+            final boolean mul = operand.expr.getKind().equals(IntBinaryOp.MUL);
             if (add || sub) {
                 stack.push(new ExprFlip(right, operand.factor * (add ? 1 : -1)));
                 stack.push(new ExprFlip(left, operand.factor));

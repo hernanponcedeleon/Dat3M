@@ -3,6 +3,7 @@ package com.dat3m.dartagnan.program.event.core;
 import com.dat3m.dartagnan.encoding.EncodingContext;
 import com.dat3m.dartagnan.encoding.ExpressionEncoder;
 import com.dat3m.dartagnan.expression.Expression;
+import com.dat3m.dartagnan.expression.type.PointerType;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.*;
 import org.sosy_lab.java_smt.api.BooleanFormula;
@@ -11,6 +12,7 @@ import org.sosy_lab.java_smt.api.BooleanFormulaManager;
 import java.util.Map;
 import java.util.Set;
 
+import static com.dat3m.dartagnan.encoding.ExpressionEncoder.ConversionMode.LEFT_TO_RIGHT;
 import static com.dat3m.dartagnan.encoding.ExpressionEncoder.ConversionMode.RIGHT_TO_LEFT;
 
 public class ExecutionStatus extends AbstractEvent implements RegWriter, EventUser {
@@ -20,6 +22,7 @@ public class ExecutionStatus extends AbstractEvent implements RegWriter, EventUs
     private final boolean trackDep;
 
     public ExecutionStatus(Register register, Event event, boolean trackDep) {
+        // assert !(register.getType() instanceof PointerType);
         this.register = register;
         this.event = event;
         this.trackDep = trackDep;
@@ -69,9 +72,13 @@ public class ExecutionStatus extends AbstractEvent implements RegWriter, EventUs
         // However, this is very counterintuitive and I think we should return 1/true on success and instead
         // change the compilation of Store-Conditional to invert the value.
         final Expression notExec = exprEncoder.wrap(bmgr.not(context.execution(event)));
+        var res = context.result(this);
+        if (res.getType() instanceof PointerType){
+            return bmgr.makeFalse();
+        }
         return bmgr.and(
-                super.encodeExec(context),
-                context.getExpressionEncoder().equal(context.result(this), notExec, RIGHT_TO_LEFT)
+                super.encodeExec(context), // this is a boolean formula
+                context.getExpressionEncoder().equal(res, notExec, RIGHT_TO_LEFT)
         );
     }
 

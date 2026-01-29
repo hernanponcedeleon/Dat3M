@@ -163,11 +163,18 @@ class VisitorTso extends VisitorBase {
         Expression address = e.getAddress();
         Load load = newRMWLoad(resultRegister, address);
 
+//        return tagList(eventSequence(
+//                load,
+//                newLocal(dummyReg, expressions.makeIntBinary(resultRegister, e.getOperator(), e.getOperand())),
+//                newRMWStore(load, address, dummyReg)
+//        ));
         return tagList(eventSequence(
                 load,
-                newLocal(dummyReg, expressions.makeIntBinary(resultRegister, e.getOperator(), e.getOperand())),
+                newLocal(dummyReg, expressions.makeCast(expressions.makeIntBinaryfromInts(resultRegister,e.getOperator(),e.getOperand()),dummyReg.getType())),
                 newRMWStore(load, address, dummyReg)
         ));
+
+
     }
 
     @Override

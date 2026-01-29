@@ -61,7 +61,7 @@ public class Printer {
     @Option(name = OptionNames.PRINTER_SHOW_SPECIFICATION,
             description = "Print program specification and filter (default: false)",
             secure = true)
-    private boolean showSpecification = false;
+    private boolean showSpecification = true;
 
     // =================================================================================
 

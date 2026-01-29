@@ -78,7 +78,7 @@ public class ProcessingManager implements ProgramProcessor {
     @Option(name = PRINT_PROGRAM_AFTER_PROCESSING,
             description = "Prints the program after all processing.",
             secure = true)
-    private boolean printAfterProcessing = false;
+    private boolean printAfterProcessing = true;
 
 // ======================================================================
     private ProcessingManager(Configuration config) throws InvalidConfigurationException {
@@ -130,6 +130,7 @@ public class ProcessingManager implements ProgramProcessor {
                                 simplifyFunction
                         ), Target.FUNCTIONS, true
                 ),
+
                 ThreadCreation.fromConfig(config),
                 ResolveNonDetChoices.newInstance(),
                 reduceSymmetry ? SymmetryReduction.fromConfig(config) : null,
@@ -151,8 +152,8 @@ public class ProcessingManager implements ProgramProcessor {
                 detectMixedSizeAccesses ? simplifyBoundedProgram : null,
                 NonterminationDetection.fromConfig(config),
                 // --- Statistics + verification ---
-                IdReassignment.newInstance(), // Normalize used Ids (remove any gaps)
                 printAfterProcessing ? DebugPrint.withHeader("After processing", Printer.Mode.THREADS, config) : null,
+                IdReassignment.newInstance(), // Normalize used Ids (remove any gaps)
                 ProgramProcessor.fromFunctionProcessor(
                         CoreCodeVerification.fromConfig(config),
                         Target.THREADS, false
