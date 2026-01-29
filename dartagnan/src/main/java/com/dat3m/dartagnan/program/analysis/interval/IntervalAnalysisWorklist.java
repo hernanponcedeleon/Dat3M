@@ -275,6 +275,11 @@ public abstract class IntervalAnalysisWorklist implements IntervalAnalysis {
         }
 
         @Override
+        public Interval visitIntUnaryExpression(IntUnaryExpr expr) {
+            return expr.getOperand().accept(this).applyOperator(expr.getKind());
+        }
+
+        @Override
         public Interval visitITEExpression(ITEExpr ite) {
             Interval trueInterval = ite.getTrueCase().accept(this);
             Interval falseInterval = ite.getFalseCase().accept(this);

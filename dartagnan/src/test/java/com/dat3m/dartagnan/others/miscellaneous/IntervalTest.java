@@ -1,6 +1,7 @@
 package com.dat3m.dartagnan.others.miscellaneous;
 
 import com.dat3m.dartagnan.expression.integers.IntBinaryOp;
+import com.dat3m.dartagnan.expression.integers.IntUnaryOp;
 import com.dat3m.dartagnan.program.analysis.interval.Interval;
 import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
@@ -68,10 +69,44 @@ public abstract class IntervalTest {
     }
 
 
+    @RunWith(Parameterized.class)
+    public static class IntervalUnaryOperationsTest {
+        private final Interval operand;
+        private final IntUnaryOp operator;
+        private final Interval expected;
+
+        public IntervalUnaryOperationsTest(
+                int lb,
+                int ub,
+                int expectedLb,
+                int expectedUb,
+                IntUnaryOp operator) {
+            operand = new Interval(BigInteger.valueOf(lb), BigInteger.valueOf(ub), byteType);
+            expected = new Interval(BigInteger.valueOf(expectedLb),BigInteger.valueOf(expectedUb), byteType);
+            this.operator = operator;
+        }
+
+        @Parameterized.Parameters(name = "{index}: {0}, {1}, {2}, {3}, {4}")
+        public static Iterable<Object[]> data() {
+            return Arrays.asList(new Object[][]{
+                    {-5,-2,2,5, IntUnaryOp.MINUS},
+                    {2,5,-5,-2, IntUnaryOp.MINUS},
+                    {-5,2,-2,5, IntUnaryOp.MINUS},
+                    {127,129,-128,255,IntUnaryOp.MINUS},
+            });
+        }
+
+         @Test
+        public void test() {
+            Interval result = operand.applyOperator(operator);
+            assertEquals(result, expected);
+         }
+
+    }
 
 
     @RunWith(Parameterized.class)
-    public static class IntervalOperationsTest {
+    public static class IntervalBinaryOperationsTest {
 
 
         private final Interval operand1;
@@ -79,7 +114,7 @@ public abstract class IntervalTest {
         private final Interval expected;
         private final IntBinaryOp op;
 
-        public IntervalOperationsTest(
+        public IntervalBinaryOperationsTest(
                 int lb1,
                 int ub1,
                 int lb2,
