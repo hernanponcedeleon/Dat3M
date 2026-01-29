@@ -51,47 +51,53 @@ public class PvmmTest {
     private static final String[] models = {
             "vulkan_pvmm",
             "vulkan_pvmm_semsc",
+            //"vulkan_pvmm_semsc_trans1",
+            "vulkan_pvmm_semsc_trans2",
             "vulkan_current_pvmm",
-            "vulkan_current_pvmm_semsc"
+            "vulkan_current_pvmm_semsc",
+            //"vulkan_current_pvmm_semsc_trans1",
+            "vulkan_current_pvmm_semsc_trans2",
     };
 
     private static final Object[][] expected = {
                                                     // orig             // current
             // test                                 base    semsc       base    semsc
 
-            {"f-graph-mp-semsc-a",                  FAIL,   FAIL,       FAIL,   FAIL},
-            {"f-graph-mp-semsc-b",                  PASS,   PASS,       PASS,   PASS},
-            {"f-graph-mp-semsc-c",                  FAIL,   FAIL,       FAIL,   FAIL},
+            {"f-graph-mp-semsc-a",                  FAIL,   FAIL,   FAIL,       FAIL,   FAIL,   FAIL},
+            {"f-graph-mp-semsc-b",                  PASS,   PASS,   PASS,       PASS,   PASS,   PASS},
+            {"f-graph-mp-semsc-c",                  FAIL,   FAIL,   FAIL,       FAIL,   FAIL,   FAIL},
 
-            {"f-graph-problem-semsc-mp-a",          PASS,   PASS,       PASS,   PASS},
-            {"f-graph-problem-semsc-mp-b",          FAIL,   PASS,       FAIL,   PASS},
-            {"f-graph-problem-semsc-mp-c",          PASS,   PASS,       PASS,   PASS},
-            {"f-graph-problem-semsc-mp-fences-a",   PASS,   PASS,       PASS,   PASS},
-            {"f-graph-problem-semsc-mp-fences-b",   FAIL,   PASS,       FAIL,   PASS},
-            {"f-graph-problem-semsc-mp-fences-c",   PASS,   PASS,       PASS,   PASS},
-            {"f-graph-problem-semsc-lb-a",          PASS,   PASS,       PASS,   PASS},
-            {"f-graph-problem-semsc-lb-b",          FAIL,   PASS,       FAIL,   PASS},
-            {"f-graph-problem-semsc-lb-c",          FAIL,   PASS,       FAIL,   PASS},
-            {"f-graph-problem-semsc-lb-c-acqrel",   FAIL,   PASS,       FAIL,   PASS},
-            {"f-graph-problem-semsc-lb-d",          PASS,   PASS,       PASS,   PASS},
-            {"f-graph-problem-semsc-lb-d-acqrel",   PASS,   PASS,       PASS,   PASS},
+            {"f-graph-problem-semsc-mp-a",          PASS,   PASS,   PASS,       PASS,   PASS,   PASS},
+            {"f-graph-problem-semsc-mp-b",          FAIL,   PASS,   PASS,       FAIL,   PASS,   PASS},
+            {"f-graph-problem-semsc-mp-c",          PASS,   PASS,   PASS,       PASS,   PASS,   PASS},
+            {"f-graph-problem-semsc-mp-fences-a",   PASS,   PASS,   PASS,       PASS,   PASS,   PASS},
+            {"f-graph-problem-semsc-mp-fences-b",   FAIL,   PASS,   PASS,       FAIL,   PASS,   PASS},
+            {"f-graph-problem-semsc-mp-fences-c",   PASS,   PASS,   PASS,       PASS,   PASS,   PASS},
+            {"f-graph-problem-semsc-lb-a",          PASS,   PASS,   PASS,       PASS,   PASS,   PASS},
+            {"f-graph-problem-semsc-lb-b",          FAIL,   PASS,   PASS,       FAIL,   PASS,   PASS},
+            {"f-graph-problem-semsc-lb-c",          FAIL,   PASS,   PASS,       FAIL,   PASS,   PASS},
+            {"f-graph-problem-semsc-lb-c-acqrel",   FAIL,   PASS,   PASS,       FAIL,   PASS,   PASS},
+            {"f-graph-problem-semsc-lb-d",          PASS,   PASS,   PASS,       PASS,   PASS,   PASS},
+            {"f-graph-problem-semsc-lb-d-acqrel",   PASS,   PASS,   PASS,       PASS,   PASS,   PASS},
 
-            {"f-graph-problem3-a",                  FAIL,   PASS,       FAIL,   PASS},
-            {"f-graph-problem3-b",                  PASS,   PASS,       PASS,   PASS},
+            {"f-graph-mp3",                         FAIL,   PASS,   FAIL,       FAIL,   PASS,   FAIL},
 
-            {"scopes-mp-acq-acq-a",                 PASS,   PASS,       PASS,   PASS},
-            {"scopes-mp-acq-acq-b",                 FAIL,   FAIL,       PASS,   PASS},
+            {"f-graph-problem3-a",                  FAIL,   PASS,   PASS,       FAIL,   PASS,   PASS},
+            {"f-graph-problem3-b",                  PASS,   PASS,   PASS,       PASS,   PASS,   PASS},
 
-            {"extra-sb",                            PASS,   PASS,       PASS,   PASS},
-            {"extra-sb-fence",                      PASS,   PASS,       PASS,   PASS},
-            {"extra-lb",                            FAIL,   FAIL,       FAIL,   FAIL},
-            {"extra-lb-fence-1",                    FAIL,   FAIL,       FAIL,   FAIL},
-            {"extra-lb-fence-2",                    FAIL,   FAIL,       FAIL,   FAIL},
-            {"extra-mp3",                           FAIL,   FAIL,       FAIL,   FAIL},
-            {"extra-mp3-fence1",                    FAIL,   FAIL,       FAIL,   FAIL},
-            {"extra-mp3-fence2",                    PASS,   PASS,       PASS,   PASS},
-            {"extra-mp-plus",                       PASS,   PASS,       PASS,   PASS},
-            {"extra-lb-plus",                       PASS,   PASS,       PASS,   PASS}
+            {"scopes-mp-acq-acq-a",                 PASS,   PASS,   PASS,       PASS,   PASS,   PASS},
+            {"scopes-mp-acq-acq-b",                 FAIL,   FAIL,   FAIL,       PASS,   PASS,   PASS},
+
+            {"extra-sb",                            PASS,   PASS,   PASS,       PASS,   PASS,   PASS},
+            {"extra-sb-fence",                      PASS,   PASS,   PASS,       PASS,   PASS,   PASS},
+            {"extra-lb",                            FAIL,   FAIL,   FAIL,       FAIL,   FAIL,   FAIL},
+            {"extra-lb-fence-1",                    FAIL,   FAIL,   FAIL,       FAIL,   FAIL,   FAIL},
+            {"extra-lb-fence-2",                    FAIL,   FAIL,   FAIL,       FAIL,   FAIL,   FAIL},
+            {"extra-mp3",                           FAIL,   FAIL,   FAIL,       FAIL,   FAIL,   FAIL},
+            {"extra-mp3-fence1",                    FAIL,   FAIL,   FAIL,       FAIL,   FAIL,   FAIL},
+            {"extra-mp3-fence2",                    PASS,   PASS,   PASS,       PASS,   PASS,   PASS},
+            {"extra-mp-plus",                       PASS,   PASS,   PASS,       PASS,   PASS,   PASS},
+            {"extra-lb-plus",                       PASS,   PASS,   PASS,       PASS,   PASS,   PASS},
     };
 
     private final Printer printer = Printer.newInstance();
@@ -124,12 +130,12 @@ public class PvmmTest {
         for (Object[] entry : expected) {
             String programPath = getRootPath("litmus/VULKAN/pvmm/" + entry[0] + ".litmus");
             Result result = (Result) entry[1];
-            //String modelPath = getRootPath("cat/vulkan_pvmm_semsc.cat");
             String modelPath = getRootPath("cat/vulkan_pvmm.cat");
+            //String modelPath = getRootPath("cat/vulkan_pvmm_semsc.cat");
             Property property = PROGRAM_SPEC;
             if (result == FAIL) {
-                //modelPath = getRootPath("cat/vulkan_pvmm_semsc_cycle.cat");
                 modelPath = getRootPath("cat/vulkan_pvmm_cycle.cat");
+                //modelPath = getRootPath("cat/vulkan_pvmm_semsc_cycle.cat");
                 property = CAT_SPEC;
             }
             try (SolverContext ctx = mkCtx()) {
