@@ -1,8 +1,8 @@
 package com.dat3m.dartagnan.verification.solving;
 
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import com.dat3m.dartagnan.GlobalSettings;
+import com.dat3m.dartagnan.configuration.Method;
 import com.dat3m.dartagnan.configuration.Property;
 import com.dat3m.dartagnan.encoding.EncodingContext;
 import com.dat3m.dartagnan.encoding.IREvaluator;
@@ -26,11 +26,13 @@ import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
 import com.dat3m.dartagnan.wmm.analysis.WmmAnalysis;
 import com.dat3m.dartagnan.wmm.processing.WmmProcessingManager;
-
-
-import org.sosy_lab.common.configuration.Configuration;
-import org.sosy_lab.common.configuration.InvalidConfigurationException;
-import org.sosy_lab.java_smt.api.ProverEnvironment;
+import com.google.common.base.Preconditions;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.sosy_lab.common.ShutdownManager;
+import org.sosy_lab.common.configuration.*;
+import org.sosy_lab.java_smt.SolverContextFactory;
+import org.sosy_lab.java_smt.api.SolverContext;
 import org.sosy_lab.java_smt.api.SolverException;
 
 import static com.dat3m.dartagnan.configuration.OptionNames.*;
@@ -156,14 +158,12 @@ public abstract class ModelChecker implements AutoCloseable {
 
     // ====================================== Logging utility ================================================
 
-    protected static void logProverStatistics(Level level, Logger logger, ProverWithTracker prover) {
-        if (logger.isEnabled(level)) {
-            StringBuilder smtStatistics = new StringBuilder("\n ===== SMT Statistics ===== \n");
-            for (String key : prover.getStatistics().keySet()) {
-                smtStatistics.append(String.format("\t%s -> %s\n", key, prover.getStatistics().get(key)));
-            }
-            logger.log(level, smtStatistics.toString());
+    protected static void logProverStatistics(Logger logger, ProverWithTracker prover) {
+        StringBuilder smtStatistics = new StringBuilder("\n ===== SMT Statistics ===== \n");
+        for (String key : prover.getStatistics().keySet()) {
+            smtStatistics.append(String.format("\t%s -> %s\n", key, prover.getStatistics().get(key)));
         }
+        logger.debug(smtStatistics.toString());
     }
 
     // ====================================== Solver utility ==================================================

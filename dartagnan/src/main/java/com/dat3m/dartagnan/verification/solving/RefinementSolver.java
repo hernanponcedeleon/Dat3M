@@ -1,8 +1,6 @@
 package com.dat3m.dartagnan.verification.solving;
 
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import com.dat3m.dartagnan.configuration.Baseline;
 import com.dat3m.dartagnan.configuration.Property;
 import com.dat3m.dartagnan.encoding.*;
@@ -48,8 +46,8 @@ import com.dat3m.dartagnan.wmm.utils.Cut;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
-
-
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.common.configuration.Option;
@@ -330,7 +328,9 @@ public class RefinementSolver extends ModelChecker {
             logger.info(generateSummary(combinedTrace, boundCheckTime));
         }
 
-        logProverStatistics(Level.DEBUG, logger, prover);
+        if (logger.isDebugEnabled()) {
+            logProverStatistics(logger, prover);
+        }
 
         if (printCovReport) {
             System.out.println(generateCoverageReport(combinedTrace.getObservedEvents(), program, analysisContext));
