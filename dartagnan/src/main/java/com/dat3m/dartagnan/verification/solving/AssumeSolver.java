@@ -1,13 +1,17 @@
 package com.dat3m.dartagnan.verification.solving;
 
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import com.dat3m.dartagnan.configuration.Property;
 import com.dat3m.dartagnan.encoding.*;
 import com.dat3m.dartagnan.smt.ProverWithTracker;
 import com.dat3m.dartagnan.utils.Result;
 import com.dat3m.dartagnan.verification.Context;
 import com.dat3m.dartagnan.verification.VerificationTask;
-import org.apache.logging.log4j.Level;
-import org.apache.logging.log4j.LogManager;
+import com.dat3m.dartagnan.wmm.Wmm;
+
+
 import org.apache.logging.log4j.Logger;
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
@@ -22,7 +26,7 @@ import static java.util.Collections.singletonList;
 
 public class AssumeSolver extends ModelChecker {
 
-    private static final Logger logger = LogManager.getLogger(AssumeSolver.class);
+    private static final Logger logger = LoggerFactory.getLogger(AssumeSolver.class);
 
     private AssumeSolver(VerificationTask task) throws InvalidConfigurationException {
         super(task);

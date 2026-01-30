@@ -1,5 +1,8 @@
 package com.dat3m.dartagnan.encoding;
 
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
@@ -19,8 +22,8 @@ import com.dat3m.dartagnan.wmm.Relation;
 import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
 import com.dat3m.dartagnan.wmm.axiom.Acyclicity;
 import com.dat3m.dartagnan.wmm.utils.graph.EventGraph;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+
+
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.common.configuration.Option;
 import org.sosy_lab.common.configuration.Options;
@@ -39,7 +42,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 @Options
 public final class EncodingContext {
 
-    private static final Logger logger = LogManager.getLogger(EncodingContext.class);
+    private static final Logger logger = LoggerFactory.getLogger(EncodingContext.class);
 
     private final VerificationTask verificationTask;
     private final Context analysisContext;

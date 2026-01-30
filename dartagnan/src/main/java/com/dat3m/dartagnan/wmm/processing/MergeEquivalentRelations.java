@@ -1,13 +1,15 @@
 package com.dat3m.dartagnan.wmm.processing;
 
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import com.dat3m.dartagnan.wmm.Constraint;
 import com.dat3m.dartagnan.wmm.Definition;
 import com.dat3m.dartagnan.wmm.Relation;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.definition.*;
 import com.dat3m.dartagnan.wmm.utils.ConstraintCopier;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+
 
 import java.util.IdentityHashMap;
 import java.util.List;
@@ -17,7 +19,7 @@ import java.util.function.Predicate;
 
 public class MergeEquivalentRelations implements WmmProcessor {
 
-    private static final Logger logger = LogManager.getLogger(MergeEquivalentRelations.class);
+    private static final Logger logger = LoggerFactory.getLogger(MergeEquivalentRelations.class);
 
     private MergeEquivalentRelations() {
     }

@@ -1,0 +1,14 @@
+[
+    {
+      "name": "com.microsoft.z3.Native$IntPtr",
+      "fields": [
+        { "name": "value", "allowWrite": true }
+      ]
+    },
+    {
+      "name": "com.microsoft.z3.Native$LongPtr",
+      "fields": [
+        { "name": "value", "allowWrite": true }
+      ]
+    }
+  ]

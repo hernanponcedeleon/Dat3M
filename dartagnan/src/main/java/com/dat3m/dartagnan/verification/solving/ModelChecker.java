@@ -1,7 +1,8 @@
 package com.dat3m.dartagnan.verification.solving;
 
-import com.dat3m.dartagnan.GlobalSettings;
-import com.dat3m.dartagnan.configuration.Method;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import com.dat3m.dartagnan.configuration.Property;
 import com.dat3m.dartagnan.encoding.EncodingContext;
 import com.dat3m.dartagnan.encoding.IREvaluator;
@@ -25,14 +26,11 @@ import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
 import com.dat3m.dartagnan.wmm.analysis.WmmAnalysis;
 import com.dat3m.dartagnan.wmm.processing.WmmProcessingManager;
-import com.google.common.base.Preconditions;
-import org.apache.logging.log4j.Level;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-import org.sosy_lab.common.ShutdownManager;
-import org.sosy_lab.common.configuration.*;
-import org.sosy_lab.java_smt.SolverContextFactory;
-import org.sosy_lab.java_smt.api.SolverContext;
+
+
+import org.sosy_lab.common.configuration.Configuration;
+import org.sosy_lab.common.configuration.InvalidConfigurationException;
+import org.sosy_lab.java_smt.api.ProverEnvironment;
 import org.sosy_lab.java_smt.api.SolverException;
 
 import static com.dat3m.dartagnan.configuration.OptionNames.*;
@@ -80,7 +78,7 @@ public abstract class ModelChecker implements AutoCloseable {
         }
     }
 
-    private static final Logger logger = LogManager.getLogger(ModelChecker.class);
+    private static final Logger logger = LoggerFactory.getLogger(ModelChecker.class);
 
     protected final VerificationTask task;
     protected final SMTConfig smtConfig;

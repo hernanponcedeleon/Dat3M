@@ -1,5 +1,8 @@
 package com.dat3m.dartagnan.program.analysis.alias;
 
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionVisitor;
 import com.dat3m.dartagnan.expression.aggregates.ConstructExpr;
@@ -22,8 +25,7 @@ import com.dat3m.dartagnan.witness.graphviz.Graphviz;
 import com.google.common.base.Supplier;
 import com.google.common.base.Suppliers;
 import com.google.common.math.IntMath;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+
 
 import java.math.BigInteger;
 import java.util.*;
@@ -74,7 +76,7 @@ import static com.google.common.base.Verify.verify;
 */
 public class InclusionBasedPointerAnalysis implements AliasAnalysis {
 
-    private static final Logger logger = LogManager.getLogger(InclusionBasedPointerAnalysis.class);
+    private static final Logger logger = LoggerFactory.getLogger(InclusionBasedPointerAnalysis.class);
 
     private static final TypeFactory types = TypeFactory.getInstance();
 
