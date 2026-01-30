@@ -143,6 +143,7 @@ public class RelationAnalysisTest {
             VerificationTask nativeTask = createTask(program, wmm, nativeConfig);
             performStaticProgramAnalyses(nativeTask, nativeContext, nativeTask.getConfig());
             performStaticWmmAnalyses(nativeTask, nativeContext, nativeTask.getConfig());
+            performIntervalAnalysis(nativeTask,nativeContext, nativeTask.getConfig());
             RelationAnalysis nativeRa = nativeContext.get(RelationAnalysis.class);
 
             // Lazy analysis
@@ -153,6 +154,7 @@ public class RelationAnalysisTest {
             VerificationTask lazyTask = createTask(program, wmm, lazyConfig);
             performStaticProgramAnalyses(lazyTask, lazyContext, lazyTask.getConfig());
             performStaticWmmAnalyses(lazyTask, lazyContext, lazyTask.getConfig());
+            performIntervalAnalysis(lazyTask, lazyContext, lazyTask.getConfig());
             RelationAnalysis lazyRa = lazyContext.get(RelationAnalysis.class);
 
             // Assert may and must sets are equal
