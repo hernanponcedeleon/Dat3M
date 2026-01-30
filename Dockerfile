@@ -30,7 +30,7 @@ RUN set -eux; \
       https://download.oracle.com/graalvm/${JAVA_VERSION}/latest/graalvm-jdk-${JAVA_VERSION}_${GRAAL_ARCH}_bin.tar.gz \
     | tar -xz --strip-components=1 -C /home/graalvm-jdk-${JAVA_VERSION}
 
-ENV GRAALVM_HOME=/home/graalvm-jdk-${JAVA_VERSION}_linux-x64
+ENV GRAALVM_HOME=/home/graalvm-jdk-${JAVA_VERSION}
 ENV JAVA_HOME=$GRAALVM_HOME
 ENV PATH=$GRAALVM_HOME/bin:$PATH
 
