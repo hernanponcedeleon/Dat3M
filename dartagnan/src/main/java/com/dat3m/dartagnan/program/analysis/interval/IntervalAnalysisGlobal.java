@@ -37,7 +37,7 @@ public class IntervalAnalysisGlobal extends IntervalAnalysisWorklist {
 
     // Calculate the interval of a memory address.
     // Takes into account all stores from a load can read from.
-    // Join the intervals of all possible stores
+    // Join the intervals of all possible stores.
     private Interval calculatePossibleInterval(Set<Store> stores, Register r) {
         if (!stores.isEmpty()) {
             Interval interval = null;
