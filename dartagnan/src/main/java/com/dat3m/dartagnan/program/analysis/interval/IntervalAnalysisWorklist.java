@@ -25,14 +25,13 @@ import java.util.*;
 
 /*
  * Forward Interval analysis
- * Computes the intervals of registers in the program.
+ * Computes the intervals of integer registers in the program.
  * We assume that the program has been fully processed and contains no loops and functions are inlined.
  * Work list based algorithm based on:
  * Static Program Analysis.
  * Authors: Anders Møller and Michael I. Schwartzbach.
  * Chapter 5.10
  * Page 77
- * An interval is of the form [lb,ub] where a variable can take any possible value between (including) lb and ub.
  */
 public abstract class IntervalAnalysisWorklist implements IntervalAnalysis {
 
@@ -132,7 +131,6 @@ public abstract class IntervalAnalysisWorklist implements IntervalAnalysis {
     // Compute intervals using a fixed point iteration.
     // Local analysis should only require one iteration
     // Global analysis may require multiple
-    // TODO: Maybe this is too naive?
     protected void computeIntervals(Program program) {
         Map<Event,Map<Register,Interval>> prevEventStates;
         do {
@@ -188,7 +186,7 @@ public abstract class IntervalAnalysisWorklist implements IntervalAnalysis {
                 }
             }
             // Event State of the successor node
-            // Modified state based on new information from the current node.
+            // Modified state based on new information from the current node
             Map<Register,Interval> currentEventStateCopy = new HashMap<>(eventStates.get(current));
            // Apply transfer function
             RegisterState state = analyseEvent(current, currentEventStateCopy);
@@ -223,7 +221,7 @@ public abstract class IntervalAnalysisWorklist implements IntervalAnalysis {
     }
 
 
-
+    // Visits expressions and has a final result interval as a field
     protected static final class AbstractExpressionEvaluator implements ExpressionVisitor<Interval> {
         private final Map<Register,Interval> eventState;
         private final Interval resultInterval;
