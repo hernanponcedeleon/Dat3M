@@ -81,10 +81,15 @@ public class PvmmTest {
             {"f-graph-problem-semsc-lb-d",          PASS,   FAIL,   PASS,   PASS,       PASS,   PASS,   PASS},
             {"f-graph-problem-semsc-lb-d-acqrel",   PASS,   FAIL,   PASS,   PASS,       PASS,   PASS,   PASS},
 
-            {"f-graph-mp3",                         FAIL,   FAIL,   PASS,   FAIL,       FAIL,   PASS,   FAIL},
+            {"f-graph-mp3-a",                       FAIL,   FAIL,   PASS,   PASS,       FAIL,   PASS,   PASS},
+            {"f-graph-mp3-af",                      FAIL,   FAIL,   FAIL,   FAIL,       FAIL,   FAIL,   FAIL},
+            {"f-graph-mp3-b",                       FAIL,   FAIL,   PASS,   FAIL,       FAIL,   PASS,   FAIL},
+            {"f-graph-mp3-bf",                      FAIL,   FAIL,   FAIL,   FAIL,       FAIL,   FAIL,   FAIL},
 
-            {"f-graph-problem3-a",                  FAIL,   PASS,   PASS,   PASS,       FAIL,   PASS,   PASS},
-            {"f-graph-problem3-b",                  PASS,   PASS,   PASS,   PASS,       PASS,   PASS,   PASS},
+            {"f-graph-mp3-sc-a",                    FAIL,   FAIL,   PASS,   PASS,       FAIL,   PASS,   PASS},
+            {"f-graph-mp3-sc-af",                   FAIL,   FAIL,   FAIL,   FAIL,       FAIL,   FAIL,   FAIL},  // TODO:
+            {"f-graph-mp3-sc-b",                    FAIL,   FAIL,   PASS,   FAIL,       FAIL,   PASS,   FAIL},
+            {"f-graph-mp3-sc-b",                    FAIL,   FAIL,   PASS,   FAIL,       FAIL,   PASS,   FAIL},
 
             {"scopes-mp-acq-acq-a",                 PASS,   PASS,   PASS,   PASS,       PASS,   PASS,   PASS},
             {"scopes-mp-acq-acq-b",                 FAIL,   FAIL,   FAIL,   FAIL,       PASS,   PASS,   PASS},
@@ -103,6 +108,9 @@ public class PvmmTest {
 
             {"mp3transitive3",                      FAIL,   FAIL,   PASS,   PASS,       FAIL,   PASS,   PASS},
             {"mp3transitive3-fence",                FAIL,   FAIL,   FAIL,   FAIL,       FAIL,   FAIL,   FAIL},
+
+            {"old_f-graph-problem3-a",              FAIL,   PASS,   PASS,   PASS,       FAIL,   PASS,   PASS},
+            {"old_f-graph-problem3-b",              PASS,   PASS,   PASS,   PASS,       PASS,   PASS,   PASS},
     };
 
     private final Printer printer = Printer.newInstance();
@@ -115,6 +123,7 @@ public class PvmmTest {
             for (int i = 1; i < entry.length; i++) {
                 Result result = (Result) entry[i];
                 String model = getRootPath("cat/" + models[i - 1] + ".cat");
+                System.out.println("    " + models[i - 1]);
                 try (SolverContext ctx = mkCtx()) {
                     try (ProverWithTracker prover = mkProver(ctx)) {
                         VerificationTask task = mkTask(program, model, PROGRAM_SPEC);
