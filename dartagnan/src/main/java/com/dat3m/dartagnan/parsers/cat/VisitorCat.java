@@ -70,7 +70,7 @@ class VisitorCat extends CatBaseVisitor<Object> {
     private void includeStdlib() {
         try {
             // The standard library is a cat file stdlib.cat which all models include by default
-            final CatParser parser = getParser(CharStreams.fromPath(Path.of(GlobalSettings.getCatDirectory() + "/stdlib.cat")));
+            final CatParser parser = getParser(CharStreams.fromPath(Path.of(includePath + "/stdlib.cat")));
             parser.mcm().accept(this);
         } catch (IOException e) {
             throw new ParsingException(e, "Error parsing stdlib.cat file");

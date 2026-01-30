@@ -35,6 +35,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import static com.dat3m.dartagnan.configuration.OptionNames.*;
 import static com.dat3m.dartagnan.configuration.Property.CAT_SPEC;
@@ -46,6 +47,11 @@ import static java.util.stream.Collectors.toMap;
 import static org.junit.Assert.*;
 
 public class PvmmTest {
+
+    private static final Map<String, Path> libs = Map.of(
+            "chains", Path.of(getRootPath("cat/chains")),
+            "nochains", Path.of(getRootPath("cat/nochains"))
+    );
 
     private static final String[] models = {
             "vulkan_pvmm",
@@ -60,7 +66,7 @@ public class PvmmTest {
             "vulkan_current_pvmm_semsc_trans2",
     };
 
-    private static final Object[][] expected = {
+    private static final Object[][] expectedAll = {
                                                     // orig             // current
             // test                                 base    semsc       base    semsc
 
@@ -101,9 +107,6 @@ public class PvmmTest {
             {"f-graph-mp3-sc-b",                    FAIL,   FAIL,   PASS,   FAIL,       FAIL,   PASS,   FAIL},
             {"f-graph-mp3-sc-b",                    FAIL,   FAIL,   PASS,   FAIL,       FAIL,   PASS,   FAIL},
 
-            {"scopes-mp-acq-acq-a",                 PASS,   PASS,   PASS,   PASS,       PASS,   PASS,   PASS},
-            {"scopes-mp-acq-acq-b",                 PASS,   PASS,   PASS,   PASS,       PASS,   PASS,   PASS},  // chains-vs-nochains
-
             {"extra-sb",                            PASS,   PASS,   PASS,   PASS,       PASS,   PASS,   PASS},
             {"extra-sb-fence",                      PASS,   PASS,   PASS,   PASS,       PASS,   PASS,   PASS},
             {"extra-lb",                            FAIL,   FAIL,   FAIL,   FAIL,       FAIL,   FAIL,   FAIL},
@@ -123,27 +126,64 @@ public class PvmmTest {
             {"old_f-graph-problem3-b",              PASS,   PASS,   PASS,   PASS,       PASS,   PASS,   PASS},
     };
 
+
+    private static final Object[][] expectedChains = {
+            {"f-graph-avvis-chains-semav",          FAIL,   FAIL,   FAIL,   FAIL,       FAIL,   FAIL,   FAIL},
+            {"f-graph-avvis-chains-semvis",         FAIL,   FAIL,   FAIL,   FAIL,       FAIL,   FAIL,   FAIL},
+
+            {"scopes-mp-acq-acq-a",                 PASS,   PASS,   PASS,   PASS,       PASS,   PASS,   PASS},
+            {"scopes-mp-acq-acq-b",                 FAIL,   FAIL,   FAIL,   FAIL,       PASS,   PASS,   PASS},
+    };
+
+    private static final Object[][] expectedNoChains = {
+            {"f-graph-avvis-chains-semav",          PASS,   PASS,   PASS,   PASS,       PASS,   PASS,   PASS},
+            {"f-graph-avvis-chains-semvis",         PASS,   PASS,   PASS,   PASS,       PASS,   PASS,   PASS},
+
+            {"scopes-mp-acq-acq-a",                 PASS,   PASS,   PASS,   PASS,       PASS,   PASS,   PASS},
+            {"scopes-mp-acq-acq-b",                 PASS,   PASS,   PASS,   PASS,       PASS,   PASS,   PASS},
+    };
+
+    private static final Map<String, Map<String, List<Result>>> expected = new HashMap<>();
+    static {
+        expected.put("chains", new HashMap<>());
+        expected.put("nochains", new HashMap<>());
+        for (String type : List.of("chains", "nochains")) {
+            for (Object[] o : expectedAll) {
+                expected.get(type).put((String) o[0], IntStream.range(1, o.length).boxed().map(i -> (Result) o[i]).toList());
+            }
+        }
+        for (Object[] o : expectedChains) {
+            expected.get("chains").put((String) o[0], IntStream.range(1, o.length).boxed().map(i -> (Result) o[i]).toList());
+        }
+        for (Object[] o : expectedNoChains) {
+            expected.get("nochains").put((String) o[0], IntStream.range(1, o.length).boxed().map(i -> (Result) o[i]).toList());
+        }
+    }
+
     private final Printer printer = Printer.newInstance();
 
     @Test
     public void checkResult() throws Exception {
-        for (Object[] entry : expected) {
-            String program = getRootPath("litmus/VULKAN/pvmm/" + entry[0] + ".litmus");
-            System.out.println(program);
-            for (int i = 1; i < entry.length; i++) {
-                Result result = (Result) entry[i];
-                String model = getRootPath("cat/" + models[i - 1] + ".cat");
-                System.out.println("    " + models[i - 1]);
-                try (SolverContext ctx = mkCtx()) {
-                    try (ProverWithTracker prover = mkProver(ctx)) {
-                        VerificationTask task = mkTask(program, model, PROGRAM_SPEC);
-                        assertEquals(result, AssumeSolver.run(ctx, prover, task).getResult());
+        for (Map.Entry<String, Map<String, List<Result>>> typeEntry : expected.entrySet()) {
+            System.out.println(typeEntry.getKey());
+            for (Map.Entry<String, List<Result>> programEntry : typeEntry.getValue().entrySet()) {
+                String program = getRootPath("litmus/VULKAN/pvmm/" + programEntry.getKey() + ".litmus");
+                System.out.println(program);
+                for (int i = 0; i < programEntry.getValue().size(); i++) {
+                    Result result = programEntry.getValue().get(i);
+                    String model = getRootPath("cat/" + models[i] + ".cat");
+                    System.out.println("    " + models[i]);
+                    try (SolverContext ctx = mkCtx()) {
+                        try (ProverWithTracker prover = mkProver(ctx)) {
+                            VerificationTask task = mkTask(program, model, PROGRAM_SPEC, typeEntry.getKey());
+                            assertEquals(result, AssumeSolver.run(ctx, prover, task).getResult());
+                        }
                     }
-                }
-                try (SolverContext ctx = mkCtx()) {
-                    try (ProverWithTracker prover = mkProver(ctx)) {
-                        VerificationTask task = mkTaskRefinement(program, model, PROGRAM_SPEC);
-                        assertEquals(result, RefinementSolver.run(ctx, prover, task).getResult());
+                    try (SolverContext ctx = mkCtx()) {
+                        try (ProverWithTracker prover = mkProver(ctx)) {
+                            VerificationTask task = mkTaskRefinement(program, model, PROGRAM_SPEC, typeEntry.getKey());
+                            assertEquals(result, RefinementSolver.run(ctx, prover, task).getResult());
+                        }
                     }
                 }
             }
@@ -152,27 +192,29 @@ public class PvmmTest {
 
     @Test
     public void logRelations() throws Exception {
-        for (Object[] entry : expected) {
-            String program = getRootPath("litmus/VULKAN/pvmm/" + entry[0] + ".litmus");
-            System.out.println(program);
-            for (int i = 1; i < entry.length; i++) {
-                Result result = (Result) entry[i];
-                String modelPath = getRootPath("cat/" + models[i - 1] + ".cat");
-                Property property = PROGRAM_SPEC;
-                if (result == FAIL) {
-                    modelPath = getRootPath("cat/" + models[i - 1] + "_cycle.cat");
-                    property = CAT_SPEC;
-                }
-                try (SolverContext ctx = mkCtx()) {
-                    try (ProverWithTracker prover = mkProver(ctx)) {
-                        VerificationTask task = mkTask(program, modelPath, property);
-                        ModelChecker mc = AssumeSolver.run(ctx, prover, task);
-                        assertTrue(mc.hasModel());
-                        RelationAnalysis ra = mc.getEncodingContext().getAnalysisContext().get(RelationAnalysis.class);
-                        Set<Relation> relations = task.getMemoryModel().getRelations();
-                        Map<String, MutableEventGraph> data = extractRelationsData(task.getProgram(), relations, ra, prover.getModel());
-                        data = translateEventIds(task.getProgram(), data);
-                        log(models[i - 1], task.getProgram(), data);
+        for (Map.Entry<String, Map<String, List<Result>>> typeEntry : expected.entrySet()) {
+            for (Map.Entry<String, List<Result>> programEntry : typeEntry.getValue().entrySet()) {
+                String program = getRootPath("litmus/VULKAN/pvmm/" + programEntry.getKey() + ".litmus");
+                System.out.println(program);
+                for (int i = 0; i < programEntry.getValue().size(); i++) {
+                    Result result = programEntry.getValue().get(i);
+                    String modelPath = getRootPath("cat/" + models[i] + ".cat");
+                    Property property = PROGRAM_SPEC;
+                    if (result == FAIL) {
+                        modelPath = getRootPath("cat/" + models[i] + "_cycle.cat");
+                        property = CAT_SPEC;
+                    }
+                    try (SolverContext ctx = mkCtx()) {
+                        try (ProverWithTracker prover = mkProver(ctx)) {
+                            VerificationTask task = mkTask(program, modelPath, property, typeEntry.getKey());
+                            ModelChecker mc = AssumeSolver.run(ctx, prover, task);
+                            assertTrue(mc.hasModel());
+                            RelationAnalysis ra = mc.getEncodingContext().getAnalysisContext().get(RelationAnalysis.class);
+                            Set<Relation> relations = task.getMemoryModel().getRelations();
+                            Map<String, MutableEventGraph> data = extractRelationsData(task.getProgram(), relations, ra, prover.getModel());
+                            data = translateEventIds(task.getProgram(), data);
+                            log(models[i], task.getProgram(), typeEntry.getKey(), data);
+                        }
                     }
                 }
             }
@@ -227,7 +269,7 @@ public class PvmmTest {
                         entry -> entry.getValue().filter((e1, e2) -> filter.contains(e1) && filter.contains(e2))));
     }
 
-    private void log(String model, Program program, Map<String, MutableEventGraph> data) throws IOException {
+    private void log(String model, Program program, String type, Map<String, MutableEventGraph> data) throws IOException {
         List<String> relations = data.keySet().stream().sorted().toList();
         StringBuilder sb = new StringBuilder();
         sb.append(printer.print(program));
@@ -236,8 +278,8 @@ public class PvmmTest {
                 sb.append(relation).append(": ").append(data.get(relation)).append("\n");
             }
         }
-        Files.createDirectories(Path.of(getRootPath("output/data/" + model)));
-        String filePath = getRootPath("output/data/" + model + "/" + program.getName() + ".log");
+        Files.createDirectories(Path.of(getRootPath("output/data/" + type + "/" + model)));
+        String filePath = getRootPath("output/data/" + type + "/" + model + "/" + program.getName() + ".log");
         Files.write(Path.of(filePath), sb.toString().getBytes());
     }
 
@@ -254,7 +296,7 @@ public class PvmmTest {
         return new ProverWithTracker(ctx, "", SolverContext.ProverOptions.GENERATE_MODELS);
     }
 
-    private VerificationTask mkTask(String programPath, String modelPath, Property property) throws Exception {
+    private VerificationTask mkTask(String programPath, String modelPath, Property property, String type) throws Exception {
         VerificationTask.VerificationTaskBuilder builder = VerificationTask.builder()
                 .withConfig(Configuration.builder()
                         .setOption(ENABLE_EXTENDED_RELATION_ANALYSIS, "false")
@@ -264,11 +306,11 @@ public class PvmmTest {
                 .withBound(1)
                 .withTarget(Arch.VULKAN);
         Program program = new ProgramParser().parse(new File(programPath));
-        Wmm mcm = new ParserCat().parse(new File(modelPath));
+        Wmm mcm = new ParserCat(libs.get(type)).parse(new File(modelPath));
         return builder.build(program, mcm, EnumSet.of(property));
     }
 
-    private VerificationTask mkTaskRefinement(String programPath, String modelPath, Property property) throws Exception {
+    private VerificationTask mkTaskRefinement(String programPath, String modelPath, Property property, String type) throws Exception {
         VerificationTask.VerificationTaskBuilder builder = VerificationTask.builder()
                 .withConfig(Configuration.builder()
                         .setOption(ENABLE_EXTENDED_RELATION_ANALYSIS, "false")
@@ -278,7 +320,7 @@ public class PvmmTest {
                 .withBound(1)
                 .withTarget(Arch.VULKAN);
         Program program = new ProgramParser().parse(new File(programPath));
-        Wmm mcm = new ParserCat().parse(new File(modelPath));
+        Wmm mcm = new ParserCat(libs.get(type)).parse(new File(modelPath));
         return builder.build(program, mcm, EnumSet.of(property));
     }
 }
