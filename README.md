@@ -34,12 +34,13 @@ docker run -w /home/Dat3M -it dartagnan /bin/bash
 
 **From Sources**
 
-Set Dat3M's home, the folder to generate output files (the output folder can be something different) and the binary and library paths (only required for native mode; use `DYLD_LIBRARY_PATH` for MacOS)
+Set the following environment variables
 ```
-export DAT3M_HOME=<Dat3M's root>
+export DAT3M_HOME=<Dat3M root>
 export DAT3M_OUTPUT=$DAT3M_HOME/output
-export PATH=$DAT3M_HOME/dartagnan/target/:$PATH
-export LD_LIBRARY_PATH=$DAT3M_HOME/dartagnan/target/libs/:$LD_LIBRARY_PATH
+export GRAALVM_HOME=<GraalVM distribution root> // only required for native mode
+export PATH=$DAT3M_HOME/dartagnan/target/:$PATH // only required for native mode
+export LD_LIBRARY_PATH=$DAT3M_HOME/dartagnan/target/libs/:$LD_LIBRARY_PATH // only required for native mode; use `DYLD_LIBRARY_PATH` for MacOS
 ```
 
 To build the tool in native mode (recommended!) run
