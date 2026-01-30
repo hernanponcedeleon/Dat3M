@@ -81,6 +81,9 @@ public class PvmmTest {
             {"f-graph-problem-semsc-lb-d",          PASS,   FAIL,   PASS,   PASS,       PASS,   PASS,   PASS},
             {"f-graph-problem-semsc-lb-d-acqrel",   PASS,   FAIL,   PASS,   PASS,       PASS,   PASS,   PASS},
 
+            {"f-graph-problem-avvis-mp-a",          PASS,   PASS,   PASS,   PASS,       PASS,   PASS,   PASS},
+            {"f-graph-problem-avvis-mp-b",          FAIL,   FAIL,   FAIL,   FAIL,       FAIL,   FAIL,   FAIL},
+
             {"f-graph-mp3-a",                       FAIL,   FAIL,   PASS,   PASS,       FAIL,   PASS,   PASS},
             {"f-graph-mp3-af",                      FAIL,   FAIL,   FAIL,   FAIL,       FAIL,   FAIL,   FAIL},
             {"f-graph-mp3-b",                       FAIL,   FAIL,   PASS,   FAIL,       FAIL,   PASS,   FAIL},
