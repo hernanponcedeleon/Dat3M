@@ -41,7 +41,7 @@ export DAT3M_OUTPUT=$DAT3M_HOME/output
 // The ones below are only required for native mode
 export GRAALVM_HOME=<GraalVM distribution root>
 export PATH=$DAT3M_HOME/dartagnan/target/:$PATH
-// Use `DYLD_LIBRARY_PATH` for MacOS
+// Use DYLD_LIBRARY_PATH for MacOS
 export LD_LIBRARY_PATH=$DAT3M_HOME/dartagnan/target/libs/:$LD_LIBRARY_PATH
 ```
 
