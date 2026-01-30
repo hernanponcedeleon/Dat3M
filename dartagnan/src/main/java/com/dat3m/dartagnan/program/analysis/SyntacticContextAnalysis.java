@@ -1,5 +1,8 @@
 package com.dat3m.dartagnan.program.analysis;
 
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.Event;
@@ -8,8 +11,7 @@ import com.dat3m.dartagnan.program.event.core.annotations.FunReturnMarker;
 import com.dat3m.dartagnan.program.event.metadata.SourceLocation;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+
 
 import java.util.HashMap;
 import java.util.Map;
@@ -24,7 +26,7 @@ import java.util.stream.Stream;
  */
 public class SyntacticContextAnalysis {
 
-    private static final Logger logger = LogManager.getLogger(SyntacticContextAnalysis.class);
+    private static final Logger logger = LoggerFactory.getLogger(SyntacticContextAnalysis.class);
 
     // ============================================================================
     // ============================== Helper classes ==============================

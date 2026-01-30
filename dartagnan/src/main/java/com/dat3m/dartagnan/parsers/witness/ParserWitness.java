@@ -1,5 +1,8 @@
 package com.dat3m.dartagnan.parsers.witness;
 
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import com.dat3m.dartagnan.parsers.XMLLexer;
 import com.dat3m.dartagnan.parsers.XMLParser;
 import com.dat3m.dartagnan.exception.AbortErrorListener;
@@ -7,8 +10,7 @@ import com.dat3m.dartagnan.parsers.witness.visitors.VisitorXML;
 import com.dat3m.dartagnan.witness.graphml.WitnessGraph;
 
 import org.antlr.v4.runtime.*;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -16,7 +18,7 @@ import java.io.IOException;
 
 public class ParserWitness {
 
-	private static final Logger logger = LogManager.getLogger(ParserWitness.class);  
+	private static final Logger logger = LoggerFactory.getLogger(ParserWitness.class);  
 
     public WitnessGraph parse(CharStream charStream) {
     	XMLLexer lexer = new XMLLexer(charStream);

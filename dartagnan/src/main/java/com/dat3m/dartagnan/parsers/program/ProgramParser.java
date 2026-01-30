@@ -1,11 +1,14 @@
 package com.dat3m.dartagnan.parsers.program;
 
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.program.Program;
 import org.antlr.v4.runtime.CharStream;
 import org.antlr.v4.runtime.CharStreams;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+
+
 import java.io.*;
 import java.util.List;
 
@@ -13,7 +16,7 @@ import static com.dat3m.dartagnan.parsers.program.utils.Compilation.compileWithC
 
 public class ProgramParser {
 
-    private static final Logger logger = LogManager.getLogger(ProgramParser.class);
+    private static final Logger logger = LoggerFactory.getLogger(ProgramParser.class);
 
     private static final String TYPE_LITMUS_AARCH64 = "AARCH64";
     private static final String TYPE_LITMUS_PPC = "PPC";

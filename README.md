@@ -5,12 +5,13 @@
 
 # Dat3M: Memory Model Aware Verification
 
-**Dartagnan** is a tool to check state reachability under weak memory models.
+**Dartagnan** is a tool to check several correctness properties under weak memory models.
 
 Requirements
 ======
 * [Maven](https://maven.apache.org/) 3.8 or above
 * [Java](https://openjdk.java.net/projects/jdk/17/) 17 or above
+* [GraalVM](https://www.graalvm.org/) (only if you run in native mode; recommended!)
 * [Clang](https://clang.llvm.org) (only to verify C programs)
 * [Graphviz](https://graphviz.org) (only if option `--witness=png` is used)
 
@@ -33,41 +34,43 @@ docker run -w /home/Dat3M -it dartagnan /bin/bash
 
 **From Sources**
 
-Set Dat3M's home and the folder to generate output files (the output folder can be something different)
+Set the following environment variables
 ```
-export DAT3M_HOME=<Dat3M's root>
+export DAT3M_HOME=<Dat3M root>
 export DAT3M_OUTPUT=$DAT3M_HOME/output
+// The ones below are only required for native mode
+export GRAALVM_HOME=<GraalVM distribution root>
+export PATH=$DAT3M_HOME/dartagnan/target/:$PATH
+// Use `DYLD_LIBRARY_PATH` for MacOS
+export LD_LIBRARY_PATH=$DAT3M_HOME/dartagnan/target/libs/:$LD_LIBRARY_PATH
 ```
 
-If you are verifying C code, be sure `clang` is in your `PATH`.
-
-To build the tool run
+To build the tool in native mode (recommended!) run
+```
+mvn clean -Pnative install -DskipTests
+```
+Alternatively, to build the tool in JVM mode (faster compilation, but slower execution) run
 ```
 mvn clean install -DskipTests
 ```
 
 Usage
 ======
-Dartagnan comes with a user interface (not available from the docker container) where it is easy to import, export and modify both the program and the memory model and select the options for the verification engine (see below).
-You can start the user interface by running
-```
-java -jar ui/target/ui.jar
-```
-<p align="center"> 
-<img src="ui/src/main/resources/ui.jpg">
-</p>
-
-Dartagnan supports programs written in the `.c`, `.litmus` formats.
+Dartagnan supports programs written in the `.c`, `.ll`, `.litmus` and `spvasm` formats.
+If you are verifying C code, be sure `clang` is in your `PATH`.
 
 There are three possible results for the verification:
 - `FAIL`: the property was violated.
 - `PASS`: loops have been fully unrolled and the property satisfied.
 - `UNKNOWN`: no violation was found, but loops have not been fully unrolled (you need to increase the unrolling bound).
 
-You can also run Dartagnan from the console:
-
+To run Dartagnan from the console in native mode:
 ```
-java -jar dartagnan/target/dartagnan.jar <CAT file> [--target=<arch>] <program file> [options]
+dartagnan <CAT file> [--target=<arch>] <program file> [options]
+```
+To run in JVM mode:
+```
+java -jar $DAT3M_HOME/dartagnan/target/dartagnan.jar <CAT file> [--target=<arch>] <program file> [options]
 ```
 For programs written in `.c`, value `<arch>` specifies the programming language or architectures to which the program will be compiled. For programs written in `.litmus` format, if the `--target` option is not given, Dartagnan will automatically extract the `<arch>` from the litmus test header. `<arch>` must be one of the following: 
 - c11
@@ -99,6 +102,15 @@ while(1) {
 }
 ```
 will unroll this loop twice and use the bound passed to the `--bound` option for all other loops.
+
+Dartagnan also comes with a user interface (not available from the docker container) where it is easy to import, export and modify both the program and the memory model and select the options for the verification engine (see below).
+You can start the user interface by running
+```
+java -jar $DAT3M_HOME/ui/target/ui.jar
+```
+<p align="center">
+<img src="ui/src/main/resources/ui.jpg">
+</p>
 
 Authors and Contact
 ======
@@ -143,3 +155,7 @@ References
 [7] Thomas Haas, Roland Meyer, Hernán Ponce de León: [**CAAT: Consistency as a Theory**](https://hernanponcedeleon.github.io/pdfs/oopsla2022.pdf). OOPSLA 2022.
 
 [8] Thomas Haas, René Maseli, Roland Meyer, Hernán Ponce de León: [**Static Analysis of Memory Models for SMT Encodings**](https://hernanponcedeleon.github.io/pdfs/oopsla2023.pdf). OOPSLA 2023.
+
+[9] Haining Tong, Natalia Gavrilenko, Hernán Ponce de León, Keijo Heljanko: [**Towards Unified Analysis of GPU Consistency**](https://hernanponcedeleon.github.io/pdfs/asplos2024.pdf). ASPLOS 2024.
+
+[10] Thomas Haas, Roland Meyer, Hernán Ponce de León, Andrés Lomelí Garduño: [**Recurrence Sets for Proving Fair Non-termination under Axiomatic Memory Consistency Models**](https://hernanponcedeleon.github.io/pdfs/popl2026.pdf). POPL 2026.

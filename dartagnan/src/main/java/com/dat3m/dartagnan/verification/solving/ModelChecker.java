@@ -1,5 +1,8 @@
 package com.dat3m.dartagnan.verification.solving;
 
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import com.dat3m.dartagnan.configuration.Property;
 import com.dat3m.dartagnan.encoding.EncodingContext;
 import com.dat3m.dartagnan.encoding.IREvaluator;
@@ -18,8 +21,8 @@ import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
 import com.dat3m.dartagnan.wmm.analysis.WmmAnalysis;
 import com.dat3m.dartagnan.wmm.axiom.Axiom;
 import com.dat3m.dartagnan.wmm.processing.WmmProcessingManager;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+
+
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.java_smt.api.ProverEnvironment;
@@ -33,7 +36,7 @@ import static com.dat3m.dartagnan.utils.Result.*;
 
 public abstract class ModelChecker {
 
-    private static final Logger logger = LogManager.getLogger(ModelChecker.class);
+    private static final Logger logger = LoggerFactory.getLogger(ModelChecker.class);
 
     protected Result res = Result.UNKNOWN;
     protected EncodingContext context;

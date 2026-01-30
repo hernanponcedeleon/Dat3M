@@ -1,5 +1,8 @@
 package com.dat3m.dartagnan.witness.graphviz;
 
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.analysis.SyntacticContextAnalysis;
 import com.dat3m.dartagnan.program.event.core.Init;
@@ -13,8 +16,8 @@ import com.dat3m.dartagnan.wmm.definition.Coherence;
 import com.dat3m.dartagnan.wmm.definition.ProgramOrder;
 import com.dat3m.dartagnan.wmm.definition.SameInstruction;
 import com.google.common.collect.Lists;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+
+
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.common.configuration.Option;
@@ -35,7 +38,7 @@ import static com.dat3m.dartagnan.wmm.RelationNameRepository.*;
 @Options
 public class ExecutionGraphVisualizer {
 
-    private static final Logger logger = LogManager.getLogger(ExecutionGraphVisualizer.class);
+    private static final Logger logger = LoggerFactory.getLogger(ExecutionGraphVisualizer.class);
 
     private final Graphviz graphviz;
     private final ColorMap colorMap;
@@ -380,7 +383,7 @@ public class ExecutionGraphVisualizer {
             logger.info("Witness stored into {}.", fileVio.getAbsolutePath());
             return fileVio;
         } catch (Exception e) {
-            logger.error(e);
+            logger.error(e.getMessage());
         }
 
         return null;

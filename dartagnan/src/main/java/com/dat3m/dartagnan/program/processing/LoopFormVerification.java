@@ -1,5 +1,8 @@
 package com.dat3m.dartagnan.program.processing;
 
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import com.dat3m.dartagnan.exception.MalformedProgramException;
 import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.Program;
@@ -7,8 +10,8 @@ import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.CondJump;
 import com.dat3m.dartagnan.program.event.core.Label;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+
+
 import org.sosy_lab.common.configuration.Configuration;
 
 import java.util.List;
@@ -32,7 +35,7 @@ import java.util.stream.Stream;
 
 public class LoopFormVerification implements ProgramProcessor {
 
-    private static final Logger logger = LogManager.getLogger(LoopFormVerification.class);
+    private static final Logger logger = LoggerFactory.getLogger(LoopFormVerification.class);
 
     public static LoopFormVerification fromConfig(Configuration config) {
         return new LoopFormVerification();
