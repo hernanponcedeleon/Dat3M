@@ -2,12 +2,13 @@
 FROM ubuntu:24.04
 
 ARG DEBIAN_FRONTEND=noninteractive
-ARG GRAALVM_VERSION=21
-ARG JAVA_VERSION=17
+ARG JAVA_VERSION=21
+ARG TARGETARCH
 
 # Install system dependencies
 RUN apt-get update && apt-get install -y \
         git \
+        zlib1g-dev \
         build-essential \
         clang \
         maven \
@@ -15,19 +16,23 @@ RUN apt-get update && apt-get install -y \
         wget \
         graphviz \
         curl \
-        unzip \
     && rm -rf /var/lib/apt/lists/*
 
 # Install GraalVM
-RUN curl -L https://github.com/graalvm/graalvm-ce-builds/releases/download/jdk-${JAVA_VERSION}.${GRAALVM_VERSION}/graalvm-community-jdk-${JAVA_VERSION}_linux-x64_bin.tar.gz \
-    | tar -xz -C /opt
+RUN set -eux; \
+    case "$TARGETARCH" in \
+      amd64)  GRAAL_ARCH="linux-x64" ;; \
+      arm64)  GRAAL_ARCH="linux-aarch64" ;; \
+      *)      echo "Unsupported arch: $TARGETARCH" && exit 1 ;; \
+    esac; \
+    mkdir -p /home/graalvm-jdk-${JAVA_VERSION}; \
+    curl -fsSL \
+      https://download.oracle.com/graalvm/${JAVA_VERSION}/latest/graalvm-jdk-${JAVA_VERSION}_${GRAAL_ARCH}_bin.tar.gz \
+    | tar -xz --strip-components=1 -C /home/graalvm-jdk-${JAVA_VERSION}
 
-ENV GRAALVM_HOME=/opt/graalvm-community-openjdk-${JAVA_VERSION}.${GRAALVM_VERSION}
+ENV GRAALVM_HOME=/home/graalvm-jdk-${JAVA_VERSION}_linux-x64
 ENV JAVA_HOME=$GRAALVM_HOME
 ENV PATH=$GRAALVM_HOME/bin:$PATH
-
-# Install native-image
-RUN gu install native-image
 
 # Install Dat3M
 WORKDIR /home
@@ -38,4 +43,4 @@ RUN git clone --branch development https://github.com/hernanponcedeleon/Dat3M.gi
 ENV DAT3M_HOME=/home/Dat3M
 ENV DAT3M_OUTPUT=$DAT3M_HOME/output
 ENV PATH=$DAT3M_HOME/dartagnan/target/:$PATH
-ENV LD_LIBRARY_PATH=$DAT3M_HOME/dartagnan/target/libs/:$LD_LIBRARY_PATH
+ENV LD_LIBRARY_PATH=$DAT3M_HOME/dartagnan/target/libs/
