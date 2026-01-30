@@ -293,7 +293,7 @@ public final class EncodingContext {
         return varToInterval;
     }
 
-    public void addVarToInterval(TypedFormula<IntegerType,?> var, Interval i) {
+    public void putVarToInterval(TypedFormula<IntegerType,?> var, Interval i) {
         varToInterval.put(var,i);
     }
 

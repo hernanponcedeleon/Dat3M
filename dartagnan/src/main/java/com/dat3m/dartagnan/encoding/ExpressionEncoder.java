@@ -166,7 +166,7 @@ public class ExpressionEncoder {
             if(interval != null && !interval.isTop()) {
                 assert variable.getType() instanceof IntegerType;
                 assert variable.formula() instanceof BitvectorFormula || variable.formula() instanceof IntegerFormula;
-                context.addVarToInterval((TypedFormula<IntegerType, ?>) variable,interval);
+                context.putVarToInterval((TypedFormula<IntegerType, ?>) variable,interval);
             }
         }
     }

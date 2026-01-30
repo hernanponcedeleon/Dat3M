@@ -228,7 +228,7 @@ final public class Interval {
             BigDecimal upperboundI1 = new BigDecimal(numeratorInterval.upperbound);
             BigDecimal lowerboundI2 = new BigDecimal(denominatorInterval.lowerbound);
             BigDecimal upperboundI2 = new BigDecimal(denominatorInterval.upperbound);
-            // TODO: Scale 3 is a random magic constant. I Do not have a better solution yet.
+            // TODO: Scale 3 is a random magic constant. I do not have a better solution yet.
             BigDecimal reciprocalLowerbound = BigDecimal.ONE.divide(lowerboundI2, 3, RoundingMode.FLOOR);
             BigDecimal reciprocalUpperbound = BigDecimal.ONE.divide(upperboundI2, 3, RoundingMode.CEILING);
             return multiply(lowerboundI1, upperboundI1, reciprocalLowerbound, reciprocalUpperbound);

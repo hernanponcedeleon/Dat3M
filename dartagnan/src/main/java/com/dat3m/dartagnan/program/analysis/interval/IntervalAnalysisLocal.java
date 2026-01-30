@@ -21,7 +21,7 @@ public class IntervalAnalysisLocal extends IntervalAnalysisWorklist {
         return new IntervalAnalysisLocal(program);
     }
 
-
+    // TODO: Maybe this can just be the default in the abstract class
     @Override
     protected RegisterState analyseLoad(Load l, Map<Register, Interval> prevIntervals) {
         Register result = l.getResultRegister();

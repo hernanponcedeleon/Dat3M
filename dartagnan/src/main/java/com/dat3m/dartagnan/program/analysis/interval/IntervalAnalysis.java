@@ -36,7 +36,7 @@ import java.util.*;
  * <ul>
  *      <li>Naive: Lightweight analysis that always derives the most pessimistic bound</li>
  *      <li>Local: Worklist based algorithm that analyses thread local events and computations for increased precision</li>
- *      <li>Global: Worklist based algorithm that extends Local by considering store and load events from shared memory. Most precise</li>
+ *      <li>Global: Worklist based algorithm that extends Local by considering store and load events from shared memory. Most precise out of the three</li>
  * </ul>
  * Register can be queried for further use.
  * Metrics about the analysis are printed if the appropriate log level is enabled.
