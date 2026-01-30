@@ -75,7 +75,6 @@ public abstract class AbstractComparisonTest {
     protected final Configuration getConfiguration() throws InvalidConfigurationException {
         var configBase = Configuration.builder()
                 .setOption(SOLVER, Z3.name())
-                .setOption(TARGET, targetProvider.get().name())
                 .setOption(PHANTOM_REFERENCES, "true")
                 .setOption(INITIALIZE_REGISTERS, "true")
                 .setOption(USE_INTEGERS, "true");

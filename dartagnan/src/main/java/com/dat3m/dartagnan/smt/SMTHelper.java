@@ -15,12 +15,10 @@ public class SMTHelper {
     private static void loadLibrary(String libName) {
         // Try using NativeLibraries::loadLibrary. Fallback to System::loadLibrary
         // if NativeLibraries failed, for example, because the operating system is
-        // not supported,
+        // not supported: see https://github.com/hernanponcedeleon/Dat3M/pull/835
         try {
             NativeLibraries.loadLibrary(libName);
         } catch (Exception e) {
-            // TODO: Is this really needed?
-            //  NativeLibraries.loadLibrary also calls this function under certain circumstances
             System.loadLibrary(libName);
         }
     }

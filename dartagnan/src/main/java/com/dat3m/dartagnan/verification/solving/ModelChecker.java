@@ -5,7 +5,6 @@ import com.dat3m.dartagnan.configuration.Method;
 import com.dat3m.dartagnan.configuration.Property;
 import com.dat3m.dartagnan.encoding.EncodingContext;
 import com.dat3m.dartagnan.encoding.IREvaluator;
-import com.dat3m.dartagnan.exception.UnsatisfiedRequirementException;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.analysis.BranchEquivalence;
@@ -97,18 +96,6 @@ public abstract class ModelChecker implements AutoCloseable {
         this.task = Preconditions.checkNotNull(task);
         this.smtConfig = new SMTConfig();
         task.getConfig().inject(smtConfig);
-    }
-
-    public static ModelChecker create(VerificationTask task, Method method) throws InvalidConfigurationException {
-        if (task.getProperty().contains(DATARACEFREEDOM)) {
-            // For DATARACEFREEDOM, we always use EAGER
-            // Shall we just throw an exception here?
-            method = Method.EAGER;
-        }
-        return switch (method) {
-            case EAGER -> AssumeSolver.create(task);
-            case LAZY -> RefinementSolver.create(task);
-        };
     }
 
     public final Result getResult() {
@@ -209,30 +196,16 @@ public abstract class ModelChecker implements AutoCloseable {
     // ====================================== Processing utility ==================================================
 
 
-    /**
-     * Performs all modifications to a parsed program.
-     * @param task Program, target memory model and property to be checked.
-     * @param config User-defined options to further specify the behavior.
-     * @exception InvalidConfigurationException Some user-defined option does not match the format.
-     */
     public static void preprocessProgram(VerificationTask task, Configuration config) throws InvalidConfigurationException {
         Program program = task.getProgram();
         ProcessingManager.fromConfig(config).run(program);
     }
+
     public static void preprocessMemoryModel(VerificationTask task, Configuration config) throws InvalidConfigurationException{
         final Wmm memoryModel = task.getMemoryModel();
         WmmProcessingManager.fromConfig(config).run(memoryModel);
     }
 
-    /**
-     * Performs all static program analyses.
-     * @param task Program, target memory model and property to be checked.
-     * @param analysisContext Collection of static analyses already performed for this task.
-     *                        Also receives the results.
-     * @param config User-defined options to further specify the behavior.
-     * @exception InvalidConfigurationException Some user-defined option does not match the format.
-     * @exception UnsatisfiedRequirementException Some static analysis is missing.
-     */
     public static void performStaticProgramAnalyses(VerificationTask task, Context analysisContext, Configuration config) throws InvalidConfigurationException {
         final Program program = task.getProgram();
         analysisContext.register(BranchEquivalence.class, BranchEquivalence.fromConfig(program, config));
@@ -243,6 +216,7 @@ public abstract class ModelChecker implements AutoCloseable {
         final AliasAnalysis alias = AliasAnalysis.fromConfig(program, analysisContext, config, logger.isWarnEnabled());
         analysisContext.register(AliasAnalysis.class, alias);
         analysisContext.register(ThreadSymmetry.class, ThreadSymmetry.fromConfig(program, config));
+
         for(Thread thread : program.getThreads()) {
             for(Event e : thread.getEvents()) {
                 // Some events perform static analyses by themselves (e.g. Svcomp's EndAtomic)
@@ -252,17 +226,22 @@ public abstract class ModelChecker implements AutoCloseable {
         }
     }
 
-    /**
-     * Performs all memory-model-based static analyses.
-     * @param task Program, target memory model and property to be checked.
-     * @param analysisContext Collection of static analyses already performed for this task.
-     *                        Also receives the results.
-     * @param config User-defined options to further specify the behavior.
-     * @exception InvalidConfigurationException Some user-defined option does not match the format.
-     * @exception UnsatisfiedRequirementException Some static analysis is missing.
-     */
     public static void performStaticWmmAnalyses(VerificationTask task, Context analysisContext, Configuration config) throws InvalidConfigurationException {
         analysisContext.register(WmmAnalysis.class, WmmAnalysis.fromConfig(task.getMemoryModel(), task.getProgram().getArch(), config));
         analysisContext.register(RelationAnalysis.class, RelationAnalysis.fromConfig(task, analysisContext, config));
+    }
+
+    // ====================================== Processing utility ==================================================
+
+    public static ModelChecker create(VerificationTask task, Method method) throws InvalidConfigurationException {
+        if (task.getProperty().contains(DATARACEFREEDOM) && method != Method.EAGER) {
+            // For DATARACEFREEDOM, we always use EAGER
+            logger.warn("Method {} is not supported for property {}. Using EAGER instead.", method, DATARACEFREEDOM);
+            method = Method.EAGER;
+        }
+        return switch (method) {
+            case EAGER -> AssumeSolver.create(task);
+            case LAZY -> RefinementSolver.create(task);
+        };
     }
 }

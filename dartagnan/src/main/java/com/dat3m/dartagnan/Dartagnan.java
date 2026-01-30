@@ -125,7 +125,6 @@ public class Dartagnan extends BaseOptions {
         final File fileModel = new File(Arrays.stream(args).filter(a -> a.endsWith(".cat")).findFirst()
                 .orElseThrow(() -> new IllegalArgumentException("CAT model not given or format not recognized")));
         logger.info("CAT file path: {}", fileModel);
-        final Wmm mcm = new ParserCat(Path.of(o.getCatIncludePath())).parse(fileModel);
         final OutputLogger output = new OutputLogger(fileModel, config);
 
         final WitnessGraph witness;
@@ -140,14 +139,13 @@ public class Dartagnan extends BaseOptions {
         final List<File> files = getProgramFilesFromArgs(args);
         for (File f : files) {
             try {
+                // ----------- Generate verification task -----------
                 final Program p = new ProgramParser().parse(f);
                 if (o.overrideEntryFunction()) {
                     p.setEntrypoint(new Entrypoint.Simple(p.getFunctionByName(o.getEntryFunction()).orElseThrow(
                         () -> new MalformedProgramException(String.format("Program has no function named %s. Select a different entry point.", o.getEntryFunction())))));
                 }
-                // FIXME? Should we reparse the memory model each iteration?
-                //  It will get modified by the model checker!
-
+                final Wmm mcm = new ParserCat(Path.of(o.getCatIncludePath())).parse(fileModel);
                 final VerificationTaskBuilder builder = VerificationTask.builder()
                         .withConfig(config)
                         .withProgressModel(o.getProgressModel())
@@ -158,16 +156,16 @@ public class Dartagnan extends BaseOptions {
                 if (p.getArch() != null && !config.hasProperty(TARGET)) {
                     builder.withTarget(p.getArch());
                 }
-                final EnumSet<Property> properties = o.getProperty();
-                final VerificationTask task = builder.build(p, mcm, properties);
-                final ModelChecker modelChecker = ModelChecker.create(task, o.getMethod());
+                final VerificationTask task = builder.build(p, mcm, o.getProperty());
 
+                // ----------- Run Model Checker ----------
+                final ModelChecker modelChecker = ModelChecker.create(task, o.getMethod());
                 long startTime = System.currentTimeMillis();
                 modelChecker.run();
                 long endTime = System.currentTimeMillis();
 
+                // ----------- Generate output-----------
                 summary = summaryFromResult(task, modelChecker, f.toString(), (endTime - startTime));
-
                 if (modelChecker.hasModel() && o.getWitnessType().generateGraphviz()) {
                     generateExecutionGraphFile(task, modelChecker, o.getWitnessType());
                 }

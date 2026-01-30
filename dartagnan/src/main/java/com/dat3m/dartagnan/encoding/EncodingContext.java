@@ -24,12 +24,8 @@ import org.apache.logging.log4j.Logger;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.common.configuration.Option;
 import org.sosy_lab.common.configuration.Options;
-import org.sosy_lab.java_smt.api.BooleanFormula;
-import org.sosy_lab.java_smt.api.BooleanFormulaManager;
-import org.sosy_lab.java_smt.api.FormulaManager;
+import org.sosy_lab.java_smt.api.*;
 import org.sosy_lab.java_smt.api.NumeralFormula.IntegerFormula;
-import org.sosy_lab.java_smt.api.ProverEnvironment;
-import org.sosy_lab.java_smt.api.SolverException;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -289,7 +285,7 @@ public final class EncodingContext {
 
     // The return value must be closed by the caller, usually with a try-with-resources statement.
     public IREvaluator newEvaluator(ProverEnvironment prover) throws SolverException {
-        return new IREvaluator(this, prover.getModel());
+        return new IREvaluator(this, prover.getEvaluator());
     }
 
     // ====================================================================================
