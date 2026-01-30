@@ -8,6 +8,7 @@ import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.analysis.*;
 import com.dat3m.dartagnan.program.analysis.alias.AliasAnalysis;
+import com.dat3m.dartagnan.program.analysis.interval.IntervalAnalysis;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.processing.ProcessingManager;
 import com.dat3m.dartagnan.utils.Result;
@@ -99,6 +100,22 @@ public abstract class ModelChecker {
             }
         }
     }
+
+
+        /**
+     * Performs interval analysis.
+     * TODO: Find a cleaner way to do this since IntervalAnalysis depends on RelationalAnalysis.
+     * @param task Program, target memory model and property to be checked.
+     * @param analysisContext Collection of static analyses already performed for this task.
+     *                        Also receives the results.
+     * @param config User-defined options to further specify the behavior.
+     * @exception InvalidConfigurationException Some user-defined option does not match the format.
+     * @exception UnsatisfiedRequirementException Some static analysis is missing.
+     */
+
+    public static void performIntervalAnalysis(VerificationTask task, Context analysisContext, Configuration config) throws InvalidConfigurationException {
+        analysisContext.register(IntervalAnalysis.class,IntervalAnalysis.fromConfig(task.getProgram(),analysisContext,task,config));
+     }
 
     /**
      * Performs all memory-model-based static analyses.

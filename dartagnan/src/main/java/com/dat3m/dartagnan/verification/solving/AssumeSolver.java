@@ -50,6 +50,7 @@ public class AssumeSolver extends ModelChecker {
         preprocessMemoryModel(task, config);
         performStaticProgramAnalyses(task, analysisContext, config);
         performStaticWmmAnalyses(task, analysisContext, config);
+        performIntervalAnalysis(task,analysisContext,config);
 
         context = EncodingContext.of(task, analysisContext, ctx.getFormulaManager());
         ProgramEncoder programEncoder = ProgramEncoder.withContext(context);
@@ -68,7 +69,9 @@ public class AssumeSolver extends ModelChecker {
         prover.addConstraint(task.getWitness().encode(context));
         prover.writeComment("Symmetry breaking encoding");
         prover.addConstraint(symmetryEncoder.encodeFullSymmetryBreaking());
-
+        // Adding bounds
+        prover.writeComment("Bounds over variables");
+        programEncoder.encodeBounds(prover);
         BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
         BooleanFormula assumptionLiteral = bmgr.makeVariable("DAT3M_spec_assumption");
         BooleanFormula propertyEncoding = propertyEncoder.encodeProperties(task.getProperty());

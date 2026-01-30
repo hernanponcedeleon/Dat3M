@@ -62,6 +62,7 @@ public class OptionNames {
     public static final String ALIAS_GRAPHVIZ_INTERNAL = "program.analysis.generateAliasGraph.internal";
     public static final String ALWAYS_SPLIT_ON_JUMPS = "program.analysis.cf.alwaysSplitOnJump";
     public static final String MERGE_BRANCHES = "program.analysis.cf.mergeBranches";
+    public static final String INTERVAL_ANALYSIS_METHOD = "program.analysis.interval";
 
     // Memory Model Options
     public static final String WMM_ATOMICITY = "wmm.analysis.assumeAtomicity";
