@@ -77,6 +77,7 @@ public abstract class AbstractLitmusTest {
         var configBase = Configuration.builder()
                 .setOption(SOLVER, Z3.name())
                 .setOption(BOUND, boundProvider.get().toString())
+                .setOption(TARGET, targetProvider.get().name())
                 .setOption(PHANTOM_REFERENCES, "true")
                 .setOption(INITIALIZE_REGISTERS, "true");
 
