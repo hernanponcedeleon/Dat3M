@@ -132,7 +132,8 @@ let hb = (po |
 
 // chains will produce the availability/visibility chains with this pattern:
 let E = (M | F | CBAR | AVDEVICE | VISDEVICE) \ IW
-let chains = E * E
+// let chains = E * E
+let chains = [E]
 
 let avsg = [AVSG]
 let avwg = (chains & (avsg; (hb & ssg & avvisinc))?); [AVWG]

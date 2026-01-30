@@ -95,7 +95,7 @@ public class PvmmTest {
             {"f-graph-mp3-sc-b",                    FAIL,   FAIL,   PASS,   FAIL,       FAIL,   PASS,   FAIL},
 
             {"scopes-mp-acq-acq-a",                 PASS,   PASS,   PASS,   PASS,       PASS,   PASS,   PASS},
-            {"scopes-mp-acq-acq-b",                 FAIL,   FAIL,   FAIL,   FAIL,       PASS,   PASS,   PASS},
+            {"scopes-mp-acq-acq-b",                 PASS,   PASS,   PASS,   PASS,       PASS,   PASS,   PASS},  // chains-vs-nochains
 
             {"extra-sb",                            PASS,   PASS,   PASS,   PASS,       PASS,   PASS,   PASS},
             {"extra-sb-fence",                      PASS,   PASS,   PASS,   PASS,       PASS,   PASS,   PASS},
