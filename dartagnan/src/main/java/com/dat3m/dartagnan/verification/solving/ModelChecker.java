@@ -35,6 +35,8 @@ import org.sosy_lab.java_smt.SolverContextFactory;
 import org.sosy_lab.java_smt.api.SolverContext;
 import org.sosy_lab.java_smt.api.SolverException;
 
+import java.util.concurrent.TimeUnit;
+
 import static com.dat3m.dartagnan.configuration.OptionNames.*;
 import static com.dat3m.dartagnan.configuration.Property.DATARACEFREEDOM;
 import static com.dat3m.dartagnan.smt.SMTHelper.createSolverContext;
@@ -67,9 +69,10 @@ public abstract class ModelChecker implements AutoCloseable {
 
         @Option(
                 name = TIMEOUT,
-                description = "Timeout (in secs) before interrupting the SMT solver.")
-        @IntegerOption(min = 0)
+                description = "Timeout before interrupting the SMT solver. Can specify time units ns, ms, s (default), min, and h.")
+        @TimeSpanOption(min = 0, codeUnit = TimeUnit.MILLISECONDS, defaultUserUnit = TimeUnit.SECONDS)
         private int timeout = 0;
+
 
         public boolean hasTimeout() {
             return timeout > 0;
@@ -142,7 +145,7 @@ public abstract class ModelChecker implements AutoCloseable {
 
         java.lang.Thread t = new java.lang.Thread(() -> {
             try {
-                final long timeoutInMillis = smtConfig.getTimeout() * 1000L;
+                final long timeoutInMillis = smtConfig.getTimeout();
                 java.lang.Thread.sleep(timeoutInMillis);
                 final String error = String.format("Timeout of %s exceeded.", Utils.toTimeString(timeoutInMillis));
                 shutdownManager.requestShutdown(error);
