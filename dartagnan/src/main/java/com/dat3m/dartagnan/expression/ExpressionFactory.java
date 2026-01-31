@@ -18,6 +18,7 @@ import com.google.common.collect.Iterables;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import static com.dat3m.dartagnan.expression.type.TypeFactory.isStaticTypeOf;
@@ -316,9 +317,42 @@ public final class ExpressionFactory {
 
     // -----------------------------------------------------------------------------------------------------------------
     // Aggregates
+    public List<Type> unpackTypeHelper(Type type){
+        if(type instanceof AggregateType ag){
+            return ag.getFields().stream().map(TypeOffset::type).toList();
+        }
+        if(type instanceof ArrayType ar){
+            return new ArrayList<>(Collections.nCopies(ar.getNumElements(),ar.getElementType()));
+        }
+        return List.of(type);
+    }
+    public List<Type> unpackTypes(List<Type> type){
+        List<Type> newResult = type.stream().map(this::unpackTypeHelper).flatMap(List::stream).toList();
+        List<Type> oldResult = type;
+        while(!newResult.equals(oldResult)){
+            // fixme way simpler using recursion!
+            oldResult = newResult;
+            newResult = type.stream().map(this::unpackTypeHelper).flatMap(List::stream).toList();
+        }
+        return newResult;
+    }
+    public List<Type> unpackType(Type type){
+        List<Type> list = List.of(type);
+        return unpackTypes(list);
+    }
 
     public Expression makeConstruct(Type type, List<? extends Expression> arguments) {
         return new ConstructExpr(type, arguments);
+    }
+    public Expression makeCompatibilityConstruct(Type type, List<? extends Expression> arguments) {
+        assert ExpressionHelper.isAggregateLike(type);
+        List<Type> types = unpackType(type);
+        List<Expression> newArguments = new ArrayList<>();
+        assert types.size() == arguments.size();
+        for (int i = 0; i < types.size(); ++i) {
+            newArguments.add(makeCast(arguments.get(i),types.get(i)));
+        }
+        return new ConstructExpr(type, newArguments);
     }
 
     public Expression makeArray(ArrayType type, List<Expression> items) {
