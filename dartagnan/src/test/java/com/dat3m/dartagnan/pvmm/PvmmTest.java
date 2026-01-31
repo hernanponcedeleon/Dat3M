@@ -74,6 +74,9 @@ public class PvmmTest {
             {"f-graph-mp-semsc-b",                  PASS,   PASS,   PASS,   PASS,       PASS,   PASS,   PASS},
             {"f-graph-mp-semsc-c",                  FAIL,   FAIL,   FAIL,   FAIL,       FAIL,   FAIL,   FAIL},
 
+            {"f-graph-mp-avvis-a",                  PASS,   PASS,   PASS,   PASS,       PASS,   PASS,   PASS},
+            {"f-graph-mp-avvis-b",                  FAIL,   FAIL,   FAIL,   FAIL,       FAIL,   FAIL,   FAIL},
+
             {"f-graph-problem-semsc-mp-a",          PASS,   PASS,   PASS,   PASS,       PASS,   PASS,   PASS},
             {"f-graph-problem-semsc-mp-b",          FAIL,   PASS,   PASS,   PASS,       FAIL,   PASS,   PASS},
             {"f-graph-problem-semsc-mp-c",          PASS,   PASS,   PASS,   PASS,       PASS,   PASS,   PASS},
@@ -125,7 +128,6 @@ public class PvmmTest {
             {"old_f-graph-problem3-a",              FAIL,   PASS,   PASS,   PASS,       FAIL,   PASS,   PASS},
             {"old_f-graph-problem3-b",              PASS,   PASS,   PASS,   PASS,       PASS,   PASS,   PASS},
     };
-
 
     private static final Object[][] expectedChains = {
             {"f-graph-avvis-chains-semav",          FAIL,   FAIL,   FAIL,   FAIL,       FAIL,   FAIL,   FAIL},
