@@ -3,6 +3,8 @@ package com.dat3m.dartagnan.program.event.core;
 import com.dat3m.dartagnan.encoding.EncodingContext;
 import com.dat3m.dartagnan.encoding.ExpressionEncoder;
 import com.dat3m.dartagnan.expression.Expression;
+import com.dat3m.dartagnan.expression.ExpressionFactory;
+import com.dat3m.dartagnan.expression.pointers.PtrToIntCast;
 import com.dat3m.dartagnan.expression.type.PointerType;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.*;
@@ -73,9 +75,10 @@ public class ExecutionStatus extends AbstractEvent implements RegWriter, EventUs
         // change the compilation of Store-Conditional to invert the value.
         final Expression notExec = exprEncoder.wrap(bmgr.not(context.execution(event)));
         var res = context.result(this);
-        if (res.getType() instanceof PointerType){
-            return bmgr.makeFalse();
-        }
+//        if (res.getType() instanceof PointerType){
+//            context.getExpressionEncoder().equal(ExpressionFactory.getInstance().makeCast(res,), notExec, RIGHT_TO_LEFT);
+//            return bmgr.makeFalse();
+//        }
         return bmgr.and(
                 super.encodeExec(context), // this is a boolean formula
                 context.getExpressionEncoder().equal(res, notExec, RIGHT_TO_LEFT)

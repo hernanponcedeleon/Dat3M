@@ -406,6 +406,9 @@ public final class ExpressionFactory {
         if (base.getType() instanceof IntegerType) {
             return makeIntToPtrCast(base, type);
         }
+        if (base.getType() instanceof BooleanType) {
+            return makePtrCast(makeIntegerCast(base, types.getArchType(),false),type);
+        }
         throw new UnsupportedOperationException(String.format("Cast %s into pointer unsupported.",base));
     }
 
