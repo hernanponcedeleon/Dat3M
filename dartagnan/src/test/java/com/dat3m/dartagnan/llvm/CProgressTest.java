@@ -1,12 +1,11 @@
 package com.dat3m.dartagnan.llvm;
 
+import com.dat3m.dartagnan.configuration.Method;
 import com.dat3m.dartagnan.configuration.ProgressModel;
 import com.dat3m.dartagnan.configuration.Property;
 import com.dat3m.dartagnan.utils.Result;
 import com.dat3m.dartagnan.utils.rules.Provider;
 import com.dat3m.dartagnan.utils.rules.Providers;
-import com.dat3m.dartagnan.verification.solving.AssumeSolver;
-import com.dat3m.dartagnan.verification.solving.RefinementSolver;
 import com.dat3m.dartagnan.wmm.Wmm;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -21,7 +20,6 @@ import static com.dat3m.dartagnan.configuration.ProgressModel.*;
 import static com.dat3m.dartagnan.utils.ResourceHelper.getTestResourcePath;
 import static com.dat3m.dartagnan.utils.Result.FAIL;
 import static com.dat3m.dartagnan.utils.Result.PASS;
-import static org.junit.Assert.assertEquals;
 
 @RunWith(Parameterized.class)
 public class CProgressTest extends AbstractCTest {
@@ -90,13 +88,11 @@ public class CProgressTest extends AbstractCTest {
 
     @Test
     public void testAssume() throws Exception {
-        AssumeSolver s = AssumeSolver.run(contextProvider.get(), proverProvider.get(), taskProvider.get());
-        assertEquals(expected, s.getResult());
+        testModelChecker(Method.EAGER);
     }
 
     @Test
     public void testRefinement() throws Exception {
-        RefinementSolver s = RefinementSolver.run(contextProvider.get(), proverProvider.get(), taskProvider.get());
-        assertEquals(expected, s.getResult());
+        testModelChecker(Method.LAZY);
     }
 }

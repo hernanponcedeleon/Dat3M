@@ -1,4 +1,4 @@
-package com.dat3m.dartagnan.encoding;
+package com.dat3m.dartagnan.smt;
 
 import com.google.common.collect.ImmutableMap;
 import org.sosy_lab.java_smt.api.*;

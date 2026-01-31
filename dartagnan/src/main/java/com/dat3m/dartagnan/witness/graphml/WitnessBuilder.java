@@ -1,6 +1,5 @@
 package com.dat3m.dartagnan.witness.graphml;
 
-import com.dat3m.dartagnan.encoding.EncodingContext;
 import com.dat3m.dartagnan.encoding.IREvaluator;
 import com.dat3m.dartagnan.expression.booleans.BoolLiteral;
 import com.dat3m.dartagnan.program.Program;
@@ -14,11 +13,10 @@ import com.dat3m.dartagnan.program.event.lang.svcomp.EndAtomic;
 import com.dat3m.dartagnan.program.event.metadata.SourceLocation;
 import com.dat3m.dartagnan.program.event.metadata.UnrollingBound;
 import com.dat3m.dartagnan.utils.Result;
+import com.dat3m.dartagnan.verification.VerificationTask;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.common.configuration.Option;
 import org.sosy_lab.common.configuration.Options;
-import org.sosy_lab.java_smt.api.ProverEnvironment;
-import org.sosy_lab.java_smt.api.SolverException;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -40,8 +38,8 @@ import static java.lang.String.valueOf;
 @Options
 public class WitnessBuilder {
 
-    private final EncodingContext context;
-    private final ProverEnvironment prover;
+    private final VerificationTask task;
+    private final IREvaluator evaluator;
     private final String type;
     private final String ltlProperty;
 
@@ -61,18 +59,18 @@ public class WitnessBuilder {
 
     private final Map<Event, Integer> eventThreadMap = new HashMap<>();
 
-    private WitnessBuilder(EncodingContext c, ProverEnvironment p, Result r, String summary) {
-        context = checkNotNull(c);
-        prover = checkNotNull(p);
+    private WitnessBuilder(IREvaluator model, Result r, String summary) throws InvalidConfigurationException {
+        evaluator = checkNotNull(model);
+        task = evaluator.getEncodingContext().getTask();
         type = r.equals(FAIL) ? "violation" : "correctness";
         ltlProperty = getLtlPropertyFromSummary(summary);
+
+        task.getConfig().inject(this);
     }
 
-    public static WitnessBuilder of(EncodingContext context, ProverEnvironment prover, Result result,
-            String ltlProperty) throws InvalidConfigurationException {
-        WitnessBuilder b = new WitnessBuilder(context, prover, result, ltlProperty);
-        context.getTask().getConfig().inject(b);
-        return b;
+    public static WitnessBuilder of(IREvaluator evaluator, Result result,
+                                    String ltlProperty) throws InvalidConfigurationException {
+        return new WitnessBuilder(evaluator, result, ltlProperty);
     }
 
     private static String getLtlPropertyFromSummary(String summary) {
@@ -130,7 +128,7 @@ public class WitnessBuilder {
             return graph;
         }
 
-        Program program = context.getTask().getProgram();
+        Program program = task.getProgram();
 
         // Compute stores related to thread spawning
         List<MemoryCoreEvent> creates = new ArrayList<>();
@@ -141,38 +139,34 @@ public class WitnessBuilder {
             }
         }
 
-        try (IREvaluator evaluator = context.newEvaluator(prover)) {
-            List<Event> execution = reOrderBasedOnAtomicity(program, getSCExecutionOrder(evaluator));
+        List<Event> execution = reOrderBasedOnAtomicity(program, getSCExecutionOrder(evaluator));
 
-            for (int i = 0; i < execution.size(); i++) {
-                Event e = execution.get(i);
-                if (i + 1 < execution.size()) {
-                    Event next = execution.get(i + 1);
-                    if (e.hasEqualMetadata(next, SourceLocation.class) && e.getThread() == next.getThread()) {
-                        continue;
-                    }
-                }
-
-                int cLine = e.hasMetadata(SourceLocation.class) ? e.getMetadata(SourceLocation.class).lineNumber() : -1;
-                edge = new Edge(new Node("N" + nextNode), new Node("N" + (nextNode + 1)));
-                edge.addAttribute(THREADID.toString(), valueOf(eventThreadMap.get(e)));
-                edge.addAttribute(STARTLINE.toString(), valueOf(cLine));
-
-                if (creates.contains(e)) {
-                    edge.addAttribute(CREATETHREAD.toString(), valueOf(threads));
-                    threads++;
-                }
-
-                graph.addEdge(edge);
-
-                nextNode++;
-                if (e instanceof Assert) {
-                    // FIXME: Execution of an assertion is not a problem, if the assertion holds!
-                    break;
+        for (int i = 0; i < execution.size(); i++) {
+            Event e = execution.get(i);
+            if (i + 1 < execution.size()) {
+                Event next = execution.get(i + 1);
+                if (e.hasEqualMetadata(next, SourceLocation.class) && e.getThread() == next.getThread()) {
+                    continue;
                 }
             }
-        } catch (SolverException ignore) {
-            // The if above guarantees that if we reach this try, a Model exists
+
+            int cLine = e.hasMetadata(SourceLocation.class) ? e.getMetadata(SourceLocation.class).lineNumber() : -1;
+            edge = new Edge(new Node("N" + nextNode), new Node("N" + (nextNode + 1)));
+            edge.addAttribute(THREADID.toString(), valueOf(eventThreadMap.get(e)));
+            edge.addAttribute(STARTLINE.toString(), valueOf(cLine));
+
+            if (creates.contains(e)) {
+                edge.addAttribute(CREATETHREAD.toString(), valueOf(threads));
+                threads++;
+            }
+
+            graph.addEdge(edge);
+
+            nextNode++;
+            if (e instanceof Assert) {
+                // FIXME: Execution of an assertion is not a problem, if the assertion holds!
+                break;
+            }
         }
         graph.getNode("N" + nextNode).addAttribute("violation", "true");
         return graph;
@@ -182,7 +176,7 @@ public class WitnessBuilder {
         // TODO: we recently added many cline to many events and this might affect the
         // witness generation.
         Predicate<Event> executedCEvents = e -> model.isExecuted(e) && e.hasMetadata(SourceLocation.class);
-        List<Event> execEvents = context.getTask().getProgram().getThreadEvents().stream()
+        List<Event> execEvents = task.getProgram().getThreadEvents().stream()
                 .filter(executedCEvents)
                 .toList();
         Map<Integer, List<Event>> map = new HashMap<>();
