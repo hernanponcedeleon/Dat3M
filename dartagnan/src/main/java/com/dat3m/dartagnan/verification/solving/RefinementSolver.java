@@ -418,7 +418,7 @@ public class RefinementSolver extends ModelChecker {
         final List<RefinementIteration> trace = new ArrayList<>();
         boolean isFinalIteration = false;
         while (!isFinalIteration) {
-
+            checkForInterrupts();
             final RefinementIteration iteration = doRefinementIteration(prover, solver, refiner);
             trace.add(iteration);
             isFinalIteration = !checkProgress(trace) || iteration.isConclusive();

@@ -77,8 +77,11 @@ public class AssumeSolver extends ModelChecker {
         prover.writeComment("Property encoding");
         prover.addConstraint(assumedSpec);
 
+        checkForInterrupts();
+
         logger.info("Starting first solver.check()");
         if (prover.isUnsatWithAssumptions(singletonList(assumptionLiteral))) {
+            checkForInterrupts();
             prover.writeComment("Bound encoding");
             prover.addConstraint(propertyEncoder.encodeBoundEventExec());
             logger.info("Starting second solver.check()");

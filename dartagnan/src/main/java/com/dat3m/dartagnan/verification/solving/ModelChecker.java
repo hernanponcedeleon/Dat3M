@@ -157,6 +157,15 @@ public abstract class ModelChecker implements AutoCloseable {
         t.start();
         runInternal();
         t.interrupt();
+
+        checkForInterrupts();
+    }
+
+    protected void checkForInterrupts() throws InterruptedException {
+        // Sometimes the shutdown can be requested without triggering an exception
+        // if we are not in native code at the time of request
+        // This can lead to strange behaviors, so also do explicit checks
+        shutdownManager.getNotifier().shutdownIfNecessary();
     }
 
     // ====================================== Logging utility ================================================
