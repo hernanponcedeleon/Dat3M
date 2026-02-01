@@ -153,6 +153,17 @@
                             <classpathPrefix>${dat3m.library.path}</classpathPrefix>
                             <mainClass>com.dat3m.dartagnan.Dartagnan</mainClass>
                         </manifest>
+                        <!--
+                            From Java 24 onward, the user needs to invoke Java apps like this:
+                                    java &#45;&#45enable-native-access=ALL-UNNAMED <App>   // &#45='-'
+                            to enable access to native methods (in Java 24 just a warning is triggered,
+                            but it will become an error in the future)
+                            We can enable this option in the manifest file so the user does not
+                            need to specify it.
+                        -->
+                        <manifestEntries>
+                            <Enable-Native-Access>ALL-UNNAMED</Enable-Native-Access>
+                        </manifestEntries>
                     </archive>
                 </configuration>
             </plugin>

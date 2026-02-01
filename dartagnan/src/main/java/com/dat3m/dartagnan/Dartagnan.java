@@ -1,8 +1,6 @@
 package com.dat3m.dartagnan;
 
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import com.dat3m.dartagnan.configuration.OptionNames;
 import com.dat3m.dartagnan.configuration.ProgressModel;
 import com.dat3m.dartagnan.configuration.Property;
@@ -45,9 +43,9 @@ import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVParser;
 import org.apache.commons.csv.CSVPrinter;
 import org.apache.commons.csv.CSVRecord;
-
-
 import org.apache.maven.model.io.xpp3.MavenXpp3Reader;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.common.configuration.Options;
@@ -177,8 +175,20 @@ public class Dartagnan extends BaseOptions {
                     generateWitnessIfAble(task, modelChecker, summary.reason() + "\n" + summary.details());
                 }
             } catch (InterruptedException e) {
-                final String details = "\t" + Optional.ofNullable(e.getMessage()).orElse("Unknown error occurred");
-                summary = new ResultSummary(f.toString(), "", TIMEDOUT, "", "", details, 0, TIMEOUT_ELAPSED);
+                final String details;
+                final ExitCode exitCode;
+                if (e.getMessage() != null) {
+                    details = "\t" + e.getMessage();
+                    exitCode = e.getMessage().contains("Timeout")
+                            ? TIMEOUT_ELAPSED
+                            : e.getMessage().contains("canceled")
+                            ? CANCELED
+                            : UNKNOWN_ERROR;
+                } else {
+                    details = "\tUnknown error occurred";
+                    exitCode = UNKNOWN_ERROR;
+                }
+                summary = new ResultSummary(f.toString(), "", INTERRUPTED, "", "", details, 0, exitCode);
             } catch (Exception e) {
                 final String reason = e.getClass().getSimpleName();
                 final String details = "\t" + Optional.ofNullable(e.getMessage()).orElse("Unknown error occurred");

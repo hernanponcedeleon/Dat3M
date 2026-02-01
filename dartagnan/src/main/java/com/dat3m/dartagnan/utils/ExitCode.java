@@ -9,7 +9,7 @@ public enum ExitCode {
     // Witness validation errors
     WITNESS_NOT_VALIDATED, WRONG_WITNESS_FILE,
     // Unexpected results
-    UNKNOWN_ERROR, TIMEOUT_ELAPSED;
+    UNKNOWN_ERROR, TIMEOUT_ELAPSED, CANCELED;
 
     public int asInt() {
         return switch (this) {
@@ -24,6 +24,7 @@ public enum ExitCode {
             case WRONG_WITNESS_FILE -> 21;
             case UNKNOWN_ERROR -> 30;
             case TIMEOUT_ELAPSED -> 31;
+            case CANCELED -> 32;
         };
     }
 }
