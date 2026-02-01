@@ -41,6 +41,7 @@ import com.dat3m.dartagnan.wmm.definition.Intersection;
 import org.junit.Test;
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
+import scala.Int;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -68,6 +69,15 @@ public class AnalysisTest {
 
     private static final TypeFactory types = TypeFactory.getInstance();
     private static final ExpressionFactory expressions = ExpressionFactory.getInstance();
+
+    private Expression toPtr(Expression expr) {
+        return expressions.makePtrCast(expr, types.getPointerType());
+    }
+    private Expression toInt(Expression expr) {
+        return expressions.makeIntegerCast(expr, types.getArchType(),true);
+    }
+
+
 
     @Test
     public void reachingDefinitionMustOverride() throws InvalidConfigurationException {
@@ -128,8 +138,6 @@ public class AnalysisTest {
         assertList(rd.getWriters(me5).ofRegister(r2).getMayWriters(), me4);
         assertList(rd.getWriters(me5).ofRegister(r2).getMustWriters(), me4);
     }
-
-
 
     @Test
     public void reachingDefinitionSupportsLoops() throws InvalidConfigurationException {
@@ -262,12 +270,7 @@ public class AnalysisTest {
     public void full0() throws InvalidConfigurationException {
         program0(FULL, NONE, MUST, NONE, NONE, NONE, NONE);
     }
-    private Expression toPtr(Expression expr) {
-        return expressions.makePtrCast(expr, types.getPointerType());
-    }
-    private Expression toInt(Expression expr) {
-        return expressions.makeIntegerCast(expr, types.getArchType(),true);
-    }
+
     private void program0(Alias method, Result... expect) throws InvalidConfigurationException {
         ProgramBuilder b = ProgramBuilder.forLanguage(SourceLanguage.LITMUS);
 
@@ -275,7 +278,7 @@ public class AnalysisTest {
         MemoryObject y = b.newMemoryObject("y", 8);
 
         b.newThread(0);
-        Register r0 = b.getOrNewRegister(0, "r0");
+        Register r0 = b.getOrNewRegister(0, "r0", types.getPointerType());
         //In C11, this is well-defined: ((uint64_t*) ((uintptr_t) x * 1))
         b.addChild(0, newLocal(r0, toPtr(mult(toInt(x), 1))));
         Store e0 = newStore(r0);
@@ -366,7 +369,6 @@ public class AnalysisTest {
     private void program2(Alias method, Result... expect) throws InvalidConfigurationException {
         ProgramBuilder b = ProgramBuilder.forLanguage(SourceLanguage.LITMUS);
         IntegerType itype = types.getArchType();
-        PointerType ptype = types.getPointerType();
         MemoryObject x = b.newMemoryObject("x", 24);
 
         b.newThread(0);
@@ -384,7 +386,7 @@ public class AnalysisTest {
         b.addChild(0, e2);
         Register r1 = b.getOrNewRegister(0, "r1", itype);
         b.addChild(0, newLocal(r1, expressions.makeZero(itype)));
-        Store e3 = newStore(expressions.makePtrAdd(expressions.makePtrAdd(x, mult(r0, 16)), mult(r1, 32)));
+        Store e3 = newStore(add(add(x, mult(r0, 16)), mult(r1, 32)));
         b.addChild(0, e3);
         b.addChild(0, l0);
 
@@ -646,6 +648,13 @@ public class AnalysisTest {
 
     private Expression value(long v) {
         return expressions.makeValue(v, types.getArchType());
+    }
+    private Expression add(Expression lhs, Expression rhs) {
+        assert rhs instanceof IntegerType;
+        if (lhs.getType() instanceof PointerType){
+            return expressions.makePtrAdd(lhs,rhs);
+        }
+        return expressions.makeAdd(lhs, rhs);
     }
 
     private Expression plus(Expression lhs, long rhs) {

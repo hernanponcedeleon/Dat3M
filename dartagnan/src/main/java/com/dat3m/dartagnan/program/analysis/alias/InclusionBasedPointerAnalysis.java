@@ -1136,6 +1136,16 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
         }
 
         @Override
+        public List<IncludeEdge> visitIntToPtrCastExpression(IntToPtrCast expr) {
+            return expr.getOperand().accept(this);
+        }
+        @Override
+        public List<IncludeEdge> visitPtrToIntCastExpression(PtrToIntCast expr) {
+            return expr.getOperand().accept(this);
+        }
+
+
+        @Override
         public List<IncludeEdge> visitIntSizeCastExpression(IntSizeCast expr) {
             // We assume type casts do not affect the value of pointers.
             return expr.isExtension() && !expr.preservesSign() ? expr.getOperand().accept(this) : visitExpression(expr);

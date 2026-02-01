@@ -373,7 +373,7 @@ public class VisitorAsmArm extends AsmArmBaseVisitor<Object> {
             if (!isOutputRegistersInitialized) {
                 isOutputRegistersInitialized = true;
                 if (i == 1) {
-                    outputAssignments.add(EventFactory.newLocal(returnRegister, asmRegisters.get(0)));
+                    outputAssignments.add(EventFactory.newLocal(returnRegister, expressions.makeCast(asmRegisters.get(0),returnRegister.getType())));
                 } else {
                     Type aggregateType = returnRegister.getType();
                     Expression finalAssignExpression = expressions.makeCompatibilityConstruct(aggregateType, this.pendingRegisters);

@@ -3,6 +3,8 @@ package com.dat3m.dartagnan.program.analysis.alias;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.integers.IntBinaryExpr;
 import com.dat3m.dartagnan.expression.integers.IntLiteral;
+import com.dat3m.dartagnan.expression.pointers.NullLiteral;
+import com.dat3m.dartagnan.expression.pointers.PtrAddExpr;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
@@ -360,9 +362,23 @@ public class AndersenAliasAnalysis implements AliasAnalysis {
                 failed = false;
                 return;
             }
+            if (x instanceof NullLiteral) {
+                location = null;
+                failed = false;
+                return;
+            }
             if (x instanceof IntBinaryExpr iBin && iBin.getKind() == ADD) {
                 Expression lhs = iBin.getLeft();
                 Expression rhs = iBin.getRight();
+                if (lhs instanceof MemoryObject mem && rhs instanceof IntLiteral ic) {
+                    location = new Location(mem, ic.getValueAsInt());
+                    failed = false;
+                    return;
+                }
+            }
+            if (x instanceof PtrAddExpr pAdd) {
+                Expression lhs = pAdd.getBase();
+                Expression rhs = pAdd.getOffset();
                 if (lhs instanceof MemoryObject mem && rhs instanceof IntLiteral ic) {
                     location = new Location(mem, ic.getValueAsInt());
                     failed = false;
