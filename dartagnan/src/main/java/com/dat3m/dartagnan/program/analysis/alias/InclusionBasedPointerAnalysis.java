@@ -1217,7 +1217,7 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
     // Red edges connect address variables to stored value variables.
     // Green-labeled nodes represent memory objects.
     // Red-labeled nodes are address variables that do not include any memory objects (probably a bug).
-    private void generateGraph() {
+    private void  generateGraph() {
         final Set<Variable> seen = new HashSet<>(objectVariables.values());
         for (Set<Variable> news = seen; !news.isEmpty();) {
             final var next = new HashSet<Variable>();

@@ -431,14 +431,19 @@ public class MemToReg implements FunctionProcessor {
         private static RegisterOffset matchGEP(Expression expression) {
             long sum = 0;
             while (!(expression instanceof Register register)) {
-                if ((!(expression instanceof IntBinaryExpr bin) ||
-                        bin.getKind() != IntBinaryOp.ADD ||
-                        !(bin.getRight() instanceof IntLiteral offset)) ||
-                        !(expression.getKind() instanceof PtrAddExpr)) {
-                    return null;
+                if (expression instanceof IntBinaryExpr bin &&
+                        bin.getKind() == IntBinaryOp.ADD &&
+                        bin.getRight() instanceof IntLiteral offset) {
+                    sum += offset.getValueAsLong();
+                    expression = bin.getLeft();
+                    continue;
                 }
-                sum += offset.getValueAsLong();
-                expression = bin.getLeft();
+                if (expression instanceof PtrAddExpr ptr && ptr.getOffset() instanceof IntLiteral offset) {
+                    sum += offset.getValueAsLong();
+                    expression = ptr.getBase();
+                    continue;
+                }
+                return null;
             }
             return new RegisterOffset(register, sum);
         }
