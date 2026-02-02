@@ -1,24 +1,18 @@
 package com.dat3m.dartagnan.llvm;
 
 import com.dat3m.dartagnan.configuration.Arch;
-import com.dat3m.dartagnan.configuration.Method;
 import com.dat3m.dartagnan.configuration.Property;
 import com.dat3m.dartagnan.verification.ResultStatus;
 import com.dat3m.dartagnan.utils.rules.Provider;
-import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.sosy_lab.common.configuration.ConfigurationBuilder;
 
-import java.io.IOException;
 import java.util.Arrays;
 import java.util.EnumSet;
 
-import java.nio.file.Path;
-
 import static com.dat3m.dartagnan.configuration.Arch.ARM8;
 import static com.dat3m.dartagnan.configuration.OptionNames.MIXED_SIZE;
-import static com.dat3m.dartagnan.utils.ResourceHelper.getTestResourcePath;
 import static com.dat3m.dartagnan.verification.ResultStatus.FAIL;
 import static com.dat3m.dartagnan.verification.ResultStatus.PASS;
 
@@ -30,8 +24,8 @@ public class MixedTest extends AbstractCTest {
     }
 
     @Override
-    protected Provider<Path> getProgramPathProvider() {
-        return () -> getTestResourcePath("mixed/" + name + ".ll");
+    protected String getProgramPathPrefix() {
+        return "mixed/";
     }
 
     @Override
@@ -55,7 +49,7 @@ public class MixedTest extends AbstractCTest {
     }
 
     @Parameterized.Parameters(name = "{index}: {0}, target={1}")
-    public static Iterable<Object[]> data() throws IOException {
+    public static Iterable<Object[]> data() {
         return Arrays.asList(new Object[][]{
             {"lockref1", ARM8, PASS},
             {"lockref2", ARM8, PASS},
@@ -72,15 +66,5 @@ public class MixedTest extends AbstractCTest {
             {"floats_msa_1", ARM8, PASS},
             {"floats_msa_2", ARM8, PASS},
         });
-    }
-
-    @Test
-    public void testAssume() throws Exception {
-        testSolver(Method.EAGER);
-    }
-
-    @Test
-    public void testRefinement() throws Exception {
-        testSolver(Method.LAZY);
     }
 }

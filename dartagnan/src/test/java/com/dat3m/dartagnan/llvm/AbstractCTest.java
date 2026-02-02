@@ -10,6 +10,7 @@ import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.verification.VerificationTaskSolver;
 import com.dat3m.dartagnan.wmm.Wmm;
 import org.junit.Rule;
+import org.junit.Test;
 import org.junit.rules.RuleChain;
 import org.junit.rules.Timeout;
 import org.sosy_lab.common.ShutdownManager;
@@ -23,6 +24,7 @@ import java.util.EnumSet;
 
 import static com.dat3m.dartagnan.utils.ResourceHelper.getTestResourcePath;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assume.assumeTrue;
 
 public abstract class AbstractCTest {
 
@@ -38,6 +40,9 @@ public abstract class AbstractCTest {
 
     // =================== Modifiable behavior ====================
 
+    protected boolean isEagerMethodEnabled() { return true; }
+    protected boolean isLazyMethodEnabled() { return true; }
+
     protected abstract long getTimeout();
 
     protected final Configuration getBaseConfiguration() throws InvalidConfigurationException {
@@ -50,8 +55,16 @@ public abstract class AbstractCTest {
         return additionalConfig(configBase).build();
     }
 
+    protected String getProgramPathPrefix() {
+        return "";
+    }
+
+    protected String getProgramPathSuffix() {
+        return ".ll";
+    }
+
     protected Provider<Path> getProgramPathProvider() {
-        return () -> getTestResourcePath(name + ".ll");
+        return () -> getTestResourcePath(getProgramPathPrefix() + name + getProgramPathSuffix());
     }
 
     protected Provider<Integer> getBoundProvider() {
@@ -113,12 +126,23 @@ public abstract class AbstractCTest {
             .around(timeout);
 
 
-    protected void testSolver(Method method) throws Exception {
+    @Test
+    public void testAssume() throws Exception {
+        assumeTrue(isEagerMethodEnabled());
+        testSolver(Method.EAGER);
+    }
+
+    @Test
+    public void testRefinement() throws Exception {
+        assumeTrue(isLazyMethodEnabled());
+        testSolver(Method.LAZY);
+    }
+
+    private void testSolver(Method method) throws Exception {
         try (VerificationTaskSolver solver = VerificationTaskSolver.createWithMethod(taskProvider.get(), method)
                 .withShutdownManager(shutdownManagerProvider.get())) {
             solver.run();
             assertEquals(expected, solver.getResult().getStatus());
         }
     }
-
 }

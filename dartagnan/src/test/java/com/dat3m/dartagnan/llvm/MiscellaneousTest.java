@@ -1,22 +1,16 @@
 package com.dat3m.dartagnan.llvm;
 
 import com.dat3m.dartagnan.configuration.Arch;
-import com.dat3m.dartagnan.configuration.Method;
 import com.dat3m.dartagnan.configuration.OptionNames;
 import com.dat3m.dartagnan.verification.ResultStatus;
 import com.dat3m.dartagnan.utils.rules.Provider;
-import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.sosy_lab.common.configuration.ConfigurationBuilder;
 
-import java.io.IOException;
 import java.util.Arrays;
 
-import java.nio.file.Path;
-
 import static com.dat3m.dartagnan.configuration.Arch.*;
-import static com.dat3m.dartagnan.utils.ResourceHelper.getTestResourcePath;
 import static com.dat3m.dartagnan.verification.ResultStatus.*;
 
 @RunWith(Parameterized.class)
@@ -30,8 +24,8 @@ public class MiscellaneousTest extends AbstractCTest {
     }
 
     @Override
-    protected Provider<Path> getProgramPathProvider() {
-        return () -> getTestResourcePath("miscellaneous/" + name + ".ll");
+    protected String getProgramPathPrefix() {
+        return "miscellaneous/";
     }
 
     @Override
@@ -56,7 +50,7 @@ public class MiscellaneousTest extends AbstractCTest {
     }
 
     @Parameterized.Parameters(name = "{index}: {0}, target={1}")
-    public static Iterable<Object[]> data() throws IOException {
+    public static Iterable<Object[]> data() {
         return Arrays.asList(new Object[][]{
                 {"idd_dynamic", ARM8, FAIL, 1},
                 {"idd_dynamic_2", ARM8, FAIL, 1},
@@ -122,15 +116,5 @@ public class MiscellaneousTest extends AbstractCTest {
                 {"alias-shrinkToBounds", IMM, FAIL, 1},
                 {"zext", IMM, PASS, 1}
         });
-    }
-
-    @Test
-    public void testAssume() throws Exception {
-        testSolver(Method.EAGER);
-    }
-
-    @Test
-    public void testRefinement() throws Exception {
-        testSolver(Method.LAZY);
     }
 }
