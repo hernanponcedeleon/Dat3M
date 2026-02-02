@@ -9,6 +9,7 @@ import com.dat3m.dartagnan.wmm.Wmm;
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.ConfigurationBuilder;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
+import org.sosy_lab.java_smt.SolverContextFactory;
 
 import java.util.EnumSet;
 
@@ -85,6 +86,11 @@ public class VerificationTask {
 
         public VerificationTaskBuilder withSolverTimeout(int t) {
             this.config.setOption(TIMEOUT, Integer.toString(t));
+            return this;
+        }
+
+        public VerificationTaskBuilder withSolver(SolverContextFactory.Solvers solver) {
+            this.config.setOption(SOLVER, solver.toString());
             return this;
         }
 

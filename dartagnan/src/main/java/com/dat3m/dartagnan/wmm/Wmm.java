@@ -180,10 +180,6 @@ public class Wmm {
 
     public void configureAll(Configuration config) throws InvalidConfigurationException {
         config.inject(this.config);
-        for (Axiom ax : getAxioms()) {
-            ax.configure(config);
-        }
-
         logger.info("{}: {}", REDUCE_ACYCLICITY_ENCODE_SETS, this.config.isReduceAcyclicityEncoding());
     }
 
