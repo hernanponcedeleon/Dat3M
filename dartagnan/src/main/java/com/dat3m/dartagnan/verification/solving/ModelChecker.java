@@ -106,6 +106,14 @@ public abstract class ModelChecker implements AutoCloseable {
         return res;
     }
 
+    public EncodingContext getEncodingContext() {
+        return context;
+    }
+
+    public ProverWithTracker getProver() {
+        return prover;
+    }
+
     public long getTimeout() {
         return smtConfig.getTimeout();
     }

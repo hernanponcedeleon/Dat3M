@@ -1,8 +1,8 @@
 package com.dat3m.dartagnan.pvmm;
 
 import com.dat3m.dartagnan.configuration.Arch;
+import com.dat3m.dartagnan.configuration.Method;
 import com.dat3m.dartagnan.configuration.Property;
-import com.dat3m.dartagnan.encoding.ProverWithTracker;
 import com.dat3m.dartagnan.parsers.cat.ParserCat;
 import com.dat3m.dartagnan.parsers.program.ProgramParser;
 import com.dat3m.dartagnan.program.Program;
@@ -12,22 +12,15 @@ import com.dat3m.dartagnan.program.event.core.GenericVisibleEvent;
 import com.dat3m.dartagnan.utils.Result;
 import com.dat3m.dartagnan.utils.printer.Printer;
 import com.dat3m.dartagnan.verification.VerificationTask;
-import com.dat3m.dartagnan.verification.solving.AssumeSolver;
 import com.dat3m.dartagnan.verification.solving.ModelChecker;
-import com.dat3m.dartagnan.verification.solving.RefinementSolver;
 import com.dat3m.dartagnan.wmm.Relation;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
 import com.dat3m.dartagnan.wmm.utils.graph.mutable.MapEventGraph;
 import com.dat3m.dartagnan.wmm.utils.graph.mutable.MutableEventGraph;
 import org.junit.Test;
-import org.sosy_lab.common.ShutdownManager;
 import org.sosy_lab.common.configuration.Configuration;
-import org.sosy_lab.common.configuration.InvalidConfigurationException;
-import org.sosy_lab.common.log.BasicLogManager;
-import org.sosy_lab.java_smt.SolverContextFactory;
 import org.sosy_lab.java_smt.api.Model;
-import org.sosy_lab.java_smt.api.SolverContext;
 
 import java.io.File;
 import java.io.IOException;
@@ -175,17 +168,15 @@ public class PvmmTest {
                     Result result = programEntry.getValue().get(i);
                     String model = getRootPath("cat/" + models[i] + ".cat");
                     System.out.println("    " + models[i]);
-                    try (SolverContext ctx = mkCtx()) {
-                        try (ProverWithTracker prover = mkProver(ctx)) {
-                            VerificationTask task = mkTask(program, model, PROGRAM_SPEC, typeEntry.getKey());
-                            assertEquals(result, AssumeSolver.run(ctx, prover, task).getResult());
-                        }
+                    VerificationTask taskEager = mkTask(program, model, PROGRAM_SPEC, typeEntry.getKey());
+                    try (ModelChecker mc = ModelChecker.create(taskEager, Method.EAGER)) {
+                        mc.run();
+                        assertEquals(result, mc.getResult());
                     }
-                    try (SolverContext ctx = mkCtx()) {
-                        try (ProverWithTracker prover = mkProver(ctx)) {
-                            VerificationTask task = mkTaskRefinement(program, model, PROGRAM_SPEC, typeEntry.getKey());
-                            assertEquals(result, RefinementSolver.run(ctx, prover, task).getResult());
-                        }
+                    VerificationTask taskLazy = mkTask(program, model, PROGRAM_SPEC, typeEntry.getKey());
+                    try (ModelChecker mc = ModelChecker.create(taskLazy, Method.LAZY)) {
+                        mc.run();
+                        assertEquals(result, mc.getResult());
                     }
                 }
             }
@@ -206,17 +197,15 @@ public class PvmmTest {
                         modelPath = getRootPath("cat/" + models[i] + "_cycle.cat");
                         property = CAT_SPEC;
                     }
-                    try (SolverContext ctx = mkCtx()) {
-                        try (ProverWithTracker prover = mkProver(ctx)) {
-                            VerificationTask task = mkTask(program, modelPath, property, typeEntry.getKey());
-                            ModelChecker mc = AssumeSolver.run(ctx, prover, task);
-                            assertTrue(mc.hasModel());
-                            RelationAnalysis ra = mc.getEncodingContext().getAnalysisContext().get(RelationAnalysis.class);
-                            Set<Relation> relations = task.getMemoryModel().getRelations();
-                            Map<String, MutableEventGraph> data = extractRelationsData(task.getProgram(), relations, ra, prover.getModel());
-                            data = translateEventIds(task.getProgram(), data);
-                            log(models[i], task.getProgram(), typeEntry.getKey(), data);
-                        }
+                    VerificationTask task = mkTask(program, modelPath, property, typeEntry.getKey());
+                    try (ModelChecker mc = ModelChecker.create(task, Method.EAGER)) {
+                        mc.run();
+                        assertTrue(mc.hasModel());
+                        RelationAnalysis ra = mc.getEncodingContext().getAnalysisContext().get(RelationAnalysis.class);
+                        Set<Relation> relations = task.getMemoryModel().getRelations();
+                        Map<String, MutableEventGraph> data = extractRelationsData(task.getProgram(), relations, ra, mc.getProver().getModel());
+                        data = translateEventIds(task.getProgram(), data);
+                        log(models[i], task.getProgram(), typeEntry.getKey(), data);
                     }
                 }
             }
@@ -285,38 +274,11 @@ public class PvmmTest {
         Files.write(Path.of(filePath), sb.toString().getBytes());
     }
 
-    private SolverContext mkCtx() throws InvalidConfigurationException {
-        Configuration cfg = Configuration.builder().build();
-        return SolverContextFactory.createSolverContext(
-                cfg,
-                BasicLogManager.create(cfg),
-                ShutdownManager.create().getNotifier(),
-                SolverContextFactory.Solvers.Z3);
-    }
-
-    private ProverWithTracker mkProver(SolverContext ctx) {
-        return new ProverWithTracker(ctx, "", SolverContext.ProverOptions.GENERATE_MODELS);
-    }
-
     private VerificationTask mkTask(String programPath, String modelPath, Property property, String type) throws Exception {
         VerificationTask.VerificationTaskBuilder builder = VerificationTask.builder()
                 .withConfig(Configuration.builder()
                         .setOption(ENABLE_EXTENDED_RELATION_ANALYSIS, "false")
                         .setOption(ENABLE_ACTIVE_SETS, "false")
-                        .build()
-                )
-                .withBound(1)
-                .withTarget(Arch.VULKAN);
-        Program program = new ProgramParser().parse(new File(programPath));
-        Wmm mcm = new ParserCat(libs.get(type)).parse(new File(modelPath));
-        return builder.build(program, mcm, EnumSet.of(property));
-    }
-
-    private VerificationTask mkTaskRefinement(String programPath, String modelPath, Property property, String type) throws Exception {
-        VerificationTask.VerificationTaskBuilder builder = VerificationTask.builder()
-                .withConfig(Configuration.builder()
-                        .setOption(ENABLE_EXTENDED_RELATION_ANALYSIS, "false")
-                        .setOption(ENABLE_ACTIVE_SETS, "true") // crashes without active set
                         .build()
                 )
                 .withBound(1)
