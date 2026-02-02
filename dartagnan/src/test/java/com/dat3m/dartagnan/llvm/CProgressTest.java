@@ -1,25 +1,19 @@
 package com.dat3m.dartagnan.llvm;
 
-import com.dat3m.dartagnan.configuration.Method;
 import com.dat3m.dartagnan.configuration.ProgressModel;
 import com.dat3m.dartagnan.configuration.Property;
 import com.dat3m.dartagnan.verification.ResultStatus;
 import com.dat3m.dartagnan.utils.rules.Provider;
 import com.dat3m.dartagnan.utils.rules.Providers;
 import com.dat3m.dartagnan.wmm.Wmm;
-import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
-import java.io.IOException;
 import java.util.Arrays;
 import java.util.EnumSet;
 
-import java.nio.file.Path;
-
 import static com.dat3m.dartagnan.configuration.Arch.C11;
 import static com.dat3m.dartagnan.configuration.ProgressModel.*;
-import static com.dat3m.dartagnan.utils.ResourceHelper.getTestResourcePath;
 import static com.dat3m.dartagnan.verification.ResultStatus.FAIL;
 import static com.dat3m.dartagnan.verification.ResultStatus.PASS;
 
@@ -34,8 +28,8 @@ public class CProgressTest extends AbstractCTest {
     }
 
     @Override
-    protected Provider<Path> getProgramPathProvider() {
-        return () -> getTestResourcePath("progress/" + name + ".ll");
+    protected String getProgramPathPrefix() {
+        return "progress/";
     }
 
     @Override
@@ -59,7 +53,7 @@ public class CProgressTest extends AbstractCTest {
     }
 
     @Parameterized.Parameters(name = "{index}: {0}, progress={1}")
-    public static Iterable<Object[]> data() throws IOException {
+    public static Iterable<Object[]> data() {
         return Arrays.asList(new Object[][]{
                 {"progressFair", FAIR, PASS},
                 {"progressFair", HSA, FAIL},
@@ -86,15 +80,5 @@ public class CProgressTest extends AbstractCTest {
                 {"progressUnfair", OBE, PASS},
                 {"progressUnfair", UNFAIR, PASS},
         });
-    }
-
-    @Test
-    public void testAssume() throws Exception {
-        testSolver(Method.EAGER);
-    }
-
-    @Test
-    public void testRefinement() throws Exception {
-        testSolver(Method.LAZY);
     }
 }
