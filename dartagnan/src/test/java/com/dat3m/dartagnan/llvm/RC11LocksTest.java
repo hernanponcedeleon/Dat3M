@@ -1,22 +1,16 @@
 package com.dat3m.dartagnan.llvm;
 
 import com.dat3m.dartagnan.configuration.Arch;
-import com.dat3m.dartagnan.configuration.Method;
 import com.dat3m.dartagnan.verification.ResultStatus;
 import com.dat3m.dartagnan.utils.rules.Provider;
 import com.dat3m.dartagnan.utils.rules.Providers;
 import com.dat3m.dartagnan.wmm.Wmm;
-import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
-import java.io.IOException;
 import java.util.Arrays;
 
-import java.nio.file.Path;
-
 import static com.dat3m.dartagnan.configuration.Arch.C11;
-import static com.dat3m.dartagnan.utils.ResourceHelper.getTestResourcePath;
 import static com.dat3m.dartagnan.verification.ResultStatus.*;
 
 @RunWith(Parameterized.class)
@@ -27,8 +21,13 @@ public class RC11LocksTest extends AbstractCTest {
     }
 
     @Override
-    protected Provider<Path> getProgramPathProvider() {
-        return () -> getTestResourcePath("locks/" + name + ".ll");
+    protected boolean isEagerMethodEnabled() {
+        return false;
+    }
+
+    @Override
+    protected String getProgramPathPrefix() {
+        return "locks/";
     }
 
     @Override
@@ -42,7 +41,7 @@ public class RC11LocksTest extends AbstractCTest {
     }
 
     @Parameterized.Parameters(name = "{index}: {0}, target={1}")
-    public static Iterable<Object[]> data() throws IOException {
+    public static Iterable<Object[]> data() {
         return Arrays.asList(new Object[][]{
                 {"ttas", C11, UNKNOWN},
                 {"ttas-acq2rx", C11, FAIL},
@@ -72,15 +71,5 @@ public class RC11LocksTest extends AbstractCTest {
                 {"ticket_awnsb_mutex", C11, PASS},
                 {"ticket_awnsb_mutex-acq2rx", C11, FAIL},
         });
-    }
-
-    // @Test
-    public void testAssume() throws Exception {
-        testSolver(Method.EAGER);
-    }
-
-    @Test
-    public void testRefinement() throws Exception {
-        testSolver(Method.LAZY);
     }
 }
