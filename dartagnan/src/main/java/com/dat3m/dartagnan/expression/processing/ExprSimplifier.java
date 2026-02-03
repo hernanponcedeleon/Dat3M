@@ -20,6 +20,8 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 
 import java.math.BigInteger;
+import java.util.ArrayList;
+import java.util.List;
 
 public class ExprSimplifier extends ExprTransformer {
 
@@ -345,20 +347,18 @@ public class ExprSimplifier extends ExprTransformer {
         return expressions.makeIntBinary(left, op, right);
     }
 
+    // what about (base + offset) + offset ->  base + (offset + offset)?
     @Override
     public Expression visitPtrAddExpression(PtrAddExpr expr) {
 
         final Expression base = expr.getBase().accept(this);
         final Expression offset = expr.getOffset().accept(this);
 
+
         // Optimizations for "x op constant"
         if (offset instanceof IntLiteral lit) {
             if(lit.isZero()){return base;}
         }
-        // can cause a tearing problem
-//        if (base instanceof NullLiteral) {
-//            return expressions.makeIntToPtrCast(offset);
-//        }
         return expressions.makePtrAdd(base, offset);
     }
 

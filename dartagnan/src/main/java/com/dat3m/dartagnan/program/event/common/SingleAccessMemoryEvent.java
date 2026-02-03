@@ -33,7 +33,7 @@ public abstract class SingleAccessMemoryEvent extends AbstractEvent implements M
     // The empty string means no memory order 
     public SingleAccessMemoryEvent(Expression address, Type accessType, String mo) {
         Preconditions.checkNotNull(mo, "The memory ordering cannot be null");
-        Preconditions.checkArgument(address.getType() instanceof PointerType);
+        // Preconditions.checkArgument(address.getType() instanceof PointerType);
         this.address = address;
         this.mo = mo;
         this.accessType = accessType;

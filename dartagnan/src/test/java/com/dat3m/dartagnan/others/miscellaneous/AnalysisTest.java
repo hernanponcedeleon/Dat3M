@@ -41,7 +41,6 @@ import com.dat3m.dartagnan.wmm.definition.Intersection;
 import org.junit.Test;
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
-import scala.Int;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -526,7 +525,7 @@ public class AnalysisTest {
         b.addChild(0, newLocal(r0, y));
         Store e0 = newStore(r0);
         b.addChild(0, e0);
-        b.addChild(0, newLocal(r0, expressions.makePtrCast(mult(expressions.makeIntegerCast(x, types.getArchType(), false), 0), types.getPointerType())));
+        b.addChild(0, newLocal(r0, toPtr(mult(toInt(x), 0))));
         Store e1 = newStore(x);
         b.addChild(0, e1);
         Store e2 = newStore(y);
@@ -650,7 +649,7 @@ public class AnalysisTest {
         return expressions.makeValue(v, types.getArchType());
     }
     private Expression add(Expression lhs, Expression rhs) {
-        assert rhs instanceof IntegerType;
+        assert rhs.getType() instanceof IntegerType;
         if (lhs.getType() instanceof PointerType){
             return expressions.makePtrAdd(lhs,rhs);
         }
