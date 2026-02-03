@@ -1,18 +1,20 @@
 package com.dat3m.dartagnan.wmm;
 
 import com.dat3m.dartagnan.encoding.EncodingContext;
+import com.dat3m.dartagnan.utils.dependable.Dependent;
 import com.dat3m.dartagnan.verification.Context;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.wmm.axiom.*;
 import com.dat3m.dartagnan.wmm.definition.*;
 import com.dat3m.dartagnan.wmm.utils.graph.EventGraph;
+import com.google.common.collect.Collections2;
 import org.sosy_lab.java_smt.api.BooleanFormula;
 
 import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
 
-public interface Constraint {
+public interface Constraint extends Dependent<Definition> {
 
     Collection<? extends Relation> getConstrainedRelations();
 
@@ -32,6 +34,10 @@ public interface Constraint {
         return Set.of();
     }
 
+    @Override
+    default Collection<Definition> getDependencies() {
+        return Collections2.transform(getConstrainedRelations(), Relation::getDefinition);
+    }
 
     interface Visitor<T> {
 
@@ -54,7 +60,6 @@ public interface Constraint {
 
         // -------------------------- Misc --------------------------
         default T visitAssumption(Assumption assume) { return visitConstraint(assume); }
-        default T visitForceEncodeAxiom(ForceEncodeAxiom forceEncode) { return visitConstraint(forceEncode); }
 
         // -------------------------- Definitions --------------------------
         // Derived

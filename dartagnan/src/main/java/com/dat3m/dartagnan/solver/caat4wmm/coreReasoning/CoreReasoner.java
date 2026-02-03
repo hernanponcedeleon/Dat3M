@@ -196,7 +196,7 @@ public class CoreReasoner {
                     }
                 } else {
                     final String name = rel.getName().orElse(null);
-                    if (RF.equals(name) || CO.equals(name) || executionGraph.getCutRelations().contains(rel)) {
+                    if (RF.equals(name) || CO.equals(name) || executionGraph.isEncoded(rel)) {
                         simplified.add(lit);
                     } else if (LOC.equals(name)) {
                         simplified.add(new AddressLiteral(e1, e2, lit.isPositive()));

@@ -1,7 +1,9 @@
 package com.dat3m.dartagnan.wmm;
 
 import com.dat3m.dartagnan.encoding.EncodingContext;
+import com.google.common.collect.Lists;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Stack;
 
@@ -43,6 +45,12 @@ public abstract class Definition implements Constraint {
     @Override
     public List<Relation> getConstrainedRelations() {
         return List.of(definedRelation);
+    }
+
+    @Override
+    public Collection<Definition> getDependencies() {
+        final List<Relation> relations = getConstrainedRelations();
+        return Lists.transform(relations.subList(1, relations.size()), Relation::getDefinition);
     }
 
     @Override

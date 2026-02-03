@@ -18,6 +18,7 @@ import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.dat3m.dartagnan.smt.FormulaManagerExt;
 import com.dat3m.dartagnan.verification.Context;
 import com.dat3m.dartagnan.verification.VerificationTask;
+import com.dat3m.dartagnan.wmm.Constraint;
 import com.dat3m.dartagnan.wmm.Relation;
 import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
 import com.dat3m.dartagnan.wmm.axiom.Acyclicity;
@@ -30,8 +31,10 @@ import org.sosy_lab.common.configuration.Options;
 import org.sosy_lab.java_smt.api.*;
 import org.sosy_lab.java_smt.api.NumeralFormula.IntegerFormula;
 
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 
 import static com.dat3m.dartagnan.configuration.OptionNames.*;
 import static com.dat3m.dartagnan.program.event.Tag.INIT;
@@ -51,6 +54,7 @@ public final class EncodingContext {
     private final RelationAnalysis relationAnalysis;
     private final FormulaManagerExt formulaManager;
     private final BooleanFormulaManager booleanFormulaManager;
+    private final Set<Constraint> constraintsToEncode;
     private final ExpressionEncoder exprEncoder;
 
     private final ExpressionFactory exprs = ExpressionFactory.getInstance();
@@ -83,7 +87,7 @@ public final class EncodingContext {
     private final Map<MemoryObject, TypedFormula<?, ?>> objAddress = new HashMap<>();
     private final Map<MemoryObject, TypedFormula<IntegerType, ?>> objSize = new HashMap<>();
 
-    private EncodingContext(VerificationTask t, Context a, FormulaManager m) {
+    private EncodingContext(VerificationTask t, Context a, FormulaManager m, Collection<? extends Constraint> c) {
         verificationTask = checkNotNull(t);
         analysisContext = checkNotNull(a);
         a.requires(BranchEquivalence.class);
@@ -92,11 +96,17 @@ public final class EncodingContext {
         relationAnalysis = a.requires(RelationAnalysis.class);
         formulaManager = new FormulaManagerExt(m);
         booleanFormulaManager = formulaManager.getBooleanFormulaManager();
+        constraintsToEncode = Set.copyOf(c);
         exprEncoder = new ExpressionEncoder(this);
     }
 
     public static EncodingContext of(VerificationTask task, Context analysisContext, FormulaManager formulaManager) throws InvalidConfigurationException {
-        EncodingContext context = new EncodingContext(task, analysisContext, formulaManager);
+        return of(task, analysisContext, formulaManager, task.getMemoryModel().getAxioms());
+    }
+
+    public static EncodingContext of(VerificationTask task, Context analysisContext, FormulaManager formulaManager,
+            Collection<? extends Constraint> constraintsToEncode) throws InvalidConfigurationException {
+        EncodingContext context = new EncodingContext(task, analysisContext, formulaManager, constraintsToEncode);
         task.getConfig().inject(context);
         logger.info("{}: {}", IDL_TO_SAT, context.useSATEncoding);
         logger.info("{}: {}", MERGE_CF_VARS, context.shouldMergeCFVars);
@@ -130,6 +140,8 @@ public final class EncodingContext {
     public BooleanFormulaManager getBooleanFormulaManager() {
         return booleanFormulaManager;
     }
+
+    public Set<Constraint> getConstraintsToEncode() { return constraintsToEncode; }
 
     public ExpressionEncoder getExpressionEncoder() { return exprEncoder; }
 
