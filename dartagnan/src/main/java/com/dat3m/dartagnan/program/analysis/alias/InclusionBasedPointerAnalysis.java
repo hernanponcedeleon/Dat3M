@@ -1027,38 +1027,7 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
 
         @Override
         public List<IncludeEdge> visitPtrAddExpression(PtrAddExpr expr) {
-            BigInteger offset = BigInteger.ZERO;
-            final List<ExprFlip> operands = new ArrayList<>();
-            final Stack<ExprFlip> stack = new Stack<>();
-            matchPtrAddExpression(new ExprFlip(expr, 1), stack);
-            while (!stack.isEmpty()) {
-                final ExprFlip operand = stack.pop();
-                if (matchPtrAddExpression(operand, stack)) {
-                    continue;
-                }
-                if (operand.expr instanceof IntLiteral literal) {
-                    offset = offset.add(literal.getValue().multiply(BigInteger.valueOf(operand.factor)));
-                } else {
-                    operands.add(operand);
-                }
-            }
-            final List<IncludeEdge> result = new ArrayList<>();
-            final int o = offset.intValue();
-            for (int i = 0; i < operands.size(); i++) {
-                final ExprFlip operand = operands.get(i);
-                if (operand.factor != 1) {
-                    result.addAll(visitExpression(operand.expr));
-                    continue;
-                }
-                List<Integer> alignment = List.of();
-                for (int j = 0; j < operands.size(); j++) {
-                    alignment = j == i ? alignment : compose(alignment, operands.get(j).factor);
-                }
-                for (IncludeEdge subResult : operand.expr.accept(this)) {
-                    addInto(result, compose(subResult, modifier(o, alignment)), false);
-                }
-            }
-            return result;
+            return visitByteExpression(expr);
         }
 
         private boolean matchPtrAddExpression(ExprFlip operand, Stack<ExprFlip> stack) {
@@ -1074,40 +1043,7 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
 
         @Override
         public List<IncludeEdge> visitIntBinaryExpression(IntBinaryExpr x) {
-            BigInteger offset = BigInteger.ZERO;
-            final List<ExprFlip> operands = new ArrayList<>();
-            final Stack<ExprFlip> stack = new Stack<>();
-            if (!matchLinearExpression(new ExprFlip(x, 1), stack)) {
-                return visitExpression(x);
-            }
-            while (!stack.isEmpty()) {
-                final ExprFlip operand = stack.pop();
-                if (matchLinearExpression(operand, stack)) {
-                    continue;
-                }
-                if (operand.expr instanceof IntLiteral literal) {
-                    offset = offset.add(literal.getValue().multiply(BigInteger.valueOf(operand.factor)));
-                } else {
-                    operands.add(operand);
-                }
-            }
-            final List<IncludeEdge> result = new ArrayList<>();
-            final int o = offset.intValue();
-            for (int i = 0; i < operands.size(); i++) {
-                final ExprFlip operand = operands.get(i);
-                if (operand.factor != 1) {
-                    result.addAll(visitExpression(operand.expr));
-                    continue;
-                }
-                List<Integer> alignment = List.of();
-                for (int j = 0; j < operands.size(); j++) {
-                    alignment = j == i ? alignment : compose(alignment, operands.get(j).factor);
-                }
-                for (IncludeEdge subResult : operand.expr.accept(this)) {
-                    addInto(result, compose(subResult, modifier(o, alignment)), false);
-                }
-            }
-            return result;
+            return visitByteExpression(x);
         }
 
         private boolean matchLinearExpression(ExprFlip operand, Stack<ExprFlip> stack) {
@@ -1128,6 +1064,55 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
                     stack.push(new ExprFlip(leftLiteral != null ? right : left, operand.factor * factor));
                     return true;
                 }
+            }
+            return false;
+        }
+
+
+        public List<IncludeEdge> visitByteExpression(Expression x) {
+            assert x instanceof IntBinaryExpr || x instanceof PtrAddExpr;
+            BigInteger offset = BigInteger.ZERO;
+            final List<ExprFlip> operands = new ArrayList<>();
+            final Stack<ExprFlip> stack = new Stack<>();
+            if (!matchByteExpression(new ExprFlip(x, 1), stack)) {
+                return visitExpression(x);
+            }
+            while (!stack.isEmpty()) {
+                final ExprFlip operand = stack.pop();
+                if (matchByteExpression(operand, stack)) {
+                    continue;
+                }
+                if (operand.expr instanceof IntLiteral literal) {
+                    offset = offset.add(literal.getValue().multiply(BigInteger.valueOf(operand.factor)));
+                } else {
+                    operands.add(operand);
+                }
+            }
+            final List<IncludeEdge> result = new ArrayList<>();
+            final int o = offset.intValue();
+            for (int i = 0; i < operands.size(); i++) {
+                final ExprFlip operand = operands.get(i);
+                if (operand.factor != 1) {
+                    result.addAll(visitExpression(operand.expr));
+                    continue;
+                }
+                List<Integer> alignment = List.of();
+                for (int j = 0; j < operands.size(); j++) {
+                    alignment = j == i ? alignment : compose(alignment, operands.get(j).factor);
+                }
+                for (IncludeEdge subResult : operand.expr.accept(this)) {
+                    addInto(result, compose(subResult, modifier(o, alignment)), false);
+                }
+            }
+            return result;
+        }
+
+        private boolean matchByteExpression(ExprFlip operand, Stack<ExprFlip> stack) {
+            if (operand.expr instanceof IntBinaryExpr ) {
+                return matchLinearExpression(operand, stack);
+            }
+            if (operand.expr instanceof PtrAddExpr ) {
+                return matchPtrAddExpression(operand, stack);
             }
             return false;
         }
