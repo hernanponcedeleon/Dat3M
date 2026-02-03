@@ -240,6 +240,9 @@ public class AndersenAliasAnalysis implements AliasAnalysis {
         } else if (expr instanceof IntBinaryExpr iBin && iBin.getLeft() instanceof Register) {
             addAllAddresses(register, maxAddressSet);
             variables.add(register);
+        } else if (expr instanceof PtrAddExpr pAdd && pAdd.getBase() instanceof Register) {
+            addAllAddresses(register, maxAddressSet);
+            variables.add(register);
         } else if (expr instanceof MemoryObject mem) {
             // r = &a
             addAddress(register, new Location(mem, 0));
@@ -290,12 +293,12 @@ public class AndersenAliasAnalysis implements AliasAnalysis {
             addTarget(reg, new Location(mem, 0));
             return;
         }
-        if (!(exp instanceof IntBinaryExpr iBin)) {
+        if (!(exp instanceof IntBinaryExpr|| exp instanceof PtrAddExpr)) {
             return;
         }
-        Expression base = iBin.getLeft();
+        Expression base = exp instanceof IntBinaryExpr ? ((IntBinaryExpr)exp).getLeft(): ((PtrAddExpr)exp).getBase();
+        Expression rhs = exp instanceof IntBinaryExpr ? ((IntBinaryExpr)exp).getRight(): ((PtrAddExpr)exp).getOffset();
         if (base instanceof MemoryObject mem) {
-            Expression rhs = iBin.getRight();
             if (rhs instanceof IntLiteral ic) {
                 addTarget(reg, new Location(mem, ic.getValueAsInt()));
             } else {
@@ -308,7 +311,6 @@ public class AndersenAliasAnalysis implements AliasAnalysis {
         }
         //accept register2 = register1 + constant
         for (Location target : targets.getOrDefault(base, Set.of())) {
-            Expression rhs = iBin.getRight();
             if (rhs instanceof IntLiteral ic) {
                 int o = target.offset + ic.getValueAsInt();
                 if (o < target.base.getKnownSize()) {
