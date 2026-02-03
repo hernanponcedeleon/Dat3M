@@ -6,8 +6,8 @@ import com.dat3m.dartagnan.verification.VerificationTask;
 import static com.dat3m.dartagnan.configuration.OptionNames.INTERVAL_ANALYSIS_METHOD;
 
 import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import com.dat3m.dartagnan.utils.Utils;
 import com.dat3m.dartagnan.expression.type.IntegerType;
 
@@ -45,7 +45,7 @@ import java.util.*;
 
 public interface IntervalAnalysis {
 
-    Logger logger = LogManager.getLogger(IntervalAnalysis.class);
+    Logger logger = LoggerFactory.getLogger(IntervalAnalysis.class);
 
     /**
      * Returns the interval associated with a register at a specific event from the result of the analysis.
