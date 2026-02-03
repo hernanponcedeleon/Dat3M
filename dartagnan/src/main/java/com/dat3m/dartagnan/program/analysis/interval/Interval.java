@@ -6,9 +6,8 @@ import com.dat3m.dartagnan.expression.integers.IntUnaryOp;
 import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.expression.utils.IntegerHelper;
 import com.google.common.base.Preconditions;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.math.BigInteger;
 import java.math.BigDecimal;
@@ -35,7 +34,7 @@ final public class Interval {
 
     static Set<Object> unsupportedOperators = new HashSet<>();
     @SuppressWarnings("unused")
-    Logger logger = LogManager.getLogger(Interval.class);
+    Logger logger = LoggerFactory.getLogger(Interval.class);
 
 
     public Interval(BigInteger lowerbound, BigInteger upperbound,IntegerType type) {

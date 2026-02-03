@@ -7,8 +7,9 @@ import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.program.event.RegReader;
 
 import com.dat3m.dartagnan.program.event.core.threading.ThreadArgument;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.dat3m.dartagnan.expression.integers.IntSizeCast;
 import com.dat3m.dartagnan.expression.Expression;
@@ -38,7 +39,7 @@ public abstract class IntervalAnalysisWorklist implements IntervalAnalysis {
     // Associate an event with a map of registers to intervals
     protected Map<Event,Map<Register,Interval>> eventStates = new HashMap<>();
     private final Program program;
-    static Logger logger = LogManager.getLogger(IntervalAnalysis.class);
+    static Logger logger = LoggerFactory.getLogger(IntervalAnalysis.class);
     private static final Set<Object> unsupportedExpressions = new HashSet<>();
 
 
