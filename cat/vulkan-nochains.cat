@@ -67,7 +67,7 @@ let inscope = (DV * DV) |
               (ssg & ((DV | QF | WG | SG) * (DV | QF | WG | SG)))
 
 // mutually ordered atomics
-let mutordatom = (loc & vloc & inscope & ((ATOM | IW) * (ATOM | IW))) \ id
+let mutordatom = (loc & vloc & inscope & (ATOM * ATOM)) \ id
 let asmo = co & mutordatom
 
 let avvisSem = (SC0123 * AVDEVICE) | (VISDEVICE * SC0123) |
