@@ -74,7 +74,8 @@ public class AssumeSolver extends ModelChecker {
         BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
         // Adding bounds
         prover.writeComment("Bounds over variables");
-        programEncoder.encodeBounds(prover);
+        BooleanFormula bounds = programEncoder.encodeBounds();
+        prover.addConstraint(bounds);
         BooleanFormula assumptionLiteral = bmgr.makeVariable("DAT3M_spec_assumption");
         BooleanFormula propertyEncoding = propertyEncoder.encodeProperties(task.getProperty());
         BooleanFormula assumedSpec = bmgr.implication(assumptionLiteral, propertyEncoding);

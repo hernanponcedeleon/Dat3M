@@ -749,7 +749,8 @@ public class ProgramEncoder implements Encoder {
 
     // ============= Bounds ============= 
 
-    public void encodeBounds(ProverWithTracker prover) throws InterruptedException {
+    public BooleanFormula encodeBounds() {
+        List<BooleanFormula> encoding = new ArrayList<>();
         FormulaManagerExt formulaManager = context.getFormulaManager();
         for(var entry : context.getVarToInterval().entrySet()) {
             Formula formula = entry.getKey().formula();
@@ -767,8 +768,8 @@ public class ProgramEncoder implements Encoder {
                 if(interval.isSignInsensitive()) {
                     lowerboundConstraint = bitvectorFormulaManager.greaterOrEquals(variable, bvLowerbound, true);
                     upperboundConstraint = bitvectorFormulaManager.lessOrEquals(variable, bvUpperbound, true);
-                    prover.addConstraint(lowerboundConstraint);
-                    prover.addConstraint(upperboundConstraint);
+                    encoding.add(lowerboundConstraint);
+                    encoding.add(upperboundConstraint);
                 }
 
             } else if (formula instanceof IntegerFormula variable) {
@@ -777,10 +778,12 @@ public class ProgramEncoder implements Encoder {
                 BigInteger upperbound = interval.getUpperbound();
                 BooleanFormula constraintGTE = integerFormulaManager.greaterOrEquals(variable, integerFormulaManager.makeNumber(lowerbound));
                 BooleanFormula constraintLTE = integerFormulaManager.lessOrEquals(variable, integerFormulaManager.makeNumber(upperbound));
-                prover.addConstraint(constraintLTE);
-                prover.addConstraint(constraintGTE);
+                encoding.add(constraintLTE);
+                encoding.add(constraintGTE);
             }
         }
+        BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
+        return bmgr.and(encoding);
 
 
     }
