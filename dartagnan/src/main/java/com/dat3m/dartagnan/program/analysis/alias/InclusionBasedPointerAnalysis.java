@@ -1025,15 +1025,12 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
 
         record ExprFlip(Expression expr, int factor) {}
 
-        // fixme is ptr value treated the same as an int value?
         @Override
         public List<IncludeEdge> visitPtrAddExpression(PtrAddExpr expr) {
             BigInteger offset = BigInteger.ZERO;
             final List<ExprFlip> operands = new ArrayList<>();
             final Stack<ExprFlip> stack = new Stack<>();
-            if (!matchPtrAddExpression(new ExprFlip(expr, 1), stack)) {
-                return visitExpression(expr);
-            }
+            matchPtrAddExpression(new ExprFlip(expr, 1), stack);
             while (!stack.isEmpty()) {
                 final ExprFlip operand = stack.pop();
                 if (matchPtrAddExpression(operand, stack)) {
