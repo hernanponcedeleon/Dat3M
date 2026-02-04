@@ -25,6 +25,6 @@ public class IntervalAnalysisLocal extends IntervalAnalysisWorklist {
     @Override
     protected RegisterState analyseLoad(Load l, Map<Register, Interval> prevIntervals) {
         Register result = l.getResultRegister();
-        return new RegisterState(result,Interval.getTop((IntegerType) result.getType()));
+        return new RegisterState(result, Interval.getTop((IntegerType) result.getType()));
     }
 }

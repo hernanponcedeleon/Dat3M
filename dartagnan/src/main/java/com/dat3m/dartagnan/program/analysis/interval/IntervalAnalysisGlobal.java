@@ -32,7 +32,7 @@ public class IntervalAnalysisGlobal extends IntervalAnalysisWorklist {
 
     
     public static IntervalAnalysis fromConfig(Program program, Context analysisContext, VerificationTask task) {
-        return new IntervalAnalysisGlobal(program,analysisContext,task);
+        return new IntervalAnalysisGlobal(program, analysisContext, task);
     }
 
     // Calculate the interval of a memory address.
@@ -48,7 +48,9 @@ public class IntervalAnalysisGlobal extends IntervalAnalysisWorklist {
                 interval = interval == null ? resultInterval : interval.join(resultInterval);
             }
             return interval;
-        } else { return Interval.getTop((IntegerType)r.getType()); }
+        } else {
+            return Interval.getTop((IntegerType) r.getType());
+        }
     }
 
 
@@ -70,7 +72,9 @@ public class IntervalAnalysisGlobal extends IntervalAnalysisWorklist {
             .stream()
             .map(e -> (Store) e)
             .collect(Collectors.toSet());
-        } else return Collections.emptySet();
+        } else {
+            return Collections.emptySet();
+        }
     }
 
 
@@ -80,11 +84,4 @@ public class IntervalAnalysisGlobal extends IntervalAnalysisWorklist {
         Interval interval = calculatePossibleInterval(stores, l.getResultRegister());
         return new RegisterState(l.getResultRegister(), interval);
     }
-
-
-
-
-
-
-
 }

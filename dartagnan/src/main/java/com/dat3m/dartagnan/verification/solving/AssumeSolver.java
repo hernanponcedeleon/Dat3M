@@ -41,7 +41,7 @@ public class AssumeSolver extends ModelChecker {
         final Context analysisContext = Context.create();
         performStaticProgramAnalyses(task, analysisContext, config);
         performStaticWmmAnalyses(task, analysisContext, config);
-        performIntervalAnalysis(task,analysisContext,config);
+        performIntervalAnalysis(task, analysisContext, config);
         return analysisContext;
     }
 

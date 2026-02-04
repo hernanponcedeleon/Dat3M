@@ -203,7 +203,7 @@ public class RefinementSolver extends ModelChecker {
         final Context analysisContext = Context.create();
         performStaticProgramAnalyses(task, analysisContext, config);
         performStaticWmmAnalyses(task, analysisContext, config);
-        performIntervalAnalysis(task,analysisContext,config);
+        performIntervalAnalysis(task, analysisContext, config);
 
         //  ------- Generate refinement model -------
         final Collection<Constraint> wmmConstraintsToEncode = new HashSet<>(biases);

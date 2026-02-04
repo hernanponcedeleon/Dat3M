@@ -51,11 +51,11 @@ public interface IntervalAnalysis {
      * Returns the interval associated with a register at a specific event from the result of the analysis.
      * The interval of a register at a specific event is determined based on previous events not the current one.
      * e.g. in local event r1 <- r1 + 1 the interval of r1 will not include the addition performed in this event but will include it in the next event.
-     * @param event 
+     * @param event
      *  The event at which the register is queried.
      * @param r
      *  The register that is queried.
-     * @return 
+     * @return
      *  The interval of register {@code r} at event {@code event}.
      * @throws RuntimeException
      *  If the event was not encountered during analysis or if the register is not of the IntegerType type.
@@ -66,8 +66,8 @@ public interface IntervalAnalysis {
 
     /**
      *  Initialises an analysis instance based on configuration options (default: NAIVE)
-     *  
-     * @param program 
+     *
+     * @param program
      *  The program that is under analysis.
      * @param analysisContext
      *  Global analysis depends on {@link RelationAnalysis}.
@@ -78,7 +78,6 @@ public interface IntervalAnalysis {
      * @return
      *  A completed interval analysis.
      * @throws InvalidConfigurationException
-     *  
      */
 
 
@@ -89,11 +88,11 @@ public interface IntervalAnalysis {
         IntervalAnalysis analysis = switch (c.method) {
             case NAIVE -> IntervalAnalysisNaive.fromConfig();
             case LOCAL -> IntervalAnalysisLocal.fromConfig(program);
-            case GLOBAL -> IntervalAnalysisGlobal.fromConfig(program,analysisContext,task);
+            case GLOBAL -> IntervalAnalysisGlobal.fromConfig(program, analysisContext, task);
         };
         long t1 = System.currentTimeMillis();
         logger.info("Finished interval analysis in {}", Utils.toTimeString(t1 - t0));
-        if(logger.isInfoEnabled()) {
+        if (logger.isInfoEnabled()) {
             analysis.computeAnalysisMetrics(program);
         }
         return analysis;
@@ -126,9 +125,11 @@ public interface IntervalAnalysis {
         double totalIntervalsReduced = 0;
         double totalIntervalsTop = 0;
         BigDecimal totalReducedIntervalSize = BigDecimal.ZERO;
-        for(Event e : program.getThreadEvents()) {
-            if(e instanceof RegReader rr) {
-                if (e instanceof RegWriter) totalRegWrites++;
+        for (Event e : program.getThreadEvents()) {
+            if (e instanceof RegReader rr) {
+                if (e instanceof RegWriter) {
+                    totalRegWrites++;
+                }
                 Set<Register.Read> regReads = rr.getRegisterReads();
                 totalRegReads += regReads.stream().filter(read -> read.register().getType() instanceof IntegerType).count();
                 for (Register.Read read : regReads) {
@@ -144,20 +145,20 @@ public interface IntervalAnalysis {
                     }
 
                 }
-            } else if(e instanceof RegWriter) {
+            } else if (e instanceof RegWriter) {
                 totalRegWrites++;
             }
         }
         DecimalFormat df = new DecimalFormat("#.##");
         double percentageIntervalsReduced = 0;
         double percentageIntervalsTop = 0;
-        if(totalRegReads != 0) {
+        if (totalRegReads != 0) {
             percentageIntervalsReduced = (totalIntervalsReduced / totalRegReads) * 100;
             percentageIntervalsTop = (totalIntervalsTop / totalRegReads) * 100;
         }
         BigDecimal averageReducedIntervalSize = BigDecimal.ZERO;
         if (totalIntervalsReduced != 0) {
-            averageReducedIntervalSize = totalReducedIntervalSize.divide(BigDecimal.valueOf((long) totalIntervalsReduced),RoundingMode.HALF_UP);
+            averageReducedIntervalSize = totalReducedIntervalSize.divide(BigDecimal.valueOf((long) totalIntervalsReduced), RoundingMode.HALF_UP);
         }
 
         logger.info("""
@@ -182,9 +183,9 @@ public interface IntervalAnalysis {
 
 
         Set<Object> unsupportedOperators = Interval.getUnsupportedOperatorsFound();
-        if(!unsupportedOperators.isEmpty()) {
-            if(logger.isWarnEnabled()) {
-                logger.warn("Unsupported operators found: {}",Interval.getUnsupportedOperatorsFound());
+        if (!unsupportedOperators.isEmpty()) {
+            if (logger.isWarnEnabled()) {
+                logger.warn("Unsupported operators found: {}", Interval.getUnsupportedOperatorsFound());
 
             }
 
