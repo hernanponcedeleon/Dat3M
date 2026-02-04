@@ -262,7 +262,7 @@ public class AnalysisTest {
 
     @Test
     public void fieldinsensitive0() throws InvalidConfigurationException {
-        program0(FIELD_INSENSITIVE, MAY, NONE, MAY, NONE, MAY, NONE);
+        program0(FIELD_INSENSITIVE, MAY, MAY, MAY, MAY, MAY, NONE);
     }
 
     @Test
