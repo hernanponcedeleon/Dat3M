@@ -37,15 +37,15 @@ final public class Interval {
     Logger logger = LoggerFactory.getLogger(Interval.class);
 
 
-    public Interval(BigInteger lowerbound, BigInteger upperbound,IntegerType type) {
+    public Interval(BigInteger lowerbound, BigInteger upperbound, IntegerType type) {
         Preconditions.checkArgument(lowerbound.compareTo(upperbound) <= 0);
         this.type = type;
         BigInteger minBound = type.getMinimumValue(true);
         BigInteger maxBoundU = type.getMaximumValue(false);
         BigInteger maxBoundS = type.getMaximumValue(true);
         // Values do not fit target type or the interval contains both signed and unsigned values
-        if ((lowerbound.compareTo(minBound) < 0 || upperbound.compareTo(maxBoundU) > 0) || 
-    (lowerbound.compareTo(BigInteger.ZERO) < 0 && upperbound.compareTo(maxBoundS) > 0)) {
+        if ((lowerbound.compareTo(minBound) < 0 || upperbound.compareTo(maxBoundU) > 0)
+                || (lowerbound.compareTo(BigInteger.ZERO) < 0 && upperbound.compareTo(maxBoundS) > 0)) {
             this.lowerbound = minBound;
             this.upperbound = maxBoundU;
         } else {
@@ -56,7 +56,7 @@ final public class Interval {
     }
 
     public Interval(BigInteger value, IntegerType type) {
-        this(value,value,type);
+        this(value, value, type);
     }
 
     public BigInteger getLowerbound() {
@@ -76,7 +76,7 @@ final public class Interval {
     }
 
     public static Interval getTop(IntegerType type) {
-        return new Interval(type.getMinimumValue(true),type.getMaximumValue(false),type);
+        return new Interval(type.getMinimumValue(true), type.getMaximumValue(false), type);
     }
 
     public BigInteger size() {
@@ -85,7 +85,7 @@ final public class Interval {
 
 
     public Interval join(Interval interval2) {
-        return new Interval(this.lowerbound.min(interval2.lowerbound),this.upperbound.max(interval2.upperbound),this.getType());    }
+        return new Interval(this.lowerbound.min(interval2.lowerbound), this.upperbound.max(interval2.upperbound), this.getType());    }
 
     public boolean isTop() {
         return this.equals(Interval.getTop(type));
@@ -99,18 +99,19 @@ final public class Interval {
 
     public Interval applyOperator(ExpressionKind op, Interval... intervals) {
         Supplier<Interval> opFunc = null;
-        if(op instanceof IntUnaryOp unop && intervals.length == 0) {
+        if (op instanceof IntUnaryOp unop && intervals.length == 0) {
             opFunc = selectUnaryOperatorMethod(unop);
-        }
-        else if(op instanceof IntBinaryOp binop && intervals.length == 1 && !intervals[0].isTop()) {
-            opFunc = selectCurriedBinaryOperatorMethod(binop,intervals[0]);
+        } else if (op instanceof IntBinaryOp binop && intervals.length == 1 && !intervals[0].isTop()) {
+            opFunc = selectCurriedBinaryOperatorMethod(binop, intervals[0]);
         } else if (intervals.length > 2) {
             throw new IllegalArgumentException("More than 2 intervals specified");
         }
 
-        if(opFunc != null && !this.isTop()) {
+        if (opFunc != null && !this.isTop()) {
             return opFunc.get();
-        } else return Interval.getTop(type);
+        } else {
+            return Interval.getTop(type);
+        }
     }
 
 
@@ -146,7 +147,9 @@ final public class Interval {
         };
         if (opFunc != null) {
             return () -> opFunc.apply(interval);
-        } else return null;
+        } else {
+            return null;
+        }
     }
 
     private Supplier<Interval> selectUnaryOperatorMethod(IntUnaryOp op) {
@@ -162,13 +165,13 @@ final public class Interval {
     private Interval subtract(Interval i2) {
         BigInteger resultBoundLowerBounds = this.lowerbound.subtract(i2.upperbound);
         BigInteger resultBoundUpperBounds = this.upperbound.subtract(i2.lowerbound);
-        return new Interval(resultBoundLowerBounds,resultBoundUpperBounds,this.getType());
+        return new Interval(resultBoundLowerBounds, resultBoundUpperBounds, this.getType());
     }
 
     private Interval add(Interval i2) {
         BigInteger resultBoundLowerBounds = this.lowerbound.add(i2.lowerbound);
         BigInteger resultBoundUpperBounds = this.upperbound.add(i2.upperbound);
-        return new Interval(resultBoundLowerBounds,resultBoundUpperBounds,this.getType());
+        return new Interval(resultBoundLowerBounds, resultBoundUpperBounds, this.getType());
     }
 
     private Interval multiply(Interval i2) {
@@ -176,30 +179,30 @@ final public class Interval {
         BigDecimal ub1 = new BigDecimal(this.upperbound);
         BigDecimal lb2 = new BigDecimal(i2.lowerbound);
         BigDecimal ub2 = new BigDecimal(i2.upperbound);
-        return multiply(lb1,ub1,lb2,ub2);
-    }	
+        return multiply(lb1, ub1, lb2, ub2);
+    }
 
 
 
-    private Interval multiply(BigDecimal lb1, BigDecimal ub1 ,BigDecimal lb2,BigDecimal ub2) {
+    private Interval multiply(BigDecimal lb1, BigDecimal ub1, BigDecimal lb2, BigDecimal ub2) {
         BigDecimal mul1 =  lb1.multiply(lb2);
         BigDecimal mul2 =  lb1.multiply(ub2);
         BigDecimal mul3 =  ub1.multiply(lb2);
         BigDecimal mul4 =  ub1.multiply(ub2);
         BigDecimal resultBoundLowerBounds = mul1.min(mul2).min(mul3).min(mul4);
         BigDecimal resultBoundUpperBounds = mul1.max(mul2).max(mul3).max(mul4);
-        BigInteger resultBoundLowerBoundsInt = resultBoundLowerBounds.setScale(0,RoundingMode.FLOOR).toBigInteger();
-        BigInteger resultBoundUpperBoundsInt = resultBoundUpperBounds.setScale(0,RoundingMode.CEILING).toBigInteger();
-        return new Interval(resultBoundLowerBoundsInt,resultBoundUpperBoundsInt,this.getType());
+        BigInteger resultBoundLowerBoundsInt = resultBoundLowerBounds.setScale(0, RoundingMode.FLOOR).toBigInteger();
+        BigInteger resultBoundUpperBoundsInt = resultBoundUpperBounds.setScale(0, RoundingMode.CEILING).toBigInteger();
+        return new Interval(resultBoundLowerBoundsInt, resultBoundUpperBoundsInt, this.getType());
     }
 
 
     private Interval sdivide(Interval i2) {
-        if(this.isSignInsensitive() && i2.isSignInsensitive()) {
+        if (this.isSignInsensitive() && i2.isSignInsensitive()) {
             Interval signedInterval1 = this.convertToSignedInterval();
             Interval signedInterval2 = i2.convertToSignedInterval();
                 // Asymmetric edge case
-            if (signedInterval1.lowerbound.compareTo(type.getMinimumValue(true)) == 0 && signedInterval2.upperbound.compareTo(BigInteger.ONE.negate()) == 0 ) {
+            if (signedInterval1.lowerbound.compareTo(type.getMinimumValue(true)) == 0 && signedInterval2.upperbound.compareTo(BigInteger.ONE.negate()) == 0) {
                 return Interval.getTop(type);
             } else {
                 return divide(signedInterval1, signedInterval2);
@@ -211,7 +214,7 @@ final public class Interval {
 
 
     private Interval udivide(Interval i2) {
-        if(this.isSignInsensitive() && i2.isSignInsensitive()) {
+        if (this.isSignInsensitive() && i2.isSignInsensitive()) {
             Interval unsignedInterval1 = this.convertToUnsignedInterval();
             Interval unsignedInterval2 = i2.convertToUnsignedInterval();
             return divide(unsignedInterval1, unsignedInterval2);
@@ -222,7 +225,7 @@ final public class Interval {
 
     private Interval divide(Interval numeratorInterval, Interval denominatorInterval) {
 
-        if(denominatorInterval.doesNotCrossZero()) {
+        if (denominatorInterval.doesNotCrossZero()) {
             BigDecimal lowerboundI1 = new BigDecimal(numeratorInterval.lowerbound);
             BigDecimal upperboundI1 = new BigDecimal(numeratorInterval.upperbound);
             BigDecimal lowerboundI2 = new BigDecimal(denominatorInterval.lowerbound);
@@ -250,18 +253,24 @@ final public class Interval {
     // Hacker's Delight second edition
     // Author Henry S. Warren, Jr.
     // Chapter 4-3
-    private BigInteger minOR(BigInteger lb1,BigInteger lb2,BigInteger ub1,BigInteger ub2) {
-        BigInteger largestBitLength = getBiggerBitLength(lb1,lb2);
+    private BigInteger minOR(BigInteger lb1, BigInteger lb2, BigInteger ub1, BigInteger ub2) {
+        BigInteger largestBitLength = getBiggerBitLength(lb1, lb2);
 
         BigInteger m = BigInteger.TWO.pow(largestBitLength.bitLength());
         BigInteger temp;
         while (!m.equals(BigInteger.ZERO)) {
-            if(!(lb1.not().and(lb2).and(m).equals(BigInteger.ZERO))) {
+            if (!(lb1.not().and(lb2).and(m).equals(BigInteger.ZERO))) {
                 temp = (lb1.or(m).and(m.negate()));
-                if(temp.compareTo(ub1) <= 0) { lb1 = temp;break; }
+                if (temp.compareTo(ub1) <= 0) {
+                    lb1 = temp;
+                    break;
+                }
             } else if (!(lb1.and(lb2.not()).and(m).equals(BigInteger.ZERO))) {
                 temp = (lb2.or(m).and(m.negate()));
-                if(temp.compareTo(ub2) <= 0) { lb2 = temp;break; }
+                if (temp.compareTo(ub2) <= 0) {
+                    lb2 = temp;
+                    break;
+                }
             }
             m = m.shiftRight(1);
         }
@@ -270,16 +279,22 @@ final public class Interval {
     }
 
 
-    private BigInteger maxOR(BigInteger lb1,BigInteger lb2,BigInteger ub1,BigInteger ub2) {
-        BigInteger largestBitLength = getBiggerBitLength(ub1,ub2);
+    private BigInteger maxOR(BigInteger lb1, BigInteger lb2, BigInteger ub1, BigInteger ub2) {
+        BigInteger largestBitLength = getBiggerBitLength(ub1, ub2);
         BigInteger m = BigInteger.TWO.pow(largestBitLength.bitLength());
         BigInteger temp;
         while (!m.equals(BigInteger.ZERO)) {
-            if(!ub1.and(ub2).and(m).equals(BigInteger.ZERO)) {
+            if (!ub1.and(ub2).and(m).equals(BigInteger.ZERO)) {
                 temp = (ub1.subtract(m)).or(m.subtract(BigInteger.ONE));
-                if (temp.compareTo(lb1) >= 0) { ub1 = temp;break; }
+                if (temp.compareTo(lb1) >= 0) {
+                    ub1 = temp;
+                    break;
+                }
                 temp = (ub2.subtract(m)).or(m.subtract(BigInteger.ONE));
-                if (temp.compareTo(lb2) >= 0) { ub2 = temp;break; }
+                if (temp.compareTo(lb2) >= 0) {
+                    ub2 = temp;
+                    break;
+                }
             }
             m = m.shiftRight(1);
         }
@@ -288,21 +303,29 @@ final public class Interval {
 
     private char constructSignNumber(BigInteger lb1, BigInteger ub1, BigInteger lb2, BigInteger ub2) {
         char signs = 0b0000;
-        if(lb1.signum() > 0) signs |= 0b1000;
-        if(ub1.signum() > 0) signs |= 0b0100;
-        if(lb2.signum() > 0) signs |= 0b0010;
-        if(ub2.signum() > 0) signs |= 0b0001;
+        if (lb1.signum() > 0) {
+            signs |= 0b1000;
+        }
+        if (ub1.signum() > 0) {
+            signs |= 0b0100;
+        }
+        if (lb2.signum() > 0) {
+            signs |= 0b0010;
+        }
+        if (ub2.signum() > 0) {
+            signs |= 0b0001;
+        }
 
         return signs;
     }
 
     private BigInteger setAllBits(int length) {
         char[] ones = new char[length];
-        Arrays.fill(ones,'1');
+        Arrays.fill(ones, '1');
         return new BigInteger(new String(ones));
     }
 
-    private Interval doOR(BigInteger lb1 ,BigInteger lb2 ,BigInteger ub1 ,BigInteger ub2) {
+    private Interval doOR(BigInteger lb1, BigInteger lb2, BigInteger ub1, BigInteger ub2) {
         char signs = constructSignNumber(lb1, ub1, lb2, ub2);
         return switch (signs) {
             case 0b1111, 0b0000, 0b0011, 0b1100 ->
@@ -336,14 +359,14 @@ final public class Interval {
                 interval.lowerbound.not());
         BigInteger maxAnd = orInterval.getLowerbound().not();
         BigInteger minAnd = orInterval.getUpperbound().not();
-        return new Interval(minAnd,maxAnd,type);
+        return new Interval(minAnd, maxAnd, type);
     }
 
     private Interval negate() {
-        if(upperbound.compareTo(type.getMinimumValue(true).negate()) > 0) {
+        if (upperbound.compareTo(type.getMinimumValue(true).negate()) > 0) {
             return Interval.getTop(type);
         } else {
-            return new Interval(upperbound.negate(),lowerbound.negate(),type);
+            return new Interval(upperbound.negate(), lowerbound.negate(), type);
         }
     }
 
@@ -351,25 +374,25 @@ final public class Interval {
     private Interval convertToSignedInterval() {
         int width = this.type.getBitWidth();
         return new Interval(
-                IntegerHelper.normalizeSigned(this.lowerbound,width),
-                IntegerHelper.normalizeSigned(this.upperbound,width),
+                IntegerHelper.normalizeSigned(this.lowerbound, width),
+                IntegerHelper.normalizeSigned(this.upperbound, width),
                 type);
     }
 
     private Interval convertToUnsignedInterval() {
         int width = this.type.getBitWidth();
         return new Interval(
-                IntegerHelper.normalizeUnsigned(this.lowerbound,width),
-                IntegerHelper.normalizeUnsigned(this.upperbound,width),
+                IntegerHelper.normalizeUnsigned(this.lowerbound, width),
+                IntegerHelper.normalizeUnsigned(this.upperbound, width),
                 type);
     }
 
 
 
 
-    @Override 
+    @Override
     public boolean equals(Object other) {
-        if(other == null) {
+        if (other == null) {
             return false;
         }
         if (other.getClass() != this.getClass()) {

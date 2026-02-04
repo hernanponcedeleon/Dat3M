@@ -752,7 +752,7 @@ public class ProgramEncoder implements Encoder {
     public BooleanFormula encodeBounds() {
         List<BooleanFormula> encoding = new ArrayList<>();
         FormulaManagerExt formulaManager = context.getFormulaManager();
-        for(var entry : context.getVarToInterval().entrySet()) {
+        for (var entry : context.getVarToInterval().entrySet()) {
             Formula formula = entry.getKey().formula();
             Interval interval = entry.getValue();
             // Encode bounds in the SMT encoding using bitvectors or integers.
@@ -765,7 +765,7 @@ public class ProgramEncoder implements Encoder {
                 BooleanFormula upperboundConstraint;
                 BitvectorFormula bvLowerbound = bitvectorFormulaManager.makeBitvector(bitWidth, lowerbound);
                 BitvectorFormula bvUpperbound = bitvectorFormulaManager.makeBitvector(bitWidth, upperbound);
-                if(interval.isSignInsensitive()) {
+                if (interval.isSignInsensitive()) {
                     lowerboundConstraint = bitvectorFormulaManager.greaterOrEquals(variable, bvLowerbound, true);
                     upperboundConstraint = bitvectorFormulaManager.lessOrEquals(variable, bvUpperbound, true);
                     encoding.add(lowerboundConstraint);
