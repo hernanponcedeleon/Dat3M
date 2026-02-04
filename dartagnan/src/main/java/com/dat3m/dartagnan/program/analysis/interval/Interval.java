@@ -8,8 +8,6 @@ import com.dat3m.dartagnan.expression.utils.IntegerHelper;
 import com.google.common.base.Preconditions;
 
 import java.math.BigInteger;
-import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
@@ -159,37 +157,23 @@ final public class Interval {
     }
 
     private Interval subtract(Interval i2) {
-        BigInteger resultBoundLowerBounds = this.lowerbound.subtract(i2.upperbound);
-        BigInteger resultBoundUpperBounds = this.upperbound.subtract(i2.lowerbound);
-        return new Interval(resultBoundLowerBounds, resultBoundUpperBounds, this.getType());
+        return new Interval(this.lowerbound.subtract(i2.upperbound), this.upperbound.subtract(i2.lowerbound), this.getType());
     }
 
     private Interval add(Interval i2) {
-        BigInteger resultBoundLowerBounds = this.lowerbound.add(i2.lowerbound);
-        BigInteger resultBoundUpperBounds = this.upperbound.add(i2.upperbound);
-        return new Interval(resultBoundLowerBounds, resultBoundUpperBounds, this.getType());
+        return new Interval(this.lowerbound.add(i2.lowerbound), this.upperbound.add(i2.upperbound), this.getType());
     }
 
     private Interval multiply(Interval i2) {
-        BigDecimal lb1 = new BigDecimal(this.lowerbound);
-        BigDecimal ub1 = new BigDecimal(this.upperbound);
-        BigDecimal lb2 = new BigDecimal(i2.lowerbound);
-        BigDecimal ub2 = new BigDecimal(i2.upperbound);
-        return multiply(lb1, ub1, lb2, ub2);
-    }
-
-
-
-    private Interval multiply(BigDecimal lb1, BigDecimal ub1, BigDecimal lb2, BigDecimal ub2) {
-        BigDecimal mul1 =  lb1.multiply(lb2);
-        BigDecimal mul2 =  lb1.multiply(ub2);
-        BigDecimal mul3 =  ub1.multiply(lb2);
-        BigDecimal mul4 =  ub1.multiply(ub2);
-        BigDecimal resultBoundLowerBounds = mul1.min(mul2).min(mul3).min(mul4);
-        BigDecimal resultBoundUpperBounds = mul1.max(mul2).max(mul3).max(mul4);
-        BigInteger resultBoundLowerBoundsInt = resultBoundLowerBounds.setScale(0, RoundingMode.FLOOR).toBigInteger();
-        BigInteger resultBoundUpperBoundsInt = resultBoundUpperBounds.setScale(0, RoundingMode.CEILING).toBigInteger();
-        return new Interval(resultBoundLowerBoundsInt, resultBoundUpperBoundsInt, this.getType());
+        BigInteger lb1 = this.lowerbound;
+        BigInteger ub1 = this.upperbound;
+        BigInteger lb2 = i2.lowerbound;
+        BigInteger ub2 = i2.upperbound;
+        BigInteger mul1 =  lb1.multiply(lb2);
+        BigInteger mul2 =  lb1.multiply(ub2);
+        BigInteger mul3 =  ub1.multiply(lb2);
+        BigInteger mul4 =  ub1.multiply(ub2);
+        return new Interval(mul1.min(mul2).min(mul3).min(mul4), mul1.max(mul2).max(mul3).max(mul4), type);
     }
 
 
@@ -222,14 +206,17 @@ final public class Interval {
     private Interval divide(Interval numeratorInterval, Interval denominatorInterval) {
 
         if (denominatorInterval.doesNotCrossZero()) {
-            BigDecimal lowerboundI1 = new BigDecimal(numeratorInterval.lowerbound);
-            BigDecimal upperboundI1 = new BigDecimal(numeratorInterval.upperbound);
-            BigDecimal lowerboundI2 = new BigDecimal(denominatorInterval.lowerbound);
-            BigDecimal upperboundI2 = new BigDecimal(denominatorInterval.upperbound);
-            // TODO: Scale 3 is a random magic constant. I do not have a better solution yet.
-            BigDecimal reciprocalLowerbound = BigDecimal.ONE.divide(lowerboundI2, 3, RoundingMode.FLOOR);
-            BigDecimal reciprocalUpperbound = BigDecimal.ONE.divide(upperboundI2, 3, RoundingMode.CEILING);
-            return multiply(lowerboundI1, upperboundI1, reciprocalLowerbound, reciprocalUpperbound);
+            BigInteger numLb = numeratorInterval.getLowerbound();
+            BigInteger numUb = numeratorInterval.getUpperbound();
+            BigInteger denomLb = denominatorInterval.getLowerbound();
+            BigInteger denomUb = denominatorInterval.getUpperbound();
+            BigInteger div1 = numLb.divide(denomLb);
+            BigInteger div2 = numLb.divide(denomUb);
+            BigInteger div3 = numUb.divide(denomLb);
+            BigInteger div4 = numUb.divide(denomUb);
+            return new Interval(div1.min(div2).min(div3).min(div4),
+                    div1.max(div2).max(div3).max(div4),
+                    type);
         } else {
             return Interval.getTop(type);
         }
@@ -353,9 +340,9 @@ final public class Interval {
                 interval.upperbound.not(),
                 this.lowerbound.not(),
                 interval.lowerbound.not());
-        BigInteger maxAnd = orInterval.getLowerbound().not();
-        BigInteger minAnd = orInterval.getUpperbound().not();
-        return new Interval(minAnd, maxAnd, type);
+        return new Interval(orInterval.getUpperbound().not(),
+                orInterval.getLowerbound().not(),
+                type);
     }
 
     private Interval negate() {

@@ -149,7 +149,7 @@ public abstract class IntervalTest {
                     {-5, -1, -2, 6, -30, 10, MUL},
 
                     // Signed division
-                    {1, 5, 2, 6, 0, 3, DIV},
+                    {1, 5, 2, 6, 0, 2, DIV},
                     // Signed division Asymmetry edge case
                     {-128, -128, -1, -1, -128, 255, DIV},
                     // Signed division by zero
