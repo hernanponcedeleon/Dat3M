@@ -1,6 +1,7 @@
 package com.dat3m.dartagnan.encoding;
 
 
+import com.dat3m.dartagnan.program.analysis.interval.IntervalAnalysis;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import com.dat3m.dartagnan.configuration.ProgressModel;
@@ -747,46 +748,42 @@ public class ProgramEncoder implements Encoder {
         }
     }
 
-    // ============= Bounds ============= 
+    // ============= Bounds =============
+
+    private List<BooleanFormula> encodeRegisterBounds(Formula variable, Interval interval) {
+        List<BooleanFormula> encoding = new ArrayList<>();
+        if (!interval.isTop()) {
+            BigInteger lowerbound = interval.getLowerbound();
+            BigInteger upperbound = interval.getUpperbound();
+            if (variable instanceof BitvectorFormula bvar) {
+                if (interval.isSignInsensitive()) {
+                    BitvectorFormulaManager bvmgr = context.getFormulaManager().getBitvectorFormulaManager();
+                    int bitWidth = bvmgr.getLength(bvar);
+                    encoding.add(bvmgr.greaterOrEquals(bvar, bvmgr.makeBitvector(bitWidth, lowerbound), true));
+                    encoding.add(bvmgr.lessOrEquals(bvar, bvmgr.makeBitvector(bitWidth, upperbound), true));
+                }
+            } else if (variable instanceof IntegerFormula ivar) {
+                IntegerFormulaManager imgr = context.getFormulaManager().getIntegerFormulaManager();
+                encoding.add(imgr.greaterOrEquals(ivar, imgr.makeNumber(lowerbound)));
+                encoding.add(imgr.lessOrEquals(ivar, imgr.makeNumber(upperbound)));
+            }
+        }
+        return encoding;
+    }
 
     public BooleanFormula encodeBounds() {
         List<BooleanFormula> encoding = new ArrayList<>();
-        FormulaManagerExt formulaManager = context.getFormulaManager();
-        for (var entry : context.getVarToInterval().entrySet()) {
-            Formula formula = entry.getKey().formula();
-            Interval interval = entry.getValue();
-            // Encode bounds in the SMT encoding using bitvectors or integers.
-            if (formula instanceof BitvectorFormula variable) {
-                BitvectorFormulaManager bitvectorFormulaManager = formulaManager.getBitvectorFormulaManager();
-                BigInteger upperbound = interval.getUpperbound();
-                BigInteger lowerbound = interval.getLowerbound();
-                int bitWidth = bitvectorFormulaManager.getLength(variable);
-                BooleanFormula lowerboundConstraint;
-                BooleanFormula upperboundConstraint;
-                BitvectorFormula bvLowerbound = bitvectorFormulaManager.makeBitvector(bitWidth, lowerbound);
-                BitvectorFormula bvUpperbound = bitvectorFormulaManager.makeBitvector(bitWidth, upperbound);
-                if (interval.isSignInsensitive()) {
-                    lowerboundConstraint = bitvectorFormulaManager.greaterOrEquals(variable, bvLowerbound, true);
-                    upperboundConstraint = bitvectorFormulaManager.lessOrEquals(variable, bvUpperbound, true);
-                    encoding.add(lowerboundConstraint);
-                    encoding.add(upperboundConstraint);
+        for (RegReader e : context.getTask().getProgram().getThreadEvents(RegReader.class)) {
+            for (Register.Read read : e.getRegisterReads()) {
+                Register r = read.register();
+                if (r.getType() instanceof IntegerType) {
+                    Interval interval = context.getAnalysisContext().requires(IntervalAnalysis.class).getIntervalAt(e, r);
+                    encoding.addAll(encodeRegisterBounds(context.getExpressionEncoder().encodeAt(r, e).formula(), interval));
                 }
-
-            } else if (formula instanceof IntegerFormula variable) {
-                IntegerFormulaManager integerFormulaManager = formulaManager.getIntegerFormulaManager();
-                BigInteger lowerbound = interval.getLowerbound();
-                BigInteger upperbound = interval.getUpperbound();
-                BooleanFormula constraintGTE = integerFormulaManager.greaterOrEquals(variable, integerFormulaManager.makeNumber(lowerbound));
-                BooleanFormula constraintLTE = integerFormulaManager.lessOrEquals(variable, integerFormulaManager.makeNumber(upperbound));
-                encoding.add(constraintLTE);
-                encoding.add(constraintGTE);
             }
         }
         BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
         return bmgr.and(encoding);
-
-
     }
-
 }
 

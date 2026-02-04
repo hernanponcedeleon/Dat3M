@@ -18,8 +18,6 @@ import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.memory.FinalMemoryValue;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.dat3m.dartagnan.program.misc.NonDetValue;
-import com.dat3m.dartagnan.program.analysis.interval.IntervalAnalysis;
-import com.dat3m.dartagnan.program.analysis.interval.Interval;
 import com.dat3m.dartagnan.smt.FormulaManagerExt;
 import com.dat3m.dartagnan.smt.TupleFormula;
 import com.google.common.base.Preconditions;
@@ -157,19 +155,6 @@ public class ExpressionEncoder {
 
     // ====================================================================================
     // Private implementation
-
-    @SuppressWarnings("unchecked")
-    private void saveIntervalOfVariable(Event event, Register register, TypedFormula<?,?> variable, Type type) {
-        IntervalAnalysis intervalAnalysis = context.getAnalysisContext().get(IntervalAnalysis.class);
-        if (event != null && intervalAnalysis != null && type instanceof IntegerType) {
-            Interval interval = intervalAnalysis.getIntervalAt(event,register);
-            if(interval != null && !interval.isTop()) {
-                assert variable.getType() instanceof IntegerType;
-                assert variable.formula() instanceof BitvectorFormula || variable.formula() instanceof IntegerFormula;
-                context.putVarToInterval((TypedFormula<IntegerType, ?>) variable,interval);
-            }
-        }
-    }
 
     // TODO: We can probably just return plain formulas and let the outer class
     //  wrap them correctly.
@@ -592,11 +577,7 @@ public class ExpressionEncoder {
             final String name = event == null ?
                     reg.getName() + "_" + reg.getFunction().getId() + "_final" :
                     reg.getName() + "(" + event.getGlobalId() + ")";
-            Type type = reg.getType();
-            TypedFormula<?,?> variable = makeVariable(name, type);
-            // Side effect!
-            saveIntervalOfVariable(event,reg,variable,type);
-            return variable;
+            return makeVariable(name, reg.getType());
         }
 
         @Override
