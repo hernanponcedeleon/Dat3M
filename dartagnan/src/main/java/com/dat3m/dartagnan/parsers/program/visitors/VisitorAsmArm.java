@@ -338,7 +338,7 @@ public class VisitorAsmArm extends AsmArmBaseVisitor<Object> {
             Type registerType = AsmUtils.getLlvmRegisterTypeGivenAsmRegisterID(this.argsRegisters,this.returnRegister,registerID);
             if (registerType instanceof PointerType pt) {registerType = typeFactory.getIntegerType(pt.bitWidth);}
             String newRegisterName = AsmUtils.makeRegisterName(registerID);
-            Register newRegister = this.llvmFunction.getOrNewRegister(newRegisterName, registerType);// fix this for execution state (reg is wrong state)
+            Register newRegister = this.llvmFunction.getOrNewRegister(newRegisterName, registerType);
             if (AsmUtils.isPartOfReturnRegister(this.returnRegister, registerID) && AsmUtils.isReturnRegisterAggregate(this.returnRegister)) {
                 this.pendingRegisters.add(newRegister);
             }

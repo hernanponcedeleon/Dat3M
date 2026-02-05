@@ -316,7 +316,7 @@ public final class ExpressionFactory {
 
     // -----------------------------------------------------------------------------------------------------------------
     // Aggregates
-    public List<Type> unpackTypeHelper(Type type){
+    private List<Type> unpackTypeHelper(Type type){
         if(type instanceof AggregateType ag){
             return ag.getFields().stream().map(TypeOffset::type).toList();
         }
