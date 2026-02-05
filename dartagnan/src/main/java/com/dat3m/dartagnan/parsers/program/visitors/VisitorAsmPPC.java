@@ -134,7 +134,7 @@ public class VisitorAsmPPC extends AsmPPCBaseVisitor<Object> {
     @Override
     public Object visitBranchNotEqual(AsmPPCParser.BranchNotEqualContext ctx) {
         Label label = AsmUtils.getOrNewLabel(labelsDefined, ctx.Numbers().getText());
-        Expression expr = expressions.makePtrCmp(comparator.left(), PtrCmpOp.NEQ, comparator.right());
+        Expression expr = expressions.makeNEQ(comparator.left(), comparator.right());
         asmInstructions.add(EventFactory.newJump(expr, label));
         return null;
     }

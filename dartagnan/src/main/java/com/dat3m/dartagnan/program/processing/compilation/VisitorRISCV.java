@@ -397,7 +397,7 @@ class VisitorRISCV extends VisitorBase {
         Register dummy = e.getFunction().newRegister(e.getResultRegister().getType());
         Register statusReg = e.getFunction().newRegister(types.getBooleanType());
         Label casEnd = newLabel("CAS_end");
-        CondJump branchOnCasCmpResult = newJump(expressions.makePtrCmp(dummy, PtrCmpOp.NEQ,e.getExpectedValue()), casEnd);
+        CondJump branchOnCasCmpResult = newJump(expressions.makeBinaryNEQ(dummy,e.getExpectedValue()), casEnd);
 
         Load load = newRMWLoadExclusive(dummy, address); // TODO: No mo on the load?
         Store store = RISCV.newRMWStoreConditional(address, e.getStoreValue(), mo.equals(Tag.Linux.MO_MB) ? Tag.RISCV.MO_REL : "", true);
@@ -592,7 +592,7 @@ class VisitorRISCV extends VisitorBase {
         Event optionalMemoryBarrierAfter = mo.equals(Tag.Linux.MO_MB) ? RISCV.newRWRWFence() : mo.equals(Tag.Linux.MO_ACQUIRE) ? RISCV.newRRWFence() : null;
         return eventSequence(
                 load,
-                newLocal(dummy, expressions.makePtrCmp(regValue, PtrCmpOp.NEQ ,unless)),
+                newLocal(dummy, expressions.makeNEQ(regValue, unless)),
                 branchOnCauCmpResult,
                 store,
                 fakeCtrlDep,

@@ -660,7 +660,7 @@ public class VisitorPower extends VisitorBase {
 
         Register dummy = e.getFunction().newRegister(e.getResultRegister().getType());
         Label casEnd = newLabel("CAS_end");
-        CondJump branchOnCasCmpResult = newJump(expressions.makePtrCmp(dummy,PtrCmpOp.NEQ ,e.getExpectedValue()), casEnd);
+        CondJump branchOnCasCmpResult = newJump(expressions.makeNEQ(dummy, expressions.makeCast(e.getExpectedValue(),dummy.getType())), casEnd);
 
         Load load = newRMWLoadExclusive(dummy, address);
         Store store = Power.newRMWStoreConditional(address, e.getStoreValue(), true);
@@ -842,7 +842,7 @@ public class VisitorPower extends VisitorBase {
         return eventSequence(
                 optionalMemoryBarrierBefore,
                 load,
-                newLocal(dummy, expressions.makePtrCmp(regValue, PtrCmpOp.NEQ ,unless)),
+                newLocal(dummy, expressions.makeNEQ(regValue,unless)),
                 branchOnCauCmpResult,
                 store,
                 fakeCtrlDep,
