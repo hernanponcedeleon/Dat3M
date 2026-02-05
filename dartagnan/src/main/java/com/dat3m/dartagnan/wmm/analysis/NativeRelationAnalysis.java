@@ -1,5 +1,8 @@
 package com.dat3m.dartagnan.wmm.analysis;
 
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import com.dat3m.dartagnan.expression.integers.IntLiteral;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
@@ -32,8 +35,8 @@ import com.dat3m.dartagnan.wmm.utils.Tuple;
 import com.dat3m.dartagnan.wmm.utils.graph.EventGraph;
 import com.dat3m.dartagnan.wmm.utils.graph.mutable.MapEventGraph;
 import com.dat3m.dartagnan.wmm.utils.graph.mutable.MutableEventGraph;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+
+
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 
@@ -53,7 +56,7 @@ import static java.util.stream.IntStream.iterate;
 
 public class NativeRelationAnalysis implements RelationAnalysis {
 
-    private static final Logger logger = LogManager.getLogger(NativeRelationAnalysis.class);
+    private static final Logger logger = LoggerFactory.getLogger(NativeRelationAnalysis.class);
 
     protected final VerificationTask task;
     protected final Context analysisContext;
@@ -498,8 +501,10 @@ public class NativeRelationAnalysis implements RelationAnalysis {
             MutableEventGraph may = new MapEventGraph();
 
             for (Event e1 : visibleEvents) {
-                for (Event e2 : visibleEvents) {
-                    may.add(e1, e2);
+                if (def.getDefinedRelation().isSet()) {
+                    may.add(e1, e1);
+                } else {
+                    may.addRange(e1, new HashSet<>(visibleEvents));
                 }
             }
 

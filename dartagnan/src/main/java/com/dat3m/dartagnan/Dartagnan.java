@@ -1,16 +1,17 @@
 package com.dat3m.dartagnan;
 
+
 import com.dat3m.dartagnan.configuration.OptionNames;
 import com.dat3m.dartagnan.configuration.ProgressModel;
 import com.dat3m.dartagnan.configuration.Property;
-import com.dat3m.dartagnan.encoding.EncodingContext;
 import com.dat3m.dartagnan.encoding.IREvaluator;
-import com.dat3m.dartagnan.encoding.ProverWithTracker;
+import com.dat3m.dartagnan.exception.MalformedProgramException;
 import com.dat3m.dartagnan.expression.ExpressionPrinter;
 import com.dat3m.dartagnan.expression.booleans.BoolLiteral;
 import com.dat3m.dartagnan.parsers.cat.ParserCat;
 import com.dat3m.dartagnan.parsers.program.ProgramParser;
 import com.dat3m.dartagnan.parsers.witness.ParserWitness;
+import com.dat3m.dartagnan.program.Entrypoint;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Program.SourceLanguage;
 import com.dat3m.dartagnan.program.analysis.SyntacticContextAnalysis;
@@ -21,7 +22,6 @@ import com.dat3m.dartagnan.program.event.core.Assert;
 import com.dat3m.dartagnan.program.event.core.CondJump;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.dat3m.dartagnan.program.processing.LoopUnrolling;
-import com.dat3m.dartagnan.program.Entrypoint;
 import com.dat3m.dartagnan.utils.ExitCode;
 import com.dat3m.dartagnan.utils.Result;
 import com.dat3m.dartagnan.utils.options.BaseOptions;
@@ -29,17 +29,13 @@ import com.dat3m.dartagnan.utils.printer.OutputLogger;
 import com.dat3m.dartagnan.utils.printer.OutputLogger.ResultSummary;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.verification.VerificationTask.VerificationTaskBuilder;
-import com.dat3m.dartagnan.verification.model.ExecutionModelManager;
 import com.dat3m.dartagnan.verification.model.ExecutionModelNext;
-import com.dat3m.dartagnan.verification.solving.AssumeSolver;
 import com.dat3m.dartagnan.verification.solving.ModelChecker;
-import com.dat3m.dartagnan.verification.solving.RefinementSolver;
 import com.dat3m.dartagnan.witness.WitnessType;
 import com.dat3m.dartagnan.witness.graphml.WitnessBuilder;
 import com.dat3m.dartagnan.witness.graphml.WitnessGraph;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.axiom.Axiom;
-import com.dat3m.dartagnan.exception.MalformedProgramException;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.io.CharSource;
@@ -47,20 +43,12 @@ import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVParser;
 import org.apache.commons.csv.CSVPrinter;
 import org.apache.commons.csv.CSVRecord;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.apache.maven.model.io.xpp3.MavenXpp3Reader;
-import org.sosy_lab.common.ShutdownManager;
-import org.sosy_lab.common.ShutdownNotifier;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.common.configuration.Options;
-import org.sosy_lab.common.log.BasicLogManager;
-import org.sosy_lab.java_smt.SolverContextFactory;
-import org.sosy_lab.java_smt.SolverContextFactory.Solvers;
-import org.sosy_lab.java_smt.api.ProverEnvironment;
-import org.sosy_lab.java_smt.api.SolverContext;
-import org.sosy_lab.java_smt.api.SolverContext.ProverOptions;
 import org.sosy_lab.java_smt.api.SolverException;
 
 import java.io.File;
@@ -83,12 +71,11 @@ import static com.dat3m.dartagnan.utils.GitInfo.*;
 import static com.dat3m.dartagnan.utils.Result.*;
 import static com.dat3m.dartagnan.witness.WitnessType.GRAPHML;
 import static com.dat3m.dartagnan.witness.graphviz.ExecutionGraphVisualizer.generateGraphvizFile;
-import static java.lang.String.valueOf;
 
 @Options
 public class Dartagnan extends BaseOptions {
 
-    private static final Logger logger = LogManager.getLogger(Dartagnan.class);
+    private static final Logger logger = LoggerFactory.getLogger(Dartagnan.class);
 
     private static final Set<String> supportedFormats = ImmutableSet.copyOf(ProgramParser.SUPPORTED_EXTENSIONS);
 
@@ -109,28 +96,10 @@ public class Dartagnan extends BaseOptions {
         final CharSource source = CharSource.concat(CharSource.wrap(preamble), CharSource.wrap(options));
         return Configuration.builder()
                 .addConverter(ProgressModel.Hierarchy.class, ProgressModel.HIERARCHY_CONVERTER)
-                .loadFromSource(source, ".", ".").build();
+                .loadFromSource(source, ".", ".")
+                .build();
     }
 
-    private static SolverContext createSolverContext(Configuration config, ShutdownNotifier notifier, Solvers solver) throws Exception {
-        // Try using NativeLibraries::loadLibrary. Fallback to System::loadLibrary
-        // if NativeLibraries failed, for example, because the operating system is
-        // not supported,
-        try {
-            return SolverContextFactory.createSolverContext(
-                config,
-                BasicLogManager.create(config),
-                notifier,
-                solver);
-        } catch (Exception e) {
-            SolverContextFactory factory = new SolverContextFactory(
-                config,
-                BasicLogManager.create(config),
-                notifier,
-                System::loadLibrary);
-            return factory.generateContext(solver);
-        }
-    }
 
     public static void main(String[] args) throws Exception {
 
@@ -151,116 +120,75 @@ public class Dartagnan extends BaseOptions {
 
         logGitInfo();
 
-        Configuration config = loadConfiguration(args);
-        Dartagnan o = new Dartagnan(config);
+        final Configuration config = loadConfiguration(args);
+        final Dartagnan o = new Dartagnan(config);
 
-        File fileModel = new File(Arrays.stream(args).filter(a -> a.endsWith(".cat")).findFirst()
+        final File fileModel = new File(Arrays.stream(args).filter(a -> a.endsWith(".cat")).findFirst()
                 .orElseThrow(() -> new IllegalArgumentException("CAT model not given or format not recognized")));
         logger.info("CAT file path: {}", fileModel);
-        Wmm mcm = new ParserCat(Path.of(o.getCatIncludePath())).parse(fileModel);
-
         final OutputLogger output = new OutputLogger(fileModel, config);
 
-        final List<File> files = new ArrayList<>();
-        Stream.of(args)
-            .map(File::new)
-            .forEach(file -> {
-                if (file.exists()) {
-                    final String path = file.getAbsolutePath();
-                    if (file.isDirectory()) {
-                        logger.info("Programs path: {}", path);
-                        files.addAll(getProgramsFiles(path));
-                    } else if (file.isFile() && supportedFormats.stream().anyMatch(file.getName()::endsWith)) {
-                        logger.info("Program path: {}", path);
-                        files.add(file);
-                    }
-                }
-            });
-        if (files.isEmpty()) {
-            throw new IllegalArgumentException("Path to input program(s) not given or format not recognized");
-        }
-
-        EnumSet<Property> properties = o.getProperty();
-
-        WitnessGraph witness = new WitnessGraph();
+        final WitnessGraph witness;
         if (o.runValidator()) {
             logger.info("Witness path: {}", o.getWitnessPath());
             witness = new ParserWitness().parse(new File(o.getWitnessPath()));
+        } else {
+            witness = new WitnessGraph();
         }
 
         ResultSummary summary = null;
+        final List<File> files = getProgramFilesFromArgs(args);
         for (File f : files) {
-            ShutdownManager sdm = ShutdownManager.create();
-            Thread t = new Thread(() -> {
-                try {
-                    if (o.hasTimeout()) {
-                        // Converts timeout from secs to millisecs
-                        Thread.sleep(1000L * o.getTimeout());
-                        sdm.requestShutdown("Shutdown Request");
-                    }
-                } catch (InterruptedException e) {
-                    // Verification ended, nothing to be done.
-                }
-            });
-
             try {
-                VerificationTaskBuilder builder = VerificationTask.builder()
-                        .withConfig(config)
-                        .withProgressModel(o.getProgressModel())
-                        .withWitness(witness);
-                Program p = new ProgramParser().parse(f);
+                // ----------- Generate verification task -----------
+                final Program p = new ProgramParser().parse(f);
                 if (o.overrideEntryFunction()) {
                     p.setEntrypoint(new Entrypoint.Simple(p.getFunctionByName(o.getEntryFunction()).orElseThrow(
                         () -> new MalformedProgramException(String.format("Program has no function named %s. Select a different entry point.", o.getEntryFunction())))));
                 }
+                final Wmm mcm = new ParserCat(Path.of(o.getCatIncludePath())).parse(fileModel);
+                final VerificationTaskBuilder builder = VerificationTask.builder()
+                        .withConfig(config)
+                        .withProgressModel(o.getProgressModel())
+                        .withWitness(witness);
                 // If the arch has been set during parsing (this only happens for litmus tests)
                 // and the user did not explicitly add the target option, we use the one
                 // obtained during parsing.
                 if (p.getArch() != null && !config.hasProperty(TARGET)) {
-                    builder = builder.withTarget(p.getArch());
+                    builder.withTarget(p.getArch());
                 }
-                VerificationTask task = builder.build(p, mcm, properties);
+                final VerificationTask task = builder.build(p, mcm, o.getProperty());
 
+                // ----------- Run Model Checker ----------
+                final ModelChecker modelChecker = ModelChecker.create(task, o.getMethod());
                 long startTime = System.currentTimeMillis();
-                t.start();
-                Configuration solverConfig = Configuration.builder()
-                        .setOption(PHANTOM_REFERENCES, valueOf(o.usePhantomReferences()))
-                        .build();
-                try (SolverContext ctx = createSolverContext(
-                        solverConfig,
-                        sdm.getNotifier(),
-                        o.getSolver());
-                        ProverWithTracker prover = new ProverWithTracker(ctx,
-                            o.getDumpSmtLib() ? GlobalSettings.getOutputDirectory() + String.format("/%s.smt2", p.getName()) : "",
-                            ProverOptions.GENERATE_MODELS)) {
-                    ModelChecker modelChecker;
-                    if (properties.contains(DATARACEFREEDOM)) {
-                        modelChecker = AssumeSolver.run(ctx, prover, task);
-                    } else {
-                        // Property is either PROGRAM_SPEC, TERMINATION, or CAT_SPEC
-                        modelChecker = switch (o.getMethod()) {
-                            case EAGER -> AssumeSolver.run(ctx, prover, task);
-                            case LAZY -> RefinementSolver.run(ctx, prover, task);
-                        };
-                    }
+                modelChecker.run();
+                long endTime = System.currentTimeMillis();
 
-                    // Verification ended, we can interrupt the timeout Thread
-                    t.interrupt();
-                    long endTime = System.currentTimeMillis();
-
-                    summary = summaryFromResult(task, prover, modelChecker, f.toString(), (endTime - startTime));
-
-                    if (modelChecker.hasModel() && o.getWitnessType().generateGraphviz()) {
-                        generateExecutionGraphFile(task, prover, modelChecker, o.getWitnessType());
-                    }
-                    // We only generate SVCOMP witnesses if we are not validating one.
-                    if (o.getWitnessType().equals(GRAPHML) && !o.runValidator()) {
-                        generateWitnessIfAble(task, prover, modelChecker, summary.reason() + "\n" + summary.details());
-                    }
+                // ----------- Generate output-----------
+                summary = summaryFromResult(task, modelChecker, f.toString(), (endTime - startTime));
+                if (modelChecker.hasModel() && o.getWitnessType().generateGraphviz()) {
+                    generateExecutionGraphFile(task, modelChecker, o.getWitnessType());
+                }
+                // We only generate SVCOMP witnesses if we are not validating one.
+                if (o.getWitnessType().equals(GRAPHML) && !o.runValidator()) {
+                    generateWitnessIfAble(task, modelChecker, summary.reason() + "\n" + summary.details());
                 }
             } catch (InterruptedException e) {
-                final long time = 1000L * o.getTimeout();
-                summary = new ResultSummary(f.toString(), "", TIMEDOUT, "", "", "", time, TIMEOUT_ELAPSED);
+                final String details;
+                final ExitCode exitCode;
+                if (e.getMessage() != null) {
+                    details = "\t" + e.getMessage();
+                    exitCode = e.getMessage().contains("Timeout")
+                            ? TIMEOUT_ELAPSED
+                            : e.getMessage().contains("canceled")
+                            ? CANCELED
+                            : UNKNOWN_ERROR;
+                } else {
+                    details = "\tUnknown error occurred";
+                    exitCode = UNKNOWN_ERROR;
+                }
+                summary = new ResultSummary(f.toString(), "", INTERRUPTED, "", "", details, 0, exitCode);
             } catch (Exception e) {
                 final String reason = e.getClass().getSimpleName();
                 final String details = "\t" + Optional.ofNullable(e.getMessage()).orElse("Unknown error occurred");
@@ -273,55 +201,71 @@ public class Dartagnan extends BaseOptions {
         System.exit((files.size() > 1 ? NORMAL_TERMINATION : summary.code()).asInt());
     }
 
-    public static List<File> getProgramsFiles(String path) {
+    private static List<File> getProgramFilesFromArgs(String[] args) {
+        final List<File> files = new ArrayList<>();
+        Stream.of(args)
+            .map(File::new)
+            .forEach(file -> {
+                if (file.exists()) {
+                    final String path = file.getAbsolutePath();
+                    if (file.isDirectory()) {
+                        logger.info("Programs path: {}", path);
+                        files.addAll(getProgramFiles(path));
+                    } else if (file.isFile() && supportedFormats.stream().anyMatch(file.getName()::endsWith)) {
+                        logger.info("Program path: {}", path);
+                        files.add(file);
+                    }
+                }
+            });
+        if (files.isEmpty()) {
+            throw new IllegalArgumentException("Path to input program(s) not given or format not recognized");
+        }
+        return files;
+    }
+
+    private static List<File> getProgramFiles(String dirPath) {
         List<File> files = new ArrayList<File>();
-        try (Stream<Path> stream = Files.walk(Paths.get(path))) {
+        try (Stream<Path> stream = Files.walk(Paths.get(dirPath))) {
             files = stream.filter(Files::isRegularFile)
                 .filter(p -> supportedFormats.stream().anyMatch(p.toString()::endsWith))
                 .map(Path::toFile)
                 .sorted(Comparator.comparing(File::toString))
                 .toList();
         } catch (IOException e) {
-            logger.error("There was an I/O error when accessing path {}", path);
+            logger.error("There was an I/O error when accessing path {}", dirPath);
             System.exit(UNKNOWN_ERROR.asInt());
         }
         return files;
     }
 
-    public static File generateExecutionGraphFile(VerificationTask task, ProverEnvironment prover, ModelChecker modelChecker,
-                                                  WitnessType witnessType)
+    public static File generateExecutionGraphFile(VerificationTask task, ModelChecker modelChecker, WitnessType witnessType)
             throws SolverException, IOException {
         Preconditions.checkArgument(modelChecker.hasModel(), "No execution graph to generate.");
 
-        final EncodingContext encodingContext = modelChecker instanceof RefinementSolver refinementSolver ?
-            refinementSolver.getContextWithFullWmm() : modelChecker.getEncodingContext();
         final SyntacticContextAnalysis synContext = newInstance(task.getProgram());
         final String progName = task.getProgram().getName();
         final int fileSuffixIndex = progName.lastIndexOf('.');
         final String name = progName.isEmpty() ? "unnamed_program" :
                 (fileSuffixIndex == - 1) ? progName : progName.substring(0, fileSuffixIndex);
-        try (IREvaluator evaluator = encodingContext.newEvaluator(prover)) {
-            final ExecutionModelNext model = new ExecutionModelManager().buildExecutionModel(evaluator);
-            // RF edges give both ordering and data flow information, thus even when the pair is in PO
-            // we get some data flow information by observing the edge
-            // CO edges only give ordering information which is known if the pair is also in PO
-            return generateGraphvizFile(model, 1, (x, y) -> true,
-                    (x, y) -> !x.getThreadModel().getThread().equals(y.getThreadModel().getThread()),
-                    getOrCreateOutputDirectory() + "/", name,
-                    synContext, witnessType.convertToPng(), encodingContext.getTask().getConfig());
-        }
+        final ExecutionModelNext model = modelChecker.getExecutionGraph();
+        // RF edges give both ordering and data flow information, thus even when the pair is in PO
+        // we get some data flow information by observing the edge
+        // CO edges only give ordering information which is known if the pair is also in PO
+        return generateGraphvizFile(model, 1, (x, y) -> true,
+                (x, y) -> !x.getThreadModel().getThread().equals(y.getThreadModel().getThread()),
+                getOrCreateOutputDirectory() + "/", name,
+                synContext, witnessType.convertToPng(), task.getConfig());
     }
 
-    private static void generateWitnessIfAble(VerificationTask task, ProverEnvironment prover,
-            ModelChecker modelChecker, String details) {
+    private static void generateWitnessIfAble(VerificationTask task,
+            ModelChecker modelChecker, String details) throws SolverException {
         // ------------------ Generate Witness, if possible ------------------
         final EnumSet<Property> properties = task.getProperty();
         if (task.getProgram().getFormat().equals(SourceLanguage.LLVM) && modelChecker.hasModel()
                 && (properties.contains(PROGRAM_SPEC) || properties.contains(DATARACEFREEDOM))
                 && modelChecker.getResult() != UNKNOWN) {
-            try {
-                WitnessBuilder w = WitnessBuilder.of(modelChecker.getEncodingContext(), prover,
-                        modelChecker.getResult(), details);
+            try (IREvaluator evaluator = modelChecker.getModel()) {
+                WitnessBuilder w = WitnessBuilder.of(evaluator, modelChecker.getResult(), details);
                 if (w.canBeBuilt()) {
                     w.build().write();
                 }
@@ -331,13 +275,13 @@ public class Dartagnan extends BaseOptions {
         }
     }
 
-    public static ResultSummary summaryFromResult(VerificationTask task, ProverEnvironment prover, ModelChecker modelChecker, String path, long time) throws SolverException {
-        try (IREvaluator evaluator = modelChecker.hasModel() ? modelChecker.getEncodingContext().newEvaluator(prover) : null) {
+    public static ResultSummary summaryFromResult(VerificationTask task, ModelChecker modelChecker, String path, long time) throws SolverException {
+        try (IREvaluator evaluator = modelChecker.hasModel() ? modelChecker.getModel() : null) {
             return summaryFromResult(task, modelChecker, evaluator, path, time);
         }
     }
 
-    private static ResultSummary summaryFromResult(VerificationTask task, ModelChecker modelChecker, IREvaluator model, String path, long time) {
+    private static ResultSummary summaryFromResult(VerificationTask task, ModelChecker modelChecker, IREvaluator model, String path, long time) throws SolverException {
         // ----------------- Generate output of verification result -----------------
         final Program p = task.getProgram();
         final EnumSet<Property> props = task.getProperty();
@@ -411,7 +355,7 @@ public class Dartagnan extends BaseOptions {
                 reason = ResultSummary.CAT_SPEC_REASON;
                 // In validation mode, we expect to find the violation, thus NORMAL_TERMINATION
                 ExitCode code = task.getWitness().isEmpty() ? CAT_SPEC_VIOLATION : NORMAL_TERMINATION;
-                return new ResultSummary(path, filter, FAIL, condition, reason, modelChecker.getFlaggedPairsOutput(), time, code);
+                return new ResultSummary(path, filter, FAIL, condition, reason, getFlaggedPairsOutput(task, model), time, code);
             }
         } else if (hasViolationsWithoutWitness) {
             // Only for programs with exists/forall specifications
@@ -515,6 +459,43 @@ public class Dartagnan extends BaseOptions {
             sb.append("\n");
         }
         return sb.toString();
+    }
+
+    private static String getFlaggedPairsOutput(VerificationTask task, IREvaluator model) {
+        if (!task.getProperty().contains(CAT_SPEC)) {
+            return "";
+        }
+
+        final Wmm wmm = task.getMemoryModel();
+        final Program program = task.getProgram();
+        final StringBuilder output = new StringBuilder();
+        final SyntacticContextAnalysis synContext = newInstance(program);
+        for (Axiom ax : wmm.getAxioms()) {
+            if (ax.isFlagged() && model.isFlaggedAxiomViolated(ax)) {
+                StringBuilder violatingPairs = new StringBuilder("\tFlag " + Optional.ofNullable(ax.getName()).orElse(ax.getRelation().getNameOrTerm())).append("\n");
+                model.eventGraph(ax.getRelation()).apply((e1, e2) -> {
+                    final String callSeparator = " -> ";
+                    final String callStackFirst = makeContextString(
+                            synContext.getContextInfo(e1).getContextOfType(CallContext.class),
+                            callSeparator);
+                    final String callStackSecond = makeContextString(
+                            synContext.getContextInfo(e2).getContextOfType(CallContext.class),
+                            callSeparator);
+
+                    violatingPairs
+                            .append("\tE").append(e1.getGlobalId())
+                            .append(" / E").append(e2.getGlobalId())
+                            .append("\t").append(callStackFirst).append(callStackFirst.isEmpty() ? "" : callSeparator)
+                            .append(getSourceLocationString(e1))
+                            .append(" / ").append(callStackSecond).append(callStackSecond.isEmpty() ? "" : callSeparator)
+                            .append(getSourceLocationString(e2))
+                            .append("\n");
+                });
+                output.append(violatingPairs);
+            }
+        }
+
+        return output.toString();
     }
 
 }

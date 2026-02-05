@@ -1,5 +1,8 @@
 package com.dat3m.dartagnan.program.processing;
 
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import com.dat3m.dartagnan.configuration.ProgressModel;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
@@ -26,8 +29,8 @@ import com.dat3m.dartagnan.program.memory.FinalMemoryValue;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.dat3m.dartagnan.verification.Context;
 import com.google.common.collect.Ordering;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+
+
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 
@@ -37,7 +40,7 @@ import static com.google.common.base.Preconditions.checkArgument;
 
 public final class Tearing implements ProgramProcessor {
 
-    private static final Logger logger = LogManager.getLogger(Tearing.class);
+    private static final Logger logger = LoggerFactory.getLogger(Tearing.class);
 
     private static final TypeFactory types = TypeFactory.getInstance();
     private static final ExpressionFactory expressions = ExpressionFactory.getInstance();
@@ -115,7 +118,7 @@ public final class Tearing implements ProgramProcessor {
             info.append("\n").append("======== Tearing source information ========");
             sortedLocs.forEach(loc -> info.append("\n\t").append(loc));
             info.append("\n").append("============================================");
-            logger.debug(info);
+            logger.debug(info.toString());
         }
         IdReassignment.newInstance().run(program);
     }

@@ -1,5 +1,8 @@
 package com.dat3m.dartagnan.parsers.cat;
 
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import com.dat3m.dartagnan.GlobalSettings;
 import com.dat3m.dartagnan.exception.AbortErrorListener;
 import com.dat3m.dartagnan.exception.MalformedMemoryModelException;
@@ -16,8 +19,7 @@ import com.dat3m.dartagnan.wmm.axiom.Axiom;
 import com.dat3m.dartagnan.wmm.definition.*;
 import com.google.common.collect.ImmutableMap;
 import org.antlr.v4.runtime.*;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+
 
 import java.io.IOException;
 import java.lang.reflect.Constructor;
@@ -37,7 +39,7 @@ import java.util.*;
 
 class VisitorCat extends CatBaseVisitor<Object> {
 
-    private static final Logger logger = LogManager.getLogger(VisitorCat.class);
+    private static final Logger logger = LoggerFactory.getLogger(VisitorCat.class);
 
     // The directory path used to resolve include statements.
     private final Path includePath;

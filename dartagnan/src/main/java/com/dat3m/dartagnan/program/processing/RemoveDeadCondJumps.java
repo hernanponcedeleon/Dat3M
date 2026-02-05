@@ -1,5 +1,8 @@
 package com.dat3m.dartagnan.program.processing;
 
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import com.dat3m.dartagnan.expression.booleans.BoolUnaryExpr;
 import com.dat3m.dartagnan.expression.integers.IntCmpExpr;
 import com.dat3m.dartagnan.expression.pointers.PtrCmpExpr;
@@ -8,8 +11,8 @@ import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.CondJump;
 import com.dat3m.dartagnan.program.event.core.Label;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+
+
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 
@@ -20,7 +23,7 @@ import java.util.Map;
 
 public class RemoveDeadCondJumps implements FunctionProcessor {
 
-    private static final Logger logger = LogManager.getLogger(RemoveDeadCondJumps.class);
+    private static final Logger logger = LoggerFactory.getLogger(RemoveDeadCondJumps.class);
 
     private RemoveDeadCondJumps() {
     }

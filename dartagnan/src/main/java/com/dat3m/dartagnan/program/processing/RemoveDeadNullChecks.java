@@ -1,5 +1,8 @@
 package com.dat3m.dartagnan.program.processing;
 
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.ExpressionVisitor;
@@ -18,8 +21,7 @@ import com.dat3m.dartagnan.program.event.RegWriter;
 import com.dat3m.dartagnan.program.event.core.Alloc;
 import com.dat3m.dartagnan.program.event.core.Local;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+
 
 import java.math.BigInteger;
 import java.util.HashMap;
@@ -43,7 +45,7 @@ import static com.dat3m.dartagnan.expression.integers.IntCmpOp.*;
  */
 public class RemoveDeadNullChecks implements FunctionProcessor {
 
-    private final static Logger logger = LogManager.getLogger(RemoveDeadNullChecks.class)
+    private final static Logger logger = LoggerFactory.getLogger(RemoveDeadNullChecks.class)
 ;
     private RemoveDeadNullChecks() { }
 

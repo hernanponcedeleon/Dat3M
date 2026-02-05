@@ -1,5 +1,8 @@
 package com.dat3m.dartagnan.wmm.analysis;
 
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import com.dat3m.dartagnan.configuration.RelationAnalysisMethod;
 import com.dat3m.dartagnan.program.analysis.ExecutionAnalysis;
 import com.dat3m.dartagnan.program.analysis.ReachingDefinitionsAnalysis;
@@ -9,8 +12,8 @@ import com.dat3m.dartagnan.verification.Context;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.wmm.Relation;
 import com.dat3m.dartagnan.wmm.utils.graph.EventGraph;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+
+
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.common.configuration.Option;
@@ -28,7 +31,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 
 public interface RelationAnalysis {
 
-    Logger logger = LogManager.getLogger(RelationAnalysis.class);
+    Logger logger = LoggerFactory.getLogger(RelationAnalysis.class);
 
     /**
      * Performs a static analysis on the relationships that may occur in an execution.
@@ -64,7 +67,7 @@ public interface RelationAnalysis {
             final StringBuilder configSummary = new StringBuilder().append("\n");
             configSummary.append("\t").append(RELATION_ANALYSIS).append(": ").append(c.method).append("\n");
             configSummary.append("\t").append(ENABLE_EXTENDED_RELATION_ANALYSIS).append(": ").append(c.enableExtended);
-            logger.info(configSummary);
+            logger.info(configSummary.toString());
         }
 
         long t0 = System.currentTimeMillis();
@@ -99,7 +102,7 @@ public interface RelationAnalysis {
             summary.append("\t#must|may rf edges: ").append(rf.must.size()).append("|").append(rf.may.size()).append("\n");
             summary.append("\t#must|may co edges: ").append(co.must.size()).append("|").append(co.may.size()).append("\n");
             summary.append("===========================================");
-            logger.info(summary);
+            logger.info(summary.toString());
         }
         return a;
     }

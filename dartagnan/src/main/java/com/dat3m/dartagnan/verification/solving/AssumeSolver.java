@@ -1,13 +1,14 @@
 package com.dat3m.dartagnan.verification.solving;
 
+
 import com.dat3m.dartagnan.configuration.Property;
 import com.dat3m.dartagnan.encoding.*;
+import com.dat3m.dartagnan.smt.ProverWithTracker;
 import com.dat3m.dartagnan.utils.Result;
 import com.dat3m.dartagnan.verification.Context;
 import com.dat3m.dartagnan.verification.VerificationTask;
-import com.dat3m.dartagnan.wmm.Wmm;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.java_smt.api.BooleanFormula;
@@ -21,43 +22,43 @@ import static java.util.Collections.singletonList;
 
 public class AssumeSolver extends ModelChecker {
 
-    private static final Logger logger = LogManager.getLogger(AssumeSolver.class);
+    private static final Logger logger = LoggerFactory.getLogger(AssumeSolver.class);
 
-    private final SolverContext ctx;
-    private final ProverWithTracker prover;
-    private final VerificationTask task;
-
-    private AssumeSolver(SolverContext c, ProverWithTracker p, VerificationTask t) {
-        ctx = c;
-        prover = p;
-        task = t;
+    private AssumeSolver(VerificationTask task) throws InvalidConfigurationException {
+        super(task);
     }
 
-    public static AssumeSolver run(SolverContext ctx, ProverWithTracker prover, VerificationTask task)
-            throws InterruptedException, SolverException, InvalidConfigurationException {
-        AssumeSolver s = new AssumeSolver(ctx, prover, task);
-        s.run();
-        return s;
+    public static AssumeSolver create(VerificationTask task) throws InvalidConfigurationException {
+        return new AssumeSolver(task);
     }
 
-    private void run() throws InterruptedException, SolverException, InvalidConfigurationException {
-        Wmm memoryModel = task.getMemoryModel();
-        Context analysisContext = Context.create();
-        Configuration config = task.getConfig();
-
-        memoryModel.configureAll(config);
+    protected Context preprocessAndAnalyse(VerificationTask task) throws InvalidConfigurationException {
+        final Configuration config = task.getConfig();
+        task.getMemoryModel().configureAll(config);
         preprocessProgram(task, config);
         preprocessMemoryModel(task, config);
+
+        final Context analysisContext = Context.create();
         performStaticProgramAnalyses(task, analysisContext, config);
         performStaticWmmAnalyses(task, analysisContext, config);
+        return analysisContext;
+    }
 
-        context = EncodingContext.of(task, analysisContext, ctx.getFormulaManager());
+    @Override
+    protected void runInternal() throws InterruptedException, SolverException, InvalidConfigurationException {
+        final Context analysisContext = preprocessAndAnalyse(task);
+
+        initSMTSolver(task.getConfig());
+        final SolverContext solverContext = this.solverContext;
+        final ProverWithTracker prover = this.prover;
+
+        context = EncodingContext.of(task, analysisContext, solverContext.getFormulaManager());
         ProgramEncoder programEncoder = ProgramEncoder.withContext(context);
         PropertyEncoder propertyEncoder = PropertyEncoder.withContext(context);
         WmmEncoder wmmEncoder = WmmEncoder.withContext(context);
         SymmetryEncoder symmetryEncoder = SymmetryEncoder.withContext(context);
 
-        logger.info("Starting encoding using " + ctx.getVersion());
+        logger.info("Starting encoding using {}", solverContext.getVersion());
         prover.writeComment("Program encoding");
         prover.addConstraint(programEncoder.encodeFullProgram());
         prover.writeComment("Memory model encoding");
@@ -69,30 +70,28 @@ public class AssumeSolver extends ModelChecker {
         prover.writeComment("Symmetry breaking encoding");
         prover.addConstraint(symmetryEncoder.encodeFullSymmetryBreaking());
 
-        BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
+        BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
         BooleanFormula assumptionLiteral = bmgr.makeVariable("DAT3M_spec_assumption");
         BooleanFormula propertyEncoding = propertyEncoder.encodeProperties(task.getProperty());
         BooleanFormula assumedSpec = bmgr.implication(assumptionLiteral, propertyEncoding);
         prover.writeComment("Property encoding");
         prover.addConstraint(assumedSpec);
-        // prover.getModel(); // only while debugging
+
+        checkForInterrupts();
+
         logger.info("Starting first solver.check()");
         if (prover.isUnsatWithAssumptions(singletonList(assumptionLiteral))) {
+            checkForInterrupts();
             prover.writeComment("Bound encoding");
             prover.addConstraint(propertyEncoder.encodeBoundEventExec());
             logger.info("Starting second solver.check()");
             res = prover.isUnsat() ? PASS : Result.UNKNOWN;
         } else {
             res = FAIL;
-            saveFlaggedPairsOutput(memoryModel, prover, context, task.getProgram());
         }
 
         if (logger.isDebugEnabled()) {
-            StringBuilder smtStatistics = new StringBuilder("\n ===== SMT Statistics ===== \n");
-            for (String key : prover.getStatistics().keySet()) {
-                smtStatistics.append(String.format("\t%s -> %s\n", key, prover.getStatistics().get(key)));
-            }
-            logger.debug(smtStatistics.toString());
+            logProverStatistics(logger, prover);
         }
 
         // For Safety specs, we have SAT=FAIL, but for reachability specs, we have SAT=PASS

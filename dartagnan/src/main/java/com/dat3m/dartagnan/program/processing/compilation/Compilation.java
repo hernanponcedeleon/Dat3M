@@ -1,5 +1,8 @@
 package com.dat3m.dartagnan.program.processing.compilation;
 
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.IRHelper;
@@ -10,8 +13,8 @@ import com.dat3m.dartagnan.program.processing.IdReassignment;
 import com.dat3m.dartagnan.program.processing.ProgramProcessor;
 import com.dat3m.dartagnan.program.processing.compilation.VisitorPower.PowerScheme;
 import com.google.common.base.Preconditions;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+
+
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.common.configuration.Option;
@@ -26,7 +29,7 @@ import static com.dat3m.dartagnan.program.processing.compilation.VisitorPower.Po
 public class Compilation implements ProgramProcessor {
 
 
-    private static final Logger logger = LogManager.getLogger(Compilation.class);
+    private static final Logger logger = LoggerFactory.getLogger(Compilation.class);
 
     // =========================== Configurables ===========================
 
