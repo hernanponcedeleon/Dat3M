@@ -1,10 +1,13 @@
 package com.dat3m.dartagnan.program.analysis.alias;
 
 import com.dat3m.dartagnan.expression.Expression;
+import com.dat3m.dartagnan.expression.base.CastExpressionBase;
 import com.dat3m.dartagnan.expression.integers.IntBinaryExpr;
 import com.dat3m.dartagnan.expression.integers.IntLiteral;
+import com.dat3m.dartagnan.expression.pointers.IntToPtrCast;
 import com.dat3m.dartagnan.expression.pointers.NullLiteral;
 import com.dat3m.dartagnan.expression.pointers.PtrAddExpr;
+import com.dat3m.dartagnan.expression.pointers.PtrToIntCast;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
@@ -289,6 +292,9 @@ public class AndersenAliasAnalysis implements AliasAnalysis {
     private void processResults(Local e) {
         Expression exp = e.getExpr();
         Register reg = e.getResultRegister();
+        if (exp instanceof IntToPtrCast || exp instanceof PtrToIntCast) {
+            exp = ((CastExpressionBase<?, ?>) exp).getOperand();
+        }
         if (exp instanceof MemoryObject mem) {
             addTarget(reg, new Location(mem, 0));
             return;
@@ -297,6 +303,10 @@ public class AndersenAliasAnalysis implements AliasAnalysis {
             return;
         }
         Expression base = exp instanceof IntBinaryExpr ? ((IntBinaryExpr)exp).getLeft(): ((PtrAddExpr)exp).getBase();
+        // fixme: this is a temp solution.
+        if (base instanceof IntToPtrCast || base instanceof PtrToIntCast) {
+            base = ((CastExpressionBase<?, ?>) base).getOperand();
+        }
         Expression rhs = exp instanceof IntBinaryExpr ? ((IntBinaryExpr)exp).getRight(): ((PtrAddExpr)exp).getOffset();
         if (base instanceof MemoryObject mem) {
             if (rhs instanceof IntLiteral ic) {

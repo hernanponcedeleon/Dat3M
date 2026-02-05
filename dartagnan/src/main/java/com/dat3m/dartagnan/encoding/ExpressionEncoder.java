@@ -138,19 +138,12 @@ public class ExpressionEncoder {
     public BooleanFormula equal(Expression left, Expression right, ConversionMode cMode) {
         final ExpressionFactory exprs = context.getExpressionFactory();
 
-        // --------------------------------------------------------------------------------------------
-        // todo: this is just for the wmm encoding. So find a better place for it. Or add ptr size cast.
-        //  But why is there an equal(ptr8, ptr64) in lockref1 and lockref2 tests?
-        //  Is tearing not working correctly??
-
         if (left.getType() instanceof PointerType && right.getType() instanceof PointerType &&
                 ((PointerType) right.getType()).getBitWidth() != ((PointerType) left.getType()).getBitWidth()) {
             left = exprs.makeCast(left, types.getArchType());
             right = exprs.makeCast(right, types.getArchType());
             return encodeBooleanFinal(exprs.makeEQ(left, right)).formula();
         }
-
-        // --------------------------------------------------------------------------------------------
 
         switch (cMode) {
             case NO -> {}
@@ -592,7 +585,6 @@ public class ExpressionEncoder {
         @Override
         public TypedFormula<PointerType, ?> visitIntToPtrCastExpression(IntToPtrCast expr) {
             final TypedFormula<IntegerType, ?> address = encodeIntegerExpr(expr.getOperand());
-            // todo add support for lossy casts like int64 to ptr32(is it even possible?)
             if (!context.useIntegers) {
                 int ibw = ((IntegerType)expr.getOperand().getType()).getBitWidth();
                 int pbw = expr.getType().getBitWidth();
@@ -614,10 +606,6 @@ public class ExpressionEncoder {
                 final BooleanFormula result = switch (expr.getKind()) {
                     case EQ -> imgr.equal(left.formula(), right.formula());
                     case NEQ -> bmgr.not(fmgr.equal(left.formula(), right.formula()));
-                    case LT -> imgr.lessThan(left.formula(), right.formula());
-                    case LTE -> imgr.lessOrEquals(left.formula(), right.formula());
-                    case GT -> imgr.greaterThan(left.formula(), right.formula());
-                    case GTE -> imgr.greaterOrEquals(left.formula(), right.formula());
                 };
                 return new TypedFormula<>(types.getBooleanType(), result);
             }else{
@@ -638,10 +626,6 @@ public class ExpressionEncoder {
                         case 2 -> fmgr.isZeroBitVector(left);
                         default -> throw new IllegalStateException();
                     });
-                    case LT -> bvgr.lessThan(left, right,false);
-                    case LTE -> bvgr.lessOrEquals(left, right,false);
-                    case GT -> bvgr.greaterThan(left, right,false);
-                    case GTE -> bvgr.greaterOrEquals(left, right,false);
                 };
                 return new TypedFormula<>(types.getBooleanType(), result);
         }

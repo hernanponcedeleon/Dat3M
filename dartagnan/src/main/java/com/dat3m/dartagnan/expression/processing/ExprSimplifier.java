@@ -199,17 +199,9 @@ public class ExprSimplifier extends ExprTransformer {
             return rewrite;
         }
 
-        final Expression l = cmp.getLeft().accept(this);
-        final Expression r = cmp.getRight().accept(this);
-
-        // Normalize "x > y" to "y < x" (and similar).
-        final boolean swap = switch (cmp.getKind()) {
-            case GTE, GT -> true;
-            default -> false;
-        };
-        final PtrCmpOp op = swap ? cmp.getKind().reverse() : cmp.getKind();
-        final Expression left = swap ? r : l;
-        final Expression right = swap ? l : r;
+        final Expression left = cmp.getLeft().accept(this);
+        final Expression right = cmp.getRight().accept(this);
+        final PtrCmpOp op = cmp.getKind();
 
         // ------- Operations on same value -------
         if (aggressive && left.equals(right)) {
@@ -221,8 +213,6 @@ public class ExprSimplifier extends ExprTransformer {
             final boolean cmpResult = switch (op) {
                 case EQ -> true;
                 case NEQ -> false;
-                default ->
-                        throw new VerifyException(String.format("Unexpected comparison operator '%s'.", op));
             };
             return expressions.makeValue(cmpResult);
         }
@@ -235,10 +225,6 @@ public class ExprSimplifier extends ExprTransformer {
             final Boolean cmpResult = switch (op) {
                 case EQ -> sameObj;
                 case NEQ -> !sameObj;
-                case LT-> sameObj ? false : null;
-                case LTE -> sameObj ? true : null;
-                default ->
-                        throw new VerifyException(String.format("Unexpected comparison operator '%s'. Missing normalization?", op));
             };
 
             if (cmpResult != null) {
@@ -379,7 +365,7 @@ public class ExprSimplifier extends ExprTransformer {
         }
         if (sub instanceof NullLiteral) {
             return expressions.makeZero(expr.getType());
-        } // the problem here is that
+        }
     return expressions.makePtrToIntCast(expr.getOperand(), expr.getType());
     }
 

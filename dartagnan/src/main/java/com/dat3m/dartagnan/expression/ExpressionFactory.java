@@ -117,36 +117,50 @@ public final class ExpressionFactory {
     }
 
     public Expression makeLT(Expression leftOperand, Expression rightOperand, boolean signed) {
+        if (leftOperand.getType() instanceof PointerType){
+            return makeIntCmpfromInts(leftOperand,IntCmpOp.ULT,rightOperand);
+        }
         return makeIntCmp(leftOperand, signed ? IntCmpOp.LT : IntCmpOp.ULT, rightOperand);
     }
 
     public Expression makeGT(Expression leftOperand, Expression rightOperand, boolean signed) {
+        if (leftOperand.getType() instanceof PointerType){
+            return makeIntCmpfromInts(leftOperand,IntCmpOp.UGT,rightOperand);
+        }
         return makeIntCmp(leftOperand, signed ? IntCmpOp.GT : IntCmpOp.UGT, rightOperand);
     }
 
     public Expression makeLTE(Expression leftOperand, Expression rightOperand, boolean signed) {
+        if (leftOperand.getType() instanceof PointerType){
+            return makeIntCmpfromInts(leftOperand,IntCmpOp.ULTE,rightOperand);
+        }
         return makeIntCmp(leftOperand, signed ? IntCmpOp.LTE : IntCmpOp.ULTE, rightOperand);
     }
 
     public Expression makeGTE(Expression leftOperand, Expression rightOperand, boolean signed) {
+        if (leftOperand.getType() instanceof PointerType){
+            return makeIntCmpfromInts(leftOperand,IntCmpOp.UGTE,rightOperand);
+        }
         return makeIntCmp(leftOperand, signed ? IntCmpOp.GTE : IntCmpOp.UGTE, rightOperand);
 
     }
-    public Expression makeLTfromInts(Expression leftOperand, Expression rightOperand, boolean signed) {
-        return makeIntCmpfromInts(leftOperand, signed ? IntCmpOp.LT : IntCmpOp.ULT, rightOperand);
-    }
 
-    public Expression makeGTfromInts(Expression leftOperand, Expression rightOperand, boolean signed) {
-        return makeIntCmpfromInts(leftOperand, signed ? IntCmpOp.GT : IntCmpOp.UGT, rightOperand);
-    }
 
-    public Expression makeLTEfromInts(Expression leftOperand, Expression rightOperand, boolean signed) {
-        return makeIntCmpfromInts(leftOperand, signed ? IntCmpOp.LTE : IntCmpOp.ULTE, rightOperand);
-    }
+//    public Expression makeLTfromInts(Expression leftOperand, Expression rightOperand, boolean signed) {
+//        return makeIntCmpfromInts(leftOperand, signed ? IntCmpOp.LT : IntCmpOp.ULT, rightOperand);
+//    }
 
-    public Expression makeGTEfromInts(Expression leftOperand, Expression rightOperand, boolean signed) {
-        return makeIntCmpfromInts(leftOperand, signed ? IntCmpOp.GTE : IntCmpOp.UGTE, rightOperand);
-    }
+//    public Expression makeGTfromInts(Expression leftOperand, Expression rightOperand, boolean signed) {
+//        return makeIntCmpfromInts(leftOperand, signed ? IntCmpOp.GT : IntCmpOp.UGT, rightOperand);
+//    }
+//
+//    public Expression makeLTEfromInts(Expression leftOperand, Expression rightOperand, boolean signed) {
+//        return makeIntCmpfromInts(leftOperand, signed ? IntCmpOp.LTE : IntCmpOp.ULTE, rightOperand);
+//    }
+//
+//    public Expression makeGTEfromInts(Expression leftOperand, Expression rightOperand, boolean signed) {
+//        return makeIntCmpfromInts(leftOperand, signed ? IntCmpOp.GTE : IntCmpOp.UGTE, rightOperand);
+//    }
 
     public Expression makeNeg(Expression operand) {
         return makeIntUnary(IntUnaryOp.MINUS, operand);
@@ -550,16 +564,16 @@ public final class ExpressionFactory {
         throw new UnsupportedOperationException("Equality not supported on type: " + type);
     }
 
-    public Expression makeEQfromInts(Expression leftOperand, Expression rightOperand) {
-
-        if (leftOperand.getType() instanceof PointerType){
-            return makeEQfromInts(makePtrToIntCast(leftOperand, types.getArchType()), rightOperand);
-        }
-        if (rightOperand.getType() instanceof PointerType){
-            return makeEQfromInts(leftOperand, makePtrToIntCast(rightOperand, types.getArchType()));
-        }
-        return makeEQ(leftOperand, rightOperand);
-    }
+//    public Expression makeEQfromInts(Expression leftOperand, Expression rightOperand) {
+//
+//        if (leftOperand.getType() instanceof PointerType){
+//            return makeEQfromInts(makePtrToIntCast(leftOperand, types.getArchType()), rightOperand);
+//        }
+//        if (rightOperand.getType() instanceof PointerType){
+//            return makeEQfromInts(leftOperand, makePtrToIntCast(rightOperand, types.getArchType()));
+//        }
+//        return makeEQ(leftOperand, rightOperand);
+//    }
 
     public Expression makeNEQ(Expression leftOperand, Expression rightOperand) {
         final Type type = leftOperand.getType();
@@ -578,16 +592,16 @@ public final class ExpressionFactory {
         throw new UnsupportedOperationException("Disequality not supported on type: " + type);
     }
 
-    public Expression makeNEQfromInts(Expression leftOperand, Expression rightOperand) {
-
-        if (leftOperand.getType() instanceof PointerType){
-            return makeNEQfromInts(makePtrToIntCast(leftOperand, types.getArchType()), rightOperand);
-        }
-        if (rightOperand.getType() instanceof PointerType){
-            return makeNEQfromInts(leftOperand, makePtrToIntCast(rightOperand, types.getArchType()));
-        }
-        return makeNEQ(leftOperand, rightOperand);
-    }
+//    public Expression makeNEQfromInts(Expression leftOperand, Expression rightOperand) {
+//
+//        if (leftOperand.getType() instanceof PointerType){
+//            return makeNEQfromInts(makePtrToIntCast(leftOperand, types.getArchType()), rightOperand);
+//        }
+//        if (rightOperand.getType() instanceof PointerType){
+//            return makeNEQfromInts(leftOperand, makePtrToIntCast(rightOperand, types.getArchType()));
+//        }
+//        return makeNEQ(leftOperand, rightOperand);
+//    }
 
     public Expression makeUnary(ExpressionKind op, Expression expr) {
         if (op instanceof BoolUnaryOp boolOp) {

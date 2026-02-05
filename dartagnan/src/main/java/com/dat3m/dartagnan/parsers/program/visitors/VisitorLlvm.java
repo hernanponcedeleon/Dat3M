@@ -586,13 +586,17 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
         final Expression compared = switch (operator) {
             case "eq" -> expressions.makeEQ(left, right);
             case "ne" -> expressions.makeNEQ(left, right);
-            // todo should pointers belong to the same object to be comparable?
+
+
+            // fixme :
             // The two arguments must be integer, pointer ,or integer vector typed. They must also be of identical types.
             // llvm doc: If the operands are pointer typed, the pointer values are compared as if they were integers.
-            case "slt", "ult" -> expressions.makeLTfromInts(left, right, operator.startsWith("s"));
-            case "sle", "ule" -> expressions.makeLTEfromInts(left, right, operator.startsWith("s"));
-            case "sgt", "ugt" -> expressions.makeGTfromInts(left, right, operator.startsWith("s"));
-            case "sge", "uge" -> expressions.makeGTEfromInts(left, right, operator.startsWith("s"));
+            // cmp should cast directly to int if both are pointers else normal int cmp
+
+            case "slt", "ult" -> expressions.makeLT(left, right, operator.startsWith("s"));
+            case "sle", "ule" -> expressions.makeLTE(left, right, operator.startsWith("s"));
+            case "sgt", "ugt" -> expressions.makeGT(left, right, operator.startsWith("s"));
+            case "sge", "uge" -> expressions.makeGTE(left, right, operator.startsWith("s"));
             default -> throw new ParsingException(String.format("Unknown predicate in %s.", ctx.getText()));
         };
         // LLVM does not support a distinct boolean type.

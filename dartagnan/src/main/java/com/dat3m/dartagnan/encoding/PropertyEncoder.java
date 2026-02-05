@@ -504,8 +504,8 @@ public class PropertyEncoder implements Encoder {
             return bmgr.makeTrue();
         }
         final Expression objectEnd = expressions.makePtrAdd(object, object.size());
-        final Expression overLowerBound = expressions.makeLTEfromInts(object, pointer, false);
-        final Expression underUpperBound = expressions.makeLTfromInts(pointer, objectEnd, false);
+        final Expression overLowerBound = expressions.makeLTE(object, pointer, false);
+        final Expression underUpperBound = expressions.makeLT(pointer, objectEnd, false);
         final Expression withinBounds = expressions.makeAnd(overLowerBound, underUpperBound);
         return context.getExpressionEncoder().encodeBooleanAt(withinBounds, stores.get(0)).formula();
     }
