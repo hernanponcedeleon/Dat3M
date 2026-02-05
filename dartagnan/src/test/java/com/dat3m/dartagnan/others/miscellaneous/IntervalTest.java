@@ -23,6 +23,8 @@ public abstract class IntervalTest {
 
     static TypeFactory types = TypeFactory.getInstance();
     static IntegerType byteType = types.getIntegerType(8);
+    final static BigInteger LB_TOP = Interval.getTop(byteType).getLowerbound();
+    final static BigInteger UB_TOP = Interval.getTop(byteType).getUpperbound();
 
     public static class IntervalInitialisationOrderingTest {
         @Test
@@ -54,11 +56,11 @@ public abstract class IntervalTest {
                     {1, 5, 1, 5},
                     {-2, 2, -2, 2},
                     // Lowerbound does not fit in bitwidth
-                    {-129, 0, -128, 255},
+                    {-129, 0, LB_TOP, UB_TOP},
                     // Upperbound does not fit in bitwidth
-                    {0, 256, -128, 255},
+                    {0, 256, LB_TOP, UB_TOP},
                     // Does not have a signed or unsigned interpretation
-                    {-1, 128, -128, 255},
+                    {-1, 128, LB_TOP, UB_TOP},
             });
         }
 
@@ -92,7 +94,7 @@ public abstract class IntervalTest {
                     {-5,-2,2,5, IntUnaryOp.MINUS},
                     {2,5,-5,-2, IntUnaryOp.MINUS},
                     {-5,2,-2,5, IntUnaryOp.MINUS},
-                    {127,129,-128,255,IntUnaryOp.MINUS},
+                    {127,129,LB_TOP,UB_TOP,IntUnaryOp.MINUS},
             });
         }
 
@@ -151,22 +153,22 @@ public abstract class IntervalTest {
                     // Signed division
                     {1, 5, 2, 6, 0, 2, DIV},
                     // Signed division Asymmetry edge case
-                    {-128, -128, -1, -1, -128, 255, DIV},
+                    {-128, -128, -1, -1, LB_TOP, UB_TOP, DIV},
                     // Signed division by zero
-                    {1, 5, -1, 1, -128, 255, DIV},
+                    {1, 5, -1, 1, LB_TOP, UB_TOP, DIV},
 
                     // Unsigned Division
                     {-1, -1, 1, 1, 255, 255, UDIV},
 
 
                     //Overflow addition
-                    {-128, 127, 1, 1, -128, 255, ADD},
+                    {-128, 127, 1, 1, LB_TOP, UB_TOP, ADD},
 
                     //Overflow subtraction
-                    {-128, 127, 1, 1, -128, 255, SUB},
+                    {-128, 127, 1, 1, LB_TOP, UB_TOP, SUB},
 
                     //Overflow Multiplication
-                    {-128, 127, 2, 2, -128, 255, MUL},
+                    {-128, 127, 2, 2, LB_TOP, UB_TOP, MUL},
 
                     //OR Cases
                     {2, 4, 9, 20, 10, 23, OR},
