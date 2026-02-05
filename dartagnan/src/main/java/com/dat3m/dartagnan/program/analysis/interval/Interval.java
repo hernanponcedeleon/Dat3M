@@ -302,7 +302,7 @@ final public class Interval {
     private BigInteger setAllBits(int length) {
         char[] ones = new char[length];
         Arrays.fill(ones, '1');
-        return new BigInteger(new String(ones));
+        return new BigInteger(new String(ones), 2);
     }
 
     private Interval doOR(BigInteger lb1, BigInteger lb2, BigInteger ub1, BigInteger ub2) {
