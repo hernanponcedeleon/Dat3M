@@ -196,7 +196,7 @@ public class Intrinsics {
                 "__VERIFIER_nondet_float", "__VERIFIER_nondet_double"),
                 false, false, true, true, Intrinsics::inlineNonDet),
         // --------------------------- LLVM ---------------------------
-        LLVM(List.of("llvm.smax", "llvm.umax", "llvm.smin", "llvm.umin", "llvm.fmin", "llvm.fmin",
+        LLVM(List.of("llvm.smax", "llvm.umax", "llvm.smin", "llvm.umin", "llvm.fmax", "llvm.fmin",
                 "llvm.ssub.sat", "llvm.usub.sat", "llvm.sadd.sat", "llvm.uadd.sat", // TODO: saturated shifts
                 "llvm.sadd.with.overflow", "llvm.ssub.with.overflow", "llvm.smul.with.overflow",
                 "llvm.ctlz", "llvm.cttz", "llvm.ctpop",
@@ -1260,7 +1260,7 @@ public class Intrinsics {
         final Expression right = arguments.get(1);
         final String name = call.getCalledFunction().getName();
         final boolean signed = name.startsWith("llvm.smax.") || name.startsWith("llvm.smin.");
-        final boolean isMax = name.startsWith("llvm.smax.") || name.startsWith("llvm.umax.");
+        final boolean isMax = name.startsWith("llvm.smax.") || name.startsWith("llvm.umax.") || name.startsWith("llvm.fmax.");
         final boolean isFloat = name.startsWith("llvm.fmax.") || name.startsWith("llvm.fmin.");
         if (isFloat) {
             final Expression result = isMax ? expressions.makeFMax(left, right) : expressions.makeFMin(left, right);
