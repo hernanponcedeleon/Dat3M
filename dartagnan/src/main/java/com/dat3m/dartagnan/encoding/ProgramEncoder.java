@@ -450,21 +450,21 @@ public class ProgramEncoder implements Encoder {
                 alignment = cur.hasKnownAlignment() ? cur.alignment() : exprs.makeITE(exec, cur.alignment(), one);
             }
 
-            final BiFunction<Expression, Expression, BooleanFormula> equate = (a, b) -> {
+            final BiFunction<Expression, Expression, BooleanFormula> assign = (a, b) -> {
                 final Event alloc = cur.getAllocationSite();
                 return cur.isStaticallyAllocated()
-                        ? exprEnc.equal(a, b)
-                        : exprEnc.equalAt(a, alloc, b, alloc);
+                        ? exprEnc.assignEqual(a, b)
+                        : exprEnc.assignEqualAt(a, alloc, b, alloc);
             };
 
             // Encode size
-            enc.add(equate.apply(sizeVar, size));
+            enc.add(assign.apply(sizeVar, size));
 
             // Encode address (we even give non-allocated objects a proper, well-aligned address)
             final MemoryObject prev = i > 0 ? memoryObjects.get(i - 1) : null;
             if (prev == null) {
                 // First object is placed at alignment
-                enc.add(equate.apply(addrVar, alignment));
+                enc.add(assign.apply(addrVar, alignment));
             } else {
                 final Expression nextAvailableAddr = exprs.makeAdd(
                         exprs.makePtrToIntCast(context.address(prev),archType),
@@ -475,7 +475,7 @@ public class ProgramEncoder implements Encoder {
                 );
 
                 // ... other objects are placed at the next well-aligned address that is available.
-                enc.add(equate.apply(addrVar, nextAlignedAddr));
+                enc.add(assign.apply(addrVar, nextAlignedAddr));
             }
         }
 
@@ -520,7 +520,7 @@ public class ProgramEncoder implements Encoder {
                         edge = context.dependency(writer, reader);
                         enc.add(bmgr.equivalence(edge, bmgr.and(context.execution(writer), context.controlFlow(reader), bmgr.not(bmgr.or(overwrite)))));
                     }
-                    BooleanFormula equalValue = exprEncoder.equalAt(register, reader, context.result(writer), writer);
+                    BooleanFormula equalValue = exprEncoder.assignEqualAt(register, reader, context.result(writer), writer);
                     enc.add(bmgr.implication(edge, equalValue));
                     overwrite.add(context.execution(writer));
                 }
@@ -528,7 +528,7 @@ public class ProgramEncoder implements Encoder {
                 if(initializeRegisters && !reg.mustBeInitialized()) {
                     final Expression zero = exprs.makeGeneralZero(register.getType());
                     overwrite.add(bmgr.not(context.controlFlow(reader)));
-                    overwrite.add(exprEncoder.equalAt(register, reader, zero, reader));
+                    overwrite.add(exprEncoder.assignEqualAt(register, reader, zero, reader));
                     enc.add(bmgr.or(overwrite));
                 }
             }
@@ -561,7 +561,7 @@ public class ProgramEncoder implements Encoder {
             final List<RegWriter> writers = registerWriters.getMayWriters();
             if (initializeRegisters && !registerWriters.mustBeInitialized()) {
                 List<BooleanFormula> clause = new ArrayList<>();
-                clause.add(exprEncoder.equal(register, exprs.makeGeneralZero(register.getType())));
+                clause.add(exprEncoder.assignEqual(register, exprs.makeGeneralZero(register.getType())));
                 for (Event w : writers) {
                     clause.add(context.execution(w));
                 }
@@ -570,7 +570,7 @@ public class ProgramEncoder implements Encoder {
             for (int i = 0; i < writers.size(); i++) {
                 final RegWriter writer = writers.get(i);
                 List<BooleanFormula> clause = new ArrayList<>();
-                clause.add(exprEncoder.equal(register, context.result(writer)));
+                clause.add(exprEncoder.assignEqual(register, context.result(writer)));
                 clause.add(bmgr.not(context.execution(writer)));
                 for (Event w : writers.subList(i + 1, writers.size())) {
                     if (!exec.areMutuallyExclusive(writer, w)) {

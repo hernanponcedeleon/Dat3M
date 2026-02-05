@@ -10,6 +10,9 @@ import com.dat3m.dartagnan.expression.aggregates.ConstructExpr;
 import com.dat3m.dartagnan.expression.aggregates.ExtractExpr;
 import com.dat3m.dartagnan.expression.booleans.*;
 import com.dat3m.dartagnan.expression.integers.*;
+import com.dat3m.dartagnan.expression.memory.FromMemoryCast;
+import com.dat3m.dartagnan.expression.memory.MemoryEqualExpr;
+import com.dat3m.dartagnan.expression.memory.ToMemoryCast;
 import com.dat3m.dartagnan.expression.misc.ITEExpr;
 import com.dat3m.dartagnan.expression.pointers.*;
 import com.dat3m.dartagnan.expression.utils.IntegerHelper;
@@ -476,6 +479,29 @@ public class ExprSimplifier extends ExprTransformer {
 
         return expressions.makeAggregateCmp(left, expr.getKind(), right);
     }
+
+    // =================================== Memory type ===================================
+
+    @Override
+    public Expression visitMemoryEqualExpression(MemoryEqualExpr expr) {
+        final Expression rewrite = tryGeneralRewrite(expr);
+        if (rewrite != null) {
+            return rewrite;
+        }
+
+        return super.visitMemoryEqualExpression(expr);
+    }
+
+    @Override
+    public Expression visitFromMemoryCastExpression(FromMemoryCast cast) {
+        final Expression inner = cast.getOperand().accept(this);
+        if (inner instanceof ToMemoryCast toMemoryCast && toMemoryCast.getSourceType().equals(cast.getTargetType())) {
+            return toMemoryCast.getOperand();
+        }
+
+        return expressions.makeFromMemoryCast(inner, cast.getTargetType());
+    }
+
 
     // =================================== Helper methods ===================================
     // An expression is potentially eliminable if it either carries no dependencies

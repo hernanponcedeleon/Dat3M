@@ -10,6 +10,7 @@ import com.dat3m.dartagnan.expression.booleans.BoolLiteral;
 import com.dat3m.dartagnan.expression.booleans.BoolUnaryExpr;
 import com.dat3m.dartagnan.expression.booleans.BoolUnaryOp;
 import com.dat3m.dartagnan.expression.integers.*;
+import com.dat3m.dartagnan.expression.memory.*;
 import com.dat3m.dartagnan.expression.misc.ITEExpr;
 import com.dat3m.dartagnan.expression.pointers.*;
 import com.dat3m.dartagnan.expression.type.*;
@@ -97,6 +98,9 @@ public class ExpressionEncoder {
             variable = context.useIntegers
                     ? integerFormulaManager().makeVariable(name)
                     : bitvectorFormulaManager().makeVariable(pointerType.getBitWidth(), name);
+        } else if (type instanceof MemoryType memoryType) {
+            assert !context.useIntegers;
+            variable = bitvectorFormulaManager().makeVariable(memoryType.getBitWidth(), name);
         } else if (type instanceof AggregateType aggType) {
             final List<Formula> fields = new ArrayList<>(aggType.getFields().size());
             for (TypeOffset field : aggType.getFields()) {
@@ -124,47 +128,54 @@ public class ExpressionEncoder {
     // ====================================================================================
     // Utility
 
-    // TODO: For conversion operations, we might want to have an universal intermediate type T with the following properties:
-    //  (1) every other type has a lossless conversion to T
-    //  (2) T can be converted to every other type (possibly with loss)
-    //  (3) A round-trip through T is always lossless.
-    //  See comments on TypedFormula class for more details.
-    public enum ConversionMode {
-        NO,
-        LEFT_TO_RIGHT,
-        RIGHT_TO_LEFT,
-    }
-
-    public BooleanFormula equal(Expression left, Expression right, ConversionMode cMode) {
-        final ExpressionFactory exprs = context.getExpressionFactory();
-
-        if (left.getType() instanceof PointerType && right.getType() instanceof PointerType &&
-                ((PointerType) right.getType()).getBitWidth() != ((PointerType) left.getType()).getBitWidth()) {
-            left = exprs.makeCast(left, types.getArchType());
-            right = exprs.makeCast(right, types.getArchType());
-            return encodeBooleanFinal(exprs.makeEQ(left, right)).formula();
-        }
-
-        switch (cMode) {
-            case NO -> {}
-            case LEFT_TO_RIGHT -> left = exprs.makeCast(left, right.getType());
-            case RIGHT_TO_LEFT -> right = exprs.makeCast(right, left.getType());
-        }
-
-        return encodeBooleanFinal(exprs.makeEQ(left, right)).formula();
-    }
-
     public BooleanFormula equal(Expression left, Expression right) {
-        return equal(left, right, ConversionMode.NO);
-    }
-
-    public BooleanFormula equalAt(Expression left, Event leftAt, Expression right, Event rightAt, ConversionMode cMode) {
-        return equal(encodeAt(left, leftAt), encodeAt(right, rightAt), cMode);
+        checkArgument(left.getType().equals(right.getType()));
+        return encodeBooleanFinal(context.getExpressionFactory().makeEQ(left, right)).formula();
     }
 
     public BooleanFormula equalAt(Expression left, Event leftAt, Expression right, Event rightAt) {
         return equal(encodeAt(left, leftAt), encodeAt(right, rightAt));
     }
+
+    public enum ConversionMode {
+        STRICT,                     // No conversion, types must match exactly
+        CAST,                       // Immediate cast
+        MEMORY_ROUND_TRIP_STRICT,   // Round-trip over memory but source/target type sizes must match
+        MEMORY_ROUND_TRIP_RELAXED,  // Round-trip over memory, source/target can have mismatching sizes
+    }
+
+    // Encodes assignment equality "left := right" with a possible conversion applied to the rhs.
+    public BooleanFormula assignEqual(Expression left, Expression right, ConversionMode conversion) {
+        final ExpressionFactory exprs = context.getExpressionFactory();
+
+        final Expression value = switch (conversion) {
+            case STRICT -> {
+                checkArgument(left.getType().equals(right.getType()));
+                yield right;
+            }
+            case CAST -> {
+                yield exprs.makeCast(right, left.getType());
+            }
+            case MEMORY_ROUND_TRIP_STRICT, MEMORY_ROUND_TRIP_RELAXED -> {
+                final boolean signed = true;
+                final boolean strict = conversion == ConversionMode.MEMORY_ROUND_TRIP_STRICT;
+                yield exprs.makeCastOverMemory(right, left.getType(), strict, signed);
+            }
+        };
+
+        return equal(left, value);
+    }
+
+
+    public BooleanFormula assignEqual(Expression left, Expression right) {
+        return assignEqual(left, right, ConversionMode.STRICT);
+    }
+
+    public BooleanFormula assignEqualAt(Expression left, Event leftAt, Expression right, Event rightAt) {
+        return assignEqual(encodeAt(left, leftAt), encodeAt(right, rightAt));
+    }
+
+
 
     // ====================================================================================
     // Private implementation
@@ -198,6 +209,15 @@ public class ExpressionEncoder {
             assert typedFormula.type() == expression.getType();
             assert typedFormula.formula() instanceof IntegerFormula || typedFormula.formula() instanceof BitvectorFormula;
             return (TypedFormula<PointerType, ?>) typedFormula;
+        }
+
+        @SuppressWarnings("unchecked")
+        public TypedFormula<MemoryType, ?> encodeMemoryExpr(Expression expression) {
+            checkArgument(expression.getType() instanceof MemoryType);
+            final TypedFormula<?, ?> typedFormula = encode(expression);
+            assert typedFormula.getType() == expression.getType();
+            assert typedFormula.formula() instanceof IntegerFormula || typedFormula.formula() instanceof BitvectorFormula;
+            return (TypedFormula<MemoryType, ?>) typedFormula;
         }
 
         @SuppressWarnings("unchecked")
@@ -353,6 +373,7 @@ public class ExpressionEncoder {
         public TypedFormula<IntegerType, ?> visitIntSizeCastExpression(IntSizeCast expr) {
             final TypedFormula<IntegerType, ?> inner = encodeIntegerExpr(expr.getOperand());
             final Formula enc;
+
             if (expr.isNoop()) {
                 return inner;
             } else if (context.useIntegers) {
@@ -375,6 +396,7 @@ public class ExpressionEncoder {
                 }
             } else {
                 assert inner.formula() instanceof BitvectorFormula;
+
                 final BitvectorFormulaManager bvmgr = bitvectorFormulaManager();
                 final BitvectorFormula innerBv = (BitvectorFormula) inner.formula();
                 final int targetBitWidth = expr.getTargetType().getBitWidth();
@@ -720,6 +742,72 @@ public class ExpressionEncoder {
             final Formula value = encode(insert.getInsertedValue()).formula();
             final TupleFormula insertForm = fmgr.getTupleFormulaManager().insert(agg, value, insert.getIndices());
             return new TypedFormula<>(insert.getType(), insertForm);
+        }
+
+        // ====================================================================================
+        // Memory type
+
+        @Override
+        public TypedFormula<MemoryType, ?> visitToMemoryCastExpression(ToMemoryCast expr) {
+            final TypedFormula<?, ?> inner = encode(expr.getOperand());
+            final MemoryType targetType = types.getMemoryTypeFor(expr.getSourceType());
+
+            // TODO: Do actual conversions
+            return new TypedFormula<MemoryType, Formula>(targetType, inner.formula());
+        }
+
+        @Override
+        public TypedFormula<?, ?> visitFromMemoryCastExpression(FromMemoryCast expr) {
+            final TypedFormula<MemoryType, ?> inner = encodeMemoryExpr(expr.getOperand());
+            final Type targetType = expr.getTargetType();
+
+            // TODO: Do actual conversions
+            return new TypedFormula<Type, Formula>(targetType, inner.formula());
+        }
+
+        @Override
+        public TypedFormula<?, ?> visitMemoryConcatExpression(MemoryConcat expr) {
+            checkArgument(!expr.getOperands().isEmpty());
+            Preconditions.checkState(!context.useIntegers);
+
+            // TODO: We just do normal bitvector concatenation for now
+            final List<? extends TypedFormula<MemoryType, ?>> operands = expr.getOperands().stream()
+                    .map(this::encodeMemoryExpr)
+                    .toList();
+            Formula enc = operands.get(0).formula();
+            final BitvectorFormulaManager bvmgr = bitvectorFormulaManager();
+            for (TypedFormula<MemoryType, ?> op : operands.subList(1, operands.size())) {
+                enc = bvmgr.concat((BitvectorFormula) op.formula(), (BitvectorFormula) enc);
+            }
+            return new TypedFormula<>(expr.getType(), enc);
+        }
+
+        @Override
+        public TypedFormula<?, ?> visitMemoryExtractExpression(MemoryExtract expr) {
+            // TODO: We just do normal bitvector extraction for now
+            //  NOTE: We need to support mathematical integers for some unit tests, which is a bit awkward
+            final Formula operand = encodeMemoryExpr(expr.getOperand()).formula();
+            final Formula enc;
+            if (context.useIntegers) {
+                final IntegerFormulaManager imgr = integerFormulaManager();
+                final IntegerFormula highBitValue = imgr.makeNumber(BigInteger.TWO.pow(expr.getHighBit() + 1));
+                final IntegerFormula lowBitValue = imgr.makeNumber(BigInteger.TWO.pow(expr.getLowBit()));
+                final IntegerFormula op = (IntegerFormula) operand;
+                final IntegerFormula extracted = expr.isExtractingHighBits() ? op : imgr.modulo(op, highBitValue);
+                enc = expr.isExtractingLowBits() ? extracted : imgr.divide(extracted, lowBitValue);
+            } else {
+                final BitvectorFormulaManager bvmgr = bitvectorFormulaManager();
+                enc = bvmgr.extract((BitvectorFormula) operand, expr.getHighBit(), expr.getLowBit());
+            }
+            return new TypedFormula<>(expr.getType(), enc);
+        }
+
+        @Override
+        public TypedFormula<BooleanType, BooleanFormula> visitMemoryEqualExpression(MemoryEqualExpr expr) {
+            final Formula left = expr.getLeft().accept(this).formula();
+            final Formula right = expr.getRight().accept(this).formula();
+
+            return new TypedFormula<>(types.getBooleanType(), fmgr.equal(left, right));
         }
 
         // ====================================================================================

@@ -42,7 +42,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static com.dat3m.dartagnan.configuration.Property.*;
-import static com.dat3m.dartagnan.encoding.ExpressionEncoder.ConversionMode.RIGHT_TO_LEFT;
+import static com.dat3m.dartagnan.encoding.ExpressionEncoder.ConversionMode.MEMORY_ROUND_TRIP_RELAXED;
 import static com.dat3m.dartagnan.program.Program.SourceLanguage.LLVM;
 import static com.dat3m.dartagnan.program.Program.SpecificationType.ASSERT;
 import static com.dat3m.dartagnan.wmm.RelationNameRepository.CO;
@@ -219,10 +219,10 @@ public class PropertyEncoder implements Encoder {
                         continue;
                     }
                     BooleanFormula sameAddress = context.sameAddress(init, w1);
-                    final BooleanFormula sameValue = exprEncoder.equal(
+                    final BooleanFormula sameValue = exprEncoder.assignEqual(
                             new FinalMemoryValue(null, init.getValue().getType(), init.getBase(), init.getOffset()),
                             context.value(w1),
-                            RIGHT_TO_LEFT
+                            MEMORY_ROUND_TRIP_RELAXED
                     );
                     enc.add(bmgr.implication(bmgr.and(lastCoExpr, sameAddress), sameValue));
                 }
@@ -244,11 +244,11 @@ public class PropertyEncoder implements Encoder {
                     }
                     BooleanFormula isLast = context.lastCoVar(w);
                     BooleanFormula sameAddr = context.sameAddress(init, w);
-                    BooleanFormula sameValue = exprEncoder.equal(finalValue, context.value(w), RIGHT_TO_LEFT);
+                    BooleanFormula sameValue = exprEncoder.assignEqual(finalValue, context.value(w), MEMORY_ROUND_TRIP_RELAXED);
                     readLastStore = bmgr.or(readLastStore, bmgr.and(isLast, sameAddr, sameValue));
                     lastStoreExistsEnc = bmgr.or(lastStoreExistsEnc, bmgr.and(isLast, sameAddr));
                 }
-                BooleanFormula readInitValue = exprEncoder.equal(finalValue, context.value(init), RIGHT_TO_LEFT);
+                BooleanFormula readInitValue = exprEncoder.assignEqual(finalValue, context.value(init), MEMORY_ROUND_TRIP_RELAXED);
                 enc.add(bmgr.ifThenElse(lastStoreExistsEnc, readLastStore, readInitValue));
             }
         }

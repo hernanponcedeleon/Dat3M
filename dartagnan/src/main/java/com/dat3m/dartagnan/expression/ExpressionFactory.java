@@ -4,8 +4,10 @@ import com.dat3m.dartagnan.expression.aggregates.*;
 import com.dat3m.dartagnan.expression.booleans.*;
 import com.dat3m.dartagnan.expression.floats.*;
 import com.dat3m.dartagnan.expression.integers.*;
+import com.dat3m.dartagnan.expression.memory.*;
 import com.dat3m.dartagnan.expression.misc.GEPExpr;
 import com.dat3m.dartagnan.expression.misc.ITEExpr;
+import com.dat3m.dartagnan.expression.processing.ExprSimplifier;
 import com.dat3m.dartagnan.expression.pointers.*;
 import com.dat3m.dartagnan.expression.type.*;
 import com.dat3m.dartagnan.expression.utils.ExpressionHelper;
@@ -25,7 +27,17 @@ import static com.dat3m.dartagnan.expression.type.TypeFactory.isStaticTypeOf;
 
 public final class ExpressionFactory {
 
-    private static final ExpressionFactory instance = new ExpressionFactory();
+    private static final ExpressionFactory instance;
+    private static final ExprSimplifier simplifier;
+
+    static {
+        // This is a bit awkward, but ExpressionFactory and ExprTransformer/Simplifier have
+        // cyclic dependencies, and so we need to ensure a specific initialization order.
+        // Maybe we should not use ExpressionSimplifier in this class or avoid ExpressionSimplifier
+        // caching a static instance of ExpressionFactory.
+        instance = new ExpressionFactory();
+        simplifier = new ExprSimplifier(false);
+    }
 
     private final TypeFactory types = TypeFactory.getInstance();
     private final IntegerType archType = types.getArchType();
@@ -144,7 +156,6 @@ public final class ExpressionFactory {
             return makeIntCmpfromInts(leftOperand,IntCmpOp.UGTE,rightOperand);
         }
         return makeIntCmp(leftOperand, signed ? IntCmpOp.GTE : IntCmpOp.UGTE, rightOperand);
-
     }
 
     public Expression makeNeg(Expression operand) {
@@ -413,7 +424,6 @@ public final class ExpressionFactory {
         return new GEPExpr(indexingType, base, offsets, stride);
     }
 
-
     public ScopedPointer makeScopedPointer(String id, ScopedPointerType type, Expression value) {
         return new ScopedPointer(id, type, value);
     }
@@ -482,7 +492,66 @@ public final class ExpressionFactory {
     }
 
     // -----------------------------------------------------------------------------------------------------------------
-    // Misc
+    // Memory
+
+    public Expression makeToMemoryCast(Expression operand) {
+        if (operand.getType() instanceof MemoryType) {
+            return operand;
+        }
+        return new ToMemoryCast(types.getMemoryTypeFor(operand.getType()), operand);
+    }
+
+    public Expression makeFromMemoryCast(Expression operand, Type type) {
+        if (operand.getType().equals(type)) {
+            return operand;
+        }
+        return new FromMemoryCast(type, operand);
+    }
+
+    public Expression makeMemoryConcat(List<? extends Expression> operands) {
+        return new MemoryConcat(operands);
+    }
+
+    public Expression makeMemoryExtract(Expression operand, int lowBit, int highBit) {
+        return new MemoryExtract(operand, lowBit, highBit);
+    }
+
+    // -----------------------------------------------------------------------------------------------------------------
+
+    // Cast via a round-trip through memory: "fromMem(toMem(<expr>)) to <targetType>".
+    // If <strict> is false, the memory sizes of the source type and the target type may mismatch:
+    // "source type < target type": after the memory cast, a zero-extension is performed (if possible)
+    // "source type > target type": only the lowest bits of <expr> are used for the conversion.
+    public Expression makeCastOverMemory(Expression expr, Type targetType, boolean strict, boolean signed) {
+        final Type sourceType = expr.getType();
+        if (sourceType.equals(targetType)) {
+            return expr;
+        }
+
+        final int targetSize = types.getMemorySizeInBits(targetType);
+        final int sourceSize = types.getMemorySizeInBits(sourceType);
+
+        if (strict && (targetSize != sourceSize)) {
+            final String error = String.format("Strict memory cast from %s to %s not possible: " +
+                    "mismatching memory sizes.", sourceType, targetType);
+            throw new IllegalArgumentException(error);
+        }
+
+        Expression exprMem = makeToMemoryCast(expr);
+        if (targetSize < sourceSize) {
+            exprMem = makeMemoryExtract(exprMem, 0, targetSize - 1);
+            exprMem = makeFromMemoryCast(exprMem, types.getCompatibleTypeOfMemorySize(targetType, targetSize));
+            exprMem = makeCast(exprMem, targetType, signed);
+        } else if (targetSize == sourceSize) {
+            exprMem = makeFromMemoryCast(exprMem, targetType);
+        } else {
+            assert (targetSize > sourceSize);
+            exprMem = makeFromMemoryCast(exprMem, types.getCompatibleTypeOfMemorySize(targetType, sourceSize));
+            exprMem = makeCast(exprMem, targetType, signed);
+        }
+
+        return exprMem.accept(simplifier);
+    }
 
     public Expression makeGeneralZero(Type type) {
         if (type instanceof ArrayType arrayType) {
@@ -504,6 +573,9 @@ public final class ExpressionFactory {
             return makeFalse();
         } else if (type instanceof FloatType floatType) {
             return makeZero(floatType);
+        } else if (type instanceof MemoryType memoryType) {
+            return makeToMemoryCast(makeZero(TypeFactory.getInstance().getIntegerType(memoryType.getBitWidth())));
+        } else {
         } else if (type instanceof PointerType pointerType) {
             return makeNullLiteral(pointerType);
         }else{
@@ -543,6 +615,8 @@ public final class ExpressionFactory {
         } else if (type instanceof FloatType) {
             // TODO: Decide on a default semantics for float equality?
             return makeFloatCmp(leftOperand, FloatCmpOp.OEQ, rightOperand);
+        } else if (type instanceof MemoryType) {
+            return new MemoryEqualExpr(booleanType, leftOperand, rightOperand);
         } else if (ExpressionHelper.isAggregateLike(type)) {
             return makeAggregateCmp(leftOperand, AggregateCmpOp.EQ, rightOperand);
         }
@@ -627,6 +701,4 @@ public final class ExpressionFactory {
         }
         throw new UnsupportedOperationException(String.format("Expression kind %s is no comparison operator.", cmpOp));
     }
-
-
 }

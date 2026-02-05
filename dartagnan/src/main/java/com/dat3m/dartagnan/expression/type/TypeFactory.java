@@ -58,6 +58,18 @@ public final class TypeFactory {
         return typeNormalizer.normalize(new IntegerType(bitWidth));
     }
 
+    public MemoryType getMemoryType(int bitWidth) {
+        checkArgument(bitWidth > 0, "Non-positive bit width %s.", bitWidth);
+        return typeNormalizer.normalize(new MemoryType(bitWidth));
+    }
+
+    public MemoryType getMemoryTypeFor(Type other) {
+        if (other instanceof MemoryType memType) {
+            return memType;
+        }
+        return getMemoryType(getMemorySizeInBits(other));
+    }
+
     public ScopedPointerType getScopedPointerType(String scopeId, Type pointedType, Integer stride) {
         checkNotNull(scopeId);
         checkNotNull(pointedType);
@@ -157,6 +169,14 @@ public final class TypeFactory {
         return getIntegerType(8);
     }
 
+    public Type getCompatibleTypeOfMemorySize(Type type, int memSizeInBits) {
+        if (type instanceof IntegerType) {
+            return getIntegerType(memSizeInBits);
+        }
+
+        throw new UnsupportedOperationException(String.format("Type %s has no compatible type of size %s", type, memSizeInBits));
+    }
+
     public int getMemorySizeInBytes(Type type) {
         return getMemorySizeInBytes(type, true);
     }
@@ -164,6 +184,9 @@ public final class TypeFactory {
     private int getMemorySizeInBytes(Type type, boolean padded) {
         if (type instanceof BooleanType) {
             return 1;
+        }
+        if (type instanceof MemoryType memType) {
+            return IntMath.divide(memType.getBitWidth(), 8, RoundingMode.CEILING);
         }
         if (type instanceof IntegerType integerType) {
             return IntMath.divide(integerType.getBitWidth(), 8, RoundingMode.CEILING);
