@@ -91,23 +91,25 @@ final public class Interval {
     }
 
 
-    public Interval applyOperator(ExpressionKind op, Interval... intervals) {
-        Supplier<Interval> opFunc = null;
-        if (op instanceof IntUnaryOp unop && intervals.length == 0) {
-            opFunc = selectUnaryOperatorMethod(unop);
-        } else if (op instanceof IntBinaryOp binop && intervals.length == 1 && !intervals[0].isTop()) {
-            opFunc = selectCurriedBinaryOperatorMethod(binop, intervals[0]);
-        } else if (intervals.length > 2) {
-            throw new IllegalArgumentException("More than 2 intervals specified");
-        }
 
+
+    public Interval applyOperator(IntBinaryOp op, Interval other) {
+        UnaryOperator<Interval> opFunc = selectBinaryOperatorMethod(op);
+        if (opFunc != null && !this.isTop() && !other.isTop()) {
+            return opFunc.apply(other);
+        } else {
+            return Interval.getTop(type);
+        }
+    }
+
+    public Interval applyOperator(IntUnaryOp op) {
+        Supplier<Interval> opFunc = selectUnaryOperatorMethod(op);
         if (opFunc != null && !this.isTop()) {
             return opFunc.get();
         } else {
             return Interval.getTop(type);
         }
     }
-
 
     private boolean doesNotCrossZero() {
         return lowerbound.compareTo(BigInteger.ZERO) > 0 || upperbound.compareTo(BigInteger.ZERO) < 0;
@@ -125,8 +127,8 @@ final public class Interval {
         return (lowerbound.signum() >= 0 && lowerbound.compareTo(type.getMaximumValue(true)) <= 0) && upperbound.compareTo(type.getMaximumValue(true)) > 0;
     }
 
-    private Supplier<Interval> selectCurriedBinaryOperatorMethod(IntBinaryOp op, Interval interval) {
-        UnaryOperator<Interval> opFunc = switch (op) {
+    private UnaryOperator<Interval> selectBinaryOperatorMethod(IntBinaryOp op) {
+        return switch (op) {
             case ADD -> this::add;
             case SUB -> this::subtract;
             case MUL -> this::multiply;
@@ -139,11 +141,6 @@ final public class Interval {
                 yield null;
             }
         };
-        if (opFunc != null) {
-            return () -> opFunc.apply(interval);
-        } else {
-            return null;
-        }
     }
 
     private Supplier<Interval> selectUnaryOperatorMethod(IntUnaryOp op) {
