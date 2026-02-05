@@ -1,6 +1,5 @@
 package com.dat3m.dartagnan.program.analysis.interval;
 
-import com.dat3m.dartagnan.expression.ExpressionKind;
 import com.dat3m.dartagnan.expression.integers.IntBinaryOp;
 import com.dat3m.dartagnan.expression.integers.IntUnaryOp;
 import com.dat3m.dartagnan.expression.type.IntegerType;
