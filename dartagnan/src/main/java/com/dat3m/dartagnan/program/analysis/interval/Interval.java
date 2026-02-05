@@ -206,10 +206,10 @@ final public class Interval {
     private Interval divide(Interval numeratorInterval, Interval denominatorInterval) {
 
         if (denominatorInterval.doesNotCrossZero()) {
-            BigInteger numLb = numeratorInterval.getLowerbound();
-            BigInteger numUb = numeratorInterval.getUpperbound();
-            BigInteger denomLb = denominatorInterval.getLowerbound();
-            BigInteger denomUb = denominatorInterval.getUpperbound();
+            BigInteger numLb = numeratorInterval.lowerbound;
+            BigInteger numUb = numeratorInterval.upperbound;
+            BigInteger denomLb = denominatorInterval.lowerbound;
+            BigInteger denomUb = denominatorInterval.upperbound;
             BigInteger div1 = numLb.divide(denomLb);
             BigInteger div2 = numLb.divide(denomUb);
             BigInteger div3 = numUb.divide(denomLb);
@@ -340,8 +340,8 @@ final public class Interval {
                 other.upperbound.not(),
                 this.lowerbound.not(),
                 other.lowerbound.not());
-        return new Interval(orInterval.getUpperbound().not(),
-                orInterval.getLowerbound().not(),
+        return new Interval(orInterval.upperbound.not(),
+                orInterval.lowerbound.not(),
                 type);
     }
 
