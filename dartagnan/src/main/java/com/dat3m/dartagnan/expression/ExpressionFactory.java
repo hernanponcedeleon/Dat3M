@@ -147,23 +147,6 @@ public final class ExpressionFactory {
 
     }
 
-
-//    public Expression makeLTfromInts(Expression leftOperand, Expression rightOperand, boolean signed) {
-//        return makeIntCmpfromInts(leftOperand, signed ? IntCmpOp.LT : IntCmpOp.ULT, rightOperand);
-//    }
-
-//    public Expression makeGTfromInts(Expression leftOperand, Expression rightOperand, boolean signed) {
-//        return makeIntCmpfromInts(leftOperand, signed ? IntCmpOp.GT : IntCmpOp.UGT, rightOperand);
-//    }
-//
-//    public Expression makeLTEfromInts(Expression leftOperand, Expression rightOperand, boolean signed) {
-//        return makeIntCmpfromInts(leftOperand, signed ? IntCmpOp.LTE : IntCmpOp.ULTE, rightOperand);
-//    }
-//
-//    public Expression makeGTEfromInts(Expression leftOperand, Expression rightOperand, boolean signed) {
-//        return makeIntCmpfromInts(leftOperand, signed ? IntCmpOp.GTE : IntCmpOp.UGTE, rightOperand);
-//    }
-
     public Expression makeNeg(Expression operand) {
         return makeIntUnary(IntUnaryOp.MINUS, operand);
     }
@@ -536,7 +519,7 @@ public final class ExpressionFactory {
         } else if (type instanceof FloatType floatType) {
             return makeFloatCast(expression, floatType, signed);
         }else if (type instanceof PointerType) {
-            return makePtrCast(expression, (PointerType) type); // todo fix for tearing(mixed test), maybe a teared pointer tracker.
+            return makePtrCast(expression, (PointerType) type);
         }
         throw new UnsupportedOperationException(String.format("Cast %s into %s unsupported.", expression, type));
     }
@@ -566,13 +549,13 @@ public final class ExpressionFactory {
         throw new UnsupportedOperationException("Equality not supported on type: " + type);
     }
 
-    public Expression makeBinaryEQ(Expression leftOperand, Expression rightOperand) {
+    public Expression makeBitwiseEQ(Expression leftOperand, Expression rightOperand) {
 
         if (leftOperand.getType() instanceof PointerType){
-            return makeBinaryEQ(makePtrToIntCast(leftOperand, archType), rightOperand);
+            return makeBitwiseEQ(makePtrToIntCast(leftOperand, archType), rightOperand);
         }
         if (rightOperand.getType() instanceof PointerType){
-            return makeBinaryEQ(leftOperand, makePtrToIntCast(rightOperand, archType));
+            return makeBitwiseEQ(leftOperand, makePtrToIntCast(rightOperand, archType));
         }
         return makeEQ(leftOperand, rightOperand);
     }
@@ -595,13 +578,13 @@ public final class ExpressionFactory {
     }
 
 
-    public Expression makeBinaryNEQ(Expression leftOperand, Expression rightOperand) {
-        //cast both operands to archtype and compare them
+    public Expression makeBitwiseNEQ(Expression leftOperand, Expression rightOperand) {
+        // casts both operands to archtype and compares them
         if (leftOperand.getType() instanceof PointerType){
-            return makeBinaryNEQ(makePtrToIntCast(leftOperand, archType), rightOperand);
+            return makeBitwiseNEQ(makePtrToIntCast(leftOperand, archType), rightOperand);
         }
         if (rightOperand.getType() instanceof PointerType){
-            return makeBinaryNEQ(leftOperand, makePtrToIntCast(rightOperand, archType));
+            return makeBitwiseNEQ(leftOperand, makePtrToIntCast(rightOperand, archType));
         }
         return makeNEQ(leftOperand, rightOperand);
     }
