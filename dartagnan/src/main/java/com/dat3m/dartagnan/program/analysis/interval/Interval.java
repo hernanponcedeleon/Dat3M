@@ -78,8 +78,8 @@ final public class Interval {
     }
 
 
-    public Interval join(Interval interval2) {
-        return new Interval(this.lowerbound.min(interval2.lowerbound), this.upperbound.max(interval2.upperbound), this.getType());    }
+    public Interval join(Interval other) {
+        return new Interval(this.lowerbound.min(other.lowerbound), this.upperbound.max(other.upperbound), this.getType());    }
 
     public boolean isTop() {
         return this.equals(Interval.getTop(type));
@@ -156,19 +156,19 @@ final public class Interval {
         };
     }
 
-    private Interval subtract(Interval i2) {
-        return new Interval(this.lowerbound.subtract(i2.upperbound), this.upperbound.subtract(i2.lowerbound), this.getType());
+    private Interval subtract(Interval other) {
+        return new Interval(this.lowerbound.subtract(other.upperbound), this.upperbound.subtract(other.lowerbound), this.getType());
     }
 
-    private Interval add(Interval i2) {
-        return new Interval(this.lowerbound.add(i2.lowerbound), this.upperbound.add(i2.upperbound), this.getType());
+    private Interval add(Interval other) {
+        return new Interval(this.lowerbound.add(other.lowerbound), this.upperbound.add(other.upperbound), this.getType());
     }
 
-    private Interval multiply(Interval i2) {
+    private Interval multiply(Interval other) {
         BigInteger lb1 = this.lowerbound;
         BigInteger ub1 = this.upperbound;
-        BigInteger lb2 = i2.lowerbound;
-        BigInteger ub2 = i2.upperbound;
+        BigInteger lb2 = other.lowerbound;
+        BigInteger ub2 = other.upperbound;
         BigInteger mul1 =  lb1.multiply(lb2);
         BigInteger mul2 =  lb1.multiply(ub2);
         BigInteger mul3 =  ub1.multiply(lb2);
@@ -177,10 +177,10 @@ final public class Interval {
     }
 
 
-    private Interval sdivide(Interval i2) {
-        if (this.isSignInsensitive() && i2.isSignInsensitive()) {
+    private Interval sdivide(Interval other) {
+        if (this.isSignInsensitive() && other.isSignInsensitive()) {
             Interval signedInterval1 = this.convertToSignedInterval();
-            Interval signedInterval2 = i2.convertToSignedInterval();
+            Interval signedInterval2 = other.convertToSignedInterval();
                 // Asymmetric edge case
             if (signedInterval1.lowerbound.compareTo(type.getMinimumValue(true)) == 0 && signedInterval2.upperbound.compareTo(BigInteger.ONE.negate()) == 0) {
                 return Interval.getTop(type);
@@ -193,10 +193,10 @@ final public class Interval {
     }
 
 
-    private Interval udivide(Interval i2) {
-        if (this.isSignInsensitive() && i2.isSignInsensitive()) {
+    private Interval udivide(Interval other) {
+        if (this.isSignInsensitive() && other.isSignInsensitive()) {
             Interval unsignedInterval1 = this.convertToUnsignedInterval();
-            Interval unsignedInterval2 = i2.convertToUnsignedInterval();
+            Interval unsignedInterval2 = other.convertToUnsignedInterval();
             return divide(unsignedInterval1, unsignedInterval2);
         } else {
             return Interval.getTop(type);
@@ -326,20 +326,20 @@ final public class Interval {
 
 
 
-    private Interval or(Interval interval) {
+    private Interval or(Interval other) {
         return doOR(this.lowerbound,
-                interval.lowerbound,
+                other.lowerbound,
                 this.upperbound,
-                interval.upperbound);
+                other.upperbound);
     }
 
 
-    private Interval and(Interval interval) {
+    private Interval and(Interval other) {
         Interval orInterval = doOR(
                 this.upperbound.not(),
-                interval.upperbound.not(),
+                other.upperbound.not(),
                 this.lowerbound.not(),
-                interval.lowerbound.not());
+                other.lowerbound.not());
         return new Interval(orInterval.getUpperbound().not(),
                 orInterval.getLowerbound().not(),
                 type);
