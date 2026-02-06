@@ -32,7 +32,6 @@ public interface Constraint {
         return Set.of();
     }
 
-
     interface Visitor<T> {
 
         private static void error(Visitor<?> visitor, Constraint c) {
@@ -54,7 +53,6 @@ public interface Constraint {
 
         // -------------------------- Misc --------------------------
         default T visitAssumption(Assumption assume) { return visitConstraint(assume); }
-        default T visitForceEncodeAxiom(ForceEncodeAxiom forceEncode) { return visitConstraint(forceEncode); }
 
         // -------------------------- Definitions --------------------------
         // Derived

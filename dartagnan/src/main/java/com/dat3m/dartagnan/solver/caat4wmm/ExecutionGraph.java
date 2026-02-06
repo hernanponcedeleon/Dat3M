@@ -17,7 +17,6 @@ import com.dat3m.dartagnan.verification.model.ExecutionModel;
 import com.dat3m.dartagnan.wmm.Relation;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.axiom.Axiom;
-import com.dat3m.dartagnan.wmm.axiom.ForceEncodeAxiom;
 import com.dat3m.dartagnan.wmm.definition.*;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.BiMap;
@@ -28,10 +27,7 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.stream.Collectors;
-
-import static com.dat3m.dartagnan.wmm.RelationNameRepository.CO;
-import static com.dat3m.dartagnan.wmm.RelationNameRepository.RF;
+import java.util.function.Predicate;
 
 public class ExecutionGraph {
 
@@ -41,10 +37,10 @@ public class ExecutionGraph {
     // Some are not declared final for purely technical reasons but all of them get
     // assigned during construction.
 
-    private final RefinementModel refinementModel;
-    private final BiMap<Relation, CAATPredicate> predicateToRelationMap;
-    private final BiMap<Axiom, Constraint> constraintMap;
-    private final Set<Relation> cutRelations;
+    private final Wmm memoryModel;
+    private final Predicate<? super com.dat3m.dartagnan.wmm.Constraint> encodedConstraints;
+    private final BiMap<Relation, CAATPredicate> predicateToRelationMap = HashBiMap.create();
+    private final BiMap<Axiom, Constraint> constraintMap = HashBiMap.create();
 
     private CAATModel caatModel;
     private EventDomain domain;
@@ -53,16 +49,9 @@ public class ExecutionGraph {
 
     // ============= Construction & Init ===============
 
-    public ExecutionGraph(RefinementModel refinementModel) {
-        this.refinementModel = refinementModel;
-        predicateToRelationMap = HashBiMap.create();
-        constraintMap = HashBiMap.create();
-        cutRelations = refinementModel.computeBoundaryRelations().stream()
-                .filter(r -> r.getName().map(n -> !(n.equals(CO) || n.equals(RF))).orElse(true))
-                .map(refinementModel::translateToOriginal)
-                .collect(Collectors.toSet());
-
-        checkNoUnsupportedRelations(refinementModel);
+    public ExecutionGraph(Wmm model, Predicate<? super com.dat3m.dartagnan.wmm.Constraint> encoded) {
+        memoryModel = Preconditions.checkNotNull(model);
+        encodedConstraints = Preconditions.checkNotNull(encoded);
         constructMappings();
     }
 
@@ -74,16 +63,13 @@ public class ExecutionGraph {
     // --------------------------------------------------
 
     private void constructMappings() {
-        final Wmm memoryModel = refinementModel.getOriginalModel();
-
         Set<RelationGraph> graphs = new HashSet<>();
         Set<Constraint> constraints = new HashSet<>();
         DependencyGraph<Relation> dependencyGraph = DependencyGraph.from(memoryModel.getRelations());
-        Set<Relation> upperRelations = refinementModel.getUpperRelations();
 
         // Special treatment for recursive relations.
         for (Set<DependencyGraph<Relation>.Node> component : dependencyGraph.getSCCs()) {
-            if (!upperRelations.contains(component.stream().findAny().get().getContent())) {
+            if (encodedConstraints.test(component.iterator().next().getContent().getDefinition())) {
                 // We skip all relations that are below or on the cut, because we do not handle recursion on those
                 continue;
             }
@@ -113,7 +99,7 @@ public class ExecutionGraph {
         }
 
         for (Axiom axiom : memoryModel.getAxioms()) {
-            if (axiom instanceof ForceEncodeAxiom || axiom.isFlagged() || axiom.isNegated()) {
+            if (axiom.isFlagged() || axiom.isNegated() || encodedConstraints.test(axiom)) {
                 continue;
             }
             Constraint constraint = getOrCreateConstraintFromAxiom(axiom);
@@ -139,14 +125,12 @@ public class ExecutionGraph {
         return Maps.unmodifiableBiMap(constraintMap);
     }
 
-    public Set<Relation> getCutRelations() { return cutRelations; }
-
     public CAATPredicate getPredicate(Relation rel) {
         return predicateToRelationMap.get(rel);
     }
 
     public CAATPredicate getPredicateByName(String name) {
-        return getPredicate(refinementModel.getOriginalModel().getRelation(name));
+        return getPredicate(memoryModel.getRelation(name));
     }
 
     public Constraint getConstraint(Axiom axiom) {
@@ -155,6 +139,10 @@ public class ExecutionGraph {
 
     public Collection<Constraint> getConstraints() {
         return constraintMap.values();
+    }
+
+    public boolean isEncoded(Relation relation) {
+        return encodedConstraints.test(relation.getDefinition());
     }
 
     // ====================================================
@@ -176,16 +164,6 @@ public class ExecutionGraph {
     // =======================================================
 
     //=================== Reading the WMM ====================
-
-    private void checkNoUnsupportedRelations(RefinementModel refinementModel) {
-        // Check that unsupported relations are all below the cut.
-        for (Relation rel : refinementModel.getOriginalModel().getRelations()) {
-            if (rel.isInternal() || rel.getDefinition() instanceof LinuxCriticalSections) {
-                Preconditions.checkArgument(refinementModel.translateToBase(rel) != null,
-                        "Relation '%s' is not supported. Missing cut?", rel.getNameOrTerm());
-            }
-        }
-    }
 
     private Constraint getOrCreateConstraintFromAxiom(Axiom axiom) {
         if (constraintMap.containsKey(axiom)) {
@@ -227,16 +205,18 @@ public class ExecutionGraph {
         final Class<?> relClass = rel.getDefinition().getClass();
         final List<Relation> dependencies = rel.getDependencies();
 
-        if (cutRelations.contains(rel)) {
-            graph = new DynamicDefaultWMMGraph(refinementModel.translateToBase(rel));
-        } else if (relClass == ReadFrom.class) {
+        if (relClass == ReadFrom.class) {
             graph = new ReadFromGraph();
+        } else if (relClass == Coherence.class) {
+            graph = new CoherenceGraph();
+        } else if (encodedConstraints.test(rel.getDefinition())) {
+            graph = new DynamicDefaultWMMGraph(rel);
         } else if (relClass == SameLocation.class) {
             graph = new LocationGraph();
         } else if (relClass == ProgramOrder.class) {
             graph = new ProgramOrderGraph();
-        } else if (relClass == Coherence.class) {
-            graph = new CoherenceGraph();
+        } else if (relClass == SameInstruction.class) {
+            graph = new SameInstructionGraph();
         } else if (relClass == Inverse.class || relClass == TransitiveClosure.class) {
             RelationGraph g = getOrCreateGraphFromRelation(dependencies.get(0));
             graph = relClass == Inverse.class ? new InverseGraph(g) : new TransitiveGraph(g);
@@ -283,8 +263,8 @@ public class ExecutionGraph {
         final Class<?> relClass = relation.getDefinition().getClass();
         final List<Relation> dependencies = relation.getDependencies();
         final SetPredicate set;
-        if (cutRelations.contains(relation)) {
-            set = new DynamicDefaultWMMSet(refinementModel.translateToBase(relation));
+        if (encodedConstraints.test(relation.getDefinition())) {
+            set = new DynamicDefaultWMMSet(relation);
         } else if (relClass == TagSet.class) {
             set = new StaticWMMSet(((TagSet) relation.getDefinition()).getTag());
         } else if (relClass == Projection.class) {

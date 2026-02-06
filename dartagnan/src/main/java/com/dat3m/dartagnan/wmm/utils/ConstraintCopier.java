@@ -60,11 +60,6 @@ public final class ConstraintCopier implements Constraint.Visitor<Constraint> {
     }
 
     @Override
-    public ForceEncodeAxiom visitForceEncodeAxiom(ForceEncodeAxiom forceEncode) {
-        return new ForceEncodeAxiom(translate(forceEncode.getRelation()), forceEncode.isNegated(), forceEncode.isFlagged());
-    }
-
-    @Override
     public Constraint visitFree(Free def) {
         return new Free(translate(def.getDefinedRelation()));
     }

@@ -16,12 +16,17 @@ import com.dat3m.dartagnan.program.event.RegWriter;
 import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.dat3m.dartagnan.smt.FormulaManagerExt;
+import com.dat3m.dartagnan.utils.dependable.DependencyGraph;
 import com.dat3m.dartagnan.verification.Context;
 import com.dat3m.dartagnan.verification.VerificationTask;
+import com.dat3m.dartagnan.wmm.Constraint;
+import com.dat3m.dartagnan.wmm.Definition;
 import com.dat3m.dartagnan.wmm.Relation;
+import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
 import com.dat3m.dartagnan.wmm.axiom.Acyclicity;
 import com.dat3m.dartagnan.wmm.utils.graph.EventGraph;
+import com.google.common.collect.Iterables;
 
 
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
@@ -30,7 +35,10 @@ import org.sosy_lab.common.configuration.Options;
 import org.sosy_lab.java_smt.api.*;
 import org.sosy_lab.java_smt.api.NumeralFormula.IntegerFormula;
 
+import java.util.Collection;
 import java.util.HashMap;
+import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Map;
 
 import static com.dat3m.dartagnan.configuration.OptionNames.*;
@@ -51,6 +59,7 @@ public final class EncodingContext {
     private final RelationAnalysis relationAnalysis;
     private final FormulaManagerExt formulaManager;
     private final BooleanFormulaManager booleanFormulaManager;
+    final Collection<Constraint> constraintsToEncode;
     private final ExpressionEncoder exprEncoder;
 
     private final ExpressionFactory exprs = ExpressionFactory.getInstance();
@@ -83,7 +92,7 @@ public final class EncodingContext {
     private final Map<MemoryObject, TypedFormula<?, ?>> objAddress = new HashMap<>();
     private final Map<MemoryObject, TypedFormula<IntegerType, ?>> objSize = new HashMap<>();
 
-    private EncodingContext(VerificationTask t, Context a, FormulaManager m) {
+    private EncodingContext(VerificationTask t, Context a, FormulaManager m, Collection<? extends Constraint> c) {
         verificationTask = checkNotNull(t);
         analysisContext = checkNotNull(a);
         a.requires(BranchEquivalence.class);
@@ -92,11 +101,23 @@ public final class EncodingContext {
         relationAnalysis = a.requires(RelationAnalysis.class);
         formulaManager = new FormulaManagerExt(m);
         booleanFormulaManager = formulaManager.getBooleanFormulaManager();
+        // All anarchic relations have to be encoded.
+        final Iterable<? extends Constraint> anarchicConstraints = Wmm.ANARCHIC_CORE_RELATIONS.stream()
+                .map(n -> t.getMemoryModel().getRelation(n).getDefinition())
+                .toList();
+        final Iterable<? extends Constraint> toEncode = Iterables.concat(c, anarchicConstraints);
+        constraintsToEncode = new LinkedHashSet<>(
+                DependencyGraph.from(toEncode, EncodingContext::computeConstraintDependencies).getNodeContents());
         exprEncoder = new ExpressionEncoder(this);
     }
 
     public static EncodingContext of(VerificationTask task, Context analysisContext, FormulaManager formulaManager) throws InvalidConfigurationException {
-        EncodingContext context = new EncodingContext(task, analysisContext, formulaManager);
+        return of(task, analysisContext, formulaManager, task.getMemoryModel().getAxioms());
+    }
+
+    public static EncodingContext of(VerificationTask task, Context analysisContext, FormulaManager formulaManager,
+            Collection<? extends Constraint> constraintsToEncode) throws InvalidConfigurationException {
+        EncodingContext context = new EncodingContext(task, analysisContext, formulaManager, constraintsToEncode);
         task.getConfig().inject(context);
         logger.info("{}: {}", IDL_TO_SAT, context.useSATEncoding);
         logger.info("{}: {}", MERGE_CF_VARS, context.shouldMergeCFVars);
@@ -130,6 +151,8 @@ public final class EncodingContext {
     public BooleanFormulaManager getBooleanFormulaManager() {
         return booleanFormulaManager;
     }
+
+    public boolean isEncoded(Constraint c) { return constraintsToEncode.contains(c); }
 
     public ExpressionEncoder getExpressionEncoder() { return exprEncoder; }
 
@@ -293,6 +316,12 @@ public final class EncodingContext {
 
     // ====================================================================================
     // Private implementation
+
+    private static Collection<? extends Constraint> computeConstraintDependencies(Constraint c) {
+        final List<Relation> r = c instanceof Definition d ? d.getConstrainedRelations() : null;
+        final Collection<? extends Relation> rels = r == null ? c.getConstrainedRelations() : r.subList(1, r.size());
+        return rels.stream().map(Relation::getDefinition).toList();
+    }
 
     private void initialize() {
         // ------- Control flow variables -------
