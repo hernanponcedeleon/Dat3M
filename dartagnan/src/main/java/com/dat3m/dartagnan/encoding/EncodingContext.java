@@ -37,6 +37,7 @@ import org.sosy_lab.java_smt.api.NumeralFormula.IntegerFormula;
 
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 
@@ -58,7 +59,7 @@ public final class EncodingContext {
     private final RelationAnalysis relationAnalysis;
     private final FormulaManagerExt formulaManager;
     private final BooleanFormulaManager booleanFormulaManager;
-    final DependencyGraph<Constraint> constraintsToEncode;
+    final Collection<Constraint> constraintsToEncode;
     private final ExpressionEncoder exprEncoder;
 
     private final ExpressionFactory exprs = ExpressionFactory.getInstance();
@@ -105,7 +106,8 @@ public final class EncodingContext {
                 .map(n -> t.getMemoryModel().getRelation(n).getDefinition())
                 .toList();
         final Iterable<? extends Constraint> toEncode = Iterables.concat(c, anarchicConstraints);
-        constraintsToEncode = DependencyGraph.from(toEncode, EncodingContext::computeConstraintDependencies);
+        constraintsToEncode = new LinkedHashSet<>(
+                DependencyGraph.from(toEncode, EncodingContext::computeConstraintDependencies).getNodeContents());
         exprEncoder = new ExpressionEncoder(this);
     }
 
@@ -150,7 +152,7 @@ public final class EncodingContext {
         return booleanFormulaManager;
     }
 
-    public boolean isEncoded(Constraint c) { return constraintsToEncode.get(c) != null; }
+    public boolean isEncoded(Constraint c) { return constraintsToEncode.contains(c); }
 
     public ExpressionEncoder getExpressionEncoder() { return exprEncoder; }
 

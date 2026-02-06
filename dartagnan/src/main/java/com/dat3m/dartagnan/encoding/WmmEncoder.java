@@ -104,7 +104,7 @@ public class WmmEncoder implements Encoder {
     }
 
     public BooleanFormula encodeFullMemoryModel() {
-        final List<Constraint> toEncode = context.constraintsToEncode.getNodeContents();
+        final Collection<Constraint> toEncode = context.constraintsToEncode;
         final Collection<? extends Constraint> total = context.getTask().getMemoryModel().getConstraints();
         logger.info("Encoding {} of {} constraints.", toEncode.size(), total.size());
         final var encoder = new RelationEncoder();
